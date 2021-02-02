@@ -328,7 +328,17 @@ class Main < Sinatra::Base
                 day += 1
             end
         end
-        @@config = YAML::load_file('/data/config.yaml')
+        begin
+            @@config = YAML::load_file('/data/config.yaml')
+        rescue
+            @@config = {
+                :first_day => '2020-06-25',
+                :first_school_day => '2020-08-10',
+                :last_day => '2021-08-06'
+            }
+            STDERR.puts "Can't read /data/config.yaml, using a few default values:"
+            STDERR.puts @@config.to_yaml
+        end
         parser.parse_lehrer do |record|
             next unless record[:can_log_in]
             @@user_info[record[:email]] = {
@@ -406,6 +416,7 @@ class Main < Sinatra::Base
         # add Eltern
         @@predefined_external_users = {:groups => [], :recipients => {}}
         @@klassen_order.each do |klasse|
+            next unless @@schueler_for_klasse.include?(klasse)
             @@predefined_external_users[:groups] << "/eltern/#{klasse}"
             @@predefined_external_users[:recipients]["/eltern/#{klasse}"] = {
                 :label => "Eltern der Klasse #{self.tr_klasse(klasse)}",
@@ -554,16 +565,18 @@ class Main < Sinatra::Base
                 @@klassen_order.index(a) <=> @@klassen_order.index(b)
             end
         end
-        @@lessons[:timetables][@@lessons[:start_dates].last].each_pair do |lesson_key, lesson_info|
-            lesson = @@lessons[:lesson_keys][lesson_key]
-            lesson[:klassen].each do |klasse|
-                @@teachers_for_klasse[klasse] ||= {}
-                lesson[:lehrer].each do |lehrer|
-                    @@teachers_for_klasse[klasse][lehrer] ||= {}
-                    @@teachers_for_klasse[klasse][lehrer][lesson[:fach]] ||= 0
-                    lesson_info[:stunden].each_pair do |dow, stunden|
-                        stunden.each_pair do |i, stunde|
-                            @@teachers_for_klasse[klasse][lehrer][lesson[:fach]] += stunde[:count]
+        unless @@lessons[:start_dates].empty?
+            @@lessons[:timetables][@@lessons[:start_dates].last].each_pair do |lesson_key, lesson_info|
+                lesson = @@lessons[:lesson_keys][lesson_key]
+                lesson[:klassen].each do |klasse|
+                    @@teachers_for_klasse[klasse] ||= {}
+                    lesson[:lehrer].each do |lehrer|
+                        @@teachers_for_klasse[klasse][lehrer] ||= {}
+                        @@teachers_for_klasse[klasse][lehrer][lesson[:fach]] ||= 0
+                        lesson_info[:stunden].each_pair do |dow, stunden|
+                            stunden.each_pair do |i, stunde|
+                                @@teachers_for_klasse[klasse][lehrer][lesson[:fach]] += stunde[:count]
+                            end
                         end
                     end
                 end

@@ -33,6 +33,7 @@ class Script
         @@teachers_for_klasse = Main.class_variable_get(:@@teachers_for_klasse)
         @@shorthands = Main.class_variable_get(:@@shorthands)
         @@klassen_order.each do |klasse|
+            next unless @@schueler_for_klasse.include?(klasse)
             @mailing_lists["klasse.#{klasse}@#{SCHUL_MAIL_DOMAIN}"] = {
                 :label => "Klasse #{klasse}",
                 :recipients => @@schueler_for_klasse[klasse]
@@ -53,7 +54,7 @@ class Script
             }
         end
         if DEVELOPMENT
-            @mailing_lists[VERTEILER_TEST_ADRESSE] = {
+            @mailing_lists[VERTEILER_TEST_EMAIL] = {
                 :label => "Dev-Verteiler",
                 :recipients => VERTEILER_DEVELOPMENT_EMAILS
             }

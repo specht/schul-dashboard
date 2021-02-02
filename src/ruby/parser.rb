@@ -85,17 +85,21 @@ class Parser
     def initialize
         @@chars = 'BCDFGHJKMNPQRSTVWXYZ23456789'.split('')
         @email_sub = {}
-        File.open('/data/schueler/email-sub.txt') do |f|
-            f.each_line do |line|
-                parts = line.strip.split(' ').map { |x| x.strip }
-                @email_sub[parts[0]] = parts[1]
+        if File.exists?('/data/schueler/email-sub.txt')
+            File.open('/data/schueler/email-sub.txt') do |f|
+                f.each_line do |line|
+                    parts = line.strip.split(' ').map { |x| x.strip }
+                    @email_sub[parts[0]] = parts[1]
+                end
             end
         end
         @nc_sub = {}
-        File.open('/data/lehrer/nc-sub.txt') do |f|
-            f.each_line do |line|
-                parts = line.strip.split(' ').map { |x| x.strip }
-                @nc_sub[parts[0]] = parts[1]
+        if File.exists?('/data/lehrer/nc-sub.txt')
+            File.open('/data/lehrer/nc-sub.txt') do |f|
+                f.each_line do |line|
+                    parts = line.strip.split(' ').map { |x| x.strip }
+                    @nc_sub[parts[0]] = parts[1]
+                end
             end
         end
         @use_mock_names = false

@@ -70,42 +70,15 @@
 <li><a href="https://youtu.be/BYqWu9Yft8s">Dashboard am Gymnasium Steglitz (ausführliche Version für Lehrkräfte)</a></li>
 </ul>
 
-<h2 id="installation">Installation</h2>
-
-<p>Systemvoraussetzungen: </p>
+<h1 id="dokumentation">Dokumentation</h1>
 
 <ul>
-<li>ruby</li>
-<li>docker</li>
-<li>docker-compose</li>
+<li><a href="file.Installation.html">Installation</a></li>
 </ul>
-
-<p>Bevor das Dashboard gestartet werden kann, muss es konfiguriert werden.</p>
-
-<ul>
-<li><code>env.template.rb</code> als <code>env.rb</code> speichern und Werte anpassen</li>
-<li><code>src/ruby/credentials.template.rb</code> als <code>src/ruby/credentials.rb</code> speichern und Werte anpassen</li>
-</ul>
-
-<p>Es reicht für einen ersten Test, die Dateien so zu lassen, wie sie sind.</p>
-
-<p>Das Skript <code>config.rb</code> ist ein Wrapper um <code>docker-compose</code>, der <code>docker-compose.yaml</code> erzeugt und dann <code>docker-compose</code> mit den angegebenen Argumenten aufruft.</p>
-
-<h3 id="bauen-der-docker-images">Bauen der Docker-Images</h3>
-
-<pre class="code ruby"><code class="ruby">./config.rb build
-</code></pre>
-
-<h3 id="start-des-systems">Start des Systems</h3>
-
-<pre class="code ruby"><code class="ruby">./config.rb up
-</code></pre>
-
-<p>Das Dashboard kann nun unter <a href="http://localhost:8025">http://localhost:8025</a> aufgerufen werden Damit man sich allerdings auch anmelden kann, muss das Dashboard konfiguriert werden.</p>
 </div></div>
 
       <div id="footer">
-  Generated on Tue Feb  2 12:23:06 2021 by
+  Generated on Tue Feb  2 12:44:50 2021 by
   <a href="http://yardoc.org" title="Yay! A Ruby Documentation Tool" target="_parent">yard</a>
   0.9.26 (ruby-2.5.1).
 </div>

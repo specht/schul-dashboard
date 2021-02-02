@@ -1,0 +1,1 @@
+--no-private --protected --output-dir yardoc src/ruby/*.rb src/ruby/include/*.rb

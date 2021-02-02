@@ -1,0 +1,805 @@
+#{this_is_a_page_for_logged_in_teachers}
+<div class='container' style='padding-top: 30px;'>
+    <div class='row'>
+        <div class='col-md-12'>
+            <h2 style='margin-bottom: 30px;'>Umfragen</h2>
+            <button class='btn btn-success bu-new-poll'><i class='fa fa-plus-circle'></i>&nbsp;&nbsp;Neue Umfrage</button>
+            <hr />
+            <div class='polls-container'>
+                <table class='table table-striped narrow'>
+                <thead>
+                    <tr>
+                        <th>Titel</th>
+                        <th style='width: 120px;'>Teilnehmer</th>
+                        <th style='width: 120px;'>Aktiv</th>
+                    </tr>
+                </thead>
+                <tbody class='polls-here'>
+                </tbody>
+                </table>
+            </div>
+        </div>        
+    </div>
+</div>
+
+<div class="modal" id="composeModal" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-scrollable modal-xl modal-dialog-centered" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title lb_title">Neue Umfrage</h5>
+            </div>
+            <div class="modal-body" style='min-height: 300px;'>
+                <div class='row'>
+                    <div class='col-md-12'>
+                        <div class="form-group">
+<!--                             <label>Titel</label> -->
+                            <input id='ti_title' class='form-control' type='text' placeholder='Bitte geben Sie den Titel der Umfrage ein'></input>
+                        </div>
+                    </div>
+                </div>
+                <div class='row'>
+                    <div class='col-md-12'>
+                        <div class='poll-items-here'></div>
+                    </div>
+                </div>
+                <div class='row'>
+                    <div class='col-md-12'>
+                        <div class="btn-group">
+                            <button type="button" class="btn btn-success dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                                <i class='fa fa-plus-circle'></i>&nbsp;&nbsp;Eintrag hinzufügen
+                            </button>
+                            <div class="dropdown-menu">
+                                <a class='dropdown-item bu-poll-add-paragraph btn btn-success'><i class='fa fa-align-left'></i>&nbsp;&nbsp;Text hinzufügen</a>
+<!--                                 <a class='dropdown-item bu-poll-add-image btn btn-success'><i class='fa fa-photo'></i>&nbsp;&nbsp;Bild hinzufügen</a> -->
+                                <a class='dropdown-item bu-poll-add-radio btn btn-success'><i class='fa fa-list'></i>&nbsp;&nbsp;Auswahl hinzufügen</a>
+                                <a class='dropdown-item bu-poll-add-checkbox btn btn-success'><i class='fa fa-list'></i>&nbsp;&nbsp;Mehrfachauswahl hinzufügen</a>
+                                <a class='dropdown-item bu-poll-add-textarea btn btn-success'><i class='fa fa-i-cursor'></i>&nbsp;&nbsp;Freitextfeld hinzufügen</a>
+<!--                                 <a class='dropdown-item bu-poll-add-likert btn btn-success'><i class='fa fa-list'></i>&nbsp;&nbsp;Likert-Skala hinzufügen</a> -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <div id='save_poll_btn_container'>
+                    <button id='bu_discard_poll' class='btn btn-outline-secondary' disabled><i class='fa fa-times'></i>&nbsp;&nbsp;<span>Verwerfen</span></button>
+                    <button id='bu_save_poll' class='btn btn-outline-secondary' disabled><i class='fa fa-check'></i>&nbsp;&nbsp;<span>Speichern</span></button>
+                </div>
+                <button id='bu_delete_poll' type="button" class="btn btn-outline-secondary" disabled style='display: none;'><i class='fa fa-trash'></i>&nbsp;&nbsp;Umfrage löschen</button>
+                <button id='bu_close_poll_modal' type="button" class="btn btn-secondary" data-dismiss="modal">Schließen</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal" id="externalUsersModal" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-scrollable modal-lg modal-dialog-centered" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Adressbuch für externe Teilnehmer</h5>
+            </div>
+            <div class="modal-body">
+                <p class='text-muted'>
+                Fügen Sie externe Teilnehmer hinzu, indem Sie Nutzer im Format <code>Vorname Nachname &lt;E-Mail-Adresse&gt;</code> hinzufügen, also z. B. <code>Max Mustermann &lt;max@example.com&gt;</code>. Trennen Sie mehrere Teilnehmer durch ein Komma oder einen Zeilenumbruch. Die Teilnehmer, die Sie hier eintragen, können Sie für alle Ihre Termine einladen, sie müssen also nur einmal hinzugefügt werden.
+                </p>
+                <p class='text-muted'>
+                Bitte beachten Sie, dass alle Teilnehmer, die hier aufgeführt sind, noch nicht unbedingt zu Ihrem Termin eingeladen sind. Sie müssen, wie reguläre Teilnehmer auch, über das Suchfeld hinzugefügt werden.
+                </p>
+                <!--<p><span style='padding: 0 5px; background-color: #f4c9c5; color: #d5291a'>Achtung:</span> Bitte beachten Sie, dass hierfür die Einwilligung zur Speicherung der E-Mail-Adresse für jeden Teilnehmer vorliegen muss.
+                </p>-->
+                <textarea id='ti_add_ext_users' class='form-control'></textarea>
+                <button id='bu_add_ext_users' class='btn btn-success float-right' style='margin: 10px 0;' disabled>Teilnehmer hinzufügen</button>
+                <table class='table table-striped narrow'>
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>E-Mail</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody class='ext-users-here'>
+                </tbody>
+                </table>
+            </div>
+            <div class="modal-footer">
+                <button id='bu_close_ext_user_modal' type="button" class="btn btn-secondary" data-dismiss="modal">Schließen</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+var recipients = {};
+var recipients_cache = {};
+var autocomplete_results = {};
+var recipients_list = {};
+var net_recipients_list = [];
+var has_external_recipients = false;
+var old_title = ''
+var old_date = null;
+var old_start_time = null;
+var old_end_time = null;
+var old_jitsi = null;
+var old_recipients_list = [];
+var old_description = '';
+var old_pid = null;
+var stored_polls = #{stored_polls.to_json};
+var external_users_for_session_user = #{external_users_for_session_user.to_json};
+var force_close = false;
+var current_poll = {};
+var stored_poll_json = null;
+
+function can_send() {
+    return true; //(net_recipients_list.length > 0) && $('#ti_title').val().trim().length > 0;
+}
+
+function pending_changes() {
+    let flag = false;
+    let current_poll_json = JSON.stringify(current_poll);
+    if (current_poll_json !== stored_poll_json)
+        flag = true;
+    if (flag)
+        $('.bu-send-invitation').prop('disabled', true).removeClass('btn-success').addClass('btn-outline-secondary');
+    $('#bu_send_missing_invitations').prop('disabled', flag);
+    return flag;
+}
+
+function update_buttons() {
+    if (old_pid) {
+        $('#bu_delete_poll').prop('disabled', false).show().removeClass('btn-outline-secondary').addClass('btn-danger');
+        $('#bu_discard_poll span').html('Änderungen verwerfen');
+        $('#bu_save_poll span').html('Änderungen speichern');
+    } else {
+        $('#bu_delete_poll').prop('disabled', true).hide().addClass('btn-outline-secondary').removeClass('btn-danger');
+        $('#bu_discard_poll span').html('Verwerfen');
+        $('#bu_save_poll span').html('Speichern');
+    }
+    if (pending_changes()) {
+        $('#bu_discard_poll').removeClass('btn-outline-secondary').addClass('btn-secondary').prop('disabled', false);
+        $('#bu_close_poll_modal').removeClass('btn-secondary').addClass('btn-outline-secondary').prop('disabled', true);
+        if (can_send())
+            $('#bu_save_poll').removeClass('btn-outline-secondary').addClass('btn-success').prop('disabled', false);
+        else
+            $('#bu_save_poll').removeClass('btn-success').addClass('btn-outline-secondary').prop('disabled', true);
+    } else {
+        $('#bu_discard_poll').removeClass('btn-secondary').addClass('btn-outline-secondary').prop('disabled', true);
+        $('#bu_close_poll_modal').removeClass('btn-outline-secondary').addClass('btn-secondary').prop('disabled', false);
+        $('#bu_save_poll').removeClass('btn-success').addClass('btn-outline-secondary').prop('disabled', true);
+    }
+}
+
+function discard_poll() {
+    force_close = true;
+    $('#composeModal').modal('hide');
+}
+
+function save_poll() {
+    let submit_data = {
+        title: $('#ti_title').val().trim(),
+        items: JSON.stringify(current_poll.items)
+    };
+    if (old_pid === null) {
+        api_call('/api/save_poll', submit_data, function(data) {
+            if (data.success) {
+                stored_poll_json = JSON.stringify(current_poll);
+                console.log(data);
+                stored_polls.unshift(data.poll);
+                old_pid = data.poll.pid;
+                update_net_recipients_list();
+                update_buttons();
+                update_stored_polls();
+            }
+        });
+    } else {
+        submit_data.pid = old_pid;
+        api_call('/api/update_poll', submit_data, function(data) {
+            if (data.success) {
+                stored_poll_json = JSON.stringify(current_poll);
+                stored_polls = stored_polls.map(function(e) {
+                    if (e.pid === data.pid)
+                        e = data.poll;
+                    return e;
+                });
+//                 force_close = true;
+//                 $('#composeModal').modal('hide');
+                update_net_recipients_list();
+                update_buttons();
+                update_stored_polls();
+            }
+        });
+    }
+}
+
+function delete_poll() {
+    if (!old_pid)
+        return;
+    api_call('/api/delete_poll', {pid: old_pid}, function(data) {
+        if (data.success) {
+            old_recipients_list = net_recipients_list;
+            $('#composeModal').modal('hide');
+            stored_polls = stored_polls.filter(x => x.pid !== data.pid);
+            update_stored_polls();
+        }
+    });
+}
+
+function update_net_recipients_list() {
+    let net_recipients_hash = {};
+    for (let key in recipients_list) {
+        let entry = recipients[key];
+        if (entry.entries)
+            for (let email of entry.entries) 
+                net_recipients_hash[email] = true;
+        else
+            net_recipients_hash[key] = true;
+    }
+    net_recipients_list = Object.keys(net_recipients_hash).sort();
+    has_external_recipients = false;
+
+//     api_call('/api/get_external_invitations_for_poll', {pid: old_pid || ''}, function(data) {
+//         $('.div_ext_users_for_poll_present').hide();
+//         $('.ext-users-for-poll-here').empty();
+//         let missing_invites = false;
+//         let requested_invites = false;
+//         for (let email of net_recipients_list) {
+//             if (email in external_users_for_session_user.recipients) {
+//                 $('.div_ext_users_for_poll_present').show();
+//                 let row = $('<tr>');
+//                 let this_invitations = data.invitations[email] || [];
+//                 let this_invitation_requested = data.invitation_requested[email];
+//                 row.append($('<td>').text(external_users_for_session_user.recipients[email].label));
+//                 row.append($('<td>').text(email));
+//                 if (this_invitations.length === 0) {
+//                     row.append($('<td>').html('&ndash;'));
+//                     missing_invites = true;
+//                 } else {
+//                     row.append($('<td>').html(this_invitations.map(function(x) { return '' + x; }).join('<br />')));
+//                 }
+//                 if (this_invitation_requested)
+//                     requested_invites = true;
+//                 let bu_invite = $('<button>').data('email', email).data('pid', old_pid).addClass('btn').addClass('btn-xs').addClass('btn-success').addClass('bu-send-invitation').html("<i class='fa fa-send'></i>&nbsp;&nbsp;Einladung senden");
+//                 if ((old_pid || '').length === 0)
+//                     bu_invite.removeClass('btn-success').addClass('btn-outline-secondary').prop('disabled', true);
+//                 row.append($('<td>').append(bu_invite));
+//                 bu_invite.click(function(e) {
+//                     let pid = $(e.target).closest('.btn').data('pid');
+//                     let email = $(e.target).closest('.btn').data('email');
+//                     api_call('/api/invite_external_user', {pid: pid, email: email}, function(data) {
+//                         if (data.success)
+//                             update_net_recipients_list();
+//                     });
+//                 });
+//                 $('.ext-users-for-poll-here').append(row);
+//             }
+//         }
+//         if (missing_invites) {
+//             if (requested_invites) {
+//                 $('.div_invites_complete').hide();
+//                 $('.div_invites_missing').hide();
+//                 $('.div_invites_requested').show();
+//             } else {
+//                 $('.div_invites_complete').hide();
+//                 $('.div_invites_missing').show();
+//                 $('.div_invites_requested').hide();
+//             }
+//         } else {
+//             $('.div_invites_complete').show();
+//             $('.div_invites_missing').hide();
+//             $('.div_invites_requested').hide();
+//         }
+//         if (net_recipients_list.length === 0)
+//             $('#recipient_count').html('keine Teilnehmer');
+//         else
+//             $('#recipient_count').html('' + net_recipients_list.length + ' Teilnehmer');
+//         update_buttons();
+//     });
+}
+
+function gen_recipient_span(key, with_rm) {
+    if (!(key in recipients))
+        recipients[key] = {label: key};
+    let label = recipients[key].label;
+    if (recipients[key].entries)
+        label += ' (' + recipients[key].entries.length + ')';
+    let recipient = $('<span>').addClass('recipient').html(label);
+    if (with_rm) {
+        let rm_button = $('<span>').addClass('rm').data('key', key);
+        rm_button.click(function(e) { 
+            remove_recipient($(e.target).data('key')); 
+            $(e.target).closest('.recipient').remove();
+        });
+        recipient.addClass('with-rm').append(rm_button);
+    }
+    if (recipients[key].teacher)
+        recipient.addClass('teacher');
+    recipient.data('key', key);
+    return recipient;
+}
+
+function add_recipient(key) {
+    if (!(key in recipients_list)) {
+        recipients_list[key] = true;
+        $('.recipients_list').append(gen_recipient_span(key, true));
+    }
+    $('.recipient-input-dropdown').hide();
+    $('#ti_recipients').val('');
+    $('#ti_title').focus();
+    update_net_recipients_list();
+}
+
+function remove_recipient(key) {
+    delete recipients_list[key];
+    update_net_recipients_list();
+}
+
+function compact_address_list(emails) {
+    let result = [];
+    for (let key of recipients_cache.groups) {
+        let all_in = true;
+        for (let email of recipients[key].entries) {
+            if (emails.indexOf(email) < 0) {
+                all_in = false;
+                break;
+            }
+        }
+        if (all_in) {
+            result.push(key);
+            let new_emails = [];
+            for (let email of emails)
+                if (recipients[key].entries.indexOf(email) < 0)
+                    new_emails.push(email);
+            emails = new_emails;
+        }
+    }
+    for (let email of emails)
+        result.push(email);
+    return result;
+}
+
+function edit_poll(poll) {
+    $('.bu-send-invitation').prop('disabled', false).removeClass('btn-outline-secondary').addClass('btn-success');
+
+    $('.recipients_list').empty();
+    recipients_list = {};
+    for (let email of poll.recipients || []) {
+        recipients_list[email] = true;
+        $('.recipients_list').append(gen_recipient_span(email, true));
+    }
+    old_pid = poll.pid;
+    update_net_recipients_list();
+    $('#composeModal').modal('show');
+    force_close = false;
+    $('.lb_title').text(poll.poll.title);
+    $('#ti_title').val(poll.poll.title);
+    current_poll = {title: poll.poll.title, items: JSON.parse(poll.poll.items)};
+    stored_poll_json = JSON.stringify(current_poll);
+    $('#ti_recipients').val('');
+    $('#ti_recipients').focus();
+    update_buttons();
+    update_current_poll();
+}
+
+function update_stored_polls() {
+    $('.polls-here').empty();
+    for (poll of stored_polls) {
+        let row = $('<tr>');
+//         row.append($('<td>').html(weekdays[poll.dow] + '. ' + poll.info.date.substr(8, 2) + '.' + poll.info.date.substr(5, 2) + '.' + poll.info.date.substr(0, 4)));
+        row.append($('<td>').html(poll.poll.title));
+        row.append($('<td>').html(''));
+        row.append($('<td>').html('nein'));
+        row.data('pid', poll.pid);
+        (function(poll) {
+            row.click(function(e) {
+                edit_poll(poll);
+            });
+        })(poll);
+        $('.polls-here').append(row);
+    };
+}
+
+function update_external_users_for_session_user() {
+    $('.ext-users-here').empty();
+    for (let email of external_users_for_session_user.order) {
+        let row = $('<tr>');
+        row.append($('<td>').html(external_users_for_session_user.recipients[email].label));
+        row.append($('<td>').html(email));
+//         let bu_toggle = $('<button>').data('email', email).addClass('btn').addClass('btn-xs').addClass('btn-secondary').html("<i class='fa fa-times'></i>&nbsp;&nbsp;nicht eingeladen");
+//         row.append($('<td>').append(bu_toggle));
+        let bu_delete = $('<button>').data('email', email).addClass('btn').addClass('btn-xs').addClass('btn-danger').html("<i class='fa fa-trash'></i>");
+        row.append($('<td>').append(bu_delete));
+        bu_delete.click(function(e) {
+            let email = $(e.target).closest('.btn').data('email');
+            api_call('/api/delete_external_user', {email: email}, function(data) {
+                if (data.success) {
+                    external_users_for_session_user = data.ext_users;
+                    update_external_users_for_session_user();
+                    load_recipients('#{@session_user[:id]}', function() {}, external_users_for_session_user);
+                }
+            });
+        });
+        $('.ext-users-here').append(row);
+    };
+}
+
+function update_current_poll() {
+    $('#ti_title').val(current_poll.title);
+    let div = $('.poll-items-here');
+    div.empty();
+    let item_types = {
+        paragraph: 'Text',
+        radio: 'Auswahl',
+        checkbox: 'Mehrfachauswahl',
+        image: 'Bild',
+        textarea: 'Freitext'
+    };
+    for (let item_index in current_poll.items) {
+        item_index = parseInt(item_index);
+        let item = current_poll.items[item_index];
+        
+        let button_div = $('<div>').addClass('float-right');//.css('margin', '10px 0');
+        let bu_rm = $('<button>').addClass('ml-1').addClass('btn').addClass('btn-sm').addClass('btn-danger').html("<i class='fa fa-trash'></i>").data('item-index', item_index);
+        let bu_up = $('<button>').addClass('ml-1').addClass('btn').addClass('btn-sm').addClass('btn-primary').html("<i class='fa fa-arrow-up'></i>").data('item-index', item_index);
+        let bu_down = $('<button>').addClass('ml-1').addClass('btn').addClass('btn-sm').addClass('btn-primary').html("<i class='fa fa-arrow-down'></i>").data('item-index', item_index);
+        if (item_index === 0)
+            bu_up.prop('disabled', true);
+        if (item_index === current_poll.items.length - 1)
+            bu_down.prop('disabled', true);
+        button_div.append(bu_rm);
+        button_div.append(bu_up);
+        button_div.append(bu_down);
+        bu_rm.click(function(e) {
+            let item_index = $(e.target).closest('.btn').data('item-index');
+            current_poll.items.splice(item_index, 1);
+            update_current_poll();
+        });
+        bu_up.click(function(e) {
+            let item_index = $(e.target).closest('.btn').data('item-index');
+            let entry = current_poll.items[item_index];
+            current_poll.items.splice(item_index, 1);
+            current_poll.items.splice(item_index - 1, 0, entry);
+            update_current_poll();
+        });
+        bu_down.click(function(e) {
+            let item_index = $(e.target).closest('.btn').data('item-index');
+            let entry = current_poll.items[item_index];
+            current_poll.items.splice(item_index, 1);
+            current_poll.items.splice(item_index + 1, 0, entry);
+            update_current_poll();
+        });
+        div.append(button_div);
+
+        let header = $('<p>');
+        header.append($('<strong>').text('' + (item_index + 1) + '. ' + item_types[item.type]));
+        div.append(header);
+        let ti_title = $('<input>').addClass('mb-2').addClass('form-control').attr('placeholder', item.type === 'paragraph' ? 'Zwischenüberschrift (optional)' : 'Bitte geben Sie eine Frage ein').val(item.title).data('item-index', item_index);
+        ti_title.change(function(e) {
+            let item_index = $(e.target).data('item-index');
+            current_poll.items[item_index].title = $(e.target).val().trim();
+            update_buttons();
+        });
+        div.append(ti_title);
+        if (item.type === 'radio' || item.type === 'checkbox') {
+            let bc = $('<div>').addClass('poll_radio_buttons').addClass('edit').data('item-index', item_index);
+            bc.data('poll_item_type', item.type);
+            for (let answer_index in item.answers) {
+                answer_index = parseInt(answer_index);
+                let answer = item.answers[answer_index];
+                let input_group = $('<div>').addClass('input-group');
+                let ti = $('<input>').attr('placeholder', 'Bitte geben Sie eine Antwortmöglichkeit ein').addClass('form-control').val(answer).attr('data-item-index', item_index).attr('data-answer-index', answer_index);
+                let button_div = $('<div>').addClass('input-group-append');
+                let bu_rm = $('<button>').addClass('btn').addClass('btn-outline-secondary').html("<i class='fa fa-trash'></i>").data('item-index', item_index).data('answer-index', answer_index);
+                let bu_up = $('<button>').addClass('btn').addClass('btn-outline-secondary').html("<i class='fa fa-arrow-up'></i>").data('item-index', item_index).data('answer-index', answer_index);
+                let bu_down = $('<button>').addClass('btn').addClass('btn-outline-secondary').html("<i class='fa fa-arrow-down'></i>").data('item-index', item_index).data('answer-index', answer_index);
+                ti.change(function(e) {
+                    let item_index = $(e.target).data('item-index');
+                    let answer_index = $(e.target).data('answer-index');
+                    current_poll.items[item_index].answers[answer_index] = $(e.target).val().trim();
+                    update_buttons();
+                });
+                if (answer_index === 0)
+                    bu_up.prop('disabled', true);
+                if (answer_index === item.answers.length - 1)
+                    bu_down.prop('disabled', true);
+                bu_rm.click(function(e) {
+                    let item_index = $(e.target).closest('.btn').data('item-index');
+                    let answer_index = $(e.target).closest('.btn').data('answer-index');
+                    current_poll.items[item_index].answers.splice(answer_index, 1);
+                    update_current_poll();
+                });
+                bu_up.click(function(e) {
+                    let item_index = $(e.target).closest('.btn').data('item-index');
+                    let answer_index = $(e.target).closest('.btn').data('answer-index');
+                    let entry = current_poll.items[item_index].answers[answer_index];
+                    current_poll.items[item_index].answers.splice(answer_index, 1);
+                    current_poll.items[item_index].answers.splice(answer_index - 1, 0, entry);
+                    update_current_poll();
+                });
+                bu_down.click(function(e) {
+                    let item_index = $(e.target).closest('.btn').data('item-index');
+                    let answer_index = $(e.target).closest('.btn').data('answer-index');
+                    let entry = current_poll.items[item_index].answers[answer_index];
+                    current_poll.items[item_index].answers.splice(answer_index, 1);
+                    current_poll.items[item_index].answers.splice(answer_index + 1, 0, entry);
+                    update_current_poll();
+                });
+                button_div.append(bu_rm);
+                button_div.append(bu_up);
+                button_div.append(bu_down);
+                input_group.append(ti)
+                input_group.append(button_div);
+                bc.append(input_group);
+            }
+            div.append(bc);
+            let bu_add_answer = $('<button>').addClass('btn').addClass('btn-sm').addClass('btn-success').html("<i class='fa fa-plus'></i>&nbsp;&nbsp;Antwortmöglichkeit hinzufügen").data('item-index', item_index);
+            bu_add_answer.click(function(e) {
+                let item_index = $(e.target).data('item-index');
+                current_poll.items[item_index].answers.push('');
+                update_current_poll();
+                $('input').filter(`[data-item-index='${item_index}']`).filter(`[data-answer-index='${current_poll.items[item_index].answers.length - 1}']`).focus();
+            });
+            div.append(bu_add_answer);
+        } else if (item.type === 'textarea') {
+            let textarea = $('<textarea>').addClass('form-control');
+            textarea.prop('disabled', true).attr('placeholder', '(Platz für Eingaben)');
+            div.append(textarea);
+        } else if (item.type === 'paragraph') {
+            let p = $('<textarea>').addClass('form-control').val(item.text).data('item-index', item_index);
+            p.change(function(e) {
+                let item_index = $(e.target).data('item-index');
+                current_poll.items[item_index].text = $(e.target).val().trim();
+                update_buttons();
+            });
+            div.append(p);
+        }
+        div.append($('<hr />').css('clear', 'both'));
+    }
+    update_buttons();
+}
+
+function new_poll() {
+    current_poll = {items: [], title: ''};
+    stored_poll_json = JSON.stringify(current_poll);
+    $('.lb_title').text('Neue Umfrage');
+    $('#ti_title').val('');
+    $('#ti_date').val('#{Date.today.to_s}');
+    $('#ti_start_time').val('08:00');
+    $('#ti_end_time').val('10:00');
+    if ($('#ti_poll_jitsi').data('state') !== 'yes')
+        $('#ti_poll_jitsi').click();
+    $('#summernote').summernote('reset');
+    recipients_list = {};
+    update_net_recipients_list();
+    $('.recipients_list').empty();
+    $('#composeModal').modal('show');
+    force_close = false;
+    old_recipients_list = [];
+    old_description = $('#summernote').summernote('code');
+    old_pid = null;
+    $('#ti_recipients').val('');
+    $('#ti_title').focus();
+    update_buttons();
+    update_current_poll();
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    $('#summernote').summernote({
+        placeholder: 'Bitte geben Sie die Terminbeschreibung ein',
+        callbacks: {
+            onChange: function() {
+                update_buttons();
+            }
+        },
+        lang: 'de-DE',
+        height: 300,
+        toolbar: [
+            ['style', ['style']],
+            ['font', ['bold', 'underline', 'clear']],
+            ['fontname', ['fontname']],
+            ['color', ['color']],
+            ['para', ['ul', 'ol', 'paragraph']],
+            ['table', ['table']],
+            ['insert', ['link']],
+            ['view', ['codeview', 'help']],
+        ],      
+    });
+    
+    $('#composeModal').on('hide.bs.modal', function(e) {
+        if (pending_changes() && (!force_close)) {
+            $('#save_poll_btn_container').effect('shake', {direction: 'left', distance: 4});
+            e.preventDefault();
+            e.stopImmediatePropagation();
+            return false; 
+        }
+    });
+    
+    $('.bu-new-poll').click(function(e) {
+        new_poll();
+    });
+    
+    $('#bu_discard_poll').click(function(e) {
+        discard_poll();
+    });
+    
+    $('#bu_save_poll').click(function(e) {
+        save_poll();
+    });
+    
+    $('#bu_delete_poll').click(function(e) {
+        delete_poll();
+    });
+    
+    $('#ti_recipients').keydown(function(e) {
+        if ((e.keyCode === 9 || e.keyCode === 13) && ($(e.target).val().length > 0)) {
+            if (Object.keys(autocomplete_results).length === 1) {
+                let key = recipients_cache.keys[Object.keys(autocomplete_results)[0]];
+                add_recipient(key);
+            }
+            e.preventDefault();
+            e.stopPropagation();
+            if (e.keyCode === 9)
+                $('#ti_recipients').focus();
+            return;
+        }
+    });
+    $('#ti_recipients').keyup(function(e) {
+        if ($('#ti_recipients')[0].selectionStart == $(e.target).val().length) {
+            let value = $(e.target).val();
+            let backspace_pressed = (e.keyCode === 8);
+            let space_at_end = value[value.length - 1] == ' ';
+            let search_terms = value.trim().toLowerCase().split(/\s+/);
+            let results = {};
+            for (let i = 0; i < search_terms.length; i++) {
+                let term = search_terms[i];
+                let term_results = {};
+                for (let key of Object.keys(recipients_cache.index[term] || {})) {
+                    term_results[key] = recipients_cache.index[term][key];
+                }
+                if (i == 0)
+                    results = term_results;
+                else {
+                    for (let k of Object.keys(results)) {
+                        if (k in term_results) {
+                            if (term_results[k] > results[k])
+                                results[k] = term_results[k];
+                        } else {
+                            delete results[k];
+                        }
+                    }
+                }
+            }
+            autocomplete_results = results;
+            result_keys = Object.keys(results).map(function(x) { return parseInt(x); });
+            if (result_keys.length === 0)
+                $('.recipient-input-dropdown').hide();
+            else {
+                if (result_keys.length === 1)
+                {
+                    if (!backspace_pressed) {
+                        let key = recipients_cache.keys[result_keys[0]];
+                        let label = recipients[key].label;
+                        $('#ti_recipients').val(label);
+                        $('#ti_recipients')[0].setSelectionRange(results[result_keys[0]] + (space_at_end ? 1 : 0), label.length);
+                    }
+                }
+                result_keys.sort(function(a, b) {
+                    let va = recipients[recipients_cache.keys[a]];
+                    let vb = recipients[recipients_cache.keys[b]];
+                    if (va.teacher === vb.teacher) {
+                        if (va.label < vb.label)
+                            return -1;
+                        return 1;
+                    } else {
+                        if (va.teacher)
+                            return -1;
+                        return 1;
+                    }
+                });
+                $('.recipient-input-dropdown').empty();
+                for (let key of result_keys) {
+                    let k = recipients_cache.keys[key];
+                    let r = gen_recipient_span(k);
+                    r.click(function(e) { 
+                        add_recipient($(e.target).data('key'));
+                    });
+                    $('.recipient-input-dropdown').append(r);
+                }
+                $('.recipient-input-dropdown').show();
+            }
+        }
+    });
+    for (let key of ['#ti_title', '#ti_date', '#ti_start_time', '#ti_end_time']) {
+        $(key).keyup(function(e) { update_buttons(); });
+        $(key).change(function(e) { update_buttons(); });
+    }
+//     $('.bu-compose').click();
+
+    $('.btn_lesson_data').click(function(e) {
+        let button = $(e.target);
+        if (button.data('state') === 'yes') {
+            button.removeClass('btn-info').addClass('btn-outline-secondary');
+            button.find('.fa').removeClass('fa-check').removeClass('fa-question-circle').addClass('fa-times');
+            button.data('state', 'no');
+            button.blur();
+        }
+        else {
+            button.removeClass('btn-outline-secondary').addClass('btn-info');
+            button.find('.fa').removeClass('fa-times').removeClass('fa-question-circle').addClass('fa-check');
+            button.data('state', 'yes');
+        }
+        update_buttons();
+    });
+    
+    $('.bu_open_ext_users_modal').click(function(e) {
+            $('#ti_add_ext_users').val('');
+        $('#externalUsersModal').modal('show');
+    });
+    
+    $('#ti_add_ext_users').keyup(function(e) { 
+        $('#bu_add_ext_users').prop('disabled', $('#ti_add_ext_users').val().trim().length === 0);
+    });
+    
+    $('#ti_add_ext_users').change(function(e) { 
+        $('#bu_add_ext_users').prop('disabled', $('#ti_add_ext_users').val().trim().length === 0);
+    });
+    
+    $('#bu_add_ext_users').click(function(e) {
+        api_call('/api/add_external_users', {text: $('#ti_add_ext_users').val().trim()}, function(data) {
+            if (data.success) {
+                $('#ti_add_ext_users').val('');
+                external_users_for_session_user = data.ext_users;
+                update_external_users_for_session_user();
+                load_recipients('#{@session_user[:id]}', function() {}, external_users_for_session_user);
+            }
+        });
+    });
+    
+    $('#bu_send_missing_invitations').click(function(e) {
+        api_call('/api/send_missing_invitations', {pid: old_pid}, function(data) {
+            console.log(data);
+            if (data.success) {
+                update_net_recipients_list();
+                update_buttons();
+            }
+        });
+    });
+    
+    load_recipients('#{@session_user[:id]}', function() {
+        update_stored_polls();
+        update_external_users_for_session_user();
+        if (window.location.hash.length > 1) 
+        {
+            let pid = window.location.hash.substr(1);
+            for (let poll of stored_polls) {
+                if (poll.pid === pid)
+                    edit_poll(poll);
+            }
+            window.location.hash = '';
+        }
+    }, external_users_for_session_user);
+//     $('.bu-new-poll').click();
+    $('.bu-poll-add-paragraph').click(function(e) {
+        current_poll.items.push({type: 'paragraph', title: '', text: ''});
+        update_current_poll();
+    });
+    $('.bu-poll-add-radio').click(function(e) {
+        current_poll.items.push({type: 'radio', title: '', answers: []});
+        update_current_poll();
+    });
+    $('.bu-poll-add-checkbox').click(function(e) {
+        current_poll.items.push({type: 'checkbox', title: '', answers: []});
+        update_current_poll();
+    });
+    $('.bu-poll-add-textarea').click(function(e) {
+        current_poll.items.push({type: 'textarea', title: ''});
+        update_current_poll();
+    });
+    $('#ti_title').change(function(e) {
+        current_poll.title = $(e.target).val().trim();
+        update_buttons();
+    });
+    $('#ti_title').keyup(function(e) {
+        current_poll.title = $(e.target).val().trim();
+        update_buttons();
+    });
+});
+</script>

@@ -1,0 +1,232 @@
+#{this_is_a_page_for_people_who_can_upload_files}
+
+<div class="modal" id="deleteFileModal" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" >
+            Datei löschen
+        </h5>
+      </div>
+      <div class="modal-body">
+        Sind Sie sicher, dass Sie dieses Datei löschen möchten?
+        <br />
+        <input type='text' class='form-control' readonly id='ti_delete_filename'></input>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-danger bu-perform-delete-file">Datei löschen</button>
+        <button type="button" class="btn btn-secondary bu-close-dialog" data-dismiss="modal">Abbrechen</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class='container' style='padding-top: 30px;'>
+    <div class='row'>
+        <div class='col-md-12'>
+            <h2>Dateien hochladen</h2>
+            <form action='/api/upload_file' class='dropzone' id='my-awesome-dropzone'></form>
+            <div class='preview' style='display: none;'></div>
+            <div class='input-group mt-1'>
+                <input type='text' class='form-control ti_uri' placeholder='Datei per URL hochladen' />
+                <div class='input-group-append'>
+                    <button class='btn btn-success bu_upload_from_uri' disabled>Datei holen</button>
+                </div>
+            </div>
+            <hr />
+            <table class='table'>
+            <thead>
+            <tr>
+            <th>Datei</th>
+            <th>Größe</th>
+            <th>Löschen</th>
+            </tr>
+            </thead>
+            <tbody id='uploads_here'>
+            </tbody>
+            </table>
+            <button class='btn btn-success bu-upload' disabled>Dateien hochladen</button>
+            <hr />
+            <table class='table narrow'>
+            <thead>
+            <tr>
+            <th>Datei</th>
+            <th>Größe</th>
+            <th>Link für Website</th>
+            <th>Löschen</th>
+            </tr>
+            </thead>
+            <tbody id='files_here'>
+            </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<script>
+window.pending_uuids = {};
+window.pending_files = {};
+window.pending_row = {};
+window.taken_slugs = {};
+
+function update_upload_button() {
+    $('.bu-upload').attr('disabled', (Object.keys(window.pending_uuids).length === 0) || ($('.is-invalid').length > 0));
+}
+
+function update_upload_from_uri_button() {
+    $('.bu_upload_from_uri').attr('disabled', $('.ti_uri').val().trim().length === 0);
+}
+
+function update_slug(uuid) {
+    let filename = window.pending_row[uuid].find('.ti_filename').val();
+    let slug = filename; //title.toLowerCase().replace(/\s+/g,'-').replace(/[^\w-]+/g,'').trim();
+    if (slug.length === 0 || slug in window.taken_slugs) {
+        window.pending_row[uuid].find('.ti_filename').removeClass('is-valid').addClass('is-invalid');
+    } else {
+        window.pending_row[uuid].find('.ti_filename').removeClass('is-invalid').addClass('is-valid');
+    }
+    update_upload_button();
+}
+
+function refresh_files() {
+    api_call('/api/get_all_files', {}, function(data) {
+        window.taken_slugs = {};
+        let files_here = $('#files_here');
+        files_here.empty();
+        if (data.success) {
+            for (let file of data.files) {
+                window.taken_slugs[file.name] = true;
+                let row = $('<tr>').data('filename', file.name);
+                row.append($('<td>').addClass('align-middle').append($('<a>').attr('href', '#{WEB_ROOT}/f/' + file.name).attr('target', '_blank').text(file.name)));
+                row.append($('<td>').addClass('align-middle').text('' + (file.size / 1024.0 / 1024.0).toFixed(1) + ' MiB'));
+                
+//         <button class='btn btn-secondary btn-clipboard' data-clipboard-action='copy' data-clipboard-target="#ti_l3"><i class='fa fa-clipboard'></i></button>
+
+                let code = 'file{' + file.name + '}{' + file.name.split('.').slice(0, -1).join('.') + '}';
+                let ig = $('<div>').addClass('input-group');
+                ig.append($('<input>').addClass('form-control').attr('type', 'text').attr('readonly', true).val(code));
+                let ia = $('<div>').addClass('input-group-append');
+                ia.append($('<button>').addClass('btn').addClass('btn-secondary').addClass('btn-clipboard').attr('data-clipboard-text', code).html("<i class='fa fa-clipboard'></i>"));
+                ig.append(ia);
+                row.append($('<td>').append(ig));
+                
+                let bu_delete = $('<button>').addClass('btn').addClass('btn-danger').html("<i class='fa fa-trash'></i>");
+                row.append($('<td>').append(bu_delete));
+                bu_delete.click(function(e) {
+                    let filename = $(e.target).closest('tr').data('filename');
+                    $('.modal-body #ti_delete_filename').val(filename);
+                    $('.bu-perform-delete-file').data('filename', filename);
+                    $('#deleteFileModal').modal('show');
+                });
+                files_here.append(row);
+            }
+        };
+    });
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    new ClipboardJS('.btn');
+    moment.locale('de');
+    Dropzone.autoDiscover = false;
+    window.dropzone = new Dropzone('#my-awesome-dropzone', {
+        dictDefaultMessage: 'Bitte hier klicken, um Dateien hochzuladen. Alternativ können Sie auch Dateien aus dem Datei-Browser hier hineinziehen.',
+//         acceptedFiles: '*',
+        autoProcessQueue: false,
+        previewsContainer: '.preview',
+        uploadMultiple: false,
+        init: function() {
+            this.on('sending', function(file, xhr, formData) {
+                formData.append("filename", window.pending_row[file.upload.uuid].find('.ti_filename').val());
+            });
+            this.on('addedfile', function(file) {
+                let uuid = file.upload.uuid;
+                if (uuid in window.pending_uuids)
+                    return;
+                window.pending_uuids[uuid] = true;
+                window.pending_files[uuid] = file;
+                let row = $('<tr>');
+                row.data('uuid', uuid);
+                window.pending_row[uuid] = row;
+                let ti_filename = $('<input>').addClass('ti_filename').addClass('form-control');
+                ti_filename.val(file.name);
+                row.append($('<td>').append(ti_filename));
+                row.append($('<td>').addClass('align-middle').text('' + (file.size / 1024.0 / 1024.0).toFixed(1) + ' MiB'));
+                let bu_remove_pending = $('<button>').addClass('btn').addClass('btn-sm').addClass('btn-danger').html("<i class='fa fa-trash'></i>");
+                row.append($('<td>').append(bu_remove_pending));
+                $('#uploads_here').append(row);
+                update_slug(uuid);
+                bu_remove_pending.click(function(e) {
+                    let uuid = $(e.target).closest('tr').data('uuid');
+                    window.dropzone.removeFile(window.pending_files[uuid]);
+                    delete window.pending_uuids[uuid];
+                    delete window.pending_files[uuid];
+                    delete window.pending_row[uuid];
+                    $(e.target).closest('tr').remove();
+                    update_upload_button();
+                });
+                ti_filename.change(function(e) {
+                    let uuid = $(e.target).closest('tr').data('uuid');
+                    update_slug(uuid);
+                });
+                ti_filename.keyup(function(e) {
+                    let uuid = $(e.target).closest('tr').data('uuid');
+                    update_slug(uuid);
+                });
+            });
+            this.on('success', function(file, data) {
+            });
+            this.on('queuecomplete', function(file, data) {
+                window.pending_uuids = {};
+                window.pending_files = {};
+                window.pending_row = {};
+                $('#uploads_here').empty();
+                update_upload_button();
+                refresh_files();
+            });
+        }
+    });
+    $('.bu-upload').click(function(e) {
+        window.dropzone.processQueue();
+    });
+    $('.bu-close').click(function(e) {
+        $('.popup').slideUp();
+    });
+    $('.bu-perform-delete-file').click(function(e) {
+        let filename = $(e.target).data('filename');
+        api_call('/api/delete_file', {filename: filename}, function(data) {
+            $('#deleteFileModal').modal('hide');
+            refresh_files();
+        });
+    });
+    $('.ti_uri').change(function(e) {
+        update_upload_from_uri_button();
+    });
+    $('.ti_uri').keyup(function(e) {
+        update_upload_from_uri_button();
+    });
+    $('.ti_uri').keydown(function(e) {
+        if (e.keyCode === 13)
+            $('.bu_upload_from_uri').click();
+    });
+    $('.bu_upload_from_uri').click(function(e) {
+        let uri = $('.ti_uri').val().trim();
+        $('.ti_uri').val('');
+        update_upload_from_uri_button();
+        api_call('/api/upload_file_via_uri', {uri: uri}, function(data) {
+            if (data.success) {
+                // filename body size
+                let bc = atob(data.body);
+                let bn = new Array(bc.length);
+                for (let i = 0; i < bc.length; i++)
+                    bn[i] = bc.charCodeAt(i);
+                let ba = new Uint8Array(bn);
+                let blob = new Blob([ba]);
+                blob.name = data.filename;
+                window.dropzone.addFile(blob);
+            }
+        });
+    });
+    refresh_files();
+    update_upload_from_uri_button();
+});
+</script>

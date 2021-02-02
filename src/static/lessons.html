@@ -1,0 +1,1347 @@
+#{this_is_a_page_for_logged_in_teachers}
+<style>
+body {
+    background-image: none;
+    background-color: #fff;
+}
+</style>
+<script>
+var lesson_key = '#{show_lesson_key}';
+var lesson_key_id = '#{lesson_key_id}';
+var lesson_data = #{lesson_data.to_json};
+var schueler_for_lesson = #{(@@schueler_for_lesson[show_lesson_key] || []).map { |email| i = {}; [:email, :first_name, :display_name].each { |k| i[k] = @@user_info[email][k]}; i; }.to_json};
+var max_recording_time = 5;
+var mediaRecorder = null;
+var chunks = [];
+var pb_button = null;
+var audio = null;
+var audio_blob = null;
+var recording = false;
+var playing = false;
+var rec_start_time = null;
+var rec_duration = 0;
+var update_rec_time_label_timeout = null;
+</script>
+
+<div class="modal" id="feedbackModal" tabindex="-1" role="dialog" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
+    <div class="modal-content">
+      <div class="modal-body">
+            <table class='table table-striped narrow schueler_table_table'>
+                <thead>
+                <tr>
+                <th class='th-feedback-name'>Name</th>
+                <th>Kommentar</th>
+                <th class='th-feedback-audiokommentar'>Audiokommentar</th>
+                </tr>
+                </thead>
+                <tbody class='schueler_table'>
+                    <tr id='recording_row' style='display: none;'>
+                        <td colspan='3'>
+                            <div class='container-fluid' style='margin: -30px 0px; padding: 30px 0px;'>
+                                <div class='row'>
+                                    <div class='col-12'>
+                                        <div class='explanation' style='margin-top: 5px; white-space: normal;'>
+                                            Hier können Sie einen Kommentar zur Stunde bzw. zur Hausaufgabe hinterlassen. Ein freigegebener Kommentar wird <span class='first_name_here'></span> erst nach fünf Minuten angezeigt, falls Sie sich umentscheiden sollten und einen Kommentar zurückziehen möchten.
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class='row'>
+                                    <div class='col-lg-6 col-md-12'>
+                                        <div class="form-group">
+                                            <label><b>Kommentar für <span class='first_name_here'></span></b></label>
+                                            <textarea class="form-control" id='ti_feedback_comment' style='height: 100px; font-family: Roboto;'></textarea>
+                                            <div style='position: relative;'>
+                                                <div class="btn-group">
+                                                    <div id='publish_text_comment_btn_container'>
+                                                        <button id='bu_publish_text_comment' class='btn btn-outline-secondary' style='margin-top: 10px;' disabled>Kommentar freigeben</button>
+                                                        <button id='bu_discard_text_comment' class='btn btn-outline-secondary' style='margin-top: 10px;' disabled>Verwerfen</button>
+                                                    </div>
+                                                </div>
+                                                <button id='bu_delete_text_comment' class='btn btn-outline-secondary' style='margin-top: 10px;' disabled><i class='fa fa-trash'></i>&#8203;</button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class='col-lg-6 col-md-12'>
+                                        <div class="form-group">
+                                            <label><b>Audiokommentar für <span class='first_name_here'></span></b></label>
+                                            <div style='min-height: 100px;'>
+                                                <div class="btn-group">
+                                                    <button id='bu_record_audio_comment' class='btn btn-danger'><i class='fa fa-microphone'></i>&nbsp;&nbsp;Aufnehmen</button>
+                                                    <button id='bu_stop_audio_comment' class='btn btn-outline-secondary' disabled><i class='fa fa-stop'></i></button>
+                                                    <button id='bu_play_audio_comment' class='btn btn-outline-secondary' disabled><i class='fa fa-play'></i></button>
+                                                </div>
+                                                <div id='audio_time' class="progress" style='margin-top: 10px;'>
+                                                    <div class="progress-bar progress-bar-striped progress-bar-animated bg-success" style="width: 0%"></div>
+                                                </div>
+                                                <div class='explanation alert-danger audio_error_warning' style='margin-top: 10px; white-space: normal; display: none;'>
+                                                    Die Aufnahme konnte nicht gestartet werden.
+                                                </div>
+                                                <div class='explanation' style='margin-top: 10px; white-space: normal; font-family: Roboto;'>
+                                                    Aufnahmedauer: <span id='duration'>0:00</span> (von max. 5 Minuten)
+                                                </div>
+                                            </div>
+                                            <div style='position: relative;'>
+                                                <div class="btn-group">
+                                                    <div id='publish_audio_comment_btn_container'>
+                                                        <button id='bu_publish_audio_comment' class='btn btn-outline-secondary' style='margin-top: 10px;' disabled>Kommentar freigeben</button>
+                                                        <button id='bu_discard_audio_comment' class='btn btn-outline-secondary' style='margin-top: 10px;' disabled>Verwerfen</button>
+                                                    </div>
+                                                </div>
+                                                <button id='bu_delete_audio_comment' class='btn btn-outline-secondary' style='margin-top: 10px;' disabled><i class='fa fa-trash'></i>&#8203;</button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+      </div>
+      <div class="modal-footer">
+        <button id='bu_close_feedback_modal' type="button" class="btn btn-secondary" data-dismiss="modal">Schließen</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class='container-fluid solid' style='padding-top: 30px;'>
+    <div class='api_messages overlay'></div>
+    <div class='row' style='position: relative;'>
+        <div class='col-md-3'>
+            <div class='lesson_pane'>
+                <p class='status_label'>&nbsp;</p>
+                <div class="form-group bu-save-discard-container">
+                    <button class='bu-discard-changes btn btn-outline-secondary' style='margin-bottom: 3px;' disabled><i class='fa fa-trash'></i>&nbsp;&nbsp;Verwerfen</button>
+                    <button class='bu-save-changes btn btn-outline-secondary' style='margin-bottom: 3px;' disabled ><i class='fa fa-check'></i>&nbsp;&nbsp;Speichern</button>
+                    <div class="btn-group bu-umplanen-container" style='position: relative; top: -2px;'>
+                        <button type="button" class="btn btn-outline-secondary dropdown-toggle bu-umplanen" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false" disabled>Umplanen</button>
+                        <div class="dropdown-menu dropdown-menu-right">
+                            <a class="bu-insert-lesson-above dropdown-item no-max-width" href='#'>Eine Stunde oberhalb einfügen</a>
+                            <a class="bu-insert-2-lesson-above dropdown-item no-max-width" href='#'>Doppelstunde oberhalb einfügen</a>
+                            <div class='dropdown-divider'></div>
+                            <a class="bu-delete-lesson dropdown-item no-max-width" href='#'><span class='delete-lessons-label'>Diese Stunde</span> aus dem Verlauf entfernen</a>
+<!--                                <button type="button" class="btn btn-outline-secondary dropdown-toggle bu-umplanen" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false" disabled>Umplanen</button>
+                                <div class="dropdown-menu">
+                                    <a class="bu-insert-lesson-above dropdown-item no-max-width" href='#'>Eine Stunde oberhalb einfügen</a>
+                                    <a class="bu-delete-lesson dropdown-item no-max-width" href='#'>Diese Stunde aus dem Verlauf entfernen</a>
+                                </div>-->
+                        </div>
+                    </div>
+                    <div style='clear: both'></div>
+                </div>
+                <hr />
+                <div class='pane_items'>
+                    <div class="form-group">
+                        <label><b>Thema</b>* <span class='text-muted'>(für SuS nicht sichtbar)</span></label>
+                        <div id='dd_thema' class="float-right dropdown" style='display: none;'>
+                            <button class="btn btn-warning btn-sm dropdown-toggle" type="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                                verschiedene Werte
+                            </button>
+                            <div class="dropdown-menu dropdown-menu-right">
+                            </div>
+                        </div>
+                        <input type="text" class="form-control input-private" id='ti_thema' disabled />
+                    </div>
+<!--                     <hr /> -->
+                    <div class="form-group">
+                        <label><b>Stundenthema</b> <span class='text-muted'>(für SuS sichtbar)</span></label>
+                        <div id='dd_stundenthema_text' class="float-right dropdown" style='display: none;'>
+                            <button class="btn btn-warning btn-sm dropdown-toggle" type="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                                verschiedene Werte
+                            </button>
+                            <div class="dropdown-menu dropdown-menu-right">
+                            </div>
+                        </div>
+                        <div class='explanation' style='margin-top: 5px; white-space: normal;'>
+                            Hier können Sie Schülerinnen und Schülern, die nicht an der Stunde teilnehmen können, mitteilen, was in der Stunde behandelt wird oder Arbeitsanweisungen geben. Dieses Feld ist für alle Schülerinnen und Schüler sichtbar (allerdings immer nur für eine Woche im voraus).
+                        </div>
+                        <textarea id='ti_stundenthema_text' style='height: 100px; margin-bottom: 15px;' class="form-control" disabled></textarea>
+                    </div>
+                    <hr />
+                    <div class="form-group">
+                        <label><b>Durchführung</b> <span class='text-muted'>(für SuS sichtbar)</span></label>
+                        <div class='button-with-label'>
+                            <button id='ti_lesson_jitsi' data-state='off' class='btn_lesson_data btn btn-sm btn-outline-secondary' disabled><i class='fa fa-times'></i>&nbsp;&nbsp;Jitsi Meet</button>
+                            <span>Für diese Stunde wird ein Jitsi Meet-Stream bereitgestellt.</span>
+                        </div>
+                        <div class='button-with-label'>
+                            <button id='ti_lesson_nc' data-state='off' class='btn_lesson_data btn btn-sm btn-outline-secondary' disabled><i class='fa fa-times'></i>&nbsp;&nbsp;Nextcloud</button>
+                            <span>Es befinden sich Aufgaben im Nextcloud-Ordner. Der Link zum Ordner wird automatisch bereitgestellt.</span>
+                        </div>
+                        <div class='button-with-label'>
+                            <button id='ti_lesson_lr' data-state='off' class='btn_lesson_data btn btn-sm btn-outline-secondary' disabled><i class='fa fa-times'></i>&nbsp;&nbsp;Lernraum</button>
+                            <span>Es befinden sich Aufgaben im Lernraum.</span>
+                        </div>
+                    </div>
+                    <hr />
+                    <div class="form-group">
+                        <label><b>Hausaufgaben</b> (zu heute) <span class='text-muted'>(für SuS sichtbar)</span></label>
+                        <div id='dd_hausaufgaben_text' class="float-right dropdown" style='display: none;'>
+                            <button class="btn btn-warning btn-sm dropdown-toggle" type="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                                verschiedene Werte
+                            </button>
+                            <div class="dropdown-menu dropdown-menu-right">
+                            </div>
+                        </div>
+                        <textarea id='ti_hausaufgaben_text' style='height: 100px; margin-bottom: 15px;' class="form-control" disabled></textarea>
+                        <div class='button-with-label'>
+                            <button id='ti_homework_nc' data-state='off' class='btn_lesson_data btn btn-sm btn-outline-secondary' disabled><i class='fa fa-times'></i>&nbsp;&nbsp;Nextcloud</button>
+                            <span>Es befinden sich Hausaufgaben im Nextcloud-Ordner.</span>
+                        </div>
+                        <div class='button-with-label'>
+                            <button id='ti_homework_lr' data-state='off' class='btn_lesson_data btn btn-sm btn-outline-secondary' disabled><i class='fa fa-times'></i>&nbsp;&nbsp;Lernraum</button>
+                            <span>Es befinden sich Hausaufgaben im Lernraum.</span>
+                        </div>
+                    </div>
+<!--                     <hr /> -->
+                    <div class="form-group">
+                        <label><b>Rückmeldung an Schülerinnen und Schüler</b></label>
+                        <div class='button-with-label'>
+                            <button id='bu_feedback' class='btn btn-sm btn-outline-secondary' disabled><i class='fa fa-microphone'></i>&nbsp;&nbsp;Feedback</button>
+                            <span>Hier können Sie Feedback zur Stunde bzw. zu den Hausaufgaben geben.</span>
+                        </div>
+                        <div id='feedback-warning' class='explanation alert-warning' style='display: none; padding: 4px 0px; margin: 4px 0; border-top: 1px solid #c4a000; border-bottom: 1px solid #c4a000;'>
+                            Diese Funktion steht nicht zur Verfügung, wenn mehrere Stunden ausgewählt sind.
+                        </div>
+                    </div>
+                    <hr />
+                    <div class="form-group">
+                        <label><b>Notizen</b>* <span class='text-muted'>(für SuS nicht sichtbar)</span></label>
+                        <div id='dd_notizen' class="float-right dropdown" style='display: none;'>
+                            <button class="btn btn-warning btn-sm dropdown-toggle" type="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                                verschiedene Werte
+                            </button>
+                            <div class="dropdown-menu dropdown-menu-right">
+                            </div>
+                        </div>
+                        <textarea id='ti_notizen' style='height: 70px;' class="form-control input-private" disabled></textarea>
+                    </div>
+                    <hr />
+                    <div class="form-group text-muted small">
+                    * Diese Einträge sind für Schülerinnen und Schüler nicht sichtbar, können jedoch von vertretenden Kolleginnen und Kollegen eingesehen werden. 
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class='col-md-9 lc_table' style='overflow-x: auto;'>
+            <table class='table wrapit table-condensed narrow lesson_table_table' style='table-layout: fixed;'>
+                <thead>
+                <tr>
+                <th class='th-nr'>Nr.</th>
+                <th class='th-datum'>Datum</th>
+                <th class='th-tag'>Tag</th>
+                <th class='th-stunde'>St.</th>
+                <th class='th-fach'>Fach</th>
+                <th>Thema <span style='font-weight: normal;'>(intern)</span></th>
+                <th>Stundenthema</th>
+                <th class='th-lesson'>Durchführung</th>
+                <th>Hausaufgaben (zu heute)</th>
+                <th class='th-feedback'>Feedback</th>
+                <th>Notizen <span style='font-weight: normal;'>(intern)</th>
+                </tr>
+                </thead>
+                <tbody class='lesson_table'>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<script>
+var row_for_lesson_offset = {};
+var cursor = null;
+var pending_changes = false;
+var data_keys = ['thema', 'notizen', 'hausaufgaben_text', 'stundenthema_text'];
+var data_keys_bools = ['lesson_jitsi', 'lesson_nc', 'lesson_lr', 'homework_nc', 'homework_lr'];
+var can_select = false;
+
+function update_changes() {
+    pending_changes = false;
+    for (key of data_keys) {
+        if ($('#dd_' + key).is(':visible')) {
+            let e = $('#dd_' + key + ' .dropdown-item')[0];
+            if (!($(e).hasClass('checked')))
+                pending_changes = true;
+        }
+        else {
+            if ($('#ti_' + key).val() !== $('#ti_' + key).data('original-value'))
+                pending_changes = true;
+        }
+        // early exit B-)
+        if (pending_changes)
+            break;
+    }
+    for (key of data_keys_bools) {
+        if ($('#ti_' + key).data('state') !== $('#ti_' + key).data('original_state'))
+            pending_changes = true;
+        // early exit B-)
+        if (pending_changes)
+            break;
+    }
+    $('.bu-discard-changes').removeClass(pending_changes ? 'btn-outline-secondary' : 'btn-secondary').addClass(pending_changes ? 'btn-secondary' : 'btn-outline-secondary').prop('disabled', !pending_changes);
+    $('.bu-save-changes').removeClass(pending_changes ? 'btn-outline-secondary' : 'btn-success').addClass(pending_changes ? 'btn-success' : 'btn-outline-secondary').prop('disabled', !pending_changes);
+}
+
+function selection_updated() {
+    $('#recording_row').detach().prependTo($('.schueler_table')).hide();
+    $('.schueler_table tr').removeClass('current').removeClass('selected');
+    let entries = [];
+    for (i of Object.keys(row_for_lesson_offset)) {
+        if (row_for_lesson_offset[i].hasClass('selected'))
+            entries.push(i);
+    }
+    if (entries.length === 1)
+        $('.delete-lessons-label').html('Diese Stunde');
+    else
+        $('.delete-lessons-label').html('' + entries.length + ' Stunden');
+    if (entries.length === 0)
+        $('.status_label').html('keine Stunden ausgewählt');
+    else if (entries.length === 1)
+        $('.status_label').html('1 Stunde ausgewählt');
+    else
+        $('.status_label').html('' + entries.length + ' Stunden ausgewählt');
+        
+    if (entries.length === 0) {
+        $('.pane_items *').prop('disabled', true);
+        $('.bu-discard-changes').removeClass('btn-secondary').addClass('btn-outline-secondary').prop('disabled', true);
+        $('.bu-save-changes').removeClass('btn-success').addClass('btn-outline-secondary').prop('disabled', true);
+        $('.bu-umplanen').removeClass('btn-primary').addClass('btn-outline-secondary').prop('disabled', true);
+        for (key of data_keys) {
+            $('#ti_' + key).val('');
+            $('#ti_' + key).attr('placeholder', '');
+        }
+        $('#feedback-warning').hide();
+        $('#bu_feedback').removeClass('btn-success').addClass('btn-outline-secondary').prop('disabled', true);
+    } else { 
+        if (entries.length === 1) {
+            $('#feedback-warning').hide();
+            $('#bu_feedback').removeClass('btn-outline-secondary').addClass('btn-success').prop('disabled', false);
+        } else {
+            $('#feedback-warning').show();
+            $('#bu_feedback').removeClass('btn-success').addClass('btn-outline-secondary').prop('disabled', true);
+        }
+        $('.bu-umplanen').removeClass('btn-outline-secondary').addClass('btn-primary').prop('disabled', false);
+        $('.pane_items *').prop('disabled', false);
+        $('.bu-discard-changes').addClass('btn-outline-secondary').removeClass('btn-secondary').prop('disabled', true);
+        $('.bu-save-changes').addClass('btn-outline-secondary').removeClass('btn-success').prop('disabled', true);
+        for (key of data_keys) {
+            let seen_values = {};
+            for (entry of entries) {
+                let value = (((lesson_data[entry] || {}).info || {})[key] || '').trim();
+                seen_values[value] = true;
+            }
+            if (Object.keys(seen_values).length === 1) {
+                // only one value
+                let v = Object.keys(seen_values)[0];
+                $('#ti_' + key).val(v);
+                $('#ti_' + key).attr('placeholder', '');
+                $('#ti_' + key).data('original-value', v);
+                $('#dd_' + key).css('display', 'none');
+            } else {
+                // multiple values
+                $('#ti_' + key).val('');
+                $('#ti_' + key).attr('placeholder', '(Einträge unverändert lassen)');
+                $('#dd_' + key).css('display', 'block');
+                let menu = $('#dd_' + key + ' .dropdown-menu').data('key', key);
+                menu.empty();
+                $('<button>').addClass('dropdown-item checked').data('special', 'unchanged').html('Einträge unverändert lassen').appendTo(menu);
+                $('<button>').addClass('dropdown-item').data('special', 'clear').html('alle Einträge löschen').appendTo(menu);
+                $('<div>').addClass('dropdown-divider').appendTo(menu);
+                for (v of Object.keys(seen_values))
+                {
+                    if (v.length > 0)
+                        $('<button>').addClass('dropdown-item').data('value', v).html(v).appendTo(menu);
+                }
+                menu.find('.dropdown-item').click(function(e) {
+                    let item = $(e.target);
+                    let menu = item.closest('.dropdown-menu');
+                    let key = menu.data('key');
+                    menu.find('.dropdown-item').removeClass('checked');
+                    $(e.target).addClass('checked');
+                    if (item.data('special') === 'unchanged')
+                        $('#ti_' + key).attr('placeholder', '(Einträge unverändert lassen)').val('');
+                    else if (item.data('special') === 'clear')
+                        $('#ti_' + key).attr('placeholder', '(alle Einträge löschen)').val('');
+                    else {
+                        $('#ti_' + key).attr('placeholder', '').val(item.data('value'));
+                    }
+                    update_changes();
+                });
+            }
+        }
+        for (key of data_keys_bools) {
+            let seen_values = {};
+            for (entry of entries) {
+                let value = ((lesson_data[entry] || {}).info || {})[key] || false;
+                seen_values[value] = true;
+            }
+            let button = $('#ti_' + key);
+            if (Object.keys(seen_values).length === 1) {
+                // only one value
+                let v = (Object.keys(seen_values)[0] === 'true');
+                if (v === true) {
+                    button.removeClass('btn-outline-secondary').removeClass('half').addClass('btn-info');
+                    button.find('.fa').removeClass('fa-times').removeClass('fa-question-circle').addClass('fa-check');
+                    button.data('state', 'yes');
+                    button.data('original_state', 'yes');
+                } else {
+                    button.removeClass('btn-info').removeClass('half').addClass('btn-outline-secondary');
+                    button.find('.fa').removeClass('fa-check').removeClass('fa-question-circle').addClass('fa-times');
+                    button.data('state', 'no');
+                    button.data('original_state', 'no');
+                }
+            } else {
+                // multiple values
+                button.removeClass('btn-outline-secondary').addClass('btn-info').addClass('half');
+                button.find('.fa').removeClass('fa-times').removeClass('fa-check').addClass('fa-question-circle');
+                button.data('state', 'mixed');
+                button.data('original_state', 'mixed');
+            }
+        }
+    } 
+    if ((#{@@lessons[:lesson_keys][show_lesson_key][:lehrer]}.indexOf('#{@session_user[:shorthand]}') < 0)) {
+        $('.pane_items *').prop('disabled', true);
+        $('.bu-discard-changes').removeClass('btn-secondary').addClass('btn-outline-secondary').prop('disabled', true);
+        $('.bu-save-changes').removeClass('btn-success').addClass('btn-outline-secondary').prop('disabled', true);
+        $('.bu-umplanen').removeClass('btn-primary').addClass('btn-outline-secondary').prop('disabled', true);
+    }
+}
+
+function update_table() {
+    for (i of Object.keys(row_for_lesson_offset)) {
+        let row = row_for_lesson_offset[i];
+        for (key of data_keys)
+        {
+            if (key === 'hausaufgaben_text') {
+                let cell = row.find('.tc_homework');
+                cell.empty();
+                let printed_something = false;
+                if (((lesson_data[i] || {}).info || {}).homework_nc) {
+                    cell.append($('<span>').addClass('bv').html('NC'));
+                    printed_something = true;
+                }
+                if (((lesson_data[i] || {}).info || {}).homework_lr) {
+                    printed_something = true;
+                    cell.append($('<span>').addClass('bv').html('LR'));
+                }
+                cell.append($('<span>').html(((lesson_data[i] || {}).info || {})[key] || ''));
+                if ((!printed_something) && (((lesson_data[i] || {}).info || {})[key] || '').length == 0)
+                    cell.append($('<span>').html('&ndash;'));
+                cell.append($('<span>').html('&nbsp;'));
+            } else if (key === 'stundenthema_text') {
+                let cell = row.find('.tc_stundenthema');
+                cell.empty();
+                let printed_something = false;
+                cell.append($('<span>').html(((lesson_data[i] || {}).info || {})[key] || ''));
+                if ((!printed_something) && (((lesson_data[i] || {}).info || {})[key] || '').length == 0)
+                    cell.append($('<span>').html('&ndash;'));
+                cell.append($('<span>').html('&nbsp;'));
+            } else {
+                let value = ((lesson_data[i] || {}).info || {})[key] || '';
+                if (value.length > 0)
+                    row.find('.tc_' + key).html(value);
+                else
+                    row.find('.tc_' + key).html('&ndash;');
+            }
+        }
+        let cell = row.find('.tc_lesson');
+        cell.empty();
+        let wrote_something = false;
+        if (((lesson_data[i] || {}).info || {}).lesson_jitsi) {
+            cell.append($('<span>').addClass('bv').html('Jitsi'));
+            wrote_something = true;
+        }
+        if (((lesson_data[i] || {}).info || {}).lesson_nc) {
+            cell.append($('<span>').addClass('bv').html('NC'));
+            wrote_something = true;
+        }
+        if (((lesson_data[i] || {}).info || {}).lesson_lr) {
+            cell.append($('<span>').addClass('bv').html('LR'));
+            wrote_something = true;
+        }
+        if (!wrote_something)
+            cell.append($('<span>').html('&ndash;'));
+        cell.append($('<span>').html('&nbsp;'));
+        cell = row.find('.tc_feedback');
+        cell.empty();
+        let comment_count = 0;
+        let audio_comment_count = 0;
+        let comments = ((lesson_data[i] || {}).comments || {});
+        for (email of Object.keys(comments)) {
+            if ((comments[email].audio_comment_tag || '').length > 0)
+                audio_comment_count += 1;
+            if ((comments[email].text_comment || '').length > 0)
+                comment_count += 1;
+        }
+        if (comment_count > 0)
+            cell.append($("<span class='badge badge-success' style='margin-right: 4px;'><i class='fa fa-comment'></i>&nbsp;&nbsp;" + comment_count + "</span>"));
+        if (audio_comment_count > 0)
+            cell.append($("<span class='badge badge-success' style='margin-right: 4px;'><i class='fa fa-microphone'></i>&nbsp;&nbsp;" + audio_comment_count + "</span>"));
+        if (comment_count === 0 && audio_comment_count === 0)
+            cell.append($('<span>').html('&ndash;'));
+    }
+}
+
+function discard_changes() {
+    selection_updated();
+    update_changes();
+}
+
+function save_changes() {
+    let data = {};
+    data.lesson_key = lesson_key;
+    data.lesson_offsets = [];
+    for (i of Object.keys(row_for_lesson_offset)) {
+        if (row_for_lesson_offset[i].hasClass('selected'))
+            data.lesson_offsets.push(parseInt(i));
+    }
+    data.data = {};
+    for (key of data_keys) {
+        let record_this_key = true;
+        let value = $('#ti_' + key).val().trim();
+        if ($('#dd_' + key).is(':visible')) {
+            let el = $('#dd_' + key + ' .dropdown-item.checked');
+            if (el.length > 0) {
+                let e = $(el[0]);
+                if (e.data('special') === 'unchanged')
+                    record_this_key = false;
+                else if (e.data('special') === 'clear')
+                    value = '';
+            }
+        }
+        if (value.length === 0)
+            value = '';
+        if (record_this_key)
+            data.data[key] = value;
+    }
+    for (key of data_keys_bools) {
+        let record_this_key = true;
+        let value = $('#ti_' + key).data('state');
+        if (value === 'mixed')
+            record_this_key = false;
+        else if (value === 'yes')
+            value = true;
+        else
+            value = false;
+        if (record_this_key)
+            data.data[key] = value;
+    }
+    (function(data) {
+        api_call('/api/save_lesson_data', data, function(result) {
+            if (result.success) {
+                for (i of data.lesson_offsets) {
+                    for (k of Object.keys(data.data))
+                    {
+                        if (typeof(lesson_data[i]) === 'undefined')
+                            lesson_data[i] = {};
+                        let v = data.data[k];
+                        if (v === null)
+                            delete lesson_data[i].info[k];
+                        else
+                        {
+                            if (typeof(lesson_data[i].info) === 'undefined')
+                                lesson_data[i].info = {};
+                            lesson_data[i].info[k] = v;
+                        }
+                    }
+                }
+                update_table();
+                selection_updated();
+                update_changes();
+            }
+        });
+    })(data);
+}
+
+function update_feedback_buttons() {
+    let lesson_offset = $($('.lesson_table tr.selected')[0]).data('lesson_offset');
+    let comment_data = (((lesson_data[lesson_offset] || {}).comments || {})[$($('.schueler_table tr.selected')[0]).data('email')] || {});
+    if (recording) {
+        $('#bu_record_audio_comment').prop('disabled', true);
+        $('#bu_stop_audio_comment').prop('disabled', false).removeClass('btn-outline-secondary').addClass('btn-primary');
+        $('#bu_play_audio_comment').prop('disabled', true).removeClass('btn-primary').addClass('btn-outline-secondary');
+    } else if (playing) {
+        $('#bu_record_audio_comment').prop('disabled', true);
+        $('#bu_stop_audio_comment').prop('disabled', false).removeClass('btn-outline-secondary').addClass('btn-primary');
+        $('#bu_play_audio_comment').prop('disabled', true).removeClass('btn-primary').addClass('btn-outline-secondary');
+    } else {
+        if (!pending_feedback_audio_comment_changes()) {
+            $('#bu_record_audio_comment').prop('disabled', false);
+            $('#bu_stop_audio_comment').prop('disabled', true).removeClass('btn-primary').addClass('btn-outline-secondary');
+            $('#bu_play_audio_comment').prop('disabled', true).removeClass('btn-primary').addClass('btn-outline-secondary');
+        } else {
+            $('#bu_record_audio_comment').prop('disabled', false);
+            $('#bu_stop_audio_comment').prop('disabled', true).removeClass('btn-primary').addClass('btn-outline-secondary');
+            $('#bu_play_audio_comment').prop('disabled', false).removeClass('btn-outline-secondary').addClass('btn-primary');
+        }
+        if (pending_feedback_changes()) {
+            $('#bu_close_feedback_modal').prop('disabled', true);
+        } else {
+            $('#bu_close_feedback_modal').prop('disabled', false);
+        }
+    }
+    if (!pending_feedback_audio_comment_changes()) {
+        $('#bu_publish_audio_comment').prop('disabled', true);
+        $('#bu_publish_audio_comment').removeClass('btn-success').addClass('btn-outline-secondary');
+        $('#bu_discard_audio_comment').prop('disabled', true);
+        $('#bu_discard_audio_comment').removeClass('btn-secondary').addClass('btn-outline-secondary');
+    } else {
+        $('#bu_publish_audio_comment').prop('disabled', false);
+        $('#bu_publish_audio_comment').removeClass('btn-outline-secondary').addClass('btn-success');
+        $('#bu_discard_audio_comment').prop('disabled', false);
+        $('#bu_discard_audio_comment').removeClass('btn-outline-secondary').addClass('btn-secondary');
+    }
+    if ((comment_data.audio_comment_tag || '').length > 0) {
+        $('#recording_row #bu_publish_audio_comment').html('Kommentar ersetzen');
+    } else {
+        $('#recording_row #bu_publish_audio_comment').html('Kommentar freigeben');
+    }
+    if (recording) {
+        $('#recording_row #bu_delete_audio_comment').removeClass('btn-danger').addClass('btn-outline-secondary').prop('disabled', true);
+    } else {
+        if ((comment_data.audio_comment_tag || '').length > 0) {
+            $('#recording_row #bu_delete_audio_comment').removeClass('btn-outline-secondary').addClass('btn-danger').prop('disabled', false);
+        } else {
+            $('#recording_row #bu_delete_audio_comment').removeClass('btn-danger').addClass('btn-outline-secondary').prop('disabled', true);
+        }
+    }
+    if ((comment_data.text_comment || '').length > 0) {
+        $('#recording_row #bu_delete_text_comment').removeClass('btn-outline-secondary').addClass('btn-danger').prop('disabled', false);
+    } else {
+        $('#recording_row #bu_delete_text_comment').removeClass('btn-danger').addClass('btn-outline-secondary').prop('disabled', true);
+    }
+    if (!pending_feedback_text_comment_changes()) {
+        $('#bu_publish_text_comment').prop('disabled', true);
+        $('#bu_publish_text_comment').removeClass('btn-success').addClass('btn-outline-secondary');
+        $('#bu_discard_text_comment').prop('disabled', true);
+        $('#bu_discard_text_comment').removeClass('btn-secondary').addClass('btn-outline-secondary');
+    } else {
+        $('#bu_publish_text_comment').prop('disabled', false);
+        $('#bu_publish_text_comment').removeClass('btn-outline-secondary').addClass('btn-success');
+        $('#bu_discard_text_comment').prop('disabled', false);
+        $('#bu_discard_text_comment').removeClass('btn-outline-secondary').addClass('btn-secondary');
+    }
+    if ((comment_data.text_comment || '').length > 0) {
+        $('#recording_row #bu_publish_text_comment').html('Kommentar ersetzen');
+    } else {
+        $('#recording_row #bu_publish_text_comment').html('Kommentar freigeben');
+    }
+}
+
+function update_rec_time_label() {
+    if (mediaRecorder.state !== 'recording')
+        return;
+
+    let duration = (Date.now() - rec_start_time) / 1000;
+    if (duration > max_recording_time * 60)
+        $('#bu_stop_audio_comment').click();
+    
+    $('#duration').html(duration_to_str(duration));
+    let width = (duration / (max_recording_time * 60) * 100);
+    if (width > 100)
+        width = 100;
+    $('#audio_time .progress-bar').css('width', '' + width + '%');
+}
+
+function stop() {
+    if (recording) {
+        recording = false;
+        rec_duration = Math.floor(Date.now() - rec_start_time);
+        clearInterval(update_rec_time_label_timeout);
+        if (mediaRecorder.state === 'recording')
+            mediaRecorder.stop();
+        $('#audio_time .progress-bar').css('width', '0%');
+    }
+    if (playing) {
+        playing = false;
+        audio.pause();
+        audio.currentTime = 0;
+    }
+    if (pb_playing) {
+        pb_audio.pause();
+        pb_audio.currentTime = 0;
+        pb_audio.dispatchEvent(new Event('ended'));
+    }
+    setTimeout(function() {
+        $('#audio_time .progress-bar').css('width', '0%');
+    }, 0);
+    update_feedback_buttons();
+}
+
+function pending_feedback_audio_comment_changes() {
+    if (audio !== null)
+        return true;
+    return false;
+}
+
+function pending_feedback_text_comment_changes() {
+    let lesson_offset = $($('.lesson_table tr.selected')[0]).data('lesson_offset');
+    let schueler = $($('.schueler_table tr.selected')[0]).data('email');
+    if ($('#ti_feedback_comment').val() !== ((((lesson_data[lesson_offset] || {}).comments || {})[schueler] || {}).text_comment || ''))
+        return true;
+    return false;
+}
+
+function pending_feedback_changes() {
+    return pending_feedback_audio_comment_changes() || pending_feedback_text_comment_changes();
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    $('body').keydown(function(e) {
+        if (!can_select)
+            return;
+        if ($(e.target).hasClass('form-control'))
+            return;
+        if (e.code === 'KeyA' && e.ctrlKey === true) {
+            e.preventDefault();
+            e.stopPropagation();
+            if (pending_changes) {
+                $('.bu-save-discard-container').effect('shake', {direction: 'left', distance: 4});
+                return;
+            }
+            $('.lesson_table tr.lesson').removeClass('current');
+            $('.lesson_table tr.lesson').addClass('selected');
+            cursor = null;
+            selection_updated();
+        }
+    });
+    $('body').mousedown(function(e) {
+        if ($('#feedbackModal').is(':visible'))
+            return;
+        if ($(e.target).closest('tr').length > 0)
+            return;
+        if (!can_select)
+            return;
+        if ($(e.target).closest('.lesson_pane').length > 0)
+            return;
+        if (pending_changes) {
+            $('.bu-save-discard-container').effect('shake', {direction: 'left', distance: 4});
+            return;
+        }
+        $('.lesson_table tr').removeClass('current');
+        $('.lesson_table tr').removeClass('selected');
+        cursor = null;
+        selection_updated();
+    });
+    
+    $('#ti_feedback_comment').keyup(function(e) {
+        update_feedback_buttons();
+    });
+    
+    $('.pane_items .form-control').keyup(function(e) {
+        update_changes();
+    });
+    $('.pane_items .form-control').change(function(e) {
+        update_changes();
+    });
+    
+    $('.btn_lesson_data').click(function(e) {
+        let button = $(e.target);
+        button.removeClass('half');
+        if (button.data('state') === 'yes') {
+            button.removeClass('btn-info').addClass('btn-outline-secondary');
+            button.find('.fa').removeClass('fa-check').removeClass('fa-question-circle').addClass('fa-times');
+            button.data('state', 'no');
+            button.blur();
+        }
+        else {
+            button.removeClass('btn-outline-secondary').addClass('btn-info');
+            button.find('.fa').removeClass('fa-times').removeClass('fa-question-circle').addClass('fa-check');
+            button.data('state', 'yes');
+        }
+        update_changes();
+    });
+    
+    $('.bu-discard-changes').click(function(e) { discard_changes() });
+    $('.bu-save-changes').click(function(e) { save_changes() });
+    $('.lesson_pane input').keydown(function(e) {
+        let key = $(e.target).attr('id').replace('ti_', '');
+        if (data_keys.indexOf(key) >= 0)
+            $('#dd_' + key + ' .dropdown-item').removeClass('checked');
+        $(e.target).attr('placeholder', '');
+        if (e.key === 'Enter')
+        {
+            $('.bu-save-changes').click();
+            e.preventDefault();
+            e.stopPropagation();
+        }
+    });
+    $('.lesson_pane textarea').keydown(function(e) {
+        let key = $(e.target).attr('id').replace('ti_', '');
+        if (data_keys.indexOf(key) >= 0)
+            $('#dd_' + key + ' .dropdown-item').removeClass('checked');
+        $(e.target).attr('placeholder', '');
+        if (e.key === 'Enter' && e.ctrlKey)
+        {
+            $('.bu-save-changes').click();
+            e.preventDefault();
+            e.stopPropagation();
+        }
+    });
+    
+    $('#ti_feedback_comment').keydown(function(e) {
+        if (e.key === 'Enter' && e.ctrlKey)
+        {
+            $('#bu_publish_text_comment').click();
+            e.preventDefault();
+            e.stopPropagation();
+        }
+    });
+    
+    for (user of schueler_for_lesson) {
+        let row = $('<tr>').addClass('schueler');
+        row.data('email', user.email);
+        row.data('first_name', user.first_name);
+        $('<td>').html(user.display_name).appendTo(row);
+        $('<td>').addClass('td_comment').html('&ndash;').appendTo(row);
+        $('<td>').addClass('td_audio_comment').html('&ndash;').appendTo(row);
+//         $('<td>').html("<button class='btn btn-primary btn-xs'><i class='fa fa-play' style='font-size: 60%;'></i>&nbsp;&nbsp;0:07</button>").appendTo(row);
+        $('#feedbackModal .schueler_table').append(row);
+        row.click(function(e) {
+            if ($(e.target).hasClass('btn'))
+                return;
+            if (pending_feedback_changes()) {
+                if (pending_feedback_text_comment_changes())
+                    $('#publish_text_comment_btn_container').effect('shake', {direction: 'left', distance: 4});
+                if (pending_feedback_audio_comment_changes())
+                    $('#publish_audio_comment_btn_container').effect('shake', {direction: 'left', distance: 4});
+                return;
+            }
+            stop();
+            audio = null;
+            audio_blob = null;
+            $('#duration').html('0:00');
+            $('#feedbackModal .schueler_table tr').removeClass('selected');
+            let row = $(e.target).closest('tr');
+            $('#recording_row .first_name_here').html(row.data('first_name'));
+            $('#recording_row').detach().insertAfter(row).show();
+            row.addClass('selected');
+            let lesson_offset = $($('.lesson_table tr.selected')[0]).data('lesson_offset');
+            let schueler = $($('.schueler_table tr.selected')[0]).data('email');
+            $('#ti_feedback_comment').val((((((lesson_data[lesson_offset] || {}) || {}).comments || {})[schueler] || {}).text_comment || ''));
+            update_feedback_buttons();
+            $('#ti_feedback_comment').focus();
+        });
+    }
+    
+    $('#feedbackModal').on('hide.bs.modal', function(e) {
+        if (pending_feedback_changes()) {
+            if (pending_feedback_text_comment_changes())
+                $('#publish_text_comment_btn_container').effect('shake', {direction: 'left', distance: 4});
+            if (pending_feedback_audio_comment_changes())
+                $('#publish_audio_comment_btn_container').effect('shake', {direction: 'left', distance: 4});
+            e.preventDefault();
+            e.stopImmediatePropagation();
+            return false; 
+        }
+    });
+    
+    $('#feedbackModal').on('hidden.bs.modal', function() {
+        stop();
+    });
+    
+    $('#bu_feedback').click(function(e) {
+        let lesson_offset = $($('.lesson_table tr.selected')[0]).data('lesson_offset');
+        let this_data = lesson_data[lesson_offset] || {};
+        jQuery.each($('.schueler_table tr'), function(i, row) {
+            row = $(row);
+            let email = row.data('email');
+            let comment_cell = row.find('.td_comment')
+            let audio_comment_cell = row.find('.td_audio_comment');
+            comment_cell.empty();
+            audio_comment_cell.empty();
+            let printed_something_in_audio_comment_cell = false;
+            let printed_something_in_text_comment_cell = false;
+            if (((this_data.comments) || {})[email]) {
+                if ((this_data.comments[email].audio_comment_tag || '').length > 0)
+                {
+                    let duration_str = duration_to_str(this_data.comments[email].duration / 1000);
+                    let play_button = $('<span>').addClass('btn btn-xs btn-success').html("<i class='fa fa-play'></i>&nbsp;&nbsp;" + duration_str);
+                    play_button.css('margin-right', '4px');
+                    play_button.data('tag', this_data.comments[email].audio_comment_tag);
+                    play_button.data('duration_str', duration_str);
+                    play_button.click(function(e) {
+                        if (pb_playing)
+                        {
+                            if ($(e.target).data('tag') !== pb_button.data('tag')) {
+                                stop();
+                                $(e.target)[0].dispatchEvent(new Event('click'));
+                                return;
+                            } else {
+                                stop();
+                                return;
+                            }
+                        }
+                        pb_button = $(e.target);
+                        if (pb_audio === null) {
+                            pb_audio = document.createElement('audio');
+                            pb_audio.setAttribute('controls', '');
+                            pb_audio.controls = true;
+                            pb_audio.addEventListener('play', function(e) {
+                                pb_playing = true;
+                                pb_button.html("<i class='fa fa-stop'></i>&nbsp;&nbsp;0:00");
+                            });
+                            pb_audio.addEventListener('ended', function() {
+                                pb_playing = false;
+                                pb_button.html("<i class='fa fa-play'></i>&nbsp;&nbsp;" + pb_button.data('duration_str'))
+                            });
+                            pb_audio.addEventListener('timeupdate', function(e) {
+                                if (!pb_playing)
+                                    return;
+                                pb_button.html("<i class='fa fa-stop'></i>&nbsp;&nbsp;" + duration_to_str(pb_audio.currentTime));
+                            });
+                        }
+                        let tag = pb_button.data('tag');
+                        pb_audio.src = '/raw/uploads/audio_comment/' + tag.substr(0, 2) + '/' + tag.substr(2, tag.length - 2) + '.ogg';
+                        pb_audio.play();
+                    });
+                    audio_comment_cell.append(play_button);
+                    printed_something_in_audio_comment_cell = true;
+                }
+                else
+                    audio_comment_cell.html('&ndash;');
+                if ((this_data.comments[email].text_comment || '').length > 0)
+                {
+                    comment_cell.html(this_data.comments[email].text_comment);
+                    printed_something_in_text_comment_cell = true;
+                }
+            }
+            if (!printed_something_in_audio_comment_cell)
+                audio_comment_cell.html('&ndash;');
+            if (!printed_something_in_text_comment_cell)
+                comment_cell.html('&ndash;');
+        });
+        $('#feedbackModal').modal('show');
+    });
+    
+    $('#bu_stop_audio_comment').click(function(e) {
+        stop();
+    });
+    
+    $('#bu_play_audio_comment').click(function(e) {
+        stop();
+        playing = true;
+        audio.play();
+        update_feedback_buttons();
+    });
+    
+    $('#bu_publish_audio_comment').click(function(e) {
+        stop();
+        let lesson_offset = $($('.lesson_table tr.selected')[0]).data('lesson_offset');
+        let schueler = $($('.schueler_table tr.selected')[0]).data('email');
+        var fd = new FormData();
+        fd.append('file', audio_blob);
+        fd.append('lesson_key', lesson_key);
+        fd.append('schueler', schueler);
+        fd.append('lesson_offset', lesson_offset);
+        fd.append('duration', rec_duration);
+        $.ajax({
+            type: 'POST',
+            url: '/api/upload_audio_comment',
+            data: fd,
+            processData: false,
+            contentType: false
+        }).done(function(data) {
+            data = JSON.parse(data);
+            audio = null;
+            audio_blob = null;
+            $('#duration').html('0:00');
+            lesson_data[lesson_offset] = lesson_data[lesson_offset] || {};
+            lesson_data[lesson_offset].comments = lesson_data[lesson_offset].comments || {};
+            lesson_data[lesson_offset].comments[schueler] = lesson_data[lesson_offset].comments[schueler] || {};
+            lesson_data[lesson_offset].comments[schueler].audio_comment_tag = data.tag;
+            lesson_data[lesson_offset].comments[schueler].audio_comment_from = '#{@session_user[:email]}';
+            lesson_data[lesson_offset].comments[schueler].duration = rec_duration;
+            $('#bu_feedback').click();
+            update_feedback_buttons();
+            update_table();
+        });           
+    });
+    
+    $('#bu_delete_audio_comment').click(function(e) {
+        stop();
+        let lesson_offset = $($('.lesson_table tr.selected')[0]).data('lesson_offset');
+        let schueler = $($('.schueler_table tr.selected')[0]).data('email');
+        api_call('/api/delete_audio_comment', {lesson_key: lesson_key, lesson_offset: lesson_offset, schueler: schueler}, function(data) {
+            if (data.success) {
+                delete lesson_data[lesson_offset].comments[schueler].audio_comment_tag;
+                delete lesson_data[lesson_offset].comments[schueler].audio_comment_from;
+                $('#bu_feedback').click();
+                update_feedback_buttons();
+                update_table();
+            }
+        });
+    });
+    
+    $('#bu_delete_text_comment').click(function(e) {
+        let lesson_offset = $($('.lesson_table tr.selected')[0]).data('lesson_offset');
+        let schueler = $($('.schueler_table tr.selected')[0]).data('email');
+        api_call('/api/delete_text_comment', {lesson_key: lesson_key, lesson_offset: lesson_offset, schueler: schueler}, function(data) {
+            if (data.success) {
+                delete lesson_data[lesson_offset].comments[schueler].text_comment;
+                $('#ti_feedback_comment').val('');
+                $('#bu_feedback').click();
+                update_feedback_buttons();
+                update_table();
+            }
+        });
+    });
+    
+    $('#bu_discard_audio_comment').click(function(e) {
+        stop();
+        audio = null;
+        audio_blob = null;
+        update_feedback_buttons();
+        $('#duration').html('0:00');
+    });
+    
+    $('#bu_discard_text_comment').click(function(e) {
+        let lesson_offset = $($('.lesson_table tr.selected')[0]).data('lesson_offset');
+        let schueler = $($('.schueler_table tr.selected')[0]).data('email');
+        $('#ti_feedback_comment').val((((lesson_data[lesson_offset] || {}).comments || {})[schueler] || {}).text_comment || '');
+        update_feedback_buttons();
+    });
+    
+    $('#bu_publish_text_comment').click(function(e) {
+        $('#ti_feedback_comment').blur();
+        let lesson_offset = $($('.lesson_table tr.selected')[0]).data('lesson_offset');
+        let schueler = $($('.schueler_table tr.selected')[0]).data('email');
+        let comment = $('#ti_feedback_comment').val().trim();
+        api_call('/api/publish_text_comment', {lesson_key: lesson_key, lesson_offset: lesson_offset, schueler: schueler, comment: comment}, function(data) { 
+            if (data.success) {
+                lesson_data[lesson_offset] = lesson_data[lesson_offset] || {};
+                lesson_data[lesson_offset].comments = lesson_data[lesson_offset].comments || {};
+                lesson_data[lesson_offset].comments[schueler] = lesson_data[lesson_offset].comments[schueler] || {};
+                lesson_data[lesson_offset].comments[schueler].text_comment = comment;
+                $('#ti_feedback_comment').val(comment);
+                $('#bu_feedback').click();
+                update_feedback_buttons();
+                update_table();
+            }
+        });
+    });
+    
+    $('#bu_record_audio_comment').click(function(e) {
+        stop();
+        $('#audio_time').show();
+        $('.audio_error_warning').hide();
+        if (navigator.mediaDevices.getUserMedia) {
+            const constraints = { audio: true, video: false };
+            chunks = [];
+
+            let onSuccess = function(stream) {
+                mediaRecorder = new MediaRecorder(stream);
+                recording = true;
+                mediaRecorder.start();
+                rec_start_time = Date.now();
+                update_rec_time_label_timeout = setInterval(update_rec_time_label, 100);
+                
+                update_feedback_buttons();
+
+                mediaRecorder.onstop = function(e) {
+                    stream.getTracks().forEach( track => track.stop() );
+                    audio = document.createElement('audio');
+                    audio.setAttribute('controls', '');
+//                     $('.sound-clip').append(audio);
+                    audio.controls = true;
+                    $('#bu_play_audio_comment').prop('disabled', false);
+                    $('#bu_play_audio_comment').removeClass('btn-outline-secondary').addClass('btn-primary');
+                    audio_blob = new Blob(chunks, { 'type' : 'audio/ogg; codecs=opus' });
+                    chunks = [];
+                    let audioURL = window.URL.createObjectURL(audio_blob);
+                    audio.src = audioURL;
+                    audio.addEventListener('ended', stop);
+                    audio.addEventListener('timeupdate', function(e) {
+                        if (audio === null)
+                            return;
+                        let width = (audio.currentTime / (rec_duration / 1000)) * 100;
+                        $('#audio_time .progress-bar').css('width', '' + width + '%');
+                    });
+                    update_feedback_buttons();
+                }
+
+                mediaRecorder.ondataavailable = function(e) {
+                    chunks.push(e.data);
+                }
+            }
+
+            let onError = function(err) {
+                console.log('The following error occured: ' + err);
+                $('#audio_time').hide();
+                $('.audio_error_warning').show();
+            }
+
+            navigator.mediaDevices.getUserMedia(constraints).then(onSuccess, onError);
+        } else {
+            console.log('getUserMedia not supported on your browser!');
+        }
+    });
+    
+    $('.bu-insert-lesson-above').click(function(e) {
+        e.preventDefault();
+        let data = {};
+        data.lesson_key = lesson_key;
+        let lesson_offsets = [];
+        for (i of Object.keys(row_for_lesson_offset)) {
+            if (row_for_lesson_offset[i].hasClass('selected'))
+                lesson_offsets.push(parseInt(i));
+        }
+        data.offset = lesson_offsets[0];
+        data.shift = 1;
+        (function(insert_above_offset, shift) {
+            api_call('/api/insert_lesson', data, function(data) {
+                if (data.success) {
+                    let new_lesson_data = {};
+                    for (let offset of Object.keys(lesson_data)) {
+                        offset = parseInt(offset);
+                        let new_offset = offset;
+                        if (offset >= insert_above_offset)
+                            new_offset += shift;
+                        new_lesson_data[new_offset] = lesson_data[offset];
+                    }
+                    lesson_data = new_lesson_data;
+                    update_table();
+                }
+            });
+        })(data.offset, data.shift);
+    });
+    
+    $('.bu-insert-2-lesson-above').click(function(e) {
+        e.preventDefault();
+        let data = {};
+        data.lesson_key = lesson_key;
+        let lesson_offsets = [];
+        for (i of Object.keys(row_for_lesson_offset)) {
+            if (row_for_lesson_offset[i].hasClass('selected'))
+                lesson_offsets.push(parseInt(i));
+        }
+        data.offset = lesson_offsets[0];
+        data.shift = 2;
+        (function(data, insert_above_offset, shift) {
+            api_call('/api/insert_lesson', data, function(data) {
+                if (data.success) {
+                    let new_lesson_data = {};
+                    for (let offset of Object.keys(lesson_data)) {
+                        offset = parseInt(offset);
+                        let new_offset = offset;
+                        if (offset >= insert_above_offset)
+                            new_offset += shift;
+                        new_lesson_data[new_offset] = lesson_data[offset];
+                    }
+                    lesson_data = new_lesson_data;
+                    update_table();
+                }
+            });
+        })(data, data.offset, data.shift);
+    });
+    
+    $('.bu-delete-lesson').click(function(e) {
+        e.preventDefault();
+        let data = {};
+        data.lesson_key = lesson_key;
+        let lesson_offsets = [];
+        for (i of Object.keys(row_for_lesson_offset)) {
+            if (row_for_lesson_offset[i].hasClass('selected'))
+                lesson_offsets.push(parseInt(i));
+        }
+        data.offsets = lesson_offsets;
+        (function(data, lesson_offsets) {
+            api_call('/api/delete_lessons', data, function(data) {
+                if (data.success) {
+                    let new_lesson_data = {};
+                    let offsets = Object.keys(lesson_data).map(function(x) { return parseInt(x); }).sort();
+                    let max = Math.max(...offsets);
+                    let cumulative_shift = 0;
+                    for (let offset = 0; offset <= max; offset++) {
+                        console.log(offset);
+                        if (lesson_offsets.length > 0 && lesson_offsets[0] === offset) {
+                            cumulative_shift += 1;
+                            lesson_offsets.shift();
+                        } else {
+                            if (lesson_data[offset])
+                                new_lesson_data[offset - cumulative_shift] = lesson_data[offset];
+                        }
+                    }
+                    lesson_data = new_lesson_data;
+                    update_table();
+                }
+            });
+        })(data, data.offsets);
+    });
+    
+    $('.bu-delete-lesson').click(function(e) {
+//         e.stopPropagation();
+        e.preventDefault();
+    });
+    
+    let uri = '/gen/w/' + lesson_key_id + '/all.json.gz';
+    var oReq = new XMLHttpRequest();
+    oReq.open('GET', uri, true);
+    oReq.responseType = 'arraybuffer';
+
+    oReq.onload = function(oEvent) {
+        let data = pako.ungzip(oReq.response);
+        let bb = new Blob([new Uint8Array(data)]);
+        let f = new FileReader();
+        f.onload = function(e) {
+            let table = $('.lesson_table');
+            let events = JSON.parse(e.target.result);
+            let last_datum = null;
+            let last_datum_odd = 0;
+            let now = new Date();
+            let last_before_now = null;
+            for (event of events)
+            {
+                event.color = color_palette.primary;
+                if (event.entfall)
+                    event.color = color_palette.disabled;
+                if (event.lesson === true)
+                {
+                    let before_now = (new Date(event.start)) < now;
+                    if (last_before_now && (before_now === false)) {
+                        let row = $('<tr>').addClass('lesson-table-info-row').addClass('today');
+                        row.append($('<td>').attr('colspan', 11).html('heute'));
+                        table.append(row);
+                    }
+                    last_before_now = before_now;
+                    for (let i = 0; i < event.count; i++)
+                    {
+                        let lesson_offset = event.lesson_offset + i;
+                        let row = $('<tr>').addClass('lesson');
+                        $('<td>').html('' + (lesson_offset + 1) + '.').css('text-align', 'right').appendTo(row);
+                        let d = new Date(event.datum);
+                        if (last_datum !== event.datum)
+                        {
+                            last_datum_odd = (last_datum_odd + 1) & 1;
+                            row.addClass('sep');
+                            $('<td>').html(event.datum.substr(8, 2) + '.' + event.datum.substr(5, 2) + '.' + event.datum.substr(0, 4)).appendTo(row);
+                            $('<td>').html(weekdays[d.getDay()]).appendTo(row);
+                        }
+                        else
+                        {
+                            $('<td>').html('').appendTo(row);
+                            $('<td>').html('').appendTo(row);
+                        }
+                        if (last_datum_odd === 1)
+                            row.addClass('odd');
+                        $('<td>').html('' + (event.stunde + i) + '.').appendTo(row);
+                        $('<td>').addClass('nowrap').html(event.label).appendTo(row);
+                        $('<td>').addClass('tc_thema').html('').appendTo(row);
+                        $('<td>').addClass('tc_stundenthema').html('').appendTo(row);
+                        $('<td>').addClass('tc_lesson').html('').appendTo(row);
+                        $('<td>').addClass('tc_homework').html('').appendTo(row);
+                        $('<td>').addClass('tc_feedback').html('').appendTo(row);
+                        $('<td>').addClass('tc_notizen').html('').appendTo(row);
+                        table.append(row);
+                        last_datum = event.datum;
+                        row_for_lesson_offset[lesson_offset] = row;
+                        row.data('lesson_offset', lesson_offset);
+                        row.mousedown(function(e) {
+                            if (!can_select)
+                                return;
+                            if (e.buttons === 1) {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                if (pending_changes) {
+                                    $('.bu-save-discard-container').effect('shake', {direction: 'left', distance: 4});
+                                    return;
+                                }
+                                let row = $(e.target).closest('tr');
+                                let lesson_offset = row.data('lesson_offset');
+                                if (e.shiftKey === true && cursor !== null) {
+                                    let cursor_ext = lesson_offset;
+                                    $('.lesson_table tr').removeClass('current');
+                                    row.addClass('current');
+                                    if (e.ctrlKey === false)
+                                        $('.lesson_table tr').removeClass('selected');
+                                    let a = Math.min(cursor, cursor_ext);
+                                    let b = Math.max(cursor, cursor_ext);
+                                    for (let i = a; i <= b; i++)
+                                        row_for_lesson_offset[i].addClass('selected');
+                                }
+                                else {
+                                    cursor = lesson_offset;
+                                    $('.lesson_table tr').removeClass('current');
+                                    row.addClass('current');
+                                    if (e.ctrlKey === false) {
+                                        $('.lesson_table tr').removeClass('selected');
+                                        row.addClass('selected');
+                                    } else {
+                                        row.toggleClass('selected');
+                                    }
+                                }
+                                selection_updated();
+                            }
+                        });
+                        row.mouseenter(function(e) {
+                            if (!can_select)
+                                return;
+                            if (e.buttons === 1) {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                if (pending_changes) {
+                                    return;
+                                }
+                                let row = $(e.target).closest('tr');
+                                let lesson_offset = row.data('lesson_offset');
+                                let cursor_ext = lesson_offset;
+                                $('.lesson_table tr').removeClass('current');
+                                row.addClass('current');
+                                $('.lesson_table tr').removeClass('selected');
+                                let a = Math.min(cursor, cursor_ext);
+                                let b = Math.max(cursor, cursor_ext);
+                                for (let i = a; i <= b; i++)
+                                    row_for_lesson_offset[i].addClass('selected');
+                                selection_updated();
+                            }
+                        });
+                    }
+                }
+                else 
+                {
+                    let row = $('<tr>').addClass('lesson-table-info-row');
+                    let t0 = event.start.substr(8, 2) + '.' + event.start.substr(5, 2) + '.';
+                    let t1 = event.end.substr(8, 2) + '.' + event.end.substr(5, 2) + '.';
+                    if (t0 !== t1)
+                        t0 += ' &ndash; ' + t1;
+                    row.append($('<td>').attr('colspan', 11).html(event.title + ' (' + t0 + ')'));
+                    table.append(row);
+                }
+            }
+
+            update_table();
+            if (window.location.hash.length > 1) {
+                let first = null;
+                for (i of window.location.hash.substr(1).split(',')) {
+                    let select_this = parseInt(i);
+                    if (first === null)
+                        first = select_this;
+                    row_for_lesson_offset[select_this].addClass('selected');
+                }
+                selection_updated();
+                if ($(window).width() >= 768) {
+                    $('html, body').animate({
+                        scrollTop: row_for_lesson_offset[first].position().top - 200,
+                    }, 1);
+                }
+            }
+            else
+            {
+                if ($('.lesson-table-info-row.today').length > 0) {
+                    if ($(window.width) >= 768) {
+                        $('html, body').animate({
+                            scrollTop: $('.lesson-table-info-row.today').position().top - 200,
+                        }, 1);
+                    }
+                }
+            }
+            can_select = true;
+            selection_updated();
+        };
+        f.readAsText(bb);
+    };
+    oReq.send();
+});
+</script>

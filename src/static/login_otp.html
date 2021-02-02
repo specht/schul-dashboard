@@ -1,0 +1,61 @@
+<div class='container' style='padding-top: 30px;'>
+    <div class='row'>
+        <div class='col-md-8 offset-md-2'>
+            <h2 style='margin-bottom: 30px;'>Anmeldung per OTP</h2>
+            <p class='text-muted'>
+            <em>
+            Hinweis: Bevor du dich per OTP einloggen kannst, musst du die Einstellung in deinem Profil aktiviert haben und den QR-Code mit deiner OTP-App gescannt haben.
+            </em>
+            </p>
+            <hr />
+            <form id='form' autocomplete='on'>
+            <div class="input-group mb-3">
+                <input type="email" id='email' class="form-control" placeholder="Bitte gib deine E-Mail-Adresse ein" aria-label="E-Mail-Adresse" autocomplete='on'>
+                <div class="input-group-append">
+                    <button id='submit_otp' class="btn btn-primary" type="submit" disabled>OTP eingeben</button>
+                </div>
+            </div>
+            </form>
+            <div class='api_messages' style='display: none;'></div>
+            <hr />
+            <div style='padding-left: 40px; position: relative;'>
+                <i class='fa fa-question-circle' style='font-size: 150%; position: absolute; top: 0px; left: 4px;'></i>
+                Für alle Fragen rund um deine E-Mail-Adresse schau bitte auf unserer <a href='/hilfe'>Hilfe-Seite</a> nach!
+            </div>
+        </div>        
+    </div>
+</div>
+<script type='text/javascript'>
+
+function update_submit_button() {
+    if ($('#email').val().trim().length > 0) {
+        $('#submit_otp').prop('disabled', false);
+    } else {
+        $('#submit_otp').prop('disabled', true);
+    }
+}
+
+window.addEventListener('load', function () {
+    $('#form').submit(function(e) { e.preventDefault(); });
+    $('#submit_otp').click(function(e) {
+        api_call('/api/login_otp', {email: $('#email').val()}, function(data) {
+            if (data.success === true)
+                window.location.href = '/c/' + data.tag;
+            else
+            {
+                if (data.error === 'no_invitation_found')
+                    show_error_message('Mit dieser E-Mail-Adresse kannst du dich nicht anmelden. Bitte verwende deine Schul-E-Mail-Adresse.');
+                else
+                    show_error_message('Bei der Anmeldung ist ein Fehler aufgetreten, bitte versuche es erneut.');
+            }
+        });
+    });
+    $('#email').focus();
+    $('#email').keyup(function(e) {
+        update_submit_button();
+    });
+    $('#email').change(function(e) {
+        update_submit_button();
+    });
+});
+</script>

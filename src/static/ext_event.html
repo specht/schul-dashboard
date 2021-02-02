@@ -1,0 +1,22 @@
+<div class='container' style='padding-top: 30px;'>
+    <div class='row'>
+        <div class='col-md-12'>
+            <h2 style='margin-bottom: 30px;'>#{show_event[:info][:title]}</h2>
+            <b class='key'>Einladung für:</b> #{show_event[:user][:name]} <br />
+            <b class='key'>Eingeladen von:</b> #{show_event[:organized_by]} <br />
+            <b class='key'>Datum:</b> #{DateTime.parse(show_event[:info][:date]).strftime('%d.%m.%Y')} <br />
+            <b class='key'>Uhrzeit:</b> #{show_event[:info][:start_time]} &ndash; #{show_event[:info][:end_time]}
+            <hr />
+            <a class='btn btn-success' href='#{show_event[:jitsi_link]}'><i class='fa fa-microphone'></i>&nbsp;&nbsp;Zum Jitsi-Raum&nbsp;&nbsp;<i class='fa fa-angle-double-right'></i></a>
+            <hr />
+            #{show_event[:info][:description]}
+        </div>        
+    </div>
+</div>
+
+<style>
+b.key {
+    display: inline-block;
+    width: 120px;
+}
+</style>

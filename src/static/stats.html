@@ -1,0 +1,100 @@
+#{this_is_a_page_for_logged_in_admins}
+<div class='container' style='padding-top: 30px;'>
+    <div class='row'>
+        <div class='col-md-12'>
+        <a href='/api/print_offline_users' class='btn btn-primary'><i class='fa fa-file-pdf-o'></i>&nbsp;&nbsp;Alle niemals angemeldeten Nutzer auflisten</a>
+        <hr />
+        #{print_stats()}
+        <hr />
+        <h3>Jitsi-Projektion</h3>
+        <div class='charts'>
+        </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.charts canvas {
+    width: 100%;
+    height: 200px;
+}
+</style>
+
+<script>
+window.addEventListener('load', function() {
+    moment.locale('de');
+    $.get('/gen/jitsi_projection.json', function(data) {
+        for (let d of Object.keys(data).sort()) {
+            let chart_x = [];
+            let chart_y = {};
+            chart_y[d + 'T08:00'] = 0;
+            chart_y[d + 'T19:00'] = 0;
+            let h = 8;
+            let m = 0;
+            let ts = ('' + h).padStart(2, '0') + ':' + ('' + m).padStart(2, '0');
+            while (ts <= '19:00') {
+                let x = d + 'T' + ts;
+                chart_y[x] = 0;
+                m += 1;
+                if (m >= 60) {
+                    m = 0;
+                    h += 1;
+                }
+                ts = ('' + h).padStart(2, '0') + ':' + ('' + m).padStart(2, '0');
+            }
+            let canvas = $('<canvas>');
+
+            for (let k in data[d]) {
+                let h = parseInt(data[d][k].start.split(':')[0]);
+                let m = parseInt(data[d][k].start.split(':')[1]);
+                let ts = ('' + h).padStart(2, '0') + ':' + ('' + m).padStart(2, '0');
+                while (ts < data[d][k].end) {
+                    let x = d + 'T' + ts;
+                    if (typeof(chart_y[x]) === 'undefined') {
+                        chart_y[x] = 0;
+                    }
+                    chart_y[x] += data[d][k].count;
+                    m += 1;
+                    if (m >= 60) {
+                        m = 0;
+                        h += 1;
+                    }
+                    ts = ('' + h).padStart(2, '0') + ':' + ('' + m).padStart(2, '0');
+                }
+            }
+            chart_x = Object.keys(chart_y).sort();
+            new Chart(canvas, {
+                type: 'bar',
+                data: {
+                    labels: chart_x,
+                    datasets: [{
+                        backgroundColor: '#12959f',
+                        label: 'Geplante Teilnehmer',
+                        data: chart_x.map(function(x) { return chart_y[x]; }),
+                    }]
+                },
+                options: {
+                    aspectRatio: 4.0,
+                    scales: {
+                        xAxes: [{
+                            type: 'time',
+                            time: {
+                                unit: 'minute',
+                                stepSize: 15
+                            },
+                        }],
+                        yAxes: [{
+                            ticks: {
+                                suggestedMax: 1000,
+                                beginAtZero: true
+                            }
+                        }]
+                    }
+                }
+            });
+            $('.charts').append($('<h4>').text(d));
+            $('.charts').append(canvas);
+        }
+    });
+});
+</script>

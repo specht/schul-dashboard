@@ -1,0 +1,145 @@
+\clearpage
+
+\rfoot{#{DISPLAY_NAME} (#{KLASSE})}
+
+\vspace*{-8mm}
+
+\section*{Dein eigenes E-Mail-Postfach #{SCHUL_NAME_AN_DATIV} #{SCHUL_NAME}}
+
+Hallo #{FIRST_NAME},
+
+Damit wir in Zukunft einfacher kommunizieren können, haben wir in den Sommerferien für jede Schülerin und jeden Schüler ein eigenes E-Mail-Postfach eingerichtet. Du hast nun also deine eigene E-Mail-Adresse #{SCHUL_NAME_AN_DATIV} #{SCHUL_NAME}, die du für alle schulischen Zwecke nutzen kannst. Dein Postfach behältst du bis zum Ende deiner Schulzeit.
+
+Hier sind die wichtigsten Daten:
+
+\begin{textblock}{4}(9.44,0.53)
+\begin{turn}{-5}
+\input{square.pdf_tex}
+\end{turn}
+\end{textblock}
+
+\begin{textblock}{4}(9.54,0.65)
+\begin{turn}{-5}
+\qrset{height=2cm}
+\qrcode{#{SCHUL_MAIL_LOGIN_URL}/?Username=#{EMAIL}}
+\end{turn}
+\vspace*{10mm}
+\end{textblock}
+
+\begin{textblock}{4}(11.4,0.8)
+\scalebox{0.12}{\input{phone.pdf_tex}}
+\end{textblock}
+
+\vspace*{1mm}
+\begin{tabularx}{\textwidth}{p{3cm}X}
+\hline
+{\bf E-Mail-Adresse:} & {\tt #{EMAIL}} \\
+{\bf Passwort:} & {\tt #{PASSWORD}} \\
+{\bf Webmail:} & {\tt #{SCHUL_MAIL_LOGIN_URL}} \\
+\end{tabularx}
+\begin{tabularx}{0.75\textwidth}{p{3cm}X}
+\hline
+\end{tabularx}
+
+\vspace*{5mm}
+
+{\bf Bitte ändere als erstes dein Passwort! } Dein E-Mail-Passwort ist besonders wichtig, deshalb verwende bitte ein neues Passwort, das du nirgendwo anders verwendest oder verwendet hast. 
+
+{\bf Passwort ändern.} Um dein Passwort zu ändern, öffne bitte die Seite {\em #{SCHUL_MAIL_LOGIN_URL}} im Webbrowser und melde dich mit deiner E-Mail-Adresse und deinem Passwort an. Falls du ein Smartphone hast, kannst du auch den QR-Code verwenden, um zur Anmeldung zu gelangen.
+
+Klicke dann oben rechts auf den Kreis mit deinen Initialien (»#{INITIALS}«) und wähle dann »Einstellungen bearbeiten«. Wähle anschließend im Menü links den Punkt »Passwort ändern«. Nun musst du dein aktuelles Passwort eingeben und danach dein neues Passwort. Klicke dann auf »Passwort ändern«, um dein neues Passwort zu speichern. Merke dir dein Passwort gut und gib es niemals weiter (außer vielleicht an deine Eltern), damit niemand außer dir deine E-Mails lesen kann oder in deinem Namen E-Mails schreiben kann.
+
+Die einfachste Möglichkeit, um dein Postfach zu nutzen, ist eine E-Mail-Weiterleitung. 
+
+{\bf Variante 1:\hspace*{3mm}Eine Weiterleitung einrichten.} Falls du bereits eine E-Mail-Adresse hast, kannst du mit einer Weiterleitung dafür sorgen, dass alle E-Mails, die du unter deiner neuen Adresse bekommst, einfach an deine vorhandene E-Mail-Adresse weitergeleitet werden.
+
+\begin{textblock}{4}(7,2.3)
+\scalebox{0.2}{\input{happy2.pdf_tex}}
+\end{textblock}
+
+Klicke dazu wieder oben rechts auf den Kreis mit deinen Initialien (»#{INITIALS}«) und wähle dann »Einstellungen bearbeiten«. Wähle anschließend im Menü links den Punkt »E-Mail« und dann rechts daneben »Automatische Weiterleitung…«. Aktiviere dann den Schalter »Automatische Weiterleitung«, trage deine bestehende E-Mail-Adresse ein und klicke auf »Änderungen übernehmen«. Bitte beachte, dass du mit dieser Variante keine E-Mails von deiner Schul-Adresse schreiben kannst und ggfs. deine private E-Mail-Adresse preisgibst, wenn du auf weitergeleitete E-Mails antwortest.
+
+Jetzt hast du die ersten Schritte geschafft!
+
+\clearpage
+\rfoot{}
+
+\vspace*{0.1mm}
+
+{\bf Variante 2:\hspace*{3mm}E-Mail-Programm konfigurieren.} Falls du bereits ein E-Mail-Programm (wie z. B. Thunderbird, Outlook, Apple Mail) oder eine E-Mail-App (wie z. B. Gmail) verwendest, kannst du sie so einstellen, dass deine schulischen E-Mails ebenfalls abgerufen werden und du auch von dieser Adresse E-Mails versenden kannst. Dafür benötigst du die folgenden Informationen:
+
+\begin{multicols}{2}
+\begin{tabularx}{\columnwidth}{p{3cm}X}
+\multicolumn{2}{l}{\bf IMAP (Eingehende E-Mail)} \\
+\hline
+{\bf Server:} & {\tt #{SCHUL_MAIL_LOGIN_IMAP_HOST}} \\
+{\bf Nutzername:} & {\em (E-Mail-Adresse)} \\
+{\bf Passwort:} & {\em (Passwort)} \\
+{\bf Port:} & {\tt 993} \\
+{\bf Verschlüsselung:} & {\tt SSL/TLS} \\
+\hline
+\end{tabularx}
+\begin{tabularx}{\columnwidth}{p{4cm}X}
+\multicolumn{2}{l}{\bf SMTP (Ausgehende E-Mail)} \\
+\hline
+{\bf Server:} & {\tt #{SCHUL_MAIL_LOGIN_SMTP_HOST}} \\
+{\bf Nutzername:} & {\em (E-Mail-Adresse)} \\
+{\bf Passwort:} & {\em (Passwort)} \\
+{\bf Port:} & {\tt 587} \\
+{\bf Verschlüsselung:} & {\tt SSL/TLS} \\
+\hline
+\end{tabularx}
+\end{multicols}
+
+{\bf Variante 3:\hspace*{3mm}Webmail verwenden.} Wenn du gar nichts einstellen willst, kannst du dich auch einfach regelmäßig auf der Webmail-Seite anmelden und nachschauen, ob du eine Nachricht bekommen hast. Diese Variante hat jedoch den Nachteil, dass du leicht Nachrichten verpassen kannst, wenn du nicht regelmäßig nachschaust.
+
+\section*{Brauchst du Hilfe?}
+
+\begin{wrapfigure}[2]{r}{3cm}
+\begin{textblock}{4}(0.3,-1.2)
+\scalebox{0.2}{\input{confused2.pdf_tex}}
+\end{textblock}
+\end{wrapfigure}
+
+Auf der Seite {\em https:/\hspace*{-0.5mm}/#{WEBSITE_HOST}} haben wir einen Hilfe-Bereich eingerichtet, in dem du Anleitungen zum Thema E-Mail findest. Es gibt dort auch Videos, auf denen alle Schritte gezeigt werden.
+
+\begin{tabularx}{\textwidth}{p{3cm}X}
+\hline
+\end{tabularx}
+
+\section*{Liebe Familie #{DISPLAY_LAST_NAME},}
+
+Auch für Sie haben wir ein E-Mail-Konto eingerichtet, über das wir Sie in Zukunft über alle Dinge informieren möchten, die die Schule betreffen. Bitte nehmen Sie die Einrichtung Ihres Kontos analog zum E-Mail-Konto von #{FIRST_NAME} vor, jedoch mit den folgenden Daten:
+
+\begin{textblock}{4}(9.44,0.63)
+\begin{turn}{-5}
+\input{square.pdf_tex}
+\end{turn}
+\end{textblock}
+
+\begin{textblock}{4}(9.54,0.75)
+\begin{turn}{-5}
+\qrset{height=2cm}
+\qrcode{#{SCHUL_MAIL_LOGIN_URL}/?Username=#{EMAIL_PARENTS}}
+\end{turn}
+\vspace*{10mm}
+\end{textblock}
+
+\begin{textblock}{4}(11.4,0.9)
+\scalebox{0.12}{\input{phone.pdf_tex}}
+\end{textblock}
+
+\vspace*{1mm}
+\begin{tabularx}{\textwidth}{p{3cm}X}
+\hline
+{\bf E-Mail-Adresse:} & {\tt #{EMAIL_PARENTS}} \\
+{\bf Passwort:} & {\tt #{PASSWORD_PARENTS}} \\
+\end{tabularx}
+\begin{tabularx}{0.75\textwidth}{p{3cm}X}
+\hline
+\end{tabularx}
+
+\vspace*{5mm}
+
+\vfill
+{\hfill\small\em Icons von Freepik (www.flaticon.com)}

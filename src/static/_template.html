@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <!--
+    
+              +++++++++++++++++++++++++++++++++++
+              +++ HALLO LIEBE INFORMATIK-FANS +++
+              +++++++++++++++++++++++++++++++++++
+                
+                 _____________________
+                /                 `   \
+                |  .-----------.  |   |-----.
+                |  |           |  |   |-=---|
+                |  | DASHBOARD |  |   |-----|
+                |  |           |  |   |-----|
+                |  |           |  |   |-----|
+                |  `-----------'  |   |-----'/\
+                 \________________/___'     /  \
+                    /                      / / /
+                   / //               //  / / /
+                  /                      / / /
+                 / _/_/_/_/_/_/_/_/_/_/ /   /
+                / _/_/_/_/_/_/_/_/_/_/ /   /
+               / _/_/_/_______/_/_/_/ / __/
+              /______________________/ /    
+              \______________________\/
+
+    Ihr könnt euch gern ein ganz eigenes Farbschema setzen, indem ihr 
+    die Developer-Console öffnet und folgenden Befehl eingebt:
+    
+    api_call('/api/set_color_scheme', {scheme: 'laaaaaabbbbbbcccccc'}, 
+    function(data) { if (data.success) window.location.reload(); });
+    
+    Dabei musst du folgende Regeln beachten:
+    - bei 'scheme' musst du genau 19 Zeichen einsetzen:
+      - erster Buchstabe: 'l' für 'light' oder 'd' für 'dark'
+      - aaaaaa: Farbe (links)  in HTML-Notation
+      - bbbbbb: Farbe (Mitte)  in HTML-Notation
+      - cccccc: Farbe (rechts) in HTML-Notation    
+    
+    Bitte achte darauf, dass die Farbe für die Mitte nicht zu hell ist, 
+    da du ansonsten die Schrift im Stundenplan nicht mehr lesen kann.
+    
+    Falls dir das eigene Farbschema nicht gefällt, kannst du im Profil 
+    jederzeit wieder eines der anderen Farbschemata wählen. Ansonsten 
+    bleibt das Farbschema so lange aktiv, bis du es wieder veränderst 
+    oder zurücksetzt.
+    
+    -->
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="msapplication-TileColor" content="#{primary_color_darker}">
+    <meta name="theme-color" content="#{primary_color_darker}">
+    
+    <title>Dashboard #{SCHUL_NAME}</title>
+    #{meta_tags || ''}
+    <link href="/gen/css/compiled-#{compiled_css_sha1}.css" rel="stylesheet" />
+    <style>
+    body {
+        background-image: url(/gen/bg/bg-#{color_scheme}.svg);
+        background-color: #{color_scheme[0] == 'l' ? '#f8f8f8' : '#080808'};
+        background-repeat: no-repeat;
+        background-size: max(100vw, 1920px);
+        background-position: 50% 0%;
+        #{css_for_font((@session_user || {})[:font]).map { |k, v| "#{k}: #{v};"}.join("\n")}
+    }
+    
+    .fc-view-harness, table {
+        background-color: rgba(255, 255, 255, 0.3);
+    }
+    
+    .navbar {
+        background-color: #e8e8e8;
+    }
+
+    .text-muted {
+/*         color: unset!important; */
+/*         opacity: 0.7; */
+        color: #666!important;
+    }
+    
+    .container {
+        border-bottom-left-radius: 16px; 
+        border-bottom-right-radius: 16px; 
+        padding-top: 30px; 
+        background-color: rgba(255, 255, 255, 0.75); 
+        padding-bottom: 30px;
+        box-shadow: 0 0 30px rgba(0,0,0,0.3);
+/*         overflow-x: scroll; */
+    }
+    
+    .container-fluid {
+        padding-top: 30px; 
+        padding-bottom: 30px;
+    }
+    
+    .container-fluid.solid {
+        background-color: rgba(255, 255, 255, 0.75); 
+    }
+    
+    .form-control:disabled, .form-control[readonly] {
+        background-color: rgba(255, 255, 255, 0.5);
+    }
+
+    hr {
+        border-top: 1px solid rgba(0, 0, 0, 0.2);
+    }
+    
+    @media (max-width: 575px) {
+        .container {
+            border-bottom-left-radius: 0; 
+            border-bottom-right-radius: 0; 
+        }
+    }
+    
+    /*
+    .btn-primary { 
+        background-color: #{primary_color};
+        border: 1px solid #{primary_color};
+    }
+    
+    .btn-primary:hover, .btn-primary:focus, .btn-primary:not(:disabled):not(.disabled).active, .btn-primary:not(:disabled):not(.disabled):active, .show>.btn-primary.dropdown-toggle { 
+        background-color: #{primary_color_darker};
+        border: 1px solid #{primary_color_darker};
+    }
+    
+    .btn-primary:focus {
+        box-shadow: none;
+    }
+    */
+    }
+    </style>
+    <script defer src="/gen/js/compiled-#{compiled_js_sha1}.js"></script>
+
+    #{PAGE_CSS_HERE}
+</head>
+
+<body>
+<nav class="navbar navbar-expand-md navbar-light fixed-top justify-content-end">
+        <a class="navbar-brand" href="/"><img src='/brand.png' style='width: 24px; height: 24px; position: relative; top: -2px;' /><span class='brand-brand'>&nbsp;&nbsp;{BRAND}</span></a>
+    <div class='ml-auto'></div>
+    #{nav_items(primary_color, now, new_messages_count)}
+</nav>
+<div class='container' style='text-align: center; display: #{MAINTENANCE_MODE ? 'block' : 'none'}'>
+<h2 style='margin-top: 15px; margin-bottom: 30px;'>Wartungsarbeiten</h2>
+<p>
+Es werden gerade Wartungsarbeiten durchgeführt und das Dashboard ist in wenigen Minuten wieder online.
+</p>
+</div>
+<div style='display: #{MAINTENANCE_MODE ? 'none' : 'block'}'>
+#{CONTENT}
+</div>
+<div class='foot text-muted'>
+    <span class='timetable_updated float-left'></span>
+    <a href='/impressum'>Impressum und Datenschutz</a>
+    <div id='rate_limit' style='float: right; color: #888;'></div>
+    &nbsp;
+</div>
+<div class='info' style='display: none;'></div>
+<script>
+var pb_audio = null;
+var pb_playing = false;
+var pb_widget = null;
+var pb_duration = 0;
+var pb_url = null;
+var show_messages_from = #{now};
+var unread_message_ids = #{unread_message_ids.to_json};
+window.FontAwesomeConfig = { autoReplaceSvg: false };
+var weekdays = ['So', 'Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa'];
+var weekdays_long = ['Sonntag', 'Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag', 'Samstag'];
+var color_palette = #{color_palette.to_json};
+var color_scheme = '#{color_scheme}';
+window.addEventListener('load', function() {
+    moment.locale('de');
+    $('.fix-this-link').click(function(e) {
+        e = $(e.target);
+        window.location = e.attr('href');
+    });
+    $('.switch-session').click(function(e) {
+        let index = parseInt($(e.target.closest('.switch-session')).data('sidindex'));
+        api_call('/api/switch_current_session', {sid_index: index}, function(data) {
+            if (data.success) {
+                window.location.href = '/';
+            }
+        });
+    });
+});
+</script>
+</body></html>

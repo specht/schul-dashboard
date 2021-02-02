@@ -1,0 +1,104 @@
+<div class='container' style='padding-top: 30px;'>
+    <div class='row'>
+        <div class='col-md-12'>
+            <h2 style='margin-bottom: 30px;'>Abstimmungen</h2>
+            <div class='row'>
+                <div class='col-md-7'>
+                    <div class="form-group">
+                        <label>Titel der Veranstaltung</label>
+                        <input type="text" class="form-control" id='ti_title' />
+                    </div>
+                </div>
+                <div class='col-md-3'>
+                    <div class="form-group">
+                        <label>Datum</label>
+                        <input type="date" class="form-control" id='ti_date' value='#{Date.today.to_s}' />
+                    </div>
+                </div>
+                <div class='col-md-2'>
+                    <div class="form-group">
+                        <label>Teilnehmer</label>
+                        <input type="number" class="form-control" id='ti_count' min='1' max='10000' />
+                    </div>
+                </div>
+            </div>
+            <div class='row' style='margin-bottom: 15px;'>
+                <div class='col-md-12'>
+                    <button id='bu_create' class='btn btn-primary float-right' disabled><i class='fa fa-file-pdf-o'></i>&nbsp;&nbsp;Abstimmung erstellen</button>
+                </div>
+            </div>
+            <hr />
+            <div class='row'>
+                <div class='col-md-12'>
+                    <table class='table narrow table-striped'>
+                    <thead><tr>
+                    <th>Datum</th>
+                    <th>Veranstaltung</th>
+                    <th>Teilnehmer</th>
+                    <th>Codes</th>
+                    <th>Löschen</th>
+                    </tr></thead>
+                    <tbody id='votes_here'>
+                    </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function update_submit_button() {
+    let title = $('#ti_title').val().trim();
+    let date = $('#ti_date').val().trim();
+    let count = parseInt($('#ti_count').val());
+    $('#bu_create').prop('disabled', !(title.length > 0 && count > 0 && count <= 10000));
+}
+
+function refresh_votes() {
+    api_call('/api/get_votes', {}, function(data) {
+        if (data.success) {
+            $('#votes_here').empty();
+            for (let entry of data.votes) {
+                let row = $('<tr>');
+                row.append($('<td>').text(moment(entry.date).format('ddd, D.M.Y')));
+                row.append($('<td>').text(entry.title));
+                row.append($('<td>').text('' + entry.count));
+                let bu_download_codes = $('<a>').addClass('btn').addClass('btn-xs').addClass('btn-primary').html("<i class='fa fa-file-pdf-o'></i>&nbsp;&nbsp;Codes herunterladen");
+                bu_download_codes.attr('href', '/api/get_vote_pdf/' + entry.code);
+                row.append($('<td>').append(bu_download_codes));
+                let bu_delete = $('<button>').addClass('btn').addClass('btn-xs').addClass('btn-danger').html("<i class='fa fa-trash'></i>&nbsp;&nbsp;Löschen");
+                bu_delete.data('code', entry.code);
+                bu_delete.click(function(e) {
+                    api_call('/api/delete_vote', {code: $(e.target).data('code')}, function(data) {
+                        if (data.success)
+                            refresh_votes();
+                    });
+                });
+                row.append($('<td>').append(bu_delete));
+                $('#votes_here').append(row);
+            }
+        }
+    });
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    moment.locale('de');
+    update_submit_button();
+    $('#ti_title').keyup(function(e) { update_submit_button(); });
+    $('#ti_title').change(function(e) { update_submit_button(); });
+    $('#ti_date').change(function(e) { update_submit_button(); });
+    $('#ti_count').keyup(function(e) { update_submit_button(); });
+    $('#ti_count').change(function(e) { update_submit_button(); });
+    $('#bu_create').click(function(e) {
+        let title = $('#ti_title').val().trim();
+        let date = $('#ti_date').val().trim();
+        let count = parseInt($('#ti_count').val());
+        api_call('/api/create_vote', {title: title, date: date, count: count}, function(data) {
+            console.log(data);
+            refresh_votes();
+        });
+    });
+    refresh_votes();
+});
+</script>

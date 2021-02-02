@@ -1,0 +1,59 @@
+<div class='container' style='padding-top: 30px;'>
+    <div class='row'>
+        <div class='col-md-12'>
+        <h3 style='margin-bottom: 1em;'>Zum Videochat mit Jitsi Meet</h3>
+        
+        <p>
+        <b>Einwilligung</b>
+        </p>
+        
+        <p>
+        Jitsi Meet am #{SCHUL_NAME} ist ein Konferenztool zur Unterstützung des Unterrichtes.
+        Mit der Teilnahme versichert die Nutzerin / der Nutzer, die <a href='/api/jitsi_terms'>Nutzerordnung</a> sowie die <a href='/api/jitsi_dse'>Datenschutzerklärung</a> vollständig gelesen zu haben und erklärt sich mit diesen ausdrücklich einverstanden.
+        Die Teilnahme ist freiwillig.
+        </p>
+
+        <hr />
+        #{(jitsi_data || {})[:html]}
+        <hr />
+        
+        <div class='alert alert-success'>
+        Bitte beachten Sie die folgenden Hinweise, damit die Videokonferenz möglichst angenehm für alle Teilnehmerinnen und Teilnehmer wird:
+        <ul>
+        <li>Stellen Sie bitte Ihr Mikrofon stumm, wenn Sie nicht sprechen</li>
+        <li>Verwenden Sie nach Möglichkeit ein Headset, Kopfhörer oder Ohrhörer, um Rückkopplungen zu vermeiden</li>
+        <li>Sorgen Sie für guten WLAN-Empfang</li>
+        <li>Sorgen Sie dafür, dass Sie nah am Mikrofon sind (ein Headset ist ideal), um weniger Hintergrundgeräusche zu übertragen</li>
+        </ul>
+        </div>
+
+        <p>
+        Hilfe zur Nutzung von Jitsi Meet erhalten Sie in unserem <a href='#{TECHNIK_HILFE_WEBSITE_URL}'>Hilfebereich</a>.
+        </p>
+
+        </div>        
+    </div>
+</div>
+
+<style>
+b.key {
+    display: inline-block;
+    width: 130px;
+}
+.alert {
+/*     padding: 15px 0; */
+/*     border: none; */
+    margin-top: 15px;
+}
+.go_div {
+    text-align: center;
+}
+.go_div .btn {
+    margin: 5px;
+}
+
+.alert-secondary {
+    background-color: rgba(255, 255, 255, 0.5);
+}
+</style>
+

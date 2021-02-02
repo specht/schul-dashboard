@@ -1,0 +1,928 @@
+#{this_is_a_page_for_logged_in_users}
+<div class='container-fluid' style='padding-top: 30px;'>
+    <div class='row'>
+        <div class='#{tablet_logged_in? ? 'col-md-6 offset-md-1' : 'col-md-2'} timetable_chooser' style='#{tablet_logged_in? ? 'margin-top: 23px;' : 'display: none;'}'>
+            <div class='hint'>
+                <div style='position: relative; top: 8px;'>
+                <span class='bullet'><i class='fa fa-check'></i></span><b>Schritt 1:</b> Seite aktualisieren
+                <a style='position: relative; top: -8px;' class='btn btn-success float-right' href='/'><i class='fa fa-refresh'></i>&nbsp;&nbsp;Jetzt aktualisieren</a>
+                </div>
+                <div style='clear: both;'></div>
+            </div>
+            <div class='hint'>
+                <div style='position: relative; top: 8px;'>
+                <span class='bullet'><i class='fa fa-check'></i></span><b>Schritt 2:</b> Kürzel auswählen<br /><br />
+                    #{print_timetable_chooser()}
+                </div>
+            </div>
+            <div class='future_homework' style='display: none;'></div>
+        </div>
+        <div class='#{tablet_logged_in? ? 'col-md-4' : 'col-md-8 offset-md-2'}'>
+            <div class='card' style='margin-bottom: 20px; display: #{session_user_has_streaming_button? ? 'block' : 'none'};'>
+                <div class='card-body' style='padding: 5px 15px;'>
+                    <i class='fa fa-lightbulb-o' style='font-size: 200%;'></i>&nbsp;&nbsp;<span style='position: relative; top: -4px;'>Hier kommst du zu deinem ggf. aktivierten Klassenstream:</span>&nbsp;&nbsp;<a class='float-right btn btn fc-button-primary streaming-button' href='#{class_stream_link_for_session_user}' target='_blank'><i class='fa fa-microphone'></i>&nbsp;&nbsp;Zum Klassenstream&nbsp;&nbsp;<i class='fa fa-angle-double-right'></i></a>
+                    <div style='clear: both;'></div>
+                </div>
+            </div>
+            <div class='hint' style='height: 60px; position: relative; top: 23px; #{tablet_logged_in? ? '' : 'display: none;'}'>
+                <div style='position: relative; top: 8px;'>
+                <span class='bullet'><i class='fa fa-check'></i></span><b>Schritt 3:</b> Stunde auswählen
+                </div>
+            </div>
+            #{print_lehrerzimmer_panel()}
+            #{print_current_polls()}
+            <div id='calendar' style='margin-bottom: 30px;'>
+            </div>
+        </div>
+        <div class='#{tablet_logged_in? ? 'col-md-6' : 'col-md-2'} timetable_chooser tablet_timetable_chooser' style='#{tablet_logged_in? ? 'display: none;' : ''}'>
+            #{print_timetable_chooser()}
+            <div class='weekend_events' style='display: none;'></div>
+            <div class='future_homework' style='display: none;'></div>
+        </div>
+    </div>
+</div>
+
+<div class="modal" id="lessonModal" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" >
+            <span class='lesson-label'></span>
+            <div class='zeitpunkt' style='font-size: 80%;'></div>
+        </h5>
+        <div class='raum-label' style='font-size: 1.25rem'></div>
+      </div>
+      <div class="modal-body">
+          <div class='container-fluid' style='padding: 0;'>
+            <div class='row'>
+                <div class='col-md-12'>
+                    <div class='vertretungs-text'></div>
+                    <div class='lesson-infos-here'></div>
+                </div>
+            </div>
+        </div>
+          
+      </div>
+      <div class="modal-footer">
+        <a class="btn btn-success bu-edit-lesson">Bearbeiten</a>
+        <button type="button" class="btn btn-secondary" data-dismiss="modal">Schließen</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal" id="pollModal" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-scrollable modal-lg modal-dialog-centered" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title poll-title"></h5>
+            </div>
+            <div class="modal-body">
+                <div class='row'>
+                    <div class='col-md-12 poll-items'></div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <div class='poll_submit_success mr-auto'><i class='fa fa-check-circle text-success'></i>&nbsp;&nbsp;Die Antworten wurden gespeichert.</div>
+                <div class='poll_submit_update_message mr-auto'><i class='fa fa-info-circle text-info'></i>&nbsp;&nbsp;Sie haben bereits abgestimmt, können Ihre Einträge aber aktualisieren.</div>
+                <div class='poll_submit_error mr-auto'><i class='fa fa-exclamation-circle text-danger'></i>&nbsp;&nbsp;Die Antworten konnten nicht gespeichert werden<span class='poll_submit_error_message'></span></div>
+                <button id='bu_submit_poll' type="button" class="btn btn-outline-success" disabled><i class='fa fa-send'></i>&nbsp;&nbsp;Senden</button>
+                <button id='bu_close_poll_modal' type="button" class="btn btn-secondary" data-dismiss="modal">Schließen</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal" id="pollResultsModal" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-scrollable modal-lg modal-dialog-centered" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title poll-title"></h5>
+            </div>
+            <div class="modal-body">
+                <div class='row'>
+                    <div class='col-md-12 poll-results-here'></div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button id='bu_close_show_poll_results_modal' type="button" class="btn btn-secondary" data-dismiss="modal">Schließen</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.fc-button-primary {
+    background-color: #{desaturated_color};
+    border: 1px solid #{desaturated_color};
+    color: #fff;
+}
+
+.fc-button-primary:hover, .fc-button-primary:active {
+    background-color: #{desaturated_color_darker};
+    border: 1px solid #{desaturated_color_darker};
+    color: #fff;
+}
+
+/* .streaming-button { */
+/*     position: absolute; */
+/*     top: 1px; */
+/* } */
+
+.card {
+    background-color: rgba(255,255,255,0.5);
+}
+
+</style>
+
+<script>
+var my_lessons = #{(@@lessons_for_shorthand[@session_user[:shorthand]] || []).to_json};
+var tablet_logged_in = ('#{tablet_logged_in?}' === 'true');
+var poll_data = null;
+
+function collect_poll_data() {
+    poll_data.response = {};
+    for (let item_index in poll_data.poll.items) {
+        let item = poll_data.poll.items[item_index];
+        if (item.type === 'radio') {
+            poll_data.response[item_index] = null;
+            if (poll_data.widgets[item_index].find('.selected').length > 0)
+                poll_data.response[item_index] = parseInt($(poll_data.widgets[item_index].find('.selected').eq(0)).data('answer-index'));
+        } else if (item.type === 'checkbox') {
+            poll_data.response[item_index] = [];
+            jQuery.each(poll_data.widgets[item_index].find('.selected'), function(_, p) {
+                let answer_index = parseInt($(p).data('answer-index'));
+                poll_data.response[item_index].push(answer_index);
+            });
+        } else if (item.type === 'textarea') {
+            poll_data.response[item_index] = poll_data.widgets[item_index].val().trim();
+        }
+    }
+    let current_response_json = JSON.stringify(poll_data.response);
+    let stored_response_json = JSON.stringify(poll_data.stored_response);
+    if ((current_response_json !== stored_response_json)) {
+        $('#bu_submit_poll').prop('disabled', false).removeClass('btn-outline-success').addClass('btn-success');
+    } else {
+        $('#bu_submit_poll').prop('disabled', true).removeClass('btn-success').addClass('btn-outline-success');
+    }
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    let narrow_window = ($(window).width() <= 640);
+    let initial_date = '#{initial_date}';
+    if (window.location.hash.length > 0)
+        window.location.hash = '';
+    let timetable_id = '#{timetable_id}';
+    $('.ttc[data-id="' + timetable_id + '"]').addClass('active');
+    let options = {
+        initialView: (narrow_window || tablet_logged_in) ? 'timeGridDay' : 'timeGridWeek',
+        dayHeaderFormat: { weekday: 'short', month: 'numeric', day: 'numeric', omitCommas: true },
+        headerToolbar: {start: '', center: '', end: tablet_logged_in ? '' : 'today prev,next'},
+        allDaySlot: true,
+        slotMinTime: '#{@session_user[:teacher] ? '07:00' : '08:00'}',
+        slotMaxTime: '22:00',
+        nowIndicator: true,
+        expandRows: true,
+        locale: 'de',
+        height: (!!window.chrome) ? #{@session_user[:teacher] ? 1230 : 1170} : #{@session_user[:teacher] ? 1280 : 1170},
+        initialDate: initial_date,
+        events: function(info, successCallback, failureCallback) {
+            let start_date = new Date(info.startStr);
+            while (start_date.getDay() != 1)
+                start_date.setDate(start_date.getDate() - 1);
+            let week = '' + start_date.getWeek();
+            if (week.length < 2)
+                week = '0' + week;
+            
+            let yw_date = start_date.getFullYear() + '-' + week;
+            let month = '' + (start_date.getMonth() + 1);
+            let day = '' + start_date.getDate();
+            if (month.length < 2) month = '0' + month;
+            if (day.length < 2) day = '0' + day;
+            
+            let uri = '/gen/w/' + timetable_id + '/' + yw_date + '.json.gz';
+//             console.log(uri);
+            if (#{@session_user[:teacher] ? true: false})
+                uri += '?' + Date.now();
+            let oReq = new XMLHttpRequest();
+            oReq.open('GET', uri, true);
+            oReq.responseType = 'arraybuffer';
+
+            oReq.onload = function(e) {
+                $('.timetable_updated').empty();
+                if (e.target.status === 200) {
+                    
+                    let data = pako.ungzip(oReq.response);
+                    let bb = new Blob([new Uint8Array(data)]);
+                    let f = new FileReader();
+                    f.onload = function(e) {
+                        let result = JSON.parse(e.target.result);
+                        events = result.events;
+//                 TODO: show if timetable is up to date or not
+                        if ('#{@session_user[:can_upload_vplan]}' === 'true') {
+                            moment.locale('de');
+//                             let timetable_date = moment(oReq.getResponseHeader('last-modified')).format('ddd, DD.MM.YYYY, LT');
+//                             console.log('#{latest_vplan_timestamp}');
+//                             console.log(result.vplan_timestamp);
+                            if ('#{latest_vplan_timestamp}' === (result.vplan_timestamp || ''))
+                                $('.timetable_updated').html("<i class='fa fa-check text-success'></i>&nbsp;&nbsp;Vertretungsplan ist aktuell");
+                            else
+                                $('.timetable_updated').html("<i class='fa fa-warning text-danger'></i>&nbsp;&nbsp;Vertretungsplan wird gerade aktualisiert, bitte demnächst noch einmal neu laden.");
+                        }
+
+                        let wrote_weekend_event_header = false;
+                        $('.weekend_events').hide();
+                        $('.weekend_events').empty();
+                        for (let event of events)
+                        {
+                            event.color = color_palette.primary;
+                            if (event.entfall)
+                                event.color = color_palette.disabled;
+                            if (event.is_event)
+                                event.color = color_palette.shifted;
+                            if (event.is_event && [6, 0].indexOf(new Date(event.datum).getDay()) >= 0) {
+                                console.log(event);
+                                if (!wrote_weekend_event_header) {
+                                    $('.weekend_events').append($('<p><b>Termine am Wochenende</b></p>'));
+                                    $('.weekend_events').show();
+                                }
+
+                                let time_str = '' + parseInt(event.datum.substr(8, 2)) + '.' + event.datum.substr(5, 2) + '.' + event.datum.substr(0, 4) + '<br />' + event.start_time + '&ndash;' + event.end_time;
+                                $('.weekend_events').append($('<hr /><p>' + time_str + '<br /><b>' + event.event_title + '</b><br />' + event.organized_by));
+                                $('.weekend_events').append(fix_bad_html($('<div>').html(event.description)));
+                                $('.weekend_events').append($('<a href="/jitsi/event/' + event.eid + '" target="_blank" class="btn btn-sm btn-primary"><i class="fa fa-microphone"></i>&nbsp;&nbsp;Zum Jitsi-Raum&nbsp;&nbsp;<i class="fa fa-angle-double-right"></i></a></p>'));
+                            }
+
+                        }
+                        if (wrote_weekend_event_header)
+                            $('.weekend_events').append('<hr />')
+                        if (#{tablet_logged_in?}) {
+                            events = events.filter(x => x.lesson);
+                            for (let event of events) {
+                                for (let key in (event.data || {})) {
+                                    if (key !== 'lesson_jitsi')
+                                        delete event.data[key];
+                                }
+                            }
+                        }
+                        let today = (new Date()).toISOString().substr(0, 10);
+//                         console.log(today, info.startStr.substr(0, 10));
+                        $('.ttc[data-id="' + timetable_id + '"].active')
+
+                        let this_klasse = #{(@session_user[:klasse] || '0').to_i};
+                        if (this_klasse === 0) {
+                            this_klasse = parseInt($($('.ttc.active')[0]).text());
+                            if (this_klasse === NaN)
+                                this_klasse = 0;
+                        }
+                        if (this_klasse >= 5 && this_klasse <= 9) {
+                            which = '7-9';
+                            if (this_klasse <= 6)
+                                which = '4-6';
+                            
+                            for (let i = 1; i <= 24; i++)
+                            {
+                                let title = '🎅 Mathe im Advent';
+                                let day_s = '' + i;
+                                if (day_s.length < 2)
+                                    day_s = '0' + day_s;
+                                let ds = '2020-12-' + day_s;
+                                let wday = new Date(ds).getDay();
+                                if (wday == 6) {
+                                    // Saturday
+                                    let day_s = '' + (i + 2);
+                                    if (day_s.length < 2)
+                                        day_s = '0' + day_s;
+                                    ds = '2020-12-' + day_s;
+                                    title += ' (Sa)';
+                                } else if (wday == 0) {
+                                    // Sunday
+                                    let day_s = '' + (i + 1);
+                                    if (day_s.length < 2)
+                                        day_s = '0' + day_s;
+                                    ds = '2020-12-' + day_s;
+                                    title += ' (So)';
+                                }
+                                if (today >= ds)
+                                    events.push({eventOrder: i, color: color_palette.shifted, start: ds, end: ds, title: title, href: 'https://www.mathe-im-advent.de/de/kalender/' + which + '/' + i + '/' });
+                            }
+                        }
+                        successCallback(events);
+                    };
+                    f.readAsText(bb);
+                }
+            };
+//             $('.timetable_updated').html('');
+            oReq.send();
+        },
+        hiddenDays: [6, 0],
+        slotEventOverlap: false,
+        slotLabelFormat: {
+            hour: 'numeric',
+            minute: '2-digit',
+            omitZeroMinute: false
+        },
+        eventContent: function(arg) {
+            if (arg.event.extendedProps.lesson)
+            {
+                let event_data = arg.event.extendedProps.data || {};
+                let per_user = arg.event.extendedProps.per_user || {};
+                let divs = [];
+                for (let pause of (arg.event.extendedProps.pausen || []))
+                {
+                    let bgdiv = $('<div>');
+                    bgdiv.css({position: 'absolute', left: 0, top: (pause[0] * 75.0 / 60.0) + 'px', right: 0});
+                    bgdiv.css('height', (((pause[1] - pause[0]) * 75.0 / 60.0)) + 'px');
+                    bgdiv.css('z-index', '-1');
+                    bgdiv.css('border-top', '1px dashed rgba(255, 255, 255, 0.2)');
+                    bgdiv.css('border-bottom', '1px dashed rgba(255, 255, 255, 0.2)');
+                    if (event_data.stundenthema_text || event_data.hausaufgaben_text)
+                        bgdiv.css('background-color', 'rgba(255, 255, 255, 0.05)');
+                    else
+                        bgdiv.css('background-color', 'rgba(255, 255, 255, 0.15)');
+    //                 bgdiv.css('background', 'url(/images/border-top.png) left top repeat-x , url(/images/border-bottom.png) left bottom repeat-x, #529ccc');
+                    bgdiv.css('min-height', '7px');
+                    divs.push(bgdiv[0]);
+                }
+                let div0 = $('<div>');
+                div0.css('white-space', 'nowrap');
+                div0.addClass('condensed');
+
+                div0.css('opacity', 0.7);
+                let t = $('<span>').text(arg.timeText);
+                let raum = $('<span>').html(arg.event.extendedProps.raum);
+                raum.addClass('condensed');
+
+                raum.css('position', 'absolute').css('right', '-1px');
+                raum.css('background-color', color_palette.primary);
+                raum.css('padding-right', '2px');
+                
+                raum.css('padding-left', '4px');
+                if (arg.event.extendedProps.entfall)
+                    raum.css('background-color', color_palette.disabled);
+                div0.append(t).append(raum);
+                
+                let div1 = $('<div>');
+                if (arg.event.extendedProps.count === 1)
+                    div1.css('white-space', 'nowrap');
+                let fach = $('<div>').html(arg.event.extendedProps.label);
+//                 fach.html(arg.event.extendedProps.lesson_key + '#' + arg.event.extendedProps.lesson_offset + ' ' + fach.html());
+//                 if (arg.event.extendedProps.vnr)
+//                     fach.html('#' + arg.event.extendedProps.vnr + ' ' + fach.html());
+                div1.append(fach);
+                let div1b = $('<div>').addClass('line2');
+                if (arg.event.extendedProps.vertretungs_text)
+                {
+                    let span = $('<span>').html(arg.event.extendedProps.vertretungs_text);
+                    span.css('opacity', 0.7);
+                    div1b.append(span);
+                }
+                div1b.append('&nbsp;');
+                if (per_user.text_comments)
+                    per_user.text_comments = filter_events_by_timestamp(per_user.text_comments, show_messages_from);
+                if (per_user.audio_comments)
+                    per_user.audio_comments = filter_events_by_timestamp(per_user.audio_comments, show_messages_from);
+                
+                let markers = $('<span>').addClass('cem').css('background-color', arg.event.extendedProps.entfall ? color_palette.disabled : (arg.event.extendedProps.is_event ? color_palette.shifted : color_palette.primary));
+                if (event_data.stundenthema_text)
+                    markers.append($('<span>').html("<i class='fa fa-info-circle'></i>"));
+                if (event_data.lesson_jitsi)
+                    markers.append($('<span>').addClass('mute').html('Jitsi'));
+                if (event_data.lesson_nc || event_data.homework_nc)
+                    markers.append($('<span>').addClass('mute').html('NC'));
+                if (event_data.lesson_lr || event_data.homework_lr)
+                    markers.append($('<span>').addClass('mute').html('LR'));
+                if (event_data.hausaufgaben_text)
+                    markers.append($('<span>').html('HA'));
+                if (per_user.text_comments || per_user.audio_comments)
+                    markers.append($('<span>').html("<i class='fa fa-comment'></i>"));
+                div1b.append(markers);
+
+                let div2 = $('<div>');
+                let div3 = $('<div>');
+                let div4 = $('<div>');
+                div2.addClass('condensed');
+
+                div2.css('border-top', '1px solid rgba(255, 255, 255, 0.5)');
+                div2.css('margin-top', '2px');
+                div2.css('height', '100%');
+
+                if ((arg.event.extendedProps.data || {}).stundenthema_text || (arg.event.extendedProps.data || {}).hausaufgaben_text)
+                {
+                    div3.css('white-space', 'nowrap');
+                    div3.css('text-overflow', 'ellipsis');
+                    div3.css('overflow', 'hidden');
+                    div3.css('position', 'absolute');
+                    div3.css('left', '0%');
+                    div3.css('width', '100%');
+                    div3.css('height', '100%');
+                    div3.css('padding-left', '1px');
+                    div3.css('padding-top', '4px');
+                }
+                
+                if ((arg.event.extendedProps.data || {}).stundenthema_text)
+                {
+//                     div3.append($('<div>').html('Stundenthema'));
+                    if (arg.event.extendedProps.count > 1)
+                    {
+                        let description = $('<div>').html((arg.event.extendedProps.data || {}).stundenthema_text || '');
+                        description.css('opacity', 0.7);
+                        description.css('white-space', 'normal');
+//                         description.css('border-top', '1px solid rgba(255, 255, 255, 0.5)');
+                        div3.append(description);
+                    }
+                }
+                
+                if ((arg.event.extendedProps.data || {}).hausaufgaben_text)
+                {
+                    div3.append($('<div>').html('Hausaufgaben (zu heute)'));
+                    if (arg.event.extendedProps.count > 1)
+                    {
+                        let description = $('<div>').html((arg.event.extendedProps.data || {}).hausaufgaben_text || '');
+                        description.css('opacity', 0.7);
+                        description.css('white-space', 'normal');
+                        description.css('border-top', '1px solid rgba(255, 255, 255, 0.5)');
+                        div3.append(description);
+                    }
+                }
+                
+                if (arg.event.extendedProps.info)
+                {
+                    div4.css('white-space', 'nowrap');
+                    div4.css('text-overflow', 'ellipsis');
+                    div4.css('overflow', 'hidden');
+                    div4.css('position', 'absolute');
+                    div4.css('left', '50%');
+                    div4.css('width', '50%');
+                    div4.css('padding-bottom', '10px');
+                    div4.css('border-left', '1px solid rgba(255, 255, 255, 0.5)');
+                    div4.css('padding-left', '1px');
+                    div4.css('height', '100%');
+                    div4.html(arg.event.extendedProps.info.title);
+                    if (arg.event.extendedProps.count > 1)
+                    {
+                        let description = $('<div>').html(arg.event.extendedProps.info.description || '');
+                        description.css('opacity', 0.7);
+                        description.css('white-space', 'normal');
+                        description.css('border-top', '1px solid rgba(255, 255, 255, 0.5)');
+                        div4.append(description);
+                    }
+                }
+                
+                div2.append(div3).append(div4);
+                divs.push(div0[0]);
+                divs.push(div1[0]);
+                divs.push(div1b[0]);
+                if (arg.event.extendedProps.count > 1)
+                {
+                    if ((arg.event.extendedProps.data || {}).stundenthema_text || (arg.event.extendedProps.data || {}).hausaufgaben_text || arg.event.extendedProps.info)
+                        divs.push(div2[0]);
+                }
+                return { domNodes: divs };
+            }
+            else if (arg.event.extendedProps.is_event)
+            {
+                let event_data = arg.event.extendedProps || {};
+                let divs = [];
+                let div0 = $('<div>');
+                div0.css('white-space', 'nowrap');
+                div0.addClass('condensed');
+
+                div0.css('opacity', 0.7);
+//                 div0.html('<b>' + event_data.event_title + '</b>');
+                let t = $('<span>').text(arg.timeText);
+                div0.append(t);
+                
+                let div1 = $('<div>');
+                div1.css('white-space', 'nowrap');
+                let fach = $('<div>').html('<b>' + event_data.event_title + '</b>');
+//                 fach.html(arg.event.extendedProps.lesson_key + '#' + arg.event.extendedProps.lesson_offset + ' ' + fach.html());
+//                 if (arg.event.extendedProps.vnr)
+//                     fach.html('#' + arg.event.extendedProps.vnr + ' ' + fach.html());
+                div1.append(fach);
+                let div1b = $('<div>').addClass('line2');
+                let span = $('<span>').html(event_data.organized_by);
+                span.css('opacity', 0.7);
+                div1b.append(span);
+                div1b.append('&nbsp;');
+                
+                let markers = $('<span>').addClass('cem').css('background-color', arg.event.extendedProps.entfall ? color_palette.disabled : (arg.event.extendedProps.is_event ? color_palette.shifted : color_palette.primary));
+                if (event_data.jitsi)
+                    markers.append($('<span>').addClass('mute').html('Jitsi'));
+                div1b.append(markers);
+
+                let div2 = $('<div>');
+                let div3 = $('<div>');
+                let div4 = $('<div>');
+                div2.addClass('condensed');
+
+//                 div2.css('border-top', '1px solid rgba(255, 255, 255, 0.5)');
+//                 div2.css('margin-top', '2px');
+                div2.css('height', '100%');
+
+                div3.css('white-space', 'nowrap');
+                div3.css('text-overflow', 'ellipsis');
+                div3.css('overflow', 'hidden');
+                div3.css('position', 'absolute');
+                div3.css('left', '0%');
+                div3.css('width', '100%');
+                div3.css('height', '100%');
+                div3.css('padding-left', '1px');
+                div3.css('padding-top', '4px');
+                
+                let description = fix_bad_html($('<div>').html(event_data.description));
+                description.css('opacity', 0.7);
+                description.css('white-space', 'normal');
+                description.css('border-top', '1px solid rgba(255, 255, 255, 0.5)');
+                div3.append(description);
+                
+                div2.append(div3).append(div4);
+                divs.push(div0[0]);
+                divs.push(div1[0]);
+                divs.push(div1b[0]);
+                divs.push(div2[0]);
+                return { domNodes: divs };
+            }
+        },
+        eventClick: function(info) {
+            let event = info.event.extendedProps;
+            if (event.href) {
+                window.open(event.href, '_blank');
+                return;
+            }
+//             console.log(event.lesson_key, event.lesson_offset);
+            console.log(event);
+            $('#lessonModal .lesson-label').html(event.label_lang || '');
+            $('#lessonModal .raum-label').html(event.raum || '');
+            if (event.vertretungs_text)
+                $('#lessonModal .vertretungs-text').html(event.vertretungs_text).show();
+            else
+                $('#lessonModal .vertretungs-text').hide();
+                
+            if (event.is_event) {
+                $('#lessonModal .lesson-label').html('<b>' + event.event_title + '</b>');
+            }
+            
+            let d = new Date(event.datum);
+            $('#lessonModal .zeitpunkt').html(weekdays_long[d.getDay()] + 
+                ', den ' + event.datum.substr(8, 2) + 
+                '.' + event.datum.substr(5, 2) + 
+                '.' + event.datum.substr(0, 4) +
+                ' (' + parseInt(info.event.startStr.substr(11, 2)) + 
+                ':' + info.event.startStr.substr(14, 2) + 
+                ' &dash; ' + parseInt(info.event.endStr.substr(11, 2)) +
+                ':' + info.event.endStr.substr(14, 2) + ')'
+                );
+
+            let offsets = [];
+            for (let i = 0; i < 1; i++)
+                offsets.push(event.lesson_offset + i);
+            if (my_lessons.indexOf(event.lesson_key) >= 0 && (event.lesson_offset || null) !== null)
+                $('#lessonModal .bu-edit-lesson').attr('href', '/lessons/' + event.lesson_key + '#' + offsets.join(',')).show();
+            else
+                $('#lessonModal .bu-edit-lesson').hide();
+            let body = $('#lessonModal .lesson-infos-here');
+            body.empty();
+            let wrote_something = (event.vertretungs_text || '').length > 0;
+            
+            if (event.is_event) {
+                body.append('<div>Einladung erhalten von: ' + event.organized_by + '</div>');
+                body.append('<hr />');
+                if (event.jitsi) {
+                    let jitsi_link = '/jitsi/event/' + event.eid;
+                    body.append($('<a>').attr('href', jitsi_link).attr('target', '_blank').addClass('float-right').addClass('btn').addClass('btn-primary').css('margin-right', '5px').css('margin-bottom', '5px').html("<i class='fa fa-microphone'></i>&nbsp;&nbsp;Zum Jitsi-Raum&nbsp;&nbsp;<i class='fa fa-angle-double-right'></i>"));
+                    body.append($('<div>').html('Die Veranstaltung findet per Jitsi Meet statt.'));
+                    body.append("<hr style='margin-top: 30px;'/>");
+                }
+                let description = fix_bad_html($('<div>').html(event.description));
+                body.append(description);
+                wrote_something = true;
+                if ('#{@session_user[:email]}' === event.organized_by_email)
+                    $('#lessonModal .bu-edit-lesson').attr('href', '/events#' + event.eid).show();
+                else
+                    $('#lessonModal .bu-edit-lesson').hide();
+//                 body.append($('<a>').attr('href', jitsi_link).attr('target', '_blank').addClass('btn').addClass('btn-primary').css('margin-right', '5px').css('margin-bottom', '5px').html("<i class='fa fa-microphone'></i>&nbsp;&nbsp;Zum Jitsi-Raum&nbsp;&nbsp;<i class='fa fa-angle-double-right'></i>"));
+            }
+            let event_data = event.data || {};
+            let per_user = event.per_user || {};
+            if (event_data.stundenthema_text) {
+                if (wrote_something)
+                    body.append('<hr>');
+                body.append('<p><b>Stundenthema</b></p>');
+                if (event_data.stundenthema_text)
+                    body.append('<p>' + event_data.stundenthema_text+ '</p>');
+                wrote_something = true;
+            }
+            let nc_ausgabe_link = '#';
+            let nc_einsammel_link = '#';
+            if (event.nc_folder) {
+                nc_ausgabe_link = '#{NEXTCLOUD_URL}/index.php/apps/files/?dir=/Unterricht/' + event.nc_folder + '/Ausgabeordner';
+                nc_einsammel_link = '#{NEXTCLOUD_URL}/index.php/apps/files/?dir=/Unterricht/' + event.nc_folder + '/' + event.nc_collect_folder;
+            }
+            let jitsi_link = '#';
+            if ((((event.klassen || [])[0]) || []).length === 1) {
+                let klasse = event.klassen[0][0];
+                if (#{PROVIDE_CLASS_STREAM} && klasse !== '11' && klasse !== '12')
+                {
+                    jitsi_link = '/jitsi/Klassenstreaming' + klasse;
+                }
+            }
+            if (jitsi_link === '#')
+                jitsi_link = '/jitsi/lesson/' + event.lesson_key;
+            if (#{teacher_tablet_logged_in?})
+            {
+                jitsi_link += '@' + encodeURI(window.selected_shorthand);
+            }
+            if (event_data.lesson_jitsi || event_data.lesson_nc || event_data.lesson_lr) {
+                if (event_data.lesson_jitsi)
+                    body.append('<p>Für diese Unterrichtsstunde wird ein Jitsi Meet-Stream bereitgestellt.</p>');
+                let parts = [];
+                if (event_data.lesson_nc)
+                    parts.push('in der Nextcloud');
+                if (event_data.lesson_lr)
+                    parts.push('im Lernraum');
+                let first = parts.slice(0, parts.length - 1).join(', ');
+                let second = [parts[parts.length - 1]];
+                if (first.length > 0)
+                    second.unshift(first);
+                if (event_data.lesson_nc || event_data.lesson_lr) {
+                    let label = second.join(' und ');
+                    body.append('<p>Es befindet sich Unterrichtsmaterial ' + label + '.</p>');
+                }
+                if (event_data.lesson_jitsi) {
+                    body.append($('<a>').attr('href', jitsi_link).attr('target', '_blank').addClass('btn').addClass('btn-primary').css('margin-right', '5px').css('margin-bottom', '5px').html("<i class='fa fa-microphone'></i>&nbsp;&nbsp;Zum Jitsi-Raum&nbsp;&nbsp;<i class='fa fa-angle-double-right'></i>"));
+                }
+                    
+                if (event_data.lesson_nc) {
+                    body.append($('<a>').attr('href', nc_ausgabe_link).attr('target', '_blank').addClass('btn').addClass('btn-primary').css('margin-right', '5px').css('margin-bottom', '5px').html("<i class='fa fa-nextcloud'></i>&nbsp;&nbsp;Zum Ausgabe-Ordner&nbsp;&nbsp;<i class='fa fa-angle-double-right'></i>"));
+                    body.append($('<a>').attr('href', nc_einsammel_link).attr('target', '_blank').addClass('btn').addClass('btn-primary').css('margin-right', '5px').css('margin-bottom', '5px').html("<i class='fa fa-nextcloud'></i>&nbsp;&nbsp;Zum Einsammel-Ordner&nbsp;&nbsp;<i class='fa fa-angle-double-right'></i>"));
+                }
+                if (event_data.lesson_lr)
+                    body.append($('<a>').attr('href', 'https://www.lernraum-berlin.de/').attr('target', '_blank').addClass('btn').addClass('btn-primary').css('margin-right', '5px').css('margin-bottom', '5px').html("<i class='fa fa-external-link'></i>&nbsp;&nbsp;Zum Lernraum&nbsp;&nbsp;<i class='fa fa-angle-double-right'></i>"));
+                wrote_something = true;
+            }
+            if (#{teacher_tablet_logged_in?}) {
+                if (!event_data.lesson_jitsi) {
+                    if (event.lesson_key !== 0) {
+                        body.append($('<div>').addClass('alert').addClass('alert-warning').html("Diese Stunde ist bisher nicht als Jitsi-Stunde markiert. Sie können dies nun nachholen und den Raum betreten. Beachten Sie bitte, dass es eine Minute dauern kann, bis diese Änderung bei Ihren Schülerinnen und Schülern zu sehen ist (diese müssen dafür auch ihren Stundenplan neu laden). Bitte markieren Sie die Stunden &ndash; wenn möglich &ndash; mit etwas Vorlauf, damit die Information rechtzeitig bei Ihren Schülerinnen und Schülern angezeigt wird."));
+                        let button = $('<button>').addClass('btn').addClass('btn-primary').css('margin-right', '5px').css('margin-bottom', '5px').html("<i class='fa fa-microphone'></i>&nbsp;&nbsp;Jitsi für diese Stunde aktivieren und per Jitsi Meet beitreten&nbsp;&nbsp;<i class='fa fa-angle-double-right'></i>");
+                        button.data('jitsi_link', jitsi_link);
+                        button.data('lesson_key', event.lesson_key);
+                        button.data('lesson_offset', event.lesson_offset);
+                        body.append(button);
+                        button.click(function(e) {
+                            let button_data = $(e.target).data();
+                            api_call('/api/force_jitsi_for_lesson', {lesson_key: button_data.lesson_key, lesson_offset: button_data.lesson_offset}, function(data) {
+                                window.location.href = jitsi_link;
+                            });
+                        });
+                    } else {
+                        body.append($('<div>').addClass('alert').addClass('alert-warning').html("Für diese Stunde können Sie momentan leider kein Jitsi Meet aktivieren, da es sich um eine Vertretungsstunde handelt."));
+                    }
+                }
+            }
+            if (event_data.hausaufgaben_text || event_data.homework_nc || event_data.homework_lr) {
+                if (wrote_something)
+                    body.append('<hr>');
+                body.append('<p><b>Hausaufgaben</b> (zu heute)</p>');
+                if (event_data.hausaufgaben_text)
+                    body.append('<p>' + event_data.hausaufgaben_text + '</p>');
+                if (event_data.homework_nc) {
+                    body.append('<p><b>Nextcloud</b></p>');
+                    body.append($('<a>').attr('href', nc_ausgabe_link).attr('target', '_blank').addClass('btn').addClass('btn-primary').css('margin-right', '5px').css('margin-bottom', '5px').html("<i class='fa fa-nextcloud'></i>&nbsp;&nbsp;Zum Ausgabe-Ordner&nbsp;&nbsp;<i class='fa fa-angle-double-right'></i>"));
+                    body.append($('<a>').attr('href', nc_einsammel_link).attr('target', '_blank').addClass('btn').addClass('btn-primary').css('margin-right', '5px').css('margin-bottom', '5px').html("<i class='fa fa-nextcloud'></i>&nbsp;&nbsp;Zum Einsammel-Ordner&nbsp;&nbsp;<i class='fa fa-angle-double-right'></i>"));
+                }
+                if (event_data.homework_lr)
+                    body.append($('<a>').attr('href', 'https://www.lernraum-berlin.de/').attr('target', '_blank').addClass('btn').addClass('btn-primary').css('margin-right', '5px').css('margin-bottom', '5px').html("<i class='fa fa-external-link'></i>&nbsp;&nbsp;Zum Lernraum&nbsp;&nbsp;<i class='fa fa-angle-double-right'></i>"));
+                wrote_something = true;
+            }
+            if (event_data.notizen) {
+                if (wrote_something)
+                    body.append('<hr>');
+                body.append('<p><b>Notizen</b> (nur für mich sichtbar)</p>');
+                if (event_data.notizen)
+                    body.append('<p>' + event_data.notizen + '</p>');
+                wrote_something = true;
+            }
+            if (per_user.text_comments || per_user.audio_comments) {
+                if (wrote_something)
+                    body.append('<hr>');
+                body.append('<p><b>Rückmeldungen</b></p>');
+                let read_entries = [];
+                for (let entry of (per_user.text_comments || [])) {
+                    body.append($('<div>').addClass('text-comment').append($('<div>').addClass('from').html(entry.from)).append($('<div>').addClass('message').html(entry.comment)));
+                    if (unread_message_ids.indexOf(entry.id) >= 0)
+                        read_entries.push(entry.id);
+                }
+                for (let entry of (per_user.audio_comments || [])) {
+                    let player = create_audio_player(entry.from, entry.tag, entry.duration / 1000);
+                    body.append(player);
+                    if (unread_message_ids.indexOf(entry.id) >= 0)
+                        read_entries.push(entry.id);
+                }
+                if (read_entries.length > 0) {
+                    api_call('/api/mark_as_read', {ids: read_entries}, function(data) {
+                        if (data.success) {
+                            unread_message_ids = data.new_unread_ids;
+                            if (unread_message_ids.length > 0) {
+                                $('.new-messages-indicator span').html('' + unread_message_ids.length);
+                                $('.new-messages-indicator-mini span').html('' + unread_message_ids.length);
+                            } else {
+                                $('.new-messages-indicator span').html('');
+                                $('.new-messages-indicator-mini span').html('');
+                                $('.new-messages-indicator').hide();
+                                $('.new-messages-indicator-mini').hide();
+                            }
+                        }
+                    });
+                }
+                wrote_something = true;
+            }
+            if (!wrote_something) {
+                if (#{tablet_logged_in?})
+                    body.append("<div class='text-muted'><i>(im Lehrer-Tablet-Modus werden keine weiteren Informationen angezeigt)</i></div>");
+                else
+                    body.append("<div class='text-muted'><i>(keine weiteren Informationen)</i></div>");
+            }
+            
+            $('#lessonModal').modal('show');
+        }
+    };
+    if ('#{!!@session_user[:teacher]}' === 'false') {
+        let d0 = moment(initial_date).day(1).subtract(28, 'days').format('YYYY-MM-DD');
+        options.validRange = {
+            start: d0
+        };
+    }
+
+    let calendar = new FullCalendar.Calendar(document.getElementById('calendar'), options);
+    calendar.render();
+    $('#lessonModal').on('hidden.bs.modal', function() {
+        if (pb_playing)
+        {
+            pb_audio.pause();
+            pb_url = null;
+        }
+    });
+    
+    if (#{!tablet_logged_in?}) {
+        let uri = '/gen/w/' + timetable_id + '/homework.json.gz';
+        if (#{@session_user[:teacher] ? true: false})
+            uri += '?' + Date.now();
+        let oReq = new XMLHttpRequest();
+        oReq.open('GET', uri, true);
+        oReq.responseType = 'arraybuffer';
+
+        oReq.onload = function(e) {
+            if (e.target.status === 200) {
+                let data = pako.ungzip(oReq.response);
+                let bb = new Blob([new Uint8Array(data)]);
+                let f = new FileReader();
+                f.onload = function(e) {
+                    let homework = JSON.parse(e.target.result);
+    //                 console.log(homework);
+//                     $('.future_homework').empty();
+                    let last_date = null;
+                    if (homework.length > 0)
+                    {
+                        $('.future_homework').append($('<p><b>Hausaufgaben</b></p>'));
+                        $('.future_homework').show();
+                    }
+                    for (let entry of homework) {
+                        if (entry.datum !== last_date) {
+    //                         if (last_date !== null)
+                            $('.future_homework').append($('<hr />'));
+                            $('.future_homework').append($('<p>').html(moment(entry.datum).format('ddd, D.M.Y')));
+                        }
+                        last_date = entry.datum;
+                        let div = $('<p>').html('<b>' + entry.fach + ':</b> ' + entry.text.join('<br />'));
+                        $('.future_homework').append(div);
+                    }
+                };
+                f.readAsText(bb);
+            }
+        };
+        oReq.send();
+    }
+    if (#{tablet_logged_in?}) {
+        window.selected_shorthand = $($('.ttc.active')[0]).text();
+        history.replaceState({}, '', '/timetable/');
+//         if (window.selected_shorthand.length === 0) {
+//             if ($('.tablet_timetable_chooser .ttc').length === 1) {
+//                 $($('.tablet_timetable_chooser .ttc')[0]).click();
+//             }
+//         }
+    }
+    $('.bu-launch-poll').click(function(e) {
+        let poll_id = $(e.target).data('poll-id');
+        console.log('launching poll with id', poll_id);
+        poll_data = {};
+        poll_data.widgets = {};
+        api_call('/api/get_poll', {pid: poll_id}, function(data) {
+            if (data.success) {
+                poll_data.pid = poll_id;
+                poll_data.poll = data.poll;
+                poll_data.stored_response = data.stored_response;
+                $('#pollModal .poll-title').text(data.poll.title);
+                $('#pollModal .poll_submit_success').hide();
+                if (poll_data.stored_response === null)
+                    $('#pollModal .poll_submit_update_message').hide();
+                else
+                    $('#pollModal .poll_submit_update_message').show();
+                $('#pollModal .poll_submit_error').hide();
+                let div = $('#pollModal .poll-items');
+                div.empty();
+                for (let item_index in data.poll.items) {
+                    let item = data.poll.items[item_index];
+                    let item_title = $('<p>').append($('<strong>').text(item.title));
+                    if (item.type === 'checkbox')
+                        item_title.append(' ').append($('<em>').text('(Mehrfachnennungen möglich)'));
+                    div.append(item_title);
+                    if (item.type === 'radio' || item.type === 'checkbox') {
+                        let bc = $('<div>').addClass('poll_radio_buttons').data('item-index', item_index);
+                        poll_data.widgets[item_index] = bc;
+                        bc.data('poll_item_type', item.type);
+                        for (let answer_index in item.answers) {
+                            let answer = item.answers[answer_index];
+                            let p = $('<p>').text(answer).data('answer-index', answer_index);
+                            if (item.type === 'radio')
+                                p.prepend($("<i class='icon icon-selected fa fa-dot-circle-o'></i>"));
+                            else
+                                p.prepend($("<i class='icon icon-selected fa fa-check-circle-o'></i>"));
+                            p.prepend($("<i class='icon icon-unselected fa fa-circle-thin'></i>"));
+                            if (item.type === 'radio') {
+                                if ((poll_data.stored_response || {})[item_index] == answer_index)
+                                    p.addClass('selected');
+                            } else if (item.type === 'checkbox') {
+                                if ((((poll_data.stored_response || {})[item_index]) || []).indexOf(parseInt(answer_index)) >= 0)
+                                    p.addClass('selected');
+                            }
+                            p.click(function(e) {
+                                let p = $(e.target);
+                                let parent = $(e.target.closest('.poll_radio_buttons'));
+                                let type = parent.data('poll_item_type');
+                                let p_was_selected = p.hasClass('selected');
+                                if (type === 'radio') {
+                                    parent.find('p').removeClass('selected');
+                                }
+                                if (p_was_selected) {
+                                    p.removeClass('selected');
+                                } else {
+                                    p.addClass('selected');
+                                }
+                                collect_poll_data();
+                            });
+                            bc.append(p);
+                        }
+                        div.append(bc);
+                    } else if (item.type === 'textarea') {
+                        let textarea = $('<textarea>').addClass('form-control').data('item-index', item_index);
+                        textarea.val((poll_data.stored_response || {})[item_index] || '');
+                        poll_data.widgets[item_index] = textarea;
+                        textarea.change(function(e) { collect_poll_data(); });
+                        div.append(textarea);
+                    } else if (item.type === 'paragraph') {
+                        let p = $('<p>').text(item.text);
+                        div.append(p);
+                    }
+                }
+                collect_poll_data();
+                $('#pollModal').modal('show');
+            }
+        });
+    });
+    $('.bu-show-poll-results').click(function(e) {
+        let poll_id = $(e.target).data('poll-id');
+        api_call('/api/get_poll_results', {pid: poll_id}, function(data) {
+            if (data.success) {
+                $('#pollResultsModal .poll-title').html(data.title);
+                $('#pollResultsModal .poll-results-here').html(data.html);
+                $('#pollResultsModal').modal('show');
+            }
+        });
+    });
+    $('#bu_submit_poll').click(function(e) {
+        if (poll_data.response !== null) {
+            $('#pollModal .poll_submit_success').hide();
+            $('#pollModal .poll_submit_update_message').hide();
+            $('#pollModal .poll_submit_error').hide();
+            let store_response = JSON.stringify(poll_data.response);
+            api_call('/api/submit_poll', {pid: poll_data.pid, response: store_response}, function(data) {
+                if (data.success) {
+                    if (typeof(data.error) !== 'undefined') {
+                        $('#pollModal .poll_submit_error_message').text(': ' + data.error);
+                        $('#pollModal .poll_submit_error').fadeIn();
+                    } else {
+                        $('#pollModal .poll_submit_success').fadeIn();
+                        poll_data.stored_response = poll_data.response;
+                        collect_poll_data();
+                    }
+                } else {
+                    $('#pollModal .poll_submit_error_message').text('');
+                    $('#pollModal .poll_submit_error').fadeIn();
+                }
+            });
+        }
+    });
+});
+</script>

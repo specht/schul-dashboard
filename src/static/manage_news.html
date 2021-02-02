@@ -1,0 +1,97 @@
+#{this_is_a_page_for_people_who_can_manage_news}
+
+<div class='container' style='padding-top: 30px;'>
+    <div class='row'>
+        <div class='col-md-12'>
+            <button class='bu-compose btn btn-success'><i class='fa fa-pencil'></i>&nbsp;&nbsp;Artikel schreiben</button>
+            <hr />
+            <h2>News verwalten</h2>
+            <table class='table narrow'>
+            <thead>
+            <tr>
+            <th>Datum</th>
+            <th>Titel</th>
+            <th>Text</th>
+            <th>Aktionen</th>
+            </tr>
+            </thead>
+            <tbody id='news_here'>
+            <tr><td><i class='fa fa-cog fa-spin'></i></td></tr>
+            </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<div class="modal" id="editModal" tabindex="-1" role="dialog" aria-hidden="true">
+  <div class="modal-dialog modal-xl modal-dialog-centered" role="document">
+    <div class="modal-content">
+      <div class="modal-body">
+        <div class='row'>
+            <div class='col-md-6'>
+                <input type='text' class='form-control ti_title' placeholder='Titel' value='Tag der Offenen Tür am Samstag, dem 9. Januar 2021'></input>
+                <textarea id='ta_markdown' class='form-control' placeholder='Text' ></textarea>
+            </div>
+            <div class='col-md-6'>
+                <div id='ta_preview'></div>
+            </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button id='bu_render_preview' type="button" class="btn btn-success" data-dismiss="modal">Vorschau</button>
+        <button id='bu_close_feedback_modal' type="button" class="btn btn-secondary" data-dismiss="modal">Schließen</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+#ta_markdown {
+    height: 600px;
+    font-family: mono;
+    font-size: 90%;
+}
+.ti_title {
+    margin-bottom: 5px;
+}
+#ta_preview {
+}
+#news_here .btn {
+    width: 32px;
+    margin-left: 5px;
+}
+
+#news_here tr {
+    cursor: pointer;
+}
+#news_here tr:hover {
+    background-color: rgba(0,0,0,0.1);
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    api_call('/api/get_news', {}, function(data) {
+        let tbody = $('#news_here');
+        tbody.empty();
+
+        for (let entry of data.news) {
+            let row = $('<tr>').data('date', entry.date);
+            row.append($('<td>').text(entry.date.substr(0, 10)));
+            row.append($('<td>').css('max-width', '300px').text(entry.title));
+            row.append($('<td>').css('max-width', '400px').text($('<div>').html(entry.body).text()));
+                tbody.append(row);
+            let bu_published = $('<button>').addClass('btn').addClass('btn-sm').addClass('btn-success').html("<i class='fa fa-send'></i>");
+            let bu_sticky = $('<button>').addClass('btn').addClass('btn-sm').addClass('btn-outline-info').html("<i class='fa fa-map-pin'></i>");
+            let bu_delete = $('<button>').addClass('btn').addClass('btn-sm').addClass('btn-danger').html("<i class='fa fa-times'></i>");
+            row.append($('<td>').append(bu_published).append(bu_sticky).append(bu_delete));
+        }
+    });
+//     api_call('/api/parse_markdown', {markdown: $('#ta_markdown').val()}, function(data) {
+//         if (data.success) {
+//             $('#ta_preview').html(data.html);
+//             $('#editModal').modal('show');
+//         }
+//     });
+});
+</script>

@@ -1,0 +1,45 @@
+<div class='container' style='padding-top: 30px;'>
+    <div class='row'>
+        <div class='col-md-8 offset-md-2'>
+            <h2 style='margin-bottom: 30px;'>Bestätige deine Anmeldung</h2>
+<!--            <p>
+            Bitte schau in deinen E-Mails nach, dort findest du deinen Anmeldecode.
+            </p>-->
+            <form id='form'>
+            <div class="input-group mb-3">
+            <input type="number" id='code' class="form-control" placeholder="Bitte gib deinen Code ein" style='text-align: center;'>
+            <div class="input-group-append">
+                <button id='submit' class="btn btn-primary" type="submit">Anmelden</button>
+            </div>
+            </div>
+            </form>
+            <div class='api_messages' style='display: none;'></div>
+        </div>        
+    </div>
+</div>
+
+<script type='text/javascript'>
+window.addEventListener('load', function () {
+    $('#form').submit(function(e) { e.preventDefault(); });
+    $('#submit').click(function(e) {
+        api_call('/api/confirm_login', {tag: '#{login_tag}', code: $('#code').val()}, function(data) {
+//             console.log(data);
+            if (data.success === true) {
+                window.location.href = '/';
+            } else {
+                if (data.error === 'code_expired')
+                    show_error_message('Dein Code ist bereits abgelaufen.');
+                else
+                    show_error_message('Bei der Anmeldung ist ein Fehler aufgetreten.');
+            }
+        });
+    });
+    if ('#{login_code}' !== '')
+    {
+//         history.replaceState({}, null, '/c/#{login_tag}'); 
+        $('#code').val('#{login_code}');
+        $('#submit').click();
+    }
+    $('#code').focus();
+});
+</script>

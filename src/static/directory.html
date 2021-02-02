@@ -1,0 +1,44 @@
+#{this_is_a_page_for_logged_in_teachers}
+<div class='container-fluid' style='padding-top: 30px; background-color: #fff;'>
+    <div>
+    #{mail_addresses_table(klasse)}
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    new ClipboardJS('.btn-clipboard');
+    if ('#{klassenleiter_for_klasse_logged_in?(klasse)}' === 'true') {
+        $('.group2-button').click(function(e) {
+            let button = $(e.target).closest('.group2-button');
+            let email = button.data('email');
+            api_call('/api/toggle_group2_for_user', {email: email}, function(data) {
+                if (data.success) {
+                    if (data.group2 === 'A') {
+                        button.text('A');
+                        button.removeClass('group2-B').addClass('group2-A');
+                    } else {
+                        button.text('B');
+                        button.removeClass('group2-A').addClass('group2-B');
+                    }
+                }
+            });
+        });
+    } else {
+        $('.group2-button').addClass('disabled');
+    }
+    $('.btn-toggle-homeschooling').click(function(e) {
+        let email = $(e.target).data('email');
+        api_call('/api/toggle_homeschooling', {email: email}, function(data) {
+            console.log('yay', data);
+            if (data.success) {
+                if (data.homeschooling) {
+                    $(e.target).removeClass('btn-secondary').addClass('btn-info').html("<i class='fa fa-home'></i>&nbsp;&nbsp;zu Hause");
+                } else {
+                    $(e.target).removeClass('btn-info').addClass('btn-secondary').html("<i class='fa fa-building'></i>&nbsp;&nbsp;Präsenz");;
+                }
+            }
+        });
+    });
+});
+</script>

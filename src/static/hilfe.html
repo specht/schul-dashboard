@@ -1,0 +1,81 @@
+<style>
+h2 {
+    font-size: 20pt;
+    margin: 1.25em 0 0.75em 0;
+}
+h3 {
+    font-size: 16pt;
+    margin: 1.25em 0 0.75em 0;
+}
+</style>
+    
+<div class='container' style='padding-top: 30px;'>
+    <div class='row'>
+        <div class='col-md-12'>
+            <h2>Alles rund um deine E-Mail-Adresse</h2>
+            <p>
+            Jede Schülerin und jeder Schüler #{SCHUL_NAME_AN_DATIV} #{SCHUL_NAME} hat eine eigene E-Mail-Adresse, die auf <em>@#{SCHUL_MAIL_DOMAIN}</em> endet.
+            Du solltest dafür Zettel mit deinen Zugangsdaten erhalten haben.
+            </p>
+            
+            <h3>Passwort ändern</h3>
+            
+            <p>
+            Bitte ändere als erstes dein Passwort! Dein E-Mail-Passwort ist besonders wichtig, deshalb verwende bitte ein neues Passwort, das du nirgendwo anders verwendest oder verwendet hast.
+            </p>
+            
+            <h3>Weiterleitung einrichten</h3>
+            
+            <p>
+            Falls du bereits eine E-Mail-Adresse hast, kannst du mit einer Weiterleitung dafür sorgen, dass alle E-Mails, die du unter deiner neuen Adresse bekommst, einfach an deine vorhandene E-Mail-Adresse weitergeleitet werden.
+            </p>
+            
+            <h3>E-Mail-Programm konfigurieren</h3>
+            
+            <p>
+            Falls du bereits ein E-Mail-Programm (wie z. B. Thunderbird, Outlook, Apple Mail) oder eine E-Mail-App (wie z. B. Gmail) verwendest, kannst du sie so einstellen, dass deine schulischen E-Mails ebenfalls abgerufen werden und du auch von dieser Adresse E-Mails versenden kannst. Dafür benötigst du die folgenden Informationen:
+            </p>
+            
+            <div class='row'>
+                <div class='col-md-6'>
+                    <table class='table'>
+                        <tr><th colspan='2'>IMAP (Eingehende E-Mail)</th></tr>
+                        <tr><th>Server:</th><td>#{SCHUL_MAIL_LOGIN_IMAP_HOST0}</td></tr>
+                        <tr><th>Nutzername:</th><td><em>(E-Mail-Adresse)</em></td></tr>
+                        <tr><th>Passwort:</th><td><em>(Passwort)</em></td></tr>
+                        <tr><th>Port:</th><td>993</td></tr>
+                        <tr><th>Verschlüsselung:</th><td>SSL/TLS</td></tr>
+                    </table>
+                </div>
+                <div class='col-md-6'>
+                    <table class='table'>
+                        <tr><th colspan='2'>SMTP (Ausgehende E-Mail)</th></tr>
+                        <tr><th>Server:</th><td>#{SCHUL_MAIL_LOGIN_SMTP_HOST}</td></tr>
+                        <tr><th>Nutzername:</th><td><em>(E-Mail-Adresse)</em></td></tr>
+                        <tr><th>Passwort:</th><td><em>(Passwort)</em></td></tr>
+                        <tr><th>Port:</th><td>587</td></tr>
+                        <tr><th>Verschlüsselung:</th><td>SSL/TLS</td></tr>
+                    </table>
+                </div>
+            </div>
+            
+            <hr />
+            
+            <p style='text-align: center;'>
+            Hilfe bei der Einrichtung von Outlook findest du auch auf den Hilfe-Seiten von IONOS:
+            </p>
+            
+            <p style='text-align: center;'>
+            <a class='btn btn-lg btn-success' href='https://www.ionos.de/hilfe/e-mail/meine-e-mails/' target='_blank'><i class='fa fa-wrench'></i>&nbsp;&nbsp;E-Mail-Programme einrichten</a>
+            </p>
+            
+            <hr />
+            <h3>Webmail verwenden</h3>
+            
+            <p>
+            Wenn du gar nichts einstellen willst, kannst du dich auch einfach regelmäßig auf der Webmail-Seite <a href='https://mail.ionos.de' target='_blank'>https://mail.ionos.de</a> anmelden und nachschauen, ob du eine Nachricht bekommen hast. Diese Variante hat jedoch den Nachteil, dass du leicht Nachrichten verpassen kannst, wenn du nicht regelmäßig nachschaust.
+            </p>
+            
+        </div>        
+    </div>
+</div>

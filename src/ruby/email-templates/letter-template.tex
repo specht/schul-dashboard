@@ -1,0 +1,142 @@
+\documentclass[11pt,a4paper,pdftex]{article}
+\pdfsuppresswarningpagegroup=1
+
+%--------------- einige ntzliche Packages ----------------------------------------------%
+%----------------------------------------------------------------------------------------%
+
+\usepackage{amssymb, amsmath, graphicx}
+\usepackage{makecell}
+\usepackage{qrcode}
+\usepackage{longtable}
+\usepackage{soul, eurosym}
+\usepackage{charter}
+\usepackage{multicol}
+\usepackage{booktabs, wrapfig, boxedminipage, shapepar, fancybox, shadow, colortbl, fancyhdr, color}
+\usepackage[german]{babel}
+\definecolor{black}{gray}{0}
+\usepackage[T1]{fontenc}
+%\usepackage[ansinew]{inputenc}
+\usepackage[a4paper,left=2.5cm,right=2.5cm,top=1.5cm,bottom=2.5cm]{geometry}
+\usepackage{ucs}
+\usepackage[utf8]{inputenc}
+\usepackage{color}
+% \usepackage[charter]{mathdesign}
+\usepackage{icomma}
+\definecolor{tango_sky_blue}{rgb}{0.1255, 0.29, 0.5294}
+\usepackage[colorlinks=true,linkcolor=black,citecolor=black,urlcolor=black,filecolor=black]{hyperref}
+\usepackage{paralist}
+\usepackage{listings}
+\usepackage{tabularx}
+\usepackage{textpos}
+\usepackage{tikz}
+\usepackage{rotating}
+\renewcommand{\baselinestretch}{1.3}
+\renewcommand{\arraystretch}{1.2}
+
+%--------------- Seiteneinrichtung ------------------------------------------------------%
+%----------------------------------------------------------------------------------------%
+
+%\setlength{\textwidth}{11cm} \setlength{\oddsidemargin}{0cm}
+%\setlength{\topmargin}{-2cm}
+\setlength{\headsep}{1cm}
+\renewcommand{\headrulewidth}{0pt}
+%\setlength{\textheight}{23cm}
+
+\setlength{\parindent}{0pt} \setlength{\parskip}{0.2cm}
+
+\pagestyle{fancy} \fancyhf{}
+
+%--------------- ein paar ntzliche eigene Befehle --------------------------------------%
+%----------------------------------------------------------------------------------------%
+
+%---Randnotiz (klein, serifenlos, Schriftfarbe:blau)---%
+\newcommand{\rand}[1]{\marginline{\small\sf \textcolor[rgb]{0.00,0.00,1.00}{#1}}}
+
+%---Kopfzeile mit zwei Text-Elementen (#1:links, #2:rechts)---%
+\newcommand{\kopf}[2]{\markright{\footnotesize\rm #1 \hfill #2}}
+
+%---fetter serifenloser Text ---%
+\newcommand{\fett}[1]{\vspace{6ex}\textbf{#1}}
+
+\newcommand{\first}[1]{{\vspace{1ex}}{\Large \textbf{#1}}{\vspace{1ex}}}
+\newcommand{\second}[1]{{\vspace{1ex}}{\large \textbf{#1}}}
+\newcommand{\tabspace}[0]{\vspace{2mm}}
+\newcommand{\cvsubheader}[1]{\multicolumn{2}{@{}l}{\second{#1}} \\ \nopagebreak[4]}
+\newcommand{\cvitem}[1]{\input{../../common/#1}}
+\newcommand{\cvtitle}[2]{#1 & \textbf{#2} \\ \nopagebreak}
+
+%---zentrierte Textbox in Textbreite---%
+\newcommand{\kasten}[1]{\begin{center}
+\begin{boxedminipage}[t]{1.0\textwidth}
+{\small\sf  #1 }
+\end{boxedminipage}
+\end{center}}
+
+%---schattierte Textbox in Textbreite---%
+\newcommand{\kastens}[1]{\begin{center}{\setlength{\sdim}{2.5pt}\setlength{\fboxsep}{0pt}\shabox{\parbox{1.0\textwidth}{{
+#1}}}}\end{center}}
+
+\usepackage{afterpage}
+\newlength{\Vertikal}
+    \setlength{\Vertikal}{\topmargin}
+    \addtolength{\Vertikal}{\headheight}
+    \addtolength{\Vertikal}{\headsep}
+    \addtolength{\Vertikal}{1in} % voffset
+    \addtolength{\Vertikal}{-\paperheight}
+    \addtolength{\Vertikal}{\baselineskip}
+
+\newlength{\Horizontal}
+    \setlength{\Horizontal}{\oddsidemargin}
+\newcommand{\setHOffset}[1]{%
+    \addtolength{\Horizontal}{#1} % hoffset
+} \makeatletter
+    \def\myV{\strip@pt\Vertikal}
+    \def\myH{\strip@pt\Horizontal}
+    \def\paperWidth{\strip@pt\paperwidth}
+    \def\paperHeight{\strip@pt\paperheight}
+
+\setlength{\fboxrule}{0pt}
+\newcommand{\printImage}[1]{%
+  \afterpage{%
+   \setlength{\unitlength}{1pt}
+   \thispagestyle{empty}
+   \begin{picture}(0,0)
+     \put(-\myH,\myV){%
+        \fbox{%
+          \makebox(\paperWidth,\paperHeight){%
+            \includegraphics[width=\paperwidth]{#1}%
+          }%
+        }%
+     }%
+   \end{picture}
+   \newpage%
+  }%
+}
+
+\setdefaultleftmargin{1em}{}{}{}{}{}
+\setlength{\pltopsep}{0pt}
+\setlength{\plpartopsep}{0pt}
+\setlength{\plitemsep}{3pt}
+
+\usepackage[shortlabels]{enumitem}
+\usepackage{tasks}
+\usepackage{xcolor}
+\usepackage{realboxes}
+\usepackage[bottom]{footmisc}
+\definecolor{light-gray}{gray}{0.90}
+\lstset{showstringspaces=false,basicstyle=\small\ttfamily,breaklines=true,numbers=left,numberstyle=\color{gray}\ttfamily,backgroundcolor=\color{light-gray}}
+\usepackage{multicol}
+
+\usepackage{xparse}
+\usepackage{tabulary}
+
+\DeclareDocumentCommand{\code}{v}{%
+%     \Colorbox{light-gray}{\csname verb\endcsname!#1!}%
+    \Colorbox{light-gray}{\csname verb\endcsname!#1!}%
+}
+\usepackage{enumitem}
+
+%--------------- Beginn der Dokumentumgebung --------------------------------------------%
+%----------------------------------------------------------------------------------------%
+\begin{document}
+

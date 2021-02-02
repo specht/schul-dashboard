@@ -1,0 +1,320 @@
+#{this_is_a_page_for_people_who_can_upload_files}
+
+<div class="modal" id="deleteImageModal" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" >
+            Bild löschen
+        </h5>
+      </div>
+      <div class="modal-body">
+        Sind Sie sicher, dass Sie dieses Bild löschen möchten?
+        <br />
+        <img src='' />
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-danger bu-perform-delete-image">Bild löschen</button>
+        <button type="button" class="btn btn-secondary bu-close-dialog" data-dismiss="modal">Abbrechen</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class='container' style='padding-top: 30px;'>
+    <div class='row'>
+        <div class='col-md-12'>
+            <h2>Bilder hochladen</h2>
+            <form action='/api/upload_image' class='dropzone' id='my-awesome-dropzone'></form>
+            <div class='preview' style='display: none;'></div>
+            <table class='table'>
+            <thead>
+            <tr>
+            <th>Bild</th>
+            <th>Auflösung</th>
+            <th>Größe</th>
+            <th>Titel</th>
+            <th>Bezeichner</th>
+            <th>Löschen</th>
+            </tr>
+            </thead>
+            <tbody id='uploads_here'>
+            </tbody>
+            </table>
+            <button class='btn btn-success bu-upload' disabled>Bilder hochladen</button>
+            <hr />
+            <div class='row'>
+                <div id='images_here' class='col-md-12'>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<div class='popup' style='display: none;'>
+    <a id='img_mag' target='_blank'><img src='' /></a>
+    <div style='margin-left: 399px;'>
+        <input type='text' id='ti_caption' class='form-control' placeholder='Bildunterschrift (optional)' />
+        <table class='table narrow'>
+        <tr><th>Breite</th><th>Links</th><th>Rechts</th></tr>
+
+        <tr><th>3/12</th>
+        <td><div class='input-group'><input id='ti_l3' class='form-control' type='text' readonly></input><div class='input-group-append'><button class='btn btn-secondary btn-clipboard' data-clipboard-action='copy' data-clipboard-target="#ti_l3"><i class='fa fa-clipboard'></i></button></div></div></td>
+        <td><div class='input-group'><input id='ti_r3' class='form-control' type='text' readonly></input><div class='input-group-append'><button class='btn btn-secondary btn-clipboard' data-clipboard-action='copy' data-clipboard-target="#ti_r3"><i class='fa fa-clipboard'></i></button></div></div></td>
+        </th></tr>
+
+        <tr><th>4/12</th>
+        <td><div class='input-group'><input id='ti_l4' class='form-control' type='text' readonly></input><div class='input-group-append'><button class='btn btn-secondary btn-clipboard' data-clipboard-action='copy' data-clipboard-target="#ti_l4"><i class='fa fa-clipboard'></i></button></div></div></td>
+        <td><div class='input-group'><input id='ti_r4' class='form-control' type='text' readonly></input><div class='input-group-append'><button class='btn btn-secondary btn-clipboard' data-clipboard-action='copy' data-clipboard-target="#ti_r4"><i class='fa fa-clipboard'></i></button></div></div></td>
+        </th></tr>
+
+        <tr><th>5/12</th>
+        <td><div class='input-group'><input id='ti_l5' class='form-control' type='text' readonly></input><div class='input-group-append'><button class='btn btn-secondary btn-clipboard' data-clipboard-action='copy' data-clipboard-target="#ti_l5"><i class='fa fa-clipboard'></i></button></div></div></td>
+        <td><div class='input-group'><input id='ti_r5' class='form-control' type='text' readonly></input><div class='input-group-append'><button class='btn btn-secondary btn-clipboard' data-clipboard-action='copy' data-clipboard-target="#ti_r5"><i class='fa fa-clipboard'></i></button></div></div></td>
+        </th></tr>
+
+        <tr><th>6/12</th>
+        <td><div class='input-group'><input id='ti_l6' class='form-control' type='text' readonly></input><div class='input-group-append'><button class='btn btn-secondary btn-clipboard' data-clipboard-action='copy' data-clipboard-target="#ti_l6"><i class='fa fa-clipboard'></i></button></div></div></td>
+        <td><div class='input-group'><input id='ti_r6' class='form-control' type='text' readonly></input><div class='input-group-append'><button class='btn btn-secondary btn-clipboard' data-clipboard-action='copy' data-clipboard-target="#ti_r6"><i class='fa fa-clipboard'></i></button></div></div></td>
+        </th></tr>
+
+        <tr><th>12/12</th>
+        <td colspan='2'><div class='input-group'><input id='ti_12' class='form-control' type='text' readonly></input><div class='input-group-append'><button class='btn btn-secondary btn-clipboard' data-clipboard-action='copy' data-clipboard-target="#ti_12"><i class='fa fa-clipboard'></i></button></div></div></td>
+        </th></tr>
+    </div>
+
+    </table>
+    <button class='bu-close btn btn-secondary float-right' style='margin-left: 10px;' >Schließen</button>
+    <button class='bu-delete btn btn-danger float-right'>Bild löschen</button>
+</div>
+
+<style>
+#uploads_here img {
+    width: 64px;
+    height: 64px;
+    object-fit: cover;
+}
+.ti_slug {
+    font-family: mono;
+    font-size: 85%;
+}
+#images_here div {
+    width: 128px;
+    height: 148px;
+    background-color: #000;
+    border-radius: 8px;
+    margin-right: 5px;
+    margin-bottom: 5px;
+    display: inline-block;
+    cursor: pointer;
+}
+
+#images_here div:hover {
+    box-shadow: 0 0 0 2pt rgba(192, 0, 0, 0.8);
+}
+#images_here div img {
+    width: 128px;
+    height: 128px;
+    object-fit: contain;
+}
+#images_here div span {
+    color: #fff;
+    font-size: 80%;
+    text-align: center;
+    display: block;
+    white-space: nowrap;
+    overflow: hidden;
+}
+.popup {
+    position: fixed;
+    right: 0;
+    bottom: 24px;
+    background-color: #fff;
+    padding: 15px;
+    border-top-left-radius: 8px;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+}
+.popup #img_mag {
+    float: left;
+}
+.popup img {
+    width: 384px;
+    height: 384px;
+    background-color: #000;
+    object-fit: contain;
+    border-radius: 4px;
+}
+.modal-body img {
+    width: 128px;
+    height: 128px;
+    object-fit: contain;
+}
+</style>
+
+<script>
+
+window.pending_uuids = {};
+window.pending_files = {};
+window.pending_row = {};
+window.taken_slugs = {};
+
+function update_upload_button() {
+    $('.bu-upload').attr('disabled', (Object.keys(window.pending_uuids).length === 0) || ($('.is-invalid').length > 0));
+}
+
+function update_slug(uuid) {
+    let title = window.pending_row[uuid].find('.ti_title').val();
+    let slug = title.toLowerCase().replace(/\s+/g,'-').replace(/[^\w-]+/g,'').trim();
+    window.pending_row[uuid].find('.ti_slug').val(slug);
+    if (slug.length === 0 || slug in window.taken_slugs) {
+        window.pending_row[uuid].find('.ti_slug').removeClass('is-valid').addClass('is-invalid');
+    } else {
+        window.pending_row[uuid].find('.ti_slug').removeClass('is-invalid').addClass('is-valid');
+    }
+    update_upload_button();
+}
+
+function update_caption() {
+    let slug = window.popup_slug;
+    let c = '';
+    if ($('#ti_caption').val().trim().length > 0)
+        c = ', "' + $('#ti_caption').val().trim().replace(/\"/g, '\\\\"') + '"';
+    $('.popup input#ti_l3').val('image{' + slug + ', l3' + c + '}');
+    $('.popup input#ti_r3').val('image{' + slug + ', r3' + c + '}');
+    $('.popup input#ti_l4').val('image{' + slug + ', l4' + c + '}');
+    $('.popup input#ti_r4').val('image{' + slug + ', r4' + c + '}');
+    $('.popup input#ti_l5').val('image{' + slug + ', l5' + c + '}');
+    $('.popup input#ti_r5').val('image{' + slug + ', r5' + c + '}');
+    $('.popup input#ti_l6').val('image{' + slug + ', l6' + c + '}');
+    $('.popup input#ti_r6').val('image{' + slug + ', r6' + c + '}');
+    $('.popup input#ti_12').val('image{' + slug + c + '}');
+}
+
+function refresh_images() {
+    api_call('/api/get_all_images', {}, function(data) {
+        window.taken_slugs = {};
+        let images_here = $('#images_here');
+        images_here.empty();
+        if (data.success) {
+            for (let image of data.images) {
+                window.taken_slugs[image.slug] = true;
+                let container = $('<div>').addClass('img_frame').data('slug', image.slug);
+                let path = '/gen/i/' + image.slug + '-256.jpg';
+                let img = $('<img>').attr('src', path);
+                container.append(img);
+                let label = $("<span>").text(image.slug);
+                container.append(label);
+                images_here.append(container);
+                container.click(function(e) {
+                    let slug = $(e.target).closest('.img_frame').data('slug');
+                    $('.popup #img_mag').attr('href', '/gen/i/' + slug + '-2048.jpg');
+                    $('.popup img').attr('src', '/gen/i/' + slug + '-512.jpg');
+                    window.popup_slug = slug;
+                    $('.popup input#ti_caption').val('');
+                    update_caption();
+                    $('.bu-delete').data('slug', slug);
+                    $('.popup').slideDown(400, function() {
+                        $('#ti_caption').focus();
+                    });
+                });
+            }
+        };
+    });
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    new ClipboardJS('.btn');
+    moment.locale('de');
+    Dropzone.autoDiscover = false;
+    window.dropzone = new Dropzone('#my-awesome-dropzone', {
+        dictDefaultMessage: 'Bitte hier klicken, um Bilder hochzuladen. Alternativ können Sie auch Bilder aus dem Datei-Browser hier hineinziehen.<br /><strong>Bitte laden Sie Bilder in guter Auflösung hoch.</strong>',
+        acceptedFiles: 'image/*',
+        autoProcessQueue: false,
+        previewsContainer: '.preview',
+        uploadMultiple: false,
+        init: function() {
+            this.on('sending', function(file, xhr, formData) {
+                formData.append("slug", window.pending_row[file.upload.uuid].find('.ti_slug').val());
+            });
+            this.on('addedfile', function(file) {
+                this.on('thumbnail', function(file) {
+                    let uuid = file.upload.uuid;
+                    if (uuid in window.pending_uuids)
+                        return;
+                    window.pending_uuids[uuid] = true;
+                    window.pending_files[uuid] = file;
+                    let row = $('<tr>');
+                    row.data('uuid', uuid);
+                    window.pending_row[uuid] = row;
+                    row.append($('<td>').append($('<img>').attr('src', file.dataURL)));
+                    row.append($('<td>').html('' + file.width + ' × ' + file.height));
+                    row.append($('<td>').html('' + (file.size / 1024.0 / 1024.0).toFixed(1) + ' MiB'));
+                    let ti_title = $('<input>').addClass('ti_title').addClass('form-control');
+                    ti_title.val(file.name.split('.')[0]);
+                    row.append($('<td>').append(ti_title));
+                    let ti_slug = $('<input>').addClass('ti_slug').addClass('form-control').attr('readonly', true);
+                    row.append($('<td>').append(ti_slug));
+                    let bu_remove_pending = $('<button>').addClass('btn').addClass('btn-sm').addClass('btn-danger').html("<i class='fa fa-trash'></i>");
+                    row.append($('<td>').append(bu_remove_pending));
+                    $('#uploads_here').append(row);
+                    update_slug(uuid);
+                    bu_remove_pending.click(function(e) {
+                        let uuid = $(e.target).closest('tr').data('uuid');
+                        window.dropzone.removeFile(window.pending_files[uuid]);
+                        delete window.pending_uuids[uuid];
+                        delete window.pending_files[uuid];
+                        delete window.pending_row[uuid];
+                        $(e.target).closest('tr').remove();
+                        update_upload_button();
+                    });
+                    ti_title.change(function(e) {
+                        let uuid = $(e.target).closest('tr').data('uuid');
+                        update_slug(uuid);
+                    });
+                    ti_title.keyup(function(e) {
+                        let uuid = $(e.target).closest('tr').data('uuid');
+                        update_slug(uuid);
+                    });
+                    update_upload_button();
+                });
+            });
+            this.on('success', function(file, data) {
+            });
+            this.on('queuecomplete', function(file, data) {
+                window.pending_uuids = {};
+                window.pending_files = {};
+                window.pending_row = {};
+                $('#uploads_here').empty();
+                update_upload_button();
+                refresh_images();
+            });
+        }
+    });
+    $('.bu-upload').click(function(e) {
+        window.dropzone.processQueue();
+    });
+    $('.bu-close').click(function(e) {
+        $('.popup').slideUp();
+    });
+    $('.bu-delete').click(function(e) {
+        let slug = $(e.target).data('slug');
+        $('.modal-body img').attr('src', '/gen/i/' + slug + '-256.jpg');
+        $('.bu-perform-delete-image').data('slug', slug);
+        $('#deleteImageModal').modal('show');
+    });
+    $('.bu-perform-delete-image').click(function(e) {
+        let slug = $(e.target).data('slug');
+        api_call('/api/delete_image', {slug: slug}, function(data) {
+            $('#deleteImageModal').modal('hide');
+            $('.popup').hide();
+            refresh_images();
+        });
+    });
+    $('#ti_caption').change(function(e) {
+        update_caption();
+    });
+    $('#ti_caption').keyup(function(e) {
+        update_caption();
+    });
+    refresh_images();
+});
+</script>

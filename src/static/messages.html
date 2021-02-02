@@ -1,0 +1,549 @@
+#{this_is_a_page_for_logged_in_users}
+<div class='container' style='padding-top: 30px;'>
+    <div class='row'>
+        <div class='col-md-8 offset-md-2'>
+            <h2 style='margin-bottom: 30px;'>Nachrichten</h2>
+            <div style='display: #{teacher_logged_in? ? 'block': 'none'}; position: relative;'>
+                <div class='btn-group'>
+                    <button id='bu-inbox' class='btn btn-primary'><i class='fa fa-inbox'></i>&nbsp;&nbsp;Posteingang</button>
+                    <button id='bu-outbox' class='btn btn-outline-secondary'><i class='fa fa-inbox'></i>&nbsp;&nbsp;Postausgang</button>
+                </div>
+                <button class='bu-compose btn btn-success bu-compose-message'><i class='fa fa-pencil'></i>&nbsp;&nbsp;Neue Nachricht</button>
+                <hr />
+            </div>
+            <div class='messages-container-inbox'></div>
+            <div class='messages-container-outbox' style='display: none;'>
+                <table class='table table-striped narrow'>
+                <thead>
+                    <tr>
+                        <th style='width: 120px;'>Datum</th>
+                        <th>Empfänger</th>
+                        <th>Nachricht</th>
+                    </tr>
+                </thead>
+                <tbody class='outbox-messages-here'>
+                </tbody>
+                </table>
+            </div>
+        </div>        
+    </div>
+</div>
+
+<div class="modal" id="composeModal" tabindex="-1" role="dialog" aria-hidden="true">
+  <div class="modal-dialog modal-xl modal-dialog-centered" role="document">
+    <div class="modal-content">
+     <div class="modal-header">
+        <h5 class="modal-title">Neue Nachricht</h5>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+            <input id='ti_recipients' class='form-control' placeholder='Empfänger suchen…'><div class='recipient-input-dropdown' style='display: none;'></div></input>
+        </div>
+        <div class="form-group">
+            <div class='recipients_list'>
+            </div>
+            <p style='margin-top: 10px;' id='recipient_count'>keine Empfänger</p>
+        </div>
+        <div class="form-group">
+            <div id='summernote'></div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <div id='publish_message_btn_container'>
+            <button id='bu_discard_message' class='btn btn-outline-secondary' disabled><i class='fa fa-times'></i>&nbsp;&nbsp;<span>Verwerfen</span></button>
+            <button id='bu_send_message' class='btn btn-outline-secondary' disabled><i class='fa fa-send'></i>&nbsp;&nbsp;<span>Senden</span></button>
+        </div>
+        <button id='bu_delete_message' type="button" class="btn btn-outline-secondary" disabled style='display: none;'><i class='fa fa-trash'></i>&nbsp;&nbsp;Nachricht löschen</button>
+        <button id='bu_close_message_modal' type="button" class="btn btn-secondary" data-dismiss="modal">Schließen</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+var recipients = {};
+var recipients_cache = {};
+var autocomplete_results = {};
+var recipients_list = {};
+var net_recipients_list = [];
+var old_recipients_list = [];
+var old_message = '';
+var old_mid = null;
+var observer = null;
+var sent_messages = #{sent_messages.to_json};
+var message_cache = {};
+var force_close = false;
+
+function can_send() {
+    return (net_recipients_list.length > 0) && $($('#summernote').summernote('code')).text().trim().length > 0;
+}
+
+function pending_changes() {
+    return (old_recipients_list.join('/') !== net_recipients_list.join('/')) || (old_message !== $('#summernote').summernote('code'));
+}
+
+function update_buttons() {
+    if (old_mid) {
+        $('#bu_delete_message').prop('disabled', false).show().removeClass('btn-outline-secondary').addClass('btn-danger');
+        $('#bu_discard_message span').html('Änderungen verwerfen');
+        $('#bu_send_message span').html('Änderungen speichern');
+    } else {
+        $('#bu_delete_message').prop('disabled', true).hide().addClass('btn-outline-secondary').removeClass('btn-danger');
+        $('#bu_discard_message span').html('Verwerfen');
+        $('#bu_send_message span').html('Senden');
+    }
+    if (pending_changes()) {
+        $('#bu_discard_message').removeClass('btn-outline-secondary').addClass('btn-secondary').prop('disabled', false);
+        $('#bu_close_message_modal').removeClass('btn-secondary').addClass('btn-outline-secondary').prop('disabled', true);
+        if (can_send())
+            $('#bu_send_message').removeClass('btn-outline-secondary').addClass('btn-success').prop('disabled', false);
+        else
+            $('#bu_send_message').removeClass('btn-success').addClass('btn-outline-secondary').prop('disabled', true);
+    } else {
+        $('#bu_discard_message').removeClass('btn-secondary').addClass('btn-outline-secondary').prop('disabled', true);
+        $('#bu_close_message_modal').removeClass('btn-outline-secondary').addClass('btn-secondary').prop('disabled', false);
+        $('#bu_send_message').removeClass('btn-success').addClass('btn-outline-secondary').prop('disabled', true);
+    }
+}
+
+function discard_message() {
+    force_close = true;
+    $('#composeModal').modal('hide');
+}
+
+function send_message() {
+    let message = $('#summernote').summernote('code');
+    if (old_mid === null) {
+        api_call('/api/send_message', {recipients: net_recipients_list, message: message}, function(data) {
+            if (data.success) {
+                sent_messages.unshift(data.message);
+                force_close = true;
+                $('#composeModal').modal('hide');
+                update_sent_messages();
+                $('#bu-outbox').click();
+            }
+        });
+    } else {
+        api_call('/api/update_message', {mid: old_mid, recipients: net_recipients_list, message: message}, function(data) {
+            if (data.success) {
+                message_cache[data.mid] = message;
+                sent_messages = sent_messages.map(function(m) {
+                    if (m.mid === data.mid)
+                        m = data.message;
+                    return m;
+                });
+                force_close = true;
+                $('#composeModal').modal('hide');
+                update_sent_messages();
+                $('#bu-outbox').click();
+            }
+        });
+    }
+}
+
+function delete_message() {
+    if (!old_mid)
+        return;
+    api_call('/api/delete_message', {mid: old_mid}, function(data) {
+        if (data.success) {
+            old_recipients_list = net_recipients_list;
+            old_message = $('#summernote').summernote('code');
+            $('#composeModal').modal('hide');
+            sent_messages = sent_messages.filter(x => x.mid !== data.mid);
+            update_sent_messages();
+        }
+    });
+}
+
+function update_net_recipients_list() {
+    let net_recipients_hash = {};
+    for (let key in recipients_list) {
+        let entry = recipients[key];
+        if (entry.entries)
+            for (let email of entry.entries) 
+                net_recipients_hash[email] = true;
+        else
+            net_recipients_hash[key] = true;
+    }
+    net_recipients_list = Object.keys(net_recipients_hash).sort();
+    if (net_recipients_list.length === 0)
+        $('#recipient_count').html('keine Empfänger');
+    else
+        $('#recipient_count').html('' + net_recipients_list.length + ' Empfänger');
+    update_buttons();
+}
+
+function gen_recipient_span(key, with_rm) {
+    if (!(key in recipients))
+        recipients[key] = {label: key};
+    let label = recipients[key].label;
+    if (recipients[key].entries)
+        label += ' (' + recipients[key].entries.length + ')';
+    let recipient = $('<span>').addClass('recipient').html(label);
+    if (with_rm) {
+        let rm_button = $('<span>').addClass('rm').data('key', key);
+        rm_button.click(function(e) { 
+            remove_recipient($(e.target).data('key')); 
+            $(e.target).closest('.recipient').remove();
+        });
+        recipient.addClass('with-rm').append(rm_button);
+    }
+    if (recipients[key].teacher)
+        recipient.addClass('teacher');
+    recipient.data('key', key);
+    return recipient;
+}
+
+function add_recipient(key) {
+    if (!(key in recipients_list)) {
+        recipients_list[key] = true;
+        $('.recipients_list').append(gen_recipient_span(key, true));
+    }
+    $('.recipient-input-dropdown').hide();
+    $('#ti_recipients').val('');
+    $('#ti_recipients').focus();
+    update_net_recipients_list();
+}
+
+function remove_recipient(key) {
+    delete recipients_list[key];
+    update_net_recipients_list();
+}
+
+function observer_callback(entries, observer) {
+    for (let entry of entries) {
+        if (entry.intersectionRatio === 0)
+            continue;
+        observer.unobserve(entry.target);
+        let entry_data = $(entry.target).data();
+        if (entry_data.mid) {
+            (function(entry_data) {
+                let request = new XMLHttpRequest();
+                let uri = '/gen/m/' + entry_data.mid.substr(0, 2) + '/' + entry_data.mid.substr(2, entry_data.mid.length - 2) + '.html.gz';
+                request.open('GET', uri, true);
+                request.responseType = 'arraybuffer';
+
+                request.onload = function(e) {
+                    if (e.target.status === 200) {
+                        let data = pako.ungzip(request.response);
+                        let bb = new Blob([new Uint8Array(data)]);
+                        let f = new FileReader();
+                        f.onload = function(e) {
+                            let contents = e.target.result;
+                            message_cache[entry_data.mid] = contents;
+                            if (entry_data.strip)
+                                $(entry_data.msg_div).html($(contents).text());
+                            else
+                                $(entry_data.msg_div).html(contents);
+                        };
+                        f.readAsText(bb);
+                    }
+                };
+                request.send();
+            })(entry_data);
+        }
+    }
+}
+
+function compact_address_list(emails) {
+    let result = [];
+    for (let key of recipients_cache.groups) {
+        let all_in = true;
+        for (let email of recipients[key].entries) {
+            if (emails.indexOf(email) < 0) {
+                all_in = false;
+                break;
+            }
+        }
+        if (all_in) {
+            result.push(key);
+            let new_emails = [];
+            for (let email of emails)
+                if (recipients[key].entries.indexOf(email) < 0)
+                    new_emails.push(email);
+            emails = new_emails;
+        }
+    }
+    for (let email of emails)
+        result.push(email);
+    return result;
+}
+
+function update_sent_messages() {
+    $('.outbox-messages-here').empty();
+    for (message of sent_messages) {
+        let row = $('<tr>');
+        row.append($('<td>').html(weekdays[message.dow] + '. ' + message.date.substr(8, 2) + '.' + message.date.substr(5, 2) + '.' + message.date.substr(0, 4)));
+        let cell = $('<td>');
+        let recipients = compact_address_list(message.recipients);
+        for (email of recipients)
+            cell.append(gen_recipient_span(email), false);
+        row.append(cell);
+        let msg_div = $('<td>').html("<i class='fa fa-spinner fa-spin'></i>");
+        row.append(msg_div);
+        if (message.mid in message_cache) {
+            msg_div.html(message_cache[message.mid]);
+        } else {
+            msg_div.data('mid', message.mid);
+            msg_div.data('msg_div', msg_div[0]);
+            msg_div.data('strip', true);
+            observer.observe(msg_div[0]);
+        }
+        (function(message) {
+            row.click(function(e) {
+                $('#summernote').summernote('reset');
+                $('#summernote').summernote('code', message_cache[message.mid]);
+                $('.recipients_list').empty();
+                recipients_list = {};
+                for (let email of recipients) {
+                    recipients_list[email] = true;
+                    $('.recipients_list').append(gen_recipient_span(email, true));
+                }
+                update_net_recipients_list();
+                $('#composeModal').modal('show');
+                force_close = false;
+                old_recipients_list = [...net_recipients_list];
+                old_message = $('#summernote').summernote('code');
+                old_mid = message.mid;
+                $('#ti_recipients').val('');
+                $('#ti_recipients').focus();
+                update_buttons();
+            });
+        })(message);
+        $('.outbox-messages-here').append(row);
+    };
+}
+
+function compose_message(to) {
+    $('#summernote').summernote('reset');
+    recipients_list = {};
+    $('.recipients_list').empty();
+    update_net_recipients_list();
+    if (typeof(to) !== 'undefined') {
+        add_recipient(to);
+        setTimeout(function() {
+            $('#summernote').summernote('focus');
+        }, 0);
+    }
+    $('#composeModal').modal('show');
+    force_close = false;
+    old_recipients_list = [];
+    old_message = $('#summernote').summernote('code');
+    old_mid = null;
+    $('#ti_recipients').val('');
+    $('#ti_recipients').focus();
+    update_buttons();
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    observer = new IntersectionObserver(observer_callback, {
+        rootMargin: '100px',
+        threshold: 1.0
+    });
+    
+    $('#summernote').summernote({
+        placeholder: 'Bitte geben Sie Ihre Nachricht ein',
+        callbacks: {
+            onChange: function() {
+                update_buttons();
+            }
+        },
+        lang: 'de-DE',
+        height: 300,
+        toolbar: [
+            ['style', ['style']],
+            ['font', ['bold', 'underline', 'clear']],
+            ['fontname', ['fontname']],
+            ['color', ['color']],
+            ['para', ['ul', 'ol', 'paragraph']],
+            ['table', ['table']],
+            ['insert', ['link']],
+            ['view', ['codeview', 'help']],
+        ],      
+    });
+    
+    $('#composeModal').on('hide.bs.modal', function(e) {
+        if (pending_changes() && (!force_close)) {
+            $('#publish_message_btn_container').effect('shake', {direction: 'left', distance: 4});
+            e.preventDefault();
+            e.stopImmediatePropagation();
+            return false; 
+        }
+    });
+    
+    $('.bu-compose').click(function(e) {
+        compose_message();
+    });
+    
+    $('#bu_discard_message').click(function(e) {
+        discard_message();
+    });
+    
+    $('#bu_send_message').click(function(e) {
+        send_message();
+    });
+    
+    $('#bu_delete_message').click(function(e) {
+        delete_message();
+    });
+    
+    $('#bu-inbox').click(function(e) {
+        $('#bu-inbox').removeClass('btn-outline-secondary').addClass('btn-primary');
+        $('#bu-outbox').removeClass('btn-primary').addClass('btn-outline-secondary');
+        $('.messages-container-inbox').show();
+        $('.messages-container-outbox').hide();
+    });
+    
+    $('#bu-outbox').click(function(e) {
+        $('#bu-outbox').removeClass('btn-outline-secondary').addClass('btn-primary');
+        $('#bu-inbox').removeClass('btn-primary').addClass('btn-outline-secondary');
+        $('.messages-container-outbox').show();
+        $('.messages-container-inbox').hide();
+    });
+    
+    $('#ti_recipients').keydown(function(e) {
+        if ((e.keyCode === 9 || e.keyCode === 13) && ($(e.target).val().length > 0)) {
+            if (Object.keys(autocomplete_results).length === 1) {
+                let key = recipients_cache.keys[Object.keys(autocomplete_results)[0]];
+                add_recipient(key);
+            }
+            e.preventDefault();
+            e.stopPropagation();
+            return;
+        }
+    });
+    $('#ti_recipients').keyup(function(e) {
+        if ($('#ti_recipients')[0].selectionStart == $(e.target).val().length) {
+            let value = $(e.target).val();
+            let backspace_pressed = (e.keyCode === 8);
+            let space_at_end = value[value.length - 1] == ' ';
+            let search_terms = value.trim().toLowerCase().split(/\s+/);
+            let results = {};
+            for (let i = 0; i < search_terms.length; i++) {
+                let term = search_terms[i];
+                let term_results = {};
+                for (let key of Object.keys(recipients_cache.index[term] || {})) {
+                    term_results[key] = recipients_cache.index[term][key];
+                }
+                if (i == 0)
+                    results = term_results;
+                else {
+                    for (let k of Object.keys(results)) {
+                        if (k in term_results) {
+                            if (term_results[k] > results[k])
+                                results[k] = term_results[k];
+                        } else {
+                            delete results[k];
+                        }
+                    }
+                }
+            }
+            autocomplete_results = results;
+            result_keys = Object.keys(results).map(function(x) { return parseInt(x); });
+            if (result_keys.length === 0)
+                $('.recipient-input-dropdown').hide();
+            else {
+                if (result_keys.length === 1)
+                {
+                    if (!backspace_pressed) {
+                        let key = recipients_cache.keys[result_keys[0]];
+                        let label = recipients[key].label;
+                        $('#ti_recipients').val(label);
+                        $('#ti_recipients')[0].setSelectionRange(results[result_keys[0]] + (space_at_end ? 1 : 0), label.length);
+                    }
+                }
+                result_keys.sort(function(a, b) {
+                    let va = recipients[recipients_cache.keys[a]];
+                    let vb = recipients[recipients_cache.keys[b]];
+                    if (va.teacher === vb.teacher) {
+                        if (va.label < vb.label)
+                            return -1;
+                        return 1;
+                    } else {
+                        if (va.teacher)
+                            return -1;
+                        return 1;
+                    }
+                });
+                $('.recipient-input-dropdown').empty();
+                for (let key of result_keys) {
+                    let k = recipients_cache.keys[key];
+                    let r = gen_recipient_span(k);
+                    r.click(function(e) { 
+                        add_recipient($(e.target).data('key'));
+                    });
+                    $('.recipient-input-dropdown').append(r);
+                }
+                $('.recipient-input-dropdown').show();
+            }
+        }
+    });
+//     $('.bu-compose').click();
+    let uri = '/gen/w/#{@session_user[:id]}/messages.json.gz';
+    if (#{@session_user[:teacher] ? true: false})
+        uri += '?' + Date.now();
+    let oReq = new XMLHttpRequest();
+    oReq.open('GET', uri, true);
+    oReq.responseType = 'arraybuffer';
+
+    oReq.onload = function(e) {
+        if (e.target.status === 200) {
+            let data = pako.ungzip(oReq.response);
+            let bb = new Blob([new Uint8Array(data)]);
+            let f = new FileReader();
+            f.onload = function(e) {
+                let messages = JSON.parse(e.target.result);
+                messages = filter_events_by_timestamp(messages, show_messages_from);
+                let old_date = null;
+                if ((messages || []).length === 0)
+                {
+                    let comment = $('<p>').html('Keine Nachrichten gefunden!<br /><br />¯\\\_(ツ)_/¯');
+                    $('.messages-container-inbox').append(comment);
+                }
+                for (let message of (messages || [])) {
+                    if (message.date !== old_date) {
+                        old_date = message.date;
+                        let date_str = weekdays_long[message.dow] + ', den ' + message.date.substr(8, 2) + '.' + message.date.substr(5, 2) + '.' + message.date.substr(0, 4);
+                        $('.messages-container-inbox').append($('<div>').addClass('messages-date').append($('<span>').html(date_str)));
+                    }
+                    let div = null;
+                    if (message.text_comment) {
+                        div = $('<div>').addClass('text-comment').append($('<div>').addClass('from').html(message.from)).append($('<div>').addClass('message').html(message.text_comment));
+                    } else if (message.audio_comment_tag) {
+                        div = create_audio_player(message.from, message.audio_comment_tag, message.duration / 1000);
+                    } else if (message.mid) {
+                        let msg_header = $('<div>').addClass('from');
+                        let msg_buttons = $('<div>').addClass('buttons');
+                        let reply_button = $('<button>').addClass('btn').addClass('btn-sm').addClass('btn-outline-secondary').html("<i class='fa fa-reply'></i>&nbsp;&nbsp;Antworten");
+                        let toggle_mark_read_button = $('<button>').addClass('btn').addClass('btn-sm').addClass('btn-outline-secondary').html("<i class='fa fa-check'></i>&nbsp;&nbsp;Als gelesen markieren");
+                        (function(to) {
+                            reply_button.click(function(e) {
+                                compose_message(to);
+                            });
+                        })(message.from_email);
+                        if ('#{teacher_logged_in?}' === 'true') {
+//                             msg_buttons.append(toggle_mark_read_button);
+                            msg_buttons.append(reply_button);
+                        }
+                        msg_header.append(msg_buttons);
+                        msg_header.append($('<span>').html(message.from));
+                        let msg_div = $('<div>').addClass('message').html("<i class='fa fa-spinner fa-spin'></i>");
+                        div = $('<div>').addClass('text-comment').append(msg_header).append(msg_div);
+                        div.data('mid', message.mid);
+                        div.data('msg_div', msg_div[0]);
+                    }
+                    $('.messages-container-inbox').append(div);
+                    observer.observe(div[0]);
+                }
+            };
+            f.readAsText(bb);
+        }
+    };
+    oReq.send();
+    if ('#{@session_user[:teacher]}' === 'true') {
+        load_recipients('#{@session_user[:id]}', function() {
+            update_sent_messages();
+        });
+    }   
+});
+</script>

@@ -1,0 +1,110 @@
+<div class="modal" id="resetNextcloudPasswordModal" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" >
+            Nextcloud-Passwort zurücksetzen
+        </h5>
+      </div>
+      <div class="modal-body">
+        Bist du sicher, dass du dein Nextcloud-Passwort zurücksetzen möchtest?
+        <div class='result-success' style='display: none;'>
+            <hr />
+            <div class='alert alert-success'>
+            <i class='fa fa-check' style='font-size: 150%; color: #28a745; position: relative; top: 2px; padding-right: 0.5em;'></i>
+            Dein Passwort wurde zurückgesetzt.
+            </div>
+        </div>
+        <div class='result-error' style='display: none;'>
+            <hr />
+            <div class='alert alert-danger'>
+            <i class='fa fa-times' style='font-size: 150%; color: #dc3545; position: relative; top: 2px; padding-right: 0.5em;'></i>
+            Dein Passwort konnte leider nicht zurückgesetzt werden.
+            </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-success bu-perform-nc-password-reset">Passwort zurücksetzen</button>
+        <button type="button" class="btn btn-secondary bu-close-dialog" data-dismiss="modal">Abbrechen</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class='container' style='padding-top: 30px;'>
+    <div class='row'>
+        <div class='col-md-8 offset-md-2'>
+            <h2 style='margin-bottom: 30px;'>Nextcloud-Anmeldung</h2>
+            <p>
+            Nutze die folgenden Zugangsdaten, um dich in der Nextcloud anzumelden:
+            </p>
+            <table class='table'>
+            <tbody>
+            <tr><th>Adresse:</th><td>
+                <div class="input-group">
+                    <input type='text' class='form-control' value='#{NEXTCLOUD_HOST}' readonly></input>
+                    <div class="input-group-append">
+                        <a class='btn btn-secondary' target='_blank' href='#{NEXTCLOUD_URL}/index.php/login?user=#{@session_user[:nc_login]}'><i class='fa fa-external-link'></i>&nbsp;&nbsp;Öffnen…</a>
+                    </div>
+                </div>
+            </td></tr>
+            <tr><th>Login:</th><td>
+                <div class="input-group">
+                    <input id='ti_nc_login' type='text' class='form-control' value='#{@session_user[:nc_login]}' readonly></input>
+                    <div class="input-group-append">
+                        <button class='btn btn-secondary btn-clipboard' data-clipboard-action='copy' data-clipboard-target="#ti_nc_login"><i class='fa fa-clipboard'></i>&nbsp;&nbsp;Kopieren</button>
+                    </div>
+                </div>
+            </td></tr>
+            <tr><th>Initialpasswort:</th><td>
+                <div class="input-group">
+                    <input id='ti_initial_nc_password' type='password' class='form-control' value='#{@session_user[:initial_nc_password]}' readonly></input>
+                    <div class="input-group-append">
+                        <button class='btn bu-show-password btn-secondary' style='border-right: 2px solid #444;'><i class='fa fa-eye'></i>&nbsp;&nbsp;Anzeigen</button>
+                        <button class='btn btn-secondary btn-clipboard' data-clipboard-action='copy' data-clipboard-text="#{@session_user[:initial_nc_password]}"><i class='fa fa-clipboard'></i>&nbsp;&nbsp;Kopieren</button>
+                    </div>
+                </div>
+            </td></tr>
+            </tbody>
+            </table>
+            <hr />
+            <div style='text-align: center;'>
+            <a href='#{NEXTCLOUD_URL}/index.php/login?user=#{@session_user[:nc_login]}' target='_blank' class='btn btn-success'><i class='fa fa-sign-in'></i>&nbsp;&nbsp;Zur Nextcloud-Anmeldung…</a>
+            </div>
+            <hr />
+            <p>
+            Du kannst dein Nextcloud-Passwort jederzeit in der Nextcloud ändern. Falls du dein geändertes Passwort vergessen haben solltest, kannst du es hier auf dein Initialpasswort zurücksetzen:
+            </p>
+            <div style='text-align: center;'>
+            <button class='btn btn-outline-secondary btn-sm bu-reset-nc-password'><i class='fa fa-key-modern'></i>&nbsp;&nbsp;Nextcloud-Passwort zurücksetzen</button>
+            </div>
+        </div>        
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    new ClipboardJS('.btn');
+    $('.bu-show-password').click(function(e) {
+        $('#ti_initial_nc_password').attr('type', 'text');
+    });
+    $('.bu-reset-nc-password').click(function(e) {
+        $('.bu-perform-nc-password-reset').prop('disabled', false);
+        $('.bu-close-dialog').html('Abbrechen');
+        $('.result-success').hide();
+        $('.result-error').hide();
+        $('#resetNextcloudPasswordModal').modal('show');
+    });
+    $('.bu-perform-nc-password-reset').click(function(e) {
+        $('.bu-perform-nc-password-reset').prop('disabled', true);
+        $('.bu-close-dialog').html('Schließen');
+        api_call('/api/reset_nc_password', {}, function(data) {
+            if (data.success) {
+                $('.result-success').show();
+            } else {
+                $('.result-error').show();
+            }
+        });
+    });
+});
+</script>

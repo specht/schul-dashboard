@@ -1,0 +1,243 @@
+# -------------------------------------------------------------------
+# Diese Datei bitte unter credentials.rb speichern und Werte anpassen
+# (bitte keine Credentials in Git committen)
+# -------------------------------------------------------------------
+
+DEVELOPMENT = ENV['DEVELOPMENT']
+
+# Name der Schule
+SCHUL_NAME = "Beispielschule"
+# 'an der' oder 'am'
+SCHUL_NAME_AN_DATIV = "an der"
+
+# E-Mail-Adresse der Schulleitung für das Impressum
+SCHULLEITUNG_EMAIL = 'schulleitung@beispielschule.de'
+
+# Mail-Domain für SuS-Adressen
+SCHUL_MAIL_DOMAIN = "mail.beispielschule.de"
+
+# Webmail-Login-Seite, SMTP- und IMAP-Host (nur wichtig für E-Mail-Briefe)
+SCHUL_MAIL_LOGIN_URL = "https://mail.beispielmailhoster.de"
+SCHUL_MAIL_LOGIN_SMTP_HOST = "smtp.beispielmailhoster.de"
+SCHUL_MAIL_LOGIN_IMAP_HOST = "imap.beispielmailhoster.de"
+
+# Bei Bedarf können alle Namen durch falsche Namen ersetzt werden
+# (für Demozwecke)
+USE_MOCK_NAMES = false
+# Hier können E-Mail-Adressen von Lehrern angegeben werden, die nicht
+# pseudonymisiert werden sollen
+EXCLUDE_FROM_MOCKIFICATION = []
+
+# Konfiguration des E-Mail-Kontos, über das E-Mails versendet werden können,
+# z. B. für die Anmeldung
+
+# SMTP Hostname
+SMTP_SERVER = 'smtp.example.com'
+# IMAP Hostname
+IMAP_SERVER = 'imap.example.com'
+SMTP_USER = 'dashboard@beispielschule.de'
+SMTP_PASSWORD = '1234_nein_wirklich'
+SMTP_DOMAIN = 'beispielschule.de'
+SMTP_FROM = 'Dashboard Beispielschule <dashboard@beispielschule.de>'
+DASHBOARD_SUPPORT_EMAIL = 'dashboard@beispielschule.de'
+
+if defined? Mail
+    Mail.defaults do
+    delivery_method :smtp, { 
+        :address => SMTP_SERVER,
+        :port => 587,
+        :domain => SMTP_DOMAIN,
+        :user_name => SMTP_USER,
+        :password => SMTP_PASSWORD,
+        :authentication => 'login',
+        :enable_starttls_auto => true  
+    }
+    end
+end
+
+# Mailing-Liste
+MAILING_LIST_EMAIL = DEVELOPMENT ? 'verteiler.dev@mail.beispielschule.de' : 'verteiler@mail.beispielschule.de'
+MAILING_LIST_PASSWORD = '1234_bitte_generiere_ein_zufälliges_passwort'
+VERTEILER_MAIL_HEADER = 'X-Forwarded-From-Beispielschule'
+VERTEILER_TEST_EMAIL = "verteiler.test@#{SCHUL_MAIL_DOMAIN}"
+VERTEILER_DEVELOPMENT_EMAILS = ['admin@beispielschule.de']
+MAIL_SUPPORT_NAME = 'Mail-Support Beispielschule'
+MAIL_SUPPORT_EMAIL = 'mailsupport@beispielschule.de'
+
+# Domain, auf der die Live-Seite läuft
+WEBSITE_HOST = 'dashboard.beispielschule.de'
+# Name für Unterschriften in E-Mails (Mit freundlichen Grüßen...)
+WEBSITE_MAINTAINER_NAME = 'Herr Müller'
+WEBSITE_MAINTAINER_NAME_AKKUSATIV = 'Herrn Müller'
+WEBSITE_MAINTAINER_EMAIL = 'mueller@beispielschule.de'
+
+# Website mit Voting-System (muss noch veröffentlich werden)
+VOTING_WEBSITE_URL = 'https://abstimmung.beispielschule.de'
+# Ansprechpartner für Wahlverfahren
+VOTING_CONTACT_EMAIL = 'admin@beispielschule.de'
+
+# Website für Technikhilfe (Chat und Speedtest)
+TECHNIK_HILFE_WEBSITE_URL = 'https://hilfe.beispielschule.de'
+
+WEB_ROOT = DEVELOPMENT ? 'http://localhost:8025' : "https://#{WEBSITE_HOST}"
+
+# Das Dashboard benötigt einen Nextcloud-Account, der Admin-Rechte hat
+NEXTCLOUD_HOST = 'nextcloud.beispielschule.de'
+NEXTCLOUD_URL = 'https://nextcloud.beispielschule.de'
+NEXTCLOUD_USER = 'dashboard'
+NEXTCLOUD_PASSWORD = 'hunter2_bitte_etwas_anderes_waehlen'
+
+# Das Skript share-nc-folders.rb muss sich als jeder Nutzer in der NextCloud
+# anmelden können. Dazu kann die NC-App »External user authentication«
+# verwendet werden, die fehlgeschlagene Anmeldeversuche an eine URL
+# weiterleiten kann, die dann die Authentifizierung übernimmt.
+# Wenn der folgende Wert != nil ist, ist dies das Passwort, mit dem
+# sich das Skript als jeder Nutzer anmelden kann. Vorsicht ist angesagt.
+NEXTCLOUD_ALL_ACCESS_PASSWORD_BE_CAREFUL = nil
+
+# Das Dashboard vermittelt Links in Jitsi-Räume mit Hilfe von JWT 
+# (JSON Web Tokens). Dafür werden ein paar Angaben benötigt,
+# die auf der Jitsi-Seite verifiziert werden müssen.
+JITSI_HOST = 'meet.beispielschule.de'
+JWT_APPAUD = 'jitsi'
+JWT_APPISS = 'dashboard'
+JWT_APPKEY = 'ein_langer_langer_richtig_langer_app_key'
+JWT_SUB = 'beispielschule.de'
+
+# Es folgen ein paar Salts, die bestimmen, nach welchen Regeln
+# Passwörter und sekundäre IDs generiert werden
+EMAIL_PASSWORD_SALT = 'bitte_jeden_salt_nur_einmal_verwenden'
+NEXTCLOUD_PASSWORD_SALT = 'bitte_jeden_salt_nur_einmal_verwenden'
+KLASSEN_ID_SALT = 'bitte_jeden_salt_nur_einmal_verwenden'
+USER_ID_SALT = 'bitte_jeden_salt_nur_einmal_verwenden'
+LESSON_ID_SALT = 'bitte_jeden_salt_nur_einmal_verwenden'
+SESSION_SCRAMBLER = 'bitte_jeden_salt_nur_einmal_verwenden'
+EXTERNAL_USER_EVENT_SCRAMBLER = 'bitte_jeden_salt_nur_einmal_verwenden'
+LOGIN_CODE_SALT = 'bitte_jeden_salt_nur_einmal_verwenden'
+WEBSITE_READ_INFO_SECRET = 'bitte_ein_zufälliges_secret_generieren'
+
+MESSAGE_DELAY = DEVELOPMENT ? 1 : 1
+LOGIN_STATS_D = [0, 7, 28, 1000]
+VPLAN_ENCODING = 'utf-8'
+JITSI_EVENT_PRE_ENTRY_TOLERANCE = DEVELOPMENT ? 2880 : 15 # minutes
+JITSI_EVENT_POST_ENTRY_TOLERANCE = DEVELOPMENT ? 2880 : 120 # minutes
+JITSI_LESSON_PRE_ENTRY_TOLERANCE = DEVELOPMENT ? 5: 5 # minutes
+JITSI_LESSON_POST_ENTRY_TOLERANCE = DEVELOPMENT ? 10: 10 # minutes
+PROVIDE_CLASS_STREAM = false
+COOKIE_EXPIRY_TIME = 3600 * 24 * 365
+AVAILABLE_FONTS = ['Roboto', 'Alegreya']
+GEN_IMAGE_WIDTHS = [2048, 1200, 1024, 768, 512, 384, 256].sort
+MAINTENANCE_MODE = false
+KLASSEN_TR = {'8o' => '8ω'}
+AUFSICHT_ZEIT = {1 => '08:00', 2 => '09:00', 3 => '09:55', 4 => '10:40',
+                 6 => '12:50', 7 => '13:40', 8 => '14:30'}
+PAUSENAUFSICHT_DAUER = {1 => 25, 2 => 15, 3 => 15, 4 => 20, 6 => 40, 
+                        7 => 40, 8 => 15}
+
+KLASSEN_ORDER = ['5a', '5b', '5c', 
+                 '6a', '6b', '6c', '6d', 
+                 '7a', '7b', '7c', '7e',
+                 '8a', '8b', '8o', 
+                 '9a', '9b', '9c', '9e',
+                 '10a', '10b', '10c', '10e', 
+                 '11', '12']
+
+COLOR_SCHEME_COLORS = [
+    ['la2c6e80d60aea2c6e8', 'Sky'],
+]
+STANDARD_COLOR_SCHEME = 'la2c6e80d60aea2c6e80'
+
+# Liste aller E-Mail-Adressen von Nutzer*innen, 
+# die Administratorenrechte haben sollen
+ADMIN_USERS = []
+
+# List aller E-Mail-Adressen von Nutzer*innen, 
+# die alle Stundenpläne sehen können sollen
+CAN_SEE_ALL_TIMETABLES_USERS = []
+
+CAN_UPLOAD_VPLAN_USERS = []
+
+CAN_UPLOAD_FILES_USERS = []
+
+CAN_MANAGE_NEWS_USERS = []
+
+class Main < Sinatra::Base
+    def self.fix_stundenzeiten
+        # definiert Stundenzeiten ab einem bestimmten Tag, bei Bedarf wiederholen
+        hd = '2020-08-10'
+        HOURS_FOR_KLASSE[hd] = {}
+        @@klassen_order.each do |klasse|
+            klassenstufe = klasse.to_i
+            HOURS_FOR_KLASSE[hd][klasse] = []
+            if [5, 6].include?(klassenstufe)
+                HOURS_FOR_KLASSE[hd][klasse] << ['08:00', '08:45']
+                HOURS_FOR_KLASSE[hd][klasse] << ['08:50', '09:40']
+                HOURS_FOR_KLASSE[hd][klasse] << ['09:55', '10:35']
+                HOURS_FOR_KLASSE[hd][klasse] << ['10:40', '11:25']
+                HOURS_FOR_KLASSE[hd][klasse] << ['11:25', '12:10']
+                HOURS_FOR_KLASSE[hd][klasse] << ['12:50', '13:35']
+                HOURS_FOR_KLASSE[hd][klasse] << ['13:40', '14:25']
+                HOURS_FOR_KLASSE[hd][klasse] << ['14:30', '15:15']
+                HOURS_FOR_KLASSE[hd][klasse] << ['15:20', '16:05']
+                HOURS_FOR_KLASSE[hd][klasse] << ['16:10', '16:55']
+                HOURS_FOR_KLASSE[hd][klasse] << ['16:55', '17:40']
+            elsif [7, 8, 9, 10].include?(klassenstufe)
+                HOURS_FOR_KLASSE[hd][klasse] << ['08:00', '08:45']
+                HOURS_FOR_KLASSE[hd][klasse] << ['08:50', '09:35']
+                HOURS_FOR_KLASSE[hd][klasse] << ['09:35', '10:20']
+                HOURS_FOR_KLASSE[hd][klasse] << ['10:40', '11:25']
+                HOURS_FOR_KLASSE[hd][klasse] << ['11:25', '12:10']
+                HOURS_FOR_KLASSE[hd][klasse] << ['12:15', '13:00']
+                HOURS_FOR_KLASSE[hd][klasse] << ['13:40', '14:25']
+                HOURS_FOR_KLASSE[hd][klasse] << ['14:30', '15:15']
+                HOURS_FOR_KLASSE[hd][klasse] << ['15:20', '16:05']
+                HOURS_FOR_KLASSE[hd][klasse] << ['16:10', '16:55']
+                HOURS_FOR_KLASSE[hd][klasse] << ['16:55', '17:40']
+            else
+                HOURS_FOR_KLASSE[hd][klasse] << ['08:00', '08:45']
+                HOURS_FOR_KLASSE[hd][klasse] << ['09:00', '09:45']
+                HOURS_FOR_KLASSE[hd][klasse] << ['09:45', '10:30']
+                HOURS_FOR_KLASSE[hd][klasse] << ['10:35', '11:20']
+                HOURS_FOR_KLASSE[hd][klasse] << ['11:20', '12:05']
+                HOURS_FOR_KLASSE[hd][klasse] << ['12:40', '13:25']
+                HOURS_FOR_KLASSE[hd][klasse] << ['13:30', '14:15']
+                HOURS_FOR_KLASSE[hd][klasse] << ['14:30', '15:15']
+                HOURS_FOR_KLASSE[hd][klasse] << ['15:20', '16:05']
+                HOURS_FOR_KLASSE[hd][klasse] << ['16:10', '16:55']
+                HOURS_FOR_KLASSE[hd][klasse] << ['16:55', '17:40']
+            end
+        end
+    end
+    
+    def self.fix_lesson_key_tr(lesson_key_tr)
+        # manchmal müssen verschiedene lesson_keys zusammengelegt werden:
+        # lesson_key_tr[a] = b
+        
+        lesson_key_tr
+    end
+    
+    def self.fix_lessons_for_shorthand
+        # zusätzliche Stunden für bestimmte Lehrkräfte können hier vergeben werden
+        # hier am Beispiel der Lehrkraft mit dem schönen Kürzel »Bsp«
+        @@lessons_for_shorthand['Bsp'] ||= []
+        @@lessons_for_shorthand['Bsp'] << 'Ma~103a'
+        
+        ['5b', '7a'].each do |klasse|
+            @@teachers_for_klasse[klasse] ||= {}
+            @@teachers_for_klasse[klasse]['Bsp'] ||= {}
+            @@klassen_for_shorthand['Bsp'] ||= Set.new()
+            @@klassen_for_shorthand['Bsp'] << klasse
+        end
+        
+        # Das Sekretariat soll auch alle Stundenpläne sehen können
+        @@klassen_for_shorthand['_Sek'] = KLASSEN_ORDER
+    end
+    
+    def self.fix_parsed_klasse(klasse)
+        # In WinSchule ist die Oberstufe (zumindest bei uns) als Klasse 12 und 13
+        # hinterlegt. Hier wird dieser Umstand beim einlesen der SuS-Daten korrigiert
+        d = {'12' => '11', '13' => '12'}
+        d[klasse] || klasse
+    end
+
+end

@@ -1,5 +1,7 @@
 # Schul-Dashboard
 
+👉 [Dokumentation](https://specht.github.io/schul-dashboard/)
+
 Das Schul-Dashboard wurde in den Sommerferien am Gymnasium Steglitz entwickelt.
 
 ![Login-Seite des Schul-Dashboards](https://github.com/specht/schul-dashboard/raw/master/doc/login-screen.png)

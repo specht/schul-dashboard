@@ -30,4 +30,7 @@ Das Skript `config.rb` ist ein Wrapper um `docker-compose`, der `docker-compose.
 
     ./config.rb up
     
-Das Dashboard kann nun unter [http://localhost:8025](http://localhost:8025) aufgerufen werden. Damit man sich allerdings auch anmelden kann, muss das Dashboard konfiguriert werden.
+Das Dashboard kann nun unter [http://localhost:8025](http://localhost:8025) aufgerufen werden Damit man sich allerdings auch anmelden kann, muss das Dashboard konfiguriert werden.
+
+![Login-Seite des Schul-Dashboards](doc/login-screen.png?raw=true "Login-Seite des Schul-Dashboards")
+

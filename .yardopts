@@ -1,1 +1,1 @@
---readme doc/README.md --no-private --protected --output-dir yardoc src/ruby/*.rb src/ruby/include/*.rb - doc/*.md
+--readme doc/README.md --protected --private --asset doc/common.css:css/common.css --output-dir yardoc src/ruby/*.rb src/ruby/include/*.rb - doc/*.md

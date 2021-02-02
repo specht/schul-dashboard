@@ -110,9 +110,9 @@ class Parser
             STDERR.puts "Using mock names!"
         end
         @mock = {}
-        @mock[:nachnamen] = JSON.parse(File.read('/data/mock/nachnamen.json'))
-        @mock[:vornamen] = JSON.parse(File.read('/data/mock/vornamen-m.json'))
-        @mock[:vornamen] += JSON.parse(File.read('/data/mock/vornamen-w.json'))
+        @mock[:nachnamen] = JSON.parse(File.read('mock/nachnamen.json'))
+        @mock[:vornamen] = JSON.parse(File.read('mock/vornamen-m.json'))
+        @mock[:vornamen] += JSON.parse(File.read('mock/vornamen-w.json'))
     end
     
     def first_letter_dot(s)
@@ -121,8 +121,13 @@ class Parser
     
     def parse_lehrer(&block)
         STDERR.puts "Parsing lehrer..."
+        path = '/data/lehrer/lehrer.csv'
+        unless File.exists?(path)
+            STDERR.puts "...skipping because #{path} does not exist"
+            return
+        end
         srand(1)
-        CSV.foreach('/data/lehrer/lehrer.csv', :headers => true) do |line|
+        CSV.foreach(path, :headers => true) do |line|
             line = Hash[line]
             email = line['E-Mail-Adresse'].strip
             shorthand = (line['Kürzel'] || '').strip
@@ -180,7 +185,12 @@ class Parser
     
     def parse_klassenleiter(&block)
         STDERR.puts "Parsing klassenleiter..."
-        File.open('/data/klassenleiter/klassenleiter.txt') do |f|
+        path = '/data/klassenleiter/klassenleiter.txt'
+        unless File.exists?(path)
+            STDERR.puts "...skipping because #{path} does not exist"
+            return
+        end
+        File.open(path) do |f|
             f.each_line do |line|
                 parts = line.split(',').map { |x| x.strip }
                 if parts.size == 3 
@@ -302,8 +312,13 @@ class Parser
     def parse_schueler(&block)
         STDERR.puts "Parsing schueler..."
         # create reproducible passwords while parsing SuS
+        path = '/data/schueler/ASCII.TXT'
+        unless File.exists?(path)
+            STDERR.puts "...skipping because #{path} does not exist"
+            return
+        end
         srand(1)
-        File.open('/data/schueler/ASCII.TXT', 'r:utf-8') do |f|
+        File.open(path, 'r:utf-8') do |f|
             f.each_line do |line|
                 yield handle_schueler_line(line)
             end
@@ -313,26 +328,30 @@ class Parser
     
     def parse_faecher
         STDERR.puts "Parsing faecher..."
-        CSV.foreach('/data/faecher/faecher.csv', :headers => true) do |line|
-            line = Hash[line]
-            next unless line['Fach']
-            fach = line['Fach'].strip
-            bezeichnung = line['Bezeichnung']
-            if bezeichnung
-                bezeichnung.strip! 
-                yield fach, bezeichnung
+        if File.exists?('/data/faecher/faecher.csv')
+            CSV.foreach('/data/faecher/faecher.csv', :headers => true) do |line|
+                line = Hash[line]
+                next unless line['Fach']
+                fach = line['Fach'].strip
+                bezeichnung = line['Bezeichnung']
+                if bezeichnung
+                    bezeichnung.strip! 
+                    yield fach, bezeichnung
+                end
             end
         end
     end
     
     def parse_ferien_feiertage
         STDERR.puts "Parsing ferien/feiertage..."
-        CSV.foreach('/data/ferien_feiertage/ferien_feiertage.csv', :headers => true) do |line|
-            line = Hash[line]
-            t0 = line['Beginn']
-            t1 = line['Ende'] || t0
-            title = line['Titel'].strip
-            yield t0, t1, title
+        if File.exists?('/data/ferien_feiertage/ferien_feiertage.csv')
+            CSV.foreach('/data/ferien_feiertage/ferien_feiertage.csv', :headers => true) do |line|
+                line = Hash[line]
+                t0 = line['Beginn']
+                t1 = line['Ende'] || t0
+                title = line['Titel'].strip
+                yield t0, t1, title
+            end
         end
     end
     
@@ -465,15 +484,17 @@ class Parser
         d = Date.parse(config[:first_day])
         end_date = Date.parse(config[:last_day])
         index = 0
-        while d <= end_date do
-            ds = d.strftime('%Y-%m-%d')
-            while ds >= (all_lessons[:start_dates][index + 1] || '') && (index < all_lessons[:start_dates].size - 1)
-                index += 1
+        unless all_lessons[:start_dates].empty?
+            while d <= end_date do
+                ds = d.strftime('%Y-%m-%d')
+                while ds >= (all_lessons[:start_dates][index + 1] || '') && (index < all_lessons[:start_dates].size - 1)
+                    index += 1
+                end
+                if ds >= all_lessons[:start_dates][index]
+                    all_lessons[:start_date_for_date][ds] = all_lessons[:start_dates][index]
+                end
+                d += 1
             end
-            if ds >= all_lessons[:start_dates][index]
-                all_lessons[:start_date_for_date][ds] = all_lessons[:start_dates][index]
-            end
-            d += 1
         end
         entries = []
         vplan_path = Dir['/vplan/*.txt'].sort.last
@@ -636,50 +657,52 @@ class Parser
             end
         end
         unassigned_names = Set.new()
-        File.open('/data/kurswahl/kurswahl.TXT', 'r:utf-8') do |f|
-            f.each_line do |line|
-                line = line.encode('utf-8')
-                next if line.strip.empty?
-                parts = line.split("\t").map do |x| 
-                    x = x.strip
-                    if x[0] == '"' && x[x.size - 1] == '"'
-                        x = x[1, x.size - 2]
+        if File.exists?('/data/kurswahl/kurswahl.TXT')
+            File.open('/data/kurswahl/kurswahl.TXT', 'r:utf-8') do |f|
+                f.each_line do |line|
+                    line = line.encode('utf-8')
+                    next if line.strip.empty?
+                    parts = line.split("\t").map do |x| 
+                        x = x.strip
+                        if x[0] == '"' && x[x.size - 1] == '"'
+                            x = x[1, x.size - 2]
+                        end
+                        x.strip
                     end
-                    x.strip
-                end
-                name = parts[0]
-                fach = parts[2].gsub('/', '-')
-                email = nil
-                if name_tr.include?(name)
-                    email = name_tr[name]
-                else
-                    emails = user_info.select do |email, user_info|
-                        last_name = user_info[:last_name]
-                        first_name = user_info[:first_name]
-                        ['11', '12'].include?(user_info[:klasse]) && ("#{last_name}#{first_name[0, name.size - last_name.size]}" == name)
-                    end.keys
-                    if emails.size == 1
-                        email = emails.to_a.first
+                    name = parts[0]
+                    fach = parts[2].gsub('/', '-')
+                    email = nil
+                    if name_tr.include?(name)
+                        email = name_tr[name]
                     else
-                        unassigned_names << name
+                        emails = user_info.select do |email, user_info|
+                            last_name = user_info[:last_name]
+                            first_name = user_info[:first_name]
+                            ['11', '12'].include?(user_info[:klasse]) && ("#{last_name}#{first_name[0, name.size - last_name.size]}" == name)
+                        end.keys
+                        if emails.size == 1
+                            email = emails.to_a.first
+                        else
+                            unassigned_names << name
+                        end
                     end
-                end
-                lesson_keys = lessons[:lesson_keys].keys.select do |lesson_key|
-                    lessons[:lesson_keys][lesson_key][:fach] == fach
-                end
-                if lesson_keys.size != 1
-                    STDERR.puts line
-                    STDERR.puts "#{fach}: #{lesson_keys.to_json}"
-                end
-                unless email
-                    STDERR.puts "Kurswahl: Can't assign #{name}!"
-                end
-                if email && lesson_keys.size == 1
-                    lesson_key = lesson_keys.to_a.first
-                    kurse_for_schueler[email] ||= Set.new()
-                    kurse_for_schueler[email] << lesson_key
-                    schueler_for_kurs[lesson_key] ||= Set.new()
-                    schueler_for_kurs[lesson_key] << email
+                    lesson_keys = lessons[:lesson_keys].keys.select do |lesson_key|
+                        lessons[:lesson_keys][lesson_key][:fach] == fach
+                    end
+                    if lesson_keys.size != 1
+                        STDERR.puts line
+                        STDERR.puts "#{fach}: #{lesson_keys.to_json}"
+                    end
+                    unless email
+                        STDERR.puts "Kurswahl: Can't assign #{name}!"
+                    end
+                    if email && lesson_keys.size == 1
+                        lesson_key = lesson_keys.to_a.first
+                        kurse_for_schueler[email] ||= Set.new()
+                        kurse_for_schueler[email] << lesson_key
+                        schueler_for_kurs[lesson_key] ||= Set.new()
+                        schueler_for_kurs[lesson_key] << email
+                    end
                 end
             end
         end

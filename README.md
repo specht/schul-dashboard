@@ -2,7 +2,7 @@
 
 Das Schul-Dashboard wurde in den Sommerferien am Gymnasium Steglitz entwickelt.
 
-<img src='doc/login-screen.png' style='border: 1px solid #aaa;'/>
+<img src='doc/login-screen.png' style='box-shadow: 4px 0 0 rgba(0,0,0,0.2);'/>
 
 
 ![Login-Seite des Schul-Dashboards](doc/login-screen.png?raw=true "Login-Seite des Schul-Dashboards")

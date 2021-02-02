@@ -5,12 +5,12 @@ require 'json'
 require 'yaml'
 require './env.rb'
 
-DEVELOPMENT = !(ENV['GYST_DASHBOARD_DEVELOPMENT'].nil?)
-
 # to get development mode, add the following to your ~/.bashrc:
-# export GYST_DASHBOARD_DEVELOPMENT=1
+# export SCHUL_DASHBOARD_DEVELOPMENT=1
 
-PROJECT_NAME = 'gystdashboard' + (DEVELOPMENT ? 'dev' : '')
+DEVELOPMENT = !(ENV['SCHUL_DASHBOARD_DEVELOPMENT'].nil?)
+
+PROJECT_NAME = 'schuldashboard' + (DEVELOPMENT ? 'dev' : '')
 DEV_NGINX_PORT = DEVELOPMENT ? 8025 : 8020
 DEV_NEO4J_PORT = 8021
 LOGS_PATH = DEVELOPMENT ? './logs' : (RUNNING_IN_PRODUCTION ? "/www/logs/#{PROJECT_NAME}" : "/home/qts/logs/#{PROJECT_NAME}")

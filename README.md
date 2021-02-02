@@ -2,7 +2,7 @@
 
 Das Schul-Dashboard wurde in den Sommerferien am Gymnasium Steglitz entwickelt.
 
-![Login-Seite des Schul-Dashboards](doc/login-screen.png?raw=true "Login-Seite des Schul-Dashboards")
+![Login-Seite des Schul-Dashboards](https://github.com/specht/schul-dashboard/raw/master/doc/login-screen.png)
 
 Es gibt ein paar Videos, die zeigen, worum es dabei geht:
 

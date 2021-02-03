@@ -34,4 +34,14 @@ Der Stundenplan ist momentan noch leer und muss einfach mit folgendem Befehl bef
     $ cd src/scripts
     $ ./update-timetables.rb
     
-In den Logs kann man beobachten, wie die Stundenpläne geschrieben werden. Dabei wird für jeden Nutzer und jede Woche eine Datei geschrieben, die der Browser später lädt, um die aktuellen Daten anzuzeigen.
+In den Logs kann man beobachten, wie die Stundenpläne geschrieben werden:
+
+    timetable_1       | Fetched 0 updated lesson events, 0 updated text comments, 0 updated audio comments, 0 updated messages and 0 updated events.
+    timetable_1       | Updating weeks: 
+    timetable_1       | ...........................................................
+    timetable_1       | <<< Finished updating all in 0.20 seconds, wrote 413 files.
+    timetable_1       | -----------------------------------------------------------
+
+Dabei wird für jeden Nutzer und jede Woche eine Datei geschrieben, die der Browser später lädt, um die aktuellen Daten anzuzeigen.
+
+Die Stundenpläne der betroffenen Teilnehmer werden im späteren Verlauf jedesmal, wenn Informationen zu einer Unterrichtsstunde verändert werden, neu geschrieben.

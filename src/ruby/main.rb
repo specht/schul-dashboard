@@ -192,7 +192,7 @@ end
 class SetupDatabase
     include QtsNeo4j
     
-    def setup
+    def setup(main)
         delay = 1
         10.times do
             begin
@@ -226,6 +226,29 @@ class SetupDatabase
                     neo4j_query("CREATE INDEX ON :PredefinedExternalUser(email)")
                     neo4j_query("CREATE INDEX ON :News(date)")
                     neo4j_query("CREATE INDEX ON :WebsiteEvent(id)")
+                end
+                transaction do
+                    main.class_variable_get(:@@user_info).keys.each do |email|
+                        neo4j_query(<<~END_OF_QUERY, :email => email)
+                            MERGE (u:User {email: {email}})
+                        END_OF_QUERY
+                    end
+                end
+                transaction do
+                    neo4j_query(<<~END_OF_QUERY, :email => "lehrer.tablet@#{SCHUL_MAIL_DOMAIN}")
+                        MERGE (u:User {email: {email}})
+                    END_OF_QUERY
+                    neo4j_query(<<~END_OF_QUERY, :email => "kurs.tablet@#{SCHUL_MAIL_DOMAIN}")
+                        MERGE (u:User {email: {email}})
+                    END_OF_QUERY
+                end
+                transaction do
+                    main.class_variable_get(:@@predefined_external_users)[:recipients].each_pair do |k, v|
+                        next if v[:entries]
+                        neo4j_query(<<~END_OF_QUERY, :email => k, :name => v[:label])
+                            MERGE (n:PredefinedExternalUser {email: {email}, name: {name}})
+                        END_OF_QUERY
+                    end
                 end
                 STDERR.puts "Setup finished."
                 break
@@ -356,6 +379,9 @@ class Main < Sinatra::Base
             }
             @@shorthands[record[:shorthand]] = record[:email]
             @@lehrer_order << record[:email]
+        end
+        ADMIN_USERS.each do |email|
+            @@user_info[email][:admin] = true
         end
         (CAN_SEE_ALL_TIMETABLES_USERS + ADMIN_USERS).each do |email|
             @@user_info[email][:can_see_all_timetables] = true
@@ -692,12 +718,12 @@ class Main < Sinatra::Base
             f.print(@@compiled_files[:css][:content])
         end
     end
-
+    
     configure do
         @@compiled_files = {}
-        setup = SetupDatabase.new()
-        setup.setup()
         self.collect_data()
+        setup = SetupDatabase.new()
+        setup.setup(self)
         @@color_scheme_colors = COLOR_SCHEME_COLORS
         @@standard_color_scheme = STANDARD_COLOR_SCHEME
         @@color_scheme_colors.map! do |s|
@@ -2131,23 +2157,32 @@ class Main < Sinatra::Base
             CREATE (l:LoginCode {tag: {tag}, code: {code}, valid_to: {valid_to}})-[:BELONGS_TO]->(n)
             RETURN n, l;
         END_OF_QUERY
-        deliver_mail do
-            to data[:email]
-            bcc SMTP_FROM
-            from SMTP_FROM
-            
-            subject "Dein Anmeldecode lautet #{random_code}"
+        begin
+            deliver_mail do
+                to data[:email]
+                bcc SMTP_FROM
+                from SMTP_FROM
+                
+                subject "Dein Anmeldecode lautet #{random_code}"
 
-            StringIO.open do |io|
-                io.puts "<p>Hallo!</p>"
-                io.puts "<p>Dein Anmeldecode lautet:</p>"
-                io.puts "<p style='font-size: 200%;'>#{random_code}</p>"
-                io.puts "<p>Der Code ist für zehn Minuten gültig. Nachdem du eingeloggt bist, bleibst du für ein ganzes Jahr eingeloggt.</p>"
-#                 link = "#{WEB_ROOT}/c/#{tag}/#{random_code}"
-#                 io.puts "<p><a href='#{link}'>#{link}</a></p>"
-                io.puts "<p>Falls du diese E-Mail nicht angefordert hast, hat jemand versucht, sich mit deiner E-Mail-Adresse auf <a href='https://#{WEBSITE_HOST}/'>https://#{WEBSITE_HOST}/</a> anzumelden. In diesem Fall musst du nichts weiter tun (es sei denn, du befürchtest, dass jemand anderes Zugriff auf dein E-Mail-Konto hat – dann solltest du dein E-Mail-Passwort ändern).</p>"
-                io.puts "<p>Viele Grüße,<br />#{WEBSITE_MAINTAINER_NAME}</p>"
-                io.string
+                StringIO.open do |io|
+                    io.puts "<p>Hallo!</p>"
+                    io.puts "<p>Dein Anmeldecode lautet:</p>"
+                    io.puts "<p style='font-size: 200%;'>#{random_code}</p>"
+                    io.puts "<p>Der Code ist für zehn Minuten gültig. Nachdem du eingeloggt bist, bleibst du für ein ganzes Jahr eingeloggt.</p>"
+    #                 link = "#{WEB_ROOT}/c/#{tag}/#{random_code}"
+    #                 io.puts "<p><a href='#{link}'>#{link}</a></p>"
+                    io.puts "<p>Falls du diese E-Mail nicht angefordert hast, hat jemand versucht, sich mit deiner E-Mail-Adresse auf <a href='https://#{WEBSITE_HOST}/'>https://#{WEBSITE_HOST}/</a> anzumelden. In diesem Fall musst du nichts weiter tun (es sei denn, du befürchtest, dass jemand anderes Zugriff auf dein E-Mail-Konto hat – dann solltest du dein E-Mail-Passwort ändern).</p>"
+                    io.puts "<p>Viele Grüße,<br />#{WEBSITE_MAINTAINER_NAME}</p>"
+                    io.string
+                end
+            end
+        rescue StandardError => e
+            if DEVELOPMENT
+                STDERR.puts "Cannot send e-mail in DEVELOPMENT mode, continuing anyway:"
+                STDERR.puts e
+            else
+                raise e
             end
         end
         respond(:tag => tag)

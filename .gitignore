@@ -7,5 +7,6 @@
 /src/ruby/credentials.rb
 env.rb
 .yardoc
+/yardoc/
 src/static/fonts/billy-*
 src/static/fonts/riffic-*

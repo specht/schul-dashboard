@@ -5,17 +5,8 @@ require 'json'
 require 'yaml'
 require './env.rb'
 
-# to get development mode, add the following to your ~/.bashrc:
-# export SCHUL_DASHBOARD_DEVELOPMENT=1
-
-DEVELOPMENT = !(ENV['SCHUL_DASHBOARD_DEVELOPMENT'].nil?)
-
-PROJECT_NAME = 'schuldashboard' + (DEVELOPMENT ? 'dev' : '')
 DEV_NGINX_PORT = DEVELOPMENT ? 8025 : 8020
 DEV_NEO4J_PORT = 8021
-LOGS_PATH = DEVELOPMENT ? './logs' : (RUNNING_IN_PRODUCTION ? "/www/logs/#{PROJECT_NAME}" : "/home/qts/logs/#{PROJECT_NAME}")
-DATA_PATH = DEVELOPMENT ? './data' : (RUNNING_IN_PRODUCTION ? "/www/data/#{PROJECT_NAME}" : "/home/qts/data/#{PROJECT_NAME}")
-INTERNAL_PATH = DEVELOPMENT ? './internal' : (RUNNING_IN_PRODUCTION ? "/www/data/#{PROJECT_NAME}_internal" : "/home/qts/data/#{PROJECT_NAME}_internal")
 NEO4J_DATA_PATH = File::join(DATA_PATH, 'neo4j')
 NEO4J_LOGS_PATH = File::join(LOGS_PATH, 'neo4j')
 RAW_FILES_PATH = File::join(DATA_PATH, 'raw')
@@ -135,7 +126,7 @@ docker_compose[:services][:ruby] = {
     :build => './docker/ruby',
     :volumes => ['./src/ruby:/app:ro',
                     './src/static:/static:ro',
-                    './src/data:/data:ro',
+                    "#{INPUT_DATA_PATH}:/data:ro",
                     "#{RAW_FILES_PATH}:/raw",
                     "#{VPLAN_FILES_PATH}:/vplan",
                     "#{INTERNAL_PATH}:/internal",
@@ -198,8 +189,8 @@ unless `hostname`.strip == 'hetzner'
     docker_compose[:services][:mail_forwarder][:user] = "#{UID}"
 end
 
+docker_compose[:services][:nginx][:ports] = ["127.0.0.1:#{DEV_NGINX_PORT}:80"]
 if DEVELOPMENT
-    docker_compose[:services][:nginx][:ports] = ["127.0.0.1:#{DEV_NGINX_PORT}:80"]
     docker_compose[:services][:neo4j][:ports] = ["127.0.0.1:#{DEV_NEO4J_PORT}:7474",
                                                  "127.0.0.1:7687:7687"]
     docker_compose[:services][:timetable][:ports] = ['127.0.0.1:8022:8080']
@@ -209,11 +200,6 @@ else
         x[:restart] = :always
     end
 end
-
-if RUNNING_IN_PRODUCTION
-    docker_compose[:services][:nginx][:ports] = ["127.0.0.1:#{DEV_NGINX_PORT}:80"]
-end
-
 
 File::open('docker-compose.yaml', 'w') do |f|
     f.puts "# NOTICE: don't edit this file directly, use config.rb instead!\n"

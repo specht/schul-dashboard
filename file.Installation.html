@@ -101,11 +101,22 @@ ruby_1            | getaddrinfo: Name does not resolve
 $ ./update-timetables.rb
 </code></pre>
 
-<p>In den Logs kann man beobachten, wie die Stundenpläne geschrieben werden. Dabei wird für jeden Nutzer und jede Woche eine Datei geschrieben, die der Browser später lädt, um die aktuellen Daten anzuzeigen.</p>
+<p>In den Logs kann man beobachten, wie die Stundenpläne geschrieben werden:</p>
+
+<pre class="code ruby"><code class="ruby">timetable_1       | Fetched 0 updated lesson events, 0 updated text comments, 0 updated audio comments, 0 updated messages and 0 updated events.
+timetable_1       | Updating weeks: 
+timetable_1       | ...........................................................
+timetable_1       | &lt;&lt;&lt; Finished updating all in 0.20 seconds, wrote 413 files.
+timetable_1       | -----------------------------------------------------------
+</code></pre>
+
+<p>Dabei wird für jeden Nutzer und jede Woche eine Datei geschrieben, die der Browser später lädt, um die aktuellen Daten anzuzeigen.</p>
+
+<p>Die Stundenpläne der betroffenen Teilnehmer werden im späteren Verlauf jedesmal, wenn Informationen zu einer Unterrichtsstunde verändert werden, neu geschrieben.</p>
 </div></div>
 
       <div id="footer">
-  Generated on Wed Feb  3 14:38:57 2021 by
+  Generated on Wed Feb  3 14:43:07 2021 by
   <a href="http://yardoc.org" title="Yay! A Ruby Documentation Tool" target="_parent">yard</a>
   0.9.26 (ruby-2.5.1).
 </div>

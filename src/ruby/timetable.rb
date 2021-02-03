@@ -1364,7 +1364,7 @@ class Timetable
                 f.puts "BEGIN:VCALENDAR"
                 f.puts "VERSION:2.0"
                 f.puts "CALSCALE:GREGORIAN"
-                f.puts "X-WR-CALNAME:Dashboard #{SCHULE_NAME}"
+                f.puts "X-WR-CALNAME:Dashboard #{SCHUL_NAME}"
                 events.each do |e| 
                     x = e.strip
                     f.puts x unless x.empty?

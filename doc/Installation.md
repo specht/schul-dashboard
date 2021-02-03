@@ -23,5 +23,9 @@ Das Skript `config.rb` ist ein Wrapper um `docker-compose`, der `docker-compose.
 
     ./config.rb up
     
-Das Dashboard kann nun unter [http://localhost:8025](http://localhost:8025) aufgerufen werden Damit man sich allerdings auch anmelden kann, muss das Dashboard konfiguriert werden.
+Das Dashboard kann nun unter [http://localhost:8025](http://localhost:8025) aufgerufen werden. Da es in den mitgelieferten Beispieldaten schon einen Lehrer gibt, kann man sich nun anmelden als `clarke@beispielschule.de`. Da standardmäßig kein E-Mail-Server konfiguriert ist, muss man den Zahlencode aus den Logs holen:
+
+    ruby_1            | !!!!! clarke@beispielschule.de => 224529 !!!!!
+    ruby_1            | Cannot send e-mail in DEVELOPMENT mode, continuing anyway:
+    ruby_1            | getaddrinfo: Name does not resolve
 

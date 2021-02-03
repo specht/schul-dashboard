@@ -1,3 +1,8 @@
+# ------------------------------------------------------
+# Achtung: Wenn diese Datei verändert wurde, muss erneut
+# ./config.rb build ausgeführt werden.
+# ------------------------------------------------------
+
 # für Produktionsumgebungen bitte auf false setzen
 DEVELOPMENT = true
 
@@ -21,3 +26,10 @@ INPUT_DATA_PATH = './src/example-data'
 LOGS_PATH = './logs'
 DATA_PATH = './data'
 INTERNAL_PATH = './internal'
+
+# Der Mail-Forwarder ist ein Skript, das einen Mail-Verteiler implementiert.
+ENABLE_MAIL_FORWARDER = false
+
+# Der Image Bot generiert verkleinerte Versionen von hochgeladenen Bildern
+# im jpeg- und webp-Format.
+ENABLE_IMAGE_BOT = false

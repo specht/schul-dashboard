@@ -138,6 +138,7 @@ KLASSEN_ORDER = ['5a']
 
 COLOR_SCHEME_COLORS = [
     ['la2c6e80d60aea2c6e8', 'Sky'],
+    ['l307fdc03396cfe0e8d', 'Zoomer'],
 ]
 STANDARD_COLOR_SCHEME = 'la2c6e80d60aea2c6e80'
 

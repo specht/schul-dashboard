@@ -165,11 +165,13 @@ docker_compose[:services][:ruby][:links] <<= "timetable:#{PROJECT_NAME}_timetabl
 docker_compose[:services][:ruby][:user] = "#{UID}"
 docker_compose[:services][:timetable][:user] = "#{UID}"
 
-docker_compose[:services][:image_bot] = YAML.load(docker_compose[:services][:ruby].to_yaml)
-docker_compose[:services][:image_bot]['entrypoint'] = DEVELOPMENT ?
-            'rerun -b --dir /app -s SIGKILL \'rackup --port 8080 --host 0.0.0.0 image-bot-repl.ru\'' :
-            'rackup --port 8080 --host 0.0.0.0 image-bot-repl.ru'
-docker_compose[:services][:ruby][:links] <<= "image_bot:#{PROJECT_NAME}_image_bot_1"
+if ENABLE_IMAGE_BOT
+    docker_compose[:services][:image_bot] = YAML.load(docker_compose[:services][:ruby].to_yaml)
+    docker_compose[:services][:image_bot]['entrypoint'] = DEVELOPMENT ?
+                'rerun -b --dir /app -s SIGKILL \'rackup --port 8080 --host 0.0.0.0 image-bot-repl.ru\'' :
+                'rackup --port 8080 --host 0.0.0.0 image-bot-repl.ru'
+    docker_compose[:services][:ruby][:links] <<= "image_bot:#{PROJECT_NAME}_image_bot_1"
+end
 
 docker_compose[:services][:ruby][:user] = "#{UID}"
 docker_compose[:services][:timetable][:user] = "#{UID}"
@@ -183,7 +185,7 @@ docker_compose[:services][:ruby][:links] <<= "invitation_bot:#{PROJECT_NAME}_inv
 docker_compose[:services][:ruby][:user] = "#{UID}"
 docker_compose[:services][:invitation_bot][:user] = "#{UID}"
 
-unless `hostname`.strip == 'hetzner'
+if ENABLE_MAIL_FORWARDER
     docker_compose[:services][:mail_forwarder] = YAML.load(docker_compose[:services][:ruby].to_yaml)
     docker_compose[:services][:mail_forwarder]['entrypoint'] = DEVELOPMENT ? 'rerun -b --dir /app -s SIGTERM \'ruby mail-forwarder.rb\'' : 'ruby mail-forwarder.rb'
     docker_compose[:services][:mail_forwarder][:user] = "#{UID}"

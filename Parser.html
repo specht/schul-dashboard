@@ -1053,8 +1053,8 @@
       <pre class="code"><span class="info file"># File 'src/ruby/parser.rb', line 330</span>
 
 <span class='kw'>def</span> <span class='id identifier rubyid_parse_faecher'>parse_faecher</span>
-    <span class='const'>STDERR</span><span class='period'>.</span><span class='id identifier rubyid_puts'>puts</span> <span class='tstring'><span class='tstring_beg'>&quot;</span><span class='tstring_content'>Parsing faecher...</span><span class='tstring_end'>&quot;</span></span>
-    <span class='kw'>if</span> <span class='const'>File</span><span class='period'>.</span><span class='id identifier rubyid_exists?'>exists?</span><span class='lparen'>(</span><span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>/data/faecher/faecher.csv</span><span class='tstring_end'>&#39;</span></span><span class='rparen'>)</span>
+<span class='comment'>#         STDERR.puts &quot;Parsing faecher...&quot;
+</span>    <span class='kw'>if</span> <span class='const'>File</span><span class='period'>.</span><span class='id identifier rubyid_exists?'>exists?</span><span class='lparen'>(</span><span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>/data/faecher/faecher.csv</span><span class='tstring_end'>&#39;</span></span><span class='rparen'>)</span>
         <span class='const'>CSV</span><span class='period'>.</span><span class='id identifier rubyid_foreach'>foreach</span><span class='lparen'>(</span><span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>/data/faecher/faecher.csv</span><span class='tstring_end'>&#39;</span></span><span class='comma'>,</span> <span class='symbol'>:headers</span> <span class='op'>=&gt;</span> <span class='kw'>true</span><span class='rparen'>)</span> <span class='kw'>do</span> <span class='op'>|</span><span class='id identifier rubyid_line'>line</span><span class='op'>|</span>
             <span class='id identifier rubyid_line'>line</span> <span class='op'>=</span> <span class='const'>Hash</span><span class='lbracket'>[</span><span class='id identifier rubyid_line'>line</span><span class='rbracket'>]</span>
             <span class='kw'>next</span> <span class='kw'>unless</span> <span class='id identifier rubyid_line'>line</span><span class='lbracket'>[</span><span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>Fach</span><span class='tstring_end'>&#39;</span></span><span class='rbracket'>]</span>
@@ -1104,8 +1104,8 @@
       <pre class="code"><span class="info file"># File 'src/ruby/parser.rb', line 346</span>
 
 <span class='kw'>def</span> <span class='id identifier rubyid_parse_ferien_feiertage'>parse_ferien_feiertage</span>
-    <span class='const'>STDERR</span><span class='period'>.</span><span class='id identifier rubyid_puts'>puts</span> <span class='tstring'><span class='tstring_beg'>&quot;</span><span class='tstring_content'>Parsing ferien/feiertage...</span><span class='tstring_end'>&quot;</span></span>
-    <span class='kw'>if</span> <span class='const'>File</span><span class='period'>.</span><span class='id identifier rubyid_exists?'>exists?</span><span class='lparen'>(</span><span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>/data/ferien_feiertage/ferien_feiertage.csv</span><span class='tstring_end'>&#39;</span></span><span class='rparen'>)</span>
+<span class='comment'>#         STDERR.puts &quot;Parsing ferien/feiertage...&quot;
+</span>    <span class='kw'>if</span> <span class='const'>File</span><span class='period'>.</span><span class='id identifier rubyid_exists?'>exists?</span><span class='lparen'>(</span><span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>/data/ferien_feiertage/ferien_feiertage.csv</span><span class='tstring_end'>&#39;</span></span><span class='rparen'>)</span>
         <span class='const'>CSV</span><span class='period'>.</span><span class='id identifier rubyid_foreach'>foreach</span><span class='lparen'>(</span><span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>/data/ferien_feiertage/ferien_feiertage.csv</span><span class='tstring_end'>&#39;</span></span><span class='comma'>,</span> <span class='symbol'>:headers</span> <span class='op'>=&gt;</span> <span class='kw'>true</span><span class='rparen'>)</span> <span class='kw'>do</span> <span class='op'>|</span><span class='id identifier rubyid_line'>line</span><span class='op'>|</span>
             <span class='id identifier rubyid_line'>line</span> <span class='op'>=</span> <span class='const'>Hash</span><span class='lbracket'>[</span><span class='id identifier rubyid_line'>line</span><span class='rbracket'>]</span>
             <span class='id identifier rubyid_t0'>t0</span> <span class='op'>=</span> <span class='id identifier rubyid_line'>line</span><span class='lbracket'>[</span><span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>Beginn</span><span class='tstring_end'>&#39;</span></span><span class='rbracket'>]</span>
@@ -1156,8 +1156,8 @@
       <pre class="code"><span class="info file"># File 'src/ruby/parser.rb', line 186</span>
 
 <span class='kw'>def</span> <span class='id identifier rubyid_parse_klassenleiter'>parse_klassenleiter</span><span class='lparen'>(</span><span class='op'>&amp;</span><span class='id identifier rubyid_block'>block</span><span class='rparen'>)</span>
-    <span class='const'>STDERR</span><span class='period'>.</span><span class='id identifier rubyid_puts'>puts</span> <span class='tstring'><span class='tstring_beg'>&quot;</span><span class='tstring_content'>Parsing klassenleiter...</span><span class='tstring_end'>&quot;</span></span>
-    <span class='id identifier rubyid_path'>path</span> <span class='op'>=</span> <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>/data/klassenleiter/klassenleiter.txt</span><span class='tstring_end'>&#39;</span></span>
+<span class='comment'>#         STDERR.puts &quot;Parsing klassenleiter...&quot;
+</span>    <span class='id identifier rubyid_path'>path</span> <span class='op'>=</span> <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>/data/klassenleiter/klassenleiter.txt</span><span class='tstring_end'>&#39;</span></span>
     <span class='kw'>unless</span> <span class='const'>File</span><span class='period'>.</span><span class='id identifier rubyid_exists?'>exists?</span><span class='lparen'>(</span><span class='id identifier rubyid_path'>path</span><span class='rparen'>)</span>
         <span class='const'>STDERR</span><span class='period'>.</span><span class='id identifier rubyid_puts'>puts</span> <span class='tstring'><span class='tstring_beg'>&quot;</span><span class='tstring_content'>...skipping because </span><span class='embexpr_beg'>#{</span><span class='id identifier rubyid_path'>path</span><span class='embexpr_end'>}</span><span class='tstring_content'> does not exist</span><span class='tstring_end'>&quot;</span></span>
         <span class='kw'>return</span>
@@ -1266,8 +1266,8 @@
       <pre class="code"><span class="info file"># File 'src/ruby/parser.rb', line 646</span>
 
 <span class='kw'>def</span> <span class='id identifier rubyid_parse_kurswahl'>parse_kurswahl</span><span class='lparen'>(</span><span class='id identifier rubyid_user_info'>user_info</span><span class='comma'>,</span> <span class='id identifier rubyid_lessons'>lessons</span><span class='comma'>,</span> <span class='id identifier rubyid_lesson_key_tr'>lesson_key_tr</span><span class='rparen'>)</span>
-    <span class='const'>STDERR</span><span class='period'>.</span><span class='id identifier rubyid_puts'>puts</span> <span class='tstring'><span class='tstring_beg'>&quot;</span><span class='tstring_content'>Parsing kurswahl...</span><span class='tstring_end'>&quot;</span></span>
-    <span class='id identifier rubyid_kurse_for_schueler'>kurse_for_schueler</span> <span class='op'>=</span> <span class='lbrace'>{</span><span class='rbrace'>}</span>
+<span class='comment'>#         STDERR.puts &quot;Parsing kurswahl...&quot;
+</span>    <span class='id identifier rubyid_kurse_for_schueler'>kurse_for_schueler</span> <span class='op'>=</span> <span class='lbrace'>{</span><span class='rbrace'>}</span>
     <span class='id identifier rubyid_schueler_for_kurs'>schueler_for_kurs</span> <span class='op'>=</span> <span class='lbrace'>{</span><span class='rbrace'>}</span>
     <span class='id identifier rubyid_name_tr'>name_tr</span> <span class='op'>=</span> <span class='lbrace'>{</span><span class='rbrace'>}</span>
     <span class='id identifier rubyid_path'>path</span> <span class='op'>=</span> <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>/data/kurswahl/kurswahl-tr.txt</span><span class='tstring_end'>&#39;</span></span>
@@ -1423,8 +1423,8 @@
       <pre class="code"><span class="info file"># File 'src/ruby/parser.rb', line 122</span>
 
 <span class='kw'>def</span> <span class='id identifier rubyid_parse_lehrer'>parse_lehrer</span><span class='lparen'>(</span><span class='op'>&amp;</span><span class='id identifier rubyid_block'>block</span><span class='rparen'>)</span>
-    <span class='const'>STDERR</span><span class='period'>.</span><span class='id identifier rubyid_puts'>puts</span> <span class='tstring'><span class='tstring_beg'>&quot;</span><span class='tstring_content'>Parsing lehrer...</span><span class='tstring_end'>&quot;</span></span>
-    <span class='id identifier rubyid_path'>path</span> <span class='op'>=</span> <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>/data/lehrer/lehrer.csv</span><span class='tstring_end'>&#39;</span></span>
+<span class='comment'>#         STDERR.puts &quot;Parsing lehrer...&quot;
+</span>    <span class='id identifier rubyid_path'>path</span> <span class='op'>=</span> <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>/data/lehrer/lehrer.csv</span><span class='tstring_end'>&#39;</span></span>
     <span class='kw'>unless</span> <span class='const'>File</span><span class='period'>.</span><span class='id identifier rubyid_exists?'>exists?</span><span class='lparen'>(</span><span class='id identifier rubyid_path'>path</span><span class='rparen'>)</span>
         <span class='const'>STDERR</span><span class='period'>.</span><span class='id identifier rubyid_puts'>puts</span> <span class='tstring'><span class='tstring_beg'>&quot;</span><span class='tstring_content'>...skipping because </span><span class='embexpr_beg'>#{</span><span class='id identifier rubyid_path'>path</span><span class='embexpr_end'>}</span><span class='tstring_content'> does not exist</span><span class='tstring_end'>&quot;</span></span>
         <span class='kw'>return</span>
@@ -1627,8 +1627,8 @@
       <pre class="code"><span class="info file"># File 'src/ruby/parser.rb', line 312</span>
 
 <span class='kw'>def</span> <span class='id identifier rubyid_parse_schueler'>parse_schueler</span><span class='lparen'>(</span><span class='op'>&amp;</span><span class='id identifier rubyid_block'>block</span><span class='rparen'>)</span>
-    <span class='const'>STDERR</span><span class='period'>.</span><span class='id identifier rubyid_puts'>puts</span> <span class='tstring'><span class='tstring_beg'>&quot;</span><span class='tstring_content'>Parsing schueler...</span><span class='tstring_end'>&quot;</span></span>
-    <span class='comment'># create reproducible passwords while parsing SuS
+<span class='comment'>#         STDERR.puts &quot;Parsing schueler...&quot;
+</span>    <span class='comment'># create reproducible passwords while parsing SuS
 </span>    <span class='id identifier rubyid_path'>path</span> <span class='op'>=</span> <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>/data/schueler/ASCII.TXT</span><span class='tstring_end'>&#39;</span></span>
     <span class='kw'>unless</span> <span class='const'>File</span><span class='period'>.</span><span class='id identifier rubyid_exists?'>exists?</span><span class='lparen'>(</span><span class='id identifier rubyid_path'>path</span><span class='rparen'>)</span>
         <span class='const'>STDERR</span><span class='period'>.</span><span class='id identifier rubyid_puts'>puts</span> <span class='tstring'><span class='tstring_beg'>&quot;</span><span class='tstring_content'>...skipping because </span><span class='embexpr_beg'>#{</span><span class='id identifier rubyid_path'>path</span><span class='embexpr_end'>}</span><span class='tstring_content'> does not exist</span><span class='tstring_end'>&quot;</span></span>
@@ -2159,7 +2159,7 @@
 </div>
 
       <div id="footer">
-  Generated on Wed Feb  3 13:21:41 2021 by
+  Generated on Wed Feb  3 14:20:49 2021 by
   <a href="http://yardoc.org" title="Yay! A Ruby Documentation Tool" target="_parent">yard</a>
   0.9.26 (ruby-2.5.1).
 </div>

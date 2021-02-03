@@ -88,11 +88,16 @@
 <pre class="code ruby"><code class="ruby">./config.rb up
 </code></pre>
 
-<p>Das Dashboard kann nun unter <a href="http://localhost:8025">http://localhost:8025</a> aufgerufen werden Damit man sich allerdings auch anmelden kann, muss das Dashboard konfiguriert werden.</p>
+<p>Das Dashboard kann nun unter <a href="http://localhost:8025">http://localhost:8025</a> aufgerufen werden. Da es in den mitgelieferten Beispieldaten schon einen Lehrer gibt, kann man sich nun anmelden als <code>clarke@beispielschule.de</code>. Da standardmäßig kein E-Mail-Server konfiguriert ist, muss man den Zahlencode aus den Logs holen:</p>
+
+<pre class="code ruby"><code class="ruby">ruby_1            | !!!!! clarke@beispielschule.de =&gt; 224529 !!!!!
+ruby_1            | Cannot send e-mail in DEVELOPMENT mode, continuing anyway:
+ruby_1            | getaddrinfo: Name does not resolve
+</code></pre>
 </div></div>
 
       <div id="footer">
-  Generated on Wed Feb  3 13:17:51 2021 by
+  Generated on Wed Feb  3 13:21:41 2021 by
   <a href="http://yardoc.org" title="Yay! A Ruby Documentation Tool" target="_parent">yard</a>
   0.9.26 (ruby-2.5.1).
 </div>

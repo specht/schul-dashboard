@@ -80,12 +80,12 @@
 
 <h2 id="bauen-der-docker-images">Bauen der Docker-Images</h2>
 
-<pre class="code ruby"><code class="ruby">./config.rb build
+<pre class="code ruby"><code class="ruby">$ ./config.rb build
 </code></pre>
 
 <h2 id="start-des-systems">Start des Systems</h2>
 
-<pre class="code ruby"><code class="ruby">./config.rb up
+<pre class="code ruby"><code class="ruby">$ ./config.rb up
 </code></pre>
 
 <p>Das Dashboard kann nun unter <a href="http://localhost:8025">http://localhost:8025</a> aufgerufen werden. Da es in den mitgelieferten Beispieldaten schon einen Lehrer gibt, kann man sich nun anmelden als <code>clarke@beispielschule.de</code>. Da standardmäßig kein E-Mail-Server konfiguriert ist, muss man den Zahlencode aus den Logs holen:</p>
@@ -94,10 +94,18 @@
 ruby_1            | Cannot send e-mail in DEVELOPMENT mode, continuing anyway:
 ruby_1            | getaddrinfo: Name does not resolve
 </code></pre>
+
+<p>Der Stundenplan ist momentan noch leer und muss einfach mit folgendem Befehl befüllt werden:</p>
+
+<pre class="code ruby"><code class="ruby">$ cd src/scripts
+$ ./update-timetables.rb
+</code></pre>
+
+<p>In den Logs kann man beobachten, wie die Stundenpläne geschrieben werden. Dabei wird für jeden Nutzer und jede Woche eine Datei geschrieben, die der Browser später lädt, um die aktuellen Daten anzuzeigen.</p>
 </div></div>
 
       <div id="footer">
-  Generated on Wed Feb  3 14:20:49 2021 by
+  Generated on Wed Feb  3 14:38:57 2021 by
   <a href="http://yardoc.org" title="Yay! A Ruby Documentation Tool" target="_parent">yard</a>
   0.9.26 (ruby-2.5.1).
 </div>

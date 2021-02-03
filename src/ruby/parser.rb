@@ -320,6 +320,7 @@ class Parser
         srand(1)
         File.open(path, 'r:utf-8') do |f|
             f.each_line do |line|
+                next if line.strip[0] == '#' || line.strip.empty?
                 yield handle_schueler_line(line)
             end
         end

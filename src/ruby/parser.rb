@@ -120,7 +120,7 @@ class Parser
     end
     
     def parse_lehrer(&block)
-        STDERR.puts "Parsing lehrer..."
+#         STDERR.puts "Parsing lehrer..."
         path = '/data/lehrer/lehrer.csv'
         unless File.exists?(path)
             STDERR.puts "...skipping because #{path} does not exist"
@@ -184,7 +184,7 @@ class Parser
     end
     
     def parse_klassenleiter(&block)
-        STDERR.puts "Parsing klassenleiter..."
+#         STDERR.puts "Parsing klassenleiter..."
         path = '/data/klassenleiter/klassenleiter.txt'
         unless File.exists?(path)
             STDERR.puts "...skipping because #{path} does not exist"
@@ -310,7 +310,7 @@ class Parser
     end
 
     def parse_schueler(&block)
-        STDERR.puts "Parsing schueler..."
+#         STDERR.puts "Parsing schueler..."
         # create reproducible passwords while parsing SuS
         path = '/data/schueler/ASCII.TXT'
         unless File.exists?(path)
@@ -328,7 +328,7 @@ class Parser
     end
     
     def parse_faecher
-        STDERR.puts "Parsing faecher..."
+#         STDERR.puts "Parsing faecher..."
         if File.exists?('/data/faecher/faecher.csv')
             CSV.foreach('/data/faecher/faecher.csv', :headers => true) do |line|
                 line = Hash[line]
@@ -344,7 +344,7 @@ class Parser
     end
     
     def parse_ferien_feiertage
-        STDERR.puts "Parsing ferien/feiertage..."
+#         STDERR.puts "Parsing ferien/feiertage..."
         if File.exists?('/data/ferien_feiertage/ferien_feiertage.csv')
             CSV.foreach('/data/ferien_feiertage/ferien_feiertage.csv', :headers => true) do |line|
                 line = Hash[line]
@@ -644,7 +644,7 @@ class Parser
     end
     
     def parse_kurswahl(user_info, lessons, lesson_key_tr)
-        STDERR.puts "Parsing kurswahl..."
+#         STDERR.puts "Parsing kurswahl..."
         kurse_for_schueler = {}
         schueler_for_kurs = {}
         name_tr = {}

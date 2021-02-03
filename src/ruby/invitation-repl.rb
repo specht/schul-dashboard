@@ -16,19 +16,23 @@ class InvitationRepl < Sinatra::Base
     end
     
     def self.perform_update(which)
-        STDERR.puts ">>> Sending invites!"
-        STDERR.puts '-' * 59
         rows = @@neo4j.neo4j_query(<<~END_OF_QUERY).map { |x| {:eid => x['eid'], :email => x['email'], :name => x['name'], :org_email => x['org_email'] } }
             MATCH (u)-[rt:IS_PARTICIPANT]->(e:Event)-[:ORGANIZED_BY]->(ou:User)
             WHERE (u:ExternalUser OR u:PredefinedExternalUser) AND rt.invitation_requested = true AND COALESCE(rt.deleted, false) = false AND COALESCE(e.deleted, false) = false
             RETURN e.id AS eid, u.email AS email, u.name AS name, ou.email AS org_email
         END_OF_QUERY
 
-        rows.each do |row|
-            # send invitation mail
-            Main.invite_external_user(row[:eid], row[:email], row[:org_email])
-            sleep 10.0
-            # wait for 10 seconds
+        if rows.size > 0
+            STDERR.puts ">>> Sending #{rows.size} invites!"
+            STDERR.puts '-' * 59
+            rows.each.with_index do |row, i|
+                # send invitation mail
+                STDERR.puts ">>> Sending invite #{i + 1} of #{rows.size}..."
+                STDERR.puts '-' * 59
+                Main.invite_external_user(row[:eid], row[:email], row[:org_email])
+                sleep 10.0
+                # wait for 10 seconds
+            end
         end
     end
     

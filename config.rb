@@ -35,7 +35,6 @@ if !DEVELOPMENT
     ]
     docker_compose[:services][:nginx][:expose] = ['80']
 end
-docker_compose[:services][:nginx][:links] = ["ruby:#{PROJECT_NAME}_ruby_1"]
 
 nginx_config = <<~eos
     log_format custom '$http_x_forwarded_for - $remote_user [$time_local] "$request" '
@@ -139,7 +138,6 @@ docker_compose[:services][:ruby] = {
 }
 docker_compose[:services][:ruby][:depends_on] ||= []
 docker_compose[:services][:ruby][:depends_on] << :neo4j
-docker_compose[:services][:ruby][:links] = ['neo4j:neo4j']
 
 docker_compose[:services][:neo4j] = {
     :build => './docker/neo4j',
@@ -152,15 +150,10 @@ docker_compose[:services][:neo4j][:environment] = [
 ]
 docker_compose[:services][:neo4j][:user] = "#{UID}"
 
-docker_compose[:services].values.each do |x|
-    x[:network_mode] = 'default'
-end
-
 docker_compose[:services][:timetable] = YAML.load(docker_compose[:services][:ruby].to_yaml)
 docker_compose[:services][:timetable]['entrypoint'] = DEVELOPMENT ?
             'rerun -b --dir /app -s SIGKILL \'rackup --port 8080 --host 0.0.0.0 timetable-repl.ru\'' :
             'rackup --port 8080 --host 0.0.0.0 timetable-repl.ru'
-docker_compose[:services][:ruby][:links] <<= "timetable:#{PROJECT_NAME}_timetable_1"
 
 docker_compose[:services][:ruby][:user] = "#{UID}"
 docker_compose[:services][:timetable][:user] = "#{UID}"
@@ -170,7 +163,6 @@ if ENABLE_IMAGE_BOT
     docker_compose[:services][:image_bot]['entrypoint'] = DEVELOPMENT ?
                 'rerun -b --dir /app -s SIGKILL \'rackup --port 8080 --host 0.0.0.0 image-bot-repl.ru\'' :
                 'rackup --port 8080 --host 0.0.0.0 image-bot-repl.ru'
-    docker_compose[:services][:ruby][:links] <<= "image_bot:#{PROJECT_NAME}_image_bot_1"
 end
 
 docker_compose[:services][:ruby][:user] = "#{UID}"
@@ -180,8 +172,6 @@ docker_compose[:services][:invitation_bot] = YAML.load(docker_compose[:services]
 docker_compose[:services][:invitation_bot]['entrypoint'] = DEVELOPMENT ?
             'rerun -b --dir /app -s SIGKILL \'rackup --port 8080 --host 0.0.0.0 invitation-repl.ru\'' :
             'rackup --port 8080 --host 0.0.0.0 invitation-repl.ru'
-docker_compose[:services][:ruby][:links] <<= "invitation_bot:#{PROJECT_NAME}_invitation_bot_1"
-
 docker_compose[:services][:ruby][:user] = "#{UID}"
 docker_compose[:services][:invitation_bot][:user] = "#{UID}"
 
@@ -190,6 +180,32 @@ if ENABLE_MAIL_FORWARDER
     docker_compose[:services][:mail_forwarder]['entrypoint'] = DEVELOPMENT ? 'rerun -b --dir /app -s SIGTERM \'ruby mail-forwarder.rb\'' : 'ruby mail-forwarder.rb'
     docker_compose[:services][:mail_forwarder][:user] = "#{UID}"
 end
+
+if ENABLE_NEXTCLOUD_SANDBOX
+    FileUtils::mkpath(File::join(DATA_PATH, 'nextcloud', 'nextcloud'))
+    FileUtils::mkpath(File::join(DATA_PATH, 'nextcloud', 'apps'))
+    FileUtils::mkpath(File::join(DATA_PATH, 'nextcloud', 'config'))
+    FileUtils::mkpath(File::join(DATA_PATH, 'nextcloud', 'data'))
+    docker_compose[:services][:nextcloud] = {
+        :build => './docker/nextcloud',
+        :volumes => [
+                     "#{File::join(DATA_PATH, 'nextcloud', 'nextcloud')}:/var/www/html",
+                     "#{File::join(DATA_PATH, 'nextcloud', 'apps')}:/var/www/html/custom_apps",
+                     "#{File::join(DATA_PATH, 'nextcloud', 'config')}:/var/www/html/config",
+                     "#{File::join(DATA_PATH, 'nextcloud', 'data')}:/var/www/html/data",
+                     ]
+    }
+    docker_compose[:services][:nextcloud][:environment] = [
+        "SQLITE_DATABASE=nextcloud",
+        "NEXTCLOUD_TRUSTED_DOMAINS=nextcloud",
+        "NEXTCLOUD_ADMIN_USER=#{NEXTCLOUD_SANDBOX_INSTALL_ADMIN_USER}",
+        "NEXTCLOUD_ADMIN_PASSWORD=#{NEXTCLOUD_SANDBOX_INSTALL_ADMIN_PASSWORD}",
+    ]
+    docker_compose[:services][:nextcloud][:user] = "#{UID}"
+    docker_compose[:services][:nextcloud][:ports] = ['127.0.0.1:8024:80']
+end
+
+docker_compose[:networks] = {:main => {}}
 
 docker_compose[:services][:nginx][:ports] = ["127.0.0.1:#{DEV_NGINX_PORT}:80"]
 if DEVELOPMENT
@@ -201,6 +217,10 @@ else
     docker_compose[:services].values.each do |x|
         x[:restart] = :always
     end
+end
+
+docker_compose[:services].each_pair do |k, v|
+    v[:networks] = {:main => {:aliases => [k]}}
 end
 
 File::open('docker-compose.yaml', 'w') do |f|

@@ -6,7 +6,7 @@ require 'set'
 
 class Script
     def initialize
-        @ocs = Nextcloud.ocs(url: NEXTCLOUD_URL,
+        @ocs = Nextcloud.ocs(url: NEXTCLOUD_URL_FROM_RUBY_CONTAINER,
                              username: NEXTCLOUD_USER,
                              password: NEXTCLOUD_PASSWORD)
     end
@@ -19,7 +19,7 @@ class Script
         @@klassen_for_shorthand = Main.class_variable_get(:@@klassen_for_shorthand)
         STDERR.puts "Getting groups..."
         all_groups = @ocs.group.all
-        @ocs.group.create('Lehrer') unless all_groups.include?('Lehrer')
+        result = @ocs.group.create('Lehrer') unless all_groups.include?('Lehrer')
         @ocs.group.create('SuS') unless all_groups.include?('SuS')
         all_klassen = Set.new()
         @@klassen_for_shorthand.values.each { |x| all_klassen |= x }
@@ -29,12 +29,6 @@ class Script
         all_klassen.to_a.sort.each do |x|
             @ocs.group.create("Klasse #{x}") unless all_groups.include?("Klasse #{x}")
         end
-#         all_klassen.to_a.sort.each do |x|
-#             @ocs.group.create("Lehrer #{x} (19/20)") unless all_groups.include?("Lehrer #{x} (19/20)")
-#         end
-#         all_klassen.to_a.sort.each do |x|
-#             @ocs.group.create("Klasse #{x} (19/20)") unless all_groups.include?("Klasse #{x} (19/20)")
-#         end
         STDERR.puts "Getting users..."
         all_users = Set.new(@ocs.user.all.map { |x| x.id })
         @@user_info.each_pair do |email, user|
@@ -64,7 +58,7 @@ class Script
             end
             klassen.each do |klasse|
                 unless user_info.groups.include?("Lehrer #{klasse}")
-                    STDERR.puts "@ocs.user(#{user_id}).group.create(Lehrer #{klasse})"
+                    STDERR.puts "@ocs.user(#{user_id}).group.create('Lehrer #{klasse}')"
                     @ocs.user(user_id).group.create("Lehrer #{klasse}")
                 end
             end
@@ -97,7 +91,7 @@ class Script
                 @ocs.user(user_id).group.create('SuS')
             end
             unless user_info.groups.include?("Klasse #{klasse}")
-                STDERR.puts "@ocs.user(#{user_id}).group.create(Klasse #{klasse})"
+                STDERR.puts "@ocs.user(#{user_id}).group.create('Klasse #{klasse}')"
                 @ocs.user(user_id).group.create("Klasse #{klasse}")
             end
         end

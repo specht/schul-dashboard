@@ -33,3 +33,10 @@ ENABLE_MAIL_FORWARDER = false
 # Der Image Bot generiert verkleinerte Versionen von hochgeladenen Bildern
 # im jpeg- und webp-Format.
 ENABLE_IMAGE_BOT = false
+
+# NextCloud für Test- und Entwicklungszwecke starten?
+# Bitte so nicht für den Produktiveinsatz nutzen
+# (läuft z. B. mit SQLite und skaliert schlecht)
+ENABLE_NEXTCLOUD_SANDBOX = true
+NEXTCLOUD_SANDBOX_INSTALL_ADMIN_USER = 'dashboard'
+NEXTCLOUD_SANDBOX_INSTALL_ADMIN_PASSWORD = 'hunter2_bitte_etwas_anderes_waehlen'

@@ -1225,7 +1225,7 @@ class Main < Sinatra::Base
         data = parse_request_data(:required_keys => [:uri])
         uri = data[:uri]
         STDERR.puts uri
-        if uri.include?(NEXTCLOUD_HOST)
+        if uri.include?(NEXTCLOUD_URL)
             c = Curl::Easy.new(uri)
             c.perform
             if c.status == '200'
@@ -1290,7 +1290,7 @@ class Main < Sinatra::Base
     
     def trigger_update(which)
         begin
-            http = Net::HTTP.new('timetable_1', 8080)
+            http = Net::HTTP.new('timetable', 8080)
             response = http.request(Net::HTTP::Get.new("/api/update/#{which}"))
         rescue StandardError => e
             STDERR.puts e
@@ -1299,7 +1299,7 @@ class Main < Sinatra::Base
     
     def trigger_update_images()
         begin
-            http = Net::HTTP.new('image_bot_1', 8080)
+            http = Net::HTTP.new('image_bot', 8080)
             response = http.request(Net::HTTP::Get.new("/api/update_all"))
         rescue StandardError => e
             STDERR.puts e
@@ -1308,7 +1308,7 @@ class Main < Sinatra::Base
     
     def trigger_send_invites()
         begin
-            http = Net::HTTP.new('invitation_bot_1', 8080)
+            http = Net::HTTP.new('invitation_bot', 8080)
             response = http.request(Net::HTTP::Get.new("/api/send_invites"))
         rescue StandardError => e
             STDERR.puts e

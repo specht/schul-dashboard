@@ -82,8 +82,13 @@ TECHNIK_HILFE_WEBSITE_URL = 'https://hilfe.beispielschule.de'
 WEB_ROOT = DEVELOPMENT ? 'http://localhost:8025' : "https://#{WEBSITE_HOST}"
 
 # Das Dashboard benötigt einen Nextcloud-Account, der Admin-Rechte hat
-NEXTCLOUD_HOST = 'nextcloud.beispielschule.de'
-NEXTCLOUD_URL = 'https://nextcloud.beispielschule.de'
+NEXTCLOUD_URL = 'http://localhost:8024'
+# Falls die Nextcloud im Development-Modus in Docker läuft, 
+# kann hier eine URL angegeben werden, unter der Nextcloud
+# vom Ruby-Container aus zu erreichen ist, z. B. 'http://nextcloud'
+# bei einer öffentlich erreichbaren Nextcloud-Instanz spielt es
+# keine Rolle und der Wert sollte derselbe sein wie für NEXTCLOUD_URL
+NEXTCLOUD_URL_FROM_RUBY_CONTAINER = 'http://nextcloud'
 NEXTCLOUD_USER = 'dashboard'
 NEXTCLOUD_PASSWORD = 'hunter2_bitte_etwas_anderes_waehlen'
 
@@ -93,7 +98,15 @@ NEXTCLOUD_PASSWORD = 'hunter2_bitte_etwas_anderes_waehlen'
 # weiterleiten kann, die dann die Authentifizierung übernimmt.
 # Wenn der folgende Wert != nil ist, ist dies das Passwort, mit dem
 # sich das Skript als jeder Nutzer anmelden kann. Vorsicht ist angesagt.
-NEXTCLOUD_ALL_ACCESS_PASSWORD_BE_CAREFUL = nil
+#
+#   'user_backends' => array(
+#       array(
+#           'class' => 'OC_User_BasicAuth',
+#           'arguments' => array('https://dashboard.beispielschule.de/nc_auth'),
+#       ),
+#   ),
+
+NEXTCLOUD_ALL_ACCESS_PASSWORD_BE_CAREFUL = 'here_be_dragons_dont_use_this_password'
 
 # Das Dashboard vermittelt Links in Jitsi-Räume mit Hilfe von JWT 
 # (JSON Web Tokens). Dafür werden ein paar Angaben benötigt,
@@ -134,7 +147,7 @@ AUFSICHT_ZEIT = {1 => '08:00', 2 => '09:00', 3 => '09:55', 4 => '10:40',
 PAUSENAUFSICHT_DAUER = {1 => 25, 2 => 15, 3 => 15, 4 => 20, 6 => 40, 
                         7 => 40, 8 => 15}
 
-KLASSEN_ORDER = ['5a']
+KLASSEN_ORDER = ['5a', '11', '12']
 
 COLOR_SCHEME_COLORS = [
     ['la2c6e80d60aea2c6e8', 'Sky'],

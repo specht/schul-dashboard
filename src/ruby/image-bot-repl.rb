@@ -7,7 +7,7 @@ require 'zlib'
 require 'fileutils'
 require 'thread'
 
-PING_TIME = ENV['DEVELOPMENT'] ? 1 : 60
+PING_TIME = DEVELOPMENT ? 1 : 60
 
 class ImageBotRepl < Sinatra::Base
     configure do
@@ -78,9 +78,6 @@ class ImageBotRepl < Sinatra::Base
                 @@queue << {:ping => true}
                 sleep PING_TIME
             end
-        end
-        unless ENV['DEVELOPMENT']
-            self.perform_update()
         end
         STDERR.puts "REPL is ready."
     end

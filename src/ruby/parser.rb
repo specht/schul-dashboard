@@ -389,7 +389,7 @@ class Parser
                     klasse = parts[1]
                     klasse = '8o' if klasse == '8?'
                     klasse = '8o' if klasse == '8ω'
-                    next if timetable_start_date < '2020-08-19' && ['11', '12'].include?(klasse)
+#                     next if timetable_start_date < '2020-08-19' && ['11', '12'].include?(klasse)
                     lehrer = parts[2]
                     if @use_mock_names
                         lehrer = @mock_shorthand[lehrer]

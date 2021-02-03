@@ -9,7 +9,7 @@ require 'yaml'
 
 class Script
     def initialize
-        @ocs = Nextcloud.ocs(url: NEXTCLOUD_URL,
+        @ocs = Nextcloud.ocs(url: NEXTCLOUD_URL_FROM_RUBY_CONTAINER,
                              username: NEXTCLOUD_USER, 
                              password: NEXTCLOUD_PASSWORD)
     end
@@ -112,7 +112,7 @@ class Script
             end
         end
         present_shares = {}
-        @ocs.file_sharing.all.each do |share|
+        (@ocs.file_sharing.all || []).each do |share|
             present_shares[share['share_with']] ||= {}
             present_shares[share['share_with']][share['path']] = {
                 :permissions => share['permissions'].to_i,
@@ -123,7 +123,7 @@ class Script
 #         STDERR.puts present_shares.to_yaml
 #         exit
         wanted_shares.keys.sort.each do |user_id|
-            ocs_user = Nextcloud.ocs(url: NEXTCLOUD_URL, 
+            ocs_user = Nextcloud.ocs(url: NEXTCLOUD_URL_FROM_RUBY_CONTAINER, 
                                      username: user_id,
                                      password: NEXTCLOUD_ALL_ACCESS_PASSWORD_BE_CAREFUL)
             wanted_dirs = Set.new()

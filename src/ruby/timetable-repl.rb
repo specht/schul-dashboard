@@ -7,8 +7,8 @@ require 'zlib'
 require 'fileutils'
 require 'thread'
 
-PING_TIME = ENV['DEVELOPMENT'] ? 1 : 60
-DELAYED_UPDATE_TIME = ENV['DEVELOPMENT'] ? 1 : 1
+PING_TIME = DEVELOPMENT ? 1 : 60
+DELAYED_UPDATE_TIME = DEVELOPMENT ? 1 : 1
 
 class TimetableRepl < Sinatra::Base
     include QtsNeo4j
@@ -68,9 +68,6 @@ class TimetableRepl < Sinatra::Base
                 @@queue << {:ping => true}
                 sleep PING_TIME
             end
-        end
-        unless DEVELOPMENT
-            self.perform_update('all')
         end
         STDERR.puts "REPL is ready."
     end

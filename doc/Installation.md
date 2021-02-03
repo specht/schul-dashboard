@@ -17,11 +17,11 @@ Das Skript `config.rb` ist ein Wrapper um `docker-compose`, der `docker-compose.
 
 ## Bauen der Docker-Images
 
-    ./config.rb build
+    $ ./config.rb build
     
 ## Start des Systems
 
-    ./config.rb up
+    $ ./config.rb up
     
 Das Dashboard kann nun unter [http://localhost:8025](http://localhost:8025) aufgerufen werden. Da es in den mitgelieferten Beispieldaten schon einen Lehrer gibt, kann man sich nun anmelden als `clarke@beispielschule.de`. Da standardmäßig kein E-Mail-Server konfiguriert ist, muss man den Zahlencode aus den Logs holen:
 
@@ -29,3 +29,9 @@ Das Dashboard kann nun unter [http://localhost:8025](http://localhost:8025) aufg
     ruby_1            | Cannot send e-mail in DEVELOPMENT mode, continuing anyway:
     ruby_1            | getaddrinfo: Name does not resolve
 
+Der Stundenplan ist momentan noch leer und muss einfach mit folgendem Befehl befüllt werden:
+
+    $ cd src/scripts
+    $ ./update-timetables.rb
+    
+In den Logs kann man beobachten, wie die Stundenpläne geschrieben werden. Dabei wird für jeden Nutzer und jede Woche eine Datei geschrieben, die der Browser später lädt, um die aktuellen Daten anzuzeigen.

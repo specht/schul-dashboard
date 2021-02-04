@@ -1,13 +1,7 @@
 #!/usr/bin/env ruby
 require './main.rb'
-require './parser.rb'
-require 'zlib'
-require 'stringio'
-require 'fileutils'
 
 class Script
-    include QtsNeo4j
-    
     def emit(s)
         puts "__RUN__ #{s}"
     end
@@ -49,6 +43,10 @@ class Script
             end
         end
         emit "php occ files:scan #{File::basename(NEXTCLOUD_DASHBOARD_DATA_DIRECTORY)}"
+        emit "# Hinweis: Die oben stehenden Befehle wurden noch nicht ausgeführt."
+        emit "# Falls die Nextcloud z. B. in einem Docker-Container läuft, können sie"
+        emit "# z. B. so ausgeführt werden:"
+        emit "# $ ./#{File.basename(__FILE__)} | docker exec -i schuldashboarddev_nextcloud_1 bash -"
     end
 end
 

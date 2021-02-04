@@ -88,12 +88,22 @@
 <pre class="code ruby"><code class="ruby">$ ./config.rb up
 </code></pre>
 
-<p>Das Dashboard kann nun unter <a href="http://localhost:8025">http://localhost:8025</a> aufgerufen werden. Da es in den mitgelieferten Beispieldaten schon einen Lehrer gibt, kann man sich nun anmelden als <code>clarke@beispielschule.de</code>. Da standardmäßig kein E-Mail-Server konfiguriert ist, muss man den Zahlencode aus den Logs holen:</p>
+<p>Nun können folgende Seiten aufgerufen werden:</p>
+
+<ul>
+<li>Dashboard: <a href="http://localhost:8025">http://localhost:8025</a></li>
+<li>Neo4j: <a href="http://localhost:8021">http://localhost:8021</a></li>
+<li>Nextcloud-Sandbox: <a href="http://localhost:8024">http://localhost:8024</a></li>
+</ul>
+
+<p>Da es in den mitgelieferten Beispieldaten schon einen Lehrer gibt, kann man sich nun im Dashboard (<a href="http://localhost:8025">http://localhost:8025</a>) anmelden als <code>clarke@beispielschule.de</code>. Da standardmäßig kein E-Mail-Server konfiguriert ist, muss man den Zahlencode aus den Logs holen:</p>
 
 <pre class="code ruby"><code class="ruby">ruby_1            | !!!!! clarke@beispielschule.de =&gt; 224529 !!!!!
 ruby_1            | Cannot send e-mail in DEVELOPMENT mode, continuing anyway:
 ruby_1            | getaddrinfo: Name does not resolve
 </code></pre>
+
+<h2 id="schreiben-der-stundenpl-ne">Schreiben der Stundenpläne</h2>
 
 <p>Der Stundenplan ist momentan noch leer und muss einfach mit folgendem Befehl befüllt werden:</p>
 
@@ -106,17 +116,56 @@ $ ./update-timetables.rb
 <pre class="code ruby"><code class="ruby">timetable_1       | Fetched 0 updated lesson events, 0 updated text comments, 0 updated audio comments, 0 updated messages and 0 updated events.
 timetable_1       | Updating weeks: 
 timetable_1       | ...........................................................
-timetable_1       | &lt;&lt;&lt; Finished updating all in 0.20 seconds, wrote 413 files.
+timetable_1       | &lt;&lt;&lt; Finished updating all in 0.47 seconds, wrote 531 files.
 timetable_1       | -----------------------------------------------------------
 </code></pre>
 
 <p>Dabei wird für jeden Nutzer und jede Woche eine Datei geschrieben, die der Browser später lädt, um die aktuellen Daten anzuzeigen.</p>
 
 <p>Die Stundenpläne der betroffenen Teilnehmer werden im späteren Verlauf jedesmal, wenn Informationen zu einer Unterrichtsstunde verändert werden, neu geschrieben.</p>
+
+<h2 id="starten-der-nextcloud-sandbox">Starten der Nextcloud-Sandbox</h2>
+
+<p>Standardmäßig wird eine kleine Nextcloud-Sandbox mitgeliefert, die nicht für den Produktiveinsatz gedacht ist. Sie lässt sich aber gut dafür verwenden, um die Verknüpfung zwischen Dashboard und Nextcloud auszuprobieren. Dazu muss zunächst die Installation der Nextcloud-Sandbox abgeschlossen werden:</p>
+
+<pre class="code ruby"><code class="ruby">$ ./install-nextcloud-sandbox.rb 
+Installing user_external app in Sandbox Nextcloud...
+user_external 1.0.0 installed
+user_external enabled
+Activating HTTP Basic Authentication Fallback for Sandbox Nextcloud...
+</code></pre>
+
+<p>Es wurde nun HTTP-Basic-Authentication aktiviert. Dies wird später vorübergehend benötigt, wenn das Dashboard die individuellen Nextcloud-Ordner an die einzelnen Nutzer:innen freigibt.</p>
+
+<p>Die Anbindung an Nextcloud erfolgt in drei Schritten:</p>
+
+<h3 id="erstellen-der-nextcloud-nutzer">Erstellen der Nextcloud-Nutzer</h3>
+
+<pre class="code ruby"><code class="ruby">$ cd src/scripts
+$ ./create-nc-users.rb
+</code></pre>
+
+<p>Das Skript kann jederzeit erneut gestartet werden, wenn Nutzer dazukommen.</p>
+
+<h3 id="erstellen-der-nextcloud-ordner">Erstellen der Nextcloud-Ordner</h3>
+
+<pre class="code ruby"><code class="ruby">$ ./create-nc-folders.rb
+</code></pre>
+
+<p>Das Skript kann jederzeit erneut gestartet werden, wenn Fächer dazukommen.</p>
+
+<h3 id="teilen-der-nextcloud-ordner">Teilen der Nextcloud-Ordner</h3>
+
+<pre class="code ruby"><code class="ruby">$ ./share-nc-folders.rb
+</code></pre>
+
+<p>Das Skript kann jederzeit erneut gestartet werden, wenn sich die Zuordnung von Fächern zu Lehrern oder Schülern verändert.</p>
+
+<p>Für dieses Skript wird die App »user_external« in Nextcloud benötigt, da sich das Skript als der jeweilige Nutzer anmelden muss, um einen geteilten Ordner ins richtige Verzeichnis zu verschieben. Damit das in der Nextcloud-Sandbox funktioniert, haben wir weiter oben das Skript <code>install-nextcloud-sandbox.rb</code> ausgeführt. <strong>Achtung:</strong> Solange diese App aktiviert ist und die Nextcloud so konfiguriert ist, dass diese App auch verwendet wird, gibt es ein Blanko-Passwort, mit jeder in jeden Account kommt: <code>NEXTCLOUD_ALL_ACCESS_PASSWORD_BE_CAREFUL</code>.</p>
 </div></div>
 
       <div id="footer">
-  Generated on Wed Feb  3 14:43:07 2021 by
+  Generated on Thu Feb  4 01:04:09 2021 by
   <a href="http://yardoc.org" title="Yay! A Ruby Documentation Tool" target="_parent">yard</a>
   0.9.26 (ruby-2.5.1).
 </div>

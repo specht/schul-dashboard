@@ -455,7 +455,7 @@ pseudonymisiert werden sollen</p>
         </dt>
         <dd><pre class="code"><span class='const'><span class='object_link'><a href="top-level-namespace.html#DEVELOPMENT-constant" title="DEVELOPMENT (constant)">DEVELOPMENT</a></span></span> <span class='op'>?</span> <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>http://localhost:8025</span><span class='tstring_end'>&#39;</span></span> <span class='op'>:</span> <span class='tstring'><span class='tstring_beg'>&quot;</span><span class='tstring_content'>https://</span><span class='embexpr_beg'>#{</span><span class='const'><span class='object_link'><a href="top-level-namespace.html#WEBSITE_HOST-constant" title="WEBSITE_HOST (constant)">WEBSITE_HOST</a></span></span><span class='embexpr_end'>}</span><span class='tstring_end'>&quot;</span></span></pre></dd>
       
-        <dt id="NEXTCLOUD_HOST-constant" class="">NEXTCLOUD_HOST =
+        <dt id="NEXTCLOUD_URL-constant" class="">NEXTCLOUD_URL =
           <div class="docstring">
   <div class="discussion">
     
@@ -469,12 +469,27 @@ pseudonymisiert werden sollen</p>
 
 </div>
         </dt>
-        <dd><pre class="code"><span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>nextcloud.beispielschule.de</span><span class='tstring_end'>&#39;</span></span></pre></dd>
+        <dd><pre class="code"><span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>http://localhost:8024</span><span class='tstring_end'>&#39;</span></span></pre></dd>
       
-        <dt id="NEXTCLOUD_URL-constant" class="">NEXTCLOUD_URL =
-          
+        <dt id="NEXTCLOUD_URL_FROM_RUBY_CONTAINER-constant" class="">NEXTCLOUD_URL_FROM_RUBY_CONTAINER =
+          <div class="docstring">
+  <div class="discussion">
+    
+<p>Falls die Nextcloud im Development-Modus in Docker läuft,  kann hier eine
+URL angegeben werden, unter der Nextcloud vom Ruby-Container aus zu
+erreichen ist, z. B. &#39;<a href="http://nextcloud">nextcloud</a>&#39; bei
+einer öffentlich erreichbaren Nextcloud-Instanz spielt es keine Rolle und
+der Wert sollte derselbe sein wie für NEXTCLOUD_URL</p>
+
+
+  </div>
+</div>
+<div class="tags">
+  
+
+</div>
         </dt>
-        <dd><pre class="code"><span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>https://nextcloud.beispielschule.de</span><span class='tstring_end'>&#39;</span></span></pre></dd>
+        <dd><pre class="code"><span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>http://nextcloud</span><span class='tstring_end'>&#39;</span></span></pre></dd>
       
         <dt id="NEXTCLOUD_USER-constant" class="">NEXTCLOUD_USER =
           
@@ -497,6 +512,14 @@ weiterleiten kann, die dann die Authentifizierung übernimmt. Wenn der
 folgende Wert != nil ist, ist dies das Passwort, mit dem sich das Skript
 als jeder Nutzer anmelden kann. Vorsicht ist angesagt.</p>
 
+<pre class="code ruby"><code class="ruby">&#39;user_backends&#39; =&gt; array(
+    array(
+        &#39;class&#39; =&gt; &#39;OC_User_BasicAuth&#39;,
+        &#39;arguments&#39; =&gt; array(&#39;https://dashboard.beispielschule.de/nc_auth&#39;),
+    ),
+),
+</code></pre>
+
 
   </div>
 </div>
@@ -505,7 +528,7 @@ als jeder Nutzer anmelden kann. Vorsicht ist angesagt.</p>
 
 </div>
         </dt>
-        <dd><pre class="code"><span class='kw'>nil</span></pre></dd>
+        <dd><pre class="code"><span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>here_be_dragons_dont_use_this_password</span><span class='tstring_end'>&#39;</span></span></pre></dd>
       
         <dt id="JITSI_HOST-constant" class="">JITSI_HOST =
           <div class="docstring">
@@ -726,7 +749,7 @@ sekundäre IDs generiert werden</p>
         <dt id="KLASSEN_ORDER-constant" class="">KLASSEN_ORDER =
           
         </dt>
-        <dd><pre class="code"><span class='lbracket'>[</span><span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>5a</span><span class='tstring_end'>&#39;</span></span><span class='rbracket'>]</span></pre></dd>
+        <dd><pre class="code"><span class='lbracket'>[</span><span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>5a</span><span class='tstring_end'>&#39;</span></span><span class='comma'>,</span> <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>11</span><span class='tstring_end'>&#39;</span></span><span class='comma'>,</span> <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>12</span><span class='tstring_end'>&#39;</span></span><span class='rbracket'>]</span></pre></dd>
       
         <dt id="COLOR_SCHEME_COLORS-constant" class="">COLOR_SCHEME_COLORS =
           
@@ -793,7 +816,7 @@ können sollen</p>
         <dt id="PING_TIME-constant" class="">PING_TIME =
           
         </dt>
-        <dd><pre class="code"><span class='const'>ENV</span><span class='lbracket'>[</span><span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>DEVELOPMENT</span><span class='tstring_end'>&#39;</span></span><span class='rbracket'>]</span> <span class='op'>?</span> <span class='int'>1</span> <span class='op'>:</span> <span class='int'>60</span></pre></dd>
+        <dd><pre class="code"><span class='const'><span class='object_link'><a href="top-level-namespace.html#DEVELOPMENT-constant" title="DEVELOPMENT (constant)">DEVELOPMENT</a></span></span> <span class='op'>?</span> <span class='int'>1</span> <span class='op'>:</span> <span class='int'>60</span></pre></dd>
       
         <dt id="MAIL_FORWARDER_SLEEP-constant" class="">MAIL_FORWARDER_SLEEP =
           
@@ -808,7 +831,7 @@ können sollen</p>
         <dt id="DELAYED_UPDATE_TIME-constant" class="">DELAYED_UPDATE_TIME =
           
         </dt>
-        <dd><pre class="code"><span class='const'>ENV</span><span class='lbracket'>[</span><span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>DEVELOPMENT</span><span class='tstring_end'>&#39;</span></span><span class='rbracket'>]</span> <span class='op'>?</span> <span class='int'>1</span> <span class='op'>:</span> <span class='int'>1</span></pre></dd>
+        <dd><pre class="code"><span class='const'><span class='object_link'><a href="top-level-namespace.html#DEVELOPMENT-constant" title="DEVELOPMENT (constant)">DEVELOPMENT</a></span></span> <span class='op'>?</span> <span class='int'>1</span> <span class='op'>:</span> <span class='int'>1</span></pre></dd>
       
         <dt id="BASE62_ALPHABET-constant" class="">BASE62_ALPHABET =
           
@@ -1146,7 +1169,7 @@ können sollen</p>
 </div>
 
       <div id="footer">
-  Generated on Wed Feb  3 14:43:07 2021 by
+  Generated on Thu Feb  4 01:04:09 2021 by
   <a href="http://yardoc.org" title="Yay! A Ruby Documentation Tool" target="_parent">yard</a>
   0.9.26 (ruby-2.5.1).
 </div>

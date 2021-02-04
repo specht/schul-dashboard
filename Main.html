@@ -3247,15 +3247,15 @@ href="http://ntlk.net/2011/11/21/convert-rgb-to-hsb-hsv-in-ruby">ntlk.net/2011/1
       <pre class="lines">
 
 
-207
-208
-209
-210
-211
-212</pre>
+212
+213
+214
+215
+216
+217</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'src/ruby/credentials.rb', line 207</span>
+      <pre class="code"><span class="info file"># File 'src/ruby/credentials.rb', line 212</span>
 
 <span class='kw'>def</span> <span class='kw'>self</span><span class='period'>.</span><span class='id identifier rubyid_fix_lesson_key_tr'>fix_lesson_key_tr</span><span class='lparen'>(</span><span class='id identifier rubyid_lesson_key_tr'>lesson_key_tr</span><span class='rparen'>)</span>
     <span class='comment'># manchmal müssen verschiedene lesson_keys zusammengelegt werden:
@@ -3283,11 +3283,6 @@ href="http://ntlk.net/2011/11/21/convert-rgb-to-hsb-hsv-in-ruby">ntlk.net/2011/1
       <pre class="lines">
 
 
-214
-215
-216
-217
-218
 219
 220
 221
@@ -3298,10 +3293,15 @@ href="http://ntlk.net/2011/11/21/convert-rgb-to-hsb-hsv-in-ruby">ntlk.net/2011/1
 226
 227
 228
-229</pre>
+229
+230
+231
+232
+233
+234</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'src/ruby/credentials.rb', line 214</span>
+      <pre class="code"><span class="info file"># File 'src/ruby/credentials.rb', line 219</span>
 
 <span class='kw'>def</span> <span class='kw'>self</span><span class='period'>.</span><span class='id identifier rubyid_fix_lessons_for_shorthand'>fix_lessons_for_shorthand</span>
     <span class='comment'># zusätzliche Stunden für bestimmte Lehrkräfte können hier vergeben werden
@@ -3339,15 +3339,15 @@ href="http://ntlk.net/2011/11/21/convert-rgb-to-hsb-hsv-in-ruby">ntlk.net/2011/1
       <pre class="lines">
 
 
-231
-232
-233
-234
-235
-236</pre>
+236
+237
+238
+239
+240
+241</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'src/ruby/credentials.rb', line 231</span>
+      <pre class="code"><span class="info file"># File 'src/ruby/credentials.rb', line 236</span>
 
 <span class='kw'>def</span> <span class='kw'>self</span><span class='period'>.</span><span class='id identifier rubyid_fix_parsed_klasse'>fix_parsed_klasse</span><span class='lparen'>(</span><span class='id identifier rubyid_klasse'>klasse</span><span class='rparen'>)</span>
     <span class='comment'># In WinSchule ist die Oberstufe (zumindest bei uns) als Klasse 12 und 13
@@ -3375,11 +3375,6 @@ href="http://ntlk.net/2011/11/21/convert-rgb-to-hsb-hsv-in-ruby">ntlk.net/2011/1
       <pre class="lines">
 
 
-160
-161
-162
-163
-164
 165
 166
 167
@@ -3420,10 +3415,15 @@ href="http://ntlk.net/2011/11/21/convert-rgb-to-hsb-hsv-in-ruby">ntlk.net/2011/1
 202
 203
 204
-205</pre>
+205
+206
+207
+208
+209
+210</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'src/ruby/credentials.rb', line 160</span>
+      <pre class="code"><span class="info file"># File 'src/ruby/credentials.rb', line 165</span>
 
 <span class='kw'>def</span> <span class='kw'>self</span><span class='period'>.</span><span class='id identifier rubyid_fix_stundenzeiten'>fix_stundenzeiten</span>
     <span class='comment'># definiert Stundenzeiten ab einem bestimmten Tag, bei Bedarf wiederholen
@@ -9245,7 +9245,7 @@ href="http://ntlk.net/2011/11/21/convert-rgb-to-hsb-hsv-in-ruby">ntlk.net/2011/1
 
 <span class='kw'>def</span> <span class='id identifier rubyid_trigger_send_invites'>trigger_send_invites</span><span class='lparen'>(</span><span class='rparen'>)</span>
     <span class='kw'>begin</span>
-        <span class='id identifier rubyid_http'>http</span> <span class='op'>=</span> <span class='const'>Net</span><span class='op'>::</span><span class='const'>HTTP</span><span class='period'>.</span><span class='id identifier rubyid_new'>new</span><span class='lparen'>(</span><span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>invitation_bot_1</span><span class='tstring_end'>&#39;</span></span><span class='comma'>,</span> <span class='int'>8080</span><span class='rparen'>)</span>
+        <span class='id identifier rubyid_http'>http</span> <span class='op'>=</span> <span class='const'>Net</span><span class='op'>::</span><span class='const'>HTTP</span><span class='period'>.</span><span class='id identifier rubyid_new'>new</span><span class='lparen'>(</span><span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>invitation_bot</span><span class='tstring_end'>&#39;</span></span><span class='comma'>,</span> <span class='int'>8080</span><span class='rparen'>)</span>
         <span class='id identifier rubyid_response'>response</span> <span class='op'>=</span> <span class='id identifier rubyid_http'>http</span><span class='period'>.</span><span class='id identifier rubyid_request'>request</span><span class='lparen'>(</span><span class='const'>Net</span><span class='op'>::</span><span class='const'>HTTP</span><span class='op'>::</span><span class='const'>Get</span><span class='period'>.</span><span class='id identifier rubyid_new'>new</span><span class='lparen'>(</span><span class='tstring'><span class='tstring_beg'>&quot;</span><span class='tstring_content'>/api/send_invites</span><span class='tstring_end'>&quot;</span></span><span class='rparen'>)</span><span class='rparen'>)</span>
     <span class='kw'>rescue</span> <span class='const'>StandardError</span> <span class='op'>=&gt;</span> <span class='id identifier rubyid_e'>e</span>
         <span class='const'>STDERR</span><span class='period'>.</span><span class='id identifier rubyid_puts'>puts</span> <span class='id identifier rubyid_e'>e</span>
@@ -9285,7 +9285,7 @@ href="http://ntlk.net/2011/11/21/convert-rgb-to-hsb-hsv-in-ruby">ntlk.net/2011/1
 
 <span class='kw'>def</span> <span class='id identifier rubyid_trigger_update'>trigger_update</span><span class='lparen'>(</span><span class='id identifier rubyid_which'>which</span><span class='rparen'>)</span>
     <span class='kw'>begin</span>
-        <span class='id identifier rubyid_http'>http</span> <span class='op'>=</span> <span class='const'>Net</span><span class='op'>::</span><span class='const'>HTTP</span><span class='period'>.</span><span class='id identifier rubyid_new'>new</span><span class='lparen'>(</span><span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>timetable_1</span><span class='tstring_end'>&#39;</span></span><span class='comma'>,</span> <span class='int'>8080</span><span class='rparen'>)</span>
+        <span class='id identifier rubyid_http'>http</span> <span class='op'>=</span> <span class='const'>Net</span><span class='op'>::</span><span class='const'>HTTP</span><span class='period'>.</span><span class='id identifier rubyid_new'>new</span><span class='lparen'>(</span><span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>timetable</span><span class='tstring_end'>&#39;</span></span><span class='comma'>,</span> <span class='int'>8080</span><span class='rparen'>)</span>
         <span class='id identifier rubyid_response'>response</span> <span class='op'>=</span> <span class='id identifier rubyid_http'>http</span><span class='period'>.</span><span class='id identifier rubyid_request'>request</span><span class='lparen'>(</span><span class='const'>Net</span><span class='op'>::</span><span class='const'>HTTP</span><span class='op'>::</span><span class='const'>Get</span><span class='period'>.</span><span class='id identifier rubyid_new'>new</span><span class='lparen'>(</span><span class='tstring'><span class='tstring_beg'>&quot;</span><span class='tstring_content'>/api/update/</span><span class='embexpr_beg'>#{</span><span class='id identifier rubyid_which'>which</span><span class='embexpr_end'>}</span><span class='tstring_end'>&quot;</span></span><span class='rparen'>)</span><span class='rparen'>)</span>
     <span class='kw'>rescue</span> <span class='const'>StandardError</span> <span class='op'>=&gt;</span> <span class='id identifier rubyid_e'>e</span>
         <span class='const'>STDERR</span><span class='period'>.</span><span class='id identifier rubyid_puts'>puts</span> <span class='id identifier rubyid_e'>e</span>
@@ -9325,7 +9325,7 @@ href="http://ntlk.net/2011/11/21/convert-rgb-to-hsb-hsv-in-ruby">ntlk.net/2011/1
 
 <span class='kw'>def</span> <span class='id identifier rubyid_trigger_update_images'>trigger_update_images</span><span class='lparen'>(</span><span class='rparen'>)</span>
     <span class='kw'>begin</span>
-        <span class='id identifier rubyid_http'>http</span> <span class='op'>=</span> <span class='const'>Net</span><span class='op'>::</span><span class='const'>HTTP</span><span class='period'>.</span><span class='id identifier rubyid_new'>new</span><span class='lparen'>(</span><span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>image_bot_1</span><span class='tstring_end'>&#39;</span></span><span class='comma'>,</span> <span class='int'>8080</span><span class='rparen'>)</span>
+        <span class='id identifier rubyid_http'>http</span> <span class='op'>=</span> <span class='const'>Net</span><span class='op'>::</span><span class='const'>HTTP</span><span class='period'>.</span><span class='id identifier rubyid_new'>new</span><span class='lparen'>(</span><span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>image_bot</span><span class='tstring_end'>&#39;</span></span><span class='comma'>,</span> <span class='int'>8080</span><span class='rparen'>)</span>
         <span class='id identifier rubyid_response'>response</span> <span class='op'>=</span> <span class='id identifier rubyid_http'>http</span><span class='period'>.</span><span class='id identifier rubyid_request'>request</span><span class='lparen'>(</span><span class='const'>Net</span><span class='op'>::</span><span class='const'>HTTP</span><span class='op'>::</span><span class='const'>Get</span><span class='period'>.</span><span class='id identifier rubyid_new'>new</span><span class='lparen'>(</span><span class='tstring'><span class='tstring_beg'>&quot;</span><span class='tstring_content'>/api/update_all</span><span class='tstring_end'>&quot;</span></span><span class='rparen'>)</span><span class='rparen'>)</span>
     <span class='kw'>rescue</span> <span class='const'>StandardError</span> <span class='op'>=&gt;</span> <span class='id identifier rubyid_e'>e</span>
         <span class='const'>STDERR</span><span class='period'>.</span><span class='id identifier rubyid_puts'>puts</span> <span class='id identifier rubyid_e'>e</span>
@@ -9637,7 +9637,7 @@ href="http://ntlk.net/2011/11/21/convert-rgb-to-hsb-hsv-in-ruby">ntlk.net/2011/1
 </div>
 
       <div id="footer">
-  Generated on Wed Feb  3 14:43:08 2021 by
+  Generated on Thu Feb  4 01:04:09 2021 by
   <a href="http://yardoc.org" title="Yay! A Ruby Documentation Tool" target="_parent">yard</a>
   0.9.26 (ruby-2.5.1).
 </div>

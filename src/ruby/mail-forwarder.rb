@@ -59,6 +59,12 @@ class Script
                 :recipients => VERTEILER_DEVELOPMENT_EMAILS
             }
         end
+        begin
+            imap = Net::IMAP.new(SCHUL_MAIL_LOGIN_IMAP_HOST)
+        rescue
+            STDERR.puts "Unable to resolve #{SCHUL_MAIL_LOGIN_IMAP_HOST}, exiting..."
+            exit(1)
+        end
         STDERR.puts "Mail forwarder ready with #{@mailing_lists.size} mailing lists at #{MAILING_LIST_EMAIL}!"
     end
     

@@ -242,4 +242,4 @@ FileUtils::mkpath(File::join(INTERNAL_PATH, 'vote'))
 FileUtils::mkpath(NEO4J_DATA_PATH)
 FileUtils::mkpath(NEO4J_LOGS_PATH)
 
-system("docker-compose --project-name #{PROJECT_NAME} #{ARGV.join(' ')}")
+system("docker-compose --project-name #{PROJECT_NAME} #{ARGV.map { |x| '"' + x + '"'}.join(' ')}")

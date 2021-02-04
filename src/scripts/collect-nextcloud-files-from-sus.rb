@@ -4,7 +4,6 @@ require 'date'
 require 'fileutils'
 require 'set'
 require 'yaml'
-require 'date'
 
 if Process.uid != 0
     STDERR.puts "This script must be run as root!"

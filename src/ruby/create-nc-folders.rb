@@ -48,7 +48,7 @@ class Script
                 end
             end
         end
-        emit "php occ files:scan #{NEXTCLOUD_USER}"
+        emit "php occ files:scan #{File::basename(NEXTCLOUD_DASHBOARD_DATA_DIRECTORY)}"
     end
 end
 

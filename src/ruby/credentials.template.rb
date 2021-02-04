@@ -93,7 +93,9 @@ NEXTCLOUD_URL = 'http://localhost:8024'
 NEXTCLOUD_URL_FROM_RUBY_CONTAINER = 'http://nextcloud'
 NEXTCLOUD_USER = 'dashboard'
 NEXTCLOUD_PASSWORD = 'hunter2_bitte_etwas_anderes_waehlen'
+# NEXTCLOUD_DASHBOARD_DATA_DIRECTORY muss ein absoluter Pfad sein 
 NEXTCLOUD_DASHBOARD_DATA_DIRECTORY = '/var/www/html/data/dashboard'
+NEXTCLOUD_WAIT_SECONDS = 0
 
 # Das Skript share-nc-folders.rb muss sich als jeder Nutzer in der NextCloud
 # anmelden können. Dazu kann die NC-App »External user authentication«

@@ -22,7 +22,7 @@ class Script
     
     def run
         emit "#!/bin/bash"
-        base_path = File.join(NEXTCLOUD_DATA_DIRECTORY, NEXTCLOUD_USER, 'files')
+        base_path = File.join(NEXTCLOUD_DASHBOARD_DATA_DIRECTORY, 'files')
         exit_if_not_exists(base_path)
         @@user_info = Main.class_variable_get(:@@user_info)
         @@faecher = Main.class_variable_get(:@@faecher)

@@ -1130,6 +1130,25 @@ span.bv {
     margin-bottom: 5px;
 }
 
+.button-with-label-relaxed button.btn {
+/*     width: 100%; */
+/*     position: absolute; */
+/*     padding-left: 15px; */
+/*     left: 0; */
+}
+
+.button-with-label-relaxed span {
+    display: inline-block;
+    font-size: 10pt;
+    position: relative;
+    line-height: 100%;
+/*     font-family: 'Roboto Condensed'; */
+    color: #444;
+/*     margin-right: 15px; */
+/*     margin-bottom: 5px; */
+    margin-left: 15px;
+}
+
 .explanation {
     font-size: 10pt;
     line-height: 100%;
@@ -1868,4 +1887,13 @@ tr.pb-0 td {
     color: #000;
     font-size: 80%;
     padding-top: 4px;
+}
+
+hr.poll-entry-divider {
+    clear: both;  
+    box-shadow: 0 6px 10px -6px rgba(0, 0, 0, 0.7);
+    height: 1rem;
+    border-top: none;
+    margin-left: -15px;
+    margin-right: -15px;
 }

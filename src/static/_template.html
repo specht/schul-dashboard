@@ -137,6 +137,38 @@
 </head>
 
 <body>
+
+<div class="modal" id="__template_modal" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true" style='z-index: 200000;'>
+  <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" >
+        </h5>
+      </div>
+      <div class="modal-body">
+      </div>
+      <div class="modal-footer">
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+function showTemplateModal(title, text, confirm_label, confirm_class,
+    cancel_label, cancel_class, confirm_callback) {
+    $('#__template_modal .modal-title').html(title);
+    $('#__template_modal .modal-body').html(text);
+    let bu_confirm = $('<button>').addClass('btn ' + confirm_class).html(confirm_label);
+    let bu_cancel = $('<button>').addClass('btn ' + cancel_class).html(cancel_label).attr('data-dismiss', 'modal');
+    $('#__template_modal .modal-footer').empty().append(bu_confirm).append(bu_cancel);
+    bu_confirm.click(function(e) {
+        confirm_callback();
+        $('#__template_modal').modal('hide');
+    });
+    $('#__template_modal').modal('show');
+}
+</script>
+
 <nav class="navbar navbar-expand-md navbar-light fixed-top justify-content-end">
         <a class="navbar-brand" href="/"><img src='/#{SCHUL_ICON}' style='width: 24px; height: 24px; position: relative; top: -2px;' /><span class='brand-brand'>&nbsp;&nbsp;{BRAND}</span></a>
     <div class='ml-auto'></div>

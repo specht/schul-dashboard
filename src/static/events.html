@@ -493,14 +493,20 @@ function update_external_users_for_session_user() {
         let bu_delete = $('<button>').data('email', email).addClass('btn').addClass('btn-xs').addClass('btn-danger').html("<i class='fa fa-trash'></i>");
         row.append($('<td>').append(bu_delete));
         bu_delete.click(function(e) {
-            let email = $(e.target).closest('.btn').data('email');
-            api_call('/api/delete_external_user', {email: email}, function(data) {
-                if (data.success) {
-                    external_users_for_session_user = data.ext_users;
-                    update_external_users_for_session_user();
-                    load_recipients('#{@session_user[:id]}', function() {}, external_users_for_session_user);
+            showTemplateModal('Externen Teilnehmer löschen', 
+                'Sind Sie sicher, dass Sie diesen externen Teilnehmer aus Ihrem Adressbuch löschen möchten?',
+                "<i class='fa fa-trash'></i>&nbsp;&nbsp;Externen Teilnehmer löschen", 'btn-danger',
+                'Abbrechen', 'btn-secondary', function() {
+                    let email = $(e.target).closest('.btn').data('email');
+                    api_call('/api/delete_external_user', {email: email}, function(data) {
+                        if (data.success) {
+                            external_users_for_session_user = data.ext_users;
+                            update_external_users_for_session_user();
+                            load_recipients('#{@session_user[:id]}', function() {}, external_users_for_session_user);
+                        }
+                    });
                 }
-            });
+            );
         });
         $('.ext-users-here').append(row);
     };
@@ -572,7 +578,13 @@ document.addEventListener('DOMContentLoaded', function() {
     });
     
     $('#bu_delete_event').click(function(e) {
-        delete_event();
+        showTemplateModal('Termin löschen', 
+            'Sind Sie sicher, dass Sie diesen Termin löschen möchten?',
+            "<i class='fa fa-trash'></i>&nbsp;&nbsp;Termin löschen", 'btn-danger',
+            'Abbrechen', 'btn-secondary', function() {
+                delete_event();
+            }
+        );
     });
     
     $('#ti_recipients').keydown(function(e) {

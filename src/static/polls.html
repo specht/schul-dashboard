@@ -3,6 +3,14 @@
     <div class='row'>
         <div class='col-md-12'>
             <h2 style='margin-bottom: 30px;'>Umfragen</h2>
+            <div class='alert alert-warning'>
+            Dieser Teil des Dashboards wird gerade aufgebaut. Sie können bereits Umfragen erstellen, 
+            die später mehrfach mit unterschiedlichen Teilnehmern (SuS, Kolleginnen und Kollegen, Eltern, 
+            externen Teilnehmern) zu verschiedenen Zeitpunkten durchgeführt werden können. 
+            Umfragen, die Sie jetzt erstellen, gehen nicht verloren.
+            <br />
+            <strong>Tipp:</strong> Sie können Umfragen auch als Tests im saLzH verwenden.
+            </div>
             <button class='btn btn-success bu-new-poll'><i class='fa fa-plus-circle'></i>&nbsp;&nbsp;Neue Umfrage</button>
             <hr />
             <div class='polls-container'>
@@ -361,12 +369,13 @@ function edit_poll(poll) {
 
     $('.recipients_list').empty();
     recipients_list = {};
-    for (let email of poll.recipients || []) {
-        recipients_list[email] = true;
-        $('.recipients_list').append(gen_recipient_span(email, true));
-    }
+//     console.log(poll);
+//     for (let email of poll.recipients || []) {
+//         recipients_list[email] = true;
+//         $('.recipients_list').append(gen_recipient_span(email, true));
+//     }
     old_pid = poll.pid;
-    update_net_recipients_list();
+//     update_net_recipients_list();
     $('#composeModal').modal('show');
     force_close = false;
     $('.lb_title').text(poll.poll.title);
@@ -493,8 +502,13 @@ function update_current_poll() {
                 ti.change(function(e) {
                     let item_index = $(e.target).data('item-index');
                     let answer_index = $(e.target).data('answer-index');
-                    current_poll.items[item_index].answers[answer_index] = $(e.target).val().trim();
+                    let value = $(e.target).val().trim();
+                    let items = value.split('|');
+                    for (let i = 0; i < items.length; i++)
+                        current_poll.items[item_index].answers.splice(answer_index + i, (i == 0) ? 1 : 0, items[i].trim());
                     update_buttons();
+                    if (items.length > 1)
+                        update_current_poll();
                 });
                 if (answer_index === 0)
                     bu_up.prop('disabled', true);
@@ -530,6 +544,7 @@ function update_current_poll() {
                 bc.append(input_group);
             }
             div.append(bc);
+            let bu_add_answer_div = $('<div>').addClass('button-with-label-relaxed');
             let bu_add_answer = $('<button>').addClass('btn').addClass('btn-sm').addClass('btn-success').html("<i class='fa fa-plus'></i>&nbsp;&nbsp;Antwortmöglichkeit hinzufügen").data('item-index', item_index);
             bu_add_answer.click(function(e) {
                 let item_index = $(e.target).data('item-index');
@@ -537,7 +552,9 @@ function update_current_poll() {
                 update_current_poll();
                 $('input').filter(`[data-item-index='${item_index}']`).filter(`[data-answer-index='${current_poll.items[item_index].answers.length - 1}']`).focus();
             });
-            div.append(bu_add_answer);
+            bu_add_answer_div.append(bu_add_answer);
+            bu_add_answer_div.append($('<span>').text('Hinweis: Sie können mehrere Antwortmöglichkeiten auf einmal hinzufügen, indem Sie sie die einzelnen Antworten mit | trennen'));
+            div.append(bu_add_answer_div);
         } else if (item.type === 'textarea') {
             let textarea = $('<textarea>').addClass('form-control');
             textarea.prop('disabled', true).attr('placeholder', '(Platz für Eingaben)');
@@ -551,7 +568,7 @@ function update_current_poll() {
             });
             div.append(p);
         }
-        div.append($('<hr />').css('clear', 'both'));
+        div.append($('<hr />').addClass('poll-entry-divider'));
     }
     update_buttons();
 }
@@ -625,7 +642,13 @@ document.addEventListener('DOMContentLoaded', function() {
     });
     
     $('#bu_delete_poll').click(function(e) {
-        delete_poll();
+        showTemplateModal('Umfrage löschen', 
+            'Sind Sie sicher, dass Sie diese Umfrage löschen möchten?',
+            "<i class='fa fa-trash'></i>&nbsp;&nbsp;Umfrage löschen", 'btn-danger',
+            'Abbrechen', 'btn-secondary', function() {
+                delete_poll();
+            }
+        );
     });
     
     $('#ti_recipients').keydown(function(e) {
@@ -801,5 +824,6 @@ document.addEventListener('DOMContentLoaded', function() {
         current_poll.title = $(e.target).val().trim();
         update_buttons();
     });
+//     edit_poll(stored_polls[0]);
 });
 </script>

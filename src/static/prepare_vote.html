@@ -70,10 +70,16 @@ function refresh_votes() {
                 let bu_delete = $('<button>').addClass('btn').addClass('btn-xs').addClass('btn-danger').html("<i class='fa fa-trash'></i>&nbsp;&nbsp;Löschen");
                 bu_delete.data('code', entry.code);
                 bu_delete.click(function(e) {
-                    api_call('/api/delete_vote', {code: $(e.target).data('code')}, function(data) {
-                        if (data.success)
-                            refresh_votes();
-                    });
+                    showTemplateModal('Abstimmung löschen', 
+                        'Sind Sie sicher, dass Sie diese Abstimmung löschen möchten?',
+                        "<i class='fa fa-trash'></i>&nbsp;&nbsp;Abstimmung löschen", 'btn-danger',
+                        'Abbrechen', 'btn-secondary', function() {
+                            api_call('/api/delete_vote', {code: $(e.target).data('code')}, function(data) {
+                                if (data.success)
+                                    refresh_votes();
+                            });
+                        }
+                    );
                 });
                 row.append($('<td>').append(bu_delete));
                 $('#votes_here').append(row);

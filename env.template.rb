@@ -9,8 +9,8 @@ DEVELOPMENT = true
 # Präfix für Docker-Container-Namen
 PROJECT_NAME = 'schuldashboard' + (DEVELOPMENT ? 'dev' : '')
 
-# UID für Prozesse
-UID = 1000
+# UID für Prozesse, muss in Produktionsumgebungen vtml. auf einen konkreten Wert gesetzt werden
+UID = Process::UID.eid
 
 # Domain, auf der die Live-Seite läuft
 WEBSITE_HOST = 'dashboard.beispielschule.de'

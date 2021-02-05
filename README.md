@@ -2,7 +2,9 @@
 
 Das Schul-Dashboard wurde am [Gymnasium Steglitz](https://gymnasiumsteglitz.de/) entwickelt, um SuS und Lehrkräften einen Einstiegspunkt für die täglichen Abläufe im Distanzunterricht zu bieten.
 
-Es gibt ein paar Videos, die zeigen, worum es dabei geht:
+[![](https://img.youtube.com/vi/u4iO_B5rMf0/maxresdefault.jpg)](https://youtu.be/u4iO_B5rMf0 "E-Learning am Gymnasium Steglitz")
+
+Es gibt ein paar Videos, die noch detaillierter zeigen, worum es dabei geht:
 
 - [Dashboard am Gymnasium Steglitz (Kurzversion für Schülerinnen und Schüler)](https://youtu.be/EGQ0Gkeu1To)
 - [Dashboard am Gymnasium Steglitz (ausführliche Version für Lehrkräfte)](https://youtu.be/BYqWu9Yft8s)
@@ -18,7 +20,7 @@ Es gibt ein paar Videos, die zeigen, worum es dabei geht:
 
 ## Schnellstart
 
-[![](https://img.youtube.com/vi/n_n6gJdkBxY/maxresdefault.jpg)](http://www.youtube.com/watch?v=n_n6gJdkBxY "Starte dein eigenes Schul-Dashboard in 6 Minuten")
+[![](https://img.youtube.com/vi/n_n6gJdkBxY/maxresdefault.jpg)](https://youtu.be/n_n6gJdkBxY "Starte dein eigenes Schul-Dashboard in 6 Minuten")
 
 ## Dokumentation
 

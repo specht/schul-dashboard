@@ -171,7 +171,7 @@ input {
 .foot a {
     color: #666;
     position: relative;
-    top: -2px;
+/*     top: -2px; */
 }
 
 .foot span {

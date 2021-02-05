@@ -16,6 +16,10 @@ Es gibt ein paar Videos, die zeigen, worum es dabei geht:
 - Anmeldung ohne Passwort, dafür mit Zahlencode, der per E-Mail versendet wird oder alternativ per OTP
 - mit Hilfe eines persönlichen iCal-Links kann der aktuelle Dashboard-Stundenplan in andere Kalender eingebunden werden
 
+## Schnellstart
+
+[![](https://img.youtube.com/vi/n_n6gJdkBxY/maxresdefault.jpg)](http://www.youtube.com/watch?v=n_n6gJdkBxY "Starte dein eigenes Schul-Dashboard in 6 Minuten")
+
 ## Dokumentation
 
 Es gibt eine ausführliche [Dokumentation](https://specht.github.io/schul-dashboard/).

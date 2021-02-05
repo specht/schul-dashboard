@@ -2536,9 +2536,7 @@ class Main < Sinatra::Base
                     io.puts "<a class='dropdown-item nav-icon' href='/login_nc'><div class='icon'><i class='fa fa-nextcloud'></i></div><span class='label'>In Nextcloud anmelden…</span></a>"
                     if @session_user[:teacher]
                         io.puts "<div class='dropdown-divider'></div>"
-                        if DEVELOPMENT
-                            io.puts "<a class='dropdown-item nav-icon' href='/polls'><div class='icon'><i class='fa fa-check-circle'></i></div><span class='label'>Umfragen</span></a>"
-                        end
+                        io.puts "<a class='dropdown-item nav-icon' href='/polls'><div class='icon'><i class='fa fa-check-circle'></i></div><span class='label'>Umfragen</span></a>"
                         io.puts "<a class='dropdown-item nav-icon' href='/prepare_vote'><div class='icon'><i class='fa fa-group'></i></div><span class='label'>Abstimmungen</span></a>"
                     end
                     if @session_user[:can_upload_vplan]

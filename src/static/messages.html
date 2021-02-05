@@ -384,7 +384,13 @@ document.addEventListener('DOMContentLoaded', function() {
     });
     
     $('#bu_delete_message').click(function(e) {
-        delete_message();
+        showTemplateModal('Nachricht löschen', 
+            'Sind Sie sicher, dass Sie diese Nachricht löschen möchten?',
+            "<i class='fa fa-trash'></i>&nbsp;&nbsp;Nachricht löschen", 'btn-danger',
+            'Abbrechen', 'btn-secondary', function() {
+                delete_message();
+            }
+        );
     });
     
     $('#bu-inbox').click(function(e) {

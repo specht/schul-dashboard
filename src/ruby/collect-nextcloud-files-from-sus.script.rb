@@ -181,7 +181,7 @@ end.each do |x|
         end
     else
         # We couldn't find an unambiguous match, do nothing.
-        STDERR.puts "[#{parts[2]}] found no match, skipping"
+        STDERR.puts "Found no match for: #{relpath}, skipping..."
         skipped_return_lesson_keys << lesson_key
     end
 end

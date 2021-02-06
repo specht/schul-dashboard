@@ -1854,25 +1854,46 @@ class Main < Sinatra::Base
         require_teacher!
         temp = neo4j_query_expect_one(<<~END_OF_QUERY, {:prid => prid, :email => @session_user[:email]})
             MATCH (pu)-[rt:IS_PARTICIPANT]->(pr:PollRun {id: {prid}})-[:RUNS]->(p:Poll)-[:ORGANIZED_BY]->(au:User {email: {email}})
-            WHERE COALESCE(rt.deleted, false) = false
-            RETURN pr, p, COUNT(pu) AS participant_count;
+            WHERE COALESCE(p.deleted, false) = false 
+            AND COALESCE(pr.deleted, false) = false
+            AND COALESCE(rt.deleted, false) = false
+            RETURN au.email, pr, p, COUNT(pu) AS participant_count;
         END_OF_QUERY
+        participants = neo4j_query(<<~END_OF_QUERY, {:prid => prid, :email => @session_user[:email]})
+            MATCH (pu)-[rt:IS_PARTICIPANT]->(pr:PollRun {id: {prid}})-[:RUNS]->(p:Poll)-[:ORGANIZED_BY]->(au:User {email: {email}})
+            WHERE COALESCE(p.deleted, false) = false 
+            AND COALESCE(pr.deleted, false) = false
+            AND COALESCE(rt.deleted, false) = false
+            RETURN labels(pu), pu.email, pu.name
+        END_OF_QUERY
+        participants = Hash[participants.map do |x|
+            [x['pu.email'], x['pu.name'] || (@@user_info[x['pu.email']] || {})[:display_name] || 'NN']
+        end]
         poll = temp['p'].props
         poll_run = temp['pr'].props
+        poll[:organizer] = (@@user_info[temp['au.email']] || {})[:display_last_name]
         poll_run[:items] = JSON.parse(poll_run[:items])
         poll_run[:participant_count] = temp['participant_count']
+        poll_run[:participants] = participants
         responses = neo4j_query(<<~END_OF_QUERY, {:prid => prid, :email => @session_user[:email]}).map { |x| {:response => JSON.parse(x['prs.response']), :email => x['u.email']} }
             MATCH (u)<-[:RESPONSE_BY]-(prs:PollResponse)-[:RESPONSE_TO]->(pr:PollRun {id: {prid}})-[:RUNS]->(p:Poll)-[:ORGANIZED_BY]->(au:User {email: {email}})
             WHERE (u:User OR u:ExternalUser OR u:PredefinedExternalUser)
             RETURN u.email, prs.response;
         END_OF_QUERY
+        responses.sort! { |a, b| participants[a] <=> participants[b] }
         return poll, poll_run, responses
     end
     
     def poll_run_results_to_html(poll, poll_run, responses, target = :web)
         StringIO.open do |io|
+            io.puts "<h3>Umfrage: #{poll[:title]}</h3>"
+            io.puts "<p>Diese #{poll_run[:anonymous] ? 'anonyme' : 'personengebundene'} Umfrage wurde von #{poll[:organizer].sub('Herr ', 'Herrn ')} mit #{poll_run[:participant_count]} Teilnehmern am #{Date.parse(poll_run[:start_date]).strftime('%d.%m.%Y')} durchgeführt.</p>"
             io.puts "<div class='alert alert-info'>"
             io.puts "Von #{poll_run[:participant_count]} Teilnehmern haben #{responses.size} die Umfrage beantwortet (#{(responses.size * 100 / poll_run[:participant_count]).to_i}%)."
+            unless poll_run[:anonymous]
+                missing_responses_from = (Set.new(poll_run[:participants].keys) - Set.new(responses.map { |x| x[:email]})).map { |x| poll_run[:participants][x] }.sort
+                io.puts "Es fehlen Antworten von: <em>#{missing_responses_from.join(', ')}</em>."
+            end
             io.puts "</div>"
             poll_run[:items].each_with_index do |item, item_index|
                 item = item.transform_keys(&:to_sym)
@@ -1887,6 +1908,7 @@ class Main < Sinatra::Base
                     end
                     io.puts "</p>"
                     histogram = {}
+                    participants_for_answer = {}
                     (0...item[:answers].size).each { |x| histogram[x] = 0 }
                     responses.each do |entry|
                         response = entry[:response]
@@ -1894,10 +1916,14 @@ class Main < Sinatra::Base
                             value = response[item_index.to_s]
                             unless value.nil?
                                 histogram[value] += 1
+                                participants_for_answer[value] ||= []
+                                participants_for_answer[value] << entry[:email]
                             end
                         else
                             (response[item_index.to_s] || []).each do |value|
                                 histogram[value] += 1
+                                participants_for_answer[value] ||= []
+                                participants_for_answer[value] << entry[:email]
                             end
                         end
                     end
@@ -1908,10 +1934,17 @@ class Main < Sinatra::Base
                     (0...item[:answers].size).each do |answer_index| 
                         v = histogram[answer_index]
                         io.puts "<tr class='pb-0'><td>#{item[:answers][answer_index]}</td><td style='text-align: right;'>#{v == 0 ? '&ndash;' : v}</td></tr>"
-                        io.puts "<tr class='noborder'><td colspan='2'>"
+                        io.puts "<tr class='noborder pdf-space-below'><td colspan='2'>"
                         io.puts "<div class='progress'>"
-                        io.puts "<div class='progress-bar progress-bar-striped bg-info' role='progressbar' style='width: #{(v * 100.0 / sum).round}%' aria-valuenow='50' aria-valuemin='0' aria-valuemax='100'>#{(v * 100.0 / sum).round}%</div>"
+                        io.puts "<div class='progress-bar progress-bar-striped bg-info' role='progressbar' style='width: #{(v * 100.0 / sum).round}%' aria-valuenow='50' aria-valuemin='0' aria-valuemax='100'><span>#{(v * 100.0 / sum).round}%</span></div>"
                         io.puts "</div>"
+                        unless poll_run[:anonymous]
+                            if participants_for_answer[answer_index]
+                                io.puts "<em>#{(participants_for_answer[answer_index] || []).map { |x| poll_run[:participants][x]}.join(', ')}</em>"
+                            else
+                                io.puts "<em>&ndash;</em>"
+                            end
+                        end
                         io.puts "</td></tr>"
                     end
                     io.puts "</tbody>"
@@ -1925,11 +1958,52 @@ class Main < Sinatra::Base
                         response = entry[:response][item_index.to_s].strip
                         unless response.empty?
                             io.puts "<hr />" unless first_response
-                            io.puts "<p>#{response}</p>"
+                            if poll_run[:anonymous]
+                                io.puts "<p>#{response}</p>"
+                            else
+                                io.puts "<p><em>#{poll_run[:participants][entry[:email]]}</em>: #{response}</p>"
+                            end
                             first_response = false
                         end
                     end
                     
+                end
+            end
+            unless poll_run[:anonymous]
+                responses.each do |entry|
+                    io.puts "<div class='page-break'></div>"
+                    io.puts "<h3>Einzelauswertung: #{poll_run[:participants][entry[:email]]}</h3>"
+                    poll_run[:items].each_with_index do |item, item_index|
+                        item = item.transform_keys(&:to_sym)
+                        if item[:type] == 'paragraph'
+                            io.puts "<p><strong>#{item[:title]}</strong></p>" unless (item[:title] || '').strip.empty?
+                            io.puts "<p>#{item[:text]}</p>" unless (item[:text] || '').strip.empty?
+                        elsif item[:type] == 'radio'
+                            io.puts "<p>"
+                            io.puts "<strong>#{item[:title]}</strong>"
+                            io.puts "</p>"
+                            answer = entry[:response][item_index.to_s]
+                            unless answer.nil?
+                                io.puts "<p>#{item[:answers][answer]}</p>"
+                            end
+                        elsif item[:type] == 'radio' || item[:type] == 'checkbox'
+                            io.puts "<p>"
+                            io.puts "<strong>#{item[:title]}</strong>"
+                            io.puts " <em>(Mehrfachnennungen möglich)</em>"
+                            io.puts "</p>"
+                            unless entry[:response][item_index.to_s].nil?
+                                io.puts "<p>"
+                                io.puts entry[:response][item_index.to_s].map { |answer| item[:answers][answer]}.join(', ')
+                                io.puts "</p>"
+                            end
+                        elsif item[:type] == 'textarea'
+                            io.puts "<p>"
+                            io.puts "<strong>#{item[:title]}</strong>"
+                            io.puts "</p>"
+                            response = entry[:response][item_index.to_s].strip
+                            io.puts "<p>#{response}</p>" unless response.empty?
+                        end
+                    end
                 end
             end
             io.string
@@ -1948,20 +2022,24 @@ class Main < Sinatra::Base
         require_teacher!
         prid = request.path.sub('/api/poll_run_results_pdf/', '')
         poll, poll_run, responses = get_poll_run_results(prid)
-        main = self
-        doc = Prawn::Document.new(:page_size => 'A4', :page_layout => :portrait) do
-#             font('/app/fonts/RobotoCondensed-Regular.ttf') do
-                font_size 12
-                now_ts = "#{Date.today.strftime('%Y-%m-%d')}T#{Time.now.strftime('%H:%M')}:00"
-                preliminary = now_ts < "#{poll_run[:end_date]}T#{poll_run[:end_time]}:00"
-                styled_text "<h4>#{preliminary ? 'Vorläufige' : ''} Umfrageergebnisse: #{poll[:title]}</h4>"
-                html = main.poll_run_results_to_html(poll, poll_run, responses, :pdf)
-                
-                styled_text html
-#             end
+        html = poll_run_results_to_html(poll, poll_run, responses, :pdf)
+        css = StringIO.open do |io|
+            io.puts "<style>"
+            io.puts "body { font-size: 12pt; line-height: 120%; }"
+            io.puts "table { width: 100%; }"
+            io.puts ".progress { width: 100%; background-color: #ccc; }"
+            io.puts ".progress-bar { position: relative; background-color: #888; text-align: right; overflow: hidden; }"
+            io.puts ".progress-bar span { margin-right: 0.5em; }"
+            io.puts ".pdf-space-above td {padding-top: 0.2em; }"
+            io.puts ".pdf-space-below td {padding-bottom: 0.2em; }"
+            io.puts ".page-break { page-break-after: always; border-top: none; margin-bottom: 0; }"
+            io.puts "</style>"
+            io.string
         end
-#         respond_raw_with_mimetype_and_filename(doc.render, 'application/pdf', "Umfrageergebnisse #{poll[:title]}.pdf")
-        respond_raw_with_mimetype(doc.render, 'application/pdf')
+        c = Curl.post('http://weasyprint:5001/pdf', {:data => css + html}.to_json)
+        pdf = c.body_str
+#         respond_raw_with_mimetype_and_filename(pdf, 'application/pdf', "Umfrageergebnisse #{poll[:title]}.pdf")
+        respond_raw_with_mimetype(pdf, 'application/pdf')
     end
 
     post '/api/save_poll' do
@@ -3463,7 +3541,7 @@ class Main < Sinatra::Base
             end
             io.puts "</div>"
             io.puts "<hr />"
-            io.puts "<a href='/jitsi/Lehrerzimmer' target='_blank' class='float-right btn btn-success'><i class='fa fa-microphone'></i>&nbsp;&nbsp;Lehrerzimmer&nbsp;<i class='fa fa-angle-double-right'></i></a>"
+            io.puts "<a href='/jitsi/Lehrerzimmer' target='_blank' style='white-space: nowrap;' class='float-right btn btn-success'><i class='fa fa-microphone'></i>&nbsp;&nbsp;Lehrerzimmer&nbsp;<i class='fa fa-angle-double-right'></i></a>"
             io.puts "<div style='clear: both;'></div>"
             io.puts "</div>"
             io.string
@@ -3501,7 +3579,7 @@ class Main < Sinatra::Base
                 io.puts "</div>"
                 io.puts "<div>#{@@user_info[organizer][:display_last_name]} hat #{teacher_logged_in? ? 'Sie' : 'dich'} zu einer Umfrage eingeladen: <strong>#{poll_title}</strong>. #{teacher_logged_in? ? 'Sie können' : 'Du kannst'} bis zum #{Date.parse(poll_run[:end_date]).strftime('%d.%m.%Y')} um #{poll_run[:end_time]} Uhr teilnehmen (die Umfrage <span class='moment-countdown' data-target-timestamp='#{poll_run[:end_date]}T#{poll_run[:end_time]}:00' data-before-label='läuft noch' data-after-label='ist vorbei'></span>).</div>"
                 io.puts "<hr />"
-                io.puts "<button class='float-right btn btn-success bu-launch-poll' data-poll-run-id='#{poll_run[:id]}'>Zur Umfrage&nbsp;<i class='fa fa-angle-double-right'></i></button>"
+                io.puts "<button style='white-space: nowrap;' class='float-right btn btn-success bu-launch-poll' data-poll-run-id='#{poll_run[:id]}'>Zur Umfrage&nbsp;<i class='fa fa-angle-double-right'></i></button>"
                 io.puts "<div style='clear: both;'></div>"
                 io.puts "</div>"
             end

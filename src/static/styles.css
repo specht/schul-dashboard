@@ -1914,3 +1914,11 @@ hr.poll-entry-divider {
 .side-panel hr {
     margin: 5px 0 8px 0;
 }
+
+@media (max-width: 1199px) {
+    #pollResponseModal .btn:disabled {
+        display: none;
+    }
+}
+
+.page-break { border-top: 1px solid rgba(0,0,0,0.3); margin-bottom: 15px; }

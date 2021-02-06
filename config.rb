@@ -221,7 +221,10 @@ end
 
 docker_compose[:services].each_pair do |k, v|
     v[:networks] = {:main => {:aliases => [k]}}
+    v[:environment] ||= []
+    v[:environment] << "DASHBOARD_SERVICE=#{k}"
 end
+
 
 File::open('docker-compose.yaml', 'w') do |f|
     f.puts "# NOTICE: don't edit this file directly, use config.rb instead!\n"

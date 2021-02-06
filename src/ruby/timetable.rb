@@ -1634,6 +1634,20 @@ class Timetable
                     RETURN u.email;
                 END_OF_QUERY
                 add_these_lesson_keys << "_#{ou_email}"
+            elsif lesson_key =~ /^_poll_run_/
+                poll_run_id = lesson_key.sub('_poll_run_', '')
+                rows = neo4j_query(<<~END_OF_QUERY, {:prid => poll_run_id}).map { |x| x['u.email'] }
+                    MATCH (u:User)-[:IS_PARTICIPANT]->(pr:PollRun {id: {prid}})
+                    RETURN u.email;
+                END_OF_QUERY
+                rows.each do |email|
+                    add_these_lesson_keys << "_#{email}"
+                end
+                ou_email = neo4j_query_expect_one(<<~END_OF_QUERY, {:prid => poll_run_id})['u.email']
+                    MATCH (pr:PollRun {id: {prid}})-[:RUNS]->(p:Poll)-[:ORGANIZED_BY]->(u:User)
+                    RETURN u.email;
+                END_OF_QUERY
+                add_these_lesson_keys << "_#{ou_email}"
             end
         end
         # now fetch all updated info nodes

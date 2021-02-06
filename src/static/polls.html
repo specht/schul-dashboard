@@ -3,23 +3,16 @@
     <div class='row'>
         <div class='col-md-12'>
             <h2 style='margin-bottom: 30px;'>Umfragen</h2>
-            <div class='alert alert-warning'>
-            Dieser Teil des Dashboards wird gerade aufgebaut. Sie können bereits Umfragen erstellen, 
-            die später mehrfach mit unterschiedlichen Teilnehmern (SuS, Kolleginnen und Kollegen, Eltern, 
-            externen Teilnehmern) zu verschiedenen Zeitpunkten durchgeführt werden können. 
-            Umfragen, die Sie jetzt erstellen, gehen nicht verloren.
-            <br />
-            <strong>Tipp:</strong> Sie können Umfragen auch als Tests im saLzH verwenden.
-            </div>
             <button class='btn btn-success bu-new-poll'><i class='fa fa-plus-circle'></i>&nbsp;&nbsp;Neue Umfrage</button>
             <hr />
             <div class='polls-container'>
-                <table class='table table-striped narrow'>
+                <table class='table narrow'>
                 <thead>
-                    <tr>
+                    <tr style='background-color: rgba(255,255,255,0.8);'>
+                        <th style='width: 150px;'>Datum</th>
                         <th>Titel</th>
-                        <th style='width: 120px;'>Teilnehmer</th>
-                        <th style='width: 120px;'>Aktiv</th>
+                        <th></th>
+                        <th></th>
                     </tr>
                 </thead>
                 <tbody class='polls-here'>
@@ -34,7 +27,7 @@
     <div class="modal-dialog modal-dialog-scrollable modal-xl modal-dialog-centered" role="document">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title lb_title">Neue Umfrage</h5>
+                <h5 class="modal-title lb_title">Umfrage</h5>
             </div>
             <div class="modal-body" style='min-height: 300px;'>
                 <div class='row'>
@@ -80,6 +73,142 @@
     </div>
 </div>
 
+<div class="modal" id="pollRunModal" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-scrollable modal-xl modal-dialog-centered" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title lb_run_poll_title">Umfrage durchführen</h5>
+            </div>
+            <div class="modal-body" style='min-height: 300px;'>
+                <div class='row'>
+                    <div class='col-md-12'>
+                        <div class="form-group">
+                            <label>Titel</label>
+                            <input id='ti_poll_run_poll_title' disabled readonly class='form-control' type='text' placeholder='Bitte geben Sie den Titel des Termins ein'></input>
+                        </div>
+                    </div>
+                </div>
+                <div class='row'>
+                    <div class='col-md-12'>
+                        <div class="form-group" style='margin-bottom: 0;'>
+                            <label><span class='float-right anonymous_hint text-danger'>Bitte wählen Sie die Art der Erfassung. Sie kann später nicht mehr geändert werden.</span>Anonymität</label>
+                        </div>
+                    </div>
+                    <div class='col-md-6'>
+                        <div class="form-group">
+                        <button id='bu_poll_run_anonymous' class='form-control' style='overflow: hidden;'><i class='fa fa-user-secret'></i>&nbsp;&nbsp;Anonyme Erfassung der Umfrageergebnisse</button>
+                        </div>
+                    </div>
+                    <div class='col-md-6'>
+                        <div class="form-group">
+                        <button id='bu_poll_run_non_anonymous' class='form-control' style='overflow: hidden;'><i class='fa fa-user'></i>&nbsp;&nbsp;Personengebundene Erfassung der Umfrageergebnisse</button>
+                        </div>
+                    </div>
+                </div>
+                <div class='row'>
+                    <div class='col-md-2'>
+                        <div class="form-group">
+                            <label>Beginn</label>
+                            <input type="date" class="form-control" id='ti_run_start_date' value='#{Date.today.to_s}' />
+                        </div>
+                    </div>
+                    <div class='col-md-2'>
+                        <div class="form-group">
+                            <label>&nbsp;</label>
+                            <input type="time" class="form-control" id='ti_run_start_time' value='08:00' />
+                        </div>
+                    </div>
+                    <div class='col-md-2'>
+                        <div class="form-group">
+                            <label>Ende</label>
+                            <input type="date" class="form-control" id='ti_run_end_date' value='#{Date.today.to_s}' />
+                        </div>
+                    </div>
+                    <div class='col-md-2'>
+                        <div class="form-group">
+                            <label>&nbsp;</label>
+                            <input type="time" class="form-control" id='ti_run_end_time' value='10:00' />
+                        </div>
+                    </div>
+                    <div class='col-md-4'>
+                        <div class="form-group">
+                            <label>Spontane Umfrage (ab jetzt)</label>
+                            <div class="btn-group" style='width: 100%;'>
+                                <button type="button" class="btn btn-outline-secondary dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                                    Zeitdauer wählen
+                                </button>
+                                <div class="dropdown-menu">
+                                    <a class='dropdown-item bu-poll-run-spontaneous btn btn-success' data-minutes='10'>10 Minuten ab jetzt</a>
+                                    <a class='dropdown-item bu-poll-run-spontaneous btn btn-success' data-minutes='20'>20 Minuten ab jetzt</a>
+                                    <a class='dropdown-item bu-poll-run-spontaneous btn btn-success' data-minutes='30'>30 Minuten ab jetzt</a>
+                                    <a class='dropdown-item bu-poll-run-spontaneous btn btn-success' data-minutes='45'>45 Minuten ab jetzt</a>
+                                    <a class='dropdown-item bu-poll-run-spontaneous btn btn-success' data-minutes='60'>60 Minuten ab jetzt</a>
+                                    <a class='dropdown-item bu-poll-run-spontaneous btn btn-success' data-minutes='90'>90 Minuten ab jetzt</a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <hr />
+                <div class="form-group">
+                    <label style='width: 100%;'><a href='#' class='bu_open_ext_users_modal float-right btn btn-success'>Externe Teilnehmer…</a>Teilnehmer <span class='text-muted'>(nur diesen Personen wird die Umfrage angezeigt)</span>
+                    </label>
+                    <input id='ti_recipients' class='form-control' placeholder='Teilnehmer suchen…' /><div class='recipient-input-dropdown' style='display: none;'></div></input>
+<!--                    <div style='font-size: 80%; margin-top: 10px;'>
+                    </div>-->
+                </div>
+                <div class="form-group">
+                    <div class='recipients_list'>
+                    </div>
+                    <p style='margin-top: 10px;' id='recipient_count'>keine Teilnehmer</p>
+                </div>
+                <div class="form-group div_ext_users_for_poll_run_present">
+                    <label style='width: 100%;'>Externe Teilnehmer</label>
+                    <div class='alert alert-info'>
+                        Sie möchten externe Teilnehmer einladen, die sich nicht im Dashboard anmelden können. Diese Teilnehmer benötigen deshalb einen Link per E-Mail, über den sie an der Umfrage teilnehmen können.
+                    </div>
+                    <div class='alert alert-danger div_invites_missing' style='display: none;'>
+                        Noch nicht alle externen Teilnehmer haben eine Einladung erhalten. Gehen Sie bitte wie folgt vor:
+                        <ol>
+                        <li>Klicken Sie, falls Sie ungespeicherte Änderungen vorgenommen haben, unten auf »Speichern« oder »Änderungen speichern«</li>
+                        <li>Klicken Sie hier, um die fehlenden Einladungen per E-Mail zu versenden:</li>
+                        </ol>
+                        <div style='text-align: center;'>
+                            <button class='btn btn-success' id='bu_send_missing_invitations' disabled><i class='fa fa-send'></i>&nbsp;&nbsp;Fehlende Einladungen versenden</button>
+                        </div>
+                    </div>
+                    <div class='alert alert-warning div_invites_requested' style='display: none;'>
+                        Es werden momentan Einladungen versendet. Bitte schauen Sie später noch einmal nach, ob alle Einladungen versendet werden konnten.
+                    </div>
+                    <div class='alert alert-success div_invites_complete' style='display: none;'>
+                        Alle externen Teilnehmer haben eine Einladung erhalten. Sie können bei Bedarf einzelne Einladungen neu versenden.
+                    </div>
+                    <table class='table table-striped narrow'>
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>E-Mail</th>
+                            <th>Gesendete Einladungen</th>
+                            <th>Einladung senden</th>
+                        </tr>
+                    </thead>
+                    <tbody class='ext-users-for-poll-run-here'>
+                    </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <div id='save_poll_run_btn_container'>
+                    <button id='bu_discard_poll_run' class='btn btn-outline-secondary' disabled><i class='fa fa-times'></i>&nbsp;&nbsp;<span>Verwerfen</span></button>
+                    <button id='bu_save_poll_run' class='btn btn-outline-secondary' disabled><i class='fa fa-check'></i>&nbsp;&nbsp;<span>Speichern</span></button>
+                </div>
+                <button id='bu_delete_poll_run' type="button" class="btn btn-outline-secondary" disabled style='display: none;'><i class='fa fa-trash'></i>&nbsp;&nbsp;Durchführung löschen</button>
+                <button id='bu_close_poll_run_modal' type="button" class="btn btn-secondary" data-dismiss="modal">Schließen</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <div class="modal" id="externalUsersModal" tabindex="-1" role="dialog" aria-hidden="true">
     <div class="modal-dialog modal-dialog-scrollable modal-lg modal-dialog-centered" role="document">
         <div class="modal-content">
@@ -88,7 +217,7 @@
             </div>
             <div class="modal-body">
                 <p class='text-muted'>
-                Fügen Sie externe Teilnehmer hinzu, indem Sie Nutzer im Format <code>Vorname Nachname &lt;E-Mail-Adresse&gt;</code> hinzufügen, also z. B. <code>Max Mustermann &lt;max@example.com&gt;</code>. Trennen Sie mehrere Teilnehmer durch ein Komma oder einen Zeilenumbruch. Die Teilnehmer, die Sie hier eintragen, können Sie für alle Ihre Termine einladen, sie müssen also nur einmal hinzugefügt werden.
+                Fügen Sie externe Teilnehmer hinzu, indem Sie Nutzer im Format <code>Vorname Nachname &lt;E-Mail-Adresse&gt;</code> hinzufügen, also z. B. <code>Max Mustermann &lt;max@example.com&gt;</code>. Trennen Sie mehrere Teilnehmer durch ein Komma oder einen Zeilenumbruch. Die Teilnehmer, die Sie hier eintragen, können Sie für alle Ihre Termine und Umfragen einladen, sie müssen also nur einmal hinzugefügt werden.
                 </p>
                 <p class='text-muted'>
                 Bitte beachten Sie, dass alle Teilnehmer, die hier aufgeführt sind, noch nicht unbedingt zu Ihrem Termin eingeladen sind. Sie müssen, wie reguläre Teilnehmer auch, über das Suchfeld hinzugefügt werden.
@@ -124,27 +253,58 @@ var recipients_list = {};
 var net_recipients_list = [];
 var has_external_recipients = false;
 var old_title = ''
-var old_date = null;
-var old_start_time = null;
-var old_end_time = null;
-var old_jitsi = null;
 var old_recipients_list = [];
 var old_description = '';
 var old_pid = null;
 var stored_polls = #{stored_polls.to_json};
+var stored_poll_runs = #{stored_poll_runs.to_json};
 var external_users_for_session_user = #{external_users_for_session_user.to_json};
 var force_close = false;
 var current_poll = {};
 var stored_poll_json = null;
+var old_prid = null;
+var current_poll_run = {};
+var current_poll_run_poll = null;
+var stored_poll_run_json = null;
+
+function _update_bold_font(e) {
+    $(e).css('font-weight', ($(e).val().trim().length > 0) ? 'bold' : 'normal');
+}
+
+function install_bold_font_if_not_empty(e) {
+    _update_bold_font(e);
+    e.keydown(function(e) { _update_bold_font(e.target); });
+    e.keyup(function(e) { _update_bold_font(e.target); });
+    e.change(function(e) { _update_bold_font(e.target); });
+}
 
 function can_send() {
     return true; //(net_recipients_list.length > 0) && $('#ti_title').val().trim().length > 0;
+}
+
+function can_send_run() {
+    return (net_recipients_list.length > 0) && (current_poll_run.anonymous !== null);
+    // TODO: Don't send if end time < start time
 }
 
 function pending_changes() {
     let flag = false;
     let current_poll_json = JSON.stringify(current_poll);
     if (current_poll_json !== stored_poll_json)
+        flag = true;
+    return flag;
+}
+
+function pending_changes_run() {
+    let flag = false;
+    let current_poll_run_json = JSON.stringify(current_poll_run);
+    
+//     console.log(stored_poll_run_json);
+//     console.log(current_poll_run_json);
+    
+    if (current_poll_run_json !== stored_poll_run_json)
+        flag = true;
+    if (old_recipients_list.join('/') !== net_recipients_list.join('/'))
         flag = true;
     if (flag)
         $('.bu-send-invitation').prop('disabled', true).removeClass('btn-success').addClass('btn-outline-secondary');
@@ -181,6 +341,11 @@ function discard_poll() {
     $('#composeModal').modal('hide');
 }
 
+function discard_poll_run() {
+    force_close = true;
+    $('#pollRunModal').modal('hide');
+}
+
 function save_poll() {
     let submit_data = {
         title: $('#ti_title').val().trim(),
@@ -193,7 +358,6 @@ function save_poll() {
                 console.log(data);
                 stored_polls.unshift(data.poll);
                 old_pid = data.poll.pid;
-                update_net_recipients_list();
                 update_buttons();
                 update_stored_polls();
             }
@@ -210,8 +374,54 @@ function save_poll() {
                 });
 //                 force_close = true;
 //                 $('#composeModal').modal('hide');
-                update_net_recipients_list();
                 update_buttons();
+                update_stored_polls();
+            }
+        });
+    }
+}
+
+function save_poll_run() {
+    let submit_data = {
+        pid: current_poll_run.pid,
+        anonymous: current_poll_run.anonymous ? 'true' : 'false',
+        start_date: current_poll_run.start_date,
+        start_time: current_poll_run.start_time,
+        end_date: current_poll_run.end_date,
+        end_time: current_poll_run.end_time,
+        recipients: net_recipients_list
+    };
+    old_recipients_list = [...net_recipients_list];
+    if (old_prid === null) {
+        api_call('/api/save_poll_run', submit_data, function(data) {
+            if (data.success) {
+                stored_poll_run_json = JSON.stringify(current_poll_run);
+                data.poll_run.pid = current_poll_run.pid;
+                stored_poll_runs.unshift(data.poll_run);
+                old_prid = data.poll_run.prid;
+                update_net_recipients_list();
+                update_run_buttons();
+                update_stored_polls();
+            }
+        });
+    } else {
+        submit_data.prid = old_prid;
+        api_call('/api/update_poll_run', submit_data, function(data) {
+            if (data.success) {
+                stored_poll_run_json = JSON.stringify(current_poll_run);
+                console.log('data', data);
+                console.log(stored_poll_runs);
+                stored_poll_runs = stored_poll_runs.map(function(pr) {
+                    if (pr.prid === data.poll_run.prid) {
+                        let pid = pr.pid;
+                        pr = data.poll_run;
+                        pr.pid = pid;
+                    }
+                    return pr;
+                });
+                console.log(stored_poll_runs);
+                update_net_recipients_list();
+                update_run_buttons();
                 update_stored_polls();
             }
         });
@@ -223,12 +433,52 @@ function delete_poll() {
         return;
     api_call('/api/delete_poll', {pid: old_pid}, function(data) {
         if (data.success) {
-            old_recipients_list = net_recipients_list;
             $('#composeModal').modal('hide');
             stored_polls = stored_polls.filter(x => x.pid !== data.pid);
             update_stored_polls();
         }
     });
+}
+
+function delete_poll_run(prid) {
+    if (!prid)
+        return;
+    api_call('/api/delete_poll_run', {prid: prid}, function(data) {
+        if (data.success) {
+            old_recipients_list = net_recipients_list;
+            $('#pollRunModal').modal('hide');
+            stored_poll_runs = stored_poll_runs.filter(x => x.prid !== data.prid);
+            update_stored_polls();
+        }
+    });
+}
+
+function update_run_buttons() {
+    if (old_prid) {
+        $('#bu_delete_poll_run').prop('disabled', false).show().removeClass('btn-outline-secondary').addClass('btn-danger');
+        $('#bu_discard_poll_run span').html('Änderungen verwerfen');
+        $('#bu_save_poll_run span').html('Änderungen speichern');
+    } else {
+        $('#bu_delete_poll_run').prop('disabled', true).hide().addClass('btn-outline-secondary').removeClass('btn-danger');
+        $('#bu_discard_poll_run span').html('Verwerfen');
+        $('#bu_save_poll_run span').html('Speichern');
+    }
+    if (pending_changes_run()) {
+        $('#bu_discard_poll_run').removeClass('btn-outline-secondary').addClass('btn-secondary').prop('disabled', false);
+        $('#bu_close_poll_run_modal').removeClass('btn-secondary').addClass('btn-outline-secondary').prop('disabled', true);
+        if (can_send_run())
+            $('#bu_save_poll_run').removeClass('btn-outline-secondary').addClass('btn-success').prop('disabled', false);
+        else
+            $('#bu_save_poll_run').removeClass('btn-success').addClass('btn-outline-secondary').prop('disabled', true);
+    } else {
+        $('#bu_discard_poll_run').removeClass('btn-secondary').addClass('btn-outline-secondary').prop('disabled', true);
+        $('#bu_close_poll_run_modal').removeClass('btn-outline-secondary').addClass('btn-secondary').prop('disabled', false);
+        $('#bu_save_poll_run').removeClass('btn-success').addClass('btn-outline-secondary').prop('disabled', true);
+    }
+    if (current_poll_run.anonymous === null)
+        $('.anonymous_hint').show();
+    else
+        $('.anonymous_hint').hide();
 }
 
 function update_net_recipients_list() {
@@ -244,63 +494,64 @@ function update_net_recipients_list() {
     net_recipients_list = Object.keys(net_recipients_hash).sort();
     has_external_recipients = false;
 
-//     api_call('/api/get_external_invitations_for_poll', {pid: old_pid || ''}, function(data) {
-//         $('.div_ext_users_for_poll_present').hide();
-//         $('.ext-users-for-poll-here').empty();
-//         let missing_invites = false;
-//         let requested_invites = false;
-//         for (let email of net_recipients_list) {
-//             if (email in external_users_for_session_user.recipients) {
-//                 $('.div_ext_users_for_poll_present').show();
-//                 let row = $('<tr>');
-//                 let this_invitations = data.invitations[email] || [];
-//                 let this_invitation_requested = data.invitation_requested[email];
-//                 row.append($('<td>').text(external_users_for_session_user.recipients[email].label));
-//                 row.append($('<td>').text(email));
-//                 if (this_invitations.length === 0) {
-//                     row.append($('<td>').html('&ndash;'));
-//                     missing_invites = true;
-//                 } else {
-//                     row.append($('<td>').html(this_invitations.map(function(x) { return '' + x; }).join('<br />')));
-//                 }
-//                 if (this_invitation_requested)
-//                     requested_invites = true;
-//                 let bu_invite = $('<button>').data('email', email).data('pid', old_pid).addClass('btn').addClass('btn-xs').addClass('btn-success').addClass('bu-send-invitation').html("<i class='fa fa-send'></i>&nbsp;&nbsp;Einladung senden");
-//                 if ((old_pid || '').length === 0)
-//                     bu_invite.removeClass('btn-success').addClass('btn-outline-secondary').prop('disabled', true);
-//                 row.append($('<td>').append(bu_invite));
-//                 bu_invite.click(function(e) {
-//                     let pid = $(e.target).closest('.btn').data('pid');
-//                     let email = $(e.target).closest('.btn').data('email');
-//                     api_call('/api/invite_external_user', {pid: pid, email: email}, function(data) {
-//                         if (data.success)
-//                             update_net_recipients_list();
-//                     });
-//                 });
-//                 $('.ext-users-for-poll-here').append(row);
-//             }
-//         }
-//         if (missing_invites) {
-//             if (requested_invites) {
-//                 $('.div_invites_complete').hide();
-//                 $('.div_invites_missing').hide();
-//                 $('.div_invites_requested').show();
-//             } else {
-//                 $('.div_invites_complete').hide();
-//                 $('.div_invites_missing').show();
-//                 $('.div_invites_requested').hide();
-//             }
-//         } else {
-//             $('.div_invites_complete').show();
-//             $('.div_invites_missing').hide();
-//             $('.div_invites_requested').hide();
-//         }
-//         if (net_recipients_list.length === 0)
-//             $('#recipient_count').html('keine Teilnehmer');
-//         else
-//             $('#recipient_count').html('' + net_recipients_list.length + ' Teilnehmer');
-//         update_buttons();
-//     });
+    api_call('/api/get_external_invitations_for_poll_run', {prid: old_prid || ''}, function(data) {
+        console.log('/api/get_external_invitations_for_poll_run for ', old_prid, data);
+        $('.div_ext_users_for_poll_run_present').hide();
+        $('.ext-users-for-poll-run-here').empty();
+        let missing_invites = false;
+        let requested_invites = false;
+        for (let email of net_recipients_list) {
+            if (email in external_users_for_session_user.recipients) {
+                $('.div_ext_users_for_poll_run_present').show();
+                let row = $('<tr>');
+                let this_invitations = data.invitations[email] || [];
+                let this_invitation_requested = data.invitation_requested[email];
+                row.append($('<td>').text(external_users_for_session_user.recipients[email].label));
+                row.append($('<td>').text(email));
+                if (this_invitations.length === 0) {
+                    row.append($('<td>').html('&ndash;'));
+                    missing_invites = true;
+                } else {
+                    row.append($('<td>').html(this_invitations.map(function(x) { return '' + x; }).join('<br />')));
+                }
+                if (this_invitation_requested)
+                    requested_invites = true;
+                let bu_invite = $('<button>').data('email', email).data('prid', old_prid).addClass('btn').addClass('btn-xs').addClass('btn-success').addClass('bu-send-invitation').html("<i class='fa fa-send'></i>&nbsp;&nbsp;Einladung senden");
+                if ((old_prid || '').length === 0)
+                    bu_invite.removeClass('btn-success').addClass('btn-outline-secondary').prop('disabled', true);
+                row.append($('<td>').append(bu_invite));
+                bu_invite.click(function(e) {
+                    let prid = $(e.target).closest('.btn').data('prid');
+                    let email = $(e.target).closest('.btn').data('email');
+                    api_call('/api/invite_external_user_for_poll_run', {prid: prid, email: email}, function(data) {
+                        if (data.success)
+                            update_net_recipients_list();
+                    });
+                });
+                $('.ext-users-for-poll-run-here').append(row);
+            }
+        }
+        if (missing_invites) {
+            if (requested_invites) {
+                $('.div_invites_complete').hide();
+                $('.div_invites_missing').hide();
+                $('.div_invites_requested').show();
+            } else {
+                $('.div_invites_complete').hide();
+                $('.div_invites_missing').show();
+                $('.div_invites_requested').hide();
+            }
+        } else {
+            $('.div_invites_complete').show();
+            $('.div_invites_missing').hide();
+            $('.div_invites_requested').hide();
+        }
+        if (net_recipients_list.length === 0)
+            $('#recipient_count').html('keine Teilnehmer');
+        else
+            $('#recipient_count').html('' + net_recipients_list.length + ' Teilnehmer');
+        update_run_buttons();
+    });
 }
 
 function gen_recipient_span(key, with_rm) {
@@ -364,22 +615,18 @@ function compact_address_list(emails) {
     return result;
 }
 
-function edit_poll(poll) {
-    $('.bu-send-invitation').prop('disabled', false).removeClass('btn-outline-secondary').addClass('btn-success');
-
-    $('.recipients_list').empty();
-    recipients_list = {};
-//     console.log(poll);
-//     for (let email of poll.recipients || []) {
-//         recipients_list[email] = true;
-//         $('.recipients_list').append(gen_recipient_span(email, true));
-//     }
+function edit_poll(pid) {
+    let poll = null;
+    for (let _ of stored_polls)
+        if (_.pid === pid)
+            poll = _;
+    if (poll === null)
+        return;
     old_pid = poll.pid;
-//     update_net_recipients_list();
     $('#composeModal').modal('show');
     force_close = false;
-    $('.lb_title').text(poll.poll.title);
     $('#ti_title').val(poll.poll.title);
+    _update_bold_font($('#ti_title'));
     current_poll = {title: poll.poll.title, items: JSON.parse(poll.poll.items)};
     stored_poll_json = JSON.stringify(current_poll);
     $('#ti_recipients').val('');
@@ -390,19 +637,155 @@ function edit_poll(poll) {
 
 function update_stored_polls() {
     $('.polls-here').empty();
-    for (poll of stored_polls) {
+    let poll_runs_for_poll = {};
+    for (let poll_run of stored_poll_runs) {
+        if (!(poll_run.pid in poll_runs_for_poll)) 
+            poll_runs_for_poll[poll_run.pid] = [];
+        poll_runs_for_poll[poll_run.pid].push(poll_run);
+    }
+    for (let poll of stored_polls) {
         let row = $('<tr>');
-//         row.append($('<td>').html(weekdays[poll.dow] + '. ' + poll.info.date.substr(8, 2) + '.' + poll.info.date.substr(5, 2) + '.' + poll.info.date.substr(0, 4)));
-        row.append($('<td>').html(poll.poll.title));
-        row.append($('<td>').html(''));
-        row.append($('<td>').html('nein'));
+        row./*css('font-weight', 'bold').*/css('background-color', 'rgba(255,255,255,0.8)');
+        row.append($('<td>').text(moment(poll.created).format('ddd, D.M.Y')));
+        row.append($('<td>').attr('colspan', 2).html(poll.poll.title));
+//         let bu_preview_poll = $('<button>').addClass('btn').addClass('btn-warning').addClass('btn-xs').html("<i class='fa fa-eye'></i>&nbsp;&nbsp;Vorschau");
+        let bu_run_poll = $('<button>').addClass('btn').addClass('btn-success').addClass('btn-xs').html("<i class='fa fa-play'></i>&nbsp;&nbsp;Durchführen");
+        let bu_edit_poll = $('<button>').addClass('btn').addClass('btn-secondary').addClass('btn-xs').html("<i class='fa fa-edit'></i>&nbsp;&nbsp;Bearbeiten");
+        row.append($('<td>').css('text-align', 'right').append(bu_run_poll).append('&nbsp;&nbsp;').append(bu_edit_poll));
+//         bu_preview_poll.click(function(e) {
+//             e.stopPropagation();
+//             let pid = $(e.target).closest('tr').data('pid');
+//             launch_poll(pid);
+//         });
+        bu_edit_poll.click(function(e) {
+            e.stopPropagation();
+            let pid = $(e.target).closest('tr').data('pid');
+            edit_poll(pid);
+        });
+        bu_run_poll.click(function(e) {
+            e.stopPropagation();
+            let pid = $(e.target).closest('tr').data('pid');
+            new_poll_run(pid);
+        });
         row.data('pid', poll.pid);
-        (function(poll) {
-            row.click(function(e) {
-                edit_poll(poll);
-            });
-        })(poll);
         $('.polls-here').append(row);
+        for (let poll_run of (poll_runs_for_poll[poll.pid] || [])) {
+            let row = $('<tr>');
+            console.log(poll_run);
+            let m_start = moment(`${poll_run.info.start_date}T${poll_run.info.start_time}:00`);
+            let diff = moment(`${poll_run.info.end_date}T${poll_run.info.end_time}:00`).unix() - moment(`${poll_run.info.start_date}T${poll_run.info.start_time}:00`).unix();
+            let duration = moment.duration(diff * 1000);
+            duration_parts = [];
+            if (duration.days() > 0)
+                duration_parts.push(`${duration.days()} Tage`);
+            if (duration.hours() > 0)
+                duration_parts.push(`${duration.hours()} Stunden`);
+            if (duration.minutes() > 0)
+                duration_parts.push(`${duration.minutes()} Minuten`);
+            if (duration_parts.length === 0)
+                duration_parts.push(`0 Minuten`);
+            let diff_to_start_time = moment(`${poll_run.info.start_date}T${poll_run.info.start_time}:00`).unix() - moment().unix();
+            let diff_to_end_time = moment().unix() - moment(`${poll_run.info.end_date}T${poll_run.info.end_time}:00`).unix();
+            let icon = '';
+            let color = '';
+            let label = '';
+            let state = '';
+            if (diff_to_start_time > 0) {
+                // we're before the poll run
+                state = 'pending';
+                icon = 'clock-o';
+                color = 'warning';
+                label = 'ausstehend';
+            } else if (diff_to_end_time > 0) {
+                // we're after the poll run
+                state = 'complete';
+                icon = 'check'
+                color = 'primary';
+                label = 'abgeschlossen';
+            } else {
+                // we're within the poll run
+                state = 'running';
+                icon = 'play'
+                color = 'success';
+                label = 'aktuell';
+            }
+//             jQuery.each($('.moment-countdown'), function(_, e) {
+//                 let t = moment($(e).data('target-timestamp'));
+//                 let bl = $(e).data('before-label');
+//                 let al = $(e).data('after-label');
+//                 let s = duration_to_s(t);
+//                 if (s === null)
+//                     $(e).text(al);
+//                 else
+//                     $(e).text(`${bl} ${s}`);
+//                 (function(e, t, bl, al) {
+//                     setInterval(function() {
+//                         let s = duration_to_s(t);
+//                         if (s === null)
+//                             $(e).text(al);
+//                         else
+//                             $(e).text(`${bl} ${s}`);
+//                     }, 60000);
+//                 })(e, t, bl, al);
+//             });
+
+            row.append($('<td>').html(`<i class='fa fa-${icon} text-${color}'></i>&nbsp;&nbsp;${label}`));
+            row.append($('<td>').html(`${m_start.format('ddd, D.M.Y HH:mm')} (${duration_parts.join(', ')})`));
+            row.append($('<td>').html(`${poll_run.recipients.length} Teilnehmer (${poll_run.info.anonymous ? 'anonym' : 'personengebunden'})`));
+            let bu_poll_run_show_results = $('<button>').css('margin-left', '4px').addClass('btn').addClass('btn-primary').addClass('btn-xs').html(`<i class='fa fa-bar-chart'></i>&nbsp;&nbsp;${(state === 'running') ? 'Vorläufige' : ''} Ergebnisse`);
+            let bu_poll_run_edit = $('<button>').css('margin-left', '4px').addClass('btn').addClass('btn-secondary').addClass('btn-xs').html("<i class='fa fa-edit'></i>&nbsp;&nbsp;Bearbeiten");
+            let bu_poll_run_stop = $('<button>').css('margin-left', '4px').addClass('btn').addClass('btn-danger').addClass('btn-xs').html(`<i class='fa fa-times'></i>&nbsp;&nbsp;Umfrage stoppen`);
+            let bu_poll_run_delete = $('<button>').css('margin-left', '4px').addClass('btn').addClass('btn-danger').addClass('btn-xs').html(`<i class='fa fa-trash'></i>&nbsp;&nbsp;Ergebnisse löschen`);
+            let cell = $('<td>').css('text-align', 'right');
+            if (state === 'running')
+                cell.append(bu_poll_run_stop);
+            if (state === 'complete')
+                cell.append(bu_poll_run_delete);
+            if (state === 'complete' || state === 'running')
+                cell.append(bu_poll_run_show_results);
+            if (state === 'pending')
+                cell.append(bu_poll_run_edit)
+            row.append(cell);
+            bu_poll_run_show_results.click(function(e) {
+                e.stopPropagation();
+                let pid = $(e.target).closest('tr').data('pid');
+                let prid = $(e.target).closest('tr').data('prid');
+                show_poll_run_results(prid);
+            });
+            bu_poll_run_edit.click(function(e) {
+                e.stopPropagation();
+                let pid = $(e.target).closest('tr').data('pid');
+                let prid = $(e.target).closest('tr').data('prid');
+                edit_poll_run(prid);
+            });
+            bu_poll_run_stop.click(function(e) {
+                e.stopPropagation();
+                let pid = $(e.target).closest('tr').data('pid');
+                let prid = $(e.target).closest('tr').data('prid');
+                showTemplateModal('Umfrage stoppen', 
+                    'Sind Sie sicher, dass Sie diese Umfrage stoppen möchten?',
+                    "<i class='fa fa-times'></i>&nbsp;&nbsp;Umfrage stoppen", 'btn-danger',
+                    'Abbrechen', 'btn-secondary', function() {
+                        stop_poll_run(prid);
+                    }
+                );
+            });
+            bu_poll_run_delete.click(function(e) {
+                e.stopPropagation();
+                let pid = $(e.target).closest('tr').data('pid');
+                let prid = $(e.target).closest('tr').data('prid');
+                showTemplateModal('Ergebnisse löschen', 
+                    'Sind Sie sicher, dass Sie diese Ergebnisse löschen möchten?',
+                    "<i class='fa fa-trash'></i>&nbsp;&nbsp;Ergebnisse löschen", 'btn-danger',
+                    'Abbrechen', 'btn-secondary', function() {
+                        delete_poll_run(prid);
+                    }
+                );
+            });
+            row.data('pid', poll.pid);
+            row.data('prid', poll_run.prid);
+            $('.polls-here').append(row);
+        }
     };
 }
 
@@ -417,14 +800,20 @@ function update_external_users_for_session_user() {
         let bu_delete = $('<button>').data('email', email).addClass('btn').addClass('btn-xs').addClass('btn-danger').html("<i class='fa fa-trash'></i>");
         row.append($('<td>').append(bu_delete));
         bu_delete.click(function(e) {
-            let email = $(e.target).closest('.btn').data('email');
-            api_call('/api/delete_external_user', {email: email}, function(data) {
-                if (data.success) {
-                    external_users_for_session_user = data.ext_users;
-                    update_external_users_for_session_user();
-                    load_recipients('#{@session_user[:id]}', function() {}, external_users_for_session_user);
+            showTemplateModal('Externen Teilnehmer löschen', 
+                'Sind Sie sicher, dass Sie diesen externen Teilnehmer aus Ihrem Adressbuch löschen möchten?',
+                "<i class='fa fa-trash'></i>&nbsp;&nbsp;Externen Teilnehmer löschen", 'btn-danger',
+                'Abbrechen', 'btn-secondary', function() {
+                    let email = $(e.target).closest('.btn').data('email');
+                    api_call('/api/delete_external_user', {email: email}, function(data) {
+                        if (data.success) {
+                            external_users_for_session_user = data.ext_users;
+                            update_external_users_for_session_user();
+                            load_recipients('#{@session_user[:id]}', function() {}, external_users_for_session_user);
+                        }
+                    });
                 }
-            });
+            );
         });
         $('.ext-users-here').append(row);
     };
@@ -432,23 +821,24 @@ function update_external_users_for_session_user() {
 
 function update_current_poll() {
     $('#ti_title').val(current_poll.title);
+    _update_bold_font($('#ti_title'));
     let div = $('.poll-items-here');
     div.empty();
     let item_types = {
-        paragraph: 'Text',
-        radio: 'Auswahl',
+        paragraph: 'Text (zur Information, keine Eingabe möglich)',
+        radio: 'Auswahl (nur eine Antwort kann ausgewählt werden)',
         checkbox: 'Mehrfachauswahl',
         image: 'Bild',
-        textarea: 'Freitext'
+        textarea: 'Freitext (Nutzer können Freitext eingeben)'
     };
     for (let item_index in current_poll.items) {
         item_index = parseInt(item_index);
         let item = current_poll.items[item_index];
         
         let button_div = $('<div>').addClass('float-right');//.css('margin', '10px 0');
-        let bu_rm = $('<button>').addClass('ml-1').addClass('btn').addClass('btn-sm').addClass('btn-danger').html("<i class='fa fa-trash'></i>").data('item-index', item_index);
-        let bu_up = $('<button>').addClass('ml-1').addClass('btn').addClass('btn-sm').addClass('btn-primary').html("<i class='fa fa-arrow-up'></i>").data('item-index', item_index);
-        let bu_down = $('<button>').addClass('ml-1').addClass('btn').addClass('btn-sm').addClass('btn-primary').html("<i class='fa fa-arrow-down'></i>").data('item-index', item_index);
+        let bu_rm = $('<button>').attr('title', 'Eintrag löschen').addClass('ml-1').addClass('btn').addClass('btn-sm').addClass('btn-danger').html("<i class='fa fa-trash'></i>").data('item-index', item_index);
+        let bu_up = $('<button>').attr('title', 'Eintrag nach oben verschieben').addClass('ml-1').addClass('btn').addClass('btn-sm').addClass('btn-primary').html("<i class='fa fa-arrow-up'></i>").data('item-index', item_index);
+        let bu_down = $('<button>').attr('title', 'Eintrag nach untern verschieben').addClass('ml-1').addClass('btn').addClass('btn-sm').addClass('btn-primary').html("<i class='fa fa-arrow-down'></i>").data('item-index', item_index);
         if (item_index === 0)
             bu_up.prop('disabled', true);
         if (item_index === current_poll.items.length - 1)
@@ -478,9 +868,10 @@ function update_current_poll() {
         div.append(button_div);
 
         let header = $('<p>');
-        header.append($('<strong>').text('' + (item_index + 1) + '. ' + item_types[item.type]));
+        header.append($('<p>').css('margin-left', '4px').text('' + (item_index + 1) + '. ' + item_types[item.type]));
         div.append(header);
         let ti_title = $('<input>').addClass('mb-2').addClass('form-control').attr('placeholder', item.type === 'paragraph' ? 'Zwischenüberschrift (optional)' : 'Bitte geben Sie eine Frage ein').val(item.title).data('item-index', item_index);
+        install_bold_font_if_not_empty(ti_title);
         ti_title.change(function(e) {
             let item_index = $(e.target).data('item-index');
             current_poll.items[item_index].title = $(e.target).val().trim();
@@ -496,9 +887,9 @@ function update_current_poll() {
                 let input_group = $('<div>').addClass('input-group');
                 let ti = $('<input>').attr('placeholder', 'Bitte geben Sie eine Antwortmöglichkeit ein').addClass('form-control').val(answer).attr('data-item-index', item_index).attr('data-answer-index', answer_index);
                 let button_div = $('<div>').addClass('input-group-append');
-                let bu_rm = $('<button>').addClass('btn').addClass('btn-outline-secondary').html("<i class='fa fa-trash'></i>").data('item-index', item_index).data('answer-index', answer_index);
-                let bu_up = $('<button>').addClass('btn').addClass('btn-outline-secondary').html("<i class='fa fa-arrow-up'></i>").data('item-index', item_index).data('answer-index', answer_index);
-                let bu_down = $('<button>').addClass('btn').addClass('btn-outline-secondary').html("<i class='fa fa-arrow-down'></i>").data('item-index', item_index).data('answer-index', answer_index);
+                let bu_rm = $('<button>').attr('title', 'Antwortmöglichkeit löschen').addClass('btn').addClass('btn-outline-secondary').html("<i class='fa fa-trash'></i>").data('item-index', item_index).data('answer-index', answer_index);
+                let bu_up = $('<button>').attr('title', 'Antwortmöglichkeit nach oben verschieben').addClass('btn').addClass('btn-outline-secondary').html("<i class='fa fa-arrow-up'></i>").data('item-index', item_index).data('answer-index', answer_index);
+                let bu_down = $('<button>').attr('title', 'Antwortmöglichkeit nach unten verschieben').addClass('btn').addClass('btn-outline-secondary').html("<i class='fa fa-arrow-down'></i>").data('item-index', item_index).data('answer-index', answer_index);
                 ti.change(function(e) {
                     let item_index = $(e.target).data('item-index');
                     let answer_index = $(e.target).data('answer-index');
@@ -553,7 +944,7 @@ function update_current_poll() {
                 $('input').filter(`[data-item-index='${item_index}']`).filter(`[data-answer-index='${current_poll.items[item_index].answers.length - 1}']`).focus();
             });
             bu_add_answer_div.append(bu_add_answer);
-            bu_add_answer_div.append($('<span>').text('Hinweis: Sie können mehrere Antwortmöglichkeiten auf einmal hinzufügen, indem Sie sie die einzelnen Antworten mit | trennen'));
+            bu_add_answer_div.append($('<span>').text('Hinweis: Sie können mehrere Antwortmöglichkeiten auf einmal hinzufügen, indem Sie sie die einzelnen Antworten mit | trennen.'));
             div.append(bu_add_answer_div);
         } else if (item.type === 'textarea') {
             let textarea = $('<textarea>').addClass('form-control');
@@ -573,29 +964,149 @@ function update_current_poll() {
     update_buttons();
 }
 
+function update_current_poll_run() {
+//     $('#ti_title').val(current_poll.title);
+    let div = $('.poll-run-items-here');
+    div.empty();
+    update_run_buttons();
+}
+
 function new_poll() {
     current_poll = {items: [], title: ''};
     stored_poll_json = JSON.stringify(current_poll);
-    $('.lb_title').text('Neue Umfrage');
     $('#ti_title').val('');
-    $('#ti_date').val('#{Date.today.to_s}');
-    $('#ti_start_time').val('08:00');
-    $('#ti_end_time').val('10:00');
-    if ($('#ti_poll_jitsi').data('state') !== 'yes')
-        $('#ti_poll_jitsi').click();
-    $('#summernote').summernote('reset');
-    recipients_list = {};
-    update_net_recipients_list();
-    $('.recipients_list').empty();
+    _update_bold_font($('#ti_title'));
     $('#composeModal').modal('show');
     force_close = false;
-    old_recipients_list = [];
     old_description = $('#summernote').summernote('code');
     old_pid = null;
-    $('#ti_recipients').val('');
     $('#ti_title').focus();
     update_buttons();
     update_current_poll();
+}
+
+function new_poll_run(pid) {
+    current_poll_run = {pid: pid};
+    current_poll_run.anonymous = null;
+    current_poll_run_poll = null;
+    for (let poll of stored_polls) {
+        if (poll.pid === pid)
+            current_poll_run_poll = poll;
+    }
+    if (current_poll_run_poll === null) {
+        console.log(`Couldn't find poll with pid ${pid}!`);
+        return;
+    }
+    $('#ti_poll_run_poll_title').val(current_poll_run_poll.poll.title);
+    
+    let minutes = 10;
+    let m = moment();
+    $('#ti_run_start_date').val(m.format('YYYY-MM-DD'));
+    $('#ti_run_start_time').val(m.format('HH:mm'));
+    m = m.add(minutes, 'minutes');
+    $('#ti_run_end_date').val(m.format('YYYY-MM-DD'));
+    $('#ti_run_end_time').val(m.format('HH:mm'));
+    current_poll_run.start_date = $('#ti_run_start_date').val();
+    current_poll_run.start_time = $('#ti_run_start_time').val();
+    current_poll_run.end_date = $('#ti_run_end_date').val();
+    current_poll_run.end_time = $('#ti_run_end_time').val();
+    
+    $('#bu_poll_run_anonymous').addClass('btn-outline-secondary').removeClass('btn-primary').prop('disabled', false);
+    $('#bu_poll_run_non_anonymous').addClass('btn-outline-secondary').removeClass('btn-primary').prop('disabled', false);
+    old_prid = null;
+    recipients_list = {};
+    update_net_recipients_list();
+    $('.recipients_list').empty();
+    $('#pollRunModal').modal('show');
+    force_close = false;
+    old_recipients_list = [];
+    $('#ti_recipients').val('');
+    stored_poll_run_json = JSON.stringify(current_poll_run);
+    update_run_buttons();
+    update_current_poll_run();
+}
+
+function edit_poll_run(prid) {
+    current_poll_run = null;
+    for (let _ of stored_poll_runs)
+        if (_.prid === prid)
+            current_poll_run = _;
+    if (current_poll_run === null) {
+        console.log(`Couldn't find poll run with prid ${prid}!`);
+        return;
+    }
+    let pid = current_poll_run.pid;
+    current_poll_run_poll = null;
+    for (let poll of stored_polls) {
+        if (poll.pid === pid)
+            current_poll_run_poll = poll;
+    }
+    if (current_poll_run_poll === null) {
+        console.log(`Couldn't find poll with pid ${pid}!`);
+        return;
+    }
+    let keep_recipients = current_poll_run.recipients;
+    current_poll_run = {
+        pid: current_poll_run_poll.pid,
+        prid: current_poll_run.prid,
+        anonymous: current_poll_run.info.anonymous,
+        start_date: current_poll_run.info.start_date,
+        start_time: current_poll_run.info.start_time,
+        end_date: current_poll_run.info.end_date,
+        end_time: current_poll_run.info.end_time
+    };
+    $('#ti_poll_run_poll_title').val(current_poll_run_poll.poll.title);
+    console.log(current_poll_run);
+    $('#ti_run_start_date').val(current_poll_run.start_date);
+    $('#ti_run_start_time').val(current_poll_run.start_time);
+    $('#ti_run_end_date').val(current_poll_run.end_date);
+    $('#ti_run_end_time').val(current_poll_run.end_time);
+    if (current_poll_run.anonymous) {
+        $('#bu_poll_run_anonymous').removeClass('btn-outline-secondary').addClass('btn-primary');
+        $('#bu_poll_run_non_anonymous').addClass('btn-outline-secondary').removeClass('btn-primary');
+    } else {
+        $('#bu_poll_run_anonymous').addClass('btn-outline-secondary').removeClass('btn-primary');
+        $('#bu_poll_run_non_anonymous').removeClass('btn-outline-secondary').addClass('btn-primary');
+    }
+    $('#bu_poll_run_anonymous').prop('disabled', true);
+    $('#bu_poll_run_non_anonymous').prop('disabled', true);
+        
+    $('.bu-send-invitation').prop('disabled', false).removeClass('btn-outline-secondary').addClass('btn-success');
+    $('.recipients_list').empty();
+    old_prid = current_poll_run.prid;
+    recipients_list = {};
+    for (let email of keep_recipients || []) {
+        recipients_list[email] = true;
+        $('.recipients_list').append(gen_recipient_span(email, true));
+    }
+    update_net_recipients_list();
+    $('#pollRunModal').modal('show');
+    force_close = false;
+    old_recipients_list = [...net_recipients_list];
+    $('#ti_recipients').val('');
+    stored_poll_run_json = JSON.stringify(current_poll_run);
+    update_run_buttons();
+    update_current_poll_run();
+}
+
+function stop_poll_run(prid) {
+    api_call('/api/stop_poll_run', {prid: prid}, function(data) {
+        if (data.success) {
+            console.log(stored_poll_runs);
+            console.log(data);
+            stored_poll_runs = stored_poll_runs.map(function(pr) {
+                if (pr.prid === data.prid) {
+                    pr.info.end_date = data.end_date;
+                    pr.info.end_time = data.end_time;
+                }
+                return pr;
+            });
+            console.log(stored_poll_runs);
+            update_run_buttons();
+            update_stored_polls();
+        }
+    });
+    
 }
 
 document.addEventListener('DOMContentLoaded', function() {
@@ -629,6 +1140,15 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
     
+    $('#pollRunModal').on('hide.bs.modal', function(e) {
+        if (pending_changes_run() && (!force_close)) {
+            $('#save_poll_run_btn_container').effect('shake', {direction: 'left', distance: 4});
+            e.preventDefault();
+            e.stopImmediatePropagation();
+            return false; 
+        }
+    });
+    
     $('.bu-new-poll').click(function(e) {
         new_poll();
     });
@@ -641,6 +1161,10 @@ document.addEventListener('DOMContentLoaded', function() {
         save_poll();
     });
     
+    $('#bu_save_poll_run').click(function(e) {
+        save_poll_run();
+    });
+    
     $('#bu_delete_poll').click(function(e) {
         showTemplateModal('Umfrage löschen', 
             'Sind Sie sicher, dass Sie diese Umfrage löschen möchten?',
@@ -649,6 +1173,20 @@ document.addEventListener('DOMContentLoaded', function() {
                 delete_poll();
             }
         );
+    });
+    
+    $('#bu_delete_poll_run').click(function(e) {
+        showTemplateModal('Durchführung löschen', 
+            'Sind Sie sicher, dass Sie diese Durchführung löschen möchten?',
+            "<i class='fa fa-trash'></i>&nbsp;&nbsp;Durchführung löschen", 'btn-danger',
+            'Abbrechen', 'btn-secondary', function() {
+                delete_poll_run(old_prid);
+            }
+        );
+    });
+    
+    $('#bu_discard_poll_run').click(function(e) {
+        discard_poll_run();
     });
     
     $('#ti_recipients').keydown(function(e) {
@@ -730,9 +1268,13 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         }
     });
-    for (let key of ['#ti_title', '#ti_date', '#ti_start_time', '#ti_end_time']) {
+    for (let key of ['#ti_title']) {
         $(key).keyup(function(e) { update_buttons(); });
         $(key).change(function(e) { update_buttons(); });
+    }
+    for (let key of ['#ti_run_start_date', '#ti_run_start_time', '#ti_run_end_date', '#ti_run_end_time']) {
+        $(key).keyup(function(e) { update_run_buttons(); });
+        $(key).change(function(e) { update_run_buttons(); });
     }
 //     $('.bu-compose').click();
 
@@ -777,7 +1319,7 @@ document.addEventListener('DOMContentLoaded', function() {
     });
     
     $('#bu_send_missing_invitations').click(function(e) {
-        api_call('/api/send_missing_invitations', {pid: old_pid}, function(data) {
+        api_call('/api/send_missing_poll_run_invitations', {prid: old_prid}, function(data) {
             console.log(data);
             if (data.success) {
                 update_net_recipients_list();
@@ -792,10 +1334,7 @@ document.addEventListener('DOMContentLoaded', function() {
         if (window.location.hash.length > 1) 
         {
             let pid = window.location.hash.substr(1);
-            for (let poll of stored_polls) {
-                if (poll.pid === pid)
-                    edit_poll(poll);
-            }
+            edit_poll(pid);
             window.location.hash = '';
         }
     }, external_users_for_session_user);
@@ -816,14 +1355,49 @@ document.addEventListener('DOMContentLoaded', function() {
         current_poll.items.push({type: 'textarea', title: ''});
         update_current_poll();
     });
-    $('#ti_title').change(function(e) {
-        current_poll.title = $(e.target).val().trim();
-        update_buttons();
+    for (let event of ['change', 'keyup']) {
+        $('#ti_title').on(event, function(e) {
+            current_poll.title = $(e.target).val().trim();
+            update_buttons();
+        });
+        for (let key of ['start_date', 'start_time', 'end_date', 'end_time']) {
+            $(`#ti_run_${key}`).on(event, function(e) {
+                current_poll_run[key] = $(e.target).val().trim();
+                update_buttons();
+            });
+        }
+    }
+    install_bold_font_if_not_empty($('#ti_title'));
+    $('.bu-poll-run-spontaneous').click(function(e) {
+        let minutes = parseInt($(e.target).data('minutes'));
+        let m = moment();
+        $('#ti_run_start_date').val(m.format('YYYY-MM-DD'));
+        $('#ti_run_start_time').val(m.format('HH:mm'));
+        m = m.add(minutes, 'minutes');
+        $('#ti_run_end_date').val(m.format('YYYY-MM-DD'));
+        $('#ti_run_end_time').val(m.format('HH:mm'));
+        current_poll_run.start_date = $('#ti_run_start_date').val();
+        current_poll_run.start_time = $('#ti_run_start_time').val();
+        current_poll_run.end_date = $('#ti_run_end_date').val();
+        current_poll_run.end_time = $('#ti_run_end_time').val();
+        update_run_buttons();
     });
-    $('#ti_title').keyup(function(e) {
-        current_poll.title = $(e.target).val().trim();
-        update_buttons();
+    $('#bu_poll_run_anonymous').click(function(e) {
+        current_poll_run.anonymous = true;
+        $('#bu_poll_run_anonymous').removeClass('btn-outline-secondary').addClass('btn-primary');
+        $('#bu_poll_run_non_anonymous').addClass('btn-outline-secondary').removeClass('btn-primary');
+        update_run_buttons();
     });
-//     edit_poll(stored_polls[0]);
+    $('#bu_poll_run_non_anonymous').click(function(e) {
+        current_poll_run.anonymous = false;
+        $('#bu_poll_run_non_anonymous').removeClass('btn-outline-secondary').addClass('btn-primary');
+        $('#bu_poll_run_anonymous').addClass('btn-outline-secondary').removeClass('btn-primary');
+        update_run_buttons();
+    });
+//     if ('#{!!DEVELOPMENT}' === 'true')
+//         new_poll_run(stored_polls[0].pid);
+    setInterval(function() {
+        update_stored_polls();
+    }, 60000);
 });
 </script>

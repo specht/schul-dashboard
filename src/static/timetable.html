@@ -71,46 +71,6 @@
   </div>
 </div>
 
-<div class="modal" id="pollModal" tabindex="-1" role="dialog" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-scrollable modal-lg modal-dialog-centered" role="document">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title poll-title"></h5>
-            </div>
-            <div class="modal-body">
-                <div class='row'>
-                    <div class='col-md-12 poll-items'></div>
-                </div>
-            </div>
-            <div class="modal-footer">
-                <div class='poll_submit_success mr-auto'><i class='fa fa-check-circle text-success'></i>&nbsp;&nbsp;Die Antworten wurden gespeichert.</div>
-                <div class='poll_submit_update_message mr-auto'><i class='fa fa-info-circle text-info'></i>&nbsp;&nbsp;Sie haben bereits abgestimmt, können Ihre Einträge aber aktualisieren.</div>
-                <div class='poll_submit_error mr-auto'><i class='fa fa-exclamation-circle text-danger'></i>&nbsp;&nbsp;Die Antworten konnten nicht gespeichert werden<span class='poll_submit_error_message'></span></div>
-                <button id='bu_submit_poll' type="button" class="btn btn-outline-success" disabled><i class='fa fa-send'></i>&nbsp;&nbsp;Senden</button>
-                <button id='bu_close_poll_modal' type="button" class="btn btn-secondary" data-dismiss="modal">Schließen</button>
-            </div>
-        </div>
-    </div>
-</div>
-
-<div class="modal" id="pollResultsModal" tabindex="-1" role="dialog" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-scrollable modal-lg modal-dialog-centered" role="document">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title poll-title"></h5>
-            </div>
-            <div class="modal-body">
-                <div class='row'>
-                    <div class='col-md-12 poll-results-here'></div>
-                </div>
-            </div>
-            <div class="modal-footer">
-                <button id='bu_close_show_poll_results_modal' type="button" class="btn btn-secondary" data-dismiss="modal">Schließen</button>
-            </div>
-        </div>
-    </div>
-</div>
-
 <style>
 .fc-button-primary {
     background-color: #{desaturated_color};
@@ -138,33 +98,28 @@
 <script>
 var my_lessons = #{(@@lessons_for_shorthand[@session_user[:shorthand]] || []).to_json};
 var tablet_logged_in = ('#{tablet_logged_in?}' === 'true');
-var poll_data = null;
 
-function collect_poll_data() {
-    poll_data.response = {};
-    for (let item_index in poll_data.poll.items) {
-        let item = poll_data.poll.items[item_index];
-        if (item.type === 'radio') {
-            poll_data.response[item_index] = null;
-            if (poll_data.widgets[item_index].find('.selected').length > 0)
-                poll_data.response[item_index] = parseInt($(poll_data.widgets[item_index].find('.selected').eq(0)).data('answer-index'));
-        } else if (item.type === 'checkbox') {
-            poll_data.response[item_index] = [];
-            jQuery.each(poll_data.widgets[item_index].find('.selected'), function(_, p) {
-                let answer_index = parseInt($(p).data('answer-index'));
-                poll_data.response[item_index].push(answer_index);
-            });
-        } else if (item.type === 'textarea') {
-            poll_data.response[item_index] = poll_data.widgets[item_index].val().trim();
-        }
-    }
-    let current_response_json = JSON.stringify(poll_data.response);
-    let stored_response_json = JSON.stringify(poll_data.stored_response);
-    if ((current_response_json !== stored_response_json)) {
-        $('#bu_submit_poll').prop('disabled', false).removeClass('btn-outline-success').addClass('btn-success');
-    } else {
-        $('#bu_submit_poll').prop('disabled', true).removeClass('btn-success').addClass('btn-outline-success');
-    }
+function duration_to_s(a, b) {
+    let diff = 0;
+    if (typeof(b) === 'undefined')
+        diff = moment(a).unix() - moment().unix();
+    else
+        diff = moment(b).unix() - moment(a).unix();
+    let duration = moment.duration(diff * 1000);
+    duration_parts = [];
+    if (duration.days() > 0)
+        duration_parts.push(`${duration.days()} Tag${duration.days() > 1 ? 'e' : ''}`);
+    if (duration.hours() > 0)
+        duration_parts.push(`${duration.hours()} Stunde${duration.hours() > 1 ? 'n' : ''}`);
+    if (duration.minutes() > 0)
+        duration_parts.push(`${duration.minutes()} Minute${duration.minutes() > 1 ? 'n' : ''}`);
+    if (duration_parts.length === 0)
+        return null;
+    let und_parts = [];
+    und_parts.push((duration_parts.slice(0, duration_parts.length - 1)).join(', '));
+    und_parts.push(duration_parts[duration_parts.length - 1]);
+    und_parts = und_parts.filter(function(e) { return e !== null && e.length > 0; });
+    return und_parts.join(' und ');
 }
 
 document.addEventListener('DOMContentLoaded', function() {
@@ -218,7 +173,6 @@ document.addEventListener('DOMContentLoaded', function() {
                     f.onload = function(e) {
                         let result = JSON.parse(e.target.result);
                         events = result.events;
-//                 TODO: show if timetable is up to date or not
                         if ('#{@session_user[:can_upload_vplan]}' === 'true') {
                             moment.locale('de');
 //                             let timetable_date = moment(oReq.getResponseHeader('last-modified')).format('ddd, DD.MM.YYYY, LT');
@@ -813,116 +767,28 @@ document.addEventListener('DOMContentLoaded', function() {
 //             }
 //         }
     }
-    $('.bu-launch-poll').click(function(e) {
-        let poll_id = $(e.target).data('poll-id');
-        console.log('launching poll with id', poll_id);
-        poll_data = {};
-        poll_data.widgets = {};
-        api_call('/api/get_poll', {pid: poll_id}, function(data) {
-            if (data.success) {
-                poll_data.pid = poll_id;
-                poll_data.poll = data.poll;
-                poll_data.stored_response = data.stored_response;
-                $('#pollModal .poll-title').text(data.poll.title);
-                $('#pollModal .poll_submit_success').hide();
-                if (poll_data.stored_response === null)
-                    $('#pollModal .poll_submit_update_message').hide();
+    jQuery.each($('.moment-countdown'), function(_, e) {
+        let t = moment($(e).data('target-timestamp'));
+        let bl = $(e).data('before-label');
+        let al = $(e).data('after-label');
+        let s = duration_to_s(t);
+        if (s === null)
+            $(e).text(al);
+        else
+            $(e).text(`${bl} ${s}`);
+        (function(e, t, bl, al) {
+            setInterval(function() {
+                let s = duration_to_s(t);
+                if (s === null)
+                    $(e).text(al);
                 else
-                    $('#pollModal .poll_submit_update_message').show();
-                $('#pollModal .poll_submit_error').hide();
-                let div = $('#pollModal .poll-items');
-                div.empty();
-                for (let item_index in data.poll.items) {
-                    let item = data.poll.items[item_index];
-                    let item_title = $('<p>').append($('<strong>').text(item.title));
-                    if (item.type === 'checkbox')
-                        item_title.append(' ').append($('<em>').text('(Mehrfachnennungen möglich)'));
-                    div.append(item_title);
-                    if (item.type === 'radio' || item.type === 'checkbox') {
-                        let bc = $('<div>').addClass('poll_radio_buttons').data('item-index', item_index);
-                        poll_data.widgets[item_index] = bc;
-                        bc.data('poll_item_type', item.type);
-                        for (let answer_index in item.answers) {
-                            let answer = item.answers[answer_index];
-                            let p = $('<p>').text(answer).data('answer-index', answer_index);
-                            if (item.type === 'radio')
-                                p.prepend($("<i class='icon icon-selected fa fa-dot-circle-o'></i>"));
-                            else
-                                p.prepend($("<i class='icon icon-selected fa fa-check-circle-o'></i>"));
-                            p.prepend($("<i class='icon icon-unselected fa fa-circle-thin'></i>"));
-                            if (item.type === 'radio') {
-                                if ((poll_data.stored_response || {})[item_index] == answer_index)
-                                    p.addClass('selected');
-                            } else if (item.type === 'checkbox') {
-                                if ((((poll_data.stored_response || {})[item_index]) || []).indexOf(parseInt(answer_index)) >= 0)
-                                    p.addClass('selected');
-                            }
-                            p.click(function(e) {
-                                let p = $(e.target);
-                                let parent = $(e.target.closest('.poll_radio_buttons'));
-                                let type = parent.data('poll_item_type');
-                                let p_was_selected = p.hasClass('selected');
-                                if (type === 'radio') {
-                                    parent.find('p').removeClass('selected');
-                                }
-                                if (p_was_selected) {
-                                    p.removeClass('selected');
-                                } else {
-                                    p.addClass('selected');
-                                }
-                                collect_poll_data();
-                            });
-                            bc.append(p);
-                        }
-                        div.append(bc);
-                    } else if (item.type === 'textarea') {
-                        let textarea = $('<textarea>').addClass('form-control').data('item-index', item_index);
-                        textarea.val((poll_data.stored_response || {})[item_index] || '');
-                        poll_data.widgets[item_index] = textarea;
-                        textarea.change(function(e) { collect_poll_data(); });
-                        div.append(textarea);
-                    } else if (item.type === 'paragraph') {
-                        let p = $('<p>').text(item.text);
-                        div.append(p);
-                    }
-                }
-                collect_poll_data();
-                $('#pollModal').modal('show');
-            }
-        });
+                    $(e).text(`${bl} ${s}`);
+            }, 60000);
+        })(e, t, bl, al);
     });
-    $('.bu-show-poll-results').click(function(e) {
-        let poll_id = $(e.target).data('poll-id');
-        api_call('/api/get_poll_results', {pid: poll_id}, function(data) {
-            if (data.success) {
-                $('#pollResultsModal .poll-title').html(data.title);
-                $('#pollResultsModal .poll-results-here').html(data.html);
-                $('#pollResultsModal').modal('show');
-            }
-        });
-    });
-    $('#bu_submit_poll').click(function(e) {
-        if (poll_data.response !== null) {
-            $('#pollModal .poll_submit_success').hide();
-            $('#pollModal .poll_submit_update_message').hide();
-            $('#pollModal .poll_submit_error').hide();
-            let store_response = JSON.stringify(poll_data.response);
-            api_call('/api/submit_poll', {pid: poll_data.pid, response: store_response}, function(data) {
-                if (data.success) {
-                    if (typeof(data.error) !== 'undefined') {
-                        $('#pollModal .poll_submit_error_message').text(': ' + data.error);
-                        $('#pollModal .poll_submit_error').fadeIn();
-                    } else {
-                        $('#pollModal .poll_submit_success').fadeIn();
-                        poll_data.stored_response = poll_data.response;
-                        collect_poll_data();
-                    }
-                } else {
-                    $('#pollModal .poll_submit_error_message').text('');
-                    $('#pollModal .poll_submit_error').fadeIn();
-                }
-            });
-        }
+    $('.bu-launch-poll').click(function(e) {
+        let prid = $(e.target).data('poll-run-id');
+        launch_poll(prid);
     });
 });
 </script>

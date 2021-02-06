@@ -15,9 +15,13 @@
                     #{print_timetable_chooser()}
                 </div>
             </div>
-            <div class='future_homework' style='display: none;'></div>
+            <div class='hint future_homework' style='display: none;'></div>
         </div>
-        <div class='#{tablet_logged_in? ? 'col-md-4' : 'col-md-8 offset-md-2'}'>
+        <div class='#{tablet_logged_in? ? '' : 'col-lg-2 col-md-12 side-panel'}'>
+            #{print_lehrerzimmer_panel()}
+            #{print_current_polls()}
+        </div>
+        <div class='#{tablet_logged_in? ? 'col-md-4' : 'col-lg-8 col-md-12'}'>
             <div class='card' style='margin-bottom: 20px; display: #{session_user_has_streaming_button? ? 'block' : 'none'};'>
                 <div class='card-body' style='padding: 5px 15px;'>
                     <i class='fa fa-lightbulb-o' style='font-size: 200%;'></i>&nbsp;&nbsp;<span style='position: relative; top: -4px;'>Hier kommst du zu deinem ggf. aktivierten Klassenstream:</span>&nbsp;&nbsp;<a class='float-right btn btn fc-button-primary streaming-button' href='#{class_stream_link_for_session_user}' target='_blank'><i class='fa fa-microphone'></i>&nbsp;&nbsp;Zum Klassenstream&nbsp;&nbsp;<i class='fa fa-angle-double-right'></i></a>
@@ -29,15 +33,13 @@
                 <span class='bullet'><i class='fa fa-check'></i></span><b>Schritt 3:</b> Stunde auswählen
                 </div>
             </div>
-            #{print_lehrerzimmer_panel()}
-            #{print_current_polls()}
             <div id='calendar' style='margin-bottom: 30px;'>
             </div>
         </div>
-        <div class='#{tablet_logged_in? ? 'col-md-6' : 'col-md-2'} timetable_chooser tablet_timetable_chooser' style='#{tablet_logged_in? ? 'display: none;' : ''}'>
+        <div class='#{tablet_logged_in? ? 'col-md-6' : 'col-lg-2 col-md-12 side-panel'} timetable_chooser tablet_timetable_chooser' style='#{tablet_logged_in? ? 'display: none;' : ''}'>
             #{print_timetable_chooser()}
             <div class='weekend_events' style='display: none;'></div>
-            <div class='future_homework' style='display: none;'></div>
+            <div class='hint future_homework' style='display: none;'></div>
         </div>
     </div>
 </div>

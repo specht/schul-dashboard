@@ -3439,7 +3439,6 @@ class Main < Sinatra::Base
         return '' if teacher_tablet_logged_in?
         StringIO.open do |io|
             io.puts "<div class='hint lehrerzimmer-panel'>"
-            io.puts "<a href='/jitsi/Lehrerzimmer' target='_blank' class='float-right btn btn-success'><i class='fa fa-microphone'></i>&nbsp;&nbsp;Zum Jitsi-Lehrerzimmer&nbsp;<i class='fa fa-angle-double-right'></i></a>"
             io.puts "<div style='padding-top: 7px;'>Momentan im Jitsi-Lehrerzimmer:&nbsp;"
 #             <span class='btn btn-xs ttc'>Sp</span>
             rooms = current_jitsi_rooms()
@@ -3462,7 +3461,10 @@ class Main < Sinatra::Base
             if nobody_here
                 io.puts "<em>niemand</em>"
             end
-            io.puts "</div><div style='clear: both;'></div>"
+            io.puts "</div>"
+            io.puts "<hr />"
+            io.puts "<a href='/jitsi/Lehrerzimmer' target='_blank' class='float-right btn btn-success'><i class='fa fa-microphone'></i>&nbsp;&nbsp;Lehrerzimmer&nbsp;<i class='fa fa-angle-double-right'></i></a>"
+            io.puts "<div style='clear: both;'></div>"
             io.puts "</div>"
             io.string
         end
@@ -3489,20 +3491,20 @@ class Main < Sinatra::Base
         end
         return '' if entries.empty?
         StringIO.open do |io|
-            io.puts "<div class='hint'>"
             entries.each.with_index do |entry, _|
-                io.puts "<hr />" if _ > 0
+                io.puts "<div class='hint'>"
                 poll_title = entry[:poll_title]
                 poll_run = entry[:poll_run]
                 organizer = entry[:organizer]
                 io.puts "<div style='float: left; width: 36px; height: 36px; margin-right: 15px; position: relative; top: 5px; left: 4px;'>"
                 io.puts user_icon(organizer, 'avatar-fill')
                 io.puts "</div>"
-                io.puts "<button style='margin-left: 15px; position: relative; top: 5px;' class='float-right btn btn-success bu-launch-poll' data-poll-run-id='#{poll_run[:id]}'>Zur Umfrage&nbsp;<i class='fa fa-angle-double-right'></i></button>"
-                io.puts "<div>#{@@user_info[organizer][:display_last_name]} hat #{teacher_logged_in? ? 'Sie' : 'dich'} zu einer Umfrage eingeladen: <strong>#{poll_title}</strong><br />#{teacher_logged_in? ? 'Sie können' : 'Du kannst'} bis zum #{Date.parse(poll_run[:end_date]).strftime('%d.%m.%Y')} um #{poll_run[:end_time]} Uhr teilnehmen (die Umfrage <span class='moment-countdown' data-target-timestamp='#{poll_run[:end_date]}T#{poll_run[:end_time]}:00' data-before-label='läuft noch' data-after-label='ist vorbei'></span>).</div>"
+                io.puts "<div>#{@@user_info[organizer][:display_last_name]} hat #{teacher_logged_in? ? 'Sie' : 'dich'} zu einer Umfrage eingeladen: <strong>#{poll_title}</strong>. #{teacher_logged_in? ? 'Sie können' : 'Du kannst'} bis zum #{Date.parse(poll_run[:end_date]).strftime('%d.%m.%Y')} um #{poll_run[:end_time]} Uhr teilnehmen (die Umfrage <span class='moment-countdown' data-target-timestamp='#{poll_run[:end_date]}T#{poll_run[:end_time]}:00' data-before-label='läuft noch' data-after-label='ist vorbei'></span>).</div>"
+                io.puts "<hr />"
+                io.puts "<button class='float-right btn btn-success bu-launch-poll' data-poll-run-id='#{poll_run[:id]}'>Zur Umfrage&nbsp;<i class='fa fa-angle-double-right'></i></button>"
                 io.puts "<div style='clear: both;'></div>"
+                io.puts "</div>"
             end
-            io.puts "</div>"
             io.string
         end
     end

@@ -99,29 +99,6 @@
 var my_lessons = #{(@@lessons_for_shorthand[@session_user[:shorthand]] || []).to_json};
 var tablet_logged_in = ('#{tablet_logged_in?}' === 'true');
 
-function duration_to_s(a, b) {
-    let diff = 0;
-    if (typeof(b) === 'undefined')
-        diff = moment(a).unix() - moment().unix();
-    else
-        diff = moment(b).unix() - moment(a).unix();
-    let duration = moment.duration(diff * 1000);
-    duration_parts = [];
-    if (duration.days() > 0)
-        duration_parts.push(`${duration.days()} Tag${duration.days() > 1 ? 'e' : ''}`);
-    if (duration.hours() > 0)
-        duration_parts.push(`${duration.hours()} Stunde${duration.hours() > 1 ? 'n' : ''}`);
-    if (duration.minutes() > 0)
-        duration_parts.push(`${duration.minutes()} Minute${duration.minutes() > 1 ? 'n' : ''}`);
-    if (duration_parts.length === 0)
-        return null;
-    let und_parts = [];
-    und_parts.push((duration_parts.slice(0, duration_parts.length - 1)).join(', '));
-    und_parts.push(duration_parts[duration_parts.length - 1]);
-    und_parts = und_parts.filter(function(e) { return e !== null && e.length > 0; });
-    return und_parts.join(' und ');
-}
-
 document.addEventListener('DOMContentLoaded', function() {
     let narrow_window = ($(window).width() <= 640);
     let initial_date = '#{initial_date}';
@@ -767,28 +744,5 @@ document.addEventListener('DOMContentLoaded', function() {
 //             }
 //         }
     }
-    jQuery.each($('.moment-countdown'), function(_, e) {
-        let t = moment($(e).data('target-timestamp'));
-        let bl = $(e).data('before-label');
-        let al = $(e).data('after-label');
-        let s = duration_to_s(t);
-        if (s === null)
-            $(e).text(al);
-        else
-            $(e).text(`${bl} ${s}`);
-        (function(e, t, bl, al) {
-            setInterval(function() {
-                let s = duration_to_s(t);
-                if (s === null)
-                    $(e).text(al);
-                else
-                    $(e).text(`${bl} ${s}`);
-            }, 60000);
-        })(e, t, bl, al);
-    });
-    $('.bu-launch-poll').click(function(e) {
-        let prid = $(e.target).data('poll-run-id');
-        launch_poll(prid);
-    });
 });
 </script>

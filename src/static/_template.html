@@ -183,8 +183,6 @@ function collect_poll_run_data() {
 //         poll_run_data.response = null;
     let current_response_json = JSON.stringify(poll_run_data.response);
     let stored_response_json = JSON.stringify(poll_run_data.stored_response);
-    console.log(stored_response_json);
-    console.log(current_response_json);
     if (current_response_json !== stored_response_json) {
         $('#bu_discard_poll_results').prop('disabled', false).removeClass('btn-outline-secondary').addClass('btn-secondary');
         $('#bu_submit_poll_results').prop('disabled', false).removeClass('btn-outline-success').addClass('btn-success');
@@ -198,102 +196,105 @@ function collect_poll_run_data() {
     }
 }
 
-function launch_poll(prid) {
-    console.log('Launching poll run with prid', prid);
+function launch_poll(prid, external_code) {
+    if (typeof(external_code) === 'undefined')
+        external_code = null;
+//     console.log('Launching poll run with prid', prid, 'and code', external_code);
     force_close_poll_response = false;
     poll_run_data = {};
     poll_run_data.widgets = {};
-    api_call('/api/get_poll_run', {prid: prid}, function(data) {
-        if (data.success) {
-            console.log(data);
-            poll_run_data.prid = data.poll_run.id;
-            poll_run_data.poll = data.poll;
-            poll_run_data.poll_run = data.poll_run;
-            poll_run_data.organizer = data.organizer;
-            poll_run_data.total_participants = data.total_participants;
-            poll_run_data.stored_response = data.stored_response;
-            if (poll_run_data.poll_run.anonymous) {
-                $('.poll-run-anonymous').show();
-                $('.poll-run-non-anonymous').hide();
-            } else {
-                $('.poll-run-anonymous').hide();
-                $('.poll-run-non-anonymous').show();
-            }
-            $('#pollResponseModal .poll-run-organizer').text(data.organizer);
-            $('#pollResponseModal .poll-run-total-participants').text(`${data.total_participants}`);
-            $('#pollResponseModal .poll-title').text(data.poll.title);
-            $('#pollResponseModal .poll_submit_success').hide();
-            if (JSON.stringify(poll_run_data.stored_response) === '{}')
-                $('#pollResponseModal .poll_submit_update_message').hide();
-            else
-                $('#pollResponseModal .poll_submit_update_message').show();
-            $('#pollResponseModal .poll_submit_error').hide();
-            let div = $('#pollResponseModal .poll-items');
-            div.empty();
-            for (let item_index in data.poll_run.items) {
-                let item = data.poll_run.items[item_index];
-                let item_title = $('<p>').append($('<strong>').text(item.title));
-                if (item.type === 'checkbox')
-                    item_title.append(' ').append($('<em>').text('(Mehrfachnennungen möglich)'));
-                div.append(item_title);
-                if (item.type === 'radio' || item.type === 'checkbox') {
-                    let bc = $('<div>').addClass('poll_radio_buttons').data('item-index', item_index);
-                    poll_run_data.widgets[item_index] = bc;
-                    bc.data('poll_item_type', item.type);
-                    for (let answer_index in item.answers) {
-                        let answer = item.answers[answer_index];
-                        let p = $('<p>').text(answer).data('answer-index', answer_index);
-                        if (item.type === 'radio')
-                            p.prepend($("<i class='icon icon-selected fa fa-dot-circle-o'></i>"));
-                        else
-                            p.prepend($("<i class='icon icon-selected fa fa-check-circle-o'></i>"));
-                        p.prepend($("<i class='icon icon-unselected fa fa-circle-thin'></i>"));
-                        if (item.type === 'radio') {
-                            if ((poll_run_data.stored_response || {})[item_index] == answer_index)
-                                p.addClass('selected');
-                        } else if (item.type === 'checkbox') {
-                            if ((((poll_run_data.stored_response || {})[item_index]) || []).indexOf(parseInt(answer_index)) >= 0)
-                                p.addClass('selected');
-                        }
-                        p.click(function(e) {
-                            let p = $(e.target);
-                            let parent = $(e.target.closest('.poll_radio_buttons'));
-                            let type = parent.data('poll_item_type');
-                            let p_was_selected = p.hasClass('selected');
-                            if (type === 'radio') {
-                                parent.find('p').removeClass('selected');
-                            }
-                            if (p_was_selected) {
-                                p.removeClass('selected');
-                            } else {
-                                p.addClass('selected');
-                            }
-                            collect_poll_run_data();
-                        });
-                        bc.append(p);
-                    }
-                    div.append(bc);
-                } else if (item.type === 'textarea') {
-                    let textarea = $('<textarea>').addClass('form-control').data('item-index', item_index);
-                    textarea.val((poll_run_data.stored_response || {})[item_index] || '');
-                    poll_run_data.widgets[item_index] = textarea;
-                    textarea.change(function(e) { collect_poll_run_data(); });
-                    div.append(textarea);
-                } else if (item.type === 'paragraph') {
-                    let p = $('<p>').text(item.text);
-                    div.append(p);
+    (function(external_code) {
+        api_call('/api/get_poll_run', {prid: prid, external_code: external_code}, function(data) {
+            if (data.success) {
+                poll_run_data.prid = data.poll_run.id;
+                poll_run_data.external_code = external_code;
+                poll_run_data.poll = data.poll;
+                poll_run_data.poll_run = data.poll_run;
+                poll_run_data.organizer = data.organizer;
+                poll_run_data.total_participants = data.total_participants;
+                poll_run_data.stored_response = data.stored_response;
+                if (poll_run_data.poll_run.anonymous) {
+                    $('.poll-run-anonymous').show();
+                    $('.poll-run-non-anonymous').hide();
+                } else {
+                    $('.poll-run-anonymous').hide();
+                    $('.poll-run-non-anonymous').show();
                 }
+                $('#pollResponseModal .poll-run-organizer').text(data.organizer);
+                $('#pollResponseModal .poll-run-total-participants').text(`${data.total_participants}`);
+                $('#pollResponseModal .poll-title').text(data.poll.title);
+                $('#pollResponseModal .poll_submit_success').hide();
+                if (JSON.stringify(poll_run_data.stored_response) === '{}')
+                    $('#pollResponseModal .poll_submit_update_message').hide();
+                else
+                    $('#pollResponseModal .poll_submit_update_message').show();
+                $('#pollResponseModal .poll_submit_error').hide();
+                let div = $('#pollResponseModal .poll-items');
+                div.empty();
+                for (let item_index in data.poll_run.items) {
+                    let item = data.poll_run.items[item_index];
+                    let item_title = $('<p>').append($('<strong>').text(item.title));
+                    if (item.type === 'checkbox')
+                        item_title.append(' ').append($('<em>').text('(Mehrfachnennungen möglich)'));
+                    div.append(item_title);
+                    if (item.type === 'radio' || item.type === 'checkbox') {
+                        let bc = $('<div>').addClass('poll_radio_buttons').data('item-index', item_index);
+                        poll_run_data.widgets[item_index] = bc;
+                        bc.data('poll_item_type', item.type);
+                        for (let answer_index in item.answers) {
+                            let answer = item.answers[answer_index];
+                            let p = $('<p>').text(answer).data('answer-index', answer_index);
+                            if (item.type === 'radio')
+                                p.prepend($("<i class='icon icon-selected fa fa-dot-circle-o'></i>"));
+                            else
+                                p.prepend($("<i class='icon icon-selected fa fa-check-circle-o'></i>"));
+                            p.prepend($("<i class='icon icon-unselected fa fa-circle-thin'></i>"));
+                            if (item.type === 'radio') {
+                                if ((poll_run_data.stored_response || {})[item_index] == answer_index)
+                                    p.addClass('selected');
+                            } else if (item.type === 'checkbox') {
+                                if ((((poll_run_data.stored_response || {})[item_index]) || []).indexOf(parseInt(answer_index)) >= 0)
+                                    p.addClass('selected');
+                            }
+                            p.click(function(e) {
+                                let p = $(e.target);
+                                let parent = $(e.target.closest('.poll_radio_buttons'));
+                                let type = parent.data('poll_item_type');
+                                let p_was_selected = p.hasClass('selected');
+                                if (type === 'radio') {
+                                    parent.find('p').removeClass('selected');
+                                }
+                                if (p_was_selected) {
+                                    p.removeClass('selected');
+                                } else {
+                                    p.addClass('selected');
+                                }
+                                collect_poll_run_data();
+                            });
+                            bc.append(p);
+                        }
+                        div.append(bc);
+                    } else if (item.type === 'textarea') {
+                        let textarea = $('<textarea>').addClass('form-control').data('item-index', item_index).css('margin-bottom', '15px');
+                        textarea.val((poll_run_data.stored_response || {})[item_index] || '');
+                        poll_run_data.widgets[item_index] = textarea;
+                        textarea.change(function(e) { collect_poll_run_data(); });
+                        div.append(textarea);
+                    } else if (item.type === 'paragraph') {
+                        let p = $('<p>').text(item.text);
+                        div.append(p);
+                    }
+                }
+                collect_poll_run_data();
+                $('#pollResponseModal').modal('show');
             }
-            collect_poll_run_data();
-            $('#pollResponseModal').modal('show');
-        }
-    });
+        });
+    })(external_code);
 }
 
 function show_poll_run_results(prid) {
     api_call('/api/get_poll_run_results', {prid: prid}, function(data) {
         if (data.success) {
-            console.log(data);
             $('#bu_poll_run_results_download_pdf').attr('href', `/api/poll_run_results_pdf/${data.prid}`);
             $('#pollRunResultsModal .poll-title').html(data.title);
             $('#pollRunResultsModal .poll-run-results-here').html(data.html);
@@ -327,10 +328,10 @@ function show_poll_run_results(prid) {
             </div>
             <div class="modal-body">
                 <div class='alert alert-success poll-run-anonymous' style='padding-left: 50px; position: relative;'>
-                <i style='font-size:200%; position: absolute; left: 12px; top: 18px;' class='fa fa-user-secret'></i>Diese Umfrage ist anonym. <span class='poll-run-organizer'></span> wird #{teacher_logged_in? ? 'Ihre' : 'deine'} Antworten sehen können, aber nicht wissen, wer welche Antworten gegeben hat.<br />Insgesamt nehmen <span class='poll-run-total-participants'></span> Teilnehmerinnen und Teilnehmer an dieser Umfrage teil.
+                <i style='font-size:200%; position: absolute; left: 12px; top: 18px;' class='fa fa-user-secret'></i>Diese Umfrage ist anonym. <span class='poll-run-organizer'></span> wird #{sus_logged_in? ? 'deine' : 'Ihre'} Antworten sehen können, aber nicht wissen, wer welche Antworten gegeben hat.<br />Insgesamt nehmen <span class='poll-run-total-participants'></span> Teilnehmerinnen und Teilnehmer an dieser Umfrage teil.
                 </div>
                 <div class='alert alert-warning poll-run-non-anonymous' style='padding-left: 55px; position: relative;'>
-                <i style='font-size:200%; position: absolute; left: 10px; top: 18px;' class='fa fa-address-card-o'></i><strong>Hinweis:</strong> Diese Umfrage ist nicht anonym.<br /> <span class='poll-run-organizer'></span> wird #{teacher_logged_in? ? 'Ihre' : 'deine'} Antworten sehen können und auch die Tatsache, dass die Antworten von #{teacher_logged_in? ? 'Ihnen' : 'dir'} stammen.
+                <i style='font-size:200%; position: absolute; left: 10px; top: 18px;' class='fa fa-address-card-o'></i><strong>Hinweis:</strong> Diese Umfrage ist nicht anonym.<br /> <span class='poll-run-organizer'></span> wird #{sus_logged_in? ? 'deine' : 'Ihre'} Antworten sehen können und auch die Tatsache, dass die Antworten von #{sus_logged_in? ? 'dir' : 'Ihnen'} stammen.
                 </div>
                 <div class='row'>
                     <div class='col-md-12 poll-items'></div>
@@ -342,9 +343,9 @@ function show_poll_run_results(prid) {
                 </div>
             </div>
             <div class="modal-footer">
-                <div class='poll_submit_success mr-auto'><i class='fa fa-check-circle text-success'></i>&nbsp;&nbsp;#{teacher_logged_in? ? 'Ihre' : 'Deine'} Antworten wurden gespeichert.</div>
-                <div class='poll_submit_update_message mr-auto'><i class='fa fa-info-circle text-info'></i>&nbsp;&nbsp;#{teacher_logged_in? ? 'Sie haben' : 'Du hast'} bereits abgestimmt, #{teacher_logged_in? ? 'können Ihre' : 'kannst deine'} Einträge aber aktualisieren.</div>
-                <div class='poll_submit_error mr-auto'><i class='fa fa-exclamation-circle text-danger'></i>&nbsp;&nbsp;#{teacher_logged_in? ? 'Ihre' : 'Deine'} Antworten konnten nicht gespeichert werden<span class='poll_submit_error_message'></span></div>
+                <div class='poll_submit_success mr-auto'><i class='fa fa-check-circle text-success'></i>&nbsp;&nbsp;#{sus_logged_in? ? 'Deine' : 'Ihre'} Antworten wurden gespeichert.</div>
+                <div class='poll_submit_update_message mr-auto'><i class='fa fa-info-circle text-info'></i>&nbsp;&nbsp;#{sus_logged_in? ? 'Du hast' : 'Sie haben'} bereits abgestimmt, #{sus_logged_in? ? 'kannst deine' : 'können Ihre'} Einträge aber aktualisieren.</div>
+                <div class='poll_submit_error mr-auto'><i class='fa fa-exclamation-circle text-danger'></i>&nbsp;&nbsp;#{sus_logged_in? ? 'Deine' : 'Ihre'} Antworten konnten nicht gespeichert werden<span class='poll_submit_error_message'></span></div>
                 <div id='save_poll_response_btn_container' style='display: inline-block;'>
                     <button id='bu_discard_poll_results' type="button" class="btn btn-outline-secondary" disabled><i class='fa fa-times'></i>&nbsp;&nbsp;Änderungen verwerfen</button>
                     <button id='bu_submit_poll_results' type="button" class="btn btn-outline-success" disabled><i class='fa fa-send'></i>&nbsp;&nbsp;Senden</button>
@@ -424,6 +425,30 @@ var weekdays = ['So', 'Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa'];
 var weekdays_long = ['Sonntag', 'Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag', 'Samstag'];
 var color_palette = #{color_palette.to_json};
 var color_scheme = '#{color_scheme}';
+
+function duration_to_s(a, b) {
+    let diff = 0;
+    if (typeof(b) === 'undefined')
+        diff = moment(a).unix() - moment().unix();
+    else
+        diff = moment(b).unix() - moment(a).unix();
+    let duration = moment.duration(diff * 1000);
+    duration_parts = [];
+    if (duration.days() > 0)
+        duration_parts.push(`${duration.days()} Tag${duration.days() > 1 ? 'e' : ''}`);
+    if (duration.hours() > 0)
+        duration_parts.push(`${duration.hours()} Stunde${duration.hours() > 1 ? 'n' : ''}`);
+    if (duration.minutes() > 0)
+        duration_parts.push(`${duration.minutes()} Minute${duration.minutes() > 1 ? 'n' : ''}`);
+    if (duration_parts.length === 0)
+        return null;
+    let und_parts = [];
+    und_parts.push((duration_parts.slice(0, duration_parts.length - 1)).join(', '));
+    und_parts.push(duration_parts[duration_parts.length - 1]);
+    und_parts = und_parts.filter(function(e) { return e !== null && e.length > 0; });
+    return und_parts.join(' und ');
+}
+
 window.addEventListener('load', function() {
     moment.locale('de');
     $('.fix-this-link').click(function(e) {
@@ -447,7 +472,7 @@ window.addEventListener('load', function() {
         $('#pollResponseModal .poll_submit_update_message').hide();
         $('#pollResponseModal .poll_submit_error').hide();
         let store_response = JSON.stringify(poll_run_data.response || {});
-        api_call('/api/submit_poll_run', {prid: poll_run_data.prid, response: store_response}, function(data) {
+        api_call('/api/submit_poll_run', {prid: poll_run_data.prid, external_code: poll_run_data.external_code, response: store_response}, function(data) {
             if (data.success) {
                 if (typeof(data.error) !== 'undefined') {
                     $('#pollResponseModal .poll_submit_error_message').text(': ' + data.error);
@@ -470,6 +495,30 @@ window.addEventListener('load', function() {
             e.stopImmediatePropagation();
             return false; 
         }
+    });
+    jQuery.each($('.moment-countdown'), function(_, e) {
+        let t = moment($(e).data('target-timestamp'));
+        let bl = $(e).data('before-label');
+        let al = $(e).data('after-label');
+        let s = duration_to_s(t);
+        if (s === null)
+            $(e).text(al);
+        else
+            $(e).text(`${bl} ${s}`);
+        (function(e, t, bl, al) {
+            setInterval(function() {
+                let s = duration_to_s(t);
+                if (s === null)
+                    $(e).text(al);
+                else
+                    $(e).text(`${bl} ${s}`);
+            }, 60000);
+        })(e, t, bl, al);
+    });
+    $('.bu-launch-poll').click(function(e) {
+        let prid = $(e.target).data('poll-run-id');
+        let external_code = $(e.target).data('poll-external-code') || '';
+        launch_poll(prid, external_code);
     });
 });
 </script>

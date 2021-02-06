@@ -134,7 +134,7 @@
                         <div class="form-group">
                             <label>Spontane Umfrage (ab jetzt)</label>
                             <div class="btn-group" style='width: 100%;'>
-                                <button type="button" class="btn btn-outline-secondary dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                                <button type="button" class="bu-poll-run-spontaneous-dropdown btn btn-outline-secondary dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
                                     Zeitdauer wählen
                                 </button>
                                 <div class="dropdown-menu">
@@ -732,19 +732,19 @@ function update_stored_polls() {
             row.append($('<td>').html(`<i class='fa fa-${icon} text-${color}'></i>&nbsp;&nbsp;${label}`));
             row.append($('<td>').html(`${m_start.format('ddd, D.M.Y HH:mm')} (${duration_parts.join(', ')})`));
             row.append($('<td>').html(`${poll_run.recipients.length} Teilnehmer (${poll_run.info.anonymous ? 'anonym' : 'personengebunden'})`));
-            let bu_poll_run_show_results = $('<button>').css('margin-left', '4px').addClass('btn').addClass('btn-primary').addClass('btn-xs').html(`<i class='fa fa-bar-chart'></i>&nbsp;&nbsp;${(state === 'running') ? 'Vorläufige' : ''} Ergebnisse`);
-            let bu_poll_run_edit = $('<button>').css('margin-left', '4px').addClass('btn').addClass('btn-secondary').addClass('btn-xs').html("<i class='fa fa-edit'></i>&nbsp;&nbsp;Bearbeiten");
+            let bu_poll_run_show_results = $('<button>').css('margin-left', '4px').addClass('btn').addClass('btn-primary').addClass('btn-xs').html(`<i class='fa fa-bar-chart'></i>&nbsp;&nbsp;${Math.floor(poll_run.response_count * 100 / poll_run.recipients.length)}%`);
+            let bu_poll_run_edit = $('<button>').css('margin-left', '4px').addClass('btn').addClass('btn-secondary').addClass('btn-xs').html("<i class='fa fa-edit'></i>");
             let bu_poll_run_stop = $('<button>').css('margin-left', '4px').addClass('btn').addClass('btn-danger').addClass('btn-xs').html(`<i class='fa fa-times'></i>&nbsp;&nbsp;Umfrage stoppen`);
             let bu_poll_run_delete = $('<button>').css('margin-left', '4px').addClass('btn').addClass('btn-danger').addClass('btn-xs').html(`<i class='fa fa-trash'></i>&nbsp;&nbsp;Ergebnisse löschen`);
-            let cell = $('<td>').css('text-align', 'right');
+            let cell = $('<td>').css('text-align', 'right').css('overflow', 'visible');
             if (state === 'running')
                 cell.append(bu_poll_run_stop);
             if (state === 'complete')
                 cell.append(bu_poll_run_delete);
             if (state === 'complete' || state === 'running')
                 cell.append(bu_poll_run_show_results);
-            if (state === 'pending')
-                cell.append(bu_poll_run_edit)
+//             if (state === 'pending')
+            cell.append(bu_poll_run_edit);
             row.append(cell);
             bu_poll_run_show_results.click(function(e) {
                 e.stopPropagation();
@@ -1013,6 +1013,9 @@ function new_poll_run(pid) {
     
     $('#bu_poll_run_anonymous').addClass('btn-outline-secondary').removeClass('btn-primary').prop('disabled', false);
     $('#bu_poll_run_non_anonymous').addClass('btn-outline-secondary').removeClass('btn-primary').prop('disabled', false);
+    $('#ti_run_start_date').prop('disabled', false);
+    $('#ti_run_start_time').prop('disabled', false);
+    $('.bu-poll-run-spontaneous-dropdown').prop('disabled', false);
     old_prid = null;
     recipients_list = {};
     update_net_recipients_list();
@@ -1070,6 +1073,9 @@ function edit_poll_run(prid) {
     }
     $('#bu_poll_run_anonymous').prop('disabled', true);
     $('#bu_poll_run_non_anonymous').prop('disabled', true);
+    $('#ti_run_start_date').prop('disabled', true);
+    $('#ti_run_start_time').prop('disabled', true);
+    $('.bu-poll-run-spontaneous-dropdown').prop('disabled', true);
         
     $('.bu-send-invitation').prop('disabled', false).removeClass('btn-outline-secondary').addClass('btn-success');
     $('.recipients_list').empty();

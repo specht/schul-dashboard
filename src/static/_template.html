@@ -174,7 +174,7 @@ function collect_poll_run_data() {
         }
     }
     $('.poll-run-progress').css('width', `${answered_item_count * 100 / total_item_count}%`);
-    $('.poll-run-progress-label').text(`${Math.floor(answered_item_count * 100 / total_item_count)}%`);
+    $('.poll-run-progress-label').text(`${answered_item_count} von ${total_item_count} Frage${total_item_count === 1 ? '' : 'n'} beantwortet`);
     for (let k in poll_run_data.response) {
         if (poll_run_data.response[k] === null || (typeof(poll_run_data.response[k]) === 'object' && poll_run_data.response[k].length === 0))
             delete poll_run_data.response[k];

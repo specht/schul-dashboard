@@ -902,7 +902,7 @@ function update_current_poll() {
                     let item_index = $(e.target).data('item-index');
                     let answer_index = $(e.target).data('answer-index');
                     let value = $(e.target).val().trim();
-                    let items = value.split('|');
+                    let items = value.split(';');
                     for (let i = 0; i < items.length; i++)
                         current_poll.items[item_index].answers.splice(answer_index + i, (i == 0) ? 1 : 0, items[i].trim());
                     update_buttons();
@@ -952,7 +952,7 @@ function update_current_poll() {
                 $('input').filter(`[data-item-index='${item_index}']`).filter(`[data-answer-index='${current_poll.items[item_index].answers.length - 1}']`).focus();
             });
             bu_add_answer_div.append(bu_add_answer);
-            bu_add_answer_div.append($('<span>').text('Hinweis: Sie können mehrere Antwortmöglichkeiten auf einmal hinzufügen, indem Sie sie die einzelnen Antworten mit | trennen.'));
+            bu_add_answer_div.append($('<span>').text('Hinweis: Sie können mehrere Antwortmöglichkeiten auf einmal hinzufügen, indem Sie sie die einzelnen Antworten mit einem Semikolon (;) trennen.'));
             div.append(bu_add_answer_div);
         } else if (item.type === 'textarea') {
             let textarea = $('<textarea>').addClass('form-control');

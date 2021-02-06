@@ -66,6 +66,7 @@
                         </div>
                     </div>
                 </div>
+                <hr />
                 <div class="form-group">
                     <label style='width: 100%;'><a href='#' class='bu_open_ext_users_modal float-right btn btn-success'>Externe Teilnehmer…</a>Teilnehmer <span class='text-muted'>(nur diesen Personen wird der Termin im Kalender angezeigt)</span>
                     </label>
@@ -90,7 +91,7 @@
                         <li>Klicken Sie hier, um die fehlenden Einladungen per E-Mail zu versenden:</li>
                         </ol>
                         <div style='text-align: center;'>
-                            <button class='btn btn-success' id='bu_send_missing_invitations' disabled><i class='fa fa-send'></i>&nbsp;&nbsp;Fehlende Einladungen versenden</button>
+                            <button class='btn btn-success' id='bu_send_missing_event_invitations' disabled><i class='fa fa-send'></i>&nbsp;&nbsp;Fehlende Einladungen versenden</button>
                         </div>
                     </div>
                     <div class='alert alert-warning div_invites_requested' style='display: none;'>
@@ -136,7 +137,7 @@
             </div>
             <div class="modal-body">
                 <p class='text-muted'>
-                Fügen Sie externe Teilnehmer hinzu, indem Sie Nutzer im Format <code>Vorname Nachname &lt;E-Mail-Adresse&gt;</code> hinzufügen, also z. B. <code>Max Mustermann &lt;max@example.com&gt;</code>. Trennen Sie mehrere Teilnehmer durch ein Komma oder einen Zeilenumbruch. Die Teilnehmer, die Sie hier eintragen, können Sie für alle Ihre Termine einladen, sie müssen also nur einmal hinzugefügt werden.
+                Fügen Sie externe Teilnehmer hinzu, indem Sie Nutzer im Format <code>Vorname Nachname &lt;E-Mail-Adresse&gt;</code> hinzufügen, also z. B. <code>Max Mustermann &lt;max@example.com&gt;</code>. Trennen Sie mehrere Teilnehmer durch ein Komma oder einen Zeilenumbruch. Die Teilnehmer, die Sie hier eintragen, können Sie für alle Ihre Termine und Umfragen einladen, sie müssen also nur einmal hinzugefügt werden.
                 </p>
                 <p class='text-muted'>
                 Bitte beachten Sie, dass alle Teilnehmer, die hier aufgeführt sind, noch nicht unbedingt zu Ihrem Termin eingeladen sind. Sie müssen, wie reguläre Teilnehmer auch, über das Suchfeld hinzugefügt werden.
@@ -197,7 +198,7 @@ function pending_changes() {
         (old_jitsi !== ($('#ti_event_jitsi').data('state') === 'yes'));
     if (flag)
         $('.bu-send-invitation').prop('disabled', true).removeClass('btn-success').addClass('btn-outline-secondary');
-    $('#bu_send_missing_invitations').prop('disabled', flag);
+    $('#bu_send_missing_event_invitations').prop('disabled', flag);
     return flag;
 }
 
@@ -334,7 +335,7 @@ function update_net_recipients_list() {
                 bu_invite.click(function(e) {
                     let eid = $(e.target).closest('.btn').data('eid');
                     let email = $(e.target).closest('.btn').data('email');
-                    api_call('/api/invite_external_user', {eid: eid, email: email}, function(data) {
+                    api_call('/api/invite_external_user_for_event', {eid: eid, email: email}, function(data) {
                         if (data.success)
                             update_net_recipients_list();
                     });
@@ -515,9 +516,16 @@ function update_external_users_for_session_user() {
 function new_event() {
     $('.lb_title').text('Neuer Termin');
     $('#ti_title').val('');
-    $('#ti_date').val('#{Date.today.to_s}');
-    $('#ti_start_time').val('08:00');
-    $('#ti_end_time').val('10:00');
+    
+    let minutes = 60;
+    let m = moment();
+    let start_date = m.format('YYYY-MM-DD');
+    $('#ti_date').val(start_date);
+    $('#ti_start_time').val(m.format('HH:mm'));
+    m = m.add(minutes, 'minutes');
+    if (m.format('YYYY-MM-DD') !== start_date)
+        m = moment(`${start_date}T23:59:00`);
+    $('#ti_end_time').val(m.format('HH:mm'));
     if ($('#ti_event_jitsi').data('state') !== 'yes')
         $('#ti_event_jitsi').click();
     $('#summernote').summernote('reset');
@@ -712,8 +720,8 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
     
-    $('#bu_send_missing_invitations').click(function(e) {
-        api_call('/api/send_missing_invitations', {eid: old_eid}, function(data) {
+    $('#bu_send_missing_event_invitations').click(function(e) {
+        api_call('/api/send_missing_event_invitations', {eid: old_eid}, function(data) {
             console.log(data);
             if (data.success) {
                 update_net_recipients_list();

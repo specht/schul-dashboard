@@ -165,7 +165,7 @@ class Main < Sinatra::Base
         respond(:invitations => invitations, :invitation_requested => invitation_requested)
     end
     
-    def self.invite_external_user(eid, email, session_user_email)
+    def self.invite_external_user_for_event(eid, email, session_user_email)
         STDERR.puts "Sending invitation mail for event #{eid} to #{email}"
         timestamp = Time.now.to_i
         data = {}
@@ -203,7 +203,7 @@ class Main < Sinatra::Base
                 io.string
             end
         end
-        $neo4j.neo4j_query(<<~END_OF_QUERY, data)
+        rows = $neo4j.neo4j_query(<<~END_OF_QUERY, data)
             MATCH (e:Event {id: {eid}})<-[rt:IS_PARTICIPANT]-(r)
             WHERE (r:ExternalUser OR r:PredefinedExternalUser) AND (r.email = {email}) AND COALESCE(rt.deleted, false) = false AND COALESCE(e.deleted, false) = false
             SET rt.invitations = COALESCE(rt.invitations, []) + [{timestamp}]
@@ -211,10 +211,10 @@ class Main < Sinatra::Base
         END_OF_QUERY
     end
     
-    post '/api/invite_external_user' do
+    post '/api/invite_external_user_for_event' do
         require_teacher!
         data = parse_request_data(:required_keys => [:eid, :email])
-        self.class.invite_external_user(data[:eid], data[:email], @session_user[:email])
+        self.class.invite_external_user_for_event(data[:eid], data[:email], @session_user[:email])
         respond({})
     end
 end

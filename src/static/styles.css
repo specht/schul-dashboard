@@ -1515,16 +1515,16 @@ span.bv {
     margin: 0 2px;
 }
 
-.polls-container tbody tr:hover {
+/*.polls-container tbody tr:hover {
     background-color: #fef4a5;
-}
+}*/
 
 .polls-container tbody td {
-    user-select: none;
+/*     user-select: none; */
 }
 
 .polls-container tbody tr {
-    cursor: pointer;
+/*     cursor: pointer; */
 }
 
 .klassen_table {
@@ -1781,6 +1781,15 @@ tr.sep td {
     width: 24px;
     height: 24px;
     border-radius: 100%;
+    background-size: cover;
+}
+
+.avatar-fill {
+    width: 100%;
+    height: 100%;
+    border-radius: 100%;
+    cursor: pointer;
+    transition: box-shadow 0.2s ease-in-out;
     background-size: cover;
 }
 

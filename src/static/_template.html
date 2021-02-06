@@ -99,7 +99,11 @@
         background-color: rgba(255, 255, 255, 0.75); 
     }
     
-    .form-control:disabled, .form-control[readonly] {
+    .form-control:disabled {
+        opacity: 0.7;
+    }
+
+    .form-control[readonly] {
         background-color: rgba(255, 255, 255, 0.5);
     }
 
@@ -138,6 +142,168 @@
 
 <body>
 
+<script>
+var poll_run_data = null;
+var force_close_poll_response = false;
+
+function collect_poll_run_data() {
+    // returns whether we have pending changes
+    poll_run_data.response = {};
+    let answered_item_count = 0;
+    let total_item_count = 0;
+    for (let item_index in poll_run_data.poll_run.items) {
+        let item = poll_run_data.poll_run.items[item_index];
+        if (item.type === 'radio') {
+            total_item_count += 1;
+            poll_run_data.response[item_index] = null;
+            if (poll_run_data.widgets[item_index].find('.selected').length > 0)
+                poll_run_data.response[item_index] = parseInt($(poll_run_data.widgets[item_index].find('.selected').eq(0)).data('answer-index'));
+            if (poll_run_data.response[item_index] !== null)
+                answered_item_count += 1;
+        } else if (item.type === 'checkbox') {
+            total_item_count += 1;
+            poll_run_data.response[item_index] = [];
+            jQuery.each(poll_run_data.widgets[item_index].find('.selected'), function(_, p) {
+                let answer_index = parseInt($(p).data('answer-index'));
+                poll_run_data.response[item_index].push(answer_index);
+            });
+            if (poll_run_data.response[item_index].length > 0)
+                answered_item_count += 1;
+        } else if (item.type === 'textarea') {
+            poll_run_data.response[item_index] = poll_run_data.widgets[item_index].val().trim();
+        }
+    }
+    $('.poll-run-progress').css('width', `${answered_item_count * 100 / total_item_count}%`);
+    $('.poll-run-progress-label').text(`${Math.floor(answered_item_count * 100 / total_item_count)}%`);
+    for (let k in poll_run_data.response) {
+        if (poll_run_data.response[k] === null || (typeof(poll_run_data.response[k]) === 'object' && poll_run_data.response[k].length === 0))
+            delete poll_run_data.response[k];
+    }
+//     if (Object.keys(poll_run_data.response).length === 0)
+//         poll_run_data.response = null;
+    let current_response_json = JSON.stringify(poll_run_data.response);
+    let stored_response_json = JSON.stringify(poll_run_data.stored_response);
+    console.log(stored_response_json);
+    console.log(current_response_json);
+    if (current_response_json !== stored_response_json) {
+        $('#bu_discard_poll_results').prop('disabled', false).removeClass('btn-outline-secondary').addClass('btn-secondary');
+        $('#bu_submit_poll_results').prop('disabled', false).removeClass('btn-outline-success').addClass('btn-success');
+        $('#bu_close_poll_response_modal').prop('disabled', true).removeClass('btn-secondary').addClass('btn-outline-secondary');
+        return true;
+    } else {
+        $('#bu_discard_poll_results').prop('disabled', true).removeClass('btn-secondary').addClass('btn-outline-secondary');
+        $('#bu_submit_poll_results').prop('disabled', true).removeClass('btn-success').addClass('btn-outline-success');
+        $('#bu_close_poll_response_modal').prop('disabled', false).removeClass('btn-outline-secondary').addClass('btn-secondary');
+        return false;
+    }
+}
+
+function launch_poll(prid) {
+    console.log('Launching poll run with prid', prid);
+    force_close_poll_response = false;
+    poll_run_data = {};
+    poll_run_data.widgets = {};
+    api_call('/api/get_poll_run', {prid: prid}, function(data) {
+        if (data.success) {
+            console.log(data);
+            poll_run_data.prid = data.poll_run.id;
+            poll_run_data.poll = data.poll;
+            poll_run_data.poll_run = data.poll_run;
+            poll_run_data.organizer = data.organizer;
+            poll_run_data.total_participants = data.total_participants;
+            poll_run_data.stored_response = data.stored_response;
+            if (poll_run_data.poll_run.anonymous) {
+                $('.poll-run-anonymous').show();
+                $('.poll-run-non-anonymous').hide();
+            } else {
+                $('.poll-run-anonymous').hide();
+                $('.poll-run-non-anonymous').show();
+            }
+            $('#pollResponseModal .poll-run-organizer').text(data.organizer);
+            $('#pollResponseModal .poll-run-total-participants').text(`${data.total_participants}`);
+            $('#pollResponseModal .poll-title').text(data.poll.title);
+            $('#pollResponseModal .poll_submit_success').hide();
+            if (JSON.stringify(poll_run_data.stored_response) === '{}')
+                $('#pollResponseModal .poll_submit_update_message').hide();
+            else
+                $('#pollResponseModal .poll_submit_update_message').show();
+            $('#pollResponseModal .poll_submit_error').hide();
+            let div = $('#pollResponseModal .poll-items');
+            div.empty();
+            for (let item_index in data.poll_run.items) {
+                let item = data.poll_run.items[item_index];
+                let item_title = $('<p>').append($('<strong>').text(item.title));
+                if (item.type === 'checkbox')
+                    item_title.append(' ').append($('<em>').text('(Mehrfachnennungen möglich)'));
+                div.append(item_title);
+                if (item.type === 'radio' || item.type === 'checkbox') {
+                    let bc = $('<div>').addClass('poll_radio_buttons').data('item-index', item_index);
+                    poll_run_data.widgets[item_index] = bc;
+                    bc.data('poll_item_type', item.type);
+                    for (let answer_index in item.answers) {
+                        let answer = item.answers[answer_index];
+                        let p = $('<p>').text(answer).data('answer-index', answer_index);
+                        if (item.type === 'radio')
+                            p.prepend($("<i class='icon icon-selected fa fa-dot-circle-o'></i>"));
+                        else
+                            p.prepend($("<i class='icon icon-selected fa fa-check-circle-o'></i>"));
+                        p.prepend($("<i class='icon icon-unselected fa fa-circle-thin'></i>"));
+                        if (item.type === 'radio') {
+                            if ((poll_run_data.stored_response || {})[item_index] == answer_index)
+                                p.addClass('selected');
+                        } else if (item.type === 'checkbox') {
+                            if ((((poll_run_data.stored_response || {})[item_index]) || []).indexOf(parseInt(answer_index)) >= 0)
+                                p.addClass('selected');
+                        }
+                        p.click(function(e) {
+                            let p = $(e.target);
+                            let parent = $(e.target.closest('.poll_radio_buttons'));
+                            let type = parent.data('poll_item_type');
+                            let p_was_selected = p.hasClass('selected');
+                            if (type === 'radio') {
+                                parent.find('p').removeClass('selected');
+                            }
+                            if (p_was_selected) {
+                                p.removeClass('selected');
+                            } else {
+                                p.addClass('selected');
+                            }
+                            collect_poll_run_data();
+                        });
+                        bc.append(p);
+                    }
+                    div.append(bc);
+                } else if (item.type === 'textarea') {
+                    let textarea = $('<textarea>').addClass('form-control').data('item-index', item_index);
+                    textarea.val((poll_run_data.stored_response || {})[item_index] || '');
+                    poll_run_data.widgets[item_index] = textarea;
+                    textarea.change(function(e) { collect_poll_run_data(); });
+                    div.append(textarea);
+                } else if (item.type === 'paragraph') {
+                    let p = $('<p>').text(item.text);
+                    div.append(p);
+                }
+            }
+            collect_poll_run_data();
+            $('#pollResponseModal').modal('show');
+        }
+    });
+}
+
+function show_poll_run_results(prid) {
+    api_call('/api/get_poll_run_results', {prid: prid}, function(data) {
+        if (data.success) {
+            console.log(data);
+            $('#bu_poll_run_results_download_pdf').attr('href', `/api/poll_run_results_pdf/${data.prid}`);
+            $('#pollRunResultsModal .poll-title').html(data.title);
+            $('#pollRunResultsModal .poll-run-results-here').html(data.html);
+            $('#pollRunResultsModal').modal('show');
+        }
+    });
+}
+
+</script>
+
 <div class="modal" id="__template_modal" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true" style='z-index: 200000;'>
   <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
     <div class="modal-content">
@@ -151,6 +317,61 @@
       </div>
     </div>
   </div>
+</div>
+
+<div class="modal" id="pollResponseModal" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-scrollable modal-xl modal-dialog-centered" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title poll-title"></h5>
+            </div>
+            <div class="modal-body">
+                <div class='alert alert-success poll-run-anonymous' style='padding-left: 50px; position: relative;'>
+                <i style='font-size:200%; position: absolute; left: 12px; top: 18px;' class='fa fa-user-secret'></i>Diese Umfrage ist anonym. <span class='poll-run-organizer'></span> wird #{teacher_logged_in? ? 'Ihre' : 'deine'} Antworten sehen können, aber nicht wissen, wer welche Antworten gegeben hat.<br />Insgesamt nehmen <span class='poll-run-total-participants'></span> Teilnehmerinnen und Teilnehmer an dieser Umfrage teil.
+                </div>
+                <div class='alert alert-warning poll-run-non-anonymous' style='padding-left: 55px; position: relative;'>
+                <i style='font-size:200%; position: absolute; left: 10px; top: 18px;' class='fa fa-address-card-o'></i><strong>Hinweis:</strong> Diese Umfrage ist nicht anonym.<br /> <span class='poll-run-organizer'></span> wird #{teacher_logged_in? ? 'Ihre' : 'deine'} Antworten sehen können und auch die Tatsache, dass die Antworten von #{teacher_logged_in? ? 'Ihnen' : 'dir'} stammen.
+                </div>
+                <div class='row'>
+                    <div class='col-md-12 poll-items'></div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <div class="progress" style='width: 100%;'>
+                    <div class="poll-run-progress progress-bar progress-bar-striped bg-success" role="progressbar" style="width: 0%;"><span class='poll-run-progress-label'></span></div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <div class='poll_submit_success mr-auto'><i class='fa fa-check-circle text-success'></i>&nbsp;&nbsp;#{teacher_logged_in? ? 'Ihre' : 'Deine'} Antworten wurden gespeichert.</div>
+                <div class='poll_submit_update_message mr-auto'><i class='fa fa-info-circle text-info'></i>&nbsp;&nbsp;#{teacher_logged_in? ? 'Sie haben' : 'Du hast'} bereits abgestimmt, #{teacher_logged_in? ? 'können Ihre' : 'kannst deine'} Einträge aber aktualisieren.</div>
+                <div class='poll_submit_error mr-auto'><i class='fa fa-exclamation-circle text-danger'></i>&nbsp;&nbsp;#{teacher_logged_in? ? 'Ihre' : 'Deine'} Antworten konnten nicht gespeichert werden<span class='poll_submit_error_message'></span></div>
+                <div id='save_poll_response_btn_container' style='display: inline-block;'>
+                    <button id='bu_discard_poll_results' type="button" class="btn btn-outline-secondary" disabled><i class='fa fa-times'></i>&nbsp;&nbsp;Änderungen verwerfen</button>
+                    <button id='bu_submit_poll_results' type="button" class="btn btn-outline-success" disabled><i class='fa fa-send'></i>&nbsp;&nbsp;Senden</button>
+                </div>
+                <button id='bu_close_poll_response_modal' type="button" class="btn btn-secondary" data-dismiss="modal">Schließen</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal" id="pollRunResultsModal" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-scrollable modal-lg modal-dialog-centered" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title poll-title"></h5>
+            </div>
+            <div class="modal-body">
+                <div class='row'>
+                    <div class='col-md-12 poll-run-results-here'></div>
+                </div>
+            </div>
+            <div class="modal-footer">
+<!--                 <a id='bu_poll_run_results_download_pdf' href='#' class="btn btn-primary"><i class='fa fa-file-pdf-o'></i>&nbsp;&nbsp;Ergebnisse als PDF herunterladen</a> -->
+                <button id='bu_close_show_poll_run_results_modal' type="button" class="btn btn-secondary" data-dismiss="modal">Schließen</button>
+            </div>
+        </div>
+    </div>
 </div>
 
 <script>
@@ -216,6 +437,39 @@ window.addEventListener('load', function() {
                 window.location.href = '/';
             }
         });
+    });
+    $('#bu_discard_poll_results').click(function(e) {
+        force_close_poll_response = true;
+        $('#pollResponseModal').modal('hide');
+    });
+    $('#bu_submit_poll_results').click(function(e) {
+        $('#pollResponseModal .poll_submit_success').hide();
+        $('#pollResponseModal .poll_submit_update_message').hide();
+        $('#pollResponseModal .poll_submit_error').hide();
+        let store_response = JSON.stringify(poll_run_data.response || {});
+        api_call('/api/submit_poll_run', {prid: poll_run_data.prid, response: store_response}, function(data) {
+            if (data.success) {
+                if (typeof(data.error) !== 'undefined') {
+                    $('#pollResponseModal .poll_submit_error_message').text(': ' + data.error);
+                    $('#pollResponseModal .poll_submit_error').fadeIn();
+                } else {
+                    $('#pollResponseModal .poll_submit_success').fadeIn();
+                    poll_run_data.stored_response = poll_run_data.response;
+                    collect_poll_run_data();
+                }
+            } else {
+                $('#pollResponseModal .poll_submit_error_message').text('');
+                $('#pollResponseModal .poll_submit_error').fadeIn();
+            }
+        });
+    });
+    $('#pollResponseModal').on('hide.bs.modal', function(e) {
+        if (collect_poll_run_data() && (!force_close_poll_response)) {
+            $('#save_poll_response_btn_container').effect('shake', {direction: 'left', distance: 4});
+            e.preventDefault();
+            e.stopImmediatePropagation();
+            return false; 
+        }
     });
 });
 </script>

@@ -29,6 +29,10 @@ class Main < Sinatra::Base
         @session_user && (@session_user[:teacher] == true)
     end
     
+    def sus_logged_in?
+        @session_user && (!(@session_user[:teacher] == true))
+    end
+    
     def teacher_tablet_logged_in?
         @session_user && @session_user[:email] == "lehrer.tablet@#{SCHUL_MAIL_DOMAIN}"
     end

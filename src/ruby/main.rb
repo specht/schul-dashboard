@@ -1713,15 +1713,31 @@ class Main < Sinatra::Base
         respond(:new_unread_ids => get_unread_messages(Time.now.to_i - MESSAGE_DELAY))
     end
     
-    def get_poll_run(prid)
-        require_user!
+    def get_poll_run(prid, external_code = nil)
+        external_code = nil if user_logged_in?
         result = {}
-        result = neo4j_query_expect_one(<<~END_OF_QUERY, {:prid => prid, :email => @session_user[:email]})
-            MATCH (u:User {email: {email}})-[:IS_PARTICIPANT]->(pr:PollRun {id: {prid}})-[:RUNS]->(p:Poll)-[:ORGANIZED_BY]->(au:User)
-            WITH pr, p, au
-            MATCH (ou:User)-[:IS_PARTICIPANT]->(pr2:PollRun {id: {prid}})-[:RUNS]->(p2:Poll)-[:ORGANIZED_BY]->(au2:User)
-            RETURN pr, p, au.email, COUNT(ou) AS total_participants
-        END_OF_QUERY
+        if external_code
+            rows = neo4j_query(<<~END_OF_QUERY, :prid => prid)
+                MATCH (u)-[rt:IS_PARTICIPANT]->(pr:PollRun {id: {prid}})-[:RUNS]->(p:Poll)-[:ORGANIZED_BY]->(au:User)
+                WHERE (u:ExternalUser OR u:PredefinedExternalUser) AND COALESCE(p.deleted, false) = false AND COALESCE(pr.deleted, false) = false AND COALESCE(rt.deleted, false) = false
+                MATCH (ou:User)-[:IS_PARTICIPANT]->(pr2:PollRun {id: {prid}})-[:RUNS]->(p2:Poll)-[:ORGANIZED_BY]->(au2:User)
+                RETURN u, pr, p, au.email, COUNT(ou) AS total_participants;
+            END_OF_QUERY
+            invitation = rows.select do |row|
+                row_code = Digest::SHA2.hexdigest(EXTERNAL_USER_EVENT_SCRAMBLER + row['pr'].props[:id] + row['u'].props[:email]).to_i(16).to_s(36)[0, 8]
+                external_code == row_code
+            end.first
+            assert(!(invitation.nil?))
+            result = invitation
+        else
+            require_user!
+            result = neo4j_query_expect_one(<<~END_OF_QUERY, {:prid => prid, :email => @session_user[:email]})
+                MATCH (u:User {email: {email}})-[:IS_PARTICIPANT]->(pr:PollRun {id: {prid}})-[:RUNS]->(p:Poll)-[:ORGANIZED_BY]->(au:User)
+                WITH pr, p, au
+                MATCH (ou:User)-[:IS_PARTICIPANT]->(pr2:PollRun {id: {prid}})-[:RUNS]->(p2:Poll)-[:ORGANIZED_BY]->(au2:User)
+                RETURN pr, p, au.email, COUNT(ou) AS total_participants
+            END_OF_QUERY
+        end
         poll = result['p'].props
         poll.delete(:items)
         poll_run = result['pr'].props
@@ -1730,17 +1746,37 @@ class Main < Sinatra::Base
     end
     
     post '/api/get_poll_run' do
-        require_user!
-        data = parse_request_data(:required_keys => [:prid])
-        poll, poll_run, organizer_email, total_participants = get_poll_run(data[:prid])
-        results = neo4j_query(<<~END_OF_QUERY, {:prid => poll_run[:id], :email => @session_user[:email]}).map { |x| x['prs.response'] }
-            MATCH (u:User {email: {email}})<-[:RESPONSE_BY]-(prs:PollResponse)-[:RESPONSE_TO]->(pr:PollRun {id: {prid}})
-            RETURN prs.response
-            LIMIT 1;
-        END_OF_QUERY
+        data = parse_request_data(:required_keys => [:prid], :optional_keys => [:external_code])
+        prid = data[:prid]
+        external_code = data[:external_code]
+        poll, poll_run, organizer_email, total_participants = get_poll_run(prid, external_code)
+
         stored_response = nil
-        unless results.empty?
-            stored_response = JSON.parse(results.first)
+        if user_logged_in?
+            results = neo4j_query(<<~END_OF_QUERY, {:prid => poll_run[:id], :email => @session_user[:email]}).map { |x| x['prs.response'] }
+                MATCH (u:User {email: {email}})<-[:RESPONSE_BY]-(prs:PollResponse)-[:RESPONSE_TO]->(pr:PollRun {id: {prid}})
+                RETURN prs.response
+                LIMIT 1;
+            END_OF_QUERY
+            unless results.empty?
+                stored_response = JSON.parse(results.first)
+            end
+        else
+            rows = neo4j_query(<<~END_OF_QUERY, :prid => prid)
+                MATCH (u)-[rt:IS_PARTICIPANT]->(pr:PollRun {id: {prid}})-[:RUNS]->(p:Poll)-[:ORGANIZED_BY]->(au:User)
+                WHERE (u:ExternalUser OR u:PredefinedExternalUser) AND COALESCE(p.deleted, false) = false AND COALESCE(pr.deleted, false) = false AND COALESCE(rt.deleted, false) = false
+                WITH u, pr
+                MATCH (u)<-[:RESPONSE_BY]-(prs:PollResponse)-[:RESPONSE_TO]->(pr)
+                RETURN prs.response, u, pr;
+            END_OF_QUERY
+            STDERR.puts rows.to_yaml
+            results = rows.select do |row|
+                row_code = Digest::SHA2.hexdigest(EXTERNAL_USER_EVENT_SCRAMBLER + row['pr'].props[:id] + row['u'].props[:email]).to_i(16).to_s(36)[0, 8]
+                external_code == row_code
+            end
+            unless results.empty?
+                stored_response = JSON.parse(results.first['prs.response'])
+            end
         end
         stored_response ||= {}
         respond(:poll => poll, :poll_run => poll_run, :stored_response => stored_response,
@@ -1766,9 +1802,12 @@ class Main < Sinatra::Base
     
     post '/api/submit_poll_run' do
         data = parse_request_data(:required_keys => [:prid, :response],
+                                  :optional_keys => [:external_code],
                                   :max_body_length => 64 * 1024,
                                   :max_string_length => 64 * 1024)
-        poll, poll_run = get_poll_run(data[:prid])
+        prid = data[:prid]
+        external_code = data[:external_code]
+        poll, poll_run = get_poll_run(prid, external_code)
         now_s = DateTime.now.strftime('%Y-%m-%dT%H:%M:%S')
         good = true
         if now_s < "#{poll_run[:start_date]}T#{poll_run[:start_time]}:00"
@@ -1779,12 +1818,32 @@ class Main < Sinatra::Base
             respond(:error => 'Diese Umfrage ist nicht mehr geöffnet.')
         end
         if good
-            neo4j_query(<<~END_OF_QUERY, {:prid => data[:prid], :response => data[:response], :email => @session_user[:email]})
-                MATCH (u:User {email: {email}})
-                MATCH (pr:PollRun {id: {prid}})
-                MERGE (u)<-[:RESPONSE_BY]-(prs:PollResponse)-[:RESPONSE_TO]->(pr)
-                SET prs.response = {response};
-            END_OF_QUERY
+            if user_logged_in?
+                neo4j_query(<<~END_OF_QUERY, {:prid => prid, :response => data[:response], :email => @session_user[:email]})
+                    MATCH (u:User {email: {email}})
+                    MATCH (pr:PollRun {id: {prid}})
+                    MERGE (u)<-[:RESPONSE_BY]-(prs:PollResponse)-[:RESPONSE_TO]->(pr)
+                    SET prs.response = {response};
+                END_OF_QUERY
+            else
+                rows = neo4j_query(<<~END_OF_QUERY, :prid => prid)
+                    MATCH (u)-[rt:IS_PARTICIPANT]->(pr:PollRun {id: {prid}})-[:RUNS]->(p:Poll)
+                    WHERE (u:ExternalUser OR u:PredefinedExternalUser) AND COALESCE(p.deleted, false) = false AND COALESCE(pr.deleted, false) = false AND COALESCE(rt.deleted, false) = false
+                    RETURN id(u), pr, u;
+                END_OF_QUERY
+                results = rows.select do |row|
+                    row_code = Digest::SHA2.hexdigest(EXTERNAL_USER_EVENT_SCRAMBLER + row['pr'].props[:id] + row['u'].props[:email]).to_i(16).to_s(36)[0, 8]
+                    external_code == row_code
+                end
+                neo4j_query(<<~END_OF_QUERY, {:prid => prid, :response => data[:response], :node_id => results.first['id(u)']})
+                    MATCH (u)
+                    WHERE id(u) = {node_id}
+                    WITH u
+                    MATCH (pr:PollRun {id: {prid}})
+                    MERGE (u)<-[:RESPONSE_BY]-(prs:PollResponse)-[:RESPONSE_TO]->(pr)
+                    SET prs.response = {response};
+                END_OF_QUERY
+            end
             respond(:submitted => true)
         end
     end
@@ -1792,14 +1851,16 @@ class Main < Sinatra::Base
     def get_poll_run_results(prid)
         require_teacher!
         temp = neo4j_query_expect_one(<<~END_OF_QUERY, {:prid => prid, :email => @session_user[:email]})
-            MATCH (pr:PollRun {id: {prid}})-[:RUNS]->(p:Poll)-[:ORGANIZED_BY]->(au:User {email: {email}})
-            RETURN pr, p;
+            MATCH (pu)-[:IS_PARTICIPANT]->(pr:PollRun {id: {prid}})-[:RUNS]->(p:Poll)-[:ORGANIZED_BY]->(au:User {email: {email}})
+            RETURN pr, p, COUNT(pu) AS participant_count;
         END_OF_QUERY
         poll = temp['p'].props
         poll_run = temp['pr'].props
         poll_run[:items] = JSON.parse(poll_run[:items])
+        poll_run[:participant_count] = temp['participant_count']
         responses = neo4j_query(<<~END_OF_QUERY, {:prid => prid, :email => @session_user[:email]}).map { |x| {:response => JSON.parse(x['prs.response']), :email => x['u.email']} }
-            MATCH (u:User)<-[:RESPONSE_BY]-(prs:PollResponse)-[:RESPONSE_TO]->(pr:PollRun {id: {prid}})-[:RUNS]->(p:Poll)-[:ORGANIZED_BY]->(au:User {email: {email}})
+            MATCH (u)<-[:RESPONSE_BY]-(prs:PollResponse)-[:RESPONSE_TO]->(pr:PollRun {id: {prid}})-[:RUNS]->(p:Poll)-[:ORGANIZED_BY]->(au:User {email: {email}})
+            WHERE (u:User OR u:ExternalUser OR u:PredefinedExternalUser)
             RETURN u.email, prs.response;
         END_OF_QUERY
         return poll, poll_run, responses
@@ -1807,6 +1868,9 @@ class Main < Sinatra::Base
     
     def poll_run_results_to_html(poll, poll_run, responses, target = :web)
         StringIO.open do |io|
+            io.puts "<div class='alert alert-info'>"
+            io.puts "Von #{poll_run[:participant_count]} Teilnehmern haben #{responses.size} die Umfrage beantwortet (#{(responses.size * 100 / poll_run[:participant_count]).to_i}%)."
+            io.puts "</div>"
             poll_run[:items].each_with_index do |item, item_index|
                 item = item.transform_keys(&:to_sym)
                 if item[:type] == 'paragraph'
@@ -1829,7 +1893,7 @@ class Main < Sinatra::Base
                                 histogram[value] += 1
                             end
                         else
-                            response[item_index.to_s].each do |value|
+                            (response[item_index.to_s] || []).each do |value|
                                 histogram[value] += 1
                             end
                         end
@@ -2146,7 +2210,7 @@ class Main < Sinatra::Base
                 io.puts "Eingeladen von: #{session_user}<br />"
                 io.puts "Titel: #{poll[:title]}<br />"
                 io.puts "Datum und Uhrzeit: #{Time.parse(poll_run[:start_date]).strftime('%d.%m.%Y')}, #{poll_run[:start_time]} &ndash; #{Time.parse(poll_run[:end_date]).strftime('%d.%m.%Y')}, #{poll_run[:end_time]}<br />"
-                link = WEB_ROOT + "/pr/#{data[:prid]}/#{code}"
+                link = WEB_ROOT + "/p/#{data[:prid]}/#{code}"
                 io.puts "</p>"
                 io.puts "<p>Link zur Umfrage:<br /><a href='#{link}'>#{link}</a></p>"
                 io.puts "<p>Bitte geben Sie den Link nicht weiter. Er ist personalisiert und enthält Ihren Namen, den Raumnamen und ist nur am Tag des Termins gültig.</p>"
@@ -2231,6 +2295,12 @@ class Main < Sinatra::Base
         eid = params[:eid]
         code = params[:code]
         redirect "#{WEB_ROOT}/jitsi/event/#{eid}/#{code}", 302
+    end
+    
+    get '/p/:prid/:code' do
+        prid = params[:prid]
+        code = params[:code]
+        redirect "#{WEB_ROOT}/poll/#{prid}/#{code}", 302
     end
     
     def external_users_for_session_user
@@ -4115,6 +4185,42 @@ class Main < Sinatra::Base
         result
     end
     
+    def gen_poll_data(path)
+        result = {}
+        result[:html] = ''
+        parts = path.sub('/poll/', '').split('/')
+        prid = parts[0]
+        code = parts[1]
+        assert((prid.is_a? String) && (!code.empty?))
+        assert((code.is_a? String) && (!code.empty?))
+        rows = neo4j_query(<<~END_OF_QUERY, :prid => prid)
+            MATCH (u)-[rt:IS_PARTICIPANT]->(pr:PollRun {id: {prid}})-[:RUNS]->(p:Poll)-[:ORGANIZED_BY]->(ou:User)
+            WHERE (u:ExternalUser OR u:PredefinedExternalUser) AND COALESCE(pr.deleted, false) = false AND COALESCE(rt.deleted, false) = false
+            RETURN pr, ou.email, u, p;
+        END_OF_QUERY
+        invitation = rows.select do |row|
+            row_code = Digest::SHA2.hexdigest(EXTERNAL_USER_EVENT_SCRAMBLER + row['pr'].props[:id] + row['u'].props[:email]).to_i(16).to_s(36)[0, 8]
+            code == row_code
+        end.first
+        if invitation.nil?
+            redirect "#{WEB_ROOT}/poll_not_found", 302
+            return
+        end
+        ext_name = invitation['u'].props[:name]
+        poll = invitation['p'].props
+        poll_run = invitation['pr'].props
+        result[:organizer] = (@@user_info[invitation['ou.email']] || {})[:display_last_name]
+        result[:organizer_icon] = user_icon(invitation['ou.email'], 'avatar-fill')
+        result[:title] = poll[:title]
+        result[:end_date] = poll_run[:end_date]
+        result[:end_time] = poll_run[:end_time]
+        result[:prid] = prid
+        result[:code] = code
+        result[:html] += "<b class='key'>Umfrage:</b>#{poll[:title]}<br />\n"
+        result[:html] += "<b class='key'>Eingeladen von:</b>Hallo<br />\n"
+        result
+    end
+    
     def print_login_ranking()
         stats = get_login_stats()
         klassen_stats = {}
@@ -4217,6 +4323,7 @@ class Main < Sinatra::Base
         latest_vplan_timestamp = ''
         os_family = 'unknown'
         jitsi_data = nil
+        poll_data = nil
         
         if (@session_user || {})[:can_upload_vplan]
             latest_vplan_timestamp = File.basename(Dir['/vplan/*.txt'].sort.last || '').sub('.txt', '')
@@ -4253,6 +4360,8 @@ class Main < Sinatra::Base
             end
         elsif path == 'jitsi'
             jitsi_data = gen_jitsi_data(request.path.sub('/jitsi/', ''))
+        elsif path == 'poll'
+            poll_data = gen_poll_data(request.path.sub('/jitsi/', ''))
         elsif path == 'index'
             if @session_user
                 path = 'timetable' 
@@ -4358,14 +4467,17 @@ class Main < Sinatra::Base
                 end
                 stored_polls = temp_order.map { |x| temp[x] }
                 
-                stored_poll_runs = neo4j_query(<<~END_OF_QUERY, :email => @session_user[:email]).map { |x| {:info => x['pr'].props, :recipient => x['u.email'], :pid => x['p.id']} }
+                stored_poll_runs = neo4j_query(<<~END_OF_QUERY, :email => @session_user[:email]).map { |x| {:info => x['pr'].props, :recipient => x['user_email'], :pid => x['pid'], :response_count => x['response_count']} }
                     MATCH (pr:PollRun)-[:RUNS]->(p:Poll)-[:ORGANIZED_BY]->(ou:User {email: {email}})
                     WHERE COALESCE(pr.deleted, false) = false
                     AND COALESCE(p.deleted, false) = false
                     WITH pr, p
                     OPTIONAL MATCH (u)-[r:IS_PARTICIPANT]->(pr)
                     WHERE (u:User OR u:ExternalUser OR u:PredefinedExternalUser) AND COALESCE(r.deleted, false) = false
-                    RETURN pr, u.email, p.id
+                    WITH pr, u.email AS user_email, p.id AS pid
+                    OPTIONAL MATCH (pu)<-[:RESPONSE_BY]-(prs:PollResponse)-[:RESPONSE_TO]->(pr)
+                    WHERE (pu:User OR pu:ExternalUser OR pu:PredefinedExternalUser) 
+                    RETURN pr, user_email, pid, COUNT(prs) as response_count
                     ORDER BY pr.start_date DESC, pr.start_time DESC;
                 END_OF_QUERY
                 temp = {}
@@ -4376,13 +4488,15 @@ class Main < Sinatra::Base
                             :recipients => [],
                             :prid => x[:info][:id],
                             :pid => x[:pid],
-                            :info => x[:info]
+                            :info => x[:info],
+                            :response_count => x[:response_count]
                         }
                         temp_order << x[:info][:id]
                     end
                     temp[x[:info][:id]][:recipients] << x[:recipient]
                 end
                 stored_poll_runs = temp_order.map { |x| temp[x] }
+                STDERR.puts stored_poll_runs.to_yaml
             end
         elsif path == 'login_nc'
             unless @session_user

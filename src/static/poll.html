@@ -8,11 +8,11 @@
         </div>
         <div style='position: relative; top: -1px;'>
             #{poll_data[:organizer]} hat Sie zu einer Umfrage eingeladen: <strong>#{poll_data[:title]}</strong><br />
-            Sie können noch bis zum #{Date.parse(poll_data[:end_date]).strftime('%d.%m.%Y')} um #{poll_data[:end_time]} Uhr teilnehmen (die Umfrage <span class='moment-countdown' data-target-timestamp='#{poll_data[:end_date]}T#{poll_data[:end_time]}:00' data-before-label='läuft noch' data-after-label='ist vorbei'></span>).
+            #{poll_data[:html]}         
         </div>
         <hr />
         <div style='text-align: center;'>
-            <button class="btn btn-success btn-lg bu-launch-poll" data-poll-run-id="#{poll_data[:prid]}" data-poll-external-code="#{poll_data[:code]}">Zur Umfrage&nbsp;<i class="fa fa-angle-double-right"></i></button>
+            <button class="btn btn-success btn-lg bu-launch-poll" #{poll_data[:disable_launch_button] ? 'disabled' : ''} data-poll-run-id="#{poll_data[:prid]}" data-poll-external-code="#{poll_data[:code]}">Zur Umfrage&nbsp;<i class="fa fa-angle-double-right"></i></button>
         </div>
     </div>
 </div>

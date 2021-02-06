@@ -395,6 +395,11 @@ function save_poll_run() {
     if (old_prid === null) {
         api_call('/api/save_poll_run', submit_data, function(data) {
             if (data.success) {
+                $('#bu_poll_run_anonymous').prop('disabled', true);
+                $('#bu_poll_run_non_anonymous').prop('disabled', true);
+                $('#ti_run_start_date').prop('disabled', true);
+                $('#ti_run_start_time').prop('disabled', true);
+                $('.bu-poll-run-spontaneous-dropdown').prop('disabled', true);
                 stored_poll_run_json = JSON.stringify(current_poll_run);
                 data.poll_run.pid = current_poll_run.pid;
                 stored_poll_runs.unshift(data.poll_run);
@@ -732,10 +737,13 @@ function update_stored_polls() {
             row.append($('<td>').html(`<i class='fa fa-${icon} text-${color}'></i>&nbsp;&nbsp;${label}`));
             row.append($('<td>').html(`${m_start.format('ddd, D.M.Y HH:mm')} (${duration_parts.join(', ')})`));
             row.append($('<td>').html(`${poll_run.recipients.length} Teilnehmer (${poll_run.info.anonymous ? 'anonym' : 'personengebunden'})`));
-            let bu_poll_run_show_results = $('<button>').css('margin-left', '4px').addClass('btn').addClass('btn-primary').addClass('btn-xs').html(`<i class='fa fa-bar-chart'></i>&nbsp;&nbsp;${Math.floor(poll_run.response_count * 100 / poll_run.recipients.length)}%`);
+            let percent = Math.floor(poll_run.response_count * 100 / poll_run.recipients.length);
+            if (isNaN(percent))
+                percent = 0;
+            let bu_poll_run_show_results = $('<button>').css('margin-left', '4px').addClass('btn').addClass('btn-primary').addClass('btn-xs').html(`<i class='fa fa-bar-chart'></i>&nbsp;&nbsp;${percent}%`);
             let bu_poll_run_edit = $('<button>').css('margin-left', '4px').addClass('btn').addClass('btn-secondary').addClass('btn-xs').html("<i class='fa fa-edit'></i>");
             let bu_poll_run_stop = $('<button>').css('margin-left', '4px').addClass('btn').addClass('btn-danger').addClass('btn-xs').html(`<i class='fa fa-times'></i>&nbsp;&nbsp;Umfrage stoppen`);
-            let bu_poll_run_delete = $('<button>').css('margin-left', '4px').addClass('btn').addClass('btn-danger').addClass('btn-xs').html(`<i class='fa fa-trash'></i>&nbsp;&nbsp;Ergebnisse löschen`);
+            let bu_poll_run_delete = $('<button>').css('margin-left', '4px').addClass('btn').addClass('btn-danger').addClass('btn-xs').html(`<i class='fa fa-trash'></i>&nbsp;&nbsp;Durchführung löschen`);
             let cell = $('<td>').css('text-align', 'right').css('overflow', 'visible');
             if (state === 'running')
                 cell.append(bu_poll_run_stop);
@@ -774,9 +782,9 @@ function update_stored_polls() {
                 e.stopPropagation();
                 let pid = $(e.target).closest('tr').data('pid');
                 let prid = $(e.target).closest('tr').data('prid');
-                showTemplateModal('Ergebnisse löschen', 
-                    'Sind Sie sicher, dass Sie diese Ergebnisse löschen möchten?',
-                    "<i class='fa fa-trash'></i>&nbsp;&nbsp;Ergebnisse löschen", 'btn-danger',
+                showTemplateModal('Durchführung löschen', 
+                    'Sind Sie sicher, dass Sie diese Durchführung löschen möchten?',
+                    "<i class='fa fa-trash'></i>&nbsp;&nbsp;Durchführung löschen", 'btn-danger',
                     'Abbrechen', 'btn-secondary', function() {
                         delete_poll_run(prid);
                     }

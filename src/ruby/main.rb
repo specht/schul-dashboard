@@ -1720,7 +1720,8 @@ class Main < Sinatra::Base
             rows = neo4j_query(<<~END_OF_QUERY, :prid => prid)
                 MATCH (u)-[rt:IS_PARTICIPANT]->(pr:PollRun {id: {prid}})-[:RUNS]->(p:Poll)-[:ORGANIZED_BY]->(au:User)
                 WHERE (u:ExternalUser OR u:PredefinedExternalUser) AND COALESCE(p.deleted, false) = false AND COALESCE(pr.deleted, false) = false AND COALESCE(rt.deleted, false) = false
-                MATCH (ou:User)-[:IS_PARTICIPANT]->(pr2:PollRun {id: {prid}})-[:RUNS]->(p2:Poll)-[:ORGANIZED_BY]->(au2:User)
+                MATCH (ou)-[rt2:IS_PARTICIPANT]->(pr2:PollRun {id: {prid}})-[:RUNS]->(p2:Poll)-[:ORGANIZED_BY]->(au2:User)
+                WHERE COALESCE(rt2.deleted, false) = false
                 RETURN u, pr, p, au.email, COUNT(ou) AS total_participants;
             END_OF_QUERY
             invitation = rows.select do |row|
@@ -1734,7 +1735,8 @@ class Main < Sinatra::Base
             result = neo4j_query_expect_one(<<~END_OF_QUERY, {:prid => prid, :email => @session_user[:email]})
                 MATCH (u:User {email: {email}})-[:IS_PARTICIPANT]->(pr:PollRun {id: {prid}})-[:RUNS]->(p:Poll)-[:ORGANIZED_BY]->(au:User)
                 WITH pr, p, au
-                MATCH (ou:User)-[:IS_PARTICIPANT]->(pr2:PollRun {id: {prid}})-[:RUNS]->(p2:Poll)-[:ORGANIZED_BY]->(au2:User)
+                MATCH (ou)-[rt2:IS_PARTICIPANT]->(pr2:PollRun {id: {prid}})-[:RUNS]->(p2:Poll)-[:ORGANIZED_BY]->(au2:User)
+                WHERE COALESCE(rt2.deleted, false) = false
                 RETURN pr, p, au.email, COUNT(ou) AS total_participants
             END_OF_QUERY
         end
@@ -1851,7 +1853,8 @@ class Main < Sinatra::Base
     def get_poll_run_results(prid)
         require_teacher!
         temp = neo4j_query_expect_one(<<~END_OF_QUERY, {:prid => prid, :email => @session_user[:email]})
-            MATCH (pu)-[:IS_PARTICIPANT]->(pr:PollRun {id: {prid}})-[:RUNS]->(p:Poll)-[:ORGANIZED_BY]->(au:User {email: {email}})
+            MATCH (pu)-[rt:IS_PARTICIPANT]->(pr:PollRun {id: {prid}})-[:RUNS]->(p:Poll)-[:ORGANIZED_BY]->(au:User {email: {email}})
+            WHERE COALESCE(rt.deleted, false) = false
             RETURN pr, p, COUNT(pu) AS participant_count;
         END_OF_QUERY
         poll = temp['p'].props
@@ -2213,7 +2216,7 @@ class Main < Sinatra::Base
                 link = WEB_ROOT + "/p/#{data[:prid]}/#{code}"
                 io.puts "</p>"
                 io.puts "<p>Link zur Umfrage:<br /><a href='#{link}'>#{link}</a></p>"
-                io.puts "<p>Bitte geben Sie den Link nicht weiter. Er ist personalisiert und enthält Ihren Namen, den Raumnamen und ist nur am Tag des Termins gültig.</p>"
+                io.puts "<p>Bitte geben Sie den Link nicht weiter. Er ist personalisiert und nur im angegebenen Zeitraum gültig.</p>"
                 io.string
             end
         end
@@ -4209,6 +4212,9 @@ class Main < Sinatra::Base
         ext_name = invitation['u'].props[:name]
         poll = invitation['p'].props
         poll_run = invitation['pr'].props
+        now = "#{Date.today.strftime('%Y-%m-%d')}T#{Time.now.strftime('%H:%M')}:00"
+        start_time = "#{poll_run[:start_date]}T#{poll_run[:start_time]}:00"
+        end_time = "#{poll_run[:end_date]}T#{poll_run[:end_time]}:00"
         result[:organizer] = (@@user_info[invitation['ou.email']] || {})[:display_last_name]
         result[:organizer_icon] = user_icon(invitation['ou.email'], 'avatar-fill')
         result[:title] = poll[:title]
@@ -4216,8 +4222,17 @@ class Main < Sinatra::Base
         result[:end_time] = poll_run[:end_time]
         result[:prid] = prid
         result[:code] = code
-        result[:html] += "<b class='key'>Umfrage:</b>#{poll[:title]}<br />\n"
-        result[:html] += "<b class='key'>Eingeladen von:</b>Hallo<br />\n"
+        if now < start_time
+            result[:disable_launch_button] = true
+            result[:html] += "Die Umfrage öffnet erst am"
+            result[:html] += " #{Date.parse(poll_run[:start_date]).strftime('%d.%m.%Y')} um #{poll_run[:start_time]} Uhr (in <span class='moment-countdown' data-target-timestamp='#{poll_run[:start_date]}T#{poll_run[:start_time]}:00' data-before-label='' data-after-label=''></span>)."
+        elsif now > end_time
+            result[:disable_launch_button] = true
+            result[:html] += "Die Umfrage ist bereits beendet."
+        else
+            result[:disable_launch_button] = false
+            result[:html] += "Sie können noch bis zum #{Date.parse(poll_run[:end_date]).strftime('%d.%m.%Y')} um #{poll_run[:end_time]} Uhr teilnehmen (die Umfrage <span class='moment-countdown' data-target-timestamp='#{poll_run[:end_date]}T#{poll_run[:end_time]}:00' data-before-label='läuft noch' data-after-label='ist vorbei'></span>)."
+        end
         result
     end
     

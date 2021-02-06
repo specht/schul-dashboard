@@ -4496,7 +4496,6 @@ class Main < Sinatra::Base
                     temp[x[:info][:id]][:recipients] << x[:recipient]
                 end
                 stored_poll_runs = temp_order.map { |x| temp[x] }
-                STDERR.puts stored_poll_runs.to_yaml
             end
         elsif path == 'login_nc'
             unless @session_user

@@ -37,6 +37,11 @@ require './parser.rb'
 
 USER_AGENT_PARSER = UserAgentParser::Parser.new
 WEEKDAYS = ['So', 'Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa']
+HOMEWORK_FEEDBACK_STATES = ['good', 'hmmm', 'lost']
+HOMEWORK_FEEDBACK_EMOJIS = {'good' => '🙂', 
+                            'hmmm' => '🤔',
+                            'lost' => '😕'}
+
 
 HOURS_FOR_KLASSE = {}
 
@@ -2840,6 +2845,55 @@ class Main < Sinatra::Base
                 results[row[:comment][:offset]][:comments][row[:user][:email]][:audio_comment_from] = row[:audio_comment_from] 
             end
         end
+        rows = neo4j_query(<<~END_OF_QUERY, :key => lesson_key).map { |x| {:offset => x['li.offset'], :feedback => x['hf'].props, :user => x['u.email'] }}
+            MATCH (u:User)<-[:FROM]-(hf:HomeworkFeedback)-[:FOR]->(li:LessonInfo)-[:BELONGS_TO]->(l:Lesson {key: {key}})
+            RETURN hf, li.offset, u.email;
+        END_OF_QUERY
+        rows.each do |row|
+            results[row[:offset]] ||= {}
+            results[row[:offset]][:feedback] ||= {}
+            results[row[:offset]][:feedback][:sus] ||= {}
+            results[row[:offset]][:feedback][:sus][row[:user]] = row[:feedback].reject do |k, v|
+                [:done].include?(k)
+            end
+            results[row[:offset]][:feedback][:sus][row[:user]][:name] = (@@user_info[row[:user]] || {})[:display_name]
+        end
+        results.each_pair do |offset, info|
+            next unless info[:feedback]
+            results[offset][:feedback][:summary] = 'Es liegt bisher kein Feedback zu dieser Stunde vor.'
+            feedback_str = StringIO.open do |io|
+                state_histogram = {}
+                time_spent_values = []
+                info[:feedback][:sus].each_pair do |email, feedback|
+                    if feedback[:state]
+                        state_histogram[feedback[:state]] ||= 0
+                        state_histogram[feedback[:state]] += 1
+                    end
+                    if feedback[:time_spent]
+                        time_spent_values << feedback[:time_spent]
+                    end
+                end
+                unless state_histogram.empty?
+                    io.puts "<p>"
+                    parts = []
+                    HOMEWORK_FEEDBACK_STATES.each do |x|
+                        parts << "#{HOMEWORK_FEEDBACK_EMOJIS[x]} × #{state_histogram[x]}" if state_histogram[x]
+                    end
+                    io.puts parts.join(', ')
+                    io.puts "</p>"
+                end
+                time_spent_values.sort!
+                unless time_spent_values.empty?
+                    io.puts "<p>"
+                    io.puts "SuS haben zwischen #{time_spent_values.first} und #{time_spent_values.last} Minuten für diese Hausaufgabe benötigt (#{time_spent_values.size} Angabe#{time_spent_values.size == 1 ? '' : 'n'})."
+                    io.puts "</p>"
+                end
+                io.string
+            end
+            results[offset][:feedback][:summary] = feedback_str
+
+        end
+
         results
     end
     

@@ -992,8 +992,14 @@ class Timetable
                 collected = {}
                 [:hausaufgaben_text, :homework_nc, :homework_lr].each do |k|
                     if data[k]
-                        unless data[k].class == String && data[k].strip.empty?
-                            collected[k] = data[k] 
+                        if data[k].class == String
+                            unless data[k].strip.empty?
+                                collected[k] = data[k]
+                            end
+                        else
+                            if data[k]
+                                collected[k] = data[k]
+                            end
                         end
                     end
                 end

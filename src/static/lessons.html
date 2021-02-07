@@ -41,7 +41,7 @@ var update_rec_time_label_timeout = null;
                             <div class='container-fluid' style='margin: -30px 0px; padding: 30px 0px;'>
                                 <div class='row'>
                                     <div class='col-12'>
-                                        <div class='explanation' style='margin-top: 5px; white-space: normal;'>
+                                        <div class='explanation' style='white-space: normal;'>
                                             Hier können Sie einen Kommentar zur Stunde bzw. zur Hausaufgabe hinterlassen. Ein freigegebener Kommentar wird <span class='first_name_here'></span> erst nach fünf Minuten angezeigt, falls Sie sich umentscheiden sollten und einen Kommentar zurückziehen möchten.
                                         </div>
                                     </div>
@@ -187,6 +187,10 @@ var update_rec_time_label_timeout = null;
                         </div>
                         <textarea id='ti_hausaufgaben_text' style='height: 100px; margin-bottom: 15px;' class="form-control" disabled></textarea>
                         <div class='button-with-label'>
+                            <input type='number' id='ti_homework_est_time' class='form-control' style='height: 32px; text-align: center;'/>
+                            <span>Geplanter Zeitaufwand (in Minuten)</span>
+                        </div>
+                        <div class='button-with-label'>
                             <button id='ti_homework_nc' data-state='off' class='btn_lesson_data btn btn-sm btn-outline-secondary' disabled><i class='fa fa-times'></i>&nbsp;&nbsp;Nextcloud</button>
                             <span>Es befinden sich Hausaufgaben im Nextcloud-Ordner.</span>
                         </div>
@@ -194,19 +198,30 @@ var update_rec_time_label_timeout = null;
                             <button id='ti_homework_lr' data-state='off' class='btn_lesson_data btn btn-sm btn-outline-secondary' disabled><i class='fa fa-times'></i>&nbsp;&nbsp;Lernraum</button>
                             <span>Es befinden sich Hausaufgaben im Lernraum.</span>
                         </div>
-                        <div class='button-with-label'>
-                            <input type='number' id='ti_homework_est_time' class='form-control' style='height: 32px; text-align: center;'/>
-                            <span>Geplanter Zeitaufwand (in Minuten)</span>
-                        </div>
                     </div>
-<!--                     <hr /> -->
+                    <hr />
+                    <div class="form-group">
+                        <label><b>Rückmeldung von Schülerinnen und Schülern</b></label>
+                        <div class='explanation sus_feedback_label' style='white-space: normal; margin-bottom: 15px;'>
+                        </div>
+                        <!--
+                        <div class='button-with-label'>
+                            <button id='bu_sus_feedback' class='btn btn-sm btn-outline-secondary' disabled><i class='fa fa-bar-chart'></i>&nbsp;&nbsp;Ansehen</button>
+                            <span>SuS haben die Möglichkeit, Feedback zu Ihrer Hausaufgabe zu geben.</span>
+                        </div>
+                        <div class='na-on-multi-select explanation alert-warning' style='display: none; padding: 4px 0px; margin: 4px 0; border-top: 1px solid #c4a000; border-bottom: 1px solid #c4a000;'>
+                            Diese Funktion steht nicht zur Verfügung, wenn mehrere Stunden ausgewählt sind.
+                        </div>
+                        -->
+                    </div>
+                    <hr />
                     <div class="form-group">
                         <label><b>Rückmeldung an Schülerinnen und Schüler</b></label>
                         <div class='button-with-label'>
                             <button id='bu_feedback' class='btn btn-sm btn-outline-secondary' disabled><i class='fa fa-microphone'></i>&nbsp;&nbsp;Feedback</button>
                             <span>Hier können Sie Feedback zur Stunde bzw. zu den Hausaufgaben geben.</span>
                         </div>
-                        <div id='feedback-warning' class='explanation alert-warning' style='display: none; padding: 4px 0px; margin: 4px 0; border-top: 1px solid #c4a000; border-bottom: 1px solid #c4a000;'>
+                        <div class='na-on-multi-select explanation alert-warning' style='display: none; padding: 4px 0px; margin: 4px 0; border-top: 1px solid #c4a000; border-bottom: 1px solid #c4a000;'>
                             Diese Funktion steht nicht zur Verfügung, wenn mehrere Stunden ausgewählt sind.
                         </div>
                     </div>
@@ -316,15 +331,21 @@ function selection_updated() {
             $('#ti_' + key).val('');
             $('#ti_' + key).attr('placeholder', '');
         }
-        $('#feedback-warning').hide();
+        $('.na-on-multi-select').hide();
         $('#bu_feedback').removeClass('btn-success').addClass('btn-outline-secondary').prop('disabled', true);
+        $('#bu_sus_feedback').removeClass('btn-warning').addClass('btn-outline-secondary').prop('disabled', true);
+        $('.sus_feedback_label').text('').hide();
     } else { 
         if (entries.length === 1) {
-            $('#feedback-warning').hide();
+            $('.na-on-multi-select').hide();
             $('#bu_feedback').removeClass('btn-outline-secondary').addClass('btn-success').prop('disabled', false);
+            $('#bu_sus_feedback').removeClass('btn-outline-secondary').addClass('btn-warning').prop('disabled', true);
+            $('.sus_feedback_label').html(((lesson_data[entries[0]] || {}).feedback || {}).summary || 'Zu dieser Stunde liegt kein Feedback vor.').show();
         } else {
-            $('#feedback-warning').show();
+            $('.na-on-multi-select').show();
             $('#bu_feedback').removeClass('btn-success').addClass('btn-outline-secondary').prop('disabled', true);
+            $('#bu_sus_feedback').removeClass('btn-warning').addClass('btn-outline-secondary').prop('disabled', true);
+            $('.sus_feedback_label').text('').hide();
         }
         $('.bu-umplanen').removeClass('btn-outline-secondary').addClass('btn-primary').prop('disabled', false);
         $('.pane_items *').prop('disabled', false);

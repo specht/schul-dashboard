@@ -994,7 +994,7 @@ class Timetable
             (@lesson_info[lesson_key] || {}).keys.sort.each do |offset|
                 data = @lesson_info[lesson_key][offset][:data] || {}
                 collected = {}
-                [:hausaufgaben_text, :homework_nc, :homework_lr, :homework_est_time].each do |k|
+                [:hausaufgaben_text, :homework_nc, :homework_lr].each do |k|
                     if data[k]
                         if data[k].class == String
                             unless data[k].strip.empty?
@@ -1008,6 +1008,19 @@ class Timetable
                     end
                 end
                 unless collected.empty?
+                    [:homework_est_time].each do |k|
+                        if data[k]
+                            if data[k].class == String
+                                unless data[k].strip.empty?
+                                    collected[k] = data[k]
+                                end
+                            else
+                                if data[k]
+                                    collected[k] = data[k]
+                                end
+                            end
+                        end
+                    end
                     collected[:offset] = offset
                     cache_index = (@events_by_lesson_key_and_offset[lesson_key] || {})[offset]
                     if cache_index
@@ -1526,7 +1539,6 @@ class Timetable
                             fach = "#{fach} (#{klassen.sort.map { |x| Main.tr_klasse(x) }.join(', ')})"
                         end
                         lehrer = @@lessons[:lesson_keys][entry[:lesson_key]][:lehrer]
-                        STDERR.puts lehrer.to_yaml
                         if entry[:info]
                             homework_text = []
                             homework_text << entry[:info][:hausaufgaben_text] if entry[:info][:hausaufgaben_text]

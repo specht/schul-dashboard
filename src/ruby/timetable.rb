@@ -989,7 +989,6 @@ class Timetable
         @@lessons[:lesson_keys].keys.each do |lesson_key|
             (@lesson_info[lesson_key] || {}).keys.sort.each do |offset|
                 data = @lesson_info[lesson_key][offset][:data] || {}
-                collected = {:offset => offset}
                 [:hausaufgaben_text, :homework_nc, :homework_lr].each do |k|
                     if data[k]
                         unless data[k].class == String && data[k].strip.empty?
@@ -998,6 +997,7 @@ class Timetable
                     end
                 end
                 unless collected.empty?
+                    collected[:offset] = offset
                     cache_index = (@events_by_lesson_key_and_offset[lesson_key] || {})[offset]
                     if cache_index
                         datum = @lesson_cache[cache_index][:datum]

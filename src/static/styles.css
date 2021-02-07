@@ -1953,3 +1953,26 @@ hr.poll-entry-divider {
     font-size: 300%;
 }
 
+.button-container .btn {
+    margin-left: 5px;
+}
+
+.button-container-vertical {
+    text-align: right;
+}
+
+.button-container-vertical .btn {
+    display: block;
+    width: 240px;
+    margin-bottom: 5px;
+}
+
+.poll-run-div {
+/*     margin-left: 15px; */
+    background-color: rgba(255, 255, 255, 0.5);
+    padding: 15px;
+    margin-bottom: 15px;
+    box-shadow: 0 0 10px rgba(0,0,0,0.2);
+    border: 1px solid #bbb;
+    border-radius: 4px;
+}

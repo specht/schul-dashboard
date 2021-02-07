@@ -199,7 +199,6 @@ function collect_poll_run_data() {
 function launch_poll(prid, external_code) {
     if (typeof(external_code) === 'undefined')
         external_code = null;
-//     console.log('Launching poll run with prid', prid, 'and code', external_code);
     force_close_poll_response = false;
     poll_run_data = {};
     poll_run_data.widgets = {};
@@ -281,7 +280,7 @@ function launch_poll(prid, external_code) {
                         textarea.change(function(e) { collect_poll_run_data(); });
                         div.append(textarea);
                     } else if (item.type === 'paragraph') {
-                        let p = $('<p>').text(item.text);
+                        let p = $('<p>').css('white-space', 'pre-line').text(item.text);
                         div.append(p);
                     }
                 }

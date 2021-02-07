@@ -1714,7 +1714,7 @@ class Main < Sinatra::Base
     end
     
     def get_poll_run(prid, external_code = nil)
-        external_code = nil if user_logged_in?
+#         external_code = nil if user_logged_in?
         result = {}
         if external_code
             rows = neo4j_query(<<~END_OF_QUERY, :prid => prid)
@@ -1820,7 +1820,7 @@ class Main < Sinatra::Base
             respond(:error => 'Diese Umfrage ist nicht mehr geöffnet.')
         end
         if good
-            if user_logged_in?
+            if external_code.nil?
                 neo4j_query(<<~END_OF_QUERY, {:prid => prid, :response => data[:response], :email => @session_user[:email]})
                     MATCH (u:User {email: {email}})
                     MATCH (pr:PollRun {id: {prid}})
@@ -2041,6 +2041,15 @@ class Main < Sinatra::Base
 #         respond_raw_with_mimetype_and_filename(pdf, 'application/pdf', "Umfrageergebnisse #{poll[:title]}.pdf")
         respond_raw_with_mimetype(pdf, 'application/pdf')
     end
+    
+    def sanitize_poll_items(items)
+        items.map do |item|
+            if item['type'] == 'radio' || item['type'] == 'checkbox'
+                item['answers'].reject! { |x| x.strip.empty? }
+            end
+            item
+        end
+    end
 
     post '/api/save_poll' do
         require_teacher!
@@ -2048,6 +2057,7 @@ class Main < Sinatra::Base
                                   :max_body_length => 1024 * 1024,
                                   :max_string_length => 1024 * 1024)
         id = RandomTag.generate(12)
+        data[:items] = sanitize_poll_items(JSON.parse(data[:items])).to_json
         timestamp = Time.now.to_i
         poll = neo4j_query_expect_one(<<~END_OF_QUERY, :session_email => @session_user[:email], :timestamp => timestamp, :id => id, :title => data[:title], :items => data[:items])['p'].props
             MATCH (a:User {email: {session_email}})
@@ -2061,7 +2071,7 @@ class Main < Sinatra::Base
             :pid => poll[:id], 
             :poll => poll
         }
-        respond(:ok => true, :poll => poll)
+        respond(:ok => true, :poll => poll, :items => data[:items])
     end
 
     post '/api/update_poll' do
@@ -2070,9 +2080,9 @@ class Main < Sinatra::Base
                                   :types => {:recipients => Array},
                                   :max_body_length => 1024 * 1024,
                                   :max_string_length => 1024 * 1024)
-
         id = data[:pid]
         STDERR.puts "Updating poll #{id}"
+        data[:items] = sanitize_poll_items(JSON.parse(data[:items])).to_json
         timestamp = Time.now.to_i
         poll = neo4j_query_expect_one(<<~END_OF_QUERY, :session_email => @session_user[:email], :timestamp => timestamp, :id => id, :title => data[:title], :items => data[:items])['p'].props
             MATCH (p:Poll {id: {id}})-[:ORGANIZED_BY]->(a:User {email: {session_email}})
@@ -2087,7 +2097,7 @@ class Main < Sinatra::Base
             :poll => poll
         }
         # update timetable for affected users
-        respond(:ok => true, :poll => poll, :pid => poll[:pid])
+        respond(:ok => true, :poll => poll, :pid => poll[:pid], :items => data[:items])
     end
     
     post '/api/delete_poll' do
@@ -4351,6 +4361,7 @@ class Main < Sinatra::Base
         result[:end_time] = poll_run[:end_time]
         result[:prid] = prid
         result[:code] = code
+        result[:external_user_name] = ext_name
         if now < start_time
             result[:disable_launch_button] = true
             result[:html] += "Die Umfrage öffnet erst am"
@@ -4622,7 +4633,7 @@ class Main < Sinatra::Base
                     OPTIONAL MATCH (pu)<-[:RESPONSE_BY]-(prs:PollResponse)-[:RESPONSE_TO]->(pr)
                     WHERE (pu:User OR pu:ExternalUser OR pu:PredefinedExternalUser) 
                     RETURN pr, user_email, pid, COUNT(prs) as response_count
-                    ORDER BY pr.start_date DESC, pr.start_time DESC;
+                    ORDER BY pr.start_date ASC, pr.start_time ASC;
                 END_OF_QUERY
                 temp = {}
                 temp_order = []

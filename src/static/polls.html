@@ -5,19 +5,7 @@
             <h2 style='margin-bottom: 30px;'>Umfragen</h2>
             <button class='btn btn-success bu-new-poll'><i class='fa fa-plus-circle'></i>&nbsp;&nbsp;Neue Umfrage</button>
             <hr />
-            <div class='polls-container'>
-                <table class='table narrow'>
-                <thead>
-                    <tr style='background-color: rgba(255,255,255,0.8);'>
-                        <th style='width: 150px;'>Datum</th>
-                        <th>Titel</th>
-                        <th></th>
-                        <th></th>
-                    </tr>
-                </thead>
-                <tbody class='polls-here'>
-                </tbody>
-                </table>
+            <div class='polls-here'>
             </div>
         </div>        
     </div>
@@ -66,7 +54,6 @@
                     <button id='bu_discard_poll' class='btn btn-outline-secondary' disabled><i class='fa fa-times'></i>&nbsp;&nbsp;<span>Verwerfen</span></button>
                     <button id='bu_save_poll' class='btn btn-outline-secondary' disabled><i class='fa fa-check'></i>&nbsp;&nbsp;<span>Speichern</span></button>
                 </div>
-                <button id='bu_delete_poll' type="button" class="btn btn-outline-secondary" disabled style='display: none;'><i class='fa fa-trash'></i>&nbsp;&nbsp;Umfrage löschen</button>
                 <button id='bu_close_poll_modal' type="button" class="btn btn-secondary" data-dismiss="modal">Schließen</button>
             </div>
         </div>
@@ -202,7 +189,6 @@
                     <button id='bu_discard_poll_run' class='btn btn-outline-secondary' disabled><i class='fa fa-times'></i>&nbsp;&nbsp;<span>Verwerfen</span></button>
                     <button id='bu_save_poll_run' class='btn btn-outline-secondary' disabled><i class='fa fa-check'></i>&nbsp;&nbsp;<span>Speichern</span></button>
                 </div>
-                <button id='bu_delete_poll_run' type="button" class="btn btn-outline-secondary" disabled style='display: none;'><i class='fa fa-trash'></i>&nbsp;&nbsp;Durchführung löschen</button>
                 <button id='bu_close_poll_run_modal' type="button" class="btn btn-secondary" data-dismiss="modal">Schließen</button>
             </div>
         </div>
@@ -314,11 +300,9 @@ function pending_changes_run() {
 
 function update_buttons() {
     if (old_pid) {
-        $('#bu_delete_poll').prop('disabled', false).show().removeClass('btn-outline-secondary').addClass('btn-danger');
         $('#bu_discard_poll span').html('Änderungen verwerfen');
         $('#bu_save_poll span').html('Änderungen speichern');
     } else {
-        $('#bu_delete_poll').prop('disabled', true).hide().addClass('btn-outline-secondary').removeClass('btn-danger');
         $('#bu_discard_poll span').html('Verwerfen');
         $('#bu_save_poll span').html('Speichern');
     }
@@ -354,18 +338,21 @@ function save_poll() {
     if (old_pid === null) {
         api_call('/api/save_poll', submit_data, function(data) {
             if (data.success) {
+                current_poll.items = JSON.parse(data.items);
                 stored_poll_json = JSON.stringify(current_poll);
                 console.log(data);
                 stored_polls.unshift(data.poll);
                 old_pid = data.poll.pid;
                 update_buttons();
                 update_stored_polls();
+                update_current_poll();
             }
         });
     } else {
         submit_data.pid = old_pid;
         api_call('/api/update_poll', submit_data, function(data) {
             if (data.success) {
+                current_poll.items = JSON.parse(data.items);
                 stored_poll_json = JSON.stringify(current_poll);
                 stored_polls = stored_polls.map(function(e) {
                     if (e.pid === data.pid)
@@ -376,6 +363,7 @@ function save_poll() {
 //                 $('#composeModal').modal('hide');
                 update_buttons();
                 update_stored_polls();
+                update_current_poll();
             }
         });
     }
@@ -433,10 +421,10 @@ function save_poll_run() {
     }
 }
 
-function delete_poll() {
-    if (!old_pid)
+function delete_poll(pid) {
+    if (!pid)
         return;
-    api_call('/api/delete_poll', {pid: old_pid}, function(data) {
+    api_call('/api/delete_poll', {pid: pid}, function(data) {
         if (data.success) {
             $('#composeModal').modal('hide');
             stored_polls = stored_polls.filter(x => x.pid !== data.pid);
@@ -460,11 +448,9 @@ function delete_poll_run(prid) {
 
 function update_run_buttons() {
     if (old_prid) {
-        $('#bu_delete_poll_run').prop('disabled', false).show().removeClass('btn-outline-secondary').addClass('btn-danger');
         $('#bu_discard_poll_run span').html('Änderungen verwerfen');
         $('#bu_save_poll_run span').html('Änderungen speichern');
     } else {
-        $('#bu_delete_poll_run').prop('disabled', true).hide().addClass('btn-outline-secondary').removeClass('btn-danger');
         $('#bu_discard_poll_run span').html('Verwerfen');
         $('#bu_save_poll_run span').html('Speichern');
     }
@@ -648,151 +634,148 @@ function update_stored_polls() {
             poll_runs_for_poll[poll_run.pid] = [];
         poll_runs_for_poll[poll_run.pid].push(poll_run);
     }
+    let first_poll = true;
     for (let poll of stored_polls) {
-        let row = $('<tr>');
-        row./*css('font-weight', 'bold').*/css('background-color', 'rgba(255,255,255,0.8)');
-        row.append($('<td>').text(moment(poll.created).format('ddd, D.M.Y')));
-        row.append($('<td>').attr('colspan', 2).html(poll.poll.title));
-//         let bu_preview_poll = $('<button>').addClass('btn').addClass('btn-warning').addClass('btn-xs').html("<i class='fa fa-eye'></i>&nbsp;&nbsp;Vorschau");
-        let bu_run_poll = $('<button>').addClass('btn').addClass('btn-success').addClass('btn-xs').html("<i class='fa fa-play'></i>&nbsp;&nbsp;Durchführen");
-        let bu_edit_poll = $('<button>').addClass('btn').addClass('btn-secondary').addClass('btn-xs').html("<i class='fa fa-edit'></i>&nbsp;&nbsp;Bearbeiten");
-        row.append($('<td>').css('text-align', 'right').append(bu_run_poll).append('&nbsp;&nbsp;').append(bu_edit_poll));
-//         bu_preview_poll.click(function(e) {
-//             e.stopPropagation();
-//             let pid = $(e.target).closest('tr').data('pid');
-//             launch_poll(pid);
-//         });
+        if (!first_poll)
+            $('.polls-here').append($('<hr />'));
+        first_poll = false;
+        let div = $('<div>').addClass('poll-div').data('pid', poll.pid);
+        $('.polls-here').append(div);
+        let bu_container = $('<div>').addClass('float-right').addClass('button-container');
+        let bu_run_poll = $('<button>').addClass('btn').addClass('btn-sm').addClass('btn-success').html("<i class='fa fa-play'></i>&nbsp;&nbsp;Durchführen");
+        let bu_delete_poll = $('<button>').addClass('btn').addClass('btn-sm').addClass('btn-danger').html("<i class='fa fa-trash'></i>&nbsp;&nbsp;Löschen");
+        let bu_edit_poll = $('<button>').addClass('btn').addClass('btn-sm').addClass('btn-secondary').html("<i class='fa fa-edit'></i>&nbsp;&nbsp;Bearbeiten");
+        div.append(bu_container);
+        bu_container.append(bu_edit_poll);
+        bu_container.append(bu_delete_poll);
+        bu_container.append(bu_run_poll);
+        div.append($('<h4>').text(poll.poll.title));
+        div.append($('<p>').text(`Erstellt am ${moment(poll.created).format('ddd, D.M.Y')}`));
         bu_edit_poll.click(function(e) {
             e.stopPropagation();
-            let pid = $(e.target).closest('tr').data('pid');
+            let pid = $(e.target).closest('.poll-div').data('pid');
             edit_poll(pid);
+        });
+        bu_delete_poll.click(function(e) {
+            e.stopPropagation();
+            let pid = $(e.target).closest('.poll-div').data('pid');
+            (function(pid) {
+                showTemplateModal('Umfrage löschen', 
+                    'Sind Sie sicher, dass Sie diese Umfrage löschen möchten?',
+                    "<i class='fa fa-trash'></i>&nbsp;&nbsp;Umfrage löschen", 'btn-danger',
+                    'Abbrechen', 'btn-secondary', function() {
+                        delete_poll(pid);
+                    }
+                );
+            })(pid);
         });
         bu_run_poll.click(function(e) {
             e.stopPropagation();
-            let pid = $(e.target).closest('tr').data('pid');
+            let pid = $(e.target).closest('.poll-div').data('pid');
             new_poll_run(pid);
         });
-        row.data('pid', poll.pid);
-        $('.polls-here').append(row);
-        for (let poll_run of (poll_runs_for_poll[poll.pid] || [])) {
-            let row = $('<tr>');
-            console.log(poll_run);
-            let m_start = moment(`${poll_run.info.start_date}T${poll_run.info.start_time}:00`);
-            let diff = moment(`${poll_run.info.end_date}T${poll_run.info.end_time}:00`).unix() - moment(`${poll_run.info.start_date}T${poll_run.info.start_time}:00`).unix();
-            let duration = moment.duration(diff * 1000);
-            duration_parts = [];
-            if (duration.days() > 0)
-                duration_parts.push(`${duration.days()} Tage`);
-            if (duration.hours() > 0)
-                duration_parts.push(`${duration.hours()} Stunden`);
-            if (duration.minutes() > 0)
-                duration_parts.push(`${duration.minutes()} Minuten`);
-            if (duration_parts.length === 0)
-                duration_parts.push(`0 Minuten`);
-            let diff_to_start_time = moment(`${poll_run.info.start_date}T${poll_run.info.start_time}:00`).unix() - moment().unix();
-            let diff_to_end_time = moment().unix() - moment(`${poll_run.info.end_date}T${poll_run.info.end_time}:00`).unix();
-            let icon = '';
-            let color = '';
-            let label = '';
-            let state = '';
-            if (diff_to_start_time > 0) {
-                // we're before the poll run
-                state = 'pending';
-                icon = 'clock-o';
-                color = 'warning';
-                label = 'ausstehend';
-            } else if (diff_to_end_time > 0) {
-                // we're after the poll run
-                state = 'complete';
-                icon = 'check'
-                color = 'primary';
-                label = 'abgeschlossen';
-            } else {
-                // we're within the poll run
-                state = 'running';
-                icon = 'play'
-                color = 'success';
-                label = 'läuft';
+        if ((poll_runs_for_poll[poll.pid] || []).length > 0) {
+            for (let poll_run of (poll_runs_for_poll[poll.pid] || [])) {
+                let run_div = $('<div>').addClass('poll-run-div').data('prid', poll_run.prid).data('pid', poll.pid);
+                $('.polls-here').append(run_div);
+                
+                let m_start = moment(`${poll_run.info.start_date}T${poll_run.info.start_time}:00`);
+                let row = $('<tr>');
+                let diff = moment(`${poll_run.info.end_date}T${poll_run.info.end_time}:00`).unix() - moment(`${poll_run.info.start_date}T${poll_run.info.start_time}:00`).unix();
+                let duration = moment.duration(diff * 1000);
+                duration_parts = [];
+                if (duration.days() > 0)
+                    duration_parts.push(`${duration.days()} Tage`);
+                if (duration.hours() > 0)
+                    duration_parts.push(`${duration.hours()} Stunden`);
+                if (duration.minutes() > 0)
+                    duration_parts.push(`${duration.minutes()} Minuten`);
+                if (duration_parts.length === 0)
+                    duration_parts.push(`0 Minuten`);
+                let diff_to_start_time = moment(`${poll_run.info.start_date}T${poll_run.info.start_time}:00`).unix() - moment().unix();
+                let diff_to_end_time = moment().unix() - moment(`${poll_run.info.end_date}T${poll_run.info.end_time}:00`).unix();
+                let icon = '';
+                let color = '';
+                let label = '';
+                let state = '';
+                if (diff_to_start_time > 0) {
+                    // we're before the poll run
+                    state = 'pending';
+                    icon = 'clock-o';
+                    color = 'warning';
+                    label = 'ausstehend';
+                } else if (diff_to_end_time > 0) {
+                    // we're after the poll run
+                    state = 'complete';
+                    icon = 'check'
+                    color = 'primary';
+                    label = 'abgeschlossen';
+                } else {
+                    // we're within the poll run
+                    state = 'running';
+                    icon = 'play'
+                    color = 'success';
+                    label = 'läuft';
+                }
+                let percent = Math.floor(poll_run.response_count * 100 / poll_run.recipients.length);
+                if (isNaN(percent))
+                    percent = 0;
+                let bu_container = $('<div>').addClass('float-right').addClass('button-container-vertical');
+                let bu_poll_run_show_results = $('<button>').css('margin-left', '4px').addClass('btn').addClass('btn-primary').addClass('btn-sm').html(`<i class='fa fa-bar-chart'></i>&nbsp;&nbsp;Ergebnisse (${percent}% beantwortet)`);
+                let bu_poll_run_edit = $('<button>').css('margin-left', '4px').addClass('btn').addClass('btn-secondary').addClass('btn-sm').html("<i class='fa fa-edit'></i>&nbsp;&nbsp;Bearbeiten");
+                let bu_poll_run_stop = $('<button>').css('margin-left', '4px').addClass('btn').addClass('btn-danger').addClass('btn-sm').html(`<i class='fa fa-times'></i>&nbsp;&nbsp;Umfrage stoppen`);
+                let bu_poll_run_delete = $('<button>').css('margin-left', '4px').addClass('btn').addClass('btn-danger').addClass('btn-sm').html(`<i class='fa fa-trash'></i>&nbsp;&nbsp;Durchführung löschen`);
+                let cell = $('<td>').css('text-align', 'right').css('overflow', 'visible');
+                if (state === 'running')
+                    bu_container.append(bu_poll_run_stop);
+                if (state === 'complete' || state === 'running')
+                    bu_container.append(bu_poll_run_show_results);
+    //             if (state === 'pending')
+                bu_container.append(bu_poll_run_edit);
+                if (state === 'complete')
+                    bu_container.append(bu_poll_run_delete);
+                run_div.append(bu_container);
+                run_div.append($('<p>').text(`Durchführung mit ${poll_run.recipients.length} Teilnehmern am ${m_start.format('ddd, D.M.Y')}`));
+                run_div.append($('<div>').html(`Status:&nbsp;&nbsp;<i class='fa fa-${icon} text-${color}'></i>&nbsp;&nbsp;${label}`));
+                run_div.append($('<div>').html(`${m_start.format('ddd, D.M.Y, HH:mm')} Uhr (${duration_parts.join(', ')})`));
+                run_div.append($('<div>').html(`${poll_run.recipients.length} Teilnehmer (${poll_run.info.anonymous ? 'anonym' : 'personengebunden'})`));
+                bu_poll_run_show_results.click(function(e) {
+                    e.stopPropagation();
+                    let pid = $(e.target).closest('.poll-run-div').data('pid');
+                    let prid = $(e.target).closest('.poll-run-div').data('prid');
+                    show_poll_run_results(prid);
+                });
+                bu_poll_run_edit.click(function(e) {
+                    e.stopPropagation();
+                    let pid = $(e.target).closest('.poll-run-div').data('pid');
+                    let prid = $(e.target).closest('.poll-run-div').data('prid');
+                    edit_poll_run(prid);
+                });
+                bu_poll_run_stop.click(function(e) {
+                    e.stopPropagation();
+                    let pid = $(e.target).closest('.poll-run-div').data('pid');
+                    let prid = $(e.target).closest('.poll-run-div').data('prid');
+                    showTemplateModal('Umfrage stoppen', 
+                        'Sind Sie sicher, dass Sie diese Umfrage stoppen möchten?',
+                        "<i class='fa fa-times'></i>&nbsp;&nbsp;Umfrage stoppen", 'btn-danger',
+                        'Abbrechen', 'btn-secondary', function() {
+                            stop_poll_run(prid);
+                        }
+                    );
+                });
+                bu_poll_run_delete.click(function(e) {
+                    e.stopPropagation();
+                    let pid = $(e.target).closest('.poll-run-div').data('pid');
+                    let prid = $(e.target).closest('.poll-run-div').data('prid');
+                    showTemplateModal('Durchführung löschen', 
+                        'Sind Sie sicher, dass Sie diese Durchführung löschen möchten?',
+                        "<i class='fa fa-trash'></i>&nbsp;&nbsp;Durchführung löschen", 'btn-danger',
+                        'Abbrechen', 'btn-secondary', function() {
+                            delete_poll_run(prid);
+                        }
+                    );
+                });
             }
-//             jQuery.each($('.moment-countdown'), function(_, e) {
-//                 let t = moment($(e).data('target-timestamp'));
-//                 let bl = $(e).data('before-label');
-//                 let al = $(e).data('after-label');
-//                 let s = duration_to_s(t);
-//                 if (s === null)
-//                     $(e).text(al);
-//                 else
-//                     $(e).text(`${bl} ${s}`);
-//                 (function(e, t, bl, al) {
-//                     setInterval(function() {
-//                         let s = duration_to_s(t);
-//                         if (s === null)
-//                             $(e).text(al);
-//                         else
-//                             $(e).text(`${bl} ${s}`);
-//                     }, 60000);
-//                 })(e, t, bl, al);
-//             });
-
-            row.append($('<td>').html(`<i class='fa fa-${icon} text-${color}'></i>&nbsp;&nbsp;${label}`));
-            row.append($('<td>').html(`${m_start.format('ddd, D.M.Y HH:mm')} (${duration_parts.join(', ')})`));
-            row.append($('<td>').html(`${poll_run.recipients.length} Teilnehmer (${poll_run.info.anonymous ? 'anonym' : 'personengebunden'})`));
-            let percent = Math.floor(poll_run.response_count * 100 / poll_run.recipients.length);
-            if (isNaN(percent))
-                percent = 0;
-            let bu_poll_run_show_results = $('<button>').css('margin-left', '4px').addClass('btn').addClass('btn-primary').addClass('btn-xs').html(`<i class='fa fa-bar-chart'></i>&nbsp;&nbsp;${percent}%`);
-            let bu_poll_run_edit = $('<button>').css('margin-left', '4px').addClass('btn').addClass('btn-secondary').addClass('btn-xs').html("<i class='fa fa-edit'></i>");
-            let bu_poll_run_stop = $('<button>').css('margin-left', '4px').addClass('btn').addClass('btn-danger').addClass('btn-xs').html(`<i class='fa fa-times'></i>&nbsp;&nbsp;Umfrage stoppen`);
-            let bu_poll_run_delete = $('<button>').css('margin-left', '4px').addClass('btn').addClass('btn-danger').addClass('btn-xs').html(`<i class='fa fa-trash'></i>&nbsp;&nbsp;Durchführung löschen`);
-            let cell = $('<td>').css('text-align', 'right').css('overflow', 'visible');
-            if (state === 'running')
-                cell.append(bu_poll_run_stop);
-            if (state === 'complete')
-                cell.append(bu_poll_run_delete);
-            if (state === 'complete' || state === 'running')
-                cell.append(bu_poll_run_show_results);
-//             if (state === 'pending')
-            cell.append(bu_poll_run_edit);
-            row.append(cell);
-            bu_poll_run_show_results.click(function(e) {
-                e.stopPropagation();
-                let pid = $(e.target).closest('tr').data('pid');
-                let prid = $(e.target).closest('tr').data('prid');
-                show_poll_run_results(prid);
-            });
-            bu_poll_run_edit.click(function(e) {
-                e.stopPropagation();
-                let pid = $(e.target).closest('tr').data('pid');
-                let prid = $(e.target).closest('tr').data('prid');
-                edit_poll_run(prid);
-            });
-            bu_poll_run_stop.click(function(e) {
-                e.stopPropagation();
-                let pid = $(e.target).closest('tr').data('pid');
-                let prid = $(e.target).closest('tr').data('prid');
-                showTemplateModal('Umfrage stoppen', 
-                    'Sind Sie sicher, dass Sie diese Umfrage stoppen möchten?',
-                    "<i class='fa fa-times'></i>&nbsp;&nbsp;Umfrage stoppen", 'btn-danger',
-                    'Abbrechen', 'btn-secondary', function() {
-                        stop_poll_run(prid);
-                    }
-                );
-            });
-            bu_poll_run_delete.click(function(e) {
-                e.stopPropagation();
-                let pid = $(e.target).closest('tr').data('pid');
-                let prid = $(e.target).closest('tr').data('prid');
-                showTemplateModal('Durchführung löschen', 
-                    'Sind Sie sicher, dass Sie diese Durchführung löschen möchten?',
-                    "<i class='fa fa-trash'></i>&nbsp;&nbsp;Durchführung löschen", 'btn-danger',
-                    'Abbrechen', 'btn-secondary', function() {
-                        delete_poll_run(prid);
-                    }
-                );
-            });
-            row.data('pid', poll.pid);
-            row.data('prid', poll_run.prid);
-            $('.polls-here').append(row);
         }
     };
 }
@@ -902,7 +885,7 @@ function update_current_poll() {
                     let item_index = $(e.target).data('item-index');
                     let answer_index = $(e.target).data('answer-index');
                     let value = $(e.target).val().trim();
-                    let items = value.split(';');
+                    let items = value.split(';').filter(function(x) { return x.trim().length > 0; } );
                     for (let i = 0; i < items.length; i++)
                         current_poll.items[item_index].answers.splice(answer_index + i, (i == 0) ? 1 : 0, items[i].trim());
                     update_buttons();
@@ -1177,26 +1160,6 @@ document.addEventListener('DOMContentLoaded', function() {
     
     $('#bu_save_poll_run').click(function(e) {
         save_poll_run();
-    });
-    
-    $('#bu_delete_poll').click(function(e) {
-        showTemplateModal('Umfrage löschen', 
-            'Sind Sie sicher, dass Sie diese Umfrage löschen möchten?',
-            "<i class='fa fa-trash'></i>&nbsp;&nbsp;Umfrage löschen", 'btn-danger',
-            'Abbrechen', 'btn-secondary', function() {
-                delete_poll();
-            }
-        );
-    });
-    
-    $('#bu_delete_poll_run').click(function(e) {
-        showTemplateModal('Durchführung löschen', 
-            'Sind Sie sicher, dass Sie diese Durchführung löschen möchten?',
-            "<i class='fa fa-trash'></i>&nbsp;&nbsp;Durchführung löschen", 'btn-danger',
-            'Abbrechen', 'btn-secondary', function() {
-                delete_poll_run(old_prid);
-            }
-        );
     });
     
     $('#bu_discard_poll_run').click(function(e) {

@@ -790,7 +790,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     bu_done.data('lesson_key', entry.lesson_key);
                     bu_done.data('offset', entry.offset);
                     bu_done.data('homework', entry);
-                    let mi_button = $('<button>').addClass('btn').addClass('btn-sm').addClass('dropdown-toggle').attr('data-toggle', 'dropdown');
+                    let mi_button = $('<button>').addClass('btn').addClass('btn-sm').addClass('dropdown-toggle').attr('data-toggle', 'dropdown').css('margin-bottom', '5px');
                     let dropdown_menu = $('<div>').addClass('dropdown-menu');
                     let mi_set_undone = $('<button>').addClass('dropdown-item').addClass('bu-set-undone').html("<i class='fa fa-clock-o'></i>noch nicht erledigt");
                     let mi_set_done = $('<button>').addClass('dropdown-item').addClass('bu-set-done').html("<i class='fa fa-check'></i>erledigt");
@@ -799,7 +799,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         mi_button.addClass('btn-success').html("<i class='fa fa-check'></i>&nbsp;&nbsp;erledigt");
                         mi_set_done.hide();
                     } else {
-                        mi_button.addClass('btn-warning').html("<i class='fa fa-clock-o'></i>&nbsp;&nbsp;noch nicht erledigt");
+                        mi_button.addClass('btn-outline-secondary').html("<i class='fa fa-clock-o'></i>&nbsp;&nbsp;noch nicht erledigt");
                         mi_set_undone.hide();
                     }
                     bu_done.append(mi_button);
@@ -817,7 +817,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         api_call('/api/mark_homework_done', {lesson_key: lesson_key, offset: offset}, function(data) {
                             if (data.success) {
                                 homework_feedback[`${lesson_key}/${offset}`].done = true;
-                                button.removeClass('btn-warning').addClass('btn-success').html("<i class='fa fa-check'></i>&nbsp;&nbsp;erledigt");
+                                button.removeClass('btn-outline-secondary').addClass('btn-success').html("<i class='fa fa-check'></i>&nbsp;&nbsp;erledigt");
                                 parent.find('.bu-set-done').hide();
                                 parent.find('.bu-set-undone').show();
                             }
@@ -828,13 +828,13 @@ document.addEventListener('DOMContentLoaded', function() {
                         let lesson_key = parent.data('lesson_key');
                         let offset = parent.data('offset');
                         let button = parent.find('.dropdown-toggle');
-                        button.removeClass('btn-success').addClass('btn-warning').html("<i class='fa fa-clock-o'></i>&nbsp;&nbsp;noch nicht erledigt");
+                        button.removeClass('btn-success').addClass('btn-outline-secondary').html("<i class='fa fa-clock-o'></i>&nbsp;&nbsp;noch nicht erledigt");
                         parent.find('.bu-set-undone').hide();
                         parent.find('.bu-set-done').show();
                         api_call('/api/mark_homework_undone', {lesson_key: lesson_key, offset: offset}, function(data) {
                             if (data.success) {
                                 homework_feedback[`${lesson_key}/${offset}`].done = false;
-                                button.removeClass('btn-success').addClass('btn-warning').html("<i class='fa fa-clock-o'></i>&nbsp;&nbsp;noch nicht erledigt");
+                                button.removeClass('btn-success').addClass('btn-outline-secondary').html("<i class='fa fa-clock-o'></i>&nbsp;&nbsp;noch nicht erledigt");
                                 parent.find('.bu-set-done').show();
                                 parent.find('.bu-set-undone').hide();
                             }

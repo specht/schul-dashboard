@@ -1086,14 +1086,14 @@ span.bv {
     margin-bottom: 15px;
 }
 
-.button-with-label button.btn {
+.button-with-label button.btn, .button-with-label input {
     width: 100%;
     position: absolute;
     padding-left: 15px;
     left: 0;
 }
 
-.button-with-label button.btn-sm {
+.button-with-label button.btn-sm, .button-with-label input {
     width: 120px;
 }
 
@@ -1942,16 +1942,13 @@ hr.poll-entry-divider {
     text-align: center;
     border-radius: 8px;
     cursor: pointer;
+    user-select: none;
 }
 
 .hf-emoji:hover {
-    background-color: rgba(0,0,0,0.1);
+    background-color: rgba(0,0,0,0.05);
 }
 
-
-.hf-emoji div {
-    font-size: 300%;
-}
 
 .button-container .btn {
     margin-left: 5px;
@@ -1976,3 +1973,21 @@ hr.poll-entry-divider {
     border: 1px solid #bbb;
     border-radius: 4px;
 }
+
+.hf-emoji div {
+    font-size: 300%;
+}
+
+.hf-emoji.selected {
+    background-color: rgba(0,0,0,0.1);
+    box-shadow: inset 0 0 10px rgba(0,0,0,0.2);
+}
+
+/*.hf-emoji.selected::after {
+    content: '✗';
+    position: absolute;
+    top: 0px;
+    right: 5px;
+    font-size: 200%;
+    color: #3465a4;
+}*/

@@ -4110,6 +4110,25 @@ class Main < Sinatra::Base
         respond(:yeah => 'sure')
     end
     
+    post '/api/update_homework_feedback' do
+        require_user!
+        data = parse_request_data(:required_keys => [:lesson_key, :offset, :state, :time_spent],
+                                  :types => {:offset => Integer, :time_spent => Integer})
+        assert(['good', 'hmmm', 'lost', ''].include?(data[:state]))
+        assert(data[:time_spent] >= 0)
+        data[:state] = nil if data[:state].empty?
+        data[:time_spent] = nil if data[:time_spent] == 0
+        neo4j_query_expect_one(<<~END_OF_QUERY, :session_email => @session_user[:email], :lesson_key => data[:lesson_key], :offset => data[:offset], :state => data[:state], :time_spent => data[:time_spent])
+            MATCH (u:User {email: {session_email}}), (li:LessonInfo {offset: {offset}})-[:BELONGS_TO]->(l:Lesson {key: {lesson_key}})
+            WITH u, li
+            MERGE (u)<-[:FROM]-(hf:HomeworkFeedback)-[:FOR]->(li)
+            SET hf.state = {state}
+            SET hf.time_spent = {time_spent}
+            RETURN hf;
+        END_OF_QUERY
+        respond(:yeah => 'sure')
+    end
+    
     def gen_jitsi_data(path)
         ua = USER_AGENT_PARSER.parse(request.env['HTTP_USER_AGENT'])
         browser_icon = 'fa-microphone'

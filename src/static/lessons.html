@@ -194,6 +194,10 @@ var update_rec_time_label_timeout = null;
                             <button id='ti_homework_lr' data-state='off' class='btn_lesson_data btn btn-sm btn-outline-secondary' disabled><i class='fa fa-times'></i>&nbsp;&nbsp;Lernraum</button>
                             <span>Es befinden sich Hausaufgaben im Lernraum.</span>
                         </div>
+                        <div class='button-with-label'>
+                            <input type='number' id='ti_homework_est_time' class='form-control' style='height: 32px; text-align: center;'/>
+                            <span>Geplanter Zeitaufwand (in Minuten)</span>
+                        </div>
                     </div>
 <!--                     <hr /> -->
                     <div class="form-group">
@@ -253,7 +257,7 @@ var update_rec_time_label_timeout = null;
 var row_for_lesson_offset = {};
 var cursor = null;
 var pending_changes = false;
-var data_keys = ['thema', 'notizen', 'hausaufgaben_text', 'stundenthema_text'];
+var data_keys = ['thema', 'notizen', 'hausaufgaben_text', 'stundenthema_text', 'homework_est_time'];
 var data_keys_bools = ['lesson_jitsi', 'lesson_nc', 'lesson_lr', 'homework_nc', 'homework_lr'];
 var can_select = false;
 

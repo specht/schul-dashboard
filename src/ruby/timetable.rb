@@ -130,6 +130,10 @@ class Timetable
                         last_event[:hausaufgaben_text] ||= Set.new()
                         last_event[:hausaufgaben_text] |= event[:hausaufgaben_text]
                     end
+                    if event[:homework_est_time] && (!event[:homework_est_time].strip.empty?)
+                        last_event[:homework_est_time] ||= '0'
+                        last_event[:homework_est_time] = (last_event[:homework_est_time].to_i + event[:homework_est_time].to_i).to_s
+                    end
                     if event[:stundenthema_text]
                         last_event[:stundenthema_text] ||= Set.new()
                         last_event[:stundenthema_text] |= event[:stundenthema_text]
@@ -990,7 +994,7 @@ class Timetable
             (@lesson_info[lesson_key] || {}).keys.sort.each do |offset|
                 data = @lesson_info[lesson_key][offset][:data] || {}
                 collected = {}
-                [:hausaufgaben_text, :homework_nc, :homework_lr].each do |k|
+                [:hausaufgaben_text, :homework_nc, :homework_lr, :homework_est_time].each do |k|
                     if data[k]
                         if data[k].class == String
                             unless data[k].strip.empty?
@@ -1176,6 +1180,16 @@ class Timetable
                                             data[k] = true
                                         end
                                     end
+                                    [:homework_est_time].each do |k|
+                                        sum = 0
+                                        (0...e[:count]).each do |o|
+                                            v = ((((@lesson_info[lesson_key] || {})[e[:lesson_offset] + o] || {})[:data] || {})[k] || '').strip
+                                            sum += v.to_i unless v.empty?
+                                        end
+                                        if sum > 0
+                                            data[k] = sum.to_s
+                                        end
+                                    end
                                     events_with_data_cache[lesson_key][e[:lesson_offset]] = data
                                 end
                                 events_with_data_per_user_cache[lesson_key] ||= {}
@@ -1264,6 +1278,11 @@ class Timetable
                                         parts << event[:data][k] if event[:data][k]
                                         parts << v
                                         event[:data][k] = parts.join('<br />').strip
+                                    elsif k == :homework_est_time
+                                        parts = []
+                                        parts << event[:data][k] if event[:data][k]
+                                        parts << v
+                                        event[:data][k] = (parts.map { |x| x.to_i }.sum).to_s
                                     end
                                 end
                             end
@@ -1506,6 +1525,8 @@ class Timetable
                             klassen = @@lessons[:lesson_keys][entry[:lesson_key]][:klassen]
                             fach = "#{fach} (#{klassen.sort.map { |x| Main.tr_klasse(x) }.join(', ')})"
                         end
+                        lehrer = @@lessons[:lesson_keys][entry[:lesson_key]][:lehrer]
+                        STDERR.puts lehrer.to_yaml
                         if entry[:info]
                             homework_text = []
                             homework_text << entry[:info][:hausaufgaben_text] if entry[:info][:hausaufgaben_text]
@@ -1515,6 +1536,8 @@ class Timetable
                                 :datum => datum, 
                                 :text => homework_text, 
                                 :fach => fach,
+                                :lehrer => lehrer.map { |x| (@@user_info[@@shorthands[x]] || {})[:display_last_name]}.join(', '),
+                                :est_time => entry[:info][:homework_est_time].to_i,
                                 :lesson_key => entry[:lesson_key],
                                 :offset => entry[:info][:offset],
                             }

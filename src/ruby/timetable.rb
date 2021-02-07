@@ -989,7 +989,7 @@ class Timetable
         @@lessons[:lesson_keys].keys.each do |lesson_key|
             (@lesson_info[lesson_key] || {}).keys.sort.each do |offset|
                 data = @lesson_info[lesson_key][offset][:data] || {}
-                collected = {}
+                collected = {:offset => offset}
                 [:hausaufgaben_text, :homework_nc, :homework_lr].each do |k|
                     if data[k]
                         unless data[k].class == String && data[k].strip.empty?
@@ -1507,7 +1507,9 @@ class Timetable
                             chronological_homework << {
                                 :datum => datum, 
                                 :text => homework_text, 
-                                :fach => fach
+                                :fach => fach,
+                                :lesson_key => entry[:lesson_key],
+                                :offset => entry[:info][:offset],
                             }
                         end
                     end

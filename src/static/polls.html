@@ -1289,6 +1289,7 @@ document.addEventListener('DOMContentLoaded', function() {
     for (let key of ['#ti_run_start_date', '#ti_run_start_time', '#ti_run_end_date', '#ti_run_end_time']) {
         $(key).keyup(function(e) { update_run_buttons(); });
         $(key).change(function(e) { update_run_buttons(); });
+        $(key).blur(function(e) { update_run_buttons(); });
     }
 //     $('.bu-compose').click();
 

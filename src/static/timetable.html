@@ -77,35 +77,57 @@
   <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
     <div class="modal-content">
       <div class="modal-header">
-        <h5 class="modal-title">Feedback zur Hausaufgabe</h5>
+        <h5 class="modal-title">Feedback zur Hausaufgabe im Fach <span class='hw-fb-fach'></span> zu <span class='hw-fb-hw-date'></span></h5>
       </div>
       <div class="modal-body">
           <div class='container-fluid' style='padding: 0;'>
             <div class='row'>
                 <div class='col-md-12'>
+                <div class='alert alert-warning'>
+                    Wenn du möchtest, kannst du hier Feedback zur Hausaufgaben an <span class='hw-fb-lehrer-genitiv'></span> senden. <br /><strong>Hinweis:</strong> Die Markierung, ob du eine Hausaufgabe erledigt hast oder nicht, ist nur für dich zu sehen.
+                </div>
+                <p style='text-align: center;'><strong>Wie bist du mit der Hausaufgabe zurecht gekommen?</strong></p>
                 </div>
             </div>
-            <div class='row'>
-                <div class='hf-emoji col-md-4'>
+            <div class='row' style='margin-bottom: 15px;'>
+                <div class='hf-emoji col-md-4' data-feedback='good'>
                 <div>🙂</div>
                 Ich glaube, ich habe alles richtig gemacht.
                 </div>
-                <div class='hf-emoji col-md-4'>
+                <div class='hf-emoji col-md-4' data-feedback='hmmm'>
                 <div>🤔</div>
                 Ich bin mir nicht ganz sicher, ob ich alles richtig gemacht habe.
                 </div>
-                <div class='hf-emoji col-md-4'>
+                <div class='hf-emoji col-md-4' data-feedback='lost'>
                 <div>😕</div>
                 Ich wusste nicht genau, was ich tun sollte.
+                </div>
+            </div>
+            <div class='hw-fb-got-est-time'>
+                <div class='row'>
+                    <div class='col-md-12'>
+                    <p style='text-align: center;'><strong><span class='hw-fb-lehrer'></span> hat für diese Hausaufgabe <span class='hw-fb-est-time'></span> Minuten vorgesehen. Wie lange hast du für die Hausaufgabe benötigt?</strong></p>
+                    </div>
+                </div>
+                <div class='row'>
+                    <div class='col-lg-4 offset-lg-4 col-md-6 offset-md-3 col-sm-6 offset-sm-3'>
+                        <div class="input-group mb-3">
+                        <input style='text-align: center;' class='form-control' id='ti_hw_spent_minutes' min='0' type='number'></input>
+                        <div class="input-group-append">
+                            <span class="input-group-text">Minuten</span>
+                        </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
           
       </div>
       <div class="modal-footer">
-        <button type='button' class="btn btn-success">Senden</button>
-        <button type='button' class="btn btn-danger">Löschen</button>
-        <button type="button" class="btn btn-secondary" data-dismiss="modal">Schließen</button>
+        <div class='feedback_submit_success mr-auto'><i class='fa fa-check-circle text-success'></i>&nbsp;&nbsp;Dein Feedback wurde gespeichert.</div>
+        <div class='feedback_submit_error mr-auto'><i class='fa fa-exclamation-circle text-danger'></i>&nbsp;&nbsp;Dein Feedback konnte nicht gespeichert werden<span class='poll_submit_error_message'></span></div>
+        <button id='bu_send_homework_feedback' type='button' class="btn btn-success"><i class='fa fa-send'></i>&nbsp;&nbsp;Feedback speichern</button>
+        <button type="button" class="btn btn-secondary" data-dismiss="modal"><i class='fa fa-times'></i>&nbsp;&nbsp;Schließen</button>
       </div>
     </div>
   </div>
@@ -752,6 +774,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 $('.future_homework').append($('<p><b>Hausaufgaben</b></p>'));
                 $('.future_homework').show();
             }
+            console.log(homework);
             for (let entry of homework) {
                 if (entry.datum !== last_date) {
                     $('.future_homework').append($('<hr />'));
@@ -760,10 +783,13 @@ document.addEventListener('DOMContentLoaded', function() {
                 last_date = entry.datum;
                 let div = $('<p>').html('<b>' + entry.fach + ':</b> ' + entry.text.join('<br />'));
                 $('.future_homework').append(div);
-                if (false && '#{!!sus_logged_in?}' === 'true') {
+                if ((entry.est_time || 0) > 0)
+                    $('.future_homework').append($('<p>').html(`Geplanter Zeitaufwand: ${entry.est_time} Minuten`));
+                if ('#{!!sus_logged_in?}' === 'true') {
                     let bu_done = $('<div>').addClass('dropdown');
                     bu_done.data('lesson_key', entry.lesson_key);
                     bu_done.data('offset', entry.offset);
+                    bu_done.data('homework', entry);
                     let mi_button = $('<button>').addClass('btn').addClass('btn-sm').addClass('dropdown-toggle').attr('data-toggle', 'dropdown');
                     let dropdown_menu = $('<div>').addClass('dropdown-menu');
                     let mi_set_undone = $('<button>').addClass('dropdown-item').addClass('bu-set-undone').html("<i class='fa fa-clock-o'></i>noch nicht erledigt");
@@ -779,8 +805,8 @@ document.addEventListener('DOMContentLoaded', function() {
                     bu_done.append(mi_button);
                     dropdown_menu.append(mi_set_undone);
                     dropdown_menu.append(mi_set_done);
-//                     dropdown_menu.append($('<div>').addClass('dropdown-divider'));
-//                     dropdown_menu.append(mi_feedback);
+                    dropdown_menu.append($('<div>').addClass('dropdown-divider'));
+                    dropdown_menu.append(mi_feedback);
                     bu_done.append(dropdown_menu);
                     $('.future_homework').append(bu_done);
                     mi_set_done.click(function(e) {
@@ -815,6 +841,33 @@ document.addEventListener('DOMContentLoaded', function() {
                         });
                     });
                     mi_feedback.click(function(e) {
+                        let parent = $(e.target).closest('.dropdown');
+                        let lesson_key = parent.data('lesson_key');
+                        let offset = parent.data('offset');
+                        let homework = parent.data('homework');
+                        $('#homeworkFeedbackModal').data('lesson_key', lesson_key);
+                        $('#homeworkFeedbackModal').data('offset', offset);
+                        $('#homeworkFeedbackModal .hw-fb-fach').text(homework.fach);
+                        $('#homeworkFeedbackModal .hw-fb-lehrer').text(homework.lehrer);
+                        $('#homeworkFeedbackModal .hw-fb-lehrer-genitiv').text(homework.lehrer.replace(/Herr/g, 'Herrn'));
+                        $('#homeworkFeedbackModal .hw-fb-est-time').text(homework.est_time);
+                        $('#homeworkFeedbackModal .hw-fb-hw-date').text(moment(entry.datum).format('ddd, D.M.Y'));
+                        $('#homeworkFeedbackModal').on('shown.bs.modal', function () {
+                            $('#ti_hw_spent_minutes').focus();
+                        });
+                        $('#ti_hw_spent_minutes').val();
+                        if ((homework.est_time || 0) > 0)
+                            $('.hw-fb-got-est-time').show();
+                        else
+                            $('.hw-fb-got-est-time').hide();
+                        $('.feedback_submit_error').hide();
+                        $('.feedback_submit_success').hide();
+                        $('#homeworkFeedbackModal .hf-emoji').removeClass('selected');
+                        let current_feedback = homework_feedback[`${lesson_key}/${offset}`] || {};
+                        $(`#homeworkFeedbackModal .hf-emoji[data-feedback=${current_feedback.state}]`).addClass('selected');
+                        $('#homeworkFeedbackModal #ti_hw_spent_minutes').val(current_feedback.time_spent || '');
+//                         
+                        $('#bu_send_homework_feedback').prop('disabled', true);
                         $('#homeworkFeedbackModal').modal('show');
                     });
                 }
@@ -856,7 +909,52 @@ document.addEventListener('DOMContentLoaded', function() {
 //             }
 //         }
     }
-//     if ('#{!!DEVELOPMENT}' === 'true')
-//         $('#homeworkFeedbackModal').modal('show');
+    $('.hf-emoji').click(function(e) {
+        let flag = $(e.target).closest('.hf-emoji').hasClass('selected');
+        $(e.target).closest('.row').find('.hf-emoji').removeClass('selected');
+        if (!flag)
+            $(e.target).closest('.hf-emoji').addClass('selected');
+        else
+            $(e.target).closest('.hf-emoji').removeClass('selected');
+        $('#bu_send_homework_feedback').prop('disabled', false);
+    });
+    $('#ti_hw_spent_minutes').change(function() {
+        $('#bu_send_homework_feedback').prop('disabled', false);
+    });
+    $('#ti_hw_spent_minutes').keyup(function() {
+        $('#bu_send_homework_feedback').prop('disabled', false);
+    });
+    
+    $('#bu_send_homework_feedback').click(function() {
+        let submit_data = {};
+        submit_data.lesson_key = $('#homeworkFeedbackModal').data('lesson_key');
+        submit_data.offset = $('#homeworkFeedbackModal').data('offset');
+        submit_data.state = '';
+        submit_data.time_spent = 0;
+        let state = $('.hf-emoji.selected').data('feedback');
+        if (typeof(state) !== 'undefined')
+            submit_data.state = state;
+        if ($('#ti_hw_spent_minutes').val().trim().length > 0)
+            submit_data.time_spent = parseInt($('#ti_hw_spent_minutes').val().trim());
+        console.log(submit_data);
+        $('.feedback_submit_error').hide();
+        $('.feedback_submit_success').hide();
+        api_call('/api/update_homework_feedback', submit_data, function(data) {
+            if (data.success) {
+                if (typeof(data.error) !== 'undefined') {
+                    $('#homeworkFeedbackModal .feedback_submit_error_message').text(': ' + data.error);
+                    $('#homeworkFeedbackModal .feedback_submit_error').fadeIn();
+                } else {
+                    $('#homeworkFeedbackModal .feedback_submit_success').fadeIn();
+                    $('#bu_send_homework_feedback').prop('disabled', true);
+                    homework_feedback[`${submit_data.lesson_key}/${submit_data.offset}`].state = submit_data.state;
+                    homework_feedback[`${submit_data.lesson_key}/${submit_data.offset}`].time_spent = submit_data.time_spent;
+                }
+            } else {
+                $('#homeworkFeedbackModal .feedback_submit_error_message').text('');
+                $('#homeworkFeedbackModal .feedback_submit_error').fadeIn();
+            }
+        });
+    });
 });
 </script>

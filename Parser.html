@@ -649,7 +649,6 @@
       <pre class="lines">
 
 
-228
 229
 230
 231
@@ -676,10 +675,11 @@
 252
 253
 254
-255</pre>
+255
+256</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'src/ruby/parser.rb', line 228</span>
+      <pre class="code"><span class="info file"># File 'src/ruby/parser.rb', line 229</span>
 
 <span class='kw'>def</span> <span class='id identifier rubyid_gen_password'>gen_password</span><span class='lparen'>(</span><span class='id identifier rubyid_email'>email</span><span class='comma'>,</span> <span class='id identifier rubyid_salt'>salt</span><span class='rparen'>)</span>
     <span class='id identifier rubyid_sha2'>sha2</span> <span class='op'>=</span> <span class='const'>Digest</span><span class='op'>::</span><span class='const'>SHA256</span><span class='period'>.</span><span class='id identifier rubyid_new'>new</span><span class='lparen'>(</span><span class='rparen'>)</span>
@@ -729,12 +729,12 @@
       <pre class="lines">
 
 
-257
 258
-259</pre>
+259
+260</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'src/ruby/parser.rb', line 257</span>
+      <pre class="code"><span class="info file"># File 'src/ruby/parser.rb', line 258</span>
 
 <span class='kw'>def</span> <span class='id identifier rubyid_gen_password_for_email'>gen_password_for_email</span><span class='lparen'>(</span><span class='id identifier rubyid_email'>email</span><span class='rparen'>)</span>
     <span class='id identifier rubyid_gen_password'>gen_password</span><span class='lparen'>(</span><span class='id identifier rubyid_email'>email</span><span class='comma'>,</span> <span class='const'><span class='object_link'><a href="top-level-namespace.html#EMAIL_PASSWORD_SALT-constant" title="EMAIL_PASSWORD_SALT (constant)">EMAIL_PASSWORD_SALT</a></span></span><span class='rparen'>)</span>
@@ -759,12 +759,12 @@
       <pre class="lines">
 
 
-261
 262
-263</pre>
+263
+264</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'src/ruby/parser.rb', line 261</span>
+      <pre class="code"><span class="info file"># File 'src/ruby/parser.rb', line 262</span>
 
 <span class='kw'>def</span> <span class='id identifier rubyid_gen_password_for_nc'>gen_password_for_nc</span><span class='lparen'>(</span><span class='id identifier rubyid_email'>email</span><span class='rparen'>)</span>
     <span class='id identifier rubyid_gen_password'>gen_password</span><span class='lparen'>(</span><span class='id identifier rubyid_email'>email</span><span class='comma'>,</span> <span class='const'><span class='object_link'><a href="top-level-namespace.html#NEXTCLOUD_PASSWORD_SALT-constant" title="NEXTCLOUD_PASSWORD_SALT (constant)">NEXTCLOUD_PASSWORD_SALT</a></span></span><span class='rparen'>)</span>
@@ -789,7 +789,6 @@
       <pre class="lines">
 
 
-265
 266
 267
 268
@@ -834,10 +833,12 @@
 307
 308
 309
-310</pre>
+310
+311
+312</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'src/ruby/parser.rb', line 265</span>
+      <pre class="code"><span class="info file"># File 'src/ruby/parser.rb', line 266</span>
 
 <span class='kw'>def</span> <span class='id identifier rubyid_handle_schueler_line'>handle_schueler_line</span><span class='lparen'>(</span><span class='id identifier rubyid_line'>line</span><span class='rparen'>)</span>
     <span class='id identifier rubyid_line'>line</span> <span class='op'>=</span> <span class='id identifier rubyid_line'>line</span><span class='period'>.</span><span class='id identifier rubyid_encode'>encode</span><span class='lparen'>(</span><span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>utf-8</span><span class='tstring_end'>&#39;</span></span><span class='rparen'>)</span>
@@ -871,15 +872,16 @@
         <span class='id identifier rubyid_exit'>exit</span><span class='lparen'>(</span><span class='int'>1</span><span class='rparen'>)</span>
     <span class='kw'>end</span>
 
-    <span class='id identifier rubyid_record'>record</span> <span class='op'>=</span> <span class='lbrace'>{</span><span class='symbol'>:first_name</span> <span class='op'>=&gt;</span> <span class='id identifier rubyid_rufname'>rufname</span><span class='comma'>,</span> 
-              <span class='symbol'>:last_name</span> <span class='op'>=&gt;</span> <span class='id identifier rubyid_nachname'>nachname</span><span class='comma'>,</span> 
-              <span class='symbol'>:email</span> <span class='op'>=&gt;</span> <span class='id identifier rubyid_email'>email</span><span class='comma'>,</span> 
-              <span class='symbol'>:initial_password</span> <span class='op'>=&gt;</span> <span class='id identifier rubyid_gen_password_for_email'>gen_password_for_email</span><span class='lparen'>(</span><span class='id identifier rubyid_email'>email</span><span class='rparen'>)</span><span class='comma'>,</span> 
-              <span class='symbol'>:initial_nc_password</span> <span class='op'>=&gt;</span> <span class='id identifier rubyid_gen_password_for_nc'>gen_password_for_nc</span><span class='lparen'>(</span><span class='id identifier rubyid_email'>email</span><span class='rparen'>)</span><span class='comma'>,</span> 
-              <span class='symbol'>:klasse</span> <span class='op'>=&gt;</span> <span class='id identifier rubyid_klasse'>klasse</span><span class='comma'>,</span> 
-              <span class='symbol'>:display_name</span> <span class='op'>=&gt;</span> <span class='id identifier rubyid_name_to_display_name'>name_to_display_name</span><span class='lparen'>(</span><span class='id identifier rubyid_rufname'>rufname</span><span class='comma'>,</span> <span class='id identifier rubyid_nachname'>nachname</span><span class='rparen'>)</span><span class='comma'>,</span> 
-              <span class='symbol'>:display_first_name</span> <span class='op'>=&gt;</span> <span class='id identifier rubyid_name_to_display_name'>name_to_display_name</span><span class='lparen'>(</span><span class='id identifier rubyid_rufname'>rufname</span><span class='comma'>,</span> <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_end'>&#39;</span></span><span class='rparen'>)</span><span class='comma'>,</span> 
+    <span class='id identifier rubyid_record'>record</span> <span class='op'>=</span> <span class='lbrace'>{</span><span class='symbol'>:first_name</span> <span class='op'>=&gt;</span> <span class='id identifier rubyid_rufname'>rufname</span><span class='comma'>,</span>
+              <span class='symbol'>:last_name</span> <span class='op'>=&gt;</span> <span class='id identifier rubyid_nachname'>nachname</span><span class='comma'>,</span>
+              <span class='symbol'>:email</span> <span class='op'>=&gt;</span> <span class='id identifier rubyid_email'>email</span><span class='comma'>,</span>
+              <span class='symbol'>:initial_password</span> <span class='op'>=&gt;</span> <span class='id identifier rubyid_gen_password_for_email'>gen_password_for_email</span><span class='lparen'>(</span><span class='id identifier rubyid_email'>email</span><span class='rparen'>)</span><span class='comma'>,</span>
+              <span class='symbol'>:initial_nc_password</span> <span class='op'>=&gt;</span> <span class='id identifier rubyid_gen_password_for_nc'>gen_password_for_nc</span><span class='lparen'>(</span><span class='id identifier rubyid_email'>email</span><span class='rparen'>)</span><span class='comma'>,</span>
+              <span class='symbol'>:klasse</span> <span class='op'>=&gt;</span> <span class='id identifier rubyid_klasse'>klasse</span><span class='comma'>,</span>
+              <span class='symbol'>:display_name</span> <span class='op'>=&gt;</span> <span class='id identifier rubyid_name_to_display_name'>name_to_display_name</span><span class='lparen'>(</span><span class='id identifier rubyid_rufname'>rufname</span><span class='comma'>,</span> <span class='id identifier rubyid_nachname'>nachname</span><span class='rparen'>)</span><span class='comma'>,</span>
+              <span class='symbol'>:display_first_name</span> <span class='op'>=&gt;</span> <span class='id identifier rubyid_name_to_display_name'>name_to_display_name</span><span class='lparen'>(</span><span class='id identifier rubyid_rufname'>rufname</span><span class='comma'>,</span> <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_end'>&#39;</span></span><span class='rparen'>)</span><span class='comma'>,</span>
               <span class='symbol'>:display_last_name</span> <span class='op'>=&gt;</span> <span class='id identifier rubyid_name_to_display_name'>name_to_display_name</span><span class='lparen'>(</span><span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_end'>&#39;</span></span><span class='comma'>,</span> <span class='id identifier rubyid_nachname'>nachname</span><span class='rparen'>)</span><span class='comma'>,</span>
+              <span class='symbol'>:display_name_official</span> <span class='op'>=&gt;</span> <span class='id identifier rubyid_name_to_display_name'>name_to_display_name</span><span class='lparen'>(</span><span class='id identifier rubyid_rufname'>rufname</span><span class='comma'>,</span> <span class='id identifier rubyid_nachname'>nachname</span><span class='rparen'>)</span><span class='comma'>,</span>
               <span class='symbol'>:geschlecht</span> <span class='op'>=&gt;</span> <span class='id identifier rubyid_geschlecht'>geschlecht</span><span class='comma'>,</span>
               <span class='symbol'>:can_log_in</span> <span class='op'>=&gt;</span> <span class='kw'>true</span>
               <span class='rbrace'>}</span>
@@ -905,16 +907,16 @@
       <pre class="lines">
 
 
-220
 221
 222
 223
 224
 225
-226</pre>
+226
+227</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'src/ruby/parser.rb', line 220</span>
+      <pre class="code"><span class="info file"># File 'src/ruby/parser.rb', line 221</span>
 
 <span class='kw'>def</span> <span class='id identifier rubyid_name_to_display_name'>name_to_display_name</span><span class='lparen'>(</span><span class='id identifier rubyid_vorname'>vorname</span><span class='comma'>,</span> <span class='id identifier rubyid_nachname'>nachname</span><span class='rparen'>)</span>
     <span class='kw'>if</span> <span class='id identifier rubyid_nachname'>nachname</span><span class='period'>.</span><span class='id identifier rubyid_include?'>include?</span><span class='lparen'>(</span><span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>,</span><span class='tstring_end'>&#39;</span></span><span class='rparen'>)</span>
@@ -943,7 +945,6 @@
       <pre class="lines">
 
 
-203
 204
 205
 206
@@ -958,10 +959,11 @@
 215
 216
 217
-218</pre>
+218
+219</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'src/ruby/parser.rb', line 203</span>
+      <pre class="code"><span class="info file"># File 'src/ruby/parser.rb', line 204</span>
 
 <span class='kw'>def</span> <span class='id identifier rubyid_name_to_email'>name_to_email</span><span class='lparen'>(</span><span class='id identifier rubyid_vorname'>vorname</span><span class='comma'>,</span> <span class='id identifier rubyid_nachname'>nachname</span><span class='rparen'>)</span>
     <span class='kw'>if</span> <span class='id identifier rubyid_nachname'>nachname</span><span class='period'>.</span><span class='id identifier rubyid_include?'>include?</span><span class='lparen'>(</span><span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>,</span><span class='tstring_end'>&#39;</span></span><span class='rparen'>)</span>
@@ -999,14 +1001,14 @@
       <pre class="lines">
 
 
-359
-360
 361
 362
-363</pre>
+363
+364
+365</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'src/ruby/parser.rb', line 359</span>
+      <pre class="code"><span class="info file"># File 'src/ruby/parser.rb', line 361</span>
 
 <span class='kw'>def</span> <span class='id identifier rubyid_notify_if_different'>notify_if_different</span><span class='lparen'>(</span><span class='id identifier rubyid_a'>a</span><span class='comma'>,</span> <span class='id identifier rubyid_b'>b</span><span class='rparen'>)</span>
     <span class='kw'>if</span> <span class='id identifier rubyid_a'>a</span> <span class='op'>!=</span> <span class='id identifier rubyid_b'>b</span>
@@ -1033,8 +1035,6 @@
       <pre class="lines">
 
 
-330
-331
 332
 333
 334
@@ -1047,10 +1047,12 @@
 341
 342
 343
-344</pre>
+344
+345
+346</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'src/ruby/parser.rb', line 330</span>
+      <pre class="code"><span class="info file"># File 'src/ruby/parser.rb', line 332</span>
 
 <span class='kw'>def</span> <span class='id identifier rubyid_parse_faecher'>parse_faecher</span>
 <span class='comment'>#         STDERR.puts &quot;Parsing faecher...&quot;
@@ -1087,8 +1089,6 @@
       <pre class="lines">
 
 
-346
-347
 348
 349
 350
@@ -1098,10 +1098,12 @@
 354
 355
 356
-357</pre>
+357
+358
+359</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'src/ruby/parser.rb', line 346</span>
+      <pre class="code"><span class="info file"># File 'src/ruby/parser.rb', line 348</span>
 
 <span class='kw'>def</span> <span class='id identifier rubyid_parse_ferien_feiertage'>parse_ferien_feiertage</span>
 <span class='comment'>#         STDERR.puts &quot;Parsing ferien/feiertage...&quot;
@@ -1135,7 +1137,6 @@
       <pre class="lines">
 
 
-186
 187
 188
 189
@@ -1150,10 +1151,11 @@
 198
 199
 200
-201</pre>
+201
+202</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'src/ruby/parser.rb', line 186</span>
+      <pre class="code"><span class="info file"># File 'src/ruby/parser.rb', line 187</span>
 
 <span class='kw'>def</span> <span class='id identifier rubyid_parse_klassenleiter'>parse_klassenleiter</span><span class='lparen'>(</span><span class='op'>&amp;</span><span class='id identifier rubyid_block'>block</span><span class='rparen'>)</span>
 <span class='comment'>#         STDERR.puts &quot;Parsing klassenleiter...&quot;
@@ -1191,8 +1193,6 @@
       <pre class="lines">
 
 
-646
-647
 648
 649
 650
@@ -1260,10 +1260,12 @@
 712
 713
 714
-715</pre>
+715
+716
+717</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'src/ruby/parser.rb', line 646</span>
+      <pre class="code"><span class="info file"># File 'src/ruby/parser.rb', line 648</span>
 
 <span class='kw'>def</span> <span class='id identifier rubyid_parse_kurswahl'>parse_kurswahl</span><span class='lparen'>(</span><span class='id identifier rubyid_user_info'>user_info</span><span class='comma'>,</span> <span class='id identifier rubyid_lessons'>lessons</span><span class='comma'>,</span> <span class='id identifier rubyid_lesson_key_tr'>lesson_key_tr</span><span class='rparen'>)</span>
 <span class='comment'>#         STDERR.puts &quot;Parsing kurswahl...&quot;
@@ -1417,7 +1419,8 @@
 181
 182
 183
-184</pre>
+184
+185</pre>
     </td>
     <td>
       <pre class="code"><span class="info file"># File 'src/ruby/parser.rb', line 122</span>
@@ -1477,6 +1480,7 @@
                   <span class='symbol'>:titel</span> <span class='op'>=&gt;</span> <span class='id identifier rubyid_titel'>titel</span><span class='comma'>,</span>
                   <span class='symbol'>:display_name</span> <span class='op'>=&gt;</span> <span class='id identifier rubyid_display_name'>display_name</span><span class='comma'>,</span>
                   <span class='symbol'>:display_last_name</span> <span class='op'>=&gt;</span> <span class='id identifier rubyid_display_last_name'>display_last_name</span><span class='comma'>,</span>
+                  <span class='symbol'>:display_name_official</span> <span class='op'>=&gt;</span> <span class='id identifier rubyid_display_last_name'>display_last_name</span><span class='comma'>,</span>
                   <span class='symbol'>:display_last_name_dativ</span> <span class='op'>=&gt;</span> <span class='id identifier rubyid_display_last_name'>display_last_name</span><span class='period'>.</span><span class='id identifier rubyid_sub'>sub</span><span class='lparen'>(</span><span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>Herr </span><span class='tstring_end'>&#39;</span></span><span class='comma'>,</span> <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>Herrn </span><span class='tstring_end'>&#39;</span></span><span class='rparen'>)</span><span class='comma'>,</span>
                   <span class='symbol'>:can_log_in</span> <span class='op'>=&gt;</span> <span class='lparen'>(</span><span class='id identifier rubyid_line'>line</span><span class='lbracket'>[</span><span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>Deaktiviert</span><span class='tstring_end'>&#39;</span></span><span class='rbracket'>]</span> <span class='op'>||</span> <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_end'>&#39;</span></span><span class='rparen'>)</span><span class='period'>.</span><span class='id identifier rubyid_empty?'>empty?</span><span class='comma'>,</span>
                   <span class='symbol'>:nc_login</span> <span class='op'>=&gt;</span> <span class='ivar'>@nc_sub</span><span class='lbracket'>[</span><span class='id identifier rubyid_email'>email</span><span class='rbracket'>]</span> <span class='op'>||</span> <span class='id identifier rubyid_shorthand'>shorthand</span><span class='period'>.</span><span class='id identifier rubyid_gsub'>gsub</span><span class='lparen'>(</span><span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>ä</span><span class='tstring_end'>&#39;</span></span><span class='comma'>,</span> <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>ae</span><span class='tstring_end'>&#39;</span></span><span class='rparen'>)</span><span class='period'>.</span><span class='id identifier rubyid_gsub'>gsub</span><span class='lparen'>(</span><span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>ö</span><span class='tstring_end'>&#39;</span></span><span class='comma'>,</span> <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>oe</span><span class='tstring_end'>&#39;</span></span><span class='rparen'>)</span><span class='period'>.</span><span class='id identifier rubyid_gsub'>gsub</span><span class='lparen'>(</span><span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>ü</span><span class='tstring_end'>&#39;</span></span><span class='comma'>,</span> <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>ue</span><span class='tstring_end'>&#39;</span></span><span class='rparen'>)</span><span class='comma'>,</span>
@@ -1505,8 +1509,6 @@
       <pre class="lines">
 
 
-607
-608
 609
 610
 611
@@ -1542,10 +1544,12 @@
 641
 642
 643
-644</pre>
+644
+645
+646</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'src/ruby/parser.rb', line 607</span>
+      <pre class="code"><span class="info file"># File 'src/ruby/parser.rb', line 609</span>
 
 <span class='kw'>def</span> <span class='id identifier rubyid_parse_pausenaufsichten'>parse_pausenaufsichten</span><span class='lparen'>(</span><span class='rparen'>)</span>
     <span class='id identifier rubyid_all_pausenaufsichten'>all_pausenaufsichten</span> <span class='op'>=</span> <span class='lbrace'>{</span><span class='symbol'>:aufsichten</span> <span class='op'>=&gt;</span> <span class='lbrace'>{</span><span class='rbrace'>}</span><span class='comma'>,</span> <span class='symbol'>:start_dates</span> <span class='op'>=&gt;</span> <span class='lbracket'>[</span><span class='rbracket'>]</span><span class='rbrace'>}</span>
@@ -1605,8 +1609,6 @@
       <pre class="lines">
 
 
-312
-313
 314
 315
 316
@@ -1621,10 +1623,12 @@
 325
 326
 327
-328</pre>
+328
+329
+330</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'src/ruby/parser.rb', line 312</span>
+      <pre class="code"><span class="info file"># File 'src/ruby/parser.rb', line 314</span>
 
 <span class='kw'>def</span> <span class='id identifier rubyid_parse_schueler'>parse_schueler</span><span class='lparen'>(</span><span class='op'>&amp;</span><span class='id identifier rubyid_block'>block</span><span class='rparen'>)</span>
 <span class='comment'>#         STDERR.puts &quot;Parsing schueler...&quot;
@@ -1663,8 +1667,6 @@
       <pre class="lines">
 
 
-365
-366
 367
 368
 369
@@ -1903,10 +1905,12 @@
 602
 603
 604
-605</pre>
+605
+606
+607</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'src/ruby/parser.rb', line 365</span>
+      <pre class="code"><span class="info file"># File 'src/ruby/parser.rb', line 367</span>
 
 <span class='kw'>def</span> <span class='id identifier rubyid_parse_timetable'>parse_timetable</span><span class='lparen'>(</span><span class='id identifier rubyid_config'>config</span><span class='comma'>,</span> <span class='id identifier rubyid_lesson_key_tr'>lesson_key_tr</span> <span class='op'>=</span> <span class='lbrace'>{</span><span class='rbrace'>}</span><span class='rparen'>)</span>
     <span class='id identifier rubyid_sub_keys_for_unr_fach'>sub_keys_for_unr_fach</span> <span class='op'>=</span> <span class='lbrace'>{</span><span class='rbrace'>}</span>
@@ -2159,7 +2163,7 @@
 </div>
 
       <div id="footer">
-  Generated on Thu Feb  4 01:04:09 2021 by
+  Generated on Mon Feb  8 23:19:08 2021 by
   <a href="http://yardoc.org" title="Yay! A Ruby Documentation Tool" target="_parent">yard</a>
   0.9.26 (ruby-2.5.1).
 </div>

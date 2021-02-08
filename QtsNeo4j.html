@@ -76,7 +76,7 @@
   
   <dl>
     <dt>Included in:</dt>
-    <dd><span class='object_link'><a href="ClearDatabase.html" title="ClearDatabase (class)">ClearDatabase</a></span>, <span class='object_link'><a href="DumpDatabase.html" title="DumpDatabase (class)">DumpDatabase</a></span>, <span class='object_link'><a href="LoadDump.html" title="LoadDump (class)">LoadDump</a></span>, <span class='object_link'><a href="Main.html" title="Main (class)">Main</a></span>, <span class='object_link'><a href="Neo4jGlobal.html" title="Neo4jGlobal (class)">Neo4jGlobal</a></span>, <span class='object_link'><a href="Neo4jHelper.html" title="Neo4jHelper (class)">Neo4jHelper</a></span>, <span class='object_link'><a href="Script.html" title="Script (class)">Script</a></span>, <span class='object_link'><a href="SetupDatabase.html" title="SetupDatabase (class)">SetupDatabase</a></span>, <span class='object_link'><a href="Timetable.html" title="Timetable (class)">Timetable</a></span>, <span class='object_link'><a href="TimetableRepl.html" title="TimetableRepl (class)">TimetableRepl</a></span></dd>
+    <dd><span class='object_link'><a href="ClearDatabase.html" title="ClearDatabase (class)">ClearDatabase</a></span>, <span class='object_link'><a href="DumpDatabase.html" title="DumpDatabase (class)">DumpDatabase</a></span>, <span class='object_link'><a href="LoadDump.html" title="LoadDump (class)">LoadDump</a></span>, <span class='object_link'><a href="Main.html" title="Main (class)">Main</a></span>, <span class='object_link'><a href="Neo4jGlobal.html" title="Neo4jGlobal (class)">Neo4jGlobal</a></span>, <span class='object_link'><a href="Neo4jHelper.html" title="Neo4jHelper (class)">Neo4jHelper</a></span>, <span class='object_link'><a href="SetupDatabase.html" title="SetupDatabase (class)">SetupDatabase</a></span>, <span class='object_link'><a href="Timetable.html" title="Timetable (class)">Timetable</a></span>, <span class='object_link'><a href="TimetableRepl.html" title="TimetableRepl (class)">TimetableRepl</a></span></dd>
   </dl>
   
 
@@ -203,31 +203,31 @@
       <pre class="lines">
 
 
-108
-109
-110
-111
-112
-113
-114
-115
-116
-117
-118
-119
-120
-121
-122
-123
-124
-125
-126
-127
-128
-129</pre>
+133
+134
+135
+136
+137
+138
+139
+140
+141
+142
+143
+144
+145
+146
+147
+148
+149
+150
+151
+152
+153
+154</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'src/ruby/main.rb', line 108</span>
+      <pre class="code"><span class="info file"># File 'src/ruby/main.rb', line 133</span>
 
 <span class='kw'>def</span> <span class='id identifier rubyid_neo4j_query'>neo4j_query</span><span class='lparen'>(</span><span class='id identifier rubyid_query_str'>query_str</span><span class='comma'>,</span> <span class='id identifier rubyid_options'>options</span> <span class='op'>=</span> <span class='lbrace'>{</span><span class='rbrace'>}</span><span class='rparen'>)</span>
     <span class='id identifier rubyid_transaction'>transaction</span> <span class='kw'>do</span>
@@ -271,16 +271,16 @@
       <pre class="lines">
 
 
-131
-132
-133
-134
-135
-136
-137</pre>
+156
+157
+158
+159
+160
+161
+162</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'src/ruby/main.rb', line 131</span>
+      <pre class="code"><span class="info file"># File 'src/ruby/main.rb', line 156</span>
 
 <span class='kw'>def</span> <span class='id identifier rubyid_neo4j_query_expect_one'>neo4j_query_expect_one</span><span class='lparen'>(</span><span class='id identifier rubyid_query_str'>query_str</span><span class='comma'>,</span> <span class='id identifier rubyid_options'>options</span> <span class='op'>=</span> <span class='lbrace'>{</span><span class='rbrace'>}</span><span class='rparen'>)</span>
     <span class='id identifier rubyid_transaction'>transaction</span> <span class='kw'>do</span>
@@ -309,31 +309,31 @@
       <pre class="lines">
 
 
-75
-76
-77
-78
-79
-80
-81
-82
-83
-84
-85
-86
-87
-88
-89
-90
-91
-92
-93
-94
-95
-96</pre>
+100
+101
+102
+103
+104
+105
+106
+107
+108
+109
+110
+111
+112
+113
+114
+115
+116
+117
+118
+119
+120
+121</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'src/ruby/main.rb', line 75</span>
+      <pre class="code"><span class="info file"># File 'src/ruby/main.rb', line 100</span>
 
 <span class='kw'>def</span> <span class='id identifier rubyid_transaction'>transaction</span><span class='lparen'>(</span><span class='op'>&amp;</span><span class='id identifier rubyid_block'>block</span><span class='rparen'>)</span>
     <span class='ivar'>@neo4j</span> <span class='op'>||=</span> <span class='const'>Neography</span><span class='op'>::</span><span class='const'>Rest</span><span class='period'>.</span><span class='id identifier rubyid_new'>new</span>
@@ -367,7 +367,7 @@
 </div>
 
       <div id="footer">
-  Generated on Thu Feb  4 01:04:09 2021 by
+  Generated on Mon Feb  8 23:19:07 2021 by
   <a href="http://yardoc.org" title="Yay! A Ruby Documentation Tool" target="_parent">yard</a>
   0.9.26 (ruby-2.5.1).
 </div>

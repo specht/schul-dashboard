@@ -1719,9 +1719,9 @@ class Main < Sinatra::Base
     end
     
     def get_poll_run(prid, external_code = nil)
-#         external_code = nil if user_logged_in?
         result = {}
-        if external_code
+        STDERR.puts "[#{external_code}]"
+        if external_code && !external_code.empty?
             rows = neo4j_query(<<~END_OF_QUERY, :prid => prid)
                 MATCH (u)-[rt:IS_PARTICIPANT]->(pr:PollRun {id: {prid}})-[:RUNS]->(p:Poll)-[:ORGANIZED_BY]->(au:User)
                 WHERE (u:ExternalUser OR u:PredefinedExternalUser) AND COALESCE(p.deleted, false) = false AND COALESCE(pr.deleted, false) = false AND COALESCE(rt.deleted, false) = false
@@ -1759,16 +1759,7 @@ class Main < Sinatra::Base
         poll, poll_run, organizer_email, total_participants = get_poll_run(prid, external_code)
 
         stored_response = nil
-        if user_logged_in?
-            results = neo4j_query(<<~END_OF_QUERY, {:prid => poll_run[:id], :email => @session_user[:email]}).map { |x| x['prs.response'] }
-                MATCH (u:User {email: {email}})<-[:RESPONSE_BY]-(prs:PollResponse)-[:RESPONSE_TO]->(pr:PollRun {id: {prid}})
-                RETURN prs.response
-                LIMIT 1;
-            END_OF_QUERY
-            unless results.empty?
-                stored_response = JSON.parse(results.first)
-            end
-        else
+        if external_code && !external_code.strip.empty?
             rows = neo4j_query(<<~END_OF_QUERY, :prid => prid)
                 MATCH (u)-[rt:IS_PARTICIPANT]->(pr:PollRun {id: {prid}})-[:RUNS]->(p:Poll)-[:ORGANIZED_BY]->(au:User)
                 WHERE (u:ExternalUser OR u:PredefinedExternalUser) AND COALESCE(p.deleted, false) = false AND COALESCE(pr.deleted, false) = false AND COALESCE(rt.deleted, false) = false
@@ -1776,13 +1767,21 @@ class Main < Sinatra::Base
                 MATCH (u)<-[:RESPONSE_BY]-(prs:PollResponse)-[:RESPONSE_TO]->(pr)
                 RETURN prs.response, u, pr;
             END_OF_QUERY
-            STDERR.puts rows.to_yaml
             results = rows.select do |row|
                 row_code = Digest::SHA2.hexdigest(EXTERNAL_USER_EVENT_SCRAMBLER + row['pr'].props[:id] + row['u'].props[:email]).to_i(16).to_s(36)[0, 8]
                 external_code == row_code
             end
             unless results.empty?
                 stored_response = JSON.parse(results.first['prs.response'])
+            end
+        else
+            results = neo4j_query(<<~END_OF_QUERY, {:prid => poll_run[:id], :email => @session_user[:email]}).map { |x| x['prs.response'] }
+                MATCH (u:User {email: {email}})<-[:RESPONSE_BY]-(prs:PollResponse)-[:RESPONSE_TO]->(pr:PollRun {id: {prid}})
+                RETURN prs.response
+                LIMIT 1;
+            END_OF_QUERY
+            unless results.empty?
+                stored_response = JSON.parse(results.first)
             end
         end
         stored_response ||= {}
@@ -1825,14 +1824,7 @@ class Main < Sinatra::Base
             respond(:error => 'Diese Umfrage ist nicht mehr geöffnet.')
         end
         if good
-            if external_code.nil?
-                neo4j_query(<<~END_OF_QUERY, {:prid => prid, :response => data[:response], :email => @session_user[:email]})
-                    MATCH (u:User {email: {email}})
-                    MATCH (pr:PollRun {id: {prid}})
-                    MERGE (u)<-[:RESPONSE_BY]-(prs:PollResponse)-[:RESPONSE_TO]->(pr)
-                    SET prs.response = {response};
-                END_OF_QUERY
-            else
+            if external_code && !external_code.empty?
                 rows = neo4j_query(<<~END_OF_QUERY, :prid => prid)
                     MATCH (u)-[rt:IS_PARTICIPANT]->(pr:PollRun {id: {prid}})-[:RUNS]->(p:Poll)
                     WHERE (u:ExternalUser OR u:PredefinedExternalUser) AND COALESCE(p.deleted, false) = false AND COALESCE(pr.deleted, false) = false AND COALESCE(rt.deleted, false) = false
@@ -1846,6 +1838,13 @@ class Main < Sinatra::Base
                     MATCH (u)
                     WHERE id(u) = {node_id}
                     WITH u
+                    MATCH (pr:PollRun {id: {prid}})
+                    MERGE (u)<-[:RESPONSE_BY]-(prs:PollResponse)-[:RESPONSE_TO]->(pr)
+                    SET prs.response = {response};
+                END_OF_QUERY
+            else
+                neo4j_query(<<~END_OF_QUERY, {:prid => prid, :response => data[:response], :email => @session_user[:email]})
+                    MATCH (u:User {email: {email}})
                     MATCH (pr:PollRun {id: {prid}})
                     MERGE (u)<-[:RESPONSE_BY]-(prs:PollResponse)-[:RESPONSE_TO]->(pr)
                     SET prs.response = {response};

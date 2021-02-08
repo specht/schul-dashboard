@@ -571,7 +571,7 @@ document.addEventListener('DOMContentLoaded', function() {
             let offsets = [];
             for (let i = 0; i < 1; i++)
                 offsets.push(event.lesson_offset + i);
-            if (my_lessons.indexOf(event.lesson_key) >= 0 && (event.lesson_offset || null) !== null)
+            if (my_lessons.indexOf(event.lesson_key) >= 0 && event.lesson_offset !== null)
                 $('#lessonModal .bu-edit-lesson').attr('href', '/lessons/' + event.lesson_key + '#' + offsets.join(',')).show();
             else
                 $('#lessonModal .bu-edit-lesson').hide();

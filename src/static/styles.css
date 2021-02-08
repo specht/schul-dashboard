@@ -1371,6 +1371,10 @@ span.bv {
     border-bottom: 1px solid rgba(0, 0, 0, 0.2);
 }
 
+.message img { 
+    max-width: 100%;
+}
+
 .fc-timegrid-event {
     overflow: hidden;
 }
@@ -1991,3 +1995,4 @@ hr.poll-entry-divider {
     font-size: 200%;
     color: #3465a4;
 }*/
+

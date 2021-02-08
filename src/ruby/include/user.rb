@@ -128,65 +128,7 @@ class Main < Sinatra::Base
         end
     end
     
-    def all_sessions
-        sids = request.cookies['sid']
-        users = []
-        if (sids.is_a? String) && (sids =~ /^[0-9A-Za-z,]+$/)
-            sids.split(',').each do |sid|
-                if sid =~ /^[0-9A-Za-z]+$/
-                    results = neo4j_query(<<~END_OF_QUERY, :sid => sid).map { |x| {:sid => x['sid'], :email => x['email'] } }
-                        MATCH (s:Session {sid: {sid}})-[:BELONGS_TO]->(u:User)
-                        RETURN s.sid AS sid, u.email AS email;
-                    END_OF_QUERY
-                    results.each do |entry|
-                        if entry[:email] && @@user_info[entry[:email]]
-                            users << {:sid => entry[:sid], :user => @@user_info[entry[:email]].dup}
-                        end
-                    end
-                end
-            end
-        end
-        users
-    end
-    
-    def purge_missing_sessions(current_sid = nil, remove_other = false)
-        sid = request.cookies['sid']
-        existing_sids = []
-        unless remove_other
-            if (sid.is_a? String) && (sid =~ /^[0-9A-Za-z,]+$/)
-                sids = sid.split(',')
-                sids.each do |sid|
-                    if sid =~ /^[0-9A-Za-z]+$/
-                        results = neo4j_query(<<~END_OF_QUERY, :sid => sid).map { |x| x['sid'] }
-                            MATCH (s:Session {sid: {sid}})-[:BELONGS_TO]->(u:User)
-                            RETURN s.sid AS sid;
-                        END_OF_QUERY
-                        existing_sids << sid unless results.empty?
-                    end
-                end
-            end
-            existing_sids.uniq!
-        end
-        if current_sid
-            # insert current SID if it's not there yet (new sessions ID)
-            unless existing_sids.include?(current_sid)
-                existing_sids.unshift(current_sid)
-            end
-            # move current SID to front
-            existing_sids -= [current_sid]
-            existing_sids.unshift(current_sid)
-        end
-        new_cookie_value = existing_sids.join(',')
-        if new_cookie_value.empty? && request.cookies['sid']
-            response.delete_cookie('sid')
-        end
-        if (request.cookies['sid'] || '') != new_cookie_value
-            response.set_cookie('sid', 
-                                :value => new_cookie_value,
-                                :expires => Time.new + COOKIE_EXPIRY_TIME,
-                                :path => '/',
-                                :httponly => true,
-                                :secure => DEVELOPMENT ? false : true)
-        end
+    def user_icon(email, c = nil)
+        "<div style='background-image: url(#{NEXTCLOUD_URL}/index.php/avatar/#{@@user_info[email][:nc_login]}/128), url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mO88h8AAq0B1REmZuEAAAAASUVORK5CYII=);;' class='#{c}'></div>"
     end
 end

@@ -383,6 +383,7 @@ class Main < Sinatra::Base
                 :last_name => record[:last_name],
                 :titel => record[:titel],
                 :display_name => record[:display_name],
+                :display_name_official => record[:display_name_official],
                 :display_last_name => record[:display_last_name],
                 :email => record[:email],
                 :can_log_in => record[:can_log_in],
@@ -392,22 +393,6 @@ class Main < Sinatra::Base
             @@shorthands[record[:shorthand]] = record[:email]
             @@lehrer_order << record[:email]
         end
-        ADMIN_USERS.each do |email|
-            @@user_info[email][:admin] = true
-        end
-        (CAN_SEE_ALL_TIMETABLES_USERS + ADMIN_USERS).each do |email|
-            @@user_info[email][:can_see_all_timetables] = true
-        end
-        (CAN_UPLOAD_VPLAN_USERS + ADMIN_USERS).each do |email|
-            @@user_info[email][:can_upload_vplan] = true
-        end
-        (CAN_UPLOAD_FILES_USERS + ADMIN_USERS).each do |email|
-            @@user_info[email][:can_upload_files] = true
-        end
-        (CAN_MANAGE_NEWS_USERS + ADMIN_USERS).each do |email|
-            @@user_info[email][:can_manage_news] = true
-        end
-
         @@klassenleiter = {}
         parser.parse_klassenleiter do |record|
             @@klassenleiter[record[:klasse]] = record[:klassenleiter]
@@ -435,6 +420,7 @@ class Main < Sinatra::Base
                 :first_name => record[:first_name],
                 :display_first_name => record[:display_first_name],
                 :display_last_name => record[:display_last_name],
+                :display_name_official => record[:display_name_official],
                 :last_name => record[:last_name],
                 :display_name => record[:display_name],
                 :email => record[:email],
@@ -451,6 +437,25 @@ class Main < Sinatra::Base
             @@user_info[email][:id] = Digest::SHA2.hexdigest(USER_ID_SALT + email).to_i(16).to_s(36)[0, 16]
         end
         
+        ADMIN_USERS.each do |email|
+            @@user_info[email][:admin] = true
+        end
+        (CAN_SEE_ALL_TIMETABLES_USERS + ADMIN_USERS).each do |email|
+            @@user_info[email][:can_see_all_timetables] = true
+        end
+        (CAN_UPLOAD_VPLAN_USERS + ADMIN_USERS).each do |email|
+            @@user_info[email][:can_upload_vplan] = true
+        end
+        (CAN_UPLOAD_FILES_USERS + ADMIN_USERS).each do |email|
+            @@user_info[email][:can_upload_files] = true
+        end
+        (CAN_MANAGE_NEWS_USERS + ADMIN_USERS).each do |email|
+            @@user_info[email][:can_manage_news] = true
+        end
+        SV_USERS.each do |email|
+            @@user_info[email][:sv] = true
+        end
+
         # add Eltern
         @@predefined_external_users = {:groups => [], :recipients => {}}
         @@klassen_order.each do |klasse|
@@ -1445,7 +1450,7 @@ class Main < Sinatra::Base
     end
     
     post '/api/create_vote' do
-        require_teacher!
+        require_teacher_or_sv!
         data = parse_request_data(:required_keys => [:title, :date, :count],
                                   :types => {:count => Integer})
         possible_codes = (0..9999).to_a
@@ -1474,7 +1479,7 @@ class Main < Sinatra::Base
     end
     
     post '/api/get_votes' do
-        require_teacher!
+        require_teacher_or_sv!
         codes = neo4j_query(<<~END_OF_QUERY, :email => @session_user[:email]).map { |x| x['v.code'] }
             MATCH (v:Vote)-[:BELONGS_TO]->(:User {email: {email}})
             RETURN v.code;
@@ -1500,7 +1505,7 @@ class Main < Sinatra::Base
     end
     
     post '/api/delete_vote' do
-        require_teacher!
+        require_teacher_or_sv!
         data = parse_request_data(:required_keys => [:code],
                                   :types => {:code => Integer})
         code = data[:code]
@@ -1534,7 +1539,7 @@ class Main < Sinatra::Base
     end
 
     get '/api/get_vote_pdf/*' do
-        require_teacher!
+        require_teacher_or_sv!
         code = request.path.sub('/api/get_vote_pdf/', '').to_i
         neo4j_query_expect_one(<<~END_OF_QUERY, :code => code, :email => @session_user[:email])
             MATCH (v:Vote {code: {code}})-[:BELONGS_TO]->(u:User {email: {email}})
@@ -1605,7 +1610,7 @@ class Main < Sinatra::Base
     end
     
     post '/api/send_message' do
-        require_teacher!
+        require_teacher_or_sv!
         data = parse_request_data(:required_keys => [:recipients, :message],
                                   :types => {:recipients => Array},
                                   :max_body_length => 1024 * 1024,
@@ -1643,7 +1648,7 @@ class Main < Sinatra::Base
     end
     
     post '/api/update_message' do
-        require_teacher!
+        require_teacher_or_sv!
         data = parse_request_data(:required_keys => [:mid, :recipients, :message],
                                   :types => {:recipients => Array},
                                   :max_body_length => 1024 * 1024,
@@ -1681,7 +1686,7 @@ class Main < Sinatra::Base
     end
     
     post '/api/delete_message' do
-        require_teacher!
+        require_teacher_or_sv!
         data = parse_request_data(:required_keys => [:mid])
         id = data[:mid]
         path = "/gen/m/#{id[0, 2]}/#{id[2, id.length - 2]}.html.gz"
@@ -1720,7 +1725,6 @@ class Main < Sinatra::Base
     
     def get_poll_run(prid, external_code = nil)
         result = {}
-        STDERR.puts "[#{external_code}]"
         if external_code && !external_code.empty?
             rows = neo4j_query(<<~END_OF_QUERY, :prid => prid)
                 MATCH (u)-[rt:IS_PARTICIPANT]->(pr:PollRun {id: {prid}})-[:RUNS]->(p:Poll)-[:ORGANIZED_BY]->(au:User)
@@ -1786,12 +1790,12 @@ class Main < Sinatra::Base
         end
         stored_response ||= {}
         respond(:poll => poll, :poll_run => poll_run, :stored_response => stored_response,
-                :organizer => (@@user_info[organizer_email] || {})[:display_last_name],
+                :organizer => (@@user_info[organizer_email] || {})[:display_name_official],
                 :total_participants => total_participants)
     end
     
     post '/api/stop_poll_run' do
-        require_user!
+        require_teacher_or_sv!
         data = parse_request_data(:required_keys => [:prid])
         now_date = Date.today.strftime('%Y-%m-%d')
         now_time = (Time.now - 60).strftime('%H:%M')
@@ -1855,7 +1859,7 @@ class Main < Sinatra::Base
     end
     
     def get_poll_run_results(prid)
-        require_teacher!
+        require_teacher_or_sv!
         temp = neo4j_query_expect_one(<<~END_OF_QUERY, {:prid => prid, :email => @session_user[:email]})
             MATCH (pu)-[rt:IS_PARTICIPANT]->(pr:PollRun {id: {prid}})-[:RUNS]->(p:Poll)-[:ORGANIZED_BY]->(au:User {email: {email}})
             WHERE COALESCE(p.deleted, false) = false 
@@ -2015,7 +2019,7 @@ class Main < Sinatra::Base
     end
     
     post '/api/get_poll_run_results' do
-        require_teacher!
+        require_teacher_or_sv!
         data = parse_request_data(:required_keys => [:prid])
         poll, poll_run, responses = get_poll_run_results(data[:prid])
         html = poll_run_results_to_html(poll, poll_run, responses)
@@ -2023,7 +2027,7 @@ class Main < Sinatra::Base
     end
     
     get '/api/poll_run_results_pdf/*' do
-        require_teacher!
+        require_teacher_or_sv!
         prid = request.path.sub('/api/poll_run_results_pdf/', '')
         poll, poll_run, responses = get_poll_run_results(prid)
         html = poll_run_results_to_html(poll, poll_run, responses, :pdf)
@@ -2056,7 +2060,7 @@ class Main < Sinatra::Base
     end
 
     post '/api/save_poll' do
-        require_teacher!
+        require_teacher_or_sv!
         data = parse_request_data(:required_keys => [:title, :items],
                                   :max_body_length => 1024 * 1024,
                                   :max_string_length => 1024 * 1024)
@@ -2079,7 +2083,7 @@ class Main < Sinatra::Base
     end
 
     post '/api/update_poll' do
-        require_teacher!
+        require_teacher_or_sv!
         data = parse_request_data(:required_keys => [:pid, :title, :items],
                                   :types => {:recipients => Array},
                                   :max_body_length => 1024 * 1024,
@@ -2105,7 +2109,7 @@ class Main < Sinatra::Base
     end
     
     post '/api/delete_poll' do
-        require_teacher!
+        require_teacher_or_sv!
         data = parse_request_data(:required_keys => [:pid])
         id = data[:pid]
         transaction do 
@@ -2121,7 +2125,7 @@ class Main < Sinatra::Base
     end
     
     post '/api/save_poll_run' do
-        require_teacher!
+        require_teacher_or_sv!
         data = parse_request_data(:required_keys => [:pid, :anonymous,
                                                      :start_date, :start_time,
                                                      :end_date, :end_time, :recipients],
@@ -2175,7 +2179,7 @@ class Main < Sinatra::Base
     end
     
     post '/api/update_poll_run' do
-        require_teacher!
+        require_teacher_or_sv!
         data = parse_request_data(:required_keys => [:prid, :anonymous, :start_date, :start_time,
                                                      :end_date, :end_time, :recipients],
                                   :types => {:recipients => Array},
@@ -2237,7 +2241,7 @@ class Main < Sinatra::Base
     end
     
     post '/api/delete_poll_run' do
-        require_teacher!
+        require_teacher_or_sv!
         data = parse_request_data(:required_keys => [:prid])
         id = data[:prid]
         transaction do 
@@ -2252,7 +2256,7 @@ class Main < Sinatra::Base
     end
     
     post '/api/get_external_invitations_for_poll_run' do
-        require_teacher!
+        require_teacher_or_sv!
         data = parse_request_data(:optional_keys => [:prid])
         id = data[:prid]
         invitations = {}
@@ -2321,7 +2325,7 @@ class Main < Sinatra::Base
     end
     
     post '/api/invite_external_user_for_poll_run' do
-        require_teacher!
+        require_teacher_or_sv!
         data = parse_request_data(:required_keys => [:prid, :email])
         self.class.invite_external_user_for_poll_run(data[:prid], data[:email], @session_user[:email])
         respond({})
@@ -2400,6 +2404,7 @@ class Main < Sinatra::Base
     
     def external_users_for_session_user
         result = {:groups => [], :recipients => {}, :order => []}
+        return result unless teacher_logged_in?
         # add pre-defined external users
         @@predefined_external_users[:groups].each do |x|
             result[:groups] << x
@@ -3018,7 +3023,7 @@ class Main < Sinatra::Base
                     end
                     io.puts "<a class='dropdown-item nav-icon' href='/login'><div class='icon'><i class='fa fa-sign-in'></i></div><span class='label'>Zusätzliche Anmeldung…</span></a>"
                     io.puts "<a class='dropdown-item nav-icon' href='/login_nc'><div class='icon'><i class='fa fa-nextcloud'></i></div><span class='label'>In Nextcloud anmelden…</span></a>"
-                    if @session_user[:teacher]
+                    if teacher_or_sv_logged_in?
                         io.puts "<div class='dropdown-divider'></div>"
                         io.puts "<a class='dropdown-item nav-icon' href='/polls'><div class='icon'><i class='fa fa-bar-chart'></i></div><span class='label'>Umfragen</span></a>"
                         io.puts "<a class='dropdown-item nav-icon' href='/prepare_vote'><div class='icon'><i class='fa fa-group'></i></div><span class='label'>Abstimmungen</span></a>"
@@ -3640,7 +3645,7 @@ class Main < Sinatra::Base
                 io.puts "<div style='float: left; width: 36px; height: 36px; margin-right: 15px; position: relative; top: 5px; left: 4px;'>"
                 io.puts user_icon(organizer, 'avatar-fill')
                 io.puts "</div>"
-                io.puts "<div>#{@@user_info[organizer][:display_last_name]} hat #{teacher_logged_in? ? 'Sie' : 'dich'} zu einer Umfrage eingeladen: <strong>#{poll_title}</strong>. #{teacher_logged_in? ? 'Sie können' : 'Du kannst'} bis zum #{Date.parse(poll_run[:end_date]).strftime('%d.%m.%Y')} um #{poll_run[:end_time]} Uhr teilnehmen (die Umfrage <span class='moment-countdown' data-target-timestamp='#{poll_run[:end_date]}T#{poll_run[:end_time]}:00' data-before-label='läuft noch' data-after-label='ist vorbei'></span>).</div>"
+                io.puts "<div>#{@@user_info[organizer][:display_name_official]} hat #{teacher_logged_in? ? 'Sie' : 'dich'} zu einer Umfrage eingeladen: <strong>#{poll_title}</strong>. #{teacher_logged_in? ? 'Sie können' : 'Du kannst'} bis zum #{Date.parse(poll_run[:end_date]).strftime('%d.%m.%Y')} um #{poll_run[:end_time]} Uhr teilnehmen (die Umfrage <span class='moment-countdown' data-target-timestamp='#{poll_run[:end_date]}T#{poll_run[:end_time]}:00' data-before-label='läuft noch' data-after-label='ist vorbei'></span>).</div>"
                 io.puts "<hr />"
                 io.puts "<button style='white-space: nowrap;' class='float-right btn btn-success bu-launch-poll' data-poll-run-id='#{poll_run[:id]}'>Zur Umfrage&nbsp;<i class='fa fa-angle-double-right'></i></button>"
                 io.puts "<div style='clear: both;'></div>"
@@ -4667,7 +4672,7 @@ class Main < Sinatra::Base
                 stored_events = temp_order.map { |x| temp[x] }
             end
         elsif path == 'polls'
-            unless teacher_logged_in?
+            unless teacher_or_sv_logged_in?
                 redirect "#{WEB_ROOT}/", 302 
             else
                 stored_polls = neo4j_query(<<~END_OF_QUERY, :email => @session_user[:email]).map { |x| {:info => x['p'].props, :recipient => x['u.email']} }

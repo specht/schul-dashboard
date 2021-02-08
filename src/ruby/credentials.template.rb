@@ -174,6 +174,12 @@ CAN_UPLOAD_FILES_USERS = []
 
 CAN_MANAGE_NEWS_USERS = []
 
+# Schülervertretung, kann:
+# - Nachrichten an SuS schreiben
+# - Umfragen unter SuS starten
+# - Abstimmungen starten
+SV_USERS = []
+
 class Main < Sinatra::Base
     def self.fix_stundenzeiten
         # definiert Stundenzeiten ab einem bestimmten Tag, bei Bedarf wiederholen

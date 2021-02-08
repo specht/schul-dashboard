@@ -3,7 +3,7 @@
     <div class='row'>
         <div class='col-md-8 offset-md-2'>
             <h2 style='margin-bottom: 30px;'>Nachrichten</h2>
-            <div style='display: #{teacher_logged_in? ? 'block': 'none'}; position: relative;'>
+            <div style='display: #{teacher_or_sv_logged_in? ? 'block': 'none'}; position: relative;'>
                 <div class='btn-group'>
                     <button id='bu-inbox' class='btn btn-primary'><i class='fa fa-inbox'></i>&nbsp;&nbsp;Posteingang</button>
                     <button id='bu-outbox' class='btn btn-outline-secondary'><i class='fa fa-inbox'></i>&nbsp;&nbsp;Postausgang</button>
@@ -484,10 +484,8 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         }
     });
-//     $('.bu-compose').click();
     let uri = '/gen/w/#{@session_user[:id]}/messages.json.gz';
-    if (#{@session_user[:teacher] ? true: false})
-        uri += '?' + Date.now();
+    uri += '?' + Date.now();
     let oReq = new XMLHttpRequest();
     oReq.open('GET', uri, true);
     oReq.responseType = 'arraybuffer';
@@ -546,7 +544,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     };
     oReq.send();
-    if ('#{@session_user[:teacher]}' === 'true') {
+    if ('#{teacher_or_sv_logged_in?}' === 'true') {
         load_recipients('#{@session_user[:id]}', function() {
             update_sent_messages();
         });

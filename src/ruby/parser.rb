@@ -174,6 +174,7 @@ class Parser
                       :titel => titel,
                       :display_name => display_name,
                       :display_last_name => display_last_name,
+                      :display_name_official => display_last_name,
                       :display_last_name_dativ => display_last_name.sub('Herr ', 'Herrn '),
                       :can_log_in => (line['Deaktiviert'] || '').empty?,
                       :nc_login => @nc_sub[email] || shorthand.gsub('ä', 'ae').gsub('ö', 'oe').gsub('ü', 'ue'),
@@ -294,15 +295,16 @@ class Parser
             exit(1)
         end
 
-        record = {:first_name => rufname, 
-                  :last_name => nachname, 
-                  :email => email, 
-                  :initial_password => gen_password_for_email(email), 
-                  :initial_nc_password => gen_password_for_nc(email), 
-                  :klasse => klasse, 
-                  :display_name => name_to_display_name(rufname, nachname), 
-                  :display_first_name => name_to_display_name(rufname, ''), 
+        record = {:first_name => rufname,
+                  :last_name => nachname,
+                  :email => email,
+                  :initial_password => gen_password_for_email(email),
+                  :initial_nc_password => gen_password_for_nc(email),
+                  :klasse => klasse,
+                  :display_name => name_to_display_name(rufname, nachname),
+                  :display_first_name => name_to_display_name(rufname, ''),
                   :display_last_name => name_to_display_name('', nachname),
+                  :display_name_official => name_to_display_name(rufname, nachname),
                   :geschlecht => geschlecht,
                   :can_log_in => true
                   }

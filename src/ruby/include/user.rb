@@ -15,6 +15,10 @@ class Main < Sinatra::Base
         user_logged_in? && @session_user[:can_manage_news]
     end
     
+    def teacher_or_sv_logged_in?
+        teacher_logged_in? || @session_user[:sv]
+    end
+    
     def admin_logged_in?
         @session_user && ADMIN_USERS.include?(@session_user[:email])
         # TODO: Erm
@@ -78,6 +82,10 @@ class Main < Sinatra::Base
         assert(user_who_can_manage_news_logged_in?)
     end
     
+    def require_teacher_or_sv!
+        assert(teacher_or_sv_logged_in?)
+    end
+    
     def this_is_a_page_for_logged_in_users
         unless user_logged_in?
             redirect "#{WEB_ROOT}/", 303
@@ -92,6 +100,12 @@ class Main < Sinatra::Base
     
     def this_is_a_page_for_logged_in_teachers
         unless teacher_logged_in?
+            redirect "#{WEB_ROOT}/", 303
+        end
+    end
+    
+    def this_is_a_page_for_logged_in_teachers_or_sv
+        unless teacher_or_sv_logged_in?
             redirect "#{WEB_ROOT}/", 303
         end
     end

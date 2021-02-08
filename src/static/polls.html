@@ -1,4 +1,4 @@
-#{this_is_a_page_for_logged_in_teachers}
+#{#this_is_a_page_for_logged_in_teachers_or_sv}
 <div class='container' style='padding-top: 30px;'>
     <div class='row'>
         <div class='col-md-12'>
@@ -138,7 +138,7 @@
                 </div>
                 <hr />
                 <div class="form-group">
-                    <label style='width: 100%;'><a href='#' class='bu_open_ext_users_modal float-right btn btn-success'>Externe Teilnehmer…</a>Teilnehmer <span class='text-muted'>(nur diesen Personen wird die Umfrage angezeigt)</span>
+                    <label style='width: 100%;'><a href='#' style='display: #{teacher_logged_in? ? 'inline' : 'none'}' class='bu_open_ext_users_modal float-right btn btn-success'>Externe Teilnehmer…</a>Teilnehmer <span class='text-muted'>(nur diesen Personen wird die Umfrage angezeigt)</span>
                     </label>
                     <input id='ti_recipients' class='form-control' placeholder='Teilnehmer suchen…' /><div class='recipient-input-dropdown' style='display: none;'></div></input>
 <!--                    <div style='font-size: 80%; margin-top: 10px;'>

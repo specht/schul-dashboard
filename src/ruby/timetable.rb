@@ -1575,16 +1575,12 @@ class Timetable
             group_for_sus[x['u.email']] = x['group2']
         end
         @@user_info.each_pair do |email, user|
-            next unless user[:teacher]
+            next unless user[:teacher] || user[:sv]
             path = "/gen/w/#{user[:id]}/recipients.json.gz"
             FileUtils.mkpath(File.dirname(path))
             Zlib::GzipWriter.open(path) do |f|
                 recipients = {}
-                # Jeder Lehrer kann allen Klassen schreiben
-#                 klassen = @@klassen_for_shorthand[user[:shorthand]] || []
-#                 if user[:can_see_all_timetables]
-                    klassen = @@klassen_order
-#                 end
+                klassen = @@klassen_order
                 klassen.each do |klasse|
                     recipients["/klasse/#{klasse}"] = {:label => "Klasse #{klasse}",
                                                        :entries => @@schueler_for_klasse[klasse]
@@ -1594,7 +1590,6 @@ class Timetable
                         if group_for_sus[email]
                             groups_for_klasse << group_for_sus[email]
                         end
-#                         recipients[email] = {:label => @@user_info[email][:display_name]}
                     end
                     if groups_for_klasse.size > 1
                         groups_for_klasse.each do |group|
@@ -1610,12 +1605,14 @@ class Timetable
                         recipients[email] = {:label => @@user_info[email][:display_name]}
                     end
                 end
-                @@user_info.each_pair do |email, user|
-                    next unless user[:teacher]
-                    recipients[email] = {:label => @@user_info[email][:display_name],
-                                         :teacher => true}
+                if user[:teacher]
+                    @@user_info.each_pair do |email, user|
+                        next unless user[:teacher]
+                        recipients[email] = {:label => @@user_info[email][:display_name],
+                                             :teacher => true}
+                    end
                 end
-                if user[:can_see_all_timetables]
+                if user[:can_see_all_timetables] || user[:sv]
                     recipients['/schueler/*'] = {:label => 'Gesamte Schülerschaft',
                                                  :entries => @@user_info.select { |k, v| !v[:teacher]}.map { |k, v| k }}
                 end

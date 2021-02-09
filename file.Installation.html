@@ -74,7 +74,11 @@
 <li><code>src/ruby/credentials.template.rb</code> als <code>src/ruby/credentials.rb</code> speichern und Werte anpassen</li>
 </ul>
 
-<p>Es reicht für einen ersten Test, die Dateien so zu lassen, wie sie sind.</p>
+<p>Es reicht für einen ersten Test, die Dateien so zu lassen, wie sie sind, also</p>
+
+<pre class="code ruby"><code class="ruby">$ cp env.template.rb env.rb
+$ cp src/ruby/credentials.template.rb src/ruby/credentials.rb 
+</code></pre>
 
 <p>Das Skript <code>config.rb</code> ist ein Wrapper um <code>docker-compose</code>, der <code>docker-compose.yaml</code> erzeugt und dann <code>docker-compose</code> mit den angegebenen Argumenten aufruft.</p>
 
@@ -87,6 +91,8 @@
 
 <pre class="code ruby"><code class="ruby">$ ./config.rb up
 </code></pre>
+
+<p>Das kann man zwar auch gleich mit der Option <code>-d</code> starten, aber so werden in der Entwicklungs-/Test-Phase die notwendigen Codes für die Anmeldung an der Konsole angezeigt und müssen nicht umständlich aus dem Log gesucht werden.</p>
 
 <p>Nun können folgende Seiten aufgerufen werden:</p>
 
@@ -145,11 +151,41 @@ Activating HTTP Basic Authentication Fallback for Sandbox Nextcloud...
 $ ./create-nc-users.rb
 </code></pre>
 
+<p><strong>Bitte die &quot;Notice&quot; in der Ausgabe beachten</strong>: Das Log zeigt erstmal 
+nur, welche Änderungen das Skript ausführen möchte. Um diese Änderungen 
+tatsächlich durchzuführen, muss es wie folgt gestartet werden:</p>
+
+<pre class="code ruby"><code class="ruby">$  ./create-nc-users.rb --srsly
+</code></pre>
+
 <p>Das Skript kann jederzeit erneut gestartet werden, wenn Nutzer dazukommen.</p>
 
 <h3 id="erstellen-der-nextcloud-ordner">Erstellen der Nextcloud-Ordner</h3>
 
 <pre class="code ruby"><code class="ruby">$ ./create-nc-folders.rb
+</code></pre>
+
+<p><strong>Hinweis</strong>: Wer an dieser Stelle einen Fehler <code>the input device is not a TTY</code> bekommt,
+kann ihn mit <code>export COMPOSE_INTERACTIVE_NO_CLI=1</code> beheben.</p>
+
+<p><strong>Bitte auch hier den Hinweis in der Ausgabe beachten</strong>: Auch diese 
+Befehle wurden nicht direkt ausgeführt, können aber in der Testumgebung 
+an den Docker-Container übergeben werden:</p>
+
+<pre class="code ruby"><code class="ruby">$ ./create-nc-folders.rb | docker exec -i schuldashboarddev_nextcloud_1 bash -
+</code></pre>
+
+<p>Im Ergebnis sieht man, dass unterhalb eines Ordners <code>Unterricht</code> verschiedene Ordner für für die Klassen/Kurse, Fächer und Schüler angelegt wurden.</p>
+
+<pre class="code ruby"><code class="ruby">mkdir: created directory &#39;/var/www/html/data/dashboard/files/Unterricht/Nawi~6a/SuS/Max Mustermann/Einsammelordner&#39;
+mkdir: created directory &#39;/var/www/html/data/dashboard/files/Unterricht/Nawi~6a/SuS/Max Mustermann/Einsammelordner/Eingesammelt&#39;
+mkdir: created directory &#39;/var/www/html/data/dashboard/files/Unterricht/Nawi~6a/SuS/Max Mustermann/R&#39;$&#39;\303\274&#39;&#39;ckgabeordner&#39;
+Starting scan for user 1 out of 1 (dashboard)
++---------+-------+--------------+
+| Folders | Files | Elapsed time |
++---------+-------+--------------+
+| 53      | 17    | 00:00:02     |
++---------+-------+--------------+
 </code></pre>
 
 <p>Das Skript kann jederzeit erneut gestartet werden, wenn Fächer dazukommen.</p>
@@ -165,7 +201,7 @@ $ ./create-nc-users.rb
 </div></div>
 
       <div id="footer">
-  Generated on Mon Feb  8 23:19:07 2021 by
+  Generated on Tue Feb  9 08:23:14 2021 by
   <a href="http://yardoc.org" title="Yay! A Ruby Documentation Tool" target="_parent">yard</a>
   0.9.26 (ruby-2.5.1).
 </div>

@@ -217,4 +217,24 @@ class Main < Sinatra::Base
         self.class.invite_external_user_for_event(data[:eid], data[:email], @session_user[:email])
         respond({})
     end
+    
+    get '/e/:eid/:code' do
+        eid = params[:eid]
+        code = params[:code]
+        redirect "#{WEB_ROOT}/jitsi/event/#{eid}/#{code}", 302
+    end
+    
+    post '/api/send_missing_event_invitations' do
+        require_teacher!
+        data = parse_request_data(:required_keys => [:eid])
+        id = data[:eid]
+        STDERR.puts "Sending missing invitations for event #{id}"
+        neo4j_query(<<~END_OF_QUERY, :session_email => @session_user[:email], :id => id)
+            MATCH (a:User {email: {session_email}})<-[:ORGANIZED_BY]-(e:Event {id: {id}})<-[rt:IS_PARTICIPANT]-(u)
+            WHERE (u:ExternalUser OR u:PredefinedExternalUser) AND SIZE(COALESCE(rt.invitations, [])) = 0
+            SET rt.invitation_requested = true;
+        END_OF_QUERY
+        trigger_send_invites()
+        respond(:ok => true)
+    end
 end

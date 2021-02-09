@@ -12,3 +12,6 @@ Es gibt ein paar Videos, die zeigen, worum es dabei geht:
 - [Dashboard am Gymnasium Steglitz (Kurzversion für Schülerinnen und Schüler)](https://youtu.be/EGQ0Gkeu1To)
 - [Dashboard am Gymnasium Steglitz (ausführliche Version für Lehrkräfte)](https://youtu.be/BYqWu9Yft8s)
 
+In diesem Video wird die schnelle Einrichtung eines Testsystems beschrieben:
+
+- [Starte dein eigenes Schul-Dashboard in 6 Minuten](https://youtu.be/n_n6gJdkBxY)

@@ -11,7 +11,10 @@ Bevor das Dashboard gestartet werden kann, muss es konfiguriert werden.
 * `env.template.rb` als `env.rb` speichern und Werte anpassen
 * `src/ruby/credentials.template.rb` als `src/ruby/credentials.rb` speichern und Werte anpassen
 
-Es reicht für einen ersten Test, die Dateien so zu lassen, wie sie sind.
+Es reicht für einen ersten Test, die Dateien so zu lassen, wie sie sind, also
+
+    $ cp env.template.rb env.rb
+    $ cp src/ruby/credentials.template.rb src/ruby/credentials.rb 
 
 Das Skript `config.rb` ist ein Wrapper um `docker-compose`, der `docker-compose.yaml` erzeugt und dann `docker-compose` mit den angegebenen Argumenten aufruft.
 
@@ -22,6 +25,8 @@ Das Skript `config.rb` ist ein Wrapper um `docker-compose`, der `docker-compose.
 ## Start des Systems
 
     $ ./config.rb up
+    
+Das kann man zwar auch gleich mit der Option `-d` starten, aber so werden in der Entwicklungs-/Test-Phase die notwendigen Codes für die Anmeldung an der Konsole angezeigt und müssen nicht umständlich aus dem Log gesucht werden.
     
 Nun können folgende Seiten aufgerufen werden:
 
@@ -72,6 +77,12 @@ Die Anbindung an Nextcloud erfolgt in drei Schritten:
 
     $ cd src/scripts
     $ ./create-nc-users.rb
+
+**Bitte die "Notice" in der Ausgabe beachten**: Das Log zeigt erstmal 
+nur, welche Änderungen das Skript ausführen möchte. Um diese Änderungen 
+tatsächlich durchzuführen, muss es wie folgt gestartet werden:
+
+    $  ./create-nc-users.rb --srsly
     
 Das Skript kann jederzeit erneut gestartet werden, wenn Nutzer dazukommen.
     
@@ -79,6 +90,27 @@ Das Skript kann jederzeit erneut gestartet werden, wenn Nutzer dazukommen.
 
     $ ./create-nc-folders.rb
     
+**Hinweis**: Wer an dieser Stelle einen Fehler `the input device is not a TTY` bekommt,
+kann ihn mit `export COMPOSE_INTERACTIVE_NO_CLI=1` beheben.
+
+**Bitte auch hier den Hinweis in der Ausgabe beachten**: Auch diese 
+Befehle wurden nicht direkt ausgeführt, können aber in der Testumgebung 
+an den Docker-Container übergeben werden:
+
+    $ ./create-nc-folders.rb | docker exec -i schuldashboarddev_nextcloud_1 bash -
+
+Im Ergebnis sieht man, dass unterhalb eines Ordners `Unterricht` verschiedene Ordner für für die Klassen/Kurse, Fächer und Schüler angelegt wurden.
+    
+    mkdir: created directory '/var/www/html/data/dashboard/files/Unterricht/Nawi~6a/SuS/Max Mustermann/Einsammelordner'
+    mkdir: created directory '/var/www/html/data/dashboard/files/Unterricht/Nawi~6a/SuS/Max Mustermann/Einsammelordner/Eingesammelt'
+    mkdir: created directory '/var/www/html/data/dashboard/files/Unterricht/Nawi~6a/SuS/Max Mustermann/R'$'\303\274''ckgabeordner'
+    Starting scan for user 1 out of 1 (dashboard)
+    +---------+-------+--------------+
+    | Folders | Files | Elapsed time |
+    +---------+-------+--------------+
+    | 53      | 17    | 00:00:02     |
+    +---------+-------+--------------+
+
 Das Skript kann jederzeit erneut gestartet werden, wenn Fächer dazukommen.
 
 ### Teilen der Nextcloud-Ordner

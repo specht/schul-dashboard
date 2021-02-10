@@ -1553,6 +1553,8 @@
       <pre class="lines">
 
 
+1632
+1633
 1634
 1635
 1636
@@ -1786,12 +1788,10 @@
 1864
 1865
 1866
-1867
-1868
-1869</pre>
+1867</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'src/ruby/timetable.rb', line 1634</span>
+      <pre class="code"><span class="info file"># File 'src/ruby/timetable.rb', line 1632</span>
 
 <span class='kw'>def</span> <span class='id identifier rubyid_update'>update</span><span class='lparen'>(</span><span class='id identifier rubyid_only_these_lesson_keys'>only_these_lesson_keys</span><span class='rparen'>)</span>
     <span class='kw'>if</span> <span class='id identifier rubyid_only_these_lesson_keys'>only_these_lesson_keys</span><span class='period'>.</span><span class='id identifier rubyid_nil?'>nil?</span>
@@ -2049,6 +2049,8 @@
       <pre class="lines">
 
 
+1564
+1565
 1566
 1567
 1568
@@ -2113,12 +2115,10 @@
 1627
 1628
 1629
-1630
-1631
-1632</pre>
+1630</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'src/ruby/timetable.rb', line 1566</span>
+      <pre class="code"><span class="info file"># File 'src/ruby/timetable.rb', line 1564</span>
 
 <span class='kw'>def</span> <span class='id identifier rubyid_update_recipients'>update_recipients</span><span class='lparen'>(</span><span class='rparen'>)</span>
     <span class='const'>STDERR</span><span class='period'>.</span><span class='id identifier rubyid_puts'>puts</span> <span class='tstring'><span class='tstring_beg'>&quot;</span><span class='tstring_content'>Updating recipients</span><span class='tstring_end'>&quot;</span></span>
@@ -3923,9 +3923,7 @@
 1559
 1560
 1561
-1562
-1563
-1564</pre>
+1562</pre>
     </td>
     <td>
       <pre class="code"><span class="info file"># File 'src/ruby/timetable.rb', line 962</span>
@@ -3957,6 +3955,7 @@
     <span class='kw'>end</span>
     <span class='id identifier rubyid_file_count'>file_count</span> <span class='op'>=</span> <span class='int'>0</span>
     <span class='id identifier rubyid_today_date'>today_date</span> <span class='op'>=</span> <span class='const'>Date</span><span class='period'>.</span><span class='id identifier rubyid_today'>today</span><span class='period'>.</span><span class='id identifier rubyid_strftime'>strftime</span><span class='lparen'>(</span><span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>%Y-%m-%d</span><span class='tstring_end'>&#39;</span></span><span class='rparen'>)</span>
+    <span class='id identifier rubyid_today_plus_7_days'>today_plus_7_days</span> <span class='op'>=</span> <span class='lparen'>(</span><span class='const'>Date</span><span class='period'>.</span><span class='id identifier rubyid_today'>today</span> <span class='op'>+</span> <span class='int'>7</span><span class='rparen'>)</span><span class='period'>.</span><span class='id identifier rubyid_strftime'>strftime</span><span class='lparen'>(</span><span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>%Y-%m-%d</span><span class='tstring_end'>&#39;</span></span><span class='rparen'>)</span>
     <span class='id identifier rubyid_regular_events_from'>regular_events_from</span> <span class='op'>=</span> <span class='const'>Date</span><span class='period'>.</span><span class='id identifier rubyid_today'>today</span> <span class='op'>+</span> <span class='int'>7</span>
     <span class='id identifier rubyid_regular_events_from'>regular_events_from</span> <span class='op'>=</span> <span class='id identifier rubyid_regular_events_from'>regular_events_from</span><span class='period'>.</span><span class='id identifier rubyid_strftime'>strftime</span><span class='lparen'>(</span><span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>%Y-%m-%d</span><span class='tstring_end'>&#39;</span></span><span class='rparen'>)</span>
     <span class='id identifier rubyid_aufsicht_start_date_index'>aufsicht_start_date_index</span> <span class='op'>=</span> <span class='int'>0</span>
@@ -4490,12 +4489,9 @@
         <span class='const'>FileUtils</span><span class='period'>.</span><span class='id identifier rubyid_mkpath'>mkpath</span><span class='lparen'>(</span><span class='const'>File</span><span class='period'>.</span><span class='id identifier rubyid_dirname'>dirname</span><span class='lparen'>(</span><span class='id identifier rubyid_path'>path</span><span class='rparen'>)</span><span class='rparen'>)</span>
         <span class='const'>Zlib</span><span class='op'>::</span><span class='const'>GzipWriter</span><span class='period'>.</span><span class='id identifier rubyid_open'>open</span><span class='lparen'>(</span><span class='id identifier rubyid_path'>path</span><span class='rparen'>)</span> <span class='kw'>do</span> <span class='op'>|</span><span class='id identifier rubyid_f'>f</span><span class='op'>|</span>
             <span class='id identifier rubyid_homework'>homework</span> <span class='op'>=</span> <span class='lbrace'>{</span><span class='rbrace'>}</span>
-            <span class='id identifier rubyid_seen_lesson_ids'>seen_lesson_ids</span> <span class='op'>=</span> <span class='const'>Set</span><span class='period'>.</span><span class='id identifier rubyid_new'>new</span><span class='lparen'>(</span><span class='rparen'>)</span>
             <span class='id identifier rubyid_lesson_keys'>lesson_keys</span><span class='period'>.</span><span class='id identifier rubyid_each'>each</span> <span class='kw'>do</span> <span class='op'>|</span><span class='id identifier rubyid_lesson_key'>lesson_key</span><span class='op'>|</span>
                 <span class='lparen'>(</span><span class='id identifier rubyid_all_homework'>all_homework</span><span class='lbracket'>[</span><span class='id identifier rubyid_lesson_key'>lesson_key</span><span class='rbracket'>]</span> <span class='op'>||</span> <span class='lbrace'>{</span><span class='rbrace'>}</span><span class='rparen'>)</span><span class='period'>.</span><span class='id identifier rubyid_keys'>keys</span><span class='period'>.</span><span class='id identifier rubyid_sort'>sort</span><span class='period'>.</span><span class='id identifier rubyid_each'>each</span> <span class='kw'>do</span> <span class='op'>|</span><span class='id identifier rubyid_datum'>datum</span><span class='op'>|</span>
-                    <span class='kw'>next</span> <span class='kw'>if</span> <span class='id identifier rubyid_datum'>datum</span> <span class='op'>&lt;</span> <span class='id identifier rubyid_today_date'>today_date</span>
-                    <span class='kw'>next</span> <span class='kw'>if</span> <span class='id identifier rubyid_seen_lesson_ids'>seen_lesson_ids</span><span class='period'>.</span><span class='id identifier rubyid_include?'>include?</span><span class='lparen'>(</span><span class='id identifier rubyid_lesson_key'>lesson_key</span><span class='rparen'>)</span>
-                    <span class='id identifier rubyid_seen_lesson_ids'>seen_lesson_ids</span> <span class='op'>&lt;&lt;</span> <span class='id identifier rubyid_lesson_key'>lesson_key</span>
+                    <span class='kw'>next</span> <span class='kw'>if</span> <span class='id identifier rubyid_datum'>datum</span> <span class='op'>&lt;</span> <span class='id identifier rubyid_today_date'>today_date</span> <span class='op'>||</span> <span class='id identifier rubyid_datum'>datum</span> <span class='op'>&gt;=</span> <span class='id identifier rubyid_today_plus_7_days'>today_plus_7_days</span>
                     <span class='id identifier rubyid_homework'>homework</span><span class='lbracket'>[</span><span class='id identifier rubyid_datum'>datum</span><span class='rbracket'>]</span> <span class='op'>||=</span> <span class='lbracket'>[</span><span class='rbracket'>]</span>
                     <span class='id identifier rubyid_homework'>homework</span><span class='lbracket'>[</span><span class='id identifier rubyid_datum'>datum</span><span class='rbracket'>]</span> <span class='op'>&lt;&lt;</span> <span class='lbrace'>{</span><span class='symbol'>:lesson_key</span> <span class='op'>=&gt;</span> <span class='id identifier rubyid_lesson_key'>lesson_key</span><span class='comma'>,</span> <span class='symbol'>:info</span> <span class='op'>=&gt;</span> <span class='id identifier rubyid_all_homework'>all_homework</span><span class='lbracket'>[</span><span class='id identifier rubyid_lesson_key'>lesson_key</span><span class='rbracket'>]</span><span class='lbracket'>[</span><span class='id identifier rubyid_datum'>datum</span><span class='rbracket'>]</span><span class='rbrace'>}</span>
                 <span class='kw'>end</span>
@@ -4543,7 +4539,7 @@
 </div>
 
       <div id="footer">
-  Generated on Tue Feb  9 08:23:16 2021 by
+  Generated on Thu Feb 11 00:37:28 2021 by
   <a href="http://yardoc.org" title="Yay! A Ruby Documentation Tool" target="_parent">yard</a>
   0.9.26 (ruby-2.5.1).
 </div>

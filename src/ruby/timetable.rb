@@ -986,6 +986,7 @@ class Timetable
         end
         file_count = 0
         today_date = Date.today.strftime('%Y-%m-%d')
+        today_plus_7_days = (Date.today + 7).strftime('%Y-%m-%d')
         regular_events_from = Date.today + 7
         regular_events_from = regular_events_from.strftime('%Y-%m-%d')
         aufsicht_start_date_index = 0
@@ -1519,12 +1520,9 @@ class Timetable
             FileUtils.mkpath(File.dirname(path))
             Zlib::GzipWriter.open(path) do |f|
                 homework = {}
-                seen_lesson_ids = Set.new()
                 lesson_keys.each do |lesson_key|
                     (all_homework[lesson_key] || {}).keys.sort.each do |datum|
-                        next if datum < today_date
-                        next if seen_lesson_ids.include?(lesson_key)
-                        seen_lesson_ids << lesson_key
+                        next if datum < today_date || datum >= today_plus_7_days
                         homework[datum] ||= []
                         homework[datum] << {:lesson_key => lesson_key, :info => all_homework[lesson_key][datum]}
                     end

@@ -9,7 +9,7 @@ body {
 var lesson_key = '#{show_lesson_key}';
 var lesson_key_id = '#{lesson_key_id}';
 var lesson_data = #{lesson_data.to_json};
-var schueler_for_lesson = #{(@@schueler_for_lesson[show_lesson_key] || []).map { |email| i = {}; [:email, :first_name, :display_name].each { |k| i[k] = @@user_info[email][k]}; i; }.to_json};
+var schueler_for_lesson = #{(@@schueler_for_lesson[show_lesson_key] || []).map { |email| i = {}; [:email, :first_name, :display_name, :nc_login].each { |k| i[k] = @@user_info[email][k]}; i; }.to_json};
 var max_recording_time = 5;
 var mediaRecorder = null;
 var chunks = [];
@@ -22,6 +22,54 @@ var rec_start_time = null;
 var rec_duration = 0;
 var update_rec_time_label_timeout = null;
 </script>
+
+<div class="modal" id="breakoutRoomsModal" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-scrollable modal-xl modal-dialog-centered" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Jitsi-Gruppenräume</h5>
+            </div>
+            <div class="modal-body">
+                <div class='row'>
+                    <div class='col-md-12'>
+                        <p>
+                        Ziehen Sie Schülerinnen und Schüler hin und her, um sie in Gruppen einzuteilen.
+                        </p>
+                    </div>
+                </div>
+                <div class='row breakout-rooms-container'>
+                    <div class='col-md-3'>
+                        <div class='breakout-group'>
+<!--                            <div class='user-widget'>
+                                <div class='icon'>#{user_icon('specht@gymnasiumsteglitz.de', 'avatar-md')}</div>
+                                Dr. Michael Specht
+                            </div>-->
+                        </div>
+                    </div>
+                    <div class='col-md-3'>
+                        <div class='breakout-group'>
+                        </div>
+                    </div>
+                    <div class='col-md-3'>
+                        <div class='breakout-group'>
+                        </div>
+                    </div>
+                    <div class='col-md-3'>
+                        <div class='breakout-group'>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <div id='save_breakout_rooms_btn_container' style='display: inline-block;'>
+                    <button id='bu_discard_breakout_room' type="button" class="btn btn-outline-secondary" disabled><i class='fa fa-trash'></i>&nbsp;&nbsp;Änderungen verwerfen</button>
+                    <button id='bu_submit_breakout_room' type="button" class="btn btn-outline-success" disabled><i class='fa fa-check'></i>&nbsp;&nbsp;Speichern</button>
+                </div>
+                <button id='bu_close_breakout_room' type="button" class="btn btn-secondary" data-dismiss="modal">Schließen</button>
+            </div>
+        </div>
+    </div>
+</div>
 
 <div class="modal" id="feedbackModal" tabindex="-1" role="dialog" aria-hidden="true">
   <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
@@ -167,6 +215,10 @@ var update_rec_time_label_timeout = null;
                             <span>Für diese Stunde wird ein Jitsi Meet-Stream bereitgestellt.</span>
                         </div>
                         <div class='button-with-label'>
+                            <button id='ti_lesson_jitsi_breakout_rooms' data-state='off' class='btn_lesson_data btn btn-sm btn-outline-secondary' disabled><i class='fa fa-times'></i>&nbsp;&nbsp;Gruppenräume</button>
+                            <span>Für diese Stunde werden Jitsi-Gruppenräume bereitgestellt.</span>
+                        </div>
+                        <div class='button-with-label'>
                             <button id='ti_lesson_nc' data-state='off' class='btn_lesson_data btn btn-sm btn-outline-secondary' disabled><i class='fa fa-times'></i>&nbsp;&nbsp;Nextcloud</button>
                             <span>Es befinden sich Aufgaben im Nextcloud-Ordner. Der Link zum Ordner wird automatisch bereitgestellt.</span>
                         </div>
@@ -273,7 +325,7 @@ var row_for_lesson_offset = {};
 var cursor = null;
 var pending_changes = false;
 var data_keys = ['thema', 'notizen', 'hausaufgaben_text', 'stundenthema_text', 'homework_est_time'];
-var data_keys_bools = ['lesson_jitsi', 'lesson_nc', 'lesson_lr', 'homework_nc', 'homework_lr'];
+var data_keys_bools = ['lesson_jitsi', 'ti_lesson_jitsi_breakout_rooms', 'lesson_nc', 'lesson_lr', 'homework_nc', 'homework_lr'];
 var can_select = false;
 
 function update_changes() {
@@ -475,7 +527,11 @@ function update_table() {
         cell.empty();
         let wrote_something = false;
         if (((lesson_data[i] || {}).info || {}).lesson_jitsi) {
-            cell.append($('<span>').addClass('bv').html('Jitsi'));
+            if (((lesson_data[i] || {}).info || {}).lesson_jitsi_breakout_rooms) {
+                cell.append($('<span>').addClass('bv').html('Jitsi/GR'));
+            } else {
+                cell.append($('<span>').addClass('bv').html('Jitsi'));
+            }
             wrote_something = true;
         }
         if (((lesson_data[i] || {}).info || {}).lesson_nc) {
@@ -1368,5 +1424,41 @@ document.addEventListener('DOMContentLoaded', function() {
         f.readAsText(bb);
     };
     oReq.send();
+    $('#ti_lesson_jitsi_breakout_rooms').click(function(e) {
+        $('.breakout-group').empty();
+        for (let user of schueler_for_lesson) {
+            let user_widget = $('<div>').addClass('user-widget');
+            user_widget.html(user.display_name);
+            let icon = $('<div>').addClass('icon');
+            icon.append('<div>').addClass('avatar-md').css('background-image', `url(#{NEXTCLOUD_URL}/index.php/avatar/${user.nc_login}/128), url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mO88h8AAq0B1REmZuEAAAAASUVORK5CYII=)`);
+            $($('.breakout-group')[0]).append(user_widget);
+            user_widget.append(icon);
+        }
+        
+//         <div class='user-widget'>
+//             <div class='icon'>#{user_icon('specht@gymnasiumsteglitz.de', 'avatar-md')}</div>
+//             Dr. Michael Specht
+//         </div>
+
+        $('#breakoutRoomsModal').modal('show');
+    });
+    $('.user-widget').draggable();
+    $('.breakout-group').droppable({
+        activate: function(event, ui) {
+            $('.breakout-group').addClass('dragging');
+        },
+        drop: function(event, ui) {
+            let element = $(ui.draggable[0]).detach();
+            element.css('left', '0');
+            element.css('top', '0');
+            $(this).append(element);
+            $('.breakout-group').removeClass('accepting').removeClass('dragging');
+        },
+        over: function(event, ui) {
+            $('.breakout-group').removeClass('accepting');
+            $(this).addClass('accepting');
+        }
+    });
+    $('#ti_lesson_jitsi_breakout_rooms').click();
 });
 </script>

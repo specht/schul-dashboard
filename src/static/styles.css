@@ -1094,7 +1094,7 @@ span.bv {
 }
 
 .button-with-label button.btn-sm, .button-with-label input {
-    width: 120px;
+    width: 130px;
 }
 
 .button-with-label .btn i {
@@ -1109,7 +1109,7 @@ span.bv {
 }
 
 .button-with-label {
-    padding-left: 130px;
+    padding-left: 140px;
     position: relative;
     min-height: 35px;
 }
@@ -1996,3 +1996,42 @@ hr.poll-entry-divider {
     color: #3465a4;
 }*/
 
+.breakout-group {
+    box-shadow: inset 0 0 8px rgba(0,0,0,0.3);
+    height: 300px;
+    padding: 8px;
+    border-radius: 4px;
+    overflow: hidden;
+    overflow-y: scroll;
+}
+
+.breakout-group.dragging {
+    overflow: visible;
+}
+
+.breakout-group.accepting {
+    box-shadow: inset 0 0 16px rgba(0,0,0,0.5);
+}
+
+.user-widget {
+    height: 37px;
+    display: inline-block;
+    border-radius: 4px;
+    position: relative;
+    padding: 6px 8px 8px 43px;
+    background-color: #fff;
+    box-shadow: 0 0 3px rgba(0,0,0,0.8);
+    user-select: none;
+    cursor: pointer;
+    margin-right: 6px;
+    margin-bottom: 6px;
+    white-space: nowrap;
+    background: #fff;
+    z-index: 100;
+}
+
+.user-widget .icon {
+    position: absolute;
+    left: 8px;
+    top: 3px;
+}

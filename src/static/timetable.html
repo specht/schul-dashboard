@@ -163,6 +163,7 @@ var tablet_logged_in = ('#{tablet_logged_in?}' === 'true');
 var homework_feedback = {};
 
 document.addEventListener('DOMContentLoaded', function() {
+    moment.locale('de');
     let narrow_window = ($(window).width() <= 640);
     let initial_date = '#{initial_date}';
     if (window.location.hash.length > 0)

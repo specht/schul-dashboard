@@ -31,7 +31,46 @@ var update_rec_time_label_timeout = null;
             </div>
             <div class="modal-body">
                 <div class='row'>
+                    <div class='col-md-4'>
+                        <div class="form-group">
+                            <label>Gruppenräume bereitstellen</label>
+                            <div class='button-with-label'>
+                                <button id='ti_event_jitsi_breakout_rooms' data-state='no' class='btn_lesson_data btn btn-outline-secondary'><i class='fa fa-times'></i>Gruppenräume</button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class='col-md-4'>
+                        <div class="form-group">
+                            <label>Anzahl der Gruppenräume</label>
+                            <div class="input-group mb-3">
+                                <input style='text-align: center;' class='form-control' id='ti_breakout_room_count' min='1' type='number' value='4'></input>
+                                <div class="input-group-append">
+                                    <span class="input-group-text"><i class='fa fa-minus'></i></span>
+                                </div>
+                                <div class="input-group-append">
+                                    <span class="input-group-text"><i class='fa fa-plus'></i></span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class='col-md-4'>
+                        <div class="form-group">
+                            <label>Gruppen einteilen</label>
+                            <div class="btn-group" style='width: 100%;'>
+                                <button type="button" class="bu-breakout-room-arrange-dropdown btn btn-outline-secondary dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                                    Einteilen
+                                </button>
+                                <div class="dropdown-menu">
+                                    <a class='dropdown-item bu-breakout-room-arrange-random btn btn-primary'><i class='fa fa-random'></i>&nbsp;&nbsp;&nbsp;&nbsp;zufällig mischen</a>
+                                    <a class='dropdown-item bu-breakout-room-arrange-random btn btn-primary'><i class='fa fa-sort-alpha-asc'></i>&nbsp;&nbsp;&nbsp;&nbsp;nach Vornamen sortieren</a>
+                                    <a class='dropdown-item bu-breakout-room-arrange-random btn btn-primary'><i class='fa fa-sort-alpha-asc'></i>&nbsp;&nbsp;&nbsp;&nbsp;nach Nachnamen sortieren</a>
+                                    <a class='dropdown-item bu-breakout-room-arrange-random btn btn-primary'><i class='fa fa-history'></i>&nbsp;&nbsp;&nbsp;&nbsp;Einteilung vom letzten mal übernehmen</a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                     <div class='col-md-12'>
+                        <hr />
                         <p>
                         Ziehen Sie Schülerinnen und Schüler hin und her, um sie in Gruppen einzuteilen.
                         </p>
@@ -39,6 +78,7 @@ var update_rec_time_label_timeout = null;
                 </div>
                 <div class='row breakout-rooms-container'>
                     <div class='col-md-3'>
+                        <input type='text' class='form-control' placeholder='Gruppenname' value='Gruppe 1'/>
                         <div class='breakout-group'>
 <!--                            <div class='user-widget'>
                                 <div class='icon'>#{user_icon('specht@gymnasiumsteglitz.de', 'avatar-md')}</div>
@@ -215,7 +255,7 @@ var update_rec_time_label_timeout = null;
                             <span>Für diese Stunde wird ein Jitsi Meet-Stream bereitgestellt.</span>
                         </div>
                         <div class='button-with-label'>
-                            <button id='ti_lesson_jitsi_breakout_rooms' data-state='off' class='btn_lesson_data btn btn-sm btn-outline-secondary' disabled><i class='fa fa-times'></i>&nbsp;&nbsp;Gruppenräume</button>
+                            <button id='ti_lesson_jitsi_breakout_rooms_popup' data-state='off' class='btn_lesson_data btn btn-sm btn-outline-secondary' disabled><i class='fa fa-times'></i>&nbsp;&nbsp;Gruppenräume</button>
                             <span>Für diese Stunde werden Jitsi-Gruppenräume bereitgestellt.</span>
                         </div>
                         <div class='button-with-label'>
@@ -820,19 +860,21 @@ document.addEventListener('DOMContentLoaded', function() {
     
     $('.btn_lesson_data').click(function(e) {
         let button = $(e.target);
-        button.removeClass('half');
-        if (button.data('state') === 'yes') {
-            button.removeClass('btn-info').addClass('btn-outline-secondary');
-            button.find('.fa').removeClass('fa-check').removeClass('fa-question-circle').addClass('fa-times');
-            button.data('state', 'no');
-            button.blur();
+        if (button.attr('id') !== 'ti_lesson_jitsi_breakout_rooms_popup') {
+            button.removeClass('half');
+            if (button.data('state') === 'yes') {
+                button.removeClass('btn-info').addClass('btn-outline-secondary');
+                button.find('.fa').removeClass('fa-check').removeClass('fa-question-circle').addClass('fa-times');
+                button.data('state', 'no');
+                button.blur();
+            }
+            else {
+                button.removeClass('btn-outline-secondary').addClass('btn-info');
+                button.find('.fa').removeClass('fa-times').removeClass('fa-question-circle').addClass('fa-check');
+                button.data('state', 'yes');
+            }
+            update_changes();
         }
-        else {
-            button.removeClass('btn-outline-secondary').addClass('btn-info');
-            button.find('.fa').removeClass('fa-times').removeClass('fa-question-circle').addClass('fa-check');
-            button.data('state', 'yes');
-        }
-        update_changes();
     });
     
     $('.bu-discard-changes').click(function(e) { discard_changes() });
@@ -1424,7 +1466,7 @@ document.addEventListener('DOMContentLoaded', function() {
         f.readAsText(bb);
     };
     oReq.send();
-    $('#ti_lesson_jitsi_breakout_rooms').click(function(e) {
+    $('#ti_lesson_jitsi_breakout_rooms_popup').click(function(e) {
         $('.breakout-group').empty();
         for (let user of schueler_for_lesson) {
             let user_widget = $('<div>').addClass('user-widget');
@@ -1433,13 +1475,8 @@ document.addEventListener('DOMContentLoaded', function() {
             icon.append('<div>').addClass('avatar-md').css('background-image', `url(#{NEXTCLOUD_URL}/index.php/avatar/${user.nc_login}/128), url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mO88h8AAq0B1REmZuEAAAAASUVORK5CYII=)`);
             $($('.breakout-group')[0]).append(user_widget);
             user_widget.append(icon);
+            user_widget.draggable();
         }
-        
-//         <div class='user-widget'>
-//             <div class='icon'>#{user_icon('specht@gymnasiumsteglitz.de', 'avatar-md')}</div>
-//             Dr. Michael Specht
-//         </div>
-
         $('#breakoutRoomsModal').modal('show');
     });
     $('.user-widget').draggable();

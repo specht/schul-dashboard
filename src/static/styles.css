@@ -1997,6 +1997,7 @@ hr.poll-entry-divider {
 }*/
 
 .breakout-group {
+    margin-top: 10px;
     box-shadow: inset 0 0 8px rgba(0,0,0,0.3);
     height: 300px;
     padding: 8px;
@@ -2006,7 +2007,7 @@ hr.poll-entry-divider {
 }
 
 .breakout-group.dragging {
-    overflow: visible;
+/*     overflow-x: visible; */
 }
 
 .breakout-group.accepting {

@@ -199,12 +199,20 @@ class Main < Sinatra::Base
                         if item[:type] == 'radio'
                             value = response[item_index.to_s]
                             unless value.nil?
+                                unless histogram[value]
+                                    STDERR.puts "Error evaluating poll: unknown value #{value} for #{item.to_json}!"
+                                    next
+                                end
                                 histogram[value] += 1
                                 participants_for_answer[value] ||= []
                                 participants_for_answer[value] << entry[:email]
                             end
                         else
                             (response[item_index.to_s] || []).each do |value|
+                                unless histogram[value]
+                                    STDERR.puts "Error evaluating poll: unknown value #{value} for #{item.to_json}!"
+                                    next
+                                end
                                 histogram[value] += 1
                                 participants_for_answer[value] ||= []
                                 participants_for_answer[value] << entry[:email]

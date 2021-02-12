@@ -290,6 +290,61 @@ class Main < Sinatra::Base
                     end
                 end
             end
+            
+            cm = {}
+            citems = (0...poll_run[:items].size).select do |item_index|
+                item = poll_run[:items][item_index].transform_keys(&:to_sym)
+                ['radio', 'checkbox'].include?(item[:type])
+            end.map { |x| x.to_s }
+            citems.each do |a|
+                citems.each do |b|
+                    next if a == b
+                    total = 0
+                    matches = 0
+                    responses.each do |response|
+                        # now we're looking at responses by one person to questions a and b
+                        va = response[:response][a]
+                        vb = response[:response][b]
+                        va = [va] unless va.is_a? Array
+                        vb = [vb] unless vb.is_a? Array
+                        va.each do |za|
+                            key = "#{a}/#{za}"
+                            cm[key] ||= 0
+                            cm[key] += 1
+                            vb.each do |zb|
+                                key = "#{a}/#{za}-#{b}/#{zb}"
+                                cm[key] ||= 0
+                                cm[key] += 1
+                            end
+                        end
+                    end
+                end
+            end
+            cm_final = {}
+            cm.keys.each do |k|
+                next unless k.include?('-')
+                match = cm[k]
+                total = cm[k.split('-').first]
+                cm_final[k] = match * 100.0 / total
+            end
+            
+            io.puts "<div class='page-break'></div>"
+            io.puts "<h3>Korrelationen</h3>"
+            io.puts "<table class='table'>"
+            cm_final.keys.select do |x|
+                cm_final[x] >= 70.0
+            end.sort do |a, b|
+                cm_final[b] <=> cm_final[a]
+            end.each do |k|
+                k2 = k.split('-').map { |x| x.split('/') }.flatten
+                qa = poll_run[:items][k2[0].to_i]['title']
+                aa = poll_run[:items][k2[0].to_i]['answers'][k2[1].to_i]
+                qb = poll_run[:items][k2[2].to_i]['title']
+                ab = poll_run[:items][k2[2].to_i]['answers'][k2[3].to_i]
+                io.puts "<tr><td style='vertical-align: top;'>#{sprintf('%3d%%', cm_final[k])}</td><td><strong>#{qa}</strong><br />#{aa}<br /><strong>#{qb}</strong><br />#{ab}</td></tr>"
+            end
+            io.puts "</table>"
+            
             io.string
         end
     end

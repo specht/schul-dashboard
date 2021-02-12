@@ -328,22 +328,25 @@ class Main < Sinatra::Base
                 cm_final[k] = match * 100.0 / total
             end
             
-            io.puts "<div class='page-break'></div>"
-            io.puts "<h3>Korrelationen</h3>"
-            io.puts "<table class='table'>"
-            cm_final.keys.select do |x|
-                cm_final[x] >= 70.0
+            use_keys = cm_final.keys.select do |x|
+                cm_final[x] >= 30.0
             end.sort do |a, b|
                 cm_final[b] <=> cm_final[a]
-            end.each do |k|
-                k2 = k.split('-').map { |x| x.split('/') }.flatten
-                qa = poll_run[:items][k2[0].to_i]['title']
-                aa = poll_run[:items][k2[0].to_i]['answers'][k2[1].to_i]
-                qb = poll_run[:items][k2[2].to_i]['title']
-                ab = poll_run[:items][k2[2].to_i]['answers'][k2[3].to_i]
-                io.puts "<tr><td style='vertical-align: top;'>#{sprintf('%3d%%', cm_final[k])}</td><td><strong>#{qa}</strong><br />#{aa}<br /><strong>#{qb}</strong><br />#{ab}</td></tr>"
             end
-            io.puts "</table>"
+            unless use_keys.empty?
+                io.puts "<div class='page-break'></div>"
+                io.puts "<h3>Korrelationen</h3>"
+                io.puts "<table class='table'>"
+                use_keys.each do |k|
+                    k2 = k.split('-').map { |x| x.split('/') }.flatten
+                    qa = poll_run[:items][k2[0].to_i]['title']
+                    aa = poll_run[:items][k2[0].to_i]['answers'][k2[1].to_i]
+                    qb = poll_run[:items][k2[2].to_i]['title']
+                    ab = poll_run[:items][k2[2].to_i]['answers'][k2[3].to_i]
+                    io.puts "<tr><td style='vertical-align: top;'>#{sprintf('%3d%%', cm_final[k])}</td><td><strong>#{qa}</strong><br />#{aa}<br /><strong>#{qb}</strong><br />#{ab}</td></tr>"
+                end
+                io.puts "</table>"
+            end
             
             io.string
         end

@@ -734,24 +734,26 @@ class Main < Sinatra::Base
     end
     
     configure do
-        @@compiled_files = {}
-        self.collect_data()
-        setup = SetupDatabase.new()
-        setup.setup(self)
-        @@color_scheme_colors = COLOR_SCHEME_COLORS
-        @@standard_color_scheme = STANDARD_COLOR_SCHEME
-        @@color_scheme_colors.map! do |s|
-            ['#' + s[0][1, 6], '#' + s[0][7, 6], '#' + s[0][13, 6], s[1], s[0][0], s[2]]
-        end
-        @@renderer = BackgroundRenderer.new
-        if ENV['DASHBOARD_SERVICE'] == 'ruby'
+        self.collect_data() unless defined?(SKIP_COLLECT_DATA) && SKIP_COLLECT_DATA
+        if ENV['DASHBOARD_SERVICE'] == 'ruby' && File.basename($0) == 'thin'
+            @@compiled_files = {}
+            setup = SetupDatabase.new()
+            setup.setup(self)
+            @@color_scheme_colors = COLOR_SCHEME_COLORS
+            @@standard_color_scheme = STANDARD_COLOR_SCHEME
+            @@color_scheme_colors.map! do |s|
+                ['#' + s[0][1, 6], '#' + s[0][7, 6], '#' + s[0][13, 6], s[1], s[0][0], s[2]]
+            end
+            @@renderer = BackgroundRenderer.new
             @@color_scheme_colors.each do |palette|
                 @@renderer.render(palette)
             end
             self.compile_js()
             self.compile_css()
         end
-        STDERR.puts "Server is up and running!"
+        if ['thin', 'rackup'].include?(File.basename($0))
+            STDERR.puts "Server is up and running!"
+        end
     end
     
     def assert(condition, message = 'assertion failed', suppress_backtrace = false)
@@ -1623,6 +1625,4 @@ class Main < Sinatra::Base
             status 404
         end
     end
-
-    run! if app_file == $0
 end

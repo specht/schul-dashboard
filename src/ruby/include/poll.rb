@@ -285,7 +285,7 @@ class Main < Sinatra::Base
                             io.puts "</p>"
                             unless entry[:response][item_index.to_s].nil?
                                 io.puts "<p>"
-                                io.puts entry[:response][item_index.to_s].map { |answer| item[:answers][answer]}.join(', ')
+                                io.puts entry[:response][item_index.to_s].reject { |x| x.nil? }.map { |answer| item[:answers][answer]}.join(', ')
                                 io.puts "</p>"
                             end
                         elsif item[:type] == 'textarea'

@@ -2004,14 +2004,20 @@ hr.poll-entry-divider {
     border-radius: 4px;
     overflow: hidden;
     overflow-y: scroll;
+    position: relative;
 }
 
 .breakout-group.dragging {
-/*     overflow-x: visible; */
+/*     overflow: visible; */
 }
 
 .breakout-group.accepting {
     box-shadow: inset 0 0 16px rgba(0,0,0,0.5);
+}
+
+.phantom-launch-pad {
+    position: absolute;
+    border: 1px solid red;
 }
 
 .user-widget {
@@ -2029,6 +2035,10 @@ hr.poll-entry-divider {
     white-space: nowrap;
     background: #fff;
     z-index: 100;
+}
+
+.user-widget.dragging {
+    position: absolute;
 }
 
 .user-widget .icon {

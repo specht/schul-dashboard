@@ -59,6 +59,7 @@ class InvitationRepl < Sinatra::Base
     
     configure do
         @@neo4j = Neo4jHelper.new()
+        @@neo4j.wait_for_neo4j()
         begin
             if @@worker_thread
                 Thread.kill(@@worker_thread)

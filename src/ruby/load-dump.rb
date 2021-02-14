@@ -1,4 +1,5 @@
 #!/usr/bin/env ruby
+SKIP_COLLECT_DATA = true
 require './main.rb'
 
 class LoadDump

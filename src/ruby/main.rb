@@ -129,6 +129,21 @@ module QtsNeo4j
             @v
         end
     end
+    
+    def wait_for_neo4j
+        delay = 1
+        10.times do
+            begin
+                neo4j_query("MATCH (n) RETURN n LIMIT 1;")
+                break
+            rescue
+                STDERR.puts $!
+                STDERR.puts "Retrying after #{delay} seconds..."
+                sleep delay
+                delay += 1
+            end
+        end
+    end
 
     def neo4j_query(query_str, options = {})
         transaction do

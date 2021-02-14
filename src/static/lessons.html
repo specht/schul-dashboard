@@ -45,10 +45,10 @@ var update_rec_time_label_timeout = null;
                             <div class="input-group mb-3">
                                 <input style='text-align: center;' class='form-control' id='ti_breakout_room_count' min='1' type='number' value='4'></input>
                                 <div class="input-group-append">
-                                    <span class="input-group-text"><i class='fa fa-minus'></i></span>
+                                    <button class="btn bu-fewer-breakout-rooms btn-outline-secondary"><i class='fa fa-minus'></i></button>
                                 </div>
                                 <div class="input-group-append">
-                                    <span class="input-group-text"><i class='fa fa-plus'></i></span>
+                                    <button class="btn bu-more-breakout-rooms btn-outline-secondary"><i class='fa fa-plus'></i></button>
                                 </div>
                             </div>
                         </div>
@@ -77,24 +77,23 @@ var update_rec_time_label_timeout = null;
                     </div>
                 </div>
                 <div class='row breakout-rooms-container'>
-                    <div class='col-md-3'>
+                    <div class='breakout-col col-md-3'>
                         <input type='text' class='form-control' placeholder='Gruppenname' value='Gruppe 1'/>
                         <div class='breakout-group'>
-<!--                            <div class='user-widget'>
-                                <div class='icon'>#{user_icon('specht@gymnasiumsteglitz.de', 'avatar-md')}</div>
-                                Dr. Michael Specht
-                            </div>-->
                         </div>
                     </div>
-                    <div class='col-md-3'>
+                    <div class='breakout-col col-md-3'>
+                        <input type='text' class='form-control' placeholder='Gruppenname' value='Gruppe 2'/>
                         <div class='breakout-group'>
                         </div>
                     </div>
-                    <div class='col-md-3'>
+                    <div class='breakout-col col-md-3'>
+                        <input type='text' class='form-control' placeholder='Gruppenname' value='Gruppe 3'/>
                         <div class='breakout-group'>
                         </div>
                     </div>
-                    <div class='col-md-3'>
+                    <div class='breakout-col col-md-3'>
+                        <input type='text' class='form-control' placeholder='Gruppenname' value='Gruppe 4'/>
                         <div class='breakout-group'>
                         </div>
                     </div>
@@ -831,6 +830,8 @@ document.addEventListener('DOMContentLoaded', function() {
     $('body').mousedown(function(e) {
         if ($('#feedbackModal').is(':visible'))
             return;
+        if ($('#breakoutRoomsModal').is(':visible'))
+            return;
         if ($(e.target).closest('tr').length > 0)
             return;
         if (!can_select)
@@ -1475,17 +1476,53 @@ document.addEventListener('DOMContentLoaded', function() {
             icon.append('<div>').addClass('avatar-md').css('background-image', `url(#{NEXTCLOUD_URL}/index.php/avatar/${user.nc_login}/128), url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mO88h8AAq0B1REmZuEAAAAASUVORK5CYII=)`);
             $($('.breakout-group')[0]).append(user_widget);
             user_widget.append(icon);
-            user_widget.draggable();
+            user_widget.draggable({
+                start: function(event, ui) {
+                    console.log('start', event, ui);
+                    let widget = $(ui.helper[0]);
+                    drop_source = widget.closest('.breakout-group');
+                    console.log(widget.position().left, widget.position().top);
+                    let clone = widget.clone().insertAfter(widget).css('opacity', 0.5);
+                    let launchpad = $('<div>').addClass('phantom-launch-pad');
+                    widget.closest('.breakout-rooms-container').append(launchpad);
+                    x = widget.position().left;
+                    y = widget.position().top;
+                    x += widget.closest('.breakout-col').position().left + widget.closest('.breakout-group').position().left;
+                    y += widget.closest('.breakout-col').position().top + widget.closest('.breakout-group').position().top;
+                    y += 4;
+                    launchpad.css('left', x);
+                    launchpad.css('top', y);
+//                     launchpad.css('left', 0).css('top', 0);
+                    widget.data('clone', clone);
+                    widget.data('launchpad', launchpad);
+                    widget.data('drop_source', drop_source);
+                    widget.detach().appendTo(launchpad);
+                    widget.addClass('dragging');
+                    widget.data('has_drop_target', false);
+                },
+                stop: function(event, ui) {
+                    console.log(ui);
+                    let widget = $(ui.helper[0]);
+                    widget.data('drop_source').scrollLeft(0);
+                    if (!widget.data('has_drop_target')) {
+                        widget.data('drop_source').append(widget);
+                        widget.removeClass('dragging');
+                        widget.css('left', '0');
+                        widget.css('top', '0');
+                        $('.breakout-group').removeClass('accepting').removeClass('dragging');
+                    }
+                    widget.data('clone').remove();
+                    widget.data('launchpad').remove();
+                }
+            });
         }
         $('#breakoutRoomsModal').modal('show');
     });
-    $('.user-widget').draggable();
     $('.breakout-group').droppable({
-        activate: function(event, ui) {
-            $('.breakout-group').addClass('dragging');
-        },
+        accept: '.user-widget',
         drop: function(event, ui) {
-            let element = $(ui.draggable[0]).detach();
+            let element = $(ui.draggable[0]);
+            element.removeClass('dragging');
             element.css('left', '0');
             element.css('top', '0');
             $(this).append(element);
@@ -1493,9 +1530,24 @@ document.addEventListener('DOMContentLoaded', function() {
         },
         over: function(event, ui) {
             $('.breakout-group').removeClass('accepting');
-            $(this).addClass('accepting');
+            $(this).addClass('accepting').scrollLeft(0);
+            let element = $(ui.draggable[0]);
+            element.data('has_drop_target', true);
+        },
+        out: function(event, ui) {
+            $('.breakout-group').removeClass('accepting');
+            let element = $(ui.draggable[0]);
+            element.data('has_drop_target', false);
+            $(this).scrollLeft(0);
         }
     });
-    $('#ti_lesson_jitsi_breakout_rooms').click();
+//     $('#ti_lesson_jitsi_breakout_rooms').click();
+    $('.bu-fewer-breakout-rooms').click(function(e) {
+        let count = parseInt($('#ti_breakout_room_count').val());
+        if (count > 1) {
+            count -= 1;
+            $('#ti_breakout_room_count').val(count);
+        }
+    });
 });
 </script>

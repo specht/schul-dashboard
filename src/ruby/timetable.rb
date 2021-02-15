@@ -1614,6 +1614,10 @@ class Timetable
                     recipients['/schueler/*'] = {:label => 'Gesamte Schülerschaft',
                                                  :entries => @@user_info.select { |k, v| !v[:teacher]}.map { |k, v| k }}
                 end
+                if user[:can_see_all_timetables]
+                    recipients['/eltern/*'] = {:label => 'Gesamte Elternschaft',
+                                               :entries => @@user_info.select { |k, v| !v[:teacher]}.map { |k, v| 'eltern.' + k }}
+                end
                 if user[:teacher]
                     recipients['/lehrer/*'] = {:label => 'Gesamtes Kollegium',
                                                :teacher => true,

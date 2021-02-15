@@ -51,7 +51,9 @@ class InvitationRepl < Sinatra::Base
                 STDERR.puts ">>> Sending invite #{i + 1} of #{rows.size}..."
                 STDERR.puts '-' * 59
                 Main.invite_external_user_for_poll_run(row[:prid], row[:email], row[:org_email])
-                sleep 10.0
+                unless DEVELOPMENT
+                    sleep 10.0
+                end
                 # wait for 10 seconds
             end
         end

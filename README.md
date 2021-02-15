@@ -9,6 +9,11 @@ Es gibt ein paar Videos, die noch detaillierter zeigen, worum es dabei geht:
 - [Dashboard am Gymnasium Steglitz (Kurzversion für Schülerinnen und Schüler)](https://youtu.be/EGQ0Gkeu1To)
 - [Dashboard am Gymnasium Steglitz (ausführliche Version für Lehrkräfte)](https://youtu.be/BYqWu9Yft8s)
 
+Presse:
+
+- [14.01.2021 Tagesspiegel Leute](https://leute.tagesspiegel.de/steglitz-zehlendorf/unter-nachbarn/2021/01/14/155025/)
+- [02.02.2021 RBB Inforadio](https://www.inforadio.de/programm/schema/sendungen/aktuell/202102/08/gute-idee-corona-gymnasium-plattform.html)
+
 ## Features
 
 - jeder Teilnehmer sieht seinen aktuellen Stundenplan

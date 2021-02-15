@@ -100,11 +100,18 @@ module QtsNeo4j
     def transaction(&block)
         @neo4j ||= Neography::Rest.new
         @tx ||= []
-        @tx << (@tx.empty? ? @neo4j.begin_transaction : nil)
+        item = nil
+        if @tx.empty?
+            item = @neo4j.begin_transaction
+#             STDERR.puts "Starting transaction ##{item['commit'].split("/")[-2]}."
+            @transaction_size = 0
+        end
+        @tx << item
         begin
             result = yield
             item = @tx.pop
             unless item.nil?
+#                 STDERR.puts "Committing transaction ##{item['commit'].split("/")[-2]} with #{@transaction_size} queries."
                 @neo4j.commit_transaction(item)
             end
             result
@@ -112,6 +119,7 @@ module QtsNeo4j
             item = @tx.pop
             unless item.nil?
                 begin
+                    STDERR.puts "Rolling back transaction ##{item['commit'].split("/")[-2]} with #{@transaction_size} queries."
                     @neo4j.rollback_transaction(item)
                 rescue
                 end
@@ -132,7 +140,23 @@ module QtsNeo4j
 
     def neo4j_query(query_str, options = {})
         transaction do
-            temp_result = @neo4j.in_transaction(@tx.first, [query_str, options])
+            temp_result = nil
+            5.times do
+                begin
+                    temp_result = @neo4j.in_transaction(@tx.first, [query_str, options])
+                    break
+                rescue Excon::Error::Socket
+                    STDERR.puts "ATTENTION: Retrying query:"
+                    STDERR.puts query_str
+                    STDERR.puts options.to_json
+                    sleep 1.0
+                end
+            end
+            if temp_result.nil?
+                STDERR.puts "ATTENTION: Giving up on query after 5 tries."
+                raise 'neo4j_oopsie'
+            end
+                
             if temp_result['errors'] && !temp_result['errors'].empty?
                 STDERR.puts "This:"
                 STDERR.puts temp_result.to_yaml
@@ -149,6 +173,7 @@ module QtsNeo4j
                     end
                 end
             end
+            @transaction_size += 1
             result
         end
     end
@@ -156,7 +181,13 @@ module QtsNeo4j
     def neo4j_query_expect_one(query_str, options = {})
         transaction do
             result = neo4j_query(query_str, options).to_a
-            raise "Expected one result but got #{result.size}" unless result.size == 1
+            unless result.size == 1
+                STDERR.puts '-' * 40
+                STDERR.puts query_str
+                STDERR.puts options.to_json
+                STDERR.puts '-' * 40
+                raise "Expected one result but got #{result.size}" 
+            end
             result.first
         end
     end
@@ -202,7 +233,11 @@ def deliver_mail(&block)
             body mail_html_to_plain_text(message)
         end
     end
-    mail.deliver!
+    if DEVELOPMENT
+        STDERR.puts "Not sending mail to because we're in development: #{mail.to.join(' / ')}"
+    else
+        mail.deliver!
+    end
 end
 
 def parse_markdown(s)
@@ -224,16 +259,36 @@ class SetupDatabase
                 neo4j_query("MATCH (n) RETURN n LIMIT 1;")
                 break unless ENV['DASHBOARD_SERVICE'] == 'ruby'
                 transaction do
+                    duplicate_peu = neo4j_query(<<~END_OF_QUERY)
+                        MATCH (n:PredefinedExternalUser)
+                        WITH n.email AS email, COLLECT(n) AS nodes
+                        WHERE SIZE(nodes) > 1
+                        RETURN nodes;
+                    END_OF_QUERY
+                    duplicate_peu.each do |entry|
+                        STDERR.puts entry.to_yaml
+                        entry['nodes'].select do |node|
+                            node['name'] != main.class_variable_get(:@@predefined_external_users)[:recipients][node['email']][:label]
+                        end.each do |node|
+                            STDERR.puts "DELETING PEU #{node['name']}"
+                            neo4j_query(<<~END_OF_QUERY, {:name => node['name'], :email => node['email']})
+                                MATCH (n:PredefinedExternalUser {name: {name}, email: {email}})
+                                DETACH DELETE n;
+                            END_OF_QUERY
+                        end
+                    end
+                end
+                transaction do
                     STDERR.puts "Removing all constraints and indexes..."
                     indexes = []
-                    neo4j_query("CALL db.constraints").each do |constraint|
-                        query = "DROP #{constraint['description']}"
-                        neo4j_query(query)
-                    end
-                    neo4j_query("CALL db.indexes").each do |index|
-                        query = "DROP #{index['description']}"
-                        neo4j_query(query)
-                    end
+#                     neo4j_query("CALL db.constraints").each do |constraint|
+#                         query = "DROP #{constraint['description']}"
+#                         neo4j_query(query)
+#                     end
+#                     neo4j_query("CALL db.indexes").each do |index|
+#                         query = "DROP #{index['description']}"
+#                         neo4j_query(query)
+#                     end
                     
                     STDERR.puts "Setting up constraints and indexes..."
                     neo4j_query("CREATE CONSTRAINT ON (n:User) ASSERT n.email IS UNIQUE")
@@ -246,6 +301,7 @@ class SetupDatabase
                     neo4j_query("CREATE CONSTRAINT ON (n:Event) ASSERT n.key IS UNIQUE")
                     neo4j_query("CREATE CONSTRAINT ON (n:Poll) ASSERT n.key IS UNIQUE")
                     neo4j_query("CREATE CONSTRAINT ON (n:PollRun) ASSERT n.key IS UNIQUE")
+#                     neo4j_query("CREATE CONSTRAINT ON (n:PredefinedExternalUser) ASSERT n.email IS UNIQUE")
                     neo4j_query("CREATE INDEX ON :LoginCode(code)")
                     neo4j_query("CREATE INDEX ON :NextcloudLoginCode(code)")
                     neo4j_query("CREATE INDEX ON :LessonInfo(offset)")
@@ -272,6 +328,20 @@ class SetupDatabase
                     neo4j_query(<<~END_OF_QUERY, :email => "kurs.tablet@#{SCHUL_MAIL_DOMAIN}")
                         MERGE (u:User {email: {email}})
                     END_OF_QUERY
+                end
+                transaction do
+                    present_users = neo4j_query(<<~END_OF_QUERY).map { |x| x['u.email'] }
+                        MATCH (u:User)
+                        RETURN u.email;
+                    END_OF_QUERY
+                    wanted_users = Set.new(main.class_variable_get(:@@user_info).keys)
+                    wanted_users << "lehrer.tablet@#{SCHUL_MAIL_DOMAIN}"
+                    wanted_users << "kurs.tablet@#{SCHUL_MAIL_DOMAIN}"
+                    users_to_be_deleted = Set.new(present_users) - wanted_users
+                    unless users_to_be_deleted.empty?
+                        STDERR.puts "Deleting users (not really):"
+                        STDERR.puts users_to_be_deleted.to_a.sort.to_yaml
+                    end
                 end
                 transaction do
                     main.class_variable_get(:@@predefined_external_users)[:recipients].each_pair do |k, v|

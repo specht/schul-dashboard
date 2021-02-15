@@ -41,7 +41,7 @@ class LoadDump
                             exit(1)
                         end
                         STDERR.print "\rLoaded #{n_count} nodes, #{r_count} relationships..."
-                        break if Time.now - t > 3
+                        break if Time.now - t > 1
                     end
                 end
                 break if f.eof?

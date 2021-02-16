@@ -2,8 +2,9 @@ class Main < Sinatra::Base
     post '/api/save_lesson_data' do
         require_teacher!
         data = parse_request_data(:required_keys => [:lesson_key, :lesson_offsets, :data],
+                                  :optional_keys => [:breakout_rooms],
                                   :max_body_length => 65536,
-                                  :types => {:lesson_offsets => Array, :data => Hash})
+                                  :types => {:lesson_offsets => Array, :data => Hash, :breakout_rooms => Hash})
         transaction do 
             timestamp = Time.now.to_i
             data[:lesson_offsets].each do |lesson_offset|
@@ -13,6 +14,24 @@ class Main < Sinatra::Base
                     SET i += {data}
                     SET i.updated = {timestamp};
                 END_OF_QUERY
+                if data.include?(:breakout_rooms)
+                    if data[:breakout_rooms].empty?
+                        results = neo4j_query(<<~END_OF_QUERY, :key => data[:lesson_key], :offset => lesson_offset)
+                            MATCH (i:LessonInfo {offset: {offset}})-[:BELONGS_TO]->(l:Lesson {key: {key}})
+                            REMOVE i.breakout_rooms
+                            REMOVE i.breakout_room_participants;
+                        END_OF_QUERY
+                    else
+                        participants = @@schueler_for_lesson[data[:lesson_key]].map do |email|
+                            data[:breakout_rooms]['participants'][email] || 0
+                        end
+                        results = neo4j_query(<<~END_OF_QUERY, :key => data[:lesson_key], :offset => lesson_offset, :breakout_rooms => data[:breakout_rooms]['rooms'] || [], :breakout_room_participants => participants)
+                            MATCH (i:LessonInfo {offset: {offset}})-[:BELONGS_TO]->(l:Lesson {key: {key}})
+                            SET i.breakout_rooms = {breakout_rooms}
+                            SET i.breakout_room_participants = {breakout_room_participants}
+                        END_OF_QUERY
+                    end
+                end
             end
         end
         trigger_update(data[:lesson_key])
@@ -127,7 +146,6 @@ class Main < Sinatra::Base
                 io.string
             end
             results[offset][:feedback][:summary] = feedback_str
-
         end
 
         results

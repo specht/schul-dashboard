@@ -235,6 +235,7 @@ def deliver_mail(&block)
     end
     if DEVELOPMENT
         STDERR.puts "Not sending mail to because we're in development: #{mail.to.join(' / ')}"
+        STDERR.puts mail.to_s
     else
         mail.deliver!
     end

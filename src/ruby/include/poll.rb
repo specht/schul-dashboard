@@ -5,16 +5,20 @@ class Main < Sinatra::Base
             rows = neo4j_query(<<~END_OF_QUERY, :prid => prid)
                 MATCH (u)-[rt:IS_PARTICIPANT]->(pr:PollRun {id: {prid}})-[:RUNS]->(p:Poll)-[:ORGANIZED_BY]->(au:User)
                 WHERE (u:ExternalUser OR u:PredefinedExternalUser) AND COALESCE(p.deleted, false) = false AND COALESCE(pr.deleted, false) = false AND COALESCE(rt.deleted, false) = false
+                RETURN u.email, pr.id, ID(u) AS unid, ID(pr) AS prnid;
+            END_OF_QUERY
+            invitation = rows.select do |row|
+                row_code = Digest::SHA2.hexdigest(EXTERNAL_USER_EVENT_SCRAMBLER + row['pr.id'] + row['u.email']).to_i(16).to_s(36)[0, 8]
+                external_code == row_code
+            end.first
+            assert(!(invitation.nil?))
+            result = neo4j_query_expect_one(<<~END_OF_QUERY, :prid => prid, :email => invitation['u.email'], :unid => invitation['unid'], :prnid => invitation['prnid'])
+                MATCH (u)-[rt:IS_PARTICIPANT]->(pr:PollRun {id: {prid}})-[:RUNS]->(p:Poll)-[:ORGANIZED_BY]->(au:User)
+                WHERE ID(u) = {unid} AND ID(pr) = {prnid}
                 MATCH (ou)-[rt2:IS_PARTICIPANT]->(pr2:PollRun {id: {prid}})-[:RUNS]->(p2:Poll)-[:ORGANIZED_BY]->(au2:User)
                 WHERE COALESCE(rt2.deleted, false) = false
                 RETURN u, pr, p, au.email, COUNT(ou) AS total_participants;
             END_OF_QUERY
-            invitation = rows.select do |row|
-                row_code = Digest::SHA2.hexdigest(EXTERNAL_USER_EVENT_SCRAMBLER + row['pr'].props[:id] + row['u'].props[:email]).to_i(16).to_s(36)[0, 8]
-                external_code == row_code
-            end.first
-            assert(!(invitation.nil?))
-            result = invitation
         else
             require_user!
             result = neo4j_query_expect_one(<<~END_OF_QUERY, {:prid => prid, :email => @session_user[:email]})

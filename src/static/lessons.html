@@ -9,7 +9,8 @@ body {
 var lesson_key = '#{show_lesson_key}';
 var lesson_key_id = '#{lesson_key_id}';
 var lesson_data = #{lesson_data.to_json};
-var schueler_for_lesson = #{(@@schueler_for_lesson[show_lesson_key] || []).map { |email| i = {}; [:email, :first_name, :display_name, :nc_login].each { |k| i[k] = @@user_info[email][k]}; i; }.to_json};
+var schueler_for_lesson = #{(@@schueler_for_lesson[show_lesson_key] || []).map { |email| i = {}; [:email, :first_name, :last_name, :display_name, :nc_login].each { |k| i[k] = @@user_info[email][k]}; i; }.to_json};
+var schueler_info_for_email = {};
 var max_recording_time = 5;
 var mediaRecorder = null;
 var chunks = [];
@@ -21,6 +22,9 @@ var playing = false;
 var rec_start_time = null;
 var rec_duration = 0;
 var update_rec_time_label_timeout = null;
+var breakout_room_config = null;
+var breakout_room_widgets = {};
+var stored_breakout_room_config_json = null;
 </script>
 
 <div class="modal" id="breakoutRoomsModal" tabindex="-1" role="dialog" aria-hidden="true">
@@ -62,9 +66,9 @@ var update_rec_time_label_timeout = null;
                                 </button>
                                 <div class="dropdown-menu">
                                     <a class='dropdown-item bu-breakout-room-arrange-random btn btn-primary'><i class='fa fa-random'></i>&nbsp;&nbsp;&nbsp;&nbsp;zufällig mischen</a>
-                                    <a class='dropdown-item bu-breakout-room-arrange-random btn btn-primary'><i class='fa fa-sort-alpha-asc'></i>&nbsp;&nbsp;&nbsp;&nbsp;nach Vornamen sortieren</a>
-                                    <a class='dropdown-item bu-breakout-room-arrange-random btn btn-primary'><i class='fa fa-sort-alpha-asc'></i>&nbsp;&nbsp;&nbsp;&nbsp;nach Nachnamen sortieren</a>
-                                    <a class='dropdown-item bu-breakout-room-arrange-random btn btn-primary'><i class='fa fa-history'></i>&nbsp;&nbsp;&nbsp;&nbsp;Einteilung vom letzten mal übernehmen</a>
+                                    <a class='dropdown-item bu-breakout-room-arrange-sort-first-name btn btn-primary'><i class='fa fa-sort-alpha-asc'></i>&nbsp;&nbsp;&nbsp;&nbsp;nach Vornamen sortieren</a>
+                                    <a class='dropdown-item bu-breakout-room-arrange-sort-last-name btn btn-primary'><i class='fa fa-sort-alpha-asc'></i>&nbsp;&nbsp;&nbsp;&nbsp;nach Nachnamen sortieren</a>
+<!--                                     <a class='dropdown-item bu-breakout-room-arrange-reuse-last btn btn-primary'><i class='fa fa-history'></i>&nbsp;&nbsp;&nbsp;&nbsp;Einteilung vom letzten mal übernehmen</a> -->
                                 </div>
                             </div>
                         </div>
@@ -77,33 +81,9 @@ var update_rec_time_label_timeout = null;
                     </div>
                 </div>
                 <div class='row breakout-rooms-container'>
-                    <div class='breakout-col col-md-3'>
-                        <input type='text' class='form-control' placeholder='Gruppenname' value='Gruppe 1'/>
-                        <div class='breakout-group'>
-                        </div>
-                    </div>
-                    <div class='breakout-col col-md-3'>
-                        <input type='text' class='form-control' placeholder='Gruppenname' value='Gruppe 2'/>
-                        <div class='breakout-group'>
-                        </div>
-                    </div>
-                    <div class='breakout-col col-md-3'>
-                        <input type='text' class='form-control' placeholder='Gruppenname' value='Gruppe 3'/>
-                        <div class='breakout-group'>
-                        </div>
-                    </div>
-                    <div class='breakout-col col-md-3'>
-                        <input type='text' class='form-control' placeholder='Gruppenname' value='Gruppe 4'/>
-                        <div class='breakout-group'>
-                        </div>
-                    </div>
                 </div>
             </div>
             <div class="modal-footer">
-                <div id='save_breakout_rooms_btn_container' style='display: inline-block;'>
-                    <button id='bu_discard_breakout_room' type="button" class="btn btn-outline-secondary" disabled><i class='fa fa-trash'></i>&nbsp;&nbsp;Änderungen verwerfen</button>
-                    <button id='bu_submit_breakout_room' type="button" class="btn btn-outline-success" disabled><i class='fa fa-check'></i>&nbsp;&nbsp;Speichern</button>
-                </div>
                 <button id='bu_close_breakout_room' type="button" class="btn btn-secondary" data-dismiss="modal">Schließen</button>
             </div>
         </div>
@@ -364,8 +344,140 @@ var row_for_lesson_offset = {};
 var cursor = null;
 var pending_changes = false;
 var data_keys = ['thema', 'notizen', 'hausaufgaben_text', 'stundenthema_text', 'homework_est_time'];
-var data_keys_bools = ['lesson_jitsi', 'ti_lesson_jitsi_breakout_rooms', 'lesson_nc', 'lesson_lr', 'homework_nc', 'homework_lr'];
+var data_keys_bools = ['lesson_jitsi', 'lesson_nc', 'lesson_lr', 'homework_nc', 'homework_lr'];
 var can_select = false;
+
+function update_breakout_room_widgets() {
+    let button = $('#ti_lesson_jitsi_breakout_rooms_popup');
+    if (breakout_room_config === null) {
+        button.data('state', 'no');
+        $('#ti_breakout_room_count').prop('disabled', true);
+        $('.bu-fewer-breakout-rooms').prop('disabled', true);
+        $('.bu-more-breakout-rooms').prop('disabled', true);
+        $('.bu-breakout-room-arrange-dropdown').prop('disabled', true);
+        
+        $('#ti_event_jitsi_breakout_rooms').removeClass('btn-info').addClass('btn-outline-secondary');
+        $('#ti_event_jitsi_breakout_rooms').find('.fa').removeClass('fa-check').removeClass('fa-question-circle').addClass('fa-times');
+        $('#ti_event_jitsi_breakout_rooms').data('state', 'no');
+    } else {
+        button.data('state', 'yes');
+        $('#ti_breakout_room_count').prop('disabled', false);
+        $('.bu-fewer-breakout-rooms').prop('disabled', breakout_room_config.rooms.length <= 1);
+        $('.bu-more-breakout-rooms').prop('disabled', breakout_room_config.rooms.length >= schueler_for_lesson.length);
+        $('.bu-breakout-room-arrange-dropdown').prop('disabled', false);
+    }
+    
+    button.removeClass('half');
+    if (button.data('state') === 'no') {
+        button.removeClass('btn-info').addClass('btn-outline-secondary');
+        button.find('.fa').removeClass('fa-check').removeClass('fa-question-circle').addClass('fa-times');
+    }
+    else {
+        button.removeClass('btn-outline-secondary').addClass('btn-info');
+        button.find('.fa').removeClass('fa-times').removeClass('fa-question-circle').addClass('fa-check');
+        if ($('#ti_lesson_jitsi').data('state') !== 'yes')
+            $('#ti_lesson_jitsi').click();
+    }
+    
+    $('.breakout-rooms-container').empty();
+    if (breakout_room_config !== null) {
+        breakout_room_config.breakout_group_widgets = [];
+        let count = breakout_room_config.rooms.length;
+        breakout_room_widgets.breakout_groups = [];
+        for (let i = 0; i < count; i++) {
+            let div = $('<div>').addClass('col-md-2');
+            let ti_group_name = $('<input>').addClass('form-control').attr('placeholder', 'Gruppenname').val(breakout_room_config.rooms[i]);
+            ti_group_name.data('room_index', i);
+            div.append(ti_group_name);
+            ti_group_name.change(function(e) {
+                let room_index = $(e.target).data('room_index');
+                breakout_room_config.rooms[room_index] = $(e.target).val().trim();
+                update_breakout_room_widgets();
+            });
+            $('.breakout-rooms-container').append(div);
+            div = $('<div>').addClass('breakout-col').addClass('col-md-10');
+            let breakout_group = $('<div>').addClass('breakout-group');
+            breakout_group.data('room_index', i);
+            div.append(breakout_group);
+            breakout_room_widgets.breakout_groups.push(breakout_group);
+            $('.breakout-rooms-container').append(div);
+            if (i < count - 1) {
+                $('.breakout-rooms-container').append($('<div>').addClass('col-md-12').append($('<hr />')));
+            }
+            breakout_group.droppable({
+                accept: '.user-widget',
+                drop: function(event, ui) {
+                    let element = $(ui.draggable[0]);
+                    let email = element.data('email');
+                    let room_index = $(this).data('room_index');
+                    breakout_room_config.participants[email] = room_index;
+                    element.removeClass('dragging');
+                    element.css('left', '0');
+                    element.css('top', '0');
+                    $(this).append(element);
+                    $('.breakout-group').removeClass('accepting').removeClass('dragging');
+                },
+                over: function(event, ui) {
+                    $('.breakout-group').removeClass('accepting');
+                    $(this).addClass('accepting').scrollLeft(0);
+                    let element = $(ui.draggable[0]);
+                    element.data('has_drop_target', true);
+                },
+                out: function(event, ui) {
+                    $('.breakout-group').removeClass('accepting');
+                    let element = $(ui.draggable[0]);
+                    element.data('has_drop_target', false);
+                    $(this).scrollLeft(0);
+                }
+            });
+        }
+        for (let user of schueler_for_lesson) {
+            let user_widget = $('<div>').addClass('user-widget');
+            user_widget.html(user.display_name);
+            let icon = $('<div>').addClass('icon');
+            icon.append('<div>').addClass('avatar-md').css('background-image', `url(#{NEXTCLOUD_URL}/index.php/avatar/${user.nc_login}/128), url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mO88h8AAq0B1REmZuEAAAAASUVORK5CYII=)`);
+            breakout_room_widgets.breakout_groups[breakout_room_config.participants[user.email]].append(user_widget);
+            user_widget.append(icon);
+            user_widget.data('email', user.email);
+            user_widget.draggable({
+                start: function(event, ui) {
+                    let widget = $(ui.helper[0]);
+                    drop_source = widget.closest('.breakout-group');
+                    let clone = widget.clone().insertAfter(widget).css('opacity', 0.5);
+                    let launchpad = $('<div>').addClass('phantom-launch-pad');
+                    widget.closest('.breakout-rooms-container').append(launchpad);
+                    x = widget.position().left;
+                    y = widget.position().top;
+                    x += widget.closest('.breakout-col').position().left + widget.closest('.breakout-group').position().left;
+                    y += widget.closest('.breakout-col').position().top + widget.closest('.breakout-group').position().top;
+                    y += 4;
+                    launchpad.css('left', x);
+                    launchpad.css('top', y);
+//                     launchpad.css('left', 0).css('top', 0);
+                    widget.data('clone', clone);
+                    widget.data('launchpad', launchpad);
+                    widget.data('drop_source', drop_source);
+                    widget.detach().appendTo(launchpad);
+                    widget.addClass('dragging');
+                    widget.data('has_drop_target', false);
+                },
+                stop: function(event, ui) {
+                    let widget = $(ui.helper[0]);
+                    widget.data('drop_source').scrollLeft(0);
+                    if (!widget.data('has_drop_target')) {
+                        widget.data('drop_source').append(widget);
+                        widget.removeClass('dragging');
+                        widget.css('left', '0');
+                        widget.css('top', '0');
+                        $('.breakout-group').removeClass('accepting').removeClass('dragging');
+                    }
+                    widget.data('clone').remove();
+                    widget.data('launchpad').remove();
+                }
+            });
+        }
+    }
+}
 
 function update_changes() {
     pending_changes = false;
@@ -389,6 +501,10 @@ function update_changes() {
         // early exit B-)
         if (pending_changes)
             break;
+    }
+    if (!pending_changes) {
+        if (JSON.stringify(breakout_room_config) !== stored_breakout_room_config_json) 
+            pending_changes = true;
     }
     $('.bu-discard-changes').removeClass(pending_changes ? 'btn-outline-secondary' : 'btn-secondary').addClass(pending_changes ? 'btn-secondary' : 'btn-outline-secondary').prop('disabled', !pending_changes);
     $('.bu-save-changes').removeClass(pending_changes ? 'btn-outline-secondary' : 'btn-success').addClass(pending_changes ? 'btn-success' : 'btn-outline-secondary').prop('disabled', !pending_changes);
@@ -515,6 +631,11 @@ function selection_updated() {
                 button.data('state', 'mixed');
                 button.data('original_state', 'mixed');
             }
+        }
+        if (entries.length === 1) {
+            $('#ti_lesson_jitsi_breakout_rooms_popup').prop('disabled', false);
+        } else {
+            $('#ti_lesson_jitsi_breakout_rooms_popup').prop('disabled', true);
         }
     } 
     if ((#{@@lessons[:lesson_keys][show_lesson_key][:lehrer]}.indexOf('#{@session_user[:shorthand]}') < 0)) {
@@ -648,6 +769,16 @@ function save_changes() {
         if (record_this_key)
             data.data[key] = value;
     }
+    if (data.lesson_offsets.length === 1) {
+        // if we have one lesson selected, store breakout room config
+        data.breakout_rooms = {};
+        if (breakout_room_config !== null) {
+            data.breakout_rooms = {
+                rooms: breakout_room_config.rooms,
+                participants: breakout_room_config.participants
+            };
+        };
+    }
     (function(data) {
         api_call('/api/save_lesson_data', data, function(result) {
             if (result.success) {
@@ -667,6 +798,7 @@ function save_changes() {
                         }
                     }
                 }
+                stored_breakout_room_config_json = JSON.stringify(breakout_room_config);
                 update_table();
                 selection_updated();
                 update_changes();
@@ -873,6 +1005,10 @@ document.addEventListener('DOMContentLoaded', function() {
                 button.removeClass('btn-outline-secondary').addClass('btn-info');
                 button.find('.fa').removeClass('fa-times').removeClass('fa-question-circle').addClass('fa-check');
                 button.data('state', 'yes');
+            }
+            if (button.attr('id') === 'ti_lesson_jitsi' && button.data('state') !== 'yes') {
+                breakout_room_config = null;
+                update_breakout_room_widgets();
             }
             update_changes();
         }
@@ -1279,7 +1415,6 @@ document.addEventListener('DOMContentLoaded', function() {
                     let max = Math.max(...offsets);
                     let cumulative_shift = 0;
                     for (let offset = 0; offset <= max; offset++) {
-                        console.log(offset);
                         if (lesson_offsets.length > 0 && lesson_offsets[0] === offset) {
                             cumulative_shift += 1;
                             lesson_offsets.shift();
@@ -1467,79 +1602,31 @@ document.addEventListener('DOMContentLoaded', function() {
         f.readAsText(bb);
     };
     oReq.send();
+    for (let user of schueler_for_lesson)
+        schueler_info_for_email[user.email] = user;
     $('#ti_lesson_jitsi_breakout_rooms_popup').click(function(e) {
-        $('.breakout-group').empty();
-        for (let user of schueler_for_lesson) {
-            let user_widget = $('<div>').addClass('user-widget');
-            user_widget.html(user.display_name);
-            let icon = $('<div>').addClass('icon');
-            icon.append('<div>').addClass('avatar-md').css('background-image', `url(#{NEXTCLOUD_URL}/index.php/avatar/${user.nc_login}/128), url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mO88h8AAq0B1REmZuEAAAAASUVORK5CYII=)`);
-            $($('.breakout-group')[0]).append(user_widget);
-            user_widget.append(icon);
-            user_widget.draggable({
-                start: function(event, ui) {
-                    console.log('start', event, ui);
-                    let widget = $(ui.helper[0]);
-                    drop_source = widget.closest('.breakout-group');
-                    console.log(widget.position().left, widget.position().top);
-                    let clone = widget.clone().insertAfter(widget).css('opacity', 0.5);
-                    let launchpad = $('<div>').addClass('phantom-launch-pad');
-                    widget.closest('.breakout-rooms-container').append(launchpad);
-                    x = widget.position().left;
-                    y = widget.position().top;
-                    x += widget.closest('.breakout-col').position().left + widget.closest('.breakout-group').position().left;
-                    y += widget.closest('.breakout-col').position().top + widget.closest('.breakout-group').position().top;
-                    y += 4;
-                    launchpad.css('left', x);
-                    launchpad.css('top', y);
-//                     launchpad.css('left', 0).css('top', 0);
-                    widget.data('clone', clone);
-                    widget.data('launchpad', launchpad);
-                    widget.data('drop_source', drop_source);
-                    widget.detach().appendTo(launchpad);
-                    widget.addClass('dragging');
-                    widget.data('has_drop_target', false);
-                },
-                stop: function(event, ui) {
-                    console.log(ui);
-                    let widget = $(ui.helper[0]);
-                    widget.data('drop_source').scrollLeft(0);
-                    if (!widget.data('has_drop_target')) {
-                        widget.data('drop_source').append(widget);
-                        widget.removeClass('dragging');
-                        widget.css('left', '0');
-                        widget.css('top', '0');
-                        $('.breakout-group').removeClass('accepting').removeClass('dragging');
-                    }
-                    widget.data('clone').remove();
-                    widget.data('launchpad').remove();
-                }
-            });
-        }
+        update_breakout_room_widgets();
         $('#breakoutRoomsModal').modal('show');
     });
-    $('.breakout-group').droppable({
-        accept: '.user-widget',
-        drop: function(event, ui) {
-            let element = $(ui.draggable[0]);
-            element.removeClass('dragging');
-            element.css('left', '0');
-            element.css('top', '0');
-            $(this).append(element);
-            $('.breakout-group').removeClass('accepting').removeClass('dragging');
-        },
-        over: function(event, ui) {
-            $('.breakout-group').removeClass('accepting');
-            $(this).addClass('accepting').scrollLeft(0);
-            let element = $(ui.draggable[0]);
-            element.data('has_drop_target', true);
-        },
-        out: function(event, ui) {
-            $('.breakout-group').removeClass('accepting');
-            let element = $(ui.draggable[0]);
-            element.data('has_drop_target', false);
-            $(this).scrollLeft(0);
+    $('#ti_breakout_room_count').attr('max', schueler_for_lesson.length);
+    $('#ti_breakout_room_count').change(function(e) {
+        let count = parseInt($('#ti_breakout_room_count').val());
+        if (count < 1)
+            count = 1;
+        if (count > schueler_for_lesson.length)
+            count = schueler_for_lesson.length;
+        $('#ti_breakout_room_count').val(count);
+        if (count < breakout_room_config.rooms.length) {
+            breakout_room_config.rooms = breakout_room_config.rooms.slice(0, count);
+            for (let user of schueler_for_lesson) {
+                if (breakout_room_config.participants[user.email] >= breakout_room_config.rooms.length)
+                    breakout_room_config.participants[user.email] = breakout_room_config.rooms.length - 1;
+            }
         }
+        while (count > breakout_room_config.rooms.length) {
+            breakout_room_config.rooms.push(`Gruppe ${breakout_room_config.rooms.length + 1}`);
+        }
+        update_breakout_room_widgets();
     });
 //     $('#ti_lesson_jitsi_breakout_rooms').click();
     $('.bu-fewer-breakout-rooms').click(function(e) {
@@ -1547,7 +1634,82 @@ document.addEventListener('DOMContentLoaded', function() {
         if (count > 1) {
             count -= 1;
             $('#ti_breakout_room_count').val(count);
+            breakout_room_config.rooms = breakout_room_config.rooms.slice(0, -1);
+            for (let user of schueler_for_lesson) {
+                if (breakout_room_config.participants[user.email] >= breakout_room_config.rooms.length)
+                    breakout_room_config.participants[user.email] = breakout_room_config.rooms.length - 1;
+            }
+            update_breakout_room_widgets();
         }
     });
+    $('.bu-more-breakout-rooms').click(function(e) {
+        let count = parseInt($('#ti_breakout_room_count').val());
+        if (count < schueler_for_lesson.length) {
+            count += 1;
+            $('#ti_breakout_room_count').val(count);
+            breakout_room_config.rooms.push(`Gruppe ${count}`);
+            update_breakout_room_widgets();
+        }
+    });
+    $('#ti_event_jitsi_breakout_rooms').click(function(e) {
+        let value = $('#ti_event_jitsi_breakout_rooms').data('state');
+        if (value === 'yes') {
+            let count = parseInt($('#ti_breakout_room_count').val());
+            breakout_room_config = {
+                rooms: [],
+                participants: {}
+            };
+            for (let i = 0; i < count; i++)
+                breakout_room_config.rooms.push(`Gruppe ${i + 1}`);
+            let i = 0;
+            for (let user of schueler_for_lesson) {
+                breakout_room_config.participants[user.email] = i;
+                i = (i + 1) % breakout_room_config.rooms.length;
+            }
+            $('.bu-breakout-room-arrange-sort-first-name').click();
+        } else {
+            breakout_room_config = null;
+        }
+        update_breakout_room_widgets();
+    });
+    $('.bu-breakout-room-arrange-random').click(function(e) {
+        let i = 0;
+        for (let user of schueler_for_lesson.sort(() => Math.random() - 0.5)) {
+            breakout_room_config.participants[user.email] = i;
+            i = (i + 1) % breakout_room_config.rooms.length;
+        }
+        update_breakout_room_widgets();
+    });
+    $('.bu-breakout-room-arrange-sort-first-name').click(function(e) {
+        let i = 0;
+        let offsets = [];
+        for (let k = 0; k < schueler_for_lesson.length; k++) {
+            offsets.push(i);
+            i = (i + 1) % breakout_room_config.rooms.length;
+        }
+        offsets = offsets.sort();
+        i = 0;
+        for (let user of schueler_for_lesson.sort((a, b) => a.first_name.localeCompare(b.first_name))) {
+            breakout_room_config.participants[user.email] = offsets[i];
+            i = i + 1;
+        }
+        update_breakout_room_widgets();
+    });
+    $('.bu-breakout-room-arrange-sort-last-name').click(function(e) {
+        let i = 0;
+        let offsets = [];
+        for (let k = 0; k < schueler_for_lesson.length; k++) {
+            offsets.push(i);
+            i = (i + 1) % breakout_room_config.rooms.length;
+        }
+        offsets = offsets.sort();
+        i = 0;
+        for (let user of schueler_for_lesson.sort((a, b) => a.last_name.localeCompare(b.last_name))) {
+            breakout_room_config.participants[user.email] = offsets[i];
+            i = i + 1;
+        }
+        update_breakout_room_widgets();
+    });
+    
 });
 </script>

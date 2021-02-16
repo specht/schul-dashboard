@@ -22,10 +22,7 @@ class Main < Sinatra::Base
                             REMOVE i.breakout_room_participants;
                         END_OF_QUERY
                     else
-                        participants = @@schueler_for_lesson[data[:lesson_key]].map do |email|
-                            data[:breakout_rooms]['participants'][email] || 0
-                        end
-                        results = neo4j_query(<<~END_OF_QUERY, :key => data[:lesson_key], :offset => lesson_offset, :breakout_rooms => data[:breakout_rooms]['rooms'] || [], :breakout_room_participants => participants)
+                        results = neo4j_query(<<~END_OF_QUERY, :key => data[:lesson_key], :offset => lesson_offset, :breakout_rooms => data[:breakout_rooms]['rooms'] || [], :breakout_room_participants => data[:breakout_rooms]['participants'])
                             MATCH (i:LessonInfo {offset: {offset}})-[:BELONGS_TO]->(l:Lesson {key: {key}})
                             SET i.breakout_rooms = {breakout_rooms}
                             SET i.breakout_room_participants = {breakout_room_participants}

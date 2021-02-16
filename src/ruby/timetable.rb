@@ -431,6 +431,8 @@ class Timetable
         @@faecher = Main.class_variable_get(:@@faecher)
         @@klassen_for_shorthand = Main.class_variable_get(:@@klassen_for_shorthand)
         @@schueler_for_klasse = Main.class_variable_get(:@@schueler_for_klasse)
+        @@schueler_for_lesson = Main.class_variable_get(:@@schueler_for_lesson)
+        @@schueler_offset_in_lesson = Main.class_variable_get(:@@schueler_offset_in_lesson)
         @@pausenaufsichten = Main.class_variable_get(:@@pausenaufsichten)
         
         lesson_offset = {}
@@ -1204,6 +1206,14 @@ class Timetable
                                             data[k] = sum.to_s
                                         end
                                     end
+                                    [:breakout_rooms, :breakout_room_participants].each do |k|
+                                        (0...e[:count]).each do |o|
+                                            v = (((@lesson_info[lesson_key] || {})[e[:lesson_offset] + o] || {})[:data] || {})[k] || []
+                                            if v && (!v.empty?)
+                                                data[k] = v
+                                            end
+                                        end
+                                    end
                                     events_with_data_cache[lesson_key][e[:lesson_offset]] = data
                                 end
                                 events_with_data_per_user_cache[lesson_key] ||= {}
@@ -1249,6 +1259,18 @@ class Timetable
                         end
                         e
                     end
+                    if user[:teacher]
+                        fixed_events.map! do |event|
+                            if event[:lesson_key]
+                                event[:schueler_for_lesson] = @@schueler_for_lesson[event[:lesson_key]].map do |email|
+                                    {:display_name => @@user_info[email][:display_name],
+                                     :nc_login => @@user_info[email][:nc_login]
+                                    }
+                                end
+                            end
+                            event
+                        end
+                    end
                     unless user[:teacher]
                         # if it's a schüler, only add events which have the right klasse
                         # (unless it's a phantom event)
@@ -1279,8 +1301,17 @@ class Timetable
                             end
                             event
                         end
+                        # add schueler_offset_in_lesson for SuS
+                        fixed_events.map! do |event|
+                            if event[:lesson_key]
+                                event[:schueler_offset_in_lesson] = @@schueler_offset_in_lesson[event[:lesson_key]][user[:email]]
+                            end
+                            event
+                        end
                         # add future homework for SuS
                         fixed_events.map! do |_event|
+                            # TODO: this code can't work because we're using symbols from parsed JSON
+                            # but it's kind of okay because we don't need homework in the lesson modal
                             event = JSON.parse(_event.to_json)
                             if (all_homework[event[:lesson_key]] || {})[event[:datum]]
                                 all_homework[event[:lesson_key]][event[:datum]].each_pair do |k, v|

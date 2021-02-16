@@ -172,7 +172,9 @@ class Main < Sinatra::Base
                         path = path.split('@')[0]
                     end
                     result[:html] = ''
-                    lesson_key = path.sub('lesson/', '')
+                    lesson_key = path.split('/')[1]
+                    breakout_room_name = path.split('/')[2]
+                    # TODO: use code from get_jitsi_room_name_for_lesson_key
                     p_ymd = Date.today.strftime('%Y-%m-%d')
                     p_yw = Date.today.strftime('%Y-%V')
                     assert(user_logged_in?)
@@ -201,6 +203,9 @@ class Main < Sinatra::Base
                     else
                         t = Time.parse("#{timetable.first['start']}:00") - JITSI_LESSON_PRE_ENTRY_TOLERANCE * 60
                         room_name = timetable.first['label_lehrer_lang'].gsub(/<[^>]+>/, '') + ' ' + timetable.first['klassen'].first.map { |x| tr_klasse(x) }.join(', ')
+                        if breakout_room_name
+                            room_name += " #{breakout_room_name}"
+                        end
                         if now_time >= t
                             can_enter_room = true
                         else
@@ -266,5 +271,82 @@ class Main < Sinatra::Base
             result = {:html => "<p class='alert alert-danger'>Der Videochat konnte nicht gefunden werden.</p>"}
         end
         result
+    end
+    
+    def current_jitsi_rooms()
+        @@current_jitsi_rooms ||= nil
+        @@current_jitsi_rooms_timestamp ||= Time.now
+        if @@current_jitsi_rooms.nil? || Time.now > @@current_jitsi_rooms_timestamp + 10
+            begin
+                @@current_jitsi_rooms = JSON.parse(File.read("/internal/jitsi/room.json"))
+                @@current_jitsi_rooms_timestamp = Time.now
+            rescue
+                @@current_jitsi_rooms = nil
+            end
+        end
+        return @@current_jitsi_rooms
+    end
+    
+    def get_jitsi_room_name_for_lesson_key(lesson_key)
+        p_ymd = Date.today.strftime('%Y-%m-%d')
+        p_yw = Date.today.strftime('%Y-%V')
+        timetable_path = "/gen/w/#{@session_user[:id]}/#{p_yw}.json.gz"
+        timetable = nil
+        Zlib::GzipReader.open(timetable_path) do |f|
+            timetable = JSON.parse(f.read)
+        end
+        assert(!(timetable.nil?))
+        timetable = timetable['events'].select do |entry|
+            entry['lesson'] && entry['lesson_key'] == lesson_key && entry['datum'] == p_ymd && (entry['data'] || {})['lesson_jitsi']
+        end.sort { |a, b| a['start'] <=> b['start'] }
+        now_time = Time.now
+        old_timetable_size = timetable.size
+        timetable = timetable.reject do |entry|
+            t = Time.parse("#{entry['end']}:00") + JITSI_LESSON_POST_ENTRY_TOLERANCE * 60
+            now_time > t
+        end
+        if timetable.empty?
+            return nil
+        else
+            room_name = timetable.first['label_lehrer_lang'].gsub(/<[^>]+>/, '') + ' ' + timetable.first['klassen'].first.map { |x| tr_klasse(x) }.join(', ')
+            return room_name
+        end
+    end
+    
+    post '/api/get_current_jitsi_users_for_lesson' do
+        require_teacher!
+        data = parse_request_data(:required_keys => [:lesson_key, :offset],
+                                  :types => {:offset => Integer})
+        assert(@@lessons_for_shorthand[@session_user[:shorthand]].include?(data[:lesson_key]))
+        lesson_info = neo4j_query_expect_one(<<~END_OF_QUERY, {:lesson_key => data[:lesson_key], :offset => data[:offset]})['i'].props
+            MATCH (i:LessonInfo {offset: {offset}})-[:BELONGS_TO]->(l:Lesson {key: {lesson_key}})
+            RETURN i;
+        END_OF_QUERY
+        lesson_room_name = get_jitsi_room_name_for_lesson_key(data[:lesson_key])
+        jitsi_rooms = current_jitsi_rooms()
+        room_participants = []
+        breakout_room_index = {}
+        (lesson_info[:breakout_rooms] || []).each.with_index do |room_name, i|
+            room_participants << []
+            breakout_room_name = "#{lesson_room_name} #{room_name}"
+            escaped_room_name = CGI.escape(breakout_room_name.gsub(/[\:\?#\[\]@!$&\\'()*+,;=><\/"]/, '')).gsub('+', '%20').downcase
+            breakout_room_index[escaped_room_name] = {
+                :room_name => room_name,
+                :index => i
+            }
+        end
+        if jitsi_rooms
+            jitsi_rooms.each do |room|
+                entry = breakout_room_index[room['roomName'].downcase]
+                if entry
+                    room_participants[entry[:index]] = room['participants'].map do |x|
+                        x['jwtName']
+                    end.sort do |a, b|
+                        a <=> b
+                    end
+                end
+            end
+        end
+        respond(:breakout_rooms => room_participants)
     end
 end

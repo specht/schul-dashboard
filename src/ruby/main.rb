@@ -724,6 +724,7 @@ class Main < Sinatra::Base
         
         @@lessons_for_user = {}
         @@schueler_for_lesson = {}
+        @@schueler_offset_in_lesson = {}
         @@user_info.each_pair do |email, user|
             lessons = (user[:teacher] ? @@lessons_for_shorthand[user[:shorthand]] : @@lessons_for_klasse[user[:klasse]]).dup
             if kurse_for_schueler.include?(email)
@@ -746,8 +747,12 @@ class Main < Sinatra::Base
             end
         end
         @@schueler_for_lesson.each_pair do |lesson_key, emails|
+            @@schueler_offset_in_lesson[lesson_key] ||= {}
             emails.sort! do |a, b|
                 @@user_info[a][:display_name] <=> @@user_info[b][:display_name]
+            end
+            emails.each.with_index do |email, i|
+                @@schueler_offset_in_lesson[lesson_key][email] = i
             end
         end
         @@pausenaufsichten = parser.parse_pausenaufsichten()
@@ -1245,20 +1250,6 @@ class Main < Sinatra::Base
         io.puts "<div class='input-group'><input type='text' class='form-control' readonly value='#{email}' /><div class='input-group-append'><button class='btn btn-secondary btn-clipboard' data-clipboard-action='copy' data-clipboard-text='#{email}'><i class='fa fa-clipboard'></i></button><a href='mailto:#{email}' class='btn btn-primary' /><i class='fa fa-envelope'></i></a></div></div>"
     end
     
-    def current_jitsi_rooms()
-        @@current_jitsi_rooms ||= nil
-        @@current_jitsi_rooms_timestamp ||= Time.now
-        if @@current_jitsi_rooms.nil? || Time.now > @@current_jitsi_rooms_timestamp + 10
-            begin
-                @@current_jitsi_rooms = JSON.parse(File.read("/internal/jitsi/room.json"))
-                @@current_jitsi_rooms_timestamp = Time.now
-            rescue
-                @@current_jitsi_rooms = nil
-            end
-        end
-        return @@current_jitsi_rooms
-    end
-    
     def print_lehrerzimmer_panel()
         require_user!
         return '' unless teacher_logged_in?
@@ -1266,7 +1257,6 @@ class Main < Sinatra::Base
         StringIO.open do |io|
             io.puts "<div class='hint lehrerzimmer-panel'>"
             io.puts "<div style='padding-top: 7px;'>Momentan im Jitsi-Lehrerzimmer:&nbsp;"
-#             <span class='btn btn-xs ttc'>Sp</span>
             rooms = current_jitsi_rooms()
             nobody_here = true
             if rooms

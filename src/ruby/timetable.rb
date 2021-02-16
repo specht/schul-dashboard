@@ -1304,7 +1304,7 @@ class Timetable
                         # add schueler_offset_in_lesson for SuS
                         fixed_events.map! do |event|
                             if event[:lesson_key]
-                                event[:schueler_offset_in_lesson] = @@schueler_offset_in_lesson[event[:lesson_key]][user[:email]]
+                                event[:schueler_offset_in_lesson] = (@@schueler_offset_in_lesson[event[:lesson_key]] || {})[user[:email]] || 0
                             end
                             event
                         end

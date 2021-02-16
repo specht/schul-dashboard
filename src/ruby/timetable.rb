@@ -1262,7 +1262,7 @@ class Timetable
                     if user[:teacher]
                         fixed_events.map! do |event|
                             if event[:lesson] && event[:lesson_key]
-                                event[:schueler_for_lesson] = @@schueler_for_lesson[event[:lesson_key]].map do |email|
+                                event[:schueler_for_lesson] = (@@schueler_for_lesson[event[:lesson_key]] || []).map do |email|
                                     {:display_name => @@user_info[email][:display_name],
                                      :nc_login => @@user_info[email][:nc_login]
                                     }

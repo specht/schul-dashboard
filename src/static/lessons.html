@@ -578,8 +578,8 @@ function selection_updated() {
             $('#bu_sus_feedback').removeClass('btn-outline-secondary').addClass('btn-warning').prop('disabled', true);
             $('.sus_feedback_label').html(((lesson_data[entries[0]] || {}).feedback || {}).summary || 'Zu dieser Stunde liegt kein Feedback vor.').show();
             breakout_room_config = {
-                rooms: JSON.parse(JSON.stringify(lesson_data[entries[0]].info.breakout_rooms || null)),
-                participants: JSON.parse(JSON.stringify(lesson_data[entries[0]].info.breakout_room_participants || null))
+                rooms: JSON.parse(JSON.stringify((lesson_data[entries[0]].info || {}).breakout_rooms || null)),
+                participants: JSON.parse(JSON.stringify((lesson_data[entries[0]].info || {}).breakout_room_participants || null))
             }
             if (breakout_room_config.rooms === null || breakout_room_config.participants === null)
                 breakout_room_config = null;

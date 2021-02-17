@@ -102,7 +102,7 @@
             <div class="input-group">
                 <input type="text" id='ti_ical_link' class="form-control" placeholder='(kein iCal-Link vorhanden)' readonly />
                 <div class="input-group-append">
-                    <button class='btn bu-clipboard-ical btn-secondary' data-clipboard-action='copy' data-clipboard-target="#ti_ical_link"><i class='fa fa-clipboard'></i>&nbsp;&nbsp;Kopieren</button>
+                    <button class='btn bu-clipboard-ical btn-secondary btn-clipboard' data-clipboard-action='copy' data-clipboard-target="#ti_ical_link"><i class='fa fa-clipboard'></i>&nbsp;&nbsp;Kopieren</button>
                 </div>
             </div>
             <div class='float-right' style='margin-top: 5px;'>
@@ -201,7 +201,7 @@ function changeThemeColor(color) {
 }
 
 window.addEventListener('load', function () {
-    new ClipboardJS('.btn');
+    install_clipboard_handler('.btn-clipboard');
     $('.bu_set_font').click(function(e) {
         $('.bu_set_font').removeClass('btn-success').addClass('btn-secondary');
         $(e.target).removeClass('btn-secondary').addClass('btn-success');

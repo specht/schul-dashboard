@@ -334,9 +334,11 @@ class Main < Sinatra::Base
                 :room_name => room_name,
                 :index => i
             }
+#             STDERR.puts escaped_room_name
         end
         if jitsi_rooms
             jitsi_rooms.each do |room|
+#                 STDERR.puts ">>> #{room['roomName'].downcase}"
                 entry = breakout_room_index[room['roomName'].downcase]
                 if entry
                     room_participants[entry[:index]] = room['participants'].map do |x|

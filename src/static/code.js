@@ -503,3 +503,12 @@ function fix_bad_html(e) {
     });
     return e;
 }
+
+function render_katex(e) {
+    renderMathInElement(e, {delimiters: [
+        {left: "$$", right: "$$", display: true},
+        {left: "\\[", right: "\\]", display: true},
+        {left: "$", right: "$", display: false},
+        {left: "\\(", right: "\\)", display: false}
+    ]});
+}

@@ -425,6 +425,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     if (arg.event.extendedProps.count > 1)
                     {
                         let description = $('<div>').html((arg.event.extendedProps.data || {}).stundenthema_text || '');
+                        render_katex(description[0]);
                         description.css('opacity', 0.7);
                         description.css('white-space', 'normal');
 //                         description.css('border-top', '1px solid rgba(255, 255, 255, 0.5)');
@@ -608,8 +609,10 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (wrote_something)
                     body.append('<hr>');
                 body.append('<p><b>Stundenthema</b></p>');
-                if (event_data.stundenthema_text)
+                if (event_data.stundenthema_text) {
                     body.append('<p>' + event_data.stundenthema_text+ '</p>');
+                    render_katex(body[0]);
+                }
                 wrote_something = true;
             }
             let nc_ausgabe_link = '#';

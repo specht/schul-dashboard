@@ -285,6 +285,7 @@ function launch_poll(prid, external_code) {
                     }
                 }
                 collect_poll_run_data();
+                render_katex($('#pollResponseModal')[0]);
                 $('#pollResponseModal').modal('show');
             }
         });
@@ -297,6 +298,7 @@ function show_poll_run_results(prid) {
             $('#bu_poll_run_results_download_pdf').attr('href', `/api/poll_run_results_pdf/${data.prid}`);
             $('#pollRunResultsModal .poll-title').html(data.title);
             $('#pollRunResultsModal .poll-run-results-here').html(data.html);
+            render_katex($('#pollRunResultsModal')[0]);
             $('#pollRunResultsModal').modal('show');
         }
     });

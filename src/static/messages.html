@@ -235,6 +235,12 @@ function observer_callback(entries, observer) {
                                 $(entry_data.msg_div).html($(contents).text());
                             else
                                 $(entry_data.msg_div).html(contents);
+                            renderMathInElement($(entry_data.msg_div)[0], {delimiters: [
+                                {left: "$$", right: "$$", display: true},
+                                {left: "\\[", right: "\\]", display: true},
+                                {left: "$", right: "$", display: false},
+                                {left: "\\(", right: "\\)", display: false}
+                            ]});
                         };
                         f.readAsText(bb);
                     }

@@ -793,6 +793,8 @@ class Main < Sinatra::Base
             '/include/moment/moment-with-locales.min.js',
             '/include/dropzone/dropzone.min.js',
             '/include/chart.js/Chart.min.js',
+            '/include/katex/katex.min.js',
+            '/include/katex/auto-render.min.js',
             '/code.js',
         ]
         
@@ -813,6 +815,7 @@ class Main < Sinatra::Base
             '/include/bootstrap4-toggle/bootstrap4-toggle.min.css',
             '/include/dropzone/dropzone.min.css',
             '/include/chart.js/Chart.min.css',
+            '/include/katex/katex.min.css',
             '/styles.css'
         ]
         

@@ -220,6 +220,7 @@ else
 end
 
 docker_compose[:services][:weasyprint] = {:image => 'lgatica/weasyprint'}
+docker_compose[:services][:ruby][:extra_hosts] = ['host.docker.internal:host-gateway']
 
 docker_compose[:services].each_pair do |k, v|
     v[:networks] = {:main => {:aliases => [k]}}

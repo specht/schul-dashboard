@@ -732,7 +732,7 @@ function update_stored_polls() {
                     bu_container.append(bu_poll_run_show_results);
     //             if (state === 'pending')
                 bu_container.append(bu_poll_run_edit);
-                if (state !== 'complete')
+                if (state !== 'running')
                     bu_container.append(bu_poll_run_delete);
                 run_div.append(bu_container);
                 run_div.append($('<p>').text(`Durchführung mit ${poll_run.recipients.length} Teilnehmern am ${m_start.format('ddd, D.M.Y')}`));

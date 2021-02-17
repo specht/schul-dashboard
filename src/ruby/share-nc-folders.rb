@@ -1,6 +1,7 @@
 #!/usr/bin/env ruby
 require './main.rb'
 require './parser.rb'
+require 'set'
 require 'zlib'
 require 'fileutils'
 require 'nextcloud'
@@ -122,7 +123,14 @@ class Script
         end
 #         STDERR.puts present_shares.to_yaml
 #         exit
+        wanted_nc_ids = nil
+        unless ARGV.empty?
+            wanted_nc_ids = Set.new(ARGV.map { |email| (@@user_info[email] || {})[:nc_login] })
+        end
         wanted_shares.keys.sort.each do |user_id|
+            unless wanted_nc_ids.nil?
+                next unless wanted_nc_ids.include?(user_id)
+            end
             ocs_user = Nextcloud.ocs(url: NEXTCLOUD_URL_FROM_RUBY_CONTAINER, 
                                      username: user_id,
                                      password: NEXTCLOUD_ALL_ACCESS_PASSWORD_BE_CAREFUL)

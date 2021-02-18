@@ -1252,7 +1252,7 @@ class Main < Sinatra::Base
     end
     
     def print_email_field(io, email)
-        io.puts "<div class='input-group'><input type='text' class='form-control' readonly value='#{email}' /><div class='input-group-append'><button class='btn btn-secondary btn-clipboard' data-clipboard-action='copy' data-clipboard-text='#{email}'><i class='fa fa-clipboard'></i></button><a href='mailto:#{email}' class='btn btn-primary' /><i class='fa fa-envelope'></i></a></div></div>"
+        io.puts "<div class='input-group'><input type='text' class='form-control' readonly value='#{email}' /><div class='input-group-append'><button class='btn btn-secondary btn-clipboard' data-clipboard-action='copy' data-clipboard-text='#{email}'><i class='fa fa-clipboard'></i></button></div></div>"
     end
     
     def print_lehrerzimmer_panel()

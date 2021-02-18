@@ -759,6 +759,7 @@ class Parser
             STDERR.puts "Kurswahl: Can't assign these names!"
             STDERR.puts unassigned_names.to_a.sort.to_yaml
         end
+        STDERR.puts "Wahlpflichtkurswahl: got SuS for #{schueler_for_lesson_key.size} lesson keys."
         return schueler_for_lesson_key
     end
 end

@@ -125,7 +125,7 @@ function refresh_files() {
 }
 
 document.addEventListener('DOMContentLoaded', function() {
-    new ClipboardJS('.btn');
+    install_clipboard_handler('.btn-clipboard');
     moment.locale('de');
     Dropzone.autoDiscover = false;
     window.dropzone = new Dropzone('#my-awesome-dropzone', {

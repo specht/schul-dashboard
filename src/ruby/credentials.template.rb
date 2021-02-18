@@ -121,6 +121,7 @@ JWT_APPAUD = 'jitsi'
 JWT_APPISS = 'dashboard'
 JWT_APPKEY = 'ein_langer_langer_richtig_langer_app_key'
 JWT_SUB = 'beispielschule.de'
+JITSI_ALL_ROOMS_URL = 'http://localhost:8040/allRooms?domain=meet.beispielschule.de'
 
 # Es folgen ein paar Salts, die bestimmen, nach welchen Regeln
 # Passwörter und sekundäre IDs generiert werden

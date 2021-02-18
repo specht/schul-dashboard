@@ -7,7 +7,7 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    new ClipboardJS('.btn-clipboard');
+    install_clipboard_handler('.btn-clipboard');
     if ('#{klassenleiter_for_klasse_logged_in?(klasse)}' === 'true') {
         $('.group2-button').click(function(e) {
             let button = $(e.target).closest('.group2-button');

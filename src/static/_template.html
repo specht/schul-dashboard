@@ -520,5 +520,20 @@ window.addEventListener('load', function() {
         launch_poll(prid, external_code);
     });
 });
+
+function install_clipboard_handler(selector) {
+    window.clipboard = new ClipboardJS(selector);
+    window.clipboard.on('success', function(e) {
+        let check = $("<i class='fa fa-check btn-success btn-clipboard-check' />");
+        $(e.trigger).append(check);
+        (function(check) {
+            setTimeout(function() {
+                check.fadeOut(400, function() {
+                    check.remove();
+                });
+            }, 1000);
+        })(check);
+    });
+}
 </script>
 </body></html>

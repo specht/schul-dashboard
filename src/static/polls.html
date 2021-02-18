@@ -642,7 +642,7 @@ function update_stored_polls() {
         let div = $('<div>').addClass('poll-div').data('pid', poll.pid);
         $('.polls-here').append(div);
         let bu_container = $('<div>').addClass('float-right').addClass('button-container');
-        let bu_run_poll = $('<button>').addClass('btn').addClass('btn-sm').addClass('btn-success').html("<i class='fa fa-play'></i>&nbsp;&nbsp;Durchführen");
+        let bu_run_poll = $('<button>').addClass('btn').addClass('btn-sm').addClass('btn-success').html("<i class='fa fa-play'></i>&nbsp;&nbsp;Neue Durchführung");
         let bu_delete_poll = $('<button>').addClass('btn').addClass('btn-sm').addClass('btn-danger').html("<i class='fa fa-trash'></i>&nbsp;&nbsp;Löschen");
         let bu_edit_poll = $('<button>').addClass('btn').addClass('btn-sm').addClass('btn-secondary').html("<i class='fa fa-edit'></i>&nbsp;&nbsp;Bearbeiten");
         div.append(bu_container);
@@ -722,7 +722,7 @@ function update_stored_polls() {
                     percent = 0;
                 let bu_container = $('<div>').addClass('float-right').addClass('button-container-vertical');
                 let bu_poll_run_show_results = $('<button>').css('margin-left', '4px').addClass('btn').addClass('btn-primary').addClass('btn-sm').html(`<i class='fa fa-bar-chart'></i>&nbsp;&nbsp;Ergebnisse (${percent}% beantwortet)`);
-                let bu_poll_run_edit = $('<button>').css('margin-left', '4px').addClass('btn').addClass('btn-secondary').addClass('btn-sm').html("<i class='fa fa-edit'></i>&nbsp;&nbsp;Bearbeiten");
+                let bu_poll_run_edit = $('<button>').css('margin-left', '4px').addClass('btn').addClass('btn-secondary').addClass('btn-sm').html("<i class='fa fa-edit'></i>&nbsp;&nbsp;Durchführung bearbeiten");
                 let bu_poll_run_stop = $('<button>').css('margin-left', '4px').addClass('btn').addClass('btn-danger').addClass('btn-sm').html(`<i class='fa fa-times'></i>&nbsp;&nbsp;Umfrage stoppen`);
                 let bu_poll_run_delete = $('<button>').css('margin-left', '4px').addClass('btn').addClass('btn-danger').addClass('btn-sm').html(`<i class='fa fa-trash'></i>&nbsp;&nbsp;Durchführung löschen`);
                 let cell = $('<td>').css('text-align', 'right').css('overflow', 'visible');
@@ -732,7 +732,7 @@ function update_stored_polls() {
                     bu_container.append(bu_poll_run_show_results);
     //             if (state === 'pending')
                 bu_container.append(bu_poll_run_edit);
-                if (state === 'complete')
+                if (state !== 'running')
                     bu_container.append(bu_poll_run_delete);
                 run_div.append(bu_container);
                 run_div.append($('<p>').text(`Durchführung mit ${poll_run.recipients.length} Teilnehmern am ${m_start.format('ddd, D.M.Y')}`));

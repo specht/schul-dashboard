@@ -721,6 +721,7 @@ class Main < Sinatra::Base
         end
         
         kurse_for_schueler, schueler_for_kurs = parser.parse_kurswahl(@@user_info.reject { |x, y| y[:teacher] }, @@lessons, lesson_key_tr)
+        wahlpflicht_sus_for_lesson_key = parser.parse_wahlpflichtkurswahl(@@user_info.reject { |x, y| y[:teacher] }, @@lessons)
         
         @@lessons_for_user = {}
         @@schueler_for_lesson = {}
@@ -738,11 +739,15 @@ class Main < Sinatra::Base
                     (lesson[:fach] == 'SpoJ' && user[:geschlecht] != 'm')
                 end
             end
-            @@lessons_for_user[email] = Set.new(lessons)
             unless user[:teacher]
                 lessons.each do |lesson_key|
+                    if wahlpflicht_sus_for_lesson_key.include?(lesson_key)
+                        next unless wahlpflicht_sus_for_lesson_key[lesson_key].include?(email)
+                    end
                     @@schueler_for_lesson[lesson_key] ||= []
                     @@schueler_for_lesson[lesson_key] << email
+                    @@lessons_for_user[email] ||= Set.new()
+                    @@lessons_for_user[email] << lesson_key
                 end
             end
         end
@@ -1247,7 +1252,7 @@ class Main < Sinatra::Base
     end
     
     def print_email_field(io, email)
-        io.puts "<div class='input-group'><input type='text' class='form-control' readonly value='#{email}' /><div class='input-group-append'><button class='btn btn-secondary btn-clipboard' data-clipboard-action='copy' data-clipboard-text='#{email}'><i class='fa fa-clipboard'></i></button><a href='mailto:#{email}' class='btn btn-primary' /><i class='fa fa-envelope'></i></a></div></div>"
+        io.puts "<div class='input-group'><input type='text' class='form-control' readonly value='#{email}' /><div class='input-group-append'><button class='btn btn-secondary btn-clipboard' data-clipboard-action='copy' title='E-Mail-Adresse in die Zwischenablage kopieren' data-clipboard-text='#{email}'><i class='fa fa-clipboard'></i></button></div></div>"
     end
     
     def print_lehrerzimmer_panel()

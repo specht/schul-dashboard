@@ -161,6 +161,35 @@
 var my_lessons = #{(@@lessons_for_shorthand[@session_user[:shorthand]] || []).to_json};
 var tablet_logged_in = ('#{tablet_logged_in?}' === 'true');
 var homework_feedback = {};
+var jitsi_refresh_config = {
+    lesson_key: null,
+    lesson_offset: null,
+    jitsi_names_div: null,
+    jitsi_missing_names_div: null,
+    jitsi_breakout_rooms_names_divs: []
+};
+
+function refresh_jitsi_presence() {
+    let in_data = {lesson_key: jitsi_refresh_config.lesson_key, offset: jitsi_refresh_config.lesson_offset};
+    api_call('/api/get_current_jitsi_users_for_lesson', in_data, function(data) {
+        if (data.success) {
+            jitsi_refresh_config.jitsi_names_div.text((data.lesson_room || []).join(', '));
+            if ((data.missing_sus || []).length === 0) {
+                jitsi_refresh_config.jitsi_missing_names_div.hide();
+            } else {
+                jitsi_refresh_config.jitsi_missing_names_div.empty();
+                jitsi_refresh_config.jitsi_missing_names_div.append($('<strong><em>Abwesend:</em></strong>'));
+                jitsi_refresh_config.jitsi_missing_names_div.append(' ');
+                jitsi_refresh_config.jitsi_missing_names_div.append($('<span>').text(((data.missing_sus || []).join(', '))));
+                jitsi_refresh_config.jitsi_missing_names_div.append($('<hr />'));
+                jitsi_refresh_config.jitsi_missing_names_div.show();
+            }
+            for (let i = 0; i < data.breakout_rooms.length; i++) {
+                jitsi_refresh_config.jitsi_breakout_rooms_names_divs[i].text(((data.breakout_rooms || {})[i] || []).join(', '));
+            }
+        }
+    });
+}
 
 document.addEventListener('DOMContentLoaded', function() {
     moment.locale('de');
@@ -638,6 +667,44 @@ document.addEventListener('DOMContentLoaded', function() {
                     p.append('Für diese Unterrichtsstunde wird ein Jitsi Meet-Stream bereitgestellt. ');
                     body.append(p);
                 }
+                if (event_data.lesson_jitsi) {
+                    body.append($('<a>').attr('href', jitsi_link).attr('target', '_blank').addClass('btn').addClass('btn-primary').css('margin-right', '5px').css('margin-bottom', '5px').html("<i class='fa fa-microphone'></i>&nbsp;&nbsp;Zum Jitsi-Raum&nbsp;&nbsp;<i class='fa fa-angle-double-right'></i>"));
+                    let names_div = $('<div>');
+                    body.append(names_div);
+                    jitsi_refresh_config.jitsi_names_div = names_div;
+                    if ('#{sus_logged_in?}' === 'true' && event_data.breakout_rooms && event_data.breakout_room_participants) {
+                        let sus_offset = event.schueler_offset_in_lesson;
+                        let group_room_name = event_data.breakout_rooms[event_data.breakout_room_participants[sus_offset]];
+                        let breakout_room_link = `/jitsi/lesson/${event.lesson_key}/${group_room_name}`;
+                        body.append($('<hr />'));
+                        body.append($('<p>').text(`Du bist außerdem in den Gruppenraum »${group_room_name}« eingeteilt. Bitte geh zuerst in den normalen Jitsi-Raum.`));
+                        body.append($('<a>').attr('href', breakout_room_link).attr('target', '_blank').addClass('btn').addClass('btn-sm').addClass('btn-primary').css('margin-right', '5px').css('margin-bottom', '5px').html(`<i class='fa fa-microphone'></i>&nbsp;&nbsp;Zum Gruppenraum »${group_room_name}«&nbsp;&nbsp;<i class='fa fa-angle-double-right'></i>`));
+                        body.append($('<hr />'));
+                    }
+                    if ('#{teacher_logged_in?}' === 'true' && event_data.breakout_rooms && event_data.breakout_room_participants) {
+                        jitsi_refresh_config.lesson_key = event.lesson_key;
+                        jitsi_refresh_config.lesson_offset = event.lesson_offset;
+                        let first_room = true;
+                        jitsi_refresh_config.jitsi_breakout_rooms_names_divs = [];
+                        for (let group_room_name of event_data.breakout_rooms) {
+                            body.append($('<hr />'));
+                            let breakout_room_link = `/jitsi/lesson/${event.lesson_key}/${group_room_name}`;
+                            body.append($('<a>').attr('href', breakout_room_link).attr('target', '_blank').addClass('btn').addClass('btn-sm').addClass('btn-primary').css('margin-right', '5px').css('margin-bottom', '5px').html(`<i class='fa fa-microphone'></i>&nbsp;&nbsp;Zum Gruppenraum »${group_room_name}«&nbsp;&nbsp;<i class='fa fa-angle-double-right'></i>`));
+                            let names_div = $('<div>');
+                            body.append(names_div);
+                            jitsi_refresh_config.jitsi_breakout_rooms_names_divs.push(names_div);
+                        }
+                        body.append($('<hr />'));
+                        let missing_names_div = $('<div>').css('font-style', 'italic').addClass('muted');
+                        body.append(missing_names_div);
+                        jitsi_refresh_config.jitsi_missing_names_div = missing_names_div;
+                        refresh_jitsi_presence();
+                        jitsi_refresh_config.poll_handle = setInterval(function() {
+                            refresh_jitsi_presence();
+                        }, 10000);
+                    }
+                }
+                    
                 let parts = [];
                 if (event_data.lesson_nc)
                     parts.push('in der Nextcloud');
@@ -651,48 +718,6 @@ document.addEventListener('DOMContentLoaded', function() {
                     let label = second.join(' und ');
                     body.append('<p>Es befindet sich Unterrichtsmaterial ' + label + '.</p>');
                 }
-                if (event_data.lesson_jitsi) {
-                    bu_refresh = $('<button>').addClass('btn').addClass('btn-success').addClass('float-right').html("<i class='fa fa-refresh'></i>&nbsp;&nbsp;Aktualisieren").data('lesson_key', event.lesson_key).data('lesson_offset', event.lesson_offset);
-                    bu_refresh.click(function(e) {
-                        let in_data = {lesson_key: $(e.target).data('lesson_key'), offset: $(e.target).data('lesson_offset')};
-                        console.log(in_data);
-                        api_call('/api/get_current_jitsi_users_for_lesson', in_data, function(data) {
-                            if (data.success) {
-                                for (let i = 0; i < data.breakout_rooms.length; i++) {
-                                    console.log(data.breakout_rooms[i].join(', '));
-                                    window.jitsi_breakout_rooms_names_divs[i].text(data.breakout_rooms[i].join(', '));
-                                }
-                            }
-                        });
-                    });
-                    body.append(bu_refresh);
-                    body.append($('<a>').attr('href', jitsi_link).attr('target', '_blank').addClass('btn').addClass('btn-primary').css('margin-right', '5px').css('margin-bottom', '5px').html("<i class='fa fa-microphone'></i>&nbsp;&nbsp;Zum Jitsi-Raum&nbsp;&nbsp;<i class='fa fa-angle-double-right'></i>"));
-                    let names_div = $('<div>');
-                    body.append(names_div);
-                    window.jitsi_names_div = names_div;
-                    if ('#{sus_logged_in?}' === 'true' && event_data.breakout_rooms && event_data.breakout_room_participants) {
-                        let sus_offset = event.schueler_offset_in_lesson;
-                        let group_room_name = event_data.breakout_rooms[event_data.breakout_room_participants[sus_offset]];
-                        let breakout_room_link = `/jitsi/lesson/${event.lesson_key}/${group_room_name}`;
-                        body.append($('<hr />'));
-                        body.append($('<p>').text(`Du bist außerdem in den Gruppenraum »${group_room_name}« eingeteilt. Bitte geh zuerst in den normalen Jitsi-Raum.`));
-                        body.append($('<a>').attr('href', breakout_room_link).attr('target', '_blank').addClass('btn').addClass('btn-sm').addClass('btn-primary').css('margin-right', '5px').css('margin-bottom', '5px').html(`<i class='fa fa-microphone'></i>&nbsp;&nbsp;Zum Gruppenraum »${group_room_name}«&nbsp;&nbsp;<i class='fa fa-angle-double-right'></i>`));
-                    }
-                    if ('#{teacher_logged_in?}' === 'true' && event_data.breakout_rooms && event_data.breakout_room_participants) {
-                        let first_room = true;
-                        window.jitsi_breakout_rooms_names_divs = [];
-                        for (let group_room_name of event_data.breakout_rooms) {
-                            body.append($('<hr />'));
-                            let breakout_room_link = `/jitsi/lesson/${event.lesson_key}/${group_room_name}`;
-                            body.append($('<a>').attr('href', breakout_room_link).attr('target', '_blank').addClass('btn').addClass('btn-sm').addClass('btn-primary').css('margin-right', '5px').css('margin-bottom', '5px').html(`<i class='fa fa-microphone'></i>&nbsp;&nbsp;Zum Gruppenraum »${group_room_name}«&nbsp;&nbsp;<i class='fa fa-angle-double-right'></i>`));
-                            let names_div = $('<div>');
-                            body.append(names_div);
-                            window.jitsi_breakout_rooms_names_divs.push(names_div);
-                        }
-                        bu_refresh.click();
-                    }
-                }
-                    
                 if (event_data.lesson_nc) {
                     body.append($('<a>').attr('href', nc_ausgabe_link).attr('target', '_blank').addClass('btn').addClass('btn-primary').css('margin-right', '5px').css('margin-bottom', '5px').html("<i class='fa fa-nextcloud'></i>&nbsp;&nbsp;Zum Ausgabe-Ordner&nbsp;&nbsp;<i class='fa fa-angle-double-right'></i>"));
                     body.append($('<a>').attr('href', nc_einsammel_link).attr('target', '_blank').addClass('btn').addClass('btn-primary').css('margin-right', '5px').css('margin-bottom', '5px').html("<i class='fa fa-nextcloud'></i>&nbsp;&nbsp;Zum Einsammel-Ordner&nbsp;&nbsp;<i class='fa fa-angle-double-right'></i>"));
@@ -802,6 +827,17 @@ document.addEventListener('DOMContentLoaded', function() {
         {
             pb_audio.pause();
             pb_url = null;
+        }
+        if (jitsi_refresh_config.poll_handle !== null) {
+            clearTimeout(jitsi_refresh_config.poll_handle);
+            jitsi_refresh_config = {
+                poll_handle: null,
+                lesson_key: null,
+                lesson_offset: null,
+                jitsi_names_div: null,
+                jitsi_missing_names_div: null,
+                jitsi_breakout_rooms_names_divs: []
+            };
         }
     });
     

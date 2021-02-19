@@ -31,6 +31,7 @@ window.addEventListener('load', function () {
                     show_error_message('Dein Code ist bereits abgelaufen.');
                 else
                     show_error_message('Bei der Anmeldung ist ein Fehler aufgetreten.');
+                $('#code').val('').focus();
             }
         });
     });

@@ -343,13 +343,17 @@ class Main < Sinatra::Base
 #                 STDERR.puts ">>> #{room['roomName'].downcase}"
                 entry = breakout_room_index[room['roomName'].downcase]
                 if entry
-                    room_participants[entry[:index]] = room['participants'].map do |x|
+                    room_participants[entry[:index]] = room['participants'].select do |x|
+                        !((@@user_info[x['jwtEMail']] || {})[:teacher])
+                    end.map do |x|
                         present_sus << x['jwtEMail']
                         x['jwtName']
                     end.sort
                 end
                 if room['roomName'].downcase == lesson_room_name
-                    lesson_room_participants = room['participants'].map do |x|
+                    lesson_room_participants = room['participants'].select do |x|
+                        !((@@user_info[x['jwtEMail']] || {})[:teacher])
+                    end.map do |x|
                         present_sus << x['jwtEMail']
                         x['jwtName']
                     end.sort

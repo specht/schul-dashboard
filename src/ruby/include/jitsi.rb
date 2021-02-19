@@ -243,13 +243,15 @@ class Main < Sinatra::Base
                 result[:html] += "<p>Ich habe die <a href='/api/jitsi_terms'>Nutzerordnung</a> und die <a href='/api/jitsi_dse'>Datenschutzerklärung</a> zur Kenntnis genommen und willige ein.</p>\n"
                 room_name = CGI.escape(room_name.gsub(/[\:\?#\[\]@!$&\\'()*+,;=><\/"]/, '')).gsub('+', '%20')
                 jwt = gen_jwt_for_room(room_name, eid, ext_name)
+                # TODO: Implement presence tokens
+                presence_token = 'xyzzyx'
                 result[:html] += "<div class='go_div'>\n"
                 # edge firefox chrome safari opera internet-explorer
                 if os_family == 'ios' || os_family == 'macosx'
                     result[:html] += "<a class='btn btn-success' href='org.jitsi.meet://#{JITSI_HOST}/#{room_name}?jwt=#{jwt}'><i class='fa fa-apple'></i>&nbsp;&nbsp;Jitsi-Raum mit Jitsi Meet betreten (iPhone und iPad)</a>"
                     result[:html] += "<p style='font-size: 90%;'><em>Installieren Sie bitte die Jitsi Meet-App aus dem <a href='https://apps.apple.com/de/app/jitsi-meet/id1165103905' target='_blank'>App Store</a>.</em></p>"
                     unless browser_icon == 'safari'
-                        result[:html] += "<a class='btn btn-outline-secondary' target='_blank' href='https://#{JITSI_HOST}/#{room_name}?jwt=#{jwt}'><i class='fa fa-#{browser_icon}'></i>&nbsp;&nbsp;Jitsi-Raum mit #{browser_name} betreten</a>"
+                        result[:html] += "<a class='btn btn-outline-secondary' href='https://#{JITSI_HOST}/#{room_name}?jwt=#{jwt}'><i class='fa fa-#{browser_icon}'></i>&nbsp;&nbsp;Jitsi-Raum mit #{browser_name} betreten</a>"
                     end
                     if browser_icon == 'safari'
                         result[:html] += "<p style='font-size: 90%;'><em>Falls Sie einen Mac verwenden: Leider funktioniert Jitsi Meet nicht mit Safari. Verwenden Sie bitte einen anderen Web-Browser wie <a href='https://www.google.com/intl/de_de/chrome/' target='_blank'>Google Chrome</a> oder <a href='https://www.mozilla.org/de/firefox/new/' target='_blank'>Firefox</a>.</em></p>"
@@ -257,9 +259,9 @@ class Main < Sinatra::Base
                 elsif os_family == 'android'
                     result[:html] += "<a class='btn btn-success' href='intent://#{JITSI_HOST}/#{room_name}?jwt=#{jwt}#Intent;scheme=org.jitsi.meet;package=org.jitsi.meet;end'><i class='fa fa-microphone'></i>&nbsp;&nbsp;Jitsi-Raum mit Jitsi Meet für Android betreten</a>"
                     result[:html] += "<p style='font-size: 90%;'><em>Installieren Sie bitte die Jitsi Meet-App aus dem <a href='https://play.google.com/store/apps/details?id=org.jitsi.meet' target='_blank'>Google Play Store</a> oder via <a href='https://f-droid.org/en/packages/org.jitsi.meet/' target='_blank' style=''>F&#8209;Droid</a>.</em></p>"
-                    result[:html] += "<a class='btn btn-outline-secondary' target='_blank' href='https://#{JITSI_HOST}/#{room_name}?jwt=#{jwt}'><i class='fa fa-#{browser_icon}'></i>&nbsp;&nbsp;Jitsi-Raum mit #{browser_name} betreten</a>"
+                    result[:html] += "<a class='btn btn-outline-secondary' href='https://#{JITSI_HOST}/#{room_name}?jwt=#{jwt}'><i class='fa fa-#{browser_icon}'></i>&nbsp;&nbsp;Jitsi-Raum mit #{browser_name} betreten</a>"
                 else
-                    result[:html] += "<a class='btn btn-success' target='_blank' href='https://#{JITSI_HOST}/#{room_name}?jwt=#{jwt}'><i class='fa fa-#{browser_icon}'></i>&nbsp;&nbsp;Jitsi-Raum mit #{browser_name} betreten</a>"
+                    result[:html] += "<a class='btn btn-success' href='https://#{JITSI_HOST}/#{room_name}?jwt=#{jwt}'><i class='fa fa-#{browser_icon}'></i>&nbsp;&nbsp;Jitsi-Raum mit #{browser_name} betreten</a>"
                 end
                 result[:html] += "</div>\n"
                 result[:html] += "</div>\n"

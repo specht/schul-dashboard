@@ -367,6 +367,14 @@ class SetupDatabase
                         END_OF_QUERY
                     end
                 end
+                # purge sessions which have not been used within the past 7 days
+                purged_session_count = neo4j_query_expect_one(<<~END_OF_QUERY, {:today => (Date.today - 7).strftime('%Y-%m-%d')})['count']
+                    MATCH (s:Session)
+                    WHERE s.last_access IS NULL OR s.last_access < {today}
+                    DETACH DELETE s
+                    RETURN COUNT(s) as count;
+                END_OF_QUERY
+                STDERR.puts "Purged #{purged_session_count} stale sessions..."
                 STDERR.puts "Setup finished."
                 break
             rescue

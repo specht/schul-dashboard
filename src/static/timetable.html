@@ -705,7 +705,7 @@ document.addEventListener('DOMContentLoaded', function() {
                             for (let group_room_name of event_data.breakout_rooms) {
                                 body.append($('<hr />'));
                                 let breakout_room_link = `/jitsi/lesson/${event.lesson_key}/${group_room_name}`;
-                                body.append($('<a>').attr('href', breakout_room_link).attr('target', '_blank').addClass('btn').addClass('btn-sm').addClass('btn-primary').css('margin-right', '5px').css('margin-bottom', '5px').html(`<i class='fa fa-microphone'></i>&nbsp;&nbsp;Zum Gruppenraum »${group_room_name}«&nbsp;&nbsp;<i class='fa fa-angle-double-right'></i>`));
+                                body.append($('<a>').attr('href', breakout_room_link).attr('target', '_blank').addClass('btn').addClass('btn-sm').addClass('btn-primary').css('margin-right', '5px').css('margin-bottom', '5px').html(`<i class='fa fa-microphone'></i>&nbsp;&nbsp;${group_room_name}&nbsp;&nbsp;<i class='fa fa-angle-double-right'></i>`));
                                 let names_div = $('<div>');
                                 body.append(names_div);
                                 jitsi_refresh_config.jitsi_breakout_rooms_names_divs.push(names_div);

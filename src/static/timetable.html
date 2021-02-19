@@ -169,6 +169,20 @@ var jitsi_refresh_config = {
     jitsi_breakout_rooms_names_divs: []
 };
 
+function clear_polling_handler() {
+    if (jitsi_refresh_config.poll_handle !== null) {
+        clearTimeout(jitsi_refresh_config.poll_handle);
+        jitsi_refresh_config = {
+            poll_handle: null,
+            lesson_key: null,
+            lesson_offset: null,
+            jitsi_names_div: null,
+            jitsi_missing_names_div: null,
+            jitsi_breakout_rooms_names_divs: []
+        };
+    }
+}
+
 function refresh_jitsi_presence() {
     let in_data = {lesson_key: jitsi_refresh_config.lesson_key, offset: jitsi_refresh_config.lesson_offset};
     api_call('/api/get_current_jitsi_users_for_lesson', in_data, function(data) {
@@ -188,6 +202,8 @@ function refresh_jitsi_presence() {
                     jitsi_refresh_config.jitsi_breakout_rooms_names_divs[i].text(((data.breakout_rooms || {})[i] || []).join(', '));
                 }
             }
+        } else {
+            clear_polling_handler();
         }
     });
 }
@@ -831,17 +847,7 @@ document.addEventListener('DOMContentLoaded', function() {
             pb_audio.pause();
             pb_url = null;
         }
-        if (jitsi_refresh_config.poll_handle !== null) {
-            clearTimeout(jitsi_refresh_config.poll_handle);
-            jitsi_refresh_config = {
-                poll_handle: null,
-                lesson_key: null,
-                lesson_offset: null,
-                jitsi_names_div: null,
-                jitsi_missing_names_div: null,
-                jitsi_breakout_rooms_names_divs: []
-            };
-        }
+        clear_polling_handler();
     });
     
     if (#{!tablet_logged_in?}) {

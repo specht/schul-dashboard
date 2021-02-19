@@ -195,6 +195,7 @@ function refresh_jitsi_presence() {
                 jitsi_refresh_config.jitsi_missing_names_div.append($('<strong><em>Momentan abwesend in Jitsi:</em></strong>'));
                 jitsi_refresh_config.jitsi_missing_names_div.append(' ');
                 jitsi_refresh_config.jitsi_missing_names_div.append($('<span>').text(((data.missing_sus || []).join(', '))));
+                jitsi_refresh_config.jitsi_missing_names_div.append($('<hr />'));
                 jitsi_refresh_config.jitsi_missing_names_div.show();
             }
             if (jitsi_refresh_config.jitsi_breakout_rooms_names_divs.length > 0) {

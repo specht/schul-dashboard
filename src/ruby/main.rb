@@ -375,6 +375,13 @@ class SetupDatabase
                     RETURN COUNT(s) as count;
                 END_OF_QUERY
                 STDERR.puts "Purged #{purged_session_count} stale sessions..."
+                purged_login_code_count = neo4j_query_expect_one(<<~END_OF_QUERY, :now => Time.now.to_i)['count']
+                    MATCH (l:LoginCode)
+                    WHERE l.valid_to <= {now}
+                    DETACH DELETE l
+                    RETURN COUNT(l) as count;
+                END_OF_QUERY
+                STDERR.puts "Purged #{purged_login_code_count} stale login codes..."
                 STDERR.puts "Setup finished."
                 break
             rescue

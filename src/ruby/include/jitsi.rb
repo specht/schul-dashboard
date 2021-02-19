@@ -322,7 +322,11 @@ class Main < Sinatra::Base
             MATCH (i:LessonInfo {offset: {offset}})-[:BELONGS_TO]->(l:Lesson {key: {lesson_key}})
             RETURN i;
         END_OF_QUERY
-        lesson_room_name = CGI.escape(get_jitsi_room_name_for_lesson_key(data[:lesson_key]).gsub(/[\:\?#\[\]@!$&\\'()*+,;=><\/"]/, '')).gsub('+', '%20').downcase
+        room_name = get_jitsi_room_name_for_lesson_key(data[:lesson_key])
+        if room_name.nil?
+            raise 'not today!'
+        end
+        lesson_room_name = CGI.escape(room_name.gsub(/[\:\?#\[\]@!$&\\'()*+,;=><\/"]/, '')).gsub('+', '%20').downcase
 
         jitsi_rooms = current_jitsi_rooms()
         room_participants = []

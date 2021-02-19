@@ -425,6 +425,7 @@ class Timetable
         @@vplan_timestamp = Main.class_variable_get(:@@vplan_timestamp)
         @@lessons_for_klasse = Main.class_variable_get(:@@lessons_for_klasse)
         @@lessons_for_user = Main.class_variable_get(:@@lessons_for_user)
+        @@lessons_for_shorthand = Main.class_variable_get(:@@lessons_for_shorthand)
         @@shorthands = Main.class_variable_get(:@@shorthands)
         @@klassen_order = Main.class_variable_get(:@@klassen_order)
         @@klassen_id = Main.class_variable_get(:@@klassen_id)
@@ -1040,6 +1041,7 @@ class Timetable
             end
         end
         ical_events = {}
+#         logged_emails = Set.new()
         while p <= end_date do
             p1 = p + 7
             p_yw = p.strftime('%Y-%V')
@@ -1086,9 +1088,18 @@ class Timetable
                 end
                 lesson_keys ||= Set.new()
                 lesson_keys << "_#{user[:klasse]}" unless user[:teacher]
-                lesson_keys << "_#{user[:shorthand]}" if user[:teacher]
+                if user[:teacher]
+                    lesson_keys << "_#{user[:shorthand]}" 
+                    (@@lessons_for_shorthand[user[:shorthand]] || []).each do |lesson_key|
+                        lesson_keys << lesson_key
+                    end
+                end
                 lesson_keys << "_#{user[:email]}"
                 next if only_these_lesson_keys && (lesson_keys & only_these_lesson_keys).empty?
+#                 unless logged_emails.include?(email)
+#                     STDERR.puts email
+#                     logged_emails << email
+#                 end
                 path = "/gen/w/#{user[:id]}/#{p_yw}.json.gz"
                 FileUtils.mkpath(File.dirname(path))
                 file_count += 1

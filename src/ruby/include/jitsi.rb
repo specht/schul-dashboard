@@ -322,33 +322,43 @@ class Main < Sinatra::Base
             MATCH (i:LessonInfo {offset: {offset}})-[:BELONGS_TO]->(l:Lesson {key: {lesson_key}})
             RETURN i;
         END_OF_QUERY
-        lesson_room_name = get_jitsi_room_name_for_lesson_key(data[:lesson_key])
+        lesson_room_name = CGI.escape(get_jitsi_room_name_for_lesson_key(data[:lesson_key]).gsub(/[\:\?#\[\]@!$&\\'()*+,;=><\/"]/, '')).gsub('+', '%20').downcase
+
         jitsi_rooms = current_jitsi_rooms()
         room_participants = []
         breakout_room_index = {}
         (lesson_info[:breakout_rooms] || []).each.with_index do |room_name, i|
             room_participants << []
-            breakout_room_name = "#{lesson_room_name} #{room_name}"
-            escaped_room_name = CGI.escape(breakout_room_name.gsub(/[\:\?#\[\]@!$&\\'()*+,;=><\/"]/, '')).gsub('+', '%20').downcase
+            escaped_room_name = CGI.escape(room_name.gsub(/[\:\?#\[\]@!$&\\'()*+,;=><\/"]/, '')).gsub('+', '%20').downcase
+            escaped_room_name = "#{lesson_room_name}%20#{escaped_room_name}"
             breakout_room_index[escaped_room_name] = {
                 :room_name => room_name,
                 :index => i
             }
-#             STDERR.puts escaped_room_name
         end
+        lesson_room_participants = []
+        present_sus = Set.new()
         if jitsi_rooms
             jitsi_rooms.each do |room|
 #                 STDERR.puts ">>> #{room['roomName'].downcase}"
                 entry = breakout_room_index[room['roomName'].downcase]
                 if entry
                     room_participants[entry[:index]] = room['participants'].map do |x|
+                        present_sus << x['jwtEMail']
                         x['jwtName']
-                    end.sort do |a, b|
-                        a <=> b
-                    end
+                    end.sort
+                end
+                if room['roomName'].downcase == lesson_room_name
+                    lesson_room_participants = room['participants'].map do |x|
+                        present_sus << x['jwtEMail']
+                        x['jwtName']
+                    end.sort
                 end
             end
         end
-        respond(:breakout_rooms => room_participants)
+        missing_sus = (Set.new((@@schueler_for_lesson[data[:lesson_key]] || [])) - present_sus).map do |email|
+            @@user_info[email][:display_name]
+        end.sort
+        respond(:lesson_room => lesson_room_participants, :breakout_rooms => room_participants, :missing_sus => missing_sus)
     end
 end

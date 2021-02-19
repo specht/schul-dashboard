@@ -33,10 +33,19 @@ class Main < Sinatra::Base
         data[:code] = data[:code].gsub(/[^0-9]/, '')
         result = neo4j_query_expect_one(<<~END_OF_QUERY, :tag => data[:tag])
             MATCH (l:LoginCode {tag: {tag}})-[:BELONGS_TO]->(u:User)
+            SET l.tries = COALESCE(l.tries, 0) + 1
             RETURN l, u;
         END_OF_QUERY
         user = result['u'].props
         login_code = result['l'].props
+        if login_code[:tries] > MAX_LOGIN_TRIES
+            neo4j_query(<<~END_OF_QUERY, :tag => data[:tag])
+                MATCH (l:LoginCode {tag: {tag}})
+                DETACH DELETE l;
+            END_OF_QUERY
+            respond({:error => 'code_expired'})
+        end
+        assert(login_code[:tries] <= MAX_LOGIN_TRIES)
         if login_code[:otp]
             otp_token = user[:otp_token]
             assert(!otp_token.nil?)
@@ -50,8 +59,8 @@ class Main < Sinatra::Base
         end
         assert(Time.at(login_code[:valid_to]) >= Time.now)
         session_id = create_session(user[:email])
-        result = neo4j_query(<<~END_OF_QUERY, :tag => data[:tag], :code => data[:code])
-            MATCH (l:LoginCode {tag: {tag}, code: {code}})
+        neo4j_query(<<~END_OF_QUERY, :tag => data[:tag])
+            MATCH (l:LoginCode {tag: {tag}})
             DETACH DELETE l;
         END_OF_QUERY
         purge_missing_sessions(session_id)

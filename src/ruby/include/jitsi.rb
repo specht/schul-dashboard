@@ -325,7 +325,7 @@ class Main < Sinatra::Base
         timetable = timetable['events'].select do |entry|
             entry['lesson'] && 
                     (entry['lesson_key'] == lesson_key) && 
-                    ((entry['datum'] == p_ymd) || DEVELOPMENT || admin_logged_in?) && 
+                    ((entry['datum'] == p_ymd) || DEVELOPMENT || (user && ADMIN_USERS.include?(user))) && 
                     (entry['data'] || {})['lesson_jitsi']
         end.sort { |a, b| a['start'] <=> b['start'] }
         now_time = Time.now

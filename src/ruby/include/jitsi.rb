@@ -426,6 +426,7 @@ class Main < Sinatra::Base
             jwt = gen_jwt_for_room(room_name, nil, @@user_info[email][:display_name])
             result[:jwt_links][breakout_room_name] = "https://#{JITSI_HOST}/#{room_name}?presence_token=#{data[:presence_token]}&jwt=#{jwt}"
         end
+        response.headers['Access-Control-Allow-Origin'] = "https://#{JITSI_HOST}"
         respond(result)
     end
 end

@@ -40,3 +40,10 @@ ENABLE_IMAGE_BOT = false
 ENABLE_NEXTCLOUD_SANDBOX = true
 NEXTCLOUD_SANDBOX_INSTALL_ADMIN_USER = 'dashboard'
 NEXTCLOUD_SANDBOX_INSTALL_ADMIN_PASSWORD = 'hunter2_bitte_etwas_anderes_waehlen'
+
+DOCKER_NETWORK_NAME = :dashboard
+
+# Falls gewünscht, kann hier das Subnetz und die IP-Adresse des Ruby-Containers
+# definiert werden
+DOCKER_NETWORK_SUBNET = nil
+DOCKER_NETWORK_RUBY_IP = nil

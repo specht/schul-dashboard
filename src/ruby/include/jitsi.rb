@@ -196,9 +196,11 @@ class Main < Sinatra::Base
                     end.sort { |a, b| a['start'] <=> b['start'] }
                     now_time = Time.now
                     old_timetable_size = timetable.size
-                    timetable = timetable.reject do |entry|
-                        t = Time.parse("#{entry['end']}:00") + JITSI_LESSON_POST_ENTRY_TOLERANCE * 60
-                        now_time > t
+                    unless admin_logged_in?
+                        timetable = timetable.reject do |entry|
+                            t = Time.parse("#{entry['end']}:00") + JITSI_LESSON_POST_ENTRY_TOLERANCE * 60
+                            now_time > t
+                        end
                     end
                     if timetable.empty?
                         if old_timetable_size > 0

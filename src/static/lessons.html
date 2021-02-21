@@ -25,6 +25,7 @@ var rec_duration = 0;
 var update_rec_time_label_timeout = null;
 var breakout_room_config = null;
 var breakout_room_widgets = {};
+var single_selected_offset = null;
 var stored_breakout_room_config_json = null;
 </script>
 
@@ -66,10 +67,10 @@ var stored_breakout_room_config_json = null;
                                     Einteilen
                                 </button>
                                 <div class="dropdown-menu">
+                                    <a class='dropdown-item bu-breakout-room-arrange-reuse-last btn btn-primary'><i class='fa fa-history'></i>&nbsp;&nbsp;&nbsp;&nbsp;Einteilung vom letzten mal übernehmen</a>
                                     <a class='dropdown-item bu-breakout-room-arrange-random btn btn-primary'><i class='fa fa-random'></i>&nbsp;&nbsp;&nbsp;&nbsp;zufällig mischen</a>
                                     <a class='dropdown-item bu-breakout-room-arrange-sort-first-name btn btn-primary'><i class='fa fa-sort-alpha-asc'></i>&nbsp;&nbsp;&nbsp;&nbsp;nach Vornamen sortieren</a>
                                     <a class='dropdown-item bu-breakout-room-arrange-sort-last-name btn btn-primary'><i class='fa fa-sort-alpha-asc'></i>&nbsp;&nbsp;&nbsp;&nbsp;nach Nachnamen sortieren</a>
-<!--                                     <a class='dropdown-item bu-breakout-room-arrange-reuse-last btn btn-primary'><i class='fa fa-history'></i>&nbsp;&nbsp;&nbsp;&nbsp;Einteilung vom letzten mal übernehmen</a> -->
                                 </div>
                             </div>
                         </div>
@@ -558,6 +559,7 @@ function selection_updated() {
         $('.status_label').html('' + entries.length + ' Stunden ausgewählt');
         
     breakout_room_config = null;
+    single_selected_offset = null;
     if (entries.length === 0) {
         $('.pane_items *').prop('disabled', true);
         $('.bu-discard-changes').removeClass('btn-secondary').addClass('btn-outline-secondary').prop('disabled', true);
@@ -573,6 +575,7 @@ function selection_updated() {
         $('.sus_feedback_label').text('').hide();
     } else { 
         if (entries.length === 1) {
+            single_selected_offset = parseInt(entries[0]);
             $('.na-on-multi-select').hide();
             $('#bu_feedback').removeClass('btn-outline-secondary').addClass('btn-success').prop('disabled', false);
             $('#bu_sus_feedback').removeClass('btn-outline-secondary').addClass('btn-warning').prop('disabled', true);
@@ -1727,11 +1730,30 @@ document.addEventListener('DOMContentLoaded', function() {
                 breakout_room_config.participants.push(i);
                 i = (i + 1) % breakout_room_config.rooms.length;
             }
-            $('.bu-breakout-room-arrange-sort-first-name').click();
+            $('.bu-breakout-room-arrange-reuse-last').click();
         } else {
             breakout_room_config = null;
         }
         update_breakout_room_widgets();
+    });
+    $('.bu-breakout-room-arrange-reuse-last').click(function(e) {
+        let o = single_selected_offset;
+        found_config = null;
+        while (o > 0) {
+            o -= 1;
+            if (((lesson_data[o] || {}).info || {}).breakout_rooms) {
+                found_config = {
+                    rooms: lesson_data[o].info.breakout_rooms,
+                    participants: lesson_data[o].info.breakout_room_participants
+                };
+                break;
+            }
+        }
+        if (found_config !== null) {
+            found_config = sanitize_breakout_room_config(found_config);
+            breakout_room_config = found_config;
+            update_breakout_room_widgets();
+        }
     });
     $('.bu-breakout-room-arrange-random').click(function(e) {
         let i = 0;

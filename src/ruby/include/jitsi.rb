@@ -191,7 +191,7 @@ class Main < Sinatra::Base
                     timetable = timetable['events'].select do |entry|
                         entry['lesson'] && 
                                 entry['lesson_key'] == lesson_key && 
-                                ((entry['datum'] == p_ymd) || DEVELOPMENT) && 
+                                ((entry['datum'] == p_ymd) || DEVELOPMENT || admin_logged_in?) && 
                                 (entry['data'] || {})['lesson_jitsi']
                     end.sort { |a, b| a['start'] <=> b['start'] }
                     now_time = Time.now
@@ -323,7 +323,7 @@ class Main < Sinatra::Base
         timetable = timetable['events'].select do |entry|
             entry['lesson'] && 
                     (entry['lesson_key'] == lesson_key) && 
-                    ((entry['datum'] == p_ymd) || DEVELOPMENT) && 
+                    ((entry['datum'] == p_ymd) || DEVELOPMENT || admin_logged_in?) && 
                     (entry['data'] || {})['lesson_jitsi']
         end.sort { |a, b| a['start'] <=> b['start'] }
         now_time = Time.now
@@ -412,6 +412,7 @@ class Main < Sinatra::Base
     end
     
     post '/api/get_current_jitsi_users_for_presence_token' do
+        response.headers['Access-Control-Allow-Origin'] = "https://#{JITSI_HOST}"
         data = parse_request_data(:required_keys => [:presence_token])
         result = neo4j_query_expect_one(<<~END_OF_QUERY, {:presence_token => data[:presence_token], :now => Time.now.to_i, :new_expiry => (Time.now + PRESENCE_TOKEN_EXPIRY_TIME).to_i})
             MATCH (l:Lesson)<-[:BELONGS_TO]-(i:LessonInfo)<-[:FOR]-(n:PresenceToken {token: {presence_token}})-[:BELONGS_TO]->(u:User)
@@ -431,7 +432,6 @@ class Main < Sinatra::Base
             jwt = gen_jwt_for_room(room_name, nil, @@user_info[email][:display_name])
             result[:jwt_links][breakout_room_name] = "https://#{JITSI_HOST}/#{room_name}?presence_token=#{data[:presence_token]}&jwt=#{jwt}"
         end
-        response.headers['Access-Control-Allow-Origin'] = "https://#{JITSI_HOST}"
         respond(result)
     end
 end

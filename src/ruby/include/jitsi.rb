@@ -406,6 +406,10 @@ class Main < Sinatra::Base
         respond(get_current_jitsi_users_for_lesson(data[:lesson_key], data[:offset]))
     end
     
+    options '/api/get_current_jitsi_users_for_presence_token' do
+        response.headers['Access-Control-Allow-Origin'] = "https://#{JITSI_HOST}"
+    end
+    
     post '/api/get_current_jitsi_users_for_presence_token' do
         data = parse_request_data(:required_keys => [:presence_token])
         result = neo4j_query_expect_one(<<~END_OF_QUERY, {:presence_token => data[:presence_token], :now => Time.now.to_i, :new_expiry => (Time.now + PRESENCE_TOKEN_EXPIRY_TIME).to_i})

@@ -213,13 +213,15 @@ class Main < Sinatra::Base
                         t = Time.parse("#{timetable.first['start']}:00") - JITSI_LESSON_PRE_ENTRY_TOLERANCE * 60
                         room_name = timetable.first['label_lehrer_lang'].gsub(/<[^>]+>/, '') + ' ' + timetable.first['klassen'].first.map { |x| tr_klasse(x) }.join(', ')
                         unless ((timetable.first['data'] || {})['breakout_rooms'] || []).empty?
-                            presence_token = RandomTag::generate(24)
-                            neo4j_query_expect_one(<<~END_OF_QUERY, {:token => presence_token, :lesson_key => timetable.first['lesson_key'], :offset => timetable.first['lesson_offset'], :email => @session_user[:email], :timestamp => (Time.now + PRESENCE_TOKEN_EXPIRY_TIME).to_i})
-                                MATCH (u:User {email: {email}}), (i:LessonInfo {offset: {offset}})-[:BELONGS_TO]->(l:Lesson {key: {lesson_key}})
-                                CREATE (n:PresenceToken {token: {token}, expiry: {timestamp}})
-                                CREATE (i)<-[:FOR]-(n)-[:BELONGS_TO]->(u)
-                                RETURN n;
-                            END_OF_QUERY
+                            if teacher_logged_in?
+                                presence_token = RandomTag::generate(24)
+                                neo4j_query_expect_one(<<~END_OF_QUERY, {:token => presence_token, :lesson_key => timetable.first['lesson_key'], :offset => timetable.first['lesson_offset'], :email => @session_user[:email], :timestamp => (Time.now + PRESENCE_TOKEN_EXPIRY_TIME).to_i})
+                                    MATCH (u:User {email: {email}}), (i:LessonInfo {offset: {offset}})-[:BELONGS_TO]->(l:Lesson {key: {lesson_key}})
+                                    CREATE (n:PresenceToken {token: {token}, expiry: {timestamp}})
+                                    CREATE (i)<-[:FOR]-(n)-[:BELONGS_TO]->(u)
+                                    RETURN n;
+                                END_OF_QUERY
+                            end
                         end
                         if breakout_room_name
                             room_name += " #{breakout_room_name}"

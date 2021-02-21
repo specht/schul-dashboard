@@ -1,3 +1,6 @@
+# discard presence token after 600 seconds unless it's renewed in the meantime
+PRESENCE_TOKEN_EXPIRY_TIME = 60 * 10
+
 class Main < Sinatra::Base
     get '/api/jitsi_terms' do
         respond_raw_with_mimetype_and_filename(File.read('/data/legal/Nutzungshinweise-Meet.pdf'), 'application/pdf', "Nutzungshinweise-Meet.pdf")
@@ -68,6 +71,7 @@ class Main < Sinatra::Base
         eid = nil
         ext_name = nil
         begin
+            presence_token = nil
             if path == 'Lehrerzimmer'
                 if teacher_logged_in?
                     room_name = 'Lehrerzimmer'
@@ -185,7 +189,10 @@ class Main < Sinatra::Base
                     end
                     assert(!(timetable.nil?))
                     timetable = timetable['events'].select do |entry|
-                        entry['lesson'] && entry['lesson_key'] == lesson_key && entry['datum'] == p_ymd && (entry['data'] || {})['lesson_jitsi']
+                        entry['lesson'] && 
+                                entry['lesson_key'] == lesson_key && 
+                                ((entry['datum'] == p_ymd) || DEVELOPMENT) && 
+                                (entry['data'] || {})['lesson_jitsi']
                     end.sort { |a, b| a['start'] <=> b['start'] }
                     now_time = Time.now
                     old_timetable_size = timetable.size
@@ -203,6 +210,15 @@ class Main < Sinatra::Base
                     else
                         t = Time.parse("#{timetable.first['start']}:00") - JITSI_LESSON_PRE_ENTRY_TOLERANCE * 60
                         room_name = timetable.first['label_lehrer_lang'].gsub(/<[^>]+>/, '') + ' ' + timetable.first['klassen'].first.map { |x| tr_klasse(x) }.join(', ')
+                        unless ((timetable.first['data'] || {})['breakout_rooms'] || []).empty?
+                            presence_token = RandomTag::generate(24)
+                            neo4j_query_expect_one(<<~END_OF_QUERY, {:token => presence_token, :lesson_key => timetable.first['lesson_key'], :offset => timetable.first['lesson_offset'], :email => @session_user[:email], :timestamp => (Time.now + PRESENCE_TOKEN_EXPIRY_TIME).to_i})
+                                MATCH (u:User {email: {email}}), (i:LessonInfo {offset: {offset}})-[:BELONGS_TO]->(l:Lesson {key: {lesson_key}})
+                                CREATE (n:PresenceToken {token: {token}, expiry: {timestamp}})
+                                CREATE (i)<-[:FOR]-(n)-[:BELONGS_TO]->(u)
+                                RETURN n;
+                            END_OF_QUERY
+                        end
                         if breakout_room_name
                             room_name += " #{breakout_room_name}"
                         end
@@ -243,15 +259,13 @@ class Main < Sinatra::Base
                 result[:html] += "<p>Ich habe die <a href='/api/jitsi_terms'>Nutzerordnung</a> und die <a href='/api/jitsi_dse'>Datenschutzerklärung</a> zur Kenntnis genommen und willige ein.</p>\n"
                 room_name = CGI.escape(room_name.gsub(/[\:\?#\[\]@!$&\\'()*+,;=><\/"]/, '')).gsub('+', '%20')
                 jwt = gen_jwt_for_room(room_name, eid, ext_name)
-                # TODO: Implement presence tokens
-                presence_token = 'xyzzyx'
                 result[:html] += "<div class='go_div'>\n"
                 # edge firefox chrome safari opera internet-explorer
                 if os_family == 'ios' || os_family == 'macosx'
                     result[:html] += "<a class='btn btn-success' href='org.jitsi.meet://#{JITSI_HOST}/#{room_name}?jwt=#{jwt}'><i class='fa fa-apple'></i>&nbsp;&nbsp;Jitsi-Raum mit Jitsi Meet betreten (iPhone und iPad)</a>"
                     result[:html] += "<p style='font-size: 90%;'><em>Installieren Sie bitte die Jitsi Meet-App aus dem <a href='https://apps.apple.com/de/app/jitsi-meet/id1165103905' target='_blank'>App Store</a>.</em></p>"
                     unless browser_icon == 'safari'
-                        result[:html] += "<a class='btn btn-outline-secondary' href='https://#{JITSI_HOST}/#{room_name}?jwt=#{jwt}'><i class='fa fa-#{browser_icon}'></i>&nbsp;&nbsp;Jitsi-Raum mit #{browser_name} betreten</a>"
+                        result[:html] += "<a class='btn btn-outline-secondary' href='https://#{JITSI_HOST}/#{room_name}?#{presence_token ? "presence_token=#{presence_token}&" : ''}jwt=#{jwt}'><i class='fa fa-#{browser_icon}'></i>&nbsp;&nbsp;Jitsi-Raum mit #{browser_name} betreten</a>"
                     end
                     if browser_icon == 'safari'
                         result[:html] += "<p style='font-size: 90%;'><em>Falls Sie einen Mac verwenden: Leider funktioniert Jitsi Meet nicht mit Safari. Verwenden Sie bitte einen anderen Web-Browser wie <a href='https://www.google.com/intl/de_de/chrome/' target='_blank'>Google Chrome</a> oder <a href='https://www.mozilla.org/de/firefox/new/' target='_blank'>Firefox</a>.</em></p>"
@@ -259,9 +273,9 @@ class Main < Sinatra::Base
                 elsif os_family == 'android'
                     result[:html] += "<a class='btn btn-success' href='intent://#{JITSI_HOST}/#{room_name}?jwt=#{jwt}#Intent;scheme=org.jitsi.meet;package=org.jitsi.meet;end'><i class='fa fa-microphone'></i>&nbsp;&nbsp;Jitsi-Raum mit Jitsi Meet für Android betreten</a>"
                     result[:html] += "<p style='font-size: 90%;'><em>Installieren Sie bitte die Jitsi Meet-App aus dem <a href='https://play.google.com/store/apps/details?id=org.jitsi.meet' target='_blank'>Google Play Store</a> oder via <a href='https://f-droid.org/en/packages/org.jitsi.meet/' target='_blank' style=''>F&#8209;Droid</a>.</em></p>"
-                    result[:html] += "<a class='btn btn-outline-secondary' href='https://#{JITSI_HOST}/#{room_name}?jwt=#{jwt}'><i class='fa fa-#{browser_icon}'></i>&nbsp;&nbsp;Jitsi-Raum mit #{browser_name} betreten</a>"
+                    result[:html] += "<a class='btn btn-outline-secondary' href='https://#{JITSI_HOST}/#{room_name}?#{presence_token ? "presence_token=#{presence_token}&" : ''}jwt=#{jwt}'><i class='fa fa-#{browser_icon}'></i>&nbsp;&nbsp;Jitsi-Raum mit #{browser_name} betreten</a>"
                 else
-                    result[:html] += "<a class='btn btn-success' href='https://#{JITSI_HOST}/#{room_name}?jwt=#{jwt}'><i class='fa fa-#{browser_icon}'></i>&nbsp;&nbsp;Jitsi-Raum mit #{browser_name} betreten</a>"
+                    result[:html] += "<a class='btn btn-success' href='https://#{JITSI_HOST}/#{room_name}?#{presence_token ? "presence_token=#{presence_token}&" : ''}jwt=#{jwt}'><i class='fa fa-#{browser_icon}'></i>&nbsp;&nbsp;Jitsi-Raum mit #{browser_name} betreten</a>"
                 end
                 result[:html] += "</div>\n"
                 result[:html] += "</div>\n"
@@ -279,9 +293,16 @@ class Main < Sinatra::Base
         @@current_jitsi_rooms ||= nil
         @@current_jitsi_rooms_timestamp ||= Time.now
         if @@current_jitsi_rooms.nil? || Time.now > @@current_jitsi_rooms_timestamp + 10
+            @@current_jitsi_rooms_timestamp = Time.now
             begin
-                @@current_jitsi_rooms = JSON.parse(File.read("/internal/jitsi/room.json"))
-                @@current_jitsi_rooms_timestamp = Time.now
+                STDERR.puts "Refreshing Jitsi presence!"
+                c = Curl::Easy.new(JITSI_ALL_ROOMS_URL)
+                c.perform
+                if c.status.to_i == 200
+                    @@current_jitsi_rooms = JSON.parse(c.body_str)['rooms']
+                else
+                    @@current_jitsi_rooms = nil
+                end
             rescue
                 @@current_jitsi_rooms = nil
             end
@@ -289,17 +310,21 @@ class Main < Sinatra::Base
         return @@current_jitsi_rooms
     end
     
-    def get_jitsi_room_name_for_lesson_key(lesson_key)
+    def get_jitsi_room_name_for_lesson_key(lesson_key, user = nil)
         p_ymd = Date.today.strftime('%Y-%m-%d')
         p_yw = Date.today.strftime('%Y-%V')
-        timetable_path = "/gen/w/#{@session_user[:id]}/#{p_yw}.json.gz"
+        user_id = @@user_info[user || @session_user[:email]][:id]
+        timetable_path = "/gen/w/#{user_id}/#{p_yw}.json.gz"
         timetable = nil
         Zlib::GzipReader.open(timetable_path) do |f|
             timetable = JSON.parse(f.read)
         end
         assert(!(timetable.nil?))
         timetable = timetable['events'].select do |entry|
-            entry['lesson'] && entry['lesson_key'] == lesson_key && entry['datum'] == p_ymd && (entry['data'] || {})['lesson_jitsi']
+            entry['lesson'] && 
+                    (entry['lesson_key'] == lesson_key) && 
+                    ((entry['datum'] == p_ymd) || DEVELOPMENT) && 
+                    (entry['data'] || {})['lesson_jitsi']
         end.sort { |a, b| a['start'] <=> b['start'] }
         now_time = Time.now
         old_timetable_size = timetable.size
@@ -315,26 +340,24 @@ class Main < Sinatra::Base
         end
     end
     
-    post '/api/get_current_jitsi_users_for_lesson' do
-        require_teacher!
-        data = parse_request_data(:required_keys => [:lesson_key, :offset],
-                                  :types => {:offset => Integer})
-        assert(@@lessons_for_shorthand[@session_user[:shorthand]].include?(data[:lesson_key]))
-        lesson_info = neo4j_query_expect_one(<<~END_OF_QUERY, {:lesson_key => data[:lesson_key], :offset => data[:offset]})['i'].props
+    def get_current_jitsi_users_for_lesson(lesson_key, offset, user = nil)
+        lesson_info = neo4j_query_expect_one(<<~END_OF_QUERY, {:lesson_key => lesson_key, :offset => offset})['i'].props
             MATCH (i:LessonInfo {offset: {offset}})-[:BELONGS_TO]->(l:Lesson {key: {lesson_key}})
             RETURN i;
         END_OF_QUERY
-        room_name = get_jitsi_room_name_for_lesson_key(data[:lesson_key])
+        room_name = get_jitsi_room_name_for_lesson_key(lesson_key, user)
         assert(!(room_name.nil?), 'not today!')
         lesson_room_name = CGI.escape(room_name.gsub(/[\:\?#\[\]@!$&\\'()*+,;=><\/"]/, '')).gsub('+', '%20').downcase
 
         jitsi_rooms = current_jitsi_rooms()
         room_participants = []
         breakout_room_index = {}
+        breakout_room_urls = []
         (lesson_info[:breakout_rooms] || []).each.with_index do |room_name, i|
             room_participants << []
             escaped_room_name = CGI.escape(room_name.gsub(/[\:\?#\[\]@!$&\\'()*+,;=><\/"]/, '')).gsub('+', '%20').downcase
             escaped_room_name = "#{lesson_room_name}%20#{escaped_room_name}"
+            breakout_room_urls << escaped_room_name
             breakout_room_index[escaped_room_name] = {
                 :room_name => room_name,
                 :index => i
@@ -344,7 +367,6 @@ class Main < Sinatra::Base
         present_sus = Set.new()
         if jitsi_rooms
             jitsi_rooms.each do |room|
-#                 STDERR.puts ">>> #{room['roomName'].downcase}"
                 entry = breakout_room_index[room['roomName'].downcase]
                 if entry
                     room_participants[entry[:index]] = room['participants'].select do |x|
@@ -352,7 +374,7 @@ class Main < Sinatra::Base
                     end.map do |x|
                         present_sus << x['jwtEMail']
                         x['jwtName']
-                    end.sort
+                    end.sort.uniq
                 end
                 if room['roomName'].downcase == lesson_room_name
                     lesson_room_participants = room['participants'].select do |x|
@@ -360,13 +382,50 @@ class Main < Sinatra::Base
                     end.map do |x|
                         present_sus << x['jwtEMail']
                         x['jwtName']
-                    end.sort
+                    end.sort.uniq
                 end
             end
         end
-        missing_sus = (Set.new((@@schueler_for_lesson[data[:lesson_key]] || [])) - present_sus).map do |email|
+        missing_sus = (Set.new((@@schueler_for_lesson[lesson_key] || [])) - present_sus).map do |email|
             @@user_info[email][:display_name]
         end.sort
-        respond(:lesson_room => lesson_room_participants, :breakout_rooms => room_participants, :missing_sus => missing_sus)
+        {:lesson_room => lesson_room_participants, 
+         :breakout_rooms => room_participants, 
+         :missing_sus => missing_sus,
+         :breakout_room_names => lesson_info[:breakout_rooms],
+         :lesson_room_name => lesson_room_name,
+         :breakout_room_index => breakout_room_index,
+         :breakout_room_urls => breakout_room_urls}
+    end
+    
+    post '/api/get_current_jitsi_users_for_lesson' do
+        require_teacher!
+        data = parse_request_data(:required_keys => [:lesson_key, :offset],
+                                  :types => {:offset => Integer})
+        assert(@@lessons_for_shorthand[@session_user[:shorthand]].include?(data[:lesson_key]))
+        respond(get_current_jitsi_users_for_lesson(data[:lesson_key], data[:offset]))
+    end
+    
+    post '/api/get_current_jitsi_users_for_presence_token' do
+        data = parse_request_data(:required_keys => [:presence_token])
+        result = neo4j_query_expect_one(<<~END_OF_QUERY, {:presence_token => data[:presence_token], :now => Time.now.to_i, :new_expiry => (Time.now + PRESENCE_TOKEN_EXPIRY_TIME).to_i})
+            MATCH (l:Lesson)<-[:BELONGS_TO]-(i:LessonInfo)<-[:FOR]-(n:PresenceToken {token: {presence_token}})-[:BELONGS_TO]->(u:User)
+            WHERE n.expiry > {now}
+            SET n.expiry = {new_expiry}
+            RETURN u.email, i.offset, l.key;
+        END_OF_QUERY
+        email = result['u.email']
+        result = get_current_jitsi_users_for_lesson(result['l.key'], result['i.offset'], email)
+        result[:presence_token] = data[:presence_token]
+        result[:jwt_links] = {}
+        room_name = result[:lesson_room_name]
+        jwt = gen_jwt_for_room(room_name, nil, @@user_info[email][:display_name])
+        result[:lesson_room_jwt_link] = "https://#{JITSI_HOST}/#{room_name}?presence_token=#{data[:presence_token]}&jwt=#{jwt}"
+        result[:breakout_room_names].each.with_index do |breakout_room_name, i|
+            room_name = result[:breakout_room_urls][i]
+            jwt = gen_jwt_for_room(room_name, nil, @@user_info[email][:display_name])
+            result[:jwt_links][breakout_room_name] = "https://#{JITSI_HOST}/#{room_name}?presence_token=#{data[:presence_token]}&jwt=#{jwt}"
+        end
+        respond(result)
     end
 end

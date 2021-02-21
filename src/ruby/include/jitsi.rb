@@ -408,7 +408,7 @@ class Main < Sinatra::Base
     
     options '/api/get_current_jitsi_users_for_presence_token' do
         response.headers['Access-Control-Allow-Origin'] = "https://#{JITSI_HOST}"
-        response.headers['Access-Control-Allow-Headers'] = "Content-Type"
+        response.headers['Access-Control-Allow-Headers'] = "Content-Type, Access-Control-Allow-Origin"
     end
     
     post '/api/get_current_jitsi_users_for_presence_token' do

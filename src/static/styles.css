@@ -2061,3 +2061,12 @@ hr.poll-entry-divider {
 .table .btn-clipboard-check {
     padding-top: 7px;
 }
+
+.lesson-notes-sus-here .btn {
+    margin-right: 4px;
+    font-family: Arial;
+    font-weight: bold;
+    width: 40px;
+    text-align: center;
+    
+}

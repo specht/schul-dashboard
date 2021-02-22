@@ -66,8 +66,93 @@
           
       </div>
       <div class="modal-footer">
-        <a class="btn btn-success bu-edit-lesson">Bearbeiten</a>
-        <button type="button" class="btn btn-secondary" data-dismiss="modal">Schließen</button>
+        <a class="btn btn-warning bu-edit-lesson-notes"><i class='fa fa-address-card-o'></i>&nbsp;&nbsp;Notizen</a>
+        <a class="btn btn-success bu-edit-lesson"><i class='fa fa-pencil'></i>&nbsp;&nbsp;Bearbeiten</a>
+        <button type="button" class="btn btn-secondary" data-dismiss="modal"><i class='fa fa-times'></i>&nbsp;&nbsp;Schließen</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal" id="lessonNotesModal" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-xl modal-dialog-centered" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" >
+            Notizen zu Schülerinnen und Schülern
+        </h5>
+      </div>
+      <div class="modal-body">
+          <div class='container-fluid' style='padding: 0;'>
+            <div class='row'>
+                <table class='table table-striped narrow'>
+                    <thead>
+                    <tr>
+                    <th rowspan='2'>Name</th>
+                    <th colspan='2'>Stunde</th>
+                    <th colspan='2'>Hausaufgaben</th>
+                    </tr>
+                    <tr>
+                    <th>Anwesenheit</th>
+                    <th>Mitarbeit</th>
+                    <th>Abgabe</th>
+                    <th>Qualität</th>
+                    </tr>
+                    </thead>
+                    <tbody class='lesson-notes-sus-here'>
+                    </tbody>
+                </table>
+<!--                <div class='col-md-4'>
+                    Anwesenheit
+                </div>
+                <div class='col-md-8'>
+                    <button class='btn btn-secondary'>abwesend</button>
+                    <button class='btn btn-secondary'>verspätet</button>
+                    <button class='btn btn-secondary'>anwesend</button>
+                </div>
+                
+                <div class='col-md-12' style='margin-bottom: 8px;'></div>
+                
+                <div class='col-md-4'>
+                    Mitarbeit
+                </div>
+                <div class='col-md-8'>
+                    <button class='btn btn-secondary'>--</button>
+                    <button class='btn btn-secondary'>-</button>
+                    <button class='btn btn-secondary'>o</button>
+                    <button class='btn btn-secondary'>+</button>
+                    <button class='btn btn-secondary'>++</button>
+                </div>
+                
+                <div class='col-md-12' style='margin-bottom: 8px;'></div>
+                
+                <div class='col-md-4'>
+                    Hausaufgaben
+                </div>
+                <div class='col-md-8'>
+                    <button class='btn btn-secondary'>nicht abgegeben</button>
+                    <button class='btn btn-secondary'>zu spät abgegeben</button>
+                    <button class='btn btn-secondary'>pünktlich abgegeben</button>
+                </div>
+
+                <div class='col-md-12' style='margin-bottom: 8px;'></div>
+                
+                <div class='col-md-4'>
+                    Qualität der Hausaufgaben
+                </div>
+                <div class='col-md-8'>
+                    <button class='btn btn-secondary'>--</button>
+                    <button class='btn btn-secondary'>-</button>
+                    <button class='btn btn-secondary'>o</button>
+                    <button class='btn btn-secondary'>+</button>
+                    <button class='btn btn-secondary'>++</button>
+                </div>-->
+            </div>
+        </div>
+          
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-dismiss="modal"><i class='fa fa-times'></i>&nbsp;&nbsp;Schließen</button>
       </div>
     </div>
   </div>
@@ -1047,5 +1132,64 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     });
+    for (let name of ['Alexandros Kaspar', 
+        'Alf Bitter', 
+        'Ann Landgraf', 
+        'Anselm Hänsch', 
+        'Curt Meder', 
+        'Elias Püschel', 
+        'Franz Kuhl', 
+        'Henryk Jasper', 
+        'Herlinde Mühl', 
+        'Hildegart Seiffert', 
+        'Ilonka Oster', 
+        'Isabella Matt', 
+        'Jacqueline Herb', 
+        'Karl-Peter Ruge', 
+        'Kuno Haak', 
+        'Marija Welzel', 
+        'Mario Seyfarth', 
+        'Mirja Spielmann', 
+        'Nadeschda Radtke', 
+        'Regina Völkl', 
+        'Richard Seidl', 
+        'Tam Anh Reinartz', 
+        'Tomas Winkel', 
+        'Ursel Bott', 
+        'Vinko Nitzsche']) {
+        let row = $('<tr>');
+        row.append($('<td>').text(name));
+        let cell = null;
+        cell = $('<td>');
+        cell.append($('<button>').addClass('btn').css({background: '#d5291a', color: '#fff'}).html("<i class='fa fa-times'></i>"));
+        cell.append($('<button>').addClass('btn').css({background: '#fdb717', color: '#333'}).html("<i class='fa fa-clock-o'></i>"));
+        cell.append($('<button>').addClass('btn').css({background: '#80bc42', color: '#333'}).html("<i class='fa fa-check'></i>"));
+        row.append(cell);
+        cell = $('<td>');
+        cell.append($('<button>').addClass('btn').css({background: '#d5291a', color: '#fff'}).html("--"));
+        cell.append($('<button>').addClass('btn').css({background: '#f4951b', color: '#fff'}).html("-"));
+        cell.append($('<button>').addClass('btn').css({background: '#fdb717', color: '#333'}).html("o"));
+        cell.append($('<button>').addClass('btn').css({background: '#beb92c', color: '#333'}).html("+"));
+        cell.append($('<button>').addClass('btn').css({background: '#80bc42', color: '#333'}).html("++"));
+        row.append(cell);
+        cell = $('<td>');
+        cell.append($('<button>').addClass('btn').css({background: '#d5291a', color: '#fff'}).html("<i class='fa fa-times'></i>"));
+        cell.append($('<button>').addClass('btn').css({background: '#fdb717', color: '#333'}).html("<i class='fa fa-clock-o'></i>"));
+        cell.append($('<button>').addClass('btn').css({background: '#80bc42', color: '#333'}).html("<i class='fa fa-check'></i>"));
+        row.append(cell);
+        cell = $('<td>');
+        cell.append($('<button>').addClass('btn').css({background: '#d5291a', color: '#fff'}).html("--"));
+        cell.append($('<button>').addClass('btn').css({background: '#f4951b', color: '#fff'}).html("-"));
+        cell.append($('<button>').addClass('btn').css({background: '#fdb717', color: '#333'}).html("o"));
+        cell.append($('<button>').addClass('btn').css({background: '#beb92c', color: '#333'}).html("+"));
+        cell.append($('<button>').addClass('btn').css({background: '#80bc42', color: '#333'}).html("++"));
+        row.append(cell);
+        $('.lesson-notes-sus-here').append(row);
+        
+    }
+    $('.bu-edit-lesson-notes').click(function() {
+        $('#lessonNotesModal').modal('show');
+    });
+    $('#lessonNotesModal').modal('show');
 });
 </script>

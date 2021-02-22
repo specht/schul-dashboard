@@ -433,7 +433,7 @@ class Main < Sinatra::Base
         room_name = result[:lesson_room_name]
         jwt = gen_jwt_for_room(room_name, nil, @@user_info[email][:display_last_name])
         result[:lesson_room_jwt_link] = "https://#{JITSI_HOST}/#{room_name}?presence_token=#{data[:presence_token]}&jwt=#{jwt}"
-        result[:breakout_room_names].each.with_index do |breakout_room_name, i|
+        (result[:breakout_room_names] || []).each.with_index do |breakout_room_name, i|
             room_name = result[:breakout_room_urls][i]
             jwt = gen_jwt_for_room(room_name, nil, @@user_info[email][:display_last_name])
             result[:jwt_links][breakout_room_name] = "https://#{JITSI_HOST}/#{room_name}?presence_token=#{data[:presence_token]}&jwt=#{jwt}"

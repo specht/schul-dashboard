@@ -350,6 +350,7 @@ var data_keys_bools = ['lesson_jitsi', 'lesson_nc', 'lesson_lr', 'homework_nc', 
 var can_select = false;
 
 function sanitize_breakout_room_config(config) {
+    config = JSON.parse(JSON.stringify(config));
     if (typeof(config.rooms) === 'undefined' || config.rooms === null)
         config.rooms = ['Gruppe 1'];
     if (config.rooms.length < 1)
@@ -849,14 +850,16 @@ function save_changes() {
                             lesson_data[i].info[k] = v;
                         }
                     }
-                    if (typeof(data.breakout_rooms.rooms) !== 'undefined')
-                        lesson_data[i].info.breakout_rooms = data.breakout_rooms.rooms;
-                    else
-                        delete lesson_data[i].info.breakout_rooms;
-                    if (typeof(data.breakout_rooms.participants) !== 'undefined')
-                        lesson_data[i].info.breakout_room_participants = data.breakout_rooms.participants;
-                    else
-                        delete lesson_data[i].info.breakout_room_participants;
+                    if (data.lesson_offsets.length === 1) {
+                        if (typeof(data.breakout_rooms.rooms) !== 'undefined')
+                            lesson_data[i].info.breakout_rooms = data.breakout_rooms.rooms;
+                        else
+                            delete lesson_data[i].info.breakout_rooms;
+                        if (typeof(data.breakout_rooms.participants) !== 'undefined')
+                            lesson_data[i].info.breakout_room_participants = data.breakout_rooms.participants;
+                        else
+                            delete lesson_data[i].info.breakout_room_participants;
+                    }
                 }
                 stored_breakout_room_config_json = JSON.stringify(breakout_room_config);
                 update_table();

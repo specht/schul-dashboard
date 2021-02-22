@@ -716,7 +716,7 @@ class Parser
         return kurse_for_schueler, schueler_for_kurs
     end
 
-    def parse_wahlpflichtkurswahl(user_info, lessons)
+    def parse_wahlpflichtkurswahl(user_info, lessons, lesson_key_tr)
 #         STDERR.puts "Parsing wahlpflichtkurswahl..."
         schueler_for_lesson_key = {}
         unassigned_names = Set.new()
@@ -724,6 +724,7 @@ class Parser
             if File.exists?('/data/kurswahl/wahlpflicht.yaml')
                 wahlpflicht = YAML.load(File.read('/data/kurswahl/wahlpflicht.yaml'))
                 wahlpflicht.each_pair do |lesson_key, sus|
+                    lesson_key = lesson_key_tr[lesson_key] || lesson_key
                     unless lessons[:lesson_keys].include?(lesson_key)
                         STDERR.puts "NOTICE -- Wahlpflicht: Skipping #{lesson_key} because it's unknown."
                         next

@@ -8,6 +8,12 @@ require 'nextcloud'
 require 'cgi'
 require 'yaml'
 
+SHARE_READ = 1
+SHARE_UPDATE = 2
+SHARE_CREATE = 4
+SHARE_DELETE = 8
+SHARE_SHARE = 16
+
 class Script
     def initialize
         @ocs = Nextcloud.ocs(url: NEXTCLOUD_URL_FROM_RUBY_CONTAINER,
@@ -62,7 +68,7 @@ class Script
                 email_for_user_id[user_id] = email
                 wanted_shares[user_id] ||= {}
                 wanted_shares[user_id]["/Unterricht/#{folder_name}"] = {
-                    :permissions => 15,
+                    :permissions => SHARE_READ | SHARE_UPDATE | SHARE_CREATE | SHARE_DELETE,
                     :target_path => "/Unterricht/#{pretty_folder_name}",
                     :share_with => user[:display_name]
                 }
@@ -75,17 +81,17 @@ class Script
                 wanted_shares[user_id] ||= {}
                 pretty_folder_name = "#{fach.gsub('/', '-')}"
                 wanted_shares[user_id]["/Unterricht/#{folder_name}/Ausgabeordner"] = {
-                    :permissions => 1,
+                    :permissions => SHARE_READ,
                     :target_path => "/Unterricht/#{pretty_folder_name.gsub(' ', '%20')}/Ausgabeordner",
                     :share_with => user[:display_name]
                 }
                 wanted_shares[user_id]["/Unterricht/#{folder_name}/SuS/#{name}/Einsammelordner"] = {
-                    :permissions => 15,
+                    :permissions => SHARE_READ | SHARE_UPDATE | SHARE_CREATE | SHARE_DELETE,
                     :target_path => "/Unterricht/#{pretty_folder_name.gsub(' ', '%20')}/Einsammelordner",
                     :share_with => user[:display_name]
                 }
                 wanted_shares[user_id]["/Unterricht/#{folder_name}/SuS/#{name}/Rückgabeordner"] = {
-                    :permissions => 15,
+                    :permissions => SHARE_READ | SHARE_UPDATE | SHARE_CREATE | SHARE_DELETE,
                     :target_path => "/Unterricht/#{pretty_folder_name.gsub(' ', '%20')}/Rückgabeordner",
                     :share_with => user[:display_name]
                 }

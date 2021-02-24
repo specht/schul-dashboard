@@ -153,7 +153,8 @@ class Main < Sinatra::Base
                     end
                 end
             end.each do |shorthand|
-                lehrer = @@user_info[@@shorthands[shorthand]] || {}
+                lehrer = @@user_info[@@shorthands[shorthand]]
+                next if lehrer.nil?
                 is_klassenleiter = (@@klassenleiter[klasse] || []).include?(shorthand)
                 
                 if old_is_klassenleiter && !is_klassenleiter

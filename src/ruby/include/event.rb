@@ -173,7 +173,10 @@ class Main < Sinatra::Base
         data[:email] = email
         data[:timestamp] = timestamp
         event = nil
-        temp = $neo4j.neo4j_query_expect_one(<<~END_OF_QUERY, data)
+        # TODO: There is a potential bug here when someone adds a PredefinedExternalUser
+        # as a recipient and there will be two results here where we would have expected
+        # one before
+        temp = $neo4j.neo4j_query(<<~END_OF_QUERY, data).first
             MATCH (u:User)<-[:ORGANIZED_BY]-(e:Event {id: {eid}})<-[rt:IS_PARTICIPANT]-(r)
             WHERE (r:ExternalUser OR r:PredefinedExternalUser) AND (r.email = {email}) AND COALESCE(rt.deleted, false) = false AND COALESCE(e.deleted, false) = false
             RETURN e, u.email;

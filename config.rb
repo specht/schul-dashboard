@@ -207,6 +207,8 @@ end
 
 unless DOCKER_NETWORK_SUBNET.nil?
     docker_compose[:networks] = {DOCKER_NETWORK_NAME => {:ipam => {:config => [{:subnet => DOCKER_NETWORK_SUBNET}]}}}
+else
+    docker_compose[:networks] = {DOCKER_NETWORK_NAME => {}}
 end
 
 docker_compose[:services][:nginx][:ports] = ["127.0.0.1:#{DEV_NGINX_PORT}:80"]

@@ -30,7 +30,7 @@
                                 <input type="text" class="form-control" value='#{@session_user[:display_last_name]}' readonly />
                             </div>
                         </div>
-                        <div class='col-md-10' style='display: #{(@session_user[:teacher] == true) ? 'none' : 'block'};'>
+                        <div class='#{(@session_user[:teacher] == true) ? 'col-md-10' : 'col-md-8'}' style='display: #{(@session_user[:teacher] == true) ? 'none' : 'block'};'>
                             <div class="form-group">
                                 <label>Anzeigename</label>
                                 <input type="text" class="form-control" value='#{@session_user[:display_name]}' readonly />
@@ -44,6 +44,12 @@
                             <div class="form-group" style='display: #{(@session_user[:teacher] == true) ? 'none' : 'block'};'>
                                 <label>Klasse</label>
                                 <input type="text" class="form-control" value='#{tr_klasse(@session_user[:klasse])}' readonly />
+                            </div>
+                        </div>
+                        <div class='col-md-2'>
+                            <div class="form-group" style='display: #{(@session_user[:teacher] == true) ? 'none' : 'block'};'>
+                                <label>Gruppe</label>
+                                <input type="text" class="form-control" value='#{@session_user[:group2]}' readonly />
                             </div>
                         </div>
                         <div class='col-md-12'>

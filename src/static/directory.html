@@ -8,7 +8,7 @@
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     install_clipboard_handler('.btn-clipboard');
-    if ('#{klassenleiter_for_klasse_logged_in?(klasse)}' === 'true') {
+    if ('#{klassenleiter_for_klasse_or_admin_logged_in?(klasse)}' === 'true') {
         $('.group2-button').click(function(e) {
             let button = $(e.target).closest('.group2-button');
             let email = button.data('email');

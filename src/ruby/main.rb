@@ -100,11 +100,18 @@ module QtsNeo4j
     def transaction(&block)
         @neo4j ||= Neography::Rest.new
         @tx ||= []
-        @tx << (@tx.empty? ? @neo4j.begin_transaction : nil)
+        item = nil
+        if @tx.empty?
+            item = @neo4j.begin_transaction
+#             STDERR.puts "Starting transaction ##{item['commit'].split("/")[-2]}."
+            @transaction_size = 0
+        end
+        @tx << item
         begin
             result = yield
             item = @tx.pop
             unless item.nil?
+#                 STDERR.puts "Committing transaction ##{item['commit'].split("/")[-2]} with #{@transaction_size} queries."
                 @neo4j.commit_transaction(item)
             end
             result
@@ -112,6 +119,7 @@ module QtsNeo4j
             item = @tx.pop
             unless item.nil?
                 begin
+                    STDERR.puts "Rolling back transaction ##{item['commit'].split("/")[-2]} with #{@transaction_size} queries."
                     @neo4j.rollback_transaction(item)
                 rescue
                 end
@@ -129,10 +137,41 @@ module QtsNeo4j
             @v
         end
     end
+    
+    def wait_for_neo4j
+        delay = 1
+        10.times do
+            begin
+                neo4j_query("MATCH (n) RETURN n LIMIT 1;")
+                break
+            rescue
+                STDERR.puts $!
+                STDERR.puts "Retrying after #{delay} seconds..."
+                sleep delay
+                delay += 1
+            end
+        end
+    end
 
     def neo4j_query(query_str, options = {})
         transaction do
-            temp_result = @neo4j.in_transaction(@tx.first, [query_str, options])
+            temp_result = nil
+            5.times do
+                begin
+                    temp_result = @neo4j.in_transaction(@tx.first, [query_str, options])
+                    break
+                rescue Excon::Error::Socket
+                    STDERR.puts "ATTENTION: Retrying query:"
+                    STDERR.puts query_str
+                    STDERR.puts options.to_json
+                    sleep 1.0
+                end
+            end
+            if temp_result.nil?
+                STDERR.puts "ATTENTION: Giving up on query after 5 tries."
+                raise 'neo4j_oopsie'
+            end
+                
             if temp_result['errors'] && !temp_result['errors'].empty?
                 STDERR.puts "This:"
                 STDERR.puts temp_result.to_yaml
@@ -149,6 +188,7 @@ module QtsNeo4j
                     end
                 end
             end
+            @transaction_size += 1
             result
         end
     end
@@ -156,7 +196,13 @@ module QtsNeo4j
     def neo4j_query_expect_one(query_str, options = {})
         transaction do
             result = neo4j_query(query_str, options).to_a
-            raise "Expected one result but got #{result.size}" unless result.size == 1
+            unless result.size == 1
+                STDERR.puts '-' * 40
+                STDERR.puts query_str
+                STDERR.puts options.to_json
+                STDERR.puts '-' * 40
+                raise "Expected one result but got #{result.size}" 
+            end
             result.first
         end
     end
@@ -202,7 +248,12 @@ def deliver_mail(&block)
             body mail_html_to_plain_text(message)
         end
     end
-    mail.deliver!
+    if DEVELOPMENT
+        STDERR.puts "Not sending mail to because we're in development: #{mail.to.join(' / ')}"
+        STDERR.puts mail.to_s
+    else
+        mail.deliver!
+    end
 end
 
 def parse_markdown(s)
@@ -224,16 +275,36 @@ class SetupDatabase
                 neo4j_query("MATCH (n) RETURN n LIMIT 1;")
                 break unless ENV['DASHBOARD_SERVICE'] == 'ruby'
                 transaction do
+                    duplicate_peu = neo4j_query(<<~END_OF_QUERY)
+                        MATCH (n:PredefinedExternalUser)
+                        WITH n.email AS email, COLLECT(n) AS nodes
+                        WHERE SIZE(nodes) > 1
+                        RETURN nodes;
+                    END_OF_QUERY
+                    duplicate_peu.each do |entry|
+                        STDERR.puts entry.to_yaml
+                        entry['nodes'].select do |node|
+                            node['name'] != main.class_variable_get(:@@predefined_external_users)[:recipients][node['email']][:label]
+                        end.each do |node|
+                            STDERR.puts "DELETING PEU #{node['name']}"
+                            neo4j_query(<<~END_OF_QUERY, {:name => node['name'], :email => node['email']})
+                                MATCH (n:PredefinedExternalUser {name: {name}, email: {email}})
+                                DETACH DELETE n;
+                            END_OF_QUERY
+                        end
+                    end
+                end
+                transaction do
                     STDERR.puts "Removing all constraints and indexes..."
                     indexes = []
-                    neo4j_query("CALL db.constraints").each do |constraint|
-                        query = "DROP #{constraint['description']}"
-                        neo4j_query(query)
-                    end
-                    neo4j_query("CALL db.indexes").each do |index|
-                        query = "DROP #{index['description']}"
-                        neo4j_query(query)
-                    end
+#                     neo4j_query("CALL db.constraints").each do |constraint|
+#                         query = "DROP #{constraint['description']}"
+#                         neo4j_query(query)
+#                     end
+#                     neo4j_query("CALL db.indexes").each do |index|
+#                         query = "DROP #{index['description']}"
+#                         neo4j_query(query)
+#                     end
                     
                     STDERR.puts "Setting up constraints and indexes..."
                     neo4j_query("CREATE CONSTRAINT ON (n:User) ASSERT n.email IS UNIQUE")
@@ -246,6 +317,8 @@ class SetupDatabase
                     neo4j_query("CREATE CONSTRAINT ON (n:Event) ASSERT n.key IS UNIQUE")
                     neo4j_query("CREATE CONSTRAINT ON (n:Poll) ASSERT n.key IS UNIQUE")
                     neo4j_query("CREATE CONSTRAINT ON (n:PollRun) ASSERT n.key IS UNIQUE")
+                    neo4j_query("CREATE CONSTRAINT ON (n:PresenceToken) ASSERT n.token IS UNIQUE")
+#                     neo4j_query("CREATE CONSTRAINT ON (n:PredefinedExternalUser) ASSERT n.email IS UNIQUE")
                     neo4j_query("CREATE INDEX ON :LoginCode(code)")
                     neo4j_query("CREATE INDEX ON :NextcloudLoginCode(code)")
                     neo4j_query("CREATE INDEX ON :LessonInfo(offset)")
@@ -274,6 +347,20 @@ class SetupDatabase
                     END_OF_QUERY
                 end
                 transaction do
+                    present_users = neo4j_query(<<~END_OF_QUERY).map { |x| x['u.email'] }
+                        MATCH (u:User)
+                        RETURN u.email;
+                    END_OF_QUERY
+                    wanted_users = Set.new(main.class_variable_get(:@@user_info).keys)
+                    wanted_users << "lehrer.tablet@#{SCHUL_MAIL_DOMAIN}"
+                    wanted_users << "kurs.tablet@#{SCHUL_MAIL_DOMAIN}"
+                    users_to_be_deleted = Set.new(present_users) - wanted_users
+                    unless users_to_be_deleted.empty?
+                        STDERR.puts "Deleting users (not really):"
+                        STDERR.puts users_to_be_deleted.to_a.sort.to_yaml
+                    end
+                end
+                transaction do
                     main.class_variable_get(:@@predefined_external_users)[:recipients].each_pair do |k, v|
                         next if v[:entries]
                         neo4j_query(<<~END_OF_QUERY, :email => k, :name => v[:label])
@@ -281,6 +368,22 @@ class SetupDatabase
                         END_OF_QUERY
                     end
                 end
+                # purge sessions which have not been used within the past 7 days
+                purged_session_count = neo4j_query_expect_one(<<~END_OF_QUERY, {:today => (Date.today - 7).strftime('%Y-%m-%d')})['count']
+                    MATCH (s:Session)-[:BELONGS_TO]->(u:User)
+                    WHERE s.last_access IS NULL OR s.last_access < {today}
+                    AND NOT ((u.email = 'lehrer.tablet@#{SCHUL_MAIL_DOMAIN}') OR (u.email = 'kurs.tablet@#{SCHUL_MAIL_DOMAIN}'))
+                    DETACH DELETE s
+                    RETURN COUNT(s) as count;
+                END_OF_QUERY
+                STDERR.puts "Purged #{purged_session_count} stale sessions..."
+                purged_login_code_count = neo4j_query_expect_one(<<~END_OF_QUERY, :now => Time.now.to_i)['count']
+                    MATCH (l:LoginCode)
+                    WHERE l.valid_to <= {now}
+                    DETACH DELETE l
+                    RETURN COUNT(l) as count;
+                END_OF_QUERY
+                STDERR.puts "Purged #{purged_login_code_count} stale login codes..."
                 STDERR.puts "Setup finished."
                 break
             rescue
@@ -635,9 +738,11 @@ class Main < Sinatra::Base
         end
         
         kurse_for_schueler, schueler_for_kurs = parser.parse_kurswahl(@@user_info.reject { |x, y| y[:teacher] }, @@lessons, lesson_key_tr)
+        wahlpflicht_sus_for_lesson_key = parser.parse_wahlpflichtkurswahl(@@user_info.reject { |x, y| y[:teacher] }, @@lessons, lesson_key_tr)
         
         @@lessons_for_user = {}
         @@schueler_for_lesson = {}
+        @@schueler_offset_in_lesson = {}
         @@user_info.each_pair do |email, user|
             lessons = (user[:teacher] ? @@lessons_for_shorthand[user[:shorthand]] : @@lessons_for_klasse[user[:klasse]]).dup
             if kurse_for_schueler.include?(email)
@@ -651,17 +756,25 @@ class Main < Sinatra::Base
                     (lesson[:fach] == 'SpoJ' && user[:geschlecht] != 'm')
                 end
             end
-            @@lessons_for_user[email] = Set.new(lessons)
             unless user[:teacher]
                 lessons.each do |lesson_key|
+                    if wahlpflicht_sus_for_lesson_key.include?(lesson_key)
+                        next unless wahlpflicht_sus_for_lesson_key[lesson_key].include?(email)
+                    end
                     @@schueler_for_lesson[lesson_key] ||= []
                     @@schueler_for_lesson[lesson_key] << email
+                    @@lessons_for_user[email] ||= Set.new()
+                    @@lessons_for_user[email] << lesson_key
                 end
             end
         end
         @@schueler_for_lesson.each_pair do |lesson_key, emails|
+            @@schueler_offset_in_lesson[lesson_key] ||= {}
             emails.sort! do |a, b|
                 @@user_info[a][:display_name] <=> @@user_info[b][:display_name]
+            end
+            emails.each.with_index do |email, i|
+                @@schueler_offset_in_lesson[lesson_key][email] = i
             end
         end
         @@pausenaufsichten = parser.parse_pausenaufsichten()
@@ -734,24 +847,26 @@ class Main < Sinatra::Base
     end
     
     configure do
-        @@compiled_files = {}
-        self.collect_data()
-        setup = SetupDatabase.new()
-        setup.setup(self)
-        @@color_scheme_colors = COLOR_SCHEME_COLORS
-        @@standard_color_scheme = STANDARD_COLOR_SCHEME
-        @@color_scheme_colors.map! do |s|
-            ['#' + s[0][1, 6], '#' + s[0][7, 6], '#' + s[0][13, 6], s[1], s[0][0], s[2]]
-        end
-        @@renderer = BackgroundRenderer.new
-        if ENV['DASHBOARD_SERVICE'] == 'ruby'
+        self.collect_data() unless defined?(SKIP_COLLECT_DATA) && SKIP_COLLECT_DATA
+        if ENV['DASHBOARD_SERVICE'] == 'ruby' && File.basename($0) == 'thin'
+            @@compiled_files = {}
+            setup = SetupDatabase.new()
+            setup.setup(self)
+            @@color_scheme_colors = COLOR_SCHEME_COLORS
+            @@standard_color_scheme = STANDARD_COLOR_SCHEME
+            @@color_scheme_colors.map! do |s|
+                ['#' + s[0][1, 6], '#' + s[0][7, 6], '#' + s[0][13, 6], s[1], s[0][0], s[2]]
+            end
+            @@renderer = BackgroundRenderer.new
             @@color_scheme_colors.each do |palette|
                 @@renderer.render(palette)
             end
             self.compile_js()
             self.compile_css()
         end
-        STDERR.puts "Server is up and running!"
+        if ['thin', 'rackup'].include?(File.basename($0))
+            STDERR.puts "Server is up and running!"
+        end
     end
     
     def assert(condition, message = 'assertion failed', suppress_backtrace = false)
@@ -1024,11 +1139,11 @@ class Main < Sinatra::Base
                     io.puts "<a class='nav-link nav-icon dropdown-toggle' href='#' id='navbarDropdown' role='button' data-toggle='dropdown' aria-haspopup='true' aria-expanded='false'>"
                     display_name = htmlentities(@session_user[:display_name])
                     if @session_user[:klasse]
-                        if @session_user[:klasse][0, 2] == '10'
-                            display_name += " (#{tr_klasse(@session_user[:klasse])}/#{@session_user[:group2]})"
-                        else
-                            display_name += " (#{tr_klasse(@session_user[:klasse])})"
+                        temp = [tr_klasse(@session_user[:klasse])]
+                        if @session_user[:group2]
+                            temp << @session_user[:group2]
                         end
+                        display_name += " (#{temp.join('/')})"
                     end
                     io.puts "<div class='icon'>#{user_icon(@session_user[:email], 'avatar-md')}</div><span class='menu-user-name'>#{display_name}</span>"
 #                     
@@ -1154,21 +1269,7 @@ class Main < Sinatra::Base
     end
     
     def print_email_field(io, email)
-        io.puts "<div class='input-group'><input type='text' class='form-control' readonly value='#{email}' /><div class='input-group-append'><button class='btn btn-secondary btn-clipboard' data-clipboard-action='copy' data-clipboard-text='#{email}'><i class='fa fa-clipboard'></i></button><a href='mailto:#{email}' class='btn btn-primary' /><i class='fa fa-envelope'></i></a></div></div>"
-    end
-    
-    def current_jitsi_rooms()
-        @@current_jitsi_rooms ||= nil
-        @@current_jitsi_rooms_timestamp ||= Time.now
-        if @@current_jitsi_rooms.nil? || Time.now > @@current_jitsi_rooms_timestamp + 10
-            begin
-                @@current_jitsi_rooms = JSON.parse(File.read("/internal/jitsi/room.json"))
-                @@current_jitsi_rooms_timestamp = Time.now
-            rescue
-                @@current_jitsi_rooms = nil
-            end
-        end
-        return @@current_jitsi_rooms
+        io.puts "<div class='input-group'><input type='text' class='form-control' readonly value='#{email}' /><div class='input-group-append'><button class='btn btn-secondary btn-clipboard' data-clipboard-action='copy' title='E-Mail-Adresse in die Zwischenablage kopieren' data-clipboard-text='#{email}'><i class='fa fa-clipboard'></i></button></div></div>"
     end
     
     def print_lehrerzimmer_panel()
@@ -1178,7 +1279,6 @@ class Main < Sinatra::Base
         StringIO.open do |io|
             io.puts "<div class='hint lehrerzimmer-panel'>"
             io.puts "<div style='padding-top: 7px;'>Momentan im Jitsi-Lehrerzimmer:&nbsp;"
-#             <span class='btn btn-xs ttc'>Sp</span>
             rooms = current_jitsi_rooms()
             nobody_here = true
             if rooms
@@ -1623,6 +1723,4 @@ class Main < Sinatra::Base
             status 404
         end
     end
-
-    run! if app_file == $0
 end

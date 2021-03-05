@@ -205,7 +205,11 @@ if ENABLE_NEXTCLOUD_SANDBOX
     docker_compose[:services][:nextcloud][:ports] = ['127.0.0.1:8024:80']
 end
 
-docker_compose[:networks] = {:main => {}}
+unless DOCKER_NETWORK_SUBNET.nil?
+    docker_compose[:networks] = {DOCKER_NETWORK_NAME => {:ipam => {:config => [{:subnet => DOCKER_NETWORK_SUBNET}]}}}
+else
+    docker_compose[:networks] = {DOCKER_NETWORK_NAME => {}}
+end
 
 docker_compose[:services][:nginx][:ports] = ["127.0.0.1:#{DEV_NGINX_PORT}:80"]
 if DEVELOPMENT
@@ -220,13 +224,16 @@ else
 end
 
 docker_compose[:services][:weasyprint] = {:image => 'lgatica/weasyprint'}
+# docker_compose[:services][:ruby][:extra_hosts] = ['host.docker.internal:host-gateway']
 
 docker_compose[:services].each_pair do |k, v|
-    v[:networks] = {:main => {:aliases => [k]}}
+    v[:networks] = {DOCKER_NETWORK_NAME => {:aliases => [k]}}
     v[:environment] ||= []
     v[:environment] << "DASHBOARD_SERVICE=#{k}"
 end
-
+unless DOCKER_NETWORK_RUBY_IP.nil?
+    docker_compose[:services][:ruby][:networks][DOCKER_NETWORK_NAME][:ipv4_address] = DOCKER_NETWORK_RUBY_IP
+end
 
 File::open('docker-compose.yaml', 'w') do |f|
     f.puts "# NOTICE: don't edit this file directly, use config.rb instead!\n"

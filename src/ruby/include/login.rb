@@ -33,10 +33,19 @@ class Main < Sinatra::Base
         data[:code] = data[:code].gsub(/[^0-9]/, '')
         result = neo4j_query_expect_one(<<~END_OF_QUERY, :tag => data[:tag])
             MATCH (l:LoginCode {tag: {tag}})-[:BELONGS_TO]->(u:User)
+            SET l.tries = COALESCE(l.tries, 0) + 1
             RETURN l, u;
         END_OF_QUERY
         user = result['u'].props
         login_code = result['l'].props
+        if login_code[:tries] > MAX_LOGIN_TRIES
+            neo4j_query(<<~END_OF_QUERY, :tag => data[:tag])
+                MATCH (l:LoginCode {tag: {tag}})
+                DETACH DELETE l;
+            END_OF_QUERY
+            respond({:error => 'code_expired'})
+        end
+        assert(login_code[:tries] <= MAX_LOGIN_TRIES)
         if login_code[:otp]
             otp_token = user[:otp_token]
             assert(!otp_token.nil?)
@@ -50,8 +59,8 @@ class Main < Sinatra::Base
         end
         assert(Time.at(login_code[:valid_to]) >= Time.now)
         session_id = create_session(user[:email])
-        result = neo4j_query(<<~END_OF_QUERY, :tag => data[:tag], :code => data[:code])
-            MATCH (l:LoginCode {tag: {tag}, code: {code}})
+        neo4j_query(<<~END_OF_QUERY, :tag => data[:tag])
+            MATCH (l:LoginCode {tag: {tag}})
             DETACH DELETE l;
         END_OF_QUERY
         purge_missing_sessions(session_id)
@@ -234,7 +243,7 @@ class Main < Sinatra::Base
         sessions = neo4j_query(<<~END_OF_QUERY, :email => email).map { |x| x['s'].props }
             MATCH (s:Session)-[:BELONGS_TO]->(u:User {email: {email}})
             RETURN s
-            ORDER BY s.expires;
+            ORDER BY s.last_access DESC;
         END_OF_QUERY
         sessions.map do |s|
             s[:scrambled_sid] = Digest::SHA2.hexdigest(SESSION_SCRAMBLER + s[:sid]).to_i(16).to_s(36)[0, 16]
@@ -254,6 +263,7 @@ class Main < Sinatra::Base
             io.puts "<thead>"
             io.puts "<tr>"
             io.puts "<th>Gültig bis</th>"
+            io.puts "<th>Zuletzt verwendet</th>"
             io.puts "<th>Gerät</th>"
             io.puts "<th>Abmelden</th>"
             io.puts "</tr>"
@@ -265,15 +275,15 @@ class Main < Sinatra::Base
                 io.puts "<tr>"
                 d = Time.parse(s[:expires]).strftime('%d.%m.%Y');
                 io.puts "<td>#{d}</td>"
+                d = Time.parse(s[:last_access]).strftime('%d.%m.%Y');
+                io.puts "<td>#{d}</td>"
                 io.puts "<td style='text-overflow: ellipsis;'>#{s[:user_agent] || 'unbekanntes Gerät'}</td>"
                 io.puts "<td><button class='btn btn-danger btn-xs btn-purge-session' data-purge-session='#{s[:scrambled_sid]}'><i class='fa fa-sign-out'></i>&nbsp;&nbsp;Gerät abmelden</button></td>"
                 io.puts "</tr>"
             end
             if sessions.size > 1
                 io.puts "<tr>"
-                io.puts "<td></td>"
-                io.puts "<td></td>"
-                io.puts "<td><button class='btn btn-danger btn-xs btn-purge-session' data-purge-session='_all'><i class='fa fa-sign-out'></i>&nbsp;&nbsp;Alle Geräte abmelden</button></td>"            
+                io.puts "<td colspan='4'><button class='float-right btn btn-danger btn-xs btn-purge-session' data-purge-session='_all'><i class='fa fa-sign-out'></i>&nbsp;&nbsp;Alle Geräte abmelden</button></td>"            
                 io.puts "</tr>"
             end
             io.puts "</tbody>"

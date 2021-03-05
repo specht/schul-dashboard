@@ -57,5 +57,10 @@ window.addEventListener('load', function () {
     $('#email').change(function(e) {
         update_submit_button();
     });
+    let params = new URLSearchParams(window.location.search);
+    if (params.has('email')) {
+        $('#email').val(params.get('email'));
+        $('#submit_otp').click();
+    }
 });
 </script>

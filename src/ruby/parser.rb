@@ -715,5 +715,53 @@ class Parser
         end
         return kurse_for_schueler, schueler_for_kurs
     end
+
+    def parse_wahlpflichtkurswahl(user_info, lessons, lesson_key_tr)
+#         STDERR.puts "Parsing wahlpflichtkurswahl..."
+        schueler_for_lesson_key = {}
+        unassigned_names = Set.new()
+        begin
+            if File.exists?('/data/kurswahl/wahlpflicht.yaml')
+                wahlpflicht = YAML.load(File.read('/data/kurswahl/wahlpflicht.yaml'))
+                wahlpflicht.each_pair do |lesson_key, sus|
+                    lesson_key = lesson_key_tr[lesson_key] || lesson_key
+                    unless lessons[:lesson_keys].include?(lesson_key)
+                        STDERR.puts "NOTICE -- Wahlpflicht: Skipping #{lesson_key} because it's unknown."
+                        next
+                    end
+                    sus.each do |name|
+                        email = nil
+                        emails = user_info.select do |email, user_info|
+                            last_name = user_info[:last_name]
+                            first_name = user_info[:first_name]
+                            "#{first_name} #{last_name}" == name || email.sub("@#{SCHUL_MAIL_DOMAIN}", '') == name
+                        end.keys
+                        if emails.size == 1
+                            email = emails.to_a.first
+                        else
+                            unassigned_names << name
+                        end
+                        unless email
+                            STDERR.puts "Wahlpflichtkurswahl: Can't assign #{name}!"
+                        end
+                        if email
+                            schueler_for_lesson_key[lesson_key] ||= Set.new()
+                            schueler_for_lesson_key[lesson_key] << email
+                        end
+                    end
+                end
+            end
+        rescue
+            STDERR.puts '-' * 50
+            STDERR.puts "ATTENTION: Error parsing wahlpflicht.yaml, skipping..."
+            STDERR.puts '-' * 50
+        end
+        unless unassigned_names.empty?
+            STDERR.puts "Kurswahl: Can't assign these names!"
+            STDERR.puts unassigned_names.to_a.sort.to_yaml
+        end
+        STDERR.puts "Wahlpflichtkurswahl: got SuS for #{schueler_for_lesson_key.size} lesson keys."
+        return schueler_for_lesson_key
+    end
 end
 

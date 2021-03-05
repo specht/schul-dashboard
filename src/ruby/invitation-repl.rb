@@ -51,7 +51,9 @@ class InvitationRepl < Sinatra::Base
                 STDERR.puts ">>> Sending invite #{i + 1} of #{rows.size}..."
                 STDERR.puts '-' * 59
                 Main.invite_external_user_for_poll_run(row[:prid], row[:email], row[:org_email])
-                sleep 10.0
+                unless DEVELOPMENT
+                    sleep 10.0
+                end
                 # wait for 10 seconds
             end
         end
@@ -59,6 +61,7 @@ class InvitationRepl < Sinatra::Base
     
     configure do
         @@neo4j = Neo4jHelper.new()
+        @@neo4j.wait_for_neo4j()
         begin
             if @@worker_thread
                 Thread.kill(@@worker_thread)

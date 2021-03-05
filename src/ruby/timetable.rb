@@ -425,12 +425,15 @@ class Timetable
         @@vplan_timestamp = Main.class_variable_get(:@@vplan_timestamp)
         @@lessons_for_klasse = Main.class_variable_get(:@@lessons_for_klasse)
         @@lessons_for_user = Main.class_variable_get(:@@lessons_for_user)
+        @@lessons_for_shorthand = Main.class_variable_get(:@@lessons_for_shorthand)
         @@shorthands = Main.class_variable_get(:@@shorthands)
         @@klassen_order = Main.class_variable_get(:@@klassen_order)
         @@klassen_id = Main.class_variable_get(:@@klassen_id)
         @@faecher = Main.class_variable_get(:@@faecher)
         @@klassen_for_shorthand = Main.class_variable_get(:@@klassen_for_shorthand)
         @@schueler_for_klasse = Main.class_variable_get(:@@schueler_for_klasse)
+        @@schueler_for_lesson = Main.class_variable_get(:@@schueler_for_lesson)
+        @@schueler_offset_in_lesson = Main.class_variable_get(:@@schueler_offset_in_lesson)
         @@pausenaufsichten = Main.class_variable_get(:@@pausenaufsichten)
         
         lesson_offset = {}
@@ -1038,6 +1041,7 @@ class Timetable
             end
         end
         ical_events = {}
+#         logged_emails = Set.new()
         while p <= end_date do
             p1 = p + 7
             p_yw = p.strftime('%Y-%V')
@@ -1084,9 +1088,18 @@ class Timetable
                 end
                 lesson_keys ||= Set.new()
                 lesson_keys << "_#{user[:klasse]}" unless user[:teacher]
-                lesson_keys << "_#{user[:shorthand]}" if user[:teacher]
+                if user[:teacher]
+                    lesson_keys << "_#{user[:shorthand]}" 
+                    (@@lessons_for_shorthand[user[:shorthand]] || []).each do |lesson_key|
+                        lesson_keys << lesson_key
+                    end
+                end
                 lesson_keys << "_#{user[:email]}"
                 next if only_these_lesson_keys && (lesson_keys & only_these_lesson_keys).empty?
+#                 unless logged_emails.include?(email)
+#                     STDERR.puts email
+#                     logged_emails << email
+#                 end
                 path = "/gen/w/#{user[:id]}/#{p_yw}.json.gz"
                 FileUtils.mkpath(File.dirname(path))
                 file_count += 1
@@ -1204,6 +1217,14 @@ class Timetable
                                             data[k] = sum.to_s
                                         end
                                     end
+                                    [:breakout_rooms, :breakout_room_participants].each do |k|
+                                        (0...e[:count]).each do |o|
+                                            v = (((@lesson_info[lesson_key] || {})[e[:lesson_offset] + o] || {})[:data] || {})[k] || []
+                                            if v && (!v.empty?)
+                                                data[k] = v
+                                            end
+                                        end
+                                    end
                                     events_with_data_cache[lesson_key][e[:lesson_offset]] = data
                                 end
                                 events_with_data_per_user_cache[lesson_key] ||= {}
@@ -1249,6 +1270,18 @@ class Timetable
                         end
                         e
                     end
+                    if user[:teacher]
+                        fixed_events.map! do |event|
+                            if event[:lesson] && event[:lesson_key]
+                                event[:schueler_for_lesson] = (@@schueler_for_lesson[event[:lesson_key]] || []).map do |email|
+                                    {:display_name => @@user_info[email][:display_name],
+                                     :nc_login => @@user_info[email][:nc_login]
+                                    }
+                                end
+                            end
+                            event
+                        end
+                    end
                     unless user[:teacher]
                         # if it's a schüler, only add events which have the right klasse
                         # (unless it's a phantom event)
@@ -1279,8 +1312,17 @@ class Timetable
                             end
                             event
                         end
+                        # add schueler_offset_in_lesson for SuS
+                        fixed_events.map! do |event|
+                            if event[:lesson_key]
+                                event[:schueler_offset_in_lesson] = (@@schueler_offset_in_lesson[event[:lesson_key]] || {})[user[:email]] || 0
+                            end
+                            event
+                        end
                         # add future homework for SuS
                         fixed_events.map! do |_event|
+                            # TODO: this code can't work because we're using symbols from parsed JSON
+                            # but it's kind of okay because we don't need homework in the lesson modal
                             event = JSON.parse(_event.to_json)
                             if (all_homework[event[:lesson_key]] || {})[event[:datum]]
                                 all_homework[event[:lesson_key]][event[:datum]].each_pair do |k, v|
@@ -1613,6 +1655,10 @@ class Timetable
                 if user[:can_see_all_timetables] || user[:sv]
                     recipients['/schueler/*'] = {:label => 'Gesamte Schülerschaft',
                                                  :entries => @@user_info.select { |k, v| !v[:teacher]}.map { |k, v| k }}
+                end
+                if user[:can_see_all_timetables]
+                    recipients['/eltern/*'] = {:label => 'Gesamte Elternschaft',
+                                               :entries => @@user_info.select { |k, v| !v[:teacher]}.map { |k, v| 'eltern.' + k }}
                 end
                 if user[:teacher]
                     recipients['/lehrer/*'] = {:label => 'Gesamtes Kollegium',

@@ -30,7 +30,7 @@
                                 <input type="text" class="form-control" value='#{@session_user[:display_last_name]}' readonly />
                             </div>
                         </div>
-                        <div class='col-md-10' style='display: #{(@session_user[:teacher] == true) ? 'none' : 'block'};'>
+                        <div class='#{(@session_user[:teacher] == true) ? 'col-md-10' : 'col-md-8'}' style='display: #{(@session_user[:teacher] == true) ? 'none' : 'block'};'>
                             <div class="form-group">
                                 <label>Anzeigename</label>
                                 <input type="text" class="form-control" value='#{@session_user[:display_name]}' readonly />
@@ -44,6 +44,12 @@
                             <div class="form-group" style='display: #{(@session_user[:teacher] == true) ? 'none' : 'block'};'>
                                 <label>Klasse</label>
                                 <input type="text" class="form-control" value='#{tr_klasse(@session_user[:klasse])}' readonly />
+                            </div>
+                        </div>
+                        <div class='col-md-2'>
+                            <div class="form-group" style='display: #{(@session_user[:teacher] == true) ? 'none' : 'block'};'>
+                                <label>Gruppe</label>
+                                <input type="text" class="form-control" value='#{@session_user[:group2]}' readonly />
                             </div>
                         </div>
                         <div class='col-md-12'>
@@ -102,7 +108,7 @@
             <div class="input-group">
                 <input type="text" id='ti_ical_link' class="form-control" placeholder='(kein iCal-Link vorhanden)' readonly />
                 <div class="input-group-append">
-                    <button class='btn bu-clipboard-ical btn-secondary' data-clipboard-action='copy' data-clipboard-target="#ti_ical_link"><i class='fa fa-clipboard'></i>&nbsp;&nbsp;Kopieren</button>
+                    <button class='btn bu-clipboard-ical btn-secondary btn-clipboard' data-clipboard-action='copy' data-clipboard-target="#ti_ical_link"><i class='fa fa-clipboard'></i>&nbsp;&nbsp;Kopieren</button>
                 </div>
             </div>
             <div class='float-right' style='margin-top: 5px;'>
@@ -201,7 +207,7 @@ function changeThemeColor(color) {
 }
 
 window.addEventListener('load', function () {
-    new ClipboardJS('.btn');
+    install_clipboard_handler('.btn-clipboard');
     $('.bu_set_font').click(function(e) {
         $('.bu_set_font').removeClass('btn-success').addClass('btn-secondary');
         $(e.target).removeClass('btn-secondary').addClass('btn-success');

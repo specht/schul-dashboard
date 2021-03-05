@@ -7,8 +7,8 @@ require 'zlib'
 require 'fileutils'
 require 'thread'
 
-PING_TIME = DEVELOPMENT ? 1 : 60
-DELAYED_UPDATE_TIME = DEVELOPMENT ? 1 : 1
+PING_TIME = DEVELOPMENT ? 1 : 1
+DELAYED_UPDATE_TIME = DEVELOPMENT ? 0 : 0
 
 class TimetableRepl < Sinatra::Base
     include QtsNeo4j

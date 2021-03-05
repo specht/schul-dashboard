@@ -83,6 +83,8 @@ TECHNIK_HILFE_WEBSITE_URL = 'https://hilfe.beispielschule.de'
 
 WEB_ROOT = DEVELOPMENT ? 'http://localhost:8025' : "https://#{WEBSITE_HOST}"
 
+MAX_LOGIN_TRIES = 5
+
 # Das Dashboard benötigt einen Nextcloud-Account, der Admin-Rechte hat
 NEXTCLOUD_URL = 'http://localhost:8024'
 # Falls die Nextcloud im Development-Modus in Docker läuft, 
@@ -121,6 +123,10 @@ JWT_APPAUD = 'jitsi'
 JWT_APPISS = 'dashboard'
 JWT_APPKEY = 'ein_langer_langer_richtig_langer_app_key'
 JWT_SUB = 'beispielschule.de'
+# Hier kann, falls vorhanden, eine URL eingetragen werden, unter der aus dem 
+# Ruby-Docker-Container ein GET-Request zu allRooms gemacht werden kann,
+# der alle Räume und Teilnehmer im JSON-Format zurückgibt.
+JITSI_ALL_ROOMS_URL = nil
 
 # Es folgen ein paar Salts, die bestimmen, nach welchen Regeln
 # Passwörter und sekundäre IDs generiert werden

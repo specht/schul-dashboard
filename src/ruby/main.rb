@@ -370,8 +370,9 @@ class SetupDatabase
                 end
                 # purge sessions which have not been used within the past 7 days
                 purged_session_count = neo4j_query_expect_one(<<~END_OF_QUERY, {:today => (Date.today - 7).strftime('%Y-%m-%d')})['count']
-                    MATCH (s:Session)
+                    MATCH (s:Session)-[:BELONGS_TO]->(u:User)
                     WHERE s.last_access IS NULL OR s.last_access < {today}
+                    AND NOT ((u.email = 'lehrer.tablet@#{SCHUL_MAIL_DOMAIN}') OR (u.email = 'kurs.tablet@#{SCHUL_MAIL_DOMAIN}'))
                     DETACH DELETE s
                     RETURN COUNT(s) as count;
                 END_OF_QUERY

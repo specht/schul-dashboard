@@ -29,8 +29,13 @@ require 'user_agent_parser'
 require 'write_xlsx'
 require 'yaml'
 
-require './background-renderer.rb'
+require './credentials.template.rb'
+warn_level = $VERBOSE
+$VERBOSE = nil
 require './credentials.rb'
+$VERBOSE = warn_level
+
+require './background-renderer.rb'
 require './include/admin.rb'
 require './include/color.rb'
 require './include/comment.rb'

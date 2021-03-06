@@ -150,12 +150,16 @@ class Main < Sinatra::Base
                 result[:html] += "<hr />"
             else
                 # it's a lesson, only allow between 07:00 and 18:00
+                result[:html] = ''
                 require_user!
                 can_enter_room = true
                 room_name = path
+                if (sus_logged_in? && WECHSELUNTERRICHT_KLASSENSTUFEN.include?(@session_user[:klasse].to_i))
+                    room_name = "Klassenstream #{@session_user[:klasse]}"
+                end
                 if room_name.index('Klassenstream') == 0
                     if (!@session_user[:teacher]) && (!get_homeschooling_for_user(@session_user[:email])) && room_name.index('Klassenstream') == 0
-                        result[:html] += "<div class='alert alert-danger'>Du bist momentan nicht für den Klassenstream freigeschaltet. Deine Klassenleiterin oder dein Klassenleiter kann dich dafür freischalten.</div>"
+                        result[:html] += "<div class='alert alert-danger'>Du bist momentan nicht für den Klassenstream freigeschaltet, da du in Gruppe #{@session_user[:group2]} eingeteilt bist und auch nicht als »zu Hause« markiert bist. Deine Klassenleiterin oder dein Klassenleiter kann dich freischalten.</div>"
                         can_enter_room = false
                     end
                     if can_enter_room

@@ -1139,11 +1139,11 @@ class Main < Sinatra::Base
                     io.puts "<a class='nav-link nav-icon dropdown-toggle' href='#' id='navbarDropdown' role='button' data-toggle='dropdown' aria-haspopup='true' aria-expanded='false'>"
                     display_name = htmlentities(@session_user[:display_name])
                     if @session_user[:klasse]
-                        temp = [tr_klasse(@session_user[:klasse])]
-                        if @session_user[:group2]
-                            temp << @session_user[:group2]
+                        if @session_user[:klasse][0, 2] == '10'
+                            display_name += " (#{tr_klasse(@session_user[:klasse])}/#{@session_user[:group2]})"
+                        else
+                            display_name += " (#{tr_klasse(@session_user[:klasse])})"
                         end
-                        display_name += " (#{temp.join('/')})"
                     end
                     io.puts "<div class='icon'>#{user_icon(@session_user[:email], 'avatar-md')}</div><span class='menu-user-name'>#{display_name}</span>"
 #                     

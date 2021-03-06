@@ -213,10 +213,16 @@ class Main < Sinatra::Base
     end
     
     def get_homeschooling_for_user(email)
-        neo4j_query_expect_one(<<~END_OF_QUERY, {:email => email})['homeschooling']
+        info = neo4j_query_expect_one(<<~END_OF_QUERY, {:email => email})
             MATCH (u:User {email: {email}})
-            RETURN COALESCE(u.homeschooling, false) AS homeschooling
+            RETURN COALESCE(u.homeschooling, false) AS homeschooling,
+                   COALESCE(u.group2, 'A') AS group2
         END_OF_QUERY
+        marked_as_homeschooling = info['homeschooling']
+        group2 = info['group2']
+        week_number = Date.today.strftime('%-V').to_i
+        marked_as_homeschooling_by_week = ((week_number % 2) == (group2[0].ord) - ('A'.ord))
+        marked_as_homeschooling || marked_as_homeschooling_by_week
     end
     
     post '/api/toggle_homeschooling' do

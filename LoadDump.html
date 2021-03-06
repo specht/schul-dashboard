@@ -154,7 +154,7 @@
   
   
   <h3 class="inherited">Methods included from <span class='object_link'><a href="QtsNeo4j.html" title="QtsNeo4j (module)">QtsNeo4j</a></span></h3>
-  <p class="inherited"><span class='object_link'><a href="QtsNeo4j.html#neo4j_query-instance_method" title="QtsNeo4j#neo4j_query (method)">#neo4j_query</a></span>, <span class='object_link'><a href="QtsNeo4j.html#neo4j_query_expect_one-instance_method" title="QtsNeo4j#neo4j_query_expect_one (method)">#neo4j_query_expect_one</a></span>, <span class='object_link'><a href="QtsNeo4j.html#transaction-instance_method" title="QtsNeo4j#transaction (method)">#transaction</a></span></p>
+  <p class="inherited"><span class='object_link'><a href="QtsNeo4j.html#neo4j_query-instance_method" title="QtsNeo4j#neo4j_query (method)">#neo4j_query</a></span>, <span class='object_link'><a href="QtsNeo4j.html#neo4j_query_expect_one-instance_method" title="QtsNeo4j#neo4j_query_expect_one (method)">#neo4j_query_expect_one</a></span>, <span class='object_link'><a href="QtsNeo4j.html#transaction-instance_method" title="QtsNeo4j#transaction (method)">#transaction</a></span>, <span class='object_link'><a href="QtsNeo4j.html#wait_for_neo4j-instance_method" title="QtsNeo4j#wait_for_neo4j (method)">#wait_for_neo4j</a></span></p>
 
 
   <div id="instance_method_details" class="method_details_list">
@@ -176,7 +176,6 @@
       <pre class="lines">
 
 
-7
 8
 9
 10
@@ -219,10 +218,11 @@
 47
 48
 49
-50</pre>
+50
+51</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'src/ruby/load-dump.rb', line 7</span>
+      <pre class="code"><span class="info file"># File 'src/ruby/load-dump.rb', line 8</span>
 
 <span class='kw'>def</span> <span class='id identifier rubyid_run'>run</span><span class='lparen'>(</span><span class='id identifier rubyid_path'>path</span><span class='rparen'>)</span>
     <span class='kw'>unless</span> <span class='const'>ARGV</span><span class='period'>.</span><span class='id identifier rubyid_include?'>include?</span><span class='lparen'>(</span><span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>--append-srsly</span><span class='tstring_end'>&#39;</span></span><span class='rparen'>)</span>
@@ -260,7 +260,7 @@
                         <span class='id identifier rubyid_exit'>exit</span><span class='lparen'>(</span><span class='int'>1</span><span class='rparen'>)</span>
                     <span class='kw'>end</span>
                     <span class='const'>STDERR</span><span class='period'>.</span><span class='id identifier rubyid_print'>print</span> <span class='tstring'><span class='tstring_beg'>&quot;</span><span class='tstring_content'>\rLoaded </span><span class='embexpr_beg'>#{</span><span class='id identifier rubyid_n_count'>n_count</span><span class='embexpr_end'>}</span><span class='tstring_content'> nodes, </span><span class='embexpr_beg'>#{</span><span class='id identifier rubyid_r_count'>r_count</span><span class='embexpr_end'>}</span><span class='tstring_content'> relationships...</span><span class='tstring_end'>&quot;</span></span>
-                    <span class='kw'>break</span> <span class='kw'>if</span> <span class='const'>Time</span><span class='period'>.</span><span class='id identifier rubyid_now'>now</span> <span class='op'>-</span> <span class='id identifier rubyid_t'>t</span> <span class='op'>&gt;</span> <span class='int'>3</span>
+                    <span class='kw'>break</span> <span class='kw'>if</span> <span class='const'>Time</span><span class='period'>.</span><span class='id identifier rubyid_now'>now</span> <span class='op'>-</span> <span class='id identifier rubyid_t'>t</span> <span class='op'>&gt;</span> <span class='int'>1</span>
                 <span class='kw'>end</span>
             <span class='kw'>end</span>
             <span class='kw'>break</span> <span class='kw'>if</span> <span class='id identifier rubyid_f'>f</span><span class='period'>.</span><span class='id identifier rubyid_eof?'>eof?</span>
@@ -278,7 +278,7 @@
 </div>
 
       <div id="footer">
-  Generated on Thu Feb 11 00:45:58 2021 by
+  Generated on Sat Mar  6 16:51:16 2021 by
   <a href="http://yardoc.org" title="Yay! A Ruby Documentation Tool" target="_parent">yard</a>
   0.9.26 (ruby-2.5.1).
 </div>

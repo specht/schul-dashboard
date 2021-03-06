@@ -203,7 +203,9 @@
 55
 56
 57
-58</pre>
+58
+59
+60</pre>
     </td>
     <td>
       <pre class="code"><span class="info file"># File 'src/ruby/invitation-repl.rb', line 18</span>
@@ -244,7 +246,9 @@
 </span>            <span class='const'>STDERR</span><span class='period'>.</span><span class='id identifier rubyid_puts'>puts</span> <span class='tstring'><span class='tstring_beg'>&quot;</span><span class='tstring_content'>&gt;&gt;&gt; Sending invite </span><span class='embexpr_beg'>#{</span><span class='id identifier rubyid_i'>i</span> <span class='op'>+</span> <span class='int'>1</span><span class='embexpr_end'>}</span><span class='tstring_content'> of </span><span class='embexpr_beg'>#{</span><span class='id identifier rubyid_rows'>rows</span><span class='period'>.</span><span class='id identifier rubyid_size'>size</span><span class='embexpr_end'>}</span><span class='tstring_content'>...</span><span class='tstring_end'>&quot;</span></span>
             <span class='const'>STDERR</span><span class='period'>.</span><span class='id identifier rubyid_puts'>puts</span> <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>-</span><span class='tstring_end'>&#39;</span></span> <span class='op'>*</span> <span class='int'>59</span>
             <span class='const'><span class='object_link'><a href="Main.html" title="Main (class)">Main</a></span></span><span class='period'>.</span><span class='id identifier rubyid_invite_external_user_for_poll_run'><span class='object_link'><a href="Main.html#invite_external_user_for_poll_run-class_method" title="Main.invite_external_user_for_poll_run (method)">invite_external_user_for_poll_run</a></span></span><span class='lparen'>(</span><span class='id identifier rubyid_row'>row</span><span class='lbracket'>[</span><span class='symbol'>:prid</span><span class='rbracket'>]</span><span class='comma'>,</span> <span class='id identifier rubyid_row'>row</span><span class='lbracket'>[</span><span class='symbol'>:email</span><span class='rbracket'>]</span><span class='comma'>,</span> <span class='id identifier rubyid_row'>row</span><span class='lbracket'>[</span><span class='symbol'>:org_email</span><span class='rbracket'>]</span><span class='rparen'>)</span>
-            <span class='id identifier rubyid_sleep'>sleep</span> <span class='float'>10.0</span>
+            <span class='kw'>unless</span> <span class='const'><span class='object_link'><a href="top-level-namespace.html#DEVELOPMENT-constant" title="DEVELOPMENT (constant)">DEVELOPMENT</a></span></span>
+                <span class='id identifier rubyid_sleep'>sleep</span> <span class='float'>10.0</span>
+            <span class='kw'>end</span>
             <span class='comment'># wait for 10 seconds
 </span>        <span class='kw'>end</span>
     <span class='kw'>end</span>
@@ -259,7 +263,7 @@
 </div>
 
       <div id="footer">
-  Generated on Thu Feb 11 00:45:58 2021 by
+  Generated on Sat Mar  6 16:51:17 2021 by
   <a href="http://yardoc.org" title="Yay! A Ruby Documentation Tool" target="_parent">yard</a>
   0.9.26 (ruby-2.5.1).
 </div>

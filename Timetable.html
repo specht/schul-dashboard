@@ -466,7 +466,7 @@
   
   
   <h3 class="inherited">Methods included from <span class='object_link'><a href="QtsNeo4j.html" title="QtsNeo4j (module)">QtsNeo4j</a></span></h3>
-  <p class="inherited"><span class='object_link'><a href="QtsNeo4j.html#neo4j_query-instance_method" title="QtsNeo4j#neo4j_query (method)">#neo4j_query</a></span>, <span class='object_link'><a href="QtsNeo4j.html#neo4j_query_expect_one-instance_method" title="QtsNeo4j#neo4j_query_expect_one (method)">#neo4j_query_expect_one</a></span>, <span class='object_link'><a href="QtsNeo4j.html#transaction-instance_method" title="QtsNeo4j#transaction (method)">#transaction</a></span></p>
+  <p class="inherited"><span class='object_link'><a href="QtsNeo4j.html#neo4j_query-instance_method" title="QtsNeo4j#neo4j_query (method)">#neo4j_query</a></span>, <span class='object_link'><a href="QtsNeo4j.html#neo4j_query_expect_one-instance_method" title="QtsNeo4j#neo4j_query_expect_one (method)">#neo4j_query_expect_one</a></span>, <span class='object_link'><a href="QtsNeo4j.html#transaction-instance_method" title="QtsNeo4j#transaction (method)">#transaction</a></span>, <span class='object_link'><a href="QtsNeo4j.html#wait_for_neo4j-instance_method" title="QtsNeo4j#wait_for_neo4j (method)">#wait_for_neo4j</a></span></p>
 <div id="constructor_details" class="method_details_list">
   <h2>Constructor Details</h2>
   
@@ -1553,52 +1553,6 @@
       <pre class="lines">
 
 
-1632
-1633
-1634
-1635
-1636
-1637
-1638
-1639
-1640
-1641
-1642
-1643
-1644
-1645
-1646
-1647
-1648
-1649
-1650
-1651
-1652
-1653
-1654
-1655
-1656
-1657
-1658
-1659
-1660
-1661
-1662
-1663
-1664
-1665
-1666
-1667
-1668
-1669
-1670
-1671
-1672
-1673
-1674
-1675
-1676
-1677
 1678
 1679
 1680
@@ -1788,10 +1742,56 @@
 1864
 1865
 1866
-1867</pre>
+1867
+1868
+1869
+1870
+1871
+1872
+1873
+1874
+1875
+1876
+1877
+1878
+1879
+1880
+1881
+1882
+1883
+1884
+1885
+1886
+1887
+1888
+1889
+1890
+1891
+1892
+1893
+1894
+1895
+1896
+1897
+1898
+1899
+1900
+1901
+1902
+1903
+1904
+1905
+1906
+1907
+1908
+1909
+1910
+1911
+1912
+1913</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'src/ruby/timetable.rb', line 1632</span>
+      <pre class="code"><span class="info file"># File 'src/ruby/timetable.rb', line 1678</span>
 
 <span class='kw'>def</span> <span class='id identifier rubyid_update'>update</span><span class='lparen'>(</span><span class='id identifier rubyid_only_these_lesson_keys'>only_these_lesson_keys</span><span class='rparen'>)</span>
     <span class='kw'>if</span> <span class='id identifier rubyid_only_these_lesson_keys'>only_these_lesson_keys</span><span class='period'>.</span><span class='id identifier rubyid_nil?'>nil?</span>
@@ -2049,48 +2049,6 @@
       <pre class="lines">
 
 
-1564
-1565
-1566
-1567
-1568
-1569
-1570
-1571
-1572
-1573
-1574
-1575
-1576
-1577
-1578
-1579
-1580
-1581
-1582
-1583
-1584
-1585
-1586
-1587
-1588
-1589
-1590
-1591
-1592
-1593
-1594
-1595
-1596
-1597
-1598
-1599
-1600
-1601
-1602
-1603
-1604
-1605
 1606
 1607
 1608
@@ -2115,10 +2073,56 @@
 1627
 1628
 1629
-1630</pre>
+1630
+1631
+1632
+1633
+1634
+1635
+1636
+1637
+1638
+1639
+1640
+1641
+1642
+1643
+1644
+1645
+1646
+1647
+1648
+1649
+1650
+1651
+1652
+1653
+1654
+1655
+1656
+1657
+1658
+1659
+1660
+1661
+1662
+1663
+1664
+1665
+1666
+1667
+1668
+1669
+1670
+1671
+1672
+1673
+1674
+1675
+1676</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'src/ruby/timetable.rb', line 1564</span>
+      <pre class="code"><span class="info file"># File 'src/ruby/timetable.rb', line 1606</span>
 
 <span class='kw'>def</span> <span class='id identifier rubyid_update_recipients'>update_recipients</span><span class='lparen'>(</span><span class='rparen'>)</span>
     <span class='const'>STDERR</span><span class='period'>.</span><span class='id identifier rubyid_puts'>puts</span> <span class='tstring'><span class='tstring_beg'>&quot;</span><span class='tstring_content'>Updating recipients</span><span class='tstring_end'>&quot;</span></span>
@@ -2172,6 +2176,10 @@
             <span class='kw'>if</span> <span class='id identifier rubyid_user'>user</span><span class='lbracket'>[</span><span class='symbol'>:can_see_all_timetables</span><span class='rbracket'>]</span> <span class='op'>||</span> <span class='id identifier rubyid_user'>user</span><span class='lbracket'>[</span><span class='symbol'>:sv</span><span class='rbracket'>]</span>
                 <span class='id identifier rubyid_recipients'>recipients</span><span class='lbracket'>[</span><span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>/schueler/*</span><span class='tstring_end'>&#39;</span></span><span class='rbracket'>]</span> <span class='op'>=</span> <span class='lbrace'>{</span><span class='symbol'>:label</span> <span class='op'>=&gt;</span> <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>Gesamte Schülerschaft</span><span class='tstring_end'>&#39;</span></span><span class='comma'>,</span>
                                              <span class='symbol'>:entries</span> <span class='op'>=&gt;</span> <span class='cvar'>@@user_info</span><span class='period'>.</span><span class='id identifier rubyid_select'>select</span> <span class='lbrace'>{</span> <span class='op'>|</span><span class='id identifier rubyid_k'>k</span><span class='comma'>,</span> <span class='id identifier rubyid_v'>v</span><span class='op'>|</span> <span class='op'>!</span><span class='id identifier rubyid_v'>v</span><span class='lbracket'>[</span><span class='symbol'>:teacher</span><span class='rbracket'>]</span><span class='rbrace'>}</span><span class='period'>.</span><span class='id identifier rubyid_map'>map</span> <span class='lbrace'>{</span> <span class='op'>|</span><span class='id identifier rubyid_k'>k</span><span class='comma'>,</span> <span class='id identifier rubyid_v'>v</span><span class='op'>|</span> <span class='id identifier rubyid_k'>k</span> <span class='rbrace'>}</span><span class='rbrace'>}</span>
+            <span class='kw'>end</span>
+            <span class='kw'>if</span> <span class='id identifier rubyid_user'>user</span><span class='lbracket'>[</span><span class='symbol'>:can_see_all_timetables</span><span class='rbracket'>]</span>
+                <span class='id identifier rubyid_recipients'>recipients</span><span class='lbracket'>[</span><span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>/eltern/*</span><span class='tstring_end'>&#39;</span></span><span class='rbracket'>]</span> <span class='op'>=</span> <span class='lbrace'>{</span><span class='symbol'>:label</span> <span class='op'>=&gt;</span> <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>Gesamte Elternschaft</span><span class='tstring_end'>&#39;</span></span><span class='comma'>,</span>
+                                           <span class='symbol'>:entries</span> <span class='op'>=&gt;</span> <span class='cvar'>@@user_info</span><span class='period'>.</span><span class='id identifier rubyid_select'>select</span> <span class='lbrace'>{</span> <span class='op'>|</span><span class='id identifier rubyid_k'>k</span><span class='comma'>,</span> <span class='id identifier rubyid_v'>v</span><span class='op'>|</span> <span class='op'>!</span><span class='id identifier rubyid_v'>v</span><span class='lbracket'>[</span><span class='symbol'>:teacher</span><span class='rbracket'>]</span><span class='rbrace'>}</span><span class='period'>.</span><span class='id identifier rubyid_map'>map</span> <span class='lbrace'>{</span> <span class='op'>|</span><span class='id identifier rubyid_k'>k</span><span class='comma'>,</span> <span class='id identifier rubyid_v'>v</span><span class='op'>|</span> <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>eltern.</span><span class='tstring_end'>&#39;</span></span> <span class='op'>+</span> <span class='id identifier rubyid_k'>k</span> <span class='rbrace'>}</span><span class='rbrace'>}</span>
             <span class='kw'>end</span>
             <span class='kw'>if</span> <span class='id identifier rubyid_user'>user</span><span class='lbracket'>[</span><span class='symbol'>:teacher</span><span class='rbracket'>]</span>
                 <span class='id identifier rubyid_recipients'>recipients</span><span class='lbracket'>[</span><span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>/lehrer/*</span><span class='tstring_end'>&#39;</span></span><span class='rbracket'>]</span> <span class='op'>=</span> <span class='lbrace'>{</span><span class='symbol'>:label</span> <span class='op'>=&gt;</span> <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>Gesamtes Kollegium</span><span class='tstring_end'>&#39;</span></span><span class='comma'>,</span>
@@ -2752,7 +2760,10 @@
 957
 958
 959
-960</pre>
+960
+961
+962
+963</pre>
     </td>
     <td>
       <pre class="code"><span class="info file"># File 'src/ruby/timetable.rb', line 415</span>
@@ -2770,12 +2781,15 @@
     <span class='cvar'>@@vplan_timestamp</span> <span class='op'>=</span> <span class='const'><span class='object_link'><a href="Main.html" title="Main (class)">Main</a></span></span><span class='period'>.</span><span class='id identifier rubyid_class_variable_get'>class_variable_get</span><span class='lparen'>(</span><span class='symbol'>:@@vplan_timestamp</span><span class='rparen'>)</span>
     <span class='cvar'>@@lessons_for_klasse</span> <span class='op'>=</span> <span class='const'><span class='object_link'><a href="Main.html" title="Main (class)">Main</a></span></span><span class='period'>.</span><span class='id identifier rubyid_class_variable_get'>class_variable_get</span><span class='lparen'>(</span><span class='symbol'>:@@lessons_for_klasse</span><span class='rparen'>)</span>
     <span class='cvar'>@@lessons_for_user</span> <span class='op'>=</span> <span class='const'><span class='object_link'><a href="Main.html" title="Main (class)">Main</a></span></span><span class='period'>.</span><span class='id identifier rubyid_class_variable_get'>class_variable_get</span><span class='lparen'>(</span><span class='symbol'>:@@lessons_for_user</span><span class='rparen'>)</span>
+    <span class='cvar'>@@lessons_for_shorthand</span> <span class='op'>=</span> <span class='const'><span class='object_link'><a href="Main.html" title="Main (class)">Main</a></span></span><span class='period'>.</span><span class='id identifier rubyid_class_variable_get'>class_variable_get</span><span class='lparen'>(</span><span class='symbol'>:@@lessons_for_shorthand</span><span class='rparen'>)</span>
     <span class='cvar'>@@shorthands</span> <span class='op'>=</span> <span class='const'><span class='object_link'><a href="Main.html" title="Main (class)">Main</a></span></span><span class='period'>.</span><span class='id identifier rubyid_class_variable_get'>class_variable_get</span><span class='lparen'>(</span><span class='symbol'>:@@shorthands</span><span class='rparen'>)</span>
     <span class='cvar'>@@klassen_order</span> <span class='op'>=</span> <span class='const'><span class='object_link'><a href="Main.html" title="Main (class)">Main</a></span></span><span class='period'>.</span><span class='id identifier rubyid_class_variable_get'>class_variable_get</span><span class='lparen'>(</span><span class='symbol'>:@@klassen_order</span><span class='rparen'>)</span>
     <span class='cvar'>@@klassen_id</span> <span class='op'>=</span> <span class='const'><span class='object_link'><a href="Main.html" title="Main (class)">Main</a></span></span><span class='period'>.</span><span class='id identifier rubyid_class_variable_get'>class_variable_get</span><span class='lparen'>(</span><span class='symbol'>:@@klassen_id</span><span class='rparen'>)</span>
     <span class='cvar'>@@faecher</span> <span class='op'>=</span> <span class='const'><span class='object_link'><a href="Main.html" title="Main (class)">Main</a></span></span><span class='period'>.</span><span class='id identifier rubyid_class_variable_get'>class_variable_get</span><span class='lparen'>(</span><span class='symbol'>:@@faecher</span><span class='rparen'>)</span>
     <span class='cvar'>@@klassen_for_shorthand</span> <span class='op'>=</span> <span class='const'><span class='object_link'><a href="Main.html" title="Main (class)">Main</a></span></span><span class='period'>.</span><span class='id identifier rubyid_class_variable_get'>class_variable_get</span><span class='lparen'>(</span><span class='symbol'>:@@klassen_for_shorthand</span><span class='rparen'>)</span>
     <span class='cvar'>@@schueler_for_klasse</span> <span class='op'>=</span> <span class='const'><span class='object_link'><a href="Main.html" title="Main (class)">Main</a></span></span><span class='period'>.</span><span class='id identifier rubyid_class_variable_get'>class_variable_get</span><span class='lparen'>(</span><span class='symbol'>:@@schueler_for_klasse</span><span class='rparen'>)</span>
+    <span class='cvar'>@@schueler_for_lesson</span> <span class='op'>=</span> <span class='const'><span class='object_link'><a href="Main.html" title="Main (class)">Main</a></span></span><span class='period'>.</span><span class='id identifier rubyid_class_variable_get'>class_variable_get</span><span class='lparen'>(</span><span class='symbol'>:@@schueler_for_lesson</span><span class='rparen'>)</span>
+    <span class='cvar'>@@schueler_offset_in_lesson</span> <span class='op'>=</span> <span class='const'><span class='object_link'><a href="Main.html" title="Main (class)">Main</a></span></span><span class='period'>.</span><span class='id identifier rubyid_class_variable_get'>class_variable_get</span><span class='lparen'>(</span><span class='symbol'>:@@schueler_offset_in_lesson</span><span class='rparen'>)</span>
     <span class='cvar'>@@pausenaufsichten</span> <span class='op'>=</span> <span class='const'><span class='object_link'><a href="Main.html" title="Main (class)">Main</a></span></span><span class='period'>.</span><span class='id identifier rubyid_class_variable_get'>class_variable_get</span><span class='lparen'>(</span><span class='symbol'>:@@pausenaufsichten</span><span class='rparen'>)</span>
     
     <span class='id identifier rubyid_lesson_offset'>lesson_offset</span> <span class='op'>=</span> <span class='lbrace'>{</span><span class='rbrace'>}</span>
@@ -3323,9 +3337,6 @@
       <pre class="lines">
 
 
-962
-963
-964
 965
 966
 967
@@ -3923,10 +3934,52 @@
 1559
 1560
 1561
-1562</pre>
+1562
+1563
+1564
+1565
+1566
+1567
+1568
+1569
+1570
+1571
+1572
+1573
+1574
+1575
+1576
+1577
+1578
+1579
+1580
+1581
+1582
+1583
+1584
+1585
+1586
+1587
+1588
+1589
+1590
+1591
+1592
+1593
+1594
+1595
+1596
+1597
+1598
+1599
+1600
+1601
+1602
+1603
+1604</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'src/ruby/timetable.rb', line 962</span>
+      <pre class="code"><span class="info file"># File 'src/ruby/timetable.rb', line 965</span>
 
 <span class='kw'>def</span> <span class='id identifier rubyid_update_weeks'>update_weeks</span><span class='lparen'>(</span><span class='id identifier rubyid_only_these_lesson_keys'>only_these_lesson_keys</span><span class='rparen'>)</span>
     <span class='const'>STDERR</span><span class='period'>.</span><span class='id identifier rubyid_puts'>puts</span> <span class='tstring'><span class='tstring_beg'>&quot;</span><span class='tstring_content'>Updating weeks: </span><span class='embexpr_beg'>#{</span><span class='id identifier rubyid_only_these_lesson_keys'>only_these_lesson_keys</span><span class='period'>.</span><span class='id identifier rubyid_to_a'>to_a</span><span class='period'>.</span><span class='id identifier rubyid_join'>join</span><span class='lparen'>(</span><span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>, </span><span class='tstring_end'>&#39;</span></span><span class='rparen'>)</span><span class='embexpr_end'>}</span><span class='tstring_end'>&quot;</span></span>
@@ -4007,7 +4060,8 @@
         <span class='kw'>end</span>
     <span class='kw'>end</span>
     <span class='id identifier rubyid_ical_events'>ical_events</span> <span class='op'>=</span> <span class='lbrace'>{</span><span class='rbrace'>}</span>
-    <span class='kw'>while</span> <span class='id identifier rubyid_p'>p</span> <span class='op'>&lt;=</span> <span class='id identifier rubyid_end_date'>end_date</span> <span class='kw'>do</span>
+<span class='comment'>#         logged_emails = Set.new()
+</span>    <span class='kw'>while</span> <span class='id identifier rubyid_p'>p</span> <span class='op'>&lt;=</span> <span class='id identifier rubyid_end_date'>end_date</span> <span class='kw'>do</span>
         <span class='id identifier rubyid_p1'>p1</span> <span class='op'>=</span> <span class='id identifier rubyid_p'>p</span> <span class='op'>+</span> <span class='int'>7</span>
         <span class='id identifier rubyid_p_yw'>p_yw</span> <span class='op'>=</span> <span class='id identifier rubyid_p'>p</span><span class='period'>.</span><span class='id identifier rubyid_strftime'>strftime</span><span class='lparen'>(</span><span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>%Y-%V</span><span class='tstring_end'>&#39;</span></span><span class='rparen'>)</span>
         <span class='id identifier rubyid_aufsicht_start_date_for_dow'>aufsicht_start_date_for_dow</span> <span class='op'>=</span> <span class='lbrace'>{</span><span class='rbrace'>}</span>
@@ -4053,10 +4107,19 @@
             <span class='kw'>end</span>
             <span class='id identifier rubyid_lesson_keys'>lesson_keys</span> <span class='op'>||=</span> <span class='const'>Set</span><span class='period'>.</span><span class='id identifier rubyid_new'>new</span><span class='lparen'>(</span><span class='rparen'>)</span>
             <span class='id identifier rubyid_lesson_keys'>lesson_keys</span> <span class='op'>&lt;&lt;</span> <span class='tstring'><span class='tstring_beg'>&quot;</span><span class='tstring_content'>_</span><span class='embexpr_beg'>#{</span><span class='id identifier rubyid_user'>user</span><span class='lbracket'>[</span><span class='symbol'>:klasse</span><span class='rbracket'>]</span><span class='embexpr_end'>}</span><span class='tstring_end'>&quot;</span></span> <span class='kw'>unless</span> <span class='id identifier rubyid_user'>user</span><span class='lbracket'>[</span><span class='symbol'>:teacher</span><span class='rbracket'>]</span>
-            <span class='id identifier rubyid_lesson_keys'>lesson_keys</span> <span class='op'>&lt;&lt;</span> <span class='tstring'><span class='tstring_beg'>&quot;</span><span class='tstring_content'>_</span><span class='embexpr_beg'>#{</span><span class='id identifier rubyid_user'>user</span><span class='lbracket'>[</span><span class='symbol'>:shorthand</span><span class='rbracket'>]</span><span class='embexpr_end'>}</span><span class='tstring_end'>&quot;</span></span> <span class='kw'>if</span> <span class='id identifier rubyid_user'>user</span><span class='lbracket'>[</span><span class='symbol'>:teacher</span><span class='rbracket'>]</span>
+            <span class='kw'>if</span> <span class='id identifier rubyid_user'>user</span><span class='lbracket'>[</span><span class='symbol'>:teacher</span><span class='rbracket'>]</span>
+                <span class='id identifier rubyid_lesson_keys'>lesson_keys</span> <span class='op'>&lt;&lt;</span> <span class='tstring'><span class='tstring_beg'>&quot;</span><span class='tstring_content'>_</span><span class='embexpr_beg'>#{</span><span class='id identifier rubyid_user'>user</span><span class='lbracket'>[</span><span class='symbol'>:shorthand</span><span class='rbracket'>]</span><span class='embexpr_end'>}</span><span class='tstring_end'>&quot;</span></span> 
+                <span class='lparen'>(</span><span class='cvar'>@@lessons_for_shorthand</span><span class='lbracket'>[</span><span class='id identifier rubyid_user'>user</span><span class='lbracket'>[</span><span class='symbol'>:shorthand</span><span class='rbracket'>]</span><span class='rbracket'>]</span> <span class='op'>||</span> <span class='lbracket'>[</span><span class='rbracket'>]</span><span class='rparen'>)</span><span class='period'>.</span><span class='id identifier rubyid_each'>each</span> <span class='kw'>do</span> <span class='op'>|</span><span class='id identifier rubyid_lesson_key'>lesson_key</span><span class='op'>|</span>
+                    <span class='id identifier rubyid_lesson_keys'>lesson_keys</span> <span class='op'>&lt;&lt;</span> <span class='id identifier rubyid_lesson_key'>lesson_key</span>
+                <span class='kw'>end</span>
+            <span class='kw'>end</span>
             <span class='id identifier rubyid_lesson_keys'>lesson_keys</span> <span class='op'>&lt;&lt;</span> <span class='tstring'><span class='tstring_beg'>&quot;</span><span class='tstring_content'>_</span><span class='embexpr_beg'>#{</span><span class='id identifier rubyid_user'>user</span><span class='lbracket'>[</span><span class='symbol'>:email</span><span class='rbracket'>]</span><span class='embexpr_end'>}</span><span class='tstring_end'>&quot;</span></span>
             <span class='kw'>next</span> <span class='kw'>if</span> <span class='id identifier rubyid_only_these_lesson_keys'>only_these_lesson_keys</span> <span class='op'>&amp;&amp;</span> <span class='lparen'>(</span><span class='id identifier rubyid_lesson_keys'>lesson_keys</span> <span class='op'>&amp;</span> <span class='id identifier rubyid_only_these_lesson_keys'>only_these_lesson_keys</span><span class='rparen'>)</span><span class='period'>.</span><span class='id identifier rubyid_empty?'>empty?</span>
-            <span class='id identifier rubyid_path'>path</span> <span class='op'>=</span> <span class='tstring'><span class='tstring_beg'>&quot;</span><span class='tstring_content'>/gen/w/</span><span class='embexpr_beg'>#{</span><span class='id identifier rubyid_user'>user</span><span class='lbracket'>[</span><span class='symbol'>:id</span><span class='rbracket'>]</span><span class='embexpr_end'>}</span><span class='tstring_content'>/</span><span class='embexpr_beg'>#{</span><span class='id identifier rubyid_p_yw'>p_yw</span><span class='embexpr_end'>}</span><span class='tstring_content'>.json.gz</span><span class='tstring_end'>&quot;</span></span>
+<span class='comment'>#                 unless logged_emails.include?(email)
+</span><span class='comment'>#                     STDERR.puts email
+</span><span class='comment'>#                     logged_emails &lt;&lt; email
+</span><span class='comment'>#                 end
+</span>            <span class='id identifier rubyid_path'>path</span> <span class='op'>=</span> <span class='tstring'><span class='tstring_beg'>&quot;</span><span class='tstring_content'>/gen/w/</span><span class='embexpr_beg'>#{</span><span class='id identifier rubyid_user'>user</span><span class='lbracket'>[</span><span class='symbol'>:id</span><span class='rbracket'>]</span><span class='embexpr_end'>}</span><span class='tstring_content'>/</span><span class='embexpr_beg'>#{</span><span class='id identifier rubyid_p_yw'>p_yw</span><span class='embexpr_end'>}</span><span class='tstring_content'>.json.gz</span><span class='tstring_end'>&quot;</span></span>
             <span class='const'>FileUtils</span><span class='period'>.</span><span class='id identifier rubyid_mkpath'>mkpath</span><span class='lparen'>(</span><span class='const'>File</span><span class='period'>.</span><span class='id identifier rubyid_dirname'>dirname</span><span class='lparen'>(</span><span class='id identifier rubyid_path'>path</span><span class='rparen'>)</span><span class='rparen'>)</span>
             <span class='id identifier rubyid_file_count'>file_count</span> <span class='op'>+=</span> <span class='int'>1</span>
             <span class='const'>Zlib</span><span class='op'>::</span><span class='const'>GzipWriter</span><span class='period'>.</span><span class='id identifier rubyid_open'>open</span><span class='lparen'>(</span><span class='id identifier rubyid_path'>path</span><span class='rparen'>)</span> <span class='kw'>do</span> <span class='op'>|</span><span class='id identifier rubyid_f'>f</span><span class='op'>|</span>
@@ -4173,6 +4236,14 @@
                                         <span class='id identifier rubyid_data'>data</span><span class='lbracket'>[</span><span class='id identifier rubyid_k'>k</span><span class='rbracket'>]</span> <span class='op'>=</span> <span class='id identifier rubyid_sum'>sum</span><span class='period'>.</span><span class='id identifier rubyid_to_s'>to_s</span>
                                     <span class='kw'>end</span>
                                 <span class='kw'>end</span>
+                                <span class='lbracket'>[</span><span class='symbol'>:breakout_rooms</span><span class='comma'>,</span> <span class='symbol'>:breakout_room_participants</span><span class='rbracket'>]</span><span class='period'>.</span><span class='id identifier rubyid_each'>each</span> <span class='kw'>do</span> <span class='op'>|</span><span class='id identifier rubyid_k'>k</span><span class='op'>|</span>
+                                    <span class='lparen'>(</span><span class='int'>0</span><span class='op'>...</span><span class='id identifier rubyid_e'>e</span><span class='lbracket'>[</span><span class='symbol'>:count</span><span class='rbracket'>]</span><span class='rparen'>)</span><span class='period'>.</span><span class='id identifier rubyid_each'>each</span> <span class='kw'>do</span> <span class='op'>|</span><span class='id identifier rubyid_o'>o</span><span class='op'>|</span>
+                                        <span class='id identifier rubyid_v'>v</span> <span class='op'>=</span> <span class='lparen'>(</span><span class='lparen'>(</span><span class='lparen'>(</span><span class='ivar'>@lesson_info</span><span class='lbracket'>[</span><span class='id identifier rubyid_lesson_key'>lesson_key</span><span class='rbracket'>]</span> <span class='op'>||</span> <span class='lbrace'>{</span><span class='rbrace'>}</span><span class='rparen'>)</span><span class='lbracket'>[</span><span class='id identifier rubyid_e'>e</span><span class='lbracket'>[</span><span class='symbol'>:lesson_offset</span><span class='rbracket'>]</span> <span class='op'>+</span> <span class='id identifier rubyid_o'>o</span><span class='rbracket'>]</span> <span class='op'>||</span> <span class='lbrace'>{</span><span class='rbrace'>}</span><span class='rparen'>)</span><span class='lbracket'>[</span><span class='symbol'>:data</span><span class='rbracket'>]</span> <span class='op'>||</span> <span class='lbrace'>{</span><span class='rbrace'>}</span><span class='rparen'>)</span><span class='lbracket'>[</span><span class='id identifier rubyid_k'>k</span><span class='rbracket'>]</span> <span class='op'>||</span> <span class='lbracket'>[</span><span class='rbracket'>]</span>
+                                        <span class='kw'>if</span> <span class='id identifier rubyid_v'>v</span> <span class='op'>&amp;&amp;</span> <span class='lparen'>(</span><span class='op'>!</span><span class='id identifier rubyid_v'>v</span><span class='period'>.</span><span class='id identifier rubyid_empty?'>empty?</span><span class='rparen'>)</span>
+                                            <span class='id identifier rubyid_data'>data</span><span class='lbracket'>[</span><span class='id identifier rubyid_k'>k</span><span class='rbracket'>]</span> <span class='op'>=</span> <span class='id identifier rubyid_v'>v</span>
+                                        <span class='kw'>end</span>
+                                    <span class='kw'>end</span>
+                                <span class='kw'>end</span>
                                 <span class='id identifier rubyid_events_with_data_cache'>events_with_data_cache</span><span class='lbracket'>[</span><span class='id identifier rubyid_lesson_key'>lesson_key</span><span class='rbracket'>]</span><span class='lbracket'>[</span><span class='id identifier rubyid_e'>e</span><span class='lbracket'>[</span><span class='symbol'>:lesson_offset</span><span class='rbracket'>]</span><span class='rbracket'>]</span> <span class='op'>=</span> <span class='id identifier rubyid_data'>data</span>
                             <span class='kw'>end</span>
                             <span class='id identifier rubyid_events_with_data_per_user_cache'>events_with_data_per_user_cache</span><span class='lbracket'>[</span><span class='id identifier rubyid_lesson_key'>lesson_key</span><span class='rbracket'>]</span> <span class='op'>||=</span> <span class='lbrace'>{</span><span class='rbrace'>}</span>
@@ -4218,6 +4289,18 @@
                     <span class='kw'>end</span>
                     <span class='id identifier rubyid_e'>e</span>
                 <span class='kw'>end</span>
+                <span class='kw'>if</span> <span class='id identifier rubyid_user'>user</span><span class='lbracket'>[</span><span class='symbol'>:teacher</span><span class='rbracket'>]</span>
+                    <span class='id identifier rubyid_fixed_events'>fixed_events</span><span class='period'>.</span><span class='id identifier rubyid_map!'>map!</span> <span class='kw'>do</span> <span class='op'>|</span><span class='id identifier rubyid_event'>event</span><span class='op'>|</span>
+                        <span class='kw'>if</span> <span class='id identifier rubyid_event'>event</span><span class='lbracket'>[</span><span class='symbol'>:lesson</span><span class='rbracket'>]</span> <span class='op'>&amp;&amp;</span> <span class='id identifier rubyid_event'>event</span><span class='lbracket'>[</span><span class='symbol'>:lesson_key</span><span class='rbracket'>]</span>
+                            <span class='id identifier rubyid_event'>event</span><span class='lbracket'>[</span><span class='symbol'>:schueler_for_lesson</span><span class='rbracket'>]</span> <span class='op'>=</span> <span class='lparen'>(</span><span class='cvar'>@@schueler_for_lesson</span><span class='lbracket'>[</span><span class='id identifier rubyid_event'>event</span><span class='lbracket'>[</span><span class='symbol'>:lesson_key</span><span class='rbracket'>]</span><span class='rbracket'>]</span> <span class='op'>||</span> <span class='lbracket'>[</span><span class='rbracket'>]</span><span class='rparen'>)</span><span class='period'>.</span><span class='id identifier rubyid_map'>map</span> <span class='kw'>do</span> <span class='op'>|</span><span class='id identifier rubyid_email'>email</span><span class='op'>|</span>
+                                <span class='lbrace'>{</span><span class='symbol'>:display_name</span> <span class='op'>=&gt;</span> <span class='cvar'>@@user_info</span><span class='lbracket'>[</span><span class='id identifier rubyid_email'>email</span><span class='rbracket'>]</span><span class='lbracket'>[</span><span class='symbol'>:display_name</span><span class='rbracket'>]</span><span class='comma'>,</span>
+                                 <span class='symbol'>:nc_login</span> <span class='op'>=&gt;</span> <span class='cvar'>@@user_info</span><span class='lbracket'>[</span><span class='id identifier rubyid_email'>email</span><span class='rbracket'>]</span><span class='lbracket'>[</span><span class='symbol'>:nc_login</span><span class='rbracket'>]</span>
+                                <span class='rbrace'>}</span>
+                            <span class='kw'>end</span>
+                        <span class='kw'>end</span>
+                        <span class='id identifier rubyid_event'>event</span>
+                    <span class='kw'>end</span>
+                <span class='kw'>end</span>
                 <span class='kw'>unless</span> <span class='id identifier rubyid_user'>user</span><span class='lbracket'>[</span><span class='symbol'>:teacher</span><span class='rbracket'>]</span>
                     <span class='comment'># if it&#39;s a schüler, only add events which have the right klasse
 </span>                    <span class='comment'># (unless it&#39;s a phantom event)
@@ -4248,9 +4331,18 @@
                         <span class='kw'>end</span>
                         <span class='id identifier rubyid_event'>event</span>
                     <span class='kw'>end</span>
+                    <span class='comment'># add schueler_offset_in_lesson for SuS
+</span>                    <span class='id identifier rubyid_fixed_events'>fixed_events</span><span class='period'>.</span><span class='id identifier rubyid_map!'>map!</span> <span class='kw'>do</span> <span class='op'>|</span><span class='id identifier rubyid_event'>event</span><span class='op'>|</span>
+                        <span class='kw'>if</span> <span class='id identifier rubyid_event'>event</span><span class='lbracket'>[</span><span class='symbol'>:lesson_key</span><span class='rbracket'>]</span>
+                            <span class='id identifier rubyid_event'>event</span><span class='lbracket'>[</span><span class='symbol'>:schueler_offset_in_lesson</span><span class='rbracket'>]</span> <span class='op'>=</span> <span class='lparen'>(</span><span class='cvar'>@@schueler_offset_in_lesson</span><span class='lbracket'>[</span><span class='id identifier rubyid_event'>event</span><span class='lbracket'>[</span><span class='symbol'>:lesson_key</span><span class='rbracket'>]</span><span class='rbracket'>]</span> <span class='op'>||</span> <span class='lbrace'>{</span><span class='rbrace'>}</span><span class='rparen'>)</span><span class='lbracket'>[</span><span class='id identifier rubyid_user'>user</span><span class='lbracket'>[</span><span class='symbol'>:email</span><span class='rbracket'>]</span><span class='rbracket'>]</span> <span class='op'>||</span> <span class='int'>0</span>
+                        <span class='kw'>end</span>
+                        <span class='id identifier rubyid_event'>event</span>
+                    <span class='kw'>end</span>
                     <span class='comment'># add future homework for SuS
 </span>                    <span class='id identifier rubyid_fixed_events'>fixed_events</span><span class='period'>.</span><span class='id identifier rubyid_map!'>map!</span> <span class='kw'>do</span> <span class='op'>|</span><span class='id identifier rubyid__event'>_event</span><span class='op'>|</span>
-                        <span class='id identifier rubyid_event'>event</span> <span class='op'>=</span> <span class='const'>JSON</span><span class='period'>.</span><span class='id identifier rubyid_parse'>parse</span><span class='lparen'>(</span><span class='id identifier rubyid__event'>_event</span><span class='period'>.</span><span class='id identifier rubyid_to_json'>to_json</span><span class='rparen'>)</span>
+                        <span class='comment'># TODO: this code can&#39;t work because we&#39;re using symbols from parsed JSON
+</span>                        <span class='comment'># but it&#39;s kind of okay because we don&#39;t need homework in the lesson modal
+</span>                        <span class='id identifier rubyid_event'>event</span> <span class='op'>=</span> <span class='const'>JSON</span><span class='period'>.</span><span class='id identifier rubyid_parse'>parse</span><span class='lparen'>(</span><span class='id identifier rubyid__event'>_event</span><span class='period'>.</span><span class='id identifier rubyid_to_json'>to_json</span><span class='rparen'>)</span>
                         <span class='kw'>if</span> <span class='lparen'>(</span><span class='id identifier rubyid_all_homework'>all_homework</span><span class='lbracket'>[</span><span class='id identifier rubyid_event'>event</span><span class='lbracket'>[</span><span class='symbol'>:lesson_key</span><span class='rbracket'>]</span><span class='rbracket'>]</span> <span class='op'>||</span> <span class='lbrace'>{</span><span class='rbrace'>}</span><span class='rparen'>)</span><span class='lbracket'>[</span><span class='id identifier rubyid_event'>event</span><span class='lbracket'>[</span><span class='symbol'>:datum</span><span class='rbracket'>]</span><span class='rbracket'>]</span>
                             <span class='id identifier rubyid_all_homework'>all_homework</span><span class='lbracket'>[</span><span class='id identifier rubyid_event'>event</span><span class='lbracket'>[</span><span class='symbol'>:lesson_key</span><span class='rbracket'>]</span><span class='rbracket'>]</span><span class='lbracket'>[</span><span class='id identifier rubyid_event'>event</span><span class='lbracket'>[</span><span class='symbol'>:datum</span><span class='rbracket'>]</span><span class='rbracket'>]</span><span class='period'>.</span><span class='id identifier rubyid_each_pair'>each_pair</span> <span class='kw'>do</span> <span class='op'>|</span><span class='id identifier rubyid_k'>k</span><span class='comma'>,</span> <span class='id identifier rubyid_v'>v</span><span class='op'>|</span>
 <span class='comment'>#                                                 [:hausaufgaben_text, :homework_nc, :homework_lr].each do |k|
@@ -4539,7 +4631,7 @@
 </div>
 
       <div id="footer">
-  Generated on Thu Feb 11 00:45:58 2021 by
+  Generated on Sat Mar  6 16:51:17 2021 by
   <a href="http://yardoc.org" title="Yay! A Ruby Documentation Tool" target="_parent">yard</a>
   0.9.26 (ruby-2.5.1).
 </div>

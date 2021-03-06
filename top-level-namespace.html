@@ -86,7 +86,7 @@
     
   
     
-      <strong class="classes">Classes:</strong> <span class='object_link'><a href="BackgroundRenderer.html" title="BackgroundRenderer (class)">BackgroundRenderer</a></span>, <span class='object_link'><a href="ClearDatabase.html" title="ClearDatabase (class)">ClearDatabase</a></span>, <span class='object_link'><a href="DumpDatabase.html" title="DumpDatabase (class)">DumpDatabase</a></span>, <span class='object_link'><a href="ImageBotRepl.html" title="ImageBotRepl (class)">ImageBotRepl</a></span>, <span class='object_link'><a href="InvitationRepl.html" title="InvitationRepl (class)">InvitationRepl</a></span>, <span class='object_link'><a href="LoadDump.html" title="LoadDump (class)">LoadDump</a></span>, <span class='object_link'><a href="Main.html" title="Main (class)">Main</a></span>, <span class='object_link'><a href="Neo4jGlobal.html" title="Neo4jGlobal (class)">Neo4jGlobal</a></span>, <span class='object_link'><a href="Neo4jHelper.html" title="Neo4jHelper (class)">Neo4jHelper</a></span>, <span class='object_link'><a href="Parser.html" title="Parser (class)">Parser</a></span>, <span class='object_link'><a href="RandomTag.html" title="RandomTag (class)">RandomTag</a></span>, <span class='object_link'><a href="Script.html" title="Script (class)">Script</a></span>, <span class='object_link'><a href="SetupDatabase.html" title="SetupDatabase (class)">SetupDatabase</a></span>, <span class='object_link'><a href="String.html" title="String (class)">String</a></span>, <span class='object_link'><a href="Timetable.html" title="Timetable (class)">Timetable</a></span>, <span class='object_link'><a href="TimetableRepl.html" title="TimetableRepl (class)">TimetableRepl</a></span>
+      <strong class="classes">Classes:</strong> <span class='object_link'><a href="AudioBotRepl.html" title="AudioBotRepl (class)">AudioBotRepl</a></span>, <span class='object_link'><a href="BackgroundRenderer.html" title="BackgroundRenderer (class)">BackgroundRenderer</a></span>, <span class='object_link'><a href="ClearDatabase.html" title="ClearDatabase (class)">ClearDatabase</a></span>, <span class='object_link'><a href="DashboardSchema.html" title="DashboardSchema (class)">DashboardSchema</a></span>, <span class='object_link'><a href="DumpDatabase.html" title="DumpDatabase (class)">DumpDatabase</a></span>, <span class='object_link'><a href="ImageBotRepl.html" title="ImageBotRepl (class)">ImageBotRepl</a></span>, <span class='object_link'><a href="InvitationRepl.html" title="InvitationRepl (class)">InvitationRepl</a></span>, <span class='object_link'><a href="LoadDump.html" title="LoadDump (class)">LoadDump</a></span>, <span class='object_link'><a href="Main.html" title="Main (class)">Main</a></span>, <span class='object_link'><a href="Neo4jGlobal.html" title="Neo4jGlobal (class)">Neo4jGlobal</a></span>, <span class='object_link'><a href="Neo4jHelper.html" title="Neo4jHelper (class)">Neo4jHelper</a></span>, <span class='object_link'><a href="NodeBlock.html" title="NodeBlock (class)">NodeBlock</a></span>, <span class='object_link'><a href="Parser.html" title="Parser (class)">Parser</a></span>, <span class='object_link'><a href="RandomTag.html" title="RandomTag (class)">RandomTag</a></span>, <span class='object_link'><a href="SchemaRenderer.html" title="SchemaRenderer (class)">SchemaRenderer</a></span>, <span class='object_link'><a href="Script.html" title="Script (class)">Script</a></span>, <span class='object_link'><a href="SetupDatabase.html" title="SetupDatabase (class)">SetupDatabase</a></span>, <span class='object_link'><a href="String.html" title="String (class)">String</a></span>, <span class='object_link'><a href="Timetable.html" title="Timetable (class)">Timetable</a></span>, <span class='object_link'><a href="TimetableRepl.html" title="TimetableRepl (class)">TimetableRepl</a></span>
     
   
 </p>
@@ -125,6 +125,11 @@
           
         </dt>
         <dd><pre class="code"><span class='lbrace'>{</span><span class='rbrace'>}</span></pre></dd>
+      
+        <dt id="SKIP_COLLECT_DATA-constant" class="">SKIP_COLLECT_DATA =
+          
+        </dt>
+        <dd><pre class="code"><span class='kw'>true</span></pre></dd>
       
         <dt id="DEVELOPMENT-constant" class="">DEVELOPMENT =
           <div class="docstring">
@@ -483,6 +488,11 @@ pseudonymisiert werden sollen</p>
         </dt>
         <dd><pre class="code"><span class='const'><span class='object_link'><a href="top-level-namespace.html#DEVELOPMENT-constant" title="DEVELOPMENT (constant)">DEVELOPMENT</a></span></span> <span class='op'>?</span> <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>http://localhost:8025</span><span class='tstring_end'>&#39;</span></span> <span class='op'>:</span> <span class='tstring'><span class='tstring_beg'>&quot;</span><span class='tstring_content'>https://</span><span class='embexpr_beg'>#{</span><span class='const'><span class='object_link'><a href="top-level-namespace.html#WEBSITE_HOST-constant" title="WEBSITE_HOST (constant)">WEBSITE_HOST</a></span></span><span class='embexpr_end'>}</span><span class='tstring_end'>&quot;</span></span></pre></dd>
       
+        <dt id="MAX_LOGIN_TRIES-constant" class="">MAX_LOGIN_TRIES =
+          
+        </dt>
+        <dd><pre class="code"><span class='int'>5</span></pre></dd>
+      
         <dt id="NEXTCLOUD_URL-constant" class="">NEXTCLOUD_URL =
           <div class="docstring">
   <div class="discussion">
@@ -616,6 +626,24 @@ verifiziert werden müssen.</p>
           
         </dt>
         <dd><pre class="code"><span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>beispielschule.de</span><span class='tstring_end'>&#39;</span></span></pre></dd>
+      
+        <dt id="JITSI_ALL_ROOMS_URL-constant" class="">JITSI_ALL_ROOMS_URL =
+          <div class="docstring">
+  <div class="discussion">
+    
+<p>Hier kann, falls vorhanden, eine URL eingetragen werden, unter der aus dem 
+Ruby-Docker-Container ein GET-Request zu allRooms gemacht werden kann, der
+alle Räume und Teilnehmer im JSON-Format zurückgibt.</p>
+
+
+  </div>
+</div>
+<div class="tags">
+  
+
+</div>
+        </dt>
+        <dd><pre class="code"><span class='kw'>nil</span></pre></dd>
       
         <dt id="EMAIL_PASSWORD_SALT-constant" class="">EMAIL_PASSWORD_SALT =
           <div class="docstring">
@@ -778,6 +806,11 @@ sekundäre IDs generiert werden</p>
         </dt>
         <dd><pre class="code"><span class='kw'>false</span></pre></dd>
       
+        <dt id="WECHSELUNTERRICHT_KLASSENSTUFEN-constant" class="">WECHSELUNTERRICHT_KLASSENSTUFEN =
+          
+        </dt>
+        <dd><pre class="code"><span class='lbracket'>[</span><span class='rbracket'>]</span></pre></dd>
+      
         <dt id="KLASSEN_TR-constant" class="">KLASSEN_TR =
           
         </dt>
@@ -888,7 +921,7 @@ können sollen</p>
         <dt id="PING_TIME-constant" class="">PING_TIME =
           
         </dt>
-        <dd><pre class="code"><span class='const'><span class='object_link'><a href="top-level-namespace.html#DEVELOPMENT-constant" title="DEVELOPMENT (constant)">DEVELOPMENT</a></span></span> <span class='op'>?</span> <span class='int'>1</span> <span class='op'>:</span> <span class='int'>60</span></pre></dd>
+        <dd><pre class="code"><span class='const'><span class='object_link'><a href="top-level-namespace.html#DEVELOPMENT-constant" title="DEVELOPMENT (constant)">DEVELOPMENT</a></span></span> <span class='op'>?</span> <span class='int'>1</span> <span class='op'>:</span> <span class='int'>1</span></pre></dd>
       
         <dt id="MAIL_FORWARDER_SLEEP-constant" class="">MAIL_FORWARDER_SLEEP =
           
@@ -903,7 +936,32 @@ können sollen</p>
         <dt id="DELAYED_UPDATE_TIME-constant" class="">DELAYED_UPDATE_TIME =
           
         </dt>
-        <dd><pre class="code"><span class='const'><span class='object_link'><a href="top-level-namespace.html#DEVELOPMENT-constant" title="DEVELOPMENT (constant)">DEVELOPMENT</a></span></span> <span class='op'>?</span> <span class='int'>1</span> <span class='op'>:</span> <span class='int'>1</span></pre></dd>
+        <dd><pre class="code"><span class='const'><span class='object_link'><a href="top-level-namespace.html#DEVELOPMENT-constant" title="DEVELOPMENT (constant)">DEVELOPMENT</a></span></span> <span class='op'>?</span> <span class='int'>0</span> <span class='op'>:</span> <span class='int'>0</span></pre></dd>
+      
+        <dt id="SHARE_READ-constant" class="">SHARE_READ =
+          
+        </dt>
+        <dd><pre class="code"><span class='int'>1</span></pre></dd>
+      
+        <dt id="SHARE_UPDATE-constant" class="">SHARE_UPDATE =
+          
+        </dt>
+        <dd><pre class="code"><span class='int'>2</span></pre></dd>
+      
+        <dt id="SHARE_CREATE-constant" class="">SHARE_CREATE =
+          
+        </dt>
+        <dd><pre class="code"><span class='int'>4</span></pre></dd>
+      
+        <dt id="SHARE_DELETE-constant" class="">SHARE_DELETE =
+          
+        </dt>
+        <dd><pre class="code"><span class='int'>8</span></pre></dd>
+      
+        <dt id="SHARE_SHARE-constant" class="">SHARE_SHARE =
+          
+        </dt>
+        <dd><pre class="code"><span class='int'>16</span></pre></dd>
       
         <dt id="BASE62_ALPHABET-constant" class="">BASE62_ALPHABET =
           
@@ -929,6 +987,23 @@ können sollen</p>
           
         </dt>
         <dd><pre class="code"><span class='const'>File</span><span class='period'>.</span><span class='id identifier rubyid_join'>join</span><span class='lparen'>(</span><span class='const'><span class='object_link'><a href="top-level-namespace.html#NEXTCLOUD_DASHBOARD_DATA_DIRECTORY-constant" title="NEXTCLOUD_DASHBOARD_DATA_DIRECTORY (constant)">NEXTCLOUD_DASHBOARD_DATA_DIRECTORY</a></span></span><span class='comma'>,</span> <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>files</span><span class='tstring_end'>&#39;</span></span><span class='comma'>,</span> <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>Unterricht</span><span class='tstring_end'>&#39;</span></span><span class='rparen'>)</span></pre></dd>
+      
+        <dt id="PRESENCE_TOKEN_EXPIRY_TIME-constant" class="">PRESENCE_TOKEN_EXPIRY_TIME =
+          <div class="docstring">
+  <div class="discussion">
+    
+<p>discard presence token after 600 seconds unless it&#39;s renewed in the
+meantime</p>
+
+
+  </div>
+</div>
+<div class="tags">
+  
+
+</div>
+        </dt>
+        <dd><pre class="code"><span class='int'>60</span> <span class='op'>*</span> <span class='int'>10</span></pre></dd>
       
     </dl>
   
@@ -1103,25 +1178,30 @@ können sollen</p>
       <pre class="lines">
 
 
-191
-192
-193
-194
-195
-196
-197
-198
-199
-200
-201
-202
-203
-204
-205
-206</pre>
+242
+243
+244
+245
+246
+247
+248
+249
+250
+251
+252
+253
+254
+255
+256
+257
+258
+259
+260
+261
+262</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'src/ruby/main.rb', line 191</span>
+      <pre class="code"><span class="info file"># File 'src/ruby/main.rb', line 242</span>
 
 <span class='kw'>def</span> <span class='id identifier rubyid_deliver_mail'>deliver_mail</span><span class='lparen'>(</span><span class='op'>&amp;</span><span class='id identifier rubyid_block'>block</span><span class='rparen'>)</span>
     <span class='id identifier rubyid_mail'>mail</span> <span class='op'>=</span> <span class='const'>Mail</span><span class='period'>.</span><span class='id identifier rubyid_new'>new</span> <span class='kw'>do</span>
@@ -1137,7 +1217,12 @@ können sollen</p>
             <span class='id identifier rubyid_body'>body</span> <span class='id identifier rubyid_mail_html_to_plain_text'><span class='object_link'><a href="#mail_html_to_plain_text-instance_method" title="#mail_html_to_plain_text (method)">mail_html_to_plain_text</a></span></span><span class='lparen'>(</span><span class='id identifier rubyid_message'>message</span><span class='rparen'>)</span>
         <span class='kw'>end</span>
     <span class='kw'>end</span>
-    <span class='id identifier rubyid_mail'>mail</span><span class='period'>.</span><span class='id identifier rubyid_deliver!'>deliver!</span>
+    <span class='kw'>if</span> <span class='const'><span class='object_link'><a href="#DEVELOPMENT-constant" title="DEVELOPMENT (constant)">DEVELOPMENT</a></span></span>
+        <span class='const'>STDERR</span><span class='period'>.</span><span class='id identifier rubyid_puts'>puts</span> <span class='tstring'><span class='tstring_beg'>&quot;</span><span class='tstring_content'>Not sending mail to because we&#39;re in development: </span><span class='embexpr_beg'>#{</span><span class='id identifier rubyid_mail'>mail</span><span class='period'>.</span><span class='id identifier rubyid_to'>to</span><span class='period'>.</span><span class='id identifier rubyid_join'>join</span><span class='lparen'>(</span><span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'> / </span><span class='tstring_end'>&#39;</span></span><span class='rparen'>)</span><span class='embexpr_end'>}</span><span class='tstring_end'>&quot;</span></span>
+        <span class='const'>STDERR</span><span class='period'>.</span><span class='id identifier rubyid_puts'>puts</span> <span class='id identifier rubyid_mail'>mail</span><span class='period'>.</span><span class='id identifier rubyid_to_s'>to_s</span>
+    <span class='kw'>else</span>
+        <span class='id identifier rubyid_mail'>mail</span><span class='period'>.</span><span class='id identifier rubyid_deliver!'>deliver!</span>
+    <span class='kw'>end</span>
 <span class='kw'>end</span></pre>
     </td>
   </tr>
@@ -1263,12 +1348,12 @@ können sollen</p>
       <pre class="lines">
 
 
-213
-214
-215</pre>
+269
+270
+271</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'src/ruby/main.rb', line 213</span>
+      <pre class="code"><span class="info file"># File 'src/ruby/main.rb', line 269</span>
 
 <span class='kw'>def</span> <span class='id identifier rubyid_join_with_sep'>join_with_sep</span><span class='lparen'>(</span><span class='id identifier rubyid_list'>list</span><span class='comma'>,</span> <span class='id identifier rubyid_a'>a</span><span class='comma'>,</span> <span class='id identifier rubyid_b'>b</span><span class='rparen'>)</span>
     <span class='lbracket'>[</span><span class='id identifier rubyid_list'>list</span><span class='lbracket'>[</span><span class='int'>0</span><span class='comma'>,</span> <span class='id identifier rubyid_list'>list</span><span class='period'>.</span><span class='id identifier rubyid_size'>size</span> <span class='op'>-</span> <span class='int'>1</span><span class='rbracket'>]</span><span class='period'>.</span><span class='id identifier rubyid_join'>join</span><span class='lparen'>(</span><span class='id identifier rubyid_a'>a</span><span class='rparen'>)</span><span class='comma'>,</span> <span class='id identifier rubyid_list'>list</span><span class='period'>.</span><span class='id identifier rubyid_last'>last</span><span class='rbracket'>]</span><span class='period'>.</span><span class='id identifier rubyid_join'>join</span><span class='lparen'>(</span><span class='id identifier rubyid_b'>b</span><span class='rparen'>)</span>
@@ -1293,12 +1378,12 @@ können sollen</p>
       <pre class="lines">
 
 
-187
-188
-189</pre>
+238
+239
+240</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'src/ruby/main.rb', line 187</span>
+      <pre class="code"><span class="info file"># File 'src/ruby/main.rb', line 238</span>
 
 <span class='kw'>def</span> <span class='id identifier rubyid_mail_html_to_plain_text'>mail_html_to_plain_text</span><span class='lparen'>(</span><span class='id identifier rubyid_s'>s</span><span class='rparen'>)</span>
     <span class='id identifier rubyid_s'>s</span><span class='period'>.</span><span class='id identifier rubyid_gsub'>gsub</span><span class='lparen'>(</span><span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>&lt;p&gt;</span><span class='tstring_end'>&#39;</span></span><span class='comma'>,</span> <span class='tstring'><span class='tstring_beg'>&quot;</span><span class='tstring_content'>\n\n</span><span class='tstring_end'>&quot;</span></span><span class='rparen'>)</span><span class='period'>.</span><span class='id identifier rubyid_gsub'>gsub</span><span class='lparen'>(</span><span class='tstring'><span class='regexp_beg'>/</span><span class='tstring_content'>&lt;br\s*\/?&gt;</span><span class='regexp_end'>/</span></span><span class='comma'>,</span> <span class='tstring'><span class='tstring_beg'>&quot;</span><span class='tstring_content'>\n</span><span class='tstring_end'>&quot;</span></span><span class='rparen'>)</span><span class='period'>.</span><span class='id identifier rubyid_gsub'>gsub</span><span class='lparen'>(</span><span class='tstring'><span class='regexp_beg'>/</span><span class='tstring_content'>&lt;\/?[^&gt;]*&gt;</span><span class='regexp_end'>/</span></span><span class='comma'>,</span> <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_end'>&#39;</span></span><span class='rparen'>)</span><span class='period'>.</span><span class='id identifier rubyid_strip'>strip</span>
@@ -1323,13 +1408,13 @@ können sollen</p>
       <pre class="lines">
 
 
-208
-209
-210
-211</pre>
+264
+265
+266
+267</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'src/ruby/main.rb', line 208</span>
+      <pre class="code"><span class="info file"># File 'src/ruby/main.rb', line 264</span>
 
 <span class='kw'>def</span> <span class='id identifier rubyid_parse_markdown'>parse_markdown</span><span class='lparen'>(</span><span class='id identifier rubyid_s'>s</span><span class='rparen'>)</span>
     <span class='id identifier rubyid_s'>s</span> <span class='op'>||=</span> <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_end'>&#39;</span></span>
@@ -1345,7 +1430,7 @@ können sollen</p>
 </div>
 
       <div id="footer">
-  Generated on Thu Feb 11 00:45:57 2021 by
+  Generated on Sat Mar  6 16:51:16 2021 by
   <a href="http://yardoc.org" title="Yay! A Ruby Documentation Tool" target="_parent">yard</a>
   0.9.26 (ruby-2.5.1).
 </div>

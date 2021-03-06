@@ -59,6 +59,8 @@ Dabei wird für jeden Nutzer und jede Woche eine Datei geschrieben, die der Brow
 
 Die Stundenpläne der betroffenen Teilnehmer werden im späteren Verlauf jedesmal, wenn Informationen zu einer Unterrichtsstunde verändert werden, neu geschrieben.
 
+Zu den Beispieldaten und zur Pflege neuer Daten gibt es [hier weitere Informatonen](Daten.md).
+
 ## Starten der Nextcloud-Sandbox
 
 Standardmäßig wird eine kleine Nextcloud-Sandbox mitgeliefert, die nicht für den Produktiveinsatz gedacht ist. Sie lässt sich aber gut dafür verwenden, um die Verknüpfung zwischen Dashboard und Nextcloud auszuprobieren. Dazu muss zunächst die Installation der Nextcloud-Sandbox abgeschlossen werden:

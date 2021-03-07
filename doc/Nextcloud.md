@@ -60,7 +60,7 @@ alle Kurse und Schüler und Schülerinnen abbildet.
 ```
 
 Diese Ordner werden dann jeweils mit allen Beteiligten geteilt, so 
-dass jede Lehrkraft klassenübergreifend Zugriff auf seine Fächer und 
+dass jede Lehrkraft klassenübergreifend Zugriff auf ihre Fächer und 
 SuS hat und alle SuS Zugriff auf ihre eigenen Fächer nach Stundenplan.
 
 
@@ -81,7 +81,7 @@ In jedem dieser Ordner liegen die o.g. Verknüpfungen:
 | Ausgabeordner   | Hier liegen die von den Lehrkräften bereitgestellten Unterlagen             | 
 | Einsammelordner | Hier legen die SuS ihre Daten für die Lehrer ab                             |
 |  - Eingesammelt | Hierhin werden die Daten nach dem Einsammeln verschoben                     |
-| Rückgabeordner  | Hier liegen die Rückmeldungen der Lehrkräft zu eingesammelten Aufgaben      |
+| Rückgabeordner  | Hier liegen die Rückmeldungen der Lehrkräfte zu eingesammelten Aufgaben     |
 
 
 ### Lehrersicht
@@ -100,9 +100,9 @@ Innerhalb dieser Ordner finden sie folgende Verknüpfungen:
 | -------------------- | --------------------------------------------------------------------------- |
 | Ausgabeordner        | Hier stellen die Lehrkräfte die Unterlagen für die SuS bereit               |
 | Auto-Einsammelordner | Hier werden die abgegebenen Unterlagen der SuS eingesammelt                 |
-| Auto-Rückgabeordner  | Hier können Lehrkräft Feedback zu eingesammelten Aufgaben abgeben           |
+| Auto-Rückgabeordner  | Hier können Lehrkräfte Feedback zu eingesammelten Aufgaben abgeben          |
 |  - Zurückgegeben     | Hierhin werden die Daten nach dem Zurückgeben an die SuS verschoben         |
-| SuS                  | Hier haben Lehrkräft direkten Zugriff auf Einsammel/Rückgabe einzelner SuS  |
+| SuS                  | Hier haben Lehrkräfte direkten Zugriff auf Einsammel/Rückgabe einzelner SuS |
 
 
 ### Ablauf 

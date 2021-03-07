@@ -41,7 +41,7 @@ class Main < Sinatra::Base
             io.puts "</thead>"
             io.puts "<tbody>"
             @@lehrer_order.each do |email|
-                io.puts "<tr>"
+                io.puts "<tr class='user_row'>"
                 user = @@user_info[email]
                 io.puts "<td>#{user_icon(email, 'avatar-md')}</td>"
                 io.puts "<td>#{user[:shorthand]}</td>"
@@ -50,7 +50,9 @@ class Main < Sinatra::Base
                 if USE_MOCK_NAMES
                     io.puts "<td>#{user[:first_name].downcase}.#{user[:last_name].downcase}@#{SCHUL_MAIL_DOMAIN}</td>"
                 else
-                    io.puts "<td>#{user[:email]}</td>"
+                    io.print "<td>"
+                    print_email_field(io, user[:email])
+                    io.puts "</td>"
                 end
                 io.puts "<td><a class='btn btn-xs btn-secondary' href='/timetable/#{user[:id]}'><i class='fa fa-calendar'></i>&nbsp;&nbsp;Stundenplan</a></td>"
                 io.puts "<td><button class='btn btn-warning btn-xs btn-impersonate' data-impersonate-email='#{user[:email]}'><i class='fa fa-id-badge'></i>&nbsp;&nbsp;Anmelden</button></td>"
@@ -95,12 +97,14 @@ class Main < Sinatra::Base
                 io.puts "<th colspan='8'>Klasse #{klasse}</th>"
                 io.puts "</tr>"
                 (@@schueler_for_klasse[klasse] || []).each do |email|
-                    io.puts "<tr>"
+                    io.puts "<tr class='user_row'>"
                     user = @@user_info[email]
                     io.puts "<td>#{user_icon(email, 'avatar-md')}</td>"
                     io.puts "<td>#{user[:last_name]}</td>"
                     io.puts "<td>#{user[:first_name]}</td>"
-                    io.puts "<td>#{user[:email]}</td>"
+                    io.print "<td>"
+                    print_email_field(io, user[:email])
+                    io.puts "</td>"
                     io.puts "<td><a class='btn btn-xs btn-secondary' href='/timetable/#{user[:id]}'><i class='fa fa-calendar'></i>&nbsp;&nbsp;Stundenplan</a></td>"
                     io.puts "<td><button class='btn btn-warning btn-xs btn-impersonate' data-impersonate-email='#{user[:email]}'><i class='fa fa-id-badge'></i>&nbsp;&nbsp;Anmelden</button></td>"
                     if all_homeschooling_users.include?(email)
@@ -132,13 +136,21 @@ class Main < Sinatra::Base
             io.puts "</table>"
             io.puts "<h3 id='tablets'>Tablets</h3>"
             io.puts "<hr />"
+            io.puts "<p>Mit einem Klick auf diesen Button können Sie dieses Gerät dauerhaft als Lehrer-Tablet anmelden.</p>"
             io.puts "<button class='btn btn-success bu_login_teacher_tablet'><i class='fa fa-sign-in'></i>&nbsp;&nbsp;Lehrer-Tablet-Modus aktivieren</button>"
             io.puts "<hr />"
+            io.puts "<p>Bitte wählen Sie ein order mehrere Kürzel, um dieses Gerät dauerhaft als Kurs-Tablet anzumelden.</p>"
             @@shorthands.keys.sort.each do |shorthand|
                 io.puts "<button class='btn-teacher-for-kurs-tablet-login btn btn-xs btn-outline-secondary' data-shorthand='#{shorthand}'>#{shorthand}</button>"
             end
             io.puts "<br /><br >"
             io.puts "<button class='btn btn-success bu_login_kurs_tablet' disabled><i class='fa fa-sign-in'></i>&nbsp;&nbsp;Kurs-Tablet-Modus aktivieren</button>"
+            io.puts "<hr />"
+            io.puts "<p>Bitte wählen Sie ein Tablet, um dieses Gerät dauerhaft als dieses Tablet anzumelden.</p>"
+            @@tablets.keys.each do |id|
+                tablet = @@tablets[id]
+                io.puts "<button class='btn-tablet-login btn btn-xs btn-outline-secondary' data-id='#{id}' style='background-color: #{tablet[:bg_color]}; color: #{tablet[:fg_color]};'>#{id}</button>"
+            end
             io.puts "<hr />"
             io.puts "<table class='table table-condensed table-striped narrow'>"
             io.puts "<thead>"

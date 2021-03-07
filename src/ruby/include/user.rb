@@ -48,17 +48,17 @@ class Main < Sinatra::Base
     
     # Returns true if a teacher tablet is logged in.
     def teacher_tablet_logged_in?
-        user_logged_in? && @session_user[:email] == "lehrer.tablet@#{SCHUL_MAIL_DOMAIN}"
+        user_logged_in? && @session_user[:is_tablet] && @session_user[:tablet_type] == :teacher
     end
     
     # Returns true if a kurs tablet is logged in.
     def kurs_tablet_logged_in?
-        user_logged_in? && @session_user[:email] == "kurs.tablet@#{SCHUL_MAIL_DOMAIN}"
+        user_logged_in? && @session_user[:is_tablet] && @session_user[:tablet_type] == :kurs
     end
     
     # Returns true if a tablet is logged in.
     def tablet_logged_in?
-        teacher_tablet_logged_in? || kurs_tablet_logged_in?
+        user_logged_in? && @session_user[:is_tablet]
     end
     
     # Returns true if a klassenleiter for a given klasse is logged in.

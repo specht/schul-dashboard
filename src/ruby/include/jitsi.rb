@@ -29,6 +29,13 @@ class Main < Sinatra::Base
                 use_user = @@user_info[@@shorthands[user]]
             elsif kurs_tablet_logged_in?
                 use_user = {:display_name => 'Kursraum'}
+            elsif tablet_logged_in?
+                if @@tablets[@session_user[:tablet_id]][:klassen_stream]
+                    use_user = {:display_name => "Klassenstreaming-Tablet #{@@tablets[@session_user[:tablet_id]][:klassen_stream]}"}
+                    payload[:moderator] = true
+                else
+                    use_user = {:display_name => 'Tablet'}
+                end
             end
             payload[:context][:user][:name] = use_user[:teacher] ? use_user[:display_last_name] : use_user[:display_name]
             payload[:context][:user][:email] = use_user[:email]
@@ -154,9 +161,6 @@ class Main < Sinatra::Base
                 require_user!
                 can_enter_room = true
                 room_name = path
-                if (sus_logged_in? && WECHSELUNTERRICHT_KLASSENSTUFEN.include?(@session_user[:klasse].to_i))
-                    room_name = "Klassenstream #{@session_user[:klasse]}"
-                end
                 if room_name.index('Klassenstream') == 0
                     if (!@session_user[:teacher]) && (!get_homeschooling_for_user(@session_user[:email])) && room_name.index('Klassenstream') == 0
                         result[:html] += "<div class='alert alert-danger'>Du bist momentan nicht für den Klassenstream freigeschaltet, da du in Gruppe #{@session_user[:group2]} eingeteilt bist und auch nicht als »zu Hause« markiert bist. Deine Klassenleiterin oder dein Klassenleiter kann dich freischalten.</div>"
@@ -186,7 +190,8 @@ class Main < Sinatra::Base
                     p_ymd = Date.today.strftime('%Y-%m-%d')
                     p_yw = Date.today.strftime('%Y-%V')
                     assert(user_logged_in?)
-                    timetable_path = "/gen/w/#{@session_user[:id]}/#{p_yw}.json.gz"
+                    timetable_id = @session_user[:id]
+                    timetable_path = "/gen/w/#{timetable_id}/#{p_yw}.json.gz"
                     timetable = nil
                     Zlib::GzipReader.open(timetable_path) do |f|
                         timetable = JSON.parse(f.read)
@@ -248,6 +253,17 @@ class Main < Sinatra::Base
                                 tds = 'fünf Minuten'
                             end
                             result[:html] += "<div class='alert alert-warning'>Der Jitsi-Raum <strong>»#{room_name}«</strong> ist erst ab #{t.strftime('%H:%M')} Uhr geöffnet. Du kannst ihn in #{tds} betreten.</div>"
+                            can_enter_room = false
+                        end
+                    end
+#                     unless timetable.empty?
+#                         unless (Set.new(WECHSELUNTERRICHT_KLASSENSTUFEN) & Set.new((timetable.first['klassen'] || []).flatten.map { |x| x.to_i })).empty?
+#                             room_name = "Klassenstream #{(timetable.first['klassen'] || []).flatten.join(' ')}"
+#                         end
+#                     end
+                    if WECHSELUNTERRICHT_KLASSENSTUFEN.include?(@session_user[:klasse].to_i)
+                        if sus_logged_in? && (!get_homeschooling_for_user(@session_user[:email]))
+                            result[:html] += "<div class='alert alert-danger'>Du bist momentan nicht für den Jitsi-Stream freigeschaltet, da du in Gruppe #{@session_user[:group2]} eingeteilt bist und auch nicht als »zu Hause« markiert bist. Wenn es sich hierbei um einen Fehler handelt, sag bitte deiner Klassenleiterin oder deinem Klassenleiter Bescheid, damit du als »zu Hause« markiert werden kannst.</div>"
                             can_enter_room = false
                         end
                     end
@@ -356,7 +372,7 @@ class Main < Sinatra::Base
             RETURN i;
         END_OF_QUERY
         room_name = get_jitsi_room_name_for_lesson_key(lesson_key, user)
-        assert(!(room_name.nil?), 'not today!')
+        assert(!(room_name.nil?), 'not today!') unless DEVELOPMENT
         lesson_room_name = CGI.escape(room_name.gsub(/[\:\?#\[\]@!$&\\'()*+,;=><\/"]/, '')).gsub('+', '%20').downcase
 
         jitsi_rooms = current_jitsi_rooms()

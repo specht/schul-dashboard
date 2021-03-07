@@ -187,6 +187,13 @@ CAN_MANAGE_NEWS_USERS = []
 # - Abstimmungen starten
 SV_USERS = []
 
+TABLET_DEFAULT_COLOR = '#d3d7cf'
+TABLET_COLORS = {}
+
+# Definition von Wechselwochen
+SWITCH_WEEKS = {'2021-03-08' => ['A', 2],
+                '2021-03-22' => nil}
+
 class Main < Sinatra::Base
     def self.fix_stundenzeiten
         # definiert Stundenzeiten ab einem bestimmten Tag, bei Bedarf wiederholen

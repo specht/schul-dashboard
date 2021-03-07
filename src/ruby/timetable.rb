@@ -1347,7 +1347,8 @@ class Timetable
                     end
                     write_events = fixed_events.reject { |x| x[:deleted] }
                     f.print({:events => write_events, 
-                             :vplan_timestamp => @@vplan_timestamp}.to_json)
+                             :vplan_timestamp => @@vplan_timestamp,
+                             :switch_week => Main.get_switch_week_for_date(p)}.to_json)
                     if only_these_lesson_keys.nil? && email[0] != '_'
                         write_events.each do |event|
                             # re-parse because keys are strings for SuS and symbols for LuL (?)

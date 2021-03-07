@@ -90,6 +90,20 @@ class Main < Sinatra::Base
         respond(:ok => 'yeah')
     end
 
+    post '/api/login_as_tablet' do
+        require_admin!
+        data = parse_request_data(:required_keys => [:id])
+        assert(@@tablets.include?(data[:id]))
+        logout()
+        session_id = create_session("tablet@#{SCHUL_MAIL_DOMAIN}")
+        neo4j_query(<<~END_OF_QUERY, :sid => session_id, :tablet_id => data[:id])
+            MATCH (s:Session {sid: {sid}})
+            SET s.tablet_id= {tablet_id};
+        END_OF_QUERY
+        purge_missing_sessions(session_id, true)
+        respond(:ok => 'yeah')
+    end
+
     def all_sessions
         sids = request.cookies['sid']
         users = []
@@ -194,6 +208,7 @@ class Main < Sinatra::Base
         assert(@@user_info.include?(data[:email]), "Login requested for invalid email: #{data[:email]}", true)
         srand(Digest::SHA2.hexdigest(LOGIN_CODE_SALT).to_i + (Time.now.to_f * 1000000).to_i)
         random_code = (0..5).map { |x| rand(10).to_s }.join('')
+        random_code = '123456' if DEVELOPMENT
         STDERR.puts "!!!!! #{data[:email]} => #{random_code} !!!!!"
         tag = RandomTag::generate(8)
         valid_to = Time.now + 600

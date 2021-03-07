@@ -323,6 +323,7 @@ class SetupDatabase
                     neo4j_query("CREATE CONSTRAINT ON (n:Poll) ASSERT n.key IS UNIQUE")
                     neo4j_query("CREATE CONSTRAINT ON (n:PollRun) ASSERT n.key IS UNIQUE")
                     neo4j_query("CREATE CONSTRAINT ON (n:PresenceToken) ASSERT n.token IS UNIQUE")
+                    neo4j_query("CREATE CONSTRAINT ON (n:Tablet) ASSERT n.id IS UNIQUE")
 #                     neo4j_query("CREATE CONSTRAINT ON (n:PredefinedExternalUser) ASSERT n.email IS UNIQUE")
                     neo4j_query("CREATE INDEX ON :LoginCode(code)")
                     neo4j_query("CREATE INDEX ON :NextcloudLoginCode(code)")
@@ -344,10 +345,20 @@ class SetupDatabase
                     end
                 end
                 transaction do
+                    main.class_variable_get(:@@tablets).keys.each do |id|
+                        neo4j_query(<<~END_OF_QUERY, :id => id)
+                            MERGE (u:Tablet {id: {id}})
+                        END_OF_QUERY
+                    end
+                end
+                transaction do
                     neo4j_query(<<~END_OF_QUERY, :email => "lehrer.tablet@#{SCHUL_MAIL_DOMAIN}")
                         MERGE (u:User {email: {email}})
                     END_OF_QUERY
                     neo4j_query(<<~END_OF_QUERY, :email => "kurs.tablet@#{SCHUL_MAIL_DOMAIN}")
+                        MERGE (u:User {email: {email}})
+                    END_OF_QUERY
+                    neo4j_query(<<~END_OF_QUERY, :email => "tablet@#{SCHUL_MAIL_DOMAIN}")
                         MERGE (u:User {email: {email}})
                     END_OF_QUERY
                 end
@@ -359,6 +370,7 @@ class SetupDatabase
                     wanted_users = Set.new(main.class_variable_get(:@@user_info).keys)
                     wanted_users << "lehrer.tablet@#{SCHUL_MAIL_DOMAIN}"
                     wanted_users << "kurs.tablet@#{SCHUL_MAIL_DOMAIN}"
+                    wanted_users << "tablet@#{SCHUL_MAIL_DOMAIN}"
                     users_to_be_deleted = Set.new(present_users) - wanted_users
                     unless users_to_be_deleted.empty?
                         STDERR.puts "Deleting users (not really):"
@@ -377,7 +389,7 @@ class SetupDatabase
                 purged_session_count = neo4j_query_expect_one(<<~END_OF_QUERY, {:today => (Date.today - 7).strftime('%Y-%m-%d')})['count']
                     MATCH (s:Session)-[:BELONGS_TO]->(u:User)
                     WHERE s.last_access IS NULL OR s.last_access < {today}
-                    AND NOT ((u.email = 'lehrer.tablet@#{SCHUL_MAIL_DOMAIN}') OR (u.email = 'kurs.tablet@#{SCHUL_MAIL_DOMAIN}'))
+                    AND NOT ((u.email = 'lehrer.tablet@#{SCHUL_MAIL_DOMAIN}') OR (u.email = 'kurs.tablet@#{SCHUL_MAIL_DOMAIN}') OR (u.email = 'tablet@#{SCHUL_MAIL_DOMAIN}'))
                     DETACH DELETE s
                     RETURN COUNT(s) as count;
                 END_OF_QUERY
@@ -470,6 +482,7 @@ class Main < Sinatra::Base
         @@schueler_for_klasse = {}
         @@faecher = {}
         @@ferien_feiertage = []
+        @@tablets = {}
         @@lehrer_order = []
         @@klassen_order = []
                            
@@ -562,6 +575,21 @@ class Main < Sinatra::Base
         end
         @@user_info.keys.each do |email|
             @@user_info[email][:id] = Digest::SHA2.hexdigest(USER_ID_SALT + email).to_i(16).to_s(36)[0, 16]
+        end
+        
+        parser.parse_tablets do |record|
+            if @@tablets.include?(record[:id])
+                raise "Ooops: already got this tablet called #{record[:id]}"
+            end
+            @@tablets[record[:id]] = record
+            bg_color = TABLET_COLORS[record[:color]] || TABLET_DEFAULT_COLOR
+            rgb = @@renderer.hex_to_rgb(bg_color).map { |x| x / 255.0 }
+            gray = rgb[0] * 0.299 + rgb[1] * 0.587 + rgb[2] * 0.114
+            @@tablets[record[:id]][:bg_color] = bg_color
+            @@tablets[record[:id]][:fg_color] = gray < 0.5 ? '#ffffff' : '#000000'
+            if record[:status].index('Klassenstreaming') == 0
+                @@tablets[record[:id]][:klassen_stream] = record[:status].sub('Klassenstreaming', '').strip
+            end
         end
         
         ADMIN_USERS.each do |email|
@@ -852,6 +880,7 @@ class Main < Sinatra::Base
     end
     
     configure do
+        @@renderer = BackgroundRenderer.new
         self.collect_data() unless defined?(SKIP_COLLECT_DATA) && SKIP_COLLECT_DATA
         if ENV['DASHBOARD_SERVICE'] == 'ruby' && File.basename($0) == 'thin'
             @@compiled_files = {}
@@ -862,7 +891,6 @@ class Main < Sinatra::Base
             @@color_scheme_colors.map! do |s|
                 ['#' + s[0][1, 6], '#' + s[0][7, 6], '#' + s[0][13, 6], s[1], s[0][0], s[2]]
             end
-            @@renderer = BackgroundRenderer.new
             @@color_scheme_colors.each do |palette|
                 @@renderer.render(palette)
             end
@@ -981,7 +1009,8 @@ class Main < Sinatra::Base
                             if email == "lehrer.tablet@#{SCHUL_MAIL_DOMAIN}"
                                 @session_user = {
                                     :email => email,
-                                    :teacher_tablet => true,
+                                    :is_tablet => true,
+                                    :tablet_type => :teacher,
                                     :color_scheme => 'lfcbf499e0001eeba30',
                                     :can_see_all_timetables => true,
                                     :teacher => true
@@ -989,11 +1018,23 @@ class Main < Sinatra::Base
                             elsif email == "kurs.tablet@#{SCHUL_MAIL_DOMAIN}"
                                 @session_user = {
                                     :email => email,
-                                    :kurs_tablet => true,
+                                    :is_tablet => true,
+                                    :tablet_type => :kurs,
                                     :color_scheme => 'la86fd07638a15a2b7a',
                                     :can_see_all_timetables => false,
                                     :teacher => false,
                                     :shorthands => session[:shorthands] || []
+                                }
+                            elsif email == "tablet@#{SCHUL_MAIL_DOMAIN}"
+                                @session_user = {
+                                    :email => email,
+                                    :is_tablet => true,
+                                    :tablet_type => :specific,
+                                    :tablet_id => session[:tablet_id],
+                                    :color_scheme => 'la2c6e80d60aea2c6e80',
+                                    :can_see_all_timetables => false,
+                                    :teacher => false,
+                                    :id => @@klassen_id[@@tablets[session[:tablet_id]][:klassen_stream]]
                                 }
                             else
                                 @session_user = @@user_info[email].dup
@@ -1105,6 +1146,14 @@ class Main < Sinatra::Base
             return "<div style='margin-right: 15px;'><b>Lehrer-Tablet-Modus</b></div>" 
         elsif kurs_tablet_logged_in?
             return "<div style='margin-right: 15px;'><b>Kurs-Tablet-Modus</b></div>" 
+        elsif tablet_logged_in?
+            tablet_id = @session_user[:tablet_id]
+            tablet = @@tablets[tablet_id] || {}
+            description = ''
+            if tablet[:klassen_stream]
+                description = " (Klassenstreaming #{tablet[:klassen_stream]})"
+            end
+            return "<div style='margin-right: 15px;'><b>Tablet-Modus</b>#{description}<span class='tablet-id-indicator' style='background-color: #{tablet[:bg_color]}; color: #{tablet[:fg_color]}'>#{tablet_id}</span></div>" 
         end
         StringIO.open do |io|
             new_messages_count_s = nil

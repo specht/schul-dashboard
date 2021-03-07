@@ -16,6 +16,15 @@
                 </div>
             </div>
             <div class='hint future_homework' style='display: none;'></div>
+            <div style='#{(tablet_logged_in? && @@tablets[@session_user[:tablet_id]][:klassen_stream]) ? '' : 'display: none;'}'>
+                <div class='hint'>
+                <h4><strong style='color: #a40000;'>Streaming-Amt</strong></h4>
+                <p>
+                Ab jetzt müsst ihr bitte <strong>nach jeder Stunde</strong> den Klassenstream beenden (auflegen).
+                Geht wieder auf den Button »Klassenstreaming«, aktualisiert die Seite (Schritt 1) wählt die nächste Stunde aus (Schritt 2) und startet das Meeting wieder, falls die Stunde per Jitsi übertragen werden soll. Danke! 🙂👍🦄
+                </p>
+                </div>
+            </div>
         </div>
         <div class='#{tablet_logged_in? ? '' : 'col-lg-2 col-md-12 side-panel'}'>
             <div class='switch_week_panel'></div>

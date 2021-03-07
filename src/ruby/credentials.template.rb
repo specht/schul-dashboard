@@ -152,6 +152,7 @@ COOKIE_EXPIRY_TIME = 3600 * 24 * 365
 AVAILABLE_FONTS = ['Roboto', 'Alegreya']
 GEN_IMAGE_WIDTHS = [2048, 1200, 1024, 768, 512, 384, 256].sort
 MAINTENANCE_MODE = false
+WECHSELUNTERRICHT_KLASSENSTUFEN = []
 KLASSEN_TR = {'8o' => '8ω'}
 AUFSICHT_ZEIT = {1 => '08:00', 2 => '09:00', 3 => '09:55', 4 => '10:40',
                  6 => '12:50', 7 => '13:40', 8 => '14:30'}

@@ -59,7 +59,7 @@ Dabei wird für jeden Nutzer und jede Woche eine Datei geschrieben, die der Brow
 
 Die Stundenpläne der betroffenen Teilnehmer werden im späteren Verlauf jedesmal, wenn Informationen zu einer Unterrichtsstunde verändert werden, neu geschrieben.
 
-Zu den Beispieldaten und zur Pflege neuer Daten gibt es [hier weitere Informatonen](Daten.md).
+Zu den Beispieldaten und zur Pflege neuer Daten gibt es [hier weitere Informatonen](file.Daten.html).
 
 ## Starten der Nextcloud-Sandbox
 

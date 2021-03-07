@@ -134,14 +134,16 @@ Ferien keine Überschriftenzeile):
 Hierbei sind die Spalten mit Tabs getrennt und Textfelder stehen in 
 Anführungsstrichen. Die Spalten haben folgende Bedeutungen:
 
-Spalte 1: Unterrichts-ID aus Untis
-Spalte 2: die Klasse (siehe zum Mapping ggf. `src/ruby/credentials.rb`)
-Spalte 3: Kürzel des Fachlehrers ( siehe `faecher/faecher.csv`)
-Spalte 4: Kürzel des Fachs (siehe `faecher/faecher.csv`)
-Spalte 5: Raumnummer
-Spalte 6: Wochentag (Mo=1, Di=2,...)
-Spalte 7: Stunde (die Stundenzeiten sind auch in `src/ruby/credentials.rb` definiert)
+| Spalte | Bedeutung                                                                   |
+| ------ | --------------------------------------------------------------------------- |
+|      1 | Unterrichts-ID aus Untis                                                    | 
+|      2 | die Klasse (siehe zum Mapping ggf. `src/ruby/credentials.rb`)               |
+|      3 | Kürzel des Fachlehrers ( siehe `faecher/faecher.csv`)                       |
+|      4 | Kürzel des Fachs (siehe `faecher/faecher.csv`)                              |
+|      5 | Raumnummer                                                                  |
+|      6 | Wochentag (Mo=1, Di=2,...)                                                  |
+|      7 | Stunde (die Stundenzeiten sind auch in `src/ruby/credentials.rb` definiert) |
 
 Wir sehen hier auch, dass Kurse problemlos zusammengelegt werden 
-können, z.B. findet der Latein-Leistungskurs gemeinsam für die 11. und 
-12. Klassen statt.
+können, z.B. findet der Latein-Leistungskurs gemeinsam für die 11. und 12. Klassen statt.
+

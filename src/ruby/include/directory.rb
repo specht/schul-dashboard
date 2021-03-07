@@ -212,6 +212,22 @@ class Main < Sinatra::Base
         all_homeschooling_users
     end
     
+    def self.get_switch_week_for_date(d)
+        ds = d.strftime('%Y-%m-%d')
+        d_info = SWITCH_WEEKS.keys.sort.select do |d|
+            ds >= d
+        end.last
+        info = SWITCH_WEEKS[d_info]
+        return nil if info.nil?
+        week_number = (d.strftime('%-V').to_i - Date.parse(d_info).strftime('%-V').to_i)
+        return (((week_number + (info[0].ord - 'A'.ord)) % info[1]) + 'A'.ord).chr
+    end
+
+    # Returns A or B
+    def self.get_current_ab_week()
+        get_switch_week_for_date(Date.today)
+    end
+    
     def get_homeschooling_for_user(email)
         info = neo4j_query_expect_one(<<~END_OF_QUERY, {:email => email})
             MATCH (u:User {email: {email}})
@@ -220,8 +236,8 @@ class Main < Sinatra::Base
         END_OF_QUERY
         marked_as_homeschooling = info['homeschooling']
         group2 = info['group2']
-        week_number = Date.today.strftime('%-V').to_i
-        marked_as_homeschooling_by_week = ((week_number % 2) == (group2[0].ord) - ('A'.ord))
+        current_week = self.class.get_current_ab_week()
+        marked_as_homeschooling_by_week = (current_week == group2)
         marked_as_homeschooling || marked_as_homeschooling_by_week
     end
     

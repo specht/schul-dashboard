@@ -9,15 +9,25 @@
                 </div>
                 <div style='clear: both;'></div>
             </div>
-            <div class='hint'>
+            <div class='hint' style='#{(kurs_tablet_logged_in? || teacher_tablet_logged_in?) ? '' : 'display: none;'}'>
                 <div style='position: relative; top: 8px;'>
                 <span class='bullet'><i class='fa fa-check'></i></span><b>Schritt 2:</b> Kürzel auswählen<br /><br />
                     #{print_timetable_chooser()}
                 </div>
             </div>
             <div class='hint future_homework' style='display: none;'></div>
+            <div style='#{(tablet_logged_in? && @@tablets[@session_user[:tablet_id]][:klassen_stream]) ? '' : 'display: none;'}'>
+                <div class='hint'>
+                <h4><strong style='color: #a40000;'>Streaming-Amt</strong></h4>
+                <p>
+                Ab jetzt müsst ihr bitte <strong>nach jeder Stunde</strong> den Klassenstream beenden (auflegen).
+                Geht wieder auf den Button »Klassenstreaming«, aktualisiert die Seite (Schritt 1) wählt die nächste Stunde aus (Schritt 2) und startet das Meeting wieder, falls die Stunde per Jitsi übertragen werden soll. Danke! 🙂👍🦄
+                </p>
+                </div>
+            </div>
         </div>
         <div class='#{tablet_logged_in? ? '' : 'col-lg-2 col-md-12 side-panel'}'>
+            <div class='switch_week_panel'></div>
             #{print_lehrerzimmer_panel()}
             #{print_current_polls()}
         </div>
@@ -30,7 +40,7 @@
             </div>
             <div class='hint' style='height: 60px; position: relative; top: 23px; #{tablet_logged_in? ? '' : 'display: none;'}'>
                 <div style='position: relative; top: 8px;'>
-                <span class='bullet'><i class='fa fa-check'></i></span><b>Schritt 3:</b> Stunde auswählen
+                <span class='bullet'><i class='fa fa-check'></i></span><b>Schritt #{(kurs_tablet_logged_in? || teacher_tablet_logged_in?) ? '3' : '2'}:</b> Stunde auswählen
                 </div>
             </div>
             <div id='calendar' style='margin-bottom: 30px;'>
@@ -160,6 +170,9 @@
 <script>
 var my_lessons = #{(@@lessons_for_shorthand[@session_user[:shorthand]] || []).to_json};
 var tablet_logged_in = ('#{tablet_logged_in?}' === 'true');
+var teacher_tablet_logged_in = ('#{teacher_tablet_logged_in?}' === 'true');
+var sus_logged_in = ('#{sus_logged_in?}' === 'true');
+var teacher_logged_in = ('#{teacher_logged_in?}' === 'true');
 var homework_feedback = {};
 var jitsi_refresh_config = {
     lesson_key: null,
@@ -261,6 +274,24 @@ document.addEventListener('DOMContentLoaded', function() {
                     f.onload = function(e) {
                         let result = JSON.parse(e.target.result);
                         events = result.events;
+                        $('.switch_week_panel').empty();
+                        if ((!tablet_logged_in) && (teacher_logged_in || '#{(sus_logged_in? && WECHSELUNTERRICHT_KLASSENSTUFEN.include?(@session_user[:klasse].to_i))}' === 'true')) {
+                            if (typeof(result.switch_week) !== 'undefined' && result.switch_week !== null) {
+                                let user_group2 = '#{@session_user[:group2]}';
+                                let s = `Diese Woche ist eine <strong>${result.switch_week}-Woche</strong>. `;
+                                if (sus_logged_in) {
+                                    if ('#{@session_user[:homeschooling]}' === 'true') {
+                                        s += `Du bist momentan als »zu Hause« markiert und nimmst deshalb von <strong>zu Hause</strong> am Unterricht teil. `;
+                                    } else {
+                                        s += `Für Dich heißt das, dass Du in dieser Woche ${user_group2 === result.switch_week ? 'in der Schule' : 'zu Hause'} unterrichtet wirst. `; 
+                                        if (user_group2 === result.switch_week)
+                                            s += `Wenn Deine Eltern entscheiden sollten, dass Du erst einmal noch weiter zu Hause bleiben sollst, müssen Sie dies Deiner Klassenleitung und dem Sekretariat mitteilen. Dann werden wir Dich als »zu Hause« markieren, so dass alle wissen, dass Du nicht in die Schule kommst und ggfs. von zu Hause am Jitsi-Unterricht teilnehmen kannst.`;
+                                    }
+                                }
+                                let div = $('<div>').addClass('hint').html(s);
+                                $('.switch_week_panel').append(div);
+                            }
+                        }
                         if ('#{@session_user[:can_upload_vplan]}' === 'true') {
                             moment.locale('de');
 //                             let timetable_date = moment(oReq.getResponseHeader('last-modified')).format('ddd, DD.MM.YYYY, LT');
@@ -298,7 +329,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         }
                         if (wrote_weekend_event_header)
                             $('.weekend_events').append('<hr />')
-                        if (#{tablet_logged_in?}) {
+                        if (tablet_logged_in) {
                             events = events.filter(x => x.lesson);
                             for (let event of events) {
                                 for (let key in (event.data || {})) {
@@ -675,7 +706,7 @@ document.addEventListener('DOMContentLoaded', function() {
             }
             if (jitsi_link === '#')
                 jitsi_link = '/jitsi/lesson/' + event.lesson_key;
-            if (#{teacher_tablet_logged_in?})
+            if (teacher_tablet_logged_in)
             {
                 jitsi_link += '@' + encodeURI(window.selected_shorthand);
             }
@@ -746,7 +777,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     body.append($('<a>').attr('href', 'https://www.lernraum-berlin.de/').attr('target', '_blank').addClass('btn').addClass('btn-primary').css('margin-right', '5px').css('margin-bottom', '5px').html("<i class='fa fa-external-link'></i>&nbsp;&nbsp;Zum Lernraum&nbsp;&nbsp;<i class='fa fa-angle-double-right'></i>"));
                 wrote_something = true;
             }
-            if (#{teacher_tablet_logged_in?}) {
+            if (teacher_tablet_logged_in) {
                 if (!event_data.lesson_jitsi) {
                     if (event.lesson_key !== 0) {
                         body.append($('<div>').addClass('alert').addClass('alert-warning').html("Diese Stunde ist bisher nicht als Jitsi-Stunde markiert. Sie können dies nun nachholen und den Raum betreten. Beachten Sie bitte, dass es eine Minute dauern kann, bis diese Änderung bei Ihren Schülerinnen und Schülern zu sehen ist (diese müssen dafür auch ihren Stundenplan neu laden). Bitte markieren Sie die Stunden &ndash; wenn möglich &ndash; mit etwas Vorlauf, damit die Information rechtzeitig bei Ihren Schülerinnen und Schülern angezeigt wird."));
@@ -824,7 +855,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 wrote_something = true;
             }
             if (!wrote_something) {
-                if (#{tablet_logged_in?})
+                if (tablet_logged_in)
                     body.append("<div class='text-muted'><i>(im Lehrer-Tablet-Modus werden keine weiteren Informationen angezeigt)</i></div>");
                 else
                     body.append("<div class='text-muted'><i>(keine weiteren Informationen)</i></div>");
@@ -851,7 +882,7 @@ document.addEventListener('DOMContentLoaded', function() {
         clear_polling_handler();
     });
     
-    if (#{!tablet_logged_in?}) {
+    if (!tablet_logged_in) {
         let uri = '/gen/w/' + timetable_id + '/homework.json.gz';
         if (#{@session_user[:teacher] ? true: false})
             uri += '?' + Date.now();
@@ -991,7 +1022,7 @@ document.addEventListener('DOMContentLoaded', function() {
         };
         oReq.send();
     }
-    if (#{tablet_logged_in?}) {
+    if (tablet_logged_in) {
         window.selected_shorthand = $($('.ttc.active')[0]).text();
         history.replaceState({}, '', '/timetable/');
 //         if (window.selected_shorthand.length === 0) {

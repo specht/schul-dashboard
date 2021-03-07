@@ -353,7 +353,27 @@ class Parser
                 t0 = line['Beginn']
                 t1 = line['Ende'] || t0
                 title = line['Titel'].strip
+                next if DEVELOPMENT && t0 == '2021-03-08'
                 yield t0, t1, title
+            end
+        end
+    end
+    
+    def parse_tablets
+#         STDERR.puts "Parsing tablets..."
+        tablets = []
+        if File.exists?('/data/tablets/tablets.csv')
+            CSV.foreach('/data/tablets/tablets.csv', :headers => true) do |line|
+                line = Hash[line]
+                next unless line['Bezeichnung']
+                id = line['Bezeichnung'].strip
+                color = (line['Farbe'] || '').strip
+                status = (line['Aktueller Status'] || '').strip
+                school_streaming = (line['Unterrichtseinsatz Streaming aus der Schule'] || '').strip
+                record = {:id => id, :color => color, 
+                          :status => status,
+                          :school_streaming => school_streaming}
+                yield record
             end
         end
     end

@@ -9,6 +9,7 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+    install_clipboard_handler('.btn-clipboard');
     $('.btn-impersonate').click(function(e) {
         let email = $(e.target).data('impersonate-email');
         api_call('/api/impersonate', {email: email}, function(data) {
@@ -71,6 +72,13 @@ document.addEventListener('DOMContentLoaded', function() {
         button.toggleClass('selected');
         let selected_buttons = $('.btn-teacher-for-kurs-tablet-login.selected');
         $('.bu_login_kurs_tablet').attr('disabled', selected_buttons.length === 0);
+    });
+    $('.btn-tablet-login').click(function(e) {
+        api_call('/api/login_as_tablet', {id: `${$(e.target).data('id')}`}, function(data) {
+            if (data.success) {
+                window.location.href = '/';
+            }
+        });
     });
 });
 </script>

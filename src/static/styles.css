@@ -1782,6 +1782,13 @@ tr.sep td {
     color: #fff;
 }
 
+.btn-tablet-login {
+    width: 3em;
+    padding: 5px;
+    margin-bottom: 5px;
+    border: 1px solid rgba(0, 0, 0, 0.5);
+}
+
 .fc .fc-daygrid-event {
     cursor: pointer;
 }
@@ -2060,4 +2067,12 @@ hr.poll-entry-divider {
 
 .table .btn-clipboard-check {
     padding-top: 7px;
+}
+
+.tablet-id-indicator {
+    margin-left: 1em;
+    padding: 4px 10px;
+    border-radius: 4px;
+    font-size: 90%;
+    font-weight: bold;
 }

@@ -14,6 +14,14 @@ class Main < Sinatra::Base
                     SET i += {data}
                     SET i.updated = {timestamp};
                 END_OF_QUERY
+                neo4j_query(<<~END_OF_QUERY, :key => data[:lesson_key], :offset => lesson_offset)
+                    MATCH (t:Tablet)<-[:WHICH]-(b:Booking {confirmed: false})-[:FOR]->(i:LessonInfo {offset: {offset}})-[:BELONGS_TO]->(l:Lesson {key: {key}})
+                    SET b.confirmed = true
+                END_OF_QUERY
+                neo4j_query(<<~END_OF_QUERY, :key => data[:lesson_key], :offset => lesson_offset)
+                    MATCH (t:Tablet)<-[:WHICH]-(b:Booking {to_be_deleted: true})-[:FOR]->(i:LessonInfo {offset: {offset}})-[:BELONGS_TO]->(l:Lesson {key: {key}})
+                    DETACH DELETE b;
+                END_OF_QUERY
                 if data.include?(:breakout_rooms)
                     if data[:breakout_rooms].empty?
                         results = neo4j_query(<<~END_OF_QUERY, :key => data[:lesson_key], :offset => lesson_offset)
@@ -144,6 +152,23 @@ class Main < Sinatra::Base
             end
             results[offset][:feedback][:summary] = feedback_str
         end
+        
+        rows = neo4j_query(<<~END_OF_QUERY, :key => lesson_key)
+            MATCH (t:Tablet)<-[:WHICH]-(b:Booking {confirmed: true})-[:FOR]->(i:LessonInfo)-[:BELONGS_TO]->(l:Lesson {key: {key}})
+            RETURN t.id, i.offset;
+        END_OF_QUERY
+        rows.each do |entry|
+            offset = entry['i.offset']
+            tablet_id = entry['t.id']
+            results[offset] ||= {}
+            results[offset][:info] ||= {}
+            results[offset][:info][:booked_tablet] = {
+                :tablet_id => tablet_id,
+                :lagerort => @@tablets[tablet_id][:lagerort],
+                :bg_color => @@tablets[tablet_id][:bg_color],
+                :fg_color => @@tablets[tablet_id][:fg_color]
+            }
+        end
 
         results
     end
@@ -196,5 +221,87 @@ class Main < Sinatra::Base
         end
         trigger_update(data[:lesson_key])
         respond(:ok => 'yeah')
+    end
+    
+    post '/api/book_streaming_tablet_for_lesson' do
+        require_teacher!
+        data = parse_request_data(:required_keys => [:lesson_key, :offset, :datum, 
+                                                     :start_time, :end_time],
+                                  :types => {:offset => Integer})
+
+        available_tablets = Set.new()
+        @@tablets_for_school_streaming.each do |tablet_id|
+            available_tablets << tablet_id
+        end
+        bookings = neo4j_query(<<~END_OF_QUERY, :datum => data[:datum]).map { |x| {:tablet_id => x['t.id'], :booking => x['b'].props} }
+            MATCH (t:Tablet)<-[:WHICH]-(b:Booking {datum: {datum}})-[:FOR]->(:LessonInfo)
+            RETURN t.id, b;
+        END_OF_QUERY
+        
+        request_start_time = DateTime.parse("#{data[:datum]}T#{data[:start_time]}:00")
+        request_end_time = DateTime.parse("#{data[:datum]}T#{data[:end_time]}:00")
+
+        bookings.each do |item|
+            tablet_id = item[:tablet_id]
+            booking = item[:booking]
+            start_time = DateTime.parse("#{booking[:datum]}T#{booking[:start_time]}:00")
+            end_time = DateTime.parse("#{booking[:datum]}T#{booking[:end_time]}:00")
+            start_time -= STREAMING_TABLET_BOOKING_TIME_PRE / 24.0 / 60.0
+            end_time += STREAMING_TABLET_BOOKING_TIME_POST / 24.0 / 60.0
+            unless request_end_time < start_time && request_start_time > end_time
+                available_tablets.delete(tablet_id)
+            end
+        end
+        
+        if available_tablets.empty?
+            respond(:found_tablet => false)
+        else
+            which_tablet = available_tablets.to_a.sample
+            data[:tablet_id] = which_tablet
+            timestamp = Time.now.to_i
+            data[:timestamp] = timestamp
+            transaction do
+                neo4j_query(<<~END_OF_QUERY, data)
+                    MERGE (l:Lesson {key: {lesson_key}})
+                    MERGE (i:LessonInfo {offset: {offset}})-[:BELONGS_TO]->(l)
+                    
+                    WITH l, i
+                    MATCH (i)<-[:FOR]->(b2:Booking)-[:WHICH]->(:Tablet)
+                    DETACH DELETE b2
+                END_OF_QUERY
+                neo4j_query(<<~END_OF_QUERY, data)
+                    MERGE (l:Lesson {key: {lesson_key}})
+                    MERGE (i:LessonInfo {offset: {offset}})-[:BELONGS_TO]->(l)
+                    
+                    WITH l, i
+                    MATCH (t:Tablet {id: {tablet_id}})
+                    
+                    WITH l, i, t
+                    MERGE (i)<-[:FOR]-(b:Booking)-[:WHICH]->(t)
+                    SET b.datum = {datum}
+                    SET b.start_time = {start_time}
+                    SET b.end_time = {end_time}
+                    SET b.confirmed = false;
+                END_OF_QUERY
+            end
+            respond(:found_tablet => true, :tablet => which_tablet, :tablet_info => @@tablets[which_tablet])
+        end
+    end
+    
+    post '/api/unbook_streaming_tablet_for_lesson' do
+        require_teacher!
+        data = parse_request_data(:required_keys => [:lesson_key, :offset],
+                                  :types => {:offset => Integer})
+
+        transaction do
+            neo4j_query(<<~END_OF_QUERY, data)
+                MATCH (l:Lesson {key: {lesson_key}})<-[:BELONGS_TO]-(i:LessonInfo {offset: {offset}})<-[:FOR]-(b:Booking {confirmed: false})-[:WHICH]->(t:Tablet)
+                DETACH DELETE b;
+            END_OF_QUERY
+            neo4j_query(<<~END_OF_QUERY, data)
+                MATCH (l:Lesson {key: {lesson_key}})<-[:BELONGS_TO]-(i:LessonInfo {offset: {offset}})<-[:FOR]-(b:Booking {confirmed: true})-[:WHICH]->(t:Tablet)
+                SET b.to_be_deleted = true;
+            END_OF_QUERY
+        end
     end
 end

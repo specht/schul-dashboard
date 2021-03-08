@@ -239,13 +239,13 @@ var stored_breakout_room_config_json = null;
                             <button id='ti_lesson_jitsi_breakout_rooms_popup' data-state='off' class='btn_lesson_data btn btn-sm btn-outline-secondary' disabled><i class='fa fa-times'></i>&nbsp;&nbsp;Gruppenräume</button>
                             <span>Für diese Stunde werden Jitsi-Gruppenräume bereitgestellt.</span>
                         </div>
-                        <!--
-                        <div class='button-with-label' style=''>
+                        <div class='button-with-label'>
                             <button id='ti_lesson_need_tablet' data-state='off' class='btn btn-sm btn-outline-secondary' disabled><i class='fa fa-times'></i>&nbsp;&nbsp;Tablet</button>
                             <span>Ich benötige ein Tablet, um für die komplette saLzH-Klasse aus der Schule zu streamen.</span>
                         </div>
+                        <div class='explanation tablet-booking-status' style='margin-top: 5px; white-space: normal;'>
+                        </div>
                         <hr style='margin: 5px 0 10px 0;' />
-                        -->
                         <div class='button-with-label'>
                             <button id='ti_lesson_nc' data-state='off' class='btn_lesson_data btn btn-sm btn-outline-secondary' disabled><i class='fa fa-times'></i>&nbsp;&nbsp;Nextcloud</button>
                             <span>Es befinden sich Aufgaben im Nextcloud-Ordner. Der Link zum Ordner wird automatisch bereitgestellt.</span>
@@ -351,6 +351,7 @@ var stored_breakout_room_config_json = null;
 <script>
 var row_for_lesson_offset = {};
 var cursor = null;
+var force_pending_changes = false;
 var pending_changes = false;
 var data_keys = ['thema', 'notizen', 'hausaufgaben_text', 'stundenthema_text', 'homework_est_time'];
 var data_keys_bools = ['lesson_jitsi', 'lesson_nc', 'lesson_lr', 'homework_nc', 'homework_lr'];
@@ -517,7 +518,7 @@ function update_breakout_room_widgets() {
 }
 
 function update_changes() {
-    pending_changes = false;
+    pending_changes = force_pending_changes;
     for (key of data_keys) {
         if ($('#dd_' + key).is(':visible')) {
             let e = $('#dd_' + key + ' .dropdown-item')[0];
@@ -547,6 +548,10 @@ function update_changes() {
     $('.bu-save-changes').removeClass(pending_changes ? 'btn-outline-secondary' : 'btn-success').addClass(pending_changes ? 'btn-success' : 'btn-outline-secondary').prop('disabled', !pending_changes);
 }
 
+function update_tablet_booking_status(info) {
+    $('.tablet-booking-status').html(`Für diese Stunde ist das Tablet <span style='background-color: ${info.bg_color}; color: ${info.fg_color}; padding: 0 4px;'>${info.tablet_id}</span> (${info.lagerort}) reserviert. Bitte beachten Sie, dass die Buchung verfällt, falls diese Stunde durch den Vertretungsplan verschoben werden sollte. Sie können dann ggfs. eine neue Buchung vornehmen.`);
+}
+
 function selection_updated() {
     $('#recording_row').detach().prependTo($('.schueler_table')).hide();
     $('.schueler_table tr').removeClass('current').removeClass('selected');
@@ -568,6 +573,7 @@ function selection_updated() {
         
     breakout_room_config = null;
     single_selected_offset = null;
+    $('.tablet-booking-status').empty();
     if (entries.length === 0) {
         $('.pane_items *').prop('disabled', true);
         $('.bu-discard-changes').removeClass('btn-secondary').addClass('btn-outline-secondary').prop('disabled', true);
@@ -602,6 +608,18 @@ function selection_updated() {
                 button.removeClass('btn-outline-secondary').removeClass('half').addClass('btn-info');
                 button.find('.fa').removeClass('fa-times').removeClass('fa-question-circle').addClass('fa-check');
                 button.data('state', 'yes');
+            } else {
+                button.removeClass('btn-info').removeClass('half').addClass('btn-outline-secondary');
+                button.find('.fa').removeClass('fa-check').removeClass('fa-question-circle').addClass('fa-times');
+                button.data('state', 'no');
+            }
+            button = $('#ti_lesson_need_tablet');
+            if (((lesson_data[single_selected_offset] || {}).info || {}).booked_tablet) {
+                button.removeClass('btn-outline-secondary').removeClass('half').addClass('btn-info');
+                button.find('.fa').removeClass('fa-times').removeClass('fa-question-circle').addClass('fa-check');
+                button.data('state', 'yes');
+                let info = ((lesson_data[single_selected_offset] || {}).info || {}).booked_tablet;
+                update_tablet_booking_status(info);
             } else {
                 button.removeClass('btn-info').removeClass('half').addClass('btn-outline-secondary');
                 button.find('.fa').removeClass('fa-check').removeClass('fa-question-circle').addClass('fa-times');
@@ -693,8 +711,10 @@ function selection_updated() {
         }
         if (entries.length === 1) {
             $('#ti_lesson_jitsi_breakout_rooms_popup').prop('disabled', false);
+            $('#ti_lesson_need_tablet').prop('disabled', false);
         } else {
             $('#ti_lesson_jitsi_breakout_rooms_popup').prop('disabled', true);
+            $('#ti_lesson_need_tablet').prop('disabled', true);
         }
     } 
     if ((#{@@lessons[:lesson_keys][show_lesson_key][:lehrer]}.indexOf('#{@session_user[:shorthand]}') < 0)) {
@@ -754,6 +774,14 @@ function update_table() {
             }
             wrote_something = true;
         }
+        if (((lesson_data[i] || {}).info || {}).booked_tablet) {
+            let span = $('<span>').addClass('bv');
+            span.html(lesson_data[i].info.booked_tablet.tablet_id);
+            span.css('background-color', lesson_data[i].info.booked_tablet.bg_color);
+            span.css('color', lesson_data[i].info.booked_tablet.fg_color);
+            cell.append(span);
+            wrote_something = true;
+        }
         if (((lesson_data[i] || {}).info || {}).lesson_nc) {
             cell.append($('<span>').addClass('bv').html('NC'));
             wrote_something = true;
@@ -787,6 +815,7 @@ function update_table() {
 
 function discard_changes() {
     selection_updated();
+    force_pending_changes = false;
     update_changes();
 }
 
@@ -869,8 +898,15 @@ function save_changes() {
                     }
                 }
                 stored_breakout_room_config_json = JSON.stringify(breakout_room_config);
+                if (typeof(lesson_data[i].info.preliminary_booked_tablet) !== 'undefined') {
+                    lesson_data[i].info.booked_tablet = lesson_data[i].info.preliminary_booked_tablet;
+                    delete lesson_data[i].info.preliminary_booked_tablet;
+                } else {
+                    delete lesson_data[i].info.booked_tablet;
+                }
                 update_table();
                 selection_updated();
+                force_pending_changes = false;
                 update_changes();
             }
         });
@@ -1079,25 +1115,73 @@ document.addEventListener('DOMContentLoaded', function() {
             if (button.attr('id') === 'ti_lesson_jitsi' && button.data('state') !== 'yes') {
                 breakout_room_config = null;
                 update_breakout_room_widgets();
+                let tablet_button = $('#ti_lesson_need_tablet');
+                if (tablet_button.data('state') === 'yes')
+                    tablet_button.click();
             }
             update_changes();
         }
     });
     
     $('#ti_lesson_need_tablet').click(function(e) {
+        let button = $('#ti_lesson_need_tablet');
+        $('.tablet-booking-status').empty();
         if (button.data('state') === 'yes') {
-            button.removeClass('btn-info').addClass('btn-outline-secondary');
-            button.find('.fa').removeClass('fa-check').removeClass('fa-question-circle').addClass('fa-times');
-            button.data('state', 'no');
-            button.blur();
             // we don't need a tablet anymore
+            let data = {
+                lesson_key: lesson_key, 
+                offset: window.single_selected_offset
+            };
+            api_call('/api/unbook_streaming_tablet_for_lesson', data, function(data) {
+                if (data.success) {
+                    if (typeof(lesson_data[window.single_selected_offset].info.preliminary_booked_tablet) !== 'undefined')
+                        delete lesson_data[window.single_selected_offset].info.preliminary_booked_tablet;
+                    button.removeClass('btn-info').addClass('btn-outline-secondary');
+                    button.find('.fa').removeClass('fa-check').removeClass('fa-question-circle').addClass('fa-times');
+                    button.data('state', 'no');
+                    button.blur();
+                    force_pending_changes = true;
+                    update_changes();
+                }
+            });
         }
         else {
-            button.removeClass('btn-outline-secondary').addClass('btn-info');
-            button.find('.fa').removeClass('fa-times').removeClass('fa-question-circle').addClass('fa-check');
-            button.data('state', 'yes');
+            let time_span = window.time_span_for_lesson_offset[window.single_selected_offset];
+            let data = {
+                lesson_key: lesson_key, 
+                offset: window.single_selected_offset, 
+                datum: time_span.datum,
+                start_time: time_span.start_time,
+                end_time: time_span.end_time
+            };
             // try to find a bookable tablet
             // don't make it permanent yet before saving
+            api_call('/api/book_streaming_tablet_for_lesson', data, function(data) {
+                if (data.success) {
+                    if (data.found_tablet) {
+                        lesson_data[window.single_selected_offset].info.preliminary_booked_tablet = {
+                            tablet_id: data.tablet,
+                            lagerort: data.tablet_info.lagerort,
+                            bg_color: data.tablet_info.bg_color,
+                            fg_color: data.tablet_info.fg_color
+                        };
+                        update_tablet_booking_status(lesson_data[window.single_selected_offset].info.preliminary_booked_tablet);
+
+                        $('.tablet-booking-status').html(`Für diese Stunde ist das Tablet <span style='background-color: ${data.tablet_info.bg_color}; color: ${data.tablet_info.fg_color}; padding: 0 4px;'>${data.tablet}</span> (${data.tablet_info.lagerort}) reserviert. Bitte beachten Sie, dass die Buchung verfällt, falls diese Stunde durch den Vertretungsplan verschoben werden sollte. Sie können dann ggfs. eine neue Buchung vornehmen.`);
+                        let jitsi_button = $('#ti_lesson_jitsi');
+                        if (jitsi_button.data('state') !== 'yes') {
+                            jitsi_button.click();
+                        }
+                        button.removeClass('btn-outline-secondary').addClass('btn-info');
+                        button.find('.fa').removeClass('fa-times').removeClass('fa-question-circle').addClass('fa-check');
+                        button.data('state', 'yes');
+                        force_pending_changes = true;
+                        update_changes();
+                    } else {
+                        $('.tablet-booking-status').html(`Es konnte leider kein verfügbares Tablet gefunden werden.`);
+                    }
+                }
+            });
         }
         update_changes();
     });
@@ -1535,6 +1619,7 @@ document.addEventListener('DOMContentLoaded', function() {
         f.onload = function(e) {
             let table = $('.lesson_table');
             let events = JSON.parse(e.target.result);
+            window.time_span_for_lesson_offset = {};
             let last_datum = null;
             let last_datum_odd = 0;
             let now = new Date();
@@ -1556,6 +1641,11 @@ document.addEventListener('DOMContentLoaded', function() {
                     for (let i = 0; i < event.count; i++)
                     {
                         let lesson_offset = event.lesson_offset + i;
+                        window.time_span_for_lesson_offset[lesson_offset] = {
+                            datum: event.datum,
+                            start_time: event.start.substr(11, 5),
+                            end_time: event.end.substr(11, 5)
+                        };
                         let row = $('<tr>').addClass('lesson');
                         $('<td>').html('' + (lesson_offset + 1) + '.').css('text-align', 'right').appendTo(row);
                         let d = new Date(event.datum);

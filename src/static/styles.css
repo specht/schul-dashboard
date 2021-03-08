@@ -2076,3 +2076,8 @@ hr.poll-entry-divider {
     font-size: 90%;
     font-weight: bold;
 }
+
+.tis {
+    padding: 0 4px;
+    border-radius: 2px;
+}

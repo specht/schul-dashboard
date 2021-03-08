@@ -368,11 +368,12 @@ class Parser
                 next unless line['Bezeichnung']
                 id = line['Bezeichnung'].strip
                 color = (line['Farbe'] || '').strip
+                lagerort = (line['Lagerort'] || '').strip
                 status = (line['Aktueller Status'] || '').strip
                 school_streaming = (line['Unterrichtseinsatz Streaming aus der Schule'] || '').strip
                 record = {:id => id, :color => color, 
-                          :status => status,
-                          :school_streaming => school_streaming}
+                          :status => status, :lagerort => lagerort }
+                record[:school_streaming] = true unless school_streaming.empty?
                 yield record
             end
         end

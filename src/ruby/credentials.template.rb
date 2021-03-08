@@ -167,6 +167,10 @@ COLOR_SCHEME_COLORS = [
 ]
 STANDARD_COLOR_SCHEME = 'la2c6e80d60aea2c6e80'
 
+# tablet booking pre and post time, in minutes
+STREAMING_TABLET_BOOKING_TIME_PRE = 5
+STREAMING_TABLET_BOOKING_TIME_POST = 15
+
 # Liste aller E-Mail-Adressen von Nutzer*innen, 
 # die Administratorenrechte haben sollen
 ADMIN_USERS = ['clarke@beispielschule.de']

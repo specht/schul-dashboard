@@ -435,6 +435,7 @@ class Timetable
         @@schueler_for_lesson = Main.class_variable_get(:@@schueler_for_lesson)
         @@schueler_offset_in_lesson = Main.class_variable_get(:@@schueler_offset_in_lesson)
         @@pausenaufsichten = Main.class_variable_get(:@@pausenaufsichten)
+        @@tablets = Main.class_variable_get(:@@tablets)
         
         lesson_offset = {}
 
@@ -960,6 +961,52 @@ class Timetable
         @regular_days_for_lesson_key.keys.each do |lesson_key|
             @regular_days_for_lesson_key[lesson_key] = @regular_days_for_lesson_key[lesson_key].to_a.sort
         end
+        # Now purge all tablet bookings which have moved and send a message
+        rows = neo4j_query(<<~END_OF_QUERY, {})
+            MATCH (:Tablet)<-[:WHICH]-(b:Booking {confirmed: true})-[:FOR]->(i:LessonInfo)-[:BELONGS_TO]->(l:Lesson)
+            RETURN i.offset, l.key, b
+        END_OF_QUERY
+        rows.each do |row|
+            lesson_key = row['l.key']
+            offset = row['i.offset']
+            booking = row['b'].props
+            cache_index = (@events_by_lesson_key_and_offset[lesson_key] || {})[offset]
+            if cache_index
+                entry = @lesson_cache[cache_index]
+                b0 = "#{booking[:datum]}T#{booking[:start_time]}"
+                b1 = "#{booking[:datum]}T#{booking[:end_time]}"
+                l0 = entry[:start]
+                l1 = entry[:end]
+                shorthands = @@lessons[:lesson_keys][lesson_key][:lehrer]
+                if b0 != l0 || b1 != l1
+                    ds = "#{b0[8, 2]}.#{b0[5, 2]}.#{b0[0, 4]}"
+                    fach = entry[:label_klasse_lang].gsub(/<[^>]+>/, '').strip
+                    # lesson has moved, purge the tablet booking
+                    neo4j_query(<<~END_OF_QUERY, {:lesson_key => lesson_key, :offset => offset})
+                        MATCH (:Tablet)<-[:WHICH]-(b:Booking {confirmed: true})-[:FOR]->(i:LessonInfo {offset: {offset}})-[:BELONGS_TO]->(l:Lesson {key: {lesson_key}})
+                        DETACH DELETE b;
+                    END_OF_QUERY
+                    shorthands.each do |shorthand|
+                        email = @@shorthands[shorthand]
+                        user_info = @@user_info[email]
+                        deliver_mail do
+                            to email
+                            bcc SMTP_FROM
+                            from SMTP_FROM
+                            
+                            subject "Tablet-Reservierung aufgehoben: #{fach}"
+
+                            StringIO.open do |io|
+                                io.puts "<p>Hallo!</p>"
+                                io.puts "<p>Es tut mir leid, aber Ihre Tablet-Reservierung für #{fach} am #{ds} wurde aufgehoben, da die Stunde aufgrund von Änderungen am Vertretungsplan nun zu einem anderen Zeitpunkt stattfindet. Sie können ggfs. ein neues Tablet buchen.</p>"
+                                io.puts "<p>Viele Grüße,<br />#{WEBSITE_MAINTAINER_NAME}</p>"
+                                io.string
+                            end
+                        end
+                    end
+                end
+            end
+        end
     end
     
     def update_weeks(only_these_lesson_keys)
@@ -1225,6 +1272,19 @@ class Timetable
                                             end
                                         end
                                     end
+                                    [:booked_tablet].each do |k|
+                                        (0...e[:count]).each do |o|
+                                            v = (((@lesson_info[lesson_key] || {})[e[:lesson_offset] + o] || {})[:data] || {})[k] || []
+                                            if v && (!v.empty?)
+                                                tablet_id = v
+                                                data[k] = v
+                                                tablet_info = @@tablets[tablet_id]
+                                                data[:booked_tablet_label_long] = "<span class='tis' style='background-color: #{tablet_info[:bg_color]}; color: #{tablet_info[:fg_color]};'>#{tablet_id}</span> (#{tablet_info[:lagerort]})"
+                                                data[:booked_tablet_label_short] = "<span class='tis' style='background-color: #{tablet_info[:bg_color]}; color: #{tablet_info[:fg_color]};'>#{tablet_id}</span>"
+                                            end
+                                        end
+                                    end
+
                                     events_with_data_cache[lesson_key][e[:lesson_offset]] = data
                                 end
                                 events_with_data_per_user_cache[lesson_key] ||= {}
@@ -1305,10 +1365,13 @@ class Timetable
                                 false
                             end
                         end
-                        # delete Notizen for SuS
+                        # delete Notizen and booked tablet info for SuS
                         fixed_events.map! do |event|
                             if event[:data]
                                 event[:data].delete(:notizen)
+                                event[:data].delete(:booked_tablet)
+                                event[:data].delete(:booked_tablet_label_long)
+                                event[:data].delete(:booked_tablet_label_short)
                             end
                             event
                         end
@@ -1737,10 +1800,12 @@ class Timetable
             end
         end
         # now fetch all updated info nodes
-        rows = neo4j_query(<<~END_OF_QUERY, {:ts => @lesson_info_last_timestamp}).map { |x| {:info => x['i'].props, :key => x['key'] } }
+        rows = neo4j_query(<<~END_OF_QUERY, {:ts => @lesson_info_last_timestamp}).map { |x| {:info => x['i'].props, :key => x['key'], :tablet_id => x['tablet_id'] } }
             MATCH (i:LessonInfo)-[:BELONGS_TO]->(l:Lesson)
             WHERE i.updated >= {ts}
-            RETURN i, l.key AS key;
+            WITH i, l
+            OPTIONAL MATCH (t:Tablet)<-[:WHICH]-(b:Booking {confirmed: true})-[:FOR]->(i)
+            RETURN i, l.key AS key, t.id AS tablet_id;
         END_OF_QUERY
         fetched_lesson_info_count = rows.size
         rows.each do |row|
@@ -1751,6 +1816,10 @@ class Timetable
             end
             @lesson_info[row[:key]][row[:info][:offset]] ||= {}
             @lesson_info[row[:key]][row[:info][:offset]][:data] = h
+            if row[:tablet_id]
+                tablet_info = @@tablets[row[:tablet_id]]
+                @lesson_info[row[:key]][row[:info][:offset]][:data][:booked_tablet] = row[:tablet_id]
+            end
         end
         # refresh text comments from database
         @text_comments_last_timestamp ||= 0

@@ -336,6 +336,9 @@ class SetupDatabase
                     neo4j_query("CREATE INDEX ON :News(date)")
                     neo4j_query("CREATE INDEX ON :PollRun(start_date)")
                     neo4j_query("CREATE INDEX ON :PollRun(end_date)")
+                    neo4j_query("CREATE INDEX ON :Booking(datum)")
+                    neo4j_query("CREATE INDEX ON :Booking(confirmed)")
+                    neo4j_query("CREATE INDEX ON :Booking(updated)")
                 end
                 transaction do
                     main.class_variable_get(:@@user_info).keys.each do |email|
@@ -577,6 +580,7 @@ class Main < Sinatra::Base
             @@user_info[email][:id] = Digest::SHA2.hexdigest(USER_ID_SALT + email).to_i(16).to_s(36)[0, 16]
         end
         
+        @@tablets_for_school_streaming = Set.new()
         parser.parse_tablets do |record|
             if @@tablets.include?(record[:id])
                 raise "Ooops: already got this tablet called #{record[:id]}"
@@ -589,6 +593,9 @@ class Main < Sinatra::Base
             @@tablets[record[:id]][:fg_color] = gray < 0.5 ? '#ffffff' : '#000000'
             if record[:status].index('Klassenstreaming') == 0
                 @@tablets[record[:id]][:klassen_stream] = record[:status].sub('Klassenstreaming', '').strip
+            end
+            if record[:school_streaming]
+                @@tablets_for_school_streaming << record[:id]
             end
         end
         

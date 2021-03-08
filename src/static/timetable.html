@@ -464,6 +464,8 @@ document.addEventListener('DOMContentLoaded', function() {
                         markers.append($('<span>').addClass('mute').html('Jitsi / GR'));
                     else
                         markers.append($('<span>').addClass('mute').html('Jitsi'));
+                    if (event_data.booked_tablet)
+                        markers.append($(event_data.booked_tablet_label_short));
                 }
                 if (event_data.lesson_nc || event_data.homework_nc)
                     markers.append($('<span>').addClass('mute').html('NC'));
@@ -714,6 +716,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (event_data.lesson_jitsi) {
                     let p = $('<p>');
                     p.append('Für diese Unterrichtsstunde wird ein Jitsi Meet-Stream bereitgestellt. ');
+                    if (event_data.booked_tablet) {
+                        p.append(`Das Tablet ${event_data.booked_tablet_label_long} ist für Sie reserviert. Bitte bringen Sie es gleich nach dem Unterricht wieder zurück.`);
+                    }
                     body.append(p);
                 }
                 if (event_data.lesson_jitsi) {

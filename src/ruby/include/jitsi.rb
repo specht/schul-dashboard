@@ -183,6 +183,38 @@ class Main < Sinatra::Base
                         ext_name = 'Kursraum'
                         path = path.split('@')[0]
                     end
+                    timetable_id = @session_user[:id]
+                    if @session_user[:is_tablet]
+                        tablet_id = @session_user[:tablet_id]
+                        if @@tablets[tablet_id][:school_streaming]
+                            # determine teacher who has booked the tablet now
+                            today = DateTime.now.strftime('%Y-%m-%d')
+                            results = neo4j_query(<<~END_OF_QUERY, {:tablet_id => tablet_id, :today => today})
+                                MATCH (t:Tablet {id: {tablet_id}})<-[:WHICH]-(b:Booking {datum: {today}, confirmed: true})-[:FOR]->(i:LessonInfo)-[:BELONGS_TO]->(l:Lesson)
+                                RETURN b, i, l
+                            END_OF_QUERY
+                            now = DateTime.now.strftime('%Y-%m-%dT%H:%M')
+                            found_teachers = Set.new()
+                            results.each do |item|
+                                booking = item['b'].props
+                                lesson = item['l'].props
+                                lesson_key = lesson[:key]
+                                lesson_info = item['i'].props
+                                lesson_data = @@lessons[:lesson_keys][lesson_key]
+                                start_time = "#{booking[:datum]}T#{booking[:start_time]}"
+                                end_time = "#{booking[:datum]}T#{booking[:end_time]}"
+                                start_time = (DateTime.parse("#{start_time}:00") - STREAMING_TABLET_BOOKING_TIME_PRE / 24.0 / 60.0).strftime('%Y-%m-%dT%H:%M')
+                                end_time = (DateTime.parse("#{start_time}:00") + STREAMING_TABLET_BOOKING_TIME_POST / 24.0 / 60.0).strftime('%Y-%m-%dT%H:%M')
+                                if now >= start_time && now <= end_time
+                                    found_teachers |= Set.new(lesson_data[:lehrer])
+                                end
+                            end
+                            unless found_teachers.empty?
+                                # force timetable_id to teacher who's currently running the lesson
+                                timetable_id = @@user_info[@@shorthands[found_teachers.to_a.sort.first]][:id]
+                            end
+                        end
+                    end
                     result[:html] = ''
                     lesson_key = path.split('/')[1]
                     breakout_room_name = path.split('/')[2]
@@ -190,7 +222,6 @@ class Main < Sinatra::Base
                     p_ymd = Date.today.strftime('%Y-%m-%d')
                     p_yw = Date.today.strftime('%Y-%V')
                     assert(user_logged_in?)
-                    timetable_id = @session_user[:id]
                     timetable_path = "/gen/w/#{timetable_id}/#{p_yw}.json.gz"
                     timetable = nil
                     Zlib::GzipReader.open(timetable_path) do |f|

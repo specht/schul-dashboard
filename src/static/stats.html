@@ -6,7 +6,7 @@
         <hr />
         #{print_stats()}
         <hr />
-        <h3>Jitsi-Projektion</h3>
+        <h3>Jitsi und Tablets</h3>
         <div class='charts'>
         </div>
         </div>
@@ -23,77 +23,105 @@
 <script>
 window.addEventListener('load', function() {
     moment.locale('de');
-    $.get('/gen/jitsi_projection.json', function(data) {
-        for (let d of Object.keys(data).sort()) {
-            let chart_x = [];
-            let chart_y = {};
-            chart_y[d + 'T08:00'] = 0;
-            chart_y[d + 'T19:00'] = 0;
-            let h = 8;
-            let m = 0;
-            let ts = ('' + h).padStart(2, '0') + ':' + ('' + m).padStart(2, '0');
-            while (ts <= '19:00') {
-                let x = d + 'T' + ts;
-                chart_y[x] = 0;
-                m += 1;
-                if (m >= 60) {
-                    m = 0;
-                    h += 1;
-                }
-                ts = ('' + h).padStart(2, '0') + ':' + ('' + m).padStart(2, '0');
-            }
-            let canvas = $('<canvas>');
-
-            for (let k in data[d]) {
-                let h = parseInt(data[d][k].start.split(':')[0]);
-                let m = parseInt(data[d][k].start.split(':')[1]);
-                let ts = ('' + h).padStart(2, '0') + ':' + ('' + m).padStart(2, '0');
-                while (ts < data[d][k].end) {
-                    let x = d + 'T' + ts;
-                    if (typeof(chart_y[x]) === 'undefined') {
+    api_call('/api/get_tablet_bookings', {}, function(data2) {
+        if (data2.success) {
+            let tablet_bookings = data2.bookings;
+            $.get('/gen/jitsi_projection.json', function(data) {
+                for (let d of Object.keys(data).sort()) {
+                    let chart_x = [];
+                    let chart_y = {};
+                    chart_y[d + 'T08:00'] = 0;
+                    chart_y[d + 'T19:00'] = 0;
+                    let h = 8;
+                    let m = 0;
+                    let ts = ('' + h).padStart(2, '0') + ':' + ('' + m).padStart(2, '0');
+                    while (ts <= '19:00') {
+                        let x = d + 'T' + ts;
                         chart_y[x] = 0;
+                        m += 1;
+                        if (m >= 60) {
+                            m = 0;
+                            h += 1;
+                        }
+                        ts = ('' + h).padStart(2, '0') + ':' + ('' + m).padStart(2, '0');
                     }
-                    chart_y[x] += data[d][k].count;
-                    m += 1;
-                    if (m >= 60) {
-                        m = 0;
-                        h += 1;
-                    }
-                    ts = ('' + h).padStart(2, '0') + ':' + ('' + m).padStart(2, '0');
-                }
-            }
-            chart_x = Object.keys(chart_y).sort();
-            new Chart(canvas, {
-                type: 'bar',
-                data: {
-                    labels: chart_x,
-                    datasets: [{
-                        backgroundColor: '#12959f',
-                        label: 'Geplante Teilnehmer',
-                        data: chart_x.map(function(x) { return chart_y[x]; }),
-                    }]
-                },
-                options: {
-                    aspectRatio: 4.0,
-                    scales: {
-                        xAxes: [{
-                            type: 'time',
-                            time: {
-                                unit: 'minute',
-                                stepSize: 15
-                            },
-                        }],
-                        yAxes: [{
-                            ticks: {
-                                suggestedMax: 1000,
-                                beginAtZero: true
+                    let canvas = $('<canvas>');
+
+                    for (let k in data[d]) {
+                        let h = parseInt(data[d][k].start.split(':')[0]);
+                        let m = parseInt(data[d][k].start.split(':')[1]);
+                        let ts = ('' + h).padStart(2, '0') + ':' + ('' + m).padStart(2, '0');
+                        while (ts < data[d][k].end) {
+                            let x = d + 'T' + ts;
+                            if (typeof(chart_y[x]) === 'undefined') {
+                                chart_y[x] = 0;
                             }
-                        }]
+                            chart_y[x] += data[d][k].count;
+                            m += 1;
+                            if (m >= 60) {
+                                m = 0;
+                                h += 1;
+                            }
+                            ts = ('' + h).padStart(2, '0') + ':' + ('' + m).padStart(2, '0');
+                        }
                     }
+                    chart_x = Object.keys(chart_y).sort();
+                    new Chart(canvas, {
+                        type: 'bar',
+                        data: {
+                            labels: chart_x,
+                            datasets: [{
+                                backgroundColor: '#12959f',
+                                label: 'Geplante Teilnehmer',
+                                data: chart_x.map(function(x) { return chart_y[x]; }),
+                            }]
+                        },
+                        options: {
+                            aspectRatio: 4.0,
+                            scales: {
+                                xAxes: [{
+                                    type: 'time',
+                                    time: {
+                                        unit: 'minute',
+                                        stepSize: 15
+                                    },
+                                }],
+                                yAxes: [{
+                                    ticks: {
+                                        suggestedMax: 1000,
+                                        beginAtZero: true
+                                    }
+                                }]
+                            }
+                        }
+                    });
+                    $('.charts').append($('<h4>').text(d));
+                    $('.charts').append(canvas);
+                    let table = $('<table>').addClass('table').addClass('narrow');
+                    for (let tablet_id in (tablet_bookings[d] || {})) {
+                        let row = $('<tr>');
+                        table.append(row);
+                        row.append($('<th>').html('&nbsp;').css('min-width', '40px'));
+                        let cell = $('<td>').css('background-color', '#f0f0f0');
+                        cell.css('width', '100%');
+                        row.append(cell);
+                        cell.css('position', 'relative');
+                        for (let booking of tablet_bookings[d][tablet_id]) {
+                            let div = $('<div>').css('overflow', 'hidden').css('font-size', '90%').css('background-color', '#fff').css('box-shadow', '0 0 3px rgba(0,0,0,0.2)').css('padding', '0 3px');
+                            div.css('position', 'absolute');
+                            div.html(`<span class='tis' style='background-color: ${booking.tablet.bg_color}; color: ${booking.tablet.fg_color};'>${tablet_id}</span> ${booking.lesson}`);
+                            let t0 = parseInt(booking.booking.start_time.substr(0, 2)) * 60 + parseInt(booking.booking.start_time.substr(3, 2));
+                            let t1 = parseInt(booking.booking.end_time.substr(0, 2)) * 60 + parseInt(booking.booking.end_time.substr(3, 2));
+                            let l = (t0 - (8 * 60)) / (19 * 60 - 8 * 60) * 100.0;
+                            let r = (t1 - (8 * 60)) / (19 * 60 - 8 * 60) * 100.0;
+                            div.css('left', `${l}%`);
+                            div.css('width', `${r - l}%`);
+                            cell.append(div);
+                        }
+                    }
+                    $('.charts').append(table);
                 }
             });
-            $('.charts').append($('<h4>').text(d));
-            $('.charts').append(canvas);
         }
     });
 });

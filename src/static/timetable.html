@@ -173,6 +173,7 @@ var tablet_logged_in = ('#{tablet_logged_in?}' === 'true');
 var teacher_tablet_logged_in = ('#{teacher_tablet_logged_in?}' === 'true');
 var sus_logged_in = ('#{sus_logged_in?}' === 'true');
 var teacher_logged_in = ('#{teacher_logged_in?}' === 'true');
+var fixed_timetable_data = #{fixed_timetable_data.to_json};
 var homework_feedback = {};
 var jitsi_refresh_config = {
     lesson_key: null,
@@ -222,6 +223,116 @@ function refresh_jitsi_presence() {
     });
 }
 
+function render_timetable(result, successCallback) {
+    events = result.events;
+    console.log(events);
+    $('.switch_week_panel').empty();
+    if ((!tablet_logged_in) && (teacher_logged_in || '#{(sus_logged_in? && WECHSELUNTERRICHT_KLASSENSTUFEN.include?(@session_user[:klasse].to_i))}' === 'true')) {
+        if (typeof(result.switch_week) !== 'undefined' && result.switch_week !== null) {
+            let user_group2 = '#{@session_user[:group2]}';
+            let s = `Diese Woche ist eine <strong>${result.switch_week}-Woche</strong>. `;
+            if (sus_logged_in) {
+                if ('#{@session_user[:homeschooling]}' === 'true') {
+                    s += `Du bist momentan als »zu Hause« markiert und nimmst deshalb von <strong>zu Hause</strong> am Unterricht teil. `;
+                } else {
+                    s += `Für Dich heißt das, dass Du in dieser Woche ${user_group2 === result.switch_week ? 'in der Schule' : 'zu Hause'} unterrichtet wirst. `; 
+                    if (user_group2 === result.switch_week)
+                        s += `Wenn Deine Eltern entscheiden sollten, dass Du erst einmal noch weiter zu Hause bleiben sollst, müssen Sie dies Deiner Klassenleitung und dem Sekretariat mitteilen. Dann werden wir Dich als »zu Hause« markieren, so dass alle wissen, dass Du nicht in die Schule kommst und ggfs. von zu Hause am Jitsi-Unterricht teilnehmen kannst.`;
+                }
+            }
+            let div = $('<div>').addClass('hint').html(s);
+            $('.switch_week_panel').append(div);
+        }
+    }
+    if ('#{@session_user[:can_upload_vplan]}' === 'true') {
+        moment.locale('de');
+//                             let timetable_date = moment(oReq.getResponseHeader('last-modified')).format('ddd, DD.MM.YYYY, LT');
+//                             console.log('#{latest_vplan_timestamp}');
+//                             console.log(result.vplan_timestamp);
+        if ('#{latest_vplan_timestamp}' === (result.vplan_timestamp || ''))
+            $('.timetable_updated').html("<i class='fa fa-check text-success'></i>&nbsp;&nbsp;Vertretungsplan ist aktuell");
+        else
+            $('.timetable_updated').html("<i class='fa fa-warning text-danger'></i>&nbsp;&nbsp;Vertretungsplan wird gerade aktualisiert, bitte demnächst noch einmal neu laden.");
+    }
+
+    let wrote_weekend_event_header = false;
+    $('.weekend_events').hide();
+    $('.weekend_events').empty();
+    for (let event of events)
+    {
+        event.color = color_palette.primary;
+        if (event.entfall)
+            event.color = color_palette.disabled;
+        if (event.is_event)
+            event.color = color_palette.shifted;
+        if (event.is_event && [6, 0].indexOf(new Date(event.datum).getDay()) >= 0) {
+//                                 console.log(event);
+            if (!wrote_weekend_event_header) {
+                $('.weekend_events').append($('<p><b>Termine am Wochenende</b></p>'));
+                $('.weekend_events').show();
+            }
+
+            let time_str = '' + parseInt(event.datum.substr(8, 2)) + '.' + event.datum.substr(5, 2) + '.' + event.datum.substr(0, 4) + '<br />' + event.start_time + '&ndash;' + event.end_time;
+            $('.weekend_events').append($('<hr /><p>' + time_str + '<br /><b>' + event.event_title + '</b><br />' + event.organized_by));
+            $('.weekend_events').append(fix_bad_html($('<div>').html(event.description)));
+            $('.weekend_events').append($('<a href="/jitsi/event/' + event.eid + '" target="_blank" class="btn btn-sm btn-primary"><i class="fa fa-microphone"></i>&nbsp;&nbsp;Zum Jitsi-Raum&nbsp;&nbsp;<i class="fa fa-angle-double-right"></i></a></p>'));
+        }
+
+    }
+    if (wrote_weekend_event_header)
+        $('.weekend_events').append('<hr />')
+    if (tablet_logged_in) {
+        events = events.filter(x => x.lesson);
+        for (let event of events) {
+            for (let key in (event.data || {})) {
+                if (key !== 'lesson_jitsi')
+                    delete event.data[key];
+            }
+        }
+    }
+    let today = (new Date()).toISOString().substr(0, 10);
+
+    let this_klasse = #{(@session_user[:klasse] || '0').to_i};
+    if (this_klasse === 0) {
+        this_klasse = parseInt($($('.ttc.active')[0]).text());
+        if (this_klasse === NaN)
+            this_klasse = 0;
+    }
+    if (this_klasse >= 5 && this_klasse <= 9) {
+        which = '7-9';
+        if (this_klasse <= 6)
+            which = '4-6';
+        
+        for (let i = 1; i <= 24; i++)
+        {
+            let title = '🎅 Mathe im Advent';
+            let day_s = '' + i;
+            if (day_s.length < 2)
+                day_s = '0' + day_s;
+            let ds = '2020-12-' + day_s;
+            let wday = new Date(ds).getDay();
+            if (wday == 6) {
+                // Saturday
+                let day_s = '' + (i + 2);
+                if (day_s.length < 2)
+                    day_s = '0' + day_s;
+                ds = '2020-12-' + day_s;
+                title += ' (Sa)';
+            } else if (wday == 0) {
+                // Sunday
+                let day_s = '' + (i + 1);
+                if (day_s.length < 2)
+                    day_s = '0' + day_s;
+                ds = '2020-12-' + day_s;
+                title += ' (So)';
+            }
+            if (today >= ds)
+                events.push({eventOrder: i, color: color_palette.shifted, start: ds, end: ds, title: title, href: 'https://www.mathe-im-advent.de/de/kalender/' + which + '/' + i + '/' });
+        }
+    }
+    successCallback(events);
+}
+
 document.addEventListener('DOMContentLoaded', function() {
     moment.locale('de');
     let narrow_window = ($(window).width() <= 640);
@@ -256,137 +367,32 @@ document.addEventListener('DOMContentLoaded', function() {
             if (month.length < 2) month = '0' + month;
             if (day.length < 2) day = '0' + day;
             
-            let uri = '/gen/w/' + timetable_id + '/' + yw_date + '.json.gz';
-//             console.log(uri);
-            if (#{@session_user[:teacher] ? true: false})
-                uri += '?' + Date.now();
-            let oReq = new XMLHttpRequest();
-            oReq.open('GET', uri, true);
-            oReq.responseType = 'arraybuffer';
+            if (fixed_timetable_data !== null) {
+                render_timetable(fixed_timetable_data, successCallback);
+            } else {
+                let uri = '/gen/w/' + timetable_id + '/' + yw_date + '.json.gz';
+                if (#{@session_user[:teacher] ? true: false})
+                    uri += '?' + Date.now();
+                let oReq = new XMLHttpRequest();
+                oReq.open('GET', uri, true);
+                oReq.responseType = 'arraybuffer';
 
-            oReq.onload = function(e) {
-                $('.timetable_updated').empty();
-                if (e.target.status === 200) {
-                    
-                    let data = pako.ungzip(oReq.response);
-                    let bb = new Blob([new Uint8Array(data)]);
-                    let f = new FileReader();
-                    f.onload = function(e) {
-                        let result = JSON.parse(e.target.result);
-                        events = result.events;
-                        $('.switch_week_panel').empty();
-                        if ((!tablet_logged_in) && (teacher_logged_in || '#{(sus_logged_in? && WECHSELUNTERRICHT_KLASSENSTUFEN.include?(@session_user[:klasse].to_i))}' === 'true')) {
-                            if (typeof(result.switch_week) !== 'undefined' && result.switch_week !== null) {
-                                let user_group2 = '#{@session_user[:group2]}';
-                                let s = `Diese Woche ist eine <strong>${result.switch_week}-Woche</strong>. `;
-                                if (sus_logged_in) {
-                                    if ('#{@session_user[:homeschooling]}' === 'true') {
-                                        s += `Du bist momentan als »zu Hause« markiert und nimmst deshalb von <strong>zu Hause</strong> am Unterricht teil. `;
-                                    } else {
-                                        s += `Für Dich heißt das, dass Du in dieser Woche ${user_group2 === result.switch_week ? 'in der Schule' : 'zu Hause'} unterrichtet wirst. `; 
-                                        if (user_group2 === result.switch_week)
-                                            s += `Wenn Deine Eltern entscheiden sollten, dass Du erst einmal noch weiter zu Hause bleiben sollst, müssen Sie dies Deiner Klassenleitung und dem Sekretariat mitteilen. Dann werden wir Dich als »zu Hause« markieren, so dass alle wissen, dass Du nicht in die Schule kommst und ggfs. von zu Hause am Jitsi-Unterricht teilnehmen kannst.`;
-                                    }
-                                }
-                                let div = $('<div>').addClass('hint').html(s);
-                                $('.switch_week_panel').append(div);
-                            }
-                        }
-                        if ('#{@session_user[:can_upload_vplan]}' === 'true') {
-                            moment.locale('de');
-//                             let timetable_date = moment(oReq.getResponseHeader('last-modified')).format('ddd, DD.MM.YYYY, LT');
-//                             console.log('#{latest_vplan_timestamp}');
-//                             console.log(result.vplan_timestamp);
-                            if ('#{latest_vplan_timestamp}' === (result.vplan_timestamp || ''))
-                                $('.timetable_updated').html("<i class='fa fa-check text-success'></i>&nbsp;&nbsp;Vertretungsplan ist aktuell");
-                            else
-                                $('.timetable_updated').html("<i class='fa fa-warning text-danger'></i>&nbsp;&nbsp;Vertretungsplan wird gerade aktualisiert, bitte demnächst noch einmal neu laden.");
-                        }
-
-                        let wrote_weekend_event_header = false;
-                        $('.weekend_events').hide();
-                        $('.weekend_events').empty();
-                        for (let event of events)
-                        {
-                            event.color = color_palette.primary;
-                            if (event.entfall)
-                                event.color = color_palette.disabled;
-                            if (event.is_event)
-                                event.color = color_palette.shifted;
-                            if (event.is_event && [6, 0].indexOf(new Date(event.datum).getDay()) >= 0) {
-//                                 console.log(event);
-                                if (!wrote_weekend_event_header) {
-                                    $('.weekend_events').append($('<p><b>Termine am Wochenende</b></p>'));
-                                    $('.weekend_events').show();
-                                }
-
-                                let time_str = '' + parseInt(event.datum.substr(8, 2)) + '.' + event.datum.substr(5, 2) + '.' + event.datum.substr(0, 4) + '<br />' + event.start_time + '&ndash;' + event.end_time;
-                                $('.weekend_events').append($('<hr /><p>' + time_str + '<br /><b>' + event.event_title + '</b><br />' + event.organized_by));
-                                $('.weekend_events').append(fix_bad_html($('<div>').html(event.description)));
-                                $('.weekend_events').append($('<a href="/jitsi/event/' + event.eid + '" target="_blank" class="btn btn-sm btn-primary"><i class="fa fa-microphone"></i>&nbsp;&nbsp;Zum Jitsi-Raum&nbsp;&nbsp;<i class="fa fa-angle-double-right"></i></a></p>'));
-                            }
-
-                        }
-                        if (wrote_weekend_event_header)
-                            $('.weekend_events').append('<hr />')
-                        if (tablet_logged_in) {
-                            events = events.filter(x => x.lesson);
-                            for (let event of events) {
-                                for (let key in (event.data || {})) {
-                                    if (key !== 'lesson_jitsi')
-                                        delete event.data[key];
-                                }
-                            }
-                        }
-                        let today = (new Date()).toISOString().substr(0, 10);
-//                         console.log(today, info.startStr.substr(0, 10));
-                        $('.ttc[data-id="' + timetable_id + '"].active')
-
-                        let this_klasse = #{(@session_user[:klasse] || '0').to_i};
-                        if (this_klasse === 0) {
-                            this_klasse = parseInt($($('.ttc.active')[0]).text());
-                            if (this_klasse === NaN)
-                                this_klasse = 0;
-                        }
-                        if (this_klasse >= 5 && this_klasse <= 9) {
-                            which = '7-9';
-                            if (this_klasse <= 6)
-                                which = '4-6';
-                            
-                            for (let i = 1; i <= 24; i++)
-                            {
-                                let title = '🎅 Mathe im Advent';
-                                let day_s = '' + i;
-                                if (day_s.length < 2)
-                                    day_s = '0' + day_s;
-                                let ds = '2020-12-' + day_s;
-                                let wday = new Date(ds).getDay();
-                                if (wday == 6) {
-                                    // Saturday
-                                    let day_s = '' + (i + 2);
-                                    if (day_s.length < 2)
-                                        day_s = '0' + day_s;
-                                    ds = '2020-12-' + day_s;
-                                    title += ' (Sa)';
-                                } else if (wday == 0) {
-                                    // Sunday
-                                    let day_s = '' + (i + 1);
-                                    if (day_s.length < 2)
-                                        day_s = '0' + day_s;
-                                    ds = '2020-12-' + day_s;
-                                    title += ' (So)';
-                                }
-                                if (today >= ds)
-                                    events.push({eventOrder: i, color: color_palette.shifted, start: ds, end: ds, title: title, href: 'https://www.mathe-im-advent.de/de/kalender/' + which + '/' + i + '/' });
-                            }
-                        }
-                        successCallback(events);
-                    };
-                    f.readAsText(bb);
-                }
-            };
-//             $('.timetable_updated').html('');
-            oReq.send();
+                oReq.onload = function(e) {
+                    $('.timetable_updated').empty();
+                    if (e.target.status === 200) {
+                        
+                        let data = pako.ungzip(oReq.response);
+                        let bb = new Blob([new Uint8Array(data)]);
+                        let f = new FileReader();
+                        f.onload = function(e) {
+                            let result = JSON.parse(e.target.result);
+                            render_timetable(result, successCallback);
+                        };
+                        f.readAsText(bb);
+                    }
+                };
+                oReq.send();
+            }
         },
         hiddenDays: [6, 0],
         slotEventOverlap: false,

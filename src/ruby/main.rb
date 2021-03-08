@@ -1485,6 +1485,7 @@ class Main < Sinatra::Base
         lesson_key_id = nil
         lesson_data = nil
         timetable_id = nil
+        fixed_timetable_data = nil
         initial_date = Date.parse([@@config[:first_school_day], Date.today.to_s].max.to_s)
         while [6, 0].include?(initial_date.wday)
         #while [0].include?(initial_date.wday)
@@ -1544,6 +1545,36 @@ class Main < Sinatra::Base
             if teacher_logged_in? || tablet_logged_in?
                 parts = request.env['REQUEST_PATH'].split('/')
                 timetable_id = parts[2]
+                if tablet_logged_in?
+                    tablet_id = @session_user[:tablet_id]
+                    tablet_info = @@tablets[tablet_id]
+                    if tablet_info[:school_streaming]
+                        today = DateTime.now.strftime('%Y-%m-%d')
+                        results = neo4j_query(<<~END_OF_QUERY, {:tablet_id => tablet_id, :today => today})
+                            MATCH (t:Tablet {id: {tablet_id}})<-[:WHICH]-(b:Booking {datum: {today}, confirmed: true})-[:FOR]->(i:LessonInfo)-[:BELONGS_TO]->(l:Lesson)
+                            RETURN b, i, l
+                        END_OF_QUERY
+                        fixed_timetable_data = {:events => []}
+                        results.each do |item|
+                            booking = item['b'].props
+                            lesson = item['l'].props
+                            lesson_key = lesson[:key]
+                            lesson_info = item['i'].props
+                            lesson_data = @@lessons[:lesson_keys][lesson_key]
+                            event = {
+                                :lesson => true,
+                                :lesson_key => lesson_key,
+                                :lesson_offset => lesson_info[:offset],
+                                :datum => booking[:datum],
+                                :start => "#{booking[:datum]}T#{booking[:start_time]}",
+                                :end => "#{booking[:datum]}T#{booking[:end_time]}",
+                                :label => "<b>#{@@faecher[lesson_data[:fach]] || lesson_data[:fach]}</b> (#{lesson_data[:klassen].join(', ')})",
+                                :data => {:lesson_jitsi => true}
+                            }
+                            fixed_timetable_data[:events] << event
+                        end
+                    end
+                end
             end
         elsif path == 'messages'
             unless @session_user

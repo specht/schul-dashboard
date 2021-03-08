@@ -324,6 +324,52 @@
         <li class="public ">
   <span class="summary_signature">
     
+      <a href="#get_current_ab_week-class_method" title="get_current_ab_week (class method)">.<strong>get_current_ab_week</strong>  &#x21d2; Object </a>
+    
+
+    
+  </span>
+  
+  
+  
+  
+  
+  
+  
+
+  
+    <span class="summary_desc"><div class='inline'>
+<p>Returns A or B.</p>
+</div></span>
+  
+</li>
+
+      
+        <li class="public ">
+  <span class="summary_signature">
+    
+      <a href="#get_switch_week_for_date-class_method" title="get_switch_week_for_date (class method)">.<strong>get_switch_week_for_date</strong>(d)  &#x21d2; Object </a>
+    
+
+    
+  </span>
+  
+  
+  
+  
+  
+  
+  
+
+  
+    <span class="summary_desc"><div class='inline'></div></span>
+  
+</li>
+
+      
+        <li class="public ">
+  <span class="summary_signature">
+    
       <a href="#invite_external_user_for_event-class_method" title="invite_external_user_for_event (class method)">.<strong>invite_external_user_for_event</strong>(eid, email, session_user_email)  &#x21d2; Object </a>
     
 
@@ -2725,18 +2771,6 @@ Nextcloud account, with a gray background as a default fallback.</p>
       <pre class="lines">
 
 
-467
-468
-469
-470
-471
-472
-473
-474
-475
-476
-477
-478
 479
 480
 481
@@ -3044,10 +3078,38 @@ Nextcloud account, with a gray background as a default fallback.</p>
 783
 784
 785
-786</pre>
+786
+787
+788
+789
+790
+791
+792
+793
+794
+795
+796
+797
+798
+799
+800
+801
+802
+803
+804
+805
+806
+807
+808
+809
+810
+811
+812
+813
+814</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'src/ruby/main.rb', line 467</span>
+      <pre class="code"><span class="info file"># File 'src/ruby/main.rb', line 479</span>
 
 <span class='kw'>def</span> <span class='kw'>self</span><span class='period'>.</span><span class='id identifier rubyid_collect_data'>collect_data</span>
     <span class='cvar'>@@user_info</span> <span class='op'>=</span> <span class='lbrace'>{</span><span class='rbrace'>}</span>
@@ -3055,6 +3117,7 @@ Nextcloud account, with a gray background as a default fallback.</p>
     <span class='cvar'>@@schueler_for_klasse</span> <span class='op'>=</span> <span class='lbrace'>{</span><span class='rbrace'>}</span>
     <span class='cvar'>@@faecher</span> <span class='op'>=</span> <span class='lbrace'>{</span><span class='rbrace'>}</span>
     <span class='cvar'>@@ferien_feiertage</span> <span class='op'>=</span> <span class='lbracket'>[</span><span class='rbracket'>]</span>
+    <span class='cvar'>@@tablets</span> <span class='op'>=</span> <span class='lbrace'>{</span><span class='rbrace'>}</span>
     <span class='cvar'>@@lehrer_order</span> <span class='op'>=</span> <span class='lbracket'>[</span><span class='rbracket'>]</span>
     <span class='cvar'>@@klassen_order</span> <span class='op'>=</span> <span class='lbracket'>[</span><span class='rbracket'>]</span>
                        
@@ -3147,6 +3210,21 @@ Nextcloud account, with a gray background as a default fallback.</p>
     <span class='kw'>end</span>
     <span class='cvar'>@@user_info</span><span class='period'>.</span><span class='id identifier rubyid_keys'>keys</span><span class='period'>.</span><span class='id identifier rubyid_each'>each</span> <span class='kw'>do</span> <span class='op'>|</span><span class='id identifier rubyid_email'>email</span><span class='op'>|</span>
         <span class='cvar'>@@user_info</span><span class='lbracket'>[</span><span class='id identifier rubyid_email'>email</span><span class='rbracket'>]</span><span class='lbracket'>[</span><span class='symbol'>:id</span><span class='rbracket'>]</span> <span class='op'>=</span> <span class='const'>Digest</span><span class='op'>::</span><span class='const'>SHA2</span><span class='period'>.</span><span class='id identifier rubyid_hexdigest'>hexdigest</span><span class='lparen'>(</span><span class='const'><span class='object_link'><a href="top-level-namespace.html#USER_ID_SALT-constant" title="USER_ID_SALT (constant)">USER_ID_SALT</a></span></span> <span class='op'>+</span> <span class='id identifier rubyid_email'>email</span><span class='rparen'>)</span><span class='period'>.</span><span class='id identifier rubyid_to_i'>to_i</span><span class='lparen'>(</span><span class='int'>16</span><span class='rparen'>)</span><span class='period'>.</span><span class='id identifier rubyid_to_s'>to_s</span><span class='lparen'>(</span><span class='int'>36</span><span class='rparen'>)</span><span class='lbracket'>[</span><span class='int'>0</span><span class='comma'>,</span> <span class='int'>16</span><span class='rbracket'>]</span>
+    <span class='kw'>end</span>
+    
+    <span class='id identifier rubyid_parser'>parser</span><span class='period'>.</span><span class='id identifier rubyid_parse_tablets'>parse_tablets</span> <span class='kw'>do</span> <span class='op'>|</span><span class='id identifier rubyid_record'>record</span><span class='op'>|</span>
+        <span class='kw'>if</span> <span class='cvar'>@@tablets</span><span class='period'>.</span><span class='id identifier rubyid_include?'>include?</span><span class='lparen'>(</span><span class='id identifier rubyid_record'>record</span><span class='lbracket'>[</span><span class='symbol'>:id</span><span class='rbracket'>]</span><span class='rparen'>)</span>
+            <span class='id identifier rubyid_raise'>raise</span> <span class='tstring'><span class='tstring_beg'>&quot;</span><span class='tstring_content'>Ooops: already got this tablet called </span><span class='embexpr_beg'>#{</span><span class='id identifier rubyid_record'>record</span><span class='lbracket'>[</span><span class='symbol'>:id</span><span class='rbracket'>]</span><span class='embexpr_end'>}</span><span class='tstring_end'>&quot;</span></span>
+        <span class='kw'>end</span>
+        <span class='cvar'>@@tablets</span><span class='lbracket'>[</span><span class='id identifier rubyid_record'>record</span><span class='lbracket'>[</span><span class='symbol'>:id</span><span class='rbracket'>]</span><span class='rbracket'>]</span> <span class='op'>=</span> <span class='id identifier rubyid_record'>record</span>
+        <span class='id identifier rubyid_bg_color'>bg_color</span> <span class='op'>=</span> <span class='const'><span class='object_link'><a href="top-level-namespace.html#TABLET_COLORS-constant" title="TABLET_COLORS (constant)">TABLET_COLORS</a></span></span><span class='lbracket'>[</span><span class='id identifier rubyid_record'>record</span><span class='lbracket'>[</span><span class='symbol'>:color</span><span class='rbracket'>]</span><span class='rbracket'>]</span> <span class='op'>||</span> <span class='const'><span class='object_link'><a href="top-level-namespace.html#TABLET_DEFAULT_COLOR-constant" title="TABLET_DEFAULT_COLOR (constant)">TABLET_DEFAULT_COLOR</a></span></span>
+        <span class='id identifier rubyid_rgb'>rgb</span> <span class='op'>=</span> <span class='cvar'>@@renderer</span><span class='period'>.</span><span class='id identifier rubyid_hex_to_rgb'>hex_to_rgb</span><span class='lparen'>(</span><span class='id identifier rubyid_bg_color'>bg_color</span><span class='rparen'>)</span><span class='period'>.</span><span class='id identifier rubyid_map'>map</span> <span class='lbrace'>{</span> <span class='op'>|</span><span class='id identifier rubyid_x'>x</span><span class='op'>|</span> <span class='id identifier rubyid_x'>x</span> <span class='op'>/</span> <span class='float'>255.0</span> <span class='rbrace'>}</span>
+        <span class='id identifier rubyid_gray'>gray</span> <span class='op'>=</span> <span class='id identifier rubyid_rgb'>rgb</span><span class='lbracket'>[</span><span class='int'>0</span><span class='rbracket'>]</span> <span class='op'>*</span> <span class='float'>0.299</span> <span class='op'>+</span> <span class='id identifier rubyid_rgb'>rgb</span><span class='lbracket'>[</span><span class='int'>1</span><span class='rbracket'>]</span> <span class='op'>*</span> <span class='float'>0.587</span> <span class='op'>+</span> <span class='id identifier rubyid_rgb'>rgb</span><span class='lbracket'>[</span><span class='int'>2</span><span class='rbracket'>]</span> <span class='op'>*</span> <span class='float'>0.114</span>
+        <span class='cvar'>@@tablets</span><span class='lbracket'>[</span><span class='id identifier rubyid_record'>record</span><span class='lbracket'>[</span><span class='symbol'>:id</span><span class='rbracket'>]</span><span class='rbracket'>]</span><span class='lbracket'>[</span><span class='symbol'>:bg_color</span><span class='rbracket'>]</span> <span class='op'>=</span> <span class='id identifier rubyid_bg_color'>bg_color</span>
+        <span class='cvar'>@@tablets</span><span class='lbracket'>[</span><span class='id identifier rubyid_record'>record</span><span class='lbracket'>[</span><span class='symbol'>:id</span><span class='rbracket'>]</span><span class='rbracket'>]</span><span class='lbracket'>[</span><span class='symbol'>:fg_color</span><span class='rbracket'>]</span> <span class='op'>=</span> <span class='id identifier rubyid_gray'>gray</span> <span class='op'>&lt;</span> <span class='float'>0.5</span> <span class='op'>?</span> <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>#ffffff</span><span class='tstring_end'>&#39;</span></span> <span class='op'>:</span> <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>#000000</span><span class='tstring_end'>&#39;</span></span>
+        <span class='kw'>if</span> <span class='id identifier rubyid_record'>record</span><span class='lbracket'>[</span><span class='symbol'>:status</span><span class='rbracket'>]</span><span class='period'>.</span><span class='id identifier rubyid_index'>index</span><span class='lparen'>(</span><span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>Klassenstreaming</span><span class='tstring_end'>&#39;</span></span><span class='rparen'>)</span> <span class='op'>==</span> <span class='int'>0</span>
+            <span class='cvar'>@@tablets</span><span class='lbracket'>[</span><span class='id identifier rubyid_record'>record</span><span class='lbracket'>[</span><span class='symbol'>:id</span><span class='rbracket'>]</span><span class='rbracket'>]</span><span class='lbracket'>[</span><span class='symbol'>:klassen_stream</span><span class='rbracket'>]</span> <span class='op'>=</span> <span class='id identifier rubyid_record'>record</span><span class='lbracket'>[</span><span class='symbol'>:status</span><span class='rbracket'>]</span><span class='period'>.</span><span class='id identifier rubyid_sub'>sub</span><span class='lparen'>(</span><span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>Klassenstreaming</span><span class='tstring_end'>&#39;</span></span><span class='comma'>,</span> <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_end'>&#39;</span></span><span class='rparen'>)</span><span class='period'>.</span><span class='id identifier rubyid_strip'>strip</span>
+        <span class='kw'>end</span>
     <span class='kw'>end</span>
     
     <span class='const'><span class='object_link'><a href="top-level-namespace.html#ADMIN_USERS-constant" title="ADMIN_USERS (constant)">ADMIN_USERS</a></span></span><span class='period'>.</span><span class='id identifier rubyid_each'>each</span> <span class='kw'>do</span> <span class='op'>|</span><span class='id identifier rubyid_email'>email</span><span class='op'>|</span>
@@ -3389,28 +3467,28 @@ Nextcloud account, with a gray background as a default fallback.</p>
       <pre class="lines">
 
 
-834
-835
-836
-837
-838
-839
-840
-841
-842
-843
-844
-845
-846
-847
-848
-849
-850
-851
-852</pre>
+862
+863
+864
+865
+866
+867
+868
+869
+870
+871
+872
+873
+874
+875
+876
+877
+878
+879
+880</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'src/ruby/main.rb', line 834</span>
+      <pre class="code"><span class="info file"># File 'src/ruby/main.rb', line 862</span>
 
 <span class='kw'>def</span> <span class='kw'>self</span><span class='period'>.</span><span class='id identifier rubyid_compile_css'>compile_css</span><span class='lparen'>(</span><span class='rparen'>)</span>
     <span class='id identifier rubyid_files'>files</span> <span class='op'>=</span> <span class='lbracket'>[</span>
@@ -3451,27 +3529,27 @@ Nextcloud account, with a gray background as a default fallback.</p>
       <pre class="lines">
 
 
-788
-789
-790
-791
-792
-793
-794
-795
-796
-797
-798
-799
-800
-801
-802
-803
-804
-805</pre>
+816
+817
+818
+819
+820
+821
+822
+823
+824
+825
+826
+827
+828
+829
+830
+831
+832
+833</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'src/ruby/main.rb', line 788</span>
+      <pre class="code"><span class="info file"># File 'src/ruby/main.rb', line 816</span>
 
 <span class='kw'>def</span> <span class='kw'>self</span><span class='period'>.</span><span class='id identifier rubyid_compile_files'>compile_files</span><span class='lparen'>(</span><span class='id identifier rubyid_key'>key</span><span class='comma'>,</span> <span class='id identifier rubyid_mimetype'>mimetype</span><span class='comma'>,</span> <span class='id identifier rubyid_paths'>paths</span><span class='rparen'>)</span>
     <span class='cvar'>@@compiled_files</span><span class='lbracket'>[</span><span class='id identifier rubyid_key'>key</span><span class='rbracket'>]</span> <span class='op'>||=</span> <span class='lbrace'>{</span><span class='symbol'>:timestamp</span> <span class='op'>=&gt;</span> <span class='kw'>nil</span><span class='comma'>,</span> <span class='symbol'>:content</span> <span class='op'>=&gt;</span> <span class='kw'>nil</span><span class='rbrace'>}</span>
@@ -3511,35 +3589,35 @@ Nextcloud account, with a gray background as a default fallback.</p>
       <pre class="lines">
 
 
-807
-808
-809
-810
-811
-812
-813
-814
-815
-816
-817
-818
-819
-820
-821
-822
-823
-824
-825
-826
-827
-828
-829
-830
-831
-832</pre>
+835
+836
+837
+838
+839
+840
+841
+842
+843
+844
+845
+846
+847
+848
+849
+850
+851
+852
+853
+854
+855
+856
+857
+858
+859
+860</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'src/ruby/main.rb', line 807</span>
+      <pre class="code"><span class="info file"># File 'src/ruby/main.rb', line 835</span>
 
 <span class='kw'>def</span> <span class='kw'>self</span><span class='period'>.</span><span class='id identifier rubyid_compile_js'>compile_js</span><span class='lparen'>(</span><span class='rparen'>)</span>
     <span class='id identifier rubyid_files'>files</span> <span class='op'>=</span> <span class='lbracket'>[</span>
@@ -3587,16 +3665,6 @@ Nextcloud account, with a gray background as a default fallback.</p>
       <pre class="lines">
 
 
-377
-378
-379
-380
-381
-382
-383
-384
-385
-386
 387
 388
 389
@@ -3611,10 +3679,20 @@ Nextcloud account, with a gray background as a default fallback.</p>
 398
 399
 400
-401</pre>
+401
+402
+403
+404
+405
+406
+407
+408
+409
+410
+411</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'src/ruby/credentials.rb', line 377</span>
+      <pre class="code"><span class="info file"># File 'src/ruby/credentials.rb', line 387</span>
 
 <span class='kw'>def</span> <span class='kw'>self</span><span class='period'>.</span><span class='id identifier rubyid_fix_lesson_key_tr'>fix_lesson_key_tr</span><span class='lparen'>(</span><span class='id identifier rubyid_lesson_key_tr'>lesson_key_tr</span><span class='rparen'>)</span>
     <span class='comment'># Kursawe: Agr 9c =&gt; Agr 9c, 9e
@@ -3661,16 +3739,6 @@ Nextcloud account, with a gray background as a default fallback.</p>
       <pre class="lines">
 
 
-403
-404
-405
-406
-407
-408
-409
-410
-411
-412
 413
 414
 415
@@ -3720,10 +3788,20 @@ Nextcloud account, with a gray background as a default fallback.</p>
 459
 460
 461
-462</pre>
+462
+463
+464
+465
+466
+467
+468
+469
+470
+471
+472</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'src/ruby/credentials.rb', line 403</span>
+      <pre class="code"><span class="info file"># File 'src/ruby/credentials.rb', line 413</span>
 
 <span class='kw'>def</span> <span class='kw'>self</span><span class='period'>.</span><span class='id identifier rubyid_fix_lessons_for_shorthand'>fix_lessons_for_shorthand</span>
     <span class='cvar'>@@lessons_for_shorthand</span><span class='lbracket'>[</span><span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>Ab</span><span class='tstring_end'>&#39;</span></span><span class='rbracket'>]</span> <span class='op'>||=</span> <span class='lbracket'>[</span><span class='rbracket'>]</span>
@@ -3805,13 +3883,13 @@ Nextcloud account, with a gray background as a default fallback.</p>
       <pre class="lines">
 
 
-464
-465
-466
-467</pre>
+474
+475
+476
+477</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'src/ruby/credentials.rb', line 464</span>
+      <pre class="code"><span class="info file"># File 'src/ruby/credentials.rb', line 474</span>
 
 <span class='kw'>def</span> <span class='kw'>self</span><span class='period'>.</span><span class='id identifier rubyid_fix_parsed_klasse'>fix_parsed_klasse</span><span class='lparen'>(</span><span class='id identifier rubyid_klasse'>klasse</span><span class='rparen'>)</span>
     <span class='id identifier rubyid_d'>d</span> <span class='op'>=</span> <span class='lbrace'>{</span><span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>12</span><span class='tstring_end'>&#39;</span></span> <span class='op'>=&gt;</span> <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>11</span><span class='tstring_end'>&#39;</span></span><span class='comma'>,</span> <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>13</span><span class='tstring_end'>&#39;</span></span> <span class='op'>=&gt;</span> <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>12</span><span class='tstring_end'>&#39;</span></span><span class='rbrace'>}</span>
@@ -3837,16 +3915,6 @@ Nextcloud account, with a gray background as a default fallback.</p>
       <pre class="lines">
 
 
-243
-244
-245
-246
-247
-248
-249
-250
-251
-252
 253
 254
 255
@@ -3969,10 +4037,20 @@ Nextcloud account, with a gray background as a default fallback.</p>
 372
 373
 374
-375</pre>
+375
+376
+377
+378
+379
+380
+381
+382
+383
+384
+385</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'src/ruby/credentials.rb', line 243</span>
+      <pre class="code"><span class="info file"># File 'src/ruby/credentials.rb', line 253</span>
 
 <span class='kw'>def</span> <span class='kw'>self</span><span class='period'>.</span><span class='id identifier rubyid_fix_stundenzeiten'>fix_stundenzeiten</span>
     <span class='id identifier rubyid_hd'>hd</span> <span class='op'>=</span> <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>2020-08-10</span><span class='tstring_end'>&#39;</span></span>
@@ -4127,18 +4205,6 @@ Nextcloud account, with a gray background as a default fallback.</p>
       <pre class="lines">
 
 
-429
-430
-431
-432
-433
-434
-435
-436
-437
-438
-439
-440
 441
 442
 443
@@ -4155,10 +4221,22 @@ Nextcloud account, with a gray background as a default fallback.</p>
 454
 455
 456
-457</pre>
+457
+458
+459
+460
+461
+462
+463
+464
+465
+466
+467
+468
+469</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'src/ruby/main.rb', line 429</span>
+      <pre class="code"><span class="info file"># File 'src/ruby/main.rb', line 441</span>
 
 <span class='kw'>def</span> <span class='kw'>self</span><span class='period'>.</span><span class='id identifier rubyid_gen_password_for_email'>gen_password_for_email</span><span class='lparen'>(</span><span class='id identifier rubyid_email'>email</span><span class='rparen'>)</span>
     <span class='id identifier rubyid_chars'>chars</span> <span class='op'>=</span> <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>BCDFGHJKMNPQRSTVWXYZ23456789</span><span class='tstring_end'>&#39;</span></span><span class='period'>.</span><span class='id identifier rubyid_split'>split</span><span class='lparen'>(</span><span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_end'>&#39;</span></span><span class='rparen'>)</span>
@@ -4188,6 +4266,91 @@ Nextcloud account, with a gray background as a default fallback.</p>
         <span class='kw'>end</span>
     <span class='kw'>end</span>
     <span class='id identifier rubyid_password'>password</span>
+<span class='kw'>end</span></pre>
+    </td>
+  </tr>
+</table>
+</div>
+    
+      <div class="method_details ">
+  <h3 class="signature " id="get_current_ab_week-class_method">
+  
+    .<strong>get_current_ab_week</strong>  &#x21d2; <tt>Object</tt> 
+  
+
+  
+
+  
+</h3><div class="docstring">
+  <div class="discussion">
+    
+<p>Returns A or B</p>
+
+
+  </div>
+</div>
+<div class="tags">
+  
+
+</div><table class="source_code">
+  <tr>
+    <td>
+      <pre class="lines">
+
+
+227
+228
+229</pre>
+    </td>
+    <td>
+      <pre class="code"><span class="info file"># File 'src/ruby/include/directory.rb', line 227</span>
+
+<span class='kw'>def</span> <span class='kw'>self</span><span class='period'>.</span><span class='id identifier rubyid_get_current_ab_week'>get_current_ab_week</span><span class='lparen'>(</span><span class='rparen'>)</span>
+    <span class='id identifier rubyid_get_switch_week_for_date'>get_switch_week_for_date</span><span class='lparen'>(</span><span class='const'>Date</span><span class='period'>.</span><span class='id identifier rubyid_today'>today</span><span class='rparen'>)</span>
+<span class='kw'>end</span></pre>
+    </td>
+  </tr>
+</table>
+</div>
+    
+      <div class="method_details ">
+  <h3 class="signature " id="get_switch_week_for_date-class_method">
+  
+    .<strong>get_switch_week_for_date</strong>(d)  &#x21d2; <tt>Object</tt> 
+  
+
+  
+
+  
+</h3><table class="source_code">
+  <tr>
+    <td>
+      <pre class="lines">
+
+
+215
+216
+217
+218
+219
+220
+221
+222
+223
+224</pre>
+    </td>
+    <td>
+      <pre class="code"><span class="info file"># File 'src/ruby/include/directory.rb', line 215</span>
+
+<span class='kw'>def</span> <span class='kw'>self</span><span class='period'>.</span><span class='id identifier rubyid_get_switch_week_for_date'>get_switch_week_for_date</span><span class='lparen'>(</span><span class='id identifier rubyid_d'>d</span><span class='rparen'>)</span>
+    <span class='id identifier rubyid_ds'>ds</span> <span class='op'>=</span> <span class='id identifier rubyid_d'>d</span><span class='period'>.</span><span class='id identifier rubyid_strftime'>strftime</span><span class='lparen'>(</span><span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>%Y-%m-%d</span><span class='tstring_end'>&#39;</span></span><span class='rparen'>)</span>
+    <span class='id identifier rubyid_d_info'>d_info</span> <span class='op'>=</span> <span class='const'><span class='object_link'><a href="top-level-namespace.html#SWITCH_WEEKS-constant" title="SWITCH_WEEKS (constant)">SWITCH_WEEKS</a></span></span><span class='period'>.</span><span class='id identifier rubyid_keys'>keys</span><span class='period'>.</span><span class='id identifier rubyid_sort'>sort</span><span class='period'>.</span><span class='id identifier rubyid_select'>select</span> <span class='kw'>do</span> <span class='op'>|</span><span class='id identifier rubyid_d'>d</span><span class='op'>|</span>
+        <span class='id identifier rubyid_ds'>ds</span> <span class='op'>&gt;=</span> <span class='id identifier rubyid_d'>d</span>
+    <span class='kw'>end</span><span class='period'>.</span><span class='id identifier rubyid_last'>last</span>
+    <span class='id identifier rubyid_info'>info</span> <span class='op'>=</span> <span class='const'><span class='object_link'><a href="top-level-namespace.html#SWITCH_WEEKS-constant" title="SWITCH_WEEKS (constant)">SWITCH_WEEKS</a></span></span><span class='lbracket'>[</span><span class='id identifier rubyid_d_info'>d_info</span><span class='rbracket'>]</span>
+    <span class='kw'>return</span> <span class='kw'>nil</span> <span class='kw'>if</span> <span class='id identifier rubyid_info'>info</span><span class='period'>.</span><span class='id identifier rubyid_nil?'>nil?</span>
+    <span class='id identifier rubyid_week_number'>week_number</span> <span class='op'>=</span> <span class='lparen'>(</span><span class='id identifier rubyid_d'>d</span><span class='period'>.</span><span class='id identifier rubyid_strftime'>strftime</span><span class='lparen'>(</span><span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>%-V</span><span class='tstring_end'>&#39;</span></span><span class='rparen'>)</span><span class='period'>.</span><span class='id identifier rubyid_to_i'>to_i</span> <span class='op'>-</span> <span class='const'>Date</span><span class='period'>.</span><span class='id identifier rubyid_parse'>parse</span><span class='lparen'>(</span><span class='id identifier rubyid_d_info'>d_info</span><span class='rparen'>)</span><span class='period'>.</span><span class='id identifier rubyid_strftime'>strftime</span><span class='lparen'>(</span><span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>%-V</span><span class='tstring_end'>&#39;</span></span><span class='rparen'>)</span><span class='period'>.</span><span class='id identifier rubyid_to_i'>to_i</span><span class='rparen'>)</span>
+    <span class='kw'>return</span> <span class='lparen'>(</span><span class='lparen'>(</span><span class='lparen'>(</span><span class='id identifier rubyid_week_number'>week_number</span> <span class='op'>+</span> <span class='lparen'>(</span><span class='id identifier rubyid_info'>info</span><span class='lbracket'>[</span><span class='int'>0</span><span class='rbracket'>]</span><span class='period'>.</span><span class='id identifier rubyid_ord'>ord</span> <span class='op'>-</span> <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>A</span><span class='tstring_end'>&#39;</span></span><span class='period'>.</span><span class='id identifier rubyid_ord'>ord</span><span class='rparen'>)</span><span class='rparen'>)</span> <span class='op'>%</span> <span class='id identifier rubyid_info'>info</span><span class='lbracket'>[</span><span class='int'>1</span><span class='rbracket'>]</span><span class='rparen'>)</span> <span class='op'>+</span> <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>A</span><span class='tstring_end'>&#39;</span></span><span class='period'>.</span><span class='id identifier rubyid_ord'>ord</span><span class='rparen'>)</span><span class='period'>.</span><span class='id identifier rubyid_chr'>chr</span>
 <span class='kw'>end</span></pre>
     </td>
   </tr>
@@ -4443,21 +4606,21 @@ Nextcloud account, with a gray background as a default fallback.</p>
       <pre class="lines">
 
 
-412
-413
-414
-415
-416
-417
-418
-419
-420
-421
-422
-423</pre>
+424
+425
+426
+427
+428
+429
+430
+431
+432
+433
+434
+435</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'src/ruby/main.rb', line 412</span>
+      <pre class="code"><span class="info file"># File 'src/ruby/main.rb', line 424</span>
 
 <span class='kw'>def</span> <span class='kw'>self</span><span class='period'>.</span><span class='id identifier rubyid_iterate_school_days'>iterate_school_days</span><span class='lparen'>(</span><span class='id identifier rubyid_options'>options</span> <span class='op'>=</span> <span class='lbrace'>{</span><span class='rbrace'>}</span><span class='comma'>,</span> <span class='op'>&amp;</span><span class='id identifier rubyid_block'>block</span><span class='rparen'>)</span>
     <span class='id identifier rubyid_day'>day</span> <span class='op'>=</span> <span class='const'>Date</span><span class='period'>.</span><span class='id identifier rubyid_parse'>parse</span><span class='lparen'>(</span><span class='cvar'>@@config</span><span class='lbracket'>[</span><span class='symbol'>:first_day</span><span class='rbracket'>]</span><span class='rparen'>)</span>
@@ -4491,12 +4654,12 @@ Nextcloud account, with a gray background as a default fallback.</p>
       <pre class="lines">
 
 
-463
-464
-465</pre>
+475
+476
+477</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'src/ruby/main.rb', line 463</span>
+      <pre class="code"><span class="info file"># File 'src/ruby/main.rb', line 475</span>
 
 <span class='kw'>def</span> <span class='kw'>self</span><span class='period'>.</span><span class='id identifier rubyid_tr_klasse'>tr_klasse</span><span class='lparen'>(</span><span class='id identifier rubyid_klasse'>klasse</span><span class='rparen'>)</span>
     <span class='const'><span class='object_link'><a href="top-level-namespace.html#KLASSEN_TR-constant" title="KLASSEN_TR (constant)">KLASSEN_TR</a></span></span><span class='lbracket'>[</span><span class='id identifier rubyid_klasse'>klasse</span><span class='rbracket'>]</span> <span class='op'>||</span> <span class='id identifier rubyid_klasse'>klasse</span>
@@ -4585,29 +4748,29 @@ Nextcloud account, with a gray background as a default fallback.</p>
       <pre class="lines">
 
 
-93
-94
-95
-96
-97
-98
-99
-100
-101
-102
-103
-104
-105
-106
 107
 108
 109
 110
 111
-112</pre>
+112
+113
+114
+115
+116
+117
+118
+119
+120
+121
+122
+123
+124
+125
+126</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'src/ruby/include/login.rb', line 93</span>
+      <pre class="code"><span class="info file"># File 'src/ruby/include/login.rb', line 107</span>
 
 <span class='kw'>def</span> <span class='id identifier rubyid_all_sessions'>all_sessions</span>
     <span class='id identifier rubyid_sids'>sids</span> <span class='op'>=</span> <span class='id identifier rubyid_request'>request</span><span class='period'>.</span><span class='id identifier rubyid_cookies'>cookies</span><span class='lbracket'>[</span><span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>sid</span><span class='tstring_end'>&#39;</span></span><span class='rbracket'>]</span>
@@ -4649,16 +4812,16 @@ Nextcloud account, with a gray background as a default fallback.</p>
       <pre class="lines">
 
 
-877
-878
-879
-880
-881
-882
-883</pre>
+905
+906
+907
+908
+909
+910
+911</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'src/ruby/main.rb', line 877</span>
+      <pre class="code"><span class="info file"># File 'src/ruby/main.rb', line 905</span>
 
 <span class='kw'>def</span> <span class='id identifier rubyid_assert'>assert</span><span class='lparen'>(</span><span class='id identifier rubyid_condition'>condition</span><span class='comma'>,</span> <span class='id identifier rubyid_message'>message</span> <span class='op'>=</span> <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>assertion failed</span><span class='tstring_end'>&#39;</span></span><span class='comma'>,</span> <span class='id identifier rubyid_suppress_backtrace'>suppress_backtrace</span> <span class='op'>=</span> <span class='kw'>false</span><span class='rparen'>)</span>
     <span class='kw'>unless</span> <span class='id identifier rubyid_condition'>condition</span>
@@ -4687,17 +4850,17 @@ Nextcloud account, with a gray background as a default fallback.</p>
       <pre class="lines">
 
 
-885
-886
-887
-888
-889
-890
-891
-892</pre>
+913
+914
+915
+916
+917
+918
+919
+920</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'src/ruby/main.rb', line 885</span>
+      <pre class="code"><span class="info file"># File 'src/ruby/main.rb', line 913</span>
 
 <span class='kw'>def</span> <span class='id identifier rubyid_assert_with_delay'>assert_with_delay</span><span class='lparen'>(</span><span class='id identifier rubyid_condition'>condition</span><span class='comma'>,</span> <span class='id identifier rubyid_message'>message</span> <span class='op'>=</span> <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>assertion failed</span><span class='tstring_end'>&#39;</span></span><span class='comma'>,</span> <span class='id identifier rubyid_suppress_backtrace'>suppress_backtrace</span> <span class='op'>=</span> <span class='kw'>false</span><span class='rparen'>)</span>
     <span class='kw'>unless</span> <span class='id identifier rubyid_condition'>condition</span>
@@ -4727,21 +4890,21 @@ Nextcloud account, with a gray background as a default fallback.</p>
       <pre class="lines">
 
 
-1263
-1264
-1265
-1266
-1267
-1268
-1269
-1270
-1271
-1272
-1273
-1274</pre>
+1312
+1313
+1314
+1315
+1316
+1317
+1318
+1319
+1320
+1321
+1322
+1323</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'src/ruby/main.rb', line 1263</span>
+      <pre class="code"><span class="info file"># File 'src/ruby/main.rb', line 1312</span>
 
 <span class='kw'>def</span> <span class='id identifier rubyid_bytes_to_str'>bytes_to_str</span><span class='lparen'>(</span><span class='id identifier rubyid_ai_Size'>ai_Size</span><span class='rparen'>)</span>
     <span class='kw'>if</span> <span class='id identifier rubyid_ai_Size'>ai_Size</span> <span class='op'>&lt;</span> <span class='int'>1024</span>
@@ -4829,17 +4992,17 @@ Nextcloud account, with a gray background as a default fallback.</p>
       <pre class="lines">
 
 
-945
-946
-947
-948
-949
-950
-951
-952</pre>
+973
+974
+975
+976
+977
+978
+979
+980</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'src/ruby/main.rb', line 945</span>
+      <pre class="code"><span class="info file"># File 'src/ruby/main.rb', line 973</span>
 
 <span class='kw'>def</span> <span class='id identifier rubyid_class_stream_link_for_session_user'>class_stream_link_for_session_user</span>
     <span class='id identifier rubyid_require_user!'>require_user!</span>
@@ -4995,29 +5158,29 @@ Nextcloud account, with a gray background as a default fallback.</p>
       <pre class="lines">
 
 
-300
-301
-302
-303
-304
-305
-306
-307
-308
-309
-310
-311
-312
-313
-314
-315
 316
 317
 318
-319</pre>
+319
+320
+321
+322
+323
+324
+325
+326
+327
+328
+329
+330
+331
+332
+333
+334
+335</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'src/ruby/include/jitsi.rb', line 300</span>
+      <pre class="code"><span class="info file"># File 'src/ruby/include/jitsi.rb', line 316</span>
 
 <span class='kw'>def</span> <span class='id identifier rubyid_current_jitsi_rooms'>current_jitsi_rooms</span><span class='lparen'>(</span><span class='rparen'>)</span>
     <span class='cvar'>@@current_jitsi_rooms</span> <span class='op'>||=</span> <span class='kw'>nil</span>
@@ -5345,13 +5508,6 @@ Nextcloud account, with a gray background as a default fallback.</p>
       <pre class="lines">
 
 
-57
-58
-59
-60
-61
-62
-63
 64
 65
 66
@@ -5586,10 +5742,26 @@ Nextcloud account, with a gray background as a default fallback.</p>
 295
 296
 297
-298</pre>
+298
+299
+300
+301
+302
+303
+304
+305
+306
+307
+308
+309
+310
+311
+312
+313
+314</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'src/ruby/include/jitsi.rb', line 57</span>
+      <pre class="code"><span class="info file"># File 'src/ruby/include/jitsi.rb', line 64</span>
 
 <span class='kw'>def</span> <span class='id identifier rubyid_gen_jitsi_data'>gen_jitsi_data</span><span class='lparen'>(</span><span class='id identifier rubyid_path'>path</span><span class='rparen'>)</span>
     <span class='id identifier rubyid_ua'>ua</span> <span class='op'>=</span> <span class='const'><span class='object_link'><a href="top-level-namespace.html#USER_AGENT_PARSER-constant" title="USER_AGENT_PARSER (constant)">USER_AGENT_PARSER</a></span></span><span class='period'>.</span><span class='id identifier rubyid_parse'>parse</span><span class='lparen'>(</span><span class='id identifier rubyid_request'>request</span><span class='period'>.</span><span class='id identifier rubyid_env'>env</span><span class='lbracket'>[</span><span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>HTTP_USER_AGENT</span><span class='tstring_end'>&#39;</span></span><span class='rbracket'>]</span><span class='rparen'>)</span>
@@ -5691,9 +5863,6 @@ Nextcloud account, with a gray background as a default fallback.</p>
             <span class='id identifier rubyid_require_user!'>require_user!</span>
             <span class='id identifier rubyid_can_enter_room'>can_enter_room</span> <span class='op'>=</span> <span class='kw'>true</span>
             <span class='id identifier rubyid_room_name'>room_name</span> <span class='op'>=</span> <span class='id identifier rubyid_path'>path</span>
-            <span class='kw'>if</span> <span class='lparen'>(</span><span class='id identifier rubyid_sus_logged_in?'>sus_logged_in?</span> <span class='op'>&amp;&amp;</span> <span class='const'><span class='object_link'><a href="top-level-namespace.html#WECHSELUNTERRICHT_KLASSENSTUFEN-constant" title="WECHSELUNTERRICHT_KLASSENSTUFEN (constant)">WECHSELUNTERRICHT_KLASSENSTUFEN</a></span></span><span class='period'>.</span><span class='id identifier rubyid_include?'>include?</span><span class='lparen'>(</span><span class='ivar'>@session_user</span><span class='lbracket'>[</span><span class='symbol'>:klasse</span><span class='rbracket'>]</span><span class='period'>.</span><span class='id identifier rubyid_to_i'>to_i</span><span class='rparen'>)</span><span class='rparen'>)</span>
-                <span class='id identifier rubyid_room_name'>room_name</span> <span class='op'>=</span> <span class='tstring'><span class='tstring_beg'>&quot;</span><span class='tstring_content'>Klassenstream </span><span class='embexpr_beg'>#{</span><span class='ivar'>@session_user</span><span class='lbracket'>[</span><span class='symbol'>:klasse</span><span class='rbracket'>]</span><span class='embexpr_end'>}</span><span class='tstring_end'>&quot;</span></span>
-            <span class='kw'>end</span>
             <span class='kw'>if</span> <span class='id identifier rubyid_room_name'>room_name</span><span class='period'>.</span><span class='id identifier rubyid_index'>index</span><span class='lparen'>(</span><span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>Klassenstream</span><span class='tstring_end'>&#39;</span></span><span class='rparen'>)</span> <span class='op'>==</span> <span class='int'>0</span>
                 <span class='kw'>if</span> <span class='lparen'>(</span><span class='op'>!</span><span class='ivar'>@session_user</span><span class='lbracket'>[</span><span class='symbol'>:teacher</span><span class='rbracket'>]</span><span class='rparen'>)</span> <span class='op'>&amp;&amp;</span> <span class='lparen'>(</span><span class='op'>!</span><span class='id identifier rubyid_get_homeschooling_for_user'>get_homeschooling_for_user</span><span class='lparen'>(</span><span class='ivar'>@session_user</span><span class='lbracket'>[</span><span class='symbol'>:email</span><span class='rbracket'>]</span><span class='rparen'>)</span><span class='rparen'>)</span> <span class='op'>&amp;&amp;</span> <span class='id identifier rubyid_room_name'>room_name</span><span class='period'>.</span><span class='id identifier rubyid_index'>index</span><span class='lparen'>(</span><span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>Klassenstream</span><span class='tstring_end'>&#39;</span></span><span class='rparen'>)</span> <span class='op'>==</span> <span class='int'>0</span>
                     <span class='id identifier rubyid_result'>result</span><span class='lbracket'>[</span><span class='symbol'>:html</span><span class='rbracket'>]</span> <span class='op'>+=</span> <span class='tstring'><span class='tstring_beg'>&quot;</span><span class='tstring_content'>&lt;div class=&#39;alert alert-danger&#39;&gt;Du bist momentan nicht für den Klassenstream freigeschaltet, da du in Gruppe </span><span class='embexpr_beg'>#{</span><span class='ivar'>@session_user</span><span class='lbracket'>[</span><span class='symbol'>:group2</span><span class='rbracket'>]</span><span class='embexpr_end'>}</span><span class='tstring_content'> eingeteilt bist und auch nicht als »zu Hause« markiert bist. Deine Klassenleiterin oder dein Klassenleiter kann dich freischalten.&lt;/div&gt;</span><span class='tstring_end'>&quot;</span></span>
@@ -5723,7 +5892,8 @@ Nextcloud account, with a gray background as a default fallback.</p>
 </span>                <span class='id identifier rubyid_p_ymd'>p_ymd</span> <span class='op'>=</span> <span class='const'>Date</span><span class='period'>.</span><span class='id identifier rubyid_today'>today</span><span class='period'>.</span><span class='id identifier rubyid_strftime'>strftime</span><span class='lparen'>(</span><span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>%Y-%m-%d</span><span class='tstring_end'>&#39;</span></span><span class='rparen'>)</span>
                 <span class='id identifier rubyid_p_yw'>p_yw</span> <span class='op'>=</span> <span class='const'>Date</span><span class='period'>.</span><span class='id identifier rubyid_today'>today</span><span class='period'>.</span><span class='id identifier rubyid_strftime'>strftime</span><span class='lparen'>(</span><span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>%Y-%V</span><span class='tstring_end'>&#39;</span></span><span class='rparen'>)</span>
                 <span class='id identifier rubyid_assert'>assert</span><span class='lparen'>(</span><span class='id identifier rubyid_user_logged_in?'>user_logged_in?</span><span class='rparen'>)</span>
-                <span class='id identifier rubyid_timetable_path'>timetable_path</span> <span class='op'>=</span> <span class='tstring'><span class='tstring_beg'>&quot;</span><span class='tstring_content'>/gen/w/</span><span class='embexpr_beg'>#{</span><span class='ivar'>@session_user</span><span class='lbracket'>[</span><span class='symbol'>:id</span><span class='rbracket'>]</span><span class='embexpr_end'>}</span><span class='tstring_content'>/</span><span class='embexpr_beg'>#{</span><span class='id identifier rubyid_p_yw'>p_yw</span><span class='embexpr_end'>}</span><span class='tstring_content'>.json.gz</span><span class='tstring_end'>&quot;</span></span>
+                <span class='id identifier rubyid_timetable_id'>timetable_id</span> <span class='op'>=</span> <span class='ivar'>@session_user</span><span class='lbracket'>[</span><span class='symbol'>:id</span><span class='rbracket'>]</span>
+                <span class='id identifier rubyid_timetable_path'>timetable_path</span> <span class='op'>=</span> <span class='tstring'><span class='tstring_beg'>&quot;</span><span class='tstring_content'>/gen/w/</span><span class='embexpr_beg'>#{</span><span class='id identifier rubyid_timetable_id'>timetable_id</span><span class='embexpr_end'>}</span><span class='tstring_content'>/</span><span class='embexpr_beg'>#{</span><span class='id identifier rubyid_p_yw'>p_yw</span><span class='embexpr_end'>}</span><span class='tstring_content'>.json.gz</span><span class='tstring_end'>&quot;</span></span>
                 <span class='id identifier rubyid_timetable'>timetable</span> <span class='op'>=</span> <span class='kw'>nil</span>
                 <span class='const'>Zlib</span><span class='op'>::</span><span class='const'>GzipReader</span><span class='period'>.</span><span class='id identifier rubyid_open'>open</span><span class='lparen'>(</span><span class='id identifier rubyid_timetable_path'>timetable_path</span><span class='rparen'>)</span> <span class='kw'>do</span> <span class='op'>|</span><span class='id identifier rubyid_f'>f</span><span class='op'>|</span>
                     <span class='id identifier rubyid_timetable'>timetable</span> <span class='op'>=</span> <span class='const'>JSON</span><span class='period'>.</span><span class='id identifier rubyid_parse'>parse</span><span class='lparen'>(</span><span class='id identifier rubyid_f'>f</span><span class='period'>.</span><span class='id identifier rubyid_read'>read</span><span class='rparen'>)</span>
@@ -5785,6 +5955,17 @@ Nextcloud account, with a gray background as a default fallback.</p>
                             <span class='id identifier rubyid_tds'>tds</span> <span class='op'>=</span> <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>fünf Minuten</span><span class='tstring_end'>&#39;</span></span>
                         <span class='kw'>end</span>
                         <span class='id identifier rubyid_result'>result</span><span class='lbracket'>[</span><span class='symbol'>:html</span><span class='rbracket'>]</span> <span class='op'>+=</span> <span class='tstring'><span class='tstring_beg'>&quot;</span><span class='tstring_content'>&lt;div class=&#39;alert alert-warning&#39;&gt;Der Jitsi-Raum &lt;strong&gt;»</span><span class='embexpr_beg'>#{</span><span class='id identifier rubyid_room_name'>room_name</span><span class='embexpr_end'>}</span><span class='tstring_content'>«&lt;/strong&gt; ist erst ab </span><span class='embexpr_beg'>#{</span><span class='id identifier rubyid_t'>t</span><span class='period'>.</span><span class='id identifier rubyid_strftime'>strftime</span><span class='lparen'>(</span><span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>%H:%M</span><span class='tstring_end'>&#39;</span></span><span class='rparen'>)</span><span class='embexpr_end'>}</span><span class='tstring_content'> Uhr geöffnet. Du kannst ihn in </span><span class='embexpr_beg'>#{</span><span class='id identifier rubyid_tds'>tds</span><span class='embexpr_end'>}</span><span class='tstring_content'> betreten.&lt;/div&gt;</span><span class='tstring_end'>&quot;</span></span>
+                        <span class='id identifier rubyid_can_enter_room'>can_enter_room</span> <span class='op'>=</span> <span class='kw'>false</span>
+                    <span class='kw'>end</span>
+                <span class='kw'>end</span>
+<span class='comment'>#                     unless timetable.empty?
+</span><span class='comment'>#                         unless (Set.new(WECHSELUNTERRICHT_KLASSENSTUFEN) &amp; Set.new((timetable.first[&#39;klassen&#39;] || []).flatten.map { |x| x.to_i })).empty?
+</span><span class='comment'>#                             room_name = &quot;Klassenstream #{(timetable.first[&#39;klassen&#39;] || []).flatten.join(&#39; &#39;)}&quot;
+</span><span class='comment'>#                         end
+</span><span class='comment'>#                     end
+</span>                <span class='kw'>if</span> <span class='const'><span class='object_link'><a href="top-level-namespace.html#WECHSELUNTERRICHT_KLASSENSTUFEN-constant" title="WECHSELUNTERRICHT_KLASSENSTUFEN (constant)">WECHSELUNTERRICHT_KLASSENSTUFEN</a></span></span><span class='period'>.</span><span class='id identifier rubyid_include?'>include?</span><span class='lparen'>(</span><span class='ivar'>@session_user</span><span class='lbracket'>[</span><span class='symbol'>:klasse</span><span class='rbracket'>]</span><span class='period'>.</span><span class='id identifier rubyid_to_i'>to_i</span><span class='rparen'>)</span>
+                    <span class='kw'>if</span> <span class='id identifier rubyid_sus_logged_in?'>sus_logged_in?</span> <span class='op'>&amp;&amp;</span> <span class='lparen'>(</span><span class='op'>!</span><span class='id identifier rubyid_get_homeschooling_for_user'>get_homeschooling_for_user</span><span class='lparen'>(</span><span class='ivar'>@session_user</span><span class='lbracket'>[</span><span class='symbol'>:email</span><span class='rbracket'>]</span><span class='rparen'>)</span><span class='rparen'>)</span>
+                        <span class='id identifier rubyid_result'>result</span><span class='lbracket'>[</span><span class='symbol'>:html</span><span class='rbracket'>]</span> <span class='op'>+=</span> <span class='tstring'><span class='tstring_beg'>&quot;</span><span class='tstring_content'>&lt;div class=&#39;alert alert-danger&#39;&gt;Du bist momentan nicht für den Jitsi-Stream freigeschaltet, da du in Gruppe </span><span class='embexpr_beg'>#{</span><span class='ivar'>@session_user</span><span class='lbracket'>[</span><span class='symbol'>:group2</span><span class='rbracket'>]</span><span class='embexpr_end'>}</span><span class='tstring_content'> eingeteilt bist und auch nicht als »zu Hause« markiert bist. Wenn es sich hierbei um einen Fehler handelt, sag bitte deiner Klassenleiterin oder deinem Klassenleiter Bescheid, damit du als »zu Hause« markiert werden kannst.&lt;/div&gt;</span><span class='tstring_end'>&quot;</span></span>
                         <span class='id identifier rubyid_can_enter_room'>can_enter_room</span> <span class='op'>=</span> <span class='kw'>false</span>
                     <span class='kw'>end</span>
                 <span class='kw'>end</span>
@@ -5891,7 +6072,14 @@ Nextcloud account, with a gray background as a default fallback.</p>
 48
 49
 50
-51</pre>
+51
+52
+53
+54
+55
+56
+57
+58</pre>
     </td>
     <td>
       <pre class="code"><span class="info file"># File 'src/ruby/include/jitsi.rb', line 13</span>
@@ -5915,6 +6103,13 @@ Nextcloud account, with a gray background as a default fallback.</p>
             <span class='id identifier rubyid_use_user'>use_user</span> <span class='op'>=</span> <span class='cvar'>@@user_info</span><span class='lbracket'>[</span><span class='cvar'>@@shorthands</span><span class='lbracket'>[</span><span class='id identifier rubyid_user'>user</span><span class='rbracket'>]</span><span class='rbracket'>]</span>
         <span class='kw'>elsif</span> <span class='id identifier rubyid_kurs_tablet_logged_in?'>kurs_tablet_logged_in?</span>
             <span class='id identifier rubyid_use_user'>use_user</span> <span class='op'>=</span> <span class='lbrace'>{</span><span class='symbol'>:display_name</span> <span class='op'>=&gt;</span> <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>Kursraum</span><span class='tstring_end'>&#39;</span></span><span class='rbrace'>}</span>
+        <span class='kw'>elsif</span> <span class='id identifier rubyid_tablet_logged_in?'>tablet_logged_in?</span>
+            <span class='kw'>if</span> <span class='cvar'>@@tablets</span><span class='lbracket'>[</span><span class='ivar'>@session_user</span><span class='lbracket'>[</span><span class='symbol'>:tablet_id</span><span class='rbracket'>]</span><span class='rbracket'>]</span><span class='lbracket'>[</span><span class='symbol'>:klassen_stream</span><span class='rbracket'>]</span>
+                <span class='id identifier rubyid_use_user'>use_user</span> <span class='op'>=</span> <span class='lbrace'>{</span><span class='symbol'>:display_name</span> <span class='op'>=&gt;</span> <span class='tstring'><span class='tstring_beg'>&quot;</span><span class='tstring_content'>Klassenstreaming-Tablet </span><span class='embexpr_beg'>#{</span><span class='cvar'>@@tablets</span><span class='lbracket'>[</span><span class='ivar'>@session_user</span><span class='lbracket'>[</span><span class='symbol'>:tablet_id</span><span class='rbracket'>]</span><span class='rbracket'>]</span><span class='lbracket'>[</span><span class='symbol'>:klassen_stream</span><span class='rbracket'>]</span><span class='embexpr_end'>}</span><span class='tstring_end'>&quot;</span></span><span class='rbrace'>}</span>
+                <span class='id identifier rubyid_payload'>payload</span><span class='lbracket'>[</span><span class='symbol'>:moderator</span><span class='rbracket'>]</span> <span class='op'>=</span> <span class='kw'>true</span>
+            <span class='kw'>else</span>
+                <span class='id identifier rubyid_use_user'>use_user</span> <span class='op'>=</span> <span class='lbrace'>{</span><span class='symbol'>:display_name</span> <span class='op'>=&gt;</span> <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>Tablet</span><span class='tstring_end'>&#39;</span></span><span class='rbrace'>}</span>
+            <span class='kw'>end</span>
         <span class='kw'>end</span>
         <span class='id identifier rubyid_payload'>payload</span><span class='lbracket'>[</span><span class='symbol'>:context</span><span class='rbracket'>]</span><span class='lbracket'>[</span><span class='symbol'>:user</span><span class='rbracket'>]</span><span class='lbracket'>[</span><span class='symbol'>:name</span><span class='rbracket'>]</span> <span class='op'>=</span> <span class='id identifier rubyid_use_user'>use_user</span><span class='lbracket'>[</span><span class='symbol'>:teacher</span><span class='rbracket'>]</span> <span class='op'>?</span> <span class='id identifier rubyid_use_user'>use_user</span><span class='lbracket'>[</span><span class='symbol'>:display_last_name</span><span class='rbracket'>]</span> <span class='op'>:</span> <span class='id identifier rubyid_use_user'>use_user</span><span class='lbracket'>[</span><span class='symbol'>:display_name</span><span class='rbracket'>]</span>
         <span class='id identifier rubyid_payload'>payload</span><span class='lbracket'>[</span><span class='symbol'>:context</span><span class='rbracket'>]</span><span class='lbracket'>[</span><span class='symbol'>:user</span><span class='rbracket'>]</span><span class='lbracket'>[</span><span class='symbol'>:email</span><span class='rbracket'>]</span> <span class='op'>=</span> <span class='id identifier rubyid_use_user'>use_user</span><span class='lbracket'>[</span><span class='symbol'>:email</span><span class='rbracket'>]</span>
@@ -6121,22 +6316,6 @@ Nextcloud account, with a gray background as a default fallback.</p>
       <pre class="lines">
 
 
-353
-354
-355
-356
-357
-358
-359
-360
-361
-362
-363
-364
-365
-366
-367
-368
 369
 370
 371
@@ -6177,10 +6356,26 @@ Nextcloud account, with a gray background as a default fallback.</p>
 406
 407
 408
-409</pre>
+409
+410
+411
+412
+413
+414
+415
+416
+417
+418
+419
+420
+421
+422
+423
+424
+425</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'src/ruby/include/jitsi.rb', line 353</span>
+      <pre class="code"><span class="info file"># File 'src/ruby/include/jitsi.rb', line 369</span>
 
 <span class='kw'>def</span> <span class='id identifier rubyid_get_current_jitsi_users_for_lesson'>get_current_jitsi_users_for_lesson</span><span class='lparen'>(</span><span class='id identifier rubyid_lesson_key'>lesson_key</span><span class='comma'>,</span> <span class='id identifier rubyid_offset'>offset</span><span class='comma'>,</span> <span class='id identifier rubyid_user'>user</span> <span class='op'>=</span> <span class='kw'>nil</span><span class='rparen'>)</span>
     <span class='id identifier rubyid_lesson_info'>lesson_info</span> <span class='op'>=</span> <span class='id identifier rubyid_neo4j_query_expect_one'>neo4j_query_expect_one</span><span class='lparen'>(</span><span class='heredoc_beg'>&lt;&lt;~END_OF_QUERY</span><span class='comma'>,</span> <span class='lbrace'>{</span><span class='symbol'>:lesson_key</span> <span class='op'>=&gt;</span> <span class='id identifier rubyid_lesson_key'>lesson_key</span><span class='comma'>,</span> <span class='symbol'>:offset</span> <span class='op'>=&gt;</span> <span class='id identifier rubyid_offset'>offset</span><span class='rbrace'>}</span><span class='rparen'>)</span><span class='lbracket'>[</span><span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>i</span><span class='tstring_end'>&#39;</span></span><span class='rbracket'>]</span><span class='period'>.</span><span class='id identifier rubyid_props'>props</span>
@@ -6188,7 +6383,7 @@ Nextcloud account, with a gray background as a default fallback.</p>
 </span><span class='tstring_content'>        RETURN i;
 </span><span class='heredoc_end'>    END_OF_QUERY
 </span>    <span class='id identifier rubyid_room_name'>room_name</span> <span class='op'>=</span> <span class='id identifier rubyid_get_jitsi_room_name_for_lesson_key'>get_jitsi_room_name_for_lesson_key</span><span class='lparen'>(</span><span class='id identifier rubyid_lesson_key'>lesson_key</span><span class='comma'>,</span> <span class='id identifier rubyid_user'>user</span><span class='rparen'>)</span>
-    <span class='id identifier rubyid_assert'>assert</span><span class='lparen'>(</span><span class='op'>!</span><span class='lparen'>(</span><span class='id identifier rubyid_room_name'>room_name</span><span class='period'>.</span><span class='id identifier rubyid_nil?'>nil?</span><span class='rparen'>)</span><span class='comma'>,</span> <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>not today!</span><span class='tstring_end'>&#39;</span></span><span class='rparen'>)</span>
+    <span class='id identifier rubyid_assert'>assert</span><span class='lparen'>(</span><span class='op'>!</span><span class='lparen'>(</span><span class='id identifier rubyid_room_name'>room_name</span><span class='period'>.</span><span class='id identifier rubyid_nil?'>nil?</span><span class='rparen'>)</span><span class='comma'>,</span> <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>not today!</span><span class='tstring_end'>&#39;</span></span><span class='rparen'>)</span> <span class='kw'>unless</span> <span class='const'><span class='object_link'><a href="top-level-namespace.html#DEVELOPMENT-constant" title="DEVELOPMENT (constant)">DEVELOPMENT</a></span></span>
     <span class='id identifier rubyid_lesson_room_name'>lesson_room_name</span> <span class='op'>=</span> <span class='const'>CGI</span><span class='period'>.</span><span class='id identifier rubyid_escape'>escape</span><span class='lparen'>(</span><span class='id identifier rubyid_room_name'>room_name</span><span class='period'>.</span><span class='id identifier rubyid_gsub'>gsub</span><span class='lparen'>(</span><span class='tstring'><span class='regexp_beg'>/</span><span class='tstring_content'>[\:\?#\[\]@!$&amp;\\&#39;()*+,;=&gt;&lt;\/&quot;]</span><span class='regexp_end'>/</span></span><span class='comma'>,</span> <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_end'>&#39;</span></span><span class='rparen'>)</span><span class='rparen'>)</span><span class='period'>.</span><span class='id identifier rubyid_gsub'>gsub</span><span class='lparen'>(</span><span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>+</span><span class='tstring_end'>&#39;</span></span><span class='comma'>,</span> <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>%20</span><span class='tstring_end'>&#39;</span></span><span class='rparen'>)</span><span class='period'>.</span><span class='id identifier rubyid_downcase'>downcase</span>
 
     <span class='id identifier rubyid_jitsi_rooms'>jitsi_rooms</span> <span class='op'>=</span> <span class='id identifier rubyid_current_jitsi_rooms'>current_jitsi_rooms</span><span class='lparen'>(</span><span class='rparen'>)</span>
@@ -6259,13 +6454,13 @@ Nextcloud account, with a gray background as a default fallback.</p>
       <pre class="lines">
 
 
-254
-255
-256
-257</pre>
+269
+270
+271
+272</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'src/ruby/include/login.rb', line 254</span>
+      <pre class="code"><span class="info file"># File 'src/ruby/include/login.rb', line 269</span>
 
 <span class='kw'>def</span> <span class='id identifier rubyid_get_current_user_sessions'>get_current_user_sessions</span><span class='lparen'>(</span><span class='rparen'>)</span>
     <span class='id identifier rubyid_require_user!'>require_user!</span>
@@ -6413,21 +6608,21 @@ Nextcloud account, with a gray background as a default fallback.</p>
       <pre class="lines">
 
 
-215
-216
-217
-218
-219
-220
-221
-222
-223
-224
-225
-226</pre>
+231
+232
+233
+234
+235
+236
+237
+238
+239
+240
+241
+242</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'src/ruby/include/directory.rb', line 215</span>
+      <pre class="code"><span class="info file"># File 'src/ruby/include/directory.rb', line 231</span>
 
 <span class='kw'>def</span> <span class='id identifier rubyid_get_homeschooling_for_user'>get_homeschooling_for_user</span><span class='lparen'>(</span><span class='id identifier rubyid_email'>email</span><span class='rparen'>)</span>
     <span class='id identifier rubyid_info'>info</span> <span class='op'>=</span> <span class='id identifier rubyid_neo4j_query_expect_one'>neo4j_query_expect_one</span><span class='lparen'>(</span><span class='heredoc_beg'>&lt;&lt;~END_OF_QUERY</span><span class='comma'>,</span> <span class='lbrace'>{</span><span class='symbol'>:email</span> <span class='op'>=&gt;</span> <span class='id identifier rubyid_email'>email</span><span class='rbrace'>}</span><span class='rparen'>)</span>
@@ -6437,8 +6632,8 @@ Nextcloud account, with a gray background as a default fallback.</p>
 </span><span class='heredoc_end'>    END_OF_QUERY
 </span>    <span class='id identifier rubyid_marked_as_homeschooling'>marked_as_homeschooling</span> <span class='op'>=</span> <span class='id identifier rubyid_info'>info</span><span class='lbracket'>[</span><span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>homeschooling</span><span class='tstring_end'>&#39;</span></span><span class='rbracket'>]</span>
     <span class='id identifier rubyid_group2'>group2</span> <span class='op'>=</span> <span class='id identifier rubyid_info'>info</span><span class='lbracket'>[</span><span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>group2</span><span class='tstring_end'>&#39;</span></span><span class='rbracket'>]</span>
-    <span class='id identifier rubyid_week_number'>week_number</span> <span class='op'>=</span> <span class='const'>Date</span><span class='period'>.</span><span class='id identifier rubyid_today'>today</span><span class='period'>.</span><span class='id identifier rubyid_strftime'>strftime</span><span class='lparen'>(</span><span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>%-V</span><span class='tstring_end'>&#39;</span></span><span class='rparen'>)</span><span class='period'>.</span><span class='id identifier rubyid_to_i'>to_i</span>
-    <span class='id identifier rubyid_marked_as_homeschooling_by_week'>marked_as_homeschooling_by_week</span> <span class='op'>=</span> <span class='lparen'>(</span><span class='lparen'>(</span><span class='id identifier rubyid_week_number'>week_number</span> <span class='op'>%</span> <span class='int'>2</span><span class='rparen'>)</span> <span class='op'>==</span> <span class='lparen'>(</span><span class='id identifier rubyid_group2'>group2</span><span class='lbracket'>[</span><span class='int'>0</span><span class='rbracket'>]</span><span class='period'>.</span><span class='id identifier rubyid_ord'>ord</span><span class='rparen'>)</span> <span class='op'>-</span> <span class='lparen'>(</span><span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>A</span><span class='tstring_end'>&#39;</span></span><span class='period'>.</span><span class='id identifier rubyid_ord'>ord</span><span class='rparen'>)</span><span class='rparen'>)</span>
+    <span class='id identifier rubyid_current_week'>current_week</span> <span class='op'>=</span> <span class='kw'>self</span><span class='period'>.</span><span class='id identifier rubyid_class'>class</span><span class='period'>.</span><span class='id identifier rubyid_get_current_ab_week'>get_current_ab_week</span><span class='lparen'>(</span><span class='rparen'>)</span>
+    <span class='id identifier rubyid_marked_as_homeschooling_by_week'>marked_as_homeschooling_by_week</span> <span class='op'>=</span> <span class='lparen'>(</span><span class='id identifier rubyid_current_week'>current_week</span> <span class='op'>==</span> <span class='id identifier rubyid_group2'>group2</span><span class='rparen'>)</span>
     <span class='id identifier rubyid_marked_as_homeschooling'>marked_as_homeschooling</span> <span class='op'>||</span> <span class='id identifier rubyid_marked_as_homeschooling_by_week'>marked_as_homeschooling_by_week</span>
 <span class='kw'>end</span></pre>
     </td>
@@ -6461,22 +6656,6 @@ Nextcloud account, with a gray background as a default fallback.</p>
       <pre class="lines">
 
 
-321
-322
-323
-324
-325
-326
-327
-328
-329
-330
-331
-332
-333
-334
-335
-336
 337
 338
 339
@@ -6491,10 +6670,26 @@ Nextcloud account, with a gray background as a default fallback.</p>
 348
 349
 350
-351</pre>
+351
+352
+353
+354
+355
+356
+357
+358
+359
+360
+361
+362
+363
+364
+365
+366
+367</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'src/ruby/include/jitsi.rb', line 321</span>
+      <pre class="code"><span class="info file"># File 'src/ruby/include/jitsi.rb', line 337</span>
 
 <span class='kw'>def</span> <span class='id identifier rubyid_get_jitsi_room_name_for_lesson_key'>get_jitsi_room_name_for_lesson_key</span><span class='lparen'>(</span><span class='id identifier rubyid_lesson_key'>lesson_key</span><span class='comma'>,</span> <span class='id identifier rubyid_user'>user</span> <span class='op'>=</span> <span class='kw'>nil</span><span class='rparen'>)</span>
     <span class='id identifier rubyid_p_ymd'>p_ymd</span> <span class='op'>=</span> <span class='const'>Date</span><span class='period'>.</span><span class='id identifier rubyid_today'>today</span><span class='period'>.</span><span class='id identifier rubyid_strftime'>strftime</span><span class='lparen'>(</span><span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>%Y-%m-%d</span><span class='tstring_end'>&#39;</span></span><span class='rparen'>)</span>
@@ -7057,21 +7252,21 @@ Nextcloud account, with a gray background as a default fallback.</p>
       <pre class="lines">
 
 
-241
-242
-243
-244
-245
-246
-247
-248
-249
-250
-251
-252</pre>
+256
+257
+258
+259
+260
+261
+262
+263
+264
+265
+266
+267</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'src/ruby/include/login.rb', line 241</span>
+      <pre class="code"><span class="info file"># File 'src/ruby/include/login.rb', line 256</span>
 
 <span class='kw'>def</span> <span class='id identifier rubyid_get_sessions_for_user'>get_sessions_for_user</span><span class='lparen'>(</span><span class='id identifier rubyid_email'>email</span><span class='rparen'>)</span>
     <span class='id identifier rubyid_require_user!'>require_user!</span>
@@ -7275,13 +7470,13 @@ Nextcloud account, with a gray background as a default fallback.</p>
       <pre class="lines">
 
 
-1044
-1045
-1046
-1047</pre>
+1085
+1086
+1087
+1088</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'src/ruby/main.rb', line 1044</span>
+      <pre class="code"><span class="info file"># File 'src/ruby/main.rb', line 1085</span>
 
 <span class='kw'>def</span> <span class='id identifier rubyid_htmlentities'>htmlentities</span><span class='lparen'>(</span><span class='id identifier rubyid_s'>s</span><span class='rparen'>)</span>
     <span class='ivar'>@html_entities_coder</span> <span class='op'>||=</span> <span class='const'>HTMLEntities</span><span class='period'>.</span><span class='id identifier rubyid_new'>new</span>
@@ -7307,18 +7502,18 @@ Nextcloud account, with a gray background as a default fallback.</p>
       <pre class="lines">
 
 
-243
-244
-245
-246
-247
-248
-249
-250
-251</pre>
+259
+260
+261
+262
+263
+264
+265
+266
+267</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'src/ruby/include/directory.rb', line 243</span>
+      <pre class="code"><span class="info file"># File 'src/ruby/include/directory.rb', line 259</span>
 
 <span class='kw'>def</span> <span class='id identifier rubyid_iterate_directory'>iterate_directory</span><span class='lparen'>(</span><span class='id identifier rubyid_which'>which</span><span class='comma'>,</span> <span class='op'>&amp;</span><span class='id identifier rubyid_block'>block</span><span class='rparen'>)</span>
     <span class='lparen'>(</span><span class='cvar'>@@schueler_for_klasse</span><span class='lbracket'>[</span><span class='id identifier rubyid_which'>which</span><span class='rbracket'>]</span> <span class='op'>||</span> <span class='lbracket'>[</span><span class='rbracket'>]</span><span class='rparen'>)</span><span class='period'>.</span><span class='id identifier rubyid_sort'>sort</span> <span class='kw'>do</span> <span class='op'>|</span><span class='id identifier rubyid_a'>a</span><span class='comma'>,</span> <span class='id identifier rubyid_b'>b</span><span class='op'>|</span>
@@ -7349,12 +7544,12 @@ Nextcloud account, with a gray background as a default fallback.</p>
       <pre class="lines">
 
 
-425
-426
-427</pre>
+437
+438
+439</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'src/ruby/main.rb', line 425</span>
+      <pre class="code"><span class="info file"># File 'src/ruby/main.rb', line 437</span>
 
 <span class='kw'>def</span> <span class='id identifier rubyid_iterate_school_days'>iterate_school_days</span><span class='lparen'>(</span><span class='id identifier rubyid_options'>options</span> <span class='op'>=</span> <span class='lbrace'>{</span><span class='rbrace'>}</span><span class='comma'>,</span> <span class='op'>&amp;</span><span class='id identifier rubyid_block'>block</span><span class='rparen'>)</span>
     <span class='kw'>self</span><span class='period'>.</span><span class='id identifier rubyid_class'>class</span><span class='period'>.</span><span class='id identifier rubyid_iterate_school_days'>iterate_school_days</span><span class='lparen'>(</span><span class='id identifier rubyid_options'>options</span><span class='comma'>,</span> <span class='op'>&amp;</span><span class='id identifier rubyid_block'>block</span><span class='rparen'>)</span>
@@ -7523,7 +7718,7 @@ Nextcloud account, with a gray background as a default fallback.</p>
       <pre class="code"><span class="info file"># File 'src/ruby/include/user.rb', line 55</span>
 
 <span class='kw'>def</span> <span class='id identifier rubyid_kurs_tablet_logged_in?'>kurs_tablet_logged_in?</span>
-    <span class='id identifier rubyid_user_logged_in?'>user_logged_in?</span> <span class='op'>&amp;&amp;</span> <span class='ivar'>@session_user</span><span class='lbracket'>[</span><span class='symbol'>:email</span><span class='rbracket'>]</span> <span class='op'>==</span> <span class='tstring'><span class='tstring_beg'>&quot;</span><span class='tstring_content'>kurs.tablet@</span><span class='embexpr_beg'>#{</span><span class='const'><span class='object_link'><a href="top-level-namespace.html#SCHUL_MAIL_DOMAIN-constant" title="SCHUL_MAIL_DOMAIN (constant)">SCHUL_MAIL_DOMAIN</a></span></span><span class='embexpr_end'>}</span><span class='tstring_end'>&quot;</span></span>
+    <span class='id identifier rubyid_user_logged_in?'>user_logged_in?</span> <span class='op'>&amp;&amp;</span> <span class='ivar'>@session_user</span><span class='lbracket'>[</span><span class='symbol'>:is_tablet</span><span class='rbracket'>]</span> <span class='op'>&amp;&amp;</span> <span class='ivar'>@session_user</span><span class='lbracket'>[</span><span class='symbol'>:tablet_type</span><span class='rbracket'>]</span> <span class='op'>==</span> <span class='symbol'>:kurs</span>
 <span class='kw'>end</span></pre>
     </td>
   </tr>
@@ -7545,22 +7740,22 @@ Nextcloud account, with a gray background as a default fallback.</p>
       <pre class="lines">
 
 
-155
-156
-157
-158
-159
-160
-161
-162
-163
-164
-165
-166
-167</pre>
+169
+170
+171
+172
+173
+174
+175
+176
+177
+178
+179
+180
+181</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'src/ruby/include/login.rb', line 155</span>
+      <pre class="code"><span class="info file"># File 'src/ruby/include/login.rb', line 169</span>
 
 <span class='kw'>def</span> <span class='id identifier rubyid_logout'>logout</span><span class='lparen'>(</span><span class='rparen'>)</span>
     <span class='id identifier rubyid_sid'>sid</span> <span class='op'>=</span> <span class='id identifier rubyid_request'>request</span><span class='period'>.</span><span class='id identifier rubyid_cookies'>cookies</span><span class='lbracket'>[</span><span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>sid</span><span class='tstring_end'>&#39;</span></span><span class='rbracket'>]</span>
@@ -8041,12 +8236,12 @@ Nextcloud account, with a gray background as a default fallback.</p>
       <pre class="lines">
 
 
-1363
-1364
-1365</pre>
+1412
+1413
+1414</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'src/ruby/main.rb', line 1363</span>
+      <pre class="code"><span class="info file"># File 'src/ruby/main.rb', line 1412</span>
 
 <span class='kw'>def</span> <span class='id identifier rubyid_may_edit_lessons?'>may_edit_lessons?</span><span class='lparen'>(</span><span class='id identifier rubyid_lesson_key'>lesson_key</span><span class='rparen'>)</span>
     <span class='id identifier rubyid_teacher_logged_in?'>teacher_logged_in?</span> <span class='op'>&amp;&amp;</span> <span class='cvar'>@@lessons_for_shorthand</span><span class='lbracket'>[</span><span class='ivar'>@session_user</span><span class='lbracket'>[</span><span class='symbol'>:shorthand</span><span class='rbracket'>]</span><span class='rbracket'>]</span><span class='period'>.</span><span class='id identifier rubyid_include?'>include?</span><span class='lparen'>(</span><span class='id identifier rubyid_lesson_key'>lesson_key</span><span class='rparen'>)</span>
@@ -8107,47 +8302,6 @@ Nextcloud account, with a gray background as a default fallback.</p>
       <pre class="lines">
 
 
-1103
-1104
-1105
-1106
-1107
-1108
-1109
-1110
-1111
-1112
-1113
-1114
-1115
-1116
-1117
-1118
-1119
-1120
-1121
-1122
-1123
-1124
-1125
-1126
-1127
-1128
-1129
-1130
-1131
-1132
-1133
-1134
-1135
-1136
-1137
-1138
-1139
-1140
-1141
-1142
-1143
 1144
 1145
 1146
@@ -8265,16 +8419,73 @@ Nextcloud account, with a gray background as a default fallback.</p>
 1258
 1259
 1260
-1261</pre>
+1261
+1262
+1263
+1264
+1265
+1266
+1267
+1268
+1269
+1270
+1271
+1272
+1273
+1274
+1275
+1276
+1277
+1278
+1279
+1280
+1281
+1282
+1283
+1284
+1285
+1286
+1287
+1288
+1289
+1290
+1291
+1292
+1293
+1294
+1295
+1296
+1297
+1298
+1299
+1300
+1301
+1302
+1303
+1304
+1305
+1306
+1307
+1308
+1309
+1310</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'src/ruby/main.rb', line 1103</span>
+      <pre class="code"><span class="info file"># File 'src/ruby/main.rb', line 1144</span>
 
 <span class='kw'>def</span> <span class='id identifier rubyid_nav_items'>nav_items</span><span class='lparen'>(</span><span class='id identifier rubyid_primary_color'>primary_color</span><span class='comma'>,</span> <span class='id identifier rubyid_now'>now</span><span class='comma'>,</span> <span class='id identifier rubyid_new_messages_count'>new_messages_count</span><span class='rparen'>)</span>
     <span class='kw'>if</span> <span class='id identifier rubyid_teacher_tablet_logged_in?'>teacher_tablet_logged_in?</span>
         <span class='kw'>return</span> <span class='tstring'><span class='tstring_beg'>&quot;</span><span class='tstring_content'>&lt;div style=&#39;margin-right: 15px;&#39;&gt;&lt;b&gt;Lehrer-Tablet-Modus&lt;/b&gt;&lt;/div&gt;</span><span class='tstring_end'>&quot;</span></span> 
     <span class='kw'>elsif</span> <span class='id identifier rubyid_kurs_tablet_logged_in?'>kurs_tablet_logged_in?</span>
         <span class='kw'>return</span> <span class='tstring'><span class='tstring_beg'>&quot;</span><span class='tstring_content'>&lt;div style=&#39;margin-right: 15px;&#39;&gt;&lt;b&gt;Kurs-Tablet-Modus&lt;/b&gt;&lt;/div&gt;</span><span class='tstring_end'>&quot;</span></span> 
+    <span class='kw'>elsif</span> <span class='id identifier rubyid_tablet_logged_in?'>tablet_logged_in?</span>
+        <span class='id identifier rubyid_tablet_id'>tablet_id</span> <span class='op'>=</span> <span class='ivar'>@session_user</span><span class='lbracket'>[</span><span class='symbol'>:tablet_id</span><span class='rbracket'>]</span>
+        <span class='id identifier rubyid_tablet'>tablet</span> <span class='op'>=</span> <span class='cvar'>@@tablets</span><span class='lbracket'>[</span><span class='id identifier rubyid_tablet_id'>tablet_id</span><span class='rbracket'>]</span> <span class='op'>||</span> <span class='lbrace'>{</span><span class='rbrace'>}</span>
+        <span class='id identifier rubyid_description'>description</span> <span class='op'>=</span> <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_end'>&#39;</span></span>
+        <span class='kw'>if</span> <span class='id identifier rubyid_tablet'>tablet</span><span class='lbracket'>[</span><span class='symbol'>:klassen_stream</span><span class='rbracket'>]</span>
+            <span class='id identifier rubyid_description'>description</span> <span class='op'>=</span> <span class='tstring'><span class='tstring_beg'>&quot;</span><span class='tstring_content'> (Klassenstreaming </span><span class='embexpr_beg'>#{</span><span class='id identifier rubyid_tablet'>tablet</span><span class='lbracket'>[</span><span class='symbol'>:klassen_stream</span><span class='rbracket'>]</span><span class='embexpr_end'>}</span><span class='tstring_content'>)</span><span class='tstring_end'>&quot;</span></span>
+        <span class='kw'>end</span>
+        <span class='kw'>return</span> <span class='tstring'><span class='tstring_beg'>&quot;</span><span class='tstring_content'>&lt;div style=&#39;margin-right: 15px;&#39;&gt;&lt;b&gt;Tablet-Modus&lt;/b&gt;</span><span class='embexpr_beg'>#{</span><span class='id identifier rubyid_description'>description</span><span class='embexpr_end'>}</span><span class='tstring_content'>&lt;span class=&#39;tablet-id-indicator&#39; style=&#39;background-color: </span><span class='embexpr_beg'>#{</span><span class='id identifier rubyid_tablet'>tablet</span><span class='lbracket'>[</span><span class='symbol'>:bg_color</span><span class='rbracket'>]</span><span class='embexpr_end'>}</span><span class='tstring_content'>; color: </span><span class='embexpr_beg'>#{</span><span class='id identifier rubyid_tablet'>tablet</span><span class='lbracket'>[</span><span class='symbol'>:fg_color</span><span class='rbracket'>]</span><span class='embexpr_end'>}</span><span class='tstring_content'>&#39;&gt;</span><span class='embexpr_beg'>#{</span><span class='id identifier rubyid_tablet_id'>tablet_id</span><span class='embexpr_end'>}</span><span class='tstring_content'>&lt;/span&gt;&lt;/div&gt;</span><span class='tstring_end'>&quot;</span></span> 
     <span class='kw'>end</span>
     <span class='const'>StringIO</span><span class='period'>.</span><span class='id identifier rubyid_open'>open</span> <span class='kw'>do</span> <span class='op'>|</span><span class='id identifier rubyid_io'>io</span><span class='op'>|</span>
         <span class='id identifier rubyid_new_messages_count_s'>new_messages_count_s</span> <span class='op'>=</span> <span class='kw'>nil</span>
@@ -8449,42 +8660,42 @@ Nextcloud account, with a gray background as a default fallback.</p>
       <pre class="lines">
 
 
-902
-903
-904
-905
-906
-907
-908
-909
-910
-911
-912
-913
-914
-915
-916
-917
-918
-919
-920
-921
-922
-923
-924
-925
-926
-927
-928
-929
 930
 931
 932
 933
-934</pre>
+934
+935
+936
+937
+938
+939
+940
+941
+942
+943
+944
+945
+946
+947
+948
+949
+950
+951
+952
+953
+954
+955
+956
+957
+958
+959
+960
+961
+962</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'src/ruby/main.rb', line 902</span>
+      <pre class="code"><span class="info file"># File 'src/ruby/main.rb', line 930</span>
 
 <span class='kw'>def</span> <span class='id identifier rubyid_parse_request_data'>parse_request_data</span><span class='lparen'>(</span><span class='id identifier rubyid_options'>options</span> <span class='op'>=</span> <span class='lbrace'>{</span><span class='rbrace'>}</span><span class='rparen'>)</span>
     <span class='id identifier rubyid_options'>options</span><span class='lbracket'>[</span><span class='symbol'>:max_body_length</span><span class='rbracket'>]</span> <span class='op'>||=</span> <span class='int'>512</span>
@@ -9105,7 +9316,19 @@ Nextcloud account, with a gray background as a default fallback.</p>
 167
 168
 169
-170</pre>
+170
+171
+172
+173
+174
+175
+176
+177
+178
+179
+180
+181
+182</pre>
     </td>
     <td>
       <pre class="code"><span class="info file"># File 'src/ruby/include/admin.rb', line 10</span>
@@ -9144,7 +9367,7 @@ Nextcloud account, with a gray background as a default fallback.</p>
         <span class='id identifier rubyid_io'>io</span><span class='period'>.</span><span class='id identifier rubyid_puts'>puts</span> <span class='tstring'><span class='tstring_beg'>&quot;</span><span class='tstring_content'>&lt;/thead&gt;</span><span class='tstring_end'>&quot;</span></span>
         <span class='id identifier rubyid_io'>io</span><span class='period'>.</span><span class='id identifier rubyid_puts'>puts</span> <span class='tstring'><span class='tstring_beg'>&quot;</span><span class='tstring_content'>&lt;tbody&gt;</span><span class='tstring_end'>&quot;</span></span>
         <span class='cvar'>@@lehrer_order</span><span class='period'>.</span><span class='id identifier rubyid_each'>each</span> <span class='kw'>do</span> <span class='op'>|</span><span class='id identifier rubyid_email'>email</span><span class='op'>|</span>
-            <span class='id identifier rubyid_io'>io</span><span class='period'>.</span><span class='id identifier rubyid_puts'>puts</span> <span class='tstring'><span class='tstring_beg'>&quot;</span><span class='tstring_content'>&lt;tr&gt;</span><span class='tstring_end'>&quot;</span></span>
+            <span class='id identifier rubyid_io'>io</span><span class='period'>.</span><span class='id identifier rubyid_puts'>puts</span> <span class='tstring'><span class='tstring_beg'>&quot;</span><span class='tstring_content'>&lt;tr class=&#39;user_row&#39;&gt;</span><span class='tstring_end'>&quot;</span></span>
             <span class='id identifier rubyid_user'>user</span> <span class='op'>=</span> <span class='cvar'>@@user_info</span><span class='lbracket'>[</span><span class='id identifier rubyid_email'>email</span><span class='rbracket'>]</span>
             <span class='id identifier rubyid_io'>io</span><span class='period'>.</span><span class='id identifier rubyid_puts'>puts</span> <span class='tstring'><span class='tstring_beg'>&quot;</span><span class='tstring_content'>&lt;td&gt;</span><span class='embexpr_beg'>#{</span><span class='id identifier rubyid_user_icon'>user_icon</span><span class='lparen'>(</span><span class='id identifier rubyid_email'>email</span><span class='comma'>,</span> <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>avatar-md</span><span class='tstring_end'>&#39;</span></span><span class='rparen'>)</span><span class='embexpr_end'>}</span><span class='tstring_content'>&lt;/td&gt;</span><span class='tstring_end'>&quot;</span></span>
             <span class='id identifier rubyid_io'>io</span><span class='period'>.</span><span class='id identifier rubyid_puts'>puts</span> <span class='tstring'><span class='tstring_beg'>&quot;</span><span class='tstring_content'>&lt;td&gt;</span><span class='embexpr_beg'>#{</span><span class='id identifier rubyid_user'>user</span><span class='lbracket'>[</span><span class='symbol'>:shorthand</span><span class='rbracket'>]</span><span class='embexpr_end'>}</span><span class='tstring_content'>&lt;/td&gt;</span><span class='tstring_end'>&quot;</span></span>
@@ -9153,7 +9376,9 @@ Nextcloud account, with a gray background as a default fallback.</p>
             <span class='kw'>if</span> <span class='const'><span class='object_link'><a href="top-level-namespace.html#USE_MOCK_NAMES-constant" title="USE_MOCK_NAMES (constant)">USE_MOCK_NAMES</a></span></span>
                 <span class='id identifier rubyid_io'>io</span><span class='period'>.</span><span class='id identifier rubyid_puts'>puts</span> <span class='tstring'><span class='tstring_beg'>&quot;</span><span class='tstring_content'>&lt;td&gt;</span><span class='embexpr_beg'>#{</span><span class='id identifier rubyid_user'>user</span><span class='lbracket'>[</span><span class='symbol'>:first_name</span><span class='rbracket'>]</span><span class='period'>.</span><span class='id identifier rubyid_downcase'>downcase</span><span class='embexpr_end'>}</span><span class='tstring_content'>.</span><span class='embexpr_beg'>#{</span><span class='id identifier rubyid_user'>user</span><span class='lbracket'>[</span><span class='symbol'>:last_name</span><span class='rbracket'>]</span><span class='period'>.</span><span class='id identifier rubyid_downcase'>downcase</span><span class='embexpr_end'>}</span><span class='tstring_content'>@</span><span class='embexpr_beg'>#{</span><span class='const'><span class='object_link'><a href="top-level-namespace.html#SCHUL_MAIL_DOMAIN-constant" title="SCHUL_MAIL_DOMAIN (constant)">SCHUL_MAIL_DOMAIN</a></span></span><span class='embexpr_end'>}</span><span class='tstring_content'>&lt;/td&gt;</span><span class='tstring_end'>&quot;</span></span>
             <span class='kw'>else</span>
-                <span class='id identifier rubyid_io'>io</span><span class='period'>.</span><span class='id identifier rubyid_puts'>puts</span> <span class='tstring'><span class='tstring_beg'>&quot;</span><span class='tstring_content'>&lt;td&gt;</span><span class='embexpr_beg'>#{</span><span class='id identifier rubyid_user'>user</span><span class='lbracket'>[</span><span class='symbol'>:email</span><span class='rbracket'>]</span><span class='embexpr_end'>}</span><span class='tstring_content'>&lt;/td&gt;</span><span class='tstring_end'>&quot;</span></span>
+                <span class='id identifier rubyid_io'>io</span><span class='period'>.</span><span class='id identifier rubyid_print'>print</span> <span class='tstring'><span class='tstring_beg'>&quot;</span><span class='tstring_content'>&lt;td&gt;</span><span class='tstring_end'>&quot;</span></span>
+                <span class='id identifier rubyid_print_email_field'>print_email_field</span><span class='lparen'>(</span><span class='id identifier rubyid_io'>io</span><span class='comma'>,</span> <span class='id identifier rubyid_user'>user</span><span class='lbracket'>[</span><span class='symbol'>:email</span><span class='rbracket'>]</span><span class='rparen'>)</span>
+                <span class='id identifier rubyid_io'>io</span><span class='period'>.</span><span class='id identifier rubyid_puts'>puts</span> <span class='tstring'><span class='tstring_beg'>&quot;</span><span class='tstring_content'>&lt;/td&gt;</span><span class='tstring_end'>&quot;</span></span>
             <span class='kw'>end</span>
             <span class='id identifier rubyid_io'>io</span><span class='period'>.</span><span class='id identifier rubyid_puts'>puts</span> <span class='tstring'><span class='tstring_beg'>&quot;</span><span class='tstring_content'>&lt;td&gt;&lt;a class=&#39;btn btn-xs btn-secondary&#39; href=&#39;/timetable/</span><span class='embexpr_beg'>#{</span><span class='id identifier rubyid_user'>user</span><span class='lbracket'>[</span><span class='symbol'>:id</span><span class='rbracket'>]</span><span class='embexpr_end'>}</span><span class='tstring_content'>&#39;&gt;&lt;i class=&#39;fa fa-calendar&#39;&gt;&lt;/i&gt;&amp;nbsp;&amp;nbsp;Stundenplan&lt;/a&gt;&lt;/td&gt;</span><span class='tstring_end'>&quot;</span></span>
             <span class='id identifier rubyid_io'>io</span><span class='period'>.</span><span class='id identifier rubyid_puts'>puts</span> <span class='tstring'><span class='tstring_beg'>&quot;</span><span class='tstring_content'>&lt;td&gt;&lt;button class=&#39;btn btn-warning btn-xs btn-impersonate&#39; data-impersonate-email=&#39;</span><span class='embexpr_beg'>#{</span><span class='id identifier rubyid_user'>user</span><span class='lbracket'>[</span><span class='symbol'>:email</span><span class='rbracket'>]</span><span class='embexpr_end'>}</span><span class='tstring_content'>&#39;&gt;&lt;i class=&#39;fa fa-id-badge&#39;&gt;&lt;/i&gt;&amp;nbsp;&amp;nbsp;Anmelden&lt;/button&gt;&lt;/td&gt;</span><span class='tstring_end'>&quot;</span></span>
@@ -9198,12 +9423,14 @@ Nextcloud account, with a gray background as a default fallback.</p>
             <span class='id identifier rubyid_io'>io</span><span class='period'>.</span><span class='id identifier rubyid_puts'>puts</span> <span class='tstring'><span class='tstring_beg'>&quot;</span><span class='tstring_content'>&lt;th colspan=&#39;8&#39;&gt;Klasse </span><span class='embexpr_beg'>#{</span><span class='id identifier rubyid_klasse'>klasse</span><span class='embexpr_end'>}</span><span class='tstring_content'>&lt;/th&gt;</span><span class='tstring_end'>&quot;</span></span>
             <span class='id identifier rubyid_io'>io</span><span class='period'>.</span><span class='id identifier rubyid_puts'>puts</span> <span class='tstring'><span class='tstring_beg'>&quot;</span><span class='tstring_content'>&lt;/tr&gt;</span><span class='tstring_end'>&quot;</span></span>
             <span class='lparen'>(</span><span class='cvar'>@@schueler_for_klasse</span><span class='lbracket'>[</span><span class='id identifier rubyid_klasse'>klasse</span><span class='rbracket'>]</span> <span class='op'>||</span> <span class='lbracket'>[</span><span class='rbracket'>]</span><span class='rparen'>)</span><span class='period'>.</span><span class='id identifier rubyid_each'>each</span> <span class='kw'>do</span> <span class='op'>|</span><span class='id identifier rubyid_email'>email</span><span class='op'>|</span>
-                <span class='id identifier rubyid_io'>io</span><span class='period'>.</span><span class='id identifier rubyid_puts'>puts</span> <span class='tstring'><span class='tstring_beg'>&quot;</span><span class='tstring_content'>&lt;tr&gt;</span><span class='tstring_end'>&quot;</span></span>
+                <span class='id identifier rubyid_io'>io</span><span class='period'>.</span><span class='id identifier rubyid_puts'>puts</span> <span class='tstring'><span class='tstring_beg'>&quot;</span><span class='tstring_content'>&lt;tr class=&#39;user_row&#39;&gt;</span><span class='tstring_end'>&quot;</span></span>
                 <span class='id identifier rubyid_user'>user</span> <span class='op'>=</span> <span class='cvar'>@@user_info</span><span class='lbracket'>[</span><span class='id identifier rubyid_email'>email</span><span class='rbracket'>]</span>
                 <span class='id identifier rubyid_io'>io</span><span class='period'>.</span><span class='id identifier rubyid_puts'>puts</span> <span class='tstring'><span class='tstring_beg'>&quot;</span><span class='tstring_content'>&lt;td&gt;</span><span class='embexpr_beg'>#{</span><span class='id identifier rubyid_user_icon'>user_icon</span><span class='lparen'>(</span><span class='id identifier rubyid_email'>email</span><span class='comma'>,</span> <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>avatar-md</span><span class='tstring_end'>&#39;</span></span><span class='rparen'>)</span><span class='embexpr_end'>}</span><span class='tstring_content'>&lt;/td&gt;</span><span class='tstring_end'>&quot;</span></span>
                 <span class='id identifier rubyid_io'>io</span><span class='period'>.</span><span class='id identifier rubyid_puts'>puts</span> <span class='tstring'><span class='tstring_beg'>&quot;</span><span class='tstring_content'>&lt;td&gt;</span><span class='embexpr_beg'>#{</span><span class='id identifier rubyid_user'>user</span><span class='lbracket'>[</span><span class='symbol'>:last_name</span><span class='rbracket'>]</span><span class='embexpr_end'>}</span><span class='tstring_content'>&lt;/td&gt;</span><span class='tstring_end'>&quot;</span></span>
                 <span class='id identifier rubyid_io'>io</span><span class='period'>.</span><span class='id identifier rubyid_puts'>puts</span> <span class='tstring'><span class='tstring_beg'>&quot;</span><span class='tstring_content'>&lt;td&gt;</span><span class='embexpr_beg'>#{</span><span class='id identifier rubyid_user'>user</span><span class='lbracket'>[</span><span class='symbol'>:first_name</span><span class='rbracket'>]</span><span class='embexpr_end'>}</span><span class='tstring_content'>&lt;/td&gt;</span><span class='tstring_end'>&quot;</span></span>
-                <span class='id identifier rubyid_io'>io</span><span class='period'>.</span><span class='id identifier rubyid_puts'>puts</span> <span class='tstring'><span class='tstring_beg'>&quot;</span><span class='tstring_content'>&lt;td&gt;</span><span class='embexpr_beg'>#{</span><span class='id identifier rubyid_user'>user</span><span class='lbracket'>[</span><span class='symbol'>:email</span><span class='rbracket'>]</span><span class='embexpr_end'>}</span><span class='tstring_content'>&lt;/td&gt;</span><span class='tstring_end'>&quot;</span></span>
+                <span class='id identifier rubyid_io'>io</span><span class='period'>.</span><span class='id identifier rubyid_print'>print</span> <span class='tstring'><span class='tstring_beg'>&quot;</span><span class='tstring_content'>&lt;td&gt;</span><span class='tstring_end'>&quot;</span></span>
+                <span class='id identifier rubyid_print_email_field'>print_email_field</span><span class='lparen'>(</span><span class='id identifier rubyid_io'>io</span><span class='comma'>,</span> <span class='id identifier rubyid_user'>user</span><span class='lbracket'>[</span><span class='symbol'>:email</span><span class='rbracket'>]</span><span class='rparen'>)</span>
+                <span class='id identifier rubyid_io'>io</span><span class='period'>.</span><span class='id identifier rubyid_puts'>puts</span> <span class='tstring'><span class='tstring_beg'>&quot;</span><span class='tstring_content'>&lt;/td&gt;</span><span class='tstring_end'>&quot;</span></span>
                 <span class='id identifier rubyid_io'>io</span><span class='period'>.</span><span class='id identifier rubyid_puts'>puts</span> <span class='tstring'><span class='tstring_beg'>&quot;</span><span class='tstring_content'>&lt;td&gt;&lt;a class=&#39;btn btn-xs btn-secondary&#39; href=&#39;/timetable/</span><span class='embexpr_beg'>#{</span><span class='id identifier rubyid_user'>user</span><span class='lbracket'>[</span><span class='symbol'>:id</span><span class='rbracket'>]</span><span class='embexpr_end'>}</span><span class='tstring_content'>&#39;&gt;&lt;i class=&#39;fa fa-calendar&#39;&gt;&lt;/i&gt;&amp;nbsp;&amp;nbsp;Stundenplan&lt;/a&gt;&lt;/td&gt;</span><span class='tstring_end'>&quot;</span></span>
                 <span class='id identifier rubyid_io'>io</span><span class='period'>.</span><span class='id identifier rubyid_puts'>puts</span> <span class='tstring'><span class='tstring_beg'>&quot;</span><span class='tstring_content'>&lt;td&gt;&lt;button class=&#39;btn btn-warning btn-xs btn-impersonate&#39; data-impersonate-email=&#39;</span><span class='embexpr_beg'>#{</span><span class='id identifier rubyid_user'>user</span><span class='lbracket'>[</span><span class='symbol'>:email</span><span class='rbracket'>]</span><span class='embexpr_end'>}</span><span class='tstring_content'>&#39;&gt;&lt;i class=&#39;fa fa-id-badge&#39;&gt;&lt;/i&gt;&amp;nbsp;&amp;nbsp;Anmelden&lt;/button&gt;&lt;/td&gt;</span><span class='tstring_end'>&quot;</span></span>
                 <span class='kw'>if</span> <span class='id identifier rubyid_all_homeschooling_users'>all_homeschooling_users</span><span class='period'>.</span><span class='id identifier rubyid_include?'>include?</span><span class='lparen'>(</span><span class='id identifier rubyid_email'>email</span><span class='rparen'>)</span>
@@ -9235,13 +9462,21 @@ Nextcloud account, with a gray background as a default fallback.</p>
         <span class='id identifier rubyid_io'>io</span><span class='period'>.</span><span class='id identifier rubyid_puts'>puts</span> <span class='tstring'><span class='tstring_beg'>&quot;</span><span class='tstring_content'>&lt;/table&gt;</span><span class='tstring_end'>&quot;</span></span>
         <span class='id identifier rubyid_io'>io</span><span class='period'>.</span><span class='id identifier rubyid_puts'>puts</span> <span class='tstring'><span class='tstring_beg'>&quot;</span><span class='tstring_content'>&lt;h3 id=&#39;tablets&#39;&gt;Tablets&lt;/h3&gt;</span><span class='tstring_end'>&quot;</span></span>
         <span class='id identifier rubyid_io'>io</span><span class='period'>.</span><span class='id identifier rubyid_puts'>puts</span> <span class='tstring'><span class='tstring_beg'>&quot;</span><span class='tstring_content'>&lt;hr /&gt;</span><span class='tstring_end'>&quot;</span></span>
+        <span class='id identifier rubyid_io'>io</span><span class='period'>.</span><span class='id identifier rubyid_puts'>puts</span> <span class='tstring'><span class='tstring_beg'>&quot;</span><span class='tstring_content'>&lt;p&gt;Mit einem Klick auf diesen Button können Sie dieses Gerät dauerhaft als Lehrer-Tablet anmelden.&lt;/p&gt;</span><span class='tstring_end'>&quot;</span></span>
         <span class='id identifier rubyid_io'>io</span><span class='period'>.</span><span class='id identifier rubyid_puts'>puts</span> <span class='tstring'><span class='tstring_beg'>&quot;</span><span class='tstring_content'>&lt;button class=&#39;btn btn-success bu_login_teacher_tablet&#39;&gt;&lt;i class=&#39;fa fa-sign-in&#39;&gt;&lt;/i&gt;&amp;nbsp;&amp;nbsp;Lehrer-Tablet-Modus aktivieren&lt;/button&gt;</span><span class='tstring_end'>&quot;</span></span>
         <span class='id identifier rubyid_io'>io</span><span class='period'>.</span><span class='id identifier rubyid_puts'>puts</span> <span class='tstring'><span class='tstring_beg'>&quot;</span><span class='tstring_content'>&lt;hr /&gt;</span><span class='tstring_end'>&quot;</span></span>
+        <span class='id identifier rubyid_io'>io</span><span class='period'>.</span><span class='id identifier rubyid_puts'>puts</span> <span class='tstring'><span class='tstring_beg'>&quot;</span><span class='tstring_content'>&lt;p&gt;Bitte wählen Sie ein order mehrere Kürzel, um dieses Gerät dauerhaft als Kurs-Tablet anzumelden.&lt;/p&gt;</span><span class='tstring_end'>&quot;</span></span>
         <span class='cvar'>@@shorthands</span><span class='period'>.</span><span class='id identifier rubyid_keys'>keys</span><span class='period'>.</span><span class='id identifier rubyid_sort'>sort</span><span class='period'>.</span><span class='id identifier rubyid_each'>each</span> <span class='kw'>do</span> <span class='op'>|</span><span class='id identifier rubyid_shorthand'>shorthand</span><span class='op'>|</span>
             <span class='id identifier rubyid_io'>io</span><span class='period'>.</span><span class='id identifier rubyid_puts'>puts</span> <span class='tstring'><span class='tstring_beg'>&quot;</span><span class='tstring_content'>&lt;button class=&#39;btn-teacher-for-kurs-tablet-login btn btn-xs btn-outline-secondary&#39; data-shorthand=&#39;</span><span class='embexpr_beg'>#{</span><span class='id identifier rubyid_shorthand'>shorthand</span><span class='embexpr_end'>}</span><span class='tstring_content'>&#39;&gt;</span><span class='embexpr_beg'>#{</span><span class='id identifier rubyid_shorthand'>shorthand</span><span class='embexpr_end'>}</span><span class='tstring_content'>&lt;/button&gt;</span><span class='tstring_end'>&quot;</span></span>
         <span class='kw'>end</span>
         <span class='id identifier rubyid_io'>io</span><span class='period'>.</span><span class='id identifier rubyid_puts'>puts</span> <span class='tstring'><span class='tstring_beg'>&quot;</span><span class='tstring_content'>&lt;br /&gt;&lt;br &gt;</span><span class='tstring_end'>&quot;</span></span>
         <span class='id identifier rubyid_io'>io</span><span class='period'>.</span><span class='id identifier rubyid_puts'>puts</span> <span class='tstring'><span class='tstring_beg'>&quot;</span><span class='tstring_content'>&lt;button class=&#39;btn btn-success bu_login_kurs_tablet&#39; disabled&gt;&lt;i class=&#39;fa fa-sign-in&#39;&gt;&lt;/i&gt;&amp;nbsp;&amp;nbsp;Kurs-Tablet-Modus aktivieren&lt;/button&gt;</span><span class='tstring_end'>&quot;</span></span>
+        <span class='id identifier rubyid_io'>io</span><span class='period'>.</span><span class='id identifier rubyid_puts'>puts</span> <span class='tstring'><span class='tstring_beg'>&quot;</span><span class='tstring_content'>&lt;hr /&gt;</span><span class='tstring_end'>&quot;</span></span>
+        <span class='id identifier rubyid_io'>io</span><span class='period'>.</span><span class='id identifier rubyid_puts'>puts</span> <span class='tstring'><span class='tstring_beg'>&quot;</span><span class='tstring_content'>&lt;p&gt;Bitte wählen Sie ein Tablet, um dieses Gerät dauerhaft als dieses Tablet anzumelden.&lt;/p&gt;</span><span class='tstring_end'>&quot;</span></span>
+        <span class='cvar'>@@tablets</span><span class='period'>.</span><span class='id identifier rubyid_keys'>keys</span><span class='period'>.</span><span class='id identifier rubyid_each'>each</span> <span class='kw'>do</span> <span class='op'>|</span><span class='id identifier rubyid_id'>id</span><span class='op'>|</span>
+            <span class='id identifier rubyid_tablet'>tablet</span> <span class='op'>=</span> <span class='cvar'>@@tablets</span><span class='lbracket'>[</span><span class='id identifier rubyid_id'>id</span><span class='rbracket'>]</span>
+            <span class='id identifier rubyid_io'>io</span><span class='period'>.</span><span class='id identifier rubyid_puts'>puts</span> <span class='tstring'><span class='tstring_beg'>&quot;</span><span class='tstring_content'>&lt;button class=&#39;btn-tablet-login btn btn-xs btn-outline-secondary&#39; data-id=&#39;</span><span class='embexpr_beg'>#{</span><span class='id identifier rubyid_id'>id</span><span class='embexpr_end'>}</span><span class='tstring_content'>&#39; style=&#39;background-color: </span><span class='embexpr_beg'>#{</span><span class='id identifier rubyid_tablet'>tablet</span><span class='lbracket'>[</span><span class='symbol'>:bg_color</span><span class='rbracket'>]</span><span class='embexpr_end'>}</span><span class='tstring_content'>; color: </span><span class='embexpr_beg'>#{</span><span class='id identifier rubyid_tablet'>tablet</span><span class='lbracket'>[</span><span class='symbol'>:fg_color</span><span class='rbracket'>]</span><span class='embexpr_end'>}</span><span class='tstring_content'>;&#39;&gt;</span><span class='embexpr_beg'>#{</span><span class='id identifier rubyid_id'>id</span><span class='embexpr_end'>}</span><span class='tstring_content'>&lt;/button&gt;</span><span class='tstring_end'>&quot;</span></span>
+        <span class='kw'>end</span>
         <span class='id identifier rubyid_io'>io</span><span class='period'>.</span><span class='id identifier rubyid_puts'>puts</span> <span class='tstring'><span class='tstring_beg'>&quot;</span><span class='tstring_content'>&lt;hr /&gt;</span><span class='tstring_end'>&quot;</span></span>
         <span class='id identifier rubyid_io'>io</span><span class='period'>.</span><span class='id identifier rubyid_puts'>puts</span> <span class='tstring'><span class='tstring_beg'>&quot;</span><span class='tstring_content'>&lt;table class=&#39;table table-condensed table-striped narrow&#39;&gt;</span><span class='tstring_end'>&quot;</span></span>
         <span class='id identifier rubyid_io'>io</span><span class='period'>.</span><span class='id identifier rubyid_puts'>puts</span> <span class='tstring'><span class='tstring_beg'>&quot;</span><span class='tstring_content'>&lt;thead&gt;</span><span class='tstring_end'>&quot;</span></span>
@@ -9391,12 +9626,12 @@ Nextcloud account, with a gray background as a default fallback.</p>
       <pre class="lines">
 
 
-1276
-1277
-1278</pre>
+1325
+1326
+1327</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'src/ruby/main.rb', line 1276</span>
+      <pre class="code"><span class="info file"># File 'src/ruby/main.rb', line 1325</span>
 
 <span class='kw'>def</span> <span class='id identifier rubyid_print_email_field'>print_email_field</span><span class='lparen'>(</span><span class='id identifier rubyid_io'>io</span><span class='comma'>,</span> <span class='id identifier rubyid_email'>email</span><span class='rparen'>)</span>
     <span class='id identifier rubyid_io'>io</span><span class='period'>.</span><span class='id identifier rubyid_puts'>puts</span> <span class='tstring'><span class='tstring_beg'>&quot;</span><span class='tstring_content'>&lt;div class=&#39;input-group&#39;&gt;&lt;input type=&#39;text&#39; class=&#39;form-control&#39; readonly value=&#39;</span><span class='embexpr_beg'>#{</span><span class='id identifier rubyid_email'>email</span><span class='embexpr_end'>}</span><span class='tstring_content'>&#39; /&gt;&lt;div class=&#39;input-group-append&#39;&gt;&lt;button class=&#39;btn btn-secondary btn-clipboard&#39; data-clipboard-action=&#39;copy&#39; title=&#39;E-Mail-Adresse in die Zwischenablage kopieren&#39; data-clipboard-text=&#39;</span><span class='embexpr_beg'>#{</span><span class='id identifier rubyid_email'>email</span><span class='embexpr_end'>}</span><span class='tstring_content'>&#39;&gt;&lt;i class=&#39;fa fa-clipboard&#39;&gt;&lt;/i&gt;&lt;/button&gt;&lt;/div&gt;&lt;/div&gt;</span><span class='tstring_end'>&quot;</span></span>
@@ -9421,44 +9656,44 @@ Nextcloud account, with a gray background as a default fallback.</p>
       <pre class="lines">
 
 
-1280
-1281
-1282
-1283
-1284
-1285
-1286
-1287
-1288
-1289
-1290
-1291
-1292
-1293
-1294
-1295
-1296
-1297
-1298
-1299
-1300
-1301
-1302
-1303
-1304
-1305
-1306
-1307
-1308
-1309
-1310
-1311
-1312
-1313
-1314</pre>
+1329
+1330
+1331
+1332
+1333
+1334
+1335
+1336
+1337
+1338
+1339
+1340
+1341
+1342
+1343
+1344
+1345
+1346
+1347
+1348
+1349
+1350
+1351
+1352
+1353
+1354
+1355
+1356
+1357
+1358
+1359
+1360
+1361
+1362
+1363</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'src/ruby/main.rb', line 1280</span>
+      <pre class="code"><span class="info file"># File 'src/ruby/main.rb', line 1329</span>
 
 <span class='kw'>def</span> <span class='id identifier rubyid_print_lehrerzimmer_panel'>print_lehrerzimmer_panel</span><span class='lparen'>(</span><span class='rparen'>)</span>
     <span class='id identifier rubyid_require_user!'>require_user!</span>
@@ -9515,18 +9750,6 @@ Nextcloud account, with a gray background as a default fallback.</p>
       <pre class="lines">
 
 
-172
-173
-174
-175
-176
-177
-178
-179
-180
-181
-182
-183
 184
 185
 186
@@ -9542,10 +9765,22 @@ Nextcloud account, with a gray background as a default fallback.</p>
 196
 197
 198
-199</pre>
+199
+200
+201
+202
+203
+204
+205
+206
+207
+208
+209
+210
+211</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'src/ruby/include/admin.rb', line 172</span>
+      <pre class="code"><span class="info file"># File 'src/ruby/include/admin.rb', line 184</span>
 
 <span class='kw'>def</span> <span class='id identifier rubyid_print_lesson_keys'>print_lesson_keys</span>
     <span class='id identifier rubyid_require_admin!'>require_admin!</span>
@@ -9709,21 +9944,6 @@ Nextcloud account, with a gray background as a default fallback.</p>
       <pre class="lines">
 
 
-259
-260
-261
-262
-263
-264
-265
-266
-267
-268
-269
-270
-271
-272
-273
 274
 275
 276
@@ -9743,10 +9963,25 @@ Nextcloud account, with a gray background as a default fallback.</p>
 290
 291
 292
-293</pre>
+293
+294
+295
+296
+297
+298
+299
+300
+301
+302
+303
+304
+305
+306
+307
+308</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'src/ruby/include/login.rb', line 259</span>
+      <pre class="code"><span class="info file"># File 'src/ruby/include/login.rb', line 274</span>
 
 <span class='kw'>def</span> <span class='id identifier rubyid_print_sessions'>print_sessions</span><span class='lparen'>(</span><span class='rparen'>)</span>
     <span class='id identifier rubyid_require_user!'>require_user!</span>
@@ -9909,55 +10144,55 @@ Nextcloud account, with a gray background as a default fallback.</p>
       <pre class="lines">
 
 
-1316
-1317
-1318
-1319
-1320
-1321
-1322
-1323
-1324
-1325
-1326
-1327
-1328
-1329
-1330
-1331
-1332
-1333
-1334
-1335
-1336
-1337
-1338
-1339
-1340
-1341
-1342
-1343
-1344
-1345
-1346
-1347
-1348
-1349
-1350
-1351
-1352
-1353
-1354
-1355
-1356
-1357
-1358
-1359
-1360
-1361</pre>
+1365
+1366
+1367
+1368
+1369
+1370
+1371
+1372
+1373
+1374
+1375
+1376
+1377
+1378
+1379
+1380
+1381
+1382
+1383
+1384
+1385
+1386
+1387
+1388
+1389
+1390
+1391
+1392
+1393
+1394
+1395
+1396
+1397
+1398
+1399
+1400
+1401
+1402
+1403
+1404
+1405
+1406
+1407
+1408
+1409
+1410</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'src/ruby/main.rb', line 1316</span>
+      <pre class="code"><span class="info file"># File 'src/ruby/main.rb', line 1365</span>
 
 <span class='kw'>def</span> <span class='id identifier rubyid_print_timetable_chooser'>print_timetable_chooser</span><span class='lparen'>(</span><span class='rparen'>)</span>
     <span class='kw'>if</span> <span class='id identifier rubyid_can_see_all_timetables_logged_in?'>can_see_all_timetables_logged_in?</span>
@@ -10025,20 +10260,6 @@ Nextcloud account, with a gray background as a default fallback.</p>
       <pre class="lines">
 
 
-114
-115
-116
-117
-118
-119
-120
-121
-122
-123
-124
-125
-126
-127
 128
 129
 130
@@ -10064,10 +10285,24 @@ Nextcloud account, with a gray background as a default fallback.</p>
 150
 151
 152
-153</pre>
+153
+154
+155
+156
+157
+158
+159
+160
+161
+162
+163
+164
+165
+166
+167</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'src/ruby/include/login.rb', line 114</span>
+      <pre class="code"><span class="info file"># File 'src/ruby/include/login.rb', line 128</span>
 
 <span class='kw'>def</span> <span class='id identifier rubyid_purge_missing_sessions'>purge_missing_sessions</span><span class='lparen'>(</span><span class='id identifier rubyid_current_sid'>current_sid</span> <span class='op'>=</span> <span class='kw'>nil</span><span class='comma'>,</span> <span class='id identifier rubyid_remove_other'>remove_other</span> <span class='op'>=</span> <span class='kw'>false</span><span class='rparen'>)</span>
     <span class='id identifier rubyid_sid'>sid</span> <span class='op'>=</span> <span class='id identifier rubyid_request'>request</span><span class='period'>.</span><span class='id identifier rubyid_cookies'>cookies</span><span class='lbracket'>[</span><span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>sid</span><span class='tstring_end'>&#39;</span></span><span class='rbracket'>]</span>
@@ -10457,12 +10692,12 @@ Nextcloud account, with a gray background as a default fallback.</p>
       <pre class="lines">
 
 
-1029
-1030
-1031</pre>
+1070
+1071
+1072</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'src/ruby/main.rb', line 1029</span>
+      <pre class="code"><span class="info file"># File 'src/ruby/main.rb', line 1070</span>
 
 <span class='kw'>def</span> <span class='id identifier rubyid_respond'>respond</span><span class='lparen'>(</span><span class='id identifier rubyid_hash'>hash</span> <span class='op'>=</span> <span class='lbrace'>{</span><span class='rbrace'>}</span><span class='rparen'>)</span>
     <span class='ivar'>@respond_hash</span> <span class='op'>=</span> <span class='id identifier rubyid_hash'>hash</span>
@@ -10487,13 +10722,13 @@ Nextcloud account, with a gray background as a default fallback.</p>
       <pre class="lines">
 
 
-1033
-1034
-1035
-1036</pre>
+1074
+1075
+1076
+1077</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'src/ruby/main.rb', line 1033</span>
+      <pre class="code"><span class="info file"># File 'src/ruby/main.rb', line 1074</span>
 
 <span class='kw'>def</span> <span class='id identifier rubyid_respond_raw_with_mimetype'>respond_raw_with_mimetype</span><span class='lparen'>(</span><span class='id identifier rubyid_content'>content</span><span class='comma'>,</span> <span class='id identifier rubyid_mimetype'>mimetype</span><span class='rparen'>)</span>
     <span class='ivar'>@respond_content</span> <span class='op'>=</span> <span class='id identifier rubyid_content'>content</span>
@@ -10519,14 +10754,14 @@ Nextcloud account, with a gray background as a default fallback.</p>
       <pre class="lines">
 
 
-1038
-1039
-1040
-1041
-1042</pre>
+1079
+1080
+1081
+1082
+1083</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'src/ruby/main.rb', line 1038</span>
+      <pre class="code"><span class="info file"># File 'src/ruby/main.rb', line 1079</span>
 
 <span class='kw'>def</span> <span class='id identifier rubyid_respond_raw_with_mimetype_and_filename'>respond_raw_with_mimetype_and_filename</span><span class='lparen'>(</span><span class='id identifier rubyid_content'>content</span><span class='comma'>,</span> <span class='id identifier rubyid_mimetype'>mimetype</span><span class='comma'>,</span> <span class='id identifier rubyid_filename'>filename</span><span class='rparen'>)</span>
     <span class='ivar'>@respond_content</span> <span class='op'>=</span> <span class='id identifier rubyid_content'>content</span>
@@ -10717,12 +10952,12 @@ href="http://ntlk.net/2011/11/21/convert-rgb-to-hsb-hsv-in-ruby">ntlk.net/2011/1
       <pre class="lines">
 
 
-53
-54
-55</pre>
+60
+61
+62</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'src/ruby/include/jitsi.rb', line 53</span>
+      <pre class="code"><span class="info file"># File 'src/ruby/include/jitsi.rb', line 60</span>
 
 <span class='kw'>def</span> <span class='id identifier rubyid_room_name_for_event'>room_name_for_event</span><span class='lparen'>(</span><span class='id identifier rubyid_title'>title</span><span class='comma'>,</span> <span class='id identifier rubyid_eid'>eid</span><span class='rparen'>)</span>
     <span class='tstring'><span class='tstring_beg'>&quot;</span><span class='embexpr_beg'>#{</span><span class='id identifier rubyid_title'>title</span><span class='embexpr_end'>}</span><span class='tstring_content'> (</span><span class='embexpr_beg'>#{</span><span class='id identifier rubyid_eid'>eid</span><span class='lbracket'>[</span><span class='int'>0</span><span class='comma'>,</span> <span class='int'>8</span><span class='rbracket'>]</span><span class='embexpr_end'>}</span><span class='tstring_content'>)</span><span class='tstring_end'>&quot;</span></span>
@@ -10809,17 +11044,17 @@ href="http://ntlk.net/2011/11/21/convert-rgb-to-hsb-hsv-in-ruby">ntlk.net/2011/1
       <pre class="lines">
 
 
-936
-937
-938
-939
-940
-941
-942
-943</pre>
+964
+965
+966
+967
+968
+969
+970
+971</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'src/ruby/main.rb', line 936</span>
+      <pre class="code"><span class="info file"># File 'src/ruby/main.rb', line 964</span>
 
 <span class='kw'>def</span> <span class='id identifier rubyid_session_user_has_streaming_button?'>session_user_has_streaming_button?</span>
     <span class='kw'>return</span> <span class='kw'>false</span> <span class='kw'>unless</span> <span class='const'><span class='object_link'><a href="top-level-namespace.html#PROVIDE_CLASS_STREAM-constant" title="PROVIDE_CLASS_STREAM (constant)">PROVIDE_CLASS_STREAM</a></span></span>
@@ -11015,7 +11250,7 @@ href="http://ntlk.net/2011/11/21/convert-rgb-to-hsb-hsv-in-ruby">ntlk.net/2011/1
       <pre class="code"><span class="info file"># File 'src/ruby/include/user.rb', line 60</span>
 
 <span class='kw'>def</span> <span class='id identifier rubyid_tablet_logged_in?'>tablet_logged_in?</span>
-    <span class='id identifier rubyid_teacher_tablet_logged_in?'>teacher_tablet_logged_in?</span> <span class='op'>||</span> <span class='id identifier rubyid_kurs_tablet_logged_in?'>kurs_tablet_logged_in?</span>
+    <span class='id identifier rubyid_user_logged_in?'>user_logged_in?</span> <span class='op'>&amp;&amp;</span> <span class='ivar'>@session_user</span><span class='lbracket'>[</span><span class='symbol'>:is_tablet</span><span class='rbracket'>]</span>
 <span class='kw'>end</span></pre>
     </td>
   </tr>
@@ -11177,7 +11412,7 @@ href="http://ntlk.net/2011/11/21/convert-rgb-to-hsb-hsv-in-ruby">ntlk.net/2011/1
       <pre class="code"><span class="info file"># File 'src/ruby/include/user.rb', line 50</span>
 
 <span class='kw'>def</span> <span class='id identifier rubyid_teacher_tablet_logged_in?'>teacher_tablet_logged_in?</span>
-    <span class='id identifier rubyid_user_logged_in?'>user_logged_in?</span> <span class='op'>&amp;&amp;</span> <span class='ivar'>@session_user</span><span class='lbracket'>[</span><span class='symbol'>:email</span><span class='rbracket'>]</span> <span class='op'>==</span> <span class='tstring'><span class='tstring_beg'>&quot;</span><span class='tstring_content'>lehrer.tablet@</span><span class='embexpr_beg'>#{</span><span class='const'><span class='object_link'><a href="top-level-namespace.html#SCHUL_MAIL_DOMAIN-constant" title="SCHUL_MAIL_DOMAIN (constant)">SCHUL_MAIL_DOMAIN</a></span></span><span class='embexpr_end'>}</span><span class='tstring_end'>&quot;</span></span>
+    <span class='id identifier rubyid_user_logged_in?'>user_logged_in?</span> <span class='op'>&amp;&amp;</span> <span class='ivar'>@session_user</span><span class='lbracket'>[</span><span class='symbol'>:is_tablet</span><span class='rbracket'>]</span> <span class='op'>&amp;&amp;</span> <span class='ivar'>@session_user</span><span class='lbracket'>[</span><span class='symbol'>:tablet_type</span><span class='rbracket'>]</span> <span class='op'>==</span> <span class='symbol'>:teacher</span>
 <span class='kw'>end</span></pre>
     </td>
   </tr>
@@ -11199,16 +11434,16 @@ href="http://ntlk.net/2011/11/21/convert-rgb-to-hsb-hsv-in-ruby">ntlk.net/2011/1
       <pre class="lines">
 
 
-894
-895
-896
-897
-898
-899
-900</pre>
+922
+923
+924
+925
+926
+927
+928</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'src/ruby/main.rb', line 894</span>
+      <pre class="code"><span class="info file"># File 'src/ruby/main.rb', line 922</span>
 
 <span class='kw'>def</span> <span class='id identifier rubyid_test_request_parameter'>test_request_parameter</span><span class='lparen'>(</span><span class='id identifier rubyid_data'>data</span><span class='comma'>,</span> <span class='id identifier rubyid_key'>key</span><span class='comma'>,</span> <span class='id identifier rubyid_options'>options</span><span class='rparen'>)</span>
     <span class='id identifier rubyid_type'>type</span> <span class='op'>=</span> <span class='lparen'>(</span><span class='lparen'>(</span><span class='id identifier rubyid_options'>options</span><span class='lbracket'>[</span><span class='symbol'>:types</span><span class='rbracket'>]</span> <span class='op'>||</span> <span class='lbrace'>{</span><span class='rbrace'>}</span><span class='rparen'>)</span><span class='lbracket'>[</span><span class='id identifier rubyid_key'>key</span><span class='rbracket'>]</span><span class='rparen'>)</span> <span class='op'>||</span> <span class='const'><span class='object_link'><a href="String.html" title="String (class)">String</a></span></span>
@@ -11559,12 +11794,12 @@ users who can upload vplan only</p>
       <pre class="lines">
 
 
-459
-460
-461</pre>
+471
+472
+473</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'src/ruby/main.rb', line 459</span>
+      <pre class="code"><span class="info file"># File 'src/ruby/main.rb', line 471</span>
 
 <span class='kw'>def</span> <span class='id identifier rubyid_tr_klasse'>tr_klasse</span><span class='lparen'>(</span><span class='id identifier rubyid_klasse'>klasse</span><span class='rparen'>)</span>
     <span class='const'><span class='object_link'><a href="top-level-namespace.html#KLASSEN_TR-constant" title="KLASSEN_TR (constant)">KLASSEN_TR</a></span></span><span class='lbracket'>[</span><span class='id identifier rubyid_klasse'>klasse</span><span class='rbracket'>]</span> <span class='op'>||</span> <span class='id identifier rubyid_klasse'>klasse</span>
@@ -11589,17 +11824,17 @@ users who can upload vplan only</p>
       <pre class="lines">
 
 
-1094
-1095
-1096
-1097
-1098
-1099
-1100
-1101</pre>
+1135
+1136
+1137
+1138
+1139
+1140
+1141
+1142</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'src/ruby/main.rb', line 1094</span>
+      <pre class="code"><span class="info file"># File 'src/ruby/main.rb', line 1135</span>
 
 <span class='kw'>def</span> <span class='id identifier rubyid_trigger_send_invites'>trigger_send_invites</span><span class='lparen'>(</span><span class='rparen'>)</span>
     <span class='kw'>begin</span>
@@ -11629,17 +11864,17 @@ users who can upload vplan only</p>
       <pre class="lines">
 
 
-1076
-1077
-1078
-1079
-1080
-1081
-1082
-1083</pre>
+1117
+1118
+1119
+1120
+1121
+1122
+1123
+1124</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'src/ruby/main.rb', line 1076</span>
+      <pre class="code"><span class="info file"># File 'src/ruby/main.rb', line 1117</span>
 
 <span class='kw'>def</span> <span class='id identifier rubyid_trigger_update'>trigger_update</span><span class='lparen'>(</span><span class='id identifier rubyid_which'>which</span><span class='rparen'>)</span>
     <span class='kw'>begin</span>
@@ -11669,17 +11904,17 @@ users who can upload vplan only</p>
       <pre class="lines">
 
 
-1085
-1086
-1087
-1088
-1089
-1090
-1091
-1092</pre>
+1126
+1127
+1128
+1129
+1130
+1131
+1132
+1133</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'src/ruby/main.rb', line 1085</span>
+      <pre class="code"><span class="info file"># File 'src/ruby/main.rb', line 1126</span>
 
 <span class='kw'>def</span> <span class='id identifier rubyid_trigger_update_images'>trigger_update_images</span><span class='lparen'>(</span><span class='rparen'>)</span>
     <span class='kw'>begin</span>
@@ -12071,7 +12306,7 @@ Nextcloud account, with a gray background as a default fallback.</p>
 </div>
 
       <div id="footer">
-  Generated on Sat Mar  6 17:05:41 2021 by
+  Generated on Mon Mar  8 10:08:36 2021 by
   <a href="http://yardoc.org" title="Yay! A Ruby Documentation Tool" target="_parent">yard</a>
   0.9.26 (ruby-2.5.1).
 </div>

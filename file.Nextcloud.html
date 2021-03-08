@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>
+  File: Nextcloud
+  
+    &mdash; Documentation by YARD 0.9.26
+  
+</title>
+
+  <link rel="stylesheet" href="css/style.css" type="text/css" />
+
+  <link rel="stylesheet" href="css/common.css" type="text/css" />
+
+<script type="text/javascript">
+  pathId = "Nextcloud";
+  relpath = '';
+</script>
+
+
+  <script type="text/javascript" charset="utf-8" src="js/jquery.js"></script>
+
+  <script type="text/javascript" charset="utf-8" src="js/app.js"></script>
+
+
+  </head>
+  <body>
+    <div class="nav_wrap">
+      <iframe id="nav" src="file_list.html?1"></iframe>
+      <div id="resizer"></div>
+    </div>
+
+    <div id="main" tabindex="-1">
+      <div id="header">
+        <div id="menu">
+  
+    <a href="_index.html">Index</a> &raquo; 
+    <span class="title">File: Nextcloud</span>
+  
+</div>
+
+        <div id="search">
+  
+    <a class="full_list_link" id="class_list_link"
+        href="class_list.html">
+
+        <svg width="24" height="24">
+          <rect x="0" y="4" width="24" height="4" rx="1" ry="1"></rect>
+          <rect x="0" y="12" width="24" height="4" rx="1" ry="1"></rect>
+          <rect x="0" y="20" width="24" height="4" rx="1" ry="1"></rect>
+        </svg>
+    </a>
+  
+</div>
+        <div class="clear"></div>
+      </div>
+
+      <div id="content"><div id='filecontents'><h1 id="nextcloud">Nextcloud</h1>
+
+<h2 id="einrichtung">Einrichtung</h2>
+
+<p>Die grundsätzliche Einrichtung der Nextcloud für unsere Beispielumgebung 
+ist in <a href="Installation.md">Installationsanweisung</a> beschrieben.</p>
+
+<h2 id="pflege-bei-nderung-der-stammdaten">Pflege bei Änderung der Stammdaten</h2>
+
+<p><a href="Installation.md">Dort</a> steht auch, welche Skripte  erneut gestartet 
+werden müssen, wenn neue Benutzer oder neue Fächer eingerichtet dazu 
+kommen oder sich die Zuordnung von Fächern zu Lehrern und Schülern 
+ändert.</p>
+
+<h2 id="ordnerstruktur-in-der-nextcloud">Ordnerstruktur in der Nextcloud</h2>
+
+<p>Zunächst wurde durch das o.g. Setup für einen User &quot;Dashboard&quot; ein 
+kompletter Ordnerbaum unterhalb von <code>Unterricht</code> eingerichtet, der 
+alle Kurse und Schüler und Schülerinnen abbildet.</p>
+
+<pre class="code ruby"><code class="ruby"> Unterricht
+...
+ ├── Ma~2a
+ │   ├── Ausgabeordner
+ │   │   └── test.md
+ │   ├── Auto-Einsammelordner (von SuS an mich)
+ │   ├── Auto-Rückgabeordner (von mir an SuS)
+ │   └── SuS
+ │       ├── Elli Mustermann
+ │       │   ├── Einsammelordner
+ │       │   │   └── Eingesammelt
+ │       │   └── Rückgabeordner
+ │       ├── Mallory Mustermann
+ │       │   ├── Einsammelordner
+ │       │   │   └── Eingesammelt
+ │       │   └── Rückgabeordner
+ │       └── Max Mustermann
+ │           ├── Einsammelordner
+ │           │   ├── Eingesammelt
+ │           │   └── test.md
+ │           └── Rückgabeordner
+ └── Nawi~6a
+     ├── Ausgabeordner
+     ├── Auto-Einsammelordner (von SuS an mich)
+     ├── Auto-Rückgabeordner (von mir an SuS)
+     └── SuS
+         ├── Elli Mustermann
+         │   ├── Einsammelordner
+         │   │   └── Eingesammelt
+         │   └── Rückgabeordner
+         ├── Mallory Mustermann
+         │   ├── Einsammelordner
+         │   │   └── Eingesammelt
+         │   └── Rückgabeordner
+         └── Max Mustermann
+             ├── Einsammelordner
+             │   └── Eingesammelt
+             └── Rückgabeordner
+</code></pre>
+
+<p>Diese Ordner werden dann jeweils mit allen Beteiligten geteilt, so 
+dass jede Lehrkraft klassenübergreifend Zugriff auf ihre Fächer und 
+SuS hat und alle SuS Zugriff auf ihre eigenen Fächer nach Stundenplan.</p>
+
+<h3 id="sch-lersicht">Schülersicht</h3>
+
+<p>Die SuS sehen in ihrer Nextcloud unterhalb von &quot;Unterricht&quot; eine Liste ihrer Fächer.</p>
+
+<p><img src="nc_sus_unterricht.png" alt="Unterricht: Schülersicht"></p>
+
+<p>In jedem dieser Ordner liegen die o.g. Verknüpfungen:</p>
+
+<p><img src="nc_sus_unterricht_mathe.png" alt="Schülersicht pro Fach"></p>
+
+<table><thead>
+<tr>
+<th>Ordner</th>
+<th>Bedeutung</th>
+</tr>
+</thead><tbody>
+<tr>
+<td>Ausgabeordner</td>
+<td>Hier liegen die von den Lehrkräften bereitgestellten Unterlagen</td>
+</tr>
+<tr>
+<td>Einsammelordner</td>
+<td>Hier legen die SuS ihre Daten für die Lehrer ab</td>
+</tr>
+<tr>
+<td>- Eingesammelt</td>
+<td>Hierhin werden die Daten nach dem Einsammeln verschoben</td>
+</tr>
+<tr>
+<td>Rückgabeordner</td>
+<td>Hier liegen die Rückmeldungen der Lehrkräfte zu eingesammelten Aufgaben</td>
+</tr>
+</tbody></table>
+
+<h3 id="lehrersicht">Lehrersicht</h3>
+
+<p>Die Lehrkräfte sehen in ihrer Unterrichtsübersicht Verknüpfungen auf 
+ihre Kurse (je Fach und Lerngruppe).</p>
+
+<p><img src="nc_lul_unterricht.png" alt="Unterricht: Lehrersicht"></p>
+
+<p>Innerhalb dieser Ordner finden sie folgende Verknüpfungen:</p>
+
+<p><img src="nc_lul_unterricht_mathe.png" alt="Lehrersicht pro Fach"></p>
+
+<table><thead>
+<tr>
+<th>Ordner</th>
+<th>Bedeutung</th>
+</tr>
+</thead><tbody>
+<tr>
+<td>Ausgabeordner</td>
+<td>Hier stellen die Lehrkräfte die Unterlagen für die SuS bereit</td>
+</tr>
+<tr>
+<td>Auto-Einsammelordner</td>
+<td>Hier werden die abgegebenen Unterlagen der SuS eingesammelt</td>
+</tr>
+<tr>
+<td>Auto-Rückgabeordner</td>
+<td>Hier können Lehrkräfte Feedback zu eingesammelten Aufgaben abgeben</td>
+</tr>
+<tr>
+<td>- Zurückgegeben</td>
+<td>Hierhin werden die Daten nach dem Zurückgeben an die SuS verschoben</td>
+</tr>
+<tr>
+<td>SuS</td>
+<td>Hier haben Lehrkräfte direkten Zugriff auf Einsammel/Rückgabe einzelner SuS</td>
+</tr>
+</tbody></table>
+
+<h3 id="ablauf">Ablauf</h3>
+
+<p>Hinter den oben beschriebenen Ordnern liegt folgende Logik:</p>
+
+<ol>
+<li>Der Lehrer stellt in seinem Kurs im <em>Ausgabeordner</em> Aufgaben und ggf. Zusatzmaterial zur Verfügung</li>
+<li>Die SuS laden die Unterlagen aus ihrem <em>Ausgabeordner</em> und bearbeiten sie</li>
+<li>Die SuS laden ihre Arbeitsergebnisse in ihren <em>Einsammelordner</em> hoch</li>
+<li>Ein Job sammelt die Arbeitsergebnisse aller SuS ein
+a. und stellt sie der Lehrkraft in deren <em>Auto-Einsammelordner (von SuS an mich)</em> zur Verfügung
+b. und verschiebt sie beim Schüler in den Unterordner <em>Eingesammelt</em></li>
+<li>Wenn die Lehrkraft Feedback für die SuS hat, wird dieses in den <em>Auto-Rückgabeordner (von mir an SuS</em> gelegt</li>
+<li>Ein Job verteilt dieses Feedback an die <em>Rückgabeordner</em> der Schüler</li>
+</ol>
+
+<h3 id="beispiel">Beispiel</h3>
+
+<p>In diesem Beispiel hat der Lehrer Herr Clarke in dem Ausgabeordner 
+für Mathematik in der 5a einen Test in Form der Datei <code>Beispielaufgabe.md</code> 
+zur Verfügung gestellt (Schritt 1).</p>
+
+<p>Alle SuS der Klasse 5a finden diese Datei in ihrem Ausgabeordner unter dem Fach Mathematik
+und können die Datei herunterladen und bearbeiten (Schritt 2).</p>
+
+<p>Max Mustermann ist mit seiner Aufgabe fertig und lädt die Ergebnisse unter dem 
+Namen <code>Beispielaufgabe.md</code> in seinen <em>Einsammelordner</em> hoch (Schritt 3).</p>
+
+<p>Solange kein automatischer Job läuft, müssen wir einzelne Schritte manuell ausführen, hier das Einsammeln der abgegebenen Dateien (Schritt 4).</p>
+
+<pre class="code bash"><code class="bash">$ ./collect-nextcloud-files-from-sus.rb --srsly | docker exec -i schuldashboarddev_nextcloud_1 ruby -
+
+Checking for files to collect...
+cp -al [/var/www/html/data/dashboard/files/Unterricht/Ma~2a/SuS/Max Mustermann/Einsammelordner/Beispielaufgabe.md] =&gt; [/var/www/html/data/dashboard/files/Unterricht/Ma~2a/Auto-Einsammelordner (von SuS an mich)/Max Mustermann – Beispielaufgabe.md]
+mv [/var/www/html/data/dashboard/files/Unterricht/Ma~2a/SuS/Max Mustermann/Einsammelordner/Beispielaufgabe.md] =&gt; [/var/www/html/data/dashboard/files/Unterricht/Ma~2a/SuS/Max Mustermann/Einsammelordner/Eingesammelt/Max Mustermann – Beispielaufgabe.md]
+Checking for files to hand out...
+Refreshing dashboard/files/Unterricht/Ma~2a/Auto-Einsammelordner (von SuS an mich)
+Starting scan for user 1 out of 1 (dashboard)
+        Folder  /dashboard/files/Unterricht/Ma~2a/Auto-Einsammelordner (von SuS an mich)
+        File    /dashboard/files/Unterricht/Ma~2a/Auto-Einsammelordner (von SuS an mich)/Max Mustermann – Beispielaufgabe.md
+
++---------+-------+--------------+
+| Folders | Files | Elapsed time |
++---------+-------+--------------+
+| 1       | 1     | 00:00:00     |
++---------+-------+--------------+
+Refreshing dashboard/files/Unterricht/Ma~2a/SuS/Max Mustermann/Einsammelordner
+Starting scan for user 1 out of 1 (dashboard)
+        Folder  /dashboard/files/Unterricht/Ma~2a/SuS/Max Mustermann/Einsammelordner
+        Folder  /dashboard/files/Unterricht/Ma~2a/SuS/Max Mustermann/Einsammelordner/Eingesammelt
+        File    /dashboard/files/Unterricht/Ma~2a/SuS/Max Mustermann/Einsammelordner/Eingesammelt/Max Mustermann – Beispielaufgabe.md
+
++---------+-------+--------------+
+| Folders | Files | Elapsed time |
++---------+-------+--------------+
+| 2       | 1     | 00:00:00     |
++---------+-------+--------------+
+</code></pre>
+
+<p>Dabei sehen wir, dass Die eingesammelte Aufgabe automatisch umbenannt und um den Schülernamen ergänzt wurde (<code>Max Mustermann - Beispielaufgabe.md</code>). Dadurch sind die Dokumente unterschiedlich benannt, falls mehrere Schüler ihre Lösung unter demselben Namen ablegen, und die Lehrkraft sieht auf den ersten Blick, was von wem kommt.</p>
+
+<p><img src="nc_lul_autoeinsammel.png" alt="Lehrer: Auto-Einsammelordner"></p>
+
+<p><img src="nc_sus_eingesammelt.png" alt="Schüler: Eingesammelt"></p>
+
+<p>Die Lehrkraft kann nun Feedback zu den Aufgaben geben. Nach Möglichkeit behält er dabei direkt den automatisch vergebenen Namen, so dass das System beim Verteilen die Zuordnung zu den SuS findet (Schritt 5).</p>
+
+<p>Zuletzt wird dieses Feedback aus dem Rückgabeordner der Lehrkraft an alle SuS verteilt (Schritt 6). Hierbei kommt dasselbe Skript wie beim Einsammeln zum Einsatz.</p>
+
+<pre class="code bash"><code class="bash">$ ./collect-nextcloud-files-from-sus.rb --srsly | docker exec -i schuldashboarddev_nextcloud_1 ruby -
+Checking for files to collect...
+Checking for files to hand out...
+[Max Mustermann – Beispielaufgabe.md] found match: Max Mustermann
+cp -al [/var/www/html/data/dashboard/files/Unterricht/Ma~2a/Auto-Rückgabeordner (von mir an SuS)/Max Mustermann – Beispielaufgabe.md] =&gt; [/var/www/html/data/dashboard/files/Unterricht/Ma~2a/SuS/Max Mustermann/Rückgabeordner/Max Mustermann – Beispielaufgabe.md]
+Checking: /var/www/html/data/dashboard/files/Unterricht/Ma~2a/Auto-Rückgabeordner (von mir an SuS)/Zurückgegeben
+md [/var/www/html/data/dashboard/files/Unterricht/Ma~2a/Auto-Rückgabeordner (von mir an SuS)/Zurückgegeben]
+mv [/var/www/html/data/dashboard/files/Unterricht/Ma~2a/Auto-Rückgabeordner (von mir an SuS)/Max Mustermann – Beispielaufgabe.md] =&gt; [/var/www/html/data/dashboard/files/Unterricht/Ma~2a/Auto-Rückgabeordner (von mir an SuS)/Zurückgegeben/Max Mustermann – Beispielaufgabe.md]
+Refreshing dashboard/files/Unterricht/Ma~2a/Auto-Rückgabeordner (von mir an SuS)
+Starting scan for user 1 out of 1 (dashboard)
+        Folder  /dashboard/files/Unterricht/Ma~2a/Auto-Rückgabeordner (von mir an SuS)
+        Folder  /dashboard/files/Unterricht/Ma~2a/Auto-Rückgabeordner (von mir an SuS)/Zurückgegeben
+        File    /dashboard/files/Unterricht/Ma~2a/Auto-Rückgabeordner (von mir an SuS)/Zurückgegeben/Max Mustermann – Beispielaufgabe.md
+
++---------+-------+--------------+
+| Folders | Files | Elapsed time |
++---------+-------+--------------+
+| 2       | 1     | 00:00:00     |
++---------+-------+--------------+
+Refreshing dashboard/files/Unterricht/Ma~2a/SuS/Max Mustermann/Rückgabeordner
+Starting scan for user 1 out of 1 (dashboard)
+        Folder  /dashboard/files/Unterricht/Ma~2a/SuS/Max Mustermann/Rückgabeordner
+        File    /dashboard/files/Unterricht/Ma~2a/SuS/Max Mustermann/Rückgabeordner/Max Mustermann – Beispielaufgabe.md
+
++---------+-------+--------------+
+| Folders | Files | Elapsed time |
++---------+-------+--------------+
+| 1       | 1     | 00:00:00     |
++---------+-------+--------------+
+</code></pre>
+
+<p>Dabei sehen wir, dass die zurück gegebenen Dateien auf Seite des Lehrers in den Unterordner <em>Zurückgegeben</em> verschoben wurden und bei Max Mustermann in seinem Rückgabeordner auftauchen.</p>
+
+<p><img src="nc_lul_zurueckgegeben.png" alt="Lehrer: Zurückgegeben"></p>
+
+<p><img src="nc_sus_rueckgabe.png" alt="Schüler: Rückgabeordner"></p>
+</div></div>
+
+      <div id="footer">
+  Generated on Mon Mar  8 10:08:35 2021 by
+  <a href="http://yardoc.org" title="Yay! A Ruby Documentation Tool" target="_parent">yard</a>
+  0.9.26 (ruby-2.5.1).
+</div>
+
+    </div>
+  </body>
+</html>

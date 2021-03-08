@@ -1540,7 +1540,8 @@ class Main < Sinatra::Base
             else
                 path = 'login'
             end
-        elsif path == 'timetable'
+        end
+        if path == 'timetable'
             redirect "#{WEB_ROOT}/", 302 unless @session_user
             if teacher_logged_in? || tablet_logged_in?
                 parts = request.env['REQUEST_PATH'].split('/')

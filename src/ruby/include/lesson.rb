@@ -345,8 +345,6 @@ class Main < Sinatra::Base
         require_admin!
         d0 = DateTime.now.strftime('%Y-%m-%d')
         d1 = (DateTime.now + 7).strftime('%Y-%m-%d')
-        STDERR.puts d0
-        STDERR.puts d1
         rows = neo4j_query(<<~END_OF_QUERY, {:d0 => d0, :d1 => d1})
             MATCH (l:Lesson)<-[:BELONGS_TO]-(i:LessonInfo)<-[:FOR]-(b:Booking {confirmed: true})-[:WHICH]->(t:Tablet)
             WHERE b.datum >= {d0} AND b.datum <= {d1}
@@ -354,7 +352,6 @@ class Main < Sinatra::Base
             ORDER BY t.id
         END_OF_QUERY
         results = {}
-        STDERR.puts rows.to_yaml
         rows.each do |row|
             lesson = row['l'].props
             lesson_key = lesson[:key]

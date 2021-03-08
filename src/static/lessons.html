@@ -241,7 +241,7 @@ var stored_breakout_room_config_json = null;
                         </div>
                         <!--
                         <div class='button-with-label' style=''>
-                            <button id='ti_lesson_need_tablet' data-state='off' class='btn_lesson_data btn btn-sm btn-outline-secondary' disabled><i class='fa fa-times'></i>&nbsp;&nbsp;Tablet</button>
+                            <button id='ti_lesson_need_tablet' data-state='off' class='btn btn-sm btn-outline-secondary' disabled><i class='fa fa-times'></i>&nbsp;&nbsp;Tablet</button>
                             <span>Ich benötige ein Tablet, um für die komplette saLzH-Klasse aus der Schule zu streamen.</span>
                         </div>
                         <hr style='margin: 5px 0 10px 0;' />
@@ -1082,6 +1082,24 @@ document.addEventListener('DOMContentLoaded', function() {
             }
             update_changes();
         }
+    });
+    
+    $('#ti_lesson_need_tablet').click(function(e) {
+        if (button.data('state') === 'yes') {
+            button.removeClass('btn-info').addClass('btn-outline-secondary');
+            button.find('.fa').removeClass('fa-check').removeClass('fa-question-circle').addClass('fa-times');
+            button.data('state', 'no');
+            button.blur();
+            // we don't need a tablet anymore
+        }
+        else {
+            button.removeClass('btn-outline-secondary').addClass('btn-info');
+            button.find('.fa').removeClass('fa-times').removeClass('fa-question-circle').addClass('fa-check');
+            button.data('state', 'yes');
+            // try to find a bookable tablet
+            // don't make it permanent yet before saving
+        }
+        update_changes();
     });
     
     $('.bu-discard-changes').click(function(e) { discard_changes() });

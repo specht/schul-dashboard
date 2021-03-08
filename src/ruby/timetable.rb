@@ -982,8 +982,9 @@ class Timetable
                     ds = "#{b0[8, 2]}.#{b0[5, 2]}.#{b0[0, 4]}"
                     fach = entry[:label_klasse_lang].gsub(/<[^>]+>/, '').strip
                     # lesson has moved, purge the tablet booking
-                    neo4j_query(<<~END_OF_QUERY, {:lesson_key => lesson_key, :offset => offset})
+                    neo4j_query(<<~END_OF_QUERY, {:lesson_key => lesson_key, :offset => offset, :timestamp => Time.now.to_i})
                         MATCH (:Tablet)<-[:WHICH]-(b:Booking {confirmed: true})-[:FOR]->(i:LessonInfo {offset: {offset}})-[:BELONGS_TO]->(l:Lesson {key: {lesson_key}})
+                        SET i.updated = {timestamp}
                         DETACH DELETE b;
                     END_OF_QUERY
                     shorthands.each do |shorthand|
@@ -998,7 +999,7 @@ class Timetable
 
                             StringIO.open do |io|
                                 io.puts "<p>Hallo!</p>"
-                                io.puts "<p>Es tut mir leid, aber Ihre Tablet-Reservierung für #{fach} am #{ds} wurde aufgehoben, da die Stunde aufgrund von Änderungen am Vertretungsplan nun zu einem anderen Zeitpunkt stattfindet. Sie können ggfs. ein neues Tablet buchen.</p>"
+                                io.puts "<p>Es tut mir leid, aber Ihre Lehrer-Tablet-Reservierung für #{fach} am #{ds} wurde aufgehoben, da die Stunde aufgrund von Änderungen am Vertretungsplan nun zu einem anderen Zeitpunkt stattfindet. Sie können ggfs. ein neues Tablet buchen.</p>"
                                 io.puts "<p>Viele Grüße,<br />#{WEBSITE_MAINTAINER_NAME}</p>"
                                 io.string
                             end

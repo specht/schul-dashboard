@@ -1159,6 +1159,10 @@ document.addEventListener('DOMContentLoaded', function() {
             api_call('/api/book_streaming_tablet_for_lesson', data, function(data) {
                 if (data.success) {
                     if (data.found_tablet) {
+                        if (typeof(lesson_data[window.single_selected_offset]) === 'undefined')
+                            lesson_data[window.single_selected_offset] = {};
+                        if (typeof(lesson_data[window.single_selected_offset].info) === 'undefined')
+                            lesson_data[window.single_selected_offset].info = {};
                         lesson_data[window.single_selected_offset].info.preliminary_booked_tablet = {
                             tablet_id: data.tablet,
                             lagerort: data.tablet_info.lagerort,
@@ -1167,7 +1171,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         };
                         update_tablet_booking_status(lesson_data[window.single_selected_offset].info.preliminary_booked_tablet);
 
-                        $('.tablet-booking-status').html(`Für diese Stunde ist das Tablet <span style='background-color: ${data.tablet_info.bg_color}; color: ${data.tablet_info.fg_color}; padding: 0 4px;'>${data.tablet}</span> (${data.tablet_info.lagerort}) reserviert. Bitte beachten Sie, dass die Buchung verfällt, falls diese Stunde durch den Vertretungsplan verschoben werden sollte. Sie können dann ggfs. eine neue Buchung vornehmen.`);
+                        $('.tablet-booking-status').html(`Für diese Stunde ist das Tablet <span style='background-color: ${data.tablet_info.bg_color}; color: ${data.tablet_info.fg_color}; padding: 0 4px;'>${data.tablet}</span> (${data.tablet_info.lagerort}) für Sie reserviert. Bitte beachten Sie, dass die Buchung verfällt, falls diese Stunde durch den Vertretungsplan verschoben werden sollte. Sie können dann ggfs. eine neue Buchung vornehmen.`);
                         let jitsi_button = $('#ti_lesson_jitsi');
                         if (jitsi_button.data('state') !== 'yes') {
                             jitsi_button.click();

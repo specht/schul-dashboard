@@ -62,6 +62,17 @@ class Main < Sinatra::Base
     end
     
     def get_lesson_data(lesson_key)
+        # purge unconfirmed tablet bookings for this lesson_key
+        neo4j_query(<<~END_OF_QUERY, :key => lesson_key)
+            MATCH (t:Tablet)<-[:WHICH]-(b:Booking {confirmed: false})-[:FOR]->(i:LessonInfo)-[:BELONGS_TO]->(l:Lesson {key: {key}})
+            DETACH DELETE b;
+        END_OF_QUERY
+        # purge unconfirmed tablet bookings for any lesson key older than 30 minutes
+        neo4j_query(<<~END_OF_QUERY, :timestamp => (Time.now - 30 * 60).to_i)
+            MATCH (t:Tablet)<-[:WHICH]-(b:Booking {confirmed: false})-[:FOR]->(i:LessonInfo)-[:BELONGS_TO]->(l:Lesson)
+            WHERE b.updated < {timestamp}
+            DETACH DELETE b;
+        END_OF_QUERY
         rows = neo4j_query(<<~END_OF_QUERY, :key => lesson_key).map { |x| x['i'].props }
             MATCH (i:LessonInfo)-[:BELONGS_TO]->(l:Lesson {key: {key}})
             RETURN i
@@ -233,30 +244,51 @@ class Main < Sinatra::Base
         @@tablets_for_school_streaming.each do |tablet_id|
             available_tablets << tablet_id
         end
-        bookings = neo4j_query(<<~END_OF_QUERY, :datum => data[:datum]).map { |x| {:tablet_id => x['t.id'], :booking => x['b'].props} }
-            MATCH (t:Tablet)<-[:WHICH]-(b:Booking {datum: {datum}})-[:FOR]->(:LessonInfo)
-            RETURN t.id, b;
+        bookings = neo4j_query(<<~END_OF_QUERY, :datum => data[:datum]).map { |x| {:tablet_id => x['t.id'], :booking => x['b'].props, :lesson_key => x['l.id']} }
+            MATCH (t:Tablet)<-[:WHICH]-(b:Booking {datum: {datum}})-[:FOR]->(i:LessonInfo)-[:BELONGS_TO]->(l:Lesson)
+            RETURN t.id, b, l.id;
         END_OF_QUERY
         
         request_start_time = DateTime.parse("#{data[:datum]}T#{data[:start_time]}:00")
         request_end_time = DateTime.parse("#{data[:datum]}T#{data[:end_time]}:00")
+        
+        favoured_tablets = Set.new()
+        tablets_booked_today = Set.new()
+        request_shorthands = @@lessons[:lesson_keys][data[:lesson_key]][:lehrer]
 
         bookings.each do |item|
             tablet_id = item[:tablet_id]
+            tablets_booked_today << tablet_id
             booking = item[:booking]
             start_time = DateTime.parse("#{booking[:datum]}T#{booking[:start_time]}:00")
             end_time = DateTime.parse("#{booking[:datum]}T#{booking[:end_time]}:00")
             start_time -= STREAMING_TABLET_BOOKING_TIME_PRE / 24.0 / 60.0
             end_time += STREAMING_TABLET_BOOKING_TIME_POST / 24.0 / 60.0
-            unless request_end_time < start_time && request_start_time > end_time
-                available_tablets.delete(tablet_id)
+            entry_shorthands = @@lessons[:lesson_keys][data[:lesson_key]][:lehrer]
+            unless (request_shorthands & entry_shorthands).empty?
+                favoured_tablets << tablet_id
+            else
+                unless request_end_time < start_time && request_start_time > end_time
+                    available_tablets.delete(tablet_id)
+                end
             end
         end
+        
+        favoured_tablets &= available_tablets
         
         if available_tablets.empty?
             respond(:found_tablet => false)
         else
             which_tablet = available_tablets.to_a.sample
+            unless favoured_tablets.empty?
+                # if user already booked a tablet this day, prefer the same tablet
+                which_tablet = favoured_tablets.to_a.sample
+            else
+                unless (available_tablets - tablets_booked_today).empty?
+                    # prefer a table which has not been booked for this day
+                    which_tablet = (available_tablets - tablets_booked_today).to_a.sample
+                end
+            end
             data[:tablet_id] = which_tablet
             timestamp = Time.now.to_i
             data[:timestamp] = timestamp
@@ -278,6 +310,7 @@ class Main < Sinatra::Base
                     
                     WITH l, i, t
                     MERGE (i)<-[:FOR]-(b:Booking)-[:WHICH]->(t)
+                    SET b.updated = {timestamp}
                     SET b.datum = {datum}
                     SET b.start_time = {start_time}
                     SET b.end_time = {end_time}
@@ -294,13 +327,16 @@ class Main < Sinatra::Base
                                   :types => {:offset => Integer})
 
         transaction do
+            timestamp = Time.now.to_i
+            data[:timestamp] = timestamp
             neo4j_query(<<~END_OF_QUERY, data)
                 MATCH (l:Lesson {key: {lesson_key}})<-[:BELONGS_TO]-(i:LessonInfo {offset: {offset}})<-[:FOR]-(b:Booking {confirmed: false})-[:WHICH]->(t:Tablet)
                 DETACH DELETE b;
             END_OF_QUERY
             neo4j_query(<<~END_OF_QUERY, data)
                 MATCH (l:Lesson {key: {lesson_key}})<-[:BELONGS_TO]-(i:LessonInfo {offset: {offset}})<-[:FOR]-(b:Booking {confirmed: true})-[:WHICH]->(t:Tablet)
-                SET b.to_be_deleted = true;
+                SET b.to_be_deleted = true
+                SET b.updated = {timestamp};
             END_OF_QUERY
         end
     end

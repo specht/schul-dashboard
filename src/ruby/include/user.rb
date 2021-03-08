@@ -67,12 +67,6 @@ class Main < Sinatra::Base
         teacher_logged_in? && @@klassenleiter[klasse].include?(@session_user[:shorthand])
     end
     
-    # Returns true if a klassenleiter for a given klasse is logged in.
-    def klassenleiter_for_klasse_or_admin_logged_in?(klasse)
-        return false unless @@klassenleiter[klasse]
-        admin_logged_in? || (teacher_logged_in? && @@klassenleiter[klasse].include?(@session_user[:shorthand]))
-    end
-    
     # Assert that a user is logged in
     def require_user!
         assert(user_logged_in?)

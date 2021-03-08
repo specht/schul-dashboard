@@ -146,3 +146,4 @@ Anführungsstrichen. Die Spalten haben folgende Bedeutungen:
 
 Wir sehen hier auch, dass Kurse problemlos zusammengelegt werden 
 können, z.B. findet der Latein-Leistungskurs gemeinsam für die 11. und 12. Klassen statt.
+

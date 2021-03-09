@@ -237,7 +237,8 @@ class Main < Sinatra::Base
         marked_as_homeschooling = info['homeschooling']
         group2 = info['group2']
         current_week = self.class.get_current_ab_week()
-        marked_as_homeschooling_by_week = (current_week == group2)
+        marked_as_homeschooling_by_week = (current_week != group2)
+#         STDERR.puts "current_week: #{current_week}, group2: #{group2}, marked_as_homeschooling: #{marked_as_homeschooling}"
         marked_as_homeschooling || marked_as_homeschooling_by_week
     end
     

@@ -861,6 +861,7 @@ function update_current_poll() {
         let header = $('<p>');
         header.append($('<p>').css('margin-left', '4px').text('' + (item_index + 1) + '. ' + item_types[item.type]));
         div.append(header);
+        let row = $('<div>').addClass('row');
         let ti_title = $('<input>').addClass('mb-2').addClass('form-control').attr('placeholder', item.type === 'paragraph' ? 'Zwischenüberschrift (optional)' : 'Bitte geben Sie eine Frage ein').val(item.title).data('item-index', item_index);
         install_bold_font_if_not_empty(ti_title);
         ti_title.change(function(e) {
@@ -868,7 +869,24 @@ function update_current_poll() {
             current_poll.items[item_index].title = $(e.target).val().trim();
             update_buttons();
         });
-        div.append(ti_title);
+        row.append($('<div>').addClass(item.type === 'checkbox' ? 'col-md-9' : 'col-md-12').append(ti_title));
+        if (item.type === 'checkbox') {
+            let ti_max_checks = $('<input>').addClass('mb-2').addClass('form-control').attr('placeholder', 'Auswahl einschränken (max. Antworten)').val(item.max_checks || '').data('item-index', item_index);
+            row.append($('<div>').addClass('col-md-3').append(ti_max_checks));
+            ti_max_checks.change(function(e) {
+                let item_index = $(e.target).data('item-index');
+                let n = parseInt($(e.target).val().trim());
+                if (isNaN(n)) {
+                    current_poll.items[item_index].max_checks = null;
+                    $(e.target).val('');
+                } else {
+                    current_poll.items[item_index].max_checks = n;
+                    $(e.target).val(`${n}`);
+                }
+                update_buttons();
+            });
+        }
+        div.append(row);
         if (item.type === 'radio' || item.type === 'checkbox') {
             let bc = $('<div>').addClass('poll_radio_buttons').addClass('edit').data('item-index', item_index);
             bc.data('poll_item_type', item.type);

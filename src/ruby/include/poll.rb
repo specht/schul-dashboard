@@ -107,6 +107,13 @@ class Main < Sinatra::Base
             good = false
             respond(:error => 'Diese Umfrage ist nicht mehr geöffnet.')
         end
+        # validate max_checks items in response 
+        response = JSON.parse(data[:response])
+        poll_run[:items].each.with_index do |item, item_index|
+            if item['type'] == 'checkbox' && item['max_checks']
+                assert((response[item_index.to_s] || []).size <= item['max_checks'])
+            end
+        end
         if good
             if external_code && !external_code.empty?
                 rows = neo4j_query(<<~END_OF_QUERY, :prid => prid)

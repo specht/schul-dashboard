@@ -233,8 +233,13 @@ function launch_poll(prid, external_code) {
                 for (let item_index in data.poll_run.items) {
                     let item = data.poll_run.items[item_index];
                     let item_title = $('<p>').append($('<strong>').text(item.title));
-                    if (item.type === 'checkbox')
-                        item_title.append(' ').append($('<em>').text('(Mehrfachnennungen möglich)'));
+                    if (item.type === 'checkbox') {
+                        if ((item.max_checks || null) !== null) {
+                            item_title.append(' ').append($('<em>').html(`(Mehrfachnennungen möglich, aber <strong>höchstens ${item.max_checks} Antworten</strong>.)`));
+                        } else {
+                            item_title.append(' ').append($('<em>').text('(Mehrfachnennungen möglich)'));
+                        }
+                    }
                     div.append(item_title);
                     if (item.type === 'radio' || item.type === 'checkbox') {
                         let bc = $('<div>').addClass('poll_radio_buttons').data('item-index', item_index);
@@ -258,6 +263,9 @@ function launch_poll(prid, external_code) {
                             p.click(function(e) {
                                 let p = $(e.target);
                                 let parent = $(e.target.closest('.poll_radio_buttons'));
+                                let item_index = parent.data('item-index');
+                                let item = poll_run_data.poll_run.items[item_index];
+                                let answer_index = p.data('answer-index');
                                 let type = parent.data('poll_item_type');
                                 let p_was_selected = p.hasClass('selected');
                                 if (type === 'radio') {
@@ -266,7 +274,18 @@ function launch_poll(prid, external_code) {
                                 if (p_was_selected) {
                                     p.removeClass('selected');
                                 } else {
-                                    p.addClass('selected');
+                                    // check if max_checks is set
+                                    if ((item.type === 'checkbox') && (item.max_checks || null))
+                                    {
+                                        let count = 0;
+                                        jQuery.each(poll_run_data.widgets[item_index].find('.selected'), function(_, p) {
+                                            count += 1;
+                                        });
+                                        if (count < item.max_checks)
+                                            p.addClass('selected');
+                                    }
+                                    else
+                                        p.addClass('selected');
                                 }
                                 collect_poll_run_data();
                             });

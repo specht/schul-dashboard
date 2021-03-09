@@ -1,9 +1,9 @@
 class Main < Sinatra::Base
-    def create_session(email)
+    def create_session(email, expire_hours)
         sid = RandomTag::generate(24)
         assert(sid =~ /^[0-9A-Za-z]+$/)
         data = {:sid => sid,
-                :expires => (DateTime.now() + 365).to_s}
+                :expires => (DateTime.now() + expire_hours / 24.0).to_s}
         begin
             ua = USER_AGENT_PARSER.parse(request.env['HTTP_USER_AGENT'])
             usa = "#{ua.family} #{ua.version.segments.first} (#{ua.os.family}"
@@ -58,7 +58,7 @@ class Main < Sinatra::Base
             respond({:error => 'code_expired'})
         end
         assert(Time.at(login_code[:valid_to]) >= Time.now)
-        session_id = create_session(user[:email])
+        session_id = create_session(user[:email], login_code[:tainted] ? 2 : 365 * 24)
         neo4j_query(<<~END_OF_QUERY, :tag => data[:tag])
             MATCH (l:LoginCode {tag: {tag}})
             DETACH DELETE l;
@@ -70,7 +70,7 @@ class Main < Sinatra::Base
     post '/api/login_as_teacher_tablet' do
         require_admin!
         logout()
-        session_id = create_session("lehrer.tablet@#{SCHUL_MAIL_DOMAIN}")
+        session_id = create_session("lehrer.tablet@#{SCHUL_MAIL_DOMAIN}", 365 * 24)
         purge_missing_sessions(session_id, true)
         respond(:ok => 'yay')
     end
@@ -81,7 +81,7 @@ class Main < Sinatra::Base
                                   :max_body_length => 1024,
                                   :types => {:shorthands => Array})
         logout()
-        session_id = create_session("kurs.tablet@#{SCHUL_MAIL_DOMAIN}")
+        session_id = create_session("kurs.tablet@#{SCHUL_MAIL_DOMAIN}", 365 * 24)
         neo4j_query(<<~END_OF_QUERY, :sid => session_id, :shorthands => data[:shorthands])
             MATCH (s:Session {sid: {sid}})
             SET s.shorthands = {shorthands};
@@ -95,7 +95,7 @@ class Main < Sinatra::Base
         data = parse_request_data(:required_keys => [:id])
         assert(@@tablets.include?(data[:id]))
         logout()
-        session_id = create_session("tablet@#{SCHUL_MAIL_DOMAIN}")
+        session_id = create_session("tablet@#{SCHUL_MAIL_DOMAIN}", 365 * 24)
         neo4j_query(<<~END_OF_QUERY, :sid => session_id, :tablet_id => data[:id])
             MATCH (s:Session {sid: {sid}})
             SET s.tablet_id= {tablet_id};
@@ -361,6 +361,10 @@ class Main < Sinatra::Base
             email = row['u'].props[:email]
             if (!@@user_info[email][:teacher]) && @@user_info[email][:klasse] == klasse
                 sus << [@@user_info[email][:display_name], code]
+                rows = neo4j_query(<<~END_OF_QUERY, {:email => email, :tag => row['n'].props[:tag]})
+                    MATCH (n:LoginCode {tag: {tag}})-[:BELONGS_TO]->(u:User {email: {email}})
+                    SET n.tainted = true
+                END_OF_QUERY
             end
         end
         respond(:codes => sus)

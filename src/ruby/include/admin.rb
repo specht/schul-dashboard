@@ -2,7 +2,7 @@ class Main < Sinatra::Base
     post '/api/impersonate' do
         require_admin!
         data = parse_request_data(:required_keys => [:email])
-        session_id = create_session(data[:email])
+        session_id = create_session(data[:email], 365 * 24)
         purge_missing_sessions(session_id)
         respond(:ok => 'yeah')
     end

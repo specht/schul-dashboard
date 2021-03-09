@@ -312,6 +312,7 @@ class SetupDatabase
 #                     end
                     
                     STDERR.puts "Setting up constraints and indexes..."
+                    neo4j_query("CREATE CONSTRAINT ON (n:LoginCode) ASSERT n.tag IS UNIQUE")
                     neo4j_query("CREATE CONSTRAINT ON (n:User) ASSERT n.email IS UNIQUE")
                     neo4j_query("CREATE CONSTRAINT ON (n:Session) ASSERT n.sid IS UNIQUE")
                     neo4j_query("CREATE CONSTRAINT ON (n:Lesson) ASSERT n.key IS UNIQUE")

@@ -110,6 +110,7 @@ class Main < Sinatra::Base
             io.puts "</tr>"
             io.puts "</tbody>"
             io.puts "</table>"
+            io.puts "<a class='btn btn-primary' href='/show_login_codes/#{klasse}'><i class='fa fa-sign-in'></i>&nbsp;&nbsp;Live-Anmeldungen der Klasse zeigen</a>"
             io.puts "<hr style='margin: 3em 0;'/>"
             io.puts "<h3>Schülerlisten Klasse #{tr_klasse(klasse)}</h3>"
 #             io.puts "<div style='text-align: center;'>"

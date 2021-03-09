@@ -339,4 +339,32 @@ class Main < Sinatra::Base
         end
         respond(:ok => true)
     end
+    
+    post '/api/get_login_codes_for_klasse' do
+        require_teacher!
+        data = parse_request_data(:required_keys => [:klasse])
+        klasse = data[:klasse]
+        assert(can_see_all_timetables_logged_in? || (@@teachers_for_klasse[klasse] || {}).include?(@session_user[:shorthand]))
+        neo4j_query(<<~END_OF_QUERY, {:timestamp => Time.now.to_i})
+            MATCH (n:LoginCode)
+            WHERE n.valid_to < {timestamp}
+            DETACH DELETE n;
+        END_OF_QUERY
+        rows = neo4j_query(<<~END_OF_QUERY)
+            MATCH (n:LoginCode)-[:BELONGS_TO]->(u:User)
+            RETURN n, u
+            ORDER BY n.valid_to;
+        END_OF_QUERY
+        sus = []
+        rows.each do |row|
+            code = row['n'].props[:code]
+            email = row['u'].props[:email]
+            if (!@@user_info[email][:teacher]) && @@user_info[email][:klasse] == klasse
+                sus << [@@user_info[email][:display_name], code]
+            end
+        end
+        respond(:codes => sus)
+    end
+    
+
 end

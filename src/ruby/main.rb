@@ -1513,13 +1513,16 @@ class Main < Sinatra::Base
             parts = request.env['REQUEST_PATH'].split('/')
             klasse = parts[2]
 #             STDERR.puts @@teachers_for_klasse[klasse].to_yaml
-            unless can_see_all_timetables_logged_in?
-                unless @@teachers_for_klasse[klasse]
-                    redirect "#{WEB_ROOT}/", 302
-                end
-                unless @@teachers_for_klasse[klasse].include?(@session_user[:shorthand])
-                    redirect "#{WEB_ROOT}/", 302
-                end
+            unless can_see_all_timetables_logged_in? || (@@teachers_for_klasse[klasse] || {}).include?(@session_user[:shorthand])
+                redirect "#{WEB_ROOT}/", 302
+            end
+        elsif path == 'show_login_codes'
+            redirect "#{WEB_ROOT}/", 302 unless @session_user
+            parts = request.env['REQUEST_PATH'].split('/')
+            klasse = parts[2]
+#             STDERR.puts @@teachers_for_klasse[klasse].to_yaml
+            unless can_see_all_timetables_logged_in? || (@@teachers_for_klasse[klasse] || {}).include?(@session_user[:shorthand])
+                redirect "#{WEB_ROOT}/", 302
             end
         elsif path == 'lessons'
             redirect "#{WEB_ROOT}/", 302 unless @session_user

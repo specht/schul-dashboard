@@ -399,7 +399,8 @@ class Main < Sinatra::Base
         old_timetable_size = timetable.size
         unless (user && ADMIN_USERS.include?(user))
             timetable = timetable.reject do |entry|
-                t = Time.parse("#{entry['end']}:00") + JITSI_LESSON_POST_ENTRY_TOLERANCE * 60
+                # TODO: REMOVE + 600
+                t = Time.parse("#{entry['end']}:00") + JITSI_LESSON_POST_ENTRY_TOLERANCE * 60 + 600
                 now_time > t
             end
         end
@@ -417,7 +418,7 @@ class Main < Sinatra::Base
             RETURN i;
         END_OF_QUERY
         room_name = get_jitsi_room_name_for_lesson_key(lesson_key, user)
-#         assert(!(room_name.nil?), 'not today!') unless DEVELOPMENT
+        assert(!(room_name.nil?), 'not today!') unless DEVELOPMENT
         lesson_room_name = CGI.escape(room_name.gsub(/[\:\?#\[\]@!$&\\'()*+,;=><\/"]/, '')).gsub('+', '%20').downcase
 
         jitsi_rooms = current_jitsi_rooms()

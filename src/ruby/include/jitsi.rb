@@ -21,7 +21,7 @@ class Main < Sinatra::Base
             :moderator => teacher_logged_in?
         }
         payload[:context][:user][:name] = user if user
-        payload[:context][:user][:email] = user if email
+        payload[:context][:user][:email] = email if email
         if user_logged_in?
             use_user = @session_user
             if teacher_tablet_logged_in?

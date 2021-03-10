@@ -263,7 +263,18 @@ class Main < Sinatra::Base
                                 end
                             end
                             if presence_token
-                                neo4j_query_expect_one(<<~END_OF_QUERY, {:token => presence_token, :lesson_key => lesson_info['lesson_key'], :offset => lesson_info['lesson_offset'], :email => @session_user[:email], :timestamp => (Time.now + PRESENCE_TOKEN_EXPIRY_TIME).to_i})
+                                query_data = {
+                                    :token => presence_token, 
+                                    :lesson_key => lesson_info['lesson_key'], 
+                                    :offset => lesson_info['lesson_offset'], 
+                                    :email => @session_user[:email], 
+                                    :timestamp => (Time.now + PRESENCE_TOKEN_EXPIRY_TIME).to_i
+                                }
+                                if DEVELOPMENT
+                                    STDERR.puts "Generating presence token"
+                                    STDERR.puts query_data.to_yaml
+                                end
+                                neo4j_query_expect_one(<<~END_OF_QUERY, query_data)
                                     MATCH (u:User {email: {email}}), (i:LessonInfo {offset: {offset}})-[:BELONGS_TO]->(l:Lesson {key: {lesson_key}})
                                     CREATE (n:PresenceToken {token: {token}, expiry: {timestamp}})
                                     CREATE (i)<-[:FOR]-(n)-[:BELONGS_TO]->(u)
@@ -406,7 +417,7 @@ class Main < Sinatra::Base
             RETURN i;
         END_OF_QUERY
         room_name = get_jitsi_room_name_for_lesson_key(lesson_key, user)
-        assert(!(room_name.nil?), 'not today!') unless DEVELOPMENT
+#         assert(!(room_name.nil?), 'not today!') unless DEVELOPMENT
         lesson_room_name = CGI.escape(room_name.gsub(/[\:\?#\[\]@!$&\\'()*+,;=><\/"]/, '')).gsub('+', '%20').downcase
 
         jitsi_rooms = current_jitsi_rooms()

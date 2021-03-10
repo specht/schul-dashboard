@@ -694,7 +694,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     body.append('<hr>');
                 body.append('<p><b>Stundenthema</b></p>');
                 if (event_data.stundenthema_text)
-                    body.append('<p>' + event_data.stundenthema_text+ '</p>');
+                    body.append(`<p style='white-space: pre-line;'>${event_data.stundenthema_text}</p>`);
                 wrote_something = true;
             }
             let nc_ausgabe_link = '#';
@@ -812,7 +812,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     body.append('<hr>');
                 body.append('<p><b>Hausaufgaben</b> (zu heute)</p>');
                 if (event_data.hausaufgaben_text)
-//                     body.append("<p style='white-space: pre-line;'>" + event_data.hausaufgaben_text + '</p>');
+                    body.append("<p style='white-space: pre-line;'>" + event_data.hausaufgaben_text + '</p>');
                 if (event_data.homework_nc) {
                     body.append('<p><b>Nextcloud</b></p>');
                     body.append($('<a>').attr('href', nc_ausgabe_link).attr('target', '_blank').addClass('btn').addClass('btn-primary').css('margin-right', '5px').css('margin-bottom', '5px').html("<i class='fa fa-nextcloud'></i>&nbsp;&nbsp;Zum Ausgabe-Ordner&nbsp;&nbsp;<i class='fa fa-angle-double-right'></i>"));

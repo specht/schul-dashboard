@@ -400,7 +400,7 @@ class Main < Sinatra::Base
         unless (user && ADMIN_USERS.include?(user))
             timetable = timetable.reject do |entry|
                 # TODO: REMOVE + 600
-                t = Time.parse("#{entry['end']}:00") + JITSI_LESSON_POST_ENTRY_TOLERANCE * 60 + 600
+                t = Time.parse("#{entry['end']}:00") + JITSI_LESSON_POST_ENTRY_TOLERANCE * 60 + 600 * 60
                 now_time > t
             end
         end

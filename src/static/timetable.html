@@ -225,7 +225,6 @@ function refresh_jitsi_presence() {
 
 function render_timetable(result, successCallback) {
     events = result.events;
-    console.log(events);
     $('.switch_week_panel').empty();
     if ((!tablet_logged_in) && (teacher_logged_in || '#{(sus_logged_in? && WECHSELUNTERRICHT_KLASSENSTUFEN.include?(@session_user[:klasse].to_i))}' === 'true')) {
         if (typeof(result.switch_week) !== 'undefined' && result.switch_week !== null) {
@@ -813,7 +812,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     body.append('<hr>');
                 body.append('<p><b>Hausaufgaben</b> (zu heute)</p>');
                 if (event_data.hausaufgaben_text)
-                    body.append('<p>' + event_data.hausaufgaben_text + '</p>');
+//                     body.append("<p style='white-space: pre-line;'>" + event_data.hausaufgaben_text + '</p>');
                 if (event_data.homework_nc) {
                     body.append('<p><b>Nextcloud</b></p>');
                     body.append($('<a>').attr('href', nc_ausgabe_link).attr('target', '_blank').addClass('btn').addClass('btn-primary').css('margin-right', '5px').css('margin-bottom', '5px').html("<i class='fa fa-nextcloud'></i>&nbsp;&nbsp;Zum Ausgabe-Ordner&nbsp;&nbsp;<i class='fa fa-angle-double-right'></i>"));
@@ -914,7 +913,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     $('.future_homework').append($('<p>').html(moment(entry.datum).format('ddd, D.M.Y')));
                 }
                 last_date = entry.datum;
-                let div = $('<p>').html('<b>' + entry.fach + ':</b> ' + entry.text.join('<br />'));
+                let div = $("<p style='white-space: pre-line;'>").html('<b>' + entry.fach + ':</b> ' + entry.text.join('<br />'));
                 $('.future_homework').append(div);
                 if ((entry.est_time || 0) > 0)
                     $('.future_homework').append($('<p>').html(`Geplanter Zeitaufwand: ${entry.est_time} Minuten`));

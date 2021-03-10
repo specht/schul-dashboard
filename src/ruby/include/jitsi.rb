@@ -493,15 +493,16 @@ class Main < Sinatra::Base
             RETURN u.email, i.offset, l.key;
         END_OF_QUERY
         email = result['u.email']
+        display_name_for_email = @@user_info[email][:teacher] ? @@user_info[email][:display_last_name] : @@user_info[email][:display_name]
         result = get_current_jitsi_users_for_lesson(result['l.key'], result['i.offset'], email)
         result[:presence_token] = data[:presence_token]
         result[:jwt_links] = {}
         room_name = result[:lesson_room_name]
-        jwt = gen_jwt_for_room(room_name, nil, @@user_info[email][:display_last_name])
+        jwt = gen_jwt_for_room(room_name, nil, display_name_for_email)
         result[:lesson_room_jwt_link] = "https://#{JITSI_HOST}/#{room_name}?presence_token=#{data[:presence_token]}&jwt=#{jwt}"
         (result[:breakout_room_names] || []).each.with_index do |breakout_room_name, i|
             room_name = result[:breakout_room_urls][i]
-            jwt = gen_jwt_for_room(room_name, nil, @@user_info[email][:display_last_name])
+            jwt = gen_jwt_for_room(room_name, nil, display_name_for_email)
             result[:jwt_links][breakout_room_name] = "https://#{JITSI_HOST}/#{room_name}?presence_token=#{data[:presence_token]}&jwt=#{jwt}"
         end
         respond(result)

@@ -250,12 +250,20 @@ class Main < Sinatra::Base
                         end
                         can_enter_room = false
                     else
-                        t = Time.parse("#{timetable.first['start']}:00") - JITSI_LESSON_PRE_ENTRY_TOLERANCE * 60
-                        room_name = timetable.first['label_lehrer_lang'].gsub(/<[^>]+>/, '') + ' ' + timetable.first['klassen'].first.map { |x| tr_klasse(x) }.join(', ')
-                        unless ((timetable.first['data'] || {})['breakout_rooms'] || []).empty?
+                        lesson_info = timetable.first
+                        t = Time.parse("#{lesson_info['start']}:00") - JITSI_LESSON_PRE_ENTRY_TOLERANCE * 60
+                        room_name = lesson_info['label_lehrer_lang'].gsub(/<[^>]+>/, '') + ' ' + lesson_info['klassen'].first.map { |x| tr_klasse(x) }.join(', ')
+                        unless ((lesson_info['data'] || {})['breakout_rooms'] || []).empty?
                             if teacher_logged_in?
                                 presence_token = RandomTag::generate(24)
-                                neo4j_query_expect_one(<<~END_OF_QUERY, {:token => presence_token, :lesson_key => timetable.first['lesson_key'], :offset => timetable.first['lesson_offset'], :email => @session_user[:email], :timestamp => (Time.now + PRESENCE_TOKEN_EXPIRY_TIME).to_i})
+                            else
+                                # SuS is logged in, generate a presence token if we have roaming breakout rooms
+                                if (lesson_info['data'] || {})['breakout_rooms_roaming']
+                                    presence_token = RandomTag::generate(24)
+                                end
+                            end
+                            if presence_token
+                                neo4j_query_expect_one(<<~END_OF_QUERY, {:token => presence_token, :lesson_key => lesson_info['lesson_key'], :offset => lesson_info['lesson_offset'], :email => @session_user[:email], :timestamp => (Time.now + PRESENCE_TOKEN_EXPIRY_TIME).to_i})
                                     MATCH (u:User {email: {email}}), (i:LessonInfo {offset: {offset}})-[:BELONGS_TO]->(l:Lesson {key: {lesson_key}})
                                     CREATE (n:PresenceToken {token: {token}, expiry: {timestamp}})
                                     CREATE (i)<-[:FOR]-(n)-[:BELONGS_TO]->(u)
@@ -287,11 +295,6 @@ class Main < Sinatra::Base
                             can_enter_room = false
                         end
                     end
-#                     unless timetable.empty?
-#                         unless (Set.new(WECHSELUNTERRICHT_KLASSENSTUFEN) & Set.new((timetable.first['klassen'] || []).flatten.map { |x| x.to_i })).empty?
-#                             room_name = "Klassenstream #{(timetable.first['klassen'] || []).flatten.join(' ')}"
-#                         end
-#                     end
                     if WECHSELUNTERRICHT_KLASSENSTUFEN.include?(@session_user[:klasse].to_i)
                         if sus_logged_in? && (!get_homeschooling_for_user(@session_user[:email]))
                             result[:html] += "<div class='alert alert-danger'>Du bist momentan nicht für den Jitsi-Stream freigeschaltet, da du in Gruppe #{@session_user[:group2]} eingeteilt bist und auch nicht als »zu Hause« markiert bist. Wenn es sich hierbei um einen Fehler handelt, sag bitte deiner Klassenleiterin oder deinem Klassenleiter Bescheid, damit du als »zu Hause« markiert werden kannst.</div>"

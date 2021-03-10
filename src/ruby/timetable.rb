@@ -1244,7 +1244,7 @@ class Timetable
                                             data[k] = values.to_a.join('<br />')
                                         end
                                     end
-                                    [:lesson_jitsi, :lesson_nc, :lesson_lr, :homework_nc, :homework_lr].each do |k|
+                                    [:lesson_jitsi, :lesson_nc, :lesson_lr, :homework_nc, :homework_lr, :breakout_rooms_roaming].each do |k|
                                         flag = false
                                         (0...e[:count]).each do |o|
                                             if (((@lesson_info[lesson_key] || {})[e[:lesson_offset] + o] || {})[:data] || {})[k]

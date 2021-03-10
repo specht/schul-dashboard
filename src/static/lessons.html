@@ -37,7 +37,7 @@ var stored_breakout_room_config_json = null;
             </div>
             <div class="modal-body">
                 <div class='row'>
-                    <div class='col-md-4'>
+                    <div class='col-md-3'>
                         <div class="form-group">
                             <label>Gruppenräume bereitstellen</label>
                             <div class='button-with-label'>
@@ -45,7 +45,7 @@ var stored_breakout_room_config_json = null;
                             </div>
                         </div>
                     </div>
-                    <div class='col-md-4'>
+                    <div class='col-md-3'>
                         <div class="form-group">
                             <label>Anzahl der Gruppenräume</label>
                             <div class="input-group mb-3">
@@ -59,7 +59,7 @@ var stored_breakout_room_config_json = null;
                             </div>
                         </div>
                     </div>
-                    <div class='col-md-4'>
+                    <div class='col-md-3'>
                         <div class="form-group">
                             <label>Gruppen einteilen</label>
                             <div class="btn-group" style='width: 100%;'>
@@ -72,6 +72,14 @@ var stored_breakout_room_config_json = null;
                                     <a class='dropdown-item bu-breakout-room-arrange-sort-first-name btn btn-primary'><i class='fa fa-sort-alpha-asc'></i>&nbsp;&nbsp;&nbsp;&nbsp;nach Vornamen sortieren</a>
                                     <a class='dropdown-item bu-breakout-room-arrange-sort-last-name btn btn-primary'><i class='fa fa-sort-alpha-asc'></i>&nbsp;&nbsp;&nbsp;&nbsp;nach Nachnamen sortieren</a>
                                 </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class='col-md-3'>
+                        <div class="form-group">
+                            <label>Freie Raumwahl</label>
+                            <div class='button-with-label'>
+                                <button id='ti_breakout_rooms_roaming' data-state='no' class='btn_lesson_data btn btn-outline-secondary' title='SuS dürfen beliebig zwischen den Räumen wechseln'><i class='fa fa-times'></i>Freie Raumwahl</button>
                             </div>
                         </div>
                     </div>
@@ -385,6 +393,7 @@ function update_breakout_room_widgets() {
     if (breakout_room_config === null) {
         button.data('state', 'no');
         $('#ti_breakout_room_count').prop('disabled', true);
+        $('#ti_breakout_rooms_roaming').prop('disabled', true);
         $('.bu-fewer-breakout-rooms').prop('disabled', true);
         $('.bu-more-breakout-rooms').prop('disabled', true);
         $('.bu-breakout-room-arrange-dropdown').prop('disabled', true);
@@ -392,11 +401,26 @@ function update_breakout_room_widgets() {
         $('#ti_event_jitsi_breakout_rooms').removeClass('btn-info').addClass('btn-outline-secondary');
         $('#ti_event_jitsi_breakout_rooms').find('.fa').removeClass('fa-check').removeClass('fa-question-circle').addClass('fa-times');
         $('#ti_event_jitsi_breakout_rooms').data('state', 'no');
+        $('#ti_breakout_rooms_roaming').removeClass('btn-info').addClass('btn-outline-secondary');
+        $('#ti_breakout_rooms_roaming').find('.fa').removeClass('fa-check').removeClass('fa-question-circle').addClass('fa-times');
+        $('#ti_breakout_rooms_roaming').data('state', 'no');
     } else {
         button.data('state', 'yes');
         $('#ti_breakout_room_count').prop('disabled', false).val(breakout_room_config.rooms.length);
         $('.bu-fewer-breakout-rooms').prop('disabled', breakout_room_config.rooms.length <= 1);
         $('.bu-more-breakout-rooms').prop('disabled', breakout_room_config.rooms.length >= schueler_for_lesson.length);
+        $('#ti_breakout_rooms_roaming').prop('disabled', false);
+        if (breakout_room_config.roaming || false) {
+            let b = $('#ti_breakout_rooms_roaming');
+            b.addClass('btn-info').removeClass('btn-outline-secondary');
+            b.find('.fa').addClass('fa-check').removeClass('fa-times');
+            b.data('state', 'yes');
+        } else {
+            let b = $('#ti_breakout_rooms_roaming');
+            b.removeClass('btn-info').addClass('btn-outline-secondary');
+            b.find('.fa').removeClass('fa-check').addClass('fa-times');
+            b.data('state', 'no');
+        }
         $('.bu-breakout-room-arrange-dropdown').prop('disabled', false);
     }
     
@@ -406,6 +430,8 @@ function update_breakout_room_widgets() {
         button.find('.fa').removeClass('fa-check').removeClass('fa-question-circle').addClass('fa-times');
         $('#ti_event_jitsi_breakout_rooms').removeClass('btn-info').addClass('btn-outline-secondary').data('state', 'no');
         $('#ti_event_jitsi_breakout_rooms').find('.fa').removeClass('fa-check').removeClass('fa-question-circle').addClass('fa-times');
+        $('#ti_breakout_rooms_roaming').removeClass('btn-info').addClass('btn-outline-secondary').data('state', 'no');
+        $('#ti_breakout_rooms_roaming').find('.fa').removeClass('fa-check').removeClass('fa-question-circle').addClass('fa-times');
     }
     else {
         button.removeClass('btn-outline-secondary').addClass('btn-info');
@@ -596,7 +622,8 @@ function selection_updated() {
             $('.sus_feedback_label').html(((lesson_data[entries[0]] || {}).feedback || {}).summary || 'Zu dieser Stunde liegt kein Feedback vor.').show();
             breakout_room_config = {
                 rooms: JSON.parse(JSON.stringify(((lesson_data[entries[0]] || {}).info || {}).breakout_rooms || null)),
-                participants: JSON.parse(JSON.stringify(((lesson_data[entries[0]] || {}).info || {}).breakout_room_participants || null))
+                participants: JSON.parse(JSON.stringify(((lesson_data[entries[0]] || {}).info || {}).breakout_room_participants || null)),
+                roaming: JSON.parse(JSON.stringify(((lesson_data[entries[0]] || {}).info || {}).breakout_rooms_roaming || null)),
             }
             if (breakout_room_config.rooms === null || breakout_room_config.participants === null)
                 breakout_room_config = null;
@@ -864,7 +891,8 @@ function save_changes() {
         if (breakout_room_config !== null) {
             data.breakout_rooms = {
                 rooms: breakout_room_config.rooms,
-                participants: breakout_room_config.participants
+                participants: breakout_room_config.participants,
+                roaming: breakout_room_config.roaming || false
             };
         };
     }
@@ -895,6 +923,10 @@ function save_changes() {
                             lesson_data[i].info.breakout_room_participants = data.breakout_rooms.participants;
                         else
                             delete lesson_data[i].info.breakout_room_participants;
+                        if (typeof(data.breakout_rooms.roaming) !== 'undefined')
+                            lesson_data[i].info.breakout_rooms_roaming = data.breakout_rooms.roaming;
+                        else
+                            delete lesson_data[i].info.breakout_rooms_roaming;
                     }
                 }
                 stored_breakout_room_config_json = JSON.stringify(breakout_room_config);
@@ -1858,15 +1890,26 @@ document.addEventListener('DOMContentLoaded', function() {
         }
         update_breakout_room_widgets();
     });
+    $('#ti_breakout_rooms_roaming').click(function(e) {
+        let value = $('#ti_breakout_rooms_roaming').data('state');
+        if (value === 'yes') {
+            breakout_room_config.roaming = true;
+        } else {
+            breakout_room_config.roaming = false;
+        }
+        update_breakout_room_widgets();
+    });
     $('.bu-breakout-room-arrange-reuse-last').click(function(e) {
         let o = single_selected_offset;
         found_config = null;
         while (o > 0) {
             o -= 1;
             if (((lesson_data[o] || {}).info || {}).breakout_rooms) {
+                console.log(lesson_data[o].info);
                 found_config = {
                     rooms: lesson_data[o].info.breakout_rooms,
-                    participants: lesson_data[o].info.breakout_room_participants
+                    participants: lesson_data[o].info.breakout_room_participants,
+                    roaming: lesson_data[o].info.breakout_rooms_roaming
                 };
                 break;
             }

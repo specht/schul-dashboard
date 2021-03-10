@@ -69,6 +69,7 @@ class TimetableRepl < Sinatra::Base
                 sleep PING_TIME
             end
         end
+        self.perform_update('all') unless DEVELOPMENT
         STDERR.puts "REPL is ready."
     end
     

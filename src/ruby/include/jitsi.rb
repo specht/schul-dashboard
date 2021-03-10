@@ -463,7 +463,7 @@ class Main < Sinatra::Base
         end.sort
         {:lesson_room => lesson_room_participants, 
          :breakout_rooms => room_participants, 
-         :missing_sus => @session_user[:teacher] ? missing_sus : nil,
+         :missing_sus => (@@user_info[user] || {})[:teacher] ? missing_sus : nil,
          :breakout_room_names => lesson_info[:breakout_rooms],
          :lesson_room_name => lesson_room_name,
          :breakout_room_index => breakout_room_index,

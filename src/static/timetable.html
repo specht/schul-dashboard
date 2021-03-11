@@ -732,13 +732,23 @@ document.addEventListener('DOMContentLoaded', function() {
                     body.append(names_div);
                     jitsi_refresh_config.jitsi_names_div = names_div;
                     if ('#{sus_logged_in?}' === 'true' && event_data.breakout_rooms && event_data.breakout_room_participants) {
-                        let sus_offset = event.schueler_offset_in_lesson;
-                        let group_room_name = event_data.breakout_rooms[event_data.breakout_room_participants[sus_offset]];
-                        let breakout_room_link = `/jitsi/lesson/${event.lesson_key}/${group_room_name}`;
-                        body.append($('<hr />'));
-                        body.append($('<p>').text(`Du bist außerdem in den Gruppenraum »${group_room_name}« eingeteilt. Bitte geh zuerst in den normalen Jitsi-Raum.`));
-                        body.append($('<a>').attr('href', breakout_room_link).attr('target', '_blank').addClass('btn').addClass('btn-sm').addClass('btn-primary').css('margin-right', '5px').css('margin-bottom', '5px').html(`<i class='fa fa-microphone'></i>&nbsp;&nbsp;Zum Gruppenraum »${group_room_name}«&nbsp;&nbsp;<i class='fa fa-angle-double-right'></i>`));
-                        body.append($('<hr />'));
+                        if (event_data.breakout_rooms_roaming) {
+                            body.append($('<hr />'));
+                            body.append($('<p>').text(`Für diese Unterrichtsstunde stehen außerdem die folgenden Gruppenräume zur Verfügung. Bitte geh zuerst in den normalen Jitsi-Raum.`));
+                            for (let group_room_name of event_data.breakout_rooms) {
+                                let breakout_room_link = `/jitsi/lesson/${event.lesson_key}/${group_room_name}`;
+                                body.append($('<a>').attr('href', breakout_room_link).attr('target', '_blank').addClass('btn').addClass('btn-sm').addClass('btn-primary').css('margin-right', '5px').css('margin-bottom', '5px').html(`<i class='fa fa-microphone'></i>&nbsp;&nbsp;${group_room_name}&nbsp;&nbsp;<i class='fa fa-angle-double-right'></i>`));
+                            }
+                            body.append($('<hr />'));
+                        } else {
+                            let sus_offset = event.schueler_offset_in_lesson;
+                            let group_room_name = event_data.breakout_rooms[event_data.breakout_room_participants[sus_offset]];
+                            let breakout_room_link = `/jitsi/lesson/${event.lesson_key}/${group_room_name}`;
+                            body.append($('<hr />'));
+                            body.append($('<p>').text(`Du bist außerdem in den Gruppenraum »${group_room_name}« eingeteilt. Bitte geh zuerst in den normalen Jitsi-Raum.`));
+                            body.append($('<a>').attr('href', breakout_room_link).attr('target', '_blank').addClass('btn').addClass('btn-sm').addClass('btn-primary').css('margin-right', '5px').css('margin-bottom', '5px').html(`<i class='fa fa-microphone'></i>&nbsp;&nbsp;Zum Gruppenraum »${group_room_name}«&nbsp;&nbsp;<i class='fa fa-angle-double-right'></i>`));
+                            body.append($('<hr />'));
+                        }
                     }
                     if ('#{teacher_logged_in?}' === 'true') {
                         if (event_data.breakout_rooms && event_data.breakout_room_participants) {

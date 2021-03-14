@@ -345,6 +345,9 @@ class Main < Sinatra::Base
                 else
                     result[:html] += "<a class='btn btn-success' href='https://#{JITSI_HOST}/#{room_name}?#{presence_token ? "presence_token=#{presence_token}&" : ''}jwt=#{jwt}'><i class='fa fa-#{browser_icon}'></i>&nbsp;&nbsp;Jitsi-Raum mit #{browser_name} betreten</a>"
                 end
+                if (eid || null) == 'phyw45tggt2p'
+                    result[:html] += "<code>#{eid}</code>"
+                end
                 result[:html] += "</div>\n"
                 result[:html] += "</div>\n"
             end

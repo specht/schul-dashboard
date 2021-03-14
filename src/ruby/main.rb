@@ -1538,6 +1538,15 @@ class Main < Sinatra::Base
             jitsi_data = gen_jitsi_data(request.path.sub('/jitsi/', ''))
         elsif path == 'poll'
             poll_data = gen_poll_data(request.path.sub('/jitsi/', ''))
+        elsif path == 'livestream'
+            jwt = request.params['jwt']
+            response.set_cookie('AuthToken', 
+                                :value => jwt,
+                                :domain => JWT_DOMAIN_STREAM,
+                                :path => '/',
+                                :httponly => true,
+                                :secure => DEVELOPMENT ? false : true)
+            redirect "#{STREAM_SITE_URL}?jwt=#{jwt}", 302
         elsif path == 'index'
             if @session_user
                 path = 'timetable' 

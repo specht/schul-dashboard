@@ -122,6 +122,10 @@ JITSI_HOST = 'meet.beispielschule.de'
 JWT_APPAUD = 'jitsi'
 JWT_APPISS = 'dashboard'
 JWT_APPKEY = 'ein_langer_langer_richtig_langer_app_key'
+JWT_APPAUD_STREAM = 'stream'
+JWT_APPKEY_STREAM = 'ein_langer_langer_richtig_langer_app_key'
+JWT_DOMAIN_STREAM = '.beispielschule.de'
+STREAM_SITE_URL = 'https://info.beispielschule.de/'
 JWT_SUB = 'beispielschule.de'
 # Hier kann, falls vorhanden, eine URL eingetragen werden, unter der aus dem 
 # Ruby-Docker-Container ein GET-Request zu allRooms gemacht werden kann,

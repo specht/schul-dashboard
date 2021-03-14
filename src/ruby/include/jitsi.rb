@@ -56,6 +56,21 @@ class Main < Sinatra::Base
         token
     end
     
+    def gen_jwt_for_stream(name)
+        payload = {
+            :context => { :user => { :name => name }},
+            :aud => JWT_APPAUD_STREAM,
+            :iss => JWT_APPISS,
+            :sub => JWT_SUB,
+            :exp => DateTime.parse("#{Time.now.strftime('%Y-%m-%d')} 00:00:00").to_time.to_i + 24 * 60 * 60
+        }
+        assert(!(payload[:context][:user][:name].nil?))
+        assert(payload[:context][:user][:name].strip.size > 0)
+
+        token = JWT.encode payload, JWT_APPKEY_STREAM, algorithm = 'HS256', header_fields = {:typ => 'JWT'}
+        token
+    end
+    
     def room_name_for_event(title, eid)
         "#{title} (#{eid[0, 8]})"
     end
@@ -78,6 +93,7 @@ class Main < Sinatra::Base
         ext_name = nil
         begin
             presence_token = nil
+            event_stream_jwt = nil
             if path == 'Lehrerzimmer'
                 if teacher_logged_in?
                     room_name = 'Lehrerzimmer'
@@ -115,6 +131,7 @@ class Main < Sinatra::Base
                         code == row_code
                     end.first
                     ext_name = invitation['u'].props[:name]
+                    event_stream_jwt = gen_jwt_for_stream(ext_name) if event[:stream]
                 else
                     # EVENT - INTERNAL USER
                     require_user!
@@ -133,6 +150,7 @@ class Main < Sinatra::Base
                             RETURN e, ou.email, u;
                         END_OF_QUERY
                     end
+                    event_stream_jwt = gen_jwt_for_stream(@session_user[:display_name]) if event[:stream]
                 end
                 assert(invitation != nil)
 
@@ -153,6 +171,7 @@ class Main < Sinatra::Base
                 else
                     can_enter_room = true
                 end
+                can_enter_room = true if admin_logged_in?
                 result[:html] += "<hr />"
             else
                 # it's a lesson, only allow between 07:00 and 18:00
@@ -345,8 +364,11 @@ class Main < Sinatra::Base
                 else
                     result[:html] += "<a class='btn btn-success' href='https://#{JITSI_HOST}/#{room_name}?#{presence_token ? "presence_token=#{presence_token}&" : ''}jwt=#{jwt}'><i class='fa fa-#{browser_icon}'></i>&nbsp;&nbsp;Jitsi-Raum mit #{browser_name} betreten</a>"
                 end
-                if (eid || null) == 'phyw45tggt2p'
-                    result[:html] += "<code>#{eid}</code>"
+                if event_stream_jwt
+                    result[:html] += "<div class='alert alert-warning'>"
+                    result[:html] += "<p>Falls Sie im Jitsi-Raum <strong>Verbindungsprobleme</strong> oder <strong>Zeitverzögerungen</strong> erleben sollten, probieren Sie bitte den Livestream, der für diesen Termin bereitgestellt wird. Sie finden dort einen Chat, über den Sie Wortmeldungen und Fragen senden können.</p>"
+                    result[:html] += "<a class='btn btn-warning' href='/livestream?jwt=#{event_stream_jwt}'><i class='fa fa-video-camera'></i>&nbsp;&nbsp;Zum Livestream…</a>"
+                    result[:html] += "</div>"
                 end
                 result[:html] += "</div>\n"
                 result[:html] += "</div>\n"

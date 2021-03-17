@@ -16,7 +16,7 @@
                 </div>
             </div>
             <div class='hint future_homework' style='display: none;'></div>
-            <div style='#{(tablet_logged_in? && @@tablets[@session_user[:tablet_id]][:klassen_stream]) ? '' : 'display: none;'}'>
+            <div style='#{(tablet_logged_in? && (@@tablets[@session_user[:tablet_id]] || {})[:klassen_stream]) ? '' : 'display: none;'}'>
                 <div class='hint'>
                 <h4><strong style='color: #a40000;'>Streaming-Amt</strong></h4>
                 <p>

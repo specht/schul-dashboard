@@ -582,6 +582,7 @@ class Main < Sinatra::Base
         end
         
         @@tablets_for_school_streaming = Set.new()
+        @@tablets_which_are_lehrer_tablets = Set.new()
         parser.parse_tablets do |record|
             if @@tablets.include?(record[:id])
                 raise "Ooops: already got this tablet called #{record[:id]}"
@@ -597,6 +598,9 @@ class Main < Sinatra::Base
             end
             if record[:school_streaming]
                 @@tablets_for_school_streaming << record[:id]
+            end
+            if record[:lehrer_modus]
+                @@tablets_which_are_lehrer_tablets << record[:id]
             end
         end
         
@@ -1014,10 +1018,27 @@ class Main < Sinatra::Base
                         session_expiry = session[:expires]
                         if DateTime.parse(session_expiry) > DateTime.now
                             email = results.first['u'].props[:email]
+                            if email == "tablet@#{SCHUL_MAIL_DOMAIN}"
+                                if @@tablets_which_are_lehrer_tablets.include?(session[:tablet_id])
+                                    email = "lehrer.tablet@#{SCHUL_MAIL_DOMAIN}"
+                                else
+                                    @session_user = {
+                                        :email => email,
+                                        :is_tablet => true,
+                                        :tablet_type => :specific,
+                                        :tablet_id => session[:tablet_id],
+                                        :color_scheme => 'la2c6e80d60aea2c6e80',
+                                        :can_see_all_timetables => false,
+                                        :teacher => false,
+                                        :id => @@klassen_id[@@tablets[session[:tablet_id]][:klassen_stream]]
+                                    }
+                                end
+                            end
                             if email == "lehrer.tablet@#{SCHUL_MAIL_DOMAIN}"
                                 @session_user = {
                                     :email => email,
                                     :is_tablet => true,
+                                    :tablet_id => session[:tablet_id],
                                     :tablet_type => :teacher,
                                     :color_scheme => 'lfcbf499e0001eeba30',
                                     :can_see_all_timetables => true,
@@ -1027,22 +1048,12 @@ class Main < Sinatra::Base
                                 @session_user = {
                                     :email => email,
                                     :is_tablet => true,
+                                    :tablet_id => session[:tablet_id],
                                     :tablet_type => :kurs,
                                     :color_scheme => 'la86fd07638a15a2b7a',
                                     :can_see_all_timetables => false,
                                     :teacher => false,
                                     :shorthands => session[:shorthands] || []
-                                }
-                            elsif email == "tablet@#{SCHUL_MAIL_DOMAIN}"
-                                @session_user = {
-                                    :email => email,
-                                    :is_tablet => true,
-                                    :tablet_type => :specific,
-                                    :tablet_id => session[:tablet_id],
-                                    :color_scheme => 'la2c6e80d60aea2c6e80',
-                                    :can_see_all_timetables => false,
-                                    :teacher => false,
-                                    :id => @@klassen_id[@@tablets[session[:tablet_id]][:klassen_stream]]
                                 }
                             else
                                 @session_user = @@user_info[email].dup
@@ -1150,18 +1161,21 @@ class Main < Sinatra::Base
     end
     
     def nav_items(primary_color, now, new_messages_count)
-        if teacher_tablet_logged_in?
-            return "<div style='margin-right: 15px;'><b>Lehrer-Tablet-Modus</b></div>" 
-        elsif kurs_tablet_logged_in?
-            return "<div style='margin-right: 15px;'><b>Kurs-Tablet-Modus</b></div>" 
-        elsif tablet_logged_in?
+        if tablet_logged_in?
             tablet_id = @session_user[:tablet_id]
             tablet = @@tablets[tablet_id] || {}
-            description = ''
-            if tablet[:klassen_stream]
-                description = " (Klassenstreaming #{tablet[:klassen_stream]})"
+            tablet_id_span = "<span class='tablet-id-indicator' style='background-color: #{tablet[:bg_color]}; color: #{tablet[:fg_color]}'>#{tablet_id}</span>"
+            if teacher_tablet_logged_in?
+                return "<div style='margin-right: 15px;'><b>Lehrer-Tablet-Modus</b>#{tablet_id_span}</div>" 
+            elsif kurs_tablet_logged_in?
+                return "<div style='margin-right: 15px;'><b>Kurs-Tablet-Modus</b>#{tablet_id_span}</div>" 
+            elsif tablet_logged_in?
+                description = ''
+                if tablet[:klassen_stream]
+                    description = " (Klassenstreaming #{tablet[:klassen_stream]})"
+                end
+                return "<div style='margin-right: 15px;'><b>Tablet-Modus</b>#{description}#{tablet_id_span}</div>" 
             end
-            return "<div style='margin-right: 15px;'><b>Tablet-Modus</b>#{description}<span class='tablet-id-indicator' style='background-color: #{tablet[:bg_color]}; color: #{tablet[:fg_color]}'>#{tablet_id}</span></div>" 
         end
         StringIO.open do |io|
             new_messages_count_s = nil
@@ -1560,8 +1574,9 @@ class Main < Sinatra::Base
                 parts = request.env['REQUEST_PATH'].split('/')
                 timetable_id = parts[2]
                 if tablet_logged_in?
+                    STDERR.puts @session_user.to_yaml
                     tablet_id = @session_user[:tablet_id]
-                    tablet_info = @@tablets[tablet_id]
+                    tablet_info = @@tablets[tablet_id] || {}
                     if tablet_info[:school_streaming]
                         today = DateTime.now.strftime('%Y-%m-%d')
                         results = neo4j_query(<<~END_OF_QUERY, {:tablet_id => tablet_id, :today => today})

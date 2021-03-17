@@ -371,9 +371,11 @@ class Parser
                 lagerort = (line['Lagerort'] || '').strip
                 status = (line['Aktueller Status'] || '').strip
                 school_streaming = (line['Unterrichtseinsatz Streaming aus der Schule'] || '').strip
+                lehrer_modus = (line['Lehrer-Modus'] || '').strip
                 record = {:id => id, :color => color, 
                           :status => status, :lagerort => lagerort }
                 record[:school_streaming] = true unless school_streaming.empty?
+                record[:lehrer_modus] = true unless lehrer_modus.empty?
                 yield record
             end
         end

@@ -1055,7 +1055,7 @@ class Main < Sinatra::Base
                                     :teacher => false,
                                     :shorthands => session[:shorthands] || []
                                 }
-                            else
+                            elsif email != "tablet@#{SCHUL_MAIL_DOMAIN}"
                                 @session_user = @@user_info[email].dup
                                 if @session_user
                                     @session_user[:font] = results.first['u'].props[:font]

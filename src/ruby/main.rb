@@ -1574,7 +1574,6 @@ class Main < Sinatra::Base
                 parts = request.env['REQUEST_PATH'].split('/')
                 timetable_id = parts[2]
                 if tablet_logged_in?
-                    STDERR.puts @session_user.to_yaml
                     tablet_id = @session_user[:tablet_id]
                     tablet_info = @@tablets[tablet_id] || {}
                     if tablet_info[:school_streaming]

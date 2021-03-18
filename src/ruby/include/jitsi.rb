@@ -235,6 +235,9 @@ class Main < Sinatra::Base
                     end
                     result[:html] = ''
                     lesson_key = path.split('/')[1]
+                    if kurs_tablet_logged_in? || teacher_tablet_logged_in?
+                        timetable_id = @@user_info[@@shorthands[@@lessons[:lesson_keys][lesson_key][:lehrer].first]][:id]
+                    end
                     breakout_room_name = path.split('/')[2]
                     # TODO: use code from get_jitsi_room_name_for_lesson_key
                     p_ymd = Date.today.strftime('%Y-%m-%d')

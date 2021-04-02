@@ -1,0 +1,964 @@
+#{this_is_a_page_for_logged_in_teachers}
+<div class='container-fluid' style='padding-top: 30px;'>
+    <div class='row'>
+        <div class='col-lg-8 col-md-12 offset-md-2 '>
+            <div id='calendar' style='margin-bottom: 30px;'>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.fc-button-primary {
+    background-color: #{desaturated_color};
+    border: 1px solid #{desaturated_color};
+    color: #fff;
+}
+
+.fc-button-primary:hover, .fc-button-primary:active {
+    background-color: #{desaturated_color_darker};
+    border: 1px solid #{desaturated_color_darker};
+    color: #fff;
+}
+
+/* .streaming-button { */
+/*     position: absolute; */
+/*     top: 1px; */
+/* } */
+
+.card {
+    background-color: rgba(255,255,255,0.5);
+}
+
+</style>
+
+<script>
+var my_lessons = #{(@@lessons_for_shorthand[@session_user[:shorthand]] || []).to_json};
+var tablet_logged_in = ('#{tablet_logged_in?}' === 'true');
+var teacher_tablet_logged_in = ('#{teacher_tablet_logged_in?}' === 'true');
+var sus_logged_in = ('#{sus_logged_in?}' === 'true');
+var teacher_logged_in = ('#{teacher_logged_in?}' === 'true');
+var fixed_timetable_data = #{fixed_timetable_data.to_json};
+var homework_feedback = {};
+var jitsi_refresh_config = {
+    lesson_key: null,
+    lesson_offset: null,
+    jitsi_names_div: null,
+    jitsi_missing_names_div: null,
+    jitsi_breakout_rooms_names_divs: []
+};
+
+function clear_polling_handler() {
+    if (jitsi_refresh_config.poll_handle !== null) {
+        clearTimeout(jitsi_refresh_config.poll_handle);
+        jitsi_refresh_config = {
+            poll_handle: null,
+            lesson_key: null,
+            lesson_offset: null,
+            jitsi_names_div: null,
+            jitsi_missing_names_div: null,
+            jitsi_breakout_rooms_names_divs: []
+        };
+    }
+}
+
+function refresh_jitsi_presence() {
+    let in_data = {lesson_key: jitsi_refresh_config.lesson_key, offset: jitsi_refresh_config.lesson_offset};
+    api_call('/api/get_current_jitsi_users_for_lesson', in_data, function(data) {
+        if (data.success) {
+            jitsi_refresh_config.jitsi_names_div.text((data.lesson_room || []).join(', '));
+            if ((data.missing_sus || []).length === 0) {
+                jitsi_refresh_config.jitsi_missing_names_div.hide();
+            } else {
+                jitsi_refresh_config.jitsi_missing_names_div.empty();
+                jitsi_refresh_config.jitsi_missing_names_div.append($('<strong><em>Momentan abwesend in Jitsi:</em></strong>'));
+                jitsi_refresh_config.jitsi_missing_names_div.append(' ');
+                jitsi_refresh_config.jitsi_missing_names_div.append($('<span>').text(((data.missing_sus || []).join(', '))));
+                jitsi_refresh_config.jitsi_missing_names_div.append($('<hr />'));
+                jitsi_refresh_config.jitsi_missing_names_div.show();
+            }
+            if (jitsi_refresh_config.jitsi_breakout_rooms_names_divs.length > 0) {
+                for (let i = 0; i < data.breakout_rooms.length; i++) {
+                    jitsi_refresh_config.jitsi_breakout_rooms_names_divs[i].text(((data.breakout_rooms || {})[i] || []).join(', '));
+                }
+            }
+        } else {
+            clear_polling_handler();
+        }
+    });
+}
+
+function render_timetable(result, successCallback) {
+    events = result.events;
+    $('.switch_week_panel').empty();
+    if ((!tablet_logged_in) && (teacher_logged_in || '#{(sus_logged_in? && WECHSELUNTERRICHT_KLASSENSTUFEN.include?(@session_user[:klasse].to_i))}' === 'true')) {
+        if (typeof(result.switch_week) !== 'undefined' && result.switch_week !== null) {
+            let user_group2 = '#{@session_user[:group2]}';
+            let s = `Diese Woche ist eine <strong>${result.switch_week}-Woche</strong>. `;
+            if (sus_logged_in) {
+                if ('#{@session_user[:homeschooling]}' === 'true') {
+                    s += `Du bist momentan als »zu Hause« markiert und nimmst deshalb von <strong>zu Hause</strong> am Unterricht teil. `;
+                } else {
+                    s += `Für Dich heißt das, dass Du in dieser Woche ${user_group2 === result.switch_week ? 'in der Schule' : 'zu Hause'} unterrichtet wirst. `; 
+                    if (user_group2 === result.switch_week)
+                        s += `Wenn Deine Eltern entscheiden sollten, dass Du erst einmal noch weiter zu Hause bleiben sollst, müssen Sie dies Deiner Klassenleitung und dem Sekretariat mitteilen. Dann werden wir Dich als »zu Hause« markieren, so dass alle wissen, dass Du nicht in die Schule kommst und ggfs. von zu Hause am Jitsi-Unterricht teilnehmen kannst.`;
+                }
+            }
+            let div = $('<div>').addClass('hint').html(s);
+            $('.switch_week_panel').append(div);
+        }
+    }
+    if ('#{@session_user[:can_upload_vplan]}' === 'true') {
+        moment.locale('de');
+//                             let timetable_date = moment(oReq.getResponseHeader('last-modified')).format('ddd, DD.MM.YYYY, LT');
+//                             console.log('#{latest_vplan_timestamp}');
+//                             console.log(result.vplan_timestamp);
+        if ('#{latest_vplan_timestamp}' === (result.vplan_timestamp || ''))
+            $('.timetable_updated').html("<i class='fa fa-check text-success'></i>&nbsp;&nbsp;Vertretungsplan ist aktuell");
+        else
+            $('.timetable_updated').html("<i class='fa fa-warning text-danger'></i>&nbsp;&nbsp;Vertretungsplan wird gerade aktualisiert, bitte demnächst noch einmal neu laden.");
+    }
+
+    let wrote_weekend_event_header = false;
+    $('.weekend_events').hide();
+    $('.weekend_events').empty();
+    for (let event of events)
+    {
+        event.color = color_palette.primary;
+        if (event.entfall)
+            event.color = color_palette.disabled;
+        if (event.is_event)
+            event.color = color_palette.shifted;
+        if (event.is_event && [6, 0].indexOf(new Date(event.datum).getDay()) >= 0) {
+//                                 console.log(event);
+            if (!wrote_weekend_event_header) {
+                $('.weekend_events').append($('<p><b>Termine am Wochenende</b></p>'));
+                $('.weekend_events').show();
+            }
+
+            let time_str = '' + parseInt(event.datum.substr(8, 2)) + '.' + event.datum.substr(5, 2) + '.' + event.datum.substr(0, 4) + '<br />' + event.start_time + '&ndash;' + event.end_time;
+            $('.weekend_events').append($('<hr /><p>' + time_str + '<br /><b>' + event.event_title + '</b><br />' + event.organized_by));
+            $('.weekend_events').append(fix_bad_html($('<div>').html(event.description)));
+            $('.weekend_events').append($('<a href="/jitsi/event/' + event.eid + '" target="_blank" class="btn btn-sm btn-primary"><i class="fa fa-microphone"></i>&nbsp;&nbsp;Zum Jitsi-Raum&nbsp;&nbsp;<i class="fa fa-angle-double-right"></i></a></p>'));
+        }
+
+    }
+    if (wrote_weekend_event_header)
+        $('.weekend_events').append('<hr />')
+    if (tablet_logged_in) {
+        events = events.filter(x => x.lesson);
+        for (let event of events) {
+            for (let key in (event.data || {})) {
+                if (key !== 'lesson_jitsi')
+                    delete event.data[key];
+            }
+        }
+    }
+    let today = (new Date()).toISOString().substr(0, 10);
+
+    let this_klasse = #{(@session_user[:klasse] || '0').to_i};
+    if (this_klasse === 0) {
+        this_klasse = parseInt($($('.ttc.active')[0]).text());
+        if (this_klasse === NaN)
+            this_klasse = 0;
+    }
+    if (this_klasse >= 5 && this_klasse <= 9) {
+        which = '7-9';
+        if (this_klasse <= 6)
+            which = '4-6';
+        
+        for (let i = 1; i <= 24; i++)
+        {
+            let title = '🎅 Mathe im Advent';
+            let day_s = '' + i;
+            if (day_s.length < 2)
+                day_s = '0' + day_s;
+            let ds = '2020-12-' + day_s;
+            let wday = new Date(ds).getDay();
+            if (wday == 6) {
+                // Saturday
+                let day_s = '' + (i + 2);
+                if (day_s.length < 2)
+                    day_s = '0' + day_s;
+                ds = '2020-12-' + day_s;
+                title += ' (Sa)';
+            } else if (wday == 0) {
+                // Sunday
+                let day_s = '' + (i + 1);
+                if (day_s.length < 2)
+                    day_s = '0' + day_s;
+                ds = '2020-12-' + day_s;
+                title += ' (So)';
+            }
+            if (today >= ds)
+                events.push({eventOrder: i, color: color_palette.shifted, start: ds, end: ds, title: title, href: 'https://www.mathe-im-advent.de/de/kalender/' + which + '/' + i + '/' });
+        }
+    }
+    successCallback(events);
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    moment.locale('de');
+    let narrow_window = ($(window).width() <= 640);
+    let initial_date = '#{initial_date}';
+    if (window.location.hash.length > 0)
+        window.location.hash = '';
+    let timetable_id = '#{timetable_id}';
+    $('.ttc[data-id="' + timetable_id + '"]').addClass('active');
+    let options = {
+        initialView: (narrow_window || tablet_logged_in) ? 'timeGridDay' : 'dayGridMonth',
+        headerToolbar: {start: 'title', center: '', end: tablet_logged_in ? '' : 'today prev,next'},
+//         allDaySlot: true,
+//         nowIndicator: true,
+//         expandRows: true,
+        locale: 'de',
+//         height: (!!window.chrome) ? #{@session_user[:teacher] ? 1230 : 1170} : #{@session_user[:teacher] ? 1280 : 1170},
+        initialDate: initial_date,
+        events: function(info, successCallback, failureCallback) {
+            let start_date = new Date(info.startStr);
+            while (start_date.getDay() != 1)
+                start_date.setDate(start_date.getDate() - 1);
+            let week = '' + start_date.getWeek();
+            if (week.length < 2)
+                week = '0' + week;
+            
+            let yw_date = start_date.getFullYear() + '-' + week;
+            let month = '' + (start_date.getMonth() + 1);
+            let day = '' + start_date.getDate();
+            if (month.length < 2) month = '0' + month;
+            if (day.length < 2) day = '0' + day;
+            
+            if (fixed_timetable_data !== null) {
+                render_timetable(fixed_timetable_data, successCallback);
+            } else {
+                let uri = '/gen/w/' + timetable_id + '/' + yw_date + '.json.gz';
+                if (#{@session_user[:teacher] ? true: false})
+                    uri += '?' + Date.now();
+                let oReq = new XMLHttpRequest();
+                oReq.open('GET', uri, true);
+                oReq.responseType = 'arraybuffer';
+
+                oReq.onload = function(e) {
+                    $('.timetable_updated').empty();
+                    if (e.target.status === 200) {
+                        
+                        let data = pako.ungzip(oReq.response);
+                        let bb = new Blob([new Uint8Array(data)]);
+                        let f = new FileReader();
+                        f.onload = function(e) {
+                            let result = JSON.parse(e.target.result);
+                            render_timetable(result, successCallback);
+                        };
+                        f.readAsText(bb);
+                    }
+                };
+                oReq.send();
+            }
+        },
+//         hiddenDays: [6, 0],
+        slotEventOverlap: false,
+        slotLabelFormat: {
+            hour: 'numeric',
+            minute: '2-digit',
+            omitZeroMinute: false
+        },
+        eventContent: function(arg) {
+            if (arg.event.extendedProps.lesson)
+            {
+                let event_data = arg.event.extendedProps.data || {};
+                let per_user = arg.event.extendedProps.per_user || {};
+                let divs = [];
+                for (let pause of (arg.event.extendedProps.pausen || []))
+                {
+                    let bgdiv = $('<div>');
+                    bgdiv.css({position: 'absolute', left: 0, top: (pause[0] * 75.0 / 60.0) + 'px', right: 0});
+                    bgdiv.css('height', (((pause[1] - pause[0]) * 75.0 / 60.0)) + 'px');
+                    bgdiv.css('z-index', '-1');
+                    bgdiv.css('border-top', '1px dashed rgba(255, 255, 255, 0.2)');
+                    bgdiv.css('border-bottom', '1px dashed rgba(255, 255, 255, 0.2)');
+                    if (event_data.stundenthema_text || event_data.hausaufgaben_text)
+                        bgdiv.css('background-color', 'rgba(255, 255, 255, 0.05)');
+                    else
+                        bgdiv.css('background-color', 'rgba(255, 255, 255, 0.15)');
+    //                 bgdiv.css('background', 'url(/images/border-top.png) left top repeat-x , url(/images/border-bottom.png) left bottom repeat-x, #529ccc');
+                    bgdiv.css('min-height', '7px');
+                    divs.push(bgdiv[0]);
+                }
+                let div0 = $('<div>');
+                div0.css('white-space', 'nowrap');
+                div0.addClass('condensed');
+
+                div0.css('opacity', 0.7);
+                let t = $('<span>').text(arg.timeText);
+                let raum = $('<span>').html(arg.event.extendedProps.raum);
+                raum.addClass('condensed');
+
+                raum.css('position', 'absolute').css('right', '-1px');
+                raum.css('background-color', color_palette.primary);
+                raum.css('padding-right', '2px');
+                
+                raum.css('padding-left', '4px');
+                if (arg.event.extendedProps.entfall)
+                    raum.css('background-color', color_palette.disabled);
+                div0.append(t).append(raum);
+                
+                let div1 = $('<div>');
+                if (arg.event.extendedProps.count === 1)
+                    div1.css('white-space', 'nowrap');
+                let fach = $('<div>').html(arg.event.extendedProps.label);
+//                 fach.html(arg.event.extendedProps.lesson_key + '#' + arg.event.extendedProps.lesson_offset + ' ' + fach.html());
+//                 if (arg.event.extendedProps.vnr)
+//                     fach.html('#' + arg.event.extendedProps.vnr + ' ' + fach.html());
+                div1.append(fach);
+                let div1b = $('<div>').addClass('line2');
+                if (arg.event.extendedProps.vertretungs_text)
+                {
+                    let span = $('<span>').html(arg.event.extendedProps.vertretungs_text);
+                    span.css('opacity', 0.7);
+                    div1b.append(span);
+                }
+                div1b.append('&nbsp;');
+                if (per_user.text_comments)
+                    per_user.text_comments = filter_events_by_timestamp(per_user.text_comments, show_messages_from);
+                if (per_user.audio_comments)
+                    per_user.audio_comments = filter_events_by_timestamp(per_user.audio_comments, show_messages_from);
+                
+                let markers = $('<span>').addClass('cem').css('background-color', arg.event.extendedProps.entfall ? color_palette.disabled : (arg.event.extendedProps.is_event ? color_palette.shifted : color_palette.primary));
+                if (event_data.stundenthema_text)
+                    markers.append($('<span>').html("<i class='fa fa-info-circle'></i>"));
+                if (event_data.lesson_jitsi) {
+                    if (event_data.breakout_rooms)
+                        markers.append($('<span>').addClass('mute').html('Jitsi / GR'));
+                    else
+                        markers.append($('<span>').addClass('mute').html('Jitsi'));
+                    if (event_data.booked_tablet)
+                        markers.append($(event_data.booked_tablet_label_short));
+                }
+                if (event_data.lesson_nc || event_data.homework_nc)
+                    markers.append($('<span>').addClass('mute').html('NC'));
+                if (event_data.lesson_lr || event_data.homework_lr)
+                    markers.append($('<span>').addClass('mute').html('LR'));
+                if (event_data.hausaufgaben_text)
+                    markers.append($('<span>').html('HA'));
+                if (per_user.text_comments || per_user.audio_comments)
+                    markers.append($('<span>').html("<i class='fa fa-comment'></i>"));
+                div1b.append(markers);
+
+                let div2 = $('<div>');
+                let div3 = $('<div>');
+                let div4 = $('<div>');
+                div2.addClass('condensed');
+
+                div2.css('border-top', '1px solid rgba(255, 255, 255, 0.5)');
+                div2.css('margin-top', '2px');
+                div2.css('height', '100%');
+
+                if ((arg.event.extendedProps.data || {}).stundenthema_text || (arg.event.extendedProps.data || {}).hausaufgaben_text)
+                {
+                    div3.css('white-space', 'nowrap');
+                    div3.css('text-overflow', 'ellipsis');
+                    div3.css('overflow', 'hidden');
+                    div3.css('position', 'absolute');
+                    div3.css('left', '0%');
+                    div3.css('width', '100%');
+                    div3.css('height', '100%');
+                    div3.css('padding-left', '1px');
+                    div3.css('padding-top', '4px');
+                }
+                
+                if ((arg.event.extendedProps.data || {}).stundenthema_text)
+                {
+//                     div3.append($('<div>').html('Stundenthema'));
+                    if (arg.event.extendedProps.count > 1)
+                    {
+                        let description = $('<div>').html((arg.event.extendedProps.data || {}).stundenthema_text || '');
+                        description.css('opacity', 0.7);
+                        description.css('white-space', 'normal');
+//                         description.css('border-top', '1px solid rgba(255, 255, 255, 0.5)');
+                        div3.append(description);
+                    }
+                }
+                
+                if ((arg.event.extendedProps.data || {}).hausaufgaben_text)
+                {
+                    div3.append($('<div>').html('Hausaufgaben (zu heute)'));
+                    if (arg.event.extendedProps.count > 1)
+                    {
+                        let description = $('<div>').html((arg.event.extendedProps.data || {}).hausaufgaben_text || '');
+                        description.css('opacity', 0.7);
+                        description.css('white-space', 'normal');
+                        description.css('border-top', '1px solid rgba(255, 255, 255, 0.5)');
+                        div3.append(description);
+                    }
+                }
+                
+                if (arg.event.extendedProps.info)
+                {
+                    div4.css('white-space', 'nowrap');
+                    div4.css('text-overflow', 'ellipsis');
+                    div4.css('overflow', 'hidden');
+                    div4.css('position', 'absolute');
+                    div4.css('left', '50%');
+                    div4.css('width', '50%');
+                    div4.css('padding-bottom', '10px');
+                    div4.css('border-left', '1px solid rgba(255, 255, 255, 0.5)');
+                    div4.css('padding-left', '1px');
+                    div4.css('height', '100%');
+                    div4.html(arg.event.extendedProps.info.title);
+                    if (arg.event.extendedProps.count > 1)
+                    {
+                        let description = $('<div>').html(arg.event.extendedProps.info.description || '');
+                        description.css('opacity', 0.7);
+                        description.css('white-space', 'normal');
+                        description.css('border-top', '1px solid rgba(255, 255, 255, 0.5)');
+                        div4.append(description);
+                    }
+                }
+                
+                div2.append(div3).append(div4);
+                divs.push(div0[0]);
+                divs.push(div1[0]);
+                divs.push(div1b[0]);
+                if (arg.event.extendedProps.count > 1)
+                {
+                    if ((arg.event.extendedProps.data || {}).stundenthema_text || (arg.event.extendedProps.data || {}).hausaufgaben_text || arg.event.extendedProps.info)
+                        divs.push(div2[0]);
+                }
+                return { domNodes: divs };
+            }
+            else if (arg.event.extendedProps.is_event)
+            {
+                let event_data = arg.event.extendedProps || {};
+                let divs = [];
+                let div0 = $('<div>');
+                div0.css('white-space', 'nowrap');
+                div0.addClass('condensed');
+
+                div0.css('opacity', 0.7);
+//                 div0.html('<b>' + event_data.event_title + '</b>');
+                let t = $('<span>').text(arg.timeText);
+                div0.append(t);
+                
+                let div1 = $('<div>');
+                div1.css('white-space', 'nowrap');
+                let fach = $('<div>').html('<b>' + event_data.event_title + '</b>');
+//                 fach.html(arg.event.extendedProps.lesson_key + '#' + arg.event.extendedProps.lesson_offset + ' ' + fach.html());
+//                 if (arg.event.extendedProps.vnr)
+//                     fach.html('#' + arg.event.extendedProps.vnr + ' ' + fach.html());
+                div1.append(fach);
+                let div1b = $('<div>').addClass('line2');
+                let span = $('<span>').html(event_data.organized_by);
+                span.css('opacity', 0.7);
+                div1b.append(span);
+                div1b.append('&nbsp;');
+                
+                let markers = $('<span>').addClass('cem').css('background-color', arg.event.extendedProps.entfall ? color_palette.disabled : (arg.event.extendedProps.is_event ? color_palette.shifted : color_palette.primary));
+                if (event_data.jitsi)
+                    markers.append($('<span>').addClass('mute').html('Jitsi'));
+                div1b.append(markers);
+
+                let div2 = $('<div>');
+                let div3 = $('<div>');
+                let div4 = $('<div>');
+                div2.addClass('condensed');
+
+//                 div2.css('border-top', '1px solid rgba(255, 255, 255, 0.5)');
+//                 div2.css('margin-top', '2px');
+                div2.css('height', '100%');
+
+                div3.css('white-space', 'nowrap');
+                div3.css('text-overflow', 'ellipsis');
+                div3.css('overflow', 'hidden');
+                div3.css('position', 'absolute');
+                div3.css('left', '0%');
+                div3.css('width', '100%');
+                div3.css('height', '100%');
+                div3.css('padding-left', '1px');
+                div3.css('padding-top', '4px');
+                
+                let description = fix_bad_html($('<div>').html(event_data.description));
+                description.css('opacity', 0.7);
+                description.css('white-space', 'normal');
+                description.css('border-top', '1px solid rgba(255, 255, 255, 0.5)');
+                div3.append(description);
+                
+                div2.append(div3).append(div4);
+                divs.push(div0[0]);
+                divs.push(div1[0]);
+                divs.push(div1b[0]);
+                divs.push(div2[0]);
+                return { domNodes: divs };
+            }
+        },
+        eventClick: function(info) {
+            let event = info.event.extendedProps;
+            if (event.href) {
+                window.open(event.href, '_blank');
+                return;
+            }
+//             console.log(event.lesson_key, event.lesson_offset);
+            console.log(event);
+            $('#lessonModal .lesson-label').html(event.label_lang || '');
+            $('#lessonModal .raum-label').html(event.raum || '');
+            if (event.vertretungs_text)
+                $('#lessonModal .vertretungs-text').html(event.vertretungs_text).show();
+            else
+                $('#lessonModal .vertretungs-text').hide();
+                
+            if (event.is_event) {
+                $('#lessonModal .lesson-label').html('<b>' + event.event_title + '</b>');
+            }
+            
+            let d = new Date(event.datum);
+            $('#lessonModal .zeitpunkt').html(weekdays_long[d.getDay()] + 
+                ', den ' + event.datum.substr(8, 2) + 
+                '.' + event.datum.substr(5, 2) + 
+                '.' + event.datum.substr(0, 4) +
+                ' (' + parseInt(info.event.startStr.substr(11, 2)) + 
+                ':' + info.event.startStr.substr(14, 2) + 
+                ' &dash; ' + parseInt(info.event.endStr.substr(11, 2)) +
+                ':' + info.event.endStr.substr(14, 2) + ')'
+                );
+
+            let offsets = [];
+            for (let i = 0; i < 1; i++)
+                offsets.push(event.lesson_offset + i);
+            if (my_lessons.indexOf(event.lesson_key) >= 0 && event.lesson_offset !== null)
+                $('#lessonModal .bu-edit-lesson').attr('href', '/lessons/' + event.lesson_key + '#' + offsets.join(',')).show();
+            else
+                $('#lessonModal .bu-edit-lesson').hide();
+            let body = $('#lessonModal .lesson-infos-here');
+            body.empty();
+            let wrote_something = (event.vertretungs_text || '').length > 0;
+            
+            if (event.is_event) {
+                body.append('<div>Einladung erhalten von: ' + event.organized_by + '</div>');
+                body.append('<hr />');
+                if (event.jitsi) {
+                    let jitsi_link = '/jitsi/event/' + event.eid;
+                    body.append($('<a>').attr('href', jitsi_link).attr('target', '_blank').addClass('float-right').addClass('btn').addClass('btn-primary').css('margin-right', '5px').css('margin-bottom', '5px').html("<i class='fa fa-microphone'></i>&nbsp;&nbsp;Zum Jitsi-Raum&nbsp;&nbsp;<i class='fa fa-angle-double-right'></i>"));
+                    body.append($('<div>').html('Die Veranstaltung findet per Jitsi Meet statt.'));
+                    body.append("<hr style='margin-top: 30px;'/>");
+                }
+                let description = fix_bad_html($('<div>').html(event.description));
+                body.append(description);
+                wrote_something = true;
+                if ('#{@session_user[:email]}' === event.organized_by_email)
+                    $('#lessonModal .bu-edit-lesson').attr('href', '/events#' + event.eid).show();
+                else
+                    $('#lessonModal .bu-edit-lesson').hide();
+//                 body.append($('<a>').attr('href', jitsi_link).attr('target', '_blank').addClass('btn').addClass('btn-primary').css('margin-right', '5px').css('margin-bottom', '5px').html("<i class='fa fa-microphone'></i>&nbsp;&nbsp;Zum Jitsi-Raum&nbsp;&nbsp;<i class='fa fa-angle-double-right'></i>"));
+            }
+            let event_data = event.data || {};
+            let per_user = event.per_user || {};
+            if (event_data.stundenthema_text) {
+                if (wrote_something)
+                    body.append('<hr>');
+                body.append('<p><b>Stundenthema</b></p>');
+                if (event_data.stundenthema_text)
+                    body.append(`<p style='white-space: pre-line;'>${event_data.stundenthema_text}</p>`);
+                wrote_something = true;
+            }
+            let nc_ausgabe_link = '#';
+            let nc_einsammel_link = '#';
+            if (event.nc_folder) {
+                nc_ausgabe_link = '#{NEXTCLOUD_URL}/index.php/apps/files/?dir=/Unterricht/' + event.nc_folder + '/Ausgabeordner';
+                nc_einsammel_link = '#{NEXTCLOUD_URL}/index.php/apps/files/?dir=/Unterricht/' + event.nc_folder + '/' + event.nc_collect_folder;
+            }
+            let jitsi_link = '#';
+            if ((((event.klassen || [])[0]) || []).length === 1) {
+                let klasse = event.klassen[0][0];
+                if (#{PROVIDE_CLASS_STREAM} && klasse !== '11' && klasse !== '12')
+                {
+                    jitsi_link = '/jitsi/Klassenstreaming' + klasse;
+                }
+            }
+            if (jitsi_link === '#')
+                jitsi_link = '/jitsi/lesson/' + event.lesson_key;
+            if (teacher_tablet_logged_in)
+            {
+                jitsi_link += '@' + encodeURI(window.selected_shorthand);
+            }
+            if (event_data.lesson_jitsi || event_data.lesson_nc || event_data.lesson_lr) {
+                if (event_data.lesson_jitsi) {
+                    let p = $('<p>');
+                    p.append('Für diese Unterrichtsstunde wird ein Jitsi Meet-Stream bereitgestellt. ');
+                    if (event_data.booked_tablet) {
+                        p.append(`Das Tablet ${event_data.booked_tablet_label_long} ist für Sie reserviert. Bitte bringen Sie es gleich nach dem Unterricht wieder zurück.`);
+                    }
+                    body.append(p);
+                }
+                if (event_data.lesson_jitsi) {
+                    body.append($('<a>').attr('href', jitsi_link).attr('target', '_blank').addClass('btn').addClass('btn-primary').css('margin-right', '5px').css('margin-bottom', '5px').html("<i class='fa fa-microphone'></i>&nbsp;&nbsp;Zum Jitsi-Raum&nbsp;&nbsp;<i class='fa fa-angle-double-right'></i>"));
+                    let names_div = $('<div>');
+                    body.append(names_div);
+                    jitsi_refresh_config.jitsi_names_div = names_div;
+                    if ('#{sus_logged_in?}' === 'true' && event_data.breakout_rooms && event_data.breakout_room_participants) {
+                        if (event_data.breakout_rooms_roaming) {
+                            body.append($('<hr />'));
+                            body.append($('<p>').text(`Für diese Unterrichtsstunde stehen außerdem die folgenden Gruppenräume zur Verfügung. Bitte geh zuerst in den normalen Jitsi-Raum.`));
+                            for (let group_room_name of event_data.breakout_rooms) {
+                                let breakout_room_link = `/jitsi/lesson/${event.lesson_key}/${group_room_name}`;
+                                body.append($('<a>').attr('href', breakout_room_link).attr('target', '_blank').addClass('btn').addClass('btn-sm').addClass('btn-primary').css('margin-right', '5px').css('margin-bottom', '5px').html(`<i class='fa fa-microphone'></i>&nbsp;&nbsp;${group_room_name}&nbsp;&nbsp;<i class='fa fa-angle-double-right'></i>`));
+                            }
+                            body.append($('<hr />'));
+                        } else {
+                            let sus_offset = event.schueler_offset_in_lesson;
+                            let group_room_name = event_data.breakout_rooms[event_data.breakout_room_participants[sus_offset]];
+                            let breakout_room_link = `/jitsi/lesson/${event.lesson_key}/${group_room_name}`;
+                            body.append($('<hr />'));
+                            body.append($('<p>').text(`Du bist außerdem in den Gruppenraum »${group_room_name}« eingeteilt. Bitte geh zuerst in den normalen Jitsi-Raum.`));
+                            body.append($('<a>').attr('href', breakout_room_link).attr('target', '_blank').addClass('btn').addClass('btn-sm').addClass('btn-primary').css('margin-right', '5px').css('margin-bottom', '5px').html(`<i class='fa fa-microphone'></i>&nbsp;&nbsp;Zum Gruppenraum »${group_room_name}«&nbsp;&nbsp;<i class='fa fa-angle-double-right'></i>`));
+                            body.append($('<hr />'));
+                        }
+                    }
+                    if ('#{teacher_logged_in?}' === 'true') {
+                        if (event_data.breakout_rooms && event_data.breakout_room_participants) {
+                            let first_room = true;
+                            jitsi_refresh_config.jitsi_breakout_rooms_names_divs = [];
+                            for (let group_room_name of event_data.breakout_rooms) {
+                                body.append($('<hr />'));
+                                let breakout_room_link = `/jitsi/lesson/${event.lesson_key}/${group_room_name}`;
+                                body.append($('<a>').attr('href', breakout_room_link).attr('target', '_blank').addClass('btn').addClass('btn-sm').addClass('btn-primary').css('margin-right', '5px').css('margin-bottom', '5px').html(`<i class='fa fa-microphone'></i>&nbsp;&nbsp;${group_room_name}&nbsp;&nbsp;<i class='fa fa-angle-double-right'></i>`));
+                                let names_div = $('<div>');
+                                body.append(names_div);
+                                jitsi_refresh_config.jitsi_breakout_rooms_names_divs.push(names_div);
+                            }
+                        }
+                        jitsi_refresh_config.lesson_key = event.lesson_key;
+                        jitsi_refresh_config.lesson_offset = event.lesson_offset;
+                        body.append($('<hr />'));
+                        let missing_names_div = $('<div>').css('font-style', 'italic').addClass('muted');
+                        body.append(missing_names_div);
+                        jitsi_refresh_config.jitsi_missing_names_div = missing_names_div;
+                        refresh_jitsi_presence();
+                        jitsi_refresh_config.poll_handle = setInterval(function() {
+                            refresh_jitsi_presence();
+                        }, 10000);
+                    }
+                }
+                    
+                let parts = [];
+                if (event_data.lesson_nc)
+                    parts.push('in der Nextcloud');
+                if (event_data.lesson_lr)
+                    parts.push('im Lernraum');
+                let first = parts.slice(0, parts.length - 1).join(', ');
+                let second = [parts[parts.length - 1]];
+                if (first.length > 0)
+                    second.unshift(first);
+                if (event_data.lesson_nc || event_data.lesson_lr) {
+                    let label = second.join(' und ');
+                    body.append('<p>Es befindet sich Unterrichtsmaterial ' + label + '.</p>');
+                }
+                if (event_data.lesson_nc) {
+                    body.append($('<a>').attr('href', nc_ausgabe_link).attr('target', '_blank').addClass('btn').addClass('btn-primary').css('margin-right', '5px').css('margin-bottom', '5px').html("<i class='fa fa-nextcloud'></i>&nbsp;&nbsp;Zum Ausgabe-Ordner&nbsp;&nbsp;<i class='fa fa-angle-double-right'></i>"));
+                    body.append($('<a>').attr('href', nc_einsammel_link).attr('target', '_blank').addClass('btn').addClass('btn-primary').css('margin-right', '5px').css('margin-bottom', '5px').html("<i class='fa fa-nextcloud'></i>&nbsp;&nbsp;Zum Einsammel-Ordner&nbsp;&nbsp;<i class='fa fa-angle-double-right'></i>"));
+                }
+                if (event_data.lesson_lr)
+                    body.append($('<a>').attr('href', 'https://www.lernraum-berlin.de/').attr('target', '_blank').addClass('btn').addClass('btn-primary').css('margin-right', '5px').css('margin-bottom', '5px').html("<i class='fa fa-external-link'></i>&nbsp;&nbsp;Zum Lernraum&nbsp;&nbsp;<i class='fa fa-angle-double-right'></i>"));
+                wrote_something = true;
+            }
+            if (teacher_tablet_logged_in) {
+                if (!event_data.lesson_jitsi) {
+                    if (event.lesson_key !== 0) {
+                        body.append($('<div>').addClass('alert').addClass('alert-warning').html("Diese Stunde ist bisher nicht als Jitsi-Stunde markiert. Sie können dies nun nachholen und den Raum betreten. Beachten Sie bitte, dass es eine Minute dauern kann, bis diese Änderung bei Ihren Schülerinnen und Schülern zu sehen ist (diese müssen dafür auch ihren Stundenplan neu laden). Bitte markieren Sie die Stunden &ndash; wenn möglich &ndash; mit etwas Vorlauf, damit die Information rechtzeitig bei Ihren Schülerinnen und Schülern angezeigt wird."));
+                        let button = $('<button>').addClass('btn').addClass('btn-primary').css('margin-right', '5px').css('margin-bottom', '5px').html("<i class='fa fa-microphone'></i>&nbsp;&nbsp;Jitsi für diese Stunde aktivieren und per Jitsi Meet beitreten&nbsp;&nbsp;<i class='fa fa-angle-double-right'></i>");
+                        button.data('jitsi_link', jitsi_link);
+                        button.data('lesson_key', event.lesson_key);
+                        button.data('lesson_offset', event.lesson_offset);
+                        body.append(button);
+                        button.click(function(e) {
+                            let button_data = $(e.target).data();
+                            api_call('/api/force_jitsi_for_lesson', {lesson_key: button_data.lesson_key, lesson_offset: button_data.lesson_offset}, function(data) {
+                                window.location.href = jitsi_link;
+                            });
+                        });
+                    } else {
+                        body.append($('<div>').addClass('alert').addClass('alert-warning').html("Für diese Stunde können Sie momentan leider kein Jitsi Meet aktivieren, da es sich um eine Vertretungsstunde handelt."));
+                    }
+                }
+            }
+            if (event_data.hausaufgaben_text || event_data.homework_nc || event_data.homework_lr) {
+                if (wrote_something)
+                    body.append('<hr>');
+                body.append('<p><b>Hausaufgaben</b> (zu heute)</p>');
+                if (event_data.hausaufgaben_text)
+                    body.append("<p style='white-space: pre-line;'>" + event_data.hausaufgaben_text + '</p>');
+                if (event_data.homework_nc) {
+                    body.append('<p><b>Nextcloud</b></p>');
+                    body.append($('<a>').attr('href', nc_ausgabe_link).attr('target', '_blank').addClass('btn').addClass('btn-primary').css('margin-right', '5px').css('margin-bottom', '5px').html("<i class='fa fa-nextcloud'></i>&nbsp;&nbsp;Zum Ausgabe-Ordner&nbsp;&nbsp;<i class='fa fa-angle-double-right'></i>"));
+                    body.append($('<a>').attr('href', nc_einsammel_link).attr('target', '_blank').addClass('btn').addClass('btn-primary').css('margin-right', '5px').css('margin-bottom', '5px').html("<i class='fa fa-nextcloud'></i>&nbsp;&nbsp;Zum Einsammel-Ordner&nbsp;&nbsp;<i class='fa fa-angle-double-right'></i>"));
+                }
+                if (event_data.homework_lr)
+                    body.append($('<a>').attr('href', 'https://www.lernraum-berlin.de/').attr('target', '_blank').addClass('btn').addClass('btn-primary').css('margin-right', '5px').css('margin-bottom', '5px').html("<i class='fa fa-external-link'></i>&nbsp;&nbsp;Zum Lernraum&nbsp;&nbsp;<i class='fa fa-angle-double-right'></i>"));
+                wrote_something = true;
+            }
+            if (event_data.notizen) {
+                if (wrote_something)
+                    body.append('<hr>');
+                body.append('<p><b>Notizen</b> (nur für mich sichtbar)</p>');
+                if (event_data.notizen)
+                    body.append('<p>' + event_data.notizen + '</p>');
+                wrote_something = true;
+            }
+            if (per_user.text_comments || per_user.audio_comments) {
+                if (wrote_something)
+                    body.append('<hr>');
+                body.append('<p><b>Rückmeldungen</b></p>');
+                let read_entries = [];
+                for (let entry of (per_user.text_comments || [])) {
+                    body.append($('<div>').addClass('text-comment').append($('<div>').addClass('from').html(entry.from)).append($('<div>').addClass('message').html(entry.comment)));
+                    if (unread_message_ids.indexOf(entry.id) >= 0)
+                        read_entries.push(entry.id);
+                }
+                for (let entry of (per_user.audio_comments || [])) {
+                    let player = create_audio_player(entry.from, entry.tag, entry.duration / 1000);
+                    body.append(player);
+                    if (unread_message_ids.indexOf(entry.id) >= 0)
+                        read_entries.push(entry.id);
+                }
+                if (read_entries.length > 0) {
+                    api_call('/api/mark_as_read', {ids: read_entries}, function(data) {
+                        if (data.success) {
+                            unread_message_ids = data.new_unread_ids;
+                            if (unread_message_ids.length > 0) {
+                                $('.new-messages-indicator span').html('' + unread_message_ids.length);
+                                $('.new-messages-indicator-mini span').html('' + unread_message_ids.length);
+                            } else {
+                                $('.new-messages-indicator span').html('');
+                                $('.new-messages-indicator-mini span').html('');
+                                $('.new-messages-indicator').hide();
+                                $('.new-messages-indicator-mini').hide();
+                            }
+                        }
+                    });
+                }
+                wrote_something = true;
+            }
+            if (!wrote_something) {
+                if (tablet_logged_in)
+                    body.append("<div class='text-muted'><i>(im Lehrer-Tablet-Modus werden keine weiteren Informationen angezeigt)</i></div>");
+                else
+                    body.append("<div class='text-muted'><i>(keine weiteren Informationen)</i></div>");
+            }
+            
+            $('#lessonModal').modal('show');
+        }
+    };
+    if ('#{!!@session_user[:teacher]}' === 'false') {
+        let d0 = moment(initial_date).day(1).subtract(28, 'days').format('YYYY-MM-DD');
+        options.validRange = {
+            start: d0
+        };
+    }
+
+    let calendar = new FullCalendar.Calendar(document.getElementById('calendar'), options);
+    calendar.render();
+    $('#lessonModal').on('hidden.bs.modal', function() {
+        if (pb_playing)
+        {
+            pb_audio.pause();
+            pb_url = null;
+        }
+        clear_polling_handler();
+    });
+    
+    if (!tablet_logged_in) {
+        let uri = '/gen/w/' + timetable_id + '/homework.json.gz';
+        if (#{@session_user[:teacher] ? true: false})
+            uri += '?' + Date.now();
+        let oReq = new XMLHttpRequest();
+        oReq.open('GET', uri, true);
+        oReq.responseType = 'arraybuffer';
+        
+        function handle_homework(homework) {
+            let last_date = null;
+            if (homework.length > 0)
+            {
+                $('.future_homework').append($('<p><b>Hausaufgaben</b></p>'));
+                $('.future_homework').show();
+            }
+            for (let entry of homework) {
+                if (entry.datum !== last_date) {
+                    $('.future_homework').append($('<hr />'));
+                    $('.future_homework').append($('<p>').html(moment(entry.datum).format('ddd, D.M.Y')));
+                }
+                last_date = entry.datum;
+                let div = $("<p style='white-space: pre-line;'>").html('<b>' + entry.fach + ':</b> ' + entry.text.join('<br />'));
+                $('.future_homework').append(div);
+                if ((entry.est_time || 0) > 0)
+                    $('.future_homework').append($('<p>').html(`Geplanter Zeitaufwand: ${entry.est_time} Minuten`));
+                if ('#{!!sus_logged_in?}' === 'true') {
+                    let bu_done = $('<div>').addClass('dropdown');
+                    bu_done.data('lesson_key', entry.lesson_key);
+                    bu_done.data('offset', entry.offset);
+                    bu_done.data('homework', entry);
+                    let mi_button = $('<button>').addClass('btn').addClass('btn-sm').addClass('dropdown-toggle').attr('data-toggle', 'dropdown').css('margin-bottom', '5px');
+                    let dropdown_menu = $('<div>').addClass('dropdown-menu');
+                    let mi_set_undone = $('<button>').addClass('dropdown-item').addClass('bu-set-undone').html("<i class='fa fa-clock-o'></i>noch nicht erledigt");
+                    let mi_set_done = $('<button>').addClass('dropdown-item').addClass('bu-set-done').html("<i class='fa fa-check'></i>erledigt");
+                    let mi_feedback = $('<button>').addClass('dropdown-item').html("<i class='fa fa-comment-o'></i>Feedback geben…");
+                    if (homework_feedback[`${entry.lesson_key}/${entry.offset}`].done) {
+                        mi_button.addClass('btn-success').html("<i class='fa fa-check'></i>&nbsp;&nbsp;erledigt");
+                        mi_set_done.hide();
+                    } else {
+                        mi_button.addClass('btn-outline-secondary').html("<i class='fa fa-clock-o'></i>&nbsp;&nbsp;noch nicht erledigt");
+                        mi_set_undone.hide();
+                    }
+                    bu_done.append(mi_button);
+                    dropdown_menu.append(mi_set_undone);
+                    dropdown_menu.append(mi_set_done);
+                    dropdown_menu.append($('<div>').addClass('dropdown-divider'));
+                    dropdown_menu.append(mi_feedback);
+                    bu_done.append(dropdown_menu);
+                    $('.future_homework').append(bu_done);
+                    mi_set_done.click(function(e) {
+                        let parent = $(e.target).closest('.dropdown');
+                        let lesson_key = parent.data('lesson_key');
+                        let offset = parent.data('offset');
+                        let button = parent.find('.dropdown-toggle');
+                        api_call('/api/mark_homework_done', {lesson_key: lesson_key, offset: offset}, function(data) {
+                            if (data.success) {
+                                homework_feedback[`${lesson_key}/${offset}`].done = true;
+                                button.removeClass('btn-outline-secondary').addClass('btn-success').html("<i class='fa fa-check'></i>&nbsp;&nbsp;erledigt");
+                                parent.find('.bu-set-done').hide();
+                                parent.find('.bu-set-undone').show();
+                            }
+                        });
+                    });
+                    mi_set_undone.click(function(e) {
+                        let parent = $(e.target).closest('.dropdown');
+                        let lesson_key = parent.data('lesson_key');
+                        let offset = parent.data('offset');
+                        let button = parent.find('.dropdown-toggle');
+                        button.removeClass('btn-success').addClass('btn-outline-secondary').html("<i class='fa fa-clock-o'></i>&nbsp;&nbsp;noch nicht erledigt");
+                        parent.find('.bu-set-undone').hide();
+                        parent.find('.bu-set-done').show();
+                        api_call('/api/mark_homework_undone', {lesson_key: lesson_key, offset: offset}, function(data) {
+                            if (data.success) {
+                                homework_feedback[`${lesson_key}/${offset}`].done = false;
+                                button.removeClass('btn-success').addClass('btn-outline-secondary').html("<i class='fa fa-clock-o'></i>&nbsp;&nbsp;noch nicht erledigt");
+                                parent.find('.bu-set-done').show();
+                                parent.find('.bu-set-undone').hide();
+                            }
+                        });
+                    });
+                    mi_feedback.click(function(e) {
+                        let parent = $(e.target).closest('.dropdown');
+                        let lesson_key = parent.data('lesson_key');
+                        let offset = parent.data('offset');
+                        let homework = parent.data('homework');
+                        $('#homeworkFeedbackModal').data('lesson_key', lesson_key);
+                        $('#homeworkFeedbackModal').data('offset', offset);
+                        $('#homeworkFeedbackModal .hw-fb-fach').text(homework.fach);
+                        $('#homeworkFeedbackModal .hw-fb-lehrer').text(homework.lehrer);
+                        $('#homeworkFeedbackModal .hw-fb-lehrer-genitiv').text(homework.lehrer.replace(/Herr/g, 'Herrn'));
+                        $('#homeworkFeedbackModal .hw-fb-est-time').text(homework.est_time);
+                        $('#homeworkFeedbackModal .hw-fb-hw-date').text(moment(entry.datum).format('ddd, D.M.Y'));
+                        $('#homeworkFeedbackModal').on('shown.bs.modal', function () {
+                            $('#ti_hw_spent_minutes').focus();
+                        });
+                        $('#ti_hw_spent_minutes').val();
+                        if ((homework.est_time || 0) > 0)
+                            $('.hw-fb-got-est-time').show();
+                        else
+                            $('.hw-fb-got-est-time').hide();
+                        $('.feedback_submit_error').hide();
+                        $('.feedback_submit_success').hide();
+                        $('#homeworkFeedbackModal .hf-emoji').removeClass('selected');
+                        let current_feedback = homework_feedback[`${lesson_key}/${offset}`] || {};
+                        $(`#homeworkFeedbackModal .hf-emoji[data-feedback=${current_feedback.state}]`).addClass('selected');
+                        $('#homeworkFeedbackModal #ti_hw_spent_minutes').val(current_feedback.time_spent || '');
+//                         
+                        $('#bu_send_homework_feedback').prop('disabled', true);
+                        $('#homeworkFeedbackModal').modal('show');
+                    });
+                }
+            }
+        }
+
+        oReq.onload = function(e) {
+            if (e.target.status === 200) {
+                let data = pako.ungzip(oReq.response);
+                let bb = new Blob([new Uint8Array(data)]);
+                let f = new FileReader();
+                f.onload = function(e) {
+                    let homework = JSON.parse(e.target.result);
+                    let request_items = [];
+                    for (let entry of homework)
+                        request_items.push(`${entry.lesson_key}/${entry.offset}`);
+                    if ('#{!!sus_logged_in?}' === 'true') {
+                        api_call('/api/get_homework_feedback', {entries: request_items}, function(data) {
+                            if (data.success) {
+                                homework_feedback = data.homework_feedback;
+                                handle_homework(homework);
+                            }
+                        });
+                    } else {
+                        handle_homework(homework);
+                    }
+                };
+                f.readAsText(bb);
+            }
+        };
+        oReq.send();
+    }
+    if (tablet_logged_in) {
+        window.selected_shorthand = $($('.ttc.active')[0]).text();
+        history.replaceState({}, '', '/timetable/');
+//         if (window.selected_shorthand.length === 0) {
+//             if ($('.tablet_timetable_chooser .ttc').length === 1) {
+//                 $($('.tablet_timetable_chooser .ttc')[0]).click();
+//             }
+//         }
+    }
+    $('.hf-emoji').click(function(e) {
+        let flag = $(e.target).closest('.hf-emoji').hasClass('selected');
+        $(e.target).closest('.row').find('.hf-emoji').removeClass('selected');
+        if (!flag)
+            $(e.target).closest('.hf-emoji').addClass('selected');
+        else
+            $(e.target).closest('.hf-emoji').removeClass('selected');
+        $('#bu_send_homework_feedback').prop('disabled', false);
+    });
+    $('#ti_hw_spent_minutes').change(function() {
+        $('#bu_send_homework_feedback').prop('disabled', false);
+    });
+    $('#ti_hw_spent_minutes').keyup(function() {
+        $('#bu_send_homework_feedback').prop('disabled', false);
+    });
+    
+    $('#bu_send_homework_feedback').click(function() {
+        let submit_data = {};
+        submit_data.lesson_key = $('#homeworkFeedbackModal').data('lesson_key');
+        submit_data.offset = $('#homeworkFeedbackModal').data('offset');
+        submit_data.state = '';
+        submit_data.time_spent = 0;
+        let state = $('.hf-emoji.selected').data('feedback');
+        if (typeof(state) !== 'undefined')
+            submit_data.state = state;
+        if ($('#ti_hw_spent_minutes').val().trim().length > 0)
+            submit_data.time_spent = parseInt($('#ti_hw_spent_minutes').val().trim());
+//         console.log(submit_data);
+        $('.feedback_submit_error').hide();
+        $('.feedback_submit_success').hide();
+        api_call('/api/update_homework_feedback', submit_data, function(data) {
+            if (data.success) {
+                if (typeof(data.error) !== 'undefined') {
+                    $('#homeworkFeedbackModal .feedback_submit_error_message').text(': ' + data.error);
+                    $('#homeworkFeedbackModal .feedback_submit_error').fadeIn();
+                } else {
+                    $('#homeworkFeedbackModal .feedback_submit_success').fadeIn();
+                    $('#bu_send_homework_feedback').prop('disabled', true);
+                    homework_feedback[`${submit_data.lesson_key}/${submit_data.offset}`].state = submit_data.state;
+                    homework_feedback[`${submit_data.lesson_key}/${submit_data.offset}`].time_spent = submit_data.time_spent;
+                }
+            } else {
+                $('#homeworkFeedbackModal .feedback_submit_error_message').text('');
+                $('#homeworkFeedbackModal .feedback_submit_error').fadeIn();
+            }
+        });
+    });
+});
+</script>

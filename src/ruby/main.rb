@@ -340,6 +340,8 @@ class SetupDatabase
                     neo4j_query("CREATE INDEX ON :Booking(datum)")
                     neo4j_query("CREATE INDEX ON :Booking(confirmed)")
                     neo4j_query("CREATE INDEX ON :Booking(updated)")
+                    neo4j_query("CREATE INDEX ON :Test(klasse)")
+                    neo4j_query("CREATE INDEX ON :Test(date)")
                 end
                 transaction do
                     main.class_variable_get(:@@user_info).keys.each do |email|
@@ -1186,9 +1188,6 @@ class Main < Sinatra::Base
                     nav_items << :kurse
                     nav_items << :directory
                 end
-                if teacher_logged_in?
-                    nav_items << ['/events', 'Termine', 'fa fa-calendar-check-o']
-                end
                 if user_who_can_upload_files_logged_in? || user_who_can_manage_news_logged_in?
                     nav_items << :website
                 end
@@ -1241,6 +1240,10 @@ class Main < Sinatra::Base
                     io.puts "<a class='dropdown-item nav-icon' href='/login_nc'><div class='icon'><i class='fa fa-nextcloud'></i></div><span class='label'>In Nextcloud anmelden…</span></a>"
                     if teacher_or_sv_logged_in?
                         io.puts "<div class='dropdown-divider'></div>"
+                        if teacher_logged_in?
+                            io.puts "<a class='dropdown-item nav-icon' href='/events'><div class='icon'><i class='fa fa-calendar-check-o'></i></div><span class='label'>Termine</span></a>"
+                            io.puts "<a class='dropdown-item nav-icon' href='/tests'><div class='icon'><i class='fa fa-file-text-o'></i></div><span class='label'>Klassenarbeiten</span></a>"
+                        end
                         io.puts "<a class='dropdown-item nav-icon' href='/polls'><div class='icon'><i class='fa fa-bar-chart'></i></div><span class='label'>Umfragen</span></a>"
                         io.puts "<a class='dropdown-item nav-icon' href='/prepare_vote'><div class='icon'><i class='fa fa-group'></i></div><span class='label'>Abstimmungen</span></a>"
                     end

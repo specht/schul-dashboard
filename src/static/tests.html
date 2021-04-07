@@ -1,11 +1,63 @@
 #{this_is_a_page_for_logged_in_teachers}
 <div class='container-fluid' style='padding-top: 30px;'>
     <div class='row'>
-        <div class='col-lg-8 col-md-12 offset-md-2 '>
+        <div class='col-lg-8 col-md-12 offset-lg-2'>
             <div id='calendar' style='margin-bottom: 30px;'>
             </div>
         </div>
+        <div class='col-lg-2' style='padding-top: 66px;'>
+            #{print_test_klassen_chooser(klasse)}
+        </div>
     </div>
+</div>
+
+<div class="modal" id="testModal" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Eintrag hinzufügen</h5>
+      </div>
+      <div class="modal-body">
+        <form>
+            <div class="form-row">
+                <div class="form-group col-md-3">
+                    <label>Datum</label>
+                    <input type='date' class='form-control' id='ti_datum' />
+                </div>
+                <div class="form-group col-md-3">
+                    <label>Klasse</label>
+                    <input type='text' class='form-control' value='#{klasse}' readonly />
+                </div>
+                <div class="form-group col-md-3">
+                    <label>Typ</label>
+                    <select id="ti_typ" class="form-control">
+                        <option value='KA' selected>Klassenarbeit</option>
+                        <option value='LEK'>LEK</option>
+                    </select>
+                </div>
+                <div class="form-group col-md-3">
+                    <label>Fach</label>
+                    <select id="ti_fach" class="form-control">
+                    </select>
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group col-md-12">
+                    <label>Kommentar</label>
+                    <input type='text' class='form-control' id='ti_comment' />
+                    <small class="form-text text-muted">Dieser Eintrag ist für alle Kolleginnen und Kollegen sichtbar.</small>
+                </div>
+            </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button id='bu_delete_test' type="button" class="btn btn-danger"><i class='fa fa-trash'></i>&nbsp;&nbsp;<span>Löschen</span></button>
+        <button id='bu_discard_test' type="button" class="btn btn-secondary" disabled><i class='fa fa-times'></i>&nbsp;&nbsp;<span>Verwerfen</span></button>
+        <button id='bu_save_test' type="button" class="btn btn-success" disabled><i class='fa fa-check'></i>&nbsp;&nbsp;<span>Speichern</span<</button>
+        <button id='bu_close_test' type="button" class="btn btn-secondary" disabled data-dismiss='modal'><i class='fa fa-times'></i>&nbsp;&nbsp;<span>Schließen</span<</button>
+      </div>
+    </div>
+  </div>
 </div>
 
 <style>
@@ -20,34 +72,109 @@
     border: 1px solid #{desaturated_color_darker};
     color: #fff;
 }
-
 .card {
     background-color: rgba(255,255,255,0.5);
+}
+.fc .fc-toolbar-title {
+    background-color: rgba(255, 255, 255, 0.7);
+    padding: 8px 16px;
+    border-top-left-radius: 8px;
+    border-top-right-radius: 8px;
+    position: relative;
+    top: 24px;
+    font-size: 1.5em;
+}
+
+.fc-daygrid-day {
+    cursor: pointer;
+}
+
+@media (max-width: 440px) {
+    .fc .fc-toolbar-title {
+        font-size: 1.0em;
+        top: 26px;
+    }
 }
 </style>
 
 <script>
+var klasse = '#{klasse}';
+var click_date = null;
+var stored_test_json = null;
+var possible_lessons = #{lessons_for_session_user_and_klasse(klasse).to_json};
+
+function collect_data() {
+    let result = {};
+    result.klasse = klasse;
+    result.datum = $('#ti_datum').val();
+    result.fach = $('#ti_fach').val();
+    result.kommentar = $('#ti_comment').val().trim();
+    result.typ = $('#ti_typ').val();
+    return result;
+}
+
+function pending_changes() {
+    let flag = false;
+    let current_test = collect_data();
+    let current_test_json = JSON.stringify(current_test);
+    if (current_test_json !== stored_test_json)
+        flag = true;
+    return flag;
+}
+
+function can_send() {
+    let data = collect_data();
+    return (data.fach !== null && data.type !== null);
+}
+
+function update_buttons() {
+    if (stored_test_json !== null) {
+        $('#bu_discard_test span').html('Änderungen verwerfen');
+        $('#bu_save_test span').html('Änderungen speichern');
+        $('#bu_delete_test').show();
+        $('#bu_close_test').show();
+    } else {
+        $('#bu_discard_test span').html('Verwerfen');
+        $('#bu_save_test span').html('Speichern');
+        $('#bu_delete_test').hide();
+        $('#bu_close_test').hide();
+    }
+    if (pending_changes()) {
+        $('#bu_discard_test').removeClass('btn-outline-secondary').addClass('btn-secondary').prop('disabled', false);
+        $('#bu_close_test').removeClass('btn-secondary').addClass('btn-outline-secondary').prop('disabled', true);
+        if (can_send())
+            $('#bu_save_test').removeClass('btn-outline-secondary').addClass('btn-success').prop('disabled', false);
+        else
+            $('#bu_save_test').removeClass('btn-success').addClass('btn-outline-secondary').prop('disabled', true);
+    } else {
+        $('#bu_discard_test').removeClass('btn-secondary').addClass('btn-outline-secondary').prop('disabled', true);
+        $('#bu_close_test').removeClass('btn-outline-secondary').addClass('btn-secondary').prop('disabled', false);
+        $('#bu_save_test').removeClass('btn-success').addClass('btn-outline-secondary').prop('disabled', true);
+    }
+}
+
 document.addEventListener('DOMContentLoaded', function() {
     moment.locale('de');
     let narrow_window = ($(window).width() <= 640);
     let initial_date = '#{initial_date}';
     let options = {
-        initialView: narrow_window ? 'listMonth' : 'dayGridMonth',
+        initialView: narrow_window ? 'dayGridWeek' : 'dayGridMonth',
         headerToolbar: {start: 'title', center: '', end: 'today prev,next'},
         locale: 'de',
         initialDate: initial_date,
         events: function(info, successCallback, failureCallback) {
-            console.log(info);
             let start_date = new Date(info.startStr);
             let ym_date = start_date.getFullYear();
             let month = '' + (start_date.getMonth() + 1);
             if (month.length < 2) month = '0' + month;
             ym_date += `-${month}`;
-            api_call('/api/get_tests', {start_date: info.startStr.substr(0, 10)}, function(data) {
+            api_call('/api/get_tests', {klasse: klasse, start_date: info.startStr.substr(0, 10)}, function(data) {
                 if (data.success) {
-                    console.log(data);
                     data.events = data.events.map(function(x) {
-                        x.color = color_palette.primary;
+                        if ((x.extendedProps.type || 'test') === 'test')
+                            x.color = color_palette.primary;
+                        else
+                            x.color = color_palette.shifted;
                         return x;
                     });
                     successCallback(data.events);
@@ -59,16 +186,71 @@ document.addEventListener('DOMContentLoaded', function() {
             hour: 'numeric',
             minute: '2-digit',
             omitZeroMinute: false
+        },
+        dateClick: function(info) {
+            if (possible_lessons.fach_order.length > 0) {
+                $('#testModal #ti_datum').val(moment(info.dateStr).format('YYYY-MM-DD'));
+                $('#ti_typ').val(null);
+                $('#ti_fach').val(null);
+                $('#ti_comment').val('');
+                stored_test_json = null;
+                update_buttons();
+                $('option.temporary').remove();
+                $('#testModal').modal('show');
+            }
+        },
+        eventClick: function(info) {
+            if (info.event.extendedProps.type === 'test') {
+                if (info.event.extendedProps.is_session_user) {
+                    let test = info.event.extendedProps.test;
+                    $('#testModal #ti_datum').val(moment(test.datum).format('YYYY-MM-DD'));
+                    $('#ti_typ').val(test.typ);
+                    $('option.temporary').remove();
+                    if (possible_lessons.fach_order.indexOf(test.fach) < 0) {
+                        let fach_tr = possible_lessons.fach_tr[test.fach] || test.fach;
+                        $('#ti_fach').append($('<option>').attr('value', test.fach).addClass('temporary').text(fach_tr));
+                    }
+                    $('#ti_fach').val(test.fach);
+                    $('#ti_comment').val(test.kommentar);
+                    stored_test_json = JSON.stringify(collect_data());
+                    update_buttons();
+                    $('#testModal').modal('show');
+                } else {
+                }
+            }
         }
     };
-    if ('#{!!@session_user[:teacher]}' === 'false') {
-        let d0 = moment(initial_date).day(1).subtract(28, 'days').format('YYYY-MM-DD');
-        options.validRange = {
-            start: d0
-        };
-    }
 
     let calendar = new FullCalendar.Calendar(document.getElementById('calendar'), options);
     calendar.render();
+    jQuery.each($('.ttc'), function(_, e) {
+        $(e).attr('onclick', `window.location.href = '/tests/${$(e).data('klasse')}'`);
+    });
+    $('.ttc').click(function(e) {
+        let klasse = $(e.target).data('klasse');
+    });
+    $('#bu_discard_test').click(function(e) {
+        $('#testModal').modal('hide');
+    });
+    $('#bu_save_test').click(function(e) {
+        let test_data = collect_data();
+        api_call('/api/save_test', test_data, function(data) {
+            console.log(data);
+            if (data.success) {
+                $('#testModal').modal('hide');
+                calendar.refetchEvents();
+            }
+        });
+    });
+    for (let i = 0; i < possible_lessons.fach_order.length; i++) {
+        let fach = possible_lessons.fach_order[i];
+        let fach_tr = possible_lessons.fach_tr[fach] || fach;
+        $('#ti_fach').append($('<option>').attr('value', fach).text(fach_tr));
+    }
+    $('#ti_datum').change(function() { update_buttons(); });
+    $('#ti_typ').change(function() { update_buttons(); });
+    $('#ti_fach').change(function() { update_buttons(); });
+    $('#ti_comment').change(function() { update_buttons(); });
+    $('#ti_comment').keyup(function() { update_buttons(); });
 });
 </script>

@@ -342,7 +342,8 @@ class SetupDatabase
                     neo4j_query("CREATE INDEX ON :Booking(confirmed)")
                     neo4j_query("CREATE INDEX ON :Booking(updated)")
                     neo4j_query("CREATE INDEX ON :Test(klasse)")
-                    neo4j_query("CREATE INDEX ON :Test(date)")
+                    neo4j_query("CREATE INDEX ON :Test(fach)")
+                    neo4j_query("CREATE INDEX ON :Test(datum)")
                 end
                 transaction do
                     main.class_variable_get(:@@user_info).keys.each do |email|
@@ -1243,7 +1244,7 @@ class Main < Sinatra::Base
                         io.puts "<div class='dropdown-divider'></div>"
                         if teacher_logged_in?
                             io.puts "<a class='dropdown-item nav-icon' href='/events'><div class='icon'><i class='fa fa-calendar-check-o'></i></div><span class='label'>Termine</span></a>"
-#                             io.puts "<a class='dropdown-item nav-icon' href='/tests'><div class='icon'><i class='fa fa-file-text-o'></i></div><span class='label'>Klassenarbeiten</span></a>"
+                            io.puts "<a class='dropdown-item nav-icon' href='/tests'><div class='icon'><i class='fa fa-file-text-o'></i></div><span class='label'>Klassenarbeiten</span></a>"
                         end
                         io.puts "<a class='dropdown-item nav-icon' href='/polls'><div class='icon'><i class='fa fa-bar-chart'></i></div><span class='label'>Umfragen</span></a>"
                         io.puts "<a class='dropdown-item nav-icon' href='/prepare_vote'><div class='icon'><i class='fa fa-group'></i></div><span class='label'>Abstimmungen</span></a>"
@@ -1395,7 +1396,7 @@ class Main < Sinatra::Base
                 unless teacher_tablet_logged_in?
                     @@klassen_order.each do |klasse|
                         id = @@klassen_id[klasse]
-                        io.puts "<a data-id='#{id}' onclick=\"window.location.href = '/timetable/#{id}' + window.location.hash;\" class='btn btn-sm ttc'>#{tr_klasse(klasse)}</a>"
+                        io.puts "<a data-klasse='#{klasse}' data-id='#{id}' onclick=\"window.location.href = '/timetable/#{id}' + window.location.hash;\" class='btn btn-sm ttc'>#{tr_klasse(klasse)}</a>"
                     end
                     io.puts '<hr />'
                 end
@@ -1425,13 +1426,25 @@ class Main < Sinatra::Base
                 @@klassen_order.each do |klasse|
                     next unless (@@klassen_for_shorthand[@session_user[:shorthand]] || Set.new()).include?(klasse)
                     id = @@klassen_id[klasse]
-                    io.puts "<a data-id='#{id}' onclick=\"window.location.href = '/timetable/#{id}' + window.location.hash;\" class='btn btn-sm ttc'>#{tr_klasse(klasse)}</a>"
+                    io.puts "<a data-klasse='#{klasse}' data-id='#{id}' onclick=\"window.location.href = '/timetable/#{id}' + window.location.hash;\" class='btn btn-sm ttc'>#{tr_klasse(klasse)}</a>"
                 end
                 id = @session_user[:id]
                 io.puts "<a data-id='#{id}' onclick=\"window.location.href = '/timetable' + window.location.hash;\" class='btn btn-sm ttc'>#{@session_user[:shorthand]}</a>"
                 io.puts "</div>"
                 io.string
             end
+        end
+    end
+    
+    def print_test_klassen_chooser(active = nil)
+        StringIO.open do |io|
+            io.puts "<div style='margin-bottom: 15px;'>"
+            klassen_for_session_user.each do |klasse|
+                next if ['11', '12'].include?(klasse)
+                io.puts "<a data-klasse='#{klasse}' class='btn btn-sm ttc #{klasse == active ? 'active': ''}'>#{tr_klasse(klasse)}</a>"
+            end
+            io.puts "</div>"
+            io.string
         end
     end
     
@@ -1565,6 +1578,12 @@ class Main < Sinatra::Base
                                 :httponly => true,
                                 :secure => DEVELOPMENT ? false : true)
             redirect "#{STREAM_SITE_URL}?jwt=#{jwt}", 302
+        elsif path == 'tests'
+            parts = request.env['REQUEST_PATH'].split('/')
+            klasse = (parts[2] || '').strip
+            if klasse.empty?
+                klasse = klassen_for_session_user.first
+            end
         elsif path == 'index'
             if @session_user
                 path = 'timetable' 

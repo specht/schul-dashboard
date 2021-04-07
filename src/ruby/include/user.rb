@@ -170,4 +170,35 @@ class Main < Sinatra::Base
     def user_icon(email, c = nil)
         "<div style='background-image: url(#{NEXTCLOUD_URL}/index.php/avatar/#{@@user_info[email][:nc_login]}/128), url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mO88h8AAq0B1REmZuEAAAAASUVORK5CYII=);' class='#{c}'></div>"
     end
+
+    def klassen_for_session_user()
+        require_teacher!
+        if can_see_all_timetables_logged_in?
+            @@klassen_order.dup
+        else
+            klassen = []
+            @@klassen_order.each do |klasse|
+                next unless (@@klassen_for_shorthand[@session_user[:shorthand]] || Set.new()).include?(klasse)
+                klassen << klasse
+            end
+            klassen
+        end
+    end
+    
+    def lessons_for_session_user_and_klasse(klasse)
+        require_teacher!
+        faecher = Set.new()
+        @@lessons_for_shorthand[@session_user[:shorthand]].each do |lesson_key|
+            lesson_info = @@lessons[:lesson_keys][lesson_key]
+            next unless lesson_info[:klassen].include?(klasse)
+            faecher << lesson_info[:fach]
+        end
+        faecher = faecher.to_a.sort do |a, b|
+            a = @@faecher[a] if @@faecher[a]
+            b = @@faecher[b] if @@faecher[b]
+            a <=> b
+        end
+        {:fach_order => faecher, :fach_tr => @@faecher}
+    end
+
 end

@@ -121,7 +121,7 @@ class BackgroundRenderer
             lines << "<path d='M #{x0.to_i},#{y0.to_i} #{x1.to_i},#{y1.to_i} #{x2.to_i},#{y2.to_i} Z' class='c#{classes[c1]} c#{classes[c2]}' />"
         else
             c1 = 'stroke:none;'
-            c2 = "fill:rgba(0,0,0,#{(1.0 - fy) * 0.2}); filter:url(#blur);"
+            c2 = "fill:rgba(0,0,0,#{sprintf('%1.3f', (1.0 - fy) * 0.2)}); filter:url(#blur);"
             classes[c1] ||= i_to_b62(classes.size)
             classes[c2] ||= i_to_b62(classes.size)
             lines << "<path d='M #{x0.to_i},#{y0.to_i} #{x1.to_i},#{y1.to_i} #{x2.to_i},#{y2.to_i} Z' class='c#{classes[c1]} c#{classes[c2]}' />"
@@ -200,7 +200,7 @@ class BackgroundRenderer
         else
             if shadow == 1
                 c1 = 'stroke:none;'
-                c2 = "fill:rgba(0,0,0,#{(1.0 - fy) * (ld_mode == 'l' ? 0.3 : 0.6)}); filter:url(#blur);"
+                c2 = "fill:rgba(0,0,0,#{sprintf('%1.3f', (1.0 - fy) * (ld_mode == 'l' ? 0.3 : 0.6))}); filter:url(#blur);"
                 classes[c1] ||= i_to_b62(classes.size)
                 classes[c2] ||= i_to_b62(classes.size)
                 lines << "<path d='M #{p0[0].to_i} #{p0[1].to_i} C#{p9[0].to_i} #{p9[1].to_i},#{pa[0].to_i} #{pa[1].to_i}, #{p1[0].to_i} #{p1[1].to_i}, #{pb[0].to_i} #{pb[1].to_i},#{pc[0].to_i} #{pc[1].to_i}, #{p2[0].to_i} #{p2[1].to_i}, #{pd[0].to_i} #{pd[1].to_i},#{pe[0].to_i} #{pe[1].to_i}, #{p0[0].to_i} #{p0[1].to_i} Z' class='c#{classes[c1]} c#{classes[c2]}' />"
@@ -249,7 +249,7 @@ class BackgroundRenderer
         else
             r = 100
             c1 = 'stroke:none;'
-            c2 = "fill:rgba(0,0,0,#{(1.0 - fy) * 0.7}); filter:url(#blur);"
+            c2 = "fill:rgba(0,0,0,#{sprintf('%1.3f', (1.0 - fy) * 0.7)}); filter:url(#blur);"
             classes[c1] ||= i_to_b62(classes.size)
             classes[c2] ||= i_to_b62(classes.size)
             lines << "<circle cx='#{p0[0].to_i}' cy='#{p0[1].to_i}' r='#{r}px' class='c#{classes[c1]} c#{classes[c2]}' />"
@@ -310,7 +310,7 @@ class BackgroundRenderer
             passes << 1
             passes.each do |pass|
                 c1 = 'stroke:none;'
-                c2 = pass == 0 ? "fill:rgba(0,0,0,#{(1.0 - fy) * (ld_mode == 'l' ? 0.3 : 0.6)}); filter:url(#blur);" : "fill:#{color};"
+                c2 = pass == 0 ? "fill:rgba(0,0,0,#{sprintf('%1.3f', (1.0 - fy) * (ld_mode == 'l' ? 0.3 : 0.6))}); filter:url(#blur);" : "fill:#{color};"
 #                 if pass == 1
 #                     c2 = 'stroke: #000000; fill:none;'
 #                 end
@@ -324,7 +324,7 @@ class BackgroundRenderer
                     y = p0[1] + r * Math.sin((i + o) * Math::PI * 2.0 / n)
                     p << [x, y]
                 end
-                lines << "<path d='M #{p.map { |_| "#{_[0]} #{_[1]}"}.join(' ')}' class='c#{classes[c1]} c#{classes[c2]}' transform='translate(#{(p0[0].to_i)}, #{(p0[1].to_i)}), rotate(#{a}), translate(#{-(p0[0].to_i)}, #{-(p0[1].to_i)})' />"
+                lines << "<path d='M #{p.map { |_| "#{sprintf('%1.1f', _[0])} #{sprintf('%1.1f', _[1])}"}.join(' ')}' class='c#{classes[c1]} c#{classes[c2]}' transform='translate(#{(p0[0].to_i)}, #{(p0[1].to_i)}) rotate(#{sprintf('%1.1f', a)}) translate(#{-(p0[0].to_i)}, #{-(p0[1].to_i)})' />"
 #                 lines << "<rect x='#{p0[0].to_i - r/2}' y='#{p0[1].to_i - r/2}' width='#{r}' height='#{r}px' class='c#{classes[c1]} c#{classes[c2]}' transform='translate(#{(p0[0].to_i)}, #{(p0[1].to_i)}), rotate(#{a}), translate(#{-(p0[0].to_i)}, #{-(p0[1].to_i)})' />"
             end
         end

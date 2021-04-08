@@ -62,4 +62,35 @@ class Main < Sinatra::Base
         }
         respond(:ok => true, :test => result)
     end
+
+    post '/api/update_test' do
+        require_teacher!
+        data = parse_request_data(:required_keys => [:klasse, :datum, :fach, :kommentar, :typ, :id])
+        timestamp = Time.now.to_i
+        test = neo4j_query_expect_one(<<~END_OF_QUERY, :session_email => @session_user[:email], :timestamp => timestamp, :id => data[:id], :klasse => data[:klasse], :datum => data[:datum], :fach => data[:fach], :kommentar => data[:kommentar], :typ => data[:typ])['t'].props
+            MATCH (t:Test {id: {id}})-[:ORGANIZED_BY]->(a:User {email: {session_email}})
+            SET t.updated = {timestamp}
+            SET t.klasse = {klasse}
+            SET t.datum = {datum}
+            SET t.fach = {fach}
+            SET t.kommentar = {kommentar}
+            SET t.typ = {typ}
+            RETURN t;
+        END_OF_QUERY
+        result = {
+            :tid => test[:id], 
+            :test => test
+        }
+        respond(:ok => true, :test => result)
+    end
+
+    post '/api/delete_test' do
+        require_teacher!
+        data = parse_request_data(:required_keys => [:id])
+        neo4j_query(<<~END_OF_QUERY, :session_email => @session_user[:email], :id => data[:id])
+            MATCH (t:Test {id: {id}})-[:ORGANIZED_BY]->(a:User {email: {session_email}})
+            DETACH DELETE t;
+        END_OF_QUERY
+        respond(:ok => true)
+    end
 end

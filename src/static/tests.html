@@ -53,8 +53,23 @@
       <div class="modal-footer">
         <button id='bu_delete_test' type="button" class="btn btn-danger"><i class='fa fa-trash'></i>&nbsp;&nbsp;<span>Löschen</span></button>
         <button id='bu_discard_test' type="button" class="btn btn-secondary" disabled><i class='fa fa-times'></i>&nbsp;&nbsp;<span>Verwerfen</span></button>
-        <button id='bu_save_test' type="button" class="btn btn-success" disabled><i class='fa fa-check'></i>&nbsp;&nbsp;<span>Speichern</span<</button>
-        <button id='bu_close_test' type="button" class="btn btn-secondary" disabled data-dismiss='modal'><i class='fa fa-times'></i>&nbsp;&nbsp;<span>Schließen</span<</button>
+        <button id='bu_save_test' type="button" class="btn btn-success" disabled><i class='fa fa-check'></i>&nbsp;&nbsp;<span>Speichern</span></button>
+        <button id='bu_close_test' type="button" class="btn btn-secondary" disabled data-dismiss='modal'><i class='fa fa-times'></i>&nbsp;&nbsp;<span>Schließen</span></button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal" id="showTestModal" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title"></h5>
+      </div>
+      <div class="modal-body">
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-dismiss='modal'><i class='fa fa-times'></i>&nbsp;&nbsp;<span>Schließen</span></button>
       </div>
     </div>
   </div>
@@ -193,10 +208,16 @@ document.addEventListener('DOMContentLoaded', function() {
                 $('#ti_typ').val(null);
                 $('#ti_fach').val(null);
                 $('#ti_comment').val('');
+                stored_test_id = null;
                 stored_test_json = null;
                 update_buttons();
                 $('option.temporary').remove();
                 $('#testModal').modal('show');
+            } else {
+                showTemplateModal('Keine Berechtigung', 
+                    `Sie können in der Klasse ${klasse} keine Arbeiten eintragen, da Sie in dieser Klasse nicht unterrichten.`,
+                    "<i class='fa fa-times'></i>&nbsp;&nbsp;Schließen", 'btn-secondary',
+                    null, null, function() {});
             }
         },
         eventClick: function(info) {
@@ -212,10 +233,18 @@ document.addEventListener('DOMContentLoaded', function() {
                     }
                     $('#ti_fach').val(test.fach);
                     $('#ti_comment').val(test.kommentar);
+                    stored_test_id = test.id;
                     stored_test_json = JSON.stringify(collect_data());
                     update_buttons();
                     $('#testModal').modal('show');
                 } else {
+                    let test = info.event.extendedProps.test;
+                    $('#showTestModal .modal-header').text(`${test.typ} ${possible_lessons.fach_tr[test.fach] || test.fach} (${test.klasse})`);
+                    let s = `Datum: ${moment(test.datum).format('ddd, D.M.Y')}`;
+                    if ((test.kommentar || '').trim().length > 0)
+                        s += `<br />${test.kommentar}`;
+                    $('#showTestModal .modal-body').html(s);
+                    $('#showTestModal').modal('show');
                 }
             }
         }
@@ -234,13 +263,36 @@ document.addEventListener('DOMContentLoaded', function() {
     });
     $('#bu_save_test').click(function(e) {
         let test_data = collect_data();
-        api_call('/api/save_test', test_data, function(data) {
-            console.log(data);
-            if (data.success) {
-                $('#testModal').modal('hide');
-                calendar.refetchEvents();
+        if (stored_test_id === null) {
+            api_call('/api/save_test', test_data, function(data) {
+                if (data.success) {
+                    $('#testModal').modal('hide');
+                    calendar.refetchEvents();
+                }
+            });
+        } else {
+            test_data.id = stored_test_id;
+            api_call('/api/update_test', test_data, function(data) {
+                if (data.success) {
+                    $('#testModal').modal('hide');
+                    calendar.refetchEvents();
+                }
+            });
+        }
+    });
+    $('#bu_delete_test').click(function(e) {
+        showTemplateModal('Eintrag löschen', 
+            'Sind Sie sicher, dass Sie diesen Eintrag löschen möchten?',
+            "<i class='fa fa-trash'></i>&nbsp;&nbsp;Eintrag löschen", 'btn-danger',
+            'Abbrechen', 'btn-secondary', function() {
+                api_call('/api/delete_test', {id: stored_test_id}, function(data) {
+                    if (data.success) {
+                        $('#testModal').modal('hide');
+                        calendar.refetchEvents();
+                    }
+                });
             }
-        });
+        );
     });
     for (let i = 0; i < possible_lessons.fach_order.length; i++) {
         let fach = possible_lessons.fach_order[i];

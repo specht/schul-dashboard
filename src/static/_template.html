@@ -399,8 +399,11 @@ function showTemplateModal(title, text, confirm_label, confirm_class,
     $('#__template_modal .modal-title').html(title);
     $('#__template_modal .modal-body').html(text);
     let bu_confirm = $('<button>').addClass('btn ' + confirm_class).html(confirm_label);
-    let bu_cancel = $('<button>').addClass('btn ' + cancel_class).html(cancel_label).attr('data-dismiss', 'modal');
-    $('#__template_modal .modal-footer').empty().append(bu_confirm).append(bu_cancel);
+    $('#__template_modal .modal-footer').empty().append(bu_confirm);
+    if (cancel_label !== null) {
+        let bu_cancel = $('<button>').addClass('btn ' + cancel_class).html(cancel_label).attr('data-dismiss', 'modal');
+        $('#__template_modal .modal-footer').append(bu_cancel);
+    }
     bu_confirm.click(function(e) {
         confirm_callback();
         $('#__template_modal').modal('hide');

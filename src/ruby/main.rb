@@ -1238,7 +1238,7 @@ class Main < Sinatra::Base
                         end
                         display_name += " (#{temp.join('/')})"
                     end
-                    io.puts "<div class='icon'>#{user_icon(@session_user[:email], 'avatar-md')}</div><span class='menu-user-name'>#{display_name}</span>"
+                    io.puts "<div class='icon nav_avatar'>#{user_icon(@session_user[:email], 'avatar-md')}</div><span class='menu-user-name'>#{display_name}</span>"
 #                     
                     io.puts "</a>"
                     io.puts "<div class='dropdown-menu dropdown-menu-right' aria-labelledby='navbarDropdown'>"

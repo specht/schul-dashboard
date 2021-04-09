@@ -6,6 +6,7 @@ class Main < Sinatra::Base
             io.puts "<div class='row'>"
             io.puts "<div class='col-md-12'>"
             io.puts "<h3>Klasse #{tr_klasse(klasse)}</h3>"
+            io.puts "<div class='table-responsive'>"
             io.puts "<table class='klassen_table table table-condensed table-striped narrow'>"
             io.puts "<thead>"
             io.puts "<tr>"
@@ -110,6 +111,7 @@ class Main < Sinatra::Base
             io.puts "</tr>"
             io.puts "</tbody>"
             io.puts "</table>"
+            io.puts "</div>"
             io.puts "<a class='btn btn-primary' href='/show_login_codes/#{klasse}'><i class='fa fa-sign-in'></i>&nbsp;&nbsp;Live-Anmeldungen der Klasse zeigen</a>"
             io.puts "<hr style='margin: 3em 0;'/>"
             io.puts "<h3>Schülerlisten Klasse #{tr_klasse(klasse)}</h3>"
@@ -119,6 +121,7 @@ class Main < Sinatra::Base
 #             io.puts "</div>"
             io.puts "<hr style='margin: 3em 0;'/>"
             io.puts "<h3>Lehrer der Klasse #{tr_klasse(klasse)}</h3>"
+            io.puts "<div class='table-responsive'>"
             io.puts "<table class='table table-condensed table-striped narrow'>"
             io.puts "<thead>"
             io.puts "<tr>"
@@ -196,6 +199,7 @@ class Main < Sinatra::Base
             io.puts "</tr>"
             io.puts "</tbody>"
             io.puts "</table>"
+            io.puts "</div>"
             io.puts "</div>"
             io.string
         end

@@ -278,60 +278,68 @@ class Main < Sinatra::Base
                         end
                         can_enter_room = false
                     else
+                        # check if we have streaming restrictions for this lesson
                         lesson_info = timetable.first
-                        t = Time.parse("#{lesson_info['start']}:00") - JITSI_LESSON_PRE_ENTRY_TOLERANCE * 60
-                        room_name = lesson_info['label_lehrer_lang'].gsub(/<[^>]+>/, '') + ' ' + lesson_info['klassen'].first.map { |x| tr_klasse(x) }.join(', ')
-                        unless ((lesson_info['data'] || {})['breakout_rooms'] || []).empty?
-                            if teacher_logged_in?
-                                presence_token = RandomTag::generate(24)
-                            else
-                                # SuS is logged in, generate a presence token if we have roaming breakout rooms
-                                if (lesson_info['data'] || {})['breakout_rooms_roaming']
-                                    presence_token = RandomTag::generate(24)
-                                end
-                            end
-                            if presence_token
-                                query_data = {
-                                    :token => presence_token, 
-                                    :lesson_key => lesson_info['lesson_key'], 
-                                    :offset => lesson_info['lesson_offset'], 
-                                    :email => @session_user[:email], 
-                                    :timestamp => (Time.now + PRESENCE_TOKEN_EXPIRY_TIME).to_i
-                                }
-                                if DEVELOPMENT
-                                    STDERR.puts "Generating presence token"
-                                    STDERR.puts query_data.to_yaml
-                                end
-                                neo4j_query_expect_one(<<~END_OF_QUERY, query_data)
-                                    MATCH (u:User {email: {email}}), (i:LessonInfo {offset: {offset}})-[:BELONGS_TO]->(l:Lesson {key: {lesson_key}})
-                                    CREATE (n:PresenceToken {token: {token}, expiry: {timestamp}})
-                                    CREATE (i)<-[:FOR]-(n)-[:BELONGS_TO]->(u)
-                                    RETURN n;
-                                END_OF_QUERY
-                            end
-                        end
-                        if breakout_room_name
-                            room_name += " #{breakout_room_name}"
-                        end
-                        if now_time >= t
-                            can_enter_room = true
-                        else
-                            timediff = ((t - now_time).to_f / 60.0).ceil
-                            tds = "#{timediff} Minute#{timediff == 1 ? '' : 'n'}"
-                            tds = "#{timediff / 60} Stunde#{timediff / 60 == 1 ? '' : 'n'} und #{timediff % 60} Minute#{(timediff % 60) == 1 ? '' : 'n'}" if timediff > 60
-                            if timediff == 1
-                                tds = 'einer Minute'
-                            elsif timediff == 2
-                                tds = 'zwei Minuten'
-                            elsif timediff == 3
-                                tds = 'drei Minuten'
-                            elsif timediff == 4
-                                tds = 'vier Minuten'
-                            elsif timediff == 5
-                                tds = 'fünf Minuten'
-                            end
-                            result[:html] += "<div class='alert alert-warning'>Der Jitsi-Raum <strong>»#{room_name}«</strong> ist erst ab #{t.strftime('%H:%M')} Uhr geöffnet. Du kannst ihn in #{tds} betreten.</div>"
+                        restrictions = get_stream_restriction_for_lesson_key(lesson_info['lesson_key'])
+                        weekday = (Date.today.wday + 6) % 7
+                        if (restrictions[weekday] == 1) && (@session_user[:homeschooling] != true) && (!@session_user[:teacher])
+                            result[:html] += "<div class='alert alert-info'>Da du nicht als »zu Hause« markiert bist (Dauer-saLzH), kannst du an diesem Stream nicht teilnehmen.</div>"
                             can_enter_room = false
+                        else
+                            t = Time.parse("#{lesson_info['start']}:00") - JITSI_LESSON_PRE_ENTRY_TOLERANCE * 60
+                            room_name = lesson_info['label_lehrer_lang'].gsub(/<[^>]+>/, '') + ' ' + lesson_info['klassen'].first.map { |x| tr_klasse(x) }.join(', ')
+                            unless ((lesson_info['data'] || {})['breakout_rooms'] || []).empty?
+                                if teacher_logged_in?
+                                    presence_token = RandomTag::generate(24)
+                                else
+                                    # SuS is logged in, generate a presence token if we have roaming breakout rooms
+                                    if (lesson_info['data'] || {})['breakout_rooms_roaming']
+                                        presence_token = RandomTag::generate(24)
+                                    end
+                                end
+                                if presence_token
+                                    query_data = {
+                                        :token => presence_token, 
+                                        :lesson_key => lesson_info['lesson_key'], 
+                                        :offset => lesson_info['lesson_offset'], 
+                                        :email => @session_user[:email], 
+                                        :timestamp => (Time.now + PRESENCE_TOKEN_EXPIRY_TIME).to_i
+                                    }
+                                    if DEVELOPMENT
+                                        STDERR.puts "Generating presence token"
+                                        STDERR.puts query_data.to_yaml
+                                    end
+                                    neo4j_query_expect_one(<<~END_OF_QUERY, query_data)
+                                        MATCH (u:User {email: {email}}), (i:LessonInfo {offset: {offset}})-[:BELONGS_TO]->(l:Lesson {key: {lesson_key}})
+                                        CREATE (n:PresenceToken {token: {token}, expiry: {timestamp}})
+                                        CREATE (i)<-[:FOR]-(n)-[:BELONGS_TO]->(u)
+                                        RETURN n;
+                                    END_OF_QUERY
+                                end
+                            end
+                            if breakout_room_name
+                                room_name += " #{breakout_room_name}"
+                            end
+                            if now_time >= t
+                                can_enter_room = true
+                            else
+                                timediff = ((t - now_time).to_f / 60.0).ceil
+                                tds = "#{timediff} Minute#{timediff == 1 ? '' : 'n'}"
+                                tds = "#{timediff / 60} Stunde#{timediff / 60 == 1 ? '' : 'n'} und #{timediff % 60} Minute#{(timediff % 60) == 1 ? '' : 'n'}" if timediff > 60
+                                if timediff == 1
+                                    tds = 'einer Minute'
+                                elsif timediff == 2
+                                    tds = 'zwei Minuten'
+                                elsif timediff == 3
+                                    tds = 'drei Minuten'
+                                elsif timediff == 4
+                                    tds = 'vier Minuten'
+                                elsif timediff == 5
+                                    tds = 'fünf Minuten'
+                                end
+                                result[:html] += "<div class='alert alert-warning'>Der Jitsi-Raum <strong>»#{room_name}«</strong> ist erst ab #{t.strftime('%H:%M')} Uhr geöffnet. Du kannst ihn in #{tds} betreten.</div>"
+                                can_enter_room = false
+                            end
                         end
                     end
                     if WECHSELUNTERRICHT_KLASSENSTUFEN.include?(@session_user[:klasse].to_i)

@@ -1794,11 +1794,14 @@ tr.sep td {
 }
 
 .avatar-md {
-    position: absolute;
     width: 28px;
     height: 28px;
     border-radius: 100%;
     background-size: cover;
+}
+
+.nav_avatar .avatar-md {
+    position: absolute;
 }
 
 .avatar-sm {

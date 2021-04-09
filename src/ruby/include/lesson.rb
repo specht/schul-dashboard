@@ -372,4 +372,57 @@ class Main < Sinatra::Base
         end
         respond(:bookings => results)
     end
+    
+    def get_stream_restriction_for_lesson_key(lesson_key)
+        results = neo4j_query_expect_one(<<~END_OF_QUERY, :key => lesson_key)['restriction']
+            MERGE (l:Lesson {key: {key}})
+            RETURN COALESCE(l.stream_restriction, []) AS restriction
+        END_OF_QUERY
+        while results.size < 5
+            results << 0
+        end
+        results
+    end
+    
+    def print_stream_restriction_table(lesson_key)
+        StringIO.open do |io|
+            io.puts "<div class='alert alert-warning'>"
+            io.puts "Falls Sie einschränken möchten, welche Kinder in Ihrem Unterricht am Streaming teilnehmen dürfen, können Sie dies hier tun. Standardmäßig ist der Stream, falls Sie ihn aktivieren, für alle Kinder aktiviert, die planmäßig gerade nicht in der Schule sind (»für alle«). Sie können den Stream bei Bedarf tageweise so einschränken, dass nur die Kinder darauf zugreifen können, die unten als »zu Hause« markiert sind (»nur für Dauer-saLzH«)."
+            io.puts "</div>"
+            io.puts "<div class='table-responsive'>"
+            io.puts "<table class='table stream-restriction-table'>"
+            io.puts "<tr>"
+            io.puts "<th>Montag</th>"
+            io.puts "<th>Dienstag</th>"
+            io.puts "<th>Mittwoch</th>"
+            io.puts "<th>Donnerstag</th>"
+            io.puts "<th>Freitag</th>"
+            io.puts "</tr>"
+            io.puts "<tr>"
+            restrictions = get_stream_restriction_for_lesson_key(lesson_key)
+            restrictions.each.with_index do |r, i|
+                io.puts "<td>"
+                io.puts "<button data-day='#{i}' class='bu-toggle-stream-restriction btn #{r == 0 ? 'btn-primary' : 'btn-info'}'>#{r == 0 ? 'für alle' : 'nur für Dauer-saLzH'}</button>"
+                io.puts "</td>"
+            end
+            io.puts "</tr>"
+            io.puts "</table>"
+            io.puts "</div>"
+            io.string
+        end
+    end
+    
+    post '/api/toggle_stream_restriction' do
+        require_teacher!
+        data = parse_request_data(:required_keys => [:lesson_key, :day],
+                                  :types => {:day => Integer})
+        day = data[:day]
+        restrictions = get_stream_restriction_for_lesson_key(data[:lesson_key]);
+        restrictions[day] = (restrictions[day] + 1) % 2
+        neo4j_query(<<~END_OF_QUERY, {:restrictions => restrictions, :lesson_key => data[:lesson_key]})
+            MERGE (l:Lesson {key: {lesson_key}})
+            SET l.stream_restriction = {restrictions}
+        END_OF_QUERY
+        respond(:state => restrictions[day])
+    end
 end

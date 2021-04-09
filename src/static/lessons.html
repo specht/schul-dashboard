@@ -4,14 +4,6 @@ body {
     background-image: none;
     background-color: #fff;
 }
-.stream-restriction-table th {
-    text-align: center;
-    width: 20%;
-}
-.stream-restriction-table button {
-    width: 100%;
-    white-space: nowrap;
-}
 </style>
 <script>
 var lesson_key = '#{show_lesson_key}';
@@ -341,7 +333,6 @@ var stored_breakout_room_config_json = null;
             </div>
         </div>
         <div class='col-md-9 lc_table' style='overflow-x: auto;'>
-            #{print_stream_restriction_table(show_lesson_key)}
             <table class='table wrapit table-condensed narrow lesson_table_table' style='table-layout: fixed;'>
                 <thead>
                 <tr>
@@ -1966,19 +1957,6 @@ document.addEventListener('DOMContentLoaded', function() {
             i = i + 1;
         }
         update_breakout_room_widgets();
-    });
-    $('.bu-toggle-stream-restriction').click(function(e) {
-        let day = $(e.target).data('day');
-        api_call('/api/toggle_stream_restriction', {lesson_key: lesson_key, day: day}, function(data) {
-            if (data.success) {
-                let button = $(e.target);
-                if (data.state === 0) {
-                    button.text('für alle').removeClass('btn-info').addClass('btn-primary');
-                } else {
-                    button.text('nur für Dauer-saLzH').removeClass('btn-primary').addClass('btn-info');
-                }
-            }
-        });
     });
 });
 </script>

@@ -5,6 +5,10 @@ class Main < Sinatra::Base
         StringIO.open do |io|
             io.puts "<div class='row'>"
             io.puts "<div class='col-md-12'>"
+            io.puts "<div class='alert alert-warning'>"
+            io.puts "Bitte überprüfen Sie die <strong>Gruppenzuordnung (A/B)</strong> und markieren Sie alle Kinder, die von der Aussetzung der Präsenzpflicht Gebrauch machen oder die aus gesundheitlichen Gründen / Quarantäne nicht in die Schule kommen können, als <strong>»zu Hause«</strong>."
+            io.puts "Auf die Jitsi-Streams können momentan nur SuS zugreifen, die laut ihrer Gruppenzuordnung in der aktuellen Woche zu Hause sind oder explizit als »zu Hause« markiert sind."
+            io.puts "</div>"
             io.puts "<h3>Klasse #{tr_klasse(klasse)}</h3>"
             io.puts "<div class='table-responsive'>"
             io.puts "<table class='klassen_table table table-condensed table-striped narrow'>"
@@ -113,6 +117,7 @@ class Main < Sinatra::Base
             io.puts "</table>"
             io.puts "</div>"
             io.puts "<a class='btn btn-primary' href='/show_login_codes/#{klasse}'><i class='fa fa-sign-in'></i>&nbsp;&nbsp;Live-Anmeldungen der Klasse zeigen</a>"
+            io.puts print_stream_restriction_table(klasse)
             io.puts "<hr style='margin: 3em 0;'/>"
             io.puts "<h3>Schülerlisten Klasse #{tr_klasse(klasse)}</h3>"
 #             io.puts "<div style='text-align: center;'>"

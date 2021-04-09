@@ -384,28 +384,41 @@ class Main < Sinatra::Base
         results
     end
     
-    def print_stream_restriction_table(lesson_key)
+    def print_stream_restriction_table(klasse)
+        lesson_keys = (@@lessons_for_shorthand[@session_user[:shorthand]] || []).select do |lesson_key|
+            lesson_info = @@lessons[:lesson_keys][lesson_key]
+            (lesson_info[:klassen] || []).include?(klasse)
+        end
+        return '' if lesson_keys.empty?
         StringIO.open do |io|
+            io.puts "<hr />"
             io.puts "<div class='alert alert-warning'>"
             io.puts "Falls Sie einschränken möchten, welche Kinder in Ihrem Unterricht am Streaming teilnehmen dürfen, können Sie dies hier tun. Standardmäßig ist der Stream, falls Sie ihn aktivieren, für alle Kinder aktiviert, die planmäßig gerade nicht in der Schule sind (»für alle«). Sie können den Stream bei Bedarf tageweise so einschränken, dass nur die Kinder darauf zugreifen können, die unten als »zu Hause« markiert sind (»nur für Dauer-saLzH«)."
             io.puts "</div>"
             io.puts "<div class='table-responsive'>"
             io.puts "<table class='table stream-restriction-table'>"
             io.puts "<tr>"
+            io.puts "<th>Fach</th>"
             io.puts "<th>Montag</th>"
             io.puts "<th>Dienstag</th>"
             io.puts "<th>Mittwoch</th>"
             io.puts "<th>Donnerstag</th>"
             io.puts "<th>Freitag</th>"
             io.puts "</tr>"
-            io.puts "<tr>"
-            restrictions = get_stream_restriction_for_lesson_key(lesson_key)
-            restrictions.each.with_index do |r, i|
-                io.puts "<td>"
-                io.puts "<button data-day='#{i}' class='bu-toggle-stream-restriction btn #{r == 0 ? 'btn-primary' : 'btn-info'}'>#{r == 0 ? 'für alle' : 'nur für Dauer-saLzH'}</button>"
+            lesson_keys.each do |lesson_key|
+                io.puts "<tr>"
+                restrictions = get_stream_restriction_for_lesson_key(lesson_key)
+                io.puts "<td style='text-align: left;'>"
+                lesson_info = @@lessons[:lesson_keys][lesson_key]
+                io.puts "#{lesson_info[:pretty_folder_name]}"
                 io.puts "</td>"
+                restrictions.each.with_index do |r, i|
+                    io.puts "<td>"
+                    io.puts "<button data-lesson-key='#{lesson_key}' data-day='#{i}' class='bu-toggle-stream-restriction btn #{r == 0 ? 'btn-primary' : 'btn-info'}'>#{r == 0 ? 'für alle' : 'nur für Dauer-saLzH'}</button>"
+                    io.puts "</td>"
+                end
+                io.puts "</tr>"
             end
-            io.puts "</tr>"
             io.puts "</table>"
             io.puts "</div>"
             io.string

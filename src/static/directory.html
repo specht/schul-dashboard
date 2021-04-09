@@ -1,13 +1,20 @@
 #{this_is_a_page_for_logged_in_teachers}
 <div class='container-fluid' style='padding-top: 30px; background-color: #fff;'>
-    <div class='alert alert-warning'>
-        Bitte überprüfen Sie die <strong>Gruppenzuordnung (A/B)</strong> und markieren Sie alle Kinder, die von der Aussetzung der Präsenzpflicht Gebrauch machen oder die aus gesundheitlichen Gründen / Quarantäne nicht in die Schule kommen können, als <strong>»zu Hause«</strong>.
-        Auf die Jitsi-Streams können momentan nur SuS zugreifen, die laut ihrer Gruppenzuordnung in der aktuellen Woche zu Hause sind oder explizit als »zu Hause« markiert sind.
-    </div>
     <div>
     #{mail_addresses_table(klasse)}
     </div>
 </div>
+
+<style>
+.stream-restriction-table th {
+    text-align: center;
+    width: 16.6666%;
+}
+.stream-restriction-table button {
+    width: 100%;
+    white-space: nowrap;
+}
+</style>
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
@@ -40,6 +47,20 @@ document.addEventListener('DOMContentLoaded', function() {
                     $(e.target).removeClass('btn-secondary').addClass('btn-info').html("<i class='fa fa-home'></i>&nbsp;&nbsp;zu Hause");
                 } else {
                     $(e.target).removeClass('btn-info').addClass('btn-secondary').html("<i class='fa fa-building'></i>&nbsp;&nbsp;Präsenz");;
+                }
+            }
+        });
+    });
+    $('.bu-toggle-stream-restriction').click(function(e) {
+        let day = $(e.target).data('day');
+        let lesson_key = $(e.target).data('lesson-key');
+        api_call('/api/toggle_stream_restriction', {lesson_key: lesson_key, day: day}, function(data) {
+            if (data.success) {
+                let button = $(e.target);
+                if (data.state === 0) {
+                    button.text('für alle').removeClass('btn-info').addClass('btn-primary');
+                } else {
+                    button.text('nur für Dauer-saLzH').removeClass('btn-primary').addClass('btn-info');
                 }
             }
         });

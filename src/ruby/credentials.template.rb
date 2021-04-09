@@ -202,6 +202,8 @@ TABLET_COLORS = {}
 SWITCH_WEEKS = {'2021-03-08' => ['A', 2],
                 '2021-03-22' => nil}
 
+KLASSENRAUM_ACCOUNT_DEEP_LINK_CODE = nil
+
 class Main < Sinatra::Base
     def self.fix_stundenzeiten
         # definiert Stundenzeiten ab einem bestimmten Tag, bei Bedarf wiederholen

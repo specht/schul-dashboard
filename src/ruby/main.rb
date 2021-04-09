@@ -369,6 +369,9 @@ class SetupDatabase
                     neo4j_query(<<~END_OF_QUERY, :email => "tablet@#{SCHUL_MAIL_DOMAIN}")
                         MERGE (u:User {email: {email}})
                     END_OF_QUERY
+                    neo4j_query(<<~END_OF_QUERY, :email => "klassenraum@#{SCHUL_MAIL_DOMAIN}")
+                        MERGE (u:User {email: {email}})
+                    END_OF_QUERY
                 end
                 transaction do
                     present_users = neo4j_query(<<~END_OF_QUERY).map { |x| x['u.email'] }
@@ -379,6 +382,7 @@ class SetupDatabase
                     wanted_users << "lehrer.tablet@#{SCHUL_MAIL_DOMAIN}"
                     wanted_users << "kurs.tablet@#{SCHUL_MAIL_DOMAIN}"
                     wanted_users << "tablet@#{SCHUL_MAIL_DOMAIN}"
+                    wanted_users << "klassenraum@#{SCHUL_MAIL_DOMAIN}"
                     users_to_be_deleted = Set.new(present_users) - wanted_users
                     unless users_to_be_deleted.empty?
                         STDERR.puts "Deleting users (not really):"
@@ -1059,6 +1063,16 @@ class Main < Sinatra::Base
                                     :teacher => false,
                                     :shorthands => session[:shorthands] || []
                                 }
+                            elsif email == "klassenraum@#{SCHUL_MAIL_DOMAIN}"
+                                @session_user = {
+                                    :email => email,
+                                    :is_tablet => true,
+                                    :tablet_id => session[:tablet_id],
+                                    :tablet_type => :klassenraum,
+                                    :color_scheme => 'l7146749f6976cc8b79',
+                                    :can_see_all_timetables => false,
+                                    :teacher => false
+                                }
                             elsif email != "tablet@#{SCHUL_MAIL_DOMAIN}"
                                 @session_user = @@user_info[email].dup
                                 if @session_user
@@ -1173,6 +1187,8 @@ class Main < Sinatra::Base
                 return "<div style='margin-right: 15px;'><b>Lehrer-Tablet-Modus</b>#{tablet_id_span}</div>" 
             elsif kurs_tablet_logged_in?
                 return "<div style='margin-right: 15px;'><b>Kurs-Tablet-Modus</b>#{tablet_id_span}</div>" 
+            elsif klassenraum_logged_in?
+                return "<div style='margin-right: 15px;'><b>Klassenraum-Modus</b>#{tablet_id_span}</div>" 
             elsif tablet_logged_in?
                 description = ''
                 if tablet[:klassen_stream]
@@ -1416,6 +1432,16 @@ class Main < Sinatra::Base
                     id = @@user_info[email][:id]
                     next unless @@user_info[email][:can_log_in]
                     io.puts "<a data-id='#{id}' onclick=\"window.location.href = '/timetable/#{id}' + window.location.hash;\" class='btn btn-sm ttc'>#{@@user_info[email][:shorthand]}</a>"
+                end
+                io.puts "</div>"
+                io.string
+            end
+        elsif klassenraum_logged_in?
+            StringIO.open do |io|
+                io.puts "<div style='margin-bottom: 15px;'>"
+                @@klassen_order.each do |klasse|
+                    id = @@klassen_id[klasse]
+                    io.puts "<a data-klasse='#{klasse}' data-id='#{id}' onclick=\"window.location.href = '/timetable/#{id}' + window.location.hash;\" class='btn btn-sm ttc'>#{tr_klasse(klasse)}</a>"
                 end
                 io.puts "</div>"
                 io.string

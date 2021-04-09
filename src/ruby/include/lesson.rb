@@ -46,10 +46,11 @@ class Main < Sinatra::Base
     end
     
     post '/api/force_jitsi_for_lesson' do
-        require_teacher_tablet!
+        assert(teacher_tablet_logged_in? || klassenraum_logged_in?)
         data = parse_request_data(:required_keys => [:lesson_key, :lesson_offset],
                                   :max_body_length => 1024,
                                   :types => {:lesson_offset => Integer})
+        STDERR.puts "force_jitsi_for_lesson: #{data.to_json}"
         transaction do 
             timestamp = Time.now.to_i
             neo4j_query(<<~END_OF_QUERY, :key => data[:lesson_key], :offset => data[:lesson_offset], :data => {:lesson_jitsi => true}, :timestamp => timestamp)

@@ -28,6 +28,8 @@ class Main < Sinatra::Base
                 use_user = @@user_info[@@shorthands[user]]
             elsif kurs_tablet_logged_in?
                 use_user = {:display_name => 'Kursraum'}
+            elsif klassenraum_logged_in?
+                use_user = {:display_name => 'Klassenraum'}
             elsif tablet_logged_in?
                 if @@tablets[@session_user[:tablet_id]][:klassen_stream]
                     use_user = {:display_name => "Klassenstreaming-Tablet #{@@tablets[@session_user[:tablet_id]][:klassen_stream]}"}
@@ -51,6 +53,8 @@ class Main < Sinatra::Base
         assert(!(payload[:context][:user][:name].nil?))
         assert(payload[:context][:user][:name].strip.size > 0)
         assert(room.strip.size > 0)
+        
+        STDERR.puts payload.to_json
 
         token = JWT.encode payload, JWT_APPKEY, algorithm = 'HS256', header_fields = {:typ => 'JWT'}
         token
@@ -204,7 +208,7 @@ class Main < Sinatra::Base
                     timetable_id = @session_user[:id]
                     if @session_user[:is_tablet]
                         tablet_id = @session_user[:tablet_id]
-                        if @@tablets[tablet_id][:school_streaming]
+                        if (@@tablets[tablet_id] || {})[:school_streaming]
                             # determine teacher who has booked the tablet now
                             today = DateTime.now.strftime('%Y-%m-%d')
                             results = neo4j_query(<<~END_OF_QUERY, {:tablet_id => tablet_id, :today => today})
@@ -235,7 +239,7 @@ class Main < Sinatra::Base
                     end
                     result[:html] = ''
                     lesson_key = path.split('/')[1]
-                    if kurs_tablet_logged_in? || teacher_tablet_logged_in?
+                    if kurs_tablet_logged_in? || teacher_tablet_logged_in? || klassenraum_logged_in?
                         timetable_id = @@user_info[@@shorthands[@@lessons[:lesson_keys][lesson_key][:lehrer].first]][:id]
                     end
                     breakout_room_name = path.split('/')[2]
@@ -268,6 +272,9 @@ class Main < Sinatra::Base
                             result[:html] += "<div class='alert alert-warning'>Dieser Jitsi-Raum ist heute nicht mehr geöffnet.</div>"
                         else
                             result[:html] += "<div class='alert alert-warning'>Dieser Jitsi-Raum ist heute nicht geöffnet.</div>"
+                        end
+                        if tablet_logged_in?
+                            result[:html] += "<div class='alert alert-info'>Falls Sie Jitsi gerade erst aktiviert haben sollten, versuchen Sie bitte, die Seite neu zu laden, da es manchmal ein paar Sekunden dauern kann, bis der Raum tatsächlich aktiviert ist.</div>"
                         end
                         can_enter_room = false
                     else

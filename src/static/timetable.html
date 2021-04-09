@@ -15,6 +15,12 @@
                     #{print_timetable_chooser()}
                 </div>
             </div>
+            <div class='hint' style='#{(klassenraum_logged_in?) ? '' : 'display: none;'}'>
+                <div style='position: relative; top: 8px;'>
+                <span class='bullet'><i class='fa fa-check'></i></span><b>Schritt 2:</b> Klasse auswählen<br /><br />
+                    #{print_timetable_chooser()}
+                </div>
+            </div>
             <div class='hint future_homework' style='display: none;'></div>
             <div style='#{(tablet_logged_in? && (@@tablets[@session_user[:tablet_id]] || {})[:klassen_stream]) ? '' : 'display: none;'}'>
                 <div class='hint'>
@@ -40,7 +46,7 @@
             </div>
             <div class='hint' style='height: 60px; position: relative; top: 23px; #{tablet_logged_in? ? '' : 'display: none;'}'>
                 <div style='position: relative; top: 8px;'>
-                <span class='bullet'><i class='fa fa-check'></i></span><b>Schritt #{(kurs_tablet_logged_in? || teacher_tablet_logged_in?) ? '3' : '2'}:</b> Stunde auswählen
+                <span class='bullet'><i class='fa fa-check'></i></span><b>Schritt #{(kurs_tablet_logged_in? || teacher_tablet_logged_in? || klassenraum_logged_in?) ? '3' : '2'}:</b> Stunde auswählen
                 </div>
             </div>
             <div id='calendar' style='margin-bottom: 30px;'>
@@ -171,6 +177,7 @@
 var my_lessons = #{(@@lessons_for_shorthand[@session_user[:shorthand]] || []).to_json};
 var tablet_logged_in = ('#{tablet_logged_in?}' === 'true');
 var teacher_tablet_logged_in = ('#{teacher_tablet_logged_in?}' === 'true');
+var klassenraum_logged_in = ('#{klassenraum_logged_in?}' === 'true');
 var sus_logged_in = ('#{sus_logged_in?}' === 'true');
 var teacher_logged_in = ('#{teacher_logged_in?}' === 'true');
 var fixed_timetable_data = #{fixed_timetable_data.to_json};
@@ -797,9 +804,10 @@ document.addEventListener('DOMContentLoaded', function() {
                     body.append($('<a>').attr('href', 'https://www.lernraum-berlin.de/').attr('target', '_blank').addClass('btn').addClass('btn-primary').css('margin-right', '5px').css('margin-bottom', '5px').html("<i class='fa fa-external-link'></i>&nbsp;&nbsp;Zum Lernraum&nbsp;&nbsp;<i class='fa fa-angle-double-right'></i>"));
                 wrote_something = true;
             }
-            if (teacher_tablet_logged_in) {
+            if (teacher_tablet_logged_in || klassenraum_logged_in) {
                 if (!event_data.lesson_jitsi) {
                     if (event.lesson_key !== 0) {
+                        console.log(event);
                         body.append($('<div>').addClass('alert').addClass('alert-warning').html("Diese Stunde ist bisher nicht als Jitsi-Stunde markiert. Sie können dies nun nachholen und den Raum betreten. Beachten Sie bitte, dass es eine Minute dauern kann, bis diese Änderung bei Ihren Schülerinnen und Schülern zu sehen ist (diese müssen dafür auch ihren Stundenplan neu laden). Bitte markieren Sie die Stunden &ndash; wenn möglich &ndash; mit etwas Vorlauf, damit die Information rechtzeitig bei Ihren Schülerinnen und Schülern angezeigt wird."));
                         let button = $('<button>').addClass('btn').addClass('btn-primary').css('margin-right', '5px').css('margin-bottom', '5px').html("<i class='fa fa-microphone'></i>&nbsp;&nbsp;Jitsi für diese Stunde aktivieren und per Jitsi Meet beitreten&nbsp;&nbsp;<i class='fa fa-angle-double-right'></i>");
                         button.data('jitsi_link', jitsi_link);
@@ -808,8 +816,10 @@ document.addEventListener('DOMContentLoaded', function() {
                         body.append(button);
                         button.click(function(e) {
                             let button_data = $(e.target).data();
+                            console.log(button_data);
                             api_call('/api/force_jitsi_for_lesson', {lesson_key: button_data.lesson_key, lesson_offset: button_data.lesson_offset}, function(data) {
-                                window.location.href = jitsi_link;
+                                if (data.success)
+                                    window.location.href = jitsi_link;
                             });
                         });
                     } else {
@@ -876,7 +886,7 @@ document.addEventListener('DOMContentLoaded', function() {
             }
             if (!wrote_something) {
                 if (tablet_logged_in)
-                    body.append("<div class='text-muted'><i>(im Lehrer-Tablet-Modus werden keine weiteren Informationen angezeigt)</i></div>");
+                    body.append("<div class='text-muted'><i>(in diesem Modus werden keine weiteren Informationen angezeigt)</i></div>");
                 else
                     body.append("<div class='text-muted'><i>(keine weiteren Informationen)</i></div>");
             }

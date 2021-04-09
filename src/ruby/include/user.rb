@@ -56,6 +56,11 @@ class Main < Sinatra::Base
         user_logged_in? && @session_user[:is_tablet] && @session_user[:tablet_type] == :kurs
     end
     
+    # Returns true if a kurs tablet is logged in.
+    def klassenraum_logged_in?
+        user_logged_in? && @session_user[:is_tablet] && @session_user[:tablet_type] == :klassenraum
+    end
+    
     # Returns true if a tablet is logged in.
     def tablet_logged_in?
         user_logged_in? && @session_user[:is_tablet]

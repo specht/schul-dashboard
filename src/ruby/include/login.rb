@@ -75,6 +75,15 @@ class Main < Sinatra::Base
         respond(:ok => 'yay')
     end
     
+    if KLASSENRAUM_ACCOUNT_DEEP_LINK_CODE
+        get "/api/klassenraum_account/#{KLASSENRAUM_ACCOUNT_DEEP_LINK_CODE}" do
+            logout()
+            session_id = create_session("klassenraum@#{SCHUL_MAIL_DOMAIN}", 365 * 24)
+            purge_missing_sessions(session_id, true)
+            redirect "#{WEB_ROOT}/", 302
+        end
+    end
+    
     post '/api/login_as_kurs_tablet' do
         require_admin!
         data = parse_request_data(:required_keys => [:shorthands],

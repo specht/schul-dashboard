@@ -77,9 +77,9 @@ class Main < Sinatra::Base
                     elsif days < 21
                         la_label = 'vor 2 Wochen'
                     elsif days < 28
-                        la_label = 'vor 3 Woche'
+                        la_label = 'vor 3 Wochen'
                     elsif days < 35
-                        la_label = 'vor 4 Woche'
+                        la_label = 'vor 4 Wochen'
                     else
                         la_label = 'vor mehreren Wochen'
                     end

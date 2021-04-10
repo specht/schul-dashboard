@@ -12,6 +12,7 @@ NEO4J_LOGS_PATH = File::join(LOGS_PATH, 'neo4j')
 RAW_FILES_PATH = File::join(DATA_PATH, 'raw')
 GEN_FILES_PATH = File::join(DATA_PATH, 'gen')
 VPLAN_FILES_PATH = File::join(DATA_PATH, 'vplan')
+MAIL_FORWARDER_PATH = File::join(DATA_PATH, 'mails')
 
 docker_compose = {
     :version => '3',
@@ -124,12 +125,12 @@ env << 'DEVELOPMENT=1' if DEVELOPMENT
 docker_compose[:services][:ruby] = {
     :build => './docker/ruby',
     :volumes => ['./src/ruby:/app:ro',
-                    './src/static:/static:ro',
-                    "#{INPUT_DATA_PATH}:/data:ro",
-                    "#{RAW_FILES_PATH}:/raw",
-                    "#{VPLAN_FILES_PATH}:/vplan",
-                    "#{INTERNAL_PATH}:/internal",
-                    "#{GEN_FILES_PATH}:/gen"],
+                 './src/static:/static:ro',
+                 "#{INPUT_DATA_PATH}:/data:ro",
+                 "#{RAW_FILES_PATH}:/raw",
+                 "#{VPLAN_FILES_PATH}:/vplan",
+                 "#{INTERNAL_PATH}:/internal",
+                 "#{GEN_FILES_PATH}:/gen"],
     :environment => env,
     :working_dir => '/app',
     :entrypoint =>  DEVELOPMENT ?
@@ -177,8 +178,10 @@ docker_compose[:services][:invitation_bot][:user] = "#{UID}"
 
 if ENABLE_MAIL_FORWARDER
     docker_compose[:services][:mail_forwarder] = YAML.load(docker_compose[:services][:ruby].to_yaml)
+    docker_compose[:services][:mail_forwarder].delete(:depends_on)
     docker_compose[:services][:mail_forwarder]['entrypoint'] = DEVELOPMENT ? 'rerun -b --dir /app -s SIGTERM \'ruby mail-forwarder.rb\'' : 'ruby mail-forwarder.rb'
     docker_compose[:services][:mail_forwarder][:user] = "#{UID}"
+    docker_compose[:services][:mail_forwarder][:volumes] << "#{MAIL_FORWARDER_PATH}:/mails"
 end
 
 if ENABLE_NEXTCLOUD_SANDBOX
@@ -249,6 +252,7 @@ FileUtils::mkpath(File::join(RAW_FILES_PATH, 'uploads/files'))
 FileUtils::mkpath(GEN_FILES_PATH)
 FileUtils::mkpath(File::join(GEN_FILES_PATH, 'i'))
 FileUtils::mkpath(VPLAN_FILES_PATH)
+FileUtils::mkpath(MAIL_FORWARDER_PATH)
 FileUtils::mkpath(INTERNAL_PATH)
 FileUtils::mkpath(File::join(INTERNAL_PATH, 'vote'))
 FileUtils::mkpath(NEO4J_DATA_PATH)

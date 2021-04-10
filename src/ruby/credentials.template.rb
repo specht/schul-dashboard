@@ -60,8 +60,7 @@ end
 # Mailing-Liste
 MAILING_LIST_EMAIL = DEVELOPMENT ? 'verteiler.dev@mail.beispielschule.de' : 'verteiler@mail.beispielschule.de'
 MAILING_LIST_PASSWORD = '1234_bitte_generiere_ein_zufälliges_passwort'
-VERTEILER_MAIL_HEADER = 'X-Forwarded-From-Beispielschule'
-VERTEILER_TEST_EMAIL = "verteiler.test@#{SCHUL_MAIL_DOMAIN}"
+VERTEILER_TEST_EMAILS = ["verteiler.test@#{SCHUL_MAIL_DOMAIN}"]
 VERTEILER_DEVELOPMENT_EMAILS = ['admin@beispielschule.de']
 MAIL_SUPPORT_NAME = 'Mail-Support Beispielschule'
 MAIL_SUPPORT_EMAIL = 'mailsupport@beispielschule.de'

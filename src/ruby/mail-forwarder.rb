@@ -100,10 +100,10 @@ class Script
             #     - pending: [...]
             #     - sent: []
             # - delete mail from Inbox
-            imap = Net::IMAP.new(SCHUL_MAIL_LOGIN_IMAP_HOST)
-            imap.authenticate('LOGIN', MAILING_LIST_EMAIL, MAILING_LIST_PASSWORD)
-            imap.select('INBOX')
             loop do
+                imap = Net::IMAP.new(SCHUL_MAIL_LOGIN_IMAP_HOST)
+                imap.authenticate('LOGIN', MAILING_LIST_EMAIL, MAILING_LIST_PASSWORD)
+                imap.select('INBOX')
                 imap.search(['NOT', 'DELETED']).each do |mid|
                     body = imap.fetch(mid, 'RFC822')[0].attr['RFC822']
                     mail = Mail.read_from_string(body)
@@ -149,6 +149,9 @@ class Script
                     end
                     imap.store(mid, '+FLAGS', [:Deleted])
                 end
+                imap.expunge
+                imap.logout
+                imap.disconnect
                 sleep MAIL_FORWARDER_SLEEP
             end
         end
@@ -184,8 +187,8 @@ class Script
                         end
                         sleep 0.1
                     end
-                    FileUtils::rm_f(path)
-                    File.open(mail_path, 'w') { |f| f.puts 'nothing to see here' }
+                    FileUtils::mv(path, path + '.archived')
+#                     File.open(mail_path, 'w') { |f| f.puts 'nothing to see here' }
                 end
                 sleep MAIL_FORWARDER_SLEEP
             end

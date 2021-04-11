@@ -80,7 +80,7 @@ class Main < Sinatra::Base
     
     # Assert that a user is logged in
     def require_user!
-        assert(user_logged_in?)
+        assert(user_logged_in?, 'User is logged in', true)
     end
     
     # Assert that an admin is logged in

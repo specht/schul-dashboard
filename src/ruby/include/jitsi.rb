@@ -459,7 +459,7 @@ class Main < Sinatra::Base
             RETURN i;
         END_OF_QUERY
         room_name = get_jitsi_room_name_for_lesson_key(lesson_key, user)
-        assert(!(room_name.nil?), 'not today!') unless DEVELOPMENT
+        assert(!(room_name.nil?), 'not today!', true) unless DEVELOPMENT
         lesson_room_name = CGI.escape(room_name.gsub(/[\:\?#\[\]@!$&\\'()*+,;=><\/"]/, '')).gsub('+', '%20').downcase
 
         jitsi_rooms = current_jitsi_rooms()

@@ -565,7 +565,7 @@ document.addEventListener('DOMContentLoaded', function() {
     });
     
     $('#composeModal').on('hide.bs.modal', function(e) {
-        if (pending_changes() && (!force_close)) {
+        if ($(e.target).attr('id') === 'composeModal' && pending_changes() && (!force_close)) {
             $('#save_event_btn_container').effect('shake', {direction: 'left', distance: 4});
             e.preventDefault();
             e.stopImmediatePropagation();

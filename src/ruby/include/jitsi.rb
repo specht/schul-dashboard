@@ -515,7 +515,7 @@ class Main < Sinatra::Base
         require_teacher!
         data = parse_request_data(:required_keys => [:lesson_key, :offset],
                                   :types => {:offset => Integer})
-        assert(@@lessons_for_shorthand[@session_user[:shorthand]].include?(data[:lesson_key]))
+        assert(@@lessons_for_shorthand[@session_user[:shorthand]].include?(data[:lesson_key]), 'get_current_jitsi_users_for_lesson', true)
         respond(get_current_jitsi_users_for_lesson(data[:lesson_key], data[:offset]))
     end
     

@@ -264,6 +264,7 @@ class Main < Sinatra::Base
             SET u.homeschooling = NOT COALESCE(u.homeschooling, FALSE)
             RETURN u.homeschooling;
         END_OF_QUERY
+        trigger_update("_#{email}")
         respond(:ok => true, :homeschooling => result['u.homeschooling'])
     end
 

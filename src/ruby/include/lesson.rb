@@ -436,6 +436,7 @@ class Main < Sinatra::Base
             MERGE (l:Lesson {key: {lesson_key}})
             SET l.stream_restriction = {restrictions}
         END_OF_QUERY
+        trigger_update(data[:lesson_key])
         respond(:state => restrictions[day])
     end
 end

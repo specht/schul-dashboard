@@ -61,6 +61,28 @@ require './include/vplan.rb'
 require './include/website_events.rb'
 require './parser.rb'
 
+def debug(message)
+    l = caller_locations.first
+    ls = ''
+    begin
+        ls = "#{l.path.sub('/app/', '')}:#{l.lineno} @ #{l.base_label}"
+    rescue
+        ls = "#{l[0].sub('/app/', '')}:#{l[1]}"
+    end
+    STDERR.puts "#{DateTime.now.strftime('%H:%M:%S')} [#{ls}] #{message}"
+end
+
+def debug_error(message)
+    l = caller_locations.first
+    ls = ''
+    begin
+        ls = "#{l.path.sub('/app/', '')}:#{l.lineno} @ #{l.base_label}"
+    rescue
+        ls = "#{l[0].sub('/app/', '')}:#{l[1]}"
+    end
+    STDERR.puts "#{DateTime.now.strftime('%H:%M:%S')} [ERROR] [#{ls}] #{message}"
+end
+
 USER_AGENT_PARSER = UserAgentParser::Parser.new
 WEEKDAYS = ['So', 'Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa']
 HOMEWORK_FEEDBACK_STATES = ['good', 'hmmm', 'lost']
@@ -125,7 +147,7 @@ module QtsNeo4j
             item = @tx.pop
             unless item.nil?
                 begin
-                    STDERR.puts "Rolling back transaction ##{item['commit'].split("/")[-2]} with #{@transaction_size} queries."
+                    debug("Rolling back transaction ##{item['commit'].split("/")[-2]} with #{@transaction_size} queries.")
                     @neo4j.rollback_transaction(item)
                 rescue
                 end
@@ -203,10 +225,10 @@ module QtsNeo4j
         transaction do
             result = neo4j_query(query_str, options).to_a
             unless result.size == 1
-                STDERR.puts '-' * 40
-                STDERR.puts query_str
-                STDERR.puts options.to_json
-                STDERR.puts '-' * 40
+                debug '-' * 40
+                debug query_str
+                debug options.to_json
+                debug '-' * 40
                 raise "Expected one result but got #{result.size}" 
             end
             result.first
@@ -255,8 +277,7 @@ def deliver_mail(&block)
         end
     end
     if DEVELOPMENT
-        STDERR.puts "Not sending mail to because we're in development: #{mail.to.join(' / ')}"
-        STDERR.puts mail.to_s
+        debug "Not sending mail to because we're in development: #{mail.subject} => #{mail.to.join(' / ')}"
     else
         mail.deliver!
     end
@@ -288,11 +309,11 @@ class SetupDatabase
                         RETURN nodes;
                     END_OF_QUERY
                     duplicate_peu.each do |entry|
-                        STDERR.puts entry.to_yaml
+                        debug entry.to_yaml
                         entry['nodes'].select do |node|
                             node['name'] != main.class_variable_get(:@@predefined_external_users)[:recipients][node['email']][:label]
                         end.each do |node|
-                            STDERR.puts "DELETING PEU #{node['name']}"
+                            debug "DELETING PEU #{node['name']}"
                             neo4j_query(<<~END_OF_QUERY, {:name => node['name'], :email => node['email']})
                                 MATCH (n:PredefinedExternalUser {name: {name}, email: {email}})
                                 DETACH DELETE n;
@@ -301,7 +322,7 @@ class SetupDatabase
                     end
                 end
                 transaction do
-                    STDERR.puts "Removing all constraints and indexes..."
+                    debug "Removing all constraints and indexes..."
                     indexes = []
 #                     neo4j_query("CALL db.constraints").each do |constraint|
 #                         query = "DROP #{constraint['description']}"
@@ -312,7 +333,7 @@ class SetupDatabase
 #                         neo4j_query(query)
 #                     end
                     
-                    STDERR.puts "Setting up constraints and indexes..."
+                    debug "Setting up constraints and indexes..."
                     neo4j_query("CREATE CONSTRAINT ON (n:LoginCode) ASSERT n.tag IS UNIQUE")
                     neo4j_query("CREATE CONSTRAINT ON (n:User) ASSERT n.email IS UNIQUE")
                     neo4j_query("CREATE CONSTRAINT ON (n:Session) ASSERT n.sid IS UNIQUE")
@@ -385,8 +406,8 @@ class SetupDatabase
                     wanted_users << "klassenraum@#{SCHUL_MAIL_DOMAIN}"
                     users_to_be_deleted = Set.new(present_users) - wanted_users
                     unless users_to_be_deleted.empty?
-                        STDERR.puts "Deleting users (not really):"
-                        STDERR.puts users_to_be_deleted.to_a.sort.to_yaml
+                        debug "Deleting users (not really):"
+                        debug users_to_be_deleted.to_a.sort.to_yaml
                     end
                 end
                 transaction do
@@ -405,19 +426,19 @@ class SetupDatabase
                     DETACH DELETE s
                     RETURN COUNT(s) as count;
                 END_OF_QUERY
-                STDERR.puts "Purged #{purged_session_count} stale sessions..."
+                debug "Purged #{purged_session_count} stale sessions..."
                 purged_login_code_count = neo4j_query_expect_one(<<~END_OF_QUERY, :now => Time.now.to_i)['count']
                     MATCH (l:LoginCode)
                     WHERE l.valid_to <= {now}
                     DETACH DELETE l
                     RETURN COUNT(l) as count;
                 END_OF_QUERY
-                STDERR.puts "Purged #{purged_login_code_count} stale login codes..."
-                STDERR.puts "Setup finished."
+                debug "Purged #{purged_login_code_count} stale login codes..."
+                debug "Setup finished."
                 break
             rescue
-                STDERR.puts $!
-                STDERR.puts "Retrying setup after #{delay} seconds..."
+                debug $!
+                debug "Retrying setup after #{delay} seconds..."
                 sleep delay
                 delay += 1
             end
@@ -523,8 +544,8 @@ class Main < Sinatra::Base
                 :first_school_day => '2020-08-10',
                 :last_day => '2021-08-06'
             }
-            STDERR.puts "Can't read /data/config.yaml, using a few default values:"
-            STDERR.puts @@config.to_yaml
+            debug "Can't read /data/config.yaml, using a few default values:"
+            debug @@config.to_yaml
         end
         parser.parse_lehrer do |record|
             next unless record[:can_log_in]
@@ -918,12 +939,13 @@ class Main < Sinatra::Base
             self.compile_css()
         end
         if ['thin', 'rackup'].include?(File.basename($0))
-            STDERR.puts "Server is up and running!"
+            debug('Server is up and running!')
         end
     end
     
     def assert(condition, message = 'assertion failed', suppress_backtrace = false)
         unless condition
+            debug_error message
             e = StandardError.new(message)
             e.set_backtrace([]) if suppress_backtrace
             raise e
@@ -932,6 +954,7 @@ class Main < Sinatra::Base
 
     def assert_with_delay(condition, message = 'assertion failed', suppress_backtrace = false)
         unless condition
+            debug_error message
             e = StandardError.new(message)
             e.set_backtrace([]) if suppress_backtrace
             sleep 3.0
@@ -954,7 +977,7 @@ class Main < Sinatra::Base
         options[:optional_keys] ||= []
         options[:max_value_lengths] ||= {}
         data_str = request.body.read(options[:max_body_length]).to_s
-#         STDERR.puts data_str
+#         debug data_str
         @latest_request_body = data_str.dup
         begin
             assert(data_str.is_a? String)
@@ -975,8 +998,8 @@ class Main < Sinatra::Base
             end
             result
         rescue
-            STDERR.puts "Request was:"
-            STDERR.puts data_str
+            debug "Request was:"
+            debug data_str
             raise
         end
     end
@@ -1011,7 +1034,7 @@ class Main < Sinatra::Base
         @session_user = nil
         if request.cookies.include?('sid')
             sid = request.cookies['sid']
-#             STDERR.puts "SID: [#{sid}]"
+#             debug "SID: [#{sid}]"
             if (sid.is_a? String) && (sid =~ /^[0-9A-Za-z,]+$/)
                 first_sid = sid.split(',').first
                 if first_sid =~ /^[0-9A-Za-z]+$/
@@ -1874,8 +1897,8 @@ class Main < Sinatra::Base
 #                             STDERR.puts code
                             s[index, length] = eval(code).to_s || ''
                         rescue
-                            STDERR.puts "Error while evaluating:"
-                            STDERR.puts code
+                            debug "Error while evaluating:"
+                            debug code
                             raise
                         end
                     end

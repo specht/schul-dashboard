@@ -218,7 +218,7 @@ class Main < Sinatra::Base
         srand(Digest::SHA2.hexdigest(LOGIN_CODE_SALT).to_i + (Time.now.to_f * 1000000).to_i)
         random_code = (0..5).map { |x| rand(10).to_s }.join('')
         random_code = '123456' if DEVELOPMENT
-        STDERR.puts "!!!!! #{data[:email]} => #{random_code} !!!!!"
+        debug "!!!!! #{data[:email]} => #{random_code} !!!!!"
         tag = RandomTag::generate(8)
         valid_to = Time.now + 600
         # was causing problems with a user... maybe? huh...
@@ -253,7 +253,7 @@ class Main < Sinatra::Base
             end
         rescue StandardError => e
             if DEVELOPMENT
-                STDERR.puts "Cannot send e-mail in DEVELOPMENT mode, continuing anyway:"
+                debug "Cannot send e-mail in DEVELOPMENT mode, continuing anyway:"
                 STDERR.puts e
             else
                 raise e

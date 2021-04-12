@@ -225,7 +225,8 @@ class Timetable
     end
     
     def print_ventry(ventry)
-        STDERR.print sprintf('[%5d] [%4d] %s %2d ', ventry[:vnr], ventry[:unr], ventry[:datum], ventry[:stunde])
+        debug sprintf('[%5d] [%4d] %s %2d ', ventry[:vnr], ventry[:unr], ventry[:datum], ventry[:stunde])
+        s = ''
         [:fach, :lehrer, :klassen, :raum].each do |k|
             k0 = "#{k}_alt".to_sym
             k1 = "#{k}_neu".to_sym
@@ -234,11 +235,11 @@ class Timetable
                 v1 = ventry[k1]
                 v0 = [v0] unless v0.is_a?(Array)
                 v1 = [v1] unless v1.is_a?(Array)
-                STDERR.print "[#{v0.join('/')}] => [#{v1.join('/')}] "
+                s += "[#{v0.join('/')}] => [#{v1.join('/')}] "
             end
         end
-        STDERR.print "[#{ventry[:vertretungs_text]}] [#{ventry[:vertretungs_art]}]"
-        STDERR.puts
+        s += "[#{ventry[:vertretungs_text]}] [#{ventry[:vertretungs_art]}]"
+        debug s
     end
     
     def patch_lesson(ventry, day_events, day_lesson_keys_for_stunde, &block)
@@ -413,7 +414,7 @@ class Timetable
     end
     
     def update_timetables()
-        STDERR.puts "Updating timetables..."
+        debug "Updating timetables..."
         # refresh vplan data
         Main.collect_data()
         seen_ventry_flags = {}
@@ -765,7 +766,7 @@ class Timetable
                             (!(Set.new(event[:klassen]) & Set.new(ventry[:klassen_alt])).empty?)
                         end
                     else
-                        STDERR.puts "OY! It's an unknown case! Somebody do something, quick!"
+                        debug "OY! It's an unknown case! Somebody do something, quick!"
                         print_ventry(ventry)
                     end
                 end
@@ -1011,7 +1012,7 @@ class Timetable
     end
     
     def update_weeks(only_these_lesson_keys)
-        STDERR.puts "Updating weeks: #{only_these_lesson_keys.to_a.join(', ')}"
+        debug "Updating weeks: #{only_these_lesson_keys.to_a.join(', ')}"
         
         ical_tokens = {}
         result = neo4j_query(<<~END_OF_QUERY)
@@ -1503,7 +1504,6 @@ class Timetable
                 end
             end
             p += 7
-            STDERR.print '.'
         end
         ical_events.each_pair do |email, events|
             FileUtils::mkpath('/gen/ical')
@@ -1669,7 +1669,7 @@ class Timetable
     end
     
     def update_recipients()
-        STDERR.puts "Updating recipients"
+        debug "Updating recipients"
         # write recipients for each user
         group_for_sus = {}
         results = neo4j_query(<<~END_OF_QUERY)
@@ -1975,7 +1975,7 @@ class Timetable
                 end
             end
         end
-        STDERR.puts "Fetched #{fetched_lesson_info_count} updated lesson events, #{fetched_text_comments_count} updated text comments, #{fetched_audio_comments_count} updated audio comments, #{fetched_message_count} updated messages and #{fetched_event_count} updated events."
+        debug "Fetched #{fetched_lesson_info_count} updated lesson events, #{fetched_text_comments_count} updated text comments, #{fetched_audio_comments_count} updated audio comments, #{fetched_message_count} updated messages and #{fetched_event_count} updated events."
         
         unless add_these_lesson_keys.empty?
             only_these_lesson_keys = (only_these_lesson_keys || Set.new()) | add_these_lesson_keys

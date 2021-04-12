@@ -107,7 +107,7 @@ class Parser
             @use_mock_names = true
         end
         if @use_mock_names
-            STDERR.puts "Using mock names!"
+            debug "Using mock names!"
         end
         @mock = {}
         @mock[:nachnamen] = JSON.parse(File.read('mock/nachnamen.json'))
@@ -120,10 +120,10 @@ class Parser
     end
     
     def parse_lehrer(&block)
-#         STDERR.puts "Parsing lehrer..."
+#         debug "Parsing lehrer..."
         path = '/data/lehrer/lehrer.csv'
         unless File.exists?(path)
-            STDERR.puts "...skipping because #{path} does not exist"
+            debug "...skipping because #{path} does not exist"
             return
         end
         srand(1)
@@ -185,10 +185,10 @@ class Parser
     end
     
     def parse_klassenleiter(&block)
-#         STDERR.puts "Parsing klassenleiter..."
+#         debug "Parsing klassenleiter..."
         path = '/data/klassenleiter/klassenleiter.txt'
         unless File.exists?(path)
-            STDERR.puts "...skipping because #{path} does not exist"
+            debug "...skipping because #{path} does not exist"
             return
         end
         File.open(path) do |f|
@@ -284,14 +284,14 @@ class Parser
             rufname = parts[4].strip
         end
         unless ['m', 'w'].include?(geschlecht)
-            STDERR.puts "#{vorname} #{nachname}: #{geschlecht}"
-            STDERR.puts "Fehler: Geschlecht nicht korrekt angegeben."
+            debug "#{vorname} #{nachname}: #{geschlecht}"
+            debug "Fehler: Geschlecht nicht korrekt angegeben."
             exit(1)
         end
         email = name_to_email(rufname, nachname)
         if email.sub('@' + SCHUL_MAIL_DOMAIN, '').size > 23
-            STDERR.puts email
-            STDERR.puts "Fehler: E-Mail-Adresse ist zu lang: #{email}"
+            debug email
+            debug "Fehler: E-Mail-Adresse ist zu lang: #{email}"
             exit(1)
         end
 
@@ -312,11 +312,11 @@ class Parser
     end
 
     def parse_schueler(&block)
-#         STDERR.puts "Parsing schueler..."
+#         debug "Parsing schueler..."
         # create reproducible passwords while parsing SuS
         path = '/data/schueler/ASCII.TXT'
         unless File.exists?(path)
-            STDERR.puts "...skipping because #{path} does not exist"
+            debug "...skipping because #{path} does not exist"
             return
         end
         srand(1)
@@ -330,7 +330,7 @@ class Parser
     end
     
     def parse_faecher
-#         STDERR.puts "Parsing faecher..."
+#         debug "Parsing faecher..."
         if File.exists?('/data/faecher/faecher.csv')
             CSV.foreach('/data/faecher/faecher.csv', :headers => true) do |line|
                 line = Hash[line]
@@ -346,7 +346,7 @@ class Parser
     end
     
     def parse_ferien_feiertage
-#         STDERR.puts "Parsing ferien/feiertage..."
+#         debug "Parsing ferien/feiertage..."
         if File.exists?('/data/ferien_feiertage/ferien_feiertage.csv')
             CSV.foreach('/data/ferien_feiertage/ferien_feiertage.csv', :headers => true) do |line|
                 line = Hash[line]
@@ -360,7 +360,7 @@ class Parser
     end
     
     def parse_tablets
-#         STDERR.puts "Parsing tablets..."
+#         debug "Parsing tablets..."
         tablets = []
         if File.exists?('/data/tablets/tablets.csv')
             CSV.foreach('/data/tablets/tablets.csv', :headers => true) do |line|
@@ -383,7 +383,7 @@ class Parser
     
     def notify_if_different(a, b)
         if a != b
-            STDERR.puts "UNEXPECTED DIFFERENCE: #{a} <=> #{b}"
+            debug "UNEXPECTED DIFFERENCE: #{a} <=> #{b}"
         end
     end
     
@@ -421,7 +421,7 @@ class Parser
                         next if lehrer.nil?
                     end
                     fach = parts[3].gsub('/', '-')
-#                     STDERR.puts fach
+#                     debug fach
 #                     fach = fach.split('-').first
 #                     next if (!fach.nil?) && fach[fach.size - 1] =~ /\d/
                     raum = parts[4]
@@ -525,7 +525,7 @@ class Parser
         entries = []
         vplan_path = Dir['/vplan/*.txt'].sort.last
         if vplan_path
-            STDERR.puts "Loading vplan from #{vplan_path}..."
+            debug "Loading vplan from #{vplan_path}..."
             File.open(vplan_path, 'r:' + VPLAN_ENCODING) do |f|
                 f.each_line do |line|
                     line = line.encode('utf-8')
@@ -669,7 +669,7 @@ class Parser
     end
     
     def parse_kurswahl(user_info, lessons, lesson_key_tr)
-#         STDERR.puts "Parsing kurswahl..."
+#         debug "Parsing kurswahl..."
         kurse_for_schueler = {}
         schueler_for_kurs = {}
         name_tr = {}
@@ -716,11 +716,11 @@ class Parser
                         lessons[:lesson_keys][lesson_key][:fach] == fach
                     end
                     if lesson_keys.size != 1
-                        STDERR.puts line
-                        STDERR.puts "#{fach}: #{lesson_keys.to_json}"
+                        debug line
+                        debug "#{fach}: #{lesson_keys.to_json}"
                     end
                     unless email
-                        STDERR.puts "Kurswahl: Can't assign #{name}!"
+                        debug "Kurswahl: Can't assign #{name}!"
                     end
                     if email && lesson_keys.size == 1
                         lesson_key = lesson_keys.to_a.first
@@ -733,14 +733,14 @@ class Parser
             end
         end
         unless unassigned_names.empty?
-            STDERR.puts "Kurswahl: Can't assign these names!"
-            STDERR.puts unassigned_names.to_a.sort.to_yaml
+            debug "Kurswahl: Can't assign these names!"
+            debug unassigned_names.to_a.sort.to_yaml
         end
         return kurse_for_schueler, schueler_for_kurs
     end
 
     def parse_wahlpflichtkurswahl(user_info, lessons, lesson_key_tr)
-#         STDERR.puts "Parsing wahlpflichtkurswahl..."
+#         debug "Parsing wahlpflichtkurswahl..."
         schueler_for_lesson_key = {}
         unassigned_names = Set.new()
         begin
@@ -749,7 +749,7 @@ class Parser
                 wahlpflicht.each_pair do |lesson_key, sus|
                     lesson_key = lesson_key_tr[lesson_key] || lesson_key
                     unless lessons[:lesson_keys].include?(lesson_key)
-                        STDERR.puts "NOTICE -- Wahlpflicht: Skipping #{lesson_key} because it's unknown."
+                        debug "NOTICE -- Wahlpflicht: Skipping #{lesson_key} because it's unknown."
                         next
                     end
                     sus.each do |name|
@@ -765,7 +765,7 @@ class Parser
                             unassigned_names << name
                         end
                         unless email
-                            STDERR.puts "Wahlpflichtkurswahl: Can't assign #{name}!"
+                            debug "Wahlpflichtkurswahl: Can't assign #{name}!"
                         end
                         if email
                             schueler_for_lesson_key[lesson_key] ||= Set.new()
@@ -775,15 +775,15 @@ class Parser
                 end
             end
         rescue
-            STDERR.puts '-' * 50
-            STDERR.puts "ATTENTION: Error parsing wahlpflicht.yaml, skipping..."
-            STDERR.puts '-' * 50
+            debug '-' * 50
+            debug "ATTENTION: Error parsing wahlpflicht.yaml, skipping..."
+            debug '-' * 50
         end
         unless unassigned_names.empty?
-            STDERR.puts "Kurswahl: Can't assign these names!"
-            STDERR.puts unassigned_names.to_a.sort.to_yaml
+            debug "Kurswahl: Can't assign these names!"
+            debug unassigned_names.to_a.sort.to_yaml
         end
-        STDERR.puts "Wahlpflichtkurswahl: got SuS for #{schueler_for_lesson_key.size} lesson keys."
+        debug "Wahlpflichtkurswahl: got SuS for #{schueler_for_lesson_key.size} lesson keys."
         return schueler_for_lesson_key
     end
 end

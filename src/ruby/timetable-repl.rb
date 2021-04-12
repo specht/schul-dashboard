@@ -18,7 +18,7 @@ class TimetableRepl < Sinatra::Base
     end
     
     def self.perform_update(which)
-        STDERR.puts ">>> Updating #{which}!"
+        debug ">>> Updating #{which}!"
         start_time = Time.now
         file_count = 0
         if which == 'all'
@@ -27,8 +27,7 @@ class TimetableRepl < Sinatra::Base
             file_count = @@timetable.update(Set.new([which]))
         end
         end_time = Time.now
-        STDERR.puts sprintf("<<< Finished updating #{which} in %1.2f seconds, wrote #{file_count} files.", (end_time - start_time).to_f)
-        STDERR.puts '-' * 59
+        debug sprintf("<<< Finished updating #{which} in %1.2f seconds, wrote #{file_count} files.", (end_time - start_time).to_f)
     end
     
     configure do
@@ -70,7 +69,7 @@ class TimetableRepl < Sinatra::Base
             end
         end
         self.perform_update('all') unless DEVELOPMENT
-        STDERR.puts "REPL is ready."
+        debug "REPL is ready."
     end
     
     get '/api/update/*' do

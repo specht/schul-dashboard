@@ -54,8 +54,8 @@ class Main < Sinatra::Base
         assert(payload[:context][:user][:name].strip.size > 0)
         assert(room.strip.size > 0)
         
-        STDERR.puts payload.to_json
-
+        debug "Generated Jitsi token for #{payload[:context][:user][:name]} for #{payload[:room]}"
+        
         token = JWT.encode payload, JWT_APPKEY, algorithm = 'HS256', header_fields = {:typ => 'JWT'}
         token
     end
@@ -306,8 +306,8 @@ class Main < Sinatra::Base
                                         :timestamp => (Time.now + PRESENCE_TOKEN_EXPIRY_TIME).to_i
                                     }
                                     if DEVELOPMENT
-                                        STDERR.puts "Generating presence token"
-                                        STDERR.puts query_data.to_yaml
+                                        debug "Generating presence token"
+                                        debug query_data.to_yaml
                                     end
                                     neo4j_query_expect_one(<<~END_OF_QUERY, query_data)
                                         MATCH (u:User {email: {email}}), (i:LessonInfo {offset: {offset}})-[:BELONGS_TO]->(l:Lesson {key: {lesson_key}})
@@ -392,9 +392,9 @@ class Main < Sinatra::Base
                 result[:html] += "</div>\n"
             end
         rescue StandardError => e
-            STDERR.puts "gen_jitsi_data failed for path [#{path}]"
-            STDERR.puts e
-            STDERR.puts e.backtrace
+            debug "gen_jitsi_data failed for path [#{path}]"
+            debug e
+            debug e.backtrace
             result = {:html => "<p class='alert alert-danger'>Der Videochat konnte nicht gefunden werden.</p>"}
         end
         result
@@ -406,7 +406,7 @@ class Main < Sinatra::Base
         if @@current_jitsi_rooms.nil? || Time.now > @@current_jitsi_rooms_timestamp + 10
             @@current_jitsi_rooms_timestamp = Time.now
             begin
-                STDERR.puts "Refreshing Jitsi presence!"
+                debug "Refreshing Jitsi presence!"
                 c = Curl::Easy.new(JITSI_ALL_ROOMS_URL)
                 c.perform
                 if c.status.to_i == 200
@@ -515,7 +515,7 @@ class Main < Sinatra::Base
         require_teacher!
         data = parse_request_data(:required_keys => [:lesson_key, :offset],
                                   :types => {:offset => Integer})
-        assert(@@lessons_for_shorthand[@session_user[:shorthand]].include?(data[:lesson_key]), 'get_current_jitsi_users_for_lesson', true)
+        assert((@@lessons_for_shorthand[@session_user[:shorthand]] || []).include?(data[:lesson_key]), 'get_current_jitsi_users_for_lesson', true)
         respond(get_current_jitsi_users_for_lesson(data[:lesson_key], data[:offset]))
     end
     

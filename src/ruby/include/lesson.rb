@@ -384,6 +384,23 @@ class Main < Sinatra::Base
         results
     end
     
+    def self.get_all_stream_restrictions()
+        temp = $neo4j.neo4j_query(<<~END_OF_QUERY)
+            MATCH (l:Lesson)
+            RETURN l.key AS lesson_key, COALESCE(l.stream_restriction, []) AS restriction
+        END_OF_QUERY
+        results = {}
+        temp.each do |entry|
+            lesson_key = entry['lesson_key']
+            restriction = entry['restriction']
+            while restriction.size < 5
+                restriction << 0
+            end
+            results[lesson_key] = restriction
+        end
+        results
+    end
+    
     def print_stream_restriction_table(klasse)
         lesson_keys = (@@lessons_for_shorthand[@session_user[:shorthand]] || []).select do |lesson_key|
             lesson_info = @@lessons[:lesson_keys][lesson_key]

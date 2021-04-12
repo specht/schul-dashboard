@@ -1025,6 +1025,18 @@ class Timetable
             ical_tokens[entry['u.email']] = entry['u.ical_token']
         end
 
+        all_stream_restrictions = Main.get_all_stream_restrictions()
+        all_homeschooling_users = Main.get_all_homeschooling_users()
+        
+        group_for_sus = {}
+        results = neo4j_query(<<~END_OF_QUERY)
+            MATCH (u:User)
+            RETURN u.email, COALESCE(u.group2, 'A') AS group2;
+        END_OF_QUERY
+        results.each do |x|
+            group_for_sus[x['u.email']] = x['group2']
+        end
+        
         events_with_data_cache = {}
         events_with_data_per_user_cache = {}
         start_date = Date.parse(@@config[:first_day])
@@ -1376,6 +1388,32 @@ class Timetable
                                 event[:data].delete(:booked_tablet_label_short)
                             end
                             event
+                        end
+                        # unless SuS is permanently at home delete lesson_jitsi flag
+                        # in some cases
+                        if @@user_info.include?(email)
+                            unless all_homeschooling_users.include?(email)
+                                fixed_events.map! do |event|
+                                    if event[:lesson] && event[:data]
+                                        if event[:data][:lesson_jitsi]
+                                            wday = (Date.parse(event[:datum]).wday + 6) % 7
+                                            if all_stream_restrictions[event[:lesson_key]][wday] == 1
+                                                # stream is only open for SuS who are permanently at home
+                                                event[:data] = event[:data].reject { |x| x == :lesson_jitsi }
+                                            else
+                                                # stream is unrestricted - open only for other group if we currently have a switch week
+                                                switch_week = Main.get_switch_week_for_date(Date.parse(event[:datum]))
+                                                if switch_week
+                                                    if switch_week == group_for_sus[email]
+                                                        event[:data] = event[:data].reject { |x| x == :lesson_jitsi }
+                                                    end
+                                                end
+                                            end
+                                        end
+                                    end
+                                    event
+                                end
+                            end
                         end
                         # add schueler_offset_in_lesson for SuS
                         fixed_events.map! do |event|

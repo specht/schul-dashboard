@@ -1,7 +1,7 @@
 class Main < Sinatra::Base
     def mail_addresses_table(klasse)
         require_teacher!
-        all_homeschooling_users = get_all_homeschooling_users()
+        all_homeschooling_users = Main.get_all_homeschooling_users()
         StringIO.open do |io|
             io.puts "<div class='row'>"
             io.puts "<div class='col-md-12'>"
@@ -210,8 +210,8 @@ class Main < Sinatra::Base
         end
     end
     
-    def get_all_homeschooling_users
-        temp = neo4j_query(<<~END_OF_QUERY)
+    def self.get_all_homeschooling_users()
+        temp = $neo4j.neo4j_query(<<~END_OF_QUERY)
             MATCH (u:User {homeschooling: true})
             RETURN u.email
         END_OF_QUERY

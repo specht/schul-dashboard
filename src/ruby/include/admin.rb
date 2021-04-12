@@ -18,7 +18,7 @@ class Main < Sinatra::Base
             all_sessions[s[:email]] ||= []
             all_sessions[s[:email]] << s[:session]
         end
-        all_homeschooling_users = get_all_homeschooling_users()
+        all_homeschooling_users = Main.get_all_homeschooling_users()
         StringIO.open do |io|
             io.puts "<a class='btn btn-secondary' href='#teachers'>Lehrerinnen und Lehrer</a>"
             io.puts "<a class='btn btn-secondary' href='#sus'>Schülerinnen und Schüler</a>"

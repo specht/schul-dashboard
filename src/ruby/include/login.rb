@@ -379,5 +379,24 @@ class Main < Sinatra::Base
         respond(:codes => sus)
     end
     
-
+    post '/api/get_all_pending_login_codes' do
+        require_admin!
+        neo4j_query(<<~END_OF_QUERY, {:timestamp => Time.now.to_i})
+            MATCH (n:LoginCode)
+            WHERE n.valid_to < {timestamp}
+            DETACH DELETE n;
+        END_OF_QUERY
+        rows = neo4j_query(<<~END_OF_QUERY)
+            MATCH (n:LoginCode)-[:BELONGS_TO]->(u:User)
+            RETURN n, u
+            ORDER BY n.valid_to;
+        END_OF_QUERY
+        users = []
+        rows.each do |row|
+            code = row['n'].props[:code]
+            email = row['u'].props[:email]
+            users << [@@user_info[email][:display_name], code]
+        end
+        respond(:codes => users)
+    end
 end

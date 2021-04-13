@@ -1,0 +1,24 @@
+#{this_is_a_page_for_logged_in_admins}
+<div class='container' style='padding-top: 30px; background-color: #fff;'>
+    <div class='row codes' style='font-size: 200%;'>
+    </div>
+</div>
+
+<script>
+function update() {
+    api_call('/api/get_all_pending_login_codes', {}, function(data) {
+        if (data.success) {
+            $('.codes').empty();
+            for (let entry of data.codes) {
+                $('<div>').addClass('col-md-6').html(`${entry[0]}&nbsp;&nbsp;&nbsp;&nbsp;${entry[1]}`).appendTo($('.codes'));
+            }
+        }
+    });
+}
+
+var klasse = '#{klasse}';
+document.addEventListener('DOMContentLoaded', function() {
+    update();
+    setInterval(function() { update(); }, 5000);
+});
+</script>

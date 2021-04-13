@@ -188,6 +188,8 @@ document.addEventListener('DOMContentLoaded', function() {
                     data.events = data.events.map(function(x) {
                         if ((x.extendedProps.type || 'test') === 'test')
                             x.color = color_palette.primary;
+                        else if ((x.extendedProps.type || 'test') === 'switch_week')
+                            x.color = color_palette.disabled;
                         else
                             x.color = color_palette.shifted;
                         return x;

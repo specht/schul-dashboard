@@ -9,12 +9,37 @@ class Main < Sinatra::Base
         @@ferien_feiertage.each do |event|
             events << {
                 :start => event[:from],
-                :end => event[:to],
+                :end => (Date.parse(event[:to]) + 1).strftime('%Y-%m-%d'),
                 :title => event[:title],
                 :extendedProps => {
                     :type => :holiday
                 }
             }
+        end
+        switch_week_entries = []
+        p = Date.parse(start_date)
+        pend = Date.parse(end_date)
+        while p <= pend && p <= Date.parse(@@config[:last_day])
+            sw = Main.get_switch_week_for_date(p)
+            if switch_week_entries.empty? || switch_week_entries.last[:sw] != sw
+                title = "#{sw}-Woche"
+                switch_week_entries << {:sw => sw, :start => p.strftime('%Y-%m-%d'), :end => p.strftime('%Y-%m-%d'), :title => title}
+            else
+                switch_week_entries.last[:end] = p.strftime('%Y-%m-%d')
+            end
+            p += 1
+        end
+        switch_week_entries.each do |entry|
+            if entry[:sw]
+                events << {
+                    :start => entry[:start],
+                    :end => (Date.parse(entry[:end]) + 1).strftime('%Y-%m-%d'),
+                    :title => entry[:title],
+                    :extendedProps => {
+                        :type => :switch_week
+                    }
+                }
+            end
         end
         tests = neo4j_query(<<~END_OF_QUERY, :start_date => start_date, :end_date => end_date, :klasse => klasse).map { |x| {:user => x['u'].props, :test => x['t'].props } }
             MATCH (t:Test {klasse: {klasse}})-[:ORGANIZED_BY]->(u:User)

@@ -1391,7 +1391,7 @@ class Timetable
                         end
                         # unless SuS is permanently at home delete lesson_jitsi flag
                         # in some cases
-                        if @@user_info.include?(email) && WECHSELUNTERRICHT_KLASSENSTUFEN.include?(user[:klasse])
+                        if @@user_info.include?(email) && WECHSELUNTERRICHT_KLASSENSTUFEN.include?(user[:klasse].to_i)
                             unless all_homeschooling_users.include?(email)
                                 fixed_events.map! do |event|
                                     if event[:lesson] && event[:data]

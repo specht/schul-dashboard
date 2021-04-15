@@ -392,6 +392,18 @@ class Parser
         lesson_keys_for_unr = {}
         info_for_lesson_key = {}
         all_lessons = {:timetables => {}, :start_dates => [], :lesson_keys => {}}
+        current_date = Date.today.strftime('%Y-%m-%d')
+        current_timetable_start_date = Dir['/data/stundenplan/*.TXT'].sort.map do |path|
+            File.basename(path).sub('.TXT', '')
+        end.select do |x|
+            current_date >= x
+        end.last
+        if current_timetable_start_date.nil?
+            current_timetable_start_date = Dir['/data/stundenplan/*.TXT'].sort.map do |path|
+                File.basename(path).sub('.TXT', '')
+            end.first
+        end
+
         Dir['/data/stundenplan/*.TXT'].sort.each do |path|
             timetable_start_date = File.basename(path).sub('.TXT', '')
             next if timetable_start_date < config[:first_school_day]
@@ -465,7 +477,9 @@ class Parser
                         lesson_keys_for_unr[unr_fach.split('~')[1].to_i] << lesson_key
                         info_for_lesson_key[lesson_key] ||= {:lehrer => Set.new(),
                                                              :klassen => Set.new()}
-                        info_for_lesson_key[lesson_key][:lehrer] |= stunden_info[:lehrer]
+                        if timetable_start_date == current_timetable_start_date
+                            info_for_lesson_key[lesson_key][:lehrer] |= stunden_info[:lehrer]
+                        end
                         info_for_lesson_key[lesson_key][:klassen] |= stunden_info[:klassen]
                         fixed_lessons[lesson_key] ||= {
                             :stunden => {}

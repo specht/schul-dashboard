@@ -79,6 +79,24 @@ class Main < Sinatra::Base
         "#{title} (#{eid[0, 8]})"
     end
     
+    def self.stream_allowed_for_date_lesson_key_and_email(datum, lesson_key, email, restrictions = nil)
+        restrictions ||= Main.get_stream_restriction_for_lesson_key(lesson_key)
+        weekday = (Date.parse(datum).wday + 6) % 7
+        return true if restrictions[weekday] == 0
+        user = @@user_info[email]
+        return true if user.nil?
+        return true if user[:teacher]
+        klassenstufe = user[:klasse].to_i
+        return true unless WECHSELUNTERRICHT_KLASSENSTUFEN.include?(klassenstufe)
+        if restrictions[weekday] == 1
+            return get_homeschooling_for_user_by_dauer_salzh(email)
+        elsif restrictions[weekday] == 2
+            return get_homeschooling_for_user(email, datum)
+        else
+            true
+        end
+    end
+    
     def gen_jitsi_data(path)
         ua = USER_AGENT_PARSER.parse(request.env['HTTP_USER_AGENT'])
         browser_icon = 'fa-microphone'
@@ -184,7 +202,7 @@ class Main < Sinatra::Base
                 can_enter_room = true
                 room_name = path
                 if room_name.index('Klassenstream') == 0
-                    if (!@session_user[:teacher]) && (!get_homeschooling_for_user(@session_user[:email])) && room_name.index('Klassenstream') == 0
+                    if (!@session_user[:teacher]) && (!Main.get_homeschooling_for_user(@session_user[:email])) && room_name.index('Klassenstream') == 0
                         result[:html] += "<div class='alert alert-danger'>Du bist momentan nicht für den Klassenstream freigeschaltet, da du in Gruppe #{@session_user[:group2]} eingeteilt bist und auch nicht als »zu Hause« markiert bist. Deine Klassenleiterin oder dein Klassenleiter kann dich freischalten.</div>"
                         can_enter_room = false
                     end
@@ -280,10 +298,9 @@ class Main < Sinatra::Base
                     else
                         # check if we have streaming restrictions for this lesson
                         lesson_info = timetable.first
-                        restrictions = get_stream_restriction_for_lesson_key(lesson_info['lesson_key'])
-                        weekday = (Date.today.wday + 6) % 7
-                        if (restrictions[weekday] == 1) && (@session_user[:homeschooling] != true) && (!@session_user[:teacher])
-                            result[:html] += "<div class='alert alert-info'>Da du nicht als »zu Hause« markiert bist (Dauer-saLzH), kannst du an diesem Stream nicht teilnehmen.</div>"
+                        
+                        unless self.class.stream_allowed_for_date_lesson_key_and_email(Date.today.strftime('%Y-%m-%d'), lesson_info['lesson_key'], @session_user[:email])
+                            result[:html] += "<div class='alert alert-info'>Du bist für diesen Jitsi-Raum leider nicht freigeschaltet.</div>"
                             can_enter_room = false
                         else
                             t = Time.parse("#{lesson_info['start']}:00") - JITSI_LESSON_PRE_ENTRY_TOLERANCE * 60
@@ -343,7 +360,7 @@ class Main < Sinatra::Base
                         end
                     end
                     if WECHSELUNTERRICHT_KLASSENSTUFEN.include?(@session_user[:klasse].to_i)
-                        if sus_logged_in? && (!get_homeschooling_for_user(@session_user[:email]))
+                        if sus_logged_in? && (!Main.get_homeschooling_for_user(@session_user[:email]))
                             result[:html] += "<div class='alert alert-danger'>Du bist momentan nicht für den Jitsi-Stream freigeschaltet, da du in Gruppe #{@session_user[:group2]} eingeteilt bist und auch nicht als »zu Hause« markiert bist. Wenn es sich hierbei um einen Fehler handelt, sag bitte deiner Klassenleiterin oder deinem Klassenleiter Bescheid, damit du als »zu Hause« markiert werden kannst.</div>"
                             can_enter_room = false
                         end

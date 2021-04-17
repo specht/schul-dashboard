@@ -7,7 +7,7 @@ class Main < Sinatra::Base
             io.puts "<div class='col-md-12'>"
             io.puts "<div class='alert alert-warning'>"
             io.puts "Bitte überprüfen Sie die <strong>Gruppenzuordnung (A/B)</strong> und markieren Sie alle Kinder, die von der Aussetzung der Präsenzpflicht Gebrauch machen oder die aus gesundheitlichen Gründen / Quarantäne nicht in die Schule kommen können, als <strong>»zu Hause«</strong>."
-            io.puts "Auf die Jitsi-Streams können momentan nur SuS zugreifen, die laut ihrer Gruppenzuordnung in der aktuellen Woche zu Hause sind oder explizit als »zu Hause« markiert sind."
+#             io.puts "Auf die Jitsi-Streams können momentan nur SuS zugreifen, die laut ihrer Gruppenzuordnung in der aktuellen Woche zu Hause sind oder explizit als »zu Hause« markiert sind."
             io.puts "</div>"
             io.puts "<h3>Klasse #{tr_klasse(klasse)}</h3>"
             io.puts "<div class='table-responsive'>"
@@ -233,23 +233,34 @@ class Main < Sinatra::Base
         return (((week_number + (info[0].ord - 'A'.ord)) % info[1]) + 'A'.ord).chr
     end
 
-    # Returns A or B
+    # Returns A or B or nil
     def self.get_current_ab_week()
         get_switch_week_for_date(Date.today)
     end
     
-    def get_homeschooling_for_user(email)
-        info = neo4j_query_expect_one(<<~END_OF_QUERY, {:email => email})
+    def self.get_homeschooling_for_user_by_dauer_salzh(email)
+        info = $neo4j.neo4j_query_expect_one(<<~END_OF_QUERY, {:email => email})
             MATCH (u:User {email: {email}})
-            RETURN COALESCE(u.homeschooling, false) AS homeschooling,
-                   COALESCE(u.group2, 'A') AS group2
+            RETURN COALESCE(u.homeschooling, false) AS homeschooling
         END_OF_QUERY
         marked_as_homeschooling = info['homeschooling']
+        marked_as_homeschooling
+    end
+    
+    def self.get_homeschooling_for_user_by_switch_week(email, datum)
+        info = $neo4j.neo4j_query_expect_one(<<~END_OF_QUERY, {:email => email})
+            MATCH (u:User {email: {email}})
+            RETURN COALESCE(u.group2, 'A') AS group2
+        END_OF_QUERY
         group2 = info['group2']
-        current_week = self.class.get_current_ab_week()
+        current_week = get_switch_week_for_date(Date.parse(datum))
         marked_as_homeschooling_by_week = (current_week != group2)
-#         STDERR.puts "current_week: #{current_week}, group2: #{group2}, marked_as_homeschooling: #{marked_as_homeschooling}"
-        marked_as_homeschooling || marked_as_homeschooling_by_week
+        marked_as_homeschooling_by_week
+    end
+    
+    def self.get_homeschooling_for_user(email, datum = nil)
+        datum ||= Date.today.strftime('%Y-%m-%d')
+        self.get_homeschooling_for_user_by_dauer_salzh(email) || self.get_homeschooling_for_user_by_switch_week(email, datum)
     end
     
     post '/api/toggle_homeschooling' do

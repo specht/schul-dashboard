@@ -58,9 +58,11 @@ document.addEventListener('DOMContentLoaded', function() {
             if (data.success) {
                 let button = $(e.target);
                 if (data.state === 0) {
-                    button.text('für alle').removeClass('btn-info').addClass('btn-primary');
-                } else {
-                    button.text('nur für Dauer-saLzH').removeClass('btn-primary').addClass('btn-info');
+                    button.text('für alle').removeClass('btn-info').removeClass('btn-warning').addClass('btn-primary');
+                } else if (data.state === 1) {
+                    button.text('nur für Dauer-saLzH').removeClass('btn-primary').removeClass('btn-warning').addClass('btn-info');
+                } else if (data.state === 2) {
+                    button.text('nicht für Wechselgruppe in Präsenz').removeClass('btn-primary').removeClass('btn-info').addClass('btn-warning');
                 }
             }
         });

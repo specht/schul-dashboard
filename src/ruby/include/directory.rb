@@ -247,20 +247,29 @@ class Main < Sinatra::Base
         marked_as_homeschooling
     end
     
-    def self.get_homeschooling_for_user_by_switch_week(email, datum)
-        info = $neo4j.neo4j_query_expect_one(<<~END_OF_QUERY, {:email => email})
-            MATCH (u:User {email: {email}})
-            RETURN COALESCE(u.group2, 'A') AS group2
-        END_OF_QUERY
-        group2 = info['group2']
+    def self.get_homeschooling_for_user_by_switch_week(email, datum, group2_for_email)
+        group2 = nil
+        if group2_for_email.nil?
+            info = $neo4j.neo4j_query_expect_one(<<~END_OF_QUERY, {:email => email})
+                MATCH (u:User {email: {email}})
+                RETURN COALESCE(u.group2, 'A') AS group2
+            END_OF_QUERY
+            group2 = info['group2']
+        else
+            group2 = group2_for_email
+        end
         current_week = get_switch_week_for_date(Date.parse(datum))
         marked_as_homeschooling_by_week = (current_week != group2)
         marked_as_homeschooling_by_week
     end
     
-    def self.get_homeschooling_for_user(email, datum = nil)
+    def self.get_homeschooling_for_user(email, datum = nil, is_homeschooling_user = nil, group2_for_email = nil)
         datum ||= Date.today.strftime('%Y-%m-%d')
-        self.get_homeschooling_for_user_by_dauer_salzh(email) || self.get_homeschooling_for_user_by_switch_week(email, datum)
+        if is_homeschooling_user.nil?
+            self.get_homeschooling_for_user_by_switch_week(email, datum, group2_for_email) || self.get_homeschooling_for_user_by_dauer_salzh(email)
+        else
+            self.get_homeschooling_for_user_by_switch_week(email, datum, group2_for_email)
+        end
     end
     
     post '/api/toggle_homeschooling' do

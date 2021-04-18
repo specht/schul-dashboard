@@ -79,7 +79,7 @@ class Main < Sinatra::Base
         "#{title} (#{eid[0, 8]})"
     end
     
-    def self.stream_allowed_for_date_lesson_key_and_email(datum, lesson_key, email, restrictions = nil)
+    def self.stream_allowed_for_date_lesson_key_and_email(datum, lesson_key, email, restrictions = nil, is_homeschooling_user = nil, group2_for_email = nil)
         restrictions ||= Main.get_stream_restriction_for_lesson_key(lesson_key)
         weekday = (Date.parse(datum).wday + 6) % 7
         return true if restrictions[weekday] == 0
@@ -89,9 +89,13 @@ class Main < Sinatra::Base
         klassenstufe = user[:klasse].to_i
         return true unless WECHSELUNTERRICHT_KLASSENSTUFEN.include?(klassenstufe)
         if restrictions[weekday] == 1
-            return get_homeschooling_for_user_by_dauer_salzh(email)
+            if is_homeschooling_user.nil?
+                return get_homeschooling_for_user_by_dauer_salzh(email)
+            else
+                return is_homeschooling_user
+            end
         elsif restrictions[weekday] == 2
-            return get_homeschooling_for_user(email, datum)
+            return get_homeschooling_for_user(email, datum, is_homeschooling_user, group2_for_email)
         else
             true
         end
@@ -476,7 +480,7 @@ class Main < Sinatra::Base
             RETURN i;
         END_OF_QUERY
         room_name = get_jitsi_room_name_for_lesson_key(lesson_key, user)
-        assert(!(room_name.nil?), 'not today!', true) unless DEVELOPMENT
+        assert(!(room_name.nil?), 'not today!', true)
         lesson_room_name = CGI.escape(room_name.gsub(/[\:\?#\[\]@!$&\\'()*+,;=><\/"]/, '')).gsub('+', '%20').downcase
 
         jitsi_rooms = current_jitsi_rooms()

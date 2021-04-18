@@ -61,8 +61,16 @@ require './include/vplan.rb'
 require './include/website_events.rb'
 require './parser.rb'
 
-def debug(message)
-    l = caller_locations.first
+def debug(message, index = 0)
+    index = 0
+    begin
+        while index < caller_locations.size - 1 && ['transaction', 'neo4j_query', 'neo4j_query_expect_one'].include?(caller_locations[index].base_label)
+            index += 1
+        end
+    rescue
+        index = 0
+    end
+    l = caller_locations[index]
     ls = ''
     begin
         ls = "#{l.path.sub('/app/', '')}:#{l.lineno} @ #{l.base_label}"
@@ -182,6 +190,7 @@ module QtsNeo4j
     end
 
     def neo4j_query(query_str, options = {})
+        debug(query_str, 1) if DEVELOPMENT
         transaction do
             temp_result = nil
             5.times do

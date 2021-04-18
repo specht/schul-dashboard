@@ -1393,7 +1393,7 @@ class Timetable
                         # in some cases
                         fixed_events.map! do |event|
                             if event[:lesson] && event[:data]
-                                unless Main.stream_allowed_for_date_lesson_key_and_email(event[:datum], event[:lesson_key], email, all_stream_restrictions[event[:lesson_key]])
+                                unless Main.stream_allowed_for_date_lesson_key_and_email(event[:datum], event[:lesson_key], email, all_stream_restrictions[event[:lesson_key]], all_homeschooling_users.include?(email), group_for_sus[email])
                                     event[:data] = event[:data].reject { |x| x == :lesson_jitsi }
                                 end
                             end
@@ -1958,7 +1958,22 @@ class Timetable
             ORDER BY e.created DESC
         END_OF_QUERY
         fetched_event_count = rows.size
-        rows.each.with_index do |row, _|
+        eids = Set.new()
+        rows.each do |row|
+            eids << row[:info][:id]
+        end
+        temp = neo4j_query(<<~END_OF_QUERY, {:eids => eids.to_a.sort}).map { |x| {:eid => x['e.id'], :participant => x['u.email'], :rt => x['rt'].props } }
+            MATCH (u:User)-[rt:IS_PARTICIPANT]->(e:Event)
+            WHERE e.id IN {eids}
+            RETURN e.id, u.email, rt
+        END_OF_QUERY
+        all_prows = {}
+        temp.each do |entry|
+            all_prows[entry[:eid]] ||= []
+            all_prows[entry[:eid]] << {:participant => entry[:participant],
+                                       :rt => entry[:rt]}
+        end
+        rows.each do |row|
             ds_date = Date.parse(row[:info][:date])
             ds_yw = ds_date.strftime('%Y-%V')
             # add event to organizer's events
@@ -1974,10 +1989,7 @@ class Timetable
                     @events_for_user[row[:organized_by]][ds_yw].delete(row[:info][:id])
                 end
             end
-            prows = neo4j_query(<<~END_OF_QUERY, {:eid => row[:info][:id]}).map { |x| {:participant => x['u.email'], :rt => x['rt'].props } }
-                MATCH (u:User)-[rt:IS_PARTICIPANT]->(e:Event {id: {eid}})
-                RETURN u.email, rt
-            END_OF_QUERY
+            prows = all_prows[row[:info][:id]] || []
             prows.each do |prow|
                 @events_for_user[prow[:participant]] ||= {}
                 @events_last_timestamp = row[:info][:updated] if row[:info][:updated] > @events_last_timestamp

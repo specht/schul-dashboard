@@ -52,7 +52,7 @@ class InvitationRepl < Sinatra::Base
                 STDERR.puts '-' * 59
                 Main.invite_external_user_for_poll_run(row[:prid], row[:email], row[:org_email])
                 unless DEVELOPMENT
-                    sleep 10.0
+                    sleep 1.0
                 end
                 # wait for 10 seconds
             end

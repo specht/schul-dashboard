@@ -9,7 +9,7 @@ body {
 var lesson_key = '#{show_lesson_key}';
 var lesson_key_id = '#{lesson_key_id}';
 var lesson_data = #{lesson_data.to_json};
-var schueler_for_lesson = #{(@@schueler_for_lesson[show_lesson_key] || []).map { |email| i = {}; [:email, :first_name, :last_name, :display_name, :nc_login].each { |k| i[k] = @@user_info[email][k]}; i; }.to_json};
+var schueler_for_lesson = #{schueler_for_lesson(show_lesson_key).to_json};
 var schueler_info_for_email = {};
 var schueler_for_lesson_index = {};
 var max_recording_time = 5;
@@ -496,7 +496,7 @@ function update_breakout_room_widgets() {
         }
         for (let user of schueler_for_lesson) {
             let user_widget = $('<div>').addClass('user-widget');
-            user_widget.html(user.display_name);
+            user_widget.html(`${user.display_name} <div class='group2-button group2-button-sm group2-${user.group2}'>${user.group2}</div>`);
             let icon = $('<div>').addClass('icon');
             icon.append('<div>').addClass('avatar-md').css('background-image', `url(#{NEXTCLOUD_URL}/index.php/avatar/${user.nc_login}/128), url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mO88h8AAq0B1REmZuEAAAAASUVORK5CYII=)`);
             breakout_room_widgets.breakout_groups[breakout_room_config.participants[schueler_for_lesson_index[user.email]]].append(user_widget);

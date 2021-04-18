@@ -1609,6 +1609,14 @@ tr.sep td {
     user-select: none;
 }
 
+.group2-button-sm {
+    width: 20px;
+    height: 20px;
+    font-size: 90%;
+    padding-top: 0;
+    margin-left: 5px;
+}
+
 .group2-button:hover {
     cursor: pointer;
 }

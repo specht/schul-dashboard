@@ -418,4 +418,25 @@ class Main < Sinatra::Base
         END_OF_QUERY
         respond(:group2 => group2)
     end
+    
+    def schueler_for_lesson(lesson_key)
+        results = (@@schueler_for_lesson[lesson_key] || []).map do |email| 
+            i = {}
+            [:email, :first_name, :last_name, :display_name, :nc_login, :group2].each do |k| 
+                i[k] = @@user_info[email][k]
+            end
+            i
+        end
+        temp = neo4j_query(<<~END_OF_QUERY, :email_addresses => (@@schueler_for_lesson[lesson_key] || []))
+            MATCH (u:User)
+            WHERE u.email IN {email_addresses}
+            RETURN u.email, COALESCE(u.group2, 'A') AS group2;
+        END_OF_QUERY
+        temp = Hash[temp.map { |x| [x['u.email'], x['group2']] }]
+        results.map! do |x|
+            x[:group2] = temp[x[:email]]
+            x
+        end
+        results
+    end
 end

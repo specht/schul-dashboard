@@ -1,0 +1,41 @@
+#{this_is_a_page_for_logged_in_teachers}
+<style>
+th {
+    background-color: rgba(255, 255, 255, 0.8);
+}
+.list_email_emails {
+    background-color: rgba(0,0,0,0.05);
+}
+.table.narrow .list_email_emails td:first-child {
+    padding-left: 60px;
+    font-style: italic;
+    border-left: 1px solid rgba(0,0,0,0.3);
+    box-shadow: inset 20px 0 20px -20px rgba(0,0,0,0.3);
+}
+</style>
+<div class='container' style='padding-top: 30px;'>
+    <div class='row'>
+        <div class='col-md-12'>
+        <h3>E-Mail-Verteiler</h3>
+        <div class='alert alert-warning'>Hier sehen Sie alle E-Mail-Verteiler, die Sie verwenden können sowie alle Adressaten, die über diese Verteiler erreicht werden können.</div>
+            #{print_mailing_lists()}
+        </div>
+    </div>
+</div>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    install_clipboard_handler('.btn-clipboard');
+    $('.bu-toggle-adresses').click(function(e) {
+        let list_email = $(e.target).data('list-email');
+        let tbody = $(`tbody.list_email_emails[data-list-email="${list_email}"]`);
+        $('.list_email_label').css('font-weight', 'normal');
+        tbody.prev('.list_email_label').css('font-weight', 'bold');
+        if (tbody.is(':visible'))
+            tbody.hide();
+        else {
+            $('tbody.list_email_emails').hide();
+            tbody.show();
+        }
+    });
+});
+</script>

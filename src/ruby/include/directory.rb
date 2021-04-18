@@ -448,4 +448,66 @@ class Main < Sinatra::Base
         end
         results
     end
+    
+    def print_mailing_list(io, list_email)
+        return unless @@mailing_lists.include?(list_email)
+        io.puts "<tr class='user_row'>"
+        info = @@mailing_lists[list_email]
+        io.puts "<td class='list_email_label'>#{info[:label]}</td>"
+        io.puts "<td>"
+        print_email_field(io, list_email)
+        io.puts "</td>"
+        io.puts "<td style='text-align: right;'><button data-list-email='#{list_email}' class='btn btn-warning btn-sm bu-toggle-adresses'>#{info[:recipients].size} Adressen&nbsp;&nbsp;<i class='fa fa-chevron-down'></i></button></td>"
+        io.puts "</tr>"
+        io.puts "<tbody style='display: none;' class='list_email_emails' data-list-email='#{list_email}'>"
+        info[:recipients].sort do |a, b|
+            an = ((@@user_info[a.sub(/^eltern\./, '')] || {})[:display_name] || '').downcase
+            bn = ((@@user_info[b.sub(/^eltern\./, '')] || {})[:display_name] || '').downcase
+            an <=> bn
+        end.each do |email|
+            name = (@@user_info[email] || {})[:display_name] || ''
+            if email[0, 7] == 'eltern.'
+                name = (@@user_info[email.sub('eltern.', '')] || {})[:display_name] || ''
+                name = "Eltern von #{name}"
+            end
+            io.puts "<tr class='user_row'>"
+            io.puts "<td>#{name}</td>"
+            io.puts "<td colspan='2'>"
+            print_email_field(io, email)
+            io.puts "</td>"
+            io.puts "</tr>"
+        end
+        io.puts "</tbody>"
+    end
+    
+    def print_mailing_lists()
+        StringIO.open do |io|
+            io.puts "<table class='table table-condensed narrow'>"
+            remaining_mailing_lists = Set.new(@@mailing_lists.keys)
+            @@klassen_order.each do |klasse|
+                io.puts "<tr><th colspan='3'>Klasse #{tr_klasse(klasse)}</th></tr>"
+                ["klasse.#{klasse}@#{SCHUL_MAIL_DOMAIN}",
+                 "eltern.#{klasse}@#{SCHUL_MAIL_DOMAIN}",
+                 "lehrer.#{klasse}@#{SCHUL_MAIL_DOMAIN}"].each do |list_email|
+                    print_mailing_list(io, list_email)
+                    remaining_mailing_lists.delete(list_email)
+                end
+            end
+            io.puts "<tr><th colspan='3'>Gesamte Schule</th></tr>"
+            ["sus@#{SCHUL_MAIL_DOMAIN}",
+             "eltern@#{SCHUL_MAIL_DOMAIN}",
+             "lehrer@#{SCHUL_MAIL_DOMAIN}"].each do |list_email|
+                print_mailing_list(io, list_email)
+                remaining_mailing_lists.delete(list_email)
+            end
+            unless remaining_mailing_lists.empty?
+                io.puts "<tr><th colspan='3'>Weitere E-Mail-Verteiler</th></tr>"
+                remaining_mailing_lists.to_a.sort.each do |list_email|
+                    print_mailing_list(io, list_email)
+                end
+            end
+            io.puts "</table>"
+            io.string
+        end
+    end
 end

@@ -861,6 +861,57 @@ class Main < Sinatra::Base
             end
         end
         @@pausenaufsichten = parser.parse_pausenaufsichten()
+        
+        @@mailing_lists = {}
+        @@klassen_order.each do |klasse|
+            next unless @@schueler_for_klasse.include?(klasse)
+            @@mailing_lists["klasse.#{klasse}@#{SCHUL_MAIL_DOMAIN}"] = {
+                :label => "SuS der Klasse #{klasse}",
+                :recipients => @@schueler_for_klasse[klasse]
+            }
+            @@mailing_lists["eltern.#{klasse}@#{SCHUL_MAIL_DOMAIN}"] = {
+                :label => "Eltern der Klasse #{klasse}",
+                :recipients => @@schueler_for_klasse[klasse].map do |email|
+                    "eltern.#{email}"
+                end
+            }
+            @@mailing_lists["lehrer.#{klasse}@#{SCHUL_MAIL_DOMAIN}"] = {
+                :label => "Lehrer der Klasse #{klasse}",
+                :recipients => ((@@teachers_for_klasse[klasse] || {}).keys.sort).map do |shorthand|
+                    email = @@shorthands[shorthand]
+                end.reject do |email|
+                    email.nil?
+                end
+            }
+        end
+        @@mailing_lists["lehrer@#{SCHUL_MAIL_DOMAIN}"] = {
+            :label => "Gesamtes Kollegium",
+            :recipients => @@user_info.keys.select do |email|
+                @@user_info[email][:teacher] && @@user_info[email][:can_log_in]
+            end
+        }
+        @@mailing_lists["sus@#{SCHUL_MAIL_DOMAIN}"] = {
+            :label => "Alle Schülerinnen und Schüler",
+            :recipients => @@user_info.keys.select do |email|
+                !@@user_info[email][:teacher]
+            end
+        }
+        @@mailing_lists["eltern@#{SCHUL_MAIL_DOMAIN}"] = {
+            :label => "Alle Eltern",
+            :recipients => @@user_info.keys.select do |email|
+                !@@user_info[email][:teacher]
+            end.map do |email|
+                "eltern.#{email}"
+            end
+        }
+        if DEVELOPMENT
+            VERTEILER_TEST_EMAILS.each do |email|
+                @@mailing_lists[email] = {
+                    :label => "Dev-Verteiler #{email}",
+                    :recipients => VERTEILER_DEVELOPMENT_EMAILS
+                }
+            end
+        end
     end    
     
     def self.compile_files(key, mimetype, paths)
@@ -1296,6 +1347,7 @@ class Main < Sinatra::Base
                         end
                         io.puts "<a class='dropdown-item nav-icon' href='/polls'><div class='icon'><i class='fa fa-bar-chart'></i></div><span class='label'>Umfragen</span></a>"
                         io.puts "<a class='dropdown-item nav-icon' href='/prepare_vote'><div class='icon'><i class='fa fa-group'></i></div><span class='label'>Abstimmungen</span></a>"
+                        io.puts "<a class='dropdown-item nav-icon' href='/mailing_lists'><div class='icon'><i class='fa fa-envelope'></i></div><span class='label'>E-Mail-Verteiler</span></a>"
                     end
                     if @session_user[:can_upload_vplan]
                         io.puts "<div class='dropdown-divider'></div>"

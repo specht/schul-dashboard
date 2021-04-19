@@ -630,6 +630,15 @@ class Parser
                         end
                     end
                     unless entry[:art].include?('Kennzeichen nicht drucken')
+                        ventry_flags = Main.gen_ventry_flags(entry)
+                        if ventry_flags == 0b1_10_11_11_11 && entry[:datum] > '2021-04-19'
+                            # ATTENTION: spezieller Spezialfall
+                            # Am Ende des Schuljahres, wenn der Abijahrgang die Schule verlässt,
+                            # kommen viele Einträge, bei denen aus Klasse 11+12 nur Klasse 11 
+                            # wird. Aus einem unbekannten Grund wird dabei fach_neu nicht exportiert,
+                            # das korrigieren wir hier.
+                            entry[:fach_neu] = entry[:fach_alt].dup
+                        end
                         entries << entry
                     end
                 end

@@ -480,6 +480,29 @@ class Main < Sinatra::Base
         self.class.iterate_school_days(options, &block)
     end
 
+    def self.gen_ventry_flags(ventry)
+        ventry_flags = 0
+        ventry_flags <<= 1
+        ventry_flags += (ventry[:unr] != 0) ? 1 : 0
+        ventry_flags <<= 1
+        ventry_flags += (ventry[:fach_alt].nil?) ? 0 : 1
+        ventry_flags <<= 1
+        ventry_flags += (ventry[:fach_neu].nil?) ? 0 : 1
+        ventry_flags <<= 1
+        ventry_flags += (ventry[:lehrer_alt].nil?) ? 0 : 1
+        ventry_flags <<= 1
+        ventry_flags += (ventry[:lehrer_neu].nil?) ? 0 : 1
+        ventry_flags <<= 1
+        ventry_flags += (ventry[:klassen_alt].nil?) ? 0 : 1
+        ventry_flags <<= 1
+        ventry_flags += (ventry[:klassen_neu].nil?) ? 0 : 1
+        ventry_flags <<= 1
+        ventry_flags += (ventry[:raum_alt].nil?) ? 0 : 1
+        ventry_flags <<= 1
+        ventry_flags += (ventry[:raum_neu].nil?) ? 0 : 1
+        ventry_flags
+    end
+    
     def self.gen_password_for_email(email)
         chars = 'BCDFGHJKMNPQRSTVWXYZ23456789'.split('')
         sha2 = Digest::SHA256.new()

@@ -363,12 +363,6 @@ class Main < Sinatra::Base
                             end
                         end
                     end
-                    if WECHSELUNTERRICHT_KLASSENSTUFEN.include?(@session_user[:klasse].to_i)
-                        if sus_logged_in? && (!Main.get_homeschooling_for_user(@session_user[:email]))
-                            result[:html] += "<div class='alert alert-danger'>Du bist momentan nicht für den Jitsi-Stream freigeschaltet, da du in Gruppe #{@session_user[:group2]} eingeteilt bist und auch nicht als »zu Hause« markiert bist. Wenn es sich hierbei um einen Fehler handelt, sag bitte deiner Klassenleiterin oder deinem Klassenleiter Bescheid, damit du als »zu Hause« markiert werden kannst.</div>"
-                            can_enter_room = false
-                        end
-                    end
                     room_name = CGI.unescape(room_name)
                 end
             end

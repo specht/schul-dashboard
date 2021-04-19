@@ -238,7 +238,7 @@ class Timetable
                 s += "[#{v0.join('/')}] => [#{v1.join('/')}] "
             end
         end
-        s += "[#{ventry[:vertretungs_text]}] [#{ventry[:vertretungs_art]}]"
+        s += "[#{ventry[:vertretungs_text]}] [#{ventry[:vertretungs_art]}] [#{ventry[:grund]}] [#{ventry[:art]}]"
         debug s
     end
     
@@ -517,25 +517,7 @@ class Timetable
             # 2. patch today's lessons based on vertretungsplan
             if @@vertretungen[ds]
                 @@vertretungen[ds].each do |ventry|
-                    ventry_flags = 0
-                    ventry_flags <<= 1
-                    ventry_flags += (ventry[:unr] != 0) ? 1 : 0
-                    ventry_flags <<= 1
-                    ventry_flags += (ventry[:fach_alt].nil?) ? 0 : 1
-                    ventry_flags <<= 1
-                    ventry_flags += (ventry[:fach_neu].nil?) ? 0 : 1
-                    ventry_flags <<= 1
-                    ventry_flags += (ventry[:lehrer_alt].nil?) ? 0 : 1
-                    ventry_flags <<= 1
-                    ventry_flags += (ventry[:lehrer_neu].nil?) ? 0 : 1
-                    ventry_flags <<= 1
-                    ventry_flags += (ventry[:klassen_alt].nil?) ? 0 : 1
-                    ventry_flags <<= 1
-                    ventry_flags += (ventry[:klassen_neu].nil?) ? 0 : 1
-                    ventry_flags <<= 1
-                    ventry_flags += (ventry[:raum_alt].nil?) ? 0 : 1
-                    ventry_flags <<= 1
-                    ventry_flags += (ventry[:raum_neu].nil?) ? 0 : 1
+                    ventry_flags = Main.gen_ventry_flags(ventry)
                     seen_ventry_flags[ventry_flags] ||= 0
                     seen_ventry_flags[ventry_flags] += 1
                     
@@ -741,7 +723,6 @@ class Timetable
                         end
                     elsif ventry_flags == 0b1_10_11_11_11 # 1003 entries at some point
                         # unr, fach_alt, lehrer_alt, lehrer_neu, klassen_alt, klassen_neu, raum_alt, raum_neu
-#                         print_ventry(ventry)
                         patch_lesson(ventry, day_events, day_lesson_keys_for_stunde) do |event|
                             (event[:fach] == ventry[:fach_alt]) && 
                             (!(Set.new(event[:klassen]) & Set.new(ventry[:klassen_alt])).empty?)

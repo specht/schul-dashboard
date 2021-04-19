@@ -54,7 +54,7 @@ class Main < Sinatra::Base
         assert(payload[:context][:user][:name].strip.size > 0)
         assert(room.strip.size > 0)
         
-        debug "Generated Jitsi token for #{payload[:context][:user][:name]} for #{payload[:room]}"
+        debug "Generated Jitsi token for #{payload[:context][:user][:name]} for #{payload[:room]}" if DEVELOPMENT
         
         token = JWT.encode payload, JWT_APPKEY, algorithm = 'HS256', header_fields = {:typ => 'JWT'}
         token

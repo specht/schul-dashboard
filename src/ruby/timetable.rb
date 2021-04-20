@@ -341,7 +341,8 @@ class Timetable
                     added_klassen = event[:klassen].last - event[:klassen].first
                     added_klassen.each do |klasse|
                         stunde = ventry[:stunde]
-                            
+
+                        STDERR.puts "[#{hfk_ds}] [#{klasse}] [#{stunde - 1}]"
                         start_time = HOURS_FOR_KLASSE[hfk_ds][klasse][stunde - 1][0]
                         end_time = HOURS_FOR_KLASSE[hfk_ds][klasse][stunde - 1][1]
                         

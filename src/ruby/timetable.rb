@@ -307,6 +307,10 @@ class Timetable
                     removed_klassen.each do |klasse|
                         stunde = ventry[:stunde]
                             
+                        if HOURS_FOR_KLASSE[hfk_ds][klasse].nil?
+                            debug "OOPS: [#{hfk_ds}] [#{klasse}] [#{stunde - 1}]"
+                            next
+                        end
                         start_time = HOURS_FOR_KLASSE[hfk_ds][klasse][stunde - 1][0]
                         end_time = HOURS_FOR_KLASSE[hfk_ds][klasse][stunde - 1][1]
                         secondary_label = ventry[:vertretungs_text]
@@ -343,7 +347,7 @@ class Timetable
                         stunde = ventry[:stunde]
 
                         if HOURS_FOR_KLASSE[hfk_ds][klasse].nil?
-                            STDERR.puts "OOPS: [#{hfk_ds}] [#{klasse}] [#{stunde - 1}]"
+                            debug "OOPS: [#{hfk_ds}] [#{klasse}] [#{stunde - 1}]"
                             next
                         end
                         start_time = HOURS_FOR_KLASSE[hfk_ds][klasse][stunde - 1][0]

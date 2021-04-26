@@ -190,7 +190,7 @@ module QtsNeo4j
     end
 
     def neo4j_query(query_str, options = {})
-        debug(query_str, 1) if DEVELOPMENT
+#         debug(query_str, 1) if DEVELOPMENT
         transaction do
             temp_result = nil
             5.times do

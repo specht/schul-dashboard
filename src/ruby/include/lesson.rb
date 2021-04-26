@@ -247,9 +247,9 @@ class Main < Sinatra::Base
         @@tablets_for_school_streaming.each do |tablet_id|
             available_tablets << tablet_id
         end
-        bookings = neo4j_query(<<~END_OF_QUERY, :datum => data[:datum]).map { |x| {:tablet_id => x['t.id'], :booking => x['b'].props, :lesson_key => x['l.id']} }
+        bookings = neo4j_query(<<~END_OF_QUERY, :datum => data[:datum]).map { |x| {:tablet_id => x['t.id'], :booking => x['b'].props, :lesson_key => x['l.key']} }
             MATCH (t:Tablet)<-[:WHICH]-(b:Booking {datum: {datum}})-[:FOR]->(i:LessonInfo)-[:BELONGS_TO]->(l:Lesson)
-            RETURN t.id, b, l.id;
+            RETURN t.id, b, l.key;
         END_OF_QUERY
         
         request_start_time = DateTime.parse("#{data[:datum]}T#{data[:start_time]}:00")
@@ -267,7 +267,7 @@ class Main < Sinatra::Base
             end_time = DateTime.parse("#{booking[:datum]}T#{booking[:end_time]}:00")
             start_time -= STREAMING_TABLET_BOOKING_TIME_PRE / 24.0 / 60.0
             end_time += STREAMING_TABLET_BOOKING_TIME_POST / 24.0 / 60.0
-            entry_shorthands = @@lessons[:lesson_keys][data[:lesson_key]][:lehrer]
+            entry_shorthands = @@lessons[:lesson_keys][item[:lesson_key]][:lehrer]
             unless (request_shorthands & entry_shorthands).empty?
                 favoured_tablets << tablet_id
             else
@@ -276,6 +276,10 @@ class Main < Sinatra::Base
                 end
             end
         end
+        
+#         debug "available_tablets: #{available_tablets.to_a.sort.join(', ')}"
+#         debug "tablets_booked_today: #{tablets_booked_today.to_a.sort.join(', ')}"
+#         debug "favoured_tablets: #{favoured_tablets.to_a.sort.join(', ')}"
         
         favoured_tablets &= available_tablets
         

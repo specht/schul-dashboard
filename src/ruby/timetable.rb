@@ -427,6 +427,7 @@ class Timetable
         Main.collect_data()
         seen_ventry_flags = {}
         @@ferien_feiertage = Main.class_variable_get(:@@ferien_feiertage)
+        @@tage_infos = Main.class_variable_get(:@@tage_infos)
         @@config = Main.class_variable_get(:@@config)
         @@user_info = Main.class_variable_get(:@@user_info)
         @@lessons = Main.class_variable_get(:@@lessons)
@@ -1123,6 +1124,15 @@ class Timetable
                     end
                 end
             end
+            @@tage_infos.each do |entry|
+                unless (entry[:from] >= p1.strftime('%Y-%m-%d') || entry[:to] < p.strftime('%Y-%m-%d'))
+                    holidays << {
+                        :start => entry[:from],
+                        :end => (Date.parse(entry[:to]) + 1).strftime('%Y-%m-%d'),
+                        :title => entry[:title]
+                    }
+                end
+            end
             # write timetable info for each user (one file per week)
             temp = @@user_info.dup
             @@klassen_order.each do |klasse|
@@ -1538,6 +1548,15 @@ class Timetable
         
         holidays = []
         @@ferien_feiertage.each do |entry|
+            unless (entry[:to] < @@config[:first_day] || entry[:from] > @@config[:last_day])
+                holidays << {
+                    :start => entry[:from],
+                    :end => Date.parse(entry[:to]).strftime('%Y-%m-%d'),
+                    :title => entry[:title]
+                }
+            end
+        end
+        @@tage_infos.each do |entry|
             unless (entry[:to] < @@config[:first_day] || entry[:from] > @@config[:last_day])
                 holidays << {
                     :start => entry[:from],

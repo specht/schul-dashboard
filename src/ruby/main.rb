@@ -568,6 +568,10 @@ class Main < Sinatra::Base
                 day += 1
             end
         end
+        @@tage_infos = []
+        parser.parse_tage_infos do |t0, t1, title|
+            @@tage_infos << {:from => t0, :to => t1, :title => title}
+        end
         begin
             @@config = YAML::load_file('/data/config.yaml')
         rescue

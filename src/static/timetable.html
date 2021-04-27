@@ -642,6 +642,15 @@ document.addEventListener('DOMContentLoaded', function() {
                 return;
             }
 //             console.log(event.lesson_key, event.lesson_offset);
+            if (typeof(event.datum) === 'undefined') {
+                console.log(info);
+                console.log(info.event);
+                event = {
+                    datum: info.event.startStr,
+                    vertretungs_text: info.event.title,
+                    omit_time: true
+                };
+            }
             console.log(event);
             $('#lessonModal .lesson-label').html(event.label_lang || '');
             $('#lessonModal .raum-label').html(event.raum || '');
@@ -655,15 +664,23 @@ document.addEventListener('DOMContentLoaded', function() {
             }
             
             let d = new Date(event.datum);
-            $('#lessonModal .zeitpunkt').html(weekdays_long[d.getDay()] + 
-                ', den ' + event.datum.substr(8, 2) + 
-                '.' + event.datum.substr(5, 2) + 
-                '.' + event.datum.substr(0, 4) +
-                ' (' + parseInt(info.event.startStr.substr(11, 2)) + 
-                ':' + info.event.startStr.substr(14, 2) + 
-                ' &dash; ' + parseInt(info.event.endStr.substr(11, 2)) +
-                ':' + info.event.endStr.substr(14, 2) + ')'
+            if (event.omit_time) {
+                $('#lessonModal .zeitpunkt').html(weekdays_long[d.getDay()] + 
+                    ', den ' + event.datum.substr(8, 2) + 
+                    '.' + event.datum.substr(5, 2) + 
+                    '.' + event.datum.substr(0, 4)
                 );
+            } else {
+                $('#lessonModal .zeitpunkt').html(weekdays_long[d.getDay()] + 
+                    ', den ' + event.datum.substr(8, 2) + 
+                    '.' + event.datum.substr(5, 2) + 
+                    '.' + event.datum.substr(0, 4) +
+                    ' (' + parseInt(info.event.startStr.substr(11, 2)) + 
+                    ':' + info.event.startStr.substr(14, 2) + 
+                    ' &dash; ' + parseInt(info.event.endStr.substr(11, 2)) +
+                    ':' + info.event.endStr.substr(14, 2) + ')'
+                );
+            }
 
             let offsets = [];
             for (let i = 0; i < 1; i++)

@@ -359,6 +359,20 @@ class Parser
         end
     end
     
+    def parse_tage_infos
+#         debug "Parsing ferien/feiertage..."
+        if File.exists?('/data/ferien_feiertage/infos.csv')
+            CSV.foreach('/data/ferien_feiertage/infos.csv', :headers => true) do |line|
+                line = Hash[line]
+                t0 = line['Beginn']
+                t1 = line['Ende'] || t0
+                title = line['Titel'].strip
+                next if DEVELOPMENT && t0 == '2021-03-08'
+                yield t0, t1, title
+            end
+        end
+    end
+    
     def parse_tablets
 #         debug "Parsing tablets..."
         tablets = []

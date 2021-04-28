@@ -1040,8 +1040,8 @@ class Timetable
         end
         file_count = 0
         today_date = Date.today.strftime('%Y-%m-%d')
-        today_plus_7_days = (Date.today + 7).strftime('%Y-%m-%d')
-        regular_events_from = Date.today + 7
+        today_plus_7_days = (Date.today + TIMETABLE_ENTRIES_VISIBLE_AHEAD_DAYS + 1).strftime('%Y-%m-%d')
+        regular_events_from = Date.today + TIMETABLE_ENTRIES_VISIBLE_AHEAD_DAYS + 1
         regular_events_from = regular_events_from.strftime('%Y-%m-%d')
         aufsicht_start_date_index = 0
         all_homework = {}

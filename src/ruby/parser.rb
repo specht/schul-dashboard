@@ -209,11 +209,7 @@ class Parser
         email = "#{vorname} #{nachname}@#{SCHUL_MAIL_DOMAIN}"
         email.downcase!
         email.gsub!(' ', '.')
-        email.gsub!('ä', 'ae')
-        email.gsub!('ö', 'oe')
-        email.gsub!('ü', 'ue')
-        email.gsub!('ß', 'ss')
-        email.gsub!('ė', 'e')
+        email = remove_accents(email)
         email = email.removeaccents
         @email_sub[email] || email
     end

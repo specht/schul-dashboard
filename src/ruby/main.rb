@@ -5,6 +5,7 @@ require 'curb'
 require 'date'
 require 'digest/sha1'
 require 'htmlentities'
+require 'i18n'
 require 'json'
 require 'jwt'
 require 'kramdown'
@@ -60,6 +61,10 @@ require './include/vote.rb'
 require './include/vplan.rb'
 require './include/website_events.rb'
 require './parser.rb'
+
+def remove_accents(s)
+    I18n.transliterate(s.gsub('ä', 'ae').gsub('ö', 'oe').gsub('ü', 'ue').gsub('Ä', 'Ae').gsub('Ö', 'Oe').gsub('Ü', 'Ue').gsub('ß', 'ss').gsub('ė', 'e'))
+end
 
 def debug(message, index = 0)
     index = 0

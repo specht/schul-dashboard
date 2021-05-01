@@ -377,7 +377,7 @@ class Main < Sinatra::Base
                 end
                 result[:html] += "<div class='alert alert-secondary'>\n"
                 result[:html] += "<p>Ich habe die <a href='/api/jitsi_terms'>Nutzerordnung</a> und die <a href='/api/jitsi_dse'>Datenschutzerklärung</a> zur Kenntnis genommen und willige ein.</p>\n"
-                room_name = CGI.escape(room_name.gsub(/[\:\?#\[\]@!$&\\'()*+,;=><\/"]/, '')).gsub('+', '%20')
+                room_name = CGI.escape(remove_accents(room_name).gsub(/[\:\?#\[\]@!$&\\'()*+,;=><\/"]/, '')).gsub('+', '%20')
                 jwt = gen_jwt_for_room(room_name, eid, ext_name)
                 result[:html] += "<div class='go_div'>\n"
                 # edge firefox chrome safari opera internet-explorer

@@ -107,6 +107,7 @@ var stored_breakout_room_config_json = null;
             <table class='table table-striped narrow schueler_table_table'>
                 <thead>
                 <tr>
+                <th class='th-feedback-nr' style='width: 50px; text-align: right;'>Nr.</th>
                 <th class='th-feedback-name'>Name</th>
                 <th>Kommentar</th>
                 <th class='th-feedback-audiokommentar'>Audiokommentar</th>
@@ -114,7 +115,7 @@ var stored_breakout_room_config_json = null;
                 </thead>
                 <tbody class='schueler_table'>
                     <tr id='recording_row' style='display: none;'>
-                        <td colspan='3'>
+                        <td colspan='4'>
                             <div class='container-fluid' style='margin: -30px 0px; padding: 30px 0px;'>
                                 <div class='row'>
                                     <div class='col-12'>
@@ -385,6 +386,9 @@ function sanitize_breakout_room_config(config) {
         if (config.participants[i] >= config.rooms.length)
             config.participants[i] = config.rooms.length - 1;
     }
+    while (config.participants.length < schueler_for_lesson.length)
+        config.participants.push(0);
+    config.participants = config.participants.slice(0, schueler_for_lesson.length);
     return config;
 }
 
@@ -1258,10 +1262,13 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
     
+    let n = 0;
     for (user of schueler_for_lesson) {
+        n += 1;
         let row = $('<tr>').addClass('schueler');
         row.data('email', user.email);
         row.data('first_name', user.first_name);
+        $('<td>').css('text-align', 'right').text(`${n}.`).appendTo(row);
         $('<td>').html(user.display_name).appendTo(row);
         $('<td>').addClass('td_comment').html('&ndash;').appendTo(row);
         $('<td>').addClass('td_audio_comment').html('&ndash;').appendTo(row);
@@ -1905,7 +1912,6 @@ document.addEventListener('DOMContentLoaded', function() {
         while (o > 0) {
             o -= 1;
             if (((lesson_data[o] || {}).info || {}).breakout_rooms) {
-                console.log(lesson_data[o].info);
                 found_config = {
                     rooms: lesson_data[o].info.breakout_rooms,
                     participants: lesson_data[o].info.breakout_room_participants,

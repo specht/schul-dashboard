@@ -39,6 +39,7 @@ class TimetableRepl < Sinatra::Base
         rescue
         end
         @@queue = Queue.new
+        @@queue << {:which => 'all'} unless DEVELOPMENT
         @@worker_thread = Thread.new do
             future_queue = {}
             while true do
@@ -68,7 +69,6 @@ class TimetableRepl < Sinatra::Base
                 sleep PING_TIME
             end
         end
-        self.perform_update('all') unless DEVELOPMENT
         debug "REPL is ready."
     end
     

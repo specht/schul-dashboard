@@ -29,6 +29,7 @@ require 'timeout'
 require 'user_agent_parser'
 require 'write_xlsx'
 require 'yaml'
+require 'zip'
 
 require './credentials.template.rb'
 warn_level = $VERBOSE

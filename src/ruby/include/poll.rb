@@ -1,3 +1,5 @@
+require 'tempfile'
+
 class Main < Sinatra::Base
     def get_poll_run(prid, external_code = nil)
         result = {}
@@ -179,102 +181,108 @@ class Main < Sinatra::Base
         return poll, poll_run, responses
     end
     
-    def poll_run_results_to_html(poll, poll_run, responses, target = :web)
+    def poll_run_results_to_html(poll, poll_run, responses, target = :web, only_this_email = nil)
         StringIO.open do |io|
-            io.puts "<h3>Umfrage: #{poll[:title]}</h3>"
-            io.puts "<p>Diese #{poll_run[:anonymous] ? 'anonyme' : 'personengebundene'} Umfrage wurde von #{poll[:organizer].sub('Herr ', 'Herrn ')} mit #{poll_run[:participant_count]} Teilnehmern am #{Date.parse(poll_run[:start_date]).strftime('%d.%m.%Y')} durchgeführt.</p>"
-            io.puts "<div class='alert alert-info'>"
-            io.puts "Von #{poll_run[:participant_count]} Teilnehmern haben #{responses.size} die Umfrage beantwortet (#{(responses.size * 100 / poll_run[:participant_count]).to_i}%)."
-            unless poll_run[:anonymous]
-                missing_responses_from = (Set.new(poll_run[:participants].keys) - Set.new(responses.map { |x| x[:email]})).map { |x| poll_run[:participants][x] }.sort
-                io.puts "Es fehlen Antworten von: <em>#{missing_responses_from.join(', ')}</em>."
-            end
-            io.puts "</div>"
-            poll_run[:items].each_with_index do |item, item_index|
-                item = item.transform_keys(&:to_sym)
-                if item[:type] == 'paragraph'
-                    io.puts "<p><strong>#{item[:title]}</strong></p>" unless (item[:title] || '').strip.empty?
-                    io.puts "<p>#{item[:text]}</p>" unless (item[:text] || '').strip.empty?
-                elsif item[:type] == 'radio' || item[:type] == 'checkbox'
-                    io.puts "<p>"
-                    io.puts "<strong>#{item[:title]}</strong>"
-                    if item[:type] == 'checkbox'
-                        io.puts " <em>(Mehrfachnennungen möglich)</em>"
-                    end
-                    io.puts "</p>"
-                    histogram = {}
-                    participants_for_answer = {}
-                    (0...item[:answers].size).each { |x| histogram[x] = 0 }
-                    responses.each do |entry|
-                        response = entry[:response]
-                        if item[:type] == 'radio'
-                            value = response[item_index.to_s]
-                            unless value.nil?
-                                unless histogram[value]
-                                    STDERR.puts "Error evaluating poll: unknown value #{value} for #{item.to_json}!"
-                                    next
+            unless only_this_email
+                io.puts "<h3>Umfrage: #{poll[:title]}</h3>"
+                io.puts "<p>Diese #{poll_run[:anonymous] ? 'anonyme' : 'personengebundene'} Umfrage wurde von #{poll[:organizer].sub('Herr ', 'Herrn ')} mit #{poll_run[:participant_count]} Teilnehmern am #{Date.parse(poll_run[:start_date]).strftime('%d.%m.%Y')} durchgeführt.</p>"
+                io.puts "<div class='alert alert-info'>"
+                io.puts "Von #{poll_run[:participant_count]} Teilnehmern haben #{responses.size} die Umfrage beantwortet (#{(responses.size * 100 / poll_run[:participant_count]).to_i}%)."
+                unless poll_run[:anonymous]
+                    missing_responses_from = (Set.new(poll_run[:participants].keys) - Set.new(responses.map { |x| x[:email]})).map { |x| poll_run[:participants][x] }.sort
+                    io.puts "Es fehlen Antworten von: <em>#{missing_responses_from.join(', ')}</em>."
+                end
+                io.puts "</div>"
+                poll_run[:items].each_with_index do |item, item_index|
+                    item = item.transform_keys(&:to_sym)
+                    if item[:type] == 'paragraph'
+                        io.puts "<p><strong>#{item[:title]}</strong></p>" unless (item[:title] || '').strip.empty?
+                        io.puts "<p>#{item[:text]}</p>" unless (item[:text] || '').strip.empty?
+                    elsif item[:type] == 'radio' || item[:type] == 'checkbox'
+                        io.puts "<p>"
+                        io.puts "<strong>#{item[:title]}</strong>"
+                        if item[:type] == 'checkbox'
+                            io.puts " <em>(Mehrfachnennungen möglich)</em>"
+                        end
+                        io.puts "</p>"
+                        histogram = {}
+                        participants_for_answer = {}
+                        (0...item[:answers].size).each { |x| histogram[x] = 0 }
+                        responses.each do |entry|
+                            response = entry[:response]
+                            if item[:type] == 'radio'
+                                value = response[item_index.to_s]
+                                unless value.nil?
+                                    unless histogram[value]
+                                        STDERR.puts "Error evaluating poll: unknown value #{value} for #{item.to_json}!"
+                                        next
+                                    end
+                                    histogram[value] += 1
+                                    participants_for_answer[value] ||= []
+                                    participants_for_answer[value] << entry[:email]
                                 end
-                                histogram[value] += 1
-                                participants_for_answer[value] ||= []
-                                participants_for_answer[value] << entry[:email]
-                            end
-                        else
-                            (response[item_index.to_s] || []).each do |value|
-                                unless histogram[value]
-                                    STDERR.puts "Error evaluating poll: unknown value #{value} for #{item.to_json}!"
-                                    next
+                            else
+                                (response[item_index.to_s] || []).each do |value|
+                                    unless histogram[value]
+                                        STDERR.puts "Error evaluating poll: unknown value #{value} for #{item.to_json}!"
+                                        next
+                                    end
+                                    histogram[value] += 1
+                                    participants_for_answer[value] ||= []
+                                    participants_for_answer[value] << entry[:email]
                                 end
-                                histogram[value] += 1
-                                participants_for_answer[value] ||= []
-                                participants_for_answer[value] << entry[:email]
                             end
                         end
-                    end
-                    sum = histogram.values.sum
-                    sum = 1 if sum == 0
-                    io.puts "<table class='table'>"
-                    io.puts "<tbody>"
-                    (0...item[:answers].size).each do |answer_index| 
-                        v = histogram[answer_index]
-                        io.puts "<tr class='pb-0'><td>#{item[:answers][answer_index]}</td><td style='text-align: right;'>#{v == 0 ? '&ndash;' : v}</td></tr>"
-                        io.puts "<tr class='noborder pdf-space-below'><td colspan='2'>"
-                        io.puts "<div class='progress'>"
-                        io.puts "<div class='progress-bar progress-bar-striped bg-info' role='progressbar' style='width: #{(v * 100.0 / sum).round}%' aria-valuenow='50' aria-valuemin='0' aria-valuemax='100'><span>#{(v * 100.0 / sum).round}%</span></div>"
-                        io.puts "</div>"
-                        unless poll_run[:anonymous]
-                            if participants_for_answer[answer_index]
-                                io.puts "<em>#{(participants_for_answer[answer_index] || []).map { |x| poll_run[:participants][x]}.join(', ')}</em>"
-                            else
-                                io.puts "<em>&ndash;</em>"
+                        sum = histogram.values.sum
+                        sum = 1 if sum == 0
+                        io.puts "<table class='table'>"
+                        io.puts "<tbody>"
+                        (0...item[:answers].size).each do |answer_index| 
+                            v = histogram[answer_index]
+                            io.puts "<tr class='pb-0'><td>#{item[:answers][answer_index]}</td><td style='text-align: right;'>#{v == 0 ? '&ndash;' : v}</td></tr>"
+                            io.puts "<tr class='noborder pdf-space-below'><td colspan='2'>"
+                            io.puts "<div class='progress'>"
+                            io.puts "<div class='progress-bar progress-bar-striped bg-info' role='progressbar' style='width: #{(v * 100.0 / sum).round}%' aria-valuenow='50' aria-valuemin='0' aria-valuemax='100'><span>#{(v * 100.0 / sum).round}%</span></div>"
+                            io.puts "</div>"
+                            unless poll_run[:anonymous]
+                                if participants_for_answer[answer_index]
+                                    io.puts "<em>#{(participants_for_answer[answer_index] || []).map { |x| poll_run[:participants][x]}.join(', ')}</em>"
+                                else
+                                    io.puts "<em>&ndash;</em>"
+                                end
+                            end
+                            io.puts "</td></tr>"
+                        end
+                        io.puts "</tbody>"
+                        io.puts "</table>"
+                    elsif item[:type] == 'textarea'
+                        io.puts "<p>"
+                        io.puts "<strong>#{item[:title]}</strong>"
+                        io.puts "</p>"
+                        first_response = true
+                        responses.each do |entry|
+                            response = entry[:response][item_index.to_s].strip
+                            unless response.empty?
+                                io.puts "<hr />" unless first_response
+                                if poll_run[:anonymous]
+                                    io.puts "<p>#{response}</p>"
+                                else
+                                    io.puts "<p><em>#{poll_run[:participants][entry[:email]]}</em>: #{response}</p>"
+                                end
+                                first_response = false
                             end
                         end
-                        io.puts "</td></tr>"
+                        
                     end
-                    io.puts "</tbody>"
-                    io.puts "</table>"
-                elsif item[:type] == 'textarea'
-                    io.puts "<p>"
-                    io.puts "<strong>#{item[:title]}</strong>"
-                    io.puts "</p>"
-                    first_response = true
-                    responses.each do |entry|
-                        response = entry[:response][item_index.to_s].strip
-                        unless response.empty?
-                            io.puts "<hr />" unless first_response
-                            if poll_run[:anonymous]
-                                io.puts "<p>#{response}</p>"
-                            else
-                                io.puts "<p><em>#{poll_run[:participants][entry[:email]]}</em>: #{response}</p>"
-                            end
-                            first_response = false
-                        end
-                    end
-                    
                 end
             end
             unless poll_run[:anonymous]
                 responses.each do |entry|
-                    io.puts "<div class='page-break'></div>"
+                    if only_this_email
+                        next unless entry[:email] == only_this_email
+                    else
+                        io.puts "<div class='page-break'></div>"
+                    end
                     io.puts "<h3>Einzelauswertung: #{poll_run[:participants][entry[:email]]}</h3>"
                     poll_run[:items].each_with_index do |item, item_index|
                         item = item.transform_keys(&:to_sym)
@@ -401,6 +409,59 @@ class Main < Sinatra::Base
         pdf = c.body_str
 #         respond_raw_with_mimetype_and_filename(pdf, 'application/pdf', "Umfrageergebnisse #{poll[:title]}.pdf")
         respond_raw_with_mimetype(pdf, 'application/pdf')
+    end
+    
+    get '/api/poll_run_results_zip/*' do
+        require_teacher_or_sv!
+        prid = request.path.sub('/api/poll_run_results_zip/', '')
+        poll, poll_run, responses = get_poll_run_results(prid)
+        
+        css = StringIO.open do |io|
+            io.puts "<style>"
+            io.puts "body { font-size: 12pt; line-height: 120%; }"
+            io.puts "table { width: 100%; }"
+            io.puts ".progress { width: 100%; background-color: #ccc; }"
+            io.puts ".progress-bar { position: relative; background-color: #888; text-align: right; overflow: hidden; }"
+            io.puts ".progress-bar span { margin-right: 0.5em; }"
+            io.puts ".pdf-space-above td {padding-top: 0.2em; }"
+            io.puts ".pdf-space-below td {padding-bottom: 0.2em; }"
+            io.puts ".page-break { page-break-after: always; border-top: none; margin-bottom: 0; }"
+            io.puts "</style>"
+            io.string
+        end
+        
+        file = Tempfile.new('poll')
+        zip = nil
+        begin
+            Zip::File.open(file.path, Zip::File::CREATE) do |zipfile|
+                html = poll_run_results_to_html(poll, poll_run, responses, :pdf)
+                c = Curl.post('http://weasyprint:5001/pdf', {:data => css + html}.to_json)
+                pdf = c.body_str
+                zipfile.get_output_stream("Gesamtauswertung.pdf") do |f|
+                    f.write(pdf)
+                end
+                unless poll_run[:anonymous]
+                    responses.each do |entry|
+                        email = entry[:email]
+                        name = poll_run[:participants][email]
+#                         poll_run[:participants][entry[:email]]
+                        html = poll_run_results_to_html(poll, poll_run, responses, :pdf, email)
+                        c = Curl.post('http://weasyprint:5001/pdf', {:data => css + html}.to_json)
+                        pdf = c.body_str
+                        zipfile.get_output_stream("Auswertung #{name}.pdf") do |f|
+                            f.write(pdf)
+                        end
+                               
+                    end
+                end
+            end
+        ensure
+            file.close
+            zip = File.read(file.path)
+            file.unlink
+        end
+                               
+        respond_raw_with_mimetype_and_filename(zip, 'application/zip', "Umfrageergebnisse #{poll[:title]}.zip")
     end
     
     def sanitize_poll_items(items)

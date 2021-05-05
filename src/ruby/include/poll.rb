@@ -384,7 +384,7 @@ class Main < Sinatra::Base
         data = parse_request_data(:required_keys => [:prid])
         poll, poll_run, responses = get_poll_run_results(data[:prid])
         html = poll_run_results_to_html(poll, poll_run, responses)
-        respond(:html => html, :title => poll[:title], :prid => data[:prid])
+        respond(:html => html, :title => poll[:title], :prid => data[:prid], :anonymous => poll_run[:anonymous] || false)
     end
     
     get '/api/poll_run_results_pdf/*' do

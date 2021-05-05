@@ -314,6 +314,11 @@ function show_poll_run_results(prid) {
     api_call('/api/get_poll_run_results', {prid: prid}, function(data) {
         if (data.success) {
             $('#bu_poll_run_results_download_pdf').attr('href', `/api/poll_run_results_pdf/${data.prid}`);
+            $('#bu_poll_run_results_download_zip').attr('href', `/api/poll_run_results_zip/${data.prid}`);
+            if (data.anonymous)
+                $('#bu_poll_run_results_download_zip').hide();
+            else
+                $('#bu_poll_run_results_download_zip').show();
             $('#pollRunResultsModal .poll-title').html(data.title);
             $('#pollRunResultsModal .poll-run-results-here').html(data.html);
             $('#pollRunResultsModal').modal('show');
@@ -386,6 +391,7 @@ function show_poll_run_results(prid) {
                 </div>
             </div>
             <div class="modal-footer">
+                <a id='bu_poll_run_results_download_zip' href='#' class="btn btn-primary"><i class='fa fa-file-zip-o'></i>&nbsp;&nbsp;Einzelergebnisse als ZIP herunterladen</a>
                 <a id='bu_poll_run_results_download_pdf' target='_blank' href='#' class="btn btn-primary"><i class='fa fa-file-pdf-o'></i>&nbsp;&nbsp;Ergebnisse als PDF herunterladen</a>
                 <button id='bu_close_show_poll_run_results_modal' type="button" class="btn btn-secondary" data-dismiss="modal">Schließen</button>
             </div>

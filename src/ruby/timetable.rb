@@ -194,7 +194,7 @@ class Timetable
             secondary_label ||= ventry[:vertretungs_art]
         end
         if where && (ventry[:vertretungs_text] || '').empty?
-            secondary_label = "#{secondary_label}: #{where}"
+            secondary_label = "#{where} (#{secondary_label})"
         end
         if primary_label.nil?
             primary_label = secondary_label.dup

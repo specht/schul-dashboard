@@ -193,8 +193,12 @@ class Timetable
         if ['Pausenaufsichtsvertretung', 'Entfall'].include?(ventry[:vertretungs_art])
             secondary_label ||= ventry[:vertretungs_art]
         end
-        if where && (ventry[:vertretungs_text] || '').empty?
-            secondary_label = "#{where} (#{secondary_label})"
+        if where 
+            if (ventry[:vertretungs_text] || '').empty?
+                secondary_label = "#{where} (#{secondary_label})"
+            else
+                secondary_label = "#{where}"
+            end
         end
         if primary_label.nil?
             primary_label = secondary_label.dup
@@ -1218,6 +1222,9 @@ class Timetable
                                                 :label_klasse_short => "#{info[:where]}",
                                                 :label_klasse_lang => "#{info[:where]}",
                                                 :label_klasse => "#{info[:where]}",
+                                                :label_short => "#{info[:where]}",
+                                                :label_lang => "#{info[:where]}",
+                                                :label => "#{info[:where]}",
                                                 }
                                     end
                                 end

@@ -1493,9 +1493,11 @@ class Main < Sinatra::Base
         return '' if teacher_tablet_logged_in?
         StringIO.open do |io|
             io.puts "<div class='hint lehrerzimmer-panel'>"
+            io.puts "<div class='hide-sm'>"
             io.puts "<div style='padding-top: 7px;'>Momentan im Jitsi-Lehrerzimmer:&nbsp;"
             rooms = current_jitsi_rooms()
             nobody_here = true
+            users = []
             if rooms
                 rooms.each do |room|
                     if room['roomName'] == 'lehrerzimmer'
@@ -1503,6 +1505,7 @@ class Main < Sinatra::Base
                             a['displayName'].downcase.sub('herr', '').sub('frau', '').sub('dr.', '').strip <=> b['displayName'].downcase.sub('herr', '').sub('frau', '').sub('dr.', '').strip
                         end.each do |participant|
                             email = participant['email']
+                            users << email
                             if @@user_info[email] && @@user_info[email][:teacher]
                                 io.puts "<span class='btn btn-xs ttc'>#{@@user_info[email][:shorthand]}</span>"
                                 nobody_here = false
@@ -1516,6 +1519,15 @@ class Main < Sinatra::Base
             end
             io.puts "</div>"
             io.puts "<hr />"
+            io.puts "</div>"
+            io.puts "<div class='hide-non-sm'>"
+            users.each do |email|
+                if @@user_info[email] && @@user_info[email][:teacher]
+#                     io.puts "<span class='btn btn-xs ttc'>#{@@user_info[email][:shorthand]}</span>"
+                    io.puts "<div style='margin-right: 5px; display: inline-block; position: relative; top: 5px; background-image: url(#{NEXTCLOUD_URL}/index.php/avatar/#{@@user_info[email][:nc_login]}/128), url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mO88h8AAq0B1REmZuEAAAAASUVORK5CYII=);' class='avatar-md'></div>"
+                end
+            end
+            io.puts "</div>"
             io.puts "<a href='/jitsi/Lehrerzimmer' target='_blank' style='white-space: nowrap;' class='float-right btn btn-success'><i class='fa fa-microphone'></i>&nbsp;&nbsp;Lehrerzimmer&nbsp;<i class='fa fa-angle-double-right'></i></a>"
             io.puts "<div style='clear: both;'></div>"
             io.puts "</div>"

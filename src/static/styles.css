@@ -2092,3 +2092,20 @@ hr.poll-entry-divider {
     padding: 0 4px;
     border-radius: 2px;
 }
+
+.hide-sm {
+    display: none;
+}
+
+.hide-non-sm {
+    display: unset;
+}
+
+@media (min-width: 768px) {
+    .hide-sm {
+        display: unset;
+    }
+    .hide-non-sm {
+        display: none;
+    }
+}

@@ -1653,6 +1653,10 @@ class Main < Sinatra::Base
     end
     
     get '/*' do
+        # first things first
+        days_left = (Date.parse('2021-06-24') - Date.today).to_i
+        response.headers['X-Tage-Bis-Zu-Den-Sommerferien'] = "#{days_left}"
+    
         path = request.env['REQUEST_PATH']
         assert(path[0] == '/')
         path = path[1, path.size - 1]

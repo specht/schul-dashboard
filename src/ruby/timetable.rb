@@ -447,6 +447,7 @@ class Timetable
         @@klassen_for_shorthand = Main.class_variable_get(:@@klassen_for_shorthand)
         @@schueler_for_klasse = Main.class_variable_get(:@@schueler_for_klasse)
         @@schueler_for_lesson = Main.class_variable_get(:@@schueler_for_lesson)
+        @@teachers_for_klasse = Main.class_variable_get(:@@teachers_for_klasse)
         @@schueler_offset_in_lesson = Main.class_variable_get(:@@schueler_offset_in_lesson)
         @@pausenaufsichten = Main.class_variable_get(:@@pausenaufsichten)
         @@tablets = Main.class_variable_get(:@@tablets)
@@ -1741,6 +1742,15 @@ class Timetable
                                     }
                         end
                     end
+                    teacher_emails = []
+                    (@@teachers_for_klasse[klasse] || {}).keys.each do |shorthand|
+                        next unless @@shorthands[shorthand]
+                        teacher_emails << @@user_info[@@shorthands[shorthand]][:email]
+                    end
+                    recipients["/klasse/#{klasse}/lehrer"] = 
+                            {:label => "Lehrer der Klasse #{klasse}",
+                             :entries => teacher_emails
+                            }
                 end
                 klassen.each do |klasse|
                     (@@schueler_for_klasse[klasse] || []).each do |email|

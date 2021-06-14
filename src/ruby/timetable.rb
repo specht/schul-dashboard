@@ -1764,7 +1764,7 @@ class Timetable
                                              :teacher => true}
                     end
                 end
-                if user[:can_see_all_timetables] || user[:sv]
+                if user[:teacher] || user[:sv]
                     recipients['/schueler/*'] = {:label => 'Gesamte Schülerschaft',
                                                  :entries => @@user_info.select { |k, v| !v[:teacher]}.map { |k, v| k }}
                 end

@@ -475,9 +475,10 @@ class Main < Sinatra::Base
             workbook = WriteXLSX.new(file.path)
             sheet = workbook.add_worksheet
             format_header = workbook.add_format({:bold => true})
-            sheet.write(0, 0, 'Nachname', format_header)
-            sheet.write(0, 1, 'Vorname', format_header)
-            sheet.write(0, 2, 'Klasse', format_header)
+            format_text = workbook.add_format({})
+            sheet.write_string(0, 0, 'Nachname', format_header)
+            sheet.write_string(0, 1, 'Vorname', format_header)
+            sheet.write_string(0, 2, 'Klasse', format_header)
             sheet.set_column(0, 1, 16)
             sheet.set_column(2, 2, 6)
             x = 2
@@ -498,15 +499,15 @@ class Main < Sinatra::Base
                 end
             end
             participant_order.each.with_index do |email, index|
-                sheet.write(index + 1, 0, (@@user_info[email] || {})[:last_name] || 'NN')
-                sheet.write(index + 1, 1, (@@user_info[email] || {})[:first_name] || 'NN')
-                sheet.write(index + 1, 2, (@@user_info[email] || {})[:klasse])
+                sheet.write_string(index + 1, 0, (@@user_info[email] || {})[:last_name] || 'NN')
+                sheet.write_string(index + 1, 1, (@@user_info[email] || {})[:first_name] || 'NN')
+                sheet.write_string(index + 1, 2, (@@user_info[email] || {})[:klasse])
             end
             
             poll_run[:items].each.with_index do |item, item_index|
                 next unless ['radio', 'textarea', 'checkbox'].include?(item['type'])
                 x += 1
-                sheet.write(0, x, item['title'], format_header)
+                sheet.write_string(0, x, item['title'], format_header)
                 participant_order.each.with_index do |email, index|
                     next unless response_by_email[email]
                     label = nil
@@ -523,7 +524,7 @@ class Main < Sinatra::Base
                             end.join(' / ')
                         end
                     end
-                    sheet.write(index + 1, x, label)
+                    sheet.write_string(index + 1, x, label)
                 end
             end
             workbook.close

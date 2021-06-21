@@ -167,7 +167,10 @@ class Parser
             display_name = "#{first_name} #{display_name}".strip
             display_name = "#{titel} #{display_name}".strip
             display_name = 'NN' if display_name.empty?
-            display_name = force_display_name if force_display_name
+            if force_display_name
+                display_name = force_display_name 
+                display_last_name = force_display_name
+            end
             
             record = {:email => email,
                       :shorthand => shorthand,

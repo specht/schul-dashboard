@@ -464,6 +464,77 @@ class Main < Sinatra::Base
         respond_raw_with_mimetype_and_filename(zip, 'application/zip', "Umfrageergebnisse #{poll[:title]}.zip")
     end
     
+    get '/api/poll_run_results_xlsx/*' do
+        require_teacher_or_sv!
+        prid = request.path.sub('/api/poll_run_results_xlsx/', '')
+        poll, poll_run, responses = get_poll_run_results(prid)
+        file = Tempfile.new('foo')
+        result = nil
+        assert(poll_run[:anonymous] == false)
+        begin
+            workbook = WriteXLSX.new(file.path)
+            sheet = workbook.add_worksheet
+            format_header = workbook.add_format({:bold => true})
+            sheet.write(0, 0, 'Nachname', format_header)
+            sheet.write(0, 1, 'Vorname', format_header)
+            sheet.write(0, 2, 'Klasse', format_header)
+            sheet.set_column(0, 1, 16)
+            sheet.set_column(2, 2, 6)
+            x = 2
+            response_by_email = {}
+            responses.each do |response|
+                email = response[:email]
+                response_by_email[email] = response[:response]
+            end
+            participant_order = poll_run[:participants].keys.sort do |a, b|
+                last_name_a = ((@@user_info[a] || {})[:last_name] || 'NN').downcase
+                last_name_b = ((@@user_info[b] || {})[:last_name] || 'NN').downcase
+                first_name_a = ((@@user_info[a] || {})[:first_name] || 'NN').downcase
+                first_name_b = ((@@user_info[b] || {})[:first_name] || 'NN').downcase
+                if last_name_a == last_name_b
+                    first_name_a <=> first_name_b
+                else
+                    last_name_a <=> last_name_b
+                end
+            end
+            participant_order.each.with_index do |email, index|
+                sheet.write(index + 1, 0, (@@user_info[email] || {})[:last_name] || 'NN')
+                sheet.write(index + 1, 1, (@@user_info[email] || {})[:first_name] || 'NN')
+                sheet.write(index + 1, 2, (@@user_info[email] || {})[:klasse])
+            end
+            
+            poll_run[:items].each.with_index do |item, item_index|
+                next unless ['radio', 'textarea', 'checkbox'].include?(item['type'])
+                x += 1
+                sheet.write(0, x, item['title'], format_header)
+                participant_order.each.with_index do |email, index|
+                    next unless response_by_email[email]
+                    label = nil
+                    if item['type'] == 'textarea'
+                        label = response_by_email[email][item_index.to_s]
+                    elsif item['type'] == 'radio'
+                        answer = response_by_email[email][item_index.to_s]
+                        label = item['answers'][answer] if answer
+                    elsif item['type'] == 'checkbox'
+                        answers = response_by_email[email][item_index.to_s]
+                        if answers
+                            label = answers.map do |i|
+                                item['answers'][i]
+                            end.join(' / ')
+                        end
+                    end
+                    sheet.write(index + 1, x, label)
+                end
+            end
+            workbook.close
+            result = File.read(file.path)
+        ensure
+            file.close
+            file.unlink
+        end
+        respond_raw_with_mimetype_and_filename(result, 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', "#{poll[:title]} – Umfrage von #{poll[:organizer]}.xlsx")
+    end
+    
     def sanitize_poll_items(items)
         items.map do |item|
             if item['type'] == 'radio' || item['type'] == 'checkbox'

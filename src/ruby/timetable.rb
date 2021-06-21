@@ -193,8 +193,12 @@ class Timetable
         if ['Pausenaufsichtsvertretung', 'Entfall'].include?(ventry[:vertretungs_art])
             secondary_label ||= ventry[:vertretungs_art]
         end
-        if where && (ventry[:vertretungs_text] || '').empty?
-            secondary_label = "#{secondary_label}: #{where}"
+        if where 
+            if (ventry[:vertretungs_text] || '').empty?
+                secondary_label = "#{where} (#{secondary_label})"
+            else
+                secondary_label = "#{where}"
+            end
         end
         if primary_label.nil?
             primary_label = secondary_label.dup
@@ -443,6 +447,7 @@ class Timetable
         @@klassen_for_shorthand = Main.class_variable_get(:@@klassen_for_shorthand)
         @@schueler_for_klasse = Main.class_variable_get(:@@schueler_for_klasse)
         @@schueler_for_lesson = Main.class_variable_get(:@@schueler_for_lesson)
+        @@teachers_for_klasse = Main.class_variable_get(:@@teachers_for_klasse)
         @@schueler_offset_in_lesson = Main.class_variable_get(:@@schueler_offset_in_lesson)
         @@pausenaufsichten = Main.class_variable_get(:@@pausenaufsichten)
         @@tablets = Main.class_variable_get(:@@tablets)
@@ -1218,6 +1223,9 @@ class Timetable
                                                 :label_klasse_short => "#{info[:where]}",
                                                 :label_klasse_lang => "#{info[:where]}",
                                                 :label_klasse => "#{info[:where]}",
+                                                :label_short => "#{info[:where]}",
+                                                :label_lang => "#{info[:where]}",
+                                                :label => "#{info[:where]}",
                                                 }
                                     end
                                 end
@@ -1734,6 +1742,15 @@ class Timetable
                                     }
                         end
                     end
+                    teacher_emails = []
+                    (@@teachers_for_klasse[klasse] || {}).keys.each do |shorthand|
+                        next unless @@shorthands[shorthand]
+                        teacher_emails << @@user_info[@@shorthands[shorthand]][:email]
+                    end
+                    recipients["/klasse/#{klasse}/lehrer"] = 
+                            {:label => "Lehrer der Klasse #{klasse}",
+                             :entries => teacher_emails
+                            }
                 end
                 klassen.each do |klasse|
                     (@@schueler_for_klasse[klasse] || []).each do |email|
@@ -1747,7 +1764,7 @@ class Timetable
                                              :teacher => true}
                     end
                 end
-                if user[:can_see_all_timetables] || user[:sv]
+                if user[:teacher] || user[:sv]
                     recipients['/schueler/*'] = {:label => 'Gesamte Schülerschaft',
                                                  :entries => @@user_info.select { |k, v| !v[:teacher]}.map { |k, v| k }}
                 end

@@ -5,6 +5,7 @@
 /internal/
 /logs/
 /src/ruby/credentials.rb
+/src/ruby/mail-forwarder-emails.txt
 env.rb
 .yardoc
 /yardoc/

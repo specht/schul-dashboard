@@ -135,6 +135,7 @@ class Parser
             first_name = (line['Vorname'] || '').strip
             last_name = (line['Nachname'] || '').strip
             geschlecht = line['Geschlecht']
+            force_display_name = line['Anzeigename']
             
             if @use_mock_names
                 if EXCLUDE_FROM_MOCKIFICATION.include?(email)
@@ -166,6 +167,7 @@ class Parser
             display_name = "#{first_name} #{display_name}".strip
             display_name = "#{titel} #{display_name}".strip
             display_name = 'NN' if display_name.empty?
+            display_name = force_display_name if force_display_name
             
             record = {:email => email,
                       :shorthand => shorthand,

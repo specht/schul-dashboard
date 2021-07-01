@@ -67,6 +67,12 @@ class Main < Sinatra::Base
         respond(:ok => 'yeah')
     end
     
+    post '/api/confirm_chat_login' do
+        data = parse_request_data(:required_keys => [:user], :types => {:user => Hash})
+        STDERR.puts data.to_yaml
+        respond(:ok => 'yeah')
+    end
+    
     post '/api/login_as_teacher_tablet' do
         require_admin!
         logout()

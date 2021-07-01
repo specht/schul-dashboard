@@ -282,7 +282,7 @@ class Main < Sinatra::Base
             END_OF_QUERY
         end
         # FOR NOW, DON'T SEND E-MAIL CODES FOR CHAT LOGINS
-        unless login_for_chat do
+        unless login_for_chat
             begin
                 deliver_mail do
                     to data[:email]

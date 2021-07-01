@@ -288,11 +288,11 @@ class Main < Sinatra::Base
                 raise e
             end
         end
-        data = {:tag => tag}
+        response_hash = {:tag => tag}
         if login_for_chat
-            data[:chat_handle] = data[:email].split('@').first
+            response_hash[:chat_handle] = data[:email].split('@').first
         end
-        respond(data)
+        respond(response_hash)
     end
     
     def get_sessions_for_user(email)

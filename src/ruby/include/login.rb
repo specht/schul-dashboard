@@ -69,8 +69,39 @@ class Main < Sinatra::Base
     
     post '/api/confirm_chat_login' do
         data = parse_request_data(:required_keys => [:user], :types => {:user => Hash})
-        STDERR.puts data.to_yaml
-        respond(:ok => 'yeah')
+        # :user:
+        #   id: "@specht:nhcham.org"
+        #   password: '123456'
+        chat_handle = data[:user]['id'].split(':').first.sub('@', '')
+        chat_code = data[:user]['password']
+        tag = chat_code.split('/').first
+        code = chat_code.split('/').last
+
+        result = neo4j_query_expect_one(<<~END_OF_QUERY, :tag => tag)
+            MATCH (l:LoginCode {tag: {tag}})-[:BELONGS_TO]->(u:User)
+            SET l.tries = COALESCE(l.tries, 0) + 1
+            RETURN l, u;
+        END_OF_QUERY
+        user = result['u'].props
+        login_code = result['l'].props
+        if login_code[:tries] > MAX_LOGIN_TRIES
+            neo4j_query(<<~END_OF_QUERY, :tag => tag)
+                MATCH (l:LoginCode {tag: {tag}})
+                DETACH DELETE l;
+            END_OF_QUERY
+            respond({:error => 'code_expired'})
+        end
+        assert(login_code[:tries] <= MAX_LOGIN_TRIES)
+        assert_with_delay(code == login_code[:code], "Wrong e-mail code entered for #{user[:email]}: #{code}", true)
+        if Time.at(login_code[:valid_to]) < Time.now
+            respond({:error => 'code_expired'})
+        end
+        assert(Time.at(login_code[:valid_to]) >= Time.now)
+        neo4j_query(<<~END_OF_QUERY, :tag => tag)
+            MATCH (l:LoginCode {tag: {tag}})
+            DETACH DELETE l;
+        END_OF_QUERY
+        respond(:auth => {:success => true})
     end
     
     post '/api/login_as_teacher_tablet' do

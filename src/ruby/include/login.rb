@@ -206,8 +206,14 @@ class Main < Sinatra::Base
         end
         respond(:ok => 'yeah')
     end
+                                    
+    options '/api/login' do
+        response.headers['Access-Control-Allow-Origin'] = "*"
+        response.headers['Access-Control-Allow-Headers'] = "Content-Type, Access-Control-Allow-Origin"
+    end
     
     post '/api/login' do
+        response.headers['Access-Control-Allow-Origin'] = "*"
         data = parse_request_data(:required_keys => [:email])
         data[:email] = data[:email].strip.downcase
         unless @@user_info.include?(data[:email]) && @@user_info[data[:email]][:can_log_in]

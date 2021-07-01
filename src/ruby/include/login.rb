@@ -281,48 +281,51 @@ class Main < Sinatra::Base
                 SET l.chat_login = TRUE;
             END_OF_QUERY
         end
-        begin
-            deliver_mail do
-                to data[:email]
-                bcc SMTP_FROM
-                from SMTP_FROM
-                
-                if login_for_chat
-                    subject "Dein Chat-Anmeldecode lautet #{random_code}"
+        # FOR NOW, DON'T SEND E-MAIL CODES FOR CHAT LOGINS
+        unless login_for_chat do
+            begin
+                deliver_mail do
+                    to data[:email]
+                    bcc SMTP_FROM
+                    from SMTP_FROM
+                    
+                    if login_for_chat
+                        subject "Dein Chat-Anmeldecode lautet #{random_code}"
 
-                    StringIO.open do |io|
-                        io.puts "<p>Hallo!</p>"
-                        io.puts "<p>Dein Chat-Anmeldecode lautet:</p>"
-                        io.puts "<p style='font-size: 200%;'>#{random_code}</p>"
-                        io.puts "<p>Der Code ist für zehn Minuten gültig.</p>"
-        #                 link = "#{WEB_ROOT}/c/#{tag}/#{random_code}"
-        #                 io.puts "<p><a href='#{link}'>#{link}</a></p>"
-                        io.puts "<p>Falls du diese E-Mail nicht angefordert hast, hat jemand versucht, sich mit deiner E-Mail-Adresse im HeeseChat anzumelden. In diesem Fall musst du nichts weiter tun (es sei denn, du befürchtest, dass jemand anderes Zugriff auf dein E-Mail-Konto hat – dann solltest du dein E-Mail-Passwort ändern).</p>"
-                        io.puts "<p>Viele Grüße,<br />#{WEBSITE_MAINTAINER_NAME}</p>"
-                        io.string
-                    end
-                else
-                    subject "Dein Anmeldecode lautet #{random_code}"
+                        StringIO.open do |io|
+                            io.puts "<p>Hallo!</p>"
+                            io.puts "<p>Dein Chat-Anmeldecode lautet:</p>"
+                            io.puts "<p style='font-size: 200%;'>#{random_code}</p>"
+                            io.puts "<p>Der Code ist für zehn Minuten gültig.</p>"
+            #                 link = "#{WEB_ROOT}/c/#{tag}/#{random_code}"
+            #                 io.puts "<p><a href='#{link}'>#{link}</a></p>"
+                            io.puts "<p>Falls du diese E-Mail nicht angefordert hast, hat jemand versucht, sich mit deiner E-Mail-Adresse im HeeseChat anzumelden. In diesem Fall musst du nichts weiter tun (es sei denn, du befürchtest, dass jemand anderes Zugriff auf dein E-Mail-Konto hat – dann solltest du dein E-Mail-Passwort ändern).</p>"
+                            io.puts "<p>Viele Grüße,<br />#{WEBSITE_MAINTAINER_NAME}</p>"
+                            io.string
+                        end
+                    else
+                        subject "Dein Anmeldecode lautet #{random_code}"
 
-                    StringIO.open do |io|
-                        io.puts "<p>Hallo!</p>"
-                        io.puts "<p>Dein Anmeldecode lautet:</p>"
-                        io.puts "<p style='font-size: 200%;'>#{random_code}</p>"
-                        io.puts "<p>Der Code ist für zehn Minuten gültig. Nachdem du eingeloggt bist, bleibst du für ein ganzes Jahr eingeloggt.</p>"
-        #                 link = "#{WEB_ROOT}/c/#{tag}/#{random_code}"
-        #                 io.puts "<p><a href='#{link}'>#{link}</a></p>"
-                        io.puts "<p>Falls du diese E-Mail nicht angefordert hast, hat jemand versucht, sich mit deiner E-Mail-Adresse auf <a href='https://#{WEBSITE_HOST}/'>https://#{WEBSITE_HOST}/</a> anzumelden. In diesem Fall musst du nichts weiter tun (es sei denn, du befürchtest, dass jemand anderes Zugriff auf dein E-Mail-Konto hat – dann solltest du dein E-Mail-Passwort ändern).</p>"
-                        io.puts "<p>Viele Grüße,<br />#{WEBSITE_MAINTAINER_NAME}</p>"
-                        io.string
+                        StringIO.open do |io|
+                            io.puts "<p>Hallo!</p>"
+                            io.puts "<p>Dein Anmeldecode lautet:</p>"
+                            io.puts "<p style='font-size: 200%;'>#{random_code}</p>"
+                            io.puts "<p>Der Code ist für zehn Minuten gültig. Nachdem du eingeloggt bist, bleibst du für ein ganzes Jahr eingeloggt.</p>"
+            #                 link = "#{WEB_ROOT}/c/#{tag}/#{random_code}"
+            #                 io.puts "<p><a href='#{link}'>#{link}</a></p>"
+                            io.puts "<p>Falls du diese E-Mail nicht angefordert hast, hat jemand versucht, sich mit deiner E-Mail-Adresse auf <a href='https://#{WEBSITE_HOST}/'>https://#{WEBSITE_HOST}/</a> anzumelden. In diesem Fall musst du nichts weiter tun (es sei denn, du befürchtest, dass jemand anderes Zugriff auf dein E-Mail-Konto hat – dann solltest du dein E-Mail-Passwort ändern).</p>"
+                            io.puts "<p>Viele Grüße,<br />#{WEBSITE_MAINTAINER_NAME}</p>"
+                            io.string
+                        end
                     end
                 end
-            end
-        rescue StandardError => e
-            if DEVELOPMENT
-                debug "Cannot send e-mail in DEVELOPMENT mode, continuing anyway:"
-                STDERR.puts e
-            else
-                raise e
+            rescue StandardError => e
+                if DEVELOPMENT
+                    debug "Cannot send e-mail in DEVELOPMENT mode, continuing anyway:"
+                    STDERR.puts e
+                else
+                    raise e
+                end
             end
         end
         response_hash = {:tag => tag}

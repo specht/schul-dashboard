@@ -288,7 +288,11 @@ class Main < Sinatra::Base
                 raise e
             end
         end
-        respond(:tag => tag)
+        data = {:tag => tag}
+        if login_for_chat
+            data[:chat_handle] = data[:email].split('@').first
+        end
+        respond(data)
     end
     
     def get_sessions_for_user(email)

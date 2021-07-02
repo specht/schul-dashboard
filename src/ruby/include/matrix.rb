@@ -113,6 +113,6 @@ class Main < Sinatra::Base
     post '/api/matrix_hook' do
         body_str = request.body.read(2048).to_s
         STDERR.puts body_str
-        respond(:okay => 'yay')
+        respond(:action => 'pass.unmodified')
     end
 end

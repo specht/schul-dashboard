@@ -537,7 +537,8 @@ class Main < Sinatra::Base
                 :avatarUri => "#{NEXTCLOUD_URL}/index.php/avatar/#{info[:nc_login]}/256",
                 :joinedCommunityIds => [],
                 :joinedRoomIds => [],
-                :forbidRoomCreation => info[:teacher] ? false : true
+                :forbidRoomCreation => info[:teacher] ? false : true,
+                :forbidUnencryptedRoomCreation => info[:teacher] ? false : true
             }
         end
         result

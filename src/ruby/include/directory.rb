@@ -522,7 +522,7 @@ class Main < Sinatra::Base
                 :forbidRoomCreation => true,
                 :forbidEncryptedRoomCreation => true,
                 :forbidUnencryptedRoomCreation => true
-            }
+            },
             :managedCommunityIds => [],
             :managedRoomIds => [],
             :users = []

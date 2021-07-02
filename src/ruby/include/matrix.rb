@@ -92,7 +92,7 @@ class Main < Sinatra::Base
             :matchRules => [
                 {:type => 'method', :regex => 'POST'},
                 {:type => 'route', :regex => '^/_matrix/client/r0/createRoom'},
-                {:type => 'route', :regex => '^/_matrix/client/r0/rooms/'}
+                {:type => 'route', :regex => '^/_matrix/client/r0/rooms/([^/]+)/leave'}
             ],
             :action => 'consult.RESTServiceURL',
             :RESTServiceURL => "#{WEB_ROOT}/api/matrix_hook",

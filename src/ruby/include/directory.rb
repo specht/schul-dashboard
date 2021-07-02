@@ -525,7 +525,7 @@ class Main < Sinatra::Base
             },
             :managedCommunityIds => [],
             :managedRoomIds => [],
-            :users = []
+            :users => []
         }
         @@user_info.each_pair do |email, info|
             result[:users] << {

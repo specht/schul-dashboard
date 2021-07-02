@@ -87,11 +87,26 @@ class Main < Sinatra::Base
             }
         end
         result[:hooks] << {
-            :id => 'dashboard-hook',
+            :id => 'dashboard-hook-before-create-room',
             :eventType => 'beforeAuthenticatedRequest',
             :matchRules => [
                 {:type => 'method', :regex => 'POST'},
-                {:type => 'route', :regex => '^/_matrix/client/r0/createRoom'},
+                {:type => 'route', :regex => '^/_matrix/client/r0/createRoom'}
+            ],
+            :action => 'consult.RESTServiceURL',
+            :RESTServiceURL => "#{WEB_ROOT}/api/matrix_hook",
+            :RESTServiceRequestHeaders => {
+                "Authorization" => 'Bearer 123456',
+            },
+            :RESTServiceRequestTimeoutMilliseconds => 10000,
+            :RESTServiceRetryAttempts => 1,
+            :RESTServiceRetryWaitTimeMilliseconds => 5000
+        }
+        result[:hooks] << {
+            :id => 'dashboard-hook-before-leave-room',
+            :eventType => 'beforeAuthenticatedRequest',
+            :matchRules => [
+                {:type => 'method', :regex => 'POST'},
                 {:type => 'route', :regex => '^/_matrix/client/r0/rooms/([^/]+)/leave'}
             ],
             :action => 'consult.RESTServiceURL',

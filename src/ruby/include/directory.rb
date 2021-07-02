@@ -527,9 +527,12 @@ class Main < Sinatra::Base
             :managedRoomIds => [],
             :users => []
         }
+        matrix_handle_to_email = {}
         @@user_info.each_pair do |email, info|
+            handle = "@#{email.split('@').first}:nhcham.org"
+            matrix_handle_to_email[handle] = email
             result[:users] << {
-                :id => "@#{email.split('@').first}:nhcham.org",
+                :id => handle,
                 :active => true,
                 :authType => 'rest',
                 :authCredential => "#{WEB_ROOT}/api/confirm_chat_login",
@@ -540,6 +543,14 @@ class Main < Sinatra::Base
                 :forbidRoomCreation => info[:teacher] ? false : true,
                 :forbidUnencryptedRoomCreation => info[:teacher] ? false : true
             }
+        end
+        result[:managedRoomsIds] << '!wfEDbfgjOMXXvsYmHq:nhcham.org'
+        result[:users].map! do |info|
+            email = matrix_handle_to_email[info[:id]]
+            if @@user_info[email][:teacher]
+                info[:joinedRoomIds] << '!wfEDbfgjOMXXvsYmHq:nhcham.org'
+            end
+            info
         end
         result
     end

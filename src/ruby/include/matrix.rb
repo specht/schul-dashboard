@@ -128,7 +128,17 @@ class Main < Sinatra::Base
 
     post '/api/matrix_hook' do
         body_str = request.body.read(2048).to_s
-        STDERR.puts body_str
+        request = JSON.parse(body_str)
+        hook_id = request['meta']['hookId']
+        assert(!hook_id.nil?)
+        matrix_login = request['meta']['authenticatedMatrixUserId']
+        assert(@@email_for_matrix_login.include?(matrix_login))
+        email = @@email_for_matrix_login[matrix_login]
+        payload = JSON.parse(request['request']['payload'])
+        STDERR.puts '-' * 40
+        STDERR.puts "HOOK ID #{hook_id}"
+        STDERR.puts "FROM #{email}"
+        STDERR.puts payload.to_yaml
         respond(:action => 'pass.unmodified')
     end
 end

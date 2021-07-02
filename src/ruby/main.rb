@@ -550,6 +550,7 @@ class Main < Sinatra::Base
     
     def self.collect_data
         @@user_info = {}
+        @@email_for_matrix_login = {}
         @@shorthands = {}
         @@schueler_for_klasse = {}
         @@faecher = {}
@@ -607,6 +608,8 @@ class Main < Sinatra::Base
                 :matrix_login => record[:matrix_login],
                 :initial_nc_password => record[:initial_nc_password]
             }
+            assert(!@@email_for_matrix_login.include?(record[:matrix_login]))
+            @@email_for_matrix_login[record[:matrix_login]] = record[:email]
             @@shorthands[record[:shorthand]] = record[:email]
             @@lehrer_order << record[:email]
         end
@@ -648,6 +651,8 @@ class Main < Sinatra::Base
                 :matrix_login => "@#{record[:email].split('@').first.sub(/\.\d+$/, '')}:#{MATRIX_DOMAIN_SHORT}",
                 :initial_nc_password => record[:initial_nc_password]
             }
+            assert(!@@email_for_matrix_login.include?(record[:matrix_login]))
+            @@email_for_matrix_login[record[:matrix_login]] = record[:email]
             @@schueler_for_klasse[record[:klasse]] ||= []
             @@schueler_for_klasse[record[:klasse]] << record[:email]
         end

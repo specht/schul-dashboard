@@ -111,7 +111,8 @@ class Main < Sinatra::Base
     end
 
     post '/api/matrix_hook' do
-        STDERR.puts request.body
+        body_str = body.read
+        STDERR.puts body_str
         respond(:okay => 'yay')
     end
 end

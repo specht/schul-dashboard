@@ -135,11 +135,30 @@ class Main < Sinatra::Base
         matrix_login = request['meta']['authenticatedMatrixUserId']
         assert(@@email_for_matrix_login.include?(matrix_login))
         email = @@email_for_matrix_login[matrix_login]
-        payload = JSON.parse(request['request']['payload'])
-        STDERR.puts '-' * 40
-        STDERR.puts "HOOK ID #{hook_id}"
-        STDERR.puts "FROM #{email}"
-        STDERR.puts payload.to_yaml
+        if hook_id == 'dashboard-hook-before-create-room'
+            payload = JSON.parse(request['request']['payload'])
+            STDERR.puts '-' * 40
+            STDERR.puts "HOOK ID #{hook_id}"
+            STDERR.puts "FROM #{email}"
+            STDERR.puts payload.to_yaml
+            if ['private_chat', 'trusted_private_chat'].include?(payload['preset'])
+                # private chat: if it's a SuS, only agree if single teacher invited
+                if !@@user_info[email][:teacher]
+                    prevent_this = true
+                    # user is SuS
+                    if payload['invite'].size == 1
+                        other_matrix_login = payload['invite'].first
+                        assert(@@email_for_matrix_login.include?(other_matrix_login))
+                        other_email = @@email_for_matrix_login[other_matrix_login]
+                        if @@user_info[other_email][:teacher]
+                            # invited user is a teacher
+                            prevent_this = false
+                        end
+                    end
+                end
+            end
+            raise 'nope' if prevent_this
+        end
         respond(:action => 'pass.unmodified')
     end
 end

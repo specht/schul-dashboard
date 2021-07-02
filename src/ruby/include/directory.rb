@@ -544,14 +544,6 @@ class Main < Sinatra::Base
                 :forbidUnencryptedRoomCreation => info[:teacher] ? false : true
             }
         end
-        result[:managedRoomIds] << '!wfEDbfgjOMXXvsYmHq:nhcham.org'
-        result[:users] = result[:users].map do |info|
-            email = matrix_handle_to_email[info[:id]]
-            if @@user_info[email][:teacher]
-                info[:joinedRoomIds] << '!wfEDbfgjOMXXvsYmHq:nhcham.org'
-            end
-            info
-        end
         result
     end
 

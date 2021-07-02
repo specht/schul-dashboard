@@ -608,8 +608,9 @@ class Main < Sinatra::Base
                 :matrix_login => record[:matrix_login],
                 :initial_nc_password => record[:initial_nc_password]
             }
-            raise "oops: duplicate matrix / nc login: #{record[:matrix_login]}" if @@email_for_matrix_login.include?(record[:matrix_login])
-            @@email_for_matrix_login[record[:matrix_login]] = record[:email]
+            matrix_login = record[:matrix_login]
+            raise "oops: duplicate matrix / nc login: #{matrix_login}" if @@email_for_matrix_login.include?(matrix_login)
+            @@email_for_matrix_login[matrix_login] = record[:email]
             @@shorthands[record[:shorthand]] = record[:email]
             @@lehrer_order << record[:email]
         end
@@ -635,6 +636,7 @@ class Main < Sinatra::Base
         self.fix_stundenzeiten()
                            
         parser.parse_schueler do |record|
+            matrix_login = "@#{record[:email].split('@').first.sub(/\.\d+$/, '')}:#{MATRIX_DOMAIN_SHORT}"
             @@user_info[record[:email]] = {
                 :teacher => false,
                 :first_name => record[:first_name],
@@ -648,11 +650,11 @@ class Main < Sinatra::Base
                 :klasse => record[:klasse],
                 :geschlecht => record[:geschlecht],
                 :nc_login => record[:email].split('@').first.sub(/\.\d+$/, ''),
-                :matrix_login => "@#{record[:email].split('@').first.sub(/\.\d+$/, '')}:#{MATRIX_DOMAIN_SHORT}",
+                :matrix_login => matrix_login,
                 :initial_nc_password => record[:initial_nc_password]
             }
-            raise "oops: duplicate matrix / nc login: #{record[:matrix_login]}" if @@email_for_matrix_login.include?(record[:matrix_login])
-            @@email_for_matrix_login[record[:matrix_login]] = record[:email]
+            raise "oops: duplicate matrix / nc login: #{matrix_login}" if @@email_for_matrix_login.include?(matrix_login)
+            @@email_for_matrix_login[matrix_login] = record[:email]
             @@schueler_for_klasse[record[:klasse]] ||= []
             @@schueler_for_klasse[record[:klasse]] << record[:email]
         end

@@ -81,7 +81,7 @@ class Main < Sinatra::Base
                 :authType => 'rest',
                 :authCredential => "#{WEB_ROOT}/api/confirm_chat_login",
                 :displayName => info[:display_name],
-                :avatarUri => "#{NEXTCLOUD_URL}/index.php/avatar/#{info[:nc_login]}/256",
+                :avatarUri => "#{NEXTCLOUD_URL}/index.php/avatar/#{info[:nc_login]}/512?#{Time.now.to_i}",
                 :joinedCommunityIds => [""],
                 :joinedRoomIds => [],
             }

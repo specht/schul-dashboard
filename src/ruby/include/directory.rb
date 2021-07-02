@@ -545,7 +545,7 @@ class Main < Sinatra::Base
             }
         end
         result[:managedRoomsIds] << '!wfEDbfgjOMXXvsYmHq:nhcham.org'
-        result[:users].map! do |info|
+        result[:users] = result[:users].map do |info|
             email = matrix_handle_to_email[info[:id]]
             if @@user_info[email][:teacher]
                 info[:joinedRoomIds] << '!wfEDbfgjOMXXvsYmHq:nhcham.org'

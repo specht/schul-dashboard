@@ -113,6 +113,9 @@ NEXTCLOUD_WAIT_SECONDS = 0
 #   ),
 
 NEXTCLOUD_ALL_ACCESS_PASSWORD_BE_CAREFUL = 'here_be_dragons_dont_use_this_password'
+
+MATRIX_DOMAIN = 'matrix.example.com'
+MATRIX_DOMAIN_SHORT = 'example.com'
 MATRIX_ALL_ACCESS_PASSWORD_BE_CAREFUL = nil
 
 # Das Dashboard vermittelt Links in Jitsi-Räume mit Hilfe von JWT 

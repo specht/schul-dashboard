@@ -529,7 +529,7 @@ class Main < Sinatra::Base
         }
         matrix_handle_to_email = {}
         @@user_info.each_pair do |email, info|
-            handle = "@#{email.split('@').first}:nhcham.org"
+            handle = info[:matrix_login]
             matrix_handle_to_email[handle] = email
             result[:users] << {
                 :id => handle,

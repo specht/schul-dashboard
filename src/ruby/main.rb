@@ -603,6 +603,7 @@ class Main < Sinatra::Base
                 :email => record[:email],
                 :can_log_in => record[:can_log_in],
                 :nc_login => record[:nc_login],
+                :matrix_login => record[:matrix_login],
                 :initial_nc_password => record[:initial_nc_password]
             }
             @@shorthands[record[:shorthand]] = record[:email]
@@ -643,6 +644,7 @@ class Main < Sinatra::Base
                 :klasse => record[:klasse],
                 :geschlecht => record[:geschlecht],
                 :nc_login => record[:email].split('@').first.sub(/\.\d+$/, ''),
+                :matrix_login => "@#{record[:email].split('@').first.sub(/\.\d+$/, '')}:#{MATRIX_DOMAIN_SHORT}",
                 :initial_nc_password => record[:initial_nc_password]
             }
             @@schueler_for_klasse[record[:klasse]] ||= []

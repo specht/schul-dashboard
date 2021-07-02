@@ -510,4 +510,42 @@ class Main < Sinatra::Base
             io.string
         end
     end
+
+    def generate_matrix_corporal_policy
+        result = {
+            :schemaVersion => 1,
+            :flags => {
+                :allowCustomUserDisplayNames => false,
+                :allowCustomUserAvatars => false,
+                :allowCustomPassthroughUserPasswords => false,
+                :allowUnauthenticatedPasswordResets => false,
+                :forbidRoomCreation => true,
+                :forbidEncryptedRoomCreation => true,
+                :forbidUnencryptedRoomCreation => true
+            }
+            :managedCommunityIds => [],
+            :managedRoomIds => [],
+            :users = []
+        }
+        @@user_info.each_pair do |email, info|
+            result[:users] << {
+                :id => "@#{email.split('@').first}:nhcham.org",
+                :active => true,
+                :authType => 'rest',
+                :authCredential => "#{WEB_ROOT}/api/confirm_chat_login",
+                :displayName => info[:display_name],
+                :avatarUri => "#{NEXTCLOUD_URL}/index.php/avatar/#{info[:nc_login]}/256",
+                :joinedCommunityIds => [],
+                :joinedRoomIds => [],
+                :forbidRoomCreation => info[:teacher] ? false : true
+            }
+        end
+        result
+    end
+
+    get '/api/generate_matrix_corporal_policy' do
+        require_admin!
+        respond(generate_matrix_corporal_policy)
+    end
+
 end

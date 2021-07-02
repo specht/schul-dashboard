@@ -91,7 +91,8 @@ class Main < Sinatra::Base
             :eventType => 'beforeAuthenticatedRequest',
             :matchRules => [
                 {:type => 'method', :regex => 'POST'},
-                {:type => 'route', :regex => '^/_matrix/client/r0/createRoom'}
+                {:type => 'route', :regex => '^/_matrix/client/r0/createRoom'},
+                {:type => 'route', :regex => '^/_matrix/client/r0/rooms/'}
             ],
             :action => 'consult.RESTServiceURL',
             :RESTServiceURL => "#{WEB_ROOT}/api/matrix_hook",

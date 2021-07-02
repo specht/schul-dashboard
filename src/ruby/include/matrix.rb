@@ -128,6 +128,7 @@ class Main < Sinatra::Base
 
     post '/api/matrix_hook' do
         body_str = request.body.read(2048).to_s
+        STDERR.puts body_str
         request = JSON.parse(body_str)
         hook_id = request['meta']['hookId']
         assert(!hook_id.nil?)

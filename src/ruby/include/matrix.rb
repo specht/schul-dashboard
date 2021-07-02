@@ -69,7 +69,7 @@ class Main < Sinatra::Base
             :managedCommunityIds => ["+alle:#{MATRIX_DOMAIN_SHORT}"],
             :managedRoomIds => [],
             :users => [],
-            :hooks = [],
+            :hooks => [],
         }
         matrix_handle_to_email = {}
         @@user_info.each_pair do |email, info|

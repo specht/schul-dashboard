@@ -141,11 +141,11 @@ class Main < Sinatra::Base
             STDERR.puts "HOOK ID #{hook_id}"
             STDERR.puts "FROM #{email}"
             STDERR.puts payload.to_yaml
-            if ['private_chat', 'trusted_private_chat'].include?(payload['preset'])
-                # private chat: if it's a SuS, only agree if single teacher invited
-                if !@@user_info[email][:teacher]
-                    prevent_this = true
-                    # user is SuS
+            if !@@user_info[email][:teacher]
+                # user is SuS
+                prevent_this = true
+                if ['private_chat', 'trusted_private_chat'].include?(payload['preset'])
+                    # private chat: if it's a SuS, only agree if single teacher invited
                     if payload['invite'].size == 1
                         other_matrix_login = payload['invite'].first
                         assert(@@email_for_matrix_login.include?(other_matrix_login))

@@ -280,10 +280,14 @@ class Main < Sinatra::Base
                 SET l.chat_login = TRUE;
             END_OF_QUERY
         end
+        email_recipient = data[:email]
+        if login_for_chat
+            email_recipient = override_email_login_recipient_for_chat(email_recipient)
+        end
         begin
             deliver_mail do
                 # FOR NOW, DON'T SEND E-MAIL CODES FOR CHAT LOGINS
-                to login_for_chat ? WEBSITE_MAINTAINER_EMAIL : data[:email]
+                to email_recipient
                 bcc SMTP_FROM
                 from SMTP_FROM
                 

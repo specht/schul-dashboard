@@ -288,3 +288,7 @@ class Main < Sinatra::Base
     end
 
 end
+
+def override_email_login_recipient_for_chat(email)
+    email
+end

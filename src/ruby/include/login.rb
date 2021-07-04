@@ -52,6 +52,8 @@ class Main < Sinatra::Base
             totp = ROTP::TOTP.new(otp_token, issuer: "Dashboard")
             assert_with_delay(totp.verify(data[:code], drift_behind: 15, drift_ahead: 15), "Wrong OTP code entered for #{user[:email]}: #{data[:code]}", true)
         else
+            STDERR.puts data.to_yaml
+            STDERR.puts login_code.to_yaml
             assert_with_delay(data[:code] == login_code[:code], "Wrong e-mail code entered for #{user[:email]}: #{data[:code]}", true)
         end
         if Time.at(login_code[:valid_to]) < Time.now

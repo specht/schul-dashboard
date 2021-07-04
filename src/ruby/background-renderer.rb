@@ -450,14 +450,17 @@ class BackgroundRenderer
     end
     
     def render(palette, user = nil)
+        rendered_something = false
         (0..6).each do |style|
             ['l', 'd'].each do |ld_mode|
                 out_path = "/gen/bg/bg-#{ld_mode}#{palette[0, 3].join('').gsub('#', '')}#{style}.svg"
                 next if File.exists?(out_path)
+                rendered_something = true
                 STDERR.puts "Rendering #{out_path} for #{user || '(no one in particular)'}"
                 render_bg(out_path, "#{ld_mode}#{palette[0, 3].join('').gsub('#', '')}#{style}")
             end
         end
+        rendered_something
     end
 end
 

@@ -15,10 +15,11 @@ class ImageBotRepl < Sinatra::Base
     end
     
     def self.perform_update()
-        STDERR.puts ">>> Refreshing images!"
+        STDERR.puts ">>> Refreshing uploaded images!"
         file_count = 0
         start_time = Time.now
-        paths = Dir['/raw/uploads/images/*']
+        # convert uploaded images
+        paths = Dir['/raw/uploads/images/*'].sort
         paths.each do |path|
             tag = File.basename(path).split('.').first
             last_jpg_path = path
@@ -43,7 +44,30 @@ class ImageBotRepl < Sinatra::Base
             end
         end
         end_time = Time.now
-        STDERR.puts sprintf("<<< Finished refreshing images in %1.2f seconds, wrote #{file_count} files.", (end_time - start_time).to_f)
+        STDERR.puts sprintf("<<< Finished refreshing uploaded images in %1.2f seconds, wrote #{file_count} files.", (end_time - start_time).to_f)
+        STDERR.puts '-' * 59
+
+        STDERR.puts ">>> Refreshing background images!"
+        file_count = 0
+        start_time = Time.now
+        # convert background images
+        paths = Dir['/gen/bg/*.svg'].sort
+        paths.each do |svg_path|
+            tag = File.basename(svg_path).split('.').first
+            png_path = "/gen/bg/#{tag}.png"
+            jpg_path = "/gen/bg/#{tag}.jpg"
+            unless File.exists?(jpg_path)
+                unless File.exists?(png_path)
+                    STDERR.puts "Creating #{png_path}..."
+                    system("rsvg-convert -f png -o #{png_path} #{svg_path}")
+                end
+                STDERR.puts "Creating #{jpg_path}..."
+                system("convert #{png_path} #{jpg_path}")
+                FileUtils::rm(png_path)
+            end
+        end
+        end_time = Time.now
+        STDERR.puts sprintf("<<< Finished refreshing background images in %1.2f seconds, wrote #{file_count} files.", (end_time - start_time).to_f)
         STDERR.puts '-' * 59
     end
     
@@ -55,6 +79,7 @@ class ImageBotRepl < Sinatra::Base
         rescue
         end
         @@queue = Queue.new
+        @@queue << {:which => 'all'}
         @@worker_thread = Thread.new do
             future_queue = {}
             while true do

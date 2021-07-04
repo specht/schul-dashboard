@@ -1958,7 +1958,8 @@ class Main < Sinatra::Base
         if color_scheme.size < 20
             color_scheme += '0'
         end
-        @@renderer.render(["##{color_scheme[1, 6]}", "##{color_scheme[7, 6]}", "##{color_scheme[13, 6]}"], (@session_user || {})[:email])
+        rendered_something = @@renderer.render(["##{color_scheme[1, 6]}", "##{color_scheme[7, 6]}", "##{color_scheme[13, 6]}"], (@session_user || {})[:email])
+        trigger_update_images() if rendered_something
         primary_color = '#' + color_scheme[7, 6]
         primary_color_darker = darken(primary_color, 0.8)
         desaturated_color = darken(desaturate(primary_color), 0.9)

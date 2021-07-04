@@ -154,6 +154,9 @@ class Main < Sinatra::Base
                             # invited user is a teacher
                             prevent_this = false
                         end
+                        if (!DEMO_ACCOUNT_EMAIL.nil?) && email == DEMO_ACCOUNT_EMAIL
+                            prevent_this = (other_email != WEBSITE_MAINTAINER_EMAIL)
+                        end
                     end
                 end
             end

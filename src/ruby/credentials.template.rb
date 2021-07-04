@@ -292,3 +292,7 @@ end
 def override_email_login_recipient_for_chat(email)
     email
 end
+
+DEMO_ACCOUNT_EMAIL = nil
+DEMO_ACCOUNT_INFO = nil
+DEMO_ACCOUNT_FIXED_PIN = nil

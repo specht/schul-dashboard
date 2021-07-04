@@ -261,6 +261,7 @@ class Main < Sinatra::Base
         srand(Digest::SHA2.hexdigest(LOGIN_CODE_SALT).to_i + (Time.now.to_f * 1000000).to_i)
         random_code = (0..5).map { |x| rand(10).to_s }.join('')
         random_code = '123456' if DEVELOPMENT
+        random_code = DEMO_ACCOUNT_FIXED_PIN if data[:email] == DEMO_ACCOUNT_EMAIL
         debug "!!!!! #{data[:email]} => #{random_code} !!!!!"
         tag = RandomTag::generate(8)
         valid_to = Time.now + 600

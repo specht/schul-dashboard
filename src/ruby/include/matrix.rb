@@ -197,7 +197,7 @@ class Main < Sinatra::Base
     post '/api/fetch_matrix_groups' do
         data = parse_request_data(:required_keys => [:access_token])
         email = neo4j_query_expect_one(<<~END_OF_QUERY, :access_token => data[:access_token])['u.email']
-            MATCH (MatrixAccessToken:m {access_token: {access_token}})-[:BELONGS_TO]->(u:User)
+            MATCH (:MatrixAccessToken {access_token: {access_token}})-[:BELONGS_TO]->(u:User)
             RETURN u.email;
         END_OF_QUERY
         STDERR.puts "Fetching matrix groups for #{email}..."

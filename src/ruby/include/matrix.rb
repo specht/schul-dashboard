@@ -179,6 +179,9 @@ class Main < Sinatra::Base
         END_OF_QUERY
         user = result['u'].props
         # make sure we've got the right user
+        STDERR.puts user.to_yaml
+        STDERR.puts @@user_info[user[:email]].to_yaml
+        STDERR.puts matrix_id
         assert(@@user_info[user[:email]][:matrix_id] == matrix_id)
         login_code = result['l'].props
         assert(code == login_code[:code])

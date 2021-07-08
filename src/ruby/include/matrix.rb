@@ -165,6 +165,11 @@ class Main < Sinatra::Base
         respond(:action => 'pass.unmodified')
     end
 
+    options '/api/store_matrix_access_token' do
+        response.headers['Access-Control-Allow-Origin'] = "*"
+        response.headers['Access-Control-Allow-Headers'] = "Content-Type, Access-Control-Allow-Origin"
+    end
+    
     post '/api/store_matrix_access_token' do
         data = parse_request_data(:required_keys => [:matrix_id, :access_token, :code])
         matrix_id = data[:matrix_id]

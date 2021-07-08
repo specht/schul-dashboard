@@ -102,7 +102,8 @@ class Main < Sinatra::Base
             # mark this login as performed and delete it later on /api/store_matrix_access_token
             result = neo4j_query_expect_one(<<~END_OF_QUERY, :tag => tag)
                 MATCH (l:LoginCode {tag: {tag}})-[:BELONGS_TO]->(u:User)
-                SET l.performed = true;
+                SET l.performed = true
+                RETURN l;
             END_OF_QUERY
         end
         respond(:auth => {:success => true})

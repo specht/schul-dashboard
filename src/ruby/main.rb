@@ -363,6 +363,7 @@ class SetupDatabase
                     neo4j_query("CREATE CONSTRAINT ON (n:PollRun) ASSERT n.key IS UNIQUE")
                     neo4j_query("CREATE CONSTRAINT ON (n:PresenceToken) ASSERT n.token IS UNIQUE")
                     neo4j_query("CREATE CONSTRAINT ON (n:Tablet) ASSERT n.id IS UNIQUE")
+                    neo4j_query("CREATE CONSTRAINT ON (n:MatrixAccessToken) ASSERT n.access_token IS UNIQUE")
 #                     neo4j_query("CREATE CONSTRAINT ON (n:PredefinedExternalUser) ASSERT n.email IS UNIQUE")
                     neo4j_query("CREATE INDEX ON :LoginCode(code)")
                     neo4j_query("CREATE INDEX ON :NextcloudLoginCode(code)")

@@ -165,7 +165,6 @@ class Main < Sinatra::Base
         respond(:action => 'pass.unmodified')
     end
 
-    # {"matrix_id":"@specht:gymnasiumsteglitz.de","access_token":"syt_c3BlY2h0_EHSoRJbpjdaDmacUtnDR_0njGGZ","code":"4dmx2blc/842950"}
     post '/api/store_matrix_access_token' do
         data = parse_request_data(:required_keys => [:matrix_id, :access_token, :code])
         matrix_id = data[:matrix_id]

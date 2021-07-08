@@ -166,7 +166,7 @@ class Main < Sinatra::Base
     end
 
     options '/api/store_matrix_access_token' do
-        response.headers['Access-Control-Allow-Origin'] = "*"
+        response.headers['Access-Control-Allow-Origin'] = "https://chat.gymnasiumsteglitz.de"
         response.headers['Access-Control-Allow-Headers'] = "Content-Type, Access-Control-Allow-Origin"
     end
     

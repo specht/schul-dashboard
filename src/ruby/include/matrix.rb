@@ -191,7 +191,7 @@ class Main < Sinatra::Base
             MATCH (l:LoginCode {tag: {tag}})
             DETACH DELETE l;
         END_OF_QUERY
-        respond(:ok => true)
+        respond(:teacher => @@user_info[user[:email]][:teacher])
     end
 
     post '/api/fetch_matrix_groups' do

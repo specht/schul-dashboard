@@ -255,7 +255,7 @@ class Main < Sinatra::Base
     end
     
     post '/api/login' do
-        response.headers['Access-Control-Allow-Origin'] = "*"
+        response.headers['Access-Control-Allow-Origin'] = "https://chat.gymnasiumsteglitz.de"
         data = parse_request_data(:required_keys => [:email], :optional_keys => [:purpose])
         data[:email] = data[:email].strip.downcase
         login_for_chat = data[:purpose] == 'chat'

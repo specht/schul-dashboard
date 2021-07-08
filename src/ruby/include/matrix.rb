@@ -171,6 +171,7 @@ class Main < Sinatra::Base
     end
     
     post '/api/store_matrix_access_token' do
+        response.headers['Access-Control-Allow-Origin'] = "https://chat.gymnasiumsteglitz.de"
         data = parse_request_data(:required_keys => [:matrix_id, :access_token, :code])
         matrix_id = data[:matrix_id]
         access_token = data[:access_token]

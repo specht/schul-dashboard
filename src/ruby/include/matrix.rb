@@ -164,4 +164,34 @@ class Main < Sinatra::Base
         end
         respond(:action => 'pass.unmodified')
     end
+
+    # {"matrix_id":"@specht:gymnasiumsteglitz.de","access_token":"syt_c3BlY2h0_EHSoRJbpjdaDmacUtnDR_0njGGZ","code":"4dmx2blc/842950"}
+    post '/api/store_matrix_access_token' do
+        data = parse_request_data(:required_keys => [:matrix_id, :access_token, :code])
+        matrix_id = data[:matrix_id]
+        access_token = data[:access_token]
+        chat_code = data[:code]
+        tag = chat_code.split('/').first
+        code = chat_code.split('/').last
+        result = neo4j_query_expect_one(<<~END_OF_QUERY, :tag => tag)
+            MATCH (l:LoginCode {tag: {tag}, performed: true})-[:BELONGS_TO]->(u:User)
+            SET l.tries = COALESCE(l.tries, 0) + 1
+            RETURN l, u;
+        END_OF_QUERY
+        user = result['u'].props
+        # make sure we've got the right user
+        assert(@@user_info[user[:email]][:matrix_id] == matrix_id)
+        login_code = result['l'].props
+        assert(code == login_code[:code])
+        assert(Time.at(login_code[:valid_to]) >= Time.now)
+        neo4j_query(<<~END_OF_QUERY, :email => user[:email], :access_token => access_token)
+            MATCH (u:User {email: {email}})
+            CREATE (:MatrixAccessToken {access_token: {access_token}})-[:BELONGS_TO]->(u)
+        END_OF_QUERY
+        neo4j_query(<<~END_OF_QUERY, :tag => tag)
+            MATCH (l:LoginCode {tag: {tag}})
+            DETACH DELETE l;
+        END_OF_QUERY
+        respond(:ok => true)
+    end
 end

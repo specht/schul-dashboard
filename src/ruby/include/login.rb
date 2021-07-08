@@ -79,6 +79,7 @@ class Main < Sinatra::Base
 
             result = neo4j_query_expect_one(<<~END_OF_QUERY, :tag => tag)
                 MATCH (l:LoginCode {tag: {tag}})-[:BELONGS_TO]->(u:User)
+                WHERE COALESCE(l.performed, false) = false
                 SET l.tries = COALESCE(l.tries, 0) + 1
                 RETURN l, u;
             END_OF_QUERY
@@ -97,9 +98,11 @@ class Main < Sinatra::Base
                 respond({:error => 'code_expired'})
             end
             assert(Time.at(login_code[:valid_to]) >= Time.now)
-            neo4j_query(<<~END_OF_QUERY, :tag => tag)
-                MATCH (l:LoginCode {tag: {tag}})
-                DETACH DELETE l;
+            # instead of deleting this login code like in the default login,
+            # mark this login as performed and delete it later on /api/store_matrix_access_token
+            result = neo4j_query_expect_one(<<~END_OF_QUERY, :tag => tag)
+                MATCH (l:LoginCode {tag: {tag}})-[:BELONGS_TO]->(u:User)
+                SET l.performed = true;
             END_OF_QUERY
         end
         respond(:auth => {:success => true})

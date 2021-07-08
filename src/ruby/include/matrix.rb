@@ -201,12 +201,15 @@ class Main < Sinatra::Base
             RETURN u.email;
         END_OF_QUERY
         STDERR.puts "Fetching matrix groups for #{email}..."
+        group_order = []
         groups = {}
         (@@klassen_for_shorthand[@@user_info[email][:shorthand]] || []).each do |klasse|
-            groups["Klasse #{klasse}"] = @@schueler_for_klasse[klasse].map do |email|
+            group_name = "Klasse #{klasse}"
+            group_order << group_name
+            groups[group_name] = @@schueler_for_klasse[klasse].map do |email|
                 @@user_info[email][:matrix_login]
             end
         end
-        respond(:groups => groups)
+        respond(:groups => groups, :group_order => group_order)
     end
 end

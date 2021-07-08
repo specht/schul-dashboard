@@ -203,7 +203,9 @@ class Main < Sinatra::Base
         STDERR.puts "Fetching matrix groups for #{email}..."
         groups = {}
         (@@klassen_for_shorthand[@@user_info[email][:shorthand]] || []).each do |klasse|
-            groups["Klasse #{klasse}"] = @@schueler_for_klasse[klasse]
+            groups["Klasse #{klasse}"] = @@schueler_for_klasse[klasse].map do |email|
+                @@user_info[email][:matrix_id]
+            end
         end
         respond(:groups => groups)
     end

@@ -211,9 +211,11 @@ class Main < Sinatra::Base
                 STDERR.puts result.to_yaml
             end
             # raise 'nope'
-            respond(:action => 'respond', 
-                :respondPayload => {:hey => 'respondPayload'}.to_json, 
-                :payload => {:hey => 'payload'}.to_json)
+            respond(:action => 'reject',
+                :responseStatusCode => 403,
+                :rejectionErrorCode => 'M_FORBIDDEN',
+                :rejectionErrorMessage => 'Well, you know...')
+
             return
         end
         respond(:action => 'pass.unmodified')

@@ -161,18 +161,20 @@ class Main < Sinatra::Base
             end
             raise 'nope' if prevent_this
         elsif hook_id == 'dashboard-hook-before-leave-room'
-            room_url = request['request']['URI'].sub('/_matrix/client/r0/rooms/', '').split('/').first
-            matrix_login(MATRIX_ADMIN_USER, MATRIX_ADMIN_PASSWORD) do |access_token|
-                result = matrix_get("/_synapse/admin/v1/rooms/#{room_url}/members", access_token)
-                members = result['members'] || []
-                members.delete(matrix_login)
-                STDERR.puts members.to_yaml
-                unless members.empty?
-                    # there's still someone else in the room after we'd have left
-                    # check if there's at least one teacher left in the room
-                    unless members.any? { |x| @@user_info[@@email_for_matrix_login[x]][:teacher]}
-                        # only SuS left, prevent teacher from leaving the room
-                        raise 'nope'
+            if @@user_info[email][:teacher]
+                room_url = request['request']['URI'].sub('/_matrix/client/r0/rooms/', '').split('/').first
+                matrix_login(MATRIX_ADMIN_USER, MATRIX_ADMIN_PASSWORD) do |access_token|
+                    result = matrix_get("/_synapse/admin/v1/rooms/#{room_url}/members", access_token)
+                    members = result['members'] || []
+                    members.delete(matrix_login)
+                    STDERR.puts members.to_yaml
+                    unless members.empty?
+                        # there's still someone else in the room after we'd have left
+                        # check if there's at least one teacher left in the room
+                        unless members.any? { |x| @@user_info[@@email_for_matrix_login[x]][:teacher]}
+                            # only SuS left, prevent teacher from leaving the room
+                            raise 'nope'
+                        end
                     end
                 end
             end

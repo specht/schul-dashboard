@@ -170,7 +170,7 @@ class Main < Sinatra::Base
                 unless members.empty?
                     # there's still someone else in the room after we'd have left
                     # check if there's at least one teacher left in the room
-                    unless members.any? { |x| @@user_info[@@matrix_handle_to_email[x]][:teacher]}
+                    unless members.any? { |x| @@user_info[@@email_for_matrix_login[x]][:teacher]}
                         # only SuS left, prevent teacher from leaving the room
                         raise 'nope'
                     end

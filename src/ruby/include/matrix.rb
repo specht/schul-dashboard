@@ -193,7 +193,7 @@ class Main < Sinatra::Base
                     end
                 end
             end
-        elseif hook_id == 'dashboard-hook-before-enable-encryption'
+        elsif hook_id == 'dashboard-hook-before-enable-encryption'
             # cannot enable encryption unless user is a teacher
             raise 'nope' unless @@user_info[email][:teacher]
             room_url = request['request']['URI'].sub('/_matrix/client/r0/rooms/', '').split('/').first

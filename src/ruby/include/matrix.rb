@@ -213,6 +213,7 @@ class Main < Sinatra::Base
                 member_entries = state['state'].select do |entry|
                     entry['type'] == 'm.room.member'
                 end
+                STDERR.puts member_entries.to_yaml
                 if member_entries.size == 2
                     if member_entries.all? { |entry| @@user_info[@@email_for_matrix_login[entry['state_key']]][:teacher] }
                         if member_entries.any? { |entry| (entry['content'] || {})['is_direct'] == true }

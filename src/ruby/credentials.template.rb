@@ -118,6 +118,11 @@ MATRIX_DOMAIN = 'matrix.example.com'
 MATRIX_DOMAIN_SHORT = 'example.com'
 MATRIX_ALL_ACCESS_PASSWORD_BE_CAREFUL = nil
 
+MATRIX_ADMIN_USER = nil
+MATRIX_ADMIN_PASSWORD = nil
+
+MATRIX_CORPORAL_CALLBACK_BEARER_TOKEN = 'bitte_jedes_bearer_token_nur_einmal_verwenden'
+
 # Das Dashboard vermittelt Links in Jitsi-Räume mit Hilfe von JWT 
 # (JSON Web Tokens). Dafür werden ein paar Angaben benötigt,
 # die auf der Jitsi-Seite verifiziert werden müssen.

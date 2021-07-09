@@ -1,9 +1,13 @@
 class Main < Sinatra::Base
 
-    def matrixRequest(path, data = {}, access_token = nil)
+    def matrix_request(method, path, data = {}, access_token = nil)
+        assert([:get, :post].include?(method))
         response = nil
+        success = false
+        methods = {:get => Curl.method(:get),
+                   :post => Curl.method(:post)}
         3.times do
-            c = Curl.post("https://#{MATRIX_DOMAIN}#{path}", data.to_json) do |http|
+            c = methods[method].call("https://#{MATRIX_DOMAIN}#{path}", data.nil? ? nil : data.to_json) do |http|
                 http.headers['Authorization'] = "Bearer #{access_token}" if access_token
             end
             begin
@@ -15,43 +19,37 @@ class Main < Sinatra::Base
             if response['retry_after_ms']
                 sleep response['retry_after_ms'].to_f / 1000.0
             else
+                success = true
                 break
             end
+        end
+        unless success
+            raise "unable to complete matrix_request: #{path} / #{data.to_json}"
         end
         response
     end
 
-    def matrixLogin(email, &block)
+    def matrix_get(path, access_token = nil)
+        matrix_request(:get, path, nil, access_token)
+    end
+
+    def matrix_post(path, data = {}, access_token = nil)
+        matrix_request(:post, path, data, access_token)
+    end
+
+    def matrix_login(user, password, &block)
         # login
-        response = matrixRequest("/_matrix/client/r0/login", {
+        response = matrix_post("/_matrix/client/r0/login", {
             :type => 'm.login.password',
-            :user => @@user_info[email][:matrix_login],
-            :password => MATRIX_ALL_ACCESS_PASSWORD_BE_CAREFUL
+            :user => user,
+            :password => password
         })
         access_token = response['access_token'] || ''
         assert(!access_token.empty?)
 
         yield(access_token)
 
-        matrixRequest("/_matrix/client/r0/logout", {}, access_token)
-    end
-
-    get '/api/matrix_test' do
-        require_admin!
-        matrixLogin(WEBSITE_MAINTAINER_EMAIL) do |access_token|
-            @@user_info.each_pair do |email, info|
-                next unless info[:teacher]
-                STDERR.puts info[:matrix_login]
-                response = matrixRequest("/_matrix/client/r0/rooms/#{CGI.escape('!wfEDbfgjOMXXvsYmHq:nhcham.org')}/invite", {
-                    :user_id => info[:matrix_login]
-                }, access_token)
-                STDERR.puts response.to_yaml
-                matrixLogin(info[:email]) do |sub_token|
-                    response = matrixRequest("/_matrix/client/r0/rooms/#{CGI.escape('!wfEDbfgjOMXXvsYmHq:nhcham.org')}/join", {}, sub_token)
-                    STDERR.puts response.to_yaml
-                end
-            end
-        end
+        matrix_post("/_matrix/client/r0/logout", {}, access_token)
     end
 
     def generate_matrix_corporal_policy
@@ -81,7 +79,7 @@ class Main < Sinatra::Base
                 :authType => 'rest',
                 :authCredential => "#{WEB_ROOT}/api/confirm_chat_login",
                 :displayName => info[:teacher] ? info[:display_last_name] : info[:display_name],
-                :avatarUri => "#{NEXTCLOUD_URL}/index.php/avatar/#{info[:nc_login]}/512?#{Time.now.to_i}",
+                :avatarUri => "#{NEXTCLOUD_URL}/index.php/avatar/#{info[:nc_login]}/512",
                 :joinedCommunityIds => [],
                 :joinedRoomIds => [],
             }
@@ -96,7 +94,7 @@ class Main < Sinatra::Base
             :action => 'consult.RESTServiceURL',
             :RESTServiceURL => "#{WEB_ROOT}/api/matrix_hook",
             :RESTServiceRequestHeaders => {
-                "Authorization" => 'Bearer 123456',
+                "Authorization" => "Bearer #{MATRIX_CORPORAL_CALLBACK_BEARER_TOKEN}",
             },
             :RESTServiceRequestTimeoutMilliseconds => 10000,
             :RESTServiceRetryAttempts => 1,
@@ -112,7 +110,7 @@ class Main < Sinatra::Base
             :action => 'consult.RESTServiceURL',
             :RESTServiceURL => "#{WEB_ROOT}/api/matrix_hook",
             :RESTServiceRequestHeaders => {
-                "Authorization" => 'Bearer 123456',
+                "Authorization" => "Bearer #{MATRIX_CORPORAL_CALLBACK_BEARER_TOKEN}",
             },
             :RESTServiceRequestTimeoutMilliseconds => 10000,
             :RESTServiceRetryAttempts => 1,
@@ -129,6 +127,7 @@ class Main < Sinatra::Base
     post '/api/matrix_hook' do
         body_str = request.body.read(2048).to_s
         STDERR.puts body_str
+        STDERR.puts request.headers.to_yaml
         request = JSON.parse(body_str)
         hook_id = request['meta']['hookId']
         assert(!hook_id.nil?)
@@ -161,6 +160,39 @@ class Main < Sinatra::Base
                 end
             end
             raise 'nope' if prevent_this
+        else if hook_id == 'dashboard-hook-before-leave-room'
+            room_url = request['request']['URI'].sub('/_matrix/client/r0/rooms/', '').gsub('/', '')
+            matrix_login(MATRIX_ADMIN_USER, MATRIX_ADMIN_PASSWORD) do |access_token|
+                result = matrix_get("/_synapse/admin/v1/rooms/#{room_url}/members", access_token)
+                STDERR.puts result.to_yaml
+                raise 'nope'
+            end
+            # {
+            #   "meta": {
+            #     "hookId": "dashboard-hook-before-leave-room",
+            #     "authenticatedMatrixUserId": "@specht:gymnasiumsteglitz.de"
+            #   },
+            #   "request": {
+            #     "URI": "/_matrix/client/r0/rooms/!ptcUGCEYkPJxSWGBgt%3Agymnasiumsteglitz.de/leave",
+            #     "path": "/_matrix/client/r0/rooms/!ptcUGCEYkPJxSWGBgt:gymnasiumsteglitz.de/leave",
+            #     "method": "POST",
+            #     "headers": {
+            #       "Accept-Encoding": "gzip",
+            #       "Authorization": "Bearer syt_c3BlY2h0_NhCyRAIWumKxtveBIQxa_2OKUyC",
+            #       "Connection": "Upgrade",
+            #       "Content-Length": "0",
+            #       "Content-Type": "application/json; charset=utf-8",
+            #       "User-Agent": "Dart/2.13 (dart:io)",
+            #       "X-Forwarded-For": "95.90.242.206",
+            #       "X-Forwarded-Port": "443",
+            #       "X-Forwarded-Proto": "https",
+            #       "X-Forwarded-Ssl": "on",
+            #       "X-Real-Ip": "95.90.242.206"
+            #     },
+            #     "payload": ""
+            #   },
+            #   "response": null
+            # }
         end
         respond(:action => 'pass.unmodified')
     end

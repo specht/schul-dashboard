@@ -156,8 +156,8 @@ class Main < Sinatra::Base
             STDERR.puts "HOOK ID #{hook_id}"
             STDERR.puts "FROM #{email}"
             STDERR.puts payload.to_yaml
-            prevent_this = true
-            if !@@user_info[email][:teacher]
+            prevent_this = false
+            unless @@user_info[email][:teacher]
                 # user is SuS
                 if ['private_chat', 'trusted_private_chat'].include?(payload['preset'])
                     # private chat: if it's a SuS, only agree if single teacher invited

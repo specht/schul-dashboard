@@ -197,7 +197,7 @@ class Main < Sinatra::Base
                             respond(:action => 'reject',
                                 :responseStatusCode => 403,
                                 :rejectionErrorCode => 'M_FORBIDDEN',
-                                :rejectionErrorMessage => 'Well, you know...')
+                                :rejectionErrorMessage => 'cantLeaveSuSAlone')
                             return
                         end
                     end
@@ -208,7 +208,8 @@ class Main < Sinatra::Base
             unless @@user_info[email][:teacher]
                 respond(:action => 'reject',
                     :responseStatusCode => 403,
-                    :rejectionErrorCode => 'M_FORBIDDEN')
+                    :rejectionErrorCode => 'M_FORBIDDEN',
+                    :rejectionErrorMessage => 'noPermission')
                 return
             end
             room_url = request['request']['URI'].sub('/_matrix/client/r0/rooms/', '').split('/').first

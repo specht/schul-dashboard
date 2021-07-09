@@ -210,7 +210,11 @@ class Main < Sinatra::Base
                 result = matrix_get("/_synapse/admin/v1/rooms/#{room_url}/state", access_token)
                 STDERR.puts result.to_yaml
             end
-            raise 'nope'
+            # raise 'nope'
+            respond(:action => 'respond', 
+                :respondPayload => {:hey => 'respondPayload'}.to_json, 
+                :payload => {:hey => 'payload'}.to_json)
+            return
         end
         respond(:action => 'pass.unmodified')
     end

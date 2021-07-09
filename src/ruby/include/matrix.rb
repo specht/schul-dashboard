@@ -160,39 +160,13 @@ class Main < Sinatra::Base
                 end
             end
             raise 'nope' if prevent_this
-        else if hook_id == 'dashboard-hook-before-leave-room'
+        elsif hook_id == 'dashboard-hook-before-leave-room'
             room_url = request['request']['URI'].sub('/_matrix/client/r0/rooms/', '').gsub('/', '')
             matrix_login(MATRIX_ADMIN_USER, MATRIX_ADMIN_PASSWORD) do |access_token|
                 result = matrix_get("/_synapse/admin/v1/rooms/#{room_url}/members", access_token)
                 STDERR.puts result.to_yaml
                 raise 'nope'
             end
-            # {
-            #   "meta": {
-            #     "hookId": "dashboard-hook-before-leave-room",
-            #     "authenticatedMatrixUserId": "@specht:gymnasiumsteglitz.de"
-            #   },
-            #   "request": {
-            #     "URI": "/_matrix/client/r0/rooms/!ptcUGCEYkPJxSWGBgt%3Agymnasiumsteglitz.de/leave",
-            #     "path": "/_matrix/client/r0/rooms/!ptcUGCEYkPJxSWGBgt:gymnasiumsteglitz.de/leave",
-            #     "method": "POST",
-            #     "headers": {
-            #       "Accept-Encoding": "gzip",
-            #       "Authorization": "Bearer syt_c3BlY2h0_NhCyRAIWumKxtveBIQxa_2OKUyC",
-            #       "Connection": "Upgrade",
-            #       "Content-Length": "0",
-            #       "Content-Type": "application/json; charset=utf-8",
-            #       "User-Agent": "Dart/2.13 (dart:io)",
-            #       "X-Forwarded-For": "95.90.242.206",
-            #       "X-Forwarded-Port": "443",
-            #       "X-Forwarded-Proto": "https",
-            #       "X-Forwarded-Ssl": "on",
-            #       "X-Real-Ip": "95.90.242.206"
-            #     },
-            #     "payload": ""
-            #   },
-            #   "response": null
-            # }
         end
         respond(:action => 'pass.unmodified')
     end
@@ -250,5 +224,4 @@ class Main < Sinatra::Base
         end
         respond(:groups => groups, :group_order => group_order)
     end
-end
 end

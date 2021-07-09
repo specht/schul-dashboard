@@ -251,3 +251,4 @@ class Main < Sinatra::Base
         respond(:groups => groups, :group_order => group_order)
     end
 end
+end

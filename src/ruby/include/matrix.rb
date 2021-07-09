@@ -193,6 +193,7 @@ class Main < Sinatra::Base
                             member_entries = state['state'].select do |entry|
                                 entry['type'] == 'm.room.member'
                             end
+                            STDERR.puts member_entries.to_yaml
                             only_sus_left_but_its_a_direct_chat = false
                             if member_entries.size == 2
                                 if member_entries.any? { |entry| (entry['content'] || {})['is_direct'] == true }

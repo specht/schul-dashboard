@@ -127,7 +127,7 @@ class Main < Sinatra::Base
     post '/api/matrix_hook' do
         body_str = request.body.read(2048).to_s
         STDERR.puts body_str
-        STDERR.puts headers
+        STDERR.puts request.env.to_h.to_yaml
         request = JSON.parse(body_str)
         hook_id = request['meta']['hookId']
         assert(!hook_id.nil?)
@@ -167,7 +167,6 @@ class Main < Sinatra::Base
                     result = matrix_get("/_synapse/admin/v1/rooms/#{room_url}/members", access_token)
                     members = result['members'] || []
                     members.delete(matrix_login)
-                    STDERR.puts members.to_yaml
                     unless members.empty?
                         # there's still someone else in the room after we'd have left
                         # check if there's at least one teacher left in the room

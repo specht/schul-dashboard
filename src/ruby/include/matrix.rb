@@ -178,7 +178,8 @@ class Main < Sinatra::Base
             if prevent_this
                 respond(:action => 'reject',
                     :responseStatusCode => 403,
-                    :rejectionErrorCode => 'M_FORBIDDEN')
+                    :rejectionErrorCode => 'M_FORBIDDEN',
+                    :rejectionErrorMessage => 'noPermission')
                 return
             end
         elsif hook_id == 'dashboard-hook-before-leave-room'

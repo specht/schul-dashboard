@@ -142,7 +142,6 @@ class Main < Sinatra::Base
 
     post '/api/matrix_hook' do
         body_str = request.body.read(2048).to_s
-        STDERR.puts body_str
         assert(request.env['HTTP_AUTHORIZATION'] == "Bearer #{MATRIX_CORPORAL_CALLBACK_BEARER_TOKEN}")
         request = JSON.parse(body_str)
         hook_id = request['meta']['hookId']
@@ -152,10 +151,6 @@ class Main < Sinatra::Base
         email = @@email_for_matrix_login[matrix_login]
         if hook_id == 'dashboard-hook-before-create-room'
             payload = JSON.parse(request['request']['payload'])
-            STDERR.puts '-' * 40
-            STDERR.puts "HOOK ID #{hook_id}"
-            STDERR.puts "FROM #{email}"
-            STDERR.puts payload.to_yaml
             prevent_this = false
             unless @@user_info[email][:teacher]
                 # user is SuS

@@ -116,6 +116,22 @@ class Main < Sinatra::Base
             :RESTServiceRetryAttempts => 1,
             :RESTServiceRetryWaitTimeMilliseconds => 5000
         }
+        result[:hooks] << {
+            :id => 'dashboard-hook-before-enable-encryption',
+            :eventType => 'beforeAuthenticatedRequest',
+            :matchRules => [
+                {:type => 'method', :regex => 'PUT'},
+                {:type => 'route', :regex => '^/_matrix/client/r0/rooms/([^/]+)/state/m.room.encryption/'}
+            ],
+            :action => 'consult.RESTServiceURL',
+            :RESTServiceURL => "#{WEB_ROOT}/api/matrix_hook",
+            :RESTServiceRequestHeaders => {
+                "Authorization" => "Bearer #{MATRIX_CORPORAL_CALLBACK_BEARER_TOKEN}",
+            },
+            :RESTServiceRequestTimeoutMilliseconds => 10000,
+            :RESTServiceRetryAttempts => 1,
+            :RESTServiceRetryWaitTimeMilliseconds => 5000
+        }
         result
     end
 
@@ -161,22 +177,24 @@ class Main < Sinatra::Base
             end
             raise 'nope' if prevent_this
         elsif hook_id == 'dashboard-hook-before-leave-room'
-            if @@user_info[email][:teacher]
-                room_url = request['request']['URI'].sub('/_matrix/client/r0/rooms/', '').split('/').first
-                matrix_login(MATRIX_ADMIN_USER, MATRIX_ADMIN_PASSWORD) do |access_token|
-                    result = matrix_get("/_synapse/admin/v1/rooms/#{room_url}/members", access_token)
-                    members = result['members'] || []
-                    members.delete(matrix_login)
-                    unless members.empty?
-                        # there's still someone else in the room after we'd have left
-                        # check if there's at least one teacher left in the room
-                        unless members.any? { |x| @@user_info[@@email_for_matrix_login[x]][:teacher]}
-                            # only SuS left, prevent teacher from leaving the room
-                            raise 'nope'
-                        end
-                    end
-                end
+            # cannot enable encryption unless user is a teacher
+            raise 'nope' unless @@user_info[email][:teacher]
+            room_url = request['request']['URI'].sub('/_matrix/client/r0/rooms/', '').split('/').first
+            matrix_login(MATRIX_ADMIN_USER, MATRIX_ADMIN_PASSWORD) do |access_token|
+                STDERR.puts "ROOM DETAILS"
+                result = matrix_get("/_synapse/admin/v1/rooms/#{room_url}", access_token)
+                STDERR.puts result.to_yaml
+
+                STDERR.puts "MEMBERS"
+                result = matrix_get("/_synapse/admin/v1/rooms/#{room_url}/members", access_token)
+                STDERR.puts result.to_yaml
+
+                STDERR.puts "STATE"
+                result = matrix_get("/_synapse/admin/v1/rooms/#{room_url}/state", access_token)
+                STDERR.puts result.to_yaml
             end
+            raise 'nope'
+        elseif hook_id == 'dashboard-hook-before-enable-encryption'
         end
         respond(:action => 'pass.unmodified')
     end

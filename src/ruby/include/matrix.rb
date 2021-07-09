@@ -229,7 +229,7 @@ class Main < Sinatra::Base
             respond(:action => 'reject',
                 :responseStatusCode => 403,
                 :rejectionErrorCode => 'M_FORBIDDEN',
-                :rejectionErrorMessage => 'Well, you know...')
+                :rejectionErrorMessage => 'canOnlyEnableE2EEInTeacherDirectChats')
             return
         end
         respond(:action => 'pass.unmodified')

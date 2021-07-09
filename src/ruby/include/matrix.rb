@@ -214,23 +214,24 @@ class Main < Sinatra::Base
             end
             room_url = request['request']['URI'].sub('/_matrix/client/r0/rooms/', '').split('/').first
             matrix_login(MATRIX_ADMIN_USER, MATRIX_ADMIN_PASSWORD) do |access_token|
-                STDERR.puts "ROOM DETAILS"
-                result = matrix_get("/_synapse/admin/v1/rooms/#{room_url}", access_token)
-                STDERR.puts result.to_yaml
-
-                STDERR.puts "MEMBERS"
-                result = matrix_get("/_synapse/admin/v1/rooms/#{room_url}/members", access_token)
-                STDERR.puts result.to_yaml
-
-                STDERR.puts "STATE"
-                result = matrix_get("/_synapse/admin/v1/rooms/#{room_url}/state", access_token)
-                STDERR.puts result.to_yaml
+                state = matrix_get("/_synapse/admin/v1/rooms/#{room_url}/state", access_token)
+                member_entries = state['state'].select do |entry|
+                    entry['type'] == 'm.room.member'
+                end
+                if member_entries.size == 2
+                    if member_entries.all? { |entry| @@user_info[@@email_for_matrix_login[entry['state_key']]][:teacher] }
+                        if member_entries.any? { |entry| (entry['content'] || {})['is_direct'] == true }
+                            respond(:action => 'pass.unmodified')
+                            return
+                        end
+                    end
+                end
+                respond(:action => 'reject',
+                    :responseStatusCode => 403,
+                    :rejectionErrorCode => 'M_FORBIDDEN',
+                    :rejectionErrorMessage => 'canOnlyEnableE2EEInTeacherDirectChats')
+                return
             end
-            respond(:action => 'reject',
-                :responseStatusCode => 403,
-                :rejectionErrorCode => 'M_FORBIDDEN',
-                :rejectionErrorMessage => 'canOnlyEnableE2EEInTeacherDirectChats')
-            return
         end
         respond(:action => 'pass.unmodified')
     end

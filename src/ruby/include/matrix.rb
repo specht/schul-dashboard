@@ -163,6 +163,7 @@ class Main < Sinatra::Base
         elsif hook_id == 'dashboard-hook-before-leave-room'
             room_url = request['request']['URI'].sub('/_matrix/client/r0/rooms/', '').gsub('/', '')
             matrix_login(MATRIX_ADMIN_USER, MATRIX_ADMIN_PASSWORD) do |access_token|
+                STDERR.puts "Requesting /_synapse/admin/v1/rooms/#{room_url}/members"
                 result = matrix_get("/_synapse/admin/v1/rooms/#{room_url}/members", access_token)
                 STDERR.puts result.to_yaml
                 raise 'nope'

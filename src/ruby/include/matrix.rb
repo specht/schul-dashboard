@@ -184,29 +184,16 @@ class Main < Sinatra::Base
                     result = matrix_get("/_synapse/admin/v1/rooms/#{room_url}/members", access_token)
                     members = result['members'] || []
                     members.delete(matrix_login)
-                    unless members.empty?
+                    unless members.size > 1
                         # there's still someone else in the room after we'd have left
                         # check if there's at least one teacher left in the room
                         unless members.any? { |x| @@user_info[@@email_for_matrix_login[x]][:teacher]}
                             # only SuS left, prevent teacher from leaving the room
-                            state = matrix_get("/_synapse/admin/v1/rooms/#{room_url}/state", access_token)
-                            member_entries = state['state'].select do |entry|
-                                entry['type'] == 'm.room.member'
-                            end
-                            STDERR.puts member_entries.to_yaml
-                            only_sus_left_but_its_a_direct_chat = false
-                            if member_entries.size == 2
-                                if member_entries.any? { |entry| (entry['content'] || {})['is_direct'] == true }
-                                    only_sus_left_but_its_a_direct_chat = true
-                                end
-                            end
-                            unless only_sus_left_but_its_a_direct_chat
-                                respond(:action => 'reject',
-                                    :responseStatusCode => 403,
-                                    :rejectionErrorCode => 'M_FORBIDDEN',
-                                    :rejectionErrorMessage => 'cantLeaveSuSAlone')
-                                return
-                            end
+                            respond(:action => 'reject',
+                                :responseStatusCode => 403,
+                                :rejectionErrorCode => 'M_FORBIDDEN',
+                                :rejectionErrorMessage => 'cantLeaveSuSAlone')
+                            return
                         end
                     end
                 end

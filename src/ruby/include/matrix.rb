@@ -184,8 +184,8 @@ class Main < Sinatra::Base
                     result = matrix_get("/_synapse/admin/v1/rooms/#{room_url}/members", access_token)
                     members = result['members'] || []
                     members.delete(matrix_login)
-                    unless members.size > 1
-                        # there's still someone else in the room after we'd have left
+                    if members.size > 1
+                        # there's still more than one person in the room after we'd have left
                         # check if there's at least one teacher left in the room
                         unless members.any? { |x| @@user_info[@@email_for_matrix_login[x]][:teacher]}
                             # only SuS left, prevent teacher from leaving the room

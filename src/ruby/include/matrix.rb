@@ -163,10 +163,18 @@ class Main < Sinatra::Base
         elsif hook_id == 'dashboard-hook-before-leave-room'
             room_url = request['request']['URI'].sub('/_matrix/client/r0/rooms/', '').split('/').first
             matrix_login(MATRIX_ADMIN_USER, MATRIX_ADMIN_PASSWORD) do |access_token|
-                STDERR.puts "Requesting /_synapse/admin/v1/rooms/#{room_url}/members"
                 result = matrix_get("/_synapse/admin/v1/rooms/#{room_url}/members", access_token)
-                STDERR.puts result.to_yaml
-                raise 'nope'
+                members = result['members'] || []
+                members.delete(matrix_login)
+                STDERR.puts members.to_yaml
+                unless members.empty?
+                    # there's still someone else in the room after we'd have left
+                    # check if there's at least one teacher left in the room
+                    unless members.any? { |x| @@user_info[@@matrix_handle_to_email[x]][:teacher]}
+                        # only SuS left, prevent teacher from leaving the room
+                        raise 'nope'
+                    end
+                end
             end
         end
         respond(:action => 'pass.unmodified')

@@ -85,12 +85,15 @@ class Main < Sinatra::Base
             }
 
             avatar_uri = "#{NEXTCLOUD_URL_FROM_RUBY_CONTAINER}/index.php/avatar/#{info[:nc_login]}/512"
+            STDERR.puts avatar_uri
 
             uri = URI(avatar_uri)
             req = Net::HTTP::Head.new(uri)
             res = Net::HTTP.start(uri.hostname, uri.port) do |http|
                 http.request(req)
             end
+
+            STDERR.puts res.code
             
             # Headers
             if res.code.to_i == 200
@@ -101,11 +104,12 @@ class Main < Sinatra::Base
                 STDERR.puts "#{etag} #{content_type} #{content_length} #{email}"
                 ext = content_type == 'image/png' ? 'png' : 'jpg'
                 avatar_cache_path = "/gen/a/#{etag[0, 2]}/#{etag[2, etag.size - 2]}.#{ext}"
+                STDERR.puts avatar_cache_path
                 unless File.exists?(avatar_cache_path)
                     c = Curl::Easy.new(avatar_uri)
                     c.perform
+                    STDERR.puts c.status
                     if c.status.to_i == 200
-                        STDERR.puts 'b'
                         FileUtils::mkpath(File.dirname(avatar_cache_path))
                         File.open(avatar_cache_path, 'w') do |f|
                             f.write c.body_str

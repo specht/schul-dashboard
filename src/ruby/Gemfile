@@ -2,6 +2,7 @@ source 'https://rubygems.org'
 
 gem 'curb'
 gem 'htmlentities'
+gem 'http'
 gem 'i18n'
 gem 'mail'
 gem 'neography'

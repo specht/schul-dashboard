@@ -1209,6 +1209,7 @@ class Main < Sinatra::Base
                                     @session_user[:otp_token] = results.first['u'].props[:otp_token]
                                     @session_user[:homeschooling] = results.first['u'].props[:homeschooling]
                                     @session_user[:group2] = results.first['u'].props[:group2] || 'A'
+                                    @session_user[:sus_may_contact_me] = results.first['u'].props[:sus_may_contact_me] || false
                                 end
                             end
                         end

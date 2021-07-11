@@ -87,6 +87,20 @@
             </div>
             <hr />
             
+            <div style='display: #{(@session_user[:teacher] == true) ? 'block' : 'none'};'>
+                <h2 style='margin-bottom: 30px; margin-top: 30px;'>HeeseChat</h2>
+                <div class='row'>
+                    <div class='col-md-12'>
+                        <div style='float: right;'>
+                            <input #{@session_user[:sus_may_contact_me] ? 'checked' : ''} type="checkbox" data-toggle="toggle" data-on="ja" data-off="nein" data-onstyle="success" data-offstyle="secondary" id='sus_may_contact_me_switch' style='float: right;'>
+                        </div>
+                        Schülerinnen und Schüler dürfen mich im HeeseChat direkt anschreiben. <br /><span>Hinweis: Sie können unabhängig von dieser Einstellung jederzeit Schülerinnen und Schüler anschreiben.</span>
+                    </div>
+                </div>
+                
+                <hr />
+            </div>
+            
             <h2 style='margin-bottom: 30px; margin-top: 30px;'>Farbschema</h2>
             <div class='row swatches' style='position: relative;'>
                 <input #{color_scheme[0] == 'd' ? 'checked' : ''} type="checkbox" data-toggle="toggle" data-on="dunkel" data-off="hell" data-onstyle="secondary" data-offstyle="secondary" id='dark_switch'>
@@ -214,6 +228,11 @@ window.addEventListener('load', function () {
         api_call('/api/set_font', {font: $(e.target).data('font')}, function(data) {
             if (data.success)
                 $('body').css(data.css);
+        });
+    });
+    $('#sus_may_contact_me_switch').change(function(e) {
+        let allowed = $(e.target).is(':checked');
+        api_call('/api/set_sus_may_contact_me', {allowed: `${allowed}`}, function(data) {
         });
     });
     $('#dark_switch').change(function(e) {

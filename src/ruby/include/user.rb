@@ -205,5 +205,15 @@ class Main < Sinatra::Base
         end
         {:fach_order => faecher, :fach_tr => @@faecher}
     end
-
+    
+    post '/api/set_sus_may_contact_me' do
+        require_teacher!
+        data = parse_request_data(:required_keys => [:allowed])
+        allowed = data[:allowed] == 'true'
+        neo4j_query(<<~END_OF_QUERY, :email => @session_user[:email], :allowed => allowed)
+            MATCH (u:User {email: {email}})
+            SET u.sus_may_contact_me = {allowed};
+        END_OF_QUERY
+        @session_user[:sus_may_contact_me] = allowed
+    end
 end

@@ -74,7 +74,15 @@ class Main < Sinatra::Base
                         other_email = @@email_for_matrix_login[other_matrix_login]
                         if @@user_info[other_email][:teacher]
                             # invited user is a teacher
-                            prevent_this = false
+                            # now we have to check whether this teacher has allowed 
+                            # direct DMs from SuS
+                            allowed = neo4j_query_expect_one(<<~END_OF_QUERY, :email => other_email)['u.sus_may_contact_me'] || false
+                                MATCH (u:User {email: {email}})
+                                RETURN u.sus_may_contact_me;
+                            END_OF_QUERY
+                            if allowed
+                                prevent_this = false
+                            end
                         else
                             prevent_this = true
                         end

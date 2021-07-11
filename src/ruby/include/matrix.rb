@@ -89,6 +89,7 @@ class Main < Sinatra::Base
 
             uri = URI(avatar_uri)
             req = Net::HTTP::Head.new(uri)
+            req['User-Agent'] = "Dashboard/#{WEBSITE_HOST}"
             res = Net::HTTP.start(uri.hostname, uri.port) do |http|
                 http.request(req)
             end

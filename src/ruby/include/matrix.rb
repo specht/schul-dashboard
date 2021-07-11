@@ -82,47 +82,9 @@ class Main < Sinatra::Base
                 :displayName => info[:teacher] ? info[:display_last_name] : info[:display_name],
                 :joinedCommunityIds => [],
                 :joinedRoomIds => [],
+                :avatarUri => "#{NEXTCLOUD_URL_FROM_RUBY_CONTAINER}/index.php/avatar/#{info[:nc_login]}/512"
             }
 
-            avatar_uri = "#{NEXTCLOUD_URL_FROM_RUBY_CONTAINER}/index.php/avatar/#{info[:nc_login]}/512"
-            STDERR.puts avatar_uri
-
-            uri = URI(avatar_uri)
-            req = Net::HTTP::Head.new(uri)
-            req['User-Agent'] = "Dashboard/#{WEBSITE_HOST}"
-            req['Accept'] = "*/*"
-            res = Net::HTTP.start(uri.hostname, uri.port) do |http|
-                http.request(req)
-            end
-
-            STDERR.puts res.code
-            STDERR.puts res.to_hash.to_yaml
-            STDERR.puts res.body
-            
-            # Headers
-            if res.code.to_i == 200
-                headers = res.to_hash
-                etag = headers['etag'].first.gsub('"', '').gsub("'", '')
-                content_type = headers['content-type'].first
-                content_length = headers['content-length'].first
-                STDERR.puts "#{etag} #{content_type} #{content_length} #{email}"
-                ext = content_type == 'image/png' ? 'png' : 'jpg'
-                avatar_cache_path = "/gen/a/#{etag[0, 2]}/#{etag[2, etag.size - 2]}.#{ext}"
-                STDERR.puts avatar_cache_path
-                unless File.exists?(avatar_cache_path)
-                    c = Curl::Easy.new(avatar_uri)
-                    c.perform
-                    STDERR.puts c.status
-                    if c.status.to_i == 200
-                        FileUtils::mkpath(File.dirname(avatar_cache_path))
-                        File.open(avatar_cache_path, 'w') do |f|
-                            f.write c.body_str
-                        end
-                    end
-                end
-                user_entry[:avatarUri] = "#{WEB_ROOT}#{avatar_cache_path}"
-            end
-            
             result[:users] << user_entry
         end
         result[:hooks] << {

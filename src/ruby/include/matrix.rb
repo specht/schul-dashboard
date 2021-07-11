@@ -73,16 +73,49 @@ class Main < Sinatra::Base
         @@user_info.each_pair do |email, info|
             handle = info[:matrix_login]
             matrix_handle_to_email[handle] = email
-            result[:users] << {
+
+            user_entry = {
                 :id => handle,
                 :active => true,
                 :authType => 'rest',
                 :authCredential => "#{WEB_ROOT}/api/confirm_chat_login",
                 :displayName => info[:teacher] ? info[:display_last_name] : info[:display_name],
-                :avatarUri => "#{NEXTCLOUD_URL}/index.php/avatar/#{info[:nc_login]}/512",
                 :joinedCommunityIds => [],
                 :joinedRoomIds => [],
             }
+
+            avatar_uri = "#{NEXTCLOUD_URL_FROM_RUBY_CONTAINER}/index.php/avatar/#{info[:nc_login]}/512"
+
+            uri = URI(avatar_uri)
+            req = Net::HTTP::Head.new(uri)
+            res = Net::HTTP.start(uri.hostname, uri.port) do |http|
+                http.request(req)
+            end
+            
+            # Headers
+            if res.code.to_i == 200
+                headers = res.to_hash
+                etag = headers['etag'].first.gsub('"', '').gsub("'", '')
+                content_type = headers['content-type'].first
+                content_length = headers['content-length'].first
+                STDERR.puts "#{etag} #{content_type} #{content_length} #{email}"
+                ext = content_type == 'image/png' ? 'png' : 'jpg'
+                avatar_cache_path = "/gen/a/#{etag[0, 2]}/#{etag[2, etag.size - 2]}.#{ext}"
+                unless File.exists?(avatar_cache_path)
+                    c = Curl::Easy.new(avatar_uri)
+                    c.perform
+                    if c.status.to_i == 200
+                        STDERR.puts 'b'
+                        FileUtils::mkpath(File.dirname(avatar_cache_path))
+                        File.open(avatar_cache_path, 'w') do |f|
+                            f.write c.body_str
+                        end
+                    end
+                end
+                user_entry[:avatarUri] = "#{WEB_ROOT}#{avatar_cache_path}"
+            end
+            
+            result[:users] << user_entry
         end
         result[:hooks] << {
             :id => 'dashboard-hook-before-create-room',

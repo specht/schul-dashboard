@@ -94,6 +94,7 @@ class Main < Sinatra::Base
             end
 
             STDERR.puts res.code
+            STDERR.puts res.to_hash.to_yaml
             
             # Headers
             if res.code.to_i == 200

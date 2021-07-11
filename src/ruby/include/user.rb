@@ -210,10 +210,12 @@ class Main < Sinatra::Base
         require_teacher!
         data = parse_request_data(:required_keys => [:allowed])
         allowed = data[:allowed] == 'true'
-        neo4j_query(<<~END_OF_QUERY, :email => @session_user[:email], :allowed => allowed)
+        allowed = neo4j_query_expect_one(<<~END_OF_QUERY, :email => @session_user[:email], :allowed => allowed)['allowed']
             MATCH (u:User {email: {email}})
-            SET u.sus_may_contact_me = {allowed};
+            SET u.sus_may_contact_me = {allowed}
+            RETURN u.sus_may_contact_me AS allowed;
         END_OF_QUERY
         @session_user[:sus_may_contact_me] = allowed
+        respond(:allowed => allowed);
     end
 end

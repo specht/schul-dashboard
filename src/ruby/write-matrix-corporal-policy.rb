@@ -37,10 +37,10 @@ class Script
         stored_etags = {}
         temp = neo4j_query(<<~END_OF_QUERY)
             MATCH (u:User)
-            RETURN u.email AS email, u.avatar_etag AS etag;
+            RETURN u.email AS email, u.avatar_etag AS etag, u.avatar_etag_path AS etag_path;
         END_OF_QUERY
         temp.each do |row|
-            stored_etags[row['email']] = row['etag']
+            stored_etags[row['email']] = {:etag => row['etag'], :path => row['etag_path']}
         end
 
         host = NEXTCLOUD_URL_FROM_RUBY_CONTAINER
@@ -49,7 +49,8 @@ class Script
             @@user_info.each_pair do |email, info|
                 handle = info[:matrix_login]
                 matrix_handle_to_email[handle] = email
-                stored_etag = stored_etags[email]
+                stored_etag = stored_etags[email][:etag]
+                stored_path = stored_etags[email][:path]
                 
                 user_entry = {
                     :id => handle,
@@ -64,14 +65,15 @@ class Script
                 avatar_uri_nc = "#{NEXTCLOUD_URL_FROM_RUBY_CONTAINER}/index.php/avatar/#{info[:nc_login]}/512"
                 STDERR.write '.'
                 headers = {}
-                headers['If-None-Match'] = stored_etag.split('.').first if stored_etag
-                STDERR.puts headers.to_json
+                if stored_etag && (stored_path.nil? || File.exists?(stored_path))
+                    headers['If-None-Match'] = stored_etag.split('.').first 
+                end
                 response = http.headers(headers).get("/index.php/avatar/#{info[:nc_login]}/512")
-                etag = response.headers['ETag'].gsub('"', '')
+                etag = response.headers['ETag']
+                raw_etag = etag.gsub('"', '')
                 content_type = response.headers['Content-Type']
-                ext = content_type == 'image/png' ? 'png' : 'jpg'
-                etag_ext = "#{etag}.#{ext}"
-                avatar_cache_path = "/gen/a/#{etag[0, 2]}/#{etag[2, etag.size]}.#{ext}"
+                ext = (content_type == 'image/png') ? 'png' : 'jpg'
+                avatar_cache_path = "/gen/a/#{raw_etag[0, 2]}/#{raw_etag[2, raw_etag.size]}.#{ext}"
                 if response.status.success?
                     STDERR.puts "Re-caching #{avatar_uri_nc} to #{avatar_cache_path}"
                     unless File::exists?(avatar_cache_path)
@@ -80,10 +82,12 @@ class Script
                             f.write response.body
                         end
                     end
-                    stored_etags[email] = etag
-                    temp = neo4j_query(<<~END_OF_QUERY, :email => email, :etag => etag_ext)
+                    stored_etags[email] = {:etag => etag,
+                                           :path => avatar_cache_path}
+                    temp = neo4j_query(<<~END_OF_QUERY, :email => email, :etag => etag, :path => avatar_cache_path)
                         MATCH (u:User {email: {email}})
-                        SET u.avatar_etag = {etag};
+                        SET u.avatar_etag = {etag}
+                        SET u.avatar_etag_path = {path};
                     END_OF_QUERY
                 end
                 user_entry[:avatarUri] = "#{WEB_ROOT}#{avatar_cache_path}"

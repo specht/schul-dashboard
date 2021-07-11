@@ -65,7 +65,6 @@ class Script
                 STDERR.write '.'
                 headers = {}
                 headers['If-None-Match'] = stored_etag.split('.').first if stored_etag
-                STDERR.puts "#{email} #{stored_etag.split('.').first}"
                 response = http.headers(headers).get("/index.php/avatar/#{info[:nc_login]}/512")
                 etag = response.headers['ETag'].gsub('"', '')
                 content_type = response.headers['Content-Type']

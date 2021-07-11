@@ -89,8 +89,10 @@ class Script
                         SET u.avatar_etag = {etag}
                         SET u.avatar_etag_path = {path};
                     END_OF_QUERY
+                    user_entry[:avatarUri] = "#{WEB_ROOT}#{avatar_cache_path}"
+                else
+                    user_entry[:avatarUri] = WEB_ROOT + Dir["/gen/a/#{raw_etag[0, 2]}/#{raw_etag[2, raw_etag.size]}.*"].first
                 end
-                user_entry[:avatarUri] = "#{WEB_ROOT}#{avatar_cache_path}"
                 
                 result[:users] << user_entry
             end

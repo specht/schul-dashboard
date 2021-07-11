@@ -65,6 +65,7 @@ class Main < Sinatra::Base
             payload = JSON.parse(request['request']['payload'])
             prevent_this = false
             unless @@user_info[email][:teacher]
+                prevent_this = true
                 # user is SuS
                 if ['private_chat', 'trusted_private_chat'].include?(payload['preset'])
                     # private chat: if it's a SuS, only agree if single teacher invited
@@ -83,8 +84,6 @@ class Main < Sinatra::Base
                             if allowed
                                 prevent_this = false
                             end
-                        else
-                            prevent_this = true
                         end
                         if (!DEMO_ACCOUNT_EMAIL.nil?) && email == DEMO_ACCOUNT_EMAIL
                             prevent_this = (other_email != WEBSITE_MAINTAINER_EMAIL)

@@ -1208,7 +1208,7 @@ class Timetable
                                    :jitsi => event[:jitsi]
                                 }
                     end
-                    if user[:teacher]
+                    if user[:teacher] && !@@pausenaufsichten[:aufsichten].empty?
                         # add pausenaufsichten
                         (0..4).each do |dow|
                             ds = (p + dow).strftime('%Y-%m-%d')

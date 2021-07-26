@@ -1,0 +1,15 @@
+#{this_is_a_page_for_logged_in_admins}
+<div class='container' style='padding-top: 30px;'>
+    <div class='row'>
+        <div class='col-md-12'>
+            <h2>E-Mail-Postfächer</h2>
+            #{print_email_accounts()}
+        </div>
+    </div>
+</div>
+
+<script>
+window.addEventListener('load', function() {
+    moment.locale('de');
+});
+</script>

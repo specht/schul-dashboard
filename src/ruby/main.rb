@@ -813,8 +813,8 @@ class Main < Sinatra::Base
 
         @@lessons_for_shorthand.keys.each do |shorthand|
             @@lessons_for_shorthand[shorthand].sort! do |_a, _b|
-                a = @@lessons[:lesson_keys][_a]
-                b = @@lessons[:lesson_keys][_b]
+                a = @@lessons[:lesson_keys][_a] || {}
+                b = @@lessons[:lesson_keys][_b] || {}
                 (a[:fach] == b[:fach]) ?
                 (((a[:klassen] || []).map { |x| @@klassen_order.index(x) || -1}.min || 0) <=> ((b[:klassen] || []).map { |x| @@klassen_order.index(x) || -1 }.min || 0)) :
                 (a[:fach] <=> b[:fach])
@@ -1338,6 +1338,9 @@ class Main < Sinatra::Base
                     nav_items << :website
                 end
                 nav_items << :messages
+                if admin_logged_in?
+                    nav_items << :admin 
+                end
                 nav_items << :profile
                 new_messages_count_s = new_messages_count.to_s
                 new_messages_count_s = '99+' if new_messages_count > 99
@@ -1355,7 +1358,21 @@ class Main < Sinatra::Base
             io.puts "<div class='collapse navbar-collapse my-0 flex-grow-0' id='navbarTogglerDemo02'>"
             io.puts "<ul class='navbar-nav mr-auto'>"
             nav_items.each do |x|
-                if x == :profile
+                if x == :admin
+                    io.puts "<li class='nav-item dropdown'>"
+                    io.puts "<a class='nav-link nav-icon dropdown-toggle' href='#' id='navbarDropdown' role='button' data-toggle='dropdown' aria-haspopup='true' aria-expanded='false'>"
+                    io.puts "<div class='icon'><i class='fa fa-wrench'></i></div>Administration"
+                    io.puts "</a>"
+                    io.puts "<div class='dropdown-menu dropdown-menu-right' aria-labelledby='navbarDropdown'>"
+                    if admin_logged_in?
+                        io.puts "<a class='dropdown-item nav-icon' href='/admin'><div class='icon'><i class='fa fa-wrench'></i></div><span class='label'>Administration</span></a>"
+                        io.puts "<a class='dropdown-item nav-icon' href='/show_all_login_codes'><div class='icon'><i class='fa fa-key-modern'></i></div><span class='label'>Live-Anmeldungen</span></a>"
+                        io.puts "<a class='dropdown-item nav-icon' href='/email_accounts'><div class='icon'><i class='fa fa-envelope'></i></div><span class='label'>E-Mail-Postfächer</span></a>"
+                        io.puts "<a class='dropdown-item nav-icon' href='/stats'><div class='icon'><i class='fa fa-bar-chart'></i></div><span class='label'>Statistiken</span></a>"
+                    end
+                    io.puts "</div>"
+                    io.puts "</li>"
+                elsif x == :profile
                     io.puts "<li class='nav-item dropdown'>"
                     io.puts "<a class='nav-link nav-icon dropdown-toggle' href='#' id='navbarDropdown' role='button' data-toggle='dropdown' aria-haspopup='true' aria-expanded='false'>"
                     display_name = htmlentities(@session_user[:display_name])
@@ -1397,12 +1414,6 @@ class Main < Sinatra::Base
                     if @session_user[:can_upload_vplan]
                         io.puts "<div class='dropdown-divider'></div>"
                         io.puts "<a class='dropdown-item nav-icon' href='/upload_vplan'><div class='icon'><i class='fa fa-upload'></i></div><span class='label'>Vertretungsplan hochladen</span></a>"
-                    end
-                    if admin_logged_in?
-                        io.puts "<div class='dropdown-divider'></div>"
-                        io.puts "<a class='dropdown-item nav-icon' href='/admin'><div class='icon'><i class='fa fa-wrench'></i></div><span class='label'>Administration</span></a>"
-                        io.puts "<a class='dropdown-item nav-icon' href='/show_all_login_codes'><div class='icon'><i class='fa fa-key-modern'></i></div><span class='label'>Live-Anmeldungen</span></a>"
-                        io.puts "<a class='dropdown-item nav-icon' href='/stats'><div class='icon'><i class='fa fa-bar-chart'></i></div><span class='label'>Statistiken</span></a>"
                     end
                     io.puts "<div class='dropdown-divider'></div>"
                     io.puts "<a class='dropdown-item nav-icon' href='/hilfe'><div class='icon'><i class='fa fa-question-circle'></i></div><span class='label'>Hilfe</span></a>"

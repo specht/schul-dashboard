@@ -209,4 +209,44 @@ class Main < Sinatra::Base
             io.string
         end
     end
+
+    def print_email_accounts()
+        StringIO.open do |io|
+            email_accounts_path = '/data/current-email-addresses.csv'
+            email_addresses = []
+            if File.exists?(email_accounts_path)
+                CSV.foreach(email_accounts_path, headers: true, col_sep: ';') do |row|
+                    email = row.to_h['E-Mail-Adresse']
+                    email_addresses << email
+                end
+            end
+            known_email_association = {}
+            email_addresses.each do |email|
+                if @@user_info.include?(email)
+                    if @@user_info[email][:teacher]
+                        known_email_association[email] = :teacher
+                    else
+                        known_email_association[email] = :sus
+                    end
+                elsif email[0, 7] == 'eltern.' && @@user_info.include?(email.sub('eltern.', ''))
+                    known_email_association[email] = :parents
+                elsif @@mailing_lists.include?(email)
+                    known_email_association[email] = :mailing_list
+                elsif email[0, 3] == 'ev.' && @@klassen_order.include?(email.split('@').first.sub('ev.', ''))
+                    known_email_association[email] = :ev
+                end
+            end
+            email_addresses.reject! { |email| known_email_association.include?(email) }
+            io.puts "<table class='table'>"
+            io.puts "<tr><th>E-Mail-Adresse</th><th>Typ</th></tr>"
+            email_addresses.sort.each do |email|
+                io.puts "<tr>"
+                io.puts "<td>#{email}</td>"
+                io.puts "<td>#{known_email_association[email]}</td>"
+                io.puts "</tr>"
+            end
+            io.puts "</table>"
+            io.string
+        end
+    end
 end

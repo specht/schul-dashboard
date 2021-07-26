@@ -293,7 +293,12 @@ def deliver_mail(&block)
         end
     end
     if DEVELOPMENT
-        debug "Not sending mail to because we're in development: #{mail.subject} => #{mail.to.join(' / ')}"
+        if DEVELOPMENT_MAIL_DELIVERY_POSITIVE_LIST.include?(mail.to.first)
+            debug "Sending mail to #{mail.to.join(' / ')} because first recipient is included in DEVELOPMENT_MAIL_DELIVERY_POSITIVE_LIST..."
+            mail.deliver!
+        else
+            debug "Not sending mail to because we're in development: #{mail.subject} => #{mail.to.join(' / ')}"
+        end
     else
         mail.deliver!
     end
@@ -365,6 +370,7 @@ class SetupDatabase
                     neo4j_query("CREATE CONSTRAINT ON (n:Tablet) ASSERT n.id IS UNIQUE")
                     neo4j_query("CREATE CONSTRAINT ON (n:MatrixAccessToken) ASSERT n.access_token IS UNIQUE")
 #                     neo4j_query("CREATE CONSTRAINT ON (n:PredefinedExternalUser) ASSERT n.email IS UNIQUE")
+                    neo4j_query("CREATE CONSTRAINT ON (n:KnownEmailAddress) ASSERT n.email IS UNIQUE")
                     neo4j_query("CREATE INDEX ON :LoginCode(code)")
                     neo4j_query("CREATE INDEX ON :NextcloudLoginCode(code)")
                     neo4j_query("CREATE INDEX ON :LessonInfo(offset)")
@@ -559,6 +565,7 @@ class Main < Sinatra::Base
         @@tablets = {}
         @@lehrer_order = []
         @@klassen_order = []
+        @@current_email_addresses = []
                            
         @@index_for_klasse = {}
         @@predefined_external_users = {}
@@ -948,6 +955,7 @@ class Main < Sinatra::Base
                 "eltern.#{email}"
             end
         }
+        @@current_email_addresses = parser.parse_current_email_addresses()
         if DEVELOPMENT
             VERTEILER_TEST_EMAILS.each do |email|
                 @@mailing_lists[email] = {

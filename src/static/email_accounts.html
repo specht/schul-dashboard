@@ -2,7 +2,6 @@
 <div class='container' style='padding-top: 30px;'>
     <div class='row'>
         <div class='col-md-12'>
-            <h2>E-Mail-Postfächer</h2>
             #{print_email_accounts()}
         </div>
     </div>
@@ -11,5 +10,33 @@
 <script>
 window.addEventListener('load', function() {
     moment.locale('de');
+    $('.bu-mark-known-address').click(function(e) {
+        let email = $(e.target).data('email');
+        api_call('/api/mark_email_address_known', {email: email, known: 'yes'}, function(data) {
+            if (data.success)
+                window.location.reload();
+        });
+    });
+    $('.bu-mark-unknown-address').click(function(e) {
+        let email = $(e.target).data('email');
+        api_call('/api/mark_email_address_known', {email: email, known: 'no'}, function(data) {
+            if (data.success)
+                window.location.reload();
+        });
+    });
+    $('.bu-mark-for-termination').click(function(e) {
+        let email = $(e.target).data('email');
+        api_call('/api/mark_email_address_for_termination', {email: email}, function(data) {
+            if (data.success)
+                window.location.reload();
+        });
+    });
+    $('.bu-unmark-for-termination').click(function(e) {
+        let email = $(e.target).data('email');
+        api_call('/api/unmark_email_address_for_termination', {email: email}, function(data) {
+            if (data.success)
+                window.location.reload();
+        });
+    });
 });
 </script>

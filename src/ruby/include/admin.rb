@@ -211,15 +211,51 @@ class Main < Sinatra::Base
     end
 
     def print_email_accounts()
+        require_admin!
         StringIO.open do |io|
-            email_accounts_path = '/data/current-email-addresses.csv'
-            email_addresses = []
-            if File.exists?(email_accounts_path)
-                CSV.foreach(email_accounts_path, headers: true, col_sep: ';') do |row|
-                    email = row.to_h['E-Mail-Adresse']
-                    email_addresses << email
+            all_marked_known = Set.new
+            all_termination_dates = {}
+            neo4j_query('MATCH (n:KnownEmailAddress) RETURN n;').each do |row|
+                info = row['n'].props
+                email = info[:email]
+                if info[:known]
+                    all_marked_known << email
+                end
+                if info[:scheduled_termination]
+                    all_termination_dates[email] = info[:scheduled_termination]
                 end
             end
+
+            Set.new(neo4j_query('MATCH (n:KnownEmailAddress {known: true}) RETURN n.email;').map { |x| x['n.email'] })
+            email_addresses = @@current_email_addresses
+            required_email_addresses = []
+            data_for_required_email_address = {}
+            @@user_info.each_pair do |email, info|
+                next unless email.include?(SMTP_DOMAIN)
+                required_email_addresses << email
+                unless info[:teacher]
+                    data_for_required_email_address[email] = {
+                        :first_name => info[:first_name],
+                        :last_name => info[:last_name],
+                        :email => email,
+                        :password => Main.gen_password_for_email(email)
+                    }
+                    eltern_email = "eltern.#{email}"
+                    required_email_addresses << eltern_email
+                    data_for_required_email_address[eltern_email] = {
+                        :first_name => '',
+                        :last_name => info[:last_name],
+                        :email => eltern_email,
+                        :password => Main.gen_password_for_email(eltern_email)
+                    }
+                end
+            end
+            @@mailing_lists.keys.each { |email| required_email_addresses << email }
+            @@klassen_order.each do |klasse|
+                next if ['11', '12'].include?(klasse)
+                required_email_addresses << "ev.#{klasse}@#{SCHUL_MAIL_DOMAIN}"
+            end
+
             known_email_association = {}
             email_addresses.each do |email|
                 if @@user_info.include?(email)
@@ -236,17 +272,146 @@ class Main < Sinatra::Base
                     known_email_association[email] = :ev
                 end
             end
-            email_addresses.reject! { |email| known_email_association.include?(email) }
-            io.puts "<table class='table'>"
-            io.puts "<tr><th>E-Mail-Adresse</th><th>Typ</th></tr>"
-            email_addresses.sort.each do |email|
-                io.puts "<tr>"
-                io.puts "<td>#{email}</td>"
-                io.puts "<td>#{known_email_association[email]}</td>"
-                io.puts "</tr>"
+            required_email_addresses = (Set.new(required_email_addresses) - Set.new(email_addresses)).to_a.sort
+            unknown_addresses = email_addresses.reject { |email| known_email_association.include?(email) }
+            io.puts "<h3>Fehlende Postfächer</h3>"
+
+            # io.puts "<table class='table'>"
+            # io.puts "<tr><th>E-Mail-Adresse</th></tr>"
+            # required_email_addresses.each do |email|
+            #     io.puts "<tr>"
+            #     io.puts "<td>#{email}</td>"
+            #     io.puts "</tr>"
+            # end
+            # io.puts "</table>"
+            io.puts "<pre>"
+            required_email_addresses.each do |email|
+                if data_for_required_email_address[email]
+                    io.puts data_for_required_email_address[email].to_json + ','
+                else
+                    io.puts "// no data for #{email}"
+                end
             end
-            io.puts "</table>"
+            io.puts "</pre>"
+
+            io.puts "<hr />"
+
+            today_str = Date.today.strftime('%Y-%m-%d')
+            [false, true].each do |known|
+                if known
+                    io.puts "<h3>Bekannte Postfächer</h3>"
+                else
+                    io.puts "<h3>Unbekannte / nicht mehr benötigte Postfächer</h3>"
+                end
+                io.puts "<table class='table'>"
+                io.puts "<tr><th>E-Mail-Adresse</th><th></th></tr>"
+                unknown_addresses.sort.each do |email|
+                    next unless all_marked_known.include?(email) == known
+                    io.puts "<tr>"
+                    classes = ''
+                    if all_termination_dates[email]
+                        if (today_str <= all_termination_dates[email])
+                            classes = 'bg-warning'
+                        else
+                            classes = 'bg-danger'
+                        end
+                    end
+                    io.puts "<td class='#{classes}'>"
+                    io.puts "#{email}"
+                    if all_termination_dates[email]
+                        io.puts "(Löschung zum #{all_termination_dates[email]})"
+                    end
+                    io.puts "<td>"
+                    io.puts "<td>"
+                    if known
+                        io.puts "<button class='btn btn-xs btn-warning bu-mark-unknown-address' data-email='#{email}'>Unbekannt</button>"
+                    else
+                        io.puts "<button class='btn btn-xs btn-success bu-mark-known-address' data-email='#{email}'>Bekannt</button>"
+                        unless all_termination_dates[email]
+                            io.puts "<button class='btn btn-xs btn-danger bu-mark-for-termination' data-email='#{email}'>Löschen</button>"
+                        end
+                    end
+                    if all_termination_dates[email]
+                        io.puts "<button class='btn btn-xs btn-warning bu-unmark-for-termination' data-email='#{email}'>Nicht löschen</button>"
+                    end
+                io.puts "</td>"
+                    io.puts "</tr>"
+                end
+                io.puts "</table>"
+
+                io.puts "<hr />"
+            end
             io.string
         end
+    end
+
+    post '/api/mark_email_address_known' do
+        require_admin!
+        data = parse_request_data(:required_keys => [:email, :known])
+        if data[:known] == 'yes'
+            neo4j_query(<<~END_OF_QUERY, :email => data[:email])
+                MERGE (n:KnownEmailAddress {email: {email}})
+                SET n.known = true;
+            END_OF_QUERY
+        else
+            neo4j_query(<<~END_OF_QUERY, :email => data[:email])
+                MERGE (n:KnownEmailAddress {email: {email}})
+                SET n.known = false;
+            END_OF_QUERY
+        end
+        respond(:ok => 'yeah')
+    end
+
+    post '/api/mark_email_address_for_termination' do
+        require_admin!
+        data = parse_request_data(:required_keys => [:email])
+        email = data[:email]
+        deletion_delay_weeks = 4
+        termination_date = (Date.today + deletion_delay_weeks * 7)
+        termination_date_str = termination_date.strftime('%d.%m.%Y')
+        deliver_mail do
+            to email
+            bcc SMTP_FROM
+            from SMTP_FROM
+            
+            subject "Löschung des E-Mail-Postfaches in #{deletion_delay_weeks} Woche#{deletion_delay_weeks == 1 ? '' : 'n'}"
+
+            StringIO.open do |io|
+                io.puts "<p>Hallo!</p>"
+                io.puts "<p>Hiermit möchten wir Ihnen mitteilen, dass Ihr Postfach #{email} zum #{termination_date_str} dauerhaft gelöscht wird. Falls es sich um einen Irrtum handeln sollte, antworten Sie bitte auf diese E-Mail. Anderenfalls sichern Sie ggfs. Ihre E-Mails vor Ablauf des genannten Datums. Sie müssen dann nichts weiter tun, das E-Mail-Postfach wird dann automatisch gelöscht.</p>"
+                io.puts "<p>Viele Grüße,<br />#{WEBSITE_MAINTAINER_NAME}</p>"
+                io.string
+            end
+        end        
+        neo4j_query(<<~END_OF_QUERY, :email => data[:email], :termination_date => termination_date.strftime('%Y-%m-%d'))
+            MERGE (n:KnownEmailAddress {email: {email}})
+            SET n.scheduled_termination = {termination_date};
+        END_OF_QUERY
+        respond(:ok => 'yeah')
+    end
+
+    post '/api/unmark_email_address_for_termination' do
+        require_admin!
+        data = parse_request_data(:required_keys => [:email])
+        email = data[:email]
+        deliver_mail do
+            to email
+            bcc SMTP_FROM
+            from SMTP_FROM
+            
+            subject "Beibehaltung des E-Mail-Postfaches"
+
+            StringIO.open do |io|
+                io.puts "<p>Hallo!</p>"
+                io.puts "<p>Hiermit möchten wir Ihnen mitteilen, dass Ihr Postfach #{email}, anders als zuvor angekündigt, nun doch nicht gelöscht wird. Sie müssen nichts weiter tun.</p>"
+                io.puts "<p>Viele Grüße,<br />#{WEBSITE_MAINTAINER_NAME}</p>"
+                io.string
+            end
+        end        
+        neo4j_query(<<~END_OF_QUERY, :email => data[:email])
+            MERGE (n:KnownEmailAddress {email: {email}})
+            REMOVE n.scheduled_termination;
+        END_OF_QUERY
+        respond(:ok => 'yeah')
     end
 end

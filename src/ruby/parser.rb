@@ -828,5 +828,17 @@ class Parser
         debug "Wahlpflichtkurswahl: got SuS for #{schueler_for_lesson_key.size} lesson keys."
         return schueler_for_lesson_key
     end
+
+    def parse_current_email_addresses
+        email_addresses = []
+        email_accounts_path = '/data/current-email-addresses.csv'
+        if File.exists?(email_accounts_path)
+            CSV.foreach(email_accounts_path, headers: true, col_sep: ';') do |row|
+                email = row.to_h['E-Mail-Adresse']
+                email_addresses << email
+            end
+        end
+        return email_addresses
+    end
 end
 

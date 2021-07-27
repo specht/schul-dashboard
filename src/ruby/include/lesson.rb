@@ -470,65 +470,39 @@ class Main < Sinatra::Base
         respond(:state => restrictions[day])
     end
     
-    # http://localhost:8025/api/get_lesson_info_xlsx/Ma~214a
-    get '/api/get_lesson_info_xlsx/:lesson_key' do |lesson_key|
+    get '/api/get_lesson_info_archive' do
         require_admin!
-        temp = neo4j_query(<<~END_OF_QUERY, {:lesson_key => lesson_key}).map { |x| x['li'].props }
-            MATCH (li:LessonInfo)-[:BELONGS_TO]->(l:Lesson {key: {lesson_key}})
-            RETURN li
-            ORDER BY li.offset;
-        END_OF_QUERY
-        lesson_info = {}
-        max_offset = nil
-        temp.each do |entry|
-            lesson_info[entry[:offset]] = entry
-            max_offset ||= entry[:offset]
-            max_offset = entry[:offset] if entry[:offset] > max_offset
-        end
-        STDERR.puts lesson_info[115].to_yaml
-        file = Tempfile.new('foo')
-        result = nil
+        file = Tempfile.new('lesson_info_archive')
+        zip = nil
         begin
-            workbook = WriteXLSX.new(file.path)
-            sheet = workbook.add_worksheet
-            format_header = workbook.add_format({:bold => true, :align => 'top'})
-            format_text = workbook.add_format({:align => 'top'})
-            format_text.set_text_wrap(true)
-            sheet.merge_range(0, 0, 1, 0, 'Nr.', format_header)
-            sheet.merge_range(0, 1, 1, 1, 'Thema', format_header)
-            sheet.merge_range(0, 2, 1, 2, 'Stundenthema', format_header)
-            sheet.merge_range(0, 3, 0, 5, 'Stunde', format_header)
-            sheet.write_string(1, 3, 'Jitsi', format_header)
-            sheet.write_string(1, 4, 'NC', format_header)
-            sheet.write_string(1, 5, 'LR', format_header)
-            sheet.merge_range(0, 6, 1, 6, 'Hausaufgabe', format_header)
-            sheet.merge_range(0, 7, 0, 8, 'Hausaufgabe', format_header)
-            sheet.write_string(1, 7, 'NC', format_header)
-            sheet.write_string(1, 8, 'LR', format_header)
-            sheet.merge_range(0, 9, 1, 9, 'Notizen', format_header)
-#             sheet.set_column(0, 1, 16)
-#             sheet.set_column(2, 2, 6)
-            (0..max_offset).each do |offset|
-                sheet.write_number(offset + 2, 0, offset + 1)
-                li = lesson_info[offset]
-                next unless li
-                sheet.write_string(offset + 2, 1, li[:thema]) if li[:thema]
-                sheet.write_string(offset + 2, 2, li[:stundenthema_text]) if li[:stundenthema_text]
-                sheet.write_boolean(offset + 2, 3, li[:lesson_jitsi])
-                sheet.write_boolean(offset + 2, 4, li[:lesson_nc])
-                sheet.write_boolean(offset + 2, 5, li[:lesson_lr])
-                sheet.write_string(offset + 2, 6, li[:hausaufgaben_text]) if li[:hausaufgaben_text]
-                sheet.write_boolean(offset + 2, 7, li[:homework_nc])
-                sheet.write_boolean(offset + 2, 8, li[:homework_lr])
-                sheet.write_string(offset + 2, 9, li[:notizen]) if li[:notizen]
+            Zip.unicode_names = true
+            Zip.force_entry_names_encoding = 'UTF-8'
+            Zip::File.open(file.path, Zip::File::CREATE) do |zipfile|
+                @@lessons[:lesson_keys].keys.each do |lesson_key|
+                    info = @@lessons[:lesson_keys][lesson_key]
+                    temp = neo4j_query(<<~END_OF_QUERY, {:lesson_key => lesson_key}).map { |x| x['li'].props }
+                        MATCH (li:LessonInfo)-[:BELONGS_TO]->(l:Lesson {key: {lesson_key}})
+                        RETURN li
+                        ORDER BY li.offset;
+                    END_OF_QUERY
+                    unless temp.empty?
+                        info[:lehrer].each do |shorthand|
+                            path = "#{shorthand}/#{lesson_key} – #{info[:pretty_folder_name]}.json"
+                            zipfile.get_output_stream(path) do |f|
+                                info = {:lesson_key => lesson_key, :entries => temp}
+                                f.write(info.to_json)
+                            end
+                        end
+                    end
+                end
             end
-            workbook.close
-            result = File.read(file.path)
         ensure
             file.close
+            zip = File.read(file.path)
             file.unlink
         end
-        respond_raw_with_mimetype_and_filename(result, 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', "Jahresplanung 2020-21 LESSON_KEY.xlsx")
-#         respond(:lesson_info => lesson_info)
+                                
+        respond_raw_with_mimetype_and_filename(zip, 'application/zip', "lesson_info_archive.zip")
     end
+    
 end

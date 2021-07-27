@@ -363,6 +363,7 @@ class SetupDatabase
                     neo4j_query("CREATE CONSTRAINT ON (n:TextComment) ASSERT n.key IS UNIQUE")
                     neo4j_query("CREATE CONSTRAINT ON (n:AudioComment) ASSERT n.key IS UNIQUE")
                     neo4j_query("CREATE CONSTRAINT ON (n:Message) ASSERT n.key IS UNIQUE")
+                    neo4j_query("CREATE CONSTRAINT ON (n:NewsEntry) ASSERT n.timestamp IS UNIQUE")
                     neo4j_query("CREATE CONSTRAINT ON (n:Event) ASSERT n.key IS UNIQUE")
                     neo4j_query("CREATE CONSTRAINT ON (n:Poll) ASSERT n.key IS UNIQUE")
                     neo4j_query("CREATE CONSTRAINT ON (n:PollRun) ASSERT n.key IS UNIQUE")
@@ -1280,9 +1281,9 @@ class Main < Sinatra::Base
     post '/api/get_news' do
         require_user_who_can_manage_news!
         results = neo4j_query(<<~END_OF_QUERY).map { |x| x['n'].props }
-            MATCH (n:News)
+            MATCH (n:NewsEntry)
             RETURN n
-            ORDER BY n.date DESC;
+            ORDER BY n.timestamp DESC;
         END_OF_QUERY
         respond(:news => results)
     end
@@ -1469,7 +1470,7 @@ class Main < Sinatra::Base
                     io.puts "</a>"
                     io.puts "<div class='dropdown-menu dropdown-menu-right' aria-labelledby='navbarDropdown' style='max-height: 500px; overflow-y: auto;'>"
                     if user_who_can_manage_news_logged_in?
-#                         io.puts "<a class='dropdown-item nav-icon' href='/manage_news'><div class='icon'><i class='fa fa-newspaper-o'></i></div><span class='label'>News verwalten</span></a>"
+                        io.puts "<a class='dropdown-item nav-icon' href='/manage_news'><div class='icon'><i class='fa fa-newspaper-o'></i></div><span class='label'>News verwalten</span></a>"
                         io.puts "<a class='dropdown-item nav-icon' href='/manage_calendar'><div class='icon'><i class='fa fa-calendar'></i></div><span class='label'>Termine verwalten</span></a>"
                     end
                     if user_who_can_manage_news_logged_in? && user_who_can_upload_files_logged_in?

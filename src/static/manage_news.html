@@ -38,7 +38,7 @@
         </div>
       </div>
       <div class="modal-footer">
-        <button id='bu_render_preview' type="button" class="btn btn-success" data-dismiss="modal">Vorschau</button>
+        <button id='bu_render_preview' type="button" class="btn btn-success">Vorschau</button>
         <button id='bu_close_feedback_modal' type="button" class="btn btn-secondary" data-dismiss="modal">Schließen</button>
       </div>
     </div>
@@ -86,6 +86,9 @@ document.addEventListener('DOMContentLoaded', function() {
             let bu_delete = $('<button>').addClass('btn').addClass('btn-sm').addClass('btn-danger').html("<i class='fa fa-times'></i>");
             row.append($('<td>').append(bu_published).append(bu_sticky).append(bu_delete));
         }
+    });
+    $('.bu-compose').click(function(e) {
+        $('#editModal').modal('show');
     });
 //     api_call('/api/parse_markdown', {markdown: $('#ta_markdown').val()}, function(data) {
 //         if (data.success) {

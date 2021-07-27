@@ -19,6 +19,7 @@ class Main < Sinatra::Base
     end
 
     post '/api/set_news_published' do
+        require_user_who_can_manage_news!
         data = parse_request_data(:required_keys => [:timestamp, :published], :types => {:timestamp => Integer})
         published = data[:published] == 'yes'
         result = neo4j_query_expect_one(<<~END_OF_QUERY, {:timestamp => data[:timestamp], :published => published})
@@ -30,6 +31,7 @@ class Main < Sinatra::Base
     end
 
     post '/api/set_news_sticky' do
+        require_user_who_can_manage_news!
         data = parse_request_data(:required_keys => [:timestamp, :sticky], :types => {:timestamp => Integer})
         sticky = data[:sticky] == 'yes'
         result = neo4j_query_expect_one(<<~END_OF_QUERY, {:timestamp => data[:timestamp], :sticky => sticky})
@@ -38,6 +40,16 @@ class Main < Sinatra::Base
             RETURN n.sticky AS sticky;
         END_OF_QUERY
         respond(:sticky => result['sticky'])
+    end
+
+    post '/api/delete_news_entry' do
+        require_user_who_can_manage_news!
+        data = parse_request_data(:required_keys => [:timestamp], :types => {:timestamp => Integer})
+        result = neo4j_query(<<~END_OF_QUERY, {:timestamp => data[:timestamp]})
+            MATCH (n:NewsEntry {timestamp: {timestamp}})
+            DETACH DELETE n;
+        END_OF_QUERY
+        respond(:ok => 'yay')
     end
 
     def _include_file(name, label)
@@ -185,6 +197,7 @@ class Main < Sinatra::Base
     end
 
     post '/api/get_news_entry' do
+        require_user_who_can_manage_news!
         data = parse_request_data(:required_keys => [:timestamp], :types => {:timestamp => Integer})
         result = neo4j_query_expect_one(<<~END_OF_QUERY, {:timestamp => data[:timestamp]})['n'].props
             MATCH (n:NewsEntry {timestamp: {timestamp}})
@@ -198,6 +211,7 @@ class Main < Sinatra::Base
     end
 
     post '/api/get_news_preview' do
+        require_user_who_can_manage_news!
         data = parse_request_data(:required_keys => [:markdown], :max_body_length => 64 * 1024,
             :max_string_length => 64 * 1024)
         content = data[:markdown]
@@ -231,6 +245,7 @@ class Main < Sinatra::Base
     end
 
     post '/api/refresh_news_on_website' do
+        require_user_who_can_manage_news!
         data = parse_request_data(:required_keys => [:staging])
         c = Curl.post("#{SCHOOL_WEBSITE_API_URL}/api/update_news_#{(data[:staging] == 'yes') ? 'staging' : 'live'}")
         respond(:yay => 'sure')

@@ -3,14 +3,17 @@
 <div class='container' style='padding-top: 30px;'>
     <div class='row'>
         <div class='col-md-12'>
+            <h2>Website-News verwalten</h2>
+            <hr />
             <div class='pull-right'>
-            <button class='btn btn-secondary bu-refresh-staging'><i id='refresh-icon-staging' class='fa fa-refresh'></i>&nbsp;&nbsp;Vorschau-Seite aktualisieren</button>
-            <button class='btn btn-danger bu-refresh-live'><i id='refresh-icon-live' class='fa fa-refresh'></i>&nbsp;&nbsp;Live-Seite aktualisieren</button>
+                <button class='btn btn-secondary bu-refresh-staging'><i id='refresh-icon-staging'
+                        class='fa fa-refresh'></i>&nbsp;&nbsp;Vorschau-Seite aktualisieren</button>
+                <button class='btn btn-success bu-refresh-live'><i id='refresh-icon-live'
+                        class='fa fa-refresh'></i>&nbsp;&nbsp;Live-Seite aktualisieren</button>
             </div>
             <button class='bu-compose btn btn-success'><i class='fa fa-pencil'></i>&nbsp;&nbsp;Artikel
                 schreiben</button>
             <hr />
-            <h2>News verwalten</h2>
             <table class='table narrow'>
                 <thead>
                     <tr>
@@ -41,11 +44,15 @@
                     </div>
                     <div class='col-md-7' style='height: 100%; display: flex; flex-direction: column;'>
                         <h3 id='preview_heading' style='margin: 15px 0;'></h3>
-                        <div id='ta_preview' class='news-post' style='overflow-y: auto; flex-grow: 1; padding-right: 15px;'></div>
+                        <div id='ta_preview' class='news-post'
+                            style='overflow-y: auto; flex-grow: 1; padding-right: 15px;'></div>
                     </div>
                 </div>
             </div>
             <div class="modal-footer">
+                <div class='pull-left text-muted' style='flex-grow: 1;'>
+                    <em>Strg+Enter: Vorschau aktualisieren</em>
+                </div>
                 <button id='bu_render_preview' type="button" class="btn btn-success">Vorschau</button>
                 <button id='bu_close_feedback_modal' type="button" class="btn btn-secondary"
                     data-dismiss="modal">Schließen</button>
@@ -132,6 +139,22 @@
                     });
                 });
 
+                bu_delete.click(function (e) {
+                    e.stopPropagation();
+                    let data = $(e.target).closest('tr').data();
+                    showTemplateModal('Eintrag löschen',
+                        'Sind Sie sicher, dass Sie diesen News-Eintrag löschen möchten?',
+                        "<i class='fa fa-trash'></i>&nbsp;&nbsp;Löschen", 'btn-danger',
+                        'Abbrechen', 'btn-secondary', function () {
+                            api_call('/api/delete_news_entry', {timestamp: data.timestamp}, function(data) {
+                                if (data.success) {
+                                    $(e.target).closest('tr').remove();
+                                }
+                            });
+                        }
+                    );
+                });
+
                 row.click(function (e) {
                     let timestamp = $(e.target).closest('tr').data('timestamp');
                     api_call('/api/get_news_entry', { timestamp: timestamp }, function (data) {
@@ -157,31 +180,37 @@
                 }
             });
         });
-        $('.ti_title').keydown(function(e) {
+        $('.ti_title').keydown(function (e) {
             if (e.keyCode === 13 && e.ctrlKey)
                 $('#bu_render_preview').click();
         });
-        $('#ta_markdown').keydown(function(e) {
+        $('#ta_markdown').keydown(function (e) {
             if (e.keyCode === 13 && e.ctrlKey)
                 $('#bu_render_preview').click();
         });
-        $('.bu-refresh-staging').click(function(e) {
+        $('.bu-refresh-staging').click(function (e) {
             $('#refresh-icon-staging').addClass('fa-spin');
-            api_call('/api/refresh_news_on_website', {staging: 'yes'}, function(data) {
+            api_call('/api/refresh_news_on_website', { staging: 'yes' }, function (data) {
                 if (data.success) {
                     $('#refresh-icon-staging').removeClass('fa-spin');
                     console.log('success');
                 }
             });
         });
-        $('.bu-refresh-live').click(function(e) {
-            $('#refresh-icon-live').addClass('fa-spin');
-            api_call('/api/refresh_news_on_website', {staging: 'no'}, function(data) {
-                if (data.success) {
-                    $('#refresh-icon-live').removeClass('fa-spin');
-                    console.log('success');
+        $('.bu-refresh-live').click(function (e) {
+            showTemplateModal('Website aktualisieren',
+                'Sind Sie sicher, dass Sie die Website aktualisieren möchten?',
+                "<i class='fa fa-check'></i>&nbsp;&nbsp;Website aktualisieren", 'btn-success',
+                'Abbrechen', 'btn-secondary', function () {
+                    $('#refresh-icon-live').addClass('fa-spin');
+                    api_call('/api/refresh_news_on_website', { staging: 'no' }, function (data) {
+                        if (data.success) {
+                            $('#refresh-icon-live').removeClass('fa-spin');
+                            console.log('success');
+                        }
+                    });
                 }
-            });
+            );
         });
     });
 </script>

@@ -2,101 +2,133 @@
 <div class='container' style='padding-top: 30px;'>
     <div class='row'>
         <div class='col-md-12'>
-            <h2 style='margin-bottom: 30px;'>Website-Termine</h2>
-            <button class='btn btn-success bu-new-event'><i class='fa fa-calendar-plus-o'></i>&nbsp;&nbsp;Neuer Termin</button>
+            <h2 style='margin-bottom: 30px;'>Website-Termine verwalten</h2>
+            <hr />
+            <div class='pull-right'>
+                <button class='btn btn-secondary bu-refresh-staging'><i id='refresh-icon-staging'
+                        class='fa fa-refresh'></i>&nbsp;&nbsp;Vorschau-Seite aktualisieren</button>
+                <button class='btn btn-success bu-refresh-live'><i id='refresh-icon-live'
+                        class='fa fa-refresh'></i>&nbsp;&nbsp;Live-Seite aktualisieren</button>
+            </div>
+            <button class='btn btn-success bu-new-event'><i class='fa fa-calendar-plus-o'></i>&nbsp;&nbsp;Neuer
+                Termin</button>
             <hr />
             <div class='website-events-container'>
                 <table class='table table-striped narrow'>
-                <thead>
-                    <tr>
-                        <th style='width: 150px;'>Datum</th>
-                        <th>Titel</th>
-                        <th style='width: 120px;'>Löschen</th>
-                    </tr>
-                </thead>
-                <tbody class='events-here'>
-                </tbody>
+                    <thead>
+                        <tr>
+                            <th style='width: 150px;'>Datum</th>
+                            <th>Titel</th>
+                            <th style='width: 120px;'>Löschen</th>
+                        </tr>
+                    </thead>
+                    <tbody class='events-here'>
+                    </tbody>
                 </table>
             </div>
-        </div>        
+        </div>
     </div>
 </div>
 
 <div class="modal" id="deleteModal" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
         <div class="modal-content">
-        <div class="modal-header">
-            <h5 class="modal-title" >
-                Termin löschen
-            </h5>
-        </div>
-        <div class="modal-body">
-            Sind Sie sicher, dass Sie diesen Termin löschen möchten?
-        </div>
-        <div class="modal-footer">
-            <button class="btn btn-danger bu-perform-delete-website-event">Termin löschen</button>
-            <button type="button" class="btn btn-secondary bu-close-dialog" data-dismiss="modal">Abbrechen</button>
-        </div>
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    Termin löschen
+                </h5>
+            </div>
+            <div class="modal-body">
+                Sind Sie sicher, dass Sie diesen Termin löschen möchten?
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-danger bu-perform-delete-website-event">Termin löschen</button>
+                <button type="button" class="btn btn-secondary bu-close-dialog" data-dismiss="modal">Abbrechen</button>
+            </div>
         </div>
     </div>
 </div>
 
 
 <script>
-function refresh_events() {
-    api_call('/api/get_website_events', {}, function(data) {
-        $('.events-here').empty();
-        if (data.success) {
-            console.log(data.events);
-            for (let entry of data.events) {
-                let row = $('<tr>');
-                row.data('id', entry.id);
-                let ds = `${entry.date.substr(8, 2)}.${entry.date.substr(5, 2)}.${entry.date.substr(0, 4)}`;
-                let cell;
-                let ti_date = $("<input>").attr('type', 'date').addClass('form-control').val(entry.date);
-                cell = $('<td>').append(ti_date);
-                row.append(cell);
-                let ti_title = $("<input>").attr('type', 'text').addClass('form-control').val(entry.title);
-                cell = $('<td>').append(ti_title);
-                row.append(cell);
-                let bu_delete = $('<button>').addClass('btn').addClass('btn').addClass('btn-danger').html("<i class='fa fa-trash'></i>&nbsp;&nbsp;Löschen");
-                row.append($('<td>').append(bu_delete));
-                $('.events-here').append(row);
-                bu_delete.click(function(e) {
-                    let id = $(e.target).closest('tr').data('id');
-                    $('.bu-perform-delete-website-event').data('delete_id', id);
-                    $('#deleteModal').modal('show');
-                });
-                ti_date.change(function(e) {
-                    let id = $(e.target).closest('tr').data('id');
-                    api_call('/api/change_website_event_date', {id: id, date: $(e.target).val()}, function(data) {
-                        refresh_events();
+    function refresh_events() {
+        api_call('/api/get_website_events', {}, function (data) {
+            $('.events-here').empty();
+            if (data.success) {
+                console.log(data.events);
+                for (let entry of data.events) {
+                    let row = $('<tr>');
+                    row.data('id', entry.id);
+                    let ds = `${entry.date.substr(8, 2)}.${entry.date.substr(5, 2)}.${entry.date.substr(0, 4)}`;
+                    let cell;
+                    let ti_date = $("<input>").attr('type', 'date').addClass('form-control').val(entry.date);
+                    cell = $('<td>').append(ti_date);
+                    row.append(cell);
+                    let ti_title = $("<input>").attr('type', 'text').addClass('form-control').val(entry.title);
+                    cell = $('<td>').append(ti_title);
+                    row.append(cell);
+                    let bu_delete = $('<button>').addClass('btn').addClass('btn').addClass('btn-danger').html("<i class='fa fa-trash'></i>&nbsp;&nbsp;Löschen");
+                    row.append($('<td>').append(bu_delete));
+                    $('.events-here').append(row);
+                    bu_delete.click(function (e) {
+                        let id = $(e.target).closest('tr').data('id');
+                        $('.bu-perform-delete-website-event').data('delete_id', id);
+                        $('#deleteModal').modal('show');
                     });
-                });
-                ti_title.change(function(e) {
-                    let id = $(e.target).closest('tr').data('id');
-                    api_call('/api/change_website_event_title', {id: id, title: $(e.target).val()}, function(data) {
-                        refresh_events();
+                    ti_date.change(function (e) {
+                        let id = $(e.target).closest('tr').data('id');
+                        api_call('/api/change_website_event_date', { id: id, date: $(e.target).val() }, function (data) {
+                            refresh_events();
+                        });
                     });
-                });
+                    ti_title.change(function (e) {
+                        let id = $(e.target).closest('tr').data('id');
+                        api_call('/api/change_website_event_title', { id: id, title: $(e.target).val() }, function (data) {
+                            refresh_events();
+                        });
+                    });
+                }
             }
-        }
-    });
-}
+        });
+    }
 
-document.addEventListener('DOMContentLoaded', function() {
-    refresh_events();
-    $('.bu-new-event').click(function(e) {
-        api_call('/api/create_website_event', {}, function(data) {
-            refresh_events();
+    document.addEventListener('DOMContentLoaded', function () {
+        refresh_events();
+        $('.bu-new-event').click(function (e) {
+            api_call('/api/create_website_event', {}, function (data) {
+                refresh_events();
+            });
+        });
+        $('.bu-perform-delete-website-event').click(function (e) {
+            let id = $(e.target).data('delete_id');
+            api_call('/api/delete_website_event', { id: id }, function (data) {
+                refresh_events();
+            });
+            $('#deleteModal').modal('hide');
+        });
+        $('.bu-refresh-staging').click(function (e) {
+            $('#refresh-icon-staging').addClass('fa-spin');
+            api_call('/api/refresh_news_on_website', { staging: 'yes' }, function (data) {
+                if (data.success) {
+                    $('#refresh-icon-staging').removeClass('fa-spin');
+                    console.log('success');
+                }
+            });
+        });
+        $('.bu-refresh-live').click(function (e) {
+            showTemplateModal('Website aktualisieren',
+                'Sind Sie sicher, dass Sie die Website aktualisieren möchten?',
+                "<i class='fa fa-check'></i>&nbsp;&nbsp;Website aktualisieren", 'btn-success',
+                'Abbrechen', 'btn-secondary', function () {
+                    $('#refresh-icon-live').addClass('fa-spin');
+                    api_call('/api/refresh_news_on_website', { staging: 'no' }, function (data) {
+                        if (data.success) {
+                            $('#refresh-icon-live').removeClass('fa-spin');
+                            console.log('success');
+                        }
+                    });
+                }
+            );
         });
     });
-    $('.bu-perform-delete-website-event').click(function(e) {
-        let id = $(e.target).data('delete_id');
-        api_call('/api/delete_website_event', {id: id}, function(data) {
-            refresh_events();
-        });
-        $('#deleteModal').modal('hide');
-    });
-});
 </script>

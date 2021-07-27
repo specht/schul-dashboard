@@ -2109,3 +2109,98 @@ hr.poll-entry-divider {
         display: none;
     }
 }
+
+.news-post img.alignleft {
+    float: left;
+    margin-top: 5px;
+    margin-right: 10px;
+    margin-bottom: 10px;
+}
+
+.news-post .date {
+    margin-top: 2px;
+    margin-left: 5px;
+    float: right;
+}
+
+.news-post iframe {
+    max-width: 100%;
+}
+
+.news-post {
+    text-align: justify;
+}
+
+.news-post h1 {
+    font-size: 20pt;
+    text-align: left;
+}
+
+.news-post h2 {
+    font-size: 18pt;
+    text-align: left;
+}
+
+.news-post h3 {
+    font-size: 18pt;
+    text-align: left;
+}
+.news-post h4 {
+    font-size: 16pt;
+    text-align: left;
+}
+
+.news-post img {
+    display: block;
+}
+
+.news-post img {
+    max-width: 100%;
+}
+
+.news-post img.l3 {
+    float: left;
+    width: 25%
+    margin-right: 15px;
+    margin-bottom: 15px;
+/*     display: inline-block; */
+}
+
+.news-post .image {
+    margin-bottom: 5px;
+}
+
+.news-post .image img {
+    width: 100%;
+}
+
+.news-post .image.pull-right {
+    float: right!important;
+    padding-right: 0;
+    margin-left: 15px;
+}
+
+.news-post .image.pull-left {
+    float: left!important;
+    padding-left: 0;
+    margin-right: 15px;
+}
+
+.news-post .image .caption {
+    font-size: 90%;
+    line-height: 12pt;
+    margin-top: 3px;
+}
+
+.news-post .iw-3 {
+    width: 24%;
+}
+.news-post .iw-4 {
+    width: 33.333%;
+}
+.news-post .iw-5 {
+    width: 41.667%;
+}
+.news-post .iw-6 {
+    width: 50%;
+}

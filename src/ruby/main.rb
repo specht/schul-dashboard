@@ -53,6 +53,7 @@ require './include/lesson.rb'
 require './include/login.rb'
 require './include/matrix.rb'
 require './include/message.rb'
+require './include/news.rb'
 require './include/otp.rb'
 require './include/poll.rb'
 require './include/stats.rb'
@@ -306,6 +307,7 @@ end
 
 def parse_markdown(s)
     s ||= ''
+    s.gsub!(/\w\*in/) { |x| x.sub('*', '\\*') }
     Kramdown::Document.new(s, :smart_quotes => %w{sbquo lsquo bdquo ldquo}).to_html.strip
 end
 
@@ -1275,17 +1277,7 @@ class Main < Sinatra::Base
         data = parse_request_data(:required_keys => [:markdown],
                                   :max_body_length => 64 * 1024,
                                   :max_string_length => 64 * 1024)
-        respond(:html => Kramdown::Document.new(data[:markdown]).to_html)
-    end
-    
-    post '/api/get_news' do
-        require_user_who_can_manage_news!
-        results = neo4j_query(<<~END_OF_QUERY).map { |x| x['n'].props }
-            MATCH (n:NewsEntry)
-            RETURN n
-            ORDER BY n.timestamp DESC;
-        END_OF_QUERY
-        respond(:news => results)
+        respond(:html => parse_markdown(data[:markdown]))
     end
     
     def trigger_update(which)

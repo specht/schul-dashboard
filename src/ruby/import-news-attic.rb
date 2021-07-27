@@ -27,6 +27,8 @@ class ImportNewsAttic
                     :content => lines.join("\n").strip
                 }
             end
+            entry[:sticky] = false
+            entry[:published] = true
             raise 'oops' if entry.nil?
             neo4j_query(<<~END_OF_QUERY, {:timestamp => nid, :entry => entry})
                 MERGE (n:NewsEntry {timestamp: {timestamp}})

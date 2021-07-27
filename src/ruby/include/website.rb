@@ -8,6 +8,65 @@ class Main < Sinatra::Base
         :xs => 480
     }
     
+    post '/api/get_website_events' do
+        require_user_who_can_manage_news!
+        ts_now = DateTime.now.strftime('%Y-%m-%d')
+        neo4j_query(<<~END_OF_QUERY, :today => ts_now).map { |x| x['e'].props }
+            MATCH (e:WebsiteEvent)
+            WHERE e.date < {today}
+            DELETE e;
+        END_OF_QUERY
+        results = neo4j_query(<<~END_OF_QUERY, :today => ts_now).map { |x| x['e'].props }
+            MATCH (e:WebsiteEvent)
+            RETURN e
+            ORDER BY e.date, e.title;
+        END_OF_QUERY
+        respond(:events => results)
+    end
+    
+    post '/api/delete_website_event' do
+        require_user_who_can_manage_news!
+        data = parse_request_data(:required_keys => [:id])
+        neo4j_query(<<~END_OF_QUERY, :id => data[:id])
+            MATCH (e:WebsiteEvent {id: {id}})
+            DELETE e;
+        END_OF_QUERY
+        respond(:result => 'yay')
+    end
+    
+    post '/api/create_website_event' do
+        require_user_who_can_manage_news!
+        id = RandomTag.generate()
+        ts_now = DateTime.now.strftime('%Y-%m-%d')
+        neo4j_query(<<~END_OF_QUERY, :id => id, :date => ts_now)
+            CREATE (e:WebsiteEvent)
+            SET e.id = {id}
+            SET e.date = {date}
+            SET e.title = '';
+        END_OF_QUERY
+        respond(:result => 'yay')
+    end
+    
+    post '/api/change_website_event_date' do
+        require_user_who_can_manage_news!
+        data = parse_request_data(:required_keys => [:id, :date])
+        neo4j_query(<<~END_OF_QUERY, :id => data[:id], :date => data[:date])
+            MATCH (e:WebsiteEvent {id: {id}})
+            SET e.date = {date};
+        END_OF_QUERY
+        respond(:result => 'yay')
+    end
+    
+    post '/api/change_website_event_title' do
+        require_user_who_can_manage_news!
+        data = parse_request_data(:required_keys => [:id, :title])
+        neo4j_query(<<~END_OF_QUERY, :id => data[:id], :title => data[:title])
+            MATCH (e:WebsiteEvent {id: {id}})
+            SET e.title = {title};
+        END_OF_QUERY
+        respond(:result => 'yay')
+    end
+
     post '/api/get_news' do
         require_user_who_can_manage_news!
         results = neo4j_query(<<~END_OF_QUERY).map { |x| x }
@@ -220,7 +279,33 @@ class Main < Sinatra::Base
         respond(:html => parse_markdown(content))
     end
 
-    get '/api/get_frontpage_news_entries' do
+    get "/api/website_get_teachers/#{WEBSITE_READ_INFO_SECRET}" do
+        data = {}
+        data[:teachers] = @@user_info.select do |email, info|
+            info[:teacher] && !info[:shorthand].empty? && info[:shorthand][0] != '_'
+        end.map do |email, info|
+            {:name => info[:display_last_name],
+             :email => info[:email]}
+        end
+        respond(data)
+    end
+    
+    get "/api/website_get_events/#{WEBSITE_READ_INFO_SECRET}" do
+        data = {}
+        results = neo4j_query(<<~END_OF_QUERY).map { |x| x['e'].props }
+            MATCH (e:WebsiteEvent)
+            RETURN e
+            ORDER BY e.date, e.title;
+        END_OF_QUERY
+        data[:events] = results.map do |x|
+            x.select do |k, v|
+                [:date, :title, :cancelled].include?(k)
+            end
+        end
+        respond(data)
+    end
+    
+    get "/api/get_frontpage_news_entries/#{WEBSITE_READ_INFO_SECRET}" do
         entries = neo4j_query(<<~END_OF_QUERY).map { |x| x['n'].props }
             MATCH (n:NewsEntry)
             WHERE n.published = true
@@ -248,6 +333,43 @@ class Main < Sinatra::Base
         require_user_who_can_manage_news!
         data = parse_request_data(:required_keys => [:staging])
         c = Curl.post("#{SCHOOL_WEBSITE_API_URL}/api/update_news_#{(data[:staging] == 'yes') ? 'staging' : 'live'}")
+        respond(:yay => 'sure')
+    end
+
+    post '/api/update_news_entry' do
+        require_user_who_can_manage_news!
+        data = parse_request_data(:required_keys => [:timestamp, :title, :content], 
+            :max_body_length => 64 * 1024,
+            :max_string_length => 64 * 1024,
+            :types => {:timestamp => Integer})
+        neo4j_query_expect_one(<<~END_OF_QUERY, {:timestamp => data[:timestamp], :title => data[:title], :content => data[:content]})
+            MATCH (n:NewsEntry {timestamp: {timestamp}})
+            SET n.title = {title}
+            SET n.content = {content}
+            RETURN n.timestamp;
+        END_OF_QUERY
+        respond(:yay => 'sure')
+    end
+
+    post '/api/store_news_entry' do
+        require_user_who_can_manage_news!
+        now = DateTime.now
+        data = parse_request_data(:required_keys => [:title, :content], 
+            :max_body_length => 64 * 1024,
+            :max_string_length => 64 * 1024)
+        entry = {
+            :timestamp => now.to_time.to_i,
+            :date => now.strftime('%Y-%m-%d %H:%M:%S'),
+            :title => data[:title],
+            :content => data[:content],
+            :sticky => false,
+            :published => false
+        }
+        neo4j_query_expect_one(<<~END_OF_QUERY, {:entry => entry, :timestamp => entry[:timestamp]})
+            CREATE (n:NewsEntry {timestamp: {timestamp}})
+            SET n = {entry}
+            RETURN n.timestamp;
+        END_OF_QUERY
         respond(:yay => 'sure')
     end
 end

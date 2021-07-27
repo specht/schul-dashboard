@@ -39,7 +39,8 @@
                 <div class='row' style='height: 100%;'>
                     <div class='col-md-5' style='height: 100%; display: flex; flex-direction: column;'>
                         <input type='text' class='form-control ti_title' placeholder='Titel' value=''></input>
-                        <textarea id='ta_markdown' class='form-control' placeholder='Text'
+                        <textarea id='ta_markdown' class='form-control'
+                            placeholder='Bitte geben Sie hier die Meldung im Markdown-Format ein'
                             style='flex-grow: 1;'></textarea>
                     </div>
                     <div class='col-md-7' style='height: 100%; display: flex; flex-direction: column;'>
@@ -53,8 +54,15 @@
                 <div class='pull-left text-muted' style='flex-grow: 1;'>
                     <em>Strg+Enter: Vorschau aktualisieren</em>
                 </div>
-                <button id='bu_render_preview' type="button" class="btn btn-success">Vorschau</button>
-                <button id='bu_close_feedback_modal' type="button" class="btn btn-secondary"
+                <button id='bu_render_preview' type="button" class="btn btn-outline-secondary"><i
+                        class='fa fa-eye'></i>&nbsp;&nbsp;Vorschau</button>
+                <div id='save_news_btn_container'>
+                    <button id='bu_discard' type="button" class="btn btn-outline-secondary"><i
+                            class='fa fa-times'></i>&nbsp;&nbsp;<span>Verwerfen</span></button>
+                    <button id='bu_save' type="button" class="btn btn-outline-secondary"><i
+                            class='fa fa-check'></i>&nbsp;&nbsp;<span>Speichern</span></button>
+                </div>
+                <button id='bu_close_edit_modal' type="button" class="btn btn-secondary"
                     data-dismiss="modal">Schließen</button>
             </div>
         </div>
@@ -89,7 +97,61 @@
 </style>
 
 <script>
+    var stored_entry = null;
+    var old_timestamp = null;
+    var old_title = '';
+    var old_content = '';
+    var preview_title = '';
+    var preview_content = '';
+    var force_close = false;
+    var row_title_element = null;
+
+    function pending_changes() {
+        let flag = (old_title !== $('.ti_title').val().trim() ||
+            (old_content !== $('#ta_markdown').val()));
+        return flag;
+    }
+
+    function pending_changes_preview() {
+        let flag = (preview_title !== $('.ti_title').val().trim() ||
+            (preview_content !== $('#ta_markdown').val()));
+        return flag;
+    }
+
+    function update_buttons() {
+        if (old_timestamp) {
+            $('#bu_discard span').html('Änderungen verwerfen');
+            $('#bu_save span').html('Änderungen speichern');
+        } else {
+            $('#bu_discard span').html('Verwerfen');
+            $('#bu_save span').html('Speichern');
+        }
+        if (pending_changes()) {
+            $('#bu_discard').removeClass('btn-outline-secondary').addClass('btn-secondary').prop('disabled', false);
+            $('#bu_close_edit_modal').removeClass('btn-secondary').addClass('btn-outline-secondary').prop('disabled', true);
+            $('#bu_save').removeClass('btn-outline-secondary').addClass('btn-success').prop('disabled', false);
+        } else {
+            $('#bu_discard').removeClass('btn-secondary').addClass('btn-outline-secondary').prop('disabled', true);
+            $('#bu_close_edit_modal').removeClass('btn-outline-secondary').addClass('btn-secondary').prop('disabled', false);
+            $('#bu_save').removeClass('btn-success').addClass('btn-outline-secondary').prop('disabled', true);
+        }
+        if (pending_changes_preview()) {
+            $('#bu_render_preview').removeClass('btn-outline-secondary').addClass('btn-primary').prop('disabled', false);
+        } else {
+            $('#bu_render_preview').removeClass('btn-primary').addClass('btn-outline-secondary').prop('disabled', true);
+        }
+    }
+
     document.addEventListener('DOMContentLoaded', function () {
+        $('#editModal').on('hide.bs.modal', function (e) {
+            if ($(e.target).attr('id') === 'editModal' && pending_changes() && (!force_close)) {
+                $('#save_news_btn_container').effect('shake', { direction: 'left', distance: 4 });
+                e.preventDefault();
+                e.stopImmediatePropagation();
+                return false;
+            }
+        });
+
         api_call('/api/get_news', {}, function (data) {
             let tbody = $('#news_here');
             tbody.empty();
@@ -100,7 +162,7 @@
                 row.data('published', entry.published);
                 row.data('sticky', entry.sticky);
                 row.append($('<td>').text(entry.date.substr(0, 10)));
-                row.append($('<td>').text(entry.title));
+                row.append($('<td>').addClass('row-title-here').text(entry.title));
                 tbody.append(row);
                 let bu_published = $('<button>').addClass('btn').addClass('btn-sm').
                     addClass(entry.published ? 'btn-success' : 'btn-outline-success').
@@ -146,7 +208,7 @@
                         'Sind Sie sicher, dass Sie diesen News-Eintrag löschen möchten?',
                         "<i class='fa fa-trash'></i>&nbsp;&nbsp;Löschen", 'btn-danger',
                         'Abbrechen', 'btn-secondary', function () {
-                            api_call('/api/delete_news_entry', {timestamp: data.timestamp}, function(data) {
+                            api_call('/api/delete_news_entry', { timestamp: data.timestamp }, function (data) {
                                 if (data.success) {
                                     $(e.target).closest('tr').remove();
                                 }
@@ -156,13 +218,23 @@
                 });
 
                 row.click(function (e) {
-                    let timestamp = $(e.target).closest('tr').data('timestamp');
+                    let row = $(e.target).closest('tr');
+                    let timestamp = row.data('timestamp');
+                    row_title_element = row.find('.row-title-here');
                     api_call('/api/get_news_entry', { timestamp: timestamp }, function (data) {
                         if (data.success) {
                             $('.ti_title').val(data.title);
                             $('#ta_markdown').val(data.content);
                             $('#preview_heading').text(data.title);
                             $('#ta_preview').html(data.content_html);
+                            old_timestamp = timestamp;
+                            old_title = data.title;
+                            old_content = data.content;
+                            preview_title = data.title;
+                            preview_content = data.content;
+                            force_close = false;
+                            
+                            update_buttons();
                             $('#editModal').modal('show');
                         }
                     });
@@ -170,6 +242,17 @@
             }
         });
         $('.bu-compose').click(function (e) {
+            old_timestamp = null;
+            old_title = '';
+            old_content = '';
+            preview_title = '';
+            preview_content = '';
+            force_close = false;
+            $('.ti_title').val('');
+            $('#ta_markdown').val('');
+            $('#preview_heading').text('');
+            $('#ta_preview').html('');
+            update_buttons();
             $('#editModal').modal('show');
         });
         $('#bu_render_preview').click(function (e) {
@@ -177,17 +260,26 @@
                 if (data.success) {
                     $('#preview_heading').text($('.ti_title').val());
                     $('#ta_preview').html(data.html);
+                    preview_title = $('.ti_title').val().trim();
+                    preview_content = $('#ta_markdown').val().trim();
+                    update_buttons();
                 }
             });
         });
         $('.ti_title').keydown(function (e) {
             if (e.keyCode === 13 && e.ctrlKey)
                 $('#bu_render_preview').click();
+            update_buttons();
         });
         $('#ta_markdown').keydown(function (e) {
             if (e.keyCode === 13 && e.ctrlKey)
                 $('#bu_render_preview').click();
+            update_buttons();
         });
+        $('.ti_title').keyup(function (e) { update_buttons(); });
+        $('#ta_markdown').keyup(function (e) { update_buttons(); });
+        $('.ti_title').change(function (e) { update_buttons(); });
+        $('#ta_markdown').change(function (e) { update_buttons(); });
         $('.bu-refresh-staging').click(function (e) {
             $('#refresh-icon-staging').addClass('fa-spin');
             api_call('/api/refresh_news_on_website', { staging: 'yes' }, function (data) {
@@ -211,6 +303,31 @@
                     });
                 }
             );
+        });
+        $('#bu_discard').click(function (e) {
+            force_close = true;
+            $('#editModal').modal('hide');
+        });
+        $('#bu_save').click(function (e) {
+            let entry = { title: $('.ti_title').val().trim(), content: $('#ta_markdown').val().trim() };
+            if (old_timestamp !== null) {
+                entry.timestamp = old_timestamp;
+                api_call('/api/update_news_entry', entry, function (data) {
+                    if (data.success) {
+                        force_close = true;
+                        $('#editModal').modal('hide');
+                        row_title_element.text(entry.title);
+                    }
+                });
+            } else {
+                api_call('/api/store_news_entry', entry, function (data) {
+                    if (data.success) {
+                        force_close = true;
+                        $('#editModal').modal('hide');
+                        window.location.reload();
+                    }
+                });
+            }
         });
     });
 </script>

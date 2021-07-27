@@ -53,7 +53,6 @@ require './include/lesson.rb'
 require './include/login.rb'
 require './include/matrix.rb'
 require './include/message.rb'
-require './include/news.rb'
 require './include/otp.rb'
 require './include/poll.rb'
 require './include/stats.rb'
@@ -62,7 +61,7 @@ require './include/theme.rb'
 require './include/user.rb'
 require './include/vote.rb'
 require './include/vplan.rb'
-require './include/website_events.rb'
+require './include/website.rb'
 require './parser.rb'
 
 def remove_accents(s)
@@ -1648,32 +1647,6 @@ class Main < Sinatra::Base
             response['WWW-Authenticate'] = %(Basic realm="Restricted Area")
             throw(:halt, [401, "Not authorized\n"])
         end
-    end
-    
-    get "/api/website_get_teachers/#{WEBSITE_READ_INFO_SECRET}" do
-        data = {}
-        data[:teachers] = @@user_info.select do |email, info|
-            info[:teacher] && !info[:shorthand].empty? && info[:shorthand][0] != '_'
-        end.map do |email, info|
-            {:name => info[:display_last_name],
-             :email => info[:email]}
-        end
-        respond(data)
-    end
-    
-    get "/api/website_get_events/#{WEBSITE_READ_INFO_SECRET}" do
-        data = {}
-        results = neo4j_query(<<~END_OF_QUERY).map { |x| x['e'].props }
-            MATCH (e:WebsiteEvent)
-            RETURN e
-            ORDER BY e.date, e.title;
-        END_OF_QUERY
-        data[:events] = results.map do |x|
-            x.select do |k, v|
-                [:date, :title, :cancelled].include?(k)
-            end
-        end
-        respond(data)
     end
     
     get '/*' do

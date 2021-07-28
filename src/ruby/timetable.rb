@@ -1780,7 +1780,7 @@ class Timetable
                 groups = recipients.keys.select do |key|
                     recipients[key].include?(:entries)
                 end.sort do |a, b|
-                    recipients[b][:entries].size <=> recipients[a][:entries].size
+                    (recipients[b][:entries] || []).size <=> (recipients[a][:entries] || []).size
                 end
                 f.print({:recipients => recipients, :groups => groups}.to_json)
             end

@@ -385,6 +385,8 @@ class Parser
             CSV.foreach('/data/tablets/tablets.csv', :headers => true) do |line|
                 line = Hash[line]
                 next unless line['Bezeichnung']
+                deaktiviert = (line['Deaktiviert'] || '').strip
+                next unless deaktiviert.empty?
                 id = line['Bezeichnung'].strip
                 color = (line['Farbe'] || '').strip
                 lagerort = (line['Lagerort'] || '').strip

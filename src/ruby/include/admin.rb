@@ -22,6 +22,7 @@ class Main < Sinatra::Base
         StringIO.open do |io|
             io.puts "<a class='btn btn-secondary' href='#teachers'>Lehrerinnen und Lehrer</a>"
             io.puts "<a class='btn btn-secondary' href='#sus'>Schülerinnen und Schüler</a>"
+            io.puts "<a class='btn btn-secondary' href='#website'>Website</a>"
             io.puts "<a class='btn btn-secondary' href='#tablets'>Tablets</a>"
             io.puts "<a class='btn btn-secondary' href='/lesson_keys'>Lesson Keys</a>"
             io.puts "<hr />"
@@ -134,6 +135,11 @@ class Main < Sinatra::Base
             end
             io.puts "</tbody>"
             io.puts "</table>"
+            io.puts "<hr />"
+            io.puts "<h3 id='website'>Website</h3>"
+            io.puts "<button class='btn btn-secondary bu-refresh-staging'><i id='refresh-icon-staging' class='fa fa-refresh'></i>&nbsp;&nbsp;Vorschau-Seite aktualisieren</button>"
+            io.puts "<button class='btn btn-success bu-refresh-live'><i id='refresh-icon-live' class='fa fa-refresh'></i>&nbsp;&nbsp;Live-Seite aktualisieren</button>"
+            io.puts "<hr />"
             io.puts "<h3 id='tablets'>Tablets</h3>"
             io.puts "<hr />"
             io.puts "<p>Mit einem Klick auf diesen Button können Sie dieses Gerät dauerhaft als Lehrer-Tablet anmelden.</p>"

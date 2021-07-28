@@ -336,6 +336,13 @@ class Main < Sinatra::Base
         respond(:yay => 'sure')
     end
 
+    post '/api/refresh_entire_website' do
+        require_admin!
+        data = parse_request_data(:required_keys => [:staging])
+        c = Curl.post("#{SCHOOL_WEBSITE_API_URL}/api/update_all_#{(data[:staging] == 'yes') ? 'staging' : 'live'}")
+        respond(:yay => 'sure')
+    end
+
     post '/api/update_news_entry' do
         require_user_who_can_manage_news!
         data = parse_request_data(:required_keys => [:timestamp, :title, :content], 

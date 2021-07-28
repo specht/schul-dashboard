@@ -2,83 +2,107 @@
 <div class='container-fluid' style='padding-top: 30px; background-color: #fff;'>
     <div class='row'>
         <div class='col-md-12'>
-        #{print_admin_dashboard()}
+            #{print_admin_dashboard()}
         </div>
     </div>
 </div>
 
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-    install_clipboard_handler('.btn-clipboard');
-    $('.btn-impersonate').click(function(e) {
-        let email = $(e.target).data('impersonate-email');
-        api_call('/api/impersonate', {email: email}, function(data) {
-            if (data.success) {
-                window.location.href = '/';
-            }
-        });
-    });
-    $('.btn-sessions').click(function(e) {
-        let id = $(e.target).data('sessions-id');
-        let row = $('.session-row.sessions-' + id);
-        if (row.is(':visible'))
-            row.hide();
-        else
-            row.show();
-    });
-    $('.btn-purge-session').click(function(e) {
-        let scrambled_sid = $(e.target).data('scrambled-sid');
-        let email = $(e.target).data('email');
-        api_call('/api/purge_session_for_user', {email: email, scrambled_sid: scrambled_sid}, function(data) {
-            if (data.success) {
-                $(e.target).closest('tr').remove();
-            }
-        });
-    });
-    $('.btn-toggle-homeschooling').click(function(e) {
-        let email = $(e.target).data('email');
-        api_call('/api/toggle_homeschooling', {email: email}, function(data) {
-            console.log('yay', data);
-            if (data.success) {
-                if (data.homeschooling) {
-                    $(e.target).removeClass('btn-secondary').addClass('btn-info').html("<i class='fa fa-home'></i>&nbsp;&nbsp;zu Hause");
-                } else {
-                    $(e.target).removeClass('btn-info').addClass('btn-secondary').html("<i class='fa fa-building'></i>&nbsp;&nbsp;Präsenz");;
+    document.addEventListener('DOMContentLoaded', function () {
+        install_clipboard_handler('.btn-clipboard');
+        $('.btn-impersonate').click(function (e) {
+            let email = $(e.target).data('impersonate-email');
+            api_call('/api/impersonate', { email: email }, function (data) {
+                if (data.success) {
+                    window.location.href = '/';
                 }
+            });
+        });
+        $('.btn-sessions').click(function (e) {
+            let id = $(e.target).data('sessions-id');
+            let row = $('.session-row.sessions-' + id);
+            if (row.is(':visible'))
+                row.hide();
+            else
+                row.show();
+        });
+        $('.btn-purge-session').click(function (e) {
+            let scrambled_sid = $(e.target).data('scrambled-sid');
+            let email = $(e.target).data('email');
+            api_call('/api/purge_session_for_user', { email: email, scrambled_sid: scrambled_sid }, function (data) {
+                if (data.success) {
+                    $(e.target).closest('tr').remove();
+                }
+            });
+        });
+        $('.btn-toggle-homeschooling').click(function (e) {
+            let email = $(e.target).data('email');
+            api_call('/api/toggle_homeschooling', { email: email }, function (data) {
+                console.log('yay', data);
+                if (data.success) {
+                    if (data.homeschooling) {
+                        $(e.target).removeClass('btn-secondary').addClass('btn-info').html("<i class='fa fa-home'></i>&nbsp;&nbsp;zu Hause");
+                    } else {
+                        $(e.target).removeClass('btn-info').addClass('btn-secondary').html("<i class='fa fa-building'></i>&nbsp;&nbsp;Präsenz");;
+                    }
+                }
+            });
+        });
+        $('.bu_login_teacher_tablet').click(function (e) {
+            api_call('/api/login_as_teacher_tablet', {}, function (data) {
+                if (data.success) {
+                    window.location.href = '/';
+                }
+            });
+        });
+        $('.bu_login_kurs_tablet').click(function (e) {
+            let selected_buttons = $('.btn-teacher-for-kurs-tablet-login.selected');
+            let shorthands = [];
+            for (let button of selected_buttons) {
+                shorthands.push($(button).data('shorthand'));
             }
+            api_call('/api/login_as_kurs_tablet', { shorthands: shorthands }, function (data) {
+                if (data.success) {
+                    window.location.href = '/';
+                }
+            });
+        });
+        $('.btn-teacher-for-kurs-tablet-login').click(function (e) {
+            let button = $(e.target);
+            button.toggleClass('selected');
+            let selected_buttons = $('.btn-teacher-for-kurs-tablet-login.selected');
+            $('.bu_login_kurs_tablet').attr('disabled', selected_buttons.length === 0);
+        });
+        $('.btn-tablet-login').click(function (e) {
+            api_call('/api/login_as_tablet', { id: `${$(e.target).data('id')}` }, function (data) {
+                if (data.success) {
+                    window.location.href = '/';
+                }
+            });
+        });
+        $('.bu-refresh-staging').click(function (e) {
+            $('#refresh-icon-staging').addClass('fa-spin');
+            api_call('/api/refresh_entire_website', { staging: 'yes' }, function (data) {
+                if (data.success) {
+                    $('#refresh-icon-staging').removeClass('fa-spin');
+                    console.log('success');
+                }
+            });
+        });
+        $('.bu-refresh-live').click(function (e) {
+            showTemplateModal('Website aktualisieren',
+                'Sind Sie sicher, dass Sie die Website aktualisieren möchten?',
+                "<i class='fa fa-check'></i>&nbsp;&nbsp;Website aktualisieren", 'btn-success',
+                'Abbrechen', 'btn-secondary', function () {
+                    $('#refresh-icon-live').addClass('fa-spin');
+                    api_call('/api/refresh_entire_website', { staging: 'no' }, function (data) {
+                        if (data.success) {
+                            $('#refresh-icon-live').removeClass('fa-spin');
+                            console.log('success');
+                        }
+                    });
+                }
+            );
         });
     });
-    $('.bu_login_teacher_tablet').click(function(e) {
-        api_call('/api/login_as_teacher_tablet', {}, function(data) {
-            if (data.success) {
-                window.location.href = '/';
-            }
-        });
-    });
-    $('.bu_login_kurs_tablet').click(function(e) {
-        let selected_buttons = $('.btn-teacher-for-kurs-tablet-login.selected');
-        let shorthands = [];
-        for (let button of selected_buttons) {
-            shorthands.push($(button).data('shorthand'));
-        }
-        api_call('/api/login_as_kurs_tablet', {shorthands: shorthands}, function(data) {
-            if (data.success) {
-                window.location.href = '/';
-            }
-        });
-    });
-    $('.btn-teacher-for-kurs-tablet-login').click(function(e) {
-        let button = $(e.target);
-        button.toggleClass('selected');
-        let selected_buttons = $('.btn-teacher-for-kurs-tablet-login.selected');
-        $('.bu_login_kurs_tablet').attr('disabled', selected_buttons.length === 0);
-    });
-    $('.btn-tablet-login').click(function(e) {
-        api_call('/api/login_as_tablet', {id: `${$(e.target).data('id')}`}, function(data) {
-            if (data.success) {
-                window.location.href = '/';
-            }
-        });
-    });
-});
 </script>

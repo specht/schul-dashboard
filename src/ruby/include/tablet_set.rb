@@ -1,19 +1,49 @@
+# TODO: move these to credentials
+TABLET_SET_WARNING_BEFORE_MINUTES = 15
+TABLET_SET_WARNING_AFTER_MINUTES = 15
+
 class Main < Sinatra::Base
 
-    # check whether we can book a list of tablet sets for a specific lesson
-    def already_booked_tablets_for_timespan(datum, start_time, end_time)
+    # check whether we can book a list of tablet sets for a specific time span
+    def already_booked_tablet_sets_for_timespan(datum, start_time, end_time)
         require_teacher!
         data = {
             :datum => datum,
             :start_time => start_time,
             :end_time => end_time
         }
-        neo4j_query(<<~END_OF_QUERY, data).map { |x| {:tablet_set_id => x['t.id'], :lesson_key => x['l.key'] } }
+        rows = neo4j_query(<<~END_OF_QUERY, data).map { |x| {:tablet_set_id => x['t.id'], :lesson_key => x['l.key'] } }
             MATCH (t:TabletSet)<-[:BOOKED]-(b:Booking {datum: {datum}})
             WHERE NOT ((b.end_time <= {start_time}) OR (b.start_time >= {end_time}))
             OPTIONAL MATCH (b)-[:FOR]->(i:LessonInfo)-[:BELONGS_TO]->(l:Lesson)
             RETURN t.id, l.key;
         END_OF_QUERY
+        result = {}
+        rows.each do |row|
+            result[row[:tablet_set_id]] ||= Set.new()
+            result[row[:tablet_set_id]] << row[:lesson_key]
+        end
+        result
+    end
+
+    # return all booked tablet sets for a specific day
+    def already_booked_tablet_sets_for_day(datum)
+        require_teacher!
+        rows = neo4j_query(<<~END_OF_QUERY, { :datum => datum }).map { |x| {:tablet_set_id => x['t.id'], :lesson_key => x['l.key'], :start_time => x['b.start_time'], :end_time => x['b.end_time'] } }
+            MATCH (t:TabletSet)<-[:BOOKED]-(b:Booking {datum: {datum}})
+            OPTIONAL MATCH (b)-[:FOR]->(i:LessonInfo)-[:BELONGS_TO]->(l:Lesson)
+            RETURN t.id, l.key, b.start_time, b.end_time;
+        END_OF_QUERY
+        result = {}
+        rows.each do |row|
+            result[row[:tablet_set_id]] ||= []
+            result[row[:tablet_set_id]] << {
+                :lesson_key => row[:lesson_key],
+                :start_time => row[:start_time],
+                :end_time => row[:end_time]
+            }
+        end
+        result
     end
 
     # book a list of tablet sets for a specific lesson, or unbook all tablet sets
@@ -22,8 +52,9 @@ class Main < Sinatra::Base
         conflicting_tablets = []
         unless tablet_sets.empty?
             # check if it's bookable
-            conflicting_tablets = already_booked_tablets_for_timespan(datum, start_time, end_time).reject do |x|
-                x[:lesson_key] == lesson_key
+            temp = already_booked_tablet_sets_for_timespan(datum, start_time, end_time)
+            conflicting_tablets = temp.keys.reject do |x|
+                temp[x][:lesson_key] == lesson_key
             end
         end
         if conflicting_tablets.empty?
@@ -54,21 +85,13 @@ class Main < Sinatra::Base
                     WITH b
                     MATCH (b)-[r:BOOKED]->(:TabletSet)
                     DELETE r
-
                 END_OF_QUERY
                 neo4j_query(<<~END_OF_QUERY, data)
-                    MERGE (l:Lesson {key: {lesson_key}})
-                    MERGE (i:LessonInfo {offset: {offset}})-[:BELONGS_TO]->(l)
-                    MERGE (b:Booking)-[:FOR]->(i)
-                    SET b.updated = {timestamp}
-                    SET b.datum = {datum}
-                    SET b.start_time = {start_time}
-                    SET b.end_time = {end_time}
-
-                    WITH l, i, b
-                    MATCH (t:TabletSet) WHERE t.id IN {tablet_set_ids}
-
-                    WITH l, i, b, t
+                    MATCH (l:Lesson {key: {lesson_key}})
+                    MATCH (i:LessonInfo {offset: {offset}})-[:BELONGS_TO]->(l)
+                    MATCH (b:Booking)-[:FOR]->(i)
+                    MATCH (t:TabletSet)
+                    WHERE t.id IN {tablet_set_ids}
                     MERGE (b)-[:BOOKED]->(t)
                 END_OF_QUERY
             end
@@ -77,6 +100,21 @@ class Main < Sinatra::Base
             debug conflicting_tablets.to_yaml
             raise :unable_to_book_tablet_sets
         end
+    end
+
+    def hh_mm_to_i(s)
+        parts = s.split(':').map { |x| x.to_i }
+        parts[0] * 60 + parts[1]
+    end
+
+    def teacher_names_and_fach_for_lesson_key(lesson_key)
+        pretty_fach = (@@lessons[:lesson_keys][lesson_key] || {})[:pretty_folder_name] || 'NN'
+        shorthands = (@@lessons[:lesson_keys][lesson_key] || {})[:lehrer] || ['NN']
+        teacher_names = shorthands.map do |shorthand|
+            email = @@shorthands[shorthand]
+            (@@user_info[email] || {})[:display_last_name_dativ] || 'NN'
+        end
+        return pretty_fach, teacher_names
     end
 
     post '/api/find_available_tablet_sets_for_lesson' do
@@ -89,6 +127,9 @@ class Main < Sinatra::Base
         @@tablet_sets.keys.each do |tablet_id|
             available_tablet_sets << tablet_id
         end
+
+        booked_tablet_sets_timespan = already_booked_tablet_sets_for_timespan(data[:datum], data[:start_time], data[:end_time])
+        booked_tablet_sets_day = already_booked_tablet_sets_for_day(data[:datum])
 
         # consider klasse
         klassen = @@lessons[:lesson_keys][data[:lesson_key]][:klassen]
@@ -119,37 +160,57 @@ class Main < Sinatra::Base
             end
         end
 
-        # also consider number of students + teacher
-        sus_count = (@@schueler_for_lesson[data[:lesson_key]] || []).size
-
-        result = neo4j_query(<<~END_OF_QUERY, :datum => data[:datum]).map { |x| {:tablet_set_id => x['t.id'], :booking => x['b'].props, :lesson_key => x['l.key']} }
-            MATCH (t:TabletSet)<-[:WHICH]-(b:Booking {datum: {datum}})-[:FOR]->(i:LessonInfo)-[:BELONGS_TO]->(l:Lesson)
-            RETURN t.id, b, l.key
-            ORDER BY b.start_time;
-        END_OF_QUERY
-        # remove bookings of tablet sets which aren't available for this room
-        result.select! do |x|
-            available_tablet_sets.include?(x)
-        end
-        bookings = {}
-        result.each do |x|
-            bookings[x[:tablet_set_id]] ||= []
-            bookings[x[:tablet_set_id]] << {
-                :booking => x[:booking]
-            }
-        end
-
         tablet_sets = {}
         available_tablet_sets.each do |x|
             tablet_sets[x] = {
                 :count => @@tablet_sets[x][:count],
                 :standort => @@tablet_sets[x][:standort],
-                :label => @@tablet_sets[x][:label]
+                :label => @@tablet_sets[x][:label],
+                :blocked_by => booked_tablet_sets_timespan[x]
             }
+            hints = []
+            if booked_tablet_sets_timespan[x]
+                lesson_key = booked_tablet_sets_timespan[x].to_a.first
+                pretty_fach, teacher_names = teacher_names_and_fach_for_lesson_key(lesson_key)
+                hints << "<span class='text-danger'><i class='fa fa-warning'></i></span>&nbsp;&nbsp;Dieser Tabletsatz wurde bereits von #{teacher_names.join(', ')} gebucht: #{pretty_fach}"
+            elsif booked_tablet_sets_day[x]
+                bookings_before = []
+                bookings_after = []
+                booked_tablet_sets_day[x].each do |entry|
+                    if entry[:end_time] <= data[:start_time]
+                        bookings_before << entry
+                    else
+                        bookings_after << entry
+                    end
+                end
+                debug bookings_before.to_yaml
+                debug bookings_after.to_yaml
+                unless bookings_before.empty?
+                    booking = bookings_before.last
+                    t = hh_mm_to_i(data[:start_time]) - hh_mm_to_i(booking[:end_time])
+                    if t <= TABLET_SET_WARNING_BEFORE_MINUTES
+                        lesson_key = booking[:lesson_key]
+                        pretty_fach, teacher_names = teacher_names_and_fach_for_lesson_key(lesson_key)
+                        hints << "<span class='text-danger'><i class='fa fa-clock-o'></i></span>&nbsp;&nbsp;Dieser Tabletsatz wird bis #{t} Minuten vor Stundenbeginn noch von #{teacher_names.join(', ')} benötigt: #{pretty_fach}"
+                    end
+                end
+                unless bookings_after.empty?
+                    booking = bookings_after.first
+                    t = hh_mm_to_i(booking[:start_time]) - hh_mm_to_i(data[:end_time])
+                    if t <= TABLET_SET_WARNING_AFTER_MINUTES
+                        lesson_key = booking[:lesson_key]
+                        pretty_fach, teacher_names = teacher_names_and_fach_for_lesson_key(lesson_key)
+                        hints << "<span class='text-danger'><i class='fa fa-clock-o'></i></span>&nbsp;&nbsp;Dieser Tabletsatz wird bereits #{t} Minuten nach Stundenende von #{teacher_names.join(', ')} benötigt: #{pretty_fach}"
+                    end
+                end
+            end
+            unless hints.empty?
+                tablet_sets[x][:hint] = hints.join(' ')
+            end
         end
 
-        respond(:bookings => bookings, :available_tablet_sets => tablet_sets, 
-            :available_tablet_sets_order => available_tablet_sets, :sus_count => sus_count)
+        respond(:available_tablet_sets => tablet_sets,
+            :available_tablet_sets_order => available_tablet_sets)
     end
 
     post '/api/book_tablet_set_for_lesson' do

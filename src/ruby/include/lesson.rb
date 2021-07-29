@@ -44,9 +44,9 @@ class Main < Sinatra::Base
                 end
                 if data.include?(:booked_tablet_sets) && data.include?(:booked_tablet_sets_timespan)
                     book_tablet_set_for_lesson(data[:lesson_key], lesson_offset, 
-                        data[:booked_tablet_sets_timespan][:datum],
-                        data[:booked_tablet_sets_timespan][:start_time],
-                        data[:booked_tablet_sets_timespan][:end_time],
+                        data[:booked_tablet_sets_timespan]['datum'],
+                        data[:booked_tablet_sets_timespan]['start_time'],
+                        data[:booked_tablet_sets_timespan]['end_time'],
                         data[:booked_tablet_sets])
                 end
             end

@@ -1340,7 +1340,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     bu_book_tablet_set.addClass('btn-outline-secondary').html("<i class='fa fa-times'></i>&nbsp;&nbsp;Nicht gebucht");
                 }
                 bu_book_tablet_set.click(function(e) {
-                    let button = $(e.target);
+                    let button = $(e.target).closest('button');
                     let tablet_set_id = button.data('tablet_set_id');
                     if (booked_tablet_sets_config.indexOf(tablet_set_id) >= 0) {
                         button.removeClass('btn-info').addClass('btn-outline-secondary');
@@ -1356,6 +1356,8 @@ document.addEventListener('DOMContentLoaded', function() {
                     update_changes();
                     update_tablet_set_booking_status();
                 });
+                if (data.available_tablet_sets[key].blocked_by)
+                    bu_book_tablet_set.prop('disabled', true);
                 row.append($('<td>').text(key));
                 row.append($('<td>').text(data.available_tablet_sets[key].label));
                 row.append($('<td>').text(data.available_tablet_sets[key].standort));

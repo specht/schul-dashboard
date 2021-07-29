@@ -2204,3 +2204,9 @@ hr.poll-entry-divider {
 .news-post .iw-6 {
     width: 50%;
 }
+
+.table.narrow tr.annotation_row td {
+    border-top: 0;
+    font-size: 90%;
+    padding-top: 0px;
+}

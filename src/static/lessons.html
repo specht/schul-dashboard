@@ -27,6 +27,10 @@ var breakout_room_config = null;
 var breakout_room_widgets = {};
 var single_selected_offset = null;
 var stored_breakout_room_config_json = null;
+var booked_tablet_sets_config = [];
+var stored_booked_tablet_sets_config = JSON.stringify([]);
+var tablet_set_info = #{@@tablet_sets.to_json};
+
 </script>
 
 <div class="modal" id="breakoutRoomsModal" tabindex="-1" role="dialog" aria-hidden="true">
@@ -95,6 +99,33 @@ var stored_breakout_room_config_json = null;
             </div>
             <div class="modal-footer">
                 <button id='bu_close_breakout_room' type="button" class="btn btn-secondary" data-dismiss="modal">Schließen</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal" id="tabletSetModal" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-scrollable modal-lg modal-dialog-centered" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Tabletsatz buchen</h5>
+            </div>
+            <div class="modal-body">
+                <table class='table narrow'>
+                    <thead>
+                        <tr>
+                            <th>Tabletsatz</th>
+                            <th>Art</th>
+                            <th>Standort</th>
+                            <th>Buchung</th>
+                        </tr>
+                    </thead>
+                    <tbody id='available_tablet_sets_here'>
+                    </tbody>
+                </table>
+            </div>
+            <div class="modal-footer">
+                <button id='bu_close_tablet_set_modal' type="button" class="btn btn-secondary" data-dismiss="modal">Schließen</button>
             </div>
         </div>
     </div>
@@ -580,12 +611,29 @@ function update_changes() {
         if (JSON.stringify(breakout_room_config) !== stored_breakout_room_config_json) 
             pending_changes = true;
     }
+    if (!pending_changes) {
+        if (JSON.stringify(booked_tablet_sets_config) !== stored_booked_tablet_sets_config) 
+            pending_changes = true;
+    }
     $('.bu-discard-changes').removeClass(pending_changes ? 'btn-outline-secondary' : 'btn-secondary').addClass(pending_changes ? 'btn-secondary' : 'btn-outline-secondary').prop('disabled', !pending_changes);
     $('.bu-save-changes').removeClass(pending_changes ? 'btn-outline-secondary' : 'btn-success').addClass(pending_changes ? 'btn-success' : 'btn-outline-secondary').prop('disabled', !pending_changes);
 }
 
 function update_tablet_booking_status(info) {
     $('.tablet-booking-status').html(`Für diese Stunde ist das Tablet <span style='background-color: ${info.bg_color}; color: ${info.fg_color}; padding: 0 4px;'>${info.tablet_id}</span> (${info.lagerort}) reserviert. Bitte beachten Sie, dass die Buchung verfällt, falls diese Stunde durch den Vertretungsplan verschoben werden sollte. Sie können dann ggfs. eine neue Buchung vornehmen.`);
+}
+
+function update_tablet_set_booking_status() {
+    if (booked_tablet_sets_config.length === 0) {
+        $('#ti_lesson_need_tablet_set').removeClass('btn-info').addClass('btn-outline-secondary');
+        $('#ti_lesson_need_tablet_set').find('.fa').removeClass('fa-check').addClass('fa-times');
+        $('.tablet-set-booking-status').empty();
+    } else {
+        $('#ti_lesson_need_tablet_set').addClass('btn-info').removeClass('btn-outline-secondary');
+        $('#ti_lesson_need_tablet_set').find('.fa').removeClass('fa-times').addClass('fa-check');
+        let names = booked_tablet_sets_config.map(function(x) { return `<b class='bg-warning' style='border-radius: 2px; padding: 0 4px;'>${x}</b>`; });
+        $('.tablet-set-booking-status').html(`Für diese Stunde reserviert: ${names.join(', ')}. Bitte beachten Sie, dass die Buchung verfällt, falls diese Stunde durch den Vertretungsplan verschoben werden sollte. Sie können dann ggfs. eine neue Buchung vornehmen.`);
+    }
 }
 
 function selection_updated() {
@@ -608,8 +656,10 @@ function selection_updated() {
         $('.status_label').html('' + entries.length + ' Stunden ausgewählt');
         
     breakout_room_config = null;
+    booked_tablet_sets_config = [];
     single_selected_offset = null;
     $('.tablet-booking-status').empty();
+    $('.tablet-set-booking-status').empty();
     if (entries.length === 0) {
         $('.pane_items *').prop('disabled', true);
         $('.bu-discard-changes').removeClass('btn-secondary').addClass('btn-outline-secondary').prop('disabled', true);
@@ -661,6 +711,10 @@ function selection_updated() {
                 button.removeClass('btn-info').removeClass('half').addClass('btn-outline-secondary');
                 button.find('.fa').removeClass('fa-check').removeClass('fa-question-circle').addClass('fa-times');
                 button.data('state', 'no');
+            }
+            button = $('#ti_lesson_need_tablet_set');
+            if (((lesson_data[single_selected_offset] || {}).info || {}).booked_tablet_sets) {
+                booked_tablet_sets_config = ((lesson_data[single_selected_offset] || {}).info || {}).booked_tablet_sets;
             }
         } else {
             $('.na-on-multi-select').show();
@@ -749,9 +803,11 @@ function selection_updated() {
         if (entries.length === 1) {
             $('#ti_lesson_jitsi_breakout_rooms_popup').prop('disabled', false);
             $('#ti_lesson_need_tablet').prop('disabled', false);
+            $('#ti_lesson_need_tablet_set').prop('disabled', false);
         } else {
             $('#ti_lesson_jitsi_breakout_rooms_popup').prop('disabled', true);
             $('#ti_lesson_need_tablet').prop('disabled', true);
+            $('#ti_lesson_need_tablet_set').prop('disabled', true);
         }
     } 
     if ((#{@@lessons[:lesson_keys][show_lesson_key][:lehrer]}.indexOf('#{@session_user[:shorthand]}') < 0)) {
@@ -760,7 +816,9 @@ function selection_updated() {
         $('.bu-save-changes').removeClass('btn-success').addClass('btn-outline-secondary').prop('disabled', true);
         $('.bu-umplanen').removeClass('btn-primary').addClass('btn-outline-secondary').prop('disabled', true);
     }
+    update_tablet_set_booking_status();
     stored_breakout_room_config_json = JSON.stringify(breakout_room_config);
+    stored_booked_tablet_sets_config = JSON.stringify(booked_tablet_sets_config);
 }
 
 function update_table() {
@@ -816,6 +874,12 @@ function update_table() {
             span.html(lesson_data[i].info.booked_tablet.tablet_id);
             span.css('background-color', lesson_data[i].info.booked_tablet.bg_color);
             span.css('color', lesson_data[i].info.booked_tablet.fg_color);
+            cell.append(span);
+            wrote_something = true;
+        }
+        if (((lesson_data[i] || {}).info || {}).booked_tablet_sets) {
+            let span = $('<span>').addClass('bv');
+            span.html(`<i class='fa fa-tablet'></i> <span style='font-weight: normal;'>&times;${(lesson_data[i].info.booked_tablet_sets_tablet_count) || 0}</span>`);
             cell.append(span);
             wrote_something = true;
         }
@@ -905,6 +969,14 @@ function save_changes() {
                 roaming: breakout_room_config.roaming || false
             };
         };
+        // if we have one lesson selected, store booked tablet sets config
+        data.booked_tablet_sets = booked_tablet_sets_config;
+        let time_span = window.time_span_for_lesson_offset[window.single_selected_offset];
+        data.booked_tablet_sets_timespan = {
+            datum: time_span.datum,
+            start_time: time_span.start_time,
+            end_time: time_span.end_time
+        };
     }
     (function(data) {
         api_call('/api/save_lesson_data', data, function(result) {
@@ -937,9 +1009,18 @@ function save_changes() {
                             lesson_data[i].info.breakout_rooms_roaming = data.breakout_rooms.roaming;
                         else
                             delete lesson_data[i].info.breakout_rooms_roaming;
+                        if ((data.booked_tablet_sets || []).length == 0)
+                            delete lesson_data[i].info.booked_tablet_sets;
+                        else {
+                            lesson_data[i].info.booked_tablet_sets = data.booked_tablet_sets;
+                            lesson_data[i].info.booked_tablet_sets_tablet_count = 0;
+                            for (let x of data.booked_tablet_sets)
+                                lesson_data[i].info.booked_tablet_sets_tablet_count += tablet_set_info[x].count;
+                        }
                     }
                 }
                 stored_breakout_room_config_json = JSON.stringify(breakout_room_config);
+                stored_booked_tablet_sets_config = JSON.stringify(booked_tablet_sets_config);
                 if (typeof(lesson_data[i].info.preliminary_booked_tablet) !== 'undefined') {
                     lesson_data[i].info.booked_tablet = lesson_data[i].info.preliminary_booked_tablet;
                     delete lesson_data[i].info.preliminary_booked_tablet;
@@ -1112,6 +1193,8 @@ document.addEventListener('DOMContentLoaded', function() {
             return;
         if ($('#breakoutRoomsModal').is(':visible'))
             return;
+        if ($('#tabletSetModal').is(':visible'))
+            return;
         if ($(e.target).closest('tr').length > 0)
             return;
         if (!can_select)
@@ -1230,6 +1313,62 @@ document.addEventListener('DOMContentLoaded', function() {
             });
         }
         update_changes();
+    });
+    
+    $('#ti_lesson_need_tablet_set').click(function(e) {
+        let button = $('#ti_lesson_need_tablet_set');
+        let time_span = window.time_span_for_lesson_offset[window.single_selected_offset];
+        let _data = {
+            lesson_key: lesson_key, 
+            offset: window.single_selected_offset, 
+            datum: time_span.datum,
+            start_time: time_span.start_time,
+            end_time: time_span.end_time
+        };
+        // try to find a bookable tablet
+        // don't make it permanent yet before saving
+        api_call('/api/find_available_tablet_sets_for_lesson', _data, function(data) {
+            let div = $('#available_tablet_sets_here');
+            div.empty();
+            for (let key of data.available_tablet_sets_order) {
+                let row = $('<tr>');
+                let bu_book_tablet_set = $('<button>').addClass('btn').addClass('btn-sm').data('tablet_set_id', key);
+                if (booked_tablet_sets_config.indexOf(key) >= 0) {
+                    bu_book_tablet_set.addClass('btn-info').html("<i class='fa fa-check'></i>&nbsp;&nbsp;Gebucht");
+                } else
+                {
+                    bu_book_tablet_set.addClass('btn-outline-secondary').html("<i class='fa fa-times'></i>&nbsp;&nbsp;Nicht gebucht");
+                }
+                bu_book_tablet_set.click(function(e) {
+                    let button = $(e.target);
+                    let tablet_set_id = button.data('tablet_set_id');
+                    if (booked_tablet_sets_config.indexOf(tablet_set_id) >= 0) {
+                        button.removeClass('btn-info').addClass('btn-outline-secondary');
+                        button.html("<i class='fa fa-times'></i>&nbsp;&nbsp;Nicht gebucht");
+                        booked_tablet_sets_config = booked_tablet_sets_config.filter(item => item !== tablet_set_id);
+                    } else {
+                        button.removeClass('btn-outline-secondary').addClass('btn-info');
+                        button.html("<i class='fa fa-check'></i>&nbsp;&nbsp;Gebucht");
+                        booked_tablet_sets_config = booked_tablet_sets_config.filter(item => item !== tablet_set_id);
+                        booked_tablet_sets_config.push(tablet_set_id);
+                        booked_tablet_sets_config.sort();
+                    }
+                    update_changes();
+                    update_tablet_set_booking_status();
+                });
+                row.append($('<td>').text(key));
+                row.append($('<td>').text(data.available_tablet_sets[key].label));
+                row.append($('<td>').text(data.available_tablet_sets[key].standort));
+                row.append($('<td>').css('padding-top', '4px').css('padding-bottom', '4px').append(bu_book_tablet_set));
+                div.append(row);
+                if (data.available_tablet_sets[key].hint) {
+                    row = $('<tr>').addClass('annotation_row');
+                    row.append($('<td>').attr('colspan', 3).html(data.available_tablet_sets[key].hint));
+                    div.append(row);
+                }
+            }
+            $('#tabletSetModal').modal('show');
+        });
     });
     
     $('.bu-discard-changes').click(function(e) { discard_changes() });
@@ -1583,6 +1722,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         new_lesson_data[new_offset] = lesson_data[offset];
                     }
                     lesson_data = new_lesson_data;
+                    selection_updated();
                     update_table();
                 }
             });
@@ -1612,6 +1752,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         new_lesson_data[new_offset] = lesson_data[offset];
                     }
                     lesson_data = new_lesson_data;
+                    selection_updated();
                     update_table();
                 }
             });
@@ -1645,6 +1786,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         }
                     }
                     lesson_data = new_lesson_data;
+                    selection_updated();
                     update_table();
                 }
             });

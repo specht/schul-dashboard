@@ -19,6 +19,7 @@ require 'open3'
 require 'prawn/qrcode'
 require 'prawn/measurement_extensions'
 require 'prawn-styled-text'
+require 'pry'
 require 'rotp'
 require 'rqrcode'
 require 'set'
@@ -56,6 +57,7 @@ require './include/message.rb'
 require './include/otp.rb'
 require './include/poll.rb'
 require './include/stats.rb'
+require './include/tablet_set.rb'
 require './include/tests.rb'
 require './include/theme.rb'
 require './include/user.rb'
@@ -197,7 +199,7 @@ module QtsNeo4j
     end
 
     def neo4j_query(query_str, options = {})
-#         debug(query_str, 1) if DEVELOPMENT
+        # debug(query_str, 1) if DEVELOPMENT
         transaction do
             temp_result = nil
             5.times do
@@ -370,6 +372,7 @@ class SetupDatabase
                     neo4j_query("CREATE CONSTRAINT ON (n:PollRun) ASSERT n.key IS UNIQUE")
                     neo4j_query("CREATE CONSTRAINT ON (n:PresenceToken) ASSERT n.token IS UNIQUE")
                     neo4j_query("CREATE CONSTRAINT ON (n:Tablet) ASSERT n.id IS UNIQUE")
+                    neo4j_query("CREATE CONSTRAINT ON (n:TabletSet) ASSERT n.id IS UNIQUE")
                     neo4j_query("CREATE CONSTRAINT ON (n:MatrixAccessToken) ASSERT n.access_token IS UNIQUE")
 #                     neo4j_query("CREATE CONSTRAINT ON (n:PredefinedExternalUser) ASSERT n.email IS UNIQUE")
                     neo4j_query("CREATE CONSTRAINT ON (n:KnownEmailAddress) ASSERT n.email IS UNIQUE")
@@ -404,6 +407,21 @@ class SetupDatabase
                             MERGE (u:Tablet {id: {id}})
                         END_OF_QUERY
                     end
+                end
+                transaction do
+                    # create tablet sets
+                    main.class_variable_get(:@@tablet_sets).keys.each do |id|
+                        neo4j_query(<<~END_OF_QUERY, :id => id)
+                            MERGE (t:TabletSet {id: {id}})
+                        END_OF_QUERY
+                    end
+                    # remove tablet sets which are no more present,
+                    # this automatically invalidates all tablet set bookings
+                    neo4j_query(<<~END_OF_QUERY, :tablet_sets => main.class_variable_get(:@@tablet_sets).keys)
+                        MATCH (t:TabletSet)
+                        WHERE NOT (t.id IN {tablet_sets})
+                        DETACH DELETE t;
+                    END_OF_QUERY
                 end
                 transaction do
                     neo4j_query(<<~END_OF_QUERY, :email => "lehrer.tablet@#{SCHUL_MAIL_DOMAIN}")
@@ -565,6 +583,7 @@ class Main < Sinatra::Base
         @@faecher = {}
         @@ferien_feiertage = []
         @@tablets = {}
+        @@tablet_sets = {}
         @@lehrer_order = []
         @@klassen_order = []
         @@current_email_addresses = []
@@ -694,6 +713,8 @@ class Main < Sinatra::Base
                 @@tablets_which_are_lehrer_tablets << record[:id]
             end
         end
+
+        @@tablet_sets = parser.parse_tablet_sets || {}
         
         ADMIN_USERS.each do |email|
             @@user_info[email][:admin] = true
@@ -1037,7 +1058,7 @@ class Main < Sinatra::Base
     configure do
         @@renderer = BackgroundRenderer.new
         self.collect_data() unless defined?(SKIP_COLLECT_DATA) && SKIP_COLLECT_DATA
-        if ENV['DASHBOARD_SERVICE'] == 'ruby' && File.basename($0) == 'thin'
+        if ENV['DASHBOARD_SERVICE'] == 'ruby' && (File.basename($0) == 'thin' || File.basename($0) == 'pry.rb')
             @@compiled_files = {}
             setup = SetupDatabase.new()
             setup.setup(self)
@@ -1054,6 +1075,9 @@ class Main < Sinatra::Base
         end
         if ['thin', 'rackup'].include?(File.basename($0))
             debug('Server is up and running!')
+        end
+        if ENV['DASHBOARD_SERVICE'] == 'ruby' && File.basename($0) == 'pry.rb'
+            binding.pry
         end
     end
     

@@ -451,6 +451,7 @@ class Timetable
         @@schueler_offset_in_lesson = Main.class_variable_get(:@@schueler_offset_in_lesson)
         @@pausenaufsichten = Main.class_variable_get(:@@pausenaufsichten)
         @@tablets = Main.class_variable_get(:@@tablets)
+        @@tablet_sets = Main.class_variable_get(:@@tablet_sets)
         
         lesson_offset = {}
 

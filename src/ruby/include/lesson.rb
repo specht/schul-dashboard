@@ -2,9 +2,12 @@ class Main < Sinatra::Base
     post '/api/save_lesson_data' do
         require_teacher!
         data = parse_request_data(:required_keys => [:lesson_key, :lesson_offsets, :data],
-                                  :optional_keys => [:breakout_rooms],
+                                  :optional_keys => [:breakout_rooms, :booked_tablet_sets, :booked_tablet_sets_timespan],
                                   :max_body_length => 65536,
-                                  :types => {:lesson_offsets => Array, :data => Hash, :breakout_rooms => Hash})
+                                  :types => {
+                                      :lesson_offsets => Array, :data => Hash, 
+                                      :breakout_rooms => Hash, :booked_tablet_sets => Array,
+                                      :booked_tablet_sets_timespan => Hash})
         transaction do 
             timestamp = Time.now.to_i
             data[:lesson_offsets].each do |lesson_offset|
@@ -38,6 +41,13 @@ class Main < Sinatra::Base
                             SET i.breakout_rooms_roaming = {breakout_rooms_roaming}
                         END_OF_QUERY
                     end
+                end
+                if data.include?(:booked_tablet_sets) && data.include?(:booked_tablet_sets_timespan)
+                    book_tablet_set_for_lesson(data[:lesson_key], lesson_offset, 
+                        data[:booked_tablet_sets_timespan][:datum],
+                        data[:booked_tablet_sets_timespan][:start_time],
+                        data[:booked_tablet_sets_timespan][:end_time],
+                        data[:booked_tablet_sets])
                 end
             end
         end
@@ -182,6 +192,22 @@ class Main < Sinatra::Base
                 :bg_color => @@tablets[tablet_id][:bg_color],
                 :fg_color => @@tablets[tablet_id][:fg_color]
             }
+        end
+
+        rows = neo4j_query(<<~END_OF_QUERY, :key => lesson_key)
+            MATCH (t:TabletSet)<-[:BOOKED]-(b:Booking)-[:FOR]->(i:LessonInfo)-[:BELONGS_TO]->(l:Lesson {key: {key}})
+            RETURN t.id, i.offset
+            ORDER BY t.id;
+        END_OF_QUERY
+        rows.each do |entry|
+            offset = entry['i.offset']
+            tablet_set_id = entry['t.id']
+            results[offset] ||= {}
+            results[offset][:info] ||= {}
+            results[offset][:info][:booked_tablet_sets] ||= []
+            results[offset][:info][:booked_tablet_sets] << tablet_set_id
+            results[offset][:info][:booked_tablet_sets_tablet_count] ||= 0
+            results[offset][:info][:booked_tablet_sets_tablet_count] += @@tablet_sets[tablet_set_id][:count]
         end
 
         results
@@ -336,10 +362,12 @@ class Main < Sinatra::Base
         transaction do
             timestamp = Time.now.to_i
             data[:timestamp] = timestamp
+            # delete unconfirmed bookings for this lesson_key / offset
             neo4j_query(<<~END_OF_QUERY, data)
                 MATCH (l:Lesson {key: {lesson_key}})<-[:BELONGS_TO]-(i:LessonInfo {offset: {offset}})<-[:FOR]-(b:Booking {confirmed: false})-[:WHICH]->(t:Tablet)
                 DETACH DELETE b;
             END_OF_QUERY
+            # mark confirmed bookings for this lesson_key / offset as 'to be deleted'
             neo4j_query(<<~END_OF_QUERY, data)
                 MATCH (l:Lesson {key: {lesson_key}})<-[:BELONGS_TO]-(i:LessonInfo {offset: {offset}})<-[:FOR]-(b:Booking {confirmed: true})-[:WHICH]->(t:Tablet)
                 SET b.to_be_deleted = true
@@ -376,7 +404,7 @@ class Main < Sinatra::Base
         end
         respond(:bookings => results)
     end
-    
+        
     def self.get_stream_restriction_for_lesson_key(lesson_key)
         results = $neo4j.neo4j_query_expect_one(<<~END_OF_QUERY, :key => lesson_key)['restriction']
             MERGE (l:Lesson {key: {key}})

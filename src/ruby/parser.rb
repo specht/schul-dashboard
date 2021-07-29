@@ -380,7 +380,6 @@ class Parser
     
     def parse_tablets
 #         debug "Parsing tablets..."
-        tablets = []
         if File.exists?('/data/tablets/tablets.csv')
             CSV.foreach('/data/tablets/tablets.csv', :headers => true) do |line|
                 line = Hash[line]
@@ -402,6 +401,22 @@ class Parser
         end
     end
     
+    def parse_tablet_sets
+        #         debug "Parsing tablet sets..."
+        path = '/data/tablets/tablet_sets.yaml'
+        if File.exists?(path)
+            result = YAML::load(File.read(path))
+            result.keys.each do |k|
+                if result[k][:only_these_rooms]
+                    result[k][:only_these_rooms].map! { |x| x.to_s }
+                end
+                result[k][:label] = "#{result[k][:form_factor]} mit #{result[k][:count]} Tablets"
+            end
+            return result
+        end
+        return nil
+    end
+            
     def notify_if_different(a, b)
         if a != b
             debug "UNEXPECTED DIFFERENCE: #{a} <=> #{b}"

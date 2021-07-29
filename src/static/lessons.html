@@ -1332,7 +1332,8 @@ document.addEventListener('DOMContentLoaded', function() {
             div.empty();
             for (let key of data.available_tablet_sets_order) {
                 let row = $('<tr>');
-                let bu_book_tablet_set = $('<button>').addClass('btn').addClass('btn-sm').data('tablet_set_id', key);
+                let bu_div = $('<div>').addClass('button-with-label');
+                let bu_book_tablet_set = $('<button>').addClass('btn').addClass('btn-sm').data('tablet_set_id', key).css('width', '120px');
                 if (booked_tablet_sets_config.indexOf(key) >= 0) {
                     bu_book_tablet_set.addClass('btn-info').html("<i class='fa fa-check'></i>&nbsp;&nbsp;Gebucht");
                 } else
@@ -1356,16 +1357,18 @@ document.addEventListener('DOMContentLoaded', function() {
                     update_changes();
                     update_tablet_set_booking_status();
                 });
-                if (data.available_tablet_sets[key].blocked_by)
-                    bu_book_tablet_set.prop('disabled', true);
                 row.append($('<td>').text(key));
                 row.append($('<td>').text(data.available_tablet_sets[key].label));
                 row.append($('<td>').text(data.available_tablet_sets[key].standort));
-                row.append($('<td>').css('padding-top', '4px').css('padding-bottom', '4px').append(bu_book_tablet_set));
+                row.append($('<td>').css('padding-top', '4px').css('padding-bottom', '4px').append(bu_div.append(bu_book_tablet_set)));
+                console.log(data.available_tablet_sets[key].blocked_by);
+                if (data.available_tablet_sets[key].blocked_by && data.available_tablet_sets[key].blocked_by.length > 0) {
+                    bu_book_tablet_set.prop('disabled', true).hide();
+                }
                 div.append(row);
                 if (data.available_tablet_sets[key].hint) {
                     row = $('<tr>').addClass('annotation_row');
-                    row.append($('<td>').attr('colspan', 3).html(data.available_tablet_sets[key].hint));
+                    row.append($('<td>').attr('colspan', 4).html(data.available_tablet_sets[key].hint));
                     div.append(row);
                 }
             }

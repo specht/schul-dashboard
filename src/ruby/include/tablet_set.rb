@@ -77,6 +77,7 @@ class Main < Sinatra::Base
                     MERGE (l:Lesson {key: {lesson_key}})
                     MERGE (i:LessonInfo {offset: {offset}})-[:BELONGS_TO]->(l)
                     MERGE (b:Booking)-[:FOR]->(i)
+                    SET i.updated = {timestamp}
                     SET b.updated = {timestamp}
                     SET b.datum = {datum}
                     SET b.start_time = {start_time}
@@ -162,17 +163,24 @@ class Main < Sinatra::Base
 
         tablet_sets = {}
         available_tablet_sets.each do |x|
+            blocked_by = booked_tablet_sets_timespan[x]
+            if blocked_by
+                blocked_by.delete(data[:lesson_key])
+            end
             tablet_sets[x] = {
                 :count => @@tablet_sets[x][:count],
                 :standort => @@tablet_sets[x][:standort],
                 :label => @@tablet_sets[x][:label],
-                :blocked_by => booked_tablet_sets_timespan[x]
+                :blocked_by => blocked_by.to_a
             }
             hints = []
             if booked_tablet_sets_timespan[x]
-                lesson_key = booked_tablet_sets_timespan[x].to_a.first
-                pretty_fach, teacher_names = teacher_names_and_fach_for_lesson_key(lesson_key)
-                hints << "<span class='text-danger'><i class='fa fa-warning'></i></span>&nbsp;&nbsp;Dieser Tabletsatz wurde bereits von #{teacher_names.join(', ')} gebucht: #{pretty_fach}"
+                booked_tablet_sets_timespan[x].to_a.each do |lesson_key|
+                    if lesson_key != data[:lesson_key]
+                        pretty_fach, teacher_names = teacher_names_and_fach_for_lesson_key(lesson_key)
+                        hints << "<span class='text-danger'><i class='fa fa-warning'></i></span>&nbsp;&nbsp;Dieser Tabletsatz wurde bereits von #{teacher_names.join(', ')} gebucht: #{pretty_fach}"
+                    end
+                end
             elsif booked_tablet_sets_day[x]
                 bookings_before = []
                 bookings_after = []
@@ -205,7 +213,7 @@ class Main < Sinatra::Base
                 end
             end
             unless hints.empty?
-                tablet_sets[x][:hint] = hints.join(' ')
+                tablet_sets[x][:hint] = hints.join('<br />')
             end
         end
 

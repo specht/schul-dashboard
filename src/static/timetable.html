@@ -189,6 +189,7 @@ var jitsi_refresh_config = {
     jitsi_missing_names_div: null,
     jitsi_breakout_rooms_names_divs: []
 };
+var tablet_set_info = #{@@tablet_sets.to_json};
 
 function clear_polling_handler() {
     if (jitsi_refresh_config.poll_handle !== null) {
@@ -479,6 +480,9 @@ document.addEventListener('DOMContentLoaded', function() {
                     if (event_data.booked_tablet)
                         markers.append($(event_data.booked_tablet_label_short));
                 }
+                if (event_data.booked_tablet_sets) {
+                    markers.append($('<span>').css('font-weight', 'normal').html(`<i class='fa fa-tablet'></i> x${event_data.booked_tablet_sets_total_count}`));
+                }
                 if (event_data.lesson_nc || event_data.homework_nc)
                     markers.append($('<span>').addClass('mute').html('NC'));
                 if (event_data.lesson_lr || event_data.homework_lr)
@@ -740,6 +744,16 @@ document.addEventListener('DOMContentLoaded', function() {
             if (teacher_tablet_logged_in)
             {
                 jitsi_link += '@' + encodeURI(window.selected_shorthand);
+            }
+            if (event_data.booked_tablet_sets) {
+                let p = $('<p>').html(`Für diese Unterrichtsstunde wurden <strong>${event_data.booked_tablet_sets_total_count} Tablets</strong> reserviert. Bitte bringen Sie sie gleich nach dem Unterricht wieder zurück.`);
+                body.append(p);
+                let list = $('<ul>');
+                body.append(list);
+                for (let tablet_set_id of event_data.booked_tablet_sets) {
+                    let item = $('<li>').html(`<strong>${tablet_set_id}</strong> (${tablet_set_info[tablet_set_id].count} Tablets): ${tablet_set_info[tablet_set_id].standort}<br/>___PRINT_HINTS_HERE___Die Tablets werden schon 5 Minuten nach Stundenende schon wieder gebraucht)`);
+                    list.append(item);
+                }
             }
             if (event_data.lesson_jitsi || event_data.lesson_nc || event_data.lesson_lr) {
                 if (event_data.lesson_jitsi) {

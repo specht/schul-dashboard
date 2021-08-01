@@ -751,9 +751,10 @@ document.addEventListener('DOMContentLoaded', function() {
                 let list = $('<ul>');
                 body.append(list);
                 for (let tablet_set_id of event_data.booked_tablet_sets) {
-                    let item = $('<li>').html(`<strong>${tablet_set_id}</strong> (${tablet_set_info[tablet_set_id].count} Tablets): ${tablet_set_info[tablet_set_id].standort}<br/>___PRINT_HINTS_HERE___Die Tablets werden schon 5 Minuten nach Stundenende schon wieder gebraucht)`);
+                    let item = $('<li>').html(`<strong>${tablet_set_id}</strong> (${tablet_set_info[tablet_set_id].count} Tablets): ${tablet_set_info[tablet_set_id].standort}`);//<br/>___PRINT_HINTS_HERE___Die Tablets werden schon 5 Minuten nach Stundenende schon wieder gebraucht)`);
                     list.append(item);
                 }
+                wrote_something = true;
             }
             if (event_data.lesson_jitsi || event_data.lesson_nc || event_data.lesson_lr) {
                 if (event_data.lesson_jitsi) {

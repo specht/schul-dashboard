@@ -1040,7 +1040,6 @@ class Timetable
                     END_OF_QUERY
                     shorthands.each do |shorthand|
                         email = @@shorthands[shorthand]
-                        user_info = @@user_info[email]
                         deliver_mail do
                             to email
                             bcc SMTP_FROM
@@ -1520,7 +1519,7 @@ class Timetable
                         write_events.each do |event|
                             # re-parse because keys are strings for SuS and symbols for LuL (?)
                             event = JSON.parse(event.to_json)
-                            next if event['start'][0, 10] < Date.today.strftime('%Y-%m-%d') || event['start'][0, 10] >= (Date.today + 7).strftime('%Y-%m-%d')
+                            next if event['start'][0, 10] < Date.today.strftime('%Y-%m-%d')
 
                             key = nil
                             date = nil
@@ -1955,6 +1954,7 @@ class Timetable
             end
             tablet_set_ids = (updated_booked_tablet_sets_for_lesson_key_and_offset[row[:key]] || {})[row[:info][:offset]]
             if tablet_set_ids
+                tablet_set_ids.sort! 
                 @lesson_info[row[:key]][row[:info][:offset]][:data][:booked_tablet_sets] = tablet_set_ids
                 @lesson_info[row[:key]][row[:info][:offset]][:data][:booked_tablet_sets_total_count] = tablet_set_ids.inject(0) { |sum, x| sum + ((@@tablet_sets[x] || {}) [:count] || 0)}
             end

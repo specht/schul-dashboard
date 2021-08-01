@@ -13,7 +13,7 @@ class Main < Sinatra::Base
         end
         login_stats = {}
         @@klassen_order.each do |klasse|
-            login_stats[klasse] = {:total => @@schueler_for_klasse[klasse].size, :count => {}}
+            login_stats[klasse] = {:total => (@@schueler_for_klasse[klasse] || []).size, :count => {}}
         end
         teacher_count = 0
         sus_count = 0
@@ -36,8 +36,10 @@ class Main < Sinatra::Base
                 else
                     login_stats[:sus][:count][d] ||= 0
                     login_stats[:sus][:count][d] += 1
-                    login_stats[user[:klasse]][:count][d] ||= 0
-                    login_stats[user[:klasse]][:count][d] += 1
+                    if login_stats[user[:klasse]]
+                        login_stats[user[:klasse]][:count][d] ||= 0
+                        login_stats[user[:klasse]][:count][d] += 1
+                    end
                 end
             end
         end
@@ -73,7 +75,7 @@ class Main < Sinatra::Base
                 LOGIN_STATS_D.reverse.each do |d|
                     io.puts "<td>"
                     data = login_stats[key]
-                    percent = ((data[:count][d] || 0) * 100 / data[:total]).to_i
+                    percent = data[:total] == 0 ? 0 : ((data[:count][d] || 0) * 100 / data[:total]).to_i
                     bgcol = get_gradient(['#cc0000', '#f4951b', '#ffe617', '#80bc42'], percent / 100.0)
                     io.puts "<span style='background-color: #{bgcol}; padding: 4px 8px; margin: 0; border-radius: 3px;'>#{percent}%</span>"
                     io.puts "</td>"

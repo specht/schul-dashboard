@@ -1361,7 +1361,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 row.append($('<td>').text(data.available_tablet_sets[key].label));
                 row.append($('<td>').text(data.available_tablet_sets[key].standort));
                 row.append($('<td>').css('padding-top', '4px').css('padding-bottom', '4px').append(bu_div.append(bu_book_tablet_set)));
-                console.log(data.available_tablet_sets[key].blocked_by);
+                console.log(data.available_tablet_sets[key]);
                 if (data.available_tablet_sets[key].blocked_by && data.available_tablet_sets[key].blocked_by.length > 0) {
                     bu_book_tablet_set.prop('disabled', true).hide();
                 }

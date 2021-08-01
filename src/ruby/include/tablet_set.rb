@@ -12,16 +12,20 @@ class Main < Sinatra::Base
             :start_time => start_time,
             :end_time => end_time
         }
-        rows = neo4j_query(<<~END_OF_QUERY, data).map { |x| {:tablet_set_id => x['t.id'], :lesson_key => x['l.key'] } }
-            MATCH (t:TabletSet)<-[:BOOKED]-(b:Booking {datum: {datum}})
+        rows = neo4j_query(<<~END_OF_QUERY, data).map { |x| {:tablet_set_id => x['t.id'], :lesson_key => x['l.key'], :email => x['u.email'] } }
+            MATCH (t:TabletSet)<-[:BOOKED]-(b:Booking {datum: {datum}})-[:BOOKED_BY]->(u:User)
             WHERE NOT ((b.end_time <= {start_time}) OR (b.start_time >= {end_time}))
             OPTIONAL MATCH (b)-[:FOR]->(i:LessonInfo)-[:BELONGS_TO]->(l:Lesson)
-            RETURN t.id, l.key;
+            RETURN t.id, l.key, u.email;
         END_OF_QUERY
         result = {}
         rows.each do |row|
-            result[row[:tablet_set_id]] ||= Set.new()
-            result[row[:tablet_set_id]] << row[:lesson_key]
+            result[row[:tablet_set_id]] ||= []
+            result[row[:tablet_set_id]] << {
+                :lesson_key => row[:lesson_key],
+                :email => row[:email],
+                :display_name => (@@user_info[row[:email]] || {})[:display_last_name_dativ] || 'NN'
+            }
         end
         result
     end
@@ -29,16 +33,18 @@ class Main < Sinatra::Base
     # return all booked tablet sets for a specific day
     def already_booked_tablet_sets_for_day(datum)
         require_teacher!
-        rows = neo4j_query(<<~END_OF_QUERY, { :datum => datum }).map { |x| {:tablet_set_id => x['t.id'], :lesson_key => x['l.key'], :start_time => x['b.start_time'], :end_time => x['b.end_time'] } }
-            MATCH (t:TabletSet)<-[:BOOKED]-(b:Booking {datum: {datum}})
+        rows = neo4j_query(<<~END_OF_QUERY, { :datum => datum }).map { |x| {:tablet_set_id => x['t.id'], :lesson_key => x['l.key'], :start_time => x['b.start_time'], :end_time => x['b.end_time'], :email => x['u.email'] } }
+            MATCH (t:TabletSet)<-[:BOOKED]-(b:Booking {datum: {datum}})-[:BOOKED_BY]->(u:User)
             OPTIONAL MATCH (b)-[:FOR]->(i:LessonInfo)-[:BELONGS_TO]->(l:Lesson)
-            RETURN t.id, l.key, b.start_time, b.end_time;
+            RETURN t.id, l.key, b.start_time, b.end_time, u.email;
         END_OF_QUERY
         result = {}
         rows.each do |row|
             result[row[:tablet_set_id]] ||= []
             result[row[:tablet_set_id]] << {
                 :lesson_key => row[:lesson_key],
+                :email => row[:email],
+                :display_name => (@@user_info[row[:email]] || {})[:display_last_name_dativ] || 'NN',
                 :start_time => row[:start_time],
                 :end_time => row[:end_time]
             }
@@ -54,8 +60,11 @@ class Main < Sinatra::Base
             # check if it's bookable
             temp = already_booked_tablet_sets_for_timespan(datum, start_time, end_time)
             conflicting_tablets = temp.keys.reject do |x|
-                temp[x][:lesson_key] == lesson_key
+                temp[x].reject do |y|
+                    y[:lesson_key] == lesson_key
+                end.empty?
             end
+            conflicting_tablets.select! { |x| tablet_sets.include?(x) }
         end
         if conflicting_tablets.empty?
             transaction do
@@ -65,6 +74,7 @@ class Main < Sinatra::Base
                 end
                 timestamp = Time.now.to_i
                 data = {
+                    :email => @session_user[:email],
                     :lesson_key => lesson_key,
                     :offset => offset,
                     :tablet_set_ids => tablet_sets,
@@ -73,10 +83,13 @@ class Main < Sinatra::Base
                     :start_time => start_time,
                     :end_time => end_time
                 }
+                # create booking node
                 neo4j_query(<<~END_OF_QUERY, data)
+                    MATCH (u:User {email: {email}})
                     MERGE (l:Lesson {key: {lesson_key}})
                     MERGE (i:LessonInfo {offset: {offset}})-[:BELONGS_TO]->(l)
                     MERGE (b:Booking)-[:FOR]->(i)
+                    MERGE (u)<-[:BOOKED_BY]-(b)
                     SET i.updated = {timestamp}
                     SET b.updated = {timestamp}
                     SET b.datum = {datum}
@@ -87,6 +100,7 @@ class Main < Sinatra::Base
                     MATCH (b)-[r:BOOKED]->(:TabletSet)
                     DELETE r
                 END_OF_QUERY
+                # connect booked tablet sets to booking node
                 neo4j_query(<<~END_OF_QUERY, data)
                     MATCH (l:Lesson {key: {lesson_key}})
                     MATCH (i:LessonInfo {offset: {offset}})-[:BELONGS_TO]->(l)
@@ -108,14 +122,8 @@ class Main < Sinatra::Base
         parts[0] * 60 + parts[1]
     end
 
-    def teacher_names_and_fach_for_lesson_key(lesson_key)
-        pretty_fach = (@@lessons[:lesson_keys][lesson_key] || {})[:pretty_folder_name] || 'NN'
-        shorthands = (@@lessons[:lesson_keys][lesson_key] || {})[:lehrer] || ['NN']
-        teacher_names = shorthands.map do |shorthand|
-            email = @@shorthands[shorthand]
-            (@@user_info[email] || {})[:display_last_name_dativ] || 'NN'
-        end
-        return pretty_fach, teacher_names
+    def fach_for_lesson_key(lesson_key)
+        (@@lessons[:lesson_keys][lesson_key] || {})[:pretty_folder_name] || 'NN'
     end
 
     post '/api/find_available_tablet_sets_for_lesson' do
@@ -165,20 +173,20 @@ class Main < Sinatra::Base
         available_tablet_sets.each do |x|
             blocked_by = booked_tablet_sets_timespan[x]
             if blocked_by
-                blocked_by.delete(data[:lesson_key])
+                blocked_by.reject! { |x| x[:lesson_key] == data[:lesson_key]}
             end
             tablet_sets[x] = {
                 :count => @@tablet_sets[x][:count],
                 :standort => @@tablet_sets[x][:standort],
                 :label => @@tablet_sets[x][:label],
-                :blocked_by => blocked_by.to_a
+                :blocked_by => blocked_by
             }
             hints = []
             if booked_tablet_sets_timespan[x]
-                booked_tablet_sets_timespan[x].to_a.each do |lesson_key|
-                    if lesson_key != data[:lesson_key]
-                        pretty_fach, teacher_names = teacher_names_and_fach_for_lesson_key(lesson_key)
-                        hints << "<span class='text-danger'><i class='fa fa-warning'></i></span>&nbsp;&nbsp;Dieser Tabletsatz wurde bereits von #{teacher_names.join(', ')} gebucht: #{pretty_fach}"
+                booked_tablet_sets_timespan[x].to_a.each do |entry|
+                    if entry[:lesson_key] != @session_user[:lesson_key]
+                        pretty_fach = fach_for_lesson_key(entry[:lesson_key])
+                        hints << "<span class='text-danger'><i class='fa fa-warning'></i></span>&nbsp;&nbsp;Dieser Tabletsatz wurde bereits von #{entry[:display_name]} gebucht#{entry[:lesson_key] ? ': ' + pretty_fach : ''}"
                     end
                 end
             elsif booked_tablet_sets_day[x]
@@ -191,24 +199,20 @@ class Main < Sinatra::Base
                         bookings_after << entry
                     end
                 end
-                debug bookings_before.to_yaml
-                debug bookings_after.to_yaml
                 unless bookings_before.empty?
                     booking = bookings_before.last
                     t = hh_mm_to_i(data[:start_time]) - hh_mm_to_i(booking[:end_time])
                     if t <= TABLET_SET_WARNING_BEFORE_MINUTES
-                        lesson_key = booking[:lesson_key]
-                        pretty_fach, teacher_names = teacher_names_and_fach_for_lesson_key(lesson_key)
-                        hints << "<span class='text-danger'><i class='fa fa-clock-o'></i></span>&nbsp;&nbsp;Dieser Tabletsatz wird bis #{t} Minuten vor Stundenbeginn noch von #{teacher_names.join(', ')} benötigt: #{pretty_fach}"
+                        pretty_fach = fach_for_lesson_key(booking[:lesson_key])
+                        hints << "<span class='text-danger'><i class='fa fa-clock-o'></i></span>&nbsp;&nbsp;Dieser Tabletsatz wird bis #{t} Minuten vor Stundenbeginn noch von #{entry[:display_name]} benötigt#{entry[:lesson_key] ? ': ' + pretty_fach : ''}"
                     end
                 end
                 unless bookings_after.empty?
                     booking = bookings_after.first
                     t = hh_mm_to_i(booking[:start_time]) - hh_mm_to_i(data[:end_time])
                     if t <= TABLET_SET_WARNING_AFTER_MINUTES
-                        lesson_key = booking[:lesson_key]
-                        pretty_fach, teacher_names = teacher_names_and_fach_for_lesson_key(lesson_key)
-                        hints << "<span class='text-danger'><i class='fa fa-clock-o'></i></span>&nbsp;&nbsp;Dieser Tabletsatz wird bereits #{t} Minuten nach Stundenende von #{teacher_names.join(', ')} benötigt: #{pretty_fach}"
+                        pretty_fach = fach_for_lesson_key(booking[:lesson_key])
+                        hints << "<span class='text-danger'><i class='fa fa-clock-o'></i></span>&nbsp;&nbsp;Dieser Tabletsatz wird bereits #{t} Minuten nach Stundenende von #{entry[:display_name]} benötigt#{entry[:lesson_key] ? ': ' + pretty_fach : ''}"
                     end
                 end
             end
@@ -221,51 +225,59 @@ class Main < Sinatra::Base
             :available_tablet_sets_order => available_tablet_sets)
     end
 
-    post '/api/book_tablet_set_for_lesson' do
-        require_teacher!
-        data = parse_request_data(:required_keys => [:lesson_key, :offset, :datum, 
-                                                     :start_time, :end_time, :tablet_set_id],
-                                  :types => {:offset => Integer})
-        timestamp = Time.now.to_i
-        data[:timestamp] = timestamp
-        neo4j_query(<<~END_OF_QUERY, data)
-            MERGE (l:Lesson {key: {lesson_key}})
-            MERGE (i:LessonInfo {offset: {offset}})-[:BELONGS_TO]->(l)
-            
-            WITH l, i
-            MATCH (t:TabletSet {id: {tablet_set_id}})
-            
-            WITH l, i, t
-            MERGE (i)<-[:FOR]-(b:Booking)-[:WHICH]->(t)
+    post '/api/unbook_tablet_set_booking' do
+        require_admin!
+        data = parse_request_data(:required_keys => [:datum, :start_time, :end_time, :tablet_set])
+        data[:timestamp] = Time.now.to_i
+        result = neo4j_query_expect_one(<<~END_OF_QUERY, data)
+            MATCH (u:User)<-[:BOOKED_BY]-(b:Booking {datum: {datum}, start_time: {start_time}, end_time: {end_time}})-[r:BOOKED]->(t:TabletSet {id: {tablet_set}})
+            OPTIONAL MATCH (b)-[:FOR]->(i:LessonInfo)-[:BELONGS_TO]->(l:Lesson)
+            WITH DISTINCT r, u, l, i, b
             SET b.updated = {timestamp}
-            SET b.datum = {datum}
-            SET b.start_time = {start_time}
-            SET b.end_time = {end_time}
-            SET b.confirmed = false;
+            SET i.updated = {timestamp}
+            DELETE r
+            RETURN u.email, l.key
         END_OF_QUERY
-        respond(:tablet_set_id => data[:tablet_set_id], :tablet_set_info => @@tablet_sets[data[:tablet_set_id]])
-    end
-    
-    post '/api/unbook_tablet_set_for_lesson' do
-        require_teacher!
-        data = parse_request_data(:required_keys => [:lesson_key, :offset, :tablet_set_id],
-                                  :types => {:offset => Integer})
 
-        transaction do
-            timestamp = Time.now.to_i
-            data[:timestamp] = timestamp
-            # delete unconfirmed bookings for this lesson_key / offset
-            neo4j_query(<<~END_OF_QUERY, data)
-                MATCH (l:Lesson {key: {lesson_key}})<-[:BELONGS_TO]-(i:LessonInfo {offset: {offset}})<-[:FOR]-(b:Booking {confirmed: false})-[:WHICH]->(t:TabletSet {id: {tablet_set_id}})
-                DETACH DELETE b;
-            END_OF_QUERY
-            # mark confirmed bookings for this lesson_key / offset as 'to be deleted'
-            neo4j_query(<<~END_OF_QUERY, data)
-                MATCH (l:Lesson {key: {lesson_key}})<-[:BELONGS_TO]-(i:LessonInfo {offset: {offset}})<-[:FOR]-(b:Booking {confirmed: true})-[:WHICH]->(t:TabletSet {id: {tablet_set_id}})
-                SET b.to_be_deleted = true
-                SET b.updated = {timestamp};
-            END_OF_QUERY
+        lesson_key = result['l.key']
+        email = result['u.email']
+        session_user_name = @session_user[:display_last_name_dativ]
+
+        if lesson_key
+            trigger_update(lesson_key)
+            fach = fach_for_lesson_key(lesson_key)
+            deliver_mail do
+                to email
+                bcc SMTP_FROM
+                from SMTP_FROM
+                
+                subject "Tabletsatz-Reservierung aufgehoben: #{fach}"
+
+                StringIO.open do |io|
+                    io.puts "<p>Hallo!</p>"
+                    io.puts "<p>Es tut mir leid, aber Ihre Tabletsatz-Reservierung für #{fach} am #{data[:datum]} von #{data[:start_time]} bis #{data[:end_time]} wurde von #{session_user_name} aufgehoben. Sie können ggfs. einen neuen Tabletsatz buchen.</p>"
+                    io.puts "<p>Viele Grüße,<br />#{WEBSITE_MAINTAINER_NAME}</p>"
+                    io.string
+                end
+            end
+        else
+            deliver_mail do
+                to email
+                bcc SMTP_FROM
+                from SMTP_FROM
+                
+                subject "Tabletsatz-Reservierung aufgehoben"
+    
+                StringIO.open do |io|
+                    io.puts "<p>Hallo!</p>"
+                    io.puts "<p>Es tut mir leid, aber Ihre Tabletsatz-Reservierung am #{data[:datum]} von #{data[:start_time]} bis #{data[:end_time]} wurde von #{session_user_name} aufgehoben. Sie können ggfs. einen neuen Tabletsatz buchen.</p>"
+                    io.puts "<p>Viele Grüße,<br />#{WEBSITE_MAINTAINER_NAME}</p>"
+                    io.string
+                end
+            end
         end
+
+        STDERR.puts result.to_yaml
         respond(:ok => 'yay')
     end 
 end

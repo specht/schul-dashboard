@@ -1030,6 +1030,7 @@ class Main < Sinatra::Base
             '/include/moment/moment-with-locales.min.js',
             '/include/dropzone/dropzone.min.js',
             '/include/chart.js/Chart.min.js',
+            '/include/jszip/dist/jszip.min.js',
             '/code.js',
         ]
         

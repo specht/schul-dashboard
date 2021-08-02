@@ -1,3 +1,8 @@
+TIMETABLE_JSON_KEYS = {
+    6 => [:klasse, :stunde, :fach, :raum, :lehrer, :text],
+    7 => [:vnr, :stunde, :klasse, :lehrer, :raum, :fach, :text],
+}
+
 class Main < Sinatra::Base
     post '/api/upload_vplan' do
         require_user_who_can_upload_vplan!
@@ -45,28 +50,28 @@ class Main < Sinatra::Base
         raise 'nope'
     end
 
-    post '/api/upload_vplan_html' do
+    def handle_zip_entry(contents)
         require_user_who_can_upload_vplan!
-        entry = params['file']
-        filename = entry['filename']
-        blob = entry['tempfile']
-        mtime = blob.mtime
-        contents = blob.read
-        # contents = contents.force_encoding('iso-8859-1').encode('utf-8')
-        # STDERR.puts "#{filename} #{contents.encoding} #{mtime}"
 
         dom = Nokogiri::HTML.parse(contents)
         return if dom.at_css('h2').nil?
         return if dom.at_css('#vertretung').nil?
         heading = dom.at_css('h2').text
+        heading.gsub!('9?', '9o')
+        heading.gsub!('J11', '11')
+        heading.gsub!('J12', '12')
+        klasse = heading.split(' ').first
+        if @@index_for_klasse[klasse]
+            heading = klasse
+        end
         datum = nil
         dom.at_css('#vertretung').children.each do |child|
             if child.name == 'table' && datum
                 table_mode = nil
                 result = {
-                    :filename => filename,
-                    :heading => heading,
-                    :datum => datum
+                    # :filename => filename,
+                    # :heading => heading,
+                    # :datum => datum
                 }
                 classes = child.attribute('class').to_s.split(' ')
                 # STDERR.puts "[#{filename}] [#{heading}] [#{datum}] "
@@ -99,22 +104,43 @@ class Main < Sinatra::Base
                     cells = row.css('td')
                     if cells.size == 1 && table_mode == :day_message
                         result[:day_message] = cells.first.text
-                    elsif cells.size == 6 && table_mode == :vplan
-                        result[:entries] ||= []
-                        result[:entries] << cells.map { |x| x.text }
+                    elsif (cells.size == 6 || cells.size == 7) && table_mode == :vplan
                         # Klassenvertretungsplan: Klasse(n)	Stunde	Fach	Raum	(Lehrer)	Text
-                    elsif cells.size == 7 && table_mode == :vplan
-                        result[:entries] ||= []
-                        result[:entries] << cells.map { |x| x.text }
                         # Lehrervertretungsplan: Vtr-Nr.	Stunde	Klasse(n)	(Lehrer)	(Raum)	(Fach)	Text
+                        result[:entries] ||= []
+                        entry = {}
+                        cells.each.with_index do |x, index|
+                            next if x.at_css('span').nil?
+                            key = TIMETABLE_JSON_KEYS[cells.size][index]
+                            span = x.at_css('span')
+                            entry_del = nil
+                            entry_add = nil
+                            span.children.each do |y|
+                                if y.name == 's'
+                                    assert(entry_del.nil?)
+                                    entry_del = y.text
+                                elsif y.name == 'text'
+                                    assert(entry_add.nil?)
+                                    entry_add = y.text
+                                end
+                            end
+                            entry_add = entry_add[1, entry_add.size - 1] if entry_add && entry_add[0] == '?'
+                            entry[key] = [entry_del, entry_add]
+                        end
+                        fixed_entry = [entry[:klasse], entry[:stunde], entry[:lehrer], entry[:fach], entry[:raum], entry[:text]]
+                        sha1 = Digest::SHA1.hexdigest(fixed_entry.to_json)[0, 8]
+                        path = "/vplan/#{datum}/entries/#{sha1}.json"
+                        FileUtils.mkpath(File.dirname(path))
+                        File.open(path, 'w') { |f| f.write(fixed_entry.to_json) }
+                        result[:entries] << sha1
                     end
                     # STDERR.print " #{cells.size}"
                 end
                 # STDERR.puts
                 # STDERR.puts '-' * 40
-                path = "/vplan/#{result[:datum]}/#{result[:heading].gsub('/', '-')}.yaml"
+                path = "/vplan/#{datum}/#{heading.gsub('/', '-')}.json"
                 FileUtils.mkpath(File.dirname(path))
-                File.open(path, 'w') { |f| f.write(result.to_yaml) }
+                File.open(path, 'w') { |f| f.write(result.to_json) }
             else
                 b = nil
                 b = child.text if child.name == 'b'
@@ -146,6 +172,31 @@ class Main < Sinatra::Base
         #         end
         #     end
         # end
+    end
+
+    post '/api/upload_vplan_html_zip' do
+        require_user_who_can_upload_vplan!
+        entry = params['data']
+        blob = entry['tempfile']
+        Zip::File.open(blob) do |zip_file|
+            zip_file.each do |entry|
+                handle_zip_entry(entry.get_input_stream.read)
+            end
+        end
+        respond(:yay => 'sure')
+    end
+
+    post '/api/upload_vplan_html' do
+        require_user_who_can_upload_vplan!
+        entry = params['file']
+        filename = entry['filename']
+        STDERR.puts "upload_vplan_html #{filename}"
+        blob = entry['tempfile']
+        mtime = blob.mtime
+        contents = blob.read
+        # contents = contents.force_encoding('iso-8859-1').encode('utf-8')
+        # STDERR.puts "#{filename} #{contents.encoding} #{mtime}"
+
         
         # if found_error
         #     FileUtils::rm(path)

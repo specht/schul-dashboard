@@ -1,0 +1,285 @@
+#{this_is_a_page_for_logged_in_admins}
+
+<style>
+    .modal-body strong {
+        display: inline-block;
+        width: 100px;
+    }
+</style>
+
+<div class='container' style='padding-top: 30px;'>
+    <div class='row'>
+        <div class='col-md-12'>
+            <button id='bu-book-tablet-set' class='btn btn-success pull-right'><i
+                    class='fa fa-tablet'></i>&nbsp;&nbsp;Tabletsatz buchen</button>
+            <h3>Tablet-Buchungen</h3>
+            <hr />
+            <div id='bookings-here'>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal" id="unbookTabletSetModal" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-scrollable modal-dialog-centered" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Tabletsatz-Buchung aufheben</h5>
+            </div>
+            <div class="modal-body">
+                <strong>Tabletsatz:</strong> <span id='tablet_set_here'></span> <br />
+                <strong>Datum:</strong> <span id='date_here'></span> <br />
+                <strong>Uhrzeit:</strong> <span id='timespan_here'></span> <br />
+                <strong>gebucht von:</strong> <span id='user_here'></span> <br />
+                <div class='extra_info_lesson'>
+                    <strong>Fach:</strong> <span id='fach_here'></span> <br />
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button id='bu_delete_tablet_set_booking' type="button" class="btn btn-danger"><i
+                        class='fa fa-trash'></i>&nbsp;&nbsp;Buchung aufheben</button>
+                <button type="button" class="btn btn-secondary" data-dismiss="modal"><i
+                        class='fa fa-times'></i>&nbsp;&nbsp;Schließen</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal" id="bookTabletSetModal" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-scrollable modal-xl modal-dialog-centered" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Tabletsatz buchen</h5>
+            </div>
+            <div class="modal-body">
+                <div class='row'>
+                    <div class='col-md-4'>
+                        <div class="form-group">
+                            <label>Datum</label>
+                            <input type="date" class="form-control" id='ti_datum' value='#{Date.today.to_s}' />
+                        </div>
+                    </div>
+                    <div class='col-md-4'>
+                        <div class="form-group">
+                            <label>Beginn</label>
+                            <input type="time" class="form-control" id='ti_start_time' value='08:00' />
+                        </div>
+                    </div>
+                    <div class='col-md-4'>
+                        <div class="form-group">
+                            <label>Ende</label>
+                            <input type="time" class="form-control" id='ti_end_time' value='10:00' />
+                        </div>
+                    </div>
+                </div>
+                <table class='table narrow'>
+                    <thead>
+                        <tr>
+                            <th>Tabletsatz</th>
+                            <th>Art</th>
+                            <th>Standort</th>
+                            <th>Buchung</th>
+                        </tr>
+                    </thead>
+                    <tbody id='available_tablet_sets_here'>
+                    </tbody>
+                </table>
+            </div>
+            <div class="modal-footer">
+                <button id='bu_perform_tablet_set_booking' type="button" class="btn btn-success"><i
+                        class='fa fa-check'></i>&nbsp;&nbsp;Tabletsatz buchen</button>
+                <button type="button" class="btn btn-secondary" data-dismiss="modal"><i
+                        class='fa fa-times'></i>&nbsp;&nbsp;Schließen</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+
+    var booking_to_be_deleted = null;
+    var booking_span_to_be_deleted = null;
+
+    var tablet_sets = #{@@tablet_sets.to_json};
+    var tablet_set_booking_widgets = {};
+    
+    var booked_tablet_sets_config = [];
+
+    function update_booking_widgets() {
+        let data = {
+            datum: $('#ti_datum').val(),
+            start_time: $('#ti_start_time').val(),
+            end_time: $('#ti_end_time').val()
+        };
+        if (data.start_time >= data.end_time) {
+            $('#bu_perform_tablet_set_booking').prop('disabled', true);
+        }
+        api_call('/api/find_available_tablet_sets_for_timespan', data, function (data) {
+            if (data.success) {
+                for (let key in data.available_tablet_sets) {
+                    let entry = data.available_tablet_sets[key];
+                    if ((entry.blocked_by || []).length > 0) {
+                        tablet_set_booking_widgets[key].button.prop('disabled', true);
+                    } else {
+                        tablet_set_booking_widgets[key].button.prop('disabled', false);
+                    }
+                    if (entry.hint) {
+                        tablet_set_booking_widgets[key].hint_row.find('td').html(entry.hint);
+                        tablet_set_booking_widgets[key].hint_row.show();
+                    } else {
+                        tablet_set_booking_widgets[key].hint_row.hide();
+                    }
+                }
+                console.log(data);
+                if (booked_tablet_sets_config.length === 0)
+                    $('#bu_perform_tablet_set_booking').prop('disabled', true);
+                else
+                    $('#bu_perform_tablet_set_booking').prop('disabled', false);
+            }
+        });
+    }
+
+    window.addEventListener('load', function () {
+        moment.locale('de');
+        api_call('/api/get_tablet_set_bookings', {}, function (data) {
+            if (data.success) {
+                let tablet_bookings = data.bookings;
+                for (let d of Object.keys(tablet_bookings).sort()) {
+                    $('#bookings-here').append($('<h4>').text(moment(d).format('ddd, L')));
+                    let table = $('<table>').addClass('table').addClass('narrow');
+                    for (let tablet_id in (tablet_bookings[d] || {})) {
+                        let row = $('<tr>');
+                        table.append(row);
+                        row.append($('<th>').html(`${tablet_id}`));
+                        let cell = $('<td>').css('background-color', '#f0f0f0');
+                        cell.css('width', '100%');
+                        row.append(cell);
+                        cell.css('position', 'relative');
+                        for (let booking of tablet_bookings[d][tablet_id]) {
+                            let div = $('<div>').css('overflow', 'hidden').css('font-size', '90%').css('background-color', '#fff').css('box-shadow', '0 0 3px rgba(0,0,0,0.2)').css('padding', '0 3px');
+                            div.addClass('timespan-booking');
+                            div.css('position', 'absolute');
+                            // div.html(`<span class='tis' style='background-color: ${booking.tablet.bg_color}; color: ${booking.tablet.fg_color};'>${tablet_id}</span> ${booking.lesson}`);
+                            div.html(`${booking.booking.start_time} <b>${booking.shorthand}</b> ${booking.lesson}`);
+                            let t0 = parseInt(booking.booking.start_time.substr(0, 2)) * 60 + parseInt(booking.booking.start_time.substr(3, 2));
+                            let t1 = parseInt(booking.booking.end_time.substr(0, 2)) * 60 + parseInt(booking.booking.end_time.substr(3, 2));
+                            let l = (t0 - (8 * 60)) / (19 * 60 - 8 * 60) * 100.0;
+                            let r = (t1 - (8 * 60)) / (19 * 60 - 8 * 60) * 100.0;
+                            div.css('left', `${l}%`);
+                            div.css('width', `${r - l}%`);
+                            div.css('cursor', 'pointer');
+                            div.data('booking', booking)
+                            cell.append(div);
+                            div.click(function (e) {
+                                booking_span_to_be_deleted = $(e.target).closest('.timespan-booking')
+                                let booking = booking_span_to_be_deleted.data('booking');
+                                booking_to_be_deleted = booking;
+                                $('#tablet_set_here').text(booking.tablet_set);
+                                $('#date_here').text(moment(booking.booking.datum).format('ddd, L'));
+                                $('#timespan_here').text(`${booking.booking.start_time} – ${booking.booking.end_time}`);
+                                if (booking.lesson) {
+                                    $('#unbookTabletSetModal .extra_info_lesson').show();
+                                    $('#fach_here').html(booking.lesson);
+                                } else {
+                                    $('#unbookTabletSetModal .extra_info_lesson').hide();
+                                }
+                                $('#user_here').html(booking.last_name);
+                                $('#unbookTabletSetModal').modal('show');
+                            });
+                        }
+                    }
+                    $('#bookings-here').append(table);
+                }
+            }
+        });
+
+        let div = $('#available_tablet_sets_here');
+        div.empty();
+        for (let key in tablet_sets) {
+            let row = $('<tr>');
+            let bu_div = $('<div>').addClass('button-with-label');
+            let bu_book_tablet_set = $('<button>').addClass('btn').addClass('btn-sm').data('tablet_set_id', key).css('width', '120px');
+            bu_book_tablet_set.prop('disabled', true);
+            bu_book_tablet_set.click(update_booking_widgets);
+            bu_book_tablet_set.addClass('btn-outline-secondary').html("<i class='fa fa-times'></i>&nbsp;&nbsp;Nicht gebucht");
+            bu_book_tablet_set.click(function(e) {
+                let button = $(e.target).closest('button');
+                let tablet_set_id = button.data('tablet_set_id');
+                if (booked_tablet_sets_config.indexOf(tablet_set_id) >= 0) {
+                    button.removeClass('btn-info').addClass('btn-outline-secondary');
+                    button.html("<i class='fa fa-times'></i>&nbsp;&nbsp;Nicht gebucht");
+                    booked_tablet_sets_config = booked_tablet_sets_config.filter(item => item !== tablet_set_id);
+                } else {
+                    button.removeClass('btn-outline-secondary').addClass('btn-info');
+                    button.html("<i class='fa fa-check'></i>&nbsp;&nbsp;Gebucht");
+                    booked_tablet_sets_config = booked_tablet_sets_config.filter(item => item !== tablet_set_id);
+                    booked_tablet_sets_config.push(tablet_set_id);
+                    booked_tablet_sets_config.sort();
+                }
+                update_booking_widgets();
+            });
+            row.append($('<td>').text(key));
+            row.append($('<td>').text(tablet_sets[key].label));
+            row.append($('<td>').text(tablet_sets[key].standort));
+            row.append($('<td>').css('padding-top', '4px').css('padding-bottom', '4px').append(bu_div.append(bu_book_tablet_set)));
+            // console.log(data.available_tablet_sets[key]);
+            // if (data.available_tablet_sets[key].blocked_by && data.available_tablet_sets[key].blocked_by.length > 0) {
+            //     bu_book_tablet_set.prop('disabled', true).hide();
+            // }
+            div.append(row);
+            row = $('<tr>').addClass('annotation_row');
+            row.append($('<td>').attr('colspan', 4));
+            div.append(row);
+            row.hide();
+            tablet_set_booking_widgets[key] = {
+                button: bu_book_tablet_set,
+                hint_row: row
+            };
+        }
+        $('#tabletSetModal').modal('show');
+
+        $('#bu_delete_tablet_set_booking').click(function (e) {
+            showTemplateModal('Website aktualisieren',
+                `Sind Sie sicher, dass Sie diese Buchung aufheben möchten? ${booking_to_be_deleted.last_name} wird per E-Mail über die Stornierung informiert.`,
+                "<i class='fa fa-trash'></i>&nbsp;&nbsp;Buchung aufheben", 'btn-danger',
+                'Abbrechen', 'btn-secondary', function () {
+                    let data = {
+                        datum: booking_to_be_deleted.booking.datum,
+                        start_time: booking_to_be_deleted.booking.start_time,
+                        end_time: booking_to_be_deleted.booking.end_time,
+                        tablet_set: booking_to_be_deleted.tablet_set
+                    };
+                    api_call('/api/unbook_tablet_set_booking', data, function (data) {
+                        if (data.success) {
+                            booking_span_to_be_deleted.remove();
+                            $('#unbookTabletSetModal').modal('hide');
+                        }
+                    });
+                });
+        });
+        $('#bu-book-tablet-set').click(function (e) {
+            // $('#ti_datum').val('#{Date.today.to_s}');
+            booked_tablet_sets_config = [];
+            $('#ti_datum').val('2021-08-11');
+            $('#ti_start_time').val('07:00');
+            $('#ti_end_time').val('10:30');
+            update_booking_widgets();
+            $('#bookTabletSetModal').modal('show');
+        });
+        $('#bu_perform_tablet_set_booking').click(function() {
+            let data = {
+                datum: $('#ti_datum').val(),
+                start_time: $('#ti_start_time').val(),
+                end_time: $('#ti_end_time').val(),
+                tablet_sets: booked_tablet_sets_config
+            };
+            api_call('/api/book_tablet_sets_for_timespan', data, function(data) {
+                console.log(data);
+            });
+        });
+        $('#ti_datum').change(update_booking_widgets);
+        $('#ti_start_time').change(update_booking_widgets);
+        $('#ti_end_time').change(update_booking_widgets);
+        $('#bu-book-tablet-set').click();
+    });
+</script>

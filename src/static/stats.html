@@ -5,10 +5,6 @@
         width: 100%;
         height: 200px;
     }
-    .modal-body strong {
-        display: inline-block;
-        width: 100px;
-    }
 </style>
    
 <div class='container' style='padding-top: 30px;'>
@@ -18,187 +14,93 @@
         <hr />
         #{print_stats()}
         <hr />
-        <h3>Jitsi und Tablets</h3>
+        <h3>Jitsi</h3>
         <div class='charts'>
         </div>
         </div>
     </div>
 </div>
 
-<div class="modal" id="tabletSetModal" tabindex="-1" role="dialog" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-scrollable modal-dialog-centered" role="document">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">Tabletsatz-Buchung</h5>
-            </div>
-            <div class="modal-body">
-                <strong>Tabletsatz:</strong> <span id='tablet_set_here'></span> <br />
-                <strong>Datum:</strong> <span id='date_here'></span> <br />
-                <strong>Uhrzeit:</strong> <span id='timespan_here'></span> <br />
-                <strong>gebucht von:</strong> <span id='user_here'></span> <br />
-                <div class='extra_info_lesson'>
-                    <strong>Fach:</strong> <span id='fach_here'></span> <br />
-                </div>
-            </div>
-            <div class="modal-footer">
-                <button id='bu_delete_tablet_set_booking' type="button" class="btn btn-danger"><i class='fa fa-trash'></i>&nbsp;&nbsp;Buchung aufheben</button>
-                <button id='bu_close_tablet_set_modal' type="button" class="btn btn-secondary" data-dismiss="modal"><i class='fa fa-times'></i>&nbsp;&nbsp;Schließen</button>
-            </div>
-        </div>
-    </div>
-</div>
-
 <script>
-
-var booking_to_be_deleted = null;
-var booking_span_to_be_deleted = null;
 
 window.addEventListener('load', function() {
     moment.locale('de');
-    api_call('/api/get_tablet_set_bookings', {}, function(data2) {
-        if (data2.success) {
-            let tablet_bookings = data2.bookings;
-            $.get('/gen/jitsi_projection.json', function(data) {
-                let dates = unique = [...new Set(Object.keys(data).concat(Object.keys(tablet_bookings)))].sort();
-                for (let d of dates) {
-                    $('.charts').append($('<h4>').text(moment(d).format('ddd, L')));
-                    if (data[d]) {
-                        let chart_x = [];
-                        let chart_y = {};
-                        chart_y[d + 'T08:00'] = 0;
-                        chart_y[d + 'T19:00'] = 0;
-                        let h = 8;
-                        let m = 0;
-                        let ts = ('' + h).padStart(2, '0') + ':' + ('' + m).padStart(2, '0');
-                        while (ts <= '19:00') {
-                            let x = d + 'T' + ts;
-                            chart_y[x] = 0;
-                            m += 1;
-                            if (m >= 60) {
-                                m = 0;
-                                h += 1;
-                            }
-                            ts = ('' + h).padStart(2, '0') + ':' + ('' + m).padStart(2, '0');
-                        }
-                        let canvas = $('<canvas>');
-
-                        for (let k in data[d]) {
-                            let h = parseInt(data[d][k].start.split(':')[0]);
-                            let m = parseInt(data[d][k].start.split(':')[1]);
-                            let ts = ('' + h).padStart(2, '0') + ':' + ('' + m).padStart(2, '0');
-                            while (ts < data[d][k].end) {
-                                let x = d + 'T' + ts;
-                                if (typeof(chart_y[x]) === 'undefined') {
-                                    chart_y[x] = 0;
-                                }
-                                chart_y[x] += data[d][k].count;
-                                m += 1;
-                                if (m >= 60) {
-                                    m = 0;
-                                    h += 1;
-                                }
-                                ts = ('' + h).padStart(2, '0') + ':' + ('' + m).padStart(2, '0');
-                            }
-                        }
-                        chart_x = Object.keys(chart_y).sort();
-                        new Chart(canvas, {
-                            type: 'bar',
-                            data: {
-                                labels: chart_x,
-                                datasets: [{
-                                    backgroundColor: '#12959f',
-                                    label: 'Geplante Teilnehmer',
-                                    data: chart_x.map(function(x) { return chart_y[x]; }),
-                                }]
-                            },
-                            options: {
-                                aspectRatio: 4.0,
-                                scales: {
-                                    xAxes: [{
-                                        type: 'time',
-                                        time: {
-                                            unit: 'minute',
-                                            stepSize: 15
-                                        },
-                                    }],
-                                    yAxes: [{
-                                        ticks: {
-                                            suggestedMax: 1000,
-                                            beginAtZero: true
-                                        }
-                                    }]
-                                }
-                            }
-                        });
-                        $('.charts').append(canvas);
+    $.get('/gen/jitsi_projection.json', function(data) {
+        for (let d of Object.keys(data).sort()) {
+            $('.charts').append($('<h4>').text(moment(d).format('ddd, L')));
+            if (data[d]) {
+                let chart_x = [];
+                let chart_y = {};
+                chart_y[d + 'T08:00'] = 0;
+                chart_y[d + 'T19:00'] = 0;
+                let h = 8;
+                let m = 0;
+                let ts = ('' + h).padStart(2, '0') + ':' + ('' + m).padStart(2, '0');
+                while (ts <= '19:00') {
+                    let x = d + 'T' + ts;
+                    chart_y[x] = 0;
+                    m += 1;
+                    if (m >= 60) {
+                        m = 0;
+                        h += 1;
                     }
-                    let table = $('<table>').addClass('table').addClass('narrow');
-                    for (let tablet_id in (tablet_bookings[d] || {})) {
-                        let row = $('<tr>');
-                        table.append(row);
-                        row.append($('<th>').html('&nbsp;').css('min-width', '40px'));
-                        let cell = $('<td>').css('background-color', '#f0f0f0');
-                        cell.css('width', '100%');
-                        row.append(cell);
-                        cell.css('position', 'relative');
-                        for (let booking of tablet_bookings[d][tablet_id]) {
-                            let div = $('<div>').css('overflow', 'hidden').css('font-size', '90%').css('background-color', '#fff').css('box-shadow', '0 0 3px rgba(0,0,0,0.2)').css('padding', '0 3px');
-                            div.addClass('timespan-booking');
-                            div.css('position', 'absolute');
-                            // div.html(`<span class='tis' style='background-color: ${booking.tablet.bg_color}; color: ${booking.tablet.fg_color};'>${tablet_id}</span> ${booking.lesson}`);
-                            div.html(`<span class='tis' style=''>${tablet_id}</span> <b>${booking.shorthand}</b> ${booking.lesson}`);
-                            let t0 = parseInt(booking.booking.start_time.substr(0, 2)) * 60 + parseInt(booking.booking.start_time.substr(3, 2));
-                            let t1 = parseInt(booking.booking.end_time.substr(0, 2)) * 60 + parseInt(booking.booking.end_time.substr(3, 2));
-                            let l = (t0 - (8 * 60)) / (19 * 60 - 8 * 60) * 100.0;
-                            let r = (t1 - (8 * 60)) / (19 * 60 - 8 * 60) * 100.0;
-                            div.css('left', `${l}%`);
-                            div.css('width', `${r - l}%`);
-                            div.css('cursor', 'pointer');
-                            console.log(booking);
-                            div.data('booking', booking)
-                            cell.append(div);
-                            div.click(function(e) {
-                                booking_span_to_be_deleted = $(e.target).closest('.timespan-booking')
-                                let booking = booking_span_to_be_deleted.data('booking');
-                                booking_to_be_deleted = booking;
-                                $('#tablet_set_here').text(booking.tablet_set);
-                                $('#date_here').text(moment(booking.booking.datum).format('ddd, L'));
-                                $('#timespan_here').text(`${booking.booking.start_time} – ${booking.booking.end_time}`);
-                                if (booking.lesson) {
-                                    $('#tabletSetModal .extra_info_lesson').show();
-                                    $('#fach_here').html(booking.lesson);
-                                } else {
-                                    $('#tabletSetModal .extra_info_lesson').hide();
-                                }
-                                $('#user_here').html(booking.last_name);
-                                $('#tabletSetModal').modal('show');
-                            });
-                        }
-                    }
-                    $('.charts').append(table);
+                    ts = ('' + h).padStart(2, '0') + ':' + ('' + m).padStart(2, '0');
                 }
-            });
-        }
-    });
-    $('#bu_delete_tablet_set_booking').click(function(e) {
-        console.log(booking_to_be_deleted);
-        showTemplateModal('Website aktualisieren',
-                `Sind Sie sicher, dass Sie diese Buchung aufheben möchten? ${booking_to_be_deleted.last_name} wird per E-Mail über die Stornierung informiert.`,
-                "<i class='fa fa-trash'></i>&nbsp;&nbsp;Buchung aufheben", 'btn-danger',
-                'Abbrechen', 'btn-secondary', function () {
-                    let data = {
-                        datum: booking_to_be_deleted.booking.datum,
-                        start_time: booking_to_be_deleted.booking.start_time,
-                        end_time: booking_to_be_deleted.booking.end_time,
-                        tablet_set: booking_to_be_deleted.tablet_set
-                    };
-                    api_call('/api/unbook_tablet_set_booking', data, function(data) {
-                        if (data.success) {
-                            booking_span_to_be_deleted.remove();
-                            $('#tabletSetModal').modal('hide');
+                let canvas = $('<canvas>');
+
+                for (let k in data[d]) {
+                    let h = parseInt(data[d][k].start.split(':')[0]);
+                    let m = parseInt(data[d][k].start.split(':')[1]);
+                    let ts = ('' + h).padStart(2, '0') + ':' + ('' + m).padStart(2, '0');
+                    while (ts < data[d][k].end) {
+                        let x = d + 'T' + ts;
+                        if (typeof(chart_y[x]) === 'undefined') {
+                            chart_y[x] = 0;
                         }
-                    });
-        });
+                        chart_y[x] += data[d][k].count;
+                        m += 1;
+                        if (m >= 60) {
+                            m = 0;
+                            h += 1;
+                        }
+                        ts = ('' + h).padStart(2, '0') + ':' + ('' + m).padStart(2, '0');
+                    }
+                }
+                chart_x = Object.keys(chart_y).sort();
+                new Chart(canvas, {
+                    type: 'bar',
+                    data: {
+                        labels: chart_x,
+                        datasets: [{
+                            backgroundColor: '#12959f',
+                            label: 'Geplante Teilnehmer',
+                            data: chart_x.map(function(x) { return chart_y[x]; }),
+                        }]
+                    },
+                    options: {
+                        aspectRatio: 4.0,
+                        scales: {
+                            xAxes: [{
+                                type: 'time',
+                                time: {
+                                    unit: 'minute',
+                                    stepSize: 15
+                                },
+                            }],
+                            yAxes: [{
+                                ticks: {
+                                    suggestedMax: 1000,
+                                    beginAtZero: true
+                                }
+                            }]
+                        }
+                    }
+                });
+                $('.charts').append(canvas);
+            }
+            let table = $('<table>').addClass('table').addClass('narrow');
+            $('.charts').append(table);
+        }
     });
 });
 </script>

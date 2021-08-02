@@ -291,6 +291,10 @@ class Parser
             exit(1)
         end
         email = name_to_email(rufname, nachname)
+        name = "#{vorname} #{nachname}"
+        if @force_email[name]
+            email = @force_email[name]
+        end
         if email.sub('@' + SCHUL_MAIL_DOMAIN, '').size > 23
             debug email
             debug "Fehler: E-Mail-Adresse ist zu lang: #{email}"
@@ -316,6 +320,21 @@ class Parser
     def parse_schueler(&block)
 #         debug "Parsing schueler..."
         # create reproducible passwords while parsing SuS
+
+        @force_email = {}
+        path = '/data/schueler/email-sub-by-name.txt'
+        if File.exists?(path)
+            File.open(path) do |f|
+                f.each_line do |line|
+                    line.strip!
+                    parts = line.split(' ')
+                    email = parts[0]
+                    name = parts[1, parts.size - 1].join(' ')
+                    @force_email[name] = email
+                end
+            end
+        end
+
         path = '/data/schueler/ASCII.TXT'
         unless File.exists?(path)
             debug "...skipping because #{path} does not exist"

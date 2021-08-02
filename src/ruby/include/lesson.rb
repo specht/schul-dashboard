@@ -421,7 +421,7 @@ class Main < Sinatra::Base
             booking = row['b'].props
             tablet_set = row['t'].props
             email = row['u.email']
-            lesson_data = @@lessons[:lesson_keys][lesson_key]
+            lesson_data = @@lessons[:lesson_keys][lesson_key] || {}
             results[booking[:datum]] ||= {}
             results[booking[:datum]][tablet_set[:id]] ||= []
             results[booking[:datum]][tablet_set[:id]] << {

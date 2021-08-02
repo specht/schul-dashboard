@@ -6,7 +6,7 @@ class Main < Sinatra::Base
             io.puts "<div class='row'>"
             io.puts "<div class='col-md-12'>"
             io.puts "<div class='alert alert-warning'>"
-            io.puts "Bitte überprüfen Sie die <strong>Gruppenzuordnung (A/B)</strong> und markieren Sie alle Kinder, die von der Aussetzung der Präsenzpflicht Gebrauch machen oder die aus gesundheitlichen Gründen / Quarantäne nicht in die Schule kommen können, als <strong>»zu Hause«</strong>."
+            io.puts "Bitte überprüfen Sie die <strong>Gruppenzuordnung (A/B)</strong> und markieren Sie alle Kinder, die aus gesundheitlichen Gründen / Quarantäne nicht in die Schule kommen können, als <strong>»zu Hause«</strong>."
 #             io.puts "Auf die Jitsi-Streams können momentan nur SuS zugreifen, die laut ihrer Gruppenzuordnung in der aktuellen Woche zu Hause sind oder explizit als »zu Hause« markiert sind."
             io.puts "</div>"
             io.puts "<h3>Klasse #{tr_klasse(klasse)}</h3>"

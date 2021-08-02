@@ -664,7 +664,7 @@ class Main < Sinatra::Base
         end
                      
         self.fix_stundenzeiten()
-                           
+
         parser.parse_schueler do |record|
             matrix_login = "@#{record[:email].split('@').first.sub(/\.\d+$/, '')}:#{MATRIX_DOMAIN_SHORT}"
             @@user_info[record[:email]] = {
@@ -1167,7 +1167,7 @@ class Main < Sinatra::Base
     end
     
     before '*' do
-        if DEVELOPMENT
+        if DEVELOPMENT && request.path[0, 5] != '/api/'
             self.class.compile_js()
             self.class.compile_css()
         end
@@ -1445,7 +1445,7 @@ class Main < Sinatra::Base
                     end
                     if @session_user[:can_upload_vplan]
                         io.puts "<div class='dropdown-divider'></div>"
-                        io.puts "<a class='dropdown-item nav-icon' href='/upload_vplan'><div class='icon'><i class='fa fa-upload'></i></div><span class='label'>Vertretungsplan hochladen</span></a>"
+                        io.puts "<a class='dropdown-item nav-icon' href='/upload_vplan_html'><div class='icon'><i class='fa fa-upload'></i></div><span class='label'>Vertretungsplan hochladen</span></a>"
                     end
                     io.puts "<div class='dropdown-divider'></div>"
                     io.puts "<a class='dropdown-item nav-icon' href='/hilfe'><div class='icon'><i class='fa fa-question-circle'></i></div><span class='label'>Hilfe</span></a>"
@@ -1462,9 +1462,11 @@ class Main < Sinatra::Base
                         io.puts "<div class='dropdown-menu dropdown-menu-right' aria-labelledby='navbarDropdown'>"
                         (@@lessons_for_shorthand[@session_user[:shorthand]] || []).each do |lesson_key|
                             lesson_info = @@lessons[:lesson_keys][lesson_key]
-                            fach = lesson_info[:fach]
-                            fach = @@faecher[fach] if @@faecher[fach]
-                            io.puts "<a class='dropdown-item nav-icon' href='/lessons/#{CGI.escape(lesson_key)}'><div class='icon'><i class='fa fa-address-book'></i></div><span class='label'>#{fach} (#{lesson_info[:klassen].map { |x| tr_klasse(x) }.join(', ')})</span></a>"
+                            if lesson_info
+                                fach = lesson_info[:fach]
+                                fach = @@faecher[fach] if @@faecher[fach]
+                                io.puts "<a class='dropdown-item nav-icon' href='/lessons/#{CGI.escape(lesson_key)}'><div class='icon'><i class='fa fa-address-book'></i></div><span class='label'>#{fach} (#{lesson_info[:klassen].map { |x| tr_klasse(x) }.join(', ')})</span></a>"
+                            end
                         end
                         io.puts "</div>"
                         io.puts "</li>"

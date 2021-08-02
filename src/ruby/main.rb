@@ -721,18 +721,23 @@ class Main < Sinatra::Base
             @@user_info[email][:admin] = true
         end
         (CAN_SEE_ALL_TIMETABLES_USERS + ADMIN_USERS).each do |email|
+            next unless @@user_info[email]
             @@user_info[email][:can_see_all_timetables] = true
         end
         (CAN_UPLOAD_VPLAN_USERS + ADMIN_USERS).each do |email|
+            next unless @@user_info[email]
             @@user_info[email][:can_upload_vplan] = true
         end
         (CAN_UPLOAD_FILES_USERS + ADMIN_USERS).each do |email|
+            next unless @@user_info[email]
             @@user_info[email][:can_upload_files] = true
         end
         (CAN_MANAGE_NEWS_USERS + ADMIN_USERS).each do |email|
+            next unless @@user_info[email]
             @@user_info[email][:can_manage_news] = true
         end
         SV_USERS.each do |email|
+            next unless @@user_info[email]
             @@user_info[email][:sv] = true
         end
 

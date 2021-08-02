@@ -64,17 +64,14 @@ class Main < Sinatra::Base
         if @@index_for_klasse[klasse]
             heading = klasse
         end
+        datum_list = Set.new()
         datum = nil
+        result = {}
         dom.at_css('#vertretung').children.each do |child|
             if child.name == 'table' && datum
                 table_mode = nil
-                result = {
-                    # :filename => filename,
-                    # :heading => heading,
-                    # :datum => datum
-                }
                 classes = child.attribute('class').to_s.split(' ')
-                # STDERR.puts "[#{filename}] [#{heading}] [#{datum}] "
+                # STDERR.puts "[#{heading}] [#{datum}] [#{classes.join(' ')}]"
                 if classes.include?('subst')
                     # STDERR.print "(Vertretungsplan)"
                     table_mode = :vplan
@@ -103,11 +100,13 @@ class Main < Sinatra::Base
                     end
                     cells = row.css('td')
                     if cells.size == 1 && table_mode == :day_message
-                        result[:day_message] = cells.first.text
+                        result[datum] ||= {}
+                        result[datum][:day_message] = cells.first.text
                     elsif (cells.size == 6 || cells.size == 7) && table_mode == :vplan
                         # Klassenvertretungsplan: Klasse(n)	Stunde	Fach	Raum	(Lehrer)	Text
                         # Lehrervertretungsplan: Vtr-Nr.	Stunde	Klasse(n)	(Lehrer)	(Raum)	(Fach)	Text
-                        result[:entries] ||= []
+                        result[datum] ||= {}
+                        result[datum][:entries] ||= []
                         entry = {}
                         cells.each.with_index do |x, index|
                             next if x.at_css('span').nil?
@@ -132,82 +131,63 @@ class Main < Sinatra::Base
                         path = "/vplan/#{datum}/entries/#{sha1}.json"
                         FileUtils.mkpath(File.dirname(path))
                         File.open(path, 'w') { |f| f.write(fixed_entry.to_json) }
-                        result[:entries] << sha1
+                        result[datum][:entries] << sha1
                     end
                     # STDERR.print " #{cells.size}"
                 end
                 # STDERR.puts
                 # STDERR.puts '-' * 40
-                path = "/vplan/#{datum}/#{heading.gsub('/', '-')}.json"
-                FileUtils.mkpath(File.dirname(path))
-                File.open(path, 'w') { |f| f.write(result.to_json) }
             else
                 b = nil
                 b = child.text if child.name == 'b'
                 child.css('b').each { |c2| b = c2.text }
-                datum = parse_html_datum(b) if b
+                if b
+                    datum = parse_html_datum(b) 
+                    datum_list << datum
+                end
             end
         end
-        # head = dom.css('.mon_head').to_s 
-        # m = head.match(/Stand: (\d+\.\d+\.\d+)\s+(\d+:\d+)/)
-        # d = m[1]
-        # t = m[2]
-        # valid_from = d.split('.').map { |x| x.to_i }.reverse.map.with_index { |x, i| sprintf("%0#{i == 0 ? 4 : 2}d", x) }.join('-')
-        # valid_from += "T#{t}:00"
-        # STDERR.puts valid_from
-
-        # path = "/vplan/#{DateTime.now.strftime('%Y-%m-%dT%H-%M-%S')}.txt.tmp"
-        # File.open(path, 'w') do |f|
-        #     f.write(blob)
-        # end
-        # found_error = false
-        # File.open(path, 'r:' + VPLAN_ENCODING) do |f|
-        #     f.each_line do |line|
-        #         next if line.strip.empty?
-        #         line = line.encode('utf-8')
-        #         parts = line.split("\t")
-        #         if parts.size != 22
-        #             found_error = true
-        #             break
-        #         end
-        #     end
-        # end
+        result.each_pair do |datum, info|
+            path = "/vplan/#{datum}/#{heading.gsub('/', '-')}.json"
+            FileUtils.mkpath(File.dirname(path))
+            File.open(path, 'w') { |f| f.write(result[datum].to_json) }
+        end
+        return datum_list
     end
 
     post '/api/upload_vplan_html_zip' do
         require_user_who_can_upload_vplan!
         entry = params['data']
         blob = entry['tempfile']
+        datum_list = Set.new()
         Zip::File.open(blob) do |zip_file|
             zip_file.each do |entry|
-                handle_zip_entry(entry.get_input_stream.read)
+                temp = handle_zip_entry(entry.get_input_stream.read)
+                if temp
+                    datum_list |= temp
+                end
+            end
+        end
+        datum_list.each do |datum|
+            File.open("/vplan/#{datum}.json", 'w') do |fout|
+                data = {:entries => {}, :timetables => {}}
+                Dir["/vplan/#{datum}/entries/*.json"].each do |path|
+                    sha1 = File.basename(path).sub('.json', '')
+                    data[:entries][sha1] = JSON.parse(File.read(path))
+                end
+                Dir["/vplan/#{datum}/*.json"].each do |path|
+                    id = File.basename(path).sub('.json', '')
+                    entry = JSON.parse(File.read(path))
+                    unless entry.empty?
+                        data[:timetables][id] = entry
+                    end
+                end
+                fout.write(data.to_json)
             end
         end
         respond(:yay => 'sure')
     end
 
-    post '/api/upload_vplan_html' do
-        require_user_who_can_upload_vplan!
-        entry = params['file']
-        filename = entry['filename']
-        STDERR.puts "upload_vplan_html #{filename}"
-        blob = entry['tempfile']
-        mtime = blob.mtime
-        contents = blob.read
-        # contents = contents.force_encoding('iso-8859-1').encode('utf-8')
-        # STDERR.puts "#{filename} #{contents.encoding} #{mtime}"
-
-        
-        # if found_error
-        #     FileUtils::rm(path)
-        #     respond(:error => true, :error_message => 'Falsches Dateiformat!')
-        #     return
-        # end
-        # FileUtils.mv(path, path.sub('.txt.tmp', '.txt'))
-        # trigger_update('all')
-        respond(:uploaded => 'yeah')
-    end
-    
     post '/api/delete_vplan' do
         require_user_who_can_upload_vplan!
         

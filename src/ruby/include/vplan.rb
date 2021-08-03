@@ -88,6 +88,13 @@ class Main < Sinatra::Base
                 assert(!table_mode.nil?)
                 # STDERR.puts child.to_s
                 child.css('tr').each do |row|
+                    row.search('s').each do |n| 
+                        n.content = "__STRIKE_BEGIN__#{n.content}__STRIKE_END__"
+                    end
+                    row.search('td/*').each do |n| 
+                        n.replace(n.content) unless (n.name == 's')
+                    end
+
                     tr = row.css('th')
                     if tr.size == 6
                         # Klassenvertretungsplan: 
@@ -106,7 +113,8 @@ class Main < Sinatra::Base
                         path = "/vplan/#{datum}/entries/#{sha1}.json"
                         FileUtils.mkpath(File.dirname(path))
                         File.open(path, 'w') { |f| f.write(day_message.to_json) }
-                        result[datum][:day_message] = sha1
+                        result[datum][:day_messages] ||= []
+                        result[datum][:day_messages] << sha1
                     elsif (cells.size == 6 || cells.size == 7) && table_mode == :vplan
                         # Klassenvertretungsplan: Klasse(n)	Stunde	Fach	Raum	(Lehrer)	Text
                         # Lehrervertretungsplan: Vtr-Nr.	Stunde	Klasse(n)	(Lehrer)	(Raum)	(Fach)	Text
@@ -114,24 +122,27 @@ class Main < Sinatra::Base
                         result[datum][:entries] ||= []
                         entry = {}
                         cells.each.with_index do |x, index|
-                            next if x.at_css('span').nil?
                             key = TIMETABLE_JSON_KEYS[cells.size][index]
-                            span = x.at_css('span')
+                            text = x.content || ''
+                            # replace &nbsp; with normal space and strip
+                            text.gsub!(/[[:space:]]+/, ' ')
+                            text.strip!
                             entry_del = nil
                             entry_add = nil
-                            span.children.each do |y|
-                                if y.name == 's'
-                                    assert(entry_del.nil?)
-                                    entry_del = y.text
-                                elsif y.name == 'text'
-                                    assert(entry_add.nil?)
-                                    entry_add = y.text
-                                end
+                            if text.include?('__STRIKE_BEGIN__')
+                                text.gsub!('__STRIKE_BEGIN__', '')
+                                parts = text.split('__STRIKE_END__')
+                                entry_del = (parts[0] || '').strip
+                                entry_add = (parts[1] || '').strip
+                            else
+                                entry_add = (text || '').strip
                             end
+                            entry_add = nil if entry_add && entry_add.empty?
+                            entry_del = nil if entry_del && entry_del.empty?
                             entry_add = entry_add[1, entry_add.size - 1] if entry_add && entry_add[0] == '?'
                             entry[key] = [entry_del, entry_add]
                         end
-                        fixed_entry = [entry[:klasse], entry[:stunde], entry[:lehrer], entry[:fach], entry[:raum], entry[:text]]
+                        fixed_entry = [entry[:stunde][1], entry[:klasse], entry[:lehrer], entry[:fach], entry[:raum], entry[:text][1]]
                         sha1 = Digest::SHA1.hexdigest(fixed_entry.to_json)[0, 8]
                         path = "/vplan/#{datum}/entries/#{sha1}.json"
                         FileUtils.mkpath(File.dirname(path))
@@ -167,7 +178,8 @@ class Main < Sinatra::Base
         datum_list = Set.new()
         Zip::File.open(blob) do |zip_file|
             zip_file.each do |entry|
-                temp = handle_zip_entry(entry.get_input_stream.read)
+                zip_contents = entry.get_input_stream.read
+                temp = handle_zip_entry(zip_contents)
                 if temp
                     datum_list |= temp
                 end
@@ -194,11 +206,7 @@ class Main < Sinatra::Base
                 fout.write(data.to_json)
             end
         end
-        if DEVELOPMENT
-            trigger_update('_8b')
-        else
-            trigger_update('all')
-        end
+        trigger_update('all')
         respond(:yay => 'sure')
     end
 

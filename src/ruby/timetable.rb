@@ -229,7 +229,7 @@ class Timetable
     end
     
     def print_ventry(ventry)
-        debug sprintf('[%5d] [%4d] %s %2d ', ventry[:vnr], ventry[:unr], ventry[:datum], ventry[:stunde])
+        debug sprintf('%s %2d ', ventry[:datum], ventry[:stunde])
         s = ''
         [:fach, :lehrer, :klassen, :raum].each do |k|
             k0 = "#{k}_alt".to_sym
@@ -262,7 +262,7 @@ class Timetable
         end
         # try to find a matching lesson, it should be exactly one
         matching_lesson_keys = Set.new()
-        day_lesson_keys_for_stunde[ventry[:stunde]].each do |lesson_key|
+        (day_lesson_keys_for_stunde[ventry[:stunde]] || []).each do |lesson_key|
             if yield(@@lessons[:lesson_keys][lesson_key])
                 matching_lesson_keys << lesson_key
             end

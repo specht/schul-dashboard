@@ -604,9 +604,65 @@ class Parser
             vplan = JSON.parse(File.read(path))
             datum = File.basename(path).sub('.json', '')
             if ENV['DASHBOARD_SERVICE'] == 'timetable'
-                debug "#{datum} #{vplan['entry_ref'].to_json}"
+                vplan['entry_ref'].each_pair do |sha1, ref|
+                    # if datum == '2021-05-18' && ref.include?('8b')
+                    #     STDERR.puts "#{datum} #{sha1} #{ref.sort.join('/')}: #{vplan['entries'][sha1].to_json}"
+                    # end
+                    # if ref.size != 2
+                    #     STDERR.puts "#{datum} #{sha1} #{ref.sort.join('/')}: #{vplan['entries'][sha1].to_json}"
+                    # end
+                end
             end
-            
+            vplan['entries'].each_pair do |sha1, jentry|
+                STDERR.puts "#{datum} #{sha1} #{jentry.to_json}"
+                stunde_range = []
+                if jentry[0].include?('-')
+                    parts = jentry[0].split('-').map { |x| x.strip.to_i }
+                    stunde_range = (parts[0]..parts[1]).to_a
+                else
+                    stunde_range = (jentry[0].to_i..jentry[0].to_i).to_a
+                end
+                stunde_range.each do |stunde|
+                    # 0: stunde
+                    # 1: klasse (old, new)
+                    # 2: lehrer (old, new)
+                    # 3: fach (old, new)
+                    # 4: raum (old, new)
+                    # 5: vertretungs_text
+
+                    entry = {
+                        # :vnr => parts[0].to_i,
+                        :datum => datum,
+                        :stunde => stunde,
+                        :lehrer_alt => jentry[2][0],
+                        :lehrer_neu => jentry[2][1],
+                        :fach_alt => (jentry[3][0] || '').gsub('/', '-'),
+                        :fach_neu => (jentry[3][1] || '').gsub('/', '-'),
+                        :raum_alt => (jentry[4][0] || '').gsub('~', '/'),
+                        :raum_neu => (jentry[4][1] || '').gsub('~', '/'),
+                        # :klassen_alt => Set.new(parts[14].split('~')).to_a.sort,
+                        :vertretungs_text => jentry[5],
+                        # :klassen_neu => Set.new(parts[18].split('~')).to_a.sort,
+                    }
+
+                    entry.keys.each do |k|
+                        if (entry[k].is_a?(String) || entry[k].is_a?(Array)) && entry[k].empty?
+                            entry.delete(k)
+                        end
+                    end
+                    ventry_flags = Main.gen_ventry_flags(entry)
+                    if ventry_flags == 0b1_10_11_11_11 && entry[:datum] > '2021-04-19'
+                        # ATTENTION: spezieller Spezialfall
+                        # Am Ende des Schuljahres, wenn der Abijahrgang die Schule verlässt,
+                        # kommen viele Einträge, bei denen aus Klasse 11+12 nur Klasse 11 
+                        # wird. Aus einem unbekannten Grund wird dabei fach_neu nicht exportiert,
+                        # das korrigieren wir hier.
+                        entry[:fach_neu] = entry[:fach_alt].dup
+                    end
+                    entries << entry
+                end
+            end
+
         end
 
     #     vplan_path = Dir['/vplan/*.txt'].sort.last

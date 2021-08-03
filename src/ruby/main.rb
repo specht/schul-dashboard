@@ -450,8 +450,8 @@ class SetupDatabase
                     wanted_users << "klassenraum@#{SCHUL_MAIL_DOMAIN}"
                     users_to_be_deleted = Set.new(present_users) - wanted_users
                     unless users_to_be_deleted.empty?
-                        debug "Deleting users (not really):"
-                        debug users_to_be_deleted.to_a.sort.to_yaml
+                        debug "Deleting #{users_to_be_deleted.size} users (not really)"
+                        # debug users_to_be_deleted.to_a.sort.to_yaml
                     end
                 end
                 transaction do

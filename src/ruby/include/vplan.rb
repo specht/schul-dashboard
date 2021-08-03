@@ -101,7 +101,12 @@ class Main < Sinatra::Base
                     cells = row.css('td')
                     if cells.size == 1 && table_mode == :day_message
                         result[datum] ||= {}
-                        result[datum][:day_message] = cells.first.text
+                        day_message = cells.first.text
+                        sha1 = Digest::SHA1.hexdigest(day_message.to_json)[0, 8]
+                        path = "/vplan/#{datum}/entries/#{sha1}.json"
+                        FileUtils.mkpath(File.dirname(path))
+                        File.open(path, 'w') { |f| f.write(day_message.to_json) }
+                        result[datum][:day_message] = sha1
                     elsif (cells.size == 6 || cells.size == 7) && table_mode == :vplan
                         # Klassenvertretungsplan: Klasse(n)	Stunde	Fach	Raum	(Lehrer)	Text
                         # Lehrervertretungsplan: Vtr-Nr.	Stunde	Klasse(n)	(Lehrer)	(Raum)	(Fach)	Text
@@ -184,6 +189,11 @@ class Main < Sinatra::Base
                 end
                 fout.write(data.to_json)
             end
+        end
+        if DEVELOPMENT
+            trigger_update('_8b')
+        else
+            trigger_update('all')
         end
         respond(:yay => 'sure')
     end

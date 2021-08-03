@@ -1711,8 +1711,10 @@ class Main < Sinatra::Base
         timetable_id = nil
         fixed_timetable_data = nil
         initial_date = Date.parse([@@config[:first_school_day], Date.today.to_s].max.to_s)
+        if DEVELOPMENT
+            initial_date = Date.parse('2021-05-17')
+        end
         while [6, 0].include?(initial_date.wday)
-        #while [0].include?(initial_date.wday)
            initial_date += 1
         end
         initial_date = initial_date.strftime('%Y-%m-%d')

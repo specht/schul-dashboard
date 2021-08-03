@@ -269,7 +269,7 @@ class Main < Sinatra::Base
         random_code = '123456' if DEVELOPMENT
         random_code = DEMO_ACCOUNT_FIXED_PIN if data[:email] == DEMO_ACCOUNT_EMAIL
         tag = RandomTag::generate(8)
-        debug "!!!!! #{data[:email]} => #{tag} / #{random_code} !!!!!"
+        # debug "!!!!! #{data[:email]} => #{tag} / #{random_code} !!!!!"
         valid_to = Time.now + 600
         # was causing problems with a user... maybe? huh...
 #         neo4j_query(<<~END_OF_QUERY, :email => data[:email])

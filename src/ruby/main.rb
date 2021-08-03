@@ -1639,7 +1639,8 @@ class Main < Sinatra::Base
             StringIO.open do |io|
                 io.puts "<div style='margin-bottom: 15px;'>"
                 @@klassen_order.each do |klasse|
-                    next unless (@@klassen_for_shorthand[@session_user[:shorthand]] || Set.new()).include?(klasse)
+                    # TODO: is this okay?
+                    # next unless (@@klassen_for_shorthand[@session_user[:shorthand]] || Set.new()).include?(klasse)
                     id = @@klassen_id[klasse]
                     io.puts "<a data-klasse='#{klasse}' data-id='#{id}' onclick=\"window.location.href = '/timetable/#{id}' + window.location.hash;\" class='btn btn-sm ttc'>#{tr_klasse(klasse)}</a>"
                 end

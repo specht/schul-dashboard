@@ -532,6 +532,10 @@ class Timetable
             # 2. patch today's lessons based on vertretungsplan
             if @@vertretungen[ds]
                 @@vertretungen[ds].each do |ventry|
+                    if ds == '2021-05-18' && ventry[:stunde] == 6
+                        STDERR.puts ventry.to_json
+                    end
+                    next
                     ventry_flags = Main.gen_ventry_flags(ventry)
                     seen_ventry_flags[ventry_flags] ||= 0
                     seen_ventry_flags[ventry_flags] += 1

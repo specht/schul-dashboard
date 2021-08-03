@@ -634,15 +634,15 @@ class Parser
                         # :vnr => parts[0].to_i,
                         :datum => datum,
                         :stunde => stunde,
+                        :klassen_alt => Set.new((jentry[1][0] || '').split('~')).to_a.sort,
+                        :klassen_neu => Set.new((jentry[1][1] || '').split('~')).to_a.sort,
                         :lehrer_alt => jentry[2][0],
                         :lehrer_neu => jentry[2][1],
                         :fach_alt => (jentry[3][0] || '').gsub('/', '-'),
                         :fach_neu => (jentry[3][1] || '').gsub('/', '-'),
-                        :raum_alt => (jentry[4][0] || '').gsub('~', '/'),
-                        :raum_neu => (jentry[4][1] || '').gsub('~', '/'),
-                        # :klassen_alt => Set.new(parts[14].split('~')).to_a.sort,
+                        :raum_alt => (jentry[4][0] || '').gsub('~', '/').gsub(',', '/').split('/').map { |x| x.strip }.join('/'),
+                        :raum_neu => (jentry[4][1] || '').gsub('~', '/').gsub(',', '/').split('/').map { |x| x.strip }.join('/'),
                         :vertretungs_text => jentry[5],
-                        # :klassen_neu => Set.new(parts[18].split('~')).to_a.sort,
                     }
 
                     entry.keys.each do |k|
@@ -650,15 +650,15 @@ class Parser
                             entry.delete(k)
                         end
                     end
-                    ventry_flags = Main.gen_ventry_flags(entry)
-                    if ventry_flags == 0b1_10_11_11_11 && entry[:datum] > '2021-04-19'
-                        # ATTENTION: spezieller Spezialfall
-                        # Am Ende des Schuljahres, wenn der Abijahrgang die Schule verlässt,
-                        # kommen viele Einträge, bei denen aus Klasse 11+12 nur Klasse 11 
-                        # wird. Aus einem unbekannten Grund wird dabei fach_neu nicht exportiert,
-                        # das korrigieren wir hier.
-                        entry[:fach_neu] = entry[:fach_alt].dup
-                    end
+                    # ventry_flags = Main.gen_ventry_flags(entry)
+                    # if ventry_flags == 0b1_10_11_11_11 && entry[:datum] > '2021-04-19'
+                    #     # ATTENTION: spezieller Spezialfall
+                    #     # Am Ende des Schuljahres, wenn der Abijahrgang die Schule verlässt,
+                    #     # kommen viele Einträge, bei denen aus Klasse 11+12 nur Klasse 11 
+                    #     # wird. Aus einem unbekannten Grund wird dabei fach_neu nicht exportiert,
+                    #     # das korrigieren wir hier.
+                    #     entry[:fach_neu] = entry[:fach_alt].dup
+                    # end
                     entries << entry
                 end
             end

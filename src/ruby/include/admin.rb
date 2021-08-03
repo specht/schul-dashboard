@@ -239,7 +239,14 @@ class Main < Sinatra::Base
             @@user_info.each_pair do |email, info|
                 next unless email.include?(SMTP_DOMAIN)
                 required_email_addresses << email
-                unless info[:teacher]
+                if info[:teacher]
+                    data_for_required_email_address[email] = {
+                        :first_name => info[:first_name],
+                        :last_name => info[:last_name],
+                        :email => email,
+                        :password => Main.gen_password_for_email(email)
+                    }
+                else
                     data_for_required_email_address[email] = {
                         :first_name => info[:first_name],
                         :last_name => info[:last_name],

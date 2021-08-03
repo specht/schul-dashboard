@@ -175,7 +175,7 @@ class Main < Sinatra::Base
         end
         datum_list.each do |datum|
             File.open("/vplan/#{datum}.json", 'w') do |fout|
-                data = {:entries => {}, :timetables => {}}
+                data = {:entries => {}, :entry_ref => {}, :timetables => {}}
                 Dir["/vplan/#{datum}/entries/*.json"].each do |path|
                     sha1 = File.basename(path).sub('.json', '')
                     data[:entries][sha1] = JSON.parse(File.read(path))
@@ -185,6 +185,10 @@ class Main < Sinatra::Base
                     entry = JSON.parse(File.read(path))
                     unless entry.empty?
                         data[:timetables][id] = entry
+                        (entry['entries'] || []).each do |e|
+                            data[:entry_ref][e] ||= []
+                            data[:entry_ref][e] << id
+                        end
                     end
                 end
                 fout.write(data.to_json)

@@ -5,6 +5,7 @@ require 'json'
 require 'digest/sha2'
 require 'nokogiri'
 require './credentials.rb'
+require '/data/config.rb'
 
 class String
     # The extended characters map used by removeaccents. The accented characters 
@@ -481,6 +482,8 @@ class Parser
                     klasse = parts[1]
                     klasse = '8o' if klasse == '8?'
                     klasse = '8o' if klasse == '8ω'
+                    klasse = '9o' if klasse == '9?'
+                    klasse = '9o' if klasse == '9ω'
 #                     next if timetable_start_date < '2020-08-19' && ['11', '12'].include?(klasse)
                     lehrer = parts[2]
                     if @use_mock_names
@@ -592,119 +595,133 @@ class Parser
             end
         end
         entries = []
-        vplan_path = Dir['/vplan/*.txt'].sort.last
-        if vplan_path
-            debug "Loading vplan from #{vplan_path}..."
-            File.open(vplan_path, 'r:' + VPLAN_ENCODING) do |f|
-                f.each_line do |line|
-                    line = line.encode('utf-8')
-                    parts = line.split("\t").map do |x| 
-                        x = x.strip
-                        if x[0] == '"' && x[x.size - 1] == '"'
-                            x = x[1, x.size - 2]
-                        end
-                        x.strip
-                    end
-                    vertretungs_arten = {
-                        'T' => 'verlegt',
-                        'F' => 'verlegt von',
-                        'W' => 'Tausch',
-                        'S' => 'Betreuung',
-                        'A' => 'Sondereinsatz',
-                        'C' => 'Entfall',
-                        'L' => 'Freisetzung',
-                        'P' => 'Teil-Vertretung',
-                        'R' => 'Raumvertretung',
-                        'B' => 'Pausenaufsichtsvertretung',
-                        '~' => 'Lehrertausch',
-                        'E' => 'Klausur'
-                    }
-                    art = Set.new()
-                    bits = {0 => 'Entfall',
-                            1 => 'Betreuung',
-                            2 => 'Sondereinsatz',
-                            3 => 'Wegverlegung',
-                            4 => 'Freisetzung',
-                            5 => 'Plus als Vertreter',
-                            6 => 'Teilvertretung',
-                            7 => 'Hinverlegung',
-                            16 => 'Raumvertretung',
-                            17 => 'Pausenaufsichtsvertretung',
-                            18 => 'Stunde ist unterrichtsfrei',
-                            20 => 'Kennzeichen nicht drucken',
-                            21 => 'Kennzeichen neu'}
-                    flags = parts[17].to_i
-                    bit = 0
-                    while flags > 0
-                        if (flags & 1) == 1
-                            art << (bits[bit] || "unbekanntes Bit #{bit}")
-                        end
-                        bit += 1
-                        flags >>= 1
-                    end
-                    datum = "#{parts[1][0, 4]}-#{parts[1][4, 2]}-#{parts[1][6, 2]}"
-                    if @use_mock_names
-                        if parts[5] && !parts[5].empty?
-                            parts[5] = @mock_shorthand[parts[5]]
-                            next if parts[5].nil?
-                        end
-                        if parts[6] && !parts[6].empty?
-                            parts[6] = @mock_shorthand[parts[6]]
-                            next if parts[6].nil?
-                        end
-                    end
-                    entry = {
-                        :vnr => parts[0].to_i,
-                        :datum => datum,
-                        :stunde => parts[2].to_i,
-    #                     :absenz_nr => parts[3].to_i,
-                        # referenziert Stundenplan
-                        :unr => parts[4].to_i,
-                        :lehrer_alt => parts[5],
-                        :lehrer_neu => parts[6],
-                        :fach_alt => parts[7].gsub('/', '-'),
-    #                     :fach_alt_stkz => parts[8],
-                        :fach_neu => parts[9].gsub('/', '-'),
-    #                     :fach_neu_stkz => parts[10],
-                        :raum_alt => parts[11].gsub('~', '/'),
-                        :raum_neu => parts[12].gsub('~', '/'),
-    #                     :stkz => parts[13],
-                        :klassen_alt => Set.new(parts[14].split('~')).to_a.map { |x| x == '8?' ? '8o': x }.sort,
-                        :grund => parts[15],
-                        :vertretungs_text => parts[16],
-                        :art => art,
-                        :klassen_neu => Set.new(parts[18].split('~')).to_a.map { |x| x == '8?' ? '8o': x }.sort,
-                        :vertretungs_art => vertretungs_arten[parts[19]] || parts[19],
-    #                     :record_date => parts[20],
-    #                     :unknown => parts[21]
-                    }
+        vplan_timestamp = nil
 
-                    entry.keys.each do |k|
-                        if (entry[k].is_a?(String) || entry[k].is_a?(Array)) && entry[k].empty?
-                            entry.delete(k)
-                        end
-                    end
-                    unless entry[:art].include?('Kennzeichen nicht drucken')
-                        ventry_flags = Main.gen_ventry_flags(entry)
-                        if ventry_flags == 0b1_10_11_11_11 && entry[:datum] > '2021-04-19'
-                            # ATTENTION: spezieller Spezialfall
-                            # Am Ende des Schuljahres, wenn der Abijahrgang die Schule verlässt,
-                            # kommen viele Einträge, bei denen aus Klasse 11+12 nur Klasse 11 
-                            # wird. Aus einem unbekannten Grund wird dabei fach_neu nicht exportiert,
-                            # das korrigieren wir hier.
-                            entry[:fach_neu] = entry[:fach_alt].dup
-                        end
-                        entries << entry
-                    end
-                end
+        Dir['/vplan/*.json'].sort.each do |path|
+            mtime = File.mtime(path)
+            vplan_timestamp ||= mtime
+            vplan_timestamp = mtime if mtime > vplan_timestamp
+            vplan = JSON.parse(File.read(path))
+            datum = File.basename(path).sub('.json', '')
+            if ENV['DASHBOARD_SERVICE'] == 'timetable'
+                debug "#{datum} #{vplan['entry_ref'].to_json}"
             end
+            
         end
+
+    #     vplan_path = Dir['/vplan/*.txt'].sort.last
+    #     if vplan_path
+    #         debug "Loading vplan from #{vplan_path}..."
+    #         File.open(vplan_path, 'r:' + VPLAN_ENCODING) do |f|
+    #             f.each_line do |line|
+    #                 line = line.encode('utf-8')
+    #                 parts = line.split("\t").map do |x| 
+    #                     x = x.strip
+    #                     if x[0] == '"' && x[x.size - 1] == '"'
+    #                         x = x[1, x.size - 2]
+    #                     end
+    #                     x.strip
+    #                 end
+    #                 vertretungs_arten = {
+    #                     'T' => 'verlegt',
+    #                     'F' => 'verlegt von',
+    #                     'W' => 'Tausch',
+    #                     'S' => 'Betreuung',
+    #                     'A' => 'Sondereinsatz',
+    #                     'C' => 'Entfall',
+    #                     'L' => 'Freisetzung',
+    #                     'P' => 'Teil-Vertretung',
+    #                     'R' => 'Raumvertretung',
+    #                     'B' => 'Pausenaufsichtsvertretung',
+    #                     '~' => 'Lehrertausch',
+    #                     'E' => 'Klausur'
+    #                 }
+    #                 art = Set.new()
+    #                 bits = {0 => 'Entfall',
+    #                         1 => 'Betreuung',
+    #                         2 => 'Sondereinsatz',
+    #                         3 => 'Wegverlegung',
+    #                         4 => 'Freisetzung',
+    #                         5 => 'Plus als Vertreter',
+    #                         6 => 'Teilvertretung',
+    #                         7 => 'Hinverlegung',
+    #                         16 => 'Raumvertretung',
+    #                         17 => 'Pausenaufsichtsvertretung',
+    #                         18 => 'Stunde ist unterrichtsfrei',
+    #                         20 => 'Kennzeichen nicht drucken',
+    #                         21 => 'Kennzeichen neu'}
+    #                 flags = parts[17].to_i
+    #                 bit = 0
+    #                 while flags > 0
+    #                     if (flags & 1) == 1
+    #                         art << (bits[bit] || "unbekanntes Bit #{bit}")
+    #                     end
+    #                     bit += 1
+    #                     flags >>= 1
+    #                 end
+    #                 datum = "#{parts[1][0, 4]}-#{parts[1][4, 2]}-#{parts[1][6, 2]}"
+    #                 if @use_mock_names
+    #                     if parts[5] && !parts[5].empty?
+    #                         parts[5] = @mock_shorthand[parts[5]]
+    #                         next if parts[5].nil?
+    #                     end
+    #                     if parts[6] && !parts[6].empty?
+    #                         parts[6] = @mock_shorthand[parts[6]]
+    #                         next if parts[6].nil?
+    #                     end
+    #                 end
+    #                 entry = {
+    #                     :vnr => parts[0].to_i,
+    #                     :datum => datum,
+    #                     :stunde => parts[2].to_i,
+    # #                     :absenz_nr => parts[3].to_i,
+    #                     # referenziert Stundenplan
+    #                     :unr => parts[4].to_i,
+    #                     :lehrer_alt => parts[5],
+    #                     :lehrer_neu => parts[6],
+    #                     :fach_alt => parts[7].gsub('/', '-'),
+    # #                     :fach_alt_stkz => parts[8],
+    #                     :fach_neu => parts[9].gsub('/', '-'),
+    # #                     :fach_neu_stkz => parts[10],
+    #                     :raum_alt => parts[11].gsub('~', '/'),
+    #                     :raum_neu => parts[12].gsub('~', '/'),
+    # #                     :stkz => parts[13],
+    #                     :klassen_alt => Set.new(parts[14].split('~')).to_a.map { |x| x == '8?' ? '8o': x }.sort,
+    #                     :grund => parts[15],
+    #                     :vertretungs_text => parts[16],
+    #                     :art => art,
+    #                     :klassen_neu => Set.new(parts[18].split('~')).to_a.map { |x| x == '8?' ? '8o': x }.sort,
+    #                     :vertretungs_art => vertretungs_arten[parts[19]] || parts[19],
+    # #                     :record_date => parts[20],
+    # #                     :unknown => parts[21]
+    #                 }
+
+    #                 entry.keys.each do |k|
+    #                     if (entry[k].is_a?(String) || entry[k].is_a?(Array)) && entry[k].empty?
+    #                         entry.delete(k)
+    #                     end
+    #                 end
+    #                 unless entry[:art].include?('Kennzeichen nicht drucken')
+    #                     ventry_flags = Main.gen_ventry_flags(entry)
+    #                     if ventry_flags == 0b1_10_11_11_11 && entry[:datum] > '2021-04-19'
+    #                         # ATTENTION: spezieller Spezialfall
+    #                         # Am Ende des Schuljahres, wenn der Abijahrgang die Schule verlässt,
+    #                         # kommen viele Einträge, bei denen aus Klasse 11+12 nur Klasse 11 
+    #                         # wird. Aus einem unbekannten Grund wird dabei fach_neu nicht exportiert,
+    #                         # das korrigieren wir hier.
+    #                         entry[:fach_neu] = entry[:fach_alt].dup
+    #                     end
+    #                     entries << entry
+    #                 end
+    #             end
+    #         end
+    #     end
         vertretungen = {}
         entries.each do |entry|
             vertretungen[entry[:datum]] ||= []
             vertretungen[entry[:datum]] << entry
         end
-        return all_lessons, vertretungen, File.basename(vplan_path || '').sub('.txt', '')
+        return all_lessons, vertretungen, vplan_timestamp
     end
     
     def parse_pausenaufsichten()

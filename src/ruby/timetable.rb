@@ -164,8 +164,8 @@ class Timetable
         HOURS_FOR_KLASSE.keys.sort.each do |k|
             hfk_ds = k if ds >= k
         end
-        start_time = HOURS_FOR_KLASSE[hfk_ds][klasse][stunde - 1][0]
-        end_time = HOURS_FOR_KLASSE[hfk_ds][klasse][stunde - 1][1]
+        start_time = HOURS_FOR_KLASSE[hfk_ds][klasse][stunde][0]
+        end_time = HOURS_FOR_KLASSE[hfk_ds][klasse][stunde][1]
         where = nil
         if ventry[:vertretungs_art] == 'Pausenaufsichtsvertretung'
             i = 0
@@ -312,11 +312,11 @@ class Timetable
                         stunde = ventry[:stunde]
                             
                         if HOURS_FOR_KLASSE[hfk_ds][klasse].nil?
-                            debug "OOPS: [#{hfk_ds}] [#{klasse}] [#{stunde - 1}]"
+                            debug "OOPS: [#{hfk_ds}] [#{klasse}] [#{stunde}]"
                             next
                         end
-                        start_time = HOURS_FOR_KLASSE[hfk_ds][klasse][stunde - 1][0]
-                        end_time = HOURS_FOR_KLASSE[hfk_ds][klasse][stunde - 1][1]
+                        start_time = HOURS_FOR_KLASSE[hfk_ds][klasse][stunde][0]
+                        end_time = HOURS_FOR_KLASSE[hfk_ds][klasse][stunde][1]
                         secondary_label = ventry[:vertretungs_text]
                         if ['Pausenaufsichtsvertretung', 'Entfall'].include?(ventry[:vertretungs_art])
                             secondary_label ||= ventry[:vertretungs_art]
@@ -354,8 +354,8 @@ class Timetable
                             debug "OOPS: [#{hfk_ds}] [#{klasse}] [#{stunde - 1}]"
                             next
                         end
-                        start_time = HOURS_FOR_KLASSE[hfk_ds][klasse][stunde - 1][0]
-                        end_time = HOURS_FOR_KLASSE[hfk_ds][klasse][stunde - 1][1]
+                        start_time = HOURS_FOR_KLASSE[hfk_ds][klasse][stunde][0]
+                        end_time = HOURS_FOR_KLASSE[hfk_ds][klasse][stunde][1]
                         
                         primary_label = ventry[:fach_neu]
                         secondary_label = ventry[:vertretungs_text]
@@ -480,11 +480,11 @@ class Timetable
                     entry = lesson[:stunden][dow][stunde]
                     hfk_klasse = entry[:klassen].first
                     if HOURS_FOR_KLASSE[hfk_ds][hfk_klasse]
-                        entry[:start_time] = HOURS_FOR_KLASSE[hfk_ds][hfk_klasse][stunde - 1][0]
-                        entry[:end_time] = HOURS_FOR_KLASSE[hfk_ds][hfk_klasse][stunde - 1][1]
+                        entry[:start_time] = HOURS_FOR_KLASSE[hfk_ds][hfk_klasse][stunde][0]
+                        entry[:end_time] = HOURS_FOR_KLASSE[hfk_ds][hfk_klasse][stunde][1]
                     else
-                        entry[:start_time] = HOURS_FOR_KLASSE[hfk_ds]['7a'][stunde - 1][0]
-                        entry[:end_time] = HOURS_FOR_KLASSE[hfk_ds]['7a'][stunde - 1][1]
+                        entry[:start_time] = HOURS_FOR_KLASSE[hfk_ds]['7a'][stunde][0]
+                        entry[:end_time] = HOURS_FOR_KLASSE[hfk_ds]['7a'][stunde][1]
                     end
                     event = {
                         :lesson => true,

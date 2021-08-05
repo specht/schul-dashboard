@@ -92,7 +92,7 @@ class Script
                     end
                 end
             end
-            # Lehrer aus allen alten Klassen hinzufügen
+            # Lehrer aus allen alten Klassen entfernen
             all_possible_klassen_order.each do |klasse|
                 unless klassen.include?(klasse)
                     if user_info.groups.include?("Lehrer #{klasse}")
@@ -144,6 +144,17 @@ class Script
                 STDERR.puts "@ocs.user(#{user_id}).group.create('Klasse #{klasse}')"
                 if srsly
                     @ocs.user(user_id).group.create("Klasse #{klasse}")
+                end
+            end
+            # Lehrer aus allen alten Klassen entfernen
+            all_possible_klassen_order.each do |k|
+                unless k == klasse
+                    if user_info.groups.include?("Klasse #{k}")
+                        STDERR.puts "@ocs.user(#{user_id}).group.destroy('Klasse #{k}')"
+                        if srsly
+                            @ocs.user(user_id).group.destroy("Klasse #{k}")
+                        end
+                    end
                 end
             end
         end

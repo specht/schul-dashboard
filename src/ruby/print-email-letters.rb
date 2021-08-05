@@ -53,10 +53,14 @@ class Script
         @@klassen_order = Main.class_variable_get(:@@klassen_order)
         FileUtils::mkpath('/gen/E-Mail-Briefe')
         FileUtils::mkpath('/gen/E-Mail-Briefe/ids')
+        FileUtils::mkpath('/gen/E-Mail-Briefe/klassen')
         system("cp email-templates/*.pdf /gen/E-Mail-Briefe/")
         system("cp email-templates/*.pdf_tex /gen/E-Mail-Briefe/")
         system("cp email-templates/*.pdf /gen/E-Mail-Briefe/ids/")
         system("cp email-templates/*.pdf_tex /gen/E-Mail-Briefe/ids/")
+        system("cp email-templates/*.pdf /gen/E-Mail-Briefe/klassen/")
+        system("cp email-templates/*.pdf_tex /gen/E-Mail-Briefe/klassen/")
+        letters_for_klasse = {}
         File.open('/gen/E-Mail-Briefe/E-Mail-Briefe.tex', 'w') do |f|
             f.write(File.read('email-templates/letter-template.tex'))
             page = File.read('email-templates/letter-page.tex')
@@ -94,8 +98,17 @@ class Script
                     fs.puts entry
                     fs.puts("\\end{document}")
                 end
+                letters_for_klasse[record[:klasse]] ||= []
+                letters_for_klasse[record[:klasse]] << entry
             end
             f.puts("\\end{document}")
+        end
+        letters_for_klasse.each_pair do |klasse, entries|
+            File.open("/gen/E-Mail-Briefe/klassen/E-Mail-Briefe Klasse #{klasse}.tex", 'w') do |fs|
+                fs.write(File.read('email-templates/letter-template.tex'))
+                fs.puts entries.join("\n")
+                fs.puts("\\end{document}")
+            end
         end
     end
 end

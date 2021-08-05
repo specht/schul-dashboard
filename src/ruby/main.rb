@@ -1639,7 +1639,8 @@ class Main < Sinatra::Base
             StringIO.open do |io|
                 io.puts "<div style='margin-bottom: 15px;'>"
                 @@klassen_order.each do |klasse|
-                    next unless (@@klassen_for_shorthand[@session_user[:shorthand]] || Set.new()).include?(klasse)
+                    # TODO: is this okay?
+                    # next unless (@@klassen_for_shorthand[@session_user[:shorthand]] || Set.new()).include?(klasse)
                     id = @@klassen_id[klasse]
                     io.puts "<a data-klasse='#{klasse}' data-id='#{id}' onclick=\"window.location.href = '/timetable/#{id}' + window.location.hash;\" class='btn btn-sm ttc'>#{tr_klasse(klasse)}</a>"
                 end
@@ -1712,9 +1713,9 @@ class Main < Sinatra::Base
         timetable_id = nil
         fixed_timetable_data = nil
         initial_date = Date.parse([@@config[:first_school_day], Date.today.to_s].max.to_s)
-        if DEVELOPMENT
-            initial_date = Date.parse('2021-05-17')
-        end
+        # if DEVELOPMENT
+        #     initial_date = Date.parse('2021-05-17')
+        # end
         while [6, 0].include?(initial_date.wday)
            initial_date += 1
         end

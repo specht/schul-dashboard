@@ -283,6 +283,9 @@ class Parser
         klasse = Main::fix_parsed_klasse(klasse)
         geschlecht = parts[3].strip
         rufname = vorname.split(' ').first
+        if rufname == 'Ka'
+            rufname = vorname
+        end
         unless (parts[4] || '').strip.empty?
             rufname = parts[4].strip
         end

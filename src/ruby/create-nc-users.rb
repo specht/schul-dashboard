@@ -107,7 +107,6 @@ class Script
 #             end
         end
         @@user_info.each_pair do |email, user|
-            next unless email == 'alexander.sternberg@mail.gymnasiumsteglitz.de'
             next if user[:teacher]
             STDERR.print '.'
             display_name = user[:display_name]

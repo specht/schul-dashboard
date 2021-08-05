@@ -50,7 +50,6 @@ class Script
             ['a', 'b', 'c', 'd', 'e', 'o'].each { |x| all_possible_klassen_order << "#{klasse}#{x}" }
         end
         @@user_info.each_pair do |email, user|
-            next unless email == 'specht@gymnasiumsteglitz.de'
             next unless user[:teacher]
             next unless user[:can_log_in]
             STDERR.print '.'
@@ -108,7 +107,7 @@ class Script
 #             end
         end
         @@user_info.each_pair do |email, user|
-            next
+            next unless email == 'alexander.sternberg@mail.gymnasiumsteglitz.de'
             next if user[:teacher]
             STDERR.print '.'
             display_name = user[:display_name]

@@ -219,7 +219,7 @@ class Timetable
             :lehrer_list => Set.new([ventry[:lehrer_neu]]),
             :klassen_list => Set.new(ventry[:klassen_neu]),
             :lesson_key => 0,
-            :lesson_offset => 0,
+            :lesson_offset => nil,
             :count => 1,
             :vnr => ventry[:vnr],
             :cache_index => @lesson_cache.size
@@ -335,7 +335,7 @@ class Timetable
                             :lehrer_list => Set.new([ventry[:lehrer_alt]]) - Set.new([ventry[:lehrer_neu]]),
                             :klassen_list => Set.new([klasse]),
                             :lesson_key => 0,
-                            :lesson_offset => 0,
+                            :lesson_offset => nil,
                             :count => 1,
                             :vnr => ventry[:vnr],
                             :phantom_event => true,
@@ -380,7 +380,7 @@ class Timetable
                             :lehrer_list => Set.new([ventry[:lehrer_alt]]) | Set.new([ventry[:lehrer_neu]]),
                             :klassen_list => Set.new([klasse]),
                             :lesson_key => 0,
-                            :lesson_offset => 0,
+                            :lesson_offset => nil,
                             :count => 1,
                             :vnr => ventry[:vnr],
                             :cache_index => @lesson_cache.size
@@ -498,7 +498,7 @@ class Timetable
                         :lehrer => [entry[:lehrer].to_a.sort],
                         :lesson_key => lesson_key,
                         :orig_lesson_key => lesson_key,
-                        :lesson_offset => 0,
+                        :lesson_offset => nil,
                         :count => entry[:count],
                         :cache_index => @lesson_cache.size
                     }
@@ -943,6 +943,7 @@ class Timetable
         @events_by_lesson_key_and_offset = {}
         @regular_days_for_lesson_key = {}
         @lesson_cache.each.with_index do |event, cache_index|
+            next if event[:lesson_offset].nil?
             @events_by_lesson_key_and_offset[event[:lesson_key]] ||= {}
             @events_by_lesson_key_and_offset[event[:lesson_key]][event[:lesson_offset]] = cache_index
         end
@@ -1150,6 +1151,7 @@ class Timetable
                 end
             end
         end
+
         ical_events = {}
 #         logged_emails = Set.new()
         while p <= end_date do

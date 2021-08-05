@@ -45,6 +45,10 @@ class Script
         STDERR.print "Getting users: "
         all_users = Set.new(@ocs.user.all.map { |x| x.id })
         STDERR.puts "found #{all_users.size}"
+        all_possible_klassen_order = Set.new(KLASSEN_ORDER)
+        (5..10).each do |klasse|
+            ['a', 'b', 'c', 'd', 'e', 'o'].each { |x| all_possible_klassen_order << "#{klasse}#{x}" }
+        end
         @@user_info.each_pair do |email, user|
             next unless email == 'specht@gymnasiumsteglitz.de'
             next unless user[:teacher]
@@ -79,6 +83,7 @@ class Script
                     @ocs.user(user_id).group.create('Lehrer')
                 end
             end
+            # Lehrer zu allen Klassen hinzufügen
             klassen.each do |klasse|
                 unless user_info.groups.include?("Lehrer #{klasse}")
                     STDERR.puts "@ocs.user(#{user_id}).group.create('Lehrer #{klasse}')"
@@ -87,6 +92,16 @@ class Script
                     end
                 end
             end
+            # Lehrer aus allen alten Klassen hinzufügen
+            all_possible_klassen_order.each do |klasse|
+                unless klassen.include?(klasse)
+                    if user_info.groups.include?("Lehrer #{klasse}")
+                        STDERR.puts "@ocs.user(#{user_id}).group.destroy('Lehrer #{klasse}')"
+                        if srsly
+                            @ocs.user(user_id).group.destroy("Lehrer #{klasse}")
+                        end
+                    end
+                end
 #             klassen.each do |klasse|
 #                 @ocs.user(user_id).group.create("Lehrer #{klasse} (19/20)")
 #             end

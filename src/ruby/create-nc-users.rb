@@ -102,6 +102,7 @@ class Script
                         end
                     end
                 end
+            end
 #             klassen.each do |klasse|
 #                 @ocs.user(user_id).group.create("Lehrer #{klasse} (19/20)")
 #             end

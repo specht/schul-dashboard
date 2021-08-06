@@ -63,7 +63,7 @@
         background-repeat: no-repeat;
         background-size: max(100vw, 1920px);
         background-position: 50% 0%;
-        #{css_for_font((@session_user || {})[:font]).map { |k, v| "#{k}: #{v};"}.join("\n")}
+        #{css_for_font(font_family).map { |k, v| "#{k}: #{v};"}.join("\n")}
     }
     
     .fc-view-harness, table {

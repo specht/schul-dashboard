@@ -2215,3 +2215,7 @@ li.nav-item a.nav-link i.fa {
     position: relative;
     top: -1px;
 }
+
+.hide-br br {
+    display: none;
+}

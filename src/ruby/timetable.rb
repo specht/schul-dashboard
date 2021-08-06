@@ -424,12 +424,28 @@ class Timetable
             day_events[stunde] += cache_indices
         end
     end
+
+    def update_monitor()
+        monitor_date = Date.today.strftime('%Y-%m-%d')
+        monitor_date = '2021-05-20' if DEVELOPMENT
+        monitor_data = {}
+        (@@vertretungen[monitor_date] || []).sort do |a, b|
+            a[:stunde] <=> b[:stunde]
+        end.each do |ventry|
+            klassen = Set.new(ventry[:klassen_alt] || []) | Set.new(ventry[:klassen_neu] || [])
+            klassen.each do |klasse|
+                next unless KLASSEN_ORDER.include?(klasse)
+                monitor_data[klasse] ||= []
+                monitor_data[klasse] << ventry
+            end
+        end
+        File.open('/gen/monitor.json', 'w') { |f| f.write(monitor_data.to_json) }
+    end
     
     def update_timetables()
         debug "Updating timetables..."
         # refresh vplan data
         Main.collect_data()
-        seen_ventry_flags = {}
         @@ferien_feiertage = Main.class_variable_get(:@@ferien_feiertage)
         @@tage_infos = Main.class_variable_get(:@@tage_infos)
         @@config = Main.class_variable_get(:@@config)
@@ -437,6 +453,7 @@ class Timetable
         @@lessons = Main.class_variable_get(:@@lessons)
         @@vertretungen = Main.class_variable_get(:@@vertretungen)
         @@vplan_timestamp = Main.class_variable_get(:@@vplan_timestamp)
+        @@day_messages = Main.class_variable_get(:@@day_messages)
         @@lessons_for_klasse = Main.class_variable_get(:@@lessons_for_klasse)
         @@lessons_for_user = Main.class_variable_get(:@@lessons_for_user)
         @@lessons_for_shorthand = Main.class_variable_get(:@@lessons_for_shorthand)
@@ -459,6 +476,9 @@ class Timetable
         @lesson_events = {}
         @lesson_events_regular = {}
         hfk_ds = HOURS_FOR_KLASSE.keys.sort.first
+
+        update_monitor()
+        
         Main.iterate_school_days do |ds, dow|
             HOURS_FOR_KLASSE.keys.sort.each do |k|
                 hfk_ds = k if ds >= k
@@ -500,7 +520,8 @@ class Timetable
                         :orig_lesson_key => lesson_key,
                         :lesson_offset => nil,
                         :count => entry[:count],
-                        :cache_index => @lesson_cache.size
+                        :cache_index => @lesson_cache.size,
+                        :regular => false
                     }
                     @lesson_cache << event
                     event[:pausen] = entry[:pausen] unless entry[:pausen].empty?
@@ -522,7 +543,8 @@ class Timetable
                         :lehrer => entry[:lehrer].to_a.sort,
                         :lesson_key => lesson_key,
                         :count => entry[:count],
-                        :cache_index => @lesson_cache.size
+                        :cache_index => @lesson_cache.size,
+                        :regular => true
                     }
                     @lesson_cache << event_regular
                     day_events_regular[stunde] ||= Set.new()
@@ -532,242 +554,97 @@ class Timetable
             # 2. patch today's lessons based on vertretungsplan
             if @@vertretungen[ds]
                 @@vertretungen[ds].each do |ventry|
-                    if ds == '2021-05-18' && ventry[:stunde] == 6
-                        STDERR.puts ventry.to_json
+                    # find matching day_events entry
+                    matching_indices = (day_events[ventry[:stunde]] || []).select do |index|
+                        event = @lesson_cache[index]
+                        flag = false
+                        if !event[:regular] 
+                            if event[:stunde] == ventry[:stunde]
+                                vfach = ventry[:fach_alt] || ventry[:fach_neu]
+                                if event[:fach].first == vfach
+                                    vlehrer = ventry[:lehrer_alt] || ventry[:lehrer_neu]
+                                    if event[:lehrer].first.include?(vlehrer)
+                                        flag = true
+                                    end
+                                end
+                            end
+                        end
+                        flag
                     end
-                    next
-                    ventry_flags = Main.gen_ventry_flags(ventry)
-                    seen_ventry_flags[ventry_flags] ||= 0
-                    seen_ventry_flags[ventry_flags] += 1
-                    
-                    if    ventry_flags == 0b0_00_00_00_00 # 16 entries at some point
-                        # ignore this
-#                         print_ventry(ventry)
-                    elsif ventry_flags == 0b0_00_00_00_01 # 12 entries at some point
-                        # ignore this, raum_neu only
-#                         print_ventry(ventry)
-                    elsif ventry_flags == 0b0_00_00_01_00 # 6 entries at some point
-                        # ignore this, klassen_neu only
-#                         print_ventry(ventry)
-                    elsif ventry_flags == 0b0_00_01_00_00 # 131 entries at some point
-                        # lehrer_neu
-                        # (Exkursion Forschertage)
-#                         print_ventry(ventry)
-                        day_events[ventry[:stunde]] << gen_ventry(ds, ventry)
-                    elsif ventry_flags == 0b0_00_01_00_01 # 149 entries at some point
-                        # lehrer_neu, raum_neu
-                        # (Klausuraufsicht)
-#                         print_ventry(ventry)
-                        day_events[ventry[:stunde]] << gen_ventry(ds, ventry)
-                    elsif ventry_flags == 0b0_00_01_01_00 # 55 entries at some point
-                        # lehrer_neu, klassen_neu
-                        # (Begleitung zur Kirche)
-#                         print_ventry(ventry)
-                        day_events[ventry[:stunde]] << gen_ventry(ds, ventry)
-                    elsif ventry_flags == 0b0_00_01_01_01 # 81 entries at some point
-                        # lehrer_neu, klassen_neu, raum_neu
-                        # (Klassenlehrerstunde)
-#                         print_ventry(ventry)
-                        day_events[ventry[:stunde]] << gen_ventry(ds, ventry)
-                    elsif ventry_flags == 0b0_00_01_01_11 # 30 entries at some point
-                        # lehrer_neu, klassen_neu, raum_alt, raum_neu
-                        # TODO: What about raum_alt?
-#                         print_ventry(ventry)
-                        day_events[ventry[:stunde]] << gen_ventry(ds, ventry)
-                    elsif ventry_flags == 0b0_00_10_00_00 # 151 entries at some point
-                        # lehrer_alt
-                        # TODO: What does this mean?
-                        # Lehrer hat frei, aber Fach und Klasse unbekannt?
-#                         print_ventry(ventry)
-                    elsif ventry_flags == 0b0_00_11_00_00 # 723 entries at some point
-                        # lehrer_alt, lehrer_neu
-                        # (Pausenaufsichtsvertretung), wo fehlt leider
-                        # TODO: Pausenaufsichtsvertretung ohne Ort, für Zeit einer Stunde?
-#                         print_ventry(ventry)
-                        day_events[ventry[:stunde]] << gen_ventry(ds, ventry)
-                    elsif ventry_flags == 0b0_00_11_00_01 # 3 entries at some point
-                        # lehrer_alt, lehrer_neu, raum_neu
-                        # (Schnupperunterricht)
-                        # TODO: was ist das?
-#                         print_ventry(ventry)
-                    elsif ventry_flags == 0b0_00_11_01_01 # 5 entries at some point
-                        # lehrer_alt, lehrer_neu, klassen_neu, raum_neu
-                        # TODO: What about lehrer_alt?
-#                         print_ventry(ventry)
-                        day_events[ventry[:stunde]] << gen_ventry(ds, ventry)
-                    elsif ventry_flags == 0b0_01_00_01_00 # 3 entries at some point
-                        # fach_neu, klassen_neu
-                        # (Klausur)
-#                         print_ventry(ventry)
-                        day_events[ventry[:stunde]] << gen_ventry(ds, ventry)
-                    elsif ventry_flags == 0b0_01_00_01_01 # 9 entries at some point
-                        # fach_neu, klassen_neu, raum_neu
-                        # (Klausur)
-#                         print_ventry(ventry)
-                        day_events[ventry[:stunde]] << gen_ventry(ds, ventry)
-                    elsif ventry_flags == 0b0_01_01_00_01 # 6 entries at some point
-                        # fach_neu, lehrer_neu, raum_neu
-                        # (Klavierstimmer)
-#                         print_ventry(ventry)
-                        day_events[ventry[:stunde]] << gen_ventry(ds, ventry)
-                    elsif ventry_flags == 0b0_01_01_01_00 # 16 entries at some point
-                        # fach_neu, lehrer_neu, klassen_neu
-                        # (Abiturprüfung verschoben auf...)
-#                         print_ventry(ventry)
-                        day_events[ventry[:stunde]] << gen_ventry(ds, ventry)
-                    elsif ventry_flags == 0b0_01_01_01_01 # 609 entries at some point
-                        # fach_neu, lehrer_neu, klassen_neu, raum_neu
-                        # (Klausur)
-#                         print_ventry(ventry)
-                        day_events[ventry[:stunde]] << gen_ventry(ds, ventry)
-                    elsif ventry_flags == 0b0_01_01_01_11 # 1 entries at some point
-                        # fach_neu, lehrer_neu, klassen_neu, raum_alt, raum_neu
-                        # (Forschertage)
-#                         print_ventry(ventry)
-                        day_events[ventry[:stunde]] << gen_ventry(ds, ventry)
-                    elsif ventry_flags == 0b0_01_11_00_01 # 1 entries at some point
-                        # fach_neu, lehrer_alt, lehrer_neu, raum_neu
-                        # TODO: What about lehrer_alt?
-#                         print_ventry(ventry)
-                        day_events[ventry[:stunde]] << gen_ventry(ds, ventry)
-                    elsif ventry_flags == 0b1_00_10_11_11 # 26 entries at some point
-                        # unr, lehrer_alt, klassen_alt, klassen_neu, raum_alt, raum_neu
-                        # (Pimp) TODO: Pimp?, neuer Lehrer fehlt?
-#                         print_ventry(ventry)
-                        patch_lesson(ventry, day_events, day_lesson_keys_for_stunde) do |event|
-                            (event[:lehrer].include?(ventry[:lehrer_alt])) &&
-                            (!(Set.new(event[:klassen]) & Set.new(ventry[:klassen_alt])).empty?)
+                    if matching_indices.size == 1
+                        event = @lesson_cache[matching_indices.first]
+                        # LEHRER
+                        if ventry[:lehrer_alt] && ventry[:lehrer_neu].nil?
+                            # Entfall
+                            event[:lehrer] = [[ventry[:lehrer_alt]], []]
+                        elsif ventry[:lehrer_alt] && ventry[:lehrer_neu] 
+                            # Lehrerwechsel
+                            event[:lehrer] = [[ventry[:lehrer_alt]], [ventry[:lehrer_neu] ]]
                         end
-                    elsif ventry_flags == 0b1_00_11_01_01 # 1 entries at some point
-                        # unr, lehrer_alt, lehrer_neu, klassen_neu, raum_neu
-#                         STDERR.puts "#{ventry[:vnr]} #{ventry[:unr]} #{ventry[:datum]} #{ventry[:stunde]} #{ventry[:lehrer_alt]} => #{ventry[:lehrer_neu]} #{ventry[:klassen_neu].join(', ')} #{ventry[:raum_neu]} #{ventry[:vertretungs_text]} #{ventry[:vertretungs_art]}"
-#                         print_ventry(ventry)
-                        # TODO: check this
-                        day_events[ventry[:stunde]] << gen_ventry(ds, ventry)
-                    elsif ventry_flags == 0b1_00_11_11_11 # 10 entries at some point
-                        # unr, lehrer_alt, lehrer_neu, klassen_alt, klassen_neu, raum_alt, raum_neu
-                        # (Lehrertausch oder Kommentar zur Stunde)
-#                         print_ventry(ventry)
-                        patch_lesson(ventry, day_events, day_lesson_keys_for_stunde) do |event|
-                            (event[:lehrer].include?(ventry[:lehrer_alt])) &&
-                            (!(Set.new(event[:klassen]) & Set.new(ventry[:klassen_alt])).empty?)
+
+                        # FACH
+                        if ventry[:fach_alt] && ventry[:fach_neu]
+                            # Fachwechsel
+                            event[:fach] = [ventry[:fach_alt], ventry[:fach_neu] ]
+                            matching_lesson_keys = Set.new()
+                            ventry[:klassen_neu].each do |klasse|
+                                (@@lessons_for_klasse[klasse] || []).each do |fach|
+                                    if fach.split('~').first == ventry[:fach_neu]
+                                        matching_lesson_keys << fach
+                                    end
+                                end
+                            end
+                            if matching_lesson_keys.size == 1
+                                # update lesson_key
+                                event[:lesson_key] = matching_lesson_keys.to_a.first
+                            else
+                                # WARN no matching lesson key found OR more than one
+                            end
                         end
-                    elsif ventry_flags == 0b1_01_10_01_01 # 1 entries at some point
-                        # unr, fach_neu, lehrer_alt, klassen_neu, raum_neu
-                        # TODO: What is this?
-#                         print_ventry(ventry)
-                    elsif ventry_flags == 0b1_01_11_01_01 # 69 entries at some point
-                        # unr, fach_neu, lehrer_alt, lehrer_neu, klassen_neu, raum_neu
-                        # TODO: What is this?
-#                         print_ventry(ventry)
-                    elsif ventry_flags == 0b1_10_10_00_10 # 29 entries at some point
-                        # unr, fach_alt, lehrer_alt, raum_alt
-                        # (FSL Entfall)
-#                         print_ventry(ventry)
-                        patch_lesson(ventry, day_events, day_lesson_keys_for_stunde) do |event|
-                            (event[:fach] == ventry[:fach_alt]) && 
-                            (event[:lehrer].include?(ventry[:lehrer_alt]))
+                        if ventry[:fach_alt] && ventry[:fach_neu].nil?
+                            # Entfall
+                            event[:fach] = [ventry[:fach_alt], ventry[:fach_neu] ]
+                            event[:entfall] = true
                         end
-                    elsif ventry_flags == 0b1_10_10_00_11 # 44 entries at some point
-                        # unr, fach_alt, lehrer_alt, raum_alt, raum_neu
-                        # (FSL Entfall)
-#                         print_ventry(ventry)
-                        patch_lesson(ventry, day_events, day_lesson_keys_for_stunde) do |event|
-                            (event[:fach] == ventry[:fach_alt]) && 
-                            (event[:lehrer].include?(ventry[:lehrer_alt]))
+                        # Vertretungstext
+                        if ventry[:vertretungs_text]
+                            event[:vertretungs_text] = ventry[:vertretungs_text]
                         end
-                    elsif ventry_flags == 0b1_10_10_10_00 # 27 entries at some point
-                        # unr, fach_alt, lehrer_alt, klassen_alt
-#                         print_ventry(ventry)
-                        # patch based on fach_alt, klassen_alt
-                        patch_lesson(ventry, day_events, day_lesson_keys_for_stunde) do |event|
-                            (event[:fach] == ventry[:fach_alt]) && 
-                            (!(Set.new(event[:klassen]) & Set.new(ventry[:klassen_alt])).empty?)
+                    elsif matching_indices.size == 0
+                        # We found no matching indices, add as custom entry
+                        hfk_klasse = nil
+                        hfk_klasse = ventry[:klassen_neu].first if ventry[:klassen_neu]
+                        start_time = nil
+                        end_time = nil
+                        if (HOURS_FOR_KLASSE[hfk_ds] || {})[hfk_klasse]
+                            start_time = HOURS_FOR_KLASSE[hfk_ds][hfk_klasse][ventry[:stunde]][0]
+                            end_time = HOURS_FOR_KLASSE[hfk_ds][hfk_klasse][ventry[:stunde]][1]
+                        else
+                            start_time = HOURS_FOR_KLASSE[hfk_ds]['7a'][ventry[:stunde]][0]
+                            end_time = HOURS_FOR_KLASSE[hfk_ds]['7a'][ventry[:stunde]][1]
                         end
-                    elsif ventry_flags == 0b1_10_10_10_10 # 956 entries at some point
-                        # unr, fach_alt, lehrer_alt, klassen_alt, raum_alt
-                        # (Freisetzung)
-#                         print_ventry(ventry)
-                        patch_lesson(ventry, day_events, day_lesson_keys_for_stunde) do |event|
-                            (event[:fach] == ventry[:fach_alt]) && 
-                            (!(Set.new(event[:klassen]) & Set.new(ventry[:klassen_alt])).empty?)
-                        end
-                    elsif ventry_flags == 0b1_10_10_10_11 # 453 entries at some point
-                        # unr, fach_alt, lehrer_alt, klassen_alt, raum_alt, raum_neu
-                        # (Freisetzung)
-#                         print_ventry(ventry)
-                        patch_lesson(ventry, day_events, day_lesson_keys_for_stunde) do |event|
-                            (event[:fach] == ventry[:fach_alt]) && 
-                            (!(Set.new(event[:klassen]) & Set.new(ventry[:klassen_alt])).empty?)
-                        end
-                    elsif ventry_flags == 0b1_10_10_11_00 # 205 entries at some point
-                        # unr, fach_alt, lehrer_alt, klassen_alt, klassen_neu
-#                         print_ventry(ventry)
-                        patch_lesson(ventry, day_events, day_lesson_keys_for_stunde) do |event|
-                            (event[:fach] == ventry[:fach_alt]) && 
-                            (event[:lehrer].include?(ventry[:lehrer_alt]))
-                        end
-                    elsif ventry_flags == 0b1_10_10_11_10 # 1304 entries at some point
-                        # unr, fach_alt, lehrer_alt, klassen_alt, klassen_neu, klassen_neu, raum_alt
-                        # (Entfall)
-#                         print_ventry(ventry)
-                        patch_lesson(ventry, day_events, day_lesson_keys_for_stunde) do |event|
-                            (event[:fach] == ventry[:fach_alt]) && 
-                            (!(Set.new(event[:klassen]) & Set.new(ventry[:klassen_alt])).empty?)
-                        end
-                    elsif ventry_flags == 0b1_10_10_11_11 # 1395 entries at some point
-                        # unr, fach_alt, lehrer_alt, klassen_alt, klassen_neu, klassen_neu, raum_alt, raum_neu
-                        # (Entfall)
-#                         print_ventry(ventry)
-                        patch_lesson(ventry, day_events, day_lesson_keys_for_stunde) do |event|
-                            (event[:fach] == ventry[:fach_alt]) && 
-                            (!(Set.new(event[:klassen]) & Set.new(ventry[:klassen_alt])).empty?)
-                        end
-                    elsif ventry_flags == 0b1_10_11_11_00 # 7 entries at some point
-                        # unr, fach_alt, lehrer_alt, lehrer_neu, klassen_alt, klassen_neu
-                        # (Ber)
-                        # TODO: FIX THIS!!!
-#                         print_ventry(ventry)
-                        patch_lesson(ventry, day_events, day_lesson_keys_for_stunde) do |event|
-                            (event[:fach] == ventry[:fach_alt]) && 
-                            (event[:lehrer].include?(ventry[:lehrer_alt]))
-                        end
-                    elsif ventry_flags == 0b1_10_11_11_01 # 13 entries at some point
-                        # unr, fach_alt, lehrer_alt, lehrer_neu, klassen_alt, klassen_neu, raum_neu
-                        # TODO: FIX THIS!!!
-#                         print_ventry(ventry)
-                        patch_lesson(ventry, day_events, day_lesson_keys_for_stunde) do |event|
-                            (event[:fach] == ventry[:fach_alt]) && 
-                            (event[:lehrer].include?(ventry[:lehrer_alt]))
-                        end
-                    elsif ventry_flags == 0b1_10_11_11_11 # 1003 entries at some point
-                        # unr, fach_alt, lehrer_alt, lehrer_neu, klassen_alt, klassen_neu, raum_alt, raum_neu
-                        patch_lesson(ventry, day_events, day_lesson_keys_for_stunde) do |event|
-                            (event[:fach] == ventry[:fach_alt]) && 
-                            (!(Set.new(event[:klassen]) & Set.new(ventry[:klassen_alt])).empty?)
-                        end
-#                         exit
-                    elsif ventry_flags == 0b1_11_10_00_11 # 4 entries at some point
-                    elsif ventry_flags == 0b1_11_10_10_10 # 10 entries at some point
-                    elsif ventry_flags == 0b1_11_10_10_11 # 13 entries at some point
-                    elsif ventry_flags == 0b1_11_10_11_10 # 4 entries at some point
-                    elsif ventry_flags == 0b1_11_10_11_11 # 26 entries at some point
-                    elsif ventry_flags == 0b1_11_11_00_11 # 27 entries at some point
-                    elsif ventry_flags == 0b1_11_11_01_11 # 2 entries at some point
-                    elsif ventry_flags == 0b1_11_11_10_00 # 4 entries at some point
-                    elsif ventry_flags == 0b1_11_11_10_10 # 14 entries at some point
-                    elsif ventry_flags == 0b1_11_11_10_11 # 15 entries at some point
-                    elsif ventry_flags == 0b1_11_11_11_00 # 51 entries at some point
-                    elsif ventry_flags == 0b1_11_11_11_01 # 16 entries at some point
-                    elsif ventry_flags == 0b1_11_11_11_10 # 35 entries at some point
-                    elsif ventry_flags == 0b1_11_11_11_11 # 2959 entries at some point
-                        patch_lesson(ventry, day_events, day_lesson_keys_for_stunde) do |event|
-                            (event[:fach] == ventry[:fach_alt]) && 
-                            (!(Set.new(event[:klassen]) & Set.new(ventry[:klassen_alt])).empty?)
-                        end
+                        event = {
+                            :lesson => true,
+                            :datum => ventry[:datum],
+                            :stunde => ventry[:stunde],
+                            :start => "#{ds}T#{start_time}",
+                            :end => "#{ds}T#{end_time}",
+                            :fach => ["#{ventry[:fach_alt]}", "#{ventry[:fach_neu]}"],
+                            :raum => ["#{ventry[:raum_alt]}", "#{ventry[:raum_neu]}"],
+                            :klassen => [ventry[:klassen_alt].to_a.sort, ventry[:klassen_neu].to_a.sort],
+                            :lehrer => [[ventry[:lehrer_alt]], [ventry[:lehrer_neu]]],
+                            :lesson_key => 0,
+                            :lesson_offset => nil,
+                            :count => 1,
+                            :cache_index => @lesson_cache.size,
+                            :vertretungs_text => ventry[:vertretungs_text],
+                            :regular => false
+                        }
+                        @lesson_cache << event
+                        day_events[ventry[:stunde]] ||= Set.new()
+                        day_events[ventry[:stunde]] << event[:cache_index]
                     else
-                        debug "OY! It's an unknown case! Somebody do something, quick!"
-                        print_ventry(ventry)
+                        # We found NO matching lesson entry
                     end
                 end
             end
@@ -797,6 +674,8 @@ class Timetable
                             e[k] = "#{strike(e[k].first)} #{e[k].last}".strip
                         end
                     end
+                    e[:lehrer_list] = Set.new((e[:lehrer] || []).flatten)
+                    e[:klassen_list] = Set.new((e[:klassen] || []).flatten)
                     
                     e.delete(:fach)
                     e.delete(:lehrer)
@@ -853,7 +732,11 @@ class Timetable
                     day_events_by_lesson_key[event[:lesson_key]] << cache_index
                 end
             end
+
             day_events = day_events_by_lesson_key
+            # ----------------------------------------------------------------------------
+            # ATTENTION: FROM HERE ON, day_events are associated by lesson_key, not stunde
+            # ----------------------------------------------------------------------------
             
             day_events_regular_by_lesson_key = {}
             day_events_regular.each_pair do |stunde, event_indices|
@@ -922,7 +805,7 @@ class Timetable
                 @lesson_events_regular[lesson_key][ds_yw] ||= Set.new()
                 @lesson_events_regular[lesson_key][ds_yw] += event_indices
             end
-            
+
             # 3b. merge same lehrer and klassen events and add them to lesson_events
             day_events_special.each_pair do |key, event_indices|
                 day_events_special[key] = merge_same_events(event_indices)
@@ -1268,6 +1151,28 @@ class Timetable
                                    :jitsi => event[:jitsi]
                                 }
                     end
+
+                    day_message_target = nil
+                    if @@user_info[email]
+                        if @@user_info[email][:teacher]
+                            day_message_target = @@user_info[email][:shorthand]
+                        else
+                            day_message_target = @@user_info[email][:klasse]
+                        end
+                    else
+                        if email[0] == '_' && KLASSEN_ORDER.include?(email[1, email.size - 1])
+                            day_message_target = email[1, email.size- 1]
+                        end
+                    end
+
+                    ((@@day_messages[p_yw] || {})[day_message_target] || {}).each_pair do |datum, messages|
+                        events << {
+                            :start => datum,
+                            :end => (Date.parse(datum) + 1).strftime('%Y-%m-%d'),
+                            :title => messages.join("<br />").gsub("\n", "<br />")
+                        }
+                    end
+
                     if user[:teacher] && !@@pausenaufsichten[:aufsichten].empty?
                         # add pausenaufsichten
                         (0..4).each do |dow|
@@ -1517,7 +1422,7 @@ class Timetable
                             event
                         end
                     end
-                    write_events = fixed_events.reject { |x| x[:deleted] }
+                    write_events = fixed_events.reject { |x| x[:deleted] || x['deleted']}
                     f.print({:events => write_events, 
                              :vplan_timestamp => @@vplan_timestamp,
                              :switch_week => Main.get_switch_week_for_date(p)}.to_json)

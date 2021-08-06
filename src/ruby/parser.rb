@@ -450,6 +450,7 @@ class Parser
         sub_keys_for_unr_fach = {}
         lesson_keys_for_unr = {}
         info_for_lesson_key = {}
+        day_messages = {}
         all_lessons = {:timetables => {}, :start_dates => [], :lesson_keys => {}}
         current_date = Date.today.strftime('%Y-%m-%d')
         current_timetable_start_date = Dir['/data/stundenplan/*.TXT'].sort.map do |path|
@@ -616,8 +617,18 @@ class Parser
                     # end
                 end
             end
+            vplan['timetables'].each_pair do |target, info|
+                next unless info['day_messages']
+                info['day_messages'].each do |sha1|
+                    p_yw = Date.parse(datum).strftime('%Y-%V')
+                    day_messages[p_yw] ||= {}
+                    day_messages[p_yw][target] ||= {}
+                    day_messages[p_yw][target][datum] ||= []
+                    day_messages[p_yw][target][datum] << vplan['entries'][sha1]
+                end
+            end
             vplan['entries'].each_pair do |sha1, jentry|
-                STDERR.puts "#{datum} #{sha1} #{jentry.to_json}"
+                # STDERR.puts "#{datum} #{sha1} #{jentry.to_json}"
                 stunde_range = []
                 if jentry[0].include?('-')
                     parts = jentry[0].split('-').map { |x| x.strip.to_i }
@@ -653,134 +664,18 @@ class Parser
                             entry.delete(k)
                         end
                     end
-                    # ventry_flags = Main.gen_ventry_flags(entry)
-                    # if ventry_flags == 0b1_10_11_11_11 && entry[:datum] > '2021-04-19'
-                    #     # ATTENTION: spezieller Spezialfall
-                    #     # Am Ende des Schuljahres, wenn der Abijahrgang die Schule verlässt,
-                    #     # kommen viele Einträge, bei denen aus Klasse 11+12 nur Klasse 11 
-                    #     # wird. Aus einem unbekannten Grund wird dabei fach_neu nicht exportiert,
-                    #     # das korrigieren wir hier.
-                    #     entry[:fach_neu] = entry[:fach_alt].dup
-                    # end
                     entries << entry
                 end
             end
 
         end
 
-    #     vplan_path = Dir['/vplan/*.txt'].sort.last
-    #     if vplan_path
-    #         debug "Loading vplan from #{vplan_path}..."
-    #         File.open(vplan_path, 'r:' + VPLAN_ENCODING) do |f|
-    #             f.each_line do |line|
-    #                 line = line.encode('utf-8')
-    #                 parts = line.split("\t").map do |x| 
-    #                     x = x.strip
-    #                     if x[0] == '"' && x[x.size - 1] == '"'
-    #                         x = x[1, x.size - 2]
-    #                     end
-    #                     x.strip
-    #                 end
-    #                 vertretungs_arten = {
-    #                     'T' => 'verlegt',
-    #                     'F' => 'verlegt von',
-    #                     'W' => 'Tausch',
-    #                     'S' => 'Betreuung',
-    #                     'A' => 'Sondereinsatz',
-    #                     'C' => 'Entfall',
-    #                     'L' => 'Freisetzung',
-    #                     'P' => 'Teil-Vertretung',
-    #                     'R' => 'Raumvertretung',
-    #                     'B' => 'Pausenaufsichtsvertretung',
-    #                     '~' => 'Lehrertausch',
-    #                     'E' => 'Klausur'
-    #                 }
-    #                 art = Set.new()
-    #                 bits = {0 => 'Entfall',
-    #                         1 => 'Betreuung',
-    #                         2 => 'Sondereinsatz',
-    #                         3 => 'Wegverlegung',
-    #                         4 => 'Freisetzung',
-    #                         5 => 'Plus als Vertreter',
-    #                         6 => 'Teilvertretung',
-    #                         7 => 'Hinverlegung',
-    #                         16 => 'Raumvertretung',
-    #                         17 => 'Pausenaufsichtsvertretung',
-    #                         18 => 'Stunde ist unterrichtsfrei',
-    #                         20 => 'Kennzeichen nicht drucken',
-    #                         21 => 'Kennzeichen neu'}
-    #                 flags = parts[17].to_i
-    #                 bit = 0
-    #                 while flags > 0
-    #                     if (flags & 1) == 1
-    #                         art << (bits[bit] || "unbekanntes Bit #{bit}")
-    #                     end
-    #                     bit += 1
-    #                     flags >>= 1
-    #                 end
-    #                 datum = "#{parts[1][0, 4]}-#{parts[1][4, 2]}-#{parts[1][6, 2]}"
-    #                 if @use_mock_names
-    #                     if parts[5] && !parts[5].empty?
-    #                         parts[5] = @mock_shorthand[parts[5]]
-    #                         next if parts[5].nil?
-    #                     end
-    #                     if parts[6] && !parts[6].empty?
-    #                         parts[6] = @mock_shorthand[parts[6]]
-    #                         next if parts[6].nil?
-    #                     end
-    #                 end
-    #                 entry = {
-    #                     :vnr => parts[0].to_i,
-    #                     :datum => datum,
-    #                     :stunde => parts[2].to_i,
-    # #                     :absenz_nr => parts[3].to_i,
-    #                     # referenziert Stundenplan
-    #                     :unr => parts[4].to_i,
-    #                     :lehrer_alt => parts[5],
-    #                     :lehrer_neu => parts[6],
-    #                     :fach_alt => parts[7].gsub('/', '-'),
-    # #                     :fach_alt_stkz => parts[8],
-    #                     :fach_neu => parts[9].gsub('/', '-'),
-    # #                     :fach_neu_stkz => parts[10],
-    #                     :raum_alt => parts[11].gsub('~', '/'),
-    #                     :raum_neu => parts[12].gsub('~', '/'),
-    # #                     :stkz => parts[13],
-    #                     :klassen_alt => Set.new(parts[14].split('~')).to_a.map { |x| x == '8?' ? '8o': x }.sort,
-    #                     :grund => parts[15],
-    #                     :vertretungs_text => parts[16],
-    #                     :art => art,
-    #                     :klassen_neu => Set.new(parts[18].split('~')).to_a.map { |x| x == '8?' ? '8o': x }.sort,
-    #                     :vertretungs_art => vertretungs_arten[parts[19]] || parts[19],
-    # #                     :record_date => parts[20],
-    # #                     :unknown => parts[21]
-    #                 }
-
-    #                 entry.keys.each do |k|
-    #                     if (entry[k].is_a?(String) || entry[k].is_a?(Array)) && entry[k].empty?
-    #                         entry.delete(k)
-    #                     end
-    #                 end
-    #                 unless entry[:art].include?('Kennzeichen nicht drucken')
-    #                     ventry_flags = Main.gen_ventry_flags(entry)
-    #                     if ventry_flags == 0b1_10_11_11_11 && entry[:datum] > '2021-04-19'
-    #                         # ATTENTION: spezieller Spezialfall
-    #                         # Am Ende des Schuljahres, wenn der Abijahrgang die Schule verlässt,
-    #                         # kommen viele Einträge, bei denen aus Klasse 11+12 nur Klasse 11 
-    #                         # wird. Aus einem unbekannten Grund wird dabei fach_neu nicht exportiert,
-    #                         # das korrigieren wir hier.
-    #                         entry[:fach_neu] = entry[:fach_alt].dup
-    #                     end
-    #                     entries << entry
-    #                 end
-    #             end
-    #         end
-    #     end
         vertretungen = {}
         entries.each do |entry|
             vertretungen[entry[:datum]] ||= []
             vertretungen[entry[:datum]] << entry
         end
-        return all_lessons, vertretungen, vplan_timestamp
+        return all_lessons, vertretungen, vplan_timestamp, day_messages
     end
     
     def parse_pausenaufsichten()

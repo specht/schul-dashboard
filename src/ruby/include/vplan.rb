@@ -91,8 +91,11 @@ class Main < Sinatra::Base
                     row.search('s').each do |n| 
                         n.content = "__STRIKE_BEGIN__#{n.content}__STRIKE_END__"
                     end
+                    row.search('br').each do |n| 
+                        n.content = "__LINE_BREAK__"
+                    end
                     row.search('td/*').each do |n| 
-                        n.replace(n.content) unless (n.name == 's')
+                        n.replace(n.content) unless n.name == 's'
                     end
 
                     tr = row.css('th')
@@ -108,7 +111,7 @@ class Main < Sinatra::Base
                     cells = row.css('td')
                     if cells.size == 1 && table_mode == :day_message
                         result[datum] ||= {}
-                        day_message = cells.first.text
+                        day_message = cells.first.text.gsub('__LINE_BREAK__', "\n").strip
                         sha1 = Digest::SHA1.hexdigest(day_message.to_json)[0, 8]
                         path = "/vplan/#{datum}/entries/#{sha1}.json"
                         FileUtils.mkpath(File.dirname(path))

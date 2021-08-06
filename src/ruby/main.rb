@@ -244,10 +244,12 @@ module QtsNeo4j
         transaction do
             result = neo4j_query(query_str, options).to_a
             unless result.size == 1
-                debug '-' * 40
-                debug query_str
-                debug options.to_json
-                debug '-' * 40
+                if DEVELOPMENT
+                    debug '-' * 40
+                    debug query_str
+                    debug options.to_json
+                    debug '-' * 40
+                end
                 raise "Expected one result but got #{result.size}" 
             end
             result.first
@@ -759,7 +761,7 @@ class Main < Sinatra::Base
             end
         end
 
-        @@lessons, @@vertretungen, @@vplan_timestamp = parser.parse_timetable(@@config)
+        @@lessons, @@vertretungen, @@vplan_timestamp, @@day_messages = parser.parse_timetable(@@config)
         merged_lesson_keys = {}
         @@lessons[:lesson_keys].keys.each do |lesson_key|
             lesson_info = @@lessons[:lesson_keys][lesson_key]
@@ -1066,20 +1068,27 @@ class Main < Sinatra::Base
     configure do
         @@renderer = BackgroundRenderer.new
         self.collect_data() unless defined?(SKIP_COLLECT_DATA) && SKIP_COLLECT_DATA
+        @@color_scheme_info = {}
         if ENV['DASHBOARD_SERVICE'] == 'ruby' && (File.basename($0) == 'thin' || File.basename($0) == 'pry.rb')
             @@compiled_files = {}
             setup = SetupDatabase.new()
             setup.setup(self)
+            COLOR_SCHEME_COLORS.each do |entry|
+                @@color_scheme_info[entry[0]] = [entry[1], entry[2]]
+            end
             @@color_scheme_colors = COLOR_SCHEME_COLORS
             @@standard_color_scheme = STANDARD_COLOR_SCHEME
             @@color_scheme_colors.map! do |s|
                 ['#' + s[0][1, 6], '#' + s[0][7, 6], '#' + s[0][13, 6], s[1], s[0][0], s[2]]
             end
-            @@color_scheme_colors.each do |palette|
+            COLOR_SCHEME_COLORS.each do |palette|
+                # @@color_scheme_info[palette.first] = [palette[1], palette[2]]
                 @@renderer.render(palette)
+                # STDERR.puts palette.to_json
             end
             self.compile_js()
             self.compile_css()
+            # STDERR.puts @@color_scheme_info.to_yaml
         end
         if ['thin', 'rackup'].include?(File.basename($0))
             debug('Server is up and running!')
@@ -1685,6 +1694,27 @@ class Main < Sinatra::Base
             throw(:halt, [401, "Not authorized\n"])
         end
     end
+
+    def pick_random_color_scheme()
+        if DEVELOPMENT
+            srand((Time.now.to_f * 1000.0).to_i)
+            which = @@color_scheme_colors.select do |x|
+                x[4] == 'l'
+            end.sample
+            "#{which[4]}#{which[0, 3].join('').gsub('#', '')}#{[0, 1, 2, 3, 5, 6].sample}"
+        else
+            @@default_color_scheme ||= {}
+            jd = Date.today.jd
+            if @@default_color_scheme[jd].nil?
+                srand(jd)
+                which = @@color_scheme_colors.select do |x|
+                    x[4] == 'l'
+                end.sample
+                @@default_color_scheme[jd] = "#{which[4]}#{which[0, 3].join('').gsub('#', '')}#{[0, 1, 2, 3, 5, 6].sample}"
+            end
+            @@default_color_scheme[jd]
+        end
+    end
     
     get '/*' do
         # first things first
@@ -1713,9 +1743,9 @@ class Main < Sinatra::Base
         timetable_id = nil
         fixed_timetable_data = nil
         initial_date = Date.parse([@@config[:first_school_day], Date.today.to_s].max.to_s)
-        # if DEVELOPMENT
-        #     initial_date = Date.parse('2021-05-17')
-        # end
+        if DEVELOPMENT
+            initial_date = Date.parse('2021-05-17')
+        end
         while [6, 0].include?(initial_date.wday)
            initial_date += 1
         end
@@ -1963,26 +1993,21 @@ class Main < Sinatra::Base
         @page_description = ''
         
         font_family = (@session_user || {})[:font]
+        font_family = 'Alegreya' if path == 'monitor'
         color_scheme = (@session_user || {})[:color_scheme]
         font_family = 'Roboto' unless AVAILABLE_FONTS.include?(font_family)
         unless color_scheme =~ /^[ld][0-9a-f]{18}[0-6]?$/
             unless user_logged_in?
-                @@default_color_scheme ||= {}
-                jd = Date.today.jd
-                if @@default_color_scheme[jd].nil?
-                    srand(jd)
-                    which = @@color_scheme_colors.select do |x|
-                        x[4] == 'l'
-                    end.sample
-                    @@default_color_scheme[jd] = "#{which[4]}#{which[0, 3].join('').gsub('#', '')}#{[0, 1, 2, 3, 5, 6].sample}"
-                end
-                color_scheme = @@default_color_scheme[jd]
+                color_scheme = pick_random_color_scheme()
             else
                 color_scheme = @@standard_color_scheme
             end
         end
         if color_scheme.size < 20
             color_scheme += '0'
+        end
+        if path == 'monitor'
+            color_scheme = pick_random_color_scheme()
         end
         rendered_something = @@renderer.render(["##{color_scheme[1, 6]}", "##{color_scheme[7, 6]}", "##{color_scheme[13, 6]}"], (@session_user || {})[:email])
         trigger_update_images() if rendered_something

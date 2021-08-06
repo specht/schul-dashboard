@@ -31,11 +31,16 @@ class Main < Sinatra::Base
     post '/api/confirm_login' do
         data = parse_request_data(:required_keys => [:tag, :code])
         data[:code] = data[:code].gsub(/[^0-9]/, '')
-        result = neo4j_query_expect_one(<<~END_OF_QUERY, :tag => data[:tag])
-            MATCH (l:LoginCode {tag: {tag}})-[:BELONGS_TO]->(u:User)
-            SET l.tries = COALESCE(l.tries, 0) + 1
-            RETURN l, u;
-        END_OF_QUERY
+        begin
+            result = neo4j_query_expect_one(<<~END_OF_QUERY, :tag => data[:tag])
+                MATCH (l:LoginCode {tag: {tag}})-[:BELONGS_TO]->(u:User)
+                SET l.tries = COALESCE(l.tries, 0) + 1
+                RETURN l, u;
+            END_OF_QUERY
+        rescue
+            respond({:error => 'code_expired'})
+            assert_with_delay(false, "Code expired", true)
+        end
         user = result['u'].props
         login_code = result['l'].props
         if login_code[:tries] > MAX_LOGIN_TRIES
@@ -44,6 +49,7 @@ class Main < Sinatra::Base
                 DETACH DELETE l;
             END_OF_QUERY
             respond({:error => 'code_expired'})
+            assert_with_delay(false, "Code expired", true)
         end
         assert(login_code[:tries] <= MAX_LOGIN_TRIES)
         if login_code[:otp]
@@ -52,8 +58,6 @@ class Main < Sinatra::Base
             totp = ROTP::TOTP.new(otp_token, issuer: "Dashboard")
             assert_with_delay(totp.verify(data[:code], drift_behind: 15, drift_ahead: 15), "Wrong OTP code entered for #{user[:email]}: #{data[:code]}", true)
         else
-            STDERR.puts data.to_yaml
-            STDERR.puts login_code.to_yaml
             assert_with_delay(data[:code] == login_code[:code], "Wrong e-mail code entered for #{user[:email]}: #{data[:code]}", true)
         end
         if Time.at(login_code[:valid_to]) < Time.now

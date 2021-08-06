@@ -637,7 +637,15 @@ document.addEventListener('DOMContentLoaded', function() {
                 divs.push(div1b[0]);
                 divs.push(div2[0]);
                 return { domNodes: divs };
-            }
+            } else {
+                if (Object.keys(arg.event.extendedProps).length === 0) {
+                    let divs = [];
+                    let div = $('<div>').html(arg.event.title).addClass('hide-br');
+                    div.css('overflow', 'hidden').css('white-space', 'nowrap');
+                    divs.push(div[0]);
+                    return { domNodes: divs };
+                }
+        }
         },
         eventClick: function(info) {
             let event = info.event.extendedProps;

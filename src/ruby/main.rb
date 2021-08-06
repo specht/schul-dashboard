@@ -1744,7 +1744,7 @@ class Main < Sinatra::Base
         fixed_timetable_data = nil
         initial_date = Date.parse([@@config[:first_school_day], Date.today.to_s].max.to_s)
         if DEVELOPMENT
-            initial_date = Date.parse('2021-05-17')
+            initial_date = Date.parse('2021-05-10')
         end
         while [6, 0].include?(initial_date.wday)
            initial_date += 1
@@ -2015,7 +2015,7 @@ class Main < Sinatra::Base
         primary_color_darker = darken(primary_color, 0.8)
         desaturated_color = darken(desaturate(primary_color), 0.9)
         desaturated_color_darker = darken(desaturate(primary_color), 0.3)
-        disabled_color = rgb_to_hex(mix(hex_to_rgb(primary_color), [192, 192, 192], 0.7))
+        disabled_color = rgb_to_hex(mix(hex_to_rgb(primary_color), [192, 192, 192], 0.5))
         shifted_color = shift_hue(primary_color, 350)
         color_palette = {:primary => primary_color, :disabled => disabled_color, :shifted => desaturated_color}
         

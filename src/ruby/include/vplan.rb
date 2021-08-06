@@ -57,6 +57,7 @@ class Main < Sinatra::Base
         return if dom.at_css('h2').nil?
         return if dom.at_css('#vertretung').nil?
         heading = dom.at_css('h2').text
+        heading.gsub!('8?', '8o')
         heading.gsub!('9?', '9o')
         heading.gsub!('J11', '11')
         heading.gsub!('J12', '12')

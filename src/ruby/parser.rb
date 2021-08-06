@@ -498,7 +498,7 @@ class Parser
 #                     debug fach
 #                     fach = fach.split('-').first
 #                     next if (!fach.nil?) && fach[fach.size - 1] =~ /\d/
-                    raum = parts[4]
+                    raum = parts[4].split('~').join('/')
                     dow = parts[5].to_i - 1
                     stunde = parts[6].to_i
                     fach_unr_key = "#{fach}~#{unr}"
@@ -607,16 +607,7 @@ class Parser
             vplan_timestamp = mtime if mtime > vplan_timestamp
             vplan = JSON.parse(File.read(path))
             datum = File.basename(path).sub('.json', '')
-            if ENV['DASHBOARD_SERVICE'] == 'timetable'
-                vplan['entry_ref'].each_pair do |sha1, ref|
-                    # if datum == '2021-05-18' && ref.include?('8b')
-                    #     STDERR.puts "#{datum} #{sha1} #{ref.sort.join('/')}: #{vplan['entries'][sha1].to_json}"
-                    # end
-                    # if ref.size != 2
-                    #     STDERR.puts "#{datum} #{sha1} #{ref.sort.join('/')}: #{vplan['entries'][sha1].to_json}"
-                    # end
-                end
-            end
+            day_entries_merge_teachers = {}
             vplan['timetables'].each_pair do |target, info|
                 next unless info['day_messages']
                 info['day_messages'].each do |sha1|
@@ -650,8 +641,8 @@ class Parser
                         :stunde => stunde,
                         :klassen_alt => Set.new((jentry[1][0] || '').split('~')).to_a.sort,
                         :klassen_neu => Set.new((jentry[1][1] || '').split('~')).to_a.sort,
-                        :lehrer_alt => jentry[2][0],
-                        :lehrer_neu => jentry[2][1],
+                        :lehrer_alt => jentry[2][0].nil? ? [] : [jentry[2][0]],
+                        :lehrer_neu => jentry[2][1].nil? ? [] : [jentry[2][1]],
                         :fach_alt => (jentry[3][0] || '').gsub('/', '-'),
                         :fach_neu => (jentry[3][1] || '').gsub('/', '-'),
                         :raum_alt => (jentry[4][0] || '').gsub('~', '/').gsub(',', '/').split('/').map { |x| x.strip }.join('/'),
@@ -664,10 +655,45 @@ class Parser
                             entry.delete(k)
                         end
                     end
-                    entries << entry
+
+                    key_parts = [
+                        entry[:stunde],
+                        (entry[:klassen_alt] || []).join('/'),
+                        (entry[:klassen_neu] || []).join('/'),
+                        entry[:fach_alt] || '',
+                        entry[:fach_neu] || '',
+                        entry[:raum_alt] || '',
+                        entry[:raum_neu] || '',
+                        entry[:vertretungs_text] || ''
+                    ]
+                    key = key_parts.join('/')
+                    day_entries_merge_teachers[key] ||= []
+                    day_entries_merge_teachers[key] << entry
                 end
             end
+            day_entries_merge_teachers.values.each do |_entries|
+                # all entries in 'entries' only differ in their teachers, so let's merge them
 
+                # debug_this = false
+                # if ENV['DASHBOARD_SERVICE'] == 'timetable' && datum == '2021-05-11' && _entries.size > 1 && (_entries.first[:klassen_neu] || []).include?('8a')
+                #     # STDERR.puts _entries.to_yaml
+                #     debug_this = true
+                # end
+                merged_entry = _entries.first.dup
+                (1..._entries.size).each do |i|
+                    other = _entries[i]
+                    [:lehrer_alt, :lehrer_neu].each do |key|
+                        if other[key]
+                            merged_entry[key] ||= []
+                            merged_entry[key] << other[key].first
+                        end
+                    end
+                end
+                # if debug_this
+                #     STDERR.puts merged_entry.to_yaml
+                # end
+                entries << merged_entry
+            end
         end
 
         vertretungen = {}

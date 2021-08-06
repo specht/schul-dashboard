@@ -554,7 +554,12 @@ class Timetable
             # 2. patch today's lessons based on vertretungsplan
             if @@vertretungen[ds]
                 @@vertretungen[ds].each do |ventry|
-                    # find matching day_events entry
+                    debug_this = false
+                    # if ds == '2021-05-11' && ventry[:lehrer_alt] && ventry[:lehrer_alt] == ['AP']
+                    #     STDERR.puts ventry.to_yaml
+                    #     debug_this = true
+                    # end
+                    # find matching day_events entry (the lesson that matches this ventry)
                     matching_indices = (day_events[ventry[:stunde]] || []).select do |index|
                         event = @lesson_cache[index]
                         flag = false
@@ -562,8 +567,8 @@ class Timetable
                             if event[:stunde] == ventry[:stunde]
                                 vfach = ventry[:fach_alt] || ventry[:fach_neu]
                                 if event[:fach].first == vfach
-                                    vlehrer = ventry[:lehrer_alt] || ventry[:lehrer_neu]
-                                    if event[:lehrer].first.include?(vlehrer)
+                                    vlehrer = ventry[:lehrer_alt] || ventry[:lehrer_neu] || []
+                                    unless (Set.new(event[:lehrer].first) & Set.new(vlehrer)).empty?
                                         flag = true
                                     end
                                 end
@@ -571,15 +576,34 @@ class Timetable
                         end
                         flag
                     end
+                    if debug_this
+                        STDERR.puts "matching_indices: #{matching_indices}"
+                    end
                     if matching_indices.size == 1
                         event = @lesson_cache[matching_indices.first]
+                        if debug_this
+                            # STDERR.puts event.to_yaml
+                        end
                         # LEHRER
                         if ventry[:lehrer_alt] && ventry[:lehrer_neu].nil?
-                            # Entfall
-                            event[:lehrer] = [[ventry[:lehrer_alt]], []]
+                            event[:lehrer] = [ventry[:lehrer_alt], []]
                         elsif ventry[:lehrer_alt] && ventry[:lehrer_neu] 
                             # Lehrerwechsel
-                            event[:lehrer] = [[ventry[:lehrer_alt]], [ventry[:lehrer_neu] ]]
+                            event[:lehrer] = [ventry[:lehrer_alt], ventry[:lehrer_neu] ]
+                        elsif ventry[:lehrer_alt].nil? && ventry[:lehrer_neu] 
+                            # Lehrerwechsel: mehr Lehrer als vorher
+                            event[:lehrer] = [[], ventry[:lehrer_neu] ]
+                        end
+
+                        # KLASSEN
+                        if ventry[:klassen_alt] && ventry[:klassen_neu].nil?
+                            event[:klassen] = [ventry[:klassen_alt], []]
+                        elsif ventry[:klassen_alt] && ventry[:klassen_neu] 
+                            # Klassenwechsel
+                            event[:klassen] = [ventry[:klassen_alt], ventry[:klassen_neu] ]
+                        elsif ventry[:klassen_alt].nil? && ventry[:klassen_neu] 
+                            # Klassenwechsel: mehr Klassen
+                            event[:klassen] = [[], ventry[:klassen_neu] ]
                         end
 
                         # FACH
@@ -602,13 +626,21 @@ class Timetable
                             end
                         end
                         if ventry[:fach_alt] && ventry[:fach_neu].nil?
-                            # Entfall
                             event[:fach] = [ventry[:fach_alt], ventry[:fach_neu] ]
-                            event[:entfall] = true
                         end
+
+                        # RAUM
+                        if ventry[:raum_alt] && ventry[:raum_neu] 
+                            # Raumwechsel
+                            event[:raum] = [ventry[:raum_alt], ventry[:raum_neu] ]
+                        end
+
                         # Vertretungstext
                         if ventry[:vertretungs_text]
                             event[:vertretungs_text] = ventry[:vertretungs_text]
+                        end
+                        if debug_this
+                            STDERR.puts event.to_yaml
                         end
                     elsif matching_indices.size == 0
                         # We found no matching indices, add as custom entry
@@ -632,7 +664,7 @@ class Timetable
                             :fach => ["#{ventry[:fach_alt]}", "#{ventry[:fach_neu]}"],
                             :raum => ["#{ventry[:raum_alt]}", "#{ventry[:raum_neu]}"],
                             :klassen => [ventry[:klassen_alt].to_a.sort, ventry[:klassen_neu].to_a.sort],
-                            :lehrer => [[ventry[:lehrer_alt]], [ventry[:lehrer_neu]]],
+                            :lehrer => [ventry[:lehrer_alt] || [], ventry[:lehrer_neu] || []],
                             :lesson_key => 0,
                             :lesson_offset => nil,
                             :count => 1,
@@ -645,6 +677,27 @@ class Timetable
                         day_events[ventry[:stunde]] << event[:cache_index]
                     else
                         # We found NO matching lesson entry
+                    end
+                end
+            end
+
+            # mark lessons as 'entfall'
+            day_events.each_pair do |stunde, event_indices|
+                event_indices.each do |cache_index|
+                    e = @lesson_cache[cache_index]
+                    if e[:lesson] && e[:lesson_key] && e[:lesson_key] != 0
+                        if (e[:klassen] && e[:klassen][1] && e[:klassen][1].empty?) || (e[:lehrer] && e[:lehrer][1] && e[:lehrer][1].empty?)
+                            e[:entfall] = true
+                            e[:lesson_key] = 0
+                        end
+                    end
+                    if e[:lehrer] 
+                        if e[:lehrer][0]
+                            e[:lehrer][0].sort!
+                        end
+                        if e[:lehrer][1]
+                            e[:lehrer][1].sort!
+                        end
                     end
                 end
             end
@@ -697,11 +750,7 @@ class Timetable
                             :teacher => "Auto-Rückgabeordner (von mir an SuS)",
                             :sus => "Rückgabeordner"
                         }
-                    end
-                    
-#                     if ds == '2019-11-22' && e[:lesson_key] == 'Ma~173a'
-#                         STDERR.puts e.to_yaml
-#                     end
+                    end                    
                 end
             end
             day_events_regular.each_pair do |stunde, event_indices|

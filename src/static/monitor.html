@@ -1,0 +1,176 @@
+<style>
+    .navbar, .foot {
+        display: none;
+    }
+
+    body {
+        padding-top: 0;
+    }
+
+    .klasse {
+        background-color: rgba(255, 255, 255, 0.7);
+        border-radius: 12px;
+        box-shadow: 0 0 5px rgba(0, 0, 0, 0.6);
+        padding: 10px 20px;
+        margin: 10px 0;
+        height: 135px;
+        position: relative;
+    }
+
+    .klasse.k11, .klasse.k12 {
+        height: 425px;
+    }
+
+
+    h3 {
+        font-size: 30px;
+        font-weight: bold;
+        text-shadow: 0 0 7px rgba(255, 255, 255, 1.0);
+        color: #000;
+        position: relative;
+        background-color: #fff;
+        display: inline-block;
+        width: 50px;
+        height: 50px;
+        border-radius: 50px;
+        left: -35px;
+        top: -15px;
+        box-shadow: 0 0 5px rgba(0, 0, 0, 0.8);
+        text-align: center;
+        padding: 7px 4px;
+    }
+
+    .row {
+        margin: 0;
+    }
+
+    .ticker {
+        position: absolute;
+        bottom: 0;
+        font-size: 40px;
+        padding: 20px 25px;
+        overflow-x: hidden;
+        white-space: nowrap;
+    }
+
+    .attribution {
+        position: absolute;
+        top: 5px;
+        right: 0;
+        left: 0;
+        text-align: center;
+        color: #fff;
+        text-shadow: 0 0 5px #000;
+    }
+    .content {
+        position: absolute;
+        left: 35px;
+        top: 5px;
+        bottom: 5px;
+        right: 15px;
+        overflow: hidden;
+        /* border: 1px solid red; */
+    }
+
+    .content table {
+        width: 100%;
+        background: none;
+    }
+    .content table td {
+        /* border: 1px solid red; */
+        font-size: 20px;
+        padding: 0 10px;
+    }
+    .content table td.vertretungs_text {
+        /* opacity: 0.7; */
+        /* font-style: italic; */
+    }
+    .content table td s {
+        margin-right: 10px;
+    }
+</style>
+
+<div class='container-fluid main row'>
+</div>
+<div class='container-fluid ticker row'>
+    Nur noch 66 Tage bis zu den Herbstferien! +++
+    Nur noch 66 Tage bis zu den Herbstferien! +++
+    Nur noch 66 Tage bis zu den Herbstferien! +++
+    Nur noch 66 Tage bis zu den Herbstferien! +++
+</div>
+<div class='attribution'></div>
+
+<script>
+    var klassen = #{ KLASSEN_ORDER.to_json };
+    var klassen_tr = #{ KLASSEN_TR.to_json };
+    var attribution = #{@@color_scheme_info[color_scheme[0, 19]].to_json};
+    var klassen_div = {};
+
+    function gen_label_arr(alt, neu) {
+        let label = '';
+        if (alt)
+            label += `<s>${alt.join(', ')}</s>`;
+        if (neu)
+            label += `<b>${neu.join(', ')}</b>`;
+        return label;
+    }
+
+    function gen_label(alt, neu) {
+        let label = '';
+        if (alt)
+            label += `<s>${alt}</s>`;
+        if (neu)
+            label += `<b>${neu}</b>`;
+        return label;
+    }
+
+    window.addEventListener('load', function () {
+        let a = `Farbschema: »${attribution[0]}«`;
+        if (attribution[1])
+            a += ` von ${attribution[1]}`;
+        $('.attribution').html(a);
+        moment.locale('de');
+        let col = null;
+        let i = 0;
+        for (let klasse of klassen) {
+            if (i % 7 == 0)
+                col = $('<div>').addClass('col-md-3').appendTo($('.main'));
+            let box = $('<div>');
+            let div = $('<div>').addClass('klasse').addClass(`k${klasse}`).appendTo(box);
+            div.append($('<h3>').text(`${klassen_tr[klasse] || klasse}`))
+            let content = $('<div>').addClass('content').appendTo(div);
+            klassen_div[klasse] = content;
+            col.append(box);
+            i += 1;
+        }
+        $.get('/gen/monitor.json', function(data) {
+            for (let klasse of klassen) {
+                let div = klassen_div[klasse];
+                div.empty();
+                if (data[klasse]) {
+                    let table = $('<table>');
+                    div.append(table);
+                    let first_entry = true;
+                    for (let entry of data[klasse]) {
+                        let row = $('<tr>').appendTo(table);
+                        if (!first_entry)
+                            row.css('border-top', '1px solid rgba(0,0,0,0.3)')
+                        first_entry = false;
+                        row.append($('<td>').html(`${entry.stunde}.`));
+                        row.append($('<td>').html(gen_label_arr(entry.klassen_alt, entry.klassen_neu)));
+                        row.append($('<td>').html(gen_label(entry.fach_alt, entry.fach_neu)));
+                        row.append($('<td>').html(gen_label_arr(entry.lehrer_alt, entry.lehrer_neu)));
+                        row.append($('<td>').html(gen_label(entry.raum_alt, entry.raum_neu)));
+                        if (entry.vertretungs_text) {
+                            let row = $('<tr>').appendTo(table);
+                            row.append($('<td>'));
+                            let cell = $('<td>').addClass('vertretungs_text').attr('colspan', '4');
+                            cell.append($('<span>').text(entry.vertretungs_text));
+                            row.append(cell);
+                        }
+                    }
+                }
+            }
+        });
+    });
+</script>

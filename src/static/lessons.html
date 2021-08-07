@@ -1368,7 +1368,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 div.append(row);
                 if (data.available_tablet_sets[key].hint) {
                     row = $('<tr>').addClass('annotation_row');
-                    row.append($('<td>').attr('colspan', 4).html(data.available_tablet_sets[key].hint));
+                    row.append($('<td>').attr('colspan', 4).css('white-space', 'unset').css('position', 'relative').css('top', '-10px').html(data.available_tablet_sets[key].hint));
                     div.append(row);
                 }
             }

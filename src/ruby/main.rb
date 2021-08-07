@@ -439,6 +439,9 @@ class SetupDatabase
                     neo4j_query(<<~END_OF_QUERY, :email => "klassenraum@#{SCHUL_MAIL_DOMAIN}")
                         MERGE (u:User {email: {email}})
                     END_OF_QUERY
+                    neo4j_query(<<~END_OF_QUERY, :email => "monitor@#{SCHUL_MAIL_DOMAIN}")
+                        MERGE (u:User {email: {email}})
+                    END_OF_QUERY
                 end
                 transaction do
                     present_users = neo4j_query(<<~END_OF_QUERY).map { |x| x['u.email'] }
@@ -450,6 +453,7 @@ class SetupDatabase
                     wanted_users << "kurs.tablet@#{SCHUL_MAIL_DOMAIN}"
                     wanted_users << "tablet@#{SCHUL_MAIL_DOMAIN}"
                     wanted_users << "klassenraum@#{SCHUL_MAIL_DOMAIN}"
+                    wanted_users << "monitor@#{SCHUL_MAIL_DOMAIN}"
                     users_to_be_deleted = Set.new(present_users) - wanted_users
                     unless users_to_be_deleted.empty?
                         debug "Deleting #{users_to_be_deleted.size} users (not really)"
@@ -1223,6 +1227,12 @@ class Main < Sinatra::Base
                                     :can_see_all_timetables => false,
                                     :teacher => false
                                 }
+                            elsif email == "monitor@#{SCHUL_MAIL_DOMAIN}"
+                                @session_user = {
+                                    :email => email,
+                                    :is_monitor => true,
+                                    :teacher => false
+                                }
                             elsif email != "tablet@#{SCHUL_MAIL_DOMAIN}"
                                 @session_user = @@user_info[email].dup
                                 if @session_user
@@ -1337,6 +1347,9 @@ class Main < Sinatra::Base
                 end
                 return "<div style='margin-right: 15px;'><b>Tablet-Modus</b>#{description}#{tablet_id_span}</div>" 
             end
+        end
+        if monitor_logged_in?
+            return ''
         end
         StringIO.open do |io|
             new_messages_count_s = nil
@@ -1789,6 +1802,9 @@ class Main < Sinatra::Base
                 path = 'login'
             end
         end
+        if user_logged_in? && @session_user[:is_monitor]
+            path = 'monitor'
+        end
         if path == 'timetable'
             redirect "#{WEB_ROOT}/", 302 unless @session_user
             if teacher_logged_in? || tablet_logged_in?
@@ -1988,8 +2004,16 @@ class Main < Sinatra::Base
         desaturated_color = darken(desaturate(primary_color), 0.9)
         desaturated_color_darker = darken(desaturate(primary_color), 0.3)
         disabled_color = rgb_to_hex(mix(hex_to_rgb(primary_color), [192, 192, 192], 0.5))
+        darker_color = rgb_to_hex(mix(hex_to_rgb(primary_color), [0, 0, 0], 0.7))
         shifted_color = shift_hue(primary_color, 350)
-        color_palette = {:primary => primary_color, :disabled => disabled_color, :shifted => desaturated_color}
+        color_palette = {
+            :primary => primary_color, 
+            :disabled => disabled_color, 
+            :darker => darker_color, 
+            :shifted => desaturated_color,
+            :left => '#' + color_scheme[1, 6],
+            :right => '#' + color_scheme[13, 6],
+        }
         
         unless path.include?('/')
             unless path.include?('.') || path[0] == '_'

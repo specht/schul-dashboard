@@ -24,6 +24,7 @@ class Main < Sinatra::Base
             io.puts "<a class='btn btn-secondary' href='#sus'>Schülerinnen und Schüler</a>"
             io.puts "<a class='btn btn-secondary' href='#website'>Website</a>"
             io.puts "<a class='btn btn-secondary' href='#tablets'>Tablets</a>"
+            io.puts "<a class='btn btn-secondary' href='#monitor'>Monitor</a>"
             io.puts "<a class='btn btn-secondary' href='/lesson_keys'>Lesson Keys</a>"
             io.puts "<hr />"
             io.puts "<h3 id='teachers'>Lehrerinnen und Lehrer</h3>"
@@ -183,6 +184,9 @@ class Main < Sinatra::Base
             end
             io.puts "</tbody>"
             io.puts "</table>"
+            io.puts "<h3 id='monitor'>Monitor</h3>"
+            io.puts "<button class='btn btn-success bu-login-as-monitor'><i class='fa fa-sign-in'></i>&nbsp;&nbsp;Als Monitor anmelden</button>"
+            io.puts "<hr />"
             io.string
         end
     end

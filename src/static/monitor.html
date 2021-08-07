@@ -1,3 +1,4 @@
+#{require_monitor_or_admin!}
 <style>
     .navbar, .foot {
         display: none;
@@ -6,6 +7,7 @@
     body {
         padding-top: 0;
         overflow: hidden;
+        color: #{color_palette[:darker]};
     }
 
     .container-fluid {
@@ -29,7 +31,7 @@
     h3 {
         font-size: 1.5vw;
         font-weight: bold;
-        color: #000;
+
         position: relative;
         background-color: #fff;
         display: inline-block;
@@ -68,13 +70,15 @@
 
     .attribution {
         position: absolute;
-        top: 0.5vw;
-        right: 0;
-        left: 0;
-        text-align: center;
-        color: #fff;
-        text-shadow: 0 0 0.5vw #000;
+        bottom: 5vw;
+        left: 98.6vw;
+        color: #{color_palette[:primary]};
         font-size: 0.9vw;
+        text-align: left;
+        /* border: 1px solid red; */
+        white-space: pre;
+        transform-origin: 0 0;
+        transform: rotate(-90deg);
     }
     .content {
         position: absolute;
@@ -108,6 +112,17 @@
     .content table td s {
         margin-right: 0.5vw;
     }
+    .embed-responsive-item {
+        background-image: url(/gen/bg/bg-#{color_scheme}.jpg);
+        background-color: #{color_scheme[0] == 'l' ? '#f8f8f8' : '#080808'};
+        background-repeat: no-repeat;
+        background-size: 100vw;
+        /* background-size: max(100vw, 1920px); */
+        background-position: 50% 0%;
+    }
+    body {
+        background: none;
+    }
 </style>
 
 <div class="embed-responsive embed-responsive-16by9">
@@ -131,6 +146,8 @@
     var klassen_animation_config = {};
     var last_timestamp = 0.0;
     var ticker_offset = 0.0;
+    var scroll_down_speed = 20.0;
+    var scroll_up_speed = 200.0;
     var ticker_div = null;
     var ticker_message = 'Kάλλιο πέντε και στο χέρι, παρά δέκα και καρτέρει';
 
@@ -140,7 +157,7 @@
         for (let klasse in klassen_animation_config) {
             let config = klassen_animation_config[klasse];
             if (config.phase == 0) {
-                config.position += diff * 20.0;
+                config.position += diff * scroll_down_speed;
                 if (config.position > config.range) {
                     config.position = config.range;
                     config.phase = 1;
@@ -150,7 +167,7 @@
                 if (timestamp >= config.timestamp)
                     config.phase = 2;
             } else if (config.phase == 2) {
-                config.position -= diff * 200.0;
+                config.position -= diff * scroll_up_speed;
                 if (config.position < 0.0) {
                     config.position = 0.0;
                     config.phase = 3;
@@ -215,7 +232,7 @@
             let span = $('<span>').text(ticker_message);
             $('.ticker-message').append(span);
         }
-        let a = `Farbschema: <b>»${attribution[0]}«</b>`;
+        let a = `<b>»${attribution[0]}«</b>`;
         if (attribution[1])
             a += ` von <b>${attribution[1]}</b>`;
         $('.attribution').html(a);

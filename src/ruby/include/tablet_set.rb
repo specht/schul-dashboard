@@ -218,6 +218,7 @@ class Main < Sinatra::Base
 
         booked_tablet_sets_timespan = already_booked_tablet_sets_for_timespan(datum, start_time, end_time)
         booked_tablet_sets_day = already_booked_tablet_sets_for_day(datum)
+        klasse5or6 = nil
 
         if lesson_key
             # consider klasse
@@ -237,16 +238,20 @@ class Main < Sinatra::Base
             # end
 
             # also consider room
-            # timetable_date = @@lessons[:start_date_for_date][datum]
-            # wday = (Date.parse(datum).wday + 6) % 7
-            # raum = @@lessons[:timetables][timetable_date][lesson_key][:stunden][wday].values.first[:raum]
-            # available_tablet_sets.select! do |x|
-            #     if @@tablet_sets[x][:only_these_rooms]
-            #         @@tablet_sets[x][:only_these_rooms].include?(raum)
-            #     else
-            #         true
-            #     end
-            # end
+            timetable_date = @@lessons[:start_date_for_date][datum]
+            wday = (Date.parse(datum).wday + 6) % 7
+            raum = @@lessons[:timetables][timetable_date][lesson_key][:stunden][wday].values.first[:raum]
+            available_tablet_sets.select! do |x|
+                if @@tablet_sets[x][:only_these_rooms_strict]
+                    if @@tablet_sets[x][:only_these_rooms]
+                        @@tablet_sets[x][:only_these_rooms].include?(raum)
+                    else
+                        true
+                    end
+                else
+                    true
+                end
+            end
         end
 
         tablet_sets = {}
@@ -298,7 +303,6 @@ class Main < Sinatra::Base
                     end
                 end
             end
-            # also consider room
             if lesson_key && @@tablet_sets[x][:only_these_rooms]
                 timetable_date = @@lessons[:start_date_for_date][datum]
                 wday = (Date.parse(datum).wday + 6) % 7
@@ -312,6 +316,16 @@ class Main < Sinatra::Base
                         hints << "<span class='text-danger'><i class='fa fa-warning'></i></span>&nbsp;&nbsp;Dieser Tabletsatz ist weit vom Raum #{raum} entfernt. Bitte wählen Sie deshalb – falls möglich – einen anderen Tabletsatz."
                     end
                 end
+            end
+            unless klasse5or6.nil?
+                if klasse5or6 && !@@tablet_sets[x][:prio_unterstufe]
+                    hints << "<span class='text-danger'><i class='fa fa-warning'></i></span>&nbsp;&nbsp;Sie buchen einen Tabletsatz für eine Unterstufenklasse, dieser Tabletsatz ist allerdings für die Unterstufe nicht so leicht zu transportieren. Bitte wählen Sie deshalb – falls möglich – einen anderen Tabletsatz."
+                elsif !klasse5or6 && @@tablet_sets[x][:prio_unterstufe]
+                    hints << "<span class='text-danger'><i class='fa fa-warning'></i></span>&nbsp;&nbsp;Sie buchen einen Tabletsatz für die Mittel- oder Oberstufe, dieser Tabletsatz ist allerdings für die Unterstufe besonders leicht zu transportieren. Bitte wählen Sie deshalb – falls möglich – einen anderen Tabletsatz."
+                end
+            end
+            if hints.empty?
+                hints << "<span class='text-success'><i class='fa fa-check'></i></span>&nbsp;&nbsp;Dieser Tabletsatz ist eine gute Wahl für Ihre Unterrichtsstunde."
             end
             unless hints.empty?
                 tablet_sets[x][:hint] = hints.join('<br />')

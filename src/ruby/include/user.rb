@@ -61,6 +61,11 @@ class Main < Sinatra::Base
         user_logged_in? && @session_user[:is_tablet] && @session_user[:tablet_type] == :klassenraum
     end
     
+    # Returns true if a kurs tablet is logged in.
+    def monitor_logged_in?
+        user_logged_in? && @session_user[:is_monitor]
+    end
+    
     # Returns true if a tablet is logged in.
     def tablet_logged_in?
         user_logged_in? && @session_user[:is_tablet]
@@ -117,6 +122,12 @@ class Main < Sinatra::Base
     def require_teacher_or_sv!
         assert(teacher_or_sv_logged_in?)
     end
+
+    # Assert that an admin is logged in
+    def require_monitor_or_admin!
+        assert(monitor_logged_in? || admin_logged_in?)
+    end
+    
     
     # Put this on top of a webpage to assert that this page can be opened by logged in users only
     def this_is_a_page_for_logged_in_users

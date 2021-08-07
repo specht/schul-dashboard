@@ -620,10 +620,15 @@ class Parser
             end
             vplan['entries'].each_pair do |sha1, jentry|
                 # STDERR.puts "#{datum} #{sha1} #{jentry.to_json}"
+                before_stunde = false
                 stunde_range = []
                 if jentry[0].include?('-')
                     parts = jentry[0].split('-').map { |x| x.strip.to_i }
                     stunde_range = (parts[0]..parts[1]).to_a
+                elsif jentry[0].include?('/')
+                    parts = jentry[0].split('/').map { |x| x.strip.to_i }
+                    stunde_range = (parts[1]..parts[1]).to_a
+                    before_stunde = true
                 else
                     stunde_range = (jentry[0].to_i..jentry[0].to_i).to_a
                 end
@@ -649,6 +654,10 @@ class Parser
                         :raum_neu => (jentry[4][1] || '').gsub('~', '/').gsub(',', '/').split('/').map { |x| x.strip }.join('/'),
                         :vertretungs_text => jentry[5],
                     }
+
+                    if before_stunde
+                        entry[:before_stunde] = true
+                    end
 
                     entry.keys.each do |k|
                         if (entry[k].is_a?(String) || entry[k].is_a?(Array)) && entry[k].empty?
@@ -704,7 +713,7 @@ class Parser
         return all_lessons, vertretungen, vplan_timestamp, day_messages
     end
     
-    def parse_pausenaufsichten()
+    def parse_pausenaufsichten(config)
         all_pausenaufsichten = {:aufsichten => {}, :start_dates => []}
         Dir['/data/pausenaufsichten/*.TXT'].sort.each do |path|
             start_date = File.basename(path).sub('.TXT', '')
@@ -740,6 +749,24 @@ class Parser
                 end
             end
         end
+
+        all_pausenaufsichten[:start_date_for_date] = {}
+        d = Date.parse(config[:first_day])
+        end_date = Date.parse(config[:last_day])
+        index = 0
+        unless all_pausenaufsichten[:start_dates].empty?
+            while d <= end_date do
+                ds = d.strftime('%Y-%m-%d')
+                while ds >= (all_pausenaufsichten[:start_dates][index + 1] || '') && (index < all_pausenaufsichten[:start_dates].size - 1)
+                    index += 1
+                end
+                if ds >= all_pausenaufsichten[:start_dates][index]
+                    all_pausenaufsichten[:start_date_for_date][ds] = all_pausenaufsichten[:start_dates][index]
+                end
+                d += 1
+            end
+        end
+
         return all_pausenaufsichten
     end
     

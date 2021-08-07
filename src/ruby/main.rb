@@ -507,7 +507,7 @@ class Main < Sinatra::Base
             ds = day.to_s
             off_day = @@off_days.include?(ds)
             unless off_day
-                yield ds, day.wday - 1
+                yield ds, (day.wday + 6) % 7
             end
             day += 1
         end
@@ -517,29 +517,6 @@ class Main < Sinatra::Base
         self.class.iterate_school_days(options, &block)
     end
 
-    def self.gen_ventry_flags(ventry)
-        ventry_flags = 0
-        ventry_flags <<= 1
-        ventry_flags += (ventry[:unr] != 0) ? 1 : 0
-        ventry_flags <<= 1
-        ventry_flags += (ventry[:fach_alt].nil?) ? 0 : 1
-        ventry_flags <<= 1
-        ventry_flags += (ventry[:fach_neu].nil?) ? 0 : 1
-        ventry_flags <<= 1
-        ventry_flags += (ventry[:lehrer_alt].nil?) ? 0 : 1
-        ventry_flags <<= 1
-        ventry_flags += (ventry[:lehrer_neu].nil?) ? 0 : 1
-        ventry_flags <<= 1
-        ventry_flags += (ventry[:klassen_alt].nil?) ? 0 : 1
-        ventry_flags <<= 1
-        ventry_flags += (ventry[:klassen_neu].nil?) ? 0 : 1
-        ventry_flags <<= 1
-        ventry_flags += (ventry[:raum_alt].nil?) ? 0 : 1
-        ventry_flags <<= 1
-        ventry_flags += (ventry[:raum_neu].nil?) ? 0 : 1
-        ventry_flags
-    end
-    
     def self.gen_password_for_email(email)
         chars = 'BCDFGHJKMNPQRSTVWXYZ23456789'.split('')
         sha2 = Digest::SHA256.new()
@@ -943,7 +920,7 @@ class Main < Sinatra::Base
                 @@schueler_offset_in_lesson[lesson_key][email] = i
             end
         end
-        @@pausenaufsichten = parser.parse_pausenaufsichten()
+        @@pausenaufsichten = parser.parse_pausenaufsichten(@@config)
         
         @@mailing_lists = {}
         @@klassen_order.each do |klasse|
@@ -1454,10 +1431,10 @@ class Main < Sinatra::Base
                         io.puts "<a class='dropdown-item nav-icon' href='/prepare_vote'><div class='icon'><i class='fa fa-group'></i></div><span class='label'>Abstimmungen</span></a>"
                         io.puts "<a class='dropdown-item nav-icon' href='/mailing_lists'><div class='icon'><i class='fa fa-envelope'></i></div><span class='label'>E-Mail-Verteiler</span></a>"
                     end
-                    if @session_user[:can_upload_vplan]
-                        io.puts "<div class='dropdown-divider'></div>"
-                        io.puts "<a class='dropdown-item nav-icon' href='/upload_vplan_html'><div class='icon'><i class='fa fa-upload'></i></div><span class='label'>Vertretungsplan hochladen</span></a>"
-                    end
+                    # if @session_user[:can_upload_vplan]
+                    #     io.puts "<div class='dropdown-divider'></div>"
+                    #     io.puts "<a class='dropdown-item nav-icon' href='/upload_vplan_html'><div class='icon'><i class='fa fa-upload'></i></div><span class='label'>Vertretungsplan hochladen</span></a>"
+                    # end
                     io.puts "<div class='dropdown-divider'></div>"
                     io.puts "<a class='dropdown-item nav-icon' href='/hilfe'><div class='icon'><i class='fa fa-question-circle'></i></div><span class='label'>Hilfe</span></a>"
                     io.puts "<div class='dropdown-divider'></div>"
@@ -1744,7 +1721,7 @@ class Main < Sinatra::Base
         fixed_timetable_data = nil
         initial_date = Date.parse([@@config[:first_school_day], Date.today.to_s].max.to_s)
         if DEVELOPMENT
-            initial_date = Date.parse('2021-05-10')
+            initial_date = Date.parse('2021-05-24')
         end
         while [6, 0].include?(initial_date.wday)
            initial_date += 1

@@ -1406,9 +1406,9 @@ class Main < Sinatra::Base
                     display_name = htmlentities(@session_user[:display_name])
                     if @session_user[:klasse]
                         temp = [tr_klasse(@session_user[:klasse])]
-                        if @session_user[:group2]
-                            temp << @session_user[:group2]
-                        end
+                        # if @session_user[:group2]
+                        #     temp << @session_user[:group2]
+                        # end
                         display_name += " (#{temp.join('/')})"
                     end
                     io.puts "<div class='icon nav_avatar'>#{user_icon(@session_user[:email], 'avatar-md')}</div><span class='menu-user-name'>#{display_name}</span>"

@@ -15,6 +15,42 @@ SHARE_DELETE = 8
 SHARE_SHARE = 16
 
 ALSO_SHARE_OS_FOLDERS = false
+HTTP_READ_TIMEOUT = 60 * 10
+
+module Nextcloud
+    class Api
+        # Sends API request to Nextcloud
+        #
+        # @param method [Symbol] Request type. Can be :get, :post, :put, etc.
+        # @param path [String] Nextcloud OCS API request path
+        # @param params [Hash, nil] Parameters to send
+        # @return [Object] Nokogiri::XML::Document
+        def request(method, path, params = nil, body = nil, depth = nil, destination = nil, raw = false)
+            response = Net::HTTP.start(@url.host, @url.port,
+            use_ssl: @url.scheme == "https") do |http|
+                STDERR.puts "Setting http read timeout to #{HTTP_READ_TIMEOUT} seconds!"
+                http.read_timeout = HTTP_READ_TIMEOUT
+                req = Kernel.const_get("Net::HTTP::#{method.capitalize}").new(@url.request_uri + path)
+                req["OCS-APIRequest"] = true
+                req.basic_auth @username, @password
+                req["Content-Type"] = "application/x-www-form-urlencoded"
+        
+                req["Depth"] = 0 if depth
+                req["Destination"] = destination if destination
+        
+                req.set_form_data(params) if params
+                req.body = body if body
+        
+                http.request(req)
+            end
+    
+            # if ![201, 204, 207].include? response.code
+            #   raise Errors::Error.new("Nextcloud received invalid status code")
+            # end
+            raw ? response.body : Nokogiri::XML.parse(response.body)
+        end
+    end
+end
 
 class Script
     def initialize

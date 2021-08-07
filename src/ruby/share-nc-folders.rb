@@ -17,6 +17,8 @@ SHARE_SHARE = 16
 ALSO_SHARE_OS_FOLDERS = false
 HTTP_READ_TIMEOUT = 60 * 10
 
+# This is a really ugly way to monkey patch an increased HTTP read timeout into the dachinat/nextcloud gem.
+
 module Nextcloud
     class Api
         # Sends API request to Nextcloud
@@ -28,7 +30,6 @@ module Nextcloud
         def request(method, path, params = nil, body = nil, depth = nil, destination = nil, raw = false)
             response = Net::HTTP.start(@url.host, @url.port,
             use_ssl: @url.scheme == "https") do |http|
-                STDERR.puts "Setting http read timeout to #{HTTP_READ_TIMEOUT} seconds!"
                 http.read_timeout = HTTP_READ_TIMEOUT
                 req = Kernel.const_get("Net::HTTP::#{method.capitalize}").new(@url.request_uri + path)
                 req["OCS-APIRequest"] = true

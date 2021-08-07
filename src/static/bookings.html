@@ -130,7 +130,6 @@
                         tablet_set_booking_widgets[key].hint_row.hide();
                     }
                 }
-                console.log(data);
                 if (booked_tablet_sets_config.length === 0)
                     $('#bu_perform_tablet_set_booking').prop('disabled', true);
                 else
@@ -160,7 +159,7 @@
                             div.addClass('timespan-booking');
                             div.css('position', 'absolute');
                             // div.html(`<span class='tis' style='background-color: ${booking.tablet.bg_color}; color: ${booking.tablet.fg_color};'>${tablet_id}</span> ${booking.lesson}`);
-                            div.html(`${booking.booking.start_time} <b>${booking.shorthand}</b> ${booking.lesson}`);
+                            div.html(`${booking.booking.start_time} <b>${booking.shorthand}</b> ${booking.lesson || ''}`);
                             let t0 = parseInt(booking.booking.start_time.substr(0, 2)) * 60 + parseInt(booking.booking.start_time.substr(3, 2));
                             let t1 = parseInt(booking.booking.end_time.substr(0, 2)) * 60 + parseInt(booking.booking.end_time.substr(3, 2));
                             let l = (t0 - (8 * 60)) / (19 * 60 - 8 * 60) * 100.0;
@@ -253,15 +252,15 @@
                         if (data.success) {
                             booking_span_to_be_deleted.remove();
                             $('#unbookTabletSetModal').modal('hide');
+                            window.location.reload();
                         }
                     });
                 });
         });
         $('#bu-book-tablet-set').click(function (e) {
-            // $('#ti_datum').val('#{Date.today.to_s}');
+            $('#ti_datum').val('#{Date.today.to_s}');
             booked_tablet_sets_config = [];
-            $('#ti_datum').val('2021-08-11');
-            $('#ti_start_time').val('07:00');
+            $('#ti_start_time').val('08:00');
             $('#ti_end_time').val('10:30');
             update_booking_widgets();
             $('#bookTabletSetModal').modal('show');
@@ -274,12 +273,15 @@
                 tablet_sets: booked_tablet_sets_config
             };
             api_call('/api/book_tablet_sets_for_timespan', data, function(data) {
-                console.log(data);
+                if (data.success) {
+                    $('#bookTabletSetModal').modal('hide');
+                    window.location.reload();
+                }
             });
         });
         $('#ti_datum').change(update_booking_widgets);
         $('#ti_start_time').change(update_booking_widgets);
         $('#ti_end_time').change(update_booking_widgets);
-        $('#bu-book-tablet-set').click();
+        // $('#bu-book-tablet-set').click();
     });
 </script>

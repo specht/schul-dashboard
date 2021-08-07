@@ -4,6 +4,40 @@ TABLET_SET_WARNING_AFTER_MINUTES = 15
 
 class Main < Sinatra::Base
 
+    post '/api/get_tablet_set_bookings' do
+        require_admin!
+        d0 = DateTime.now.strftime('%Y-%m-%d')
+        rows = neo4j_query(<<~END_OF_QUERY, {:d0 => d0})
+            MATCH (t:TabletSet)<-[:BOOKED]-(b:Booking)-[:BOOKED_BY]->(u:User)
+            WHERE b.datum >= {d0}
+            OPTIONAL MATCH (b)-[:FOR]->(i:LessonInfo)-[:BELONGS_TO]->(l:Lesson)
+            RETURN t, l, b, i, u.email;
+        END_OF_QUERY
+        results = {}
+        rows.each do |row|
+            booking = row['b'].props
+            tablet_set = row['t'].props
+            email = row['u.email']
+            results[booking[:datum]] ||= {}
+            results[booking[:datum]][tablet_set[:id]] ||= []
+            entry = {
+                :booking => booking,
+                :last_name => (@@user_info[email] || {})[:display_last_name] || 'NN',
+                :shorthand => (@@user_info[email] || {})[:shorthand] || 'NN',
+                :tablet_set => tablet_set[:id]
+            }
+            if row['l']
+                lesson = row['l'].props
+                lesson_key = lesson[:key]
+                lesson_info = row['i'].props
+                lesson_data = @@lessons[:lesson_keys][lesson_key] || {}
+                entry[:lesson] = lesson_data[:pretty_folder_name]
+            end
+            results[booking[:datum]][tablet_set[:id]] << entry
+        end
+        respond(:bookings => results)
+    end
+        
     # check whether we can book a list of tablet sets for a specific time span
     def already_booked_tablet_sets_for_timespan(datum, start_time, end_time)
         require_teacher!
@@ -146,13 +180,8 @@ class Main < Sinatra::Base
                 # create booking node
                 neo4j_query(<<~END_OF_QUERY, data)
                     MATCH (u:User {email: {email}})
-                    MERGE (b:Booking {datum: {datum}, start_time: {start_time}, end_time: {end_time}})
-                    MERGE (u)<-[:BOOKED_BY]-(b)
+                    CREATE (u)<-[:BOOKED_BY]-(b:Booking {datum: {datum}, start_time: {start_time}, end_time: {end_time}})
                     SET b.updated = {timestamp}
-
-                    WITH b
-                    MATCH (b)-[r:BOOKED]->(:TabletSet)
-                    DELETE r
 
                     WITH b
                     MATCH (t:TabletSet)
@@ -197,29 +226,28 @@ class Main < Sinatra::Base
             klasse5or6 = klassen.any? { |x| [5, 6].include?(x.to_i) }
 
             # sort by :prio_unterstufe
-            available_tablet_sets.sort! do |a, b|
-                a_prio = (!!@@tablet_sets[a][:prio_unterstufe]) ? 1 : 0
-                b_prio = (!!@@tablet_sets[b][:prio_unterstufe]) ? 1 : 0
-                dir = a_prio <=> b_prio
-                if dir == 0
-                    a <=> b
-                else
-                    dir * (klasse5or6 ? -1 : 1)
-                end
-            end
+            # available_tablet_sets.sort! do |a, b|
+            #     a_prio = (!!@@tablet_sets[a][:prio_unterstufe]) ? 1 : 0
+            #     b_prio = (!!@@tablet_sets[b][:prio_unterstufe]) ? 1 : 0
+            #     dir = a_prio <=> b_prio
+            #     if dir == 0
+            #         a <=> b
+            #     else
+            #         dir * (klasse5or6 ? -1 : 1)
+            #     end
+            # end
 
             # also consider room
-            timetable_date = @@lessons[:start_date_for_date][datum]
-            wday = (Date.parse(datum).wday + 6) % 7
-            raum = @@lessons[:timetables][timetable_date][lesson_key][:stunden][wday].values.first[:raum]
-
-            available_tablet_sets.select! do |x|
-                if @@tablet_sets[x][:only_these_rooms]
-                    @@tablet_sets[x][:only_these_rooms].include?(raum)
-                else
-                    true
-                end
-            end
+            # timetable_date = @@lessons[:start_date_for_date][datum]
+            # wday = (Date.parse(datum).wday + 6) % 7
+            # raum = @@lessons[:timetables][timetable_date][lesson_key][:stunden][wday].values.first[:raum]
+            # available_tablet_sets.select! do |x|
+            #     if @@tablet_sets[x][:only_these_rooms]
+            #         @@tablet_sets[x][:only_these_rooms].include?(raum)
+            #     else
+            #         true
+            #     end
+            # end
         end
 
         tablet_sets = {}
@@ -268,6 +296,21 @@ class Main < Sinatra::Base
                     if t <= TABLET_SET_WARNING_AFTER_MINUTES
                         pretty_fach = fach_for_lesson_key(booking[:lesson_key])
                         hints << "<span class='text-danger'><i class='fa fa-clock-o'></i></span>&nbsp;&nbsp;Dieser Tabletsatz wird bereits #{t} Minuten nach Stundenende von #{booking[:display_name]} benötigt#{booking[:lesson_key] ? ': ' + pretty_fach : ''}"
+                    end
+                end
+            end
+            # also consider room
+            if lesson_key && @@tablet_sets[x][:only_these_rooms]
+                timetable_date = @@lessons[:start_date_for_date][datum]
+                wday = (Date.parse(datum).wday + 6) % 7
+                raum = nil
+                begin
+                    raum = @@lessons[:timetables][timetable_date][lesson_key][:stunden][wday].values.first[:raum]
+                rescue
+                end
+                if raum
+                    unless @@tablet_sets[x][:only_these_rooms].include?(raum)
+                        hints << "<span class='text-danger'><i class='fa fa-warning'></i></span>&nbsp;&nbsp;Dieser Tabletsatz ist weit vom Raum #{raum} entfernt. Bitte wählen Sie deshalb – falls möglich – einen anderen Tabletsatz."
                     end
                 end
             end

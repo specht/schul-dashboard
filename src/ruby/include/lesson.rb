@@ -404,37 +404,6 @@ class Main < Sinatra::Base
         respond(:bookings => results)
     end
         
-    post '/api/get_tablet_set_bookings' do
-        require_admin!
-        d0 = DateTime.now.strftime('%Y-%m-%d')
-        rows = neo4j_query(<<~END_OF_QUERY, {:d0 => d0})
-            MATCH (t:TabletSet)<-[:BOOKED]-(b:Booking)-[:BOOKED_BY]->(u:User)
-            WHERE b.datum >= {d0}
-            OPTIONAL MATCH (b)-[:FOR]->(i:LessonInfo)-[:BELONGS_TO]->(l:Lesson)
-            RETURN t, l, b, i, u.email;
-        END_OF_QUERY
-        results = {}
-        rows.each do |row|
-            lesson = row['l'].props
-            lesson_key = lesson[:key]
-            lesson_info = row['i'].props
-            booking = row['b'].props
-            tablet_set = row['t'].props
-            email = row['u.email']
-            lesson_data = @@lessons[:lesson_keys][lesson_key] || {}
-            results[booking[:datum]] ||= {}
-            results[booking[:datum]][tablet_set[:id]] ||= []
-            results[booking[:datum]][tablet_set[:id]] << {
-                :booking => booking,
-                :last_name => (@@user_info[email] || {})[:display_last_name] || 'NN',
-                :shorthand => (@@user_info[email] || {})[:shorthand] || 'NN',
-                :lesson => lesson_data[:pretty_folder_name],
-                :tablet_set => tablet_set[:id]
-            }
-        end
-        respond(:bookings => results)
-    end
-        
     def self.get_stream_restriction_for_lesson_key(lesson_key)
         results = $neo4j.neo4j_query_expect_one(<<~END_OF_QUERY, :key => lesson_key)['restriction']
             MERGE (l:Lesson {key: {key}})

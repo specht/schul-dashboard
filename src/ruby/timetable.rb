@@ -157,7 +157,7 @@ class Timetable
     def update_monitor()
         debug "Updating monitor..."
         monitor_date = Date.today.strftime('%Y-%m-%d')
-        monitor_date = '2021-05-17' if DEVELOPMENT
+        # monitor_date = '2021-05-17' if DEVELOPMENT
         monitor_data = {}
         (@@vertretungen[monitor_date] || []).sort do |a, b|
             a[:stunde] <=> b[:stunde]

@@ -1,4 +1,4 @@
-#{require_monitor_or_admin!}
+#{require_monitor_or_user_who_can_manage_news!}
 <style>
     .navbar, .foot {
         display: none;
@@ -12,6 +12,13 @@
 
     .container-fluid {
         padding-top: 2vw;
+        padding: 2vw 1vw;
+    }
+
+    .main > div {
+        width: 24.5vw;
+        padding: 0 1vw;
+        /* position: absolute; */
     }
 
     .klasse {
@@ -64,6 +71,12 @@
 
     .ticker-message span:after {
         content: '+++';
+        display: inline-block;
+        margin: 0 2vw;
+    }
+
+    .ticker-message span.empty:after {
+        content: '';
         display: inline-block;
         margin: 0 2vw;
     }
@@ -146,10 +159,12 @@
     var klassen_animation_config = {};
     var last_timestamp = 0.0;
     var ticker_offset = 0.0;
-    var scroll_down_speed = 20.0;
-    var scroll_up_speed = 200.0;
+    var scroll_down_speed = 1.0;
+    var scroll_up_speed = 10.0;
+    var ticker_speed = 6.0;
     var ticker_div = null;
-    var ticker_message = 'Kάλλιο πέντε και στο χέρι, παρά δέκα και καρτέρει';
+    var ticker_messages = [];
+    var ticker_index = 0;
 
     function animation_step(timestamp) {
         timestamp *= 0.001;
@@ -177,16 +192,28 @@
                 if (timestamp >= config.timestamp)
                     config.phase = 0;
             }
-            $(klassen_animation_config[klasse].table).css('top', `-${config.position}px`);
+            $(klassen_animation_config[klasse].table).css('top', `-${config.position}vw`);
         }
-        let message_width = $('.ticker-message span').first().width();
-        if (message_width < 1.0)
-            message_width = 1.0;
-        ticker_offset += diff * 80;
-        while (ticker_offset > message_width && ticker_offset >= 0) {
-            ticker_offset -= message_width;
+        if ($('.ticker-message span').length > 0) {
+            let message_width = $('.ticker-message span').first().width() * 100.0 / window.innerWidth;
+            if (message_width < 1.0)
+                message_width = 1.0;
+            ticker_offset += diff * ticker_speed;
+            while (ticker_offset > message_width && ticker_offset >= 0) {
+                $('.ticker-message span').first().remove();
+                ticker_offset -= message_width;
+            }
+            $('.ticker-message').css('left', `-${ticker_offset}vw`);
         }
-        $('.ticker-message').css('left', `-${ticker_offset}px`);
+        while ($('.ticker-message').width() + $('.ticker-message').position().left < window.innerWidth) {
+            if (ticker_messages.length > 0) {
+                ticker_index %= ticker_messages.length;
+                $('<span>').text(ticker_messages[ticker_index]).appendTo($('.ticker-message'));
+                ticker_index = (ticker_index + 1) % ticker_messages.length;
+            } else {
+                $('<span>').addClass('empty').appendTo($('.ticker-message'));
+            }
+        }
 
         last_timestamp = timestamp;
         window.requestAnimationFrame(animation_step);
@@ -213,8 +240,10 @@
     function install_auto_scroller(klasse, target) {
         target = $(target);
         let table = $(target).find('table');
-        if (table.height() > target.height()) {
-            let diff = table.height() - target.height();
+        let table_height = table.height() * 100.0 / window.innerWidth;
+        let target_height = target.height() * 100.0 / window.innerWidth;
+        if (table_height > target_height) {
+            let diff = table_height - target_height;
             klassen_animation_config[klasse] = {
                 range: diff,
                 phase: 3,
@@ -227,11 +256,6 @@
     }
 
     window.addEventListener('load', function () {
-        ticker_div = $('.ticker');
-        for (let i = 0; i < 100; i++) {
-            let span = $('<span>').text(ticker_message);
-            $('.ticker-message').append(span);
-        }
         let a = `<b>»${attribution[0]}«</b>`;
         if (attribution[1])
             a += ` von <b>${attribution[1]}</b>`;
@@ -239,15 +263,21 @@
         moment.locale('de');
         let col = null;
         let i = 0;
+        let y = 2.0;
         for (let klasse of klassen) {
-            if (i % 7 == 0)
-                col = $('<div>').addClass('col-md-3').appendTo($('.main'));
+            if (i % 7 == 0) {
+                col = $('<div>');
+                col.appendTo($('.main'));
+                y = 0.0;
+            }
             let box = $('<div>');
             let div = $('<div>').addClass('klasse').addClass(`k${klasse}`).appendTo(box);
             div.append($('<h3>').text(`${klassen_tr[klasse] || klasse}`))
             let content = $('<div>').addClass('content').appendTo(div);
             klassen_div[klasse] = content;
             col.append(box);
+            col.css('top', `${y}vw`);
+            y += 10.0;
             i += 1;
         }
         $.get('/gen/monitor.json', function(data) {

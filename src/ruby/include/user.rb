@@ -124,8 +124,8 @@ class Main < Sinatra::Base
     end
 
     # Assert that an admin is logged in
-    def require_monitor_or_admin!
-        assert(monitor_logged_in? || admin_logged_in?)
+    def require_monitor_or_user_who_can_manage_news!
+        assert(monitor_logged_in? || user_who_can_manage_news_logged_in?)
     end
     
     

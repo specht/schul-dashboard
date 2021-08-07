@@ -1362,6 +1362,7 @@ class Main < Sinatra::Base
                 end
                 if user_who_can_upload_files_logged_in? || user_who_can_manage_news_logged_in?
                     nav_items << :website
+                    nav_items << :monitor
                 end
                 nav_items << :messages
                 if admin_logged_in?
@@ -1500,6 +1501,17 @@ class Main < Sinatra::Base
                     if user_who_can_upload_files_logged_in?
                         io.puts "<a class='dropdown-item nav-icon' href='/upload_images'><div class='icon'><i class='fa fa-photo'></i></div><span class='label'>Bilder hochladen</span></a>"
                         io.puts "<a class='dropdown-item nav-icon' href='/upload_files'><div class='icon'><i class='fa fa-file-pdf-o'></i></div><span class='label'>Dateien hochladen</span></a>"
+                    end
+                    io.puts "</div>"
+                    io.puts "</li>"
+                elsif x == :monitor
+                    io.puts "<li class='nav-item dropdown'>"
+                    io.puts "<a class='nav-link nav-icon dropdown-toggle' href='#' id='navbarDropdown' role='button' data-toggle='dropdown' aria-haspopup='true' aria-expanded='false'>"
+                    io.puts "<div class='icon'><i class='fa fa-tv'></i></div>Monitore"
+                    io.puts "</a>"
+                    io.puts "<div class='dropdown-menu dropdown-menu-right' aria-labelledby='navbarDropdown' style='max-height: 500px; overflow-y: auto;'>"
+                    if user_who_can_manage_news_logged_in?
+                        io.puts "<a class='dropdown-item nav-icon' href='/manage_monitor'><div class='icon'><i class='fa fa-tv'></i></div><span class='label'>Monitore verwalten</span></a>"
                     end
                     io.puts "</div>"
                     io.puts "</li>"

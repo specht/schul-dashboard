@@ -23,7 +23,9 @@ class Script
     
     def run
         srsly = false
-        if ARGV.include?('--srsly')
+        args = ARGV.dup
+        if args.include?('--srsly')
+            args.delete('--srsly')
             srsly = true
         else
             STDERR.puts "Notice: Not making any modifications unless you specify --srsly"
@@ -31,8 +33,8 @@ class Script
 
         @@user_info = Main.class_variable_get(:@@user_info)
         wanted_nc_ids = nil
-        unless ARGV.empty?
-            wanted_nc_ids = Set.new(ARGV.map { |email| (@@user_info[email] || {})[:nc_login] })
+        unless args.empty?
+            wanted_nc_ids = Set.new(args.map { |email| (@@user_info[email] || {})[:nc_login] })
         end
 
         wanted_shares.keys.sort.each do |user_id|

@@ -50,7 +50,6 @@ class Script
                 result = ocs_user.webdav.directory.move('/Unterricht', '/Archiv-20-21')
                 if result[:status] != 'ok'
                     STDERR.puts "Error!"
-                    exit(1)
                 end
             end
         end

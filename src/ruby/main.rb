@@ -1075,23 +1075,18 @@ class Main < Sinatra::Base
         end
     end
     
-    def assert(condition, message = 'assertion failed', suppress_backtrace = false)
+    def assert(condition, message = 'assertion failed', suppress_backtrace = false, delay = nil)
         unless condition
             debug_error message
             e = StandardError.new(message)
             e.set_backtrace([]) if suppress_backtrace
+            sleep delay unless delay.nil?
             raise e
         end
     end
 
     def assert_with_delay(condition, message = 'assertion failed', suppress_backtrace = false)
-        unless condition
-            debug_error message
-            e = StandardError.new(message)
-            e.set_backtrace([]) if suppress_backtrace
-            sleep 3.0
-            raise e
-        end
+        assert(condition, message, suppress_backtrace, 3.0)
     end
 
     def test_request_parameter(data, key, options)

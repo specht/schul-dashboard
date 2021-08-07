@@ -63,7 +63,7 @@ class Main < Sinatra::Base
         if Time.at(login_code[:valid_to]) < Time.now
             respond({:error => 'code_expired'})
         end
-        assert(Time.at(login_code[:valid_to]) >= Time.now)
+        assert(Time.at(login_code[:valid_to]) >= Time.now, 'code expired', true)
         session_id = create_session(user[:email], login_code[:tainted] ? 2 : 365 * 24)
         neo4j_query(<<~END_OF_QUERY, :tag => data[:tag])
             MATCH (l:LoginCode {tag: {tag}})

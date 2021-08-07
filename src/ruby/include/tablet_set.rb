@@ -176,7 +176,6 @@ class Main < Sinatra::Base
                     :start_time => start_time,
                     :end_time => end_time
                 }
-                debug data.to_yaml
                 # create booking node
                 neo4j_query(<<~END_OF_QUERY, data)
                     MATCH (u:User {email: {email}})

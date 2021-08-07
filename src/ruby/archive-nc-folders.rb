@@ -37,7 +37,8 @@ class Script
             wanted_nc_ids = Set.new(args.map { |email| (@@user_info[email] || {})[:nc_login] })
         end
 
-        wanted_shares.keys.sort.each do |user_id|
+        @@user_info.keys.sort.each do |email|
+            user_id = @@user_info[email][:nc_login]
             unless wanted_nc_ids.nil?
                 next unless wanted_nc_ids.include?(user_id)
             end

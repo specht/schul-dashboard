@@ -56,6 +56,10 @@ class Script
             lesson_info = @@lessons[:lesson_keys][lesson_key]
             # only handle lessons which have actual Klassen
             next if (Set.new(lesson_info[:klassen]) & Set.new(@@klassen_order)).empty?
+            unless ALSO_SHARE_OS_FOLDERS
+                next unless (Set.new(lesson_info[:klassen]) & Set.new(['11', '12'])).empty?
+            end
+
             folder_name = "#{lesson_key}"
             fach = lesson_info[:fach]
             fach = @@faecher[fach] || fach
@@ -207,6 +211,7 @@ class Script
                         result = ocs_user.webdav.directory.move(share['file_target'], info[:target_path])
                         if result[:status] != 'ok'
                             STDERR.puts "Error!"
+                            STDERR.puts result.to_yaml
                             exit(1)
                         end
                     end

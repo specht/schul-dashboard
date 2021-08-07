@@ -1,52 +1,57 @@
 #!/usr/bin/env ruby
 require './main.rb'
+require './parser.rb'
+require 'set'
+require 'zlib'
+require 'fileutils'
+require 'nextcloud'
+require 'cgi'
+require 'yaml'
+
+SHARE_READ = 1
+SHARE_UPDATE = 2
+SHARE_CREATE = 4
+SHARE_DELETE = 8
+SHARE_SHARE = 16
 
 class Script
-    def emit(s)
-        puts "__RUN__ #{s}"
-    end
-    
-    def exit_if_not_exists(path)
-        emit "if [ ! -d \"#{path}\" ]"
-        emit "then"
-        emit "    echo \"Path does not exist: #{path}\""
-        emit "    exit 1"
-        emit "fi"
+    def initialize
+        @ocs = Nextcloud.ocs(url: NEXTCLOUD_URL_FROM_RUBY_CONTAINER,
+                             username: NEXTCLOUD_USER, 
+                             password: NEXTCLOUD_PASSWORD)
     end
     
     def run
-        emit "#!/bin/bash"
-        base_path = File.join(NEXTCLOUD_DASHBOARD_DATA_DIRECTORY, 'files')
-        exit_if_not_exists(base_path)
+        srsly = false
+        if ARGV.include?('--srsly')
+            srsly = true
+        else
+            STDERR.puts "Notice: Not making any modifications unless you specify --srsly"
+        end
+
         @@user_info = Main.class_variable_get(:@@user_info)
-        @@faecher = Main.class_variable_get(:@@faecher)
-        @@klassen_order = Main.class_variable_get(:@@klassen_order)
-        @@lessons_for_klasse = Main.class_variable_get(:@@lessons_for_klasse)
-        @@lessons = Main.class_variable_get(:@@lessons)
-        @@schueler_for_klasse = Main.class_variable_get(:@@schueler_for_klasse)
-        @@schueler_for_lesson = Main.class_variable_get(:@@schueler_for_lesson)
-        @@lessons[:lesson_keys].keys.sort.each do |lesson_key|
-            lesson_info = @@lessons[:lesson_keys][lesson_key]
-            next if (Set.new(lesson_info[:klassen]) & Set.new(@@klassen_order)).empty?
-            folder_name = "#{lesson_key}"
-            einsammel_path = "Auto-Einsammelordner (von SuS an mich)"
-            rueckgabe_path = "Auto-Rückgabeordner (von mir an SuS)"
-            STDERR.puts sprintf('%3d %-20s %-10s %s', (@@schueler_for_lesson[lesson_key] || []).size, lesson_key, lesson_info[:lehrer].join(', '), lesson_info[:klassen].join(', '))
-            ['Ausgabeordner', einsammel_path, rueckgabe_path].each do |x|
-                emit "mkdir -pv \"#{File.join(base_path, 'Unterricht', folder_name, x)}\""
+        wanted_nc_ids = nil
+        unless ARGV.empty?
+            wanted_nc_ids = Set.new(ARGV.map { |email| (@@user_info[email] || {})[:nc_login] })
+        end
+
+        wanted_shares.keys.sort.each do |user_id|
+            unless wanted_nc_ids.nil?
+                next unless wanted_nc_ids.include?(user_id)
             end
-            (@@schueler_for_lesson[lesson_key] || []).each do |email|
-                name = @@user_info[email][:display_name]
-                ['Einsammelordner', 'Einsammelordner/Eingesammelt', 'Rückgabeordner'].each do |x|
-                    emit "mkdir -pv \"#{File.join(base_path, 'Unterricht', folder_name, 'SuS', name, x)}\""
+            ocs_user = Nextcloud.ocs(url: NEXTCLOUD_URL_FROM_RUBY_CONTAINER, 
+                                     username: user_id,
+                                     password: NEXTCLOUD_ALL_ACCESS_PASSWORD_BE_CAREFUL)
+            STDERR.puts "Moving [#{user_id}]/Unterricht to /Archiv-20-21..."
+            if srsly
+                result = ocs_user.webdav.directory.move('/Unterricht', '/Archiv-20-21')
+                if result[:status] != 'ok'
+                    STDERR.puts "Error!"
+                    exit(1)
                 end
             end
         end
-        emit "php occ files:scan #{File::basename(NEXTCLOUD_DASHBOARD_DATA_DIRECTORY)}"
-        emit "# Hinweis: Die oben stehenden Befehle wurden noch nicht ausgeführt."
-        emit "# Falls die Nextcloud z. B. in einem Docker-Container läuft, können sie"
-        emit "# z. B. so ausgeführt werden:"
-        emit "# $ ./#{File.basename(__FILE__)} | docker exec -i schuldashboarddev_nextcloud_1 bash -"
+
     end
 end
 

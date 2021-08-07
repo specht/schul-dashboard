@@ -156,8 +156,16 @@ class Timetable
     
     def update_monitor()
         debug "Updating monitor..."
-        monitor_date = Date.today.strftime('%Y-%m-%d')
-        monitor_date = '2021-08-09' if DEVELOPMENT
+
+        monitor_date = Date.parse([@@config[:first_school_day], Date.today.to_s].max.to_s)
+        # if DEVELOPMENT
+        #     initial_date = Date.parse('2021-05-24')
+        # end
+        while [6, 0].include?(monitor_date.wday)
+            monitor_date += 1
+        end
+        monitor_date = monitor_date.strftime('%Y-%m-%d')
+
         temp_data = {}
         (@@vertretungen[monitor_date] || []).sort do |a, b|
             a[:stunde] <=> b[:stunde]

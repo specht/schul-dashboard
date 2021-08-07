@@ -1,6 +1,8 @@
 #!/usr/bin/env ruby
 require './main.rb'
 
+ALSO_CREATE_OS_FOLDERS = false
+
 class Script
     def emit(s)
         puts "__RUN__ #{s}"
@@ -28,6 +30,9 @@ class Script
         @@lessons[:lesson_keys].keys.sort.each do |lesson_key|
             lesson_info = @@lessons[:lesson_keys][lesson_key]
             next if (Set.new(lesson_info[:klassen]) & Set.new(@@klassen_order)).empty?
+            unless ALSO_CREATE_OS_FOLDERS
+                next unless (Set.new(lesson_info[:klassen]) & Set.new(['11', '12'])).empty?
+            end
             folder_name = "#{lesson_key}"
             einsammel_path = "Auto-Einsammelordner (von SuS an mich)"
             rueckgabe_path = "Auto-Rückgabeordner (von mir an SuS)"

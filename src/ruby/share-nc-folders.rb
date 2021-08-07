@@ -14,6 +14,8 @@ SHARE_CREATE = 4
 SHARE_DELETE = 8
 SHARE_SHARE = 16
 
+ALSO_SHARE_OS_FOLDERS = false
+
 class Script
     def initialize
         @ocs = Nextcloud.ocs(url: NEXTCLOUD_URL_FROM_RUBY_CONTAINER,

@@ -1678,7 +1678,7 @@ class Main < Sinatra::Base
             which = @@color_scheme_colors.select do |x|
                 x[4] == 'l'
             end.sample
-            "#{which[4]}#{which[0, 3].join('').gsub('#', '')}#{[0, 1, 2, 3, 5, 6].sample}"
+            "#{which[4]}#{which[0, 3].join('').gsub('#', '')}#{[0].sample}"
         else
             @@default_color_scheme ||= {}
             jd = Date.today.jd

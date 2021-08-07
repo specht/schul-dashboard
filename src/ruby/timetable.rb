@@ -157,16 +157,46 @@ class Timetable
     def update_monitor()
         debug "Updating monitor..."
         monitor_date = Date.today.strftime('%Y-%m-%d')
-        # monitor_date = '2021-05-17' if DEVELOPMENT
-        monitor_data = {}
+        monitor_date = '2021-08-09' if DEVELOPMENT
+        temp_data = {}
         (@@vertretungen[monitor_date] || []).sort do |a, b|
             a[:stunde] <=> b[:stunde]
         end.each do |ventry|
             klassen = Set.new(ventry[:klassen_alt] || []) | Set.new(ventry[:klassen_neu] || [])
             klassen.each do |klasse|
                 next unless KLASSEN_ORDER.include?(klasse)
-                monitor_data[klasse] ||= []
-                monitor_data[klasse] << ventry
+                temp_data[klasse] ||= {}
+                key = ventry.keys.sort.reject { |k| k == :stunde }.map { |k| [k, ventry[k]] }.to_json
+                temp_data[klasse][key] ||= []
+                temp_data[klasse][key] << ventry
+            end
+        end
+        monitor_data = {}
+        temp_data.each_pair do |klasse, entries|
+            monitor_data[klasse] = []
+            entries.values.each do |tuple|
+                tuple.each.with_index do |entry, i|
+                    if i > 0
+                        if monitor_data[klasse].last[:stunde_range].last + 1 == entry[:stunde]
+                            monitor_data[klasse].last[:stunde_range][1] += 1
+                        else
+                            monitor_data[klasse] << entry
+                            monitor_data[klasse].last[:stunde_range] = [monitor_data[klasse].last[:stunde], monitor_data[klasse].last[:stunde]]
+                        end
+                    else
+                        monitor_data[klasse] << entry
+                        monitor_data[klasse].last[:stunde_range] = [monitor_data[klasse].last[:stunde], monitor_data[klasse].last[:stunde]]
+                    end
+                end
+            end
+            monitor_data[klasse].map! do |entry|
+                if entry[:stunde_range].first == entry[:stunde_range].last
+                    entry[:stunde_label] = "#{entry[:stunde_range].first}."
+                else
+                    entry[:stunde_label] = "#{entry[:stunde_range].first}. – #{entry[:stunde_range].last}."
+                end
+                entry.delete(:stunde_range)
+                entry
             end
         end
         File.open('/gen/monitor.json', 'w') { |f| f.write(monitor_data.to_json) }

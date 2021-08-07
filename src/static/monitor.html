@@ -5,39 +5,42 @@
 
     body {
         padding-top: 0;
+        overflow: hidden;
+    }
+
+    .container-fluid {
+        padding-top: 2vw;
     }
 
     .klasse {
         background-color: rgba(255, 255, 255, 0.7);
-        border-radius: 12px;
-        box-shadow: 0 0 5px rgba(0, 0, 0, 0.6);
-        padding: 10px 20px;
-        margin: 10px 0;
-        height: 135px;
+        border-radius: 1vw;
+        box-shadow: 0 0 0.5vw rgba(0, 0, 0, 0.6);
+        padding: 1vw 2vw;
+        margin: 1vw 0;
+        height: 6vw;
         position: relative;
     }
 
     .klasse.k11, .klasse.k12 {
-        height: 425px;
+        height: 20vw;
     }
 
-
     h3 {
-        font-size: 30px;
+        font-size: 2vw;
         font-weight: bold;
-        text-shadow: 0 0 7px rgba(255, 255, 255, 1.0);
         color: #000;
         position: relative;
         background-color: #fff;
         display: inline-block;
-        width: 50px;
-        height: 50px;
-        border-radius: 50px;
-        left: -35px;
-        top: -15px;
-        box-shadow: 0 0 5px rgba(0, 0, 0, 0.8);
+        width: 3.5vw;
+        height: 3.5vw;
+        border-radius: 4vw;
+        left: -3.2vw;
+        top: -1.5vw;
+        box-shadow: 0 0 0.4vw rgba(0, 0, 0, 0.8);
         text-align: center;
-        padding: 7px 4px;
+        padding: 0.5vw;
     }
 
     .row {
@@ -46,28 +49,39 @@
 
     .ticker {
         position: absolute;
-        bottom: 0;
-        font-size: 40px;
-        padding: 20px 25px;
+        bottom: -0.5vw;
+        font-size: 2.5vw;
+        padding: 1vw 1vw;
         overflow-x: hidden;
         white-space: nowrap;
     }
 
+    .ticker-message {
+        position: relative;
+    }
+
+    .ticker-message span:after {
+        content: '+++';
+        display: inline-block;
+        margin: 0 2vw;
+    }
+
     .attribution {
         position: absolute;
-        top: 5px;
+        top: 0.5vw;
         right: 0;
         left: 0;
         text-align: center;
         color: #fff;
-        text-shadow: 0 0 5px #000;
+        text-shadow: 0 0 0.5vw #000;
+        font-size: 0.9vw;
     }
     .content {
         position: absolute;
-        left: 35px;
-        top: 5px;
-        bottom: 5px;
-        right: 15px;
+        left: 2.5vw;
+        top: 0vw;
+        bottom: 0vw;
+        right: 0.5vw;
         overflow: hidden;
         /* border: 1px solid red; */
     }
@@ -75,36 +89,91 @@
     .content table {
         width: 100%;
         background: none;
+        position: relative;
+        margin-top: 0.3vw;
     }
+
     .content table td {
         /* border: 1px solid red; */
-        font-size: 20px;
-        padding: 0 10px;
+        font-size: 1.2vw;
+        padding: 0 0.5vw;
     }
     .content table td.vertretungs_text {
+        position: relative;
+        top: -0.3vw;
         /* opacity: 0.7; */
         /* font-style: italic; */
+        /* padding-top: -1vw; */
     }
     .content table td s {
-        margin-right: 10px;
+        margin-right: 0.5vw;
     }
 </style>
 
-<div class='container-fluid main row'>
+<div class="embed-responsive embed-responsive-16by9">
+    <div class='embed-responsive-item'>
+        <div class='container-fluid main row'>
+        </div>
+        <div class='container-fluid ticker row'>
+            <div class='ticker-message'></div>
+        </div>
+        <div class='attribution'></div>
+    </div>
 </div>
-<div class='container-fluid ticker row'>
-    Nur noch 66 Tage bis zu den Herbstferien! +++
-    Nur noch 66 Tage bis zu den Herbstferien! +++
-    Nur noch 66 Tage bis zu den Herbstferien! +++
-    Nur noch 66 Tage bis zu den Herbstferien! +++
-</div>
-<div class='attribution'></div>
 
 <script>
+    var top_delay = 5.0;
+    var bottom_delay = 2.0;
     var klassen = #{ KLASSEN_ORDER.to_json };
     var klassen_tr = #{ KLASSEN_TR.to_json };
     var attribution = #{@@color_scheme_info[color_scheme[0, 19]].to_json};
     var klassen_div = {};
+    var klassen_animation_config = {};
+    var last_timestamp = 0.0;
+    var ticker_offset = 0.0;
+    var ticker_div = null;
+    var ticker_message = 'Kάλλιο πέντε και στο χέρι, παρά δέκα και καρτέρει';
+
+    function animation_step(timestamp) {
+        timestamp *= 0.001;
+        let diff = timestamp - last_timestamp;
+        for (let klasse in klassen_animation_config) {
+            let config = klassen_animation_config[klasse];
+            if (config.phase == 0) {
+                config.position += diff * 20.0;
+                if (config.position > config.range) {
+                    config.position = config.range;
+                    config.phase = 1;
+                    config.timestamp = timestamp + bottom_delay;
+                }
+            } else if (config.phase == 1) {
+                if (timestamp >= config.timestamp)
+                    config.phase = 2;
+            } else if (config.phase == 2) {
+                config.position -= diff * 200.0;
+                if (config.position < 0.0) {
+                    config.position = 0.0;
+                    config.phase = 3;
+                    config.timestamp = timestamp + top_delay;
+                }
+            } else if (config.phase == 3) {
+                if (timestamp >= config.timestamp)
+                    config.phase = 0;
+            }
+            $(klassen_animation_config[klasse].table).css('top', `-${config.position}px`);
+        }
+        let message_width = $('.ticker-message span').first().width();
+        if (message_width < 1.0)
+            message_width = 1.0;
+        ticker_offset += diff * 80;
+        while (ticker_offset > message_width && ticker_offset >= 0) {
+            ticker_offset -= message_width;
+        }
+        $('.ticker-message').css('left', `-${ticker_offset}px`);
+
+        last_timestamp = timestamp;
+        window.requestAnimationFrame(animation_step);
+    }
 
     function gen_label_arr(alt, neu) {
         let label = '';
@@ -124,10 +193,31 @@
         return label;
     }
 
+    function install_auto_scroller(klasse, target) {
+        target = $(target);
+        let table = $(target).find('table');
+        if (table.height() > target.height()) {
+            let diff = table.height() - target.height();
+            klassen_animation_config[klasse] = {
+                range: diff,
+                phase: 3,
+                timestamp: top_delay,
+                position: 0,
+                table: table[0],
+            };
+            // target.css('top', `-${diff}px`);
+        }
+    }
+
     window.addEventListener('load', function () {
-        let a = `Farbschema: »${attribution[0]}«`;
+        ticker_div = $('.ticker');
+        for (let i = 0; i < 100; i++) {
+            let span = $('<span>').text(ticker_message);
+            $('.ticker-message').append(span);
+        }
+        let a = `Farbschema: <b>»${attribution[0]}«</b>`;
         if (attribution[1])
-            a += ` von ${attribution[1]}`;
+            a += ` von <b>${attribution[1]}</b>`;
         $('.attribution').html(a);
         moment.locale('de');
         let col = null;
@@ -156,7 +246,7 @@
                         if (!first_entry)
                             row.css('border-top', '1px solid rgba(0,0,0,0.3)')
                         first_entry = false;
-                        row.append($('<td>').html(`${entry.stunde}.`));
+                        row.append($('<td>').html(`<b>${entry.stunde_label}</b>`));
                         row.append($('<td>').html(gen_label_arr(entry.klassen_alt, entry.klassen_neu)));
                         row.append($('<td>').html(gen_label(entry.fach_alt, entry.fach_neu)));
                         row.append($('<td>').html(gen_label_arr(entry.lehrer_alt, entry.lehrer_neu)));
@@ -169,8 +259,10 @@
                             row.append(cell);
                         }
                     }
+                    install_auto_scroller(klasse, div);
                 }
             }
+            window.requestAnimationFrame(animation_step);
         });
     });
 </script>

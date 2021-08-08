@@ -222,16 +222,37 @@ def get_file_from_url(url, &block)
     end
 end
 
+def head_file_from_url(url, &block)
+    uri = URI.parse(url)
+    req = Net::HTTP::Head.new(uri)
+    if UNTIS_VERTRETUNGSPLAN_USERNAME && UNTIS_VERTRETUNGSPLAN_PASSWORD
+        req.basic_auth UNTIS_VERTRETUNGSPLAN_USERNAME, UNTIS_VERTRETUNGSPLAN_PASSWORD
+    end
+    
+    res = Net::HTTP.start(uri.hostname, uri.port, :use_ssl => uri.scheme == 'https') do |http|
+        response = http.request(req)
+        if response.code.to_i == 200
+            yield(response.header)
+        else
+            raise "page not found: #{url}"
+        end
+    end
+end
+
 def perform_refresh
     last_update_timestamp = ''
     last_update_timestamp_path = '/vplan/timestamp.txt'
     if File.exists?(last_update_timestamp_path)
         last_update_timestamp = File.read(last_update_timestamp_path).strip
     end
+    last_modified = last_update_timestamp
+    head_file_from_url("#{UNTIS_VERTRETUNGSPLAN_BASE_URL}/frames/navbar.htm") do |header|
+        last_modified = DateTime.parse(header['last-modified']).strftime('%Y-%m-%d-%H-%M-%S')
+    end
+    return unless last_modified > last_update_timestamp
+
     get_file_from_url("#{UNTIS_VERTRETUNGSPLAN_BASE_URL}/frames/navbar.htm") do |header, body|
         bodies = []
-        last_modified = DateTime.parse(header['last-modified']).strftime('%Y-%m-%d-%H-%M-%S')
-        next unless last_modified > last_update_timestamp
         dom = Nokogiri::HTML.parse(body)
         weeks = []
         dom.css('select').each do |element|
@@ -256,9 +277,9 @@ def perform_refresh
             end
         end
         handle_html_batch(bodies)
-        File.open(last_update_timestamp_path, 'w') { |f| f.puts(last_modified) }
-        system("curl http://timetable:8080/api/update/all")
     end
+    File.open(last_update_timestamp_path, 'w') { |f| f.puts(last_modified) }
+    system("curl http://timetable:8080/api/update/all")
 end
 
 loop do

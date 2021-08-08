@@ -164,6 +164,7 @@
     var ticker_div = null;
     var ticker_messages = [];
     var ticker_index = 0;
+    var klassen_tr = #{KLASSEN_TR.to_json};
 
     function animation_step(timestamp) {
         timestamp *= 0.001;
@@ -290,6 +291,8 @@
                             row.css('border-top', '1px solid rgba(0,0,0,0.3)')
                         first_entry = false;
                         row.append($('<td>').css('width', '4vw').html(`<b>${entry.stunde_label}</b>`));
+                        if (entry.klassen_alt) entry.klassen_alt = entry.klassen_alt.map(function(x) { return klassen_tr[x] || x; });
+                        if (entry.klassen_neu) entry.klassen_neu = entry.klassen_neu.map(function(x) { return klassen_tr[x] || x; });
                         row.append($('<td>').html(gen_label_arr(entry.klassen_alt, entry.klassen_neu)));
                         row.append($('<td>').html(gen_label(entry.fach_alt, entry.fach_neu)));
                         row.append($('<td>').html(gen_label_arr(entry.lehrer_alt, entry.lehrer_neu)));

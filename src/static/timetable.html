@@ -639,7 +639,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 divs.push(div2[0]);
                 return { domNodes: divs };
             } else {
-                console.log(((arg.event || {}).title || '').trim());
+                console.log(`[${((arg.event || {}).title || '').trim()}]`);
                 if (((arg.event || {}).title || '').trim().length > 0) {
                     let divs = [];
                     let div0 = $('<div>');

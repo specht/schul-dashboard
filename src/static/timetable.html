@@ -653,6 +653,9 @@ document.addEventListener('DOMContentLoaded', function() {
                     div.css('overflow', 'hidden').css('white-space', 'nowrap');
                     divs.push(div[0]);
                     return { domNodes: divs };
+                } else {
+                    return { domNodes: [] };
+                }
                 }
             }
         },

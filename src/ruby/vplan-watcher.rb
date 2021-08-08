@@ -185,6 +185,9 @@ def handle_html_batch(bodies)
                 (temp['entries'] || []).each do |sha1|
                     data[:entries][sha1] = JSON.parse(File.read("/vplan/#{datum}/entries/#{sha1}.json"))
                 end
+                (temp['day_messages'] || []).each do |sha1|
+                    data[:entries][sha1] = JSON.parse(File.read("/vplan/#{datum}/entries/#{sha1}.json"))
+                end
             end
             Dir["/vplan/#{datum}/*.json"].each do |path|
                 id = File.basename(path).sub('.json', '')

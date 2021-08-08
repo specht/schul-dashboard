@@ -180,9 +180,11 @@ def handle_html_batch(bodies)
     datum_list.each do |datum|
         File.open("/vplan/#{datum}.json", 'w') do |fout|
             data = {:entries => {}, :entry_ref => {}, :timetables => {}}
-            Dir["/vplan/#{datum}/entries/*.json"].each do |path|
-                sha1 = File.basename(path).sub('.json', '')
-                data[:entries][sha1] = JSON.parse(File.read(path))
+            Dir["/vplan/#{datum}/*.json"].each do |path|
+                temp = JSON.parse(File.read(path))
+                (temp['entries'] || []).each do |sha1|
+                    data[:entries][sha1] = JSON.parse(File.read("/vplan/#{datum}/entries/#{sha1}.json"))
+                end
             end
             Dir["/vplan/#{datum}/*.json"].each do |path|
                 id = File.basename(path).sub('.json', '')

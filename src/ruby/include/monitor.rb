@@ -15,18 +15,28 @@ class Main < Sinatra::Base
         messages
     end
 
-    post '/api/force_reload_monitors' do
-        require_user_who_can_manage_news!
+    def self.force_reload_monitors
         (@@ws_clients[:monitor] || {}).each_pair do |client_id, info|
             ws = info[:ws]
             ws.send({:command => 'force_reload'}.to_json)
         end
     end
 
-    def update_monitors
+    post '/api/force_reload_monitors' do
+        require_user_who_can_manage_news!
+        self.class.force_reload_monitors()
+    end
+
+    def update_monitors_message
         (@@ws_clients[:monitor] || {}).each_pair do |client_id, info|
             ws = info[:ws]
             ws.send({:command => 'update_monitor_messages', :messages => get_monitor_messages}.to_json)
+        end
+    end
+
+    def update_monitors_vplan
+        (@@ws_clients[:monitor] || {}).each_pair do |client_id, info|
+            ws = info[:ws]
             monitor_data = {:klassen => {}, :timestamp => ''}
             monitor_data_path = '/vplan/monitor/monitor.json'
             if File.exists?(monitor_data_path)
@@ -36,13 +46,18 @@ class Main < Sinatra::Base
         end
     end
 
+    def update_monitors
+        update_monitors_message()
+        update_monitors_vplan()
+    end
+
     post '/api/update_monitor_messages' do
         require_user_who_can_manage_news!
         data = parse_request_data(:required_keys => [:text],
             :max_body_length => 64 * 1024,
             :max_string_length => 64 * 1024)
         File.open(MONITOR_MESSAGE_PATH, 'w') { |f| f.puts data[:text] }
-        update_monitors()
+        update_monitors_message()
     end
 
     post '/api/get_monitor_messages_raw' do

@@ -639,24 +639,19 @@ document.addEventListener('DOMContentLoaded', function() {
                 divs.push(div2[0]);
                 return { domNodes: divs };
             } else {
-                console.log(`[${((arg.event || {}).title || '').trim()}]`);
-                if (((arg.event || {}).title || '').trim().length > 0) {
-                    let divs = [];
-                    let div0 = $('<div>');
-                    div0.css('white-space', 'nowrap');
-                    div0.addClass('condensed');
+                let divs = [];
+                let div0 = $('<div>');
+                div0.css('white-space', 'nowrap');
+                div0.addClass('condensed');
 
-                    div0.css('opacity', 0.7);
-                    let t = $('<span>').text(arg.timeText);
-                    div0.append(t);
-                    divs.push(div0[0]);
-                    let div = $('<div>').html(arg.event.title).addClass('hide-br');
-                    div.css('overflow', 'hidden').css('white-space', 'nowrap');
-                    divs.push(div[0]);
-                    return { domNodes: divs };
-                } else {
-                    return { domNodes: [] };
-                }
+                div0.css('opacity', 0.7);
+                let t = $('<span>').text(arg.timeText);
+                div0.append(t);
+                divs.push(div0[0]);
+                let div = $('<div>').html(arg.event.title).addClass('hide-br');
+                div.css('overflow', 'hidden').css('white-space', 'nowrap');
+                divs.push(div[0]);
+                return { domNodes: divs };
             }
         },
         eventClick: function(info) {

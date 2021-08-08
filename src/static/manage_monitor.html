@@ -12,6 +12,7 @@
 <div class='container' style='padding-top: 30px;'>
     <div class='row'>
         <div class='col-md-12'>
+            <button id='btn-force-reload' class='btn btn-outline-secondary pull-right'>Monitore neu laden</button>
             <h2 style='margin-bottom: 30px;'>Monitore verwalten</h2>
             <div class='monitor-frame'>
                 <div class="embed-responsive embed-responsive-16by9">
@@ -28,5 +29,10 @@
 
 <script>
     document.addEventListener('DOMContentLoaded', function () {
+        $('#btn-force-reload').click(function(e) {
+            api_call('/api/force_reload_monitors', function(data) {
+
+            });
+        });
     });
 </script>

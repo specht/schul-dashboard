@@ -166,6 +166,11 @@ if ENABLE_IMAGE_BOT
                 'rackup --port 8080 --host 0.0.0.0 image-bot-repl.ru'
 end
 
+docker_compose[:services][:vplan_watcher] = YAML.load(docker_compose[:services][:ruby].to_yaml)
+docker_compose[:services][:vplan_watcher]['entrypoint'] = DEVELOPMENT ?
+            'rerun -b --dir /app -s SIGKILL \'ruby vplan-watcher.rb\'' :
+            'ruby vplan-watcher.rb'
+
 docker_compose[:services][:ruby][:user] = "#{UID}"
 docker_compose[:services][:timetable][:user] = "#{UID}"
 

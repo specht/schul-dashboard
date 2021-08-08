@@ -4,6 +4,7 @@ require 'csv'
 require 'curb'
 require 'date'
 require 'digest/sha1'
+require 'faye/websocket'
 require 'htmlentities'
 require 'i18n'
 require 'json'
@@ -55,6 +56,7 @@ require './include/lesson.rb'
 require './include/login.rb'
 require './include/matrix.rb'
 require './include/message.rb'
+require './include/monitor.rb'
 require './include/otp.rb'
 require './include/poll.rb'
 require './include/stats.rb'
@@ -63,9 +65,10 @@ require './include/tests.rb'
 require './include/theme.rb'
 require './include/user.rb'
 require './include/vote.rb'
-require './include/vplan.rb'
 require './include/website.rb'
 require './parser.rb'
+
+Faye::WebSocket.load_adapter('thin')
 
 def remove_accents(s)
     I18n.transliterate(s.gsub('ä', 'ae').gsub('ö', 'oe').gsub('ü', 'ue').gsub('Ä', 'Ae').gsub('Ö', 'Oe').gsub('Ü', 'Ue').gsub('ß', 'ss').gsub('ė', 'e'))
@@ -1710,6 +1713,43 @@ class Main < Sinatra::Base
                 @@default_color_scheme[jd] = "#{which[4]}#{which[0, 3].join('').gsub('#', '')}#{[0, 1, 2, 3, 5, 6].sample}"
             end
             @@default_color_scheme[jd]
+        end
+    end
+
+    get '/ws_monitor' do
+        if Faye::WebSocket.websocket?(request.env)
+            ws = Faye::WebSocket.new(request.env)
+        
+            ws.on(:open) do |event|
+                client_id = request.env['HTTP_SEC_WEBSOCKET_KEY']
+                @@ws_clients ||= {}
+                @@ws_clients[:monitor] ||= {}
+                @@ws_clients[:monitor][client_id] = {:ws => ws}
+                STDERR.puts "Got #{@@ws_clients[:monitor].size} connected monitors."
+                update_monitors()
+            end
+        
+            ws.on(:message) do |msg|
+                client_id = request.env['HTTP_SEC_WEBSOCKET_KEY']
+                data = nil
+                begin
+                    data = JSON.parse(msg.data)
+                rescue
+                end
+                if data
+                    STDERR.puts data.to_yaml
+                end
+            end
+        
+            ws.on(:close) do |event|
+                client_id = request.env['HTTP_SEC_WEBSOCKET_KEY']
+                @@ws_clients ||= {}
+                @@ws_clients[:monitor] ||= {}
+                @@ws_clients[:monitor].delete(client_id)
+                STDERR.puts "Got #{@@ws_clients[:monitor].size} connected monitors."
+            end
+        
+            ws.rack_response
         end
     end
     

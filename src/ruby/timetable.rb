@@ -208,6 +208,8 @@ class Timetable
             end
         end
         File.open('/gen/monitor.json', 'w') { |f| f.write(monitor_data.to_json) }
+        STDERR.puts "service: [#{ENV['DASHBOARD_SERVICE']}]"
+        # update_monitors()
     end
 
     def update_timetables()

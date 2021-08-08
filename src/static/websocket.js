@@ -26,9 +26,12 @@ function setup_ws(ws)
     }
     
     ws.onmessage = function(msg) {
+        console.log(msg.data);
         data = JSON.parse(msg.data);
         if (data.command == 'force_reload') {
             window.location.reload();
+        } else if (data.command == 'update_monitor_messages') {
+            ticker_messages = data.messages;
         }
     }
 }

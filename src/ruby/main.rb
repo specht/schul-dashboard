@@ -1052,6 +1052,7 @@ class Main < Sinatra::Base
     configure do
         @@renderer = BackgroundRenderer.new
         self.collect_data() unless defined?(SKIP_COLLECT_DATA) && SKIP_COLLECT_DATA
+        @@ws_clients = {}
         @@color_scheme_info = {}
         if ENV['DASHBOARD_SERVICE'] == 'ruby' && (File.basename($0) == 'thin' || File.basename($0) == 'pry.rb')
             @@compiled_files = {}
@@ -1722,7 +1723,6 @@ class Main < Sinatra::Base
         
             ws.on(:open) do |event|
                 client_id = request.env['HTTP_SEC_WEBSOCKET_KEY']
-                @@ws_clients ||= {}
                 @@ws_clients[:monitor] ||= {}
                 @@ws_clients[:monitor][client_id] = {:ws => ws}
                 STDERR.puts "Got #{@@ws_clients[:monitor].size} connected monitors."
@@ -1743,7 +1743,6 @@ class Main < Sinatra::Base
         
             ws.on(:close) do |event|
                 client_id = request.env['HTTP_SEC_WEBSOCKET_KEY']
-                @@ws_clients ||= {}
                 @@ws_clients[:monitor] ||= {}
                 @@ws_clients[:monitor].delete(client_id)
                 STDERR.puts "Got #{@@ws_clients[:monitor].size} connected monitors."

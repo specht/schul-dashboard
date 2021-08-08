@@ -1697,7 +1697,7 @@ class Main < Sinatra::Base
     end
 
     def pick_random_color_scheme()
-        if DEVELOPMENT
+        if false && DEVELOPMENT
             srand((Time.now.to_f * 1000.0).to_i)
             which = @@color_scheme_colors.select do |x|
                 x[4] == 'l'

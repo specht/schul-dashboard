@@ -13,8 +13,8 @@
     }
 
     .container-fluid {
-        padding-top: 2vw;
         padding: 2vw 1vw;
+        padding-top: 1vw;
     }
 
     .main > div {
@@ -29,12 +29,12 @@
         box-shadow: 0 0 0.5vw rgba(0, 0, 0, 0.6);
         padding: 1vw 2vw;
         margin: 1vw 0;
-        height: 6vw;
+        height: 6.2vw;
         position: relative;
     }
 
     .klasse.k11, .klasse.k12 {
-        height: 20vw;
+        height: 20.599vw;
     }
 
     h3 {
@@ -86,7 +86,7 @@
     .attribution {
         position: absolute;
         bottom: 5vw;
-        left: 98.6vw;
+        left: 98.45vw;
         color: #{color_palette[:primary]};
         font-size: 0.9vw;
         text-align: left;
@@ -109,10 +109,12 @@
         width: 100%;
         background: none;
         position: relative;
-        margin-top: 0.3vw;
+        margin-top: 0.2vw;
+        /* border: 1px solid red; */
     }
 
     .content table td {
+        /* border: 1px solid red; */
         font-size: 1.2vw;
         padding: 0 0.5vw;
     }
@@ -261,12 +263,10 @@
         moment.locale('de');
         let col = null;
         let i = 0;
-        let y = 2.0;
         for (let klasse of klassen) {
             if (i % 7 == 0) {
                 col = $('<div>');
                 col.appendTo($('.main'));
-                y = 0.0;
             }
             let box = $('<div>');
             let div = $('<div>').addClass('klasse').addClass(`k${klasse}`).appendTo(box);
@@ -274,8 +274,6 @@
             let content = $('<div>').addClass('content').appendTo(div);
             klassen_div[klasse] = content;
             col.append(box);
-            col.css('top', `${y}vw`);
-            y += 10.0;
             i += 1;
         }
         $.get('/gen/monitor.json', function(data) {
@@ -292,10 +290,10 @@
                             row.css('border-top', '1px solid rgba(0,0,0,0.3)')
                         first_entry = false;
                         row.append($('<td>').css('width', '4vw').html(`<b>${entry.stunde_label}</b>`));
-                        row.append($('<td>').css('width', '3vw').html(gen_label_arr(entry.klassen_alt, entry.klassen_neu)));
-                        row.append($('<td>').css('width', '4vw').html(gen_label(entry.fach_alt, entry.fach_neu)));
+                        row.append($('<td>').html(gen_label_arr(entry.klassen_alt, entry.klassen_neu)));
+                        row.append($('<td>').html(gen_label(entry.fach_alt, entry.fach_neu)));
                         row.append($('<td>').html(gen_label_arr(entry.lehrer_alt, entry.lehrer_neu)));
-                        row.append($('<td>').html(gen_label(entry.raum_alt, entry.raum_neu)));
+                        row.append($('<td>').css('text-align', 'right').html(gen_label(entry.raum_alt, entry.raum_neu)));
                         if (entry.vertretungs_text) {
                             let row = $('<tr>').appendTo(table);
                             row.append($('<td>'));

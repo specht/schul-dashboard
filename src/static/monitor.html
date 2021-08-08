@@ -323,7 +323,7 @@
         let table_height = table.height() * 100.0 / window.innerWidth;
         let target_height = target.height() * 100.0 / window.innerWidth;
         if (table_height > target_height) {
-            let diff = table_height - target_height;
+            let diff = table_height - target_height + 0.3;
             klassen_animation_config[klasse] = {
                 range: diff,
                 phase: 2,

@@ -1717,41 +1717,6 @@ class Main < Sinatra::Base
         end
     end
 
-    get '/ws_monitor' do
-        if Faye::WebSocket.websocket?(request.env)
-            ws = Faye::WebSocket.new(request.env)
-        
-            ws.on(:open) do |event|
-                client_id = request.env['HTTP_SEC_WEBSOCKET_KEY']
-                @@ws_clients[:monitor] ||= {}
-                @@ws_clients[:monitor][client_id] = {:ws => ws}
-                STDERR.puts "Got #{@@ws_clients[:monitor].size} connected monitors."
-                update_monitors()
-            end
-        
-            ws.on(:message) do |msg|
-                client_id = request.env['HTTP_SEC_WEBSOCKET_KEY']
-                data = nil
-                begin
-                    data = JSON.parse(msg.data)
-                rescue
-                end
-                if data
-                    STDERR.puts data.to_yaml
-                end
-            end
-        
-            ws.on(:close) do |event|
-                client_id = request.env['HTTP_SEC_WEBSOCKET_KEY']
-                @@ws_clients[:monitor] ||= {}
-                @@ws_clients[:monitor].delete(client_id)
-                STDERR.puts "Got #{@@ws_clients[:monitor].size} connected monitors."
-            end
-        
-            ws.rack_response
-        end
-    end
-    
     get '/*' do
         # first things first
         days_left = (Date.parse('2021-06-24') - Date.today).to_i

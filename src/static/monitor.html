@@ -1,5 +1,4 @@
 #{require_monitor_or_user_who_can_manage_news!}
-<script src='websocket.js'></script>
 <style>
     .navbar, .foot {
         display: none;
@@ -24,8 +23,9 @@
     }
 
     .klasse {
+        backdrop-filter: blur(10px);
         background-color: rgba(255, 255, 255, 0.7);
-        border-radius: 1vw;
+        border-radius: 0.7vw;
         box-shadow: 0 0 0.5vw rgba(0, 0, 0, 0.6);
         padding: 1vw 2vw;
         margin: 1vw 0;
@@ -44,14 +44,14 @@
         position: relative;
         background-color: #fff;
         display: inline-block;
-        width: 3.0vw;
-        height: 3.0vw;
-        border-radius: 4vw;
+        width: 3vw;
+        height: 3vw;
+        border-radius: 3vw;
         left: -3.2vw;
         top: -1.5vw;
         box-shadow: 0 0 0.4vw rgba(0, 0, 0, 0.8);
         text-align: center;
-        padding: 0.6vw;
+        padding-top: 0.6vw;
     }
 
     .row {
@@ -166,6 +166,86 @@
     var ticker_index = 0;
     var klassen_tr = #{KLASSEN_TR.to_json};
 
+    var ws = null;
+    var ws_timer_id = null;
+    var last_vplan_timestamp = null;
+
+    function keep_alive() { 
+        var timeout = 20000;
+        if (ws.readyState == ws.OPEN) {  
+            ws.send('');  
+        }  
+        (function() {
+            ws_timer_id = setTimeout(keep_alive, timeout);  
+        })();
+    }                  
+
+    function setup_ws(ws)
+    {
+        ws.onopen = function() {
+            console.log('ws.onopen');
+            keep_alive();
+        }
+        
+        ws.onclose = function() {
+            console.log('ws.onclose');
+            clearTimeout(ws_timer_id);
+            // try to re-establish connection in 10 seconds
+            setTimeout(establish_websocket_connection, 10000);
+        }
+        
+        ws.onmessage = function(msg) {
+            data = JSON.parse(msg.data);
+            console.log(data.command);
+            if (data.command == 'force_reload') {
+                window.location.reload();
+            } else if (data.command == 'update_monitor_messages') {
+                ticker_messages = data.messages;
+            } else if (data.command == 'update_vplan') {
+                if (data.timestamp !== last_vplan_timestamp) {
+                    last_vplan_timestamp = data.timestamp;
+                    data = data.data;
+                    for (let klasse of klassen) {
+                        let div = klassen_div[klasse];
+                        div.empty();
+                        if (data.klassen[klasse]) {
+                            let table = $('<table>');
+                            div.append(table);
+                            let first_entry = true;
+                            for (let entry of data.klassen[klasse]) {
+                                let row = $('<tr>').appendTo(table);
+                                if (!first_entry)
+                                    row.css('border-top', '1px solid rgba(0,0,0,0.3)')
+                                first_entry = false;
+                                row.append($('<td>').css('width', '4vw').html(`<b>${entry.stunde_label}</b>`));
+                                if (entry.klassen_alt) entry.klassen_alt = entry.klassen_alt.map(function(x) { return klassen_tr[x] || x; });
+                                if (entry.klassen_neu) entry.klassen_neu = entry.klassen_neu.map(function(x) { return klassen_tr[x] || x; });
+                                row.append($('<td>').html(gen_label_arr(entry.klassen_alt, entry.klassen_neu)));
+                                row.append($('<td>').html(gen_label(entry.fach_alt, entry.fach_neu)));
+                                row.append($('<td>').html(gen_label_arr(entry.lehrer_alt, entry.lehrer_neu)));
+                                row.append($('<td>').css('text-align', 'right').html(gen_label(entry.raum_alt, entry.raum_neu)));
+                                if (entry.vertretungs_text) {
+                                    let row = $('<tr>').appendTo(table);
+                                    row.append($('<td>'));
+                                    let cell = $('<td>').addClass('vertretungs_text').attr('colspan', '4');
+                                    cell.append($('<span>').text(entry.vertretungs_text));
+                                    row.append(cell);
+                                }
+                            }
+                            install_auto_scroller(klasse, div);
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    function establish_websocket_connection() {
+        var ws_uri = (location.protocol == 'http:' ? 'ws://' : 'wss://') + location.host + '/ws_monitor';
+        ws = new WebSocket(ws_uri);
+        setup_ws(ws);
+    }
+
     function animation_step(timestamp) {
         timestamp *= 0.001;
         let diff = timestamp - last_timestamp;
@@ -246,12 +326,11 @@
             let diff = table_height - target_height;
             klassen_animation_config[klasse] = {
                 range: diff,
-                phase: 3,
+                phase: 2,
                 timestamp: top_delay,
                 position: 0,
                 table: table[0],
             };
-            // target.css('top', `-${diff}px`);
         }
     }
 
@@ -277,38 +356,6 @@
             col.append(box);
             i += 1;
         }
-        $.get('/gen/monitor.json', function(data) {
-            for (let klasse of klassen) {
-                let div = klassen_div[klasse];
-                div.empty();
-                if (data[klasse]) {
-                    let table = $('<table>');
-                    div.append(table);
-                    let first_entry = true;
-                    for (let entry of data[klasse]) {
-                        let row = $('<tr>').appendTo(table);
-                        if (!first_entry)
-                            row.css('border-top', '1px solid rgba(0,0,0,0.3)')
-                        first_entry = false;
-                        row.append($('<td>').css('width', '4vw').html(`<b>${entry.stunde_label}</b>`));
-                        if (entry.klassen_alt) entry.klassen_alt = entry.klassen_alt.map(function(x) { return klassen_tr[x] || x; });
-                        if (entry.klassen_neu) entry.klassen_neu = entry.klassen_neu.map(function(x) { return klassen_tr[x] || x; });
-                        row.append($('<td>').html(gen_label_arr(entry.klassen_alt, entry.klassen_neu)));
-                        row.append($('<td>').html(gen_label(entry.fach_alt, entry.fach_neu)));
-                        row.append($('<td>').html(gen_label_arr(entry.lehrer_alt, entry.lehrer_neu)));
-                        row.append($('<td>').css('text-align', 'right').html(gen_label(entry.raum_alt, entry.raum_neu)));
-                        if (entry.vertretungs_text) {
-                            let row = $('<tr>').appendTo(table);
-                            row.append($('<td>'));
-                            let cell = $('<td>').addClass('vertretungs_text').attr('colspan', '4');
-                            cell.append($('<span>').text(entry.vertretungs_text));
-                            row.append(cell);
-                        }
-                    }
-                    install_auto_scroller(klasse, div);
-                }
-            }
-            window.requestAnimationFrame(animation_step);
-        });
+        window.requestAnimationFrame(animation_step);
     });
 </script>

@@ -251,7 +251,10 @@ def perform_refresh
     end
     return unless last_modified > last_update_timestamp
 
+    STDERR.puts "Fetching vplan from #{UNTIS_VERTRETUNGSPLAN_BASE_URL}!"
+
     get_file_from_url("#{UNTIS_VERTRETUNGSPLAN_BASE_URL}/frames/navbar.htm") do |header, body|
+        file_count = 0
         bodies = []
         dom = Nokogiri::HTML.parse(body)
         weeks = []
@@ -266,20 +269,24 @@ def perform_refresh
         teachers = JSON.parse(body.match(/var teachers\s*=\s*([^;]+);/)[1])
         weeks.each do |week|
             (0...teachers.size).each do |index|
+                file_count += 1
                 get_file_from_url("#{UNTIS_VERTRETUNGSPLAN_BASE_URL}/#{week}/v/#{sprintf('v%05d', index + 1)}.htm") do |header, body|
                     bodies << body
                 end
             end
             (0...classes.size).each do |index|
+                file_count += 1
                 get_file_from_url("#{UNTIS_VERTRETUNGSPLAN_BASE_URL}/#{week}/w/#{sprintf('w%05d', index + 1)}.htm") do |header, body|
                     bodies << body
                 end
             end
         end
+        STDERR.puts "Fetched #{file_count} HTML files, parsing..."
         handle_html_batch(bodies)
     end
     File.open(last_update_timestamp_path, 'w') { |f| f.puts(last_modified) }
-    system("curl http://timetable:8080/api/update/all")
+    STDERR.puts "Triggering timetable update..."
+    system("curl -s http://timetable:8080/api/update/all")
 end
 
 loop do

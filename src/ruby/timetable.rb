@@ -179,25 +179,30 @@ class Timetable
                 temp_data[klasse][key] << ventry
             end
         end
-        monitor_data = {}
+        monitor_timestamp = ''
+        vplan_timestamp_path = '/vplan/timestamp.txt'
+        if File.exists?(vplan_timestamp_path)
+            vplan_timestamp = File.read(vplan_timestamp_path)
+        end
+        monitor_data = {:klassen => {}, :timestamp => DateTime.now.to_s}
         temp_data.each_pair do |klasse, entries|
-            monitor_data[klasse] = []
+            monitor_data[:klassen][klasse] = []
             entries.values.each do |tuple|
                 tuple.each.with_index do |entry, i|
                     if i > 0
-                        if monitor_data[klasse].last[:stunde_range].last + 1 == entry[:stunde]
-                            monitor_data[klasse].last[:stunde_range][1] += 1
+                        if monitor_data[:klassen][klasse].last[:stunde_range].last + 1 == entry[:stunde]
+                            monitor_data[:klassen][klasse].last[:stunde_range][1] += 1
                         else
-                            monitor_data[klasse] << entry
-                            monitor_data[klasse].last[:stunde_range] = [monitor_data[klasse].last[:stunde], monitor_data[klasse].last[:stunde]]
+                            monitor_data[:klassen][klasse] << entry
+                            monitor_data[:klassen][klasse].last[:stunde_range] = [monitor_data[:klassen][klasse].last[:stunde], monitor_data[:klassen][klasse].last[:stunde]]
                         end
                     else
-                        monitor_data[klasse] << entry
-                        monitor_data[klasse].last[:stunde_range] = [monitor_data[klasse].last[:stunde], monitor_data[klasse].last[:stunde]]
+                        monitor_data[:klassen][klasse] << entry
+                        monitor_data[:klassen][klasse].last[:stunde_range] = [monitor_data[:klassen][klasse].last[:stunde], monitor_data[:klassen][klasse].last[:stunde]]
                     end
                 end
             end
-            monitor_data[klasse].map! do |entry|
+            monitor_data[:klassen][klasse].map! do |entry|
                 if entry[:stunde_range].first == entry[:stunde_range].last
                     entry[:stunde_label] = "#{entry[:stunde_range].first}."
                 else
@@ -207,8 +212,12 @@ class Timetable
                 entry
             end
         end
-        File.open('/gen/monitor.json', 'w') { |f| f.write(monitor_data.to_json) }
-        STDERR.puts "service: [#{ENV['DASHBOARD_SERVICE']}]"
+        FileUtils.mkpath('/vplan/monitor')
+        File.open('/vplan/monitor/monitor.json', 'w') { |f| f.write(monitor_data.to_json) }
+        if ENV['DASHBOARD_SERVICE'] == 'timetable'
+            STDERR.puts "service: [#{ENV['DASHBOARD_SERVICE']}]"
+            system("curl -s http://ruby:3000/api/update_monitors")
+        end
         # update_monitors()
     end
 

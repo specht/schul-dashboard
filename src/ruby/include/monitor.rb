@@ -27,6 +27,12 @@ class Main < Sinatra::Base
         (@@ws_clients[:monitor] || {}).each_pair do |client_id, info|
             ws = info[:ws]
             ws.send({:command => 'update_monitor_messages', :messages => get_monitor_messages}.to_json)
+            monitor_data = {:klassen => {}, :timestamp => ''}
+            monitor_data_path = '/vplan/monitor/monitor.json'
+            if File.exists?(monitor_data_path)
+                monitor_data = JSON.parse(File.read(monitor_data_path))
+            end
+            ws.send({:command => 'update_vplan', :data => monitor_data}.to_json)
         end
     end
 
@@ -46,5 +52,44 @@ class Main < Sinatra::Base
             text = File.read(MONITOR_MESSAGE_PATH)
         end
         respond(:text => text)
+    end
+
+    get '/api/update_monitors' do
+        update_monitors()
+    end
+
+    get '/ws_monitor' do
+        if Faye::WebSocket.websocket?(request.env)
+            ws = Faye::WebSocket.new(request.env)
+        
+            ws.on(:open) do |event|
+                client_id = request.env['HTTP_SEC_WEBSOCKET_KEY']
+                @@ws_clients[:monitor] ||= {}
+                @@ws_clients[:monitor][client_id] = {:ws => ws}
+                STDERR.puts "Got #{@@ws_clients[:monitor].size} connected monitors."
+                update_monitors()
+            end
+        
+            ws.on(:message) do |msg|
+                client_id = request.env['HTTP_SEC_WEBSOCKET_KEY']
+                data = nil
+                begin
+                    data = JSON.parse(msg.data)
+                rescue
+                end
+                if data
+                    STDERR.puts data.to_yaml
+                end
+            end
+        
+            ws.on(:close) do |event|
+                client_id = request.env['HTTP_SEC_WEBSOCKET_KEY']
+                @@ws_clients[:monitor] ||= {}
+                @@ws_clients[:monitor].delete(client_id)
+                STDERR.puts "Got #{@@ws_clients[:monitor].size} connected monitors."
+            end
+        
+            ws.rack_response
+        end
     end
 end

@@ -2217,5 +2217,9 @@ li.nav-item a.nav-link i.fa {
 }
 
 .hide-br br {
-    display: none;
+    content: '';
+}
+
+.hide-br br::after {
+    content: ' / ';
 }

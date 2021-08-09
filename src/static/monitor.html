@@ -7,7 +7,7 @@
     body {
         padding-top: 0;
         overflow: hidden;
-        color: #{color_palette[:darker]};
+        color: #{color_palette[:contrast]};
         background: none;
     }
 
@@ -31,6 +31,7 @@
         margin: 1vw 0;
         height: 6.2vw;
         position: relative;
+        color: #{color_palette[:darker]};
     }
 
     .klasse.k11, .klasse.k12 {
@@ -87,7 +88,7 @@
         position: absolute;
         bottom: 5vw;
         left: 98.45vw;
-        color: #{color_palette[:primary]};
+        color: #{color_palette[:contrast]};
         font-size: 0.9vw;
         text-align: left;
         /* border: 1px solid red; */
@@ -129,7 +130,7 @@
     }
 
     .embed-responsive-item {
-        background-image: url(/gen/bg/bg-#{color_scheme}.jpg);
+        background-image: url(/gen/bg/bg-#{color_scheme}.svg);
         background-color: #{color_scheme[0] == 'l' ? '#f8f8f8' : '#080808'};
         background-repeat: no-repeat;
         background-size: 100vw;

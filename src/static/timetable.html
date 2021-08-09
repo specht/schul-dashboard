@@ -251,16 +251,13 @@ function render_timetable(result, successCallback) {
             $('.switch_week_panel').append(div);
         }
     }
-    if ('#{@session_user[:can_upload_vplan]}' === 'true') {
-        moment.locale('de');
-//                             let timetable_date = moment(oReq.getResponseHeader('last-modified')).format('ddd, DD.MM.YYYY, LT');
-//                             console.log('#{latest_vplan_timestamp}');
-//                             console.log(result.vplan_timestamp);
-        if ('#{latest_vplan_timestamp}' === (result.vplan_timestamp || ''))
-            $('.timetable_updated').html("<i class='fa fa-check text-success'></i>&nbsp;&nbsp;Vertretungsplan ist aktuell");
-        else
-            $('.timetable_updated').html("<i class='fa fa-warning text-danger'></i>&nbsp;&nbsp;Vertretungsplan wird gerade aktualisiert, bitte demnächst noch einmal neu laden.");
-    }
+    // if ('#{@session_user[:can_upload_vplan]}' === 'true') {
+    //     moment.locale('de');
+    //     if ('#{latest_vplan_timestamp}' === (result.vplan_timestamp || ''))
+    //         $('.timetable_updated').html("<i class='fa fa-check text-success'></i>&nbsp;&nbsp;Vertretungsplan ist aktuell");
+    //     else
+    //         $('.timetable_updated').html("<i class='fa fa-warning text-danger'></i>&nbsp;&nbsp;Vertretungsplan wird gerade aktualisiert, bitte demnächst noch einmal neu laden.");
+    // }
 
     let wrote_weekend_event_header = false;
     $('.weekend_events').hide();

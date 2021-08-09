@@ -242,12 +242,12 @@ window.addEventListener('load', function () {
             if (data.success)
             {
                 color_scheme = new_color_scheme;
-                $('body').css('background-image', 'url(/gen/bg/bg-' + new_color_scheme + '.jpg)');
+                $('body').css('background-image', 'url(/gen/bg/bg-' + new_color_scheme + '.svg)');
                 $('body').css('background-color', new_color_scheme[0] == 'l' ? '#f8f8f8' : '#080808');
                 color_scheme = new_color_scheme;
                 changeThemeColor(data.primary_color_darker);
                 for (let style of [0, 1, 2, 3, 4, 5, 6])
-                    style_swatches[style].css('background-image', 'url(/gen/bg/bg-' + color_scheme.substr(0, 19) + style + '.jpg)');
+                    style_swatches[style].css('background-image', 'url(/gen/bg/bg-' + color_scheme.substr(0, 19) + style + '.svg)');
             }
         });
     });
@@ -261,7 +261,7 @@ window.addEventListener('load', function () {
         let l_mode = x[4];
         let col = $('<div>').addClass('col-md-12');
         let swatch = $('<div>');
-        swatch.css('background-image', 'url(/gen/bg/bg-' + l_mode + gradient.join('').replace(/#/g, '') + '0.jpg)');
+        swatch.css('background-image', 'url(/gen/bg/bg-' + l_mode + gradient.join('').replace(/#/g, '') + '0.svg)');
         swatch.html('&nbsp;');
         swatch.addClass('btn');
         swatch.addClass('swatch');
@@ -331,7 +331,7 @@ window.addEventListener('load', function () {
                     color_scheme = new_color_scheme;
                     $('.swatch').removeClass('active');
                     $(e.target.closest('.btn')).addClass('active');
-                    $('body').css('background-image', 'url(/gen/bg/bg-' + new_color_scheme + '.jpg)');
+                    $('body').css('background-image', 'url(/gen/bg/bg-' + new_color_scheme + '.svg)');
                     $('body').css('background-color', new_color_scheme[0] === 'l' ? '#f8f8f8' : '#080808');
                     $('.new-messages-indicator').css('background-color', '#' + new_color_scheme.substr(7, 6));
                     $('.new-messages-indicator-mini .fa').css('color', '#' + new_color_scheme.substr(7, 6));
@@ -339,7 +339,7 @@ window.addEventListener('load', function () {
                     changeThemeColor(data.primary_color_darker);
                     $('#dark_switch').bootstrapToggle(new_color_scheme[0] === 'l' ? 'off' : 'on');
                     for (let style of [0, 1, 2, 3, 4, 5, 6])
-                        style_swatches[style].css('background-image', 'url(/gen/bg/bg-' + color_scheme.substr(0, 19) + style + '.jpg)');
+                        style_swatches[style].css('background-image', 'url(/gen/bg/bg-' + color_scheme.substr(0, 19) + style + '.svg)');
                 }
             });
         });
@@ -351,7 +351,7 @@ window.addEventListener('load', function () {
         let col = $('<div>').addClass('col-md-12');
         let swatch = $('<div>');
         style_swatches.push(swatch);
-        swatch.css('background-image', 'url(/gen/bg/bg-' + l_mode + gradient + style + '.jpg)');
+        swatch.css('background-image', 'url(/gen/bg/bg-' + l_mode + gradient + style + '.svg)');
         swatch.html('&nbsp;');
         swatch.addClass('btn');
         swatch.addClass('swatch');
@@ -373,7 +373,7 @@ window.addEventListener('load', function () {
                     color_scheme = new_color_scheme;
                     $('.swatch').removeClass('active');
                     $(e.target.closest('.btn')).addClass('active');
-                    $('body').css('background-image', 'url(/gen/bg/bg-' + new_color_scheme + '.jpg)');
+                    $('body').css('background-image', 'url(/gen/bg/bg-' + new_color_scheme + '.svg)');
                     $('body').css('background-color', new_color_scheme[0] === 'l' ? '#f8f8f8' : '#080808');
                     $('.new-messages-indicator').css('background-color', '#' + new_color_scheme.substr(7, 6));
                     $('.new-messages-indicator-mini .fa').css('color', '#' + new_color_scheme.substr(7, 6));

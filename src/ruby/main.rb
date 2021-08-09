@@ -1707,14 +1707,12 @@ class Main < Sinatra::Base
     def pick_random_color_scheme()
         @@default_color_scheme ||= {}
         jd = (Date.today + 1).jd
-        if @@default_color_scheme[jd].nil?
-            srand(jd)
-            which = @@color_scheme_colors.select do |x|
-                x[4] == 'l'
-            end.sample
-            @@default_color_scheme[jd] = "#{which[4]}#{which[0, 3].join('').gsub('#', '')}#{[0, 5].sample}"
-        end
-        @@default_color_scheme[jd]
+        return @@default_color_scheme[jd] if @@default_color_scheme[jd]
+        srand(DEVELOPMENT ? (Time.now.to_f * 1000).to_i : jd)
+        which = @@color_scheme_colors.sample
+        color_scheme = "#{which[4]}#{which[0, 3].join('').gsub('#', '')}#{[0, 5].sample}"
+        @@default_color_scheme[jd] = color_scheme unless DEVELOPMENT
+        return color_scheme
     end
 
     get '/*' do
@@ -2021,12 +2019,14 @@ class Main < Sinatra::Base
         desaturated_color_darker = darken(desaturate(primary_color), 0.3)
         disabled_color = rgb_to_hex(mix(hex_to_rgb(primary_color), [192, 192, 192], 0.5))
         darker_color = rgb_to_hex(mix(hex_to_rgb(primary_color), [0, 0, 0], 0.7))
+        contrast_color = rgb_to_hex(mix(hex_to_rgb(primary_color), color_scheme[0] == 'l' ? [0, 0, 0] : [255, 255, 255], 0.7))
         shifted_color = shift_hue(primary_color, 350)
         color_palette = {
             :primary => primary_color, 
             :disabled => disabled_color, 
             :darker => darker_color, 
             :shifted => desaturated_color,
+            :contrast => contrast_color,
             :left => '#' + color_scheme[1, 6],
             :right => '#' + color_scheme[13, 6],
         }

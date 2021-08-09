@@ -207,7 +207,7 @@
             data = JSON.parse(msg.data);
             console.log(data.command);
             if (data.command == 'force_reload') {
-                $('.embed-responsive-item')[0].requestFullscreen();
+                /* $('.embed-responsive-item')[0].requestFullscreen(); */
                 window.location.reload();
             } else if (data.command == 'update_time') {
                 server_time_diff = data.time - js_time();

@@ -1180,75 +1180,83 @@ class Main < Sinatra::Base
                         RETURN s, u;
                     END_OF_QUERY
                     if results.size == 1
-                        session = results.first['s'].props
-                        session_expiry = session[:expires]
-                        if DateTime.parse(session_expiry) > DateTime.now
-                            email = results.first['u'].props[:email]
-                            if email == "tablet@#{SCHUL_MAIL_DOMAIN}"
-                                if @@tablets_which_are_lehrer_tablets.include?(session[:tablet_id])
-                                    email = "lehrer.tablet@#{SCHUL_MAIL_DOMAIN}"
-                                else
+                        begin
+                            session = results.first['s'].props
+                            session_expiry = session[:expires]
+                            if DateTime.parse(session_expiry) > DateTime.now
+                                email = results.first['u'].props[:email]
+                                if email == "tablet@#{SCHUL_MAIL_DOMAIN}"
+                                    if @@tablets_which_are_lehrer_tablets.include?(session[:tablet_id])
+                                        email = "lehrer.tablet@#{SCHUL_MAIL_DOMAIN}"
+                                    else
+                                        @session_user = {
+                                            :email => email,
+                                            :is_tablet => true,
+                                            :tablet_type => :specific,
+                                            :tablet_id => session[:tablet_id],
+                                            :color_scheme => 'la2c6e80d60aea2c6e80',
+                                            :can_see_all_timetables => false,
+                                            :teacher => false,
+                                            :id => @@klassen_id[@@tablets[session[:tablet_id]][:klassen_stream]]
+                                        }
+                                    end
+                                end
+                                if email == "lehrer.tablet@#{SCHUL_MAIL_DOMAIN}"
                                     @session_user = {
                                         :email => email,
                                         :is_tablet => true,
-                                        :tablet_type => :specific,
                                         :tablet_id => session[:tablet_id],
-                                        :color_scheme => 'la2c6e80d60aea2c6e80',
+                                        :tablet_type => :teacher,
+                                        :color_scheme => 'lfcbf499e0001eeba30',
+                                        :can_see_all_timetables => true,
+                                        :teacher => true
+                                    }
+                                elsif email == "kurs.tablet@#{SCHUL_MAIL_DOMAIN}"
+                                    @session_user = {
+                                        :email => email,
+                                        :is_tablet => true,
+                                        :tablet_id => session[:tablet_id],
+                                        :tablet_type => :kurs,
+                                        :color_scheme => 'la86fd07638a15a2b7a',
                                         :can_see_all_timetables => false,
                                         :teacher => false,
-                                        :id => @@klassen_id[@@tablets[session[:tablet_id]][:klassen_stream]]
+                                        :shorthands => session[:shorthands] || []
                                     }
+                                elsif email == "klassenraum@#{SCHUL_MAIL_DOMAIN}"
+                                    @session_user = {
+                                        :email => email,
+                                        :is_tablet => true,
+                                        :tablet_id => session[:tablet_id],
+                                        :tablet_type => :klassenraum,
+                                        :color_scheme => 'l7146749f6976cc8b79',
+                                        :can_see_all_timetables => false,
+                                        :teacher => false
+                                    }
+                                elsif email == "monitor@#{SCHUL_MAIL_DOMAIN}"
+                                    @session_user = {
+                                        :email => email,
+                                        :is_monitor => true,
+                                        :teacher => false
+                                    }
+                                elsif email != "tablet@#{SCHUL_MAIL_DOMAIN}"
+                                    @session_user = @@user_info[email].dup
+                                    if @session_user
+                                        @session_user[:font] = results.first['u'].props[:font]
+                                        @session_user[:color_scheme] = results.first['u'].props[:color_scheme]
+                                        @session_user[:ical_token] = results.first['u'].props[:ical_token]
+                                        @session_user[:otp_token] = results.first['u'].props[:otp_token]
+                                        @session_user[:homeschooling] = results.first['u'].props[:homeschooling]
+                                        @session_user[:group2] = results.first['u'].props[:group2] || 'A'
+                                        @session_user[:sus_may_contact_me] = results.first['u'].props[:sus_may_contact_me] || false
+                                    end
                                 end
                             end
-                            if email == "lehrer.tablet@#{SCHUL_MAIL_DOMAIN}"
-                                @session_user = {
-                                    :email => email,
-                                    :is_tablet => true,
-                                    :tablet_id => session[:tablet_id],
-                                    :tablet_type => :teacher,
-                                    :color_scheme => 'lfcbf499e0001eeba30',
-                                    :can_see_all_timetables => true,
-                                    :teacher => true
-                                }
-                            elsif email == "kurs.tablet@#{SCHUL_MAIL_DOMAIN}"
-                                @session_user = {
-                                    :email => email,
-                                    :is_tablet => true,
-                                    :tablet_id => session[:tablet_id],
-                                    :tablet_type => :kurs,
-                                    :color_scheme => 'la86fd07638a15a2b7a',
-                                    :can_see_all_timetables => false,
-                                    :teacher => false,
-                                    :shorthands => session[:shorthands] || []
-                                }
-                            elsif email == "klassenraum@#{SCHUL_MAIL_DOMAIN}"
-                                @session_user = {
-                                    :email => email,
-                                    :is_tablet => true,
-                                    :tablet_id => session[:tablet_id],
-                                    :tablet_type => :klassenraum,
-                                    :color_scheme => 'l7146749f6976cc8b79',
-                                    :can_see_all_timetables => false,
-                                    :teacher => false
-                                }
-                            elsif email == "monitor@#{SCHUL_MAIL_DOMAIN}"
-                                @session_user = {
-                                    :email => email,
-                                    :is_monitor => true,
-                                    :teacher => false
-                                }
-                            elsif email != "tablet@#{SCHUL_MAIL_DOMAIN}"
-                                @session_user = @@user_info[email].dup
-                                if @session_user
-                                    @session_user[:font] = results.first['u'].props[:font]
-                                    @session_user[:color_scheme] = results.first['u'].props[:color_scheme]
-                                    @session_user[:ical_token] = results.first['u'].props[:ical_token]
-                                    @session_user[:otp_token] = results.first['u'].props[:otp_token]
-                                    @session_user[:homeschooling] = results.first['u'].props[:homeschooling]
-                                    @session_user[:group2] = results.first['u'].props[:group2] || 'A'
-                                    @session_user[:sus_may_contact_me] = results.first['u'].props[:sus_may_contact_me] || false
-                                end
-                            end
+                        rescue
+                            # something went wrong, delete the session
+                            results = neo4j_query(<<~END_OF_QUERY, :sid => first_sid).to_a
+                                MATCH (s:Session {sid: {sid}})
+                                DETACH DELETE s;
+                            END_OF_QUERY
                         end
                     end
                 end

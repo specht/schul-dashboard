@@ -122,7 +122,8 @@ class Main < Sinatra::Base
             io.puts "<h3>Schülerlisten Klasse #{tr_klasse(klasse)}</h3>"
 #             io.puts "<div style='text-align: center;'>"
             io.puts "<a href='/api/directory_xlsx/#{klasse}' class='btn btn-primary'><i class='fa fa-file-excel-o'></i>&nbsp;&nbsp;Excel-Tabelle herunterladen</a>"
-            io.puts "<a href='/api/directory_timetex_pdf/#{klasse}' class='btn btn-primary'><i class='fa fa-file-pdf-o'></i>&nbsp;&nbsp;Timetex-PDF herunterladen</a>"
+            io.puts "<a href='/api/directory_timetex_pdf/by_last_name/#{klasse}' class='btn btn-primary'><i class='fa fa-file-pdf-o'></i>&nbsp;&nbsp;Timetex-PDF herunterladen</a>"
+            io.puts "<a href='/api/directory_timetex_pdf/by_first_name/#{klasse}' class='btn btn-primary'><i class='fa fa-file-pdf-o'></i>&nbsp;&nbsp;Timetex-PDF herunterladen (nach Vornamen sortiert)</a>"
 #             io.puts "</div>"
             io.puts "<hr style='margin: 3em 0;'/>"
             io.puts "<h3>Lehrer der Klasse #{tr_klasse(klasse)}</h3>"
@@ -288,19 +289,19 @@ class Main < Sinatra::Base
         respond(:ok => true, :homeschooling => result['u.homeschooling'])
     end
 
-    def iterate_directory(which, &block)
+    def iterate_directory(which, first_key = :last_name, second_key = :first_name, &block)
         (@@schueler_for_klasse[which] || []).sort do |a, b|
-            (@@user_info[a][:last_name] == @@user_info[b][:last_name]) ?
-            (@@user_info[a][:first_name] <=> @@user_info[b][:first_name]) :
-            (@@user_info[a][:last_name] <=> @@user_info[b][:last_name])
+            (@@user_info[a][first_key] == @@user_info[b][first_key]) ?
+            (@@user_info[a][second_key] <=> @@user_info[b][second_key]) :
+            (@@user_info[a][first_key] <=> @@user_info[b][first_key])
         end.each.with_index do |email, i|
             yield email, i
         end
     end
     
-    get '/api/directory_timetex_pdf/*' do
+    get '/api/directory_timetex_pdf/by_last_name/*' do
         require_teacher!
-        klasse = request.path.sub('/api/directory_timetex_pdf/', '')
+        klasse = request.path.sub('/api/directory_timetex_pdf/by_last_name/', '')
         main = self
         doc = Prawn::Document.new(:page_size => 'A4', :page_layout => :portrait, 
                                 :margin => 0) do
@@ -310,6 +311,27 @@ class Main < Sinatra::Base
                     user = @@user_info[email]
                     y = 297.mm - 20.mm - 20.7.pt * i
                     draw_text "#{user[:last_name]}, #{user[:first_name]}", :at => [30.mm, y + 6.pt]
+                    line_width 0.2.mm
+                    stroke { line [30.mm, y + 20.7.pt], [77.mm, y + 20.7.pt] } if i == 0
+                    stroke { line [30.mm, y], [77.mm, y] }
+                end
+            end
+        end
+        respond_raw_with_mimetype_and_filename(doc.render, 'application/pdf', "Klasse #{klasse}.pdf")
+    end
+
+    get '/api/directory_timetex_pdf/by_first_name/*' do
+        require_teacher!
+        klasse = request.path.sub('/api/directory_timetex_pdf/by_first_name/', '')
+        main = self
+        doc = Prawn::Document.new(:page_size => 'A4', :page_layout => :portrait, 
+                                :margin => 0) do
+            font('/app/fonts/RobotoCondensed-Regular.ttf') do
+                font_size 12
+                main.iterate_directory(klasse, :display_name, nil) do |email, i|
+                    user = @@user_info[email]
+                    y = 297.mm - 20.mm - 20.7.pt * i
+                    draw_text "#{user[:display_name]}", :at => [30.mm, y + 6.pt]
                     line_width 0.2.mm
                     stroke { line [30.mm, y + 20.7.pt], [77.mm, y + 20.7.pt] } if i == 0
                     stroke { line [30.mm, y], [77.mm, y] }

@@ -165,10 +165,19 @@
     var ticker_messages = [];
     var ticker_index = 0;
     var klassen_tr = #{KLASSEN_TR.to_json};
+    var server_time_diff = 0;
 
     var ws = null;
     var ws_timer_id = null;
     var last_vplan_timestamp = null;
+
+    function js_time() {
+        return Math.floor(Date.now() / 1000.0) + 999999;
+    }
+
+    function server_time() {
+        return js_time() + server_time_diff;
+    }
 
     function keep_alive() { 
         var timeout = 20000;
@@ -198,7 +207,10 @@
             data = JSON.parse(msg.data);
             console.log(data.command);
             if (data.command == 'force_reload') {
+                $('.embed-responsive-item')[0].requestFullscreen();
                 window.location.reload();
+            } else if (data.command == 'update_time') {
+                server_time_diff = data.time - js_time();
             } else if (data.command == 'update_monitor_messages') {
                 ticker_messages = data.messages;
             } else if (data.command == 'update_vplan') {

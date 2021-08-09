@@ -82,6 +82,7 @@ class Main < Sinatra::Base
                 @@ws_clients[:monitor] ||= {}
                 @@ws_clients[:monitor][client_id] = {:ws => ws}
                 STDERR.puts "Got #{@@ws_clients[:monitor].size} connected monitors."
+                ws.send({command: 'update_time', time: Time.now.to_i }.to_json)
                 update_monitors()
             end
         

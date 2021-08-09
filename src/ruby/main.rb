@@ -1704,7 +1704,7 @@ class Main < Sinatra::Base
             which = @@color_scheme_colors.select do |x|
                 x[4] == 'l'
             end.sample
-            @@default_color_scheme[jd] = "#{which[4]}#{which[0, 3].join('').gsub('#', '')}#{[0, 3].sample}"
+            @@default_color_scheme[jd] = "#{which[4]}#{which[0, 3].join('').gsub('#', '')}#{[0, 5].sample}"
         end
         @@default_color_scheme[jd]
     end

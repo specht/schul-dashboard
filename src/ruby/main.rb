@@ -1697,24 +1697,16 @@ class Main < Sinatra::Base
     end
 
     def pick_random_color_scheme()
-        if false && DEVELOPMENT
-            srand((Time.now.to_f * 1000.0).to_i)
+        @@default_color_scheme ||= {}
+        jd = (Date.today + 1).jd
+        if @@default_color_scheme[jd].nil?
+            srand(jd)
             which = @@color_scheme_colors.select do |x|
                 x[4] == 'l'
             end.sample
-            "#{which[4]}#{which[0, 3].join('').gsub('#', '')}#{[0].sample}"
-        else
-            @@default_color_scheme ||= {}
-            jd = Date.today.jd
-            if @@default_color_scheme[jd].nil?
-                srand(jd)
-                which = @@color_scheme_colors.select do |x|
-                    x[4] == 'l'
-                end.sample
-                @@default_color_scheme[jd] = "#{which[4]}#{which[0, 3].join('').gsub('#', '')}#{[0, 1, 2, 3, 5, 6].sample}"
-            end
-            @@default_color_scheme[jd]
+            @@default_color_scheme[jd] = "#{which[4]}#{which[0, 3].join('').gsub('#', '')}#{[0, 3].sample}"
         end
+        @@default_color_scheme[jd]
     end
 
     get '/*' do

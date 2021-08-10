@@ -1,4 +1,13 @@
 #{this_is_a_page_for_logged_in_users}
+<style>
+    .fc-v-event .fc-event-main {
+        color: #{color_palette[:main_text]};
+    }
+    .cem span {
+        /* background-color: rgba(255, 255, 255, 0.2); */
+        background-color: rgba(#{hex_to_rgb(color_palette[:main_text]).map { |x| x.to_s }.join(', ')}, 0.2);
+    }
+</style>
 <div class='container-fluid' style='padding-top: 30px;'>
     <div class='row'>
         <div class='#{tablet_logged_in? ? 'col-md-6 offset-md-1' : 'col-md-2'} timetable_chooser' style='#{tablet_logged_in? ? 'margin-top: 23px;' : 'display: none;'}'>
@@ -151,14 +160,14 @@
 
 <style>
 .fc-button-primary {
-    background-color: #{desaturated_color};
-    border: 1px solid #{desaturated_color};
+    background-color: #{color_palette[:desaturated_color]};
+    border: 1px solid #{color_palette[:desaturated_color]};
     color: #fff;
 }
 
 .fc-button-primary:hover, .fc-button-primary:active {
-    background-color: #{desaturated_color_darker};
-    border: 1px solid #{desaturated_color_darker};
+    background-color: #{color_palette[:desaturated_color_darker]};
+    border: 1px solid #{color_palette[:desaturated_color_darker]};
     color: #fff;
 }
 
@@ -418,8 +427,10 @@ document.addEventListener('DOMContentLoaded', function() {
                     bgdiv.css({position: 'absolute', left: 0, top: (pause[0] * 75.0 / 60.0) + 'px', right: 0});
                     bgdiv.css('height', (((pause[1] - pause[0]) * 75.0 / 60.0)) + 'px');
                     bgdiv.css('z-index', '-1');
-                    bgdiv.css('border-top', '1px dashed rgba(255, 255, 255, 0.2)');
-                    bgdiv.css('border-bottom', '1px dashed rgba(255, 255, 255, 0.2)');
+                    // bgdiv.css('border-top', '1px dashed rgba(255, 255, 255, 0.2)');
+                    bgdiv.css('border-top', '1px dashed rgba(#{hex_to_rgb(color_palette[:main_text]).map { |x| x.to_s }.join(', ')}, 0.2)');
+                    // bgdiv.css('border-bottom', '1px dashed rgba(255, 255, 255, 0.2)');
+                    bgdiv.css('border-bottom', '1px dashed rgba(#{hex_to_rgb(color_palette[:main_text]).map { |x| x.to_s }.join(', ')}, 0.2)');
                     if (event_data.stundenthema_text || event_data.hausaufgaben_text)
                         bgdiv.css('background-color', 'rgba(255, 255, 255, 0.05)');
                     else
@@ -496,7 +507,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 let div4 = $('<div>');
                 div2.addClass('condensed');
 
-                div2.css('border-top', '1px solid rgba(255, 255, 255, 0.5)');
+                // div2.css('border-top', '1px solid rgba(255, 255, 255, 0.5)');
+                div2.css('border-top', '1px solid rgba(#{hex_to_rgb(color_palette[:main_text]).map { |x| x.to_s }.join(', ')}, 0.5)');
+                // div2.css('border-top', '1px solid #{color_palette[:main_text]};');
                 div2.css('margin-top', '2px');
                 div2.css('height', '100%');
 
@@ -534,7 +547,9 @@ document.addEventListener('DOMContentLoaded', function() {
                         let description = $('<div>').html((arg.event.extendedProps.data || {}).hausaufgaben_text || '');
                         description.css('opacity', 0.7);
                         description.css('white-space', 'normal');
-                        description.css('border-top', '1px solid rgba(255, 255, 255, 0.5)');
+                        // description.css('border-top', '1px solid rgba(255, 255, 255, 0.5)');
+                        description.css('border-top', '1px solid rgba(#{hex_to_rgb(color_palette[:main_text]).map { |x| x.to_s }.join(', ')}, 0.5)');
+                        
                         div3.append(description);
                     }
                 }
@@ -557,7 +572,8 @@ document.addEventListener('DOMContentLoaded', function() {
                         let description = $('<div>').html(arg.event.extendedProps.info.description || '');
                         description.css('opacity', 0.7);
                         description.css('white-space', 'normal');
-                        description.css('border-top', '1px solid rgba(255, 255, 255, 0.5)');
+                        // description.css('border-top', '1px solid rgba(255, 255, 255, 0.5)');
+                        description.css('border-top', '1px solid rgba(#{hex_to_rgb(color_palette[:main_text]).map { |x| x.to_s }.join(', ')}, 0.5)');
                         div4.append(description);
                     }
                 }
@@ -626,7 +642,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 let description = fix_bad_html($('<div>').html(event_data.description));
                 description.css('opacity', 0.7);
                 description.css('white-space', 'normal');
-                description.css('border-top', '1px solid rgba(255, 255, 255, 0.5)');
+                // description.css('border-top', '1px solid rgba(255, 255, 255, 0.5)');
+                description.css('border-top', '1px solid rgba(#{hex_to_rgb(color_palette[:main_text]).map { |x| x.to_s }.join(', ')}, 0.5)');
                 div3.append(description);
                 
                 div2.append(div3).append(div4);

@@ -77,18 +77,15 @@
 
 <style>
 .fc-button-primary {
-    background-color: #{desaturated_color};
-    border: 1px solid #{desaturated_color};
+    background-color: #{color_palette[:desaturated_color]};
+    border: 1px solid #{color_palette[:desaturated_color]};
     color: #fff;
 }
 
 .fc-button-primary:hover, .fc-button-primary:active {
-    background-color: #{desaturated_color_darker};
-    border: 1px solid #{desaturated_color_darker};
+    background-color: #{color_palette[:desaturated_color_darker]};
+    border: 1px solid #{color_palette[:desaturated_color_darker]};
     color: #fff;
-}
-.card {
-    background-color: rgba(255,255,255,0.5);
 }
 .fc .fc-toolbar-title {
     background-color: rgba(255, 255, 255, 0.7);
@@ -102,6 +99,10 @@
 
 .fc-daygrid-day {
     cursor: pointer;
+}
+
+.fc-h-event .fc-event-main {
+    color: #{color_palette[:main_text]};
 }
 
 @media (max-width: 440px) {

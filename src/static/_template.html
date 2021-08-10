@@ -50,8 +50,8 @@
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="msapplication-TileColor" content="#{primary_color_darker}">
-    <meta name="theme-color" content="#{primary_color_darker}">
+    <meta name="msapplication-TileColor" content="#{color_palette[:primary_color_darker]}">
+    <meta name="theme-color" content="#{color_palette[:primary_color_darker]}">
     
     <title>Dashboard #{SCHUL_NAME}</title>
     #{meta_tags || ''}
@@ -116,23 +116,6 @@
             border-bottom-left-radius: 0; 
             border-bottom-right-radius: 0; 
         }
-    }
-    
-    /*
-    .btn-primary { 
-        background-color: #{primary_color};
-        border: 1px solid #{primary_color};
-    }
-    
-    .btn-primary:hover, .btn-primary:focus, .btn-primary:not(:disabled):not(.disabled).active, .btn-primary:not(:disabled):not(.disabled):active, .show>.btn-primary.dropdown-toggle { 
-        background-color: #{primary_color_darker};
-        border: 1px solid #{primary_color_darker};
-    }
-    
-    .btn-primary:focus {
-        box-shadow: none;
-    }
-    */
     }
     </style>
     <script defer src="/gen/js/compiled-#{compiled_js_sha1}.js"></script>
@@ -427,7 +410,7 @@ function showTemplateModal(title, text, confirm_label, confirm_class,
 <nav class="navbar navbar-expand-md navbar-light fixed-top justify-content-end">
         <a class="navbar-brand" href="/"><img src='/#{SCHUL_ICON}' style='width: 24px; height: 24px; position: relative; top: -2px;' /><span class='brand-brand'>&nbsp;&nbsp;{BRAND}</span></a>
     <div class='ml-auto'></div>
-    #{nav_items(primary_color, now, new_messages_count)}
+    #{nav_items(color_palette[:primary_color], now, new_messages_count)}
 </nav>
 <div class='container' style='text-align: center; display: #{MAINTENANCE_MODE ? 'block' : 'none'}'>
 <h2 style='margin-top: 15px; margin-bottom: 30px;'>Wartungsarbeiten</h2>

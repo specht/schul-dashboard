@@ -252,12 +252,13 @@ window.addEventListener('load', function () {
         });
     });
     let gradients = #{get_gradients().to_json()};
-    console.log(gradients.style_histogram);
     for (let x of gradients.color_schemes)
     {
+        console.log(x);
         let color = x[0];
         let gradient = x[1];
         let paint_colors = x[2];
+        let color_palette = x[7];
         let l_mode = x[4];
         let col = $('<div>').addClass('col-md-12');
         let swatch = $('<div>');
@@ -307,6 +308,8 @@ window.addEventListener('load', function () {
         if (x[5] !== null)
             g2.append($('<div>').css('font-size', '80%').css('margin-top', '-3px').text('(von ' + x[5] + ')'));
         g2.addClass('label');
+        console.log(color_palette.main_text);
+        g2.css('color', color_palette.main_text);
         g.css('position', 'absolute');
         g.css('left', '0');
         g.css('top', '0');

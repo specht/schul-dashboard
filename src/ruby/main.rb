@@ -723,6 +723,10 @@ class Main < Sinatra::Base
             next unless @@user_info[email]
             @@user_info[email][:can_manage_news] = true
         end
+        (CAN_MANAGE_NEWS_USERS + ADMIN_USERS).each do |email|
+            next unless @@user_info[email]
+            @@user_info[email][:can_manage_news] = true
+        end
         SV_USERS.each do |email|
             next unless @@user_info[email]
             @@user_info[email][:sv] = true
@@ -2013,23 +2017,7 @@ class Main < Sinatra::Base
         end
         rendered_something = @@renderer.render(["##{color_scheme[1, 6]}", "##{color_scheme[7, 6]}", "##{color_scheme[13, 6]}"], (@session_user || {})[:email])
         trigger_update_images() if rendered_something
-        primary_color = '#' + color_scheme[7, 6]
-        primary_color_darker = darken(primary_color, 0.8)
-        desaturated_color = darken(desaturate(primary_color), 0.9)
-        desaturated_color_darker = darken(desaturate(primary_color), 0.3)
-        disabled_color = rgb_to_hex(mix(hex_to_rgb(primary_color), [192, 192, 192], 0.5))
-        darker_color = rgb_to_hex(mix(hex_to_rgb(primary_color), [0, 0, 0], 0.7))
-        contrast_color = rgb_to_hex(mix(hex_to_rgb(primary_color), color_scheme[0] == 'l' ? [0, 0, 0] : [255, 255, 255], 0.7))
-        shifted_color = shift_hue(primary_color, 350)
-        color_palette = {
-            :primary => primary_color, 
-            :disabled => disabled_color, 
-            :darker => darker_color, 
-            :shifted => desaturated_color,
-            :contrast => contrast_color,
-            :left => '#' + color_scheme[1, 6],
-            :right => '#' + color_scheme[13, 6],
-        }
+        color_palette = color_palette_for_color_scheme(color_scheme)
         
         unless path.include?('/')
             unless path.include?('.') || path[0] == '_'

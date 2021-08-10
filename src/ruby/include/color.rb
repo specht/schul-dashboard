@@ -59,6 +59,11 @@ class Main < Sinatra::Base
         [r, g, b]
     end
 
+    def luminance(color) 
+        r, g, b = hex_to_rgb(color)
+        return r * 0.299 + g * 0.587 + b * 0.114
+    end
+
     def mix(a, b, t)
         t1 = 1.0 - t
         return [a[0] * t1 + b[0] * t,
@@ -105,5 +110,27 @@ class Main < Sinatra::Base
         a = html_to_rgb(colors[i])
         b = html_to_rgb(colors[i + 1])
         rgb_to_html([a[0] * f1 + b[0] * f, a[1] * f1 + b[1] * f, a[2] * f1 + b[2] * f])
+    end
+
+    def color_palette_for_color_scheme(color_scheme)
+        primary_color = '#' + color_scheme[7, 6]
+        light = luminance(primary_color) > 160
+        primary_color_darker = darken(primary_color, 0.8)
+        desaturated_color = darken(desaturate(primary_color), 0.9)
+        desaturated_color_darker = darken(desaturate(primary_color), 0.3)
+        disabled_color = light ? rgb_to_hex(mix(hex_to_rgb(primary_color), [255, 255, 255], 0.5)) : rgb_to_hex(mix(hex_to_rgb(primary_color), [192, 192, 192], 0.5))
+        darker_color = rgb_to_hex(mix(hex_to_rgb(primary_color), [0, 0, 0], 0.7))
+        shifted_color = shift_hue(primary_color, 350)
+        main_text_color = light ? rgb_to_hex(mix(hex_to_rgb(primary_color), [0, 0, 0], 0.7)) : rgb_to_hex(mix(hex_to_rgb(primary_color), [255, 255, 255], 0.8))
+        color_palette = {
+            :primary => primary_color, 
+            :disabled => disabled_color, 
+            :darker => darker_color, 
+            :shifted => desaturated_color,
+            :left => '#' + color_scheme[1, 6],
+            :right => '#' + color_scheme[13, 6],
+            :main_text => main_text_color
+        }
+        color_palette
     end
 end

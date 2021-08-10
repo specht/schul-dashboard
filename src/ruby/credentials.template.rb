@@ -198,6 +198,8 @@ CAN_UPLOAD_FILES_USERS = []
 
 CAN_MANAGE_NEWS_USERS = []
 
+CAN_MANAGE_MONITORS_USERS = []
+
 # Schülervertretung, kann:
 # - Nachrichten an SuS schreiben
 # - Umfragen unter SuS starten

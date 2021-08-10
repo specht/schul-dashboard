@@ -58,8 +58,7 @@ class Main < Sinatra::Base
             paint_colors = x[0, 3].map do |c|
                 rgb_to_hex(mix(hex_to_rgb(c), [255, 255, 255], 0.3))
             end
-            cs = 'l' + x[0, 3].join('').gsub('#', '')
-            [x[1], x[0, 3], paint_colors, x[3], x[4], x[5], histogram[cs], color_palette_for_color_scheme(cs)]
+            [x[1], x[0, 3], paint_colors, x[3], x[4], x[5], histogram[x[0, 3].join('').gsub('#', '')], color_palette_for_color_scheme("l#{x[0, 3].join('').gsub('#', '')}")]
         end
         {:color_schemes => color_schemes,
          :style_histogram => histogram_style}

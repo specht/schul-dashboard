@@ -254,7 +254,6 @@ window.addEventListener('load', function () {
     let gradients = #{get_gradients().to_json()};
     for (let x of gradients.color_schemes)
     {
-        console.log(x);
         let color = x[0];
         let gradient = x[1];
         let paint_colors = x[2];
@@ -285,6 +284,7 @@ window.addEventListener('load', function () {
         g2.css('top', '-148px');
         swatch.append(g.append(g2));
         
+        console.log(x);
         if (x[6] !== null)
             swatch.append($('<div>').addClass('color-scheme-usage').css('background-color', 'rgba(255,255,255,0.7)').text('' + x[6]));
             
@@ -308,7 +308,6 @@ window.addEventListener('load', function () {
         if (x[5] !== null)
             g2.append($('<div>').css('font-size', '80%').css('margin-top', '-3px').text('(von ' + x[5] + ')'));
         g2.addClass('label');
-        console.log(color_palette.main_text);
         g2.css('color', color_palette.main_text);
         g.css('position', 'absolute');
         g.css('left', '0');

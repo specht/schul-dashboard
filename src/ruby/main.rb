@@ -1712,7 +1712,7 @@ class Main < Sinatra::Base
         @@default_color_scheme ||= {}
         jd = (Date.today + 1).jd
         return @@default_color_scheme[jd] if @@default_color_scheme[jd]
-        srand(DEVELOPMENT ? (Time.now.to_f * 1000).to_i : jd)
+        srand(false && DEVELOPMENT ? (Time.now.to_f * 1000).to_i : jd)
         which = @@color_scheme_colors.sample
         color_scheme = "#{which[4]}#{which[0, 3].join('').gsub('#', '')}#{[0, 5].sample}"
         @@default_color_scheme[jd] = color_scheme unless DEVELOPMENT

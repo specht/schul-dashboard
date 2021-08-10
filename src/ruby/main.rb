@@ -723,9 +723,9 @@ class Main < Sinatra::Base
             next unless @@user_info[email]
             @@user_info[email][:can_manage_news] = true
         end
-        (CAN_MANAGE_NEWS_USERS + ADMIN_USERS).each do |email|
+        (CAN_MANAGE_MONITORS_USERS + ADMIN_USERS).each do |email|
             next unless @@user_info[email]
-            @@user_info[email][:can_manage_news] = true
+            @@user_info[email][:can_manage_monitors] = true
         end
         SV_USERS.each do |email|
             next unless @@user_info[email]
@@ -1378,6 +1378,8 @@ class Main < Sinatra::Base
                 end
                 if user_who_can_upload_files_logged_in? || user_who_can_manage_news_logged_in?
                     nav_items << :website
+                end
+                if user_who_can_manage_monitors_logged_in?
                     nav_items << :monitor
                 end
                 nav_items << :messages

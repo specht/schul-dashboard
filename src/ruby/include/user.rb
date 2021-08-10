@@ -19,6 +19,11 @@ class Main < Sinatra::Base
         user_logged_in? && @session_user[:can_manage_news]
     end
     
+    # Returns true if a user who can manage monitors is logged in.
+    def user_who_can_manage_monitors_logged_in?
+        user_logged_in? && @session_user[:can_manage_monitors]
+    end
+    
     # Returns true if a teacher or SV is logged in.
     def teacher_or_sv_logged_in?
         user_logged_in? && (teacher_logged_in? || @session_user[:sv])
@@ -116,6 +121,11 @@ class Main < Sinatra::Base
     # Assert that a user who can manage news is logged in
     def require_user_who_can_manage_news!
         assert(user_who_can_manage_news_logged_in?)
+    end
+    
+    # Assert that a user who can manage monitors is logged in
+    def require_user_who_can_manage_monitors!
+        assert(user_who_can_manage_monitors_logged_in?)
     end
     
     # Assert that a teacher or SV is logged in

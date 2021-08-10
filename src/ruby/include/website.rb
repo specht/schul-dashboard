@@ -7,21 +7,25 @@ class Main < Sinatra::Base
         :sm => 768,
         :xs => 480
     }
-    
-    post '/api/get_website_events' do
-        require_user_who_can_manage_news!
+
+    def self.get_website_events
         ts_now = DateTime.now.strftime('%Y-%m-%d')
-        neo4j_query(<<~END_OF_QUERY, :today => ts_now).map { |x| x['e'].props }
+        $neo4j.neo4j_query(<<~END_OF_QUERY, :today => ts_now).map { |x| x['e'].props }
             MATCH (e:WebsiteEvent)
             WHERE e.date < {today}
             DELETE e;
         END_OF_QUERY
-        results = neo4j_query(<<~END_OF_QUERY, :today => ts_now).map { |x| x['e'].props }
+        results = $neo4j.neo4j_query(<<~END_OF_QUERY, :today => ts_now).map { |x| x['e'].props }
             MATCH (e:WebsiteEvent)
             RETURN e
             ORDER BY e.date, e.title;
         END_OF_QUERY
-        respond(:events => results)
+        results
+    end
+    
+    post '/api/get_website_events' do
+        require_user_who_can_manage_news!
+        respond(:events => self.class.get_website_events())
     end
     
     post '/api/delete_website_event' do

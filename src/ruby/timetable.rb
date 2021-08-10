@@ -959,7 +959,19 @@ class Timetable
                     holidays << {
                         :start => entry[:from],
                         :end => (Date.parse(entry[:to]) + 1).strftime('%Y-%m-%d'),
-                        :title => entry[:title]
+                        :title => entry[:title],
+                        :label => entry[:title]
+                    }
+                end
+            end
+            website_events = []
+            Main.get_website_events.each do |entry|
+                unless (entry[:date] >= p1.strftime('%Y-%m-%d') || entry[:date] < p.strftime('%Y-%m-%d'))
+                    website_events << {
+                        :start => entry[:date],
+                        :end => (Date.parse(entry[:date]) + 1).strftime('%Y-%m-%d'),
+                        :title => entry[:title],
+                        :label => entry[:title]
                     }
                 end
             end
@@ -1010,6 +1022,7 @@ class Timetable
                     end                    
                     events += cache_indices.map { |x| @lesson_cache[x] }
                     events += holidays 
+                    events += website_events
                     # add events
                     ((@events_for_user[email] || {})[p_yw] || {}).each_pair do |eid, info|
                         event = info[:event]

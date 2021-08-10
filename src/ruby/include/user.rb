@@ -214,7 +214,7 @@ class Main < Sinatra::Base
     def lessons_for_session_user_and_klasse(klasse)
         require_teacher!
         faecher = Set.new()
-        @@lessons_for_shorthand[@session_user[:shorthand]].each do |lesson_key|
+        (@@lessons_for_shorthand[@session_user[:shorthand]] || []).each do |lesson_key|
             lesson_info = @@lessons[:lesson_keys][lesson_key]
             next unless lesson_info[:klassen].include?(klasse)
             faecher << lesson_info[:fach]

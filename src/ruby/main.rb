@@ -1528,7 +1528,7 @@ class Main < Sinatra::Base
                     io.puts "<div class='icon'><i class='fa fa-tv'></i></div>Monitore"
                     io.puts "</a>"
                     io.puts "<div class='dropdown-menu dropdown-menu-right' aria-labelledby='navbarDropdown' style='max-height: 500px; overflow-y: auto;'>"
-                    if user_who_can_manage_news_logged_in?
+                    if user_who_can_manage_monitors_logged_in?
                         io.puts "<a class='dropdown-item nav-icon' href='/manage_monitor'><div class='icon'><i class='fa fa-tv'></i></div><span class='label'>Monitore verwalten</span></a>"
                     end
                     io.puts "</div>"

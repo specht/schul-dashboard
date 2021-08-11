@@ -134,8 +134,8 @@ class Main < Sinatra::Base
     end
 
     # Assert that an admin is logged in
-    def require_monitor_or_user_who_can_manage_news!
-        assert(monitor_logged_in? || user_who_can_manage_news_logged_in?)
+    def require_monitor_or_user_who_can_manage_monitors!
+        assert(monitor_logged_in? || user_who_can_manage_monitors_logged_in?)
     end
     
     
@@ -184,6 +184,13 @@ class Main < Sinatra::Base
     # Put this on top of a webpage to assert that this page can be opened by users who can manage news only
     def this_is_a_page_for_people_who_can_manage_news
         unless user_who_can_manage_news_logged_in?
+            redirect "#{WEB_ROOT}/", 303
+        end
+    end
+    
+    # Put this on top of a webpage to assert that this page can be opened by users who can manage monitors only
+    def this_is_a_page_for_people_who_can_manage_monitors
+        unless user_who_can_manage_monitors_logged_in?
             redirect "#{WEB_ROOT}/", 303
         end
     end

@@ -301,7 +301,11 @@ class Main < Sinatra::Base
         end
         email_recipient = data[:email]
         if login_for_chat
-            email_recipient = override_email_login_recipient_for_chat(email_recipient)
+            if @@user_info[data[:email]][:teacher]
+                # always allow login for teachers
+            else
+                email_recipient = override_email_login_recipient_for_chat(email_recipient)
+            end
         end
         begin
             deliver_mail do

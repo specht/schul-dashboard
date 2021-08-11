@@ -655,10 +655,6 @@ class Parser
                         :vertretungs_text => jentry[5],
                     }
 
-                    if entry[:raum_neu] == 'Sochos'
-                        STDERR.puts ">>> #{path} #{sha1} #{entry.to_json}"
-                    end
-
                     if before_stunde
                         entry[:before_stunde] = true
                     end

@@ -170,7 +170,6 @@ class Timetable
         (@@vertretungen[monitor_date] || []).sort do |a, b|
             a[:stunde] <=> b[:stunde]
         end.each do |ventry|
-            STDERR.puts ventry.to_json if ventry[:raum_neu] == 'Sochos'
             klassen = Set.new(ventry[:klassen_alt] || []) | Set.new(ventry[:klassen_neu] || [])
             klassen.each do |klasse|
                 next unless KLASSEN_ORDER.include?(klasse)

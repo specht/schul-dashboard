@@ -23,7 +23,7 @@ class Main < Sinatra::Base
     end
 
     post '/api/force_reload_monitors' do
-        require_user_who_can_manage_news!
+        require_user_who_can_manage_monitors!
         self.class.force_reload_monitors()
     end
 
@@ -52,7 +52,7 @@ class Main < Sinatra::Base
     end
 
     post '/api/update_monitor_messages' do
-        require_user_who_can_manage_news!
+        require_user_who_can_manage_monitors!
         data = parse_request_data(:required_keys => [:text],
             :max_body_length => 64 * 1024,
             :max_string_length => 64 * 1024)
@@ -61,7 +61,7 @@ class Main < Sinatra::Base
     end
 
     post '/api/get_monitor_messages_raw' do
-        require_user_who_can_manage_news!
+        require_user_who_can_manage_monitors!
         text = ''
         if File.exists?(MONITOR_MESSAGE_PATH)
             text = File.read(MONITOR_MESSAGE_PATH)

@@ -46,7 +46,7 @@ def parse_html_datum(s)
     raise 'nope'
 end
 
-def handle_vplan_html_file(contents)
+def handle_vplan_html_file(contents, removed_days)
     dom = Nokogiri::HTML.parse(contents)
     return if dom.at_css('h2').nil?
     return if dom.at_css('#vertretung').nil?
@@ -158,6 +158,12 @@ def handle_vplan_html_file(contents)
             if b
                 datum = parse_html_datum(b) 
                 datum_list << datum
+                unless removed_days.include?(datum)
+                    Dir["/vplan/#{datum}/*.json"].each do |path|
+                        FileUtils::rm_f(path)
+                    end
+                    removed_days << datum
+                end
             end
         end
     end
@@ -171,8 +177,9 @@ end
 
 def handle_html_batch(bodies)
     datum_list = Set.new()
+    removed_days = Set.new()
     bodies.each do |body|
-        temp = handle_vplan_html_file(body)
+        temp = handle_vplan_html_file(body, removed_days)
         if temp
             datum_list |= temp
         end

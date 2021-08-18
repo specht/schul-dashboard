@@ -25,6 +25,7 @@ class Main < Sinatra::Base
     post '/api/set_color_scheme' do
         require_user!
         data = parse_request_data(:required_keys => [:scheme])
+        data[:scheme].downcase!
         assert('ld'.include?(data[:scheme][0]))
         assert(data[:scheme][1, 18] =~ /^[0-9a-f]{18}[0-6]?$/)
         results = neo4j_query(<<~END_OF_QUERY, :email => @session_user[:email], :scheme => data[:scheme])

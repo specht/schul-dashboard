@@ -394,9 +394,9 @@ class Main < Sinatra::Base
             
             sessions.each do |s|
                 io.puts "<tr>"
-                d = Time.parse(s[:expires]).strftime('%d.%m.%Y');
+                d = s[:expires] ? Time.parse(s[:expires]).strftime('%d.%m.%Y') : '&ndash;'
                 io.puts "<td>#{d}</td>"
-                d = Time.parse(s[:last_access]).strftime('%d.%m.%Y');
+                d = s[:last_access] ? Time.parse(s[:last_access]).strftime('%d.%m.%Y') : '&ndash;'
                 io.puts "<td>#{d}</td>"
                 io.puts "<td style='text-overflow: ellipsis;'>#{s[:user_agent] || 'unbekanntes Gerät'}</td>"
                 io.puts "<td><button class='btn btn-danger btn-xs btn-purge-session' data-purge-session='#{s[:scrambled_sid]}'><i class='fa fa-sign-out'></i>&nbsp;&nbsp;Gerät abmelden</button></td>"

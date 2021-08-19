@@ -2224,3 +2224,7 @@ li.nav-item a.nav-link i.fa {
 .hide-br br::after {
     content: ' / ';
 }
+
+.input-group {
+    flex-wrap: nowrap;
+}

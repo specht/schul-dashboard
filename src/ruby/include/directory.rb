@@ -504,7 +504,7 @@ class Main < Sinatra::Base
     
     def print_mailing_lists()
         StringIO.open do |io|
-            io.puts "<table class='table table-condensed narrow'>"
+            io.puts "<table class='table table-condensed narrow' style='width: unset; min-width: 100%;'>"
             remaining_mailing_lists = Set.new(@@mailing_lists.keys)
             @@klassen_order.each do |klasse|
                 io.puts "<tr><th colspan='3'>Klasse #{tr_klasse(klasse)}</th></tr>"

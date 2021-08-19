@@ -28,7 +28,8 @@ class Main < Sinatra::Base
             io.puts "<a class='btn btn-secondary' href='/lesson_keys'>Lesson Keys</a>"
             io.puts "<hr />"
             io.puts "<h3 id='teachers'>Lehrerinnen und Lehrer</h3>"
-            io.puts "<table class='table table-condensed table-striped narrow'>"
+            io.puts "<div style='max-width: 100%; overflow-x: auto;'>"
+            io.puts "<table class='table table-condensed table-striped narrow' style='width: unset; min-width: 100%;'>"
             io.puts "<thead>"
             io.puts "<tr>"
             io.puts "<th></th>"
@@ -79,8 +80,10 @@ class Main < Sinatra::Base
             end
             io.puts "</tbody>"
             io.puts "</table>"
+            io.puts "</div>"
             io.puts "<h3 id='sus'>Schülerinnen und Schüler</h3>"
-            io.puts "<table class='table table-condensed table-striped narrow'>"
+            io.puts "<div style='max-width: 100%; overflow-x: auto;'>"
+            io.puts "<table class='table table-condensed table-striped narrow' style='width: unset; min-width: 100%;'>"
             io.puts "<thead>"
             io.puts "<tr>"
             io.puts "<th></th>"
@@ -136,6 +139,7 @@ class Main < Sinatra::Base
             end
             io.puts "</tbody>"
             io.puts "</table>"
+            io.puts "</div>"
             io.puts "<hr />"
             io.puts "<h3 id='website'>Website</h3>"
             io.puts "<button class='btn btn-secondary bu-refresh-staging'><i id='refresh-icon-staging' class='fa fa-refresh'></i>&nbsp;&nbsp;Vorschau-Seite aktualisieren</button>"
@@ -159,7 +163,8 @@ class Main < Sinatra::Base
                 io.puts "<button class='btn-tablet-login btn btn-xs btn-outline-secondary' data-id='#{id}' style='background-color: #{tablet[:bg_color]}; color: #{tablet[:fg_color]};'>#{id}</button>"
             end
             io.puts "<hr />"
-            io.puts "<table class='table table-condensed table-striped narrow'>"
+            io.puts "<div style='max-width: 100%; overflow-x: auto;'>"
+            io.puts "<table class='table table-condensed table-striped narrow' style='width: unset; min-width: 100%;'>"
             io.puts "<thead>"
             io.puts "<tr>"
             io.puts "<th>Typ</th>"
@@ -184,6 +189,7 @@ class Main < Sinatra::Base
             end
             io.puts "</tbody>"
             io.puts "</table>"
+            io.puts "</div>"
             io.puts "<h3 id='monitor'>Monitor</h3>"
             io.puts "<button class='btn btn-success bu-login-as-monitor'><i class='fa fa-sign-in'></i>&nbsp;&nbsp;Als Monitor anmelden</button>"
             io.puts "<hr />"

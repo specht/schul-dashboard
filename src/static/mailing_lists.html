@@ -16,9 +16,11 @@ th {
 <div class='container' style='padding-top: 30px;'>
     <div class='row'>
         <div class='col-md-12'>
-        <h3>E-Mail-Verteiler</h3>
-        <div class='alert alert-warning'>Hier sehen Sie alle E-Mail-Verteiler, die Sie verwenden können sowie alle Adressaten, die über diese Verteiler erreicht werden können.</div>
-            #{print_mailing_lists()}
+            <h3>E-Mail-Verteiler</h3>
+            <div class='alert alert-warning'>Hier sehen Sie alle E-Mail-Verteiler, die Sie verwenden können sowie alle Adressaten, die über diese Verteiler erreicht werden können.</div>
+            <div style='max-width: 100%; overflow-x: auto;'>
+                #{print_mailing_lists()}
+            </div>
         </div>
     </div>
 </div>

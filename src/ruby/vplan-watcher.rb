@@ -46,8 +46,31 @@ def parse_html_datum(s)
     raise 'nope'
 end
 
+def strip_past_tables(dom)
+    dom.css('td').each do |td|
+        if (td.text || '').strip == 'Vertretungen sind nicht freigegeben'
+            n = td.parent.parent
+            deleted_table = false
+            while n != nil
+                p = n.previous
+                n.remove()
+                if n && n.name == 'table'
+                    if deleted_table
+                        break
+                    else
+                        deleted_table = true
+                    end
+                end
+                n = p
+            end
+        end
+    end
+    dom
+end
+
 def handle_vplan_html_file(contents, removed_days)
     dom = Nokogiri::HTML.parse(contents)
+    dom = strip_past_tables(dom)
     return if dom.at_css('h2').nil?
     return if dom.at_css('#vertretung').nil?
     heading = dom.at_css('h2').text

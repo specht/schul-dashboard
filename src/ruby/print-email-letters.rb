@@ -88,7 +88,7 @@ class Script
                 entry.gsub!('#{LAST_NAME}', record[:last_name])
                 entry.gsub!('#{DISPLAY_NAME}', record[:display_name])
                 entry.gsub!('#{DISPLAY_LAST_NAME}', record[:display_last_name])
-                entry.gsub!('#{KLASSE}', record[:klasse])
+                entry.gsub!('#{KLASSE}', record[:klasse].gsub('o', '\\textomega'))
                 entry.gsub!('#{PASSWORD}', password)
                 entry.gsub!('#{PASSWORD_PARENTS}', password_parents)
                 entry.gsub!('#{INITIALS}', "#{(record[:display_first_name][0] || '').upcase}#{record[:last_name][0].upcase}")

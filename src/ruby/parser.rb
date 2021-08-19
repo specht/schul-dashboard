@@ -622,6 +622,8 @@ class Parser
                 # STDERR.puts "#{datum} #{sha1} #{jentry.to_json}"
                 before_stunde = false
                 stunde_range = []
+                # TODO fix this
+                jentry[0] ||= ''
                 if jentry[0].include?('-')
                     parts = jentry[0].split('-').map { |x| x.strip.to_i }
                     stunde_range = (parts[0]..parts[1]).to_a

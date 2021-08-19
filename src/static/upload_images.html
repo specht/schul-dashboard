@@ -27,20 +27,22 @@
             <h2>Bilder hochladen</h2>
             <form action='/api/upload_image' class='dropzone' id='my-awesome-dropzone'></form>
             <div class='preview' style='display: none;'></div>
-            <table class='table'>
-            <thead>
-            <tr>
-            <th>Bild</th>
-            <th>Auflösung</th>
-            <th>Größe</th>
-            <th>Titel</th>
-            <th>Bezeichner</th>
-            <th>Löschen</th>
-            </tr>
-            </thead>
-            <tbody id='uploads_here'>
-            </tbody>
-            </table>
+            <div style='max-width: 100%; overflow-x: auto;'>
+                <table class='table' style='width: unset; min-width: 100%;'>
+                <thead>
+                <tr>
+                <th>Bild</th>
+                <th>Auflösung</th>
+                <th>Größe</th>
+                <th>Titel</th>
+                <th>Bezeichner</th>
+                <th>Löschen</th>
+                </tr>
+                </thead>
+                <tbody id='uploads_here'>
+                </tbody>
+                </table>
+            </div>
             <button class='btn btn-success bu-upload' disabled>Bilder hochladen</button>
             <hr />
             <div class='row'>

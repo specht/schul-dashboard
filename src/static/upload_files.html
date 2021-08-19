@@ -34,31 +34,35 @@
                 </div>
             </div>
             <hr />
-            <table class='table'>
-            <thead>
-            <tr>
-            <th>Datei</th>
-            <th>Größe</th>
-            <th>Löschen</th>
-            </tr>
-            </thead>
-            <tbody id='uploads_here'>
-            </tbody>
-            </table>
+            <div style='max-width: 100%; overflow-x: auto;'>
+                <table class='table' style='width: unset; min-width: 100%;'>
+                <thead>
+                <tr>
+                <th>Datei</th>
+                <th>Größe</th>
+                <th>Löschen</th>
+                </tr>
+                </thead>
+                <tbody id='uploads_here'>
+                </tbody>
+                </table>
+            </div>
             <button class='btn btn-success bu-upload' disabled>Dateien hochladen</button>
             <hr />
-            <table class='table narrow'>
-            <thead>
-            <tr>
-            <th>Datei</th>
-            <th>Größe</th>
-            <th>Link für Website</th>
-            <th>Löschen</th>
-            </tr>
-            </thead>
-            <tbody id='files_here'>
-            </tbody>
-            </table>
+            <div style='max-width: 100%; overflow-x: auto;'>
+                <table class='table narrow' style='width: unset; min-width: 100%;'>
+                <thead>
+                <tr>
+                <th>Datei</th>
+                <th>Größe</th>
+                <th>Link für Website</th>
+                <th>Löschen</th>
+                </tr>
+                </thead>
+                <tbody id='files_here'>
+                </tbody>
+                </table>
+            </div>
         </div>
     </div>
 </div>
@@ -104,7 +108,7 @@ function refresh_files() {
 
                 let code = 'file{' + file.name + '}{' + file.name.split('.').slice(0, -1).join('.') + '}';
                 let ig = $('<div>').addClass('input-group');
-                ig.append($('<input>').addClass('form-control').attr('type', 'text').attr('readonly', true).val(code));
+                ig.append($('<input>').addClass('form-control').css('min-width', '100px').attr('type', 'text').attr('readonly', true).val(code));
                 let ia = $('<div>').addClass('input-group-append');
                 ia.append($('<button>').addClass('btn').addClass('btn-secondary').addClass('btn-clipboard').attr('data-clipboard-text', code).html("<i class='fa fa-clipboard'></i>"));
                 ig.append(ia);

@@ -14,20 +14,22 @@
             <button class='bu-compose btn btn-success'><i class='fa fa-pencil'></i>&nbsp;&nbsp;Artikel
                 schreiben</button>
             <hr />
-            <table class='table narrow'>
-                <thead>
-                    <tr>
-                        <th>Datum</th>
-                        <th>Titel</th>
-                        <th>Aktionen</th>
-                    </tr>
-                </thead>
-                <tbody id='news_here'>
-                    <tr>
-                        <td><i class='fa fa-cog fa-spin'></i></td>
-                    </tr>
-                </tbody>
-            </table>
+            <div style='max-width: 100%; overflow-x: auto;'>
+                <table class='table narrow' style='width: unset; min-width: 100%;'>
+                    <thead>
+                        <tr>
+                            <th>Datum</th>
+                            <th>Titel</th>
+                            <th>Aktionen</th>
+                        </tr>
+                    </thead>
+                    <tbody id='news_here'>
+                        <tr>
+                            <td><i class='fa fa-cog fa-spin'></i></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
         </div>
     </div>
 </div>

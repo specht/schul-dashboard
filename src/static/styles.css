@@ -962,9 +962,9 @@ s {
 }
 
 @media (max-width: 767px) {
-    .lesson_pane *, .lc_table *, .schueler_table *, .klassen_table * {
+    /* .lesson_pane *, .lc_table *, .schueler_table *, .klassen_table * {
         font-size: 10pt;
-    }
+    } */
     .th-nr { width: 35px; }
     .th-datum { width: 75px; }
     .th-tag { width: 30px; }

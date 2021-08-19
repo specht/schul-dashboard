@@ -10,8 +10,11 @@ class Main < Sinatra::Base
 #             io.puts "Auf die Jitsi-Streams können momentan nur SuS zugreifen, die laut ihrer Gruppenzuordnung in der aktuellen Woche zu Hause sind oder explizit als »zu Hause« markiert sind."
             io.puts "</div>"
             io.puts "<h3>Klasse #{tr_klasse(klasse)}</h3>"
-            io.puts "<div class='table-responsive'>"
-            io.puts "<table class='klassen_table table table-condensed table-striped narrow'>"
+            # <div style='max-width: 100%; overflow-x: auto;'>
+            # <table class='table' style='width: unset; min-width: 100%;'>
+
+            io.puts "<div class='table-responsive' style='max-width: 100%; overflow-x: auto;'>"
+            io.puts "<table class='klassen_table table table-condensed table-striped narrow' style='width: unset; min-width: 100%;'>"
             io.puts "<thead>"
             io.puts "<tr>"
             io.puts "<th>Nr.</th>"

@@ -42,6 +42,15 @@
     jederzeit wieder eines der anderen Farbschemata wählen. Ansonsten 
     bleibt das Farbschema so lange aktiv, bis du es wieder veränderst 
     oder zurücksetzt.
+
+    -------------------------------------------------------------------
+    +++ NEU +++ NEU +++ NEU +++ NEU +++ NEU +++ NEU +++ NEU +++ NEU +++
+    -------------------------------------------------------------------
+
+    Wenn du Lust auf eine digitale Schnitzeljagd im Dashboard hast,
+    versuch es mal hier: 
+
+    #{WEB_ROOT}/h4ck
     
     -->
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
@@ -53,6 +62,7 @@
     <title>Dashboard #{SCHUL_NAME}</title>
     #{meta_tags || ''}
     <link href="/gen/css/compiled-#{compiled_css_sha1}.css" rel="stylesheet" />
+
     <style>
     body {
         background-image: url(/gen/bg/bg-#{color_scheme}.svg);
@@ -62,7 +72,7 @@
         background-position: 50% 0%;
         #{css_for_font(font_family).map { |k, v| "#{k}: #{v};"}.join("\n")}
     }
-    
+
     .fc-view-harness, table {
         background-color: rgba(255, 255, 255, 0.3);
     }

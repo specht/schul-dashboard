@@ -48,6 +48,7 @@ require './include/directory.rb'
 require './include/event.rb'
 require './include/ext_user.rb'
 require './include/file.rb'
+require './include/hack.rb'
 require './include/homework.rb'
 require './include/ical.rb'
 require './include/image.rb'
@@ -566,6 +567,7 @@ class Main < Sinatra::Base
         @@user_info = {}
         @@email_for_matrix_login = {}
         @@shorthands = {}
+        @@shorthand_order = []
         @@schueler_for_klasse = {}
         @@faecher = {}
         @@ferien_feiertage = []
@@ -634,6 +636,11 @@ class Main < Sinatra::Base
         @@klassenleiter = {}
         parser.parse_klassenleiter do |record|
             @@klassenleiter[record[:klasse]] = record[:klassenleiter]
+        end
+        @@shorthand_order = @@shorthands.keys.sort do |a, b|
+            ua = @@user_info[@@shorthands[a]]
+            ub = @@user_info[@@shorthands[b]]
+            ua[:last_name].downcase <=> ub[:last_name].downcase
         end
         
         @@lehrer_order.sort!() do |a, b|
@@ -1723,7 +1730,7 @@ class Main < Sinatra::Base
 
     get '/*' do
         # first things first
-        days_left = (Date.parse('2021-06-24') - Date.today).to_i
+        days_left = (Date.parse('2022-07-07') - Date.today).to_i
         response.headers['X-Tage-Bis-Zu-Den-Sommerferien'] = "#{days_left}"
     
         path = request.env['REQUEST_PATH']

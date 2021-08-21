@@ -1,0 +1,26 @@
+<style>
+    .form-control {
+        margin-top: 40px;
+        background-color: rgba(0,0,0,0.5);
+        font-size: 200%;
+        text-align: center;
+        border-radius: 8px;
+        border: 3px solid #444;
+    }
+    .form-control:focus {
+        background-color: #000;
+    }
+</style>
+<script>
+window.addEventListener('load', function() {
+    $('#hack_form').submit(function(e) {
+        e.preventDefault();
+        let password = $('#ti_hack').val().trim();
+        window.location.href = '/h4ck/' + password;
+        return false;
+    })
+});
+</script>
+<form id='hack_form'>
+    <input type='text' id='ti_hack' class='form-control' />
+</form>

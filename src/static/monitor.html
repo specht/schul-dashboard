@@ -219,12 +219,12 @@
                 if (data.timestamp !== last_vplan_timestamp) {
                     last_vplan_timestamp = data.timestamp;
                     data = data.data;
+                    console.log(data);
                     for (let klasse of klassen) {
                         let div = klassen_div[klasse];
                         div.empty();
                         if (data.klassen[klasse]) {
                             let table = $('<table>');
-                            /* table.hide(); */
                             div.append(table);
                             let first_entry = true;
                             for (let entry of data.klassen[klasse]) {
@@ -248,7 +248,6 @@
                                 }
                             }
                             install_auto_scroller(klasse, div);
-                            /* table.fadeIn(); */
                         }
                     }
                 }

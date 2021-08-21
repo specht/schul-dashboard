@@ -611,11 +611,14 @@ class Parser
             vplan['timetables'].each_pair do |target, info|
                 next unless info['day_messages']
                 info['day_messages'].each do |sha1|
-                    p_yw = Date.parse(datum).strftime('%Y-%V')
-                    day_messages[p_yw] ||= {}
-                    day_messages[p_yw][target] ||= {}
-                    day_messages[p_yw][target][datum] ||= []
-                    day_messages[p_yw][target][datum] << vplan['entries'][sha1]
+                    message = (vplan['entries'][sha1] || '').strip
+                    unless message.empty?
+                        p_yw = Date.parse(datum).strftime('%Y-%V')
+                        day_messages[p_yw] ||= {}
+                        day_messages[p_yw][target] ||= {}
+                        day_messages[p_yw][target][datum] ||= []
+                        day_messages[p_yw][target][datum] << message
+                    end
                 end
             end
             vplan['entries'].each_pair do |sha1, jentry|

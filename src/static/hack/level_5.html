@@ -1,9 +1,13 @@
+<script>
+    let x = #{@hack_next_password.split('').map { |x| x.ord }.to_json};
+    let b = '';
+    for (let i = 0; i < x.length; i++)
+        b += '>';
+    console.log(`>>>>>>>>>>>>>>>>>>>>>>>>${b}\n> Das Passwort lautet: ${x.map(function(_){return String.fromCharCode(_)}).join('')}\n>>>>>>>>>>>>>>>>>>>>>>>>${b}`);
+</script>
 <p>
-    Im fünften Level geht es um das Thema <b>»ASCII-Codes«</b>.
+    Jetzt geht es noch einmal darum, ein Passwort zu finden. Diesmal ist das Passwort aber <b>nicht im HTML-Quelltext</b> versteckt. ;-)
 </p>
 <p>
-    Um ins nächste Level zu kommen, gib den zweistelligen, <b>hexadezimalen</b> ASCII-Code für das folgende Zeichen ein:
-</p>
-<p>
-    <b style='font-size: 400%;'>#{@hack_token}</b>
+    Um ins nächste Level zu kommen, gib das <b>Passwort</b> ein. 
 </p>

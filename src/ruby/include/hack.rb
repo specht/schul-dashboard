@@ -1,7 +1,63 @@
 require 'digest/md5'
 
+# https://gist.githubusercontent.com/mecampbellsoup/7001539/raw/366a43c6dc7aea76dbe2357173e3fc7e0f7407f1/roman_numerals.rb
+
+class Integer
+
+  @@values = {
+    1=>"I",
+    4=>"IV",
+    5=>"V",
+    9=>"IX",
+    10=>"X",
+    40=>"XL",
+    50=>"L",
+    90=>"XC",
+    100=>"C",
+    400=>"CD",
+    500=>"D",
+    900=>"CM",
+    1000=>"M"
+  }
+
+  def to_roman_descending #this one requires numeral-arabic pairs in descending order, i.e. 1000=>"M" on down
+    return 0 if self == 0
+
+    roman = ""
+    integer = self
+    @@values.each do |k,v|
+      until integer < k
+        roman << v
+        integer -= k
+      end
+    end
+    roman
+  end
+
+  def to_roman
+    integer = self
+    roman = ""
+
+    while integer > 0
+      if @@values[integer]
+        roman += @@values[integer]
+        return roman
+      end
+
+      roman += @@values[next_lower_key(integer)] # increment the roman numeral string here
+      integer -= next_lower_key(integer) # decrement the arabic integer here
+    end
+  end
+
+  def next_lower_key(integer)
+    arabics = @@values.keys
+    next_lower_index = (arabics.push(integer).sort.index(integer))-1
+    arabics[next_lower_index]
+  end
+end
+
 class Main < Sinatra::Base
-    MAX_HACK_LEVEL = 8
+    MAX_HACK_LEVEL = 10
 
     NAMES = %w(babbage boole catmull cerf chomksy codd dijkstra
         engelbart feinler hamilton hamming hejlsberg hopper kay knuth lamport
@@ -42,32 +98,52 @@ class Main < Sinatra::Base
             names = NAMES.shuffle
             @hack_next_password = names[@hack_level]
         elsif @hack_level == 1
-            names = NAMES.shuffle
-            @hack_next_password = names[@hack_level]
+            number = [1, 2].sample * 1000 + [1,2,3,4,5,6,7,8,9].sample * 100 + [1,2,3,4,5,6,7,8,9].sample * 10 + [1,2,3,4,5,6,7,8,9].sample
+            @hack_next_password = number.to_roman.downcase
+            @hack_token = "#{number}"
         elsif @hack_level == 2
             names = NAMES.shuffle
             @hack_next_password = names[@hack_level]
         elsif @hack_level == 3
+            notes = [['C', 'Cis', 'D', 'Es', 'E', 'F', 'Fis', 'G', 'As', 'A', 'B', 'H'],
+                     ['c', 'cis', 'd', 'es', 'e', 'f', 'fis', 'g', 'as', 'a', 'b', 'h']]
+
+            index = (0...(notes[0].size)).to_a.sample
+            mode = (0..1).to_a.sample
+            chord = "#{notes[mode][index]}-#{mode == 0 ? 'Dur' : 'Moll'}"
+            a = (index + ((mode == 0) ? 4 : 3) + [1, 11].sample) % 12
+            b = (index + ((mode == 0) ? 4 : 3)) % 12
+            c = (index + 7 + [1, 11].sample) % 12
+            d = (index + [1, 11].sample) % 12
+
+            @hack_next_password = notes[1][b]
+            a, b, c, d = *([a, b, c, d].shuffle)
+            @hack_description = "<span style='font-size: 150%;'><b>#{notes[1][a]}</b>, <b>#{notes[1][b]}</b>, <b>#{notes[1][c]}</b> oder <b>#{notes[1][d]}</b></span>"
+            @hack_token = chord
+        elsif @hack_level == 4
+            names = NAMES.shuffle
+            @hack_next_password = names[@hack_level]
+        elsif @hack_level == 5
             space_events = SPACE_EVENTS.keys.shuffle
             date = space_events.first
             @hack_token = SPACE_EVENTS[date].first
             @hack_description = "#{SPACE_EVENTS[date][1].gsub('__DATE__', "<b>#{SPACE_EVENTS[date].first}</b>")} Wie viele Tage sind seitdem vergangen?"
             @hack_next_password = (Date.today - Date.parse(date)).to_i.to_s
-        elsif @hack_level == 4
+        elsif @hack_level == 6
             ascii = '@#$%&*()[]{}'.split('').shuffle
             @hack_token = ascii.first
             @hack_next_password = sprintf('%02x', ascii.first.ord)
-        elsif @hack_level == 5
+        elsif @hack_level == 7
             primes = PRIMES.shuffle
             ps = primes[0, 6]
             p = ps.sample
             @hack_token = ps.inject(1) { |_, x| _ * x } * p
             @hack_next_password = p.to_s
-        elsif @hack_level == 6
+        elsif @hack_level == 8
             names = NAMES.shuffle
             @hack_next_password = names[@hack_level]
             response.headers['X-Dashboard-Hackers-Passwort'] = @hack_next_password
-        elsif @hack_level == 7
+        elsif @hack_level == 9
             fruit = FRUIT.shuffle
             @hack_next_password = fruit.first
             @hack_token = Digest::MD5.hexdigest(@hack_next_password)

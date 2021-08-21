@@ -1,13 +1,9 @@
-<script>
-    let x = #{@hack_next_password.split('').map { |x| x.ord }.to_json};
-    let b = '';
-    for (let i = 0; i < x.length; i++)
-        b += '>';
-    console.log(`>>>>>>>>>>>>>>>>>>>>>>>>${b}\n> Das Passwort lautet: ${x.map(function(_){return String.fromCharCode(_)}).join('')}\n>>>>>>>>>>>>>>>>>>>>>>>>${b}`);
-</script>
 <p>
-    Im dritten Level geht es noch einmal darum, ein Passwort zu finden.
+    Jetzt geht es wieder darum, ein Passwort zu finden – allerdings ist es diesmal besser versteckt.
 </p>
 <p>
-    Um ins nächste Level zu kommen, gib das <b>Passwort</b> ein. 
+    Um ins nächste Level zu kommen, gib das <b>Passwort</b> ein.
+    <!-- Wer hätte denn ahnen können, dass sich das Passwort direkt hier befinden könnte? 
+        Das Passwort lautet: »#{@hack_next_password}« -->
 </p>
+

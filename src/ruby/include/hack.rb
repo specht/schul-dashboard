@@ -102,7 +102,7 @@ class Main < Sinatra::Base
         
         get_next_password()
 
-        STDERR.puts "HACK // level: #{@hack_level}, seed: #{@hack_seed}, provided: #{provided_password}#{provided_password.nil? ? '(nil)':''}, next password: #{@hack_next_password}#{@hack_next_password.nil? ? '(nil)':''}"
+        STDERR.puts "HACK // #{@session_user[:email]} // level: #{@hack_level}, seed: #{@hack_seed}, provided: #{provided_password}#{provided_password.nil? ? '(nil)':''}, next password: #{@hack_next_password}#{@hack_next_password.nil? ? '(nil)':''}"
 
         unless provided_password.nil? || @hack_next_password.nil?
             if provided_password == @hack_next_password
@@ -148,7 +148,7 @@ class Main < Sinatra::Base
                 result.each do |row|
                     histogram[row['u.hack_level']] ||= []
                     histogram[row['u.hack_level']] << row['u.email']
-                    names << row['hack_name'].strip unless row['hack_name'].strip.empty?
+                    names << row['hack_name'] unless row['hack_name'].strip.empty?
                 end
                 names.sort!
                 parts = []

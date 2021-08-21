@@ -217,6 +217,14 @@ class Main < Sinatra::Base
         require_user!
         data = parse_request_data(:required_keys => [:name])
         neo4j_query("MATCH (u:User {email: {email}}) SET u.hack_name = {name};", {:email => @session_user[:email], :name => data[:name]})
+        display_name = @session_user[:display_name]
+        deliver_mail(data[:name]) do
+            to WEBSITE_MAINTAINER_EMAIL
+            bcc SMTP_FROM
+            from SMTP_FROM
+            
+            subject "H4CK: #{display_name}"
+        end        
         respond(:alright => 'yeah')
     end
 

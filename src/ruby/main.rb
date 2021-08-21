@@ -287,18 +287,25 @@ def mail_html_to_plain_text(s)
     s.gsub('<p>', "\n\n").gsub(/<br\s*\/?>/, "\n").gsub(/<\/?[^>]*>/, '').strip
 end
 
-def deliver_mail(&block)
+def deliver_mail(plain_text = nil, &block)
     mail = Mail.new do
         charset = 'UTF-8'
         message = self.instance_eval(&block)
-        html_part do
-            content_type 'text/html; charset=UTF-8'
-            body message
-        end
-        
-        text_part do
-            content_type 'text/plain; charset=UTF-8'
-            body mail_html_to_plain_text(message)
+        if plain_text.nil?
+            html_part do
+                content_type 'text/html; charset=UTF-8'
+                body message
+            end
+            
+            text_part do
+                content_type 'text/plain; charset=UTF-8'
+                body mail_html_to_plain_text(message)
+            end
+        else
+            text_part do
+                content_type 'text/plain; charset=UTF-8'
+                body plain_text
+            end
         end
     end
     if DEVELOPMENT
@@ -320,7 +327,7 @@ def parse_markdown(s)
 end
 
 def join_with_sep(list, a, b)
-    [list[0, list.size - 1].join(a), list.last].join(b)
+    list.size == 1 ? list.first : [list[0, list.size - 1].join(a), list.last].join(b)
 end
 
 class SetupDatabase
@@ -1470,6 +1477,9 @@ class Main < Sinatra::Base
                     #     io.puts "<a class='dropdown-item nav-icon' href='/upload_vplan_html'><div class='icon'><i class='fa fa-upload'></i></div><span class='label'>Vertretungsplan hochladen</span></a>"
                     # end
                     io.puts "<div class='dropdown-divider'></div>"
+                    # if true
+                    #     io.puts "<a class='dropdown-item nav-icon' href='/h4ck'><div class='icon'><i class='fa fa-rocket'></i></div><span class='label'>Dashboard Hackers</span></a>"
+                    # end
                     io.puts "<a class='dropdown-item nav-icon' href='/hilfe'><div class='icon'><i class='fa fa-question-circle'></i></div><span class='label'>Hilfe</span></a>"
                     io.puts "<div class='dropdown-divider'></div>"
                     io.puts "<a class='dropdown-item nav-icon' href='#' onclick='perform_logout();'><div class='icon'><i class='fa fa-sign-out'></i></div><span class='label'>Abmelden</span></a>"

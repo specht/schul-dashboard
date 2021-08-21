@@ -1,0 +1,185 @@
+#{this_is_a_page_for_logged_in_users}
+<style>
+body {
+    background: none;
+    background-color: #000800;
+}
+
+h1 {
+    margin-top: 20px;
+    text-align: center;
+    color: #fad31c;
+    font-weight: bold;
+    border-top: 1px dashed #fad31c;
+    border-bottom: 1px dashed #fad31c;
+    padding: 30px 0;
+}
+
+h2 {
+    margin-top: 20px;
+    text-align: center;
+    color: #fad31c;
+    font-weight: bold;
+    border-top: 1px dashed #fad31c;
+    border-bottom: 1px dashed #fad31c;
+    padding: 30px 0;
+    margin-bottom: 40px;
+}
+
+p {
+    margin-top: 40px;
+    font-size: 20px;
+    text-align: center;
+    color: #73d216;
+}
+
+p b {
+    font-weight: bold;
+    color: #fad31c;
+}
+p a {
+    font-weight: bold;
+    color: #fad31c;
+}
+.text-danger {
+    color: #d5291a;
+}
+.text-danger b {
+    font-weight: bold;
+    color: unset;
+    color: #ea2830;
+    padding: 5px;
+    border-radius: 4px;
+}
+p a:hover {
+    color: #fad31c;
+}
+.container {
+    background: none;
+    font-family: 'PT Mono', monospace;
+    box-shadow: none;
+}
+hr {
+    border-top: 1px dashed #73d216;
+    opacity: 0.5;
+    margin: 40px 0;
+}
+.name-pref, .hack-reset, #hack_reset_confirm_yes, #hack_reset_confirm_no {
+    cursor: pointer;
+}
+p.name {
+    margin-top: 15px;
+}
+</style>
+
+<script>
+
+var tr_1337 = {};
+
+function setCharAt(str, index, chr) {
+    if(index > str.length-1) return str;
+    return str.substring(0, index) + chr + str.substring(index + 1);
+}
+
+Array.prototype.sample = function(){
+    return this[Math.floor(Math.random()*this.length)];
+}
+
+function animate_1337(element) {
+    let text = $(element).text();
+    if ($(element).data('1337') !== true) {
+        $(element).data('1337', true);
+        $(element).data('s', 1);
+        $(element).data('text', $(element).text());
+    }
+    let l = $(element).data('text').length;
+    let t = $(element).data('s');
+    let finish = (t > 20 + l);
+    for (let i = 0; i < text.length; i++) {
+        let s = $(element).data('text')[i];
+        if (!finish) {
+            if (i > t)
+                s = ':';
+            if (Math.random() < 1.0 - t / (20.0 + l))
+                s = (tr_1337[s.toUpperCase()] || [s]).sample();
+        }
+        text = setCharAt(text, i, s);
+    }
+
+    $(element).text(text);
+    if (!finish) {
+        let d = t - l;
+        if (d < 0)
+            d = 0;
+        if (d == 0) d = 2;
+        setTimeout(function() {
+            animate_1337(element);
+        }, d * 20);
+    }
+    $(element).data('s', t + 1);
+}
+
+window.addEventListener('load', function() {
+    for (let i = 65; i <= 90; i++) {
+        let c = String.fromCharCode(i);
+        tr_1337[c] = [];
+        tr_1337[c].push(c);
+        tr_1337[c].push(c.toLowerCase());
+        if (c == 'O')
+            tr_1337[c].push('0');
+        if (c == 'L')
+            tr_1337[c].push('1');
+        if (c == 'Z')
+            tr_1337[c].push('2');
+        if (c == 'E') {
+            tr_1337[c].push('3');
+            tr_1337[c].push('З');
+        }
+        if (c == 'A')
+            tr_1337[c].push('4');
+        if (c == 'S')
+            tr_1337[c].push('5');
+        if (c == 'J')
+            tr_1337[c].push('7');
+        if (c == 'B')
+            tr_1337[c].push('8');
+        if (c == 'R')
+            tr_1337[c].push('Я');
+    }
+    tr_1337['0'] = ['0', 'O', 'o'];
+    tr_1337['1'] = ['1', 'L', 'l'];
+    tr_1337['2'] = ['2', 'Z', 'z'];
+    tr_1337['3'] = ['3', 'E', 'З'];
+    tr_1337['4'] = ['4', 'A'];
+    tr_1337['5'] = ['5', 'S', 's'];
+    tr_1337['8'] = ['8', 'B'];
+    animate_1337($('h1')[0]);
+    for (let element of $('b'))
+        animate_1337(element);
+    $('.name-pref').click(function(e) {
+        let target = $(e.target).closest('.name-pref');
+        let name = target.data('name');
+        api_call('/api/hack_set_name', {name: name}, function(data) {
+            if (data.success)
+                window.location.reload();
+        });
+    });
+    $('.hack-reset').click(function(e) {
+        $('#hack_reset_confirm').show();
+    });
+    $('#hack_reset_confirm_no').click(function() {
+        $('#hack_reset_confirm').hide();
+    });
+    $('#hack_reset_confirm_yes').click(function() {
+        api_call('/api/hack_reset', {}, function(data) {
+            if (data.success)
+                window.location.reload();
+        });
+    });
+});
+
+</script>
+
+<div class='container'>
+    #{hack_content()}
+</div>

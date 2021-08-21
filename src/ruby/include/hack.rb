@@ -229,7 +229,11 @@ class Main < Sinatra::Base
                 names.sort!
                 parts = []
                 histogram.keys.sort.each do |level|
-                    parts << "<b>#{histogram[level].size} Person#{histogram[level].size == 1 ? '' : 'en'}</b> in <b>Level #{level}</b>"
+                    l = 'in der <b>Hall of Fame</b>'
+                    if level + 1 <= MAX_HACK_LEVEL
+                        l = "in <b>Level #{level + 1}</b>"
+                    end
+                    parts << "<b>#{histogram[level].size} Person#{histogram[level].size == 1 ? '' : 'en'}</b> #{l}"
                 end
                 io.puts "Davon befinde#{histogram[histogram.keys.sort.first].size == 1 ? 't' : 'n'} sich #{join_with_sep(parts, ', ', ' und ')}."
                 io.puts "</p>"

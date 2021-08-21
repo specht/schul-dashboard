@@ -98,7 +98,7 @@ function animate_1337(element) {
     for (let i = 0; i < text.length; i++) {
         let s = $(element).data('text')[i];
         if (!finish) {
-            if (i > t)
+            if (i > t && s !== ' ')
                 s = ':';
             if (Math.random() < 1.0 - t / (20.0 + l))
                 s = (tr_1337[s.toUpperCase()] || [s]).sample();

@@ -59,7 +59,7 @@ end
 class Main < Sinatra::Base
     MAX_HACK_LEVEL = 10
 
-    NAMES = %w(babbage boole catmull cerf chomksy codd dijkstra
+    NAMES = %w(babbage boole catmull cerf chomsky codd dijkstra
         engelbart feinler hamilton hamming hejlsberg hopper kay knuth lamport
         lovelace minsky ritchie stroustrup thompson torvalds turing wirth zuse)
 

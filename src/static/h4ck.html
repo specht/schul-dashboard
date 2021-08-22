@@ -104,7 +104,7 @@ function animate_1337(element) {
             if (i > t && s !== ' ')
                 s = ':';
             if (Math.random() < 1.0 - t / (20.0 + l))
-                s = (tr_1337[s.toUpperCase()] || [s]).sample();
+                s = (tr_1337[s] || [s]).sample();
         }
         text = setCharAt(text, i, s);
     }
@@ -123,31 +123,45 @@ function animate_1337(element) {
 }
 
 window.addEventListener('load', function() {
+    let _tr = {
+        'A': ['4'],
+        'B': ['8', 'Б'],
+        'b': ['б'],
+        'D': ['Д'],
+        'd': ['д'],
+        'E': ['3', 'З', 'Э', ],
+        'e': ['з', 'э'],
+        'F': ['Ф'],
+        'f': ['ф'],
+        'G': ['Г'],
+        'g': ['г'],
+        'I': ['И'],
+        'i': ['и'],
+        'J': ['7'],
+        'K': ['К'],
+        'k': ['к'],
+        'L': ['Л'],
+        'l': ['1', 'л'],
+        'O': ['0'],
+        'P': ['П'],
+        'p': ['п'],
+        'R': ['Я'],
+        'S': ['5'],
+        'Z': ['2'],
+    };
     for (let i = 65; i <= 90; i++) {
+        // upper case
         let c = String.fromCharCode(i);
         tr_1337[c] = [];
         tr_1337[c].push(c);
         tr_1337[c].push(c.toLowerCase());
-        if (c == 'O')
-            tr_1337[c].push('0');
-        if (c == 'L')
-            tr_1337[c].push('1');
-        if (c == 'Z')
-            tr_1337[c].push('2');
-        if (c == 'E') {
-            tr_1337[c].push('3');
-            tr_1337[c].push('З');
-        }
-        if (c == 'A')
-            tr_1337[c].push('4');
-        if (c == 'S')
-            tr_1337[c].push('5');
-        if (c == 'J')
-            tr_1337[c].push('7');
-        if (c == 'B')
-            tr_1337[c].push('8');
-        if (c == 'R')
-            tr_1337[c].push('Я');
+        tr_1337[c] = tr_1337[c].concat(_tr[c] || []);
+        // lower case
+        c = String.fromCharCode(i).toLowerCase();
+        tr_1337[c] = [];
+        tr_1337[c].push(c);
+        tr_1337[c].push(c.toUpperCase());
+        tr_1337[c] = tr_1337[c].concat(_tr[c] || []);
     }
     tr_1337['0'] = ['0', 'O', 'o'];
     tr_1337['1'] = ['1', 'L', 'l'];
@@ -156,6 +170,7 @@ window.addEventListener('load', function() {
     tr_1337['4'] = ['4', 'A'];
     tr_1337['5'] = ['5', 'S', 's'];
     tr_1337['8'] = ['8', 'B'];
+    console.log(tr_1337);
     animate_1337($('h1')[0]);
     for (let element of $('b'))
         animate_1337(element);

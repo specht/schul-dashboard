@@ -304,7 +304,10 @@ class Main < Sinatra::Base
 
     post '/api/hack_set_name' do
         require_user!
-        data = parse_request_data(:required_keys => [:name])
+        data = parse_request_data(:required_keys => [:name], :options => {
+            :max_body_length => 2048,
+            :max_string_length => 2048
+        })
         neo4j_query("MATCH (u:User {email: {email}}) SET u.hack_name = {name};", {:email => @session_user[:email], :name => data[:name]})
         display_name = @session_user[:display_name]
         deliver_mail(data[:name]) do

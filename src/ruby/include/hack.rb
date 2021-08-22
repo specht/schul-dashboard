@@ -275,6 +275,7 @@ class Main < Sinatra::Base
                 names.each do |name|
                     io.puts "<p class='name'>#{name}</p>"
                 end
+                io.puts File.read('/static/hack/hall_of_fame_foot.html')
             else
                 io.puts File.read('/static/hack/title.html').gsub('#{next_hack_level}', (@hack_level + 1).to_s)
                 if failed_tries == 0

@@ -186,6 +186,8 @@ window.addEventListener('load', function() {
     animate_1337($('h1')[0]);
     for (let element of $('b'))
         animate_1337(element);
+    for (let element of $('.name'))
+        animate_1337(element);
     $('.name-pref').click(function(e) {
         let target = $(e.target).closest('.name-pref');
         let name = target.data('name');

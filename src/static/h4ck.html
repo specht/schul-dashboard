@@ -182,6 +182,8 @@ window.addEventListener('load', function() {
     tr_1337['4'] = ['4', 'A'];
     tr_1337['5'] = ['5', 'S', 's'];
     tr_1337['8'] = ['8', 'B'];
+    if (window.location.hash === '#debug')
+        $('.container').append($('<p>').text(JSON.stringify(tr_1337)));
     console.log(tr_1337);
     animate_1337($('h1')[0]);
     for (let element of $('b'))

@@ -89,12 +89,12 @@ Array.prototype.sample = function(){
 }
 
 function animate_1337(element) {
+    let text = $(element).text();
     if ($(element).data('1337') !== true) {
         $(element).data('1337', true);
+        $(element).data('s', 1);
+        $(element).data('text', $(element).text());
     }
-    let text = $(element).text();
-    $(element).data('text', $(element).text());
-    $(element).data('s', 1);
     let l = $(element).data('text').length;
     let t = $(element).data('s');
     let finish = (t > 20 + l);

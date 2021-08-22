@@ -17,12 +17,13 @@
         background-color: #020;
         border: 3px solid #040;
         z-index: 2;
-        width: 24px;
-        height: 24px;
+        width: 32px;
+        height: 32px;
         display: inline-block;
         border-radius: 100%;
         color: #73d216;
         text-align: center;
+        font-size: 20px;
     }
     .hack_progress div.active {
         background-color: #040;
@@ -31,16 +32,16 @@
 </style>
 <div class='hack_progress' style='display: #{@hack_level == 0 ? 'none': 'flex'};'>
     <span></span>
-    <div class='#{@hack_level >= 0 ? 'active': ''}'>#{@hack_level >= 0 ? '1': ''}</div>
-    <div class='#{@hack_level >= 1 ? 'active': ''}'>#{@hack_level >= 1 ? '2': ''}</div>
-    <div class='#{@hack_level >= 2 ? 'active': ''}'>#{@hack_level >= 2 ? '3': ''}</div>
-    <div class='#{@hack_level >= 3 ? 'active': ''}'>#{@hack_level >= 3 ? '4': ''}</div>
-    <div class='#{@hack_level >= 4 ? 'active': ''}'>#{@hack_level >= 4 ? '5': ''}</div>
-    <div class='#{@hack_level >= 5 ? 'active': ''}'>#{@hack_level >= 5 ? '6': ''}</div>
-    <div class='#{@hack_level >= 6 ? 'active': ''}'>#{@hack_level >= 6 ? '7': ''}</div>
-    <div class='#{@hack_level >= 7 ? 'active': ''}'>#{@hack_level >= 7 ? '8': ''}</div>
-    <div class='#{@hack_level >= 8 ? 'active': ''}'>#{@hack_level >= 8 ? '9': ''}</div>
-    <div class='#{@hack_level >= 9 ? 'active': ''}'>#{@hack_level >= 9 ? '10': ''}</div>
+    <div class='#{@hack_level >= 0 ? 'active': ''}'>#{@hack_level >= 0 ? '१': ''}</div>
+    <div class='#{@hack_level >= 1 ? 'active': ''}'>#{@hack_level >= 1 ? '२': ''}</div>
+    <div class='#{@hack_level >= 2 ? 'active': ''}'>#{@hack_level >= 2 ? '३': ''}</div>
+    <div class='#{@hack_level >= 3 ? 'active': ''}'>#{@hack_level >= 3 ? '४': ''}</div>
+    <div class='#{@hack_level >= 4 ? 'active': ''}'>#{@hack_level >= 4 ? '५': ''}</div>
+    <div class='#{@hack_level >= 5 ? 'active': ''}'>#{@hack_level >= 5 ? '६': ''}</div>
+    <div class='#{@hack_level >= 6 ? 'active': ''}'>#{@hack_level >= 6 ? '७': ''}</div>
+    <div class='#{@hack_level >= 7 ? 'active': ''}'>#{@hack_level >= 7 ? '८': ''}</div>
+    <div class='#{@hack_level >= 8 ? 'active': ''}'>#{@hack_level >= 8 ? '९': ''}</div>
+    <div class='#{@hack_level >= 9 ? 'active': ''}'>#{@hack_level >= 9 ? '१०': ''}</div>
 </div>
 <h1>:: Dashboard Hackers // Level #{next_hack_level} ::</h1>
 

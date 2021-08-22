@@ -1,2 +1,46 @@
+<style>
+    .hack_progress {
+        display: flex;
+        justify-content: space-between;
+        position: relative;
+        margin-bottom: 30px;
+    }
+    .hack_progress span {
+        border-top: 1px dashed #040;
+        position: absolute;
+        top: 50%;
+        left: 0;
+        right: 0;
+        z-index: 1;
+    }
+    .hack_progress div {
+        background-color: #020;
+        border: 3px solid #040;
+        z-index: 2;
+        width: 24px;
+        height: 24px;
+        display: inline-block;
+        border-radius: 100%;
+        color: #73d216;
+        text-align: center;
+    }
+    .hack_progress div.active {
+        background-color: #040;
+        border: 3px solid #080;
+    }
+</style>
+<div class='hack_progress' style='display: #{@hack_level == 0 ? 'none': 'flex'};'>
+    <span></span>
+    <div class='#{@hack_level >= 0 ? 'active': ''}'>#{@hack_level >= 0 ? '1': ''}</div>
+    <div class='#{@hack_level >= 1 ? 'active': ''}'>#{@hack_level >= 1 ? '2': ''}</div>
+    <div class='#{@hack_level >= 2 ? 'active': ''}'>#{@hack_level >= 2 ? '3': ''}</div>
+    <div class='#{@hack_level >= 3 ? 'active': ''}'>#{@hack_level >= 3 ? '4': ''}</div>
+    <div class='#{@hack_level >= 4 ? 'active': ''}'>#{@hack_level >= 4 ? '5': ''}</div>
+    <div class='#{@hack_level >= 5 ? 'active': ''}'>#{@hack_level >= 5 ? '6': ''}</div>
+    <div class='#{@hack_level >= 6 ? 'active': ''}'>#{@hack_level >= 6 ? '7': ''}</div>
+    <div class='#{@hack_level >= 7 ? 'active': ''}'>#{@hack_level >= 7 ? '8': ''}</div>
+    <div class='#{@hack_level >= 8 ? 'active': ''}'>#{@hack_level >= 8 ? '9': ''}</div>
+    <div class='#{@hack_level >= 9 ? 'active': ''}'>#{@hack_level >= 9 ? '10': ''}</div>
+</div>
 <h1>:: Dashboard Hackers // Level #{next_hack_level} ::</h1>
 

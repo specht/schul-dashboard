@@ -110,15 +110,24 @@ class Main < Sinatra::Base
 
             index = (0...(notes[0].size)).to_a.sample
             mode = (0..1).to_a.sample
-            chord = "#{notes[mode][index]}-#{mode == 0 ? 'Dur' : 'Moll'}"
-            a = (index + ((mode == 0) ? 4 : 3) + [1, 11].sample) % 12
+            available_indices = (0...(notes[0].size)).to_a
+            a = (index + 0) % 12
             b = (index + ((mode == 0) ? 4 : 3)) % 12
-            c = (index + 7 + [1, 11].sample) % 12
-            d = (index + [1, 11].sample) % 12
+            c = (index + 7) % 12
+            available_indices.delete(a)
+            available_indices.delete(b)
+            available_indices.delete(c)
+            available_indices.shuffle!
+            x = available_indices.shift()
+            y = available_indices.shift()
+            z = available_indices.shift()
 
-            @hack_next_password = notes[1][b]
-            a, b, c, d = *([a, b, c, d].shuffle)
-            @hack_description = "<span style='font-size: 150%;'><b>#{notes[1][a]}</b>, <b>#{notes[1][b]}</b>, <b>#{notes[1][c]}</b> oder <b>#{notes[1][d]}</b></span>"
+            chord = "#{notes[mode][index]}-#{mode == 0 ? 'Dur' : 'Moll'}"
+            correct_note = [b, c].sample
+
+            @hack_next_password = notes[1][correct_note]
+            n0, n1, n2, n3 = *([correct_note, x, y, z].shuffle)
+            @hack_description = "<span style='font-size: 150%;'><b>#{notes[1][n0]}</b>, <b>#{notes[1][n1]}</b>, <b>#{notes[1][n2]}</b> oder <b>#{notes[1][n3]}</b></span>"
             @hack_token = chord
         elsif @hack_level == 4
             names = NAMES.shuffle
@@ -208,7 +217,7 @@ class Main < Sinatra::Base
         get_next_password()
 
         StringIO.open do |io|
-            io.puts "<p style='text-align: left; margin-top: 0;'><b>#{@session_user[:first_name]}</b> &lt;#{@session_user[:email]}&gt;</p>"
+            # io.puts "<p style='text-align: left; margin-top: 0;'><b>#{@session_user[:first_name]}</b> &lt;#{@session_user[:email]}&gt;</p>"
             if @hack_level == MAX_HACK_LEVEL
                 # io.puts "<p style='float: right; margin-top: 0;'><a href='/hackers'>=&gt; Hall of Fame</a></p>"
                 io.puts File.read('/static/hack/hall_of_fame.html')

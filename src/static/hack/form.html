@@ -6,9 +6,11 @@
         text-align: center;
         border-radius: 8px;
         border: 3px solid #444;
+        color: #fff;
     }
     .form-control:focus {
         background-color: #000;
+        color: #fff;
     }
 </style>
 <script>
@@ -19,8 +21,13 @@ window.addEventListener('load', function() {
         window.location.href = '/h4ck/' + password;
         return false;
     })
+    $('#ti_hack').focus();
 });
 </script>
-<form id='hack_form'>
-    <input type='text' id='ti_hack' class='form-control' />
-</form>
+<div class='row'>
+    <div class='col-md-6 offset-md-3'>
+    <form id='hack_form'>
+        <input type='text' id='ti_hack' class='form-control' />
+    </form>
+</div>
+</div>

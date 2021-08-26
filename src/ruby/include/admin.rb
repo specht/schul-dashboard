@@ -211,7 +211,13 @@ class Main < Sinatra::Base
             io.puts "</thead>"
             io.puts "<tbody>"
             @@lessons[:lesson_keys].keys.sort do |a, b|
-                a.downcase <=> b.downcase
+                a_fach = @@faecher[@@lessons[:lesson_keys][a][:fach]]
+                b_fach = @@faecher[@@lessons[:lesson_keys][b][:fach]]
+                a_lehrer = @@lessons[:lesson_keys][a][:lehrer].join(', ')
+                b_lehrer = @@lessons[:lesson_keys][b][:lehrer].join(', ')
+                a_klassen = @@lessons[:lesson_keys][a][:klassen].join(', ')
+                b_klassen = @@lessons[:lesson_keys][b][:klassen].join(', ')
+                "#{a_lehrer}/#{a_fach}/#{a_klassen}" <=> "#{b_lehrer}/#{b_fach}/#{b_klassen}"
             end.each do |lesson_key|
                 io.puts "<tr>"
                 io.puts "<td>#{lesson_key}</td>"

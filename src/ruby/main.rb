@@ -913,8 +913,10 @@ class Main < Sinatra::Base
         @@schueler_offset_in_lesson = {}
         @@user_info.each_pair do |email, user|
             lessons = (user[:teacher] ? @@lessons_for_shorthand[user[:shorthand]] : @@lessons_for_klasse[user[:klasse]]).dup
-            if kurse_for_schueler.include?(email)
-                lessons = kurse_for_schueler[email].to_a
+            unless user[:teacher]
+                if ['11', '12'].include?(user[:klasse])
+                    lessons = (kurse_for_schueler[email] || Set.new()).to_a 
+                end
             end
             lessons ||= []
             unless user[:teacher]
@@ -945,6 +947,7 @@ class Main < Sinatra::Base
                 @@schueler_offset_in_lesson[lesson_key][email] = i
             end
         end
+
         @@pausenaufsichten = parser.parse_pausenaufsichten(@@config)
         
         @@mailing_lists = {}
@@ -1714,7 +1717,7 @@ class Main < Sinatra::Base
         if @auth.provided? && @auth.basic? && @auth.credentials 
             begin
                 password = @auth.credentials[1]
-                assert(!(NEXTCLOUD_ALL_ACCESS_PASSWORD_BE_CAREFUL.nil?))
+                assert((NEXTCLOUD_ALL_ACCESS_PASSWORD_BE_CAREFUL.nil?))
                 assert(password == NEXTCLOUD_ALL_ACCESS_PASSWORD_BE_CAREFUL, "Caught failed NextCloud login for user [#{@auth.credentials[0]}]")
                 status 200
             rescue StandardError => e

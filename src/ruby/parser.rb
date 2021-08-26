@@ -464,6 +464,11 @@ class Parser
             end.first
         end
 
+        unr_tr = {}
+        if File.exists?('/data/stundenplan/unr-tr.yaml')
+            unr_tr = YAML.load(File.read('/data/stundenplan/unr-tr.yaml'))
+        end
+
         Dir['/data/stundenplan/*.TXT'].sort.each do |path|
             timetable_start_date = File.basename(path).sub('.TXT', '')
             next if timetable_start_date < config[:first_school_day]
@@ -471,6 +476,9 @@ class Parser
             lessons = {}
             # timetables used to be ISO-8859-1 before 2020-10-26, UTF-8 after that
             enc = timetable_start_date < '2020-10-26' ? 'iso-8859-1' : 'utf-8'
+            use_tr_date = unr_tr.keys.select { |x| x <= timetable_start_date }.first
+            STDERR.puts "#{path} => use_tr_date: [#{use_tr_date}]"
+            use_tr = unr_tr[use_tr_date] || {}
             File.open(path, 'r:' + enc) do |f|
                 f.each_line do |line|
                     line = line.encode('utf-8')
@@ -483,6 +491,7 @@ class Parser
                         x.strip
                     end
                     unr = parts[0].to_i
+                    unr = use_tr[unr] || unr
                     klasse = parts[1]
                     klasse = '8o' if klasse == '8?'
                     klasse = '8o' if klasse == '8ω'

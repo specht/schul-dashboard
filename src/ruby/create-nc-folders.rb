@@ -1,7 +1,7 @@
 #!/usr/bin/env ruby
 require './main.rb'
 
-ALSO_CREATE_OS_FOLDERS = false
+ALSO_CREATE_OS_FOLDERS = true
 
 class Script
     def emit(s)

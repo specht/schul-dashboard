@@ -187,7 +187,7 @@ class Main < Sinatra::Base
         
         get_next_password()
 
-        STDERR.puts "HACK // #{@session_user[:email]} // level: #{@hack_level}, seed: #{@hack_seed}, provided: #{provided_password}#{provided_password.nil? ? '(nil)':''}, next password: #{@hack_next_password}#{@hack_next_password.nil? ? '(nil)':''}"
+        STDERR.puts "HACK // #{@session_user[:email]} // level: #{@hack_level}, next password: #{@hack_next_password}#{@hack_next_password.nil? ? '(nil)':''}"
 
         unless provided_password.nil? || @hack_next_password.nil?
             if provided_password == @hack_next_password

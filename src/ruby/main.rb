@@ -766,6 +766,29 @@ class Main < Sinatra::Base
 
         @@lessons, @@vertretungen, @@vplan_timestamp, @@day_messages = parser.parse_timetable(@@config)
         merged_lesson_keys = {}
+        @@current_lesson_keys = Set.new()
+        if DASHBOARD_SERVICE == 'ruby'
+            @@lessons[:lesson_keys].keys.sort do |a, b|
+                afach = (a.split('~').first || '').downcase
+                bfach = (b.split('~').first || '').downcase
+                astufe = a.split('~')[1].to_i
+                bstufe = b.split('~')[1].to_i
+                afach == bfach ? ((astufe == bstufe) ? (a <=> b) : (astufe <=> bstufe)) : (afach <=> bfach)
+            end.each do |lesson_key|
+                lesson = @@lessons[:lesson_keys][lesson_key]
+                stunden = []
+                ((@@lessons[:timetables][@@lessons[:timetables].keys.sort.last][lesson_key] || {})[:stunden] || {}).each_pair do |dow, h|
+                    h.each_pair do |stunde, info|
+                        stunden << info
+                    end
+                end
+                unless stunden.empty?
+                    STDERR.puts "#{stunden.size} #{lesson_key}"
+                    @@current_lesson_keys << lesson_key
+                end
+            end
+        end
+        raise 'nope'
         @@lessons[:lesson_keys].keys.each do |lesson_key|
             lesson_info = @@lessons[:lesson_keys][lesson_key]
             next if (Set.new(lesson_info[:klassen]) & Set.new(@@klassen_order)).empty?

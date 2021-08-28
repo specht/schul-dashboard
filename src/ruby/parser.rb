@@ -474,11 +474,30 @@ class Parser
             next if timetable_start_date < config[:first_school_day]
             all_lessons[:start_dates] << timetable_start_date
             lessons = {}
-            # timetables used to be ISO-8859-1 before 2020-10-26, UTF-8 after that
-            enc = timetable_start_date < '2020-10-26' ? 'iso-8859-1' : 'utf-8'
             use_tr_date = unr_tr.keys.select { |x| x <= timetable_start_date }.first
             use_tr = unr_tr[use_tr_date] || {}
-            File.open(path, 'r:' + enc) do |f|
+            line_cache = {}
+            File.open(path, 'r:utf-8') do |f|
+                f.each_line do |line|
+                    line = line.encode('utf-8')
+                    parts = line.split("\t").map do |x| 
+                        x = x.strip
+                        if x[0] == '"' && x[x.size - 1] == '"'
+                            x = x[1, x.size - 2]
+                        end
+                        x.strip
+                    end
+                    klasse = parts[1]
+                    klasse = '8o' if klasse == '8?'
+                    klasse = '8o' if klasse == '8ω'
+                    klasse = '9o' if klasse == '9?'
+                    klasse = '9o' if klasse == '9ω'
+                    cache_key = parts[2, parts.size - 2].join('/')
+                    line_cache[cache_key] ||= Set.new()
+                    line_cache[cache_key] << klasse
+                end
+            end
+            File.open(path, 'r:utf-8') do |f|
                 f.each_line do |line|
                     line = line.encode('utf-8')
 #                     parts = line.split(",").map do |x| 
@@ -496,6 +515,7 @@ class Parser
                     klasse = '8o' if klasse == '8ω'
                     klasse = '9o' if klasse == '9?'
                     klasse = '9o' if klasse == '9ω'
+
 #                     next if timetable_start_date < '2020-08-19' && ['11', '12'].include?(klasse)
                     lehrer = parts[2]
                     if @use_mock_names
@@ -510,6 +530,9 @@ class Parser
                     dow = parts[5].to_i - 1
                     stunde = parts[6].to_i
                     fach_unr_key = "#{fach}~#{unr}"
+                    fach_unr_key = "#{fach}~#{klasse}"
+                    cache_key = parts[2, parts.size - 2].join('/')
+                    fach_unr_key = "#{fach}~#{line_cache[cache_key].to_a.sort.join('~')}"
                     lessons[fach_unr_key] ||= {}
                     lessons[fach_unr_key]["#{dow}/#{stunde}"] ||= {}
                     lessons[fach_unr_key]["#{dow}/#{stunde}"][raum] ||= {
@@ -541,7 +564,8 @@ class Parser
                 stunden.each_pair do |tag_stunde, info|
                     info.each_pair do |raum, stunden_info|
                         sub_key = "#{stunden_info[:lehrer].to_a.sort.join('/')}~#{stunden_info[:klassen].to_a.sort.join('/')}"
-                        lesson_key = "#{unr_fach}#{sub_keys_for_unr_fach[unr_fach][sub_key]}"
+                        lesson_key = "#{unr_fach}"
+                        # lesson_key = "#{unr_fach}~#{sub_keys_for_unr_fach[unr_fach][sub_key]}"
                         lesson_key = lesson_key_tr[lesson_key] || lesson_key
                         lesson_keys_for_unr[unr_fach.split('~')[1].to_i] ||= Set.new()
                         lesson_keys_for_unr[unr_fach.split('~')[1].to_i] << lesson_key

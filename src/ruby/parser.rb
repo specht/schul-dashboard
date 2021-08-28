@@ -477,7 +477,6 @@ class Parser
             # timetables used to be ISO-8859-1 before 2020-10-26, UTF-8 after that
             enc = timetable_start_date < '2020-10-26' ? 'iso-8859-1' : 'utf-8'
             use_tr_date = unr_tr.keys.select { |x| x <= timetable_start_date }.first
-            STDERR.puts "#{path} => use_tr_date: [#{use_tr_date}]"
             use_tr = unr_tr[use_tr_date] || {}
             File.open(path, 'r:' + enc) do |f|
                 f.each_line do |line|

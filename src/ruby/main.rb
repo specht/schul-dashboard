@@ -39,6 +39,7 @@ $VERBOSE = nil
 require './credentials.rb'
 require '/data/config.rb'
 $VERBOSE = warn_level
+DASHBOARD_SERVICE = ENV['DASHBOARD_SERVICE']
 
 require './background-renderer.rb'
 require './include/admin.rb'
@@ -790,6 +791,9 @@ class Main < Sinatra::Base
             end
         end
         lesson_key_tr = self.fix_lesson_key_tr(lesson_key_tr)
+        if DASHBOARD_SERVICE == 'ruby'
+            debug lesson_key_tr.to_yaml
+        end
 
         # patch lesson_keys in @@lessons and @@vertretungen
         @@lessons, @@vertretungen = parser.parse_timetable(@@config, lesson_key_tr)

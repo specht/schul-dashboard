@@ -97,6 +97,7 @@
         transform-origin: 0 0;
         transform: rotate(-90deg);
     }
+
     .content {
         position: absolute;
         left: 2vw;
@@ -146,7 +147,8 @@
         <div class='container-fluid ticker row'>
             <div class='ticker-message'></div>
         </div>
-        <div class='attribution'></div>
+        <div class='attribution'><span class='color_scheme'></span><span style='margin: 0 0.5em;'>//</span>Stand: <span class='monitor_timestamp'></span></div>
+        
     </div>
 </div>
 
@@ -219,6 +221,7 @@
                 if (data.timestamp !== last_vplan_timestamp) {
                     last_vplan_timestamp = data.timestamp;
                     data = data.data;
+                    $('.monitor_timestamp').text(moment(data.timestamp).format('ddd, D.M.Y H:m:s'));
                     console.log(data);
                     for (let klasse of klassen) {
                         let div = klassen_div[klasse];
@@ -354,7 +357,7 @@
         let a = `<b>»${attribution[0]}«</b>`;
         if (attribution[1])
             a += ` von <b>${attribution[1]}</b>`;
-        $('.attribution').html(a);
+        $('.color_scheme').html(a);
         moment.locale('de');
         let col = null;
         let i = 0;

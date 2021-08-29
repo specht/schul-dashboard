@@ -221,7 +221,7 @@
                 if (data.timestamp !== last_vplan_timestamp) {
                     last_vplan_timestamp = data.timestamp;
                     data = data.data;
-                    $('.monitor_timestamp').text(moment(data.timestamp).format('ddd, D.M.Y HH:mm:ss'));
+                    /* $('.monitor_timestamp').text(moment(data.timestamp).format('ddd, D.M.Y HH:mm:ss')); */
                     console.log(data);
                     for (let klasse of klassen) {
                         let div = klassen_div[klasse];

@@ -775,10 +775,10 @@ class Main < Sinatra::Base
         @@current_lesson_key_info = {}
         if DASHBOARD_SERVICE == 'ruby'
             @@lessons[:lesson_keys].keys.sort do |a, b|
-                afach = (a.split('~').first || '').downcase
-                bfach = (b.split('~').first || '').downcase
-                astufe = a.split('~')[1].to_i
-                bstufe = b.split('~')[1].to_i
+                afach = (a.split('_').first || '').downcase
+                bfach = (b.split('_').first || '').downcase
+                astufe = a.split('_')[1].to_i
+                bstufe = b.split('_')[1].to_i
                 afach == bfach ? ((astufe == bstufe) ? (a <=> b) : (astufe <=> bstufe)) : (afach <=> bfach)
             end.each do |lesson_key|
                 lesson = @@lessons[:lesson_keys][lesson_key]
@@ -802,7 +802,7 @@ class Main < Sinatra::Base
         @@lessons[:lesson_keys].each_pair do |lesson_key, info|
             # STDERR.puts "[#{lesson_key}]"
             unless @@faecher[lesson_key]
-                x = lesson_key.split('~').first.split('-').first
+                x = lesson_key.split('_').first.split('-').first
                 @@faecher[info[:fach]] = @@faecher[x] if @@faecher[x]
             end
         end

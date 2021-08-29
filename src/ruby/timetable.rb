@@ -166,11 +166,14 @@ class Timetable
         end
         monitor_date = monitor_date.strftime('%Y-%m-%d')
 
-        monitor_data = {:klassen => {}, :lehrer => {}, :timestamp => DateTime.now.to_s}
         monitor_timestamp = ''
+        monitor_data = {:klassen => {}, :lehrer => {}, :timestamp => DateTime.now.to_s}
         vplan_timestamp_path = '/vplan/timestamp.txt'
         if File.exists?(vplan_timestamp_path)
             vplan_timestamp = File.read(vplan_timestamp_path)
+            parts = vplan_timestamp.split('-')
+
+            monitor_data[:vplan_timestamp] = DateTime.parse("#{parts[0]}-#{parts[1]}-#{parts[2]}T#{parts[3]}:#{parts[4]}:#{parts[5]}+#{DateTime.now.to_s.split('+')[1]}").to_s
         end
 
         temp_data = {:klassen => {}, :lehrer => {}}

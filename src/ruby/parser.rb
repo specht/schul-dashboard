@@ -668,6 +668,11 @@ class Parser
                         :vertretungs_text => jentry[5],
                     }
 
+                    # TODO: IMPORTANT: This ignores all Testing entries as a temporary fix
+                    if entry[:fach_alt] == 'Testung' || entry[:fach_neu] == 'Testung'
+                        next
+                    end
+
                     if before_stunde
                         entry[:before_stunde] = true
                     end

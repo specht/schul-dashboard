@@ -469,6 +469,8 @@ class Parser
             unr_tr = YAML.load(File.read('/data/stundenplan/unr-tr.yaml'))
         end
 
+        lesson_key_back_tr = {}
+
         Dir['/data/stundenplan/*.TXT'].sort.each do |path|
             timetable_start_date = File.basename(path).sub('.TXT', '')
             next if timetable_start_date < config[:first_school_day]
@@ -529,10 +531,11 @@ class Parser
                     raum = parts[4].split('~').join('/')
                     dow = parts[5].to_i - 1
                     stunde = parts[6].to_i
-                    fach_unr_key = "#{fach}~#{unr}"
-                    fach_unr_key = "#{fach}~#{klasse}"
                     cache_key = parts[2, parts.size - 2].join('/')
-                    fach_unr_key = "#{fach}~#{line_cache[cache_key].to_a.sort.join('~')}"
+                    fach_unr_key = "#{fach}_#{line_cache[cache_key].to_a.sort { |a, b| (a.to_i == b.to_i) ? (a <=> b) : (a.to_i <=> b.to_i)}.join('~')}"
+                    fach_unr_key = lesson_key_tr[fach_unr_key] || fach_unr_key
+                    lesson_key_back_tr[fach_unr_key] = "#{fach}~#{unr}a"
+                    next if fach_unr_key == '_'
                     lessons[fach_unr_key] ||= {}
                     lessons[fach_unr_key]["#{dow}/#{stunde}"] ||= {}
                     lessons[fach_unr_key]["#{dow}/#{stunde}"][raum] ||= {
@@ -566,9 +569,8 @@ class Parser
                         sub_key = "#{stunden_info[:lehrer].to_a.sort.join('/')}~#{stunden_info[:klassen].to_a.sort.join('/')}"
                         lesson_key = "#{unr_fach}"
                         # lesson_key = "#{unr_fach}~#{sub_keys_for_unr_fach[unr_fach][sub_key]}"
-                        lesson_key = lesson_key_tr[lesson_key] || lesson_key
-                        lesson_keys_for_unr[unr_fach.split('~')[1].to_i] ||= Set.new()
-                        lesson_keys_for_unr[unr_fach.split('~')[1].to_i] << lesson_key
+                        lesson_keys_for_unr[unr_fach.split('_')[1].to_i] ||= Set.new()
+                        lesson_keys_for_unr[unr_fach.split('_')[1].to_i] << lesson_key
                         info_for_lesson_key[lesson_key] ||= {:lehrer => Set.new(),
                                                              :klassen => Set.new()}
                         if timetable_start_date == current_timetable_start_date
@@ -580,12 +582,12 @@ class Parser
                         }
                         all_lessons[:lesson_keys][lesson_key] ||= {
                             :unr => Set.new(),
-                            :fach => unr_fach.split('~').first,
+                            :fach => unr_fach.split('_').first,
                             :lehrer => Set.new(),
                             :klassen => Set.new()
                         }
                         
-                        all_lessons[:lesson_keys][lesson_key][:unr] << unr_fach.split('~')[1].to_i
+                        all_lessons[:lesson_keys][lesson_key][:unr] << unr_fach.split('_')[1].to_i
                         all_lessons[:lesson_keys][lesson_key][:lehrer] |= info_for_lesson_key[lesson_key][:lehrer]
                         all_lessons[:lesson_keys][lesson_key][:klassen] |= info_for_lesson_key[lesson_key][:klassen]
 
@@ -752,7 +754,7 @@ class Parser
             vertretungen[entry[:datum]] ||= []
             vertretungen[entry[:datum]] << entry
         end
-        return all_lessons, vertretungen, vplan_timestamp, day_messages
+        return all_lessons, vertretungen, vplan_timestamp, day_messages, lesson_key_back_tr
     end
     
     def parse_pausenaufsichten(config)

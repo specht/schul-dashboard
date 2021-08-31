@@ -764,66 +764,45 @@ class Main < Sinatra::Base
             end
         end
 
-        @@lessons, @@vertretungen, @@vplan_timestamp, @@day_messages = parser.parse_timetable(@@config)
-        merged_lesson_keys = {}
-        @@current_lesson_keys = Set.new()
-        if DASHBOARD_SERVICE == 'ruby'
-            @@lessons[:lesson_keys].keys.sort do |a, b|
-                afach = (a.split('~').first || '').downcase
-                bfach = (b.split('~').first || '').downcase
-                astufe = a.split('~')[1].to_i
-                bstufe = b.split('~')[1].to_i
-                afach == bfach ? ((astufe == bstufe) ? (a <=> b) : (astufe <=> bstufe)) : (afach <=> bfach)
-            end.each do |lesson_key|
-                lesson = @@lessons[:lesson_keys][lesson_key]
-                stunden = []
-                ((@@lessons[:timetables][@@lessons[:timetables].keys.sort.last][lesson_key] || {})[:stunden] || {}).each_pair do |dow, h|
-                    h.each_pair do |stunde, info|
-                        stunden << info
-                    end
-                end
-                unless stunden.empty?
-                    STDERR.puts "#{stunden.size} #{lesson_key}"
-                    @@current_lesson_keys << lesson_key
-                end
-            end
-        end
-        raise 'nope'
-        @@lessons[:lesson_keys].keys.each do |lesson_key|
-            lesson_info = @@lessons[:lesson_keys][lesson_key]
-            next if (Set.new(lesson_info[:klassen]) & Set.new(@@klassen_order)).empty?
-            temp = "#{lesson_info[:fach]}/#{lesson_info[:klassen].sort.join(',')}/#{lesson_info[:lehrer].sort.join(',')}"
-            merged_lesson_keys[temp] ||= []
-            merged_lesson_keys[temp] << lesson_key
-        end
-        merged_lesson_keys.keys.each do |temp|
-            merged_lesson_keys[temp].sort!
-        end
         lesson_key_tr = {}
-        # merge lesson_keys
-        merged_lesson_keys.each_pair do |temp, lesson_keys|
-            next if lesson_keys.size == 1
-            klassen = Set.new()
-            lesson_keys.each do |lesson_key|
-                klassen |= Set.new(@@lessons[:lesson_keys][lesson_key][:klassen])
-            end
-            lesson_keys.each.with_index do |lesson_key, i|
-                if i > 0
-                    lesson_key_tr[lesson_key] = lesson_keys.first
-                end
-            end
-        end
         lesson_key_tr = self.fix_lesson_key_tr(lesson_key_tr)
         if DASHBOARD_SERVICE == 'ruby'
             debug lesson_key_tr.to_yaml
+        end
+
+        @@lessons, @@vertretungen, @@vplan_timestamp, @@day_messages, @@lesson_key_back_tr = parser.parse_timetable(@@config, lesson_key_tr)
+        @@current_lesson_key_order = []
+        @@current_lesson_key_info = {}
+        if DASHBOARD_SERVICE == 'ruby'
+            @@lessons[:lesson_keys].keys.sort do |a, b|
+                afach = (a.split('_').first || '').downcase
+                bfach = (b.split('_').first || '').downcase
+                astufe = a.split('_')[1].to_i
+                bstufe = b.split('_')[1].to_i
+                afach == bfach ? ((astufe == bstufe) ? (a <=> b) : (astufe <=> bstufe)) : (afach <=> bfach)
+            end.each do |lesson_key|
+                lesson = @@lessons[:lesson_keys][lesson_key]
+                stunden = Set.new()
+                ((@@lessons[:timetables][@@lessons[:timetables].keys.sort.last][lesson_key] || {})[:stunden] || {}).each_pair do |dow, h|
+                    h.each_pair do |stunde, info|
+                        stunden << sprintf('%d/%02d', info[:tag], info[:stunde])
+                    end
+                end
+                unless stunden.empty?
+                    @@current_lesson_key_order << lesson_key
+                    @@current_lesson_key_info[lesson_key] = {}
+                    @@current_lesson_key_info[lesson_key][:stunden] = stunden.to_a.sort
+                end
+            end
         end
 
         # patch lesson_keys in @@lessons and @@vertretungen
         @@lessons, @@vertretungen = parser.parse_timetable(@@config, lesson_key_tr)
         # patch @@faecher
         @@lessons[:lesson_keys].each_pair do |lesson_key, info|
+            # STDERR.puts "[#{lesson_key}]"
             unless @@faecher[lesson_key]
-                x = lesson_key.split('~').first.split('-').first
+                x = lesson_key.split('_').first.split('-').first
                 @@faecher[info[:fach]] = @@faecher[x] if @@faecher[x]
             end
         end

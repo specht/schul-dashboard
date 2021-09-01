@@ -892,6 +892,7 @@ class Main < Sinatra::Base
         unless @@lessons[:start_dates].empty?
             @@lessons[:timetables][@@lessons[:start_dates].last].each_pair do |lesson_key, lesson_info|
                 lesson = @@lessons[:lesson_keys][lesson_key]
+                next if lesson[:fach] == 'Testung'
                 lesson[:klassen].each do |klasse|
                     @@teachers_for_klasse[klasse] ||= {}
                     lesson[:lehrer].each do |lehrer|

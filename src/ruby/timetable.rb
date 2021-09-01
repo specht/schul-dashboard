@@ -38,6 +38,15 @@ class Timetable
         end
         s.strip
     end
+
+    def fix_h_to_hh(s)
+        return nil if s.nil?
+        if s =~ /^\d:\d\d$/
+            '0' + s
+        else
+            s
+        end
+    end
     
     def gen_label_lehrer(a, b)
         # a: fach, b: lehrer
@@ -1097,6 +1106,8 @@ class Timetable
                         if @@user_info[organized_by]
                             organized_by = @@user_info[organized_by][:display_last_name]
                         end
+                        event[:start_time] = fix_h_to_hh(event[:start_time])
+                        event[:end_time] = fix_h_to_hh(event[:end_time])
                         events << {:lesson => false,
                                    :start => "#{event[:date]}T#{event[:start_time]}",
                                    :end => "#{event[:date]}T#{event[:end_time]}",

@@ -106,6 +106,15 @@ def debug_error(message)
     STDERR.puts "#{DateTime.now.strftime('%H:%M:%S')} [ERROR] [#{ls}] #{message}"
 end
 
+def fix_h_to_hh(s)
+    return nil if s.nil?
+    if s =~ /^\d:\d\d$/
+        '0' + s
+    else
+        s
+    end
+end
+
 USER_AGENT_PARSER = UserAgentParser::Parser.new
 WEEKDAYS = ['So', 'Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa']
 HOMEWORK_FEEDBACK_STATES = ['good', 'hmmm', 'lost']
@@ -1948,7 +1957,12 @@ class Main < Sinatra::Base
                     end
                     temp[x[:info][:id]][:recipients] << x[:recipient]
                 end
-                stored_events = temp_order.map { |x| temp[x] }
+                stored_events = temp_order.map do |x| 
+                    e = temp[x]
+                    e[:info][:start_time] = fix_h_to_hh(e[:info][:start_time])
+                    e[:info][:end_time] = fix_h_to_hh(e[:info][:end_time])
+                    e
+                end
             end
         elsif path == 'polls'
             unless teacher_or_sv_logged_in?

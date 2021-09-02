@@ -308,7 +308,7 @@ class Main < Sinatra::Base
                 elsif pretty_fach.include?(' LK')
                     row_style = 'background-color: #fcaf3e;'
                 elsif !(Set.new(@@lessons[:lesson_keys][lesson_key][:klassen]) & Set.new(KLASSEN_ORDER)).empty?
-                    row_style = 'background-color: #73a946;'
+                    # row_style = 'background-color: #73a946;'
                 end
                 io.puts "<tr style='#{row_style}'>"
                 io.puts "<td>#{lesson_key}</td>"

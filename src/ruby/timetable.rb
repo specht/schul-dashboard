@@ -38,6 +38,15 @@ class Timetable
         end
         s.strip
     end
+
+    def fix_h_to_hh(s)
+        return nil if s.nil?
+        if s =~ /^\d:\d\d$/
+            '0' + s
+        else
+            s
+        end
+    end
     
     def gen_label_lehrer(a, b)
         # a: fach, b: lehrer
@@ -166,11 +175,14 @@ class Timetable
         end
         monitor_date = monitor_date.strftime('%Y-%m-%d')
 
-        monitor_data = {:klassen => {}, :lehrer => {}, :timestamp => DateTime.now.to_s}
         monitor_timestamp = ''
+        monitor_data = {:klassen => {}, :lehrer => {}, :timestamp => DateTime.now.to_s}
         vplan_timestamp_path = '/vplan/timestamp.txt'
         if File.exists?(vplan_timestamp_path)
             vplan_timestamp = File.read(vplan_timestamp_path)
+            parts = vplan_timestamp.split('-')
+
+            monitor_data[:vplan_timestamp] = DateTime.parse("#{parts[0]}-#{parts[1]}-#{parts[2]}T#{parts[3]}:#{parts[4]}:#{parts[5]}+#{DateTime.now.to_s.split('+')[1]}").to_s
         end
 
         temp_data = {:klassen => {}, :lehrer => {}}
@@ -1094,6 +1106,8 @@ class Timetable
                         if @@user_info[organized_by]
                             organized_by = @@user_info[organized_by][:display_last_name]
                         end
+                        event[:start_time] = fix_h_to_hh(event[:start_time])
+                        event[:end_time] = fix_h_to_hh(event[:end_time])
                         events << {:lesson => false,
                                    :start => "#{event[:date]}T#{event[:start_time]}",
                                    :end => "#{event[:date]}T#{event[:end_time]}",

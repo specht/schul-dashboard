@@ -34,9 +34,7 @@ class Script
         @@user_info = Main.class_variable_get(:@@user_info)
         wanted_nc_ids = nil
         unless args.empty?
-            STDERR.puts args.join(' ')
             wanted_nc_ids = Set.new(args.map { |email| (@@user_info[email] || {})[:nc_login] })
-            STDERR.puts wanted_nc_ids.to_a.sort.join(' ')
         end
 
         @@user_info.keys.sort.each do |email|

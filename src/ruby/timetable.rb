@@ -1318,7 +1318,9 @@ class Timetable
                         fixed_events.reject! do |event|
                             if event[:lesson] && (!event[:phantom_event]) && (!event[:pausenaufsicht])
                                 if event[:klassen].first.include?('11') || event[:klassen].first.include?('12') || event[:klassen].last.include?('11') || event[:klassen].last.include?('12')
-                                    (event[:lesson_key] != 0) && (@@lessons_for_user[user[:email]]) && (!@@lessons_for_user[user[:email]].include?(event[:lesson_key]))
+                                    # also handle entfall lessons: check orig_lesson_key first, lesson_key otherwise
+                                    check_lesson_key = event[:orig_lesson_key] || event[:lesson_key]
+                                    (check_lesson_key != 0) && (@@lessons_for_user[user[:email]]) && (!@@lessons_for_user[user[:email]].include?(check_lesson_key))
                                 else
                                     false
                                 end

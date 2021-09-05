@@ -462,8 +462,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (arg.event.extendedProps.count === 1)
                     div1.css('white-space', 'nowrap');
                 let fach = $('<div>').html(arg.event.extendedProps.label);
-                if ('#{!!DEVELOPMENT}' === 'true')
-                    fach.html('<b style="background-color: rgba(255,255,255,0.2);">[' + arg.event.extendedProps.lesson_key + '#' + arg.event.extendedProps.lesson_offset + ']</b><br />' + fach.html());
+                // if ('#{!!DEVELOPMENT}' === 'true')
+                    // fach.html('<b style="background-color: rgba(255,255,255,0.2);">[' + arg.event.extendedProps.lesson_key + '#' + arg.event.extendedProps.lesson_offset + ']</b><br />' + fach.html());
 //                 if (arg.event.extendedProps.vnr)
 //                     fach.html('#' + arg.event.extendedProps.vnr + ' ' + fach.html());
                 div1.append(fach);

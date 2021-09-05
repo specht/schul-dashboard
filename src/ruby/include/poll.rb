@@ -147,6 +147,17 @@ class Main < Sinatra::Base
         end
     end
     
+    post '/api/hide_poll_run' do
+        require_user!
+        data = parse_request_data(:required_keys => [:prid])
+        neo4j_query(<<~END_OF_QUERY, {:prid => data[:prid], :email => @session_user[:email]})
+            MATCH (u:User {email: {email}})-[rt:IS_PARTICIPANT]->(pr:PollRun {id: {prid}})
+            SET rt.hide = true;
+        END_OF_QUERY
+
+        respond(:yay => 'sure')
+    end
+    
     def get_poll_run_results(prid)
         require_teacher_or_sv!
         temp = neo4j_query_expect_one(<<~END_OF_QUERY, {:prid => prid, :email => @session_user[:email]})
@@ -828,14 +839,14 @@ class Main < Sinatra::Base
         today = Date.today.strftime('%Y-%m-%d')
         now = Time.now.strftime('%Y-%m-%dT%H:%M:%S')
         email = @session_user[:email]
-        entries = neo4j_query(<<~END_OF_QUERY, :email => email, :today => today).map { |x| {:poll_run => x['pr'].props, :poll_title => x['p.title'], :organizer => x['a.email'] } }
+        entries = neo4j_query(<<~END_OF_QUERY, :email => email, :today => today).map { |x| {:poll_run => x['pr'].props, :poll_title => x['p.title'], :organizer => x['a.email'], :hidden => x['hidden'] } }
             MATCH (u:User {email: {email}})-[rt:IS_PARTICIPANT]->(pr:PollRun)-[:RUNS]->(p:Poll)-[:ORGANIZED_BY]->(a:User)
             WHERE COALESCE(rt.deleted, false) = false
             AND COALESCE(pr.deleted, false) = false
             AND COALESCE(p.deleted, false) = false
             AND {today} >= pr.start_date
-            AND   {today} <= pr.end_date
-            RETURN pr, p.title, a.email
+            AND {today} <= pr.end_date
+            RETURN pr, p.title, a.email, COALESCE(rt.hide, FALSE) AS hidden
             ORDER BY pr.end_date, pr.end_time;
         END_OF_QUERY
         entries.select! do |entry|
@@ -843,9 +854,15 @@ class Main < Sinatra::Base
             now >= "#{pr[:start_date]}T#{pr[:start_time]}:00" && now <= "#{pr[:end_date]}T#{pr[:end_time]}:00"
         end
         return '' if entries.empty?
+        hidden_entries = entries.select { |x| x[:hidden] }
         StringIO.open do |io|
+            unless hidden_entries.empty?
+                io.puts "<div class='hint hint_poll_hidden_indicator'>"
+                io.puts "Ausgeblendete Umfragen: #{hidden_entries.map { |x| x[:poll_title] }.join(', ')} <a id='show_hidden_polls' href='#'>(anzeigen)</a>"
+                io.puts "</div>"
+            end
             entries.each.with_index do |entry, _|
-                io.puts "<div class='hint'>"
+                io.puts "<div class='hint hint_poll' style='#{entry[:hidden] ? 'display: none;': ''}'>"
                 poll_title = entry[:poll_title]
                 poll_run = entry[:poll_run]
                 organizer = entry[:organizer]

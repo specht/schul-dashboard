@@ -328,6 +328,7 @@ def deliver_mail(plain_text = nil, &block)
             mail.deliver!
         else
             debug "Not sending mail to because we're in development: #{mail.subject} => #{mail.to.join(' / ')}"
+            debug mail.to_s
         end
     else
         mail.deliver!

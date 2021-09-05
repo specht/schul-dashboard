@@ -162,7 +162,9 @@ function collect_poll_run_data() {
             if (poll_run_data.response[item_index].length > 0)
                 answered_item_count += 1;
         } else if (item.type === 'textarea') {
-            poll_run_data.response[item_index] = poll_run_data.widgets[item_index].val().trim();
+            let s = poll_run_data.widgets[item_index].val().trim();
+            if (s.length > 0)
+                poll_run_data.response[item_index] = s;
         }
     }
     $('.poll-run-progress').css('width', `${answered_item_count * 100 / total_item_count}%`);
@@ -171,16 +173,16 @@ function collect_poll_run_data() {
         if (poll_run_data.response[k] === null || (typeof(poll_run_data.response[k]) === 'object' && poll_run_data.response[k].length === 0))
             delete poll_run_data.response[k];
     }
-//     if (Object.keys(poll_run_data.response).length === 0)
-//         poll_run_data.response = null;
     let current_response_json = JSON.stringify(poll_run_data.response);
     let stored_response_json = JSON.stringify(poll_run_data.stored_response);
     if (current_response_json !== stored_response_json) {
+        $('#bu_hide_poll_run').prop('disabled', true);
         $('#bu_discard_poll_results').prop('disabled', false).removeClass('btn-outline-secondary').addClass('btn-secondary');
         $('#bu_submit_poll_results').prop('disabled', false).removeClass('btn-outline-success').addClass('btn-success');
         $('#bu_close_poll_response_modal').prop('disabled', true).removeClass('btn-secondary').addClass('btn-outline-secondary');
         return true;
     } else {
+        $('#bu_hide_poll_run').prop('disabled', false);
         $('#bu_discard_poll_results').prop('disabled', true).removeClass('btn-secondary').addClass('btn-outline-secondary');
         $('#bu_submit_poll_results').prop('disabled', true).removeClass('btn-success').addClass('btn-outline-success');
         $('#bu_close_poll_response_modal').prop('disabled', false).removeClass('btn-outline-secondary').addClass('btn-secondary');
@@ -296,6 +298,10 @@ function launch_poll(prid, external_code) {
                     }
                 }
                 collect_poll_run_data();
+                if (external_code !== null && external_code.length > 0)
+                    $('#bu_hide_poll_run').hide();
+                else
+                    $('#bu_hide_poll_run').show();
                 $('#pollResponseModal').modal('show');
             }
         });
@@ -345,6 +351,7 @@ function show_poll_run_results(prid) {
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title poll-title"></h5>
+                <button id='bu_hide_poll_run' type="button" class="float-right btn btn-sm btn-outline-secondary"><i class='fa fa-eye-slash'></i>&nbsp;&nbsp;Diese Umfrage ausblenden</button>
             </div>
             <div class="modal-body">
                 <div class='alert alert-success poll-run-anonymous' style='padding-left: 50px; position: relative;'>
@@ -512,6 +519,18 @@ window.addEventListener('load', function() {
                 $('#pollResponseModal .poll_submit_error').fadeIn();
             }
         });
+    });
+    $('#bu_hide_poll_run').click(function(e) {
+        api_call('/api/hide_poll_run', {prid: poll_run_data.prid}, function(data) {
+            if (data.success) {
+                window.location.reload();
+            }
+        });
+    });
+    $('#show_hidden_polls').click(function(e) {
+        $('.hint_poll_hidden_indicator').slideUp();
+        $('.hint_poll').slideDown();
+        e.preventDefault();
     });
     $('#pollResponseModal').on('hide.bs.modal', function(e) {
         if (collect_poll_run_data() && (!force_close_poll_response)) {

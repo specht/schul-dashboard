@@ -28,6 +28,7 @@ class Script
         @@schueler_for_klasse = Main.class_variable_get(:@@schueler_for_klasse)
         @@schueler_for_lesson = Main.class_variable_get(:@@schueler_for_lesson)
         @@lessons[:lesson_keys].keys.sort.each do |lesson_key|
+            next if lesson_key[0, 8] == 'Testung_'
             lesson_info = @@lessons[:lesson_keys][lesson_key]
             next if (Set.new(lesson_info[:klassen]) & Set.new(@@klassen_order)).empty?
             unless ALSO_CREATE_OS_FOLDERS

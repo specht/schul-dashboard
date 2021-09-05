@@ -96,6 +96,7 @@ class Script
             unless ALSO_SHARE_OS_FOLDERS
                 next unless (Set.new(lesson_info[:klassen]) & Set.new(['11', '12'])).empty?
             end
+            next if lesson_key[0, 8] == 'Testung_'
 
             folder_name = "#{lesson_key}"
             fach = lesson_info[:fach]

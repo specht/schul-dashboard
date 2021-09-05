@@ -1791,7 +1791,7 @@ class Main < Sinatra::Base
         fixed_timetable_data = nil
         initial_date = Date.parse([@@config[:first_school_day], Date.today.to_s].max.to_s)
         # if DEVELOPMENT
-        #     initial_date = Date.parse('2021-05-24')
+        #     initial_date = Date.parse('2021-08-30')
         # end
         while [6, 0].include?(initial_date.wday)
            initial_date += 1
@@ -1834,7 +1834,7 @@ class Main < Sinatra::Base
             parts = request.env['REQUEST_PATH'].split('/')
             show_lesson_key = CGI::unescape(parts[2])
             lesson_key_id = @@lessons[:lesson_keys][show_lesson_key][:id]
-            lesson_data = get_lesson_data(show_lesson_key)
+            lesson_data = Main.get_lesson_data(show_lesson_key)
             unless may_edit_lessons?(show_lesson_key)
                 redirect "#{WEB_ROOT}/", 302
             end

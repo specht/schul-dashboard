@@ -463,7 +463,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     div1.css('white-space', 'nowrap');
                 let fach = $('<div>').html(arg.event.extendedProps.label);
                 // if ('#{!!DEVELOPMENT}' === 'true')
-                    // fach.html('<b style="background-color: rgba(255,255,255,0.2);">[' + arg.event.extendedProps.lesson_key + '#' + arg.event.extendedProps.lesson_offset + ']</b><br />' + fach.html());
+                //     fach.html('<b style="background-color: rgba(255,255,255,0.2);">[' + arg.event.extendedProps.lesson_key + '#' + arg.event.extendedProps.lesson_offset + ']</b><br />' + fach.html());
 //                 if (arg.event.extendedProps.vnr)
 //                     fach.html('#' + arg.event.extendedProps.vnr + ' ' + fach.html());
                 div1.append(fach);
@@ -498,8 +498,12 @@ document.addEventListener('DOMContentLoaded', function() {
                     markers.append($('<span>').addClass('mute').html('NC'));
                 if (event_data.lesson_lr || event_data.homework_lr)
                     markers.append($('<span>').addClass('mute').html('LR'));
-                if (event_data.hausaufgaben_text)
-                    markers.append($('<span>').html('HA'));
+                if (event_data.hausaufgaben_text) {
+                    if ((per_user.homework_feedback || {}).short_state)
+                        markers.append($('<span>').text('HA ' + per_user.homework_feedback.short_state));
+                    else
+                        markers.append($('<span>').html('HA'));
+                }
                 if (per_user.text_comments || per_user.audio_comments)
                     markers.append($('<span>').html("<i class='fa fa-comment'></i>"));
                 div1b.append(markers);
@@ -903,6 +907,16 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
                 if (event_data.homework_lr)
                     body.append($('<a>').attr('href', 'https://www.lernraum-berlin.de/').attr('target', '_blank').addClass('btn').addClass('btn-primary').css('margin-right', '5px').css('margin-bottom', '5px').html("<i class='fa fa-external-link'></i>&nbsp;&nbsp;Zum Lernraum&nbsp;&nbsp;<i class='fa fa-angle-double-right'></i>"));
+                if (per_user.homework_feedback)
+                {
+                    let parts = [];
+                    if (per_user.homework_feedback.state)
+                        parts.push(per_user.homework_feedback.state);
+                    if (per_user.homework_feedback.time_spent)
+                        parts.push(`benötigte Zeit: ${per_user.homework_feedback.time_spent}`);
+                    body.append($('<p>').text('Feedback von SuS: ' + parts.join(', ')));
+                }
+
                 wrote_something = true;
             }
             if (event_data.notizen) {

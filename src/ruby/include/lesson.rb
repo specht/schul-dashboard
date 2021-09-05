@@ -73,19 +73,19 @@ class Main < Sinatra::Base
         respond(:ok => true)
     end
     
-    def get_lesson_data(lesson_key)
+    def self.get_lesson_data(lesson_key)
         # purge unconfirmed tablet bookings for this lesson_key
-        neo4j_query(<<~END_OF_QUERY, :key => lesson_key)
+        $neo4j.neo4j_query(<<~END_OF_QUERY, :key => lesson_key)
             MATCH (t:Tablet)<-[:WHICH]-(b:Booking {confirmed: false})-[:FOR]->(i:LessonInfo)-[:BELONGS_TO]->(l:Lesson {key: {key}})
             DETACH DELETE b;
         END_OF_QUERY
         # purge unconfirmed tablet bookings for any lesson key older than 30 minutes
-        neo4j_query(<<~END_OF_QUERY, :timestamp => (Time.now - 30 * 60).to_i)
+        $neo4j.neo4j_query(<<~END_OF_QUERY, :timestamp => (Time.now - 30 * 60).to_i)
             MATCH (t:Tablet)<-[:WHICH]-(b:Booking {confirmed: false})-[:FOR]->(i:LessonInfo)-[:BELONGS_TO]->(l:Lesson)
             WHERE b.updated < {timestamp}
             DETACH DELETE b;
         END_OF_QUERY
-        rows = neo4j_query(<<~END_OF_QUERY, :key => lesson_key).map { |x| x['i'].props }
+        rows = $neo4j.neo4j_query(<<~END_OF_QUERY, :key => lesson_key).map { |x| x['i'].props }
             MATCH (i:LessonInfo)-[:BELONGS_TO]->(l:Lesson {key: {key}})
             RETURN i
             ORDER BY i.offset;
@@ -97,7 +97,7 @@ class Main < Sinatra::Base
                 [:offset, :updated].include?(k)
             end
         end
-        rows = neo4j_query(<<~END_OF_QUERY, :key => lesson_key).map { |x| {:comment => x['c'].props, :user => x['u'].props, :text_comment_from => x['tcf.email'] } }
+        rows = $neo4j.neo4j_query(<<~END_OF_QUERY, :key => lesson_key).map { |x| {:comment => x['c'].props, :user => x['u'].props, :text_comment_from => x['tcf.email'] } }
             MATCH (u:User)<-[:TO]-(c:TextComment)-[:BELONGS_TO]->(l:Lesson {key: {key}})
             MATCH (c)-[:FROM]->(tcf:User)
             RETURN c, u, tcf.email
@@ -112,7 +112,7 @@ class Main < Sinatra::Base
                 results[row[:comment][:offset]][:comments][row[:user][:email]][:text_comment_from] = row[:text_comment_from] 
             end
         end
-        rows = neo4j_query(<<~END_OF_QUERY, :key => lesson_key).map { |x| {:comment => x['c'].props, :user => x['u'].props, :audio_comment_from => x['acf.email'] } }
+        rows = $neo4j.neo4j_query(<<~END_OF_QUERY, :key => lesson_key).map { |x| {:comment => x['c'].props, :user => x['u'].props, :audio_comment_from => x['acf.email'] } }
             MATCH (u:User)<-[:TO]-(c:AudioComment)-[:BELONGS_TO]->(l:Lesson {key: {key}})
             MATCH (c)-[:FROM]->(acf:User)
             RETURN c, u, acf.email
@@ -128,7 +128,7 @@ class Main < Sinatra::Base
                 results[row[:comment][:offset]][:comments][row[:user][:email]][:audio_comment_from] = row[:audio_comment_from] 
             end
         end
-        rows = neo4j_query(<<~END_OF_QUERY, :key => lesson_key).map { |x| {:offset => x['li.offset'], :feedback => x['hf'].props, :user => x['u.email'] }}
+        rows = $neo4j.neo4j_query(<<~END_OF_QUERY, :key => lesson_key).map { |x| {:offset => x['li.offset'], :feedback => x['hf'].props, :user => x['u.email'] }}
             MATCH (u:User)<-[:FROM]-(hf:HomeworkFeedback)-[:FOR]->(li:LessonInfo)-[:BELONGS_TO]->(l:Lesson {key: {key}})
             RETURN hf, li.offset, u.email;
         END_OF_QUERY
@@ -176,7 +176,7 @@ class Main < Sinatra::Base
             results[offset][:feedback][:summary] = feedback_str
         end
         
-        rows = neo4j_query(<<~END_OF_QUERY, :key => lesson_key)
+        rows = $neo4j.neo4j_query(<<~END_OF_QUERY, :key => lesson_key)
             MATCH (t:Tablet)<-[:WHICH]-(b:Booking {confirmed: true})-[:FOR]->(i:LessonInfo)-[:BELONGS_TO]->(l:Lesson {key: {key}})
             RETURN t.id, i.offset;
         END_OF_QUERY
@@ -193,7 +193,7 @@ class Main < Sinatra::Base
             }
         end
 
-        rows = neo4j_query(<<~END_OF_QUERY, :key => lesson_key)
+        rows = $neo4j.neo4j_query(<<~END_OF_QUERY, :key => lesson_key)
             MATCH (t:TabletSet)<-[:BOOKED]-(b:Booking)-[:FOR]->(i:LessonInfo)-[:BELONGS_TO]->(l:Lesson {key: {key}})
             RETURN t.id, i.offset
             ORDER BY t.id;
@@ -214,7 +214,7 @@ class Main < Sinatra::Base
     
     post '/api/get_lesson_data' do
         data = parse_request_data(:required_keys => [:lesson_key])
-        results = get_lesson_data(data[:lesson_key])
+        results = Main.get_lesson_data(data[:lesson_key])
         respond(:results => results)
     end
     

@@ -922,6 +922,7 @@ class Timetable
 
         all_stream_restrictions = Main.get_all_stream_restrictions()
         all_homeschooling_users = Main.get_all_homeschooling_users()
+        lesson_homework_feedback = {}
         
         group_for_sus = {}
         results = neo4j_query(<<~END_OF_QUERY)
@@ -1273,6 +1274,14 @@ class Timetable
                                             }
                                         end
                                     end
+                                    # add homework feedback
+                                    if user[:teacher]
+                                        lesson_homework_feedback[e[:lesson_key]] ||= Main.get_homework_feedback_for_lesson_key(e[:lesson_key])
+                                        if lesson_homework_feedback[e[:lesson_key]] && lesson_homework_feedback[e[:lesson_key]][e[:lesson_offset]]
+                                            user_data[:homework_feedback] = lesson_homework_feedback[e[:lesson_key]][e[:lesson_offset]]
+                                        end
+                                    end
+
                                     events_with_data_per_user_cache[lesson_key][e[:lesson_offset]][email] = user_data
                                 end
                                 e[:data] = events_with_data_cache[lesson_key][e[:lesson_offset]]

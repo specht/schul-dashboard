@@ -20,6 +20,59 @@ class Main < Sinatra::Base
         respond(:homework_feedback => results)
     end
     
+    def self.get_homework_feedback_for_lesson_key(lesson_key)
+        hf = $neo4j.neo4j_query(<<~END_OF_QUERY, :lesson_key => lesson_key).map { |x| {:offset => x['li.offset'], :hf => x['hf'].props} }
+            MATCH (u:User)<-[:FROM]-(hf:HomeworkFeedback)-[:FOR]->(li:LessonInfo)-[:BELONGS_TO]->(l:Lesson {key: {lesson_key}})
+            RETURN hf, li.offset
+            ORDER BY li.offset;
+        END_OF_QUERY
+        results = {}
+        hf.each do |_entry|
+            entry = _entry[:hf]
+            offset = _entry[:offset]
+            results[offset] ||= {
+                :state_histogram => {},
+                :time_spent_min => nil,
+                :time_spent_max => nil
+            }
+            if entry[:state]
+                results[offset][:state_histogram][entry[:state]] ||= 0
+                results[offset][:state_histogram][entry[:state]] += 1
+            end
+            if entry[:time_spent]
+                results[offset][:time_spent_min] ||= entry[:time_spent]
+                results[offset][:time_spent_min] = entry[:time_spent] if entry[:time_spent] < results[offset][:time_spent_min]
+                results[offset][:time_spent_max] ||= entry[:time_spent]
+                results[offset][:time_spent_max] = entry[:time_spent] if entry[:time_spent] > results[offset][:time_spent_max]
+            end
+        end
+        final_result = {}
+        results.each_pair do |offset, data|
+            result = {}
+            if results[offset][:time_spent_min]
+                if results[offset][:time_spent_min] != results[offset][:time_spent_max]
+                    result[:time_spent] = "#{results[offset][:time_spent_min]} – #{results[offset][:time_spent_max]} Minuten"
+                else
+                    result[:time_spent] = "#{results[offset][:time_spent_min]} Minuten"
+                end
+            end
+            unless results[offset][:state_histogram].empty?
+                parts = []
+                short_parts = []
+                HOMEWORK_FEEDBACK_STATES.each do |state|
+                    if results[offset][:state_histogram][state]
+                        parts << "#{HOMEWORK_FEEDBACK_EMOJIS[state]} × #{results[offset][:state_histogram][state]}"
+                        short_parts << "#{HOMEWORK_FEEDBACK_EMOJIS[state]}"
+                    end
+                end
+                result[:state] = parts.join(', ')
+                result[:short_state] = short_parts.join('')
+            end
+            final_result[offset] = result
+        end
+        final_result
+    end
+    
     post '/api/mark_homework_done' do
         require_user!
         data = parse_request_data(:required_keys => [:lesson_key, :offset],

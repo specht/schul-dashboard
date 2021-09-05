@@ -272,7 +272,7 @@ class Main < Sinatra::Base
                         io.puts "</p>"
                         first_response = true
                         responses.each do |entry|
-                            response = entry[:response][item_index.to_s].strip
+                            response = (entry[:response][item_index.to_s] || '').strip
                             unless response.empty?
                                 io.puts "<hr />" unless first_response
                                 if poll_run[:anonymous]

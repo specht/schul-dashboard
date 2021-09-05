@@ -167,9 +167,9 @@ class Timetable
         debug "Updating monitor..."
 
         monitor_date = Date.parse([@@config[:first_school_day], Date.today.to_s].max.to_s)
-        # if DEVELOPMENT
-        #     initial_date = Date.parse('2021-05-24')
-        # end
+        if DEVELOPMENT
+            monitor_date = Date.parse('2021-08-30')
+        end
         while [6, 0].include?(monitor_date.wday)
             monitor_date += 1
         end

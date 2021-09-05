@@ -468,6 +468,9 @@ class SetupDatabase
                     neo4j_query(<<~END_OF_QUERY, :email => "monitor@#{SCHUL_MAIL_DOMAIN}")
                         MERGE (u:User {email: {email}})
                     END_OF_QUERY
+                    neo4j_query(<<~END_OF_QUERY, :email => "monitor-sek@#{SCHUL_MAIL_DOMAIN}")
+                        MERGE (u:User {email: {email}})
+                    END_OF_QUERY
                 end
                 transaction do
                     present_users = neo4j_query(<<~END_OF_QUERY).map { |x| x['u.email'] }
@@ -480,6 +483,7 @@ class SetupDatabase
                     wanted_users << "tablet@#{SCHUL_MAIL_DOMAIN}"
                     wanted_users << "klassenraum@#{SCHUL_MAIL_DOMAIN}"
                     wanted_users << "monitor@#{SCHUL_MAIL_DOMAIN}"
+                    wanted_users << "monitor-sek@#{SCHUL_MAIL_DOMAIN}"
                     users_to_be_deleted = Set.new(present_users) - wanted_users
                     unless users_to_be_deleted.empty?
                         debug "Deleting #{users_to_be_deleted.size} users (not really)"
@@ -1281,6 +1285,12 @@ class Main < Sinatra::Base
                                         :is_monitor => true,
                                         :teacher => false
                                     }
+                                elsif email == "monitor-sek@#{SCHUL_MAIL_DOMAIN}"
+                                    @session_user = {
+                                        :email => email,
+                                        :is_monitor => true,
+                                        :teacher => false
+                                    }
                                 elsif email != "tablet@#{SCHUL_MAIL_DOMAIN}"
                                     @session_user = @@user_info[email].dup
                                     if @session_user
@@ -1757,7 +1767,11 @@ class Main < Sinatra::Base
         jd = (Date.today + 1).jd
         return @@default_color_scheme[jd] if @@default_color_scheme[jd]
         srand(DEVELOPMENT ? (Time.now.to_f * 1000).to_i : jd)
-        which = @@color_scheme_colors.sample
+        which = nil
+        while true do
+            which = @@color_scheme_colors.sample
+            break unless which[4] == 'd'
+        end
         color_scheme = "#{which[4]}#{which[0, 3].join('').gsub('#', '')}#{[0, 5].sample}"
         @@default_color_scheme[jd] = color_scheme unless DEVELOPMENT
         return color_scheme

@@ -167,6 +167,14 @@ class Main < Sinatra::Base
         respond(:ok => 'yeah')
     end
 
+    post '/api/login_as_monitor_sek' do
+        require_admin!
+        logout()
+        session_id = create_session("monitor-sek@#{SCHUL_MAIL_DOMAIN}", 365 * 24)
+        purge_missing_sessions(session_id, true)
+        respond(:ok => 'yeah')
+    end
+
     def all_sessions
         sids = request.cookies['sid']
         users = []

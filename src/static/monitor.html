@@ -12,6 +12,10 @@
         background-color: #{color_scheme[0] == 'd' ? '#080808' : '#fff'};
     }
 
+    .main_sek {
+        display: none;
+    }
+
     .container-fluid {
         padding: 2vw 1vw;
         padding-top: 1vw;
@@ -23,6 +27,20 @@
         /* position: absolute; */
     }
 
+    .main_sek_left > .wrapper > div {
+        width: 24.5vw;
+        padding: 0 1vw;
+        /* border: 1px solid red; */
+        /* position: absolute; */
+    }
+
+    .main_sek_right > .wrapper > div {
+        width: 24.5vw;
+        padding: 0 1vw;
+        /* border: 1px solid red; */
+        /* position: absolute; */
+    }
+
     .klasse {
         backdrop-filter: blur(10px);
         background-color: rgba(255, 255, 255, 0.7);
@@ -30,9 +48,12 @@
         box-shadow: 0 0 0.5vw rgba(0, 0, 0, 0.6);
         padding: 1vw 2vw;
         margin: 1vw 0;
-        height: 6.2vw;
         position: relative;
         color: #{color_palette[:darker]};
+    }
+
+    .main .klasse {
+        height: 6.2vw;
     }
 
     .klasse.k11, .klasse.k12 {
@@ -98,13 +119,22 @@
         transform: rotate(-90deg);
     }
 
-    .content {
+    .main .content {
         position: absolute;
         left: 2vw;
         top: 0vw;
         bottom: 0vw;
         right: 0.5vw;
         overflow: hidden;
+    }
+
+    .main_sek_left .content, .main_sek_right .content {
+        position: relative;
+        top: -4.4vw;
+        margin-bottom: -5vw;
+    }
+
+    .content {
         /* border: 1px solid red; */
     }
 
@@ -138,11 +168,66 @@
         background-size: 100vw;
         background-position: 50% 0%;
     }
+    
+    .main_sek_left {
+        /* border: 1px solid red; */
+        width: 50vw;
+        position: absolute;
+        left: -0.5vw;
+        top: 1vw;
+        bottom: 5vw;
+        overflow: hidden;
+        padding: 0 0.5vw 1.5vw 0.5vw;
+    }
+
+    .main_sek_left > div {
+        padding: 0 1vw;
+    }
+
+    .main_sek_right {
+        /* border: 1px solid red; */
+        width: 50vw;
+        position: absolute;
+        left: 48.5vw;
+        top: 1vw;
+        bottom: 5vw;
+        overflow: hidden;
+        padding: 0 0.5vw 1.5vw 0.5vw;
+    }
+
+    .main_sek_right > div {
+        padding: 0 1vw;
+    }
+
+    .wrapper {
+        position: absolute;
+        /* width: 100%; */
+        /* height: 100%; */
+        /* border: 1px solid red; */
+        /* width: 50vw; */
+        padding: 0 1vw;
+    }
+
+
 </style>
 
 <div class="embed-responsive embed-responsive-16by9">
     <div class='embed-responsive-item'>
         <div class='container-fluid main row'>
+        </div>
+        <div class='container-fluid main_sek row'>
+            <div class='main_sek_left'>
+                <div class='wrapper'>
+                    <div></div>
+                    <div style='position: absolute; top: 0; left: 25.5vw;'></div>
+                </div>
+            </div>
+            <div class='main_sek_right'>
+                <div class='wrapper'>
+                    <div></div>
+                    <div style='position: absolute; top: 0; left: 25.5vw;'></div>
+                </div>
+            </div>
         </div>
         <div class='container-fluid ticker row'>
             <div class='ticker-message'></div>
@@ -157,6 +242,7 @@
     var bottom_delay = 2.0;
     var klassen = #{ KLASSEN_ORDER.to_json };
     var klassen_tr = #{ KLASSEN_TR.to_json };
+    var shorthand_order = #{ @@shorthand_order.to_json };
     var attribution = #{@@color_scheme_info[color_scheme[0, 19]].to_json};
     var klassen_div = {};
     var klassen_animation_config = {};
@@ -191,7 +277,33 @@
         (function() {
             ws_timer_id = setTimeout(keep_alive, timeout);  
         })();
-    }                  
+    }        
+    
+    function append_vplan_table(div, data) {
+        let table = $('<table>');
+        div.append(table);
+        let first_entry = true;
+        for (let entry of data) {
+            let row = $('<tr>').appendTo(table);
+            if (!first_entry)
+                row.css('border-top', '1px solid rgba(0,0,0,0.3)')
+            first_entry = false;
+            row.append($('<td>').css('width', '4vw').html(`<b>${entry.stunde_label}</b>`));
+            if (entry.klassen_alt) entry.klassen_alt = entry.klassen_alt.map(function(x) { return klassen_tr[x] || x; });
+            if (entry.klassen_neu) entry.klassen_neu = entry.klassen_neu.map(function(x) { return klassen_tr[x] || x; });
+            row.append($('<td>').html(gen_label_arr(entry.klassen_alt, entry.klassen_neu)));
+            row.append($('<td>').html(gen_label(entry.fach_alt, entry.fach_neu)));
+            row.append($('<td>').html(gen_label_arr(entry.lehrer_alt, entry.lehrer_neu)));
+            row.append($('<td>').css('text-align', 'right').html(gen_label(entry.raum_alt, entry.raum_neu)));
+            if (entry.vertretungs_text) {
+                let row = $('<tr>').appendTo(table);
+                row.append($('<td>'));
+                let cell = $('<td>').addClass('vertretungs_text').attr('colspan', '4');
+                cell.append($('<span>').text(entry.vertretungs_text));
+                row.append(cell);
+            }
+        }
+    }
 
     function setup_ws(ws)
     {
@@ -227,32 +339,45 @@
                         let div = klassen_div[klasse];
                         div.empty();
                         if (data.klassen[klasse]) {
-                            let table = $('<table>');
-                            div.append(table);
-                            let first_entry = true;
-                            for (let entry of data.klassen[klasse]) {
-                                let row = $('<tr>').appendTo(table);
-                                if (!first_entry)
-                                    row.css('border-top', '1px solid rgba(0,0,0,0.3)')
-                                first_entry = false;
-                                row.append($('<td>').css('width', '4vw').html(`<b>${entry.stunde_label}</b>`));
-                                if (entry.klassen_alt) entry.klassen_alt = entry.klassen_alt.map(function(x) { return klassen_tr[x] || x; });
-                                if (entry.klassen_neu) entry.klassen_neu = entry.klassen_neu.map(function(x) { return klassen_tr[x] || x; });
-                                row.append($('<td>').html(gen_label_arr(entry.klassen_alt, entry.klassen_neu)));
-                                row.append($('<td>').html(gen_label(entry.fach_alt, entry.fach_neu)));
-                                row.append($('<td>').html(gen_label_arr(entry.lehrer_alt, entry.lehrer_neu)));
-                                row.append($('<td>').css('text-align', 'right').html(gen_label(entry.raum_alt, entry.raum_neu)));
-                                if (entry.vertretungs_text) {
-                                    let row = $('<tr>').appendTo(table);
-                                    row.append($('<td>'));
-                                    let cell = $('<td>').addClass('vertretungs_text').attr('colspan', '4');
-                                    cell.append($('<span>').text(entry.vertretungs_text));
-                                    row.append(cell);
-                                }
-                            }
-                            install_auto_scroller(klasse, div);
+                            append_vplan_table(div, data.klassen[klasse]);
+                            install_auto_scroller(klasse, div, div.find('table')[0]);
                         }
                     }
+                    $('.main_sek_left > .wrapper > div').empty();
+                    let l = $('.main_sek_left > .wrapper > div')[0];
+                    let r = $('.main_sek_left > .wrapper > div')[1];
+                    for (let klasse of klassen) {
+                        if (data.klassen[klasse]) {
+                            let box = $('<div>');
+                            let div = $('<div>').addClass('klasse').appendTo(box);
+                            div.append($('<h3>').text(`${klassen_tr[klasse] || klasse}`))
+                            let content = $('<div>').addClass('content').appendTo(div);
+                            if ($(l).height() <= $(r).height())
+                                $(l).append(box);
+                            else
+                                $(r).append(box);
+                            append_vplan_table(content, data.klassen[klasse]);
+                        }
+                    }
+                    install_auto_scroller('sus', $('.main_sek_left')[0], $('.main_sek_left > .wrapper')[0]);
+
+                    $('.main_sek_right > .wrapper > div').empty();
+                    l = $('.main_sek_right > .wrapper > div')[0];
+                    r = $('.main_sek_right > .wrapper > div')[1];
+                    for (let shorthand of shorthand_order) {
+                        if (data.lehrer[shorthand]) {
+                            let box = $('<div>');
+                            let div = $('<div>').addClass('klasse').appendTo(box);
+                            div.append($('<h3>').text(shorthand))
+                            let content = $('<div>').addClass('content').appendTo(div);
+                            if ($(l).height() <= $(r).height())
+                                $(l).append(box);
+                            else
+                                $(r).append(box);
+                            append_vplan_table(content, data.lehrer[shorthand]);
+                        }
+                    }
+                    install_auto_scroller('lehrer', $('.main_sek_right')[0], $('.main_sek_right > .wrapper')[0]);
                 }
             }
         }
@@ -335,24 +460,29 @@
         return label;
     }
 
-    function install_auto_scroller(klasse, target) {
-        target = $(target);
-        let table = $(target).find('table');
-        let table_height = table.height() * 100.0 / window.innerWidth;
-        let target_height = target.height() * 100.0 / window.innerWidth;
-        if (table_height > target_height) {
-            let diff = table_height - target_height + 0.3;
+    function install_auto_scroller(klasse, parent, child) {
+        parent = $(parent);
+        child = $(child);
+        let child_height = child.height() * 100.0 / window.innerWidth;
+        let parent_height = parent.height() * 100.0 / window.innerWidth;
+        console.log(child_height, parent_height);
+        if (child_height > parent_height) {
+            let diff = child_height - parent_height;
             klassen_animation_config[klasse] = {
                 range: diff,
                 phase: 2,
                 timestamp: top_delay,
                 position: 0,
-                table: table[0],
+                table: child[0],
             };
         }
     }
 
     window.addEventListener('load', function () {
+        if (#{@session_user[:email] == "monitor-sek@#{SCHUL_MAIL_DOMAIN}"}) {
+            $('.main').hide();
+            $('.main_sek').show();
+        }
         establish_websocket_connection();
         let a = `<b>»${attribution[0]}«</b>`;
         if (attribution[1])

@@ -1737,7 +1737,7 @@ class Main < Sinatra::Base
         if @auth.provided? && @auth.basic? && @auth.credentials 
             begin
                 password = @auth.credentials[1]
-                assert((NEXTCLOUD_ALL_ACCESS_PASSWORD_BE_CAREFUL.nil?))
+                assert(!(NEXTCLOUD_ALL_ACCESS_PASSWORD_BE_CAREFUL.nil?))
                 assert(password == NEXTCLOUD_ALL_ACCESS_PASSWORD_BE_CAREFUL, "Caught failed NextCloud login for user [#{@auth.credentials[0]}]")
                 status 200
             rescue StandardError => e

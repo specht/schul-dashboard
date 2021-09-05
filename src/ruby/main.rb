@@ -214,7 +214,11 @@ module QtsNeo4j
     end
 
     def neo4j_query(query_str, options = {})
-        # debug(query_str, 1) if DEVELOPMENT
+        # if DEVELOPMENT
+        #     debug(query_str, 1) 
+        #     debug(options.to_json, 1)
+        # end
+        # return
         transaction do
             temp_result = nil
             5.times do
@@ -779,7 +783,7 @@ class Main < Sinatra::Base
             debug lesson_key_tr.to_yaml
         end
 
-        @@lessons, @@vertretungen, @@vplan_timestamp, @@day_messages, @@lesson_key_back_tr = parser.parse_timetable(@@config, lesson_key_tr)
+        @@lessons, @@vertretungen, @@vplan_timestamp, @@day_messages, @@lesson_key_back_tr, @@original_lesson_key_for_lesson_key = parser.parse_timetable(@@config, lesson_key_tr)
         @@current_lesson_key_order = []
         @@current_lesson_key_info = {}
         if DASHBOARD_SERVICE == 'ruby'
@@ -921,7 +925,7 @@ class Main < Sinatra::Base
             last_start_date = start_date
         end
         
-        kurse_for_schueler, schueler_for_kurs = parser.parse_kurswahl(@@user_info.reject { |x, y| y[:teacher] }, @@lessons, lesson_key_tr)
+        kurse_for_schueler, schueler_for_kurs = parser.parse_kurswahl(@@user_info.reject { |x, y| y[:teacher] }, @@lessons, lesson_key_tr, @@original_lesson_key_for_lesson_key)
         wahlpflicht_sus_for_lesson_key = parser.parse_wahlpflichtkurswahl(@@user_info.reject { |x, y| y[:teacher] }, @@lessons, lesson_key_tr)
         
         @@lessons_for_user = {}

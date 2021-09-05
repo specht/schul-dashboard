@@ -470,6 +470,7 @@ class Parser
         end
 
         lesson_key_back_tr = {}
+        original_lesson_key_for_lesson_key = {}
 
         Dir['/data/stundenplan/*.TXT'].sort.each do |path|
             timetable_start_date = File.basename(path).sub('.TXT', '')
@@ -535,6 +536,8 @@ class Parser
                     fach_unr_key = "#{fach}_#{line_cache[cache_key].to_a.sort { |a, b| (a.to_i == b.to_i) ? (a <=> b) : (a.to_i <=> b.to_i)}.join('~')}"
                     fach_unr_key = lesson_key_tr[fach_unr_key] || fach_unr_key
                     lesson_key_back_tr[fach_unr_key] = "#{fach}~#{unr}a"
+                    original_lesson_key_for_lesson_key[parts[3]] ||= Set.new()
+                    original_lesson_key_for_lesson_key[parts[3]] << fach_unr_key
                     next if fach_unr_key == '_'
                     lessons[fach_unr_key] ||= {}
                     lessons[fach_unr_key]["#{dow}/#{stunde}"] ||= {}
@@ -754,7 +757,7 @@ class Parser
             vertretungen[entry[:datum]] ||= []
             vertretungen[entry[:datum]] << entry
         end
-        return all_lessons, vertretungen, vplan_timestamp, day_messages, lesson_key_back_tr
+        return all_lessons, vertretungen, vplan_timestamp, day_messages, lesson_key_back_tr, original_lesson_key_for_lesson_key
     end
     
     def parse_pausenaufsichten(config)
@@ -814,7 +817,7 @@ class Parser
         return all_pausenaufsichten
     end
     
-    def parse_kurswahl(user_info, lessons, lesson_key_tr)
+    def parse_kurswahl(user_info, lessons, lesson_key_tr, original_lesson_key_for_lesson_key)
 #         debug "Parsing kurswahl..."
         kurse_for_schueler = {}
         schueler_for_kurs = {}
@@ -842,7 +845,6 @@ class Parser
                         x.strip
                     end
                     name = parts[0]
-                    fach = parts[2].gsub('/', '-')
                     email = nil
                     if name_tr.include?(name)
                         email = name_tr[name]
@@ -858,22 +860,22 @@ class Parser
                             unassigned_names << name
                         end
                     end
-                    lesson_keys = lessons[:lesson_keys].keys.select do |lesson_key|
-                        lessons[:lesson_keys][lesson_key][:fach] == fach
-                    end
-                    if lesson_keys.size != 1
+                    lesson_keys = original_lesson_key_for_lesson_key[parts[2]] || Set.new()
+                    if lesson_keys.empty?
+                        debug "Kurswahl: Can't assign #{parts[2]}!"
                         debug line
-                        debug "#{fach}: #{lesson_keys.to_json}"
                     end
                     unless email
                         debug "Kurswahl: Can't assign #{name}!"
+                        debug line
                     end
-                    if email && lesson_keys.size == 1
-                        lesson_key = lesson_keys.to_a.first
-                        kurse_for_schueler[email] ||= Set.new()
-                        kurse_for_schueler[email] << lesson_key
-                        schueler_for_kurs[lesson_key] ||= Set.new()
-                        schueler_for_kurs[lesson_key] << email
+                    if email && lesson_keys.size > 0
+                        lesson_keys.each do |lesson_key|
+                            kurse_for_schueler[email] ||= Set.new()
+                            kurse_for_schueler[email] << lesson_key
+                            schueler_for_kurs[lesson_key] ||= Set.new()
+                            schueler_for_kurs[lesson_key] << email
+                        end
                     end
                 end
             end

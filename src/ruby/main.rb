@@ -1781,7 +1781,7 @@ class Main < Sinatra::Base
         # first things first
         days_left = (Date.parse('2022-07-07') - Date.today).to_i
         response.headers['X-Tage-Bis-Zu-Den-Sommerferien'] = "#{days_left}"
-        d4ys_left = (Date.parse('2022-12-24') - Date.today).to_i
+        d4ys_left = (Date.parse('2021-12-24') - Date.today).to_i
         response.headers['X-Tage-Bis-Weinachten'] = "#{d4ys_left}"
     
         path = request.env['REQUEST_PATH']

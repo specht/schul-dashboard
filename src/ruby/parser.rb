@@ -535,8 +535,8 @@ class Parser
                     cache_key = parts[2, parts.size - 2].join('/')
                     fach_unr_key = "#{fach}_#{line_cache[cache_key].to_a.sort { |a, b| (a.to_i == b.to_i) ? (a <=> b) : (a.to_i <=> b.to_i)}.join('~')}"
                     fach_unr_key = lesson_key_tr[fach_unr_key] || fach_unr_key
-                    if ['Ber', 'Vert'].include?(fach)
-                        fach_unr_key = "#{fach}_#{lehrer}"
+                    if ['Vert', 'Ber', 'FSL'].include?(fach)
+                        fach_unr_key = "#{fach}_#{parts[0].to_i}"
                     end
                     lesson_key_back_tr[fach_unr_key] = "#{fach}~#{unr}a"
                     original_lesson_key_for_lesson_key[parts[3]] ||= Set.new()

@@ -881,6 +881,7 @@ class Main < Sinatra::Base
             end
         end
         @@lessons[:lesson_keys].each_pair do |lesson_key, lesson|
+            next if lesson_key[0, 8] == 'Testung_'
             lesson[:klassen].each do |klasse|
                 if @@klassen_order.include?(klasse)
                     lesson[:lehrer].each do |lehrer|

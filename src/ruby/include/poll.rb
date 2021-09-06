@@ -322,7 +322,7 @@ class Main < Sinatra::Base
                             io.puts "<p>"
                             io.puts "<strong>#{item[:title]}</strong>"
                             io.puts "</p>"
-                            response = entry[:response][item_index.to_s].strip
+                            response = (entry[:response][item_index.to_s] || '').strip
                             io.puts "<p>#{response}</p>" unless response.empty?
                         end
                     end

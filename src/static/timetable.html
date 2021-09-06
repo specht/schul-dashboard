@@ -914,7 +914,8 @@ document.addEventListener('DOMContentLoaded', function() {
                         parts.push(per_user.homework_feedback.state);
                     if (per_user.homework_feedback.time_spent)
                         parts.push(`benötigte Zeit: ${per_user.homework_feedback.time_spent}`);
-                    body.append($('<p>').text('Feedback von SuS: ' + parts.join(', ')));
+                    if (parts.length > 0)
+                        body.append($('<p>').text('Feedback von SuS: ' + parts.join(', ')));
                 }
 
                 wrote_something = true;

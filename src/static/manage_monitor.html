@@ -12,17 +12,26 @@
 <div class='container' style='padding-top: 30px;'>
     <div class='row'>
         <div class='col-md-12'>
-            <button id='btn-force-reload' class='btn btn-outline-secondary pull-right'>Monitore neu laden</button>
             <h2 style='margin-bottom: 30px;'>Monitore verwalten</h2>
+            <p>Bitte geben Sie hier Meldungen ein, die auf den Monitoren angezeigt werden sollen. Sie können mehrere Meldungen durch Zeilenumbrüche trennen.</p>
+            <textarea id='ta_messages' class='form-control' style='height: 200px; margin-bottom: 15px;'></textarea>
+            <button id='btn-update-monitor-messages' class='btn btn-success pull-right' disabled>Speichern</button>
+            <button id='btn-force-reload' class='btn btn-outline-secondary pull-right' style='margin-right: 10px;'>Monitore neu laden</button>
+            <div style='clear: both;'></div>
+            <hr />
+            <h3>Monitore im Schulhaus</h3>
             <div class='monitor-frame'>
                 <div class="embed-responsive embed-responsive-16by9">
                     <iframe class="embed-responsive-item" src="/monitor"></iframe>
                 </div>
             </div>
             <hr />
-            <p>Bitte geben Sie hier Meldungen ein, die auf den Monitoren angezeigt werden sollen. Sie können mehrere Meldungen durch Zeilenumbrüche trennen.</p>
-            <textarea id='ta_messages' class='form-control' style='height: 200px; margin-bottom: 15px;'></textarea>
-            <button id='btn-update-monitor-messages' class='btn btn-success pull-right' disabled>Speichern</button>
+            <h3>Monitor im Sekretariat</h3>
+            <div class='monitor-frame'>
+                <div class="embed-responsive embed-responsive-16by9">
+                    <iframe class="embed-responsive-item" src="/monitor/sek"></iframe>
+                </div>
+            </div>
         </div>
     </div>
 </div>

@@ -479,7 +479,7 @@
     }
 
     window.addEventListener('load', function () {
-        if (#{@session_user[:email] == "monitor-sek@#{SCHUL_MAIL_DOMAIN}"}) {
+        if (#{@session_user[:email] == "monitor-sek@#{SCHUL_MAIL_DOMAIN}"} || window.location.pathname === '/monitor/sek') {
             $('.main').hide();
             $('.main_sek').show();
         }

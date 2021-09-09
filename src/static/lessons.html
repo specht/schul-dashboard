@@ -367,6 +367,13 @@ var tablet_set_info = #{@@tablet_sets.to_json};
                     <div class="form-group text-muted small">
                     * Diese Einträge sind für Schülerinnen und Schüler nicht sichtbar, können jedoch von vertretenden Kolleginnen und Kollegen eingesehen werden. 
                     </div>
+                    <hr />
+                    <label><b>Schülerlisten</b> <span class='text-muted'>(für diesen Kurs)</span></label>
+                    <br />
+                    <a href='/api/directory_xlsx/#{show_lesson_key}' class='btn btn-sm btn-primary' style='margin: 0 8px 8px 0;'><i class='fa fa-file-excel-o'></i>&nbsp;&nbsp;Excel-Tabelle herunterladen</a>
+                    <a href='/api/directory_timetex_pdf/by_last_name/#{show_lesson_key}' class='btn btn-sm btn-primary' style='margin: 0 8px 8px 0;'><i class='fa fa-file-pdf-o'></i>&nbsp;&nbsp;Timetex-PDF herunterladen</a>
+                    <a href='/api/directory_timetex_pdf/by_first_name/#{show_lesson_key}' class='btn btn-sm btn-primary' style='margin: 0 8px 8px 0;'><i class='fa fa-file-pdf-o'></i>&nbsp;&nbsp;Timetex-PDF herunterladen (nach Vornamen sortiert)</a>
+        
                 </div>
             </div>
         </div>

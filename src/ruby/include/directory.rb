@@ -293,7 +293,13 @@ class Main < Sinatra::Base
     end
 
     def iterate_directory(which, first_key = :last_name, second_key = :first_name, &block)
-        (@@schueler_for_klasse[which] || []).sort do |a, b|
+        email_list = @@schueler_for_klasse[which]
+        if email_list.nil?
+            # try lesson key
+            email_list = @@schueler_for_lesson[which]
+        end
+        email_list ||= []
+        (email_list).sort do |a, b|
             (@@user_info[a][first_key] == @@user_info[b][first_key]) ?
             (@@user_info[a][second_key] <=> @@user_info[b][second_key]) :
             (@@user_info[a][first_key] <=> @@user_info[b][first_key])
@@ -320,7 +326,8 @@ class Main < Sinatra::Base
                 end
             end
         end
-        respond_raw_with_mimetype_and_filename(doc.render, 'application/pdf', "Klasse #{klasse}.pdf")
+        # respond_raw_with_mimetype_and_filename(doc.render, 'application/pdf', "Klasse #{klasse}.pdf")
+        respond_raw_with_mimetype(doc.render, 'application/pdf')
     end
 
     get '/api/directory_timetex_pdf/by_first_name/*' do
@@ -341,7 +348,8 @@ class Main < Sinatra::Base
                 end
             end
         end
-        respond_raw_with_mimetype_and_filename(doc.render, 'application/pdf', "Klasse #{klasse}.pdf")
+        # respond_raw_with_mimetype_and_filename(doc.render, 'application/pdf', "Klasse #{klasse}.pdf")
+        respond_raw_with_mimetype(doc.render, 'application/pdf')
     end
 
     get '/api/print_offline_users' do

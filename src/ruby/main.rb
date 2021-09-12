@@ -49,6 +49,7 @@ require './include/directory.rb'
 require './include/event.rb'
 require './include/ext_user.rb'
 require './include/file.rb'
+require './include/groups.rb'
 require './include/hack.rb'
 require './include/homework.rb'
 require './include/ical.rb'
@@ -1504,8 +1505,9 @@ class Main < Sinatra::Base
                             io.puts "<a class='dropdown-item nav-icon' href='/tests'><div class='icon'><i class='fa fa-file-text-o'></i></div><span class='label'>Klassenarbeiten</span></a>"
                         end
                         io.puts "<a class='dropdown-item nav-icon' href='/polls'><div class='icon'><i class='fa fa-bar-chart'></i></div><span class='label'>Umfragen</span></a>"
-                        io.puts "<a class='dropdown-item nav-icon' href='/prepare_vote'><div class='icon'><i class='fa fa-group'></i></div><span class='label'>Abstimmungen</span></a>"
+                        io.puts "<a class='dropdown-item nav-icon' href='/prepare_vote'><div class='icon'><i class='fa fa-hand-paper-o'></i></div><span class='label'>Abstimmungen</span></a>"
                         io.puts "<a class='dropdown-item nav-icon' href='/mailing_lists'><div class='icon'><i class='fa fa-envelope'></i></div><span class='label'>E-Mail-Verteiler</span></a>"
+                        io.puts "<a class='dropdown-item nav-icon' href='/groups'><div class='icon'><i class='fa fa-group'></i></div><span class='label'>Gruppen</span></a>"
                     end
                     # if @session_user[:can_upload_vplan]
                     #     io.puts "<div class='dropdown-divider'></div>"
@@ -1825,6 +1827,7 @@ class Main < Sinatra::Base
         now = Time.now.to_i - MESSAGE_DELAY
         sent_messages = []
         stored_events = []
+        stored_groups = []
         stored_polls = []
         stored_poll_runs = []
         show_event = {}
@@ -1986,6 +1989,38 @@ class Main < Sinatra::Base
                     e = temp[x]
                     e[:info][:start_time] = fix_h_to_hh(e[:info][:start_time])
                     e[:info][:end_time] = fix_h_to_hh(e[:info][:end_time])
+                    e
+                end
+            end
+        elsif path == 'groups'
+            unless teacher_or_sv_logged_in?
+                redirect "#{WEB_ROOT}/", 302 
+            else
+                stored_groups = neo4j_query(<<~END_OF_QUERY, :email => @session_user[:email]).map { |x| {:info => x['g'].props, :recipient => x['u.email']} }
+                    MATCH (g:Group)-[:DEFINED_BY]->(ou:User {email: {email}})
+                    WHERE COALESCE(g.deleted, false) = false
+                    WITH g
+                    OPTIONAL MATCH (u)-[r:IS_PART_OF]->(g)
+                    WHERE (u:User OR u:ExternalUser OR u:PredefinedExternalUser) AND COALESCE(r.deleted, false) = false
+                    RETURN g, u.email
+                    ORDER BY g.created DESC, g.id;
+                END_OF_QUERY
+                external_users_for_session_user = external_users_for_session_user()
+                temp = {}
+                temp_order = []
+                stored_groups.each do |x|
+                    unless temp[x[:info][:id]]
+                        temp[x[:info][:id]] = {
+                            :recipients => [],
+                            :gid => x[:info][:id],
+                            :info => x[:info]
+                        }
+                        temp_order << x[:info][:id]
+                    end
+                    temp[x[:info][:id]][:recipients] << x[:recipient]
+                end
+                stored_groups = temp_order.map do |x| 
+                    e = temp[x]
                     e
                 end
             end

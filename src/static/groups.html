@@ -1,0 +1,553 @@
+#{this_is_a_page_for_logged_in_teachers_or_sv}
+<div class='container' style='padding-top: 30px;'>
+    <div class='row'>
+        <div class='col-md-12'>
+            <h2 style='margin-bottom: 30px;'>Gruppen</h2>
+            <button class='btn btn-success bu-new-group'><i class='fa fa-plus'></i>&nbsp;&nbsp;Neue Gruppe</button>
+            <hr />
+            <div class='groups-container' style='max-width: 100%; overflow-x: auto;'>
+                <table class='table table-striped narrow' style='width: unset; min-width: 100%;'>
+                <thead>
+                    <tr>
+                        <th>Gruppe</th>
+                        <th>Teilnehmer</th>
+                    </tr>
+                </thead>
+                <tbody class='groups-here'>
+                </tbody>
+                </table>
+            </div>
+        </div>        
+    </div>
+</div>
+
+<div class="modal" id="groupModal" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-scrollable modal-xl modal-dialog-centered" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title lb_title">Neue Gruppe</h5>
+            </div>
+            <div class="modal-body">
+                <div class='row'>
+                    <div class='col-md-12'>
+                        <div class="form-group">
+                            <label>Name</label>
+                            <input id='ti_name' class='form-control' type='text' placeholder='Bitte geben Sie den Namen der Gruppe ein'></input>
+                        </div>
+                    </div>
+                </div>
+                <hr />
+                <div class="form-group">
+                    <label style='width: 100%;'><a href='#' class='bu_open_ext_users_modal float-right btn btn-success'>Externe Teilnehmer…</a>Teilnehmer
+                    </label>
+                    <input id='ti_recipients' class='form-control' placeholder='Teilnehmer suchen…' /><div class='recipient-input-dropdown' style='display: none;'></div></input>
+<!--                    <div style='font-size: 80%; margin-top: 10px;'>
+                    </div>-->
+                </div>
+                <div class="form-group">
+                    <div class='recipients_list'>
+                    </div>
+                    <p style='margin-top: 10px;' id='recipient_count'>keine Teilnehmer</p>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <div id='save_group_btn_container'>
+                    <button id='bu_discard_group' class='btn btn-outline-secondary' disabled><i class='fa fa-times'></i>&nbsp;&nbsp;<span>Verwerfen</span></button>
+                    <button id='bu_save_group' class='btn btn-outline-secondary' disabled><i class='fa fa-check'></i>&nbsp;&nbsp;<span>Speichern</span></button>
+                </div>
+                <button id='bu_delete_group' type="button" class="btn btn-outline-secondary" disabled style='display: none;'><i class='fa fa-trash'></i>&nbsp;&nbsp;Gruppe löschen</button>
+                <button id='bu_close_group_modal' type="button" class="btn btn-secondary" data-dismiss="modal">Schließen</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal" id="externalUsersModal" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-scrollable modal-lg modal-dialog-centered" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Adressbuch für externe Teilnehmer</h5>
+            </div>
+            <div class="modal-body">
+                <p class='text-muted'>
+                Fügen Sie externe Teilnehmer hinzu, indem Sie Nutzer im Format <code>Vorname Nachname &lt;E-Mail-Adresse&gt;</code> hinzufügen, also z. B. <code>Max Mustermann &lt;max@example.com&gt;</code>. Trennen Sie mehrere Teilnehmer durch ein Komma oder einen Zeilenumbruch. Die Teilnehmer, die Sie hier eintragen, können Sie für alle Ihre Termine und Umfragen einladen, sie müssen also nur einmal hinzugefügt werden.
+                </p>
+                <p class='text-muted'>
+                Bitte beachten Sie, dass alle Teilnehmer, die hier aufgeführt sind, noch nicht unbedingt zu Ihrer Gruppe hinzugefügt sind. Sie müssen, wie reguläre Teilnehmer auch, über das Suchfeld hinzugefügt werden.
+                </p>
+                <!--<p><span style='padding: 0 5px; background-color: #f4c9c5; color: #d5291a'>Achtung:</span> Bitte beachten Sie, dass hierfür die Einwilligung zur Speicherung der E-Mail-Adresse für jeden Teilnehmer vorliegen muss.
+                </p>-->
+                <textarea id='ti_add_ext_users' class='form-control'></textarea>
+                <button id='bu_add_ext_users' class='btn btn-success float-right' style='margin: 10px 0;' disabled>Teilnehmer hinzufügen</button>
+                <table class='table table-striped narrow'>
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>E-Mail</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody class='ext-users-here'>
+                </tbody>
+                </table>
+            </div>
+            <div class="modal-footer">
+                <button id='bu_close_ext_user_modal' type="button" class="btn btn-secondary" data-dismiss="modal">Schließen</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+var recipients = {};
+var recipients_cache = {};
+var autocomplete_results = {};
+var recipients_list = {};
+var net_recipients_list = [];
+var old_name = ''
+var old_recipients_list = [];
+var old_gid = null;
+var stored_groups = #{stored_groups.to_json};
+var external_users_for_session_user = #{external_users_for_session_user.to_json};
+var force_close = false;
+
+function can_send() {
+    return (net_recipients_list.length > 0) && $('#ti_name').val().trim().length > 0;
+}
+
+function pending_changes() {
+    let flag = (old_recipients_list.join('/') !== net_recipients_list.join('/')) || 
+        (old_name !== $('#ti_name').val());
+    return flag;
+}
+
+function update_buttons() {
+    if (old_gid) {
+        $('#bu_delete_group').prop('disabled', false).show().removeClass('btn-outline-secondary').addClass('btn-danger');
+        $('#bu_discard_group span').html('Änderungen verwerfen');
+        $('#bu_save_group span').html('Änderungen speichern');
+    } else {
+        $('#bu_delete_group').prop('disabled', true).hide().addClass('btn-outline-secondary').removeClass('btn-danger');
+        $('#bu_discard_group span').html('Verwerfen');
+        $('#bu_save_group span').html('Speichern');
+    }
+    if (pending_changes()) {
+        $('#bu_discard_group').removeClass('btn-outline-secondary').addClass('btn-secondary').prop('disabled', false);
+        $('#bu_close_group_modal').removeClass('btn-secondary').addClass('btn-outline-secondary').prop('disabled', true);
+        if (can_send())
+            $('#bu_save_group').removeClass('btn-outline-secondary').addClass('btn-success').prop('disabled', false);
+        else
+            $('#bu_save_group').removeClass('btn-success').addClass('btn-outline-secondary').prop('disabled', true);
+    } else {
+        $('#bu_discard_group').removeClass('btn-secondary').addClass('btn-outline-secondary').prop('disabled', true);
+        $('#bu_close_group_modal').removeClass('btn-outline-secondary').addClass('btn-secondary').prop('disabled', false);
+        $('#bu_save_group').removeClass('btn-success').addClass('btn-outline-secondary').prop('disabled', true);
+    }
+}
+
+function discard_group() {
+    force_close = true;
+    $('#groupModal').modal('hide');
+}
+
+function save_group() {
+    let description = $('#summernote').summernote('code');
+    let submit_data = {
+        name: $('#ti_name').val().trim(),
+        recipients: net_recipients_list
+    };
+    old_name = submit_data.name;
+    old_recipients_list = [...net_recipients_list];
+    if (old_gid === null) {
+        api_call('/api/save_group', submit_data, function(data) {
+            if (data.success) {
+                stored_groups.unshift(data.group);
+                force_close = true;
+                $('#groupModal').modal('hide');
+                old_gid = data.group.gid;
+                update_net_recipients_list();
+                update_buttons();
+                update_stored_groups();
+            }
+        });
+    } else {
+        submit_data.gid = old_gid;
+        api_call('/api/update_group', submit_data, function(data) {
+            if (data.success) {
+                stored_groups = stored_groups.map(function(g) {
+                    if (g.gid === data.gid)
+                        g = data.group;
+                    return g;
+                });
+                force_close = true;
+                $('#groupModal').modal('hide');
+                update_net_recipients_list();
+                update_buttons();
+                update_stored_groups();
+            }
+        });
+    }
+}
+
+function delete_group() {
+    if (!old_gid)
+        return;
+    api_call('/api/delete_group', {gid: old_gid}, function(data) {
+        if (data.success) {
+            old_recipients_list = net_recipients_list;
+            force_close = true;
+            $('#groupModal').modal('hide');
+            stored_groups = stored_groups.filter(x => x.gid !== data.gid);
+            update_stored_groups();
+        }
+    });
+}
+
+function update_net_recipients_list() {
+    let net_recipients_hash = {};
+    for (let key in recipients_list) {
+        let entry = recipients[key];
+        if (entry.entries)
+            for (let email of entry.entries) 
+                net_recipients_hash[email] = true;
+        else
+            net_recipients_hash[key] = true;
+    }
+    net_recipients_list = Object.keys(net_recipients_hash).sort();
+
+    if (net_recipients_list.length === 0)
+        $('#recipient_count').html('keine Teilnehmer');
+    else
+        $('#recipient_count').html('' + net_recipients_list.length + ' Teilnehmer');
+    update_buttons();
+}
+
+function gen_recipient_span(key, with_rm) {
+    if (!(key in recipients))
+        recipients[key] = {label: key};
+    let label = recipients[key].label;
+    if (recipients[key].entries)
+        label += ' (' + recipients[key].entries.length + ')';
+    let recipient = $('<span>').addClass('recipient').html(label);
+    if (with_rm) {
+        let rm_button = $('<span>').addClass('rm').data('key', key);
+        rm_button.click(function(e) { 
+            remove_recipient($(e.target).data('key')); 
+            $(e.target).closest('.recipient').remove();
+        });
+        recipient.addClass('with-rm').append(rm_button);
+    }
+    if (recipients[key].teacher)
+        recipient.addClass('teacher');
+    recipient.data('key', key);
+    return recipient;
+}
+
+function add_recipient(key) {
+    if (!(key in recipients_list)) {
+        recipients_list[key] = true;
+        $('.recipients_list').append(gen_recipient_span(key, true));
+    }
+    $('.recipient-input-dropdown').hide();
+    $('#ti_recipients').val('');
+    $('#ti_name').focus();
+    update_net_recipients_list();
+}
+
+function remove_recipient(key) {
+    delete recipients_list[key];
+    update_net_recipients_list();
+}
+
+function compact_address_list(emails) {
+    let result = [];
+    for (let key of recipients_cache.groups) {
+        let all_in = true;
+        for (let email of recipients[key].entries) {
+            if (emails.indexOf(email) < 0) {
+                all_in = false;
+                break;
+            }
+        }
+        if (all_in) {
+            result.push(key);
+            let new_emails = [];
+            for (let email of emails)
+                if (recipients[key].entries.indexOf(email) < 0)
+                    new_emails.push(email);
+            emails = new_emails;
+        }
+    }
+    for (let email of emails)
+        result.push(email);
+    return result;
+}
+
+function edit_group(group) {
+    $('.recipients_list').empty();
+    recipients_list = {};
+    for (let email of group.recipients) {
+        recipients_list[email] = true;
+        $('.recipients_list').append(gen_recipient_span(email, true));
+    }
+    old_gid = group.gid;
+    update_net_recipients_list();
+    $('#groupModal').modal('show');
+    force_close = false;
+    $('.lb_name').text(group.info.name);
+    $('#ti_name').val(group.info.name);
+    old_name = group.info.name;
+    old_recipients_list = [...net_recipients_list];
+    $('#ti_recipients').val('');
+    $('#ti_recipients').focus();
+    update_buttons();
+}
+
+function update_stored_groups() {
+    $('.groups-here').empty();
+    for (group of stored_groups) {
+        let row = $('<tr>');
+        let cell = $('<td>');
+        cell.text(group.info.name);
+        row.append(cell);
+        row.append($('<td>').html('' + group.recipients.length + ' Teilnehmer'));
+        row.data('gid', group.gid);
+        (function(group) {
+            row.click(function(e) {
+                edit_group(group);
+            });
+        })(group);
+        $('.groups-here').append(row);
+    };
+}
+
+function update_external_users_for_session_user() {
+    $('.ext-users-here').empty();
+    for (let email of external_users_for_session_user.order) {
+        let row = $('<tr>');
+        row.append($('<td>').html(external_users_for_session_user.recipients[email].label));
+        row.append($('<td>').html(email));
+//         let bu_toggle = $('<button>').data('email', email).addClass('btn').addClass('btn-xs').addClass('btn-secondary').html("<i class='fa fa-times'></i>&nbsp;&nbsp;nicht eingeladen");
+//         row.append($('<td>').append(bu_toggle));
+        let bu_delete = $('<button>').data('email', email).addClass('btn').addClass('btn-xs').addClass('btn-danger').html("<i class='fa fa-trash'></i>");
+        row.append($('<td>').append(bu_delete));
+        bu_delete.click(function(e) {
+            showTemplateModal('Externen Teilnehmer löschen', 
+                'Sind Sie sicher, dass Sie diesen externen Teilnehmer aus Ihrem Adressbuch löschen möchten?',
+                "<i class='fa fa-trash'></i>&nbsp;&nbsp;Externen Teilnehmer löschen", 'btn-danger',
+                'Abbrechen', 'btn-secondary', function() {
+                    let email = $(e.target).closest('.btn').data('email');
+                    api_call('/api/delete_external_user', {email: email}, function(data) {
+                        if (data.success) {
+                            external_users_for_session_user = data.ext_users;
+                            update_external_users_for_session_user();
+                            load_recipients('#{@session_user[:id]}', function() {}, external_users_for_session_user);
+                        }
+                    });
+                }
+            );
+        });
+        $('.ext-users-here').append(row);
+    };
+}
+
+function new_group() {
+    $('.lb_title').text('Neue Gruppe');
+    $('#ti_name').val('');
+    
+    let minutes = 60;
+    let m = moment();
+    let start_date = m.format('YYYY-MM-DD');
+    $('#ti_date').val(start_date);
+    $('#ti_start_time').val(m.format('HH:mm'));
+    m = m.add(minutes, 'minutes');
+    if (m.format('YYYY-MM-DD') !== start_date)
+        m = moment(`${start_date}T23:59:00`);
+    $('#ti_end_time').val(m.format('HH:mm'));
+    if ($('#ti_group_jitsi').data('state') !== 'yes')
+        $('#ti_group_jitsi').click();
+    $('#summernote').summernote('reset');
+    recipients_list = {};
+    update_net_recipients_list();
+    $('.recipients_list').empty();
+    $('#groupModal').modal('show');
+    force_close = false;
+    old_recipients_list = [];
+    old_gid = null;
+    $('#ti_recipients').val('');
+    $('#ti_name').focus();
+    update_buttons();
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    $('#groupModal').on('hide.bs.modal', function(e) {
+        if ($(e.target).attr('id') === 'groupModal' && pending_changes() && (!force_close)) {
+            $('#save_group_btn_container').effect('shake', {direction: 'left', distance: 4});
+            e.preventDefault();
+            e.stopImmediatePropagation();
+            return false; 
+        }
+    });
+    
+    $('.bu-new-group').click(function(e) {
+        new_group();
+    });
+    
+    $('#bu_discard_group').click(function(e) {
+        discard_group();
+    });
+    
+    $('#bu_save_group').click(function(e) {
+        save_group();
+    });
+    
+    $('#bu_delete_group').click(function(e) {
+        showTemplateModal('Gruppe löschen', 
+            'Sind Sie sicher, dass Sie diese Gruppe löschen möchten?',
+            "<i class='fa fa-trash'></i>&nbsp;&nbsp;Gruppe löschen", 'btn-danger',
+            'Abbrechen', 'btn-secondary', function() {
+                delete_group();
+            }
+        );
+    });
+    
+    $('#ti_recipients').keydown(function(e) {
+        if ((e.keyCode === 9 || e.keyCode === 13) && ($(e.target).val().length > 0)) {
+            if (Object.keys(autocomplete_results).length === 1) {
+                let key = recipients_cache.keys[Object.keys(autocomplete_results)[0]];
+                add_recipient(key);
+            }
+            e.preventDefault();
+            e.stopPropagation();
+            if (e.keyCode === 9)
+                $('#ti_recipients').focus();
+            return;
+        }
+    });
+    $('#ti_recipients').keyup(function(e) {
+        if ($('#ti_recipients')[0].selectionStart == $(e.target).val().length) {
+            let value = $(e.target).val();
+            let backspace_pressed = (e.keyCode === 8);
+            let space_at_end = value[value.length - 1] == ' ';
+            let search_terms = value.trim().toLowerCase().split(/\s+/);
+            let results = {};
+            for (let i = 0; i < search_terms.length; i++) {
+                let term = search_terms[i];
+                let term_results = {};
+                for (let key of Object.keys(recipients_cache.index[term] || {})) {
+                    term_results[key] = recipients_cache.index[term][key];
+                }
+                if (i == 0)
+                    results = term_results;
+                else {
+                    for (let k of Object.keys(results)) {
+                        if (k in term_results) {
+                            if (term_results[k] > results[k])
+                                results[k] = term_results[k];
+                        } else {
+                            delete results[k];
+                        }
+                    }
+                }
+            }
+            autocomplete_results = results;
+            result_keys = Object.keys(results).map(function(x) { return parseInt(x); });
+            if (result_keys.length === 0)
+                $('.recipient-input-dropdown').hide();
+            else {
+                if (result_keys.length === 1)
+                {
+                    if (!backspace_pressed) {
+                        let key = recipients_cache.keys[result_keys[0]];
+                        let label = recipients[key].label;
+                        $('#ti_recipients').val(label);
+                        $('#ti_recipients')[0].setSelectionRange(results[result_keys[0]] + (space_at_end ? 1 : 0), label.length);
+                    }
+                }
+                result_keys.sort(function(a, b) {
+                    let va = recipients[recipients_cache.keys[a]];
+                    let vb = recipients[recipients_cache.keys[b]];
+                    if (va.teacher === vb.teacher) {
+                        if (va.label < vb.label)
+                            return -1;
+                        return 1;
+                    } else {
+                        if (va.teacher)
+                            return -1;
+                        return 1;
+                    }
+                });
+                $('.recipient-input-dropdown').empty();
+                for (let key of result_keys) {
+                    let k = recipients_cache.keys[key];
+                    let r = gen_recipient_span(k);
+                    r.click(function(e) { 
+                        add_recipient($(e.target).data('key'));
+                    });
+                    $('.recipient-input-dropdown').append(r);
+                }
+                $('.recipient-input-dropdown').show();
+            }
+        }
+    });
+    for (let key of ['#ti_name', '#ti_date', '#ti_start_time', '#ti_end_time']) {
+        $(key).keyup(function(e) { update_buttons(); });
+        $(key).change(function(e) { update_buttons(); });
+    }
+//     $('.bu-compose').click();
+
+    $('.btn_lesson_data').click(function(e) {
+        let button = $(e.target);
+        if (button.data('state') === 'yes') {
+            button.removeClass('btn-info').addClass('btn-outline-secondary');
+            button.find('.fa').removeClass('fa-check').removeClass('fa-question-circle').addClass('fa-times');
+            button.data('state', 'no');
+            button.blur();
+        }
+        else {
+            button.removeClass('btn-outline-secondary').addClass('btn-info');
+            button.find('.fa').removeClass('fa-times').removeClass('fa-question-circle').addClass('fa-check');
+            button.data('state', 'yes');
+        }
+        update_buttons();
+    });
+    
+    $('.bu_open_ext_users_modal').click(function(e) {
+            $('#ti_add_ext_users').val('');
+        $('#externalUsersModal').modal('show');
+    });
+    
+    $('#ti_add_ext_users').keyup(function(e) { 
+        $('#bu_add_ext_users').prop('disabled', $('#ti_add_ext_users').val().trim().length === 0);
+    });
+    
+    $('#ti_add_ext_users').change(function(e) { 
+        $('#bu_add_ext_users').prop('disabled', $('#ti_add_ext_users').val().trim().length === 0);
+    });
+    
+    $('#bu_add_ext_users').click(function(e) {
+        api_call('/api/add_external_users', {text: $('#ti_add_ext_users').val().trim()}, function(data) {
+            if (data.success) {
+                $('#ti_add_ext_users').val('');
+                external_users_for_session_user = data.ext_users;
+                update_external_users_for_session_user();
+                load_recipients('#{@session_user[:id]}', function() {}, external_users_for_session_user);
+            }
+        });
+    });
+    
+    load_recipients('#{@session_user[:id]}', function() {
+        update_stored_groups();
+        update_external_users_for_session_user();
+        if (window.location.hash.length > 1) 
+        {
+            let gid = window.location.hash.substr(1);
+            for (let group of stored_groups) {
+                if (group.gid === gid)
+                    edit_group(group);
+            }
+            window.location.hash = '';
+        }
+    }, external_users_for_session_user);
+});
+</script>

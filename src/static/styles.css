@@ -1537,6 +1537,34 @@ span.bv {
     cursor: pointer;
 }
 
+.groups-container table {
+    table-layout: fixed;
+}
+
+.groups-container td {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.groups-container .recipient {
+/*     font-size: 85%; */
+    padding: 2px 4px;
+    margin: 0 2px;
+}
+
+.groups-container tbody tr:hover {
+    background-color: #fef4a5;
+}
+
+.groups-container tbody td {
+    user-select: none;
+}
+
+.groups-container tbody tr {
+    cursor: pointer;
+}
+
 .polls-container table {
     table-layout: fixed;
 }

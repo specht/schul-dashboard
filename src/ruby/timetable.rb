@@ -1667,7 +1667,7 @@ class Timetable
         return file_count
     end
     
-    def update_recipients()
+    def update_recipients(only_this_email = nil)
         debug "Updating recipients"
         # write recipients for each user
         group_for_sus = {}
@@ -1678,7 +1678,39 @@ class Timetable
         results.each do |x|
             group_for_sus[x['u.email']] = x['group2']
         end
+        groups_for_user = {}
+        users_with_defined_groups = nil
+        if only_this_email
+            users_with_defined_groups = [only_this_email]
+        else
+            users_with_defined_groups = neo4j_query(<<~END_OF_QUERY).map { |x| x['ou.email'] }
+                MATCH (g:Group)-[:DEFINED_BY]->(ou:User)
+                WHERE COALESCE(g.deleted, false) = false
+                WITH g, ou
+                RETURN DISTINCT ou.email;
+            END_OF_QUERY
+        end
+        # debug users_with_defined_groups.to_yaml
+        stored_groups = neo4j_query(<<~END_OF_QUERY, {:emails => users_with_defined_groups}).map { |x| {:email => x['ou.email'], :info => x['g'].props, :recipient => x['u.email']} }
+            MATCH (g:Group)-[:DEFINED_BY]->(ou:User)
+            WHERE COALESCE(g.deleted, false) = false
+            AND ou.email IN {emails}
+            WITH g, ou
+            OPTIONAL MATCH (u)-[r:IS_PART_OF]->(g)
+            WHERE (u:User OR u:ExternalUser OR u:PredefinedExternalUser) AND COALESCE(r.deleted, false) = false
+            RETURN g, u.email, ou.email
+            ORDER BY g.created DESC, g.id;
+        END_OF_QUERY
+        # debug stored_groups.to_yaml
+        stored_groups.each do |x|
+            groups_for_user[x[:email]] ||= {}
+            groups_for_user[x[:email]][x[:info][:id]] ||= { :name => x[:info][:name], :recipients => []}
+            groups_for_user[x[:email]][x[:info][:id]][:recipients] << x[:recipient]
+        end
+        # debug groups_for_user.to_yaml
+
         @@user_info.each_pair do |email, user|
+            next if only_this_email && only_this_email != email
             next unless user[:teacher] || user[:sv]
             path = "/gen/w/#{user[:id]}/recipients.json.gz"
             FileUtils.mkpath(File.dirname(path))
@@ -1738,12 +1770,17 @@ class Timetable
                                                :teacher => true,
                                                :entries => @@user_info.select { |k, v| v[:teacher]}.map { |k, v| k }}
                 end
+                (groups_for_user[email] || {}).each_pair do |gid, g|
+                    recipients["/custom/#{gid}"] = {:label => g[:name], :entries => g[:recipients]}
+                end
+
                 groups = recipients.keys.select do |key|
                     recipients[key].include?(:entries)
                 end.sort do |a, b|
                     (recipients[b][:entries] || []).size <=> (recipients[a][:entries] || []).size
                 end
-                f.print({:recipients => recipients, :groups => groups}.to_json)
+                data = {:recipients => recipients, :groups => groups}
+                f.print(data.to_json)
             end
         end
     end
@@ -1806,6 +1843,9 @@ class Timetable
                     RETURN u.email;
                 END_OF_QUERY
                 add_these_lesson_keys << "_#{ou_email}"
+            elsif lesson_key =~ /^_groups_/
+                email = lesson_key.sub('_groups_/', '')
+                update_recipients(email)
             end
         end
         # now fetch all updated info nodes with booked tablet sets

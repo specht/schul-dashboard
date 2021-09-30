@@ -6,7 +6,7 @@ class Main < Sinatra::Base
 
     post '/api/get_tablet_set_bookings' do
         require_admin!
-        d0 = DateTime.now.strftime('%Y-%m-%d')
+        d0 = (DateTime.now - 28).strftime('%Y-%m-%d')
         rows = neo4j_query(<<~END_OF_QUERY, {:d0 => d0})
             MATCH (t:TabletSet)<-[:BOOKED]-(b:Booking)-[:BOOKED_BY]->(u:User)
             WHERE b.datum >= {d0}

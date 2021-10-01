@@ -991,6 +991,7 @@ class Main < Sinatra::Base
 
     def self.update_mailing_lists()
         self.update_antikenfahrt_groups()
+        @@mailing_lists = {}
         @@klassen_order.each do |klasse|
             next unless @@schueler_for_klasse.include?(klasse)
             @@mailing_lists["klasse.#{klasse}@#{SCHUL_MAIL_DOMAIN}"] = {

@@ -24,6 +24,11 @@ class Main < Sinatra::Base
         user_logged_in? && @session_user[:can_manage_monitors]
     end
     
+    # Returns true if a user who can manage Antikenfahrt is logged in.
+    def user_who_can_manage_antikenfahrt_logged_in?
+        user_logged_in? && @session_user[:can_manage_antikenfahrt]
+    end
+    
     # Returns true if a teacher or SV is logged in.
     def teacher_or_sv_logged_in?
         user_logged_in? && (teacher_logged_in? || @session_user[:sv])
@@ -128,6 +133,11 @@ class Main < Sinatra::Base
         assert(user_who_can_manage_monitors_logged_in?)
     end
     
+    # Assert that a user who can manage Antikenfahrt is logged in
+    def require_user_who_can_manage_antikenfahrt!
+        assert(user_who_can_manage_antikenfahrt_logged_in?)
+    end
+    
     # Assert that a teacher or SV is logged in
     def require_teacher_or_sv!
         assert(teacher_or_sv_logged_in?)
@@ -137,7 +147,6 @@ class Main < Sinatra::Base
     def require_monitor_or_user_who_can_manage_monitors!
         assert(monitor_logged_in? || user_who_can_manage_monitors_logged_in?)
     end
-    
     
     # Put this on top of a webpage to assert that this page can be opened by logged in users only
     def this_is_a_page_for_logged_in_users

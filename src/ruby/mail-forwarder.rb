@@ -32,16 +32,33 @@ class Script
         @@teachers_for_klasse = Main.class_variable_get(:@@teachers_for_klasse)
         @@shorthands = Main.class_variable_get(:@@shorthands)
         @@user_info = Main.class_variable_get(:@@user_info)
-        @@mailing_lists = Main.class_variable_get(:@@mailing_lists)
+        @@mailing_lists = nil
+        @@mailing_list_mtime = 0
         begin
             imap = Net::IMAP.new(SCHUL_MAIL_LOGIN_IMAP_HOST)
         rescue
             STDERR.puts "Unable to resolve #{SCHUL_MAIL_LOGIN_IMAP_HOST}, exiting..."
             exit(1)
         end
-        STDERR.puts "Mail forwarder ready with #{@@mailing_lists.size} mailing lists at #{MAILING_LIST_EMAIL}!"
+        STDERR.puts "Mail forwarder ready with #{fresh_mailing_list().size} mailing lists at #{MAILING_LIST_EMAIL}!"
     end
-    
+
+    def fresh_mailing_list()
+        refresh = false
+        path = '/internal/mailing_lists.yaml'
+        if @@mailing_lists.nil?
+            refresh = true
+        elsif File.mtime(path) > @@mailing_list_mtime
+            refresh = true
+        end
+        if refresh
+            STDERR.puts "Re-reading mailing lists from disk..."
+            @@mailing_list = YAML.load(File.read(path))
+            @@mailing_list_mtime = File.mtime(path)
+        end
+        @@mailing_list
+    end
+
     def allowed_senders()
         results = Set.new()
         results |= Set.new(@@user_info.keys.select { |email| @@user_info[email][:teacher] })
@@ -105,8 +122,8 @@ class Script
                             all_recipients = Set.new
                             recipients = ((mail.to || []) + (mail.cc || []) + (mail.bcc || []))
                             recipients.each do |m|
-                                if @@mailing_lists.include?(m.downcase)
-                                    all_recipients |= Set.new(@@mailing_lists[m.downcase][:recipients])
+                                if fresh_mailing_list().include?(m.downcase)
+                                    all_recipients |= Set.new(fresh_mailing_list()[m.downcase][:recipients])
                                 end
                             end
                             File.open(recipients_path, 'w') do |f|

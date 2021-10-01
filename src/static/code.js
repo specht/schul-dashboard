@@ -305,8 +305,13 @@ function filter_events_by_timestamp(events, now) {
 
 
 function load_recipients(id, callback, also_load_ext_users) {
+    let antikenfahrt_recipients = window.antikenfahrt_recipients;
+    if (typeof(antikenfahrt_recipients) === 'undefined')
+        antikenfahrt_recipients = {recipients: {}, groups: []};
     if (typeof(also_load_ext_users) === 'undefined')
         also_load_ext_users = {groups: [], recipients: {}, order: []};
+    if (typeof(can_handle_external_users) === 'undefined')
+        can_handle_external_users = false;
     let uri = '/gen/w/' + id + '/recipients.json.gz';
     var oReq = new XMLHttpRequest();
     oReq.open('GET', uri, true);
@@ -319,6 +324,14 @@ function load_recipients(id, callback, also_load_ext_users) {
             let f = new FileReader();
             f.onload = function(e) {
                 let entries = JSON.parse(e.target.result);
+                for (let group of antikenfahrt_recipients.groups)
+                {
+                    if (CAN_HANDLE_EXTERNAL_USERS == false && antikenfahrt_recipients.recipients[group].external === true)
+                        continue;
+                    entries.groups.push(group);
+                    entries.recipients[group] = antikenfahrt_recipients.recipients[group];
+                }
+                console.log(entries);
                 for (let group of also_load_ext_users.groups)
                     entries.groups.push(group);
                 for (let key in also_load_ext_users.recipients) {

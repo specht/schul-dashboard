@@ -173,6 +173,12 @@ PAUSENAUFSICHT_DAUER = {1 => 25, 2 => 15, 3 => 15, 4 => 20, 6 => 40,
                         7 => 40, 8 => 15}
 
 KLASSEN_ORDER = ['5a', '11', '12']
+GROUP_AF_ICONS = {
+    '' => '🏠',
+    'it' => '🇮🇹',
+    'gr' => '🇬🇷'
+}
+GROUP_AF_ICON_KEYS = GROUP_AF_ICONS.keys.sort
 
 COLOR_SCHEME_COLORS = [
     ['la2c6e80d60aea2c6e8', 'Sky'],
@@ -199,6 +205,8 @@ CAN_UPLOAD_FILES_USERS = []
 CAN_MANAGE_NEWS_USERS = []
 
 CAN_MANAGE_MONITORS_USERS = []
+
+CAN_MANAGE_ANTIKENFAHRT_USERS = []
 
 # Schülervertretung, kann:
 # - Nachrichten an SuS schreiben

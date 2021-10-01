@@ -38,6 +38,19 @@ document.addEventListener('DOMContentLoaded', function() {
     } else {
         $('.group2-button').addClass('disabled');
     }
+    if ('#{user_who_can_manage_antikenfahrt_logged_in?}' === 'true') {
+        $('.group-af-button').click(function(e) {
+            let button = $(e.target).closest('.group-af-button');
+            let email = button.data('email');
+            api_call('/api/toggle_group_af_for_user', {email: email}, function(data) {
+                if (data.success) {
+                    button.text(#{GROUP_AF_ICONS.to_json}[data.group_af]);
+                }
+            });
+        });
+    } else {
+        $('.group2-button').addClass('disabled');
+    }
     $('.btn-toggle-homeschooling').click(function(e) {
         let email = $(e.target).data('email');
         api_call('/api/toggle_homeschooling', {email: email}, function(data) {

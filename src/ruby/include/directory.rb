@@ -5,10 +5,10 @@ class Main < Sinatra::Base
         StringIO.open do |io|
             io.puts "<div class='row'>"
             io.puts "<div class='col-md-12'>"
-            io.puts "<div class='alert alert-warning'>"
-            io.puts "Bitte überprüfen Sie die <strong>Gruppenzuordnung (A/B)</strong> und markieren Sie alle Kinder, die aus gesundheitlichen Gründen / Quarantäne nicht in die Schule kommen können, als <strong>»zu Hause«</strong>."
+            # io.puts "<div class='alert alert-warning'>"
+            # io.puts "Bitte überprüfen Sie die <strong>Gruppenzuordnung (A/B)</strong> und markieren Sie alle Kinder, die aus gesundheitlichen Gründen / Quarantäne nicht in die Schule kommen können, als <strong>»zu Hause«</strong>."
 #             io.puts "Auf die Jitsi-Streams können momentan nur SuS zugreifen, die laut ihrer Gruppenzuordnung in der aktuellen Woche zu Hause sind oder explizit als »zu Hause« markiert sind."
-            io.puts "</div>"
+            # io.puts "</div>"
             io.puts "<h3>Klasse #{tr_klasse(klasse)}</h3>"
             # <div style='max-width: 100%; overflow-x: auto;'>
             # <table class='table' style='width: unset; min-width: 100%;'>
@@ -23,7 +23,11 @@ class Main < Sinatra::Base
             io.puts "<th>Vorname</th>"
             io.puts "<th>E-Mail-Adresse</th>"
             io.puts "<th style='width: 140px;'>Homeschooling</th>"
-            io.puts "<th style='width: 100px;'>Gruppe A/B</th>"
+            if ['11', '12'].include?(klasse)
+                io.puts "<th style='width: 100px;'>Antikenfahrt</th>"
+            else
+                io.puts "<th style='width: 100px;'>Gruppe A/B</th>"
+            end
             io.puts "<th style='width: 180px;'>Letzter Zugriff</th>"
             io.puts "<th>Eltern-E-Mail-Adresse</th>"
             io.puts "</tr>"
@@ -32,13 +36,15 @@ class Main < Sinatra::Base
             results = neo4j_query(<<~END_OF_QUERY, :email_addresses => @@schueler_for_klasse[klasse])
                 MATCH (u:User)
                 WHERE u.email IN {email_addresses}
-                RETURN u.email, u.last_access, COALESCE(u.group2, 'A') AS group2;
+                RETURN u.email, u.last_access, COALESCE(u.group2, 'A') AS group2, COALESCE(u.group_af, '') AS group_af;
             END_OF_QUERY
             last_access = {}
             group2_for_email = {}
+            group_af_for_email = {}
             results.each do |x|
                 last_access[x['u.email']] = x['u.last_access']
                 group2_for_email[x['u.email']] = x['group2']
+                group_af_for_email[x['u.email']] = x['group_af']
             end
             
             (@@schueler_for_klasse[klasse] || []).sort do |a, b|
@@ -61,7 +67,11 @@ class Main < Sinatra::Base
                 else
                     io.puts "<td><button #{homeschooling_button_disabled} class='btn btn-secondary btn-xs btn-toggle-homeschooling' data-email='#{email}'><i class='fa fa-building'></i>&nbsp;&nbsp;Präsenz</button></td>"
                 end
-                io.puts "<td><div class='group2-button group2-#{group2_for_email[email]}' data-email='#{email}'>#{group2_for_email[email]}</div></td>"
+                if ['11', '12'].include?(klasse)
+                    io.puts "<td><div class='group-af-button #{user_who_can_manage_antikenfahrt_logged_in? ? '' : 'disabled'}' data-email='#{email}'>#{GROUP_AF_ICONS[group_af_for_email[email]]}</div></td>"
+                else
+                    io.puts "<td><div class='group2-button group2-#{group2_for_email[email]}' data-email='#{email}'>#{group2_for_email[email]}</div></td>"
+                end
                 la_label = 'noch nie angemeldet'
                 today = Date.today.to_s
                 if last_access[email]
@@ -276,6 +286,54 @@ class Main < Sinatra::Base
         end
     end
     
+    def self.update_antikenfahrt_groups()
+        results = $neo4j.neo4j_query(<<~END_OF_QUERY).map { |x| {:email => x['email'], :group_af => x['group_af'] }}
+            MATCH (u:User)
+            RETURN u.email AS email, COALESCE(u.group_af, '') AS group_af;
+        END_OF_QUERY
+        groups = {}
+        main_user_info = @@user_info
+        results.each do |row|
+            next unless ['gr', 'it'].include?(row[:group_af])
+            user_info = main_user_info[row[:email]]
+            next unless user_info
+            next unless user_info[:teacher] == false
+            next unless ['11', '12'].include?(user_info[:klasse])
+            groups[user_info[:klasse]] ||= {}
+            groups[user_info[:klasse]][row[:group_af]] ||= []
+            groups[user_info[:klasse]][row[:group_af]] << row[:email]
+        end
+        @@antikenfahrt_recipients = {
+            :recipients => {},
+            :groups => []
+        }
+        @@antikenfahrt_mailing_lists = {}
+        ['11', '12'].each do |klasse|
+            ['gr', 'it'].each do |group_af|
+                next if ((groups[klasse] || {})[group_af] || []).empty?
+                @@antikenfahrt_recipients[:groups] << "/af/#{klasse}/#{group_af}/sus"
+                @@antikenfahrt_recipients[:recipients]["/af/#{klasse}/#{group_af}/sus"] = {
+                    :label => "Antikenfahrt #{GROUP_AF_ICONS[group_af]} – SuS #{klasse}",
+                    :entries => groups[klasse][group_af]
+                }
+                @@antikenfahrt_recipients[:groups] << "/af/#{klasse}/#{group_af}/eltern"
+                @@antikenfahrt_recipients[:recipients]["/af/#{klasse}/#{group_af}/eltern"] = {
+                    :label => "Antikenfahrt #{GROUP_AF_ICONS[group_af]} – Eltern #{klasse} (extern)",
+                    :external => true,
+                    :entries => groups[klasse][group_af].map { |x| 'eltern.' + x }
+                }
+                @@antikenfahrt_mailing_lists["antikenfahrt.#{group_af}.#{klasse}@#{SCHUL_MAIL_DOMAIN}"] = {
+                    :label => "Antikenfahrt #{GROUP_AF_ICONS[group_af]} – SuS Klassenstufe #{klasse}",
+                    :recipients => groups[klasse][group_af]
+                }
+                @@antikenfahrt_mailing_lists["antikenfahrt.#{group_af}.eltern.#{klasse}@#{SCHUL_MAIL_DOMAIN}"] = {
+                    :label => "Antikenfahrt #{GROUP_AF_ICONS[group_af]} – Eltern Klassenstufe #{klasse}",
+                    :recipients => groups[klasse][group_af].map { |x| 'eltern.' + x }
+                }
+            end
+        end
+    end
+    
     post '/api/toggle_homeschooling' do
         data = parse_request_data(:required_keys => [:email])
         email = data[:email]
@@ -460,6 +518,27 @@ class Main < Sinatra::Base
         END_OF_QUERY
         respond(:group2 => group2)
     end
+
+    post '/api/toggle_group_af_for_user' do
+        require_user_who_can_manage_antikenfahrt!
+        data = parse_request_data(:required_keys => [:email])
+        email = data[:email]
+        group_af = neo4j_query_expect_one(<<~END_OF_QUERY, :email => email)['group_af']
+            MATCH (u:User {email: {email}})
+            RETURN COALESCE(u.group_af, '') AS group_af;
+        END_OF_QUERY
+        index = GROUP_AF_ICON_KEYS.index(group_af) || 0
+        index = (index + 1) % GROUP_AF_ICON_KEYS.size
+        group_af = neo4j_query_expect_one(<<~END_OF_QUERY, :email => email, :group_af => GROUP_AF_ICON_KEYS[index])['group_af']
+            MATCH (u:User {email: {email}})
+            SET u.group_af = {group_af}
+            RETURN u.group_af AS group_af;
+        END_OF_QUERY
+        Main.update_antikenfahrt_groups()
+        Main.update_mailing_lists()
+
+        respond(:group_af => group_af)
+    end
     
     def schueler_for_lesson(lesson_key)
         results = (@@schueler_for_lesson[lesson_key] || []).map do |email| 
@@ -524,6 +603,17 @@ class Main < Sinatra::Base
                  "lehrer.#{klasse}@#{SCHUL_MAIL_DOMAIN}"].each do |list_email|
                     print_mailing_list(io, list_email)
                     remaining_mailing_lists.delete(list_email)
+                end
+                if ['11', '12'].include?(klasse)
+                    ['gr', 'it'].each do |group_af|
+                        ['', '.eltern'].each do |extra|
+                            list_email = "antikenfahrt.#{group_af}#{extra}.#{klasse}@#{SCHUL_MAIL_DOMAIN}"
+                            if @@mailing_lists[list_email]
+                                print_mailing_list(io, list_email)
+                                remaining_mailing_lists.delete(list_email)
+                            end
+                        end
+                    end
                 end
             end
             io.puts "<tr><th colspan='3'>Gesamte Schule</th></tr>"

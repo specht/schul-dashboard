@@ -182,6 +182,8 @@ var old_description = '';
 var old_eid = null;
 var stored_events = #{stored_events.to_json};
 var external_users_for_session_user = #{external_users_for_session_user.to_json};
+var antikenfahrt_recipients = #{@@antikenfahrt_recipients.to_json};
+CAN_HANDLE_EXTERNAL_USERS = true;
 var force_close = false;
 
 function can_send() {

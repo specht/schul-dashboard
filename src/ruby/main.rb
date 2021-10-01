@@ -603,7 +603,9 @@ class Main < Sinatra::Base
         @@lehrer_order = []
         @@klassen_order = []
         @@current_email_addresses = []
-                           
+        @@antikenfahrt_recipients = {}
+        @@antikenfahrt_mailing_lists = {}
+
         @@index_for_klasse = {}
         @@predefined_external_users = {}
         
@@ -760,6 +762,10 @@ class Main < Sinatra::Base
         (CAN_MANAGE_MONITORS_USERS + ADMIN_USERS).each do |email|
             next unless @@user_info[email]
             @@user_info[email][:can_manage_monitors] = true
+        end
+        (CAN_MANAGE_ANTIKENFAHRT_USERS + ADMIN_USERS).each do |email|
+            next unless @@user_info[email]
+            @@user_info[email][:can_manage_antikenfahrt] = true
         end
         SV_USERS.each do |email|
             next unless @@user_info[email]
@@ -976,8 +982,15 @@ class Main < Sinatra::Base
         end
 
         @@pausenaufsichten = parser.parse_pausenaufsichten(@@config)
-        
+
         @@mailing_lists = {}
+        self.update_antikenfahrt_groups()
+        self.update_mailing_lists()
+        @@current_email_addresses = parser.parse_current_email_addresses()
+    end    
+
+    def self.update_mailing_lists()
+        self.update_antikenfahrt_groups()
         @@klassen_order.each do |klasse|
             next unless @@schueler_for_klasse.include?(klasse)
             @@mailing_lists["klasse.#{klasse}@#{SCHUL_MAIL_DOMAIN}"] = {
@@ -1030,7 +1043,9 @@ class Main < Sinatra::Base
                 "eltern.#{email}"
             end
         }
-        @@current_email_addresses = parser.parse_current_email_addresses()
+        @@antikenfahrt_mailing_lists.each_pair do |k, v|
+            @@mailing_lists[k] = v
+        end
         if DEVELOPMENT
             VERTEILER_TEST_EMAILS.each do |email|
                 @@mailing_lists[email] = {
@@ -1039,7 +1054,11 @@ class Main < Sinatra::Base
                 }
             end
         end
-    end    
+        File.open('/internal/mailing_lists.yaml.tmp', 'w') do |f|
+            f.puts @@mailing_lists.to_yaml
+        end
+        FileUtils::mv('/internal/mailing_lists.yaml.tmp', '/internal/mailing_lists.yaml', force: true)
+    end
     
     def self.compile_files(key, mimetype, paths)
         @@compiled_files[key] ||= {:timestamp => nil, :content => nil}
@@ -1312,6 +1331,7 @@ class Main < Sinatra::Base
                                         @session_user[:otp_token] = results.first['u'].props[:otp_token]
                                         @session_user[:homeschooling] = results.first['u'].props[:homeschooling]
                                         @session_user[:group2] = results.first['u'].props[:group2] || 'A'
+                                        @session_user[:group_af] = results.first['u'].props[:group_af] || ''
                                         @session_user[:sus_may_contact_me] = results.first['u'].props[:sus_may_contact_me] || false
                                     end
                                 end
@@ -1553,6 +1573,11 @@ class Main < Sinatra::Base
                     end
                 elsif x == :directory
                     klassen = @@klassen_for_shorthand[@session_user[:shorthand]] || []
+                    if user_who_can_manage_antikenfahrt_logged_in?
+                        klassen << '11'
+                        klassen << '12'
+                        klassen.uniq!
+                    end
                     unless klassen.empty?
                         io.puts "<li class='nav-item dropdown'>"
                         io.puts "<a class='nav-link nav-icon dropdown-toggle' href='#' id='navbarDropdown' role='button' data-toggle='dropdown' aria-haspopup='true' aria-expanded='false'>"

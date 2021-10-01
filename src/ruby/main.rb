@@ -1013,13 +1013,13 @@ class Main < Sinatra::Base
                 end
             }
             if @@klassenleiter[klasse]
-                @@mailing_lists["team#{klasse.to_i}@#{SCHUL_MAIL_DOMAIN}"] ||= {
+                @@mailing_lists["team.#{klasse.to_i}@#{SCHUL_MAIL_DOMAIN}"] ||= {
                     :label => "Klassenleiterteam der Klassenstufe #{klasse.to_i}",
                     :recipients => []
                 }
                 @@klassenleiter[klasse].each do |shorthand|
                     if @@shorthands[shorthand]
-                        @@mailing_lists["team#{klasse.to_i}@#{SCHUL_MAIL_DOMAIN}"][:recipients] << @@shorthands[shorthand]
+                        @@mailing_lists["team.#{klasse.to_i}@#{SCHUL_MAIL_DOMAIN}"][:recipients] << @@shorthands[shorthand]
                     end
                 end
             end

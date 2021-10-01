@@ -616,6 +616,12 @@ class Main < Sinatra::Base
                     end
                 end
             end
+            io.puts "<tr><th colspan='3'>Klassenleiter-Teams</th></tr>"
+            [5, 6, 7, 8, 9, 10].each do |klasse|
+                list_email = "team.#{klasse}@mail.gymnasiumsteglitz.de"
+                print_mailing_list(io, list_email)
+                remaining_mailing_lists.delete(list_email)
+            end
             io.puts "<tr><th colspan='3'>Gesamte Schule</th></tr>"
             ["sus@#{SCHUL_MAIL_DOMAIN}",
              "eltern@#{SCHUL_MAIL_DOMAIN}",

@@ -1440,16 +1440,16 @@ class Timetable
                     if ical_tokens[email]
                         ical_events[email] ||= []
                         write_events.each do |event|
-                            STDERR.puts event.keys.to_json
+                            # STDERR.puts event.keys.to_json
                             event_str = StringIO.open do |io|
-                                if event[:is_event]
-                                    io.puts "BEGIN:VEVENT"
-                                    io.puts "DTSTART;TZID=Europe/Berlin:#{event[:start].gsub('-', '').gsub(':', '')}00"
-                                    io.puts "DTEND;TZID=Europe/Berlin:#{event[:end].gsub('-', '').gsub(':', '')}00"
-                                    io.puts "SUMMARY:#{fix_label_for_unicode(event[:event_title])}"
-                                    io.puts "DESCRIPTION:#{event[:description].gsub("\n", "\\n")}"
-                                    io.puts "END:VEVENT"
-                                end
+                                # if event[:is_event]
+                                #     io.puts "BEGIN:VEVENT"
+                                #     io.puts "DTSTART;TZID=Europe/Berlin:#{event[:start].gsub('-', '').gsub(':', '')}00"
+                                #     io.puts "DTEND;TZID=Europe/Berlin:#{event[:end].gsub('-', '').gsub(':', '')}00"
+                                #     io.puts "SUMMARY:#{fix_label_for_unicode(event[:event_title])}"
+                                #     io.puts "DESCRIPTION:#{event[:description].gsub("\n", "\\n")}"
+                                #     io.puts "END:VEVENT"
+                                # end
                                 next if event[:label].nil?
                                 io.puts "BEGIN:VEVENT"
                                 io.puts "DTSTART;TZID=Europe/Berlin:#{event[:start].gsub('-', '').gsub(':', '')}00"

@@ -335,6 +335,22 @@ class Main < Sinatra::Base
         end
     end
 
+    def print_all_users
+        require_admin!
+        StringIO.open do |io|
+            @@user_info.keys.sort.each do |email|
+                io.puts "#{email} #{@@user_info[email][:display_name]}"
+            end
+            io.string
+        end
+    end
+
+    get '/api/all_users' do
+        require_admin!
+        respond_raw_with_mimetype(print_all_users, 'text/plain')
+    end
+
+
     def print_email_accounts()
         require_admin!
         StringIO.open do |io|

@@ -215,6 +215,23 @@ var tablet_set_info = #{@@tablet_sets.to_json};
   </div>
 </div>
 
+<div class="modal" id="emailListModal" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-scrollable modal-lg modal-dialog-centered" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">E-Mail-Adressen</h5>
+            </div>
+            <div class="modal-body" style='overflow-x: auto;'>
+                <p><b>Hinweis:</b> Bitte verwenden Sie die Adressen nach Möglichkeit im BCC.</p>
+                <textarea style='font-family: monospace; font-size: 90%;' rows='20' class='form-control' readonly></textarea>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Schließen</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <div class='container-fluid solid' style='padding-top: 30px;'>
     <div class='api_messages overlay'></div>
     <div class='row' style='position: relative;'>
@@ -373,6 +390,7 @@ var tablet_set_info = #{@@tablet_sets.to_json};
                     <a href='/api/directory_xlsx/#{show_lesson_key}' class='btn btn-sm btn-primary' style='margin: 0 8px 8px 0;'><i class='fa fa-file-excel-o'></i>&nbsp;&nbsp;Excel-Tabelle herunterladen</a>
                     <a href='/api/directory_timetex_pdf/by_last_name/#{show_lesson_key}' class='btn btn-sm btn-primary' style='margin: 0 8px 8px 0;'><i class='fa fa-file-pdf-o'></i>&nbsp;&nbsp;Timetex-PDF herunterladen</a>
                     <a href='/api/directory_timetex_pdf/by_first_name/#{show_lesson_key}' class='btn btn-sm btn-primary' style='margin: 0 8px 8px 0;'><i class='fa fa-file-pdf-o'></i>&nbsp;&nbsp;Timetex-PDF herunterladen (nach Vornamen sortiert)</a>
+                    <a id='bu_email_list' href='' style='margin: 0 8px 8px 0;' class='btn btn-sm btn-primary'><i class='fa fa-envelope-o'></i>&nbsp;&nbsp;Liste aller E-Mail-Adressen</a>
         
                 </div>
             </div>
@@ -2123,6 +2141,17 @@ document.addEventListener('DOMContentLoaded', function() {
             i = i + 1;
         }
         update_breakout_room_widgets();
+    });
+    let s = [];
+    for (let user of schueler_for_lesson) {
+        console.log(user);
+        s.push(`${user.display_name} <${user.email}>`);
+    }
+    $('#emailListModal textarea').val(s.join("\n"));
+    $('#bu_email_list').click(function(e) {
+        e.preventDefault();
+        console.log('jeyu!');
+        $('#emailListModal').modal('show');
     });
 });
 </script>

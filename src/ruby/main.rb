@@ -348,6 +348,19 @@ end
 
 class SetupDatabase
     include QtsNeo4j
+
+    def wait_for_neo4j
+        delay = 1
+        10.times do
+            begin
+                neo4j_query("MATCH (n) RETURN n LIMIT 1;")
+            rescue
+                debug "Waiting #{delay} seconds for Neo4j to come up..."
+                sleep delay
+                delay += 1
+            end
+        end
+    end
     
     def setup(main)
         delay = 1
@@ -1129,13 +1142,14 @@ class Main < Sinatra::Base
     end
     
     configure do
+        setup = SetupDatabase.new()
+        setup.wait_for_neo4j()
         @@renderer = BackgroundRenderer.new
         self.collect_data() unless defined?(SKIP_COLLECT_DATA) && SKIP_COLLECT_DATA
         @@ws_clients = {}
         @@color_scheme_info = {}
         if ENV['DASHBOARD_SERVICE'] == 'ruby' && (File.basename($0) == 'thin' || File.basename($0) == 'pry.rb')
             @@compiled_files = {}
-            setup = SetupDatabase.new()
             setup.setup(self)
             COLOR_SCHEME_COLORS.each do |entry|
                 @@color_scheme_info[entry[0]] = [entry[1], entry[2]]

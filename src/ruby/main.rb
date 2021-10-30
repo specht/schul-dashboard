@@ -1825,7 +1825,8 @@ class Main < Sinatra::Base
             which = @@color_scheme_colors.sample
             break unless which[4] == 'd'
         end
-        color_scheme = "#{which[4]}#{which[0, 3].join('').gsub('#', '')}#{[0, 5].sample}"
+        # color_scheme = "#{which[4]}#{which[0, 3].join('').gsub('#', '')}#{[0, 5].sample}"
+        color_scheme = "#{which[4]}#{which[0, 3].join('').gsub('#', '')}0"
         @@default_color_scheme[jd] = color_scheme unless DEVELOPMENT
         return color_scheme
     end

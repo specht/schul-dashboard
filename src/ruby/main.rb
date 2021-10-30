@@ -1617,6 +1617,7 @@ class Main < Sinatra::Base
                     if user_who_can_manage_news_logged_in?
                         io.puts "<a class='dropdown-item nav-icon' href='/manage_news'><div class='icon'><i class='fa fa-newspaper-o'></i></div><span class='label'>News verwalten</span></a>"
                         io.puts "<a class='dropdown-item nav-icon' href='/manage_calendar'><div class='icon'><i class='fa fa-calendar'></i></div><span class='label'>Termine verwalten</span></a>"
+                        io.puts "<a class='dropdown-item nav-icon' href='/anmeldungen'><div class='icon'><i class='fa fa-group'></i></div><span class='label'>Anmeldungen einsehen</span></a>"
                     end
                     if user_who_can_manage_news_logged_in? && user_who_can_upload_files_logged_in?
                         io.puts "<div class='dropdown-divider'></div>"
@@ -1823,7 +1824,7 @@ class Main < Sinatra::Base
         which = nil
         while true do
             which = @@color_scheme_colors.sample
-            break unless which[4] == 'd'
+            break unless which[4] == 'd' || which[1] == '#ff0040'
         end
         # color_scheme = "#{which[4]}#{which[0, 3].join('').gsub('#', '')}#{[0, 5].sample}"
         color_scheme = "#{which[4]}#{which[0, 3].join('').gsub('#', '')}0"

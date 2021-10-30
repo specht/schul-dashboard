@@ -240,4 +240,84 @@ class Main < Sinatra::Base
         trigger_send_invites()
         respond(:ok => true)
     end
+
+    post '/api/sign_up_for_event' do
+        data = parse_request_data(:required_keys => [:name, :email, :mode])
+        STDERR.puts "Got sign up: #{data.to_json}"
+        timestamp = DateTime.now.strftime('%Y-%m-%d %H:%M:%S')
+        neo4j_query(<<~END_OF_QUERY, :name => data[:name], :email => data[:email], :mode => data[:mode], :timestamp => timestamp)
+            MERGE (e:PublicEvent {name: "Info-Abend für Viertklässler-Eltern"})
+            CREATE (n:PublicEventPerson {name: $name, email: $email, mode: $mode, timestamp: $timestamp})-[:SIGNED_UP_FOR]->(e)
+        END_OF_QUERY
+        deliver_mail do
+            to data[:email]
+            bcc SMTP_FROM
+            from SMTP_FROM
+            reply_to DASHBOARD_SUPPORT_EMAIL
+            
+            subject "Ihre Anmeldung zum Info-Abend für Viertklässler-Eltern"
+
+            StringIO.open do |io|
+                io.puts "<p>Sehr geehrte/r #{data[:name]},</p>"
+                io.puts "<p>Vielen Dank für Ihre Anmeldung! Wir werden Sie rechtzeitig über den genauen Ablauf informieren.</p>"
+                io.puts "<p>Mit freundlichen Grüßen</p>"
+                io.string
+            end
+        end
+        respond(:ok => true)
+    end
+
+    def public_events_table()
+        require_teacher!
+        StringIO.open do |io|
+            io.puts "<div class='row'>"
+            io.puts "<div class='col-md-12'>"
+            public_event_names = neo4j_query(<<~END_OF_QUERY).map { |x| x['n.name'] }
+                MATCH (n:PublicEvent)
+                RETURN n.name;
+            END_OF_QUERY
+            public_event_names.each do |public_event_name|
+                io.puts "<h3>#{public_event_name}</h3>"
+                io.puts "<div class='table-responsive' style='max-width: 100%; overflow-x: auto;'>"
+                io.puts "<table class='klassen_table table table-condensed table-striped narrow' style='width: unset; min-width: 100%;'>"
+                io.puts "<thead>"
+                io.puts "<tr>"
+                io.puts "<th>Nr.</th>"
+                io.puts "<th style='width: 120px;'>Anmeldung</th>"
+                io.puts "<th>Name</th>"
+                io.puts "<th style='width: 120px;'>Modus</th>"
+                io.puts "<th style='width: 30%;'>E-Mail-Adresse</th>"
+                io.puts "</tr>"
+                io.puts "</thead>"
+                io.puts "<tbody>"
+                results = neo4j_query(<<~END_OF_QUERY, :public_event_name => public_event_name).map { |x| x['n'].props }
+                    MATCH (n:PublicEventPerson)-[:SIGNED_UP_FOR]->(e:PublicEvent {name: $public_event_name})
+                    RETURN n
+                    ORDER BY n.timestamp ASC;
+                END_OF_QUERY
+
+                counter = {}
+                results.each.with_index do |row, index|
+                    counter[row[:mode]] ||= 0
+                    counter[row[:mode]] += 1
+                    io.puts "<tr class='user_row'>"
+                    io.puts "<td>#{index + 1}.</td>"
+                    io.puts "<td>#{row[:timestamp][0, 10]}</td>"
+                    io.puts "<td>#{row[:name]}</td>"
+                    mode_tr = {'presence' => 'Präsenz', 'online' => 'Online'}
+                    io.puts "<td>#{mode_tr[row[:mode]] || row[:mode]} (Nr. #{counter[row[:mode]]})</td>"
+                    io.puts "<td>"
+                    print_email_field(io, row[:email])
+                    io.puts "</td>"
+                    io.puts "</tr>"
+                end
+                io.puts "</tbody>"
+                io.puts "</table>"
+                io.puts "</div>"
+            end
+            io.puts "</div>"
+            io.puts "</div>"
+            io.string
+        end
+    end
 end

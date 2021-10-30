@@ -1,0 +1,118 @@
+<style>
+    b.key {
+        display: inline-block;
+        width: 120px;
+    }
+
+    .form-group label {
+        width: 120px;
+        float: left;
+    }
+
+    input.form-control {
+        /* display: inline-block; */
+        /* width: auto; */
+
+    }
+</style>
+
+<div class='container' style='padding-top: 30px;'>
+    <div class='row'>
+        <div class='col-md-12'>
+            <h3>Anmeldung zum Informationsabend für Viertklässler-Eltern</h3>
+            <p>(Text bitte einfügen: bitte Formular benutzen, Stream auf jeden Fall, Präsenz je nach dem, Sie bekommen
+                eine Bestätigungs-E-Mail und weitere Informationen kurz vorher)</p>
+            <b class='key'>Datum:</b> 12.34.5678 <br />
+            <b class='key'>Uhrzeit:</b> 12:34 Uhr <br />
+            <hr />
+            <div>
+                <div class="form-group row">
+                    <label for="ti_name" class="col-md-2 col-form-label">Name:</label>
+                    <div class="col-md-10">
+                        <input type="text" class="form-control" id="ti_name" placeholder="Name">
+                    </div>
+                </div>
+                <div class="form-group row">
+                    <label for="ti_email" class="col-md-2 col-form-label">E-Mail:</label>
+                    <div class="col-md-10">
+                        <input type="email" class="form-control" id="ti_email" placeholder="E-Mail-Adresse">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <p>Bitte treffen Sie eine Auswahl:</p>
+                    <div data-key='mode' class="poll_radio_buttons">
+                        <p data-value='presence' class=""><i class="icon icon-unselected fa fa-circle-thin"></i><i
+                                class="icon icon-selected fa fa-dot-circle-o"></i>Falls die Veranstaltung auch in
+                            Präsenz stattfindet, möchte ich vor Ort teilnehmen. Mir ist bekannt, dass die entsprechende
+                            3G-Regel gilt und ich werde den entsprechenden Nachweis zur Kontrolle mitführen. Verfügbare
+                            Plätze werden enstprechend der Anmeldereihenfolge vergeben.</p>
+                        <p data-value='online' class=""><i class="icon icon-unselected fa fa-circle-thin"></i><i
+                                class="icon icon-selected fa fa-dot-circle-o"></i>Ich möchte an der Veranstaltung im
+                            Video-Stream teilnehmen und Fragen ggf. per Live-Chat stellen</p>
+                    </div>
+                </div>
+                <hr />
+                <div style='text-align: center;'>
+                    <button id='bu_submit' type="submit" class="btn btn-success" disabled><i class='fa fa-send'></i>&nbsp;&nbsp;Anmelden</button>
+                </div>
+                <div id='thankyou' class='alert alert-success' style='display: none;'>
+                    Vielen Dank für Ihre Anmeldung! Wir haben Ihnen eine E-Mail zur Anmeldebestätigung gesendet.
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    function collect_data() {
+        let data = {};
+        data.name = $('#ti_name').val().trim();
+        data.email = $('#ti_email').val().trim();
+        jQuery.each($('.poll_radio_buttons'), function(_, e) {
+            let key = $(e).data('key');
+            let selected = $(e).find('p.selected');
+            if (selected.length === 1) {
+                data[key] = $(selected[0]).data('value');
+            } else {
+                data[key] = null;
+            }
+        });
+        return data;
+    }
+
+    function update_submit_button() {
+        let data = collect_data();
+        let can_submit = true;
+        if (data.name.length === 0) can_submit = false;
+        if (data.email.length === 0) can_submit = false;
+        if (data.mode === null) can_submit = false;
+        $('#bu_submit').prop('disabled', !can_submit);
+    }
+
+    window.addEventListener('load', function () {
+        $('.poll_radio_buttons p').click(function (e) {
+            let which = $(e.target).closest('p');
+            $('.poll_radio_buttons p').removeClass('selected');
+            which.addClass('selected');
+            update_submit_button();
+        });
+        $('input').keyup(function(e) {
+            update_submit_button();
+        });
+        $('input').keydown(function(e) {
+            update_submit_button();
+        });
+        $('input').change(function(e) {
+            update_submit_button();
+        });
+        $('#bu_submit').click(function(e) {
+            let data = collect_data();
+            api_call('/api/sign_up_for_event', {name: data.name, email: data.email, mode: data.mode}, function(data) {
+                if (data.success) {
+                    $('#bu_submit').slideUp();
+                    $('#thankyou').slideDown();
+                }
+            });
+        });
+    });
+</script>

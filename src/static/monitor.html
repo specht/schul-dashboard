@@ -72,15 +72,15 @@
 
     h3 {
         user-select: none;
-        font-size: 1.3vw;
+        font-size: 1.2vw;
         font-weight: bold;
 
         position: relative;
         background-color: #fff;
         display: inline-block;
-        width: 3vw;
-        height: 3vw;
-        border-radius: 1.5vw;
+        width: 2.8vw;
+        height: 2.8vw;
+        border-radius: 1.2vw;
         left: -3.2vw;
         top: -1.5vw;
         box-shadow: 0 0 0.4vw rgba(0, 0, 0, 0.4);
@@ -514,14 +514,15 @@
                     data = data.data;
                     let today = data.today;
                     let tomorrow = data.tomorrow;
-                    data = data.data[data.today];
-                    $('.monitor_timestamp').text(moment(data.vplan_timestamp).format('dddd, D.M.Y, LT [Uhr]'));
+                    data_today = data.data[data.today];
+                    data_tomorrow = data.data[data.tomorrow];
+                    $('.monitor_timestamp').text(moment(data_today.vplan_timestamp).format('dddd, D.M.Y, LT [Uhr]'));
                     if (monitor_mode === 'public') {
                         for (let klasse of klassen) {
                             let div = klassen_div[klasse];
                             div.empty();
-                            if (data.klassen[klasse]) {
-                                append_vplan_table(div, data.klassen[klasse]);
+                            if (data_today.klassen[klasse]) {
+                                append_vplan_table(div, data_today.klassen[klasse]);
                                 install_auto_scroller(klasse, div, div.find('table')[0]);
                             }
                         }
@@ -532,7 +533,7 @@
                         let l = $('.main_sek_left > .wrapper > div')[0];
                         // let r = $('.main_sek_left > .wrapper > div')[1];
                         for (let klasse of klassen) {
-                            if (data.klassen[klasse]) {
+                            if (data_today.klassen[klasse]) {
                                 let box = $('<div>');
                                 let div = $('<div>').addClass('klasse').appendTo(box);
                                 div.append($('<h3>').text(`${klassen_tr[klasse] || klasse}`))
@@ -541,7 +542,7 @@
                                     $(l).append(box);
                                 // else
                                     // $(r).append(box);
-                                append_vplan_table(content, data.klassen[klasse], true);
+                                append_vplan_table(content, data_today.klassen[klasse], true);
                             }
                         }
                         install_auto_scroller_continuous('sus', $('.main_sek_left')[0], $('.main_sek_left > .wrapper')[0]);
@@ -554,7 +555,7 @@
                         l = $('.main_sek_right > .wrapper > div')[0];
                         // r = $('.main_sek_right > .wrapper > div')[1];
                         for (let shorthand of shorthand_order) {
-                            if (data.lehrer[shorthand]) {
+                            if (data_today.lehrer[shorthand]) {
                                 let box = $('<div>');
                                 let div = $('<div>').addClass('klasse').appendTo(box);
                                 div.append($('<h3>').text(shorthand))
@@ -563,7 +564,7 @@
                                     $(l).append(box);
                                 // else
                                     // $(r).append(box);
-                                append_vplan_table(content, data.lehrer[shorthand], true);
+                                append_vplan_table(content, data_today.lehrer[shorthand], true);
                             }
                         }
                         install_auto_scroller_continuous('lehrer', $('.main_sek_right')[0], $('.main_sek_right > .wrapper')[0]);
@@ -578,14 +579,14 @@
                         $('.la_tomorrow').text(moment(tomorrow).format('dddd, D.M.Y'));
                         $('.main_lz_left > .wrapper > div').empty();
                         let l = $('.main_lz_left > .wrapper > div')[0];
-                        for (let klasse of klassen) {
-                            if (data.klassen[klasse]) {
+                        for (let shorthand of shorthand_order) {
+                            if (data_today.lehrer[shorthand]) {
                                 let box = $('<div>');
                                 let div = $('<div>').addClass('klasse').appendTo(box);
-                                div.append($('<h3>').text(`${klassen_tr[klasse] || klasse}`))
+                                div.append($('<h3>').text(shorthand))
                                 let content = $('<div>').addClass('content').appendTo(div);
                                 $(l).append(box);
-                                append_vplan_table(content, data.klassen[klasse], true);
+                                append_vplan_table(content, data_today.lehrer[shorthand], true);
                             }
                         }
                         install_auto_scroller_continuous('sus', $('.main_lz_left')[0], $('.main_lz_left > .wrapper')[0]);
@@ -597,13 +598,13 @@
                         $('.main_lz_right > .wrapper > div').empty();
                         l = $('.main_lz_right > .wrapper > div')[0];
                         for (let shorthand of shorthand_order) {
-                            if (data.lehrer[shorthand]) {
+                            if (data_tomorrow.lehrer[shorthand]) {
                                 let box = $('<div>');
                                 let div = $('<div>').addClass('klasse').appendTo(box);
                                 div.append($('<h3>').text(shorthand))
                                 let content = $('<div>').addClass('content').appendTo(div);
                                 $(l).append(box);
-                                append_vplan_table(content, data.lehrer[shorthand], true);
+                                append_vplan_table(content, data_tomorrow.lehrer[shorthand], true);
                             }
                         }
                         install_auto_scroller_continuous('lehrer', $('.main_lz_right')[0], $('.main_lz_right > .wrapper')[0]);

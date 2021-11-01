@@ -484,6 +484,17 @@
         }
     }
 
+    function interrupt_on_scroll(selector, key) {
+        $(selector).bind('mousewheel', function(e) {
+            klassen_animation_config[key].phase = 0;
+            klassen_animation_config[key].timestamp = last_timestamp + top_delay;
+        });
+        $(selector).bind('touchmove', function(e) {
+            klassen_animation_config[key].phase = 0;
+            klassen_animation_config[key].timestamp = last_timestamp + top_delay;
+        });
+    }
+
     function setup_ws(ws)
     {
         ws.onopen = function() {
@@ -546,10 +557,7 @@
                             }
                         }
                         install_auto_scroller_continuous('sus', $('.main_sek_left')[0], $('.main_sek_left > .wrapper')[0]);
-                        $('.main_sek_left').bind('mousewheel', function(e) {
-                            klassen_animation_config['sus'].phase = 0;
-                            klassen_animation_config['sus'].timestamp = last_timestamp + top_delay;
-                        });
+                        interrupt_on_scroll('.main_sek_left', 'sus');
 
                         $('.main_sek_right > .wrapper > div').empty();
                         l = $('.main_sek_right > .wrapper > div')[0];
@@ -568,10 +576,7 @@
                             }
                         }
                         install_auto_scroller_continuous('lehrer', $('.main_sek_right')[0], $('.main_sek_right > .wrapper')[0]);
-                        $('.main_sek_right').bind('mousewheel', function(e) {
-                            klassen_animation_config['lehrer'].phase = 0;
-                            klassen_animation_config['lehrer'].timestamp = last_timestamp + top_delay;
-                        });
+                        interrupt_on_scroll('.main_sek_right', 'lehrer');
                     }
 
                     if (monitor_mode === 'lehrerzimmer') {
@@ -590,10 +595,7 @@
                             }
                         }
                         install_auto_scroller_continuous('sus', $('.main_lz_left')[0], $('.main_lz_left > .wrapper')[0]);
-                        $('.main_lz_left').bind('mousewheel', function(e) {
-                            klassen_animation_config['sus'].phase = 0;
-                            klassen_animation_config['sus'].timestamp = last_timestamp + top_delay;
-                        });
+                        interrupt_on_scroll('.main_lz_left', 'sus');
 
                         $('.main_lz_right > .wrapper > div').empty();
                         l = $('.main_lz_right > .wrapper > div')[0];
@@ -608,10 +610,7 @@
                             }
                         }
                         install_auto_scroller_continuous('lehrer', $('.main_lz_right')[0], $('.main_lz_right > .wrapper')[0]);
-                        $('.main_lz_right').bind('mousewheel', function(e) {
-                            klassen_animation_config['lehrer'].phase = 0;
-                            klassen_animation_config['lehrer'].timestamp = last_timestamp + top_delay;
-                        });
+                        interrupt_on_scroll('.main_lz_right', 'lehrer');
                     }
                 }
             }

@@ -485,6 +485,9 @@ class SetupDatabase
                     neo4j_query(<<~END_OF_QUERY, :email => "monitor-sek@#{SCHUL_MAIL_DOMAIN}")
                         MERGE (u:User {email: {email}})
                     END_OF_QUERY
+                    neo4j_query(<<~END_OF_QUERY, :email => "monitor-lz@#{SCHUL_MAIL_DOMAIN}")
+                        MERGE (u:User {email: {email}})
+                    END_OF_QUERY
                 end
                 transaction do
                     present_users = neo4j_query(<<~END_OF_QUERY).map { |x| x['u.email'] }
@@ -498,6 +501,7 @@ class SetupDatabase
                     wanted_users << "klassenraum@#{SCHUL_MAIL_DOMAIN}"
                     wanted_users << "monitor@#{SCHUL_MAIL_DOMAIN}"
                     wanted_users << "monitor-sek@#{SCHUL_MAIL_DOMAIN}"
+                    wanted_users << "monitor-lz@#{SCHUL_MAIL_DOMAIN}"
                     users_to_be_deleted = Set.new(present_users) - wanted_users
                     unless users_to_be_deleted.empty?
                         debug "Deleting #{users_to_be_deleted.size} users (not really)"
@@ -1332,6 +1336,12 @@ class Main < Sinatra::Base
                                         :teacher => false
                                     }
                                 elsif email == "monitor-sek@#{SCHUL_MAIL_DOMAIN}"
+                                    @session_user = {
+                                        :email => email,
+                                        :is_monitor => true,
+                                        :teacher => false
+                                    }
+                                elsif email == "monitor-lz@#{SCHUL_MAIL_DOMAIN}"
                                     @session_user = {
                                         :email => email,
                                         :is_monitor => true,

@@ -16,6 +16,10 @@
         display: none;
     }
 
+    .main_lz {
+        display: none;
+    }
+
     .container-fluid {
         padding: 2vw 1vw;
         padding-top: 1vw;
@@ -28,24 +32,30 @@
     }
 
     .main_sek_left > .wrapper > div {
-        width: 24.5vw;
+        width: 49vw;
         padding: 0 1vw;
-        /* border: 1px solid red; */
-        /* position: absolute; */
     }
 
     .main_sek_right > .wrapper > div {
-        width: 24.5vw;
+        width: 49vw;
         padding: 0 1vw;
-        /* border: 1px solid red; */
-        /* position: absolute; */
+    }
+
+    .main_lz_left > .wrapper > div {
+        width: 49vw;
+        padding: 0 1vw;
+    }
+
+    .main_lz_right > .wrapper > div {
+        width: 49vw;
+        padding: 0 1vw;
     }
 
     .klasse {
         backdrop-filter: blur(10px);
         background-color: rgba(255, 255, 255, 0.7);
         border-radius: 0.7vw;
-        box-shadow: 0 0 0.5vw rgba(0, 0, 0, 0.6);
+        box-shadow: 0 0 0.5vw rgba(0, 0, 0, 0.4);
         padding: 1vw 2vw;
         margin: 1vw 0;
         position: relative;
@@ -61,7 +71,8 @@
     }
 
     h3 {
-        font-size: 1.5vw;
+        user-select: none;
+        font-size: 1.3vw;
         font-weight: bold;
 
         position: relative;
@@ -69,12 +80,12 @@
         display: inline-block;
         width: 3vw;
         height: 3vw;
-        border-radius: 3vw;
+        border-radius: 1.5vw;
         left: -3.2vw;
         top: -1.5vw;
-        box-shadow: 0 0 0.4vw rgba(0, 0, 0, 0.8);
+        box-shadow: 0 0 0.4vw rgba(0, 0, 0, 0.4);
         text-align: center;
-        padding-top: 0.6vw;
+        padding-top: 0.7vw;
     }
 
     .row {
@@ -82,6 +93,7 @@
     }
 
     .ticker {
+        user-select: none;
         position: absolute;
         bottom: -0.5vw;
         font-size: 2.5vw;
@@ -117,6 +129,7 @@
         white-space: pre;
         transform-origin: 0 0;
         transform: rotate(-90deg);
+        user-select: none;
     }
 
     .main .content {
@@ -129,6 +142,12 @@
     }
 
     .main_sek_left .content, .main_sek_right .content {
+        position: relative;
+        top: -4.4vw;
+        margin-bottom: -5vw;
+    }
+
+    .main_lz_left .content, .main_lz_right .content {
         position: relative;
         top: -4.4vw;
         margin-bottom: -5vw;
@@ -148,8 +167,9 @@
 
     .content table td {
         /* border: 1px solid red; */
-        font-size: 1.15vw;
+        font-size: 1.05vw;
         padding: 0 0.5vw;
+        user-select: none;
     }
 
     .content table td.vertretungs_text {
@@ -176,8 +196,16 @@
         left: -0.5vw;
         top: 1vw;
         bottom: 5vw;
-        overflow: hidden;
         padding: 0 0.5vw 1.5vw 0.5vw;
+    }
+
+    .main_sek_left::-webkit-scrollbar {
+        display: none;
+    }
+    .main_sek_left {
+        overflow: scroll;
+        -ms-overflow-style: none;  /* IE and Edge */
+        scrollbar-width: none;  /* Firefox */
     }
 
     .main_sek_left > div {
@@ -191,12 +219,115 @@
         left: 48.5vw;
         top: 1vw;
         bottom: 5vw;
-        overflow: hidden;
         padding: 0 0.5vw 1.5vw 0.5vw;
+    }
+
+    .main_sek_right::-webkit-scrollbar {
+        display: none;
+    }
+    .main_sek_right {
+        overflow: scroll;
+        -ms-overflow-style: none;  /* IE and Edge */
+        scrollbar-width: none;  /* Firefox */
+    }
+
+
+    .main_sek td {
+        vertical-align: top;
     }
 
     .main_sek_right > div {
         padding: 0 1vw;
+    }
+
+    .main_sek td:nth-child(1) {
+        width: 4vw!important;
+    }
+
+    .main_sek td:nth-child(2) {
+        width: 6vw!important;
+    }
+
+    .main_sek td:nth-child(3) {
+        width: 6vw!important;
+    }
+
+    .main_sek td:nth-child(4) {
+        width: 6vw!important;
+    }
+
+    .main_sek td:nth-child(5) {
+        width: 8vw!important;
+    }
+    
+    .main_lz_left {
+        /* border: 1px solid red; */
+        width: 50vw;
+        position: absolute;
+        left: -0.5vw;
+        top: 3vw;
+        bottom: 5vw;
+        padding: 0 0.5vw 1.5vw 0.5vw;
+    }
+
+    .main_lz_left::-webkit-scrollbar {
+        display: none;
+    }
+    .main_lz_left {
+        overflow: scroll;
+        -ms-overflow-style: none;  /* IE and Edge */
+        scrollbar-width: none;  /* Firefox */
+    }
+
+    .main_lz_left > div {
+        padding: 0 1vw;
+    }
+
+    .main_lz_right {
+        /* border: 1px solid red; */
+        width: 50vw;
+        position: absolute;
+        left: 48.5vw;
+        top: 3vw;
+        bottom: 5vw;
+        padding: 0 0.5vw 1.5vw 0.5vw;
+    }
+
+    .main_lz_right::-webkit-scrollbar {
+        display: none;
+    }
+    .main_lz_right {
+        overflow: scroll;
+        -ms-overflow-style: none;  /* IE and Edge */
+        scrollbar-width: none;  /* Firefox */
+    }
+
+    .main_lz td {
+        vertical-align: top;
+    }
+
+    .main_lz_right > div {
+        padding: 0 1vw;
+    }
+
+    .main_lz td:nth-child(1) {
+        width: 4vw!important;
+    }
+
+    .main_lz td:nth-child(2) {
+        width: 6vw!important;
+    }
+
+    .main_lz td:nth-child(3) {
+        width: 6vw!important;
+    }
+
+    .main_lz td:nth-child(4) {
+        width: 6vw!important;
+    }
+
+    .main_lz td:nth-child(5) {
+        width: 8vw!important;
     }
 
     .wrapper {
@@ -206,6 +337,28 @@
         /* border: 1px solid red; */
         /* width: 50vw; */
         padding: 0 1vw;
+    }
+
+    .main_lz .heading {
+        position: fixed;
+        top: 0.8vw;
+        text-align: center;
+        width: 47vw;
+        left: 2vw;
+    }
+
+    .main_lz .heading div {
+        display: inline-block;
+        font-size: 1vw;
+        font-weight: bold;
+        background-color: rgba(255, 255, 255, 0.8);
+        border-radius: 2vw;
+        padding: 0 0.8vw;
+        /* box-shadow: 0 0 0.5vw rgba(0, 0, 0, 0.3); */
+    }
+
+    .main_lz div:nth-child(2) .heading {
+        left: 51vw;
     }
 
 
@@ -219,13 +372,27 @@
             <div class='main_sek_left'>
                 <div class='wrapper'>
                     <div></div>
-                    <div style='position: absolute; top: 0; left: 25.5vw;'></div>
+                    <!-- <div style='position: absolute; top: 0; left: 25.5vw;'></div> -->
                 </div>
             </div>
             <div class='main_sek_right'>
                 <div class='wrapper'>
                     <div></div>
-                    <div style='position: absolute; top: 0; left: 25.5vw;'></div>
+                    <!-- <div style='position: absolute; top: 0; left: 25.5vw;'></div> -->
+                </div>
+            </div>
+        </div>
+        <div class='container-fluid main_lz row'>
+            <div class='main_lz_left'>
+                <div class='heading'><div class='la_today'></div></div>
+                <div class='wrapper'>
+                    <div></div>
+                </div>
+            </div>
+            <div class='main_lz_right'>
+                <div class='heading'><div class='la_tomorrow'></div></div>
+                <div class='wrapper'>
+                    <div></div>
                 </div>
             </div>
         </div>
@@ -238,6 +405,7 @@
 </div>
 
 <script>
+    var monitor_mode = 'public';
     var top_delay = 5.0;
     var bottom_delay = 2.0;
     var klassen = #{ KLASSEN_ORDER.to_json };
@@ -279,7 +447,9 @@
         })();
     }        
     
-    function append_vplan_table(div, data) {
+    function append_vplan_table(div, data, long) {
+        if (typeof(long) == 'undefined')
+            long = false;
         let table = $('<table>');
         div.append(table);
         let first_entry = true;
@@ -294,13 +464,22 @@
             row.append($('<td>').html(gen_label_arr(entry.klassen_alt, entry.klassen_neu)));
             row.append($('<td>').html(gen_label(entry.fach_alt, entry.fach_neu)));
             row.append($('<td>').html(gen_label_arr(entry.lehrer_alt, entry.lehrer_neu)));
-            row.append($('<td>').css('text-align', 'right').html(gen_label(entry.raum_alt, entry.raum_neu)));
-            if (entry.vertretungs_text) {
-                let row = $('<tr>').appendTo(table);
-                row.append($('<td>'));
-                let cell = $('<td>').addClass('vertretungs_text').attr('colspan', '4');
-                cell.append($('<span>').text(entry.vertretungs_text));
-                row.append(cell);
+            if (long) {
+                row.append($('<td>').html(gen_label(entry.raum_alt, entry.raum_neu)));
+            } else {
+                row.append($('<td>').css('text-align', 'right').html(gen_label(entry.raum_alt, entry.raum_neu)));
+            }
+            if (long) {
+                row.append($('<td>').text(entry.vertretungs_text));
+
+            } else {
+                if (entry.vertretungs_text) {
+                    let row = $('<tr>').appendTo(table);
+                    row.append($('<td>'));
+                    let cell = $('<td>').addClass('vertretungs_text').attr('colspan', '4');
+                    cell.append($('<span>').text(entry.vertretungs_text));
+                    row.append(cell);
+                }
             }
         }
     }
@@ -333,51 +512,106 @@
                 if (data.timestamp !== last_vplan_timestamp) {
                     last_vplan_timestamp = data.timestamp;
                     data = data.data;
+                    let today = data.today;
+                    let tomorrow = data.tomorrow;
+                    data = data.data[data.today];
                     $('.monitor_timestamp').text(moment(data.vplan_timestamp).format('dddd, D.M.Y, LT [Uhr]'));
-                    console.log(data);
-                    for (let klasse of klassen) {
-                        let div = klassen_div[klasse];
-                        div.empty();
-                        if (data.klassen[klasse]) {
-                            append_vplan_table(div, data.klassen[klasse]);
-                            install_auto_scroller(klasse, div, div.find('table')[0]);
+                    if (monitor_mode === 'public') {
+                        for (let klasse of klassen) {
+                            let div = klassen_div[klasse];
+                            div.empty();
+                            if (data.klassen[klasse]) {
+                                append_vplan_table(div, data.klassen[klasse]);
+                                install_auto_scroller(klasse, div, div.find('table')[0]);
+                            }
                         }
                     }
-                    $('.main_sek_left > .wrapper > div').empty();
-                    let l = $('.main_sek_left > .wrapper > div')[0];
-                    let r = $('.main_sek_left > .wrapper > div')[1];
-                    for (let klasse of klassen) {
-                        if (data.klassen[klasse]) {
-                            let box = $('<div>');
-                            let div = $('<div>').addClass('klasse').appendTo(box);
-                            div.append($('<h3>').text(`${klassen_tr[klasse] || klasse}`))
-                            let content = $('<div>').addClass('content').appendTo(div);
-                            if ($(l).height() <= $(r).height())
-                                $(l).append(box);
-                            else
-                                $(r).append(box);
-                            append_vplan_table(content, data.klassen[klasse]);
-                        }
-                    }
-                    install_auto_scroller('sus', $('.main_sek_left')[0], $('.main_sek_left > .wrapper')[0]);
 
-                    $('.main_sek_right > .wrapper > div').empty();
-                    l = $('.main_sek_right > .wrapper > div')[0];
-                    r = $('.main_sek_right > .wrapper > div')[1];
-                    for (let shorthand of shorthand_order) {
-                        if (data.lehrer[shorthand]) {
-                            let box = $('<div>');
-                            let div = $('<div>').addClass('klasse').appendTo(box);
-                            div.append($('<h3>').text(shorthand))
-                            let content = $('<div>').addClass('content').appendTo(div);
-                            if ($(l).height() <= $(r).height())
-                                $(l).append(box);
-                            else
-                                $(r).append(box);
-                            append_vplan_table(content, data.lehrer[shorthand]);
+                    if (monitor_mode === 'sekretariat') {
+                        $('.main_sek_left > .wrapper > div').empty();
+                        let l = $('.main_sek_left > .wrapper > div')[0];
+                        // let r = $('.main_sek_left > .wrapper > div')[1];
+                        for (let klasse of klassen) {
+                            if (data.klassen[klasse]) {
+                                let box = $('<div>');
+                                let div = $('<div>').addClass('klasse').appendTo(box);
+                                div.append($('<h3>').text(`${klassen_tr[klasse] || klasse}`))
+                                let content = $('<div>').addClass('content').appendTo(div);
+                                // if ($(l).height() <= $(r).height())
+                                    $(l).append(box);
+                                // else
+                                    // $(r).append(box);
+                                append_vplan_table(content, data.klassen[klasse], true);
+                            }
                         }
+                        install_auto_scroller_continuous('sus', $('.main_sek_left')[0], $('.main_sek_left > .wrapper')[0]);
+                        $('.main_sek_left').bind('mousewheel', function(e) {
+                            klassen_animation_config['sus'].phase = 0;
+                            klassen_animation_config['sus'].timestamp = last_timestamp + top_delay;
+                        });
+
+                        $('.main_sek_right > .wrapper > div').empty();
+                        l = $('.main_sek_right > .wrapper > div')[0];
+                        // r = $('.main_sek_right > .wrapper > div')[1];
+                        for (let shorthand of shorthand_order) {
+                            if (data.lehrer[shorthand]) {
+                                let box = $('<div>');
+                                let div = $('<div>').addClass('klasse').appendTo(box);
+                                div.append($('<h3>').text(shorthand))
+                                let content = $('<div>').addClass('content').appendTo(div);
+                                // if ($(l).height() <= $(r).height())
+                                    $(l).append(box);
+                                // else
+                                    // $(r).append(box);
+                                append_vplan_table(content, data.lehrer[shorthand], true);
+                            }
+                        }
+                        install_auto_scroller_continuous('lehrer', $('.main_sek_right')[0], $('.main_sek_right > .wrapper')[0]);
+                        $('.main_sek_right').bind('mousewheel', function(e) {
+                            klassen_animation_config['lehrer'].phase = 0;
+                            klassen_animation_config['lehrer'].timestamp = last_timestamp + top_delay;
+                        });
                     }
-                    install_auto_scroller('lehrer', $('.main_sek_right')[0], $('.main_sek_right > .wrapper')[0]);
+
+                    if (monitor_mode === 'lehrerzimmer') {
+                        $('.la_today').text(moment(today).format('dddd, D.M.Y'));
+                        $('.la_tomorrow').text(moment(tomorrow).format('dddd, D.M.Y'));
+                        $('.main_lz_left > .wrapper > div').empty();
+                        let l = $('.main_lz_left > .wrapper > div')[0];
+                        for (let klasse of klassen) {
+                            if (data.klassen[klasse]) {
+                                let box = $('<div>');
+                                let div = $('<div>').addClass('klasse').appendTo(box);
+                                div.append($('<h3>').text(`${klassen_tr[klasse] || klasse}`))
+                                let content = $('<div>').addClass('content').appendTo(div);
+                                $(l).append(box);
+                                append_vplan_table(content, data.klassen[klasse], true);
+                            }
+                        }
+                        install_auto_scroller_continuous('sus', $('.main_lz_left')[0], $('.main_lz_left > .wrapper')[0]);
+                        $('.main_lz_left').bind('mousewheel', function(e) {
+                            klassen_animation_config['sus'].phase = 0;
+                            klassen_animation_config['sus'].timestamp = last_timestamp + top_delay;
+                        });
+
+                        $('.main_lz_right > .wrapper > div').empty();
+                        l = $('.main_lz_right > .wrapper > div')[0];
+                        for (let shorthand of shorthand_order) {
+                            if (data.lehrer[shorthand]) {
+                                let box = $('<div>');
+                                let div = $('<div>').addClass('klasse').appendTo(box);
+                                div.append($('<h3>').text(shorthand))
+                                let content = $('<div>').addClass('content').appendTo(div);
+                                $(l).append(box);
+                                append_vplan_table(content, data.lehrer[shorthand], true);
+                            }
+                        }
+                        install_auto_scroller_continuous('lehrer', $('.main_lz_right')[0], $('.main_lz_right > .wrapper')[0]);
+                        $('.main_lz_right').bind('mousewheel', function(e) {
+                            klassen_animation_config['lehrer'].phase = 0;
+                            klassen_animation_config['lehrer'].timestamp = last_timestamp + top_delay;
+                        });
+                    }
                 }
             }
         }
@@ -394,28 +628,44 @@
         let diff = timestamp - last_timestamp;
         for (let klasse in klassen_animation_config) {
             let config = klassen_animation_config[klasse];
-            if (config.phase == 0) {
-                config.position += diff * scroll_down_speed;
-                if (config.position > config.range) {
-                    config.position = config.range;
-                    config.phase = 1;
-                    config.timestamp = timestamp + bottom_delay;
+            if (config.type === 'elevator') {
+                if (config.phase == 0) {
+                    config.position += diff * scroll_down_speed;
+                    if (config.position > config.range) {
+                        config.position = config.range;
+                        config.phase = 1;
+                        config.timestamp = timestamp + bottom_delay;
+                    }
+                } else if (config.phase == 1) {
+                    if (timestamp >= config.timestamp)
+                        config.phase = 2;
+                } else if (config.phase == 2) {
+                    config.position -= diff * scroll_up_speed;
+                    if (config.position < 0.0) {
+                        config.position = 0.0;
+                        config.phase = 3;
+                        config.timestamp = timestamp + top_delay;
+                    }
+                } else if (config.phase == 3) {
+                    if (timestamp >= config.timestamp)
+                        config.phase = 0;
                 }
-            } else if (config.phase == 1) {
-                if (timestamp >= config.timestamp)
-                    config.phase = 2;
-            } else if (config.phase == 2) {
-                config.position -= diff * scroll_up_speed;
-                if (config.position < 0.0) {
-                    config.position = 0.0;
-                    config.phase = 3;
-                    config.timestamp = timestamp + top_delay;
+                $(klassen_animation_config[klasse].table).css('top', `-${config.position}vw`);
+            } else if (config.type === 'continuous') {
+                if (config.phase == 0) {
+                    if (timestamp >= config.timestamp) {
+                        config.phase = 1;
+                        let top = $(klassen_animation_config[klasse].parent).scrollTop();
+                        config.position = top * 100.0 / window.innerWidth;
+                    }
+                } else if (config.phase == 1) {
+                    config.position += diff * scroll_down_speed;
+                    while (config.position > config.range && config.range > 0)
+                        config.position -= config.range;
+                    let top = config.position / 100.0 * window.innerWidth;
+                    $(klassen_animation_config[klasse].parent).scrollTop(top);
                 }
-            } else if (config.phase == 3) {
-                if (timestamp >= config.timestamp)
-                    config.phase = 0;
             }
-            $(klassen_animation_config[klasse].table).css('top', `-${config.position}vw`);
         }
         if ($('.ticker-message span').length > 0) {
             let message_width = $('.ticker-message span').first().width() * 100.0 / window.innerWidth;
@@ -469,6 +719,7 @@
         if (child_height > parent_height) {
             let diff = child_height - parent_height;
             klassen_animation_config[klasse] = {
+                type: 'elevator',
                 range: diff,
                 phase: 2,
                 timestamp: top_delay,
@@ -478,10 +729,38 @@
         }
     }
 
+    function install_auto_scroller_continuous(klasse, parent, child) {
+        parent = $(parent);
+        child = $(child);
+        let child_height = child.height() * 100.0 / window.innerWidth;
+        let parent_height = parent.height() * 100.0 / window.innerWidth;
+        console.log(child_height, parent_height);
+        if (child_height > parent_height) {
+            let html = child.find('div').html();
+            child.append(html);
+            let diff = child_height - 1.0;
+            klassen_animation_config[klasse] = {
+                type: 'continuous',
+                range: diff,
+                phase: 0,
+                timestamp: 0,
+                position: 0,
+                table: child[0],
+                parent: parent,
+            };
+        }
+    }
+
     window.addEventListener('load', function () {
         if (#{@session_user[:email] == "monitor-sek@#{SCHUL_MAIL_DOMAIN}"} || window.location.pathname === '/monitor/sek') {
+            monitor_mode = 'sekretariat';
             $('.main').hide();
             $('.main_sek').show();
+        }
+        else if (#{@session_user[:email] == "monitor-lz@#{SCHUL_MAIL_DOMAIN}"} || window.location.pathname === '/monitor/lz') {
+            monitor_mode = 'lehrerzimmer';
+            $('.main').hide();
+            $('.main_lz').show();
         }
         establish_websocket_connection();
         let a = `<b>»${attribution[0]}«</b>`;

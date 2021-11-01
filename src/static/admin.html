@@ -94,6 +94,13 @@
                 }
             });
         });
+        $('.bu-login-as-monitor-lz').click(function (e) {
+            api_call('/api/login_as_monitor_lz', {}, function (data) {
+                if (data.success) {
+                    window.location.href = '/';
+                }
+            });
+        });
         $('.bu-refresh-staging').click(function (e) {
             $('#refresh-icon-staging').addClass('fa-spin');
             api_call('/api/refresh_entire_website', { staging: 'yes' }, function (data) {

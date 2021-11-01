@@ -166,131 +166,92 @@ class Timetable
     def update_monitor()
         debug "Updating monitor..."
 
-        monitor_date = Date.parse([@@config[:first_school_day], Date.today.to_s].max.to_s)
-        if DEVELOPMENT
-            monitor_date = Date.parse('2021-08-30')
-        end
-        while [6, 0].include?(monitor_date.wday)
-            monitor_date += 1
-        end
-        monitor_date = monitor_date.strftime('%Y-%m-%d')
+        monitor_data_package = {:data => {}}
+        ts = DateTime.now.to_s
 
-        monitor_timestamp = ''
-        monitor_data = {:klassen => {}, :lehrer => {}, :timestamp => DateTime.now.to_s}
-        vplan_timestamp_path = '/vplan/timestamp.txt'
-        if File.exists?(vplan_timestamp_path)
-            vplan_timestamp = File.read(vplan_timestamp_path)
-            parts = vplan_timestamp.split('-')
-
-            monitor_data[:vplan_timestamp] = DateTime.parse("#{parts[0]}-#{parts[1]}-#{parts[2]}T#{parts[3]}:#{parts[4]}:#{parts[5]}+#{DateTime.now.to_s.split('+')[1]}").to_s
-        end
-
-        temp_data = {:klassen => {}, :lehrer => {}}
-        (@@vertretungen[monitor_date] || []).sort do |a, b|
-            a[:stunde] <=> b[:stunde]
-        end.each do |ventry|
-            klassen = Set.new(ventry[:klassen_alt] || []) | Set.new(ventry[:klassen_neu] || [])
-            klassen.each do |klasse|
-                next unless KLASSEN_ORDER.include?(klasse)
-                temp_data[:klassen][klasse] ||= {}
-                key = ventry.keys.sort.reject { |k| k == :stunde }.map { |k| [k, ventry[k]] }.to_json
-                temp_data[:klassen][klasse][key] ||= []
-                temp_data[:klassen][klasse][key] << ventry
+        (0..1).each do |offset|
+            monitor_date = Date.parse([@@config[:first_school_day], Date.today.to_s].max.to_s)
+            while [6, 0].include?(monitor_date.wday) do
+                monitor_date += 1
+            end 
+            monitor_date += offset
+            while [6, 0].include?(monitor_date.wday) do
+                monitor_date += 1
+            end 
+            monitor_date = monitor_date.strftime('%Y-%m-%d')
+            if offset == 0
+                monitor_data_package[:today] = monitor_date
+            else
+                monitor_data_package[:tomorrow] = monitor_date
             end
-            lehrer = Set.new(ventry[:lehrer_alt] || []) | Set.new(ventry[:lehrer_neu] || [])
-            lehrer.each do |shorthand|
-                next unless @@shorthands.include?(shorthand)
-                temp_data[:lehrer][shorthand] ||= {}
-                key = ventry.keys.sort.reject { |k| k == :stunde }.map { |k| [k, ventry[k]] }.to_json
-                temp_data[:lehrer][shorthand][key] ||= []
-                temp_data[:lehrer][shorthand][key] << ventry
+
+            monitor_timestamp = ''
+            monitor_data = {:klassen => {}, :lehrer => {}, :timestamp => ts}
+            monitor_data_package[:timestamp] ||= ts
+            vplan_timestamp_path = '/vplan/timestamp.txt'
+            if File.exists?(vplan_timestamp_path)
+                vplan_timestamp = File.read(vplan_timestamp_path)
+                parts = vplan_timestamp.split('-')
+
+                monitor_data[:vplan_timestamp] = DateTime.parse("#{parts[0]}-#{parts[1]}-#{parts[2]}T#{parts[3]}:#{parts[4]}:#{parts[5]}+#{DateTime.now.to_s.split('+')[1]}").to_s
+                monitor_data_package[:vplan_timestamp] ||= monitor_data[:vplan_timestamp]
             end
-        end
-        [:klassen, :lehrer].each do |which|
-            temp_data[which].each_pair do |key, entries|
-                monitor_data[which][key] = []
-                entries.values.each do |tuple|
-                    tuple.each.with_index do |entry, i|
-                        if i > 0
-                            if monitor_data[which][key].last[:stunde_range].last + 1 == entry[:stunde]
-                                monitor_data[which][key].last[:stunde_range][1] += 1
+
+            temp_data = {:klassen => {}, :lehrer => {}}
+            (@@vertretungen[monitor_date] || []).sort do |a, b|
+                a[:stunde] <=> b[:stunde]
+            end.each do |ventry|
+                klassen = Set.new(ventry[:klassen_alt] || []) | Set.new(ventry[:klassen_neu] || [])
+                klassen.each do |klasse|
+                    next unless KLASSEN_ORDER.include?(klasse)
+                    temp_data[:klassen][klasse] ||= {}
+                    key = ventry.keys.sort.reject { |k| k == :stunde }.map { |k| [k, ventry[k]] }.to_json
+                    temp_data[:klassen][klasse][key] ||= []
+                    temp_data[:klassen][klasse][key] << ventry
+                end
+                lehrer = Set.new(ventry[:lehrer_alt] || []) | Set.new(ventry[:lehrer_neu] || [])
+                lehrer.each do |shorthand|
+                    next unless @@shorthands.include?(shorthand)
+                    temp_data[:lehrer][shorthand] ||= {}
+                    key = ventry.keys.sort.reject { |k| k == :stunde }.map { |k| [k, ventry[k]] }.to_json
+                    temp_data[:lehrer][shorthand][key] ||= []
+                    temp_data[:lehrer][shorthand][key] << ventry
+                end
+            end
+            [:klassen, :lehrer].each do |which|
+                temp_data[which].each_pair do |key, entries|
+                    monitor_data[which][key] = []
+                    entries.values.each do |tuple|
+                        tuple.each.with_index do |entry, i|
+                            if i > 0
+                                if monitor_data[which][key].last[:stunde_range].last + 1 == entry[:stunde]
+                                    monitor_data[which][key].last[:stunde_range][1] += 1
+                                else
+                                    monitor_data[which][key] << entry
+                                    monitor_data[which][key].last[:stunde_range] = [monitor_data[which][key].last[:stunde], monitor_data[which][key].last[:stunde]]
+                                end
                             else
                                 monitor_data[which][key] << entry
                                 monitor_data[which][key].last[:stunde_range] = [monitor_data[which][key].last[:stunde], monitor_data[which][key].last[:stunde]]
                             end
-                        else
-                            monitor_data[which][key] << entry
-                            monitor_data[which][key].last[:stunde_range] = [monitor_data[which][key].last[:stunde], monitor_data[which][key].last[:stunde]]
                         end
                     end
-                end
-                monitor_data[which][key].map! do |entry|
-                    if entry[:stunde_range].first == entry[:stunde_range].last
-                        entry[:stunde_label] = "#{entry[:stunde_range].first}."
-                    else
-                        entry[:stunde_label] = "#{entry[:stunde_range].first}. – #{entry[:stunde_range].last}."
+                    monitor_data[which][key].map! do |entry|
+                        if entry[:stunde_range].first == entry[:stunde_range].last
+                            entry[:stunde_label] = "#{entry[:stunde_range].first}."
+                        else
+                            entry[:stunde_label] = "#{entry[:stunde_range].first}. – #{entry[:stunde_range].last}."
+                        end
+                        entry.delete(:stunde_range)
+                        entry
                     end
-                    entry.delete(:stunde_range)
-                    entry
                 end
             end
+            monitor_data_package[:data][monitor_date] = monitor_data
         end
-        # temp_data[:klassen].each_pair do |klasse, entries|
-        #     monitor_data[:klassen][klasse] = []
-        #     entries.values.each do |tuple|
-        #         tuple.each.with_index do |entry, i|
-        #             if i > 0
-        #                 if monitor_data[:klassen][klasse].last[:stunde_range].last + 1 == entry[:stunde]
-        #                     monitor_data[:klassen][klasse].last[:stunde_range][1] += 1
-        #                 else
-        #                     monitor_data[:klassen][klasse] << entry
-        #                     monitor_data[:klassen][klasse].last[:stunde_range] = [monitor_data[:klassen][klasse].last[:stunde], monitor_data[:klassen][klasse].last[:stunde]]
-        #                 end
-        #             else
-        #                 monitor_data[:klassen][klasse] << entry
-        #                 monitor_data[:klassen][klasse].last[:stunde_range] = [monitor_data[:klassen][klasse].last[:stunde], monitor_data[:klassen][klasse].last[:stunde]]
-        #             end
-        #         end
-        #     end
-        #     monitor_data[:klassen][klasse].map! do |entry|
-        #         if entry[:stunde_range].first == entry[:stunde_range].last
-        #             entry[:stunde_label] = "#{entry[:stunde_range].first}."
-        #         else
-        #             entry[:stunde_label] = "#{entry[:stunde_range].first}. – #{entry[:stunde_range].last}."
-        #         end
-        #         entry.delete(:stunde_range)
-        #         entry
-        #     end
-        # end
-        # temp_data[:lehrer].each_pair do |shorthand, entries|
-        #     monitor_data[:lehrer][shorthand] = []
-        #     entries.values.each do |tuple|
-        #         tuple.each.with_index do |entry, i|
-        #             if i > 0
-        #                 if monitor_data[:lehrer][shorthand].last[:stunde_range].last + 1 == entry[:stunde]
-        #                     monitor_data[:lehrer][shorthand].last[:stunde_range][1] += 1
-        #                 else
-        #                     monitor_data[:lehrer][shorthand] << entry
-        #                     monitor_data[:lehrer][shorthand].last[:stunde_range] = [monitor_data[:lehrer][shorthand].last[:stunde], monitor_data[:lehrer][shorthand].last[:stunde]]
-        #                 end
-        #             else
-        #                 monitor_data[:lehrer][shorthand] << entry
-        #                 monitor_data[:lehrer][shorthand].last[:stunde_range] = [monitor_data[:lehrer][shorthand].last[:stunde], monitor_data[:lehrer][shorthand].last[:stunde]]
-        #             end
-        #         end
-        #     end
-        #     monitor_data[:lehrer][shorthand].map! do |entry|
-        #         if entry[:stunde_range].first == entry[:stunde_range].last
-        #             entry[:stunde_label] = "#{entry[:stunde_range].first}."
-        #         else
-        #             entry[:stunde_label] = "#{entry[:stunde_range].first}. – #{entry[:stunde_range].last}."
-        #         end
-        #         entry.delete(:stunde_range)
-        #         entry
-        #     end
-        # end
+
         FileUtils.mkpath('/vplan/monitor')
-        File.open('/vplan/monitor/monitor.json', 'w') { |f| f.write(monitor_data.to_json) }
+        File.open('/vplan/monitor/monitor.json', 'w') { |f| f.write(monitor_data_package.to_json) }
         if ENV['DASHBOARD_SERVICE'] == 'timetable'
             STDERR.puts "service: [#{ENV['DASHBOARD_SERVICE']}]"
             system("curl -s http://ruby:3000/api/update_monitors")

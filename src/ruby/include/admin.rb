@@ -279,6 +279,7 @@ class Main < Sinatra::Base
             io.puts "<h3 id='monitor'>Monitor</h3>"
             io.puts "<button class='btn btn-success bu-login-as-monitor'><i class='fa fa-sign-in'></i>&nbsp;&nbsp;Als Monitor anmelden</button>"
             io.puts "<button class='btn btn-success bu-login-as-monitor-sek'><i class='fa fa-sign-in'></i>&nbsp;&nbsp;Als Sek-Monitor anmelden</button>"
+            io.puts "<button class='btn btn-success bu-login-as-monitor-lz'><i class='fa fa-sign-in'></i>&nbsp;&nbsp;Als Sek-Monitor anmelden</button>"
             io.puts "<hr />"
             io.string
         end

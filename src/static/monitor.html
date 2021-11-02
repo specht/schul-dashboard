@@ -265,7 +265,7 @@
         width: 50vw;
         position: absolute;
         left: -0.5vw;
-        top: 3vw;
+        top: 6vw;
         bottom: 5vw;
         padding: 0 0.5vw 1.5vw 0.5vw;
     }
@@ -288,7 +288,7 @@
         width: 50vw;
         position: absolute;
         left: 48.5vw;
-        top: 3vw;
+        top: 6vw;
         bottom: 5vw;
         padding: 0 0.5vw 1.5vw 0.5vw;
     }
@@ -347,7 +347,7 @@
         left: 2vw;
     }
 
-    .main_lz .heading div {
+    .main_lz .heading .la_date {
         display: inline-block;
         font-size: 1vw;
         font-weight: bold;
@@ -355,6 +355,42 @@
         border-radius: 2vw;
         padding: 0 0.8vw;
         /* box-shadow: 0 0 0.5vw rgba(0, 0, 0, 0.3); */
+    }
+
+    .main_lz .heading .la_shorthands {
+        display: inline-block;
+        font-size: 1vw;
+        font-weight: bold;
+        overflow: scroll;   
+        white-space: nowrap;
+        width: 47vw;
+        position: relative;
+        left: -1vw;
+        top: 0.5vw;
+        /* background-color: rgba(255, 255, 255, 0.8); */
+        /* border-radius: 2vw; */
+        /* padding: 0 0.8vw; */
+        /* box-shadow: 0 0 0.5vw rgba(0, 0, 0, 0.3); */
+        /* border: 1px solid red; */
+    }
+
+    .main_lz .heading .la_shorthands::-webkit-scrollbar {
+        display: none;
+    }
+    .main_lz .heading .la_shorthands {
+        overflow: scroll;
+        -ms-overflow-style: none;  /* IE and Edge */
+        scrollbar-width: none;  /* Firefox */
+    }
+
+    .la_shorthands h3 {
+        position: unset;
+        margin-right: 0.2vw;
+        width: 2vw;
+        height: 2vw;
+        font-size: 1vw;
+        padding-top: 0.4vw;
+        border-radius: 0.85vw;
     }
 
     .main_lz div:nth-child(2) .heading {
@@ -384,13 +420,13 @@
         </div>
         <div class='container-fluid main_lz row'>
             <div class='main_lz_left'>
-                <div class='heading'><div class='la_today'></div></div>
+                <div class='heading'><div class='la_today la_date'></div><div class='la_today_shorthands la_shorthands'></div></div>
                 <div class='wrapper'>
                     <div></div>
                 </div>
             </div>
             <div class='main_lz_right'>
-                <div class='heading'><div class='la_tomorrow'></div></div>
+                <div class='heading'><div class='la_tomorrow la_date'></div><div class='la_tomorrow_shorthands la_shorthands'></div></div>
                 <div class='wrapper'>
                     <div></div>
                 </div>
@@ -582,10 +618,12 @@
                     if (monitor_mode === 'lehrerzimmer') {
                         $('.la_today').text(moment(today).format('dddd, D.M.Y'));
                         $('.la_tomorrow').text(moment(tomorrow).format('dddd, D.M.Y'));
+                        $('.la_today_shorthands').empty();
                         $('.main_lz_left > .wrapper > div').empty();
                         let l = $('.main_lz_left > .wrapper > div')[0];
                         for (let shorthand of shorthand_order) {
                             if (data_today.lehrer[shorthand]) {
+                                $('.la_today_shorthands').append($('<h3>').text(shorthand));
                                 let box = $('<div>');
                                 let div = $('<div>').addClass('klasse').appendTo(box);
                                 div.append($('<h3>').text(shorthand))
@@ -597,10 +635,12 @@
                         install_auto_scroller_continuous('sus', $('.main_lz_left')[0], $('.main_lz_left > .wrapper')[0]);
                         interrupt_on_scroll('.main_lz_left', 'sus');
 
+                        $('.la_tomorrow_shorthands').empty();
                         $('.main_lz_right > .wrapper > div').empty();
                         l = $('.main_lz_right > .wrapper > div')[0];
                         for (let shorthand of shorthand_order) {
                             if (data_tomorrow.lehrer[shorthand]) {
+                                $('.la_tomorrow_shorthands').append($('<h3>').text(shorthand));
                                 let box = $('<div>');
                                 let div = $('<div>').addClass('klasse').appendTo(box);
                                 div.append($('<h3>').text(shorthand))

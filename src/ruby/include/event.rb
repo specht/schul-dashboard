@@ -258,9 +258,17 @@ class Main < Sinatra::Base
             subject "Ihre Anmeldung zum Info-Abend für Viertklässler-Eltern"
 
             StringIO.open do |io|
-                io.puts "<p>Sehr geehrte/r #{data[:name]},</p>"
-                io.puts "<p>Vielen Dank für Ihre Anmeldung! Wir werden Sie rechtzeitig über den genauen Ablauf informieren.</p>"
-                io.puts "<p>Mit freundlichen Grüßen</p>"
+                if data[:mode] == 'presence'
+                    io.puts "<p>Sehr geehrte/r #{data[:name]}</p>"
+                    io.puts "<p>vielen Dank für Ihre Anmeldung. Die Veranstaltung findet in der Aula der Schule statt; Ihre Plätze werden Ihnen zugewiesen. Bitte kommen Sie ca. 15 Minuten vor Beginn der Veranstaltung zum Haupteingang des Gymnasium Steglitz, Heesestraße 15. Wir bitten um Verständnis, dass wir bei Einlass Ihren 3G-Status überprüfen und Ihre Kontaktdaten (Name, Vorname, Emailadresse) für eine ggf. notwendige Kontaktnachverfolgung erheben. Die entsprechenden Listen werden nach vier Wochen vernichtet. Sollten Sie Symptome einer Coronaerkrankung aufweisen (Husten, Schnupfen, erhöhte Temperatur etc.) verzichten Sie bitte auf einen Besuch.</p>"
+                    io.puts "<p>Wir weisen ferner darauf hin, dass während der gesamten Veranstaltung die Pflicht zum Tragen einer medizinischen Maske besteht.</p>"
+                    io.puts "<p>Mit freundlichen Grüßen</p>"
+                else
+                    io.puts "<p>Sehr geehrte #{data[:name]}</p>"
+                    io.puts "<p>vielen Dank für Ihre Anmeldung. Die Zugangsdaten für das Streaming erhalten Sie zeitnah zur Veranstaltung mit gesonderer Mail (oder gleich? Wie es besser ist...). Wir weisen darauf hin, dass es nicht erlaubt ist, Teile der Veranstaltung mitzuschneiden oder andere Formen der Aufzeichnung zu wählen.</p>"
+                    io.puts "<p>Falls Sie Fragen haben, können Sie diese im Chat stellen; sie werden dann in der Veranstaltung live beantwortet.</p>"
+                    io.puts "<p>Mit freundlichen Grüßen</p>"
+                end
                 io.string
             end
         end

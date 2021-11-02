@@ -265,7 +265,7 @@ class Main < Sinatra::Base
                     io.puts "<p>Mit freundlichen Grüßen</p>"
                 else
                     io.puts "<p>Sehr geehrte #{data[:name]}</p>"
-                    io.puts "<p>vielen Dank für Ihre Anmeldung. Die Zugangsdaten für das Streaming erhalten Sie zeitnah zur Veranstaltung mit gesonderer Mail (oder gleich? Wie es besser ist...). Wir weisen darauf hin, dass es nicht erlaubt ist, Teile der Veranstaltung mitzuschneiden oder andere Formen der Aufzeichnung zu wählen.</p>"
+                    io.puts "<p>vielen Dank für Ihre Anmeldung. Die Zugangsdaten für das Streaming erhalten Sie zeitnah zur Veranstaltung mit gesonderer Mail. Wir weisen darauf hin, dass es nicht erlaubt ist, Teile der Veranstaltung mitzuschneiden oder andere Formen der Aufzeichnung zu wählen.</p>"
                     io.puts "<p>Falls Sie Fragen haben, können Sie diese im Chat stellen; sie werden dann in der Veranstaltung live beantwortet.</p>"
                     io.puts "<p>Mit freundlichen Grüßen</p>"
                 end

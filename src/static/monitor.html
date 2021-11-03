@@ -521,14 +521,11 @@
     }
 
     function interrupt_on_scroll(selector, key) {
-        $(selector).bind('mousewheel', function(e) {
-            klassen_animation_config[key].phase = 0;
-            klassen_animation_config[key].timestamp = last_timestamp + top_delay;
-        });
-        $(selector).bind('touchmove', function(e) {
-            klassen_animation_config[key].phase = 0;
-            klassen_animation_config[key].timestamp = last_timestamp + top_delay;
-        });
+        for (let event of ['mousewheel', 'touchmove', 'wheel'])
+            $(selector).bind(event, function(e) {
+                klassen_animation_config[key].phase = 0;
+                klassen_animation_config[key].timestamp = last_timestamp + top_delay;
+            });
     }
 
     function setup_ws(ws)

@@ -255,7 +255,7 @@ class Main < Sinatra::Base
             from SMTP_FROM
             reply_to DASHBOARD_SUPPORT_EMAIL
             
-            subject "Ihre Anmeldung zum Info-Abend für Viertklässler-Eltern"
+            subject "Ihre Anmeldung zum Info-Abend für Viertklässler-Eltern am 23.11.2021"
 
             StringIO.open do |io|
                 if data[:mode] == 'presence'

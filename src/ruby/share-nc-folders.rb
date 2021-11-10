@@ -101,6 +101,7 @@ class Script
             folder_name = "#{lesson_key}"
             fach = lesson_info[:fach]
             fach = @@faecher[fach] || fach
+            next if fach.empty?
             pretty_folder_name = lesson_info[:pretty_folder_name]
             teachers = Set.new(lesson_info[:lehrer])
             teachers |= @@shorthands_for_lesson[lesson_key] || Set.new()

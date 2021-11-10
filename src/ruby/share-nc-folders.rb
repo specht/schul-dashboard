@@ -162,6 +162,11 @@ class Script
                 raise "Ouch! We didn't catch something in the code above."
             end
         end
+        wanted_nc_ids = nil
+        unless ARGV.empty?
+            wanted_nc_ids = Set.new(ARGV.map { |email| (@@user_info[email] || {})[:nc_login] })
+        end
+        STDERR.puts "Got wanted shares for #{wanted_shares.size} users."
         STDERR.puts "Collecting present shares..."
         present_shares = {}
         (@ocs.file_sharing.all || []).each do |share|
@@ -175,10 +180,6 @@ class Script
         STDERR.puts "Got present shares for #{present_shares.size} users."
 #         STDERR.puts present_shares.to_yaml
 #         exit
-        wanted_nc_ids = nil
-        unless ARGV.empty?
-            wanted_nc_ids = Set.new(ARGV.map { |email| (@@user_info[email] || {})[:nc_login] })
-        end
         wanted_shares.keys.sort.each do |user_id|
             unless wanted_nc_ids.nil?
                 next unless wanted_nc_ids.include?(user_id)

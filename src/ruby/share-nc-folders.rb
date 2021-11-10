@@ -124,6 +124,9 @@ class Script
                 email_for_user_id[user_id] = email
                 wanted_shares[user_id] ||= {}
                 pretty_folder_name = "#{fach.gsub('/', '-')}"
+                if pretty_folder_name.empty?
+                    raise 'nope'
+                end
                 wanted_shares[user_id]["/Unterricht/#{folder_name}/Ausgabeordner"] = {
                     :permissions => SHARE_READ,
                     :target_path => "/Unterricht/#{pretty_folder_name.gsub(' ', '%20')}/Ausgabeordner",

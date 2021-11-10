@@ -125,7 +125,7 @@ class Script
                 wanted_shares[user_id] ||= {}
                 pretty_folder_name = "#{fach.gsub('/', '-')}"
                 if pretty_folder_name.empty?
-                    raise 'nope'
+                    raise "nope: #{lesson_key}"
                 end
                 wanted_shares[user_id]["/Unterricht/#{folder_name}/Ausgabeordner"] = {
                     :permissions => SHARE_READ,

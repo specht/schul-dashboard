@@ -162,6 +162,7 @@ class Script
                 raise "Ouch! We didn't catch something in the code above."
             end
         end
+        STDERR.puts "Collecting present shares..."
         present_shares = {}
         (@ocs.file_sharing.all || []).each do |share|
             present_shares[share['share_with']] ||= {}
@@ -171,6 +172,7 @@ class Script
                 :share_with => share['share_with_displayname']
             }
         end
+        STDERR.puts "Got present shares for #{present_shares.size} users."
 #         STDERR.puts present_shares.to_yaml
 #         exit
         wanted_nc_ids = nil
@@ -180,6 +182,8 @@ class Script
         wanted_shares.keys.sort.each do |user_id|
             unless wanted_nc_ids.nil?
                 next unless wanted_nc_ids.include?(user_id)
+                STDERR.puts "Wanted shares for #{user_id}:"
+                STDERR.puts wanted_shares[user_id].to_yaml
             end
             ocs_user = Nextcloud.ocs(url: NEXTCLOUD_URL_FROM_RUBY_CONTAINER, 
                                      username: user_id,

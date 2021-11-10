@@ -251,7 +251,7 @@ class Script
                             end
                         end
                         if share['file_target'] != info[:target_path]
-                            STDERR.puts "Moving [#`{user_id}]#{share['file_target']} to #{info[:target_path]}..."
+                            STDERR.puts "Moving [#{user_id}]#{share['file_target']} to #{info[:target_path]}..."
                             result = ocs_user.webdav.directory.move(share['file_target'], info[:target_path])
                             if result[:status] != 'ok'
                                 STDERR.puts "Error!"

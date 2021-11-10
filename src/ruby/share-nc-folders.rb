@@ -167,7 +167,6 @@ class Script
             wanted_nc_ids = Set.new(ARGV.map { |email| (@@user_info[email] || {})[:nc_login] })
         end
         STDERR.puts "Got wanted shares for #{wanted_shares.size} users."
-        STDERR.puts wanted_shares.to_yaml
         STDERR.puts "Collecting present shares..."
         present_shares = {}
         (@ocs.file_sharing.all || []).each do |share|

@@ -250,12 +250,16 @@ class Script
                                 created_sub_paths << sub_path
                             end
                         end
-                        STDERR.puts "Moving [#{user_id}]#{share['file_target']} to #{info[:target_path]}..."
-                        result = ocs_user.webdav.directory.move(share['file_target'], info[:target_path])
-                        if result[:status] != 'ok'
-                            STDERR.puts "Error!"
-                            STDERR.puts result.to_yaml
-                            exit(1)
+                        if share['file_target'] != info[:target_path]
+                            STDERR.puts "Moving [#`{user_id}]#{share['file_target']} to #{info[:target_path]}..."
+                            result = ocs_user.webdav.directory.move(share['file_target'], info[:target_path])
+                            if result[:status] != 'ok'
+                                STDERR.puts "Error!"
+                                STDERR.puts result.to_yaml
+                                exit(1)
+                            end
+                        else
+                            STDERR.puts "Not moving [#`{user_id}]#{share['file_target']} to #{info[:target_path]} because they're identical"
                         end
                     end
                 rescue StandardError => e

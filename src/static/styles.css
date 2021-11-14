@@ -65,6 +65,35 @@
   src: url(/fonts/AlegreyaSans-BoldItalic.ttf) format('truetype');
 }
 
+@font-face {
+    font-family: 'GFSNeohellenic';
+    font-style: normal;
+    font-weight: 400;
+    src: url(/fonts/gfs_neohellenic.ttf) format('truetype');
+    unicode-range: U+0370-03ff;
+}
+  
+@font-face {
+    font-family: 'GFSNeohellenic';
+    font-style: normal;
+    font-weight: 700;
+    src: url(/fonts/gfs_neohellenic_bold.ttf) format('truetype');
+}
+  
+@font-face {
+    font-family: 'GFSNeohellenic';
+    font-style: italic;
+    font-weight: 400;
+    src: url(/fonts/gfs_neohellenic_italic.ttf) format('truetype');
+}
+  
+@font-face {
+    font-family: 'GFSNeohellenic';
+    font-style: italic;
+    font-weight: 700;
+    src: url(/fonts/gfs_neohellenic_bold_italic.ttf) format('truetype');
+}
+
 /* Riffic und Billy funktionieren gut, sind aber nicht im Repository enthalten,
  * da sie kommerzielle Fonts und somit nicht frei verfügbar sind.
  */

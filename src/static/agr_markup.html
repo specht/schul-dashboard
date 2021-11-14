@@ -1,0 +1,295 @@
+<style>
+    .markup_container {
+        position: relative;
+        height: 600px;
+        line-height: 250%;
+        font-size: 150%;
+        font-family: GFSNeohellenic, AlegreyaSans, 'Roboto Condensed';
+        border: 1px solid #ddd;
+        box-shadow: inset 0 0 15px rgba(0, 0, 0, 0.2);
+    }
+
+    .markup_container textarea {
+        color: transparent;
+        background: transparent;
+        caret-color: #444;
+        resize: none;
+    }
+
+    .markup_container .inner {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        font-size: 100%;
+        line-height: 200%;
+        background: none;
+        overflow: auto;
+        padding: 15px;
+        white-space: pre-wrap;
+        margin: 0;
+        border: none;
+    }
+
+    .markup_container .inner .muted {
+        opacity: 0.4;
+    }
+
+    .markup_container .inner .markup {
+        border-radius: 4px;
+    }
+
+    .markup_container .inner .annotation_wrap {
+        position: relative;
+        white-space: nowrap;
+        /* border: 1px solid red; */
+    }
+
+    .markup_container .inner .annotation {
+        position: absolute;
+        font-size: 50%;
+        top: -32px;
+        opacity: 0.5;
+    }
+
+    #markup_layer {
+        color: transparent;
+    }
+
+    .bu-markup {
+        background-color: #fff;
+        border: 1px solid #aaa;
+        border-radius: 4px;
+        padding: 4px;
+        text-align: center;
+        margin-bottom: 2px;
+        cursor: pointer;
+        display: inline-block;
+        width: 100%;
+        position: relative;
+        padding-left: 20px;
+    }
+
+    .bu-markup:hover {
+        background-color: #eee;
+    }
+
+    .bu-markup .code {
+        position: absolute;
+        left: 8px;
+        top: 6px;
+        background-color: #ccc;
+        font-family: 'Roboto';
+        border-radius: 30px;
+        font-size: 12px;
+        font-weight: bold;
+        width: 20px;
+        height: 20px;
+    }
+
+    .markup_container .inner .dontwrap {
+        display: inline-block;
+        /* border: 1px solid red; */
+    }
+</style>
+
+<div class='container' style='padding-top: 30px; background-color: #fff;'>
+    <div class='row'>
+        <div class='col-md-8'>
+            <div class='markup_container'>
+                <div class='inner' id='markup_layer' style='pointer-events: none; '></div>
+                <textarea spellcheck="false"
+                    class='inner'>T[Ὁ δὲ Σώστρατος] καὶ 0[ὁ Φίλιππος 1{καὶ] ἡ Σοφία} ἐκ τῆς Ἀκροπόλεως 0[πρὸς] τὸ θέατρον 2[τοῦ Διονύσου 3{τοῦ} θεοῦ] καταβαίνουσιν, ὅπου οἱ Ἀθηναῖοι ἀγῶνας τραγικοὺς καὶ κωμῳδικοὺς θεῶνται.
+Ὡς εἰς τὸ θέατρον ἀφικνοῦνται, πρῶτον μὲν πρὸς τὰ ὄπισθεν τῆς σκήνης ἔρχονται, ἔπειτα δ’ ἀνὰ τοὺς βαθμοὺς 3[βαίνουσιν] καὶ εἰς τὴν ὀρχήστραν καταβλέπουσιν. Ὁ δὲ Φίλιππος ἐρωτᾷ· «Διὰ τί οἱ  Ἀθηναῖοι τοσοῦτον θέατρον ᾠκοδόμησαν;» Ὁ δὲ Σώστρατος ἀποκρίνεται· «Ὁ δῆμος ἥδεται τραγῳδίαις τε καὶ κωμῳδίαις. Διὰ τοῦτο τοῖς τε Ληναίοις καὶ τοῖς Διονυσίοις οἱ πολῖται πρῲ πορεύονται πρὸς τὸ θέατρον καὶ μένουσιν ἐκεῖ μέχρι δείλης. Πολλάκις οὖν τὸ θέατρον οὐχ ἱκανόν ἐστι τοσούτους ἀνθρώπους δέχεσθαι.»
+Ὁ δὲ Φίλιππος· «Τίς διδάσκει τὰς τραγῳδίας καὶ τὰς κωμῳδίας;» Ὁ δὲ Σώστρατος· «Ὁ ποιητὴς αὐτός», φησί, «τὸ δρᾶμα διδάσκει. Τὸν δὲ χόρον παρασκευάζουσι πλούσιοι πολῖται. Οὕτως γὰρ τῆς πόλεως μάλιστα ἐπιμελοῦνται, ὅτι τοὺς θεατὰς ἀγαθοὺς πολίτας γίγνεσθαι βούλονται.»
+Φίλιππος· «Ἦ πολλὰ δράματα ἔβλεψας;» Σώστρατος· «Ἔβλεψα, ὦ υἱέ.» Φίλιππος· «Τίνος δράμασι μάλιστα ἥδῃ;» Σώστρατος· «Ἥδομαι ταῖς τοῦ Ἀριστοφάνου κωμῳδίαις, ὅτι ἀεί εἰσι γελοῖαι· οἷον ἐκείνη ἡ κωμῳδία, ἧς τὸ ὄνομα ἐστι Λυσιστράτη· ἐν αὐτῇ αἱ γυναῖκες ἐναντιοῦνται τοῖς ἄνδρασι καὶ τὸν στρατὸν λύουσιν, ὅτι τῷ πολέμῳ ὀργίζονται.» Σοφία· «Διὰ τί τοῦτο γελοῖον ἡγῇ;» Σώστρατος·  «Γελοῖόν ἐστιν, ὅτι αἱ γυναῖκες ἐν ταύτῃ τῇ κωμῳδίᾳ τὰ τῶν ἀνδρῶν ποιοῦσιν· ἐν δὲ τῇ ἡμετέρᾳ πολιτείᾳ κατὰ τὸ εἰωθὸς τῶν μὲν γυναικῶν ἐστι τῆς οἰκίας ἐπιμελεῖσθαι, οἱ δὲ ἄνδρες τὰ πολιτικὰ πράττουσιν. - Ἄγετε ὀψὲ τῆς ἡμέρας ἐστί, ἆρ’ οὐ βούλεσθε οἴκαδε ἔρχεσθαι;» Οἱ δὲ παῖδες· «Ἡδέως οἴκαδε ἐπανερχόμεθα, ὅτι κάμνομεν.» Ὁ δὲ Σώστρατος ἄγει αὐτοὺς πρὸς τὰς πύλας. Ἐκεῖ τὸν ἡμιόνον εὑρίσκουσιν καὶ οἴκαδε πορεύονται.</textarea>
+                <div class='inner' id='styled_text_layer' style='pointer-events: none; '></div>
+            </div>
+        </div>
+        <div class='col-md-4' id='agr-buttons-here'>
+        </div>
+    </div>
+</div>
+
+<script>
+
+    let markupItemCodes = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz';
+    let markupItems = [
+        'Prädikat', 'Subjekt',
+        'Konnektor Hauptsatz', 'Konnektor Nebensatz',
+        '1. Partizip im Satz', 'Bezugswort zum 1. Partizip',
+        '2. Partizip im Satz', 'Bezugswort zum 2. Partizip',
+        '3. Partizip im Satz', 'Bezugswort zum 3. Partizip',
+        'Nebensatz 1. Ordnung',
+        'Nebensatz 2. Ordnung',
+        'Nebensatz 3. Ordnung',
+        'Nebensatz 4. Ordnung',
+        'Nebensatz 5. Ordnung',
+        '4. Partizip im Satz', 'Bezugswort zum 4. Partizip',
+        '5. Partizip im Satz', 'Bezugswort zum 5. Partizip',
+        '6. Partizip im Satz', 'Bezugswort zum 6. Partizip',
+        '7. Partizip im Satz', 'Bezugswort zum 7. Partizip',
+        '8. Partizip im Satz', 'Bezugswort zum 8. Partizip',
+        '9. Partizip im Satz', 'Bezugswort zum 9. Partizip',
+        '10. Partizip im Satz', 'Bezugswort zum 10. Partizip',
+        'erstes Satzglied'
+    ];
+
+    let markupColors = ['#fad31c', '#80bc42', '#55beed'].map(function(x) {
+        let r = parseInt(x.substring(1, 3), 16);
+        let g = parseInt(x.substring(3, 5), 16);
+        let b = parseInt(x.substring(5, 7), 16);
+        return [r, g, b];
+    });
+
+    function parse_agr_markup(s) {
+        let result = '';
+        let markup = '';
+        let i = 0;
+        const markup_cats = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz';
+        const parens = '[]{}';
+        const closer_for_paren = { '[': ']', '{': '}' };
+        let paren_stack = [];
+        collected_markup_cats = {};
+        while (true) {
+            let c = s.charAt(i);
+            let code = s.codePointAt(i);
+            if (markup_cats.indexOf(c) >= 0 || parens.indexOf(c) >= 0) {
+                result += "<span class='muted'>";
+            } else {
+                collected_markup_cats = {};
+            }
+            if (markup_cats.indexOf(c) >= 0) {
+                collected_markup_cats[c] = true;
+            }
+            let open_paren = false;
+            let close_paren = false;
+            if (c === '[' || c === '{') {
+                let used_colors = {};
+                for (let x of paren_stack)
+                    used_colors[x.color_index] = true;
+                let use_color_index = -1;
+                for (let i = 0; i < markupColors.length; i++)
+                {
+                    if (!(used_colors[i] === true)) {
+                        use_color_index = i;
+                        break;
+                    }
+                }
+
+                paren_stack.push({ 
+                    paren: c, 
+                    closer: closer_for_paren[c], 
+                    cats: Object.keys(collected_markup_cats),
+                    color_index: use_color_index
+                });
+                open_paren = true;
+            }
+            if (c === ']' || c === '}') {
+                // find matching paren on stack
+                let p = paren_stack.length - 1;
+                while (p >= 0) {
+                    if (paren_stack[p].closer === c) {
+                        paren_stack.splice(p, 1);
+                        close_paren = true;
+                        break;
+                    }
+                    p -= 1;
+                }
+            }
+
+            if (close_paren) {
+                markup += "&#8288;</span>";
+                result += "&#8288;";
+            }
+            result += c;
+            markup += c;
+            // if (close_paren && paren_stack.length === 0 ) {
+            //     markup += "&#8288;</span>";
+            //     result += "&#8288;";
+            // }
+            if (markup_cats.indexOf(c) >= 0 || parens.indexOf(c) >= 0) {
+                result += "</span>"
+            }
+            if (open_paren || (close_paren && paren_stack.length > 0)) {
+                if (open_paren && paren_stack.length > 1) {
+                    markup += "&#8288;</span>";
+                    result += "&#8288;";
+                }
+                let annotations = [];
+                for (let cat in collected_markup_cats) annotations.push(markupItems[markup_cats.indexOf(cat)]);
+                let color = [0, 0, 0];
+                for (let i = 0; i < paren_stack.length; i++) {
+                    let use_color = [255, 0, 0];
+                    if (paren_stack[i].color_index >= 0) {
+                        use_color = markupColors[paren_stack[i].color_index];
+                    }
+                    color[0] += use_color[0];
+                    color[1] += use_color[1];
+                    color[2] += use_color[2];
+                }
+                color[0] /= paren_stack.length;
+                color[1] /= paren_stack.length;
+                color[2] /= paren_stack.length;
+                markup += `<span class='markup' style='background-color: rgba(${color[0]},${color[1]},${color[2]}, 0.8);'>&#8288;`;
+                result += `<span class='annotation_wrap'><span class='annotation'>${annotations.join(', ')}</span></span>&#8288;`;
+            }
+            i += 1;
+            if (i >= s.length) break;
+        }
+        return [markup, result];
+    }
+
+    function update_text() {
+        let text = $('.markup_container textarea').val();
+        let pair = parse_agr_markup(text);
+        $('.markup_container #markup_layer').html(pair[0]);
+        $('.markup_container #styled_text_layer').html(pair[1]);
+    }
+
+    document.addEventListener('DOMContentLoaded', function () {
+
+        for (let i = 0; i < markupItems.length; i++) {
+            let code = markupItemCodes.charAt(i);
+            let x = markupItems[i];
+            if (x.indexOf('Partizip im Satz') >= 0) {
+                let button = $('<div>').data('code', code).css('width', '60%').addClass('bu-markup').html(`<span class='code'>${code}</span>${x}`);
+                $('#agr-buttons-here').append(button);
+                let code2 = markupItemCodes.charAt(i + 1);
+                let button2 = $('<div>').data('code', code2).css('width', '40%').addClass('bu-markup').html(`<span class='code'>${code2}</span>Bezugswort`);
+                $('#agr-buttons-here').append(button2);
+            } else if (x.indexOf('Bezugswort') < 0) {
+                let button = $('<div>').data('code', code).addClass('bu-markup').html(`<span class='code'>${code}</span>${x}`);
+                $('#agr-buttons-here').append(button);
+            }
+        }
+
+        update_text();
+        for (let e of ['input']) {
+            $('.markup_container textarea').on(e, function (e) {
+                update_text();
+            });
+        }
+        $('.markup_container textarea').on('scroll', function (e) {
+            let top = $('.markup_container textarea')[0].scrollTop;
+            let left = $('.markup_container textarea')[0].scrollLeft;
+            $('.markup_container #styled_text_layer')[0].scrollTop = top;
+            $('.markup_container #styled_text_layer')[0].scrollLeft = left;
+            $('.markup_container #markup_layer')[0].scrollTop = top;
+            $('.markup_container #markup_layer')[0].scrollLeft = left;
+        });
+
+        $('.bu-markup').click(function(e) {
+            let textarea = $('textarea.inner')[0];
+            let start = textarea.selectionStart;
+            let end = textarea.selectionEnd;
+            let text = textarea.value;
+            let code = $(e.target).closest('.bu-markup').data('code');
+            text = text.substr(0, start) + `${code}[` + text.substr(start);
+            text = text.substr(0, end + 2) + ']' + text.substr(end + 2);
+            textarea.value = text;
+            update_text();
+        });
+    });
+</script>

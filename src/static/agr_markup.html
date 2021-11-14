@@ -177,7 +177,7 @@
         const closer_for_paren = { '[': ']', '{': '}' };
         let paren_stack = [];
         collected_markup_cats = {};
-        while (true) {
+        while (i < s.length) {
             let c = s.charAt(i);
             let code = s.codePointAt(i);
             if (markup_cats.indexOf(c) >= 0 || parens.indexOf(c) >= 0) {

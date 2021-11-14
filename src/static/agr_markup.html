@@ -53,6 +53,25 @@
         opacity: 0.5;
     }
 
+    .markup_container .code {
+        /* font-family: 'Roboto Condensed'; */
+        background-color: #ddd;
+        color: #888;
+        border-radius: 4px;
+        /* font-family: 'Roboto'; */
+        /* border-radius: 30px; */
+        /* font-size: 12px; */
+        /* font-weight: bold; */
+        /* width: 20px; */
+        /* height: 20px; */
+        /* display: inline-block; */
+        /* position: relative; */
+        /* top: -2px; */
+        /* line-height: 100%; */
+        /* text-align: center; */
+        /* padding-top: 3px; */
+    }
+
     #markup_layer {
         color: transparent;
     }
@@ -99,8 +118,7 @@
         <div class='col-md-8'>
             <div class='markup_container'>
                 <div class='inner' id='markup_layer' style='pointer-events: none; '></div>
-                <textarea spellcheck="false"
-                    class='inner'></textarea>
+                <textarea spellcheck="false" class='inner'></textarea>
                 <div class='inner' id='styled_text_layer' style='pointer-events: none; '></div>
             </div>
         </div>
@@ -200,8 +218,16 @@
                 markup += "&#8288;</span>";
                 result += "&#8288;";
             }
+            if (markup_cats.indexOf(c) >= 0) {
+                result += "<span class='code'>";
+                markup += "<span class='code'>";
+            }
             result += c;
             markup += c;
+            if (markup_cats.indexOf(c) >= 0) {
+                result += "</span>";
+                markup += "</span>";
+            }
             // if (close_paren && paren_stack.length === 0 ) {
             //     markup += "&#8288;</span>";
             //     result += "&#8288;";

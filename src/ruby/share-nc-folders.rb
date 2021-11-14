@@ -101,6 +101,7 @@ class Script
             folder_name = "#{lesson_key}"
             fach = lesson_info[:fach]
             fach = @@faecher[fach] || fach
+            next if fach.empty?
             pretty_folder_name = lesson_info[:pretty_folder_name]
             teachers = Set.new(lesson_info[:lehrer])
             teachers |= @@shorthands_for_lesson[lesson_key] || Set.new()
@@ -124,6 +125,9 @@ class Script
                 email_for_user_id[user_id] = email
                 wanted_shares[user_id] ||= {}
                 pretty_folder_name = "#{fach.gsub('/', '-')}"
+                if pretty_folder_name.empty?
+                    raise "nope: #{lesson_key}"
+                end
                 wanted_shares[user_id]["/Unterricht/#{folder_name}/Ausgabeordner"] = {
                     :permissions => SHARE_READ,
                     :target_path => "/Unterricht/#{pretty_folder_name.gsub(' ', '%20')}/Ausgabeordner",
@@ -162,6 +166,12 @@ class Script
                 raise "Ouch! We didn't catch something in the code above."
             end
         end
+        wanted_nc_ids = nil
+        unless ARGV.empty?
+            wanted_nc_ids = Set.new(ARGV.map { |email| (@@user_info[email] || {})[:nc_login] })
+        end
+        STDERR.puts "Got wanted shares for #{wanted_shares.size} users."
+        STDERR.puts "Collecting present shares..."
         present_shares = {}
         (@ocs.file_sharing.all || []).each do |share|
             present_shares[share['share_with']] ||= {}
@@ -171,15 +181,14 @@ class Script
                 :share_with => share['share_with_displayname']
             }
         end
+        STDERR.puts "Got present shares for #{present_shares.size} users."
 #         STDERR.puts present_shares.to_yaml
 #         exit
-        wanted_nc_ids = nil
-        unless ARGV.empty?
-            wanted_nc_ids = Set.new(ARGV.map { |email| (@@user_info[email] || {})[:nc_login] })
-        end
         wanted_shares.keys.sort.each do |user_id|
             unless wanted_nc_ids.nil?
                 next unless wanted_nc_ids.include?(user_id)
+                STDERR.puts "Wanted shares for #{user_id}:"
+                STDERR.puts wanted_shares[user_id].to_yaml
             end
             ocs_user = Nextcloud.ocs(url: NEXTCLOUD_URL_FROM_RUBY_CONTAINER, 
                                      username: user_id,
@@ -245,12 +254,16 @@ class Script
                                 created_sub_paths << sub_path
                             end
                         end
-                        STDERR.puts "Moving [#{user_id}]#{share['file_target']} to #{info[:target_path]}..."
-                        result = ocs_user.webdav.directory.move(share['file_target'], info[:target_path])
-                        if result[:status] != 'ok'
-                            STDERR.puts "Error!"
-                            STDERR.puts result.to_yaml
-                            exit(1)
+                        if share['file_target'] != info[:target_path]
+                            STDERR.puts "Moving [#{user_id}]#{share['file_target']} to #{info[:target_path]}..."
+                            result = ocs_user.webdav.directory.move(share['file_target'], info[:target_path])
+                            if result[:status] != 'ok'
+                                STDERR.puts "Error!"
+                                STDERR.puts result.to_yaml
+                                exit(1)
+                            end
+                        else
+                            STDERR.puts "Not moving [#`{user_id}]#{share['file_target']} to #{info[:target_path]} because they're identical"
                         end
                     end
                 rescue StandardError => e

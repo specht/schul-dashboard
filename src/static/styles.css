@@ -94,6 +94,15 @@
     src: url(/fonts/gfs_neohellenic_bold_italic.ttf) format('truetype');
 }
 
+@font-face {
+    font-family: 'Selectric';
+    font-style: normal;
+    font-weight: 400;
+    src: url(/fonts/SLC_.ttf) format('truetype');
+}
+  
+
+
 /* Riffic und Billy funktionieren gut, sind aber nicht im Repository enthalten,
  * da sie kommerzielle Fonts und somit nicht frei verfügbar sind.
  */

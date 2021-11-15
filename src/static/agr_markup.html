@@ -26,9 +26,11 @@
         font-size: 100%;
         line-height: 200%;
         background: none;
-        overflow: auto;
+        overflow-x: hidden;
+        overflow-y: auto;
         padding: 15px;
         white-space: pre-wrap;
+        word-wrap: break-word;
         margin: 0;
         border: none;
     }
@@ -53,7 +55,7 @@
         top: -14px;
         /* opacity: 0.5; */
         color: #666;
-        background-color: #fff;
+        /* background-color: #fff; */
         line-height: 100%;
         padding: 0 4px;
         font-family: AlegreyaSans;
@@ -61,7 +63,7 @@
     }
 
     .markup_container .code {
-        color: transparent;
+        /* color: transparent; */
         position: relative;
     }
 
@@ -129,7 +131,7 @@
         <div class='col-md-8'>
             <div class='markup_container'>
                 <div class='inner' id='markup_layer' style='pointer-events: none; '></div>
-                <textarea spellcheck="false" class='inner'>1[Ὁ δὲ Σώστρατος καὶ ὁ Φίλιππος καὶ ἡ Σοφία] ἐκ τῆς Ἀκροπόλεως πρὸς τὸ θέατρον τοῦ Διονύσου τοῦ θεοῦ 0[καταβαίνουσιν], 3[ὅπου] 1[οἱ Ἀθηναῖοι] ἀγῶνας τραγικοὺς καὶ κωμῳδικοὺς 0[θεῶνται]. 3[Ὡς ]εἰς τὸ θέατρον 0[ἀφικνοῦ1[νται]], πρῶτον μὲν πρὸς τὰ ὄπισθεν τῆς σκήνης 0[ἔρχο1[νται]], ἔπειτα δ’ ἀνὰ τοὺς βαθμοὺς 0[βαίν1[ουσιν]] 2[καὶ] εἰς τὴν ὀρχήστραν 0[καταβλέπ1[ουσ1[]]. Ὁ δὲ Φίλιπ]πος ἐρωτᾷ· «Διὰ τί οἱ  Ἀθηναῖοι τοσοῦτον θέατρον ᾠκοδόμησαν;» Ὁ δὲ Σώστρατος ἀποκρίνεται· «Ὁ δῆμος ἥδεται τραγῳδίαις τε καὶ κωμῳδίαις. Διὰ τοῦτο τοῖς τε Ληναίοις καὶ τοῖς Διονυσίοις οἱ πολῖται πρῲ πορεύονται πρὸς τὸ θέατρον καὶ μένουσιν ἐκεῖ μέχρι δείλης. Πολλάκις οὖν τὸ θέατρον οὐχ ἱκανόν ἐστι τοσούτους ἀνθρώπους δέχεσθ</textarea>
+                <textarea spellcheck="false" class='inner'>1[Ὁ δὲ Σώστρατος καὶ ὁ Φίλιππος καὶ ἡ Σοφία] ἐκ τῆς Ἀκροπόλεως πρὸς τὸ θέατρον τοῦ Διονύσου τοῦ θεοῦ 0[καταβαίνουσιν], 3[ὅπου] 1[οἱ Ἀθηναῖοι] ἀγῶνας τραγικοὺς καὶ κωμῳδικοὺς 0[θεῶνται]. 3[Ὡς ]εἰς τὸ θέατρον 0[ἀφικνοῦ1[νται]], πρῶτον μὲν πρὸς τὰ ὄπισθεν τῆς σκήνης 0[ἔρχο1[νται]], ἔπειτα δ’ ἀνὰ τοὺς βαθμοὺς 0[βαίν1[ουσιν]] 2[καὶ] εἰς τὴν ὀρχήστραν 0[καταβλέπ1[ουσ1[ουσ]]. Ὁ δὲ Φίλιπ]πος ἐρωτᾷ· «Διὰ τί οἱ  Ἀθηναῖοι τοσοῦτον θέατρον ᾠκοδόμησαν;» Ὁ δὲ Σώστρατος ἀποκρίνεται· «Ὁ δῆμος ἥδεται τραγῳδίαις τε καὶ κωμῳδίαις. Διὰ τοῦτο τοῖς τε Ληναίοις καὶ τοῖς Διονυσίοις οἱ πολῖται πρῲ πορεύονται πρὸς τὸ θέατρον καὶ μένουσιν ἐκεῖ μέχρι δείλης. Πολλάκις οὖν τὸ θέατρον οὐχ ἱκανόν ἐστι τοσούτους ἀνθρώπους δέχεσθ</textarea>
                 <div class='inner' id='styled_text_layer' style='pointer-events: none; '></div>
             </div>
         </div>
@@ -184,7 +186,7 @@
             let c = s.charAt(i);
             let code = s.codePointAt(i);
             if (markup_cats.indexOf(c) >= 0 || parens.indexOf(c) >= 0) {
-                result += "<span class='muted'>";
+                result += "&#8288;<span class='muted'>&#8288;";
             } else {
                 collected_markup_cats = {};
             }
@@ -228,29 +230,23 @@
             }
 
             if (close_paren) {
-                markup += "&#8288;</span>";
-                result += "&#8288;";
+                markup += "</span>";
+                result += "";
             }
             if (markup_cats.indexOf(c) >= 0) {
-                // result += "<span class='code'>";
-                result += `<span class='code' style='color: transparent;'><span class='label'></span>${c}</span>`;
-                // markup += `<span class='code'><span class='circle'></span><span class='label'>${c}</span>${c}</span>`;
-                markup += `<span class='code'>&#8288;<span class='circle'>&#8288;</span>&#8288;<span class='label'>&#8288;${c}&#8288;</span>&#8288;${c}&#8288;</span>`;
+                result += `<span class='code'>${c}</span>`;
+                markup += `<span class='code'>${c}</span>`;
             } else {
                 result += c;
                 markup += c;
             }
-            // if (close_paren && paren_stack.length === 0 ) {
-            //     markup += "&#8288;</span>";
-            //     result += "&#8288;";
-            // }
             if (markup_cats.indexOf(c) >= 0 || parens.indexOf(c) >= 0) {
-                result += "</span>"
+                result += "&#8288;</span>&#8288;"
             }
             if (open_paren || (close_paren && paren_stack.length > 0)) {
                 if (open_paren && paren_stack.length > 1) {
-                    markup += "&#8288;</span>";
-                    result += "&#8288;";
+                    markup += "</span>";
+                    result += "";
                 }
                 let annotations = [];
                 for (let cat in collected_markup_cats) annotations.push(markupItems[markup_cats.indexOf(cat)]);
@@ -267,7 +263,7 @@
                 color[0] /= paren_stack.length;
                 color[1] /= paren_stack.length;
                 color[2] /= paren_stack.length;
-                markup += `<span class='markup' style='background-color: rgba(${color[0]},${color[1]},${color[2]}, 0.8);'>&#8288;`;
+                markup += `<span class='markup' style='background-color: rgba(${color[0]},${color[1]},${color[2]}, 0.8);'>`;
                 result += `<span class='annotation_wrap'><span class='annotation'>${annotations.join(', ')}</span></span>&#8288;`;
             }
             i += 1;

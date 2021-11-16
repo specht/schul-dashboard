@@ -474,7 +474,7 @@ class Timetable
                                 # Fachwechsel
                                 event[:fach] = [ventry[:fach_alt], ventry[:fach_neu] ]
                                 matching_lesson_keys = Set.new()
-                                ventry[:klassen_neu].each do |klasse|
+                                (ventry[:klassen_neu] || []).each do |klasse|
                                     (@@lessons_for_klasse[klasse] || []).each do |fach|
                                         if fach.split('_').first == ventry[:fach_neu]
                                             matching_lesson_keys << fach

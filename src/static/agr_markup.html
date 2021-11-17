@@ -173,7 +173,9 @@
         'ACI',
         'NCI',
         'substantivierter Infinitiv',
-        'sonstige Infinitive'
+        'sonstige Infinitive',
+        'Subjektsakkusativ',
+        'Infinitiv im ACI'
     ];
 
     let markupColors = ['#fad31c', '#80bc42', '#55beed'].map(function(x) {
@@ -296,7 +298,7 @@
             let x = markupItems[i];
             let width = 100;
             let label = x;
-            if (['Prädikat', 'Subjekt'].indexOf(x) >= 0)
+            if (['Prädikat', 'Subjekt', 'Subjektsakkusativ'].indexOf(x) >= 0)
                 width = 50;
             if (['ACI', 'NCI', 'erstes Satzglied'].indexOf(x) >= 0)
                 width = 33;

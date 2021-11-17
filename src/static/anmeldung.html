@@ -43,10 +43,10 @@
                     <p>Bitte treffen Sie eine Auswahl:</p>
                     <div data-key='mode' class="poll_radio_buttons">
                         <p data-value='presence' class=""><i class="icon icon-unselected fa fa-circle-thin"></i><i
-                                class="icon icon-selected fa fa-dot-circle-o"></i>Falls die Veranstaltung auch in
+                                class="icon icon-selected fa fa-dot-circle-o"></i><s>Falls die Veranstaltung auch in
                             Präsenz stattfindet, möchte ich vor Ort teilnehmen. Mir ist bekannt, dass die entsprechende
                             2G-Regel gilt und ich werde den entsprechenden Nachweis zur Kontrolle mitführen. Verfügbare
-                            Plätze werden enstprechend der Anmeldereihenfolge vergeben.</p>
+                            Plätze werden enstprechend der Anmeldereihenfolge vergeben.</s><br />Die Präsenztermine sind leider ausgebucht.</p>
                         <p data-value='online' class=""><i class="icon icon-unselected fa fa-circle-thin"></i><i
                                 class="icon icon-selected fa fa-dot-circle-o"></i>Ich möchte an der Veranstaltung im
                             Video-Stream teilnehmen und Fragen ggf. per Live-Chat stellen</p>
@@ -93,9 +93,12 @@
     window.addEventListener('load', function () {
         $('.poll_radio_buttons p').click(function (e) {
             let which = $(e.target).closest('p');
-            $('.poll_radio_buttons p').removeClass('selected');
-            which.addClass('selected');
-            update_submit_button();
+            if (which.data('value') === 'online')
+            {
+                $('.poll_radio_buttons p').removeClass('selected');
+                which.addClass('selected');
+                update_submit_button();
+            }
         });
         $('input').keyup(function(e) {
             update_submit_button();

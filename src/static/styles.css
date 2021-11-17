@@ -70,7 +70,7 @@
     font-style: normal;
     font-weight: 400;
     src: url(/fonts/gfs_neohellenic.ttf) format('truetype');
-    unicode-range: U+0370-03ff,U+1f00-1fff;
+    unicode-range: U+0370-03FF, U+1F00-1FFF;
 }
   
 @font-face {

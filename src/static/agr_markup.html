@@ -100,6 +100,7 @@
         width: 100%;
         position: relative;
         padding-left: 20px;
+        font-family: 'Roboto Condensed';
     }
 
     .bu-markup:hover {
@@ -126,7 +127,7 @@
     }
 </style>
 
-<div class='container' style='padding-top: 30px; background-color: #fff;'>
+<div class='container-wide' style='padding-top: 30px; background-color: #fff;'>
     <div class='row'>
         <div class='col-md-8'>
             <div class='markup_container'>
@@ -146,24 +147,33 @@
     let markupItems = [
         'Prädikat', 'Subjekt',
         'Konnektor Hauptsatz', 'Konnektor Nebensatz',
-        '1. Partizip im Satz', 'Bezugswort zum 1. Partizip',
-        '2. Partizip im Satz', 'Bezugswort zum 2. Partizip',
-        '3. Partizip im Satz', 'Bezugswort zum 3. Partizip',
+        '1. adverbiales Partizip im Satz', 'Bezugswort zum 1. adverbialen Partizip',
+        '2. adverbiales Partizip im Satz', 'Bezugswort zum 2. adverbialen Partizip',
+        '3. adverbiales Partizip im Satz', 'Bezugswort zum 3. adverbialen Partizip',
+        '4. adverbiales Partizip im Satz', 'Bezugswort zum 4. adverbialen Partizip',
+        '5. adverbiales Partizip im Satz', 'Bezugswort zum 5. adverbialen Partizip',
+        'Genitivus absolutus',
         'zusammenhängende Wortgruppe',
         'Hauptsatz',
         'Nebensatz 1. Ordnung',
         'Nebensatz 2. Ordnung',
         'Nebensatz 3. Ordnung',
         'Nebensatz 4. Ordnung',
-        'Nebensatz 5. Ordnung',
-        '4. Partizip im Satz', 'Bezugswort zum 4. Partizip',
-        '5. Partizip im Satz', 'Bezugswort zum 5. Partizip',
-        '6. Partizip im Satz', 'Bezugswort zum 6. Partizip',
-        '7. Partizip im Satz', 'Bezugswort zum 7. Partizip',
-        '8. Partizip im Satz', 'Bezugswort zum 8. Partizip',
-        '9. Partizip im Satz', 'Bezugswort zum 9. Partizip',
-        '10. Partizip im Satz', 'Bezugswort zum 10. Partizip',
-        'erstes Satzglied'
+        '1. attributives Partizip', 'Bezugswort zum 1. attr. Partizip',
+        '2. attributives Partizip', 'Bezugswort zum 2. attr. Partizip',
+        '3. attributives Partizip', 'Bezugswort zum 3. attr. Partizip',
+        '4. attributives Partizip', 'Bezugswort zum 4. attr. Partizip',
+        '5. attributives Partizip', 'Bezugswort zum 5. attr. Partizip',
+        '1. prädikatives Partizip', 'Bezugswort zum 1. prädikativen Partizip', 'regierendes Verb zum 1. prädikativen Partizip',
+        '2. prädikatives Partizip', 'Bezugswort zum 2. prädikativen Partizip', 'regierendes Verb zum 2. prädikativen Partizip',
+        '3. prädikatives Partizip', 'Bezugswort zum 3. prädikativen Partizip', 'regierendes Verb zum 3. prädikativen Partizip',
+        '4. prädikatives Partizip', 'Bezugswort zum 4. prädikativen Partizip', 'regierendes Verb zum 4. prädikativen Partizip',
+        '5. prädikatives Partizip', 'Bezugswort zum 5. prädikativen Partizip', 'regierendes Verb zum 5. prädikativen Partizip',
+        'erstes Satzglied',
+        'ACI',
+        'NCI',
+        'substantivierter Infinitiv',
+        'sonstige Infinitive'
     ];
 
     let markupColors = ['#fad31c', '#80bc42', '#55beed'].map(function(x) {
@@ -284,16 +294,49 @@
         for (let i = 0; i < markupItems.length; i++) {
             let code = markupItemCodes.charAt(i);
             let x = markupItems[i];
-            if (x.indexOf('Partizip im Satz') >= 0) {
-                let button = $('<div>').data('code', code).css('width', '60%').addClass('bu-markup').html(`<span class='code'>${code}</span>${x}`);
-                $('#agr-buttons-here').append(button);
-                let code2 = markupItemCodes.charAt(i + 1);
-                let button2 = $('<div>').data('code', code2).css('width', '40%').addClass('bu-markup').html(`<span class='code'>${code2}</span>Bezugswort`);
-                $('#agr-buttons-here').append(button2);
-            } else if (x.indexOf('Bezugswort') < 0) {
-                let button = $('<div>').data('code', code).addClass('bu-markup').html(`<span class='code'>${code}</span>${x}`);
-                $('#agr-buttons-here').append(button);
+            let width = 100;
+            let label = x;
+            if (['Prädikat', 'Subjekt'].indexOf(x) >= 0)
+                width = 50;
+            if (['ACI', 'NCI', 'erstes Satzglied'].indexOf(x) >= 0)
+                width = 33;
+            if (x.indexOf('Nebensatz') >= 0 && x.indexOf('Ordnung') >= 0)
+                width = 50;
+            if (x.indexOf('Konnektor') >= 0)
+                width = 50;
+            if (['Genitivus absolutus'].indexOf(x) >= 0)
+                width = 33;
+            if (['zusammenhängende Wortgruppe'].indexOf(x) >= 0) {
+                width = 33;
+                label = 'zushg. Wortgruppe';
             }
+            if (['Hauptsatz'].indexOf(x) >= 0)
+                width = 33;
+            if (x.indexOf('adverbial') >= 0)
+                width = 50;
+            if (x.indexOf('attributiv') >= 0 || x.indexOf('attr.') >= 0)
+                width = 50;
+            if (x.indexOf('prädikativ') >= 0)
+            {
+                width = 33;
+                if (x.indexOf('Bezugswort') >= 0)
+                    label = 'Bezugswort';
+                if (x.indexOf('regierendes') >= 0)
+                    label = 'regierendes Verb';
+            }
+            if (x.indexOf('Infinitiv') >= 0)
+                width = 50;
+            
+            // if (x.indexOf('Partizip') >= 0 && x.indexOf('Bezugswort') < 0 && x.indexOf('regierende') < 0 && x.indexOf('prädikatives') < 0) {
+            //     let button = $('<div>').data('code', code).css('width', '60%').addClass('bu-markup').html(`<span class='code'>${code}</span>${x}`);
+            //     $('#agr-buttons-here').append(button);
+            //     let code2 = markupItemCodes.charAt(i + 1);
+            //     let button2 = $('<div>').data('code', code2).css('width', '40%').addClass('bu-markup').html(`<span class='code'>${code2}</span>Bezugswort`);
+            //     $('#agr-buttons-here').append(button2);
+            // } else if (x.indexOf('Bezugswort') < 0) {
+                let button = $('<div>').data('code', code).addClass('bu-markup').css('width', `${width}%`).html(`<span class='code'>${code}</span>${label}`);
+                $('#agr-buttons-here').append(button);
+            // }
         }
 
         update_text();

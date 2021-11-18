@@ -25,9 +25,8 @@ class Main < Sinatra::Base
             io.puts "<th style='width: 140px;'>Homeschooling</th>"
             if ['11', '12'].include?(klasse)
                 io.puts "<th style='width: 100px;'>Antikenfahrt</th>"
-            else
-                io.puts "<th style='width: 100px;'>Gruppe A/B</th>"
             end
+            io.puts "<th style='width: 100px;'>A/B</th>"
             io.puts "<th style='width: 180px;'>Letzter Zugriff</th>"
             io.puts "<th>Eltern-E-Mail-Adresse</th>"
             io.puts "</tr>"
@@ -69,9 +68,8 @@ class Main < Sinatra::Base
                 end
                 if ['11', '12'].include?(klasse)
                     io.puts "<td><div class='group-af-button #{user_who_can_manage_antikenfahrt_logged_in? ? '' : 'disabled'}' data-email='#{email}'>#{GROUP_AF_ICONS[group_af_for_email[email]]}</div></td>"
-                else
-                    io.puts "<td><div class='group2-button group2-#{group2_for_email[email]}' data-email='#{email}'>#{group2_for_email[email]}</div></td>"
                 end
+                io.puts "<td><div class='group2-button group2-#{group2_for_email[email]}' data-email='#{email}'>#{group2_for_email[email]}</div></td>"
                 la_label = 'noch nie angemeldet'
                 today = Date.today.to_s
                 if last_access[email]

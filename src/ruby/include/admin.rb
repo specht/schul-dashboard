@@ -340,7 +340,7 @@ class Main < Sinatra::Base
         require_admin!
         StringIO.open do |io|
             @@user_info.keys.sort.each do |email|
-                io.puts "#{email} #{@@user_info[email][:display_name]}"
+                io.puts "#{email} #{@@user_info[email][:nc_login]} #{@@user_info[email][:display_name]}"
             end
             io.string
         end

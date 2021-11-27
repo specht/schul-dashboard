@@ -1450,6 +1450,19 @@ class Main < Sinatra::Base
             STDERR.puts e
         end
     end
+
+    # returns 0 if before Dec 1
+    # returns 1 .. 24 if in range
+    # returns 24 if Dec 25 .. 31
+    def advents_calendar_date_today()
+        date = DateTime.now.to_s[0, 10]
+        date = '2021-12-03' if admin_logged_in?
+        return 0 if date < '2021-12-01'
+        return 0 if date > '2021-12-31'
+        day = date[8, 2].to_i
+        day = 24 if day > 24
+        return day
+    end
     
     def nav_items(primary_color, now, new_messages_count)
         if tablet_logged_in?
@@ -1492,6 +1505,7 @@ class Main < Sinatra::Base
                 if admin_logged_in?
                     nav_items << :admin 
                 end
+                nav_items << :advent_calendar if advents_calendar_date_today > 0
                 nav_items << :profile
                 new_messages_count_s = new_messages_count.to_s
                 new_messages_count_s = '99+' if new_messages_count > 99
@@ -1524,6 +1538,10 @@ class Main < Sinatra::Base
                         io.puts "<a class='dropdown-item nav-icon' href='/stats'><div class='icon'><i class='fa fa-bar-chart'></i></div><span class='label'>Statistiken</span></a>"
                     end
                     io.puts "</div>"
+                    io.puts "</li>"
+                elsif x == :advent_calendar
+                    io.puts "<li class='nav-item text-nowrap'>"
+                    io.puts "<a class='bu-launch-adventskalender nav-link nav-icon'><div class='icon'><i class='fa fa-snowflake-o'></i></div>Adventskalender</a>"
                     io.puts "</li>"
                 elsif x == :profile
                     io.puts "<li class='nav-item dropdown'>"
@@ -1840,6 +1858,101 @@ class Main < Sinatra::Base
         color_scheme = "#{which[4]}#{which[0, 3].join('').gsub('#', '')}0"
         @@default_color_scheme[jd] = color_scheme unless DEVELOPMENT
         return color_scheme
+    end
+
+    def get_open_doors_for_user()
+        require_user!
+        doors = neo4j_query_expect_one(<<~END_OF_QUERY, :email => @session_user[:email])['doors']
+            MATCH (u:User {email: $email})
+            RETURN COALESCE(u.advent_calendar_doors, 0) AS doors;
+        END_OF_QUERY
+        doors
+    end
+
+    def print_advent_calendar_css
+        return '' unless user_logged_in?
+        images = %w(e44dfe6191 76a30b9ef9 5eb940adf5)
+        permutation = [18,2,7,5,8,23,21,15,10,14,11,20,4,9,17,0,19,3,1,12,6,22,16,13]
+        xo = [1,2,3,4,0.5,1.5,2.5,3.5,4.5,0,1,2,3,4,5,0.5,1.5,2.5,3.5,4.5,1,2,3,4]
+        yo = [0,0,0,0,1,1,1,1,1,2,2,2,2,2,2,3,3,3,3,3,4,4,4,4]
+        StringIO.open do |io|
+            (0..23).each do |k|
+                i = permutation[k]
+                image = images[i]
+                image = nil if i > advents_calendar_date_today() - 1
+                io.puts ".door.door#{i} {"
+                io.puts "    left: #{xo[k] * 17.5 + 0.5}vh;"
+                io.puts "    top: #{yo[k] * 17.5 + 0.1}vh;"
+                io.puts "    width: 17.5vh;"
+                io.puts "    height: 17.5vh;"
+                io.puts "}"
+                io.puts ".door.door#{i} .flip-card-front {"
+                io.puts "    background-image: url(/images/advent-calendar/doors/tiles-#{i}.png);"
+                io.puts "    background-size: cover;"
+                io.puts "}"
+                io.puts ".door.door#{i} .flip-card-back {"
+                io.puts "    background-image: url(https://pixel.hackschule.de/raw/uploads/#{images[i]}.png);"
+                io.puts "    background-size: cover;"
+                io.puts "}"
+            end
+            io.puts "@media (orientation: portrait) {"
+                (0..23).each do |k|
+                    i = permutation[k]
+                    io.puts ".door.door#{i} {"
+                    io.puts "    left: #{yo[k] * 18.277 + 0.1044}vw;"
+                    io.puts "    top: #{xo[k] * 18.277 + 0.5222}vw;"
+                    io.puts "    width: 18.277vw;"
+                    io.puts "    height: 18.277vw;"
+                    io.puts "}"
+                end
+            io.puts "}"
+            io.string
+        end
+    end
+
+    def print_advent_calendar_doors
+        return '' unless user_logged_in?
+        doors = get_open_doors_for_user()
+        StringIO.open do |io|
+            (0..23).each do |i|
+                io.puts "<div data-door='#{i}' class='door door#{i} #{((doors >> i) & 1) > 0 ? 'open' : ''}'>"
+                io.puts "<div class='flip-card-inner'>"
+                io.puts "<div class='flip-card-front'></div>"
+                io.puts "<div class='flip-card-back'></div>"
+                io.puts "</div>"
+                io.puts "</div>"
+            end
+            io.string
+        end
+    end
+
+    post '/api/toggle_door' do
+        require_user!
+        data = parse_request_data(:required_keys => [:door], :types => {:door => Integer})
+        door = data[:door]
+        assert(door >= 0 && door <= 23)
+        assert(door <= advents_calendar_date_today - 1)
+        # TODO: only open doors that we may open
+        doors = get_open_doors_for_user()
+        doors ^= (1 << door)
+        neo4j_query(<<~END_OF_QUERY, :email => @session_user[:email], :doors => doors)
+            MATCH (u:User {email: $email})
+            SET u.advent_calendar_doors = $doors;
+        END_OF_QUERY
+        respond(:ok => 'yay')
+    end
+
+    def print_adventskalender_sidepanel()
+        require_user!
+        StringIO.open do |io|
+            io.puts "<div class='hint'>"
+            io.puts "<div>Adventskalender</div>"
+            io.puts "<hr />"
+            io.puts "<button style='white-space: nowrap;' class='float-right btn btn-success bu-launch-adventskalender' >Adventskalender öffnen&nbsp;<i class='fa fa-angle-double-right'></i></button>"
+            io.puts "<div style='clear: both;'></div>"
+            io.puts "</div>"
+            io.string
+        end
     end
 
     get '/*' do

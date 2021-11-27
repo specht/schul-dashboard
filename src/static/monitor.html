@@ -397,7 +397,27 @@
         left: 51vw;
     }
 
+    .monitor_advent_calendar {
+        /* border: 1px solid red; */
+        position: absolute;
+        left: 2vw;
+        bottom: -0.1vw;
+        width: 23vw;
+        height: 4.5vw;
+    }
+    .monitor_advent_calendar img {
+        background-color: #023;
+        /* image-rendering: pixelated; */
+        /* -ms-interpolation-mode: nearest-neighbor;  */
+        width: 3.7vw;
+        height: 3.7vw;
+        margin-left: 0.5vw;
+        border-radius: 0.2vw;
+    }
 
+    .ticker {
+        left: #{advents_calendar_date_today < 0 ? '0' : '24.5'}vw;
+    }
 </style>
 
 <div class="embed-responsive embed-responsive-16by9">
@@ -436,7 +456,7 @@
             <div class='ticker-message'></div>
         </div>
         <div class='attribution'><span class='color_scheme'></span><span style='margin: 0 0.5em;'>//</span>Stand: <span class='monitor_timestamp'></span></div>
-        
+        <div class='monitor_advent_calendar' style='display: none;'>#{print_current_monitor_advent_calendar_images()}</div>
     </div>
 </div>
 
@@ -799,6 +819,10 @@
             $('.main').hide();
             $('.main_lz').show();
         }
+        /* else { */
+            /* if (#{advents_calendar_date_today() || -1} >= 0) */
+                $('.monitor_advent_calendar').show();
+        /* } */
         establish_websocket_connection();
         let a = `<b>»${attribution[0]}«</b>`;
         if (attribution[1])

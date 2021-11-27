@@ -217,8 +217,8 @@
     .flip-card-back {
         background-color: #023;
         transform: rotateY(180deg);
-        image-rendering: pixelated;
-        -ms-interpolation-mode: nearest-neighbor; 
+        /* image-rendering: pixelated;
+        -ms-interpolation-mode: nearest-neighbor;  */
     }
 
     .snowman {
@@ -687,6 +687,7 @@ window.addEventListener('load', function() {
     $('.bu-launch-adventskalender').click(function(e) {
         e.preventDefault();
         e.stopPropagation();
+        $('.collapse').removeClass('show');
         $('#advent_calendar').fadeIn();
     });
     $('#advent_calendar').click(function(e) {

@@ -1456,7 +1456,7 @@ class Main < Sinatra::Base
     # returns 24 if Dec 25 .. 31
     def advents_calendar_date_today()
         date = DateTime.now.to_s[0, 10]
-        date = '2021-12-03' if admin_logged_in?
+        # date = '2021-12-01'
         return 0 if date < '2021-12-01'
         return 0 if date > '2021-12-31'
         day = date[8, 2].to_i
@@ -1505,7 +1505,7 @@ class Main < Sinatra::Base
                 if admin_logged_in?
                     nav_items << :admin 
                 end
-                nav_items << :advent_calendar if advents_calendar_date_today > 0
+                nav_items << :advent_calendar #if advents_calendar_date_today > 0
                 nav_items << :profile
                 new_messages_count_s = new_messages_count.to_s
                 new_messages_count_s = '99+' if new_messages_count > 99
@@ -1869,12 +1869,23 @@ class Main < Sinatra::Base
         doors
     end
 
+    def advent_calendar_images
+        return [] unless File.exists?('advent-calendar-images.txt')
+        File.read('advent-calendar-images.txt').split(/\s+/).map { |x| x.strip }.reject { |x| x.empty? }.map do |x|
+            unless File.exists?("/gen/ac-#{x}.png")
+                system("wget -O /gen/ac-#{x}-dl.png https://pixel.hackschule.de/raw/uploads/#{x}.png")
+                system("convert /gen/ac-#{x}-dl.png -scale 1600% /gen/ac-#{x}.png")
+            end
+            "/gen/ac-#{x}.png"
+        end
+    end
+
     def print_advent_calendar_css
         return '' unless user_logged_in?
-        images = %w(e44dfe6191 76a30b9ef9 5eb940adf5)
         permutation = [18,2,7,5,8,23,21,15,10,14,11,20,4,9,17,0,19,3,1,12,6,22,16,13]
         xo = [1,2,3,4,0.5,1.5,2.5,3.5,4.5,0,1,2,3,4,5,0.5,1.5,2.5,3.5,4.5,1,2,3,4]
         yo = [0,0,0,0,1,1,1,1,1,2,2,2,2,2,2,3,3,3,3,3,4,4,4,4]
+        images = advent_calendar_images
         StringIO.open do |io|
             (0..23).each do |k|
                 i = permutation[k]
@@ -1891,7 +1902,7 @@ class Main < Sinatra::Base
                 io.puts "    background-size: cover;"
                 io.puts "}"
                 io.puts ".door.door#{i} .flip-card-back {"
-                io.puts "    background-image: url(https://pixel.hackschule.de/raw/uploads/#{images[i]}.png);"
+                io.puts "    background-image: url(#{images[i]});"
                 io.puts "    background-size: cover;"
                 io.puts "}"
             end
@@ -1921,6 +1932,25 @@ class Main < Sinatra::Base
                 io.puts "<div class='flip-card-back'></div>"
                 io.puts "</div>"
                 io.puts "</div>"
+            end
+            io.string
+        end
+    end
+
+    def print_current_monitor_advent_calendar_images()
+        images = advent_calendar_images
+        today = advents_calendar_date_today()
+        StringIO.open do |io|
+            d = advents_calendar_date_today() - 4
+            d = 0 if d < 0
+            d = 19 if d > 19
+            (0..4).each do |x|
+                i = d + x
+                url = "/images/advent-calendar/doors/tiles-#{i}.png"
+                if i <= today - 1
+                    url = images[i]
+                end
+                io.puts "<img src='#{url}' />"
             end
             io.string
         end

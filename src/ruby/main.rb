@@ -1457,7 +1457,7 @@ class Main < Sinatra::Base
     def advents_calendar_date_today()
         date = DateTime.now.to_s[0, 10]
         if DEVELOPMENT
-            date = '2021-11-30'
+            date = '2021-12-24'
         end
         return 0 if date < '2021-12-01'
         return 0 if date > '2021-12-31'

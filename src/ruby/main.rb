@@ -1456,7 +1456,9 @@ class Main < Sinatra::Base
     # returns 24 if Dec 25 .. 31
     def advents_calendar_date_today()
         date = DateTime.now.to_s[0, 10]
-        # date = '2021-12-01'
+        if DEVELOPMENT
+            date = '2021-11-30'
+        end
         return 0 if date < '2021-12-01'
         return 0 if date > '2021-12-31'
         day = date[8, 2].to_i
@@ -1540,13 +1542,15 @@ class Main < Sinatra::Base
                     io.puts "</div>"
                     io.puts "</li>"
                 elsif x == :advent_calendar
-                    io.puts "<li class='nav-item text-nowrap'>"
                     if admin_logged_in?
+                        io.puts "<li class='nav-item text-nowrap' style='margin-right: -17px;'>"
                         io.puts "<a class='bu-launch-adventskalender nav-link nav-icon'><div class='icon'><i class='fa fa-snowflake-o'></i></div></a>"
+                        io.puts "</li>"
                     else
+                        io.puts "<li class='nav-item text-nowrap'>"
                         io.puts "<a class='bu-launch-adventskalender nav-link nav-icon'><div class='icon'><i class='fa fa-snowflake-o'></i></div>Adventskalender</a>"
+                        io.puts "</li>"
                     end
-                    io.puts "</li>"
                 elsif x == :profile
                     io.puts "<li class='nav-item dropdown'>"
                     io.puts "<a class='nav-link nav-icon dropdown-toggle' href='#' id='navbarDropdown' role='button' data-toggle='dropdown' aria-haspopup='true' aria-expanded='false'>"

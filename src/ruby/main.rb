@@ -1541,7 +1541,11 @@ class Main < Sinatra::Base
                     io.puts "</li>"
                 elsif x == :advent_calendar
                     io.puts "<li class='nav-item text-nowrap'>"
-                    io.puts "<a class='bu-launch-adventskalender nav-link nav-icon'><div class='icon'><i class='fa fa-snowflake-o'></i></div>Adventskalender</a>"
+                    if admin_logged_in?
+                        io.puts "<a class='bu-launch-adventskalender nav-link nav-icon'><div class='icon'><i class='fa fa-snowflake-o'></i></div></a>"
+                    else
+                        io.puts "<a class='bu-launch-adventskalender nav-link nav-icon'><div class='icon'><i class='fa fa-snowflake-o'></i></div>Adventskalender</a>"
+                    end
                     io.puts "</li>"
                 elsif x == :profile
                     io.puts "<li class='nav-item dropdown'>"

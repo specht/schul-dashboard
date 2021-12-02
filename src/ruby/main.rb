@@ -1456,9 +1456,9 @@ class Main < Sinatra::Base
     # returns 24 if Dec 25 .. 31
     def advents_calendar_date_today()
         date = DateTime.now.to_s[0, 10]
-        if DEVELOPMENT
-            date = '2021-12-24'
-        end
+        # if DEVELOPMENT
+            # date = '2021-12-24'
+        # end
         return 0 if date < '2021-12-01'
         return 0 if date > '2021-12-31'
         day = date[8, 2].to_i
@@ -1990,6 +1990,16 @@ class Main < Sinatra::Base
             io.puts "<div style='clear: both;'></div>"
             io.puts "</div>"
             io.string
+        end
+    end
+
+    before "/monitor/#{MONITOR_DEEP_LINK}" do
+        unless MONITOR_DEEP_LINK.nil?
+            @session_user = {
+                :email => "monitor@#{SCHUL_MAIL_DOMAIN}",
+                :is_monitor => true,
+                :teacher => false
+            }
         end
     end
 

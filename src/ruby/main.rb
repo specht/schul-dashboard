@@ -62,6 +62,7 @@ require './include/message.rb'
 require './include/monitor.rb'
 require './include/otp.rb'
 require './include/poll.rb'
+require './include/salzh.rb'
 require './include/stats.rb'
 require './include/tablet_set.rb'
 require './include/tests.rb'
@@ -763,6 +764,10 @@ class Main < Sinatra::Base
         (CAN_SEE_ALL_TIMETABLES_USERS + ADMIN_USERS).each do |email|
             next unless @@user_info[email]
             @@user_info[email][:can_see_all_timetables] = true
+        end
+        (CAN_MANAGE_SALZH_USERS + ADMIN_USERS).each do |email|
+            next unless @@user_info[email]
+            @@user_info[email][:can_manage_salzh] = true
         end
         (CAN_UPLOAD_VPLAN_USERS + ADMIN_USERS).each do |email|
             next unless @@user_info[email]
@@ -1542,11 +1547,7 @@ class Main < Sinatra::Base
                     io.puts "</div>"
                     io.puts "</li>"
                 elsif x == :advent_calendar
-                    if admin_logged_in?
-                        io.puts "<li class='nav-item text-nowrap' style='margin-right: -17px;'>"
-                        io.puts "<a class='bu-launch-adventskalender nav-link nav-icon'><div class='icon'><i class='fa fa-snowflake-o'></i></div></a>"
-                        io.puts "</li>"
-                    else
+                    unless admin_logged_in?
                         io.puts "<li class='nav-item text-nowrap'>"
                         io.puts "<a class='bu-launch-adventskalender nav-link nav-icon'><div class='icon'><i class='fa fa-snowflake-o'></i></div>Adventskalender</a>"
                         io.puts "</li>"
@@ -1583,6 +1584,9 @@ class Main < Sinatra::Base
                     if teacher_or_sv_logged_in?
                         io.puts "<div class='dropdown-divider'></div>"
                         if teacher_logged_in?
+                            if can_manage_salzh_logged_in?
+                                io.puts "<a class='dropdown-item nav-icon' href='/salzh'><div class='icon'><i class='fa fa-home'></i></div><span class='label'>SuS im saLzH</span></a>"
+                            end
                             io.puts "<a class='dropdown-item nav-icon' href='/events'><div class='icon'><i class='fa fa-calendar-check-o'></i></div><span class='label'>Termine</span></a>"
                             io.puts "<a class='dropdown-item nav-icon' href='/tests'><div class='icon'><i class='fa fa-file-text-o'></i></div><span class='label'>Klassenarbeiten</span></a>"
                         end
@@ -1599,6 +1603,9 @@ class Main < Sinatra::Base
                     # if true
                     #     io.puts "<a class='dropdown-item nav-icon' href='/h4ck'><div class='icon'><i class='fa fa-rocket'></i></div><span class='label'>Dashboard Hackers</span></a>"
                     # end
+                    if admin_logged_in?
+                        io.puts "<a class='bu-launch-adventskalender dropdown-item nav-icon'><div class='icon'><i class='fa fa-snowflake-o'></i></div><span class='label'>Adventskalender</span></a>"
+                    end
                     io.puts "<a class='dropdown-item nav-icon' href='/hilfe'><div class='icon'><i class='fa fa-question-circle'></i></div><span class='label'>Hilfe</span></a>"
                     io.puts "<div class='dropdown-divider'></div>"
                     io.puts "<a class='dropdown-item nav-icon' href='#' onclick='perform_logout();'><div class='icon'><i class='fa fa-sign-out'></i></div><span class='label'>Abmelden</span></a>"

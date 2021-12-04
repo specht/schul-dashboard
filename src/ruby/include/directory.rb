@@ -2,6 +2,7 @@ class Main < Sinatra::Base
     def mail_addresses_table(klasse)
         require_teacher!
         all_homeschooling_users = Main.get_all_homeschooling_users()
+        all_salzh_users = Main.get_all_salzh_users()
         StringIO.open do |io|
             io.puts "<div class='row'>"
             io.puts "<div class='col-md-12'>"
@@ -18,16 +19,17 @@ class Main < Sinatra::Base
             io.puts "<thead>"
             io.puts "<tr>"
             io.puts "<th>Nr.</th>"
-            io.puts "<th style='width: 64px;'></th>"
+            io.puts "<th></th>"
             io.puts "<th>Name</th>"
             io.puts "<th>Vorname</th>"
             io.puts "<th>E-Mail-Adresse</th>"
-            io.puts "<th style='width: 140px;'>Homeschooling</th>"
+            # io.puts "<th style='width: 140px;'>Homeschooling</th>"
             if ['11', '12'].include?(klasse)
-                io.puts "<th style='width: 100px;'>Antikenfahrt</th>"
+                io.puts "<th>Antikenfahrt</th>"
             end
-            io.puts "<th style='width: 100px;'>A/B</th>"
-            io.puts "<th style='width: 180px;'>Letzter Zugriff</th>"
+            io.puts "<th>A/B</th>"
+            io.puts "<th>Letzter Zugriff</th>"
+            io.puts "<th>saLzH</th>"
             io.puts "<th>Eltern-E-Mail-Adresse</th>"
             io.puts "</tr>"
             io.puts "</thead>"
@@ -61,11 +63,11 @@ class Main < Sinatra::Base
                 print_email_field(io, record[:email])
                 io.puts "</td>"
                 homeschooling_button_disabled = (@@klassenleiter[klasse] || []).include?(@session_user[:shorthand]) ? '' : 'disabled'
-                if all_homeschooling_users.include?(email)
-                    io.puts "<td><button #{homeschooling_button_disabled} class='btn btn-info btn-xs btn-toggle-homeschooling' data-email='#{email}'><i class='fa fa-home'></i>&nbsp;&nbsp;zu Hause</button></td>"
-                else
-                    io.puts "<td><button #{homeschooling_button_disabled} class='btn btn-secondary btn-xs btn-toggle-homeschooling' data-email='#{email}'><i class='fa fa-building'></i>&nbsp;&nbsp;Präsenz</button></td>"
-                end
+                # if all_homeschooling_users.include?(email)
+                #     io.puts "<td><button #{homeschooling_button_disabled} class='btn btn-info btn-xs btn-toggle-homeschooling' data-email='#{email}'><i class='fa fa-home'></i>&nbsp;&nbsp;zu Hause</button></td>"
+                # else
+                #     io.puts "<td><button #{homeschooling_button_disabled} class='btn btn-secondary btn-xs btn-toggle-homeschooling' data-email='#{email}'><i class='fa fa-building'></i>&nbsp;&nbsp;Präsenz</button></td>"
+                # end
                 if ['11', '12'].include?(klasse)
                     io.puts "<td><div class='group-af-button #{user_who_can_manage_antikenfahrt_logged_in? ? '' : 'disabled'}' data-email='#{email}'>#{GROUP_AF_ICONS[group_af_for_email[email]]}</div></td>"
                 end
@@ -101,6 +103,12 @@ class Main < Sinatra::Base
                     end
                 end
                 io.puts "<td>#{la_label}</td>"
+                salzh_label = ''
+                if all_salzh_users[email]
+                    salzh_label = "<div class='bg-warning' style='text-align: center; padding: 4px; margin: -4px; border-radius: 4px;'><i class='fa fa-home'></i>&nbsp;&nbsp;bis #{Date.parse(all_salzh_users[email]).strftime('%d.%m.')}</div>"
+                end
+
+                io.puts "<td>#{salzh_label}</td>"
                 io.puts "<td>"
                 print_email_field(io, "eltern.#{record[:email]}")
                 io.puts "</td>"
@@ -108,19 +116,17 @@ class Main < Sinatra::Base
             end
             io.puts "<tr>"
             io.puts "<td colspan='3'></td>"
-            io.puts "<td><b>E-Mail an die Klasse #{tr_klasse(klasse)}</b></td>"
+            io.puts "<td colspan='2'><b>E-Mail an die Klasse #{tr_klasse(klasse)}</b></td>"
             io.puts "<td></td>"
-            io.puts "<td></td>"
-            io.puts "<td colspan='2'><b>E-Mail an alle Eltern der Klasse #{tr_klasse(klasse)}</b></td>"
+            io.puts "<td colspan='3'><b>E-Mail an alle Eltern der Klasse #{tr_klasse(klasse)}</b></td>"
             io.puts "</tr>"
             io.puts "<tr class='user_row'>"
             io.puts "<td colspan='3'></td>"
-            io.puts "<td>"
+            io.puts "<td colspan='2'>"
             print_email_field(io, "klasse.#{klasse}@#{SCHUL_MAIL_DOMAIN}")
             io.puts "</td>"
             io.puts "<td></td>"
-            io.puts "<td></td>"
-            io.puts "<td colspan='2'>"
+            io.puts "<td colspan='3'>"
             print_email_field(io, "eltern.#{klasse}@#{SCHUL_MAIL_DOMAIN}")
             io.puts "</td>"
             io.puts "</tr>"
@@ -232,6 +238,24 @@ class Main < Sinatra::Base
             all_homeschooling_users << user['u.email']
         end
         all_homeschooling_users
+    end
+    
+    def self.get_all_salzh_users()
+        today = Date.today.strftime('%Y-%m-%d')
+        $neo4j.neo4j_query(<<~END_OF_QUERY, :today => today)
+            MATCH (s:Salzh)-[:BELONGS_TO]->(u:User)
+            WHERE s.end_date < {today}
+            DETACH DELETE s;
+        END_OF_QUERY
+        temp = $neo4j.neo4j_query(<<~END_OF_QUERY)
+            MATCH (s:Salzh)-[:BELONGS_TO]->(u:User)
+            RETURN u.email, s.end_date;
+        END_OF_QUERY
+        all_salzh_users = {}
+        temp.each do |user|
+            all_salzh_users[user['u.email']] = user['s.end_date']
+        end
+        all_salzh_users
     end
     
     def self.get_switch_week_for_date(d)

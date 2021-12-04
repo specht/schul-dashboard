@@ -46,6 +46,11 @@ class Main < Sinatra::Base
         user_logged_in? && (admin_logged_in? || @session_user[:can_see_all_timetables])
     end
     
+    # Returns true if a user who can see all timetables is logged in.
+    def can_manage_salzh_logged_in?
+        user_logged_in? && (admin_logged_in? || @session_user[:can_manage_salzh])
+    end
+    
     # Returns true if a teacher is logged in.
     def teacher_logged_in?
         user_logged_in? && (@session_user[:teacher] == true)
@@ -147,10 +152,20 @@ class Main < Sinatra::Base
     def require_monitor_or_user_who_can_manage_monitors!
         assert(monitor_logged_in? || user_who_can_manage_monitors_logged_in?)
     end
-    
+
+    def require_user_who_can_manage_salzh!
+        assert(can_manage_salzh_logged_in?)
+    end
+        
     # Put this on top of a webpage to assert that this page can be opened by logged in users only
     def this_is_a_page_for_logged_in_users
         unless user_logged_in?
+            redirect "#{WEB_ROOT}/", 303
+        end
+    end
+    
+    def this_is_a_page_for_logged_in_users_who_can_manage_salzh
+        unless can_manage_salzh_logged_in?
             redirect "#{WEB_ROOT}/", 303
         end
     end
@@ -254,5 +269,16 @@ class Main < Sinatra::Base
         END_OF_QUERY
         @session_user[:sus_may_contact_me] = allowed
         respond(:allowed => allowed);
+    end
+
+    def klasse_for_sus
+        require_teacher!
+        result = {}
+        @@user_info.each_pair do |email, info|
+            next if info[:teacher]
+            next unless info[:klasse]
+            result[email] = info[:klasse]
+        end
+        result
     end
 end

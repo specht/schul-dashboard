@@ -198,6 +198,8 @@ ADMIN_USERS = ['clarke@beispielschule.de']
 # die alle Stundenpläne sehen können sollen
 CAN_SEE_ALL_TIMETABLES_USERS = []
 
+CAN_MANAGE_SALZH_USERS = []
+
 CAN_UPLOAD_VPLAN_USERS = []
 
 CAN_UPLOAD_FILES_USERS = []

@@ -707,6 +707,10 @@ window.addEventListener('load', function() {
             api_call('/api/toggle_door', {door: door});
         }
     });
+    $('.klasse-click-row').click(function(e) {
+        let row = $(e.target).closest('tr');
+        window.location.href = `/directory/${row.data('klasse')}`;
+    });
 });
 
 function install_clipboard_handler(selector) {

@@ -304,14 +304,16 @@ function filter_events_by_timestamp(events, now) {
 }
 
 
-function load_recipients(id, callback, also_load_ext_users) {
+function load_recipients(id, callback, also_load_ext_users, sus_only) {
     let antikenfahrt_recipients = window.antikenfahrt_recipients;
     if (typeof(antikenfahrt_recipients) === 'undefined')
         antikenfahrt_recipients = {recipients: {}, groups: []};
-    if (typeof(also_load_ext_users) === 'undefined')
+    if (typeof(also_load_ext_users) === 'undefined' || also_load_ext_users === null)
         also_load_ext_users = {groups: [], recipients: {}, order: []};
     if (typeof(can_handle_external_users) === 'undefined')
         can_handle_external_users = false;
+    if (typeof(sus_only) === 'undefined')
+        sus_only = false;
     let uri = '/gen/w/' + id + '/recipients.json.gz';
     var oReq = new XMLHttpRequest();
     oReq.open('GET', uri, true);
@@ -331,7 +333,17 @@ function load_recipients(id, callback, also_load_ext_users) {
                     entries.groups.push(group);
                     entries.recipients[group] = antikenfahrt_recipients.recipients[group];
                 }
-                console.log(entries);
+                if (sus_only) {
+                    entries.groups = [];
+                    let new_recipients = {};
+                    for (let key in entries.recipients) {
+                        if (key.charAt(0) != '/' && (entries.recipients[key].teacher || false) === false) {
+                            new_recipients[key] = entries.recipients[key];
+                        }
+                    }
+                    entries.recipients = new_recipients;
+                }
+                // console.log(entries);
                 for (let group of also_load_ext_users.groups)
                     entries.groups.push(group);
                 for (let key in also_load_ext_users.recipients) {

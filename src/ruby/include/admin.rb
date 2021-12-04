@@ -178,7 +178,7 @@ class Main < Sinatra::Base
             io.puts "<th>E-Mail-Adresse</th>"
             io.puts "<th>Stundenplan</th>"
             io.puts "<th>Anmelden</th>"
-            io.puts "<th>Homeschooling</th>"
+            # io.puts "<th>Homeschooling</th>"
             io.puts "<th>Sessions</th>"
             io.puts "</tr>"
             io.puts "</thead>"
@@ -198,11 +198,11 @@ class Main < Sinatra::Base
                     io.puts "</td>"
                     io.puts "<td><a class='btn btn-xs btn-secondary' href='/timetable/#{user[:id]}'><i class='fa fa-calendar'></i>&nbsp;&nbsp;Stundenplan</a></td>"
                     io.puts "<td><button class='btn btn-warning btn-xs btn-impersonate' data-impersonate-email='#{user[:email]}'><i class='fa fa-id-badge'></i>&nbsp;&nbsp;Anmelden</button></td>"
-                    if all_homeschooling_users.include?(email)
-                        io.puts "<td><button class='btn btn-info btn-xs btn-toggle-homeschooling' data-email='#{user[:email]}'><i class='fa fa-home'></i>&nbsp;&nbsp;zu Hause</button></td>"
-                    else
-                        io.puts "<td><button class='btn btn-secondary btn-xs btn-toggle-homeschooling' data-email='#{user[:email]}'><i class='fa fa-building'></i>&nbsp;&nbsp;Präsenz</button></td>"
-                    end
+                    # if all_homeschooling_users.include?(email)
+                    #     io.puts "<td><button class='btn btn-info btn-xs btn-toggle-homeschooling' data-email='#{user[:email]}'><i class='fa fa-home'></i>&nbsp;&nbsp;zu Hause</button></td>"
+                    # else
+                    #     io.puts "<td><button class='btn btn-secondary btn-xs btn-toggle-homeschooling' data-email='#{user[:email]}'><i class='fa fa-building'></i>&nbsp;&nbsp;Präsenz</button></td>"
+                    # end
                     if all_sessions.include?(email)
                         io.puts "<td><button class='btn-sessions btn btn-xs btn-secondary' data-sessions-id='#{@@user_info[email][:id]}'>#{all_sessions[email].size} Session#{all_sessions[email].size == 1 ? '' : 's'}</button></td>"
                     else

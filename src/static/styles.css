@@ -1631,7 +1631,7 @@ span.bv {
 /*     cursor: pointer; */
 }
 
-.klassen_table {
+/* .klassen_table {
     table-layout: fixed;
 }
 
@@ -1646,7 +1646,7 @@ span.bv {
 }
 .klassen_table th:nth-child(6), .klassen_table td:nth-child(6) {
     width: 25%;
-}
+} */
 
 
 /*.input-private, .input-private:focus {
@@ -2347,4 +2347,10 @@ li.nav-item a.nav-link i.fa {
 
 .input-group {
     flex-wrap: nowrap;
+}
+
+.klasse-click-row:hover {
+    cursor: pointer;
+    outline: 1px solid rgba(0,0,0,0.2);
+    box-shadow: 0 0 10px rgba(0,0,0,0.2);
 }

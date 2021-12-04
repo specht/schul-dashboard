@@ -1,0 +1,405 @@
+#{this_is_a_page_for_logged_in_users_who_can_manage_salzh}
+<div class='container' style='padding-top: 30px;'>
+    <div class='row'>
+        <div class='col-md-8 offset-md-2'>
+            <h2 style='margin-bottom: 30px;'>Schülerinnen und Schüler im saLzH</h2>
+            <!-- <hr /> -->
+            <div style='text-align: right'>
+                <button class='btn btn-success bu-add-salzh'><i class='fa fa-pencil'></i>&nbsp;&nbsp;Eintragen</button>
+            </div>
+            <hr />
+            <table class='table table-narrow narrow'>
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Letzter Tag im saLzH</th>
+                        <th>Bearbeiten</th>
+                    </tr>
+                </thead>
+                <tbody id='salzh_sus_here'>
+
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<div class="modal" id="composeModal" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Neuer Eintrag</h5>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <input id='ti_recipients' class='form-control' placeholder='Schülerinnen oder Schüler suchen…'>
+                    <div class='recipient-input-dropdown' style='display: none;'></div></input>
+                </div>
+                <div class="form-group row">
+                    <label for="ti_email" class="col-sm-3 col-form-label">Name:</label>
+                    <div class="col-sm-9">
+                        <input type="text" readonly class="form-control" id="ti_email" placeholder="">
+                    </div>
+                </div>
+                <div class="form-group row">
+                    <label for="ti_end_date" class="col-sm-3 col-form-label">Letzter Tag im saLzH:</label>
+                    <div class="col-sm-9">
+                        <input type="date" class="form-control" id="ti_end_date" />
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <div id='publish_message_btn_container'>
+                    <button id='bu_discard_message' class='btn btn-outline-secondary' disabled><i
+                            class='fa fa-times'></i>&nbsp;&nbsp;<span>Verwerfen</span></button>
+                    <button id='bu_send_message' class='btn btn-outline-secondary' disabled><i
+                            class='fa fa-check'></i>&nbsp;&nbsp;<span>Speichern</span></button>
+                </div>
+                <button id='bu_delete_message' type="button" class="btn btn-outline-secondary" disabled
+                    style='display: none;'><i class='fa fa-trash'></i>&nbsp;&nbsp;Nachricht löschen</button>
+                <button id='bu_close_message_modal' type="button" class="btn btn-secondary"
+                    data-dismiss="modal">Schließen</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    var recipients = {};
+    var recipients_cache = {};
+    var autocomplete_results = {};
+    var klasse_for_sus = #{ klasse_for_sus().to_json};
+    var old_end_date = null;
+    var observer = null;
+    var sent_messages = #{ sent_messages.to_json };
+    var antikenfahrt_recipients = #{@@antikenfahrt_recipients.to_json};
+    var message_cache = {};
+    var force_close = false;
+    var current_salzh_entries = #{ get_current_salzh_sus.to_json };
+
+    function can_send() {
+        let email = $('#ti_email').data('email');
+        let end_date = $('#ti_end_date').val();
+        return email != null && end_date.length > 0;
+    }
+
+    function pending_changes() {
+        if (old_end_date === null) {
+            let email = $('#ti_email').data('email') || '';
+            return email.length > 0;
+        }
+        let end_date = $('#ti_end_date').val();
+        return (end_date != old_end_date);
+    }
+
+    function update_buttons() {
+        $('#bu_delete_message').prop('disabled', true).hide().addClass('btn-outline-secondary').removeClass('btn-danger');
+        $('#bu_discard_message span').html('Verwerfen');
+        $('#bu_send_message span').html('Speichern');
+        if (pending_changes()) {
+            $('#bu_discard_message').removeClass('btn-outline-secondary').addClass('btn-secondary').prop('disabled', false);
+            $('#bu_close_message_modal').removeClass('btn-secondary').addClass('btn-outline-secondary').prop('disabled', true);
+            if (can_send())
+                $('#bu_send_message').removeClass('btn-outline-secondary').addClass('btn-success').prop('disabled', false);
+            else
+                $('#bu_send_message').removeClass('btn-success').addClass('btn-outline-secondary').prop('disabled', true);
+        } else {
+            $('#bu_discard_message').removeClass('btn-secondary').addClass('btn-outline-secondary').prop('disabled', true);
+            $('#bu_close_message_modal').removeClass('btn-outline-secondary').addClass('btn-secondary').prop('disabled', false);
+            $('#bu_send_message').removeClass('btn-success').addClass('btn-outline-secondary').prop('disabled', true);
+        }
+    }
+
+    function discard_message() {
+        force_close = true;
+        $('#composeModal').modal('hide');
+    }
+
+    function send_message() {
+        let email = $('#ti_email').data('email');
+        let end_date = $('#ti_end_date').val();
+        api_call('/api/update_salzh_for_sus', { email: email, end_date: end_date }, function (data) {
+            if (data.success) {
+                force_close = true;
+                $('#composeModal').modal('hide');
+                window.location.reload();
+            }
+        });
+    }
+
+    function delete_message() {
+        api_call('/api/delete_message', { mid: old_mid }, function (data) {
+            if (data.success) {
+                old_message = $('#summernote').summernote('code');
+                $('#composeModal').modal('hide');
+                sent_messages = sent_messages.filter(x => x.mid !== data.mid);
+            }
+        });
+    }
+
+    function gen_recipient_span(key, with_rm) {
+        if (!(key in recipients))
+            recipients[key] = { label: key };
+        let label = recipients[key].label;
+        if (recipients[key].entries)
+            label += ' (' + recipients[key].entries.length + ')';
+        if (key in klasse_for_sus)
+            label += ` (${klasse_for_sus[key]})`;
+        let recipient = $('<span>').addClass('recipient').html(label);
+        if (recipients[key].teacher)
+            recipient.addClass('teacher');
+        recipient.data('key', key);
+        return recipient;
+    }
+
+    function add_recipient(key) {
+        $('#ti_email').val(gen_recipient_span(key, true).text());
+        $('#ti_email').data('email', key);
+        $('.recipients_list').empty().append(gen_recipient_span(key, true));
+        $('.recipient-input-dropdown').hide();
+        $('#ti_recipients').val('');
+        $('#ti_recipients').focus();
+        update_buttons();
+    }
+
+    function observer_callback(entries, observer) {
+        for (let entry of entries) {
+            if (entry.intersectionRatio === 0)
+                continue;
+            observer.unobserve(entry.target);
+            let entry_data = $(entry.target).data();
+            if (entry_data.mid) {
+                (function (entry_data) {
+                    let request = new XMLHttpRequest();
+                    let uri = '/gen/m/' + entry_data.mid.substr(0, 2) + '/' + entry_data.mid.substr(2, entry_data.mid.length - 2) + '.html.gz';
+                    request.open('GET', uri, true);
+                    request.responseType = 'arraybuffer';
+
+                    request.onload = function (e) {
+                        if (e.target.status === 200) {
+                            let data = pako.ungzip(request.response);
+                            let bb = new Blob([new Uint8Array(data)]);
+                            let f = new FileReader();
+                            f.onload = function (e) {
+                                let contents = e.target.result;
+                                message_cache[entry_data.mid] = contents;
+                                if (entry_data.strip)
+                                    $(entry_data.msg_div).html($(contents).text());
+                                else
+                                    $(entry_data.msg_div).html(contents);
+                            };
+                            f.readAsText(bb);
+                        }
+                    };
+                    request.send();
+                })(entry_data);
+            }
+        }
+    }
+
+    function compact_address_list(emails) {
+        let result = [];
+        for (let key of recipients_cache.groups) {
+            let all_in = true;
+            for (let email of recipients[key].entries) {
+                if (emails.indexOf(email) < 0) {
+                    all_in = false;
+                    break;
+                }
+            }
+            if (all_in) {
+                result.push(key);
+                let new_emails = [];
+                for (let email of emails)
+                    if (recipients[key].entries.indexOf(email) < 0)
+                        new_emails.push(email);
+                emails = new_emails;
+            }
+        }
+        for (let email of emails)
+            result.push(email);
+        return result;
+    }
+
+    function compose_message() {
+        $('#ti_email').val('');
+        $('#ti_email').data('email', null);
+        $('#ti_end_date').val('');
+        $('#composeModal .modal-title').text('Neuer Eintrag');
+        $('#composeModal').modal('show');
+        old_end_date = null;
+        force_close = false;
+        $('#ti_recipients').show();
+        $('#ti_recipients').val('');
+        $('#ti_recipients').focus();
+        update_buttons();
+    }
+
+    document.addEventListener('DOMContentLoaded', function () {
+        observer = new IntersectionObserver(observer_callback, {
+            rootMargin: '100px',
+            threshold: 1.0
+        });
+
+        $('#composeModal').on('hide.bs.modal', function (e) {
+            if ($(e.target).attr('id') === 'composeModal' && pending_changes() && (!force_close)) {
+                $('#publish_message_btn_container').effect('shake', { direction: 'left', distance: 4 });
+                e.preventDefault();
+                e.stopImmediatePropagation();
+                return false;
+            }
+        });
+
+        $('.bu-add-salzh').click(function (e) {
+            compose_message();
+        });
+
+        $('#bu_discard_message').click(function (e) {
+            discard_message();
+        });
+
+        $('#bu_send_message').click(function (e) {
+            send_message();
+        });
+
+        $('#bu_delete_message').click(function (e) {
+            showTemplateModal('Nachricht löschen',
+                'Sind Sie sicher, dass Sie diese Nachricht löschen möchten?',
+                "<i class='fa fa-trash'></i>&nbsp;&nbsp;Nachricht löschen", 'btn-danger',
+                'Abbrechen', 'btn-secondary', function () {
+                    delete_message();
+                }
+            );
+        });
+
+        $('#bu-inbox').click(function (e) {
+            $('#bu-inbox').removeClass('btn-outline-secondary').addClass('btn-primary');
+            $('#bu-outbox').removeClass('btn-primary').addClass('btn-outline-secondary');
+            $('.messages-container-inbox').show();
+            $('.messages-container-outbox').hide();
+        });
+
+        $('#bu-outbox').click(function (e) {
+            $('#bu-outbox').removeClass('btn-outline-secondary').addClass('btn-primary');
+            $('#bu-inbox').removeClass('btn-primary').addClass('btn-outline-secondary');
+            $('.messages-container-outbox').show();
+            $('.messages-container-inbox').hide();
+        });
+
+        $('#ti_recipients').keydown(function (e) {
+            if ((e.keyCode === 9 || e.keyCode === 13) && ($(e.target).val().length > 0)) {
+                if (Object.keys(autocomplete_results).length === 1) {
+                    let key = recipients_cache.keys[Object.keys(autocomplete_results)[0]];
+                    add_recipient(key);
+                }
+                e.preventDefault();
+                e.stopPropagation();
+                return;
+            }
+        });
+        $('#ti_recipients').keyup(function (e) {
+            if ($('#ti_recipients')[0].selectionStart == $(e.target).val().length) {
+                let value = $(e.target).val();
+                let backspace_pressed = (e.keyCode === 8);
+                let space_at_end = value[value.length - 1] == ' ';
+                let search_terms = value.trim().toLowerCase().split(/\s+/);
+                let results = {};
+                for (let i = 0; i < search_terms.length; i++) {
+                    let term = search_terms[i];
+                    let term_results = {};
+                    for (let key of Object.keys(recipients_cache.index[term] || {})) {
+                        term_results[key] = recipients_cache.index[term][key];
+                    }
+                    if (i == 0)
+                        results = term_results;
+                    else {
+                        for (let k of Object.keys(results)) {
+                            if (k in term_results) {
+                                if (term_results[k] > results[k])
+                                    results[k] = term_results[k];
+                            } else {
+                                delete results[k];
+                            }
+                        }
+                    }
+                }
+                autocomplete_results = results;
+                result_keys = Object.keys(results).map(function (x) { return parseInt(x); });
+                if (result_keys.length === 0)
+                    $('.recipient-input-dropdown').hide();
+                else {
+                    if (result_keys.length === 1) {
+                        if (!backspace_pressed) {
+                            let key = recipients_cache.keys[result_keys[0]];
+                            let label = recipients[key].label;
+                            $('#ti_recipients').val(label);
+                            $('#ti_recipients')[0].setSelectionRange(results[result_keys[0]] + (space_at_end ? 1 : 0), label.length);
+                        }
+                    }
+                    result_keys.sort(function (a, b) {
+                        let va = recipients[recipients_cache.keys[a]];
+                        let vb = recipients[recipients_cache.keys[b]];
+                        if (va.teacher === vb.teacher) {
+                            if (va.label < vb.label)
+                                return -1;
+                            return 1;
+                        } else {
+                            if (va.teacher)
+                                return -1;
+                            return 1;
+                        }
+                    });
+                    $('.recipient-input-dropdown').empty();
+                    for (let key of result_keys) {
+                        let k = recipients_cache.keys[key];
+                        let r = gen_recipient_span(k);
+                        r.click(function (e) {
+                            add_recipient($(e.target).data('key'));
+                        });
+                        $('.recipient-input-dropdown').append(r);
+                    }
+                    $('.recipient-input-dropdown').show();
+                }
+            }
+        });
+        if ('#{teacher_or_sv_logged_in?}' === 'true') {
+            load_recipients('#{@session_user[:id]}', function () {
+                // console.log(recipients);
+            }, null, true);
+        }
+        $('#ti_end_date').change(function () {
+            update_buttons();
+        });
+
+        moment.locale('de');
+        for (let entry of current_salzh_entries) {
+            let row = $('<tr>');
+            row.data('email', entry.email);
+            row.data('name', `${entry.name} (${entry.klasse})`);
+            row.data('end_date', entry.end_date);
+            row.append($('<td>').text(`${entry.name} (${entry.klasse})`));
+            row.append($('<td>').text(moment(entry.end_date).format('ddd, DD.MM.YYYY')));
+            let button = $('<button>').addClass('btn').addClass('btn-sm').addClass('btn-warning').html("<i class='fa fa-pencil'></i>&nbsp;&nbsp;Bearbeiten");
+            row.append($('<td>').append(button));
+            $('#salzh_sus_here').append(row);
+            button.click(function(e) {
+                let row = $(e.target).closest('tr');
+                let email = row.data('email');
+                let name = row.data('name');
+                let end_date = row.data('end_date');
+                old_end_date = end_date;
+                $('#ti_email').val(name);
+                $('#ti_email').data('email', email);
+                $('#ti_end_date').val(end_date);
+                $('#composeModal .modal-title').text('Eintrag bearbeiten');
+                $('#composeModal').modal('show');
+                force_close = false;
+                $('#ti_recipients').hide();
+                $('#ti_recipients').val('');
+                $('#ti_recipients').focus();
+                update_buttons();
+            });
+        }
+        // $('.bu-add-salzh').click();
+    });
+</script>

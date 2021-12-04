@@ -60,6 +60,12 @@
         margin: 1vw 0;
         position: relative;
         color: #{color_palette[:darker]};
+        transition: background-color 1000ms linear;
+    }
+
+    .klasse.highlight {
+        background-color: rgba(250, 211, 28, 0.9);
+        transition: background-color 1000ms linear;
     }
 
     .main .klasse {
@@ -401,6 +407,7 @@
     .la_shorthands h3.highlight{
         font-weight: bold;
         background-color: #fff;
+        cursor: pointer;
     }
 
     .main_lz div:nth-child(2) .heading {
@@ -663,8 +670,27 @@
                             $('.la_today_shorthands').append(e);
                             if (data_today.lehrer[shorthand] && data_today.lehrer[shorthand].length > 0) {
                                 e.addClass('highlight');
+                                e.data('shorthand', shorthand);
+                                e.click(function(e) {
+                                    let shorthand = $(e.target).closest('h3').data('shorthand');
+                                    console.log(`scroll to ${shorthand}`);
+                                    let boxes = $('.main_lz_left .box-teacher-' + shorthand);
+                                    let current_scroll = $('.main_lz_left').scrollTop();
+                                    for (let box of boxes) {
+                                        let top = $(box).position().top - 100;
+                                        if (top > current_scroll) {
+                                            klassen_animation_config['sus'].phase = 0;
+                                            klassen_animation_config['sus'].timestamp = last_timestamp + top_delay;
+                                            $('.main_lz_left').animate({ scrollTop: top }, 1000);
+                                            $(box).addClass('highlight');
+                                            setTimeout(function() { $(box).removeClass('highlight');}, 5000);
+                                            break;
+                                        }
+                                    }
+                                });
                                 let box = $('<div>');
                                 let div = $('<div>').addClass('klasse').appendTo(box);
+                                div.addClass('box-teacher-' + shorthand);
                                 div.append($('<h3>').text(shorthand))
                                 let content = $('<div>').addClass('content').appendTo(div);
                                 $(l).append(box);
@@ -682,8 +708,27 @@
                             $('.la_tomorrow_shorthands').append(e);
                             if (data_tomorrow.lehrer[shorthand] && data_tomorrow.lehrer[shorthand].length > 0) {
                                 e.addClass('highlight');
+                                e.data('shorthand', shorthand);
+                                e.click(function(e) {
+                                    let shorthand = $(e.target).closest('h3').data('shorthand');
+                                    console.log(`scroll to ${shorthand}`);
+                                    let boxes = $('.main_lz_right .box-teacher-' + shorthand);
+                                    let current_scroll = $('.main_lz_right').scrollTop();
+                                    for (let box of boxes) {
+                                        let top = $(box).position().top - 100;
+                                        if (top > current_scroll) {
+                                            klassen_animation_config['lehrer'].phase = 0;
+                                            klassen_animation_config['lehrer'].timestamp = last_timestamp + top_delay;
+                                            $('.main_lz_right').animate({ scrollTop: top }, 1000);
+                                            $(box).addClass('highlight');
+                                            setTimeout(function() { $(box).removeClass('highlight');}, 5000);
+                                            break;
+                                        }
+                                    }
+                                });
                                 let box = $('<div>');
                                 let div = $('<div>').addClass('klasse').appendTo(box);
+                                div.addClass('box-teacher-' + shorthand);
                                 div.append($('<h3>').text(shorthand))
                                 let content = $('<div>').addClass('content').appendTo(div);
                                 $(l).append(box);

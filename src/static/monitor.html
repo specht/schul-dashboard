@@ -265,7 +265,7 @@
         width: 50vw;
         position: absolute;
         left: -0.5vw;
-        top: 6vw;
+        top: 8.5vw;
         bottom: 5vw;
         padding: 0 0.5vw 1.5vw 0.5vw;
     }
@@ -288,7 +288,7 @@
         width: 50vw;
         position: absolute;
         left: 48.5vw;
-        top: 6vw;
+        top: 8.5vw;
         bottom: 5vw;
         padding: 0 0.5vw 1.5vw 0.5vw;
     }
@@ -361,8 +361,8 @@
         display: inline-block;
         font-size: 1vw;
         font-weight: bold;
-        overflow: scroll;   
-        white-space: nowrap;
+        /* overflow: scroll;    */
+        /* white-space: nowrap; */
         width: 47vw;
         position: relative;
         left: -1vw;
@@ -386,11 +386,21 @@
     .la_shorthands h3 {
         position: unset;
         margin-right: 0.2vw;
-        width: 2vw;
-        height: 2vw;
-        font-size: 1vw;
-        padding-top: 0.4vw;
-        border-radius: 0.85vw;
+        width: 1.4vw;
+        height: 1.4vw;
+        font-size: 0.7vw;
+        padding-top: 0.3vw;
+        border-radius: 0.55vw;
+        display: inline-block;
+        margin: 0.07vw;
+        font-weight: normal;
+        background-color: rgba(255,255,255,0.5);
+        box-shadow: none;
+    }
+
+    .la_shorthands h3.highlight{
+        font-weight: bold;
+        background-color: #fff;
     }
 
     .main_lz div:nth-child(2) .heading {
@@ -467,6 +477,7 @@
     var klassen = #{ KLASSEN_ORDER.to_json };
     var klassen_tr = #{ KLASSEN_TR.to_json };
     var shorthand_order = #{ @@shorthand_order.to_json };
+    var real_shorthands = shorthand_order.filter((x) => x.charAt(0) != '_' );
     var attribution = #{@@color_scheme_info[color_scheme[0, 19]].to_json};
     var klassen_div = {};
     var klassen_animation_config = {};
@@ -647,9 +658,11 @@
                         $('.la_today_shorthands').empty();
                         $('.main_lz_left > .wrapper > div').empty();
                         let l = $('.main_lz_left > .wrapper > div')[0];
-                        for (let shorthand of shorthand_order) {
+                        for (let shorthand of real_shorthands) {
+                            let e = $('<h3>').text(shorthand);
+                            $('.la_today_shorthands').append(e);
                             if (data_today.lehrer[shorthand] && data_today.lehrer[shorthand].length > 0) {
-                                $('.la_today_shorthands').append($('<h3>').text(shorthand));
+                                e.addClass('highlight');
                                 let box = $('<div>');
                                 let div = $('<div>').addClass('klasse').appendTo(box);
                                 div.append($('<h3>').text(shorthand))
@@ -664,9 +677,11 @@
                         $('.la_tomorrow_shorthands').empty();
                         $('.main_lz_right > .wrapper > div').empty();
                         l = $('.main_lz_right > .wrapper > div')[0];
-                        for (let shorthand of shorthand_order) {
+                        for (let shorthand of real_shorthands) {
+                            let e = $('<h3>').text(shorthand);
+                            $('.la_tomorrow_shorthands').append(e);
                             if (data_tomorrow.lehrer[shorthand] && data_tomorrow.lehrer[shorthand].length > 0) {
-                                $('.la_tomorrow_shorthands').append($('<h3>').text(shorthand));
+                                e.addClass('highlight');
                                 let box = $('<div>');
                                 let div = $('<div>').addClass('klasse').appendTo(box);
                                 div.append($('<h3>').text(shorthand))

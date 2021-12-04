@@ -77,6 +77,7 @@
     var message_cache = {};
     var force_close = false;
     var current_salzh_entries = #{ get_current_salzh_sus.to_json };
+    var klassen_tr = #{ KLASSEN_TR.to_json };
 
     function can_send() {
         let email = $('#ti_email').data('email');
@@ -378,7 +379,7 @@
             row.data('email', entry.email);
             row.data('name', `${entry.name} (${entry.klasse})`);
             row.data('end_date', entry.end_date);
-            row.append($('<td>').text(`${entry.name} (${entry.klasse})`));
+            row.append($('<td>').text(`${entry.name} (${klassen_tr[entry.klasse] || entry.klasse})`));
             row.append($('<td>').text(moment(entry.end_date).format('ddd, DD.MM.YYYY')));
 
             let button = $('<button>').addClass('btn').addClass('btn-sm').addClass('btn-warning').html("<i class='fa fa-pencil'></i>&nbsp;&nbsp;Bearbeiten");

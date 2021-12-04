@@ -108,7 +108,7 @@ class Main < Sinatra::Base
                 # io.puts "<tr><th>Klasse</th><th>SuS</th></tr>"
                 KLASSEN_ORDER.each do |klasse|
                     next unless all_klassen.include?(klasse)
-                    io.puts "<tr class='klasse-click-row' data-klasse='#{klasse}'><td><strong>Klasse #{klasse}</strong></td><td>#{all_klassen[klasse].size} SuS</td></tr>"
+                    io.puts "<tr class='klasse-click-row' data-klasse='#{klasse}'><td><strong>Klasse #{tr_klasse(klasse)}</strong></td><td>#{all_klassen[klasse].size} SuS</td></tr>"
                 end
                 io.puts "</table></div>"
                 io.puts "</div>"

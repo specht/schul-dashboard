@@ -277,7 +277,7 @@ class Main < Sinatra::Base
         @@user_info.each_pair do |email, info|
             next if info[:teacher]
             next unless info[:klasse]
-            result[email] = info[:klasse]
+            result[email] = Main.tr_klasse(info[:klasse])
         end
         result
     end

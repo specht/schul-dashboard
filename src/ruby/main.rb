@@ -1003,6 +1003,16 @@ class Main < Sinatra::Base
             end
         end
 
+        @@schueler_for_teacher = {}
+        @@lessons_for_shorthand.each_pair do |shorthand, lesson_keys|
+            @@schueler_for_teacher[shorthand] ||= Set.new()
+            lesson_keys.each do |lesson_key|
+                (@@schueler_for_lesson[lesson_key] || []).each do |email|
+                    @@schueler_for_teacher[shorthand] << email
+                end
+            end
+        end
+
         @@pausenaufsichten = parser.parse_pausenaufsichten(@@config)
 
         @@mailing_lists = {}

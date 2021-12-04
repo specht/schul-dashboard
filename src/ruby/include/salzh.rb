@@ -11,15 +11,25 @@ class Main < Sinatra::Base
         respond(:ok => true)
     end
 
-    def get_current_salzh_sus
+    post '/api/delete_salzh_entry' do
+        require_user_who_can_manage_salzh!
+        data = parse_request_data(:required_keys => [:email])
+        neo4j_query(<<~END_OF_QUERY, :email => data[:email])
+            MATCH (s:Salzh)-[:BELONGS_TO]->(u:User {email: {email}})
+            DETACH DELETE s;
+        END_OF_QUERY
+        respond(:ok => true)
+    end
+
+    def self.get_current_salzh_sus
         today = Date.today.strftime('%Y-%m-%d')
         # purge stale salzh entries
-        neo4j_query(<<~END_OF_QUERY, :today => today)
+        $neo4j.neo4j_query(<<~END_OF_QUERY, :today => today)
             MATCH (s:Salzh)-[:BELONGS_TO]->(u:User)
             WHERE s.end_date < {today}
             DETACH DELETE s;
         END_OF_QUERY
-        rows = neo4j_query(<<~END_OF_QUERY, :today => today)
+        rows = $neo4j.neo4j_query(<<~END_OF_QUERY, :today => today)
             MATCH (s:Salzh)-[:BELONGS_TO]->(u:User)
             RETURN s, u
             ORDER BY s.end_date;
@@ -41,10 +51,14 @@ class Main < Sinatra::Base
         entries
     end
 
+    def get_current_salzh_sus
+        Main.get_current_salzh_sus
+    end
+
     def get_current_salzh_sus_for_logged_in_teacher
         entries = get_current_salzh_sus
         entries.select! do |entry|
-            @@klassen_for_shorthand[@session_user[:shorthand]].include?(entry[:klasse])
+            @@schueler_for_teacher[@session_user[:shorthand]].include?(entry[:email])
         end
         entries
     end
@@ -70,7 +84,7 @@ class Main < Sinatra::Base
             return '' if entries.empty?
             StringIO.open do |io|
                 io.puts "<div class='hint'>"
-                io.puts "<p><strong>SuS im saLzH</strong></p>"
+                io.puts "<p><strong><div style='display: inline-block; padding: 4px; margin: -4px; border-radius: 4px' class='bg-warning'>SuS im saLzH</div></strong></p>"
                 all_klassen = {}
                 entries.each do |x| 
                     all_klassen[x[:klasse]] ||= []

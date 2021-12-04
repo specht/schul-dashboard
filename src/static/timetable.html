@@ -495,6 +495,10 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (event_data.booked_tablet_sets) {
                     markers.append($('<span>').css('font-weight', 'normal').html(`<i class='fa fa-tablet'></i> x${event_data.booked_tablet_sets_total_count}`));
                 }
+                let salzh_sus = arg.event.extendedProps.salzh_sus || [];
+                if (salzh_sus.length > 0) {
+                    markers.append($('<span>').css('font-weight', 'normal').html(`<i class='fa fa-home'></i> x${salzh_sus.length}`));
+                }
                 if (event_data.lesson_nc || event_data.homework_nc)
                     markers.append($('<span>').addClass('mute').html('NC'));
                 if (event_data.lesson_lr || event_data.homework_lr)
@@ -790,6 +794,12 @@ document.addEventListener('DOMContentLoaded', function() {
                     let item = $('<li>').html(`<strong>${tablet_set_id}</strong> (${tablet_set_info[tablet_set_id].count} Tablets): ${tablet_set_info[tablet_set_id].standort}`);//<br/>___PRINT_HINTS_HERE___Die Tablets werden schon 5 Minuten nach Stundenende schon wieder gebraucht)`);
                     list.append(item);
                 }
+                wrote_something = true;
+            }
+            let salzh_sus = event.salzh_sus || [];
+            if (salzh_sus.length > 0) {
+                let p = $('<p>').html(`In dieser Unterrichtsstunde befinde${salzh_sus.length === 1 ? 't': 'n'} sich ${salzh_sus.length} SuS im saLzH: ${salzh_sus.map((x) => {return `<div class='bg-warning' style='display: inline-block; padding: 2px 4px; margin: -2px 0px; border-radius: 4px;'>${x}</div>`; }).join(', ')}.`);
+                body.append(p);
                 wrote_something = true;
             }
             if (event_data.lesson_jitsi || event_data.lesson_nc || event_data.lesson_lr) {

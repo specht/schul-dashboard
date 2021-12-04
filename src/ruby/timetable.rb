@@ -286,6 +286,12 @@ class Timetable
         @@pausenaufsichten = Main.class_variable_get(:@@pausenaufsichten)
         @@tablets = Main.class_variable_get(:@@tablets)
         @@tablet_sets = Main.class_variable_get(:@@tablet_sets)
+        @@current_salzh_sus = Main.get_current_salzh_sus()
+        @@current_salzh_sus_by_email = {}
+        @@current_salzh_sus.each do |entry|
+            @@current_salzh_sus_by_email[entry[:email]] = entry[:end_date]
+        end
+
         
         lesson_offset = {}
 
@@ -1264,6 +1270,22 @@ class Timetable
                             if event[:lehrer_removed]
                                 if event[:lehrer_removed].include?(@@user_info[email][:shorthand])
                                     event[:entfall] = true
+                                end
+                            end
+                            event
+                        end
+                        # inject saLzH SuS for this lesson, if any
+                        fixed_events.map! do |event|
+                            if event[:lesson] && event[:lesson_key]
+                                lesson_sus = Set.new(@@schueler_for_lesson[event[:lesson_key]] || [])
+                                salzh_sus = Set.new(@@current_salzh_sus_by_email.keys)
+                                intersection = (lesson_sus & salzh_sus).select do |email|
+                                    @@current_salzh_sus_by_email[email] >= event[:datum]
+                                end
+                                if intersection.size > 0
+                                    event[:salzh_sus] = intersection.to_a.sort.map do |email|
+                                        @@user_info[email][:display_name]
+                                    end
                                 end
                             end
                             event

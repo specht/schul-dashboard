@@ -14,6 +14,7 @@
                         <th>Name</th>
                         <th>Letzter Tag im saLzH</th>
                         <th>Bearbeiten</th>
+                        <th>Löschen</th>
                     </tr>
                 </thead>
                 <tbody id='salzh_sus_here'>
@@ -379,11 +380,10 @@
             row.data('end_date', entry.end_date);
             row.append($('<td>').text(`${entry.name} (${entry.klasse})`));
             row.append($('<td>').text(moment(entry.end_date).format('ddd, DD.MM.YYYY')));
+
             let button = $('<button>').addClass('btn').addClass('btn-sm').addClass('btn-warning').html("<i class='fa fa-pencil'></i>&nbsp;&nbsp;Bearbeiten");
             row.append($('<td>').append(button));
-            $('#salzh_sus_here').append(row);
             button.click(function(e) {
-                let row = $(e.target).closest('tr');
                 let email = row.data('email');
                 let name = row.data('name');
                 let end_date = row.data('end_date');
@@ -399,6 +399,25 @@
                 $('#ti_recipients').focus();
                 update_buttons();
             });
+
+            button = $('<button>').addClass('btn').addClass('btn-sm').addClass('btn-danger').html("<i class='fa fa-trash'></i>&nbsp;&nbsp;Löschen");
+            row.append($('<td>').append(button));
+            button.click(function(e) {
+                let name = row.data('name');
+                let email = row.data('email');
+                showTemplateModal('Eintrag löschen',
+                    `Sind Sie sicher, dass Sie den Eintrag für ${name} löschen möchten?`,
+                    "<i class='fa fa-trash'></i>&nbsp;&nbsp;Eintrag löschen", 'btn-danger',
+                    'Abbrechen', 'btn-secondary', function () {
+                        api_call('/api/delete_salzh_entry', {email: email}, function(data) {
+                            if (data.success)
+                                window.location.reload();
+                        });
+                    }
+                );
+            });
+
+            $('#salzh_sus_here').append(row);
         }
         // $('.bu-add-salzh').click();
     });

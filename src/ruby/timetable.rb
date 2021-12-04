@@ -169,6 +169,8 @@ class Timetable
         monitor_data_package = {:data => {}}
         ts = DateTime.now.to_s
 
+        salzh_info = Main.get_current_salzh_sus_for_all_teachers()
+
         (0..1).each do |offset|
             monitor_date = Date.parse([@@config[:first_school_day], Date.today.to_s].max.to_s)
             while [6, 0].include?(monitor_date.wday) do
@@ -219,8 +221,33 @@ class Timetable
                 end
             end
             [:klassen, :lehrer].each do |which|
-                temp_data[which].each_pair do |key, entries|
+                it = temp_data[which]
+                if which == :lehrer
+                    it = {}
+                    @@lehrer_order.each do |email|
+                        shorthand = @@user_info[email][:shorthand]
+                        it[shorthand] = temp_data[which][shorthand] || {}
+                    end
+                end
+                it.each_pair do |key, entries|
                     monitor_data[which][key] = []
+                    if which == :lehrer && salzh_info[key]
+                        filtered = salzh_info[key].select do |x|
+                            x[:end_date] >= monitor_date
+                        end
+                        unless filtered.empty?
+                            klassen = {}
+                            filtered.each do |entry|
+                                klassen[entry[:klasse]] ||= {}
+                                klassen[entry[:klasse]][entry[:email]] = entry
+                            end
+                            klassen_sorted = klassen.keys.sort do |a, b|
+                                KLASSEN_ORDER.index(a) <=> KLASSEN_ORDER.index(b)
+                            end
+                            label = "<i class='fa fa-home'></i>&nbsp;&nbsp;Sie haben momentan <strong>#{filtered.size} SuS</strong> in <strong>#{klassen.size} Klasse#{klassen.size == 1 ? '' : 'n'} (#{klassen_sorted.join(', ')})</strong> im saLzH."
+                            monitor_data[which][key] << {:type => 'extra', :salzh_sus => filtered, :salzh_sus_label => label}
+                        end
+                    end
                     entries.values.each do |tuple|
                         tuple.each.with_index do |entry, i|
                             if i > 0
@@ -237,13 +264,17 @@ class Timetable
                         end
                     end
                     monitor_data[which][key].map! do |entry|
-                        if entry[:stunde_range].first == entry[:stunde_range].last
-                            entry[:stunde_label] = "#{entry[:stunde_range].first}."
+                        if entry[:type] == 'extra'
+                            entry
                         else
-                            entry[:stunde_label] = "#{entry[:stunde_range].first}. – #{entry[:stunde_range].last}."
+                            if entry[:stunde_range].first == entry[:stunde_range].last
+                                entry[:stunde_label] = "#{entry[:stunde_range].first}."
+                            else
+                                entry[:stunde_label] = "#{entry[:stunde_range].first}. – #{entry[:stunde_range].last}."
+                            end
+                            entry.delete(:stunde_range)
+                            entry
                         end
-                        entry.delete(:stunde_range)
-                        entry
                     end
                 end
             end
@@ -291,6 +322,7 @@ class Timetable
         @@current_salzh_sus.each do |entry|
             @@current_salzh_sus_by_email[entry[:email]] = entry[:end_date]
         end
+        @@lehrer_order = Main.class_variable_get(:@@lehrer_order)
 
         
         lesson_offset = {}

@@ -514,27 +514,36 @@
             if (!first_entry)
                 row.css('border-top', '1px solid rgba(0,0,0,0.3)')
             first_entry = false;
-            row.append($('<td>').css('width', '4vw').html(`<b>${entry.stunde_label}</b>`));
-            if (entry.klassen_alt) entry.klassen_alt = entry.klassen_alt.map(function(x) { return klassen_tr[x] || x; });
-            if (entry.klassen_neu) entry.klassen_neu = entry.klassen_neu.map(function(x) { return klassen_tr[x] || x; });
-            row.append($('<td>').html(gen_label_arr(entry.klassen_alt, entry.klassen_neu)));
-            row.append($('<td>').html(gen_label(entry.fach_alt, entry.fach_neu)));
-            row.append($('<td>').html(gen_label_arr(entry.lehrer_alt, entry.lehrer_neu)));
-            if (long) {
-                row.append($('<td>').html(gen_label(entry.raum_alt, entry.raum_neu)));
+            if (entry.type === 'extra') {
+                row.append($("<td colspan='5'>").html(`${entry.salzh_sus_label}`));
             } else {
-                row.append($('<td>').css('text-align', 'right').html(gen_label(entry.raum_alt, entry.raum_neu)));
-            }
-            if (long) {
-                row.append($('<td>').text(entry.vertretungs_text));
-
-            } else {
-                if (entry.vertretungs_text) {
-                    let row = $('<tr>').appendTo(table);
+                row.append($('<td>').css('width', '4vw').html(`<b>${entry.stunde_label}</b>`));
+                if (entry.klassen_alt) entry.klassen_alt = entry.klassen_alt.map(function(x) { return klassen_tr[x] || x; });
+                if (entry.klassen_neu) entry.klassen_neu = entry.klassen_neu.map(function(x) { return klassen_tr[x] || x; });
+                row.append($('<td>').html(gen_label_arr(entry.klassen_alt, entry.klassen_neu)));
+                if ((entry.fach_neu || '').substring(0, 5) === 'Test-') {
+                    row.append($('<td>').html(gen_label(entry.fach_alt, 'Testung')));
                     row.append($('<td>'));
-                    let cell = $('<td>').addClass('vertretungs_text').attr('colspan', '4');
-                    cell.append($('<span>').text(entry.vertretungs_text));
-                    row.append(cell);
+                } else {
+                    row.append($('<td>').html(gen_label(entry.fach_alt, entry.fach_neu)));
+                    row.append($('<td>').html(gen_label_arr(entry.lehrer_alt, entry.lehrer_neu)));
+                }
+                if (long) {
+                    row.append($('<td>').html(gen_label(entry.raum_alt, entry.raum_neu)));
+                } else {
+                    row.append($('<td>').css('text-align', 'right').html(gen_label(entry.raum_alt, entry.raum_neu)));
+                }
+                if (long) {
+                    row.append($('<td>').text(entry.vertretungs_text));
+
+                } else {
+                    if (entry.vertretungs_text) {
+                        let row = $('<tr>').appendTo(table);
+                        row.append($('<td>'));
+                        let cell = $('<td>').addClass('vertretungs_text').attr('colspan', '4');
+                        cell.append($('<span>').text(entry.vertretungs_text));
+                        row.append(cell);
+                    }
                 }
             }
         }
@@ -616,7 +625,7 @@
                         l = $('.main_sek_right > .wrapper > div')[0];
                         // r = $('.main_sek_right > .wrapper > div')[1];
                         for (let shorthand of shorthand_order) {
-                            if (data_today.lehrer[shorthand]) {
+                            if (data_today.lehrer[shorthand] && data_today.lehrer[shorthand].length > 0) {
                                 let box = $('<div>');
                                 let div = $('<div>').addClass('klasse').appendTo(box);
                                 div.append($('<h3>').text(shorthand))
@@ -639,7 +648,7 @@
                         $('.main_lz_left > .wrapper > div').empty();
                         let l = $('.main_lz_left > .wrapper > div')[0];
                         for (let shorthand of shorthand_order) {
-                            if (data_today.lehrer[shorthand]) {
+                            if (data_today.lehrer[shorthand] && data_today.lehrer[shorthand].length > 0) {
                                 $('.la_today_shorthands').append($('<h3>').text(shorthand));
                                 let box = $('<div>');
                                 let div = $('<div>').addClass('klasse').appendTo(box);
@@ -656,7 +665,7 @@
                         $('.main_lz_right > .wrapper > div').empty();
                         l = $('.main_lz_right > .wrapper > div')[0];
                         for (let shorthand of shorthand_order) {
-                            if (data_tomorrow.lehrer[shorthand]) {
+                            if (data_tomorrow.lehrer[shorthand] && data_tomorrow.lehrer[shorthand].length > 0) {
                                 $('.la_tomorrow_shorthands').append($('<h3>').text(shorthand));
                                 let box = $('<div>');
                                 let div = $('<div>').addClass('klasse').appendTo(box);

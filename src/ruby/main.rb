@@ -685,9 +685,7 @@ class Main < Sinatra::Base
             @@klassenleiter[record[:klasse]] = record[:klassenleiter]
         end
         @@shorthand_order = @@shorthands.keys.sort do |a, b|
-            ua = @@user_info[@@shorthands[a]]
-            ub = @@user_info[@@shorthands[b]]
-            ua[:last_name].downcase <=> ub[:last_name].downcase
+            a.downcase <=> b.downcase
         end
         
         @@lehrer_order.sort!() do |a, b|

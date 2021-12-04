@@ -63,6 +63,19 @@ class Main < Sinatra::Base
         entries
     end
 
+    def self.get_current_salzh_sus_for_all_teachers
+        all_entries = Main.get_current_salzh_sus
+        result = {}
+        @@lehrer_order.each do |email|
+            shorthand = @@user_info[email][:shorthand]
+            entries = all_entries.select do |entry|
+                (@@schueler_for_teacher[shorthand] || []).include?(entry[:email])
+            end
+            result[shorthand] = entries
+        end
+        result
+    end
+
     def print_salzh_panel
         require_user!
         unless teacher_logged_in?

@@ -57,8 +57,14 @@ class Main < Sinatra::Base
                 io.puts "<tr class='user_row'>"
                 io.puts "<td>#{_ + 1}.</td>"
                 io.puts "<td>#{user_icon(email, 'avatar-md')}</td>"
-                io.puts "<td>#{record[:last_name]}</td>"
-                io.puts "<td>#{record[:first_name]}</td>"
+                salzh_style = ''
+                salzh_class = ''
+                if all_salzh_users[email]
+                    salzh_style = 'padding: 2px 4px; margin: -2px -4px; display: inline-block; border-radius: 4px;'
+                    salzh_class = 'bg-warning'
+                end
+                io.puts "<td><div class='#{salzh_class}' style='#{salzh_style}'>#{record[:last_name]}</div></td>"
+                io.puts "<td><div class='#{salzh_class}' style='#{salzh_style}'>#{record[:first_name]}</div></td>"
                 io.puts "<td>"
                 print_email_field(io, record[:email])
                 io.puts "</td>"

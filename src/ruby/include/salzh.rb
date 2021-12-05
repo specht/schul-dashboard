@@ -103,7 +103,7 @@ class Main < Sinatra::Base
                     all_klassen[x[:klasse]] ||= []
                     all_klassen[x[:klasse]] << x[:email]
                 end
-                io.puts "<p>Momentan befinde#{entries.size == 1 ? 't' : 'n'} sich <strong>#{entries.size} SuS</strong> in <strong>#{all_klassen.size} Klasse#{all_klassen.size == 1 ? '' : 'n'}</strong> im pandemiebedingten saLzH. Bitte ermöglichen Sie diesen SuS nach Möglichkeit eine Teilnahme am Unterricht im saLzH.</p>"
+                io.puts "<p>Momentan befinde#{entries.size == 1 ? 't' : 'n'} sich <strong>#{entries.size} SuS</strong> in <strong>#{all_klassen.size} Klasse#{all_klassen.size == 1 ? '' : 'n'}</strong> im pandemiebedingten saLzH. Bitte ermöglichen Sie diesen SuS eine Teilnahme am Unterricht im saLzH.</p>"
                 io.puts "<div style='margin: 0 -10px 0 -10px;'><table class='table table-narrow narrow'>"
                 # io.puts "<tr><th>Klasse</th><th>SuS</th></tr>"
                 KLASSEN_ORDER.each do |klasse|

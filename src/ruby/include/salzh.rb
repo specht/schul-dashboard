@@ -58,7 +58,7 @@ class Main < Sinatra::Base
     def get_current_salzh_sus_for_logged_in_teacher
         entries = get_current_salzh_sus
         entries.select! do |entry|
-            @@schueler_for_teacher[@session_user[:shorthand]].include?(entry[:email])
+            (@@schueler_for_teacher[@session_user[:shorthand]] || []).include?(entry[:email])
         end
         entries
     end

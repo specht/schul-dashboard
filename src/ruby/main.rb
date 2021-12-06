@@ -417,6 +417,7 @@ class SetupDatabase
                     neo4j_query("CREATE CONSTRAINT ON (n:PresenceToken) ASSERT n.token IS UNIQUE")
                     neo4j_query("CREATE CONSTRAINT ON (n:Tablet) ASSERT n.id IS UNIQUE")
                     neo4j_query("CREATE CONSTRAINT ON (n:TabletSet) ASSERT n.id IS UNIQUE")
+                    neo4j_query("CREATE CONSTRAINT ON (n:PublicEventPerson) ASSERT n.tag IS UNIQUE")
                     neo4j_query("CREATE CONSTRAINT ON (n:MatrixAccessToken) ASSERT n.access_token IS UNIQUE")
 #                     neo4j_query("CREATE CONSTRAINT ON (n:PredefinedExternalUser) ASSERT n.email IS UNIQUE")
                     neo4j_query("CREATE CONSTRAINT ON (n:KnownEmailAddress) ASSERT n.email IS UNIQUE")

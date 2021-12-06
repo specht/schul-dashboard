@@ -7,5 +7,17 @@
 <script>
     document.addEventListener('DOMContentLoaded', function() {
         install_clipboard_handler('.btn-clipboard');
+        $('.bu-delete').click(function(e) {
+            let tag = $($(e.target).closest('.bu-delete')).data('tag');
+            showTemplateModal('Anmeldung löschen',
+                'Sind Sie sicher, dass Sie diese Anmeldung löschen möchten?',
+                "<i class='fa fa-trash'></i>&nbsp;&nbsp;Anmeldung löschen", 'btn-danger',
+                'Abbrechen', 'btn-secondary', function () {
+                    api_call('/api/delete_sign_up_for_event', {tag: tag}, function(data) {
+                        if (data.success)
+                            window.location.reload();
+                    });
+                });
+        });
     });
 </script>

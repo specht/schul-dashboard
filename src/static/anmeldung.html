@@ -1,3 +1,4 @@
+#{this_is_a_page_for_logged_in_admins}
 <style>
     b.key {
         display: inline-block;
@@ -19,14 +20,35 @@
 <div class='container' style='padding-top: 30px;'>
     <div class='row'>
         <div class='col-md-12'>
-            <h3>Anmeldung zum Informationsabend für Viertklässler-Eltern</h3>
-            <p>Zurzeit gehen wir davon aus, dass wir die Veranstaltung in Präsenz anbieten können, eine Teilnahme ist nach dem 2G-Modell (Geimpft/Genesen) möglich. Wir bitten um Verständnis, dass wir aufgrund der Corona-Schutzmaßnahmen nur einer begrenzten Zahl Zugang gewähren können. Sollte die Anzahl der Interessenten die Anzahl der Plätze übersteigen, werden wir eine zusätzliche Veranstaltung um 18.00 Uhr einrichten.</p>
+            <div class='alert alert-warning'>Achtung: Seite ist momentan nur für Admins sichtbar.</div>
+            <h3>Anmeldung zum Tag der Offenen Tür</h3>
+            <p>Hier haben Sie die Möglichkeit, sich für den Tag der Offenen Tür am <strong>Samstag, den 8. Januar
+                    2022</strong> anzumelden. Eine Anmeldung gilt gleichzeitig für die Infoveranstaltung in der Aula,
+                einen begleiteten Rundgang durch das Schulhaus sowie den Schnupperunterricht im Fach Latein. Eine
+                Anmeldung gilt jeweils <strong>für ein Kind plus max. 2 Begleitpersonen</strong>. Zurzeit gehen wir
+                davon aus, dass wir die Veranstaltung in Präsenz anbieten können, eine Teilnahme ist nach dem 2G-Modell
+                (Geimpft/Genesen) nach aktuellem Stand möglich.
+            </p>
 
-            <p>Gleichzeitig haben Sie auch die Möglichkeit, an der Veranstaltung um 19.30 Uhr per Livestream teilzunehmen und Fragen über den Chat zu stellen.</p>
-            <b class='key'>Datum:</b> 23.11.2021 <br />
-            <b class='key'>Uhrzeit:</b> 19.30 Uhr (online)<br />
+            <p>Die Teilnehmer:innenzahl pro Schiene ist aufgrund der Pandemielage begrenzt. Plätze werden nach der
+                Reihenfolge der Anmeldung vergeben. Sie erhalten nach erfolgter Anmeldung eine Bestätigung per E-Mail.
+                Wir bitten Sie darum, uns zu benachrichtigen, falls Sie nicht an dem gebuchten Termin teilnehmen können,
+                damit wir den Platz neu vergeben können.</p>
+
+            <p>Die <strong>SESB-Schiene</strong> (Staatliche Europaschule Berlin) richtet sich an Schülerinnen und
+                Schüler mit <strong>griechischer Muttersprache</strong>.</p>
+
+            <p>Wenn Sie sich zur Teilnahme an unserer <strong>Online-Schiene</strong> entscheiden, haben Sie die
+                Möglichkeit, im Livestream Fragen per Chat zu stellen.</p>
+
             <hr />
+            <!-- <hr /> -->
             <div>
+                <div class="table-responsive" style="max-width: 100%; overflow-x: auto;">
+                    <table class='table table-narrow narrow'>
+                        #{print_public_event_table()}
+                    </table>
+                </div>
                 <div class="form-group row">
                     <label for="ti_name" class="col-md-2 col-form-label">Name:</label>
                     <div class="col-md-10">
@@ -39,25 +61,16 @@
                         <input type="email" class="form-control" id="ti_email" placeholder="E-Mail-Adresse">
                     </div>
                 </div>
-                <div class="form-group">
-                    <p>Bitte treffen Sie eine Auswahl:</p>
-                    <div data-key='mode' class="poll_radio_buttons">
-                        <p data-value='presence' class=""><i class="icon icon-unselected fa fa-circle-thin"></i><i
-                                class="icon icon-selected fa fa-dot-circle-o"></i><s>Falls die Veranstaltung auch in
-                            Präsenz stattfindet, möchte ich vor Ort teilnehmen. Mir ist bekannt, dass die entsprechende
-                            2G-Regel gilt und ich werde den entsprechenden Nachweis zur Kontrolle mitführen. Verfügbare
-                            Plätze werden enstprechend der Anmeldereihenfolge vergeben.</s><br />Die Präsenztermine sind leider ausgebucht.</p>
-                        <p data-value='online' class=""><i class="icon icon-unselected fa fa-circle-thin"></i><i
-                                class="icon icon-selected fa fa-dot-circle-o"></i>Ich möchte an der Veranstaltung im
-                            Video-Stream teilnehmen und Fragen ggf. per Live-Chat stellen</p>
-                    </div>
-                </div>
                 <hr />
                 <div style='text-align: center;'>
-                    <button id='bu_submit' type="submit" class="btn btn-success" disabled><i class='fa fa-send'></i>&nbsp;&nbsp;Anmelden</button>
+                    <button id='bu_submit' type="submit" class="btn btn-success" disabled><i
+                            class='fa fa-send'></i>&nbsp;&nbsp;Termin buchen</button>
                 </div>
                 <div id='thankyou' class='alert alert-success' style='display: none;'>
                     Vielen Dank für Ihre Anmeldung! Wir haben Ihnen eine E-Mail zur Anmeldebestätigung gesendet.
+                </div>
+                <div id='error' class='alert alert-danger' style='display: none;'>
+                    Fehler bei der Buchung.
                 </div>
             </div>
         </div>
@@ -69,15 +82,10 @@
         let data = {};
         data.name = $('#ti_name').val().trim();
         data.email = $('#ti_email').val().trim();
-        jQuery.each($('.poll_radio_buttons'), function(_, e) {
-            let key = $(e).data('key');
-            let selected = $(e).find('p.selected');
-            if (selected.length === 1) {
-                data[key] = $(selected[0]).data('value');
-            } else {
-                data[key] = null;
-            }
-        });
+        data.track = null;
+        let selected_buttons = $('.bu-track.selected');
+        if (selected_buttons.length === 1)
+            data.track = $(selected_buttons[0]).data('track');
         return data;
     }
 
@@ -86,35 +94,46 @@
         let can_submit = true;
         if (data.name.length === 0) can_submit = false;
         if (data.email.length === 0) can_submit = false;
-        if (data.mode === null) can_submit = false;
+        if (data.track === null) can_submit = false;
         $('#bu_submit').prop('disabled', !can_submit);
     }
 
     window.addEventListener('load', function () {
-        $('.poll_radio_buttons p').click(function (e) {
-            let which = $(e.target).closest('p');
-            if (which.data('value') === 'online')
-            {
-                $('.poll_radio_buttons p').removeClass('selected');
-                which.addClass('selected');
-                update_submit_button();
-            }
-        });
-        $('input').keyup(function(e) {
+        $('.bu-track').click(function (e) {
+            let which = $(e.target).closest('.bu-track');
+            let prev = $('.bu-track.selected');
+            prev.removeClass('selected');
+            prev.removeClass('btn-info');
+            prev.addClass('btn-outline-info');
+            prev.html('auswählen');
+            which.addClass('selected');
+            which.removeClass('btn-outline-info');
+            which.addClass('btn-info');
+            which.html("<i class='fa fa-check'></i>&nbsp;&nbsp;ausgewählt");
             update_submit_button();
         });
-        $('input').keydown(function(e) {
+        $('input').keyup(function (e) {
             update_submit_button();
         });
-        $('input').change(function(e) {
+        $('input').keydown(function (e) {
             update_submit_button();
         });
-        $('#bu_submit').click(function(e) {
+        $('input').change(function (e) {
+            update_submit_button();
+        });
+        $('#bu_submit').click(function (e) {
             let data = collect_data();
-            api_call('/api/sign_up_for_event', {name: data.name, email: data.email, mode: data.mode}, function(data) {
+            $('.bu-track').prop('disabled', true);
+            $('#ti_name').prop('disabled', true);
+            $('#ti_email').prop('disabled', true);
+            api_call('/api/sign_up_for_event', { name: data.name, email: data.email, track: data.track }, function (data) {
+                console.log(data);
                 if (data.success) {
                     $('#bu_submit').slideUp();
                     $('#thankyou').slideDown();
+                } else {
+                    $('#bu_submit').slideUp();
+                    $('#error').slideDown();
                 }
             });
         });

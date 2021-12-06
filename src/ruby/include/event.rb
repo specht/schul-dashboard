@@ -289,13 +289,13 @@ class Main < Sinatra::Base
                     io.puts "<p>Sehr geehrte/r #{data[:name]}</p>"
                     io.puts "<p>vielen Dank für Ihre Anmeldung für die #{titel} am Tag der Offenen Tür. Die Veranstaltung findet am 08.01.2022 von #{beginn} bis #{ende} Uhr statt. Die Zugangsdaten für das Streaming erhalten Sie zeitnah zur Veranstaltung mit gesonderter Mail. Wir weisen darauf hin, dass es nicht erlaubt ist, Teile der Veranstaltung mitzuschneiden oder andere Formen der Aufzeichnung zu wählen.</p>"
                     io.puts "<p>Falls Sie Fragen haben, können Sie diese im Chat stellen; sie werden dann in der Veranstaltung live beantwortet.</p>"
-                    io.puts "<p>Für einen kleinen Vorab-Eindruck empfehlen wir Ihnen unseren ;a href='https://rundgang.gymnasiumsteglitz.de/'>virtuellen 360°-Grad-Rundgang</a>.</p>"
+                    io.puts "<p>Für einen kleinen Vorab-Eindruck empfehlen wir Ihnen unseren <a href='https://rundgang.gymnasiumsteglitz.de/'>virtuellen 360°-Grad-Rundgang</a>.</p>"
                     io.puts "<p>Mit freundlichen Grüßen</p>"
                 else
                     io.puts "<p>Sehr geehrte/r #{data[:name]}</p>"
                     io.puts "<p>vielen Dank für Ihre Anmeldung für die #{titel} am Tag der Offenen Tür. Die Veranstaltung findet am 08.01.2022 von #{beginn} bis #{ende} Uhr statt. Der Einlass ist um #{einlass} Uhr am Haupteingang des Gymnasium Steglitz, Heesestraße 15. Wir bitten um Verständnis, dass wir bei Einlass den 2G-Status erwachsener Begleitpersonen überprüfen und Ihre Kontaktdaten (Name, Vorname, E-Mail-Adresse) für eine ggf. notwendige Kontaktnachverfolgung erheben. Die entsprechenden Listen werden nach vier Wochen vernichtet. Zur Überprüfung des Impfstatus bringen Sie bitte einen digital lesbaren Impfnachweis (QR-Code) sowie ein Ausweisdokument mit. Wir weisen darauf hin, dass wir ohne Nachweise in dieser Form keinen Zutritt gewähren können. Sollten Sie Symptome einer Coronaerkrankung aufweisen (Husten, Schnupfen, erhöhte Temperatur etc.) verzichten Sie bitte auf einen Besuch.</p>"
                     io.puts "<p>Wir weisen ferner darauf hin, dass während der gesamten Veranstaltung die Pflicht zum Tragen einer FFP2-Maske besteht. Wir bitten Sie darum, uns zu benachrichtigen, falls Sie nicht an dem gebuchten Termin teilnehmen können, damit wir den Platz neu vergeben können.</p>"
-                    io.puts "<p>Für einen kleinen Vorab-Eindruck empfehlen wir Ihnen unseren ;a href='https://rundgang.gymnasiumsteglitz.de/'>virtuellen 360°-Grad-Rundgang</a>.</p>"
+                    io.puts "<p>Für einen kleinen Vorab-Eindruck empfehlen wir Ihnen unseren <a href='https://rundgang.gymnasiumsteglitz.de/'>virtuellen 360°-Grad-Rundgang</a>.</p>"
                     io.puts "<p>Mit freundlichen Grüßen</p>"
                 end
                 io.string

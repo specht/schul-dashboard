@@ -8,19 +8,21 @@
                 <button class='btn btn-success bu-add-salzh'><i class='fa fa-pencil'></i>&nbsp;&nbsp;Eintragen</button>
             </div>
             <hr />
-            <table class='table table-narrow narrow'>
-                <thead>
-                    <tr>
-                        <th>Name</th>
-                        <th>Letzter Tag im saLzH</th>
-                        <th>Bearbeiten</th>
-                        <th>Löschen</th>
-                    </tr>
-                </thead>
-                <tbody id='salzh_sus_here'>
+            <div class="table-responsive" style="max-width: 100%; overflow-x: auto;">
+                <table class='table table-narrow narrow'>
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Letzter Tag im saLzH</th>
+                            <th>Bearbeiten</th>
+                            <th>Löschen</th>
+                        </tr>
+                    </thead>
+                    <tbody id='salzh_sus_here'>
 
-                </tbody>
-            </table>
+                    </tbody>
+                </table>
+            </div>
         </div>
     </div>
 </div>
@@ -384,7 +386,7 @@
 
             let button = $('<button>').addClass('btn').addClass('btn-sm').addClass('btn-warning').html("<i class='fa fa-pencil'></i>&nbsp;&nbsp;Bearbeiten");
             row.append($('<td>').append(button));
-            button.click(function(e) {
+            button.click(function (e) {
                 let email = row.data('email');
                 let name = row.data('name');
                 let end_date = row.data('end_date');
@@ -403,14 +405,14 @@
 
             button = $('<button>').addClass('btn').addClass('btn-sm').addClass('btn-danger').html("<i class='fa fa-trash'></i>&nbsp;&nbsp;Löschen");
             row.append($('<td>').append(button));
-            button.click(function(e) {
+            button.click(function (e) {
                 let name = row.data('name');
                 let email = row.data('email');
                 showTemplateModal('Eintrag löschen',
                     `Sind Sie sicher, dass Sie den Eintrag für ${name} löschen möchten?`,
                     "<i class='fa fa-trash'></i>&nbsp;&nbsp;Eintrag löschen", 'btn-danger',
                     'Abbrechen', 'btn-secondary', function () {
-                        api_call('/api/delete_salzh_entry', {email: email}, function(data) {
+                        api_call('/api/delete_salzh_entry', { email: email }, function (data) {
                             if (data.success)
                                 window.location.reload();
                         });

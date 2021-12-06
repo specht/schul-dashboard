@@ -676,17 +676,24 @@
                                     console.log(`scroll to ${shorthand}`);
                                     let boxes = $('.main_lz_left .box-teacher-' + shorthand);
                                     let current_scroll = $('.main_lz_left').scrollTop();
+                                    let best_top = null;
+                                    let best_box = null;
                                     for (let box of boxes) {
                                         let top = $(box).position().top - 100;
-                                        if (top > current_scroll) {
-                                            klassen_animation_config['sus'].phase = 0;
-                                            klassen_animation_config['sus'].timestamp = last_timestamp + top_delay;
-                                            $('.main_lz_left').animate({ scrollTop: top }, 1000);
-                                            $(box).addClass('highlight');
-                                            setTimeout(function() { $(box).removeClass('highlight');}, 5000);
-                                            break;
+                                        if (best_top === null) {
+                                            best_top = top;
+                                            best_box = box;
+                                        }
+                                        if (Math.abs(top - current_scroll) < Math.abs(best_top - current_scroll)) {
+                                            best_top = top;
+                                            best_box = box;
                                         }
                                     }
+                                    klassen_animation_config['sus'].phase = 0;
+                                    klassen_animation_config['sus'].timestamp = last_timestamp + top_delay;
+                                    $('.main_lz_left').animate({ scrollTop: best_top }, 1000);
+                                    $(best_box).addClass('highlight');
+                                    setTimeout(function() { $(best_box).removeClass('highlight');}, 5000);
                                 });
                                 let box = $('<div>');
                                 let div = $('<div>').addClass('klasse').appendTo(box);
@@ -714,17 +721,24 @@
                                     console.log(`scroll to ${shorthand}`);
                                     let boxes = $('.main_lz_right .box-teacher-' + shorthand);
                                     let current_scroll = $('.main_lz_right').scrollTop();
+                                    let best_top = null;
+                                    let best_box = null;
                                     for (let box of boxes) {
                                         let top = $(box).position().top - 100;
-                                        if (top > current_scroll) {
-                                            klassen_animation_config['lehrer'].phase = 0;
-                                            klassen_animation_config['lehrer'].timestamp = last_timestamp + top_delay;
-                                            $('.main_lz_right').animate({ scrollTop: top }, 1000);
-                                            $(box).addClass('highlight');
-                                            setTimeout(function() { $(box).removeClass('highlight');}, 5000);
-                                            break;
+                                        if (best_top === null) {
+                                            best_top = top;
+                                            best_box = box;
+                                        }
+                                        if (Math.abs(top - current_scroll) < Math.abs(best_top - current_scroll)) {
+                                            best_top = top;
+                                            best_box = box;
                                         }
                                     }
+                                    klassen_animation_config['lehrer'].phase = 0;
+                                    klassen_animation_config['lehrer'].timestamp = last_timestamp + top_delay;
+                                    $('.main_lz_right').animate({ scrollTop: best_top }, 1000);
+                                    $(best_box).addClass('highlight');
+                                    setTimeout(function() { $(best_box).removeClass('highlight');}, 5000);
                                 });
                                 let box = $('<div>');
                                 let div = $('<div>').addClass('klasse').appendTo(box);

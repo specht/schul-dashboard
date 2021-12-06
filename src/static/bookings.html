@@ -14,8 +14,10 @@
                     class='fa fa-tablet'></i>&nbsp;&nbsp;Tabletsatz buchen</button>
             <h3>Tablet-Buchungen</h3>
             <hr />
-            <table id='bookings-here' class='table narrow'>
-            </table>
+            <div class="table-responsive" style="max-width: 100%; overflow-x: auto;">
+                <table id='bookings-here' class='table narrow'>
+                </table>
+            </div>
         </div>
     </div>
 </div>
@@ -72,6 +74,7 @@
                         </div>
                     </div>
                 </div>
+                <div class="table-responsive" style="max-width: 100%; overflow-x: auto;">
                 <table class='table narrow'>
                     <thead>
                         <tr>
@@ -84,6 +87,7 @@
                     <tbody id='available_tablet_sets_here'>
                     </tbody>
                 </table>
+                </div>
             </div>
             <div class="modal-footer">
                 <button id='bu_perform_tablet_set_booking' type="button" class="btn btn-success"><i

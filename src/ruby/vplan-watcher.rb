@@ -311,7 +311,7 @@ def perform_refresh
             end
             (0...classes.size).each do |index|
                 file_count += 1
-                get_file_from_url("#{UNTIS_VERTRETUNGSPLAN_BASE_URL}/#{week}/w/#{sprintf('w%05d', index + 1)}.htm") do |header, body|
+                get_file_from_url("#{UNTIS_VERTRETUNGSPLAN_BASE_URL}/#{sprintf('%02d', week)}/w/#{sprintf('w%05d', index + 1)}.htm") do |header, body|
                     bodies << body
                 end
             end

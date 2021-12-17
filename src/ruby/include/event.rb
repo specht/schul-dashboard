@@ -1,4 +1,4 @@
-EVENT_TRACK_ORDER = %w(schiene_1 schiene_2 schiene_3 schiene_sesb online)
+EVENT_TRACK_ORDER = %w(schiene_1 schiene_2 schiene_3 schiene_sesb schiene_4 online)
 EVENT_TRACKS = {
     'schiene_1'    => [ '9:15',  '9:30', '11:00', 'Schiene 1', 19],
     'schiene_2'    => ['10:45', '11:00', '12:30', 'Schiene 2', 19],

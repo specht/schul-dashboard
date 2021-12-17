@@ -305,7 +305,7 @@ def perform_refresh
         weeks.each do |week|
             (0...teachers.size).each do |index|
                 file_count += 1
-                get_file_from_url("#{UNTIS_VERTRETUNGSPLAN_BASE_URL}/#{week}/v/#{sprintf('v%05d', index + 1)}.htm") do |header, body|
+                get_file_from_url("#{UNTIS_VERTRETUNGSPLAN_BASE_URL}/#{sprintf('%02d', week)}/v/#{sprintf('v%05d', index + 1)}.htm") do |header, body|
                     bodies << body
                 end
             end

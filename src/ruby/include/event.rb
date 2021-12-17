@@ -4,7 +4,7 @@ EVENT_TRACKS = {
     'schiene_2'    => ['10:45', '11:00', '12:30', 'Schiene 2', 19],
     'schiene_3'    => ['12:15', '12:30', '14:00', 'Schiene 3', 19],
     'schiene_sesb' => ['12:45', '13:00', '14:30', 'SESB-Schiene', 19],
-    # 'schiene_4'    => ['13:45', '14:00', '15:30', 'Schiene 4', 3],
+    'schiene_4'    => ['13:45', '14:00', '15:30', 'Schiene 4', 19],
     'online'       => [    nil, '11:00', '12:30', 'Online-Schiene', 1000],
 }
 EVENT_NAME = 'Tag der Offenen Tür'
@@ -293,7 +293,7 @@ class Main < Sinatra::Base
                     io.puts "<p>Mit freundlichen Grüßen</p>"
                 else
                     io.puts "<p>Sehr geehrte/r #{data[:name]},</p>"
-                    io.puts "<p>vielen Dank für Ihre Anmeldung für die #{titel} am Tag der Offenen Tür. Die Veranstaltung findet am 08.01.2022 von #{beginn} bis #{ende} Uhr statt. Der Einlass ist um #{einlass} Uhr am Haupteingang des Gymnasium Steglitz, Heesestraße 15. Wir bitten um Verständnis, dass wir bei Einlass den 2G-Status erwachsener Begleitpersonen überprüfen und Ihre Kontaktdaten (Name, Vorname, E-Mail-Adresse) für eine ggf. notwendige Kontaktnachverfolgung erheben. Die entsprechenden Listen werden nach vier Wochen vernichtet. Zur Überprüfung des Impfstatus bringen Sie bitte einen digital lesbaren Impfnachweis (QR-Code) sowie ein Ausweisdokument mit. Wir weisen darauf hin, dass wir ohne Nachweise in dieser Form keinen Zutritt gewähren können. Sollten Sie Symptome einer Coronaerkrankung aufweisen (Husten, Schnupfen, erhöhte Temperatur etc.) verzichten Sie bitte auf einen Besuch.</p>"
+                    io.puts "<p>vielen Dank für Ihre Anmeldung für die #{titel} am Tag der Offenen Tür. Die Veranstaltung findet am 08.01.2022 von #{beginn} bis #{ende} Uhr statt. Der Einlass ist um #{einlass} Uhr am Haupteingang des Gymnasium Steglitz, Heesestraße 15. Pro Kind kann aufgrund der Vorgaben leider nur eine Begleitperson eingelassen werden. Wir bitten um Verständnis, dass wir bei Einlass den 2G-Status erwachsener Begleitpersonen überprüfen und Ihre Kontaktdaten (Name, Vorname, E-Mail-Adresse) für eine ggf. notwendige Kontaktnachverfolgung erheben. Die entsprechenden Listen werden nach vier Wochen vernichtet. Zur Überprüfung des Impfstatus bringen Sie bitte einen digital lesbaren Impfnachweis (QR-Code) sowie ein Ausweisdokument mit. Wir weisen darauf hin, dass wir ohne Nachweise in dieser Form keinen Zutritt gewähren können. Sollten Sie Symptome einer Coronaerkrankung aufweisen (Husten, Schnupfen, erhöhte Temperatur etc.) verzichten Sie bitte auf einen Besuch.</p>"
                     io.puts "<p>Wir weisen ferner darauf hin, dass während der gesamten Veranstaltung die Pflicht zum Tragen einer FFP2-Maske besteht. Wir bitten Sie darum, uns zu benachrichtigen, falls Sie nicht an dem gebuchten Termin teilnehmen können, damit wir den Platz neu vergeben können.</p>"
                     io.puts "<p>Für einen kleinen Vorab-Eindruck empfehlen wir Ihnen unseren <a href='https://rundgang.gymnasiumsteglitz.de/'>virtuellen 360°-Grad-Rundgang</a>.</p>"
                     io.puts "<p>Mit freundlichen Grüßen</p>"

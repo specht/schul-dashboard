@@ -296,6 +296,7 @@ class Main < Sinatra::Base
             io.puts "<th>(Before)</th>"
             io.puts "<th>Fach</th>"
             io.puts "<th>Klassen</th>"
+            io.puts "<th>SuS</th>"
             io.puts "<th>Stunden</th>"
             io.puts "<th>Termine</th>"
             io.puts "<th>Lehrer</th>"
@@ -319,6 +320,11 @@ class Main < Sinatra::Base
                 io.puts "<td>#{pretty_fach}</td>"
                 info = @@current_lesson_key_info[lesson_key]
                 io.puts "<td>#{@@lessons[:lesson_keys][lesson_key][:klassen].sort { |a, b| (a.to_i == b.to_i) ? (a <=> b) : (a.to_i <=> b.to_i) }.map { |x| tr_klasse(x) }.join(', ')}</td>"
+                sus_list = []
+                (@@schueler_for_lesson[lesson_key] || []).each.with_index do |email, i|
+                    sus_list << "#{i + 1}. #{@@user_info[email][:display_name]}"
+                end
+                io.puts "<td>#{sus_list.size}&nbsp;SuS#{sus_list.size == 0 ? "<i class='fa fa-warning text-danger'></i>" : ''}</td>"
                 icon = ''
                 if pretty_fach.include?(' LK') 
                     icon = good_bad_icon(info[:stunden].size == 5)

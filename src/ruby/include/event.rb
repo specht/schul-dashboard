@@ -287,7 +287,7 @@ class Main < Sinatra::Base
             StringIO.open do |io|
                 if data[:track] == 'online'
                     io.puts "<p>Sehr geehrte/r #{data[:name]},</p>"
-                    io.puts "<p>vielen Dank für Ihre Anmeldung für die #{titel} am Tag der Offenen Tür. Die Veranstaltung findet am 08.01.2022 von #{beginn} bis #{ende} Uhr statt. Die Zugangsdaten für das Streaming erhalten Sie zeitnah zur Veranstaltung mit gesonderter Mail. Wir weisen darauf hin, dass es nicht erlaubt ist, Teile der Veranstaltung mitzuschneiden oder andere Formen der Aufzeichnung zu wählen.</p>"
+                    io.puts "<p>vielen Dank für Ihre Anmeldung für die #{titel} am Tag der Offenen Tür. Die Veranstaltung findet am 08.01.2022 um #{beginn} Uhr statt. Die Zugangsdaten für das Streaming erhalten Sie zeitnah zur Veranstaltung mit gesonderter Mail.</p>"
                     io.puts "<p>Falls Sie Fragen haben, können Sie diese im Chat stellen; sie werden dann in der Veranstaltung live beantwortet.</p>"
                     io.puts "<p>Für einen kleinen Vorab-Eindruck empfehlen wir Ihnen unseren <a href='https://rundgang.gymnasiumsteglitz.de/'>virtuellen 360°-Grad-Rundgang</a>.</p>"
                     io.puts "<p>Mit freundlichen Grüßen</p>"

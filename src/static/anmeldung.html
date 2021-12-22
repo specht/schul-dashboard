@@ -21,34 +21,25 @@
         <div class='col-md-12'>
             <h3>Anmeldung zum Tag der Offenen Tür</h3>
             <p>
-                Hier haben Sie die Möglichkeit, sich für den Tag der Offenen Tür am <strong>Samstag, den 8. Januar
-                2022</strong>, anzumelden. Aufgrund aktualisierter Vorgaben gilt eine Anmeldung jeweils für <strong>ein 
-                Kind</strong> plus <strong>eine Begleitperson</strong>.
-                Sie beinhaltet die Teilnahme an der Infoveranstaltung in der Aula, an einem 
-                begleiteten Rundgang durch das Schulhaus und dem Schnupperunterricht Latein. Zurzeit gehen wir
-                davon aus, dass wir die Veranstaltung in Präsenz anbieten können, eine Teilnahme ist nach dem 2G-Modell
-                (Geimpft/Genesen) nach aktuellem Stand möglich.
+                Hiermit melden Sie sich für die Teilnahme am Videostream zum Tag der Offenen Tür Digital am <strong>8. Januar 2022 um 11:00 Uhr</strong> an.
+            </p>
+            <p>
+                Während des Livestreams haben Sie die Möglichkeit, Fragen direkt im Chat zu stellen, die anschließend im Livestream beantwortet werden. 
+                Parallel stehen Ihnen unsere Fachleitungen und Fachkräfte der einzelnen Fachbereiche für Fragen in unserem Chatsystem zur Verfügung.
+            </p>
+            <p>
+                Die Teilnahme ist nur nach vorheriger Anmeldung möglich.
             </p>
 
-            <p>Die Teilnehmer:innenzahl pro Schiene ist aufgrund der Pandemielage begrenzt. Plätze werden nach der
-                Reihenfolge der Anmeldung vergeben. Sie erhalten nach erfolgter Anmeldung eine Bestätigung per E-Mail.
-                Wir bitten Sie darum, uns zu benachrichtigen, falls Sie nicht an dem gebuchten Termin teilnehmen können,
-                damit wir den Platz neu vergeben können.</p>
-
-            <p>Die <strong>SESB-Schiene</strong> (Staatliche Europaschule Berlin) richtet sich an Schülerinnen und
-                Schüler mit <strong>griechischer Muttersprache</strong>.</p>
-
-            <p>Wenn Sie sich zur Teilnahme an unserer <strong>Online-Schiene</strong> entscheiden, haben Sie die
-                Möglichkeit, im Livestream Fragen per Chat zu stellen.</p>
 
             <hr />
             <!-- <hr /> -->
             <div>
-                <div class="table-responsive" style="max-width: 100%; overflow-x: auto;">
+                <!-- <div class="table-responsive" style="max-width: 100%; overflow-x: auto;">
                     <table class='table table-narrow narrow'>
                         #{print_public_event_table()}
                     </table>
-                </div>
+                </div> -->
                 <div class="form-group row">
                     <label for="ti_name" class="col-md-2 col-form-label">Name:</label>
                     <div class="col-md-10">
@@ -64,7 +55,7 @@
                 <hr />
                 <div style='text-align: center;'>
                     <button id='bu_submit' type="submit" class="btn btn-success" disabled><i
-                            class='fa fa-send'></i>&nbsp;&nbsp;Termin buchen</button>
+                            class='fa fa-send'></i>&nbsp;&nbsp;Anmelden</button>
                 </div>
                 <div id='thankyou' class='alert alert-success' style='display: none;'>
                     Vielen Dank für Ihre Anmeldung! Wir haben Ihnen eine E-Mail zur Anmeldebestätigung gesendet.
@@ -83,9 +74,10 @@
         data.name = $('#ti_name').val().trim();
         data.email = $('#ti_email').val().trim();
         data.track = null;
-        let selected_buttons = $('.bu-track.selected');
-        if (selected_buttons.length === 1)
-            data.track = $(selected_buttons[0]).data('track');
+        data.track = 'online';
+        // let selected_buttons = $('.bu-track.selected');
+        // if (selected_buttons.length === 1)
+        //     data.track = $(selected_buttons[0]).data('track');
         return data;
     }
 

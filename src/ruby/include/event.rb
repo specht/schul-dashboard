@@ -1,11 +1,11 @@
-EVENT_TRACK_ORDER = %w(schiene_1 schiene_2 schiene_3 schiene_sesb schiene_4 online)
+EVENT_TRACK_ORDER = %w(online)
 EVENT_TRACKS = {
-    'schiene_1'    => [ '9:15',  '9:30', '11:00', 'Schiene 1', 19],
-    'schiene_2'    => ['10:45', '11:00', '12:30', 'Schiene 2', 19],
-    'schiene_3'    => ['12:15', '12:30', '14:00', 'Schiene 3', 19],
-    'schiene_sesb' => ['12:45', '13:00', '14:30', 'SESB-Schiene', 19],
-    'schiene_4'    => ['13:45', '14:00', '15:30', 'Schiene 4', 19],
-    'online'       => [    nil, '11:00', '12:30', 'Online-Schiene', 1000],
+    # 'schiene_1'    => [ '9:15',  '9:30', '11:00', 'Schiene 1', 19],
+    # 'schiene_2'    => ['10:45', '11:00', '12:30', 'Schiene 2', 19],
+    # 'schiene_3'    => ['12:15', '12:30', '14:00', 'Schiene 3', 19],
+    # 'schiene_sesb' => ['12:45', '13:00', '14:30', 'SESB-Schiene', 19],
+    # 'schiene_4'    => ['13:45', '14:00', '15:30', 'Schiene 4', 19],
+    'online'       => [    nil, '11:00', '12:30', 'Tag der Offenen Tür digital', 1000],
 }
 EVENT_NAME = 'Tag der Offenen Tür'
 
@@ -360,7 +360,7 @@ class Main < Sinatra::Base
                     io.puts "</tr>"
                     io.puts "</thead>"
                     io.puts "<tbody>"
-                        sign_ups[track].each.with_index do |row, index|
+                    sign_ups[track].each.with_index do |row, index|
                         io.puts "<tr class='user_row'>"
                         io.puts "<td>#{EVENT_TRACKS[track][3]}</td>"
                         io.puts "<td>#{index + 1}.</td>"
@@ -375,6 +375,15 @@ class Main < Sinatra::Base
                     io.puts "</tbody>"
                 end
                 io.puts "</table>"
+                io.puts "<textarea class='form-control' readonly>"
+                all_emails = Set.new()
+                sign_ups.each_pair do |track, rows|
+                    rows.each do |row|
+                        all_emails << "#{row[:name]} <#{row[:email]}>"
+                    end
+                end
+                io.puts all_emails.to_a.sort.join("\n")
+                io.puts "</textarea>"
                 io.puts "</div>"
             end
             io.puts "</div>"

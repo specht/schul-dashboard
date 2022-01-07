@@ -376,13 +376,13 @@ class Main < Sinatra::Base
                 end
                 io.puts "</table>"
                 io.puts "<textarea class='form-control' readonly>"
-                all_emails = Set.new()
+                all_emails = []
                 sign_ups.each_pair do |track, rows|
                     rows.each do |row|
                         all_emails << "#{row[:name]} <#{row[:email]}>"
                     end
                 end
-                io.puts all_emails.to_a.sort.join("\n")
+                io.puts all_emails.uniq.join("\n")
                 io.puts "</textarea>"
                 io.puts "</div>"
             end

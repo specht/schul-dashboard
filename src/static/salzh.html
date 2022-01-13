@@ -12,6 +12,7 @@
                 <table class='table table-narrow narrow'>
                     <thead>
                         <tr>
+                            <th>Nr.</th>
                             <th>Name</th>
                             <th>Letzter Tag im saLzH</th>
                             <th>Bearbeiten</th>
@@ -376,11 +377,14 @@
         });
 
         moment.locale('de');
+        let i = 0;
         for (let entry of current_salzh_entries) {
+            i += 1;
             let row = $('<tr>');
             row.data('email', entry.email);
             row.data('name', `${entry.name} (${entry.klasse})`);
             row.data('end_date', entry.end_date);
+            row.append($('<td>').text(`${i}.`));
             row.append($('<td>').text(`${entry.name} (${klassen_tr[entry.klasse] || entry.klasse})`));
             row.append($('<td>').text(moment(entry.end_date).format('ddd, DD.MM.YYYY')));
 

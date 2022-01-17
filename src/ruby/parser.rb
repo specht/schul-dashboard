@@ -934,7 +934,7 @@ class Parser
             debug "Kurswahl: Can't assign these names!"
             debug unassigned_names.to_a.sort.to_yaml
         end
-        debug "Wahlpflichtkurswahl: got SuS for #{schueler_for_lesson_key.size} lesson keys."
+        # debug "Wahlpflichtkurswahl: got SuS for #{schueler_for_lesson_key.size} lesson keys."
         return schueler_for_lesson_key
     end
 

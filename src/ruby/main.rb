@@ -87,6 +87,7 @@ def debug(message, index = 0)
     rescue
         index = 0
     end
+    # STDERR.puts caller_locations.to_yaml
     l = caller_locations[index]
     ls = ''
     begin
@@ -812,9 +813,9 @@ class Main < Sinatra::Base
 
         lesson_key_tr = {}
         lesson_key_tr = self.fix_lesson_key_tr(lesson_key_tr)
-        if DASHBOARD_SERVICE == 'ruby'
-            debug lesson_key_tr.to_yaml
-        end
+        # if DASHBOARD_SERVICE == 'ruby'
+        #     debug lesson_key_tr.to_yaml
+        # end
 
         @@lessons, @@vertretungen, @@vplan_timestamp, @@day_messages, @@lesson_key_back_tr, @@original_lesson_key_for_lesson_key = parser.parse_timetable(@@config, lesson_key_tr)
         @@current_lesson_key_order = []

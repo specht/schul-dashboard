@@ -16,7 +16,7 @@ class Main < Sinatra::Base
             :aud => JWT_APPAUD,
             :iss => JWT_APPISS,
             :sub => JWT_SUB,
-            :room => room,
+            :room => room.strip,
             :exp => DateTime.parse("#{Time.now.strftime('%Y-%m-%d')} 00:00:00").to_time.to_i + 24 * 60 * 60,
             :moderator => teacher_logged_in?
         }

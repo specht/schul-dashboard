@@ -21,7 +21,7 @@ class Script
         @@klassen_order = Main.class_variable_get(:@@klassen_order)
         entries.sort do |a, b|
             (a[:klasse] == b[:klasse]) ?
-            (a[:last_name] <=> b[:last_name]) :
+            ([a[:last_name], a[:display_first_name]].join('/') <=> [b[:last_name], b[:display_first_name]].join('/')) :
             ((@@klassen_order.index(a[:klasse]) || -1) <=> (@@klassen_order.index(b[:klasse]) || -1))
         end.each do |record|
             STDERR.puts "[#{record[:klasse]}] #{record[:display_name]} <#{record[:email]}>"

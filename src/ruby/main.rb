@@ -706,6 +706,17 @@ class Main < Sinatra::Base
                      
         self.fix_stundenzeiten()
 
+        disable_jitsi_for_email = Set.new()
+        if File.exists?('/data/schueler/disable-jitsi.txt')
+            File.open('/data/schueler/disable-jitsi.txt') do |f|
+                f.each_line do |line|
+                    line.strip!
+                    next if line.empty?
+                    disable_jitsi_for_email << line
+                end
+            end
+        end
+
         parser.parse_schueler do |record|
             matrix_login = "@#{record[:email].split('@').first.sub(/\.\d+$/, '')}:#{MATRIX_DOMAIN_SHORT}"
             @@user_info[record[:email]] = {
@@ -722,7 +733,8 @@ class Main < Sinatra::Base
                 :geschlecht => record[:geschlecht],
                 :nc_login => record[:email].split('@').first.sub(/\.\d+$/, ''),
                 :matrix_login => matrix_login,
-                :initial_nc_password => record[:initial_nc_password]
+                :initial_nc_password => record[:initial_nc_password],
+                :jitsi_disabled => disable_jitsi_for_email.include?(record[:email])
             }
             raise "oops: duplicate matrix / nc login: #{matrix_login}" if @@email_for_matrix_login.include?(matrix_login)
             @@email_for_matrix_login[matrix_login] = record[:email]

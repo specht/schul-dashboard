@@ -354,6 +354,7 @@ class Parser
         if DEMO_ACCOUNT_EMAIL
             yield handle_schueler_line("#{DEMO_ACCOUNT_INFO[:last_name]}\t#{DEMO_ACCOUNT_INFO[:first_name]}\t#{DEMO_ACCOUNT_INFO[:klasse]}\t#{DEMO_ACCOUNT_INFO[:geschlecht]}")
         end
+
         srand()
     end
     

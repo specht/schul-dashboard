@@ -25,7 +25,7 @@ class Main < Sinatra::Base
         if user_logged_in?
             use_user = @session_user
             # don't generate JWT if user is on negative list (/data/schueler/disable-jitsi.txt)
-            if @@user_info[@session_user[:email]][:jitsi_disabled]
+            if @@user_info[@session_user[:email]] && @@user_info[@session_user[:email]][:jitsi_disabled]
                 raise 'no jitsi for you'
             end
             if teacher_tablet_logged_in?

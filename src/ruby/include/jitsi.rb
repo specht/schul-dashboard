@@ -275,7 +275,7 @@ class Main < Sinatra::Base
                     assert(user_logged_in?)
                     timetable_path = "/gen/w/#{timetable_id}/#{p_yw}.json.gz"
                     timetable = nil
-                    debug timetable_path
+                    # debug timetable_path
                     Zlib::GzipReader.open(timetable_path) do |f|
                         timetable = JSON.parse(f.read)
                     end
@@ -288,12 +288,12 @@ class Main < Sinatra::Base
                     end.sort { |a, b| a['start'] <=> b['start'] }
                     now_time = Time.now
                     old_timetable_size = timetable.size
-                    unless admin_logged_in?
+                    # unless admin_logged_in?
                         timetable = timetable.reject do |entry|
                             t = Time.parse("#{entry['end']}:00") + JITSI_LESSON_POST_ENTRY_TOLERANCE * 60
                             now_time > t
                         end
-                    end
+                    # end
                     if timetable.empty?
                         if old_timetable_size > 0
                             result[:html] += "<div class='alert alert-warning'>Dieser Jitsi-Raum ist heute nicht mehr geöffnet.</div>"
@@ -308,7 +308,7 @@ class Main < Sinatra::Base
                         # check if we have streaming restrictions for this lesson
                         lesson_info = timetable.first
 
-                        debug lesson_info.to_yaml
+                        # debug lesson_info.to_yaml
                         
                         unless self.class.stream_allowed_for_date_lesson_key_and_email(Date.today.strftime('%Y-%m-%d'), lesson_info['lesson_key'], @session_user[:email])
                             result[:html] += "<div class='alert alert-info'>Du bist für diesen Jitsi-Raum leider nicht freigeschaltet.</div>"

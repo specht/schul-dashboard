@@ -708,8 +708,8 @@ window.addEventListener('load', function() {
         }
     });
     $('.klasse-click-row').click(function(e) {
-        let row = $(e.target).closest('tr');
-        window.location.href = `/directory/${row.data('klasse')}`;
+        let row = $(e.target).closest('tbody');
+        row.next().toggle();
     });
 });
 

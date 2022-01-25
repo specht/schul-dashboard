@@ -2354,3 +2354,37 @@ li.nav-item a.nav-link i.fa {
     outline: 1px solid rgba(0,0,0,0.2);
     box-shadow: 0 0 10px rgba(0,0,0,0.2);
 }
+
+.salzh-badge {
+    width: 1em;
+    height: 1em;
+    display: inline-block;
+    border-radius: 1em;
+    /* margin-right: 0.5em; */
+    margin: 0 0.5em 0 0;
+    position: relative;
+    top: 0.2em;
+    border: 1px solid rgba(0,0,0,0.2);
+}
+
+.salzh-badge-big {
+    font-size: 120%;
+    width: 1.1em;
+    height: 1.1em;
+}
+
+.salzh-badge.bg-danger span {
+    color: #fff;
+}
+
+.salzh-badge span {
+    position: relative;
+    top: -6px;
+    display: inline-block;
+    width: 1em;
+    text-align: center;
+}
+
+.btn-light-danger, .bg-light-danger {
+    background-color: #E5872E;
+}

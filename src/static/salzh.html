@@ -1,8 +1,8 @@
 #{this_is_a_page_for_logged_in_users_who_can_manage_salzh}
 <div class='container' style='padding-top: 30px;'>
     <div class='row'>
-        <div class='col-md-8 offset-md-2'>
-            <h2 style='margin-bottom: 30px;'>Schülerinnen und Schüler im saLzH</h2>
+        <div class='col-md-12'>
+            <h2 style='margin-bottom: 30px;'>Kontaktpersonen / saLzH</h2>
             <!-- <hr /> -->
             <div style='text-align: right'>
                 <button class='btn btn-success bu-add-salzh'><i class='fa fa-pencil'></i>&nbsp;&nbsp;Eintragen</button>
@@ -13,10 +13,15 @@
                     <thead>
                         <tr>
                             <th>Nr.</th>
-                            <th>Name</th>
-                            <th>Letzter Tag im saLzH</th>
-                            <th>Bearbeiten</th>
-                            <th>Löschen</th>
+                            <th>Klasse</th>
+                            <th>Nachname</th>
+                            <th>Vorname</th>
+                            <th>Kontaktperson</th>
+                            <th>freiwillig saLzH</th>
+                            <th>saLzH</th>
+                            <th>Letzter Tag</th>
+                            <th></th>
+                            <th></th>
                         </tr>
                     </thead>
                     <tbody id='salzh_sus_here'>
@@ -45,8 +50,22 @@
                         <input type="text" readonly class="form-control" id="ti_email" placeholder="">
                     </div>
                 </div>
+                <div class="form-group row hide-if-edit">
+                    <label class="col-sm-3 col-form-label">Status:</label>
+                    <div class='col-sm-3'>
+                        <button id='bu_contact_person' style='width: 100%;'
+                            class='btn btn-outline-secondary'>Kontaktperson</button>
+                    </div>
+                    <div class='col-sm-3'>
+                        <button id='bu_freiwillig_salzh' style='width: 100%;'
+                            class='btn btn-outline-secondary'>freiwillig saLzH</button>
+                    </div>
+                    <div class='col-sm-3'>
+                        <button id='bu_salzh' style='width: 100%;' class='btn btn-outline-secondary'>saLzH</button>
+                    </div>
+                </div>
                 <div class="form-group row">
-                    <label for="ti_end_date" class="col-sm-3 col-form-label">Letzter Tag im saLzH:</label>
+                    <label for="ti_end_date" class="col-sm-3 col-form-label">Letzter Tag:</label>
                     <div class="col-sm-9">
                         <input type="date" class="form-control" id="ti_end_date" />
                     </div>
@@ -74,6 +93,7 @@
     var autocomplete_results = {};
     var klasse_for_sus = #{ klasse_for_sus().to_json};
     var old_end_date = null;
+    var old_mode = null;
     var observer = null;
     var sent_messages = #{ sent_messages.to_json };
     var antikenfahrt_recipients = #{@@antikenfahrt_recipients.to_json};
@@ -85,14 +105,18 @@
     function can_send() {
         let email = $('#ti_email').data('email');
         let end_date = $('#ti_end_date').val();
-        return email != null && end_date.length > 0;
+        let mode = null;
+        if ($('#bu_contact_person').hasClass('btn-warning')) mode = 'contact_person';
+        if ($('#bu_freiwillig_salzh').hasClass('btn-light-danger')) mode = 'freiwillig_salzh';
+        if ($('#bu_salzh').hasClass('btn-danger')) mode = 'salzh';
+        return email != null && end_date.length > 0 && mode !== null;
     }
 
     function pending_changes() {
         if (old_end_date === null) {
             let email = $('#ti_email').data('email') || '';
             return email.length > 0;
-        }
+        }   
         let end_date = $('#ti_end_date').val();
         return (end_date != old_end_date);
     }
@@ -123,7 +147,10 @@
     function send_message() {
         let email = $('#ti_email').data('email');
         let end_date = $('#ti_end_date').val();
-        api_call('/api/update_salzh_for_sus', { email: email, end_date: end_date }, function (data) {
+        let mode = null;
+        if ($('#bu_contact_person').hasClass('btn-warning')) mode = 'contact_person';
+        if ($('#bu_salzh').hasClass('btn-danger')) mode = 'salzh';
+        api_call('/api/update_salzh_for_sus', { email: email, end_date: end_date, mode: mode }, function (data) {
             if (data.success) {
                 force_close = true;
                 $('#composeModal').modal('hide');
@@ -230,9 +257,13 @@
         $('#ti_email').val('');
         $('#ti_email').data('email', null);
         $('#ti_end_date').val('');
+        $('#bu_contact_person').removeClass('btn-warning').addClass('btn-outline-secondary');
+        $('#bu_salzh').removeClass('btn-danger').addClass('btn-outline-secondary');
         $('#composeModal .modal-title').text('Neuer Eintrag');
+        $('#composeModal .hide-if-edit').show();
         $('#composeModal').modal('show');
         old_end_date = null;
+        old_mode = null;
         force_close = false;
         $('#ti_recipients').show();
         $('#ti_recipients').val('');
@@ -265,6 +296,18 @@
 
         $('#bu_send_message').click(function (e) {
             send_message();
+        });
+
+        $('#bu_contact_person').click(function (e) {
+            $('#bu_contact_person').removeClass('btn-outline-secondary').addClass('btn-warning');
+            $('#bu_salzh').removeClass('btn-danger').addClass('btn-outline-secondary');
+            update_buttons();
+        });
+
+        $('#bu_salzh').click(function (e) {
+            $('#bu_contact_person').removeClass('btn-warning').addClass('btn-outline-secondary');
+            $('#bu_salzh').removeClass('btn-outline-secondary').addClass('btn-danger');
+            update_buttons();
         });
 
         $('#bu_delete_message').click(function (e) {
@@ -384,21 +427,86 @@
             row.data('email', entry.email);
             row.data('name', `${entry.name} (${entry.klasse})`);
             row.data('end_date', entry.end_date);
+            row.data('mode', entry.mode);
             row.append($('<td>').text(`${i}.`));
-            row.append($('<td>').text(`${entry.name} (${klassen_tr[entry.klasse] || entry.klasse})`));
+            // row.append($('<td>').text(`${entry.name} (${klassen_tr[entry.klasse] || entry.klasse})`));
+            row.append($('<td>').text(entry.klasse_tr));
+            row.append($('<td>').text(entry.last_name));
+            row.append($('<td>').text(entry.first_name));
+            let bu_contact_person = $('<button>').css('width', '120px').addClass('btn').addClass('btn-outline-secondary').addClass('btn-sm').text('Kontaktperson').addClass('bu-contact-person');
+            row.append($('<td>').append(bu_contact_person));
+            let bu_freiwillig_salzh = $('<button>').css('width', '120px').addClass('btn').addClass('btn-outline-secondary').addClass('btn-sm').text('freiwillig saLzH').addClass('bu-freiwillig-salzh');
+            row.append($('<td>').append(bu_freiwillig_salzh));
+            let bu_salzh = $('<button>').css('width', '120px').addClass('btn').addClass('btn-outline-secondary').addClass('btn-sm').text('saLzH').addClass('bu-salzh');
+            row.append($('<td>').append(bu_salzh));
+            bu_contact_person.click(function(e) {
+                let row = $(e.target).closest('tr');
+                let email = row.data('email');
+                let end_date = row.data('end_date');
+                api_call('/api/update_salzh_for_sus', { email: email, end_date: end_date, mode: 'contact_person' }, function (data) {
+                    if (data.success) {
+                        row.data('mode', 'contact_person');
+                        row.find('.bu-contact-person').removeClass('btn-outline-secondary').addClass('btn-warning');
+                        row.find('.bu-freiwillig-salzh').removeClass('btn-light-danger').addClass('btn-outline-secondary');
+                        row.find('.bu-salzh').removeClass('btn-danger').addClass('btn-outline-secondary');
+                    }
+                });
+            });
+            bu_freiwillig_salzh.click(function(e) {
+                let row = $(e.target).closest('tr');
+                let email = row.data('email');
+                let end_date = row.data('end_date');
+                api_call('/api/update_salzh_for_sus', { email: email, end_date: end_date, mode: 'freiwillig_salzh' }, function (data) {
+                    if (data.success) {
+                        row.data('mode', 'freiwillig_salzh');
+                        row.find('.bu-contact-person').removeClass('btn-warning').addClass('btn-outline-secondary');
+                        row.find('.bu-freiwillig-salzh').removeClass('btn-outline-secondary').addClass('btn-light-danger');
+                        row.find('.bu-salzh').removeClass('btn-danger').addClass('btn-outline-secondary');
+                    }
+                });
+            });
+            bu_salzh.click(function(e) {
+                let row = $(e.target).closest('tr');
+                let email = row.data('email');
+                let end_date = row.data('end_date');
+                api_call('/api/update_salzh_for_sus', { email: email, end_date: end_date, mode: 'salzh' }, function (data) {
+                    if (data.success) {
+                        row.data('mode', 'salzh');
+                        row.find('.bu-contact-person').removeClass('btn-warning').addClass('btn-outline-secondary');
+                        row.find('.bu-freiwillig-salzh').removeClass('btn-light-danger').addClass('btn-outline-secondary');
+                        row.find('.bu-salzh').removeClass('btn-outline-secondary').addClass('btn-danger');
+                    }
+                });
+            });
+            if (entry.mode === 'contact_person') {
+                bu_contact_person.removeClass('btn-outline-secondary').addClass('btn-warning');
+            } else if (entry.mode === 'freiwillig_salzh') {
+                bu_freiwillig_salzh.removeClass('btn-outline-secondary').addClass('btn-light-danger');
+            } else {
+                bu_salzh.removeClass('btn-outline-secondary').addClass('btn-danger');
+            }
             row.append($('<td>').text(moment(entry.end_date).format('ddd, DD.MM.YYYY')));
 
-            let button = $('<button>').addClass('btn').addClass('btn-sm').addClass('btn-warning').html("<i class='fa fa-pencil'></i>&nbsp;&nbsp;Bearbeiten");
+            let button = $('<button>').addClass('btn').addClass('btn-sm').addClass('btn-secondary').html("<i class='fa fa-pencil'></i>");
             row.append($('<td>').append(button));
             button.click(function (e) {
                 let email = row.data('email');
                 let name = row.data('name');
                 let end_date = row.data('end_date');
                 old_end_date = end_date;
+                old_mode = row.data('mode');
                 $('#ti_email').val(name);
                 $('#ti_email').data('email', email);
                 $('#ti_end_date').val(end_date);
+                if (row.data('mode') == 'contact_person') {
+                    $('#bu_contact_person').removeClass('btn-outline-secondary').addClass('btn-warning');
+                    $('#bu_salzh').removeClass('btn-danger').addClass('btn-outline-secondary');
+                } else {
+                    $('#bu_contact_person').removeClass('btn-warning').addClass('btn-outline-secondary');
+                    $('#bu_salzh').removeClass('btn-outline-secondary').addClass('btn-danger');
+                }
                 $('#composeModal .modal-title').text('Eintrag bearbeiten');
+                $('#composeModal .hide-if-edit').hide();
                 $('#composeModal').modal('show');
                 force_close = false;
                 $('#ti_recipients').hide();
@@ -407,7 +515,7 @@
                 update_buttons();
             });
 
-            button = $('<button>').addClass('btn').addClass('btn-sm').addClass('btn-danger').html("<i class='fa fa-trash'></i>&nbsp;&nbsp;Löschen");
+            button = $('<button>').addClass('btn').addClass('btn-sm').addClass('btn-danger').html("<i class='fa fa-trash'></i>");
             row.append($('<td>').append(button));
             button.click(function (e) {
                 let name = row.data('name');

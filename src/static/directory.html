@@ -80,5 +80,21 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     });
+    $('.ti_freiwillig_salzh').change(function(e) {
+        let email = $(e.target).closest('tr').data('email');
+        api_call('/api/set_freiwillig_salzh', {email: email, end_date: $(e.target).val()}, function(data) {
+            if (data.success) {
+                window.location.reload();
+            }
+        });
+    });
+    $('.bu_delete_freiwillig_salzh').click(function(e) {
+        let email = $(e.target).closest('tr').data('email');
+        api_call('/api/delete_freiwillig_salzh', {email: email}, function(data) {
+            if (data.success) {
+                window.location.reload();
+            }
+        });
+    });
 });
 </script>

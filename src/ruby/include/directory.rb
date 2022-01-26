@@ -2,7 +2,7 @@ class Main < Sinatra::Base
     def mail_addresses_table(klasse)
         require_teacher!
         all_homeschooling_users = Main.get_all_homeschooling_users()
-        all_salzh_users = Main.get_all_salzh_users()
+        salzh_status = Main.get_salzh_status_for_emails(Main.class_variable_get(:@@schueler_for_klasse)[klasse] || [])
         StringIO.open do |io|
             io.puts "<div class='row'>"
             io.puts "<div class='col-md-12'>"
@@ -22,6 +22,10 @@ class Main < Sinatra::Base
             io.puts "<th></th>"
             io.puts "<th>Name</th>"
             io.puts "<th>Vorname</th>"
+            io.puts "<th>Status</th>"
+            if can_manage_salzh_logged_in?
+                io.puts "<th>Freiwilliges saLzH bis</th>"
+            end
             io.puts "<th>E-Mail-Adresse</th>"
             # io.puts "<th style='width: 140px;'>Homeschooling</th>"
             if ['11', '12'].include?(klasse)
@@ -29,7 +33,6 @@ class Main < Sinatra::Base
             end
             io.puts "<th>A/B</th>"
             io.puts "<th>Letzter Zugriff</th>"
-            io.puts "<th>saLzH</th>"
             io.puts "<th>Eltern-E-Mail-Adresse</th>"
             io.puts "</tr>"
             io.puts "</thead>"
@@ -54,17 +57,30 @@ class Main < Sinatra::Base
                 (@@user_info[a][:last_name] <=> @@user_info[b][:last_name])
             end.each.with_index do |email, _|
                 record = @@user_info[email]
-                io.puts "<tr class='user_row'>"
+                io.puts "<tr class='user_row' data-email='#{email}'>"
                 io.puts "<td>#{_ + 1}.</td>"
                 io.puts "<td>#{user_icon(email, 'avatar-md')}</td>"
                 salzh_style = ''
                 salzh_class = ''
-                if all_salzh_users[email]
+                if salzh_status[email]
                     salzh_style = 'padding: 2px 4px; margin: -2px -4px; display: inline-block; border-radius: 4px;'
-                    salzh_class = 'bg-warning'
+                    salzh_class = "bg-#{SALZH_MODE_COLORS[(salzh_status[email] || {})[:status]]}"
                 end
                 io.puts "<td><div class='#{salzh_class}' style='#{salzh_style}'>#{record[:last_name]}</div></td>"
                 io.puts "<td><div class='#{salzh_class}' style='#{salzh_style}'>#{record[:first_name]}</div></td>"
+                salzh_label = ''
+                if salzh_status[email][:status]
+                    salzh_label = "<span class='salzh-badge salzh-badge-big bg-#{SALZH_MODE_COLORS[(salzh_status[email] || {})[:status]]}'><i class='fa #{SALZH_MODE_ICONS[(salzh_status[email] || {})[:status]]}'></i></span>&nbsp;&nbsp;bis #{Date.parse(salzh_status[email][:status_end_date]).strftime('%d.%m.')}"
+
+                    # salzh_label = "<div class='bg-#{SALZH_MODE_COLORS[(salzh_status[email] || {})[:status]]}' style='text-align: center; padding: 4px; margin: -4px; border-radius: 4px;'><i class='fa #{SALZH_MODE_ICONS[(salzh_status[email] || {})[:status]]}'></i>&nbsp;&nbsp;bis #{Date.parse(salzh_status[email][:status_end_date]).strftime('%d.%m.')}</div>"
+                end
+                io.puts "<td>#{salzh_label}</td>"
+                if can_manage_salzh_logged_in?
+                    io.puts "<td>"
+                    freiwillig_salzh = salzh_status[email][:freiwillig_salzh]
+                    io.puts "<div class='input-group'><input type='date' class='form-control ti_freiwillig_salzh' value='#{freiwillig_salzh}' /><div class='input-group-append'><button #{freiwillig_salzh.nil? ? 'disabled' : ''} class='btn #{freiwillig_salzh.nil? ? 'btn-outline-secondary' : 'btn-danger'} bu_delete_freiwillig_salzh'><i class='fa fa-trash'></i></button></div></div>"
+                    io.puts "</td>"
+                end
                 io.puts "<td>"
                 print_email_field(io, record[:email])
                 io.puts "</td>"
@@ -109,12 +125,6 @@ class Main < Sinatra::Base
                     end
                 end
                 io.puts "<td>#{la_label}</td>"
-                salzh_label = ''
-                if all_salzh_users[email]
-                    salzh_label = "<div class='bg-warning' style='text-align: center; padding: 4px; margin: -4px; border-radius: 4px;'><i class='fa fa-home'></i>&nbsp;&nbsp;bis #{Date.parse(all_salzh_users[email]).strftime('%d.%m.')}</div>"
-                end
-
-                io.puts "<td>#{salzh_label}</td>"
                 io.puts "<td>"
                 print_email_field(io, "eltern.#{record[:email]}")
                 io.puts "</td>"
@@ -244,24 +254,6 @@ class Main < Sinatra::Base
             all_homeschooling_users << user['u.email']
         end
         all_homeschooling_users
-    end
-    
-    def self.get_all_salzh_users()
-        today = Date.today.strftime('%Y-%m-%d')
-        $neo4j.neo4j_query(<<~END_OF_QUERY, :today => today)
-            MATCH (s:Salzh)-[:BELONGS_TO]->(u:User)
-            WHERE s.end_date < {today}
-            DETACH DELETE s;
-        END_OF_QUERY
-        temp = $neo4j.neo4j_query(<<~END_OF_QUERY)
-            MATCH (s:Salzh)-[:BELONGS_TO]->(u:User)
-            RETURN u.email, s.end_date;
-        END_OF_QUERY
-        all_salzh_users = {}
-        temp.each do |user|
-            all_salzh_users[user['u.email']] = user['s.end_date']
-        end
-        all_salzh_users
     end
     
     def self.get_switch_week_for_date(d)

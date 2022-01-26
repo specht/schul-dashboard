@@ -169,7 +169,7 @@ class Timetable
         monitor_data_package = {:data => {}}
         ts = DateTime.now.to_s
 
-        salzh_info = Main.get_current_salzh_sus_for_all_teachers()
+        salzh_info = Main.get_current_salzh_status_for_all_teachers()
 
         (0..1).each do |offset|
             monitor_date = Date.parse([@@config[:first_school_day], Date.today.to_s].max.to_s)
@@ -233,7 +233,7 @@ class Timetable
                     monitor_data[which][key] = []
                     if which == :lehrer && salzh_info[key]
                         filtered = salzh_info[key].select do |x|
-                            x[:end_date] >= monitor_date
+                            x[:status_end_date] >= monitor_date
                         end
                         unless filtered.empty?
                             klassen = {}
@@ -317,10 +317,10 @@ class Timetable
         @@pausenaufsichten = Main.class_variable_get(:@@pausenaufsichten)
         @@tablets = Main.class_variable_get(:@@tablets)
         @@tablet_sets = Main.class_variable_get(:@@tablet_sets)
-        @@current_salzh_sus = Main.get_current_salzh_sus()
-        @@current_salzh_sus_by_email = {}
-        @@current_salzh_sus.each do |entry|
-            @@current_salzh_sus_by_email[entry[:email]] = entry[:end_date]
+        @@current_salzh_status = Main.get_current_salzh_status()
+        @@current_salzh_status_by_email = {}
+        @@current_salzh_status.each do |entry|
+            @@current_salzh_status_by_email[entry[:email]] = entry
         end
         @@lehrer_order = Main.class_variable_get(:@@lehrer_order)
 
@@ -1310,13 +1310,27 @@ class Timetable
                         fixed_events.map! do |event|
                             if event[:lesson] && event[:lesson_key]
                                 lesson_sus = Set.new(@@schueler_for_lesson[event[:lesson_key]] || [])
-                                salzh_sus = Set.new(@@current_salzh_sus_by_email.keys)
+                                salzh_sus = Set.new(@@current_salzh_status_by_email.keys)
                                 intersection = (lesson_sus & salzh_sus).select do |email|
-                                    @@current_salzh_sus_by_email[email] >= event[:datum]
+                                    @@current_salzh_status_by_email[email][:status_end_date] >= event[:datum]
                                 end
                                 if intersection.size > 0
-                                    event[:salzh_sus] = intersection.to_a.sort.map do |email|
-                                        @@user_info[email][:display_name]
+                                    intersection_sorted = intersection.to_a.sort
+                                    contact_person_sus = intersection_sorted.select do |email|
+                                        @@current_salzh_status_by_email[email][:status] == :contact_person
+                                    end
+                                    unless contact_person_sus.empty?
+                                        event[:contact_person_sus] = contact_person_sus.map do |email|
+                                            @@user_info[email][:display_name]
+                                        end
+                                    end
+                                    salzh_sus = intersection_sorted.select do |email|
+                                        @@current_salzh_status_by_email[email][:status] == :salzh
+                                    end
+                                    unless contact_person_sus.empty?
+                                        event[:salzh_sus] = salzh_sus.map do |email|
+                                            @@user_info[email][:display_name]
+                                        end
                                     end
                                 end
                             end

@@ -2,11 +2,11 @@
 <div class='container' style='padding-top: 30px;'>
     <div class='row'>
         <div class='col-md-12'>
-            <h2 style='margin-bottom: 30px;'>Kontaktpersonen / saLzH</h2>
             <!-- <hr /> -->
-            <div style='text-align: right'>
+            <div style='float: right'>
                 <button class='btn btn-success bu-add-salzh'><i class='fa fa-pencil'></i>&nbsp;&nbsp;Eintragen</button>
             </div>
+            <h2 style='margin-bottom: 30px;'>Kontaktpersonen / saLzH</h2>
             <hr />
             <div class="table-responsive" style="max-width: 100%; overflow-x: auto;">
                 <table class='table table-narrow narrow'>
@@ -17,7 +17,6 @@
                             <th>Nachname</th>
                             <th>Vorname</th>
                             <th>Kontaktperson</th>
-                            <th>freiwillig saLzH</th>
                             <th>saLzH</th>
                             <th>Letzter Tag</th>
                             <th></th>
@@ -45,28 +44,24 @@
                     <div class='recipient-input-dropdown' style='display: none;'></div></input>
                 </div>
                 <div class="form-group row">
-                    <label for="ti_email" class="col-sm-3 col-form-label">Name:</label>
-                    <div class="col-sm-9">
+                    <label for="ti_email" class="col-sm-4 col-form-label">Name:</label>
+                    <div class="col-sm-8">
                         <input type="text" readonly class="form-control" id="ti_email" placeholder="">
                     </div>
                 </div>
                 <div class="form-group row hide-if-edit">
-                    <label class="col-sm-3 col-form-label">Status:</label>
-                    <div class='col-sm-3'>
+                    <label class="col-sm-4 col-form-label">Status:</label>
+                    <div class='col-sm-4'>
                         <button id='bu_contact_person' style='width: 100%;'
                             class='btn btn-outline-secondary'>Kontaktperson</button>
                     </div>
-                    <div class='col-sm-3'>
-                        <button id='bu_freiwillig_salzh' style='width: 100%;'
-                            class='btn btn-outline-secondary'>freiwillig saLzH</button>
-                    </div>
-                    <div class='col-sm-3'>
+                    <div class='col-sm-4'>
                         <button id='bu_salzh' style='width: 100%;' class='btn btn-outline-secondary'>saLzH</button>
                     </div>
                 </div>
                 <div class="form-group row">
-                    <label for="ti_end_date" class="col-sm-3 col-form-label">Letzter Tag:</label>
-                    <div class="col-sm-9">
+                    <label for="ti_end_date" class="col-sm-4 col-form-label">Letzter Tag:</label>
+                    <div class="col-sm-8">
                         <input type="date" class="form-control" id="ti_end_date" />
                     </div>
                 </div>
@@ -107,7 +102,6 @@
         let end_date = $('#ti_end_date').val();
         let mode = null;
         if ($('#bu_contact_person').hasClass('btn-warning')) mode = 'contact_person';
-        if ($('#bu_freiwillig_salzh').hasClass('btn-light-danger')) mode = 'freiwillig_salzh';
         if ($('#bu_salzh').hasClass('btn-danger')) mode = 'salzh';
         return email != null && end_date.length > 0 && mode !== null;
     }
@@ -426,8 +420,9 @@
             let row = $('<tr>');
             row.data('email', entry.email);
             row.data('name', `${entry.name} (${entry.klasse})`);
-            row.data('end_date', entry.end_date);
-            row.data('mode', entry.mode);
+            console.log(entry);
+            row.data('end_date', entry.salzh_end_date);
+            row.data('mode', entry.salz_mode);
             row.append($('<td>').text(`${i}.`));
             // row.append($('<td>').text(`${entry.name} (${klassen_tr[entry.klasse] || entry.klasse})`));
             row.append($('<td>').text(entry.klasse_tr));
@@ -435,8 +430,6 @@
             row.append($('<td>').text(entry.first_name));
             let bu_contact_person = $('<button>').css('width', '120px').addClass('btn').addClass('btn-outline-secondary').addClass('btn-sm').text('Kontaktperson').addClass('bu-contact-person');
             row.append($('<td>').append(bu_contact_person));
-            let bu_freiwillig_salzh = $('<button>').css('width', '120px').addClass('btn').addClass('btn-outline-secondary').addClass('btn-sm').text('freiwillig saLzH').addClass('bu-freiwillig-salzh');
-            row.append($('<td>').append(bu_freiwillig_salzh));
             let bu_salzh = $('<button>').css('width', '120px').addClass('btn').addClass('btn-outline-secondary').addClass('btn-sm').text('saLzH').addClass('bu-salzh');
             row.append($('<td>').append(bu_salzh));
             bu_contact_person.click(function(e) {
@@ -447,20 +440,6 @@
                     if (data.success) {
                         row.data('mode', 'contact_person');
                         row.find('.bu-contact-person').removeClass('btn-outline-secondary').addClass('btn-warning');
-                        row.find('.bu-freiwillig-salzh').removeClass('btn-light-danger').addClass('btn-outline-secondary');
-                        row.find('.bu-salzh').removeClass('btn-danger').addClass('btn-outline-secondary');
-                    }
-                });
-            });
-            bu_freiwillig_salzh.click(function(e) {
-                let row = $(e.target).closest('tr');
-                let email = row.data('email');
-                let end_date = row.data('end_date');
-                api_call('/api/update_salzh_for_sus', { email: email, end_date: end_date, mode: 'freiwillig_salzh' }, function (data) {
-                    if (data.success) {
-                        row.data('mode', 'freiwillig_salzh');
-                        row.find('.bu-contact-person').removeClass('btn-warning').addClass('btn-outline-secondary');
-                        row.find('.bu-freiwillig-salzh').removeClass('btn-outline-secondary').addClass('btn-light-danger');
                         row.find('.bu-salzh').removeClass('btn-danger').addClass('btn-outline-secondary');
                     }
                 });
@@ -473,19 +452,16 @@
                     if (data.success) {
                         row.data('mode', 'salzh');
                         row.find('.bu-contact-person').removeClass('btn-warning').addClass('btn-outline-secondary');
-                        row.find('.bu-freiwillig-salzh').removeClass('btn-light-danger').addClass('btn-outline-secondary');
                         row.find('.bu-salzh').removeClass('btn-outline-secondary').addClass('btn-danger');
                     }
                 });
             });
-            if (entry.mode === 'contact_person') {
+            if (entry.salzh_mode === 'contact_person') {
                 bu_contact_person.removeClass('btn-outline-secondary').addClass('btn-warning');
-            } else if (entry.mode === 'freiwillig_salzh') {
-                bu_freiwillig_salzh.removeClass('btn-outline-secondary').addClass('btn-light-danger');
             } else {
                 bu_salzh.removeClass('btn-outline-secondary').addClass('btn-danger');
             }
-            row.append($('<td>').text(moment(entry.end_date).format('ddd, DD.MM.YYYY')));
+            row.append($('<td>').text(moment(entry.salzh_end_date).format('ddd, DD.MM.YYYY')));
 
             let button = $('<button>').addClass('btn').addClass('btn-sm').addClass('btn-secondary').html("<i class='fa fa-pencil'></i>");
             row.append($('<td>').append(button));

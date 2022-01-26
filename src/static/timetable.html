@@ -493,11 +493,15 @@ document.addEventListener('DOMContentLoaded', function() {
                         markers.append($(event_data.booked_tablet_label_short));
                 }
                 if (event_data.booked_tablet_sets) {
-                    markers.append($('<span>').css('font-weight', 'normal').html(`<i class='fa fa-tablet'></i> x${event_data.booked_tablet_sets_total_count}`));
+                    markers.append($('<span>').css('font-weight', 'normal').html(`<i class='fa fa-tablet'></i> &times;${event_data.booked_tablet_sets_total_count}`));
+                }
+                let contact_person_sus = arg.event.extendedProps.contact_person_sus || [];
+                if (contact_person_sus.length > 0) {
+                    markers.append($('<span>').css('font-weight', 'normal').html(`<i class='fa fa-exclamation-circle'></i> &times;${contact_person_sus.length}`));
                 }
                 let salzh_sus = arg.event.extendedProps.salzh_sus || [];
                 if (salzh_sus.length > 0) {
-                    markers.append($('<span>').css('font-weight', 'normal').html(`<i class='fa fa-home'></i> x${salzh_sus.length}`));
+                    markers.append($('<span>').css('font-weight', 'normal').html(`<i class='fa fa-home'></i> &times;${salzh_sus.length}`));
                 }
                 if (event_data.lesson_nc || event_data.homework_nc)
                     markers.append($('<span>').addClass('mute').html('NC'));
@@ -796,9 +800,15 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
                 wrote_something = true;
             }
+            let contact_person_sus = event.contact_person_sus || [];
+            if (contact_person_sus.length > 0) {
+                let p = $('<p>').html(`In dieser Unterrichtsstunde befinde${contact_person_sus.length === 1 ? 't': 'n'} sich ${contact_person_sus.length} SuS, die Kontaktpersonen sind: ${contact_person_sus.map((x) => {return `<div class='bg-#{SALZH_MODE_COLORS[:contact_person]}' style='display: inline-block; padding: 2px 4px; margin: -2px 0px; border-radius: 4px;'>${x}</div>`; }).join(', ')}.`);
+                body.append(p);
+                wrote_something = true;
+            }
             let salzh_sus = event.salzh_sus || [];
             if (salzh_sus.length > 0) {
-                let p = $('<p>').html(`In dieser Unterrichtsstunde befinde${salzh_sus.length === 1 ? 't': 'n'} sich ${salzh_sus.length} SuS im saLzH: ${salzh_sus.map((x) => {return `<div class='bg-warning' style='display: inline-block; padding: 2px 4px; margin: -2px 0px; border-radius: 4px;'>${x}</div>`; }).join(', ')}.`);
+                let p = $('<p>').html(`In dieser Unterrichtsstunde befinde${salzh_sus.length === 1 ? 't': 'n'} sich ${salzh_sus.length} SuS im saLzH: ${salzh_sus.map((x) => {return `<div class='bg-#{SALZH_MODE_COLORS[:salzh]}' style='display: inline-block; padding: 2px 4px; margin: -2px 0px; border-radius: 4px;'>${x}</div>`; }).join(', ')}.`);
                 body.append(p);
                 wrote_something = true;
             }

@@ -2368,18 +2368,31 @@ li.nav-item a.nav-link i.fa {
 }
 
 .salzh-badge-big {
-    font-size: 120%;
-    width: 1.1em;
-    height: 1.1em;
+    font-size: 90%;
+    /* margin: 0.4em 0.2em; */
+    width: 1.5em;
+    height: 1.5em;
+    font-weight: bold;
+    text-align: center;
+}
+
+.salzh-badge-big .fa {
+    position: relative;
+    /* top: -6px; */
 }
 
 .salzh-badge.bg-danger span {
+    color: rgba(255,255,255,0.9);
+}
+
+.bg-danger {
     color: #fff;
 }
 
+
 .salzh-badge span {
     position: relative;
-    top: -6px;
+    top: -1px;
     display: inline-block;
     width: 1em;
     text-align: center;

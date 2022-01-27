@@ -444,7 +444,7 @@ class Main < Sinatra::Base
                 io.puts "<strong>Was bedeutet das?</strong>"
                 io.puts "</p>"
                 io.puts "<div id='salzh_explanation' style='display: #{hide_explanations ? 'none': 'block'};'>"
-                if contact_person_count > 0
+                if salzh_count > 0
                     io.puts "<hr />"
                     io.puts "<p>"
                     io.puts "<strong><span class='bg-danger' style='padding: 0.2em 0.5em; font-weight: bold; border-radius: 0.25em; color: #fff;'>saLzH:</span></strong> Es handelt sich um SuS, die aus unter&shy;schied&shy;lichen Gründen im saLzH sind (z. B. positiv getestet / als Kontaktperson nach Rückmeldung der Eltern bestätigt freiwillig im saLzH / Aussetzung der Präsenz&shy;pflicht). Bitte ermöglichen Sie diesen SuS eine Teilnahme am Unterricht."

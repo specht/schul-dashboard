@@ -233,7 +233,7 @@ class Timetable
                     monitor_data[which][key] = []
                     if which == :lehrer && salzh_info[key]
                         filtered = salzh_info[key].select do |x|
-                            x[:status_end_date] >= monitor_date
+                            x[:status] == :salzh && x[:status_end_date] >= monitor_date
                         end
                         unless filtered.empty?
                             klassen = {}

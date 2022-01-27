@@ -96,5 +96,18 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     });
+    $('.bu_toggle_testing_required').click(function(e) {
+        let email = $(e.target).closest('tr').data('email');
+        let button = $(e.target).closest('button');
+        api_call('/api/toggle_testing_required', {email: email}, function(data) {
+            if (data.success) {
+                if (data.testing_required) {
+                    button.removeClass('btn-outline-secondary').addClass('btn-success').html("<i class='fa fa-check'></i>&nbsp;&nbsp;notwendig");
+                } else {
+                    button.removeClass('btn-success').addClass('btn-outline-secondary').html("<i class='fa fa-times'></i>&nbsp;&nbsp;nicht notwendig");
+                }
+            }
+        });
+    });
 });
 </script>

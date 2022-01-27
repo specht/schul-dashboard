@@ -1207,5 +1207,10 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     });
+
+    $('#bu_minimize_salzh_explanation').click(function(e) {
+        $('#salzh_explanation').slideUp();
+        api_call('/api/minimize_salzh_explanation');
+    });
 });
 </script>

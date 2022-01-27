@@ -1,5 +1,6 @@
-SALZH_MODE_COLORS = {:contact_person => 'warning', :salzh => 'danger'}
-SALZH_MODE_ICONS = {:contact_person => 'fa-exclamation', :salzh => 'fa-home'}
+SALZH_MODE_COLORS = {:contact_person => 'warning', :salzh => 'danger', :hotspot_klasse => 'pink'}
+SALZH_MODE_ICONS = {:contact_person => 'fa-exclamation', :salzh => 'fa-home', :hotspot_klasse => 'fa-fire'}
+SALZH_MODE_LABEL = {:contact_person => 'Kontaktperson', :salzh => 'saLzH', :hotspot_klasse => 'erhöhtes Infektionsgeschehen in der Klasse'}
 
 class Main < Sinatra::Base
     def self.get_salzh_status_for_emails(emails = nil) 
@@ -16,8 +17,22 @@ class Main < Sinatra::Base
             WHERE EXISTS(u.freiwillig_salzh) AND u.freiwillig_salzh < {today}
             REMOVE u.freiwillig_salzh;
         END_OF_QUERY
+        $neo4j.neo4j_query(<<~END_OF_QUERY, :today => today)
+            MATCH (k:Klasse)
+            WHERE k.hotspot_end_date < {today}
+            DETACH DELETE k;
+        END_OF_QUERY
         temp = []
         temp2 = []
+
+        hotspot_dates = {}
+        rows = $neo4j.neo4j_query(<<~END_OF_QUERY)
+            MATCH (k:Klasse)
+            RETURN k.klasse, k.hotspot_end_date;
+        END_OF_QUERY
+        rows.each do |x|
+            hotspot_dates[x['k.klasse']] = x['k.hotspot_end_date']
+        end
 
         if emails.nil?
             temp = $neo4j.neo4j_query(<<~END_OF_QUERY)
@@ -26,7 +41,7 @@ class Main < Sinatra::Base
             END_OF_QUERY
             temp2 = $neo4j.neo4j_query(<<~END_OF_QUERY)
                 MATCH (u:User)
-                RETURN u.email, u.freiwillig_salzh;
+                RETURN u.email, u.freiwillig_salzh, COALESCE(u.testing_required, TRUE) AS testing_required;
             END_OF_QUERY
         else
             emails = [emails] unless emails.is_a? Array
@@ -38,7 +53,7 @@ class Main < Sinatra::Base
             temp2 = $neo4j.neo4j_query(<<~END_OF_QUERY, {:emails => emails})
                 MATCH (u:User)
                 WHERE u.email IN $emails
-                RETURN u.email, u.freiwillig_salzh;
+                RETURN u.email, u.freiwillig_salzh, COALESCE(u.testing_required, TRUE) AS testing_required;
             END_OF_QUERY
         end
 
@@ -46,7 +61,8 @@ class Main < Sinatra::Base
         temp2.each do |row|
             email = row['u.email']
             result[email] = {
-                :freiwillig_salzh => row['u.freiwillig_salzh'] # end_date or nil
+                :freiwillig_salzh => row['u.freiwillig_salzh'], # end_date or nil
+                :testing_required => row['testing_required']
             }
         end
         temp.each do |row|
@@ -71,8 +87,25 @@ class Main < Sinatra::Base
                     status_end_date = info[:salzh_end_date]
                 end
             end
+            if status.nil?
+                # see if it's a hotspot klasse
+                if @@user_info[email]
+                    klasse = @@user_info[email][:klasse]
+                    if hotspot_dates[klasse]
+                        status = :hotspot_klasse
+                        status_end_date = hotspot_dates[klasse]
+                    end
+                end
+            end
             info[:status] = status
             info[:status_end_date] = status_end_date
+            wday = DateTime.now.wday
+            needs_testing_today = true
+            unless info[:testing_required]
+                needs_testing_today = false
+            end
+            info[:needs_testing_today] = needs_testing_today
+            
         end
         result
     end
@@ -118,6 +151,83 @@ class Main < Sinatra::Base
             REMOVE u.freiwillig_salzh;
         END_OF_QUERY
         respond(:ok => true)
+    end
+
+    post '/api/set_hotspot_klasse_end_date' do
+        require_user_who_can_manage_salzh!
+        data = parse_request_data(:required_keys => [:klasse, :end_date])
+        neo4j_query(<<~END_OF_QUERY, :klasse => data[:klasse], :end_date => data[:end_date])
+            MERGE (k:Klasse {klasse: $klasse})
+            SET k.hotspot_end_date = $end_date;
+        END_OF_QUERY
+        respond(:ok => true)
+    end
+
+    post '/api/delete_hotspot_klasse_end_date' do
+        require_user_who_can_manage_salzh!
+        data = parse_request_data(:required_keys => [:klasse])
+        neo4j_query(<<~END_OF_QUERY, :klasse => data[:klasse])
+            MERGE (k:Klasse {klasse: $klasse})
+            REMOVE k.hotspot_end_date;
+        END_OF_QUERY
+        respond(:ok => true)
+    end
+
+    post '/api/minimize_salzh_explanation' do
+        require_teacher!
+        neo4j_query(<<~END_OF_QUERY, :email => @session_user[:email])
+            MATCH (u:User {email: $email})
+            SET u.hide_salzh_panel_explanation = true;
+        END_OF_QUERY
+        respond(:ok => true)
+    end
+
+    post '/api/toggle_testing_required' do
+        require_user_who_can_manage_salzh!
+        data = parse_request_data(:required_keys => [:email])
+        result = neo4j_query_expect_one(<<~END_OF_QUERY, :email => data[:email])
+            MATCH (u:User {email: $email})
+            SET u.testing_required = NOT (COALESCE(u.testing_required, TRUE))
+            RETURN u.testing_required;
+        END_OF_QUERY
+        respond(:ok => true, :testing_required => result['u.testing_required'])
+    end
+
+    def self.get_hotspot_klassen
+        # purge stale entries
+        today = Date.today.strftime('%Y-%m-%d')
+        $neo4j.neo4j_query(<<~END_OF_QUERY, :today => today)
+            MATCH (k:Klasse)
+            WHERE k.hotspot_end_date < {today}
+            DETACH DELETE k;
+        END_OF_QUERY
+
+        hotspot_dates = {}
+        rows = $neo4j.neo4j_query(<<~END_OF_QUERY)
+            MATCH (k:Klasse)
+            RETURN k.klasse, k.hotspot_end_date;
+        END_OF_QUERY
+        rows.each do |x|
+            hotspot_dates[x['k.klasse']] = x['k.hotspot_end_date']
+        end
+        StringIO.open do |io|
+            KLASSEN_ORDER.each do |klasse|
+                next if ['11', '12'].include?(klasse)
+                io.puts "<tr data-klasse='#{klasse}'>"
+                io.puts "<td>#{tr_klasse(klasse)}</td>"
+                # io.puts "<td>#{@@schueler_for_klasse[klasse].size}</td>"
+                io.puts "<td>"
+                hotspot_end_date = hotspot_dates[klasse]
+                io.puts "<div class='input-group input-group-sm'><input type='date' class='form-control ti_hotspot_end_date' value='#{hotspot_end_date}' /><div class='input-group-append'><button #{hotspot_end_date.nil? ? 'disabled' : ''} class='btn #{hotspot_end_date.nil? ? 'btn-outline-secondary' : 'btn-danger'} bu_delete_hotspot_end_date'><i class='fa fa-trash'></i></button></div></div>"
+                io.puts "</td>"
+            io.puts "</tr>"
+            end
+            io.string
+        end
+    end
+
+    def get_hotspot_klassen
+        Main.get_hotspot_klassen
     end
 
     def self.get_current_salzh_sus
@@ -234,22 +344,35 @@ class Main < Sinatra::Base
             StringIO.open do |io|
                 end_date = salzh_status[:status_end_date]
                 if salzh_status[:status] == :salzh
+                    p = Date.parse(end_date) + 1
+                    while [0, 6].include?(p.wday) || @@holiday_dates.include?(p.strftime("%Y-%m-%d"))
+                        p += 1
+                    end
                     io.puts "<div class='hint'>"
                     io.puts "<p><strong>Unterricht im saLzH</strong></p>"
-                    io.puts "<p>Du bist <strong>bis zum #{Date.parse(end_date).strftime('%d.%m.')}</strong> für das schulisch angeleite Lernen zu Hause (saLzH) eingetragen. Bitte schau regelmäßig in deinem Stundenplan nach, ob du Aufgaben in der Nextcloud oder im Lernraum bekommst oder ob Stunden per Jitsi durchgeführt werden.</p>"
+                    io.puts "<p>Du bist <strong>bis zum #{Date.parse(end_date).strftime('%d.%m.')}</strong> für das schulisch angeleite Lernen zu Hause (saLzH) eingetragen. Bitte schau regelmäßig in deinem Stunden&shy;plan nach, ob du Aufgaben in der Nextcloud oder im Lernraum bekommst oder ob Stunden per Jitsi durch&shy;geführt werden. <strong>Ab dem #{p.strftime('%d.%m.')}</strong> erwarten wir dich wieder in der Schule.</p>"
                     io.puts "</div>"
                 elsif salzh_status[:status] == :contact_person
                     io.puts "<div class='hint'>"
                     io.puts "<p><strong>Kontaktperson</strong></p>"
-                    io.puts "<p>Du bist <strong>bis zum #{Date.parse(end_date).strftime('%d.%m.')}</strong> als Kontaktperson markiert. Das heißt, dass du weiterhin in die Schule kommen darfst, aber einige Regeln beachten musst. Falls du freiwillig zu Hause bleiben möchtest, müssen deine Eltern dem Sekretariat <a href='mailto:sekretariat@gymnasiumsteglitz.de'>per E-Mail Bescheid geben</a>. Die folgenden Regeln gelten für dich:</p>"
+                    io.puts "<p>Du bist <strong>bis zum #{Date.parse(end_date).strftime('%d.%m.')}</strong> als Kontakt&shy;person markiert. Das heißt, dass du weiterhin in die Schule kommen darfst, aber einige Regeln beachten musst. Falls du freiwillig zu Hause bleiben möchtest, müssen deine Eltern dem Sekretariat <a href='mailto:sekretariat@gymnasiumsteglitz.de'>per E-Mail Bescheid geben</a>. Die folgenden Regeln gelten für dich:</p>"
                     io.puts "<hr />"
                     io.puts "<ul style='padding-left: 1.5em;'>"
-                    io.puts "<li>tägliche Testung vor Beginn der Schultages (ein Test vom Vortag, z. B. aus einem Schnelltestzentrum, kann nicht akzeptiert werden)</li>"
-                    io.puts "<li>du bekommst von deiner Klassenleitung (#{@@klassenleiter[@session_user[:klasse]].map { |shorthand| @@user_info[@@shorthands[shorthand]][:display_last_name] }.join(' oder ')}) am Freitag für jeden Tag des Wochenendes, an du noch Kontaktperson bist, einen Schnelltest mit nach Hause</li>"
+                    io.puts "<li>tägliche Testung vor Beginn der Schultages (ein Test vom Vortag, z. B. aus einem Schnell&shy;test&shy;zentrum, kann nicht akzeptiert werden)</li>"
+                    if ['11', '12'].include?(@session_user[:klasse])
+                        io.puts "<li>du bekommst von deiner Tutorin / deinem Tutor am Freitag für jeden Tag des Wochenendes, an du noch Kontakt&shy;person bist, einen Schnelltest mit nach Hause</li>"
+                    else
+                        io.puts "<li>du bekommst von deiner Klassen&shy;leitung (#{@@klassenleiter[@session_user[:klasse]].map { |shorthand| @@user_info[@@shorthands[shorthand]][:display_last_name] }.join(' oder ')}) am Freitag für jeden Tag des Wochenendes, an du noch Kontakt&shy;person bist, einen Schnelltest mit nach Hause</li>"
+                    end
                     io.puts "<li>falls du Symptome (Husten, Fieber, Kopfschmerzen, …) zeigst, darfst du das Schulhaus nicht mehr betreten</li>"
                     io.puts "<li>du darfst nicht mehr am gemeinsamen Essen in der Mensa teilnehmen</li>"
-                    io.puts "<li>während des Sportunterrichts (Umkleide, Sport in der Halle) musst du durchgehend eine Maske tragen – ist dies aufgrund der körperlichen Betätigung nicht möglich, nimmst du nicht am Sportunterricht teil</li>"
+                    io.puts "<li>während des Sport&shy;unter&shy;richts (Umkleide, Sport in der Halle) musst du durch&shy;gehend eine Maske tragen – ist dies aufgrund der körperlichen Betätigung nicht möglich, nimmst du nicht am Sportunterricht teil</li>"
                     io.puts "</ul>"
+                    io.puts "</div>"
+                elsif salzh_status[:status] == :hotspot_klasse
+                    io.puts "<div class='hint'>"
+                    io.puts "<p><strong>Klasse mit erhöhtem Infektionsaufkommen</strong></p>"
+                    io.puts "<p>Da in deiner Klasse momentan ein erhöhtes Infektionsgeschehen herrscht, wirst du <strong>bis zum #{Date.parse(end_date).strftime('%d.%m.')}</strong> täglich getestet.</p>"
                     io.puts "</div>"
                 end
                 io.string
@@ -257,6 +380,10 @@ class Main < Sinatra::Base
         else
             entries = get_current_salzh_status_for_logged_in_teacher()
             return '' if entries.empty?
+            hide_explanations = neo4j_query_expect_one(<<~END_OF_QUERY, {:email => @session_user[:email]})['hide']
+                MATCH (u:User {email: $email})
+                RETURN COALESCE(u.hide_salzh_panel_explanation, false) AS hide;
+            END_OF_QUERY
             StringIO.open do |io|
                 io.puts "<div class='hint'>"
                 # io.puts "<p><strong><div style='display: inline-block; padding: 4px; margin: -4px; border-radius: 4px' class='bg-warning'>SuS im saLzH</div></strong></p>"
@@ -305,7 +432,7 @@ class Main < Sinatra::Base
                     io.puts "</tbody>"
                     io.puts "<tbody style='display: none;'>"
                     all_klassen[klasse].each do |email|
-                        badge =  
+                        next unless [:salzh, :contact_person].include?(entry_for_email[email][:status])
                         badge = "<span style='position: relative; top: -1px;' class='salzh-badge salzh-badge-big bg-#{SALZH_MODE_COLORS[entry_for_email[email][:status]]}'><i class='fa #{SALZH_MODE_ICONS[entry_for_email[email][:status]]}'></i></span>"
                         io.puts "<tr><td colspan='2'>#{badge}#{@@user_info[email][:display_name]}</td></tr>"
                     end
@@ -316,7 +443,7 @@ class Main < Sinatra::Base
                 io.puts "<p style='cursor: pointer;' onclick=\"$('#salzh_explanation').slideDown();\">"
                 io.puts "<strong>Was bedeutet das?</strong>"
                 io.puts "</p>"
-                io.puts "<div id='salzh_explanation' style='display: none;'>"
+                io.puts "<div id='salzh_explanation' style='display: #{hide_explanations ? 'none': 'block'};'>"
                 if contact_person_count > 0
                     io.puts "<hr />"
                     io.puts "<p>"
@@ -336,10 +463,104 @@ class Main < Sinatra::Base
                     io.puts "<li>während des Sportunterrichts (Umkleide, Sport in der Halle) muss durchgehend eine Maske getragen werden – ist dies aufgrund der körperlichen Betätigung nicht möglich, nehmen diese Kinder nicht am Sportunterricht teil</li>"
                     io.puts "</ul>"
                 end
+                io.puts "<button class='btn btn-xs btn-outline-secondary' id='bu_minimize_salzh_explanation'>Diese Information minimieren</button>"
                 io.puts "</div>"
                 io.puts "</div>"
                 io.string
             end
         end
     end
+
+    get '/api/test_list' do
+        require_user_who_can_manage_salzh!
+        klassenleiter = Main.class_variable_get(:@@klassenleiter)
+        shorthands = Main.class_variable_get(:@@shorthands)
+        user_info = Main.class_variable_get(:@@user_info)
+        main = self
+        salzh_status = Main.get_salzh_status_for_emails()
+        doc = Prawn::Document.new(:page_size => 'A4', :page_layout => :portrait, 
+                                :margin => 0) do
+            font_families.update("RobotoCondensed" => {
+                :normal => "/app/fonts/RobotoCondensed-Regular.ttf",
+                :italic => "/app/fonts/RobotoCondensed-Italic.ttf",
+                :bold => "/app/fonts/RobotoCondensed-Bold.ttf",
+                :bold_italic => "/app/fonts/RobotoCondensed-BoldItalic.ttf"
+                })
+            font_families.update("Roboto" => {
+                :normal => "/app/fonts/Roboto-Regular.ttf",
+                :italic => "/app/fonts/Roboto-Italic.ttf",
+                :bold => "/app/fonts/Roboto-Bold.ttf",
+                :bold_italic => "/app/fonts/Roboto-BoldItalic.ttf"
+                })
+            font('RobotoCondensed') do
+                KLASSEN_ORDER.each.with_index do |klasse, index|
+                    next if ['11', '12'].include?(klasse)
+
+                    found_one = false
+                    main.iterate_directory(klasse) do |email, i|
+                        status = salzh_status[email]
+                        if status[:needs_testing_today]
+                            found_one = true
+                            break
+                        end
+                    end
+                    next unless found_one
+
+                    start_new_page if index > 0
+                    font_size 12
+                    bounding_box([2.cm, 297.mm - 2.cm], width: 17.cm, height: 257.mm) do
+                        float do
+                            text "#{DateTime.now.strftime("%d.%m.%Y")}", :align => :right
+                        end
+                        text "<b>Testliste Klasse #{Main.tr_klasse(klasse)}</b>   (#{(klassenleiter[klasse] || []).map { |shorthand| (user_info[shorthands[shorthand]] || {})[:display_last_name] }.reject { |x| x.nil? }.join(' / ')})", :inline_format => true
+
+                        line_width 0.2.mm
+
+                        main.iterate_directory(klasse) do |email, i|
+                            status = salzh_status[email]
+                            # status is salzh / contact_person / hotspot_klasse
+                            # needs_testing_today: true / false
+                            fill_color status[:needs_testing_today] ? '000000' : 'a0a0a0'
+                            stroke_color status[:needs_testing_today] ? '000000' : 'a0a0a0'
+                            user = @@user_info[email]
+                            y = 242.mm - 7.2.mm * i
+                            draw_text "#{i + 1}.", :at => [0.mm, y]
+                            draw_text "#{status[:needs_testing_today] ? '' : '('}#{user[:last_name]}, #{user[:first_name]}#{status[:needs_testing_today] ? '' : ')'}", :at => [10.mm, y]
+
+                            stroke { rectangle [80.mm, y + 3.mm], 3.mm, 3.mm }
+                            draw_text "positiv", :at => [87.mm, y]
+
+                            stroke { rectangle [110.mm, y + 3.mm], 3.mm, 3.mm }
+                            draw_text "negativ", :at => [117.mm, y]
+
+                            fill_color 'a0a0a0'
+                            stroke_color 'a0a0a0'
+
+                            stroke { rectangle [140.mm, y + 3.mm], 3.mm, 3.mm }
+                            draw_text "freigetestet", :at => [147.mm, y]
+
+                            stroke_color '000000'
+                            fill_color '000000'
+
+                            if status[:status] == :salzh
+                                stroke { line [0.mm, y + 1.mm], [13.5.cm, y + 1.mm] }
+                            end
+                            stroke { line [0.mm, y + 5.2.mm], [17.cm, y + 5.2.mm] } if i == 0
+                            stroke { line [0.mm, y - 2.mm], [17.cm, y - 2.mm] }
+                        end
+                    end
+
+                        # stroke { rectangle [0, 0], 12.85.cm, 8.5.cm }
+                        # bounding_box([5.mm, -5.mm], width: 11.85.cm) do
+                        #     font_size 10
+                            
+                        #     text "<b>Code für Online-Abstimmung #{SCHUL_NAME_AN_DATIV} #{SCHUL_NAME}</b>", inline_format: true
+
+                end
+            end
+        end
+        # respond_raw_with_mimetype_and_filename(doc.render, 'application/pdf', "Klasse #{klasse}.pdf")
+        respond_raw_with_mimetype(doc.render, 'application/pdf')
+    end
+
 end

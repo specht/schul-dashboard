@@ -2381,11 +2381,11 @@ li.nav-item a.nav-link i.fa {
     /* top: -6px; */
 }
 
-.salzh-badge.bg-danger span {
+.salzh-badge.bg-danger span, .salzh-badge.bg-pink span {
     color: rgba(255,255,255,0.9);
 }
 
-.bg-danger {
+.bg-danger, .bg-info, .bg-pink {
     color: #fff;
 }
 
@@ -2398,6 +2398,6 @@ li.nav-item a.nav-link i.fa {
     text-align: center;
 }
 
-.btn-light-danger, .bg-light-danger {
-    background-color: #E5872E;
+.bg-pink {
+    background-color: #7b67ae;
 }

@@ -4,6 +4,7 @@
         <div class='col-md-12'>
             <!-- <hr /> -->
             <div style='float: right'>
+                <a href='/api/test_list' class='btn btn-secondary bu-download-test-list' style='margin-right: 15px;'><i class='fa fa-file-pdf-o'></i>&nbsp;&nbsp;Aktuelle Testliste herunterladen</a>
                 <button class='btn btn-success bu-add-salzh'><i class='fa fa-pencil'></i>&nbsp;&nbsp;Eintragen</button>
             </div>
             <h2 style='margin-bottom: 30px;'>Kontaktpersonen / saLzH</h2>
@@ -27,6 +28,25 @@
 
                     </tbody>
                 </table>
+            </div>
+            <hr />
+            <h3>Klassen mit erhöhtem Infektionsaufkommen</h3>
+                <div class='row'>
+                    <div class='col-md-4'>
+                        <div class="table-responsive" style="max-width: 100%; overflow-x: auto;">
+                            <table class='table table-narrow narrow'>
+                            <thead>
+                                <tr>
+                                    <th>Klasse</th>
+                                    <th>Tägliche Testpflicht bis</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                #{get_hotspot_klassen()}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -91,7 +111,7 @@
     var old_mode = null;
     var observer = null;
     var sent_messages = #{ sent_messages.to_json };
-    var antikenfahrt_recipients = #{@@antikenfahrt_recipients.to_json};
+    var antikenfahrt_recipients = #{@@antikenfahrt_recipients.to_json };
     var message_cache = {};
     var force_close = false;
     var current_salzh_entries = #{ get_current_salzh_sus.to_json };
@@ -511,5 +531,22 @@
             $('#salzh_sus_here').append(row);
         }
         // $('.bu-add-salzh').click();
+        $('.ti_hotspot_end_date').change(function(e) {
+            let klasse = $(e.target).closest('tr').data('klasse');
+            api_call('/api/set_hotspot_klasse_end_date', {klasse: klasse, end_date: $(e.target).val()}, function(data) {
+                if (data.success) {
+                    window.location.reload();
+                }
+            });
+        });
+        $('.bu_delete_hotspot_end_date').click(function(e) {
+            let klasse = $(e.target).closest('tr').data('klasse');
+            api_call('/api/delete_hotspot_klasse_end_date', {klasse: klasse}, function(data) {
+                if (data.success) {
+                    window.location.reload();
+                }
+            });
+        });
+
     });
 </script>

@@ -10,7 +10,15 @@ class Main < Sinatra::Base
             # io.puts "Bitte überprüfen Sie die <strong>Gruppenzuordnung (A/B)</strong> und markieren Sie alle Kinder, die aus gesundheitlichen Gründen / Quarantäne nicht in die Schule kommen können, als <strong>»zu Hause«</strong>."
 #             io.puts "Auf die Jitsi-Streams können momentan nur SuS zugreifen, die laut ihrer Gruppenzuordnung in der aktuellen Woche zu Hause sind oder explizit als »zu Hause« markiert sind."
             # io.puts "</div>"
+            io.puts "<div class='pull-right' style='position: relative; top: 10px;'>"
+            [:salzh, :contact_person, :hotspot_klasse].each do |status|
+                salzh_label = "<span style='margin-left: 2em;'><span class='salzh-badge salzh-badge-big bg-#{SALZH_MODE_COLORS[status]}'><i class='fa #{SALZH_MODE_ICONS[status]}'></i></span>&nbsp;#{SALZH_MODE_LABEL[status]}</span>"
+                io.puts salzh_label
+            end
+            io.puts "</div>"
             io.puts "<h3>Klasse #{tr_klasse(klasse)}</h3>"
+            io.puts "<p>"
+            io.puts "</p>"
             # <div style='max-width: 100%; overflow-x: auto;'>
             # <table class='table' style='width: unset; min-width: 100%;'>
 
@@ -24,6 +32,7 @@ class Main < Sinatra::Base
             io.puts "<th>Vorname</th>"
             io.puts "<th>Status</th>"
             if can_manage_salzh_logged_in?
+                io.puts "<th>Reguläre Testung</th>"
                 io.puts "<th>Freiwilliges saLzH bis</th>"
             end
             io.puts "<th>E-Mail-Adresse</th>"
@@ -62,7 +71,7 @@ class Main < Sinatra::Base
                 io.puts "<td>#{user_icon(email, 'avatar-md')}</td>"
                 salzh_style = ''
                 salzh_class = ''
-                if salzh_status[email]
+                if salzh_status[email] && [:contact_person, :salzh].include?(salzh_status[email][:status])
                     salzh_style = 'padding: 2px 4px; margin: -2px -4px; display: inline-block; border-radius: 4px;'
                     salzh_class = "bg-#{SALZH_MODE_COLORS[(salzh_status[email] || {})[:status]]}"
                 end
@@ -76,6 +85,15 @@ class Main < Sinatra::Base
                 end
                 io.puts "<td>#{salzh_label}</td>"
                 if can_manage_salzh_logged_in?
+                    io.puts "<td>"
+                    testing_required = salzh_status[email][:testing_required]
+                    if testing_required
+                        io.puts "<button class='btn btn-sm btn-success bu_toggle_testing_required'><i class='fa fa-check'></i>&nbsp;&nbsp;notwendig</button>"
+                    else
+                        io.puts "<button class='btn btn-sm btn-outline-secondary bu_toggle_testing_required'><i class='fa fa-times'></i>&nbsp;&nbsp;nicht notwendig</button>"
+                    end
+                    io.puts "</td>"
+
                     io.puts "<td>"
                     freiwillig_salzh = salzh_status[email][:freiwillig_salzh]
                     io.puts "<div class='input-group'><input type='date' class='form-control ti_freiwillig_salzh' value='#{freiwillig_salzh}' /><div class='input-group-append'><button #{freiwillig_salzh.nil? ? 'disabled' : ''} class='btn #{freiwillig_salzh.nil? ? 'btn-outline-secondary' : 'btn-danger'} bu_delete_freiwillig_salzh'><i class='fa fa-trash'></i></button></div></div>"

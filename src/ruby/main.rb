@@ -1031,6 +1031,17 @@ class Main < Sinatra::Base
         self.update_antikenfahrt_groups()
         self.update_mailing_lists()
         @@current_email_addresses = parser.parse_current_email_addresses()
+
+        @@holiday_dates = Set.new()
+        @@ferien_feiertage.each do |entry|
+            temp0 = Date.parse(entry[:from])
+            temp1 = Date.parse(entry[:to])
+            while temp0 <= temp1
+                @@holiday_dates << temp0.strftime('%Y-%m-%d')
+                temp0 += 1
+            end
+        end
+
     end    
 
     def self.update_mailing_lists()

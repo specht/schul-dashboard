@@ -536,11 +536,13 @@ class Main < Sinatra::Base
                             fill_color 'a0a0a0'
                             stroke_color 'a0a0a0'
 
-                            stroke { rectangle [140.mm, y + 3.mm], 3.mm, 3.mm }
-                            draw_text "freigetestet", :at => [147.mm, y]
-
                             stroke_color '000000'
                             fill_color '000000'
+
+                            if status[:status] == :salzh
+                                stroke { rectangle [140.mm, y + 3.mm], 3.mm, 3.mm }
+                                draw_text "freigegeben", :at => [147.mm, y]
+                            end
 
                             if status[:status] == :salzh
                                 stroke { line [0.mm, y + 1.mm], [13.5.cm, y + 1.mm] }

@@ -1,6 +1,6 @@
 SALZH_MODE_COLORS = {:contact_person => 'warning', :salzh => 'danger', :hotspot_klasse => 'pink'}
 SALZH_MODE_ICONS = {:contact_person => 'fa-exclamation', :salzh => 'fa-home', :hotspot_klasse => 'fa-fire'}
-SALZH_MODE_LABEL = {:contact_person => 'Kontaktperson', :salzh => 'saLzH', :hotspot_klasse => 'erhöhtes Infektionsgeschehen in der Klasse'}
+SALZH_MODE_LABEL = {:contact_person => 'Kontaktperson', :salzh => 'saLzH', :hotspot_klasse => 'Hotspot-Klasse'}
 
 class Main < Sinatra::Base
     def self.get_salzh_status_for_emails(emails = nil) 
@@ -507,7 +507,7 @@ class Main < Sinatra::Base
                     next unless found_one
 
                     start_new_page if index > 0
-                    font_size 12
+                    font_size 11
                     bounding_box([2.cm, 297.mm - 2.cm], width: 17.cm, height: 257.mm) do
                         float do
                             text "#{DateTime.now.strftime("%d.%m.%Y")}", :align => :right
@@ -518,14 +518,20 @@ class Main < Sinatra::Base
 
                         main.iterate_directory(klasse) do |email, i|
                             status = salzh_status[email]
+                            label_type = Main.get_test_list_label_type(status[:status], status[:testing_required], true)
                             # status is salzh / contact_person / hotspot_klasse
                             # needs_testing_today: true / false
-                            fill_color status[:needs_testing_today] ? '000000' : 'a0a0a0'
-                            stroke_color status[:needs_testing_today] ? '000000' : 'a0a0a0'
+                            if label_type == :enabled
+                                fill_color '000000'
+                                stroke_color '000000'
+                            elsif label_type == :disabled
+                                fill_color 'a0a0a0'
+                                stroke_color 'a0a0a0'
+                            end
                             user = @@user_info[email]
-                            y = 242.mm - 7.2.mm * i
+                            y = 242.mm - 6.7.mm * i
                             draw_text "#{i + 1}.", :at => [0.mm, y]
-                            draw_text "#{status[:needs_testing_today] ? '' : '('}#{user[:last_name]}, #{user[:first_name]}#{status[:needs_testing_today] ? '' : ')'}", :at => [10.mm, y]
+                            draw_text "#{label_type == :disabled ? '(' : ''}#{user[:last_name]}, #{user[:first_name]}#{label_type == :disabled ? ')' : ''}", :at => [10.mm, y]
 
                             stroke { rectangle [80.mm, y + 3.mm], 3.mm, 3.mm }
                             draw_text "positiv", :at => [87.mm, y]
@@ -533,23 +539,41 @@ class Main < Sinatra::Base
                             stroke { rectangle [110.mm, y + 3.mm], 3.mm, 3.mm }
                             draw_text "negativ", :at => [117.mm, y]
 
-                            fill_color 'a0a0a0'
-                            stroke_color 'a0a0a0'
-
                             stroke_color '000000'
                             fill_color '000000'
 
-                            if status[:status] == :salzh
+                            if label_type == :strike
                                 stroke { rectangle [140.mm, y + 3.mm], 3.mm, 3.mm }
                                 draw_text "freigegeben", :at => [147.mm, y]
-                            end
-
-                            if status[:status] == :salzh
                                 stroke { line [0.mm, y + 1.mm], [13.5.cm, y + 1.mm] }
                             end
+
                             stroke { line [0.mm, y + 5.2.mm], [17.cm, y + 5.2.mm] } if i == 0
                             stroke { line [0.mm, y - 2.mm], [17.cm, y - 2.mm] }
                         end
+                        bounding_box([0, 2.cm], width: 17.cm, height: 4.cm) do
+                            float do
+                                text "<b>Legende</b>", :inline_format => true, :leading => 3.mm
+                                text "Nachname, Vorname –", :inline_format => true, :leading => 1.mm
+                                fill_color 'a0a0a0'
+                                text "Nachname, Vorname –", :inline_format => true, :leading => 1.mm
+                                fill_color '000000'
+                                stroke_color '000000'
+                                text "Nachname, Vorname –", :inline_format => true, :leading => 1.mm
+                                stroke { line [0.mm, 21.mm], [3.1.cm, 21.mm] }
+                            end
+                        end
+
+                        bounding_box([3.6.cm, 2.cm], width: 13.cm, height: 4.cm) do
+                            float do
+                                text " ", :inline_format => true, :leading => 3.mm
+                                text "muss heute getestet werden", :inline_format => true, :leading => 1.mm
+                                text "kann heute getestet werden", :inline_format => true, :leading => 1.mm
+                                text "wurde für heute <b>nicht</b> in der Schule erwartet – bitte zunächst <b>keine Eintragung</b> machen und zur Abklärung ins Sekretariat schicken", :inline_format => true, :leading => 1.mm
+                            end
+                        end
+
+                        
                     end
 
                         # stroke { rectangle [0, 0], 12.85.cm, 8.5.cm }
@@ -563,6 +587,46 @@ class Main < Sinatra::Base
         end
         # respond_raw_with_mimetype_and_filename(doc.render, 'application/pdf', "Klasse #{klasse}.pdf")
         respond_raw_with_mimetype(doc.render, 'application/pdf')
+    end
+
+    def self.get_test_list_label_type(status, regular_test_required, regular_test_day)
+        if status == :salzh
+            return :strike
+        end
+        if regular_test_required == false
+            return :disabled
+        end
+        if regular_test_required && !regular_test_day && status == nil
+            return :disabled
+        end
+        return :enabled
+    end
+
+    def get_test_regime_html()
+        StringIO.open do |io|
+            [true, false].each do |regular_test_day|
+                [true, false].each do |regular_test_required|
+                    [:salzh, :contact_person, :hotspot_klasse, nil].each do |status|
+                        io.puts "<tr>"
+                        io.puts "<td><span style='position: relative; top: -1px;' class='salzh-badge salzh-badge-big bg-#{SALZH_MODE_COLORS[status]}'><i class='fa #{SALZH_MODE_ICONS[status]}'></i></span>#{SALZH_MODE_LABEL[status] || '&ndash;'}</td>"
+                        io.puts "<td>#{regular_test_required ? 'notwendig' : 'nicht notwendig'}</td>"
+                        io.puts "<td>#{regular_test_day ? 'ja' : 'nein'}</td>"
+                        label_type = Main.get_test_list_label_type(status, regular_test_required, regular_test_day)
+                        if label_type == :enabled
+                            io.puts "<td>Vorname Nachname</td>"
+                        elsif label_type == :disabled
+                            io.puts "<td style='color: #aaa;'>(Vorname Nachname)</td>"
+                        elsif label_type == :strike
+                            io.puts "<td><s style='color: #000;'>Vorname Nachname</s></td>"
+                        else
+                            io.puts "<td>???</td>"
+                        end
+                        io.puts "</tr>"
+                    end
+                end
+            end
+            io.string
+        end
     end
 
 end

@@ -496,18 +496,19 @@ class Main < Sinatra::Base
                 KLASSEN_ORDER.each.with_index do |klasse, index|
                     next if ['11', '12'].include?(klasse)
 
-                    found_one = false
-                    main.iterate_directory(klasse) do |email, i|
-                        status = salzh_status[email]
-                        if status[:needs_testing_today]
-                            found_one = true
-                            break
-                        end
-                    end
-                    next unless found_one
+                    # found_one = false
+                    # main.iterate_directory(klasse) do |email, i|
+                    #     status = salzh_status[email]
+                    #     if status[:needs_testing_today]
+                    #         found_one = true
+                    #         break
+                    #     end
+                    # end
+                    # next unless found_one
 
                     start_new_page if index > 0
                     font_size 11
+                    any_strike = false
                     bounding_box([2.cm, 297.mm - 2.cm], width: 17.cm, height: 257.mm) do
                         float do
                             text "#{DateTime.now.strftime("%d.%m.%Y")}", :align => :right
@@ -531,27 +532,32 @@ class Main < Sinatra::Base
                             user = @@user_info[email]
                             y = 242.mm - 6.7.mm * i
                             draw_text "#{i + 1}.", :at => [0.mm, y]
-                            draw_text "#{label_type == :disabled ? '(' : ''}#{user[:last_name]}, #{user[:first_name]}#{label_type == :disabled ? ')' : ''}", :at => [10.mm, y]
+                            draw_text "#{label_type == :disabled ? '(' : ''}#{user[:last_name]}, #{user[:first_name]}#{label_type == :disabled ? ')' : ''}", :at => [7.mm, y]
 
-                            stroke { rectangle [80.mm, y + 3.mm], 3.mm, 3.mm }
-                            draw_text "positiv", :at => [87.mm, y]
+                            # TK pos neg TZ Verspätung
 
-                            stroke { rectangle [110.mm, y + 3.mm], 3.mm, 3.mm }
-                            draw_text "negativ", :at => [117.mm, y]
+                            [[76, 'TK'], [92, 'pos.'], [108, 'neg.'], [124, 'TZ']].each do |pair|
+                                x = pair[0]
+                                label = pair[1]
+                                stroke { rectangle [x.mm, y + 3.mm], 3.mm, 3.mm }
+                                draw_text label, :at => [x.mm + 5.mm, y]
+                            end
+
 
                             stroke_color '000000'
                             fill_color '000000'
 
                             if label_type == :strike
                                 stroke { rectangle [140.mm, y + 3.mm], 3.mm, 3.mm }
-                                draw_text "freigegeben", :at => [147.mm, y]
-                                stroke { line [0.mm, y + 1.mm], [13.5.cm, y + 1.mm] }
+                                draw_text "Sek", :at => [145.mm, y]
+                                stroke { line [0.mm, y + 1.mm], [7.3.cm, y + 1.mm] }
+                                any_strike = true
                             end
 
                             stroke { line [0.mm, y + 5.2.mm], [17.cm, y + 5.2.mm] } if i == 0
                             stroke { line [0.mm, y - 2.mm], [17.cm, y - 2.mm] }
                         end
-                        bounding_box([0, 2.cm], width: 17.cm, height: 4.cm) do
+                        bounding_box([0, 1.5.cm], width: 17.cm, height: 4.cm) do
                             float do
                                 text "<b>Legende</b>", :inline_format => true, :leading => 3.mm
                                 text "Nachname, Vorname –", :inline_format => true, :leading => 1.mm
@@ -564,7 +570,7 @@ class Main < Sinatra::Base
                             end
                         end
 
-                        bounding_box([3.6.cm, 2.cm], width: 13.cm, height: 4.cm) do
+                        bounding_box([3.6.cm, 1.5.cm], width: 11.cm, height: 4.cm) do
                             float do
                                 text " ", :inline_format => true, :leading => 3.mm
                                 text "muss heute getestet werden", :inline_format => true, :leading => 1.mm
@@ -573,7 +579,33 @@ class Main < Sinatra::Base
                             end
                         end
 
-                        
+                        bounding_box([0, 244.mm - 6.7.mm * @@schueler_for_klasse[klasse].size], width: 6.2.cm, height: 2.cm) do
+                            text "Testkassette abgegeben", :align => :right
+                            text "im Testzentrum getestet", :align => :right
+                            if any_strike
+                                text "war im Sekretariat", :align => :right
+                            end
+                        end
+                        bounding_box([6.4.cm, 249.mm - 6.7.mm * @@schueler_for_klasse[klasse].size], width: 16.2.cm, height: 2.5.cm) do
+                            stroke do
+                                line [0.cm, 18.mm], [1.35.cm, 18.mm]
+                                line [1.35.cm, 18.mm], [1.35.cm, 21.mm]
+                            end
+                            stroke do
+                                line [0.cm, 18.mm - 11.0], [2.95.cm, 18.mm - 11.0]
+                                line [2.95.cm, 18.mm - 11.0], [2.95.cm, 21.mm]
+                            end
+                            if any_strike
+                                stroke do
+                                    line [0.cm, 18.mm - 22.0], [7.75.cm, 18.mm - 22.0]
+                                    line [7.75.cm, 18.mm - 22.0], [7.75.cm, 21.mm]
+                                end
+                            end
+                        end
+                        stroke { rectangle [14.5.cm, 0.5.cm], 2.5.cm, 1.5.cm }
+                        font_size 8
+                        draw_text "Kürzel", :at => [154.mm, -13.1.mm]
+                        font_size 11
                     end
 
                         # stroke { rectangle [0, 0], 12.85.cm, 8.5.cm }

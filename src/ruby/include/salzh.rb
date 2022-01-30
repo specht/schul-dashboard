@@ -536,9 +536,10 @@ class Main < Sinatra::Base
 
                             # TK pos neg TZ Verspätung
 
-                            [[76, 'TK'], [92, 'pos.'], [108, 'neg.'], [124, 'TZ']].each do |pair|
-                                x = pair[0]
-                                label = pair[1]
+                            dist = 20.0
+
+                            %w(TK pos. neg. TZ).each.with_index do |label, i|
+                                x = 76 + dist * i
                                 stroke { rectangle [x.mm, y + 3.mm], 3.mm, 3.mm }
                                 draw_text label, :at => [x.mm + 5.mm, y]
                             end
@@ -548,8 +549,8 @@ class Main < Sinatra::Base
                             fill_color '000000'
 
                             if label_type == :strike
-                                stroke { rectangle [140.mm, y + 3.mm], 3.mm, 3.mm }
-                                draw_text "Sek", :at => [145.mm, y]
+                                stroke { rectangle [(76 + dist * 4).mm, y + 3.mm], 3.mm, 3.mm }
+                                draw_text "Sek", :at => [(76 + dist * 4).mm + 5.mm, y]
                                 stroke { line [0.mm, y + 1.mm], [7.3.cm, y + 1.mm] }
                                 any_strike = true
                             end
@@ -592,13 +593,13 @@ class Main < Sinatra::Base
                                 line [1.35.cm, 18.mm], [1.35.cm, 21.mm]
                             end
                             stroke do
-                                line [0.cm, 18.mm - 11.0], [2.95.cm, 18.mm - 11.0]
-                                line [2.95.cm, 18.mm - 11.0], [2.95.cm, 21.mm]
+                                line [0.cm, 18.mm - 11.0], [7.35.cm, 18.mm - 11.0]
+                                line [7.35.cm, 18.mm - 11.0], [7.35.cm, 21.mm]
                             end
                             if any_strike
                                 stroke do
-                                    line [0.cm, 18.mm - 22.0], [7.75.cm, 18.mm - 22.0]
-                                    line [7.75.cm, 18.mm - 22.0], [7.75.cm, 21.mm]
+                                    line [0.cm, 18.mm - 22.0], [9.35.cm, 18.mm - 22.0]
+                                    line [9.35.cm, 18.mm - 22.0], [9.35.cm, 21.mm]
                                 end
                             end
                         end

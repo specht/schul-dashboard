@@ -2043,6 +2043,16 @@ class Main < Sinatra::Base
         end
     end
 
+    before "/monitor/#{MONITOR_LZ_DEEP_LINK}" do
+        unless MONITOR_LZ_DEEP_LINK.nil?
+            @session_user = {
+                :email => "monitor-lz@#{SCHUL_MAIL_DOMAIN}",
+                :is_monitor => true,
+                :teacher => false
+            }
+        end
+    end
+
     get '/*' do
         # first things first
         days_left = (Date.parse('2022-07-07') - Date.today).to_i

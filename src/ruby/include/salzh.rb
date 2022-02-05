@@ -561,17 +561,26 @@ class Main < Sinatra::Base
                         bounding_box([0, 1.5.cm], width: 17.cm, height: 4.cm) do
                             float do
                                 text "<b>Legende</b>", :inline_format => true, :leading => 3.mm
-                                text "Nachname, Vorname –", :inline_format => true, :leading => 1.mm
+                                text "Nachname, Vorname", :inline_format => true, :leading => 1.mm
                                 fill_color 'a0a0a0'
-                                text "Nachname, Vorname –", :inline_format => true, :leading => 1.mm
+                                text "(Nachname, Vorname)", :inline_format => true, :leading => 1.mm
                                 fill_color '000000'
                                 stroke_color '000000'
-                                text "Nachname, Vorname –", :inline_format => true, :leading => 1.mm
+                                text "Nachname, Vorname", :inline_format => true, :leading => 1.mm
                                 stroke { line [0.mm, 21.mm], [3.1.cm, 21.mm] }
                             end
                         end
 
-                        bounding_box([3.6.cm, 1.5.cm], width: 11.cm, height: 4.cm) do
+                        bounding_box([3.5.cm, 1.5.cm], width: 11.cm, height: 4.cm) do
+                            float do
+                                text " ", :inline_format => true, :leading => 3.mm
+                                text "–", :inline_format => true, :leading => 1.mm
+                                text "–", :inline_format => true, :leading => 1.mm
+                                text "–", :inline_format => true, :leading => 1.mm
+                            end
+                        end
+
+                        bounding_box([3.8.cm, 1.5.cm], width: 11.cm, height: 4.cm) do
                             float do
                                 text " ", :inline_format => true, :leading => 3.mm
                                 text "muss heute getestet werden", :inline_format => true, :leading => 1.mm

@@ -246,7 +246,7 @@ module QtsNeo4j
                 if temp.size < 1024 * 10
                     STDERR.puts temp
                 else
-                    STDERR.puts "(omitted YAML string with #{temp.size} characters"
+                    STDERR.puts "(omitted YAML string with #{temp.size} characters)"
                 end
                 raise CypherError.new(temp_result['errors'].first['code'], temp_result['errors'].first['message'])
             end

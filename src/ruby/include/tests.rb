@@ -43,7 +43,7 @@ class Main < Sinatra::Base
         end
         tests = neo4j_query(<<~END_OF_QUERY, :start_date => start_date, :end_date => end_date, :klasse => klasse).map { |x| {:user => x['u'].props, :test => x['t'].props } }
             MATCH (t:Test {klasse: {klasse}})-[:ORGANIZED_BY]->(u:User)
-            WHERE t.datum >= {start_date} AND t.datum <= {end_date}
+            WHERE t.datum >= {start_date} AND t.datum <= {end_date} AND COALESCE(t.deleted, false) = false
             RETURN t, u;
         END_OF_QUERY
         tests.each do |event|
@@ -54,14 +54,15 @@ class Main < Sinatra::Base
             end
             events << {
                 :start => event[:test][:datum],
-                :end => event[:test][:datum],
+                :end => (Date.parse(event[:test][:end_datum] || event[:test][:datum]) + 1).strftime('%Y-%m-%d'),
                 :title => title,
                 :extendedProps => {
                     :type => :test,
                     :test => event[:test],
                     :display_name => user_info[:display_name],
                     :shorthand => user_info[:shorthand],
-                    :is_session_user => event[:user][:email] == @session_user[:email]
+                    :is_session_user => event[:user][:email] == @session_user[:email],
+                    :public_for_klasse => event[:test][:public_for_klasse] || false
                 }
             }
         end
@@ -70,12 +71,12 @@ class Main < Sinatra::Base
     
     post '/api/save_test' do
         require_teacher!
-        data = parse_request_data(:required_keys => [:klasse, :datum, :fach, :kommentar, :typ])
+        data = parse_request_data(:required_keys => [:klasse, :datum, :end_datum, :fach, :kommentar, :typ, :public_for_klasse])
         id = RandomTag.generate(12)
         timestamp = Time.now.to_i
-        test = neo4j_query_expect_one(<<~END_OF_QUERY, :session_email => @session_user[:email], :timestamp => timestamp, :id => id, :klasse => data[:klasse], :datum => data[:datum], :fach => data[:fach], :kommentar => data[:kommentar], :typ => data[:typ])['t'].props
+        test = neo4j_query_expect_one(<<~END_OF_QUERY, :session_email => @session_user[:email], :timestamp => timestamp, :id => id, :klasse => data[:klasse], :datum => data[:datum], :end_datum => data[:end_datum], :fach => data[:fach], :kommentar => data[:kommentar], :typ => data[:typ], :public_for_klasse => data[:public_for_klasse])['t'].props
             MATCH (a:User {email: {session_email}})
-            CREATE (t:Test {id: {id}, klasse: {klasse}, datum: {datum}, fach: {fach}, kommentar: {kommentar}, typ: {typ}})
+            CREATE (t:Test {id: {id}, klasse: {klasse}, datum: {datum}, end_datum: {end_datum}, fach: {fach}, kommentar: {kommentar}, typ: {typ}, public_for_klasse: {public_for_klasse}})
             SET t.created = {timestamp}
             SET t.updated = {timestamp}
             CREATE (t)-[:ORGANIZED_BY]->(a)
@@ -85,37 +86,48 @@ class Main < Sinatra::Base
             :tid => test[:id], 
             :test => test
         }
+        trigger_update("_klasse_#{data[:klasse]}")
         respond(:ok => true, :test => result)
     end
 
     post '/api/update_test' do
         require_teacher!
-        data = parse_request_data(:required_keys => [:klasse, :datum, :fach, :kommentar, :typ, :id])
+        data = parse_request_data(:required_keys => [:klasse, :datum, :end_datum, :fach, :kommentar, :typ, :id, :public_for_klasse])
         timestamp = Time.now.to_i
-        test = neo4j_query_expect_one(<<~END_OF_QUERY, :session_email => @session_user[:email], :timestamp => timestamp, :id => data[:id], :klasse => data[:klasse], :datum => data[:datum], :fach => data[:fach], :kommentar => data[:kommentar], :typ => data[:typ])['t'].props
+        test = neo4j_query_expect_one(<<~END_OF_QUERY, :session_email => @session_user[:email], :timestamp => timestamp, :id => data[:id], :klasse => data[:klasse], :datum => data[:datum], :end_datum => data[:end_datum], :fach => data[:fach], :kommentar => data[:kommentar], :typ => data[:typ], :public_for_klasse => data[:public_for_klasse])['t'].props
             MATCH (t:Test {id: {id}})-[:ORGANIZED_BY]->(a:User {email: {session_email}})
             SET t.updated = {timestamp}
             SET t.klasse = {klasse}
             SET t.datum = {datum}
+            SET t.end_datum = {end_datum}
             SET t.fach = {fach}
             SET t.kommentar = {kommentar}
             SET t.typ = {typ}
+            SET t.public_for_klasse = {public_for_klasse}
             RETURN t;
         END_OF_QUERY
         result = {
             :tid => test[:id], 
             :test => test
         }
+        trigger_update("_klasse_#{data[:klasse]}")
         respond(:ok => true, :test => result)
     end
 
     post '/api/delete_test' do
         require_teacher!
         data = parse_request_data(:required_keys => [:id])
-        neo4j_query(<<~END_OF_QUERY, :session_email => @session_user[:email], :id => data[:id])
-            MATCH (t:Test {id: {id}})-[:ORGANIZED_BY]->(a:User {email: {session_email}})
-            DETACH DELETE t;
+        timestamp = Time.now.to_i
+        klasse = neo4j_query_expect_one(<<~END_OF_QUERY, :id => data[:id])['t.klasse']
+            MATCH (t:Test {id: {id}})
+            RETURN t.klasse;
         END_OF_QUERY
+        neo4j_query(<<~END_OF_QUERY, :session_email => @session_user[:email], :id => data[:id], :timestamp => timestamp)
+            MATCH (t:Test {id: {id}})-[:ORGANIZED_BY]->(a:User {email: {session_email}})
+            SET t.updated = {timestamp}
+            SET t.deleted = true;
+        END_OF_QUERY
+        trigger_update("_klasse_#{klasse}")
         respond(:ok => true)
     end
 end

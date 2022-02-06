@@ -907,7 +907,7 @@ class Timetable
     
     def update_weeks(only_these_lesson_keys)
         debug "Updating weeks: #{only_these_lesson_keys.to_a.join(', ')}"
-        
+
         ical_tokens = {}
         result = neo4j_query(<<~END_OF_QUERY)
             MATCH (u:User)
@@ -1051,10 +1051,28 @@ class Timetable
                     }
                 end
             end
+            public_test_events_for_klasse = {}
+            @@klassen_order.each do |klasse|
+                public_test_events_for_klasse[klasse] = (@public_test_entries_for_klasse[klasse] || {}).values.reject do |entry|
+                    (entry[:datum] >= p1.strftime('%Y-%m-%d') || entry[:end_datum] < p.strftime('%Y-%m-%d')) || entry[:public_for_klasse] != 'yes'
+                end.map do |entry|
+                    title = entry[:typ]
+                    unless (entry[:fach] || '').strip.empty?
+                        title += " (#{entry[:fach]})"
+                    end
+                    {
+                        :start => entry[:datum],
+                        :end => (Date.parse(entry[:end_datum]) + 1).strftime('%Y-%m-%d'),
+                        :title => title,
+                        :label => title
+                    }
+                end
+            end
             # write timetable info for each user (one file per week)
             temp = @@user_info.dup
             @@klassen_order.each do |klasse|
                 temp["_#{klasse}"] = {
+                    :is_klasse => true,
                     :klasse => klasse,
                     :id => @@klassen_id[klasse]
                 }
@@ -1099,6 +1117,9 @@ class Timetable
                     events += cache_indices.map { |x| @lesson_cache[x] }
                     events += holidays 
                     events += website_events
+                    if (user[:teacher] || false) == false || user[:is_klasse]
+                        events += public_test_events_for_klasse[user[:klasse]]
+                    end
                     # add events
                     ((@events_for_user[email] || {})[p_yw] || {}).each_pair do |eid, info|
                         event = info[:event]
@@ -1827,11 +1848,13 @@ class Timetable
         if only_these_lesson_keys.nil?
             begin
                 update_timetables()
-            rescue
+            rescue StandardError => e
+                STDERR.puts e
             end
             begin
                 update_recipients()
-            rescue
+            rescue StandardError => e
+                STDERR.puts e
             end
         end
         
@@ -1843,6 +1866,7 @@ class Timetable
         @messages_for_user ||= {}
         @events_for_user ||= {}
         @lesson_info_last_timestamp ||= 0
+        @public_test_entries_for_klasse ||= {}
         fetched_lesson_info_count = 0
         fetched_text_comments_count = 0
         fetched_audio_comments_count = 0
@@ -1890,6 +1914,12 @@ class Timetable
             elsif lesson_key =~ /^_groups_/
                 email = lesson_key.sub('_groups_/', '')
                 update_recipients(email)
+            elsif lesson_key =~ /^_klasse_/
+                klasse = lesson_key.sub('_klasse_', '')
+                add_these_lesson_keys << "_#{klasse}"
+                (@@schueler_for_klasse[klasse] || []).each do |email|
+                    add_these_lesson_keys << "_#{email}"
+                end
             end
         end
         # now fetch all updated info nodes with booked tablet sets
@@ -2073,6 +2103,24 @@ class Timetable
         rescue StandardError => e
             STDERR.puts e
         end
+        # refresh public tests from database
+        @public_tests_last_timestamp ||= 0
+        rows = neo4j_query(<<~END_OF_QUERY, {:ts => @public_tests_last_timestamp}).map { |x| x['t'].props }
+            MATCH (t:Test)
+            WHERE t.updated >= {ts}
+            RETURN t;
+        END_OF_QUERY
+        fetched_public_test_entries = rows.size
+        rows.each do |row|
+            @public_test_entries_for_klasse[row[:klasse]] ||= {}
+            @public_tests_last_timestamp = row[:updated] if row[:updated] > @public_tests_last_timestamp
+            if (row[:deleted] || false) || (row[:public_for_klasse] || 'no') != 'yes'
+                @public_test_entries_for_klasse[row[:klasse]].delete(row[:id])
+            else
+                row[:end_datum] ||= row[:datum]
+                @public_test_entries_for_klasse[row[:klasse]][row[:id]] = row
+            end
+        end
         # refresh events from database
         @events_last_timestamp ||= 0
         rows = neo4j_query(<<~END_OF_QUERY, {:ts => @events_last_timestamp}).map { |x| {:info => x['e'].props, :organized_by => x['ou.email'] } }
@@ -2133,7 +2181,7 @@ class Timetable
                 end
             end
         end
-        debug "Fetched #{fetched_lesson_info_count} updated lesson events, #{fetched_text_comments_count} updated text comments, #{fetched_audio_comments_count} updated audio comments, #{fetched_message_count} updated messages and #{fetched_event_count} updated events."
+        debug "Fetched #{fetched_lesson_info_count} updated lesson events, #{fetched_text_comments_count} updated text comments, #{fetched_audio_comments_count} updated audio comments, #{fetched_message_count} updated messages, #{fetched_event_count} updated events and #{fetched_public_test_entries} public test entries."
         
         unless add_these_lesson_keys.empty?
             only_these_lesson_keys = (only_these_lesson_keys || Set.new()) | add_these_lesson_keys

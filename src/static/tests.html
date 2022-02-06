@@ -25,14 +25,23 @@
                     <input type='date' class='form-control' id='ti_datum' />
                 </div>
                 <div class="form-group col-md-3">
+                    <label>bis</label>
+                    <input type='date' class='form-control' id='ti_end_datum' />
+                </div>
+                <!-- <div class="form-group col-md-3">
                     <label>Klasse</label>
                     <input type='text' class='form-control' value='#{klasse}' readonly />
-                </div>
+                </div> -->
                 <div class="form-group col-md-3">
                     <label>Typ</label>
                     <select id="ti_typ" class="form-control">
                         <option value='KA' selected>Klassenarbeit</option>
                         <option value='LEK'>LEK</option>
+                        <option value='Exkursion'>Exkursion</option>
+                        <option value='Fahrt'>Fahrt</option>
+                        <option value='Workshop'>Workshop</option>
+                        <option value='MSA'>MSA</option>
+                        <option value='Vera'>Vera</option>
                     </select>
                 </div>
                 <div class="form-group col-md-3">
@@ -45,7 +54,15 @@
                 <div class="form-group col-md-12">
                     <label>Kommentar</label>
                     <input type='text' class='form-control' id='ti_comment' />
-                    <small class="form-text text-muted">Dieser Eintrag ist für alle Kolleginnen und Kollegen sichtbar.</small>
+                    <small class="form-text text-muted">Dieser Eintrag ist für alle Kolleginnen und Kollegen, aber nicht für SuS sichtbar.</small>
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group col-md-12">
+                    <div class='button-with-label'>
+                        <button id='ti_publish_for_klasse' data-state='no' class='btn btn-outline-secondary'><i class='fa fa-times'></i>Diesen Eintrag im Stundenplan der <strong>Klasse #{klasse}</strong> anzeigen</button>
+                    </div>
+                    <!-- <small class="form-text text-muted"></small> -->
                 </div>
             </div>
         </form>
@@ -123,9 +140,12 @@ function collect_data() {
     let result = {};
     result.klasse = klasse;
     result.datum = $('#ti_datum').val();
+    result.end_datum = $('#ti_end_datum').val();
     result.fach = $('#ti_fach').val();
     result.kommentar = $('#ti_comment').val().trim();
-    result.typ = $('#ti_typ').val();
+    result.typ = ($('#ti_typ').val() || '').trim();
+    result.public_for_klasse = $('#ti_publish_for_klasse').data('state');
+    if (result.typ.length === 0) result.typ = null;
     return result;
 }
 
@@ -140,7 +160,7 @@ function pending_changes() {
 
 function can_send() {
     let data = collect_data();
-    return (data.fach !== null && data.type !== null);
+    return (data.fach !== null && data.typ !== null && data.datum <= data.end_datum);
 }
 
 function update_buttons() {
@@ -208,9 +228,14 @@ document.addEventListener('DOMContentLoaded', function() {
         dateClick: function(info) {
             if (possible_lessons.fach_order.length > 0) {
                 $('#testModal #ti_datum').val(moment(info.dateStr).format('YYYY-MM-DD'));
+                $('#testModal #ti_end_datum').val(moment(info.dateStr).format('YYYY-MM-DD'));
                 $('#ti_typ').val(null);
                 $('#ti_fach').val(null);
                 $('#ti_comment').val('');
+                $('#ti_publish_for_klasse').data('state', 'no');
+                $('#ti_publish_for_klasse').addClass('btn-outline-secondary').removeClass('btn-success');
+                $('#ti_publish_for_klasse').find('i').addClass('fa-times').removeClass('fa-check');
+
                 stored_test_id = null;
                 stored_test_json = null;
                 update_buttons();
@@ -228,6 +253,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (info.event.extendedProps.is_session_user) {
                     let test = info.event.extendedProps.test;
                     $('#testModal #ti_datum').val(moment(test.datum).format('YYYY-MM-DD'));
+                    $('#testModal #ti_end_datum').val(moment(test.end_datum).format('YYYY-MM-DD'));
                     $('#ti_typ').val(test.typ);
                     $('option.temporary').remove();
                     if (possible_lessons.fach_order.indexOf(test.fach) < 0) {
@@ -236,6 +262,15 @@ document.addEventListener('DOMContentLoaded', function() {
                     }
                     $('#ti_fach').val(test.fach);
                     $('#ti_comment').val(test.kommentar);
+                    if (test.public_for_klasse === 'yes') {
+                        $('#ti_publish_for_klasse').data('state', 'yes');
+                        $('#ti_publish_for_klasse').removeClass('btn-outline-secondary').addClass('btn-success');
+                        $('#ti_publish_for_klasse').find('i').removeClass('fa-times').addClass('fa-check');
+                    } else {
+                        $('#ti_publish_for_klasse').data('state', 'no');
+                        $('#ti_publish_for_klasse').addClass('btn-outline-secondary').removeClass('btn-success');
+                        $('#ti_publish_for_klasse').find('i').addClass('fa-times').removeClass('fa-check');
+                    }
                     stored_test_id = test.id;
                     stored_test_json = JSON.stringify(collect_data());
                     update_buttons();
@@ -244,6 +279,8 @@ document.addEventListener('DOMContentLoaded', function() {
                     let test = info.event.extendedProps.test;
                     $('#showTestModal .modal-header').text(`${test.typ} ${possible_lessons.fach_tr[test.fach] || test.fach} (${test.klasse})`);
                     let s = `Datum: ${moment(test.datum).format('ddd, D.M.Y')}`;
+                    if (test.datum !== test.end_datum)
+                        s += ` &ndash; ${moment(test.end_datum).format('ddd, D.M.Y')}`;
                     if ((test.kommentar || '').trim().length > 0)
                         s += `<br />${test.kommentar}`;
                     $('#showTestModal .modal-body').html(s);
@@ -297,15 +334,36 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         );
     });
+    $('#ti_fach').append($('<option>').attr('value', '').text("(keine Angabe)"));
     for (let i = 0; i < possible_lessons.fach_order.length; i++) {
         let fach = possible_lessons.fach_order[i];
         let fach_tr = possible_lessons.fach_tr[fach] || fach;
         $('#ti_fach').append($('<option>').attr('value', fach).text(fach_tr));
     }
-    $('#ti_datum').change(function() { update_buttons(); });
+    $('#ti_datum').change(function() { 
+        $('#ti_end_datum').val($('#ti_datum').val());
+        update_buttons(); 
+    });
+    $('#ti_end_datum').change(function() { 
+        update_buttons(); 
+    });
     $('#ti_typ').change(function() { update_buttons(); });
     $('#ti_fach').change(function() { update_buttons(); });
     $('#ti_comment').change(function() { update_buttons(); });
     $('#ti_comment').keyup(function() { update_buttons(); });
+    $('#ti_publish_for_klasse').click(function(e) {
+        e.preventDefault();
+        let button = $(e.target).closest('button');
+        if (button.data('state') === 'no') {
+            button.data('state', 'yes');
+            button.removeClass('btn-outline-secondary').addClass('btn-success');
+            button.find('i').removeClass('fa-times').addClass('fa-check');
+        } else {
+            button.data('state', 'no');
+            button.addClass('btn-outline-secondary').removeClass('btn-success');
+            button.find('i').addClass('fa-times').removeClass('fa-check');
+        }
+        update_buttons();
+    });
 });
 </script>

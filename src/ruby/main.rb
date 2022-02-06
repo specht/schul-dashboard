@@ -2449,7 +2449,7 @@ class Main < Sinatra::Base
 #                             STDERR.puts code
                             s[index, length] = eval(code).to_s || ''
                         rescue
-                            debug "Error while evaluating:"
+                            debug "Error while evaluating for #{@session_user.to_json}:"
                             debug code
                             raise
                         end

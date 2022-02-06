@@ -2014,31 +2014,68 @@ class Timetable
             end
         end
         begin
+            STDERR.puts '=' * 50
             # refresh messages from database
             @messages_last_timestamp ||= 0
-            rows = neo4j_query(<<~END_OF_QUERY, {:ts => @messages_last_timestamp}).map { |x| {:info => x['m'].props, :from => x['mf.email'], :to => x['u.email'], :rt => x['rt'].props } }
+            STDERR.puts '!' * 50
+            new_rows = neo4j_query(<<~END_OF_QUERY, {:ts => @messages_last_timestamp})
                 MATCH (u:User)<-[rt:TO]-(m:Message)-[:FROM]->(mf:User)
                 WHERE m.updated >= {ts} OR rt.updated >= {ts}
-                RETURN m, mf.email, u.email, rt
-                ORDER BY m.created DESC
+                RETURN m, mf.email, COLLECT(u.email), COLLECT(rt)
+                ORDER BY m.created DESC;
             END_OF_QUERY
+            STDERR.puts '~' * 50
+            new_rows.map! do |x|
+                {:info => x['m'].props, 
+                 :from => x['mf.email'], 
+                 :to_list => x['COLLECT(u.email)'], 
+                 :rt_list => x['COLLECT(rt)'].map { |x| x.transform_keys { |y| y.to_sym }}
+                }
+            end
+            STDERR.puts new_rows.to_yaml
             fetched_message_count = rows.size
-            rows.each do |row|
-                @messages_for_user[row[:to]] ||= {}
-                @messages_last_timestamp = row[:info][:updated] if row[:info][:updated] > @messages_last_timestamp
-                if (row[:rt] || {})[:updated]
-                    @messages_last_timestamp = row[:rt][:updated] if row[:rt][:updated] > @messages_last_timestamp
-                end
-                if row[:info][:id] && !row[:info][:deleted] && !(row[:rt] || {})[:deleted]
-                    @messages_for_user[row[:to]][row[:info][:id]] = {
-                        :timestamp => row[:info][:created],
-                        :from => row[:from]
-                    }
-                else
-                    @messages_for_user[row[:to]].delete(row[:info][:id])
+            new_rows.each do |row|
+                row[:to_list].each.with_index do |to, to_index| 
+                    rt = row[:rt_list][to_index]
+                    @messages_for_user[to] ||= {} 
+                    @messages_last_timestamp = row[:info][:updated] if row[:info][:updated] > @messages_last_timestamp
+                    if (rt || {})[:updated]
+                        @messages_last_timestamp = rt[:updated] if rt[:updated] > @messages_last_timestamp
+                    end
+                    if row[:info][:id] && !row[:info][:deleted] && !(rt || {})[:deleted]
+                        @messages_for_user[to][row[:info][:id]] = {
+                            :timestamp => row[:info][:created],
+                            :from => row[:from]
+                        }
+                    else
+                        @messages_for_user[to].delete(row[:info][:id])
+                    end
                 end
             end
-        rescue
+            # rows = neo4j_query(<<~END_OF_QUERY, {:ts => @messages_last_timestamp}).map { |x| {:info => x['m'].props, :from => x['mf.email'], :to => x['u.email'], :rt => x['rt'].props } }
+            #     MATCH (u:User)<-[rt:TO]-(m:Message)-[:FROM]->(mf:User)
+            #     WHERE m.updated >= {ts} OR rt.updated >= {ts}
+            #     RETURN m, mf.email, u.email, rt
+            #     ORDER BY m.created DESC
+            # END_OF_QUERY
+            # fetched_message_count = rows.size
+            # rows.each do |row|
+            #     @messages_for_user[row[:to]] ||= {}
+            #     @messages_last_timestamp = row[:info][:updated] if row[:info][:updated] > @messages_last_timestamp
+            #     if (row[:rt] || {})[:updated]
+            #         @messages_last_timestamp = row[:rt][:updated] if row[:rt][:updated] > @messages_last_timestamp
+            #     end
+            #     if row[:info][:id] && !row[:info][:deleted] && !(row[:rt] || {})[:deleted]
+            #         @messages_for_user[row[:to]][row[:info][:id]] = {
+            #             :timestamp => row[:info][:created],
+            #             :from => row[:from]
+            #         }
+            #     else
+            #         @messages_for_user[row[:to]].delete(row[:info][:id])
+            #     end
+            # end
+        rescue StandardError => e
+            STDERR.puts e
         end
         # refresh events from database
         @events_last_timestamp ||= 0

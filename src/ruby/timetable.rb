@@ -2014,17 +2014,14 @@ class Timetable
             end
         end
         begin
-            STDERR.puts '=' * 50
             # refresh messages from database
             @messages_last_timestamp ||= 0
-            STDERR.puts '!' * 50
             new_rows = neo4j_query(<<~END_OF_QUERY, {:ts => @messages_last_timestamp})
                 MATCH (u:User)<-[rt:TO]-(m:Message)-[:FROM]->(mf:User)
                 WHERE m.updated >= {ts} OR rt.updated >= {ts}
                 RETURN m, mf.email, COLLECT(u.email), COLLECT(rt)
                 ORDER BY m.created DESC;
             END_OF_QUERY
-            STDERR.puts '~' * 50
             new_rows.map! do |x|
                 {:info => x['m'].props, 
                  :from => x['mf.email'], 
@@ -2032,7 +2029,6 @@ class Timetable
                  :rt_list => x['COLLECT(rt)'].map { |x| x.transform_keys { |y| y.to_sym }}
                 }
             end
-            STDERR.puts new_rows.to_yaml
             fetched_message_count = rows.size
             new_rows.each do |row|
                 row[:to_list].each.with_index do |to, to_index| 

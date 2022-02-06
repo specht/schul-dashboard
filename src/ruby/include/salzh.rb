@@ -3,10 +3,15 @@ SALZH_MODE_ICONS = {:contact_person => 'fa-exclamation', :salzh => 'fa-home', :h
 SALZH_MODE_LABEL = {:contact_person => 'Kontaktperson', :salzh => 'saLzH', :hotspot_klasse => 'Hotspot-Klasse'}
 
 class Main < Sinatra::Base
-    def self.get_salzh_status_for_emails(emails = nil) 
-
-        # purge stale salzh entries
+    def self.purge_stale_salzh_entries(force = true)
         today = Date.today.strftime('%Y-%m-%d')
+        unless force
+            @@last_purge_stale_salzh_entries_date ||= ''
+            if today <= @@last_purge_stale_salzh_entries_date
+                return
+            end
+            @@last_purge_stale_salzh_entries_date = today
+        end
         $neo4j.neo4j_query(<<~END_OF_QUERY, :today => today)
             MATCH (s:Salzh)-[:BELONGS_TO]->(u:User)
             WHERE s.end_date < {today}
@@ -22,6 +27,12 @@ class Main < Sinatra::Base
             WHERE k.hotspot_end_date < {today}
             DETACH DELETE k;
         END_OF_QUERY
+    end
+
+    def self.get_salzh_status_for_emails(emails = nil, force_refresh = true) 
+
+        self.purge_stale_salzh_entries(false)
+
         temp = []
         temp2 = []
 
@@ -120,6 +131,7 @@ class Main < Sinatra::Base
             SET s.mode = {mode}
             RETURN s;
         END_OF_QUERY
+        self.purge_stale_salzh_entries(true)
         respond(:ok => true)
     end
 
@@ -130,6 +142,7 @@ class Main < Sinatra::Base
             MATCH (s:Salzh)-[:BELONGS_TO]->(u:User {email: {email}})
             DETACH DELETE s;
         END_OF_QUERY
+        self.purge_stale_salzh_entries(true)
         respond(:ok => true)
     end
 
@@ -140,6 +153,7 @@ class Main < Sinatra::Base
             MATCH (u:User {email: $email})
             SET u.freiwillig_salzh = $end_date;
         END_OF_QUERY
+        self.purge_stale_salzh_entries(true)
         respond(:ok => true)
     end
 
@@ -150,6 +164,7 @@ class Main < Sinatra::Base
             MATCH (u:User {email: $email})
             REMOVE u.freiwillig_salzh;
         END_OF_QUERY
+        self.purge_stale_salzh_entries(true)
         respond(:ok => true)
     end
 
@@ -160,6 +175,7 @@ class Main < Sinatra::Base
             MERGE (k:Klasse {klasse: $klasse})
             SET k.hotspot_end_date = $end_date;
         END_OF_QUERY
+        self.purge_stale_salzh_entries(true)
         respond(:ok => true)
     end
 
@@ -170,6 +186,7 @@ class Main < Sinatra::Base
             MERGE (k:Klasse {klasse: $klasse})
             REMOVE k.hotspot_end_date;
         END_OF_QUERY
+        self.purge_stale_salzh_entries(true)
         respond(:ok => true)
     end
 
@@ -195,12 +212,7 @@ class Main < Sinatra::Base
 
     def self.get_hotspot_klassen
         # purge stale entries
-        today = Date.today.strftime('%Y-%m-%d')
-        $neo4j.neo4j_query(<<~END_OF_QUERY, :today => today)
-            MATCH (k:Klasse)
-            WHERE k.hotspot_end_date < {today}
-            DETACH DELETE k;
-        END_OF_QUERY
+        self.purge_stale_salzh_entries(false)
 
         hotspot_dates = {}
         rows = $neo4j.neo4j_query(<<~END_OF_QUERY)
@@ -231,13 +243,8 @@ class Main < Sinatra::Base
     end
 
     def self.get_current_salzh_sus
-        # purge stale salzh entries
-        today = Date.today.strftime('%Y-%m-%d')
-        $neo4j.neo4j_query(<<~END_OF_QUERY, :today => today)
-            MATCH (s:Salzh)-[:BELONGS_TO]->(u:User)
-            WHERE s.end_date < {today}
-            DETACH DELETE s;
-        END_OF_QUERY
+        # purge stale salzh entries !!!
+        self.purge_stale_salzh_entries(false)
 
         rows = $neo4j.neo4j_query(<<~END_OF_QUERY)
             MATCH (s:Salzh)-[:BELONGS_TO]->(u:User)

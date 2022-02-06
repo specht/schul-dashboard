@@ -242,7 +242,12 @@ module QtsNeo4j
                 
             if temp_result['errors'] && !temp_result['errors'].empty?
                 STDERR.puts "This:"
-                STDERR.puts temp_result.to_yaml
+                temp = temp_result.to_yaml
+                if temp.size < 1024 * 10
+                    STDERR.puts temp
+                else
+                    STDERR.puts "(omitted YAML string with #{temp.size} characters"
+                end
                 raise CypherError.new(temp_result['errors'].first['code'], temp_result['errors'].first['message'])
             end
             result = []

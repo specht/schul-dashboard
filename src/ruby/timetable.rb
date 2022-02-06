@@ -1825,8 +1825,14 @@ class Timetable
     
     def update(only_these_lesson_keys)
         if only_these_lesson_keys.nil?
-            update_timetables()
-            update_recipients()
+            begin
+                update_timetables()
+            rescue
+            end
+            begin
+                update_recipients()
+            rescue
+            end
         end
         
         add_these_lesson_keys = Set.new()

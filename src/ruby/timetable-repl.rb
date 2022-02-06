@@ -18,16 +18,19 @@ class TimetableRepl < Sinatra::Base
     end
     
     def self.perform_update(which)
-        debug ">>> Updating #{which}!"
-        start_time = Time.now
-        file_count = 0
-        if which == 'all'
-            file_count = @@timetable.update(nil)
-        else
-            file_count = @@timetable.update(Set.new([which]))
+        begin
+            debug ">>> Updating #{which}!"
+            start_time = Time.now
+            file_count = 0
+            if which == 'all'
+                file_count = @@timetable.update(nil)
+            else
+                file_count = @@timetable.update(Set.new([which]))
+            end
+            end_time = Time.now
+            debug sprintf("<<< Finished updating #{which} in %1.2f seconds, wrote #{file_count} files.", (end_time - start_time).to_f)
+        rescue
         end
-        end_time = Time.now
-        debug sprintf("<<< Finished updating #{which} in %1.2f seconds, wrote #{file_count} files.", (end_time - start_time).to_f)
     end
     
     configure do

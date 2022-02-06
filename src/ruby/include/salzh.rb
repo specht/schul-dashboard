@@ -499,142 +499,161 @@ class Main < Sinatra::Base
                 :bold => "/app/fonts/Roboto-Bold.ttf",
                 :bold_italic => "/app/fonts/Roboto-BoldItalic.ttf"
                 })
+            first_page = true
+            max_entries_per_page = 33
             font('RobotoCondensed') do
                 KLASSEN_ORDER.each.with_index do |klasse, index|
-                    next if ['11', '12'].include?(klasse)
 
-                    # found_one = false
-                    # main.iterate_directory(klasse) do |email, i|
-                    #     status = salzh_status[email]
-                    #     if status[:needs_testing_today]
-                    #         found_one = true
-                    #         break
-                    #     end
-                    # end
-                    # next unless found_one
-
-                    start_new_page if index > 0
-                    font_size 11
+                    sus_count = 0
                     any_strike = false
-                    bounding_box([2.cm, 297.mm - 2.cm], width: 17.cm, height: 257.mm) do
-                        float do
-                            text "#{DateTime.now.strftime("%d.%m.%Y")}", :align => :right
+                    main.iterate_directory(klasse) do |email, i|
+                        status = salzh_status[email]
+                        label_type = Main.get_test_list_label_type(status[:status], status[:testing_required], true)
+                        sus_count += 1
+                        if label_type == :strike
+                            any_strike = true
                         end
-                        text "<b>Testliste Klasse #{Main.tr_klasse(klasse)}</b>   (#{(klassenleiter[klasse] || []).map { |shorthand| (user_info[shorthands[shorthand]] || {})[:display_last_name] }.reject { |x| x.nil? }.join(' / ')})", :inline_format => true
-
-                        line_width 0.2.mm
-
-                        main.iterate_directory(klasse) do |email, i|
-                            status = salzh_status[email]
-                            label_type = Main.get_test_list_label_type(status[:status], status[:testing_required], true)
-                            # status is salzh / contact_person / hotspot_klasse
-                            # needs_testing_today: true / false
-                            if label_type == :enabled
-                                fill_color '000000'
-                                stroke_color '000000'
-                            elsif label_type == :disabled
-                                fill_color 'a0a0a0'
-                                stroke_color 'a0a0a0'
-                            end
-                            user = @@user_info[email]
-                            y = 242.mm - 6.7.mm * i
-                            draw_text "#{i + 1}.", :at => [0.mm, y]
-                            draw_text "#{label_type == :disabled ? '(' : ''}#{user[:last_name]}, #{user[:first_name]}#{label_type == :disabled ? ')' : ''}", :at => [7.mm, y]
-
-                            # TK pos neg TZ Verspätung
-
-                            dist = 20.0
-
-                            %w(TK pos. neg. TZ).each.with_index do |label, i|
-                                x = 76 + dist * i
-                                stroke { rectangle [x.mm, y + 3.mm], 3.mm, 3.mm }
-                                draw_text label, :at => [x.mm + 5.mm, y]
-                            end
-
-
-                            stroke_color '000000'
-                            fill_color '000000'
-
-                            if label_type == :strike
-                                stroke { rectangle [(76 + dist * 4).mm, y + 3.mm], 3.mm, 3.mm }
-                                draw_text "Sek", :at => [(76 + dist * 4).mm + 5.mm, y]
-                                stroke { line [0.mm, y + 1.mm], [7.3.cm, y + 1.mm] }
-                                any_strike = true
-                            end
-
-                            stroke { line [0.mm, y + 5.2.mm], [17.cm, y + 5.2.mm] } if i == 0
-                            stroke { line [0.mm, y - 2.mm], [17.cm, y - 2.mm] }
-                        end
-                        bounding_box([0, 1.5.cm], width: 17.cm, height: 4.cm) do
-                            float do
-                                text "<b>Legende</b>", :inline_format => true, :leading => 3.mm
-                                text "Nachname, Vorname", :inline_format => true, :leading => 1.mm
-                                fill_color 'a0a0a0'
-                                text "(Nachname, Vorname)", :inline_format => true, :leading => 1.mm
-                                fill_color '000000'
-                                stroke_color '000000'
-                                text "Nachname, Vorname", :inline_format => true, :leading => 1.mm
-                                stroke { line [0.mm, 21.mm], [3.1.cm, 21.mm] }
-                            end
-                        end
-
-                        bounding_box([3.5.cm, 1.5.cm], width: 11.cm, height: 4.cm) do
-                            float do
-                                text " ", :inline_format => true, :leading => 3.mm
-                                text "–", :inline_format => true, :leading => 1.mm
-                                text "–", :inline_format => true, :leading => 1.mm
-                                text "–", :inline_format => true, :leading => 1.mm
-                            end
-                        end
-
-                        bounding_box([3.8.cm, 1.5.cm], width: 11.cm, height: 4.cm) do
-                            float do
-                                text " ", :inline_format => true, :leading => 3.mm
-                                text "muss heute getestet werden", :inline_format => true, :leading => 1.mm
-                                text "kann heute getestet werden", :inline_format => true, :leading => 1.mm
-                                text "wurde für heute <b>nicht</b> in der Schule erwartet – bitte zunächst <b>keine Eintragung</b> machen und zur Abklärung ins Sekretariat schicken", :inline_format => true, :leading => 1.mm
-                            end
-                        end
-
-                        bounding_box([0, 244.mm - 6.7.mm * @@schueler_for_klasse[klasse].size], width: 6.2.cm, height: 2.cm) do
-                            text "Testkassette abgegeben", :align => :right
-                            text "im Testzentrum getestet", :align => :right
-                            if any_strike
-                                text "war im Sekretariat", :align => :right
-                            end
-                        end
-                        bounding_box([6.4.cm, 249.mm - 6.7.mm * @@schueler_for_klasse[klasse].size], width: 16.2.cm, height: 2.5.cm) do
-                            stroke do
-                                line [0.cm, 18.mm], [1.35.cm, 18.mm]
-                                line [1.35.cm, 18.mm], [1.35.cm, 21.mm]
-                            end
-                            stroke do
-                                line [0.cm, 18.mm - 11.0], [7.35.cm, 18.mm - 11.0]
-                                line [7.35.cm, 18.mm - 11.0], [7.35.cm, 21.mm]
-                            end
-                            if any_strike
-                                stroke do
-                                    line [0.cm, 18.mm - 22.0], [9.35.cm, 18.mm - 22.0]
-                                    line [9.35.cm, 18.mm - 22.0], [9.35.cm, 21.mm]
-                                end
-                            end
-                        end
-                        stroke { rectangle [14.5.cm, 0.5.cm], 2.5.cm, 1.5.cm }
-                        font_size 8
-                        draw_text "Kürzel", :at => [154.mm, -13.1.mm]
-                        font_size 11
                     end
 
-                        # stroke { rectangle [0, 0], 12.85.cm, 8.5.cm }
-                        # bounding_box([5.mm, -5.mm], width: 11.85.cm) do
-                        #     font_size 10
-                            
-                        #     text "<b>Code für Online-Abstimmung #{SCHUL_NAME_AN_DATIV} #{SCHUL_NAME}</b>", inline_format: true
+                    page_count = (sus_count - 1) / max_entries_per_page + 1
 
+                    (0...page_count).each do |page|
+
+                        start_new_page unless first_page
+                        first_page = false
+                        sus0 = page * max_entries_per_page
+                        sus1 = [(page + 1) * max_entries_per_page - 1, @@schueler_for_klasse[klasse].size - 1].min
+                        sus_on_this_page = sus1 - sus0 + 1
+
+                        font_size 11
+                        bounding_box([2.cm, 297.mm - 2.cm], width: 17.cm, height: 257.mm) do
+                            float do
+                                text "#{DateTime.now.strftime("%d.%m.%Y")}", :align => :right
+                            end
+                            title = "<b>Testliste Klasse #{Main.tr_klasse(klasse)}</b>   "
+                            parts = []
+                            if klassenleiter[klasse] && (!['11', '12'].include?(klasse))
+                                parts << "#{(klassenleiter[klasse] || []).map { |shorthand| (user_info[shorthands[shorthand]] || {})[:display_last_name] }.reject { |x| x.nil? }.join(' / ')}"
+                            end
+                            if page_count > 1
+                                parts << "Seite #{page + 1} von #{page_count}"
+                            end
+                            unless parts.empty?
+                                title += " (#{parts.join(', ')})"
+                            end
+                            text title, :inline_format => true
+
+                            line_width 0.2.mm
+
+                            bounding_box([0, 1.5.cm], width: 17.cm, height: 4.cm) do
+                                float do
+                                    text "<b>Legende</b>", :inline_format => true, :leading => 3.mm
+                                    text "Nachname, Vorname", :inline_format => true, :leading => 1.mm
+                                    fill_color 'a0a0a0'
+                                    text "(Nachname, Vorname)", :inline_format => true, :leading => 1.mm
+                                    fill_color '000000'
+                                    stroke_color '000000'
+                                    text "Nachname, Vorname", :inline_format => true, :leading => 1.mm
+                                    stroke { line [0.mm, 21.mm], [3.1.cm, 21.mm] }
+                                end
+                            end
+
+                            bounding_box([3.5.cm, 1.5.cm], width: 11.cm, height: 4.cm) do
+                                float do
+                                    text " ", :inline_format => true, :leading => 3.mm
+                                    text "–", :inline_format => true, :leading => 1.mm
+                                    text "–", :inline_format => true, :leading => 1.mm
+                                    text "–", :inline_format => true, :leading => 1.mm
+                                end
+                            end
+
+                            bounding_box([3.8.cm, 1.5.cm], width: 11.cm, height: 4.cm) do
+                                float do
+                                    text " ", :inline_format => true, :leading => 3.mm
+                                    text "muss heute getestet werden", :inline_format => true, :leading => 1.mm
+                                    text "kann heute getestet werden", :inline_format => true, :leading => 1.mm
+                                    text "wurde für heute <b>nicht</b> in der Schule erwartet – bitte zunächst <b>keine Eintragung</b> machen und zur Abklärung ins Sekretariat schicken", :inline_format => true, :leading => 1.mm
+                                end
+                            end
+
+                            bounding_box([0, 244.mm - 6.7.mm * sus_on_this_page], width: 6.2.cm, height: 2.cm) do
+                                text "Testkassette abgegeben", :align => :right
+                                text "im Testzentrum getestet", :align => :right
+                                if any_strike
+                                    text "war im Sekretariat", :align => :right
+                                end
+                            end
+                            bounding_box([6.4.cm, 249.mm - 6.7.mm * sus_on_this_page], width: 16.2.cm, height: 2.5.cm) do
+                                stroke do
+                                    line [0.cm, 18.mm], [1.35.cm, 18.mm]
+                                    line [1.35.cm, 18.mm], [1.35.cm, 21.mm]
+                                end
+                                stroke do
+                                    line [0.cm, 18.mm - 11.0], [7.35.cm, 18.mm - 11.0]
+                                    line [7.35.cm, 18.mm - 11.0], [7.35.cm, 21.mm]
+                                end
+                                if any_strike
+                                    stroke do
+                                        line [0.cm, 18.mm - 22.0], [9.35.cm, 18.mm - 22.0]
+                                        line [9.35.cm, 18.mm - 22.0], [9.35.cm, 21.mm]
+                                    end
+                                end
+                            end
+                            if page == 0
+                                stroke { rectangle [14.5.cm, 0.5.cm], 2.5.cm, 1.5.cm }
+                                font_size 8
+                                draw_text "Kürzel", :at => [154.mm, -13.1.mm]
+                                font_size 11
+                            end
+
+                            entry_on_page = 0
+                            main.iterate_directory(klasse) do |email, j|
+                                next if j < sus0 || j > sus1
+                                i = j - sus0
+                                status = salzh_status[email]
+                                label_type = Main.get_test_list_label_type(status[:status], status[:testing_required], true)
+                                # status is salzh / contact_person / hotspot_klasse
+                                # needs_testing_today: true / false
+                                if label_type == :enabled
+                                    fill_color '000000'
+                                    stroke_color '000000'
+                                elsif label_type == :disabled
+                                    fill_color 'a0a0a0'
+                                    stroke_color 'a0a0a0'
+                                end
+                                user = @@user_info[email]
+                                y = 242.mm - 6.7.mm * i
+                                draw_text "#{j + 1}.", :at => [0.mm, y]
+                                draw_text "#{label_type == :disabled ? '(' : ''}#{user[:last_name]}, #{user[:first_name]}#{label_type == :disabled ? ')' : ''}", :at => [7.mm, y]
+
+                                # TK pos neg TZ Verspätung
+
+                                dist = 20.0
+
+                                %w(TK pos. neg. TZ).each.with_index do |label, i|
+                                    x = 76 + dist * i
+                                    stroke { rectangle [x.mm, y + 3.mm], 3.mm, 3.mm }
+                                    draw_text label, :at => [x.mm + 5.mm, y]
+                                end
+
+
+                                stroke_color '000000'
+                                fill_color '000000'
+
+                                if label_type == :strike
+                                    stroke { rectangle [(76 + dist * 4).mm, y + 3.mm], 3.mm, 3.mm }
+                                    draw_text "Sek", :at => [(76 + dist * 4).mm + 5.mm, y]
+                                    stroke { line [0.mm, y + 1.mm], [7.3.cm, y + 1.mm] }
+                                end
+
+                                stroke { line [0.mm, y + 5.2.mm], [17.cm, y + 5.2.mm] } if i == 0
+                                stroke { line [0.mm, y - 2.mm], [17.cm, y - 2.mm] }
+                            end
+                        end
+                    end
                 end
             end
         end
-        # respond_raw_with_mimetype_and_filename(doc.render, 'application/pdf', "Klasse #{klasse}.pdf")
         respond_raw_with_mimetype(doc.render, 'application/pdf')
     end
 

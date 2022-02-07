@@ -697,4 +697,27 @@ class Main < Sinatra::Base
         end
     end
 
+    def self.log_freiwillig_salzh_sus_for_today()
+        wall_time = Time.now.strftime('%H:%M')
+        return if wall_time < '12:00'
+        today = Date.today.strftime('%Y-%m-%d')
+        path = "/internal/salzh_protocol/#{today}.txt"
+        return if File.exists?(path)
+
+        unless File.exists?(File.dirname(path))
+            FileUtils.mkpath(File.dirname(path))
+        end
+
+        Main.purge_stale_salzh_entries(true)
+        rows = $neo4j.neo4j_query(<<~END_OF_QUERY).map { |x| x['u.email'] }
+            MATCH (u:User)
+            WHERE EXISTS(u.freiwillig_salzh)
+            RETURN u.email;
+        END_OF_QUERY
+        File.open(path, 'w') do |f|
+            f.puts "# watch out, only count days which were actual school days! we need to filter this..."
+            f.puts rows.join("\n")
+        end
+    end
+
 end

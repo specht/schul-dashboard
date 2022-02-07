@@ -1856,6 +1856,11 @@ class Timetable
             rescue StandardError => e
                 STDERR.puts e
             end
+            begin
+                Main.log_freiwillig_salzh_sus_for_today()
+            rescue StandardError => e
+                STDERR.puts e
+            end
         end
         
         add_these_lesson_keys = Set.new()

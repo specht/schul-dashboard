@@ -423,27 +423,33 @@ class Main < Sinatra::Base
                 io.puts "<p>"
                 io.puts "Sie haben momentan #{spans.map { |x| '<strong>' + x + '</strong>'}.join(' und ')}."
                 io.puts "</p>"
-                io.puts "<div style='margin: 0 -10px 0 -10px;'><table class='table table-narrow narrow'>"
+                io.puts "<div style='margin: 0 -10px 0 -10px; overflow-x: clip;'><table class='table table-sm narrow' style='width: 100%;'>"
                 io.puts "<tr><th>Klasse</th><th>Status</th></tr>"
                 KLASSEN_ORDER.each do |klasse|
                     next unless all_klassen.include?(klasse)
-                    io.puts "<tbody>"
-                    io.puts "<tr class='klasse-click-row' data-klasse='#{klasse}'><td>Klasse #{tr_klasse(klasse)}</td>"
-                    io.puts "<td>"
-                    [:contact_person, :salzh].each do |status|
-                        if (email_for_klasse_and_status[klasse][status] || []).size > 0
-                            io.puts "<span class='salzh-badge salzh-badge-big bg-#{status == :contact_person ? 'warning': 'danger'}'><span>#{(email_for_klasse_and_status[klasse][status] || []).size}</span></span>"
-                        end
-                    end
-                    io.puts "</td></tr>"
-                    io.puts "</tbody>"
-                    io.puts "<tbody style='display: none;'>"
+                    first_row = true
                     all_klassen[klasse].each do |email|
                         next unless [:salzh, :contact_person].include?(entry_for_email[email][:status])
+                        if first_row
+                            io.puts "<tbody>"
+                            io.puts "<tr class='klasse-click-row' data-klasse='#{klasse}'><td>Klasse #{tr_klasse(klasse)}</td>"
+                            io.puts "<td>"
+                            [:contact_person, :salzh].each do |status|
+                                if (email_for_klasse_and_status[klasse][status] || []).size > 0
+                                    io.puts "<span class='salzh-badge salzh-badge-big bg-#{status == :contact_person ? 'warning': 'danger'}'><span>#{(email_for_klasse_and_status[klasse][status] || []).size}</span></span>"
+                                end
+                            end
+                            io.puts "</td></tr>"
+                            io.puts "</tbody>"
+                            io.puts "<tbody style='display: none;'>"
+                        end
+                        first_row = false
                         badge = "<span style='position: relative; top: -1px;' class='salzh-badge salzh-badge-big bg-#{SALZH_MODE_COLORS[entry_for_email[email][:status]]}'><i class='fa #{SALZH_MODE_ICONS[entry_for_email[email][:status]]}'></i></span>"
                         io.puts "<tr><td colspan='2'>#{badge}#{@@user_info[email][:display_name]}</td></tr>"
                     end
-                    io.puts "</tbody>"
+                    unless first_row
+                        io.puts "</tbody>"
+                    end
                 end
                 io.puts "</table></div>"
                 io.puts "<hr />"

@@ -661,6 +661,9 @@ class Main < Sinatra::Base
         if status == :salzh
             return :strike
         end
+        if status == :hotspot_klasse
+            return :enabled
+        end
         if regular_test_required == false
             return :disabled
         end

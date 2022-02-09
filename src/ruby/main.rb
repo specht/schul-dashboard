@@ -1253,7 +1253,7 @@ class Main < Sinatra::Base
         options[:max_value_lengths] ||= {}
         data_str = request.body.read(options[:max_body_length]).to_s
         if @session_user
-            STDERR.puts ">>> [#{@session_user[:email]}] #{request.path} #{data_str}"
+            STDERR.puts ">>> [#{@session_user[:email]}] #{request.ip} #{request.path} #{data_str}"
         end
 #         debug data_str
         @latest_request_body = data_str.dup

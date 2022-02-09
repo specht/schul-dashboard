@@ -700,6 +700,83 @@ class Main < Sinatra::Base
         end
     end
 
+    def print_salzh_protocol_table()
+        holiday_dates = Set.new()
+        @@ferien_feiertage.each do |entry|
+            temp0 = Date.parse(entry[:from])
+            temp1 = Date.parse(entry[:to])
+            while temp0 <= temp1
+                holiday_dates << temp0.strftime('%Y-%m-%d')
+                temp0 += 1
+            end
+        end
+        StringIO.open do |io|
+            data = {}
+            Dir['/internal/salzh_protocol/*.txt'].sort.each do |path|
+                datum = File.basename(path).sub('.txt', '')
+                d = DateTime.parse(datum)
+
+                # skip weekends
+                next if [0, 6].include?(d.wday)
+
+                # skip holidays
+                next if holiday_dates.include?(datum)
+
+                emails = File.read(path).split("\n").map { |x| x.strip }.reject { |x| x.empty? || x[0] == '#' }
+                emails.each do |email|
+                    data[email] ||= {}
+                    data[email][datum] = true
+                end
+            end
+            cw = DateTime.now.strftime('%-V').to_i
+            d0 = DateTime.now
+            while d0.wday != 1
+                d0 -= 1
+            end
+            d1 = d0 + 4
+            io.puts "<table class='table table-striped table-sm narrow'>"
+            io.puts "<thead>"
+            io.puts "<tr>"
+            io.puts "<th rowspan='2'>Klasse</th>"
+            io.puts "<th rowspan='2'>Name</th>"
+            io.puts "<th colspan='5'>KW #{cw} (#{d0.strftime('%d.%m.')} &ndash; #{d1.strftime('%d.%m.')})</th>"
+            io.puts "<th rowspan='2'>Gesamt</th>"
+            io.puts "</tr>"
+            io.puts "<tr>"
+            io.puts "<th>Mo</th>"
+            io.puts "<th>Di</th>"
+            io.puts "<th>Mi</th>"
+            io.puts "<th>Do</th>"
+            io.puts "<th>Fr</th>"
+            io.puts "</tr>"
+            io.puts "</thead>"
+            io.puts "<tbody>"
+            KLASSEN_ORDER.each.with_index do |klasse, index|
+                iterate_directory(klasse) do |email, i|
+                    next unless data[email]
+                    io.puts "<tr>"
+                    io.puts "<td>#{klasse}</td>"
+                    io.puts "<td>#{@@user_info[email][:display_name]}</td>"
+                    (0...5).each do |i|
+                        flag = data[email][(d0 + i).strftime('%Y-%m-%d')]
+                        io.print "<td>"
+                        if flag 
+                            io.puts "<i class='fa fa-home'></i>"
+                        else
+                            io.puts "&ndash;"
+                        end
+                        io.puts "</td>"
+                    end
+                    io.puts "<td>#{data[email].size}</td>"
+                    io.puts "</tr>"
+                end
+            end
+            io.puts "</tbody>"
+            io.puts "</table>"
+            io.string
+        end
+    end
+
     def self.log_freiwillig_salzh_sus_for_today()
         wall_time = Time.now.strftime('%H:%M')
         return if wall_time < '12:00'

@@ -1253,7 +1253,7 @@ class Main < Sinatra::Base
         options[:max_value_lengths] ||= {}
         data_str = request.body.read(options[:max_body_length]).to_s
         if @session_user
-            unless ['/api/send_message', '/api/update_message'].include?(request.path)
+            unless ['/api/send_message', '/api/update_message', '/api/submit_poll_run'].include?(request.path)
                 begin
                     STDERR.puts sprintf(">>> [%-15s] [%s] %s %s", request.ip, @session_user[:nc_login], request.path, data_str)
                 rescue

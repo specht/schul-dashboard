@@ -1255,7 +1255,7 @@ class Main < Sinatra::Base
         if @session_user
             unless ['/api/send_message', '/api/update_message'].include?(request.path)
                 begin
-                    STDERR.puts sprintf(">>> [%-15s] [%s] %s %s", request.ip, @session_user[:email], request.path, data_str)
+                    STDERR.puts sprintf(">>> [%-15s] [%s] %s %s", request.ip, @session_user[:nc_login], request.path, data_str)
                 rescue
                 end
             end

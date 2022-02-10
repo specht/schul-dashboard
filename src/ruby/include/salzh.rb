@@ -706,6 +706,61 @@ class Main < Sinatra::Base
         end
     end
 
+    def print_salzh_protocol_table_overview()
+        holiday_dates = Set.new()
+        @@ferien_feiertage.each do |entry|
+            temp0 = Date.parse(entry[:from])
+            temp1 = Date.parse(entry[:to])
+            while temp0 <= temp1
+                holiday_dates << temp0.strftime('%Y-%m-%d')
+                temp0 += 1
+            end
+        end
+        StringIO.open do |io|
+            data = {}
+            week = Set.new()
+            cw = DateTime.now.strftime('%-V').to_i
+            d0 = DateTime.now
+            while d0.wday != 1
+                d0 -= 1
+            end
+            d1 = d0 + 4
+            Dir['/internal/salzh_protocol/*.txt'].sort.each do |path|
+                datum = File.basename(path).sub('.txt', '')
+                d = DateTime.parse(datum)
+
+                # skip weekends
+                next if [0, 6].include?(d.wday)
+
+                # skip holidays
+                next if holiday_dates.include?(datum)
+
+                # skip if not current week
+                next if datum < d0.strftime('%Y-%m-%d') || datum > d1.strftime('%Y-%m-%d')
+
+                emails = File.read(path).split("\n").map { |x| x.strip }.reject { |x| x.empty? || x[0] == '#' }
+                emails.each do |email|
+                    data[datum] ||= Set.new()
+                    data[datum] << email
+                    week << email
+                end
+            end
+            io.puts "<table class='table table-striped table-sm narrow'>"
+            io.puts "<tbody>"
+            io.puts "<tr>"
+            io.puts "<th>KW #{cw}</th><th>#{d0.strftime('%d.%m.')} &ndash; #{d1.strftime('%d.%m.')}</th><td>#{week.size} SuS</td>"
+            io.puts "</tr>"
+            (0...5).each do |i|
+                io.puts "<tr>"
+                io.puts "<th>#{%w(Mo Di Mi Do Fr)[i]}</th><th>#{(d0 + i).strftime('%d.%m.')}</th><td>#{(data[(d0 + i).strftime('%Y-%m-%d')] || Set.new()).size} SuS</td>"
+                io.puts "</tr>"
+            end
+            io.puts "</tbody>"
+            io.puts "</table>"
+            io.string
+        end
+    end
+
     def print_salzh_protocol_table()
         holiday_dates = Set.new()
         @@ferien_feiertage.each do |entry|

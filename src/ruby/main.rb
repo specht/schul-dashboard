@@ -1254,7 +1254,10 @@ class Main < Sinatra::Base
         data_str = request.body.read(options[:max_body_length]).to_s
         if @session_user
             unless ['/api/send_message', '/api/update_message'].include?(request.path)
-                STDERR.puts ">>> [#{request.ip}] [#{@session_user[:display_name]}] #{request.path} #{data_str}"
+                begin
+                    STDERR.puts sprintf(">>> [%-15s] [%s] %s %s", request.ip, @session_user[:email], request.path, data_str)
+                rescue
+                end
             end
         end
 #         debug data_str

@@ -1400,14 +1400,14 @@ class Timetable
                         end
                         # unless SuS is permanently at home delete lesson_jitsi flag
                         # in some cases
-                        fixed_events.map! do |event|
-                            if event[:lesson] && event[:data]
-                                unless Main.stream_allowed_for_date_lesson_key_and_email(event[:datum], event[:lesson_key], email, all_stream_restrictions[event[:lesson_key]], all_homeschooling_users.include?(email), group_for_sus[email])
-                                    event[:data] = event[:data].reject { |x| x == :lesson_jitsi }
-                                end
-                            end
-                            event
-                        end
+                        # fixed_events.map! do |event|
+                        #     if event[:lesson] && event[:data]
+                        #         unless Main.stream_allowed_for_date_lesson_key_and_email(event[:datum], event[:lesson_key], email, all_stream_restrictions[event[:lesson_key]], all_homeschooling_users.include?(email), group_for_sus[email])
+                        #             event[:data] = event[:data].reject { |x| x == :lesson_jitsi }
+                        #         end
+                        #     end
+                        #     event
+                        # end
                         # add schueler_offset_in_lesson for SuS
                         fixed_events.map! do |event|
                             if event[:lesson_key]

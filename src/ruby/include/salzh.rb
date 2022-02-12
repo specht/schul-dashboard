@@ -612,7 +612,16 @@ class Main < Sinatra::Base
                                 font_size 11
                             end
 
-                            entry_on_page = 0
+                            main.iterate_directory(klasse) do |email, j|
+                                next if j < sus0 || j > sus1
+                                i = j - sus0
+                                next if i % 2 == 0
+                                y = 242.mm - 6.7.mm * i
+                                fill_color 'f0f0f0'
+                                fill do
+                                    rectangle [0.mm, y + 4.8.mm], 17.cm, 6.7.mm
+                                end
+                            end
                             main.iterate_directory(klasse) do |email, j|
                                 next if j < sus0 || j > sus1
                                 i = j - sus0
@@ -620,12 +629,12 @@ class Main < Sinatra::Base
                                 label_type = Main.get_test_list_label_type(status[:status], status[:testing_required], true)
                                 # status is salzh / contact_person / hotspot_klasse
                                 # needs_testing_today: true / false
-                                if label_type == :enabled
-                                    fill_color '000000'
-                                    stroke_color '000000'
-                                elsif label_type == :disabled
+                                if label_type == :disabled
                                     fill_color 'a0a0a0'
                                     stroke_color 'a0a0a0'
+                                else
+                                    fill_color '000000'
+                                    stroke_color '000000'
                                 end
                                 user = @@user_info[email]
                                 y = 242.mm - 6.7.mm * i

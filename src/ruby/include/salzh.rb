@@ -486,11 +486,22 @@ class Main < Sinatra::Base
 
     get '/api/test_list' do
         require_user_who_can_manage_salzh!
+        Main.purge_stale_salzh_entries(true)
         klassenleiter = Main.class_variable_get(:@@klassenleiter)
         shorthands = Main.class_variable_get(:@@shorthands)
         user_info = Main.class_variable_get(:@@user_info)
         main = self
         salzh_status = Main.get_salzh_status_for_emails()
+
+        hotspot_dates = {}
+        rows = $neo4j.neo4j_query(<<~END_OF_QUERY)
+            MATCH (k:Klasse)
+            RETURN k.klasse, k.hotspot_end_date;
+        END_OF_QUERY
+        rows.each do |x|
+            hotspot_dates[x['k.klasse']] = x['k.hotspot_end_date']
+        end
+
         doc = Prawn::Document.new(:page_size => 'A4', :page_layout => :portrait, 
                                 :margin => 0) do
             font_families.update("RobotoCondensed" => {
@@ -626,6 +637,9 @@ class Main < Sinatra::Base
                                 next if j < sus0 || j > sus1
                                 i = j - sus0
                                 status = salzh_status[email]
+                                if status[:status] != :salzh && hotspot_dates[klasse]
+                                    status[:status] = :hotspot_klasse
+                                end
                                 label_type = Main.get_test_list_label_type(status[:status], status[:testing_required], true)
                                 # status is salzh / contact_person / hotspot_klasse
                                 # needs_testing_today: true / false
@@ -640,6 +654,7 @@ class Main < Sinatra::Base
                                 y = 242.mm - 6.7.mm * i
                                 draw_text "#{j + 1}.", :at => [0.mm, y]
                                 draw_text "#{label_type == :disabled ? '(' : ''}#{user[:last_name]}, #{user[:first_name]}#{label_type == :disabled ? ')' : ''}", :at => [7.mm, y]
+                                # draw_text "#{status[:status]} #{status[:status].class} #{status[:testing_required]} #{label_type.to_s}", :at => [7.mm, y]
 
                                 # TK pos neg TZ Verspätung
 

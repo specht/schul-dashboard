@@ -1047,6 +1047,15 @@ class Main < Sinatra::Base
             end
         end
 
+        if ENV['DASHBOARD_SERVICE'] == 'ruby'
+            FileUtils.rm_rf('/internal/debug/')
+            FileUtils.mkpath('/internal/debug/')
+            Main.class_variables.each do |x|
+                File.open(File.join('/internal/debug', "#{x.to_s}.yaml"), 'w') do |f|
+                    f.write Main.class_variable_get(x).to_yaml
+                end
+            end
+        end
     end    
 
     def self.update_mailing_lists()

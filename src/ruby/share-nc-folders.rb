@@ -129,9 +129,9 @@ class Script
                 if pretty_folder_name.empty?
                     raise "nope: #{lesson_key}"
                 end
-                if @materialamt_for_lesson[lesson_key]
+                if @@materialamt_for_lesson[lesson_key]
                     permissions = SHARE_READ
-                    if @materialamt_for_lesson[lesson_key].include?(email)
+                    if @@materialamt_for_lesson[lesson_key].include?(email)
                         permissions = SHARE_READ | SHARE_UPDATE | SHARE_CREATE | SHARE_DELETE
                     end
                     wanted_shares[user_id]["/Unterricht/#{folder_name}/Ausgabeordner-Materialamt"] = {

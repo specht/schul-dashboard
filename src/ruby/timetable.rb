@@ -1956,6 +1956,14 @@ class Timetable
             end
             @lesson_info[row[:key]][row[:info][:offset]] ||= {}
             @lesson_info[row[:key]][row[:info][:offset]][:data] = h
+            if @lesson_info[row[:key]][row[:info][:offset]][:data][:ha_amt_text]
+                parts = []
+                parts << @lesson_info[row[:key]][row[:info][:offset]][:data][:hausaufgaben_text]
+                parts << @lesson_info[row[:key]][row[:info][:offset]][:data][:ha_amt_text]
+                parts.reject! { |x| x.nil? || x.empty? }
+                @lesson_info[row[:key]][row[:info][:offset]][:data][:hausaufgaben_text] = parts.join("\n")
+            end
+
             if row[:tablet_id]
                 tablet_info = @@tablets[row[:tablet_id]]
                 @lesson_info[row[:key]][row[:info][:offset]][:data][:booked_tablet] = row[:tablet_id]

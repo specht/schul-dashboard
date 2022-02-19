@@ -70,6 +70,7 @@ class Script
         @@schueler_for_klasse = Main.class_variable_get(:@@schueler_for_klasse)
         @@schueler_for_lesson = Main.class_variable_get(:@@schueler_for_lesson)
         @@lessons_for_shorthand = Main.class_variable_get(:@@lessons_for_shorthand)
+        @@materialamt_for_lesson = Main.class_variable_get(:@@materialamt_for_lesson)
         
 #         @ocs.file_sharing.all.each do |share|
 #             STDERR.puts sprintf('[%5s] %s => [%s]%s', share['id'], share['path'], share['share_with'], share['file_target'])
@@ -127,6 +128,17 @@ class Script
                 pretty_folder_name = "#{fach.gsub('/', '-')}"
                 if pretty_folder_name.empty?
                     raise "nope: #{lesson_key}"
+                end
+                if @materialamt_for_lesson[lesson_key]
+                    permissions = SHARE_READ
+                    if @materialamt_for_lesson[lesson_key].include?(email)
+                        permissions = SHARE_READ | SHARE_UPDATE | SHARE_CREATE | SHARE_DELETE
+                    end
+                    wanted_shares[user_id]["/Unterricht/#{folder_name}/Ausgabeordner-Materialamt"] = {
+                        :permissions => permissions,
+                        :target_path => "/Unterricht/#{pretty_folder_name.gsub(' ', '%20')}/Ausgabeordner (Materialamt)",
+                        :share_with => user[:display_name]
+                    }
                 end
                 wanted_shares[user_id]["/Unterricht/#{folder_name}/Ausgabeordner"] = {
                     :permissions => SHARE_READ,

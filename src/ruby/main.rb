@@ -633,7 +633,7 @@ class Main < Sinatra::Base
 
         @@index_for_klasse = {}
         @@predefined_external_users = {}
-        
+
         parser = Parser.new()
         parser.parse_faecher do |fach, bezeichnung|
             @@faecher[fach] = bezeichnung
@@ -980,6 +980,16 @@ class Main < Sinatra::Base
         kurse_for_schueler, schueler_for_kurs = parser.parse_kurswahl(@@user_info.reject { |x, y| y[:teacher] }, @@lessons, lesson_key_tr, @@original_lesson_key_for_lesson_key)
         wahlpflicht_sus_for_lesson_key = parser.parse_wahlpflichtkurswahl(@@user_info.reject { |x, y| y[:teacher] }, @@lessons, lesson_key_tr)
         
+        @@materialamt_for_lesson = {}
+        rows = $neo4j.neo4j_query(<<~END_OF_QUERY)
+            MATCH (u:User)-[r:HAS_AMT {amt: 'material'}]->(l:Lesson)
+            RETURN u.email, l.key;
+        END_OF_QUERY
+        rows.each do |row|
+            @@materialamt_for_lesson[row['l.key']] ||= Set.new()
+            @@materialamt_for_lesson[row['l.key']] << row['u.email']
+        end
+
         @@lessons_for_user = {}
         @@schueler_for_lesson = {}
         @@schueler_offset_in_lesson = {}
@@ -1044,6 +1054,31 @@ class Main < Sinatra::Base
             while temp0 <= temp1
                 @@holiday_dates << temp0.strftime('%Y-%m-%d')
                 temp0 += 1
+            end
+        end
+
+        @@room_ids = {}
+        ROOM_ORDER.each do |room|
+            @@room_ids[room] = Digest::SHA2.hexdigest(KLASSEN_ID_SALT + room).to_i(16).to_s(36)[0, 16]
+        end
+        @@rooms_for_shorthand = {}
+        room_order_set = Set.new(ROOM_ORDER)
+        timetable_today.each_pair do |lesson_key, info|
+            info[:stunden].each_pair do |wday, day_info|
+                day_info.each_pair do |stunde, lesson_info|
+                    lesson_info[:lehrer].each do |shorthand|
+                        (lesson_info[:raum] || '').split('/').each do |room|
+                            unless (room || '').strip.empty?
+                                if room_order_set.include?(room)
+                                    @@rooms_for_shorthand[shorthand] ||= Set.new()
+                                    @@rooms_for_shorthand[shorthand] << room
+                                else
+                                    debug("Room not declared: #{room}")
+                                end
+                            end
+                        end
+                    end
+                end
             end
         end
 
@@ -1823,25 +1858,31 @@ class Main < Sinatra::Base
     end
     
     def print_timetable_chooser()
-        if can_see_all_timetables_logged_in?
-            StringIO.open do |io|
-                io.puts "<div style='margin-bottom: 15px;'>"
-                unless teacher_tablet_logged_in?
-                    @@klassen_order.each do |klasse|
-                        id = @@klassen_id[klasse]
-                        io.puts "<a data-klasse='#{klasse}' data-id='#{id}' onclick=\"window.location.href = '/timetable/#{id}' + window.location.hash;\" class='btn btn-sm ttc'>#{tr_klasse(klasse)}</a>"
-                    end
-                    io.puts '<hr />'
-                end
-                @@lehrer_order.each do |email|
-                    id = @@user_info[email][:id]
-                    next unless @@user_info[email][:can_log_in]
-                    io.puts "<a data-id='#{id}' onclick=\"window.location.href = '/timetable/#{id}' + window.location.hash;\" class='btn btn-sm ttc'>#{@@user_info[email][:shorthand]}</a>"
-                end
-                io.puts "</div>"
-                io.string
-            end
-        elsif kurs_tablet_logged_in?
+        # if can_see_all_timetables_logged_in?
+        #     StringIO.open do |io|
+        #         io.puts "<div style='margin-bottom: 15px;'>"
+        #         unless teacher_tablet_logged_in?
+        #             @@klassen_order.each do |klasse|
+        #                 id = @@klassen_id[klasse]
+        #                 io.puts "<a data-klasse='#{klasse}' data-id='#{id}' onclick=\"window.location.href = '/timetable/#{id}' + window.location.hash;\" class='btn btn-sm ttc'>#{tr_klasse(klasse)}</a>"
+        #             end
+        #             io.puts '<hr />'
+        #         end
+        #         @@lehrer_order.each do |email|
+        #             id = @@user_info[email][:id]
+        #             next unless @@user_info[email][:can_log_in]
+        #             io.puts "<a data-id='#{id}' onclick=\"window.location.href = '/timetable/#{id}' + window.location.hash;\" class='btn btn-sm ttc'>#{@@user_info[email][:shorthand]}</a>"
+        #         end
+        #         io.puts '<hr />'
+        #         ROOM_ORDER.each do |room|
+        #             id = room
+        #             # next unless @@user_info[email][:can_log_in]
+        #             io.puts "<a data-id='#{id}' onclick=\"window.location.href = '/timetable/#{id}' + window.location.hash;\" class='btn btn-sm ttc'>#{room}</a>"
+        #         end
+        #         io.puts "</div>"
+        #         io.string
+        #     end
+        if kurs_tablet_logged_in?
             StringIO.open do |io|
                 io.puts "<div style='margin-bottom: 15px;'>"
                 @@lehrer_order.each do |email|
@@ -1866,14 +1907,48 @@ class Main < Sinatra::Base
         elsif teacher_logged_in?
             StringIO.open do |io|
                 io.puts "<div style='margin-bottom: 15px;'>"
-                @@klassen_order.each do |klasse|
-                    # TODO: is this okay?
-                    # next unless (@@klassen_for_shorthand[@session_user[:shorthand]] || Set.new()).include?(klasse)
-                    id = @@klassen_id[klasse]
-                    io.puts "<a data-klasse='#{klasse}' data-id='#{id}' onclick=\"window.location.href = '/timetable/#{id}' + window.location.hash;\" class='btn btn-sm ttc'>#{tr_klasse(klasse)}</a>"
+                hidden_something = false
+                @@lehrer_order.each do |email|
+                    id = @@user_info[email][:id]
+                    next unless @@user_info[email][:can_log_in]
+                    next unless can_see_all_timetables_logged_in? || email == @session_user[:email]
+                    hide = (email != @session_user[:email])
+                    hidden_something = true if hide
+                    style = hide ? 'display: none;' : ''
+                    io.puts "<a data-id='#{id}' onclick=\"window.location.href = '/timetable/#{id}' + window.location.hash;\" class='btn btn-sm ttc ttc-teacher' style='#{style}'>#{@@user_info[email][:shorthand]}</a>"
                 end
-                id = @session_user[:id]
-                io.puts "<a data-id='#{id}' onclick=\"window.location.href = '/timetable' + window.location.hash;\" class='btn btn-sm ttc'>#{@session_user[:shorthand]}</a>"
+                if hidden_something
+                    io.puts "<button class='btn btn-xs ttc bu-show-alle-teacher' style='width: unset; padding: 0.25rem 0.5rem; display: block;' onclick=\"$('.ttc-teacher').show(); $('.bu-show-alle-teacher').hide();\">Alle Lehrkräfte</button>"
+                end
+                io.puts '<hr />'
+
+                hidden_something = false
+                @@klassen_order.each do |klasse|
+                    hide = !((@@klassen_for_shorthand[@session_user[:shorthand]] || Set.new()).include?(klasse))
+                    hidden_something = true if hide
+                    style = hide ? 'display: none;' : ''
+                    id = @@klassen_id[klasse]
+                    io.puts "<a data-klasse='#{klasse}' data-id='#{id}' onclick=\"window.location.href = '/timetable/#{id}' + window.location.hash;\" class='btn btn-sm ttc ttc-klasse' style='#{style}'>#{tr_klasse(klasse)}</a>"
+                end
+                if hidden_something
+                    io.puts "<button class='btn btn-xs ttc bu-show-alle-klassen' style='width: unset; padding: 0.25rem 0.5rem; display: block;' onclick=\"$('.ttc-klasse').show(); $('.bu-show-alle-klassen').hide();\">Alle Klassen</button>"
+                end
+
+                # io.puts '<hr />'
+
+                # hidden_something = false
+                # ROOM_ORDER.each do |room|
+                #     hide = !((@@rooms_for_shorthand[@session_user[:shorthand]] || Set.new()).include?(room))
+                #     hidden_something = true if hide
+                #     style = hide ? 'display: none;' : ''
+                #     id = @@room_ids[room]
+                #     io.puts "<a data-id='#{id}' onclick=\"window.location.href = '/timetable/#{id}' + window.location.hash;\" class='btn btn-sm ttc ttc-room' style='#{style}'>#{room}</a>"
+                # end
+                # if hidden_something
+                #     io.puts "<button class='btn btn-xs ttc bu-show-alle-rooms' style='width: unset; padding: 0.25rem 0.5rem; display: block;' onclick=\"$('.ttc-room').show(); $('.bu-show-alle-rooms').hide();\">Alle Räume</button>"
+                # end
+
+
                 io.puts "</div>"
                 io.string
             end

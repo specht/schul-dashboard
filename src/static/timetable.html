@@ -90,17 +90,26 @@
                 </div>
             </div>
         </div>
-          
       </div>
       <div class="modal-footer">
+        <div class='small show-ha-amt-only' style='width: 100%;'>
+            Du vertrittst in diesem Fach das Hausaufgabenamt und kannst deshalb Hausaufgaben für deine Klasse / deinen Kurs eintragen.
+        </div>
+        <div class="ha-amt-container" style='display: none; width: 100%;'>
+            <textarea class='form-control' id='ta_ha_amt_text' placeholder='Hier kannst du die Hausaufgaben zu dieser Stunde eintragen'></textarea>
+        </div>
         <a class="btn btn-success bu-edit-lesson">Bearbeiten</a>
+        <button class="show-ha-amt-only btn btn-secondary bu-discard-ha-amt-text-changes"><i class='fa fa-trash'></i>&nbsp;&nbsp;Änderungen verwerfen</button>
+        <button class="show-ha-amt-only btn btn-success bu-save-ha-amt-text-changes"><i class='fa fa-check'></i>&nbsp;&nbsp;Änderungen speichern</button>
+        <button class="show-ha-amt-only btn btn-success bu-enter-ha-amt-text"><i class='fa fa-pencil'></i>&nbsp;&nbsp;Hausaufgaben eintragen</button>
         <button type="button" class="btn btn-secondary" data-dismiss="modal">Schließen</button>
       </div>
     </div>
   </div>
+  </div>
 </div>
 
-<div class="modal" id="homeworkFeedbackModal" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
+  <div class="modal" id="homeworkFeedbackModal" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
   <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
     <div class="modal-content">
       <div class="modal-header">
@@ -201,6 +210,7 @@ var jitsi_refresh_config = {
     jitsi_breakout_rooms_names_divs: []
 };
 var tablet_set_info = #{@@tablet_sets.to_json};
+var ha_amt_lesson_keys = #{get_ha_amt_lesson_keys.to_json};
 
 function clear_polling_handler() {
     if (jitsi_refresh_config.poll_handle !== null) {
@@ -346,6 +356,17 @@ function render_timetable(result, successCallback) {
         }
     }
     successCallback(events);
+}
+
+function update_ha_amt_buttons() {
+    let pending_changes = $('#ta_ha_amt_text').val().trim() !== $('#ta_ha_amt_text').data('stored_ha_amt_text');
+    if (pending_changes) {
+        $('.bu-discard-ha-amt-text-changes').removeClass('btn-outline-secondary').addClass('btn-secondary').prop('disabled', false);
+        $('.bu-save-ha-amt-text-changes').removeClass('btn-outline-secondary').addClass('btn-success').prop('disabled', false);
+    } else {
+        $('.bu-discard-ha-amt-text-changes').addClass('btn-outline-secondary').removeClass('btn-secondary').prop('disabled', true);
+        $('.bu-save-ha-amt-text-changes').addClass('btn-outline-secondary').removeClass('btn-success').prop('disabled', true);
+    }
 }
 
 document.addEventListener('DOMContentLoaded', function() {
@@ -684,6 +705,9 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         },
         eventClick: function(info) {
+            $('.show-ha-amt-only').hide();
+            $('.ha-amt-container').hide();
+
             let event = info.event.extendedProps;
             if (event.href) {
                 window.open(event.href, '_blank');
@@ -700,6 +724,15 @@ document.addEventListener('DOMContentLoaded', function() {
                 };
             }
             console.log(event);
+            if (ha_amt_lesson_keys.indexOf(event.lesson_key) >= 0)
+            {
+                $('.show-ha-amt-only').show();
+                $('.bu-enter-ha-amt-text').show();
+            }
+
+            $('.bu-discard-ha-amt-text-changes').hide();
+            $('.bu-save-ha-amt-text-changes').hide();
+
             $('#lessonModal .lesson-label').html(event.label_lang || '');
             $('#lessonModal .raum-label').html(event.raum || '');
             if (event.vertretungs_text)
@@ -737,6 +770,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 $('#lessonModal .bu-edit-lesson').attr('href', '/lessons/' + event.lesson_key + '#' + offsets.join(',')).show();
             else
                 $('#lessonModal .bu-edit-lesson').hide();
+            $('#lessonModal').data('lesson-key', event.lesson_key);
+            $('#lessonModal').data('lesson-offset', event.lesson_offset);
             let body = $('#lessonModal .lesson-infos-here');
             body.empty();
             let wrote_something = (event.vertretungs_text || '').length > 0;
@@ -1211,6 +1246,37 @@ document.addEventListener('DOMContentLoaded', function() {
     $('#bu_minimize_salzh_explanation').click(function(e) {
         $('#salzh_explanation').slideUp();
         api_call('/api/minimize_salzh_explanation');
+    });
+
+    for (x of ['keydown', 'keyup', 'change']) {
+        $('#ta_ha_amt_text').on(x, function(e) {
+            update_ha_amt_buttons();
+        });
+    }
+    $('.bu-enter-ha-amt-text').click(function(e) {
+        api_call('/api/get_ha_amt_text_for_lesson', {lesson_key: $('#lessonModal').data('lesson-key'), lesson_offset: $('#lessonModal').data('lesson-offset')}, function(data) {
+            if (data.success) {
+                $('#ta_ha_amt_text').val(data.ha_amt_text);
+                $('#ta_ha_amt_text').data('stored_ha_amt_text', data.ha_amt_text);
+                update_ha_amt_buttons();
+                $('.bu-enter-ha-amt-text').hide();
+                $('.bu-discard-ha-amt-text-changes').show();
+                $('.bu-save-ha-amt-text-changes').show();
+                $('.ha-amt-container').slideDown();
+            }
+        });
+    });
+    $('.bu-save-ha-amt-text-changes').click(function(e) {
+        api_call('/api/set_ha_amt_text_for_lesson', {lesson_key: $('#lessonModal').data('lesson-key'), 
+            lesson_offset: $('#lessonModal').data('lesson-offset'),
+            ha_amt_text: $('#ta_ha_amt_text').val().trim()}, function(data) {
+            if (data.success) {
+                $('#lessonModal').modal('hide');
+            }
+        });
+    });
+    $('.bu-discard-ha-amt-text-changes').click(function(e) {
+        $('#lessonModal').modal('hide');
     });
 });
 </script>

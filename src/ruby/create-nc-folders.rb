@@ -38,7 +38,7 @@ class Script
             einsammel_path = "Auto-Einsammelordner (von SuS an mich)"
             rueckgabe_path = "Auto-Rückgabeordner (von mir an SuS)"
             STDERR.puts sprintf('%3d %-20s %-10s %s', (@@schueler_for_lesson[lesson_key] || []).size, lesson_key, lesson_info[:lehrer].join(', '), lesson_info[:klassen].join(', '))
-            ['Ausgabeordner', einsammel_path, rueckgabe_path].each do |x|
+            ['Ausgabeordner-Materialamt', 'Ausgabeordner', einsammel_path, rueckgabe_path].each do |x|
                 emit "mkdir -pv \"#{File.join(base_path, 'Unterricht', folder_name, x)}\""
             end
             (@@schueler_for_lesson[lesson_key] || []).each do |email|

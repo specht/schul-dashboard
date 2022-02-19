@@ -173,6 +173,7 @@ PAUSENAUFSICHT_DAUER = {1 => 25, 2 => 15, 3 => 15, 4 => 20, 6 => 40,
                         7 => 40, 8 => 15}
 
 KLASSEN_ORDER = ['5a', '11', '12']
+ROOM_ORDER = %w(101 102 103 104)
 GROUP_AF_ICONS = {
     '' => '🏠',
     'it' => '🇮🇹',

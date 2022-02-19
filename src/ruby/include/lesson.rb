@@ -53,6 +53,51 @@ class Main < Sinatra::Base
         trigger_update(data[:lesson_key])
         respond(:ok => true)
     end
+
+    def get_ha_amt_lesson_keys()
+        return [] unless user_logged_in?
+        return [] if @session_user[:teacher]
+        results = neo4j_query(<<~END_OF_QUERY, :email => @session_user[:email])
+            MATCH (u:User {email: $email})-[r:HAS_AMT {amt: 'hausaufgaben'}]->(l:Lesson)
+            RETURN l.key;
+        END_OF_QUERY
+        return results.map { |x| x['l.key'] }
+    end
+    
+    post '/api/set_ha_amt_text_for_lesson' do
+        # require teacher OR require schueler with HA amt enabled
+        data = parse_request_data(:required_keys => [:lesson_key, :lesson_offset, :ha_amt_text],
+                                  :max_body_length => 1024,
+                                  :types => {:lesson_offset => Integer})
+        require_teacher_for_lesson_or_ha_amt_logged_in(data[:lesson_key])
+        timestamp = Time.now.to_i
+        results = neo4j_query(<<~END_OF_QUERY, :key => data[:lesson_key], :offset => data[:lesson_offset], :ha_amt_text => data[:ha_amt_text], :timestamp => timestamp)
+            MERGE (l:Lesson {key: {key}})
+            MERGE (i:LessonInfo {offset: {offset}})-[:BELONGS_TO]->(l)
+            SET i.ha_amt_text = {ha_amt_text}
+            SET i.updated = {timestamp};
+        END_OF_QUERY
+        trigger_update(data[:lesson_key])
+        respond(:ok => true)
+    end
+    
+    post '/api/get_ha_amt_text_for_lesson' do
+        # require teacher OR require schueler with HA amt enabled
+        data = parse_request_data(:required_keys => [:lesson_key, :lesson_offset],
+                                  :types => {:lesson_offset => Integer})
+        require_teacher_for_lesson_or_ha_amt_logged_in(data[:lesson_key])
+        ha_amt_text = nil
+        begin
+            ha_amt_text = neo4j_query_expect_one(<<~END_OF_QUERY, :key => data[:lesson_key], :offset => data[:lesson_offset], :ha_amt_text => data[:ha_amt_text])['i.ha_amt_text']
+                MATCH (i:LessonInfo {offset: {offset}})-[:BELONGS_TO]->(l:Lesson {key: {key}})
+                RETURN i.ha_amt_text;
+            END_OF_QUERY
+        rescue StandardError => e
+            STDERR.puts e
+        end
+        ha_amt_text ||= ''
+        respond(:ha_amt_text => ha_amt_text)
+    end
     
     post '/api/force_jitsi_for_lesson' do
         assert(teacher_tablet_logged_in? || klassenraum_logged_in?)
@@ -531,5 +576,46 @@ class Main < Sinatra::Base
                                 
         respond_raw_with_mimetype_and_filename(zip, 'application/zip', "lesson_info_archive.zip")
     end
-    
+
+    post '/api/add_sus_to_amt' do
+        assert(teacher_logged_in?)
+        data = parse_request_data(:required_keys => [:lesson_key, :amt, :email])
+
+        neo4j_query(<<~END_OF_QUERY, :key => data[:lesson_key], :amt => data[:amt], :email => data[:email])
+            MATCH (u:User {email: $email})
+            MERGE (l:Lesson {key: $key})
+            WITH u, l
+            MERGE (u)-[r:HAS_AMT {amt: $amt}]->(l);
+        END_OF_QUERY
+        respond(:ok => true)
+    end
+
+    post '/api/remove_sus_from_amt' do
+        assert(teacher_logged_in?)
+        data = parse_request_data(:required_keys => [:lesson_key, :amt, :email])
+
+        neo4j_query(<<~END_OF_QUERY, :key => data[:lesson_key], :amt => data[:amt], :email => data[:email])
+            MATCH (u:User {email: $email})-[r:HAS_AMT {amt: $amt}]->(l:Lesson {key: $key})
+            DELETE r;
+        END_OF_QUERY
+        respond(:ok => true)
+    end
+
+    post '/api/get_amt_sus' do
+        assert(teacher_logged_in?)
+        data = parse_request_data(:required_keys => [:lesson_key])
+
+        rows = neo4j_query(<<~END_OF_QUERY, :key => data[:lesson_key])
+            MATCH (u:User)-[r:HAS_AMT]->(l:Lesson {key: $key})
+            RETURN u.email, r.amt;
+        END_OF_QUERY
+        results = {}
+        rows.each do |row|
+            email = row['u.email']
+            amt = row['r.amt']
+            results[email] ||= []
+            results[email] << amt
+        end
+        respond(:results => results)
+    end
 end

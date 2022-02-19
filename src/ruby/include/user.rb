@@ -98,6 +98,14 @@ class Main < Sinatra::Base
         admin_logged_in? || (teacher_logged_in? && @@klassenleiter[klasse].include?(@session_user[:shorthand]))
     end
     
+    def teacher_for_lesson_or_ha_amt_logged_in?(lesson_key)
+        if teacher_logged_in?
+            return true
+        else
+            return get_ha_amt_lesson_keys.include?(lesson_key)
+        end
+    end
+    
     # Assert that a user is logged in
     def require_user!
         assert(user_logged_in?, 'User is logged in', true)
@@ -155,6 +163,10 @@ class Main < Sinatra::Base
 
     def require_user_who_can_manage_salzh!
         assert(can_manage_salzh_logged_in?)
+    end
+
+    def require_teacher_for_lesson_or_ha_amt_logged_in(lesson_key)
+        assert(teacher_for_lesson_or_ha_amt_logged_in?(lesson_key))
     end
         
     # Put this on top of a webpage to assert that this page can be opened by logged in users only

@@ -190,7 +190,8 @@ class Script
             present_shares[share['share_with']][share['path']] = {
                 :permissions => share['permissions'].to_i,
                 :target_path => share['file_target'],
-                :share_with => share['share_with_displayname']
+                :share_with => share['share_with_displayname'],
+                :id => share['id']
             }
         end
         STDERR.puts "Got present shares for #{present_shares.size} users."
@@ -199,8 +200,8 @@ class Script
         wanted_shares.keys.sort.each do |user_id|
             unless wanted_nc_ids.nil?
                 next unless wanted_nc_ids.include?(user_id)
-                STDERR.puts "Wanted shares for #{user_id}:"
-                STDERR.puts wanted_shares[user_id].to_yaml
+                # STDERR.puts "Wanted shares for #{user_id}:"
+                # STDERR.puts wanted_shares[user_id].to_yaml
             end
             ocs_user = Nextcloud.ocs(url: NEXTCLOUD_URL_FROM_RUBY_CONTAINER, 
                                      username: user_id,
@@ -243,7 +244,8 @@ class Script
             end
             created_sub_paths = Set.new()
             wanted_shares[user_id].each_pair do |path, info|
-                next if (((present_shares[user_id] || {})[path]) || {})[:target_path] == info[:target_path]
+                next if (((present_shares[user_id] || {})[path]) || {})[:target_path] == info[:target_path] &&
+                    (((present_shares[user_id] || {})[path]) || {})[:permissions] == info[:permissions]
                 begin
                     unless (present_shares[user_id] || {})[path]
                         STDERR.puts "Sharing #{path} to [#{user_id}]..."
@@ -255,6 +257,10 @@ class Script
                         raise 'oops'
                     end
                     share = shares.first
+                    if share['permissions'].to_i != info[:permissions]
+                        STDERR.puts "Updating permissions [#{user_id}]#{share['file_target']}..."
+                        @ocs.file_sharing.update_permissions(share['id'], info[:permissions])
+                    end
                     if share['file_target'].gsub(' ', '%20') != info[:target_path]
                         dir_parts = File.dirname(info[:target_path]).split('/')
                         dir_parts.each.with_index do |p, _|
@@ -275,13 +281,24 @@ class Script
                                 exit(1)
                             end
                         else
-                            STDERR.puts "Not moving [#`{user_id}]#{share['file_target']} to #{info[:target_path]} because they're identical"
+                            STDERR.puts "Not moving [#{user_id}]#{share['file_target']} to #{info[:target_path]} because they're identical"
                         end
                     end
                 rescue StandardError => e
                 end
             end
         end
+        present_shares.keys.sort.each do |user_id|
+            unless wanted_nc_ids.nil?
+                next unless wanted_nc_ids.include?(user_id)
+            end
+            present_shares[user_id].each_pair do |path, info|
+                next if (wanted_shares[user_id] || {})[path]
+                STDERR.puts "Removing share #{path} for #{user_id}..."
+                @ocs.file_sharing.destroy(info[:id])
+            end
+        end
+
 
     end
 end

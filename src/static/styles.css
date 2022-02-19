@@ -2412,7 +2412,7 @@ li.nav-item a.nav-link i.fa {
 .fc-scrollgrid {
     border-top-left-radius: 0.8em;
     border-top-right-radius: 0.8em;
-    box-shadow: 0 0 2em rgba(0,0,0,0.2);
+    box-shadow: 0 0 2em rgba(0,0,0,0.4);
 }
 
 .fc-theme-standard thead td:last-child, .fc-theme-standard thead th:last-child {

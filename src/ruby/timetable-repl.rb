@@ -29,7 +29,9 @@ class TimetableRepl < Sinatra::Base
             end
             end_time = Time.now
             debug sprintf("<<< Finished updating #{which} in %1.2f seconds, wrote #{file_count} files.", (end_time - start_time).to_f)
-        rescue
+        rescue StandardError => e
+            STDERR.puts e
+            STDERR.puts e.backtrace
         end
     end
     

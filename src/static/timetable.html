@@ -369,13 +369,19 @@ function update_ha_amt_buttons() {
     }
 }
 
+var timetable_id = '#{timetable_id}';
+
+function load_timetable(id) {
+    timetable_id = id;
+    window.calendar.refetchEvents();
+}
+
 document.addEventListener('DOMContentLoaded', function() {
     moment.locale('de');
     let narrow_window = ($(window).width() <= 640);
     let initial_date = '#{initial_date}';
     if (window.location.hash.length > 0)
         window.location.hash = '';
-    let timetable_id = '#{timetable_id}';
     $('.ttc[data-id="' + timetable_id + '"]').addClass('active');
     let options = {
         initialView: (narrow_window || tablet_logged_in) ? 'timeGridDay' : 'timeGridWeek',
@@ -416,6 +422,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 oReq.onload = function(e) {
                     $('.timetable_updated').empty();
                     if (e.target.status === 200) {
+                        $('.ttc').removeClass('active');
+                        $('.ttc[data-id="' + timetable_id + '"]').addClass('active');
                         
                         let data = pako.ungzip(oReq.response);
                         let bb = new Blob([new Uint8Array(data)]);
@@ -766,7 +774,7 @@ document.addEventListener('DOMContentLoaded', function() {
             let offsets = [];
             for (let i = 0; i < 1; i++)
                 offsets.push(event.lesson_offset + i);
-            if (my_lessons.indexOf(event.lesson_key) >= 0 && event.lesson_offset !== null)
+            if (my_lessons.indexOf(event.lesson_key) >= 0 && event.lesson_offset !== null && event.lesson_offset >= 0)
                 $('#lessonModal .bu-edit-lesson').attr('href', '/lessons/' + event.lesson_key + '#' + offsets.join(',')).show();
             else
                 $('#lessonModal .bu-edit-lesson').hide();
@@ -1035,8 +1043,8 @@ document.addEventListener('DOMContentLoaded', function() {
         };
     }
 
-    let calendar = new FullCalendar.Calendar(document.getElementById('calendar'), options);
-    calendar.render();
+    window.calendar = new FullCalendar.Calendar(document.getElementById('calendar'), options);
+    window.calendar.render();
     $('#lessonModal').on('hidden.bs.modal', function() {
         if (pb_playing)
         {

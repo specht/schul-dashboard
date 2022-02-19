@@ -189,6 +189,7 @@ class Script
         STDERR.puts "Collecting present shares..."
         present_shares = {}
         (@ocs.file_sharing.all || []).each do |share|
+            next if share['share_with'].nil?
             present_shares[share['share_with']] ||= {}
             present_shares[share['share_with']][share['path']] = {
                 :permissions => share['permissions'].to_i,
@@ -250,10 +251,14 @@ class Script
             end
             created_sub_paths = Set.new()
             wanted_shares[user_id].each_pair do |path, info|
-                next if (((present_shares[user_id] || {})[path]) || {})[:target_path] == info[:target_path] &&
+                next if ((((present_shares[user_id] || {})[path]) || {})[:target_path] || '').gsub(' ', '%20') == info[:target_path] &&
                     (((present_shares[user_id] || {})[path]) || {})[:permissions] == info[:permissions]
                 begin
-                    unless (present_shares[user_id] || {})[path]
+                    unless (present_shares[user_id] || {})[path] && ((((present_shares[user_id] || {})[path]) || {})[:target_path].gsub(' ', '%20') == info[:target_path])
+                        unless ((((present_shares[user_id] || {})[path]) || {})[:target_path] || '').gsub(' ', '%20') == info[:target_path]
+                            STDERR.puts "Removing share #{path} for #{user_id}..."
+                            @ocs.file_sharing.destroy((((present_shares[user_id] || {})[path]) || {})[:id])
+                        end
                         STDERR.puts "Sharing #{path} to [#{user_id}]..."
                         _temp = @ocs.file_sharing.create(path, 0, user_id, nil, nil, info[:permissions])
                     end

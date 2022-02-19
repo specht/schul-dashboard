@@ -101,7 +101,7 @@ class BackgroundRenderer
         fx = 0.0 if fx < 0.0
         fx = 1.0 if fx > 1.0
         
-        fy = my / 1000.0
+        fy = my / 1540.0
 #         fy = fy * 0.8 + 0.2
         fy = 0.0 if fy < 0.0
         fy = 1.0 if fy > 1.0
@@ -161,7 +161,7 @@ class BackgroundRenderer
         fx = 0.0 if fx < 0.0
         fx = 1.0 if fx > 1.0
         
-        fy = my / 1000.0
+        fy = my / 1540.0
 #         fy = fy * 0.8 + 0.2
         fy = 0.0 if fy < 0.0
         fy = 1.0 if fy > 1.0
@@ -214,6 +214,8 @@ class BackgroundRenderer
     end
     
     def draw_circle(f, g, p0, p1, p2, m, ld_mode, classes, lines)
+        p0[0] += rand(50) - 25
+        p0[1] += rand(50) - 25
         x0 = p0[0]; y0 = p0[1]
         x1 = p1[0]; y1 = p1[1]
         x2 = p2[0]; y2 = p2[1]
@@ -229,7 +231,7 @@ class BackgroundRenderer
         fx = 0.0 if fx < 0.0
         fx = 1.0 if fx > 1.0
         
-        fy = my / 1000.0
+        fy = my / 1540.0
 #         fy = fy * 0.8 + 0.2
         fy = 0.0 if fy < 0.0
         fy = 1.0 if fy > 1.0
@@ -247,9 +249,10 @@ class BackgroundRenderer
 #             classes[c2] ||= i_to_b62(classes.size)
 #             lines << "<circle cx='#{p0[0].to_i}' cy='#{p0[1].to_i}' r='100px' class='c#{classes[c1]} c#{classes[c2]}' />"
         else
-            r = 100
+            r = 100 + rand(20)
             c1 = 'stroke:none;'
-            c2 = "fill:rgba(0,0,0,#{sprintf('%1.3f', (1.0 - fy) * 0.7)}); filter:url(#blur);"
+            c2 = "fill:rgba(0,0,0,#{sprintf('%1.3f', (1.0 - fy) * (ld_mode == 'l' ? 0.3 : 0.6))}); filter:url(#blur);"
+
             classes[c1] ||= i_to_b62(classes.size)
             classes[c2] ||= i_to_b62(classes.size)
             lines << "<circle cx='#{p0[0].to_i}' cy='#{p0[1].to_i}' r='#{r}px' class='c#{classes[c1]} c#{classes[c2]}' />"
@@ -277,7 +280,7 @@ class BackgroundRenderer
         fx = 0.0 if fx < 0.0
         fx = 1.0 if fx > 1.0
         
-        fy = my / 1040.0
+        fy = my / 1540.0
 #         fy = fy * 0.8 + 0.2
         fy = 0.0 if fy < 0.0
         fy = 1.0 if fy > 1.0
@@ -363,17 +366,17 @@ class BackgroundRenderer
             classes = {}
             lines = []
             f.puts "<?xml version='1.0' encoding='UTF-8' standalone='no'?>"
-            f.puts "<svg xmlns='http://www.w3.org/2000/svg' width='1920' height='1080'>"
+            f.puts "<svg xmlns='http://www.w3.org/2000/svg' width='1920' height='1600'>"
             f.puts "<filter id='blur'>"
             f.puts "<feGaussianBlur stdDeviation='5' />"
             f.puts "</filter>"
-#             f.puts "<rect x='0' y='0' width='1920' height='1080' style='fill: #aaa;'/>"
+#             f.puts "<rect x='0' y='0' width='1920' height='1600' style='fill: #aaa;'/>"
             dx = 115.47
             dy = 100
             dots = []
             y = -300
             shift = 0
-            while y < 1500 do
+            while y < 2000 do
                 line = []
                 x = 1920.0 / 2.0 - dx * 12 + shift * dx * 0.5
                 while x < 2400 do
@@ -422,7 +425,7 @@ class BackgroundRenderer
                                                 dots[y+1][x+d+2], 
                                                 dots[y-1][x+d], # 1
                                                 mode, ld_mode, shadow, style == 3, classes, lines)
-                        else
+                        elsif [4, 5, 6].include?(style)
                             n = 3
                             if style == 5
                                 n = 4
@@ -430,8 +433,9 @@ class BackgroundRenderer
                                 n = 6
                             end
                             draw_ngon(n, f, g, dots[y][x], dots[y+1][x+d], dots[y][x+1], mode, ld_mode, shadow, classes, lines)
+                        else
+                            draw_circle(f, g, dots[y][x], dots[y+1][x+d], dots[y][x+1], mode, ld_mode, classes, lines)
                         end
-#                         draw_circle(f, g, dots[y][x], dots[y+1][x+d], dots[y][x+1], mode, ld_mode, classes, lines)
 #                         break
                     end
 #                         break
@@ -451,7 +455,7 @@ class BackgroundRenderer
     
     def render(palette, user = nil)
         rendered_something = false
-        (0..6).each do |style|
+        (0..7).each do |style|
             ['l', 'd'].each do |ld_mode|
                 out_path = "/gen/bg/bg-#{ld_mode}#{palette[0, 3].join('').gsub('#', '')}#{style}.svg"
                 next if File.exists?(out_path)
@@ -467,7 +471,7 @@ end
 if __FILE__ == $0
     STDERR.puts "OY"
     renderer = BackgroundRenderer.new()
-    (0..6).each do |style|
-        renderer.render_bg("/gen/bg/out-#{style}.svg", "d7146749f6976cc8b79#{style}")
+    (0..7).each do |style|
+        renderer.render_bg("/gen/bg/out-#{style}.svg", "l7146749f6976cc8b79#{style}")
     end
 end

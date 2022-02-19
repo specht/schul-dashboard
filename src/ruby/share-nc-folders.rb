@@ -254,8 +254,8 @@ class Script
                 next if ((((present_shares[user_id] || {})[path]) || {})[:target_path] || '').gsub(' ', '%20') == info[:target_path] &&
                     (((present_shares[user_id] || {})[path]) || {})[:permissions] == info[:permissions]
                 begin
-                    unless (present_shares[user_id] || {})[path] && ((((present_shares[user_id] || {})[path]) || {})[:target_path].gsub(' ', '%20') == info[:target_path])
-                        unless ((((present_shares[user_id] || {})[path]) || {})[:target_path] || '').gsub(' ', '%20') == info[:target_path]
+                    unless (present_shares[user_id] || {})[path] && ((((present_shares[user_id] || {})[path]) || {})[:target_path].gsub(' ', '%20') == info[:target_path].gsub(' ', '%20'))
+                        unless ((((present_shares[user_id] || {})[path]) || {})[:target_path] || '').gsub(' ', '%20') == info[:target_path].gsub(' ', '%20')
                             STDERR.puts "Removing share #{path} for #{user_id}..."
                             @ocs.file_sharing.destroy((((present_shares[user_id] || {})[path]) || {})[:id])
                         end
@@ -272,7 +272,7 @@ class Script
                         STDERR.puts "Updating permissions [#{user_id}]#{share['file_target']}..."
                         @ocs.file_sharing.update_permissions(share['id'], info[:permissions])
                     end
-                    if share['file_target'].gsub(' ', '%20') != info[:target_path]
+                    if share['file_target'].gsub(' ', '%20') != info[:target_path].gsub(' ', '%20')
                         dir_parts = File.dirname(info[:target_path]).split('/')
                         dir_parts.each.with_index do |p, _|
                             sub_path = dir_parts[0, _ + 1].join('/')

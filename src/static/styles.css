@@ -213,6 +213,7 @@ input {
     box-shadow: rgba(0,0,0,0.2) 0px 1px 10px;
     border-bottom: 1px solid #bbb;
     background-color: #fff!important;
+    /* background-color: rgba(255,255,255,0.7)!important; */
 }
 
 .info {
@@ -2401,4 +2402,19 @@ li.nav-item a.nav-link i.fa {
 
 .bg-pink {
     background-color: #7b67ae;
+}
+
+.fc, .fc-view-harness, .fc-view-harness thead table {
+    border-top-left-radius: 0.8em;
+    border-top-right-radius: 0.8em;
+}
+
+.fc-scrollgrid {
+    border-top-left-radius: 0.8em;
+    border-top-right-radius: 0.8em;
+    box-shadow: 0 0 2em rgba(0,0,0,0.2);
+}
+
+.fc-theme-standard thead td:last-child, .fc-theme-standard thead th:last-child {
+    border-top-right-radius: 0.8em;
 }

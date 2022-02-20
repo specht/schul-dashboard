@@ -264,7 +264,7 @@ window.addEventListener('load', function () {
                 /* $('body').css('background-color', new_color_scheme[0] == 'l' ? '#f8f8f8' : '#080808'); */
                 $('#backdrop').css('background-color', new_color_scheme[0] == 'l' ? '#f8f8f8' : '#080808');
                 color_scheme = new_color_scheme;
-                changeThemeColor(data.primary_color_darker);
+                changeThemeColor(data.darker);
                 for (let style of [0, 1, 2, 3, 4, 5, 6, 7, 8])
                     style_swatches[style].css('background-image', 'url(/gen/bg/bg-' + color_scheme.substr(0, 19) + style + '.svg)');
             }
@@ -400,7 +400,7 @@ window.addEventListener('load', function () {
                     $('.new-messages-indicator').css('background-color', '#' + new_color_scheme.substr(7, 6));
                     $('.new-messages-indicator-mini .fa').css('color', '#' + new_color_scheme.substr(7, 6));
                     color_scheme = new_color_scheme; 
-                    changeThemeColor(data.primary_color_darker);
+                    changeThemeColor(data.darker);
                     $('#dark_switch').bootstrapToggle(new_color_scheme[0] === 'l' ? 'off' : 'on');
                 }
             });

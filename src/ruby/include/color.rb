@@ -119,7 +119,7 @@ class Main < Sinatra::Base
         desaturated_color = darken(desaturate(primary_color), 0.9)
         desaturated_color_darker = darken(desaturate(primary_color), 0.3)
         disabled_color = light ? rgb_to_hex(mix(hex_to_rgb(primary_color), [255, 255, 255], 0.5)) : rgb_to_hex(mix(hex_to_rgb(primary_color), [192, 192, 192], 0.5))
-        darker_color = rgb_to_hex(mix(hex_to_rgb(primary_color), [0, 0, 0], 0.7))
+        darker_color = rgb_to_hex(mix(hex_to_rgb(primary_color), [0, 0, 0], 0.6))
         shifted_color = shift_hue(primary_color, 350)
         main_text_color = light ? rgb_to_hex(mix(hex_to_rgb(primary_color), [0, 0, 0], 0.7)) : rgb_to_hex(mix(hex_to_rgb(primary_color), [255, 255, 255], 0.8))
         contrast_color = rgb_to_hex(mix(hex_to_rgb(primary_color), color_scheme[0] == 'l' ? [0, 0, 0] : [255, 255, 255], 0.7))

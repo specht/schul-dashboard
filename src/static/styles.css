@@ -2418,3 +2418,20 @@ li.nav-item a.nav-link i.fa {
 .fc-theme-standard thead td:last-child, .fc-theme-standard thead th:last-child {
     border-top-right-radius: 0.8em;
 }
+
+.fc-theme-standard td, .fc-theme-standard th {
+    border: 1px solid rgba(0,0,0,0.1);
+}
+
+.fc-theme-standard .fc-scrollgrid {
+    border: 1px solid rgba(0,0,0,0.1);
+}
+
+.table td, .table th {
+    border-top: 1px solid rgba(0,0,0,0.1);
+}
+
+.table tbody+tbody {
+    border-top: none;
+    /* border-top: 2px solid #dee2e6; */
+}

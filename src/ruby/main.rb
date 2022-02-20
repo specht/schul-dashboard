@@ -2008,12 +2008,13 @@ class Main < Sinatra::Base
         return @@default_color_scheme[jd] if @@default_color_scheme[jd]
         srand(DEVELOPMENT ? (Time.now.to_f * 1000).to_i : jd)
         which = nil
+        style = nil
         while true do
             which = @@color_scheme_colors.sample
+            style = [0].sample
             break unless which[4] == 'd' || which[1] == '#ff0040'
         end
-        # color_scheme = "#{which[4]}#{which[0, 3].join('').gsub('#', '')}#{[0, 5].sample}"
-        color_scheme = "#{which[4]}#{which[0, 3].join('').gsub('#', '')}0"
+        color_scheme = "#{which[4]}#{which[0, 3].join('').gsub('#', '')}#{style}"
         @@default_color_scheme[jd] = color_scheme unless DEVELOPMENT
         return color_scheme
     end

@@ -265,7 +265,7 @@ window.addEventListener('load', function () {
                 $('#backdrop').css('background-color', new_color_scheme[0] == 'l' ? '#f8f8f8' : '#080808');
                 color_scheme = new_color_scheme;
                 changeThemeColor(data.darker);
-                for (let style of [0, 1, 2, 3, 4, 5, 6, 7, 8])
+                for (let style of [0, 1, 2, 3, 4, 5, 6, 7, 8, 9])
                     style_swatches[style].css('background-image', 'url(/gen/bg/bg-' + color_scheme.substr(0, 19) + style + '.svg)');
             }
         });
@@ -360,13 +360,13 @@ window.addEventListener('load', function () {
                     color_scheme = new_color_scheme; 
                     changeThemeColor(data.primary_color_darker);
                     $('#dark_switch').bootstrapToggle(new_color_scheme[0] === 'l' ? 'off' : 'on');
-                    for (let style of [0, 1, 2, 3, 4, 5, 6, 7, 8])
+                    for (let style of [0, 1, 2, 3, 4, 5, 6, 7, 8, 9])
                         style_swatches[style].css('background-image', 'url(/gen/bg/bg-' + color_scheme.substr(0, 19) + style + '.svg)');
                 }
             });
         });
     }
-    for (let style of [0, 1, 2, 3, 4, 5, 6, 7, 8])
+    for (let style of [0, 1, 2, 3, 4, 5, 6, 7, 8, 9])
     {
         let gradient = '#{color_scheme[1, 18]}';
         let l_mode = '#{color_scheme[0]}';

@@ -278,7 +278,7 @@ class BackgroundRenderer
         end
     end
     
-    def draw_ngon(n, f, g, p0, p1, p2, m, ld_mode, shadow, classes, lines)
+    def draw_ngon(n, f, g, p0, p1, p2, m, ld_mode, shadow, classes, lines, &block)
         x0 = p0[0]; y0 = p0[1]
         x1 = p1[0]; y1 = p1[1]
         x2 = p2[0]; y2 = p2[1]
@@ -303,6 +303,7 @@ class BackgroundRenderer
         bg_color = ld_mode == 'l' ? [248, 248, 248] : [8, 8, 8]
         # mix RGB
         color = rgb_to_hex(mix(mix(hex_to_rgb(g[ix]), hex_to_rgb(g[ix + 1]), fx), bg_color, fy))
+        color = yield(color) if block_given?
         # mix HSV
 #         color = rgb_to_hex(mix(hsv_to_rgb(mix(rgb_to_hsv(hex_to_rgb(g[ix])), rgb_to_hsv(hex_to_rgb(g[ix + 1])), fx)), bg_color, fy))
         if m == 0
@@ -383,7 +384,7 @@ class BackgroundRenderer
         g[1] = rgb_to_hex(mix(hex_to_rgb(g[1]), [255, 255, 255], 0.1))
 
         height = 1600
-        if style == 8
+        if [8, 9].include?(style)
             height = 2400
         end
 
@@ -393,25 +394,33 @@ class BackgroundRenderer
         File.open(out_path, 'w') do |f|
             classes = {}
             lines = []
+            bgg = ld_mode == 'l' ? 248 : 8
             f.puts "<?xml version='1.0' encoding='UTF-8' standalone='no'?>"
             f.puts "<svg xmlns='http://www.w3.org/2000/svg' width='1920' height='#{height}'>"
             f.puts "<defs>"
             f.puts "<linearGradient id='gr1'>"
-            f.puts "<stop stop-color='#{darken(g[0], bg_darken)}' offset='0%'/>"
-            f.puts "<stop stop-color='#{darken(g[1], bg_darken)}' offset='50%'/>"
-            f.puts "<stop stop-color='#{darken(g[2], bg_darken)}' offset='100%'/>"
+            f.puts "<stop stop-color='#{g[0]}' offset='0%'/>"
+            f.puts "<stop stop-color='#{g[1]}' offset='50%'/>"
+            f.puts "<stop stop-color='#{g[2]}' offset='100%'/>"
             f.puts "</linearGradient>"
             f.puts "<linearGradient id='gr2' x1='0' x2='0' y1='0' y2='1'>"
-            bgg = ld_mode == 'l' ? 248 : 8
             f.puts "<stop stop-color='rgba(#{bgg},#{bgg},#{bgg},0.0)' offset='0%'/>"
-            f.puts "<stop stop-color='rgba(#{bgg},#{bgg},#{bgg},0.5)' offset='50%'/>"
             f.puts "<stop stop-color='rgba(#{bgg},#{bgg},#{bgg},1.0)' offset='100%'/>"
+            f.puts "</linearGradient>"
+            f.puts "<linearGradient id='gr3'>"
+            f.puts "<stop stop-color='rgba(255,255,255,0.0)' offset='0%'/>"
+            f.puts "<stop stop-color='rgba(255,255,255,0.15)' offset='100%'/>"
+            f.puts "</linearGradient>"
+            f.puts "<linearGradient id='gr4'>"
+            f.puts "<stop stop-color='rgba(0,0,0,0.1)' offset='0%'/>"
+            f.puts "<stop stop-color='rgba(0,0,0,0.0)' offset='100%'/>"
             f.puts "</linearGradient>"
             f.puts "</defs>"
             f.puts "<filter id='blur'>"
             f.puts "<feGaussianBlur stdDeviation='5' />"
             f.puts "</filter>"
             f.puts "<rect x='0' y='0' width='1920' height='#{height}' fill='url(#gr1)'/>"
+            # f.puts "<rect x='0' y='0' width='1920' height='#{height}' fill='rgba(#{bgg},#{bgg},#{bgg},1)'/>"
             f.puts "<rect x='0' y='0' width='1920' height='#{height}' fill='url(#gr2)'/>"
             if style <= 7
                 dx = 115.47
@@ -512,6 +521,21 @@ class BackgroundRenderer
                     draw_circle(f, g, p, p, p, 1, ld_mode, classes, lines, false, r, false, 1800, 1000, 1000)
                 end
                 lines << "<rect x='0' y='#{height/2}' width='1920' height='#{height/2}' fill='url(#gr2)'/>"
+            elsif style == 9
+                (-8..8).each do |a|
+                    cx = 1920.0 / 2 + a * 120
+                    cy = 400.0 + a * 20
+                    phi = a * rand(40) + 20.0
+                    lines << "<g transform='translate(#{cx},#{cy}) rotate(#{phi})'>"
+                    if ld_mode == 'l'
+                        lines << "<rect x='-50' y='-#{height}' width='50' height='#{2*height}' fill='url(#gr3)'/>"
+                    else
+                        lines << "<rect x='0' y='-#{height}' width='50' height='#{2*height}' fill='url(#gr4)'/>"
+                    end
+                    lines << "</g>"
+                end
+
+                lines << "<rect x='0' y='#{height/2}' width='1920' height='#{height/2}' fill='url(#gr2)'/>"
             end
             f.puts "<style>"
             classes.each_pair do |contents, i|
@@ -527,7 +551,7 @@ class BackgroundRenderer
     
     def render(palette, user = nil)
         rendered_something = false
-        (0..8).each do |style|
+        (0..9).each do |style|
             ['l', 'd'].each do |ld_mode|
                 out_path = "/gen/bg/bg-#{ld_mode}#{palette[0, 3].join('').gsub('#', '')}#{style}.svg"
                 next if File.exists?(out_path)
@@ -543,7 +567,7 @@ end
 if __FILE__ == $0
     STDERR.puts "OY"
     renderer = BackgroundRenderer.new()
-    (0..8).each do |style|
-        renderer.render_bg("/gen/bg/out-#{style}.svg", "d55beedf9b935e5185d#{style}")
+    (0..9).each do |style|
+        renderer.render_bg("/gen/bg/out-#{style}.svg", "l55beedf9b935e5185d#{style}")
     end
 end

@@ -213,9 +213,11 @@ class BackgroundRenderer
         end
     end
     
-    def draw_circle(f, g, p0, p1, p2, m, ld_mode, classes, lines)
-        p0[0] += rand(50) - 25
-        p0[1] += rand(50) - 25
+    def draw_circle(f, g, p0, p1, p2, m, ld_mode, classes, lines, randomize, r0, alpha, dx, dy, dr)
+        if randomize
+            p0[0] += rand(50) - 25
+            p0[1] += rand(50) - 25
+        end
         x0 = p0[0]; y0 = p0[1]
         x1 = p1[0]; y1 = p1[1]
         x2 = p2[0]; y2 = p2[1]
@@ -249,18 +251,30 @@ class BackgroundRenderer
 #             classes[c2] ||= i_to_b62(classes.size)
 #             lines << "<circle cx='#{p0[0].to_i}' cy='#{p0[1].to_i}' r='100px' class='c#{classes[c1]} c#{classes[c2]}' />"
         else
-            r = 100 + rand(20)
-            c1 = 'stroke:none;'
-            c2 = "fill:rgba(0,0,0,#{sprintf('%1.3f', (1.0 - fy) * (ld_mode == 'l' ? 0.3 : 0.6))}); filter:url(#blur);"
+            r = r0
+            if randomize
+                r += rand(20)
+            end
 
-            classes[c1] ||= i_to_b62(classes.size)
-            classes[c2] ||= i_to_b62(classes.size)
-            lines << "<circle cx='#{p0[0].to_i}' cy='#{p0[1].to_i}' r='#{r}px' class='c#{classes[c1]} c#{classes[c2]}' />"
-            c1 = 'stroke:none;'
-            c2 = "fill:#{color};"
-            classes[c1] ||= i_to_b62(classes.size)
-            classes[c2] ||= i_to_b62(classes.size)
-            lines << "<circle cx='#{p0[0].to_i}' cy='#{p0[1].to_i}' r='#{r}px' class='c#{classes[c1]} c#{classes[c2]}' />"
+            if alpha
+                c1 = "stroke:none;"
+                c2 = "fill:rgba(#{bg_color.map { |x| x.to_s}.join(',')},0.2);"
+                classes[c1] ||= i_to_b62(classes.size)
+                classes[c2] ||= i_to_b62(classes.size)
+                lines << "<circle cx='#{p0[0].to_i + dx}' cy='#{p0[1].to_i + dy}' r='#{r + dr}' class='c#{classes[c1]} c#{classes[c2]}' />"
+            else
+                c1 = 'stroke:none;'
+                c2 = "fill:rgba(0,0,0,#{sprintf('%1.3f', (1.0 - fy) * (ld_mode == 'l' ? 0.3 : 0.6))}); filter:url(#blur);"
+                classes[c1] ||= i_to_b62(classes.size)
+                classes[c2] ||= i_to_b62(classes.size)
+                lines << "<circle cx='#{p0[0].to_i + dx}' cy='#{p0[1].to_i + dy}' r='#{r + dr}' class='c#{classes[c1]} c#{classes[c2]}' />"
+
+                c1 = 'stroke:none;'
+                c2 = "fill:#{color};"
+                classes[c1] ||= i_to_b62(classes.size)
+                classes[c2] ||= i_to_b62(classes.size)
+                lines << "<circle cx='#{p0[0].to_i + dx}' cy='#{p0[1].to_i + dy}' r='#{r + dr}' class='c#{classes[c1]} c#{classes[c2]}' />"
+            end
         end
     end
     
@@ -352,6 +366,14 @@ class BackgroundRenderer
 
         [left, color, right]
     end
+
+    def darken(c, f = 1.0)
+        rgb = hex_to_rgb(c)
+        rgb[0] *= f
+        rgb[1] *= f
+        rgb[2] *= f
+        rgb_to_hex(rgb)
+    end
     
     def render_bg(out_path, palette)
         style = (palette[19] || '0').to_i
@@ -362,84 +384,129 @@ class BackgroundRenderer
 
         FileUtils.mkpath('/gen/bg')
         STDERR.puts "#{palette} => #{out_path}"
+        bg_darken = 0.8
         File.open(out_path, 'w') do |f|
             classes = {}
             lines = []
             f.puts "<?xml version='1.0' encoding='UTF-8' standalone='no'?>"
             f.puts "<svg xmlns='http://www.w3.org/2000/svg' width='1920' height='1600'>"
+            f.puts "<defs>"
+            f.puts "<linearGradient id='gr1'>"
+            f.puts "<stop stop-color='#{darken(g[0], bg_darken)}' offset='0%'/>"
+            f.puts "<stop stop-color='#{darken(g[1], bg_darken)}' offset='50%'/>"
+            f.puts "<stop stop-color='#{darken(g[2], bg_darken)}' offset='100%'/>"
+            f.puts "</linearGradient>"
+            f.puts "<linearGradient id='gr2' x1='0' x2='0' y1='0' y2='1'>"
+            bgg = ld_mode == 'l' ? 248 : 8
+            f.puts "<stop stop-color='rgba(#{bgg},#{bgg},#{bgg},0.0)' offset='0%'/>"
+            f.puts "<stop stop-color='rgba(#{bgg},#{bgg},#{bgg},0.3)' offset='70%'/>"
+            f.puts "<stop stop-color='rgba(#{bgg},#{bgg},#{bgg},1.0)' offset='100%'/>"
+            f.puts "</linearGradient>"
+            f.puts "</defs>"
             f.puts "<filter id='blur'>"
             f.puts "<feGaussianBlur stdDeviation='5' />"
             f.puts "</filter>"
-#             f.puts "<rect x='0' y='0' width='1920' height='1600' style='fill: #aaa;'/>"
-            dx = 115.47
-            dy = 100
-            dots = []
-            y = -300
-            shift = 0
-            while y < 2000 do
-                line = []
-                x = 1920.0 / 2.0 - dx * 12 + shift * dx * 0.5
-                while x < 2400 do
-                    vx = x
-                    vy = y
-                    phi = rand() * 2.0 * Math::PI
-                    r = 0.0
-                    if [0].include?(style)
-                        r = 30.0
-                    end
-                    vx = x + r * Math::cos(phi)
-                    vy = y + r * Math::sin(phi)
-                    line << [vx, vy]
-                    x += dx
-                end
-                dots << line
-                y += dy
-                shift = (shift + 1) % 2
-            end
-            [0, 1].each do |mode|
-                # 2
-                (2...(dots.size - 3)).each do |y|
-                    # 2
-                    x0 = 0
-                    x1 = dots.first.size - 1
-                    (2...(dots.first.size - 3)).sort do |a, b|
-                        (a - (x1 - x0) / 2.0).abs <=> (b - (x1 - x0) / 2.0).abs
-                    end.each do |x|
-                        d = y % 2
-                        if [0, 1, 2, 3].include?(style)
-                            draw_curved_triangle(f, g, 
-                                                dots[y][x], dots[y+1][x+d-1], dots[y+1][x+d], 
-                                                dots[y-1][x+d], 
-                                                dots[y-1][x+d-1], 
-                                                dots[y+1][x+d-2], 
-                                                dots[y+2][x-1], 
-                                                dots[y+2][x+1], 
-                                                dots[y+1][x+d+1], 
-                                                mode, ld_mode, shadow, style == 3, classes, lines)
-                            draw_curved_triangle(f, g, 
-                                                dots[y][x], dots[y+1][x+d], dots[y][x+1], 
-                                                dots[y-2][x], #2
-                                                dots[y+1][x+d-1], 
-                                                dots[y+2][x-1], # 1
-                                                dots[y+1][x+d+1], # 2
-                                                dots[y+1][x+d+2], 
-                                                dots[y-1][x+d], # 1
-                                                mode, ld_mode, shadow, style == 3, classes, lines)
-                        elsif [4, 5, 6].include?(style)
-                            n = 3
-                            if style == 5
-                                n = 4
-                            elsif style == 6
-                                n = 6
-                            end
-                            draw_ngon(n, f, g, dots[y][x], dots[y+1][x+d], dots[y][x+1], mode, ld_mode, shadow, classes, lines)
-                        else
-                            draw_circle(f, g, dots[y][x], dots[y+1][x+d], dots[y][x+1], mode, ld_mode, classes, lines)
+            f.puts "<rect x='0' y='0' width='1920' height='1600' fill='url(#gr1)'/>"
+            f.puts "<rect x='0' y='0' width='1920' height='1600' fill='url(#gr2)'/>"
+            if style <= 7
+                dx = 115.47
+                dy = 100
+                dots = []
+                y = -300
+                shift = 0
+                while y < 2000 do
+                    line = []
+                    x = 1920.0 / 2.0 - dx * 12 + shift * dx * 0.5
+                    while x < 2400 do
+                        vx = x
+                        vy = y
+                        phi = rand() * 2.0 * Math::PI
+                        r = 0.0
+                        if [0].include?(style)
+                            r = 30.0
                         end
-#                         break
+                        vx = x + r * Math::cos(phi)
+                        vy = y + r * Math::sin(phi)
+                        line << [vx, vy]
+                        x += dx
                     end
-#                         break
+                    dots << line
+                    y += dy
+                    shift = (shift + 1) % 2
                 end
+                [0, 1].each do |mode|
+                    # 2
+                    (2...(dots.size - 3)).each do |y|
+                        # 2
+                        x0 = 0
+                        x1 = dots.first.size - 1
+                        (2...(dots.first.size - 3)).sort do |a, b|
+                            (a - (x1 - x0) / 2.0).abs <=> (b - (x1 - x0) / 2.0).abs
+                        end.each do |x|
+                            d = y % 2
+                            if [0, 1, 2, 3].include?(style)
+                                draw_curved_triangle(f, g, 
+                                                    dots[y][x], dots[y+1][x+d-1], dots[y+1][x+d], 
+                                                    dots[y-1][x+d], 
+                                                    dots[y-1][x+d-1], 
+                                                    dots[y+1][x+d-2], 
+                                                    dots[y+2][x-1], 
+                                                    dots[y+2][x+1], 
+                                                    dots[y+1][x+d+1], 
+                                                    mode, ld_mode, shadow, style == 3, classes, lines)
+                                draw_curved_triangle(f, g, 
+                                                    dots[y][x], dots[y+1][x+d], dots[y][x+1], 
+                                                    dots[y-2][x], #2
+                                                    dots[y+1][x+d-1], 
+                                                    dots[y+2][x-1], # 1
+                                                    dots[y+1][x+d+1], # 2
+                                                    dots[y+1][x+d+2], 
+                                                    dots[y-1][x+d], # 1
+                                                    mode, ld_mode, shadow, style == 3, classes, lines)
+                            elsif [4, 5, 6].include?(style)
+                                n = 3
+                                if style == 5
+                                    n = 4
+                                elsif style == 6
+                                    n = 6
+                                end
+                                draw_ngon(n, f, g, dots[y][x], dots[y+1][x+d], dots[y][x+1], mode, ld_mode, shadow, classes, lines)
+                            elsif style == 7
+                                draw_circle(f, g, dots[y][x], dots[y+1][x+d], dots[y][x+1], mode, ld_mode, classes, lines, true, 100, false, 0, 0, 0)
+                            end
+    #                         break
+                        end
+    #                         break
+                    end
+                end
+            elsif style == 8
+                # (0..50).each do |y|
+                #     p = [1920.0/2 + Math.cos(y * 0.2) * 200, 500.0 + Math.sin(y * 0.2) * 200]
+                #     r = 1300 - y * 20
+                #     lines << "<clipPath id='clip#{y}'>"
+                #     lines << "<circle cx='#{p[0].to_i}' cy='#{p[1].to_i}' r='#{r}px' />"
+                #     lines << "</clipPath>"
+                # end
+                # (0..50).each do |y|
+                #     p = [1920.0/2 + Math.cos(y * 0.2) * 200, 500.0 + Math.sin(y * 0.2) * 200]
+                #     r = 1300 - y * 20
+                #     lines << "<g style='clip-path: url(#clip#{y - 1});'>" if y > 0
+                #     # lines << "<circle cx='#{p[0].to_i}' cy='#{p[1].to_i}' r='#{r}px' style='fill: rgba(0,0,0,0.05);'/>"
+                #     # g2 = g.map { |x| darken(x, 1.0 - y / 51.0)}
+                #     draw_circle(f, g, p, p, p, 1, ld_mode, classes, lines, true, r, false)
+                # end
+                # (0..50).each do |y|
+                #     lines << "</g>" if y > 0
+                # end
+                (0..50).each do |y|
+                    p = [y / 50.0 * 2400 - 400, 0.0 + rand(500) - 250]
+                    r = 1000
+                    # lines << "<g style='clip-path: url(#clip#{y - 1});'>" if y > 0
+                    # lines << "<circle cx='#{p[0].to_i}' cy='#{p[1].to_i}' r='#{r}px' style='fill: rgba(0,0,0,0.05);'/>"
+                    # g2 = g.map { |x| darken(x, 1.0 - y / 51.0)}
+                    draw_circle(f, g, p, p, p, 1, ld_mode, classes, lines, false, r, false, 1300, 500, 300)
+                end
+                lines << "<rect x='0' y='800' width='1920' height='800' fill='url(#gr2)'/>"
             end
             f.puts "<style>"
             classes.each_pair do |contents, i|
@@ -455,7 +522,7 @@ class BackgroundRenderer
     
     def render(palette, user = nil)
         rendered_something = false
-        (0..7).each do |style|
+        (0..8).each do |style|
             ['l', 'd'].each do |ld_mode|
                 out_path = "/gen/bg/bg-#{ld_mode}#{palette[0, 3].join('').gsub('#', '')}#{style}.svg"
                 next if File.exists?(out_path)
@@ -471,7 +538,7 @@ end
 if __FILE__ == $0
     STDERR.puts "OY"
     renderer = BackgroundRenderer.new()
-    (0..7).each do |style|
-        renderer.render_bg("/gen/bg/out-#{style}.svg", "l7146749f6976cc8b79#{style}")
+    (0..8).each do |style|
+        renderer.render_bg("/gen/bg/out-#{style}.svg", "d6a00009626006a0000#{style}")
     end
 end

@@ -27,7 +27,7 @@ class Main < Sinatra::Base
         data = parse_request_data(:required_keys => [:scheme])
         data[:scheme].downcase!
         assert('ld'.include?(data[:scheme][0]))
-        assert(data[:scheme][1, 18] =~ /^[0-9a-f]{18}[0-7]?$/)
+        assert(data[:scheme][1, 18] =~ /^[0-9a-f]{18}[0-8]?$/)
         results = neo4j_query(<<~END_OF_QUERY, :email => @session_user[:email], :scheme => data[:scheme])
             MATCH (u:User {email: {email}})
             SET u.color_scheme = {scheme};

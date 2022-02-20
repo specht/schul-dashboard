@@ -352,7 +352,7 @@ window.addEventListener('load', function () {
                     $('.swatch').removeClass('active');
                     $(e.target.closest('.btn')).addClass('active');
                     /* $('body').css('background-image', 'url(/gen/bg/bg-' + new_color_scheme + '.svg)'); */
-                    $('#backdrop').css('background-image', 'url(/gen/bg/bg-' + new_color_scheme + '.svg)');
+                    $('#backdrop').css('background-image', `url(/gen/bg/bg-${new_color_scheme}.svg)`);
                     /* $('body').css('background-color', new_color_scheme[0] === 'l' ? '#f8f8f8' : '#080808'); */
                     $('#backdrop').css('background-color', new_color_scheme[0] === 'l' ? '#f8f8f8' : '#080808');
                     $('.new-messages-indicator').css('background-color', '#' + new_color_scheme.substr(7, 6));
@@ -361,7 +361,7 @@ window.addEventListener('load', function () {
                     changeThemeColor(data.primary_color_darker);
                     $('#dark_switch').bootstrapToggle(new_color_scheme[0] === 'l' ? 'off' : 'on');
                     for (let style of [0, 1, 2, 3, 4, 5, 6, 7, 8, 9])
-                        style_swatches[style].css('background-image', 'url(/gen/bg/bg-' + color_scheme.substr(0, 19) + style + '.svg)');
+                        style_swatches[style].css('background-image', `url(/gen/bg/bg-${color_scheme.substr(0, 19)}${style}.svg)`);
                 }
             });
         });
@@ -373,7 +373,7 @@ window.addEventListener('load', function () {
         let col = $('<div>').addClass('col-md-12');
         let swatch = $('<div>');
         style_swatches.push(swatch);
-        swatch.css('background-image', 'url(/gen/bg/bg-' + l_mode + gradient + style + '.svg)');
+        swatch.css('background-image', `url(/gen/bg/bg-${l_mode}${gradient}${style}.svg)`);
         swatch.html('&nbsp;');
         swatch.addClass('btn');
         swatch.addClass('swatch');
@@ -395,7 +395,7 @@ window.addEventListener('load', function () {
                     color_scheme = new_color_scheme;
                     $('.swatch').removeClass('active');
                     $(e.target.closest('.btn')).addClass('active');
-                    $('body').css('background-image', 'url(/gen/bg/bg-' + new_color_scheme + '.svg)');
+                    $('body').css('background-image', `url(/gen/bg/bg-${new_color_scheme}.svg)`);
                     $('body').css('background-color', new_color_scheme[0] === 'l' ? '#f8f8f8' : '#080808');
                     $('.new-messages-indicator').css('background-color', '#' + new_color_scheme.substr(7, 6));
                     $('.new-messages-indicator-mini .fa').css('color', '#' + new_color_scheme.substr(7, 6));

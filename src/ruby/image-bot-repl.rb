@@ -59,7 +59,7 @@ class ImageBotRepl < Sinatra::Base
             unless File.exists?(jpg_path)
                 unless File.exists?(png_path)
                     STDERR.puts "Creating #{png_path}..."
-                    system("rsvg-convert -f png -o #{png_path} #{svg_path}")
+                    system("inkscape --export-filename=#{png_path} #{svg_path}")
                 end
                 STDERR.puts "Creating #{jpg_path}..."
                 system("convert #{png_path} #{jpg_path}")

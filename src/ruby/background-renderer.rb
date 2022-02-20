@@ -200,7 +200,7 @@ class BackgroundRenderer
         else
             if shadow == 1
                 c1 = 'stroke:none;'
-                c2 = "fill:rgba(0,0,0,#{sprintf('%1.3f', (1.0 - fy) * (ld_mode == 'l' ? 0.3 : 0.6))}); filter:url(#blur);"
+                c2 = "fill:#000; fill-opacity:#{sprintf('%1.3f', (1.0 - fy) * (ld_mode == 'l' ? 0.3 : 0.6))}; filter:url(#blur);"
                 classes[c1] ||= i_to_b62(classes.size)
                 classes[c2] ||= i_to_b62(classes.size)
                 lines << "<path d='M #{p0[0].to_i} #{p0[1].to_i} C#{p9[0].to_i} #{p9[1].to_i},#{pa[0].to_i} #{pa[1].to_i}, #{p1[0].to_i} #{p1[1].to_i}, #{pb[0].to_i} #{pb[1].to_i},#{pc[0].to_i} #{pc[1].to_i}, #{p2[0].to_i} #{p2[1].to_i}, #{pd[0].to_i} #{pd[1].to_i},#{pe[0].to_i} #{pe[1].to_i}, #{p0[0].to_i} #{p0[1].to_i} Z' class='c#{classes[c1]} c#{classes[c2]}' />"
@@ -264,7 +264,7 @@ class BackgroundRenderer
                 lines << "<circle cx='#{p0[0].to_i + dx}' cy='#{p0[1].to_i + dy}' r='#{r + dr}' class='c#{classes[c1]} c#{classes[c2]}' />"
             else
                 c1 = 'stroke:none;'
-                c2 = "fill:rgba(0,0,0,#{sprintf('%1.3f', (1.0 - fy) * (ld_mode == 'l' ? 0.3 : 0.6))}); filter:url(#blur);"
+                c2 = "fill:#000; fill-opacity:#{sprintf('%1.3f', (1.0 - fy) * (ld_mode == 'l' ? 0.3 : 0.6))}; filter:url(#blur);"
                 classes[c1] ||= i_to_b62(classes.size)
                 classes[c2] ||= i_to_b62(classes.size)
                 lines << "<circle cx='#{p0[0].to_i + dx}' cy='#{p0[1].to_i + dy}' r='#{r + dr}' class='c#{classes[c1]} c#{classes[c2]}' />"
@@ -328,7 +328,7 @@ class BackgroundRenderer
             passes << 1
             passes.each do |pass|
                 c1 = 'stroke:none;'
-                c2 = pass == 0 ? "fill:rgba(0,0,0,#{sprintf('%1.3f', (1.0 - fy) * (ld_mode == 'l' ? 0.3 : 0.6))}); filter:url(#blur);" : "fill:#{color};"
+                c2 = pass == 0 ? "fill:#000; fill-opacity:#{sprintf('%1.3f', (1.0 - fy) * (ld_mode == 'l' ? 0.3 : 0.6))}; filter:url(#blur);" : "fill:#{color};"
 #                 if pass == 1
 #                     c2 = 'stroke: #000000; fill:none;'
 #                 end
@@ -395,6 +395,7 @@ class BackgroundRenderer
             classes = {}
             lines = []
             bgg = ld_mode == 'l' ? 248 : 8
+            bgc = sprintf('#%02x%02x%02x', bgg, bgg, bgg)
             f.puts "<?xml version='1.0' encoding='UTF-8' standalone='no'?>"
             f.puts "<svg xmlns='http://www.w3.org/2000/svg' width='1920' height='#{height}'>"
             f.puts "<defs>"
@@ -404,16 +405,16 @@ class BackgroundRenderer
             f.puts "<stop stop-color='#{g[2]}' offset='100%'/>"
             f.puts "</linearGradient>"
             f.puts "<linearGradient id='gr2' x1='0' x2='0' y1='0' y2='1'>"
-            f.puts "<stop stop-color='rgba(#{bgg},#{bgg},#{bgg},0.0)' offset='0%'/>"
-            f.puts "<stop stop-color='rgba(#{bgg},#{bgg},#{bgg},1.0)' offset='100%'/>"
+            f.puts "<stop stop-color='#{bgc}' stop-opacity='0' offset='0%'/>"
+            f.puts "<stop stop-color='#{bgc}' stop-opacity='1'  offset='100%'/>"
             f.puts "</linearGradient>"
             f.puts "<linearGradient id='gr3'>"
-            f.puts "<stop stop-color='rgba(255,255,255,0.0)' offset='0%'/>"
-            f.puts "<stop stop-color='rgba(255,255,255,0.15)' offset='100%'/>"
+            f.puts "<stop stop-color='#ffffff' stop-opacity='0' offset='0%'/>"
+            f.puts "<stop stop-color='#ffffff' stop-opacity='0.15' offset='100%'/>"
             f.puts "</linearGradient>"
             f.puts "<linearGradient id='gr4'>"
-            f.puts "<stop stop-color='rgba(0,0,0,0.1)' offset='0%'/>"
-            f.puts "<stop stop-color='rgba(0,0,0,0.0)' offset='100%'/>"
+            f.puts "<stop stop-color='#000000' stop-opacity='0.1' offset='0%'/>"
+            f.puts "<stop stop-color='#000000' stop-opacity='0.0' offset='100%'/>"
             f.puts "</linearGradient>"
             f.puts "</defs>"
             f.puts "<filter id='blur'>"
@@ -570,4 +571,7 @@ if __FILE__ == $0
     (0..9).each do |style|
         renderer.render_bg("/gen/bg/out-#{style}.svg", "l55beedf9b935e5185d#{style}")
     end
+    # (0..9).each do |style|
+    #     system("inkscape --export-filename=/gen/bg/out-#{style}.png /gen/bg/out-#{style}.svg")
+    # end
 end

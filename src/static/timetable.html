@@ -5,8 +5,8 @@
     }
 
     .cem span {
-        /* background-color: rgba(255, 255, 255, 0.2); */
-        background-color: rgba(#{hex_to_rgb(color_palette[:main_text]).map { |x| x.to_s }.join(', ')}, 0.2);
+        background-color: #{color_palette[:is_light] ? 'rgba(255, 255, 255, 0.3)' : 'rgba(255, 255, 255, 0.2)'};
+        /* background-color: rgba(#{hex_to_rgb(color_palette[:main_text]).map { |x| x.to_s }.join(', ')}, 0.2); */
     }
 </style>
 <div class='container-fluid' style='padding-top: 30px;'>

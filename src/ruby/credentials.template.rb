@@ -181,12 +181,6 @@ GROUP_AF_ICONS = {
 }
 GROUP_AF_ICON_KEYS = GROUP_AF_ICONS.keys.sort
 
-COLOR_SCHEME_COLORS = [
-    ['la2c6e80d60aea2c6e8', 'Sky'],
-    ['l307fdc03396cfe0e8d', 'Zoomer'],
-]
-STANDARD_COLOR_SCHEME = 'la2c6e80d60aea2c6e80'
-
 # tablet booking pre and post time, in minutes
 STREAMING_TABLET_BOOKING_TIME_PRE = 5
 STREAMING_TABLET_BOOKING_TIME_POST = 15

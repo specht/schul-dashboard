@@ -44,6 +44,7 @@ DASHBOARD_SERVICE = ENV['DASHBOARD_SERVICE']
 require './background-renderer.rb'
 require './include/admin.rb'
 require './include/color.rb'
+require './include/color-schemes.rb'
 require './include/comment.rb'
 require './include/directory.rb'
 require './include/event.rb'

@@ -382,6 +382,11 @@ class BackgroundRenderer
         g = ['#' + palette[1, 6], '#' + palette[7, 6], '#' + palette[13, 6]]
         g[1] = rgb_to_hex(mix(hex_to_rgb(g[1]), [255, 255, 255], 0.1))
 
+        height = 1600
+        if style == 8
+            height = 2400
+        end
+
         FileUtils.mkpath('/gen/bg')
         STDERR.puts "#{palette} => #{out_path}"
         bg_darken = 0.8
@@ -389,7 +394,7 @@ class BackgroundRenderer
             classes = {}
             lines = []
             f.puts "<?xml version='1.0' encoding='UTF-8' standalone='no'?>"
-            f.puts "<svg xmlns='http://www.w3.org/2000/svg' width='1920' height='1600'>"
+            f.puts "<svg xmlns='http://www.w3.org/2000/svg' width='1920' height='#{height}'>"
             f.puts "<defs>"
             f.puts "<linearGradient id='gr1'>"
             f.puts "<stop stop-color='#{darken(g[0], bg_darken)}' offset='0%'/>"
@@ -399,15 +404,15 @@ class BackgroundRenderer
             f.puts "<linearGradient id='gr2' x1='0' x2='0' y1='0' y2='1'>"
             bgg = ld_mode == 'l' ? 248 : 8
             f.puts "<stop stop-color='rgba(#{bgg},#{bgg},#{bgg},0.0)' offset='0%'/>"
-            f.puts "<stop stop-color='rgba(#{bgg},#{bgg},#{bgg},0.3)' offset='70%'/>"
+            f.puts "<stop stop-color='rgba(#{bgg},#{bgg},#{bgg},0.5)' offset='50%'/>"
             f.puts "<stop stop-color='rgba(#{bgg},#{bgg},#{bgg},1.0)' offset='100%'/>"
             f.puts "</linearGradient>"
             f.puts "</defs>"
             f.puts "<filter id='blur'>"
             f.puts "<feGaussianBlur stdDeviation='5' />"
             f.puts "</filter>"
-            f.puts "<rect x='0' y='0' width='1920' height='1600' fill='url(#gr1)'/>"
-            f.puts "<rect x='0' y='0' width='1920' height='1600' fill='url(#gr2)'/>"
+            f.puts "<rect x='0' y='0' width='1920' height='#{height}' fill='url(#gr1)'/>"
+            f.puts "<rect x='0' y='0' width='1920' height='#{height}' fill='url(#gr2)'/>"
             if style <= 7
                 dx = 115.47
                 dy = 100
@@ -504,9 +509,9 @@ class BackgroundRenderer
                     # lines << "<g style='clip-path: url(#clip#{y - 1});'>" if y > 0
                     # lines << "<circle cx='#{p[0].to_i}' cy='#{p[1].to_i}' r='#{r}px' style='fill: rgba(0,0,0,0.05);'/>"
                     # g2 = g.map { |x| darken(x, 1.0 - y / 51.0)}
-                    draw_circle(f, g, p, p, p, 1, ld_mode, classes, lines, false, r, false, 1300, 500, 300)
+                    draw_circle(f, g, p, p, p, 1, ld_mode, classes, lines, false, r, false, 1800, 1000, 1000)
                 end
-                lines << "<rect x='0' y='800' width='1920' height='800' fill='url(#gr2)'/>"
+                lines << "<rect x='0' y='#{height/2}' width='1920' height='#{height/2}' fill='url(#gr2)'/>"
             end
             f.puts "<style>"
             classes.each_pair do |contents, i|
@@ -539,6 +544,6 @@ if __FILE__ == $0
     STDERR.puts "OY"
     renderer = BackgroundRenderer.new()
     (0..8).each do |style|
-        renderer.render_bg("/gen/bg/out-#{style}.svg", "d6a00009626006a0000#{style}")
+        renderer.render_bg("/gen/bg/out-#{style}.svg", "d55beedf9b935e5185d#{style}")
     end
 end

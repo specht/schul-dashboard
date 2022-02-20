@@ -30,7 +30,7 @@ COLOR_SCHEME_COLORS = [
     ['d119c7503626414a19e', '20.000 Meilen unter dem Meer', 'Astrid'],
     ['d160520069960025061', 'Tiefsee'],
     ['d043402138610043402', 'Polarnacht', 'Astrid'],
-    ['d4aa03f003f2e80bc42', 'Runter vom Rasen'],
+    ['d4aa03f003f2e80bc42', 'Thylakoid'],
     ['l2a9134054a29e7ecef', 'Slytherin'],
     ['ldf01010b6121a9f5bc', 'Watermelon', 'Josefine'],
     ['lf7fe2e088a08fa5882', 'Kaktus', 'Josefine'],

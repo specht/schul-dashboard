@@ -502,6 +502,13 @@ class Main < Sinatra::Base
             hotspot_dates[x['k.klasse']] = x['k.hotspot_end_date']
         end
 
+        is_regular_test_day = false
+        wday = (DateTime.now.wday + 6) % 7
+        pattern = Main.get_regular_testing_days()
+        if pattern[wday] == true
+            is_regular_test_day = true
+        end
+
         doc = Prawn::Document.new(:page_size => 'A4', :page_layout => :portrait, 
                                 :margin => 0) do
             font_families.update("RobotoCondensed" => {
@@ -525,12 +532,15 @@ class Main < Sinatra::Base
                     any_strike = false
                     main.iterate_directory(klasse) do |email, i|
                         status = salzh_status[email]
-                        label_type = Main.get_test_list_label_type(status[:status], status[:testing_required], true)
+                        label_type = Main.get_test_list_label_type(status[:status], status[:testing_required], is_regular_test_day)
                         sus_count += 1
                         if label_type == :strike
                             any_strike = true
                         end
                     end
+
+                    freq = 0.1
+                    amp = 0.mm
 
                     page_count = (sus_count - 1) / max_entries_per_page + 1
 
@@ -625,22 +635,25 @@ class Main < Sinatra::Base
 
                             main.iterate_directory(klasse) do |email, j|
                                 next if j < sus0 || j > sus1
+                                dx = (Math.sin(j * freq) * amp)
                                 i = j - sus0
                                 next if i % 2 == 0
                                 y = 242.mm - 6.7.mm * i
                                 fill_color 'f0f0f0'
                                 fill do
-                                    rectangle [0.mm, y + 4.8.mm], 17.cm, 6.7.mm
+                                    rectangle [0.mm, y + 4.8.mm], 17.cm + dx, 6.7.mm
                                 end
                             end
                             main.iterate_directory(klasse) do |email, j|
                                 next if j < sus0 || j > sus1
+                                dx = (Math.sin(j * freq) * amp)
+                                dx2 = (Math.sin((j + 1) * freq) * amp)
                                 i = j - sus0
                                 status = salzh_status[email]
                                 if status[:status] != :salzh && hotspot_dates[klasse]
                                     status[:status] = :hotspot_klasse
                                 end
-                                label_type = Main.get_test_list_label_type(status[:status], status[:testing_required], true)
+                                label_type = Main.get_test_list_label_type(status[:status], status[:testing_required], is_regular_test_day)
                                 # status is salzh / contact_person / hotspot_klasse
                                 # needs_testing_today: true / false
                                 if label_type == :disabled
@@ -652,7 +665,7 @@ class Main < Sinatra::Base
                                 end
                                 user = @@user_info[email]
                                 y = 242.mm - 6.7.mm * i
-                                draw_text "#{j + 1}.", :at => [0.mm, y]
+                                draw_text "#{j + 1}.", :at => [0.5.mm, y]
                                 draw_text "#{label_type == :disabled ? '(' : ''}#{user[:last_name]}, #{user[:first_name]}#{label_type == :disabled ? ')' : ''}", :at => [7.mm, y]
                                 # draw_text "#{status[:status]} #{status[:status].class} #{status[:testing_required]} #{label_type.to_s}", :at => [7.mm, y]
 
@@ -676,8 +689,12 @@ class Main < Sinatra::Base
                                     stroke { line [0.mm, y + 1.mm], [7.3.cm, y + 1.mm] }
                                 end
 
-                                stroke { line [0.mm, y + 5.2.mm], [17.cm, y + 5.2.mm] } if i == 0
-                                stroke { line [0.mm, y - 2.mm], [17.cm, y - 2.mm] }
+                                stroke { line [0.mm, y + 5.2.mm], [17.cm + dx, y + 5.2.mm] } if i == 0
+                                if j % 2 == 0
+                                    stroke { line [0.mm, y - 2.mm], [17.cm + dx2, y - 2.mm] }
+                                else
+                                    stroke { line [0.mm, y - 2.mm], [17.cm + dx, y - 2.mm] }
+                                end
                             end
                         end
                     end
@@ -885,4 +902,36 @@ class Main < Sinatra::Base
         end
     end
 
+    def self.get_regular_testing_days()
+        pattern = $neo4j.neo4j_query_expect_one(<<~END_OF_QUERY)['pattern']
+            MERGE (n:RegularTestingDays)
+            RETURN COALESCE(n.pattern, 0) AS pattern;
+        END_OF_QUERY
+        return (0..4).map do |i|
+            ((pattern >> i) & 1) == 0
+        end
+    end
+
+    post '/api/get_regular_testing_days' do
+        require_user_who_can_manage_salzh!
+        respond(:pattern => Main.get_regular_testing_days())
+    end
+
+    post '/api/toggle_regular_testing_day' do
+        require_user_who_can_manage_salzh!
+        data = parse_request_data(:required_keys => [:wday], :types => {:wday => Integer})
+        wday = data[:wday]
+        assert(wday >= 0 && wday <= 4)
+        pattern = $neo4j.neo4j_query_expect_one(<<~END_OF_QUERY)['pattern']
+            MERGE (n:RegularTestingDays)
+            RETURN COALESCE(n.pattern, 0) AS pattern;
+        END_OF_QUERY
+        pattern ^= (1 << wday)
+        pattern = $neo4j.neo4j_query(<<~END_OF_QUERY, {:pattern => pattern})
+            MERGE (n:RegularTestingDays)
+            SET n.pattern = $pattern;
+        END_OF_QUERY
+
+        respond(:pattern => Main.get_regular_testing_days())
+    end
 end

@@ -54,20 +54,20 @@
                         <table class='table table-narrow narrow'>
                             <thead>
                                 <tr>
-                                    <th>Montag</th>
-                                    <th>Dienstag</th>
-                                    <th>Mittwoch</th>
-                                    <th>Donnerstag</th>
-                                    <th>Freitag</th>
+                                    <th style='width: 20%;'>Montag</th>
+                                    <th style='width: 20%;'>Dienstag</th>
+                                    <th style='width: 20%;'>Mittwoch</th>
+                                    <th style='width: 20%;'>Donnerstag</th>
+                                    <th style='width: 20%;'>Freitag</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 <tr>
-                                    <td><button style='width: 100%;' data-wday='1' class='bu_switch_regular_testing_day btn btn-success'>regulär</button></td>
-                                    <td><button style='width: 100%;' data-wday='2' class='bu_switch_regular_testing_day btn btn-success'>regulär</button></td>
-                                    <td><button style='width: 100%;' data-wday='3' class='bu_switch_regular_testing_day btn btn-success'>regulär</button></td>
-                                    <td><button style='width: 100%;' data-wday='4' class='bu_switch_regular_testing_day btn btn-success'>regulär</button></td>
-                                    <td><button style='width: 100%;' data-wday='5' class='bu_switch_regular_testing_day btn btn-success'>regulär</button></td>
+                                    <td><button style='width: 100%;' data-wday='0' class='bu_switch_regular_testing_day btn'></button></td>
+                                    <td><button style='width: 100%;' data-wday='1' class='bu_switch_regular_testing_day btn'></button></td>
+                                    <td><button style='width: 100%;' data-wday='2' class='bu_switch_regular_testing_day btn'></button></td>
+                                    <td><button style='width: 100%;' data-wday='3' class='bu_switch_regular_testing_day btn'></button></td>
+                                    <td><button style='width: 100%;' data-wday='4' class='bu_switch_regular_testing_day btn'></button></td>
                                 </tr>
                             </tbody>
                         </table>
@@ -325,6 +325,20 @@
         $('#ti_recipients').val('');
         $('#ti_recipients').focus();
         update_buttons();
+    }
+
+    function update_testing_days_buttons(pattern) {
+        for (let i = 0; i < 5; i++) {
+            let flag = pattern[i];
+            let b = $(`.bu_switch_regular_testing_day[data-wday=${i}]`);
+            if (flag) {
+                b.text('regulär');
+                b.removeClass('btn-outline-secondary').addClass('btn-success');
+            } else {
+                b.text('nicht regulär');
+                b.addClass('btn-outline-secondary').removeClass('btn-success');
+            }
+        }
     }
 
     document.addEventListener('DOMContentLoaded', function () {
@@ -592,11 +606,16 @@
 
         $('.bu_switch_regular_testing_day').click(function(e) {
             let wday = $(e.target).data('wday');
-            api_call('/api/switch_regular_testing_day', {wday: wday}, function(data) {
+            api_call('/api/toggle_regular_testing_day', {wday: wday}, function(data) {
                 if (data.success) {
-                    window.location.reload();
+                    update_testing_days_buttons(data.pattern);
                 }
             });
+        });
+        api_call('/api/get_regular_testing_days', {}, function(data) {
+            if (data.success) {
+                update_testing_days_buttons(data.pattern);
+            }
         });
 
     });

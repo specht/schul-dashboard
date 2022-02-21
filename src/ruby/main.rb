@@ -1252,10 +1252,32 @@ class Main < Sinatra::Base
                 ['#' + s[0][1, 6], '#' + s[0][7, 6], '#' + s[0][13, 6], s[1], s[0][0], s[2]]
             end
             COLOR_SCHEME_COLORS.each do |palette|
-                # @@color_scheme_info[palette.first] = [palette[1], palette[2]]
                 @@renderer.render(palette)
-                # STDERR.puts palette.to_json
             end
+            rows = $neo4j.neo4j_query(<<~END_OF_QUERY).map { |x| x['u.color_scheme'] }
+                MATCH (u:User)
+                WHERE u.color_scheme IS NOT NULL
+                RETURN u.color_scheme;
+            END_OF_QUERY
+            missing_color_schemes = Set.new(rows.map { |x| x[1, 18]} )
+            missing_color_schemes.reject! do |x|
+                File.exists?('/data/gen/bg/l#{x}0.svg')
+            end
+            missing_color_schemes = missing_color_schemes.map do |x|
+                ["##{x[0, 6]}", "##{x[6, 6]}", "##{x[12, 6]}"]
+            end
+            missing_color_schemes = missing_color_schemes.to_a.sort
+            missing_color_schemes.each do |palette|
+                @@renderer.render(palette)
+            end
+
+            begin
+                http = Net::HTTP.new('image_bot', 8080)
+                response = http.request(Net::HTTP::Get.new("/api/update_all"))
+            rescue StandardError => e
+                STDERR.puts e
+            end
+    
             self.compile_js()
             self.compile_css()
             # STDERR.puts @@color_scheme_info.to_yaml

@@ -571,7 +571,4 @@ if __FILE__ == $0
     (0..9).each do |style|
         renderer.render_bg("/gen/bg/out-#{style}.svg", "l55beedf9b935e5185d#{style}")
     end
-    # (0..9).each do |style|
-    #     system("inkscape --export-filename=/gen/bg/out-#{style}.png /gen/bg/out-#{style}.svg")
-    # end
 end

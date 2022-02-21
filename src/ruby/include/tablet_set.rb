@@ -238,19 +238,23 @@ class Main < Sinatra::Base
             # end
 
             # also consider room
-            timetable_date = @@lessons[:start_date_for_date][datum]
-            wday = (Date.parse(datum).wday + 6) % 7
-            raum = @@lessons[:timetables][timetable_date][lesson_key][:stunden][wday].values.first[:raum]
-            available_tablet_sets.select! do |x|
-                if @@tablet_sets[x][:only_these_rooms_strict]
-                    if @@tablet_sets[x][:only_these_rooms]
-                        @@tablet_sets[x][:only_these_rooms].include?(raum)
+            begin
+                timetable_date = @@lessons[:start_date_for_date][datum]
+                wday = (Date.parse(datum).wday + 6) % 7
+                raum = @@lessons[:timetables][timetable_date][lesson_key][:stunden][wday].values.first[:raum]
+                available_tablet_sets.select! do |x|
+                    if @@tablet_sets[x][:only_these_rooms_strict]
+                        if @@tablet_sets[x][:only_these_rooms]
+                            @@tablet_sets[x][:only_these_rooms].include?(raum)
+                        else
+                            true
+                        end
                     else
                         true
                     end
-                else
-                    true
                 end
+            rescue StandardError => e
+                debug("An error occured while trying to determine the room for a lesson: #{e}, ignoring the room now...")
             end
         end
 

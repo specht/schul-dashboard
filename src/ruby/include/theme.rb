@@ -33,8 +33,9 @@ class Main < Sinatra::Base
             MATCH (u:User {email: {email}})
             SET u.color_scheme = {scheme};
         END_OF_QUERY
-        @@renderer.render(["##{data[:scheme][1, 6]}", "##{data[:scheme][7, 6]}", "##{data[:scheme][13, 6]}", '(no title)'], @session_user[:email])
-        trigger_update_images()
+        if @@renderer.render(["##{data[:scheme][1, 6]}", "##{data[:scheme][7, 6]}", "##{data[:scheme][13, 6]}", '(no title)'], @session_user[:email])
+            trigger_update_images()
+        end
         respond(:ok => true, :primary_color_darker => darken("##{data[:scheme][7, 6]}", 0.8), :darker => rgb_to_hex(mix(hex_to_rgb(primary_color), [0, 0, 0], 0.6)))
     end
     

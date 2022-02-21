@@ -1260,9 +1260,6 @@ class Main < Sinatra::Base
                 RETURN u.color_scheme;
             END_OF_QUERY
             missing_color_schemes = Set.new(rows.map { |x| x[1, 18]} )
-            missing_color_schemes.reject! do |x|
-                File.exists?('/data/gen/bg/l#{x}0.svg')
-            end
             missing_color_schemes = missing_color_schemes.map do |x|
                 ["##{x[0, 6]}", "##{x[6, 6]}", "##{x[12, 6]}"]
             end

@@ -56,14 +56,13 @@ class ImageBotRepl < Sinatra::Base
             tag = File.basename(svg_path).split('.').first
             png_path = "/gen/bg/#{tag}.png"
             jpg_path = "/gen/bg/#{tag}.jpg"
+            unless File.exists?(png_path)
+                STDERR.puts "Creating #{png_path}..."
+                system("inkscape --export-filename=#{png_path} #{svg_path}")
+            end
             unless File.exists?(jpg_path)
-                unless File.exists?(png_path)
-                    STDERR.puts "Creating #{png_path}..."
-                    system("inkscape --export-filename=#{png_path} #{svg_path}")
-                end
                 STDERR.puts "Creating #{jpg_path}..."
                 system("convert #{png_path} #{jpg_path}")
-                FileUtils::rm(png_path)
             end
         end
         end_time = Time.now

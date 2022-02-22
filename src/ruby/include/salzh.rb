@@ -711,6 +711,9 @@ class Main < Sinatra::Base
         if status == :hotspot_klasse
             return :enabled
         end
+        if status == :contact_person
+            return :enabled
+        end
         if regular_test_required == false
             return :disabled
         end

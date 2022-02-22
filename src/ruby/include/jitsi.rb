@@ -84,6 +84,9 @@ class Main < Sinatra::Base
     end
     
     def self.stream_allowed_for_date_lesson_key_and_email(datum, lesson_key, email, restrictions = nil, is_homeschooling_user = nil, group2_for_email = nil)
+        # temporarily disable all stream restrictions
+        return true
+        
         restrictions ||= Main.get_stream_restriction_for_lesson_key(lesson_key)
         weekday = (Date.parse(datum).wday + 6) % 7
         return true if restrictions[weekday] == 0

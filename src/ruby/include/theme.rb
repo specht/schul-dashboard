@@ -27,13 +27,16 @@ class Main < Sinatra::Base
         data = parse_request_data(:required_keys => [:scheme])
         data[:scheme].downcase!
         assert('ld'.include?(data[:scheme][0]))
-        assert(data[:scheme][1, 18] =~ /^[0-9a-f]{18}[0-6]?$/)
+        assert(data[:scheme][1, 18] =~ /^[0-9a-f]{18}[0-9]?$/)
+        primary_color = '#' + data[:scheme][7, 6]
         results = neo4j_query(<<~END_OF_QUERY, :email => @session_user[:email], :scheme => data[:scheme])
             MATCH (u:User {email: {email}})
             SET u.color_scheme = {scheme};
         END_OF_QUERY
-        @@renderer.render(["##{data[:scheme][1, 6]}", "##{data[:scheme][7, 6]}", "##{data[:scheme][13, 6]}", '(no title)'], @session_user[:email])
-        respond(:ok => true, :primary_color_darker => darken("##{data[:scheme][7, 6]}", 0.8))
+        if @@renderer.render(["##{data[:scheme][1, 6]}", "##{data[:scheme][7, 6]}", "##{data[:scheme][13, 6]}", '(no title)'], @session_user[:email])
+            trigger_update_images()
+        end
+        respond(:ok => true, :primary_color_darker => darken("##{data[:scheme][7, 6]}", 0.8), :darker => rgb_to_hex(mix(hex_to_rgb(primary_color), [0, 0, 0], 0.6)))
     end
     
     def get_gradients()

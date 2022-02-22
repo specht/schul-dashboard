@@ -1,5 +1,6 @@
 #{this_is_a_page_for_logged_in_users}
-<div class='container' style='padding-top: 30px;'>
+<div id='backdrop'></div>
+<div class='container' style='padding-top: 30px; z-index: 1; position: relative;'>
     <div class='row'>
         <div class='col-md-8 offset-md-2'>
             <h2 style='margin-bottom: 30px;'>Profil</h2>
@@ -166,7 +167,23 @@
 
 <style>
 body {
-    background-attachment: fixed;
+    background: none!important;
+}
+#backdrop {
+    content: '';
+    position: fixed;
+    width: 100vw;
+    height: 100vh;
+    top: 0;
+    left: 0;
+    will-change: transform;
+    background-image: url(/gen/bg/bg-#{color_scheme}.jpg);
+    background-color: #{color_scheme[0] == 'l' ? '#f8f8f8' : '#080808'};
+    background-repeat: no-repeat;
+    background-size: max(100vw, 1920px);
+    background-position: 50% 0%;
+    z-index: 0;
+    transition: background-image 0.3s ease, background-color 0.3s ease;
 }
 </style>
 <script type='text/javascript'>
@@ -214,10 +231,10 @@ function update_save_button()
 }
 
 function changeThemeColor(color) {
-//     let x = document.querySelector('meta[name=theme-color]');
-//     x.setAttribute('content', color);
-//     x = document.querySelector('meta[name=msapplication-TileColor]');
-//     x.setAttribute('content', color);
+    let x = document.querySelector('meta[name=theme-color]');
+    x.setAttribute('content', color);
+    x = document.querySelector('meta[name=msapplication-TileColor]');
+    x.setAttribute('content', color);
 }
 
 window.addEventListener('load', function () {
@@ -242,12 +259,14 @@ window.addEventListener('load', function () {
             if (data.success)
             {
                 color_scheme = new_color_scheme;
-                $('body').css('background-image', 'url(/gen/bg/bg-' + new_color_scheme + '.svg)');
-                $('body').css('background-color', new_color_scheme[0] == 'l' ? '#f8f8f8' : '#080808');
+                /* $('body').css('background-image', 'url(/gen/bg/bg-' + new_color_scheme + '.svg)'); */
+                $('#backdrop').css('background-image', 'url(/gen/bg/bg-' + new_color_scheme + '.jpg)');
+                /* $('body').css('background-color', new_color_scheme[0] == 'l' ? '#f8f8f8' : '#080808'); */
+                $('#backdrop').css('background-color', new_color_scheme[0] == 'l' ? '#f8f8f8' : '#080808');
                 color_scheme = new_color_scheme;
-                changeThemeColor(data.primary_color_darker);
-                for (let style of [0, 1, 2, 3, 4, 5, 6])
-                    style_swatches[style].css('background-image', 'url(/gen/bg/bg-' + color_scheme.substr(0, 19) + style + '.svg)');
+                changeThemeColor(data.darker);
+                for (let style of [0, 1, 2, 3, 4, 5, 6, 7, 8, 9])
+                    style_swatches[style].css('background-image', 'url(/gen/bg/bg-' + color_scheme.substr(0, 19) + style + '.jpg)');
             }
         });
     });
@@ -261,7 +280,7 @@ window.addEventListener('load', function () {
         let l_mode = x[4];
         let col = $('<div>').addClass('col-md-12');
         let swatch = $('<div>');
-        swatch.css('background-image', 'url(/gen/bg/bg-' + l_mode + gradient.join('').replace(/#/g, '') + '0.svg)');
+        swatch.css('background-image', 'url(/gen/bg/bg-' + l_mode + gradient.join('').replace(/#/g, '') + '0.jpg)');
         swatch.html('&nbsp;');
         swatch.addClass('btn');
         swatch.addClass('swatch');
@@ -332,27 +351,29 @@ window.addEventListener('load', function () {
                     color_scheme = new_color_scheme;
                     $('.swatch').removeClass('active');
                     $(e.target.closest('.btn')).addClass('active');
-                    $('body').css('background-image', 'url(/gen/bg/bg-' + new_color_scheme + '.svg)');
-                    $('body').css('background-color', new_color_scheme[0] === 'l' ? '#f8f8f8' : '#080808');
+                    /* $('body').css('background-image', 'url(/gen/bg/bg-' + new_color_scheme + '.svg)'); */
+                    $('#backdrop').css('background-image', `url(/gen/bg/bg-${new_color_scheme}.jpg)`);
+                    /* $('body').css('background-color', new_color_scheme[0] === 'l' ? '#f8f8f8' : '#080808'); */
+                    $('#backdrop').css('background-color', new_color_scheme[0] === 'l' ? '#f8f8f8' : '#080808');
                     $('.new-messages-indicator').css('background-color', '#' + new_color_scheme.substr(7, 6));
                     $('.new-messages-indicator-mini .fa').css('color', '#' + new_color_scheme.substr(7, 6));
                     color_scheme = new_color_scheme; 
                     changeThemeColor(data.primary_color_darker);
                     $('#dark_switch').bootstrapToggle(new_color_scheme[0] === 'l' ? 'off' : 'on');
-                    for (let style of [0, 1, 2, 3, 4, 5, 6])
-                        style_swatches[style].css('background-image', 'url(/gen/bg/bg-' + color_scheme.substr(0, 19) + style + '.svg)');
+                    for (let style of [0, 1, 2, 3, 4, 5, 6, 7, 8, 9])
+                        style_swatches[style].css('background-image', `url(/gen/bg/bg-${color_scheme.substr(0, 19)}${style}.jpg)`);
                 }
             });
         });
     }
-    for (let style of [0, 1, 2, 3, 4, 5, 6])
+    for (let style of [0, 1, 2, 3, 4, 5, 6, 7, 8, 9])
     {
         let gradient = '#{color_scheme[1, 18]}';
         let l_mode = '#{color_scheme[0]}';
         let col = $('<div>').addClass('col-md-12');
         let swatch = $('<div>');
         style_swatches.push(swatch);
-        swatch.css('background-image', 'url(/gen/bg/bg-' + l_mode + gradient + style + '.svg)');
+        swatch.css('background-image', `url(/gen/bg/bg-${l_mode}${gradient}${style}.jpg)`);
         swatch.html('&nbsp;');
         swatch.addClass('btn');
         swatch.addClass('swatch');
@@ -374,12 +395,12 @@ window.addEventListener('load', function () {
                     color_scheme = new_color_scheme;
                     $('.swatch').removeClass('active');
                     $(e.target.closest('.btn')).addClass('active');
-                    $('body').css('background-image', 'url(/gen/bg/bg-' + new_color_scheme + '.svg)');
+                    $('body').css('background-image', `url(/gen/bg/bg-${new_color_scheme}.jpg)`);
                     $('body').css('background-color', new_color_scheme[0] === 'l' ? '#f8f8f8' : '#080808');
                     $('.new-messages-indicator').css('background-color', '#' + new_color_scheme.substr(7, 6));
                     $('.new-messages-indicator-mini .fa').css('color', '#' + new_color_scheme.substr(7, 6));
                     color_scheme = new_color_scheme; 
-                    changeThemeColor(data.primary_color_darker);
+                    changeThemeColor(data.darker);
                     $('#dark_switch').bootstrapToggle(new_color_scheme[0] === 'l' ? 'off' : 'on');
                 }
             });

@@ -423,27 +423,33 @@ class Main < Sinatra::Base
                 io.puts "<p>"
                 io.puts "Sie haben momentan #{spans.map { |x| '<strong>' + x + '</strong>'}.join(' und ')}."
                 io.puts "</p>"
-                io.puts "<div style='margin: 0 -10px 0 -10px;'><table class='table table-narrow narrow'>"
+                io.puts "<div style='margin: 0 -10px 0 -10px; overflow-x: clip;'><table class='table table-sm narrow' style='width: 100%;'>"
                 io.puts "<tr><th>Klasse</th><th>Status</th></tr>"
                 KLASSEN_ORDER.each do |klasse|
                     next unless all_klassen.include?(klasse)
-                    io.puts "<tbody>"
-                    io.puts "<tr class='klasse-click-row' data-klasse='#{klasse}'><td>Klasse #{tr_klasse(klasse)}</td>"
-                    io.puts "<td>"
-                    [:contact_person, :salzh].each do |status|
-                        if (email_for_klasse_and_status[klasse][status] || []).size > 0
-                            io.puts "<span class='salzh-badge salzh-badge-big bg-#{status == :contact_person ? 'warning': 'danger'}'><span>#{(email_for_klasse_and_status[klasse][status] || []).size}</span></span>"
-                        end
-                    end
-                    io.puts "</td></tr>"
-                    io.puts "</tbody>"
-                    io.puts "<tbody style='display: none;'>"
+                    first_row = true
                     all_klassen[klasse].each do |email|
                         next unless [:salzh, :contact_person].include?(entry_for_email[email][:status])
+                        if first_row
+                            io.puts "<tbody>"
+                            io.puts "<tr class='klasse-click-row' data-klasse='#{klasse}'><td>Klasse #{tr_klasse(klasse)}</td>"
+                            io.puts "<td>"
+                            [:contact_person, :salzh].each do |status|
+                                if (email_for_klasse_and_status[klasse][status] || []).size > 0
+                                    io.puts "<span class='salzh-badge salzh-badge-big bg-#{status == :contact_person ? 'warning': 'danger'}'><span>#{(email_for_klasse_and_status[klasse][status] || []).size}</span></span>"
+                                end
+                            end
+                            io.puts "</td></tr>"
+                            io.puts "</tbody>"
+                            io.puts "<tbody style='display: none;'>"
+                        end
+                        first_row = false
                         badge = "<span style='position: relative; top: -1px;' class='salzh-badge salzh-badge-big bg-#{SALZH_MODE_COLORS[entry_for_email[email][:status]]}'><i class='fa #{SALZH_MODE_ICONS[entry_for_email[email][:status]]}'></i></span>"
                         io.puts "<tr><td colspan='2'>#{badge}#{@@user_info[email][:display_name]}</td></tr>"
                     end
-                    io.puts "</tbody>"
+                    unless first_row
+                        io.puts "</tbody>"
+                    end
                 end
                 io.puts "</table></div>"
                 io.puts "<hr />"
@@ -480,11 +486,29 @@ class Main < Sinatra::Base
 
     get '/api/test_list' do
         require_user_who_can_manage_salzh!
+        Main.purge_stale_salzh_entries(true)
         klassenleiter = Main.class_variable_get(:@@klassenleiter)
         shorthands = Main.class_variable_get(:@@shorthands)
         user_info = Main.class_variable_get(:@@user_info)
         main = self
         salzh_status = Main.get_salzh_status_for_emails()
+
+        hotspot_dates = {}
+        rows = $neo4j.neo4j_query(<<~END_OF_QUERY)
+            MATCH (k:Klasse)
+            RETURN k.klasse, k.hotspot_end_date;
+        END_OF_QUERY
+        rows.each do |x|
+            hotspot_dates[x['k.klasse']] = x['k.hotspot_end_date']
+        end
+
+        is_regular_test_day = false
+        wday = (DateTime.now.wday + 6) % 7
+        pattern = Main.get_regular_testing_days()
+        if pattern[wday] == true
+            is_regular_test_day = true
+        end
+
         doc = Prawn::Document.new(:page_size => 'A4', :page_layout => :portrait, 
                                 :margin => 0) do
             font_families.update("RobotoCondensed" => {
@@ -508,12 +532,15 @@ class Main < Sinatra::Base
                     any_strike = false
                     main.iterate_directory(klasse) do |email, i|
                         status = salzh_status[email]
-                        label_type = Main.get_test_list_label_type(status[:status], status[:testing_required], true)
+                        label_type = Main.get_test_list_label_type(status[:status], status[:testing_required], is_regular_test_day)
                         sus_count += 1
                         if label_type == :strike
                             any_strike = true
                         end
                     end
+
+                    freq = 0.1
+                    amp = 0.mm
 
                     page_count = (sus_count - 1) / max_entries_per_page + 1
 
@@ -606,25 +633,41 @@ class Main < Sinatra::Base
                                 font_size 11
                             end
 
-                            entry_on_page = 0
                             main.iterate_directory(klasse) do |email, j|
                                 next if j < sus0 || j > sus1
+                                dx = (Math.sin(j * freq) * amp)
+                                i = j - sus0
+                                next if i % 2 == 0
+                                y = 242.mm - 6.7.mm * i
+                                fill_color 'f0f0f0'
+                                fill do
+                                    rectangle [0.mm, y + 4.8.mm], 17.cm + dx, 6.7.mm
+                                end
+                            end
+                            main.iterate_directory(klasse) do |email, j|
+                                next if j < sus0 || j > sus1
+                                dx = (Math.sin(j * freq) * amp)
+                                dx2 = (Math.sin((j + 1) * freq) * amp)
                                 i = j - sus0
                                 status = salzh_status[email]
-                                label_type = Main.get_test_list_label_type(status[:status], status[:testing_required], true)
+                                if status[:status] != :salzh && hotspot_dates[klasse]
+                                    status[:status] = :hotspot_klasse
+                                end
+                                label_type = Main.get_test_list_label_type(status[:status], status[:testing_required], is_regular_test_day)
                                 # status is salzh / contact_person / hotspot_klasse
                                 # needs_testing_today: true / false
-                                if label_type == :enabled
-                                    fill_color '000000'
-                                    stroke_color '000000'
-                                elsif label_type == :disabled
+                                if label_type == :disabled
                                     fill_color 'a0a0a0'
                                     stroke_color 'a0a0a0'
+                                else
+                                    fill_color '000000'
+                                    stroke_color '000000'
                                 end
                                 user = @@user_info[email]
                                 y = 242.mm - 6.7.mm * i
-                                draw_text "#{j + 1}.", :at => [0.mm, y]
+                                draw_text "#{j + 1}.", :at => [0.5.mm, y]
                                 draw_text "#{label_type == :disabled ? '(' : ''}#{user[:last_name]}, #{user[:first_name]}#{label_type == :disabled ? ')' : ''}", :at => [7.mm, y]
+                                # draw_text "#{status[:status]} #{status[:status].class} #{status[:testing_required]} #{label_type.to_s}", :at => [7.mm, y]
 
                                 # TK pos neg TZ Verspätung
 
@@ -646,8 +689,12 @@ class Main < Sinatra::Base
                                     stroke { line [0.mm, y + 1.mm], [7.3.cm, y + 1.mm] }
                                 end
 
-                                stroke { line [0.mm, y + 5.2.mm], [17.cm, y + 5.2.mm] } if i == 0
-                                stroke { line [0.mm, y - 2.mm], [17.cm, y - 2.mm] }
+                                stroke { line [0.mm, y + 5.2.mm], [17.cm + dx, y + 5.2.mm] } if i == 0
+                                if j % 2 == 0
+                                    stroke { line [0.mm, y - 2.mm], [17.cm + dx2, y - 2.mm] }
+                                else
+                                    stroke { line [0.mm, y - 2.mm], [17.cm + dx, y - 2.mm] }
+                                end
                             end
                         end
                     end
@@ -660,6 +707,9 @@ class Main < Sinatra::Base
     def self.get_test_list_label_type(status, regular_test_required, regular_test_day)
         if status == :salzh
             return :strike
+        end
+        if status == :hotspot_klasse
+            return :enabled
         end
         if regular_test_required == false
             return :disabled
@@ -697,4 +747,191 @@ class Main < Sinatra::Base
         end
     end
 
+    def print_salzh_protocol_table_overview()
+        holiday_dates = Set.new()
+        @@ferien_feiertage.each do |entry|
+            temp0 = Date.parse(entry[:from])
+            temp1 = Date.parse(entry[:to])
+            while temp0 <= temp1
+                holiday_dates << temp0.strftime('%Y-%m-%d')
+                temp0 += 1
+            end
+        end
+        StringIO.open do |io|
+            data = {}
+            week = Set.new()
+            cw = DateTime.now.strftime('%-V').to_i
+            d0 = DateTime.now
+            while d0.wday != 1
+                d0 -= 1
+            end
+            d1 = d0 + 4
+            Dir['/internal/salzh_protocol/*.txt'].sort.each do |path|
+                datum = File.basename(path).sub('.txt', '')
+                d = DateTime.parse(datum)
+
+                # skip weekends
+                next if [0, 6].include?(d.wday)
+
+                # skip holidays
+                next if holiday_dates.include?(datum)
+
+                # skip if not current week
+                next if datum < d0.strftime('%Y-%m-%d') || datum > d1.strftime('%Y-%m-%d')
+
+                emails = File.read(path).split("\n").map { |x| x.strip }.reject { |x| x.empty? || x[0] == '#' }
+                emails.each do |email|
+                    data[datum] ||= Set.new()
+                    data[datum] << email
+                    week << email
+                end
+            end
+            io.puts "<table class='table table-striped table-sm narrow'>"
+            io.puts "<tbody>"
+            io.puts "<tr>"
+            io.puts "<th>KW #{cw}</th><th>#{d0.strftime('%d.%m.')} &ndash; #{d1.strftime('%d.%m.')}</th><td>#{week.size} SuS</td>"
+            io.puts "</tr>"
+            (0...5).each do |i|
+                io.puts "<tr>"
+                io.puts "<th>#{%w(Mo Di Mi Do Fr)[i]}</th><th>#{(d0 + i).strftime('%d.%m.')}</th><td>#{(data[(d0 + i).strftime('%Y-%m-%d')] || Set.new()).size} SuS</td>"
+                io.puts "</tr>"
+            end
+            io.puts "</tbody>"
+            io.puts "</table>"
+            io.string
+        end
+    end
+
+    def print_salzh_protocol_table()
+        holiday_dates = Set.new()
+        @@ferien_feiertage.each do |entry|
+            temp0 = Date.parse(entry[:from])
+            temp1 = Date.parse(entry[:to])
+            while temp0 <= temp1
+                holiday_dates << temp0.strftime('%Y-%m-%d')
+                temp0 += 1
+            end
+        end
+        StringIO.open do |io|
+            data = {}
+            Dir['/internal/salzh_protocol/*.txt'].sort.each do |path|
+                datum = File.basename(path).sub('.txt', '')
+                d = DateTime.parse(datum)
+
+                # skip weekends
+                next if [0, 6].include?(d.wday)
+
+                # skip holidays
+                next if holiday_dates.include?(datum)
+
+                emails = File.read(path).split("\n").map { |x| x.strip }.reject { |x| x.empty? || x[0] == '#' }
+                emails.each do |email|
+                    data[email] ||= {}
+                    data[email][datum] = true
+                end
+            end
+            cw = DateTime.now.strftime('%-V').to_i
+            d0 = DateTime.now
+            while d0.wday != 1
+                d0 -= 1
+            end
+            d1 = d0 + 4
+            io.puts "<table class='table table-striped table-sm narrow'>"
+            io.puts "<thead>"
+            io.puts "<tr>"
+            io.puts "<th rowspan='2'>Klasse</th>"
+            io.puts "<th rowspan='2'>Name</th>"
+            io.puts "<th colspan='5'>KW #{cw} (#{d0.strftime('%d.%m.')} &ndash; #{d1.strftime('%d.%m.')})</th>"
+            io.puts "<th rowspan='2'>Gesamt</th>"
+            io.puts "</tr>"
+            io.puts "<tr>"
+            io.puts "<th>Mo</th>"
+            io.puts "<th>Di</th>"
+            io.puts "<th>Mi</th>"
+            io.puts "<th>Do</th>"
+            io.puts "<th>Fr</th>"
+            io.puts "</tr>"
+            io.puts "</thead>"
+            io.puts "<tbody>"
+            KLASSEN_ORDER.each.with_index do |klasse, index|
+                iterate_directory(klasse) do |email, i|
+                    next unless data[email]
+                    io.puts "<tr>"
+                    io.puts "<td>#{klasse}</td>"
+                    io.puts "<td>#{@@user_info[email][:display_name]}</td>"
+                    (0...5).each do |i|
+                        flag = data[email][(d0 + i).strftime('%Y-%m-%d')]
+                        io.print "<td>"
+                        if flag 
+                            io.puts "<i class='fa fa-home'></i>"
+                        else
+                            io.puts "&ndash;"
+                        end
+                        io.puts "</td>"
+                    end
+                    io.puts "<td>#{data[email].size}</td>"
+                    io.puts "</tr>"
+                end
+            end
+            io.puts "</tbody>"
+            io.puts "</table>"
+            io.string
+        end
+    end
+
+    def self.log_freiwillig_salzh_sus_for_today()
+        wall_time = Time.now.strftime('%H:%M')
+        return if wall_time < '12:00'
+        today = Date.today.strftime('%Y-%m-%d')
+        path = "/internal/salzh_protocol/#{today}.txt"
+        return if File.exists?(path)
+
+        unless File.exists?(File.dirname(path))
+            FileUtils.mkpath(File.dirname(path))
+        end
+
+        Main.purge_stale_salzh_entries(true)
+        rows = $neo4j.neo4j_query(<<~END_OF_QUERY).map { |x| x['u.email'] }
+            MATCH (u:User)
+            WHERE EXISTS(u.freiwillig_salzh)
+            RETURN u.email;
+        END_OF_QUERY
+        File.open(path, 'w') do |f|
+            f.puts "# watch out, only count days which were actual school days! we need to filter this..."
+            f.puts rows.join("\n")
+        end
+    end
+
+    def self.get_regular_testing_days()
+        pattern = $neo4j.neo4j_query_expect_one(<<~END_OF_QUERY)['pattern']
+            MERGE (n:RegularTestingDays)
+            RETURN COALESCE(n.pattern, 0) AS pattern;
+        END_OF_QUERY
+        return (0..4).map do |i|
+            ((pattern >> i) & 1) == 0
+        end
+    end
+
+    post '/api/get_regular_testing_days' do
+        require_user_who_can_manage_salzh!
+        respond(:pattern => Main.get_regular_testing_days())
+    end
+
+    post '/api/toggle_regular_testing_day' do
+        require_user_who_can_manage_salzh!
+        data = parse_request_data(:required_keys => [:wday], :types => {:wday => Integer})
+        wday = data[:wday]
+        assert(wday >= 0 && wday <= 4)
+        pattern = $neo4j.neo4j_query_expect_one(<<~END_OF_QUERY)['pattern']
+            MERGE (n:RegularTestingDays)
+            RETURN COALESCE(n.pattern, 0) AS pattern;
+        END_OF_QUERY
+        pattern ^= (1 << wday)
+        pattern = $neo4j.neo4j_query(<<~END_OF_QUERY, {:pattern => pattern})
+            MERGE (n:RegularTestingDays)
+            SET n.pattern = $pattern;
+        END_OF_QUERY
+
+        respond(:pattern => Main.get_regular_testing_days())
+    end
 end

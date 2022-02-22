@@ -195,33 +195,61 @@ class Main < Sinatra::Base
         event = temp['e'].props
         session_user = @@user_info[temp['u.email']][:display_last_name]
         code = Digest::SHA2.hexdigest(EXTERNAL_USER_EVENT_SCRAMBLER + data[:eid] + data[:email]).to_i(16).to_s(36)[0, 8]
-        deliver_mail do
-            to data[:email]
-            bcc SMTP_FROM
-            from SMTP_FROM
-            reply_to "#{@@user_info[session_user_email][:display_name]} <#{session_user_email}>"
-            
-            subject "Einladung: #{event[:title]}"
-
-            StringIO.open do |io|
-                io.puts "<p>Sie haben eine Einladung zu einem Termin via Jitsi Meet erhalten.</p>"
-                io.puts "<p>"
-                io.puts "Eingeladen von: #{session_user}<br />"
-                io.puts "Titel: #{event[:title]}<br />"
-                io.puts "Datum und Uhrzeit: #{Time.parse(event[:date]).strftime('%d.%m.%Y')}, #{event[:start_time]} &ndash; #{event[:end_time]}<br />"
-                link = WEB_ROOT + "/e/#{data[:eid]}/#{code}"
-                io.puts "</p>"
-                io.puts "<p>Link zum Termin:<br /><a href='#{link}'>#{link}</a></p>"
-                io.puts "<p>Bitte geben Sie den Link nicht weiter. Er ist personalisiert und enthält Ihren Namen, den Raumnamen und ist nur am Tag des Termins gültig.</p>"
-                io.puts event[:description]
-                io.string
-            end
-        end
+        # remove invitation request / if something goes wrong, we won't keep sending out invites blocking the queue
         rows = $neo4j.neo4j_query(<<~END_OF_QUERY, data)
             MATCH (e:Event {id: {eid}})<-[rt:IS_PARTICIPANT]-(r)
             WHERE (r:ExternalUser OR r:PredefinedExternalUser) AND (r.email = {email}) AND COALESCE(rt.deleted, false) = false AND COALESCE(e.deleted, false) = false
-            SET rt.invitations = COALESCE(rt.invitations, []) + [{timestamp}]
-            REMOVE rt.invitation_requested
+            REMOVE rt.invitation_requested;
+        END_OF_QUERY
+        begin
+            deliver_mail do
+                to data[:email]
+                bcc SMTP_FROM
+                from SMTP_FROM
+                reply_to "#{@@user_info[session_user_email][:display_name]} <#{session_user_email}>"
+                
+                subject "Einladung: #{event[:title]}"
+
+                StringIO.open do |io|
+                    io.puts "<p>Sie haben eine Einladung zu einem Termin via Jitsi Meet erhalten.</p>"
+                    io.puts "<p>"
+                    io.puts "Eingeladen von: #{session_user}<br />"
+                    io.puts "Titel: #{event[:title]}<br />"
+                    io.puts "Datum und Uhrzeit: #{Time.parse(event[:date]).strftime('%d.%m.%Y')}, #{event[:start_time]} &ndash; #{event[:end_time]}<br />"
+                    link = WEB_ROOT + "/e/#{data[:eid]}/#{code}"
+                    io.puts "</p>"
+                    io.puts "<p>Link zum Termin:<br /><a href='#{link}'>#{link}</a></p>"
+                    io.puts "<p>Bitte geben Sie den Link nicht weiter. Er ist personalisiert und enthält Ihren Namen, den Raumnamen und ist nur am Tag des Termins gültig.</p>"
+                    io.puts event[:description]
+                    io.string
+                end
+            end
+        rescue
+            deliver_mail do
+                to session_user_email
+                bcc SMTP_FROM
+                from SMTP_FROM
+                
+                subject "Einladung konnte nicht versendet werden: #{event[:title]}"
+
+                StringIO.open do |io|
+                    io.puts "<p>Die Einladung für den folgenden Termin konnte nicht versendet werden:</p>"
+                    io.puts "<p>"
+                    io.puts "E-Mail: #{data[:email]}<br />"
+                    io.puts "Titel: #{event[:title]}<br />"
+                    io.puts "Datum und Uhrzeit: #{Time.parse(event[:date]).strftime('%d.%m.%Y')}, #{event[:start_time]} &ndash; #{event[:end_time]}<br />"
+                    link = WEB_ROOT + "/e/#{data[:eid]}/#{code}"
+                    io.puts "</p>"
+                    io.puts "<p>Bitte überprüfen Sie die E-Mail-Adresse, sie ist vermutlich falsch.</p>"
+                    io.string
+                end
+            end
+        end
+        # add timestamp to list of successfully sent invitations
+        rows = $neo4j.neo4j_query(<<~END_OF_QUERY, data)
+            MATCH (e:Event {id: {eid}})<-[rt:IS_PARTICIPANT]-(r)
+            WHERE (r:ExternalUser OR r:PredefinedExternalUser) AND (r.email = {email}) AND COALESCE(rt.deleted, false) = false AND COALESCE(e.deleted, false) = false
+            SET rt.invitations = COALESCE(rt.invitations, []) + [{timestamp}];
         END_OF_QUERY
     end
     

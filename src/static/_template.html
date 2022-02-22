@@ -43,6 +43,11 @@
     bleibt das Farbschema so lange aktiv, bis du es wieder veränderst 
     oder zurücksetzt.
 
+    Achtung, es kann eine Weile dauern, bis dein neues Farbschema sichtbar
+    ist (ca. eine Minute). Bis dahin ist dein Hintergrund einfach schwarz
+    oder weiß. Drücke einfach ab und zu F5, bis dein neuer Hintergrund
+    zu sehen ist.
+
     -------------------------------------------------------------------
     +++ NEU +++ NEU +++ NEU +++ NEU +++ NEU +++ NEU +++ NEU +++ NEU +++
     -------------------------------------------------------------------
@@ -56,8 +61,8 @@
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="msapplication-TileColor" content="#{color_palette[:primary_color_darker]}">
-    <meta name="theme-color" content="#{color_palette[:primary_color_darker]}">
+    <meta name="msapplication-TileColor" content="#{color_palette[:darker]}">
+    <meta name="theme-color" content="#{color_palette[:darker]}">
     
     <title>Dashboard #{SCHUL_NAME}</title>
     #{meta_tags || ''}
@@ -66,7 +71,7 @@
     <style>
     body {
         #{ path == '/static/h4ck.html' ? '/*' : ''} 
-        background-image: url(/gen/bg/bg-#{color_scheme}.svg);
+        background-image: url(/gen/bg/bg-#{color_scheme}.jpg);
         background-color: #{color_scheme[0] == 'l' ? '#f8f8f8' : '#080808'};
         #{ path == '/static/h4ck.html' ? '*/ transition: none;' : ''} 
         background-repeat: no-repeat;
@@ -550,7 +555,7 @@ Es werden gerade Wartungsarbeiten durchgeführt und das Dashboard ist in wenigen
 </div>
 <!-- <div class='snowman'></div> -->
 <div class='foot text-muted'>
-    <span class='float-left'>&copy; 2021 <a href='https://gymnasiumsteglitz.de' target='_blank'>Gymnasium Steglitz</a></span>
+    <span class='float-left'>&copy; 2022 <a href='https://gymnasiumsteglitz.de' target='_blank'>Gymnasium Steglitz</a></span>
     <span class='timetable_updated float-left'></span>
     <span><a href='/impressum'>Impressum</a></span>
 </div>

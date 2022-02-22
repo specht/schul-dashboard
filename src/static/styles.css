@@ -213,6 +213,7 @@ input {
     box-shadow: rgba(0,0,0,0.2) 0px 1px 10px;
     border-bottom: 1px solid #bbb;
     background-color: #fff!important;
+    /* background-color: rgba(255,255,255,0.7)!important; */
 }
 
 .info {
@@ -842,6 +843,7 @@ s {
     transition: none;
     padding: .25rem 0;
     box-shadow: 0 0 2px rgba(0, 0, 0, 0.6);
+    overflow-x: hidden;
 }
 
 .ttc:hover {
@@ -2400,4 +2402,36 @@ li.nav-item a.nav-link i.fa {
 
 .bg-pink {
     background-color: #7b67ae;
+}
+
+.fc, .fc-view-harness, .fc-view-harness thead table {
+    border-top-left-radius: 0.8em;
+    border-top-right-radius: 0.8em;
+}
+
+.fc-scrollgrid {
+    border-top-left-radius: 0.8em;
+    border-top-right-radius: 0.8em;
+    box-shadow: 0 0 2em rgba(0,0,0,0.4);
+}
+
+.fc-theme-standard thead td:last-child, .fc-theme-standard thead th:last-child {
+    border-top-right-radius: 0.8em;
+}
+
+.fc-theme-standard td, .fc-theme-standard th {
+    border: 1px solid rgba(0,0,0,0.1);
+}
+
+.fc-theme-standard .fc-scrollgrid {
+    border: 1px solid rgba(0,0,0,0.1);
+}
+
+.table td, .table th {
+    border-top: 1px solid rgba(0,0,0,0.1);
+}
+
+.table tbody+tbody {
+    border-top: none;
+    /* border-top: 2px solid #dee2e6; */
 }

@@ -117,14 +117,19 @@ class Main < Sinatra::Base
         light = luminance(primary_color) > 160
         primary_color_darker = darken(primary_color, 0.8)
         desaturated_color = darken(desaturate(primary_color), 0.9)
+        if light
+            desaturated_color = rgb_to_hex(mix(hex_to_rgb(desaturate(primary_color)), hex_to_rgb('#ffffff'), 0.1))
+        end
         desaturated_color_darker = darken(desaturate(primary_color), 0.3)
         disabled_color = light ? rgb_to_hex(mix(hex_to_rgb(primary_color), [255, 255, 255], 0.5)) : rgb_to_hex(mix(hex_to_rgb(primary_color), [192, 192, 192], 0.5))
-        darker_color = rgb_to_hex(mix(hex_to_rgb(primary_color), [0, 0, 0], 0.7))
+        darker_color = rgb_to_hex(mix(hex_to_rgb(primary_color), [0, 0, 0], 0.6))
         shifted_color = shift_hue(primary_color, 350)
         main_text_color = light ? rgb_to_hex(mix(hex_to_rgb(primary_color), [0, 0, 0], 0.7)) : rgb_to_hex(mix(hex_to_rgb(primary_color), [255, 255, 255], 0.8))
         contrast_color = rgb_to_hex(mix(hex_to_rgb(primary_color), color_scheme[0] == 'l' ? [0, 0, 0] : [255, 255, 255], 0.7))
         color_palette = {
+            :is_light => light,
             :primary => primary_color, 
+            :primary_color_darker => primary_color_darker,
             :disabled => disabled_color, 
             :darker => darker_color, 
             :shifted => desaturated_color,

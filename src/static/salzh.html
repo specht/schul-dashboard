@@ -4,13 +4,14 @@
         <div class='col-md-12'>
             <!-- <hr /> -->
             <div style='float: right'>
-                <a href='/api/test_list' class='btn btn-secondary bu-download-test-list' style='margin-right: 15px;'><i class='fa fa-file-pdf-o'></i>&nbsp;&nbsp;Aktuelle Testliste herunterladen</a>
+                <a href='/salzh_protokoll' class='btn btn-secondary' style='margin-right: 15px;'><i class='fa fa-file-pdf-o'></i>&nbsp;&nbsp;saLzH-Protokoll</a>
+                <a href='/api/test_list' class='btn btn-secondary' style='margin-right: 15px;'><i class='fa fa-file-pdf-o'></i>&nbsp;&nbsp;Aktuelle Testliste</a>
                 <button class='btn btn-success bu-add-salzh'><i class='fa fa-pencil'></i>&nbsp;&nbsp;Eintragen</button>
             </div>
             <h2 style='margin-bottom: 30px;'>Kontaktpersonen / saLzH</h2>
             <hr />
             <div class="table-responsive" style="max-width: 100%; overflow-x: auto;">
-                <table class='table table-narrow narrow'>
+                <table class='table table-narrow narrow table-striped'>
                     <thead>
                         <tr>
                             <th>Nr.</th>
@@ -34,7 +35,7 @@
                 <div class='col-md-4'>
                     <h3>Hotspot-Klassen</h3>
                     <div class="table-responsive" style="max-width: 100%; overflow-x: auto;">
-                        <table class='table table-narrow narrow'>
+                        <table class='table table-narrow narrow table-striped'>
                             <thead>
                                 <tr>
                                     <th>Klasse</th>
@@ -53,27 +54,27 @@
                         <table class='table table-narrow narrow'>
                             <thead>
                                 <tr>
-                                    <th>Montag</th>
-                                    <th>Dienstag</th>
-                                    <th>Mittwoch</th>
-                                    <th>Donnerstag</th>
-                                    <th>Freitag</th>
+                                    <th style='width: 20%;'>Montag</th>
+                                    <th style='width: 20%;'>Dienstag</th>
+                                    <th style='width: 20%;'>Mittwoch</th>
+                                    <th style='width: 20%;'>Donnerstag</th>
+                                    <th style='width: 20%;'>Freitag</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 <tr>
-                                    <td><button style='width: 100%;' data-wday='1' class='bu_switch_regular_testing_day btn btn-success'>regulär</button></td>
-                                    <td><button style='width: 100%;' data-wday='2' class='bu_switch_regular_testing_day btn btn-success'>regulär</button></td>
-                                    <td><button style='width: 100%;' data-wday='3' class='bu_switch_regular_testing_day btn btn-success'>regulär</button></td>
-                                    <td><button style='width: 100%;' data-wday='4' class='bu_switch_regular_testing_day btn btn-success'>regulär</button></td>
-                                    <td><button style='width: 100%;' data-wday='5' class='bu_switch_regular_testing_day btn btn-success'>regulär</button></td>
+                                    <td><button style='width: 100%;' data-wday='0' class='bu_switch_regular_testing_day btn'></button></td>
+                                    <td><button style='width: 100%;' data-wday='1' class='bu_switch_regular_testing_day btn'></button></td>
+                                    <td><button style='width: 100%;' data-wday='2' class='bu_switch_regular_testing_day btn'></button></td>
+                                    <td><button style='width: 100%;' data-wday='3' class='bu_switch_regular_testing_day btn'></button></td>
+                                    <td><button style='width: 100%;' data-wday='4' class='bu_switch_regular_testing_day btn'></button></td>
                                 </tr>
                             </tbody>
                         </table>
                     </div>
                     <h3>Testregime</h3>
                     <div class="table-responsive" style="max-width: 100%; overflow-x: auto;">
-                        <table class='table table-narrow narrow'>
+                        <table class='table table-narrow narrow table-sm table-striped'>
                             <thead>
                                 <tr>
                                     <th>Status</th>
@@ -324,6 +325,20 @@
         $('#ti_recipients').val('');
         $('#ti_recipients').focus();
         update_buttons();
+    }
+
+    function update_testing_days_buttons(pattern) {
+        for (let i = 0; i < 5; i++) {
+            let flag = pattern[i];
+            let b = $(`.bu_switch_regular_testing_day[data-wday=${i}]`);
+            if (flag) {
+                b.text('regulär');
+                b.removeClass('btn-outline-secondary').addClass('btn-success');
+            } else {
+                b.text('nicht regulär');
+                b.addClass('btn-outline-secondary').removeClass('btn-success');
+            }
+        }
     }
 
     document.addEventListener('DOMContentLoaded', function () {
@@ -591,11 +606,16 @@
 
         $('.bu_switch_regular_testing_day').click(function(e) {
             let wday = $(e.target).data('wday');
-            api_call('/api/switch_regular_testing_day', {wday: wday}, function(data) {
+            api_call('/api/toggle_regular_testing_day', {wday: wday}, function(data) {
                 if (data.success) {
-                    window.location.reload();
+                    update_testing_days_buttons(data.pattern);
                 }
             });
+        });
+        api_call('/api/get_regular_testing_days', {}, function(data) {
+            if (data.success) {
+                update_testing_days_buttons(data.pattern);
+            }
         });
 
     });

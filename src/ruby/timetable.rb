@@ -103,6 +103,39 @@ class Timetable
         s.gsub('<s>()</s>', '').strip
     end
     
+    def gen_label_room(a, b, c)
+        # a: fach, b: klassen, c: lehrer
+        b = [[]] if b.nil?
+        b = [[]] if b == [nil]
+        a0 = ''; a1 = ''; b0 = []; b1 = []; c0 = []; c1 = [];
+        b = b.map do |x|
+            x.map { |y| KLASSEN_TR[y] || y }
+        end
+        begin; a0 = "#{a.first} #{(b.first || []).join(', ')}"; rescue; end;
+        begin; a1 = "#{a.last} #{(b.last || []).join(', ')}"; rescue; end;
+        begin; b0 = b.first || []; rescue; end;
+        begin; b1 = b.last || []; rescue; end;
+        begin; c0 = c.first || []; rescue; end;
+        begin; c1 = c.last || []; rescue; end;
+        s = if a0 == a1 && c0 == c1
+            "#{bold(a0)} #{paren(c0.join(', '))}".strip
+        elsif a0 == a1 && c0 != c1
+            ca = c0.dup
+            c1.each { |c| ca << c unless ca.include?(c) }
+            "#{bold(a0)} (#{strike(c0.join(', '))} #{c1.join(', ')})".strip
+        elsif a0 != a1 && c0 == c1
+            "#{strike(bold(a0))} #{bold(a1)} #{paren(c0.join(', '))}".strip
+        else
+            _temp = "#{strike(bold(a0))} #{bold(a1)}"
+            ca = c0.dup
+            c1.each { |c| ca << b unless ca.include?(c) }
+            _temp += " (#{strike(c0.join(', '))} #{c1.join(', ')})"
+            _temp.strip!
+            _temp
+        end
+        s.gsub('<s>()</s>', '').strip
+    end
+    
     def merge_same_events(cache_indices)
         # in / out: cache indices
         merged_event_indices = []
@@ -323,8 +356,8 @@ class Timetable
             @@current_salzh_status_by_email[entry[:email]] = entry
         end
         @@lehrer_order = Main.class_variable_get(:@@lehrer_order)
+        @@room_ids = Main.class_variable_get(:@@room_ids)
 
-        
         lesson_offset = {}
 
         @lesson_cache = []
@@ -607,11 +640,15 @@ class Timetable
                     e = @lesson_cache[cache_index]
                     e[:lehrer_list] = Set.new((e[:lehrer] || []).flatten)
                     e[:klassen_list] = Set.new((e[:klassen] || []).flatten)
+                    e[:raum_list] = Set.new((e[:raum] || []).flatten)
                     if e[:lehrer] && e[:lehrer].size > 1
                         e[:lehrer_removed] = e[:lehrer].first
                     end
                     if e[:klassen] && e[:klassen].size > 1
                         e[:klassen_removed] = e[:klassen].first
+                    end
+                    if e[:raum] && e[:raum].size > 1
+                        e[:raum_removed] = e[:raum].first
                     end
 
                     fach_lang = e[:fach].map do |x|
@@ -624,10 +661,13 @@ class Timetable
                     end
                     e[:label_lehrer_short] = gen_label_lehrer(e[:fach], e[:lehrer])
                     e[:label_klasse_short] = gen_label_klasse(e[:fach], e[:klassen], e[:lehrer])
+                    e[:label_room_short] = gen_label_room(e[:fach], e[:klassen], e[:lehrer])
                     e[:label_lehrer] = gen_label_lehrer(fach_lang, e[:lehrer])
                     e[:label_klasse] = gen_label_klasse(fach_lang, e[:klassen], e[:lehrer])
+                    e[:label_room] = gen_label_room(fach_lang, e[:klassen], e[:lehrer])
                     e[:label_lehrer_lang] = gen_label_lehrer(fach_lang, lehrer_lang)
                     e[:label_klasse_lang] = gen_label_klasse(fach_lang, e[:klassen], lehrer_lang)
+                    e[:label_room_lang] = gen_label_room(fach_lang, e[:klassen], lehrer_lang)
                     [:raum].each do |k|
                         if e[k].first == e[k].last
                             e[k] = e[k].first
@@ -753,6 +793,11 @@ class Timetable
                         day_events_special[key] ||= Set.new()
                         day_events_special[key] << cache_index
                     end
+                    (event[:raum_list] || Set.new()).each do |raum|
+                        key = "_@#{raum}"
+                        day_events_special[key] ||= Set.new()
+                        day_events_special[key] << cache_index
+                    end
                 end
             end
             day_events_regular.each_pair do |lesson_key, event_indices|
@@ -761,7 +806,7 @@ class Timetable
                 @lesson_events_regular[lesson_key][ds_yw] += event_indices
             end
 
-            # 3b. merge same lehrer and klassen events and add them to lesson_events
+            # 3b. merge same lehrer, klassen and room events and add them to lesson_events
             day_events_special.each_pair do |key, event_indices|
                 day_events_special[key] = merge_same_events(event_indices)
                 @lesson_events[key] ||= {}
@@ -1077,13 +1122,21 @@ class Timetable
                     :id => @@klassen_id[klasse]
                 }
             end
+            ROOM_ORDER.each do |room|
+                temp["_@#{room}"] = {
+                    :is_room => true,
+                    :room => room,
+                    :id => @@room_ids[room]
+                }
+            end
             temp.each_pair do |email, user|
                 lesson_keys = @@lessons_for_user[email].dup
                 if email[0] == '_'
                     lesson_keys = Set.new(@@lessons_for_klasse[user[:klasse]])
                 end
                 lesson_keys ||= Set.new()
-                lesson_keys << "_#{user[:klasse]}" unless user[:teacher]
+                lesson_keys << "_#{user[:klasse]}" if user[:is_klasse]
+                lesson_keys << "_@#{user[:room]}" if user[:is_room]
                 if user[:teacher]
                     lesson_keys << "_#{user[:shorthand]}" 
                     (@@lessons_for_shorthand[user[:shorthand]] || []).each do |lesson_key|
@@ -1113,11 +1166,14 @@ class Timetable
                                 @lesson_cache[x][:datum] >= regular_events_from
                             end
                         end
-                    end                    
+                    end
+                    if user[:is_room]
+                        cache_indices += ((@lesson_events["_@#{user[:room]}"] || {})[p_yw] || Set.new())
+                    end
                     events += cache_indices.map { |x| @lesson_cache[x] }
                     events += holidays 
                     events += website_events
-                    if (user[:teacher] || false) == false || user[:is_klasse]
+                    if user[:klasse]
                         events += public_test_events_for_klasse[user[:klasse]]
                     end
                     # add events
@@ -1173,6 +1229,11 @@ class Timetable
                             e[:label] = user[:teacher] ? e[:label_klasse].dup : e[:label_lehrer].dup
                             e[:label_lang] = user[:teacher] ? e[:label_klasse_lang].dup : e[:label_lehrer_lang].dup
                             e[:label_short] = user[:teacher] ? e[:label_klasse_short].dup : e[:label_lehrer_short].dup
+                            if user[:is_room]
+                                e[:label] = e[:label_room].dup
+                                e[:label_lang] = e[:label_room_lang].dup
+                                e[:label_short] = e[:label_room_short].dup
+                            end
                             if e[:nc_folder]
                                 e[:nc_folder] = user[:teacher] ? e[:nc_folder][:teacher].dup : e[:nc_folder][:sus].dup
                             end
@@ -1358,7 +1419,18 @@ class Timetable
                             event
                         end
                     end
-                    unless user[:teacher]
+                    if user[:is_room]
+                        fixed_events.reject! do |event|
+                            event[:lesson] && (!(event[:raum] || '').split('/').include?(user[:room]))
+                        end
+                        fixed_events.map! do |event|
+                            event.delete(:data)
+                            event.delete(:per_user)
+                            event.delete(:lesson_offset)
+                            event
+                        end
+                    end
+                    if (!user[:is_room]) && (!user[:teacher])
                         # if it's a schüler, remove pausenaufsichten
                         fixed_events.reject! do |event|
                             event[:pausenaufsicht]
@@ -1400,14 +1472,14 @@ class Timetable
                         end
                         # unless SuS is permanently at home delete lesson_jitsi flag
                         # in some cases
-                        fixed_events.map! do |event|
-                            if event[:lesson] && event[:data]
-                                unless Main.stream_allowed_for_date_lesson_key_and_email(event[:datum], event[:lesson_key], email, all_stream_restrictions[event[:lesson_key]], all_homeschooling_users.include?(email), group_for_sus[email])
-                                    event[:data] = event[:data].reject { |x| x == :lesson_jitsi }
-                                end
-                            end
-                            event
-                        end
+                        # fixed_events.map! do |event|
+                        #     if event[:lesson] && event[:data]
+                        #         unless Main.stream_allowed_for_date_lesson_key_and_email(event[:datum], event[:lesson_key], email, all_stream_restrictions[event[:lesson_key]], all_homeschooling_users.include?(email), group_for_sus[email])
+                        #             event[:data] = event[:data].reject { |x| x == :lesson_jitsi }
+                        #         end
+                        #     end
+                        #     event
+                        # end
                         # add schueler_offset_in_lesson for SuS
                         fixed_events.map! do |event|
                             if event[:lesson_key]
@@ -1451,6 +1523,10 @@ class Timetable
                         end
                     end
                     write_events = fixed_events.reject { |x| x[:deleted] || x['deleted']}
+                    # if user[:is_room]
+                    #     STDERR.puts write_events.to_yaml
+                    # end
+
                     f.print({:events => write_events, 
                              :vplan_timestamp => @@vplan_timestamp,
                              :switch_week => Main.get_switch_week_for_date(p)}.to_json)
@@ -1856,6 +1932,11 @@ class Timetable
             rescue StandardError => e
                 STDERR.puts e
             end
+            begin
+                Main.log_freiwillig_salzh_sus_for_today()
+            rescue StandardError => e
+                STDERR.puts e
+            end
         end
         
         add_these_lesson_keys = Set.new()
@@ -1951,6 +2032,14 @@ class Timetable
             end
             @lesson_info[row[:key]][row[:info][:offset]] ||= {}
             @lesson_info[row[:key]][row[:info][:offset]][:data] = h
+            if @lesson_info[row[:key]][row[:info][:offset]][:data][:ha_amt_text]
+                parts = []
+                parts << @lesson_info[row[:key]][row[:info][:offset]][:data][:hausaufgaben_text]
+                parts << @lesson_info[row[:key]][row[:info][:offset]][:data][:ha_amt_text]
+                parts.reject! { |x| x.nil? || x.empty? }
+                @lesson_info[row[:key]][row[:info][:offset]][:data][:hausaufgaben_text] = parts.join("\n")
+            end
+
             if row[:tablet_id]
                 tablet_info = @@tablets[row[:tablet_id]]
                 @lesson_info[row[:key]][row[:info][:offset]][:data][:booked_tablet] = row[:tablet_id]

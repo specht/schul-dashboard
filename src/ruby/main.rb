@@ -2246,7 +2246,7 @@ class Main < Sinatra::Base
                     OPTIONAL MATCH (u)-[r:IS_PARTICIPANT]->(e)
                     WHERE (u:User OR u:ExternalUser OR u:PredefinedExternalUser) AND COALESCE(r.deleted, false) = false
                     RETURN e, u.email
-                    ORDER BY e.created DESC, e.id;
+                    ORDER BY e.date DESC, e.start_time DESC, e.id;
                 END_OF_QUERY
                 external_users_for_session_user = external_users_for_session_user()
                 temp = {}

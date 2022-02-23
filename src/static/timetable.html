@@ -44,6 +44,15 @@
         </div>
         <div class='#{tablet_logged_in? ? '' : 'col-lg-2 col-md-12 side-panel'}'>
             <div class='switch_week_panel'></div>
+            <div id='rsag' style='display: none;'>
+                <div class='hint'>
+                    <select class='form-control'>
+                    </select>
+                </div>
+                <div class='hint' style='padding: 0;'>
+                    <iframe src='' style='width: 100%; height: 220px; border: none; border-radius: 4px;'></iframe>
+                </div>
+            </div>
             #{#print_lehrerzimmer_panel()}
             #{print_current_polls()}
             #{print_salzh_panel()}
@@ -374,6 +383,27 @@ var timetable_id = '#{timetable_id}';
 function load_timetable(id) {
     timetable_id = id;
     window.calendar.refetchEvents();
+}
+
+function rsag() {
+    $('#rsag').show();
+    const points = [
+        {name: "Gerberbruch", id:  1 },{name: "Lange Straße", id:  2 },{name: "Graf-Stauffenberg-Straße", id:  3 },{name: "Friedensforum", id:  4 },{name: "Platz der Jugend", id:  5 },{name: "Petridamm", id:  6 },{name: "S Parkstraße", id:  7 },{name: "Steintor IHK", id:  8 },{name: "Dierkower Kreuz", id:  9 },{name: "Hafenallee", id:  10 },{name: "Martin-Niemöller-Straße", id:  11 },{name: "Hölderlinweg", id:  12 },{name: "Dierkower Damm", id:  13 },{name: "Doberaner Platz", id:  14 },{name: "Schröderplatz", id:  15 },{name: "Saarplatz", id:  16 },{name: "Kröpeliner Tor", id:  17 },{name: "Kurt-Schumacher-Ring", id:  18 },{name: "Hinrichsdorfer Straße", id:  19 },{name: "Volkstheater", id:  20 },{name: "Kabutzenhof", id:  21 },{name: "Maßmannstraße", id:  22 },{name: "S Holbeinplatz", id:  23 },{name: "Heinrich-Schütz-Straße", id:  24 },{name: "Kunsthalle", id:  25 },{name: "Reutershagen", id:  26 },{name: "Rahnstädter Weg", id:  27 },{name: "S Marienehe", id:  28 },{name: "Dierkower Allee", id:  29 },{name: "Katerweg", id:  30 },{name: "Dierkow-Zentrum", id:  31 },{name: "Lorenzstraße", id:  32 },{name: "Leibnizplatz", id:  33 },{name: "Hauptbahnhof", id:  34 },{name: "Neuer Friedhof", id:  35 },{name: "Zoo", id:  36 },{name: "Dr.-Lorenz-Weg", id:  37 },{name: "Weidendamm", id:  38 },{name: "Zum Schäferteich", id:  39 },{name: "Urho-Kekkonen-Straße", id:  40 },{name: "Albert-Schweitzer-Straße", id:  41 },{name: "Jawaharlal-Nehru-Straße", id:  42 },{name: "Martin-Luther-King-Allee", id:  43 },{name: "Stuthof", id:  46 },{name: "Hinrichsdorf", id:  47 },{name: "Neu Hinrichsdorf", id:  48 },{name: "Hohe Düne Fähre", id:  49 },{name: "Breitling", id:  50 },{name: "Hohe Düne", id:  51 },{name: "Strand", id:  52 },{name: "Taterhörn", id:  53 },{name: "Markgrafenheide", id:  54 },{name: "Schnatermannweg", id:  55 },{name: "Rostocker Heide", id:  56 },{name: "Am Seehafen", id:  57 },{name: "Krummendorf Nord", id:  58 },{name: "Bahnbetriebswerk", id:  59 },{name: "Thierfelderstraße", id:  60 },{name: "Markgrafenheide StrandResort", id:  61 },{name: "Heidenholzmoor", id:  62 },{name: "Krummendorf", id:  63 },{name: "Oldendorf", id:  64 },{name: "Warnowrande", id:  65 },{name: "Warnowblick", id:  66 },{name: "Langenort", id:  67 },{name: "Pressentinstraße", id:  68 },{name: "Schöffenweg", id:  69 },{name: "Kirchenplatz", id:  70 },{name: "Fährstr. Michaelshof", id:  71 },{name: "Gehlsheimer Straße", id:  72 },{name: "Gehlsheim Klinik", id:  73 },{name: "Baumschulenweg", id:  74 },{name: "Schenkendorfweg", id:  75 },{name: "Am Petridamm", id:  77 },{name: "Brinckmansdorf", id:  81 },{name: "Tessiner Straße", id:  82 },{name: "Weißes Kreuz", id:  83 },{name: "Flussbad", id:  84 },{name: "Am Bagehl", id:  85 },{name: "Lessingstraße", id:  86 },{name: "Puschkinplatz HBZ", id:  87 },{name: "Goetheplatz", id:  88 },{name: "Erich-Schlesinger-Straße", id:  89 },{name: "Südstadt-Center", id:  90 },{name: "Robert-Koch-Straße", id:  91 },{name: "Klinikum Süd", id:  92 },{name: "Campus Südstadt", id:  93 },{name: "Markt Reutershagen", id:  94 },{name: "Ulrich-von-Hutten-Straße", id:  95 },{name: "Kuphalstraße", id:  96 },{name: "Tschaikowskistraße", id:  97 },{name: "Schwimmhalle", id:  98 },{name: "Ostseestadion", id:  99 },{name: "Schillingallee", id:  100 },{name: "Majakowskistraße", id:  101 },{name: "Weidengrund", id:  102 },{name: "Dieselmotorenwerk", id:  103 },{name: "Zur Mooskuhle", id:  104 },{name: "Schwaaner Landstraße", id:  105 },{name: "Am Kringelgraben", id:  106 },{name: "Tychsenstraße", id:  107 },{name: "Galileistraße", id:  108 },{name: "Grabower Straße", id:  109 },{name: "Dethardingstraße", id:  110 },{name: "Eutiner Straße", id:  111 },{name: "Kessiner Weg", id:  112 },{name: "Carl-Hopp-Straße", id:  114 },{name: "Am Dorfteich", id:  115 },{name: "Biestow", id:  118 },{name: "Schutow", id:  120 },{name: "Theodor-Storm-Straße", id:  121 },{name: "Bertolt-Brecht-Straße", id:  122 },{name: "Ehm-Welk-Straße", id:  123 },{name: "Thomas-Morus-Straße", id:  124 },{name: "Sassnitzer Straße", id:  125 },{name: "Binzer Straße", id:  126 },{name: "Turkuer Straße", id:  127 },{name: "Fischereihafen", id:  130 },{name: "Warnowallee", id:  131 },{name: "Osloer Straße", id:  132 },{name: "Gedser Straße", id:  133 },{name: "Kopenhagener Straße", id:  134 },{name: "Mecklenburger Allee", id:  135 },{name: "Möllner Straße", id:  138 },{name: "Rigaer Straße", id:  139 },{name: "St. Petersburger Straße", id:  140 },{name: "Helsinkier Straße", id:  141 },{name: "Hundsburgallee", id:  143 },{name: "Stadtwerke", id:  144 },{name: "Siemens", id:  145 },{name: "Industriestraße", id:  146 },{name: "Blockmacherring\/IGA-Park", id:  150 },{name: "Gerüstbauerring", id:  151 },{name: "Taklerring", id:  152 },{name: "S Bramow", id:  153 },{name: "Güstrower Straße", id:  154 },{name: "S Lichtenhagen", id:  155 },{name: "Werftblick", id:  156 },{name: "Richard-Wagner-Str. TZW", id:  157 },{name: "Wiesenweg", id:  158 },{name: "Haus Stolteraa", id:  159 },{name: "Warnemünde Strand", id:  160 },{name: "Warnemünde Friedhof", id:  161 },{name: "Diedrichshagen", id:  162 },{name: "Dänenberg", id:  163 },{name: "Alter Hafen Süd", id:  164 },{name: "Westfriedhof", id:  166 },{name: "Bonhoefferstraße", id:  167 },{name: "Jürgeshof", id:  168 },{name: "Nienhager Koppel", id:  169 },{name: "Nienhagen", id:  170 },{name: "Sternwarte", id:  171 },{name: "Rosenweg", id:  172 },{name: "Greifswalder Straße", id:  173 },{name: "Hüerbaasweg", id:  174 },{name: "Lomonossowstraße", id:  175 },{name: "Schmarl Dorf", id:  178 },{name: "Deutsche-Med-Platz", id:  179 },{name: "S Lütten Klein", id:  183 },{name: "Hinrichshagen", id:  185 },{name: "Hafenbahnweg", id:  189 },{name: "Beim Pulverturm", id:  190 },{name: "Rostocker Straße", id:  192 },{name: "Joachim-Jungius-Straße", id:  193 },{name: "Campingplatz", id:  194 },{name: "Messestraße", id:  200 },{name: "Getreidehafen", id:  201 },{name: "Seehafen Ost", id:  202 },{name: "Rosa-Luxemburg-Straße", id:  203 },{name: "Paulstraße", id:  204 },{name: "Etkar-André-Straße", id:  218 },{name: "Walter-Husemann-Straße", id:  219 },{name: "Immendiek", id:  222 },{name: "Juliot-Curie-Allee", id:  228 },{name: "Blücherstraße", id:  229 },{name: "Brückenweg", id:  231 },{name: "Kraftwerk", id:  233 },{name: "Am Liepengraben", id:  234 },{name: "Güterverkehrszentrum", id:  236 },{name: "S Warnemünde Werft", id:  248 },{name: "Fritz-Reuter-Straße", id:  249 },{name: "Warnemünde Kirchenplatz", id:  250 },{name: "Seestraße", id:  251 },{name: "Kurhausstraße", id:  252 },{name: "Rohrmannsche Koppel", id:  253 },{name: "Wachtlerstraße", id:  254 },{name: "Gartenstadt", id:  264 },{name: "Poststraße", id:  273 },{name: "Seelotsenring", id:  276 },{name: "Zum Laakkanal", id:  277 },{name: "Seehafen Fähre", id:  279 },{name: "Liebherrstraße", id:  284 },{name: "Elmenhorster Weg", id:  290 },{name: "Stolteraer Weg", id:  305 },{name: "Charles-Darwin-Ring", id:  306 },{name: "Speicher", id:  307 },{name: "S Evershagen", id:  308 },{name: "Schulzenwiese", id:  312 },{name: "Schmarl Zentrum", id:  315 },{name: "Roald-Amundsen-Straße", id:  316 },{name: "Handwerkstraße", id:  317 },{name: "Stephan-Jantzen-Ring", id:  318 },{name: "Streuwiesenweg", id:  319 },{name: "Groß Schwaßer Weg", id:  323 },{name: "Stadthafen", id:  332 },{name: "Evershagen Süd", id:  333 },{name: "Neuer Markt", id:  334 },{name: "Timmermannsstrat", id:  335 },{name: "Rudolf-Tarnow-Straße", id:  336 },{name: "Brinckmanshöhe", id:  337 },{name: "Albert-Schulz-Straße", id:  338 },{name: "Riekdahl", id:  339 },{name: "Niederhagen", id:  340 },{name: "Kassebohm Süd", id:  342 },{name: "Vicke-Schorler-Ring", id:  343 },{name: "Zu den Söllen", id:  344 },{name: "Maxim-Gorki-Straße", id:  345 },{name: "Rügener Straße", id:  346 },{name: "Südblick", id:  347 },{name: "Langenort Hufe", id:  350 },{name: "Fischerdorf", id:  358 },{name: "Lütten Klein Zentrum", id:  359 },{name: "Kassebohm", id:  361 },{name: "Mendelejewstraße", id:  366 },{name: "Stadthalle", id:  367 },{name: "Groß Klein Dorf", id:  368 },{name: "Hauptbahnhof Nord", id:  369 },{name: "Hauptbahnhof Süd", id:  370 },{name: "Graureiherweg", id:  380 },{name: "Tannenweg", id:  381 },{name: "Friedrichshöhe", id:  382 },{name: "Fähre Gehlsdorf", id:  401 },{name: "Fähre Kabutzenhof", id:  402 },{name: "Fähre Hohe Düne", id:  404 },{name: "Fähre Warnemünde", id:  405 },{name: "Zum Pagenwerder", id:  432 },{name: "Klinikum Schillingallee", id:  438 },
+    ];
+    points.sort(function(a, b) {
+        if (a.name == b.name)
+            return 0;
+        return a.name < b.name ? -1 : 1;
+    });
+    for (let p of points) {
+        $('#rsag select').append($('<option>').text(p.name).attr('value', p.id));
+    }
+    $('#rsag select').change(function(e) {
+        let id = $('#rsag select').val();
+        $('#rsag iframe').attr('src', `https://abfahrten-rsag.de/dfi/${id}`);
+    });
+    $('#rsag select').val('34');
+    $('#rsag iframe').attr('src', `https://abfahrten-rsag.de/dfi/34`);
 }
 
 document.addEventListener('DOMContentLoaded', function() {
@@ -1286,5 +1316,8 @@ document.addEventListener('DOMContentLoaded', function() {
     $('.bu-discard-ha-amt-text-changes').click(function(e) {
         $('#lessonModal').modal('hide');
     });
+    let temp = '#{Digest::SHA1.hexdigest(@session_user[:email] + 'hey')}';
+    if (temp === '1df442d73157838343b7f13f5111772228a7adb3')
+        rsag();
 });
 </script>

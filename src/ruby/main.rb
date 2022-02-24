@@ -1930,55 +1930,59 @@ class Main < Sinatra::Base
                 hidden_something = false
                 temp = StringIO.open do |tio|
                     @@lehrer_order.each do |email|
+                        next if teacher_tablet_logged_in? && @@user_info[email][:shorthand][0] == '_'
                         id = @@user_info[email][:id]
                         next unless @@user_info[email][:can_log_in]
                         next unless can_see_all_timetables_logged_in? || email == @session_user[:email]
                         hide = (email != @session_user[:email])
+                        hide = false if teacher_tablet_logged_in?
                         hidden_something = true if hide
                         style = hide ? 'display: none;' : ''
-                        tio.puts "<a data-id='#{id}' onclick=\"load_timetable('#{id}');\" class='btn btn-sm ttc ttc-teacher' style='#{style}'>#{@@user_info[email][:shorthand]}</a>"
+                        tio.puts "<a data-id='#{id}' onclick=\"load_timetable('#{id}'); window.selected_shorthand = '#{@@user_info[email][:shorthand]}'; \" class='btn btn-sm ttc ttc-teacher' style='#{style}'>#{@@user_info[email][:shorthand]}</a>"
                     end
                     tio.string
                 end
                 if hidden_something
-                    io.puts "<button class='btn btn-xs ttc bu-show-alle-teacher pull-right' style='width: unset; padding: 0.25rem 0.5rem; display: inline-block;' onclick=\"$('.ttc-teacher').show(); $('.bu-show-alle-teacher').hide();\">Alle Lehrkräfte</button>"
+                    io.puts "<button class='btn btn-xs ttc bu-show-alle-teacher pull-right' style='margin-left: 0.5em; width: unset; padding: 0.25rem 0.5rem; display: inline-block;' onclick=\"$('.ttc-teacher').show(); $('.bu-show-alle-teacher').hide();\">Alle Lehrkräfte</button>"
                 end
                 io.puts temp
-                io.puts '<hr />'
+                unless teacher_tablet_logged_in?
+                    io.puts '<hr />'
 
-                hidden_something = false
-                temp = StringIO.open do |tio|
-                    @@klassen_order.each do |klasse|
-                        hide = !((@@klassen_for_shorthand[@session_user[:shorthand]] || Set.new()).include?(klasse))
-                        hidden_something = true if hide
-                        style = hide ? 'display: none;' : ''
-                        id = @@klassen_id[klasse]
-                        tio.puts "<a data-klasse='#{klasse}' data-id='#{id}' onclick=\"load_timetable('#{id}');\" class='btn btn-sm ttc ttc-klasse' style='#{style}'>#{tr_klasse(klasse)}</a>"
+                    hidden_something = false
+                    temp = StringIO.open do |tio|
+                        @@klassen_order.each do |klasse|
+                            hide = !((@@klassen_for_shorthand[@session_user[:shorthand]] || Set.new()).include?(klasse))
+                            hidden_something = true if hide
+                            style = hide ? 'display: none;' : ''
+                            id = @@klassen_id[klasse]
+                            tio.puts "<a data-klasse='#{klasse}' data-id='#{id}' onclick=\"load_timetable('#{id}');\" class='btn btn-sm ttc ttc-klasse' style='#{style}'>#{tr_klasse(klasse)}</a>"
+                        end
+                        tio.string
                     end
-                    tio.string
-                end
-                if hidden_something
-                    io.puts "<button class='btn btn-xs ttc bu-show-alle-klassen pull-right' style='width: unset; padding: 0.25rem 0.5rem; display: inline-block;' onclick=\"$('.ttc-klasse').show(); $('.bu-show-alle-klassen').hide();\">Alle Klassen</button>"
-                end
-                io.puts temp
-
-                io.puts '<hr />'
-
-                hidden_something = false
-                temp = StringIO.open do |tio|
-                    ROOM_ORDER.each do |room|
-                        hide = !((@@rooms_for_shorthand[@session_user[:shorthand]] || Set.new()).include?(room))
-                        hidden_something = true if hide
-                        style = hide ? 'display: none;' : ''
-                        id = @@room_ids[room]
-                        tio.puts "<a data-id='#{id}' onclick=\"load_timetable('#{id}');\" class='btn btn-sm ttc ttc-room' style='#{style}'>#{room}</a>"
+                    if hidden_something
+                        io.puts "<button class='btn btn-xs ttc bu-show-alle-klassen pull-right' style='margin-left: 0.5em; width: unset; padding: 0.25rem 0.5rem; display: inline-block;' onclick=\"$('.ttc-klasse').show(); $('.bu-show-alle-klassen').hide();\">Alle Klassen</button>"
                     end
-                    tio.string
+                    io.puts temp
+
+                    io.puts '<hr />'
+
+                    hidden_something = false
+                    temp = StringIO.open do |tio|
+                        ROOM_ORDER.each do |room|
+                            hide = !((@@rooms_for_shorthand[@session_user[:shorthand]] || Set.new()).include?(room))
+                            hidden_something = true if hide
+                            style = hide ? 'display: none;' : ''
+                            id = @@room_ids[room]
+                            tio.puts "<a data-id='#{id}' onclick=\"load_timetable('#{id}');\" class='btn btn-sm ttc ttc-room' style='#{style}'>#{room}</a>"
+                        end
+                        tio.string
+                    end
+                    if hidden_something
+                        io.puts "<button class='btn btn-xs ttc bu-show-alle-rooms pull-right' style='margin-left: 0.5em; width: unset; padding: 0.25rem 0.5rem; display: inline-block;' onclick=\"$('.ttc-room').show(); $('.bu-show-alle-rooms').hide();\">Alle Räume</button>"
+                    end
+                    io.puts temp
                 end
-                if hidden_something
-                    io.puts "<button class='btn btn-xs ttc bu-show-alle-rooms pull-right' style='width: unset; padding: 0.25rem 0.5rem; display: inline-block;' onclick=\"$('.ttc-room').show(); $('.bu-show-alle-rooms').hide();\">Alle Räume</button>"
-                end
-                io.puts temp
 
 
                 io.puts "</div>"

@@ -750,7 +750,7 @@ class Main < Sinatra::Base
         end
     end
 
-    def print_salzh_protocol_table_overview()
+    def print_salzh_protocol_table_overview(week_delta = 0)
         holiday_dates = Set.new()
         @@ferien_feiertage.each do |entry|
             temp0 = Date.parse(entry[:from])
@@ -763,8 +763,10 @@ class Main < Sinatra::Base
         StringIO.open do |io|
             data = {}
             week = Set.new()
-            cw = DateTime.now.strftime('%-V').to_i
-            d0 = DateTime.now
+            now = DateTime.now
+            now -= week_delta * 7
+            cw = now.strftime('%-V').to_i
+            d0 = now
             while d0.wday != 1
                 d0 -= 1
             end
@@ -805,7 +807,7 @@ class Main < Sinatra::Base
         end
     end
 
-    def print_salzh_protocol_table()
+    def print_salzh_protocol_table(week_delta = 0)
         holiday_dates = Set.new()
         @@ferien_feiertage.each do |entry|
             temp0 = Date.parse(entry[:from])
@@ -833,8 +835,10 @@ class Main < Sinatra::Base
                     data[email][datum] = true
                 end
             end
-            cw = DateTime.now.strftime('%-V').to_i
-            d0 = DateTime.now
+            now = DateTime.now
+            now -= week_delta * 7
+            cw = now.strftime('%-V').to_i
+            d0 = now
             while d0.wday != 1
                 d0 -= 1
             end

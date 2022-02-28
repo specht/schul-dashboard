@@ -2284,6 +2284,9 @@ class Main < Sinatra::Base
             if klasse.empty?
                 klasse = klassen_for_session_user.first
             end
+        elsif path == 'salzh_protokoll'
+            parts = request.env['REQUEST_PATH'].split('/')
+            salzh_protocol_delta = (parts[2] || '').strip
         elsif path == 'index'
             if @session_user
                 path = 'timetable' 

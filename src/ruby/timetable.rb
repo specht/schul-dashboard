@@ -617,16 +617,17 @@ class Timetable
             day_events.each_pair do |stunde, event_indices|
                 event_indices.each do |cache_index|
                     e = @lesson_cache[cache_index]
-                    # if e[:lesson] && e[:lesson_key] && e[:lesson_key] != 0
-                    #     if (e[:klassen] && e[:klassen][1] && e[:klassen][1].empty?) || (e[:lehrer] && e[:lehrer][1] && e[:lehrer][1].empty?)
-                    #         e[:entfall] = true
-                    #         e[:lesson_key] = 0
-                    #     end
-                    # end
                     if e[:lesson] && e[:lesson_key] && e[:lesson_key] != 0
-                        if (e[:vertretungs_text] || '').include?('entfällt')
-                            e[:entfall] = true
-                            e[:lesson_key] = 0
+                        if e[:datum] >= '2022-03-15'
+                            if (e[:vertretungs_text] || '').include?('entfällt')
+                                e[:entfall] = true
+                                e[:lesson_key] = 0
+                            end
+                        else
+                            if (e[:klassen] && e[:klassen][1] && e[:klassen][1].empty?) || (e[:lehrer] && e[:lehrer][1] && e[:lehrer][1].empty?)
+                                e[:entfall] = true
+                                e[:lesson_key] = 0
+                            end
                         end
                     end
                     if e[:lehrer] 

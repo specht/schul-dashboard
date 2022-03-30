@@ -944,4 +944,57 @@ class Main < Sinatra::Base
 
         respond(:pattern => Main.get_regular_testing_days())
     end
+
+    def self_tests_this_week()
+        d = Date.today
+        while (d.wday != 1)
+            d -= 1
+        end
+        d0 = d.strftime('%Y-%m-%d')
+        d1 = (d + 6).strftime('%Y-%m-%d')
+
+        rows = neo4j_query(<<~END_OF_QUERY, {:d0 => d0, :d1 => d1, :email => @session_user[:email]})
+            MATCH (u:User {email: {email}})-[:SELF_TESTED_ON]->(std:SelfTestDay)
+            WHERE std.datum >= {d0} AND std.datum <= {d1}
+            RETURN std.datum AS datum;
+        END_OF_QUERY
+        rows.map do |x|
+            i = Date.parse(x['datum']) - Date.parse(d0)
+            {:datum => x['datum'], :label => %w(Mo Di Mi Do Fr Sa So)[i]}
+        end
+    end
+
+    def print_self_test_panel()
+        require_user!
+        return '' unless teacher_logged_in?
+        return '' if teacher_tablet_logged_in?
+        today = Date.today.strftime('%Y-%m-%d')
+        StringIO.open do |io|
+            io.puts "<div class='hint'>"
+            days = self_tests_this_week()
+            label = 'noch nicht'
+            days_label = ''
+            if days.size > 0
+                label = "bereits #{days.size}×"
+                days_label = " (am #{days.map{ |x| x[:label] }.join(' ')})"
+            end
+            io.puts "Sie haben sich in dieser Woche <strong>#{label}</strong> getestet#{days_label}."
+            io.puts "<hr />"
+            io.puts "<button #{days.map { |x| x[:datum] }.include?(today) ? 'disabled' : ''} class='bu-add-self-test btn btn-success btn-sm float-right'><i class='fa fa-pencil'></i>&nbsp;&nbsp;Testung protokollieren…</button><div style='clear: both;'></div>"
+            io.puts "</div>"
+            io.string
+        end
+    end
+
+    post '/api/add_self_test_for_today' do
+        require_teacher!
+        today = Date.today.strftime('%Y-%m-%d')
+        neo4j_query(<<~END_OF_QUERY, {:email => @session_user[:email], :today => today})
+            MATCH (u:User {email: {email}})
+            MERGE (std:SelfTestDay {datum: {today}})
+            MERGE (u)-[:SELF_TESTED_ON]->(std);
+        END_OF_QUERY
+        respond(:ok => true)
+    end
+
 end

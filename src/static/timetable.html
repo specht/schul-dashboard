@@ -54,6 +54,7 @@
                 </div>
             </div>
             #{#print_lehrerzimmer_panel()}
+            #{print_self_test_panel()}
             #{print_current_polls()}
             #{print_salzh_panel()}
         </div>
@@ -432,7 +433,7 @@ document.addEventListener('DOMContentLoaded', function() {
             let week = '' + start_date.getWeek();
             if (week.length < 2)
                 week = '0' + week;
-            
+
             let yw_date = start_date.getFullYear() + '-' + week;
             let month = '' + (start_date.getMonth() + 1);
             let day = '' + start_date.getDate();
@@ -1319,5 +1320,18 @@ document.addEventListener('DOMContentLoaded', function() {
     let temp = '#{Digest::SHA1.hexdigest(@session_user[:email] + 'hey')}';
     if (temp === '1df442d73157838343b7f13f5111772228a7adb3')
         rsag();
+    $('.bu-add-self-test').click(function(e) {
+        showTemplateModal('Testung protokollieren',
+                'Falls Sie sich <strong>heute</strong> getestet haben oder getestet worden sind <strong>und der Test negativ war</strong>, protokollieren Sie dieses Ergebnis nun bitte.',
+                "<i class='fa fa-check'></i>&nbsp;&nbsp;Negativen Test protokollieren", 'btn-success',
+                'Abbrechen', 'btn-secondary', function () {
+                    api_call('/api/add_self_test_for_today', {}, function (data) {
+                        if (data.success) {
+                            window.location.reload();
+                        }
+                    });
+                }
+            );
+    });
 });
 </script>

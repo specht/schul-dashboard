@@ -196,7 +196,11 @@ class Main < Sinatra::Base
         StringIO.open do |io|
             unless only_this_email
                 io.puts "<h3>Umfrage: #{poll[:title]}</h3>"
-                io.puts "<p>Diese #{poll_run[:anonymous] ? 'anonyme' : 'personengebundene'} Umfrage wurde von #{poll[:organizer].sub('Herr ', 'Herrn ')} mit #{poll_run[:participant_count]} Teilnehmern am #{Date.parse(poll_run[:start_date]).strftime('%d.%m.%Y')} durchgeführt.</p>"
+                time_range = "am #{Date.parse(poll_run[:start_date]).strftime('%d.%m.%Y')} von #{poll_run[:start_time]} Uhr bis #{poll_run[:end_time]} Uhr"
+                if poll_run[:start_date] != poll_run[:end_date]
+                    time_range = "vom #{Date.parse(poll_run[:start_date]).strftime('%d.%m.%Y')} (#{poll_run[:start_time]} Uhr) bis zum #{Date.parse(poll_run[:end_date]).strftime('%d.%m.%Y')} (#{poll_run[:end_time]} Uhr)"
+                end
+                io.puts "<p>Diese #{poll_run[:anonymous] ? 'anonyme' : 'personengebundene'} Umfrage wurde von #{poll[:organizer].sub('Herr ', 'Herrn ')} mit #{poll_run[:participant_count]} Teilnehmern #{time_range} durchgeführt.</p>"
                 io.puts "<div class='alert alert-info'>"
                 io.puts "Von #{poll_run[:participant_count]} Teilnehmern haben #{responses.size} die Umfrage beantwortet (#{(responses.size * 100 / poll_run[:participant_count]).to_i}%)."
                 unless poll_run[:anonymous]

@@ -2463,17 +2463,16 @@ class Main < Sinatra::Base
                 end
                 stored_polls = temp_order.map { |x| temp[x] }
                 
-                stored_poll_runs = neo4j_query(<<~END_OF_QUERY, :email => @session_user[:email]).map { |x| {:info => x['pr'].props, :recipient => x['user_email'], :pid => x['pid'], :response_count => x['response_count']} }
+                # Two part query, step one: first, fetch all polls and poll runs, but without the participants
+                # (otherwise we'll get lots of redundancy and traffic galore)
+                stored_poll_runs = neo4j_query(<<~END_OF_QUERY, :email => @session_user[:email]).map { |x| {:info => x['pr'].props, :pid => x['pid'], :response_count => x['response_count']} }
                     MATCH (pr:PollRun)-[:RUNS]->(p:Poll)-[:ORGANIZED_BY]->(ou:User {email: {email}})
                     WHERE COALESCE(pr.deleted, false) = false
                     AND COALESCE(p.deleted, false) = false
                     WITH pr, p
-                    OPTIONAL MATCH (u)-[r:IS_PARTICIPANT]->(pr)
-                    WHERE (u:User OR u:ExternalUser OR u:PredefinedExternalUser) AND COALESCE(r.deleted, false) = false
-                    WITH pr, u.email AS user_email, p.id AS pid
                     OPTIONAL MATCH (pu)<-[:RESPONSE_BY]-(prs:PollResponse)-[:RESPONSE_TO]->(pr)
-                    WHERE (pu:User OR pu:ExternalUser OR pu:PredefinedExternalUser) 
-                    RETURN pr, user_email, pid, COUNT(prs) as response_count
+                    WHERE (pu:User OR pu:ExternalUser OR pu:PredefinedExternalUser)
+                    RETURN pr, p.id AS pid, COUNT(prs) as response_count
                     ORDER BY pr.start_date ASC, pr.start_time ASC;
                 END_OF_QUERY
                 temp = {}
@@ -2489,13 +2488,26 @@ class Main < Sinatra::Base
                         }
                         temp_order << x[:info][:id]
                     end
-                    temp[x[:info][:id]][:recipients] << x[:recipient]
                 end
+
+                # Step 2: now fetch participants for every poll run
+                participants = neo4j_query(<<~END_OF_QUERY, :poll_run_ids => temp_order).map { |x| {:prid => x['prid'], :user_email => x['user_email']} }
+                    MATCH (pr:PollRun)
+                    WHERE pr.id IN {poll_run_ids}
+                    WITH pr
+                    OPTIONAL MATCH (u)-[r:IS_PARTICIPANT]->(pr)
+                    WHERE (u:User OR u:ExternalUser OR u:PredefinedExternalUser) AND COALESCE(r.deleted, false) = false
+                    RETURN pr.id AS prid, u.email AS user_email;
+                END_OF_QUERY
+                participants.each do |row|
+                    temp[row[:prid]][:recipients] << row[:user_email]
+                end
+
                 stored_poll_runs = temp_order.map { |x| temp[x] }
             end
         elsif path == 'login_nc'
             unless @session_user
-                redirect "#{WEB_ROOT}/", 302 
+                redirect "#{WEB_ROOT}/", 302
             end
         end
         new_messages_count = 0

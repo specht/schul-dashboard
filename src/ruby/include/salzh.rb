@@ -705,6 +705,7 @@ class Main < Sinatra::Base
     end
 
     def self.get_test_list_label_type(status, regular_test_required, regular_test_day)
+        today = DateTime.now.strftime('%Y-%m-%d')
         if status == :salzh
             return :strike
         end
@@ -715,9 +716,11 @@ class Main < Sinatra::Base
             return :enabled
         end
         if regular_test_required == false
+            return :enabled if today >= '2022-04-01'
             return :disabled
         end
         if regular_test_required && !regular_test_day && status == nil
+            return :enabled if today >= '2022-04-01'
             return :disabled
         end
         return :enabled

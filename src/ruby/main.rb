@@ -1826,7 +1826,11 @@ class Main < Sinatra::Base
     end
     
     def print_email_field(io, email)
-        io.puts "<div class='input-group'><input type='text' class='form-control' readonly value='#{email}' style='min-width: 100px;' /><div class='input-group-append'><button class='btn btn-secondary btn-clipboard' data-clipboard-action='copy' title='E-Mail-Adresse in die Zwischenablage kopieren' data-clipboard-text='#{email}'><i class='fa fa-clipboard'></i></button></div></div>"
+        io.puts "<div class='input-group'><input type='text' class='form-control' readonly value='#{email}' style='min-width: 100px;' /><div class='input-group-append'><button class='btn btn-secondary btn-clipboard' data-clipboard-action='copy' title='Eintrag in die Zwischenablage kopieren' data-clipboard-text='#{email}'><i class='fa fa-clipboard'></i></button></div></div>"
+    end
+    
+    def print_password_field(io, password)
+        io.puts "<div class='input-group'><input type='password' class='form-control' readonly value='#{password}' style='min-width: 50px;' /><div class='input-group-append'><button class='btn btn-secondary btn-clipboard' data-clipboard-action='copy' title='Eintrag in die Zwischenablage kopieren' data-clipboard-text='#{password}'><i class='fa fa-clipboard'></i></button></div></div>"
     end
     
     def print_lehrerzimmer_panel()
@@ -1999,6 +2003,32 @@ class Main < Sinatra::Base
                 io.puts "<a data-klasse='#{klasse}' class='btn btn-sm ttc #{klasse == active ? 'active': ''}'>#{tr_klasse(klasse)}</a>"
             end
             io.puts "</div>"
+            io.string
+        end
+    end
+    
+    def print_semi_public_links()
+        require_user!
+        # return '' unless teacher_logged_in?
+        return '' if teacher_tablet_logged_in?
+        StringIO.open do |io|
+            io.puts "<h2 style='margin-bottom: 30px; margin-top: 30px;'>Schulinterne Links</h2>"
+            io.puts "<table class='table'>"
+            io.puts "<tr><th>Website</th><th>Name</th><th>Passwort</th></tr>"
+            SEMI_PUBLIC_LINKS.each do |link|
+                next unless link[:condition].call(self)
+                io.puts "<tr>"
+                io.puts "<td><a href='#{link[:url]}' target='_blank'>#{link[:title]}</a></td>"
+                io.puts "<td>"
+                print_email_field(io, link[:user])
+                io.puts "</td>"
+                io.puts "<td>"
+                print_password_field(io, link[:password])
+                io.puts "</td>"
+                io.puts "</tr>"
+            end
+            io.puts "</table>"
+            io.puts "<hr />"
             io.string
         end
     end

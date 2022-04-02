@@ -998,4 +998,68 @@ class Main < Sinatra::Base
         respond(:ok => true)
     end
 
+    post '/api/get_self_tests_for_week' do
+        require_user_who_can_manage_salzh!
+        data = parse_request_data(:optional_keys => [:delta], :types => {:delta => Integer})
+        today = Date.today
+        while today.wday != 1
+            today -= 1
+        end
+        if data[:delta]
+            today -= data[:delta] * 7
+        end
+        d0 = today.strftime('%Y-%m-%d')
+        d1 = (today + 6).strftime('%Y-%m-%d')
+        dates_for_email = {}
+        rows = neo4j_query(<<~END_OF_QUERY, {:email => @session_user[:email], :d0 => d0, :d1 => d1})
+            MATCH (u:User {email: {email}})-[:SELF_TESTED_ON]->(std:SelfTestDay)
+            WHERE std.datum >= {d0} AND std.datum <= {d1}
+            RETURN u.email AS email, std.datum AS datum;
+        END_OF_QUERY
+        rows.each do |row|
+            email = row['email']
+            datum = row['datum']
+            dates_for_email[email] ||= Set.new()
+            dates_for_email[email] << datum
+        end
+        STDERR.puts dates_for_email.to_yaml
+        results = []
+        @@lehrer_order.each do |email|
+            user = @@user_info[email]
+            results << {
+                :email => email,
+                :display_name => user[:display_name],
+                :avatar => user_icon(email, 'avatar-md'),
+                :tested => (dates_for_email[email] || []).to_a.sort,
+            }
+        end
+        results.sort! do |a, b|
+            bs = b[:tested].size
+            as = a[:tested].size
+            (bs == as) ? (@@user_info[a[:email]][:last_name] <=> @@user_info[b[:email]][:last_name]) : (bs <=> as)
+        end
+        respond(:results => results, :dates => (0...7).map { |x| (today + x).strftime('%Y-%m-%d') })
+    end
+
+    post '/api/add_self_test_entry' do
+        require_user_who_can_manage_salzh!
+        data = parse_request_data(:required_keys => [:email, :datum])
+        neo4j_query(<<~END_OF_QUERY, {:email => data[:email], :datum => data[:datum]})
+            MATCH (u:User {email: {email}})
+            MERGE (std:SelfTestDay {datum: {datum}})
+            MERGE (u)-[:SELF_TESTED_ON]->(std);
+        END_OF_QUERY
+        respond(:ok => true)
+    end
+
+    post '/api/remove_self_test_entry' do
+        require_user_who_can_manage_salzh!
+        data = parse_request_data(:required_keys => [:email, :datum])
+        neo4j_query(<<~END_OF_QUERY, {:email => data[:email], :datum => data[:datum]})
+            MATCH (u:User {email: {email}})-[r:SELF_TESTED_ON]->(std:SelfTestDay {datum: {datum}})
+            DELETE r;
+        END_OF_QUERY
+        respond(:ok => true)
+    end
+
 end

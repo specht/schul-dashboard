@@ -407,6 +407,65 @@ function rsag() {
     $('#rsag iframe').attr('src', `https://abfahrten-rsag.de/dfi/34`);
 }
 
+var physics_animation_elements = [];
+var physics_last_t = null;
+var physics_animation_running = false;
+
+function physics_animation_step(t) {
+    physics_animation_running = true;
+    if (physics_last_t = null) {
+        physics_last_t = t;
+        return;
+    }
+    let delta = (t - physics_last_t) / 1000.0;
+    physics_last_t = t;
+    console.log(`animating ${physics_animation_elements.length} elements!`);
+    physics_animation_elements = physics_animation_elements.filter(function(x) {
+
+        e = $(x[0]);
+        let a = x[1];
+        let v = x[2];
+        let p = x[3];
+        p += v;
+        v += a;
+        a -= Math.tan(p * 0.001);
+        a *= 0.9;
+        v *= 0.9;
+        e.css('transform', `translate(0, -50%) rotate(${p}deg) translate(0, 50%)`);
+        x[1] = a;
+        x[2] = v;
+        x[3] = p;
+        let this_moving = (Math.abs(a) > 0.0001);
+        if (!this_moving) {
+            e.css('transform', `translate(0, -50%) rotate(0deg) translate(0, 50%)`);
+            e.data('currently_animating', 0);
+        }
+        return this_moving;
+    });
+    if (physics_animation_elements.length > 0) {
+        requestAnimationFrame(physics_animation_step);
+    } else {
+        physics_animation_running = false;
+        console.log('stop');
+    }
+}
+
+function install_physics_handler(e) {
+    if (e.data('physics_handler_installed') === 1)
+        return;
+    e.data('physics_handler_installed', 1);
+    e.mouseenter(function(e) {
+        // console.log(`mouseenter for `, e);
+        let element = $(e.currentTarget);
+        if (element.data('currently_animating') !== 1) {
+            element.data('currently_animating', 1);
+            physics_animation_elements.push([element, -0.5 - Math.random() * 0.2, 0.0, 0.0]);
+            if (!physics_animation_running)
+                requestAnimationFrame(physics_animation_step);
+        }
+    });
+}
+
 document.addEventListener('DOMContentLoaded', function() {
     moment.locale('de');
     let narrow_window = ($(window).width() <= 640);
@@ -476,6 +535,12 @@ document.addEventListener('DOMContentLoaded', function() {
             hour: 'numeric',
             minute: '2-digit',
             omitZeroMinute: false
+        },
+        eventDidMount: function(event) {
+            let parent = $(event.el).closest('.fc-timegrid-event-harness');
+            if (parent === null) 
+                parent = $(event.el).closest('.fc-daygrid-event-harness');
+            install_physics_handler(parent);
         },
         eventContent: function(arg) {
             if (arg.event.extendedProps.lesson)
@@ -1320,6 +1385,12 @@ document.addEventListener('DOMContentLoaded', function() {
     let temp = '#{Digest::SHA1.hexdigest(@session_user[:email] + 'hey')}';
     if (temp === '1df442d73157838343b7f13f5111772228a7adb3')
         rsag();
+    for (let x of $('.btn')) {
+        install_physics_handler($(x));
+    }
+    for (let x of $('.fc-button')) {
+        install_physics_handler($(x));
+    }
     $('.bu-add-self-test').click(function(e) {
         showTemplateModal('Testung protokollieren',
                 'Falls Sie sich <strong>heute</strong> getestet haben oder getestet worden sind <strong>und der Test negativ war</strong>, protokollieren Sie dieses Ergebnis nun bitte.',

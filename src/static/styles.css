@@ -179,7 +179,11 @@ body {
     transition: background-image 0.3s ease, background-color 0.3s ease;
 }
 
-.container, .ttc, .fc .fc-view-harness, .hint, .weekend_events, .future_homework {
+/* .container, .ttc, .fc .fc-view-harness, .hint, .weekend_events, .future_homework {
+    backdrop-filter: blur(10px);
+} */
+
+.container, .fc .fc-view-harness, .hint, .weekend_events, .future_homework {
     backdrop-filter: blur(10px);
 }
 

@@ -1,0 +1,75 @@
+#{this_is_a_page_for_logged_in_users_who_can_manage_salzh}
+<div class='container' style='padding-top: 30px;'>
+    <div class='row'>
+        <div class='col-md-12'>
+            <div class="table-responsive" style="max-width: 100%; overflow-x: auto;">
+            <table class='table table-striped table-narrow narrow rows_here'>
+            </table>
+            </div>
+        </div>
+    </div>
+</div>
+<script>
+    var delta = #{salzh_protocol_delta.to_i};
+    window.addEventListener('load', function() {
+        api_call('/api/get_self_tests_for_week', {delta: delta}, function(data) {
+            if (data.success) {
+                let table = $('.rows_here');
+                table.empty();
+                let old_count = null;
+                for (let entry of data.results) {
+                    if (entry.tested.length !== old_count) {
+                        old_count = entry.tested.length;
+                        let row = $('<tr>');
+                        row.append($('<th>'));
+                        row.append($('<th>'));
+                        row.append($('<th>').attr('colspan', 7).text(`${old_count} Testungen`));
+                        table.append(row);
+                    }
+                    let row = $('<tr>');
+                    row.append($('<td>').html(entry.avatar));
+                    row.append($('<td>').text(entry.display_name));
+                    for (let i = 0; i < 7; i++) {
+                        let label = '';
+                        let button = $('<button>').addClass('btn').addClass('btn-sm');
+                        if (entry.tested.indexOf(data.dates[i]) >= 0) {
+                            button.addClass('btn-success');
+                            button.data('tested', true);
+                            label = "<i class='fa fa-check'></i>"
+                        } else {
+                            button.addClass('btn-outline-secondary');
+                            button.data('tested', false);
+                            label = "<i class='fa fa-times'></i>"
+                        }
+                        label += `&nbsp;&nbsp;${moment(data.dates[i]).format('ddd DD.MM.')}`;
+                        button.html(label);
+                        row.append($('<td>').append(button));
+                        row.data('email', entry.email);
+                        row.data('display_name', entry.display_name);
+                        button.data('datum', data.dates[i]);
+                        button.click(function(e) {
+                            let email = $(e.target).closest('tr').data('email');
+                            let display_name = $(e.target).closest('tr').data('display_name');
+                            let datum = $(e.target).closest('button').data('datum');
+                            let tested = $(e.target).closest('button').data('tested');
+                            showTemplateModal(tested ? 'Eintrag entfernen' : 'Eintrag hinzufügen',
+                                tested ? 
+                                `Sind Sie sicher, dass Sie die negative Testung für <strong>${display_name}</strong> am <strong>${moment(datum).format('dddd, [den] DD.MM.YYYY')}</strong> entfernen möchten?` :
+                                `Sind Sie sicher, dass Sie eine negative Testung für <strong>${display_name}</strong> am <strong>${moment(datum).format('dddd, [den] DD.MM.YYYY')}</strong> eintragen möchten?`,
+                                tested ? "<i class='fa fa-check'></i>&nbsp;&nbsp;Eintrag entfernen" : "<i class='fa fa-check'></i>&nbsp;&nbsp;Negativen Test eintragen", tested ? 'btn-danger' : 'btn-success',
+                                'Abbrechen', 'btn-secondary', function () {
+                                    api_call(tested ? '/api/remove_self_test_entry' : '/api/add_self_test_entry', {email: email, datum: datum}, function (data) {
+                                        if (data.success) {
+                                            window.location.reload();
+                                        }
+                                    });
+                                }
+                            );
+                        });
+                    }
+                    table.append(row);
+                }
+            }
+        });
+    });
+</script>

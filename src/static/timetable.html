@@ -466,7 +466,7 @@ function install_physics_handler(e) {
             for (let x of physics_animation_elements) {
                 console.log(x[0][0], element[0]);
                 if (x[0][0] === element[0]) {
-                    x[1] = -0.2 - Math.random() * 0.1;
+                    x[1] -= 0.2;
                     break;
                 }
             }

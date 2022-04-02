@@ -1011,8 +1011,8 @@ class Main < Sinatra::Base
         d0 = today.strftime('%Y-%m-%d')
         d1 = (today + 6).strftime('%Y-%m-%d')
         dates_for_email = {}
-        rows = neo4j_query(<<~END_OF_QUERY, {:email => @session_user[:email], :d0 => d0, :d1 => d1})
-            MATCH (u:User {email: {email}})-[:SELF_TESTED_ON]->(std:SelfTestDay)
+        rows = neo4j_query(<<~END_OF_QUERY, {:d0 => d0, :d1 => d1})
+            MATCH (u:User)-[:SELF_TESTED_ON]->(std:SelfTestDay)
             WHERE std.datum >= {d0} AND std.datum <= {d1}
             RETURN u.email AS email, std.datum AS datum;
         END_OF_QUERY
@@ -1022,7 +1022,6 @@ class Main < Sinatra::Base
             dates_for_email[email] ||= Set.new()
             dates_for_email[email] << datum
         end
-        STDERR.puts dates_for_email.to_yaml
         results = []
         @@lehrer_order.each do |email|
             user = @@user_info[email]

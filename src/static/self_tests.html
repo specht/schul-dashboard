@@ -23,7 +23,7 @@
                         let row = $('<tr>');
                         row.append($('<th>'));
                         row.append($('<th>'));
-                        row.append($('<th>').attr('colspan', 7).text(`${old_count} Testungen`));
+                        row.append($('<th>').attr('colspan', 7).text(`${old_count == 0 ? 'keine' : old_count} Testung${old_count != 1 ? 'en' : ''}`));
                         table.append(row);
                     }
                     let row = $('<tr>');

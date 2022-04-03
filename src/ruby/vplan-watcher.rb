@@ -252,7 +252,8 @@ def get_file_from_url(url, &block)
             body = body.encode('utf-8')
             yield(response.header, body)
         else
-            raise "page not found: #{url}"
+            STDERR.puts "WARNING: page not found: #{url}"
+            # raise "page not found: #{url}"
         end
     end
 end

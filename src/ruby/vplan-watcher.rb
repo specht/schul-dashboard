@@ -106,19 +106,19 @@ def handle_vplan_html_file(contents, removed_days)
             assert(!table_mode.nil?)
             # STDERR.puts child.to_s
             child.css('tr').each do |row|
-                row.search('s').each do |n| 
+                row.search('s').each do |n|
                     n.content = "__STRIKE_BEGIN__#{n.content}__STRIKE_END__"
                 end
-                row.search('br').each do |n| 
+                row.search('br').each do |n|
                     n.content = "__LINE_BREAK__"
                 end
-                row.search('td/*').each do |n| 
+                row.search('td/*').each do |n|
                     n.replace(n.content) unless n.name == 's'
                 end
 
                 tr = row.css('th')
                 if tr.size == 6
-                    # Klassenvertretungsplan: 
+                    # Klassenvertretungsplan:
                     headings = tr.map { |x| x.text }.join(' / ')
                     assert(headings == 'Klasse(n) / Stunde / Fach / Raum / (Lehrer) / Text')
                 elsif tr.size == 7
@@ -179,7 +179,7 @@ def handle_vplan_html_file(contents, removed_days)
             b = child.text if child.name == 'b'
             child.css('b').each { |c2| b = c2.text }
             if b
-                datum = parse_html_datum(b) 
+                datum = parse_html_datum(b)
                 datum_list << datum
                 unless removed_days.include?(datum)
                     Dir["/vplan/#{datum}/*.json"].each do |path|
@@ -243,7 +243,7 @@ def get_file_from_url(url, &block)
     if UNTIS_VERTRETUNGSPLAN_USERNAME && UNTIS_VERTRETUNGSPLAN_PASSWORD
         req.basic_auth UNTIS_VERTRETUNGSPLAN_USERNAME, UNTIS_VERTRETUNGSPLAN_PASSWORD
     end
-    
+
     res = Net::HTTP.start(uri.hostname, uri.port, :use_ssl => uri.scheme == 'https') do |http|
         response = http.request(req)
         if response.code.to_i == 200

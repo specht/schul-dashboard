@@ -969,6 +969,7 @@ class Main < Sinatra::Base
         require_user!
         return '' unless teacher_logged_in?
         return '' if teacher_tablet_logged_in?
+        return '' if EXCLUDE_FROM_SELF_TEST_REPORT.include?(@session_user[:shorthand])
         today = Date.today.strftime('%Y-%m-%d')
         StringIO.open do |io|
             io.puts "<div class='hint'>"
@@ -989,6 +990,7 @@ class Main < Sinatra::Base
 
     post '/api/add_self_test_for_today' do
         require_teacher!
+        assert(!EXCLUDE_FROM_SELF_TEST_REPORT.include?(@session_user[:shorthand]))
         today = Date.today.strftime('%Y-%m-%d')
         neo4j_query(<<~END_OF_QUERY, {:email => @session_user[:email], :today => today})
             MATCH (u:User {email: {email}})

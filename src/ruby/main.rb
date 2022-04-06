@@ -1741,7 +1741,9 @@ class Main < Sinatra::Base
                         io.puts "</li>"
                     end
                 elsif x == :directory
+                    STDERR.puts 'A'
                     klassen = @@klassen_for_shorthand[@session_user[:shorthand]] || []
+                    STDERR.puts klassen.to_yaml
                     if user_who_can_manage_antikenfahrt_logged_in?
                         klassen << '11'
                         klassen << '12'

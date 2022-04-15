@@ -41,8 +41,8 @@ class Main < Sinatra::Base
             respond({:error => 'code_expired'})
             assert_with_delay(false, "Code expired", true)
         end
-        user = result['u'].props
-        login_code = result['l'].props
+        user = result['u']
+        login_code = result['l']
         if login_code[:tries] > MAX_LOGIN_TRIES
             neo4j_query(<<~END_OF_QUERY, :tag => data[:tag])
                 MATCH (l:LoginCode {tag: $tag})
@@ -87,8 +87,8 @@ class Main < Sinatra::Base
                 SET l.tries = COALESCE(l.tries, 0) + 1
                 RETURN l, u;
             END_OF_QUERY
-            user = result['u'].props
-            login_code = result['l'].props
+            user = result['u']
+            login_code = result['l']
             if login_code[:tries] > MAX_LOGIN_TRIES
                 neo4j_query(<<~END_OF_QUERY, :tag => tag)
                     MATCH (l:LoginCode {tag: $tag})
@@ -377,7 +377,7 @@ class Main < Sinatra::Base
     
     def get_sessions_for_user(email)
         require_user!
-        sessions = neo4j_query(<<~END_OF_QUERY, :email => email).map { |x| x['s'].props }
+        sessions = neo4j_query(<<~END_OF_QUERY, :email => email).map { |x| x['s'] }
             MATCH (s:Session)-[:BELONGS_TO]->(u:User {email: $email})
             RETURN s
             ORDER BY s.last_access DESC;
@@ -479,11 +479,11 @@ class Main < Sinatra::Base
         END_OF_QUERY
         sus = []
         rows.each do |row|
-            code = row['n'].props[:code]
-            email = row['u'].props[:email]
+            code = row['n'][:code]
+            email = row['u'][:email]
             if (!@@user_info[email][:teacher]) && @@user_info[email][:klasse] == klasse
                 sus << [@@user_info[email][:display_name], code]
-                rows = neo4j_query(<<~END_OF_QUERY, {:email => email, :tag => row['n'].props[:tag]})
+                rows = neo4j_query(<<~END_OF_QUERY, {:email => email, :tag => row['n'][:tag]})
                     MATCH (n:LoginCode {tag: $tag})-[:BELONGS_TO]->(u:User {email: $email})
                     SET n.tainted = true
                 END_OF_QUERY
@@ -506,8 +506,8 @@ class Main < Sinatra::Base
         END_OF_QUERY
         users = []
         rows.each do |row|
-            code = row['n'].props[:code]
-            email = row['u'].props[:email]
+            code = row['n'][:code]
+            email = row['u'][:email]
             users << [@@user_info[email][:display_name], code]
         end
         respond(:codes => users)

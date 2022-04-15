@@ -11,7 +11,7 @@ class Main < Sinatra::Base
         end
         
         # add external users from user's address book
-        ext_users = neo4j_query(<<~END_OF_QUERY, :session_email => @session_user[:email]).map { |x| x['e'].props }
+        ext_users = neo4j_query(<<~END_OF_QUERY, :session_email => @session_user[:email]).map { |x| x['e'] }
             MATCH (u:User {email: $session_email})-[:ENTERED_EXT_USER]->(e:ExternalUser)
             RETURN e
             ORDER BY e.name

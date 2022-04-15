@@ -862,7 +862,7 @@ class Timetable
         rows.each do |row|
             lesson_key = row['l.key']
             offset = row['i.offset']
-            booking = row['b'].props
+            booking = row['b']
             cache_index = (@events_by_lesson_key_and_offset[lesson_key] || {})[offset]
             if cache_index
                 entry = @lesson_cache[cache_index]
@@ -911,7 +911,7 @@ class Timetable
         rows.each do |row|
             lesson_key = row['l.key']
             offset = row['i.offset']
-            booking = row['b'].props
+            booking = row['b']
             cache_index = (@events_by_lesson_key_and_offset[lesson_key] || {})[offset]
             if cache_index
                 entry = @lesson_cache[cache_index]
@@ -1833,7 +1833,7 @@ class Timetable
             END_OF_QUERY
         end
         # debug users_with_defined_groups.to_yaml
-        stored_groups = neo4j_query(<<~END_OF_QUERY, {:emails => users_with_defined_groups}).map { |x| {:email => x['ou.email'], :info => x['g'].props, :recipient => x['u.email']} }
+        stored_groups = neo4j_query(<<~END_OF_QUERY, {:emails => users_with_defined_groups}).map { |x| {:email => x['ou.email'], :info => x['g'], :recipient => x['u.email']} }
             MATCH (g:Group)-[:DEFINED_BY]->(ou:User)
             WHERE COALESCE(g.deleted, false) = false
             AND ou.email IN $emails
@@ -2011,7 +2011,7 @@ class Timetable
             end
         end
         # now fetch all updated info nodes with booked tablet sets
-        rows = neo4j_query(<<~END_OF_QUERY, {:ts => @lesson_info_last_timestamp}).map { |x| {:info => x['i'].props, :key => x['key'], :tablet_set_id => x['tablet_set_id'] } }
+        rows = neo4j_query(<<~END_OF_QUERY, {:ts => @lesson_info_last_timestamp}).map { |x| {:info => x['i'], :key => x['key'], :tablet_set_id => x['tablet_set_id'] } }
             MATCH (t:TabletSet)<-[:BOOKED]-(b:Booking)-[:FOR]->(i:LessonInfo)-[:BELONGS_TO]->(l:Lesson)
             WHERE i.updated >= $ts
             RETURN i, l.key AS key, t.id AS tablet_set_id;
@@ -2023,7 +2023,7 @@ class Timetable
             updated_booked_tablet_sets_for_lesson_key_and_offset[row[:key]][row[:info][:offset]] << row[:tablet_set_id]
         end
         # now fetch all updated info nodes
-        rows = neo4j_query(<<~END_OF_QUERY, {:ts => @lesson_info_last_timestamp}).map { |x| {:info => x['i'].props, :key => x['key'], :tablet_id => x['tablet_id'] } }
+        rows = neo4j_query(<<~END_OF_QUERY, {:ts => @lesson_info_last_timestamp}).map { |x| {:info => x['i'], :key => x['key'], :tablet_id => x['tablet_id'] } }
             MATCH (i:LessonInfo)-[:BELONGS_TO]->(l:Lesson)
             WHERE i.updated >= $ts
             WITH i, l
@@ -2060,7 +2060,7 @@ class Timetable
         end
         # refresh text comments from database
         @text_comments_last_timestamp ||= 0
-        rows = neo4j_query(<<~END_OF_QUERY, {:ts => @text_comments_last_timestamp}).map { |x| {:info => x['c'].props, :key => x['key'], :schueler => x['s.email'], :tcf => x['tcf.email'] } }
+        rows = neo4j_query(<<~END_OF_QUERY, {:ts => @text_comments_last_timestamp}).map { |x| {:info => x['c'], :key => x['key'], :schueler => x['s.email'], :tcf => x['tcf.email'] } }
             MATCH (s:User)<-[:TO]-(c:TextComment)-[:BELONGS_TO]->(l:Lesson)
             WHERE c.updated >= $ts
             WITH s, c, l
@@ -2099,7 +2099,7 @@ class Timetable
         end
         # refresh audio comments from database
         @audio_comments_last_timestamp ||= 0
-        rows = neo4j_query(<<~END_OF_QUERY, {:ts => @audio_comments_last_timestamp}).map { |x| {:info => x['c'].props, :key => x['key'], :schueler => x['s.email'], :acf => x['acf.email'] } }
+        rows = neo4j_query(<<~END_OF_QUERY, {:ts => @audio_comments_last_timestamp}).map { |x| {:info => x['c'], :key => x['key'], :schueler => x['s.email'], :acf => x['acf.email'] } }
             MATCH (s:User)<-[:TO]-(c:AudioComment)-[:BELONGS_TO]->(l:Lesson)
             WHERE c.updated >= $ts
             WITH s, c, l
@@ -2149,7 +2149,7 @@ class Timetable
                 ORDER BY m.created DESC;
             END_OF_QUERY
             new_rows.map! do |x|
-                {:info => x['m'].props, 
+                {:info => x['m'], 
                  :from => x['mf.email'], 
                  :to_list => x['COLLECT(u.email)'], 
                  :rt_list => x['COLLECT(rt)'].map { |x| x.transform_keys { |y| y.to_sym }}
@@ -2174,7 +2174,7 @@ class Timetable
                     end
                 end
             end
-            # rows = neo4j_query(<<~END_OF_QUERY, {:ts => @messages_last_timestamp}).map { |x| {:info => x['m'].props, :from => x['mf.email'], :to => x['u.email'], :rt => x['rt'].props } }
+            # rows = neo4j_query(<<~END_OF_QUERY, {:ts => @messages_last_timestamp}).map { |x| {:info => x['m'], :from => x['mf.email'], :to => x['u.email'], :rt => x['rt'] } }
             #     MATCH (u:User)<-[rt:TO]-(m:Message)-[:FROM]->(mf:User)
             #     WHERE m.updated >= $ts OR rt.updated >= $ts
             #     RETURN m, mf.email, u.email, rt
@@ -2201,7 +2201,7 @@ class Timetable
         end
         # refresh public tests from database
         @public_tests_last_timestamp ||= 0
-        rows = neo4j_query(<<~END_OF_QUERY, {:ts => @public_tests_last_timestamp}).map { |x| x['t'].props }
+        rows = neo4j_query(<<~END_OF_QUERY, {:ts => @public_tests_last_timestamp}).map { |x| x['t'] }
             MATCH (t:Test)
             WHERE t.updated >= $ts
             RETURN t;
@@ -2219,7 +2219,7 @@ class Timetable
         end
         # refresh events from database
         @events_last_timestamp ||= 0
-        rows = neo4j_query(<<~END_OF_QUERY, {:ts => @events_last_timestamp}).map { |x| {:info => x['e'].props, :organized_by => x['ou.email'] } }
+        rows = neo4j_query(<<~END_OF_QUERY, {:ts => @events_last_timestamp}).map { |x| {:info => x['e'], :organized_by => x['ou.email'] } }
             MATCH (e:Event)-[:ORGANIZED_BY]->(ou:User)
             WHERE e.updated >= $ts
             RETURN e, ou.email
@@ -2230,7 +2230,7 @@ class Timetable
         rows.each do |row|
             eids << row[:info][:id]
         end
-        temp = neo4j_query(<<~END_OF_QUERY, {:eids => eids.to_a.sort}).map { |x| {:eid => x['e.id'], :participant => x['u.email'], :rt => x['rt'].props } }
+        temp = neo4j_query(<<~END_OF_QUERY, {:eids => eids.to_a.sort}).map { |x| {:eid => x['e.id'], :participant => x['u.email'], :rt => x['rt'] } }
             MATCH (u:User)-[rt:IS_PARTICIPANT]->(e:Event)
             WHERE e.id IN $eids
             RETURN e.id, u.email, rt

@@ -149,7 +149,7 @@ class Main < Sinatra::Base
                     RETURN e, ou.email;
                 END_OF_QUERY
                 organizer_email = data['ou.email']
-                event = data['e'].props
+                event = data['e']
                 room_name = room_name_for_event(event[:title], eid)
                 
                 if code
@@ -160,10 +160,10 @@ class Main < Sinatra::Base
                         RETURN e, ou.email, u;
                     END_OF_QUERY
                     invitation = rows.select do |row|
-                        row_code = Digest::SHA2.hexdigest(EXTERNAL_USER_EVENT_SCRAMBLER + row['e'].props[:id] + row['u'].props[:email]).to_i(16).to_s(36)[0, 8]
+                        row_code = Digest::SHA2.hexdigest(EXTERNAL_USER_EVENT_SCRAMBLER + row['e'][:id] + row['u'][:email]).to_i(16).to_s(36)[0, 8]
                         code == row_code
                     end.first
-                    ext_name = invitation['u'].props[:name]
+                    ext_name = invitation['u'][:name]
                     event_stream_jwt = gen_jwt_for_stream(ext_name) if event[:stream]
                 else
                     # EVENT - INTERNAL USER
@@ -247,10 +247,10 @@ class Main < Sinatra::Base
                             now = DateTime.now.strftime('%Y-%m-%dT%H:%M')
                             found_teachers = Set.new()
                             results.each do |item|
-                                booking = item['b'].props
-                                lesson = item['l'].props
+                                booking = item['b']
+                                lesson = item['l']
                                 lesson_key = lesson[:key]
-                                lesson_info = item['i'].props
+                                lesson_info = item['i']
                                 lesson_data = @@lessons[:lesson_keys][lesson_key]
                                 start_time = "#{booking[:datum]}T#{booking[:start_time]}"
                                 end_time = "#{booking[:datum]}T#{booking[:end_time]}"
@@ -479,7 +479,7 @@ class Main < Sinatra::Base
     end
     
     def get_current_jitsi_users_for_lesson(lesson_key, offset, user = nil)
-        lesson_info = neo4j_query_expect_one(<<~END_OF_QUERY, {:lesson_key => lesson_key, :offset => offset})['i'].props
+        lesson_info = neo4j_query_expect_one(<<~END_OF_QUERY, {:lesson_key => lesson_key, :offset => offset})['i']
             MATCH (i:LessonInfo {offset: $offset})-[:BELONGS_TO]->(l:Lesson {key: $lesson_key})
             RETURN i;
         END_OF_QUERY

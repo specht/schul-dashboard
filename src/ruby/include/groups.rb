@@ -7,7 +7,7 @@ class Main < Sinatra::Base
                                   :max_string_length => 1024 * 1024)
         id = RandomTag.generate(12)
         timestamp = Time.now.to_i
-        group = neo4j_query_expect_one(<<~END_OF_QUERY, :session_email => @session_user[:email], :timestamp => timestamp, :id => id, :name => data[:name])['g'].props
+        group = neo4j_query_expect_one(<<~END_OF_QUERY, :session_email => @session_user[:email], :timestamp => timestamp, :id => id, :name => data[:name])['g']
             MATCH (a:User {email: $session_email})
             CREATE (g:Group {id: $id, name: $name})
             SET g.created = $timestamp
@@ -60,7 +60,7 @@ class Main < Sinatra::Base
         id = data[:gid]
         STDERR.puts "Updating group #{id}"
         timestamp = Time.now.to_i
-        group = neo4j_query_expect_one(<<~END_OF_QUERY, :session_email => @session_user[:email], :timestamp => timestamp, :id => id, :name => data[:name], :recipients => data[:recipients])['g'].props
+        group = neo4j_query_expect_one(<<~END_OF_QUERY, :session_email => @session_user[:email], :timestamp => timestamp, :id => id, :name => data[:name], :recipients => data[:recipients])['g']
             MATCH (g:Group {id: $id})-[:DEFINED_BY]->(a:User {email: $session_email})
             SET g.updated = $timestamp
             SET g.name = $name

@@ -171,10 +171,10 @@ class Main < Sinatra::Base
             SET l.tries = COALESCE(l.tries, 0) + 1
             RETURN l, u;
         END_OF_QUERY
-        user = result['u'].props
+        user = result['u']
         # make sure we've got the right user
         assert(@@user_info[user[:email]][:matrix_login] == matrix_id)
-        login_code = result['l'].props
+        login_code = result['l']
         assert(code == login_code[:code])
         assert(Time.at(login_code[:valid_to]) >= Time.now)
         neo4j_query(<<~END_OF_QUERY, :email => user[:email], :access_token => access_token)

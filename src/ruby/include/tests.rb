@@ -41,7 +41,7 @@ class Main < Sinatra::Base
                 }
             end
         end
-        tests = neo4j_query(<<~END_OF_QUERY, :start_date => start_date, :end_date => end_date, :klasse => klasse).map { |x| {:user => x['u'].props, :test => x['t'].props } }
+        tests = neo4j_query(<<~END_OF_QUERY, :start_date => start_date, :end_date => end_date, :klasse => klasse).map { |x| {:user => x['u'], :test => x['t'] } }
             MATCH (t:Test {klasse: $klasse})-[:ORGANIZED_BY]->(u:User)
             WHERE t.datum >= $start_date AND t.datum <= $end_date AND COALESCE(t.deleted, false) = false
             RETURN t, u;
@@ -74,7 +74,7 @@ class Main < Sinatra::Base
         data = parse_request_data(:required_keys => [:klasse, :datum, :end_datum, :fach, :kommentar, :typ, :public_for_klasse])
         id = RandomTag.generate(12)
         timestamp = Time.now.to_i
-        test = neo4j_query_expect_one(<<~END_OF_QUERY, :session_email => @session_user[:email], :timestamp => timestamp, :id => id, :klasse => data[:klasse], :datum => data[:datum], :end_datum => data[:end_datum], :fach => data[:fach], :kommentar => data[:kommentar], :typ => data[:typ], :public_for_klasse => data[:public_for_klasse])['t'].props
+        test = neo4j_query_expect_one(<<~END_OF_QUERY, :session_email => @session_user[:email], :timestamp => timestamp, :id => id, :klasse => data[:klasse], :datum => data[:datum], :end_datum => data[:end_datum], :fach => data[:fach], :kommentar => data[:kommentar], :typ => data[:typ], :public_for_klasse => data[:public_for_klasse])['t']
             MATCH (a:User {email: $session_email})
             CREATE (t:Test {id: $id, klasse: $klasse, datum: $datum, end_datum: $end_datum, fach: $fach, kommentar: $kommentar, typ: $typ, public_for_klasse: $public_for_klasse})
             SET t.created = $timestamp
@@ -94,7 +94,7 @@ class Main < Sinatra::Base
         require_teacher!
         data = parse_request_data(:required_keys => [:klasse, :datum, :end_datum, :fach, :kommentar, :typ, :id, :public_for_klasse])
         timestamp = Time.now.to_i
-        test = neo4j_query_expect_one(<<~END_OF_QUERY, :session_email => @session_user[:email], :timestamp => timestamp, :id => data[:id], :klasse => data[:klasse], :datum => data[:datum], :end_datum => data[:end_datum], :fach => data[:fach], :kommentar => data[:kommentar], :typ => data[:typ], :public_for_klasse => data[:public_for_klasse])['t'].props
+        test = neo4j_query_expect_one(<<~END_OF_QUERY, :session_email => @session_user[:email], :timestamp => timestamp, :id => data[:id], :klasse => data[:klasse], :datum => data[:datum], :end_datum => data[:end_datum], :fach => data[:fach], :kommentar => data[:kommentar], :typ => data[:typ], :public_for_klasse => data[:public_for_klasse])['t']
             MATCH (t:Test {id: $id})-[:ORGANIZED_BY]->(a:User {email: $session_email})
             SET t.updated = $timestamp
             SET t.klasse = $klasse

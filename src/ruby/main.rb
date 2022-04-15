@@ -198,7 +198,7 @@ module QtsNeo4j
             @v
         end
     end
-    
+
     def wait_for_neo4j
         delay = 1
         10.times do
@@ -211,6 +211,18 @@ module QtsNeo4j
                 sleep delay
                 delay += 1
             end
+        end
+    end
+
+    def parse_neo4j_result(x)
+        if x.is_a?(Neo4j::Driver::Types::Node) || x.is_a?(Neo4j::Driver::Types::Relationship)
+            #ResultRow.new(x.properties)
+            v = x.properties
+            Hash[v.map { |k, v| [k.to_sym, v] }]
+        elsif x.is_a?(Array)
+            x.map { |y| parse_neo4j_result(y) }
+        else
+            x
         end
     end
 
@@ -234,11 +246,7 @@ module QtsNeo4j
                 item = {}
                 row.keys.each.with_index do |key, i|
                     v = row.values[i]
-                    if v.is_a?(Neo4j::Driver::Types::Node) || v.is_a?(Neo4j::Driver::Types::Relationship)
-                        item[key.to_s] = ResultRow.new(v.properties)
-                    else
-                        item[key.to_s] = v
-                    end
+                    item[key.to_s] = parse_neo4j_result(v)
                 end
                 result << item
             end
@@ -1391,10 +1399,10 @@ class Main < Sinatra::Base
                     END_OF_QUERY
                     if results.size == 1
                         begin
-                            session = results.first['s'].props
+                            session = results.first['s']
                             session_expiry = session[:expires]
                             if DateTime.parse(session_expiry) > DateTime.now
-                                email = results.first['u'].props[:email]
+                                email = results.first['u'][:email]
                                 if email == "tablet@#{SCHUL_MAIL_DOMAIN}"
                                     if @@tablets_which_are_lehrer_tablets.include?(session[:tablet_id])
                                         email = "lehrer.tablet@#{SCHUL_MAIL_DOMAIN}"
@@ -1463,14 +1471,14 @@ class Main < Sinatra::Base
                                 elsif email != "tablet@#{SCHUL_MAIL_DOMAIN}"
                                     @session_user = @@user_info[email].dup
                                     if @session_user
-                                        @session_user[:font] = results.first['u'].props[:font]
-                                        @session_user[:color_scheme] = results.first['u'].props[:color_scheme]
-                                        @session_user[:ical_token] = results.first['u'].props[:ical_token]
-                                        @session_user[:otp_token] = results.first['u'].props[:otp_token]
-                                        @session_user[:homeschooling] = results.first['u'].props[:homeschooling]
-                                        @session_user[:group2] = results.first['u'].props[:group2] || 'A'
-                                        @session_user[:group_af] = results.first['u'].props[:group_af] || ''
-                                        @session_user[:sus_may_contact_me] = results.first['u'].props[:sus_may_contact_me] || false
+                                        @session_user[:font] = results.first['u'][:font]
+                                        @session_user[:color_scheme] = results.first['u'][:color_scheme]
+                                        @session_user[:ical_token] = results.first['u'][:ical_token]
+                                        @session_user[:otp_token] = results.first['u'][:otp_token]
+                                        @session_user[:homeschooling] = results.first['u'][:homeschooling]
+                                        @session_user[:group2] = results.first['u'][:group2] || 'A'
+                                        @session_user[:group_af] = results.first['u'][:group_af] || ''
+                                        @session_user[:sus_may_contact_me] = results.first['u'][:sus_may_contact_me] || false
                                     end
                                 end
                             end
@@ -2341,10 +2349,10 @@ class Main < Sinatra::Base
                         END_OF_QUERY
                         fixed_timetable_data = {:events => []}
                         results.each do |item|
-                            booking = item['b'].props
-                            lesson = item['l'].props
+                            booking = item['b']
+                            lesson = item['l']
                             lesson_key = lesson[:key]
-                            lesson_info = item['i'].props
+                            lesson_info = item['i']
                             lesson_data = @@lessons[:lesson_keys][lesson_key]
                             event = {
                                 :lesson => true,
@@ -2370,7 +2378,7 @@ class Main < Sinatra::Base
                     WHERE (c:TextComment OR c:AudioComment OR c:Message)
                     SET ruc.seen = true
                 END_OF_QUERY
-                sent_messages = neo4j_query(<<~END_OF_QUERY, :email => @session_user[:email]).map { |x| {:info => x['m'].props, :recipient => x['r.email']} }
+                sent_messages = neo4j_query(<<~END_OF_QUERY, :email => @session_user[:email]).map { |x| {:info => x['m'], :recipient => x['r.email']} }
                     MATCH (m:Message)-[:FROM]->(u:User {email: $email})
                     WHERE COALESCE(m.deleted, false) = false
                     WITH m
@@ -2399,7 +2407,7 @@ class Main < Sinatra::Base
             unless teacher_logged_in?
                 redirect "#{WEB_ROOT}/", 302 
             else
-                stored_events = neo4j_query(<<~END_OF_QUERY, :email => @session_user[:email]).map { |x| {:info => x['e'].props, :recipient => x['u.email']} }
+                stored_events = neo4j_query(<<~END_OF_QUERY, :email => @session_user[:email]).map { |x| {:info => x['e'], :recipient => x['u.email']} }
                     MATCH (e:Event)-[:ORGANIZED_BY]->(ou:User {email: $email})
                     WHERE COALESCE(e.deleted, false) = false
                     WITH e
@@ -2435,7 +2443,7 @@ class Main < Sinatra::Base
             unless teacher_or_sv_logged_in?
                 redirect "#{WEB_ROOT}/", 302 
             else
-                stored_groups = neo4j_query(<<~END_OF_QUERY, :email => @session_user[:email]).map { |x| {:info => x['g'].props, :recipient => x['u.email']} }
+                stored_groups = neo4j_query(<<~END_OF_QUERY, :email => @session_user[:email]).map { |x| {:info => x['g'], :recipient => x['u.email']} }
                     MATCH (g:Group)-[:DEFINED_BY]->(ou:User {email: $email})
                     WHERE COALESCE(g.deleted, false) = false
                     WITH g
@@ -2467,7 +2475,7 @@ class Main < Sinatra::Base
             unless teacher_or_sv_logged_in?
                 redirect "#{WEB_ROOT}/", 302 
             else
-                stored_polls = neo4j_query(<<~END_OF_QUERY, :email => @session_user[:email]).map { |x| {:info => x['p'].props, :recipient => x['u.email']} }
+                stored_polls = neo4j_query(<<~END_OF_QUERY, :email => @session_user[:email]).map { |x| {:info => x['p'], :recipient => x['u.email']} }
                     MATCH (p:Poll)-[:ORGANIZED_BY]->(ou:User {email: $email})
                     WHERE COALESCE(p.deleted, false) = false
                     WITH p
@@ -2493,7 +2501,7 @@ class Main < Sinatra::Base
                 
                 # Two part query, step one: first, fetch all polls and poll runs, but without the participants
                 # (otherwise we'll get lots of redundancy and traffic galore)
-                stored_poll_runs = neo4j_query(<<~END_OF_QUERY, :email => @session_user[:email]).map { |x| {:info => x['pr'].props, :pid => x['pid'], :response_count => x['response_count']} }
+                stored_poll_runs = neo4j_query(<<~END_OF_QUERY, :email => @session_user[:email]).map { |x| {:info => x['pr'], :pid => x['pid'], :response_count => x['response_count']} }
                     MATCH (pr:PollRun)-[:RUNS]->(p:Poll)-[:ORGANIZED_BY]->(ou:User {email: $email})
                     WHERE COALESCE(pr.deleted, false) = false
                     AND COALESCE(p.deleted, false) = false

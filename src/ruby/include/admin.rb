@@ -95,7 +95,7 @@ class Main < Sinatra::Base
     
     def print_admin_dashboard()
         require_admin!
-        temp = neo4j_query(<<~END_OF_QUERY).map { |x| {:session => x['s'].props, :email => x['u.email'] } }
+        temp = neo4j_query(<<~END_OF_QUERY).map { |x| {:session => x['s'], :email => x['u.email'] } }
             MATCH (s:Session)-[:BELONGS_TO]->(u:User)
             RETURN s, u.email
         END_OF_QUERY
@@ -364,7 +364,7 @@ class Main < Sinatra::Base
             all_marked_known = Set.new
             all_termination_dates = {}
             neo4j_query('MATCH (n:KnownEmailAddress) RETURN n;').each do |row|
-                info = row['n'].props
+                info = row['n']
                 email = info[:email]
                 if info[:known]
                     all_marked_known << email

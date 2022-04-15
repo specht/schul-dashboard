@@ -15,8 +15,8 @@ class Main < Sinatra::Base
         END_OF_QUERY
         results = {}
         rows.each do |row|
-            booking = row['b'].props
-            tablet_set = row['t'].props
+            booking = row['b']
+            tablet_set = row['t']
             email = row['u.email']
             results[booking[:datum]] ||= {}
             results[booking[:datum]][tablet_set[:id]] ||= []
@@ -27,9 +27,9 @@ class Main < Sinatra::Base
                 :tablet_set => tablet_set[:id]
             }
             if row['l']
-                lesson = row['l'].props
+                lesson = row['l']
                 lesson_key = lesson[:key]
-                lesson_info = row['i'].props
+                lesson_info = row['i']
                 lesson_data = @@lessons[:lesson_keys][lesson_key] || {}
                 entry[:lesson] = lesson_data[:pretty_folder_name]
             end

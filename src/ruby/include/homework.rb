@@ -8,7 +8,7 @@ class Main < Sinatra::Base
             parts = entry.split('/')
             lesson_key = parts[0]
             offset = parts[1].to_i
-            hf = neo4j_query(<<~END_OF_QUERY, :session_email => @session_user[:email], :lesson_key => lesson_key, :offset => offset).map { |x| x['hf'].props }
+            hf = neo4j_query(<<~END_OF_QUERY, :session_email => @session_user[:email], :lesson_key => lesson_key, :offset => offset).map { |x| x['hf'] }
                 MATCH (u:User {email: $session_email})<-[:FROM]-(hf:HomeworkFeedback)-[:FOR]->(li:LessonInfo {offset: $offset})-[:BELONGS_TO]->(l:Lesson {key: $lesson_key})
                 RETURN hf;
             END_OF_QUERY
@@ -21,7 +21,7 @@ class Main < Sinatra::Base
     end
     
     def self.get_homework_feedback_for_lesson_key(lesson_key)
-        hf = $neo4j.neo4j_query(<<~END_OF_QUERY, :lesson_key => lesson_key).map { |x| {:offset => x['li.offset'], :hf => x['hf'].props} }
+        hf = $neo4j.neo4j_query(<<~END_OF_QUERY, :lesson_key => lesson_key).map { |x| {:offset => x['li.offset'], :hf => x['hf']} }
             MATCH (u:User)<-[:FROM]-(hf:HomeworkFeedback)-[:FOR]->(li:LessonInfo)-[:BELONGS_TO]->(l:Lesson {key: $lesson_key})
             RETURN hf, li.offset
             ORDER BY li.offset;

@@ -20,7 +20,7 @@ class Main < Sinatra::Base
                                   :max_value_lengths => {:description => 1024 * 1024})
         id = RandomTag.generate(12)
         timestamp = Time.now.to_i
-        event = neo4j_query_expect_one(<<~END_OF_QUERY, :session_email => @session_user[:email], :timestamp => timestamp, :id => id, :title => data[:title], :jitsi => (data[:jitsi] == 'yes'), :date => data[:date], :start_time => data[:start_time], :end_time => data[:end_time], :description => data[:description])['e'].props
+        event = neo4j_query_expect_one(<<~END_OF_QUERY, :session_email => @session_user[:email], :timestamp => timestamp, :id => id, :title => data[:title], :jitsi => (data[:jitsi] == 'yes'), :date => data[:date], :start_time => data[:start_time], :end_time => data[:end_time], :description => data[:description])['e']
             MATCH (a:User {email: $session_email})
             CREATE (e:Event {id: $id, title: $title, jitsi: $jitsi, date: $date, start_time: $start_time, end_time: $end_time, description: $description})
             SET e.created = $timestamp
@@ -78,7 +78,7 @@ class Main < Sinatra::Base
         id = data[:eid]
         STDERR.puts "Updating event #{id}"
         timestamp = Time.now.to_i
-        event = neo4j_query_expect_one(<<~END_OF_QUERY, :session_email => @session_user[:email], :timestamp => timestamp, :id => id, :title => data[:title], :jitsi => (data[:jitsi] == 'yes'), :date => data[:date], :start_time => data[:start_time], :end_time => data[:end_time], :recipients => data[:recipients], :description => data[:description])['e'].props
+        event = neo4j_query_expect_one(<<~END_OF_QUERY, :session_email => @session_user[:email], :timestamp => timestamp, :id => id, :title => data[:title], :jitsi => (data[:jitsi] == 'yes'), :date => data[:date], :start_time => data[:start_time], :end_time => data[:end_time], :recipients => data[:recipients], :description => data[:description])['e']
             MATCH (e:Event {id: $id})-[:ORGANIZED_BY]->(a:User {email: $session_email})
             SET e.updated = $timestamp
             SET e.title = $title
@@ -192,7 +192,7 @@ class Main < Sinatra::Base
             WHERE (r:ExternalUser OR r:PredefinedExternalUser) AND (r.email = $email) AND COALESCE(rt.deleted, false) = false AND COALESCE(e.deleted, false) = false
             RETURN e, u.email;
         END_OF_QUERY
-        event = temp['e'].props
+        event = temp['e']
         session_user = @@user_info[temp['u.email']][:display_last_name]
         code = Digest::SHA2.hexdigest(EXTERNAL_USER_EVENT_SCRAMBLER + data[:eid] + data[:email]).to_i(16).to_s(36)[0, 8]
         # remove invitation request / if something goes wrong, we won't keep sending out invites blocking the queue
@@ -341,7 +341,7 @@ class Main < Sinatra::Base
     end
 
     def get_sign_ups_for_public_event(event_name)
-        entries = neo4j_query(<<~END_OF_QUERY, :public_event_name => event_name).map { |x| x['n'].props }
+        entries = neo4j_query(<<~END_OF_QUERY, :public_event_name => event_name).map { |x| x['n'] }
             MATCH (n:PublicEventPerson)-[:SIGNED_UP_FOR]->(e:PublicEvent {name: $public_event_name})
             RETURN n
             ORDER BY n.timestamp ASC;

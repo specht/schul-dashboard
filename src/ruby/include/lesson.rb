@@ -130,7 +130,7 @@ class Main < Sinatra::Base
             WHERE b.updated < $timestamp
             DETACH DELETE b;
         END_OF_QUERY
-        rows = $neo4j.neo4j_query(<<~END_OF_QUERY, :key => lesson_key).map { |x| x['i'].props }
+        rows = $neo4j.neo4j_query(<<~END_OF_QUERY, :key => lesson_key).map { |x| x['i'] }
             MATCH (i:LessonInfo)-[:BELONGS_TO]->(l:Lesson {key: $key})
             RETURN i
             ORDER BY i.offset;
@@ -142,7 +142,7 @@ class Main < Sinatra::Base
                 [:offset, :updated].include?(k)
             end
         end
-        rows = $neo4j.neo4j_query(<<~END_OF_QUERY, :key => lesson_key).map { |x| {:comment => x['c'].props, :user => x['u'].props, :text_comment_from => x['tcf.email'] } }
+        rows = $neo4j.neo4j_query(<<~END_OF_QUERY, :key => lesson_key).map { |x| {:comment => x['c'], :user => x['u'], :text_comment_from => x['tcf.email'] } }
             MATCH (u:User)<-[:TO]-(c:TextComment)-[:BELONGS_TO]->(l:Lesson {key: $key})
             MATCH (c)-[:FROM]->(tcf:User)
             RETURN c, u, tcf.email
@@ -157,7 +157,7 @@ class Main < Sinatra::Base
                 results[row[:comment][:offset]][:comments][row[:user][:email]][:text_comment_from] = row[:text_comment_from] 
             end
         end
-        rows = $neo4j.neo4j_query(<<~END_OF_QUERY, :key => lesson_key).map { |x| {:comment => x['c'].props, :user => x['u'].props, :audio_comment_from => x['acf.email'] } }
+        rows = $neo4j.neo4j_query(<<~END_OF_QUERY, :key => lesson_key).map { |x| {:comment => x['c'], :user => x['u'], :audio_comment_from => x['acf.email'] } }
             MATCH (u:User)<-[:TO]-(c:AudioComment)-[:BELONGS_TO]->(l:Lesson {key: $key})
             MATCH (c)-[:FROM]->(acf:User)
             RETURN c, u, acf.email
@@ -173,7 +173,7 @@ class Main < Sinatra::Base
                 results[row[:comment][:offset]][:comments][row[:user][:email]][:audio_comment_from] = row[:audio_comment_from] 
             end
         end
-        rows = $neo4j.neo4j_query(<<~END_OF_QUERY, :key => lesson_key).map { |x| {:offset => x['li.offset'], :feedback => x['hf'].props, :user => x['u.email'] }}
+        rows = $neo4j.neo4j_query(<<~END_OF_QUERY, :key => lesson_key).map { |x| {:offset => x['li.offset'], :feedback => x['hf'], :user => x['u.email'] }}
             MATCH (u:User)<-[:FROM]-(hf:HomeworkFeedback)-[:FOR]->(li:LessonInfo)-[:BELONGS_TO]->(l:Lesson {key: $key})
             RETURN hf, li.offset, u.email;
         END_OF_QUERY
@@ -317,7 +317,7 @@ class Main < Sinatra::Base
         @@tablets_for_school_streaming.each do |tablet_id|
             available_tablets << tablet_id
         end
-        bookings = neo4j_query(<<~END_OF_QUERY, :datum => data[:datum]).map { |x| {:tablet_id => x['t.id'], :booking => x['b'].props, :lesson_key => x['l.key']} }
+        bookings = neo4j_query(<<~END_OF_QUERY, :datum => data[:datum]).map { |x| {:tablet_id => x['t.id'], :booking => x['b'], :lesson_key => x['l.key']} }
             MATCH (t:Tablet)<-[:WHICH]-(b:Booking {datum: $datum})-[:FOR]->(i:LessonInfo)-[:BELONGS_TO]->(l:Lesson)
             RETURN t.id, b, l.key;
         END_OF_QUERY
@@ -432,11 +432,11 @@ class Main < Sinatra::Base
         END_OF_QUERY
         results = {}
         rows.each do |row|
-            lesson = row['l'].props
+            lesson = row['l']
             lesson_key = lesson[:key]
-            lesson_info = row['i'].props
-            booking = row['b'].props
-            tablet = row['t'].props
+            lesson_info = row['i']
+            booking = row['b']
+            tablet = row['t']
             lesson_data = @@lessons[:lesson_keys][lesson_key]
             results[booking[:datum]] ||= {}
             results[booking[:datum]][tablet[:id]] ||= []
@@ -552,7 +552,7 @@ class Main < Sinatra::Base
             Zip::File.open(file.path, Zip::File::CREATE) do |zipfile|
                 @@lessons[:lesson_keys].keys.each do |lesson_key|
                     info = @@lessons[:lesson_keys][lesson_key]
-                    temp = neo4j_query(<<~END_OF_QUERY, {:lesson_key => lesson_key}).map { |x| x['li'].props }
+                    temp = neo4j_query(<<~END_OF_QUERY, {:lesson_key => lesson_key}).map { |x| x['li'] }
                         MATCH (li:LessonInfo)-[:BELONGS_TO]->(l:Lesson {key: $lesson_key})
                         RETURN li
                         ORDER BY li.offset;

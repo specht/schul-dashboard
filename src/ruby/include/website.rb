@@ -10,12 +10,12 @@ class Main < Sinatra::Base
 
     def self.get_website_events
         ts_now = DateTime.now.strftime('%Y-%m-%d')
-        $neo4j.neo4j_query(<<~END_OF_QUERY, :today => ts_now).map { |x| x['e'].props }
+        $neo4j.neo4j_query(<<~END_OF_QUERY, :today => ts_now).map { |x| x['e'] }
             MATCH (e:WebsiteEvent)
             WHERE e.date < $today
             DELETE e;
         END_OF_QUERY
-        results = $neo4j.neo4j_query(<<~END_OF_QUERY, :today => ts_now).map { |x| x['e'].props }
+        results = $neo4j.neo4j_query(<<~END_OF_QUERY, :today => ts_now).map { |x| x['e'] }
             MATCH (e:WebsiteEvent)
             RETURN e
             ORDER BY e.date, e.title;
@@ -262,7 +262,7 @@ class Main < Sinatra::Base
     post '/api/get_news_entry' do
         require_user_who_can_manage_news!
         data = parse_request_data(:required_keys => [:timestamp], :types => {:timestamp => Integer})
-        result = neo4j_query_expect_one(<<~END_OF_QUERY, {:timestamp => data[:timestamp]})['n'].props
+        result = neo4j_query_expect_one(<<~END_OF_QUERY, {:timestamp => data[:timestamp]})['n']
             MATCH (n:NewsEntry {timestamp: $timestamp})
             RETURN n;
         END_OF_QUERY
@@ -296,7 +296,7 @@ class Main < Sinatra::Base
     
     get "/api/website_get_events/#{WEBSITE_READ_INFO_SECRET}" do
         data = {}
-        results = neo4j_query(<<~END_OF_QUERY).map { |x| x['e'].props }
+        results = neo4j_query(<<~END_OF_QUERY).map { |x| x['e'] }
             MATCH (e:WebsiteEvent)
             RETURN e
             ORDER BY e.date, e.title;
@@ -310,7 +310,7 @@ class Main < Sinatra::Base
     end
     
     get "/api/get_frontpage_news_entries/#{WEBSITE_READ_INFO_SECRET}" do
-        entries = neo4j_query(<<~END_OF_QUERY).map { |x| x['n'].props }
+        entries = neo4j_query(<<~END_OF_QUERY).map { |x| x['n'] }
             MATCH (n:NewsEntry)
             WHERE n.published = true
             RETURN n

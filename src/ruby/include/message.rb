@@ -13,7 +13,7 @@ class Main < Sinatra::Base
             f.print data[:message]
         end
         timestamp = Time.now.to_i
-        message = neo4j_query_expect_one(<<~END_OF_QUERY, :session_email => @session_user[:email], :timestamp => timestamp, :id => id, :recipients => data[:recipients])['m'].props
+        message = neo4j_query_expect_one(<<~END_OF_QUERY, :session_email => @session_user[:email], :timestamp => timestamp, :id => id, :recipients => data[:recipients])['m']
             MATCH (a:User {email: $session_email})
             CREATE (m:Message {id: $id})
             SET m.created = $timestamp
@@ -51,7 +51,7 @@ class Main < Sinatra::Base
             f.print data[:message]
         end
         timestamp = Time.now.to_i
-        message = neo4j_query_expect_one(<<~END_OF_QUERY, :session_email => @session_user[:email], :timestamp => timestamp, :id => id, :recipients => data[:recipients])['m'].props
+        message = neo4j_query_expect_one(<<~END_OF_QUERY, :session_email => @session_user[:email], :timestamp => timestamp, :id => id, :recipients => data[:recipients])['m']
             MATCH (m:Message {id: $id})-[:FROM]->(a:User {email: $session_email})
             SET m.updated = $timestamp
             WITH DISTINCT m

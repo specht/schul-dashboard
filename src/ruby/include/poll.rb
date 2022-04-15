@@ -31,9 +31,9 @@ class Main < Sinatra::Base
                 RETURN pr, p, au.email, COUNT(ou) AS total_participants
             END_OF_QUERY
         end
-        poll = result['p'].props
+        poll = result['p']
         poll.delete(:items)
-        poll_run = result['pr'].props
+        poll_run = result['pr']
         poll_run[:items] = JSON.parse(poll_run[:items])
         return poll, poll_run, result['au.email'], result['total_participants']
     end
@@ -54,7 +54,7 @@ class Main < Sinatra::Base
                 RETURN prs.response, u, pr;
             END_OF_QUERY
             results = rows.select do |row|
-                row_code = Digest::SHA2.hexdigest(EXTERNAL_USER_EVENT_SCRAMBLER + row['pr'].props[:id] + row['u'].props[:email]).to_i(16).to_s(36)[0, 8]
+                row_code = Digest::SHA2.hexdigest(EXTERNAL_USER_EVENT_SCRAMBLER + row['pr'][:id] + row['u'][:email]).to_i(16).to_s(36)[0, 8]
                 external_code == row_code
             end
             unless results.empty?
@@ -87,7 +87,7 @@ class Main < Sinatra::Base
             SET pr.end_time = $now_time
             RETURN pr
         END_OF_QUERY
-        poll_run = result['pr'].props
+        poll_run = result['pr']
         poll_run[:items] = JSON.parse(poll_run[:items])
         respond(:prid => data[:prid], :end_date => now_date, :end_time => now_time)
     end
@@ -124,7 +124,7 @@ class Main < Sinatra::Base
                     RETURN id(u), pr, u;
                 END_OF_QUERY
                 results = rows.select do |row|
-                    row_code = Digest::SHA2.hexdigest(EXTERNAL_USER_EVENT_SCRAMBLER + row['pr'].props[:id] + row['u'].props[:email]).to_i(16).to_s(36)[0, 8]
+                    row_code = Digest::SHA2.hexdigest(EXTERNAL_USER_EVENT_SCRAMBLER + row['pr'][:id] + row['u'][:email]).to_i(16).to_s(36)[0, 8]
                     external_code == row_code
                 end
                 neo4j_query(<<~END_OF_QUERY, {:prid => prid, :response => data[:response], :node_id => results.first['id(u)']})
@@ -177,8 +177,8 @@ class Main < Sinatra::Base
         participants = Hash[participants.map do |x|
             [x['pu.email'], x['pu.name'] || (@@user_info[x['pu.email']] || {})[:display_name] || 'NN']
         end]
-        poll = temp['p'].props
-        poll_run = temp['pr'].props
+        poll = temp['p']
+        poll_run = temp['pr']
         poll[:organizer] = (@@user_info[temp['au.email']] || {})[:display_last_name]
         poll_run[:items] = JSON.parse(poll_run[:items])
         poll_run[:participant_count] = temp['participant_count']
@@ -568,7 +568,7 @@ class Main < Sinatra::Base
         id = RandomTag.generate(12)
         data[:items] = sanitize_poll_items(JSON.parse(data[:items])).to_json
         timestamp = Time.now.to_i
-        poll = neo4j_query_expect_one(<<~END_OF_QUERY, :session_email => @session_user[:email], :timestamp => timestamp, :id => id, :title => data[:title], :items => data[:items])['p'].props
+        poll = neo4j_query_expect_one(<<~END_OF_QUERY, :session_email => @session_user[:email], :timestamp => timestamp, :id => id, :title => data[:title], :items => data[:items])['p']
             MATCH (a:User {email: $session_email})
             CREATE (p:Poll {id: $id, title: $title, items: $items})
             SET p.created = $timestamp
@@ -593,7 +593,7 @@ class Main < Sinatra::Base
         STDERR.puts "Updating poll #{id}"
         data[:items] = sanitize_poll_items(JSON.parse(data[:items])).to_json
         timestamp = Time.now.to_i
-        poll = neo4j_query_expect_one(<<~END_OF_QUERY, :session_email => @session_user[:email], :timestamp => timestamp, :id => id, :title => data[:title], :items => data[:items])['p'].props
+        poll = neo4j_query_expect_one(<<~END_OF_QUERY, :session_email => @session_user[:email], :timestamp => timestamp, :id => id, :title => data[:title], :items => data[:items])['p']
             MATCH (p:Poll {id: $id})-[:ORGANIZED_BY]->(a:User {email: $session_email})
             SET p.updated = $timestamp
             SET p.title = $title
@@ -635,7 +635,7 @@ class Main < Sinatra::Base
         id = RandomTag.generate(12)
         timestamp = Time.now.to_i
         assert(['true', 'false'].include?(data[:anonymous]))
-        poll_run = neo4j_query_expect_one(<<~END_OF_QUERY, :session_email => @session_user[:email], :timestamp => timestamp, :id => id, :pid => data[:pid], :anonymous => (data[:anonymous] == 'true'), :start_date => data[:start_date], :start_time => data[:start_time], :end_date => data[:end_date], :end_time => data[:end_time])['pr'].props
+        poll_run = neo4j_query_expect_one(<<~END_OF_QUERY, :session_email => @session_user[:email], :timestamp => timestamp, :id => id, :pid => data[:pid], :anonymous => (data[:anonymous] == 'true'), :start_date => data[:start_date], :start_time => data[:start_time], :end_date => data[:end_date], :end_time => data[:end_time])['pr']
             MATCH (p:Poll {id: $pid})-[:ORGANIZED_BY]->(a:User {email: $session_email})
             CREATE (pr:PollRun {id: $id, anonymous: $anonymous, start_date: $start_date, start_time: $start_time, end_date: $end_date, end_time: $end_time})
             SET pr.created = $timestamp
@@ -690,7 +690,7 @@ class Main < Sinatra::Base
         STDERR.puts "Updating poll run #{id}"
         timestamp = Time.now.to_i
         assert(['true', 'false'].include?(data[:anonymous]))
-        poll_run = neo4j_query_expect_one(<<~END_OF_QUERY, :session_email => @session_user[:email], :timestamp => timestamp, :id => id, :anonymous => (data[:anonymous] == 'true'), :start_date => data[:start_date], :start_time => data[:start_time], :end_date => data[:end_date], :end_time => data[:end_time], :recipients => data[:recipients])['pr'].props
+        poll_run = neo4j_query_expect_one(<<~END_OF_QUERY, :session_email => @session_user[:email], :timestamp => timestamp, :id => id, :anonymous => (data[:anonymous] == 'true'), :start_date => data[:start_date], :start_time => data[:start_time], :end_date => data[:end_date], :end_time => data[:end_time], :recipients => data[:recipients])['pr']
             MATCH (pr:PollRun {id: $id})-[:RUNS]->(p:Poll)-[:ORGANIZED_BY]->(a:User {email: $session_email})
             WHERE pr.anonymous = $anonymous
             SET pr.updated = $timestamp
@@ -792,8 +792,8 @@ class Main < Sinatra::Base
             WHERE (r:ExternalUser OR r:PredefinedExternalUser) AND (r.email = $email) AND COALESCE(rt.deleted, false) = false AND COALESCE(pr.deleted, false) = false AND COALESCE(p.deleted, false) = false
             RETURN pr, p, u.email;
         END_OF_QUERY
-        poll_run = temp['pr'].props
-        poll = temp['p'].props
+        poll_run = temp['pr']
+        poll = temp['p']
         session_user = @@user_info[temp['u.email']][:display_last_name]
         code = Digest::SHA2.hexdigest(EXTERNAL_USER_EVENT_SCRAMBLER + data[:prid] + data[:email]).to_i(16).to_s(36)[0, 8]
         deliver_mail do
@@ -843,7 +843,7 @@ class Main < Sinatra::Base
         today = Date.today.strftime('%Y-%m-%d')
         now = Time.now.strftime('%Y-%m-%dT%H:%M:%S')
         email = @session_user[:email]
-        entries = neo4j_query(<<~END_OF_QUERY, :email => email, :today => today).map { |x| {:poll_run => x['pr'].props, :poll_title => x['p.title'], :organizer => x['a.email'], :hidden => x['hidden'] } }
+        entries = neo4j_query(<<~END_OF_QUERY, :email => email, :today => today).map { |x| {:poll_run => x['pr'], :poll_title => x['p.title'], :organizer => x['a.email'], :hidden => x['hidden'] } }
             MATCH (u:User {email: $email})-[rt:IS_PARTICIPANT]->(pr:PollRun)-[:RUNS]->(p:Poll)-[:ORGANIZED_BY]->(a:User)
             WHERE COALESCE(rt.deleted, false) = false
             AND COALESCE(pr.deleted, false) = false
@@ -911,16 +911,16 @@ class Main < Sinatra::Base
             RETURN pr, ou.email, u, p;
         END_OF_QUERY
         invitation = rows.select do |row|
-            row_code = Digest::SHA2.hexdigest(EXTERNAL_USER_EVENT_SCRAMBLER + row['pr'].props[:id] + row['u'].props[:email]).to_i(16).to_s(36)[0, 8]
+            row_code = Digest::SHA2.hexdigest(EXTERNAL_USER_EVENT_SCRAMBLER + row['pr'][:id] + row['u'][:email]).to_i(16).to_s(36)[0, 8]
             code == row_code
         end.first
         if invitation.nil?
             redirect "#{WEB_ROOT}/poll_not_found", 302
             return
         end
-        ext_name = invitation['u'].props[:name]
-        poll = invitation['p'].props
-        poll_run = invitation['pr'].props
+        ext_name = invitation['u'][:name]
+        poll = invitation['p']
+        poll_run = invitation['pr']
         now = "#{Date.today.strftime('%Y-%m-%d')}T#{Time.now.strftime('%H:%M')}:00"
         start_time = "#{poll_run[:start_date]}T#{poll_run[:start_time]}:00"
         end_time = "#{poll_run[:end_date]}T#{poll_run[:end_time]}:00"

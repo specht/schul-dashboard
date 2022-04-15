@@ -11,7 +11,8 @@ require 'json'
 require 'jwt'
 require 'kramdown'
 require 'mail'
-require 'neography'
+# require 'neography'
+require 'neo4j_ruby_driver'
 require 'net/http'
 require 'net/imap'
 require 'nextcloud'
@@ -128,25 +129,25 @@ HOMEWORK_FEEDBACK_EMOJIS = {'good' => '🙂',
 
 HOURS_FOR_KLASSE = {}
 
-Neography.configure do |config|
-    config.protocol             = "http"
-    config.server               = "neo4j"
-    config.port                 = 7474
-    config.directory            = ""  # prefix this path with '/'
-    config.cypher_path          = "/cypher"
-    config.gremlin_path         = "/ext/GremlinPlugin/graphdb/execute_script"
-    config.log_file             = "/dev/shm/neography.log"
-    config.log_enabled          = false
-    config.slow_log_threshold   = 0    # time in ms for query logging
-    config.max_threads          = 20
-    config.authentication       = nil  # 'basic' or 'digest'
-    config.username             = nil
-    config.password             = nil
-    config.parser               = MultiJsonParser
-    config.http_send_timeout    = 1200
-    config.http_receive_timeout = 1200
-    config.persistent           = true
-end
+# Neography.configure do |config|
+#     config.protocol             = "http"
+#     config.server               = "neo4j"
+#     config.port                 = 7474
+#     config.directory            = ""  # prefix this path with '/'
+#     config.cypher_path          = "/cypher"
+#     config.gremlin_path         = "/ext/GremlinPlugin/graphdb/execute_script"
+#     config.log_file             = "/dev/shm/neography.log"
+#     config.log_enabled          = false
+#     config.slow_log_threshold   = 0    # time in ms for query logging
+#     config.max_threads          = 20
+#     config.authentication       = nil  # 'basic' or 'digest'
+#     config.username             = nil
+#     config.password             = nil
+#     config.parser               = MultiJsonParser
+#     config.http_send_timeout    = 1200
+#     config.http_receive_timeout = 1200
+#     config.persistent           = true
+# end
 
 module QtsNeo4j
 
@@ -155,40 +156,36 @@ module QtsNeo4j
             @code = code
             @message = message
         end
-        
+
         def to_s
             "Cypher Error\n#{@code}\n#{@message}"
         end
     end
 
     def transaction(&block)
-        @neo4j ||= Neography::Rest.new
-        @tx ||= []
-        item = nil
-        if @tx.empty?
-            item = @neo4j.begin_transaction
-#             STDERR.puts "Starting transaction ##{item['commit'].split("/")[-2]}."
-            @transaction_size = 0
-        end
-        @tx << item
-        begin
-            result = yield
-            item = @tx.pop
-            unless item.nil?
-#                 STDERR.puts "Committing transaction ##{item['commit'].split("/")[-2]} with #{@transaction_size} queries."
-                @neo4j.commit_transaction(item)
-            end
-            result
-        rescue
-            item = @tx.pop
-            unless item.nil?
-                begin
-                    debug("Rolling back transaction ##{item['commit'].split("/")[-2]} with #{@transaction_size} queries.")
-                    @neo4j.rollback_transaction(item)
-                rescue
+        @@neo4j_driver ||= Neo4j::Driver::GraphDatabase.driver('bolt://neo4j:7687')
+        if @has_bolt_session.nil?
+            begin
+                @has_bolt_session = true
+                @@neo4j_driver.session do |session|
+                    if @has_bolt_transaction.nil?
+                        begin
+                            session.write_transaction do |tx|
+                                @has_bolt_transaction = tx
+                                yield
+                            end
+                        ensure
+                            @has_bolt_transaction = nil
+                        end
+                    else
+                        yield
+                    end
                 end
+            ensure
+                @has_bolt_session = nil
             end
-            raise
+        else
+            yield
         end
     end
 
@@ -230,62 +227,37 @@ module QtsNeo4j
         # return
         transaction do
             temp_result = nil
-            5.times do
-                begin
-                    temp_result = @neo4j.in_transaction(@tx.first, [query_str, options])
-                    break
-                rescue Excon::Error::Socket
-                    STDERR.puts "ATTENTION: Retrying query:"
-                    STDERR.puts query_str
-                    STDERR.puts options.to_json
-                    sleep 1.0
-                end
-            end
-            if temp_result.nil?
-                STDERR.puts "ATTENTION: Giving up on query after 5 tries."
-                raise 'neo4j_oopsie'
-            end
-                
-            if temp_result['errors'] && !temp_result['errors'].empty?
-                STDERR.puts "This:"
-                temp = temp_result.to_yaml
-                if temp.size < 1024 * 10
-                    STDERR.puts temp
-                else
-                    STDERR.puts "(omitted YAML string with #{temp.size} characters)"
-                end
-                raise CypherError.new(temp_result['errors'].first['code'], temp_result['errors'].first['message'])
-            end
+            temp_result = @has_bolt_transaction.run(query_str, options)
+
             result = []
-            temp_result['results'].first['data'].each_with_index do |row, row_index|
-                result << {}
-                temp_result['results'].first['columns'].each_with_index do |key, key_index|
-                    if row['row'][key_index].is_a? Hash
-                        result.last[key] = ResultRow.new(row['row'][key_index])
+            temp_result.each do |row|
+                item = {}
+                row.keys.each.with_index do |key, i|
+                    v = row.values[i]
+                    if v.is_a?(Neo4j::Driver::Types::Node) || v.is_a?(Neo4j::Driver::Types::Relationship)
+                        item[key.to_s] = ResultRow.new(v.properties)
                     else
-                        result.last[key] = row['row'][key_index]
+                        item[key.to_s] = v
                     end
                 end
+                result << item
             end
-            @transaction_size += 1
             result
         end
     end
 
     def neo4j_query_expect_one(query_str, options = {})
-        transaction do
-            result = neo4j_query(query_str, options).to_a
-            unless result.size == 1
-                if DEVELOPMENT
-                    debug '-' * 40
-                    debug query_str
-                    debug options.to_json
-                    debug '-' * 40
-                end
-                raise "Expected one result but got #{result.size}" 
+        result = neo4j_query(query_str, options)
+        unless result.size == 1
+            if DEVELOPMENT
+                debug '-' * 40
+                debug query_str
+                debug options.to_json
+                debug '-' * 40
             end
-            result.first
+            raise "Expected one result but got #{result.size}"
         end
+        result.first
     end
 end
 
@@ -377,6 +349,17 @@ class SetupDatabase
     
     def setup(main)
         delay = 1
+        # Neo4j::Driver::GraphDatabase.driver('bolt://neo4j:7687') do |driver|
+        #     driver.session do |session|
+        #         greeting = session.write_transaction do |tx|
+        #             result = tx.run("CREATE (a:Greeting) SET a.message = $message RETURN a.message + ', from node ' + id(a)",
+        #             message: 'hello, world')
+        #             result.single.first
+        #         end
+        #         puts greeting
+        #     end
+        # end
+        # exit(1)
         10.times do
             begin
                 neo4j_query("MATCH (n) RETURN n LIMIT 1;")

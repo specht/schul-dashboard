@@ -32,6 +32,5 @@ end
 dump = DumpDatabase.new
 dump.run
 
-
 # MATCH (n) RETURN id(n) as id, labels(n) as labels, n as n;
 # MATCH ()-[r]->() RETURN type(r) as type, id(r) as id, id(startnode(r)) as from, id(endnode(r)) as to, r as r;

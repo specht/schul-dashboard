@@ -160,6 +160,8 @@ module QtsNeo4j
                         yield
                     end
                 end
+            rescue StandardError => e
+                debug("[NEO4J ERROR] #{e}")
             ensure
                 @has_bolt_session = nil
             end

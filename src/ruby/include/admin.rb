@@ -513,12 +513,12 @@ class Main < Sinatra::Base
         data = parse_request_data(:required_keys => [:email, :known])
         if data[:known] == 'yes'
             neo4j_query(<<~END_OF_QUERY, :email => data[:email])
-                MERGE (n:KnownEmailAddress {email: {email}})
+                MERGE (n:KnownEmailAddress {email: $email})
                 SET n.known = true;
             END_OF_QUERY
         else
             neo4j_query(<<~END_OF_QUERY, :email => data[:email])
-                MERGE (n:KnownEmailAddress {email: {email}})
+                MERGE (n:KnownEmailAddress {email: $email})
                 SET n.known = false;
             END_OF_QUERY
         end
@@ -547,8 +547,8 @@ class Main < Sinatra::Base
             end
         end        
         neo4j_query(<<~END_OF_QUERY, :email => data[:email], :termination_date => termination_date.strftime('%Y-%m-%d'))
-            MERGE (n:KnownEmailAddress {email: {email}})
-            SET n.scheduled_termination = {termination_date};
+            MERGE (n:KnownEmailAddress {email: $email})
+            SET n.scheduled_termination = $termination_date;
         END_OF_QUERY
         respond(:ok => 'yeah')
     end
@@ -572,7 +572,7 @@ class Main < Sinatra::Base
             end
         end        
         neo4j_query(<<~END_OF_QUERY, :email => data[:email])
-            MERGE (n:KnownEmailAddress {email: {email}})
+            MERGE (n:KnownEmailAddress {email: $email})
             REMOVE n.scheduled_termination;
         END_OF_QUERY
         respond(:ok => 'yeah')

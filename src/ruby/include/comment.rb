@@ -28,20 +28,20 @@ class Main < Sinatra::Base
         transaction do 
             timestamp = Time.now.to_i
             results = neo4j_query(<<~END_OF_QUERY, :session_email => @session_user[:email], :key => lesson_key, :offset => lesson_offset, :schueler => schueler, :audio_comment_tag => tag, :duration => duration, :timestamp => timestamp, :id => id)
-                MATCH (u:User {email: {schueler}})
-                MERGE (l:Lesson {key: {key}})
-                MERGE (u)<-[ruc:TO]-(c:AudioComment {offset: {offset}})-[:BELONGS_TO]->(l)
+                MATCH (u:User {email: $schueler})
+                MERGE (l:Lesson {key: $key})
+                MERGE (u)<-[ruc:TO]-(c:AudioComment {offset: $offset})-[:BELONGS_TO]->(l)
                 WITH ruc, u, c, c.tag as old_tag
-                SET c.id = {id}
-                SET c.tag = {audio_comment_tag}
-                SET c.duration = {duration}
-                SET c.updated = {timestamp}
+                SET c.id = $id
+                SET c.tag = $audio_comment_tag
+                SET c.duration = $duration
+                SET c.updated = $timestamp
                 REMOVE ruc.seen
                 WITH c, old_tag
                 OPTIONAL MATCH (c)-[r:FROM]->(:User)
                 DELETE r
                 WITH c, old_tag
-                MATCH (su:User {email: {session_email}})
+                MATCH (su:User {email: $session_email})
                 MERGE (c)-[:FROM]->(su)
                 RETURN old_tag
             END_OF_QUERY
@@ -61,9 +61,9 @@ class Main < Sinatra::Base
         transaction do 
             timestamp = Time.now.to_i
             results = neo4j_query(<<~END_OF_QUERY, :key => data[:lesson_key], :offset => data[:lesson_offset], :schueler => data[:schueler], :timestamp => timestamp)
-                MATCH (:User {email: {schueler}})<-[:TO]-(c:AudioComment {offset: {offset}})-[:BELONGS_TO]->(:Lesson {key: {key}})
+                MATCH (:User {email: $schueler})<-[:TO]-(c:AudioComment {offset: $offset})-[:BELONGS_TO]->(:Lesson {key: $key})
                 WITH c, c.tag AS old_tag
-                SET c = {offset: c.offset, updated: {timestamp}}
+                SET c = {offset: c.offset, updated: $timestamp}
                 WITH c, old_tag
                 OPTIONAL MATCH (c)-[r:FROM]->(:User)
                 DELETE r
@@ -87,19 +87,19 @@ class Main < Sinatra::Base
         transaction do 
             timestamp = Time.now.to_i
             neo4j_query(<<~END_OF_QUERY, :session_email => @session_user[:email], :key => data[:lesson_key], :offset => data[:lesson_offset], :schueler => data[:schueler], :text_comment => data[:comment], :timestamp => timestamp, :id => id)
-                MATCH (u:User {email: {schueler}})
-                MERGE (l:Lesson {key: {key}})
-                MERGE (u)<-[ruc:TO]-(c:TextComment {offset: {offset}})-[:BELONGS_TO]->(l)
-                SET c.comment = {text_comment}
-                SET c.created = {timestamp}
-                SET c.updated = {timestamp}
-                SET c.id = {id}
+                MATCH (u:User {email: $schueler})
+                MERGE (l:Lesson {key: $key})
+                MERGE (u)<-[ruc:TO]-(c:TextComment {offset: $offset})-[:BELONGS_TO]->(l)
+                SET c.comment = $text_comment
+                SET c.created = $timestamp
+                SET c.updated = $timestamp
+                SET c.id = $id
                 REMOVE ruc.seen
                 WITH c
                 OPTIONAL MATCH (c)-[r:FROM]->(:User)
                 DELETE r
                 WITH c
-                MATCH (su:User {email: {session_email}})
+                MATCH (su:User {email: $session_email})
                 MERGE (c)-[:FROM]->(su);
             END_OF_QUERY
         end
@@ -114,8 +114,8 @@ class Main < Sinatra::Base
         transaction do 
             timestamp = Time.now.to_i
             results = neo4j_query(<<~END_OF_QUERY, :key => data[:lesson_key], :offset => data[:lesson_offset], :schueler => data[:schueler], :timestamp => timestamp)
-                MATCH (u:User {email: {schueler}})<-[:TO]-(c:TextComment {offset: {offset}})-[:BELONGS_TO]->(l:Lesson {key: {key}})
-                SET c = {offset: c.offset, updated: {timestamp}}
+                MATCH (u:User {email: $schueler})<-[:TO]-(c:TextComment {offset: $offset})-[:BELONGS_TO]->(l:Lesson {key: $key})
+                SET c = {offset: c.offset, updated: $timestamp}
                 WITH c
                 OPTIONAL MATCH (c)-[r:FROM]->(:User)
                 DELETE r

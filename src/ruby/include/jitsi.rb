@@ -47,7 +47,7 @@ class Main < Sinatra::Base
             payload[:context][:user][:avatar] = "#{NEXTCLOUD_URL}/index.php/avatar/#{use_user[:nc_login]}/128"
             if eid
                 organizer_email = neo4j_query_expect_one(<<~END_OF_QUERY, :eid => eid, :session_email => use_user[:email])['ou.email']
-                    MATCH (e:Event {id: {eid}})-[:ORGANIZED_BY]->(ou:User)
+                    MATCH (e:Event {id: $eid})-[:ORGANIZED_BY]->(ou:User)
                     WHERE COALESCE(e.deleted, false) = false
                     RETURN ou.email;
                 END_OF_QUERY
@@ -144,7 +144,7 @@ class Main < Sinatra::Base
                 organizer_email = nil
                 event = nil
                 data = neo4j_query_expect_one(<<~END_OF_QUERY, :eid => eid)
-                    MATCH (e:Event {id: {eid}})-[:ORGANIZED_BY]->(ou:User)
+                    MATCH (e:Event {id: $eid})-[:ORGANIZED_BY]->(ou:User)
                     WHERE COALESCE(e.deleted, false) = false
                     RETURN e, ou.email;
                 END_OF_QUERY
@@ -155,7 +155,7 @@ class Main < Sinatra::Base
                 if code
                     # EVENT - EXTERNAL USER WITH CODE
                     rows = neo4j_query(<<~END_OF_QUERY, :eid => eid)
-                        MATCH (u)-[rt:IS_PARTICIPANT]->(e:Event {id: {eid}})-[:ORGANIZED_BY]->(ou:User)
+                        MATCH (u)-[rt:IS_PARTICIPANT]->(e:Event {id: $eid})-[:ORGANIZED_BY]->(ou:User)
                         WHERE (u:ExternalUser OR u:PredefinedExternalUser) AND COALESCE(e.deleted, false) = false AND COALESCE(rt.deleted, false) = false
                         RETURN e, ou.email, u;
                     END_OF_QUERY
@@ -171,14 +171,14 @@ class Main < Sinatra::Base
                     begin
                         # EVENT - INTERNAL USER IS ORGANIZER
                         invitation = neo4j_query_expect_one(<<~END_OF_QUERY, :eid => eid, :email => @session_user[:email])
-                            MATCH (e:Event {id: {eid}})-[:ORGANIZED_BY]->(ou:User {email: {email}})
+                            MATCH (e:Event {id: $eid})-[:ORGANIZED_BY]->(ou:User {email: $email})
                             WHERE COALESCE(e.deleted, false) = false
                             RETURN e, ou.email;
                         END_OF_QUERY
                     rescue
                         # EVENT - INTERNAL USER IS INVITED
                         invitation = neo4j_query_expect_one(<<~END_OF_QUERY, :eid => eid, :email => @session_user[:email])
-                            MATCH (u:User {email: {email}})-[rt:IS_PARTICIPANT]->(e:Event {id: {eid}})-[:ORGANIZED_BY]->(ou:User)
+                            MATCH (u:User {email: $email})-[rt:IS_PARTICIPANT]->(e:Event {id: $eid})-[:ORGANIZED_BY]->(ou:User)
                             WHERE COALESCE(e.deleted, false) = false AND COALESCE(rt.deleted, false) = false
                             RETURN e, ou.email, u;
                         END_OF_QUERY
@@ -241,7 +241,7 @@ class Main < Sinatra::Base
                             # determine teacher who has booked the tablet now
                             today = DateTime.now.strftime('%Y-%m-%d')
                             results = neo4j_query(<<~END_OF_QUERY, {:tablet_id => tablet_id, :today => today})
-                                MATCH (t:Tablet {id: {tablet_id}})<-[:WHICH]-(b:Booking {datum: {today}, confirmed: true})-[:FOR]->(i:LessonInfo)-[:BELONGS_TO]->(l:Lesson)
+                                MATCH (t:Tablet {id: $tablet_id})<-[:WHICH]-(b:Booking {datum: $today, confirmed: true})-[:FOR]->(i:LessonInfo)-[:BELONGS_TO]->(l:Lesson)
                                 RETURN b, i, l
                             END_OF_QUERY
                             now = DateTime.now.strftime('%Y-%m-%dT%H:%M')
@@ -341,8 +341,8 @@ class Main < Sinatra::Base
                                         debug query_data.to_yaml
                                     end
                                     neo4j_query_expect_one(<<~END_OF_QUERY, query_data)
-                                        MATCH (u:User {email: {email}}), (i:LessonInfo {offset: {offset}})-[:BELONGS_TO]->(l:Lesson {key: {lesson_key}})
-                                        CREATE (n:PresenceToken {token: {token}, expiry: {timestamp}})
+                                        MATCH (u:User {email: $email}), (i:LessonInfo {offset: $offset})-[:BELONGS_TO]->(l:Lesson {key: $lesson_key})
+                                        CREATE (n:PresenceToken {token: $token, expiry: $timestamp})
                                         CREATE (i)<-[:FOR]-(n)-[:BELONGS_TO]->(u)
                                         RETURN n;
                                     END_OF_QUERY
@@ -480,7 +480,7 @@ class Main < Sinatra::Base
     
     def get_current_jitsi_users_for_lesson(lesson_key, offset, user = nil)
         lesson_info = neo4j_query_expect_one(<<~END_OF_QUERY, {:lesson_key => lesson_key, :offset => offset})['i'].props
-            MATCH (i:LessonInfo {offset: {offset}})-[:BELONGS_TO]->(l:Lesson {key: {lesson_key}})
+            MATCH (i:LessonInfo {offset: $offset})-[:BELONGS_TO]->(l:Lesson {key: $lesson_key})
             RETURN i;
         END_OF_QUERY
         room_name = get_jitsi_room_name_for_lesson_key(lesson_key, user)
@@ -553,9 +553,9 @@ class Main < Sinatra::Base
         response.headers['Access-Control-Allow-Origin'] = "https://#{JITSI_HOST}"
         data = parse_request_data(:required_keys => [:presence_token])
         result = neo4j_query_expect_one(<<~END_OF_QUERY, {:presence_token => data[:presence_token], :now => Time.now.to_i, :new_expiry => (Time.now + PRESENCE_TOKEN_EXPIRY_TIME).to_i})
-            MATCH (l:Lesson)<-[:BELONGS_TO]-(i:LessonInfo)<-[:FOR]-(n:PresenceToken {token: {presence_token}})-[:BELONGS_TO]->(u:User)
-            WHERE n.expiry > {now}
-            SET n.expiry = {new_expiry}
+            MATCH (l:Lesson)<-[:BELONGS_TO]-(i:LessonInfo)<-[:FOR]-(n:PresenceToken {token: $presence_token})-[:BELONGS_TO]->(u:User)
+            WHERE n.expiry > $now
+            SET n.expiry = $new_expiry
             RETURN u.email, i.offset, l.key;
         END_OF_QUERY
         email = result['u.email']

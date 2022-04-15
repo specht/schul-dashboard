@@ -21,36 +21,36 @@ class Main < Sinatra::Base
         id = RandomTag.generate(12)
         timestamp = Time.now.to_i
         event = neo4j_query_expect_one(<<~END_OF_QUERY, :session_email => @session_user[:email], :timestamp => timestamp, :id => id, :title => data[:title], :jitsi => (data[:jitsi] == 'yes'), :date => data[:date], :start_time => data[:start_time], :end_time => data[:end_time], :description => data[:description])['e'].props
-            MATCH (a:User {email: {session_email}})
-            CREATE (e:Event {id: {id}, title: {title}, jitsi: {jitsi}, date: {date}, start_time: {start_time}, end_time: {end_time}, description: {description}})
-            SET e.created = {timestamp}
-            SET e.updated = {timestamp}
+            MATCH (a:User {email: $session_email})
+            CREATE (e:Event {id: $id, title: $title, jitsi: $jitsi, date: $date, start_time: $start_time, end_time: $end_time, description: $description})
+            SET e.created = $timestamp
+            SET e.updated = $timestamp
             CREATE (e)-[:ORGANIZED_BY]->(a)
             RETURN e;
         END_OF_QUERY
         # link regular users
         neo4j_query(<<~END_OF_QUERY, :eid => id, :recipients => data[:recipients].select {|x| @@user_info.include?(x)} )
-            MATCH (e:Event {id: {eid}})
+            MATCH (e:Event {id: $eid})
             WITH DISTINCT e
             MATCH (u:User)
-            WHERE u.email IN {recipients}
+            WHERE u.email IN $recipients
             CREATE (u)-[:IS_PARTICIPANT]->(e);
         END_OF_QUERY
         # link external users from address book
         neo4j_query(<<~END_OF_QUERY, :eid => id, :recipients => data[:recipients].reject {|x| @@user_info.include?(x)}, :session_email => @session_user[:email] )
-            MATCH (e:Event {id: {eid}})
+            MATCH (e:Event {id: $eid})
             WITH DISTINCT e
-            MATCH (u:ExternalUser {entered_by: {session_email}})
-            WHERE u.email IN {recipients}
+            MATCH (u:ExternalUser {entered_by: $session_email})
+            WHERE u.email IN $recipients
             CREATE (u)-[:IS_PARTICIPANT]->(e);
         END_OF_QUERY
         # link external users (predefined)
         STDERR.puts data[:recipients].select {|x| @@predefined_external_users[:recipients].include?(x) }.to_yaml
         temp = neo4j_query(<<~END_OF_QUERY, :eid => id, :recipients => data[:recipients].select {|x| @@predefined_external_users[:recipients].include?(x) })
-            MATCH (e:Event {id: {eid}})
+            MATCH (e:Event {id: $eid})
             WITH DISTINCT e
             MATCH (u:PredefinedExternalUser)
-            WHERE u.email IN {recipients}
+            WHERE u.email IN $recipients
             CREATE (u)-[:IS_PARTICIPANT]->(e);
         END_OF_QUERY
         STDERR.puts temp.to_yaml
@@ -79,14 +79,14 @@ class Main < Sinatra::Base
         STDERR.puts "Updating event #{id}"
         timestamp = Time.now.to_i
         event = neo4j_query_expect_one(<<~END_OF_QUERY, :session_email => @session_user[:email], :timestamp => timestamp, :id => id, :title => data[:title], :jitsi => (data[:jitsi] == 'yes'), :date => data[:date], :start_time => data[:start_time], :end_time => data[:end_time], :recipients => data[:recipients], :description => data[:description])['e'].props
-            MATCH (e:Event {id: {id}})-[:ORGANIZED_BY]->(a:User {email: {session_email}})
-            SET e.updated = {timestamp}
-            SET e.title = {title}
-            SET e.jitsi = {jitsi}
-            SET e.date = {date}
-            SET e.start_time = {start_time}
-            SET e.end_time = {end_time}
-            SET e.description = {description}
+            MATCH (e:Event {id: $id})-[:ORGANIZED_BY]->(a:User {email: $session_email})
+            SET e.updated = $timestamp
+            SET e.title = $title
+            SET e.jitsi = $jitsi
+            SET e.date = $date
+            SET e.start_time = $start_time
+            SET e.end_time = $end_time
+            SET e.description = $description
             WITH DISTINCT e
             OPTIONAL MATCH (u)-[r:IS_PARTICIPANT]->(e)
             SET r.deleted = true
@@ -95,28 +95,28 @@ class Main < Sinatra::Base
         END_OF_QUERY
         # link regular users
         neo4j_query(<<~END_OF_QUERY, :eid => id, :recipients => data[:recipients].select {|x| @@user_info.include?(x)} )
-            MATCH (e:Event {id: {eid}})
+            MATCH (e:Event {id: $eid})
             WITH DISTINCT e
             MATCH (u:User)
-            WHERE u.email IN {recipients}
+            WHERE u.email IN $recipients
             MERGE (u)-[r:IS_PARTICIPANT]->(e)
             REMOVE r.deleted
         END_OF_QUERY
         # link external users from address book
         neo4j_query(<<~END_OF_QUERY, :eid => id, :recipients => data[:recipients].reject {|x| @@user_info.include?(x)}, :session_email => @session_user[:email] )
-            MATCH (e:Event {id: {eid}})
+            MATCH (e:Event {id: $eid})
             WITH DISTINCT e
-            MATCH (u:ExternalUser {entered_by: {session_email}})
-            WHERE u.email IN {recipients}
+            MATCH (u:ExternalUser {entered_by: $session_email})
+            WHERE u.email IN $recipients
             MERGE (u)-[r:IS_PARTICIPANT]->(e)
             REMOVE r.deleted
         END_OF_QUERY
         # link external users (predefined)
         neo4j_query(<<~END_OF_QUERY, :eid => id, :recipients => data[:recipients].select {|x| @@predefined_external_users[:recipients].include?(x) })
-            MATCH (e:Event {id: {eid}})
+            MATCH (e:Event {id: $eid})
             WITH DISTINCT e
             MATCH (u:PredefinedExternalUser)
-            WHERE u.email IN {recipients}
+            WHERE u.email IN $recipients
             MERGE (u)-[r:IS_PARTICIPANT]->(e)
             REMOVE r.deleted
         END_OF_QUERY
@@ -139,12 +139,12 @@ class Main < Sinatra::Base
         transaction do 
             timestamp = Time.now.to_i
             neo4j_query(<<~END_OF_QUERY, :session_email => @session_user[:email], :timestamp => timestamp, :id => id)
-                MATCH (a:User {email: {session_email}})<-[:ORGANIZED_BY]-(e:Event {id: {id}})
-                SET e.updated = {timestamp}
+                MATCH (a:User {email: $session_email})<-[:ORGANIZED_BY]-(e:Event {id: $id})
+                SET e.updated = $timestamp
                 SET e.deleted = true
                 WITH e
                 OPTIONAL MATCH (r:User)-[rt:IS_PARTICIPANT]->(e)
-                SET rt.updated = {timestamp}
+                SET rt.updated = $timestamp
                 SET rt.deleted = true
             END_OF_QUERY
         end
@@ -162,7 +162,7 @@ class Main < Sinatra::Base
         unless (id || '').empty?
             data = {:session_email => @session_user[:email], :id => id}
             temp = neo4j_query(<<~END_OF_QUERY, data).map { |x| {:email => x['r.email'], :invitations => x['invitations'] || [], :invitation_requested => x['invitation_requested'] } }
-                MATCH (a:User {email: {session_email}})<-[:ORGANIZED_BY]-(e:Event {id: {id}})<-[rt:IS_PARTICIPANT]-(r)
+                MATCH (a:User {email: $session_email})<-[:ORGANIZED_BY]-(e:Event {id: $id})<-[rt:IS_PARTICIPANT]-(r)
                 WHERE (r:ExternalUser OR r:PredefinedExternalUser) AND COALESCE(rt.deleted, false) = false
                 RETURN r.email, COALESCE(rt.invitations, []) AS invitations, COALESCE(rt.invitation_requested, false) AS invitation_requested;
             END_OF_QUERY
@@ -188,8 +188,8 @@ class Main < Sinatra::Base
         # as a recipient and there will be two results here where we would have expected
         # one before
         temp = $neo4j.neo4j_query(<<~END_OF_QUERY, data).first
-            MATCH (u:User)<-[:ORGANIZED_BY]-(e:Event {id: {eid}})<-[rt:IS_PARTICIPANT]-(r)
-            WHERE (r:ExternalUser OR r:PredefinedExternalUser) AND (r.email = {email}) AND COALESCE(rt.deleted, false) = false AND COALESCE(e.deleted, false) = false
+            MATCH (u:User)<-[:ORGANIZED_BY]-(e:Event {id: $eid})<-[rt:IS_PARTICIPANT]-(r)
+            WHERE (r:ExternalUser OR r:PredefinedExternalUser) AND (r.email = $email) AND COALESCE(rt.deleted, false) = false AND COALESCE(e.deleted, false) = false
             RETURN e, u.email;
         END_OF_QUERY
         event = temp['e'].props
@@ -197,8 +197,8 @@ class Main < Sinatra::Base
         code = Digest::SHA2.hexdigest(EXTERNAL_USER_EVENT_SCRAMBLER + data[:eid] + data[:email]).to_i(16).to_s(36)[0, 8]
         # remove invitation request / if something goes wrong, we won't keep sending out invites blocking the queue
         rows = $neo4j.neo4j_query(<<~END_OF_QUERY, data)
-            MATCH (e:Event {id: {eid}})<-[rt:IS_PARTICIPANT]-(r)
-            WHERE (r:ExternalUser OR r:PredefinedExternalUser) AND (r.email = {email}) AND COALESCE(rt.deleted, false) = false AND COALESCE(e.deleted, false) = false
+            MATCH (e:Event {id: $eid})<-[rt:IS_PARTICIPANT]-(r)
+            WHERE (r:ExternalUser OR r:PredefinedExternalUser) AND (r.email = $email) AND COALESCE(rt.deleted, false) = false AND COALESCE(e.deleted, false) = false
             REMOVE rt.invitation_requested;
         END_OF_QUERY
         begin
@@ -247,9 +247,9 @@ class Main < Sinatra::Base
         end
         # add timestamp to list of successfully sent invitations
         rows = $neo4j.neo4j_query(<<~END_OF_QUERY, data)
-            MATCH (e:Event {id: {eid}})<-[rt:IS_PARTICIPANT]-(r)
-            WHERE (r:ExternalUser OR r:PredefinedExternalUser) AND (r.email = {email}) AND COALESCE(rt.deleted, false) = false AND COALESCE(e.deleted, false) = false
-            SET rt.invitations = COALESCE(rt.invitations, []) + [{timestamp}];
+            MATCH (e:Event {id: $eid})<-[rt:IS_PARTICIPANT]-(r)
+            WHERE (r:ExternalUser OR r:PredefinedExternalUser) AND (r.email = $email) AND COALESCE(rt.deleted, false) = false AND COALESCE(e.deleted, false) = false
+            SET rt.invitations = COALESCE(rt.invitations, []) + [$timestamp];
         END_OF_QUERY
     end
     
@@ -272,7 +272,7 @@ class Main < Sinatra::Base
         id = data[:eid]
         STDERR.puts "Sending missing invitations for event #{id}"
         neo4j_query(<<~END_OF_QUERY, :session_email => @session_user[:email], :id => id)
-            MATCH (a:User {email: {session_email}})<-[:ORGANIZED_BY]-(e:Event {id: {id}})<-[rt:IS_PARTICIPANT]-(u)
+            MATCH (a:User {email: $session_email})<-[:ORGANIZED_BY]-(e:Event {id: $id})<-[rt:IS_PARTICIPANT]-(u)
             WHERE (u:ExternalUser OR u:PredefinedExternalUser) AND SIZE(COALESCE(rt.invitations, [])) = 0
             SET rt.invitation_requested = true;
         END_OF_QUERY

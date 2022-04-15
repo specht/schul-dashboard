@@ -22,8 +22,8 @@ class Main < Sinatra::Base
         }
         File.open(sprintf('/internal/vote/%04d.json', code), 'w') { |f| f.write(vote_data.to_json) }
         neo4j_query(<<~END_OF_QUERY, :code => code, :email => @session_user[:email])
-            MATCH (u:User {email: {email}})
-            CREATE (v:Vote {code: {code}})-[:BELONGS_TO]->(u)
+            MATCH (u:User {email: $email})
+            CREATE (v:Vote {code: $code})-[:BELONGS_TO]->(u)
         END_OF_QUERY
         respond(:ok => true)
     end
@@ -31,7 +31,7 @@ class Main < Sinatra::Base
     post '/api/get_votes' do
         require_teacher_or_sv!
         codes = neo4j_query(<<~END_OF_QUERY, :email => @session_user[:email]).map { |x| x['v.code'] }
-            MATCH (v:Vote)-[:BELONGS_TO]->(:User {email: {email}})
+            MATCH (v:Vote)-[:BELONGS_TO]->(:User {email: $email})
             RETURN v.code;
         END_OF_QUERY
         results = codes.map do |code|
@@ -60,7 +60,7 @@ class Main < Sinatra::Base
                                   :types => {:code => Integer})
         code = data[:code]
         neo4j_query_expect_one(<<~END_OF_QUERY, :code => code, :email => @session_user[:email])
-            MATCH (v:Vote {code: {code}})-[:BELONGS_TO]->(u:User {email: {email}})
+            MATCH (v:Vote {code: $code})-[:BELONGS_TO]->(u:User {email: $email})
             DETACH DELETE v
             RETURN u.email;
         END_OF_QUERY
@@ -92,7 +92,7 @@ class Main < Sinatra::Base
         require_teacher_or_sv!
         code = request.path.sub('/api/get_vote_pdf/', '').to_i
         neo4j_query_expect_one(<<~END_OF_QUERY, :code => code, :email => @session_user[:email])
-            MATCH (v:Vote {code: {code}})-[:BELONGS_TO]->(u:User {email: {email}})
+            MATCH (v:Vote {code: $code})-[:BELONGS_TO]->(u:User {email: $email})
             RETURN v;
         END_OF_QUERY
         vote = nil

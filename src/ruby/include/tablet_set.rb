@@ -9,7 +9,7 @@ class Main < Sinatra::Base
         d0 = (DateTime.now - 28).strftime('%Y-%m-%d')
         rows = neo4j_query(<<~END_OF_QUERY, {:d0 => d0})
             MATCH (t:TabletSet)<-[:BOOKED]-(b:Booking)-[:BOOKED_BY]->(u:User)
-            WHERE b.datum >= {d0}
+            WHERE b.datum >= $d0
             OPTIONAL MATCH (b)-[:FOR]->(i:LessonInfo)-[:BELONGS_TO]->(l:Lesson)
             RETURN t, l, b, i, u.email;
         END_OF_QUERY
@@ -47,8 +47,8 @@ class Main < Sinatra::Base
             :end_time => end_time
         }
         rows = neo4j_query(<<~END_OF_QUERY, data).map { |x| {:tablet_set_id => x['t.id'], :lesson_key => x['l.key'], :email => x['u.email'] } }
-            MATCH (t:TabletSet)<-[:BOOKED]-(b:Booking {datum: {datum}})-[:BOOKED_BY]->(u:User)
-            WHERE NOT ((b.end_time <= {start_time}) OR (b.start_time >= {end_time}))
+            MATCH (t:TabletSet)<-[:BOOKED]-(b:Booking {datum: $datum})-[:BOOKED_BY]->(u:User)
+            WHERE NOT ((b.end_time <= $start_time) OR (b.start_time >= $end_time))
             OPTIONAL MATCH (b)-[:FOR]->(i:LessonInfo)-[:BELONGS_TO]->(l:Lesson)
             RETURN t.id, l.key, u.email;
         END_OF_QUERY
@@ -68,7 +68,7 @@ class Main < Sinatra::Base
     def already_booked_tablet_sets_for_day(datum)
         require_teacher!
         rows = neo4j_query(<<~END_OF_QUERY, { :datum => datum }).map { |x| {:tablet_set_id => x['t.id'], :lesson_key => x['l.key'], :start_time => x['b.start_time'], :end_time => x['b.end_time'], :email => x['u.email'] } }
-            MATCH (t:TabletSet)<-[:BOOKED]-(b:Booking {datum: {datum}})-[:BOOKED_BY]->(u:User)
+            MATCH (t:TabletSet)<-[:BOOKED]-(b:Booking {datum: $datum})-[:BOOKED_BY]->(u:User)
             OPTIONAL MATCH (b)-[:FOR]->(i:LessonInfo)-[:BELONGS_TO]->(l:Lesson)
             RETURN t.id, l.key, b.start_time, b.end_time, u.email;
         END_OF_QUERY
@@ -119,16 +119,16 @@ class Main < Sinatra::Base
                 }
                 # create booking node
                 neo4j_query(<<~END_OF_QUERY, data)
-                    MATCH (u:User {email: {email}})
-                    MERGE (l:Lesson {key: {lesson_key}})
-                    MERGE (i:LessonInfo {offset: {offset}})-[:BELONGS_TO]->(l)
+                    MATCH (u:User {email: $email})
+                    MERGE (l:Lesson {key: $lesson_key})
+                    MERGE (i:LessonInfo {offset: $offset})-[:BELONGS_TO]->(l)
                     MERGE (b:Booking)-[:FOR]->(i)
                     MERGE (u)<-[:BOOKED_BY]-(b)
-                    SET i.updated = {timestamp}
-                    SET b.updated = {timestamp}
-                    SET b.datum = {datum}
-                    SET b.start_time = {start_time}
-                    SET b.end_time = {end_time}
+                    SET i.updated = $timestamp
+                    SET b.updated = $timestamp
+                    SET b.datum = $datum
+                    SET b.start_time = $start_time
+                    SET b.end_time = $end_time
 
                     WITH b
                     MATCH (b)-[r:BOOKED]->(:TabletSet)
@@ -136,11 +136,11 @@ class Main < Sinatra::Base
                 END_OF_QUERY
                 # connect booked tablet sets to booking node
                 neo4j_query(<<~END_OF_QUERY, data)
-                    MATCH (l:Lesson {key: {lesson_key}})
-                    MATCH (i:LessonInfo {offset: {offset}})-[:BELONGS_TO]->(l)
+                    MATCH (l:Lesson {key: $lesson_key})
+                    MATCH (i:LessonInfo {offset: $offset})-[:BELONGS_TO]->(l)
                     MATCH (b:Booking)-[:FOR]->(i)
                     MATCH (t:TabletSet)
-                    WHERE t.id IN {tablet_set_ids}
+                    WHERE t.id IN $tablet_set_ids
                     MERGE (b)-[:BOOKED]->(t)
                 END_OF_QUERY
             end
@@ -178,13 +178,13 @@ class Main < Sinatra::Base
                 }
                 # create booking node
                 neo4j_query(<<~END_OF_QUERY, data)
-                    MATCH (u:User {email: {email}})
-                    CREATE (u)<-[:BOOKED_BY]-(b:Booking {datum: {datum}, start_time: {start_time}, end_time: {end_time}})
-                    SET b.updated = {timestamp}
+                    MATCH (u:User {email: $email})
+                    CREATE (u)<-[:BOOKED_BY]-(b:Booking {datum: $datum, start_time: $start_time, end_time: $end_time})
+                    SET b.updated = $timestamp
 
                     WITH b
                     MATCH (t:TabletSet)
-                    WHERE t.id IN {tablet_set_ids}
+                    WHERE t.id IN $tablet_set_ids
                     CREATE (b)-[:BOOKED]->(t)
                 END_OF_QUERY
             end
@@ -367,11 +367,11 @@ class Main < Sinatra::Base
         data = parse_request_data(:required_keys => [:datum, :start_time, :end_time, :tablet_set])
         data[:timestamp] = Time.now.to_i
         result = neo4j_query_expect_one(<<~END_OF_QUERY, data)
-            MATCH (u:User)<-[:BOOKED_BY]-(b:Booking {datum: {datum}, start_time: {start_time}, end_time: {end_time}})-[r:BOOKED]->(t:TabletSet {id: {tablet_set}})
+            MATCH (u:User)<-[:BOOKED_BY]-(b:Booking {datum: $datum, start_time: $start_time, end_time: $end_time})-[r:BOOKED]->(t:TabletSet {id: $tablet_set})
             OPTIONAL MATCH (b)-[:FOR]->(i:LessonInfo)-[:BELONGS_TO]->(l:Lesson)
             WITH DISTINCT r, u, l, i, b
-            SET b.updated = {timestamp}
-            SET i.updated = {timestamp}
+            SET b.updated = $timestamp
+            SET i.updated = $timestamp
             DELETE r
             RETURN u.email, l.key
         END_OF_QUERY

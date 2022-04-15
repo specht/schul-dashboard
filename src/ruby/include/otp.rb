@@ -2,7 +2,7 @@ class Main < Sinatra::Base
     def delete_session_user_otp_token()
         require_user!
         result = neo4j_query(<<~END_OF_QUERY, :email => @session_user[:email])
-            MATCH (u:User {email: {email}})
+            MATCH (u:User {email: $email})
             REMOVE u.otp_token;
         END_OF_QUERY
     end
@@ -12,8 +12,8 @@ class Main < Sinatra::Base
         delete_session_user_otp_token()
         token = ROTP::Base32.random()
         result = neo4j_query(<<~END_OF_QUERY, :email => @session_user[:email], :token => token)
-            MATCH (u:User {email: {email}})
-            SET u.otp_token = {token};
+            MATCH (u:User {email: $email})
+            SET u.otp_token = $token;
         END_OF_QUERY
         @session_user[:otp_token] = token
         respond(:qr_code => session_user_otp_qr_code())
@@ -47,12 +47,12 @@ class Main < Sinatra::Base
         tag = RandomTag::generate(8)
         valid_to = Time.now + 600
         neo4j_query(<<~END_OF_QUERY, :email => data[:email])
-            MATCH (l:LoginCode)-[:BELONGS_TO]->(n:User {email: {email}})
+            MATCH (l:LoginCode)-[:BELONGS_TO]->(n:User {email: $email})
             DETACH DELETE l;
         END_OF_QUERY
         neo4j_query(<<~END_OF_QUERY, :email => data[:email], :tag => tag, :valid_to => valid_to.to_i)
-            MATCH (n:User {email: {email}})
-            CREATE (l:LoginCode {tag: {tag}, otp: true, valid_to: {valid_to}})-[:BELONGS_TO]->(n)
+            MATCH (n:User {email: $email})
+            CREATE (l:LoginCode {tag: $tag, otp: true, valid_to: $valid_to})-[:BELONGS_TO]->(n)
             RETURN n;
         END_OF_QUERY
         respond(:tag => tag)

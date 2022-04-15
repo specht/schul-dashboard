@@ -85,9 +85,9 @@ class Script
                     stored_etags[email] = {:etag => etag,
                                            :path => avatar_cache_path}
                     temp = neo4j_query(<<~END_OF_QUERY, :email => email, :etag => etag, :path => avatar_cache_path)
-                        MATCH (u:User {email: {email}})
-                        SET u.avatar_etag = {etag}
-                        SET u.avatar_etag_path = {path};
+                        MATCH (u:User {email: $email})
+                        SET u.avatar_etag = $etag
+                        SET u.avatar_etag_path = $path;
                     END_OF_QUERY
                     user_entry[:avatarUri] = "#{WEB_ROOT}#{avatar_cache_path}"
                 else

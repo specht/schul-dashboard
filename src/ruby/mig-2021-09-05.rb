@@ -31,8 +31,8 @@ class Script
             l = rev[k].first
             STDERR.puts "[#{k}] ==> [#{l}]"
             if SRSLY
-                neo4j_query("MATCH (li:Lesson {key: {new_key}}) DETACH DELETE li;", {:new_key => l})
-                neo4j_query("MATCH (li:Lesson {key: {old_key}}) SET li.key = {new_key};", {:old_key => k, :new_key => l})
+                neo4j_query("MATCH (li:Lesson {key: $new_key}) DETACH DELETE li;", {:new_key => l})
+                neo4j_query("MATCH (li:Lesson {key: $old_key}) SET li.key = $new_key;", {:old_key => k, :new_key => l})
             end
         end
     end

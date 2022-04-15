@@ -48,7 +48,7 @@ class Main < Sinatra::Base
             io.puts "<tbody>"
             results = neo4j_query(<<~END_OF_QUERY, :email_addresses => @@schueler_for_klasse[klasse])
                 MATCH (u:User)
-                WHERE u.email IN {email_addresses}
+                WHERE u.email IN $email_addresses
                 RETURN u.email, u.last_access, COALESCE(u.group2, 'A') AS group2, COALESCE(u.group_af, '') AS group_af;
             END_OF_QUERY
             last_access = {}
@@ -292,7 +292,7 @@ class Main < Sinatra::Base
     
     def self.get_homeschooling_for_user_by_dauer_salzh(email)
         info = $neo4j.neo4j_query_expect_one(<<~END_OF_QUERY, {:email => email})
-            MATCH (u:User {email: {email}})
+            MATCH (u:User {email: $email})
             RETURN COALESCE(u.homeschooling, false) AS homeschooling
         END_OF_QUERY
         marked_as_homeschooling = info['homeschooling']
@@ -303,7 +303,7 @@ class Main < Sinatra::Base
         group2 = nil
         if group2_for_email.nil?
             info = $neo4j.neo4j_query_expect_one(<<~END_OF_QUERY, {:email => email})
-                MATCH (u:User {email: {email}})
+                MATCH (u:User {email: $email})
                 RETURN COALESCE(u.group2, 'A') AS group2
             END_OF_QUERY
             group2 = info['group2']
@@ -380,7 +380,7 @@ class Main < Sinatra::Base
             assert(@@klassenleiter[klasse].include?(@session_user[:shorthand]))
         end
         result = neo4j_query_expect_one(<<~END_OF_QUERY, :email => data[:email])
-            MATCH (u:User {email: {email}})
+            MATCH (u:User {email: $email})
             SET u.homeschooling = NOT COALESCE(u.homeschooling, FALSE)
             RETURN u.homeschooling;
         END_OF_QUERY
@@ -517,7 +517,7 @@ class Main < Sinatra::Base
             iterate_directory(klasse) do |email, i|
                 user = @@user_info[email]
                 group2 = neo4j_query_expect_one(<<~END_OF_QUERY, :email => email)['group2']
-                    MATCH (u:User {email: {email}})
+                    MATCH (u:User {email: $email})
                     RETURN COALESCE(u.group2, 'A') AS group2;
                 END_OF_QUERY
                 sheet.write(i + 1, 0, user[:last_name])
@@ -541,7 +541,7 @@ class Main < Sinatra::Base
         data = parse_request_data(:required_keys => [:email])
         email = data[:email]
         group2 = neo4j_query_expect_one(<<~END_OF_QUERY, :email => email)['group2']
-            MATCH (u:User {email: {email}})
+            MATCH (u:User {email: $email})
             RETURN COALESCE(u.group2, 'A') AS group2;
         END_OF_QUERY
         if group2 == 'A'
@@ -550,8 +550,8 @@ class Main < Sinatra::Base
             group2 = 'A'
         end
         group2 = neo4j_query_expect_one(<<~END_OF_QUERY, :email => email, :group2 => group2)['group2']
-            MATCH (u:User {email: {email}})
-            SET u.group2 = {group2}
+            MATCH (u:User {email: $email})
+            SET u.group2 = $group2
             RETURN u.group2 AS group2;
         END_OF_QUERY
         respond(:group2 => group2)
@@ -562,14 +562,14 @@ class Main < Sinatra::Base
         data = parse_request_data(:required_keys => [:email])
         email = data[:email]
         group_af = neo4j_query_expect_one(<<~END_OF_QUERY, :email => email)['group_af']
-            MATCH (u:User {email: {email}})
+            MATCH (u:User {email: $email})
             RETURN COALESCE(u.group_af, '') AS group_af;
         END_OF_QUERY
         index = GROUP_AF_ICON_KEYS.index(group_af) || 0
         index = (index + 1) % GROUP_AF_ICON_KEYS.size
         group_af = neo4j_query_expect_one(<<~END_OF_QUERY, :email => email, :group_af => GROUP_AF_ICON_KEYS[index])['group_af']
-            MATCH (u:User {email: {email}})
-            SET u.group_af = {group_af}
+            MATCH (u:User {email: $email})
+            SET u.group_af = $group_af
             RETURN u.group_af AS group_af;
         END_OF_QUERY
         Main.update_antikenfahrt_groups()
@@ -588,7 +588,7 @@ class Main < Sinatra::Base
         end
         temp = neo4j_query(<<~END_OF_QUERY, :email_addresses => (@@schueler_for_lesson[lesson_key] || []))
             MATCH (u:User)
-            WHERE u.email IN {email_addresses}
+            WHERE u.email IN $email_addresses
             RETURN u.email, COALESCE(u.group2, 'A') AS group2;
         END_OF_QUERY
         temp = Hash[temp.map { |x| [x['u.email'], x['group2']] }]

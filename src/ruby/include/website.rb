@@ -12,7 +12,7 @@ class Main < Sinatra::Base
         ts_now = DateTime.now.strftime('%Y-%m-%d')
         $neo4j.neo4j_query(<<~END_OF_QUERY, :today => ts_now).map { |x| x['e'].props }
             MATCH (e:WebsiteEvent)
-            WHERE e.date < {today}
+            WHERE e.date < $today
             DELETE e;
         END_OF_QUERY
         results = $neo4j.neo4j_query(<<~END_OF_QUERY, :today => ts_now).map { |x| x['e'].props }
@@ -32,7 +32,7 @@ class Main < Sinatra::Base
         require_user_who_can_manage_news!
         data = parse_request_data(:required_keys => [:id])
         neo4j_query(<<~END_OF_QUERY, :id => data[:id])
-            MATCH (e:WebsiteEvent {id: {id}})
+            MATCH (e:WebsiteEvent {id: $id})
             DELETE e;
         END_OF_QUERY
         respond(:result => 'yay')
@@ -44,8 +44,8 @@ class Main < Sinatra::Base
         ts_now = DateTime.now.strftime('%Y-%m-%d')
         neo4j_query(<<~END_OF_QUERY, :id => id, :date => ts_now)
             CREATE (e:WebsiteEvent)
-            SET e.id = {id}
-            SET e.date = {date}
+            SET e.id = $id
+            SET e.date = $date
             SET e.title = '';
         END_OF_QUERY
         respond(:result => 'yay')
@@ -55,8 +55,8 @@ class Main < Sinatra::Base
         require_user_who_can_manage_news!
         data = parse_request_data(:required_keys => [:id, :date])
         neo4j_query(<<~END_OF_QUERY, :id => data[:id], :date => data[:date])
-            MATCH (e:WebsiteEvent {id: {id}})
-            SET e.date = {date};
+            MATCH (e:WebsiteEvent {id: $id})
+            SET e.date = $date;
         END_OF_QUERY
         respond(:result => 'yay')
     end
@@ -65,8 +65,8 @@ class Main < Sinatra::Base
         require_user_who_can_manage_news!
         data = parse_request_data(:required_keys => [:id, :title])
         neo4j_query(<<~END_OF_QUERY, :id => data[:id], :title => data[:title])
-            MATCH (e:WebsiteEvent {id: {id}})
-            SET e.title = {title};
+            MATCH (e:WebsiteEvent {id: $id})
+            SET e.title = $title;
         END_OF_QUERY
         respond(:result => 'yay')
     end
@@ -86,8 +86,8 @@ class Main < Sinatra::Base
         data = parse_request_data(:required_keys => [:timestamp, :published], :types => {:timestamp => Integer})
         published = data[:published] == 'yes'
         result = neo4j_query_expect_one(<<~END_OF_QUERY, {:timestamp => data[:timestamp], :published => published})
-            MATCH (n:NewsEntry {timestamp: {timestamp}})
-            SET n.published = {published}
+            MATCH (n:NewsEntry {timestamp: $timestamp})
+            SET n.published = $published
             RETURN n.published AS published;
         END_OF_QUERY
         respond(:published => result['published'])
@@ -98,8 +98,8 @@ class Main < Sinatra::Base
         data = parse_request_data(:required_keys => [:timestamp, :sticky], :types => {:timestamp => Integer})
         sticky = data[:sticky] == 'yes'
         result = neo4j_query_expect_one(<<~END_OF_QUERY, {:timestamp => data[:timestamp], :sticky => sticky})
-            MATCH (n:NewsEntry {timestamp: {timestamp}})
-            SET n.sticky = {sticky}
+            MATCH (n:NewsEntry {timestamp: $timestamp})
+            SET n.sticky = $sticky
             RETURN n.sticky AS sticky;
         END_OF_QUERY
         respond(:sticky => result['sticky'])
@@ -109,7 +109,7 @@ class Main < Sinatra::Base
         require_user_who_can_manage_news!
         data = parse_request_data(:required_keys => [:timestamp], :types => {:timestamp => Integer})
         result = neo4j_query(<<~END_OF_QUERY, {:timestamp => data[:timestamp]})
-            MATCH (n:NewsEntry {timestamp: {timestamp}})
+            MATCH (n:NewsEntry {timestamp: $timestamp})
             DETACH DELETE n;
         END_OF_QUERY
         respond(:ok => 'yay')
@@ -263,7 +263,7 @@ class Main < Sinatra::Base
         require_user_who_can_manage_news!
         data = parse_request_data(:required_keys => [:timestamp], :types => {:timestamp => Integer})
         result = neo4j_query_expect_one(<<~END_OF_QUERY, {:timestamp => data[:timestamp]})['n'].props
-            MATCH (n:NewsEntry {timestamp: {timestamp}})
+            MATCH (n:NewsEntry {timestamp: $timestamp})
             RETURN n;
         END_OF_QUERY
         content = result[:content]
@@ -354,9 +354,9 @@ class Main < Sinatra::Base
             :max_string_length => 64 * 1024,
             :types => {:timestamp => Integer})
         neo4j_query_expect_one(<<~END_OF_QUERY, {:timestamp => data[:timestamp], :title => data[:title], :content => data[:content]})
-            MATCH (n:NewsEntry {timestamp: {timestamp}})
-            SET n.title = {title}
-            SET n.content = {content}
+            MATCH (n:NewsEntry {timestamp: $timestamp})
+            SET n.title = $title
+            SET n.content = $content
             RETURN n.timestamp;
         END_OF_QUERY
         respond(:yay => 'sure')
@@ -377,8 +377,8 @@ class Main < Sinatra::Base
             :published => false
         }
         neo4j_query_expect_one(<<~END_OF_QUERY, {:entry => entry, :timestamp => entry[:timestamp]})
-            CREATE (n:NewsEntry {timestamp: {timestamp}})
-            SET n = {entry}
+            CREATE (n:NewsEntry {timestamp: $timestamp})
+            SET n = $entry
             RETURN n.timestamp;
         END_OF_QUERY
         respond(:yay => 'sure')

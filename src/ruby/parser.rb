@@ -952,4 +952,3 @@ class Parser
         return email_addresses
     end
 end
-

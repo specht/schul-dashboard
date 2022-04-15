@@ -12,33 +12,33 @@ class Main < Sinatra::Base
             timestamp = Time.now.to_i
             data[:lesson_offsets].each do |lesson_offset|
                 results = neo4j_query(<<~END_OF_QUERY, :key => data[:lesson_key], :offset => lesson_offset, :data => data[:data], :timestamp => timestamp)
-                    MERGE (l:Lesson {key: {key}})
-                    MERGE (i:LessonInfo {offset: {offset}})-[:BELONGS_TO]->(l)
-                    SET i += {data}
-                    SET i.updated = {timestamp};
+                    MERGE (l:Lesson {key: $key})
+                    MERGE (i:LessonInfo {offset: $offset})-[:BELONGS_TO]->(l)
+                    SET i += $data
+                    SET i.updated = $timestamp;
                 END_OF_QUERY
                 neo4j_query(<<~END_OF_QUERY, :key => data[:lesson_key], :offset => lesson_offset)
-                    MATCH (t:Tablet)<-[:WHICH]-(b:Booking {confirmed: false})-[:FOR]->(i:LessonInfo {offset: {offset}})-[:BELONGS_TO]->(l:Lesson {key: {key}})
+                    MATCH (t:Tablet)<-[:WHICH]-(b:Booking {confirmed: false})-[:FOR]->(i:LessonInfo {offset: $offset})-[:BELONGS_TO]->(l:Lesson {key: $key})
                     SET b.confirmed = true
                 END_OF_QUERY
                 neo4j_query(<<~END_OF_QUERY, :key => data[:lesson_key], :offset => lesson_offset)
-                    MATCH (t:Tablet)<-[:WHICH]-(b:Booking {to_be_deleted: true})-[:FOR]->(i:LessonInfo {offset: {offset}})-[:BELONGS_TO]->(l:Lesson {key: {key}})
+                    MATCH (t:Tablet)<-[:WHICH]-(b:Booking {to_be_deleted: true})-[:FOR]->(i:LessonInfo {offset: $offset})-[:BELONGS_TO]->(l:Lesson {key: $key})
                     DETACH DELETE b;
                 END_OF_QUERY
                 if data.include?(:breakout_rooms)
                     if data[:breakout_rooms].empty?
                         results = neo4j_query(<<~END_OF_QUERY, :key => data[:lesson_key], :offset => lesson_offset)
-                            MATCH (i:LessonInfo {offset: {offset}})-[:BELONGS_TO]->(l:Lesson {key: {key}})
+                            MATCH (i:LessonInfo {offset: $offset})-[:BELONGS_TO]->(l:Lesson {key: $key})
                             REMOVE i.breakout_rooms
                             REMOVE i.breakout_room_participants
                             REMOVE i.breakout_rooms_roaming
                         END_OF_QUERY
                     else
                         results = neo4j_query(<<~END_OF_QUERY, :key => data[:lesson_key], :offset => lesson_offset, :breakout_rooms => data[:breakout_rooms]['rooms'] || [], :breakout_room_participants => data[:breakout_rooms]['participants'], :breakout_rooms_roaming => data[:breakout_rooms]['roaming'])
-                            MATCH (i:LessonInfo {offset: {offset}})-[:BELONGS_TO]->(l:Lesson {key: {key}})
-                            SET i.breakout_rooms = {breakout_rooms}
-                            SET i.breakout_room_participants = {breakout_room_participants}
-                            SET i.breakout_rooms_roaming = {breakout_rooms_roaming}
+                            MATCH (i:LessonInfo {offset: $offset})-[:BELONGS_TO]->(l:Lesson {key: $key})
+                            SET i.breakout_rooms = $breakout_rooms
+                            SET i.breakout_room_participants = $breakout_room_participants
+                            SET i.breakout_rooms_roaming = $breakout_rooms_roaming
                         END_OF_QUERY
                     end
                 end
@@ -72,10 +72,10 @@ class Main < Sinatra::Base
         require_teacher_for_lesson_or_ha_amt_logged_in(data[:lesson_key])
         timestamp = Time.now.to_i
         results = neo4j_query(<<~END_OF_QUERY, :key => data[:lesson_key], :offset => data[:lesson_offset], :ha_amt_text => data[:ha_amt_text], :timestamp => timestamp)
-            MERGE (l:Lesson {key: {key}})
-            MERGE (i:LessonInfo {offset: {offset}})-[:BELONGS_TO]->(l)
-            SET i.ha_amt_text = {ha_amt_text}
-            SET i.updated = {timestamp};
+            MERGE (l:Lesson {key: $key})
+            MERGE (i:LessonInfo {offset: $offset})-[:BELONGS_TO]->(l)
+            SET i.ha_amt_text = $ha_amt_text
+            SET i.updated = $timestamp;
         END_OF_QUERY
         trigger_update(data[:lesson_key])
         respond(:ok => true)
@@ -89,7 +89,7 @@ class Main < Sinatra::Base
         ha_amt_text = nil
         begin
             ha_amt_text = neo4j_query_expect_one(<<~END_OF_QUERY, :key => data[:lesson_key], :offset => data[:lesson_offset], :ha_amt_text => data[:ha_amt_text])['i.ha_amt_text']
-                MATCH (i:LessonInfo {offset: {offset}})-[:BELONGS_TO]->(l:Lesson {key: {key}})
+                MATCH (i:LessonInfo {offset: $offset})-[:BELONGS_TO]->(l:Lesson {key: $key})
                 RETURN i.ha_amt_text;
             END_OF_QUERY
         rescue StandardError => e
@@ -108,10 +108,10 @@ class Main < Sinatra::Base
         transaction do 
             timestamp = Time.now.to_i
             neo4j_query(<<~END_OF_QUERY, :key => data[:lesson_key], :offset => data[:lesson_offset], :data => {:lesson_jitsi => true}, :timestamp => timestamp)
-                MERGE (l:Lesson {key: {key}})
-                MERGE (i:LessonInfo {offset: {offset}})-[:BELONGS_TO]->(l)
-                SET i += {data}
-                SET i.updated = {timestamp};
+                MERGE (l:Lesson {key: $key})
+                MERGE (i:LessonInfo {offset: $offset})-[:BELONGS_TO]->(l)
+                SET i += $data
+                SET i.updated = $timestamp;
             END_OF_QUERY
         end
         trigger_update(data[:lesson_key])
@@ -121,17 +121,17 @@ class Main < Sinatra::Base
     def self.get_lesson_data(lesson_key)
         # purge unconfirmed tablet bookings for this lesson_key
         $neo4j.neo4j_query(<<~END_OF_QUERY, :key => lesson_key)
-            MATCH (t:Tablet)<-[:WHICH]-(b:Booking {confirmed: false})-[:FOR]->(i:LessonInfo)-[:BELONGS_TO]->(l:Lesson {key: {key}})
+            MATCH (t:Tablet)<-[:WHICH]-(b:Booking {confirmed: false})-[:FOR]->(i:LessonInfo)-[:BELONGS_TO]->(l:Lesson {key: $key})
             DETACH DELETE b;
         END_OF_QUERY
         # purge unconfirmed tablet bookings for any lesson key older than 30 minutes
         $neo4j.neo4j_query(<<~END_OF_QUERY, :timestamp => (Time.now - 30 * 60).to_i)
             MATCH (t:Tablet)<-[:WHICH]-(b:Booking {confirmed: false})-[:FOR]->(i:LessonInfo)-[:BELONGS_TO]->(l:Lesson)
-            WHERE b.updated < {timestamp}
+            WHERE b.updated < $timestamp
             DETACH DELETE b;
         END_OF_QUERY
         rows = $neo4j.neo4j_query(<<~END_OF_QUERY, :key => lesson_key).map { |x| x['i'].props }
-            MATCH (i:LessonInfo)-[:BELONGS_TO]->(l:Lesson {key: {key}})
+            MATCH (i:LessonInfo)-[:BELONGS_TO]->(l:Lesson {key: $key})
             RETURN i
             ORDER BY i.offset;
         END_OF_QUERY
@@ -143,7 +143,7 @@ class Main < Sinatra::Base
             end
         end
         rows = $neo4j.neo4j_query(<<~END_OF_QUERY, :key => lesson_key).map { |x| {:comment => x['c'].props, :user => x['u'].props, :text_comment_from => x['tcf.email'] } }
-            MATCH (u:User)<-[:TO]-(c:TextComment)-[:BELONGS_TO]->(l:Lesson {key: {key}})
+            MATCH (u:User)<-[:TO]-(c:TextComment)-[:BELONGS_TO]->(l:Lesson {key: $key})
             MATCH (c)-[:FROM]->(tcf:User)
             RETURN c, u, tcf.email
             ORDER BY c.offset;
@@ -158,7 +158,7 @@ class Main < Sinatra::Base
             end
         end
         rows = $neo4j.neo4j_query(<<~END_OF_QUERY, :key => lesson_key).map { |x| {:comment => x['c'].props, :user => x['u'].props, :audio_comment_from => x['acf.email'] } }
-            MATCH (u:User)<-[:TO]-(c:AudioComment)-[:BELONGS_TO]->(l:Lesson {key: {key}})
+            MATCH (u:User)<-[:TO]-(c:AudioComment)-[:BELONGS_TO]->(l:Lesson {key: $key})
             MATCH (c)-[:FROM]->(acf:User)
             RETURN c, u, acf.email
             ORDER BY c.offset;
@@ -174,7 +174,7 @@ class Main < Sinatra::Base
             end
         end
         rows = $neo4j.neo4j_query(<<~END_OF_QUERY, :key => lesson_key).map { |x| {:offset => x['li.offset'], :feedback => x['hf'].props, :user => x['u.email'] }}
-            MATCH (u:User)<-[:FROM]-(hf:HomeworkFeedback)-[:FOR]->(li:LessonInfo)-[:BELONGS_TO]->(l:Lesson {key: {key}})
+            MATCH (u:User)<-[:FROM]-(hf:HomeworkFeedback)-[:FOR]->(li:LessonInfo)-[:BELONGS_TO]->(l:Lesson {key: $key})
             RETURN hf, li.offset, u.email;
         END_OF_QUERY
         rows.each do |row|
@@ -222,7 +222,7 @@ class Main < Sinatra::Base
         end
         
         rows = $neo4j.neo4j_query(<<~END_OF_QUERY, :key => lesson_key)
-            MATCH (t:Tablet)<-[:WHICH]-(b:Booking {confirmed: true})-[:FOR]->(i:LessonInfo)-[:BELONGS_TO]->(l:Lesson {key: {key}})
+            MATCH (t:Tablet)<-[:WHICH]-(b:Booking {confirmed: true})-[:FOR]->(i:LessonInfo)-[:BELONGS_TO]->(l:Lesson {key: $key})
             RETURN t.id, i.offset;
         END_OF_QUERY
         rows.each do |entry|
@@ -239,7 +239,7 @@ class Main < Sinatra::Base
         end
 
         rows = $neo4j.neo4j_query(<<~END_OF_QUERY, :key => lesson_key)
-            MATCH (t:TabletSet)<-[:BOOKED]-(b:Booking)-[:FOR]->(i:LessonInfo)-[:BELONGS_TO]->(l:Lesson {key: {key}})
+            MATCH (t:TabletSet)<-[:BOOKED]-(b:Booking)-[:FOR]->(i:LessonInfo)-[:BELONGS_TO]->(l:Lesson {key: $key})
             RETURN t.id, i.offset
             ORDER BY t.id;
         END_OF_QUERY
@@ -269,10 +269,10 @@ class Main < Sinatra::Base
                                   :types => {:offset => Integer, :shift => Integer})
         timestamp = Time.now.to_i
         results = neo4j_query(<<~END_OF_QUERY, :key => data[:lesson_key], :offset => data[:offset], :shift => data[:shift], :timestamp => timestamp)
-            MATCH (n:LessonInfo)-[:BELONGS_TO]->(:Lesson {key: {key}}) 
-            WHERE n.offset >= {offset}
-            SET n.offset = n.offset + {shift}
-            SET n.updated = {timestamp};
+            MATCH (n:LessonInfo)-[:BELONGS_TO]->(:Lesson {key: $key}) 
+            WHERE n.offset >= $offset
+            SET n.offset = n.offset + $shift
+            SET n.updated = $timestamp;
         END_OF_QUERY
         trigger_update(data[:lesson_key])
         respond(:ok => 'yeah')
@@ -292,14 +292,14 @@ class Main < Sinatra::Base
         timestamp = Time.now.to_i
         data[:offsets].each do |offset|
             results = neo4j_query(<<~END_OF_QUERY, :key => data[:lesson_key], :offset => offset - cumulative_offset, :timestamp => timestamp)
-                MATCH (n:LessonInfo {offset: {offset}})-[:BELONGS_TO]->(:Lesson {key: {key}}) 
+                MATCH (n:LessonInfo {offset: $offset})-[:BELONGS_TO]->(:Lesson {key: $key}) 
                 DETACH DELETE n;
             END_OF_QUERY
             results = neo4j_query(<<~END_OF_QUERY, :key => data[:lesson_key], :offset => offset - cumulative_offset, :timestamp => timestamp)
-                MATCH (n:LessonInfo)-[:BELONGS_TO]->(:Lesson {key: {key}}) 
-                WHERE n.offset > {offset}
+                MATCH (n:LessonInfo)-[:BELONGS_TO]->(:Lesson {key: $key}) 
+                WHERE n.offset > $offset
                 SET n.offset = n.offset - 1
-                SET n.updated = {timestamp};
+                SET n.updated = $timestamp;
             END_OF_QUERY
             cumulative_offset += 1
         end
@@ -318,7 +318,7 @@ class Main < Sinatra::Base
             available_tablets << tablet_id
         end
         bookings = neo4j_query(<<~END_OF_QUERY, :datum => data[:datum]).map { |x| {:tablet_id => x['t.id'], :booking => x['b'].props, :lesson_key => x['l.key']} }
-            MATCH (t:Tablet)<-[:WHICH]-(b:Booking {datum: {datum}})-[:FOR]->(i:LessonInfo)-[:BELONGS_TO]->(l:Lesson)
+            MATCH (t:Tablet)<-[:WHICH]-(b:Booking {datum: $datum})-[:FOR]->(i:LessonInfo)-[:BELONGS_TO]->(l:Lesson)
             RETURN t.id, b, l.key;
         END_OF_QUERY
         
@@ -371,26 +371,26 @@ class Main < Sinatra::Base
             data[:timestamp] = timestamp
             transaction do
                 neo4j_query(<<~END_OF_QUERY, data)
-                    MERGE (l:Lesson {key: {lesson_key}})
-                    MERGE (i:LessonInfo {offset: {offset}})-[:BELONGS_TO]->(l)
+                    MERGE (l:Lesson {key: $lesson_key})
+                    MERGE (i:LessonInfo {offset: $offset})-[:BELONGS_TO]->(l)
                     
                     WITH l, i
                     MATCH (i)<-[:FOR]->(b2:Booking)-[:WHICH]->(:Tablet)
                     DETACH DELETE b2
                 END_OF_QUERY
                 neo4j_query(<<~END_OF_QUERY, data)
-                    MERGE (l:Lesson {key: {lesson_key}})
-                    MERGE (i:LessonInfo {offset: {offset}})-[:BELONGS_TO]->(l)
+                    MERGE (l:Lesson {key: $lesson_key})
+                    MERGE (i:LessonInfo {offset: $offset})-[:BELONGS_TO]->(l)
                     
                     WITH l, i
-                    MATCH (t:Tablet {id: {tablet_id}})
+                    MATCH (t:Tablet {id: $tablet_id})
                     
                     WITH l, i, t
                     MERGE (i)<-[:FOR]-(b:Booking)-[:WHICH]->(t)
-                    SET b.updated = {timestamp}
-                    SET b.datum = {datum}
-                    SET b.start_time = {start_time}
-                    SET b.end_time = {end_time}
+                    SET b.updated = $timestamp
+                    SET b.datum = $datum
+                    SET b.start_time = $start_time
+                    SET b.end_time = $end_time
                     SET b.confirmed = false;
                 END_OF_QUERY
             end
@@ -408,14 +408,14 @@ class Main < Sinatra::Base
             data[:timestamp] = timestamp
             # delete unconfirmed bookings for this lesson_key / offset
             neo4j_query(<<~END_OF_QUERY, data)
-                MATCH (l:Lesson {key: {lesson_key}})<-[:BELONGS_TO]-(i:LessonInfo {offset: {offset}})<-[:FOR]-(b:Booking {confirmed: false})-[:WHICH]->(t:Tablet)
+                MATCH (l:Lesson {key: $lesson_key})<-[:BELONGS_TO]-(i:LessonInfo {offset: $offset})<-[:FOR]-(b:Booking {confirmed: false})-[:WHICH]->(t:Tablet)
                 DETACH DELETE b;
             END_OF_QUERY
             # mark confirmed bookings for this lesson_key / offset as 'to be deleted'
             neo4j_query(<<~END_OF_QUERY, data)
-                MATCH (l:Lesson {key: {lesson_key}})<-[:BELONGS_TO]-(i:LessonInfo {offset: {offset}})<-[:FOR]-(b:Booking {confirmed: true})-[:WHICH]->(t:Tablet)
+                MATCH (l:Lesson {key: $lesson_key})<-[:BELONGS_TO]-(i:LessonInfo {offset: $offset})<-[:FOR]-(b:Booking {confirmed: true})-[:WHICH]->(t:Tablet)
                 SET b.to_be_deleted = true
-                SET b.updated = {timestamp};
+                SET b.updated = $timestamp;
             END_OF_QUERY
         end
     end
@@ -426,7 +426,7 @@ class Main < Sinatra::Base
         d1 = (DateTime.now + 7).strftime('%Y-%m-%d')
         rows = neo4j_query(<<~END_OF_QUERY, {:d0 => d0, :d1 => d1})
             MATCH (l:Lesson)<-[:BELONGS_TO]-(i:LessonInfo)<-[:FOR]-(b:Booking {confirmed: true})-[:WHICH]->(t:Tablet)
-            WHERE b.datum >= {d0} AND b.datum <= {d1}
+            WHERE b.datum >= $d0 AND b.datum <= $d1
             RETURN l, i, b, t
             ORDER BY t.id
         END_OF_QUERY
@@ -451,7 +451,7 @@ class Main < Sinatra::Base
         
     def self.get_stream_restriction_for_lesson_key(lesson_key)
         results = $neo4j.neo4j_query_expect_one(<<~END_OF_QUERY, :key => lesson_key)['restriction']
-            MERGE (l:Lesson {key: {key}})
+            MERGE (l:Lesson {key: $key})
             RETURN COALESCE(l.stream_restriction, []) AS restriction
         END_OF_QUERY
         while results.size < 5
@@ -535,8 +535,8 @@ class Main < Sinatra::Base
         restrictions = self.class.get_stream_restriction_for_lesson_key(data[:lesson_key]);
         restrictions[day] = (restrictions[day] + 2) % 3
         neo4j_query(<<~END_OF_QUERY, {:restrictions => restrictions, :lesson_key => data[:lesson_key]})
-            MERGE (l:Lesson {key: {lesson_key}})
-            SET l.stream_restriction = {restrictions}
+            MERGE (l:Lesson {key: $lesson_key})
+            SET l.stream_restriction = $restrictions
         END_OF_QUERY
         trigger_update(data[:lesson_key])
         respond(:state => restrictions[day])
@@ -553,7 +553,7 @@ class Main < Sinatra::Base
                 @@lessons[:lesson_keys].keys.each do |lesson_key|
                     info = @@lessons[:lesson_keys][lesson_key]
                     temp = neo4j_query(<<~END_OF_QUERY, {:lesson_key => lesson_key}).map { |x| x['li'].props }
-                        MATCH (li:LessonInfo)-[:BELONGS_TO]->(l:Lesson {key: {lesson_key}})
+                        MATCH (li:LessonInfo)-[:BELONGS_TO]->(l:Lesson {key: $lesson_key})
                         RETURN li
                         ORDER BY li.offset;
                     END_OF_QUERY

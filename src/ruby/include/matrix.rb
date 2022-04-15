@@ -78,7 +78,7 @@ class Main < Sinatra::Base
                             # now we have to check whether this teacher has allowed 
                             # direct DMs from SuS
                             allowed = neo4j_query_expect_one(<<~END_OF_QUERY, :email => other_email)['u.sus_may_contact_me'] || false
-                                MATCH (u:User {email: {email}})
+                                MATCH (u:User {email: $email})
                                 RETURN u.sus_may_contact_me;
                             END_OF_QUERY
                             if allowed
@@ -167,7 +167,7 @@ class Main < Sinatra::Base
         tag = chat_code.split('/').first
         code = chat_code.split('/').last
         result = neo4j_query_expect_one(<<~END_OF_QUERY, :tag => tag)
-            MATCH (l:LoginCode {tag: {tag}, performed: true})-[:BELONGS_TO]->(u:User)
+            MATCH (l:LoginCode {tag: $tag, performed: true})-[:BELONGS_TO]->(u:User)
             SET l.tries = COALESCE(l.tries, 0) + 1
             RETURN l, u;
         END_OF_QUERY
@@ -178,11 +178,11 @@ class Main < Sinatra::Base
         assert(code == login_code[:code])
         assert(Time.at(login_code[:valid_to]) >= Time.now)
         neo4j_query(<<~END_OF_QUERY, :email => user[:email], :access_token => access_token)
-            MATCH (u:User {email: {email}})
-            CREATE (:MatrixAccessToken {access_token: {access_token}})-[:BELONGS_TO]->(u)
+            MATCH (u:User {email: $email})
+            CREATE (:MatrixAccessToken {access_token: $access_token})-[:BELONGS_TO]->(u)
         END_OF_QUERY
         neo4j_query(<<~END_OF_QUERY, :tag => tag)
-            MATCH (l:LoginCode {tag: {tag}})
+            MATCH (l:LoginCode {tag: $tag})
             DETACH DELETE l;
         END_OF_QUERY
         respond(:teacher => @@user_info[user[:email]][:teacher])
@@ -191,7 +191,7 @@ class Main < Sinatra::Base
     post '/api/fetch_matrix_groups' do
         data = parse_request_data(:required_keys => [:access_token])
         email = neo4j_query_expect_one(<<~END_OF_QUERY, :access_token => data[:access_token])['u.email']
-            MATCH (:MatrixAccessToken {access_token: {access_token}})-[:BELONGS_TO]->(u:User)
+            MATCH (:MatrixAccessToken {access_token: $access_token})-[:BELONGS_TO]->(u:User)
             RETURN u.email;
         END_OF_QUERY
         STDERR.puts "Fetching matrix groups for #{email}..."

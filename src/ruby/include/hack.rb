@@ -166,7 +166,7 @@ class Main < Sinatra::Base
         provided_password = (parts[2] || '').strip.downcase
         provided_password = nil if provided_password.empty?
         result = neo4j_query_expect_one(<<~END_OF_QUERY, {:email => @session_user[:email]})
-            MATCH (u:User {email: {email}})
+            MATCH (u:User {email: $email})
             RETURN COALESCE(u.hack_level, 0) AS hack_level, 
             u.hack_seed AS hack_seed,
             COALESCE(u.failed_tries, 0) AS failed_tries,
@@ -180,8 +180,8 @@ class Main < Sinatra::Base
         if @hack_seed.nil? || (@hack_level == 0 && provided_password.nil?)
             @hack_seed = Time.now.to_i
             result = neo4j_query(<<~END_OF_QUERY, {:email => @session_user[:email], :hack_seed => @hack_seed})
-                MATCH (u:User {email: {email}})
-                SET u.hack_seed = {hack_seed};
+                MATCH (u:User {email: $email})
+                SET u.hack_seed = $hack_seed;
             END_OF_QUERY
         end
         
@@ -193,18 +193,18 @@ class Main < Sinatra::Base
             if provided_password == @hack_next_password
                 @hack_level += 1
                 result = neo4j_query(<<~END_OF_QUERY, {:email => @session_user[:email], :hack_level => @hack_level})
-                    MATCH (u:User {email: {email}})
-                    SET u.hack_level = {hack_level},
+                    MATCH (u:User {email: $email})
+                    SET u.hack_level = $hack_level,
                     u.failed_tries = 0;
                 END_OF_QUERY
             else
                 result = neo4j_query(<<~END_OF_QUERY, {:email => @session_user[:email]})
-                    MATCH (u:User {email: {email}})
+                    MATCH (u:User {email: $email})
                     SET u.failed_tries = COALESCE(u.failed_tries, 0) + 1;
                 END_OF_QUERY
                 if tries_left <= 1
                     result = neo4j_query(<<~END_OF_QUERY, {:email => @session_user[:email]})
-                        MATCH (u:User {email: {email}})
+                        MATCH (u:User {email: $email})
                         SET u.hack_level = 0, u.failed_tries = 0, u.hack_name = '';
                     END_OF_QUERY
                 end
@@ -306,7 +306,7 @@ class Main < Sinatra::Base
     post '/api/hack_set_name' do
         require_user!
         data = parse_request_data(:required_keys => [:name], :max_body_length => 2048, :max_string_length => 2048)
-        neo4j_query("MATCH (u:User {email: {email}}) SET u.hack_name = {name};", {:email => @session_user[:email], :name => data[:name]})
+        neo4j_query("MATCH (u:User {email: $email}) SET u.hack_name = $name;", {:email => @session_user[:email], :name => data[:name]})
         display_name = @session_user[:display_name]
         deliver_mail(data[:name]) do
             to WEBSITE_MAINTAINER_EMAIL
@@ -321,7 +321,7 @@ class Main < Sinatra::Base
     post '/api/hack_reset' do
         require_user!
         neo4j_query(<<~END_OF_QUERY, {:email => @session_user[:email]})
-            MATCH (u:User {email: {email}})
+            MATCH (u:User {email: $email})
             SET u.hack_level = 0, u.failed_tries = 0, u.hack_name = '';
         END_OF_QUERY
         respond(:alright => 'yeah')

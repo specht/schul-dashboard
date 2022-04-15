@@ -218,7 +218,7 @@ module QtsNeo4j
     end
 
     def neo4j_query(query_str, options = {})
-        # TODO: In preparation for migration from Neo4j 3 to 4, replace {key} syntax with $key
+        # TODO: In preparation for migration from Neo4j 3 to 4, replace $key syntax with $key
         # TODO: Make this stand out, fix the code by and by
         options.keys.each do |key|
             query_str.gsub!("{#{key}}", "$#{key}")
@@ -395,7 +395,7 @@ class SetupDatabase
                         end.each do |node|
                             debug "DELETING PEU #{node['name']}"
                             neo4j_query(<<~END_OF_QUERY, {:name => node['name'], :email => node['email']})
-                                MATCH (n:PredefinedExternalUser {name: {name}, email: {email}})
+                                MATCH (n:PredefinedExternalUser {name: $name, email: $email})
                                 DETACH DELETE n;
                             END_OF_QUERY
                         end
@@ -2353,7 +2353,7 @@ class Main < Sinatra::Base
                     if tablet_info[:school_streaming]
                         today = DateTime.now.strftime('%Y-%m-%d')
                         results = neo4j_query(<<~END_OF_QUERY, {:tablet_id => tablet_id, :today => today})
-                            MATCH (t:Tablet {id: {tablet_id}})<-[:WHICH]-(b:Booking {datum: {today}, confirmed: true})-[:FOR]->(i:LessonInfo)-[:BELONGS_TO]->(l:Lesson)
+                            MATCH (t:Tablet {id: $tablet_id})<-[:WHICH]-(b:Booking {datum: $today, confirmed: true})-[:FOR]->(i:LessonInfo)-[:BELONGS_TO]->(l:Lesson)
                             RETURN b, i, l
                         END_OF_QUERY
                         fixed_timetable_data = {:events => []}
@@ -2383,12 +2383,12 @@ class Main < Sinatra::Base
                 redirect "#{WEB_ROOT}/", 302 
             else
                 neo4j_query(<<~END_OF_QUERY, :email => @session_user[:email])
-                    MATCH (c)-[ruc:TO]->(:User {email: {email}})
+                    MATCH (c)-[ruc:TO]->(:User {email: $email})
                     WHERE (c:TextComment OR c:AudioComment OR c:Message)
                     SET ruc.seen = true
                 END_OF_QUERY
                 sent_messages = neo4j_query(<<~END_OF_QUERY, :email => @session_user[:email]).map { |x| {:info => x['m'].props, :recipient => x['r.email']} }
-                    MATCH (m:Message)-[:FROM]->(u:User {email: {email}})
+                    MATCH (m:Message)-[:FROM]->(u:User {email: $email})
                     WHERE COALESCE(m.deleted, false) = false
                     WITH m
                     OPTIONAL MATCH (m)-[:TO]->(r:User)
@@ -2417,7 +2417,7 @@ class Main < Sinatra::Base
                 redirect "#{WEB_ROOT}/", 302 
             else
                 stored_events = neo4j_query(<<~END_OF_QUERY, :email => @session_user[:email]).map { |x| {:info => x['e'].props, :recipient => x['u.email']} }
-                    MATCH (e:Event)-[:ORGANIZED_BY]->(ou:User {email: {email}})
+                    MATCH (e:Event)-[:ORGANIZED_BY]->(ou:User {email: $email})
                     WHERE COALESCE(e.deleted, false) = false
                     WITH e
                     OPTIONAL MATCH (u)-[r:IS_PARTICIPANT]->(e)
@@ -2453,7 +2453,7 @@ class Main < Sinatra::Base
                 redirect "#{WEB_ROOT}/", 302 
             else
                 stored_groups = neo4j_query(<<~END_OF_QUERY, :email => @session_user[:email]).map { |x| {:info => x['g'].props, :recipient => x['u.email']} }
-                    MATCH (g:Group)-[:DEFINED_BY]->(ou:User {email: {email}})
+                    MATCH (g:Group)-[:DEFINED_BY]->(ou:User {email: $email})
                     WHERE COALESCE(g.deleted, false) = false
                     WITH g
                     OPTIONAL MATCH (u)-[r:IS_PART_OF]->(g)
@@ -2485,7 +2485,7 @@ class Main < Sinatra::Base
                 redirect "#{WEB_ROOT}/", 302 
             else
                 stored_polls = neo4j_query(<<~END_OF_QUERY, :email => @session_user[:email]).map { |x| {:info => x['p'].props, :recipient => x['u.email']} }
-                    MATCH (p:Poll)-[:ORGANIZED_BY]->(ou:User {email: {email}})
+                    MATCH (p:Poll)-[:ORGANIZED_BY]->(ou:User {email: $email})
                     WHERE COALESCE(p.deleted, false) = false
                     WITH p
                     OPTIONAL MATCH (u)-[r:IS_PARTICIPANT]->(p)
@@ -2511,7 +2511,7 @@ class Main < Sinatra::Base
                 # Two part query, step one: first, fetch all polls and poll runs, but without the participants
                 # (otherwise we'll get lots of redundancy and traffic galore)
                 stored_poll_runs = neo4j_query(<<~END_OF_QUERY, :email => @session_user[:email]).map { |x| {:info => x['pr'].props, :pid => x['pid'], :response_count => x['response_count']} }
-                    MATCH (pr:PollRun)-[:RUNS]->(p:Poll)-[:ORGANIZED_BY]->(ou:User {email: {email}})
+                    MATCH (pr:PollRun)-[:RUNS]->(p:Poll)-[:ORGANIZED_BY]->(ou:User {email: $email})
                     WHERE COALESCE(pr.deleted, false) = false
                     AND COALESCE(p.deleted, false) = false
                     WITH pr, p
@@ -2538,7 +2538,7 @@ class Main < Sinatra::Base
                 # Step 2: now fetch participants for every poll run
                 participants = neo4j_query(<<~END_OF_QUERY, :poll_run_ids => temp_order).map { |x| {:prid => x['prid'], :user_email => x['user_email']} }
                     MATCH (pr:PollRun)
-                    WHERE pr.id IN {poll_run_ids}
+                    WHERE pr.id IN $poll_run_ids
                     WITH pr
                     OPTIONAL MATCH (u)-[r:IS_PARTICIPANT]->(pr)
                     WHERE (u:User OR u:ExternalUser OR u:PredefinedExternalUser) AND COALESCE(r.deleted, false) = false

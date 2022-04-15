@@ -3,7 +3,7 @@ class Main < Sinatra::Base
         login_seen = {}
         LOGIN_STATS_D.each do |d|
             login_counts = neo4j_query(<<~END_OF_QUERY, :today => (Date.today - d).to_s)
-                MATCH (u:User) WHERE EXISTS(u.last_access) AND u.last_access >= {today}
+                MATCH (u:User) WHERE EXISTS(u.last_access) AND u.last_access >= $today
                 RETURN u.email;
             END_OF_QUERY
             login_counts.map { |x| x['u.email'] }.each do |email|
@@ -95,8 +95,8 @@ class Main < Sinatra::Base
             klassen_stats[klasse] = 100 * stats[klasse][:count][LOGIN_STATS_D.last].to_f / stats[klasse][:total]
             if stats[klasse][:count][LOGIN_STATS_D.last] == stats[klasse][:total]
                 neo4j_query(<<~END_OF_QUERY, :klasse => klasse, :timestamp => Time.now.to_i)
-                    MERGE (n:KlasseKomplett {klasse: {klasse}})
-                    ON CREATE SET n.timestamp = {timestamp}
+                    MERGE (n:KlasseKomplett {klasse: $klasse})
+                    ON CREATE SET n.timestamp = $timestamp
                 END_OF_QUERY
             end
         end

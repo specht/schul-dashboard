@@ -12,7 +12,7 @@ class Main < Sinatra::Base
         
         # add external users from user's address book
         ext_users = neo4j_query(<<~END_OF_QUERY, :session_email => @session_user[:email]).map { |x| x['e'].props }
-            MATCH (u:User {email: {session_email}})-[:ENTERED_EXT_USER]->(e:ExternalUser)
+            MATCH (u:User {email: $session_email})-[:ENTERED_EXT_USER]->(e:ExternalUser)
             RETURN e
             ORDER BY e.name
         END_OF_QUERY
@@ -36,9 +36,9 @@ class Main < Sinatra::Base
             display_name = (a.display_name || '').strip
             if email.size > 0 && display_name.size > 0
                 neo4j_query(<<~END_OF_QUERY, :session_email => @session_user[:email], :email => email, :name => display_name)
-                    MATCH (u:User {email: {session_email}})
-                    MERGE (u)-[:ENTERED_EXT_USER]->(e:ExternalUser {email: {email}, entered_by: {session_email}})
-                    SET e.name = {name}
+                    MATCH (u:User {email: $session_email})
+                    MERGE (u)-[:ENTERED_EXT_USER]->(e:ExternalUser {email: $email, entered_by: $session_email})
+                    SET e.name = $name
                 END_OF_QUERY
             end
         end
@@ -49,7 +49,7 @@ class Main < Sinatra::Base
         require_teacher!
         data = parse_request_data(:required_keys => [:email])
         neo4j_query(<<~END_OF_QUERY, :session_email => @session_user[:email], :email => data[:email])
-            MATCH (u:User {email: {session_email}})-[:ENTERED_EXT_USER]->(e:ExternalUser {email: {email}})
+            MATCH (u:User {email: $session_email})-[:ENTERED_EXT_USER]->(e:ExternalUser {email: $email})
             DETACH DELETE e;
         END_OF_QUERY
         respond(:ext_users => external_users_for_session_user)

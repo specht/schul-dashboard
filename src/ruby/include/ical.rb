@@ -2,7 +2,7 @@ class Main < Sinatra::Base
     def delete_session_user_ical_link()
         require_user!
         result = neo4j_query(<<~END_OF_QUERY, :email => @session_user[:email]).map { |x| x['u.ical_token'] }
-            MATCH (u:User {email: {email}})
+            MATCH (u:User {email: $email})
             WHERE EXISTS(u.ical_token)
             RETURN u.ical_token;
         END_OF_QUERY
@@ -14,7 +14,7 @@ class Main < Sinatra::Base
             end
         end
         result = neo4j_query(<<~END_OF_QUERY, :email => @session_user[:email])
-            MATCH (u:User {email: {email}})
+            MATCH (u:User {email: $email})
             REMOVE u.ical_token;
         END_OF_QUERY
     end
@@ -24,8 +24,8 @@ class Main < Sinatra::Base
         delete_session_user_ical_link()
         token = RandomTag.generate(32)
         result = neo4j_query(<<~END_OF_QUERY, :email => @session_user[:email], :token => token)
-            MATCH (u:User {email: {email}})
-            SET u.ical_token = {token};
+            MATCH (u:User {email: $email})
+            SET u.ical_token = $token;
         END_OF_QUERY
         trigger_update("_#{@session_user[:email]}")
         respond(:token => token)

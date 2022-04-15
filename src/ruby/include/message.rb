@@ -14,14 +14,14 @@ class Main < Sinatra::Base
         end
         timestamp = Time.now.to_i
         message = neo4j_query_expect_one(<<~END_OF_QUERY, :session_email => @session_user[:email], :timestamp => timestamp, :id => id, :recipients => data[:recipients])['m'].props
-            MATCH (a:User {email: {session_email}})
-            CREATE (m:Message {id: {id}})
-            SET m.created = {timestamp}
-            SET m.updated = {timestamp}
+            MATCH (a:User {email: $session_email})
+            CREATE (m:Message {id: $id})
+            SET m.created = $timestamp
+            SET m.updated = $timestamp
             CREATE (m)-[:FROM]->(a)
             WITH m
             MATCH (u:User)
-            WHERE u.email IN {recipients}
+            WHERE u.email IN $recipients
             CREATE (m)-[:TO]->(u)
             RETURN DISTINCT m;
         END_OF_QUERY
@@ -52,14 +52,14 @@ class Main < Sinatra::Base
         end
         timestamp = Time.now.to_i
         message = neo4j_query_expect_one(<<~END_OF_QUERY, :session_email => @session_user[:email], :timestamp => timestamp, :id => id, :recipients => data[:recipients])['m'].props
-            MATCH (m:Message {id: {id}})-[:FROM]->(a:User {email: {session_email}})
-            SET m.updated = {timestamp}
+            MATCH (m:Message {id: $id})-[:FROM]->(a:User {email: $session_email})
+            SET m.updated = $timestamp
             WITH DISTINCT m
             MATCH (m)-[r:TO]->(u:User)
             DELETE r
             WITH DISTINCT m
             MATCH (u:User)
-            WHERE u.email IN {recipients}
+            WHERE u.email IN $recipients
             CREATE (m)-[:TO]->(u)
             RETURN DISTINCT m;
         END_OF_QUERY
@@ -85,12 +85,12 @@ class Main < Sinatra::Base
         transaction do 
             timestamp = Time.now.to_i
             neo4j_query(<<~END_OF_QUERY, :session_email => @session_user[:email], :timestamp => timestamp, :id => id)
-                MATCH (a:User {email: {session_email}})<-[:FROM]-(m:Message {id: {id}})
-                SET m.updated = {timestamp}
+                MATCH (a:User {email: $session_email})<-[:FROM]-(m:Message {id: $id})
+                SET m.updated = $timestamp
                 SET m.deleted = true
                 WITH m
                 OPTIONAL MATCH (m)-[rt:TO]->(r:User)
-                SET rt.updated = {timestamp}
+                SET rt.updated = $timestamp
                 SET rt.deleted = true
             END_OF_QUERY
         end
@@ -105,8 +105,8 @@ class Main < Sinatra::Base
                                   :types => {:ids => Array})
         transaction do 
             results = neo4j_query(<<~END_OF_QUERY, :ids => data[:ids], :email => @session_user[:email])
-                MATCH (c)-[ruc:TO]->(:User {email: {email}})
-                WHERE (c:TextComment OR c:AudioComment OR c:Message) AND c.id IN {ids}
+                MATCH (c)-[ruc:TO]->(:User {email: $email})
+                WHERE (c:TextComment OR c:AudioComment OR c:Message) AND c.id IN $ids
                 SET ruc.seen = true
             END_OF_QUERY
         end

@@ -14,17 +14,17 @@ class Main < Sinatra::Base
         end
         $neo4j.neo4j_query(<<~END_OF_QUERY, :today => today)
             MATCH (s:Salzh)-[:BELONGS_TO]->(u:User)
-            WHERE s.end_date < {today}
+            WHERE s.end_date < $today
             DETACH DELETE s;
         END_OF_QUERY
         $neo4j.neo4j_query(<<~END_OF_QUERY, :today => today)
             MATCH (u:User)
-            WHERE EXISTS(u.freiwillig_salzh) AND u.freiwillig_salzh < {today}
+            WHERE EXISTS(u.freiwillig_salzh) AND u.freiwillig_salzh < $today
             REMOVE u.freiwillig_salzh;
         END_OF_QUERY
         $neo4j.neo4j_query(<<~END_OF_QUERY, :today => today)
             MATCH (k:Klasse)
-            WHERE k.hotspot_end_date < {today}
+            WHERE k.hotspot_end_date < $today
             DETACH DELETE k;
         END_OF_QUERY
     end
@@ -125,10 +125,10 @@ class Main < Sinatra::Base
         require_user_who_can_manage_salzh!
         data = parse_request_data(:required_keys => [:email, :end_date, :mode])
         neo4j_query_expect_one(<<~END_OF_QUERY, :email => data[:email], :end_date => data[:end_date], :mode => data[:mode])
-            MATCH (u:User {email: {email}})
+            MATCH (u:User {email: $email})
             MERGE (s:Salzh)-[:BELONGS_TO]->(u)
-            SET s.end_date = {end_date}
-            SET s.mode = {mode}
+            SET s.end_date = $end_date
+            SET s.mode = $mode
             RETURN s;
         END_OF_QUERY
         Main.purge_stale_salzh_entries(true)
@@ -139,7 +139,7 @@ class Main < Sinatra::Base
         require_user_who_can_manage_salzh!
         data = parse_request_data(:required_keys => [:email])
         neo4j_query(<<~END_OF_QUERY, :email => data[:email])
-            MATCH (s:Salzh)-[:BELONGS_TO]->(u:User {email: {email}})
+            MATCH (s:Salzh)-[:BELONGS_TO]->(u:User {email: $email})
             DETACH DELETE s;
         END_OF_QUERY
         Main.purge_stale_salzh_entries(true)
@@ -954,8 +954,8 @@ class Main < Sinatra::Base
         d1 = (d + 6).strftime('%Y-%m-%d')
 
         rows = neo4j_query(<<~END_OF_QUERY, {:d0 => d0, :d1 => d1, :email => @session_user[:email]})
-            MATCH (u:User {email: {email}})-[:SELF_TESTED_ON]->(std:SelfTestDay)
-            WHERE std.datum >= {d0} AND std.datum <= {d1}
+            MATCH (u:User {email: $email})-[:SELF_TESTED_ON]->(std:SelfTestDay)
+            WHERE std.datum >= $d0 AND std.datum <= $d1
             RETURN std.datum AS datum
             ORDER BY std.datum;
         END_OF_QUERY
@@ -993,8 +993,8 @@ class Main < Sinatra::Base
         assert(!EXCLUDE_FROM_SELF_TEST_REPORT.include?(@session_user[:shorthand]))
         today = Date.today.strftime('%Y-%m-%d')
         neo4j_query(<<~END_OF_QUERY, {:email => @session_user[:email], :today => today})
-            MATCH (u:User {email: {email}})
-            MERGE (std:SelfTestDay {datum: {today}})
+            MATCH (u:User {email: $email})
+            MERGE (std:SelfTestDay {datum: $today})
             MERGE (u)-[:SELF_TESTED_ON]->(std);
         END_OF_QUERY
         respond(:ok => true)
@@ -1015,7 +1015,7 @@ class Main < Sinatra::Base
         dates_for_email = {}
         rows = neo4j_query(<<~END_OF_QUERY, {:d0 => d0, :d1 => d1})
             MATCH (u:User)-[:SELF_TESTED_ON]->(std:SelfTestDay)
-            WHERE std.datum >= {d0} AND std.datum <= {d1}
+            WHERE std.datum >= $d0 AND std.datum <= $d1
             RETURN u.email AS email, std.datum AS datum;
         END_OF_QUERY
         rows.each do |row|
@@ -1046,8 +1046,8 @@ class Main < Sinatra::Base
         require_user_who_can_manage_salzh!
         data = parse_request_data(:required_keys => [:email, :datum])
         neo4j_query(<<~END_OF_QUERY, {:email => data[:email], :datum => data[:datum]})
-            MATCH (u:User {email: {email}})
-            MERGE (std:SelfTestDay {datum: {datum}})
+            MATCH (u:User {email: $email})
+            MERGE (std:SelfTestDay {datum: $datum})
             MERGE (u)-[:SELF_TESTED_ON]->(std);
         END_OF_QUERY
         respond(:ok => true)
@@ -1057,7 +1057,7 @@ class Main < Sinatra::Base
         require_user_who_can_manage_salzh!
         data = parse_request_data(:required_keys => [:email, :datum])
         neo4j_query(<<~END_OF_QUERY, {:email => data[:email], :datum => data[:datum]})
-            MATCH (u:User {email: {email}})-[r:SELF_TESTED_ON]->(std:SelfTestDay {datum: {datum}})
+            MATCH (u:User {email: $email})-[r:SELF_TESTED_ON]->(std:SelfTestDay {datum: $datum})
             DELETE r;
         END_OF_QUERY
         respond(:ok => true)

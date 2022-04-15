@@ -218,6 +218,11 @@ module QtsNeo4j
     end
 
     def neo4j_query(query_str, options = {})
+        # TODO: In preparation for migration from Neo4j 3 to 4, replace {key} syntax with $key
+        # TODO: Make this stand out, fix the code by and by
+        options.keys.each do |key|
+            query_str.gsub!("{#{key}}", "$#{key}")
+        end
         # if DEVELOPMENT
         #     debug(query_str, 1) 
         #     debug(options.to_json, 1)
@@ -396,9 +401,8 @@ class SetupDatabase
                         end
                     end
                 end
-                transaction do
-                    debug "Removing all constraints and indexes..."
-                    indexes = []
+                debug "Removing all constraints and indexes..."
+                indexes = []
 #                     neo4j_query("CALL db.constraints").each do |constraint|
 #                         query = "DROP #{constraint['description']}"
 #                         neo4j_query(query)
@@ -407,57 +411,63 @@ class SetupDatabase
 #                         query = "DROP #{index['description']}"
 #                         neo4j_query(query)
 #                     end
-                    
-                    debug "Setting up constraints and indexes..."
-                    neo4j_query("CREATE CONSTRAINT ON (n:LoginCode) ASSERT n.tag IS UNIQUE")
-                    neo4j_query("CREATE CONSTRAINT ON (n:User) ASSERT n.email IS UNIQUE")
-                    neo4j_query("CREATE CONSTRAINT ON (n:Session) ASSERT n.sid IS UNIQUE")
-                    neo4j_query("CREATE CONSTRAINT ON (n:Lesson) ASSERT n.key IS UNIQUE")
-                    neo4j_query("CREATE CONSTRAINT ON (n:WebsiteEvent) ASSERT n.key IS UNIQUE")
-                    neo4j_query("CREATE CONSTRAINT ON (n:TextComment) ASSERT n.key IS UNIQUE")
-                    neo4j_query("CREATE CONSTRAINT ON (n:AudioComment) ASSERT n.key IS UNIQUE")
-                    neo4j_query("CREATE CONSTRAINT ON (n:Message) ASSERT n.key IS UNIQUE")
-                    neo4j_query("CREATE CONSTRAINT ON (n:NewsEntry) ASSERT n.timestamp IS UNIQUE")
-                    neo4j_query("CREATE CONSTRAINT ON (n:Event) ASSERT n.key IS UNIQUE")
-                    neo4j_query("CREATE CONSTRAINT ON (n:Poll) ASSERT n.key IS UNIQUE")
-                    neo4j_query("CREATE CONSTRAINT ON (n:PollRun) ASSERT n.key IS UNIQUE")
-                    neo4j_query("CREATE CONSTRAINT ON (n:PresenceToken) ASSERT n.token IS UNIQUE")
-                    neo4j_query("CREATE CONSTRAINT ON (n:Tablet) ASSERT n.id IS UNIQUE")
-                    neo4j_query("CREATE CONSTRAINT ON (n:TabletSet) ASSERT n.id IS UNIQUE")
-                    neo4j_query("CREATE CONSTRAINT ON (n:PublicEventPerson) ASSERT n.tag IS UNIQUE")
-                    neo4j_query("CREATE CONSTRAINT ON (n:MatrixAccessToken) ASSERT n.access_token IS UNIQUE")
-#                     neo4j_query("CREATE CONSTRAINT ON (n:PredefinedExternalUser) ASSERT n.email IS UNIQUE")
-                    neo4j_query("CREATE CONSTRAINT ON (n:KnownEmailAddress) ASSERT n.email IS UNIQUE")
-                    neo4j_query("CREATE CONSTRAINT ON (n:SelfTestDay) ASSERT n.datum IS UNIQUE")
-                    neo4j_query("CREATE INDEX ON :LoginCode(code)")
-                    neo4j_query("CREATE INDEX ON :NextcloudLoginCode(code)")
-                    neo4j_query("CREATE INDEX ON :LessonInfo(offset)")
-                    neo4j_query("CREATE INDEX ON :TextComment(offset)")
-                    neo4j_query("CREATE INDEX ON :AudioComment(offset)")
-                    neo4j_query("CREATE INDEX ON :ExternalUser(entered_by)")
-                    neo4j_query("CREATE INDEX ON :ExternalUser(email)")
-                    neo4j_query("CREATE INDEX ON :PredefinedExternalUser(email)")
-                    neo4j_query("CREATE INDEX ON :News(date)")
-                    neo4j_query("CREATE INDEX ON :PollRun(start_date)")
-                    neo4j_query("CREATE INDEX ON :PollRun(end_date)")
-                    neo4j_query("CREATE INDEX ON :Booking(datum)")
-                    neo4j_query("CREATE INDEX ON :Booking(confirmed)")
-                    neo4j_query("CREATE INDEX ON :Booking(updated)")
-                    neo4j_query("CREATE INDEX ON :Test(klasse)")
-                    neo4j_query("CREATE INDEX ON :Test(fach)")
-                    neo4j_query("CREATE INDEX ON :Test(datum)")
+                
+                debug "Setting up constraints and indexes..."
+                [
+                    "CREATE CONSTRAINT ON (n:LoginCode) ASSERT n.tag IS UNIQUE",
+                    "CREATE CONSTRAINT ON (n:User) ASSERT n.email IS UNIQUE",
+                    "CREATE CONSTRAINT ON (n:Session) ASSERT n.sid IS UNIQUE",
+                    "CREATE CONSTRAINT ON (n:Lesson) ASSERT n.key IS UNIQUE",
+                    "CREATE CONSTRAINT ON (n:WebsiteEvent) ASSERT n.key IS UNIQUE",
+                    "CREATE CONSTRAINT ON (n:TextComment) ASSERT n.key IS UNIQUE",
+                    "CREATE CONSTRAINT ON (n:AudioComment) ASSERT n.key IS UNIQUE",
+                    "CREATE CONSTRAINT ON (n:Message) ASSERT n.key IS UNIQUE",
+                    "CREATE CONSTRAINT ON (n:NewsEntry) ASSERT n.timestamp IS UNIQUE",
+                    "CREATE CONSTRAINT ON (n:Event) ASSERT n.key IS UNIQUE",
+                    "CREATE CONSTRAINT ON (n:Poll) ASSERT n.key IS UNIQUE",
+                    "CREATE CONSTRAINT ON (n:PollRun) ASSERT n.key IS UNIQUE",
+                    "CREATE CONSTRAINT ON (n:PresenceToken) ASSERT n.token IS UNIQUE",
+                    "CREATE CONSTRAINT ON (n:Tablet) ASSERT n.id IS UNIQUE",
+                    "CREATE CONSTRAINT ON (n:TabletSet) ASSERT n.id IS UNIQUE",
+                    "CREATE CONSTRAINT ON (n:PublicEventPerson) ASSERT n.tag IS UNIQUE",
+                    "CREATE CONSTRAINT ON (n:MatrixAccessToken) ASSERT n.access_token IS UNIQUE",
+                    "CREATE CONSTRAINT ON (n:KnownEmailAddress) ASSERT n.email IS UNIQUE",
+                    "CREATE CONSTRAINT ON (n:SelfTestDay) ASSERT n.datum IS UNIQUE",
+                    "CREATE INDEX ON :LoginCode(code)",
+                    "CREATE INDEX ON :NextcloudLoginCode(code)",
+                    "CREATE INDEX ON :LessonInfo(offset)",
+                    "CREATE INDEX ON :TextComment(offset)",
+                    "CREATE INDEX ON :AudioComment(offset)",
+                    "CREATE INDEX ON :ExternalUser(entered_by)",
+                    "CREATE INDEX ON :ExternalUser(email)",
+                    "CREATE INDEX ON :PredefinedExternalUser(email)",
+                    "CREATE INDEX ON :News(date)",
+                    "CREATE INDEX ON :PollRun(start_date)",
+                    "CREATE INDEX ON :PollRun(end_date)",
+                    "CREATE INDEX ON :Booking(datum)",
+                    "CREATE INDEX ON :Booking(confirmed)",
+                    "CREATE INDEX ON :Booking(updated)",
+                    "CREATE INDEX ON :Test(klasse)",
+                    "CREATE INDEX ON :Test(fach)",
+                    "CREATE INDEX ON :Test(datum)",
+                ].each do |s|
+                    begin
+                        neo4j_query(s)
+                    rescue StandardError => e
+                        debug("failed running constraint query: #{s}")
+                    end
                 end
                 transaction do
                     main.class_variable_get(:@@user_info).keys.each do |email|
                         neo4j_query(<<~END_OF_QUERY, :email => email)
-                            MERGE (u:User {email: {email}})
+                            MERGE (u:User {email: $email})
                         END_OF_QUERY
                     end
                 end
                 transaction do
                     main.class_variable_get(:@@tablets).keys.each do |id|
                         neo4j_query(<<~END_OF_QUERY, :id => id)
-                            MERGE (u:Tablet {id: {id}})
+                            MERGE (u:Tablet {id: $id})
                         END_OF_QUERY
                     end
                 end
@@ -465,38 +475,38 @@ class SetupDatabase
                     # create tablet sets
                     main.class_variable_get(:@@tablet_sets).keys.each do |id|
                         neo4j_query(<<~END_OF_QUERY, :id => id)
-                            MERGE (t:TabletSet {id: {id}})
+                            MERGE (t:TabletSet {id: $id})
                         END_OF_QUERY
                     end
                     # remove tablet sets which are no more present,
                     # this automatically invalidates all tablet set bookings
                     neo4j_query(<<~END_OF_QUERY, :tablet_sets => main.class_variable_get(:@@tablet_sets).keys)
                         MATCH (t:TabletSet)
-                        WHERE NOT (t.id IN {tablet_sets})
+                        WHERE NOT (t.id IN $tablet_sets)
                         DETACH DELETE t;
                     END_OF_QUERY
                 end
                 transaction do
                     neo4j_query(<<~END_OF_QUERY, :email => "lehrer.tablet@#{SCHUL_MAIL_DOMAIN}")
-                        MERGE (u:User {email: {email}})
+                        MERGE (u:User {email: $email})
                     END_OF_QUERY
                     neo4j_query(<<~END_OF_QUERY, :email => "kurs.tablet@#{SCHUL_MAIL_DOMAIN}")
-                        MERGE (u:User {email: {email}})
+                        MERGE (u:User {email: $email})
                     END_OF_QUERY
                     neo4j_query(<<~END_OF_QUERY, :email => "tablet@#{SCHUL_MAIL_DOMAIN}")
-                        MERGE (u:User {email: {email}})
+                        MERGE (u:User {email: $email})
                     END_OF_QUERY
                     neo4j_query(<<~END_OF_QUERY, :email => "klassenraum@#{SCHUL_MAIL_DOMAIN}")
-                        MERGE (u:User {email: {email}})
+                        MERGE (u:User {email: $email})
                     END_OF_QUERY
                     neo4j_query(<<~END_OF_QUERY, :email => "monitor@#{SCHUL_MAIL_DOMAIN}")
-                        MERGE (u:User {email: {email}})
+                        MERGE (u:User {email: $email})
                     END_OF_QUERY
                     neo4j_query(<<~END_OF_QUERY, :email => "monitor-sek@#{SCHUL_MAIL_DOMAIN}")
-                        MERGE (u:User {email: {email}})
+                        MERGE (u:User {email: $email})
                     END_OF_QUERY
                     neo4j_query(<<~END_OF_QUERY, :email => "monitor-lz@#{SCHUL_MAIL_DOMAIN}")
-                        MERGE (u:User {email: {email}})
+                        MERGE (u:User {email: $email})
                     END_OF_QUERY
                 end
                 transaction do
@@ -522,14 +532,14 @@ class SetupDatabase
                     main.class_variable_get(:@@predefined_external_users)[:recipients].each_pair do |k, v|
                         next if v[:entries]
                         neo4j_query(<<~END_OF_QUERY, :email => k, :name => v[:label])
-                            MERGE (n:PredefinedExternalUser {email: {email}, name: {name}})
+                            MERGE (n:PredefinedExternalUser {email: $email, name: $name})
                         END_OF_QUERY
                     end
                 end
                 # purge sessions which have not been used within the past 7 days
                 purged_session_count = neo4j_query_expect_one(<<~END_OF_QUERY, {:today => (Date.today - 7).strftime('%Y-%m-%d')})['count']
                     MATCH (s:Session)-[:BELONGS_TO]->(u:User)
-                    WHERE s.last_access IS NULL OR s.last_access < {today}
+                    WHERE s.last_access IS NULL OR s.last_access < $today
                     AND NOT ((u.email = 'lehrer.tablet@#{SCHUL_MAIL_DOMAIN}') OR (u.email = 'kurs.tablet@#{SCHUL_MAIL_DOMAIN}') OR (u.email = 'tablet@#{SCHUL_MAIL_DOMAIN}'))
                     DETACH DELETE s
                     RETURN COUNT(s) as count;
@@ -537,7 +547,7 @@ class SetupDatabase
                 debug "Purged #{purged_session_count} stale sessions..."
                 purged_login_code_count = neo4j_query_expect_one(<<~END_OF_QUERY, :now => Time.now.to_i)['count']
                     MATCH (l:LoginCode)
-                    WHERE l.valid_to <= {now}
+                    WHERE l.valid_to <= $now
                     DETACH DELETE l
                     RETURN COUNT(l) as count;
                 END_OF_QUERY
@@ -1065,6 +1075,7 @@ class Main < Sinatra::Base
         end
         @@rooms_for_shorthand = {}
         room_order_set = Set.new(ROOM_ORDER)
+        undeclared_rooms = Set.new()
         timetable_today.each_pair do |lesson_key, info|
             info[:stunden].each_pair do |wday, day_info|
                 day_info.each_pair do |stunde, lesson_info|
@@ -1075,13 +1086,16 @@ class Main < Sinatra::Base
                                     @@rooms_for_shorthand[shorthand] ||= Set.new()
                                     @@rooms_for_shorthand[shorthand] << room
                                 else
-                                    debug("Room not declared: #{room}")
+                                    undeclared_rooms << room
                                 end
                             end
                         end
                     end
                 end
             end
+        end
+        unless undeclared_rooms.empty?
+            debug("Undeclared rooms: #{undeclared_rooms.to_a.sort.join(' ')}")
         end
 
         if ENV['DASHBOARD_SERVICE'] == 'ruby'
@@ -1387,9 +1401,9 @@ class Main < Sinatra::Base
                 first_sid = sid.split(',').first
                 if first_sid =~ /^[0-9A-Za-z]+$/
                     results = neo4j_query(<<~END_OF_QUERY, :sid => first_sid, :today => Date.today.to_s).to_a
-                        MATCH (s:Session {sid: {sid}})-[:BELONGS_TO]->(u:User)
-                        SET u.last_access = {today}
-                        SET s.last_access = {today}
+                        MATCH (s:Session {sid: $sid})-[:BELONGS_TO]->(u:User)
+                        SET u.last_access = $today
+                        SET s.last_access = $today
                         RETURN s, u;
                     END_OF_QUERY
                     if results.size == 1
@@ -1480,7 +1494,7 @@ class Main < Sinatra::Base
                         rescue
                             # something went wrong, delete the session
                             results = neo4j_query(<<~END_OF_QUERY, :sid => first_sid).to_a
-                                MATCH (s:Session {sid: {sid}})
+                                MATCH (s:Session {sid: $sid})
                                 DETACH DELETE s;
                             END_OF_QUERY
                         end
@@ -1741,9 +1755,7 @@ class Main < Sinatra::Base
                         io.puts "</li>"
                     end
                 elsif x == :directory
-                    STDERR.puts 'A'
                     klassen = @@klassen_for_shorthand[@session_user[:shorthand]] || []
-                    STDERR.puts klassen.to_yaml
                     if user_who_can_manage_antikenfahrt_logged_in?
                         klassen << '11'
                         klassen << '12'

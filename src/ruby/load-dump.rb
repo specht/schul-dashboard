@@ -28,13 +28,13 @@ class LoadDump
                         if line[0] == 'n'
                             line = line[2, line.size - 2]
                             node = JSON.parse(line)
-                            node_id = neo4j_query_expect_one("CREATE (n:#{node['labels'].join(':')} {props}) RETURN id(n) as id", :props => node['properties'])
+                            node_id = neo4j_query_expect_one("CREATE (n:#{node['labels'].join(':')} $props) RETURN id(n) as id", :props => node['properties'])
                             node_tr[node['id']] = node_id['id']
                             n_count += 1
                         elsif line[0] == 'r'
                             line = line[2, line.size - 2]
                             relationship = JSON.parse(line)
-                            neo4j_query_expect_one("MATCH (from), (to) WHERE ID(from) = #{node_tr[relationship['from']]} AND ID(to) = #{node_tr[relationship['to']]} CREATE (from)-[r:#{relationship['type']} {props}]->(to) RETURN r;", :props => relationship['properties'])
+                            neo4j_query_expect_one("MATCH (from), (to) WHERE ID(from) = #{node_tr[relationship['from']]} AND ID(to) = #{node_tr[relationship['to']]} CREATE (from)-[r:#{relationship['type']} $props]->(to) RETURN r;", :props => relationship['properties'])
                             r_count += 1
                         else
                             STDERR.puts "Invalid entry: #{line}"

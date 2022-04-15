@@ -1,4 +1,4 @@
-FROM ruby:2-alpine
+FROM ruby:3-alpine
 MAINTAINER Dr. Michael Specht <specht@gymnasiumsteglitz.de>
 
 RUN apk update && apk upgrade

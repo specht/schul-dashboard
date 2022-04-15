@@ -16,13 +16,13 @@ class Main < Sinatra::Base
         all_sessions().each do |session|
             other_sid = session[:sid]
             result = neo4j_query(<<~END_OF_QUERY, :email => email, :other_sid => other_sid).map { |x| x['sid'] }
-                MATCH (s:Session {sid: {other_sid}})-[:BELONGS_TO]->(u:User {email: {email}})
+                MATCH (s:Session {sid: $other_sid})-[:BELONGS_TO]->(u:User {email: $email})
                 DETACH DELETE s;
             END_OF_QUERY
         end
         neo4j_query_expect_one(<<~END_OF_QUERY, :email => email, :data => data)
-            MATCH (u:User {email: {email}})
-            CREATE (s:Session {data})-[:BELONGS_TO]->(u)
+            MATCH (u:User {email: $email})
+            CREATE (s:Session $data)-[:BELONGS_TO]->(u)
             RETURN s; 
         END_OF_QUERY
         sid
@@ -33,7 +33,7 @@ class Main < Sinatra::Base
         data[:code] = data[:code].gsub(/[^0-9]/, '')
         begin
             result = neo4j_query_expect_one(<<~END_OF_QUERY, :tag => data[:tag])
-                MATCH (l:LoginCode {tag: {tag}})-[:BELONGS_TO]->(u:User)
+                MATCH (l:LoginCode {tag: $tag})-[:BELONGS_TO]->(u:User)
                 SET l.tries = COALESCE(l.tries, 0) + 1
                 RETURN l, u;
             END_OF_QUERY
@@ -45,7 +45,7 @@ class Main < Sinatra::Base
         login_code = result['l'].props
         if login_code[:tries] > MAX_LOGIN_TRIES
             neo4j_query(<<~END_OF_QUERY, :tag => data[:tag])
-                MATCH (l:LoginCode {tag: {tag}})
+                MATCH (l:LoginCode {tag: $tag})
                 DETACH DELETE l;
             END_OF_QUERY
             respond({:error => 'code_expired'})
@@ -66,7 +66,7 @@ class Main < Sinatra::Base
         assert(Time.at(login_code[:valid_to]) >= Time.now, 'code expired', true)
         session_id = create_session(user[:email], login_code[:tainted] ? 2 : 365 * 24)
         neo4j_query(<<~END_OF_QUERY, :tag => data[:tag])
-            MATCH (l:LoginCode {tag: {tag}})
+            MATCH (l:LoginCode {tag: $tag})
             DETACH DELETE l;
         END_OF_QUERY
         purge_missing_sessions(session_id)
@@ -82,7 +82,7 @@ class Main < Sinatra::Base
             code = chat_code.split('/').last
 
             result = neo4j_query_expect_one(<<~END_OF_QUERY, :tag => tag)
-                MATCH (l:LoginCode {tag: {tag}})-[:BELONGS_TO]->(u:User)
+                MATCH (l:LoginCode {tag: $tag})-[:BELONGS_TO]->(u:User)
                 WHERE COALESCE(l.performed, false) = false
                 SET l.tries = COALESCE(l.tries, 0) + 1
                 RETURN l, u;
@@ -91,7 +91,7 @@ class Main < Sinatra::Base
             login_code = result['l'].props
             if login_code[:tries] > MAX_LOGIN_TRIES
                 neo4j_query(<<~END_OF_QUERY, :tag => tag)
-                    MATCH (l:LoginCode {tag: {tag}})
+                    MATCH (l:LoginCode {tag: $tag})
                     DETACH DELETE l;
                 END_OF_QUERY
                 respond({:error => 'code_expired'})
@@ -105,7 +105,7 @@ class Main < Sinatra::Base
             # instead of deleting this login code like in the default login,
             # mark this login as performed and delete it later on /api/store_matrix_access_token
             result = neo4j_query_expect_one(<<~END_OF_QUERY, :tag => tag)
-                MATCH (l:LoginCode {tag: {tag}})-[:BELONGS_TO]->(u:User)
+                MATCH (l:LoginCode {tag: $tag})-[:BELONGS_TO]->(u:User)
                 SET l.performed = true
                 RETURN l;
             END_OF_QUERY
@@ -138,8 +138,8 @@ class Main < Sinatra::Base
         logout()
         session_id = create_session("kurs.tablet@#{SCHUL_MAIL_DOMAIN}", 365 * 24)
         neo4j_query(<<~END_OF_QUERY, :sid => session_id, :shorthands => data[:shorthands])
-            MATCH (s:Session {sid: {sid}})
-            SET s.shorthands = {shorthands};
+            MATCH (s:Session {sid: $sid})
+            SET s.shorthands = $shorthands;
         END_OF_QUERY
         purge_missing_sessions(session_id, true)
         respond(:ok => 'yeah')
@@ -152,8 +152,8 @@ class Main < Sinatra::Base
         logout()
         session_id = create_session("tablet@#{SCHUL_MAIL_DOMAIN}", 365 * 24)
         neo4j_query(<<~END_OF_QUERY, :sid => session_id, :tablet_id => data[:id])
-            MATCH (s:Session {sid: {sid}})
-            SET s.tablet_id= {tablet_id};
+            MATCH (s:Session {sid: $sid})
+            SET s.tablet_id= $tablet_id;
         END_OF_QUERY
         purge_missing_sessions(session_id, true)
         respond(:ok => 'yeah')
@@ -190,7 +190,7 @@ class Main < Sinatra::Base
             sids.split(',').each do |sid|
                 if sid =~ /^[0-9A-Za-z]+$/
                     results = neo4j_query(<<~END_OF_QUERY, :sid => sid).map { |x| {:sid => x['sid'], :email => x['email'] } }
-                        MATCH (s:Session {sid: {sid}})-[:BELONGS_TO]->(u:User)
+                        MATCH (s:Session {sid: $sid})-[:BELONGS_TO]->(u:User)
                         RETURN s.sid AS sid, u.email AS email;
                     END_OF_QUERY
                     results.each do |entry|
@@ -213,7 +213,7 @@ class Main < Sinatra::Base
                 sids.each do |sid|
                     if sid =~ /^[0-9A-Za-z]+$/
                         results = neo4j_query(<<~END_OF_QUERY, :sid => sid).map { |x| x['sid'] }
-                            MATCH (s:Session {sid: {sid}})-[:BELONGS_TO]->(u:User)
+                            MATCH (s:Session {sid: $sid})-[:BELONGS_TO]->(u:User)
                             RETURN s.sid AS sid;
                         END_OF_QUERY
                         existing_sids << sid unless results.empty?
@@ -251,7 +251,7 @@ class Main < Sinatra::Base
             current_sid = sid.split(',').first
             if current_sid =~ /^[0-9A-Za-z]+$/
                 result = neo4j_query(<<~END_OF_QUERY, :sid => current_sid)
-                    MATCH (s:Session {sid: {sid}})
+                    MATCH (s:Session {sid: $sid})
                     DETACH DELETE s;
                 END_OF_QUERY
             end
@@ -301,17 +301,17 @@ class Main < Sinatra::Base
         valid_to = Time.now + 600
         # was causing problems with a user... maybe? huh...
 #         neo4j_query(<<~END_OF_QUERY, :email => data[:email])
-#             MATCH (l:LoginCode)-[:BELONGS_TO]->(n:User {email: {email}})
+#             MATCH (l:LoginCode)-[:BELONGS_TO]->(n:User {email: $email})
 #             DETACH DELETE l;
 #         END_OF_QUERY
         result = neo4j_query(<<~END_OF_QUERY, :email => data[:email], :tag => tag, :code => random_code, :valid_to => valid_to.to_i)
-            MATCH (n:User {email: {email}})
-            CREATE (l:LoginCode {tag: {tag}, code: {code}, valid_to: {valid_to}})-[:BELONGS_TO]->(n)
+            MATCH (n:User {email: $email})
+            CREATE (l:LoginCode {tag: $tag, code: $code, valid_to: $valid_to})-[:BELONGS_TO]->(n)
             RETURN n, l;
         END_OF_QUERY
         if login_for_chat
             result = neo4j_query(<<~END_OF_QUERY, :tag => tag)
-                MATCH (l:LoginCode {tag: {tag}})
+                MATCH (l:LoginCode {tag: $tag})
                 SET l.chat_login = TRUE;
             END_OF_QUERY
         end
@@ -378,7 +378,7 @@ class Main < Sinatra::Base
     def get_sessions_for_user(email)
         require_user!
         sessions = neo4j_query(<<~END_OF_QUERY, :email => email).map { |x| x['s'].props }
-            MATCH (s:Session)-[:BELONGS_TO]->(u:User {email: {email}})
+            MATCH (s:Session)-[:BELONGS_TO]->(u:User {email: $email})
             RETURN s
             ORDER BY s.last_access DESC;
         END_OF_QUERY
@@ -434,14 +434,14 @@ class Main < Sinatra::Base
         data = parse_request_data(:required_keys => [:scrambled_sid])
         if data[:scrambled_sid] == '_all'
             neo4j_query(<<~END_OF_QUERY, :email => @session_user[:email])
-                MATCH (s:Session)-[:BELONGS_TO]->(:User {email: {email}})
+                MATCH (s:Session)-[:BELONGS_TO]->(:User {email: $email})
                 DETACH DELETE s;
             END_OF_QUERY
         else
             sessions = get_current_user_sessions().select { |x| x[:scrambled_sid] == data[:scrambled_sid] }
             sessions.each do |s|
                 neo4j_query(<<~END_OF_QUERY, :sid => s[:sid])
-                    MATCH (s:Session {sid: {sid}})
+                    MATCH (s:Session {sid: $sid})
                     DETACH DELETE s;
                 END_OF_QUERY
             end
@@ -455,7 +455,7 @@ class Main < Sinatra::Base
         sessions = get_sessions_for_user(data[:email]).select { |x| x[:scrambled_sid] == data[:scrambled_sid] }
         sessions.each do |s|
             neo4j_query(<<~END_OF_QUERY, :sid => s[:sid])
-                MATCH (s:Session {sid: {sid}})
+                MATCH (s:Session {sid: $sid})
                 DETACH DELETE s;
             END_OF_QUERY
         end
@@ -469,7 +469,7 @@ class Main < Sinatra::Base
         assert(can_see_all_timetables_logged_in? || (@@teachers_for_klasse[klasse] || {}).include?(@session_user[:shorthand]))
         neo4j_query(<<~END_OF_QUERY, {:timestamp => Time.now.to_i})
             MATCH (n:LoginCode)
-            WHERE n.valid_to < {timestamp}
+            WHERE n.valid_to < $timestamp
             DETACH DELETE n;
         END_OF_QUERY
         rows = neo4j_query(<<~END_OF_QUERY)
@@ -484,7 +484,7 @@ class Main < Sinatra::Base
             if (!@@user_info[email][:teacher]) && @@user_info[email][:klasse] == klasse
                 sus << [@@user_info[email][:display_name], code]
                 rows = neo4j_query(<<~END_OF_QUERY, {:email => email, :tag => row['n'].props[:tag]})
-                    MATCH (n:LoginCode {tag: {tag}})-[:BELONGS_TO]->(u:User {email: {email}})
+                    MATCH (n:LoginCode {tag: $tag})-[:BELONGS_TO]->(u:User {email: $email})
                     SET n.tainted = true
                 END_OF_QUERY
             end
@@ -496,7 +496,7 @@ class Main < Sinatra::Base
         require_admin!
         neo4j_query(<<~END_OF_QUERY, {:timestamp => Time.now.to_i})
             MATCH (n:LoginCode)
-            WHERE n.valid_to < {timestamp}
+            WHERE n.valid_to < $timestamp
             DETACH DELETE n;
         END_OF_QUERY
         rows = neo4j_query(<<~END_OF_QUERY)

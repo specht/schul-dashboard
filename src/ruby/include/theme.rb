@@ -16,8 +16,8 @@ class Main < Sinatra::Base
         data = parse_request_data(:required_keys => [:font])
         assert(AVAILABLE_FONTS.include?(data[:font]))
         results = neo4j_query(<<~END_OF_QUERY, :email => @session_user[:email], :font => data[:font])
-            MATCH (u:User {email: {email}})
-            SET u.font = {font};
+            MATCH (u:User {email: $email})
+            SET u.font = $font;
         END_OF_QUERY
         respond(:ok => true, :css => css_for_font(data[:font]))
     end
@@ -30,8 +30,8 @@ class Main < Sinatra::Base
         assert(data[:scheme][1, 18] =~ /^[0-9a-f]{18}[0-9]?$/)
         primary_color = '#' + data[:scheme][7, 6]
         results = neo4j_query(<<~END_OF_QUERY, :email => @session_user[:email], :scheme => data[:scheme])
-            MATCH (u:User {email: {email}})
-            SET u.color_scheme = {scheme};
+            MATCH (u:User {email: $email})
+            SET u.color_scheme = $scheme;
         END_OF_QUERY
         if @@renderer.render(["##{data[:scheme][1, 6]}", "##{data[:scheme][7, 6]}", "##{data[:scheme][13, 6]}", '(no title)'], @session_user[:email])
             trigger_update_images()

@@ -275,8 +275,8 @@ class Main < Sinatra::Base
         data = parse_request_data(:required_keys => [:allowed])
         allowed = data[:allowed] == 'true'
         allowed = neo4j_query_expect_one(<<~END_OF_QUERY, :email => @session_user[:email], :allowed => allowed)['allowed']
-            MATCH (u:User {email: {email}})
-            SET u.sus_may_contact_me = {allowed}
+            MATCH (u:User {email: $email})
+            SET u.sus_may_contact_me = $allowed
             RETURN u.sus_may_contact_me AS allowed;
         END_OF_QUERY
         @session_user[:sus_may_contact_me] = allowed

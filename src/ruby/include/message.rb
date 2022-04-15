@@ -117,11 +117,11 @@ class Main < Sinatra::Base
         require_user!
         # don't show messages which are not at least 5 minutes old
         rows = neo4j_query(<<~END_OF_QUERY, :email => @session_user[:email], :now => now).map { |x| x['c.id'] }
-            MATCH (c)-[ruc:TO]->(u:User {email: {email}}) 
+            MATCH (c)-[ruc:TO]->(u:User {email: $email}) 
             WHERE ((c:TextComment AND EXISTS(c.comment)) OR 
                     (c:AudioComment AND EXISTS(c.tag)) OR
                     (c:Message AND EXISTS(c.id))) AND
-                    c.updated < {now} AND COALESCE(ruc.seen, false) = false
+                    c.updated < $now AND COALESCE(ruc.seen, false) = false
             RETURN c.id
         END_OF_QUERY
         rows

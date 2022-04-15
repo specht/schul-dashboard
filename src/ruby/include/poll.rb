@@ -5,7 +5,7 @@ class Main < Sinatra::Base
         result = {}
         if external_code && !external_code.empty?
             rows = neo4j_query(<<~END_OF_QUERY, :prid => prid)
-                MATCH (u)-[rt:IS_PARTICIPANT]->(pr:PollRun {id: {prid}})-[:RUNS]->(p:Poll)-[:ORGANIZED_BY]->(au:User)
+                MATCH (u)-[rt:IS_PARTICIPANT]->(pr:PollRun {id: $prid})-[:RUNS]->(p:Poll)-[:ORGANIZED_BY]->(au:User)
                 WHERE (u:ExternalUser OR u:PredefinedExternalUser) AND COALESCE(p.deleted, false) = false AND COALESCE(pr.deleted, false) = false AND COALESCE(rt.deleted, false) = false
                 RETURN u.email, pr.id, ID(u) AS unid, ID(pr) AS prnid;
             END_OF_QUERY
@@ -15,18 +15,18 @@ class Main < Sinatra::Base
             end.first
             assert(!(invitation.nil?))
             result = neo4j_query_expect_one(<<~END_OF_QUERY, :prid => prid, :email => invitation['u.email'], :unid => invitation['unid'], :prnid => invitation['prnid'])
-                MATCH (u)-[rt:IS_PARTICIPANT]->(pr:PollRun {id: {prid}})-[:RUNS]->(p:Poll)-[:ORGANIZED_BY]->(au:User)
-                WHERE ID(u) = {unid} AND ID(pr) = {prnid}
-                MATCH (ou)-[rt2:IS_PARTICIPANT]->(pr2:PollRun {id: {prid}})-[:RUNS]->(p2:Poll)-[:ORGANIZED_BY]->(au2:User)
+                MATCH (u)-[rt:IS_PARTICIPANT]->(pr:PollRun {id: $prid})-[:RUNS]->(p:Poll)-[:ORGANIZED_BY]->(au:User)
+                WHERE ID(u) = $unid AND ID(pr) = $prnid
+                MATCH (ou)-[rt2:IS_PARTICIPANT]->(pr2:PollRun {id: $prid})-[:RUNS]->(p2:Poll)-[:ORGANIZED_BY]->(au2:User)
                 WHERE COALESCE(rt2.deleted, false) = false
                 RETURN u, pr, p, au.email, COUNT(ou) AS total_participants;
             END_OF_QUERY
         else
             require_user!
             result = neo4j_query_expect_one(<<~END_OF_QUERY, {:prid => prid, :email => @session_user[:email]})
-                MATCH (u:User {email: {email}})-[:IS_PARTICIPANT]->(pr:PollRun {id: {prid}})-[:RUNS]->(p:Poll)-[:ORGANIZED_BY]->(au:User)
+                MATCH (u:User {email: $email})-[:IS_PARTICIPANT]->(pr:PollRun {id: $prid})-[:RUNS]->(p:Poll)-[:ORGANIZED_BY]->(au:User)
                 WITH pr, p, au
-                MATCH (ou)-[rt2:IS_PARTICIPANT]->(pr2:PollRun {id: {prid}})-[:RUNS]->(p2:Poll)-[:ORGANIZED_BY]->(au2:User)
+                MATCH (ou)-[rt2:IS_PARTICIPANT]->(pr2:PollRun {id: $prid})-[:RUNS]->(p2:Poll)-[:ORGANIZED_BY]->(au2:User)
                 WHERE COALESCE(rt2.deleted, false) = false
                 RETURN pr, p, au.email, COUNT(ou) AS total_participants
             END_OF_QUERY
@@ -47,7 +47,7 @@ class Main < Sinatra::Base
         stored_response = nil
         if external_code && !external_code.strip.empty?
             rows = neo4j_query(<<~END_OF_QUERY, :prid => prid)
-                MATCH (u)-[rt:IS_PARTICIPANT]->(pr:PollRun {id: {prid}})-[:RUNS]->(p:Poll)-[:ORGANIZED_BY]->(au:User)
+                MATCH (u)-[rt:IS_PARTICIPANT]->(pr:PollRun {id: $prid})-[:RUNS]->(p:Poll)-[:ORGANIZED_BY]->(au:User)
                 WHERE (u:ExternalUser OR u:PredefinedExternalUser) AND COALESCE(p.deleted, false) = false AND COALESCE(pr.deleted, false) = false AND COALESCE(rt.deleted, false) = false
                 WITH u, pr
                 MATCH (u)<-[:RESPONSE_BY]-(prs:PollResponse)-[:RESPONSE_TO]->(pr)
@@ -62,7 +62,7 @@ class Main < Sinatra::Base
             end
         else
             results = neo4j_query(<<~END_OF_QUERY, {:prid => poll_run[:id], :email => @session_user[:email]}).map { |x| x['prs.response'] }
-                MATCH (u:User {email: {email}})<-[:RESPONSE_BY]-(prs:PollResponse)-[:RESPONSE_TO]->(pr:PollRun {id: {prid}})
+                MATCH (u:User {email: $email})<-[:RESPONSE_BY]-(prs:PollResponse)-[:RESPONSE_TO]->(pr:PollRun {id: $prid})
                 RETURN prs.response
                 LIMIT 1;
             END_OF_QUERY
@@ -82,9 +82,9 @@ class Main < Sinatra::Base
         now_date = Date.today.strftime('%Y-%m-%d')
         now_time = (Time.now - 60).strftime('%H:%M')
         result = neo4j_query_expect_one(<<~END_OF_QUERY, {:prid => data[:prid], :email => @session_user[:email], :now_date => now_date, :now_time => now_time})
-            MATCH (pr:PollRun {id: {prid}})-[:RUNS]->(p:Poll)-[:ORGANIZED_BY]->(u:User {email: {email}})
-            SET pr.end_date = {now_date}
-            SET pr.end_time = {now_time}
+            MATCH (pr:PollRun {id: $prid})-[:RUNS]->(p:Poll)-[:ORGANIZED_BY]->(u:User {email: $email})
+            SET pr.end_date = $now_date
+            SET pr.end_time = $now_time
             RETURN pr
         END_OF_QUERY
         poll_run = result['pr'].props
@@ -119,7 +119,7 @@ class Main < Sinatra::Base
         if good
             if external_code && !external_code.empty?
                 rows = neo4j_query(<<~END_OF_QUERY, :prid => prid)
-                    MATCH (u)-[rt:IS_PARTICIPANT]->(pr:PollRun {id: {prid}})-[:RUNS]->(p:Poll)
+                    MATCH (u)-[rt:IS_PARTICIPANT]->(pr:PollRun {id: $prid})-[:RUNS]->(p:Poll)
                     WHERE (u:ExternalUser OR u:PredefinedExternalUser) AND COALESCE(p.deleted, false) = false AND COALESCE(pr.deleted, false) = false AND COALESCE(rt.deleted, false) = false
                     RETURN id(u), pr, u;
                 END_OF_QUERY
@@ -129,18 +129,18 @@ class Main < Sinatra::Base
                 end
                 neo4j_query(<<~END_OF_QUERY, {:prid => prid, :response => data[:response], :node_id => results.first['id(u)']})
                     MATCH (u)
-                    WHERE id(u) = {node_id}
+                    WHERE id(u) = $node_id
                     WITH u
-                    MATCH (pr:PollRun {id: {prid}})
+                    MATCH (pr:PollRun {id: $prid})
                     MERGE (u)<-[:RESPONSE_BY]-(prs:PollResponse)-[:RESPONSE_TO]->(pr)
-                    SET prs.response = {response};
+                    SET prs.response = $response;
                 END_OF_QUERY
             else
                 neo4j_query(<<~END_OF_QUERY, {:prid => prid, :response => data[:response], :email => @session_user[:email]})
-                    MATCH (u:User {email: {email}})
-                    MATCH (pr:PollRun {id: {prid}})
+                    MATCH (u:User {email: $email})
+                    MATCH (pr:PollRun {id: $prid})
                     MERGE (u)<-[:RESPONSE_BY]-(prs:PollResponse)-[:RESPONSE_TO]->(pr)
-                    SET prs.response = {response};
+                    SET prs.response = $response;
                 END_OF_QUERY
             end
             respond(:submitted => true)
@@ -151,7 +151,7 @@ class Main < Sinatra::Base
         require_user!
         data = parse_request_data(:required_keys => [:prid])
         neo4j_query(<<~END_OF_QUERY, {:prid => data[:prid], :email => @session_user[:email]})
-            MATCH (u:User {email: {email}})-[rt:IS_PARTICIPANT]->(pr:PollRun {id: {prid}})
+            MATCH (u:User {email: $email})-[rt:IS_PARTICIPANT]->(pr:PollRun {id: $prid})
             SET rt.hide = true;
         END_OF_QUERY
 
@@ -161,15 +161,15 @@ class Main < Sinatra::Base
     def get_poll_run_results(prid)
         require_teacher_or_sv!
         temp = neo4j_query_expect_one(<<~END_OF_QUERY, {:prid => prid, :email => @session_user[:email]})
-            MATCH (pu)-[rt:IS_PARTICIPANT]->(pr:PollRun {id: {prid}})-[:RUNS]->(p:Poll)-[:ORGANIZED_BY]->(au:User {email: {email}})
-            WHERE COALESCE(p.deleted, false) = false 
+            MATCH (pu)-[rt:IS_PARTICIPANT]->(pr:PollRun {id: $prid})-[:RUNS]->(p:Poll)-[:ORGANIZED_BY]->(au:User {email: $email})
+            WHERE COALESCE(p.deleted, false) = false
             AND COALESCE(pr.deleted, false) = false
             AND COALESCE(rt.deleted, false) = false
             RETURN au.email, pr, p, COUNT(pu) AS participant_count;
         END_OF_QUERY
         participants = neo4j_query(<<~END_OF_QUERY, {:prid => prid, :email => @session_user[:email]})
-            MATCH (pu)-[rt:IS_PARTICIPANT]->(pr:PollRun {id: {prid}})-[:RUNS]->(p:Poll)-[:ORGANIZED_BY]->(au:User {email: {email}})
-            WHERE COALESCE(p.deleted, false) = false 
+            MATCH (pu)-[rt:IS_PARTICIPANT]->(pr:PollRun {id: $prid})-[:RUNS]->(p:Poll)-[:ORGANIZED_BY]->(au:User {email: $email})
+            WHERE COALESCE(p.deleted, false) = false
             AND COALESCE(pr.deleted, false) = false
             AND COALESCE(rt.deleted, false) = false
             RETURN labels(pu), pu.email, pu.name
@@ -184,7 +184,7 @@ class Main < Sinatra::Base
         poll_run[:participant_count] = temp['participant_count']
         poll_run[:participants] = participants
         responses = neo4j_query(<<~END_OF_QUERY, {:prid => prid, :email => @session_user[:email]}).map { |x| {:response => JSON.parse(x['prs.response']), :email => x['u.email']} }
-            MATCH (u)<-[:RESPONSE_BY]-(prs:PollResponse)-[:RESPONSE_TO]->(pr:PollRun {id: {prid}})-[:RUNS]->(p:Poll)-[:ORGANIZED_BY]->(au:User {email: {email}})
+            MATCH (u)<-[:RESPONSE_BY]-(prs:PollResponse)-[:RESPONSE_TO]->(pr:PollRun {id: $prid})-[:RUNS]->(p:Poll)-[:ORGANIZED_BY]->(au:User {email: $email})
             WHERE (u:User OR u:ExternalUser OR u:PredefinedExternalUser)
             RETURN u.email, prs.response;
         END_OF_QUERY
@@ -569,10 +569,10 @@ class Main < Sinatra::Base
         data[:items] = sanitize_poll_items(JSON.parse(data[:items])).to_json
         timestamp = Time.now.to_i
         poll = neo4j_query_expect_one(<<~END_OF_QUERY, :session_email => @session_user[:email], :timestamp => timestamp, :id => id, :title => data[:title], :items => data[:items])['p'].props
-            MATCH (a:User {email: {session_email}})
-            CREATE (p:Poll {id: {id}, title: {title}, items: {items}})
-            SET p.created = {timestamp}
-            SET p.updated = {timestamp}
+            MATCH (a:User {email: $session_email})
+            CREATE (p:Poll {id: $id, title: $title, items: $items})
+            SET p.created = $timestamp
+            SET p.updated = $timestamp
             CREATE (p)-[:ORGANIZED_BY]->(a)
             RETURN p;
         END_OF_QUERY
@@ -594,10 +594,10 @@ class Main < Sinatra::Base
         data[:items] = sanitize_poll_items(JSON.parse(data[:items])).to_json
         timestamp = Time.now.to_i
         poll = neo4j_query_expect_one(<<~END_OF_QUERY, :session_email => @session_user[:email], :timestamp => timestamp, :id => id, :title => data[:title], :items => data[:items])['p'].props
-            MATCH (p:Poll {id: {id}})-[:ORGANIZED_BY]->(a:User {email: {session_email}})
-            SET p.updated = {timestamp}
-            SET p.title = {title}
-            SET p.items = {items}
+            MATCH (p:Poll {id: $id})-[:ORGANIZED_BY]->(a:User {email: $session_email})
+            SET p.updated = $timestamp
+            SET p.title = $title
+            SET p.items = $items
             WITH DISTINCT p
             RETURN p;
         END_OF_QUERY
@@ -616,8 +616,8 @@ class Main < Sinatra::Base
         transaction do 
             timestamp = Time.now.to_i
             neo4j_query(<<~END_OF_QUERY, :session_email => @session_user[:email], :timestamp => timestamp, :id => id)
-                MATCH (a:User {email: {session_email}})<-[:ORGANIZED_BY]-(p:Poll {id: {id}})
-                SET p.updated = {timestamp}
+                MATCH (a:User {email: $session_email})<-[:ORGANIZED_BY]-(p:Poll {id: $id})
+                SET p.updated = $timestamp
                 SET p.deleted = true
             END_OF_QUERY
         end
@@ -636,37 +636,37 @@ class Main < Sinatra::Base
         timestamp = Time.now.to_i
         assert(['true', 'false'].include?(data[:anonymous]))
         poll_run = neo4j_query_expect_one(<<~END_OF_QUERY, :session_email => @session_user[:email], :timestamp => timestamp, :id => id, :pid => data[:pid], :anonymous => (data[:anonymous] == 'true'), :start_date => data[:start_date], :start_time => data[:start_time], :end_date => data[:end_date], :end_time => data[:end_time])['pr'].props
-            MATCH (p:Poll {id: {pid}})-[:ORGANIZED_BY]->(a:User {email: {session_email}})
-            CREATE (pr:PollRun {id: {id}, anonymous: {anonymous}, start_date: {start_date}, start_time: {start_time}, end_date: {end_date}, end_time: {end_time}})
-            SET pr.created = {timestamp}
-            SET pr.updated = {timestamp}
+            MATCH (p:Poll {id: $pid})-[:ORGANIZED_BY]->(a:User {email: $session_email})
+            CREATE (pr:PollRun {id: $id, anonymous: $anonymous, start_date: $start_date, start_time: $start_time, end_date: $end_date, end_time: $end_time})
+            SET pr.created = $timestamp
+            SET pr.updated = $timestamp
             SET pr.items = p.items
             CREATE (pr)-[:RUNS]->(p)
             RETURN pr;
         END_OF_QUERY
         # link regular users
         neo4j_query(<<~END_OF_QUERY, :prid => id, :recipients => data[:recipients].select {|x| @@user_info.include?(x)} )
-            MATCH (pr:PollRun {id: {prid}})
+            MATCH (pr:PollRun {id: $prid})
             WITH DISTINCT pr
             MATCH (u:User)
-            WHERE u.email IN {recipients}
+            WHERE u.email IN $recipients
             CREATE (u)-[:IS_PARTICIPANT]->(pr);
         END_OF_QUERY
         # link external users from address book
         neo4j_query(<<~END_OF_QUERY, :prid => id, :recipients => data[:recipients].reject {|x| @@user_info.include?(x)}, :session_email => @session_user[:email] )
-            MATCH (pr:PollRun {id: {prid}})
+            MATCH (pr:PollRun {id: $prid})
             WITH DISTINCT pr
-            MATCH (u:ExternalUser {entered_by: {session_email}})
-            WHERE u.email IN {recipients}
+            MATCH (u:ExternalUser {entered_by: $session_email})
+            WHERE u.email IN $recipients
             CREATE (u)-[:IS_PARTICIPANT]->(pr);
         END_OF_QUERY
         # link external users (predefined)
 #         STDERR.puts data[:recipients].select {|x| @@predefined_external_users[:recipients].include?(x) }.to_yaml
         temp = neo4j_query(<<~END_OF_QUERY, :prid => id, :recipients => data[:recipients].select {|x| @@predefined_external_users[:recipients].include?(x) })
-            MATCH (pr:PollRun {id: {prid}})
+            MATCH (pr:PollRun {id: $prid})
             WITH DISTINCT pr
             MATCH (u:PredefinedExternalUser)
-            WHERE u.email IN {recipients}
+            WHERE u.email IN $recipients
             CREATE (u)-[:IS_PARTICIPANT]->(pr);
         END_OF_QUERY
 #         STDERR.puts temp.to_yaml
@@ -691,13 +691,13 @@ class Main < Sinatra::Base
         timestamp = Time.now.to_i
         assert(['true', 'false'].include?(data[:anonymous]))
         poll_run = neo4j_query_expect_one(<<~END_OF_QUERY, :session_email => @session_user[:email], :timestamp => timestamp, :id => id, :anonymous => (data[:anonymous] == 'true'), :start_date => data[:start_date], :start_time => data[:start_time], :end_date => data[:end_date], :end_time => data[:end_time], :recipients => data[:recipients])['pr'].props
-            MATCH (pr:PollRun {id: {id}})-[:RUNS]->(p:Poll)-[:ORGANIZED_BY]->(a:User {email: {session_email}})
-            WHERE pr.anonymous = {anonymous}
-            SET pr.updated = {timestamp}
-            SET pr.start_date = {start_date}
-            SET pr.start_time = {start_time}
-            SET pr.end_date = {end_date}
-            SET pr.end_time = {end_time}
+            MATCH (pr:PollRun {id: $id})-[:RUNS]->(p:Poll)-[:ORGANIZED_BY]->(a:User {email: $session_email})
+            WHERE pr.anonymous = $anonymous
+            SET pr.updated = $timestamp
+            SET pr.start_date = $start_date
+            SET pr.start_time = $start_time
+            SET pr.end_date = $end_date
+            SET pr.end_time = $end_time
             WITH DISTINCT pr
             OPTIONAL MATCH (u)-[r:IS_PARTICIPANT]->(pr)
             SET r.deleted = true
@@ -706,28 +706,28 @@ class Main < Sinatra::Base
         END_OF_QUERY
         # link regular users
         neo4j_query(<<~END_OF_QUERY, :prid => id, :recipients => data[:recipients].select {|x| @@user_info.include?(x)} )
-            MATCH (pr:PollRun {id: {prid}})
+            MATCH (pr:PollRun {id: $prid})
             WITH DISTINCT pr
             MATCH (u:User)
-            WHERE u.email IN {recipients}
+            WHERE u.email IN $recipients
             MERGE (u)-[r:IS_PARTICIPANT]->(pr)
             REMOVE r.deleted
         END_OF_QUERY
         # link external users from address book
         neo4j_query(<<~END_OF_QUERY, :prid => id, :recipients => data[:recipients].reject {|x| @@user_info.include?(x)}, :session_email => @session_user[:email] )
-            MATCH (pr:PollRun {id: {prid}})
+            MATCH (pr:PollRun {id: $prid})
             WITH DISTINCT pr
-            MATCH (u:ExternalUser {entered_by: {session_email}})
-            WHERE u.email IN {recipients}
+            MATCH (u:ExternalUser {entered_by: $session_email})
+            WHERE u.email IN $recipients
             MERGE (u)-[r:IS_PARTICIPANT]->(pr)
             REMOVE r.deleted
         END_OF_QUERY
         # link external users (predefined)
         neo4j_query(<<~END_OF_QUERY, :prid => id, :recipients => data[:recipients].select {|x| @@predefined_external_users[:recipients].include?(x) })
-            MATCH (pr:PollRun {id: {prid}})
+            MATCH (pr:PollRun {id: $prid})
             WITH DISTINCT pr
             MATCH (u:PredefinedExternalUser)
-            WHERE u.email IN {recipients}
+            WHERE u.email IN $recipients
             MERGE (u)-[r:IS_PARTICIPANT]->(pr)
             REMOVE r.deleted
         END_OF_QUERY
@@ -748,8 +748,8 @@ class Main < Sinatra::Base
         transaction do 
             timestamp = Time.now.to_i
             neo4j_query(<<~END_OF_QUERY, :session_email => @session_user[:email], :timestamp => timestamp, :id => id)
-                MATCH (a:User {email: {session_email}})<-[:ORGANIZED_BY]-(p:Poll)<-[:RUNS]-(pr:PollRun {id: {id}})
-                SET pr.updated = {timestamp}
+                MATCH (a:User {email: $session_email})<-[:ORGANIZED_BY]-(p:Poll)<-[:RUNS]-(pr:PollRun {id: $id})
+                SET pr.updated = $timestamp
                 SET pr.deleted = true
             END_OF_QUERY
         end
@@ -765,7 +765,7 @@ class Main < Sinatra::Base
         unless (id || '').empty?
             data = {:session_email => @session_user[:email], :id => id}
             temp = neo4j_query(<<~END_OF_QUERY, data).map { |x| {:email => x['r.email'], :invitations => x['invitations'] || [], :invitation_requested => x['invitation_requested'] } }
-                MATCH (a:User {email: {session_email}})<-[:ORGANIZED_BY]-(p:Poll)<-[:RUNS]-(pr:PollRun {id: {id}})<-[rt:IS_PARTICIPANT]-(r)
+                MATCH (a:User {email: $session_email})<-[:ORGANIZED_BY]-(p:Poll)<-[:RUNS]-(pr:PollRun {id: $id})<-[rt:IS_PARTICIPANT]-(r)
                 WHERE (r:ExternalUser OR r:PredefinedExternalUser) AND COALESCE(rt.deleted, false) = false
                 RETURN r.email, COALESCE(rt.invitations, []) AS invitations, COALESCE(rt.invitation_requested, false) AS invitation_requested;
             END_OF_QUERY
@@ -788,8 +788,8 @@ class Main < Sinatra::Base
         data[:timestamp] = timestamp
         poll_run = nil
         temp = $neo4j.neo4j_query_expect_one(<<~END_OF_QUERY, data)
-            MATCH (u:User)<-[:ORGANIZED_BY]-(p:Poll)<-[:RUNS]-(pr:PollRun {id: {prid}})<-[rt:IS_PARTICIPANT]-(r)
-            WHERE (r:ExternalUser OR r:PredefinedExternalUser) AND (r.email = {email}) AND COALESCE(rt.deleted, false) = false AND COALESCE(pr.deleted, false) = false AND COALESCE(p.deleted, false) = false
+            MATCH (u:User)<-[:ORGANIZED_BY]-(p:Poll)<-[:RUNS]-(pr:PollRun {id: $prid})<-[rt:IS_PARTICIPANT]-(r)
+            WHERE (r:ExternalUser OR r:PredefinedExternalUser) AND (r.email = $email) AND COALESCE(rt.deleted, false) = false AND COALESCE(pr.deleted, false) = false AND COALESCE(p.deleted, false) = false
             RETURN pr, p, u.email;
         END_OF_QUERY
         poll_run = temp['pr'].props
@@ -818,9 +818,9 @@ class Main < Sinatra::Base
             end
         end
         rows = $neo4j.neo4j_query(<<~END_OF_QUERY, data)
-            MATCH (pr:PollRun {id: {prid}})<-[rt:IS_PARTICIPANT]-(r)
-            WHERE (r:ExternalUser OR r:PredefinedExternalUser) AND (r.email = {email}) AND COALESCE(rt.deleted, false) = false AND COALESCE(pr.deleted, false) = false
-            SET rt.invitations = COALESCE(rt.invitations, []) + [{timestamp}]
+            MATCH (pr:PollRun {id: $prid})<-[rt:IS_PARTICIPANT]-(r)
+            WHERE (r:ExternalUser OR r:PredefinedExternalUser) AND (r.email = $email) AND COALESCE(rt.deleted, false) = false AND COALESCE(pr.deleted, false) = false
+            SET rt.invitations = COALESCE(rt.invitations, []) + [$timestamp]
             REMOVE rt.invitation_requested
         END_OF_QUERY
     end
@@ -844,12 +844,12 @@ class Main < Sinatra::Base
         now = Time.now.strftime('%Y-%m-%dT%H:%M:%S')
         email = @session_user[:email]
         entries = neo4j_query(<<~END_OF_QUERY, :email => email, :today => today).map { |x| {:poll_run => x['pr'].props, :poll_title => x['p.title'], :organizer => x['a.email'], :hidden => x['hidden'] } }
-            MATCH (u:User {email: {email}})-[rt:IS_PARTICIPANT]->(pr:PollRun)-[:RUNS]->(p:Poll)-[:ORGANIZED_BY]->(a:User)
+            MATCH (u:User {email: $email})-[rt:IS_PARTICIPANT]->(pr:PollRun)-[:RUNS]->(p:Poll)-[:ORGANIZED_BY]->(a:User)
             WHERE COALESCE(rt.deleted, false) = false
             AND COALESCE(pr.deleted, false) = false
             AND COALESCE(p.deleted, false) = false
-            AND {today} >= pr.start_date
-            AND {today} <= pr.end_date
+            AND $today >= pr.start_date
+            AND $today <= pr.end_date
             RETURN pr, p.title, a.email, COALESCE(rt.hide, FALSE) AS hidden
             ORDER BY pr.end_date, pr.end_time;
         END_OF_QUERY
@@ -889,7 +889,7 @@ class Main < Sinatra::Base
         id = data[:prid]
         STDERR.puts "Sending missing invitations for poll run #{id}"
         neo4j_query(<<~END_OF_QUERY, :session_email => @session_user[:email], :id => id)
-            MATCH (a:User {email: {session_email}})<-[:ORGANIZED_BY]-(p:Poll)<-[:RUNS]-(pr:PollRun {id: {id}})<-[rt:IS_PARTICIPANT]-(u)
+            MATCH (a:User {email: $session_email})<-[:ORGANIZED_BY]-(p:Poll)<-[:RUNS]-(pr:PollRun {id: $id})<-[rt:IS_PARTICIPANT]-(u)
             WHERE (u:ExternalUser OR u:PredefinedExternalUser) AND SIZE(COALESCE(rt.invitations, [])) = 0
             SET rt.invitation_requested = true;
         END_OF_QUERY
@@ -906,7 +906,7 @@ class Main < Sinatra::Base
         assert((prid.is_a? String) && (!code.empty?))
         assert((code.is_a? String) && (!code.empty?))
         rows = neo4j_query(<<~END_OF_QUERY, :prid => prid)
-            MATCH (u)-[rt:IS_PARTICIPANT]->(pr:PollRun {id: {prid}})-[:RUNS]->(p:Poll)-[:ORGANIZED_BY]->(ou:User)
+            MATCH (u)-[rt:IS_PARTICIPANT]->(pr:PollRun {id: $prid})-[:RUNS]->(p:Poll)-[:ORGANIZED_BY]->(ou:User)
             WHERE (u:ExternalUser OR u:PredefinedExternalUser) AND COALESCE(pr.deleted, false) = false AND COALESCE(rt.deleted, false) = false
             RETURN pr, ou.email, u, p;
         END_OF_QUERY

@@ -11,7 +11,6 @@ require 'json'
 require 'jwt'
 require 'kramdown'
 require 'mail'
-# require 'neography'
 require 'neo4j_ruby_driver'
 require 'net/http'
 require 'net/imap'
@@ -128,26 +127,6 @@ HOMEWORK_FEEDBACK_EMOJIS = {'good' => '🙂',
                             'lost' => '😕'}
 
 HOURS_FOR_KLASSE = {}
-
-# Neography.configure do |config|
-#     config.protocol             = "http"
-#     config.server               = "neo4j"
-#     config.port                 = 7474
-#     config.directory            = ""  # prefix this path with '/'
-#     config.cypher_path          = "/cypher"
-#     config.gremlin_path         = "/ext/GremlinPlugin/graphdb/execute_script"
-#     config.log_file             = "/dev/shm/neography.log"
-#     config.log_enabled          = false
-#     config.slow_log_threshold   = 0    # time in ms for query logging
-#     config.max_threads          = 20
-#     config.authentication       = nil  # 'basic' or 'digest'
-#     config.username             = nil
-#     config.password             = nil
-#     config.parser               = MultiJsonParser
-#     config.http_send_timeout    = 1200
-#     config.http_receive_timeout = 1200
-#     config.persistent           = true
-# end
 
 module QtsNeo4j
 

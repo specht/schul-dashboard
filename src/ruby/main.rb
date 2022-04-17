@@ -208,16 +208,6 @@ module QtsNeo4j
     end
 
     def neo4j_query(query_str, options = {})
-        # TODO: In preparation for migration from Neo4j 3 to 4, replace $key syntax with $key
-        # TODO: Make this stand out, fix the code by and by
-        options.keys.each do |key|
-            query_str.gsub!("{#{key}}", "$#{key}")
-        end
-        # if DEVELOPMENT
-        #     debug(query_str, 1) 
-        #     debug(options.to_json, 1)
-        # end
-        # return
         transaction do
             temp_result = nil
             temp_result = @has_bolt_transaction.run(query_str, options)
@@ -338,17 +328,6 @@ class SetupDatabase
     
     def setup(main)
         delay = 1
-        # Neo4j::Driver::GraphDatabase.driver('bolt://neo4j:7687') do |driver|
-        #     driver.session do |session|
-        #         greeting = session.write_transaction do |tx|
-        #             result = tx.run("CREATE (a:Greeting) SET a.message = $message RETURN a.message + ', from node ' + id(a)",
-        #             message: 'hello, world')
-        #             result.single.first
-        #         end
-        #         puts greeting
-        #     end
-        # end
-        # exit(1)
         10.times do
             begin
                 neo4j_query("MATCH (n) RETURN n LIMIT 1;")

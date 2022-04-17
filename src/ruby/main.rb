@@ -1182,7 +1182,6 @@ class Main < Sinatra::Base
     
     def self.compile_css()
         files = [
-            '/tailwind.css',
             '/include/flowbite/flowbite.min.css',
             '/include/bootstrap/bootstrap.min.css',
             '/include/summernote/summernote-bs4.min.css',

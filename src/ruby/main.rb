@@ -1168,6 +1168,7 @@ class Main < Sinatra::Base
             '/include/dropzone/dropzone.min.js',
             '/include/chart.js/Chart.min.js',
             '/include/jszip/dist/jszip.min.js',
+            '/include/flowbite/flowbite.js',
             '/code.js',
         ]
         
@@ -1181,6 +1182,8 @@ class Main < Sinatra::Base
     
     def self.compile_css()
         files = [
+            '/tailwind.css',
+            '/include/flowbite/flowbite.min.css',
             '/include/bootstrap/bootstrap.min.css',
             '/include/summernote/summernote-bs4.min.css',
             '/include/fork-awesome/fork-awesome.min.css',
@@ -1188,7 +1191,7 @@ class Main < Sinatra::Base
             '/include/bootstrap4-toggle/bootstrap4-toggle.min.css',
             '/include/dropzone/dropzone.min.css',
             '/include/chart.js/Chart.min.css',
-            '/styles.css'
+            '/styles.css',
         ]
         
         self.compile_files(:css, 'text/css', files)

@@ -99,6 +99,8 @@ function agr_api_call(url, data, callback, options) {
             let token = data.token;
             let headers = {headers: {'X-JWT': token}};
             api_call(AGR_HOST + url, data_json, callback, { ...options, ...headers });
+        } else {
+            show_error_message(data.error);
         }
     });
 }

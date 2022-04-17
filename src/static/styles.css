@@ -2440,3 +2440,7 @@ li.nav-item a.nav-link i.fa {
     border-top: none;
     /* border-top: 2px solid #dee2e6; */
 }
+
+img {
+    display: inline;
+}

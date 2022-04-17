@@ -61,7 +61,7 @@
 </div>
 <script>
     window.addEventListener('load', function () {
-        agr_api_call('/api/overview_stats', {}, function(data) {
+        agr_api_call('/jwt/overview_stats', {}, function(data) {
             if (data.success) {
                 console.log(data.result);
                 $('.v-user-count').text(`${data.result.user_count}`);

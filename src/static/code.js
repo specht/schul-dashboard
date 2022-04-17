@@ -60,7 +60,6 @@ function api_call(url, data, callback, options) {
     };
     if (typeof (options.headers) !== 'undefined') {
         conf.beforeSend = function (xhr) {
-            console.log('yay');
             for (let key in options.headers)
                 xhr.setRequestHeader(key, options.headers[key]);
         };

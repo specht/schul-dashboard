@@ -1,71 +1,154 @@
 #{this_is_a_page_for_logged_in_teachers}
 <style>
-.api_messages {
-    position: absolute;
-    top: 60px;
-    width: 60%;
-    left: 20%;
-    display: none;
-}
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+    .api_messages {
+        position: absolute;
+        top: 60px;
+        width: 60%;
+        left: 20%;
+        display: none;
+    }
+
+    @tailwind base;
+    @tailwind components;
+    @tailwind utilities;
 </style>
 <script>
-    var KLASSEN_TR = #{KLASSEN_TR.to_json};
+    var KLASSEN_TR = #{ KLASSEN_TR.to_json };
 </script>
 <div class='api_messages'></div>
-<div class='container-fluid' style='background-color: #fff; padding: 0; position: absolute; bottom: 0; top: 57px; display: flex;'>
+<div class='container-fluid'
+    style='background-color: #fff; padding: 0; position: absolute; bottom: 0; top: 57px; display: flex; overflow-y: auto;'>
     <aside class="w-64" style='height: 100%;'>
         <div class="overflow-y-auto p-3 bg-gray-50 drop-shadow-lg" style='height: 100%;'>
-           <ul class="space-y-2">
-              <li>
-                <a href="#" class="flex items-center p-2 text-base font-normal text-gray-900 rounded-lg hover:bg-gray-100">
-                    <span>Übersicht</span>
-                </a>
-              </li>
-              <li>
-                 <button type="button" class="flex items-center p-2 w-full text-base font-normal text-gray-900 rounded-lg transition duration-75 group hover:bg-gray-100" aria-controls="dropdown-example" data-collapse-toggle="dropdown-example">
-                       <span class="flex-1 text-left whitespace-nowrap" sidebar-toggle-item>Klassen</span>
-                       <svg sidebar-toggle-item class="w-6 h-6" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd"></path></svg>
-                 </button>
-                 <ul id="dropdown-example" class="hidden py-2 space-y-2">
-                       <li>
-                          <a href="#" class="flex items-center pl-3 py-1 w-full text-base font-normal text-gray-900 rounded-lg group hover:bg-gray-100">Products</a>
-                       </li>
-                       <li>
-                          <a href="#" class="flex items-center pl-3 py-1 w-full text-base font-normal text-gray-900 rounded-lg group hover:bg-gray-100">Billing</a>
-                       </li>
-                       <li>
-                          <a href="#" class="flex items-center pl-3 py-1 w-full text-base font-normal text-gray-900 rounded-lg group hover:bg-gray-100">Invoice</a>
-                       </li>
-                 </ul>
-              </li>
-              <li>
-                 <a href="#" class="flex items-center p-2 text-base font-normal text-gray-900 rounded-lg hover:bg-gray-100">
-                    <!-- <svg class="flex-shrink-0 w-6 h-6 text-gray-500 transition duration-75 group-hover:text-gray-900" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path d="M5 3a2 2 0 00-2 2v2a2 2 0 002 2h2a2 2 0 002-2V5a2 2 0 00-2-2H5zM5 11a2 2 0 00-2 2v2a2 2 0 002 2h2a2 2 0 002-2v-2a2 2 0 00-2-2H5zM11 5a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V5zM11 13a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"></path></svg> -->
-                    <span class="flex-1 whitespace-nowrap">Kanban</span>
-                    <span class="inline-flex justify-center items-center px-2 ml-3 text-sm font-medium text-gray-800 bg-gray-200 rounded-full">13</span>
-                 </a>
-              </li>
-           </ul>
+            <ul class="space-y-2">
+                <li>
+                    <a href="#"
+                        class="flex items-center p-2 text-base font-normal text-gray-900 rounded-lg hover:bg-gray-100">
+                        <span>Übersicht</span>
+                    </a>
+                </li>
+                <li>
+                    <button type="button"
+                        class="flex items-center p-2 w-full text-base font-normal text-gray-900 rounded-lg transition duration-75 group hover:bg-gray-100"
+                        aria-controls="dropdown-example" data-collapse-toggle="dropdown-example">
+                        <span class="flex-1 text-left whitespace-nowrap" sidebar-toggle-item>Klassen</span>
+                        <svg sidebar-toggle-item class="w-6 h-6" fill="currentColor" viewBox="0 0 20 20"
+                            xmlns="http://www.w3.org/2000/svg">
+                            <path fill-rule="evenodd"
+                                d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"
+                                clip-rule="evenodd"></path>
+                        </svg>
+                    </button>
+                    <ul id="dropdown-example" class="hidden py-2 space-y-2">
+                        <li>
+                            <a href="#"
+                                class="flex items-center pl-3 py-1 w-full text-base font-normal text-gray-900 rounded-lg group hover:bg-gray-100">Products</a>
+                        </li>
+                        <li>
+                            <a href="#"
+                                class="flex items-center pl-3 py-1 w-full text-base font-normal text-gray-900 rounded-lg group hover:bg-gray-100">Billing</a>
+                        </li>
+                        <li>
+                            <a href="#"
+                                class="flex items-center pl-3 py-1 w-full text-base font-normal text-gray-900 rounded-lg group hover:bg-gray-100">Invoice</a>
+                        </li>
+                    </ul>
+                </li>
+                <li>
+                    <a href="#"
+                        class="flex items-center p-2 text-base font-normal text-gray-900 rounded-lg hover:bg-gray-100">
+                        <!-- <svg class="flex-shrink-0 w-6 h-6 text-gray-500 transition duration-75 group-hover:text-gray-900" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path d="M5 3a2 2 0 00-2 2v2a2 2 0 002 2h2a2 2 0 002-2V5a2 2 0 00-2-2H5zM5 11a2 2 0 00-2 2v2a2 2 0 002 2h2a2 2 0 002-2v-2a2 2 0 00-2-2H5zM11 5a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V5zM11 13a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"></path></svg> -->
+                        <span class="flex-1 whitespace-nowrap">Mehr</span>
+                        <span
+                            class="inline-flex justify-center items-center px-2 ml-3 text-sm font-medium text-gray-800 bg-gray-200 rounded-full">13</span>
+                    </a>
+                </li>
+            </ul>
         </div>
-     </aside>
-     <div class="w-full grid grid-cols-3 gap-4">
-        <div class="aspect-video bg-gray-100 p-3 text-center rounded-lg"><h3><span class="text-red-700 font-bold v-user-count"></span> Nutzer:innen</h3></div>
-        <div class="aspect-video bg-gray-100 p-3 text-center rounded-lg">
-            <h3><span class="text-red-700 font-bold v-total-solved-task-count"></span> gelöste Aufgaben</h3>
-            <p>(pro Nutzer einmal)</p>
+    </aside>
+    <section class="p-4 w-full">
+    <div class="w-full grid grid-cols-4 gap-4 mb-4">
+        <div class="col-span-4">
+            <h3>Aktivität</h3>
         </div>
-      </div>
+        <div class="bg-gray-100 p-3 rounded-lg border-l-4 border-l-red-500">
+            <h5 class="text-gray-500 italic">in den letzten 24 Stunden</h5>
+            <hr />
+            <h4><span class="inline-block w-20 text-center"><span class="px-2 rounded-md bg-red-200 text-red-700 v-users-solved-1d font-bold"></span></span> Nutzer:innen</h4>
+            <h4><span class="inline-block w-20 text-center"><span class="px-2 rounded-md bg-red-200 text-red-700 v-tasks-solved-1d font-bold"></span></span> Aufgaben</h4>
+            <h5><span class="inline-block w-20 text-center"><span class="px-2 rounded-md bg-red-200 text-red-700 v-tasks-voc-solved-1d"></span></span> davon Vokabeln</h5>
+            <h5><span class="inline-block w-20 text-center"><span class="px-2 rounded-md bg-red-200 text-red-700 v-tasks-form-solved-1d"></span></span> davon Formen</h5>
+        </div>
+        <div class="bg-gray-100 p-3 rounded-lg border-l-4 border-l-orange-500">
+            <h5 class="text-gray-500 italic">in der letzten Woche</h5>
+            <hr />
+            <h4><span class="inline-block w-20 text-center"><span class="px-2 rounded-md bg-orange-200 text-orange-700 v-users-solved-7d font-bold"></span></span> Nutzer:innen</h4>
+            <h4><span class="inline-block w-20 text-center"><span class="px-2 rounded-md bg-orange-200 text-orange-700 v-tasks-solved-7d font-bold"></span></span> Aufgaben</h4>
+            <h5><span class="inline-block w-20 text-center"><span class="px-2 rounded-md bg-orange-200 text-orange-700 v-tasks-voc-solved-7d"></span></span> davon Vokabeln</h5>
+            <h5><span class="inline-block w-20 text-center"><span class="px-2 rounded-md bg-orange-200 text-orange-700 v-tasks-form-solved-7d"></span></span> davon Formen</h5>
+        </div>
+        <div class="bg-gray-100 p-3 rounded-lg border-l-4 border-l-amber-500">
+            <h5 class="text-gray-500 italic">in den letzten 4 Wochen</h5>
+            <hr />
+            <h4><span class="inline-block w-20 text-center"><span class="px-2 rounded-md bg-amber-200 text-amber-700 v-users-solved-28d font-bold"></span></span> Nutzer:innen</h4>
+            <h4><span class="inline-block w-20 text-center"><span class="px-2 rounded-md bg-amber-200 text-amber-700 v-tasks-solved-28d font-bold"></span></span> Aufgaben</h4>
+            <h5><span class="inline-block w-20 text-center"><span class="px-2 rounded-md bg-amber-200 text-amber-700 v-tasks-voc-solved-28d"></span></span> davon Vokabeln</h5>
+            <h5><span class="inline-block w-20 text-center"><span class="px-2 rounded-md bg-amber-200 text-amber-700 v-tasks-form-solved-28d"></span></span> davon Formen</h5>
+        </div>
+        <div class="bg-gray-100 p-3 rounded-lg border-l-4 border-l-yellow-500">
+            <h5 class="text-gray-500 italic">jemals</h5>
+            <hr />
+            <h4><span class="inline-block w-20 text-center"><span class="px-2 rounded-md bg-yellow-200 text-yellow-700 v-users-solved-all font-bold"></span></span> Nutzer:innen</h4>
+            <h4><span class="inline-block w-20 text-center"><span class="px-2 rounded-md bg-yellow-200 text-yellow-700 v-tasks-solved-all font-bold"></span></span> Aufgaben</h4>
+            <h5><span class="inline-block w-20 text-center"><span class="px-2 rounded-md bg-yellow-200 text-yellow-700 v-tasks-voc-solved-all"></span></span> davon Vokabeln</h5>
+            <h5><span class="inline-block w-20 text-center"><span class="px-2 rounded-md bg-yellow-200 text-yellow-700 v-tasks-form-solved-all"></span></span> davon Formen</h5>
+        </div>
+        <div class="col-span-4">
+            <h3>Nutzer:innen mit der größten Aktivität</h3>
+            <div class='h-96 overflow-y-auto' style='max-width: 100%; overflow-x: auto;'>
+                <table id='top_user_table' class='table table-condensed table-striped narrow' style='width: unset; min-width: 100%;'>
+                    <thead>
+                        <tr>
+                            <th>Aufgaben</th>
+                            <th>Name</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    </section>
 </div>
 <script>
     window.addEventListener('load', function () {
-        agr_api_call('/jwt/overview_stats', {}, function(data) {
+        agr_api_call('/jwt/overview_stats', {}, function (data) {
             if (data.success) {
                 console.log(data.result);
                 $('.v-user-count').text(`${data.result.user_count}`);
-                $('.v-total-solved-task-count').text(`${data.result.total_solved_task_count}`);
+                $('.v-tasks-solved-all').text(`${data.result.tasks_solved_all}`);
+                $('.v-tasks-solved-1d').text(`${data.result.tasks_solved_1d}`);
+                $('.v-tasks-solved-7d').text(`${data.result.tasks_solved_7d}`);
+                $('.v-tasks-solved-28d').text(`${data.result.tasks_solved_28d}`);
+                $('.v-tasks-voc-solved-all').text(`${data.result.tasks_voc_solved_all}`);
+                $('.v-tasks-voc-solved-1d').text(`${data.result.tasks_voc_solved_1d}`);
+                $('.v-tasks-voc-solved-7d').text(`${data.result.tasks_voc_solved_7d}`);
+                $('.v-tasks-voc-solved-28d').text(`${data.result.tasks_voc_solved_28d}`);
+                $('.v-tasks-form-solved-all').text(`${data.result.tasks_form_solved_all}`);
+                $('.v-tasks-form-solved-1d').text(`${data.result.tasks_form_solved_1d}`);
+                $('.v-tasks-form-solved-7d').text(`${data.result.tasks_form_solved_7d}`);
+                $('.v-tasks-form-solved-28d').text(`${data.result.tasks_form_solved_28d}`);
+                $('.v-users-solved-all').text(`${data.result.users_solved_all}`);
+                $('.v-users-solved-1d').text(`${data.result.users_solved_1d}`);
+                $('.v-users-solved-7d').text(`${data.result.users_solved_7d}`);
+                $('.v-users-solved-28d').text(`${data.result.users_solved_28d}`);
+                for (let entry of data.result.user_top_list) {
+                    let row = $('<tr>');
+                    row.append($('<td>').text(`${entry.solved}`));
+                    row.append($('<td>').text(entry.email));
+                    $('#top_user_table tbody').append(row);
+                }
             }
         });
     });

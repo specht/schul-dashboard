@@ -133,6 +133,9 @@ JWT_APPKEY = 'ein_langer_langer_richtig_langer_app_key'
 JWT_APPAUD_STREAM = 'stream'
 JWT_APPKEY_STREAM = 'ein_langer_langer_richtig_langer_app_key'
 JWT_DOMAIN_STREAM = '.beispielschule.de'
+JWT_APPAUD_AGRAPP = 'agrapp'
+JWT_APPISS_AGRAPP = 'dashboard'
+JWT_APPKEY_AGRAPP = 'ein_langer_langer_richtig_langer_app_key'
 STREAM_SITE_URL = 'https://info.beispielschule.de/'
 JWT_SUB = 'beispielschule.de'
 # Hier kann, falls vorhanden, eine URL eingetragen werden, unter der aus dem 
@@ -192,18 +195,14 @@ ADMIN_USERS = ['clarke@beispielschule.de']
 # List aller E-Mail-Adressen von Nutzer*innen, 
 # die alle Stundenpläne sehen können sollen
 CAN_SEE_ALL_TIMETABLES_USERS = []
-
 CAN_MANAGE_SALZH_USERS = []
-
 CAN_UPLOAD_VPLAN_USERS = []
-
 CAN_UPLOAD_FILES_USERS = []
-
 CAN_MANAGE_NEWS_USERS = []
-
 CAN_MANAGE_MONITORS_USERS = []
-
 CAN_MANAGE_ANTIKENFAHRT_USERS = []
+CAN_MANAGE_AGR_APP = []
+CAN_MANAGE_AGR_APP_KLASSEN = {}
 
 # Schülervertretung, kann:
 # - Nachrichten an SuS schreiben

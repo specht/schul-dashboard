@@ -1657,6 +1657,10 @@ class Main < Sinatra::Base
                     end
                     io.puts "<a class='dropdown-item nav-icon' href='/login'><div class='icon'><i class='fa fa-sign-in'></i></div><span class='label'>Zusätzliche Anmeldung…</span></a>"
                     io.puts "<a class='dropdown-item nav-icon' href='/login_nc'><div class='icon'><i class='fa fa-nextcloud'></i></div><span class='label'>In Nextcloud anmelden…</span></a>"
+                    if can_manage_agr_app_logged_in?
+                        io.puts "<div class='dropdown-divider'></div>"
+                        io.puts "<a class='dropdown-item nav-icon' href='/agr_app'><div class='icon'><i class='fa fa-mobile'></i></div><span class='label'>Altgriechisch-App</span></a>"
+                    end
                     if teacher_or_sv_logged_in?
                         io.puts "<div class='dropdown-divider'></div>"
                         if teacher_logged_in?
@@ -2161,6 +2165,21 @@ class Main < Sinatra::Base
             io.puts "</div>"
             io.string
         end
+    end
+
+    post '/api/get_agr_jwt_token' do
+        require_user_who_can_manage_agr_app!
+        data = parse_request_data(:required_keys => [:url, :payload], :max_body_length => 0x100000)
+        payload = {
+            # :context => JSON.parse(data[:payload]),
+            :data_sha1 => Digest::SHA1.hexdigest(data[:payload]),
+            :url => data[:url],
+            :email => @session_user[:email],
+            :display_name => @session_user[:display_name],
+            :exp => Time.now.to_i + 60
+        }
+        token = JWT.encode payload, JWT_APPKEY_AGRAPP, algorithm = 'HS256', header_fields = {:typ => 'JWT'}
+        respond(:token => token)
     end
 
     before "/monitor/#{MONITOR_DEEP_LINK}" do

@@ -28,7 +28,7 @@ class Main < Sinatra::Base
     def user_who_can_manage_antikenfahrt_logged_in?
         user_logged_in? && @session_user[:can_manage_antikenfahrt]
     end
-    
+
     # Returns true if a teacher or SV is logged in.
     def teacher_or_sv_logged_in?
         user_logged_in? && (teacher_logged_in? || @session_user[:sv])
@@ -106,6 +106,11 @@ class Main < Sinatra::Base
         end
     end
     
+    # Returns true if a teacher is logged in.
+    def can_manage_agr_app_logged_in?
+        user_logged_in? && CAN_MANAGE_AGR_APP.include?(@session_user[:email])
+    end
+    
     # Assert that a user is logged in
     def require_user!
         assert(user_logged_in?, 'User is logged in', true)
@@ -149,6 +154,11 @@ class Main < Sinatra::Base
     # Assert that a user who can manage Antikenfahrt is logged in
     def require_user_who_can_manage_antikenfahrt!
         assert(user_who_can_manage_antikenfahrt_logged_in?)
+    end
+    
+    # Assert that a user who can manage agrapp is logged in
+    def require_user_who_can_manage_agr_app!
+        assert(can_manage_agr_app_logged_in?)
     end
     
     # Assert that a teacher or SV is logged in

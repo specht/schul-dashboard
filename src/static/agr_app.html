@@ -307,7 +307,7 @@
                         kurse: (USER_INFO[email] || {}).kurse || [],
                     });
                 }
-                sort_table_by_column('name', true);
+                sort_table_by_column('tall', false);
                 refresh_table();
                 for (let klasse of KLASSEN_ORDER_AGR) {
                     let klassen_label = KLASSEN_TR[klasse] || klasse;

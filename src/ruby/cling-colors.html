@@ -1,0 +1,498 @@
+<html>
+<head>
+<style>
+body { font-family: mono; font-size: 10pt; }
+.name { display: inline-block; width: 8em; }
+.swatch { display: inline-block; text-align: center; padding: 0.5em 1em;}
+.text-daffodil-100{color:#262203;}.bg-daffodil-100{background-color:#262203;}
+.text-daffodil-200{color:#413a05;}.bg-daffodil-200{background-color:#413a05;}
+.text-daffodil-300{color:#72670a;}.bg-daffodil-300{background-color:#72670a;}
+.text-daffodil-400{color:#b3a110;}.bg-daffodil-400{background-color:#b3a110;}
+.text-daffodil-500{color:#ffe617;}.bg-daffodil-500{background-color:#ffe617;}
+.text-daffodil-600{color:#ffeb45;}.bg-daffodil-600{background-color:#ffeb45;}
+.text-daffodil-700{color:#fff073;}.bg-daffodil-700{background-color:#fff073;}
+.text-daffodil-800{color:#fff5a2;}.bg-daffodil-800{background-color:#fff5a2;}
+.text-daffodil-900{color:#fffad0;}.bg-daffodil-900{background-color:#fffad0;}
+.text-daisy-100{color:#251f04;}.bg-daisy-100{background-color:#251f04;}
+.text-daisy-200{color:#403607;}.bg-daisy-200{background-color:#403607;}
+.text-daisy-300{color:#705f0c;}.bg-daisy-300{background-color:#705f0c;}
+.text-daisy-400{color:#af9413;}.bg-daisy-400{background-color:#af9413;}
+.text-daisy-500{color:#fad31c;}.bg-daisy-500{background-color:#fad31c;}
+.text-daisy-600{color:#fbdb49;}.bg-daisy-600{background-color:#fbdb49;}
+.text-daisy-700{color:#fce476;}.bg-daisy-700{background-color:#fce476;}
+.text-daisy-800{color:#fdeda4;}.bg-daisy-800{background-color:#fdeda4;}
+.text-daisy-900{color:#fef6d1;}.bg-daisy-900{background-color:#fef6d1;}
+.text-mustard-100{color:#251b03;}.bg-mustard-100{background-color:#251b03;}
+.text-mustard-200{color:#402e05;}.bg-mustard-200{background-color:#402e05;}
+.text-mustard-300{color:#71520a;}.bg-mustard-300{background-color:#71520a;}
+.text-mustard-400{color:#b18010;}.bg-mustard-400{background-color:#b18010;}
+.text-mustard-500{color:#fdb717;}.bg-mustard-500{background-color:#fdb717;}
+.text-mustard-600{color:#fdc545;}.bg-mustard-600{background-color:#fdc545;}
+.text-mustard-700{color:#fdd373;}.bg-mustard-700{background-color:#fdd373;}
+.text-mustard-800{color:#fee2a2;}.bg-mustard-800{background-color:#fee2a2;}
+.text-mustard-900{color:#fef0d0;}.bg-mustard-900{background-color:#fef0d0;}
+.text-circus-zest-100{color:#251904;}.bg-circus-zest-100{background-color:#251904;}
+.text-circus-zest-200{color:#402b08;}.bg-circus-zest-200{background-color:#402b08;}
+.text-circus-zest-300{color:#704c0e;}.bg-circus-zest-300{background-color:#704c0e;}
+.text-circus-zest-400{color:#af7717;}.bg-circus-zest-400{background-color:#af7717;}
+.text-circus-zest-500{color:#faaa21;}.bg-circus-zest-500{background-color:#faaa21;}
+.text-circus-zest-600{color:#fbbb4d;}.bg-circus-zest-600{background-color:#fbbb4d;}
+.text-circus-zest-700{color:#fccc79;}.bg-circus-zest-700{background-color:#fccc79;}
+.text-circus-zest-800{color:#fddda6;}.bg-circus-zest-800{background-color:#fddda6;}
+.text-circus-zest-900{color:#feeed2;}.bg-circus-zest-900{background-color:#feeed2;}
+.text-pumpkin-100{color:#241109;}.bg-pumpkin-100{background-color:#241109;}
+.text-pumpkin-200{color:#3d1d10;}.bg-pumpkin-200{background-color:#3d1d10;}
+.text-pumpkin-300{color:#6c341c;}.bg-pumpkin-300{background-color:#6c341c;}
+.text-pumpkin-400{color:#a9522c;}.bg-pumpkin-400{background-color:#a9522c;}
+.text-pumpkin-500{color:#f1753f;}.bg-pumpkin-500{background-color:#f1753f;}
+.text-pumpkin-600{color:#f39065;}.bg-pumpkin-600{background-color:#f39065;}
+.text-pumpkin-700{color:#f6ac8b;}.bg-pumpkin-700{background-color:#f6ac8b;}
+.text-pumpkin-800{color:#f9c7b2;}.bg-pumpkin-800{background-color:#f9c7b2;}
+.text-pumpkin-900{color:#fce3d8;}.bg-pumpkin-900{background-color:#fce3d8;}
+.text-tangerine-100{color:#230d05;}.bg-tangerine-100{background-color:#230d05;}
+.text-tangerine-200{color:#3c1609;}.bg-tangerine-200{background-color:#3c1609;}
+.text-tangerine-300{color:#6a2710;}.bg-tangerine-300{background-color:#6a2710;}
+.text-tangerine-400{color:#a63d19;}.bg-tangerine-400{background-color:#a63d19;}
+.text-tangerine-500{color:#ed5724;}.bg-tangerine-500{background-color:#ed5724;}
+.text-tangerine-600{color:#f0784f;}.bg-tangerine-600{background-color:#f0784f;}
+.text-tangerine-700{color:#f49a7b;}.bg-tangerine-700{background-color:#f49a7b;}
+.text-tangerine-800{color:#f7bba7;}.bg-tangerine-800{background-color:#f7bba7;}
+.text-tangerine-900{color:#fbddd3;}.bg-tangerine-900{background-color:#fbddd3;}
+.text-salmon-100{color:#230a08;}.bg-salmon-100{background-color:#230a08;}
+.text-salmon-200{color:#3d110e;}.bg-salmon-200{background-color:#3d110e;}
+.text-salmon-300{color:#6b1f19;}.bg-salmon-300{background-color:#6b1f19;}
+.text-salmon-400{color:#a73027;}.bg-salmon-400{background-color:#a73027;}
+.text-salmon-500{color:#ef4538;}.bg-salmon-500{background-color:#ef4538;}
+.text-salmon-600{color:#f26a5f;}.bg-salmon-600{background-color:#f26a5f;}
+.text-salmon-700{color:#f58f87;}.bg-salmon-700{background-color:#f58f87;}
+.text-salmon-800{color:#f8b4af;}.bg-salmon-800{background-color:#f8b4af;}
+.text-salmon-900{color:#fbd9d7;}.bg-salmon-900{background-color:#fbd9d7;}
+.text-persimmon-100{color:#230607;}.bg-persimmon-100{background-color:#230607;}
+.text-persimmon-200{color:#3b0a0c;}.bg-persimmon-200{background-color:#3b0a0c;}
+.text-persimmon-300{color:#691215;}.bg-persimmon-300{background-color:#691215;}
+.text-persimmon-400{color:#a41c21;}.bg-persimmon-400{background-color:#a41c21;}
+.text-persimmon-500{color:#ea2830;}.bg-persimmon-500{background-color:#ea2830;}
+.text-persimmon-600{color:#ee5359;}.bg-persimmon-600{background-color:#ee5359;}
+.text-persimmon-700{color:#f27e82;}.bg-persimmon-700{background-color:#f27e82;}
+.text-persimmon-800{color:#f6a9ac;}.bg-persimmon-800{background-color:#f6a9ac;}
+.text-persimmon-900{color:#fad4d5;}.bg-persimmon-900{background-color:#fad4d5;}
+.text-rouge-100{color:#1c0505;}.bg-rouge-100{background-color:#1c0505;}
+.text-rouge-200{color:#300809;}.bg-rouge-200{background-color:#300809;}
+.text-rouge-300{color:#540f11;}.bg-rouge-300{background-color:#540f11;}
+.text-rouge-400{color:#83181a;}.bg-rouge-400{background-color:#83181a;}
+.text-rouge-500{color:#bc2326;}.bg-rouge-500{background-color:#bc2326;}
+.text-rouge-600{color:#c94f51;}.bg-rouge-600{background-color:#c94f51;}
+.text-rouge-700{color:#d67b7c;}.bg-rouge-700{background-color:#d67b7c;}
+.text-rouge-800{color:#e4a7a8;}.bg-rouge-800{background-color:#e4a7a8;}
+.text-rouge-900{color:#f1d3d3;}.bg-rouge-900{background-color:#f1d3d3;}
+.text-scarlet-100{color:#150100;}.bg-scarlet-100{background-color:#150100;}
+.text-scarlet-200{color:#230300;}.bg-scarlet-200{background-color:#230300;}
+.text-scarlet-300{color:#3f0501;}.bg-scarlet-300{background-color:#3f0501;}
+.text-scarlet-400{color:#620802;}.bg-scarlet-400{background-color:#620802;}
+.text-scarlet-500{color:#8c0c03;}.bg-scarlet-500{background-color:#8c0c03;}
+.text-scarlet-600{color:#a33c35;}.bg-scarlet-600{background-color:#a33c35;}
+.text-scarlet-700{color:#ba6d67;}.bg-scarlet-700{background-color:#ba6d67;}
+.text-scarlet-800{color:#d19d9a;}.bg-scarlet-800{background-color:#d19d9a;}
+.text-scarlet-900{color:#e8cecc;}.bg-scarlet-900{background-color:#e8cecc;}
+.text-hot-pink-100{color:#22030d;}.bg-hot-pink-100{background-color:#22030d;}
+.text-hot-pink-200{color:#3a0617;}.bg-hot-pink-200{background-color:#3a0617;}
+.text-hot-pink-300{color:#670a29;}.bg-hot-pink-300{background-color:#670a29;}
+.text-hot-pink-400{color:#a01041;}.bg-hot-pink-400{background-color:#a01041;}
+.text-hot-pink-500{color:#e5185d;}.bg-hot-pink-500{background-color:#e5185d;}
+.text-hot-pink-600{color:#ea467d;}.bg-hot-pink-600{background-color:#ea467d;}
+.text-hot-pink-700{color:#ef749d;}.bg-hot-pink-700{background-color:#ef749d;}
+.text-hot-pink-800{color:#f4a2be;}.bg-hot-pink-800{background-color:#f4a2be;}
+.text-hot-pink-900{color:#f9d0de;}.bg-hot-pink-900{background-color:#f9d0de;}
+.text-princess-100{color:#24131a;}.bg-princess-100{background-color:#24131a;}
+.text-princess-200{color:#3e212c;}.bg-princess-200{background-color:#3e212c;}
+.text-princess-300{color:#6d3b4e;}.bg-princess-300{background-color:#6d3b4e;}
+.text-princess-400{color:#aa5c7a;}.bg-princess-400{background-color:#aa5c7a;}
+.text-princess-500{color:#f384ae;}.bg-princess-500{background-color:#f384ae;}
+.text-princess-600{color:#f59cbe;}.bg-princess-600{background-color:#f59cbe;}
+.text-princess-700{color:#f7b5ce;}.bg-princess-700{background-color:#f7b5ce;}
+.text-princess-800{color:#facdde;}.bg-princess-800{background-color:#facdde;}
+.text-princess-900{color:#fce6ee;}.bg-princess-900{background-color:#fce6ee;}
+.text-petal-100{color:#251d1f;}.bg-petal-100{background-color:#251d1f;}
+.text-petal-200{color:#403235;}.bg-petal-200{background-color:#403235;}
+.text-petal-300{color:#70595e;}.bg-petal-300{background-color:#70595e;}
+.text-petal-400{color:#af8b93;}.bg-petal-400{background-color:#af8b93;}
+.text-petal-500{color:#fac6d2;}.bg-petal-500{background-color:#fac6d2;}
+.text-petal-600{color:#fbd1db;}.bg-petal-600{background-color:#fbd1db;}
+.text-petal-700{color:#fcdce4;}.bg-petal-700{background-color:#fcdce4;}
+.text-petal-800{color:#fde8ed;}.bg-petal-800{background-color:#fde8ed;}
+.text-petal-900{color:#fef3f6;}.bg-petal-900{background-color:#fef3f6;}
+.text-lilac-100{color:#1a161d;}.bg-lilac-100{background-color:#1a161d;}
+.text-lilac-200{color:#2d2632;}.bg-lilac-200{background-color:#2d2632;}
+.text-lilac-300{color:#504359;}.bg-lilac-300{background-color:#504359;}
+.text-lilac-400{color:#7c698b;}.bg-lilac-400{background-color:#7c698b;}
+.text-lilac-500{color:#b296c7;}.bg-lilac-500{background-color:#b296c7;}
+.text-lilac-600{color:#c1abd2;}.bg-lilac-600{background-color:#c1abd2;}
+.text-lilac-700{color:#d0c0dd;}.bg-lilac-700{background-color:#d0c0dd;}
+.text-lilac-800{color:#e0d5e8;}.bg-lilac-800{background-color:#e0d5e8;}
+.text-lilac-900{color:#efeaf3;}.bg-lilac-900{background-color:#efeaf3;}
+.text-lavender-100{color:#120f1a;}.bg-lavender-100{background-color:#120f1a;}
+.text-lavender-200{color:#1f1a2c;}.bg-lavender-200{background-color:#1f1a2c;}
+.text-lavender-300{color:#372e4e;}.bg-lavender-300{background-color:#372e4e;}
+.text-lavender-400{color:#56487a;}.bg-lavender-400{background-color:#56487a;}
+.text-lavender-500{color:#7b67ae;}.bg-lavender-500{background-color:#7b67ae;}
+.text-lavender-600{color:#9585be;}.bg-lavender-600{background-color:#9585be;}
+.text-lavender-700{color:#afa3ce;}.bg-lavender-700{background-color:#afa3ce;}
+.text-lavender-800{color:#cac2de;}.bg-lavender-800{background-color:#cac2de;}
+.text-lavender-900{color:#e4e0ee;}.bg-lavender-900{background-color:#e4e0ee;}
+.text-violet-100{color:#0e0711;}.bg-violet-100{background-color:#0e0711;}
+.text-violet-200{color:#180d1e;}.bg-violet-200{background-color:#180d1e;}
+.text-violet-300{color:#2a1735;}.bg-violet-300{background-color:#2a1735;}
+.text-violet-400{color:#422553;}.bg-violet-400{background-color:#422553;}
+.text-violet-500{color:#5f3577;}.bg-violet-500{background-color:#5f3577;}
+.text-violet-600{color:#7f5d92;}.bg-violet-600{background-color:#7f5d92;}
+.text-violet-700{color:#9f85ad;}.bg-violet-700{background-color:#9f85ad;}
+.text-violet-800{color:#bfaec8;}.bg-violet-800{background-color:#bfaec8;}
+.text-violet-900{color:#dfd6e3;}.bg-violet-900{background-color:#dfd6e3;}
+.text-ceadon-100{color:#1c1f14;}.bg-ceadon-100{background-color:#1c1f14;}
+.text-ceadon-200{color:#313523;}.bg-ceadon-200{background-color:#313523;}
+.text-ceadon-300{color:#565e3e;}.bg-ceadon-300{background-color:#565e3e;}
+.text-ceadon-400{color:#879260;}.bg-ceadon-400{background-color:#879260;}
+.text-ceadon-500{color:#c1d18a;}.bg-ceadon-500{background-color:#c1d18a;}
+.text-ceadon-600{color:#cddaa1;}.bg-ceadon-600{background-color:#cddaa1;}
+.text-ceadon-700{color:#d9e3b8;}.bg-ceadon-700{background-color:#d9e3b8;}
+.text-ceadon-800{color:#e6ecd0;}.bg-ceadon-800{background-color:#e6ecd0;}
+.text-ceadon-900{color:#f2f5e7;}.bg-ceadon-900{background-color:#f2f5e7;}
+.text-olive-100{color:#12150c;}.bg-olive-100{background-color:#12150c;}
+.text-olive-200{color:#1f2515;}.bg-olive-200{background-color:#1f2515;}
+.text-olive-300{color:#364126;}.bg-olive-300{background-color:#364126;}
+.text-olive-400{color:#54653b;}.bg-olive-400{background-color:#54653b;}
+.text-olive-500{color:#799155;}.bg-olive-500{background-color:#799155;}
+.text-olive-600{color:#93a777;}.bg-olive-600{background-color:#93a777;}
+.text-olive-700{color:#aebd99;}.bg-olive-700{background-color:#aebd99;}
+.text-olive-800{color:#c9d3bb;}.bg-olive-800{background-color:#c9d3bb;}
+.text-olive-900{color:#e4e9dd;}.bg-olive-900{background-color:#e4e9dd;}
+.text-bamboo-100{color:#131c09;}.bg-bamboo-100{background-color:#131c09;}
+.text-bamboo-200{color:#203010;}.bg-bamboo-200{background-color:#203010;}
+.text-bamboo-300{color:#39541d;}.bg-bamboo-300{background-color:#39541d;}
+.text-bamboo-400{color:#59832e;}.bg-bamboo-400{background-color:#59832e;}
+.text-bamboo-500{color:#80bc42;}.bg-bamboo-500{background-color:#80bc42;}
+.text-bamboo-600{color:#99c967;}.bg-bamboo-600{background-color:#99c967;}
+.text-bamboo-700{color:#b2d68d;}.bg-bamboo-700{background-color:#b2d68d;}
+.text-bamboo-800{color:#cce4b3;}.bg-bamboo-800{background-color:#cce4b3;}
+.text-bamboo-900{color:#e5f1d9;}.bg-bamboo-900{background-color:#e5f1d9;}
+.text-grass-100{color:#0b1809;}.bg-grass-100{background-color:#0b1809;}
+.text-grass-200{color:#122910;}.bg-grass-200{background-color:#122910;}
+.text-grass-300{color:#21481c;}.bg-grass-300{background-color:#21481c;}
+.text-grass-400{color:#33702c;}.bg-grass-400{background-color:#33702c;}
+.text-grass-500{color:#4aa03f;}.bg-grass-500{background-color:#4aa03f;}
+.text-grass-600{color:#6eb365;}.bg-grass-600{background-color:#6eb365;}
+.text-grass-700{color:#92c68b;}.bg-grass-700{background-color:#92c68b;}
+.text-grass-800{color:#b6d9b2;}.bg-grass-800{background-color:#b6d9b2;}
+.text-grass-900{color:#daecd8;}.bg-grass-900{background-color:#daecd8;}
+.text-kelly-100{color:#03140b;}.bg-kelly-100{background-color:#03140b;}
+.text-kelly-200{color:#052212;}.bg-kelly-200{background-color:#052212;}
+.text-kelly-300{color:#093d21;}.bg-kelly-300{background-color:#093d21;}
+.text-kelly-400{color:#0f5f33;}.bg-kelly-400{background-color:#0f5f33;}
+.text-kelly-500{color:#16884a;}.bg-kelly-500{background-color:#16884a;}
+.text-kelly-600{color:#449f6e;}.bg-kelly-600{background-color:#449f6e;}
+.text-kelly-700{color:#73b792;}.bg-kelly-700{background-color:#73b792;}
+.text-kelly-800{color:#a1cfb6;}.bg-kelly-800{background-color:#a1cfb6;}
+.text-kelly-900{color:#d0e7da;}.bg-kelly-900{background-color:#d0e7da;}
+.text-forrest-100{color:#000906;}.bg-forrest-100{background-color:#000906;}
+.text-forrest-200{color:#00100b;}.bg-forrest-200{background-color:#00100b;}
+.text-forrest-300{color:#001c14;}.bg-forrest-300{background-color:#001c14;}
+.text-forrest-400{color:#002c20;}.bg-forrest-400{background-color:#002c20;}
+.text-forrest-500{color:#003f2e;}.bg-forrest-500{background-color:#003f2e;}
+.text-forrest-600{color:#336557;}.bg-forrest-600{background-color:#336557;}
+.text-forrest-700{color:#668b81;}.bg-forrest-700{background-color:#668b81;}
+.text-forrest-800{color:#99b2ab;}.bg-forrest-800{background-color:#99b2ab;}
+.text-forrest-900{color:#ccd8d5;}.bg-forrest-900{background-color:#ccd8d5;}
+.text-cloud-100{color:#1d2124;}.bg-cloud-100{background-color:#1d2124;}
+.text-cloud-200{color:#31383d;}.bg-cloud-200{background-color:#31383d;}
+.text-cloud-300{color:#57646c;}.bg-cloud-300{background-color:#57646c;}
+.text-cloud-400{color:#889ba9;}.bg-cloud-400{background-color:#889ba9;}
+.text-cloud-500{color:#c3def1;}.bg-cloud-500{background-color:#c3def1;}
+.text-cloud-600{color:#cfe4f3;}.bg-cloud-600{background-color:#cfe4f3;}
+.text-cloud-700{color:#dbebf6;}.bg-cloud-700{background-color:#dbebf6;}
+.text-cloud-800{color:#e7f1f9;}.bg-cloud-800{background-color:#e7f1f9;}
+.text-cloud-900{color:#f3f8fc;}.bg-cloud-900{background-color:#f3f8fc;}
+.text-dream-100{color:#0c1c23;}.bg-dream-100{background-color:#0c1c23;}
+.text-dream-200{color:#15303c;}.bg-dream-200{background-color:#15303c;}
+.text-dream-300{color:#26556a;}.bg-dream-300{background-color:#26556a;}
+.text-dream-400{color:#3b85a6;}.bg-dream-400{background-color:#3b85a6;}
+.text-dream-500{color:#55beed;}.bg-dream-500{background-color:#55beed;}
+.text-dream-600{color:#77cbf0;}.bg-dream-600{background-color:#77cbf0;}
+.text-dream-700{color:#99d8f4;}.bg-dream-700{background-color:#99d8f4;}
+.text-dream-800{color:#bbe5f7;}.bg-dream-800{background-color:#bbe5f7;}
+.text-dream-900{color:#ddf2fb;}.bg-dream-900{background-color:#ddf2fb;}
+.text-gulf-100{color:#071921;}.bg-gulf-100{background-color:#071921;}
+.text-gulf-200{color:#0c2b39;}.bg-gulf-200{background-color:#0c2b39;}
+.text-gulf-300{color:#164b64;}.bg-gulf-300{background-color:#164b64;}
+.text-gulf-400{color:#22759d;}.bg-gulf-400{background-color:#22759d;}
+.text-gulf-500{color:#31a8e0;}.bg-gulf-500{background-color:#31a8e0;}
+.text-gulf-600{color:#5ab9e6;}.bg-gulf-600{background-color:#5ab9e6;}
+.text-gulf-700{color:#83caec;}.bg-gulf-700{background-color:#83caec;}
+.text-gulf-800{color:#acdcf2;}.bg-gulf-800{background-color:#acdcf2;}
+.text-gulf-900{color:#d5edf8;}.bg-gulf-900{background-color:#d5edf8;}
+.text-turquoise-100{color:#05141e;}.bg-turquoise-100{background-color:#05141e;}
+.text-turquoise-200{color:#082334;}.bg-turquoise-200{background-color:#082334;}
+.text-turquoise-300{color:#0f3e5b;}.bg-turquoise-300{background-color:#0f3e5b;}
+.text-turquoise-400{color:#18608f;}.bg-turquoise-400{background-color:#18608f;}
+.text-turquoise-500{color:#238acc;}.bg-turquoise-500{background-color:#238acc;}
+.text-turquoise-600{color:#4fa1d6;}.bg-turquoise-600{background-color:#4fa1d6;}
+.text-turquoise-700{color:#7bb8e0;}.bg-turquoise-700{background-color:#7bb8e0;}
+.text-turquoise-800{color:#a7d0ea;}.bg-turquoise-800{background-color:#a7d0ea;}
+.text-turquoise-900{color:#d3e7f4;}.bg-turquoise-900{background-color:#d3e7f4;}
+.text-sky-100{color:#010e1a;}.bg-sky-100{background-color:#010e1a;}
+.text-sky-200{color:#03182c;}.bg-sky-200{background-color:#03182c;}
+.text-sky-300{color:#052b4e;}.bg-sky-300{background-color:#052b4e;}
+.text-sky-400{color:#09437a;}.bg-sky-400{background-color:#09437a;}
+.text-sky-500{color:#0d60ae;}.bg-sky-500{background-color:#0d60ae;}
+.text-sky-600{color:#3d7fbe;}.bg-sky-600{background-color:#3d7fbe;}
+.text-sky-700{color:#6d9fce;}.bg-sky-700{background-color:#6d9fce;}
+.text-sky-800{color:#9ebfde;}.bg-sky-800{background-color:#9ebfde;}
+.text-sky-900{color:#cedfee;}.bg-sky-900{background-color:#cedfee;}
+.text-indigo-100{color:#030814;}.bg-indigo-100{background-color:#030814;}
+.text-indigo-200{color:#050f22;}.bg-indigo-200{background-color:#050f22;}
+.text-indigo-300{color:#091a3c;}.bg-indigo-300{background-color:#091a3c;}
+.text-indigo-400{color:#0e295e;}.bg-indigo-400{background-color:#0e295e;}
+.text-indigo-500{color:#143b86;}.bg-indigo-500{background-color:#143b86;}
+.text-indigo-600{color:#43629e;}.bg-indigo-600{background-color:#43629e;}
+.text-indigo-700{color:#7289b6;}.bg-indigo-700{background-color:#7289b6;}
+.text-indigo-800{color:#a1b0ce;}.bg-indigo-800{background-color:#a1b0ce;}
+.text-indigo-900{color:#d0d7e6;}.bg-indigo-900{background-color:#d0d7e6;}
+.text-navy-100{color:#00040b;}.bg-navy-100{background-color:#00040b;}
+.text-navy-200{color:#000612;}.bg-navy-200{background-color:#000612;}
+.text-navy-300{color:#000c21;}.bg-navy-300{background-color:#000c21;}
+.text-navy-400{color:#001233;}.bg-navy-400{background-color:#001233;}
+.text-navy-500{color:#001b4a;}.bg-navy-500{background-color:#001b4a;}
+.text-navy-600{color:#33486e;}.bg-navy-600{background-color:#33486e;}
+.text-navy-700{color:#667692;}.bg-navy-700{background-color:#667692;}
+.text-navy-800{color:#99a3b6;}.bg-navy-800{background-color:#99a3b6;}
+.text-navy-900{color:#ccd1da;}.bg-navy-900{background-color:#ccd1da;}
+.text-sea-foam-100{color:#121e1d;}.bg-sea-foam-100{background-color:#121e1d;}
+.text-sea-foam-200{color:#203431;}.bg-sea-foam-200{background-color:#203431;}
+.text-sea-foam-300{color:#385c57;}.bg-sea-foam-300{background-color:#385c57;}
+.text-sea-foam-400{color:#578f88;}.bg-sea-foam-400{background-color:#578f88;}
+.text-sea-foam-500{color:#7dcdc2;}.bg-sea-foam-500{background-color:#7dcdc2;}
+.text-sea-foam-600{color:#97d7ce;}.bg-sea-foam-600{background-color:#97d7ce;}
+.text-sea-foam-700{color:#b1e1da;}.bg-sea-foam-700{background-color:#b1e1da;}
+.text-sea-foam-800{color:#cbebe6;}.bg-sea-foam-800{background-color:#cbebe6;}
+.text-sea-foam-900{color:#e5f5f2;}.bg-sea-foam-900{background-color:#e5f5f2;}
+.text-teal-100{color:#001919;}.bg-teal-100{background-color:#001919;}
+.text-teal-200{color:#002b2b;}.bg-teal-200{background-color:#002b2b;}
+.text-teal-300{color:#004b4b;}.bg-teal-300{background-color:#004b4b;}
+.text-teal-400{color:#007575;}.bg-teal-400{background-color:#007575;}
+.text-teal-500{color:#00a8a8;}.bg-teal-500{background-color:#00a8a8;}
+.text-teal-600{color:#33b9b9;}.bg-teal-600{background-color:#33b9b9;}
+.text-teal-700{color:#66caca;}.bg-teal-700{background-color:#66caca;}
+.text-teal-800{color:#99dcdc;}.bg-teal-800{background-color:#99dcdc;}
+.text-teal-900{color:#cceded;}.bg-teal-900{background-color:#cceded;}
+.text-peacock-100{color:#021617;}.bg-peacock-100{background-color:#021617;}
+.text-peacock-200{color:#042628;}.bg-peacock-200{background-color:#042628;}
+.text-peacock-300{color:#084347;}.bg-peacock-300{background-color:#084347;}
+.text-peacock-400{color:#0c686f;}.bg-peacock-400{background-color:#0c686f;}
+.text-peacock-500{color:#12959f;}.bg-peacock-500{background-color:#12959f;}
+.text-peacock-600{color:#41aab2;}.bg-peacock-600{background-color:#41aab2;}
+.text-peacock-700{color:#70bfc5;}.bg-peacock-700{background-color:#70bfc5;}
+.text-peacock-800{color:#a0d4d8;}.bg-peacock-800{background-color:#a0d4d8;}
+.text-peacock-900{color:#cfe9eb;}.bg-peacock-900{background-color:#cfe9eb;}
+.text-cyan-100{color:#010b0c;}.bg-cyan-100{background-color:#010b0c;}
+.text-cyan-200{color:#021315;}.bg-cyan-200{background-color:#021315;}
+.text-cyan-300{color:#042325;}.bg-cyan-300{background-color:#042325;}
+.text-cyan-400{color:#06363a;}.bg-cyan-400{background-color:#06363a;}
+.text-cyan-500{color:#094e54;}.bg-cyan-500{background-color:#094e54;}
+.text-cyan-600{color:#3a7176;}.bg-cyan-600{background-color:#3a7176;}
+.text-cyan-700{color:#6b9498;}.bg-cyan-700{background-color:#6b9498;}
+.text-cyan-800{color:#9cb8ba;}.bg-cyan-800{background-color:#9cb8ba;}
+.text-cyan-900{color:#cddbdc;}.bg-cyan-900{background-color:#cddbdc;}
+.text-chocolate-100{color:#080402;}.bg-chocolate-100{background-color:#080402;}
+.text-chocolate-200{color:#0e0704;}.bg-chocolate-200{background-color:#0e0704;}
+.text-chocolate-300{color:#190d07;}.bg-chocolate-300{background-color:#190d07;}
+.text-chocolate-400{color:#27150b;}.bg-chocolate-400{background-color:#27150b;}
+.text-chocolate-500{color:#381e11;}.bg-chocolate-500{background-color:#381e11;}
+.text-chocolate-600{color:#5f4b40;}.bg-chocolate-600{background-color:#5f4b40;}
+.text-chocolate-700{color:#877870;}.bg-chocolate-700{background-color:#877870;}
+.text-chocolate-800{color:#afa59f;}.bg-chocolate-800{background-color:#afa59f;}
+.text-chocolate-900{color:#d7d2cf;}.bg-chocolate-900{background-color:#d7d2cf;}
+.text-terra-cotta-100{color:#1c0d04;}.bg-terra-cotta-100{background-color:#1c0d04;}
+.text-terra-cotta-200{color:#311708;}.bg-terra-cotta-200{background-color:#311708;}
+.text-terra-cotta-300{color:#56290e;}.bg-terra-cotta-300{background-color:#56290e;}
+.text-terra-cotta-400{color:#864016;}.bg-terra-cotta-400{background-color:#864016;}
+.text-terra-cotta-500{color:#c05c20;}.bg-terra-cotta-500{background-color:#c05c20;}
+.text-terra-cotta-600{color:#cc7c4c;}.bg-terra-cotta-600{background-color:#cc7c4c;}
+.text-terra-cotta-700{color:#d99d79;}.bg-terra-cotta-700{background-color:#d99d79;}
+.text-terra-cotta-800{color:#e5bda5;}.bg-terra-cotta-800{background-color:#e5bda5;}
+.text-terra-cotta-900{color:#f2ded2;}.bg-terra-cotta-900{background-color:#f2ded2;}
+.text-camel-100{color:#1c1710;}.bg-camel-100{background-color:#1c1710;}
+.text-camel-200{color:#30271b;}.bg-camel-200{background-color:#30271b;}
+.text-camel-300{color:#564530;}.bg-camel-300{background-color:#564530;}
+.text-camel-400{color:#866c4b;}.bg-camel-400{background-color:#866c4b;}
+.text-camel-500{color:#bf9b6b;}.bg-camel-500{background-color:#bf9b6b;}
+.text-camel-600{color:#cbaf88;}.bg-camel-600{background-color:#cbaf88;}
+.text-camel-700{color:#d8c3a6;}.bg-camel-700{background-color:#d8c3a6;}
+.text-camel-800{color:#e5d7c3;}.bg-camel-800{background-color:#e5d7c3;}
+.text-camel-900{color:#f2ebe1;}.bg-camel-900{background-color:#f2ebe1;}
+.text-linen-100{color:#221f19;}.bg-linen-100{background-color:#221f19;}
+.text-linen-200{color:#3b362a;}.bg-linen-200{background-color:#3b362a;}
+.text-linen-300{color:#685f4b;}.bg-linen-300{background-color:#685f4b;}
+.text-linen-400{color:#a39475;}.bg-linen-400{background-color:#a39475;}
+.text-linen-500{color:#e9d4a7;}.bg-linen-500{background-color:#e9d4a7;}
+.text-linen-600{color:#eddcb8;}.bg-linen-600{background-color:#eddcb8;}
+.text-linen-700{color:#f1e5ca;}.bg-linen-700{background-color:#f1e5ca;}
+.text-linen-800{color:#f6eddb;}.bg-linen-800{background-color:#f6eddb;}
+.text-linen-900{color:#faf6ed;}.bg-linen-900{background-color:#faf6ed;}
+.text-stone-100{color:#222221;}.bg-stone-100{background-color:#222221;}
+.text-stone-200{color:#3b3a39;}.bg-stone-200{background-color:#3b3a39;}
+.text-stone-300{color:#686765;}.bg-stone-300{background-color:#686765;}
+.text-stone-400{color:#a2a19d;}.bg-stone-400{background-color:#a2a19d;}
+.text-stone-500{color:#e7e6e1;}.bg-stone-500{background-color:#e7e6e1;}
+.text-stone-600{color:#ebebe7;}.bg-stone-600{background-color:#ebebe7;}
+.text-stone-700{color:#f0f0ed;}.bg-stone-700{background-color:#f0f0ed;}
+.text-stone-800{color:#f5f5f3;}.bg-stone-800{background-color:#f5f5f3;}
+.text-stone-900{color:#fafaf9;}.bg-stone-900{background-color:#fafaf9;}
+.text-smoke-100{color:#1f1f1f;}.bg-smoke-100{background-color:#1f1f1f;}
+.text-smoke-200{color:#353535;}.bg-smoke-200{background-color:#353535;}
+.text-smoke-300{color:#5d5d5e;}.bg-smoke-300{background-color:#5d5d5e;}
+.text-smoke-400{color:#919293;}.bg-smoke-400{background-color:#919293;}
+.text-smoke-500{color:#cfd0d2;}.bg-smoke-500{background-color:#cfd0d2;}
+.text-smoke-600{color:#d8d9db;}.bg-smoke-600{background-color:#d8d9db;}
+.text-smoke-700{color:#e2e2e4;}.bg-smoke-700{background-color:#e2e2e4;}
+.text-smoke-800{color:#ebeced;}.bg-smoke-800{background-color:#ebeced;}
+.text-smoke-900{color:#f5f5f6;}.bg-smoke-900{background-color:#f5f5f6;}
+.text-steel-100{color:#141415;}.bg-steel-100{background-color:#141415;}
+.text-steel-200{color:#232324;}.bg-steel-200{background-color:#232324;}
+.text-steel-300{color:#3e3e40;}.bg-steel-300{background-color:#3e3e40;}
+.text-steel-400{color:#606164;}.bg-steel-400{background-color:#606164;}
+.text-steel-500{color:#8a8b8f;}.bg-steel-500{background-color:#8a8b8f;}
+.text-steel-600{color:#a1a2a5;}.bg-steel-600{background-color:#a1a2a5;}
+.text-steel-700{color:#b8b9bb;}.bg-steel-700{background-color:#b8b9bb;}
+.text-steel-800{color:#d0d0d2;}.bg-steel-800{background-color:#d0d0d2;}
+.text-steel-900{color:#e7e7e8;}.bg-steel-900{background-color:#e7e7e8;}
+.text-slate-100{color:#111315;}.bg-slate-100{background-color:#111315;}
+.text-slate-200{color:#1e2224;}.bg-slate-200{background-color:#1e2224;}
+.text-slate-300{color:#353b40;}.bg-slate-300{background-color:#353b40;}
+.text-slate-400{color:#535d65;}.bg-slate-400{background-color:#535d65;}
+.text-slate-500{color:#778590;}.bg-slate-500{background-color:#778590;}
+.text-slate-600{color:#929da6;}.bg-slate-600{background-color:#929da6;}
+.text-slate-700{color:#adb5bc;}.bg-slate-700{background-color:#adb5bc;}
+.text-slate-800{color:#c8ced2;}.bg-slate-800{background-color:#c8ced2;}
+.text-slate-900{color:#e3e6e8;}.bg-slate-900{background-color:#e3e6e8;}
+.text-charcoal-100{color:#0a0b0b;}.bg-charcoal-100{background-color:#0a0b0b;}
+.text-charcoal-200{color:#121313;}.bg-charcoal-200{background-color:#121313;}
+.text-charcoal-300{color:#1f2222;}.bg-charcoal-300{background-color:#1f2222;}
+.text-charcoal-400{color:#313636;}.bg-charcoal-400{background-color:#313636;}
+.text-charcoal-500{color:#474d4d;}.bg-charcoal-500{background-color:#474d4d;}
+.text-charcoal-600{color:#6b7070;}.bg-charcoal-600{background-color:#6b7070;}
+.text-charcoal-700{color:#909494;}.bg-charcoal-700{background-color:#909494;}
+.text-charcoal-800{color:#b5b7b7;}.bg-charcoal-800{background-color:#b5b7b7;}
+.text-charcoal-900{color:#dadbdb;}.bg-charcoal-900{background-color:#dadbdb;}
+.text-black-100{color:#000001;}.bg-black-100{background-color:#000001;}
+.text-black-200{color:#010102;}.bg-black-200{background-color:#010102;}
+.text-black-300{color:#020203;}.bg-black-300{background-color:#020203;}
+.text-black-400{color:#030405;}.bg-black-400{background-color:#030405;}
+.text-black-500{color:#050608;}.bg-black-500{background-color:#050608;}
+.text-black-600{color:#373739;}.bg-black-600{background-color:#373739;}
+.text-black-700{color:#69696a;}.bg-black-700{background-color:#69696a;}
+.text-black-800{color:#9b9b9c;}.bg-black-800{background-color:#9b9b9c;}
+.text-black-900{color:#cdcdcd;}.bg-black-900{background-color:#cdcdcd;}
+.text-white-100{color:#262626;}.bg-white-100{background-color:#262626;}
+.text-white-200{color:#414141;}.bg-white-200{background-color:#414141;}
+.text-white-300{color:#727272;}.bg-white-300{background-color:#727272;}
+.text-white-400{color:#b3b3b3;}.bg-white-400{background-color:#b3b3b3;}
+.text-white-500{color:#ffffff;}.bg-white-500{background-color:#ffffff;}
+.text-white-600{color:#ffffff;}.bg-white-600{background-color:#ffffff;}
+.text-white-700{color:#ffffff;}.bg-white-700{background-color:#ffffff;}
+.text-white-800{color:#ffffff;}.bg-white-800{background-color:#ffffff;}
+.text-white-900{color:#ffffff;}.bg-white-900{background-color:#ffffff;}
+</style>
+<script>
+var cling_colors = {"daffodil-100":"#262203","daffodil-200":"#413a05","daffodil-300":"#72670a","daffodil-400":"#b3a110","daffodil-500":"#ffe617","daffodil-600":"#ffeb45","daffodil-700":"#fff073","daffodil-800":"#fff5a2","daffodil-900":"#fffad0","daisy-100":"#251f04","daisy-200":"#403607","daisy-300":"#705f0c","daisy-400":"#af9413","daisy-500":"#fad31c","daisy-600":"#fbdb49","daisy-700":"#fce476","daisy-800":"#fdeda4","daisy-900":"#fef6d1","mustard-100":"#251b03","mustard-200":"#402e05","mustard-300":"#71520a","mustard-400":"#b18010","mustard-500":"#fdb717","mustard-600":"#fdc545","mustard-700":"#fdd373","mustard-800":"#fee2a2","mustard-900":"#fef0d0","circus-zest-100":"#251904","circus-zest-200":"#402b08","circus-zest-300":"#704c0e","circus-zest-400":"#af7717","circus-zest-500":"#faaa21","circus-zest-600":"#fbbb4d","circus-zest-700":"#fccc79","circus-zest-800":"#fddda6","circus-zest-900":"#feeed2","pumpkin-100":"#241109","pumpkin-200":"#3d1d10","pumpkin-300":"#6c341c","pumpkin-400":"#a9522c","pumpkin-500":"#f1753f","pumpkin-600":"#f39065","pumpkin-700":"#f6ac8b","pumpkin-800":"#f9c7b2","pumpkin-900":"#fce3d8","tangerine-100":"#230d05","tangerine-200":"#3c1609","tangerine-300":"#6a2710","tangerine-400":"#a63d19","tangerine-500":"#ed5724","tangerine-600":"#f0784f","tangerine-700":"#f49a7b","tangerine-800":"#f7bba7","tangerine-900":"#fbddd3","salmon-100":"#230a08","salmon-200":"#3d110e","salmon-300":"#6b1f19","salmon-400":"#a73027","salmon-500":"#ef4538","salmon-600":"#f26a5f","salmon-700":"#f58f87","salmon-800":"#f8b4af","salmon-900":"#fbd9d7","persimmon-100":"#230607","persimmon-200":"#3b0a0c","persimmon-300":"#691215","persimmon-400":"#a41c21","persimmon-500":"#ea2830","persimmon-600":"#ee5359","persimmon-700":"#f27e82","persimmon-800":"#f6a9ac","persimmon-900":"#fad4d5","rouge-100":"#1c0505","rouge-200":"#300809","rouge-300":"#540f11","rouge-400":"#83181a","rouge-500":"#bc2326","rouge-600":"#c94f51","rouge-700":"#d67b7c","rouge-800":"#e4a7a8","rouge-900":"#f1d3d3","scarlet-100":"#150100","scarlet-200":"#230300","scarlet-300":"#3f0501","scarlet-400":"#620802","scarlet-500":"#8c0c03","scarlet-600":"#a33c35","scarlet-700":"#ba6d67","scarlet-800":"#d19d9a","scarlet-900":"#e8cecc","hot-pink-100":"#22030d","hot-pink-200":"#3a0617","hot-pink-300":"#670a29","hot-pink-400":"#a01041","hot-pink-500":"#e5185d","hot-pink-600":"#ea467d","hot-pink-700":"#ef749d","hot-pink-800":"#f4a2be","hot-pink-900":"#f9d0de","princess-100":"#24131a","princess-200":"#3e212c","princess-300":"#6d3b4e","princess-400":"#aa5c7a","princess-500":"#f384ae","princess-600":"#f59cbe","princess-700":"#f7b5ce","princess-800":"#facdde","princess-900":"#fce6ee","petal-100":"#251d1f","petal-200":"#403235","petal-300":"#70595e","petal-400":"#af8b93","petal-500":"#fac6d2","petal-600":"#fbd1db","petal-700":"#fcdce4","petal-800":"#fde8ed","petal-900":"#fef3f6","lilac-100":"#1a161d","lilac-200":"#2d2632","lilac-300":"#504359","lilac-400":"#7c698b","lilac-500":"#b296c7","lilac-600":"#c1abd2","lilac-700":"#d0c0dd","lilac-800":"#e0d5e8","lilac-900":"#efeaf3","lavender-100":"#120f1a","lavender-200":"#1f1a2c","lavender-300":"#372e4e","lavender-400":"#56487a","lavender-500":"#7b67ae","lavender-600":"#9585be","lavender-700":"#afa3ce","lavender-800":"#cac2de","lavender-900":"#e4e0ee","violet-100":"#0e0711","violet-200":"#180d1e","violet-300":"#2a1735","violet-400":"#422553","violet-500":"#5f3577","violet-600":"#7f5d92","violet-700":"#9f85ad","violet-800":"#bfaec8","violet-900":"#dfd6e3","ceadon-100":"#1c1f14","ceadon-200":"#313523","ceadon-300":"#565e3e","ceadon-400":"#879260","ceadon-500":"#c1d18a","ceadon-600":"#cddaa1","ceadon-700":"#d9e3b8","ceadon-800":"#e6ecd0","ceadon-900":"#f2f5e7","olive-100":"#12150c","olive-200":"#1f2515","olive-300":"#364126","olive-400":"#54653b","olive-500":"#799155","olive-600":"#93a777","olive-700":"#aebd99","olive-800":"#c9d3bb","olive-900":"#e4e9dd","bamboo-100":"#131c09","bamboo-200":"#203010","bamboo-300":"#39541d","bamboo-400":"#59832e","bamboo-500":"#80bc42","bamboo-600":"#99c967","bamboo-700":"#b2d68d","bamboo-800":"#cce4b3","bamboo-900":"#e5f1d9","grass-100":"#0b1809","grass-200":"#122910","grass-300":"#21481c","grass-400":"#33702c","grass-500":"#4aa03f","grass-600":"#6eb365","grass-700":"#92c68b","grass-800":"#b6d9b2","grass-900":"#daecd8","kelly-100":"#03140b","kelly-200":"#052212","kelly-300":"#093d21","kelly-400":"#0f5f33","kelly-500":"#16884a","kelly-600":"#449f6e","kelly-700":"#73b792","kelly-800":"#a1cfb6","kelly-900":"#d0e7da","forrest-100":"#000906","forrest-200":"#00100b","forrest-300":"#001c14","forrest-400":"#002c20","forrest-500":"#003f2e","forrest-600":"#336557","forrest-700":"#668b81","forrest-800":"#99b2ab","forrest-900":"#ccd8d5","cloud-100":"#1d2124","cloud-200":"#31383d","cloud-300":"#57646c","cloud-400":"#889ba9","cloud-500":"#c3def1","cloud-600":"#cfe4f3","cloud-700":"#dbebf6","cloud-800":"#e7f1f9","cloud-900":"#f3f8fc","dream-100":"#0c1c23","dream-200":"#15303c","dream-300":"#26556a","dream-400":"#3b85a6","dream-500":"#55beed","dream-600":"#77cbf0","dream-700":"#99d8f4","dream-800":"#bbe5f7","dream-900":"#ddf2fb","gulf-100":"#071921","gulf-200":"#0c2b39","gulf-300":"#164b64","gulf-400":"#22759d","gulf-500":"#31a8e0","gulf-600":"#5ab9e6","gulf-700":"#83caec","gulf-800":"#acdcf2","gulf-900":"#d5edf8","turquoise-100":"#05141e","turquoise-200":"#082334","turquoise-300":"#0f3e5b","turquoise-400":"#18608f","turquoise-500":"#238acc","turquoise-600":"#4fa1d6","turquoise-700":"#7bb8e0","turquoise-800":"#a7d0ea","turquoise-900":"#d3e7f4","sky-100":"#010e1a","sky-200":"#03182c","sky-300":"#052b4e","sky-400":"#09437a","sky-500":"#0d60ae","sky-600":"#3d7fbe","sky-700":"#6d9fce","sky-800":"#9ebfde","sky-900":"#cedfee","indigo-100":"#030814","indigo-200":"#050f22","indigo-300":"#091a3c","indigo-400":"#0e295e","indigo-500":"#143b86","indigo-600":"#43629e","indigo-700":"#7289b6","indigo-800":"#a1b0ce","indigo-900":"#d0d7e6","navy-100":"#00040b","navy-200":"#000612","navy-300":"#000c21","navy-400":"#001233","navy-500":"#001b4a","navy-600":"#33486e","navy-700":"#667692","navy-800":"#99a3b6","navy-900":"#ccd1da","sea-foam-100":"#121e1d","sea-foam-200":"#203431","sea-foam-300":"#385c57","sea-foam-400":"#578f88","sea-foam-500":"#7dcdc2","sea-foam-600":"#97d7ce","sea-foam-700":"#b1e1da","sea-foam-800":"#cbebe6","sea-foam-900":"#e5f5f2","teal-100":"#001919","teal-200":"#002b2b","teal-300":"#004b4b","teal-400":"#007575","teal-500":"#00a8a8","teal-600":"#33b9b9","teal-700":"#66caca","teal-800":"#99dcdc","teal-900":"#cceded","peacock-100":"#021617","peacock-200":"#042628","peacock-300":"#084347","peacock-400":"#0c686f","peacock-500":"#12959f","peacock-600":"#41aab2","peacock-700":"#70bfc5","peacock-800":"#a0d4d8","peacock-900":"#cfe9eb","cyan-100":"#010b0c","cyan-200":"#021315","cyan-300":"#042325","cyan-400":"#06363a","cyan-500":"#094e54","cyan-600":"#3a7176","cyan-700":"#6b9498","cyan-800":"#9cb8ba","cyan-900":"#cddbdc","chocolate-100":"#080402","chocolate-200":"#0e0704","chocolate-300":"#190d07","chocolate-400":"#27150b","chocolate-500":"#381e11","chocolate-600":"#5f4b40","chocolate-700":"#877870","chocolate-800":"#afa59f","chocolate-900":"#d7d2cf","terra-cotta-100":"#1c0d04","terra-cotta-200":"#311708","terra-cotta-300":"#56290e","terra-cotta-400":"#864016","terra-cotta-500":"#c05c20","terra-cotta-600":"#cc7c4c","terra-cotta-700":"#d99d79","terra-cotta-800":"#e5bda5","terra-cotta-900":"#f2ded2","camel-100":"#1c1710","camel-200":"#30271b","camel-300":"#564530","camel-400":"#866c4b","camel-500":"#bf9b6b","camel-600":"#cbaf88","camel-700":"#d8c3a6","camel-800":"#e5d7c3","camel-900":"#f2ebe1","linen-100":"#221f19","linen-200":"#3b362a","linen-300":"#685f4b","linen-400":"#a39475","linen-500":"#e9d4a7","linen-600":"#eddcb8","linen-700":"#f1e5ca","linen-800":"#f6eddb","linen-900":"#faf6ed","stone-100":"#222221","stone-200":"#3b3a39","stone-300":"#686765","stone-400":"#a2a19d","stone-500":"#e7e6e1","stone-600":"#ebebe7","stone-700":"#f0f0ed","stone-800":"#f5f5f3","stone-900":"#fafaf9","smoke-100":"#1f1f1f","smoke-200":"#353535","smoke-300":"#5d5d5e","smoke-400":"#919293","smoke-500":"#cfd0d2","smoke-600":"#d8d9db","smoke-700":"#e2e2e4","smoke-800":"#ebeced","smoke-900":"#f5f5f6","steel-100":"#141415","steel-200":"#232324","steel-300":"#3e3e40","steel-400":"#606164","steel-500":"#8a8b8f","steel-600":"#a1a2a5","steel-700":"#b8b9bb","steel-800":"#d0d0d2","steel-900":"#e7e7e8","slate-100":"#111315","slate-200":"#1e2224","slate-300":"#353b40","slate-400":"#535d65","slate-500":"#778590","slate-600":"#929da6","slate-700":"#adb5bc","slate-800":"#c8ced2","slate-900":"#e3e6e8","charcoal-100":"#0a0b0b","charcoal-200":"#121313","charcoal-300":"#1f2222","charcoal-400":"#313636","charcoal-500":"#474d4d","charcoal-600":"#6b7070","charcoal-700":"#909494","charcoal-800":"#b5b7b7","charcoal-900":"#dadbdb","black-100":"#000001","black-200":"#010102","black-300":"#020203","black-400":"#030405","black-500":"#050608","black-600":"#373739","black-700":"#69696a","black-800":"#9b9b9c","black-900":"#cdcdcd","white-100":"#262626","white-200":"#414141","white-300":"#727272","white-400":"#b3b3b3","white-500":"#ffffff","white-600":"#ffffff","white-700":"#ffffff","white-800":"#ffffff","white-900":"#ffffff"};
+</script>
+</head>
+<body>
+<span class='name'>daffodil</span>
+<span class='swatch bg-daffodil-100'>100</span><span class='swatch bg-daffodil-200'>200</span><span class='swatch bg-daffodil-300'>300</span><span class='swatch bg-daffodil-400'>400</span><span class='swatch bg-daffodil-500'>500</span><span class='swatch bg-daffodil-600'>600</span><span class='swatch bg-daffodil-700'>700</span><span class='swatch bg-daffodil-800'>800</span><span class='swatch bg-daffodil-900'>900</span><br />
+<span class='name'>daisy</span>
+<span class='swatch bg-daisy-100'>100</span><span class='swatch bg-daisy-200'>200</span><span class='swatch bg-daisy-300'>300</span><span class='swatch bg-daisy-400'>400</span><span class='swatch bg-daisy-500'>500</span><span class='swatch bg-daisy-600'>600</span><span class='swatch bg-daisy-700'>700</span><span class='swatch bg-daisy-800'>800</span><span class='swatch bg-daisy-900'>900</span><br />
+<span class='name'>mustard</span>
+<span class='swatch bg-mustard-100'>100</span><span class='swatch bg-mustard-200'>200</span><span class='swatch bg-mustard-300'>300</span><span class='swatch bg-mustard-400'>400</span><span class='swatch bg-mustard-500'>500</span><span class='swatch bg-mustard-600'>600</span><span class='swatch bg-mustard-700'>700</span><span class='swatch bg-mustard-800'>800</span><span class='swatch bg-mustard-900'>900</span><br />
+<span class='name'>circus-zest</span>
+<span class='swatch bg-circus-zest-100'>100</span><span class='swatch bg-circus-zest-200'>200</span><span class='swatch bg-circus-zest-300'>300</span><span class='swatch bg-circus-zest-400'>400</span><span class='swatch bg-circus-zest-500'>500</span><span class='swatch bg-circus-zest-600'>600</span><span class='swatch bg-circus-zest-700'>700</span><span class='swatch bg-circus-zest-800'>800</span><span class='swatch bg-circus-zest-900'>900</span><br />
+<span class='name'>pumpkin</span>
+<span class='swatch bg-pumpkin-100'>100</span><span class='swatch bg-pumpkin-200'>200</span><span class='swatch bg-pumpkin-300'>300</span><span class='swatch bg-pumpkin-400'>400</span><span class='swatch bg-pumpkin-500'>500</span><span class='swatch bg-pumpkin-600'>600</span><span class='swatch bg-pumpkin-700'>700</span><span class='swatch bg-pumpkin-800'>800</span><span class='swatch bg-pumpkin-900'>900</span><br />
+<span class='name'>tangerine</span>
+<span class='swatch bg-tangerine-100'>100</span><span class='swatch bg-tangerine-200'>200</span><span class='swatch bg-tangerine-300'>300</span><span class='swatch bg-tangerine-400'>400</span><span class='swatch bg-tangerine-500'>500</span><span class='swatch bg-tangerine-600'>600</span><span class='swatch bg-tangerine-700'>700</span><span class='swatch bg-tangerine-800'>800</span><span class='swatch bg-tangerine-900'>900</span><br />
+<span class='name'>salmon</span>
+<span class='swatch bg-salmon-100'>100</span><span class='swatch bg-salmon-200'>200</span><span class='swatch bg-salmon-300'>300</span><span class='swatch bg-salmon-400'>400</span><span class='swatch bg-salmon-500'>500</span><span class='swatch bg-salmon-600'>600</span><span class='swatch bg-salmon-700'>700</span><span class='swatch bg-salmon-800'>800</span><span class='swatch bg-salmon-900'>900</span><br />
+<span class='name'>persimmon</span>
+<span class='swatch bg-persimmon-100'>100</span><span class='swatch bg-persimmon-200'>200</span><span class='swatch bg-persimmon-300'>300</span><span class='swatch bg-persimmon-400'>400</span><span class='swatch bg-persimmon-500'>500</span><span class='swatch bg-persimmon-600'>600</span><span class='swatch bg-persimmon-700'>700</span><span class='swatch bg-persimmon-800'>800</span><span class='swatch bg-persimmon-900'>900</span><br />
+<span class='name'>rouge</span>
+<span class='swatch bg-rouge-100'>100</span><span class='swatch bg-rouge-200'>200</span><span class='swatch bg-rouge-300'>300</span><span class='swatch bg-rouge-400'>400</span><span class='swatch bg-rouge-500'>500</span><span class='swatch bg-rouge-600'>600</span><span class='swatch bg-rouge-700'>700</span><span class='swatch bg-rouge-800'>800</span><span class='swatch bg-rouge-900'>900</span><br />
+<span class='name'>scarlet</span>
+<span class='swatch bg-scarlet-100'>100</span><span class='swatch bg-scarlet-200'>200</span><span class='swatch bg-scarlet-300'>300</span><span class='swatch bg-scarlet-400'>400</span><span class='swatch bg-scarlet-500'>500</span><span class='swatch bg-scarlet-600'>600</span><span class='swatch bg-scarlet-700'>700</span><span class='swatch bg-scarlet-800'>800</span><span class='swatch bg-scarlet-900'>900</span><br />
+<span class='name'>hot-pink</span>
+<span class='swatch bg-hot-pink-100'>100</span><span class='swatch bg-hot-pink-200'>200</span><span class='swatch bg-hot-pink-300'>300</span><span class='swatch bg-hot-pink-400'>400</span><span class='swatch bg-hot-pink-500'>500</span><span class='swatch bg-hot-pink-600'>600</span><span class='swatch bg-hot-pink-700'>700</span><span class='swatch bg-hot-pink-800'>800</span><span class='swatch bg-hot-pink-900'>900</span><br />
+<span class='name'>princess</span>
+<span class='swatch bg-princess-100'>100</span><span class='swatch bg-princess-200'>200</span><span class='swatch bg-princess-300'>300</span><span class='swatch bg-princess-400'>400</span><span class='swatch bg-princess-500'>500</span><span class='swatch bg-princess-600'>600</span><span class='swatch bg-princess-700'>700</span><span class='swatch bg-princess-800'>800</span><span class='swatch bg-princess-900'>900</span><br />
+<span class='name'>petal</span>
+<span class='swatch bg-petal-100'>100</span><span class='swatch bg-petal-200'>200</span><span class='swatch bg-petal-300'>300</span><span class='swatch bg-petal-400'>400</span><span class='swatch bg-petal-500'>500</span><span class='swatch bg-petal-600'>600</span><span class='swatch bg-petal-700'>700</span><span class='swatch bg-petal-800'>800</span><span class='swatch bg-petal-900'>900</span><br />
+<span class='name'>lilac</span>
+<span class='swatch bg-lilac-100'>100</span><span class='swatch bg-lilac-200'>200</span><span class='swatch bg-lilac-300'>300</span><span class='swatch bg-lilac-400'>400</span><span class='swatch bg-lilac-500'>500</span><span class='swatch bg-lilac-600'>600</span><span class='swatch bg-lilac-700'>700</span><span class='swatch bg-lilac-800'>800</span><span class='swatch bg-lilac-900'>900</span><br />
+<span class='name'>lavender</span>
+<span class='swatch bg-lavender-100'>100</span><span class='swatch bg-lavender-200'>200</span><span class='swatch bg-lavender-300'>300</span><span class='swatch bg-lavender-400'>400</span><span class='swatch bg-lavender-500'>500</span><span class='swatch bg-lavender-600'>600</span><span class='swatch bg-lavender-700'>700</span><span class='swatch bg-lavender-800'>800</span><span class='swatch bg-lavender-900'>900</span><br />
+<span class='name'>violet</span>
+<span class='swatch bg-violet-100'>100</span><span class='swatch bg-violet-200'>200</span><span class='swatch bg-violet-300'>300</span><span class='swatch bg-violet-400'>400</span><span class='swatch bg-violet-500'>500</span><span class='swatch bg-violet-600'>600</span><span class='swatch bg-violet-700'>700</span><span class='swatch bg-violet-800'>800</span><span class='swatch bg-violet-900'>900</span><br />
+<span class='name'>ceadon</span>
+<span class='swatch bg-ceadon-100'>100</span><span class='swatch bg-ceadon-200'>200</span><span class='swatch bg-ceadon-300'>300</span><span class='swatch bg-ceadon-400'>400</span><span class='swatch bg-ceadon-500'>500</span><span class='swatch bg-ceadon-600'>600</span><span class='swatch bg-ceadon-700'>700</span><span class='swatch bg-ceadon-800'>800</span><span class='swatch bg-ceadon-900'>900</span><br />
+<span class='name'>olive</span>
+<span class='swatch bg-olive-100'>100</span><span class='swatch bg-olive-200'>200</span><span class='swatch bg-olive-300'>300</span><span class='swatch bg-olive-400'>400</span><span class='swatch bg-olive-500'>500</span><span class='swatch bg-olive-600'>600</span><span class='swatch bg-olive-700'>700</span><span class='swatch bg-olive-800'>800</span><span class='swatch bg-olive-900'>900</span><br />
+<span class='name'>bamboo</span>
+<span class='swatch bg-bamboo-100'>100</span><span class='swatch bg-bamboo-200'>200</span><span class='swatch bg-bamboo-300'>300</span><span class='swatch bg-bamboo-400'>400</span><span class='swatch bg-bamboo-500'>500</span><span class='swatch bg-bamboo-600'>600</span><span class='swatch bg-bamboo-700'>700</span><span class='swatch bg-bamboo-800'>800</span><span class='swatch bg-bamboo-900'>900</span><br />
+<span class='name'>grass</span>
+<span class='swatch bg-grass-100'>100</span><span class='swatch bg-grass-200'>200</span><span class='swatch bg-grass-300'>300</span><span class='swatch bg-grass-400'>400</span><span class='swatch bg-grass-500'>500</span><span class='swatch bg-grass-600'>600</span><span class='swatch bg-grass-700'>700</span><span class='swatch bg-grass-800'>800</span><span class='swatch bg-grass-900'>900</span><br />
+<span class='name'>kelly</span>
+<span class='swatch bg-kelly-100'>100</span><span class='swatch bg-kelly-200'>200</span><span class='swatch bg-kelly-300'>300</span><span class='swatch bg-kelly-400'>400</span><span class='swatch bg-kelly-500'>500</span><span class='swatch bg-kelly-600'>600</span><span class='swatch bg-kelly-700'>700</span><span class='swatch bg-kelly-800'>800</span><span class='swatch bg-kelly-900'>900</span><br />
+<span class='name'>forrest</span>
+<span class='swatch bg-forrest-100'>100</span><span class='swatch bg-forrest-200'>200</span><span class='swatch bg-forrest-300'>300</span><span class='swatch bg-forrest-400'>400</span><span class='swatch bg-forrest-500'>500</span><span class='swatch bg-forrest-600'>600</span><span class='swatch bg-forrest-700'>700</span><span class='swatch bg-forrest-800'>800</span><span class='swatch bg-forrest-900'>900</span><br />
+<span class='name'>cloud</span>
+<span class='swatch bg-cloud-100'>100</span><span class='swatch bg-cloud-200'>200</span><span class='swatch bg-cloud-300'>300</span><span class='swatch bg-cloud-400'>400</span><span class='swatch bg-cloud-500'>500</span><span class='swatch bg-cloud-600'>600</span><span class='swatch bg-cloud-700'>700</span><span class='swatch bg-cloud-800'>800</span><span class='swatch bg-cloud-900'>900</span><br />
+<span class='name'>dream</span>
+<span class='swatch bg-dream-100'>100</span><span class='swatch bg-dream-200'>200</span><span class='swatch bg-dream-300'>300</span><span class='swatch bg-dream-400'>400</span><span class='swatch bg-dream-500'>500</span><span class='swatch bg-dream-600'>600</span><span class='swatch bg-dream-700'>700</span><span class='swatch bg-dream-800'>800</span><span class='swatch bg-dream-900'>900</span><br />
+<span class='name'>gulf</span>
+<span class='swatch bg-gulf-100'>100</span><span class='swatch bg-gulf-200'>200</span><span class='swatch bg-gulf-300'>300</span><span class='swatch bg-gulf-400'>400</span><span class='swatch bg-gulf-500'>500</span><span class='swatch bg-gulf-600'>600</span><span class='swatch bg-gulf-700'>700</span><span class='swatch bg-gulf-800'>800</span><span class='swatch bg-gulf-900'>900</span><br />
+<span class='name'>turquoise</span>
+<span class='swatch bg-turquoise-100'>100</span><span class='swatch bg-turquoise-200'>200</span><span class='swatch bg-turquoise-300'>300</span><span class='swatch bg-turquoise-400'>400</span><span class='swatch bg-turquoise-500'>500</span><span class='swatch bg-turquoise-600'>600</span><span class='swatch bg-turquoise-700'>700</span><span class='swatch bg-turquoise-800'>800</span><span class='swatch bg-turquoise-900'>900</span><br />
+<span class='name'>sky</span>
+<span class='swatch bg-sky-100'>100</span><span class='swatch bg-sky-200'>200</span><span class='swatch bg-sky-300'>300</span><span class='swatch bg-sky-400'>400</span><span class='swatch bg-sky-500'>500</span><span class='swatch bg-sky-600'>600</span><span class='swatch bg-sky-700'>700</span><span class='swatch bg-sky-800'>800</span><span class='swatch bg-sky-900'>900</span><br />
+<span class='name'>indigo</span>
+<span class='swatch bg-indigo-100'>100</span><span class='swatch bg-indigo-200'>200</span><span class='swatch bg-indigo-300'>300</span><span class='swatch bg-indigo-400'>400</span><span class='swatch bg-indigo-500'>500</span><span class='swatch bg-indigo-600'>600</span><span class='swatch bg-indigo-700'>700</span><span class='swatch bg-indigo-800'>800</span><span class='swatch bg-indigo-900'>900</span><br />
+<span class='name'>navy</span>
+<span class='swatch bg-navy-100'>100</span><span class='swatch bg-navy-200'>200</span><span class='swatch bg-navy-300'>300</span><span class='swatch bg-navy-400'>400</span><span class='swatch bg-navy-500'>500</span><span class='swatch bg-navy-600'>600</span><span class='swatch bg-navy-700'>700</span><span class='swatch bg-navy-800'>800</span><span class='swatch bg-navy-900'>900</span><br />
+<span class='name'>sea-foam</span>
+<span class='swatch bg-sea-foam-100'>100</span><span class='swatch bg-sea-foam-200'>200</span><span class='swatch bg-sea-foam-300'>300</span><span class='swatch bg-sea-foam-400'>400</span><span class='swatch bg-sea-foam-500'>500</span><span class='swatch bg-sea-foam-600'>600</span><span class='swatch bg-sea-foam-700'>700</span><span class='swatch bg-sea-foam-800'>800</span><span class='swatch bg-sea-foam-900'>900</span><br />
+<span class='name'>teal</span>
+<span class='swatch bg-teal-100'>100</span><span class='swatch bg-teal-200'>200</span><span class='swatch bg-teal-300'>300</span><span class='swatch bg-teal-400'>400</span><span class='swatch bg-teal-500'>500</span><span class='swatch bg-teal-600'>600</span><span class='swatch bg-teal-700'>700</span><span class='swatch bg-teal-800'>800</span><span class='swatch bg-teal-900'>900</span><br />
+<span class='name'>peacock</span>
+<span class='swatch bg-peacock-100'>100</span><span class='swatch bg-peacock-200'>200</span><span class='swatch bg-peacock-300'>300</span><span class='swatch bg-peacock-400'>400</span><span class='swatch bg-peacock-500'>500</span><span class='swatch bg-peacock-600'>600</span><span class='swatch bg-peacock-700'>700</span><span class='swatch bg-peacock-800'>800</span><span class='swatch bg-peacock-900'>900</span><br />
+<span class='name'>cyan</span>
+<span class='swatch bg-cyan-100'>100</span><span class='swatch bg-cyan-200'>200</span><span class='swatch bg-cyan-300'>300</span><span class='swatch bg-cyan-400'>400</span><span class='swatch bg-cyan-500'>500</span><span class='swatch bg-cyan-600'>600</span><span class='swatch bg-cyan-700'>700</span><span class='swatch bg-cyan-800'>800</span><span class='swatch bg-cyan-900'>900</span><br />
+<span class='name'>chocolate</span>
+<span class='swatch bg-chocolate-100'>100</span><span class='swatch bg-chocolate-200'>200</span><span class='swatch bg-chocolate-300'>300</span><span class='swatch bg-chocolate-400'>400</span><span class='swatch bg-chocolate-500'>500</span><span class='swatch bg-chocolate-600'>600</span><span class='swatch bg-chocolate-700'>700</span><span class='swatch bg-chocolate-800'>800</span><span class='swatch bg-chocolate-900'>900</span><br />
+<span class='name'>terra-cotta</span>
+<span class='swatch bg-terra-cotta-100'>100</span><span class='swatch bg-terra-cotta-200'>200</span><span class='swatch bg-terra-cotta-300'>300</span><span class='swatch bg-terra-cotta-400'>400</span><span class='swatch bg-terra-cotta-500'>500</span><span class='swatch bg-terra-cotta-600'>600</span><span class='swatch bg-terra-cotta-700'>700</span><span class='swatch bg-terra-cotta-800'>800</span><span class='swatch bg-terra-cotta-900'>900</span><br />
+<span class='name'>camel</span>
+<span class='swatch bg-camel-100'>100</span><span class='swatch bg-camel-200'>200</span><span class='swatch bg-camel-300'>300</span><span class='swatch bg-camel-400'>400</span><span class='swatch bg-camel-500'>500</span><span class='swatch bg-camel-600'>600</span><span class='swatch bg-camel-700'>700</span><span class='swatch bg-camel-800'>800</span><span class='swatch bg-camel-900'>900</span><br />
+<span class='name'>linen</span>
+<span class='swatch bg-linen-100'>100</span><span class='swatch bg-linen-200'>200</span><span class='swatch bg-linen-300'>300</span><span class='swatch bg-linen-400'>400</span><span class='swatch bg-linen-500'>500</span><span class='swatch bg-linen-600'>600</span><span class='swatch bg-linen-700'>700</span><span class='swatch bg-linen-800'>800</span><span class='swatch bg-linen-900'>900</span><br />
+<span class='name'>stone</span>
+<span class='swatch bg-stone-100'>100</span><span class='swatch bg-stone-200'>200</span><span class='swatch bg-stone-300'>300</span><span class='swatch bg-stone-400'>400</span><span class='swatch bg-stone-500'>500</span><span class='swatch bg-stone-600'>600</span><span class='swatch bg-stone-700'>700</span><span class='swatch bg-stone-800'>800</span><span class='swatch bg-stone-900'>900</span><br />
+<span class='name'>smoke</span>
+<span class='swatch bg-smoke-100'>100</span><span class='swatch bg-smoke-200'>200</span><span class='swatch bg-smoke-300'>300</span><span class='swatch bg-smoke-400'>400</span><span class='swatch bg-smoke-500'>500</span><span class='swatch bg-smoke-600'>600</span><span class='swatch bg-smoke-700'>700</span><span class='swatch bg-smoke-800'>800</span><span class='swatch bg-smoke-900'>900</span><br />
+<span class='name'>steel</span>
+<span class='swatch bg-steel-100'>100</span><span class='swatch bg-steel-200'>200</span><span class='swatch bg-steel-300'>300</span><span class='swatch bg-steel-400'>400</span><span class='swatch bg-steel-500'>500</span><span class='swatch bg-steel-600'>600</span><span class='swatch bg-steel-700'>700</span><span class='swatch bg-steel-800'>800</span><span class='swatch bg-steel-900'>900</span><br />
+<span class='name'>slate</span>
+<span class='swatch bg-slate-100'>100</span><span class='swatch bg-slate-200'>200</span><span class='swatch bg-slate-300'>300</span><span class='swatch bg-slate-400'>400</span><span class='swatch bg-slate-500'>500</span><span class='swatch bg-slate-600'>600</span><span class='swatch bg-slate-700'>700</span><span class='swatch bg-slate-800'>800</span><span class='swatch bg-slate-900'>900</span><br />
+<span class='name'>charcoal</span>
+<span class='swatch bg-charcoal-100'>100</span><span class='swatch bg-charcoal-200'>200</span><span class='swatch bg-charcoal-300'>300</span><span class='swatch bg-charcoal-400'>400</span><span class='swatch bg-charcoal-500'>500</span><span class='swatch bg-charcoal-600'>600</span><span class='swatch bg-charcoal-700'>700</span><span class='swatch bg-charcoal-800'>800</span><span class='swatch bg-charcoal-900'>900</span><br />
+<span class='name'>black</span>
+<span class='swatch bg-black-100'>100</span><span class='swatch bg-black-200'>200</span><span class='swatch bg-black-300'>300</span><span class='swatch bg-black-400'>400</span><span class='swatch bg-black-500'>500</span><span class='swatch bg-black-600'>600</span><span class='swatch bg-black-700'>700</span><span class='swatch bg-black-800'>800</span><span class='swatch bg-black-900'>900</span><br />
+<span class='name'>white</span>
+<span class='swatch bg-white-100'>100</span><span class='swatch bg-white-200'>200</span><span class='swatch bg-white-300'>300</span><span class='swatch bg-white-400'>400</span><span class='swatch bg-white-500'>500</span><span class='swatch bg-white-600'>600</span><span class='swatch bg-white-700'>700</span><span class='swatch bg-white-800'>800</span><span class='swatch bg-white-900'>900</span><br />
+</body>
+</html>

@@ -263,4 +263,10 @@ FileUtils::mkpath(File::join(INTERNAL_PATH, 'vote'))
 FileUtils::mkpath(NEO4J_DATA_PATH)
 FileUtils::mkpath(NEO4J_LOGS_PATH)
 
+if DEVELOPMENT && ARGV == ['up']
+    fork do
+        system('./tailwind.sh')
+    end
+end
+
 system("docker-compose --project-name #{PROJECT_NAME} #{ARGV.map { |x| '"' + x + '"'}.join(' ')}")

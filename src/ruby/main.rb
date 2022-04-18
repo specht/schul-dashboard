@@ -1191,6 +1191,7 @@ class Main < Sinatra::Base
             '/include/dropzone/dropzone.min.css',
             '/include/chart.js/Chart.min.css',
             '/styles.css',
+            '/cling.css',
         ]
         
         self.compile_files(:css, 'text/css', files)

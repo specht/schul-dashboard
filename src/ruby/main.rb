@@ -1581,14 +1581,14 @@ class Main < Sinatra::Base
                     nav_items << :kurse
                     nav_items << :directory
                 end
-                if user_who_can_upload_files_logged_in? || user_who_can_manage_news_logged_in?
-                    nav_items << :website
-                end
-                if user_who_can_manage_monitors_logged_in?
-                    nav_items << :monitor
-                end
+                # if user_who_can_upload_files_logged_in? || user_who_can_manage_news_logged_in?
+                #     nav_items << :website
+                # end
+                # if user_who_can_manage_monitors_logged_in?
+                #     nav_items << :monitor
+                # end
                 nav_items << :messages
-                if admin_logged_in?
+                if admin_logged_in? || user_who_can_upload_files_logged_in? || user_who_can_manage_news_logged_in? || user_who_can_manage_monitors_logged_in?
                     nav_items << :admin 
                 end
                 # nav_items << :advent_calendar #if advents_calendar_date_today > 0
@@ -1615,13 +1615,33 @@ class Main < Sinatra::Base
                     io.puts "<div class='icon'><i class='fa fa-wrench'></i></div>Administration"
                     io.puts "</a>"
                     io.puts "<div class='dropdown-menu dropdown-menu-right' aria-labelledby='navbarDropdown'>"
+                    printed_something = false
+                    if user_who_can_manage_news_logged_in?
+                        io.puts "<a class='dropdown-item nav-icon' href='/manage_news'><div class='icon'><i class='fa fa-newspaper-o'></i></div><span class='label'>News verwalten</span></a>"
+                        io.puts "<a class='dropdown-item nav-icon' href='/manage_calendar'><div class='icon'><i class='fa fa-calendar'></i></div><span class='label'>Termine verwalten</span></a>"
+                        # io.puts "<a class='dropdown-item nav-icon' href='/anmeldungen'><div class='icon'><i class='fa fa-group'></i></div><span class='label'>Anmeldungen einsehen</span></a>"
+                        printed_something = true
+                    end
+                    if user_who_can_upload_files_logged_in?
+                        io.puts "<div class='dropdown-divider'></div>" if printed_something
+                        io.puts "<a class='dropdown-item nav-icon' href='/upload_images'><div class='icon'><i class='fa fa-photo'></i></div><span class='label'>Bilder hochladen</span></a>"
+                        io.puts "<a class='dropdown-item nav-icon' href='/upload_files'><div class='icon'><i class='fa fa-file-pdf-o'></i></div><span class='label'>Dateien hochladen</span></a>"
+                        printed_something = true
+                    end
+                    if user_who_can_manage_monitors_logged_in?
+                        io.puts "<div class='dropdown-divider'></div>" if printed_something
+                        io.puts "<a class='dropdown-item nav-icon' href='/manage_monitor'><div class='icon'><i class='fa fa-tv'></i></div><span class='label'>Monitore verwalten</span></a>"
+                        printed_something = true
+                    end
                     if admin_logged_in?
+                        io.puts "<div class='dropdown-divider'></div>" if printed_something
                         io.puts "<a class='dropdown-item nav-icon' href='/admin'><div class='icon'><i class='fa fa-wrench'></i></div><span class='label'>Administration</span></a>"
                         io.puts "<a class='dropdown-item nav-icon' href='/bookings'><div class='icon'><i class='fa fa-tablet'></i></div><span class='label'>Tablets</span></a>"
                         io.puts "<div class='dropdown-divider'></div>"
                         io.puts "<a class='dropdown-item nav-icon' href='/show_all_login_codes'><div class='icon'><i class='fa fa-key-modern'></i></div><span class='label'>Live-Anmeldungen</span></a>"
                         io.puts "<a class='dropdown-item nav-icon' href='/email_accounts'><div class='icon'><i class='fa fa-envelope'></i></div><span class='label'>E-Mail-Postfächer</span></a>"
                         io.puts "<a class='dropdown-item nav-icon' href='/stats'><div class='icon'><i class='fa fa-bar-chart'></i></div><span class='label'>Statistiken</span></a>"
+                        printed_something = true
                     end
                     io.puts "</div>"
                     io.puts "</li>"
@@ -1734,37 +1754,6 @@ class Main < Sinatra::Base
                         io.puts "</div>"
                         io.puts "</li>"
                     end
-                elsif x == :website
-                    io.puts "<li class='nav-item dropdown'>"
-                    io.puts "<a class='nav-link nav-icon dropdown-toggle' href='#' id='navbarDropdown' role='button' data-toggle='dropdown' aria-haspopup='true' aria-expanded='false'>"
-                    io.puts "<div class='icon'><i class='fa fa-home'></i></div>Website"
-                    io.puts "</a>"
-                    io.puts "<div class='dropdown-menu dropdown-menu-right' aria-labelledby='navbarDropdown' style='max-height: 500px; overflow-y: auto;'>"
-                    if user_who_can_manage_news_logged_in?
-                        io.puts "<a class='dropdown-item nav-icon' href='/manage_news'><div class='icon'><i class='fa fa-newspaper-o'></i></div><span class='label'>News verwalten</span></a>"
-                        io.puts "<a class='dropdown-item nav-icon' href='/manage_calendar'><div class='icon'><i class='fa fa-calendar'></i></div><span class='label'>Termine verwalten</span></a>"
-                        io.puts "<a class='dropdown-item nav-icon' href='/anmeldungen'><div class='icon'><i class='fa fa-group'></i></div><span class='label'>Anmeldungen einsehen</span></a>"
-                    end
-                    if user_who_can_manage_news_logged_in? && user_who_can_upload_files_logged_in?
-                        io.puts "<div class='dropdown-divider'></div>"
-                    end
-                    if user_who_can_upload_files_logged_in?
-                        io.puts "<a class='dropdown-item nav-icon' href='/upload_images'><div class='icon'><i class='fa fa-photo'></i></div><span class='label'>Bilder hochladen</span></a>"
-                        io.puts "<a class='dropdown-item nav-icon' href='/upload_files'><div class='icon'><i class='fa fa-file-pdf-o'></i></div><span class='label'>Dateien hochladen</span></a>"
-                    end
-                    io.puts "</div>"
-                    io.puts "</li>"
-                elsif x == :monitor
-                    io.puts "<li class='nav-item dropdown'>"
-                    io.puts "<a class='nav-link nav-icon dropdown-toggle' href='#' id='navbarDropdown' role='button' data-toggle='dropdown' aria-haspopup='true' aria-expanded='false'>"
-                    io.puts "<div class='icon'><i class='fa fa-tv'></i></div>Monitore"
-                    io.puts "</a>"
-                    io.puts "<div class='dropdown-menu dropdown-menu-right' aria-labelledby='navbarDropdown' style='max-height: 500px; overflow-y: auto;'>"
-                    if user_who_can_manage_monitors_logged_in?
-                        io.puts "<a class='dropdown-item nav-icon' href='/manage_monitor'><div class='icon'><i class='fa fa-tv'></i></div><span class='label'>Monitore verwalten</span></a>"
-                    end
-                    io.puts "</div>"
-                    io.puts "</li>"
                 elsif x == :messages
                     io.puts "<li class='nav-item text-nowrap'>"
                     if new_messages_count > 0

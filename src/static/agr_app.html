@@ -20,6 +20,32 @@
     @tailwind utilities;
 </style>
 <div class='api_messages'></div>
+<div class="modal" id="user_modal" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true" style='z-index: 200000;'>
+    <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
+        <div class="modal-content">
+        <div class="modal-header">
+            <h5 class="modal-title" >
+            </h5>
+        </div>
+        <div class="modal-body">
+            <table id='user-unit-table' class='table table-condensed table-striped narrow' style='width: unset; min-width: 100%;'>
+                <thead>
+                    <th>Nr.</th>
+                    <th>Lektion</th>
+                    <th>Vokabeln</th>
+                    <th>Fortschritt</th>
+                </thead>
+                <tbody>
+                </tbody>
+            </table>
+        </div>
+        <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-dismiss="modal">Schließen</button>
+        </div>
+        </div>
+    </div>
+</div>
+ 
 <div class='container-fluid'
     style='background-color: #fff; padding: 0; position: absolute; bottom: 0; top: 57px; display: flex; overflow-y: auto; margin-bottom: 24px;'>
     <section class="p-4 w-full">
@@ -91,6 +117,67 @@
     var AGR_LESSON_INFO = {};
     var AGR_SCHUELER = [];
     var TABLE_ROWS = [];
+    var VOC = null;
+
+    function launch_user_modal(email) {
+        agr_api_call('/jwt/user_details', {email: email}, function(data) {
+            if (data.success) {
+                console.log(data);
+                let modal = $('#user_modal');
+                modal.find('.modal-title').text((USER_INFO[email] || {}).display_name || email);
+                let tbody = modal.find('#user-unit-table tbody');
+                tbody.empty();
+                let t1d = 3600 * 24;
+                let t7d = 3600 * 24 * 7;
+                let t28d = 3600 * 24 * 28;
+                for (let unit of VOC.unit_order) {
+                    let row = $('<tr>');
+                    row.append($('<td>').text(`${unit}.`));
+                    row.append($('<td>').text(`${VOC.unit_title[unit] || '–'}`));
+                    let total_count = (VOC.units[unit] || []).length;
+                    row.append($('<td>').text(`${total_count}`));
+                    let progress_bar = $('<div>').addClass('mt-2 rounded-full w-64 h-2 bg-slate-800').css('position', 'relative').css('overflow', 'hidden');
+                    let numbers = [0, 0, 0, 0, 0];
+
+                    for (let sha1 of (VOC.units[unit] || [])) {
+                        if (sha1 in data.result.entries) {
+                            let t = data.result.entries[sha1];
+                            let diff = (data.result.now - t) / 1000.0;
+                            index = 3;
+                            if (diff < t28d) index = 2;
+                            if (diff < t7d) index = 1;
+                            if (diff < t1d) index = 0;
+                            numbers[index] += 1;
+                        }
+                    }
+                    // for (let email of SCHUELER_FOR_KLASSE[klasse]) {
+                    //     let i = 4;
+                    //     // if (typeof(data.result.user_info[email]) !== 'undefined') {
+                    //     //     if (data.result.user_info[email].last_activity_cat === 'all')
+                    //     //         i = 3;
+                    //     //     else if (data.result.user_info[email].last_activity_cat === '28d')
+                    //     //         i = 2;
+                    //     //     else if (data.result.user_info[email].last_activity_cat === '7d')
+                    //     //         i = 1;
+                    //     //     else if (data.result.user_info[email].last_activity_cat === '1d')
+                    //     //         i = 0;
+                    //     // }
+                    //     numbers[i] += 1;
+                    // }
+                    let left = 0.0;
+                    for (let i = 0; i < 4; i++) {
+                        let width = numbers[i] * 100.0 / total_count;
+                        let part = $('<div>').css('position', 'absolute').addClass('h-2 inline-block').css('left', `${left}%`).css('width', `${width}%`).addClass(`bg-${ACTIVITY_DURATIONS[i][0]}-500`).appendTo(progress_bar);
+                        left += width;
+                    }
+                    row.append($('<td>').append(progress_bar));
+                    tbody.append(row);
+                }
+                modal.modal('show');
+            }
+
+        });
+    }
 
     function sort_table_by_column(column, ascending) {
         TABLE_ROWS = TABLE_ROWS.sort(function(a, b) {
@@ -135,237 +222,252 @@
     }
 
     window.addEventListener('load', function () {
-        agr_api_call('/jwt/overview_stats', {}, function (data) {
-            if (data.success) {
-                console.log(data.result);
-                for (let shorthand in LESSONS_FOR_SHORTHAND) {
-                    for (let lesson_key of LESSONS_FOR_SHORTHAND[shorthand]) {
-                        if (lesson_key.toLowerCase().indexOf('agr') === 0)
-                        {
-                            if (typeof(AGR_LESSON_INFO[lesson_key]) === 'undefined')
-                                AGR_LESSON_INFO[lesson_key] = { shorthands: [], schueler: [] };
-                            AGR_LESSON_INFO[lesson_key].shorthands.push(shorthand);
-                        }
-                    }
-                }
-                let all_schueler = {};
-                for (let lesson_key in SCHUELER_FOR_LESSON) {
-                    if (lesson_key in AGR_LESSON_INFO) {
-                        for (let email of SCHUELER_FOR_LESSON[lesson_key]) {
-                            AGR_LESSON_INFO[lesson_key].schueler.push(email);
-                            all_schueler[email] = true;
-                        }
-                    }
-                }
-                AGR_SCHUELER = Object.keys(all_schueler);
-                for (let lesson_key in AGR_LESSON_INFO) {
-                    let lesson_label = '';
-                    if (lesson_key.substr(0, 4) === 'AGR-')
-                        lesson_label = `LK`;
-                    else if (lesson_key.substr(0, 4) === 'agr-')
-                        lesson_label = `GK`;
-                    else if (lesson_key.substr(0, 4) === 'Agr_')
-                        lesson_label = ``;
-                    else lesson_label = `${lesson_key}`;
-                    let klassen = {};
-                    for (let email of AGR_LESSON_INFO[lesson_key].schueler) {
-                        klassen[USER_INFO[email].klasse] = true;
-                        if (typeof(USER_INFO[email].kurse) === 'undefined') {
-                            USER_INFO[email].kurse = [];
-                        }
-                        USER_INFO[email].kurse.push(lesson_key);
-                    }
-                    lesson_label += ` ${Object.keys(klassen).sort().map(function(x) {return KLASSEN_TR[x] || x;}).join(', ')}`;
-                    lesson_label += ` (${AGR_LESSON_INFO[lesson_key].shorthands.join(', ')})`;
-                    AGR_LESSON_INFO[lesson_key].klassen = Object.keys(klassen).sort();
-                    AGR_LESSON_INFO[lesson_key].label = lesson_label;
-                }
-
-                AGR_LESSON_KEYS = Object.keys(AGR_LESSON_INFO).sort(function(a, b) {
-                    let sa = KLASSEN_ORDER.indexOf(AGR_LESSON_INFO[a].klassen[0]);
-                    let sb = KLASSEN_ORDER.indexOf(AGR_LESSON_INFO[b].klassen[0]);
-                    if (sa < sb) return -1;
-                    else if (sa > sb) return 1;
-                    else return 0;
-                });
-                for (let x of ACTIVITY_DURATIONS) {
-                    color = x[0];
-                    let border_color = CLING_COLORS[`${color}-600`];
-                    let div = $(`<div class="col-span-4 md:col-span-2 xl:col-span-1 bg-gray-100 p-3 rounded-lg border-l-4" style="border-left-color: ${border_color}">`);
-                    div.append($(`<h5 class="text-gray-500 italic">${x[2]}</h5>`));
-                    div.append($('<hr>'));
-                    div.append($(`<h4><span class="inline-block w-20 text-center"><span class="px-2 rounded-md bg-${color}-700 text-${color}-300 v-users-solved-1d font-bold">${data.result[`users_solved_${x[1]}`]}</span></span> Nutzer:innen</h4>`));
-                    div.append($(`<h4><span class="inline-block w-20 text-center"><span class="px-2 rounded-md bg-${color}-700 text-${color}-300 v-tasks-solved-1d font-bold">${data.result[`tasks_solved_${x[1]}`]}</span></span> Aufgaben</h4>`));
-                    div.append($(`<h5 class="text-slate-700/50"><span class="inline-block w-20 text-center"><span class="px-2 rounded-md bg-${color}-700 text-${color}-300 opacity-75 v-tasks-voc-solved-1d">${data.result[`tasks_voc_solved_${x[1]}`]}</span></span> davon Vokabeln</h5>`));
-                    div.append($(`<h5 class="text-slate-700/50"><span class="inline-block w-20 text-center"><span class="px-2 rounded-md bg-${color}-700 text-${color}-300 opacity-75 v-tasks-form-solved-1d">${data.result[`tasks_form_solved_${x[1]}`]}</span></span> davon Formen</h5>`));
-                    $('#activity_overview').append(div);
-                }
-                // add kurs buttons
-                for (let lesson_key of AGR_LESSON_KEYS) {
-                    let button = $('<button>').addClass('bu-kurs focus:outline-none bg-gray-200 hover:bg-gray-300 rounded-lg px-3 py-1 mr-1 mb-1');
-                    button.text(`${AGR_LESSON_INFO[lesson_key].label}`);
-                    button.data('active', false);
-                    button.data('lesson_key', lesson_key);
-                    button.click(function(e) {
-                        let button = $(e.target);
-                        let active = button.data('active');
-                        if (active === true) {
-                            button.addClass('bg-gray-200 hover:bg-gray-300');
-                            button.removeClass('bg-amber-200 hover:bg-amber-300');
-                            button.data('active', false);
-                        } else {
-                            button.removeClass('bg-gray-200 hover:bg-gray-300');
-                            button.addClass('bg-amber-400 hover:bg-amber-300');
-                            button.data('active', true);
-                        }
-                        refresh_table();
-                    })
-                    $('#filter_buttons_klasse').append(button);
-                }
-                let row = $('<tr>');
-                row.append($(`<th style='width: 50px;'>`).text('Nr.'));
-                row.append($(`<th style='width: 50px;'>`));
-                for (let item of TABLE_COLUMNS) {
-                    let header = $(`<th>`).text(item[1]);
-                    let bu_sort_asc = $(`<span class='cursor-pointer inline-block bg-slate-900 hover:text-black rounded-full text-slate-500 font-sm ml-2 w-6 h-6 text-center'><i class='fa fa-angle-down'></i></span>`);
-                    header.append(bu_sort_asc);
-                    let bu_sort_desc = $(`<span class='cursor-pointer inline-block bg-slate-900 hover:text-black rounded-full text-slate-500 font-sm ml-1 w-6 h-6 text-center'><i class='fa fa-angle-up'></i></span>`);
-                    header.append(bu_sort_desc);
-                    bu_sort_asc.click(function() {
-                        sort_table_by_column(item[0], true);
-                        refresh_table();
-                    });
-                    bu_sort_desc.click(function() {
-                        sort_table_by_column(item[0], false);
-                        refresh_table();
-                    });
-                    // let bu_sort_chart = $(`<span class='cursor-pointer inline-block bg-slate-900 hover:text-black rounded-full text-slate-500 font-sm ml-1 w-6 h-6 text-center'><i class='fa fa-pie-chart'></i></span>`);
-                    // header.append(bu_sort_chart);
-                    row.append(header);
-                }
-
-
-                $('#top_user_table thead').append(row);
-                let already_have_email = {};
-                for (let entry of data.result.user_top_list) {
-                    already_have_email[entry.email] = true;
-                    let row = $('<tr>');
-                    let nc_login = null;
-                    let user_info = USER_INFO[entry.email] || {};
-                    nc_login = user_info.nc_login;
-                    row.append($('<td>'));
-                    row.append($('<td>').append($('<div>').css('background-image', `url(#{NEXTCLOUD_URL}/index.php/avatar/${nc_login}/128), url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mO88h8AAq0B1REmZuEAAAAASUVORK5CYII=)`).addClass('avatar-md')));
-                    row.append($('<td>').text(user_info.display_name || entry.email));
-                    let kurse = ((USER_INFO[entry.email] || {}).kurse || []).map(function(x) {return AGR_LESSON_INFO[x].label; }).join(', ') || '–';
-                    row.append($('<td>').text(kurse));
-                    row.append($('<td>').text(`${data.result.unit_for_user[entry.email]}`));
-                    for (let x of ACTIVITY_DURATIONS) {
-                        let count = entry.st['t' + x[1]];
-                        if (count === 0)
-                            row.append($('<td>').html(`<span class='px-1 inline-block w-12 text-center'>–</span>`));
-                        else
-                            row.append($('<td>').html(`<span class='px-1 inline-block w-12 text-center rounded-lg bg-${x[0]}-700 text-${x[0]}-300'>${count}</span>`));
-                    }
-                    row.append($('<td>').text(`${moment.unix(entry.last_activity / 1000).format('ddd, D.M.Y')}`));
-                    row.append($('<td>').text(`${data.result.user_info[entry.email].version || '–'}`));
-                    TABLE_ROWS.push({
-                        element: row,
-                        email: entry.email,
-                        name: user_info.display_name || entry.email,
-                        kurse: (USER_INFO[entry.email] || {}).kurse || [],
-                        unit: data.result.unit_for_user[entry.email],
-                        t1d: entry.st.t1d,
-                        t7d: entry.st.t7d,
-                        t28d: entry.st.t28d,
-                        tall: entry.st.tall,
-                        last_activity: entry.last_activity,
-                        version: data.result.user_info[entry.email].version,
-                    });
-                }
-                for (let email of AGR_SCHUELER) {
-                    if (already_have_email[email])
-                        continue;
-                    let row = $('<tr>');
-                    let nc_login = null;
-                    let user_info = USER_INFO[email] || {};
-                    nc_login = user_info.nc_login;
-                    row.append($('<td>'));
-                    row.append($('<td>').append($('<div>').css('background-image', `url(#{NEXTCLOUD_URL}/index.php/avatar/${nc_login}/128), url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mO88h8AAq0B1REmZuEAAAAASUVORK5CYII=)`).addClass('avatar-md')));
-                    row.append($('<td>').text(user_info.display_name || email));
-                    let kurse = ((USER_INFO[email] || {}).kurse || []).map(function(x) {return AGR_LESSON_INFO[x].label; }).join(', ') || '–';
-                    row.append($('<td>').text(kurse));
-                    row.append($('<td>').text(`–`));
-                    for (let x of ACTIVITY_DURATIONS) {
-                        row.append($('<td>').html(`<span class='px-1 inline-block w-12 text-center'>–</span>`));
-                    }
-                    row.append($('<td>').text(`–`));
-                    row.append($('<td>').text(`–`));
-                    TABLE_ROWS.push({
-                        element: row,
-                        email: email,
-                        name: user_info.display_name || email,
-                        kurse: (USER_INFO[email] || {}).kurse || [],
-                    });
-                }
-                sort_table_by_column('tall', false);
-                refresh_table();
-                for (let klasse of KLASSEN_ORDER_AGR) {
-                    let klassen_label = KLASSEN_TR[klasse] || klasse;
-                    let div = $(`<div class='flex justify-center items-center'>`);
-                    div.append($(`<div class='text-center absolute text-base md:text-lg'>${klassen_label}</div>`));
-                    let canvas = $(`<canvas>`).attr('height', '250');
-                    div.append(canvas);
-                    let numbers = [0, 0, 0, 0, 0];
-                    for (let email of SCHUELER_FOR_KLASSE[klasse]) {
-                        let i = 4;
-                        if (typeof(data.result.user_info[email]) !== 'undefined') {
-                            if (data.result.user_info[email].last_activity_cat === 'all')
-                                i = 3;
-                            else if (data.result.user_info[email].last_activity_cat === '28d')
-                                i = 2;
-                            else if (data.result.user_info[email].last_activity_cat === '7d')
-                                i = 1;
-                            else if (data.result.user_info[email].last_activity_cat === '1d')
-                                i = 0;
-                        }
-                        numbers[i] += 1;
-                    }
-                    $('#klassen_activity_overview').append(div);
-
-                    setTimeout(function() {
-                        new Chart(canvas, {
-                            type: 'doughnut',
-                            data: {
-                                labels: ['heute', '7 Tage', '28 Tage', 'jemals', 'noch nie'],
-                                datasets: [
-                                    {
-                                        // label: "My First Dataset",
-                                        data: numbers,
-                                        backgroundColor: [
-                                            CLING_COLORS[`${ACTIVITY_DURATIONS[0][0]}-500`],
-                                            CLING_COLORS[`${ACTIVITY_DURATIONS[1][0]}-500`],
-                                            CLING_COLORS[`${ACTIVITY_DURATIONS[2][0]}-500`],
-                                            CLING_COLORS[`${ACTIVITY_DURATIONS[3][0]}-500`],
-                                            CLING_COLORS[`slate-900`],
-                                        ],
-                                        borderWidth: 1,
-                                        hoverOffset: 4,
-                                    },
-                                ],
-                            },
-                            options: {
-                                legend: {
-                                    display: false
-                                },
-                                tooltips: {
-                                    enabled: true
-                                }
+        agr_api_call('/jwt/get_voc', {}, function(data2) {
+            VOC = data2.voc;
+            agr_api_call('/jwt/overview_stats', {}, function (data) {
+                if (data.success) {
+                    console.log(data.result);
+                    for (let shorthand in LESSONS_FOR_SHORTHAND) {
+                        for (let lesson_key of LESSONS_FOR_SHORTHAND[shorthand]) {
+                            if (lesson_key.toLowerCase().indexOf('agr') === 0)
+                            {
+                                if (typeof(AGR_LESSON_INFO[lesson_key]) === 'undefined')
+                                    AGR_LESSON_INFO[lesson_key] = { shorthands: [], schueler: [] };
+                                AGR_LESSON_INFO[lesson_key].shorthands.push(shorthand);
                             }
+                        }
+                    }
+                    let all_schueler = {};
+                    for (let lesson_key in SCHUELER_FOR_LESSON) {
+                        if (lesson_key in AGR_LESSON_INFO) {
+                            for (let email of SCHUELER_FOR_LESSON[lesson_key]) {
+                                AGR_LESSON_INFO[lesson_key].schueler.push(email);
+                                all_schueler[email] = true;
+                            }
+                        }
+                    }
+                    AGR_SCHUELER = Object.keys(all_schueler);
+                    for (let lesson_key in AGR_LESSON_INFO) {
+                        let lesson_label = '';
+                        if (lesson_key.substr(0, 4) === 'AGR-')
+                            lesson_label = `LK`;
+                        else if (lesson_key.substr(0, 4) === 'agr-')
+                            lesson_label = `GK`;
+                        else if (lesson_key.substr(0, 4) === 'Agr_')
+                            lesson_label = ``;
+                        else lesson_label = `${lesson_key}`;
+                        let klassen = {};
+                        for (let email of AGR_LESSON_INFO[lesson_key].schueler) {
+                            klassen[USER_INFO[email].klasse] = true;
+                            if (typeof(USER_INFO[email].kurse) === 'undefined') {
+                                USER_INFO[email].kurse = [];
+                            }
+                            USER_INFO[email].kurse.push(lesson_key);
+                        }
+                        lesson_label += ` ${Object.keys(klassen).sort().map(function(x) {return KLASSEN_TR[x] || x;}).join(', ')}`;
+                        lesson_label += ` (${AGR_LESSON_INFO[lesson_key].shorthands.join(', ')})`;
+                        AGR_LESSON_INFO[lesson_key].klassen = Object.keys(klassen).sort();
+                        AGR_LESSON_INFO[lesson_key].label = lesson_label;
+                    }
+
+                    AGR_LESSON_KEYS = Object.keys(AGR_LESSON_INFO).sort(function(a, b) {
+                        let sa = KLASSEN_ORDER.indexOf(AGR_LESSON_INFO[a].klassen[0]);
+                        let sb = KLASSEN_ORDER.indexOf(AGR_LESSON_INFO[b].klassen[0]);
+                        if (sa < sb) return -1;
+                        else if (sa > sb) return 1;
+                        else return 0;
+                    });
+                    for (let x of ACTIVITY_DURATIONS) {
+                        color = x[0];
+                        let border_color = CLING_COLORS[`${color}-600`];
+                        let div = $(`<div class="col-span-4 md:col-span-2 xl:col-span-1 bg-gray-100 p-3 rounded-lg border-l-4" style="border-left-color: ${border_color}">`);
+                        div.append($(`<h5 class="text-gray-500 italic">${x[2]}</h5>`));
+                        div.append($('<hr>'));
+                        div.append($(`<h4><span class="inline-block w-20 text-center"><span class="px-2 rounded-md bg-${color}-700 text-${color}-300 v-users-solved-1d font-bold">${data.result[`users_solved_${x[1]}`]}</span></span> Nutzer:innen</h4>`));
+                        div.append($(`<h4><span class="inline-block w-20 text-center"><span class="px-2 rounded-md bg-${color}-700 text-${color}-300 v-tasks-solved-1d font-bold">${data.result[`tasks_solved_${x[1]}`]}</span></span> Aufgaben</h4>`));
+                        div.append($(`<h5 class="text-slate-700/50"><span class="inline-block w-20 text-center"><span class="px-2 rounded-md bg-${color}-700 text-${color}-300 opacity-75 v-tasks-voc-solved-1d">${data.result[`tasks_voc_solved_${x[1]}`]}</span></span> davon Vokabeln</h5>`));
+                        div.append($(`<h5 class="text-slate-700/50"><span class="inline-block w-20 text-center"><span class="px-2 rounded-md bg-${color}-700 text-${color}-300 opacity-75 v-tasks-form-solved-1d">${data.result[`tasks_form_solved_${x[1]}`]}</span></span> davon Formen</h5>`));
+                        $('#activity_overview').append(div);
+                    }
+                    // add kurs buttons
+                    for (let lesson_key of AGR_LESSON_KEYS) {
+                        let button = $('<button>').addClass('bu-kurs focus:outline-none bg-gray-200 hover:bg-gray-300 rounded-lg px-3 py-1 mr-1 mb-1');
+                        button.text(`${AGR_LESSON_INFO[lesson_key].label}`);
+                        button.data('active', false);
+                        button.data('lesson_key', lesson_key);
+                        button.click(function(e) {
+                            let button = $(e.target);
+                            let active = button.data('active');
+                            if (active === true) {
+                                button.addClass('bg-gray-200 hover:bg-gray-300');
+                                button.removeClass('bg-amber-200 hover:bg-amber-300');
+                                button.data('active', false);
+                            } else {
+                                button.removeClass('bg-gray-200 hover:bg-gray-300');
+                                button.addClass('bg-amber-400 hover:bg-amber-300');
+                                button.data('active', true);
+                            }
+                            refresh_table();
+                        })
+                        $('#filter_buttons_klasse').append(button);
+                    }
+                    let row = $('<tr>');
+                    row.append($(`<th style='width: 50px;'>`).text('Nr.'));
+                    row.append($(`<th style='width: 50px;'>`));
+                    for (let item of TABLE_COLUMNS) {
+                        let header = $(`<th>`).text(item[1]);
+                        let bu_sort_asc = $(`<span class='cursor-pointer inline-block bg-slate-900 hover:text-black rounded-full text-slate-500 font-sm ml-2 w-6 h-6 text-center'><i class='fa fa-angle-down'></i></span>`);
+                        header.append(bu_sort_asc);
+                        let bu_sort_desc = $(`<span class='cursor-pointer inline-block bg-slate-900 hover:text-black rounded-full text-slate-500 font-sm ml-1 w-6 h-6 text-center'><i class='fa fa-angle-up'></i></span>`);
+                        header.append(bu_sort_desc);
+                        bu_sort_asc.click(function() {
+                            sort_table_by_column(item[0], true);
+                            refresh_table();
                         });
-                    }, 0);
+                        bu_sort_desc.click(function() {
+                            sort_table_by_column(item[0], false);
+                            refresh_table();
+                        });
+                        // let bu_sort_chart = $(`<span class='cursor-pointer inline-block bg-slate-900 hover:text-black rounded-full text-slate-500 font-sm ml-1 w-6 h-6 text-center'><i class='fa fa-pie-chart'></i></span>`);
+                        // header.append(bu_sort_chart);
+                        row.append(header);
+                    }
+                    row.append($(`<th>`));
+
+                    $('#top_user_table thead').append(row);
+                    let already_have_email = {};
+                    for (let entry of data.result.user_top_list) {
+                        already_have_email[entry.email] = true;
+                        let row = $('<tr>');
+                        let nc_login = null;
+                        let user_info = USER_INFO[entry.email] || {};
+                        nc_login = user_info.nc_login;
+                        row.append($('<td>'));
+                        row.append($('<td>').append($('<div>').css('background-image', `url(#{NEXTCLOUD_URL}/index.php/avatar/${nc_login}/128), url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mO88h8AAq0B1REmZuEAAAAASUVORK5CYII=)`).addClass('avatar-md')));
+                        let bu_name = $('<span>').text(user_info.display_name || entry.email);
+                        row.append($('<td>').append(bu_name));
+                        let kurse = ((USER_INFO[entry.email] || {}).kurse || []).map(function(x) {return AGR_LESSON_INFO[x].label; }).join(', ') || '–';
+                        row.append($('<td>').text(kurse));
+                        row.append($('<td>').text(`${data.result.unit_for_user[entry.email]}`));
+                        for (let x of ACTIVITY_DURATIONS) {
+                            let count = entry.st['t' + x[1]];
+                            if (count === 0)
+                                row.append($('<td>').html(`<span class='px-1 inline-block w-12 text-center'>–</span>`));
+                            else
+                                row.append($('<td>').html(`<span class='px-1 inline-block w-12 text-center rounded-lg bg-${x[0]}-700 text-${x[0]}-300'>${count}</span>`));
+                        }
+                        row.append($('<td>').text(`${moment.unix(entry.last_activity / 1000).format('ddd, D.M.Y')}`));
+                        row.append($('<td>').text(`${data.result.user_info[entry.email].version || '–'}`));
+                        let bu_details = $(`<button class='btn btn-sm btn-success'>Details<i class='fa fa-angle-double-right ml-1'></i></button>`);
+                        bu_details.click(function(e) {
+                            launch_user_modal(entry.email);
+                        })
+                        row.append($('<td>').append(bu_details));
+                        TABLE_ROWS.push({
+                            element: row,
+                            email: entry.email,
+                            name: user_info.display_name || entry.email,
+                            kurse: (USER_INFO[entry.email] || {}).kurse || [],
+                            unit: data.result.unit_for_user[entry.email],
+                            t1d: entry.st.t1d,
+                            t7d: entry.st.t7d,
+                            t28d: entry.st.t28d,
+                            tall: entry.st.tall,
+                            last_activity: entry.last_activity,
+                            version: data.result.user_info[entry.email].version,
+                        });
+                    }
+                    for (let email of AGR_SCHUELER) {
+                        if (already_have_email[email])
+                            continue;
+                        let row = $('<tr>');
+                        let nc_login = null;
+                        let user_info = USER_INFO[email] || {};
+                        nc_login = user_info.nc_login;
+                        row.append($('<td>'));
+                        row.append($('<td>').append($('<div>').css('background-image', `url(#{NEXTCLOUD_URL}/index.php/avatar/${nc_login}/128), url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mO88h8AAq0B1REmZuEAAAAASUVORK5CYII=)`).addClass('avatar-md')));
+                        let bu_name = $('<span>').text(user_info.display_name || email);
+                        row.append($('<td>').append(bu_name));
+                        let kurse = ((USER_INFO[email] || {}).kurse || []).map(function(x) {return AGR_LESSON_INFO[x].label; }).join(', ') || '–';
+                        row.append($('<td>').text(kurse));
+                        row.append($('<td>').text(`–`));
+                        for (let x of ACTIVITY_DURATIONS) {
+                            row.append($('<td>').html(`<span class='px-1 inline-block w-12 text-center'>–</span>`));
+                        }
+                        row.append($('<td>').text(`–`));
+                        row.append($('<td>').text(`–`));
+                        let bu_details = $(`<button class='btn btn-sm btn-success'>Details<i class='fa fa-angle-double-right ml-1'></i></button>`);
+                        bu_details.click(function(e) {
+                            launch_user_modal(email);
+                        })
+                        row.append($('<td>').append(bu_details));
+                        TABLE_ROWS.push({
+                            element: row,
+                            email: email,
+                            name: user_info.display_name || email,
+                            kurse: (USER_INFO[email] || {}).kurse || [],
+                        });
+                    }
+                    sort_table_by_column('tall', false);
+                    refresh_table();
+                    for (let klasse of KLASSEN_ORDER_AGR) {
+                        let klassen_label = KLASSEN_TR[klasse] || klasse;
+                        let div = $(`<div class='flex justify-center items-center'>`);
+                        div.append($(`<div class='text-center absolute text-base md:text-lg'>${klassen_label}</div>`));
+                        let canvas = $(`<canvas>`).attr('height', '250');
+                        div.append(canvas);
+                        let numbers = [0, 0, 0, 0, 0];
+                        for (let email of SCHUELER_FOR_KLASSE[klasse]) {
+                            let i = 4;
+                            if (typeof(data.result.user_info[email]) !== 'undefined') {
+                                if (data.result.user_info[email].last_activity_cat === 'all')
+                                    i = 3;
+                                else if (data.result.user_info[email].last_activity_cat === '28d')
+                                    i = 2;
+                                else if (data.result.user_info[email].last_activity_cat === '7d')
+                                    i = 1;
+                                else if (data.result.user_info[email].last_activity_cat === '1d')
+                                    i = 0;
+                            }
+                            numbers[i] += 1;
+                        }
+                        $('#klassen_activity_overview').append(div);
+
+                        setTimeout(function() {
+                            new Chart(canvas, {
+                                type: 'doughnut',
+                                data: {
+                                    labels: ['heute', '7 Tage', '28 Tage', 'jemals', 'noch nie'],
+                                    datasets: [
+                                        {
+                                            // label: "My First Dataset",
+                                            data: numbers,
+                                            backgroundColor: [
+                                                CLING_COLORS[`${ACTIVITY_DURATIONS[0][0]}-500`],
+                                                CLING_COLORS[`${ACTIVITY_DURATIONS[1][0]}-500`],
+                                                CLING_COLORS[`${ACTIVITY_DURATIONS[2][0]}-500`],
+                                                CLING_COLORS[`${ACTIVITY_DURATIONS[3][0]}-500`],
+                                                CLING_COLORS[`slate-900`],
+                                            ],
+                                            borderWidth: 1,
+                                            hoverOffset: 4,
+                                        },
+                                    ],
+                                },
+                                options: {
+                                    legend: {
+                                        display: false
+                                    },
+                                    tooltips: {
+                                        enabled: true
+                                    }
+                                }
+                            });
+                        }, 0);
+                    }
+                    $('.show-when-ready').fadeIn();
                 }
-                $('.show-when-ready').fadeIn();
-            }
+            });
         });
     });
 </script>

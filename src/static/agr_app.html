@@ -14,6 +14,7 @@
 </style>
 <script>
     var KLASSEN_TR = #{ KLASSEN_TR.to_json };
+    var USER_INFO = #{@@user_info.map { |email, info| [email, {:display_name => info[:display_name], :nc_login => info[:nc_login], :klasse => info[:klasse]}]}.to_h.to_json };
 </script>
 <div class='api_messages'></div>
 <div class='container-fluid'
@@ -105,11 +106,14 @@
         </div>
         <div class="col-span-4">
             <h3>Nutzer:innen mit der größten Aktivität</h3>
-            <div class='h-96 overflow-y-auto' style='max-width: 100%; overflow-x: auto;'>
+            <div class='overflow-y-auto' style='max-width: 100%; overflow-x: auto;'>
                 <table id='top_user_table' class='table table-condensed table-striped narrow' style='width: unset; min-width: 100%;'>
                     <thead>
                         <tr>
+                            <th style="width: 50px;"></th>
                             <th>Name</th>
+                            <th>Klasse</th>
+                            <th>Lektion</th>
                             <th>Aufgaben</th>
                             <th>Letzte Aktivität</th>
                         </tr>
@@ -146,7 +150,16 @@
                 $('.v-users-solved-28d').text(`${data.result.users_solved_28d}`);
                 for (let entry of data.result.user_top_list) {
                     let row = $('<tr>');
-                    row.append($('<td>').text(entry.email));
+                    let nc_login = null;
+                    let user_info = USER_INFO[entry.email] || {};
+                    nc_login = user_info.nc_login;
+                    row.append($('<td>').append($('<div>').css('background-image', `url(http://localhost:8024/index.php/avatar/${nc_login}/128), url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mO88h8AAq0B1REmZuEAAAAASUVORK5CYII=)`).addClass('avatar-md')));
+                    // <div style="background-image: url(http://localhost:8024/index.php/avatar/philippa.amthor/128), url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mO88h8AAq0B1REmZuEAAAAASUVORK5CYII=);" class="avatar-md"></div>
+                    row.append($('<td>').text(user_info.display_name));
+                    let klasse = user_info.klasse || '–';
+                    klasse = KLASSEN_TR[klasse] || klasse;
+                    row.append($('<td>').text(klasse));
+                    row.append($('<td>').text(`${data.result.unit_for_user[entry.email]}`));
                     row.append($('<td>').text(`${entry.solved}`));
                     row.append($('<td>').text(`${moment.unix(entry.last_activity / 1000).format('ddd, D.M.Y')}`));
                     $('#top_user_table tbody').append(row);

@@ -159,7 +159,11 @@
                     klasse = KLASSEN_TR[klasse] || klasse;
                     row.append($('<td>').text(klasse));
                     row.append($('<td>').text(`${data.result.unit_for_user[entry.email]}`));
-                    row.append($('<td>').text(`${entry.solved}`));
+                    let parts = [];
+                    for (let x of [['green', '1'], ['sky', '7'], ['indigo', '28'], ['purple', 'all']]) {
+                        parts.push(`<span class='px-1 inline-block w-12 text-center rounded-lg bg-${x[0]}-200 text-${x[0]}-700'>${entry.st['t' + x[1]]}</span>`);
+                    }
+                    row.append($('<td>').html(`${parts.join(' ')}`));
                     row.append($('<td>').text(`${moment.unix(entry.last_activity / 1000).format('ddd, D.M.Y')}`));
                     $('#top_user_table tbody').append(row);
                 }

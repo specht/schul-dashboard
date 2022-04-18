@@ -153,9 +153,8 @@
                     let nc_login = null;
                     let user_info = USER_INFO[entry.email] || {};
                     nc_login = user_info.nc_login;
-                    row.append($('<td>').append($('<div>').css('background-image', `url(http://localhost:8024/index.php/avatar/${nc_login}/128), url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mO88h8AAq0B1REmZuEAAAAASUVORK5CYII=)`).addClass('avatar-md')));
-                    // <div style="background-image: url(http://localhost:8024/index.php/avatar/philippa.amthor/128), url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mO88h8AAq0B1REmZuEAAAAASUVORK5CYII=);" class="avatar-md"></div>
-                    row.append($('<td>').text(user_info.display_name));
+                    row.append($('<td>').append($('<div>').css('background-image', `url(#{NEXTCLOUD_URL}/index.php/avatar/${nc_login}/128), url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mO88h8AAq0B1REmZuEAAAAASUVORK5CYII=)`).addClass('avatar-md')));
+                    row.append($('<td>').text(user_info.display_name || entry.email));
                     let klasse = user_info.klasse || '–';
                     klasse = KLASSEN_TR[klasse] || klasse;
                     row.append($('<td>').text(klasse));

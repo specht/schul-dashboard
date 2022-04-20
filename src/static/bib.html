@@ -33,17 +33,9 @@
         <div class="w-full grid grid-cols-12 gap-4 mb-4">
             <div class="col-span-12">
                 <h3>Bücher</h3>
-
-                <!-- <div class="flex flex-col items-center bg-white rounded-lg border shadow-md md:flex-row hover:bg-gray-100 dark:border-gray-700 dark:bg-gray-800 dark:hover:bg-gray-700">
-                    <img class="object-cover w-auto h-48 rounded-t-lg md:rounded-none md:rounded-l-lg" src="http://localhost:8045/gen/covers/3676-128.jpg" alt="">
-                    <div class="flex flex-col between p-4 leading-normal">
-                        <h5 class="mb-2 text-2xl font-bold tracking-tight text-gray-900 dark:text-white">Noteworthy technology acquisitions 2021</h5>
-                        <p class="mb-3 font-normal text-gray-700 dark:text-gray-400">Here are the biggest enterprise technology acquisitions of 2021 so far, in reverse chronological order.</p>
-                    </div>
-                </div> -->
-
-                <div class='book_list'></div>
             </div>
+        </div>
+        <div id='book_list' class="w-full grid grid-cols-12 gap-4 mb-4">
         </div>
     </section>
 </div>
@@ -57,12 +49,31 @@
 
     function create_book_div(book) {
         let cover_path = `${BIB_HOST}/gen/covers/${book.stem}-128.jpg`;
-        let div = $(`<div class="flex flex-col items-center bg-white rounded-lg border shadow-md md:flex-row hover:bg-gray-100 dark:border-gray-700 dark:bg-gray-800 dark:hover:bg-gray-700 mb-3">`);
-        let cover = $(`<img class="object-cover w-auto h-48 rounded-t-lg md:rounded-none md:rounded-l-lg" src="${cover_path}" alt="">`);
+        let div = $(`<div class="overflow-hidden col-span-12 md:col-span-4 shadow-md bg-white shadow-md border rounded" style="height: 200px;">`);
+        let cover = $(`<div class='bg-slate-900' style="margin-right: 1rem; float: left; height: 100%; width: 150px; background-position: center center; background-size: contain; background-image: url(${cover_path}); background-repeat: no-repeat;"></div>`);
         div.append(cover);
-        let details = $(`<div class="flex flex-col between p-4 leading-normal">`);
-        details.append($(`<h5 class="mb-2 text-2xl font-bold tracking-tight text-gray-900 dark:text-white">${book.title}</h5>`));
-        details.append($(`<p class="mb-3 font-normal text-gray-700 dark:text-gray-400">${book.author}</p>`));
+        let details = $(`<div class="w-full p-2">`);
+        details.append($(`<span class="font-bold text-xl">`).text(book.title));
+        if (book.subtitle)
+            details.append($(`<span class='text-lg'>`).text(` – ${book.subtitle}`));
+        if (book.author)
+            details.append($(`<div class="font-italic truncate">`).text(book.author));
+        let parts = [];
+        if (book.verlag)
+            parts.push(book.verlag);
+        if (book.published)
+            parts.push(book.published);
+        if (book.page_count)
+            parts.push(`${book.page_count} Seiten`);
+        if (parts.length > 0)
+            details.append($(`<div>`).text(parts.join(', ')));
+        let stem = $(`<span class='bg-amber-400 px-2 py-1 rounded mr-2 font-bold'>`).text(book.stem);
+        let isbn = $(`<span>`).text(`ISBN: ${book.isbn}`);
+        details.append($(`<div>`).append(stem).append(isbn));
+        if (book.text_snippet) {
+            details.append($(`<hr class='my-2'>`));
+            details.append($(`<div class="font-italic" style='line-clamp: 2; overflow: hidden; text-overflow: ellipsis;'>`).text(book.text_snippet));
+        }
         div.append(details);
         return div;
     }
@@ -71,8 +82,8 @@
         bib_api_call('/jwt/get_books', {}, function (data) {
             for (let book of data.books) {
                 // console.log(book);
-                // if (book.stem == 3676)
-                    $('.book_list').append(create_book_div(book));
+                // if (book.stem == 1691)
+                    $('#book_list').append(create_book_div(book));
             }
         });
     });

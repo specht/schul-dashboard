@@ -33,6 +33,16 @@
         <div class="w-full grid grid-cols-12 gap-4 mb-4">
             <div class="col-span-12">
                 <h3>Bücher</h3>
+
+                <!-- <div class="flex flex-col items-center bg-white rounded-lg border shadow-md md:flex-row hover:bg-gray-100 dark:border-gray-700 dark:bg-gray-800 dark:hover:bg-gray-700">
+                    <img class="object-cover w-auto h-48 rounded-t-lg md:rounded-none md:rounded-l-lg" src="http://localhost:8045/gen/covers/3676-128.jpg" alt="">
+                    <div class="flex flex-col between p-4 leading-normal">
+                        <h5 class="mb-2 text-2xl font-bold tracking-tight text-gray-900 dark:text-white">Noteworthy technology acquisitions 2021</h5>
+                        <p class="mb-3 font-normal text-gray-700 dark:text-gray-400">Here are the biggest enterprise technology acquisitions of 2021 so far, in reverse chronological order.</p>
+                    </div>
+                </div> -->
+
+                <div class='book_list'></div>
             </div>
         </div>
     </section>
@@ -45,12 +55,25 @@
     var SCHUELER_FOR_LESSON = #{@@schueler_for_lesson.select { | lesson_key | lesson_key.downcase[0, 3] == 'agr' }.to_json};
     var LESSONS_FOR_SHORTHAND = #{@@lessons_for_shorthand.to_json};
 
-    function iframe_loaded() {
-        console.log('yay');
+    function create_book_div(book) {
+        let cover_path = `${BIB_HOST}/gen/covers/${book.stem}-128.jpg`;
+        let div = $(`<div class="flex flex-col items-center bg-white rounded-lg border shadow-md md:flex-row hover:bg-gray-100 dark:border-gray-700 dark:bg-gray-800 dark:hover:bg-gray-700 mb-3">`);
+        let cover = $(`<img class="object-cover w-auto h-48 rounded-t-lg md:rounded-none md:rounded-l-lg" src="${cover_path}" alt="">`);
+        div.append(cover);
+        let details = $(`<div class="flex flex-col between p-4 leading-normal">`);
+        details.append($(`<h5 class="mb-2 text-2xl font-bold tracking-tight text-gray-900 dark:text-white">${book.title}</h5>`));
+        details.append($(`<p class="mb-3 font-normal text-gray-700 dark:text-gray-400">${book.author}</p>`));
+        div.append(details);
+        return div;
     }
 
     window.addEventListener('load', function () {
-        bib_api_call('/jwt/ping', {}, function (data) {
+        bib_api_call('/jwt/get_books', {}, function (data) {
+            for (let book of data.books) {
+                // console.log(book);
+                // if (book.stem == 3676)
+                    $('.book_list').append(create_book_div(book));
+            }
         });
     });
 </script>

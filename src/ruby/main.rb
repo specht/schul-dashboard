@@ -2179,6 +2179,21 @@ class Main < Sinatra::Base
         respond(:token => token)
     end
 
+    post '/api/get_bib_jwt_token' do
+        require_user_who_can_manage_bib!
+        data = parse_request_data(:required_keys => [:url, :payload], :max_body_length => 0x100000)
+        payload = {
+            # :context => JSON.parse(data[:payload]),
+            :data_sha1 => Digest::SHA1.hexdigest(data[:payload]),
+            :url => data[:url],
+            :email => @session_user[:email],
+            :display_name => @session_user[:display_name],
+            :exp => Time.now.to_i + 60
+        }
+        token = JWT.encode payload, JWT_APPKEY_BIB, algorithm = 'HS256', header_fields = {:typ => 'JWT'}
+        respond(:token => token)
+    end
+
     before "/monitor/#{MONITOR_DEEP_LINK}" do
         unless MONITOR_DEEP_LINK.nil?
             @session_user = {

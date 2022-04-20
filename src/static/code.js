@@ -108,7 +108,7 @@ function agr_api_call(url, data, callback, options) {
 
 function bib_api_call(url, data, callback, options) {
     let data_json = JSON.stringify(data);
-    api_call('/api/get_agr_jwt_token', { url: url, payload: data_json }, function (data) {
+    api_call('/api/get_bib_jwt_token', { url: url, payload: data_json }, function (data) {
         if (data.success) {
             let token = data.token;
             let headers = {headers: {'X-JWT': token}};

@@ -202,7 +202,7 @@ CAN_MANAGE_NEWS_USERS = []
 CAN_MANAGE_MONITORS_USERS = []
 CAN_MANAGE_ANTIKENFAHRT_USERS = []
 CAN_MANAGE_AGR_APP = []
-CAN_MANAGE_AGR_APP_KLASSEN = {}
+CAN_MANAGE_BIB = []
 
 # Schülervertretung, kann:
 # - Nachrichten an SuS schreiben

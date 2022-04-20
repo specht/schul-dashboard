@@ -106,9 +106,12 @@ class Main < Sinatra::Base
         end
     end
     
-    # Returns true if a teacher is logged in.
     def can_manage_agr_app_logged_in?
         user_logged_in? && CAN_MANAGE_AGR_APP.include?(@session_user[:email])
+    end
+    
+    def can_manage_bib_logged_in?
+        user_logged_in? && CAN_MANAGE_BIB.include?(@session_user[:email])
     end
     
     # Assert that a user is logged in
@@ -161,6 +164,10 @@ class Main < Sinatra::Base
         assert(can_manage_agr_app_logged_in?)
     end
     
+    def require_user_who_can_manage_bib!
+        assert(can_manage_bib_logged_in?)
+    end
+
     # Assert that a teacher or SV is logged in
     def require_teacher_or_sv!
         assert(teacher_or_sv_logged_in?)

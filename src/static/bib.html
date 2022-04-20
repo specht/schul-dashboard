@@ -1,0 +1,63 @@
+#{require_user_who_can_manage_bib!}
+<style>
+    html {
+        scroll-behavior: smooth;
+    }
+
+    .api_messages {
+        position: absolute;
+        top: 60px;
+        width: 60%;
+        left: 20%;
+        display: none;
+    }
+
+    @tailwind base;
+    @tailwind components;
+    @tailwind utilities;
+</style>
+<div class='api_messages'></div>
+<div class='container-fluid'
+    style='background-color: #fff; padding: 0; position: absolute; bottom: 0; top: 57px; display: flex; overflow-y: auto; margin-bottom: 24px;'>
+    <section class="p-4 w-full">
+
+        <!-- <ul class="flex justify-center fixed shadow-md bg-white p-1" style="top: 64px; right: 20px; z-index: 100;">
+            <li class="mx-1">
+                <a class="inline-block border border-blue-500 hover:bg-slate-200 rounded py-1 px-3" href="#activity_overview">Aktivität</a>
+            </li>
+            <li class="mx-1">
+                <a class="inline-block border border-blue-500 hover:bg-slate-200 rounded py-1 px-3" href="#user_list">Nutzer:innen</a>
+            </li>
+        </ul> -->
+
+        <div class="w-full grid grid-cols-12 gap-4 mb-4">
+            <div class="col-span-12">
+                <h3>Bücher</h3>
+                <iframe id='temp'></iframe>
+            </div>
+        </div>
+    </section>
+</div>
+<script>
+    var KLASSEN_TR = #{ KLASSEN_TR.to_json };
+    var USER_INFO = #{@@user_info.map { | email, info | [email, {:display_name => info[:display_name], :nc_login => info[:nc_login], :klasse => info[:klasse] }]}.to_h.to_json };
+    var KLASSEN_ORDER = #{@@klassen_order.to_json};
+    var SCHUELER_FOR_KLASSE = #{@@schueler_for_klasse.to_json};
+    var SCHUELER_FOR_LESSON = #{@@schueler_for_lesson.select { | lesson_key | lesson_key.downcase[0, 3] == 'agr' }.to_json};
+    var LESSONS_FOR_SHORTHAND = #{@@lessons_for_shorthand.to_json};
+
+    function iframe_loaded() {
+        console.log('yay');
+    }
+
+    window.addEventListener('load', function () {
+        bib_api_call('/jwt/ping', {}, function (data) {
+            let iframe = document.getElementById('temp');
+            iframe.addEventListener('load', function() {
+                console.log(iframe.contentWindow.document.body.innerHTML);
+            });
+            let isbn = '9783661720029';
+            iframe.src = `https://www.buchhandel.de/buch/${isbn}`;
+        });
+    });
+</script>

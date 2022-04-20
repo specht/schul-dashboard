@@ -106,6 +106,19 @@ function agr_api_call(url, data, callback, options) {
     });
 }
 
+function bib_api_call(url, data, callback, options) {
+    let data_json = JSON.stringify(data);
+    api_call('/api/get_agr_jwt_token', { url: url, payload: data_json }, function (data) {
+        if (data.success) {
+            let token = data.token;
+            let headers = {headers: {'X-JWT': token}};
+            api_call(BIB_HOST + url, data_json, callback, { ...options, ...headers });
+        } else {
+            show_error_message(data.error);
+        }
+    });
+}
+
 function perform_logout() {
     api_call('/api/logout', {}, function (data) {
         if (data.success)

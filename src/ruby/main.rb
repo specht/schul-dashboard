@@ -1680,9 +1680,14 @@ class Main < Sinatra::Base
                     end
                     io.puts "<a class='dropdown-item nav-icon' href='/login'><div class='icon'><i class='fa fa-sign-in'></i></div><span class='label'>Zusätzliche Anmeldung…</span></a>"
                     io.puts "<a class='dropdown-item nav-icon' href='/login_nc'><div class='icon'><i class='fa fa-nextcloud'></i></div><span class='label'>In Nextcloud anmelden…</span></a>"
-                    if can_manage_agr_app_logged_in?
+                    if can_manage_agr_app_logged_in? || can_manage_bib_logged_in?
                         io.puts "<div class='dropdown-divider'></div>"
-                        io.puts "<a class='dropdown-item nav-icon' href='/agr_app'><div class='icon'><i class='fa fa-mobile'></i></div><span class='label'>Altgriechisch-App</span></a>"
+                        if can_manage_agr_app_logged_in?
+                            io.puts "<a class='dropdown-item nav-icon' href='/agr_app'><div class='icon'><i class='fa fa-mobile'></i></div><span class='label'>Altgriechisch-App</span></a>"
+                        end
+                        if can_manage_bib_logged_in?
+                            io.puts "<a class='dropdown-item nav-icon' href='/bib'><div class='icon'><i class='fa fa-book'></i></div><span class='label'>Bibliothek</span></a>"
+                        end
                     end
                     if teacher_or_sv_logged_in?
                         io.puts "<div class='dropdown-divider'></div>"

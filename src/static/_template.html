@@ -255,6 +255,7 @@ var poll_run_data = null;
 var force_close_poll_response = false;
 var CAN_HANDLE_EXTERNAL_USERS = false;
 var AGR_HOST = "#{DEVELOPMENT ? 'http://localhost:8035' : 'https://agr.nhcham.org'}";
+var BIB_HOST = "#{DEVELOPMENT ? 'http://localhost:8045' : 'https://bib.nhcham.org'}";
 
 function collect_poll_run_data() {
     // returns whether we have pending changes

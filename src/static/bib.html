@@ -48,11 +48,14 @@
     var LESSONS_FOR_SHORTHAND = #{@@lessons_for_shorthand.to_json};
 
     function create_book_div(book) {
-        let cover_path = `${BIB_HOST}/gen/covers/${book.stem}-128.jpg`;
-        let div = $(`<div class="border overflow-hidden col-span-12 md:col-span-6 xl:col-span-4 shadow-md bg-white shadow-md rounded" style="height: 202px;">`);
-        let cover = $(`<div class='bg-slate-900 shadow shadow-md mr-3 border-r-2' style="float: left; height: 200px; width: 145px; background-position: center center; background-size: contain; background-image: url(${cover_path}); background-repeat: no-repeat; border-right: 1px solid #ddd;"></div>`);
+        let cover_path = `${BIB_HOST}/gen/covers/${book.stem}-200.jpg`;
+        let div = $(`<div class="border overflow-hidden col-span-12 md:col-span-6 xl:col-span-4 shadow-md bg-white shadow-md rounded" style="overflow-wrap: break-word;">`);
+        if (book.bib_entry) {
+            div.append($(`<div class="text-sm px-2 bg-stone-700 text-stone-300 py-1" style='border-bottom: 1px solid #ddd;'>`).text(book.bib_entry));
+        }
+        let cover = $(`<div class='bg-stone-800 shadow shadow-md mr-3 border-r-2' style="float: left; height: 200px; width: 145px; background-position: center center; background-size: contain; background-image: url(${cover_path}); background-repeat: no-repeat; border-right: 1px solid #ddd; height: 200px; "></div>`);
         div.append(cover);
-        let details = $(`<div class="w-full p-2">`);
+        let details = $(`<div class="w-full p-2" style="height: 200px;">`);
         details.append($(`<span class="font-bold text-xl">`).text(book.title));
         if (book.subtitle)
             details.append($(`<span class='text-lg'>`).text(` – ${book.subtitle}`));
@@ -70,9 +73,13 @@
         let stem = $(`<span class='bg-amber-200 px-2 py-1 rounded mr-2 font-bold'>`).text(book.stem);
         let isbn = $(`<span>`).text(`ISBN: ${book.isbn}`);
         details.append($(`<div>`).append(stem).append(isbn));
-        if (book.text_snippet) {
+        if (book.description) {
             details.append($(`<hr class='my-2'>`));
-            details.append($(`<div class="font-italic" style='line-clamp: 2; overflow: hidden; text-overflow: ellipsis;'>`).text(book.text_snippet));
+            details.append($(`<div class="font-italic" style='overflow: hidden; text-overflow: ellipsis;'>`).text(book.description));
+        }
+        else if (book.text_snippet) {
+            details.append($(`<hr class='my-2'>`));
+            details.append($(`<div class="font-italic" style='overflow: hidden; text-overflow: ellipsis;'>`).text(book.text_snippet));
         }
         div.append(details);
         return div;
@@ -82,7 +89,7 @@
         bib_api_call('/jwt/get_books', {}, function (data) {
             for (let book of data.books) {
                 // console.log(book);
-                // if (book.stem == 1691)
+                // if (book.stem == 3075)
                     $('#book_list').append(create_book_div(book));
             }
         });

@@ -33,7 +33,6 @@
         <div class="w-full grid grid-cols-12 gap-4 mb-4">
             <div class="col-span-12">
                 <h3>Bücher</h3>
-                <iframe id='temp'></iframe>
             </div>
         </div>
     </section>
@@ -52,12 +51,6 @@
 
     window.addEventListener('load', function () {
         bib_api_call('/jwt/ping', {}, function (data) {
-            let iframe = document.getElementById('temp');
-            iframe.addEventListener('load', function() {
-                console.log(iframe.contentWindow.document.body.innerHTML);
-            });
-            let isbn = '9783661720029';
-            iframe.src = `https://www.buchhandel.de/buch/${isbn}`;
         });
     });
 </script>

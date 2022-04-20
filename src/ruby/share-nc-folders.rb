@@ -89,8 +89,16 @@ class Script
                 @@shorthands_for_lesson[lesson_key] << shorthand
             end
         end
-        
-        @@lessons[:timetables][@@lessons[:timetables].keys.sort.last].keys.each do |lesson_key|
+
+        latest_lesson_keys = Set.new(@@lessons[:timetables][@@lessons[:timetables].keys.sort.last].keys)
+        all_lesson_keys = Set.new()
+        @@lessons[:timetables].keys.sort.each do |date|
+            all_lesson_keys |= Set.new(@@lessons[:timetables][date].keys)
+        end
+        # STDERR.puts "all lesson keys: #{all_lesson_keys.size}"
+        # STDERR.puts "latest lesson keys: #{latest_lesson_keys.size}"
+        # STDERR.puts "Diff: #{(all_lesson_keys - latest_lesson_keys).to_a.sort.join(' ')}"
+        all_lesson_keys.each do |lesson_key|
             lesson_info = @@lessons[:lesson_keys][lesson_key]
             # only handle lessons which have actual Klassen
             next if (Set.new(lesson_info[:klassen]) & Set.new(@@klassen_order)).empty?

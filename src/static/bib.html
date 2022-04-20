@@ -49,8 +49,8 @@
 
     function create_book_div(book) {
         let cover_path = `${BIB_HOST}/gen/covers/${book.stem}-128.jpg`;
-        let div = $(`<div class="overflow-hidden col-span-12 md:col-span-4 shadow-md bg-white shadow-md border rounded" style="height: 200px;">`);
-        let cover = $(`<div class='bg-slate-900' style="margin-right: 1rem; float: left; height: 100%; width: 150px; background-position: center center; background-size: contain; background-image: url(${cover_path}); background-repeat: no-repeat;"></div>`);
+        let div = $(`<div class="border overflow-hidden col-span-12 md:col-span-6 xl:col-span-4 shadow-md bg-white shadow-md rounded" style="height: 202px;">`);
+        let cover = $(`<div class='bg-slate-900 shadow shadow-md mr-3 border-r-2' style="float: left; height: 200px; width: 145px; background-position: center center; background-size: contain; background-image: url(${cover_path}); background-repeat: no-repeat; border-right: 1px solid #ddd;"></div>`);
         div.append(cover);
         let details = $(`<div class="w-full p-2">`);
         details.append($(`<span class="font-bold text-xl">`).text(book.title));
@@ -67,7 +67,7 @@
             parts.push(`${book.page_count} Seiten`);
         if (parts.length > 0)
             details.append($(`<div>`).text(parts.join(', ')));
-        let stem = $(`<span class='bg-amber-400 px-2 py-1 rounded mr-2 font-bold'>`).text(book.stem);
+        let stem = $(`<span class='bg-amber-200 px-2 py-1 rounded mr-2 font-bold'>`).text(book.stem);
         let isbn = $(`<span>`).text(`ISBN: ${book.isbn}`);
         details.append($(`<div>`).append(stem).append(isbn));
         if (book.text_snippet) {

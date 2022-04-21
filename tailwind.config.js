@@ -1,5 +1,5 @@
 module.exports = {
-  content: ['src/static/agr_app.html', 'src/static/bib.html'],
+  content: ['src/static/*.html'],
   theme: {},
   plugins: [],
 }

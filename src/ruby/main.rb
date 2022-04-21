@@ -1169,6 +1169,7 @@ class Main < Sinatra::Base
             '/include/chart.js/Chart.min.js',
             '/include/jszip/dist/jszip.min.js',
             '/include/flowbite/flowbite.js',
+            '/include/quagga.js/quagga.min.js',
             '/code.js',
         ]
         

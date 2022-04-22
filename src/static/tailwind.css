@@ -633,10 +633,6 @@ Ensure the default browser behavior of the `hidden` attribute.
   display: none;
 }
 
-.aspect-square {
-  aspect-ratio: 1 / 1;
-}
-
 .h-2 {
   height: 0.5rem;
 }
@@ -1564,12 +1560,6 @@ Ensure the default browser behavior of the `hidden` attribute.
   outline-offset: 2px;
 }
 
-@media (min-width: 640px) {
-  .sm\:p-2 {
-    padding: 0.5rem;
-  }
-}
-
 @media (min-width: 768px) {
   .md\:col-span-2 {
     grid-column: span 2 / span 2;
@@ -1577,10 +1567,6 @@ Ensure the default browser behavior of the `hidden` attribute.
 
   .md\:col-span-6 {
     grid-column: span 6 / span 6;
-  }
-
-  .md\:p-2 {
-    padding: 0.5rem;
   }
 
   .md\:p-4 {

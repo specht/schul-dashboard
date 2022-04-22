@@ -1289,7 +1289,8 @@ class Main < Sinatra::Base
         if @session_user
             unless ['/api/send_message', '/api/update_message', '/api/submit_poll_run'].include?(request.path)
                 begin
-                    STDERR.puts sprintf(">>> [%-15s] [%s] %s %s", request.ip, @session_user[:nc_login], request.path, data_str)
+                    ip_short = request.ip.to_s.split('.').map { |x| sprintf('%02x', x.to_i) }.join('')
+                    STDERR.puts sprintf("%s [%s] [%s] %s %s", DateTime.now.strftime('%Y-%m-%d %H:%M:%S'), ip_short, @session_user[:nc_login], request.path, data_str)
                 rescue
                 end
             end

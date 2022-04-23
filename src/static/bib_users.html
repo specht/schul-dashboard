@@ -1,0 +1,58 @@
+#{require_user_who_can_manage_bib!}
+#{File.read('/static/_bib_template.html')}
+<div class="w-full grid grid-cols-12 gap-4 mb-4">
+    <div class="col-span-12">
+        <div class="table-responsive" style="max-width: 100%; overflow-x: auto;">
+            <table class="klassen_table table table-condensed table-striped narrow table-sm" style="width: unset; min-width: 100%;">
+                <thead>
+                    <tr>
+                        <th>Nr.</th>
+                        <th></th>
+                        <th>Name</th>
+                        <th>Vorname</th>
+                        <th>Klasse</th>
+                        <th>E-Mail-Adresse</th>
+                        <th>Ausgeliehene Medien</th>
+                    </tr>
+                </thead>
+                <tbody id="user_list"></tbody>
+            </table>
+        </div>
+    </div>
+</div>
+</section>
+</div>
+<script>
+    window.addEventListener('load', function () {
+        bib_api_call('/jwt/get_users', {}, function (data) {
+            if (data.success) {
+                // return;
+                let table = $('#user_list');
+                let i = 0;
+                for (let entry of data.users) {
+                    i += 1;
+                    let email = entry.email;
+                    let row = $('<tr>').addClass('user_row');
+                    if (email[0] !== '(') {
+                        let user_info = USER_INFO[email] || {};
+                        nc_login = user_info.nc_login;
+                        row.append($('<td>').text(`${i}.`));
+                        row.append($('<td>').append($('<div>').css('background-image', `url(#{NEXTCLOUD_URL}/index.php/avatar/${nc_login}/128), url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mO88h8AAq0B1REmZuEAAAAASUVORK5CYII=)`).addClass('avatar-md')));
+                        row.append($('<td>').text(user_info.last_name));
+                        row.append($('<td>').text(user_info.first_name));
+                        row.append($('<td>').text(user_info.klasse || '–'));
+                        row.append($('<td>').html(email_field(email)));
+                        row.append($('<td>').text(`${entry.ausleih_count === 0 ? '–' : entry.ausleih_count}`));
+                    } else {
+                        row.append($('<td>').text(`${i}.`));
+                        row.append($('<td>'));
+                        row.append($('<td>').attr('colspan', 4).text(email));
+                        row.append($('<td>').text(`${entry.ausleih_count === 0 ? '–' : entry.ausleih_count}`));
+                    }
+                    table.append(row);
+                }
+                install_clipboard_handler('.btn-clipboard');
+            }
+        });
+    });
+</script>

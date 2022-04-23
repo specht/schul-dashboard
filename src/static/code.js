@@ -416,3 +416,7 @@ function fix_bad_html(e) {
     });
     return e;
 }
+
+function email_field(email) {
+    return `<div class='input-group'><input type='text' class='form-control' readonly value='${email}' style='min-width: 100px;' /><div class='input-group-append'><button class='btn btn-secondary btn-clipboard' data-clipboard-action='copy' title='Eintrag in die Zwischenablage kopieren' data-clipboard-text='${email}'><i class='fa fa-clipboard'></i></button></div></div>`;
+}

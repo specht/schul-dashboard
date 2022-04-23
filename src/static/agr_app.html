@@ -28,7 +28,7 @@
             </h5>
         </div>
         <div class="modal-body">
-            <table id='user-unit-table' class='table table-condensed table-striped narrow' style='width: unset; min-width: 100%;'>
+            <table id='user-unit-table' class='table table-sm table-condensed table-striped narrow' style='width: unset; min-width: 100%;'>
                 <thead>
                     <th>Nr.</th>
                     <th>Lektion</th>
@@ -74,7 +74,7 @@
                 <div id='filter_buttons_klasse' class=' mb-2 mt-1 overflow-y-auto' style='max-width: 100%; overflow-x: auto;'>
                 </div>
                 <div class='overflow-y-auto' style='max-width: 100%; overflow-x: auto;'>
-                    <table id='top_user_table' class='table table-condensed table-striped narrow'
+                    <table id='top_user_table' class='table table-sm table-condensed table-striped narrow'
                         style='width: unset; min-width: 100%;'>
                         <thead>
                         </thead>
@@ -131,7 +131,7 @@
                 let t7d = 3600 * 24 * 7;
                 let t28d = 3600 * 24 * 28;
                 for (let unit of VOC.unit_order) {
-                    let row = $('<tr>');
+                    let row = $('<tr>').addClass('user_row');
                     row.append($('<td>').text(`${unit}.`));
                     row.append($('<td>').text(`${VOC.unit_title[unit] || '–'}`));
                     let total_count = (VOC.units[unit] || []).length;
@@ -311,7 +311,7 @@
                         })
                         $('#filter_buttons_klasse').append(button);
                     }
-                    let row = $('<tr>');
+                    let row = $('<tr>').addClass('user_row');
                     row.append($(`<th style='width: 50px;'>`).text('Nr.'));
                     row.append($(`<th style='width: 50px;'>`));
                     for (let item of TABLE_COLUMNS) {
@@ -338,7 +338,7 @@
                     let already_have_email = {};
                     for (let entry of data.result.user_top_list) {
                         already_have_email[entry.email] = true;
-                        let row = $('<tr>');
+                        let row = $('<tr>').addClass('user_row');
                         let nc_login = null;
                         let user_info = USER_INFO[entry.email] || {};
                         nc_login = user_info.nc_login;
@@ -380,7 +380,7 @@
                     for (let email of AGR_SCHUELER) {
                         if (already_have_email[email])
                             continue;
-                        let row = $('<tr>');
+                        let row = $('<tr>').addClass('user_row');
                         let nc_login = null;
                         let user_info = USER_INFO[email] || {};
                         nc_login = user_info.nc_login;

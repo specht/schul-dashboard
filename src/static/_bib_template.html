@@ -17,6 +17,14 @@
         z-index: 101;
     }
 
+    .submenu a {
+        white-space: nowrap;
+    }
+
+    .submenu {
+        overflow-x: auto;
+    }
+
     @tailwind base;
     @tailwind components;
     @tailwind utilities;
@@ -24,28 +32,34 @@
 <div class='api_messages'></div>
 <script>
     var KLASSEN_TR = #{ KLASSEN_TR.to_json };
-    var USER_INFO = #{@@user_info.map { | email, info | [email, {:display_name => info[:display_name], :nc_login => info[:nc_login], :klasse => info[:klasse] }]}.to_h.to_json };
+    var USER_INFO = #{@@user_info.map { | email, info | [email, {:first_name => info[:first_name], :last_name => info[:last_name], :display_name => info[:display_name], :nc_login => info[:nc_login], :klasse => info[:klasse] }]}.to_h.to_json };
     var KLASSEN_ORDER = #{@@klassen_order.to_json};
     var SCHUELER_FOR_KLASSE = #{@@schueler_for_klasse.to_json};
 
-    function create_book_div(book, preview) {
+    function create_book_div(book, options = {}) {
         let cover_path = `${BIB_HOST}/gen/covers/${book.stem}-200.jpg`;
-        let div = $(`<div class="hover:outline hover:outline-1 hover:shadow-lg hover:outline-gray-400 cursor-pointer book border overflow-hidden col-span-12 md:col-span-6 xl:col-span-4 shadow-md bg-white shadow-md rounded" style="overflow-wrap: break-word; position: relative;">`);
+        let hover_classes = '';
+        if (options.clickable) {
+            hover_classes = 'hover:outline hover:outline-1 hover:shadow-lg hover:outline-gray-400 cursor-pointer ';
+        }
+        let div = $(`<div class="${hover_classes} book border overflow-hidden col-span-12 md:col-span-6 xl:col-span-4 shadow-md bg-white shadow-md rounded" style="overflow-wrap: break-word; position: relative;">`);
         let bib_entry = $(`<div class="text-sm px-2 bg-stone-700 text-stone-300 py-1" style='border-bottom: 1px solid #ddd; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;'>`);
-        if (!preview)
+        if (!(options.preview))
             bib_entry.text(book.bib_entry);
         else
             bib_entry.html('&nbsp;');
         div.append(bib_entry);
         let cover = $(`<div class='bg-stone-800 shadow shadow-md mr-3 border-r-2' style="float: left; height: 200px; width: 145px; background-position: center center; background-size: contain; background-repeat: no-repeat; border-right: 1px solid #ddd; height: 200px; "></div>`);
-        if (!preview)
+        if (!(options.preview))
             cover.css('background-image', `url(${cover_path})`);
         div.append(cover);
-        if (!preview) {
+        if (!(options.preview)) {
             let details = $(`<div class="w-full p-2" style="height: 200px;">`);
-            details.append($(`<span class="font-bold text-xl">`).text(book.title));
+            let title_div = $(`<div style="max-height: 60px; overflow: hidden;">`);
+            title_div.append($(`<span class="font-bold text-xl">`).text(book.title));
             if (book.subtitle)
-                details.append($(`<span class='text-lg'>`).text(` – ${book.subtitle}`));
+                title_div.append($(`<span class='text-lg'>`).text(` – ${book.subtitle}`));
+            details.append(title_div);
             if (book.author)
                 details.append($(`<div class="font-italic truncate">`).text(book.author));
             let parts = [];
@@ -76,32 +90,34 @@
             }
             div.append(details);
         }
-        div.click(function(e) {
-            bib_api_call('/jwt/get_book', {stem: book.stem}, function (data) {
-                if (data.success) {
-                    console.log(data);
-                    let book = data.book;
-                    $('#book_modal .modal-title').text(book.title);
-                    let table = $('<table>').addClass('table table-sm table-striped');
-                    $('#book_modal .modal-body').empty();
-                    for (let exemplar of data.exemplare) {
-                        let row = $('<tr>')
-                        // console.log(exemplar);
-                        let email = exemplar.u.email;
-                        let user_info = USER_INFO[email] || {};
-                        nc_login = user_info.nc_login;
-                        row.append($('<td>').text(exemplar.e.signature));
-                        row.append($('<td>').text(exemplar.r.datum));
-                        row.append($('<td>').append($('<div>').css('background-image', `url(#{NEXTCLOUD_URL}/index.php/avatar/${nc_login}/128), url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mO88h8AAq0B1REmZuEAAAAASUVORK5CYII=)`).addClass('avatar-md')));
-                        row.append($('<td>').text(user_info.display_name || email));
-                        row.append($('<td>').html(`${KLASSEN_TR[user_info.klasse || ''] || user_info.klasse || '&ndash;'}`));
-                        table.append(row);
+        if (options.clickable) {
+            div.click(function(e) {
+                bib_api_call('/jwt/get_book', {stem: book.stem}, function (data) {
+                    if (data.success) {
+                        console.log(data);
+                        let book = data.book;
+                        $('#book_modal .modal-title').text(book.title);
+                        let table = $('<table>').addClass('table table-sm table-striped');
+                        $('#book_modal .modal-body').empty();
+                        for (let exemplar of data.exemplare) {
+                            let row = $('<tr>')
+                            // console.log(exemplar);
+                            let email = exemplar.u.email;
+                            let user_info = USER_INFO[email] || {};
+                            nc_login = user_info.nc_login;
+                            row.append($('<td>').text(exemplar.e.signature));
+                            row.append($('<td>').text(exemplar.r.datum));
+                            row.append($('<td>').append($('<div>').css('background-image', `url(#{NEXTCLOUD_URL}/index.php/avatar/${nc_login}/128), url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mO88h8AAq0B1REmZuEAAAAASUVORK5CYII=)`).addClass('avatar-md')));
+                            row.append($('<td>').text(user_info.display_name || email));
+                            row.append($('<td>').html(`${KLASSEN_TR[user_info.klasse || ''] || user_info.klasse || '&ndash;'}`));
+                            table.append(row);
+                        }
+                        $('#book_modal .modal-body').append(table);
+                        $('#book_modal').modal('show');
                     }
-                    $('#book_modal .modal-body').append(table);
-                    $('#book_modal').modal('show');
-                }
+                });
             });
-        });
+        }
         return div;
     }
     window.addEventListener('load', function () {
@@ -130,14 +146,26 @@
 
 
 <div class='container-wide'
-    style='padding: 0; padding-top: 40px; display: flex; margin-bottom: 24px;'>
+    style='padding: 0; padding-top: 60px; display: flex; margin-bottom: 24px;'>
     <section class="p-3 w-full">
 
-        <ul class="submenu flex shadow-md fixed bg-stone-800 px-2.5 py-2" style="border-bottom: 1px solid #ccc; top: 57px; left: 0px; right: 0px; z-index: 100;">
+        <ul class="submenu flex items-center shadow-md fixed bg-stone-800 px-2.5 py-2" style="border-bottom: 1px solid #ccc; top: 57px; left: 0px; right: 0px; z-index: 100;">
             <li class="mx-1">
-                <a class="inline-block bg-slate-900 border border-blue-500 hover:bg-slate-200 rounded py-1 px-3" href="/bib">Alle Medien</a>
+                <a class="inline-block bg-slate-900 border border-blue-500 hover:bg-slate-200 rounded py-1 px-3" href="/bib">Medien</a>
+            </li>
+            <li class="mx-1">
+                <a class="inline-block bg-slate-900 border border-blue-500 hover:bg-slate-200 rounded py-1 px-3" href="/bib_users">Nutzer:innen</a>
             </li>
             <li class="mx-1">
                 <a class="inline-block bg-slate-900 border border-blue-500 hover:bg-slate-200 rounded py-1 px-3" href="/bib_scan">Buch scannen</a>
             </li>
+            <!-- <li style="border-left: 1px solid #ccc; height: 54px; margin: -10px 10px -10px 10px;"></li>
+            <li class="mx-1">
+                <div class="input-group">
+                    <input type="text" class="form-control" placeholder="Suchbegriff eingeben" style="min-width: 200px;" />
+                    <div class="input-group-append">
+                      <button class="btn btn-success" type="button">Suchen</button>
+                    </div>
+                  </div>
+            </li> -->
         </ul>

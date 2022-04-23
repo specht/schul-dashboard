@@ -1,105 +1,22 @@
 #{require_user_who_can_manage_bib!}
-<style>
-    html {
-        scroll-behavior: smooth;
-    }
-
-    .api_messages {
-        position: absolute;
-        top: 60px;
-        width: 60%;
-        left: 20%;
-        display: none;
-    }
-
-    @tailwind base;
-    @tailwind components;
-    @tailwind utilities;
-
-</style>
-<div class='api_messages'></div>
-<div class='container-fluid'
-    style='background-color: #fff; padding: 0; position: absolute; bottom: 0; top: 57px; display: flex; overflow-y: auto; margin-bottom: 24px;'>
-    <section class="p-4 w-full">
-
-        <ul class="flex justify-center fixed shadow-md bg-white p-1" style="top: 64px; right: 20px; z-index: 100;">
-            <li class="mx-1">
-                <a class="inline-block border border-blue-500 hover:bg-slate-200 rounded py-1 px-3" href="/bib_scan">Buch scannen</a>
-            </li>
-            <li class="mx-1">
-                <a class="inline-block border border-blue-500 hover:bg-slate-200 rounded py-1 px-3" href="/bib">Alle Medien</a>
-            </li>
-        </ul>
-
-        <div class="w-full grid grid-cols-12 gap-4 mb-4">
-            <div class="col-span-12">
-                <h3>Bücher</h3>
-            </div>
-        </div>
-        <div id='book_list' class="w-full grid grid-cols-12 gap-4 mb-4">
-        </div>
-    </section>
+#{File.read('/static/_bib_template.html')}
+<div class="w-full grid grid-cols-12 gap-4 mb-4 mt-3">
+    <div class="col-span-12">
+        <h3>Bücher</h3>
+    </div>
+</div>
+<div id='book_list' class="w-full grid grid-cols-12 gap-4 mb-4">
+</div>
+</section>
 </div>
 <script>
-    var KLASSEN_TR = #{ KLASSEN_TR.to_json };
-    var USER_INFO = #{@@user_info.map { | email, info | [email, {:display_name => info[:display_name], :nc_login => info[:nc_login], :klasse => info[:klasse] }]}.to_h.to_json };
-    var KLASSEN_ORDER = #{@@klassen_order.to_json};
-    var SCHUELER_FOR_KLASSE = #{@@schueler_for_klasse.to_json};
-    var SCHUELER_FOR_LESSON = #{@@schueler_for_lesson.select { | lesson_key | lesson_key.downcase[0, 3] == 'agr' }.to_json};
-    var LESSONS_FOR_SHORTHAND = #{@@lessons_for_shorthand.to_json};
     var observer = null;
-
-    function create_book_div(book, preview) {
-        let cover_path = `${BIB_HOST}/gen/covers/${book.stem}-200.jpg`;
-        let div = $(`<div class="border overflow-hidden col-span-12 md:col-span-6 xl:col-span-4 shadow-md bg-white shadow-md rounded" style="overflow-wrap: break-word;">`);
-        let bib_entry = $(`<div class="text-sm px-2 bg-stone-700 text-stone-300 py-1" style='border-bottom: 1px solid #ddd; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;'>`);
-        if (!preview) 
-            bib_entry.text(book.bib_entry);
-        else    
-            bib_entry.html('&nbsp;');
-        div.append(bib_entry);
-        let cover = $(`<div class='bg-stone-800 shadow shadow-md mr-3 border-r-2' style="float: left; height: 200px; width: 145px; background-position: center center; background-size: contain; background-repeat: no-repeat; border-right: 1px solid #ddd; height: 200px; "></div>`);
-        if (!preview)
-            cover.css('background-image', `url(${cover_path})`);
-        div.append(cover);
-        if (!preview) {
-            let details = $(`<div class="w-full p-2" style="height: 200px;">`);
-            details.append($(`<span class="font-bold text-xl">`).text(book.title));
-            if (book.subtitle)
-                details.append($(`<span class='text-lg'>`).text(` – ${book.subtitle}`));
-            if (book.author)
-                details.append($(`<div class="font-italic truncate">`).text(book.author));
-            let parts = [];
-            if (book.verlag)
-                parts.push(book.verlag);
-            if (book.published)
-                parts.push(book.published);
-            if (book.page_count)
-                parts.push(`${book.page_count} Seiten`);
-            if (parts.length > 0)
-                details.append($(`<div>`).text(parts.join(', ')));
-            let stem = $(`<span class='bg-amber-200 px-2 py-1 rounded mr-2 font-bold'>`).text(book.stem);
-            let isbn = $(`<span>`).text(`ISBN: ${book.isbn}`);
-            details.append($(`<div>`).append(stem).append(isbn));
-            if (book.description) {
-                details.append($(`<hr class='my-2'>`));
-                details.append($(`<div class="font-italic" style='overflow: hidden; text-overflow: ellipsis;'>`).text(book.description));
-            }
-            else if (book.text_snippet) {
-                details.append($(`<hr class='my-2'>`));
-                details.append($(`<div class="font-italic" style='overflow: hidden; text-overflow: ellipsis;'>`).text(book.text_snippet));
-            }
-            div.append(details);
-        }
-        return div;
-    }
 
     function observer_callback(entries, observer) {
         for (let entry of entries) {
             if (entry.intersectionRatio === 0)
                 continue;
             observer.unobserve(entry.target);
-            console.log('hey');
             let book = $(entry.target).data('book');
             $(entry.target).replaceWith(create_book_div(book, false));
         }
@@ -120,5 +37,6 @@
                 observer.observe(div[0]);
             }
         });
+        // $('#extralarge-modal').show();
     });
 </script>

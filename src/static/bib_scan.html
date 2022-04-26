@@ -88,6 +88,8 @@
             let code = result.codeResult.code;
             if (code.match(/^\d{4}\/\d{3}$/) !== null)
                 code = code.replace('/', '-');
+            if (code.match(/^\d{4}\/0\d{3}$/) !== null)
+                code = code.replace('/0', '-');
             if (code.match(/^\d{4}\-\d{3}$/) !== null) {
                 code = parseInt(code.split('-')[0]);
                 if (stem != code) {

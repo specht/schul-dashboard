@@ -106,6 +106,21 @@
                             stem_book = data.book;
                             console.log(data.book);
                             $('#book_list').append(create_book_div(data.book));
+                            let input = $(`<input class='form-control' style='position: absolute; bottom: 5px; right: 5px;'>`);
+                            let button = $(`<button style='position: absolute; bottom: 5px; right: 5px;'>`).addClass('btn btn-primary').text(`ISBN eingeben`);
+                            $('.book').first().append(input);
+                            $('.book').first().append(button);
+                            button.click(function(e) {
+                                let isbn = input.val.trim();
+                                bib_api_call('/jwt/add_isbn_for_book', {stem: stem, isbn: isbn}, function (data) {
+                                    if (data.success) {
+                                        stem = null;
+                                        $('.book').remove();
+                                        isbn_set = {};
+                                        stem_book = null;
+                                    }
+                                });
+                            });
                         }
                     });
                 }
@@ -141,5 +156,11 @@
         Quagga.onDetected(function(result) {
             on_scan(result);
         });
+
+        // setTimeout(function() {
+            // console.log('hey');
+            // on_scan({codeResult: {code: '1795-051'}});
+            // on_scan({codeResult: {code: '1795'}});
+        // }, 0);
     });
 </script>

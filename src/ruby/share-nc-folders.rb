@@ -92,8 +92,19 @@ class Script
 
         latest_lesson_keys = Set.new(@@lessons[:timetables][@@lessons[:timetables].keys.sort.last].keys)
         all_lesson_keys = Set.new()
+        all_shorthands_for_lesson = {}
         @@lessons[:timetables].keys.sort.each do |date|
             all_lesson_keys |= Set.new(@@lessons[:timetables][date].keys)
+            @@lessons[:timetables][date].each_pair do |lesson_key, lesson_info|
+                lesson_info[:stunden].each_pair do |dow, dow_info|
+                    dow_info.each_pair do |stunde, stunden_info|
+                        stunden_info[:lehrer].each do |shorthand|
+                            all_shorthands_for_lesson[lesson_key] ||= Set.new()
+                            all_shorthands_for_lesson[lesson_key] << shorthand
+                        end
+                    end
+                end
+            end
         end
         # STDERR.puts "all lesson keys: #{all_lesson_keys.size}"
         # STDERR.puts "latest lesson keys: #{latest_lesson_keys.size}"
@@ -113,7 +124,7 @@ class Script
             next if fach.empty?
             pretty_folder_name = lesson_info[:pretty_folder_name]
             teachers = Set.new(lesson_info[:lehrer])
-            teachers |= @@shorthands_for_lesson[lesson_key] || Set.new()
+            teachers |= all_shorthands_for_lesson[lesson_key] || Set.new()
             teachers.each do |shorthand|
                 email = @@shorthands[shorthand]
                 next if email.nil?

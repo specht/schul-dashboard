@@ -286,8 +286,13 @@ class Parser
         if rufname == 'Ka'
             rufname = vorname
         end
-        unless (parts[4] || '').strip.empty?
-            rufname = parts[4].strip
+        geburtstag = nil
+        if parts[4] =~ /^\d+\.\d+\.\d+$/
+            geb_parts = parts[4].split('.').map { |x| x.to_i }
+            geburtstag = sprintf('%04d-%02d-%02d', geb_parts[2], geb_parts[1], geb_parts[0])
+        end
+        unless (parts[5] || '').strip.empty?
+            rufname = parts[5].strip
         end
         unless ['m', 'w'].include?(geschlecht)
             debug "#{vorname} #{nachname}: #{geschlecht}"
@@ -308,6 +313,7 @@ class Parser
         record = {:first_name => rufname,
                   :last_name => nachname,
                   :email => email,
+                  :geburtstag => geburtstag,
                   :initial_password => gen_password_for_email(email),
                   :initial_nc_password => gen_password_for_nc(email),
                   :klasse => klasse,

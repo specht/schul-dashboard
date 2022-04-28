@@ -331,6 +331,8 @@ class Timetable
         @@tage_infos = Main.class_variable_get(:@@tage_infos)
         @@config = Main.class_variable_get(:@@config)
         @@user_info = Main.class_variable_get(:@@user_info)
+        @@birthday_entries = Main.class_variable_get(:@@birthday_entries)
+        @@schueler_for_teacher = Main.class_variable_get(:@@schueler_for_teacher)
         @@lessons = Main.class_variable_get(:@@lessons)
         @@vertretungen = Main.class_variable_get(:@@vertretungen)
         @@vplan_timestamp = Main.class_variable_get(:@@vplan_timestamp)
@@ -1054,6 +1056,8 @@ class Timetable
         while p <= end_date do
             p1 = p + 7
             p_yw = p.strftime('%Y-%V')
+            p_md = p.strftime('%m-%d')
+            p_y = p.strftime('%Y')
             # aufsicht_start_date_for_dow = {}
             # (0..4).each do |dow|
             #     pt = p + dow
@@ -1425,6 +1429,35 @@ class Timetable
                             end
                             event
                         end
+                        # inject birthdays
+                        p0 = p - 2
+                        while p0 < p1 - 2 do
+                            p_md = p0.strftime('%m-%d')
+                            p_y = p0.strftime('%Y')
+                            pt_md = p0.strftime('%m-%d')
+                            pt_y = p0.strftime('%Y')
+                            day_label = nil
+                            if [0, 6].include?(p0.wday)
+                                day_label = p0.strftime('%d.%m.')
+                                pt_md = p.strftime('%m-%d')
+                                pt_y = p.strftime('%Y')
+                            end
+                            if @@birthday_entries[p_md]
+                                @@birthday_entries[p_md].each do |email|
+                                    next unless (@@schueler_for_teacher[user[:shorthand]] || {}).include?(email)
+                                    title = "🎂 #{@@user_info[email][:display_name]} (#{@@user_info[email][:klasse]})"
+                                    if day_label
+                                        title += " (am #{day_label})"
+                                    end
+                                    fixed_events << {
+                                        :start => "#{pt_y}-#{pt_md}",
+                                        :end => (Date.parse("#{pt_y}-#{pt_md}") + 1).strftime('%Y-%m-%d'),
+                                        :title => title
+                                    }
+                                end
+                            end
+                            p0 += 1
+                        end
                     end
                     if user[:is_room]
                         fixed_events.reject! do |event|
@@ -1534,7 +1567,7 @@ class Timetable
                     #     STDERR.puts write_events.to_yaml
                     # end
 
-                    f.print({:events => write_events, 
+                    f.print({:events => write_events,
                              :vplan_timestamp => @@vplan_timestamp,
                              :switch_week => Main.get_switch_week_for_date(p)}.to_json)
                     if only_these_lesson_keys.nil? && email[0] != '_'

@@ -190,7 +190,7 @@ class Main < Sinatra::Base
             io.puts "</thead>"
             io.puts "<tbody>"
             old_is_klassenleiter = true
-            @@teachers_for_klasse[klasse].keys.sort do |a, b|
+            (@@teachers_for_klasse[klasse] || {}).keys.sort do |a, b|
                 name_comp = begin
                     @@user_info[@@shorthands[a]][:last_name] <=> @@user_info[@@shorthands[b]][:last_name]
                 rescue

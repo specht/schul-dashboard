@@ -595,6 +595,7 @@ class Main < Sinatra::Base
         @@current_email_addresses = []
         @@antikenfahrt_recipients = {}
         @@antikenfahrt_mailing_lists = {}
+        @@birthday_entries = {}
 
         @@index_for_klasse = {}
         @@predefined_external_users = {}
@@ -710,6 +711,12 @@ class Main < Sinatra::Base
             @@email_for_matrix_login[matrix_login] = record[:email]
             @@schueler_for_klasse[record[:klasse]] ||= []
             @@schueler_for_klasse[record[:klasse]] << record[:email]
+            birthday = record[:geburtstag]
+            if birthday
+                birthday_md = birthday[5, 5]
+                @@birthday_entries[birthday_md] ||= []
+                @@birthday_entries[birthday_md] << record[:email]
+            end
         end
         @@user_info.keys.each do |email|
             @@user_info[email][:id] = Digest::SHA2.hexdigest(USER_ID_SALT + email).to_i(16).to_s(36)[0, 16]

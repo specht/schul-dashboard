@@ -41,6 +41,18 @@ class Main < Sinatra::Base
                 }
             end
         end
+        test_events = Main.get_test_events()
+        test_events.each do |event|
+            events << {
+                :start => event[:date],
+                :end => (Date.parse(event[:date]) + 1).strftime('%Y-%m-%d'),
+                :title => event[:title],
+                :extendedProps => {
+                    :type => :test_event
+                }
+            }
+        end
+
         tests = neo4j_query(<<~END_OF_QUERY, :start_date => start_date, :end_date => end_date, :klasse => klasse).map { |x| {:user => x['u'], :test => x['t'] } }
             MATCH (t:Test {klasse: $klasse})-[:ORGANIZED_BY]->(u:User)
             WHERE t.datum >= $start_date AND t.datum <= $end_date AND COALESCE(t.deleted, false) = false

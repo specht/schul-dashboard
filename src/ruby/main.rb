@@ -67,6 +67,7 @@ require './include/salzh.rb'
 require './include/stats.rb'
 require './include/tablet_set.rb'
 require './include/tests.rb'
+require './include/test_events.rb'
 require './include/theme.rb'
 require './include/user.rb'
 require './include/vote.rb'
@@ -370,6 +371,7 @@ class SetupDatabase
                     "CREATE CONSTRAINT ON (n:Session) ASSERT n.sid IS UNIQUE",
                     "CREATE CONSTRAINT ON (n:Lesson) ASSERT n.key IS UNIQUE",
                     "CREATE CONSTRAINT ON (n:WebsiteEvent) ASSERT n.key IS UNIQUE",
+                    "CREATE CONSTRAINT ON (n:TestEvent) ASSERT n.key IS UNIQUE",
                     "CREATE CONSTRAINT ON (n:TextComment) ASSERT n.key IS UNIQUE",
                     "CREATE CONSTRAINT ON (n:AudioComment) ASSERT n.key IS UNIQUE",
                     "CREATE CONSTRAINT ON (n:Message) ASSERT n.key IS UNIQUE",
@@ -1970,6 +1972,10 @@ class Main < Sinatra::Base
             klassen_for_session_user.each do |klasse|
                 next if ['11', '12'].include?(klasse)
                 io.puts "<a data-klasse='#{klasse}' class='btn btn-sm ttc #{klasse == active ? 'active': ''}'>#{tr_klasse(klasse)}</a>"
+            end
+            if user_who_can_manage_news_logged_in?
+                io.puts "<hr />"
+                io.puts "<a href='/manage_test_calendar' style='width: 9em;' class='btn btn-sm ttc'>Kalender verwalten</a>"
             end
             io.puts "</div>"
             io.string

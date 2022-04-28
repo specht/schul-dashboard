@@ -1445,7 +1445,7 @@ class Timetable
                             if @@birthday_entries[p_md]
                                 @@birthday_entries[p_md].each do |email|
                                     next unless (@@schueler_for_teacher[user[:shorthand]] || {}).include?(email)
-                                    title = "🎂 #{@@user_info[email][:display_name]} (#{@@user_info[email][:klasse]})"
+                                    title = "🎂 #{@@user_info[email][:display_name]} (#{tr_klasse(@@user_info[email][:klasse])})"
                                     if day_label
                                         title += " (am #{day_label})"
                                     end

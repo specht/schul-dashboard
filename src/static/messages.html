@@ -25,7 +25,7 @@
                 </tbody>
                 </table>
             </div>
-        </div>        
+        </div>
     </div>
 </div>
 
@@ -249,6 +249,8 @@ function observer_callback(entries, observer) {
 function compact_address_list(emails) {
     let result = [];
     for (let key of recipients_cache.groups) {
+        if (recipients[key].entries.length === 0)
+            continue;
         let all_in = true;
         for (let email of recipients[key].entries) {
             if (emails.indexOf(email) < 0) {

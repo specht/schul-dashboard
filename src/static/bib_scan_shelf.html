@@ -66,16 +66,14 @@
                 console.log(`stem: ${stem}`);
                 beep0.play();
                 $('#book_list').empty();
-                bib_api_call('/jwt/get_book', {stem: stem}, function (data) {
-                    if (data.success) {
-                        stem_book = data.book;
-                        console.log(data);
-                        $('#book_list').append(create_book_div(data.book, data.shelf));
-                        bib_api_call('/jwt/set_shelf_for_book', {stem: stem, shelf: last_shelf}, function(data) {
+                bib_api_call('/jwt/set_shelf_for_book', {stem: stem, shelf: last_shelf}, function(data2) {
+                    bib_api_call('/jwt/get_book', {stem: stem}, function (data) {
+                        if (data.success) {
+                            stem_book = data.book;
                             console.log(data);
-
-                        });
-                    }
+                            $('#book_list').append(create_book_div(data.book, data.shelf));
+                        }
+                    });
                 });
 
             }

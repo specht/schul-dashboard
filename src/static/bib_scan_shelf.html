@@ -96,6 +96,7 @@
 
         $('#bu-reset-shelf').click(function() {
             last_shelf = null;
+            last_scanned_barcode = null;
             $('#shelf_label').text('');
             $('#bu-reset-shelf').attr('disabled', true);
             $('#book_list').empty();

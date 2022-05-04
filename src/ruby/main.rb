@@ -1697,7 +1697,7 @@ class Main < Sinatra::Base
                             io.puts "<a class='dropdown-item nav-icon' href='/agr_app'><div class='icon'><i class='fa fa-mobile'></i></div><span class='label'>Altgriechisch-App</span></a>"
                         end
                         if can_manage_bib_logged_in?
-                            io.puts "<a class='dropdown-item nav-icon' href='/bib'><div class='icon'><i class='fa fa-book'></i></div><span class='label'>Bibliothek</span></a>"
+                            io.puts "<a class='dropdown-item nav-icon' href='/bib_scan_shelf'><div class='icon'><i class='fa fa-book'></i></div><span class='label'>Bibliothek</span></a>"
                         end
                     end
                     if teacher_or_sv_logged_in?

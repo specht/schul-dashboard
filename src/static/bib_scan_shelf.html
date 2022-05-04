@@ -1,123 +1,106 @@
 #{require_user_who_can_manage_bib!}
 #{File.read('/static/_bib_template.html')}
 <style>
-    #barcode_scanner_div canvas {
+    #barcode_scanner_div {
+        border: 1px solid #aaa;
+        position: relative;
+    }
+    #shelf_label {
         position: absolute;
-        left: 0;
         top: 0;
-        max-width: 100%;
+        left: 0;
+        font-size: 48px;
+        background-color: rgba(255,255,255,0.5);
+        padding: 0 0.2em;
     }
 </style>
-<div class="w-full grid grid-cols-12 gap-4 mb-4">
-    <div class="col-span-12">
-        <h3>Regal scannen</h3>
-        <p>Bitte scannen Sie ein Regal. Sie können anschließend dazugehörige Signaturstämme scannen.</p>
-    </div>
-</div>
+<!-- <div class="w-full grid grid-cols-12 gap-4 mb-4"> -->
+    <!-- <div class="col-span-12"> -->
+        <!-- <h3>Regal scannen</h3> -->
+        <!-- <p>Bitte scannen Sie ein Regal. Sie können anschließend dazugehörige Signaturstämme scannen.</p> -->
+    <!-- </div> -->
+<!-- </div> -->
 <!-- <div id='book_list' class="w-full grid grid-cols-12 gap-4 mb-4"> -->
     <!-- <div class="border overflow-hidden col-span-12 md:col-span-6 xl:col-span-4 shadow-md bg-white shadow-md rounded" style="max-height: 231px;"> -->
-        <video id="barcode_scanner_div" style="position: relative;"></video>
+        <button id='bu-reset-shelf' style='margin-bottom: 5px;' class='btn btn-danger' disabled>Bearbeitung des Regals beenden</button>
+<div id="barcode_scanner_div">
+    <video id="barcode_scanner_video"></video>
+    <div id="shelf_label"></div>
+</div>
+<div id="book_list">
+
+</div>
     <!-- </div> -->
 <!-- </div> -->
 </section>
 </div>
 <script type="text/javascript" src="/include/zxing.min.js"></script>
 <script>
-    var stem = null;
-    var isbn_set = {};
+    var beep0 = new Audio('/beep0.mp3');
+    var beep1 = new Audio('/beep1.mp3');
 
-    var beep = new Audio('/scanner.mp3');
-    window.addEventListener('load', function () {
+    var last_scanned_barcode = null;
+    var last_shelf = null;
 
-        function on_scan(result) {
-            let code = result.codeResult.code;
-            if (code.match(/^\d{4}\/\d{3}$/) !== null)
-                code = code.replace('/', '-');
-            if (code.match(/^\d{4}\/0\d{3}$/) !== null)
-                code = code.replace('/0', '-');
-            if (code.match(/^\d{4}\-\d{3}$/) !== null) {
-                code = parseInt(code.split('-')[0]);
-                if (stem != code) {
-                    beep.play();
-                    if (stem !== null) {
-                        $('.book').remove();
-                        isbn_set = {};
-                        stem_book = null;
-                    }
-                    stem = code;
-                    console.log(`Got stem: ${stem}`);
-                    bib_api_call('/jwt/get_book', {stem: stem}, function (data) {
-                        if (data.success) {
-                            stem_book = data.book;
-                            console.log(data.book);
-                            $('#book_list').append(create_book_div(data.book));
-                            let input = $(`<input class='form-control' type='number' style='position: absolute; bottom: 5px; right: 5px;'>`);
-                            let button = $(`<button style='position: absolute; bottom: 5px; right: 5px;'>`).addClass('btn btn-primary').text(`ISBN eingeben`);
-                            $('.book').first().append(input);
-                            $('.book').first().append(button);
-                            button.click(function(e) {
-                                let isbn = input.val().trim();
-                                bib_api_call('/jwt/add_isbn_for_book', {stem: stem, isbn: isbn}, function (data) {
-                                    if (data.success) {
-                                        stem = null;
-                                        $('.book').remove();
-                                        isbn_set = {};
-                                        stem_book = null;
-                                    }
-                                });
-                            });
-                        }
-                    });
-                }
-            } else {
-                if (stem !== null) {
-                    beep.play();
-                    let isbn = code;
-                    if (!(isbn in isbn_set)) {
-                        isbn_set[isbn] = true;
-                        console.log(`Got ISBN: ${isbn}`);
-                        if (stem_book.isbn == isbn || stem_book.isbn13 == isbn || (stem_book.scanned_isbn || []).indexOf(isbn) >= 0) {
-                            let button = $(`<button style='position: absolute; bottom: 5px; right: 5px;'>`).addClass('btn btn-secondary btn-sm disabled').text(`»${isbn}« ist bereits verknüpft`);
-                            $('.book').first().append(button);
-                        } else {
-                            let button = $(`<button style='position: absolute; bottom: 5px; right: 5px;'>`).addClass('btn btn-success').text(`»${isbn}« verknüpfen`);
-                            $('.book').first().append(button);
-                            button.click(function(e) {
-                                bib_api_call('/jwt/add_isbn_for_book', {stem: stem, isbn: isbn}, function (data) {
-                                    if (data.success) {
-                                        stem = null;
-                                        $('.book').remove();
-                                        isbn_set = {};
-                                        stem_book = null;
-                                    }
-                                });
-                            });
-                        }
-                    }
-                }
-            }
+    function on_scan(code) {
+        if (code === last_scanned_barcode)
+            return;
+        last_scanned_barcode = code;
+        if (code.substring(0, 4) === 'bib:') {
+            console.log(`shelf code: ${code}`)
+            beep1.play();
+            last_shelf = code.replace('bib:', '');
+            $('#shelf_label').text(last_shelf);
+            $('#bu-reset-shelf').attr('disabled', false);
+        } else {
+            console.log(`book code: ${code}`)
         }
 
-        const codeReader = new ZXing.BrowserMultiFormatReader()
-        console.log('ZXing code reader initialized');
-        var selectedVideoDeviceId = null;
-        codeReader.listVideoInputDevices()
-            .then((videoInputDevices) => {
-                selectedVideoDeviceId = videoInputDevices[0].deviceId;
-                codeReader.decodeFromVideoDevice(selectedVideoDeviceId, 'barcode_scanner_div', (result, err) => {
-                    if (result) {
-                        console.log(result);
-                        // document.getElementById('result').textContent = result.text;
-                    }
-                    if (err && !(err instanceof ZXing.NotFoundException)) {
-                        console.error(err);
-                        // document.getElementById('result').textContent = err;
+        if (code.match(/^\d{4}\/\d{3}$/) !== null)
+            code = code.replace('/', '-');
+        if (code.match(/^\d{4}\/0\d{3}$/) !== null)
+            code = code.replace('/0', '-');
+        if (code.match(/^\d{4}\-\d{3}$/) !== null) {
+            if (last_shelf !== null) {
+                let stem = parseInt(code.split('-')[0]);
+                console.log(`stem: ${stem}`);
+                beep0.play();
+                $('#book_list').empty();
+                bib_api_call('/jwt/get_book', {stem: stem}, function (data) {
+                    if (data.success) {
+                        stem_book = data.book;
+                        console.log(data);
+                        $('#book_list').append(create_book_div(data.book, data.shelf));
+                        bib_api_call('/jwt/set_shelf_for_book', {stem: stem, shelf: last_shelf}, function(data) {
+                            console.log(data);
+
+                        });
                     }
                 });
-            })
 
-            .catch((err) => {
-                console.error(err)
-            });
+            }
+        }
+    }
+
+    window.addEventListener('load', function () {
+
+        const codeReader = new ZXing.BrowserMultiFormatReader()
+        codeReader.decodeFromVideoDevice(null, 'barcode_scanner_video', (result, err) => {
+            if (result) on_scan(result.text);
         });
+
+        // setTimeout(function() {
+        //     on_scan('bib:13D');
+        // }, 0);
+        // setTimeout(function() {
+        //     on_scan('3792-123');
+        // }, 100);
+
+        $('#bu-reset-shelf').click(function() {
+            last_shelf = null;
+            $('#shelf_label').text('');
+            $('#bu-reset-shelf').attr('disabled', true);
+            $('#book_list').empty();
+        });
+    });
 </script>

@@ -2181,7 +2181,7 @@ class Main < Sinatra::Base
 
     post '/api/get_agr_jwt_token' do
         require_user_who_can_manage_agr_app!
-        data = parse_request_data(:required_keys => [:url, :payload], :max_body_length => 0x100000)
+        data = parse_request_data(:required_keys => [:url, :payload], :max_body_length => 0x10000000)
         payload = {
             # :context => JSON.parse(data[:payload]),
             :data_sha1 => Digest::SHA1.hexdigest(data[:payload]),
@@ -2196,7 +2196,7 @@ class Main < Sinatra::Base
 
     post '/api/get_bib_jwt_token' do
         require_user_who_can_manage_bib!
-        data = parse_request_data(:required_keys => [:url, :payload], :max_body_length => 0x100000)
+        data = parse_request_data(:required_keys => [:url, :payload], :max_body_length => 0x10000000, :max_string_length => 0x10000000)
         payload = {
             # :context => JSON.parse(data[:payload]),
             :data_sha1 => Digest::SHA1.hexdigest(data[:payload]),

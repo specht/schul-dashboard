@@ -12,6 +12,7 @@
         position: absolute;
         top: -25%;
         left: 0;
+        width: 100%;
     }
     #shelf_label {
         position: absolute;
@@ -21,14 +22,54 @@
         background-color: rgba(255,255,255,0.5);
         padding: 0 0.2em;
     }
+    #frame_canvas {
+        width: 100%;
+    }
+    #current_photo {
+        width: 100%;
+    }
+    #frame_canvas {
+        display: none;
+    }
+    p {
+        margin-bottom: 0.2em;
+    }
+    #shelf_items_list div {
+        display: inline-block;
+    }
 </style>
-<button id='bu-reset-shelf' style='margin-bottom: 5px;' class='btn btn-danger' disabled>Bearbeitung des Regals beenden</button>
+<div class="modal" id="photo_modal" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true" style='z-index: 200000;'>
+    <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" >Foto hinterlegen für Regal <strong><span id="shelf_here"></span></strong>
+          </h5>
+        </div>
+        <div class="modal-body">
+            <!-- Möchtest du dieses Foto für das Regal <span id="shelf_here"></span> hinterlegen? -->
+            <img id="current_photo"/>
+        </div>
+        <div class="modal-footer">
+            <button id='bu_discard_photo' type="button" class="btn btn-secondary" data-dismiss="modal"><i class='fa fa-times'></i>&nbsp;&nbsp;Abbrechen</button>
+            <button id='bu_submit_photo' type="button" class="btn btn-success"><i class='fa fa-send'></i>&nbsp;&nbsp;Hochladen</button>
+        </div>
+      </div>
+    </div>
+  </div>
+<button id='bu-reset-shelf' style='margin-bottom: 5px;' class='btn btn-danger' disabled>Regal beenden</button>
+<button id='bu-add-photo' style='margin-bottom: 5px;' class='btn btn-warning' disabled>Foto hinterlegen</button>
 <div id="barcode_scanner_div">
     <video id="barcode_scanner_video"></video>
     <div id="shelf_label"></div>
 </div>
-<div id="book_list">
-</div>
+<canvas id='frame_canvas'></canvas>
+<div id="book_list"></div>
+<div id="shelf_items_list"></div>
+<hr />
+<p><strong>Schritt 1.</strong> QR-Code am Regal scannen (der Code klebt immer links unten am Regal)</p>
+<p><strong>Schritt 2.</strong> Barcode im Buch scannen: das Buch wird geladen und angezeigt (von jedem Buch nur ein Exemplar, es geht nur um den Signaturstamm)</p>
+<p><strong>Schritt 3.</strong> Falls ein Buch keine Signatur oder keinen Barcode haben sollte, oder ein anderes Cover hat: bitte Fotos hinterlegen (Buchdeckel, Signatur)!</p>
+<p><strong>Achtung:</strong> Bitte bei jedem Buch und jedem Foto sicherstellen, dass ihr im richtigen Regal seid. Wenn ein neues Regal kommt: einfach den neuen QR-Code am Regal scannen oder »Regal beenden« drücken.</p>
 </section>
 </div>
 
@@ -36,9 +77,35 @@
 <script>
     var beep0 = new Audio('/beep0.mp3');
     var beep1 = new Audio('/beep1.mp3');
+    var beep2 = new Audio('/beep2.mp3');
 
     var last_scanned_barcode = null;
     var last_shelf = null;
+
+    function refresh_shelf_info() {
+        bib_api_call('/jwt/get_info_for_shelf', {shelf: last_shelf}, function(data) {
+            if (data.success) {
+                $('#shelf_items_list').empty();
+                $('#shelf_items_list').append($("<div>").css('display', 'block').text(`Bereits im Regal: ${data.books.length} ${data.books.length === 1 ? 'Buch' : 'Bücher'} und ${data.photos.length} ${data.photos.length === 1 ? 'Foto' : 'Fotos'}.`));
+                for (let book of data.books) {
+                    let cover_path = `${BIB_HOST}/gen/covers/${book.stem}-200.jpg`;
+                    let book_div = $(`<div class='bg-stone-800 mt-1 mr-1 border-r-2' style="height: 72px; width: 72px; background-position: center center; background-size: contain; background-repeat: no-repeat; border-right: 1px solid #ddd; overflow: hidden; position: relative; font-size: 80%; line-height: 100%;">${book.title} / ${book.author}</div>`);
+                    let cover = $(`<div style="height: 72px; width: 72px; background-position: center center; background-size: cover; background-repeat: no-repeat; border-right: 1px solid #ddd; position: absolute; top: 0; left: 0;"></div>`);
+                    book_div.append(cover);
+                    cover.css('background-image', `url(${cover_path})`);
+                    $('#shelf_items_list').append(book_div);
+                }
+                for (let photo of data.photos) {
+                    let cover_path = `${BIB_HOST}/gen/shelf-photos/${photo.sha1}.jpg`;
+                    let book_div = $(`<div class='bg-stone-800 mt-1 mr-1 border-r-2' style="height: 72px; width: 72px; background-position: center center; background-size: contain; background-repeat: no-repeat; border-right: 1px solid #ddd; overflow: hidden; position: relative; font-size: 80%; line-height: 100%;"></div>`);
+                    let cover = $(`<div style="height: 72px; width: 72px; background-position: center center; background-size: cover; background-repeat: no-repeat; border-right: 1px solid #ddd; position: absolute; top: 0; left: 0;"></div>`);
+                    book_div.append(cover);
+                    cover.css('background-image', `url(${cover_path})`);
+                    $('#shelf_items_list').append(book_div);
+                }
+            }
+        });
+    }
 
     function on_scan(code) {
         if (code === last_scanned_barcode)
@@ -50,6 +117,10 @@
             last_shelf = code.replace('bib:', '');
             $('#shelf_label').text(last_shelf);
             $('#bu-reset-shelf').attr('disabled', false);
+            $('#bu-add-photo').attr('disabled', false);
+            $('#book_list').empty();
+            $('#shelf_items_list').empty();
+            refresh_shelf_info();
         } else {
             console.log(`book code: ${code}`)
         }
@@ -64,12 +135,14 @@
                 console.log(`stem: ${stem}`);
                 beep0.play();
                 $('#book_list').empty();
+                $('#shelf_items_list').empty();
                 bib_api_call('/jwt/set_shelf_for_book', {stem: stem, shelf: last_shelf}, function(data2) {
                     bib_api_call('/jwt/get_book', {stem: stem}, function (data) {
                         if (data.success) {
                             stem_book = data.book;
                             console.log(data);
                             $('#book_list').append(create_book_div(data.book, data.shelf));
+                            refresh_shelf_info();
                         }
                     });
                 });
@@ -85,9 +158,9 @@
             if (result) on_scan(result.text);
         });
 
-        // setTimeout(function() {
-        //     on_scan('bib:13D');
-        // }, 0);
+        setTimeout(function() {
+            on_scan('bib:13D');
+        }, 0);
         // setTimeout(function() {
         //     on_scan('3792-123');
         // }, 100);
@@ -97,7 +170,36 @@
             last_scanned_barcode = null;
             $('#shelf_label').text('');
             $('#bu-reset-shelf').attr('disabled', true);
+            $('#bu-add-photo').attr('disabled', true);
             $('#book_list').empty();
+            $('#shelf_items_list').empty();
+        });
+
+        $('#bu-add-photo').click(function() {
+            beep2.play();
+            let video = $('#barcode_scanner_video')[0];
+            let canvas = $('#frame_canvas')[0];
+            let width = video.videoWidth;
+            let height = video.videoHeight;
+            $(canvas).attr('width', width);
+            $(canvas).attr('height', height);
+            canvas.getContext('2d').drawImage(video, 0, 0, width, height);
+            let image = canvas.toDataURL('image/jpeg');
+            $('#shelf_here').text(last_shelf);
+            $('#current_photo').attr('src', image);
+
+            $('#photo_modal').modal('show');
+        });
+
+        $('#bu_submit_photo').click(function() {
+            $('#bu_submit_photo').attr('disabled', true);
+            bib_api_call('/jwt/submit_shelf_photo', {shelf: last_shelf, jpg: $('#current_photo').attr('src')}, function (data) {
+                $('#bu_submit_photo').attr('disabled', false);
+                if (data.success) {
+                    $('#photo_modal').modal('hide');
+                    refresh_shelf_info();
+                }
+            });
         });
     });
 </script>

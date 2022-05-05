@@ -4,6 +4,14 @@
     #barcode_scanner_div {
         border: 1px solid #aaa;
         position: relative;
+        width: 100%;
+        padding-top: 56%;
+        overflow: hidden;
+    }
+    #barcode_scanner_div video {
+        position: absolute;
+        top: -25%;
+        left: 0;
     }
     #shelf_label {
         position: absolute;
@@ -14,26 +22,16 @@
         padding: 0 0.2em;
     }
 </style>
-<!-- <div class="w-full grid grid-cols-12 gap-4 mb-4"> -->
-    <!-- <div class="col-span-12"> -->
-        <!-- <h3>Regal scannen</h3> -->
-        <!-- <p>Bitte scannen Sie ein Regal. Sie können anschließend dazugehörige Signaturstämme scannen.</p> -->
-    <!-- </div> -->
-<!-- </div> -->
-<!-- <div id='book_list' class="w-full grid grid-cols-12 gap-4 mb-4"> -->
-    <!-- <div class="border overflow-hidden col-span-12 md:col-span-6 xl:col-span-4 shadow-md bg-white shadow-md rounded" style="max-height: 231px;"> -->
-        <button id='bu-reset-shelf' style='margin-bottom: 5px;' class='btn btn-danger' disabled>Bearbeitung des Regals beenden</button>
+<button id='bu-reset-shelf' style='margin-bottom: 5px;' class='btn btn-danger' disabled>Bearbeitung des Regals beenden</button>
 <div id="barcode_scanner_div">
     <video id="barcode_scanner_video"></video>
     <div id="shelf_label"></div>
 </div>
 <div id="book_list">
-
 </div>
-    <!-- </div> -->
-<!-- </div> -->
 </section>
 </div>
+
 <script type="text/javascript" src="/include/zxing.min.js"></script>
 <script>
     var beep0 = new Audio('/beep0.mp3');

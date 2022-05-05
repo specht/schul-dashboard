@@ -41,7 +41,7 @@
     #shelf_items_list div {
         display: inline-block;
     }
-    #bu-add-photo {
+    #button_container {
         position: absolute;
         right: 5px;
         bottom: 5px;
@@ -65,11 +65,13 @@
       </div>
     </div>
   </div>
-<button id='bu-reset-shelf' style='margin-bottom: 5px;' class='btn btn-danger' disabled>Regal beenden</button>
 <div id="barcode_scanner_div">
     <video id="barcode_scanner_video"></video>
     <div id="shelf_label"></div>
-    <button id='bu-add-photo' style='margin-bottom: 5px;' class='btn btn-success' disabled><i class='fa fa-camera'></i>&nbsp;&nbsp;Foto hochladen</button>
+    <div id="button_container">
+        <button id='bu-reset-shelf' style='margin-bottom: 5px;' class='btn btn-danger' disabled><i class='fa fa-times'></i>&nbsp;&nbsp;Regal beenden</button>
+        <button id='bu-add-photo' style='margin-bottom: 5px;' class='btn btn-success' disabled><i class='fa fa-camera'></i>&nbsp;&nbsp;Foto hochladen</button>
+    </div>
 </div>
 <canvas id='frame_canvas'></canvas>
 <div id="book_list"></div>

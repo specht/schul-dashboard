@@ -69,8 +69,8 @@
     <video id="barcode_scanner_video"></video>
     <div id="shelf_label"></div>
     <div id="button_container">
-        <button id='bu-reset-shelf' style='margin-bottom: 5px;' class='btn btn-danger' disabled><i class='fa fa-times'></i>&nbsp;&nbsp;Regal beenden</button>
-        <button id='bu-add-photo' style='margin-bottom: 5px;' class='btn btn-success' disabled><i class='fa fa-camera'></i>&nbsp;&nbsp;Foto hochladen</button>
+        <button id='bu-reset-shelf' style='margin-bottom: 5px; display: none;' class='btn btn-danger'><i class='fa fa-times'></i>&nbsp;&nbsp;Regal beenden</button>
+        <button id='bu-add-photo' style='margin-bottom: 5px; display: none;' class='btn btn-success'><i class='fa fa-camera'></i>&nbsp;&nbsp;Foto hochladen</button>
     </div>
 </div>
 <canvas id='frame_canvas'></canvas>
@@ -127,8 +127,8 @@
             beep1.play();
             last_shelf = code.replace('bib:', '');
             $('#shelf_label').text(last_shelf);
-            $('#bu-reset-shelf').attr('disabled', false);
-            $('#bu-add-photo').attr('disabled', false);
+            $('#bu-reset-shelf').show();
+            $('#bu-add-photo').show();
             $('#book_list').empty();
             $('#shelf_items_list').empty();
             refresh_shelf_info();
@@ -180,8 +180,8 @@
             last_shelf = null;
             last_scanned_barcode = null;
             $('#shelf_label').text('');
-            $('#bu-reset-shelf').attr('disabled', true);
-            $('#bu-add-photo').attr('disabled', true);
+            $('#bu-reset-shelf').hide();
+            $('#bu-add-photo').hide();
             $('#book_list').empty();
             $('#shelf_items_list').empty();
         });

@@ -5,14 +5,15 @@
         border: 1px solid #aaa;
         position: relative;
         width: 100%;
-        padding-top: 56%;
+        padding-top: 133%;
         overflow: hidden;
     }
     #barcode_scanner_div video {
         position: absolute;
-        top: -25%;
         left: 0;
+        top: 0;
         width: 100%;
+        height: 100%;
     }
     #shelf_label {
         position: absolute;
@@ -37,12 +38,17 @@
     #shelf_items_list div {
         display: inline-block;
     }
+    #bu-add-photo {
+        position: absolute;
+        right: 5px;
+        bottom: 5px;
+    }
 </style>
 <div class="modal" id="photo_modal" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true" style='z-index: 200000;'>
     <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
       <div class="modal-content">
         <div class="modal-header">
-          <h5 class="modal-title" >Foto hinterlegen für Regal <strong><span id="shelf_here"></span></strong>
+          <h5 class="modal-title" >Foto hochladen für Regal <strong><span id="shelf_here"></span></strong>
           </h5>
         </div>
         <div class="modal-body">
@@ -57,10 +63,10 @@
     </div>
   </div>
 <button id='bu-reset-shelf' style='margin-bottom: 5px;' class='btn btn-danger' disabled>Regal beenden</button>
-<button id='bu-add-photo' style='margin-bottom: 5px;' class='btn btn-warning' disabled>Foto hinterlegen</button>
 <div id="barcode_scanner_div">
     <video id="barcode_scanner_video"></video>
     <div id="shelf_label"></div>
+    <button id='bu-add-photo' style='margin-bottom: 5px;' class='btn btn-warning' disabled><i class='fa fa-camera'></i>&nbsp;&nbsp;Foto hochladen</button>
 </div>
 <canvas id='frame_canvas'></canvas>
 <div id="book_list"></div>
@@ -158,9 +164,9 @@
             if (result) on_scan(result.text);
         });
 
-        // setTimeout(function() {
-            // on_scan('bib:13D');
-        // }, 0);
+        setTimeout(function() {
+            on_scan('bib:13D');
+        }, 0);
         // setTimeout(function() {
         //     on_scan('3792-123');
         // }, 100);

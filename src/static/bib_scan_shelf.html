@@ -5,8 +5,11 @@
         border: 1px solid #aaa;
         position: relative;
         width: 100%;
-        padding-top: 133%;
+        /* padding-top: 133%; */
         overflow: hidden;
+        height: 50vh;
+        border-radius: 15px;
+        background-color: #222;
     }
     #barcode_scanner_div video {
         position: absolute;
@@ -66,7 +69,7 @@
 <div id="barcode_scanner_div">
     <video id="barcode_scanner_video"></video>
     <div id="shelf_label"></div>
-    <button id='bu-add-photo' style='margin-bottom: 5px;' class='btn btn-warning' disabled><i class='fa fa-camera'></i>&nbsp;&nbsp;Foto hochladen</button>
+    <button id='bu-add-photo' style='margin-bottom: 5px;' class='btn btn-success' disabled><i class='fa fa-camera'></i>&nbsp;&nbsp;Foto hochladen</button>
 </div>
 <canvas id='frame_canvas'></canvas>
 <div id="book_list"></div>

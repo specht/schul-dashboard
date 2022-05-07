@@ -1616,11 +1616,16 @@ class Timetable
                                 #     io.puts "DESCRIPTION:#{event[:description].gsub("\n", "\\n")}"
                                 #     io.puts "END:VEVENT"
                                 # end
-                                next if event[:label].nil?
+                                next if event[:label].nil? && event[:title].nil? && event[:event_title].nil?
                                 io.puts "BEGIN:VEVENT"
-                                io.puts "DTSTART;TZID=Europe/Berlin:#{event[:start].gsub('-', '').gsub(':', '')}00"
-                                io.puts "DTEND;TZID=Europe/Berlin:#{event[:end].gsub('-', '').gsub(':', '')}00"
-                                io.puts "SUMMARY:#{fix_label_for_unicode(event[:label])}"
+                                if event[:start].include?('T')
+                                    io.puts "DTSTART;TZID=Europe/Berlin:#{event[:start].gsub('-', '').gsub(':', '')}00"
+                                    io.puts "DTEND;TZID=Europe/Berlin:#{event[:end].gsub('-', '').gsub(':', '')}00"
+                                else
+                                    io.puts "DTSTART;TZID=Europe/Berlin:#{event[:start].gsub('-', '')}"
+                                    io.puts "DTEND;TZID=Europe/Berlin:#{event[:end].gsub('-', '')}"
+                                end
+                                io.puts "SUMMARY:#{fix_label_for_unicode(event[:label] || event[:title] || event[:event_title])}"
                                 temp = StringIO.open do |io2|
                                     data = event[:data] || {}
                                     if data[:stundenthema_text]
@@ -1653,6 +1658,15 @@ class Timetable
                                             io2.puts
                                         end
                                         io2.puts
+                                    end
+                                    if event[:vertretungs_text]
+                                        io2.puts event[:vertretungs_text]
+                                        io2.puts
+                                    end
+                                    if event[:description]
+                                        io2.puts event[:description].gsub(/<\/?[^>]+>/, '')
+                                        io2.puts
+                                        io.puts "X-ALT-DESC;FMTTYPE=text/html:#{event[:description].gsub("\n", ' ')}"
                                     end
                                     io2.string.strip
                                 end

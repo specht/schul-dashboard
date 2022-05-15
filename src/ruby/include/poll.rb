@@ -860,6 +860,7 @@ class Main < Sinatra::Base
         return '' if entries.empty?
         hidden_entries = entries.select { |x| x[:hidden] }
         StringIO.open do |io|
+            io.puts "<div class='col-lg-12 col-md-4 col-sm-6'>"
             unless hidden_entries.empty?
                 io.puts "<div class='hint hint_poll_hidden_indicator'>"
                 io.puts "Ausgeblendete Umfragen: #{hidden_entries.map { |x| x[:poll_title] }.join(', ')} <a id='show_hidden_polls' href='#'>(anzeigen)</a>"
@@ -879,6 +880,7 @@ class Main < Sinatra::Base
                 io.puts "<div style='clear: both;'></div>"
                 io.puts "</div>"
             end
+            io.puts "</div>"
             io.string
         end
     end

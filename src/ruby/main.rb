@@ -1816,6 +1816,7 @@ class Main < Sinatra::Base
         return '' unless teacher_logged_in?
         return '' if teacher_tablet_logged_in?
         StringIO.open do |io|
+            io.puts "<div class='col-lg-12 col-md-4 col-sm-6'>"
             io.puts "<div class='hint lehrerzimmer-panel'>"
             io.puts "<div class='hide-sm'>"
             io.puts "<div style='padding-top: 7px;'>Momentan im Jitsi-Lehrerzimmer:&nbsp;"
@@ -1854,6 +1855,7 @@ class Main < Sinatra::Base
             io.puts "</div>"
             io.puts "<a href='/jitsi/Lehrerzimmer' target='_blank' style='white-space: nowrap;' class='float-right btn btn-success'><i class='fa fa-microphone'></i>&nbsp;&nbsp;Lehrerzimmer&nbsp;<i class='fa fa-angle-double-right'></i></a>"
             io.puts "<div style='clear: both;'></div>"
+            io.puts "</div>"
             io.puts "</div>"
             io.string
         end
@@ -2169,11 +2171,13 @@ class Main < Sinatra::Base
     def print_adventskalender_sidepanel()
         require_user!
         StringIO.open do |io|
+            io.puts "<div class='col-lg-12 col-md-4 col-sm-6'>"
             io.puts "<div class='hint'>"
             io.puts "<div>Adventskalender</div>"
             io.puts "<hr />"
             io.puts "<button style='white-space: nowrap;' class='float-right btn btn-success bu-launch-adventskalender' >Adventskalender öffnen&nbsp;<i class='fa fa-angle-double-right'></i></button>"
             io.puts "<div style='clear: both;'></div>"
+            io.puts "</div>"
             io.puts "</div>"
             io.string
         end

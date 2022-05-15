@@ -355,11 +355,14 @@ class Main < Sinatra::Base
                     while [0, 6].include?(p.wday) || @@holiday_dates.include?(p.strftime("%Y-%m-%d"))
                         p += 1
                     end
+                    io.puts "<div class='col-lg-12 col-md-4 col-sm-6'>"
                     io.puts "<div class='hint'>"
                     io.puts "<p><strong>Unterricht im saLzH</strong></p>"
                     io.puts "<p>Du bist <strong>bis zum #{Date.parse(end_date).strftime('%d.%m.')}</strong> für das schulisch angeleite Lernen zu Hause (saLzH) eingetragen. Bitte schau regelmäßig in deinem Stunden&shy;plan nach, ob du Aufgaben in der Nextcloud oder im Lernraum bekommst oder ob Stunden per Jitsi durch&shy;geführt werden. <strong>Ab dem #{p.strftime('%d.%m.')}</strong> erwarten wir dich wieder in der Schule.</p>"
                     io.puts "</div>"
+                    io.puts "</div>"
                 elsif salzh_status[:status] == :contact_person
+                    io.puts "<div class='col-lg-12 col-md-4 col-sm-6'>"
                     io.puts "<div class='hint'>"
                     io.puts "<p><strong>Kontaktperson</strong></p>"
                     io.puts "<p>Du bist <strong>bis zum #{Date.parse(end_date).strftime('%d.%m.')}</strong> als Kontakt&shy;person markiert. Das heißt, dass du weiterhin in die Schule kommen darfst, aber einige Regeln beachten musst. Falls du freiwillig zu Hause bleiben möchtest, müssen deine Eltern dem Sekretariat <a href='mailto:sekretariat@gymnasiumsteglitz.de'>per E-Mail Bescheid geben</a>. Die folgenden Regeln gelten für dich:</p>"
@@ -376,10 +379,13 @@ class Main < Sinatra::Base
                     io.puts "<li>während des Sport&shy;unter&shy;richts (Umkleide, Sport in der Halle) musst du durch&shy;gehend eine Maske tragen – ist dies aufgrund der körperlichen Betätigung nicht möglich, nimmst du nicht am Sportunterricht teil</li>"
                     io.puts "</ul>"
                     io.puts "</div>"
+                    io.puts "</div>"
                 elsif salzh_status[:status] == :hotspot_klasse
+                    io.puts "<div class='col-lg-12 col-md-4 col-sm-6'>"
                     io.puts "<div class='hint'>"
                     io.puts "<p><strong>Klasse mit erhöhtem Infektionsaufkommen</strong></p>"
                     io.puts "<p>Da in deiner Klasse momentan ein erhöhtes Infektionsgeschehen herrscht, wirst du <strong>bis zum #{Date.parse(end_date).strftime('%d.%m.')}</strong> täglich getestet.</p>"
+                    io.puts "</div>"
                     io.puts "</div>"
                 end
                 io.string
@@ -392,6 +398,7 @@ class Main < Sinatra::Base
                 RETURN COALESCE(u.hide_salzh_panel_explanation, false) AS hide;
             END_OF_QUERY
             StringIO.open do |io|
+                io.puts "<div class='col-lg-12 col-md-4 col-sm-6'>"
                 io.puts "<div class='hint'>"
                 # io.puts "<p><strong><div style='display: inline-block; padding: 4px; margin: -4px; border-radius: 4px' class='bg-warning'>SuS im saLzH</div></strong></p>"
                 contact_person_count = 0
@@ -477,6 +484,7 @@ class Main < Sinatra::Base
                     io.puts "</ul>"
                 end
                 io.puts "<button class='btn btn-xs btn-outline-secondary' id='bu_minimize_salzh_explanation'>Diese Information minimieren</button>"
+                io.puts "</div>"
                 io.puts "</div>"
                 io.puts "</div>"
                 io.string
@@ -972,6 +980,7 @@ class Main < Sinatra::Base
         return '' if EXCLUDE_FROM_SELF_TEST_REPORT.include?(@session_user[:shorthand])
         today = Date.today.strftime('%Y-%m-%d')
         StringIO.open do |io|
+            io.puts "<div class='col-lg-12 col-md-4 col-sm-6'>"
             io.puts "<div class='hint'>"
             days = self_tests_this_week()
             label = 'noch nicht'
@@ -983,6 +992,7 @@ class Main < Sinatra::Base
             io.puts "Sie haben sich in dieser Woche <strong>#{label}</strong> getestet#{days_label}."
             io.puts "<hr />"
             io.puts "<button #{days.map { |x| x[:datum] }.include?(today) ? 'disabled' : ''} class='bu-add-self-test btn btn-success btn-sm float-right'><i class='fa fa-pencil'></i>&nbsp;&nbsp;Testung protokollieren…</button><div style='clear: both;'></div>"
+            io.puts "</div>"
             io.puts "</div>"
             io.string
         end

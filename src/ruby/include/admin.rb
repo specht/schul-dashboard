@@ -111,6 +111,7 @@ class Main < Sinatra::Base
             io.puts "<a class='btn btn-secondary' href='#website'>Website</a>"
             io.puts "<a class='btn btn-secondary' href='#tablets'>Tablets</a>"
             io.puts "<a class='btn btn-secondary' href='#monitor'>Monitor</a>"
+            io.puts "<a class='btn btn-secondary' href='#bibliothek'>Bibliothek</a>"
             io.puts "<a class='btn btn-secondary' href='/lesson_keys'>Lesson Keys</a>"
             io.puts "<hr />"
             io.puts "<h3 id='teachers'>Lehrerinnen und Lehrer</h3>"
@@ -273,6 +274,13 @@ class Main < Sinatra::Base
                 io.puts "<td><button class='btn btn-xs btn-danger btn-purge-session' data-email='kurs.tablet@#{SCHUL_MAIL_DOMAIN}' data-scrambled-sid='#{session[:scrambled_sid]}'>Abmelden</button></td>"
                 io.puts "</tr>"
             end
+            get_sessions_for_user("bib-mobile@#{SCHUL_MAIL_DOMAIN}").each do |session|
+                io.puts "<tr>"
+                io.puts "<td>Bibliotheks-Handy</td>"
+                io.puts "<td>#{session[:user_agent]}</td>"
+                io.puts "<td><button class='btn btn-xs btn-danger btn-purge-session' data-email='bib-mobile@#{SCHUL_MAIL_DOMAIN}' data-scrambled-sid='#{session[:scrambled_sid]}'>Abmelden</button></td>"
+                io.puts "</tr>"
+            end
             io.puts "</tbody>"
             io.puts "</table>"
             io.puts "</div>"
@@ -280,6 +288,9 @@ class Main < Sinatra::Base
             io.puts "<button class='btn btn-success bu-login-as-monitor'><i class='fa fa-sign-in'></i>&nbsp;&nbsp;Als Monitor anmelden</button>"
             io.puts "<button class='btn btn-success bu-login-as-monitor-sek'><i class='fa fa-sign-in'></i>&nbsp;&nbsp;Als Sek-Monitor anmelden</button>"
             io.puts "<button class='btn btn-success bu-login-as-monitor-lz'><i class='fa fa-sign-in'></i>&nbsp;&nbsp;Als Sek-Monitor anmelden</button>"
+            io.puts "<hr />"
+            io.puts "<h3 id='bibliothek'>Bibliothek</h3>"
+            io.puts "<button class='btn btn-success bu-login-as-bib-mobile'><i class='fa fa-sign-in'></i>&nbsp;&nbsp;Als Bibliotheks-Handy anmelden</button>"
             io.puts "<hr />"
             io.string
         end

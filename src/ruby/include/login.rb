@@ -183,6 +183,14 @@ class Main < Sinatra::Base
         respond(:ok => 'yeah')
     end
 
+    post '/api/login_as_bib_mobile' do
+        require_admin!
+        logout()
+        session_id = create_session("bib-mobile@#{SCHUL_MAIL_DOMAIN}", 365 * 24)
+        purge_missing_sessions(session_id, true)
+        respond(:ok => 'yeah')
+    end
+
     def all_sessions
         sids = request.cookies['sid']
         users = []

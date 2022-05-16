@@ -461,6 +461,9 @@ class SetupDatabase
                     neo4j_query(<<~END_OF_QUERY, :email => "monitor-lz@#{SCHUL_MAIL_DOMAIN}")
                         MERGE (u:User {email: $email})
                     END_OF_QUERY
+                    neo4j_query(<<~END_OF_QUERY, :email => "bib-mobile@#{SCHUL_MAIL_DOMAIN}")
+                        MERGE (u:User {email: $email})
+                    END_OF_QUERY
                 end
                 transaction do
                     present_users = neo4j_query(<<~END_OF_QUERY).map { |x| x['u.email'] }
@@ -475,6 +478,7 @@ class SetupDatabase
                     wanted_users << "monitor@#{SCHUL_MAIL_DOMAIN}"
                     wanted_users << "monitor-sek@#{SCHUL_MAIL_DOMAIN}"
                     wanted_users << "monitor-lz@#{SCHUL_MAIL_DOMAIN}"
+                    wanted_users << "bib-mobile@#{SCHUL_MAIL_DOMAIN}"
                     users_to_be_deleted = Set.new(present_users) - wanted_users
                     unless users_to_be_deleted.empty?
                         debug "Deleting #{users_to_be_deleted.size} users (not really)"
@@ -493,7 +497,7 @@ class SetupDatabase
                 purged_session_count = neo4j_query_expect_one(<<~END_OF_QUERY, {:today => (Date.today - 7).strftime('%Y-%m-%d')})['count']
                     MATCH (s:Session)-[:BELONGS_TO]->(u:User)
                     WHERE s.last_access IS NULL OR s.last_access < $today
-                    AND NOT ((u.email = 'lehrer.tablet@#{SCHUL_MAIL_DOMAIN}') OR (u.email = 'kurs.tablet@#{SCHUL_MAIL_DOMAIN}') OR (u.email = 'tablet@#{SCHUL_MAIL_DOMAIN}'))
+                    AND NOT ((u.email = 'lehrer.tablet@#{SCHUL_MAIL_DOMAIN}') OR (u.email = 'kurs.tablet@#{SCHUL_MAIL_DOMAIN}') OR (u.email = 'tablet@#{SCHUL_MAIL_DOMAIN}') OR (u.email = 'bib-mobile@#{SCHUL_MAIL_DOMAIN}'))
                     DETACH DELETE s
                     RETURN COUNT(s) as count;
                 END_OF_QUERY
@@ -1442,6 +1446,16 @@ class Main < Sinatra::Base
                                         :is_monitor => true,
                                         :teacher => false
                                     }
+                                elsif email == "bib-mobile@#{SCHUL_MAIL_DOMAIN}"
+                                    @session_user = {
+                                        :email => email,
+                                        :is_tablet => true,
+                                        :tablet_id => session[:tablet_id],
+                                        :tablet_type => :bib_mobile,
+                                        :color_scheme => 'd4aa03f003f2e80bc420',
+                                        :can_see_all_timetables => false,
+                                        :teacher => false
+                                    }
                                 elsif email != "tablet@#{SCHUL_MAIL_DOMAIN}"
                                     @session_user = @@user_info[email].dup
                                     if @session_user
@@ -1567,17 +1581,21 @@ class Main < Sinatra::Base
             tablet = @@tablets[tablet_id] || {}
             tablet_id_span = "<span class='tablet-id-indicator' style='background-color: #{tablet[:bg_color]}; color: #{tablet[:fg_color]}'>#{tablet_id}</span>"
             if teacher_tablet_logged_in?
-                return "<div style='margin-right: 15px;'><b>Lehrer-Tablet-Modus</b>#{tablet_id_span}</div>" 
+                return "<div style='margin-right: 15px;'><b>Lehrer-Tablet-Modus</b>#{tablet_id_span}</div>"
             elsif kurs_tablet_logged_in?
-                return "<div style='margin-right: 15px;'><b>Kurs-Tablet-Modus</b>#{tablet_id_span}</div>" 
+                return "<div style='margin-right: 15px;'><b>Kurs-Tablet-Modus</b>#{tablet_id_span}</div>"
             elsif klassenraum_logged_in?
-                return "<div style='margin-right: 15px;'><b>Klassenraum-Modus</b>#{tablet_id_span}</div>" 
+                return "<div style='margin-right: 15px;'><b>Klassenraum-Modus</b>#{tablet_id_span}</div>"
             elsif tablet_logged_in?
                 description = ''
                 if tablet[:klassen_stream]
                     description = " (Klassenstreaming #{tablet[:klassen_stream]})"
                 end
-                return "<div style='margin-right: 15px;'><b>Tablet-Modus</b>#{description}#{tablet_id_span}</div>" 
+                if @session_user[:tablet_type] == :bib_mobile
+                    return ""
+                else
+                    return "<div style='margin-right: 15px;'><b>Tablet-Modus</b>#{description}#{tablet_id_span}</div>"
+                end
             end
         end
         if monitor_logged_in?
@@ -2335,7 +2353,11 @@ class Main < Sinatra::Base
             salzh_protocol_delta = (parts[2] || '').strip
         elsif path == 'index'
             if @session_user
-                path = 'timetable'
+                if @session_user[:tablet_type] == :bib_mobile
+                    path = 'bib_scan_shelf'
+                else
+                    path = 'timetable'
+                end
             else
                 path = 'login'
             end

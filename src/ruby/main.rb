@@ -2354,7 +2354,8 @@ class Main < Sinatra::Base
         elsif path == 'index'
             if @session_user
                 if @session_user[:tablet_type] == :bib_mobile
-                    path = 'bib_scan_shelf'
+                    redirect "#{WEB_ROOT}/bib_scan_shelf", 302
+                    return
                 else
                     path = 'timetable'
                 end

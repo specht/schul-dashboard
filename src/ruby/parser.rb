@@ -779,7 +779,7 @@ class Parser
             File.open(path, File.basename(path) >= '2020-10-26.TXT' ? 'r:utf-8' : 'r:iso-8859-1') do |f|
                 f.each_line do |line|
                     line = line.encode('utf-8')
-                    parts = line.split("\t").map do |x| 
+                    parts = line.split("\t").map do |x|
                         x = x.strip
                         if x[0] == '"' && x[x.size - 1] == '"'
                             x = x[1, x.size - 2]
@@ -790,7 +790,7 @@ class Parser
                     shorthand = parts[1]
                     next if (shorthand || '').empty?
                     dow = parts[2].to_i - 1
-                    stunde = parts[3].to_i
+                    stunde = parts[3].to_i - 1
                     minutes = parts[4].to_i
                     all_pausenaufsichten[:aufsichten][start_date][shorthand] ||= {}
                     all_pausenaufsichten[:aufsichten][start_date][shorthand][dow] ||= {}

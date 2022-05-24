@@ -1952,9 +1952,13 @@ class Main < Sinatra::Base
                     io.puts '<hr />'
 
                     hidden_something = false
+                    all_hidden = @@klassen_order.all? do |klasse|
+                        !((@@klassen_for_shorthand[@session_user[:shorthand]] || Set.new()).include?(klasse))
+                    end
                     temp = StringIO.open do |tio|
                         @@klassen_order.each do |klasse|
                             hide = !((@@klassen_for_shorthand[@session_user[:shorthand]] || Set.new()).include?(klasse))
+                            hide = false if all_hidden
                             hidden_something = true if hide
                             style = hide ? 'display: none;' : ''
                             id = @@klassen_id[klasse]
@@ -1970,9 +1974,13 @@ class Main < Sinatra::Base
                     io.puts '<hr />'
 
                     hidden_something = false
+                    all_hidden = ROOM_ORDER.all? do |room|
+                        !((@@rooms_for_shorthand[@session_user[:shorthand]] || Set.new()).include?(room))
+                    end
                     temp = StringIO.open do |tio|
                         ROOM_ORDER.each do |room|
                             hide = !((@@rooms_for_shorthand[@session_user[:shorthand]] || Set.new()).include?(room))
+                            hide = false if all_hidden
                             hidden_something = true if hide
                             style = hide ? 'display: none;' : ''
                             id = @@room_ids[room]

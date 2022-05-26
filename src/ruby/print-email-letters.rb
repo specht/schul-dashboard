@@ -64,6 +64,7 @@ class Script
         File.open('/gen/E-Mail-Briefe/E-Mail-Briefe.tex', 'w') do |f|
             f.write(File.read('email-templates/letter-template.tex'))
             page = File.read('email-templates/letter-page.tex')
+            page = File.read('email-templates/letter-page.ru.tex')
             count = 0
             entries.sort do |a, b|
                 (a[:klasse] == b[:klasse]) ?

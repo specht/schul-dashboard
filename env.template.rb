@@ -32,7 +32,7 @@ ENABLE_MAIL_FORWARDER = false
 
 # Der Image Bot generiert verkleinerte Versionen von hochgeladenen Bildern
 # im jpeg- und webp-Format.
-ENABLE_IMAGE_BOT = false
+ENABLE_IMAGE_BOT = true
 
 # NextCloud für Test- und Entwicklungszwecke starten?
 # Bitte so nicht für den Produktiveinsatz nutzen

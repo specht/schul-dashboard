@@ -649,6 +649,7 @@ class Parser
         vplan_timestamp = nil
 
         Dir['/vplan/*.json'].sort.each do |path|
+            next unless File.basename(path) =~ /\d{4}\-\d{2}\-\d{2}\.json/
             mtime = File.mtime(path)
             vplan_timestamp ||= mtime
             vplan_timestamp = mtime if mtime > vplan_timestamp

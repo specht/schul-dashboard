@@ -112,6 +112,15 @@
         white-space: nowrap;
     }
 
+    .ticker-photo-bg {
+        background-color: rgba(255, 255, 255, 0.5);
+        box-shadow: 0 0 1vh rgba(0,0,0,0.6);
+    }
+
+    .ticker-photo-bg .ticker-message {
+        color: #222;
+    }
+
     .ticker-message {
         position: relative;
     }
@@ -269,7 +278,7 @@
     .main_sek td:nth-child(5) {
         width: 8vw!important;
     }
-    
+
     .main_lz_left {
         /* border: 1px solid red; */
         width: 50vw;
@@ -439,6 +448,16 @@
     .ticker {
         /*left: #{advents_calendar_date_today < 0 ? '0' : '24.5'}vw;*/
     }
+
+    .image_container {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        background-size: cover;
+        transition: opacity 3s linear;
+    }
 </style>
 
 <div class="embed-responsive embed-responsive-16by9">
@@ -473,11 +492,15 @@
                 </div>
             </div>
         </div>
+        <div class='attribution'><span class='color_scheme'></span><span style='margin: 0 0.5em;'>//</span>Stand: <span class='monitor_timestamp'></span></div>
+        <div class='monitor_advent_calendar' style='display: none;'>#{print_current_monitor_advent_calendar_images()}</div>
+        <div class='image_container ic_back' style='display: none;'>
+        </div>
+        <div class='image_container ic_front' style='display: none;'>
+        </div>
         <div class='container-fluid ticker row'>
             <div class='ticker-message'></div>
         </div>
-        <div class='attribution'><span class='color_scheme'></span><span style='margin: 0 0.5em;'>//</span>Stand: <span class='monitor_timestamp'></span></div>
-        <div class='monitor_advent_calendar' style='display: none;'>#{print_current_monitor_advent_calendar_images()}</div>
     </div>
 </div>
 
@@ -500,6 +523,9 @@
     var ticker_div = null;
     var ticker_messages = [];
     var ticker_index = 0;
+    var images = [];
+    var image_index = 0;
+    var image_swap_timer = null;
     var klassen_tr = #{KLASSEN_TR.to_json};
     var server_time_diff = 0;
 
@@ -515,16 +541,16 @@
         return js_time() + server_time_diff;
     }
 
-    function keep_alive() { 
+    function keep_alive() {
         var timeout = 20000;
-        if (ws.readyState == ws.OPEN) {  
-            ws.send('');  
-        }  
+        if (ws.readyState == ws.OPEN) {
+            ws.send('');
+        }
         (function() {
-            ws_timer_id = setTimeout(keep_alive, timeout);  
+            ws_timer_id = setTimeout(keep_alive, timeout);
         })();
-    }        
-    
+    }
+
     function append_vplan_table(div, data, long) {
         if (typeof(long) == 'undefined')
             long = false;
@@ -585,14 +611,14 @@
             console.log('ws.onopen');
             keep_alive();
         }
-        
+
         ws.onclose = function() {
             console.log('ws.onclose');
             clearTimeout(ws_timer_id);
             // try to re-establish connection in 10 seconds
             setTimeout(establish_websocket_connection, 10000);
         }
-        
+
         ws.onmessage = function(msg) {
             data = JSON.parse(msg.data);
             console.log(data.command);
@@ -602,7 +628,11 @@
             } else if (data.command == 'update_time') {
                 server_time_diff = data.time - js_time();
             } else if (data.command == 'update_monitor_messages') {
-                ticker_messages = data.messages;
+                console.log(data);
+                ticker_messages = data.data.messages;
+                images = data.data.images;
+                image_index = 0;
+                refresh_images();
             } else if (data.command == 'update_vplan') {
                 if (data.timestamp !== last_vplan_timestamp) {
                     last_vplan_timestamp = data.timestamp;
@@ -892,6 +922,42 @@
                 table: child[0],
                 parent: parent,
             };
+        }
+    }
+
+    function refresh_images() {
+        if (monitor_mode !== 'public')
+            return;
+        let div_bg = $('.image_container.ic_back');
+        let div_fg = $('.image_container.ic_front');
+        if (images.length === 0) {
+            $('.ticker').removeClass('ticker-photo-bg');
+            div_bg.css('background-image', 'none');
+            div_fg.css('background-image', 'none');
+            div_bg.hide();
+            div_fg.hide();
+            if (image_swap_timer !== null) {
+                clearInterval(image_swap_timer);
+                image_swap_timer = null;
+            }
+        } else {
+            $('.ticker').addClass('ticker-photo-bg');
+            div_bg.css('background-image', `url(/gen/i/${images[image_index]}-2048.jpg)`);
+            div_fg.css('background-image', `none`);
+            div_fg.css('opacity', 0.0);
+            div_bg.show();
+            div_fg.show();
+            image_swap_timer = setInterval(function() {
+                if (images.length > 1) {
+                    image_index = (image_index + 1) % images.length;
+                    div_fg.css('background-image', `url(/gen/i/${images[image_index]}-2048.jpg)`);
+                    div_fg.css('opacity', 1.0);
+                    setTimeout(function() {
+                        div_bg.css('background-image', `url(/gen/i/${images[image_index]}-2048.jpg)`);
+                        div_fg.css('opacity', 0.0);
+                    }, 4000);
+                }
+            }, 30000)
         }
     }
 

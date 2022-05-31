@@ -1,18 +1,23 @@
 class Main < Sinatra::Base
 
-    MONITOR_MESSAGE_PATH = '/vplan/message.txt'
+    MONITOR_MESSAGE_PATH = '/vplan/message.json'
 
     def get_monitor_messages()
-        text = ''
+        data = {}
         if File.exists?(MONITOR_MESSAGE_PATH)
-            text = File.read(MONITOR_MESSAGE_PATH)
+            data = JSON.parse(File.read(MONITOR_MESSAGE_PATH))
         end
-        messages = []
-        text.split("\n").each do |line|
-            line.strip!
-            messages << line unless line.empty?
+        result = {
+            :messages => [],
+            :images => []
+        }
+        [:messages, :images].each do |key|
+            (data[key.to_s] || '').split("\n").each do |line|
+                line.strip!
+                result[key] << line unless line.empty?
+            end
         end
-        messages
+        result
     end
 
     def self.force_reload_monitors
@@ -30,7 +35,7 @@ class Main < Sinatra::Base
     def update_monitors_message
         (@@ws_clients[:monitor] || {}).each_pair do |client_id, info|
             ws = info[:ws]
-            ws.send({:command => 'update_monitor_messages', :messages => get_monitor_messages}.to_json)
+            ws.send({:command => 'update_monitor_messages', :data => get_monitor_messages}.to_json)
         end
     end
 
@@ -53,20 +58,23 @@ class Main < Sinatra::Base
 
     post '/api/update_monitor_messages' do
         require_user_who_can_manage_monitors!
-        data = parse_request_data(:required_keys => [:text],
+        data = parse_request_data(:required_keys => [:messages, :images],
             :max_body_length => 64 * 1024,
             :max_string_length => 64 * 1024)
-        File.open(MONITOR_MESSAGE_PATH, 'w') { |f| f.puts data[:text] }
+        File.open(MONITOR_MESSAGE_PATH, 'w') do |f|
+            d = {:messages => data[:messages], :images => data[:images]}
+            f.print d.to_json
+        end
         update_monitors_message()
     end
 
     post '/api/get_monitor_messages_raw' do
         require_user_who_can_manage_monitors!
-        text = ''
+        data = {'messages': '', 'images': ''}
         if File.exists?(MONITOR_MESSAGE_PATH)
-            text = File.read(MONITOR_MESSAGE_PATH)
+            data = JSON.parse(File.read(MONITOR_MESSAGE_PATH))
         end
-        respond(:text => text)
+        respond(:data => data)
     end
 
     get '/api/update_monitors' do
@@ -76,7 +84,7 @@ class Main < Sinatra::Base
     get '/ws_monitor' do
         if Faye::WebSocket.websocket?(request.env)
             ws = Faye::WebSocket.new(request.env)
-        
+
             ws.on(:open) do |event|
                 client_id = request.env['HTTP_SEC_WEBSOCKET_KEY']
                 @@ws_clients[:monitor] ||= {}
@@ -85,7 +93,7 @@ class Main < Sinatra::Base
                 ws.send({command: 'update_time', time: Time.now.to_i }.to_json)
                 update_monitors()
             end
-        
+
             ws.on(:message) do |msg|
                 client_id = request.env['HTTP_SEC_WEBSOCKET_KEY']
                 data = nil
@@ -97,14 +105,14 @@ class Main < Sinatra::Base
                     STDERR.puts data.to_yaml
                 end
             end
-        
+
             ws.on(:close) do |event|
                 client_id = request.env['HTTP_SEC_WEBSOCKET_KEY']
                 @@ws_clients[:monitor] ||= {}
                 @@ws_clients[:monitor].delete(client_id)
                 STDERR.puts "Got #{@@ws_clients[:monitor].size} connected monitors."
             end
-        
+
             ws.rack_response
         end
     end

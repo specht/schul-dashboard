@@ -13,8 +13,16 @@
     <div class='row'>
         <div class='col-md-12'>
             <h2 style='margin-bottom: 30px;'>Monitore verwalten</h2>
-            <p>Bitte geben Sie hier Meldungen ein, die auf den Monitoren angezeigt werden sollen. Sie können mehrere Meldungen durch Zeilenumbrüche trennen.</p>
-            <textarea id='ta_messages' class='form-control' style='height: 200px; margin-bottom: 15px;'></textarea>
+            <div class='row'>
+            <div class='col-md-8'>
+                <p>Bitte geben Sie hier Meldungen ein, die auf den Monitoren angezeigt werden sollen. Sie können mehrere Meldungen durch Zeilenumbrüche trennen.</p>
+                <textarea id='ta_messages' class='form-control' style='height: 150px; margin-bottom: 15px;'></textarea>
+            </div>
+            <div class='col-md-4'>
+                <p>Hier können Sie Bilder angeben, die auf den Monitoren angezeigt werden sollen:</p>
+                <textarea id='ta_images' class='form-control' style='height: 150px; margin-bottom: 15px;'></textarea>
+            </div>
+            </div>
             <button id='btn-update-monitor-messages' class='btn btn-success pull-right' disabled>Speichern</button>
             <button id='btn-force-reload' class='btn btn-outline-secondary pull-right' style='margin-right: 10px;'>Monitore neu laden</button>
             <div style='clear: both;'></div>
@@ -46,8 +54,11 @@
 <script>
     document.addEventListener('DOMContentLoaded', function () {
         api_call('/api/get_monitor_messages_raw', {}, function(data) {
-            $('#ta_messages').val(data.text);
-            $('#btn-update-monitor-messages').prop('disabled', false);
+            if (data.success) {
+                $('#ta_messages').val(data.data.messages);
+                $('#ta_images').val(data.data.images);
+                $('#btn-update-monitor-messages').prop('disabled', false);
+            }
         });
         $('#btn-force-reload').click(function(e) {
             api_call('/api/force_reload_monitors', {}, function(data) {
@@ -55,8 +66,8 @@
             });
         });
         $('#btn-update-monitor-messages').click(function(e) {
-            api_call('/api/update_monitor_messages', {text: $('#ta_messages').val()}, function(data) {
+            api_call('/api/update_monitor_messages', {messages: $('#ta_messages').val(), images: $('#ta_images').val()}, function(data) {
             });
-        });        
+        });
     });
 </script>

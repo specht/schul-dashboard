@@ -792,7 +792,9 @@ class Main < Sinatra::Base
             WHERE (r:ExternalUser OR r:PredefinedExternalUser) AND (r.email = $email) AND COALESCE(rt.deleted, false) = false AND COALESCE(pr.deleted, false) = false AND COALESCE(p.deleted, false) = false
             RETURN pr, p, u.email;
         END_OF_QUERY
-        assert(results.size > 0)
+        if results.empty?
+            raise 'no results found, expected at least one!'
+        end
         temp = results.first
         poll_run = temp['pr']
         poll = temp['p']

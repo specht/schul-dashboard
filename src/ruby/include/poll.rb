@@ -787,11 +787,13 @@ class Main < Sinatra::Base
         data[:email] = email
         data[:timestamp] = timestamp
         poll_run = nil
-        temp = $neo4j.neo4j_query_expect_one(<<~END_OF_QUERY, data)
+        results = $neo4j.neo4j_query(<<~END_OF_QUERY, data)
             MATCH (u:User)<-[:ORGANIZED_BY]-(p:Poll)<-[:RUNS]-(pr:PollRun {id: $prid})<-[rt:IS_PARTICIPANT]-(r)
             WHERE (r:ExternalUser OR r:PredefinedExternalUser) AND (r.email = $email) AND COALESCE(rt.deleted, false) = false AND COALESCE(pr.deleted, false) = false AND COALESCE(p.deleted, false) = false
             RETURN pr, p, u.email;
         END_OF_QUERY
+        assert(results.size > 0)
+        temp = results.first
         poll_run = temp['pr']
         poll = temp['p']
         session_user = @@user_info[temp['u.email']][:display_last_name]

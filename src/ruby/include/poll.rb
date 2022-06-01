@@ -805,7 +805,7 @@ class Main < Sinatra::Base
             bcc SMTP_FROM
             from SMTP_FROM
             reply_to "#{@@user_info[session_user_email][:display_name]} <#{session_user_email}>"
-            
+
             subject "Einladung zur Umfrage: #{poll[:title]}"
 
             StringIO.open do |io|

@@ -52,7 +52,8 @@ class Main < Sinatra::Base
             END_OF_QUERY
             temp2 = $neo4j.neo4j_query(<<~END_OF_QUERY)
                 MATCH (u:User)
-                RETURN u.email, u.freiwillig_salzh, COALESCE(u.testing_required, TRUE) AS testing_required;
+                RETURN u.email, u.freiwillig_salzh, COALESCE(u.testing_required, TRUE) AS testing_required,
+                COALESCE(u.voluntary_testing, FALSE) AS voluntary_testing;
             END_OF_QUERY
         else
             emails = [emails] unless emails.is_a? Array
@@ -64,7 +65,8 @@ class Main < Sinatra::Base
             temp2 = $neo4j.neo4j_query(<<~END_OF_QUERY, {:emails => emails})
                 MATCH (u:User)
                 WHERE u.email IN $emails
-                RETURN u.email, u.freiwillig_salzh, COALESCE(u.testing_required, TRUE) AS testing_required;
+                RETURN u.email, u.freiwillig_salzh, COALESCE(u.testing_required, TRUE) AS testing_required,
+                COALESCE(u.voluntary_testing, FALSE) AS voluntary_testing;
             END_OF_QUERY
         end
 
@@ -73,7 +75,8 @@ class Main < Sinatra::Base
             email = row['u.email']
             result[email] = {
                 :freiwillig_salzh => row['u.freiwillig_salzh'], # end_date or nil
-                :testing_required => row['testing_required']
+                :testing_required => row['testing_required'],
+                :voluntary_testing => row['voluntary_testing']
             }
         end
         temp.each do |row|
@@ -116,7 +119,7 @@ class Main < Sinatra::Base
                 needs_testing_today = false
             end
             info[:needs_testing_today] = needs_testing_today
-            
+
         end
         result
     end
@@ -208,6 +211,17 @@ class Main < Sinatra::Base
             RETURN u.testing_required;
         END_OF_QUERY
         respond(:ok => true, :testing_required => result['u.testing_required'])
+    end
+
+    post '/api/toggle_voluntary_testing' do
+        require_teacher!
+        data = parse_request_data(:required_keys => [:email])
+        result = neo4j_query_expect_one(<<~END_OF_QUERY, :email => data[:email])
+            MATCH (u:User {email: $email})
+            SET u.voluntary_testing = NOT (COALESCE(u.voluntary_testing, FALSE))
+            RETURN u.voluntary_testing;
+        END_OF_QUERY
+        respond(:ok => true, :voluntary_testing => result['u.voluntary_testing'])
     end
 
     def self.get_hotspot_klassen

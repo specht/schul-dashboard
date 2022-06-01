@@ -1,6 +1,7 @@
 class Main < Sinatra::Base
     def mail_addresses_table(klasse)
         require_teacher!
+        klassenleiter_logged_in = (@@klassenleiter[klasse] || []).include?(@session_user[:shorthand]) || admin_logged_in?
         all_homeschooling_users = Main.get_all_homeschooling_users()
         salzh_status = Main.get_salzh_status_for_emails(Main.class_variable_get(:@@schueler_for_klasse)[klasse] || [])
         StringIO.open do |io|
@@ -35,6 +36,9 @@ class Main < Sinatra::Base
                 io.puts "<th>Reguläre Testung</th>"
                 io.puts "<th>Freiwilliges saLzH bis</th>"
             end
+            if klassenleiter_logged_in
+                io.puts "<th>Freiwillige Testung</th>"
+            end
             io.puts "<th>E-Mail-Adresse</th>"
             # io.puts "<th style='width: 140px;'>Homeschooling</th>"
             if ['11', '12'].include?(klasse)
@@ -59,7 +63,7 @@ class Main < Sinatra::Base
                 group2_for_email[x['u.email']] = x['group2']
                 group_af_for_email[x['u.email']] = x['group_af']
             end
-            
+
             (@@schueler_for_klasse[klasse] || []).sort do |a, b|
                 (@@user_info[a][:last_name] == @@user_info[b][:last_name]) ?
                 (@@user_info[a][:first_name] <=> @@user_info[b][:first_name]) :
@@ -99,10 +103,20 @@ class Main < Sinatra::Base
                     io.puts "<div class='input-group'><input type='date' class='form-control ti_freiwillig_salzh' value='#{freiwillig_salzh}' /><div class='input-group-append'><button #{freiwillig_salzh.nil? ? 'disabled' : ''} class='btn #{freiwillig_salzh.nil? ? 'btn-outline-secondary' : 'btn-danger'} bu_delete_freiwillig_salzh'><i class='fa fa-trash'></i></button></div></div>"
                     io.puts "</td>"
                 end
+                if klassenleiter_logged_in
+                    io.puts "<td>"
+                    voluntary_testing = salzh_status[email][:voluntary_testing]
+                    if voluntary_testing
+                        io.puts "<button class='btn btn-sm btn-success bu_toggle_voluntary_testing'><i class='fa fa-check'></i>&nbsp;&nbsp;nimmt teil</button>"
+                    else
+                        io.puts "<button class='btn btn-sm btn-outline-secondary bu_toggle_voluntary_testing'><i class='fa fa-times'></i>&nbsp;&nbsp;nimmt nicht teil</button>"
+                    end
+                    io.puts "</td>"
+                end
                 io.puts "<td>"
                 print_email_field(io, record[:email])
                 io.puts "</td>"
-                homeschooling_button_disabled = (@@klassenleiter[klasse] || []).include?(@session_user[:shorthand]) ? '' : 'disabled'
+                homeschooling_button_disabled = klassenleiter_logged_in ? '' : 'disabled'
                 # if all_homeschooling_users.include?(email)
                 #     io.puts "<td><button #{homeschooling_button_disabled} class='btn btn-info btn-xs btn-toggle-homeschooling' data-email='#{email}'><i class='fa fa-home'></i>&nbsp;&nbsp;zu Hause</button></td>"
                 # else

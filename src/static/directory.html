@@ -109,5 +109,18 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     });
+    $('.bu_toggle_voluntary_testing').click(function(e) {
+        let email = $(e.target).closest('tr').data('email');
+        let button = $(e.target).closest('button');
+        api_call('/api/toggle_voluntary_testing', {email: email}, function(data) {
+            if (data.success) {
+                if (data.voluntary_testing) {
+                    button.removeClass('btn-outline-secondary').addClass('btn-success').html("<i class='fa fa-check'></i>&nbsp;&nbsp;nimmt teil");
+                } else {
+                    button.removeClass('btn-success').addClass('btn-outline-secondary').html("<i class='fa fa-times'></i>&nbsp;&nbsp;nimmt nicht teil");
+                }
+            }
+        });
+    });
 });
 </script>

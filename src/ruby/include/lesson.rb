@@ -628,9 +628,6 @@ class Main < Sinatra::Base
         Zlib::GzipReader.open("/gen/w/#{lesson_key_id}/all.json.gz") do |f|
             lesson_events = JSON.parse(f.read)
         end
-        STDERR.puts lesson_data.to_yaml
-        STDERR.puts lesson_events.to_yaml
-        STDERR.puts lesson_key_id
         main = self
         y = 0
         doc = Prawn::Document.new(:page_size => 'A4', :page_layout => :portrait,

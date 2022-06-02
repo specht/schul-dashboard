@@ -899,7 +899,7 @@ function selection_updated() {
             $('#ti_lesson_need_tablet_set').prop('disabled', true);
         }
     } 
-    if ((#{@@lessons[:lesson_keys][show_lesson_key][:lehrer]}.indexOf('#{@session_user[:shorthand]}') < 0)) {
+    if ((#{@@lessons[:lesson_keys][show_lesson_key][:lehrer]}.indexOf('#{@session_user[:shorthand]}') < 0) && (#{(@@lessons[:historic_lessons_for_shorthand][@session_user[:shorthand]] || Set.new()).to_a}.indexOf('#{show_lesson_key}') < 0)) {
         $('.pane_items *').prop('disabled', true);
         $('.bu-discard-changes').removeClass('btn-secondary').addClass('btn-outline-secondary').prop('disabled', true);
         $('.bu-save-changes').removeClass('btn-success').addClass('btn-outline-secondary').prop('disabled', true);

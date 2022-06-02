@@ -454,6 +454,7 @@ class Parser
     end
     
     def parse_timetable(config, lesson_key_tr = {})
+        historic_lessons_for_shorthand = {}
         sub_keys_for_unr_fach = {}
         lesson_keys_for_unr = {}
         info_for_lesson_key = {}
@@ -510,8 +511,7 @@ class Parser
             File.open(path, 'r:utf-8') do |f|
                 f.each_line do |line|
                     line = line.encode('utf-8')
-#                     parts = line.split(",").map do |x| 
-                    parts = line.split("\t").map do |x| 
+                    parts = line.split("\t").map do |x|
                         x = x.strip
                         if x[0] == '"' && x[x.size - 1] == '"'
                             x = x[1, x.size - 2]
@@ -526,16 +526,12 @@ class Parser
                     klasse = '9o' if klasse == '9?'
                     klasse = '9o' if klasse == '9ω'
 
-#                     next if timetable_start_date < '2020-08-19' && ['11', '12'].include?(klasse)
                     lehrer = parts[2]
                     if @use_mock_names
                         lehrer = @mock_shorthand[lehrer]
                         next if lehrer.nil?
                     end
                     fach = parts[3].gsub('/', '-')
-#                     debug fach
-#                     fach = fach.split('-').first
-#                     next if (!fach.nil?) && fach[fach.size - 1] =~ /\d/
                     raum = parts[4].split('~').join('/')
                     dow = parts[5].to_i - 1
                     stunde = parts[6].to_i
@@ -570,7 +566,7 @@ class Parser
                             klassen = (x.split('~')[1] || '').split('/')
                             klassen == sub_key_klassen
                         end.map { |x| sub_keys_for_unr_fach[unr_fach][x] }.first
-                        
+
                         letter ||= ('a'.ord + sub_keys_for_unr_fach[unr_fach].size).chr
                         sub_keys_for_unr_fach[unr_fach][sub_key] ||= letter
                     end
@@ -586,6 +582,11 @@ class Parser
                         lesson_keys_for_unr[unr_fach.split('_')[1].to_i] << lesson_key
                         info_for_lesson_key[lesson_key] ||= {:lehrer => Set.new(),
                                                              :klassen => Set.new()}
+                        # only assign lessons to teachers if it's in the current timetable
+                        stunden_info[:lehrer].each do |shorthand|
+                            historic_lessons_for_shorthand[shorthand] ||= Set.new()
+                            historic_lessons_for_shorthand[shorthand] << lesson_key
+                        end
                         if timetable_start_date == current_timetable_start_date
                             info_for_lesson_key[lesson_key][:lehrer] |= stunden_info[:lehrer]
                         end
@@ -768,6 +769,7 @@ class Parser
             vertretungen[entry[:datum]] ||= []
             vertretungen[entry[:datum]] << entry
         end
+        all_lessons[:historic_lessons_for_shorthand] = historic_lessons_for_shorthand
         return all_lessons, vertretungen, vplan_timestamp, day_messages, lesson_key_back_tr, original_lesson_key_for_lesson_key
     end
     

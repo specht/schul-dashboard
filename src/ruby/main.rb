@@ -1749,18 +1749,40 @@ class Main < Sinatra::Base
                     io.puts "</div>"
                     io.puts "</li>"
                 elsif x == :kurse
-                    unless (@@lessons_for_shorthand[@session_user[:shorthand]] || []).empty?
+                    unless (@@lessons_for_shorthand[@session_user[:shorthand]] || []).empty? && (@@lessons[:historic_lessons_for_shorthand][@session_user[:shorthand]] || []).empty?
                         io.puts "<li class='nav-item dropdown'>"
                         io.puts "<a class='nav-link nav-icon dropdown-toggle' href='#' id='navbarDropdown' role='button' data-toggle='dropdown' aria-haspopup='true' aria-expanded='false'>"
                         io.puts "<div class='icon'><i class='fa fa-address-book'></i></div>Kurse"
                         io.puts "</a>"
                         io.puts "<div class='dropdown-menu dropdown-menu-right' aria-labelledby='navbarDropdown'>"
+                        taken_lesson_keys = Set.new()
                         (@@lessons_for_shorthand[@session_user[:shorthand]] || []).each do |lesson_key|
                             lesson_info = @@lessons[:lesson_keys][lesson_key]
                             if lesson_info
                                 fach = lesson_info[:fach]
                                 fach = @@faecher[fach] if @@faecher[fach]
                                 io.puts "<a class='dropdown-item nav-icon' href='/lessons/#{CGI.escape(lesson_key)}'><div class='icon'><i class='fa fa-address-book'></i></div><span class='label'>#{fach} (#{lesson_info[:klassen].map { |x| tr_klasse(x) }.join(', ')})</span></a>"
+                                taken_lesson_keys << lesson_key
+                            end
+                        end
+                        remaining_lesson_keys = ((@@lessons[:historic_lessons_for_shorthand][@session_user[:shorthand]] || Set.new()) - taken_lesson_keys)
+                        unless remaining_lesson_keys.empty?
+                            lesson_keys_with_data = neo4j_query(<<~END_OF_QUERY, {:lesson_keys => remaining_lesson_keys}).map { |x| x['l.key'] }
+                                MATCH (l:Lesson)
+                                WHERE l.key IN $lesson_keys
+                                RETURN l.key;
+                            END_OF_QUERY
+                            remaining_lesson_keys &= Set.new(lesson_keys_with_data)
+                            unless remaining_lesson_keys.empty?
+                                io.puts "<div class='dropdown-divider'></div>"
+                                remaining_lesson_keys.to_a.sort.each do |lesson_key|
+                                    lesson_info = @@lessons[:lesson_keys][lesson_key]
+                                    if lesson_info
+                                        fach = lesson_info[:fach]
+                                        fach = @@faecher[fach] if @@faecher[fach]
+                                        io.puts "<a class='dropdown-item nav-icon' href='/lessons/#{CGI.escape(lesson_key)}'><div class='icon'><i class='fa fa-address-book'></i></div><span class='label'>#{fach} (#{lesson_info[:klassen].map { |x| tr_klasse(x) }.join(', ')})</span></a>"
+                                    end
+                                end
                             end
                         end
                         io.puts "</div>"
@@ -2044,7 +2066,7 @@ class Main < Sinatra::Base
     end
     
     def may_edit_lessons?(lesson_key)
-        teacher_logged_in? && @@lessons_for_shorthand[@session_user[:shorthand]].include?(lesson_key)
+        teacher_logged_in? && (@@lessons_for_shorthand[@session_user[:shorthand]].include?(lesson_key) || (@@lessons[:historic_lessons_for_shorthand][@session_user[:shorthand]].include?(lesson_key)))
     end
 
     get '/nc_auth' do

@@ -618,4 +618,99 @@ class Main < Sinatra::Base
         end
         respond(:results => results)
     end
+
+    get '/api/kursbuch_pdf/*' do
+        require_teacher!
+        lesson_key = request.path.sub('/api/kursbuch_pdf/', '')
+        lesson_key_id = @@lessons[:lesson_keys][lesson_key][:id]
+        lesson_data = Main.get_lesson_data(lesson_key)
+        lesson_events = nil
+        Zlib::GzipReader.open("/gen/w/#{lesson_key_id}/all.json.gz") do |f|
+            lesson_events = JSON.parse(f.read)
+        end
+        STDERR.puts lesson_data.to_yaml
+        STDERR.puts lesson_events.to_yaml
+        STDERR.puts lesson_key_id
+        main = self
+        y = 0
+        doc = Prawn::Document.new(:page_size => 'A4', :page_layout => :portrait,
+                                  :margin => 0) do
+            font_families.update(
+                "Roboto Condensed" => {
+                    :bold        => "/app/fonts/RobotoCondensed-Bold.ttf",
+                    :italic      => "/app/fonts/RobotoCondensed-Italic.ttf",
+                    :bold_italic => "/app/fonts/RobotoCondensed-BoldItalic.ttf",
+                    :normal      => '/app/fonts/RobotoCondensed-Regular.ttf' })
+            font('Roboto Condensed') do
+                font_size 10
+                line_width 0.1.mm
+                px = 1.mm
+                py = 1.mm
+                lesson_events.each do |event|
+                    next unless event['lesson']
+                    lesson_offset = event['lesson_offset']
+                    count = event['count']
+                    height = 20.33.mm
+                    bounding_box([10.mm, 297.0.mm - 22.mm - height * y], width: 189.mm, height: height) do
+                        x = 0.mm
+                        width = 14.mm
+                        bounding_box([x, height], width: width, height: height) do
+                            stroke_bounds
+                            d = Date.parse(event['datum'])
+                            text_box d.strftime("%d.%m.\n%Y"), at: [px, height - py], width: width - px * 2, height: height - py * 2, align: :center
+                        end
+                        x += width
+                        width = 12.mm
+                        bounding_box([x, height], width: width, height: height) do
+                            stroke_bounds
+                            stunde = count > 1 ? "#{event['stunde']}.–#{event['stunde'].to_i + count - 1}." : "#{event['stunde']}."
+                            text_box stunde, at: [px, height - py], width: width - px * 2, height: height - py * 2, align: :center
+                        end
+                        x += width
+                        width = 69.mm
+                        stundenthema_text = Set.new()
+                        hausaufgaben_text = Set.new()
+                        (0...count).each do |offset|
+                            info = lesson_data[lesson_offset + offset]
+                            next if info.nil?
+                            stundenthema_text << info[:info][:stundenthema_text]
+                            parts = []
+                            parts << info[:info][:hausaufgaben_text]
+                            parts << info[:info][:ha_amt_text]
+                            parts.reject! { |x| x.nil? || x.empty? }
+                            hausaufgaben_text << parts.join("\n")
+                        end
+                        bounding_box([x, height], width: width, height: height) do
+                            stroke_bounds
+                            begin
+                                text_box stundenthema_text.to_a.join("\n"), at: [px, height - py], width: width - px * 2, height: height - py * 2
+                            rescue
+                            end
+                        end
+                        x += width
+                        width = 93.mm
+                        bounding_box([x, height], width: width, height: height) do
+                            stroke_bounds
+                            begin
+                                text_box hausaufgaben_text.to_a.join("\n"), at: [px, height - py], width: width - px * 2, height: height - py * 2
+                            rescue
+                            end
+                        end
+                    end
+                    y += 1
+                    if y > 12
+                        start_new_page
+                        y = 0
+                    end
+                end
+                # y = 297.mm - 20.mm
+                # draw_text "#{lesson_key}", :at => [30.mm, y + 6.pt]
+                # line_width 0.2.mm
+                # stroke { line [30.mm, y + 20.7.pt], [77.mm, y + 20.7.pt] } if i == 0
+                # stroke { line [30.mm, y], [77.mm, y] }
+            end
+        end
+        # respond_raw_with_mimetype_and_filename(doc.render, 'application/pdf', "Klasse #{klasse}.pdf")
+        respond_raw_with_mimetype(doc.render, 'application/pdf')
+    end
 end

@@ -571,10 +571,12 @@ class Main < Sinatra::Base
                     sus_count = 0
                     any_strike = false
                     sus_list = []
+                    number_for_email = {}
                     klassen_group.each do |klasse|
                         main.iterate_directory(klasse) do |email, i|
                             next if exclude_from_testing.include?(email)
                             sus_list << email
+                            number_for_email[email] = i
                         end
                     end
                     sus_list.each.with_index do |email, i|
@@ -608,7 +610,7 @@ class Main < Sinatra::Base
                             if klassen_group.size == 1
                                 title = "<b>Testliste Klasse #{Main.tr_klasse(klassen_group.first)}</b>"
                             else
-                                title = "<b>Testliste Klassen #{klassen_group.map { |x| Main.tr_klasse(x)}.join(', ')}</b>"
+                                title = "<b>Testliste Klassen #{Main.tr_klasse(klassen_group.first)} bis #{Main.tr_klasse(klassen_group.last)}</b>"
                             end
                             parts = []
                             # if klassenleiter[klasse] && (!['11', '12'].include?(klasse))
@@ -662,19 +664,24 @@ class Main < Sinatra::Base
                                     text "war im Sekretariat", :align => :right
                                 end
                             end
+                            dist = 18.0
+                            offset = 76.0 + 7
                             bounding_box([6.4.cm, 249.mm - 6.7.mm * sus_on_this_page], width: 16.2.cm, height: 2.5.cm) do
+                                x = offset + dist * 0 - 62.7
                                 stroke do
-                                    line [0.cm, 18.mm], [1.35.cm, 18.mm]
-                                    line [1.35.cm, 18.mm], [1.35.cm, 21.mm]
+                                    line [0.cm, 18.mm], [x.mm, 18.mm]
+                                    line [x.mm, 18.mm], [x.mm, 21.mm]
                                 end
+                                x = offset + dist * 3 - 62.7
                                 stroke do
-                                    line [0.cm, 18.mm - 11.0], [7.35.cm, 18.mm - 11.0]
-                                    line [7.35.cm, 18.mm - 11.0], [7.35.cm, 21.mm]
+                                    line [0.cm, 18.mm - 11], [x.mm, 18.mm - 11]
+                                    line [x.mm, 18.mm - 11], [x.mm, 21.mm]
                                 end
                                 if any_strike
+                                    x = offset + dist * 4 - 62.7
                                     stroke do
-                                        line [0.cm, 18.mm - 22.0], [9.35.cm, 18.mm - 22.0]
-                                        line [9.35.cm, 18.mm - 22.0], [9.35.cm, 21.mm]
+                                        line [0.cm, 18.mm - 22], [x.mm, 18.mm - 22]
+                                        line [x.mm, 18.mm - 22], [x.mm, 21.mm]
                                     end
                                 end
                             end
@@ -718,14 +725,11 @@ class Main < Sinatra::Base
                                 end
                                 user = @@user_info[email]
                                 y = 242.mm - 6.7.mm * i
-                                draw_text "#{j + 1}.", :at => [0.5.mm, y]
-                                draw_text "#{label_type == :disabled ? '(' : ''}#{user[:last_name]}, #{user[:first_name]} (#{main.tr_klasse(user[:klasse])}) #{label_type == :disabled ? ')' : ''}", :at => [7.mm, y]
+                                draw_text "#{main.tr_klasse(user[:klasse])}/#{number_for_email[email] + 1}", :at => [0.5.mm, y]
+                                draw_text "#{label_type == :disabled ? '(' : ''}#{user[:last_name]}, #{user[:first_name]}#{label_type == :disabled ? ')' : ''}", :at => [7.mm + 7.mm, y]
                                 # draw_text "#{status[:status]} #{status[:status].class} #{status[:testing_required]} #{label_type.to_s}", :at => [7.mm, y]
 
                                 # TK pos neg TZ Verspätung
-
-                                dist = 20.0
-                                offset = 76.0
 
                                 %w(TK pos. neg. TZ).each.with_index do |label, i|
                                     x = offset + dist * i

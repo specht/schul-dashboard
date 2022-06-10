@@ -531,6 +531,24 @@ class Main < Sinatra::Base
             is_regular_test_day = true
         end
 
+        klassen_groups = []
+        # KLASSEN_ORDER.each do |klasse|
+        #     klassen_groups << [klasse]
+        # end
+        cut = KLASSEN_ORDER.index('7c')
+        klassen_groups << KLASSEN_ORDER[0, cut]
+        klassen_groups << KLASSEN_ORDER[cut, KLASSEN_ORDER.size - cut]
+        exclude_from_testing = Set.new()
+        rows = $neo4j.neo4j_query(<<~END_OF_QUERY)
+            MATCH (u:User)
+            WHERE COALESCE(u.voluntary_testing, FALSE) = FALSE
+            RETURN u.email;
+        END_OF_QUERY
+        rows.each do |row|
+            exclude_from_testing << row['u.email']
+        end
+
+
         doc = Prawn::Document.new(:page_size => 'A4', :page_layout => :portrait, 
                                 :margin => 0) do
             font_families.update("RobotoCondensed" => {
@@ -548,11 +566,18 @@ class Main < Sinatra::Base
             first_page = true
             max_entries_per_page = 33
             font('RobotoCondensed') do
-                KLASSEN_ORDER.each.with_index do |klasse, index|
+                klassen_groups.each.with_index do |klassen_group, index|
 
                     sus_count = 0
                     any_strike = false
-                    main.iterate_directory(klasse) do |email, i|
+                    sus_list = []
+                    klassen_group.each do |klasse|
+                        main.iterate_directory(klasse) do |email, i|
+                            next if exclude_from_testing.include?(email)
+                            sus_list << email
+                        end
+                    end
+                    sus_list.each.with_index do |email, i|
                         status = salzh_status[email]
                         label_type = Main.get_test_list_label_type(status[:status], status[:testing_required], is_regular_test_day)
                         sus_count += 1
@@ -571,7 +596,7 @@ class Main < Sinatra::Base
                         start_new_page unless first_page
                         first_page = false
                         sus0 = page * max_entries_per_page
-                        sus1 = [(page + 1) * max_entries_per_page - 1, @@schueler_for_klasse[klasse].size - 1].min
+                        sus1 = [(page + 1) * max_entries_per_page - 1, sus_list.size - 1].min
                         sus_on_this_page = sus1 - sus0 + 1
 
                         font_size 11
@@ -579,11 +604,16 @@ class Main < Sinatra::Base
                             float do
                                 text "#{DateTime.now.strftime("%d.%m.%Y")}", :align => :right
                             end
-                            title = "<b>Testliste Klasse #{Main.tr_klasse(klasse)}</b>   "
-                            parts = []
-                            if klassenleiter[klasse] && (!['11', '12'].include?(klasse))
-                                parts << "#{(klassenleiter[klasse] || []).map { |shorthand| (user_info[shorthands[shorthand]] || {})[:display_last_name] }.reject { |x| x.nil? }.join(' / ')}"
+                            title = ""
+                            if klassen_group.size == 1
+                                title = "<b>Testliste Klasse #{Main.tr_klasse(klassen_group.first)}</b>"
+                            else
+                                title = "<b>Testliste Klassen #{klassen_group.map { |x| Main.tr_klasse(x)}.join(', ')}</b>"
                             end
+                            parts = []
+                            # if klassenleiter[klasse] && (!['11', '12'].include?(klasse))
+                            #     parts << "#{(klassenleiter[klasse] || []).map { |shorthand| (user_info[shorthands[shorthand]] || {})[:display_last_name] }.reject { |x| x.nil? }.join(' / ')}"
+                            # end
                             if page_count > 1
                                 parts << "Seite #{page + 1} von #{page_count}"
                             end
@@ -655,7 +685,7 @@ class Main < Sinatra::Base
                                 font_size 11
                             end
 
-                            main.iterate_directory(klasse) do |email, j|
+                            sus_list.each.with_index do |email, j|
                                 next if j < sus0 || j > sus1
                                 dx = (Math.sin(j * freq) * amp)
                                 i = j - sus0
@@ -666,8 +696,9 @@ class Main < Sinatra::Base
                                     rectangle [0.mm, y + 4.8.mm], 17.cm + dx, 6.7.mm
                                 end
                             end
-                            main.iterate_directory(klasse) do |email, j|
+                            sus_list.each.with_index do |email, j|
                                 next if j < sus0 || j > sus1
+                                klasse = @@user_info[email][:klasse]
                                 dx = (Math.sin(j * freq) * amp)
                                 dx2 = (Math.sin((j + 1) * freq) * amp)
                                 i = j - sus0
@@ -688,26 +719,26 @@ class Main < Sinatra::Base
                                 user = @@user_info[email]
                                 y = 242.mm - 6.7.mm * i
                                 draw_text "#{j + 1}.", :at => [0.5.mm, y]
-                                draw_text "#{label_type == :disabled ? '(' : ''}#{user[:last_name]}, #{user[:first_name]}#{label_type == :disabled ? ')' : ''}", :at => [7.mm, y]
+                                draw_text "#{label_type == :disabled ? '(' : ''}#{user[:last_name]}, #{user[:first_name]} (#{main.tr_klasse(user[:klasse])}) #{label_type == :disabled ? ')' : ''}", :at => [7.mm, y]
                                 # draw_text "#{status[:status]} #{status[:status].class} #{status[:testing_required]} #{label_type.to_s}", :at => [7.mm, y]
 
                                 # TK pos neg TZ Verspätung
 
                                 dist = 20.0
+                                offset = 76.0
 
                                 %w(TK pos. neg. TZ).each.with_index do |label, i|
-                                    x = 76 + dist * i
+                                    x = offset + dist * i
                                     stroke { rectangle [x.mm, y + 3.mm], 3.mm, 3.mm }
                                     draw_text label, :at => [x.mm + 5.mm, y]
                                 end
-
 
                                 stroke_color '000000'
                                 fill_color '000000'
 
                                 if label_type == :strike
-                                    stroke { rectangle [(76 + dist * 4).mm, y + 3.mm], 3.mm, 3.mm }
-                                    draw_text "Sek", :at => [(76 + dist * 4).mm + 5.mm, y]
+                                    stroke { rectangle [(offset + dist * 4).mm, y + 3.mm], 3.mm, 3.mm }
+                                    draw_text "Sek", :at => [(offset + dist * 4).mm + 5.mm, y]
                                     stroke { line [0.mm, y + 1.mm], [7.3.cm, y + 1.mm] }
                                 end
 

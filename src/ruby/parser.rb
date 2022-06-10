@@ -305,9 +305,10 @@ class Parser
             email = @force_email[name]
         end
         if email.sub('@' + SCHUL_MAIL_DOMAIN, '').size > 23
-            debug email
-            debug "Fehler: E-Mail-Adresse ist zu lang: #{email}"
-            exit(1)
+            unless @use_mock_names
+                debug "Fehler: E-Mail-Adresse ist zu lang: #{email}"
+                exit(1)
+            end
         end
 
         record = {:first_name => rufname,

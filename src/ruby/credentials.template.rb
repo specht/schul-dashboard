@@ -14,6 +14,7 @@ SCHUL_ICON = "brand.png"
 
 # E-Mail-Adresse der Schulleitung für das Impressum
 SCHULLEITUNG_EMAIL = 'schulleitung@beispielschule.de'
+SEKRETARIAT_EMAIL = 'sekretariat@beispielschule.de'
 
 # Mail-Domain für SuS-Adressen
 SCHUL_MAIL_DOMAIN = "mail.beispielschule.de"

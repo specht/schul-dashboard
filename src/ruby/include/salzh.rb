@@ -300,6 +300,44 @@ class Main < Sinatra::Base
         Main.get_current_salzh_sus
     end
 
+    def self.get_voluntary_testing_sus
+        rows = $neo4j.neo4j_query(<<~END_OF_QUERY).map do |x|
+            MATCH (u:User {voluntary_testing: true})
+            RETURN u.email, u.last_skipped_voluntary_testing;
+        END_OF_QUERY
+            d = @@user_info[x['u.email']]
+            d[:last_skipped_voluntary_testing] = x['u.last_skipped_voluntary_testing']
+            d
+        end
+
+        rows.sort! do |a, b|
+            if a[:klasse] == b[:klasse]
+                if a[:last_name] == b[:last_name]
+                    a[:first_name] <=> b[:first_name]
+                else
+                    a[:last_name] <=> b[:last_name]
+                end
+            else
+                (KLASSEN_ORDER.index(a[:klasse]) <=> KLASSEN_ORDER.index(b[:klasse]))
+            end
+        end
+        today_s = DateTime.now.strftime('%Y-%m-%d')
+        rows.map do |info|
+            {
+                :email => info[:email],
+                :first_name => info[:first_name],
+                :last_name => info[:last_name],
+                :display_name => info[:display_name],
+                :skipped_today => info[:last_skipped_voluntary_testing] == today_s,
+                :klasse => tr_klasse(info[:klasse])
+            }
+        end
+    end
+
+    def get_voluntary_testing_sus
+        Main.get_voluntary_testing_sus
+    end
+
     def self.get_current_salzh_status
         entries = []
         temp = self.get_salzh_status_for_emails()
@@ -1118,6 +1156,34 @@ class Main < Sinatra::Base
         neo4j_query(<<~END_OF_QUERY, {:email => data[:email], :datum => data[:datum]})
             MATCH (u:User {email: $email})-[r:SELF_TESTED_ON]->(std:SelfTestDay {datum: $datum})
             DELETE r;
+        END_OF_QUERY
+        respond(:ok => true)
+    end
+
+    post '/api/notify_parents_of_skipped_voluntary_testing' do
+        require_user_who_can_manage_salzh!
+        data = parse_request_data(:required_keys => [:email])
+        first_name = @@user_info[data[:email]][:first_name]
+
+        deliver_mail do
+            to "eltern.#{data[:email]}"
+            cc SEKRETARIAT_EMAIL
+            bcc SMTP_FROM
+            from SMTP_FROM
+
+            subject "Nichtteilnahme an freiwilliger Testung"
+
+            StringIO.open do |io|
+                io.puts "<p>Liebe Eltern von #{first_name},</p>"
+                io.puts "<p>Ihr Kind ist heute nicht zur Testung erschienen. Bitte beachten Sie, dass Ihre Entscheidung zur freiwilligen Teilnahme Ihres Kindes an den Testungen bis zu den Sommerferien gilt.</p>"
+                io.puts "<p>Mit freundlichen Grüßen<br />#{WEBSITE_MAINTAINER_NAME}</p>"
+                io.string
+            end
+        end
+
+        neo4j_query(<<~END_OF_QUERY, {:email => data[:email], :datum => DateTime.now.strftime('%Y-%m-%d')})
+            MATCH (u:User {email: $email})
+            SET u.last_skipped_voluntary_testing = $datum;
         END_OF_QUERY
         respond(:ok => true)
     end

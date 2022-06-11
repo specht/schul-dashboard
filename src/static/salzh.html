@@ -10,7 +10,7 @@
                 <button class='btn btn-success bu-add-salzh'><i class='fa fa-pencil'></i>&nbsp;&nbsp;Eintragen</button>
             </div>
             <h2 style='margin-bottom: 30px;'>Kontaktpersonen / saLzH</h2>
-            <hr />
+            <!-- <hr /> -->
             <div class="table-responsive" style="max-width: 100%; overflow-x: auto;">
                 <table class='table table-narrow narrow table-striped'>
                     <thead>
@@ -27,6 +27,27 @@
                         </tr>
                     </thead>
                     <tbody id='salzh_sus_here'>
+
+                    </tbody>
+                </table>
+            </div>
+            <hr />
+            <h2 style='margin-bottom: 30px;'>Freiwillige Testung</h2>
+            <p>
+                Hier können Sie Eltern per E-Mail benachrichtigen, wenn ihr Kind heute nicht zur Testung erschienen ist.
+            </p>
+            <!-- <hr /> -->
+            <div class="table-responsive" style="max-width: 100%; overflow-x: auto;">
+                <table class='table table-narrow narrow table-striped'>
+                    <thead>
+                        <tr>
+                            <th>Klasse</th>
+                            <th>Nachname</th>
+                            <th>Vorname</th>
+                            <th>Erinnerung</th>
+                        </tr>
+                    </thead>
+                    <tbody id='voluntary_testing_sus_here'>
 
                     </tbody>
                 </table>
@@ -158,6 +179,7 @@
     var message_cache = {};
     var force_close = false;
     var current_salzh_entries = #{ get_current_salzh_sus.to_json };
+    var voluntary_testing_entries = #{ get_voluntary_testing_sus.to_json };
     var klassen_tr = #{ KLASSEN_TR.to_json };
 
     function can_send() {
@@ -587,7 +609,37 @@
 
             $('#salzh_sus_here').append(row);
         }
-        // $('.bu-add-salzh').click();
+        for (let entry of voluntary_testing_entries) {
+            let row = $('<tr>');
+            row.data('email', entry.email);
+            row.data('display_name', entry.display_name);
+            row.append($('<td>').text(entry.klasse));
+            row.append($('<td>').text(entry.last_name));
+            row.append($('<td>').text(entry.first_name));
+            let bu_send_reminder = $('<button>').addClass('btn').addClass('btn-success').addClass('btn-sm').text('E-Mail an Eltern senden…').addClass('bu-send-reminder');
+            if (entry.skipped_today) {
+                bu_send_reminder.prop('disabled', true).removeClass('btn-success').addClass('btn-outline-secondary');
+            }
+            row.append($('<td>').append(bu_send_reminder));
+            $('#voluntary_testing_sus_here').append(row);
+            bu_send_reminder.click(function(e) {
+                let row = $(e.target).closest('tr');
+                let email = row.data('email');
+                let display_name = row.data('display_name');
+                showTemplateModal('Eltern benachrichtigen',
+                `Sind Sie sicher, dass Sie die Eltern von ${display_name} wegen einer nicht erfolgten Testung benachrichtigen möchten?`,
+                "<i class='fa fa-check'></i>&nbsp;&nbsp;E-Mail senden", 'btn-success',
+                'Abbrechen', 'btn-secondary', function () {
+                    api_call('/api/notify_parents_of_skipped_voluntary_testing', {email: email}, function(data) {
+                        if (data.success) {
+                            bu_send_reminder.prop('disabled', true).removeClass('btn-success').addClass('btn-outline-secondary');
+                        }
+                    });
+                }
+            );
+
+            });
+        }
         $('.ti_hotspot_end_date').change(function(e) {
             let klasse = $(e.target).closest('tr').data('klasse');
             api_call('/api/set_hotspot_klasse_end_date', {klasse: klasse, end_date: $(e.target).val()}, function(data) {

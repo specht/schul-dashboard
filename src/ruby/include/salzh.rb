@@ -1170,6 +1170,7 @@ class Main < Sinatra::Base
             cc SEKRETARIAT_EMAIL
             bcc SMTP_FROM
             from SMTP_FROM
+            reply_to SEKRETARIAT_EMAIL
 
             subject "Nichtteilnahme an freiwilliger Testung"
 

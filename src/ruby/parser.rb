@@ -127,7 +127,7 @@ class Parser
             debug "...skipping because #{path} does not exist"
             return
         end
-        srand(1)
+        srand(12)
         CSV.foreach(path, :headers => true) do |line|
             line = Hash[line]
             email = line['E-Mail-Adresse'].strip
@@ -139,7 +139,7 @@ class Parser
             force_display_name = line['Anzeigename']
             
             if @use_mock_names
-                if EXCLUDE_FROM_MOCKIFICATION.include?(email)
+                unless EXCLUDE_FROM_MOCKIFICATION.include?(email)
                     first_name = @mock[:vornamen].sample
                     last_name = @mock[:nachnamen].sample
                     @mock_shorthand ||= {}
@@ -351,7 +351,7 @@ class Parser
             debug "...skipping because #{path} does not exist"
             return
         end
-        srand(1)
+        srand(12)
         File.open(path, 'r:utf-8') do |f|
             f.each_line do |line|
                 next if line.strip[0] == '#' || line.strip.empty?

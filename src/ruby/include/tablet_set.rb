@@ -5,7 +5,7 @@ TABLET_SET_WARNING_AFTER_MINUTES = 15
 class Main < Sinatra::Base
 
     post '/api/get_tablet_set_bookings' do
-        require_admin!
+        require_user_who_can_manage_tablets!
         d0 = (DateTime.now - 28).strftime('%Y-%m-%d')
         rows = neo4j_query(<<~END_OF_QUERY, {:d0 => d0})
             MATCH (t:TabletSet)<-[:BOOKED]-(b:Booking)-[:BOOKED_BY]->(u:User)
@@ -205,7 +205,7 @@ class Main < Sinatra::Base
     end
 
     post '/api/already_booked_tablet_sets_for_timespan' do
-        require_admin!
+        require_user_who_can_manage_tablets!
         data = parse_request_data(:required_keys => [:datum, :start_time, :end_time])
         respond(:bookings => already_booked_tablet_sets_for_timespan(data[:datum], data[:start_time], data[:end_time]))
     end
@@ -365,7 +365,7 @@ class Main < Sinatra::Base
     end
 
     post '/api/unbook_tablet_set_booking' do
-        require_admin!
+        require_user_who_can_manage_tablets!
         data = parse_request_data(:required_keys => [:datum, :start_time, :end_time, :tablet_set])
         data[:timestamp] = Time.now.to_i
         result = neo4j_query_expect_one(<<~END_OF_QUERY, data)
@@ -421,7 +421,7 @@ class Main < Sinatra::Base
     end 
 
     post '/api/book_tablet_sets_for_timespan' do
-        require_admin!
+        require_user_who_can_manage_tablets!
         data = parse_request_data(:required_keys => [:datum, :start_time, :end_time, :tablet_sets],
             :types => {:tablet_sets => Array})
 

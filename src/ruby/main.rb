@@ -778,6 +778,10 @@ class Main < Sinatra::Base
             next unless @@user_info[email]
             @@user_info[email][:can_manage_monitors] = true
         end
+        (CAN_MANAGE_TABLETS_USERS + ADMIN_USERS).each do |email|
+            next unless @@user_info[email]
+            @@user_info[email][:can_manage_tablets] = true
+        end
         (CAN_MANAGE_ANTIKENFAHRT_USERS + ADMIN_USERS).each do |email|
             next unless @@user_info[email]
             @@user_info[email][:can_manage_antikenfahrt] = true
@@ -1617,7 +1621,7 @@ class Main < Sinatra::Base
                 #     nav_items << :monitor
                 # end
                 nav_items << :messages
-                if admin_logged_in? || user_who_can_upload_files_logged_in? || user_who_can_manage_news_logged_in? || user_who_can_manage_monitors_logged_in?
+                if admin_logged_in? || user_who_can_upload_files_logged_in? || user_who_can_manage_news_logged_in? || user_who_can_manage_monitors_logged_in? || user_who_can_manage_tablets_logged_in?
                     nav_items << :admin 
                 end
                 # nav_items << :advent_calendar #if advents_calendar_date_today > 0
@@ -1665,7 +1669,11 @@ class Main < Sinatra::Base
                     if admin_logged_in?
                         io.puts "<div class='dropdown-divider'></div>" if printed_something
                         io.puts "<a class='dropdown-item nav-icon' href='/admin'><div class='icon'><i class='fa fa-wrench'></i></div><span class='label'>Administration</span></a>"
+                    end
+                    if user_who_can_manage_tablets_logged_in?
                         io.puts "<a class='dropdown-item nav-icon' href='/bookings'><div class='icon'><i class='fa fa-tablet'></i></div><span class='label'>Tablets</span></a>"
+                    end
+                    if admin_logged_in?
                         io.puts "<div class='dropdown-divider'></div>"
                         io.puts "<a class='dropdown-item nav-icon' href='/show_all_login_codes'><div class='icon'><i class='fa fa-key-modern'></i></div><span class='label'>Live-Anmeldungen</span></a>"
                         io.puts "<a class='dropdown-item nav-icon' href='/email_accounts'><div class='icon'><i class='fa fa-envelope'></i></div><span class='label'>E-Mail-Postfächer</span></a>"
@@ -2640,7 +2648,7 @@ class Main < Sinatra::Base
         rendered_something = @@renderer.render(["##{color_scheme[1, 6]}", "##{color_scheme[7, 6]}", "##{color_scheme[13, 6]}"], (@session_user || {})[:email])
         trigger_update_images() if rendered_something
         color_palette = color_palette_for_color_scheme(color_scheme)
-        
+
         unless path.include?('/')
             unless path.include?('.') || path[0] == '_'
                 original_path = path.dup

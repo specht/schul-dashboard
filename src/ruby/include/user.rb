@@ -24,6 +24,11 @@ class Main < Sinatra::Base
         user_logged_in? && @session_user[:can_manage_monitors]
     end
     
+    # Returns true if a user who can manage tablets is logged in.
+    def user_who_can_manage_tablets_logged_in?
+        user_logged_in? && @session_user[:can_manage_tablets]
+    end
+    
     # Returns true if a user who can manage Antikenfahrt is logged in.
     def user_who_can_manage_antikenfahrt_logged_in?
         user_logged_in? && @session_user[:can_manage_antikenfahrt]
@@ -152,6 +157,11 @@ class Main < Sinatra::Base
     # Assert that a user who can manage monitors is logged in
     def require_user_who_can_manage_monitors!
         assert(user_who_can_manage_monitors_logged_in?)
+    end
+    
+    # Assert that a user who can manage tablets is logged in
+    def require_user_who_can_manage_tablets!
+        assert(user_who_can_manage_tablets_logged_in?)
     end
     
     # Assert that a user who can manage Antikenfahrt is logged in

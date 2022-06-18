@@ -672,11 +672,15 @@ class Parser
                 end
             end
             vplan['entries'].each_pair do |sha1, jentry|
-                STDERR.puts "#{datum} #{sha1} #{jentry.to_json}"
+                # STDERR.puts "#{datum} #{sha1} #{jentry.to_json}"
                 before_stunde = false
                 stunde_range = []
                 # TODO: fix this
                 next unless jentry.is_a? Array
+                if jentry[0].nil?
+                    debug "ATTENTION: #{datum} #{sha1} #{jentry.to_json}"
+                    next
+                end
                 if jentry[0].include?('-')
                     parts = jentry[0].split('-').map { |x| x.strip.to_i }
                     stunde_range = (parts[0]..parts[1]).to_a

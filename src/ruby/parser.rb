@@ -672,7 +672,7 @@ class Parser
                 end
             end
             vplan['entries'].each_pair do |sha1, jentry|
-                # STDERR.puts "#{datum} #{sha1} #{jentry.to_json}"
+                STDERR.puts "#{datum} #{sha1} #{jentry.to_json}"
                 before_stunde = false
                 stunde_range = []
                 # TODO: fix this

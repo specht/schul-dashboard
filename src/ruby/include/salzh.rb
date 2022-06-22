@@ -1172,12 +1172,12 @@ class Main < Sinatra::Base
             from SMTP_FROM
             reply_to SEKRETARIAT_EMAIL
 
-            subject "Nichtteilnahme an freiwilliger Testung"
+            subject "Nichtteilnahme an freiwilliger Testung: #{@@user_info[data[:email]][:display_name]} (#{@@user_info[data[:email]][:klasse]})"
 
             StringIO.open do |io|
                 io.puts "<p>Liebe Eltern von #{first_name},</p>"
                 io.puts "<p>Ihr Kind ist heute nicht zur Testung erschienen. Bitte beachten Sie, dass Ihre Entscheidung zur freiwilligen Teilnahme Ihres Kindes an den Testungen bis zu den Sommerferien gilt.</p>"
-                io.puts "<p>Mit freundlichen Grüßen<br />#{WEBSITE_MAINTAINER_NAME}</p>"
+                io.puts "<p>Mit freundlichen Grüßen</p>"
                 io.string
             end
         end

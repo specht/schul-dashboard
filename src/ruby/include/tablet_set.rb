@@ -40,7 +40,7 @@ class Main < Sinatra::Base
         
     # check whether we can book a list of tablet sets for a specific time span
     def already_booked_tablet_sets_for_timespan(datum, start_time, end_time)
-        require_teacher!
+        require_user_who_can_manage_tablets_or_teacher!
         data = {
             :datum => datum,
             :start_time => start_time,
@@ -66,7 +66,7 @@ class Main < Sinatra::Base
 
     # return all booked tablet sets for a specific day
     def already_booked_tablet_sets_for_day(datum)
-        require_teacher!
+        require_user_who_can_manage_tablets_or_teacher!
         rows = neo4j_query(<<~END_OF_QUERY, { :datum => datum }).map { |x| {:tablet_set_id => x['t.id'], :lesson_key => x['l.key'], :start_time => x['b.start_time'], :end_time => x['b.end_time'], :email => x['u.email'] } }
             MATCH (t:TabletSet)<-[:BOOKED]-(b:Booking {datum: $datum})-[:BOOKED_BY]->(u:User)
             OPTIONAL MATCH (b)-[:FOR]->(i:LessonInfo)-[:BELONGS_TO]->(l:Lesson)
@@ -88,7 +88,7 @@ class Main < Sinatra::Base
 
     # book a list of tablet sets for a specific lesson, or unbook all tablet sets
     def book_tablet_set_for_lesson(datum, start_time, end_time, tablet_sets = [], lesson_key, offset)
-        require_teacher!
+        require_user_who_can_manage_tablets_or_teacher!
         conflicting_tablets = []
         unless tablet_sets.empty?
             # check if it's bookable
@@ -153,7 +153,7 @@ class Main < Sinatra::Base
 
     # book a list of tablet sets for a specific lesson, or unbook all tablet sets
     def book_tablet_set_for_timespan(datum, start_time, end_time, tablet_sets)
-        require_admin!
+        require_user_who_can_manage_tablets!
         conflicting_tablets = []
         unless tablet_sets.empty?
             # check if it's bookable
@@ -341,7 +341,7 @@ class Main < Sinatra::Base
     end
 
     post '/api/find_available_tablet_sets_for_lesson' do
-        require_teacher!
+        require_user_who_can_manage_tablets_or_teacher!
         data = parse_request_data(:required_keys => [:lesson_key, :offset, :datum, 
                                                      :start_time, :end_time],
                                   :types => {:offset => Integer})
@@ -354,7 +354,7 @@ class Main < Sinatra::Base
     end
 
     post '/api/find_available_tablet_sets_for_timespan' do
-        require_teacher!
+        require_user_who_can_manage_tablets_or_teacher!
         data = parse_request_data(:required_keys => [:datum, :start_time, :end_time])
 
         tablet_sets, available_tablet_sets = find_available_tablet_sets(

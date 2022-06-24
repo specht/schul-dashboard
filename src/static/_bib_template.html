@@ -76,8 +76,16 @@
             if (parts.length > 0)
                 details.append($(`<div>`).text(parts.join(', ')));
             let stem = $(`<span class='bg-amber-200 px-2 py-1 rounded mr-2 font-bold'>`).text(book.stem);
+            if (options.exemplar)
+                stem.text(options.exemplar.signature);
+            else if (options.bnr)
+                stem.text(`${book.stem}-${options.bnr}`);
+            let discarded_span = '';
+            if (options.exemplar && options.exemplar.ts_discarded) {
+                discarded_span = $(`<span class='bg-red-400 text-red-900 px-2 py-1 rounded mr-2 font-bold'>`).text('ausgemustert');
+            }
             let shelf_span = '';
-            if (shelf !== null)
+            if (typeof(shelf) !== 'undefined' && shelf !== null)
                 shelf_span = $(`<span class='bg-violet-700 px-2 py-1 rounded mr-2 font-bold'>`).text(shelf.location);
 
             let available_count = $(`<span class='bg-sky-800 px-2 py-1 rounded mr-2 font-bold'>`).text(`${book.bib_available} / ${book.bib_count}`);
@@ -87,7 +95,7 @@
             // if (book.ausleih_count != book.bib_count - book.bib_available)
             //     count_div.addClass('bg-red-500 px-1 py-2 rounded');
             let count_div = '';
-            details.append($(`<div>`).append(stem).append(shelf_span).append(count_div));
+            details.append($(`<div style='white-space: nowrap; overflow-x: overlay;'>`).append(stem).append(discarded_span).append(shelf_span).append(count_div));
             details.append($(`<div>`).append(isbn));
             if (book.description) {
                 details.append($(`<hr class='my-2'>`));
@@ -167,6 +175,9 @@
             </li> -->
             <li class="mx-1">
                 <a class="inline-block bg-slate-900 border border-blue-500 hover:bg-slate-200 rounded py-1 px-3" href="/bib_scan_shelf">Regal scannen</a>
+            </li>
+            <li class="mx-1">
+                <a class="inline-block bg-slate-900 border border-blue-500 hover:bg-slate-200 rounded py-1 px-3" href="/bib_discard">Ausmustern</a>
             </li>
             <!-- <li class="mx-1">
                 <a class="inline-block bg-slate-900 border border-blue-500 hover:bg-slate-200 rounded py-1 px-3" href="/bib_scan">ISBN scannen</a>

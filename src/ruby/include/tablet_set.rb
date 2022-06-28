@@ -380,7 +380,7 @@ class Main < Sinatra::Base
 
         lesson_key = result['l.key']
         email = result['u.email']
-        session_user_name = @session_user[:display_last_name_dativ]
+        session_user_name = @session_user[:display_last_name_dativ] || @session_user[:display_name]
 
         if lesson_key
             trigger_update(lesson_key)

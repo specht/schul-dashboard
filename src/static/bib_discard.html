@@ -158,6 +158,7 @@
             bib_api_call('/jwt/discard_exemplar', { stem: signature.stem, bnr: signature.bnr }, function (data) {
                 if (data.success) {
                     reset();
+                    last_scanned_barcode = null;
                 }
             });
         });

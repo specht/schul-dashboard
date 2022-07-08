@@ -1741,7 +1741,7 @@ class Main < Sinatra::Base
                                 io.puts "<a class='dropdown-item nav-icon' href='/lehrbuchverein'><div class='icon'><i class='fa fa-book'></i></div><span class='label'>Lehrmittelverein</span></a>"
                             end
                             if can_manage_bib_logged_in?
-                                io.puts "<a class='dropdown-item nav-icon' href='/bib_scan_shelf'><div class='icon'><i class='fa fa-book'></i></div><span class='label'>Bibliothek</span></a>"
+                                io.puts "<a class='dropdown-item nav-icon' href='/bib_scan_shelf'><div class='icon'><i class='fa fa-book'></i></div><span class='label'>Bibliotheks-Verwaltung</span></a>"
                             end
                         end
                         if teacher_or_sv_logged_in?

@@ -1,0 +1,65 @@
+<style>
+    .api_messages {
+        position: absolute;
+        top: 60px;
+        width: 60%;
+        left: 20%;
+        display: none;
+    }
+
+    body {
+        /* background: none; */
+        /* background-color: white; */
+        /* padding-top: 120px; */
+    }
+
+    .api_messages {
+        position: fixed;
+        z-index: 101;
+    }
+
+    .submenu a {
+        white-space: nowrap;
+    }
+
+    .submenu {
+        overflow-x: auto;
+    }
+
+    @tailwind base;
+    @tailwind components;
+    @tailwind utilities;
+</style>
+<div class='api_messages'></div>
+<script>
+    window.addEventListener('load', function () {
+        for (let x of $('.submenu a')) {
+            let href = $(x).attr('href');
+            if (window.location.pathname === href) {
+                $(x).removeClass('bg-white').addClass('font-bold shadow-md outline outline-1 outline-blue-500 bg-white');
+            }
+        }
+    });
+</script>
+
+<div class='container' style='padding: 0; display: flex; margin-bottom: 24px;'>
+    <section class="pl-3 pr-3 pb-3 w-full">
+        <ul class="submenu flex items-center shadow-md fixed bg-stone-800 px-2.5 py-2" style="border-bottom: 1px solid #ccc; left: 0px; right: 0px; z-index: 100;">
+            <li class="mx-1">
+                <a class="inline-block bg-slate-900 border border-blue-500 hover:bg-slate-200 rounded py-1 px-3" href="/bibliothek">Ausgeliehene Bücher</a>
+            </li>
+            <li class="mx-1">
+                <a class="inline-block bg-slate-900 border border-blue-500 hover:bg-slate-200 rounded py-1 px-3" href="/bib_search">Bücher leihen</a>
+            </li>
+            <!-- <li style="border-left: 1px solid #ccc; height: 54px; margin: -10px 10px -10px 10px;"></li>
+            <li class="mx-1">
+                <div class="input-group">
+                    <input type="text" class="form-control" placeholder="Suchbegriff eingeben" style="min-width: 200px;" />
+                    <div class="input-group-append">
+                      <button class="btn btn-success" type="button">Suchen</button>
+                    </div>
+                  </div>
+            </li> -->
+        </ul>
+    </section>
+</div>

@@ -429,3 +429,141 @@ function fix_bad_html(e) {
 function email_field(email) {
     return `<div class='input-group'><input type='text' class='form-control' readonly value='${email}' style='min-width: 100px;' /><div class='input-group-append'><button class='btn btn-secondary btn-clipboard' data-clipboard-action='copy' title='Eintrag in die Zwischenablage kopieren' data-clipboard-text='${email}'><i class='fa fa-clipboard'></i></button></div></div>`;
 }
+
+// receives a string and returns a hash of stem, bnr and optional checksum if valid, null otherwise
+function fix_scanned_book_barcode(s) {
+    let parts = s.split(/[^\w\d]/);
+    if (parts.length < 2)
+        return null;
+    let stem = parts[0];
+    let bnr = parts[1];
+    let checksum = parts[2] || null;
+    if (!/^\d+$/.test(stem))
+        return null;
+    if (!/^\d+$/.test(bnr))
+        return null;
+    if (checksum !== null)
+        if (!/^\w\w$/.test(checksum))
+            return null;
+    return { stem: parseInt(stem), bnr: parseInt(bnr), checksum: checksum };
+}
+
+function create_book_div(book, shelf, options = {}) {
+    let stem = $(`<span class='text-slate-500 pl-2 pr-1 py-1 absolute text-sm'>`).css('right', '0.5em').text(book.stem);
+    if (options.exemplar && options.exemplar.bnr)
+        stem.html(`<i class='fa fa-barcode'></i>&nbsp;&nbsp;${book.stem}-${options.exemplar.bnr}`);
+    let cover_path = `${BIB_HOST}/gen/covers/${book.stem}-200.jpg`;
+    let hover_classes = '';
+    if (options.clickable) {
+        hover_classes = 'hover:outline hover:outline-1 hover:shadow-lg hover:outline-gray-400 cursor-pointer ';
+    }
+    let div = $(`<div class="${hover_classes} book border overflow-hidden col-span-12 md:col-span-6 xl:col-span-4 shadow-md bg-white shadow-md rounded" style="overflow-wrap: break-word; position: relative;">`);
+    if (options.show_bib_entry) {
+        let bib_entry = $(`<div class="text-sm px-2 bg-stone-700 text-stone-300 py-1 relative" style='border-bottom: 1px solid #ddd; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;'>`);
+        if (!(options.preview)) {
+            bib_entry.text(book.bib_entry);
+            bib_entry.append(stem);
+        }
+        else
+            bib_entry.html('&nbsp;');
+        div.append(bib_entry);
+    } else {
+        div.append(stem.addClass('rounded bg-white bottom-0'));
+    }
+    let cover = $(`<div class='bg-stone-800 shadow shadow-md mr-3 border-r-2 relative' style="float: left; height: 200px; width: 145px; background-position: center center; background-size: contain; background-repeat: no-repeat; border-right: 1px solid #ddd; height: 200px; "></div>`);
+    if (!(options.preview)) {
+        if (book.has_cover) {
+            cover.css('background-image', `url(${cover_path})`);
+        } else {
+            cover.addClass('p-2 text-center italic text-sm');
+            cover.append($('<div>').text(book.title).addClass('text-slate-400 pt-3 pb-2'));
+            if (book.author) {
+                cover.append($('<hr />'));
+                cover.append($('<div>').text(book.author).addClass('text-slate-600'));
+            }
+        }
+    }
+    div.append(cover);
+    if (!(options.preview)) {
+        let details = $(`<div class="w-full p-2" style="height: 200px;">`);
+        let title_div = $(`<div style="max-height: 60px; overflow: hidden;">`);
+        title_div.append($(`<span class="font-bold text-xl">`).text(book.title));
+        if (book.subtitle)
+            title_div.append($(`<span class='text-lg'>`).text(` – ${book.subtitle}`));
+        details.append(title_div);
+        if (book.author)
+            details.append($(`<div class="font-italic truncate">`).text(book.author));
+        let parts = [];
+        if (book.verlag)
+            parts.push(book.verlag);
+        if (book.published)
+            parts.push(book.published);
+        if (parts.length > 0)
+            details.append($(`<div style='white-space: nowrap; overflow: hidden; text-overflow: ellipsis;'>`).text(parts.join(', ')));
+        parts = [];
+        if (book.page_count)
+            parts.push(`${book.page_count} Seiten`);
+        if (parts.length > 0)
+            details.append($(`<div>`).text(parts.join(', ')));
+        let discarded_span = '';
+        if (options.exemplar && options.exemplar.ts_discarded) {
+            let t = moment.unix(options.exemplar.ts_discarded);
+            discarded_span = $(`<span class='bg-red-400 text-red-900 px-2 py-1 rounded mr-2'>`).text(`ausgemustert am ${t.format('L')}`);
+        }
+        let shelf_span = '';
+        if (typeof(shelf) !== 'undefined' && shelf !== null) {
+            console.log(shelf);
+            shelf_span = $(`<span class='bg-violet-700 px-2 py-1 rounded mr-2 font-bold'>`).text(shelf.location);
+        }
+
+        let available_count = $(`<span class='bg-sky-800 px-2 py-1 rounded mr-2 font-bold'>`).text(`${book.bib_available} / ${book.bib_count}`);
+        let ausleih_count = $(`<span class='bg-bamboo-800 px-2 py-1 rounded mr-2 font-bold'>`).text(book.ausleih_count);
+        let isbn = $(`<span>`).text(`ISBN: ${book.isbn}`);
+        // let count_div = $('<span>').append(available_count).append(ausleih_count);
+        // if (book.ausleih_count != book.bib_count - book.bib_available)
+        //     count_div.addClass('bg-red-500 px-1 py-2 rounded');
+        let count_div = '';
+        details.append($(`<div style='white-space: nowrap; overflow: hidden; text-overflow: ellipsis;'>`).append(discarded_span).append(shelf_span).append(count_div));
+        if (book.isbn) {
+            details.append($(`<div>`).append(isbn));
+        }
+        if (book.description) {
+            details.append($(`<hr class='my-2'>`));
+            details.append($(`<div class="font-italic" style='white-space: nowrap; overflow: hidden; text-overflow: ellipsis;'>`).text(book.description));
+        }
+        else if (book.text_snippet) {
+            details.append($(`<hr class='my-2'>`));
+            details.append($(`<div class="font-italic" style='white-space: nowrap; overflow: hidden; text-overflow: ellipsis;'>`).text(book.text_snippet));
+        }
+        div.append(details);
+    }
+    if (options.clickable) {
+        div.click(function(e) {
+            bib_api_call('/jwt/get_book', {stem: book.stem}, function (data) {
+                if (data.success) {
+                    console.log(data);
+                    let book = data.book;
+                    $('#book_modal .modal-title').text(book.title);
+                    let table = $('<table>').addClass('table table-sm table-striped');
+                    $('#book_modal .modal-body').empty();
+                    for (let exemplar of data.exemplare) {
+                        let row = $('<tr>')
+                        // console.log(exemplar);
+                        let email = exemplar.u.email;
+                        let user_info = USER_INFO[email] || {};
+                        nc_login = user_info.nc_login;
+                        row.append($('<td>').text(exemplar.e.signature));
+                        row.append($('<td>').text(exemplar.r.datum));
+                        row.append($('<td>').append($('<div>').css('background-image', `url(#{NEXTCLOUD_URL}/index.php/avatar/${nc_login}/128), url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mO88h8AAq0B1REmZuEAAAAASUVORK5CYII=)`).addClass('avatar-md')));
+                        row.append($('<td>').text(user_info.display_name || email));
+                        row.append($('<td>').html(`${KLASSEN_TR[user_info.klasse || ''] || user_info.klasse || '&ndash;'}`));
+                        table.append(row);
+                    }
+                    $('#book_modal .modal-body').append(table);
+                    $('#book_modal').modal('show');
+                }
+            });
+        });
+    }
+    return div;
+}

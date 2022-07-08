@@ -25,10 +25,10 @@ document.addEventListener('DOMContentLoaded', function() {
                     b.removeClass('btn-success').removeClass('btn-primary').removeClass('btn-danger').addClass('btn-outline-secondary');
                 if (data.state === 0)
                     buttons[0].removeClass('btn-outline-secondary').addClass(STATE_STYLES[0]);
-                for (let i = 0; i < 2; i++) {
-                    if ((data.state >> i) & 1 === 1)
-                        buttons[i + 1].removeClass('btn-outline-secondary').addClass(STATE_STYLES[i + 1]);
-                }
+                if ((data.state >> 0) & 1 === 1)
+                    buttons[1].removeClass('btn-outline-secondary').addClass(STATE_STYLES[1]);
+                if ((data.state >> 1) & 1 === 1 || (data.state >> 2) & 1 === 1)
+                    buttons[2].removeClass('btn-outline-secondary').addClass(STATE_STYLES[2]);
             }
         });
     });
@@ -44,10 +44,10 @@ document.addEventListener('DOMContentLoaded', function() {
                     b.removeClass('btn-success').removeClass('btn-primary').removeClass('btn-danger').addClass('btn-outline-secondary');
                 if (data.state === 0)
                     buttons[0].removeClass('btn-outline-secondary').addClass(STATE_STYLES[0]);
-                for (let i = 0; i < 2; i++) {
-                    if ((data.state >> i) & 1 === 1)
-                        buttons[i + 1].removeClass('btn-outline-secondary').addClass(STATE_STYLES[i + 1]);
-                }
+                if ((data.state >> 0) & 1 === 1)
+                    buttons[1].removeClass('btn-outline-secondary').addClass(STATE_STYLES[1]);
+                if ((data.state >> 1) & 1 === 1 || (data.state >> 2) & 1 === 1)
+                    buttons[2].removeClass('btn-outline-secondary').addClass(STATE_STYLES[2]);
             }
         });
     });

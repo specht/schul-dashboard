@@ -1,5 +1,5 @@
 class Main < Sinatra::Base
-    # returns 0 for selbstzahler, 1 for paid, 2 for zahlungsbefreit
+    # returns bits 1 for paid, 2 for zahlungsbefreit, 4 for lehrmittelfreiheit
     def determine_lehrmittelverein_state_for_email(email)
         result = 0
         temp = neo4j_query(<<~END_OF_QUERY, {:email => email})
@@ -7,6 +7,7 @@ class Main < Sinatra::Base
             RETURN u.email;
         END_OF_QUERY
         result += 2 if temp.size > 0
+        result += 4 if [5, 6].include?(((@@user_info[email] || {})[:klasse] || '').to_i)
         temp = neo4j_query(<<~END_OF_QUERY, {:email => email, :jahr => LEHRBUCHVEREIN_JAHR})
             MATCH (u:User {email: $email})-[:PAID_FOR]->(j:Lehrbuchvereinsjahr {jahr: $jahr})
             RETURN u.email;
@@ -71,6 +72,7 @@ class Main < Sinatra::Base
                 state = 0
                 state += 1 if paid.include?(email)
                 state += 2 if no_pay.include?(email)
+                state += 4 if [5, 6].include?(((@@user_info[email] || {})[:klasse] || '').to_i)
                 io.puts "<tr class='user_row' data-email='#{email}'>"
                 user = @@user_info[email]
                 io.puts "<td>#{user[:last_name]}</td>"
@@ -81,7 +83,7 @@ class Main < Sinatra::Base
                     io.puts "<button class='btn btn-xs #{((state >> 0) & 1) == 1 ? 'btn-success' : 'btn-outline-secondary'} bu_toggle_paid'>bezahlt für #{LEHRBUCHVEREIN_JAHR}/#{(LEHRBUCHVEREIN_JAHR % 100) + 1}</button>"
                     io.puts "</td>"
                     io.puts "<td>"
-                    io.puts "<button class='btn btn-xs #{((state >> 1) & 1) == 1 ? 'btn-primary' : 'btn-outline-secondary'} bu_toggle_no_pay'>zahlungsbefreit</button>"
+                    io.puts "<button class='btn btn-xs #{(((state >> 1) & 1) == 1) || (((state >> 2) & 1) == 1) ? 'btn-primary' : 'btn-outline-secondary'} bu_toggle_no_pay' #{state & 4 == 4 ? 'disabled' : ''}>zahlungsbefreit</button>"
                     io.puts "</td>"
                     io.puts "<td>"
                     io.puts "<button class='btn btn-xs #{state == 0 ? 'btn-danger' : 'btn-outline-secondary'} bu_no_book_for_you disabled'>Selbstzahler</button>"

@@ -108,15 +108,24 @@ function agr_api_call(url, data, callback, options) {
 
 function bib_api_call(url, data, callback, options) {
     let data_json = JSON.stringify(data);
-    api_call('/api/get_bib_jwt_token', { url: url, payload: data_json }, function (data) {
-        if (data.success) {
-            let token = data.token;
-            let headers = {headers: {'X-JWT': token}};
-            api_call(BIB_HOST + url, data_json, callback, { ...options, ...headers });
-        } else {
-            show_error_message(data.error);
-        }
-    });
+    let expired = window.bib_jwt_expired || 0;
+    if (Date.now() > expired) {
+        // request new JWT
+        api_call('/api/get_bib_jwt_token', {}, function (data) {
+            if (data.success) {
+                window.bib_jwt_token = data.token;
+                window.bib_jwt_expired = Date.now() + data.ttl * 1000;
+                let headers = {headers: {'X-JWT': window.bib_jwt_token}};
+                api_call(BIB_HOST + url, data_json, callback, { ...options, ...headers });
+            } else {
+                show_error_message(data.error);
+            }
+        });
+    } else {
+        // re-use existing JWT
+        let headers = {headers: {'X-JWT': window.bib_jwt_token}};
+        api_call(BIB_HOST + url, data_json, callback, { ...options, ...headers });
+    }
 }
 
 function perform_logout() {

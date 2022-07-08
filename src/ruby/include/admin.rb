@@ -119,7 +119,7 @@ class Main < Sinatra::Base
             io.puts "<table class='table table-condensed table-striped narrow' style='width: unset; min-width: 100%;'>"
             io.puts "<thead>"
             io.puts "<tr>"
-            io.puts "<th></th>"
+            # io.puts "<th></th>"
             io.puts "<th>Kürzel</th>"
             io.puts "<th>Name</th>"
             io.puts "<th>Vorname</th>"
@@ -133,7 +133,7 @@ class Main < Sinatra::Base
             @@lehrer_order.each do |email|
                 io.puts "<tr class='user_row'>"
                 user = @@user_info[email]
-                io.puts "<td>#{user_icon(email, 'avatar-md')}</td>"
+                # io.puts "<td>#{user_icon(email, 'avatar-md')}</td>"
                 io.puts "<td>#{user[:shorthand]}</td>"
                 io.puts "<td>#{user[:last_name]}</td>"
                 io.puts "<td>#{user[:first_name]}</td>"
@@ -173,7 +173,7 @@ class Main < Sinatra::Base
             io.puts "<table class='table table-condensed table-striped narrow' style='width: unset; min-width: 100%;'>"
             io.puts "<thead>"
             io.puts "<tr>"
-            io.puts "<th></th>"
+            # io.puts "<th></th>"
             io.puts "<th>Name</th>"
             io.puts "<th>Vorname</th>"
             io.puts "<th>E-Mail-Adresse</th>"
@@ -186,12 +186,12 @@ class Main < Sinatra::Base
             io.puts "<tbody>"
             @@klassen_order.each do |klasse|
                 io.puts "<tr>"
-                io.puts "<th colspan='8'>Klasse #{klasse}</th>"
+                io.puts "<th colspan='6'>Klasse #{klasse}</th>"
                 io.puts "</tr>"
                 (@@schueler_for_klasse[klasse] || []).each do |email|
                     io.puts "<tr class='user_row'>"
                     user = @@user_info[email]
-                    io.puts "<td>#{user_icon(email, 'avatar-md')}</td>"
+                    # io.puts "<td>#{user_icon(email, 'avatar-md')}</td>"
                     io.puts "<td>#{user[:last_name]}</td>"
                     io.puts "<td>#{user[:first_name]}</td>"
                     io.print "<td>"

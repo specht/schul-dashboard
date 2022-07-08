@@ -55,7 +55,9 @@
         div.append(bib_entry);
         let cover = $(`<div class='bg-stone-800 shadow shadow-md mr-3 border-r-2' style="float: left; height: 200px; width: 145px; background-position: center center; background-size: contain; background-repeat: no-repeat; border-right: 1px solid #ddd; height: 200px; "></div>`);
         if (!(options.preview))
-            cover.css('background-image', `url(${cover_path})`);
+            if (book.has_cover) {
+                cover.css('background-image', `url(${cover_path})`);
+            }
         div.append(cover);
         if (!(options.preview)) {
             let details = $(`<div class="w-full p-2" style="height: 200px;">`);
@@ -85,8 +87,10 @@
                 discarded_span = $(`<span class='bg-red-400 text-red-900 px-2 py-1 rounded mr-2 font-bold'>`).text('ausgemustert');
             }
             let shelf_span = '';
-            if (typeof(shelf) !== 'undefined' && shelf !== null)
+            if (typeof(shelf) !== 'undefined' && shelf !== null) {
+                console.log(shelf);
                 shelf_span = $(`<span class='bg-violet-700 px-2 py-1 rounded mr-2 font-bold'>`).text(shelf.location);
+            }
 
             let available_count = $(`<span class='bg-sky-800 px-2 py-1 rounded mr-2 font-bold'>`).text(`${book.bib_available} / ${book.bib_count}`);
             let ausleih_count = $(`<span class='bg-bamboo-800 px-2 py-1 rounded mr-2 font-bold'>`).text(book.ausleih_count);

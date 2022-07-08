@@ -13,7 +13,7 @@
                 continue;
             observer.unobserve(entry.target);
             let book = $(entry.target).data('book');
-            $(entry.target).replaceWith(create_book_div(book, {preview: false, clickable: true}));
+            $(entry.target).replaceWith(create_book_div(book, null, {preview: false, clickable: true}));
         }
     }
 
@@ -27,7 +27,7 @@
             for (let book of data.books) {
                 // console.log(book);
                 // if (book.stem == 3075)
-                let div = create_book_div(book, {preview: true}).data('book', book);
+                let div = create_book_div(book, null, {preview: true}).data('book', book);
                 $('#book_list').append(div);
                 observer.observe(div[0]);
             }

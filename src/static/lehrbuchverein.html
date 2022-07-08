@@ -1,0 +1,43 @@
+#{this_is_a_page_for_logged_in_users}
+<div class='container' style='padding-top: 30px;'>
+    <div class='row'>
+        <div class='col-md-12'>
+            <h3>Lehrbuchverein</h3>
+            #{print_lehrbuchverein_table()}
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    moment.locale('de');
+    $('.bu_toggle_vereinsmitglied').click(function(e) {
+        let button = $(e.target).closest('.btn');
+        let email = button.closest('tr').data('email');
+        api_call('/api/toggle_lehrbuchverein_mitglied', {email: email}, function(data) {
+            if (data.success) {
+                if (data.lehrbuchverein_mitglied) {
+                    button.removeClass('btn-outline-secondary').addClass('btn-success').html("<i class='fa fa-check'></i>&nbsp;&nbsp;Vereinsmitglied");
+                } else {
+                    button.removeClass('btn-success').addClass('btn-outline-secondary').html("<i class='fa fa-times'></i>&nbsp;&nbsp;kein Mitglied");
+
+                }
+            }
+        });
+    });
+    $('.bu_toggle_paid').click(function(e) {
+        let button = $(e.target).closest('.btn');
+        let email = button.closest('tr').data('email');
+        api_call('/api/toggle_lehrbuchverein_paid', {email: email}, function(data) {
+            if (data.success) {
+                if (data.paid) {
+                    button.removeClass('btn-outline-secondary').addClass('btn-success').html("<i class='fa fa-check'></i>&nbsp;&nbsp;bezahlt");
+                } else {
+                    button.removeClass('btn-success').addClass('btn-outline-secondary').html("<i class='fa fa-times'></i>&nbsp;&nbsp;nicht bezahlt");
+
+                }
+            }
+        });
+    });
+});
+</script>

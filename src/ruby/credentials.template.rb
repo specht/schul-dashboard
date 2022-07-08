@@ -46,14 +46,14 @@ DASHBOARD_SUPPORT_EMAIL = 'dashboard@beispielschule.de'
 
 if defined? Mail
     Mail.defaults do
-    delivery_method :smtp, { 
+    delivery_method :smtp, {
         :address => SMTP_SERVER,
         :port => 587,
         :domain => SMTP_DOMAIN,
         :user_name => SMTP_USER,
         :password => SMTP_PASSWORD,
         :authentication => 'login',
-        :enable_starttls_auto => true  
+        :enable_starttls_auto => true
     }
     end
 end
@@ -87,7 +87,7 @@ MAX_LOGIN_TRIES = 5
 
 # Das Dashboard benötigt einen Nextcloud-Account, der Admin-Rechte hat
 NEXTCLOUD_URL = 'http://localhost:8024'
-# Falls die Nextcloud im Development-Modus in Docker läuft, 
+# Falls die Nextcloud im Development-Modus in Docker läuft,
 # kann hier eine URL angegeben werden, unter der Nextcloud
 # vom Ruby-Container aus zu erreichen ist, z. B. 'http://nextcloud'
 # bei einer öffentlich erreichbaren Nextcloud-Instanz spielt es
@@ -95,7 +95,7 @@ NEXTCLOUD_URL = 'http://localhost:8024'
 NEXTCLOUD_URL_FROM_RUBY_CONTAINER = 'http://nextcloud'
 NEXTCLOUD_USER = 'dashboard'
 NEXTCLOUD_PASSWORD = 'hunter2_bitte_etwas_anderes_waehlen'
-# NEXTCLOUD_DASHBOARD_DATA_DIRECTORY muss ein absoluter Pfad sein 
+# NEXTCLOUD_DASHBOARD_DATA_DIRECTORY muss ein absoluter Pfad sein
 NEXTCLOUD_DASHBOARD_DATA_DIRECTORY = '/var/www/html/data/dashboard'
 NEXTCLOUD_WAIT_SECONDS = 0
 
@@ -124,7 +124,7 @@ MATRIX_ADMIN_PASSWORD = nil
 
 MATRIX_CORPORAL_CALLBACK_BEARER_TOKEN = 'bitte_jedes_bearer_token_nur_einmal_verwenden'
 
-# Das Dashboard vermittelt Links in Jitsi-Räume mit Hilfe von JWT 
+# Das Dashboard vermittelt Links in Jitsi-Räume mit Hilfe von JWT
 # (JSON Web Tokens). Dafür werden ein paar Angaben benötigt,
 # die auf der Jitsi-Seite verifiziert werden müssen.
 JITSI_HOST = 'meet.beispielschule.de'
@@ -140,7 +140,7 @@ JWT_APPKEY_AGRAPP = 'ein_langer_langer_richtig_langer_app_key'
 STREAM_SITE_URL = 'https://info.beispielschule.de/'
 JWT_SUB = 'beispielschule.de'
 JWT_APPKEY_BIB = 'ein_langer_langer_richtig_langer_app_key'
-# Hier kann, falls vorhanden, eine URL eingetragen werden, unter der aus dem 
+# Hier kann, falls vorhanden, eine URL eingetragen werden, unter der aus dem
 # Ruby-Docker-Container ein GET-Request zu allRooms gemacht werden kann,
 # der alle Räume und Teilnehmer im JSON-Format zurückgibt.
 JITSI_ALL_ROOMS_URL = nil
@@ -174,7 +174,7 @@ KLASSEN_TR = {'8o' => '8ω'}
 TIMETABLE_ENTRIES_VISIBLE_AHEAD_DAYS = 7
 AUFSICHT_ZEIT = {1 => '08:00', 2 => '09:00', 3 => '09:55', 4 => '10:40',
                  6 => '12:50', 7 => '13:40', 8 => '14:30'}
-PAUSENAUFSICHT_DAUER = {1 => 25, 2 => 15, 3 => 15, 4 => 20, 6 => 40, 
+PAUSENAUFSICHT_DAUER = {1 => 25, 2 => 15, 3 => 15, 4 => 20, 6 => 40,
                         7 => 40, 8 => 15}
 
 KLASSEN_ORDER = ['5a', '11', '12']
@@ -190,11 +190,11 @@ GROUP_AF_ICON_KEYS = GROUP_AF_ICONS.keys.sort
 STREAMING_TABLET_BOOKING_TIME_PRE = 5
 STREAMING_TABLET_BOOKING_TIME_POST = 15
 
-# Liste aller E-Mail-Adressen von Nutzer*innen, 
+# Liste aller E-Mail-Adressen von Nutzer*innen,
 # die Administratorenrechte haben sollen
 ADMIN_USERS = ['clarke@beispielschule.de']
 
-# List aller E-Mail-Adressen von Nutzer*innen, 
+# List aller E-Mail-Adressen von Nutzer*innen,
 # die alle Stundenpläne sehen können sollen
 CAN_SEE_ALL_TIMETABLES_USERS = []
 CAN_MANAGE_SALZH_USERS = []
@@ -205,6 +205,10 @@ CAN_MANAGE_MONITORS_USERS = []
 CAN_MANAGE_ANTIKENFAHRT_USERS = []
 CAN_MANAGE_AGR_APP = []
 CAN_MANAGE_BIB = []
+CAN_MANAGE_BIB_MEMBERS = []
+CAN_MANAGE_BIB_PAYMENT = []
+EXTERNAL_USERS = []
+LEHRBUCHVEREIN_JAHR = 2022
 
 # Schülervertretung, kann:
 # - Nachrichten an SuS schreiben

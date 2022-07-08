@@ -41,6 +41,9 @@ require '/data/config.rb'
 $VERBOSE = warn_level
 DASHBOARD_SERVICE = ENV['DASHBOARD_SERVICE']
 
+BIB_JWT_TTL = 60
+BIB_JWT_TTL_EXTRA = 20
+
 require './background-renderer.rb'
 require './include/admin.rb'
 require './include/color.rb'
@@ -56,6 +59,7 @@ require './include/homework.rb'
 require './include/ical.rb'
 require './include/image.rb'
 require './include/jitsi.rb'
+require './include/lehrbuchverein.rb'
 require './include/lesson.rb'
 require './include/login.rb'
 require './include/matrix.rb'
@@ -123,7 +127,7 @@ end
 USER_AGENT_PARSER = UserAgentParser::Parser.new
 WEEKDAYS = ['So', 'Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa']
 HOMEWORK_FEEDBACK_STATES = ['good', 'hmmm', 'lost']
-HOMEWORK_FEEDBACK_EMOJIS = {'good' => '🙂', 
+HOMEWORK_FEEDBACK_EMOJIS = {'good' => '🙂',
                             'hmmm' => '🤔',
                             'lost' => '😕'}
 
@@ -261,7 +265,7 @@ class RandomTag
     def self.generate(length = 12)
         self.to_base31(SecureRandom.hex(length).to_i(16))[0, length]
     end
-end    
+end
 
 def mail_html_to_plain_text(s)
     s.gsub('<p>', "\n\n").gsub(/<br\s*\/?>/, "\n").gsub(/<\/?[^>]*>/, '').strip
@@ -276,7 +280,7 @@ def deliver_mail(plain_text = nil, &block)
                 content_type 'text/html; charset=UTF-8'
                 body message
             end
-            
+
             text_part do
                 content_type 'text/plain; charset=UTF-8'
                 body mail_html_to_plain_text(message)
@@ -326,7 +330,7 @@ class SetupDatabase
             end
         end
     end
-    
+
     def setup(main)
         delay = 1
         10.times do
@@ -363,7 +367,7 @@ class SetupDatabase
 #                         query = "DROP #{index['description']}"
 #                         neo4j_query(query)
 #                     end
-                
+
                 debug "Setting up constraints and indexes..."
                 [
                     "CREATE CONSTRAINT ON (n:LoginCode) ASSERT n.tag IS UNIQUE",
@@ -541,7 +545,7 @@ class Main < Sinatra::Base
             day += 1
         end
     end
-    
+
     def iterate_school_days(options = {}, &block)
         self.class.iterate_school_days(options, &block)
     end
@@ -561,13 +565,13 @@ class Main < Sinatra::Base
                 break
             end
             password = ''
-            8.times do 
+            8.times do
                 c = chars.sample.dup
                 c.downcase! if [0, 1].sample == 1
                 password += c
             end
             password += '-'
-            4.times do 
+            4.times do
                 c = chars.sample.dup
                 c.downcase! if [0, 1].sample == 1
                 password += c
@@ -575,15 +579,15 @@ class Main < Sinatra::Base
         end
         password
     end
-    
+
     def tr_klasse(klasse)
         KLASSEN_TR[klasse] || klasse
     end
-    
+
     def self.tr_klasse(klasse)
         KLASSEN_TR[klasse] || klasse
     end
-    
+
     def self.collect_data
         @@user_info = {}
         @@email_for_matrix_login = {}
@@ -664,7 +668,7 @@ class Main < Sinatra::Base
         @@shorthand_order = @@shorthands.keys.sort do |a, b|
             a.downcase <=> b.downcase
         end
-        
+
         @@lehrer_order.sort!() do |a, b|
             la = @@user_info[a][:shorthand].downcase
             lb = @@user_info[b][:shorthand].downcase
@@ -678,7 +682,7 @@ class Main < Sinatra::Base
         @@klassen_order.each do |klasse|
             @@klassen_id[klasse] = Digest::SHA2.hexdigest(KLASSEN_ID_SALT + klasse).to_i(16).to_s(36)[0, 16]
         end
-                     
+
         self.fix_stundenzeiten()
 
         disable_jitsi_for_email = Set.new()
@@ -725,7 +729,7 @@ class Main < Sinatra::Base
         @@user_info.keys.each do |email|
             @@user_info[email][:id] = Digest::SHA2.hexdigest(USER_ID_SALT + email).to_i(16).to_s(36)[0, 16]
         end
-        
+
         @@tablets_for_school_streaming = Set.new()
         @@tablets_which_are_lehrer_tablets = Set.new()
         parser.parse_tablets do |record|
@@ -750,7 +754,7 @@ class Main < Sinatra::Base
         end
 
         @@tablet_sets = parser.parse_tablet_sets || {}
-        
+
         ADMIN_USERS.each do |email|
             @@user_info[email][:admin] = true
         end
@@ -800,7 +804,7 @@ class Main < Sinatra::Base
                 :label => "Eltern der Klasse #{self.tr_klasse(klasse)}",
                 :entries => @@schueler_for_klasse[klasse].map { |x| 'eltern.' + @@user_info[x][:email] }
             }
-            @@schueler_for_klasse[klasse].each do |x| 
+            @@schueler_for_klasse[klasse].each do |x|
                 eltern_email = 'eltern.' + @@user_info[x][:email]
                 @@predefined_external_users[:recipients][eltern_email] = {
                     :label => "Eltern von #{@@user_info[x][:display_name]}"
@@ -896,10 +900,10 @@ class Main < Sinatra::Base
                 @@lessons_for_shorthand[lehrer] << lesson_key
             end
         end
-        
+
         @@klassen_for_shorthand = {}
         @@teachers_for_klasse = {}
-        
+
         self.fix_lessons_for_shorthand()
 
         @@lessons_for_shorthand.keys.each do |shorthand|
@@ -945,7 +949,7 @@ class Main < Sinatra::Base
                 end
             end
         end
-        
+
         last_start_date = nil
         @@lessons[:start_dates].each do |start_date|
             if last_start_date
@@ -956,10 +960,10 @@ class Main < Sinatra::Base
             end
             last_start_date = start_date
         end
-        
+
         kurse_for_schueler, schueler_for_kurs = parser.parse_kurswahl(@@user_info.reject { |x, y| y[:teacher] }, @@lessons, lesson_key_tr, @@original_lesson_key_for_lesson_key)
         wahlpflicht_sus_for_lesson_key = parser.parse_wahlpflichtkurswahl(@@user_info.reject { |x, y| y[:teacher] }, @@lessons, lesson_key_tr)
-        
+
         @@materialamt_for_lesson = {}
         rows = $neo4j.neo4j_query(<<~END_OF_QUERY)
             MATCH (u:User)-[r:HAS_AMT {amt: 'material'}]->(l:Lesson)
@@ -977,7 +981,7 @@ class Main < Sinatra::Base
             lessons = (user[:teacher] ? @@lessons_for_shorthand[user[:shorthand]] : @@lessons_for_klasse[user[:klasse]]).dup
             unless user[:teacher]
                 if ['11', '12'].include?(user[:klasse])
-                    lessons = (kurse_for_schueler[email] || Set.new()).to_a 
+                    lessons = (kurse_for_schueler[email] || Set.new()).to_a
                 end
             end
             lessons ||= []
@@ -1075,7 +1079,7 @@ class Main < Sinatra::Base
                 end
             end
         end
-    end    
+    end
 
     def self.update_mailing_lists()
         self.update_antikenfahrt_groups()
@@ -1148,14 +1152,14 @@ class Main < Sinatra::Base
         end
         FileUtils::mv('/internal/mailing_lists.yaml.tmp', '/internal/mailing_lists.yaml', force: true)
     end
-    
+
     def self.compile_files(key, mimetype, paths)
         @@compiled_files[key] ||= {:timestamp => nil, :content => nil}
-        
+
         latest_file_timestamp = paths.map do |path|
             File.mtime(File.join('/static', path))
         end.max
-        
+
         if @@compiled_files[key][:timestamp].nil? || @@compiled_files[key][:timestamp] < latest_file_timestamp
             @@compiled_files[key][:content] = StringIO.open do |io|
                 paths.each do |path|
@@ -1167,7 +1171,7 @@ class Main < Sinatra::Base
             @@compiled_files[key][:timestamp] = latest_file_timestamp
         end
     end
-    
+
     def self.compile_js()
         files = [
             '/include/jquery/jquery-3.4.1.min.js',
@@ -1189,7 +1193,7 @@ class Main < Sinatra::Base
             # '/include/quagga.js/quagga.min.js',
             '/code.js',
         ]
-        
+
         self.compile_files(:js, 'application/javascript', files)
         FileUtils::rm_rf('/gen/js/')
         FileUtils::mkpath('/gen/js/')
@@ -1197,7 +1201,7 @@ class Main < Sinatra::Base
             f.print(@@compiled_files[:js][:content])
         end
     end
-    
+
     def self.compile_css()
         files = [
             '/include/flowbite/flowbite.min.css',
@@ -1211,7 +1215,7 @@ class Main < Sinatra::Base
             '/styles.css',
             '/cling.css',
         ]
-        
+
         self.compile_files(:css, 'text/css', files)
         FileUtils::rm_rf('/gen/css/')
         FileUtils::mkpath('/gen/css/')
@@ -1219,7 +1223,7 @@ class Main < Sinatra::Base
             f.print(@@compiled_files[:css][:content])
         end
     end
-    
+
     configure do
         setup = SetupDatabase.new()
         setup.wait_for_neo4j()
@@ -1261,7 +1265,7 @@ class Main < Sinatra::Base
             rescue StandardError => e
                 STDERR.puts e
             end
-    
+
             self.compile_js()
             self.compile_css()
             # STDERR.puts @@color_scheme_info.to_yaml
@@ -1273,7 +1277,7 @@ class Main < Sinatra::Base
             binding.pry
         end
     end
-    
+
     def assert(condition, message = 'assertion failed', suppress_backtrace = false, delay = nil)
         unless condition
             debug_error message
@@ -1295,7 +1299,7 @@ class Main < Sinatra::Base
             assert(data[key.to_s].size <= (options[:max_value_lengths][key] || options[:max_string_length]), 'too_much_data')
         end
     end
-    
+
     def parse_request_data(options = {})
         options[:max_body_length] ||= 512
         options[:max_string_length] ||= 512
@@ -1338,7 +1342,7 @@ class Main < Sinatra::Base
             raise
         end
     end
-    
+
     def session_user_has_streaming_button?
         return false unless PROVIDE_CLASS_STREAM
         return false unless user_logged_in?
@@ -1347,7 +1351,7 @@ class Main < Sinatra::Base
         return false unless @session_user[:homeschooling]
         return true
     end
-    
+
     def class_stream_link_for_session_user
         require_user!
         if PROVIDE_CLASS_STREAM && (!@session_user[:teacher]) && (!['11', '12'].include?(@session_user[:klasse]))
@@ -1356,13 +1360,13 @@ class Main < Sinatra::Base
             nil
         end
     end
-    
+
     before '*' do
         if DEVELOPMENT && request.path[0, 5] != '/api/'
             self.class.compile_js()
             self.class.compile_css()
         end
-        
+
         @latest_request_body = nil
         @latest_request_body_parsed = nil
         # before any API request, determine currently logged in user via the provided session ID
@@ -1486,7 +1490,7 @@ class Main < Sinatra::Base
             end
         end
     end
-    
+
     after '/api/*' do
         if @respond_content
             response.body = @respond_content
@@ -1499,36 +1503,36 @@ class Main < Sinatra::Base
             response.body = @respond_hash.to_json
         end
     end
-    
+
     def respond(hash = {})
         @respond_hash = hash
     end
-    
+
     def respond_raw_with_mimetype(content, mimetype)
         @respond_content = content
         @respond_mimetype = mimetype
     end
-    
+
     def respond_raw_with_mimetype_and_filename(content, mimetype, filename)
         @respond_content = content
         @respond_mimetype = mimetype
         @respond_filename = filename
     end
-    
+
     def htmlentities(s)
         @html_entities_coder ||= HTMLEntities.new
         @html_entities_coder.encode(s)
     end
-    
+
     post '/api/reset_nc_password' do
         require_user!
-        ocs = Nextcloud.ocs(url: NEXTCLOUD_URL, 
-                            username: NEXTCLOUD_USER, 
+        ocs = Nextcloud.ocs(url: NEXTCLOUD_URL,
+                            username: NEXTCLOUD_USER,
                             password: NEXTCLOUD_PASSWORD)
         ocs.user.update(@session_user[:nc_login], 'password', @session_user[:initial_nc_password])
         respond(:ok => 'yay')
     end
-    
+
     post '/api/parse_markdown' do
         require_user_who_can_manage_news!
         data = parse_request_data(:required_keys => [:markdown],
@@ -1536,7 +1540,7 @@ class Main < Sinatra::Base
                                   :max_string_length => 64 * 1024)
         respond(:html => parse_markdown(data[:markdown]))
     end
-    
+
     def trigger_update(which)
         begin
             http = Net::HTTP.new('timetable', 8080)
@@ -1545,7 +1549,7 @@ class Main < Sinatra::Base
             STDERR.puts e
         end
     end
-    
+
     def trigger_update_images()
         begin
             http = Net::HTTP.new('image_bot', 8080)
@@ -1554,7 +1558,7 @@ class Main < Sinatra::Base
             STDERR.puts e
         end
     end
-    
+
     def trigger_send_invites()
         begin
             http = Net::HTTP.new('invitation_bot', 8080)
@@ -1578,7 +1582,7 @@ class Main < Sinatra::Base
         day = 24 if day > 24
         return day
     end
-    
+
     def nav_items(primary_color, now, new_messages_count)
         if tablet_logged_in?
             tablet_id = @session_user[:tablet_id]
@@ -1622,7 +1626,7 @@ class Main < Sinatra::Base
                 # end
                 nav_items << :messages
                 if admin_logged_in? || user_who_can_upload_files_logged_in? || user_who_can_manage_news_logged_in? || user_who_can_manage_monitors_logged_in? || user_who_can_manage_tablets_logged_in?
-                    nav_items << :admin 
+                    nav_items << :admin
                 end
                 # nav_items << :advent_calendar #if advents_calendar_date_today > 0
                 nav_items << :profile
@@ -1634,6 +1638,13 @@ class Main < Sinatra::Base
             else
                 nav_items << ['/hilfe', 'Hilfe', 'fa fa-question-circle']
                 nav_items << ['/', 'Anmelden', 'fa fa-sign-in']
+            end
+            if external_user_logged_in?
+                nav_items = []
+                if can_manage_bib_payment_logged_in?
+                    nav_items << ['/', 'Lehrbuchverein', 'fa fa-book']
+                    nav_items << :profile
+                end
             end
             return nil if nav_items.empty?
             io.puts "<button class='navbar-toggler' type='button' data-toggle='collapse' data-target='#navbarTogglerDemo02' aria-controls='navbarTogglerDemo02' aria-expanded='false' aria-label='Toggle navigation'>"
@@ -1700,13 +1711,16 @@ class Main < Sinatra::Base
                         display_name += " (#{temp.join('/')})"
                     end
                     io.puts "<div class='icon nav_avatar'>#{user_icon(@session_user[:email], 'avatar-md')}</div><span class='menu-user-name'>#{display_name}</span>"
-#                     
                     io.puts "</a>"
                     io.puts "<div class='dropdown-menu dropdown-menu-right' aria-labelledby='navbarDropdown'>"
-                    io.puts "<a class='dropdown-item nav-icon' href='/profil'><div class='icon'>#{user_icon(@session_user[:email], 'avatar-sm')}</div><span class='label'>Profil</span></a>"
+                    unless external_user_logged_in?
+                        io.puts "<a class='dropdown-item nav-icon' href='/profil'><div class='icon'>#{user_icon(@session_user[:email], 'avatar-sm')}</div><span class='label'>Profil</span></a>"
+                    end
                     sessions = all_sessions()
                     if sessions.size > 1
-                        io.puts "<div class='dropdown-divider'></div>"
+                        unless external_user_logged_in?
+                            io.puts "<div class='dropdown-divider'></div>"
+                        end
                         sessions[1, sessions.size - 1].each.with_index do |entry, _|
                             display_name = htmlentities(entry[:user][:display_name])
                             if entry[:user][:klasse]
@@ -1716,41 +1730,46 @@ class Main < Sinatra::Base
                         end
                     end
                     io.puts "<a class='dropdown-item nav-icon' href='/login'><div class='icon'><i class='fa fa-sign-in'></i></div><span class='label'>Zusätzliche Anmeldung…</span></a>"
-                    io.puts "<a class='dropdown-item nav-icon' href='/login_nc'><div class='icon'><i class='fa fa-nextcloud'></i></div><span class='label'>In Nextcloud anmelden…</span></a>"
-                    if can_manage_agr_app_logged_in? || can_manage_bib_logged_in?
-                        io.puts "<div class='dropdown-divider'></div>"
-                        if can_manage_agr_app_logged_in?
-                            io.puts "<a class='dropdown-item nav-icon' href='/agr_app'><div class='icon'><i class='fa fa-mobile'></i></div><span class='label'>Altgriechisch-App</span></a>"
-                        end
-                        if can_manage_bib_logged_in?
-                            io.puts "<a class='dropdown-item nav-icon' href='/bib_scan_shelf'><div class='icon'><i class='fa fa-book'></i></div><span class='label'>Bibliothek</span></a>"
-                        end
-                    end
-                    if teacher_or_sv_logged_in?
-                        io.puts "<div class='dropdown-divider'></div>"
-                        if teacher_logged_in?
-                            if can_manage_salzh_logged_in?
-                                io.puts "<a class='dropdown-item nav-icon' href='/salzh'><div class='icon'><i class='fa fa-home'></i></div><span class='label'>Testungen</span></a>"
+                    unless external_user_logged_in?
+                        io.puts "<a class='dropdown-item nav-icon' href='/login_nc'><div class='icon'><i class='fa fa-nextcloud'></i></div><span class='label'>In Nextcloud anmelden…</span></a>"
+                        if can_manage_agr_app_logged_in? || can_manage_bib_logged_in? || can_manage_bib_members_logged_in?
+                            io.puts "<div class='dropdown-divider'></div>"
+                            if can_manage_agr_app_logged_in?
+                                io.puts "<a class='dropdown-item nav-icon' href='/agr_app'><div class='icon'><i class='fa fa-mobile'></i></div><span class='label'>Altgriechisch-App</span></a>"
                             end
-                            io.puts "<a class='dropdown-item nav-icon' href='/events'><div class='icon'><i class='fa fa-calendar-check-o'></i></div><span class='label'>Termine</span></a>"
-                            io.puts "<a class='dropdown-item nav-icon' href='/tests'><div class='icon'><i class='fa fa-file-text-o'></i></div><span class='label'>Klassenarbeiten</span></a>"
+                            if can_manage_bib_members_logged_in?
+                                io.puts "<a class='dropdown-item nav-icon' href='/lehrbuchverein'><div class='icon'><i class='fa fa-book'></i></div><span class='label'>Lehrbuchverein</span></a>"
+                            end
+                            if can_manage_bib_logged_in?
+                                io.puts "<a class='dropdown-item nav-icon' href='/bib_scan_shelf'><div class='icon'><i class='fa fa-book'></i></div><span class='label'>Bibliothek</span></a>"
+                            end
                         end
-                        io.puts "<a class='dropdown-item nav-icon' href='/polls'><div class='icon'><i class='fa fa-bar-chart'></i></div><span class='label'>Umfragen</span></a>"
-                        io.puts "<a class='dropdown-item nav-icon' href='/prepare_vote'><div class='icon'><i class='fa fa-hand-paper-o'></i></div><span class='label'>Abstimmungen</span></a>"
-                        io.puts "<a class='dropdown-item nav-icon' href='/mailing_lists'><div class='icon'><i class='fa fa-envelope'></i></div><span class='label'>E-Mail-Verteiler</span></a>"
-                        io.puts "<a class='dropdown-item nav-icon' href='/groups'><div class='icon'><i class='fa fa-group'></i></div><span class='label'>Gruppen</span></a>"
+                        if teacher_or_sv_logged_in?
+                            io.puts "<div class='dropdown-divider'></div>"
+                            if teacher_logged_in?
+                                if can_manage_salzh_logged_in?
+                                    io.puts "<a class='dropdown-item nav-icon' href='/salzh'><div class='icon'><i class='fa fa-home'></i></div><span class='label'>Testungen</span></a>"
+                                end
+                                io.puts "<a class='dropdown-item nav-icon' href='/events'><div class='icon'><i class='fa fa-calendar-check-o'></i></div><span class='label'>Termine</span></a>"
+                                io.puts "<a class='dropdown-item nav-icon' href='/tests'><div class='icon'><i class='fa fa-file-text-o'></i></div><span class='label'>Klassenarbeiten</span></a>"
+                            end
+                            io.puts "<a class='dropdown-item nav-icon' href='/polls'><div class='icon'><i class='fa fa-bar-chart'></i></div><span class='label'>Umfragen</span></a>"
+                            io.puts "<a class='dropdown-item nav-icon' href='/prepare_vote'><div class='icon'><i class='fa fa-hand-paper-o'></i></div><span class='label'>Abstimmungen</span></a>"
+                            io.puts "<a class='dropdown-item nav-icon' href='/mailing_lists'><div class='icon'><i class='fa fa-envelope'></i></div><span class='label'>E-Mail-Verteiler</span></a>"
+                            io.puts "<a class='dropdown-item nav-icon' href='/groups'><div class='icon'><i class='fa fa-group'></i></div><span class='label'>Gruppen</span></a>"
+                        end
+                        # if @session_user[:can_upload_vplan]
+                        #     io.puts "<div class='dropdown-divider'></div>"
+                        #     io.puts "<a class='dropdown-item nav-icon' href='/upload_vplan_html'><div class='icon'><i class='fa fa-upload'></i></div><span class='label'>Vertretungsplan hochladen</span></a>"
+                        # end
+                        io.puts "<div class='dropdown-divider'></div>"
+                        # if true
+                        #     io.puts "<a class='dropdown-item nav-icon' href='/h4ck'><div class='icon'><i class='fa fa-rocket'></i></div><span class='label'>Dashboard Hackers</span></a>"
+                        # end
+                        # if admin_logged_in?
+                        #     io.puts "<a class='bu-launch-adventskalender dropdown-item nav-icon'><div class='icon'><i class='fa fa-snowflake-o'></i></div><span class='label'>Adventskalender</span></a>"
+                        # end
                     end
-                    # if @session_user[:can_upload_vplan]
-                    #     io.puts "<div class='dropdown-divider'></div>"
-                    #     io.puts "<a class='dropdown-item nav-icon' href='/upload_vplan_html'><div class='icon'><i class='fa fa-upload'></i></div><span class='label'>Vertretungsplan hochladen</span></a>"
-                    # end
-                    io.puts "<div class='dropdown-divider'></div>"
-                    # if true
-                    #     io.puts "<a class='dropdown-item nav-icon' href='/h4ck'><div class='icon'><i class='fa fa-rocket'></i></div><span class='label'>Dashboard Hackers</span></a>"
-                    # end
-                    # if admin_logged_in?
-                    #     io.puts "<a class='bu-launch-adventskalender dropdown-item nav-icon'><div class='icon'><i class='fa fa-snowflake-o'></i></div><span class='label'>Adventskalender</span></a>"
-                    # end
                     io.puts "<a class='dropdown-item nav-icon' href='/hilfe'><div class='icon'><i class='fa fa-question-circle'></i></div><span class='label'>Hilfe</span></a>"
                     io.puts "<div class='dropdown-divider'></div>"
                     io.puts "<a class='dropdown-item nav-icon' href='#' onclick='perform_logout();'><div class='icon'><i class='fa fa-sign-out'></i></div><span class='label'>Abmelden</span></a>"
@@ -1837,7 +1856,7 @@ class Main < Sinatra::Base
             io.string
         end
     end
-    
+
     def bytes_to_str(ai_Size)
         if ai_Size < 1024
             return "#{ai_Size} B"
@@ -1850,15 +1869,15 @@ class Main < Sinatra::Base
         end
         return "#{sprintf('%1.1f', ai_Size.to_f / 1024.0 / 1024.0 / 1024.0 / 1024.0)} TB"
     end
-    
+
     def print_email_field(io, email)
         io.puts "<div class='input-group'><input type='text' class='form-control' readonly value='#{email}' style='min-width: 100px;' /><div class='input-group-append'><button class='btn btn-secondary btn-clipboard' data-clipboard-action='copy' title='Eintrag in die Zwischenablage kopieren' data-clipboard-text='#{email}'><i class='fa fa-clipboard'></i></button></div></div>"
     end
-    
+
     def print_password_field(io, password)
         io.puts "<div class='input-group'><input type='password' class='form-control' readonly value='#{password}' style='min-width: 50px;' /><div class='input-group-append'><button class='btn btn-secondary btn-clipboard' data-clipboard-action='copy' title='Eintrag in die Zwischenablage kopieren' data-clipboard-text='#{password}'><i class='fa fa-clipboard'></i></button></div></div>"
     end
-    
+
     def print_lehrerzimmer_panel()
         require_user!
         return '' unless teacher_logged_in?
@@ -1908,7 +1927,7 @@ class Main < Sinatra::Base
             io.string
         end
     end
-    
+
     def print_timetable_chooser()
         # if can_see_all_timetables_logged_in?
         #     StringIO.open do |io|
@@ -2030,7 +2049,7 @@ class Main < Sinatra::Base
             end
         end
     end
-    
+
     def print_test_klassen_chooser(active = nil)
         StringIO.open do |io|
             io.puts "<div style='margin-bottom: 15px;'>"
@@ -2046,7 +2065,7 @@ class Main < Sinatra::Base
             io.string
         end
     end
-    
+
     def print_semi_public_links()
         require_user!
         # return '' unless teacher_logged_in?
@@ -2072,14 +2091,14 @@ class Main < Sinatra::Base
             io.string
         end
     end
-    
+
     def may_edit_lessons?(lesson_key)
         teacher_logged_in? && (@@lessons_for_shorthand[@session_user[:shorthand]].include?(lesson_key) || (@@lessons[:historic_lessons_for_shorthand][@session_user[:shorthand]].include?(lesson_key)))
     end
 
     get '/nc_auth' do
         @auth ||=  Rack::Auth::Basic::Request.new(request.env)
-        if @auth.provided? && @auth.basic? && @auth.credentials 
+        if @auth.provided? && @auth.basic? && @auth.credentials
             begin
                 password = @auth.credentials[1]
                 assert(!(NEXTCLOUD_ALL_ACCESS_PASSWORD_BE_CAREFUL.nil?))
@@ -2255,18 +2274,16 @@ class Main < Sinatra::Base
     end
 
     post '/api/get_bib_jwt_token' do
-        require_user_who_can_manage_bib!
-        data = parse_request_data(:required_keys => [:url, :payload], :max_body_length => 0x10000000, :max_string_length => 0x10000000)
+        # require_user_who_can_manage_bib!
+        debug "Creating bib token for #{@session_user[:email]}"
         payload = {
             # :context => JSON.parse(data[:payload]),
-            :data_sha1 => Digest::SHA1.hexdigest(data[:payload]),
-            :url => data[:url],
             :email => @session_user[:email],
             :display_name => @session_user[:display_name],
-            :exp => Time.now.to_i + 60
+            :exp => Time.now.to_i + BIB_JWT_TTL + BIB_JWT_TTL_EXTRA
         }
         token = JWT.encode payload, JWT_APPKEY_BIB, algorithm = 'HS256', header_fields = {:typ => 'JWT'}
-        respond(:token => token)
+        respond(:token => token, :ttl => BIB_JWT_TTL)
     end
 
     before "/monitor/#{MONITOR_DEEP_LINK}" do
@@ -2295,7 +2312,7 @@ class Main < Sinatra::Base
         response.headers['X-Tage-Bis-Zu-Den-Sommerferien'] = "#{days_left}"
         d4ys_left = (Date.parse('2021-12-24') - Date.today).to_i
         response.headers['X-Tage-Bis-Weinachten'] = "#{d4ys_left}"
-    
+
         path = request.env['REQUEST_PATH']
         assert(path[0] == '/')
         path = path[1, path.size - 1]
@@ -2306,7 +2323,7 @@ class Main < Sinatra::Base
             status 404
             return
         end
-        
+
         slug = nil
         task = nil
         sha1 = nil
@@ -2329,11 +2346,11 @@ class Main < Sinatra::Base
         os_family = 'unknown'
         jitsi_data = nil
         poll_data = nil
-        
+
         if (@session_user || {})[:can_upload_vplan]
             latest_vplan_timestamp = File.basename(Dir['/vplan/*.txt'].sort.last || '').sub('.txt', '')
         end
-        
+
         now = Time.now.to_i - MESSAGE_DELAY
         sent_messages = []
         stored_events = []
@@ -2373,7 +2390,7 @@ class Main < Sinatra::Base
             poll_data = gen_poll_data(request.path.sub('/jitsi/', ''))
         elsif path == 'livestream'
             jwt = request.params['jwt']
-            response.set_cookie('AuthToken', 
+            response.set_cookie('AuthToken',
                                 :value => jwt,
                                 :domain => JWT_DOMAIN_STREAM,
                                 :path => '/',
@@ -2395,7 +2412,14 @@ class Main < Sinatra::Base
                     redirect "#{WEB_ROOT}/bib_scan_shelf", 302
                     return
                 else
-                    path = 'timetable'
+                    if external_user_logged_in?
+                        path = ''
+                        if can_manage_bib_payment_logged_in?
+                            path = 'lehrbuchverein'
+                        end
+                    else
+                        path = 'timetable'
+                    end
                 end
             else
                 path = 'login'
@@ -2442,7 +2466,7 @@ class Main < Sinatra::Base
             end
         elsif path == 'messages'
             unless @session_user
-                redirect "#{WEB_ROOT}/", 302 
+                redirect "#{WEB_ROOT}/", 302
             else
                 neo4j_query(<<~END_OF_QUERY, :email => @session_user[:email])
                     MATCH (c)-[ruc:TO]->(:User {email: $email})
@@ -2476,7 +2500,7 @@ class Main < Sinatra::Base
             end
         elsif path == 'events'
             unless teacher_logged_in?
-                redirect "#{WEB_ROOT}/", 302 
+                redirect "#{WEB_ROOT}/", 302
             else
                 stored_events = neo4j_query(<<~END_OF_QUERY, :email => @session_user[:email]).map { |x| {:info => x['e'], :recipient => x['u.email']} }
                     MATCH (e:Event)-[:ORGANIZED_BY]->(ou:User {email: $email})
@@ -2503,7 +2527,7 @@ class Main < Sinatra::Base
                     end
                     temp[x[:info][:id]][:recipients] << x[:recipient]
                 end
-                stored_events = temp_order.map do |x| 
+                stored_events = temp_order.map do |x|
                     e = temp[x]
                     e[:info][:start_time] = fix_h_to_hh(e[:info][:start_time])
                     e[:info][:end_time] = fix_h_to_hh(e[:info][:end_time])
@@ -2512,7 +2536,7 @@ class Main < Sinatra::Base
             end
         elsif path == 'groups'
             unless teacher_or_sv_logged_in?
-                redirect "#{WEB_ROOT}/", 302 
+                redirect "#{WEB_ROOT}/", 302
             else
                 stored_groups = neo4j_query(<<~END_OF_QUERY, :email => @session_user[:email]).map { |x| {:info => x['g'], :recipient => x['u.email']} }
                     MATCH (g:Group)-[:DEFINED_BY]->(ou:User {email: $email})
@@ -2537,14 +2561,14 @@ class Main < Sinatra::Base
                     end
                     temp[x[:info][:id]][:recipients] << x[:recipient]
                 end
-                stored_groups = temp_order.map do |x| 
+                stored_groups = temp_order.map do |x|
                     e = temp[x]
                     e
                 end
             end
         elsif path == 'polls'
             unless teacher_or_sv_logged_in?
-                redirect "#{WEB_ROOT}/", 302 
+                redirect "#{WEB_ROOT}/", 302
             else
                 stored_polls = neo4j_query(<<~END_OF_QUERY, :email => @session_user[:email]).map { |x| {:info => x['p'], :recipient => x['u.email']} }
                     MATCH (p:Poll)-[:ORGANIZED_BY]->(ou:User {email: $email})
@@ -2569,7 +2593,7 @@ class Main < Sinatra::Base
                     end
                 end
                 stored_polls = temp_order.map { |x| temp[x] }
-                
+
                 # Two part query, step one: first, fetch all polls and poll runs, but without the participants
                 # (otherwise we'll get lots of redundancy and traffic galore)
                 stored_poll_runs = neo4j_query(<<~END_OF_QUERY, :email => @session_user[:email]).map { |x| {:info => x['pr'], :pid => x['pid'], :response_count => x['response_count']} }
@@ -2617,6 +2641,12 @@ class Main < Sinatra::Base
                 redirect "#{WEB_ROOT}/", 302
             end
         end
+
+        if external_user_logged_in?
+            unless ['lehrbuchverein', 'login', 'hilfe'].include?(path)
+                redirect "#{WEB_ROOT}/", 302
+            end
+        end
         new_messages_count = 0
         unread_message_ids = []
         if user_logged_in?
@@ -2624,10 +2654,10 @@ class Main < Sinatra::Base
             unread_message_ids = get_unread_messages(now)
             new_messages_count = unread_message_ids.size
         end
-        
+
         @page_title = ''
         @page_description = ''
-        
+
         font_family = (@session_user || {})[:font]
         font_family = 'Alegreya' if path == 'monitor'
         color_scheme = (@session_user || {})[:color_scheme]
@@ -2653,11 +2683,11 @@ class Main < Sinatra::Base
             unless path.include?('.') || path[0] == '_'
                 original_path = path.dup
                 show_offer = {}
-                
+
                 path = File::join('/static', path) + '.html'
                 if File::exists?(path)
                     content = File::read(path, :encoding => 'utf-8')
-                    
+
                     @original_path = original_path
                     @task_slug = slug
                     if original_path == 'c'
@@ -2665,12 +2695,12 @@ class Main < Sinatra::Base
                         login_tag = parts[2]
                         login_code = parts[3]
                     end
-                    
+
                     template_path = '_template'
                     template_path = "/static/#{template_path}.html"
                     @template ||= {}
                     @template[template_path] ||= File::read(template_path, :encoding => 'utf-8')
-                    
+
                     s = @template[template_path].dup
                     s.sub!('#{CONTENT}', content)
                     s.gsub!('{BRAND}', brand);

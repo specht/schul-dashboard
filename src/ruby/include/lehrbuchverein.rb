@@ -1,13 +1,33 @@
 class Main < Sinatra::Base
+    # returns 0 for selbstzahler, 1 for paid, 2 for zahlungsbefreit
+    def determine_lehrmittelverein_state_for_email(email)
+        result = 0
+        temp = neo4j_query(<<~END_OF_QUERY, {:email => email})
+            MATCH (u:User {email: $email, lmv_no_pay: true})
+            RETURN u.email;
+        END_OF_QUERY
+        result += 2 if temp.size > 0
+        temp = neo4j_query(<<~END_OF_QUERY, {:email => email, :jahr => LEHRBUCHVEREIN_JAHR})
+            MATCH (u:User {email: $email})-[:PAID_FOR]->(j:Lehrbuchvereinsjahr {jahr: $jahr})
+            RETURN u.email;
+        END_OF_QUERY
+        result += 1 if temp.size > 0
+        return result
+    end
+
+    def can_checkout_books(email)
+        determine_lehrmittelverein_state_for_email(email) > 0
+    end
+
     def print_lehrbuchverein_table()
         assert(can_manage_bib_members_logged_in? || can_manage_bib_payment_logged_in?)
         temp = neo4j_query(<<~END_OF_QUERY).map { |x| { :email => x['u.email'] } }
-            MATCH (u:User {lehrbuchverein_mitglied: true})
+            MATCH (u:User {lmv_no_pay: true})
             RETURN u.email;
         END_OF_QUERY
-        mitglieder = Set.new()
+        no_pay = Set.new()
         temp.each do |row|
-            mitglieder << row[:email]
+            no_pay << row[:email]
         end
         temp = neo4j_query(<<~END_OF_QUERY, {:jahr => LEHRBUCHVEREIN_JAHR}).map { |x| { :email => x['u.email'] } }
             MATCH (u:User)-[:PAID_FOR]->(j:Lehrbuchvereinsjahr {jahr: $jahr})
@@ -26,9 +46,10 @@ class Main < Sinatra::Base
             io.puts "<th>Vorname</th>"
             io.puts "<th>Klasse</th>"
             if can_manage_bib_members_logged_in?
-                io.puts "<th>Vereinsmitglied</th>"
+                io.puts "<th>Bezahlt für #{LEHRBUCHVEREIN_JAHR}/#{(LEHRBUCHVEREIN_JAHR % 100) + 1}</th>"
+                io.puts "<th>Zahlungsbefreit</th>"
+                io.puts "<th>Selbstzahler</th>"
             end
-            io.puts "<th>Bezahlt für #{LEHRBUCHVEREIN_JAHR}/#{(LEHRBUCHVEREIN_JAHR % 100) + 1}</th>"
             io.puts "</tr>"
             io.puts "</thead>"
             io.puts "<tbody>"
@@ -38,15 +59,18 @@ class Main < Sinatra::Base
                     all_schueler << email
                 end
             end
-            all_schueler.sort! do |a, b|
-                @@user_info[a][:last_name] == @@user_info[b][:last_name] ?
-                (@@user_info[a][:first_name] <=> @@user_info[b][:first_name]) :
-                (@@user_info[a][:last_name] <=> @@user_info[b][:last_name])
-            end
+            # all_schueler.sort! do |a, b|
+            #     @@user_info[a][:last_name] == @@user_info[b][:last_name] ?
+            #     (@@user_info[a][:first_name] <=> @@user_info[b][:first_name]) :
+            #     (@@user_info[a][:last_name] <=> @@user_info[b][:last_name])
+            # end
             all_schueler.each do |email|
                 unless can_manage_bib_members_logged_in?
                     next unless mitglieder.include?(email)
                 end
+                state = 0
+                state += 1 if paid.include?(email)
+                state += 2 if no_pay.include?(email)
                 io.puts "<tr class='user_row' data-email='#{email}'>"
                 user = @@user_info[email]
                 io.puts "<td>#{user[:last_name]}</td>"
@@ -54,20 +78,15 @@ class Main < Sinatra::Base
                 io.puts "<td>#{tr_klasse(user[:klasse])}</td>"
                 if can_manage_bib_members_logged_in?
                     io.puts "<td>"
-                    if mitglieder.include?(email)
-                        io.puts "<button class='btn btn-xs btn-success bu_toggle_vereinsmitglied'><i class='fa fa-check'></i>&nbsp;&nbsp;Vereinsmitglied</button>"
-                    else
-                        io.puts "<button class='btn btn-xs btn-outline-secondary bu_toggle_vereinsmitglied'><i class='fa fa-times'></i>&nbsp;&nbsp;kein Mitglied</button>"
-                    end
+                    io.puts "<button class='btn btn-xs #{((state >> 0) & 1) == 1 ? 'btn-success' : 'btn-outline-secondary'} bu_toggle_paid'>bezahlt für #{LEHRBUCHVEREIN_JAHR}/#{(LEHRBUCHVEREIN_JAHR % 100) + 1}</button>"
+                    io.puts "</td>"
+                    io.puts "<td>"
+                    io.puts "<button class='btn btn-xs #{((state >> 1) & 1) == 1 ? 'btn-primary' : 'btn-outline-secondary'} bu_toggle_no_pay'>zahlungsbefreit</button>"
+                    io.puts "</td>"
+                    io.puts "<td>"
+                    io.puts "<button class='btn btn-xs #{state == 0 ? 'btn-danger' : 'btn-outline-secondary'} bu_no_book_for_you disabled'>Selbstzahler</button>"
                     io.puts "</td>"
                 end
-                io.puts "<td>"
-                if paid.include?(email)
-                    io.puts "<button class='btn btn-xs btn-success bu_toggle_paid' #{can_manage_bib_payment_logged_in? ? '' : 'disabled'}><i class='fa fa-check'></i>&nbsp;&nbsp;bezahlt</button>"
-                else
-                    io.puts "<button class='btn btn-xs btn-outline-secondary bu_toggle_paid' #{can_manage_bib_payment_logged_in? ? '' : 'disabled'}><i class='fa fa-times'></i>&nbsp;&nbsp;nicht bezahlt</button>"
-                end
-                io.puts "</td>"
             io.puts "</tr>"
             end
             io.puts "</tbody>"
@@ -77,22 +96,22 @@ class Main < Sinatra::Base
         end
     end
 
-    post '/api/toggle_lehrbuchverein_mitglied' do
+    post '/api/toggle_lehrbuchverein_no_pay' do
         data = parse_request_data(:required_keys => [:email])
         email = data[:email]
         assert(can_manage_bib_members_logged_in?)
         result = neo4j_query_expect_one(<<~END_OF_QUERY, :email => data[:email])
             MATCH (u:User {email: $email})
-            SET u.lehrbuchverein_mitglied = NOT COALESCE(u.lehrbuchverein_mitglied, FALSE)
-            RETURN u.lehrbuchverein_mitglied;
+            SET u.lmv_no_pay = NOT COALESCE(u.lmv_no_pay, FALSE)
+            RETURN u.lmv_no_pay;
         END_OF_QUERY
-        respond(:ok => true, :lehrbuchverein_mitglied => result['u.lehrbuchverein_mitglied'])
+        respond(:ok => true, :state => determine_lehrmittelverein_state_for_email(email))
     end
 
     post '/api/toggle_lehrbuchverein_paid' do
         data = parse_request_data(:required_keys => [:email])
         email = data[:email]
-        assert(can_manage_bib_payment_logged_in?)
+        assert(can_manage_bib_members_logged_in?)
         paid = neo4j_query(<<~END_OF_QUERY, {:jahr => LEHRBUCHVEREIN_JAHR, :email => data[:email]}).size > 0
             MATCH (u:User {email: $email})-[:PAID_FOR]->(j:Lehrbuchvereinsjahr {jahr: $jahr})
             RETURN u.email;
@@ -102,7 +121,7 @@ class Main < Sinatra::Base
                 MATCH (u:User {email: $email})-[r:PAID_FOR]->(j:Lehrbuchvereinsjahr {jahr: $jahr})
                 DELETE r;
             END_OF_QUERY
-            respond(:ok => true, :paid => false)
+            respond(:ok => true, :state => determine_lehrmittelverein_state_for_email(email))
         else
             result = neo4j_query_expect_one(<<~END_OF_QUERY, :jahr => LEHRBUCHVEREIN_JAHR, :email => data[:email])
                 MATCH (u:User {email: $email})
@@ -110,7 +129,7 @@ class Main < Sinatra::Base
                 CREATE (u)-[:PAID_FOR]->(j)
                 RETURN u.lehrbuchverein_mitglied;
             END_OF_QUERY
-            respond(:ok => true, :paid => true)
+            respond(:ok => true, :state => determine_lehrmittelverein_state_for_email(email))
         end
     end
 end

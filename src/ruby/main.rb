@@ -1642,7 +1642,7 @@ class Main < Sinatra::Base
             if external_user_logged_in?
                 nav_items = []
                 if can_manage_bib_payment_logged_in?
-                    nav_items << ['/', 'Lehrbuchverein', 'fa fa-book']
+                    nav_items << ['/', 'Lehrmittelverein', 'fa fa-book']
                     nav_items << :profile
                 end
             end
@@ -1738,7 +1738,7 @@ class Main < Sinatra::Base
                                 io.puts "<a class='dropdown-item nav-icon' href='/agr_app'><div class='icon'><i class='fa fa-mobile'></i></div><span class='label'>Altgriechisch-App</span></a>"
                             end
                             if can_manage_bib_members_logged_in?
-                                io.puts "<a class='dropdown-item nav-icon' href='/lehrbuchverein'><div class='icon'><i class='fa fa-book'></i></div><span class='label'>Lehrbuchverein</span></a>"
+                                io.puts "<a class='dropdown-item nav-icon' href='/lehrbuchverein'><div class='icon'><i class='fa fa-book'></i></div><span class='label'>Lehrmittelverein</span></a>"
                             end
                             if can_manage_bib_logged_in?
                                 io.puts "<a class='dropdown-item nav-icon' href='/bib_scan_shelf'><div class='icon'><i class='fa fa-book'></i></div><span class='label'>Bibliothek</span></a>"

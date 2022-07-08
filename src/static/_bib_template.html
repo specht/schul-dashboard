@@ -40,6 +40,24 @@
     var KLASSEN_ORDER = #{@@klassen_order.to_json};
     var SCHUELER_FOR_KLASSE = #{@@schueler_for_klasse.to_json};
 
+    // receives a string and returns a hash of stem, bnr and optional checksum if valid, null otherwise
+    function fix_scanned_book_barcode(s) {
+        let parts = s.split(/[^\w\d]/);
+        if (parts.length < 2)
+            return null;
+        let stem = parts[0];
+        let bnr = parts[1];
+        let checksum = parts[2] || null;
+        if (!/^\d+$/.test(stem))
+            return null;
+        if (!/^\d+$/.test(bnr))
+            return null;
+        if (checksum !== null)
+            if (!/^\w\w$/.test(checksum))
+                return null;
+        return { stem: parseInt(stem), bnr: parseInt(bnr), checksum: checksum };
+    }
+
     function create_book_div(book, shelf, options = {}) {
         let cover_path = `${BIB_HOST}/gen/covers/${book.stem}-200.jpg`;
         let hover_classes = '';
@@ -78,13 +96,12 @@
             if (parts.length > 0)
                 details.append($(`<div>`).text(parts.join(', ')));
             let stem = $(`<span class='bg-amber-200 px-2 py-1 rounded mr-2 font-bold'>`).text(book.stem);
-            if (options.exemplar)
-                stem.text(options.exemplar.signature);
-            else if (options.bnr)
+            if (options.bnr)
                 stem.text(`${book.stem}-${options.bnr}`);
             let discarded_span = '';
             if (options.exemplar && options.exemplar.ts_discarded) {
-                discarded_span = $(`<span class='bg-red-400 text-red-900 px-2 py-1 rounded mr-2 font-bold'>`).text('ausgemustert');
+                let t = moment.unix(options.exemplar.ts_discarded);
+                discarded_span = $(`<span class='bg-red-400 text-red-900 px-2 py-1 rounded mr-2'>`).text(`ausgemustert am ${t.format('L')}`);
             }
             let shelf_span = '';
             if (typeof(shelf) !== 'undefined' && shelf !== null) {

@@ -104,6 +104,7 @@
     var beep2 = new Audio('/beep2.mp3');
 
     var signature_to_discard = null;
+    var last_scanned_barcode = null;
 
     function reset() {
         $('#book_div').empty();
@@ -113,34 +114,30 @@
     }
 
     function on_scan(code) {
-        if (code.match(/^\d{4}\/\d{3}$/) !== null)
-            code = code.replace('/', '-');
-        if (code.match(/^\d{4}\/0\d{3}$/) !== null)
-            code = code.replace('/0', '-');
-        if (code.match(/^\d{4}\-\d{3}$/) !== null) {
-            reset();
-            let signature = code;
-            let stem = parseInt(signature.split('-')[0]);
-            let bnr = parseInt(signature.split('-')[1]);
-            bib_api_call('/jwt/get_book', { stem: stem, bnr: bnr }, function (data) {
-                if (data.success) {
-                    stem_book = data.book;
-                    console.log(data);
-                    let exemplar = (data.exemplar || {}).e;
-                    $('#book_div').append(create_book_div(data.book, null, { bnr: bnr, exemplar: exemplar, bnr: bnr }));
-                    $('#bu_discard_exemplar').removeClass('btn-outline-secondary').addClass('btn-danger');
-                    if (exemplar && exemplar.ts_discarded)
-                        $('#bu_discard_exemplar').prop('disabled', true);
-                    else
-                        $('#bu_discard_exemplar').prop('disabled', false);
-                    $('#exemplar_here').text(`${bnr}`);
-                    signature_to_discard = signature;
-                }
-            });
+        if (code === last_scanned_barcode)
+            return;
+        last_scanned_barcode = code;
+        let barcode_parts = fix_scanned_book_barcode(code);
+        if (barcode_parts === null)
+            return;
+        reset();
+        bib_api_call('/jwt/get_book', { stem: barcode_parts.stem, bnr: barcode_parts.bnr, checksum: barcode_parts.checksum }, function (data) {
+            if (data.success) {
+                stem_book = data.book;
+                console.log(data);
+                let exemplar = (data.exemplar || {}).e;
+                $('#book_div').append(create_book_div(data.book, null, { bnr: barcode_parts.bnr, exemplar: exemplar }));
+                $('#bu_discard_exemplar').removeClass('btn-outline-secondary').addClass('btn-danger');
+                if (exemplar && exemplar.ts_discarded)
+                    $('#bu_discard_exemplar').prop('disabled', true);
+                else
+                    $('#bu_discard_exemplar').prop('disabled', false);
+                $('#exemplar_here').text(`${barcode_parts.bnr}`);
+                signature_to_discard = barcode_parts;
+            }
+        });
 
-            console.log(`signature: ${signature}`);
-            beep0.play();
-        }
+        beep0.play();
     }
 
     window.addEventListener('load', function () {
@@ -158,7 +155,7 @@
             let signature = signature_to_discard;
             console.log(`discarding ${signature}`);
             $('#discard_modal').modal('hide');
-            bib_api_call('/jwt/discard_exemplar', { signature: signature }, function (data) {
+            bib_api_call('/jwt/discard_exemplar', { stem: signature.stem, bnr: signature.bnr }, function (data) {
                 if (data.success) {
                     reset();
                 }

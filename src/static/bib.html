@@ -13,7 +13,34 @@
                 continue;
             observer.unobserve(entry.target);
             let book = $(entry.target).data('book');
-            $(entry.target).replaceWith(create_book_div(book, null, {preview: false, clickable: true}));
+            $(entry.target).replaceWith(create_book_div(book, null, {
+                preview: false, clickable: true, callback: function (book) {
+                    bib_api_call('/jwt/get_book', { stem: book.stem }, function (data) {
+                        if (data.success) {
+                            console.log(data);
+                            let book = data.book;
+                            $('#book_modal .modal-title').text(book.title);
+                            let table = $('<table>').addClass('table table-sm table-striped');
+                            $('#book_modal .modal-body').empty();
+                            for (let exemplar of data.exemplare) {
+                                let row = $('<tr>')
+                                // console.log(exemplar);
+                                let email = exemplar.u.email;
+                                let user_info = USER_INFO[email] || {};
+                                nc_login = user_info.nc_login;
+                                row.append($('<td>').text(exemplar.e.signature));
+                                row.append($('<td>').text(exemplar.r.datum));
+                                row.append($('<td>').append($('<div>').css('background-image', `url(#{NEXTCLOUD_URL}/index.php/avatar/${nc_login}/128), url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mO88h8AAq0B1REmZuEAAAAASUVORK5CYII=)`).addClass('avatar-md')));
+                                row.append($('<td>').text(user_info.display_name || email));
+                                row.append($('<td>').html(`${KLASSEN_TR[user_info.klasse || ''] || user_info.klasse || '&ndash;'}`));
+                                table.append(row);
+                            }
+                            $('#book_modal .modal-body').append(table);
+                            $('#book_modal').modal('show');
+                        }
+                    });
+                }
+            }));
         }
     }
 
@@ -27,7 +54,7 @@
             for (let book of data.books) {
                 // console.log(book);
                 // if (book.stem == 3075)
-                let div = create_book_div(book, null, {preview: true}).data('book', book);
+                let div = create_book_div(book, null, { preview: true }).data('book', book);
                 $('#book_list').append(div);
                 observer.observe(div[0]);
             }

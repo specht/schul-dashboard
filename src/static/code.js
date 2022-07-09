@@ -24,7 +24,9 @@ jQuery.extend({
 function show_error_message(message) {
     var div = $('<div>').css('text-align', 'center').css('padding', '15px').addClass('bg-light text-danger').html(message);
     $('.api_messages').empty();
-    $('.api_messages').append(div).show();
+    let button = $("<button class='text-stone-400 btn pull-right form-control' style='width: unset; margin: 8px;' ><i class='fa fa-times'></i></button>");
+    $('.api_messages').append(button).append(div).show();
+    button.click(function(e) { $('.api_messages').hide(); });
 }
 
 function show_success_message(message) {
@@ -470,7 +472,7 @@ function create_book_div(book, shelf, options = {}) {
     } else {
         div.append(stem.addClass('rounded bg-white bottom-0'));
     }
-    let cover = $(`<div class='bg-stone-800 shadow shadow-md mr-3 border-r-2 relative' style="float: left; height: 200px; width: 145px; background-position: center center; background-size: contain; background-repeat: no-repeat; border-right: 1px solid #ddd; height: 200px; "></div>`);
+    let cover = $(`<div class='bg-stone-800 shadow shadow-md mr-3 border-r-2 relative' style="float: left; height: 200px; width: 145px; background-position: center center; background-size: contain; background-repeat: no-repeat; border-right: 1px solid #ddd; "></div>`);
     if (!(options.preview)) {
         if (book.has_cover) {
             cover.css('background-image', `url(${cover_path})`);
@@ -539,30 +541,7 @@ function create_book_div(book, shelf, options = {}) {
     }
     if (options.clickable) {
         div.click(function(e) {
-            bib_api_call('/jwt/get_book', {stem: book.stem}, function (data) {
-                if (data.success) {
-                    console.log(data);
-                    let book = data.book;
-                    $('#book_modal .modal-title').text(book.title);
-                    let table = $('<table>').addClass('table table-sm table-striped');
-                    $('#book_modal .modal-body').empty();
-                    for (let exemplar of data.exemplare) {
-                        let row = $('<tr>')
-                        // console.log(exemplar);
-                        let email = exemplar.u.email;
-                        let user_info = USER_INFO[email] || {};
-                        nc_login = user_info.nc_login;
-                        row.append($('<td>').text(exemplar.e.signature));
-                        row.append($('<td>').text(exemplar.r.datum));
-                        row.append($('<td>').append($('<div>').css('background-image', `url(#{NEXTCLOUD_URL}/index.php/avatar/${nc_login}/128), url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mO88h8AAq0B1REmZuEAAAAASUVORK5CYII=)`).addClass('avatar-md')));
-                        row.append($('<td>').text(user_info.display_name || email));
-                        row.append($('<td>').html(`${KLASSEN_TR[user_info.klasse || ''] || user_info.klasse || '&ndash;'}`));
-                        table.append(row);
-                    }
-                    $('#book_modal .modal-body').append(table);
-                    $('#book_modal').modal('show');
-                }
-            });
+            options.callback(book);
         });
     }
     return div;

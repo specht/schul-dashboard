@@ -1,0 +1,40 @@
+#{this_is_a_page_for_logged_in_teachers}
+#{File.read('/static/_bib_public_template.html')}
+<div class='container bg-white' style='margin-top: 35px;'>
+    <div class="input-group mb-3">
+        <input id='ti_search' type="text" class="form-control" placeholder="Bitte gib einen Suchbegriff ein" />
+        <div class="input-group-append">
+            <button id='bu_search' class="btn btn-success" type="button">Suchen</button>
+        </div>
+    </div>
+    <div id='book_list' class="w-full grid grid-cols-12 gap-4 mb-4"></div>
+</div>
+<script>
+    function perform_search() {
+        bib_api_call('/jwt/search', {query: $('#ti_search').val().trim()}, function (data) {
+            if (data.success) {
+                $('#book_list').empty();
+                if (data.books.length === 0) {
+                    $('#book_list').append($("<div class='bg-amber-300 p-2 rounded col-span-12'>Keine Suchergebnisse!</div>"));
+                }
+                for (let book of data.books) {
+                    let div = create_book_div(book, null, { clickable: true, callback: function(book) {
+                        window.location.href = `/bib_book/${book.stem}`;
+                    }}).data('book', book);
+                    $('#book_list').append(div);
+                }
+            }
+        });
+    }
+    window.addEventListener('load', function () {
+        $('#ti_search').focus();
+        $('#ti_search').keydown(function(e) {
+            if (e.key === 'Enter') {
+                perform_search();
+            }
+        });
+        $('#bu_search').click(function(e) {
+            perform_search();
+        });
+    });
+</script>

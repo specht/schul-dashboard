@@ -142,7 +142,7 @@
 
     window.addEventListener('load', function () {
 
-        const codeReader = new ZXing.BrowserMultiFormatReader()
+        const codeReader = new ZXing.BrowserMultiFormatReader();
         codeReader.decodeFromVideoDevice(null, 'barcode_scanner_video', (result, err) => {
             if (result) on_scan(result.text);
         });

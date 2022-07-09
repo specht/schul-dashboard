@@ -1,0 +1,25 @@
+#{File.read('/static/_bib_public_template.html')}
+<div class='container bg-white' style='margin-top: 35px;'>
+    <div id='book_here'>
+        <div class="row">
+            <div class='col-md-3'>
+                <div id='book_cover' class='bg-stone-800 shadow shadow-md border-r-2 text-center italic text-sm' style='background-repeat: no-repeat; background-position: center; background-size: contain; width: 100%; padding-bottom: 138%;'></div>
+            </div>
+        </div>
+    </div>
+</div>
+<script>
+    window.addEventListener('load', function () {
+        let stem = parseInt(window.location.pathname.replace('/bib_book/', ''));
+        bib_api_call('/jwt/get_book', {stem: stem}, function (data) {
+            if (data.success) {
+                let book = data.book;
+                let cover = $('#book_cover');
+                if (book.has_cover) {
+                    cover.css('background-image', `url("${BIB_HOST}/gen/covers/${book.stem}-400.jpg")`)
+                } else {
+                }
+            }
+        });
+    });
+</script>

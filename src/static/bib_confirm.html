@@ -1,0 +1,117 @@
+#{File.read('/static/_bib_public_template.html')}
+<style>
+    .barcode_container {
+        border: 1px solid #ddd;
+        padding: 15px;
+        border-radius: 15px;
+        box-shadow: 0px 0px 5px rgba(0, 0, 0, 0.2);
+        margin-bottom: 15px;
+        background-color: #eee;
+        /* margin: 15px; */
+    }
+
+    #barcode_scanner_div {
+        position: relative;
+        width: 100%;
+        /* padding-top: 133%; */
+        overflow: hidden;
+        height: 200px;
+        /* background-color: #e0e0e0; */
+        margin-bottom: 15px;
+        border-radius: 15px;
+        border: 1px solid #aaa;
+    }
+
+    #barcode_scanner_div video {
+        object-fit: cover;
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+    }
+</style>
+<div class='container bg-white' style='margin-top: 35px;'>
+    <div class='row'>
+        <div class="col-lg-6 col-md-6 col-sm-4">
+            <p>
+                Bitte bestätige deine geliehenen Bücher, indem du den Barcode in jedem Buch einscannst. Den Barcode
+                findest du ganz vorn
+                im Buch.
+            </p>
+            <p>
+                <span id="books_left"></span>
+            </p>
+
+        </div>
+        <div id='barcode_widget' class='col-12 col-sm-8 col-md-6 col-lg-6'>
+        </div>
+    </div>
+    <div id='book_list' class="w-full grid grid-cols-12 gap-4 mb-4"></div>
+</div>
+<script type="text/javascript" src="/include/zxing.min.js"></script>
+<script type="text/javascript" src="/barcode-widget.js"></script>
+<script>
+    var divs_for_signature = {};
+
+    function on_scan(barcode, scanned) {
+        let parts = fix_scanned_book_barcode(barcode);
+        if (parts === null) return;
+        console.log(`YIPPIE ${barcode}, scanned: ${scanned}`);
+        console.log(parts);
+        let data = {
+            stem: parts.stem,
+            bnr: parts.bnr,
+            entry_type: scanned ? 'scanned' : 'typed'
+        };
+        if (parts.checksum) data.checksum = parts.checksum;
+        bib_api_call('/jwt/confirm_checked_out_book', data, function (data) {
+            console.log(data);
+            if (data.success) {
+                if (data.error) {
+                    show_error_message(data.error);
+                } else {
+                    let signature = `${parts.stem}-${parts.bnr}`;
+                    divs_for_signature[signature].hide();
+                    delete divs_for_signature[signature];
+                    update_books_left();
+                }
+            }
+        });
+    }
+
+    function update_books_left() {
+        let count = Object.keys(divs_for_signature).length;
+        if (count === 0) {
+            $('#books_left').html(`Danke, alle Bücher sind bestätigt!`);
+        } else if (count === 1) {
+            $('#books_left').html(`Du musst noch <span class='font-bold'>${count} Buch</span> bestätigen.`);
+        } else {
+            $('#books_left').html(`Du musst noch <span class='font-bold'>${count} Bücher</span> bestätigen.`);
+        }
+    }
+
+    window.addEventListener('load', function () {
+        let widget = new BarcodeWidget({
+            element: $('#barcode_widget'),
+            // formats: [ZXing.BarcodeFormat.CODE_39, ZXing.BarcodeFormat.CODE_128],
+            formats: [ZXing.BarcodeFormat.QR_CODE],
+            on_scan: on_scan
+        });
+        bib_api_call('/jwt/get_checked_out_books_for_user_unconfirmed', {}, function (data) {
+            if (data.success) {
+                console.log(data);
+                for (let row of data.exemplare) {
+                    let div = create_book_div(row.book, null, {
+                        exemplar: row.exemplar, clickable: true, callback: function (book) {
+                            window.location.href = `/bib_book/${book.stem}`;
+                        }
+                    }).data('book', row.book);
+                    divs_for_signature[`${row.book.stem}-${row.exemplar.bnr}`] = div;
+                    $('#book_list').append(div);
+                }
+                update_books_left();
+            }
+        });
+    });
+</script>

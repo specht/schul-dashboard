@@ -1,16 +1,31 @@
 #{File.read('/static/_bib_public_template.html')}
 <div class='container bg-white' style='margin-top: 35px;'>
-    <!-- <h3>Ausgeliehene Bücher</h3> -->
+    <div id='unconfirmed_div' style='display: none;'>
+        <div class="mb-3 bg-stone-800 p-3 rounded shadow shadow-sm border-red-500" style="border-width: 1px;">
+            <i class="fa fa-exclamation-triangle pull-left text-stone-400"
+                style="font-size: 200%; position: relative; top: 10px; padding-right: 10px;"></i>
+            <a class="pull-right btn btn-success" style='position: relative; top: 5px; margin-left: 10px;'
+                href="/bib_confirm"><i class='fa fa-angle-double-right'></i>&nbsp;&nbsp;Bücher bestätigen</a>
+            Einige deiner geliehenen Bücher sind noch nicht bestätigt. Bitte scanne die Barcodes deiner geliehenen
+            Bücher, um zu bestätigen, dass du die richtigen Bücher bekommen hast.
+        </div>
+        <hr />
+    </div>
     <div id='book_list' class="w-full grid grid-cols-12 gap-4 mb-4"></div>
-    <!-- col-span-12 md:col-span-6 xl:col-span-4 -->
 </div>
 <script>
     window.addEventListener('load', function () {
         bib_api_call('/jwt/get_checked_out_books_for_user', {}, function (data) {
-            console.log(data);
             if (data.success) {
+                if (data.unconfirmed_count > 0)
+                    $('#unconfirmed_div').show();
+                console.log(data);
                 for (let row of data.exemplare) {
-                    let div = create_book_div(row.book, null, { exemplar: row.exemplar }).data('book', row.book);
+                    let div = create_book_div(row.book, null, {
+                        exemplar: row.exemplar, clickable: true, callback: function (book) {
+                            window.location.href = `/bib_book/${book.stem}`;
+                        }
+                    }).data('book', row.book);
                     $('#book_list').append(div);
                 }
             }

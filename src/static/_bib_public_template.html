@@ -1,3 +1,4 @@
+#{this_is_a_page_for_logged_in_users}
 <style>
     .api_messages {
         position: absolute;
@@ -46,10 +47,10 @@
     <section class="pl-3 pr-3 pb-3 w-full">
         <ul class="submenu flex items-center shadow-md fixed bg-stone-800 px-2.5 py-2" style="border-bottom: 1px solid #ccc; left: 0px; right: 0px; z-index: 100;">
             <li class="mx-1">
-                <a class="inline-block bg-slate-900 border border-blue-500 hover:bg-slate-200 rounded py-1 px-3" href="/bibliothek">Ausgeliehene Bücher</a>
+                <a class="inline-block bg-slate-900 border border-blue-500 hover:bg-slate-200 rounded py-1 px-3" href="/bibliothek">Meine Bücher</a>
             </li>
-            <li class="mx-1">
-                <a class="inline-block bg-slate-900 border border-blue-500 hover:bg-slate-200 rounded py-1 px-3" href="/bib_search">Bücher leihen</a>
+            <li class="mx-1" style="display: #{teacher_logged_in? ? 'unset' : 'none'};">
+                <a class="inline-block bg-slate-900 border border-blue-500 hover:bg-slate-200 rounded py-1 px-3" href="/bib_browse">Katalog</a>
             </li>
             <!-- <li style="border-left: 1px solid #ccc; height: 54px; margin: -10px 10px -10px 10px;"></li>
             <li class="mx-1">

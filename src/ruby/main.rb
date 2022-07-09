@@ -1757,6 +1757,9 @@ class Main < Sinatra::Base
                             io.puts "<a class='dropdown-item nav-icon' href='/prepare_vote'><div class='icon'><i class='fa fa-hand-paper-o'></i></div><span class='label'>Abstimmungen</span></a>"
                             io.puts "<a class='dropdown-item nav-icon' href='/mailing_lists'><div class='icon'><i class='fa fa-envelope'></i></div><span class='label'>E-Mail-Verteiler</span></a>"
                             io.puts "<a class='dropdown-item nav-icon' href='/groups'><div class='icon'><i class='fa fa-group'></i></div><span class='label'>Gruppen</span></a>"
+                            if teacher_logged_in? && (DEVELOPMENT || can_manage_bib_logged_in?)
+                                io.puts "<a class='dropdown-item nav-icon' href='/bibliothek'><div class='icon'><i class='fa fa-book'></i></div><span class='label'>Bibliothek</span></a>"
+                            end
                         end
                         # if @session_user[:can_upload_vplan]
                         #     io.puts "<div class='dropdown-divider'></div>"
@@ -1769,6 +1772,10 @@ class Main < Sinatra::Base
                         # if admin_logged_in?
                         #     io.puts "<a class='bu-launch-adventskalender dropdown-item nav-icon'><div class='icon'><i class='fa fa-snowflake-o'></i></div><span class='label'>Adventskalender</span></a>"
                         # end
+                    end
+                    if DEVELOPMENT && !teacher_logged_in?
+                        io.puts "<a class='dropdown-item nav-icon' href='/bibliothek'><div class='icon'><i class='fa fa-book'></i></div><span class='label'>Bibliothek</span></a>"
+                        io.puts "<div class='dropdown-divider'></div>"
                     end
                     io.puts "<a class='dropdown-item nav-icon' href='/hilfe'><div class='icon'><i class='fa fa-question-circle'></i></div><span class='label'>Hilfe</span></a>"
                     io.puts "<div class='dropdown-divider'></div>"
@@ -2280,6 +2287,8 @@ class Main < Sinatra::Base
             # :context => JSON.parse(data[:payload]),
             :email => @session_user[:email],
             :display_name => @session_user[:display_name],
+            :can_manage_bib => can_manage_bib_logged_in?,
+            :teacher => teacher_logged_in?,
             :exp => Time.now.to_i + BIB_JWT_TTL + BIB_JWT_TTL_EXTRA
         }
         token = JWT.encode payload, JWT_APPKEY_BIB, algorithm = 'HS256', header_fields = {:typ => 'JWT'}

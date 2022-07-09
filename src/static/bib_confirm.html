@@ -1,36 +1,4 @@
 #{File.read('/static/_bib_public_template.html')}
-<style>
-    .barcode_container {
-        border: 1px solid #ddd;
-        padding: 15px;
-        border-radius: 15px;
-        box-shadow: 0px 0px 5px rgba(0, 0, 0, 0.2);
-        margin-bottom: 15px;
-        background-color: #eee;
-        /* margin: 15px; */
-    }
-
-    #barcode_scanner_div {
-        position: relative;
-        width: 100%;
-        /* padding-top: 133%; */
-        overflow: hidden;
-        height: 200px;
-        /* background-color: #e0e0e0; */
-        margin-bottom: 15px;
-        border-radius: 15px;
-        border: 1px solid #aaa;
-    }
-
-    #barcode_scanner_div video {
-        object-fit: cover;
-        position: absolute;
-        left: 0;
-        top: 0;
-        width: 100%;
-        height: 100%;
-    }
-</style>
 <div class='container bg-white' style='margin-top: 35px;'>
     <div class='row'>
         <div class="col-lg-6 col-md-6 col-sm-4">
@@ -95,7 +63,7 @@
         let widget = new BarcodeWidget({
             element: $('#barcode_widget'),
             // formats: [ZXing.BarcodeFormat.CODE_39, ZXing.BarcodeFormat.CODE_128],
-            formats: [ZXing.BarcodeFormat.QR_CODE],
+            // formats: [ZXing.BarcodeFormat.QR_CODE],
             on_scan: on_scan
         });
         bib_api_call('/jwt/get_checked_out_books_for_user_unconfirmed', {}, function (data) {

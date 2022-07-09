@@ -1,23 +1,102 @@
 #{File.read('/static/_bib_public_template.html')}
+<style>
+    #book_subtitle,
+    #book_verlag_jahr_seiten_preis {
+        font-style: italic;
+    }
+
+    #book_details h5 {
+        margin: 0;
+    }
+
+    #book_details {
+        margin-bottom: 1em;
+    }
+</style>
 <div class='container bg-white' style='margin-top: 35px;'>
     <div id='book_here'>
-        <div class="row">
-            <div class='col-md-3'>
-                <div id='book_cover' class='bg-stone-800 shadow shadow-md border-r-2 text-center italic text-sm' style='background-repeat: no-repeat; background-position: center; background-size: contain; width: 100%; padding-bottom: 138%;'></div>
-            </div>
+        <div id='book_cover_container' class='pull-left mr-3 mb-3 bg-stone-800 shadow shadow-md' style="width: 250px;">
+            <img id='book_cover' class=' text-center italic text-sm' style='width: 100%;' />
         </div>
+        <h3 id='book_title'></h3>
+        <h4 id='book_subtitle'></h4>
+        <h5 id='book_author'></h5>
+        <div id='book_details'></div>
+        <p id='book_description'></p>
+    </div>
+    <hr style='clear: both;' />
+    <div id='hint_scan_isbn' class='alert alert-warning relative' style="display: none; min-height: 70px;">
+        <div style="float: left; font-size: 200%; margin-right: 0.5em;">🙂</div>
+        <div style="padding-top: 10px;">Dieses Buch hat noch keine ISBN. Hilf uns, die Bibliothek zu verbessern, indem du die ISBN scannst.</div>
+        <div style="text-align: center; margin-top: 10px;">
+            <a id='hint_scan_isbn_link' class="btn btn-success" href="#"><i class='fa fa-barcode'></i>&nbsp;&nbsp;ISBN
+                erfassen</a>
+        </div>
+    </div>
+    <div id='hint_scan_isbn_thank_you' class='alert alert-warning relative' style="display: none; min-height: 70px;">
+        <div style="float: left; font-size: 200%; margin-right: 0.5em;">🤩</div>
+        <div style="padding-top: 10px;">Danke, dass du uns die fehlende ISBN für dieses Buch übermittelt hast! Wir kümmern uns darum.</div>
+    </div>
+    <div id='checked_out'>
     </div>
 </div>
 <script>
     window.addEventListener('load', function () {
         let stem = parseInt(window.location.pathname.replace('/bib_book/', ''));
-        bib_api_call('/jwt/get_book', {stem: stem}, function (data) {
+        bib_api_call('/jwt/get_book', { stem: stem }, function (data) {
             if (data.success) {
                 let book = data.book;
+                console.log(data);
+                $('#book_title').text(book.title);
+                $('#book_subtitle').text(book.subtitle);
+                $('#book_author').text(book.author);
+                let parts = [];
+                if (book.verlag) parts.push(book.verlag)
+                if (book.published) parts.push(`${book.published}`)
+                if (parts.length > 0)
+                    $('#book_details').append($('<h5>').text(parts.join(', ')));
+                parts = [];
+                if (book.page_count) parts.push(`${book.page_count} Seiten`)
+                if (parts.length > 0)
+                    $('#book_details').append($('<h5>').text(parts.join(', ')));
+                parts = [];
+                if (book.isbn) parts.push(`ISBN: ${book.isbn}`);
+                if (parts.length > 0)
+                    $('#book_details').append($('<h5>').text(parts.join(', ')));
+                parts = [];
+                if (book.waehrung && book.preis) parts.push(`Preis: ${currency_string(book.preis, book.waehrung)}`);
+                if (parts.length > 0)
+                    $('#book_details').append($('<h5>').text(parts.join(', ')));
+                $('#book_description').text(book.description);
                 let cover = $('#book_cover');
                 if (book.has_cover) {
-                    cover.css('background-image', `url("${BIB_HOST}/gen/covers/${book.stem}-400.jpg")`)
+                    cover.attr('src', `${BIB_HOST}/gen/covers/${book.stem}-400.jpg`);
                 } else {
+                    $('#book_cover_container').hide();
+                }
+                if (data.checked_out.length > 0) {
+                    console.log(book);
+                    if ((book.isbn || '').length === 0) {
+                        if (data.proposed_isbn.length > 0) {
+                            $('#hint_scan_isbn_thank_you').show();
+                        } else {
+                            $('#hint_scan_isbn_link').attr('href', `/bib_scan_isbn/${book.stem}`);
+                            $('#hint_scan_isbn').show();
+                        }
+                    }
+                    let x = ['keine', 'ein', 'zwei', 'drei', 'vier', 'fünf'];
+                    let div = $("<div>").text(`Du hast ${x[data.checked_out.length] || data.checked_out.length} Exemplar${data.checked_out.length === 1 ? '' : 'e'} dieses Buchs ausgeliehen.`);
+                    $('#checked_out').append(div);
+                    let table = $("<table class='table table-sm mt-3'>");
+                    table.append($("<tr><th>Signatur</th><th>Ausgeliehen</th><th>Bestätigt</th></tr>"));
+                    div.append(table);
+                    for (let entry of data.checked_out) {
+                        let row = $('<tr>');
+                        row.append($('<td>').text(`${book.stem}-${entry.e.bnr}`));
+                        row.append($('<td>').text(`${moment.unix(entry.r.ts_checked_out).format('L')}`));
+                        row.append($('<td>').text(`${entry.r.ts_confirmed ? moment.unix(entry.r.ts_confirmed).format('L') : '(noch nicht bestätigt)'}`));
+                        table.append(row);
+                    }
                 }
             }
         });

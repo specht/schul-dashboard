@@ -1,0 +1,71 @@
+#{File.read('/static/_bib_public_template.html')}
+<div class='container bg-white' style='margin-top: 35px;'>
+    <div class='row'>
+        <div class="col-md-6">
+            <p>Bitte scanne die ISBN deines Buches »<span id='bib_title'></span>«.</p>
+            <div id='barcode_widget'></div>
+        </div>
+        <div class='col-md-6'>
+            <div id="result"></div>
+            <div id="buttons" style="display: none;">
+                <p>Passen die Angaben zum Buch?</p>
+                <button id='bu_submit' class='btn btn-success'><i class='fa fa-send'></i>&nbsp;&nbsp;ISBN senden</button>
+                <button id='bu_cancel' class='btn btn-secondary'><i
+                        class='fa fa-times'></i>&nbsp;&nbsp;Abbrechen</button>
+            </div>
+        </div>
+    </div>
+    <div id='book_list' class="w-full grid grid-cols-12 gap-4 mb-4"></div>
+</div>
+<script type="text/javascript" src="/include/zxing.min.js"></script>
+<script type="text/javascript" src="/barcode-widget.js"></script>
+<script>
+    var divs_for_signature = {};
+    var widget = null;
+
+    function on_scan(barcode, scanned) {
+        console.log(`YIPPIE ${barcode}, scanned: ${scanned}`);
+        widget.disable();
+        bib_api_call('/jwt/fetch_info_for_isbn', { isbn: barcode }, function (data) {
+            if (data.success && data.record) {
+                window.scanned_isbn = data.record.isbn;
+                $('#result').empty();
+                let div = $("<div class='rounded rounded-md shadow shadow-sm bg-stone-800 p-3 mb-3'>");
+                let p = $('<p>');
+                p.append(data.record.title);
+                if (data.record.subtitle)
+                    p.append(data.record.subtitle);
+                p.append($("<br>"));
+                p.append($("<em>").text(data.record.author));
+
+                div.append(p);
+                $('#result').append($('<p>Wir haben folgendes Buch gefunden:</p>'));
+                $('#result').append(div);
+                $('#buttons').show();
+            } else {
+                $('#result').append($('<p>Die ISBN-Suche lieferte leider keine Ergebnisse.</p>'));
+            }
+        });
+    }
+
+    window.addEventListener('load', function () {
+        let stem = parseInt(window.location.pathname.replace('/bib_scan_isbn/', ''));
+        widget = new BarcodeWidget({
+            element: $('#barcode_widget'),
+            on_scan: on_scan
+        });
+        bib_api_call('/jwt/get_book', { stem: stem }, function (data) {
+            $('#bib_title').text(data.book.bib_entry);
+            console.log(data);
+        });
+        $('#bu_submit').click(function (e) {
+            bib_api_call('/jwt/propose_isbn_for_stem', { stem: stem, isbn: window.scanned_isbn }, function (data) {
+                if (data.success)
+                    window.navigation.back();
+            });
+        });
+        $('#bu_cancel').click(function (e) {
+            window.navigation.back();
+        });
+    });
+</script>

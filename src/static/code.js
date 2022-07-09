@@ -546,3 +546,11 @@ function create_book_div(book, shelf, options = {}) {
     }
     return div;
 }
+
+function currency_string(preis, waehrung) {
+    let pre = `${Math.floor(preis / 100)}`;
+    let post = `${preis % 100}`;
+    while (post.length < 2)
+        post = '0' + post;
+    return `${pre},${post} ${waehrung}`;
+}

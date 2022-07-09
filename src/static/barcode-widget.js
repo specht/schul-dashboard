@@ -20,8 +20,10 @@ class BarcodeWidget {
         container.append(input_group);
         this.element.append(container);
         this.text_input = text_input;
+        this.submit_button = submit_button;
 
         this.last_scanned = null;
+        this.disabled = false;
 
         let hints = null;
         if (options.formats) {
@@ -52,6 +54,8 @@ class BarcodeWidget {
     }
 
     _on_scan(s, scanned) {
+        if (this.disabled)
+            return;
         if (scanned) {
             if (s !== this.last_scanned) {
                 this.beep0.play();
@@ -62,5 +66,11 @@ class BarcodeWidget {
             this.on_scan(s, false);
             this.text_input.val('').focus();
         }
+    }
+
+    disable() {
+        this.text_input.prop('disabled', true);
+        this.submit_button.prop('disabled', true);
+        this.disabled = true;
     }
 }

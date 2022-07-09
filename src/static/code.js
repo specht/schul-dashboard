@@ -452,7 +452,7 @@ function create_book_div(book, shelf, options = {}) {
     let stem = $(`<span class='text-slate-500 pl-2 pr-1 py-1 absolute text-sm'>`).css('right', '0.5em').text(book.stem);
     if (options.exemplar && options.exemplar.bnr)
         stem.html(`<i class='fa fa-barcode'></i>&nbsp;&nbsp;${book.stem}-${options.exemplar.bnr}`);
-    let cover_path = `${BIB_HOST}/gen/covers/${book.stem}-200.jpg`;
+    let cover_path = `${BIB_HOST}/gen/covers/${book.stem}-400.jpg`;
     let hover_classes = '';
     if (options.clickable) {
         hover_classes = 'hover:outline hover:outline-1 hover:shadow-lg hover:outline-gray-400 cursor-pointer ';

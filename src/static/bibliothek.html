@@ -1,7 +1,8 @@
 #{File.read('/static/_bib_public_template.html')}
 <div class='container bg-white' style='margin-top: 35px;'>
     <!-- <h3>Ausgeliehene Bücher</h3> -->
-    <div id='book_list' class="w-full grid grid-cols-8 gap-4 mb-4"></div>
+    <div id='book_list' class="w-full grid grid-cols-12 gap-4 mb-4"></div>
+    <!-- col-span-12 md:col-span-6 xl:col-span-4 -->
 </div>
 <script>
     window.addEventListener('load', function () {

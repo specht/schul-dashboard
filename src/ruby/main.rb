@@ -1460,7 +1460,7 @@ class Main < Sinatra::Base
                                         :is_tablet => true,
                                         :tablet_id => session[:tablet_id],
                                         :tablet_type => :bib_mobile,
-                                        :color_scheme => 'd4aa03f003f2e80bc420',
+                                        :color_scheme => 'd4aa03f003f2e80bc428',
                                         :can_see_all_timetables => false,
                                         :teacher => false
                                     }
@@ -1786,7 +1786,7 @@ class Main < Sinatra::Base
                         io.puts "<a class='nav-link nav-icon dropdown-toggle' href='#' id='navbarDropdown' role='button' data-toggle='dropdown' aria-haspopup='true' aria-expanded='false'>"
                         io.puts "<div class='icon'><i class='fa fa-address-book'></i></div>Kurse"
                         io.puts "</a>"
-                        io.puts "<div class='dropdown-menu dropdown-menu-right' aria-labelledby='navbarDropdown'>"
+                        io.puts "<div class='dropdown-menu' aria-labelledby='navbarDropdown'>"
                         taken_lesson_keys = Set.new()
                         (@@lessons_for_shorthand[@session_user[:shorthand]] || []).each do |lesson_key|
                             lesson_info = @@lessons[:lesson_keys][lesson_key]
@@ -1832,7 +1832,7 @@ class Main < Sinatra::Base
                         io.puts "<a class='nav-link nav-icon dropdown-toggle' href='#' id='navbarDropdown' role='button' data-toggle='dropdown' aria-haspopup='true' aria-expanded='false'>"
                         io.puts "<div class='icon'><i class='fa fa-address-book'></i></div>Klassen"
                         io.puts "</a>"
-                        io.puts "<div class='dropdown-menu dropdown-menu-right' aria-labelledby='navbarDropdown' style='max-height: 500px; overflow-y: auto;'>"
+                        io.puts "<div class='dropdown-menu' aria-labelledby='navbarDropdown'>"
                         if can_see_all_timetables_logged_in?
                             klassen = @@klassen_order
                         end
@@ -2416,7 +2416,7 @@ class Main < Sinatra::Base
         elsif path == 'index'
             if @session_user
                 if @session_user[:tablet_type] == :bib_mobile
-                    redirect "#{WEB_ROOT}/bib_scan_shelf", 302
+                    redirect "#{WEB_ROOT}/bibliothek", 302
                     return
                 else
                     if external_user_logged_in?
@@ -2667,6 +2667,7 @@ class Main < Sinatra::Base
 
         font_family = (@session_user || {})[:font]
         font_family = 'Alegreya' if path == 'monitor'
+        font_family = 'Alegreya' if (@session_user || {})[:email] == 'bib-mobile@mail.gymnasiumsteglitz.de'
         color_scheme = (@session_user || {})[:color_scheme]
         font_family = 'Roboto' unless AVAILABLE_FONTS.include?(font_family)
         unless color_scheme =~ /^[ld][0-9a-f]{18}[0-9]?$/

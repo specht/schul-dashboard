@@ -49,7 +49,7 @@
 <div class='container' style='padding: 0; display: flex; background: white; border-radius: 0;'>
     <section class="pl-3 pr-3 pb-3 w-full" style="height: 51px;">
         <ul class="submenu flex fixed bg-white px-2.5 py-2" style="border-bottom: 1px solid #ccc; left: 0px; right: 0px; z-index: 100;">
-            <li class="mx-1">
+            <li class="mx-1" style="display: #{teacher_logged_in? ? 'unset' : 'none'};">
                 <a class="inline-block bg-slate-900 border border-blue-500 hover:bg-slate-200 rounded py-1 px-3" href="/bibliothek">Meine Bücher</a>
             </li>
             <li class="mx-1" style="display: #{teacher_logged_in? || can_manage_bib_logged_in? ? 'unset' : 'none'};">

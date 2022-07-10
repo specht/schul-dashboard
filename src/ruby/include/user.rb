@@ -124,6 +124,10 @@ class Main < Sinatra::Base
         user_logged_in? && (CAN_MANAGE_BIB.include?(@session_user[:email]) || @session_user[:email] == "bib-mobile@#{SCHUL_MAIL_DOMAIN}")
     end
 
+    def teacher_or_can_manage_bib_logged_in?
+        teacher_logged_in? || can_manage_bib_logged_in?
+    end
+
     def can_manage_bib_members_logged_in?
         user_logged_in? && (CAN_MANAGE_BIB_MEMBERS.include?(@session_user[:email]))
     end
@@ -199,6 +203,10 @@ class Main < Sinatra::Base
         assert(can_manage_bib_logged_in?)
     end
 
+    def require_teacher_or_user_who_can_manage_bib!
+        assert(teacher_or_can_manage_bib_logged_in?)
+    end
+
     # Assert that a teacher or SV is logged in
     def require_teacher_or_sv!
         assert(teacher_or_sv_logged_in?)
@@ -246,7 +254,7 @@ class Main < Sinatra::Base
 
     # Put this on top of a webpage to assert that this page can be opened by teachers only or users who can manage the library
     def this_is_a_page_for_logged_in_teachers_or_can_manage_bib
-        unless teacher_logged_in? || can_manage_bib_logged_in?
+        unless teacher_or_can_manage_bib_logged_in?
             redirect "#{WEB_ROOT}/", 303
         end
     end

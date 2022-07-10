@@ -7,6 +7,7 @@
             <button id='bu_search' class="btn btn-success" type="button">Suchen</button>
         </div>
     </div>
+    <!-- <div id='labels_here'></div> -->
     <div id='book_list' class="w-full grid grid-cols-12 gap-4 mb-4"></div>
 </div>
 <script>
@@ -29,6 +30,14 @@
         });
     }
     window.addEventListener('load', function () {
+        // bib_api_call('/jwt/get_labels', {}, function (data) {
+        //     if (data.success) {
+        //         console.log(data);
+        //         for (let label of data.labels) {
+        //             $('#labels_here').append($(`<button class='btn btn-xs btn-outline-secondary mr-1 mb-1'>${label.value}</button>`));
+        //         }
+        //     }
+        // });
         $('#ti_search').focus();
         $('#ti_search').keydown(function(e) {
             if (e.key === 'Enter') {

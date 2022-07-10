@@ -2444,3 +2444,21 @@ li.nav-item a.nav-link i.fa {
 img {
     display: inline;
 }
+
+.dropdown-menu {
+    max-height: calc(100vh - 100px);
+    overflow-y: auto;
+    overflow-x: hidden;
+}
+
+.dropdown-menu .dropdown-item {
+    max-width: calc(100vw - 50px);
+    overflow-x: hidden;
+}
+
+@media (max-width: 767px) {
+    .dropdown-menu {
+        max-height: calc(100vh - 350px);
+    }
+}
+

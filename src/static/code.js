@@ -547,10 +547,22 @@ function create_book_div(book, shelf, options = {}) {
     return div;
 }
 
-function currency_string(preis, waehrung) {
-    let pre = `${Math.floor(preis / 100)}`;
-    let post = `${preis % 100}`;
-    while (post.length < 2)
-        post = '0' + post;
-    return `${pre},${post} ${waehrung}`;
+function currency_string_plain(preis) {
+    if (preis) {
+        let pre = `${Math.floor(preis / 100)}`;
+        let post = `${preis % 100}`;
+        while (post.length < 2)
+            post = '0' + post;
+        return `${pre},${post}`;
+    } else return null;
 }
+
+function currency_string(preis, waehrung) {
+    let s = currency_string_plain(preis);
+    if (s) {
+        return `${s} ${waehrung}`;
+    } else {
+        return null;
+    }
+}
+

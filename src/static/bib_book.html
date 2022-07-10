@@ -13,7 +13,7 @@
         margin-bottom: 1em;
     }
 </style>
-<div class='container bg-white' style='margin-top: 35px;'>
+<div class='container bg-white'>
     <div id='book_here'>
         <div id='book_cover_container' class='pull-left mr-3 mb-3 bg-stone-800 shadow shadow-md' style="width: 250px;">
             <img id='book_cover' class=' text-center italic text-sm' style='width: 100%;' />
@@ -43,6 +43,10 @@
 <script>
     window.addEventListener('load', function () {
         let stem = parseInt(window.location.pathname.replace('/bib_book/', ''));
+        let mi = $(`<li class='mx-1'><a class='inline-block bg-slate-900 border border-blue-500 hover:bg-slate-200 rounded py-1 px-3' href='/bib_book_edit/${stem}'><i class='fa fa-pencil'></i>&nbsp;&nbsp;Bearbeiten</a></li>`);
+        mi.insertAfter($('#sub_menu_extra'));
+        $('#subsubmenu').show();
+
         bib_api_call('/jwt/get_book', { stem: stem }, function (data) {
             if (data.success) {
                 let book = data.book;
@@ -94,7 +98,11 @@
                         let row = $('<tr>');
                         row.append($('<td>').text(`${book.stem}-${entry.e.bnr}`));
                         row.append($('<td>').text(`${moment.unix(entry.r.ts_checked_out).format('L')}`));
-                        row.append($('<td>').text(`${entry.r.ts_confirmed ? moment.unix(entry.r.ts_confirmed).format('L') : '(noch nicht bestätigt)'}`));
+                        if (entry.r.ts_confirmed) {
+                            row.append($('<td>').text(moment.unix(entry.r.ts_confirmed).format('L')));
+                        } else {
+                            row.append($('<td>').html("<i class='text-stone-400 fa fa-exclamation-triangle'></i>&nbsp;&nbsp;(noch nicht bestätigt) <a class='btn btn-success btn-xs ml-3' href='/bib_confirm'>Jetzt bestätigen</a>"));
+                        }
                         table.append(row);
                     }
                 }

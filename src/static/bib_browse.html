@@ -1,6 +1,6 @@
 #{this_is_a_page_for_logged_in_teachers}
 #{File.read('/static/_bib_public_template.html')}
-<div class='container bg-white' style='margin-top: 35px;'>
+<div class='container bg-white'>
     <div class="input-group mb-3">
         <input id='ti_search' type="text" class="form-control" placeholder="Bitte gib einen Suchbegriff ein" />
         <div class="input-group-append">
@@ -11,7 +11,9 @@
 </div>
 <script>
     function perform_search() {
-        bib_api_call('/jwt/search', {query: $('#ti_search').val().trim()}, function (data) {
+        let query = $('#ti_search').val().trim();
+        history.replaceState(null, '', `/${location.pathname.split('/')[1]}/${encodeURIComponent(query)}`);
+        bib_api_call('/jwt/search', {query: query}, function (data) {
             if (data.success) {
                 $('#book_list').empty();
                 if (data.books.length === 0) {
@@ -36,5 +38,11 @@
         $('#bu_search').click(function(e) {
             perform_search();
         });
+        let query = location.pathname.split('/')[2];
+        if (query) {
+            query = decodeURIComponent(query);
+            $('#ti_search').val(query);
+            perform_search();
+        }
     });
 </script>

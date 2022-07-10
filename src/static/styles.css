@@ -2462,3 +2462,61 @@ img {
     }
 }
 
+.book-cover {
+    width: 145px;
+    height: 200px;
+    padding: 10px;
+}
+
+.book-cover.compact {
+    width: 173px;
+    height: 235px;
+}
+
+@media (max-width: 1199px) {
+    .book-cover {
+        padding: 8px;
+    }
+    .book-cover div {
+        font-size: 12px;
+    }
+    .book-cover.compact {
+        width: 140px;
+        height: 190px;
+    }
+}
+
+@media (max-width: 991px) {
+    .book-cover {
+        padding: 4px;
+    }
+    .book-cover div {
+        font-size: 11px;
+        line-height: 1.5em;
+    }
+    .book-cover.compact {
+        width: 100px;
+        height: 135px;
+    }
+}
+
+@media (max-width: 767px) {
+    .book-cover.compact {
+        width: 115px;
+        height: 160px;
+    }
+}
+
+@media (max-width: 639px) {
+    .book-cover {
+        padding: 10px;
+    }
+    .book-cover div {
+        font-size: 13px;
+        line-height: 1.5em;
+    }
+    .book-cover.compact {
+        width: 100%;
+        height: 58vw;
+    }
+}

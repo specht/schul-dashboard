@@ -13,7 +13,7 @@
         margin-bottom: 1em;
     }
 </style>
-<div class='container bg-white'>
+<div class='container bg-white' style="padding-top: 15px;">
     <div id='book_here'>
         <div id='book_cover_container' class='pull-left mr-3 mb-3 bg-stone-800 shadow shadow-md' style="width: 250px;">
             <img id='book_cover' class=' text-center italic text-sm' style='width: 100%;' />
@@ -39,15 +39,19 @@
         <div style="float: left; font-size: 200%; margin-right: 0.5em;">🤩</div>
         <div style="padding-top: 10px;">Danke, dass du uns die fehlende ISBN für dieses Buch übermittelt hast! Wir kümmern uns darum.</div>
     </div>
-    <div id='checked_out'>
-    </div>
+    <div id='checked_out_user'></div>
+    <div id='checked_out_all'></div>
 </div>
 <script>
     window.addEventListener('load', function () {
-        let stem = parseInt(window.location.pathname.replace('/bib_book/', ''));
-        let mi = $(`<li class='mx-1'><a class='inline-block bg-slate-900 border border-blue-500 hover:bg-slate-200 rounded py-1 px-3' href='/bib_book_edit/${stem}'><i class='fa fa-pencil'></i>&nbsp;&nbsp;Bearbeiten</a></li>`);
-        mi.insertAfter($('#sub_menu_extra'));
-        $('#subsubmenu').show();
+        let stem_s = window.location.pathname.replace('/bib_book/', '');
+        let stem = parseInt(stem_s);
+        if ('#{can_manage_bib_logged_in?}' === 'true') {
+            $(`<li class='mx-1 py-1 px-1.5' style='white-space: nowrap;'><i class='fa fa-barcode'></i>&nbsp;&nbsp;${stem}</li>`).insertBefore($('#sub_menu_extra'));
+            $(`<li class='mx-1'><a class='inline-block bg-slate-900 border border-blue-500 hover:bg-slate-200 rounded py-1 px-3' href='/bib_book_edit/${stem}'><i class='fa fa-pencil'></i>&nbsp;&nbsp;Metadaten bearbeiten</a></li>`).insertAfter($('#sub_menu_extra'));
+            $(`<li class='mx-1'><a class='inline-block bg-slate-900 border border-blue-500 hover:bg-slate-200 rounded py-1 px-3' href='#'><i class='fa fa-print'></i>&nbsp;&nbsp;Label drucken</a></li>`).insertAfter($('#sub_menu_extra'));
+            $('#subsubmenu').show();
+        }
 
         bib_api_call('/jwt/get_book', { stem: stem }, function (data) {
             if (data.success) {
@@ -85,8 +89,7 @@
                         $('#labels_here').append($(`<span class='bg-stone-500 text-gray-800 text-sm mr-2 px-2.5 py-0.5 rounded dark:bg-gray-700 dark:text-gray-300'>${label.value}</span>`));
                     }
                 }
-                if (data.checked_out.length > 0) {
-                    console.log(book);
+                if (data.checked_out_user.length > 0) {
                     if ((book.isbn || '').length === 0) {
                         if (data.proposed_isbn.length > 0) {
                             $('#hint_scan_isbn_thank_you').show();
@@ -96,12 +99,12 @@
                         }
                     }
                     let x = ['keine', 'ein', 'zwei', 'drei', 'vier', 'fünf'];
-                    let div = $("<div>").text(`Du hast ${x[data.checked_out.length] || data.checked_out.length} Exemplar${data.checked_out.length === 1 ? '' : 'e'} dieses Buchs ausgeliehen.`);
-                    $('#checked_out').append(div);
+                    let div = $("<div>").text(`Du hast ${x[data.checked_out_user.length] || data.checked_out_user.length} Exemplar${data.checked_out_user.length === 1 ? '' : 'e'} dieses Buchs ausgeliehen.`);
+                    $('#checked_out_user').append(div);
                     let table = $("<table class='table table-sm mt-3'>");
                     table.append($("<tr><th>Signatur</th><th>Ausgeliehen</th><th>Bestätigt</th></tr>"));
                     div.append(table);
-                    for (let entry of data.checked_out) {
+                    for (let entry of data.checked_out_user) {
                         let row = $('<tr>');
                         row.append($('<td>').text(`${book.stem}-${entry.e.bnr}`));
                         row.append($('<td>').text(`${moment.unix(entry.r.ts_checked_out).format('L')}`));
@@ -109,6 +112,35 @@
                             row.append($('<td>').text(moment.unix(entry.r.ts_confirmed).format('L')));
                         } else {
                             row.append($('<td>').html("<i class='text-stone-400 fa fa-exclamation-triangle'></i>&nbsp;&nbsp;(noch nicht bestätigt) <a class='btn btn-success btn-xs ml-3' href='/bib_confirm'>Jetzt bestätigen</a>"));
+                        }
+                        table.append(row);
+                    }
+                }
+                if (data.checked_out_all && data.checked_out_all.length > 0) {
+                    if ((book.isbn || '').length === 0) {
+                        if (data.proposed_isbn.length > 0) {
+                            $('#hint_scan_isbn_thank_you').show();
+                        } else {
+                            $('#hint_scan_isbn_link').attr('href', `/bib_scan_isbn/${book.stem}`);
+                            $('#hint_scan_isbn').show();
+                        }
+                    }
+                    let x = ['keine', 'ein', 'zwei', 'drei', 'vier', 'fünf'];
+                    let div = $("<div>");
+                    $('#checked_out_all').append($(`<h3>Ausgeliehene Exemplare</h3>`));
+                    $('#checked_out_all').append(div);
+                    let table = $("<table class='table table-sm mt-3'>");
+                    table.append($("<tr><th>Signatur</th><th>Nachname</th><th>Vorname</th><th>Klasse</th><th>Ausgeliehen</th><th>Bestätigt</th></tr>"));
+                    div.append(table);
+                    for (let entry of data.checked_out_all) {
+                        let row = $('<tr>');
+                        row.append($('<td>').text(`${book.stem}-${entry.e.bnr}`));
+                        row.append(create_user_td_span(entry.u.email));
+                        row.append($('<td>').text(`${moment.unix(entry.r.ts_checked_out).format('L')}`));
+                        if (entry.r.ts_confirmed) {
+                            row.append($('<td>').text(moment.unix(entry.r.ts_confirmed).format('L')));
+                        } else {
+                            row.append($('<td>').html("<i class='text-stone-400 fa fa-exclamation-triangle'></i>&nbsp;&nbsp;(noch nicht bestätigt)"));
                         }
                         table.append(row);
                     }

@@ -12,6 +12,7 @@
         /* background: none; */
         /* background-color: white; */
         /* padding-top: 120px; */
+        background-attachment: fixed;
     }
 
     .api_messages {
@@ -33,6 +34,22 @@
 </style>
 <div class='api_messages'></div>
 <script>
+    var db_user_info = #{Hash[@@user_info.map { |k, v| [k, {:first_name => v[:first_name], :display_name => v[:display_name], :last_name => v[:display_last_name], :klasse => tr_klasse(v[:klasse]), :teacher => v[:teacher]}] }].to_json};
+    
+    function create_user_td_span(email) {
+        if (db_user_info[email]) {
+            if (db_user_info[email].teacher) {
+                return `<td colspan='3'><span class='bg-amber-300 p-1 rounded'>${(db_user_info[email] || {}).display_name}</span></td>`;
+            } else {
+                return `<td>${(db_user_info[email] || {}).last_name}</td>` +
+                `<td>${(db_user_info[email] || {}).first_name || ''}</td>` +
+                `<td>${(db_user_info[email] || {}).klasse || ''}</td>`;
+            }
+        } else {
+            return `<td colspan='3'><span class='bg-stone-700 p-1 rounded'><s>${email}</s></span></td>`;
+        }
+    }
+
     window.addEventListener('load', function () {
         for (let x of $('.submenu a')) {
             let href = $(x).attr('href');

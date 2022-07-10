@@ -69,14 +69,19 @@
         bib_api_call('/jwt/get_checked_out_books_for_user_unconfirmed', {}, function (data) {
             if (data.success) {
                 console.log(data);
+                let x = 0;
                 for (let row of data.exemplare) {
                     let div = create_book_div(row.book, null, {
+                        compact: true,
                         exemplar: row.exemplar, clickable: true, callback: function (book) {
                             window.location.href = `/bib_book/${book.stem}`;
                         }
                     }).data('book', row.book);
                     divs_for_signature[`${row.book.stem}-${row.exemplar.bnr}`] = div;
+                    // div.css('position', 'absolute');
+                    // div.css('left', `${-x * 30}px`);
                     $('#book_list').append(div);
+                    x += 1;
                 }
                 update_books_left();
             }

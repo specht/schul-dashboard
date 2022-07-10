@@ -7,7 +7,7 @@ class Main < Sinatra::Base
             RETURN u.email;
         END_OF_QUERY
         result += 2 if temp.size > 0
-        result += 4 if [5, 6].include?(((@@user_info[email] || {})[:klasse] || '').to_i)
+        # result += 4 if [5, 6].include?(((@@user_info[email] || {})[:klasse] || '').to_i)
         temp = neo4j_query(<<~END_OF_QUERY, {:email => email, :jahr => LEHRBUCHVEREIN_JAHR})
             MATCH (u:User {email: $email})-[:PAID_FOR]->(j:Lehrbuchvereinsjahr {jahr: $jahr})
             RETURN u.email;
@@ -72,7 +72,7 @@ class Main < Sinatra::Base
                 state = 0
                 state += 1 if paid.include?(email)
                 state += 2 if no_pay.include?(email)
-                state += 4 if [5, 6].include?(((@@user_info[email] || {})[:klasse] || '').to_i)
+                # state += 4 if [5, 6].include?(((@@user_info[email] || {})[:klasse] || '').to_i)
                 io.puts "<tr class='user_row' data-email='#{email}'>"
                 user = @@user_info[email]
                 io.puts "<td>#{user[:last_name]}</td>"

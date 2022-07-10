@@ -111,6 +111,7 @@ function agr_api_call(url, data, callback, options) {
 function bib_api_call(url, data, callback, options) {
     let data_json = JSON.stringify(data);
     let expired = localStorage.getItem('bib_jwt_expired') || 0;
+    console.log(`JWT expired: ${expired}`);
     if (Date.now() > expired) {
         // request new JWT
         api_call('/api/get_bib_jwt_token', {}, function (data) {
@@ -131,6 +132,8 @@ function bib_api_call(url, data, callback, options) {
 }
 
 function perform_logout() {
+    // clear any short-lived JWT from local storage
+    localStorage.clear();
     api_call('/api/logout', {}, function (data) {
         if (data.success)
             window.location.href = '/';

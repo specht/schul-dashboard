@@ -616,6 +616,8 @@ window.addEventListener('load', function() {
         window.location = e.attr('href');
     });
     $('.switch-session').click(function(e) {
+        // clear any short-lived JWT from local storage
+        localStorage.clear();
         let index = parseInt($(e.target.closest('.switch-session')).data('sidindex'));
         api_call('/api/switch_current_session', {sid_index: index}, function(data) {
             if (data.success) {

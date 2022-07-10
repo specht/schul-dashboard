@@ -1732,7 +1732,7 @@ class Main < Sinatra::Base
                     io.puts "<a class='dropdown-item nav-icon' href='/login'><div class='icon'><i class='fa fa-sign-in'></i></div><span class='label'>Zusätzliche Anmeldung…</span></a>"
                     unless external_user_logged_in?
                         io.puts "<a class='dropdown-item nav-icon' href='/login_nc'><div class='icon'><i class='fa fa-nextcloud'></i></div><span class='label'>In Nextcloud anmelden…</span></a>"
-                        if can_manage_agr_app_logged_in? || can_manage_bib_logged_in? || can_manage_bib_members_logged_in?
+                        if can_manage_agr_app_logged_in? || can_manage_bib_members_logged_in?
                             io.puts "<div class='dropdown-divider'></div>"
                             if can_manage_agr_app_logged_in?
                                 io.puts "<a class='dropdown-item nav-icon' href='/agr_app'><div class='icon'><i class='fa fa-mobile'></i></div><span class='label'>Altgriechisch-App</span></a>"
@@ -1740,24 +1740,26 @@ class Main < Sinatra::Base
                             if can_manage_bib_members_logged_in?
                                 io.puts "<a class='dropdown-item nav-icon' href='/lehrbuchverein'><div class='icon'><i class='fa fa-book'></i></div><span class='label'>Lehrmittelverein</span></a>"
                             end
-                            if can_manage_bib_logged_in?
-                                io.puts "<a class='dropdown-item nav-icon' href='/bib_scan_shelf'><div class='icon'><i class='fa fa-book'></i></div><span class='label'>Bibliotheks-Verwaltung</span></a>"
-                            end
+                            # if can_manage_bib_logged_in?
+                            #     io.puts "<a class='dropdown-item nav-icon' href='/bib_scan_shelf'><div class='icon'><i class='fa fa-book'></i></div><span class='label'>Bibliotheks-Verwaltung</span></a>"
+                            # end
                         end
-                        if teacher_or_sv_logged_in?
+                        if teacher_or_sv_logged_in? || can_manage_bib_logged_in?
                             io.puts "<div class='dropdown-divider'></div>"
-                            if teacher_logged_in?
-                                if can_manage_salzh_logged_in?
-                                    io.puts "<a class='dropdown-item nav-icon' href='/salzh'><div class='icon'><i class='fa fa-home'></i></div><span class='label'>Testungen</span></a>"
+                            if teacher_or_sv_logged_in?
+                                if teacher_logged_in?
+                                    if can_manage_salzh_logged_in?
+                                        io.puts "<a class='dropdown-item nav-icon' href='/salzh'><div class='icon'><i class='fa fa-home'></i></div><span class='label'>Testungen</span></a>"
+                                    end
+                                    io.puts "<a class='dropdown-item nav-icon' href='/events'><div class='icon'><i class='fa fa-calendar-check-o'></i></div><span class='label'>Termine</span></a>"
+                                    io.puts "<a class='dropdown-item nav-icon' href='/tests'><div class='icon'><i class='fa fa-file-text-o'></i></div><span class='label'>Klassenarbeiten</span></a>"
                                 end
-                                io.puts "<a class='dropdown-item nav-icon' href='/events'><div class='icon'><i class='fa fa-calendar-check-o'></i></div><span class='label'>Termine</span></a>"
-                                io.puts "<a class='dropdown-item nav-icon' href='/tests'><div class='icon'><i class='fa fa-file-text-o'></i></div><span class='label'>Klassenarbeiten</span></a>"
+                                io.puts "<a class='dropdown-item nav-icon' href='/polls'><div class='icon'><i class='fa fa-bar-chart'></i></div><span class='label'>Umfragen</span></a>"
+                                io.puts "<a class='dropdown-item nav-icon' href='/prepare_vote'><div class='icon'><i class='fa fa-hand-paper-o'></i></div><span class='label'>Abstimmungen</span></a>"
+                                io.puts "<a class='dropdown-item nav-icon' href='/mailing_lists'><div class='icon'><i class='fa fa-envelope'></i></div><span class='label'>E-Mail-Verteiler</span></a>"
+                                io.puts "<a class='dropdown-item nav-icon' href='/groups'><div class='icon'><i class='fa fa-group'></i></div><span class='label'>Gruppen</span></a>"
                             end
-                            io.puts "<a class='dropdown-item nav-icon' href='/polls'><div class='icon'><i class='fa fa-bar-chart'></i></div><span class='label'>Umfragen</span></a>"
-                            io.puts "<a class='dropdown-item nav-icon' href='/prepare_vote'><div class='icon'><i class='fa fa-hand-paper-o'></i></div><span class='label'>Abstimmungen</span></a>"
-                            io.puts "<a class='dropdown-item nav-icon' href='/mailing_lists'><div class='icon'><i class='fa fa-envelope'></i></div><span class='label'>E-Mail-Verteiler</span></a>"
-                            io.puts "<a class='dropdown-item nav-icon' href='/groups'><div class='icon'><i class='fa fa-group'></i></div><span class='label'>Gruppen</span></a>"
-                            if teacher_logged_in? && (DEVELOPMENT || can_manage_bib_logged_in?)
+                            if can_manage_bib_logged_in?
                                 io.puts "<a class='dropdown-item nav-icon' href='/bibliothek'><div class='icon'><i class='fa fa-book'></i></div><span class='label'>Bibliothek</span></a>"
                             end
                         end
@@ -1772,10 +1774,6 @@ class Main < Sinatra::Base
                         # if admin_logged_in?
                         #     io.puts "<a class='bu-launch-adventskalender dropdown-item nav-icon'><div class='icon'><i class='fa fa-snowflake-o'></i></div><span class='label'>Adventskalender</span></a>"
                         # end
-                    end
-                    if DEVELOPMENT && !teacher_logged_in?
-                        io.puts "<a class='dropdown-item nav-icon' href='/bibliothek'><div class='icon'><i class='fa fa-book'></i></div><span class='label'>Bibliothek</span></a>"
-                        io.puts "<div class='dropdown-divider'></div>"
                     end
                     io.puts "<a class='dropdown-item nav-icon' href='/hilfe'><div class='icon'><i class='fa fa-question-circle'></i></div><span class='label'>Hilfe</span></a>"
                     io.puts "<div class='dropdown-divider'></div>"

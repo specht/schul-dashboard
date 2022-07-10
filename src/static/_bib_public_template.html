@@ -43,16 +43,16 @@
     });
 </script>
 
-<!-- <div class='container text-sm text-stone-200' style="text-align: center; background-color: #fce94f; border-radius: 0; padding: 5px 15px; border-top: 1px solid rgba(0,0,0,0.1); border-bottom: 1px solid rgba(0,0,0,0.1);">
-    <b>Sommerferien-Sandbox:</b> Du darfst alles ausprobieren, aber alle Änderungen werden zum Ende der Sommerferien (oder auch vorher mehrmals) zurückgesetzt.
-</div> -->
+<div class='container text-sm text-stone-200' style="text-align: center; background-color: #fce94f; border-radius: 0; padding: 5px 15px; border-top: 1px solid rgba(0,0,0,0.1); border-bottom: 1px solid rgba(0,0,0,0.1);">
+    <b>Sommerferien-Sandbox:</b> Dieser Teil des Dashboards befindet sich gerade in Entwicklung. Du darfst alles ausprobieren, aber alle Änderungen werden zum Ende der Sommerferien (oder auch vorher mehrmals) zurückgesetzt. Falls du Fragen, Hinweise oder Anmerkungen hast, schreib eine E-Mail an <a href='mailto:specht@gymnasiumsteglitz.de'>specht@gymnasiumsteglitz.de</a>.
+</div>
 <div class='container' style='padding: 0; display: flex; background: white; border-radius: 0;'>
     <section class="pl-3 pr-3 pb-3 w-full" style="height: 51px;">
         <ul class="submenu flex fixed bg-white px-2.5 py-2" style="border-bottom: 1px solid #ccc; left: 0px; right: 0px; z-index: 100;">
             <li class="mx-1">
                 <a class="inline-block bg-slate-900 border border-blue-500 hover:bg-slate-200 rounded py-1 px-3" href="/bibliothek">Meine Bücher</a>
             </li>
-            <li class="mx-1" style="display: #{teacher_logged_in? ? 'unset' : 'none'};">
+            <li class="mx-1" style="display: #{teacher_logged_in? || can_manage_bib_logged_in? ? 'unset' : 'none'};">
                 <a class="inline-block bg-slate-900 border border-blue-500 hover:bg-slate-200 rounded py-1 px-3" href="/bib_browse">Katalog</a>
             </li>
             <li class="mx-1" style="display: #{teacher_logged_in? ? 'unset' : 'none'};">

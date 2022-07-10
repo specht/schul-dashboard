@@ -244,6 +244,13 @@ class Main < Sinatra::Base
         end
     end
 
+    # Put this on top of a webpage to assert that this page can be opened by teachers only or users who can manage the library
+    def this_is_a_page_for_logged_in_teachers_or_can_manage_bib
+        unless teacher_logged_in? || can_manage_bib_logged_in?
+            redirect "#{WEB_ROOT}/", 303
+        end
+    end
+
     # Put this on top of a webpage to assert that this page can be opened by teachers or SV only
     def this_is_a_page_for_logged_in_teachers_or_sv
         unless teacher_or_sv_logged_in?

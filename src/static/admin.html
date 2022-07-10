@@ -11,6 +11,8 @@
     document.addEventListener('DOMContentLoaded', function () {
         install_clipboard_handler('.btn-clipboard');
         $('.btn-impersonate').click(function (e) {
+            // clear any short-lived JWT from local storage
+            localStorage.clear();
             let email = $(e.target).data('impersonate-email');
             api_call('/api/impersonate', { email: email }, function (data) {
                 if (data.success) {

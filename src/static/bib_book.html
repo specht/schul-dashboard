@@ -26,7 +26,7 @@
         <div id='book_details'></div>
         <p id='book_description'></p>
     </div>
-    <hr style='clear: both;' />
+    <div style="clear: both"></div>
     <div id='hint_scan_isbn' class='alert alert-warning relative' style="display: none; min-height: 70px;">
         <div style="float: left; font-size: 200%; margin-right: 0.5em;">🙂</div>
         <div style="padding-top: 10px;">Dieses Buch hat noch keine ISBN. Hilf uns, die Bibliothek zu verbessern, indem du die ISBN scannst.</div>
@@ -40,7 +40,14 @@
         <div style="padding-top: 10px;">Danke, dass du uns die fehlende ISBN für dieses Buch übermittelt hast! Wir kümmern uns darum.</div>
     </div>
     <div id='checked_out_user'></div>
-    <div id='checked_out_all'></div>
+    <div class="bib_teacher_only">
+        <hr />
+        <p>Wenn du dieses Buch im Unterricht verwenden möchtest, kannst du es hier bestellen.</p>
+        <button class="btn btn-success"><i class='fa fa-shopping-basket'></i>&nbsp;&nbsp;Buch bestellen</button>
+    </div>
+    <div class="bib_management_only">
+        <div id='checked_out_all'></div>
+    </div>
 </div>
 <script>
     window.addEventListener('load', function () {
@@ -101,9 +108,11 @@
                     let x = ['keine', 'ein', 'zwei', 'drei', 'vier', 'fünf'];
                     let div = $("<div>").text(`Du hast ${x[data.checked_out_user.length] || data.checked_out_user.length} Exemplar${data.checked_out_user.length === 1 ? '' : 'e'} dieses Buchs ausgeliehen.`);
                     $('#checked_out_user').append(div);
-                    let table = $("<table class='table table-sm mt-3'>");
+                    let table_div = $(`<div class="table-responsive" style="max-width: 100%; overflow-x: auto;">`);
+                    let table = $("<table class='table table-sm mt-3 table-condensed narrow'>");
                     table.append($("<tr><th>Signatur</th><th>Ausgeliehen</th><th>Bestätigt</th></tr>"));
-                    div.append(table);
+                    table_div.append(table);
+                    div.append(table_div);
                     for (let entry of data.checked_out_user) {
                         let row = $('<tr>');
                         row.append($('<td>').text(`${book.stem}-${entry.e.bnr}`));
@@ -129,9 +138,11 @@
                     let div = $("<div>");
                     $('#checked_out_all').append($(`<h3>Ausgeliehene Exemplare</h3>`));
                     $('#checked_out_all').append(div);
-                    let table = $("<table class='table table-sm mt-3'>");
-                    table.append($("<tr><th>Signatur</th><th>Nachname</th><th>Vorname</th><th>Klasse</th><th>Ausgeliehen</th><th>Bestätigt</th></tr>"));
-                    div.append(table);
+                    let table_div = $(`<div class="table-responsive" style="max-width: 100%; overflow-x: auto;">`);
+                    let table = $("<table class='table table-sm mt-3 table-condensed narrow'>");
+                    table.append($("<tr><th>Signatur</th><th>Nachname</th><th>Vorname</th><th>Klasse</th><th>Ausleihdatum</th><th>Bestätigt</th></tr>"));
+                    table_div.append(table);
+                    div.append(table_div);
                     for (let entry of data.checked_out_all) {
                         let row = $('<tr>');
                         row.append($('<td>').text(`${book.stem}-${entry.e.bnr}`));

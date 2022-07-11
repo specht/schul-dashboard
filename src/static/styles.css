@@ -2520,3 +2520,11 @@ img {
         height: 58vw;
     }
 }
+
+tr.clickable_row {
+    cursor: pointer;
+}
+
+tr.clickable_row:hover td {
+    background-color: rgba(0,0,0,0.05);
+}

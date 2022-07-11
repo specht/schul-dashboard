@@ -29,7 +29,8 @@
     <div style="clear: both"></div>
     <div id='hint_scan_isbn' class='alert alert-warning relative' style="display: none; min-height: 70px;">
         <div style="float: left; font-size: 200%; margin-right: 0.5em;">🙂</div>
-        <div style="padding-top: 10px;">Dieses Buch hat noch keine ISBN. Hilf uns, die Bibliothek zu verbessern, indem du die ISBN scannst.</div>
+        <div style="padding-top: 10px;">Dieses Buch hat noch keine ISBN. Hilf uns, die Bibliothek zu verbessern, indem
+            du die ISBN scannst.</div>
         <div style="text-align: center; margin-top: 10px;">
             <a id='hint_scan_isbn_link' class="btn btn-success" href="#"><i class='fa fa-barcode'></i>&nbsp;&nbsp;ISBN
                 erfassen</a>
@@ -37,7 +38,8 @@
     </div>
     <div id='hint_scan_isbn_thank_you' class='alert alert-warning relative' style="display: none; min-height: 70px;">
         <div style="float: left; font-size: 200%; margin-right: 0.5em;">🤩</div>
-        <div style="padding-top: 10px;">Danke, dass du uns die fehlende ISBN für dieses Buch übermittelt hast! Wir kümmern uns darum.</div>
+        <div style="padding-top: 10px;">Danke, dass du uns die fehlende ISBN für dieses Buch übermittelt hast! Wir
+            kümmern uns darum.</div>
     </div>
     <div id='checked_out_user'></div>
     <div class="bib_teacher_only">
@@ -126,35 +128,28 @@
                     }
                 }
                 if (data.checked_out_all && data.checked_out_all.length > 0) {
-                    if ((book.isbn || '').length === 0) {
-                        if (data.proposed_isbn.length > 0) {
-                            $('#hint_scan_isbn_thank_you').show();
-                        } else {
-                            $('#hint_scan_isbn_link').attr('href', `/bib_scan_isbn/${book.stem}`);
-                            $('#hint_scan_isbn').show();
-                        }
-                    }
-                    let x = ['keine', 'ein', 'zwei', 'drei', 'vier', 'fünf'];
                     let div = $("<div>");
                     $('#checked_out_all').append($(`<h3>Ausgeliehene Exemplare</h3>`));
                     $('#checked_out_all').append(div);
-                    let table_div = $(`<div class="table-responsive" style="max-width: 100%; overflow-x: auto;">`);
-                    let table = $("<table class='table table-sm mt-3 table-condensed narrow'>");
-                    table.append($("<tr><th>Signatur</th><th>Nachname</th><th>Vorname</th><th>Klasse</th><th>Ausleihdatum</th><th>Bestätigt</th></tr>"));
-                    table_div.append(table);
-                    div.append(table_div);
-                    for (let entry of data.checked_out_all) {
-                        let row = $('<tr>');
-                        row.append($('<td>').text(`${book.stem}-${entry.e.bnr}`));
-                        row.append(create_user_td_span(entry.u.email));
-                        row.append($('<td>').text(`${moment.unix(entry.r.ts_checked_out).format('L')}`));
-                        if (entry.r.ts_confirmed) {
-                            row.append($('<td>').text(moment.unix(entry.r.ts_confirmed).format('L')));
-                        } else {
-                            row.append($('<td>').html("<i class='text-stone-400 fa fa-exclamation-triangle'></i>&nbsp;&nbsp;(noch nicht bestätigt)"));
-                        }
-                        table.append(row);
-                    }
+                    new SortableTable({
+                        element: div,
+                        headers: ['Signatur', 'Nachname', 'Vorname', 'Klasse', 'Ausleihdatum', 'Bestätigt'].map(function (x) {
+                            let th = $('<th>').text(x);
+                            if (['Signatur', 'Klasse', 'Ausleihdatum', 'Bestätigt'].indexOf(x) >= 0) th.data('type', 'int');
+                            return th;
+                        }),
+                        rows: data.checked_out_all.map(function (entry) {
+                            return [
+                                $('<td>').text(`${book.stem}-${entry.e.bnr}`).data('sort_value', entry.e.bnr),
+                                create_user_td_span(entry.u.email),
+                                $('<td>').html((db_user_info[entry.u.email] || {}).klasse || '&ndash;').data('sort_value', (db_user_info[entry.u.email] || {}).klassen_order),
+                                $('<td>').text(`${moment.unix(entry.r.ts_checked_out).format('L')}`).data('sort_value', entry.r.ts_checked_out),
+                                entry.r.ts_confirmed
+                                    ? $('<td>').text(moment.unix(entry.r.ts_confirmed).format('L')).data('sort_value', entry.r.ts_confirmed)
+                                    : $('<td>').html("<i class='text-stone-400 fa fa-exclamation-triangle'></i>&nbsp;&nbsp;(noch nicht bestätigt)").data('sort_value', NaN)
+                            ];
+                        })
+                    });
                 }
             }
         });

@@ -677,6 +677,10 @@ class Main < Sinatra::Base
             la <=> lb
         end
         @@klassen_order = KLASSEN_ORDER
+        @@klassen_index = {}
+        KLASSEN_ORDER.each_with_index do |klasse, i|
+            @@klassen_index[klasse] = i
+        end
         @@klassen_order.each.with_index { |k, i| @@index_for_klasse[k] = i }
         @@klassen_id = {}
         @@klassen_order.each do |klasse|
@@ -1190,8 +1194,10 @@ class Main < Sinatra::Base
             '/include/chart.js/Chart.min.js',
             '/include/jszip/dist/jszip.min.js',
             '/include/flowbite/flowbite.js',
-            # '/include/quagga.js/quagga.min.js',
             '/code.js',
+            '/include/zxing.min.js',
+            '/barcode-widget.js',
+            '/sortable-table.js',
         ]
 
         self.compile_files(:js, 'application/javascript', files)

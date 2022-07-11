@@ -54,19 +54,27 @@
 </style>
 <div class='api_messages'></div>
 <script>
-    var db_user_info = #{Hash[@@user_info.map { |k, v| [k, {:first_name => v[:first_name], :display_name => v[:display_name], :last_name => v[:display_last_name], :klasse => tr_klasse(v[:klasse]), :teacher => v[:teacher]}] }].to_json};
+    var db_user_info = #{ Hash[@@user_info.map { | k, v | [k, {:first_name => v[:first_name], :titel => v[:titel], :display_name => v[:display_name], :last_name => v[:last_name], :display_last_name => v[:display_last_name], :klasse => tr_klasse(v[:klasse]), :klassen_order => @@klassen_index[v[:klasse]], :teacher => v[:teacher] }] }].to_json};
 
     function create_user_td_span(email) {
         if (db_user_info[email]) {
-            if (db_user_info[email].teacher) {
-                return `<td colspan='3'><span class='bg-amber-300 p-1 rounded'>${(db_user_info[email] || {}).display_name}</span></td>`;
-            } else {
-                return `<td>${(db_user_info[email] || {}).last_name}</td>` +
-                `<td>${(db_user_info[email] || {}).first_name || ''}</td>` +
-                `<td>${(db_user_info[email] || {}).klasse || ''}</td>`;
+            let parts = [];
+            for (let key of ['last_name', 'first_name']) {
+                if (db_user_info[email].teacher) {
+                    if (key === 'last_name' && db_user_info[email].titel) {
+                        parts.push(`<td data-sort_value="${db_user_info[email][key]}"><span class='bg-amber-300 p-1 rounded'>${db_user_info[email].titel} ${db_user_info[email][key]}</span></td>`);
+                    } else {
+                        parts.push(`<td><span class='bg-amber-300 p-1 rounded'>${db_user_info[email][key]}</span></td>`);
+                    }
+                } else {
+                    parts.push(`<td>${(db_user_info[email] || {})[key]}</td>`);
+                }
             }
+            return $(parts.join(''));
         } else {
-            return `<td colspan='3'><span class='bg-stone-700 p-1 rounded'><s>${email}</s></span></td>`;
+            return $(`<td colspan='2'>`).append(
+                $(`<span class='bg-stone-700 p-1 rounded text-stone-300'>`).text(email)
+            );
         }
     }
 
@@ -82,34 +90,48 @@
     });
 </script>
 
-<div class='container text-sm text-stone-200' style="text-align: center; background-color: #fce94f; border-radius: 0; padding: 5px 15px; border-top: 1px solid rgba(0,0,0,0.1); border-bottom: 1px solid rgba(0,0,0,0.1);">
-    <b>Sommerferien-Sandbox:</b> Dieser Teil des Dashboards befindet sich gerade in Entwicklung. Du darfst alles ausprobieren, aber alle Änderungen werden zum Ende der Sommerferien (oder auch vorher mehrmals) zurückgesetzt. Falls du Fragen, Hinweise oder Anmerkungen hast, schreib eine E-Mail an <a href='mailto:specht@gymnasiumsteglitz.de'>specht@gymnasiumsteglitz.de</a>.
+<div class='container text-sm text-stone-200'
+    style="text-align: center; background-color: #fce94f; border-radius: 0; padding: 5px 15px; border-top: 1px solid rgba(0,0,0,0.1); border-bottom: 1px solid rgba(0,0,0,0.1);">
+    <b>Sommerferien-Sandbox:</b> Dieser Teil des Dashboards befindet sich gerade in Entwicklung. Du darfst alles
+    ausprobieren, aber alle Änderungen werden zum Ende der Sommerferien (oder auch vorher mehrmals) zurückgesetzt. Falls
+    du Fragen, Hinweise oder Anmerkungen hast, schreib eine E-Mail an <a
+        href='mailto:specht@gymnasiumsteglitz.de'>specht@gymnasiumsteglitz.de</a>.
 </div>
 <div class='container' style='padding: 0; display: flex; background: white; border-radius: 0;'>
     <section class="pl-3 pr-3 pb-3 w-full" style="height: 51px;">
-        <ul class="submenu flex fixed bg-white px-2.5 py-2" style="border-bottom: 1px solid #eee; left: 0px; right: 0px; z-index: 100;">
+        <ul class="submenu flex fixed bg-white px-2.5 py-2"
+            style="border-bottom: 1px solid #eee; left: 0px; right: 0px; z-index: 100;">
             <li class="mx-1" style="display: #{teacher_logged_in? ? 'unset' : 'none'};">
-                <a class="inline-block bg-slate-900 border border-blue-500 hover:bg-slate-200 rounded py-1 px-3" href="/bibliothek">Meine Bücher</a>
+                <a class="inline-block bg-slate-900 border border-blue-500 hover:bg-slate-200 rounded py-1 px-3"
+                    href="/bibliothek">Meine Bücher</a>
             </li>
             <li class="mx-1" style="display: #{teacher_logged_in? || can_manage_bib_logged_in? ? 'unset' : 'none'};">
-                <a class="inline-block bg-slate-900 border border-blue-500 hover:bg-slate-200 rounded py-1 px-3" href="/bib_browse">Katalog</a>
+                <a class="inline-block bg-slate-900 border border-blue-500 hover:bg-slate-200 rounded py-1 px-3"
+                    href="/bib_browse">Katalog</a>
             </li>
             <li class="mx-1" style="display: #{teacher_logged_in? ? 'unset' : 'none'};">
-                <a class="inline-block bg-slate-900 border border-blue-500 hover:bg-slate-200 rounded py-1 px-3" href="#">Bestellungen</a>
+                <a class="inline-block bg-slate-900 border border-blue-500 hover:bg-slate-200 rounded py-1 px-3"
+                    href="#">Bestellungen</a>
             </li>
             <li style='margin-left: auto;'></li>
-            <li style="display: #{can_manage_bib_logged_in? ? 'unset' : 'none'}; border-left: 1px solid #ccc; height: 52px; margin: -10px 10px -10px 10px;"></li>
-            <li class="mx-1" style="display: #{can_manage_bib_logged_in? ? 'unset' : 'none'};">
-                <a class="inline-block bg-slate-900 border border-blue-500 hover:bg-slate-200 rounded py-1 px-3" href="#">Medien</a>
+            <li
+                style="display: #{can_manage_bib_logged_in? ? 'unset' : 'none'}; border-left: 1px solid #ccc; height: 52px; margin: -10px 10px -10px 10px;">
             </li>
             <li class="mx-1" style="display: #{can_manage_bib_logged_in? ? 'unset' : 'none'};">
-                <a class="inline-block bg-slate-900 border border-blue-500 hover:bg-slate-200 rounded py-1 px-3" href="#">Nutzer:innen</a>
+                <a class="inline-block bg-slate-900 border border-blue-500 hover:bg-slate-200 rounded py-1 px-3"
+                    href="#">Medien</a>
             </li>
             <li class="mx-1" style="display: #{can_manage_bib_logged_in? ? 'unset' : 'none'};">
-                <a class="inline-block bg-slate-900 border border-blue-500 hover:bg-slate-200 rounded py-1 px-3" href="#">Bestellungen</a>
+                <a class="inline-block bg-slate-900 border border-blue-500 hover:bg-slate-200 rounded py-1 px-3"
+                    href="/bib_users">Nutzer</a>
             </li>
             <li class="mx-1" style="display: #{can_manage_bib_logged_in? ? 'unset' : 'none'};">
-                <a class="inline-block bg-slate-900 border border-blue-500 hover:bg-slate-200 rounded py-1 px-3" href="#">Rückgabe</a>
+                <a class="inline-block bg-slate-900 border border-blue-500 hover:bg-slate-200 rounded py-1 px-3"
+                    href="#">Bestellungen</a>
+            </li>
+            <li class="mx-1" style="display: #{can_manage_bib_logged_in? ? 'unset' : 'none'};">
+                <a class="inline-block bg-slate-900 border border-blue-500 hover:bg-slate-200 rounded py-1 px-3"
+                    href="#">Rückgabe</a>
             </li>
             <!-- <li class="mx-1">
                 <div class="input-group">
@@ -122,9 +144,11 @@
         </ul>
     </section>
 </div>
-<div id='subsubmenu' class='container' style='padding: 0; display: flex; background: white; border-radius: 0; display: none;'>
+<div id='subsubmenu' class='container'
+    style='padding: 0; display: flex; background: white; border-radius: 0; display: none;'>
     <section class="pl-3 pr-3 pb-3 w-full" style="height: 51px;">
-        <ul class="submenu flex fixed bg-stone-900 px-2.5 py-2" style="border-bottom: 1px solid #eee; left: 0px; right: 0px; z-index: 100;">
+        <ul class="submenu flex fixed bg-stone-900 px-2.5 py-2"
+            style="border-bottom: 1px solid #eee; left: 0px; right: 0px; z-index: 100;">
             <li id='sub_menu_extra' style='margin-left: auto;'></li>
         </ul>
     </section>

@@ -3,6 +3,8 @@ class SortableTable {
         this.element = options.element;
         this.headers = options.headers;
         this.rows = options.rows;
+        this.clickable_row_callback = options.clickable_row_callback;
+        this.filter_callback = options.filter_callback;
         let table_div = $(`<div class="table-responsive" style="max-width: 100%; overflow-x: auto;">`);
         let table = $("<table class='table table-sm table-condensed narrow'>");
         table_div.append(table);
@@ -26,8 +28,12 @@ class SortableTable {
             let tr = $('<tr>');
             if (options.clickable_rows) {
                 tr.addClass('clickable_row');
+                tr.click(function(e) {
+                    self.clickable_row_callback($(e.target).closest('tr').data('row_data'));
+                });
             }
-            tr.append(row);
+            tr.data('row_data', row[0])
+            tr.append(row.slice(1));
             let i = 0;
             let j = 0;
             let col_index = {};
@@ -43,6 +49,17 @@ class SortableTable {
         }
         this.element.append(table_div);
         this.tbody = tbody;
+    }
+
+    update_filter() {
+        if (!this.filter_callback)
+            return;
+        for (let tr of this.tbody.find('tr')) {
+            if (this.filter_callback($(tr).data('row_data')))
+                $(tr).show();
+            else
+                $(tr).hide();
+        }
     }
 
     sort_rows(index, descending) {

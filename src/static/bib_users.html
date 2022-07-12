@@ -1,34 +1,86 @@
 #{File.read('/static/_bib_public_template.html')}
 #{require_user_who_can_manage_bib!}
 <div class='container bg-white'>
+    <div id='labels_here' class='mb-3'>Filter:&nbsp;&nbsp;</div>
     <div id="users_here"></div>
 </div>
 <script>
+    var selected_klassen = [];
+    var user_table = null;
+
+    function row_clicked(data) {
+        window.location = `/bib_user/${encodeURIComponent(data)}`;
+    }
+
+    function user_filter(data) {
+        if (window.selected_klassen.length === 0)
+            return true;
+        else {
+            let info = db_user_info[data] || {};
+            if (info.teacher) {
+                return window.selected_klassen.indexOf('LK') >= 0;
+            } else {
+                return window.selected_klassen.indexOf(info.klasse) >= 0;
+            }
+        }
+    }
+
     window.addEventListener('load', function () {
+        for (let label of #{(KLASSEN_ORDER.map { |x| tr_klasse(x) } + ['LK']).to_json}) {
+            let button = $(`<button class='bu-label btn btn-xs btn-outline-secondary mr-1 mb-1' data-flag='false'>${label}</button>`);
+            $('#labels_here').append(button);
+            button.click(function (e) {
+                let button = $(e.target).closest('button');
+                if (button.data('flag') === false) {
+                    button.data('flag', true);
+                    button.removeClass('btn-outline-secondary').addClass('btn-success');
+                } else {
+                    button.data('flag', false);
+                    button.removeClass('btn-success').addClass('btn-outline-secondary');
+                }
+                selected_klassen = [];
+                for (let x of button.parent().find('button')) {
+                    if ($(x).data('flag'))
+                        selected_klassen.push($(x).text());
+                }
+                console.log(selected_klassen);
+                window.user_table.update_filter();
+            })
+        }
         bib_api_call('/jwt/get_users', {}, function (data) {
             if (data.success) {
+                let present_users = {};
+                for (let entry of data.users) {
+                    present_users[entry.email] = true;
+                }
+                for (let email of Object.keys(db_user_info)) {
+                    if (!present_users[email]) {
+                        data.users.push({ email: email, ausleih_count: 0 });
+                    }
+                }
                 let div = $('<div>');
                 $('#users_here').append(div);
-                let table = new SortableTable({
+                window.user_table = new SortableTable({
                     element: div,
                     headers: ['Nachname', 'Vorname', 'Klasse', 'Ausgeliehen'].map(function (x) {
                         let th = $('<th>').text(x);
                         if (['Klasse', 'Ausgeliehen'].indexOf(x) >= 0) th.data('type', 'int');
                         return th;
                     }),
-                    rows: data.users.filter(function(x) {
-                        return x.email.indexOf('(') != 0;
-                    }).map(function (entry) {
+                    rows: data.users.map(function (entry) {
                         return [
+                            entry.email,
                             create_user_td_span(entry.email),
                             $('<td>').html((db_user_info[entry.email] || {}).klasse || '&ndash;').data('sort_value', (db_user_info[entry.email] || {}).klassen_order),
-                            $('<td>').html(`${entry.ausleih_count === 0 ? '&ndash;': entry.ausleih_count}`).data('sort_value', entry.ausleih_count || 0)
+                            $('<td>').html(`${entry.ausleih_count === 0 ? '&ndash;' : entry.ausleih_count}`).data('sort_value', entry.ausleih_count || 0)
                         ];
                     }),
-                    clickable_rows: true
+                    filter_callback: user_filter,
+                    clickable_rows: true,
+                    clickable_row_callback: row_clicked
                 });
-                table.sort_rows(0, false);
-                table.sort_rows(2, false);
+                window.user_table.sort_rows(0, false);
+                window.user_table.sort_rows(2, false);
             }
         });
     });

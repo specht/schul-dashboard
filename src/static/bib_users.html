@@ -7,6 +7,7 @@
 <script>
     var selected_klassen = [];
     var user_table = null;
+    var lehrmittelverein_state_cache = #{@@lehrmittelverein_state_cache.to_json};
 
     function row_clicked(data) {
         window.location = `/bib_user/${encodeURIComponent(data)}`;
@@ -62,7 +63,7 @@
                 $('#users_here').append(div);
                 window.user_table = new SortableTable({
                     element: div,
-                    headers: ['Nachname', 'Vorname', 'Klasse', 'Ausgeliehen'].map(function (x) {
+                    headers: ['Nachname', 'Vorname', 'Klasse', 'Verein', 'Ausgeliehen'].map(function (x) {
                         let th = $('<th>').text(x);
                         if (['Klasse', 'Ausgeliehen'].indexOf(x) >= 0) th.data('type', 'int');
                         return th;
@@ -72,7 +73,8 @@
                             entry.email,
                             create_user_td_span(entry.email),
                             $('<td>').html((db_user_info[entry.email] || {}).klasse || '&ndash;').data('sort_value', (db_user_info[entry.email] || {}).klassen_order),
-                            $('<td>').html(`${entry.ausleih_count === 0 ? '&ndash;' : entry.ausleih_count}`).data('sort_value', entry.ausleih_count || 0)
+                            $('<td>').html(lehrmittelverein_state_cache[entry.email] ? `<i class='fa fa-check-circle text-stone-400'></i` : `<i class='fa fa-circle text-red-500'></i>`).data('sort_value', lehrmittelverein_state_cache[entry.email]),
+                            $('<td>').html(`${entry.ausleih_count === 0 ? '&ndash;' : entry.ausleih_count}`).data('sort_value', entry.ausleih_count || 0),
                         ];
                     }),
                     filter_callback: user_filter,

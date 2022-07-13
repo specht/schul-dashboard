@@ -1,4 +1,27 @@
 class Main < Sinatra::Base
+    def self.determine_lehrmittelverein_state_for_all()
+        @@lehrmittelverein_state_cache = {}
+        @@user_info.each_pair do |email, info|
+            @@lehrmittelverein_state_cache[email] = info[:teacher]
+        end
+        temp = $neo4j.neo4j_query(<<~END_OF_QUERY).map { |x| { :email => x['u.email'] } }
+            MATCH (u:User {lmv_no_pay: true})
+            RETURN u.email;
+        END_OF_QUERY
+        temp.each do |row|
+            email = row[:email]
+            @@lehrmittelverein_state_cache[email] = true
+        end
+        temp = $neo4j.neo4j_query(<<~END_OF_QUERY, {:jahr => LEHRBUCHVEREIN_JAHR}).map { |x| { :email => x['u.email'] } }
+            MATCH (u:User)-[:PAID_FOR]->(j:Lehrbuchvereinsjahr {jahr: $jahr})
+            RETURN u.email;
+        END_OF_QUERY
+        temp.each do |row|
+            email = row[:email]
+            @@lehrmittelverein_state_cache[email] = true
+        end
+    end
+
     # returns bits 1 for paid, 2 for zahlungsbefreit, 4 for lehrmittelfreiheit
     def determine_lehrmittelverein_state_for_email(email)
         result = 0
@@ -107,6 +130,7 @@ class Main < Sinatra::Base
             SET u.lmv_no_pay = NOT COALESCE(u.lmv_no_pay, FALSE)
             RETURN u.lmv_no_pay;
         END_OF_QUERY
+        @@lehrmittelverein_state_cache[email] = determine_lehrmittelverein_state_for_email(email)
         respond(:ok => true, :state => determine_lehrmittelverein_state_for_email(email))
     end
 
@@ -123,6 +147,7 @@ class Main < Sinatra::Base
                 MATCH (u:User {email: $email})-[r:PAID_FOR]->(j:Lehrbuchvereinsjahr {jahr: $jahr})
                 DELETE r;
             END_OF_QUERY
+            @@lehrmittelverein_state_cache[email] = determine_lehrmittelverein_state_for_email(email)
             respond(:ok => true, :state => determine_lehrmittelverein_state_for_email(email))
         else
             result = neo4j_query_expect_one(<<~END_OF_QUERY, :jahr => LEHRBUCHVEREIN_JAHR, :email => data[:email])
@@ -131,6 +156,7 @@ class Main < Sinatra::Base
                 CREATE (u)-[:PAID_FOR]->(j)
                 RETURN u.lehrbuchverein_mitglied;
             END_OF_QUERY
+            @@lehrmittelverein_state_cache[email] = determine_lehrmittelverein_state_for_email(email)
             respond(:ok => true, :state => determine_lehrmittelverein_state_for_email(email))
         end
     end

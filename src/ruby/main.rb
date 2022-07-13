@@ -1274,6 +1274,7 @@ class Main < Sinatra::Base
 
             self.compile_js()
             self.compile_css()
+            self.determine_lehrmittelverein_state_for_all()
             # STDERR.puts @@color_scheme_info.to_yaml
         end
         if ['thin', 'rackup'].include?(File.basename($0))

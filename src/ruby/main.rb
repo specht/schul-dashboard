@@ -1738,7 +1738,7 @@ class Main < Sinatra::Base
                     io.puts "<a class='dropdown-item nav-icon' href='/login'><div class='icon'><i class='fa fa-sign-in'></i></div><span class='label'>Zusätzliche Anmeldung…</span></a>"
                     unless external_user_logged_in?
                         io.puts "<a class='dropdown-item nav-icon' href='/login_nc'><div class='icon'><i class='fa fa-nextcloud'></i></div><span class='label'>In Nextcloud anmelden…</span></a>"
-                        if can_manage_agr_app_logged_in? || can_manage_bib_members_logged_in?
+                        if can_manage_agr_app_logged_in? || can_manage_bib_members_logged_in? || can_manage_bib_logged_in?
                             io.puts "<div class='dropdown-divider'></div>"
                             if can_manage_agr_app_logged_in?
                                 io.puts "<a class='dropdown-item nav-icon' href='/agr_app'><div class='icon'><i class='fa fa-mobile'></i></div><span class='label'>Altgriechisch-App</span></a>"
@@ -1746,9 +1746,9 @@ class Main < Sinatra::Base
                             if can_manage_bib_members_logged_in?
                                 io.puts "<a class='dropdown-item nav-icon' href='/lehrbuchverein'><div class='icon'><i class='fa fa-book'></i></div><span class='label'>Lehrmittelverein</span></a>"
                             end
-                            # if can_manage_bib_logged_in?
-                            #     io.puts "<a class='dropdown-item nav-icon' href='/bib_scan_shelf'><div class='icon'><i class='fa fa-book'></i></div><span class='label'>Bibliotheks-Verwaltung</span></a>"
-                            # end
+                            if can_manage_bib_logged_in?
+                                io.puts "<a class='dropdown-item nav-icon' href='/bibliothek'><div class='icon'><i class='fa fa-book'></i></div><span class='label'>Bibliothek</span></a>"
+                            end
                         end
                         if teacher_or_sv_logged_in? || can_manage_bib_logged_in?
                             io.puts "<div class='dropdown-divider'></div>"
@@ -1764,9 +1764,6 @@ class Main < Sinatra::Base
                                 io.puts "<a class='dropdown-item nav-icon' href='/prepare_vote'><div class='icon'><i class='fa fa-hand-paper-o'></i></div><span class='label'>Abstimmungen</span></a>"
                                 io.puts "<a class='dropdown-item nav-icon' href='/mailing_lists'><div class='icon'><i class='fa fa-envelope'></i></div><span class='label'>E-Mail-Verteiler</span></a>"
                                 io.puts "<a class='dropdown-item nav-icon' href='/groups'><div class='icon'><i class='fa fa-group'></i></div><span class='label'>Gruppen</span></a>"
-                            end
-                            if can_manage_bib_logged_in?
-                                io.puts "<a class='dropdown-item nav-icon' href='/bibliothek'><div class='icon'><i class='fa fa-book'></i></div><span class='label'>Bibliothek</span></a>"
                             end
                         end
                         # if @session_user[:can_upload_vplan]

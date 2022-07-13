@@ -52,6 +52,10 @@
     </div>
 </div>
 <script>
+    function row_clicked(data) {
+        window.location = `/bib_user/${encodeURIComponent(data)}`;
+    }
+
     window.addEventListener('load', function () {
         let stem_s = window.location.pathname.replace('/bib_book/', '');
         let stem = parseInt(stem_s);
@@ -140,7 +144,8 @@
                         }),
                         rows: data.checked_out_all.map(function (entry) {
                             return [
-                                entry.e.bnr,
+                                // entry.e.bnr,
+                                entry.u.email,
                                 $('<td>').text(`${book.stem}-${entry.e.bnr}`).data('sort_value', entry.e.bnr),
                                 create_user_td_span(entry.u.email),
                                 $('<td>').html((db_user_info[entry.u.email] || {}).klasse || '&ndash;').data('sort_value', (db_user_info[entry.u.email] || {}).klassen_order),
@@ -149,7 +154,9 @@
                                     ? $('<td>').text(moment.unix(entry.r.ts_confirmed).format('L')).data('sort_value', entry.r.ts_confirmed)
                                     : $('<td>').html("<i class='text-stone-400 fa fa-exclamation-triangle'></i>&nbsp;&nbsp;(noch nicht bestätigt)").data('sort_value', NaN)
                             ];
-                        })
+                        }),
+                        clickable_rows: true,
+                        clickable_row_callback: row_clicked
                     });
                 }
             }

@@ -63,6 +63,7 @@
                 $('#users_here').append(div);
                 window.user_table = new SortableTable({
                     element: div,
+                    xs: true,
                     headers: ['Nachname', 'Vorname', 'Klasse', 'Verein', 'Ausgeliehen'].map(function (x) {
                         let th = $('<th>').text(x);
                         if (['Klasse', 'Ausgeliehen'].indexOf(x) >= 0) th.data('type', 'int');
@@ -73,7 +74,7 @@
                             entry.email,
                             create_user_td_span(entry.email),
                             $('<td>').html((db_user_info[entry.email] || {}).klasse || '&ndash;').data('sort_value', (db_user_info[entry.email] || {}).klassen_order),
-                            $('<td>').html(lehrmittelverein_state_cache[entry.email] ? `<i class='fa fa-check-circle text-stone-400'></i` : `<i class='fa fa-circle text-red-500'></i>`).data('sort_value', lehrmittelverein_state_cache[entry.email]),
+                            $('<td>').html(lehrmittelverein_state_cache[entry.email] ? `<i class='fa fa-check-circle text-grass-500'></i` : `<i class='fa fa-times-circle text-persimmon-500'></i>`).data('sort_value', lehrmittelverein_state_cache[entry.email]),
                             $('<td>').html(`${entry.ausleih_count === 0 ? '&ndash;' : entry.ausleih_count}`).data('sort_value', entry.ausleih_count || 0),
                         ];
                     }),

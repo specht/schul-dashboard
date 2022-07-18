@@ -7,6 +7,8 @@ class SortableTable {
         this.filter_callback = options.filter_callback;
         let table_div = $(`<div class="table-responsive" style="max-width: 100%; overflow-x: auto;">`);
         let table = $("<table class='table table-sm table-condensed narrow'>");
+        if (options.xs)
+        table.addClass('xs');
         table_div.append(table);
         let thead = $('<thead>');
         table.append(thead);
@@ -102,3 +104,4 @@ class SortableTable {
         // }
     }
 }
+

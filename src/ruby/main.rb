@@ -1739,7 +1739,7 @@ class Main < Sinatra::Base
                     io.puts "<a class='dropdown-item nav-icon' href='/login'><div class='icon'><i class='fa fa-sign-in'></i></div><span class='label'>Zusätzliche Anmeldung…</span></a>"
                     unless external_user_logged_in?
                         io.puts "<a class='dropdown-item nav-icon' href='/login_nc'><div class='icon'><i class='fa fa-nextcloud'></i></div><span class='label'>In Nextcloud anmelden…</span></a>"
-                        if can_manage_agr_app_logged_in? || can_manage_bib_members_logged_in? || can_manage_bib_logged_in?
+                        if can_manage_agr_app_logged_in? || can_manage_bib_members_logged_in? || can_manage_bib_logged_in? || DEVELOPMENT
                             io.puts "<div class='dropdown-divider'></div>"
                             if can_manage_agr_app_logged_in?
                                 io.puts "<a class='dropdown-item nav-icon' href='/agr_app'><div class='icon'><i class='fa fa-mobile'></i></div><span class='label'>Altgriechisch-App</span></a>"
@@ -1747,7 +1747,7 @@ class Main < Sinatra::Base
                             if can_manage_bib_members_logged_in?
                                 io.puts "<a class='dropdown-item nav-icon' href='/lehrbuchverein'><div class='icon'><i class='fa fa-book'></i></div><span class='label'>Lehrmittelverein</span></a>"
                             end
-                            if can_manage_bib_logged_in?
+                            if can_manage_bib_logged_in? || DEVELOPMENT
                                 io.puts "<a class='dropdown-item nav-icon' href='/bibliothek'><div class='icon'><i class='fa fa-book'></i></div><span class='label'>Bibliothek</span></a>"
                             end
                         end

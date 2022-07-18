@@ -135,8 +135,9 @@
                     let div = $("<div>");
                     $('#checked_out_all').append($(`<h3>Ausgeliehene Exemplare</h3>`));
                     $('#checked_out_all').append(div);
-                    new SortableTable({
+                    let table = new SortableTable({
                         element: div,
+                        xs: true,
                         headers: ['Signatur', 'Nachname', 'Vorname', 'Klasse', 'Ausleihdatum', 'Bestätigt'].map(function (x) {
                             let th = $('<th>').text(x);
                             if (['Signatur', 'Klasse', 'Ausleihdatum', 'Bestätigt'].indexOf(x) >= 0) th.data('type', 'int');

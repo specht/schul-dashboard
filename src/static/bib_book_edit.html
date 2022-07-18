@@ -103,6 +103,12 @@
 <script>
     window.addEventListener('load', function () {
         let stem = parseInt(window.location.pathname.replace('/bib_book_edit/', ''));
+        if ('#{can_manage_bib_logged_in?}' === 'true') {
+            $(`<li class='mx-1 py-1 px-1.5' style='white-space: nowrap;'><i class='fa fa-barcode'></i>&nbsp;&nbsp;${stem}</li>`).insertBefore($('#sub_menu_extra'));
+            $(`<li class='mx-1'><span class='inline-block bg-slate-900 border border-blue-500 hover:bg-slate-200 rounded py-1 px-3' href='/bib_book_edit/${stem}'><i class='fa fa-check'></i>&nbsp;&nbsp;Änderungen speichern</span></li>`).insertAfter($('#sub_menu_extra'));
+            $(`<li class='mx-1'><a class='inline-block bg-slate-900 border border-blue-500 hover:bg-slate-200 rounded py-1 px-3' href='#'><i class='fa fa-times'></i>&nbsp;&nbsp;Änderungen verwerfen</a></li>`).insertAfter($('#sub_menu_extra'));
+            $('#subsubmenu').show();
+        }
         bib_api_call('/jwt/get_book', { stem: stem }, function (data) {
             if (data.success) {
                 let book = data.book;

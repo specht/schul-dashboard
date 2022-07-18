@@ -8,10 +8,16 @@ class BarcodeWidget {
         let container = $("<div style='border: 1px solid #ddd; padding: 15px; border-radius: 15px; box-shadow: 0px 0px 5px rgba(0,0,0,0.2); margin-bottom: 15px; background-color: #eee;'>");
         let video_container = $("<div style='position: relative; width: 100%; overflow: hidden; height: 200px; margin-bottom: 15px; border-radius: 15px; border: 1px solid #aaa;'>");
         let video = $("<video class='rounded shadow mb-3' style='object-fit: cover; position: absolute; left: 0; top: 0; width: 100%; height: 100%;'>");
-        let hint = $("<div class='text-muted text-sm'>").text('Alternativ kannst du den Barcode auch hier eingeben:');
-        let input_group = $("<div class='input-group mt-1'>");
+        let expand_link = $(`<a href=''>`).text('eingeben');
+        let hint = $("<div class='text-muted text-sm'>").text('Alternativ kannst du den Barcode auch.').append(expand_link).append('.');
+        let input_group = $("<div class='input-group mt-1'>").hide();
         let text_input = $("<input type='text' class='form-control' style='text-align: center'>");
         let submit_button = $("<button class='btn btn-success' type='button'>").text('Senden');
+        expand_link.click(function(e) {
+            e.preventDefault();
+            input_group.slideDown();
+            text_input.focus();
+        });
         input_group.append(text_input);
         input_group.append($("<div class='input-group-append'>").append(submit_button));
         video_container.append(video);
@@ -38,6 +44,15 @@ class BarcodeWidget {
         }).catch(e => {
             video_container.hide();
             hint.text('Es konnte keine Kamera erkannt werden. Versuch es bitte mit einem anderen Gerät oder gib den Barcode manuell ein:');
+            input_group.show();
+            $(document).keydown(function(e) {
+                if (e.key === 'F8') {
+                    console.log(e);
+                    text_input.focus();
+                    text_input.val('');
+                    e.preventDefault();
+                }
+            });
         });
 
         let self = this;
@@ -64,7 +79,7 @@ class BarcodeWidget {
             }
         } else {
             this.on_scan(s, false);
-            this.text_input.val('').focus();
+            this.text_input.focus();
         }
     }
 

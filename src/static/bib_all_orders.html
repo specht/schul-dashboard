@@ -15,7 +15,7 @@
         bib_api_call('/jwt/all_orders', {}, function (data) {
             if (data.success) {
                 if (data.orders.length === 0) {
-                    $('#order_table').append($(`<div class='alert alert-warning'>Du hast keine Bestellungen aufgegeben. Wenn du ein Buch bestellen möchtest, schau im <a href='/bib_browse'>Katalog</a> nach.</div>`));
+                    $('#order_table').append($(`<div class='alert alert-warning'>Es liegen keine Bestellungen vor.</div>`));
                 } else {
                     console.log(data);
                     new SortableTable({

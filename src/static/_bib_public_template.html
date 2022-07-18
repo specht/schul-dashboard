@@ -78,6 +78,28 @@
         }
     }
 
+    function create_user_td_span_teacher(email) {
+        if (db_user_info[email]) {
+            let parts = [];
+            for (let key of ['display_name']) {
+                if (db_user_info[email].teacher) {
+                    if (db_user_info[email].titel) {
+                        parts.push(`<td data-sort_value="${db_user_info[email].last_name}"><span class='p-1 rounded'>${db_user_info[email].display_name}</span></td>`);
+                    } else {
+                        parts.push(`<td><span class='p-1 rounded'>${db_user_info[email].display_name}</span></td>`);
+                    }
+                } else {
+                    parts.push(`<td>${(db_user_info[email] || {})[key]}</td>`);
+                }
+            }
+            return $(parts.join(''));
+        } else {
+            return $(`<td>`).append(
+                $(`<span class='bg-stone-700 p-1 rounded text-stone-300'>`).text(email)
+            );
+        }
+    }
+
     window.addEventListener('load', function () {
         for (let x of $('.submenu a')) {
             let href = $(x).attr('href');
@@ -98,7 +120,7 @@
         href='mailto:specht@gymnasiumsteglitz.de'>specht@gymnasiumsteglitz.de</a>.
 </div>
 <div class='container' style='padding: 0; display: flex; background: white; border-radius: 0;'>
-    <section class="pl-3 pr-3 pb-3 w-full" style="height: 51px;">
+    <section class="pl-3 pr-3 pb-3 w-full" style="height: 51px; display: #{teacher_logged_in? ? 'block' : 'none'}">
         <ul class="submenu flex fixed bg-white px-2.5 py-2"
             style="border-bottom: 1px solid #eee; left: 0px; right: 0px; z-index: 100;">
             <li class="mx-1" style="display: #{teacher_logged_in? ? 'unset' : 'none'};">
@@ -111,7 +133,7 @@
             </li>
             <li class="mx-1" style="display: #{teacher_logged_in? ? 'unset' : 'none'};">
                 <a class="inline-block bg-slate-900 border border-blue-500 hover:bg-slate-200 rounded py-1 px-3"
-                    href="#">Bestellungen</a>
+                    href="/bib_orders">Bestellungen</a>
             </li>
             <li style='margin-left: auto;'></li>
             <li
@@ -127,20 +149,12 @@
             </li>
             <li class="mx-1" style="display: #{can_manage_bib_logged_in? ? 'unset' : 'none'};">
                 <a class="inline-block bg-slate-900 border border-blue-500 hover:bg-slate-200 rounded py-1 px-3"
-                    href="#">Bestellungen</a>
+                    href="/bib_all_orders">Bestellungen</a>
             </li>
             <li class="mx-1" style="display: #{can_manage_bib_logged_in? ? 'unset' : 'none'};">
                 <a class="inline-block bg-slate-900 border border-blue-500 hover:bg-slate-200 rounded py-1 px-3"
                     href="/bib_return">Rückgabe</a>
             </li>
-            <!-- <li class="mx-1">
-                <div class="input-group">
-                    <input type="text" class="form-control" placeholder="Suchbegriff eingeben" style="min-width: 200px;" />
-                    <div class="input-group-append">
-                    <button class="btn btn-success" type="button">Suchen</button>
-                    </div>
-                </div>
-            </li> -->
         </ul>
     </section>
 </div>

@@ -1,0 +1,67 @@
+#{this_is_a_page_for_logged_in_teachers_or_can_manage_bib}
+#{File.read('/static/_bib_public_template.html')}
+<div class='container bg-white' style="padding-top: 15px;">
+    <div class="bib_teacher_only">
+        <h3>Bestellungen</h3>
+        <div id='order_table'></div>
+    </div>
+</div>
+<script>
+    function row_clicked(data) {
+        window.location = `/bib_book/${data}`;
+    }
+
+    window.addEventListener('load', function () {
+        bib_api_call('/jwt/my_orders', {}, function (data) {
+            if (data.success) {
+                if (data.orders.length === 0) {
+                    $('#order_table').append($(`<div class='alert alert-warning'>Du hast keine Bestellungen aufgegeben. Wenn du ein Buch bestellen möchtest, schau im <a href='/bib_browse'>Katalog</a> nach.</div>`));
+                } else {
+                    new SortableTable({
+                        xs: true,
+                        element: $('#order_table'),
+                        headers: ['Signatur', 'Titel', 'Autor', 'Bestellt', 'Anzahl', 'Status', ''].map(function (x) {
+                            let th = $('<th>').text(x);
+                            if (['Signatur', 'Bestellt'].indexOf(x) >= 0) th.data('type', 'int');
+                            return th;
+                        }),
+                        rows: data.orders.map(function(order) {
+                            let bu_stornieren = $(`<button class='btn btn-danger btn-xs'>`).html(`<i class='fa fa-trash'></i>&nbsp;&nbsp;Stornieren`);
+                            bu_stornieren.click(function(e) {
+                                e.stopPropagation();
+                                showTemplateModal('Bestellung stornieren',
+                                    'Bist du sicher, dass du diese Bestellung stornieren möchtest?',
+                                    "<i class='fa fa-trash'></i>&nbsp;&nbsp;Bestellung stornieren", 'btn-danger',
+                                    'Abbrechen', 'btn-secondary', function () {
+                                        console.log(`stornieren ${order.r_id}`);
+                                        bib_api_call('/jwt/cancel_order', {r_id: order.r_id}, function (data) {
+                                            if (data.success) {
+                                                $(e.target).closest('tr').remove();
+                                            }
+                                        });
+                                    }
+                                );
+
+                            });
+                            let cells = [
+                                order.b.stem,
+                                $('<td>').text(`${order.b.stem}`),
+                                $('<td>').css('max-width', '300px').text(order.b.title),
+                                $('<td>').css('max-width', '200px').text(order.b.author),
+                                $('<td>').text(`${moment.unix(order.r.ts_order_placed).format('L')}`).data('sort_value', order.r.ts_order_placed),
+                                $('<td>').text(`${order.r.count}`).data('sort_value', order.r.count),
+                                $('<td>').html(`<i class='fa fa-clock-o text-stone-400'></i>&nbsp;&nbsp;in Bearbeitung`),
+                                $('<td>').append(bu_stornieren),
+                            ];
+
+                            return cells;
+                        }),
+                        clickable_rows: true,
+                        clickable_row_callback: row_clicked
+                    });
+                }
+            }
+        });
+
+    });
+</script>

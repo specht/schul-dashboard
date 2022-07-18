@@ -1,0 +1,51 @@
+#{require_user_who_can_manage_bib!}
+#{File.read('/static/_bib_public_template.html')}
+<div class='container bg-white' style="padding-top: 15px;">
+    <div class="bib_teacher_only">
+        <h3>Bestellung bearbeiten</h3>
+        <div class='row'>
+            <div class='col-md-6' id='order_div'>
+                <div class="table-responsive" style="max-width: 100%; overflow-x: auto;">
+                    <table class="table table-sm table-condensed narrow" style="user-select: none;">
+                        <tr><th>Bestellt von:</th><td id='user_here'></td></tr>
+                        <tr><th>am:</th><td id='ts_order_placed_here'></td></tr>
+                        <tr><th>Regal:</th><td id='ts_order_shelf_here'></td></tr>
+                        <tr><th>Signaturstamm:</th><td id='ts_order_stem_here'></td></tr>
+                        <tr><th>Anzahl:</th><td class='font-bold' id='ts_order_count_here'></td></tr>
+                    </table>
+                </div>
+            </div>
+            <div class='col-md-6' id='book_div'></div>
+        </div>
+        <hr />
+        <div class='mb-3'>
+        <button class='btn btn-success'><i class='fa fa-barcode'></i>&nbsp;&nbsp;Exemplare scannen</button>
+        <button class='btn btn-outline-secondary' disabled><i class='fa fa-print'></i>&nbsp;&nbsp;Beleg drucken</button>
+        <button class='btn btn-outline-secondary' disabled><i class='fa fa-check'></i>&nbsp;&nbsp;Bestellung kann abgeholt werden</button>
+        </div>
+        <button class='btn btn-danger'><i class='fa fa-trash'></i>&nbsp;&nbsp;Bestellung löschen</button>
+    </div>
+</div>
+<script>
+    window.addEventListener('load', function () {
+        let r_id_s = window.location.pathname.replace('/bib_process_order/', '');
+        let r_id = parseInt(r_id_s);
+        bib_api_call('/jwt/get_order', {r_id: r_id}, function (data) {
+            if (data.success) {
+                console.log(data);
+                let div = create_book_div(data.order.b, null, {
+                    clickable: true, callback: function (book) {
+                        window.location.href = `/bib_book/${book.stem}`;
+                    }
+                }).data('book', data.order.b);
+                $('#book_div').append(div);
+                $('#user_here').html(`${(db_user_info[data.order.u.email] || {}).display_name || data.order.u.email}`);
+                $('#ts_order_placed_here').text(`${moment.unix(data.order.r.ts_order_placed).format('L')}`);
+                $('#ts_order_count_here').text(`${data.order.r.count} Exemplar${data.order.r.count === 1 ? '': 'e'}`);
+                $('#ts_order_shelf_here').html(`${(data.order.locations || []).map(function(x) {return create_location_span(x); }).join('')}`);
+                $('#ts_order_stem_here').text(`${data.order.b.stem}`);
+
+            }
+        });
+    });
+</script>

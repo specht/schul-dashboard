@@ -1,0 +1,49 @@
+#{require_user_who_can_manage_bib!}
+#{File.read('/static/_bib_public_template.html')}
+<div class='container bg-white' style="padding-top: 15px;">
+    <div class="bib_teacher_only">
+        <h3>Bestellungen</h3>
+        <div id='order_table'></div>
+    </div>
+</div>
+<script>
+    function row_clicked(r_id) {
+        window.location = `/bib_process_order/${r_id}`;
+    }
+
+    window.addEventListener('load', function () {
+        bib_api_call('/jwt/all_orders', {}, function (data) {
+            if (data.success) {
+                if (data.orders.length === 0) {
+                    $('#order_table').append($(`<div class='alert alert-warning'>Du hast keine Bestellungen aufgegeben. Wenn du ein Buch bestellen möchtest, schau im <a href='/bib_browse'>Katalog</a> nach.</div>`));
+                } else {
+                    console.log(data);
+                    new SortableTable({
+                        xs: true,
+                        element: $('#order_table'),
+                        headers: ['Bestellt', 'Name', 'Signatur', 'Titel', 'Autor', 'Anzahl', 'Regal'].map(function (x) {
+                            let th = $('<th>').text(x);
+                            if (['Signatur', 'Bestellt', 'Anzahl'].indexOf(x) >= 0) th.data('type', 'int');
+                            return th;
+                        }),
+                        rows: data.orders.map(function(order) {
+                            return [
+                                order.r_id,
+                                $('<td>').text(`${moment.unix(order.r.ts_order_placed).format('L')}`).data('sort_value', order.r.ts_order_placed),
+                                create_user_td_span_teacher(order.u.email),
+                                $('<td>').text(`${order.b.stem}`).data('sort_value', order.b.stem),
+                                $('<td>').css('max-width', '280px').text(order.b.title),
+                                $('<td>').css('max-width', '180px').text(order.b.author),
+                                $('<td>').text(`${order.r.count}`).data('sort_value', order.r.count),
+                                $('<td>').html(`${(order.locations || []).map(function(x) {return create_location_span(x); }).join('')}`).data('sort_value', (order.locations || ['0'])[0]),
+                            ];
+                        }),
+                        clickable_rows: true,
+                        clickable_row_callback: row_clicked
+                    });
+                }
+            }
+        });
+
+    });
+</script>

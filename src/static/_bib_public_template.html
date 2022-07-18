@@ -62,9 +62,9 @@
             for (let key of ['last_name', 'first_name']) {
                 if (db_user_info[email].teacher) {
                     if (key === 'last_name' && db_user_info[email].titel) {
-                        parts.push(`<td data-sort_value="${db_user_info[email][key]}"><span class='bg-amber-300 p-1 rounded'>${db_user_info[email].titel} ${db_user_info[email][key]}</span></td>`);
+                        parts.push(`<td data-sort_value="${db_user_info[email][key]}"><span class='bg-amber-200 p-1 rounded'>${db_user_info[email].titel} ${db_user_info[email][key]}</span></td>`);
                     } else {
-                        parts.push(`<td><span class='bg-amber-300 p-1 rounded'>${db_user_info[email][key]}</span></td>`);
+                        parts.push(`<td><span class='bg-amber-200 p-1 rounded'>${db_user_info[email][key]}</span></td>`);
                     }
                 } else {
                     parts.push(`<td>${(db_user_info[email] || {})[key]}</td>`);
@@ -91,7 +91,7 @@
 </script>
 
 <div class='container text-sm text-stone-200'
-    style="text-align: center; background-color: #fce94f; border-radius: 0; padding: 5px 15px; border-top: 1px solid rgba(0,0,0,0.1); border-bottom: 1px solid rgba(0,0,0,0.1);">
+    style="text-align: center; background-color: #fce94f; border-radius: 0; padding: 5px 15px; border-top: 1px solid rgba(0,0,0,0.1); border-bottom: 1px solid rgba(0,0,0,0.1); display: #{DEVELOPMENT ? 'none': 'block'}">
     <b>Sommerferien-Sandbox:</b> Dieser Teil des Dashboards befindet sich gerade in Entwicklung. Du darfst alles
     ausprobieren, aber alle Änderungen werden zum Ende der Sommerferien (oder auch vorher mehrmals) zurückgesetzt. Falls
     du Fragen, Hinweise oder Anmerkungen hast, schreib eine E-Mail an <a
@@ -131,7 +131,7 @@
             </li>
             <li class="mx-1" style="display: #{can_manage_bib_logged_in? ? 'unset' : 'none'};">
                 <a class="inline-block bg-slate-900 border border-blue-500 hover:bg-slate-200 rounded py-1 px-3"
-                    href="#">Rückgabe</a>
+                    href="/bib_return">Rückgabe</a>
             </li>
             <!-- <li class="mx-1">
                 <div class="input-group">

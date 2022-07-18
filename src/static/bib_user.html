@@ -9,6 +9,7 @@
 </div>
 <script>
     function row_clicked(data) {
+        window.location = `/bib_book/${data.book.stem}`;
         console.log(data);
     }
 

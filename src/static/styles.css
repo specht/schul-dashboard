@@ -2529,6 +2529,6 @@ tr.clickable_row:hover td {
     background-color: rgba(0,0,0,0.05);
 }
 
-table.xs td {
+table.xs td, table.xs th {
     padding: 0.15rem 0.75rem!important  ;
 }

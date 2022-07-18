@@ -45,18 +45,43 @@
     <div class="bib_teacher_only">
         <hr />
         <p>Wenn du dieses Buch im Unterricht verwenden möchtest, kannst du es hier bestellen.</p>
-        <button class="btn btn-success"><i class='fa fa-shopping-basket'></i>&nbsp;&nbsp;Buch bestellen</button>
+        <button id='bu_order_overview' class="btn btn-success"><i class='fa fa-shopping-basket'></i>&nbsp;&nbsp;Buch
+            bestellen</button>
+        <div id="order_div" style='display: block;'>
+            <button class='btn btn-outline-secondary'>
+                <i class='fa fa-group'></i>&nbsp;&nbsp;Ich möchte das Buch für eine Klasse oder einen Kurs bestellen.
+            </button>
+            <button class='btn btn-outline-secondary'>
+                <i class='fa fa-user'></i>&nbsp;&nbsp;Ich möchte das Buch für mich bestellen.
+            </button>
+            <div id="order_kurs_div">
+            </div>
+            <div id="order_private_div">
+            </div>
+            <hr />
+        </div>
     </div>
     <div class="bib_management_only">
+        <div id='stock_overview'></div>
         <div id='checked_out_all'></div>
+        <div id='in_stock_all'></div>
     </div>
 </div>
 <script>
+
+    var kurse = #{ Hash[(@@lessons_for_shorthand[@session_user[:shorthand]] || []).map do | x |
+        y = @@lessons[:lesson_keys][x]
+        [x, {:fach => y[:pretty_folder_name] || x, :count => (@@schueler_for_lesson[x] || []).size}]
+    end].to_json};
     function row_clicked(data) {
         window.location = `/bib_user/${encodeURIComponent(data)}`;
     }
 
     window.addEventListener('load', function () {
+        $('#bu_order_overview').click(function (e) {
+            $('#bu_order_overview').hide();
+            $('#order_div').slideDown();
+        });
         let stem_s = window.location.pathname.replace('/bib_book/', '');
         let stem = parseInt(stem_s);
         if ('#{can_manage_bib_logged_in?}' === 'true') {
@@ -102,6 +127,11 @@
                         $('#labels_here').append($(`<span class='bg-stone-500 text-gray-800 text-sm mr-2 px-2.5 py-0.5 rounded dark:bg-gray-700 dark:text-gray-300'>${label.value}</span>`));
                     }
                 }
+                if (data.locations) {
+                    for (let location of data.locations) {
+                        $('#labels_here').append($(create_location_span(location)));
+                    }
+                }
                 if (data.checked_out_user.length > 0) {
                     if ((book.isbn || '').length === 0) {
                         if (data.proposed_isbn.length > 0) {
@@ -131,36 +161,96 @@
                         table.append(row);
                     }
                 }
-                if (data.checked_out_all && data.checked_out_all.length > 0) {
+                // if (data.checked_out_all && data.in_stock_all) {
+                //     let div = $("<div>");
+                //     $('#stock_overview').append($(`<h3>Bestand</h3>`));
+                //     $('#stock_overview').append(div);
+                //     div.append(`Bestätigte Exemplare: `);
+                //     div.append(`davon ausgeliehen: `);
+                //     div.append(`davon vorrätig: `);
+                // }
+                if (data.checked_out_all) {
                     let div = $("<div>");
                     $('#checked_out_all').append($(`<h3>Ausgeliehene Exemplare</h3>`));
                     $('#checked_out_all').append(div);
-                    let table = new SortableTable({
-                        element: div,
-                        xs: true,
-                        headers: ['Signatur', 'Nachname', 'Vorname', 'Klasse', 'Ausleihdatum', 'Bestätigt'].map(function (x) {
-                            let th = $('<th>').text(x);
-                            if (['Signatur', 'Klasse', 'Ausleihdatum', 'Bestätigt'].indexOf(x) >= 0) th.data('type', 'int');
-                            return th;
-                        }),
-                        rows: data.checked_out_all.map(function (entry) {
-                            return [
-                                // entry.e.bnr,
-                                entry.u.email,
-                                $('<td>').text(`${book.stem}-${entry.e.bnr}`).data('sort_value', entry.e.bnr),
-                                create_user_td_span(entry.u.email),
-                                $('<td>').html((db_user_info[entry.u.email] || {}).klasse || '&ndash;').data('sort_value', (db_user_info[entry.u.email] || {}).klassen_order),
-                                $('<td>').text(`${moment.unix(entry.r.ts_checked_out).format('L')}`).data('sort_value', entry.r.ts_checked_out),
-                                entry.r.ts_confirmed
-                                    ? $('<td>').text(moment.unix(entry.r.ts_confirmed).format('L')).data('sort_value', entry.r.ts_confirmed)
-                                    : $('<td>').html("<i class='text-stone-400 fa fa-exclamation-triangle'></i>&nbsp;&nbsp;(noch nicht bestätigt)").data('sort_value', NaN)
-                            ];
-                        }),
-                        clickable_rows: true,
-                        clickable_row_callback: row_clicked
-                    });
+                    if (data.checked_out_all.length > 0) {
+                        new SortableTable({
+                            element: div,
+                            xs: true,
+                            headers: ['Signatur', 'Nachname', 'Vorname', 'Klasse', 'Ausleihdatum', 'Bestätigt'].map(function (x) {
+                                let th = $('<th>').text(x);
+                                if (['Signatur', 'Klasse', 'Ausleihdatum', 'Bestätigt'].indexOf(x) >= 0) th.data('type', 'int');
+                                return th;
+                            }),
+                            rows: data.checked_out_all.map(function (entry) {
+                                return [
+                                    // entry.e.bnr,
+                                    entry.u.email,
+                                    $('<td>').text(`${book.stem}-${entry.e.bnr}`).data('sort_value', entry.e.bnr),
+                                    create_user_td_span(entry.u.email),
+                                    $('<td>').html((db_user_info[entry.u.email] || {}).klasse || '&ndash;').data('sort_value', (db_user_info[entry.u.email] || {}).klassen_order),
+                                    $('<td>').text(`${moment.unix(entry.r.ts_checked_out).format('L')}`).data('sort_value', entry.r.ts_checked_out),
+                                    entry.r.ts_confirmed
+                                        ? $('<td>').text(moment.unix(entry.r.ts_confirmed).format('L')).data('sort_value', entry.r.ts_confirmed)
+                                        : $('<td>').html("<i class='text-stone-400 fa fa-exclamation-triangle'></i>&nbsp;&nbsp;(noch nicht bestätigt)").data('sort_value', NaN)
+                                ];
+                            }),
+                            clickable_rows: true,
+                            clickable_row_callback: row_clicked
+                        });
+                    } else {
+                        div.append($(`<div class='alert alert-warning'>keine Exemplare ausgeliehen</div>`));
+                    }
+                }
+                if (data.in_stock_all) {
+                    let div = $("<div>");
+                    $('#in_stock_all').append($(`<h3>Vorrätige Exemplare</h3>`));
+                    $('#in_stock_all').append(div);
+                    $('#in_stock_all').append($(`<p class='text-muted font-italic'>Es kann sein, dass mehr Exemplare im Regal liegen, als hier angegeben ist. In diesem Fall sind die Exemplare noch nicht gescannt worden, z. B. durch einen Labeldruck, eine Ausleihe oder eine Rückgabe.</p>`));
+                    if (data.in_stock_all.length > 0) {
+                        new SortableTable({
+                            element: div,
+                            xs: true,
+                            headers: ['Signatur', 'Ausgemustert'].map(function (x) {
+                                let th = $('<th>').text(x);
+                                if (['Signatur', 'Ausgemustert'].indexOf(x) >= 0) th.data('type', 'int');
+                                return th;
+                            }),
+                            rows: data.in_stock_all.map(function (entry) {
+                                return [
+                                    entry['e.bnr'],
+                                    $('<td>').text(`${stem}-${entry['e.bnr']}`).data('sort_value', entry['e.bnr']),
+                                    entry['e.ts_discarded']
+                                        ? $('<td>').html(`<i class='text-stone-400 fa fa-trash'></i>&nbsp;&nbsp;${moment.unix(entry['e.ts_discarded']).format('L')}`).data('sort_value', entry['e.ts_discarded'])
+                                        : $('<td>').html("&ndash;").data('sort_value', NaN)
+                                ];
+                            })
+                        });
+                    } else {
+                        div.append($(`<div class='alert alert-warning'>keine Exemplare vorrätig</div>`));
+                    }
                 }
             }
+        });
+        new SortableTable({
+            element: $('#order_kurs_div'),
+            xs: true,
+            headers: ['Kurs', 'Schüler', 'Bestellen'].map(function (x) {
+                let th = $('<th>').text(x);
+                if (['Schüler'].indexOf(x) >= 0) th.data('type', 'int');
+                return th;
+            }),
+            rows: Object.keys(kurse).map(function (lesson_key) {
+                let kurs = kurse[lesson_key];
+                console.log(lesson_key, kurs);
+                let button = $(`<button class='btn btn-xs btn-success'>`).html(`Bestellen`);
+                return [
+                    lesson_key,
+                    $('<td>').text(kurs.fach),
+                    $('<td>').text(`${kurs.count}`),
+                    $('<td>').append(button),
+                ];
+            }),
         });
     });
 </script>

@@ -5,52 +5,69 @@ class SortableTable {
         this.rows = options.rows;
         this.clickable_row_callback = options.clickable_row_callback;
         this.filter_callback = options.filter_callback;
+        this.options = options;
         let table_div = $(`<div class="table-responsive" style="max-width: 100%; overflow-x: auto;">`);
         let table = $("<table class='table table-sm table-condensed narrow'>");
+        table.css('user-select', 'none');
         if (options.xs)
-        table.addClass('xs');
+            table.addClass('xs');
         table_div.append(table);
         let thead = $('<thead>');
         table.append(thead);
         let self = this;
         for (let i = 0; i < options.headers.length; i++) {
             let cell = options.headers[i];
+            cell.addClass('hover:bg-stone-200');
             cell.data('index', i);
-            let bu_sort_asc = $(`<span class='cursor-pointer inline-block bg-slate-900 hover:text-black rounded-full text-slate-500 font-sm ml-2 w-6 h-6 text-center'><i class='fa fa-angle-down'></i></span>`);
-            bu_sort_asc.click(function(e) { self.sort_rows($(e.target).closest('th').data('index'), false); });
-            cell.append(bu_sort_asc);
-            let bu_sort_desc = $(`<span class='cursor-pointer inline-block bg-slate-900 hover:text-black rounded-full text-slate-500 font-sm ml-1 w-6 h-6 text-center'><i class='fa fa-angle-up'></i></span>`);
-            bu_sort_desc.click(function(e) { self.sort_rows($(e.target).closest('th').data('index'), true); });
-            cell.append(bu_sort_desc);
+            cell.data('sort_direction', null);
+            cell.css('cursor', 'pointer');
+            cell.click(function (e) {
+                let index = $(e.target).closest('th').data('index')
+                let direction = $(e.target).closest('th').data('sort_direction') || 'desc';
+                direction = (direction === 'desc') ? 'asc' : 'desc';
+                $(e.target).closest('th').data('sort_direction', direction);
+                self.sort_rows(index, direction === 'desc');
+            });
+            // let bu_sort_asc = $(`<span class='cursor-pointer inline-block bg-slate-900 hover:text-black rounded-full text-slate-500 font-sm ml-2 w-6 h-6 text-center'><i class='fa fa-angle-down'></i></span>`);
+            // bu_sort_asc.click(function(e) { self.sort_rows($(e.target).closest('th').data('index'), false); });
+            // cell.append(bu_sort_asc);
+            // let bu_sort_desc = $(`<span class='cursor-pointer inline-block bg-slate-900 hover:text-black rounded-full text-slate-500 font-sm ml-1 w-6 h-6 text-center'><i class='fa fa-angle-up'></i></span>`);
+            // bu_sort_desc.click(function(e) { self.sort_rows($(e.target).closest('th').data('index'), true); });
+            // cell.append(bu_sort_desc);
             thead.append(cell);
         }
         let tbody = $('<tbody>');
+        this.tbody = tbody;
         table.append(tbody);
         for (let row of options.rows) {
-            let tr = $('<tr>');
-            if (options.clickable_rows) {
-                tr.addClass('clickable_row');
-                tr.click(function(e) {
-                    self.clickable_row_callback($(e.target).closest('tr').data('row_data'));
-                });
-            }
-            tr.data('row_data', row[0])
-            tr.append(row.slice(1));
-            let i = 0;
-            let j = 0;
-            let col_index = {};
-            for (let cell of tr.find('td')) {
-                let colspan = parseInt($(cell).attr('colspan') || 1);
-                for (let k = 0; k < colspan; k++)
-                    col_index[j + k] = i;
-                j += colspan;
-                i += 1;
-            }
-            tr.data('col_index', col_index);
-            tbody.append(tr);
+            this.add_row(row);
         }
         this.element.append(table_div);
-        this.tbody = tbody;
+    }
+
+    add_row(row) {
+        let tr = $('<tr>');
+        let self = this;
+        if (this.options.clickable_rows) {
+            tr.addClass('clickable_row');
+            tr.click(function (e) {
+                self.clickable_row_callback($(e.target).closest('tr').data('row_data'));
+            });
+        }
+        tr.data('row_data', row[0])
+        tr.append(row.slice(1));
+        let i = 0;
+        let j = 0;
+        let col_index = {};
+        for (let cell of tr.find('td')) {
+            let colspan = parseInt($(cell).attr('colspan') || 1);
+            for (let k = 0; k < colspan; k++)
+                col_index[j + k] = i;
+            j += colspan;
+            i += 1;
+        }
+        tr.data('col_index', col_index);
+        this.tbody.append(tr);
     }
 
     update_filter() {
@@ -68,7 +85,7 @@ class SortableTable {
         let th = $(this.headers[index]);
         let type = $(th).data('type') || 'string';
         let rows = this.tbody.find('tr').get();
-        rows.sort(function(_a, _b) {
+        rows.sort(function (_a, _b) {
             let result = 0;
             let aci = $(_a).data('col_index');
             let bci = $(_b).data('col_index');

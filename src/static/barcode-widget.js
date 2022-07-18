@@ -3,13 +3,13 @@ class BarcodeWidget {
         this.beep0 = new Audio('/beep0.mp3');
         this.beep1 = new Audio('/beep1.mp3');
         this.beep2 = new Audio('/beep2.mp3');
-    
+
         this.element = options.element;
         let container = $("<div style='border: 1px solid #ddd; padding: 15px; border-radius: 15px; box-shadow: 0px 0px 5px rgba(0,0,0,0.2); margin-bottom: 15px; background-color: #eee;'>");
         let video_container = $("<div style='position: relative; width: 100%; overflow: hidden; height: 200px; margin-bottom: 15px; border-radius: 15px; border: 1px solid #aaa;'>");
         let video = $("<video class='rounded shadow mb-3' style='object-fit: cover; position: absolute; left: 0; top: 0; width: 100%; height: 100%;'>");
         let expand_link = $(`<a href=''>`).text('eingeben');
-        let hint = $("<div class='text-muted text-sm'>").text('Alternativ kannst du den Barcode auch.').append(expand_link).append('.');
+        let hint = $("<div class='text-muted text-sm'>").text('Alternativ kannst du den Barcode auch ').append(expand_link).append('.');
         let input_group = $("<div class='input-group mt-1'>").hide();
         let text_input = $("<input type='text' class='form-control' style='text-align: center'>");
         let submit_button = $("<button class='btn btn-success' type='button'>").text('Senden');
@@ -75,6 +75,7 @@ class BarcodeWidget {
             if (s !== this.last_scanned) {
                 this.beep0.play();
                 this.last_scanned = s;
+                this.text_input.val(s);
                 this.on_scan(s, true);
             }
         } else {

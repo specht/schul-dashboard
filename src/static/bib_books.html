@@ -39,7 +39,8 @@
                 for (let book of data.books) {
                     search_results[book.stem] = true;
                 }
-                table.update_filter();
+                if (table)
+                    table.update_filter();
             }
         });
     }
@@ -76,37 +77,16 @@
                 $('#bu_search').click(function (e) {
                     perform_search();
                 });
-                let query = location.pathname.split('/')[2];
-                if (query) {
-                    query = decodeURIComponent(query);
-                    console.log(query);
-                    let labels = [];
-                    query = query.replace(/\[[^\]]*\]/g, function (x) {
-                        let label = x.substr(1, x.length - 2);
-                        labels.push(label);
-                        for (let button of $('.bu-label')) {
-                            if ($(button).text() === label) {
-                                $(button).data('flag', true);
-                                $(button).removeClass('btn-outline-secondary').addClass('btn-success');
-                            }
-                        }
-                        return '';
-                    });
-                    console.log(`query: [${query}], labels: [${labels}]`);
-                    $('#ti_search').val(query);
-                    perform_search();
-                }
                 bib_api_call('/jwt/get_books', {}, function (data) {
                     if (data.success) {
-                        console.log(data);
                         let div = $('<div>').appendTo($('#book_table'));
                         table = new SortableTable({
                             xs: true,
                             element: div,
                             filter_callback: filter,
-                            headers: ['Signaturstamm', 'Titel', 'Autor', 'Vorrätig', 'Ausgeliehen'].map(function (x) {
+                            headers: ['Signaturstamm', 'Titel', 'Autor', 'Ausgeliehen', 'Vorrätig', 'Regal'].map(function (x) {
                                 let th = $('<th>').text(x);
-                                if (['Signaturstamm', 'Vorrätig', 'Ausgeliehen'].indexOf(x) >= 0) th.data('type', 'int');
+                                if (['Signaturstamm', 'Vorrätig', 'Ausgeliehen', 'Regal'].indexOf(x) >= 0) th.data('type', 'int');
                                 return th;
                             }),
                             rows: data.books.map(function (entry) {
@@ -115,13 +95,34 @@
                                     $('<td>').text(`${entry.stem}`).data('sort_value', entry.stem),
                                     $('<td>').css('max-width', '300px').text(entry.title),
                                     $('<td>').css('max-width', '200px').text(entry.author),
-                                    $('<td>').text(`${entry.stock_count || 0}`).data('sort_value', entry.stock_count || 0),
-                                    $('<td>').text(`${entry.ausleih_count || 0}`).data('sort_value', entry.ausleih_count || 0),
+                                    $('<td>').html(`${entry.ausleih_count || `&ndash;`}`).data('sort_value', entry.ausleih_count || 0),
+                                    $('<td>').html(`${entry.stock_count || `&ndash;`}`).data('sort_value', entry.stock_count || 0),
+                                    $('<td>').html(`${(entry.locations || []).map(function(x) {return create_location_span(x); }).join('')}`).data('sort_value', (entry.locations || ['0'])[0]),
                                 ];
                             }),
                             clickable_rows: true,
                             clickable_row_callback: row_clicked
                         });
+                        let query = location.pathname.split('/')[2];
+                        if (query) {
+                            query = decodeURIComponent(query);
+                            console.log(query);
+                            let labels = [];
+                            query = query.replace(/\[[^\]]*\]/g, function (x) {
+                                let label = x.substr(1, x.length - 2);
+                                labels.push(label);
+                                for (let button of $('.bu-label')) {
+                                    if ($(button).text() === label) {
+                                        $(button).data('flag', true);
+                                        $(button).removeClass('btn-outline-secondary').addClass('btn-success');
+                                    }
+                                }
+                                return '';
+                            });
+                            console.log(`query: [${query}], labels: [${labels}]`);
+                            $('#ti_search').val(query);
+                            perform_search();
+                        }
                     }
                 });
             }

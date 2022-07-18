@@ -91,14 +91,9 @@
                 </form>
             </div>
         </div>
-
-        <h3 id='book_title'></h3>
-        <h4 id='book_subtitle'></h4>
-        <h5 id='book_author'></h5>
-        <div id='book_details'></div>
-        <p id='book_description'></p>
     </div>
     <hr style='clear: both;' />
+    <div id='isbn_search_results'></div>
 </div>
 <script>
     window.addEventListener('load', function () {
@@ -112,7 +107,7 @@
         bib_api_call('/jwt/get_book', { stem: stem }, function (data) {
             if (data.success) {
                 let book = data.book;
-                console.log(book);
+                console.log(data);
                 $('#ti_title').val(book.title);
                 $('#ti_subtitle').val(book.subtitle);
                 $('#ti_author').val(book.author);
@@ -129,6 +124,36 @@
                     cover.attr('src', `${BIB_HOST}/gen/covers/${book.stem}-400.jpg`);
                 } else {
                     $('#book_cover_container').hide();
+                }
+                if ((data.proposed_isbn || []).length > 0) {
+                    for (let isbn of data.proposed_isbn) {
+                        bib_api_call('/jwt/fetch_info_for_isbn', { isbn: isbn }, function (data) {
+                            if (data.success && data.record) {
+                                console.log(data);
+                                if (data.record.cover) data.record.has_cover = true;
+                                let div = create_book_div(data.record, null, {
+                                    clickable: true, callback: function (book) {
+                                        console.log('yay');
+                                    }
+                                }).data('book', data.record);
+                                $('#isbn_search_results').append(div);
+                                // window.scanned_isbn = data.record.isbn;
+                                // $('#result').empty();
+                                // let div = $("<div class='rounded rounded-md shadow shadow-sm bg-stone-800 p-3 mb-3'>");
+                                // let p = $('<p>');
+                                // p.append(data.record.title);
+                                // if (data.record.subtitle)
+                                //     p.append(data.record.subtitle);
+                                // p.append($("<br>"));
+                                // p.append($("<em>").text(data.record.author));
+
+                                // div.append(p);
+                                // $('#result').append($('<p>Wir haben folgendes Buch gefunden:</p>'));
+                                // $('#result').append(div);
+                                // $('#buttons').show();
+                            }
+                        });
+                    }
                 }
             }
         });

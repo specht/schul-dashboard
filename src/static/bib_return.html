@@ -1,0 +1,76 @@
+#{File.read('/static/_bib_public_template.html')}
+#{require_user_who_can_manage_bib!}
+<div class='container bg-white'>
+    <div class='row'>
+        <div class="col-lg-6 col-md-6 col-sm-4">
+            <p>
+                Bitte scanne alle Bücher, die zurückgenommen werden sollen.
+            </p>
+        </div>
+        <div id='barcode_widget' class='col-12 col-sm-8 col-md-6 col-lg-6'>
+        </div>
+    </div>
+    <div id='book_table'></div>
+</div>
+<script>
+    var divs_for_signature = {};
+    var table = null;
+
+    function on_scan(barcode, scanned) {
+        let parts = fix_scanned_book_barcode(barcode);
+        if (parts === null) return;
+        console.log(parts);
+        let data = {
+            stem: parts.stem,
+            bnr: parts.bnr,
+            entry_type: scanned ? 'scanned' : 'typed'
+        };
+        if (parts.checksum) data.checksum = parts.checksum;
+        bib_api_call('/jwt/return_book', data, function (data) {
+            console.log(data);
+            if (data.success) {
+                if (table) {
+                    let cells = [
+                        parts.stem,
+                        $('<td>').text(`${parts.stem}-${parts.bnr}`).data('sort_value', parts.stem * 1000000 + parts.bnr),
+                        $('<td>').css('max-width', '300px').text(data.title),
+                        $('<td>').css('max-width', '200px').text(data.author)
+                    ];
+                    if (data.email) {
+                        cells.push(create_user_td_span(data.email));
+                        cells.push($('<td>').html((db_user_info[data.email] || {}).klasse || '&ndash;').data('sort_value', (db_user_info[data.email] || {}).klassen_order));
+                        cells.push($('<td>').text(`${moment.unix(data.ts_returned).format('L')}`).data('sort_value', data.ts_returned));
+                        cells.push($('<td>').text(`${moment.unix(data.ts_returned).format('L')}`).data('sort_value', data.ts_returned));
+
+                    } else {
+                        cells.push($(`<td colspan='5' class='text-muted font-italic'>`).html('(war nicht ausgeliehen)'));
+                    }
+                    table.add_row(cells);
+                }
+            }
+        });
+    }
+
+    function row_clicked(data) {
+        window.location = `/bib_book/${data}`;
+    }
+
+    window.addEventListener('load', function () {
+        table = new SortableTable({
+            xs: true,
+            element: $('#book_table'),
+            headers: ['Signatur', 'Titel', 'Autor', 'Nachname', 'Vorname', 'Klasse', 'Ausgeliehen', 'Zurückgegeben'].map(function (x) {
+                let th = $('<th>').text(x);
+                if (['Signatur', 'Ausgeliehen', 'Zurückgegeben'].indexOf(x) >= 0) th.data('type', 'int');
+                return th;
+            }),
+            rows: [],
+            clickable_rows: true,
+            clickable_row_callback: row_clicked
+        });
+        let widget = new BarcodeWidget({
+            element: $('#barcode_widget'),
+            on_scan: on_scan
+        });
+    });
+</script>

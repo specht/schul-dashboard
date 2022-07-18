@@ -1185,7 +1185,7 @@ class Timetable
                     events += holidays 
                     events += website_events
                     if user[:klasse]
-                        events += public_test_events_for_klasse[user[:klasse]]
+                        events += public_test_events_for_klasse[user[:klasse]] || []
                     end
                     # add events
                     ((@events_for_user[email] || {})[p_yw] || {}).each_pair do |eid, info|

@@ -27,8 +27,7 @@
         console.log(parts);
         let data = {
             stem: parts.stem,
-            bnr: parts.bnr,
-            entry_type: scanned ? 'scanned' : 'typed'
+            bnr: parts.bnr
         };
         if (parts.checksum) data.checksum = parts.checksum;
         bib_api_call('/jwt/confirm_checked_out_book', data, function (data) {

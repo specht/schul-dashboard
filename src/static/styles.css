@@ -2533,3 +2533,11 @@ table.xs td, table.xs th {
     padding: 0.15rem 0.75rem!important  ;
 }
 
+table tr.has_hl {
+    transition: 2s linear background-color;
+}
+
+table tr.has_hl.hl {
+    background-color: #ffe617;
+    transition: none;
+}

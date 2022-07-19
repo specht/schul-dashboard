@@ -221,6 +221,7 @@ end
 
 docker_compose[:services][:nginx][:ports] = ["127.0.0.1:#{DEV_NGINX_PORT}:80"]
 if DEVELOPMENT
+    docker_compose[:services][:nginx][:ports] = ["0.0.0.0:#{DEV_NGINX_PORT}:80"]
     docker_compose[:services][:neo4j][:ports] = ["127.0.0.1:#{DEV_NEO4J_PORT}:7474",
                                                  "127.0.0.1:7687:7687"]
     docker_compose[:services][:timetable][:ports] = ['127.0.0.1:8022:8080']

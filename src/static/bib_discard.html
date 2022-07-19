@@ -137,7 +137,7 @@
             }
         });
 
-        beep0.play();
+        let _ = beep0.cloneNode(); _.play();
     }
 
     window.addEventListener('load', function () {

@@ -18,17 +18,20 @@
 
     function on_scan(barcode, scanned) {
         let parts = fix_scanned_book_barcode(barcode);
-        if (parts === null) return;
+        if (parts === null) {
+            let _ = beep_fail.cloneNode(); _.play();
+            return;
+        }
         console.log(parts);
         let data = {
             stem: parts.stem,
-            bnr: parts.bnr,
-            entry_type: scanned ? 'scanned' : 'typed'
+            bnr: parts.bnr
         };
         if (parts.checksum) data.checksum = parts.checksum;
         bib_api_call('/jwt/return_book', data, function (data) {
             console.log(data);
             if (data.success) {
+                let _ = beep1.cloneNode(); _.play();
                 if (table) {
                     let cells = [
                         parts.stem,
@@ -39,7 +42,7 @@
                     if (data.email) {
                         cells.push(create_user_td_span(data.email));
                         cells.push($('<td>').html((db_user_info[data.email] || {}).klasse || '&ndash;').data('sort_value', (db_user_info[data.email] || {}).klassen_order));
-                        cells.push($('<td>').text(`${moment.unix(data.ts_returned).format('L')}`).data('sort_value', data.ts_returned));
+                        cells.push($('<td>').text(`${moment.unix(data.ts_checked_out).format('L')}`).data('sort_value', data.ts_checked_out));
                         cells.push($('<td>').text(`${moment.unix(data.ts_returned).format('L')}`).data('sort_value', data.ts_returned));
 
                     } else {
@@ -47,6 +50,8 @@
                     }
                     table.add_row(cells);
                 }
+            } else {
+                let _ = beep_fail.cloneNode(); _.play();
             }
         });
     }

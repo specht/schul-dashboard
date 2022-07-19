@@ -1198,6 +1198,7 @@ class Main < Sinatra::Base
             '/include/zxing.min.js',
             '/barcode-widget.js',
             '/sortable-table.js',
+            '/include/print.min.js',
         ]
 
         self.compile_files(:js, 'application/javascript', files)
@@ -1220,6 +1221,7 @@ class Main < Sinatra::Base
             '/include/chart.js/Chart.min.css',
             '/styles.css',
             '/cling.css',
+            '/include/print.min.css',
         ]
 
         self.compile_files(:css, 'text/css', files)
@@ -2295,6 +2297,14 @@ class Main < Sinatra::Base
         }
         token = JWT.encode payload, JWT_APPKEY_BIB, algorithm = 'HS256', header_fields = {:typ => 'JWT'}
         respond(:token => token, :ttl => BIB_JWT_TTL)
+    end
+
+    get '/api/get_bib_dump' do
+        jwt = request.env["HTTP_X_JWT"]
+        decoded_token = JWT.decode(jwt, JWT_APPKEY_BIB, true, { :algorithm => "HS256" }).first
+        diff = decoded_token["exp"] - Time.now.to_i
+        assert(diff >= 0)
+        respond(:user_info => @@user_info)
     end
 
     before "/monitor/#{MONITOR_DEEP_LINK}" do

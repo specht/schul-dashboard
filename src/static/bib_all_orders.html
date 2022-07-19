@@ -1,5 +1,11 @@
 #{require_user_who_can_manage_bib!}
 #{File.read('/static/_bib_public_template.html')}
+<style>
+    /* @media (min-width: 1200px) */
+    .container, .container-lg, .container-md, .container-sm, .container-xl {
+        max-width: 1500px;
+    }
+</style>
 <div class='container bg-white' style="padding-top: 15px;">
     <div class="bib_teacher_only">
         <h3>Bestellungen</h3>
@@ -7,6 +13,12 @@
     </div>
 </div>
 <script>
+    var kurse = #{ Hash[@@lessons[:lesson_keys].keys.map do | x |
+        y = @@lessons[:lesson_keys][x]
+        [x, {:fach => y[:pretty_folder_name] || x, :sus => (@@schueler_for_lesson[x] || []), :klassen => y[:klassen]}]
+    end].to_json};
+    var lehrmittelverein_state_cache = #{@@lehrmittelverein_state_cache.to_json};
+
     function row_clicked(r_id) {
         window.location = `/bib_process_order/${r_id}`;
     }
@@ -17,24 +29,35 @@
                 if (data.orders.length === 0) {
                     $('#order_table').append($(`<div class='alert alert-warning'>Es liegen keine Bestellungen vor.</div>`));
                 } else {
-                    console.log(data);
                     new SortableTable({
                         xs: true,
                         element: $('#order_table'),
-                        headers: ['Bestellt', 'Name', 'Signatur', 'Titel', 'Autor', 'Anzahl', 'Regal'].map(function (x) {
+                        headers: ['Bestellt', 'Name', 'Signatur', 'Titel', 'Autor', 'Kurs', 'Klasse', 'Anzahl', 'Regal'].map(function (x) {
                             let th = $('<th>').text(x);
                             if (['Signatur', 'Bestellt', 'Anzahl'].indexOf(x) >= 0) th.data('type', 'int');
                             return th;
                         }),
                         rows: data.orders.map(function(order) {
+                            let count = order.o.count;
+                            if (order.o.lesson_key) {
+                                order.book_info = {
+                                    ordering_teacher_has_this_book: order.u.email in order.users_who_have_this_book,
+                                    ordering_teacher_email: order.u.email,
+                                    users_who_have_this_book: order.users_who_have_this_book,
+                                };
+                                console.log(order.book_info);
+                                count = calculate_kurs_order_count(order.o.lesson_key, order.b.stem, order.book_info);
+                            }
                             return [
-                                order.r_id,
-                                $('<td>').text(`${moment.unix(order.r.ts_order_placed).format('L')}`).data('sort_value', order.r.ts_order_placed),
+                                order.o.id,
+                                $('<td>').text(`${moment.unix(order.o.ts_order_placed).format('L')}`).data('sort_value', order.o.ts_order_placed),
                                 create_user_td_span_teacher(order.u.email),
                                 $('<td>').text(`${order.b.stem}`).data('sort_value', order.b.stem),
                                 $('<td>').css('max-width', '280px').text(order.b.title),
                                 $('<td>').css('max-width', '180px').text(order.b.author),
-                                $('<td>').text(`${order.r.count}`).data('sort_value', order.r.count),
+                                $('<td>').html(`${(kurse[order.o.lesson_key] || {}).fach || '&ndash;'}`),
+                                $('<td>').html(`${((kurse[order.o.lesson_key] || {}).klassen || []).join(', ') || '&ndash;'}`),
+                                $('<td>').html(`${count}`).data('sort_value', count),
                                 $('<td>').html(`${(order.locations || []).map(function(x) {return create_location_span(x); }).join('')}`).data('sort_value', (order.locations || ['0'])[0]),
                             ];
                         }),

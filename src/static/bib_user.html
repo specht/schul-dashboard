@@ -1,25 +1,71 @@
 #{File.read('/static/_bib_public_template.html')}
 #{require_user_who_can_manage_bib!}
 <div class='container bg-white' style="padding-top: 15px;">
-    <h2 id="display_name"></h2>
+    <h2 class="display_name"></h2>
     <!-- <div id='book_list' class="w-full grid grid-cols-12 gap-4 mb-4"></div> -->
     <hr />
     <h3>Ausgeliehene Medien</h3>
     <div id='book_table'></div>
+    <button id='bu_checkout' class='btn btn-success'>Buch an <span class="display_name"></span> ausleihen</button>
+    <div id='hint_no_verein' class='mt-3 alert alert-warning'>Es können keine Bücher ausgeliehen werden, weil <span class="display_name"></span> nicht im Lehrmittelverein ist.</div>
+    <div id='check_out_div' style='display: none; margin-top: 15px;'>
+        <div class='row'>
+            <div class="col-lg-6 col-md-6 col-sm-4">
+                <p>
+                    Bitte scanne alle Bücher, die ausgeliehen werden sollen.
+                </p>
+            </div>
+            <div id='barcode_widget' class='col-12 col-sm-8 col-md-6 col-lg-6'>
+            </div>
+        </div>
+    </div>
 </div>
 <script>
-    function row_clicked(data) {
-        window.location = `/bib_book/${data.book.stem}`;
+    var email = decodeURIComponent(window.location.pathname.replace('/bib_user/', ''));
+    var table = null;
+    var lehrmittelverein_state_cache = #{@@lehrmittelverein_state_cache.to_json};
+
+    function row_clicked(stem) {
+        window.location = `/bib_book/${stem}`;
         console.log(data);
     }
 
+    function on_scan(barcode) {
+        let parts = fix_scanned_book_barcode(barcode);
+        if (parts === null) return;
+        console.log(parts);
+        let data = {
+            email: email,
+            stem: parts.stem,
+            bnr: parts.bnr
+        };
+        if (parts.checksum) data.checksum = parts.checksum;
+        console.log(data);
+        bib_api_call('/jwt/checkout_exemplar_for_user', data, function (data) {
+            console.log(data);
+            if (data.success) {
+                if (table) {
+                    table.add_row([
+                        data.b.stem,
+                        $('<td>').text(`${data.b.stem}-${data.e.bnr}`).data('sort_value', data.b.stem * 1000000 + data.b.bnr),
+                        $('<td>').css('max-width', '300px').text(data.b.title),
+                        $('<td>').css('max-width', '200px').text(data.b.author),
+                        $('<td>').text(`${moment.unix(data.r.ts_checked_out).format('L')}`).data('sort_value', data.r.ts_checked_out),
+                        data.r.ts_confirmed
+                            ? $('<td>').text(moment.unix(data.r.ts_confirmed).format('L')).data('sort_value', data.r.ts_confirmed)
+                            : $('<td>').html("<i class='text-stone-400 fa fa-exclamation-triangle'></i>&nbsp;&nbsp;(noch nicht bestätigt)").data('sort_value', NaN)
+                    ]);
+                }
+            }
+        });
+    }
+
     window.addEventListener('load', function () {
-        let email = decodeURIComponent(window.location.pathname.replace('/bib_user/', ''));
-        $('#display_name').text((db_user_info[email] || {}).display_name || email)
+        $('.display_name').text((db_user_info[email] || {}).display_name || email)
         bib_api_call('/jwt/get_checked_out_books_for_email', { email: email }, function (data) {
             if (data.success) {
                 let div = $('<div>').appendTo($('#book_table'));
-                let table = new SortableTable({
+                table = new SortableTable({
                     element: div,
                     xs: true,
                     headers: ['Signatur', 'Titel', 'Autor', 'Ausgeliehen', 'Bestätigt'].map(function (x) {
@@ -29,7 +75,7 @@
                     }),
                     rows: data.exemplare.map(function (entry) {
                         return [
-                            entry,
+                            entry.book.stem,
                             $('<td>').text(`${entry.book.stem}-${entry.exemplar.bnr}`).data('sort_value', entry.book.stem * 1000000 + entry.exemplar.bnr),
                             $('<td>').css('max-width', '300px').text(entry.book.title),
                             $('<td>').css('max-width', '200px').text(entry.book.author),
@@ -37,25 +83,24 @@
                             entry.r.ts_confirmed
                                 ? $('<td>').text(moment.unix(entry.r.ts_confirmed).format('L')).data('sort_value', entry.r.ts_confirmed)
                                 : $('<td>').html("<i class='text-stone-400 fa fa-exclamation-triangle'></i>&nbsp;&nbsp;(noch nicht bestätigt)").data('sort_value', NaN)
-                            // entry.email,
-                            // create_user_td_span(entry.email),
-                            // $('<td>').html((db_user_info[entry.email] || {}).klasse || '&ndash;').data('sort_value', (db_user_info[entry.email] || {}).klassen_order),
-                            // $('<td>').html(`${entry.ausleih_count === 0 ? '&ndash;' : entry.ausleih_count}`).data('sort_value', entry.ausleih_count || 0)
                         ];
                     }),
                     clickable_rows: true,
                     clickable_row_callback: row_clicked
                 });
                 table.sort_rows(3, false);
-                // for (let row of data.exemplare) {
-                //     let div = create_book_div(row.book, null, {
-                //         exemplar: row.exemplar, clickable: true, callback: function (book) {
-                //             window.location.href = `/bib_book/${book.stem}`;
-                //         }
-                //     }).data('book', row.book);
-                //     $('#book_list').append(div);
-                // }
             }
         });
+        $('#bu_checkout').click(function(e) {
+            $('#bu_checkout').prop('disabled', true);
+            new BarcodeWidget({
+                element: $('#barcode_widget'),
+                on_scan: on_scan
+            });
+            $('#check_out_div').slideDown();
+        });
+        if (!lehrmittelverein_state_cache[email]) {
+            $('#bu_checkout').prop('disabled', true);
+        }
     });
 </script>

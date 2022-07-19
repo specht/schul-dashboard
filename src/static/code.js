@@ -62,19 +62,29 @@ function api_call(url, data, callback, options) {
         contentType: 'application/json',
         dataType: 'json',
     };
+    if (options.dataType)
+        conf.dataType = options.dataType;
+    if (options.contentType)
+        conf.contentType = options.contentType;
+
     if (typeof (options.headers) !== 'undefined') {
         conf.beforeSend = function (xhr) {
             for (let key in options.headers)
                 xhr.setRequestHeader(key, options.headers[key]);
         };
     }
-    let jqxhr = jQuery.post(conf);
+    let jqxhr = null;
+    if (options.method === 'GET')
+        jqxhr = jQuery.get(conf);
+    else
+        jqxhr = jQuery.post(conf);
 
     jqxhr.done(function (data) {
         clearTimeout(window.please_wait_timeout);
         $('.api_messages').empty().hide();
         if (typeof (callback) !== 'undefined') {
-            data.success = true;
+            if (options.method !== 'GET')
+                data.success = true;
             callback(data);
         }
     });
@@ -449,7 +459,10 @@ function fix_scanned_book_barcode(s) {
     if (checksum !== null)
         if (!/^\w\w$/.test(checksum))
             return null;
-    return { stem: parseInt(stem), bnr: parseInt(bnr), checksum: checksum };
+    let result = { stem: parseInt(stem), bnr: parseInt(bnr) };
+    if (checksum !== null)
+        result.checksum = checksum;
+    return result;
 }
 
 function create_book_div(book, shelf, options = {}) {
@@ -577,4 +590,8 @@ function currency_string(preis, waehrung) {
 
 function create_location_span(location) {
     return `<span class='bg-lilac-600 text-lilac-200 text-sm mr-2 px-1.5 py-0.5 rounded'>${location}</span>`;
+}
+
+function join_with_sep(list, a, b) {
+    return list.length == 1 ? list[0] : [list.slice(0, list.length - 1).join(a), list[list.length - 1]].join(b);
 }

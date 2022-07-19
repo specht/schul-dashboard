@@ -2,50 +2,241 @@
 #{File.read('/static/_bib_public_template.html')}
 <div class='container bg-white' style="padding-top: 15px;">
     <div class="bib_teacher_only">
-        <h3>Bestellung bearbeiten</h3>
+        <div class='mb-3'>
+            <button id='bu_scan_exemplare' class='btn btn-success mr-1'><i class='fa fa-barcode'></i>&nbsp;&nbsp;Exemplare scannen</button>
+            <button id='bu_confirm_checkout' class='btn btn-outline-secondary mr-1' disabled><i class='fa fa-check'></i>&nbsp;&nbsp;Ausleihe bestätigen</button>
+            <button id='bu_print_receipt' class='btn btn-outline-secondary mr-1' disabled><i class='fa fa-print'></i>&nbsp;&nbsp;Beleg drucken</button>
+            <button id='bu_mark_as_ready' class='btn btn-outline-secondary mr-1' disabled><i class='fa fa-send'></i>&nbsp;&nbsp;Bestellung als »bereit« markieren</button>
+        </div>
         <div class='row'>
-            <div class='col-md-6' id='order_div'>
-                <div class="table-responsive" style="max-width: 100%; overflow-x: auto;">
-                    <table class="table table-sm table-condensed narrow" style="user-select: none;">
-                        <tr><th>Bestellt von:</th><td id='user_here'></td></tr>
-                        <tr><th>am:</th><td id='ts_order_placed_here'></td></tr>
-                        <tr><th>Regal:</th><td id='ts_order_shelf_here'></td></tr>
-                        <tr><th>Signaturstamm:</th><td id='ts_order_stem_here'></td></tr>
-                        <tr><th>Anzahl:</th><td class='font-bold' id='ts_order_count_here'></td></tr>
-                    </table>
+            <div class='col-md-6'>
+                <!-- <h3>Bestellung bearbeiten</h3> -->
+                <div>
+                    <div>
+                        <div id='scan_container'></div>
+                        <div id='scan_hint' style='display: none;'>
+                            <div class='alert alert-warning'>
+                                Falls nicht genügend Exemplare vorhanden sind, kannst du trotzdem eine Teilausleihe bestätigen. So werden die verhandenen Exemplare jetzt schon verliehen und die fehlenden Exemplare können später verliehen werden.
+                            </div>
+                        </div>
+                    </div>
+                    <div id='book_div'></div>
+                    <div id='order_div'>
+                        <div class="table-responsive mt-3" style="max-width: 100%; overflow-x: auto;">
+                            <table class="table table-sm table-condensed narrow" style="user-select: none;">
+                                <tr><th>Bestellt von:</th><td id='user_here'></td></tr>
+                                <tr><th>am:</th><td id='ts_order_placed_here'></td></tr>
+                                <tr><th>Regal:</th><td id='ts_order_shelf_here'></td></tr>
+                                <tr><th>Signaturstamm:</th><td id='ts_order_stem_here'></td></tr>
+                                <tr><th>Benötigte Anzahl:</th><td class='font-bold' id='ts_order_count_here'></td></tr>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+                <div id='fulfillments_div' style="display: none;">
+                    <hr />
+                    <p>Erfolgte Buchungen:</p>
+                    <div id='fulfillments_table'></div>
+                </div>
+                <div id='scan_finished_hint' style='display: none;'>
+                    <div class='alert alert-success'>
+                        Alle Exemplare wurden gescannt, allerdings noch nicht ausgeliehen. Bestätige nun die Ausleihe, um fortzufahren.
+                    </div>
                 </div>
             </div>
-            <div class='col-md-6' id='book_div'></div>
+            <div class='col-md-6'>
+                <div id='scan_table'></div>
+            </div>
         </div>
-        <hr />
-        <div class='mb-3'>
-        <button class='btn btn-success'><i class='fa fa-barcode'></i>&nbsp;&nbsp;Exemplare scannen</button>
-        <button class='btn btn-outline-secondary' disabled><i class='fa fa-print'></i>&nbsp;&nbsp;Beleg drucken</button>
-        <button class='btn btn-outline-secondary' disabled><i class='fa fa-check'></i>&nbsp;&nbsp;Bestellung kann abgeholt werden</button>
-        </div>
-        <button class='btn btn-danger'><i class='fa fa-trash'></i>&nbsp;&nbsp;Bestellung löschen</button>
     </div>
 </div>
 <script>
+    var kurse = #{ Hash[@@lessons[:lesson_keys].keys.map do | x |
+        y = @@lessons[:lesson_keys][x]
+        [x, {:fach => y[:pretty_folder_name] || x, :sus => (@@schueler_for_lesson[x] || []), :klassen => y[:klassen]}]
+    end].to_json};
+    var lehrmittelverein_state_cache = #{@@lehrmittelverein_state_cache.to_json};
+    var stem = null;
+    var already_scanned_barcodes = {};
+    var scan_table = null;
+    var scan_widget = null;
+    var kurs_order_list = null;
+
+    function append_barcode(parts) {
+        if (scan_widget === null || Object.keys(already_scanned_barcodes).length >= scan_table.element.find('tr').length)
+            return;
+        let barcode = `${parts.stem}-${parts.bnr}`;
+        if (barcode in already_scanned_barcodes) {
+            let _ = beep_fail.cloneNode(); _.play();
+        } else {
+            $('#bu_confirm_checkout').prop('disabled', false).removeClass('btn-outline-secondary').addClass('btn-success');
+            let _ = beep1.cloneNode(); _.play();
+            let tr = scan_table.element.find('tr').eq(Object.keys(already_scanned_barcodes).length);
+            tr.data('barcode_parts', parts);
+            tr.find('td').eq(3).text(`${parts.stem}-${parts.bnr}`);
+            scan_table.highlight_row(tr);
+            already_scanned_barcodes[barcode] = true;
+
+            tr = scan_table.element.find('tr').eq(Object.keys(already_scanned_barcodes).length);
+            tr.find('td').eq(3).html(`<i class='text-slate-500 fa fa-circle-o-notch fa-spin'></i>`);
+
+            if (Object.keys(already_scanned_barcodes).length >= scan_table.element.find('tr').length) {
+                // we're done scanning all barcodes!
+                scan_widget.element.slideUp();
+                $('#scan_hint').slideUp();
+                $('#scan_finished_hint').slideDown();
+            }
+        }
+    }
+
+    function on_scan(barcode) {
+        let parts = fix_scanned_book_barcode(barcode);
+        if (parts === null) {
+            let _ = beep_fail.cloneNode(); _.play();
+            return;
+        }
+        let data = {
+            stem: parts.stem,
+            bnr: parts.bnr
+        };
+        if (parts.checksum) data.checksum = parts.checksum;
+        if (parts.stem !== stem) {
+            let _ = beep_fail.cloneNode(); _.play();
+            return;
+        }
+        bib_api_call('/jwt/verify_scanned_barcode', parts, function (data) {
+            if (data.success) {
+                append_barcode(parts);
+            } else {
+                let _ = beep_fail.cloneNode(); _.play();
+            }
+        });
+    }
+
     window.addEventListener('load', function () {
-        let r_id_s = window.location.pathname.replace('/bib_process_order/', '');
-        let r_id = parseInt(r_id_s);
-        bib_api_call('/jwt/get_order', {r_id: r_id}, function (data) {
+        if ('#{can_manage_bib_logged_in?}' === 'true') {
+            $(`<li class='mx-1'><a class='inline-block bg-slate-900 border border-blue-500 hover:bg-slate-200 rounded py-1 px-3' href='#'><i class='fa fa-trash'></i>&nbsp;&nbsp;Bestellung stornieren</a></li>`).insertAfter($('#sub_menu_extra'));
+            $('#subsubmenu').show();
+        }
+        let oid = window.location.pathname.replace('/bib_process_order/', '');
+        bib_api_call('/jwt/get_order', {oid: oid}, function (data) {
             if (data.success) {
                 console.log(data);
+                stem = data.order.b.stem;
                 let div = create_book_div(data.order.b, null, {
                     clickable: true, callback: function (book) {
                         window.location.href = `/bib_book/${book.stem}`;
                     }
                 }).data('book', data.order.b);
+                let list = [];
+                for (let i = 0; i < data.order.o.count || 0; i++) list.push(data.order.u.email);
+                if (data.order.o.lesson_key) {
+                    data.order.book_info = {
+                        ordering_teacher_has_this_book: data.order.u.email in data.order.users_who_have_this_book,
+                        ordering_teacher_email: data.order.u.email,
+                        users_who_have_this_book: data.order.users_who_have_this_book,
+                    };
+                    kurs_order_list = calculate_kurs_order_list(data.order.o.lesson_key, data.order.b.stem, data.order.book_info);
+                    list = Object.keys(kurs_order_list.list);
+                }
+
+                scan_table = new SortableTable({
+                    xs: true,
+                    element: $('#scan_table'),
+                    headers: ['Name', 'Vorname', 'Klasse', 'Signatur'].map(function (x) {
+                        let th = $('<th>').text(x);
+                        if (['Nr.', 'Signatur', 'Klasse'].indexOf(x) >= 0) th.data('type', 'int');
+                        return th;
+                    }),
+                    rows: list.map(function(email, i) {
+                        let user_info = db_user_info[email] || {};
+                        return [
+                            email,
+                            // $('<td>').text(`${i + 1}.`).data('sort_value', i + 1),
+                            create_user_td_span(email),
+                            $('<td>').html((db_user_info[email] || {}).klasse || '&ndash;').data('sort_value', user_info.teacher ? -1 : user_info.klassen_order),
+                            $('<td>'),
+                        ];
+                    }),
+                    sortable: false
+                });
+                scan_table.sort_rows(0, false);
+                scan_table.sort_rows(2, false);
+
                 $('#book_div').append(div);
                 $('#user_here').html(`${(db_user_info[data.order.u.email] || {}).display_name || data.order.u.email}`);
-                $('#ts_order_placed_here').text(`${moment.unix(data.order.r.ts_order_placed).format('L')}`);
-                $('#ts_order_count_here').text(`${data.order.r.count} Exemplar${data.order.r.count === 1 ? '': 'e'}`);
+                $('#ts_order_placed_here').text(`${moment.unix(data.order.o.ts_order_placed).format('L')}`);
+                $('#ts_order_count_here').text(`${list.length} Exemplar${list.length === 1 ? '': 'e'}`);
                 $('#ts_order_shelf_here').html(`${(data.order.locations || []).map(function(x) {return create_location_span(x); }).join('')}`);
                 $('#ts_order_stem_here').text(`${data.order.b.stem}`);
-
             }
+        });
+        bib_api_call('/jwt/get_fulfillments_for_order', {oid: oid}, function (data) {
+            console.log(data);
+            if (data.fulfillments.length > 0) {
+                $('#fulfillments_div').show();
+                new SortableTable({
+                    xs: true,
+                    element: $('#fulfillments_table'),
+                    headers: ['Datum', 'Exemplare', 'Beleg'].map(function (x) {
+                        let th = $('<th>').text(x);
+                        if (['Datum', 'Exemplare'].indexOf(x) >= 0) th.data('type', 'int');
+                        return th;
+                    }),
+                    rows: data.fulfillments.map(function(fulfillment) {
+                        console.log(fulfillment);
+                        let button = $(`<button class='btn btn-success btn-xs'>`).html(`<i class='fa fa-print'></i>&nbsp;&nbsp;Beleg`);
+                        button.click(function(e) {
+                            printJS(`${BIB_HOST}/jwt/receipt_pdf/${fulfillment.id}`);
+                        });
+                        return [
+                            fulfillment.id,
+                            $('<td>').html(`${moment.unix(fulfillment.ts).format('L')}`),
+                            $('<td>').html(`${fulfillment.bnrs.length}`),
+                            $('<td>').append(button),
+                        ];
+                    }),
+                    sortable: false
+                });
+            }
+        });
+        $('#bu_scan_exemplare').click(function(e) {
+            scan_widget = new BarcodeWidget({
+                element: $('#scan_container'),
+                on_scan: on_scan
+            });
+            $('#scan_hint').show();
+            $('#bu_scan_exemplare').prop('disabled', true);
+            let tr = scan_table.element.find('tr').eq(0);
+            tr.find('td').eq(3).html(`<i class='text-slate-500 fa fa-circle-o-notch fa-spin'></i>`);
+
+            if ('#{DEVELOPMENT}' === '1') {
+                setTimeout(function() {
+                    for (let i = 0; i < 6; i++)
+                        setTimeout(function() {
+                            append_barcode({stem: 3614, bnr: i + 1});
+                        }, 100 * i);
+                }, 100);
+            }
+        });
+        $('#bu_confirm_checkout').click(function(e) {
+            let data = {};
+            data.stem = stem;
+            data.oid = oid;
+            data.users = [];
+            data.bnrs = [];
+            for (let row of scan_table.element.find('tr')) {
+                let email = $(row).data('row_data');
+                let barcode_parts = $(row).data('barcode_parts');
+                if (barcode_parts) {
+                    data.users.push(email);
+                    data.bnrs.push(barcode_parts.bnr);
+                }
+            }
+            bib_api_call('/jwt/checkout_order', data, function (data) {
+                console.log(data);
+            });
+            
         });
     });
 </script>

@@ -1,5 +1,7 @@
 class SortableTable {
     constructor(options) {
+        if (typeof(options.sortable) === 'undefined')
+            options.sortable = true;
         this.element = options.element;
         this.headers = options.headers;
         this.rows = options.rows;
@@ -17,35 +19,33 @@ class SortableTable {
         let self = this;
         for (let i = 0; i < options.headers.length; i++) {
             let cell = options.headers[i];
-            cell.addClass('hover:bg-stone-200');
-            cell.data('index', i);
-            cell.data('sort_direction', null);
-            cell.css('cursor', 'pointer');
-            cell.click(function (e) {
-                let index = $(e.target).closest('th').data('index')
-                let direction = $(e.target).closest('th').data('sort_direction') || 'desc';
-                direction = (direction === 'desc') ? 'asc' : 'desc';
-                $(e.target).closest('th').data('sort_direction', direction);
-                self.sort_rows(index, direction === 'desc');
-            });
-            // let bu_sort_asc = $(`<span class='cursor-pointer inline-block bg-slate-900 hover:text-black rounded-full text-slate-500 font-sm ml-2 w-6 h-6 text-center'><i class='fa fa-angle-down'></i></span>`);
-            // bu_sort_asc.click(function(e) { self.sort_rows($(e.target).closest('th').data('index'), false); });
-            // cell.append(bu_sort_asc);
-            // let bu_sort_desc = $(`<span class='cursor-pointer inline-block bg-slate-900 hover:text-black rounded-full text-slate-500 font-sm ml-1 w-6 h-6 text-center'><i class='fa fa-angle-up'></i></span>`);
-            // bu_sort_desc.click(function(e) { self.sort_rows($(e.target).closest('th').data('index'), true); });
-            // cell.append(bu_sort_desc);
+            if (options.sortable) {
+                cell.addClass('hover:bg-stone-200');
+                cell.data('index', i);
+                cell.data('sort_direction', null);
+                cell.css('cursor', 'pointer');
+                cell.click(function (e) {
+                    let index = $(e.target).closest('th').data('index')
+                    let direction = $(e.target).closest('th').data('sort_direction') || 'desc';
+                    direction = (direction === 'desc') ? 'asc' : 'desc';
+                    $(e.target).closest('th').data('sort_direction', direction);
+                    self.sort_rows(index, direction === 'desc');
+                });
+            }
             thead.append(cell);
         }
         let tbody = $('<tbody>');
         this.tbody = tbody;
         table.append(tbody);
         for (let row of options.rows) {
-            this.add_row(row);
+            this.add_row(row, false);
         }
         this.element.append(table_div);
     }
 
-    add_row(row) {
+    add_row(row, highlight) {
+        if (typeof(highlight) === 'undefined')
+            highlight = true;
         let tr = $('<tr>');
         let self = this;
         if (this.options.clickable_rows) {
@@ -68,6 +68,19 @@ class SortableTable {
         }
         tr.data('col_index', col_index);
         this.tbody.append(tr);
+        if (highlight) {
+            tr.addClass('hl').addClass('has_hl');
+            setTimeout(function() {
+                tr.removeClass('hl');
+            }, 2000);
+        }
+    }
+
+    highlight_row(tr) {
+        tr.addClass('hl').addClass('has_hl');
+        setTimeout(function() {
+            tr.removeClass('hl');
+        }, 2000);
     }
 
     update_filter() {

@@ -55,6 +55,10 @@
 <div class='api_messages'></div>
 <script>
     var db_user_info = #{ Hash[@@user_info.map { | k, v | [k, {:first_name => v[:first_name], :titel => v[:titel], :display_name => v[:display_name], :last_name => v[:last_name], :display_last_name => v[:display_last_name], :klasse => tr_klasse(v[:klasse]), :klassen_order => @@klassen_index[v[:klasse]], :teacher => v[:teacher] }] }].to_json};
+    var beep0 = new Audio('/beep0.mp3');
+    var beep1 = new Audio('/beep1.mp3');
+    var beep2 = new Audio('/beep2.mp3');
+    var beep_fail = new Audio('/beep-fail.mp3');
 
     function create_user_td_span(email) {
         if (db_user_info[email]) {
@@ -98,6 +102,40 @@
                 $(`<span class='bg-stone-700 p-1 rounded text-stone-300'>`).text(email)
             );
         }
+    }
+
+    function calculate_kurs_order_list(lesson_key, stem, use_this_book_response) {
+        if (typeof(use_this_book_response) === 'undefined')
+            use_this_book_response = book_response;
+        let already_have_book_sus = [];
+        let no_verein_sus = [];
+        for (let email of kurse[lesson_key].sus) {
+            if (use_this_book_response.users_who_have_this_book[email]) {
+                already_have_book_sus.push(email);
+            } else if (!(lehrmittelverein_state_cache[email] || false)) {
+                no_verein_sus.push(email);
+            }
+        }
+        let result = {};
+        let list = {};
+        for (let email of kurse[lesson_key].sus)
+            list[email] = true;
+        for (let email of already_have_book_sus)
+            delete list[email];
+        for (let email of no_verein_sus)
+            delete list[email];
+        if (!use_this_book_response.ordering_teacher_has_this_book) {
+            list[use_this_book_response.ordering_teacher_email] = true;
+        }
+        result.list = list;
+        result.already_have_book_sus = already_have_book_sus;
+        result.no_verein_sus = no_verein_sus;
+        result.teacher_has_this_book = use_this_book_response.ordering_teacher_has_this_book;
+        return result;
+    }
+
+    function calculate_kurs_order_count(lesson_key, stem, use_this_book_response) {
+        return Object.keys(calculate_kurs_order_list(lesson_key, stem, use_this_book_response).list).length;
     }
 
     window.addEventListener('load', function () {

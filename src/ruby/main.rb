@@ -589,6 +589,7 @@ class Main < Sinatra::Base
     end
 
     def self.collect_data
+        @@server_etag = RandomTag.generate(24)
         @@user_info = {}
         @@email_for_matrix_login = {}
         @@shorthands = {}
@@ -2299,12 +2300,24 @@ class Main < Sinatra::Base
         respond(:token => token, :ttl => BIB_JWT_TTL)
     end
 
+    get '/api/get_bib_dump_etag' do
+        unless DEVELOPMENT
+            jwt = request.env["HTTP_X_JWT"]
+            decoded_token = JWT.decode(jwt, JWT_APPKEY_BIB, true, { :algorithm => "HS256" }).first
+            diff = decoded_token["exp"] - Time.now.to_i
+            assert(diff >= 0)
+        end
+        respond(:etag => @@server_etag)
+    end
+
     get '/api/get_bib_dump' do
-        jwt = request.env["HTTP_X_JWT"]
-        decoded_token = JWT.decode(jwt, JWT_APPKEY_BIB, true, { :algorithm => "HS256" }).first
-        diff = decoded_token["exp"] - Time.now.to_i
-        assert(diff >= 0)
-        respond(:user_info => @@user_info)
+        unless DEVELOPMENT
+            jwt = request.env["HTTP_X_JWT"]
+            decoded_token = JWT.decode(jwt, JWT_APPKEY_BIB, true, { :algorithm => "HS256" }).first
+            diff = decoded_token["exp"] - Time.now.to_i
+            assert(diff >= 0)
+        end
+        respond(:user_info => @@user_info, :etag => @@server_etag, :lessons => @@lessons)
     end
 
     before "/monitor/#{MONITOR_DEEP_LINK}" do

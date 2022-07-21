@@ -138,6 +138,14 @@
         return Object.keys(calculate_kurs_order_list(lesson_key, stem, use_this_book_response).list).length;
     }
 
+    function calculate_private_order_count(order_count, stem, email, users_who_have_this_book) {
+        // console.log(users_who_have_this_book);
+        let n = (users_who_have_this_book[email] || 0);
+        n = order_count - n;
+        if (n < 0) n = 0;
+        return n;
+    }
+
     window.addEventListener('load', function () {
         for (let x of $('.submenu a')) {
             let href = $(x).attr('href');

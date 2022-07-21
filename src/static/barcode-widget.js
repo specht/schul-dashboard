@@ -6,7 +6,7 @@ class BarcodeWidget {
 
         this.element = options.element;
         let container = $("<div style='border: 1px solid #ddd; padding: 15px; border-radius: 15px; box-shadow: 0px 0px 5px rgba(0,0,0,0.2); margin-bottom: 15px; background-color: #eee;'>");
-        let video_container = $("<div style='position: relative; width: 100%; overflow: hidden; height: 200px; margin-bottom: 15px; border-radius: 15px; border: 1px solid #aaa;'>");
+        let video_container = $("<div style='position: relative; width: 100%; overflow: hidden; height: 200px; margin-bottom: 15px; border-radius: 15px; border: 1px solid #aaa; display: none;'>");
         let video = $("<video class='rounded shadow mb-3' style='object-fit: cover; position: absolute; left: 0; top: 0; width: 100%; height: 100%;'>");
         let expand_link = $(`<a href=''>`).text('eingeben');
         let hint = $("<div class='text-muted text-sm'>").text('Alternativ kannst du den Barcode auch ').append(expand_link).append('.');
@@ -39,10 +39,13 @@ class BarcodeWidget {
         }
         this.on_scan = options.on_scan;
         let codeReader = new ZXing.BrowserMultiFormatReader(hints);
+        let no_camera = false;
         codeReader.decodeFromVideoDevice(null, video[0], (result, err) => {
-            if (result) this._on_scan(result.text, true);
+            if (result) {
+                this._on_scan(result.text, true);
+            }
         }).catch(e => {
-            video_container.hide();
+            no_camera = true;
             hint.text('Es konnte keine Kamera erkannt werden. Versuch es bitte mit einem anderen Gerät oder gib den Barcode manuell ein:');
             input_group.show();
             $(document).keydown(function(e) {
@@ -53,6 +56,9 @@ class BarcodeWidget {
                     e.preventDefault();
                 }
             });
+        }).finally(function() {
+            if (!no_camera)
+                video_container.show();
         });
 
         let self = this;

@@ -45,7 +45,7 @@
     <div class="bib_teacher_only">
         <hr />
         <div id='orders_placed_notice' class='alert alert-warning' style="display: none;">
-            Du hast <span id='orders_placed_count'></span> dieses Buchs <a href='/bib_orders'>bestellt</a>.
+            Du hast <span id='orders_placed_count'></span> <a href='/bib_orders'>bestellt</a>.
         </div>
         <p>Wenn du dieses Buch im Unterricht verwenden möchtest, kannst du es hier bestellen.</p>
         <button id='bu_order_overview' class="btn btn-success"><i class='fa fa-shopping-basket'></i>&nbsp;&nbsp;Buch
@@ -54,7 +54,7 @@
             <button id='bu_order_kurs' class='btn btn-outline-secondary mr-1'>
                 <i class='fa fa-group'></i>&nbsp;&nbsp;Ich möchte das Buch für eine Klasse oder einen Kurs bestellen.
             </button>
-            <button id='bu_order_private' class='btn btn-outline-secondary mr-1'>
+            <button id='bu_order_private' class='btn btn-outline-secondary mr-1' style="display: none;" disabled>
                 <i class='fa fa-user'></i>&nbsp;&nbsp;Ich möchte das Buch für mich bestellen.
             </button>
             <div id="order_kurs_div" style='display: none; margin-top: 15px;'>
@@ -75,7 +75,7 @@
                 </div>
             </div>
             <div id="order_private_div" style='display: none; margin-top: 15px;'>
-                Ich möchte <input id='ti_order_private_count' class='form-control' type='number' min='1' max='100' value='1' style='display: inline-block; width: 50px; text-align: center; margin: 0 10px;' /> Exemplar<span id='private_order_exemplare_suffix'></span> für mich bestellen.
+                Ich möchte ein Exemplar für mich bestellen.
                 <div class='mt-3'>
                     <button id='bu_place_order_private' class='btn btn-success'><i class='fa fa-send'></i>&nbsp;&nbsp;Bestellung aufgeben</button>
                     <div id='bu_place_order_private_success' class='alert alert-success' style='display: none; margin-top: 15px;'>Deine Bestellung wurde aufgenommen. Du kannst den Status deiner Bestellung unter <a href='/bib_orders'>»Bestellungen«</a> einsehen.</div>
@@ -148,13 +148,8 @@
             $('#order_private_div').slideDown();
             $('#order_kurs_div').slideUp();
         });
-        $('#ti_order_private_count').keyup(function(e) {
-            let count = parseInt($('#ti_order_private_count').val());
-            $('#private_order_exemplare_suffix').text(count === 1 ? '' : 'e');
-        });
         $('#bu_place_order_private').click(function(e) {
-            let count = parseInt($('#ti_order_private_count').val());
-            bib_api_call('/jwt/place_order_private', { stem: stem, count: count }, function (data) {
+            bib_api_call('/jwt/place_order_private', { stem: stem }, function (data) {
                 if (data.success) {
                     $('#bu_place_order_private').prop('disabled', true);
                     $('#bu_place_order_private_success').slideDown();
@@ -222,7 +217,9 @@
                         $('#labels_here').append($(create_location_span(location)));
                     }
                 }
+                let show_private_order_button = true;
                 if (data.checked_out_user.length > 0) {
+                    show_private_order_button = false;
                     if ((book.isbn || '').length === 0) {
                         if (data.proposed_isbn.length > 0) {
                             $('#hint_scan_isbn_thank_you').show();
@@ -322,7 +319,11 @@
                 }
                 let orders_placed_parts = [];
                 if (data.orders_placed && data.orders_placed > 0) {
-                    orders_placed_parts.push(`${data.orders_placed} Exemplar${data.orders_placed === 1 ? '' : 'e'} privat`);
+                    show_private_order_button = false;
+                    let missing_books = data.orders_placed - (data.users_who_have_this_book[data.ordering_teacher_email] || 0);
+                    if (missing_books < 0) missing_books = 0;
+                    if (missing_books > 0)
+                        orders_placed_parts.push(`${missing_books} Exemplar${missing_books === 1 ? '' : 'e'} privat`);
                 }
                 if (data.kurs_orders_placed && data.kurs_orders_placed.length > 0) {
                     for (let lesson_key of data.kurs_orders_placed) {
@@ -335,6 +336,9 @@
                 if (orders_placed_parts.length > 0) {
                     $('#orders_placed_count').text(join_with_sep(orders_placed_parts, ', ', ' und '));
                     $('#orders_placed_notice').show();
+                }
+                if (show_private_order_button) {
+                    $('#bu_order_private').prop('disabled', false).show();                    
                 }
             }
         });

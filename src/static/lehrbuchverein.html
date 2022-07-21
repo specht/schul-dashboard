@@ -1,9 +1,10 @@
 #{this_is_a_page_for_logged_in_users}
-<div class='container' style='padding-top: 30px;'>
+<div class='container' style='padding-top: 30px; background-color: #fff;'>
     <div class='row'>
         <div class='col-md-12'>
             <h3>Lehrmittelverein</h3>
-            #{print_lehrbuchverein_table()}
+            <div id='labels_here' class='mb-3'>Filter:&nbsp;&nbsp;</div>
+            <div id='table_here'></div>
         </div>
     </div>
 </div>
@@ -11,45 +12,120 @@
 <script>
 STATE_STYLES = ['btn-danger', 'btn-success', 'btn-primary'];
 
+var db_user_info = #{ Hash[@@user_info.map { | k, v | [k, {:first_name => v[:first_name], :titel => v[:titel], :display_name => v[:display_name], :last_name => v[:last_name], :display_last_name => v[:display_last_name], :klasse => tr_klasse(v[:klasse]), :klassen_order => @@klassen_index[v[:klasse]], :teacher => v[:teacher] }] }].to_json};
+var user_table = null;
+
+function user_filter(data) {
+    if (window.selected_klassen.length === 0)
+        return true;
+    else {
+        let info = db_user_info[data] || {};
+        if (info.teacher) {
+            return window.selected_klassen.indexOf('LK') >= 0;
+        } else {
+            return window.selected_klassen.indexOf(info.klasse) >= 0;
+        }
+    }
+}
+
 document.addEventListener('DOMContentLoaded', function() {
     moment.locale('de');
-    $('.bu_toggle_no_pay').click(function(e) {
-        let button = $(e.target).closest('.btn');
-        let row = button.closest('tr');
-        let buttons = [row.find('.bu_no_book_for_you'), row.find('.bu_toggle_paid'), row.find('.bu_toggle_no_pay')];
-        let email = button.closest('tr').data('email');
-        api_call('/api/toggle_lehrbuchverein_no_pay', {email: email}, function(data) {
-            if (data.success) {
-                console.log(data);
-                for (let b of buttons)
-                    b.removeClass('btn-success').removeClass('btn-primary').removeClass('btn-danger').addClass('btn-outline-secondary');
-                if (data.state === 0)
-                    buttons[0].removeClass('btn-outline-secondary').addClass(STATE_STYLES[0]);
-                if ((data.state >> 0) & 1 === 1)
-                    buttons[1].removeClass('btn-outline-secondary').addClass(STATE_STYLES[1]);
-                if ((data.state >> 1) & 1 === 1 || (data.state >> 2) & 1 === 1)
-                    buttons[2].removeClass('btn-outline-secondary').addClass(STATE_STYLES[2]);
+    for (let label of #{(KLASSEN_ORDER.map { |x| tr_klasse(x) }).to_json}) {
+        let button = $(`<button class='bu-label btn btn-xs btn-outline-secondary mr-1 mb-1' data-flag='false'>${label}</button>`);
+        $('#labels_here').append(button);
+        button.click(function (e) {
+            let button = $(e.target).closest('button');
+            if (button.data('flag') === false) {
+                button.data('flag', true);
+                button.removeClass('btn-outline-secondary').addClass('btn-success');
+            } else {
+                button.data('flag', false);
+                button.removeClass('btn-success').addClass('btn-outline-secondary');
             }
-        });
-    });
-    $('.bu_toggle_paid').click(function(e) {
-        let button = $(e.target).closest('.btn');
-        let row = button.closest('tr');
-        let buttons = [row.find('.bu_no_book_for_you'), row.find('.bu_toggle_paid'), row.find('.bu_toggle_no_pay')];
-        let email = button.closest('tr').data('email');
-        api_call('/api/toggle_lehrbuchverein_paid', {email: email}, function(data) {
-            if (data.success) {
-                console.log(data);
-                for (let b of buttons)
-                    b.removeClass('btn-success').removeClass('btn-primary').removeClass('btn-danger').addClass('btn-outline-secondary');
-                if (data.state === 0)
-                    buttons[0].removeClass('btn-outline-secondary').addClass(STATE_STYLES[0]);
-                if ((data.state >> 0) & 1 === 1)
-                    buttons[1].removeClass('btn-outline-secondary').addClass(STATE_STYLES[1]);
-                if ((data.state >> 1) & 1 === 1 || (data.state >> 2) & 1 === 1)
-                    buttons[2].removeClass('btn-outline-secondary').addClass(STATE_STYLES[2]);
+            selected_klassen = [];
+            for (let x of button.parent().find('button')) {
+                if ($(x).data('flag'))
+                    selected_klassen.push($(x).text());
             }
-        });
+            console.log(selected_klassen);
+            window.user_table.update_filter();
+        })
+    }
+
+    api_call('/api/get_lehrbuchverein_data', {}, function(data) {
+        if (data.success) {
+            let jahr = `${data.year}/${(data.year + 1) % 100}`;
+            user_table = new SortableTable({
+                xs: true,
+                element: $('#table_here'),
+                headers: ['Name', 'Vorname', 'Klasse', `Bezahlt für ${jahr}`, 'Zahlungsbefreit', 'Selbstzahler'].map(function (x) {
+                    let th = $('<th>').text(x);
+                    if (['Klasse'].indexOf(x) >= 0) th.data('type', 'int');
+                    return th;
+                }),
+                filter_callback: user_filter,
+                rows: data.users.map(function(user) {
+                    let bu_toggle_paid = $(`<button class='btn btn-xs btn-outline-secondary'>`).text(`bezahlt für ${jahr}`);
+                    let bu_toggle_no_pay = $(`<button class='btn btn-xs btn-outline-secondary'>`).text(`zahlungsbefreit`);
+                    let bu_no_book_for_you = $(`<button class='btn btn-xs btn-outline-secondary' disabled>`).text(`Selbstzahler`);
+                    if (user.paid)
+                        bu_toggle_paid.removeClass('btn-outline-secondary').addClass('btn-success');
+                    if (user.no_pay)
+                        bu_toggle_no_pay.removeClass('btn-outline-secondary').addClass('btn-primary');
+                    if (!(user.paid || user.no_pay))
+                        bu_no_book_for_you.removeClass('btn-outline-secondary').addClass('btn-danger');
+                    bu_toggle_paid.click(function(e) {
+                        let email = $(e.target).closest('tr').data('row_data');
+                        api_call('/api/toggle_lehrbuchverein_paid', {email: email}, function(data) {
+                            if (data.success) {
+                                let buttons = [
+                                    $(e.target).closest('tr').find('button').eq(0),
+                                    $(e.target).closest('tr').find('button').eq(1),
+                                    $(e.target).closest('tr').find('button').eq(2)
+                                ];
+                                for (let b of buttons)
+                                    b.removeClass('btn-success').removeClass('btn-primary').removeClass('btn-danger').addClass('btn-outline-secondary');
+                                if (data.state === 0)
+                                    buttons[2].removeClass('btn-outline-secondary').addClass(STATE_STYLES[0]);
+                                if ((data.state >> 0) & 1 === 1)
+                                    buttons[0].removeClass('btn-outline-secondary').addClass(STATE_STYLES[1]);
+                                if ((data.state >> 1) & 1 === 1 || (data.state >> 2) & 1 === 1)
+                                    buttons[1].removeClass('btn-outline-secondary').addClass(STATE_STYLES[2]);
+                            }
+                        });
+                    });
+                    bu_toggle_no_pay.click(function(e) {
+                        let email = $(e.target).closest('tr').data('row_data');
+                        api_call('/api/toggle_lehrbuchverein_no_pay', {email: email}, function(data) {
+                            if (data.success) {
+                                let buttons = [
+                                    $(e.target).closest('tr').find('button').eq(0),
+                                    $(e.target).closest('tr').find('button').eq(1),
+                                    $(e.target).closest('tr').find('button').eq(2)
+                                ];
+                                for (let b of buttons)
+                                    b.removeClass('btn-success').removeClass('btn-primary').removeClass('btn-danger').addClass('btn-outline-secondary');
+                                if (data.state === 0)
+                                    buttons[2].removeClass('btn-outline-secondary').addClass(STATE_STYLES[0]);
+                                if ((data.state >> 0) & 1 === 1)
+                                    buttons[0].removeClass('btn-outline-secondary').addClass(STATE_STYLES[1]);
+                                if ((data.state >> 1) & 1 === 1 || (data.state >> 2) & 1 === 1)
+                                    buttons[1].removeClass('btn-outline-secondary').addClass(STATE_STYLES[2]);
+                            }
+                        });
+                    });
+                    return [
+                        user.email,
+                        $('<td>').text(user.last_name),
+                        $('<td>').text(user.first_name),
+                        $('<td>').text(user.klasse).data('sort_value', user.klassen_index),
+                        $('<td>').append(bu_toggle_paid),
+                        $('<td>').append(bu_toggle_no_pay),
+                        $('<td>').append(bu_no_book_for_you),
+                    ];
+                }),
+            });
+        }
     });
 });
 </script>

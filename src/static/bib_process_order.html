@@ -3,10 +3,10 @@
 <div class='container bg-white' style="padding-top: 15px;">
     <div class="bib_teacher_only">
         <div class='mb-3'>
-            <button id='bu_scan_exemplare' class='btn btn-success mr-1'><i class='fa fa-barcode'></i>&nbsp;&nbsp;Exemplare scannen</button>
-            <button id='bu_confirm_checkout' class='btn btn-outline-secondary mr-1' disabled><i class='fa fa-check'></i>&nbsp;&nbsp;Ausleihe bestätigen</button>
+            <button id='bu_scan_exemplare' class='btn btn-outline-secondary mr-1' disabled><i class='fa fa-barcode'></i>&nbsp;&nbsp;Exemplare scannen</button>
+            <button id='bu_confirm_checkout' class='btn btn-outline-secondary mr-1' disabled><i class='fa fa-check'></i>&nbsp;&nbsp;Ausleihe durchführen</button>
             <button id='bu_print_receipt' class='btn btn-outline-secondary mr-1' disabled><i class='fa fa-print'></i>&nbsp;&nbsp;Beleg drucken</button>
-            <button id='bu_mark_as_ready' class='btn btn-outline-secondary mr-1' disabled><i class='fa fa-send'></i>&nbsp;&nbsp;Bestellung als »bereit« markieren</button>
+            <!-- <button id='bu_notify_teacher' class='btn btn-outline-secondary mr-1' disabled><i class='fa fa-send'></i>&nbsp;&nbsp;E-Mail senden</button> -->
         </div>
         <div class='row'>
             <div class='col-md-6'>
@@ -25,6 +25,7 @@
                         <div class="table-responsive mt-3" style="max-width: 100%; overflow-x: auto;">
                             <table class="table table-sm table-condensed narrow" style="user-select: none;">
                                 <tr><th>Bestellt von:</th><td id='user_here'></td></tr>
+                                <tr id='tr_kurs' style="display: none;"><th>Kurs:</th><td id='kurs_here'></td></tr>
                                 <tr><th>am:</th><td id='ts_order_placed_here'></td></tr>
                                 <tr><th>Regal:</th><td id='ts_order_shelf_here'></td></tr>
                                 <tr><th>Signaturstamm:</th><td id='ts_order_stem_here'></td></tr>
@@ -38,14 +39,20 @@
                     <p>Erfolgte Buchungen:</p>
                     <div id='fulfillments_table'></div>
                 </div>
-                <div id='scan_finished_hint' style='display: none;'>
-                    <div class='alert alert-success'>
-                        Alle Exemplare wurden gescannt, allerdings noch nicht ausgeliehen. Bestätige nun die Ausleihe, um fortzufahren.
-                    </div>
-                </div>
             </div>
             <div class='col-md-6'>
-                <div id='scan_table'></div>
+                <div id='scan_table_div' style='display: none;'>
+                    <p><b>Nutzer, die dieses Buch noch bekommen sollen:</b></p>
+                    <div id='scan_table'></div>
+                </div>
+                <div id='already_have_book_table_div' style='display: none;'>
+                    <p><b>Nutzer, die dieses Buch bereits haben:</b></p>
+                    <div id='already_have_book_table'></div>
+                </div>
+                <div id='no_verein_table_div' style='display: none;'>
+                    <p><b>Nutzer, die nicht im Lehrmittelverein sind:</b></p>
+                    <div id='no_verein_table'></div>
+                </div>
             </div>
         </div>
     </div>
@@ -61,6 +68,7 @@
     var scan_table = null;
     var scan_widget = null;
     var kurs_order_list = null;
+    var fulfillments_table = null;
 
     function append_barcode(parts) {
         if (scan_widget === null || Object.keys(already_scanned_barcodes).length >= scan_table.element.find('tr').length)
@@ -80,11 +88,13 @@
             tr = scan_table.element.find('tr').eq(Object.keys(already_scanned_barcodes).length);
             tr.find('td').eq(3).html(`<i class='text-slate-500 fa fa-circle-o-notch fa-spin'></i>`);
 
+            if (scan_table.element.find('tr').length > 1)
+                $('#scan_hint').slideDown();
+
             if (Object.keys(already_scanned_barcodes).length >= scan_table.element.find('tr').length) {
                 // we're done scanning all barcodes!
                 scan_widget.element.slideUp();
                 $('#scan_hint').slideUp();
-                $('#scan_finished_hint').slideDown();
             }
         }
     }
@@ -114,10 +124,10 @@
     }
 
     window.addEventListener('load', function () {
-        if ('#{can_manage_bib_logged_in?}' === 'true') {
-            $(`<li class='mx-1'><a class='inline-block bg-slate-900 border border-blue-500 hover:bg-slate-200 rounded py-1 px-3' href='#'><i class='fa fa-trash'></i>&nbsp;&nbsp;Bestellung stornieren</a></li>`).insertAfter($('#sub_menu_extra'));
-            $('#subsubmenu').show();
-        }
+        // if ('#{can_manage_bib_logged_in?}' === 'true') {
+        //     $(`<li class='mx-1'><a class='inline-block bg-slate-900 border border-blue-500 hover:bg-slate-200 rounded py-1 px-3' href='#'><i class='fa fa-trash'></i>&nbsp;&nbsp;Bestellung löschen</a></li>`).insertAfter($('#sub_menu_extra'));
+        //     $('#subsubmenu').show();
+        // }
         let oid = window.location.pathname.replace('/bib_process_order/', '');
         bib_api_call('/jwt/get_order', {oid: oid}, function (data) {
             if (data.success) {
@@ -129,6 +139,8 @@
                     }
                 }).data('book', data.order.b);
                 let list = [];
+                let already_have_book_list = [];
+                let no_verein_list = [];
                 for (let i = 0; i < data.order.o.count || 0; i++) list.push(data.order.u.email);
                 if (data.order.o.lesson_key) {
                     data.order.book_info = {
@@ -138,44 +150,108 @@
                     };
                     kurs_order_list = calculate_kurs_order_list(data.order.o.lesson_key, data.order.b.stem, data.order.book_info);
                     list = Object.keys(kurs_order_list.list);
+                    already_have_book_list = kurs_order_list.already_have_book_sus;
+                    no_verein_list = kurs_order_list.no_verein_sus;
+                    console.log(kurs_order_list);
+                } else {
+                    if (data.order.o.processed) list = [];
                 }
 
-                scan_table = new SortableTable({
-                    xs: true,
-                    element: $('#scan_table'),
-                    headers: ['Name', 'Vorname', 'Klasse', 'Signatur'].map(function (x) {
-                        let th = $('<th>').text(x);
-                        if (['Nr.', 'Signatur', 'Klasse'].indexOf(x) >= 0) th.data('type', 'int');
-                        return th;
-                    }),
-                    rows: list.map(function(email, i) {
-                        let user_info = db_user_info[email] || {};
-                        return [
-                            email,
-                            // $('<td>').text(`${i + 1}.`).data('sort_value', i + 1),
-                            create_user_td_span(email),
-                            $('<td>').html((db_user_info[email] || {}).klasse || '&ndash;').data('sort_value', user_info.teacher ? -1 : user_info.klassen_order),
-                            $('<td>'),
-                        ];
-                    }),
-                    sortable: false
-                });
-                scan_table.sort_rows(0, false);
-                scan_table.sort_rows(2, false);
+                if (list.length > 0) {
+                    scan_table = new SortableTable({
+                        xs: true,
+                        element: $('#scan_table'),
+                        headers: ['Name', 'Vorname', 'Klasse', 'Signatur'].map(function (x) {
+                            let th = $('<th>').text(x);
+                            if (['Nr.', 'Signatur', 'Klasse'].indexOf(x) >= 0) th.data('type', 'int');
+                            return th;
+                        }),
+                        rows: list.map(function(email, i) {
+                            let user_info = db_user_info[email] || {};
+                            return [
+                                email,
+                                // $('<td>').text(`${i + 1}.`).data('sort_value', i + 1),
+                                create_user_td_span(email),
+                                $('<td>').html((db_user_info[email] || {}).klasse || '&ndash;').data('sort_value', user_info.teacher ? -1 : user_info.klassen_order),
+                                $('<td>'),
+                            ];
+                        }),
+                        sortable: false
+                    });
+                    scan_table.sort_rows(0, false);
+                    scan_table.sort_rows(2, false);
+                    $('#scan_table_div').show();
+                }
+
+                if (already_have_book_list.length > 0) {
+                    let already_have_book_table = new SortableTable({
+                        xs: true,
+                        element: $('#already_have_book_table'),
+                        headers: ['Name', 'Vorname', 'Klasse'].map(function (x) {
+                            let th = $('<th>').text(x);
+                            if (['Nr.', 'Klasse'].indexOf(x) >= 0) th.data('type', 'int');
+                            return th;
+                        }),
+                        rows: already_have_book_list.map(function(email, i) {
+                            let user_info = db_user_info[email] || {};
+                            return [
+                                email,
+                                // $('<td>').text(`${i + 1}.`).data('sort_value', i + 1),
+                                create_user_td_span(email),
+                                $('<td>').html((db_user_info[email] || {}).klasse || '&ndash;').data('sort_value', user_info.teacher ? -1 : user_info.klassen_order),
+                            ];
+                        }),
+                        sortable: false
+                    });
+                    already_have_book_table.sort_rows(0, false);
+                    already_have_book_table.sort_rows(2, false);
+                    $('#already_have_book_table_div').show();
+                }
+
+                if (no_verein_list.length > 0) {
+                    let no_verein_table = new SortableTable({
+                        xs: true,
+                        element: $('#no_verein_table'),
+                        headers: ['Name', 'Vorname', 'Klasse'].map(function (x) {
+                            let th = $('<th>').text(x);
+                            if (['Nr.', 'Klasse'].indexOf(x) >= 0) th.data('type', 'int');
+                            return th;
+                        }),
+                        rows: no_verein_list.map(function(email, i) {
+                            let user_info = db_user_info[email] || {};
+                            return [
+                                email,
+                                // $('<td>').text(`${i + 1}.`).data('sort_value', i + 1),
+                                create_user_td_span(email),
+                                $('<td>').html((db_user_info[email] || {}).klasse || '&ndash;').data('sort_value', user_info.teacher ? -1 : user_info.klassen_order),
+                            ];
+                        }),
+                        sortable: false
+                    });
+                    no_verein_table.sort_rows(0, false);
+                    no_verein_table.sort_rows(2, false);
+                    $('#no_verein_table_div').show();
+                }
 
                 $('#book_div').append(div);
                 $('#user_here').html(`${(db_user_info[data.order.u.email] || {}).display_name || data.order.u.email}`);
+                if (data.order.o.lesson_key) {
+                    $('#tr_kurs').show();
+                    $('#kurs_here').text((kurse[data.order.o.lesson_key] || {}).fach || data.order.o.lesson_key);
+                }
                 $('#ts_order_placed_here').text(`${moment.unix(data.order.o.ts_order_placed).format('L')}`);
                 $('#ts_order_count_here').text(`${list.length} Exemplar${list.length === 1 ? '': 'e'}`);
                 $('#ts_order_shelf_here').html(`${(data.order.locations || []).map(function(x) {return create_location_span(x); }).join('')}`);
                 $('#ts_order_stem_here').text(`${data.order.b.stem}`);
+                if (list.length > 0) {
+                    $('#bu_scan_exemplare').removeClass('btn-outline-secondary').addClass('btn-success').prop('disabled', false);
+                }
             }
         });
         bib_api_call('/jwt/get_fulfillments_for_order', {oid: oid}, function (data) {
             console.log(data);
-            if (data.fulfillments.length > 0) {
-                $('#fulfillments_div').show();
-                new SortableTable({
+            if (data.success) {
+                fulfillments_table = new SortableTable({
                     xs: true,
                     element: $('#fulfillments_table'),
                     headers: ['Datum', 'Exemplare', 'Beleg'].map(function (x) {
@@ -184,7 +260,6 @@
                         return th;
                     }),
                     rows: data.fulfillments.map(function(fulfillment) {
-                        console.log(fulfillment);
                         let button = $(`<button class='btn btn-success btn-xs'>`).html(`<i class='fa fa-print'></i>&nbsp;&nbsp;Beleg`);
                         button.click(function(e) {
                             printJS(`${BIB_HOST}/jwt/receipt_pdf/${fulfillment.id}`);
@@ -198,6 +273,9 @@
                     }),
                     sortable: false
                 });
+                if (data.fulfillments.length > 0) {
+                    $('#fulfillments_div').show();
+                }
             }
         });
         $('#bu_scan_exemplare').click(function(e) {
@@ -205,19 +283,18 @@
                 element: $('#scan_container'),
                 on_scan: on_scan
             });
-            $('#scan_hint').show();
             $('#bu_scan_exemplare').prop('disabled', true);
             let tr = scan_table.element.find('tr').eq(0);
             tr.find('td').eq(3).html(`<i class='text-slate-500 fa fa-circle-o-notch fa-spin'></i>`);
 
-            if ('#{DEVELOPMENT}' === '1') {
-                setTimeout(function() {
-                    for (let i = 0; i < 6; i++)
-                        setTimeout(function() {
-                            append_barcode({stem: 3614, bnr: i + 1});
-                        }, 100 * i);
-                }, 100);
-            }
+            // if ('#{DEVELOPMENT}' === '1') {
+            //     setTimeout(function() {
+            //         for (let i = 0; i < 20; i++)
+            //             setTimeout(function() {
+            //                 on_scan(`3789-${i}`);
+            //             }, 100 * i);
+            //     }, 100);
+            // }
         });
         $('#bu_confirm_checkout').click(function(e) {
             let data = {};
@@ -235,8 +312,29 @@
             }
             bib_api_call('/jwt/checkout_order', data, function (data) {
                 console.log(data);
+                if (data.success) {
+                    $('#bu_confirm_checkout').prop('disabled', true);
+                    $('#bu_print_receipt').prop('disabled', false).removeClass('btn-outline-secondary').addClass('btn-success').data('fid', data.f.id);
+                    $('#bu_mark_as_ready').prop('disabled', false).removeClass('btn-outline-secondary').addClass('btn-success');
+                    let button = $(`<button class='btn btn-success btn-xs'>`).html(`<i class='fa fa-print'></i>&nbsp;&nbsp;Beleg`);
+                    button.click(function(e) {
+                        printJS(`${BIB_HOST}/jwt/receipt_pdf/${data.f.id}`);
+                    });
+                    fulfillments_table.add_row([
+                        data.f.id,
+                        $('<td>').html(`${moment.unix(data.f.ts).format('L')}`),
+                        $('<td>').html(`${data.f.bnrs.length}`),
+                        $('<td>').append(button),
+
+                    ], true);
+                    $('#fulfillments_div').show();
+
+                }
             });
-            
+        });
+        $('#bu_print_receipt').click(function(e) {
+            let fid = $(e.target).closest('button').data('fid');
+            printJS(`${BIB_HOST}/jwt/receipt_pdf/${fid}`);
         });
     });
 </script>

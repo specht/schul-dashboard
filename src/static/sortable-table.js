@@ -44,6 +44,7 @@ class SortableTable {
     }
 
     add_row(row, highlight) {
+        if (row === null) return;
         if (typeof(highlight) === 'undefined')
             highlight = true;
         let tr = $('<tr>');

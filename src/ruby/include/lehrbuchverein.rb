@@ -160,4 +160,44 @@ class Main < Sinatra::Base
             respond(:ok => true, :state => determine_lehrmittelverein_state_for_email(email))
         end
     end
+
+    post '/api/get_lehrbuchverein_data' do
+        assert(can_manage_bib_members_logged_in?)
+        temp = neo4j_query(<<~END_OF_QUERY).map { |x| { :email => x['u.email'] } }
+            MATCH (u:User {lmv_no_pay: true})
+            RETURN u.email;
+        END_OF_QUERY
+        no_pay = Set.new()
+        temp.each do |row|
+            no_pay << row[:email]
+        end
+        temp = neo4j_query(<<~END_OF_QUERY, {:jahr => LEHRBUCHVEREIN_JAHR}).map { |x| { :email => x['u.email'] } }
+            MATCH (u:User)-[:PAID_FOR]->(j:Lehrbuchvereinsjahr {jahr: $jahr})
+            RETURN u.email;
+        END_OF_QUERY
+        paid = Set.new()
+        temp.each do |row|
+            paid << row[:email]
+        end
+        users = []
+        all_schueler = []
+        @@klassen_order.each do |klasse|
+            (@@schueler_for_klasse[klasse] || []).each do |email|
+                all_schueler << email
+            end
+        end
+        all_schueler.each do |email|
+            users << {
+                :email => email,
+                :last_name => @@user_info[email][:last_name],
+                :first_name => @@user_info[email][:first_name],
+                :klasse => tr_klasse(@@user_info[email][:klasse]),
+                :klassen_index => @@klassen_index[@@user_info[email][:klasse]] || -1,
+                :no_pay => no_pay.include?(email),
+                :paid => paid.include?(email),
+            }
+        end
+        respond(:users => users, :year => LEHRBUCHVEREIN_JAHR)
+    end
+
 end

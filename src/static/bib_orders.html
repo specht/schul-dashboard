@@ -1,5 +1,10 @@
 #{this_is_a_page_for_logged_in_teachers_or_can_manage_bib}
 #{File.read('/static/_bib_public_template.html')}
+<style>
+    .container, .container-lg, .container-md, .container-sm, .container-xl {
+        max-width: 1400px;
+    }
+</style>
 <div class='container bg-white' style="padding-top: 15px;">
     <div class="bib_teacher_only">
         <h3>Bestellungen</h3>
@@ -11,6 +16,7 @@
         y = @@lessons[:lesson_keys][x]
         [x, {:fach => y[:pretty_folder_name] || x, :sus => (@@schueler_for_lesson[x] || [])}]
     end].to_json};
+    var lehrmittelverein_state_cache = #{@@lehrmittelverein_state_cache.to_json};
 
     function row_clicked(data) {
         window.location = `/bib_book/${data}`;
@@ -19,20 +25,35 @@
     window.addEventListener('load', function () {
         bib_api_call('/jwt/my_orders', {}, function (data) {
             if (data.success) {
-                console.log(data);
                 if (data.orders.length === 0) {
-                    $('#order_table').append($(`<div class='alert alert-warning'>Du hast keine Bestellungen aufgegeben. Wenn du ein Buch bestellen möchtest, schau im <a href='/bib_browse'>Katalog</a> nach.</div>`));
+                    $('#order_table').append($(`<div class='alert alert-warning'>Du hast keine Bestellungen aufgegeben. Wenn du eine Bestellung aufgeben möchtest, such dir ein Buch im <a href='/bib_browse'>Katalog</a> aus.</div>`));
                 } else {
                     new SortableTable({
                         xs: true,
                         element: $('#order_table'),
-                        headers: ['Signatur', 'Titel', 'Autor', 'Bestellt', 'Anzahl / Kurs', 'Status', ''].map(function (x) {
+                        headers: ['Signatur', 'Titel', 'Autor', 'Bestellt', 'Kurs', 'Ausstehend', 'Status', ''].map(function (x) {
                             let th = $('<th>').text(x);
-                            if (['Signatur', 'Bestellt', 'Anzahl / Kurs'].indexOf(x) >= 0) th.data('type', 'int');
+                            if (['Signatur', 'Bestellt'].indexOf(x) >= 0) th.data('type', 'int');
                             return th;
                         }),
                         rows: data.orders.map(function(order) {
-                            let bu_stornieren = $(`<button class='btn btn-danger btn-xs'>`).html(`<i class='fa fa-trash'></i>&nbsp;&nbsp;Stornieren`);
+                            console.log(order);
+
+                            let missing_count = order.o.count;
+                            if (order.o.lesson_key) {
+                                order.book_info = {
+                                    ordering_teacher_has_this_book: order.u.email in order.users_who_have_this_book,
+                                    ordering_teacher_email: order.u.email,
+                                    users_who_have_this_book: order.users_who_have_this_book,
+                                };
+                                missing_count = calculate_kurs_order_count(order.o.lesson_key, order.b.stem, order.book_info);
+                            } else {
+                                missing_count = calculate_private_order_count(order.o.count, order.b.stem, order.u.email, order.users_who_have_this_book);
+                            }
+
+                            let bu_stornieren = $(`<button class='btn btn-danger btn-xs'>`).html(`Stornieren`);
+                            if (order.f_count > 0)
+                                bu_stornieren.prop('disabled', true).removeClass('btn-danger').addClass('btn-outline-secondary');
                             bu_stornieren.click(function(e) {
                                 e.stopPropagation();
                                 showTemplateModal('Bestellung stornieren',
@@ -48,11 +69,9 @@
                                 );
 
                             });
-                            let count = order.o.count;
-                            let count_sort_value = count;
+                            let kurs = '(privat)';
                             if (order.o.lesson_key) {
-                                count = kurse[order.o.lesson_key].fach || order.o.lesson_key;
-                                count_sort_value = 0;
+                                kurs = kurse[order.o.lesson_key].fach || order.o.lesson_key;
                             }
                             let cells = [
                                 order.b.stem,
@@ -60,8 +79,12 @@
                                 $('<td>').css('max-width', '300px').text(order.b.title),
                                 $('<td>').css('max-width', '200px').text(order.b.author),
                                 $('<td>').text(`${moment.unix(order.o.ts_order_placed).format('L')}`).data('sort_value', order.o.ts_order_placed),
-                                $('<td>').text(`${count}`).data('sort_value', count_sort_value),
-                                $('<td>').html(`<i class='fa fa-clock-o text-stone-400'></i>&nbsp;&nbsp;in Bearbeitung`),
+                                $('<td>').css('max-width', '180px').text(`${kurs}`),
+                                $('<td>').text(`${missing_count}`).data('sort_value', missing_count),
+                                missing_count === 0 ? $('<td>').html(`<i class='fa fa-check text-grass-500'></i>&nbsp;&nbsp;Bereit`) :
+                                    (order.f_count === 0 ? $('<td>').html(`<i class='fa fa-clock-o text-stone-400'></i>&nbsp;&nbsp;in Bearbeitung`) :
+                                    $('<td>').html(`<i class='fa fa-clock-o text-grass-500'></i>&nbsp;&nbsp;Teilweise bereit`)),
+                                
                                 $('<td>').append(bu_stornieren),
                             ];
 

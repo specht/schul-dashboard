@@ -1,166 +1,59 @@
+#{File.read('/static/_bib_public_template.html')}
 #{require_user_who_can_manage_bib!}
-#{File.read('/static/_bib_template.html')}
-<style>
-    #barcode_scanner_div canvas {
-        position: absolute;
-        left: 0;
-        top: 0;
-        max-width: 100%;
-    }
-</style>
-<div class="w-full grid grid-cols-12 gap-4 mb-4">
-    <div class="col-span-12">
-        <h3>Buch scannen</h3>
-        <p>Bitte scannen Sie eine Signatur. Sie können anschließend die dazugehörige ISBN einscannen.</p>
+<div class='container bg-white'>
+    <div class='row'>
+        <div class="col-md-6">
+            <div id='barcode_widget'></div>
+        </div>
+        <div class="col-md-6">
+            <img id="cover" style="max-width: 30%;"></img><br />
+            <i class='fa fa-check'></i>&nbsp;&nbsp;Buch hat eine ISBN<br />
+            <i class='fa fa-check'></i>&nbsp;&nbsp;Buch hat ein Cover<br />
+            <i class='fa fa-check'></i>&nbsp;&nbsp;Buch hat Lagerort<br />
+            <i class='fa fa-check'></i>&nbsp;&nbsp;Label hat Prüfsumme<br />
+            <hr />
+            <button class='btn btn-sm btn-success ml-1 mr-1'>ISBN scannen</button>
+            <button class='btn btn-sm btn-success ml-1 mr-1'>Cover fotografieren</button>
+            <button class='btn btn-sm btn-success ml-1 mr-1'>Regal scannen</button>
     </div>
-</div>
-<div id='book_list' class="w-full grid grid-cols-12 gap-4 mb-4">
-    <div class="border overflow-hidden col-span-12 md:col-span-6 xl:col-span-4 shadow-md bg-white shadow-md rounded" style="max-height: 231px;">
-        <div id="barcode_scanner_div" style="position: relative; max-width: 400px;"></div>
     </div>
-</div>
-<div id='unscanned_book_list'>
-</div>
-</section>
 </div>
 <script>
-    var stem = null;
-    var isbn_set = {};
+    var divs_for_signature = {};
+    var table = null;
 
-    var beep = new Audio('/scanner.mp3');
-    window.addEventListener('load', function () {
-
-        bib_api_call('/jwt/get_books_without_isbn', {}, function (data) {
+    function on_scan(barcode, scanned) {
+        let parts = fix_scanned_book_barcode(barcode);
+        if (parts === null) {
+            let _ = beep_fail.cloneNode(); _.play();
+            return;
+        }
+        let data = {
+            stem: parts.stem,
+            bnr: parts.bnr
+        };
+        if (parts.checksum) data.checksum = parts.checksum;
+        bib_api_call('/jwt/scan_book', data, function (data) {
+            console.log(data);
             if (data.success) {
-                $('#unscanned_book_list').append($("<div>").text('Die folgenden Signaturstämme haben noch keine zugeordnete ISBN:'));
-                for (let book of data.books) {
-                    let entry = $('<p>').html(`<span class='bg-amber-200 px-2 py-1 rounded mr-2 font-bold'>${book.stem}</span>${book.author}: ${book.title}`);
-                    $('#unscanned_book_list').append(entry);
-                }
-            }
-        });
-
-        Quagga.init({
-            locate: true,
-            inputStream : {
-                name : "Live",
-                type : "LiveStream",
-                facingMode: "environment",
-                target: document.querySelector('#barcode_scanner_div')    // Or '#yourElement' (optional)
-            },
-            decoder : {
-                readers : ["ean_reader", "code_39_reader", "code_128_reader"]
-            }
-        }, function(err) {
-            if (err) {
-                console.log(err);
-                return;
-            }
-            console.log("Initialization finished. Ready to start");
-            Quagga.start();
-        });
-
-        Quagga.onProcessed(function(result) {
-            let drawingCtx = Quagga.canvas.ctx.overlay;
-            let drawingCanvas = Quagga.canvas.dom.overlay;
-
-            if (result) {
-                if (result.boxes) {
-                    drawingCtx.clearRect(0, 0, parseInt(drawingCanvas.getAttribute("width")), parseInt(drawingCanvas.getAttribute("height")));
-                    result.boxes.filter(function (box) {
-                        return box !== result.box;
-                    }).forEach(function (box) {
-                        Quagga.ImageDebug.drawPath(box, {x: 0, y: 1}, drawingCtx, {color: "green", lineWidth: 2});
-                    });
-                }
-
-                if (result.box) {
-                    Quagga.ImageDebug.drawPath(result.box, {x: 0, y: 1}, drawingCtx, {color: "#00F", lineWidth: 2});
-                }
-
-                if (result.codeResult && result.codeResult.code) {
-                    Quagga.ImageDebug.drawPath(result.line, {x: 'x', y: 'y'}, drawingCtx, {color: 'red', lineWidth: 3});
-                }
-            }
-        });
-
-        function on_scan(result) {
-            let code = result.codeResult.code;
-            if (code.match(/^\d{4}\/\d{3}$/) !== null)
-                code = code.replace('/', '-');
-            if (code.match(/^\d{4}\/0\d{3}$/) !== null)
-                code = code.replace('/0', '-');
-            if (code.match(/^\d{4}\-\d{3}$/) !== null) {
-                code = parseInt(code.split('-')[0]);
-                if (stem != code) {
-                    beep.play();
-                    if (stem !== null) {
-                        $('.book').remove();
-                        isbn_set = {};
-                        stem_book = null;
-                    }
-                    stem = code;
-                    console.log(`Got stem: ${stem}`);
-                    bib_api_call('/jwt/get_book', {stem: stem}, function (data) {
-                        if (data.success) {
-                            stem_book = data.book;
-                            console.log(data.book);
-                            $('#book_list').append(create_book_div(data.book));
-                            let input = $(`<input class='form-control' type='number' style='position: absolute; bottom: 5px; right: 5px;'>`);
-                            let button = $(`<button style='position: absolute; bottom: 5px; right: 5px;'>`).addClass('btn btn-primary').text(`ISBN eingeben`);
-                            $('.book').first().append(input);
-                            $('.book').first().append(button);
-                            button.click(function(e) {
-                                let isbn = input.val().trim();
-                                bib_api_call('/jwt/add_isbn_for_book', {stem: stem, isbn: isbn}, function (data) {
-                                    if (data.success) {
-                                        stem = null;
-                                        $('.book').remove();
-                                        isbn_set = {};
-                                        stem_book = null;
-                                    }
-                                });
-                            });
-                        }
-                    });
+                let _ = beep1.cloneNode(); _.play();
+                let book = data.book;
+                if (book.has_cover) {
+                    $('#cover').attr('src', `${BIB_HOST}/gen/covers/${book.stem}-400.jpg`).show();
+                } else {
+                    $('#cover').hide();
                 }
             } else {
-                if (stem !== null) {
-                    beep.play();
-                    let isbn = code;
-                    if (!(isbn in isbn_set)) {
-                        isbn_set[isbn] = true;
-                        console.log(`Got ISBN: ${isbn}`);
-                        if (stem_book.isbn == isbn || stem_book.isbn13 == isbn || (stem_book.scanned_isbn || []).indexOf(isbn) >= 0) {
-                            let button = $(`<button style='position: absolute; bottom: 5px; right: 5px;'>`).addClass('btn btn-secondary btn-sm disabled').text(`»${isbn}« ist bereits verknüpft`);
-                            $('.book').first().append(button);
-                        } else {
-                            let button = $(`<button style='position: absolute; bottom: 5px; right: 5px;'>`).addClass('btn btn-success').text(`»${isbn}« verknüpfen`);
-                            $('.book').first().append(button);
-                            button.click(function(e) {
-                                bib_api_call('/jwt/add_isbn_for_book', {stem: stem, isbn: isbn}, function (data) {
-                                    if (data.success) {
-                                        stem = null;
-                                        $('.book').remove();
-                                        isbn_set = {};
-                                        stem_book = null;
-                                    }
-                                });
-                            });
-                        }
-                    }
-                }
+                let _ = beep_fail.cloneNode(); _.play();
             }
-        }
-
-        Quagga.onDetected(function(result) {
-            on_scan(result);
         });
+    }
 
-        // setTimeout(function() {
-            // console.log('hey');
-            // on_scan({codeResult: {code: '1795-051'}});
-            // on_scan({codeResult: {code: '1795'}});
-        // }, 0);
+    window.addEventListener('load', function () {
+        let widget = new BarcodeWidget({
+            element: $('#barcode_widget'),
+            on_scan: on_scan
+        });
+        widget.element.find('video').parent().css('height', '120px');
     });
 </script>

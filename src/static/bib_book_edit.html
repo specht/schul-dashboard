@@ -106,6 +106,9 @@
                     <label>Beschreibung</label>
                     <textarea class='form-control' id="ti_description"></textarea>
                 </div>
+                <div id="old_description_container" class="alert alert-secondary text-sm" style="display: none;">
+                    Autor und Titel im vorherigen Bibliothekssystem: <span id='old_description'></span>
+                </div>
                 <!-- <hr /> -->
                 <button id='bu_save_changes' disabled class='btn btn-success pull-right'><i class='fa fa-check'></i>&nbsp;&nbsp;Änderungen speichern</button>
             </div>
@@ -219,6 +222,7 @@
         if ('#{can_manage_bib_logged_in?}' === 'true') {
             $(`<li class='mx-1 py-1 px-1.5' style='white-space: nowrap;'><i class='fa fa-barcode'></i>&nbsp;&nbsp;${stem}</li>`).insertBefore($('#sub_menu_extra'));
             $(`<li class='mx-1'><a class='inline-block bg-slate-900 border border-blue-500 hover:bg-slate-200 rounded py-1 px-3' href='/bib_book_edit/${stem}'><i class='fa fa-pencil'></i>&nbsp;&nbsp;Metadaten bearbeiten</a></li>`).insertAfter($('#sub_menu_extra'));
+            $(`<li class='mx-1'><a class='inline-block bg-slate-900 border border-blue-500 hover:bg-slate-200 rounded py-1 px-3' href='/bib_add_exemplare/${stem}'><i class='fa fa-plus'></i>&nbsp;&nbsp;Neue Exemplare aufnehmen</a></li>`).insertAfter($('#sub_menu_extra'));
             $(`<li class='mx-1'><a class='inline-block bg-slate-900 border border-blue-500 hover:bg-slate-200 rounded py-1 px-3' href='/bib_print_label/${stem}'><i class='fa fa-print'></i>&nbsp;&nbsp;Label drucken</a></li>`).insertAfter($('#sub_menu_extra'));
             $(`<li class='mx-1'><a class='inline-block bg-slate-900 border border-blue-500 hover:bg-slate-200 rounded py-1 px-3' href='/bib_book/${stem}'><i class='fa fa-book'></i>&nbsp;&nbsp;Buch</a></li>`).insertAfter($('#sub_menu_extra'));
             $('#subsubmenu').show();
@@ -239,6 +243,10 @@
                 $('#ti_preis').val(currency_string_plain(book.preis));
                 $('#ti_waehrung').val(book.waehrung);
                 $('#ti_stem').val(book.stem);
+                if (book.bib_entry) {
+                    $('#old_description').text(book.bib_entry);
+                    $('#old_description_container').show();
+                }
                 old_data_s = JSON.stringify(collect_data());
                 for (let key of ['title', 'subtitle', 'author', 'isbn',
                     'language', 'verlag', 'published', 'page_count',

@@ -465,7 +465,26 @@ function show_poll_run_results(prid) {
   </div>
 </div>
 
-<div class="modal" id="pollResponseModal" tabindex="-1" role="dialog" aria-hidden="true">
+<div class="modal" id="__template_modal_with_input" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true" style='z-index: 200000;'>
+    <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" >
+          </h5>
+        </div>
+        <div class="modal-body">
+            <div class="modal-body-hint"></div>
+            <div class="form-group mt-2">
+                <input type="text" id="ti_template_modal_input" class="form-control">
+            </div>
+        </div>
+        <div class="modal-footer">
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <div class="modal" id="pollResponseModal" tabindex="-1" role="dialog" aria-hidden="true">
     <div class="modal-dialog modal-dialog-scrollable modal-xl modal-dialog-centered" role="document">
         <div class="modal-content">
             <div class="modal-header">
@@ -539,6 +558,51 @@ function showTemplateModal(title, text, confirm_label, confirm_class,
         $('#__template_modal').modal('hide');
     });
     $('#__template_modal').modal('show');
+}
+
+function showTemplateModalWithInput(title, text, confirm_label, confirm_class,
+    cancel_label, cancel_class, label, placeholder, confirm_callback) {
+    $('#__template_modal_with_input .modal-title').html(title);
+    $('#__template_modal_with_input .modal-body-hint').html(text);
+    $('#__template_modal_with_input #ti_template_modal_input').val('').attr('placeholder', placeholder);
+    $('#ti_template_modal_input').unbind();
+    let bu_confirm = $('<button disabled>').addClass('btn btn-outline-secondary').html(confirm_label);
+    $('#__template_modal_with_input .modal-footer').empty().append(bu_confirm);
+    if (cancel_label !== null) {
+        let bu_cancel = $('<button>').addClass('btn ' + cancel_class).html(cancel_label).attr('data-dismiss', 'modal');
+        $('#__template_modal_with_input .modal-footer').append(bu_cancel);
+    }
+    bu_confirm.click(function(e) {
+        confirm_callback($('#ti_template_modal_input').val());
+        $('#__template_modal_with_input').modal('hide');
+    });
+    $('#__template_modal_with_input').on('shown.bs.modal', function(e) {
+        $('#ti_template_modal_input').focus();
+    });
+
+    function handle_ti_update() {
+        if ($('#ti_template_modal_input').val().length > 0) {
+            bu_confirm.removeClass('btn-outline-secondary').addClass(confirm_class).prop('disabled', false);
+        } else {
+            bu_confirm.addClass('btn-outline-secondary').removeClass(confirm_class).prop('disabled', true);
+        }
+    }
+    $('#ti_template_modal_input').keydown(function (e) {
+        handle_ti_update();
+    });
+    $('#ti_template_modal_input').keyup(function (e) {
+        handle_ti_update();
+    });
+    $('#ti_template_modal_input').change(function (e) {
+        handle_ti_update();
+    });
+    $('#ti_template_modal_input').keydown(function (e) {
+        if (e.key === 'Enter') {
+            if ($('#ti_template_modal_input').val().length > 0)
+                bu_confirm.click();
+        }
+    });
+    $('#__template_modal_with_input').modal('show');
 }
 </script>
 

@@ -26,83 +26,203 @@
     <div id='book_here'>
         <div class="row">
             <div class="col-md-3">
-                <div id='book_cover_container' class='pull-left mr-3 mb-3 bg-stone-800 shadow shadow-md'
+                <div id='book_cover_container' class='pull-left mr-3 mb-3 bg-stone-800 shadow shadow-md text-center italic text-sm border'
                     style="width: 100%;">
-                    <img id='book_cover' class=' text-center italic text-sm' style='width: 100%;' />
+                    <img id='book_cover' class='text-center italic text-sm' style='width: 100%; display: none;' />
+                    <div id='book_cover_placeholder' style="padding-top: 60%; padding-bottom: 60%; display: none;">
+                        <div class='text-slate-400 pt-3 pb-2'>(kein Cover)</div>
+                    </div>
                 </div>
-
+                <button id='bu_set_cover_from_link' class='btn btn-outline-secondary btn-sm mr-1 mb-1' style="width: 100%;"><i class='fa fa-link'></i>&nbsp;&nbsp;Cover von Link setzen…</button>
+                <button id='bu_remove_cover' class='btn btn-outline-secondary btn-sm mr-1 mb-1' style="width: 100%;"><i class='fa fa-trash'></i>&nbsp;&nbsp;Cover entfernen</button>
+                <div id="other_covers">
+                </div>
             </div>
             <div class="col-md-9">
-                <form>
-                    <div class="form-row">
-                        <div class="form-group col-md-10">
-                            <label>Titel</label>
-                            <input type="text" class="form-control" id="ti_title">
-                        </div>
-                        <div class="form-group col-md-2">
-                            <label>Signaturstamm</label>
-                            <input type="text" class="form-control" id="ti_stem" disabled readonly>
-                        </div>
+                <div class="form-row">
+                    <div class="form-group col-md-10">
+                        <label>Titel</label>
+                        <input type="text" class="form-control" id="ti_title">
                     </div>
-                    <div class="form-row">
-                        <div class="form-group col-md-10">
-                            <label>Untertitel</label>
-                            <input type="text" class="form-control" id="ti_subtitle">
-                        </div>
-                        <div class="form-group col-md-2">
-                            <label>ISBN</label>
-                            <input type="text" pattern="\d+" class="form-control" id="ti_isbn">
-                        </div>
+                    <div class="form-group col-md-2">
+                        <label>Signaturstamm</label>
+                        <input type="text" class="form-control" id="ti_stem" disabled readonly>
                     </div>
-                    <div class="form-group">
+                </div>
+                <div class="form-row">
+                    <div class="form-group col-md-10">
+                        <label>Untertitel</label>
+                        <input type="text" class="form-control" id="ti_subtitle">
+                    </div>
+                    <div class="form-group col-md-2">
+                        <label>ISBN</label>
+                        <input type="text" pattern=".+" class="form-control" id="ti_isbn">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group col-md-10">
                         <label>Autor</label>
                         <input type="text" class="form-control" id="ti_author">
                     </div>
-                    <div class="form-row">
-                        <div class="form-group col-md-5">
-                            <label>Verlag</label>
-                            <input type="text" class="form-control" id="ti_verlag">
-                        </div>
-                        <div class="form-group col-md-2">
-                            <label>Jahr</label>
-                            <input type="text" pattern="\d{4}" class="form-control" id="ti_published">
-                        </div>
-                        <div class="form-group col-md-2">
-                            <label>Seiten</label>
-                            <input type="text" pattern="\d*" class="form-control" id="ti_page_count">
-                        </div>
-                        <div class="form-group col-md-2">
-                            <label>Preis</label>
-                            <input type="text" pattern="\d+(,\d{1,2})?" class="form-control" id="ti_preis">
-                        </div>
-                        <div class="form-group col-md-1">
-                            <label>&nbsp;</label>
-                            <select class='form-control' id="ti_waehrung">
-                                <option value="€">€</option>
-                                <option value="DM">DM</option>
-                            </select>
-                            <!-- <input type="text" class="form-control" id="ti_waehrung"> -->
+                    <div class="form-group col-md-2">
+                        <label>Sprache</label>
+                        <select class='form-control' id="ti_language">
+                            <option value="de">deutsch</option>
+                            <option value="en">englisch</option>
+                            <option value="fr">französisch</option>
+                            <option value="el">griechisch</option>
+                            <option value="la">lateinisch</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group col-md-5">
+                        <label>Verlag</label>
+                        <input type="text" class="form-control" id="ti_verlag">
+                    </div>
+                    <div class="form-group col-md-2">
+                        <label>Jahr</label>
+                        <input type="text" pattern="\d{4}" class="form-control" id="ti_published">
+                    </div>
+                    <div class="form-group col-md-2">
+                        <label>Seiten</label>
+                        <input type="text" pattern="\d*" class="form-control" id="ti_page_count">
+                    </div>
+                    <div class="form-group col-md-3">
+                        <label>Preis</label>
+                        <!-- <input type="text" pattern="\d+(,\d{1,2})?" class="form-control" id="ti_preis"> -->
+                        <div class="input-group">
+                            <input id='ti_preis' type="text" class="form-control">
+                            <div class="input-group-append" style="width: 40%;">
+                                <select class='form-control' id="ti_waehrung">
+                                    <option value="€">€</option>
+                                    <option value="DM">DM</option>
+                                </select>
+                            </div>
                         </div>
                     </div>
-                    <div class="form-group">
-                        <label>Beschreibung</label>
-                        <textarea class='form-control' id="ti_description"></textarea>
-                    </div>
-                </form>
+                </div>
+                <div class="form-group">
+                    <label>Beschreibung</label>
+                    <textarea class='form-control' id="ti_description"></textarea>
+                </div>
+                <!-- <hr /> -->
+                <button id='bu_save_changes' disabled class='btn btn-success pull-right'><i class='fa fa-check'></i>&nbsp;&nbsp;Änderungen speichern</button>
             </div>
         </div>
     </div>
-    <hr style='clear: both;' />
-    <div id='isbn_search_results'></div>
 </div>
 <script>
+    var stem = null;
+    var old_data_s = null;
+
+    function update_isbn_info(refresh_fields) {
+        bib_api_call('/jwt/fetch_info_for_isbn', { isbn: $('#ti_isbn').val().trim() }, function (data) {
+            if (data.success) {
+                console.log(data);
+                for (let key of ['title', 'subtitle', 'author', 'verlag', 'description', 'published', 'page_count', 'language']) {
+                    $(`#ti_${key}`).closest('.form-group').find('.btn-xs').remove();
+                    let values = {};
+                    for (let service of Object.keys(data.compiled)) {
+                        let value = (data.compiled[service] || {})[key];
+                        if (key === 'language') {
+                            if (['de', 'en', 'fr', 'el', 'it', 'la'].indexOf(value) < 0)
+                                value = null;
+                        } else if (key === 'published' && typeof(value) !== 'undefined' && value !== null) {
+                            if (value.match(/\d{4}/).length > 0) {
+                                value = (value || '').match(/\d{4}/)[0];
+                            }
+                        }
+                        if (typeof(value) !== 'undefined' && value !== null) {
+                            if (!(value in values))
+                                values[value] = [];
+                            values[value].push(service);
+                        }
+                    }
+                    for (let value of Object.keys(values)) {
+                        let button = $(`<button class='btn btn-outline-secondary btn-xs mr-1 mt-1'>`).text(value);
+                        button.css('text-align', 'left');
+                        $(`#ti_${key}`).closest('.form-group').append(button);
+                        button.click(function(e) {
+                            $(`#ti_${key}`).val(value);
+                            refresh_buttons();
+                        });
+                    }
+                    if (refresh_fields)
+                        $(`#ti_${key}`).val(data.record[key]);
+                }
+                $('#other_covers').empty();
+                if (data.record.cover) {
+                    $('#other_covers').append($('<div>').text('Vorgeschlagene Cover:'));
+                    let image = $('<img>').attr('src', `${BIB_HOST}${data.record.cover}`).css('width', '50%').css('cursor', 'pointer');
+                    $('#other_covers').append(image);
+                    image.click(function(e) {
+                        bib_api_call('/jwt/set_cover_from_path', {stem: stem, path: data.record.cover}, function(data) {
+                            if (data.success) {
+                                console.log(data);
+                                update_cover(data.book);
+                            }
+                        });
+                    });
+                }
+            }
+        });
+    }
+
+    function update_cover(book) {
+        if (book.has_cover) {
+            $('#book_cover').attr('src', `${BIB_HOST}/gen/covers/${book.stem}-400.jpg?${Date.now()}`);
+            $('#book_cover').show();
+            $('#book_cover_placeholder').hide();
+        } else {
+            $('#book_cover_placeholder').show();
+            $('#book_cover').hide();
+        }
+    }
+
+    function collect_data() {
+        let data = {};
+        data.title = $('#ti_title').val().trim();
+        data.subtitle = $('#ti_subtitle').val().trim();
+        data.author = $('#ti_author').val().trim();
+        data.isbn = $('#ti_isbn').val().trim();
+        data.language = $('#ti_language').val().trim();
+        data.verlag = $('#ti_verlag').val().trim();
+        let published = parseInt($('#ti_published').val().trim());
+        if (!published.isNaN) data.published = published;
+        let page_count = parseInt($('#ti_page_count').val().trim());
+        if (!page_count.isNaN) data.page_count = page_count;
+        data.preis = null;
+        if ($('#ti_preis').val().trim().length > 0) {
+            let preis = Math.floor(parseFloat($('#ti_preis').val().trim().replace(',', '.')) * 100);
+            if (!(preis.isNaN)) data.preis = preis;
+        }
+        data.waehrung = null;
+        if ($('#ti_waehrung').val())
+            data.waehrung = $('#ti_waehrung').val().trim();
+        data.language = $('#ti_language').val().trim();
+        data.description = $('#ti_description').val().trim();
+        return data;
+    }
+
+    function refresh_buttons() {
+        let now_data_s = JSON.stringify(collect_data());
+        if (($(':invalid').length === 0) && (now_data_s !== old_data_s)) {
+            $('#bu_save_changes').prop('disabled', false);
+        } else {
+            $('#bu_save_changes').prop('disabled', true);
+        }
+    }
+
     window.addEventListener('load', function () {
-        let stem = parseInt(window.location.pathname.replace('/bib_book_edit/', ''));
+        stem = parseInt(window.location.pathname.replace('/bib_book_edit/', ''));
         if ('#{can_manage_bib_logged_in?}' === 'true') {
             $(`<li class='mx-1 py-1 px-1.5' style='white-space: nowrap;'><i class='fa fa-barcode'></i>&nbsp;&nbsp;${stem}</li>`).insertBefore($('#sub_menu_extra'));
-            $(`<li class='mx-1'><span class='inline-block bg-slate-900 border border-blue-500 hover:bg-slate-200 rounded py-1 px-3' href='/bib_book_edit/${stem}'><i class='fa fa-check'></i>&nbsp;&nbsp;Änderungen speichern</span></li>`).insertAfter($('#sub_menu_extra'));
-            $(`<li class='mx-1'><a class='inline-block bg-slate-900 border border-blue-500 hover:bg-slate-200 rounded py-1 px-3' href='#'><i class='fa fa-times'></i>&nbsp;&nbsp;Änderungen verwerfen</a></li>`).insertAfter($('#sub_menu_extra'));
+            $(`<li class='mx-1'><a class='inline-block bg-slate-900 border border-blue-500 hover:bg-slate-200 rounded py-1 px-3' href='/bib_book_edit/${stem}'><i class='fa fa-pencil'></i>&nbsp;&nbsp;Metadaten bearbeiten</a></li>`).insertAfter($('#sub_menu_extra'));
+            $(`<li class='mx-1'><a class='inline-block bg-slate-900 border border-blue-500 hover:bg-slate-200 rounded py-1 px-3' href='/bib_print_label/${stem}'><i class='fa fa-print'></i>&nbsp;&nbsp;Label drucken</a></li>`).insertAfter($('#sub_menu_extra'));
+            $(`<li class='mx-1'><a class='inline-block bg-slate-900 border border-blue-500 hover:bg-slate-200 rounded py-1 px-3' href='/bib_book/${stem}'><i class='fa fa-book'></i>&nbsp;&nbsp;Buch</a></li>`).insertAfter($('#sub_menu_extra'));
             $('#subsubmenu').show();
+            fix_subsubmenu();
         }
         bib_api_call('/jwt/get_book', { stem: stem }, function (data) {
             if (data.success) {
@@ -119,43 +239,76 @@
                 $('#ti_preis').val(currency_string_plain(book.preis));
                 $('#ti_waehrung').val(book.waehrung);
                 $('#ti_stem').val(book.stem);
+                old_data_s = JSON.stringify(collect_data());
+                for (let key of ['title', 'subtitle', 'author', 'isbn',
+                    'language', 'verlag', 'published', 'page_count',
+                    'description', 'preis', 'waehrung']) {
+                    $(`#ti_${key}`).change((e) => refresh_buttons());
+                    $(`#ti_${key}`).keydown((e) => refresh_buttons());
+                    $(`#ti_${key}`).keyup((e) => refresh_buttons());
+                }
                 let cover = $('#book_cover');
-                if (book.has_cover) {
-                    cover.attr('src', `${BIB_HOST}/gen/covers/${book.stem}-400.jpg`);
-                } else {
-                    $('#book_cover_container').hide();
+                update_cover(book);
+                if (book.isbn) {
+                    update_isbn_info(false);
                 }
                 if ((data.proposed_isbn || []).length > 0) {
                     for (let isbn of data.proposed_isbn) {
-                        bib_api_call('/jwt/fetch_info_for_isbn', { isbn: isbn }, function (data) {
-                            if (data.success && data.record) {
-                                console.log(data);
-                                if (data.record.cover) data.record.has_cover = true;
-                                let div = create_book_div(data.record, null, {
-                                    clickable: true, callback: function (book) {
-                                        console.log('yay');
-                                    }
-                                }).data('book', data.record);
-                                $('#isbn_search_results').append(div);
-                                // window.scanned_isbn = data.record.isbn;
-                                // $('#result').empty();
-                                // let div = $("<div class='rounded rounded-md shadow shadow-sm bg-stone-800 p-3 mb-3'>");
-                                // let p = $('<p>');
-                                // p.append(data.record.title);
-                                // if (data.record.subtitle)
-                                //     p.append(data.record.subtitle);
-                                // p.append($("<br>"));
-                                // p.append($("<em>").text(data.record.author));
-
-                                // div.append(p);
-                                // $('#result').append($('<p>Wir haben folgendes Buch gefunden:</p>'));
-                                // $('#result').append(div);
-                                // $('#buttons').show();
-                            }
+                        let button = $(`<button class='btn btn-success btn-xs mr-1 mt-1'>`).text(isbn);
+                        button.css('text-align', 'left');
+                        $(`#ti_isbn`).closest('.form-group').append(button);
+                        button.click(function(e) {
+                            $(`#ti_isbn`).val(isbn);
+                            update_isbn_info(true);
                         });
                     }
                 }
             }
+        });
+        $('#ti_isbn').change(function(e) {
+            let isbn = $('#ti_isbn').val().trim().replace(/\-/g, '');
+            if ($('#ti_isbn').val() !== isbn)
+                $('#ti_isbn').val(isbn);
+            update_isbn_info(true);
+        });
+        $('#ti_preis').change(function(e) {
+            let preis = Math.floor(parseFloat($('#ti_preis').val().trim().replace(',', '.')) * 100);
+            console.log(preis);
+            let post = `${Math.floor(preis % 100)}`;
+            while (post.length < 2) post = '0' + post;
+            let s = `${Math.floor(preis / 100)},${post}`;
+            if (isNaN(preis))
+                s = '';
+            if ($('#ti_preis').val() !== s)
+                $('#ti_preis').val(s);
+        });
+        $('#bu_remove_cover').click(function(e) {
+            bib_api_call('/jwt/remove_cover', { stem: stem }, function (data) {
+                if (data.success) {
+                    update_cover(data.book);
+                }
+            });
+        });
+        $('#bu_set_cover_from_link').click(function(e) {
+            showTemplateModalWithInput('Cover von Link setzen',
+                'Bitte gib den Link ein, von dem du das Cover laden möchtest.',
+                "<i class='fa fa-check'></i>&nbsp;&nbsp;Cover laden", 'btn-success',
+                'Abbrechen', 'btn-secondary', 'URL:', 'Bitte gib eine URL ein', function (url) {
+                    bib_api_call('/jwt/set_cover_from_link', {stem: stem, url: url}, function(data) {
+                        if (data.success) {
+                            console.log(data);
+                            update_cover(data.book);
+                        }
+                    });
+                }
+            );
+        });
+        $('#bu_save_changes').click(function(e) {
+            let data = collect_data();
+            bib_api_call('/jwt/update_book', {stem: stem, data: data}, function(data) {
+                if (data.success)
+                    window.location.reload();
+            });
         });
     });
 </script>

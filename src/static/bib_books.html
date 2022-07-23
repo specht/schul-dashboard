@@ -1,5 +1,10 @@
 #{File.read('/static/_bib_public_template.html')}
 #{require_user_who_can_manage_bib!}
+<style>
+    .container, .container-lg, .container-md, .container-sm, .container-xl {
+        max-width: 1500px;
+    }
+</style>
 <div class='container bg-white' style="padding-top: 15px;">
     <div class="input-group mb-3">
         <input id='ti_search' type="text" class="form-control" placeholder="Bitte gib einen Suchbegriff ein" />
@@ -84,7 +89,7 @@
                             xs: true,
                             element: div,
                             filter_callback: filter,
-                            headers: ['Signaturstamm', 'Titel', 'Autor', 'Ausgeliehen', 'Vorrätig', 'Regal'].map(function (x) {
+                            headers: ['Signaturstamm', 'Titel', 'Autor', 'ISBN', 'Ausgeliehen', 'Vorrätig', 'Regal'].map(function (x) {
                                 let th = $('<th>').text(x);
                                 if (['Signaturstamm', 'Vorrätig', 'Ausgeliehen', 'Regal'].indexOf(x) >= 0) th.data('type', 'int');
                                 return th;
@@ -95,6 +100,7 @@
                                     $('<td>').text(`${entry.stem}`).data('sort_value', entry.stem),
                                     $('<td>').css('max-width', '300px').text(entry.title),
                                     $('<td>').css('max-width', '200px').text(entry.author),
+                                    $('<td>').html(`${entry.isbn || `&ndash;`}`).data('sort_value', entry.ausleih_count || 0),
                                     $('<td>').html(`${entry.ausleih_count || `&ndash;`}`).data('sort_value', entry.ausleih_count || 0),
                                     $('<td>').html(`${entry.stock_count || `&ndash;`}`).data('sort_value', entry.stock_count || 0),
                                     $('<td>').html(`${(entry.locations || []).map(function(x) {return create_location_span(x); }).join('')}`).data('sort_value', (entry.locations || ['0'])[0]),

@@ -1,0 +1,71 @@
+#{require_user_who_can_manage_bib!}
+#{File.read('/static/_bib_public_template.html')}
+<style>
+    input:invalid {
+        border: 3px solid red;
+    }
+</style>
+<div class='container bg-white' style="padding-top: 15px;">
+    <!--
+        Dieses Buch: einzelnes Label
+        Egal welches Buch: mehrere Label (scannen + drucken)
+    -->
+    <div class='row'>
+        <div class='col-md-6'>
+            <h3>Einzelnes Label drucken</h3>
+            <div class="form-group row">
+                <label class="col-sm-3 col-form-label">Buchnummer:</label>
+                <div class="col-sm-9">
+                <input type="number" pattern="^\d+$" class="form-control" id="ti_bnr" placeholder="Bitte gib die Buchnummer ein">
+                </div>
+            </div>
+
+            <button id='bu_print_single_label' class='btn btn-success'>Einzelnes Label drucken</button>
+        </div>
+        <div class='col-md-6'>
+            <h3>Scannen + drucken (ein oder mehrere Label)</h3>
+            <div id='scan_div'></div>
+        </div>
+    </div>
+</div>
+<script>
+    function on_scan(barcode) {
+        let parts = fix_scanned_book_barcode(barcode);
+        if (parts === null) return;
+        let data = {
+            stem: parts.stem,
+            bnr: parts.bnr
+        };
+        bib_api_call('/jwt/add_to_label_print_queue', data, function (data) {
+            if (data.success) {
+                console.log("added to queue, now notifying printer");
+                jQuery.get('https://local.dashboard.gymnasiumsteglitz.de:8989');
+            }
+        });
+    }
+
+    window.addEventListener('load', function () {
+        let stem_s = window.location.pathname.replace('/bib_print_label/', '');
+        stem = parseInt(stem_s);
+        if ('#{can_manage_bib_logged_in?}' === 'true') {
+            $(`<li class='mx-1 py-1 px-1.5' style='white-space: nowrap;'><i class='fa fa-barcode'></i>&nbsp;&nbsp;${stem}</li>`).insertBefore($('#sub_menu_extra'));
+            $(`<li class='mx-1'><a class='inline-block bg-slate-900 border border-blue-500 hover:bg-slate-200 rounded py-1 px-3' href='/bib_book_edit/${stem}'><i class='fa fa-pencil'></i>&nbsp;&nbsp;Metadaten bearbeiten</a></li>`).insertAfter($('#sub_menu_extra'));
+            $(`<li class='mx-1'><a class='inline-block bg-slate-900 border border-blue-500 hover:bg-slate-200 rounded py-1 px-3' href='/bib_print_label/${stem}'><i class='fa fa-print'></i>&nbsp;&nbsp;Label drucken</a></li>`).insertAfter($('#sub_menu_extra'));
+            $(`<li class='mx-1'><a class='inline-block bg-slate-900 border border-blue-500 hover:bg-slate-200 rounded py-1 px-3' href='/bib_book/${stem}'><i class='fa fa-book'></i>&nbsp;&nbsp;Buch</a></li>`).insertAfter($('#sub_menu_extra'));
+            $('#subsubmenu').show();
+            fix_subsubmenu();
+        }
+        let widget = new BarcodeWidget({
+            element: $('#scan_div'),
+            on_scan: on_scan
+        });
+        $('#bu_print_single_label').click(function(e) {
+            let bnr = $('#ti_bnr').val().trim();
+            if (bnr.length > 0) on_scan(`${stem}-${bnr}`);
+        });
+        $('#ti_bnr').keydown(function(e) {
+            if (e.key === 'Enter')
+                $('#bu_print_single_label').click();
+        });
+    });
+</script>

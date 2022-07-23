@@ -156,6 +156,16 @@
         if ("#{teacher_logged_in?}" === 'true') $('.bib_teacher_only').show();
         if ("#{can_manage_bib_logged_in?}" === 'true') $('.bib_management_only').show();
     });
+
+    function fix_subsubmenu() {
+        for (let x of $('#subsubmenu a')) {
+            let href = $(x).attr('href');
+            if (window.location.pathname === href) {
+                $(x).removeClass('bg-white').addClass('font-bold shadow-md outline outline-1 outline-blue-500 bg-white');
+            }
+        }
+
+    }
 </script>
 
 <div class='container text-sm text-stone-200'

@@ -159,34 +159,12 @@ class Main < Sinatra::Base
         respond(:ok => 'yeah')
     end
 
-    post '/api/login_as_monitor' do
+    post '/api/login_as_special' do
         require_admin!
+        data = parse_request_data(:required_keys => [:prefix])
+        assert(%w(monitor monitor-sek monitor-lz bib-mobile bib-station bib-station-with-printer).include?(data[:prefix]))
         logout()
-        session_id = create_session("monitor@#{SCHUL_MAIL_DOMAIN}", 365 * 24)
-        purge_missing_sessions(session_id, true)
-        respond(:ok => 'yeah')
-    end
-
-    post '/api/login_as_monitor_sek' do
-        require_admin!
-        logout()
-        session_id = create_session("monitor-sek@#{SCHUL_MAIL_DOMAIN}", 365 * 24)
-        purge_missing_sessions(session_id, true)
-        respond(:ok => 'yeah')
-    end
-
-    post '/api/login_as_monitor_lz' do
-        require_admin!
-        logout()
-        session_id = create_session("monitor-lz@#{SCHUL_MAIL_DOMAIN}", 365 * 24)
-        purge_missing_sessions(session_id, true)
-        respond(:ok => 'yeah')
-    end
-
-    post '/api/login_as_bib_mobile' do
-        require_admin!
-        logout()
-        session_id = create_session("bib-mobile@#{SCHUL_MAIL_DOMAIN}", 365 * 24)
+        session_id = create_session("#{data[:prefix]}@#{SCHUL_MAIL_DOMAIN}", 365 * 24)
         purge_missing_sessions(session_id, true)
         respond(:ok => 'yeah')
     end

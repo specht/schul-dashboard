@@ -468,6 +468,12 @@ class SetupDatabase
                     neo4j_query(<<~END_OF_QUERY, :email => "bib-mobile@#{SCHUL_MAIL_DOMAIN}")
                         MERGE (u:User {email: $email})
                     END_OF_QUERY
+                    neo4j_query(<<~END_OF_QUERY, :email => "bib-station@#{SCHUL_MAIL_DOMAIN}")
+                        MERGE (u:User {email: $email})
+                    END_OF_QUERY
+                    neo4j_query(<<~END_OF_QUERY, :email => "bib-station-with-printer@#{SCHUL_MAIL_DOMAIN}")
+                        MERGE (u:User {email: $email})
+                    END_OF_QUERY
                 end
                 transaction do
                     present_users = neo4j_query(<<~END_OF_QUERY).map { |x| x['u.email'] }
@@ -483,6 +489,8 @@ class SetupDatabase
                     wanted_users << "monitor-sek@#{SCHUL_MAIL_DOMAIN}"
                     wanted_users << "monitor-lz@#{SCHUL_MAIL_DOMAIN}"
                     wanted_users << "bib-mobile@#{SCHUL_MAIL_DOMAIN}"
+                    wanted_users << "bib-station@#{SCHUL_MAIL_DOMAIN}"
+                    wanted_users << "bib-station-with-printer@#{SCHUL_MAIL_DOMAIN}"
                     users_to_be_deleted = Set.new(present_users) - wanted_users
                     unless users_to_be_deleted.empty?
                         debug "Deleting #{users_to_be_deleted.size} users (not really)"
@@ -501,7 +509,7 @@ class SetupDatabase
                 purged_session_count = neo4j_query_expect_one(<<~END_OF_QUERY, {:today => (Date.today - 7).strftime('%Y-%m-%d')})['count']
                     MATCH (s:Session)-[:BELONGS_TO]->(u:User)
                     WHERE s.last_access IS NULL OR s.last_access < $today
-                    AND NOT ((u.email = 'lehrer.tablet@#{SCHUL_MAIL_DOMAIN}') OR (u.email = 'kurs.tablet@#{SCHUL_MAIL_DOMAIN}') OR (u.email = 'tablet@#{SCHUL_MAIL_DOMAIN}') OR (u.email = 'bib-mobile@#{SCHUL_MAIL_DOMAIN}'))
+                    AND NOT ((u.email = 'lehrer.tablet@#{SCHUL_MAIL_DOMAIN}') OR (u.email = 'kurs.tablet@#{SCHUL_MAIL_DOMAIN}') OR (u.email = 'tablet@#{SCHUL_MAIL_DOMAIN}') OR (u.email = 'bib-mobile@#{SCHUL_MAIL_DOMAIN}') OR (u.email = 'bib-station@#{SCHUL_MAIL_DOMAIN}') OR (u.email = 'bib-station-with-printer@#{SCHUL_MAIL_DOMAIN}'))
                     DETACH DELETE s
                     RETURN COUNT(s) as count;
                 END_OF_QUERY
@@ -1465,6 +1473,26 @@ class Main < Sinatra::Base
                                         :teacher => false
                                     }
                                 elsif email == "bib-mobile@#{SCHUL_MAIL_DOMAIN}"
+                                    @session_user = {
+                                        :email => email,
+                                        :is_tablet => true,
+                                        :tablet_id => session[:tablet_id],
+                                        :tablet_type => :bib_mobile,
+                                        :color_scheme => 'd4aa03f003f2e80bc428',
+                                        :can_see_all_timetables => false,
+                                        :teacher => false
+                                    }
+                                elsif email == "bib-station@#{SCHUL_MAIL_DOMAIN}"
+                                    @session_user = {
+                                        :email => email,
+                                        :is_tablet => true,
+                                        :tablet_id => session[:tablet_id],
+                                        :tablet_type => :bib_mobile,
+                                        :color_scheme => 'd4aa03f003f2e80bc428',
+                                        :can_see_all_timetables => false,
+                                        :teacher => false
+                                    }
+                                elsif email == "bib-station-with-printer@#{SCHUL_MAIL_DOMAIN}"
                                     @session_user = {
                                         :email => email,
                                         :is_tablet => true,
@@ -2438,8 +2466,11 @@ class Main < Sinatra::Base
             salzh_protocol_delta = (parts[2] || '').strip
         elsif path == 'index'
             if @session_user
-                if @session_user[:tablet_type] == :bib_mobile
-                    redirect "#{WEB_ROOT}/bibliothek", 302
+                if @session_user[:email].index('bib-station') == 0
+                    redirect "#{WEB_ROOT}/bib_browse", 302
+                    return
+                elsif @session_user[:tablet_type] == :bib_mobile
+                    redirect "#{WEB_ROOT}/bib_scan", 302
                     return
                 else
                     if external_user_logged_in?
@@ -2690,7 +2721,11 @@ class Main < Sinatra::Base
 
         font_family = (@session_user || {})[:font]
         font_family = 'Alegreya' if path == 'monitor'
-        font_family = 'Alegreya' if (@session_user || {})[:email] == 'bib-mobile@mail.gymnasiumsteglitz.de'
+        font_family = 'Alegreya' if [
+            'bib-mobile@mail.gymnasiumsteglitz.de',
+            'bib-station@mail.gymnasiumsteglitz.de',
+            'bib-station-with-printer@mail.gymnasiumsteglitz.de'
+        ].include?((@session_user || {})[:email])
         color_scheme = (@session_user || {})[:color_scheme]
         font_family = 'Roboto' unless AVAILABLE_FONTS.include?(font_family)
         unless color_scheme =~ /^[ld][0-9a-f]{18}[0-9]?$/

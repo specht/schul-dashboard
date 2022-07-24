@@ -7,9 +7,13 @@ class BarcodeWidget {
         this.element = options.element;
         let container = $("<div style='border: 1px solid #ddd; padding: 15px; border-radius: 15px; box-shadow: 0px 0px 5px rgba(0,0,0,0.2); margin-bottom: 15px; background-color: #eee;'>");
         let video_container = $("<div style='position: relative; width: 100%; overflow: hidden; height: 200px; margin-bottom: 15px; border-radius: 15px; border: 1px solid #aaa; display: none;'>");
+        if (bib_mobile_logged_in)
+            video_container.css('height', '120px');
         let video = $("<video class='rounded shadow mb-3' style='object-fit: cover; position: absolute; left: 0; top: 0; width: 100%; height: 100%;'>");
         let expand_link = $(`<a href=''>`).text('eingeben');
         let hint = $("<div class='text-muted text-sm'>").text('Alternativ kannst du den Barcode auch ').append(expand_link).append('.');
+        if (station_logged_in)
+            hint = $("<div class='text-muted text-sm'>").text('Barcode:');
         let input_group = $("<div class='input-group mt-1'>").hide();
         let text_input = $("<input type='text' class='form-control' style='text-align: center'>");
         let submit_button = $("<button class='btn btn-success' type='button'>").text('Senden');
@@ -38,15 +42,31 @@ class BarcodeWidget {
             hints.set(ZXing.DecodeHintType.POSSIBLE_FORMATS, formats);
         }
         this.on_scan = options.on_scan;
-        let codeReader = new ZXing.BrowserMultiFormatReader(hints);
-        let no_camera = false;
-        codeReader.decodeFromVideoDevice(null, video[0], (result, err) => {
-            if (result) {
-                this._on_scan(result.text, true);
-            }
-        }).catch(e => {
-            no_camera = true;
-            hint.text('Es konnte keine Kamera erkannt werden. Versuch es bitte mit einem anderen Gerät oder gib den Barcode manuell ein:');
+        if (!station_logged_in) {
+            let codeReader = new ZXing.BrowserMultiFormatReader(hints);
+            let no_camera = false;
+            codeReader.decodeFromVideoDevice(null, video[0], (result, err) => {
+                if (result) {
+                    this._on_scan(result.text, true);
+                }
+            }).catch(e => {
+                no_camera = true;
+                hint.text('Es konnte keine Kamera erkannt werden. Versuch es bitte mit einem anderen Gerät oder gib den Barcode manuell ein:');
+                input_group.show();
+                $(document).keydown(function(e) {
+                    if (e.key === 'F8') {
+                        console.log(e);
+                        text_input.focus();
+                        text_input.val('');
+                        e.preventDefault();
+                    }
+                });
+            }).finally(function() {
+                if (!no_camera)
+                    video_container.show();
+            });
+        } else {
+            // hint.text('Es konnte keine Kamera erkannt werden. Versuch es bitte mit einem anderen Gerät oder gib den Barcode manuell ein:');
             input_group.show();
             $(document).keydown(function(e) {
                 if (e.key === 'F8') {
@@ -56,10 +76,7 @@ class BarcodeWidget {
                     e.preventDefault();
                 }
             });
-        }).finally(function() {
-            if (!no_camera)
-                video_container.show();
-        });
+        }
 
         let self = this;
         submit_button.click(function() {

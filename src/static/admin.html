@@ -83,28 +83,42 @@
             });
         });
         $('.bu-login-as-monitor').click(function (e) {
-            api_call('/api/login_as_monitor', {}, function (data) {
+            api_call('/api/login_as_special', {prefix: 'monitor'}, function (data) {
                 if (data.success) {
                     window.location.href = '/';
                 }
             });
         });
         $('.bu-login-as-monitor-sek').click(function (e) {
-            api_call('/api/login_as_monitor_sek', {}, function (data) {
+            api_call('/api/login_as_special', {prefix: 'monitor-sek'}, function (data) {
                 if (data.success) {
                     window.location.href = '/';
                 }
             });
         });
         $('.bu-login-as-monitor-lz').click(function (e) {
-            api_call('/api/login_as_monitor_lz', {}, function (data) {
+            api_call('/api/login_as_special', {prefix: 'monitor-lz'}, function (data) {
                 if (data.success) {
                     window.location.href = '/';
                 }
             });
         });
         $('.bu-login-as-bib-mobile').click(function (e) {
-            api_call('/api/login_as_bib_mobile', {}, function (data) {
+            api_call('/api/login_as_special', {prefix: 'bib-mobile'}, function (data) {
+                if (data.success) {
+                    window.location.href = '/';
+                }
+            });
+        });
+        $('.bu-login-as-bib-station').click(function (e) {
+            api_call('/api/login_as_special', {prefix: 'bib-station'}, function (data) {
+                if (data.success) {
+                    window.location.href = '/';
+                }
+            });
+        });
+        $('.bu-login-as-bib-station-with-printer').click(function (e) {
+            api_call('/api/login_as_special', {prefix: 'bib-station-with-printer'}, function (data) {
                 if (data.success) {
                     window.location.href = '/';
                 }

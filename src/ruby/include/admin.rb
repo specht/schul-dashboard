@@ -281,16 +281,32 @@ class Main < Sinatra::Base
                 io.puts "<td><button class='btn btn-xs btn-danger btn-purge-session' data-email='bib-mobile@#{SCHUL_MAIL_DOMAIN}' data-scrambled-sid='#{session[:scrambled_sid]}'>Abmelden</button></td>"
                 io.puts "</tr>"
             end
+            get_sessions_for_user("bib-station@#{SCHUL_MAIL_DOMAIN}").each do |session|
+                io.puts "<tr>"
+                io.puts "<td>Bibliotheks-Station</td>"
+                io.puts "<td>#{session[:user_agent]}</td>"
+                io.puts "<td><button class='btn btn-xs btn-danger btn-purge-session' data-email='bib-station@#{SCHUL_MAIL_DOMAIN}' data-scrambled-sid='#{session[:scrambled_sid]}'>Abmelden</button></td>"
+                io.puts "</tr>"
+            end
+            get_sessions_for_user("bib-station-with-printer@#{SCHUL_MAIL_DOMAIN}").each do |session|
+                io.puts "<tr>"
+                io.puts "<td>Bibliotheks-Station mit Drucker</td>"
+                io.puts "<td>#{session[:user_agent]}</td>"
+                io.puts "<td><button class='btn btn-xs btn-danger btn-purge-session' data-email='bib-station-with-printer@#{SCHUL_MAIL_DOMAIN}' data-scrambled-sid='#{session[:scrambled_sid]}'>Abmelden</button></td>"
+                io.puts "</tr>"
+            end
             io.puts "</tbody>"
             io.puts "</table>"
             io.puts "</div>"
             io.puts "<h3 id='monitor'>Monitor</h3>"
             io.puts "<button class='btn btn-success bu-login-as-monitor'><i class='fa fa-sign-in'></i>&nbsp;&nbsp;Als Monitor anmelden</button>"
             io.puts "<button class='btn btn-success bu-login-as-monitor-sek'><i class='fa fa-sign-in'></i>&nbsp;&nbsp;Als Sek-Monitor anmelden</button>"
-            io.puts "<button class='btn btn-success bu-login-as-monitor-lz'><i class='fa fa-sign-in'></i>&nbsp;&nbsp;Als Sek-Monitor anmelden</button>"
+            io.puts "<button class='btn btn-success bu-login-as-monitor-lz'><i class='fa fa-sign-in'></i>&nbsp;&nbsp;Als LZ-Monitor anmelden</button>"
             io.puts "<hr />"
             io.puts "<h3 id='bibliothek'>Bibliothek</h3>"
             io.puts "<button class='btn btn-success bu-login-as-bib-mobile'><i class='fa fa-sign-in'></i>&nbsp;&nbsp;Als Bibliotheks-Handy anmelden</button>"
+            io.puts "<button class='btn btn-success bu-login-as-bib-station'><i class='fa fa-sign-in'></i>&nbsp;&nbsp;Als Bibliotheks-Station anmelden</button>"
+            io.puts "<button class='btn btn-success bu-login-as-bib-station-with-printer'><i class='fa fa-sign-in'></i>&nbsp;&nbsp;Als Bibliotheks-Station mit Labeldrucker anmelden</button>"
             io.puts "<hr />"
             io.string
         end

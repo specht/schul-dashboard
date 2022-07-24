@@ -2290,7 +2290,7 @@ class Main < Sinatra::Base
             io.puts "<div class='hint'>"
             io.puts "<div>Adventskalender</div>"
             io.puts "<hr />"
-            io.puts "<button style='white-space: nowrap;' class='float-right btn btn-success bu-launch-adventskalender' >Adventskalender öffnen&nbsp;<i class='fa fa-angle-double-right'></i></button>"
+            io.puts "<button style='white-space: nowrap;' class='float-right btn btn-success bu-launch-adventskalender'>Adventskalender öffnen&nbsp;<i class='fa fa-angle-double-right'></i></button>"
             io.puts "<div style='clear: both;'></div>"
             io.puts "</div>"
             io.puts "</div>"

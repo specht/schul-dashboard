@@ -1,28 +1,177 @@
 #{File.read('/static/_bib_public_template.html')}
 #{require_user_who_can_manage_bib!}
+<style>
+    #cover {
+        box-shadow: 0 0 10px rgba(0,0,0,0.25);
+        width: 100%;
+        display: block;
+    }
+    #cover.none {
+        padding-bottom: 130%;
+    }
+    #barcode_div {
+        display: inline-block;
+        width: calc(66% - 7px);
+        margin-right: 7px;
+        vertical-align: top;
+    }
+    #cover_div {
+        display: inline-block;
+        width: 33%;
+        position: relative;
+        left: 10px;
+    }
+    #author_div, #title_div {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+    #stem_div {
+        float: right;
+    }
+    #title_div {
+        font-weight: bold;
+    }
+    #author_div {
+        margin-bottom: 10px;
+    }
+    ._barcode_widget {
+        margin-bottom: 0px!important;
+    }
+    .thumb {
+        width: calc((100vw - 30px) / 3.2);
+        margin-right: 2px;
+        margin-bottom: 2px;
+    }
+</style>
 <div class='container bg-white'>
     <div class='row'>
         <div class="col-md-6">
-            <div id='barcode_widget'></div>
+            <div id="barcode_div">
+                <div id='barcode_widget'></div>
+            </div>
+            <div id='cover_div'>
+                <img id="cover"></img>
+                <a id='cover_link' href='' class='btn btn-sm btn-success mt-1 w-100'>Zum Buch…</a>
+            </div>
         </div>
         <div class="col-md-6">
-            <img id="cover" style="max-width: 30%;"></img><br />
-            <i class='fa fa-check'></i>&nbsp;&nbsp;Buch hat eine ISBN<br />
-            <i class='fa fa-check'></i>&nbsp;&nbsp;Buch hat ein Cover<br />
-            <i class='fa fa-check'></i>&nbsp;&nbsp;Buch hat Lagerort<br />
-            <i class='fa fa-check'></i>&nbsp;&nbsp;Label hat Prüfsumme<br />
             <hr />
-            <button class='btn btn-sm btn-success ml-1 mr-1'>ISBN scannen</button>
-            <button class='btn btn-sm btn-success ml-1 mr-1'>Cover fotografieren</button>
-            <button class='btn btn-sm btn-success ml-1 mr-1'>Regal scannen</button>
-    </div>
+            <div id='unknown_book' style="display: none;">
+                <div class="alert alert-danger">
+                    Ein Buch mit der Stammsignatur <span id='unknown_stem'></span> befindet sich nicht im System.
+                </div>
+            </div>
+            <div id='stem_div'></div>
+            <div id='title_div'></div>
+            <div id='author_div'></div>
+            <div id='info_div' style="display: none;">
+                <button id='bu_scan_isbn' class='pull-right btn btn-sm btn-success ml-1 mr-1'>ISBN scannen</button>
+                <div id='info_isbn'></div>
+                <hr />
+                <button id='bu_take_photo' class='pull-right btn btn-sm btn-success ml-1 mr-1'>Cover fotografieren</button>
+                <div id='info_cover'></div>
+                <hr />
+                <button class='pull-right btn btn-sm btn-success ml-1 mr-1' disabled>Regal scannen</button>
+                <div id='info_shelf'></div>
+                <hr />
+            </div>
+        </div>
     </div>
 </div>
+<div class="modal" id="photo_modal" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true" style='z-index: 200000;'>
+    <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Foto hochladen</h5>
+        </div>
+        <div class="modal-body">
+            <img id="current_photo"/>
+            <div class="button_container pull-right" style="margin-top: 15px;">
+                <button id='bu_discard_photo' type="button" class="btn btn-secondary" data-dismiss="modal"><i class='fa fa-times'></i>&nbsp;&nbsp;Abbrechen</button>
+                <button id='bu_submit_photo' type="button" class="btn btn-success"><i class='fa fa-send'></i>&nbsp;&nbsp;Hochladen</button>
+            </div>
+        </div>
+      </div>
+    </div>
+</div>
+
 <script>
     var divs_for_signature = {};
     var table = null;
+    var scanning_isbn = false;
+    var last_scanned_parts = null;
+    var take_photo_interval = null;
+    var current_image = null;
+
+    function handle_scan_book(stem, data) {
+        console.log(data);
+        if (data.success) {
+            $('#unknown_book').hide();
+            $('#info_div').css('display', 'block');
+            let _ = beep1.cloneNode(); _.play();
+            let book = data.book;
+            $('#stem_div').html(`<i class='fa fa-barcode'></i>&nbsp;&nbsp;${stem}`);
+            let title = `${book.title}`;
+            if (book.subtitle && book.subtitle.trim().length > 0)
+                title += `– ${book.subtitle}`;
+            $('#title_div').text(title);
+            $('#author_div').text(book.author);
+            if (book.isbn) {
+                $('#info_isbn').html(`<i class='fa fa-check text-grass-500'></i>&nbsp;&nbsp;Buch hat eine ISBN`);
+                $('#bu_scan_isbn').prop('disabled', true);
+            } else {
+                $('#info_isbn').html(`<i class='fa fa-times text-scarlet-500'></i>&nbsp;&nbsp;Buch hat keine ISBN`);
+                $('#bu_scan_isbn').prop('disabled', false);
+                if ((data.proposed_isbn || []).length > 0) {
+                    $('#info_isbn').append(`, aber bereits Vorschläge: ${data.proposed_isbn.join(', ')}`);
+                }
+            }
+            if (book.has_cover) {
+                $('#cover').attr('src', `${BIB_HOST}/gen/covers/${book.stem}-400.jpg`).removeClass('none');
+                $('#info_cover').html(`<i class='fa fa-check text-grass-500'></i>&nbsp;&nbsp;Buch hat ein Cover`);
+                if ((data.book_photos || []).length > 0) {
+                    $('#info_cover').append(`, aber es wurden Fotos hochgeladen:<br />`);
+                }
+            } else {
+                $('#cover').attr('src', '').addClass('none');
+                $('#info_cover').html(`<i class='fa fa-times text-scarlet-500'></i>&nbsp;&nbsp;Buch hat kein Cover`);
+                if ((data.book_photos || []).length > 0) {
+                    $('#info_cover').append(`, aber bereits Vorschläge:<br />`);
+                }
+            }
+            if ((data.book_photos || []).length > 0) {
+                $('#info_cover').append(`${data.book_photos.map(function(x) { return `<img class='thumb' src='${BIB_HOST}/gen/book-photos/${x.sha1}.jpg'></img>`;}).join('')}`);
+            }
+            $('#cover_link').attr('href', `/bib_book/${book.stem}`);
+            if ((data.locations || []).length > 0) {
+                $('#info_shelf').html(`<i class='fa fa-check text-grass-500'></i>&nbsp;&nbsp;Buch hat einen Lagerort: ${data.locations.map(function(x) { return create_location_span(x); })}`);
+            } else {
+                $('#info_shelf').html(`<i class='fa fa-times text-scarlet-500'></i>&nbsp;&nbsp;Buch hat keinen Lagerort`);
+            }
+        } else {
+            let _ = beep_fail.cloneNode(); _.play();
+            $('.api_messages').hide();
+            $('#unknown_stem').text(stem);
+            $('#unknown_book').show();
+        }
+    }
 
     function on_scan(barcode, scanned) {
+        if (scanning_isbn) {
+            scanning_isbn = false;
+            $('#bu_scan_isbn').prop('disabled', false);
+            bib_api_call('/jwt/propose_isbn_for_stem', {stem: last_scanned_parts.stem, isbn: barcode}, function(data) {
+                if (data.success) {
+                    let _ = beep1.cloneNode(); _.play();
+                    bib_api_call('/jwt/scan_book', last_scanned_parts, function (data) {
+                        handle_scan_book(last_scanned_parts.stem, data);
+                    });
+                }
+            });
+            return;
+        }
+        last_scanned_parts = null;
         let parts = fix_scanned_book_barcode(barcode);
         if (parts === null) {
             let _ = beep_fail.cloneNode(); _.play();
@@ -33,19 +182,9 @@
             bnr: parts.bnr
         };
         if (parts.checksum) data.checksum = parts.checksum;
+        last_scanned_parts = parts;
         bib_api_call('/jwt/scan_book', data, function (data) {
-            console.log(data);
-            if (data.success) {
-                let _ = beep1.cloneNode(); _.play();
-                let book = data.book;
-                if (book.has_cover) {
-                    $('#cover').attr('src', `${BIB_HOST}/gen/covers/${book.stem}-400.jpg`).show();
-                } else {
-                    $('#cover').hide();
-                }
-            } else {
-                let _ = beep_fail.cloneNode(); _.play();
-            }
+            handle_scan_book(parts.stem, data);
         });
     }
 
@@ -54,5 +193,45 @@
             element: $('#barcode_widget'),
             on_scan: on_scan
         });
+        $('#bu_scan_isbn').click(function(e) {
+            $('#bu_scan_isbn').prop('disabled', true);
+            scanning_isbn = true;
+        })
+        $('#bu_take_photo').click(function(e) {
+            take_photo_interval = setInterval(function() {
+                let video = $('video')[0];
+                let canvas = $('<canvas>');
+                let width = video.videoWidth;
+                let height = video.videoHeight;
+                canvas.attr('width', width);
+                canvas.attr('height', height);
+                canvas[0].getContext('2d').drawImage(video, 0, 0, width, height);
+                current_image = canvas[0].toDataURL('image/jpeg');
+                $('#current_photo').attr('src', current_image);
+            }, 20);
+            $('#photo_modal').modal('show');
+        });
+        $('#photo_modal').on('hidden.bs.modal', function() {
+            clearInterval(take_photo_interval);
+            take_photo_interval = null;
+        });
+        $('#bu_submit_photo').click(function(e) {
+            $('#bu_submit_photo').attr('disabled', true);
+            bib_api_call('/jwt/submit_photo_for_book', {stem: last_scanned_parts.stem, jpg: current_image}, function (data) {
+                if (data.success) {
+                    $('#bu_submit_photo').attr('disabled', false);
+                    $('#photo_modal').modal('hide');
+                    bib_api_call('/jwt/scan_book', last_scanned_parts, function (data) {
+                        handle_scan_book(last_scanned_parts.stem, data);
+                    });
+                }
+            });
+        });
+        if ("#{DEVELOPMENT == '1'}") {
+            on_scan('3792-007');
+            // on_scan('9999-016');
+            // on_scan('1000-016');
+            // on_scan('1053-016');
+        }
     });
 </script>

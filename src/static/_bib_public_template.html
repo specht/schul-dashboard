@@ -56,6 +56,19 @@
         #{@session_user[:email].index('bib-') == 0 ? 'display: none;' : '' }
     }
 
+    @media (max-width: 575px) {
+        ._barcode_widget > div:first-child {
+            height: 120px!important;
+        }
+
+        ._barcode_widget {
+            border-radius: 0!important;
+            margin: 0px -15px 15px -15px!important;
+            border: none!important;
+            border-bottom: 1px solid #ddd!important;
+        }
+    }
+
     @tailwind base;
     @tailwind components;
     @tailwind utilities;

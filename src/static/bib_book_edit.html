@@ -21,6 +21,11 @@
     input:invalid {
         border: 3px solid red;
     }
+    #bu_save_changes {
+        /* text-decoration: none; */
+        height: 34px;
+        padding: 4px 16px;
+    }
 </style>
 <div class='container bg-white'>
     <div id='book_here'>
@@ -110,7 +115,7 @@
                     Autor und Titel im vorherigen Bibliothekssystem: <span id='old_description'></span>
                 </div>
                 <!-- <hr /> -->
-                <button id='bu_save_changes' disabled class='btn btn-success pull-right'><i class='fa fa-check'></i>&nbsp;&nbsp;Änderungen speichern</button>
+                <!-- <button id='bu_save_changes' disabled class='btn btn-success pull-right'><i class='fa fa-check'></i>&nbsp;&nbsp;Änderungen speichern</button> -->
             </div>
         </div>
     </div>
@@ -122,7 +127,8 @@
     function update_isbn_info(refresh_fields) {
         bib_api_call('/jwt/fetch_info_for_isbn', { isbn: $('#ti_isbn').val().trim() }, function (data) {
             if (data.success) {
-                console.log(data);
+                if (Object.keys(data.compiled).length === 0)
+                    return;
                 for (let key of ['title', 'subtitle', 'author', 'verlag', 'description', 'published', 'page_count', 'language']) {
                     $(`#ti_${key}`).closest('.form-group').find('.btn-xs').remove();
                     let values = {};
@@ -189,7 +195,8 @@
         data.subtitle = $('#ti_subtitle').val().trim();
         data.author = $('#ti_author').val().trim();
         data.isbn = $('#ti_isbn').val().trim();
-        data.language = $('#ti_language').val().trim();
+        if ($('#ti_language').val())
+            data.language = $('#ti_language').val().trim();
         data.verlag = $('#ti_verlag').val().trim();
         let published = parseInt($('#ti_published').val().trim());
         if (!published.isNaN) data.published = published;
@@ -203,7 +210,6 @@
         data.waehrung = null;
         if ($('#ti_waehrung').val())
             data.waehrung = $('#ti_waehrung').val().trim();
-        data.language = $('#ti_language').val().trim();
         data.description = $('#ti_description').val().trim();
         return data;
     }
@@ -211,9 +217,9 @@
     function refresh_buttons() {
         let now_data_s = JSON.stringify(collect_data());
         if (($(':invalid').length === 0) && (now_data_s !== old_data_s)) {
-            $('#bu_save_changes').prop('disabled', false);
+            $('#bu_save_changes').prop('disabled', false);//.addClass('bg-grass-500 text-white hover:bg-grass-300').removeClass('bg-slate-900 text-slate-600').css('pointer-events', 'all');
         } else {
-            $('#bu_save_changes').prop('disabled', true);
+            $('#bu_save_changes').prop('disabled', true);//.removeClass('bg-grass-500 text-white').addClass('bg-slate-900 text-slate-600').css('pointer-events', 'none');
         }
     }
 
@@ -221,6 +227,7 @@
         stem = parseInt(window.location.pathname.replace('/bib_book_edit/', ''));
         if ('#{can_manage_bib_logged_in?}' === 'true') {
             $(`<li class='mx-1 py-1 px-1.5' style='white-space: nowrap;'><i class='fa fa-barcode'></i>&nbsp;&nbsp;${stem}</li>`).insertBefore($('#sub_menu_extra'));
+            $(`<li class='mx-1'><button id='bu_save_changes' disabled class='btn btn-success'><i class='fa fa-check'></i>&nbsp;&nbsp;Änderungen speichern</a>`).insertAfter($('#sub_menu_extra'));
             $(`<li class='mx-1'><a class='inline-block bg-slate-900 border border-blue-500 hover:bg-slate-200 rounded py-1 px-3' href='/bib_book_edit/${stem}'><i class='fa fa-pencil'></i>&nbsp;&nbsp;Metadaten bearbeiten</a></li>`).insertAfter($('#sub_menu_extra'));
             $(`<li class='mx-1'><a class='inline-block bg-slate-900 border border-blue-500 hover:bg-slate-200 rounded py-1 px-3' href='/bib_add_exemplare/${stem}'><i class='fa fa-plus'></i>&nbsp;&nbsp;Neue Exemplare aufnehmen</a></li>`).insertAfter($('#sub_menu_extra'));
             if ("#{@session_user[:email].split('@').first}" === 'bib-station-with-printer')
@@ -237,6 +244,7 @@
                 $('#ti_subtitle').val(book.subtitle);
                 $('#ti_author').val(book.author);
                 $('#ti_isbn').val(book.isbn);
+                $('#ti_language').val(book.language);
                 $('#ti_verlag').val(book.verlag);
                 $('#ti_published').val(book.published);
                 $('#ti_page_count').val(book.page_count);
@@ -249,6 +257,7 @@
                     $('#old_description_container').show();
                 }
                 old_data_s = JSON.stringify(collect_data());
+                refresh_buttons();
                 for (let key of ['title', 'subtitle', 'author', 'isbn',
                     'language', 'verlag', 'published', 'page_count',
                     'description', 'preis', 'waehrung']) {
@@ -269,6 +278,7 @@
                         button.click(function(e) {
                             $(`#ti_isbn`).val(isbn);
                             update_isbn_info(true);
+                            refresh_buttons();
                         });
                     }
                 }

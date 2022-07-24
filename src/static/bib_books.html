@@ -85,7 +85,6 @@
                 bib_api_call('/jwt/get_books', {}, function (data) {
                     if (data.success) {
                         let div = $('<div>');
-                        console.log('yay');
                         table = new SortableTable({
                             xs: true,
                             element: div,

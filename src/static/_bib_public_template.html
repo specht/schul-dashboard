@@ -210,12 +210,11 @@
                 <a class="inline-block bg-slate-900 border border-blue-500 hover:bg-slate-200 rounded py-1 px-3"
                     href="/bib_browse">Katalog</a>
             </li>
-            <li class="mx-1" style="display: #{teacher_logged_in? ? 'unset' : 'none'};">
+            <li class="mx-1" style="display: #{teacher_logged_in? ? 'unset' : 'none'}; margin-right: 15px!important">
                 <a class="inline-block bg-slate-900 border border-blue-500 hover:bg-slate-200 rounded py-1 px-3"
                     href="/bib_orders">Bestellungen</a>
             </li>
-            <li
-                style="display: #{can_manage_bib_logged_in? ? 'unset' : 'none'}; #{@session_user[:email].split('@').first == 'bib-mobile' ? 'display: none;' : ''} border-left: 1px solid #ccc; height: 52px; margin: -10px 10px -10px 10px;">
+            <li style="display: #{can_manage_bib_logged_in? ? 'unset' : 'none'}; #{@session_user[:email].split('@').first == 'bib-mobile' ? 'display: none;' : ''} border-left: 1px solid #ccc; height: 52px; margin: -10px 10px -10px 10px; margin-left: auto;">
             </li>
             <li class="mx-1" style="display: #{(can_manage_bib_logged_in? && @session_user[:email].split('@').first != 'bib-mobile') ? 'unset' : 'none'};">
                 <a class="inline-block bg-slate-900 border border-blue-500 hover:bg-slate-200 rounded py-1 px-3"

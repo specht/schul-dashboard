@@ -1208,6 +1208,7 @@ class Main < Sinatra::Base
             '/barcode-widget.js',
             '/sortable-table.js',
             '/include/print.min.js',
+            '/include/odometer.min.js',
         ]
 
         self.compile_files(:js, 'application/javascript', files)
@@ -1231,6 +1232,7 @@ class Main < Sinatra::Base
             '/styles.css',
             '/cling.css',
             '/include/print.min.css',
+            '/include/odometer-theme-default.css',
         ]
 
         self.compile_files(:css, 'text/css', files)
@@ -2112,7 +2114,8 @@ class Main < Sinatra::Base
         return '' if teacher_tablet_logged_in?
         StringIO.open do |io|
             io.puts "<h2 style='margin-bottom: 30px; margin-top: 30px;'>Schulinterne Links</h2>"
-            io.puts "<table class='table'>"
+            io.puts "<div class='table-responsive' style='max-width: 100%; overflow-x: auto;'>"
+            io.puts "<table class='table table-condensed table-striped narrow' style='width: unset; min-width: 100%;'>"
             io.puts "<tr><th>Website</th><th>Name</th><th>Passwort</th></tr>"
             SEMI_PUBLIC_LINKS.each do |link|
                 next unless link[:condition].call(self)
@@ -2127,6 +2130,7 @@ class Main < Sinatra::Base
                 io.puts "</tr>"
             end
             io.puts "</table>"
+            io.puts "</div>"
             io.puts "<hr />"
             io.string
         end

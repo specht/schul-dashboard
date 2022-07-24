@@ -52,7 +52,7 @@
             </div>
             <div id='cover_div'>
                 <img id="cover"></img>
-                <a id='cover_link' href='' class='btn btn-sm btn-success mt-1 w-100'>Zum Buch…</a>
+                <a id='cover_link' href='' class='btn btn-sm btn-success mt-1 w-100' style='display: none;'>Zum Buch…</a>
             </div>
         </div>
         <div class="col-md-6">
@@ -144,6 +144,7 @@
                 $('#info_cover').append(`${data.book_photos.map(function(x) { return `<img class='thumb' src='${BIB_HOST}/gen/book-photos/${x.sha1}.jpg'></img>`;}).join('')}`);
             }
             $('#cover_link').attr('href', `/bib_book/${book.stem}`);
+            $('#cover_link').show();
             if ((data.locations || []).length > 0) {
                 $('#info_shelf').html(`<i class='fa fa-check text-grass-500'></i>&nbsp;&nbsp;Buch hat einen Lagerort: ${data.locations.map(function(x) { return create_location_span(x); })}`);
             } else {
@@ -154,6 +155,7 @@
             $('.api_messages').hide();
             $('#unknown_stem').text(stem);
             $('#unknown_book').show();
+            $('#cover_link').hide();
         }
     }
 

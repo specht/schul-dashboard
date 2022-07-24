@@ -6,8 +6,8 @@ class BarcodeWidget {
 
         this.element = options.element;
         let container = $("<div class='_barcode_widget' style='border: 1px solid #ddd; padding: 15px; border-radius: 15px; box-shadow: 0px 0px 5px rgba(0,0,0,0.2); margin-bottom: 15px; background-color: #eee;'>");
-        let video_container = $("<div style='position: relative; width: 100%; overflow: hidden; height: 200px; margin-bottom: 15px; border-radius: 15px; border: 1px solid #aaa; display: none;'>");
-        let video = $("<video class='rounded shadow mb-3' style='object-fit: cover; position: absolute; left: 0; top: 0; width: 100%; height: 100%;'>");
+        let video_container = $("<div style='position: relative; width: 100%; overflow: hidden; height: 200px; margin-bottom: 15px; border: 1px solid #aaa; display: none;'>");
+        let video = $("<video class='shadow mb-3' style='object-fit: cover; position: absolute; left: 0; top: 0; width: 100%; height: 100%;'>");
         let expand_link = $(`<a href=''>`).text('eingeben');
         let hint = $("<div class='text-muted text-sm'>").text('Alternativ kannst du den Barcode auch ').append(expand_link).append('.');
         if (station_logged_in)

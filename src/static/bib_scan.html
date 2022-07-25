@@ -203,7 +203,6 @@
 
             bib_api_call('/jwt/propose_isbn_for_stem', {stem: last_scanned_parts.stem, isbn: barcode}, function(data) {
                 if (data.success) {
-                    sound.play('success');
                     bib_api_call('/jwt/scan_book', last_scanned_parts, function (data) {
                         handle_scan_book(last_scanned_parts.stem, data);
                     });

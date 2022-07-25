@@ -45,16 +45,11 @@
         margin-bottom: 2px;
         max-width: 150px;
     }
-    #current_photo {
-        max-height: calc(100vh - 200px);
-        width: 100%;
-        object-fit: cover;
-    }
     #snapshot_video_container {
-        max-height: calc(100vh - 200px);
-        width: 100%;
-        object-fit: cover;
-        height: 80vh;
+        max-height: calc(80vh - 200px);
+    }
+    #current_photo {
+        max-height: calc(80vh - 200px);
     }
 </style>
 <div class='container bg-white'>
@@ -100,10 +95,10 @@
           <h5 class="modal-title">Foto hochladen</h5>
         </div>
         <div class="modal-body">
+            <img id='current_photo' style="display: none;"></img>
             <div id='snapshot_video_container'></div>
-            <img id="current_photo" />
             <div style="position: relative; width: 100%; text-align: center; top: -50px; margin-bottom: -40px;">
-                <div id='bu_snapshot' class='btn bg-scarlet-500 shadow' style="border-radius: 100%; padding: 1px;">
+                <div id='bu_snapshot' class='btn bg-scarlet-500' style="border-radius: 100%; padding: 1px; box-shadow: 0 0 3px 2px rgb(255 255 255);">
                     <div class='btn bg-white' style="border-radius: 100%; padding: 1px;">
                         <div class='btn bg-scarlet-500 text-white' style="border-radius: 100%; width: 30px; height: 30px;">
                         </div>
@@ -133,7 +128,6 @@
     var last_scanned_parts = null;
     // var take_photo_interval = null;
     var current_image = null;
-    var hold_photo = false;
     var current_shelf = null;
 
     function handle_scan_book(stem, data) {
@@ -251,48 +245,45 @@
         $('#bu_take_photo').click(function(e) {
             let video = $('video');
             video.css('object-fit', 'contain');
-            console.log('video: ', video);
+            video.css('position', 'relative');
             let video_parent = video.parent();
-            console.log('parent: ', parent);
             video.appendTo($('#snapshot_video_container'));
-
-            // take_photo_interval = setInterval(function() {
-            //     if (hold_photo) return;
-            //     let video = $('video')[0];
-            //     let canvas = $('<canvas>');
-            //     let width = video.videoWidth;
-            //     let height = video.videoHeight;
-            //     canvas.attr('width', width);
-            //     canvas.attr('height', height);
-            //     canvas[0].getContext('2d').drawImage(video, 0, 0, width, height);
-            //     current_image = canvas[0].toDataURL('image/jpeg');
-            //     $('#current_photo').attr('src', current_image);
-            // }, 20);
-            hold_photo = false;
             $('#bu_submit_photo').prop('disabled', true);
             $('#bu_snapshot').show();
             $('#bu_repeat_snapshot').hide();
             $('#photo_modal').modal('show');
+            $('#snapshot_video_container').show();
+            $('#current_photo').hide();
         });
         $('#bu_snapshot').click(function(e) {
             sound.play('snapshot');
-            hold_photo = true;
+            let video = $('video')[0];
+            let canvas = $('<canvas>');
+            let width = video.videoWidth;
+            let height = video.videoHeight;
+            canvas.attr('width', width);
+            canvas.attr('height', height);
+            canvas[0].getContext('2d').drawImage(video, 0, 0, width, height);
+            current_image = canvas[0].toDataURL('image/jpeg');
+            $('#current_photo').attr('src', current_image);
+            $('#snapshot_video_container').hide();
+            $('#current_photo').show();
             $('#bu_snapshot').hide();
             $('#bu_repeat_snapshot').show();
             $('#bu_submit_photo').prop('disabled', false);
         });
         $('#bu_repeat_snapshot').click(function(e) {
-            hold_photo = false;
             $('#bu_snapshot').show();
             $('#bu_repeat_snapshot').hide();
             $('#bu_submit_photo').prop('disabled', true);
+            $('#snapshot_video_container').show();
+            $('#current_photo').hide();
         });
         $('#photo_modal').on('hidden.bs.modal', function() {
             let video = $('video');
             video.appendTo($('._barcode_widget > div').eq(0));
             video.css('object-fit', 'cover');
-            // clearInterval(take_photo_interval);
-            // take_photo_interval = null;
+            video.css('position', 'absolute');
         });
         $('#bu_submit_photo').click(function(e) {
             $('#bu_submit_photo').attr('disabled', true);

@@ -19,7 +19,7 @@
     function on_scan(barcode, scanned) {
         let parts = fix_scanned_book_barcode(barcode);
         if (parts === null) {
-            let _ = beep_fail.cloneNode(); _.play();
+            sound.play('error');
             return;
         }
         let data = {
@@ -30,7 +30,7 @@
         bib_api_call('/jwt/return_book', data, function (data) {
             console.log(data);
             if (data.success) {
-                let _ = beep1.cloneNode(); _.play();
+                sound.play('success');
                 if (table) {
                     let cells = [
                         parts.stem,
@@ -50,7 +50,7 @@
                     table.add_row(cells);
                 }
             } else {
-                let _ = beep_fail.cloneNode(); _.play();
+                sound.play('error');
             }
         });
     }

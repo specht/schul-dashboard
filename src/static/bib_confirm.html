@@ -45,7 +45,7 @@
                 if (data.error) {
                     show_error_message(data.error);
                 } else {
-                    let _ = beep1.cloneNode(); _.play();
+                    sound.play('success');
                     let signature = `${parts.stem}-${parts.bnr}`;
                     divs_for_signature[signature].hide();
                     delete divs_for_signature[signature];

@@ -124,7 +124,7 @@
         last_scanned_barcode = code;
         if (code.substring(0, 4) === 'bib:') {
             console.log(`shelf code: ${code}`)
-            beep1.play();
+            sound.play('success');
             last_shelf = code.replace('bib:', '');
             $('#shelf_label').text(last_shelf);
             $('#bu-reset-shelf').show();
@@ -144,7 +144,7 @@
             if (last_shelf !== null) {
                 let stem = parseInt(code.split('-')[0]);
                 console.log(`stem: ${stem}`);
-                beep0.play();
+                sound.play('scan');
                 $('#book_list').empty();
                 $('#shelf_items_list').empty();
                 bib_api_call('/jwt/set_shelf_for_book', {stem: stem, shelf: last_shelf}, function(data2) {
@@ -187,7 +187,7 @@
         });
 
         $('#bu-add-photo').click(function() {
-            beep2.play();
+            sound.play('snapshot');
             let video = $('#barcode_scanner_video')[0];
             let canvas = $('#frame_canvas')[0];
             let width = video.videoWidth;

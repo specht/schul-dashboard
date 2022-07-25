@@ -1206,6 +1206,7 @@ class Main < Sinatra::Base
             '/code.js',
             '/include/zxing.min.js',
             '/barcode-widget.js',
+            '/sound.js',
             '/sortable-table.js',
             '/include/print.min.js',
             '/include/odometer.min.js',

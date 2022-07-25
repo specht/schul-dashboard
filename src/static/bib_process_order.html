@@ -73,10 +73,10 @@
             return;
         let barcode = `${parts.stem}-${parts.bnr}`;
         if (barcode in already_scanned_barcodes) {
-            let _ = beep_fail.cloneNode(); _.play();
+            sound.play('error');
         } else {
             $('#bu_confirm_checkout').prop('disabled', false).removeClass('btn-outline-secondary').addClass('btn-success');
-            let _ = beep1.cloneNode(); _.play();
+            sound.play('success');
             let tr = scan_table.element.find('tr').eq(Object.keys(already_scanned_barcodes).length);
             tr.data('barcode_parts', parts);
             tr.find('td').eq(3).text(`${parts.stem}-${parts.bnr}`);
@@ -100,7 +100,7 @@
     function on_scan(barcode) {
         let parts = fix_scanned_book_barcode(barcode);
         if (parts === null) {
-            let _ = beep_fail.cloneNode(); _.play();
+            sound.play('error');
             return;
         }
         let data = {
@@ -109,14 +109,14 @@
         };
         if (parts.checksum) data.checksum = parts.checksum;
         if (parts.stem !== stem) {
-            let _ = beep_fail.cloneNode(); _.play();
+            sound.play('error');
             return;
         }
         bib_api_call('/jwt/verify_scanned_barcode', parts, function (data) {
             if (data.success) {
                 append_barcode(parts);
             } else {
-                let _ = beep_fail.cloneNode(); _.play();
+                sound.play('error');
             }
         });
     }

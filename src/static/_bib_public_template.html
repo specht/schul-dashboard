@@ -96,17 +96,10 @@
 <div class='api_messages'></div>
 <script>
     var db_user_info = #{ Hash[@@user_info.map { | k, v | [k, {:first_name => v[:first_name], :titel => v[:titel], :display_name => v[:display_name], :last_name => v[:last_name], :display_last_name => v[:display_last_name], :klasse => tr_klasse(v[:klasse]), :klassen_order => @@klassen_index[v[:klasse]], :teacher => v[:teacher] }] }].to_json};
-    var beep0 = new Audio('/beep0.mp3');
-    var beep1 = new Audio('/beep1.mp3');
-    var beep2 = new Audio('/beep2.mp3');
-    var beep_fail = new Audio('/beep-fail.mp3');
     var station_logged_in = #{@session_user[:email].index('bib-station') == 0};
     var bib_mobile_logged_in = #{@session_user[:email].index('bib-mobile') == 0};
-
-    function play_audio(which) {
-        let _ = which.cloneNode();
-        _.play();
-    }
+    var sound = null;
+    var sound_initialized_by_user_interaction = false;
 
     function create_user_td_span(email) {
         if (db_user_info[email]) {
@@ -203,6 +196,13 @@
         }
         if ("#{teacher_logged_in?}" === 'true') $('.bib_teacher_only').show();
         if ("#{can_manage_bib_logged_in?}" === 'true') $('.bib_management_only').show();
+        window.sound = new SoundPlayer();
+        $('body').on('touchstart', function(e) {
+            if (!window.sound_initialized_by_user_interaction) {
+                window.sound_initialized_by_user_interaction = true;
+                window.sound = new SoundPlayer();
+            }
+        })
     });
 
     function fix_subsubmenu() {

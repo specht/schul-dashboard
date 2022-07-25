@@ -128,7 +128,7 @@
         if (data.success) {
             $('#unknown_book').hide();
             $('#info_div').css('display', 'block');
-            play_audio(beep1);
+            sound.play('success');
             let book = data.book;
             $('#stem_div').html(`<i class='fa fa-barcode'></i>&nbsp;&nbsp;${stem}`);
             let title = `${book.title}`;
@@ -170,7 +170,7 @@
                 $('#info_shelf').html(`<i class='fa fa-times text-scarlet-500'></i>&nbsp;&nbsp;Buch hat keinen Lagerort`);
             }
         } else {
-            play_audio(beep_fail);
+            sound.play('error');
             $('.api_messages').hide();
             $('#unknown_stem').text(stem);
             $('#unknown_book').show();
@@ -179,12 +179,13 @@
     }
 
     function on_scan(barcode, scanned) {
+        console.log(barcode);
         if (scanning_isbn) {
             scanning_isbn = false;
             $('#bu_scan_isbn').prop('disabled', false);
             bib_api_call('/jwt/propose_isbn_for_stem', {stem: last_scanned_parts.stem, isbn: barcode}, function(data) {
                 if (data.success) {
-                    play_audio(beep1);
+                    sound.play('success');
                     bib_api_call('/jwt/scan_book', last_scanned_parts, function (data) {
                         handle_scan_book(last_scanned_parts.stem, data);
                     });
@@ -197,13 +198,13 @@
             console.log(`current shelf: ${current_shelf}`);
             $('.shelf_here').text(current_shelf);
             $('#bu_set_shelf').show().prop('disabled', false);
-            play_audio(beep1);
+            sound.play('success');
             return;
         }
         last_scanned_parts = null;
         let parts = fix_scanned_book_barcode(barcode);
         if (parts === null) {
-            play_audio(beep_fail);
+            sound.play('error');
             return;
         }
         let data = {
@@ -246,7 +247,7 @@
             $('#photo_modal').modal('show');
         });
         $('#bu_snapshot').click(function(e) {
-            play_audio(beep2);
+            sound.play('snapshot');
             hold_photo = true;
             $('#bu_snapshot').hide();
             $('#bu_repeat_snapshot').show();

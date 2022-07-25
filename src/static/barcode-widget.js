@@ -94,7 +94,7 @@ class BarcodeWidget {
             return;
         if (scanned) {
             if (s !== this.last_scanned) {
-                let _ = beep0.cloneNode(); _.play();
+                sound.play('scan');
                 this.last_scanned = s;
                 this.text_input.val(s);
                 this.on_scan(s, true);

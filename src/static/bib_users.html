@@ -1,6 +1,12 @@
 #{File.read('/static/_bib_public_template.html')}
 #{require_user_who_can_manage_bib!}
 <div class='container bg-white'>
+    <div class="input-group mb-3">
+        <input id='ti_search' type="text" class="form-control" placeholder="Bitte gib einen Suchbegriff ein" />
+        <div class="input-group-append">
+            <button id='bu_search' class="btn btn-success" type="button">Suchen</button>
+        </div>
+    </div>
     <div id='labels_here' class='mb-3'>Filter:&nbsp;&nbsp;</div>
     <div id="users_here"></div>
 </div>
@@ -8,26 +14,46 @@
     var selected_klassen = [];
     var user_table = null;
     var lehrmittelverein_state_cache = #{@@lehrmittelverein_state_cache.to_json};
+    var query = null;
 
     function row_clicked(data) {
         window.location = `/bib_user/${encodeURIComponent(data)}`;
     }
 
     function user_filter(data) {
-        if (window.selected_klassen.length === 0)
-            return true;
-        else {
+        let klasse_result = true;
+        let query_result = true;
+        if (window.selected_klassen.length > 0) {
             let info = db_user_info[data] || {};
             if (info.teacher) {
-                return window.selected_klassen.indexOf('LK') >= 0;
+                klasse_result = (window.selected_klassen.indexOf('Lehrkräfte') >= 0);
             } else {
-                return window.selected_klassen.indexOf(info.klasse) >= 0;
+                klasse_result = (window.selected_klassen.indexOf(info.klasse) >= 0);
             }
         }
+        if (query !== null) {
+            let info = db_user_info[data] || {};
+            let s = (info.display_name || '').toLowerCase();
+            for (let q of query) {
+                if (s.indexOf(q) < 0)
+                    query_result = false;
+            }
+        }
+        return klasse_result && query_result;
+    }
+
+    function perform_search() {
+        query = $('#ti_search').val().trim().toLowerCase();
+        if (query.length === 0) {
+            query = null;
+        } else {
+            query = query.split(/\s+/);
+        }
+        window.user_table.update_filter();
     }
 
     window.addEventListener('load', function () {
-        for (let label of #{(KLASSEN_ORDER.map { |x| tr_klasse(x) } + ['LK']).to_json}) {
+        for (let label of #{(KLASSEN_ORDER.map { |x| tr_klasse(x) } + ['Lehrkräfte']).to_json}) {
             let button = $(`<button class='bu-label btn btn-xs btn-outline-secondary mr-1 mb-1' data-flag='false'>${label}</button>`);
             $('#labels_here').append(button);
             button.click(function (e) {
@@ -59,8 +85,7 @@
                         data.users.push({ email: email, ausleih_count: 0 });
                     }
                 }
-                let div = $('<div>');
-                $('#users_here').append(div);
+                let div = $('<div>').appendTo('#users_here');
                 window.user_table = new SortableTable({
                     element: div,
                     xs: true,
@@ -85,6 +110,15 @@
                 window.user_table.sort_rows(0, false);
                 window.user_table.sort_rows(2, false);
             }
+        });
+        $('#ti_search').focus();
+        $('#ti_search').keydown(function (e) {
+            if (e.key === 'Enter') {
+                perform_search();
+            }
+        });
+        $('#bu_search').click(function (e) {
+            perform_search();
         });
     });
 </script>

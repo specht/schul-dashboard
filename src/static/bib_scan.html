@@ -28,6 +28,7 @@
     }
     #stem_div {
         float: right;
+        margin-left: 10px;
     }
     #title_div {
         font-weight: bold;
@@ -42,6 +43,7 @@
         width: calc((100vw - 30px) / 3.2);
         margin-right: 2px;
         margin-bottom: 2px;
+        max-width: 150px;
     }
 </style>
 <div class='container bg-white'>
@@ -66,15 +68,15 @@
             <div id='title_div'></div>
             <div id='author_div'></div>
             <div id='info_div' style="display: none;">
+                <hr style='margin: 12px 0 5px 0;'/>
                 <button id='bu_scan_isbn' class='pull-right btn btn-sm btn-success ml-1 mr-1'>ISBN scannen</button>
                 <div id='info_isbn'></div>
-                <hr />
+                <hr style='margin: 12px 0 5px 0;'/>
+                <button id='bu_set_shelf' style='display: none;' class='pull-right btn btn-sm btn-success ml-1 mr-1' disabled>Buch liegt in <span class="shelf_here"></span></button>
+                <div id='info_shelf'></div>
+                <hr style='margin: 12px 0 5px 0;'/>
                 <button id='bu_take_photo' class='pull-right btn btn-sm btn-success ml-1 mr-1'>Cover fotografieren</button>
                 <div id='info_cover'></div>
-                <hr />
-                <button class='pull-right btn btn-sm btn-success ml-1 mr-1' disabled>Regal scannen</button>
-                <div id='info_shelf'></div>
-                <hr />
             </div>
         </div>
     </div>
@@ -86,7 +88,22 @@
           <h5 class="modal-title">Foto hochladen</h5>
         </div>
         <div class="modal-body">
-            <img id="current_photo"/>
+            <img id="current_photo" />
+            <div style="position: relative; width: 100%; text-align: center; top: -50px; margin-bottom: -40px;">
+                <div id='bu_snapshot' class='btn bg-scarlet-500 shadow' style="border-radius: 100%; padding: 1px;">
+                    <div class='btn bg-white' style="border-radius: 100%; padding: 1px;">
+                        <div class='btn bg-scarlet-500 text-white' style="border-radius: 100%; width: 30px; height: 30px;">
+                        </div>
+                    </div>
+                </div>
+                <div id='bu_repeat_snapshot' class='btn bg-slate-900 shadow' style="border-radius: 100%; padding: 1px; display: none;">
+                    <div class='btn bg-slate-800' style="border-radius: 100%; padding: 1px;">
+                        <div class='btn bg-slate-900 text-slate-500' style="border-radius: 100%; width: 30px; height: 30px;">
+                            <i class='fa fa-repeat' style="position: relative; left: -4px; top: -3px;"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
             <div class="button_container pull-right" style="margin-top: 15px;">
                 <button id='bu_discard_photo' type="button" class="btn btn-secondary" data-dismiss="modal"><i class='fa fa-times'></i>&nbsp;&nbsp;Abbrechen</button>
                 <button id='bu_submit_photo' type="button" class="btn btn-success"><i class='fa fa-send'></i>&nbsp;&nbsp;Hochladen</button>
@@ -103,6 +120,8 @@
     var last_scanned_parts = null;
     var take_photo_interval = null;
     var current_image = null;
+    var hold_photo = false;
+    var current_shelf = null;
 
     function handle_scan_book(stem, data) {
         console.log(data);
@@ -146,7 +165,7 @@
             $('#cover_link').attr('href', `/bib_book/${book.stem}`);
             $('#cover_link').show();
             if ((data.locations || []).length > 0) {
-                $('#info_shelf').html(`<i class='fa fa-check text-grass-500'></i>&nbsp;&nbsp;Buch hat einen Lagerort: ${data.locations.map(function(x) { return create_location_span(x); })}`);
+                $('#info_shelf').html(`<i class='fa fa-check text-grass-500'></i>&nbsp;&nbsp;Buch hat einen Lagerort: ${data.locations.map(function(x) { return create_location_span(x); }).join(' ')}`);
             } else {
                 $('#info_shelf').html(`<i class='fa fa-times text-scarlet-500'></i>&nbsp;&nbsp;Buch hat keinen Lagerort`);
             }
@@ -171,6 +190,14 @@
                     });
                 }
             });
+            return;
+        }
+        if (barcode.indexOf('bib:') === 0) {
+            current_shelf = barcode.replace('bib:', '');
+            console.log(`current shelf: ${current_shelf}`);
+            $('.shelf_here').text(current_shelf);
+            $('#bu_set_shelf').show().prop('disabled', false);
+            let _ = beep1.cloneNode(); _.play();
             return;
         }
         last_scanned_parts = null;
@@ -201,6 +228,7 @@
         })
         $('#bu_take_photo').click(function(e) {
             take_photo_interval = setInterval(function() {
+                if (hold_photo) return;
                 let video = $('video')[0];
                 let canvas = $('<canvas>');
                 let width = video.videoWidth;
@@ -211,7 +239,24 @@
                 current_image = canvas[0].toDataURL('image/jpeg');
                 $('#current_photo').attr('src', current_image);
             }, 20);
+            hold_photo = false;
+            $('#bu_submit_photo').prop('disabled', true);
+            $('#bu_snapshot').show();
+            $('#bu_repeat_snapshot').hide();
             $('#photo_modal').modal('show');
+        });
+        $('#bu_snapshot').click(function(e) {
+            let _ = beep2.cloneNode(); _.play();
+            hold_photo = true;
+            $('#bu_snapshot').hide();
+            $('#bu_repeat_snapshot').show();
+            $('#bu_submit_photo').prop('disabled', false);
+        });
+        $('#bu_repeat_snapshot').click(function(e) {
+            hold_photo = false;
+            $('#bu_snapshot').show();
+            $('#bu_repeat_snapshot').hide();
+            $('#bu_submit_photo').prop('disabled', true);
         });
         $('#photo_modal').on('hidden.bs.modal', function() {
             clearInterval(take_photo_interval);
@@ -229,11 +274,21 @@
                 }
             });
         });
-        // if ("#{DEVELOPMENT == '1'}") {
-        //     on_scan('3792-007');
+        $('#bu_set_shelf').click(function(e) {
+            bib_api_call('/jwt/add_shelf_for_book', {stem: last_scanned_parts.stem, shelf: current_shelf}, function(data) {
+                if (data.success) {
+                    bib_api_call('/jwt/scan_book', last_scanned_parts, function (data) {
+                        handle_scan_book(last_scanned_parts.stem, data);
+                    });
+                }
+            });
+        })
+        if (#{DEVELOPMENT == '1'}) {
+            // on_scan('bib:23F');
+            // on_scan('3792-007');
         //     // on_scan('9999-016');
         //     // on_scan('1000-016');
         //     // on_scan('1053-016');
-        // }
+        }
     });
 </script>

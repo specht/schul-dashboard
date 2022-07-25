@@ -19,7 +19,7 @@
                     Du musst noch <span id="books_left"></span> <span id='books_label'></span> bestätigen.
                 </div>
                 <div id='no_books_left_div' style="display: none;">
-                    Danke, alle Bücher sind bestätigt!
+                    <i class='fa fa-check text-grass-500'></i>&nbsp;&nbsp;Danke, alle Bücher sind bestätigt!
                 </div>
             </div>
         </div>
@@ -45,10 +45,16 @@
                 if (data.error) {
                     show_error_message(data.error);
                 } else {
+                    let _ = beep1.cloneNode(); _.play();
                     let signature = `${parts.stem}-${parts.bnr}`;
                     divs_for_signature[signature].hide();
                     delete divs_for_signature[signature];
                     update_books_left();
+                }
+            } else {
+                if (data.error) {
+                    show_error_message(data.error);
+                    setTimeout(function() { $('.api_messages').fadeOut(); }, 5000);
                 }
             }
         });

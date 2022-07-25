@@ -9,7 +9,7 @@ class SortableTable {
         this.filter_callback = options.filter_callback;
         this.options = options;
         let table_div = $(`<div class="table-responsive" style="max-width: 100%; overflow-x: auto;">`);
-        let table = $("<table class='table table-sm table-condensed narrow'>");
+        let table = $("<table class='table table-sm table-condensed narrow' style='display: none;'>");
         table.css('user-select', 'none');
         if (options.xs)
             table.addClass('xs');
@@ -41,6 +41,7 @@ class SortableTable {
             this.add_row(row, false);
         }
         this.element.append(table_div);
+        table.css('display', 'table');
     }
 
     add_row(row, highlight) {

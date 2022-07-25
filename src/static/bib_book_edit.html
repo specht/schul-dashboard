@@ -127,9 +127,10 @@
     function update_isbn_info(refresh_fields) {
         bib_api_call('/jwt/fetch_info_for_isbn', { isbn: $('#ti_isbn').val().trim() }, function (data) {
             if (data.success) {
+                console.log(data);
                 if (Object.keys(data.compiled).length === 0)
                     return;
-                for (let key of ['title', 'subtitle', 'author', 'verlag', 'description', 'published', 'page_count', 'language']) {
+                for (let key of ['title', 'subtitle', 'author', 'verlag', 'description', 'published', 'page_count', 'language', 'preis']) {
                     $(`#ti_${key}`).closest('.form-group').find('.btn-xs').remove();
                     let values = {};
                     for (let service of Object.keys(data.compiled)) {
@@ -166,12 +167,17 @@
                     let image = $('<img>').attr('src', `${BIB_HOST}${data.record.cover}`).css('width', '50%').css('cursor', 'pointer');
                     $('#other_covers').append(image);
                     image.click(function(e) {
-                        bib_api_call('/jwt/set_cover_from_path', {stem: stem, path: data.record.cover}, function(data) {
-                            if (data.success) {
-                                console.log(data);
-                                update_cover(data.book);
-                            }
-                        });
+                        if (stem !== null) {
+                            bib_api_call('/jwt/set_cover_from_path', {stem: stem, path: data.record.cover}, function(data) {
+                                if (data.success) {
+                                    console.log(data);
+                                    update_cover(data.book);
+                                }
+                            });
+                        } else {
+                            show_error_message("Bevor du ein Cover setzen kannst, musst du das Buch speichern!");
+                            setTimeout(function() { $('.api_messages').fadeOut(); }, 3000);
+                        }
                     });
                 }
             }
@@ -224,64 +230,78 @@
     }
 
     window.addEventListener('load', function () {
-        stem = parseInt(window.location.pathname.replace('/bib_book_edit/', ''));
+        let stem_s = window.location.pathname.replace('/bib_book_edit/', '');
+        stem = (stem_s === '_new') ? null : parseInt(stem_s);
         if ('#{can_manage_bib_logged_in?}' === 'true') {
-            $(`<li class='mx-1 py-1 px-1.5' style='white-space: nowrap;'><i class='fa fa-barcode'></i>&nbsp;&nbsp;${stem}</li>`).insertBefore($('#sub_menu_extra'));
+            $(`<li class='mx-1 py-1 px-1.5' style='white-space: nowrap;'><i class='fa fa-barcode'></i>&nbsp;&nbsp;${stem || '(neuer Signaturstamm)'}</li>`).insertBefore($('#sub_menu_extra'));
             $(`<li class='mx-1'><button id='bu_save_changes' disabled class='btn btn-success'><i class='fa fa-check'></i>&nbsp;&nbsp;Änderungen speichern</a>`).insertAfter($('#sub_menu_extra'));
-            $(`<li class='mx-1'><a class='inline-block bg-slate-900 border border-blue-500 hover:bg-slate-200 rounded py-1 px-3' href='/bib_book_edit/${stem}'><i class='fa fa-pencil'></i>&nbsp;&nbsp;Metadaten bearbeiten</a></li>`).insertAfter($('#sub_menu_extra'));
-            $(`<li class='mx-1'><a class='inline-block bg-slate-900 border border-blue-500 hover:bg-slate-200 rounded py-1 px-3' href='/bib_add_exemplare/${stem}'><i class='fa fa-plus'></i>&nbsp;&nbsp;Neue Exemplare aufnehmen</a></li>`).insertAfter($('#sub_menu_extra'));
-            if ("#{@session_user[:email].split('@').first}" === 'bib-station-with-printer')
-                $(`<li class='mx-1'><a class='inline-block bg-slate-900 border border-blue-500 hover:bg-slate-200 rounded py-1 px-3' href='/bib_print_label/${stem}'><i class='fa fa-print'></i>&nbsp;&nbsp;Label drucken</a></li>`).insertAfter($('#sub_menu_extra'));
-            $(`<li class='mx-1'><a class='inline-block bg-slate-900 border border-blue-500 hover:bg-slate-200 rounded py-1 px-3' href='/bib_book/${stem}'><i class='fa fa-book'></i>&nbsp;&nbsp;Buch</a></li>`).insertAfter($('#sub_menu_extra'));
+            if (stem !== null) {
+                $(`<li class='mx-1'><a class='inline-block bg-slate-900 border border-blue-500 hover:bg-slate-200 rounded py-1 px-3' href='/bib_book_edit/${stem}'><i class='fa fa-pencil'></i>&nbsp;&nbsp;Metadaten bearbeiten</a></li>`).insertAfter($('#sub_menu_extra'));
+                if ("#{@session_user[:email].split('@').first}" === 'bib-station-with-printer') {
+                    $(`<li class='mx-1'><a class='inline-block bg-slate-900 border border-blue-500 hover:bg-slate-200 rounded py-1 px-3' href='/bib_add_exemplare/${stem}'><i class='fa fa-plus'></i>&nbsp;&nbsp;Neue Exemplare aufnehmen</a></li>`).insertAfter($('#sub_menu_extra'));
+                    $(`<li class='mx-1'><a class='inline-block bg-slate-900 border border-blue-500 hover:bg-slate-200 rounded py-1 px-3' href='/bib_print_label/${stem}'><i class='fa fa-print'></i>&nbsp;&nbsp;Label drucken</a></li>`).insertAfter($('#sub_menu_extra'));
+                }
+                $(`<li class='mx-1'><a class='inline-block bg-slate-900 border border-blue-500 hover:bg-slate-200 rounded py-1 px-3' href='/bib_book/${stem}'><i class='fa fa-book'></i>&nbsp;&nbsp;Buch</a></li>`).insertAfter($('#sub_menu_extra'));
+            }
             $('#subsubmenu').show();
             fix_subsubmenu();
         }
-        bib_api_call('/jwt/get_book', { stem: stem }, function (data) {
-            if (data.success) {
-                let book = data.book;
-                console.log(data);
-                $('#ti_title').val(book.title);
-                $('#ti_subtitle').val(book.subtitle);
-                $('#ti_author').val(book.author);
-                $('#ti_isbn').val(book.isbn);
-                $('#ti_language').val(book.language);
-                $('#ti_verlag').val(book.verlag);
-                $('#ti_published').val(book.published);
-                $('#ti_page_count').val(book.page_count);
-                $('#ti_description').val(book.description);
-                $('#ti_preis').val(currency_string_plain(book.preis));
-                $('#ti_waehrung').val(book.waehrung);
-                $('#ti_stem').val(book.stem);
-                if (book.bib_entry) {
-                    $('#old_description').text(book.bib_entry);
-                    $('#old_description_container').show();
-                }
-                old_data_s = JSON.stringify(collect_data());
-                refresh_buttons();
-                for (let key of ['title', 'subtitle', 'author', 'isbn',
-                    'language', 'verlag', 'published', 'page_count',
-                    'description', 'preis', 'waehrung']) {
-                    $(`#ti_${key}`).change((e) => refresh_buttons());
-                    $(`#ti_${key}`).keydown((e) => refresh_buttons());
-                    $(`#ti_${key}`).keyup((e) => refresh_buttons());
-                }
-                let cover = $('#book_cover');
-                update_cover(book);
-                if (book.isbn) {
-                    update_isbn_info(false);
-                }
-                if ((data.proposed_isbn || []).length > 0) {
-                    for (let isbn of data.proposed_isbn) {
-                        let button = $(`<button class='btn btn-success btn-xs mr-1 mt-1'>`).text(isbn);
-                        button.css('text-align', 'left');
-                        $(`#ti_isbn`).closest('.form-group').append(button);
-                        button.click(function(e) {
-                            $(`#ti_isbn`).val(isbn);
-                            update_isbn_info(true);
-                            refresh_buttons();
-                        });
+        if (stem === null) {
+        } else {
+            bib_api_call('/jwt/get_book', { stem: stem }, function (data) {
+                if (data.success) {
+                    let book = data.book;
+                    console.log(data);
+                    $('#ti_title').val(book.title);
+                    $('#ti_subtitle').val(book.subtitle);
+                    $('#ti_author').val(book.author);
+                    $('#ti_isbn').val(book.isbn);
+                    $('#ti_language').val(book.language);
+                    $('#ti_verlag').val(book.verlag);
+                    $('#ti_published').val(book.published);
+                    $('#ti_page_count').val(book.page_count);
+                    $('#ti_description').val(book.description);
+                    $('#ti_preis').val(currency_string_plain(book.preis));
+                    $('#ti_waehrung').val(book.waehrung);
+                    $('#ti_stem').val(book.stem);
+                    if (book.bib_entry) {
+                        $('#old_description').text(book.bib_entry);
+                        $('#old_description_container').show();
+                    }
+                    let cover = $('#book_cover');
+                    update_cover(book);
+                    if (book.isbn) {
+                        update_isbn_info(false);
+                    }
+                    if ((data.proposed_isbn || []).length > 0) {
+                        for (let isbn of data.proposed_isbn) {
+                            let button = $(`<button class='btn btn-success btn-xs mr-1 mt-1'>`).text(isbn);
+                            button.css('text-align', 'left');
+                            $(`#ti_isbn`).closest('.form-group').append(button);
+                            button.click(function(e) {
+                                $(`#ti_isbn`).val(isbn);
+                                update_isbn_info(true);
+                                refresh_buttons();
+                            });
+                        }
                     }
                 }
+            });
+        }
+        old_data_s = JSON.stringify(collect_data());
+        refresh_buttons();
+        for (let key of ['title', 'subtitle', 'author', 'isbn',
+            'language', 'verlag', 'published', 'page_count',
+            'description', 'preis', 'waehrung']) {
+            $(`#ti_${key}`).change((e) => refresh_buttons());
+            $(`#ti_${key}`).keydown((e) => refresh_buttons());
+            $(`#ti_${key}`).keyup((e) => refresh_buttons());
+        }
+        $(document).keydown(function(e) {
+            if (e.key === 'F8') {
+                $('#ti_isbn').focus();
+                $('#ti_isbn').val('');
+                e.preventDefault();
             }
         });
         $('#ti_isbn').change(function(e) {
@@ -324,10 +344,17 @@
         });
         $('#bu_save_changes').click(function(e) {
             let data = collect_data();
-            bib_api_call('/jwt/update_book', {stem: stem, data: data}, function(data) {
-                if (data.success)
-                    window.location.reload();
-            });
+            if (stem === null) {
+                bib_api_call('/jwt/create_book', {data: data}, function(data) {
+                    if (data.success)
+                        window.location.href = `/bib_book_edit/${data.stem}`;
+                });
+            } else {
+                bib_api_call('/jwt/update_book', {stem: stem, data: data}, function(data) {
+                    if (data.success)
+                        window.location.reload();
+                });
+            }
         });
     });
 </script>

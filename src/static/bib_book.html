@@ -12,10 +12,24 @@
     #book_details {
         margin-bottom: 1em;
     }
+
+    #book_cover_container {
+        width: 250px;
+    }
+
+    @media (max-width: 575px) {
+        #book_cover_container {
+            width: 150px;
+        }
+        h3 {
+            font-size: 1.5rem;
+        }
+    }
+
 </style>
 <div class='container bg-white' style="padding-top: 15px;">
     <div id='book_here'>
-        <div id='book_cover_container' class='pull-left mr-3 mb-3 bg-stone-800 shadow shadow-md' style="width: 250px;">
+        <div id='book_cover_container' class='pull-left mr-3 mb-3 bg-stone-800 shadow shadow-md'>
             <img id='book_cover' class=' text-center italic text-sm' style='width: 100%;' />
         </div>
         <div id='labels_here' class='pull-right'>

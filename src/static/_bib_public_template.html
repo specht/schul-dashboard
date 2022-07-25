@@ -103,6 +103,11 @@
     var station_logged_in = #{@session_user[:email].index('bib-station') == 0};
     var bib_mobile_logged_in = #{@session_user[:email].index('bib-mobile') == 0};
 
+    function play_audio(which) {
+        let _ = which.cloneNode();
+        _.play();
+    }
+
     function create_user_td_span(email) {
         if (db_user_info[email]) {
             let parts = [];

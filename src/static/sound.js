@@ -13,5 +13,15 @@ class SoundPlayer {
 
     play(which) {
         this.howl.play(which);
+        if (is_safari) {
+            if (!window.sound_initialized_by_user_interaction) {
+                $('body').append(`<span class='safari_volume_indicator bg-grass-600'><i class='fa fa-volume-up text-white'></i></span>`);
+                $('.safari_volume_indicator').click(function() {
+                    window.sound_initialized_by_user_interaction = true;
+                    window.sound = new SoundPlayer();
+                    $('.safari_volume_indicator').fadeOut();
+                });
+            }
+        }
     }
 }

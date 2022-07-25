@@ -1,5 +1,21 @@
 #{this_is_a_page_for_logged_in_users}
 <style>
+    .safari_volume_indicator {
+        display: block;
+        position: fixed;
+        right: 4px;
+        bottom: 4px;
+        width: 45px;
+        height: 45px;
+        z-index: 100000;
+        padding-top: 5px;
+        border: 1px solid rgba(0,0,0,0.2);
+        border-radius: 100%;
+        box-shadow: rgb(0 0 0 / 20%) 0px -1px 10px;
+        font-size: 145%;
+        text-align: center;
+    }
+
     .api_messages {
         position: absolute;
         top: 60px;
@@ -100,6 +116,7 @@
     var bib_mobile_logged_in = #{@session_user[:email].index('bib-mobile') == 0};
     var sound = null;
     var sound_initialized_by_user_interaction = false;
+    var is_safari = (navigator.userAgent.indexOf('Safari') >= 0 && navigator.userAgent.indexOf('Chrome') < 0);
 
     function create_user_td_span(email) {
         if (db_user_info[email]) {
@@ -201,6 +218,7 @@
             if (!window.sound_initialized_by_user_interaction) {
                 window.sound_initialized_by_user_interaction = true;
                 window.sound = new SoundPlayer();
+                $('.safari_volume_indicator').fadeOut();
             }
         })
     });

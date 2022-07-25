@@ -43,6 +43,7 @@
             console.log(data);
             if (data.success) {
                 if (data.error) {
+                    sound.play('error');
                     show_error_message(data.error);
                 } else {
                     sound.play('success');
@@ -53,6 +54,7 @@
                 }
             } else {
                 if (data.error) {
+                    sound.play('error');
                     show_error_message(data.error);
                     setTimeout(function() { $('.api_messages').fadeOut(); }, 5000);
                 }

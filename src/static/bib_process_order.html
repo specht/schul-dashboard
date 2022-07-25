@@ -1,58 +1,56 @@
 #{require_user_who_can_manage_bib!}
 #{File.read('/static/_bib_public_template.html')}
 <div class='container bg-white' style="padding-top: 15px;">
-    <div class="bib_teacher_only">
-        <div class='mb-3'>
-            <button id='bu_scan_exemplare' class='btn btn-outline-secondary mr-1' disabled><i class='fa fa-barcode'></i>&nbsp;&nbsp;Exemplare scannen</button>
-            <button id='bu_confirm_checkout' class='btn btn-outline-secondary mr-1' disabled><i class='fa fa-check'></i>&nbsp;&nbsp;Ausleihe durchführen</button>
-            <button id='bu_print_receipt' class='btn btn-outline-secondary mr-1' disabled><i class='fa fa-print'></i>&nbsp;&nbsp;Beleg drucken</button>
-            <!-- <button id='bu_notify_teacher' class='btn btn-outline-secondary mr-1' disabled><i class='fa fa-send'></i>&nbsp;&nbsp;E-Mail senden</button> -->
-        </div>
-        <div class='row'>
-            <div class='col-md-6'>
-                <!-- <h3>Bestellung bearbeiten</h3> -->
+    <div class='mb-3'>
+        <button id='bu_scan_exemplare' class='btn btn-outline-secondary mr-1' disabled><i class='fa fa-barcode'></i>&nbsp;&nbsp;Exemplare scannen</button>
+        <button id='bu_confirm_checkout' class='btn btn-outline-secondary mr-1' disabled><i class='fa fa-check'></i>&nbsp;&nbsp;Ausleihe durchführen</button>
+        <button id='bu_print_receipt' class='btn btn-outline-secondary mr-1' disabled><i class='fa fa-print'></i>&nbsp;&nbsp;Beleg drucken</button>
+        <!-- <button id='bu_notify_teacher' class='btn btn-outline-secondary mr-1' disabled><i class='fa fa-send'></i>&nbsp;&nbsp;E-Mail senden</button> -->
+    </div>
+    <div class='row'>
+        <div class='col-md-6'>
+            <!-- <h3>Bestellung bearbeiten</h3> -->
+            <div>
                 <div>
-                    <div>
-                        <div id='scan_container'></div>
-                        <div id='scan_hint' style='display: none;'>
-                            <div class='alert alert-warning'>
-                                Falls nicht genügend Exemplare vorhanden sind, kannst du trotzdem eine Teilausleihe bestätigen. So werden die verhandenen Exemplare jetzt schon verliehen und die fehlenden Exemplare können später verliehen werden.
-                            </div>
-                        </div>
-                    </div>
-                    <div id='book_div'></div>
-                    <div id='order_div'>
-                        <div class="table-responsive mt-3" style="max-width: 100%; overflow-x: auto;">
-                            <table class="table table-sm table-condensed narrow" style="user-select: none;">
-                                <tr><th>Bestellt von:</th><td id='user_here'></td></tr>
-                                <tr id='tr_kurs' style="display: none;"><th>Kurs:</th><td id='kurs_here'></td></tr>
-                                <tr><th>am:</th><td id='ts_order_placed_here'></td></tr>
-                                <tr><th>Regal:</th><td id='ts_order_shelf_here'></td></tr>
-                                <tr><th>Signaturstamm:</th><td id='ts_order_stem_here'></td></tr>
-                                <tr><th>Benötigte Anzahl:</th><td class='font-bold' id='ts_order_count_here'></td></tr>
-                            </table>
+                    <div id='scan_container'></div>
+                    <div id='scan_hint' style='display: none;'>
+                        <div class='alert alert-warning'>
+                            Falls nicht genügend Exemplare vorhanden sind, kannst du trotzdem eine Teilausleihe bestätigen. So werden die verhandenen Exemplare jetzt schon verliehen und die fehlenden Exemplare können später verliehen werden.
                         </div>
                     </div>
                 </div>
-                <div id='fulfillments_div' style="display: none;">
-                    <hr />
-                    <p>Erfolgte Buchungen:</p>
-                    <div id='fulfillments_table'></div>
+                <div id='book_div'></div>
+                <div id='order_div'>
+                    <div class="table-responsive mt-3" style="max-width: 100%; overflow-x: auto;">
+                        <table class="table table-sm table-condensed narrow" style="user-select: none;">
+                            <tr><th>Bestellt von:</th><td id='user_here'></td></tr>
+                            <tr id='tr_kurs' style="display: none;"><th>Kurs:</th><td id='kurs_here'></td></tr>
+                            <tr><th>am:</th><td id='ts_order_placed_here'></td></tr>
+                            <tr><th>Regal:</th><td id='ts_order_shelf_here'></td></tr>
+                            <tr><th>Signaturstamm:</th><td id='ts_order_stem_here'></td></tr>
+                            <tr><th>Benötigte Anzahl:</th><td class='font-bold' id='ts_order_count_here'></td></tr>
+                        </table>
+                    </div>
                 </div>
             </div>
-            <div class='col-md-6'>
-                <div id='scan_table_div' style='display: none;'>
-                    <p><b>Nutzer, die dieses Buch noch bekommen sollen:</b></p>
-                    <div id='scan_table'></div>
-                </div>
-                <div id='already_have_book_table_div' style='display: none;'>
-                    <p><b>Nutzer, die dieses Buch bereits haben:</b></p>
-                    <div id='already_have_book_table'></div>
-                </div>
-                <div id='no_verein_table_div' style='display: none;'>
-                    <p><b>Nutzer, die nicht im Lehrmittelverein sind:</b></p>
-                    <div id='no_verein_table'></div>
-                </div>
+            <div id='fulfillments_div' style="display: none;">
+                <hr />
+                <p>Erfolgte Buchungen:</p>
+                <div id='fulfillments_table'></div>
+            </div>
+        </div>
+        <div class='col-md-6'>
+            <div id='scan_table_div' style='display: none;'>
+                <p><b>Nutzer, die dieses Buch noch bekommen sollen:</b></p>
+                <div id='scan_table'></div>
+            </div>
+            <div id='already_have_book_table_div' style='display: none;'>
+                <p><b>Nutzer, die dieses Buch bereits haben:</b></p>
+                <div id='already_have_book_table'></div>
+            </div>
+            <div id='no_verein_table_div' style='display: none;'>
+                <p><b>Nutzer, die nicht im Lehrmittelverein sind:</b></p>
+                <div id='no_verein_table'></div>
             </div>
         </div>
     </div>

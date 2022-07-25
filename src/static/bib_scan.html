@@ -6,7 +6,10 @@
         width: 100%;
         display: block;
     }
-    #cover.none {
+    #no_cover {
+        box-shadow: 0 0 10px rgba(0,0,0,0.25);
+        width: 100%;
+        display: block;
         padding-bottom: 130%;
     }
     #barcode_div {
@@ -62,6 +65,7 @@
                 <div id='barcode_widget'></div>
             </div>
             <div id='cover_div'>
+                <div id="no_cover" style="display: none;"></div>
                 <img id="cover"></img>
                 <a id='cover_link' href='' class='btn btn-sm btn-success mt-1 w-100' style='display: none;'>Zum Buch…</a>
             </div>
@@ -157,13 +161,15 @@
             $('#bu_scan_isbn').prop('disabled', false).show();
                 $('#bu_scan_isbn_cancel').hide();
             if (book.has_cover) {
-                $('#cover').attr('src', `${BIB_HOST}/gen/covers/${book.stem}-400.jpg`).removeClass('none');
+                $('#cover').attr('src', `${BIB_HOST}/gen/covers/${book.stem}-400.jpg`).removeClass('none').show();
+                $('#no_cover').hide();
                 $('#info_cover').html(`<i class='fa fa-check text-grass-500'></i>&nbsp;&nbsp;Buch hat ein Cover`);
                 if ((data.book_photos || []).length > 0) {
                     $('#info_cover').append(`, aber es wurden Fotos hochgeladen:<br />`);
                 }
             } else {
-                $('#cover').attr('src', '').addClass('none');
+                $('#cover').attr('src', '').hide();
+                $('#no_cover').show();
                 $('#info_cover').html(`<i class='fa fa-times text-scarlet-500'></i>&nbsp;&nbsp;Buch hat kein Cover`);
                 if ((data.book_photos || []).length > 0) {
                     $('#info_cover').append(`, aber bereits Vorschläge:<br />`);

@@ -116,7 +116,7 @@
     var bib_mobile_logged_in = #{@session_user[:email].index('bib-mobile') == 0};
     var sound = null;
     var sound_initialized_by_user_interaction = false;
-    var is_safari = (navigator.userAgent.indexOf('Safari') >= 0 && navigator.userAgent.indexOf('Chrome') < 0);
+    var is_safari = false;//(navigator.userAgent.indexOf('Safari') >= 0 && navigator.userAgent.indexOf('Chrome') < 0);
 
     function create_user_td_span(email) {
         if (db_user_info[email]) {

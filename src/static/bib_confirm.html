@@ -45,6 +45,7 @@
                 if (data.error) {
                     sound.play('error');
                     show_error_message(data.error);
+                    setTimeout(function() { $('.api_messages').fadeOut(); }, 5000);
                 } else {
                     sound.play('success');
                     let signature = `${parts.stem}-${parts.bnr}`;

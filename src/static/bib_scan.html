@@ -45,6 +45,17 @@
         margin-bottom: 2px;
         max-width: 150px;
     }
+    #current_photo {
+        max-height: calc(100vh - 200px);
+        width: 100%;
+        object-fit: cover;
+    }
+    #snapshot_video_container {
+        max-height: calc(100vh - 200px);
+        width: 100%;
+        object-fit: cover;
+        height: 80vh;
+    }
 </style>
 <div class='container bg-white'>
     <div class='row'>
@@ -70,6 +81,7 @@
             <div id='info_div' style="display: none;">
                 <hr style='margin: 12px 0 5px 0;'/>
                 <button id='bu_scan_isbn' class='pull-right btn btn-sm btn-success ml-1 mr-1'>ISBN scannen</button>
+                <button id='bu_scan_isbn_cancel' class='pull-right btn btn-sm btn-danger ml-1 mr-1' style="display: none;"><i class='fa fa-times'></i>&nbsp;&nbsp;Abbruch</button>
                 <div id='info_isbn'></div>
                 <hr style='margin: 12px 0 5px 0;'/>
                 <button id='bu_set_shelf' style='display: none;' class='pull-right btn btn-sm btn-success ml-1 mr-1' disabled>Buch liegt in <span class="shelf_here"></span></button>
@@ -88,6 +100,7 @@
           <h5 class="modal-title">Foto hochladen</h5>
         </div>
         <div class="modal-body">
+            <div id='snapshot_video_container'></div>
             <img id="current_photo" />
             <div style="position: relative; width: 100%; text-align: center; top: -50px; margin-bottom: -40px;">
                 <div id='bu_snapshot' class='btn bg-scarlet-500 shadow' style="border-radius: 100%; padding: 1px;">
@@ -118,7 +131,7 @@
     var table = null;
     var scanning_isbn = false;
     var last_scanned_parts = null;
-    var take_photo_interval = null;
+    // var take_photo_interval = null;
     var current_image = null;
     var hold_photo = false;
     var current_shelf = null;
@@ -138,14 +151,14 @@
             $('#author_div').text(book.author);
             if (book.isbn) {
                 $('#info_isbn').html(`<i class='fa fa-check text-grass-500'></i>&nbsp;&nbsp;Buch hat eine ISBN`);
-                $('#bu_scan_isbn').prop('disabled', true);
             } else {
                 $('#info_isbn').html(`<i class='fa fa-times text-scarlet-500'></i>&nbsp;&nbsp;Buch hat keine ISBN`);
-                $('#bu_scan_isbn').prop('disabled', false);
                 if ((data.proposed_isbn || []).length > 0) {
                     $('#info_isbn').append(`, aber bereits Vorschläge: ${data.proposed_isbn.join(', ')}`);
                 }
             }
+            $('#bu_scan_isbn').prop('disabled', false).show();
+                $('#bu_scan_isbn_cancel').hide();
             if (book.has_cover) {
                 $('#cover').attr('src', `${BIB_HOST}/gen/covers/${book.stem}-400.jpg`).removeClass('none');
                 $('#info_cover').html(`<i class='fa fa-check text-grass-500'></i>&nbsp;&nbsp;Buch hat ein Cover`);
@@ -182,7 +195,9 @@
         console.log(barcode);
         if (scanning_isbn) {
             scanning_isbn = false;
-            $('#bu_scan_isbn').prop('disabled', false);
+            $('#bu_scan_isbn').prop('disabled', false).show();
+            $('#bu_scan_isbn_cancel').hide();
+
             bib_api_call('/jwt/propose_isbn_for_stem', {stem: last_scanned_parts.stem, isbn: barcode}, function(data) {
                 if (data.success) {
                     sound.play('success');
@@ -224,22 +239,35 @@
             on_scan: on_scan
         });
         $('#bu_scan_isbn').click(function(e) {
-            $('#bu_scan_isbn').prop('disabled', true);
+            $('#bu_scan_isbn').prop('disabled', true).hide();
+            $('#bu_scan_isbn_cancel').show();
             scanning_isbn = true;
         })
+        $('#bu_scan_isbn_cancel').click(function(e) {
+            $('#bu_scan_isbn').prop('disabled', false).show();
+            $('#bu_scan_isbn_cancel').hide();
+            scanning_isbn = false;
+        })
         $('#bu_take_photo').click(function(e) {
-            take_photo_interval = setInterval(function() {
-                if (hold_photo) return;
-                let video = $('video')[0];
-                let canvas = $('<canvas>');
-                let width = video.videoWidth;
-                let height = video.videoHeight;
-                canvas.attr('width', width);
-                canvas.attr('height', height);
-                canvas[0].getContext('2d').drawImage(video, 0, 0, width, height);
-                current_image = canvas[0].toDataURL('image/jpeg');
-                $('#current_photo').attr('src', current_image);
-            }, 20);
+            let video = $('video');
+            video.css('object-fit', 'contain');
+            console.log('video: ', video);
+            let video_parent = video.parent();
+            console.log('parent: ', parent);
+            video.appendTo($('#snapshot_video_container'));
+
+            // take_photo_interval = setInterval(function() {
+            //     if (hold_photo) return;
+            //     let video = $('video')[0];
+            //     let canvas = $('<canvas>');
+            //     let width = video.videoWidth;
+            //     let height = video.videoHeight;
+            //     canvas.attr('width', width);
+            //     canvas.attr('height', height);
+            //     canvas[0].getContext('2d').drawImage(video, 0, 0, width, height);
+            //     current_image = canvas[0].toDataURL('image/jpeg');
+            //     $('#current_photo').attr('src', current_image);
+            // }, 20);
             hold_photo = false;
             $('#bu_submit_photo').prop('disabled', true);
             $('#bu_snapshot').show();
@@ -260,8 +288,11 @@
             $('#bu_submit_photo').prop('disabled', true);
         });
         $('#photo_modal').on('hidden.bs.modal', function() {
-            clearInterval(take_photo_interval);
-            take_photo_interval = null;
+            let video = $('video');
+            video.appendTo($('._barcode_widget > div').eq(0));
+            video.css('object-fit', 'cover');
+            // clearInterval(take_photo_interval);
+            // take_photo_interval = null;
         });
         $('#bu_submit_photo').click(function(e) {
             $('#bu_submit_photo').attr('disabled', true);
@@ -275,6 +306,9 @@
                 }
             });
         });
+        $('#bu_discard_photo').click(function(e) {
+            $('#photo_modal').modal('hide');
+        });
         $('#bu_set_shelf').click(function(e) {
             bib_api_call('/jwt/add_shelf_for_book', {stem: last_scanned_parts.stem, shelf: current_shelf}, function(data) {
                 if (data.success) {
@@ -286,7 +320,7 @@
         })
         if (#{DEVELOPMENT == '1'}) {
             // on_scan('bib:23F');
-            // on_scan('3792-007');
+            on_scan('3792-007');
         //     // on_scan('9999-016');
         //     // on_scan('1000-016');
         //     // on_scan('1053-016');

@@ -9,7 +9,7 @@ class BarcodeWidget {
         let video_container = $("<div style='position: relative; width: 100%; overflow: hidden; height: 200px; margin-bottom: 15px; display: none;'>");
         let video = $("<video class='rounded shadow' style='object-fit: cover; position: absolute; left: 0; top: 0; width: 100%; height: 100%;'>");
         let expand_link = $(`<a href=''>`).text('eingeben');
-        let hint = $("<div class='text-muted text-sm'>").text('Alternativ kannst du den Barcode auch ').append(expand_link).append('.');
+        let hint = $("<div class='text-muted text-sm'>").text(teacher_logged_in ? 'Alternativ können Sie den Barcode auch ' : 'Alternativ kannst du den Barcode auch ').append(expand_link).append('.');
         if (station_logged_in)
             hint = $("<div class='text-muted text-sm'>").text('Barcode:');
         let input_group = $("<div class='input-group mt-1'>").hide();
@@ -49,7 +49,9 @@ class BarcodeWidget {
                 }
             }).catch(e => {
                 no_camera = true;
-                hint.text('Es konnte keine Kamera erkannt werden. Versuch es bitte mit einem anderen Gerät oder gib den Barcode manuell ein:');
+                hint.text(teacher_logged_in ?
+                    'Es konnte keine Kamera erkannt werden. Versuchen Sie es bitte mit einem anderen Gerät oder geben Sie den Barcode manuell ein:' :
+                    'Es konnte keine Kamera erkannt werden. Versuch es bitte mit einem anderen Gerät oder gib den Barcode manuell ein:');
                 input_group.show();
                 $(document).keydown(function(e) {
                     if (e.key === 'F8') {

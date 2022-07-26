@@ -6,8 +6,9 @@
                 style="font-size: 200%; position: relative; top: 10px; padding-right: 10px;"></i>
             <a class="pull-right btn btn-success" style='position: relative; top: 5px; margin-left: 10px;'
                 href="/bib_confirm"><i class='fa fa-angle-double-right'></i>&nbsp;&nbsp;Bücher bestätigen</a>
-            Einige deiner geliehenen Bücher sind noch nicht bestätigt. Bitte scanne die Barcodes deiner geliehenen
-            Bücher, um zu bestätigen, dass du die richtigen Bücher bekommen hast.
+            #{teacher_logged_in? ?
+                'Einige Ihrer geliehenen Bücher sind noch nicht bestätigt. Bitte scannen Sie die Barcodes Ihrer geliehenen Bücher, um zu bestätigen, dass Sie die richtigen Bücher bekommen haben.' :
+                'Einige deiner geliehenen Bücher sind noch nicht bestätigt. Bitte scanne die Barcodes deiner geliehenen Bücher, um zu bestätigen, dass du die richtigen Bücher bekommen hast.'}
         </div>
         <hr />
     </div>

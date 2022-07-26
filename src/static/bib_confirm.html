@@ -10,13 +10,13 @@
         <div id='barcode_widget' class='col-12 col-sm-8 col-md-6 col-lg-6'></div>
         <div class="col-lg-6 col-md-6 col-sm-4">
             <p>
-                Bitte bestätige deine geliehenen Bücher, indem du den Barcode in jedem Buch einscannst. Den Barcode
-                findest du ganz vorn
-                im Buch.
+                #{teacher_logged_in? ?
+                'Bitte bestätigen Sie Ihre geliehenen Bücher, indem Sie den Barcode in jedem Buch einscannen. Den Barcode finden Sie ganz vorn im Buch.' :
+                'Bitte bestätige deine geliehenen Bücher, indem du den Barcode in jedem Buch einscannst. Den Barcode findest du ganz vorn im Buch.'}
             </p>
             <div style="font-size: 110%; border: 1px solid #ddd; padding: 15px; border-radius: 15px; box-shadow: 0 0 10px rgba(0,0,0,0.25); margin-bottom: 15px; text-align: center;">
                 <div id='books_left_div' style="display: none;">
-                    Du musst noch <span id="books_left"></span> <span id='books_label'></span> bestätigen.
+                    #{teacher_logged_in? ? 'Sie müssen' : 'Du musst'} noch <span id="books_left"></span> <span id='books_label'></span> bestätigen.
                 </div>
                 <div id='no_books_left_div' style="display: none;">
                     <i class='fa fa-check text-grass-500'></i>&nbsp;&nbsp;Danke, alle Bücher sind bestätigt!

@@ -114,6 +114,7 @@
     var db_user_info = #{ Hash[@@user_info.map { | k, v | [k, {:first_name => v[:first_name], :titel => v[:titel], :display_name => v[:display_name], :last_name => v[:last_name], :display_last_name => v[:display_last_name], :klasse => tr_klasse(v[:klasse]), :klassen_order => @@klassen_index[v[:klasse]], :teacher => v[:teacher] }] }].to_json};
     var station_logged_in = #{@session_user[:email].index('bib-station') == 0};
     var bib_mobile_logged_in = #{@session_user[:email].index('bib-mobile') == 0};
+    var teacher_logged_in = #{teacher_logged_in?};
     var sound = null;
     var sound_initialized_by_user_interaction = false;
     var is_safari = false;//(navigator.userAgent.indexOf('Safari') >= 0 && navigator.userAgent.indexOf('Chrome') < 0);

@@ -57,7 +57,7 @@
                             bu_stornieren.click(function(e) {
                                 e.stopPropagation();
                                 showTemplateModal('Bestellung stornieren',
-                                    'Bist du sicher, dass du diese Bestellung stornieren möchtest?',
+                                    'Sind Sie sicher, dass Sie diese Bestellung stornieren möchten?',
                                     "<i class='fa fa-trash'></i>&nbsp;&nbsp;Bestellung stornieren", 'btn-danger',
                                     'Abbrechen', 'btn-secondary', function () {
                                         bib_api_call('/jwt/cancel_order', {oid: order.o.id}, function (data) {

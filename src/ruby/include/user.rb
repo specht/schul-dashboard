@@ -140,6 +140,10 @@ class Main < Sinatra::Base
         user_logged_in? && (EXTERNAL_USERS.include?(@session_user[:email]))
     end
 
+    def require_device!
+        assert(!@session_device.nil?)
+    end
+
     # Assert that a user is logged in
     def require_user!
         assert(user_logged_in?, 'User is logged in', true)
@@ -228,6 +232,12 @@ class Main < Sinatra::Base
     # Put this on top of a webpage to assert that this page can be opened by logged in users only
     def this_is_a_page_for_logged_in_users
         unless user_logged_in?
+            redirect "#{WEB_ROOT}/", 303
+        end
+    end
+
+    def this_is_a_page_for_devices
+        if @session_device.nil?
             redirect "#{WEB_ROOT}/", 303
         end
     end

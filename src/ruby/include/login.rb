@@ -12,7 +12,7 @@ class Main < Sinatra::Base
             data[:user_agent] = usa
         rescue
         end
-        
+
         all_sessions().each do |session|
             other_sid = session[:sid]
             result = neo4j_query(<<~END_OF_QUERY, :email => email, :other_sid => other_sid).map { |x| x['sid'] }
@@ -23,11 +23,25 @@ class Main < Sinatra::Base
         neo4j_query_expect_one(<<~END_OF_QUERY, :email => email, :data => data)
             MATCH (u:User {email: $email})
             CREATE (s:Session $data)-[:BELONGS_TO]->(u)
-            RETURN s; 
+            RETURN s;
         END_OF_QUERY
         sid
     end
-    
+
+    def create_device_token(device, expire_hours)
+        token = RandomTag::generate(24)
+        assert(token =~ /^[0-9A-Za-z]+$/)
+        data = {:device => device,
+                :token => token,
+                :expires => (DateTime.now() + expire_hours / 24.0).to_s}
+
+        neo4j_query_expect_one(<<~END_OF_QUERY, :data => data)
+            CREATE (t:DeviceToken $data)
+            RETURN t;
+        END_OF_QUERY
+        token
+    end
+
     post '/api/confirm_login' do
         data = parse_request_data(:required_keys => [:tag, :code])
         data[:code] = data[:code].gsub(/[^0-9]/, '')
@@ -162,11 +176,53 @@ class Main < Sinatra::Base
     post '/api/login_as_special' do
         require_admin!
         data = parse_request_data(:required_keys => [:prefix])
-        assert(%w(monitor monitor-sek monitor-lz bib-mobile bib-station bib-station-with-printer).include?(data[:prefix]))
+        assert(%w(monitor monitor-sek monitor-lz).include?(data[:prefix]))
         logout()
         session_id = create_session("#{data[:prefix]}@#{SCHUL_MAIL_DOMAIN}", 365 * 24)
         purge_missing_sessions(session_id, true)
         respond(:ok => 'yeah')
+    end
+
+    post '/api/login_as_device' do
+        require_admin!
+        data = parse_request_data(:required_keys => [:device])
+        assert(%w(bib-mobile bib-station bib-station-with-printer).include?(data[:device]))
+        logout()
+        token = create_device_token(data[:device], 365 * 24)
+        purge_missing_sessions(nil, true)
+        response.set_cookie('device_token',
+            :value => token,
+            :expires => Time.new + COOKIE_EXPIRY_TIME,
+            :path => '/',
+            :httponly => true,
+            :secure => DEVELOPMENT ? false : true)
+        respond(:ok => 'yeah')
+    end
+
+    post '/api/get_device_login_qrcode' do
+        require_device!
+        login_token = RandomTag::generate(24)
+        assert(login_token =~ /^[0-9A-Za-z]+$/)
+
+        # delete all login tokens for this device
+        neo4j_query(<<~END_OF_QUERY, :device_token => @session_device_token)
+            MATCH (lt:DeviceLoginToken)-[:FOR]->(dt:DeviceToken {token: $device_token})
+            DETACH DELETE lt;
+        END_OF_QUERY
+        # store login token
+        neo4j_query_expect_one(<<~END_OF_QUERY, :login_token => login_token, :device_token => @session_device_token)
+            MATCH (dt:DeviceToken {token: $device_token})
+            CREATE (lt:DeviceLoginToken {token: $login_token})-[:FOR]->(dt)
+            RETURN lt;
+        END_OF_QUERY
+
+        url = "#{WEB_ROOT}/api/login_for_device/#{login_token}"
+
+        qrcode = RQRCode::QRCode.new(url, 7)
+        svg = qrcode.as_svg(offset: 0, color: '000', shape_rendering: 'crispEdges',
+                            module_size: 4, standalone: true).gsub("\n", '')
+
+        respond(:ok => 'yeah', :url => url, :qrcode => svg)
     end
 
     def all_sessions
@@ -222,7 +278,7 @@ class Main < Sinatra::Base
             response.delete_cookie('sid')
         end
         if (request.cookies['sid'] || '') != new_cookie_value
-            response.set_cookie('sid', 
+            response.set_cookie('sid',
                                 :value => new_cookie_value,
                                 :expires => Time.new + COOKIE_EXPIRY_TIME,
                                 :path => '/',

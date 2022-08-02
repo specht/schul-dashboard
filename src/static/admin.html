@@ -104,21 +104,21 @@
             });
         });
         $('.bu-login-as-bib-mobile').click(function (e) {
-            api_call('/api/login_as_special', {prefix: 'bib-mobile'}, function (data) {
+            api_call('/api/login_as_device', {device: 'bib-mobile'}, function (data) {
                 if (data.success) {
                     window.location.href = '/';
                 }
             });
         });
         $('.bu-login-as-bib-station').click(function (e) {
-            api_call('/api/login_as_special', {prefix: 'bib-station'}, function (data) {
+            api_call('/api/login_as_device', {device: 'bib-station'}, function (data) {
                 if (data.success) {
                     window.location.href = '/';
                 }
             });
         });
         $('.bu-login-as-bib-station-with-printer').click(function (e) {
-            api_call('/api/login_as_special', {prefix: 'bib-station-with-printer'}, function (data) {
+            api_call('/api/login_as_device', {device: 'bib-station-with-printer'}, function (data) {
                 if (data.success) {
                     window.location.href = '/';
                 }

@@ -1,0 +1,136 @@
+<style>
+    .api_messages {
+        position: absolute;
+        top: 60px;
+        width: 80%;
+        left: 10%;
+        display: none;
+    }
+
+    body {
+        /* background: none; */
+        /* background-color: white; */
+        /* padding-top: 120px; */
+        background-attachment: fixed;
+    }
+
+    .api_messages {
+        position: fixed;
+        z-index: 101;
+    }
+
+    body {
+        padding-top: 0;
+    }
+
+    .navbar {
+        display: none;
+    }
+
+    #qrcode_container {
+        display: flex;
+        margin-top: 20vh;
+        justify-content: center;
+        justify-items: center;
+    }
+
+    #qrcode {
+        padding: 30px;
+        background-color: #fff;
+        display: inline-block;
+        border-radius: 10%;
+        box-shadow: 0 0 20px rgba(0,0,0,0.5);
+        transform: scale(0);
+        transition: transform 300ms;
+    }
+
+    #qrcode.showing {
+        transform: scale(1);
+    }
+
+    @tailwind base;
+    @tailwind components;
+    @tailwind utilities;
+</style>
+<div class='api_messages'></div>
+
+<div class='container' style='padding: 0; display: flex; background: white; border-radius: 0;'>
+    <section class="w-full" style="height: 51px; display: #{(teacher_logged_in? || can_manage_bib_logged_in?) ? 'block' : 'none'}">
+        <ul class="submenu flex bg-white px-2.5 py-2"
+            style="border-bottom: 1px solid #eee; left: 0px; right: 0px; z-index: 100;">
+        </ul>
+    </section>
+</div>
+<div id='subsubmenu' class='container'
+    style='padding: 0; display: flex; background: white; border-radius: 0; display: none;'>
+    <section class="w-full" style="height: 51px;">
+        <ul class="submenu flex bg-stone-900 px-2.5 py-2"
+            style="border-bottom: 1px solid #eee; left: 0px; right: 0px; z-index: 100;">
+            <li id='sub_menu_extra' style='margin-left: auto;'></li>
+        </ul>
+    </section>
+</div>
+<div id="qrcode_container">
+    <div id='qrcode'></div>
+</div>
+
+<script>
+    var ws = null;
+    var ws_timer_id = null;
+
+    function keep_alive() {
+        var timeout = 20000;
+        if (ws.readyState == ws.OPEN) {
+            ws.send('');
+        }
+        (function() {
+            ws_timer_id = setTimeout(keep_alive, timeout);
+        })();
+    }
+
+    function setup_ws(ws)
+    {
+        ws.onopen = function() {
+            console.log('ws.onopen');
+            api_call('/api/get_device_login_qrcode', {}, function(data) {
+                if (data.success) {
+                    console.log(data);
+                    $('#qrcode').append(data.qrcode);
+                    $('#qrcode').addClass('showing');
+                    if ('#{DEVELOPMENT}' === '1')
+                        $('#qrcode').append($('<a>').attr('href', data.url).text('LINK'));
+                }
+            });
+            keep_alive();
+        }
+
+        ws.onclose = function() {
+            console.log('ws.onclose');
+            $('#qrcode').empty();
+            $('#qrcode').removeClass('showing');
+            clearTimeout(ws_timer_id);
+            // try to re-establish connection in 10 seconds
+            setTimeout(establish_websocket_connection, 10000);
+        }
+
+        ws.onmessage = function(msg) {
+            data = JSON.parse(msg.data);
+            console.log(data.command);
+            if (data.command === 'do_login') {
+                api_call('/api/login_for_device_do_login', {}, function(data) {
+                    if (data.success) window.location.href = '/';
+                });
+            }
+        }
+    }
+
+    function establish_websocket_connection() {
+        var ws_uri = (location.protocol == 'http:' ? 'ws://' : 'wss://') + location.host + '/ws_bib_login';
+        ws = new WebSocket(ws_uri);
+        setup_ws(ws);
+    }
+
+    window.addEventListener('load', function () {
+        establish_websocket_connection();
+    });
+</script>

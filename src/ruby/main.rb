@@ -46,6 +46,7 @@ BIB_JWT_TTL_EXTRA = 20
 
 require './background-renderer.rb'
 require './include/admin.rb'
+require './include/bib_login.rb'
 require './include/color.rb'
 require './include/color-schemes.rb'
 require './include/comment.rb'
@@ -373,6 +374,8 @@ class SetupDatabase
                     "CREATE CONSTRAINT ON (n:LoginCode) ASSERT n.tag IS UNIQUE",
                     "CREATE CONSTRAINT ON (n:User) ASSERT n.email IS UNIQUE",
                     "CREATE CONSTRAINT ON (n:Session) ASSERT n.sid IS UNIQUE",
+                    "CREATE CONSTRAINT ON (n:DeviceToken) ASSERT n.token IS UNIQUE",
+                    "CREATE CONSTRAINT ON (n:DeviceLoginToken) ASSERT n.token IS UNIQUE",
                     "CREATE CONSTRAINT ON (n:Lesson) ASSERT n.key IS UNIQUE",
                     "CREATE CONSTRAINT ON (n:WebsiteEvent) ASSERT n.key IS UNIQUE",
                     "CREATE CONSTRAINT ON (n:TestEvent) ASSERT n.key IS UNIQUE",
@@ -1391,6 +1394,24 @@ class Main < Sinatra::Base
 
         @latest_request_body = nil
         @latest_request_body_parsed = nil
+
+        @session_device = nil
+        @session_device_token = nil
+        if request.cookies.include?('device_token')
+            token = request.cookies['device_token']
+            if (token.is_a? String) && (token =~ /^[0-9A-Za-z,]+$/)
+                results = neo4j_query(<<~END_OF_QUERY, :token => token, :today => Date.today.to_s).to_a
+                    MATCH (s:DeviceToken {token: $token})
+                    SET s.last_access = $today
+                    RETURN s;
+                END_OF_QUERY
+                if results.size == 1
+                    @session_device = results.first['s'][:device]
+                    @session_device_token = token
+                end
+            end
+        end
+
         # before any API request, determine currently logged in user via the provided session ID
         @session_user = nil
         if request.cookies.include?('sid')
@@ -1408,6 +1429,9 @@ class Main < Sinatra::Base
                     if results.size == 1
                         begin
                             session = results.first['s']
+                            if session[:tied_to_device_token]
+                                assert(session[:tied_to_device_token] == @session_device_token)
+                            end
                             session_expiry = session[:expires]
                             if DateTime.parse(session_expiry) > DateTime.now
                                 email = results.first['u'][:email]
@@ -2472,11 +2496,12 @@ class Main < Sinatra::Base
             salzh_protocol_delta = (parts[2] || '').strip
         elsif path == 'index'
             if @session_user
-                if @session_user[:email].index('bib-station') == 0
+                if @session_device
+                    if @session_device == 'bib-mobile'
+                        redirect "#{WEB_ROOT}/bib_scan", 302
+                        return
+                    end
                     redirect "#{WEB_ROOT}/bib_browse", 302
-                    return
-                elsif @session_user[:tablet_type] == :bib_mobile
-                    redirect "#{WEB_ROOT}/bib_scan", 302
                     return
                 else
                     if external_user_logged_in?
@@ -2489,7 +2514,11 @@ class Main < Sinatra::Base
                     end
                 end
             else
-                path = 'login'
+                if @session_device
+                    path = 'bib_login'
+                else
+                    path = 'login'
+                end
             end
         end
         if user_logged_in? && @session_user[:is_monitor]

@@ -77,6 +77,7 @@
 <script>
     var ws = null;
     var ws_timer_id = null;
+    var try_seconds = 1;
 
     function keep_alive() {
         var timeout = 20000;
@@ -91,6 +92,7 @@
     function setup_ws(ws)
     {
         ws.onopen = function() {
+            try_seconds = 1;
             console.log('ws.onopen');
             api_call('/api/get_device_login_qrcode', {}, function(data) {
                 if (data.success) {
@@ -110,7 +112,8 @@
             $('#qrcode').removeClass('showing');
             clearTimeout(ws_timer_id);
             // try to re-establish connection in 10 seconds
-            setTimeout(establish_websocket_connection, 10000);
+            try_seconds = 1;
+            setTimeout(establish_websocket_connection, try_seconds * 1000);
         }
 
         ws.onmessage = function(msg) {
@@ -125,6 +128,7 @@
     }
 
     function establish_websocket_connection() {
+        if (try_seconds < 10) try_seconds += 1;
         var ws_uri = (location.protocol == 'http:' ? 'ws://' : 'wss://') + location.host + '/ws_bib_login';
         ws = new WebSocket(ws_uri);
         setup_ws(ws);

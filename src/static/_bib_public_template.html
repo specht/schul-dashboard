@@ -121,7 +121,7 @@
 </style>
 <div class='api_messages'></div>
 <script>
-    var db_user_info = #{ Hash[@@user_info.map { | k, v | [k, {:first_name => v[:first_name], :titel => v[:titel], :display_name => v[:display_name], :last_name => v[:last_name], :display_last_name => v[:display_last_name], :klasse => tr_klasse(v[:klasse]), :klassen_order => @@klassen_index[v[:klasse]], :teacher => v[:teacher] }] }].to_json};
+    var db_user_info = #{ Hash[@@user_info.map { | k, v | [k, {:first_name => v[:first_name], :titel => v[:titel], :display_name => v[:display_name], :last_name => v[:last_name], :display_last_name => v[:display_last_name], :klasse => tr_klasse(v[:klasse]), :no_tr_klasse => v[:klasse], :klassen_order => @@klassen_index[v[:klasse]], :teacher => v[:teacher] }] }].to_json};
     var station_logged_in = #{@session_user[:email].index('bib-station') == 0};
     var bib_mobile_logged_in = #{@session_user[:email].index('bib-mobile') == 0};
     var teacher_logged_in = #{teacher_logged_in?};
@@ -269,7 +269,7 @@
                 <a class="inline-block bg-slate-900 border border-blue-500 hover:bg-slate-200 rounded py-1 px-3"
                     href="/bibliothek">Meine Bücher</a>
             </li>
-            <li class="mx-1" style="display: #{((teacher_logged_in? || can_manage_bib_logged_in?) && @session_user[:email].split('@').first != 'bib-mobile') ? 'unset' : 'none'};">
+            <li class="mx-1" style="display: #{((teacher_logged_in? || can_manage_bib_logged_in?) && @session_device != 'bib-mobile') ? 'unset' : 'none'};">
                 <a class="inline-block bg-slate-900 border border-blue-500 hover:bg-slate-200 rounded py-1 px-3"
                     href="/bib_browse">Katalog</a>
             </li>
@@ -277,9 +277,9 @@
                 <a class="inline-block bg-slate-900 border border-blue-500 hover:bg-slate-200 rounded py-1 px-3"
                     href="/bib_orders">Bestellungen</a>
             </li>
-            <li style="display: #{can_manage_bib_logged_in? ? 'unset' : 'none'}; #{@session_user[:email].split('@').first == 'bib-mobile' ? 'display: none;' : ''} border-left: 1px solid #ccc; height: 52px; margin: -10px 10px -10px 10px; margin-left: auto;">
+            <li style="display: #{can_manage_bib_logged_in? ? 'unset' : 'none'}; #{@session_device == 'bib-mobile' ? 'display: none;' : ''} border-left: 1px solid #ccc; height: 52px; margin: -10px 10px -10px 10px; margin-left: auto;">
             </li>
-            <li class="mx-1" style="display: #{(can_manage_bib_logged_in? && @session_user[:email].split('@').first != 'bib-mobile') ? 'unset' : 'none'};">
+            <li class="mx-1" style="display: #{(can_manage_bib_logged_in? && @session_device != 'bib-mobile') ? 'unset' : 'none'};">
                 <a class="inline-block bg-slate-900 border border-blue-500 hover:bg-slate-200 rounded py-1 px-3"
                     href="/bib_books">Medien</a>
             </li>
@@ -287,7 +287,7 @@
                 <a class="inline-block bg-slate-900 border border-blue-500 hover:bg-slate-200 rounded py-1 px-3"
                     href="/bib_users">Nutzer</a>
             </li>
-            <li class="mx-1" style="display: #{(can_manage_bib_logged_in? && @session_user[:email].split('@').first != 'bib-mobile') ? 'unset' : 'none'};">
+            <li class="mx-1" style="display: #{(can_manage_bib_logged_in? && @session_device != 'bib-mobile') ? 'unset' : 'none'};">
                 <a class="inline-block bg-slate-900 border border-blue-500 hover:bg-slate-200 rounded py-1 px-3"
                     href="/bib_all_orders">Bestellungen</a>
             </li>

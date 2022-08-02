@@ -1,179 +1,72 @@
+#{File.read('/static/_bib_public_template.html')}
 #{require_user_who_can_manage_bib!}
-#{File.read('/static/_bib_template.html')}
-<style>
-    #barcode_scanner_div {
-        border: 1px solid #aaa;
-        position: relative;
-        width: 100%;
-        /* padding-top: 133%; */
-        overflow: hidden;
-        height: 50vh;
-        border-radius: 15px;
-        background-color: #222;
-    }
-
-    #barcode_scanner_div video {
-        position: absolute;
-        left: 0;
-        top: 0;
-        width: 100%;
-        height: 100%;
-    }
-
-    #shelf_label {
-        position: absolute;
-        top: 0;
-        left: 0;
-        font-size: 48px;
-        background-color: rgba(255, 255, 255, 0.5);
-        padding: 0 0.2em;
-    }
-
-    #frame_canvas {
-        width: 100%;
-    }
-
-    #current_photo {
-        width: 100%;
-    }
-
-    #frame_canvas {
-        display: none;
-    }
-
-    p {
-        margin-bottom: 0.2em;
-    }
-
-    #shelf_items_list div {
-        display: inline-block;
-    }
-
-    .button_container {
-        position: absolute;
-        right: 5px;
-        bottom: 5px;
-    }
-</style>
-<div class="modal" id="discard_modal" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true"
-    style='z-index: 200000;'>
-    <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">Buch ausmustern
-                </h5>
-            </div>
-            <div class="modal-body">
-                Bist du sicher, dass du dieses Buch ausmustern möchtest?
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-dismiss="modal"><i
-                        class='fa fa-times'></i>&nbsp;&nbsp;Abbrechen</button>
-                <button id='bu_confirm_discard' type="button" class="btn btn-danger"><i
-                        class='fa fa-trash'></i>&nbsp;&nbsp;Ausmustern</button>
-            </div>
+<div class='container bg-white'>
+    <div class='row'>
+        <div class="col-lg-6 col-md-6 col-sm-4">
+            <h3>Exemplare ausmustern</h3>
+            <p>
+                Bitte scanne alle Exemplare, die ausgemustert werden sollen.
+            </p>
+        </div>
+        <div id='barcode_widget' class='col-12 col-sm-8 col-md-6 col-lg-6'>
         </div>
     </div>
+    <div id='book_table'></div>
 </div>
-<div id="barcode_scanner_div">
-    <video id="barcode_scanner_video"></video>
-    <div id="shelf_label"></div>
-    <div class="button_container">
-        <button id='bu-reset-shelf' style='margin-bottom: 5px; display: none;' class='btn btn-danger'><i
-                class='fa fa-times'></i>&nbsp;&nbsp;Regal beenden</button>
-        <button id='bu-add-photo' style='margin-bottom: 5px; display: none;' class='btn btn-success'><i
-                class='fa fa-camera'></i>&nbsp;&nbsp;Foto hochladen</button>
-    </div>
-</div>
-<div id="book_div" style="margin-top: 15px;"></div>
-<hr />
-<button id='bu_discard_exemplar' type="button" class="btn btn-outline-secondary" style='display: block; width: 100%;'
-    disabled><i class='fa fa-trash'></i>&nbsp;&nbsp;Exemplar <span id='exemplar_here'></span> ausmustern</button>
-<hr />
-<p><strong>Schritt 1.</strong> Barcode im Buch scannen</p>
-<p><strong>Schritt 2.</strong> Ausmusterung bestätigen</p>
-<!-- <hr /> -->
-<!-- <button id='bu_download_discarded_list' type="button" class="btn btn-success" style='display: block; width: 100%;'><i class='fa fa-file-o-pdf'></i>&nbsp;&nbsp;Liste herunterladen</button> -->
-</section>
-</div>
-
-<script type="text/javascript" src="/include/zxing.min.js"></script>
 <script>
-    var beep0 = new Audio('/beep0.mp3');
-    var beep1 = new Audio('/beep1.mp3');
-    var beep2 = new Audio('/beep2.mp3');
+    var divs_for_signature = {};
+    var table = null;
 
-    var signature_to_discard = null;
-    var last_scanned_barcode = null;
-
-    function reset() {
-        $('#book_div').empty();
-        $('#bu_discard_exemplar').removeClass('btn-danger').addClass('btn-outline-secondary').prop('disabled', true);
-        $('#exemplar_here').text('');
-        signature_to_discard = null;
-    }
-
-    function on_scan(code) {
-        if (code === last_scanned_barcode)
+    function on_scan(barcode, scanned) {
+        let parts = fix_scanned_book_barcode(barcode);
+        if (parts === null) {
+            sound.play('error');
             return;
-        last_scanned_barcode = code;
-        let barcode_parts = fix_scanned_book_barcode(code);
-        if (barcode_parts === null)
-            return;
-        reset();
-        bib_api_call('/jwt/get_book', { stem: barcode_parts.stem, bnr: barcode_parts.bnr, checksum: barcode_parts.checksum }, function (data) {
+        }
+        let data = {
+            stem: parts.stem,
+            bnr: parts.bnr
+        };
+        if (parts.checksum) data.checksum = parts.checksum;
+        bib_api_call('/jwt/discard_exemplar', data, function (data) {
+            console.log(data);
             if (data.success) {
-                stem_book = data.book;
-                console.log(data);
-                let exemplar = (data.exemplar || {}).e;
-                $('#book_div').append(create_book_div(data.book, null, { bnr: barcode_parts.bnr, exemplar: exemplar }));
-                $('#bu_discard_exemplar').removeClass('btn-outline-secondary').addClass('btn-danger');
-                if (exemplar && exemplar.ts_discarded)
-                    $('#bu_discard_exemplar').prop('disabled', true);
-                else
-                    $('#bu_discard_exemplar').prop('disabled', false);
-                $('#exemplar_here').text(`${barcode_parts.bnr}`);
-                signature_to_discard = barcode_parts;
+                sound.play('success');
+                if (table) {
+                    let cells = [
+                        parts.stem,
+                        $('<td>').text(`${parts.stem}-${parts.bnr}`).data('sort_value', parts.stem * 1000000 + parts.bnr),
+                        $('<td>').css('max-width', '300px').text(data.title),
+                        $('<td>').css('max-width', '200px').text(data.author)
+                    ];
+                    table.add_row(cells);
+                }
+            } else {
+                sound.play('error');
             }
         });
+    }
 
-        sound.play('success');
+    function row_clicked(data) {
+        window.location = `/bib_book/${data}`;
     }
 
     window.addEventListener('load', function () {
-
-        const codeReader = new ZXing.BrowserMultiFormatReader();
-        codeReader.decodeFromVideoDevice(null, 'barcode_scanner_video', (result, err) => {
-            if (result) on_scan(result.text);
+        table = new SortableTable({
+            xs: true,
+            element: $('#book_table'),
+            headers: ['Signatur', 'Titel', 'Autor'].map(function (x) {
+                let th = $('<th>').text(x);
+                if (['Signatur'].indexOf(x) >= 0) th.data('type', 'int');
+                return th;
+            }),
+            rows: [],
+            clickable_rows: true,
+            clickable_row_callback: row_clicked
         });
-
-        $('#bu_discard_exemplar').click(function (e) {
-            $('#discard_modal').modal('show');
+        let widget = new BarcodeWidget({
+            element: $('#barcode_widget'),
+            on_scan: on_scan
         });
-
-        $('#bu_confirm_discard').click(function (e) {
-            let signature = signature_to_discard;
-            console.log(`discarding ${signature}`);
-            $('#discard_modal').modal('hide');
-            bib_api_call('/jwt/discard_exemplar', { stem: signature.stem, bnr: signature.bnr }, function (data) {
-                if (data.success) {
-                    reset();
-                    last_scanned_barcode = null;
-                }
-            });
-        });
-
-        $('#bu_download_discarded_list').click(function(e) {
-            bib_api_call('/jwt/discarded_exemplare_pdf', { }, function (data) {
-                if (data.success) {
-                    console.log(data);
-                    // reset();
-                }
-            });
-        });
-
-        // setTimeout(function () {
-        //     on_scan('3558-048');
-        // }, 0);
     });
 </script>

@@ -10,11 +10,11 @@
     <p>
     Gib zuerst ein, wie viele neue Label mit neuen Buchnummern
     gedruckt werden sollen. Klebe die neuen Label anschließend
-    in die neuen Bücher. Optional kannst du die neuen Bücher
-    anschließend scannen, was dazu führt, dass sie als »vorrätig«
-    in der Datenbank geführt werden. Wenn du sie nicht einscannst,
-    ist das kein Problem, dann werden sie beim ersten Ausleihvorgang
-    in das System aufgenommen.
+    in die neuen Bücher.
+    <br />
+    <strong>Achtung:</strong> Die Bücher werden automatisch als »vorrätig« ins System aufgenommen.
+    Falls du also zu viele Etiketten gedruckt hast oder es ein Problem beim ausdrucken gab, muss
+    dieser Fehler nachträglich korrigiert werden.
     </p>
     <p>
     Die nächste freie Buchnummer lautet: <span class='font-bold' id='next_bnr_here'></span>.
@@ -26,7 +26,7 @@
         </div>
     </div>
 
-    <button id='bu_print_labels' disabled class='pull-right btn btn-success'><span id='count_here'></span> Label drucken</button>
+    <button id='bu_print_labels' disabled class='pull-right btn btn-success'><span id='count_here'></span> Label drucken und Bücher aufnehmen</button>
     <div style="clear: both;"></div>
 </div>
 <script>
@@ -40,7 +40,7 @@
         if ('#{can_manage_bib_logged_in?}' === 'true') {
             $(`<li class='mx-1 py-1 px-1.5' style='white-space: nowrap;'><i class='fa fa-barcode'></i>&nbsp;&nbsp;${stem}</li>`).insertBefore($('#sub_menu_extra'));
             $(`<li class='mx-1'><a class='inline-block bg-slate-900 border border-blue-500 hover:bg-slate-200 rounded py-1 px-3' href='/bib_book_edit/${stem}'><i class='fa fa-pencil'></i>&nbsp;&nbsp;Metadaten bearbeiten</a></li>`).insertAfter($('#sub_menu_extra'));
-            if ("#{@session_user[:email].split('@').first}" === 'bib-station-with-printer') {
+            if ("#{@session_device}" === 'bib-station-with-printer') {
                 $(`<li class='mx-1'><a class='inline-block bg-slate-900 border border-blue-500 hover:bg-slate-200 rounded py-1 px-3' href='/bib_add_exemplare/${stem}'><i class='fa fa-plus'></i>&nbsp;&nbsp;Neue Exemplare aufnehmen</a></li>`).insertAfter($('#sub_menu_extra'));
                 $(`<li class='mx-1'><a class='inline-block bg-slate-900 border border-blue-500 hover:bg-slate-200 rounded py-1 px-3' href='/bib_print_label/${stem}'><i class='fa fa-print'></i>&nbsp;&nbsp;Label drucken</a></li>`).insertAfter($('#sub_menu_extra'));
             }
@@ -66,17 +66,17 @@
             }
         });
         $('#bu_print_labels').click(function(e) {
-            bib_api_call('/jwt/add_to_label_print_queue_range', {stem: stem, first_bnr: next_bnr, last_bnr: next_bnr + count - 1}, function (data) {
+            bib_api_call('/jwt/add_exemplare', {stem: stem, first_bnr: next_bnr, last_bnr: next_bnr + count - 1}, function (data) {
                 if (data.success) {
                     console.log("added to queue, now notifying printer");
                     jQuery.get('https://local.dashboard.gymnasiumsteglitz.de:8989');
                     $('#ti_count').prop('disabled', true);
                     $('#bu_print_labels').prop('disabled', true).removeClass('btn-success').addClass('btn-outline-secondary');
-                    bib_api_call('/jwt/set_bib_count', {stem: stem, bnr: next_bnr + count - 1}, function(data) {
-                        if (data.success) {
+                //     bib_api_call('/jwt/set_bib_count', {stem: stem, bnr: next_bnr + count - 1}, function(data) {
+                //         if (data.success) {
 
-                        }
-                    });
+                //         }
+                //     });
                 }
             });
         });

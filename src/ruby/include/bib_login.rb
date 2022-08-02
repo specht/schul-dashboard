@@ -48,6 +48,7 @@ class Main < Sinatra::Base
                 MATCH (dt:DeviceToken {token: $device_token})-[r:DEVICE_LOGIN_AS]->(:User)
                 DELETE r;
             END_OF_QUERY
+            assert(CAN_MANAGE_BIB.include?(email))
             session_id = create_session(email, 365 * 24)
             purge_missing_sessions(session_id, true)
             neo4j_query(<<~END_OF_QUERY, {:sid => session_id, :device_token => @session_device_token})
@@ -55,6 +56,7 @@ class Main < Sinatra::Base
                 SET s.tied_to_device_token = $device_token;
             END_OF_QUERY
         rescue
+            redirect "#{WEB_ROOT}/", 302
         end
         respond(:yay => 'sure')
     end

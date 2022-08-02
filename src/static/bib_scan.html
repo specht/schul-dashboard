@@ -67,7 +67,8 @@
             <div id='cover_div'>
                 <div id="no_cover" style="display: none;"></div>
                 <a class='cover_link' href=''><img id="cover"></img></a>
-                <a href='' class='cover_link btn btn-sm btn-success mt-1 w-100' style='display: none;'>Zum Buch…</a>
+                <a id='link_book' href='' class='cover_link btn btn-sm btn-success mt-1 w-100' style='display: none;'>Zum Buch…</a>
+                <a id='link_exemplar' href='' class='cover_link btn btn-sm btn-success mt-1 w-100' style='display: none;'>Zum Exemplar…</a>
             </div>
         </div>
         <div class="col-md-6">
@@ -137,7 +138,7 @@
     var current_image = null;
     var current_shelf = null;
 
-    function handle_scan_book(stem, data) {
+    function handle_scan_book(stem, bnr, data) {
         console.log(data);
         if (data.success) {
             $('#unknown_book').hide();
@@ -178,7 +179,8 @@
             if ((data.book_photos || []).length > 0) {
                 $('#info_cover').append(`${data.book_photos.map(function(x) { return `<img class='thumb' src='${BIB_HOST}/gen/book-photos/${x.sha1}.jpg'></img>`;}).join('')}`);
             }
-            $('.cover_link').attr('href', `/bib_book/${book.stem}`);
+            $('#link_book').attr('href', `/bib_book/${book.stem}`);
+            $('#link_exemplar').attr('href', `/bib_exemplar/${book.stem}-${bnr}`);
             $('.cover_link').show();
             if ((data.locations || []).length > 0) {
                 $('#info_shelf').html(`<i class='fa fa-check text-grass-500'></i>&nbsp;&nbsp;Buch hat einen Lagerort: ${data.locations.map(function(x) { return create_location_span(x); }).join(' ')}`);
@@ -204,7 +206,7 @@
             bib_api_call('/jwt/propose_isbn_for_stem', {stem: last_scanned_parts.stem, isbn: barcode}, function(data) {
                 if (data.success) {
                     bib_api_call('/jwt/scan_book', last_scanned_parts, function (data) {
-                        handle_scan_book(last_scanned_parts.stem, data);
+                        handle_scan_book(last_scanned_parts.stem, last_scanned_parts.bnr, data);
                     });
                 }
             });
@@ -231,7 +233,7 @@
         if (parts.checksum) data.checksum = parts.checksum;
         last_scanned_parts = parts;
         bib_api_call('/jwt/scan_book', data, function (data) {
-            handle_scan_book(parts.stem, data);
+            handle_scan_book(parts.stem, parts.bnr, data);
         });
     }
 
@@ -300,7 +302,7 @@
                     $('#bu_submit_photo').attr('disabled', false);
                     $('#photo_modal').modal('hide');
                     bib_api_call('/jwt/scan_book', last_scanned_parts, function (data) {
-                        handle_scan_book(last_scanned_parts.stem, data);
+                        handle_scan_book(last_scanned_parts.stem, last_scanned_parts.bnr, data);
                     });
                 }
             });
@@ -312,7 +314,7 @@
             bib_api_call('/jwt/add_shelf_for_book', {stem: last_scanned_parts.stem, shelf: current_shelf}, function(data) {
                 if (data.success) {
                     bib_api_call('/jwt/scan_book', last_scanned_parts, function (data) {
-                        handle_scan_book(last_scanned_parts.stem, data);
+                        handle_scan_book(last_scanned_parts.stem, last_scanned_parts.bnr, data);
                     });
                 }
             });

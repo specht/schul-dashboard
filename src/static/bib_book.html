@@ -62,8 +62,7 @@
             Du hast <span id='orders_placed_count'></span> <a href='/bib_orders'>bestellt</a>.
         </div>
         <p>Wenn du dieses Buch im Unterricht verwenden möchtest, kannst du es hier bestellen.</p>
-        <button id='bu_order_overview' class="btn btn-success"><i class='fa fa-shopping-basket'></i>&nbsp;&nbsp;Buch
-            bestellen</button>
+        <button id='bu_order_overview' class="btn btn-success"><i class='fa fa-shopping-basket'></i>&nbsp;&nbsp;Buch bestellen</button>
         <div id="order_div" style='display: none; margin-top: 15px;'>
             <button id='bu_order_kurs' class='btn btn-outline-secondary mr-1'>
                 <i class='fa fa-group'></i>&nbsp;&nbsp;Ich möchte das Buch für eine Klasse oder einen Kurs bestellen.
@@ -99,9 +98,30 @@
         </div>
     </div>
     <div class="bib_management_only">
+        <h3>Interne Informationen und Funktionen</h3>
+        <!-- <hr /> -->
+        <p>Wenn du dieses Buch im Namen einer Lehrkraft für einen Kurs bestellen möchtest, kannst du es hier bestellen.</p>
+        <button id='bu_order_impersonate_overview' class="btn btn-success"><i class='fa fa-shopping-basket'></i>&nbsp;&nbsp;Buch für einen Kurs bestellen</button>
+        <div id="order_impersonate_div" style='display: none; margin-top: 15px;'>
+            <div class='row'>
+                <div class='col-md-12'>
+                    <div id="kurs_impersonate_list_div"></div>
+                </div>
+                <div class='col-md-12' id="order_kurs_impersonate_div_confirm" style="display: none;">
+                    Ich möchte das Buch für den Kurs <span class='font-bold' id="label_kurs_impersonate_name"></span> im Namen von <span class='font-bold' id="label_kurs_impersonate_teacher"></span> bestellen.
+                    <div class='mt-3' style='text-align: right;'>
+                        <button id='bu_place_order_kurs_impersonate' class='btn btn-success' style="display: none;"><i class='fa fa-send'></i>&nbsp;&nbsp;Bestellung aufgeben</button>
+                    </div>
+                    <div id='bu_place_order_kurs_impersonate_success' class='alert alert-success' style='display: none; margin-top: 15px;'>Die Bestellung wurde aufgenommen.</div>
+                </div>
+            </div>
+            <!-- <hr /> -->
+        </div>
+        <hr />
         <div id='stock_overview'></div>
         <div id='checked_out_all'></div>
         <div id='in_stock_all'></div>
+        <div id='discarded_all'></div>
     </div>
 </div>
 <script>
@@ -110,13 +130,27 @@
         y = @@lessons[:lesson_keys][x]
         [x, {:fach => y[:pretty_folder_name] || x, :sus => (@@schueler_for_lesson[x] || [])}]
     end].to_json};
+    var all_kurse = #{
+        (can_manage_bib_logged_in? ? Hash[@@lessons[:lesson_keys].keys.map do |lesson_key|
+            info = {}
+            info[:sus_count] = (@@schueler_for_lesson[lesson_key] || []).size
+            info[:fach] = @@lessons[:lesson_keys][lesson_key][:pretty_folder_name]
+            info[:klassen] = @@lessons[:lesson_keys][lesson_key][:klassen]
+            info[:first_teacher] = @@shorthands[@@lessons[:lesson_keys][lesson_key][:lehrer].first]
+            info[:first_teacher_display_name] = (@@user_info[@@shorthands[@@lessons[:lesson_keys][lesson_key][:lehrer].first]] || {})[:display_name]
+            [lesson_key, info]
+        end.select do |x|
+            x[1][:sus_count] > 0 && !x[1][:first_teacher].nil?
+        end] : {}).to_json
+    };
     var lehrmittelverein_state_cache = #{@@lehrmittelverein_state_cache.to_json};
     var book_response = null;
     var clicked_lesson_key = null;
+    var clicked_teacher = null;
     var stem = null;
 
     function row_clicked(data) {
-        window.location = `/bib_user/${encodeURIComponent(data)}`;
+        window.location = `/bib_exemplar/${encodeURIComponent(data)}`;
     }
 
     function kurs_row_clicked(lesson_key) {
@@ -145,10 +179,24 @@
         $('#label_order_kurs_count').text(`${total_count} Exemplar${total_count === 1 ? '' : 'e'}`);
     }
 
+    function kurs_impersonate_row_clicked(lesson_key) {
+        $('#kurs_impersonate_list_div').slideUp();
+        clicked_lesson_key = lesson_key;
+        clicked_teacher = all_kurse[lesson_key].first_teacher;
+        $('#bu_place_order_kurs_impersonate').show();
+        $('#order_kurs_impersonate_div_confirm').slideDown();
+        $('#label_kurs_impersonate_name').text(all_kurse[lesson_key].fach);
+        $('#label_kurs_impersonate_teacher').text(all_kurse[lesson_key].first_teacher_display_name);
+    }
+
     window.addEventListener('load', function () {
         $('#bu_order_overview').click(function (e) {
             $('#bu_order_overview').prop('disabled', true);
             $('#order_div').slideDown();
+        });
+        $('#bu_order_impersonate_overview').click(function(e) {
+            $('#bu_order_impersonate_overview').prop('disabled', true);
+            $('#order_impersonate_div').slideDown();
         });
         $('#bu_order_kurs').click(function(e) {
             $('#bu_order_kurs').removeClass('btn-outline-secondary').addClass('btn-success');
@@ -178,12 +226,20 @@
                 }
             });
         });
+        $('#bu_place_order_kurs_impersonate').click(function(e) {
+            bib_api_call('/jwt/place_order_kurs_impersonate', { stem: stem, lesson_key: clicked_lesson_key, teacher: clicked_teacher }, function (data) {
+                if (data.success) {
+                    $('#bu_place_order_kurs_impersonate').prop('disabled', true);
+                    $('#bu_place_order_kurs_impersonate_success').slideDown();
+                }
+            });
+        });
         let stem_s = window.location.pathname.replace('/bib_book/', '');
         stem = parseInt(stem_s);
         if ('#{can_manage_bib_logged_in?}' === 'true') {
             $(`<li class='mx-1 py-1 px-1.5' style='white-space: nowrap;'><i class='fa fa-barcode'></i>&nbsp;&nbsp;${stem}</li>`).insertBefore($('#sub_menu_extra'));
             $(`<li class='mx-1'><a class='inline-block bg-slate-900 border border-blue-500 hover:bg-slate-200 rounded py-1 px-3' href='/bib_book_edit/${stem}'><i class='fa fa-pencil'></i>&nbsp;&nbsp;Metadaten bearbeiten</a></li>`).insertAfter($('#sub_menu_extra'));
-            if ("#{@session_user[:email].split('@').first}" === 'bib-station-with-printer') {
+            if ("#{@session_device}" === 'bib-station-with-printer') {
                 $(`<li class='mx-1'><a class='inline-block bg-slate-900 border border-blue-500 hover:bg-slate-200 rounded py-1 px-3' href='/bib_add_exemplare/${stem}'><i class='fa fa-plus'></i>&nbsp;&nbsp;Neue Exemplare aufnehmen</a></li>`).insertAfter($('#sub_menu_extra'));
                 $(`<li class='mx-1'><a class='inline-block bg-slate-900 border border-blue-500 hover:bg-slate-200 rounded py-1 px-3' href='/bib_print_label/${stem}'><i class='fa fa-print'></i>&nbsp;&nbsp;Label drucken</a></li>`).insertAfter($('#sub_menu_extra'));
             }
@@ -290,8 +346,7 @@
                             }),
                             rows: data.checked_out_all.map(function (entry) {
                                 return [
-                                    // entry.e.bnr,
-                                    entry.u.email,
+                                    `${book.stem}-${entry.e.bnr}`,
                                     $('<td>').text(`${book.stem}-${entry.e.bnr}`).data('sort_value', entry.e.bnr),
                                     create_user_td_span(entry.u.email),
                                     $('<td>').html((db_user_info[entry.u.email] || {}).klasse || '&ndash;').data('sort_value', (db_user_info[entry.u.email] || {}).klassen_order),
@@ -324,18 +379,51 @@
                             }),
                             rows: data.in_stock_all.map(function (entry) {
                                 return [
-                                    entry['e.bnr'],
+                                    `${book.stem}-${entry['e.bnr']}`,
                                     $('<td>').text(`${stem}-${entry['e.bnr']}`).data('sort_value', entry['e.bnr']),
                                     entry['e.ts_discarded']
                                         ? $('<td>').html(`<i class='text-stone-400 fa fa-trash'></i>&nbsp;&nbsp;${moment.unix(entry['e.ts_discarded']).format('L')}`).data('sort_value', entry['e.ts_discarded'])
                                         : $('<td>').html("&ndash;").data('sort_value', NaN)
                                 ];
-                            })
+                            }),
+                            clickable_rows: true,
+                            clickable_row_callback: row_clicked
                         });
                     } else {
                         div.append($(`<div class='alert alert-warning'>keine Exemplare vorrätig</div>`));
                     }
                 }
+
+                if (data.discarded) {
+                    let div = $("<div>");
+                    $('#discarded_all').append($(`<h3>Ausgemusterte Exemplare</h3>`));
+                    $('#discarded_all').append(div);
+                    if (data.discarded.length > 0) {
+                        new SortableTable({
+                            element: div,
+                            xs: true,
+                            headers: ['Signatur', 'Ausgemustert'].map(function (x) {
+                                let th = $('<th>').text(x);
+                                if (['Signatur', 'Ausgemustert'].indexOf(x) >= 0) th.data('type', 'int');
+                                return th;
+                            }),
+                            rows: data.discarded.map(function (entry) {
+                                return [
+                                    `${book.stem}-${entry['e.bnr']}`,
+                                    $('<td>').text(`${stem}-${entry['e.bnr']}`).data('sort_value', entry['e.bnr']),
+                                    entry['e.ts_discarded']
+                                        ? $('<td>').html(`<i class='text-stone-400 fa fa-trash'></i>&nbsp;&nbsp;${moment.unix(entry['e.ts_discarded']).format('L')}`).data('sort_value', entry['e.ts_discarded'])
+                                        : $('<td>').html("&ndash;").data('sort_value', NaN)
+                                ];
+                            }),
+                            clickable_rows: true,
+                            clickable_row_callback: row_clicked
+                        });
+                    } else {
+                        div.append($(`<div class='alert alert-warning'>keine Exemplare ausgemustert</div>`));
+                    }
+                }
+
                 let orders_placed_parts = [];
                 if (data.orders_placed && data.orders_placed > 0) {
                     show_private_order_button = false;
@@ -357,7 +445,7 @@
                     $('#orders_placed_notice').show();
                 }
                 if (show_private_order_button) {
-                    $('#bu_order_private').prop('disabled', false).show();                    
+                    $('#bu_order_private').prop('disabled', false).show();
                 }
             }
         });
@@ -384,5 +472,27 @@
         } else {
             $('#bu_order_kurs').prop('disabled', true);
         }
+        let kurs_table_impersonate = new SortableTable({
+            element: $('#kurs_impersonate_list_div'),
+            xs: true,
+            headers: ['Kurs', 'Lehrkraft', 'Klasse', 'Schüler'].map(function (x) {
+                let th = $('<th>').text(x);
+                if (['Schüler'].indexOf(x) >= 0) th.data('type', 'int');
+                return th;
+            }),
+            rows: Object.keys(all_kurse).map(function (lesson_key) {
+                let kurs = all_kurse[lesson_key];
+                return [
+                    lesson_key,
+                    $('<td>').text(kurs.fach),
+                    $('<td>').text(`${kurs.first_teacher_display_name}`),
+                    $('<td>').text(`${kurs.klassen.join(', ')}`),
+                    $('<td>').text(`${kurs.sus_count}`).data('sort_value', kurs.sus_count),
+                ];
+            }),
+            clickable_rows: true,
+            clickable_row_callback: kurs_impersonate_row_clicked,
+        });
+        kurs_table_impersonate.sort_rows(0);
     });
 </script>

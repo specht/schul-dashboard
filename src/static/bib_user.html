@@ -2,6 +2,16 @@
 #{require_user_who_can_manage_bib!}
 <div class='container bg-white' style="padding-top: 15px;">
     <h2 class="display_name"></h2>
+    <table class='xs table table-sm table-condensed narrow' style="width: unset;">
+        <tr>
+            <th>Klasse:</th>
+            <td><span id="klasse_here"></span></td>
+        </tr>
+        <tr id='tr_klassenleiter' style="display: none;">
+            <th>Klassenleitung:</th>
+            <td><span id="klassenleiter_here"></span></td>
+        </tr>
+    </table>
     <!-- <div id='book_list' class="w-full grid grid-cols-12 gap-4 mb-4"></div> -->
     <hr />
     <h3>Ausgeliehene Medien</h3>
@@ -24,6 +34,8 @@
     var email = decodeURIComponent(window.location.pathname.replace('/bib_user/', ''));
     var table = null;
     var lehrmittelverein_state_cache = #{@@lehrmittelverein_state_cache.to_json};
+    var klassenleiter = #{@@klassenleiter.to_json};
+    var shorthands = #{@@shorthands.to_json};
 
     function row_clicked(stem) {
         window.location = `/bib_book/${stem}`;
@@ -41,27 +53,40 @@
         };
         if (parts.checksum) data.checksum = parts.checksum;
         console.log(data);
-        bib_api_call('/jwt/checkout_exemplar_for_user', data, function (data) {
-            console.log(data);
+        bib_api_call('/jwt/verify_scanned_barcode', parts, function (data) {
             if (data.success) {
-                if (table) {
-                    table.add_row([
-                        data.b.stem,
-                        $('<td>').text(`${data.b.stem}-${data.e.bnr}`).data('sort_value', data.b.stem * 1000000 + data.b.bnr),
-                        $('<td>').css('max-width', '300px').text(data.b.title),
-                        $('<td>').css('max-width', '200px').text(data.b.author),
-                        $('<td>').text(`${moment.unix(data.r.ts_checked_out).format('L')}`).data('sort_value', data.r.ts_checked_out),
-                        data.r.ts_confirmed
-                            ? $('<td>').text(moment.unix(data.r.ts_confirmed).format('L')).data('sort_value', data.r.ts_confirmed)
-                            : $('<td>').html("<i class='text-stone-400 fa fa-exclamation-triangle'></i>&nbsp;&nbsp;(noch nicht bestätigt)").data('sort_value', NaN)
-                    ]);
-                }
+                bib_api_call('/jwt/checkout_exemplar_for_user', data, function (data) {
+                    console.log(data);
+                    if (data.success) {
+                        sound.play('success');
+                        if (table) {
+                            table.add_row([
+                                data.b.stem,
+                                $('<td>').text(`${data.b.stem}-${data.e.bnr}`).data('sort_value', data.b.stem * 1000000 + data.b.bnr),
+                                $('<td>').css('max-width', '300px').text(data.b.title),
+                                $('<td>').css('max-width', '200px').text(data.b.author),
+                                $('<td>').text(`${moment.unix(data.r.ts_checked_out).format('L')}`).data('sort_value', data.r.ts_checked_out),
+                                data.r.ts_confirmed
+                                    ? $('<td>').text(moment.unix(data.r.ts_confirmed).format('L')).data('sort_value', data.r.ts_confirmed)
+                                    : $('<td>').html("<i class='text-stone-400 fa fa-exclamation-triangle'></i>&nbsp;&nbsp;(noch nicht bestätigt)").data('sort_value', NaN)
+                            ]);
+                        }
+                    }
+                });
+            } else {
+                sound.play('error');
             }
         });
     }
 
     window.addEventListener('load', function () {
         $('.display_name').text((db_user_info[email] || {}).display_name || email)
+        $('#klasse_here').text(db_user_info[email].klasse)
+        if (klassenleiter[db_user_info[email].no_tr_klasse]) {
+            $('#klassenleiter_here').text(klassenleiter[db_user_info[email].no_tr_klasse].map(function(x) { return db_user_info[shorthands[x]].display_name; }).join(', '));
+            $('#tr_klassenleiter').show();
+            console.log(klassenleiter[db_user_info[email].no_tr_klasse]);
+        }
         bib_api_call('/jwt/get_checked_out_books_for_email', { email: email }, function (data) {
             if (data.success) {
                 let div = $('<div>').appendTo($('#book_table'));

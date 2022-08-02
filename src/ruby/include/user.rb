@@ -66,6 +66,11 @@ class Main < Sinatra::Base
         user_logged_in? && (@session_user[:teacher] == true)
     end
 
+    # Returns true if a device is logged in.
+    def device_logged_in?
+        !@session_device.nil?
+    end
+
     # Returns true if a SuS is logged in.
     def sus_logged_in?
         user_logged_in? && (!(@session_user[:teacher] == true))

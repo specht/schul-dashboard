@@ -2762,7 +2762,7 @@ class Main < Sinatra::Base
             'bib-station-with-printer@mail.gymnasiumsteglitz.de'
         ].include?((@session_user || {})[:email])
         color_scheme = (@session_user || {})[:color_scheme]
-        font_family = 'Roboto' unless AVAILABLE_FONTS.include?(font_family)
+        font_family = 'Alegreya' unless AVAILABLE_FONTS.include?(font_family)
         unless color_scheme =~ /^[ld][0-9a-f]{18}[0-9]?$/
             unless user_logged_in?
                 color_scheme = pick_random_color_scheme()

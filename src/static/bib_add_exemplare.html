@@ -69,7 +69,7 @@
             bib_api_call('/jwt/add_exemplare', {stem: stem, first_bnr: next_bnr, last_bnr: next_bnr + count - 1}, function (data) {
                 if (data.success) {
                     console.log("added to queue, now notifying printer");
-                    jQuery.get('https://local.dashboard.gymnasiumsteglitz.de:8989');
+                    jQuery.get('https://localhost:8989');
                     $('#ti_count').prop('disabled', true);
                     $('#bu_print_labels').prop('disabled', true).removeClass('btn-success').addClass('btn-outline-secondary');
                 //     bib_api_call('/jwt/set_bib_count', {stem: stem, bnr: next_bnr + count - 1}, function(data) {

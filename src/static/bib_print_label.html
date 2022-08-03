@@ -49,7 +49,7 @@
         bib_api_call('/jwt/add_to_label_print_queue', data, function (data) {
             if (data.success) {
                 console.log("added to queue, now notifying printer");
-                jQuery.get('https://local.dashboard.gymnasiumsteglitz.de:8989');
+                jQuery.get('https://localhost:8989');
             }
         });
     }

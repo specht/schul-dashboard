@@ -67,6 +67,9 @@
     var scan_widget = null;
     var kurs_order_list = null;
     var fulfillments_table = null;
+    var order_teacher = null;
+    var order_fach = null;
+    var oid = window.location.pathname.replace('/bib_process_order/', '');
 
     function append_barcode(parts) {
         if (scan_widget === null || Object.keys(already_scanned_barcodes).length >= scan_table.element.find('tr').length)
@@ -126,10 +129,11 @@
         //     $(`<li class='mx-1'><a class='inline-block bg-slate-900 border border-blue-500 hover:bg-slate-200 rounded py-1 px-3' href='#'><i class='fa fa-trash'></i>&nbsp;&nbsp;Bestellung löschen</a></li>`).insertAfter($('#sub_menu_extra'));
         //     $('#subsubmenu').show();
         // }
-        let oid = window.location.pathname.replace('/bib_process_order/', '');
         bib_api_call('/jwt/get_order', {oid: oid}, function (data) {
             if (data.success) {
                 console.log(data);
+                order_teacher = data.order.u.email;
+                order_fach = kurse[data.order.o.lesson_key].fach;
                 stem = data.order.b.stem;
                 let div = create_book_div(data.order.b, null, {
                     clickable: true, callback: function (book) {
@@ -295,8 +299,11 @@
             // }
         });
         $('#bu_confirm_checkout').click(function(e) {
+            scan_widget.disable();
             let data = {};
             data.stem = stem;
+            data.order_teacher = order_teacher;
+            data.order_fach = order_fach;
             data.oid = oid;
             data.users = [];
             data.bnrs = [];

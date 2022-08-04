@@ -93,7 +93,7 @@
                 table = new SortableTable({
                     element: div,
                     xs: true,
-                    headers: ['Signatur', 'Titel', 'Autor', 'Ausgeliehen', 'Bestätigt'].map(function (x) {
+                    headers: ['Signatur', 'Titel', 'Autor', 'Ausgeliehen', 'Bestätigt', 'Lehrkraft', 'Fach'].map(function (x) {
                         let th = $('<th>').text(x);
                         if (['Signatur', 'Ausgeliehen', 'Bestätigt'].indexOf(x) >= 0) th.data('type', 'int');
                         return th;
@@ -107,7 +107,9 @@
                             $('<td>').text(`${moment.unix(entry.r.ts_checked_out).format('L')}`).data('sort_value', entry.r.ts_checked_out),
                             entry.r.ts_confirmed
                                 ? $('<td>').text(moment.unix(entry.r.ts_confirmed).format('L')).data('sort_value', entry.r.ts_confirmed)
-                                : $('<td>').html("<i class='text-stone-400 fa fa-exclamation-triangle'></i>&nbsp;&nbsp;(noch nicht bestätigt)").data('sort_value', NaN)
+                                : $('<td>').html("<i class='text-stone-400 fa fa-exclamation-triangle'></i>&nbsp;&nbsp;(noch nicht bestätigt)").data('sort_value', NaN),
+                            entry.r.teacher ? create_user_td_span_teacher(entry.r.teacher) : $('<td>').text('–'),
+                            $('<td>').text(entry.r.fach || '–')
                         ];
                     }),
                     clickable_rows: true,

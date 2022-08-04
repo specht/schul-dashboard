@@ -479,7 +479,7 @@
             xs: true,
             headers: ['Kurs', 'Lehrkraft', 'Klasse', 'Schüler'].map(function (x) {
                 let th = $('<th>').text(x);
-                if (['Schüler'].indexOf(x) >= 0) th.data('type', 'int');
+                if (['Schüler', 'Klasse'].indexOf(x) >= 0) th.data('type', 'int');
                 return th;
             }),
             rows: Object.keys(all_kurse).map(function (lesson_key) {
@@ -488,13 +488,14 @@
                     lesson_key,
                     $('<td>').text(kurs.fach),
                     $('<td>').text(`${kurs.first_teacher_display_name}`),
-                    $('<td>').text(`${kurs.klassen.join(', ')}`),
+                    $('<td>').text(`${kurs.klassen.map(function(x) { return klassen_tr[x] || x; }).join(', ')}`).data('sort_value', klassen_order_reverse[kurs.klassen[0]] || 999),
                     $('<td>').text(`${kurs.sus_count}`).data('sort_value', kurs.sus_count),
                 ];
             }),
             clickable_rows: true,
             clickable_row_callback: kurs_impersonate_row_clicked,
         });
+        kurs_table_impersonate.sort_rows(2);
         kurs_table_impersonate.sort_rows(0);
     });
 </script>

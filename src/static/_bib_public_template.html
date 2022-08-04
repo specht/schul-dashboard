@@ -122,6 +122,10 @@
 <div class='api_messages'></div>
 <script>
     var db_user_info = #{ Hash[@@user_info.map { | k, v | [k, {:first_name => v[:first_name], :titel => v[:titel], :display_name => v[:display_name], :last_name => v[:last_name], :display_last_name => v[:display_last_name], :klasse => tr_klasse(v[:klasse]), :no_tr_klasse => v[:klasse], :klassen_order => @@klassen_index[v[:klasse]], :teacher => v[:teacher] }] }].to_json};
+    var klassen_order = #{ KLASSEN_ORDER.to_json };
+    var klassen_order_reverse = {};
+    for (let i = 0; i < klassen_order.length; i++) klassen_order_reverse[klassen_order[i]] = i;
+    var klassen_tr = #{ KLASSEN_TR.to_json };
     var station_logged_in = #{@session_user[:email].index('bib-station') == 0};
     var bib_mobile_logged_in = #{@session_user[:email].index('bib-mobile') == 0};
     var teacher_logged_in = #{teacher_logged_in?};

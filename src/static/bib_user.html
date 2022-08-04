@@ -53,8 +53,8 @@
         };
         if (parts.checksum) data.checksum = parts.checksum;
         console.log(data);
-        bib_api_call('/jwt/verify_scanned_barcode', parts, function (data) {
-            if (data.success) {
+        bib_api_call('/jwt/verify_scanned_barcode', parts, function (data2) {
+            if (data2.success) {
                 bib_api_call('/jwt/checkout_exemplar_for_user', data, function (data) {
                     console.log(data);
                     if (data.success) {

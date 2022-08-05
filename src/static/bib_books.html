@@ -100,9 +100,9 @@
                             xs: true,
                             element: div,
                             filter_callback: filter,
-                            headers: ['Signaturstamm', 'Titel', 'Autor', 'ISBN', 'Ausgeliehen', 'Vorrätig', 'Regal', ''].map(function (x) {
+                            headers: ['Signaturstamm', 'Titel', 'Autor', 'Verlag', 'Jahr', 'ISBN', 'Ausgeliehen', 'Vorrätig', 'Regal'].map(function (x) {
                                 let th = $('<th>').text(x);
-                                if (['Signaturstamm', 'Vorrätig', 'Ausgeliehen', 'Regal'].indexOf(x) >= 0) th.data('type', 'int');
+                                if (['Signaturstamm', 'Jahr', 'Vorrätig', 'Ausgeliehen', 'Regal'].indexOf(x) >= 0) th.data('type', 'int');
                                 return th;
                             }),
                             rows: data.books.map(function (entry) {
@@ -114,11 +114,12 @@
                                     $('<td>').text(`${entry.stem}`).data('sort_value', entry.stem),
                                     $('<td>').css('max-width', '300px').text(title),
                                     $('<td>').css('max-width', '200px').text(entry.author),
+                                    $('<td>').css('max-width', '200px').text(entry.verlag || '–'),
+                                    $('<td>').text(`${entry.published || '–'}`),
                                     $('<td>').html(`${entry.isbn || `&ndash;`}`).data('sort_value', entry.ausleih_count || 0),
                                     $('<td>').html(`${entry.ausleih_count || `&ndash;`}`).data('sort_value', entry.ausleih_count || 0),
-                                    $('<td>').html(`${entry.stock_count || `&ndash;`}`).data('sort_value', entry.stock_count || 0),
+                                    $('<td>').html(`${entry.stock_count || `&ndash;`}<span class='bg-stone-700 text-stone-300 text-sm ml-2 mr-2 px-1.5 py-0.5 rounded'>(${entry.bib_available}/${entry.bib_count})</span>`).data('sort_value', entry.stock_count || 0),
                                     $('<td>').html(`${(entry.locations || []).map(function(x) {return create_location_span(x); }).join('')}`).data('sort_value', (entry.locations || ['0'])[0]),
-                                    $('<td>').html(`<a class='btn btn-xs' href='/bib_book_edit/${entry.stem}'><i class='fa fa-edit'></i></a>`),
                                 ];
                             }),
                             clickable_rows: true,

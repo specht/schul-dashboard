@@ -46,7 +46,10 @@
                         cells.push($('<td>').text(`${moment.unix(data.ts_returned).format('L')}`).data('sort_value', data.ts_returned));
 
                     } else {
-                        cells.push($(`<td colspan='5' class='text-muted font-italic'>`).html('(war nicht ausgeliehen)'));
+                        if (data.ts_discarded !== null)
+                            cells.push($(`<td colspan='5' class='text-muted font-italic'>`).html('(ist bereits ausgemustert)'));
+                        else
+                            cells.push($(`<td colspan='5' class='text-muted font-italic'>`).html('(war nicht ausgeliehen)'));
                     }
                     table.add_row(cells);
                 }

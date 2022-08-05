@@ -41,7 +41,7 @@
                                 ordering_teacher_email: order.u.email,
                                 users_who_have_this_book: order.users_who_have_this_book,
                             };
-                            count = calculate_kurs_order_count(order.o.lesson_key, order.b.stem, order.book_info);
+                            count = calculate_kurs_order_count(order.o.lesson_key, order.b.stem, order.o.plus_teacher, order.book_info);
                         } else {
                             count = calculate_private_order_count(order.o.count, order.b.stem, order.u.email, order.users_who_have_this_book);
                         }

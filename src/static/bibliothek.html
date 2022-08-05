@@ -13,6 +13,11 @@
         <hr />
     </div>
     <div id='book_list' class="w-full grid grid-cols-12 gap-4 mb-4"></div>
+    <div id="no_books_hint" style="display: none;" class="alert alert-warning">
+        #{teacher_logged_in? ?
+            'Sie haben momentan keine Bücher ausgeliehen.' :
+            'Du hast momentan keine Bücher ausgeliehen.'}
+    </div>
 </div>
 <script>
     window.addEventListener('load', function () {
@@ -29,6 +34,8 @@
                     }).data('book', row.book);
                     $('#book_list').append(div);
                 }
+                if (data.exemplare.length === 0)
+                    $('#no_books_hint').show();
             }
         });
     });

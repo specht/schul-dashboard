@@ -150,7 +150,7 @@
                         ordering_teacher_email: data.order.u.email,
                         users_who_have_this_book: data.order.users_who_have_this_book,
                     };
-                    kurs_order_list = calculate_kurs_order_list(data.order.o.lesson_key, data.order.b.stem, data.order.book_info);
+                    kurs_order_list = calculate_kurs_order_list(data.order.o.lesson_key, data.order.b.stem, data.order.o.plus_teacher, data.order.book_info);
                     list = Object.keys(kurs_order_list.list);
                     already_have_book_list = kurs_order_list.already_have_book_sus;
                     no_verein_list = kurs_order_list.no_verein_sus;
@@ -181,7 +181,7 @@
                         sortable: false
                     });
                     scan_table.sort_rows(0, false);
-                    scan_table.sort_rows(2, false);
+                    scan_table.sort_rows(2, true);
                     $('#scan_table_div').show();
                 }
 
@@ -307,12 +307,14 @@
             data.oid = oid;
             data.users = [];
             data.bnrs = [];
+            data.checksums = [];
             for (let row of scan_table.element.find('tr')) {
                 let email = $(row).data('row_data');
                 let barcode_parts = $(row).data('barcode_parts');
                 if (barcode_parts) {
                     data.users.push(email);
                     data.bnrs.push(barcode_parts.bnr);
+                    data.checksums.push(barcode_parts.checksum);
                 }
             }
             bib_api_call('/jwt/checkout_order', data, function (data) {
@@ -333,6 +335,24 @@
 
                     ], true);
                     $('#fulfillments_div').show();
+                    bib_api_call('/jwt/get_order', {oid: oid}, function (data) {
+                        if (data.success) {
+                            console.log(data);
+                            if (data.order.o.lesson_key) {
+                                data.order.book_info = {
+                                    ordering_teacher_has_this_book: data.order.u.email in data.order.users_who_have_this_book,
+                                    ordering_teacher_email: data.order.u.email,
+                                    users_who_have_this_book: data.order.users_who_have_this_book,
+                                };
+                                kurs_order_list = calculate_kurs_order_list(data.order.o.lesson_key, data.order.b.stem, data.order.o.plus_teacher, data.order.book_info);
+                                if (Object.keys(kurs_order_list.list).length === 0) {
+                                    bib_api_call('/jwt/mark_order_complete', {oid: oid, stem: stem}, function (data) {
+                                    });
+                                }
+                            }
+                        }
+                    });
+
 
                 }
             });

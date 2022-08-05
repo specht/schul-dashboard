@@ -2,7 +2,7 @@
 #{require_user_who_can_manage_bib!}
 <div class='container bg-white' style="padding-top: 15px;">
     <h2 class="display_name"></h2>
-    <table class='xs table table-sm table-condensed narrow' style="width: unset;">
+    <table id='user_info' class='xs table table-sm table-condensed narrow' style="width: unset; display: none;">
         <tr>
             <th>Klasse:</th>
             <td><span id="klasse_here"></span></td>
@@ -19,11 +19,24 @@
     <button id='bu_checkout' class='btn btn-success'>Buch an <span class="display_name"></span> ausleihen</button>
     <div id='hint_no_verein' class='mt-3 alert alert-warning' style='display: none;'>Es können keine Bücher ausgeliehen werden, weil <span class="display_name"></span> nicht im Lehrmittelverein ist.</div>
     <div id='check_out_div' style='display: none; margin-top: 15px;'>
+        <hr />
+        <p>
+            Bitte scanne alle Bücher, die ausgeliehen werden sollen.
+        </p>
         <div class='row'>
             <div class="col-lg-6 col-md-6 col-sm-4">
-                <p>
-                    Bitte scanne alle Bücher, die ausgeliehen werden sollen.
-                </p>
+                <div class="form-group row">
+                    <label class="col-sm-5 col-form-label">Lehrkraft (optional):</label>
+                    <div class="col-sm-7">
+                        <input type="text" class="form-control" id="ti_order_teacher" placeholder="Lehrkraft">
+                    </div>
+                </div>
+                <div class="form-group row">
+                    <label class="col-sm-5 col-form-label">Kurs (optional):</label>
+                    <div class="col-sm-7">
+                        <input type="text" class="form-control" id="ti_order_fach" placeholder="Fach">
+                    </div>
+                </div>
             </div>
             <div id='barcode_widget' class='col-12 col-sm-8 col-md-6 col-lg-6'>
             </div>
@@ -51,6 +64,10 @@
             stem: parts.stem,
             bnr: parts.bnr
         };
+        if ($('#ti_order_teacher').val().trim().length > 0)
+            data.order_teacher = $('#ti_order_teacher').val().trim();
+        if ($('#ti_order_fach').val().trim().length > 0)
+            data.order_fach = $('#ti_order_fach').val().trim();
         if (parts.checksum) data.checksum = parts.checksum;
         console.log(data);
         bib_api_call('/jwt/verify_scanned_barcode', parts, function (data2) {
@@ -66,9 +83,9 @@
                                 $('<td>').css('max-width', '300px').text(data.b.title),
                                 $('<td>').css('max-width', '200px').text(data.b.author),
                                 $('<td>').text(`${moment.unix(data.r.ts_checked_out).format('L')}`).data('sort_value', data.r.ts_checked_out),
-                                data.r.ts_confirmed
-                                    ? $('<td>').text(moment.unix(data.r.ts_confirmed).format('L')).data('sort_value', data.r.ts_confirmed)
-                                    : $('<td>').html("<i class='text-stone-400 fa fa-exclamation-triangle'></i>&nbsp;&nbsp;(noch nicht bestätigt)").data('sort_value', NaN)
+                                create_confirmed_td(data.r, data.server_ts, false),
+                                data.r.teacher ? create_user_td_span_teacher(data.r.teacher) : $('<td>').text('–'),
+                                $('<td>').text(data.r.fach || '–')
                             ]);
                         }
                     }
@@ -81,11 +98,14 @@
 
     window.addEventListener('load', function () {
         $('.display_name').text((db_user_info[email] || {}).display_name || email)
-        $('#klasse_here').text(db_user_info[email].klasse)
-        if (klassenleiter[db_user_info[email].no_tr_klasse]) {
-            $('#klassenleiter_here').text(klassenleiter[db_user_info[email].no_tr_klasse].map(function(x) { return db_user_info[shorthands[x]].display_name; }).join(', '));
-            $('#tr_klassenleiter').show();
-            console.log(klassenleiter[db_user_info[email].no_tr_klasse]);
+        if (db_user_info[email]) {
+            $('#klasse_here').text(db_user_info[email].klasse)
+            if (klassenleiter[db_user_info[email].no_tr_klasse]) {
+                $('#klassenleiter_here').text(klassenleiter[db_user_info[email].no_tr_klasse].map(function(x) { return db_user_info[shorthands[x]].display_name; }).join(', '));
+                $('#tr_klassenleiter').show();
+                console.log(klassenleiter[db_user_info[email].no_tr_klasse]);
+            }
+            $('#user_info').show();
         }
         bib_api_call('/jwt/get_checked_out_books_for_email', { email: email }, function (data) {
             if (data.success) {
@@ -105,9 +125,7 @@
                             $('<td>').css('max-width', '300px').text(entry.book.title),
                             $('<td>').css('max-width', '200px').text(entry.book.author),
                             $('<td>').text(`${moment.unix(entry.r.ts_checked_out).format('L')}`).data('sort_value', entry.r.ts_checked_out),
-                            entry.r.ts_confirmed
-                                ? $('<td>').text(moment.unix(entry.r.ts_confirmed).format('L')).data('sort_value', entry.r.ts_confirmed)
-                                : $('<td>').html("<i class='text-stone-400 fa fa-exclamation-triangle'></i>&nbsp;&nbsp;(noch nicht bestätigt)").data('sort_value', NaN),
+                            checkout_exemplar_for_user(entry.r, data.server_ts, false),
                             entry.r.teacher ? create_user_td_span_teacher(entry.r.teacher) : $('<td>').text('–'),
                             $('<td>').text(entry.r.fach || '–')
                         ];

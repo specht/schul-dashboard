@@ -274,27 +274,6 @@ class Main < Sinatra::Base
                 io.puts "<td><button class='btn btn-xs btn-danger btn-purge-session' data-email='kurs.tablet@#{SCHUL_MAIL_DOMAIN}' data-scrambled-sid='#{session[:scrambled_sid]}'>Abmelden</button></td>"
                 io.puts "</tr>"
             end
-            get_sessions_for_user("bib-mobile@#{SCHUL_MAIL_DOMAIN}").each do |session|
-                io.puts "<tr>"
-                io.puts "<td>Bibliotheks-Handy</td>"
-                io.puts "<td>#{session[:user_agent]}</td>"
-                io.puts "<td><button class='btn btn-xs btn-danger btn-purge-session' data-email='bib-mobile@#{SCHUL_MAIL_DOMAIN}' data-scrambled-sid='#{session[:scrambled_sid]}'>Abmelden</button></td>"
-                io.puts "</tr>"
-            end
-            get_sessions_for_user("bib-station@#{SCHUL_MAIL_DOMAIN}").each do |session|
-                io.puts "<tr>"
-                io.puts "<td>Bibliotheks-Station</td>"
-                io.puts "<td>#{session[:user_agent]}</td>"
-                io.puts "<td><button class='btn btn-xs btn-danger btn-purge-session' data-email='bib-station@#{SCHUL_MAIL_DOMAIN}' data-scrambled-sid='#{session[:scrambled_sid]}'>Abmelden</button></td>"
-                io.puts "</tr>"
-            end
-            get_sessions_for_user("bib-station-with-printer@#{SCHUL_MAIL_DOMAIN}").each do |session|
-                io.puts "<tr>"
-                io.puts "<td>Bibliotheks-Station mit Drucker</td>"
-                io.puts "<td>#{session[:user_agent]}</td>"
-                io.puts "<td><button class='btn btn-xs btn-danger btn-purge-session' data-email='bib-station-with-printer@#{SCHUL_MAIL_DOMAIN}' data-scrambled-sid='#{session[:scrambled_sid]}'>Abmelden</button></td>"
-                io.puts "</tr>"
-            end
             io.puts "</tbody>"
             io.puts "</table>"
             io.puts "</div>"

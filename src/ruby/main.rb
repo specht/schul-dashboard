@@ -468,15 +468,6 @@ class SetupDatabase
                     neo4j_query(<<~END_OF_QUERY, :email => "monitor-lz@#{SCHUL_MAIL_DOMAIN}")
                         MERGE (u:User {email: $email})
                     END_OF_QUERY
-                    neo4j_query(<<~END_OF_QUERY, :email => "bib-mobile@#{SCHUL_MAIL_DOMAIN}")
-                        MERGE (u:User {email: $email})
-                    END_OF_QUERY
-                    neo4j_query(<<~END_OF_QUERY, :email => "bib-station@#{SCHUL_MAIL_DOMAIN}")
-                        MERGE (u:User {email: $email})
-                    END_OF_QUERY
-                    neo4j_query(<<~END_OF_QUERY, :email => "bib-station-with-printer@#{SCHUL_MAIL_DOMAIN}")
-                        MERGE (u:User {email: $email})
-                    END_OF_QUERY
                 end
                 transaction do
                     present_users = neo4j_query(<<~END_OF_QUERY).map { |x| x['u.email'] }
@@ -491,9 +482,6 @@ class SetupDatabase
                     wanted_users << "monitor@#{SCHUL_MAIL_DOMAIN}"
                     wanted_users << "monitor-sek@#{SCHUL_MAIL_DOMAIN}"
                     wanted_users << "monitor-lz@#{SCHUL_MAIL_DOMAIN}"
-                    wanted_users << "bib-mobile@#{SCHUL_MAIL_DOMAIN}"
-                    wanted_users << "bib-station@#{SCHUL_MAIL_DOMAIN}"
-                    wanted_users << "bib-station-with-printer@#{SCHUL_MAIL_DOMAIN}"
                     users_to_be_deleted = Set.new(present_users) - wanted_users
                     unless users_to_be_deleted.empty?
                         debug "Deleting #{users_to_be_deleted.size} users (not really)"
@@ -512,7 +500,7 @@ class SetupDatabase
                 purged_session_count = neo4j_query_expect_one(<<~END_OF_QUERY, {:today => (Date.today - 7).strftime('%Y-%m-%d')})['count']
                     MATCH (s:Session)-[:BELONGS_TO]->(u:User)
                     WHERE s.last_access IS NULL OR s.last_access < $today
-                    AND NOT ((u.email = 'lehrer.tablet@#{SCHUL_MAIL_DOMAIN}') OR (u.email = 'kurs.tablet@#{SCHUL_MAIL_DOMAIN}') OR (u.email = 'tablet@#{SCHUL_MAIL_DOMAIN}') OR (u.email = 'bib-mobile@#{SCHUL_MAIL_DOMAIN}') OR (u.email = 'bib-station@#{SCHUL_MAIL_DOMAIN}') OR (u.email = 'bib-station-with-printer@#{SCHUL_MAIL_DOMAIN}'))
+                    AND NOT ((u.email = 'lehrer.tablet@#{SCHUL_MAIL_DOMAIN}') OR (u.email = 'kurs.tablet@#{SCHUL_MAIL_DOMAIN}') OR (u.email = 'tablet@#{SCHUL_MAIL_DOMAIN}'))
                     DETACH DELETE s
                     RETURN COUNT(s) as count;
                 END_OF_QUERY
@@ -1500,36 +1488,6 @@ class Main < Sinatra::Base
                                         :is_monitor => true,
                                         :teacher => false
                                     }
-                                elsif email == "bib-mobile@#{SCHUL_MAIL_DOMAIN}"
-                                    @session_user = {
-                                        :email => email,
-                                        :is_tablet => true,
-                                        :tablet_id => session[:tablet_id],
-                                        :tablet_type => :bib_mobile,
-                                        :color_scheme => 'd4aa03f003f2e80bc428',
-                                        :can_see_all_timetables => false,
-                                        :teacher => false
-                                    }
-                                elsif email == "bib-station@#{SCHUL_MAIL_DOMAIN}"
-                                    @session_user = {
-                                        :email => email,
-                                        :is_tablet => true,
-                                        :tablet_id => session[:tablet_id],
-                                        :tablet_type => :bib_mobile,
-                                        :color_scheme => 'd4aa03f003f2e80bc428',
-                                        :can_see_all_timetables => false,
-                                        :teacher => false
-                                    }
-                                elsif email == "bib-station-with-printer@#{SCHUL_MAIL_DOMAIN}"
-                                    @session_user = {
-                                        :email => email,
-                                        :is_tablet => true,
-                                        :tablet_id => session[:tablet_id],
-                                        :tablet_type => :bib_mobile,
-                                        :color_scheme => 'd4aa03f003f2e80bc428',
-                                        :can_see_all_timetables => false,
-                                        :teacher => false
-                                    }
                                 elsif email != "tablet@#{SCHUL_MAIL_DOMAIN}"
                                     @session_user = @@user_info[email].dup
                                     if @session_user
@@ -2394,12 +2352,16 @@ class Main < Sinatra::Base
         end
     end
 
+    get '/p/:tag' do
+        redirect "#{WEB_ROOT}/bib_postpone/#{params[:tag]}", 302
+    end
+
     get '/*' do
         # first things first
-        days_left = (Date.parse('2022-07-07') - Date.today).to_i
-        response.headers['X-Tage-Bis-Zu-Den-Sommerferien'] = "#{days_left}"
-        d4ys_left = (Date.parse('2021-12-24') - Date.today).to_i
-        response.headers['X-Tage-Bis-Weinachten'] = "#{d4ys_left}"
+        # days_left = (Date.parse('2022-07-07') - Date.today).to_i
+        # response.headers['X-Tage-Bis-Zu-Den-Sommerferien'] = "#{days_left}"
+        d4ys_left = (Date.parse('2022-12-24') - Date.today).to_i
+        response.headers['X-Tage-Bis-Weihnachten'] = "#{d4ys_left}"
 
         path = request.env['REQUEST_PATH']
         assert(path[0] == '/')
@@ -2756,11 +2718,7 @@ class Main < Sinatra::Base
 
         font_family = (@session_user || {})[:font]
         font_family = 'Alegreya' if path == 'monitor'
-        font_family = 'Alegreya' if [
-            'bib-mobile@mail.gymnasiumsteglitz.de',
-            'bib-station@mail.gymnasiumsteglitz.de',
-            'bib-station-with-printer@mail.gymnasiumsteglitz.de'
-        ].include?((@session_user || {})[:email])
+        font_family = 'Alegreya' if %w(bib-mobile bib-station bib-station-with-printer).include?(@session_device)
         color_scheme = (@session_user || {})[:color_scheme]
         font_family = 'Alegreya' unless AVAILABLE_FONTS.include?(font_family)
         unless color_scheme =~ /^[ld][0-9a-f]{18}[0-9]?$/

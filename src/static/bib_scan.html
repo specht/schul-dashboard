@@ -179,6 +179,7 @@
             if ((data.book_photos || []).length > 0) {
                 $('#info_cover').append(`${data.book_photos.map(function(x) { return `<img class='thumb' src='${BIB_HOST}/gen/book-photos/${x.sha1}.jpg'></img>`;}).join('')}`);
             }
+            $('.cover_link').attr('href', `/bib_book/${book.stem}`);
             $('#link_book').attr('href', `/bib_book/${book.stem}`);
             $('#link_exemplar').attr('href', `/bib_exemplar/${book.stem}-${bnr}`);
             $('.cover_link').show();

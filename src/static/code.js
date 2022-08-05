@@ -140,6 +140,11 @@ function bib_api_call(url, data, callback, options) {
     }
 }
 
+function bib_api_call_no_jwt(url, data, callback, options) {
+    let data_json = JSON.stringify(data);
+    api_call(BIB_HOST + url, data_json, callback, { ...options});
+}
+
 function perform_logout() {
     // clear any short-lived JWT from local storage
     localStorage.clear();

@@ -1,4 +1,4 @@
-#{this_is_a_page_for_logged_in_users}
+#{path == 'bib_postpone' ? '' : this_is_a_page_for_logged_in_users}
 <style>
     .safari_volume_indicator {
         display: block;
@@ -126,8 +126,8 @@
     var klassen_order_reverse = {};
     for (let i = 0; i < klassen_order.length; i++) klassen_order_reverse[klassen_order[i]] = i;
     var klassen_tr = #{ KLASSEN_TR.to_json };
-    var station_logged_in = #{@session_user[:email].index('bib-station') == 0};
-    var bib_mobile_logged_in = #{@session_user[:email].index('bib-mobile') == 0};
+    var station_logged_in = #{(@session_device || '').index('bib-station') == 0};
+    var bib_mobile_logged_in = #{(@session_device || '').index('bib-mobile') == 0};
     var teacher_logged_in = #{teacher_logged_in?};
     var sound = null;
     var sound_initialized_by_user_interaction = false;
@@ -177,7 +177,25 @@
         }
     }
 
-    function calculate_kurs_order_list(lesson_key, stem, use_this_book_response) {
+    function create_confirmed_td(r, server_ts, add_link_button) {
+        if (r.ts_confirmed) {
+            return $('<td>').text(moment.unix(r.ts_confirmed).format('L')).data('sort_value', r.ts_confirmed);
+        } else {
+            if (r.force_hide) {
+                return $('<td>').html("<i class='text-stone-400 fa fa-clock-o'></i>&nbsp;&nbsp;(versteckt bis Bestellung komplett)").data('sort_value', NaN);
+            }
+            else if (r.ts_hide_before && server_ts < r.ts_hide_before) {
+                return $('<td>').html(`<i class='text-stone-400 fa fa-clock-o'></i>&nbsp;&nbsp;(versteckt bis ${moment.unix(r.ts_hide_before).format('L')})`).data('sort_value', NaN);
+            } else {
+                let s = "<i class='text-stone-400 fa fa-exclamation-triangle'></i>&nbsp;&nbsp;(noch nicht bestätigt)";
+                if (add_link_button)
+                    s += "<a class='btn btn-success btn-xs ml-3' href='/bib_confirm'>Jetzt bestätigen</a>";
+                return $('<td>').html(s).data('sort_value', NaN);
+            }
+        }
+    }
+
+    function calculate_kurs_order_list(lesson_key, stem, plus_teacher, use_this_book_response) {
         if (typeof(use_this_book_response) === 'undefined')
             use_this_book_response = book_response;
         let already_have_book_sus = [];
@@ -197,7 +215,7 @@
             delete list[email];
         for (let email of no_verein_sus)
             delete list[email];
-        if (!use_this_book_response.ordering_teacher_has_this_book) {
+        if (!use_this_book_response.ordering_teacher_has_this_book && plus_teacher) {
             list[use_this_book_response.ordering_teacher_email] = true;
         }
         result.list = list;
@@ -207,8 +225,8 @@
         return result;
     }
 
-    function calculate_kurs_order_count(lesson_key, stem, use_this_book_response) {
-        return Object.keys(calculate_kurs_order_list(lesson_key, stem, use_this_book_response).list).length;
+    function calculate_kurs_order_count(lesson_key, stem, plus_teacher, use_this_book_response) {
+        return Object.keys(calculate_kurs_order_list(lesson_key, stem, plus_teacher, use_this_book_response).list).length;
     }
 
     function calculate_private_order_count(order_count, stem, email, users_who_have_this_book) {

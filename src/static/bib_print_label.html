@@ -20,15 +20,19 @@
                 <input type="text" class="form-control" id="ti_force_datum" placeholder="(z. B. Januar 2022)">
                 </div>
             </div>
-            <h3>Einzelnes Label drucken</h3>
+            <h3>Buchnummern drucken</h3>
             <div class="form-group row">
                 <label class="col-sm-3 col-form-label">Buchnummer:</label>
-                <div class="col-sm-9">
-                <input type="number" pattern="^\d+$" class="form-control" id="ti_bnr" placeholder="Bitte gib die Buchnummer ein">
+                <div class="col-sm-3">
+                    <input type="number" pattern="^\d+$" class="form-control" id="ti_bnr_first" placeholder="von">
+                </div>
+                <label class="col-sm-2 col-form-label">bis:</label>
+                <div class="col-sm-4">
+                    <input type="number" pattern="^\d+$" class="form-control" id="ti_bnr_last" placeholder="bis (optional)">
                 </div>
             </div>
 
-            <button id='bu_print_single_label' class='btn btn-success'>Einzelnes Label drucken</button>
+            <button id='bu_print_bnr_label' class='btn btn-success'>Label mit Buchnummer drucken</button>
         </div>
         <div class='col-md-6'>
             <h3>Scannen + drucken (ein oder mehrere Label)</h3>
@@ -72,13 +76,35 @@
             element: $('#scan_div'),
             on_scan: on_scan
         });
-        $('#bu_print_single_label').click(function(e) {
-            let bnr = $('#ti_bnr').val().trim();
-            if (bnr.length > 0) on_scan(`${stem}-${bnr}`);
+        $('#bu_print_bnr_label').click(function(e) {
+            let bnr_first = $('#ti_bnr_first').val().trim();
+            let bnr_last = $('#ti_bnr_last').val().trim();
+            if (bnr_first.length > 0 && bnr_last.length > 0) {
+                let data = {
+                    stem: stem,
+                    first_bnr: parseInt(bnr_first),
+                    last_bnr: parseInt(bnr_last)
+                };
+                let force_datum = $('#ti_force_datum').val().trim();
+                if (force_datum.length > 0) data.force_datum = force_datum;
+                bib_api_call('/jwt/add_to_label_print_queue_range', data, function (data) {
+                    if (data.success) {
+                        console.log("added to queue, now notifying printer");
+                        jQuery.get('https://localhost:8989');
+                    }
+                });
+            }
         });
-        $('#ti_bnr').keydown(function(e) {
+        $('#ti_bnr_first').keydown(function(e) {
             if (e.key === 'Enter')
-                $('#bu_print_single_label').click();
+                $('#bu_print_bnr_label').click();
+        });
+        $('#ti_bnr_last').keydown(function(e) {
+            if (e.key === 'Enter')
+                $('#bu_print_bnr_label').click();
+        });
+        $('#ti_bnr_first').on('keydown keyup change', function(e) {
+            $('#ti_bnr_last').val($(e.target).val());
         });
     });
 </script>

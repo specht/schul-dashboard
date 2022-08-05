@@ -126,7 +126,7 @@ class Main < Sinatra::Base
     end
 
     def can_manage_bib_logged_in?
-        user_logged_in? && ((CAN_MANAGE_BIB.include?(@session_user[:email]) && teacher_logged_in?) || @session_user[:email] == "bib-mobile@#{SCHUL_MAIL_DOMAIN}" || @session_user[:email] == "bib-station@#{SCHUL_MAIL_DOMAIN}" || @session_user[:email] == "bib-station-with-printer@#{SCHUL_MAIL_DOMAIN}")
+        user_logged_in? && (CAN_MANAGE_BIB.include?(@session_user[:email]) && teacher_logged_in?)
     end
 
     def teacher_or_can_manage_bib_logged_in?

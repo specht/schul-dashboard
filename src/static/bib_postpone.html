@@ -1,0 +1,20 @@
+#{#File.read('/static/_bib_public_template.html')}
+<style>
+    body { padding-top: 0; }
+    .navbar {display: none;}
+</style>
+<div class='container bg-white' id="response">
+</div>
+<script>
+    window.addEventListener('load', function () {
+        let tag = window.location.pathname.replace('/bib_postpone/', '');
+        console.log(tag);
+        bib_api_call_no_jwt('/public/postpone', {tag: tag}, function (data) {
+            if (data.success) {
+                $('#response').html(data.html_response);
+            } else {
+                $('#response').html("Dieser Link ist nicht mehr gültig.");
+            }
+        });
+    });
+</script>

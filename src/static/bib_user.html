@@ -125,7 +125,7 @@
                             $('<td>').css('max-width', '300px').text(entry.book.title),
                             $('<td>').css('max-width', '200px').text(entry.book.author),
                             $('<td>').text(`${moment.unix(entry.r.ts_checked_out).format('L')}`).data('sort_value', entry.r.ts_checked_out),
-                            checkout_exemplar_for_user(entry.r, data.server_ts, false),
+                            create_confirmed_td(entry.r, data.server_ts, false),
                             entry.r.teacher ? create_user_td_span_teacher(entry.r.teacher) : $('<td>').text('–'),
                             $('<td>').text(entry.r.fach || '–')
                         ];

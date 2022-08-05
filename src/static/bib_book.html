@@ -119,6 +119,8 @@
                 <div class='col-md-12' id="order_kurs_impersonate_div_confirm" style="display: none;">
                     Ich möchte das Buch für den Kurs <span class='font-bold' id="label_kurs_impersonate_name"></span> im Namen von <span class='font-bold' id="label_kurs_impersonate_teacher"></span> bestellen.
                     <div class='mt-3' style='text-align: right;'>
+                        <button id="bu_plus_teacher_impersonate" class="btn btn-outline-secondary"><i class='fa fa-times'></i>&nbsp;&nbsp;Lehrerexemplar wird benötigt (+1)</button>
+                        &nbsp;&nbsp;
                         <button id='bu_place_order_kurs_impersonate' class='btn btn-success' style="display: none;"><i class='fa fa-send'></i>&nbsp;&nbsp;Bestellung aufgeben</button>
                     </div>
                     <div id='bu_place_order_kurs_impersonate_success' class='alert alert-success' style='display: none; margin-top: 15px;'>Die Bestellung wurde aufgenommen.</div>
@@ -251,7 +253,7 @@
             });
         });
         $('#bu_place_order_kurs').click(function(e) {
-            bib_api_call('/jwt/place_order_kurs', { stem: stem, lesson_key: clicked_lesson_key, plus_teacher: $('#bu_plus_teacher').hasClass('btn-success') ? 1 : 0 }, function (data) {
+            bib_api_call('/jwt/place_order_kurs', { stem: stem, lesson_key: clicked_lesson_key, plus_teacher: $('#bu_plus_teacher').hasClass('btn-success') ? 1 : 0, fach: kurse[clicked_lesson_key].fach }, function (data) {
                 if (data.success) {
                     $('#bu_place_order_kurs').prop('disabled', true);
                     $('#bu_place_order_kurs_success').slideDown();
@@ -259,7 +261,7 @@
             });
         });
         $('#bu_place_order_kurs_impersonate').click(function(e) {
-            bib_api_call('/jwt/place_order_kurs_impersonate', { stem: stem, lesson_key: clicked_lesson_key, teacher: clicked_teacher }, function (data) {
+            bib_api_call('/jwt/place_order_kurs_impersonate', { stem: stem, lesson_key: clicked_lesson_key, teacher: clicked_teacher, plus_teacher: $('#bu_plus_teacher_impersonate').hasClass('btn-success') ? 1 : 0, fach: all_kurse[clicked_lesson_key].fach }, function (data) {
                 if (data.success) {
                     $('#bu_place_order_kurs_impersonate').prop('disabled', true);
                     $('#bu_place_order_kurs_impersonate_success').slideDown();
@@ -273,6 +275,13 @@
             } else {
                 $('#bu_plus_teacher').addClass('btn-outline-secondary').removeClass('btn-success').html(`<i class='fa fa-times'></i>&nbsp;&nbsp;Ich benötige ein Lehrerexemplar`);
                 kurs_row_clicked(clicked_lesson_key);
+            }
+        });
+        $('#bu_plus_teacher_impersonate').click(function(e) {
+            if ($('#bu_plus_teacher_impersonate').hasClass('btn-outline-secondary')) {
+                $('#bu_plus_teacher_impersonate').removeClass('btn-outline-secondary').addClass('btn-success').html(`<i class='fa fa-check'></i>&nbsp;&nbsp;Lehrerexemplar wird benötigt (+1)`);
+            } else {
+                $('#bu_plus_teacher_impersonate').addClass('btn-outline-secondary').removeClass('btn-success').html(`<i class='fa fa-times'></i>&nbsp;&nbsp;Lehrerexemplar wird benötigt (+1)`);
             }
         });
         let stem_s = window.location.pathname.replace('/bib_book/', '');

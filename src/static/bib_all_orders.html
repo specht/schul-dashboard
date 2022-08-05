@@ -46,7 +46,7 @@
                             count = calculate_private_order_count(order.o.count, order.b.stem, order.u.email, order.users_who_have_this_book);
                         }
                         order.count = count;
-                        if (count > 0) {
+                        if (count > 0 && (!order.o.complete)) {
                             active_orders.push(order);
                         } else {
                             if ((!order.o.processed) && (order.o.lesson_key))
@@ -86,9 +86,9 @@
                         new SortableTable({
                             xs: true,
                             element: $('#recent_order_table'),
-                            headers: ['Bestellt', 'Name', 'Signatur', 'Titel', 'Autor', 'Kurs', 'Klasse', 'Benötigt', 'Regal'].map(function (x) {
+                            headers: ['Bestellt', 'Name', 'Signatur', 'Titel', 'Autor', 'Kurs', 'Klasse'].map(function (x) {
                                 let th = $('<th>').text(x);
-                                if (['Signatur', 'Bestellt', 'Benötigt'].indexOf(x) >= 0) th.data('type', 'int');
+                                if (['Signatur', 'Bestellt'].indexOf(x) >= 0) th.data('type', 'int');
                                 return th;
                             }),
                             rows: past_orders.map(function(order) {
@@ -101,8 +101,6 @@
                                     $('<td>').css('max-width', '180px').text(order.b.author),
                                     $('<td>').html(`${(kurse[order.o.lesson_key] || {}).fach || '(privat)'}`),
                                     $('<td>').html(`${((kurse[order.o.lesson_key] || {}).klassen || []).join(', ') || '&ndash;'}`),
-                                    $('<td>').html(`${order.count}`).data('sort_value', order.count),
-                                    $('<td>').html(`${(order.locations || []).map(function(x) {return create_location_span(x); }).join('')}`).data('sort_value', (order.locations || ['0'])[0]),
                                 ];
                             }),
                             clickable_rows: true,

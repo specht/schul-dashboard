@@ -44,7 +44,9 @@ class SortableTable {
         table.css('display', 'table');
     }
 
-    add_row(row, highlight) {
+    add_row(row, highlight, prepend) {
+        if (typeof(prepend) === 'undefined')
+            prepend = false;
         if (row === null) return;
         if (typeof(highlight) === 'undefined')
             highlight = true;
@@ -69,7 +71,10 @@ class SortableTable {
             i += 1;
         }
         tr.data('col_index', col_index);
-        this.tbody.append(tr);
+        if (prepend)
+            this.tbody.prepend(tr);
+        else
+            this.tbody.append(tr);
         if (highlight) {
             tr.addClass('hl').addClass('has_hl');
             setTimeout(function() {

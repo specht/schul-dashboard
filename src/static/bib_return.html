@@ -51,7 +51,7 @@
                         else
                             cells.push($(`<td colspan='5' class='text-muted font-italic'>`).html('(war nicht ausgeliehen)'));
                     }
-                    table.add_row(cells);
+                    table.add_row(cells, true, true);
                 }
             } else {
                 sound.play('error');

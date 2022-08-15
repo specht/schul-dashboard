@@ -115,6 +115,10 @@
         scrollbar-width: none;
     }
 
+    .container, .container-lg, .container-md, .container-sm, .container-xl {
+        max-width: 1500px;
+    }
+    
     @tailwind base;
     @tailwind components;
     @tailwind utilities;
@@ -289,37 +293,41 @@
             style="border-bottom: 1px solid #eee; left: 0px; right: 0px; z-index: 100;">
             <li class="mx-1" style="display: #{(teacher_logged_in? && (!device_logged_in?)) ? 'unset' : 'none'};">
                 <a class="inline-block bg-slate-900 border border-blue-500 hover:bg-slate-200 rounded py-1 px-3"
-                    href="/bibliothek">Meine Bücher</a>
+                    href="/bibliothek"><i class='fa fa-book'></i>&nbsp;&nbsp;Meine Bücher</a>
             </li>
             <li class="mx-1" style="display: #{((teacher_logged_in? || can_manage_bib_logged_in?) && @session_device != 'bib-mobile') ? 'unset' : 'none'};">
                 <a class="inline-block bg-slate-900 border border-blue-500 hover:bg-slate-200 rounded py-1 px-3"
-                    href="/bib_browse">Katalog</a>
+                    href="/bib_browse"><i class='fa fa-search'></i>&nbsp;&nbsp;Katalog</a>
             </li>
             <li class="mx-1" style="display: #{(teacher_logged_in? && @session_device.nil?) ? 'unset' : 'none'}; margin-right: 15px!important">
                 <a class="inline-block bg-slate-900 border border-blue-500 hover:bg-slate-200 rounded py-1 px-3"
-                    href="/bib_orders">Bestellungen</a>
+                    href="/bib_orders"><i class='fa fa-shopping-cart'></i>&nbsp;&nbsp;Bestellungen</a>
             </li>
             <li style="display: #{can_manage_bib_logged_in? ? 'unset' : 'none'}; #{@session_device == 'bib-mobile' ? 'display: none;' : ''} border-left: 1px solid #ccc; height: 52px; margin: -10px 10px -10px 10px; margin-left: auto;">
             </li>
             <li class="mx-1" style="display: #{(can_manage_bib_logged_in? && @session_device != 'bib-mobile') ? 'unset' : 'none'};">
                 <a class="inline-block bg-slate-900 border border-blue-500 hover:bg-slate-200 rounded py-1 px-3"
-                    href="/bib_books">Medien</a>
+                    href="/bib_books"><i class='fa fa-book'></i>&nbsp;&nbsp;Medien</a>
             </li>
             <li class="mx-1" style="display: #{can_manage_bib_logged_in? ? 'unset' : 'none'};">
                 <a class="inline-block bg-slate-900 border border-blue-500 hover:bg-slate-200 rounded py-1 px-3"
-                    href="/bib_users">Nutzer</a>
+                    href="/bib_users"><i class='fa fa-user'></i>&nbsp;&nbsp;Nutzer</a>
             </li>
             <li class="mx-1" style="display: #{(can_manage_bib_logged_in? && @session_device != 'bib-mobile') ? 'unset' : 'none'};">
                 <a class="inline-block bg-slate-900 border border-blue-500 hover:bg-slate-200 rounded py-1 px-3"
-                    href="/bib_all_orders">Bestellungen</a>
+                    href="/bib_all_orders"><i class='fa fa-shopping-cart'></i>&nbsp;&nbsp;Bestellungen</a>
             </li>
             <li class="mx-1" style="display: #{can_manage_bib_logged_in? ? 'unset' : 'none'};">
                 <a class="inline-block bg-slate-900 border border-blue-500 hover:bg-slate-200 rounded py-1 px-3"
-                    href="/bib_scan">Bücher scannen</a>
+                    href="/bib_scan"><i class='fa fa-barcode'></i>&nbsp;&nbsp;Bücher scannen</a>
             </li>
             <li class="mx-1" style="display: #{can_manage_bib_logged_in? ? 'unset' : 'none'};">
                 <a class="inline-block bg-slate-900 border border-blue-500 hover:bg-slate-200 rounded py-1 px-3"
-                    href="/bib_return">Rückgabe</a>
+                    href="/bib_return"><i class='fa fa-arrow-circle-down'></i>&nbsp;&nbsp;Rückgabe</a>
+            </li>
+            <li class="mx-1" style="display: #{can_manage_bib_logged_in? ? 'unset' : 'none'};">
+                <a class="inline-block bg-slate-900 border border-blue-500 hover:bg-slate-200 rounded py-1 px-3"
+                    href="/bib_discard"><i class='fa fa-trash'></i>&nbsp;&nbsp;Ausmustern</a>
             </li>
         </ul>
     </section>

@@ -1247,6 +1247,10 @@ class Timetable
                         if e[:lesson]
                             e[:label] = user[:teacher] ? e[:label_klasse].dup : e[:label_lehrer].dup
                             e[:label_lang] = user[:teacher] ? e[:label_klasse_lang].dup : e[:label_lehrer_lang].dup
+                            if user[:teacher]
+                                e[:label] = "<b>#{@@lessons[:lesson_keys][e[:lesson_key]][:pretty_folder_name].gsub(/\([^\)]+\)/, '').strip}</b> #{e[:label_klasse].scan(/\([^\)]+\)/)[0]}"
+                                e[:label_lang] = "<b>#{@@lessons[:lesson_keys][e[:lesson_key]][:pretty_folder_name].gsub(/\([^\)]+\)/, '').strip}</b> #{e[:label_klasse].scan(/\([^\)]+\)/)[0]}"
+                            end
                             e[:label_short] = user[:teacher] ? e[:label_klasse_short].dup : e[:label_lehrer_short].dup
                             if user[:is_room]
                                 e[:label] = e[:label_room].dup

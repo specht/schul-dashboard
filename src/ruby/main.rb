@@ -877,6 +877,7 @@ class Main < Sinatra::Base
             end
             @@lessons[:lesson_keys][lesson_key][:pretty_folder_name] = pretty_folder_name
         end
+        # if we have 2x Chemie GK (11) for one teacher, differentiate with A and B
         @@lessons[:lesson_keys].keys.each do |lesson_key|
             lesson_info = @@lessons[:lesson_keys][lesson_key]
             pretty_folder_name = lesson_info[:pretty_folder_name]
@@ -1819,7 +1820,7 @@ class Main < Sinatra::Base
                             if lesson_info
                                 fach = lesson_info[:fach]
                                 fach = @@faecher[fach] if @@faecher[fach]
-                                io.puts "<a class='dropdown-item nav-icon' href='/lessons/#{CGI.escape(lesson_key)}'><div class='icon'><i class='fa fa-address-book'></i></div><span class='label'>#{fach} (#{lesson_info[:klassen].map { |x| tr_klasse(x) }.join(', ')})</span></a>"
+                                io.puts "<a class='dropdown-item nav-icon' href='/lessons/#{CGI.escape(lesson_key)}'><div class='icon'><i class='fa fa-address-book'></i></div><span class='label'>#{lesson_info[:pretty_folder_name]}</span></a>"
                                 taken_lesson_keys << lesson_key
                             end
                         end

@@ -190,7 +190,8 @@
         let total_count = Object.keys(details.list).length;
         $('<tr>').append($(`<th>`).text('Gesamt')).append($(`<th>`).css('text-align', 'right').text(`${total_count}`)).appendTo($('#order_kurs_div_table'));
         $('#bu_place_order_kurs').show();
-        // $('#bu_place_order_kurs').prop('disabled', total_count <= 0);
+        $('#bu_place_order_kurs').prop('disabled', false);
+        $('#bu_place_order_kurs_success').hide();
 
         $('#order_kurs_div_confirm').slideDown();
         $('#label_order_kurs_count').text(`${total_count} Exemplar${total_count === 1 ? '' : 'e'}`);

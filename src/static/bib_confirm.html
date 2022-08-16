@@ -31,7 +31,10 @@
 
     function on_scan(barcode, scanned) {
         let parts = fix_scanned_book_barcode(barcode);
-        if (parts === null) return;
+        if (parts === null) {
+            sound.play('error');
+            return;
+        }
         console.log(`YIPPIE ${barcode}, scanned: ${scanned}`);
         console.log(parts);
         let data = {

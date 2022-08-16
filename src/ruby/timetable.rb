@@ -632,7 +632,7 @@ class Timetable
                             end
                         end
                     end
-                    if e[:lehrer] 
+                    if e[:lehrer]
                         if e[:lehrer][0]
                             e[:lehrer][0].sort!
                         end
@@ -684,10 +684,10 @@ class Timetable
                             e[k] = "#{strike(e[k].first)} #{e[k].last}".strip
                         end
                     end
-                    
+
                     e.delete(:fach)
                     e.delete(:lehrer)
-                    
+
                     lesson_key = e[:lesson_key]
                     if lesson_key && lesson_key != 0
                         lesson_info = @@lessons[:lesson_keys][lesson_key]
@@ -705,7 +705,7 @@ class Timetable
                             :teacher => "Auto-Rückgabeordner (von mir an SuS)",
                             :sus => "Rückgabeordner"
                         }
-                    end                    
+                    end
                 end
             end
             day_events_regular.each_pair do |stunde, event_indices|
@@ -722,12 +722,12 @@ class Timetable
                     e[:label_lehrer_lang] = gen_label_lehrer([fach_lang], [lehrer_lang])
                     e[:label_klasse_lang] = gen_label_klasse([fach_lang], [e[:klassen]], [lehrer_lang])
                     e[:klassen] = [e[:klassen]]
-                    
+
                     e.delete(:fach)
                     e.delete(:lehrer)
                 end
             end
-            
+
             day_events_by_lesson_key = {}
             day_events.each_pair do |stunde, event_indices|
                 event_indices.each do |cache_index|
@@ -741,7 +741,7 @@ class Timetable
             # ----------------------------------------------------------------------------
             # ATTENTION: FROM HERE ON, day_events are associated by lesson_key, not stunde
             # ----------------------------------------------------------------------------
-            
+
             day_events_regular_by_lesson_key = {}
             day_events_regular.each_pair do |stunde, event_indices|
                 event_indices.each do |cache_index|
@@ -751,14 +751,14 @@ class Timetable
                 end
             end
             day_events_regular = day_events_regular_by_lesson_key
-            
+
             # 2c. sort events # NOT NECESSARY
 #             day_events.each_pair do |lesson_key, events|
 #                 events.sort! do |a, b|
 #                     a[:stunde] <=> b[:stunde]
 #                 end
 #             end
-#             
+#
             # 2c. find doppelstunden
             day_events.each_pair do |lesson_key, event_indices|
                 next if lesson_key == 0
@@ -776,11 +776,11 @@ class Timetable
                     end
                 end
             end
-            
+
             day_events_regular.each_pair do |lesson_key, event_indices|
                 day_events_regular[lesson_key] = merge_same_events(event_indices.to_a.sort)
             end
-            
+
             day_events_special = {}
 
             # 3. add today's events to lesson_events, collect lehrer and klassen events
@@ -822,7 +822,7 @@ class Timetable
                 @lesson_events[key][ds_yw] ||= Set.new()
                 @lesson_events[key][ds_yw] += day_events_special[key]
             end
-            
+
             # 4. increment lesson offsets
             day_events.each_pair do |lesson_key, event_indices|
                 next if lesson_key == 0
@@ -835,7 +835,6 @@ class Timetable
                     lesson_offset[lesson_key] += event[:count]
                 end
             end
-            
         end
         @events_by_lesson_key_and_offset = {}
         @regular_days_for_lesson_key = {}
@@ -889,7 +888,7 @@ class Timetable
                             to email
                             bcc SMTP_FROM
                             from SMTP_FROM
-                            
+
                             subject "Tablet-Reservierung aufgehoben: #{fach}"
 
                             StringIO.open do |io|
@@ -943,7 +942,7 @@ class Timetable
                             to email
                             bcc SMTP_FROM
                             from SMTP_FROM
-                            
+
                             subject "Tabletsatz-Reservierung aufgehoben: #{fach}"
 
                             StringIO.open do |io|
@@ -958,9 +957,16 @@ class Timetable
             end
         end
     end
-    
+
     def update_weeks(only_these_lesson_keys)
-        debug "Updating weeks: #{only_these_lesson_keys.to_a.join(', ')}"
+        hide_from_sus = false
+        now = Time.now
+        if now.strftime('%Y-%m-%d') < @@config[:first_school_day]
+            hide_from_sus = true
+        elsif now.strftime('%Y-%m-%d') == @@config[:first_school_day]
+            hide_from_sus = now.strftime('%H:%M:%S') < '09:00:00'
+        end
+        debug "Updating weeks: #{only_these_lesson_keys.to_a.join(', ')} (hide_from_sus: #{hide_from_sus})"
 
         ical_tokens = {}
         result = neo4j_query(<<~END_OF_QUERY)
@@ -976,7 +982,7 @@ class Timetable
         all_stream_restrictions = Main.get_all_stream_restrictions()
         all_homeschooling_users = Main.get_all_homeschooling_users()
         lesson_homework_feedback = {}
-        
+
         group_for_sus = {}
         results = neo4j_query(<<~END_OF_QUERY)
             MATCH (u:User)
@@ -985,7 +991,7 @@ class Timetable
         results.each do |x|
             group_for_sus[x['u.email']] = x['group2']
         end
-        
+
         events_with_data_cache = {}
         events_with_data_per_user_cache = {}
         start_date = Date.parse(@@config[:first_day])
@@ -1140,7 +1146,11 @@ class Timetable
                     :id => @@room_ids[room]
                 }
             end
+            now
             temp.each_pair do |email, user|
+                if (!user[:teacher]) && (hide_from_sus)
+                    next
+                end
                 lesson_keys = @@lessons_for_user[email].dup
                 if email[0] == '_'
                     lesson_keys = Set.new(@@lessons_for_klasse[user[:klasse]])
@@ -1149,7 +1159,7 @@ class Timetable
                 lesson_keys << "_#{user[:klasse]}" if user[:is_klasse]
                 lesson_keys << "_@#{user[:room]}" if user[:is_room]
                 if user[:teacher]
-                    lesson_keys << "_#{user[:shorthand]}" 
+                    lesson_keys << "_#{user[:shorthand]}"
                     (@@lessons_for_shorthand[user[:shorthand]] || []).each do |lesson_key|
                         lesson_keys << lesson_key
                     end
@@ -1182,7 +1192,7 @@ class Timetable
                         cache_indices += ((@lesson_events["_@#{user[:room]}"] || {})[p_yw] || Set.new())
                     end
                     events += cache_indices.map { |x| @lesson_cache[x] }
-                    events += holidays 
+                    events += holidays
                     events += website_events
                     if user[:klasse]
                         events += public_test_events_for_klasse[user[:klasse]] || []
@@ -1685,13 +1695,14 @@ class Timetable
             p += 7
         end
         ical_events.each_pair do |email, events|
+            next if (!@@user_info[email][:teacher]) && hide_from_sus
             FileUtils::mkpath('/gen/ical')
             File.open("/gen/ical/#{ical_tokens[email]}.ics", 'w') do |f|
                 f.puts "BEGIN:VCALENDAR"
                 f.puts "VERSION:2.0"
                 f.puts "CALSCALE:GREGORIAN"
                 f.puts "X-WR-CALNAME:Dashboard #{SCHUL_NAME}"
-                events.each do |e| 
+                events.each do |e|
                     x = e.strip
                     f.puts x unless x.empty?
                 end
@@ -1799,6 +1810,7 @@ class Timetable
             }
         end
         temp.each_pair do |email, user|
+            next if (!@@user_info[email][:teacher]) && hide_from_sus
             lesson_keys = @@lessons_for_user[email].dup
             if email[0] == '_'
                 lesson_keys = Set.new(@@lessons_for_klasse[user[:klasse]])

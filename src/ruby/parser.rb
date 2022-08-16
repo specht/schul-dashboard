@@ -200,6 +200,7 @@ class Parser
         end
         File.open(path) do |f|
             f.each_line do |line|
+                next if line.strip[0] == '#'
                 parts = line.split(',').map { |x| x.strip }
                 if parts.size == 3 
                     yield :klasse => parts[0], :klassenleiter => [parts[1], parts[2]]

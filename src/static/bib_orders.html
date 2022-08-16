@@ -71,7 +71,7 @@
                             });
                             let kurs = '(privat)';
                             if (order.o.lesson_key) {
-                                kurs = kurse[order.o.lesson_key].fach || order.o.lesson_key;
+                                kurs = (kurse[order.o.lesson_key] || {}).fach || order.o.lesson_key;
                             }
                             let cells = [
                                 order.b.stem,

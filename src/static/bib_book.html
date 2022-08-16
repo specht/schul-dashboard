@@ -59,7 +59,7 @@
     <div class="bib_teacher_only">
         <hr />
         <div id='orders_placed_notice' class='alert alert-warning' style="display: none;">
-            Du hast <span id='orders_placed_count'></span> <a href='/bib_orders'>bestellt</a>.
+            Du hast dieses Buch <span id='orders_placed_count'></span> <a href='/bib_orders'>bestellt</a>.
         </div>
         <p>Wenn du dieses Buch im Unterricht verwenden möchtest, kannst du es hier bestellen.</p>
         <button id='bu_order_overview' class="btn btn-success"><i class='fa fa-shopping-basket'></i>&nbsp;&nbsp;Buch bestellen</button>
@@ -468,18 +468,18 @@
                 }
 
                 let orders_placed_parts = [];
-                if (data.orders_placed && data.orders_placed > 0) {
-                    show_private_order_button = false;
-                    let missing_books = data.orders_placed - (data.users_who_have_this_book[data.ordering_teacher_email] || 0);
-                    if (missing_books < 0) missing_books = 0;
-                    if (missing_books > 0)
-                        orders_placed_parts.push(`${missing_books} Exemplar${missing_books === 1 ? '' : 'e'} privat`);
-                }
+                // if (data.orders_placed && data.orders_placed > 0) {
+                //     show_private_order_button = false;
+                //     let missing_books = data.orders_placed - (data.users_who_have_this_book[data.ordering_teacher_email] || 0);
+                //     if (missing_books < 0) missing_books = 0;
+                //     if (missing_books > 0)
+                //         orders_placed_parts.push(`ein Exemplar${missing_books === 1 ? '' : 'e'} privat`);
+                // }
                 if (data.kurs_orders_placed && data.kurs_orders_placed.length > 0) {
                     for (let kop of data.kurs_orders_placed) {
                         if (kurse[kop.lesson_key]) {
                             let count = calculate_kurs_order_count(kop.lesson_key, stem, kop.plus_teacher);
-                            orders_placed_parts.push(`${count} Exemplar${count === 1 ? '' : 'e'} für deinen Kurs ${kurse[kop.lesson_key].fach}`);
+                            orders_placed_parts.push(`für deinen Kurs ${kurse[kop.lesson_key].fach}`);
                         }
                     }
                 }

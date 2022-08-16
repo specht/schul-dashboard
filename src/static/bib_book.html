@@ -82,6 +82,7 @@
                         <div>
                             <button id="bu_plus_teacher" class="btn btn-sm btn-outline-secondary mb-3"><i class='fa fa-times'></i>&nbsp;&nbsp;Ich benötige ein Lehrerexemplar</button>
                         </div>
+                        <div class='alert alert-warning text-sm'>Hinweis: Falls die Gesamtzahl nicht stimmt, weil z. B. SuS der 7. Klassen noch nicht im Lehrmittelverein sind oder weil für Oberstufenkurse noch keine Teilnehmerlisten im Dashboard hinterlegt sind, können Sie trotzdem die Bestellung jetzt schon vornehmen. Wir werden die Bestellung bearbeiten, sobald die fehlenden Informationen vorliegen und dann werden auch die Zahlen automatisch korrigiert.</div>
                         Ich möchte <span class='font-bold' id="label_order_kurs_count"></span> für meinen Kurs <span class='font-bold' id="label_kurs_name"></span> bestellen.
                         <div class='mt-3' style='text-align: right;'>
                             <button id='bu_place_order_kurs' class='btn btn-success' style="display: none;"><i class='fa fa-send'></i>&nbsp;&nbsp;Bestellung aufgeben</button>
@@ -189,7 +190,7 @@
         let total_count = Object.keys(details.list).length;
         $('<tr>').append($(`<th>`).text('Gesamt')).append($(`<th>`).css('text-align', 'right').text(`${total_count}`)).appendTo($('#order_kurs_div_table'));
         $('#bu_place_order_kurs').show();
-        $('#bu_place_order_kurs').prop('disabled', total_count <= 0);
+        // $('#bu_place_order_kurs').prop('disabled', total_count <= 0);
 
         $('#order_kurs_div_confirm').slideDown();
         $('#label_order_kurs_count').text(`${total_count} Exemplar${total_count === 1 ? '' : 'e'}`);
@@ -503,15 +504,11 @@
                 }),
                 rows: Object.keys(kurse).map(function (lesson_key) {
                     let kurs = kurse[lesson_key];
-                    if (kurs.sus.length === 0) {
-                        return null; 
-                    } else {
-                        return [
-                            lesson_key,
-                            $('<td>').text(kurs.fach),
-                            $('<td>').text(`${kurs.sus.length}`).data('sort_value', kurs.sus.length),
-                        ];
-                    }
+                    return [
+                        lesson_key,
+                        $('<td>').text(kurs.fach),
+                        $('<td>').text(`${kurs.sus.length}`).data('sort_value', kurs.sus.length),
+                    ];
                 }),
                 clickable_rows: true,
                 clickable_row_callback: kurs_row_clicked,

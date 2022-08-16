@@ -17,10 +17,10 @@ SHARE_SHARE = 16
 class Script
     def initialize
         @ocs = Nextcloud.ocs(url: NEXTCLOUD_URL_FROM_RUBY_CONTAINER,
-                             username: NEXTCLOUD_USER, 
+                             username: NEXTCLOUD_USER,
                              password: NEXTCLOUD_PASSWORD)
     end
-    
+
     def run
         srsly = false
         args = ARGV.dup
@@ -45,9 +45,9 @@ class Script
             ocs_user = Nextcloud.ocs(url: NEXTCLOUD_URL_FROM_RUBY_CONTAINER, 
                                      username: user_id,
                                      password: NEXTCLOUD_ALL_ACCESS_PASSWORD_BE_CAREFUL)
-            STDERR.puts "Moving [#{user_id}]/Unterricht to /Archiv-Jahresbeginn-21-22..."
+            STDERR.puts "Moving [#{user_id}]/Unterricht to /Archiv-Jahresbeginn-22-23..."
             if srsly
-                result = ocs_user.webdav.directory.move('/Unterricht', '/Archiv-Jahresbeginn-21-22')
+                result = ocs_user.webdav.directory.move('/Unterricht', '/Archiv-Jahresbeginn-22-23')
                 if result[:status] != 'ok'
                     STDERR.puts "Error!"
                 end

@@ -1084,7 +1084,7 @@ class Main < Sinatra::Base
             end
             File::open('/internal/debug/emails.txt', 'w') do |f|
                 @@user_info.keys.sort.each do |email|
-                    f.puts "#{@@user_info[email][:display_name]} #{email}"
+                    f.puts "#{email}"
                 end
             end
         end

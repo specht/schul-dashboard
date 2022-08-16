@@ -1082,6 +1082,11 @@ class Main < Sinatra::Base
                     f.write Main.class_variable_get(x).to_yaml
                 end
             end
+            File::open('/internal/debug/emails.txt', 'w') do |f|
+                @@user_info.keys.sort.each do |email|
+                    f.puts "#{@@user_info[email][:display_name]} #{email}"
+                end
+            end
         end
     end
 

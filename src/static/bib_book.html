@@ -503,11 +503,15 @@
                 }),
                 rows: Object.keys(kurse).map(function (lesson_key) {
                     let kurs = kurse[lesson_key];
-                    return [
-                        lesson_key,
-                        $('<td>').text(kurs.fach),
-                        $('<td>').text(`${kurs.sus.length}`).data('sort_value', kurs.sus.length),
-                    ];
+                    if (kurs.sus.length === 0) {
+                        return null; 
+                    } else {
+                        return [
+                            lesson_key,
+                            $('<td>').text(kurs.fach),
+                            $('<td>').text(`${kurs.sus.length}`).data('sort_value', kurs.sus.length),
+                        ];
+                    }
                 }),
                 clickable_rows: true,
                 clickable_row_callback: kurs_row_clicked,

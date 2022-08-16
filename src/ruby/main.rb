@@ -869,7 +869,7 @@ class Main < Sinatra::Base
             lesson_info = @@lessons[:lesson_keys][lesson_key]
             fach = lesson_info[:fach]
             fach = @@faecher[fach] || fach
-            pretty_folder_name = "#{fach.gsub('/', '-')} (#{lesson_info[:klassen].sort.join(', ')})"
+            pretty_folder_name = "#{fach.gsub('/', '-')} (#{lesson_info[:klassen].sort.map { |x| tr_klasse(x) }.join(', ')})"
             lesson_info[:lehrer].each do |shorthand|
                 pretty_folder_names_for_teacher[shorthand] ||= {}
                 pretty_folder_names_for_teacher[shorthand][pretty_folder_name] ||= Set.new()
@@ -1769,7 +1769,7 @@ class Main < Sinatra::Base
                             if can_manage_bib_members_logged_in?
                                 io.puts "<a class='dropdown-item nav-icon' href='/lehrbuchverein'><div class='icon'><i class='fa fa-book'></i></div><span class='label'>Lehrmittelverein</span></a>"
                             end
-                            if can_manage_bib_logged_in? || DEVELOPMENT
+                            if can_manage_bib_logged_in? || teacher_logged_in?
                                 io.puts "<a class='dropdown-item nav-icon' href='/bibliothek'><div class='icon'><i class='fa fa-book'></i></div><span class='label'>Bibliothek</span></a>"
                             end
                         end

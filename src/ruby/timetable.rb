@@ -1818,7 +1818,7 @@ class Timetable
             lesson_keys << "_#{user[:shorthand]}" if user[:teacher]
             if only_these_lesson_keys && (lesson_keys & only_these_lesson_keys).empty?
                 unless only_these_lesson_keys.include?(:all_messages) || only_these_lesson_keys.include?(:event)
-                    next 
+                    next
                 end
             end
             path = "/gen/w/#{user[:id]}/homework.json.gz"

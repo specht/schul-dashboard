@@ -1148,9 +1148,7 @@ class Timetable
             end
             now
             temp.each_pair do |email, user|
-                if (!user[:teacher]) && (hide_from_sus)
-                    next
-                end
+                next if @@user_info[email] && (!@@user_info[email][:teacher]) && hide_from_sus
                 lesson_keys = @@lessons_for_user[email].dup
                 if email[0] == '_'
                     lesson_keys = Set.new(@@lessons_for_klasse[user[:klasse]])
@@ -1695,7 +1693,7 @@ class Timetable
             p += 7
         end
         ical_events.each_pair do |email, events|
-            next if (!@@user_info[email][:teacher]) && hide_from_sus
+            next if @@user_info[email] && (!@@user_info[email][:teacher]) && hide_from_sus
             FileUtils::mkpath('/gen/ical')
             File.open("/gen/ical/#{ical_tokens[email]}.ics", 'w') do |f|
                 f.puts "BEGIN:VCALENDAR"
@@ -1810,7 +1808,7 @@ class Timetable
             }
         end
         temp.each_pair do |email, user|
-            next if (!@@user_info[email][:teacher]) && hide_from_sus
+            next if @@user_info[email] && (!@@user_info[email][:teacher]) && hide_from_sus
             lesson_keys = @@lessons_for_user[email].dup
             if email[0] == '_'
                 lesson_keys = Set.new(@@lessons_for_klasse[user[:klasse]])

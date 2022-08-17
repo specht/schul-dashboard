@@ -277,9 +277,9 @@ class Main < Sinatra::Base
                 booked_tablet_sets_timespan[x].to_a.each do |entry|
                     if entry[:lesson_key]
                         pretty_fach = fach_for_lesson_key(entry[:lesson_key])
-                        hints << "<span class='text-danger'><i class='fa fa-warning'></i></span>&nbsp;&nbsp;Dieser Tabletsatz wurde bereits von <strong>#{entry[:display_name]}</strong> gebucht#{entry[:lesson_key] ? ': ' + pretty_fach : ''}."
+                        hints << "<span class='text-danger'><i class='fa fa-warning'></i></span>&nbsp;&nbsp;Dieser Tabletsatz wurde bereits von <b>#{entry[:display_name]}</b> gebucht#{entry[:lesson_key] ? ': ' + pretty_fach : ''}."
                     else
-                        hints << "<span class='text-danger'><i class='fa fa-warning'></i></span>&nbsp;&nbsp;Dieser Tabletsatz wurde bereits von <strong>#{entry[:display_name]}</strong> gebucht."
+                        hints << "<span class='text-danger'><i class='fa fa-warning'></i></span>&nbsp;&nbsp;Dieser Tabletsatz wurde bereits von <b>#{entry[:display_name]}</b> gebucht."
                     end
                 end
             elsif booked_tablet_sets_day[x]

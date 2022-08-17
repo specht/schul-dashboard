@@ -45,12 +45,16 @@
                             count = calculate_private_order_count(order.o.count, order.b.stem, order.u.email, order.users_who_have_this_book);
                         }
                         order.count = count;
-                        if (count > 0 && (!order.o.complete)) {
+                        if (order.o.complete)
+                            past_orders.push(order);
+                        else
                             active_orders.push(order);
-                        } else {
-                            if ((!order.o.processed) && (order.o.lesson_key))
-                                past_orders.push(order);
-                        }
+                        // if (count > 0 && (!order.o.complete)) {
+                        //     active_orders.push(order);
+                        // } else {
+                        //     if ((!order.o.processed) && (order.o.lesson_key))
+                        //         past_orders.push(order);
+                        // }
                     }
                     if (active_orders.length > 0) {
                         new SortableTable({

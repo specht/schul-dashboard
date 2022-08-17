@@ -33,7 +33,6 @@
                     let active_orders = [];
                     let past_orders = [];
                     for (let order of data.orders) {
-                        console.log(order);
                         let count = order.o.count;
                         if (order.o.lesson_key) {
                             order.book_info = {

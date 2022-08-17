@@ -869,7 +869,7 @@ class Main < Sinatra::Base
             lesson_info = @@lessons[:lesson_keys][lesson_key]
             fach = lesson_info[:fach]
             fach = @@faecher[fach] || fach
-            pretty_folder_name = "#{fach.gsub('/', '-')} (#{lesson_info[:klassen].sort.join(', ')})"
+            pretty_folder_name = "#{fach.gsub('/', '-')} (#{lesson_info[:klassen].sort.map { |x| tr_klasse(x) }.join(', ')})"
             lesson_info[:lehrer].each do |shorthand|
                 pretty_folder_names_for_teacher[shorthand] ||= {}
                 pretty_folder_names_for_teacher[shorthand][pretty_folder_name] ||= Set.new()
@@ -877,6 +877,7 @@ class Main < Sinatra::Base
             end
             @@lessons[:lesson_keys][lesson_key][:pretty_folder_name] = pretty_folder_name
         end
+        # if we have 2x Chemie GK (11) for one teacher, differentiate with A and B
         @@lessons[:lesson_keys].keys.each do |lesson_key|
             lesson_info = @@lessons[:lesson_keys][lesson_key]
             pretty_folder_name = lesson_info[:pretty_folder_name]
@@ -1084,7 +1085,7 @@ class Main < Sinatra::Base
             end
             File::open('/internal/debug/emails.txt', 'w') do |f|
                 @@user_info.keys.sort.each do |email|
-                    f.puts "#{@@user_info[email][:display_name]} #{email}"
+                    f.puts "#{email}"
                 end
             end
         end
@@ -1761,7 +1762,7 @@ class Main < Sinatra::Base
                     io.puts "<a class='dropdown-item nav-icon' href='/login'><div class='icon'><i class='fa fa-sign-in'></i></div><span class='label'>Zusätzliche Anmeldung…</span></a>"
                     unless external_user_logged_in?
                         io.puts "<a class='dropdown-item nav-icon' href='/login_nc'><div class='icon'><i class='fa fa-nextcloud'></i></div><span class='label'>In Nextcloud anmelden…</span></a>"
-                        if can_manage_agr_app_logged_in? || can_manage_bib_members_logged_in? || can_manage_bib_logged_in? || DEVELOPMENT
+                        # if can_manage_agr_app_logged_in? || can_manage_bib_members_logged_in? || can_manage_bib_logged_in? || teacher_logged_in?
                             io.puts "<div class='dropdown-divider'></div>"
                             if can_manage_agr_app_logged_in?
                                 io.puts "<a class='dropdown-item nav-icon' href='/agr_app'><div class='icon'><i class='fa fa-mobile'></i></div><span class='label'>Altgriechisch-App</span></a>"
@@ -1769,10 +1770,10 @@ class Main < Sinatra::Base
                             if can_manage_bib_members_logged_in?
                                 io.puts "<a class='dropdown-item nav-icon' href='/lehrbuchverein'><div class='icon'><i class='fa fa-book'></i></div><span class='label'>Lehrmittelverein</span></a>"
                             end
-                            if can_manage_bib_logged_in? || DEVELOPMENT
+                            # if can_manage_bib_logged_in? || teacher_logged_in?
                                 io.puts "<a class='dropdown-item nav-icon' href='/bibliothek'><div class='icon'><i class='fa fa-book'></i></div><span class='label'>Bibliothek</span></a>"
-                            end
-                        end
+                            # end
+                        # end
                         if teacher_or_sv_logged_in? || can_manage_bib_logged_in?
                             io.puts "<div class='dropdown-divider'></div>"
                             if teacher_or_sv_logged_in?
@@ -1819,7 +1820,7 @@ class Main < Sinatra::Base
                             if lesson_info
                                 fach = lesson_info[:fach]
                                 fach = @@faecher[fach] if @@faecher[fach]
-                                io.puts "<a class='dropdown-item nav-icon' href='/lessons/#{CGI.escape(lesson_key)}'><div class='icon'><i class='fa fa-address-book'></i></div><span class='label'>#{fach} (#{lesson_info[:klassen].map { |x| tr_klasse(x) }.join(', ')})</span></a>"
+                                io.puts "<a class='dropdown-item nav-icon' href='/lessons/#{CGI.escape(lesson_key)}'><div class='icon'><i class='fa fa-address-book'></i></div><span class='label'>#{lesson_info[:pretty_folder_name]}</span></a>"
                                 taken_lesson_keys << lesson_key
                             end
                         end

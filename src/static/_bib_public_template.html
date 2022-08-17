@@ -204,7 +204,7 @@
             use_this_book_response = book_response;
         let already_have_book_sus = [];
         let no_verein_sus = [];
-        for (let email of kurse[lesson_key].sus) {
+        for (let email of ((kurse[lesson_key] || {}).sus || [])) {
             if (use_this_book_response.users_who_have_this_book[email]) {
                 already_have_book_sus.push(email);
             } else if (!(lehrmittelverein_state_cache[email] || false)) {
@@ -213,7 +213,7 @@
         }
         let result = {};
         let list = {};
-        for (let email of kurse[lesson_key].sus)
+        for (let email of ((kurse[lesson_key] || {}).sus || []))
             list[email] = true;
         for (let email of already_have_book_sus)
             delete list[email];

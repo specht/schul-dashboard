@@ -59,7 +59,7 @@
     <div class="bib_teacher_only">
         <hr />
         <div id='orders_placed_notice' class='alert alert-warning' style="display: none;">
-            Du hast <span id='orders_placed_count'></span> <a href='/bib_orders'>bestellt</a>.
+            Du hast dieses Buch <span id='orders_placed_count'></span> <a href='/bib_orders'>bestellt</a>.
         </div>
         <p>Wenn du dieses Buch im Unterricht verwenden möchtest, kannst du es hier bestellen.</p>
         <button id='bu_order_overview' class="btn btn-success"><i class='fa fa-shopping-basket'></i>&nbsp;&nbsp;Buch bestellen</button>
@@ -82,6 +82,7 @@
                         <div>
                             <button id="bu_plus_teacher" class="btn btn-sm btn-outline-secondary mb-3"><i class='fa fa-times'></i>&nbsp;&nbsp;Ich benötige ein Lehrerexemplar</button>
                         </div>
+                        <div class='alert alert-warning text-sm'>Hinweis: Falls die Gesamtzahl nicht stimmt, weil z. B. SuS der 7. Klassen noch nicht im Lehrmittelverein sind oder weil für Oberstufenkurse noch keine Teilnehmerlisten im Dashboard hinterlegt sind, können Sie trotzdem die Bestellung jetzt schon vornehmen. Wir werden die Bestellung bearbeiten, sobald die fehlenden Informationen vorliegen und dann werden auch die Zahlen automatisch korrigiert.</div>
                         Ich möchte <span class='font-bold' id="label_order_kurs_count"></span> für meinen Kurs <span class='font-bold' id="label_kurs_name"></span> bestellen.
                         <div class='mt-3' style='text-align: right;'>
                             <button id='bu_place_order_kurs' class='btn btn-success' style="display: none;"><i class='fa fa-send'></i>&nbsp;&nbsp;Bestellung aufgeben</button>
@@ -189,7 +190,8 @@
         let total_count = Object.keys(details.list).length;
         $('<tr>').append($(`<th>`).text('Gesamt')).append($(`<th>`).css('text-align', 'right').text(`${total_count}`)).appendTo($('#order_kurs_div_table'));
         $('#bu_place_order_kurs').show();
-        $('#bu_place_order_kurs').prop('disabled', total_count <= 0);
+        $('#bu_place_order_kurs').prop('disabled', false);
+        $('#bu_place_order_kurs_success').hide();
 
         $('#order_kurs_div_confirm').slideDown();
         $('#label_order_kurs_count').text(`${total_count} Exemplar${total_count === 1 ? '' : 'e'}`);
@@ -468,18 +470,18 @@
                 }
 
                 let orders_placed_parts = [];
-                if (data.orders_placed && data.orders_placed > 0) {
-                    show_private_order_button = false;
-                    let missing_books = data.orders_placed - (data.users_who_have_this_book[data.ordering_teacher_email] || 0);
-                    if (missing_books < 0) missing_books = 0;
-                    if (missing_books > 0)
-                        orders_placed_parts.push(`${missing_books} Exemplar${missing_books === 1 ? '' : 'e'} privat`);
-                }
+                // if (data.orders_placed && data.orders_placed > 0) {
+                //     show_private_order_button = false;
+                //     let missing_books = data.orders_placed - (data.users_who_have_this_book[data.ordering_teacher_email] || 0);
+                //     if (missing_books < 0) missing_books = 0;
+                //     if (missing_books > 0)
+                //         orders_placed_parts.push(`ein Exemplar${missing_books === 1 ? '' : 'e'} privat`);
+                // }
                 if (data.kurs_orders_placed && data.kurs_orders_placed.length > 0) {
                     for (let kop of data.kurs_orders_placed) {
                         if (kurse[kop.lesson_key]) {
                             let count = calculate_kurs_order_count(kop.lesson_key, stem, kop.plus_teacher);
-                            orders_placed_parts.push(`${count} Exemplar${count === 1 ? '' : 'e'} für deinen Kurs ${kurse[kop.lesson_key].fach}`);
+                            orders_placed_parts.push(`für deinen Kurs ${kurse[kop.lesson_key].fach}`);
                         }
                     }
                 }

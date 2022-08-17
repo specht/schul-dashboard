@@ -20,7 +20,7 @@ class Script
                              username: NEXTCLOUD_USER,
                              password: NEXTCLOUD_PASSWORD)
     end
-    
+
     def run
         srsly = false
         args = ARGV.dup

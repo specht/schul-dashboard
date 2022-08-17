@@ -11,7 +11,8 @@
         console.log(tag);
         bib_api_call_no_jwt('/public/postpone', {tag: tag}, function (data) {
             if (data.success) {
-                $('#response').html(data.html_response);
+                console.log(data);
+                $('#response').html(`Ihre Schülerinnen und Schüler werden ab dem ${moment.unix(data.new_ts_hide_before).format('L')} dazu aufgefordert, ihre Bücher zu bestätigen. Sie bekommen eine Woche vorher, ab dem ${moment.unix(data.new_ts_postpone_reminder).format('L')} die Gelegenheit, diesen Termin um zwei weitere Wochen in die Zukunft zu verschieben.`);
             } else {
                 $('#response').html("Dieser Link ist nicht mehr gültig.");
             }

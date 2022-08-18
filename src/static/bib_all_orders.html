@@ -74,7 +74,7 @@
                                     $('<td>').css('max-width', '280px').text(order.b.title),
                                     $('<td>').css('max-width', '180px').text(order.b.author),
                                     $('<td>').html(`${(kurse[order.o.lesson_key] || {}).fach || '(privat)'}`),
-                                    $('<td>').html(`${((kurse[order.o.lesson_key] || {}).klassen || []).join(', ') || '&ndash;'}`),
+                                    $('<td>').html(`${((kurse[order.o.lesson_key] || {}).klassen || []).map(function(x) {return klassen_tr[x] || x; }).join(', ') || '&ndash;'}`),
                                     $('<td>').html(`${order.count}`).data('sort_value', order.count),
                                     $('<td>').html(`${(order.locations || []).map(function(x) {return create_location_span(x); }).join('')}`).data('sort_value', (order.locations || ['0'])[0]),
                                 ];

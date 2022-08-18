@@ -163,7 +163,7 @@
                     $('#order_complete_hint').show();
                 }
                 order_teacher = data.order.u.email;
-                order_fach = kurse[data.order.o.lesson_key].fach;
+                order_fach = (kurse[data.order.o.lesson_key] || {}).fach;
                 stem = data.order.b.stem;
                 original_stem = stem;
                 let div = create_book_div(data.order.b, null, {
@@ -187,6 +187,8 @@
                     no_verein_list = kurs_order_list.no_verein_sus;
                     console.log(kurs_order_list);
                 } else {
+                    console.log('yay');
+                    list = [data.order.u.email];
                     if (data.order.o.processed) list = [];
                 }
 
@@ -378,6 +380,11 @@
                                     users_who_have_this_book: data.order.users_who_have_this_book,
                                 };
                                 kurs_order_list = calculate_kurs_order_list(data.order.o.lesson_key, data.order.b.stem, data.order.o.plus_teacher, data.order.book_info);
+                                if (hooray_weve_completed_this_order || Object.keys(kurs_order_list.list).length === 0) {
+                                    bib_api_call('/jwt/mark_order_complete', {oid: oid, stem: original_stem}, function (data) {
+                                    });
+                                }
+                            } else {
                                 if (hooray_weve_completed_this_order || Object.keys(kurs_order_list.list).length === 0) {
                                     bib_api_call('/jwt/mark_order_complete', {oid: oid, stem: original_stem}, function (data) {
                                     });

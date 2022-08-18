@@ -33,7 +33,7 @@
         }
         if (query !== null) {
             let info = db_user_info[data] || {};
-            let s = (info.display_name || '').toLowerCase();
+            let s = (info.display_name || '').toLowerCase() + ' ' + data;
             for (let q of query) {
                 if (s.indexOf(q) < 0)
                     query_result = false;
@@ -76,6 +76,7 @@
         }
         bib_api_call('/jwt/get_users', {}, function (data) {
             if (data.success) {
+                console.log(data);
                 let present_users = {};
                 for (let entry of data.users) {
                     present_users[entry.email] = true;
@@ -89,9 +90,9 @@
                 window.user_table = new SortableTable({
                     element: div,
                     xs: true,
-                    headers: ['Nachname', 'Vorname', 'Klasse', 'Verein', 'Ausgeliehen'].map(function (x) {
+                    headers: ['Nachname', 'Vorname', 'Klasse', 'Verein', 'Ausgeliehen', 'Bestätigt'].map(function (x) {
                         let th = $('<th>').text(x);
-                        if (['Klasse', 'Ausgeliehen'].indexOf(x) >= 0) th.data('type', 'int');
+                        if (['Klasse', 'Ausgeliehen', 'Bestätigt'].indexOf(x) >= 0) th.data('type', 'int');
                         return th;
                     }),
                     rows: data.users.map(function (entry) {
@@ -101,6 +102,7 @@
                             $('<td>').html((db_user_info[entry.email] || {}).klasse || '&ndash;').data('sort_value', (db_user_info[entry.email] || {}).klassen_order),
                             $('<td>').html(lehrmittelverein_state_cache[entry.email] ? `<i class='fa fa-check-circle text-grass-500'></i` : `<i class='fa fa-times-circle text-persimmon-500'></i>`).data('sort_value', (lehrmittelverein_state_cache[entry.email] || false).toString()),
                             $('<td>').html(`${entry.ausleih_count === 0 ? '&ndash;' : entry.ausleih_count}`).data('sort_value', entry.ausleih_count || 0),
+                            $('<td>').html(`${entry.confirm_count ? entry.confirm_count : '&ndash;'}`).data('sort_value', entry.confirm_count || 0),
                         ];
                     }),
                     filter_callback: user_filter,

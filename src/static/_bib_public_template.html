@@ -313,6 +313,10 @@
                 <a class="inline-block bg-slate-900 border border-blue-500 hover:bg-slate-200 rounded py-1 px-3"
                     href="/bib_users"><i class='fa fa-user'></i>&nbsp;&nbsp;Nutzer</a>
             </li>
+            <li class="mx-1" style="display: #{can_manage_bib_logged_in? ? 'unset' : 'none'};">
+                <a class="inline-block bg-slate-900 border border-blue-500 hover:bg-slate-200 rounded py-1 px-3"
+                    href="/bib_shelves"><i class='fa fa-map-marker'></i>&nbsp;&nbsp;Regale</a>
+            </li>
             <li class="mx-1" style="display: #{(can_manage_bib_logged_in? && @session_device != 'bib-mobile') ? 'unset' : 'none'};">
                 <a class="inline-block bg-slate-900 border border-blue-500 hover:bg-slate-200 rounded py-1 px-3"
                     href="/bib_all_orders"><i class='fa fa-shopping-cart'></i>&nbsp;&nbsp;Bestellungen</a>

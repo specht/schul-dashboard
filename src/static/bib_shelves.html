@@ -1,0 +1,37 @@
+#{File.read('/static/_bib_public_template.html')}
+#{require_user_who_can_manage_bib!}
+<div class='container bg-white'>
+    <div class="table-responsive" style="max-width: 100%; overflow-x: auto;">
+        <table class="table table-sm table-condensed narrow xs" style="display: table; user-select: none;" id='shelves_here'>
+        </table>
+    </div>
+</div>
+<script>
+    window.addEventListener('load', function () {
+        bib_api_call('/jwt/get_shelves', {}, function (data) {
+            if (data.success) {
+                console.log(data);
+                let row = $('<tr>');
+                row.append($('<th>'));
+                for (let letter = 0; letter < 7; letter++) {
+                    let cell = $(`<th>`).text(`${String.fromCharCode(65 + letter)}`);
+                    row.append(cell);
+                }
+                $('#shelves_here').append(row);
+                for (let shelf = 1; shelf <= 40; shelf++) {
+                    let row = $('<tr>');
+                    let cell = $(`<th>`).text(`${shelf}`);
+                    row.append(cell);
+                    for (let letter = 0; letter < 7; letter++) {
+                        let cell = $(`<td>`);
+                        let shelf_adress = `${shelf}${String.fromCharCode(65 + letter)}`;
+                        if (data.shelves[shelf_adress])
+                            cell.text(`${data.shelves[shelf_adress]}`);
+                        row.append(cell);
+                    }
+                    $('#shelves_here').append(row);
+                }
+            }
+        });
+    });
+</script>

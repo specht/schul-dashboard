@@ -87,7 +87,7 @@
                 <button id='bu_scan_isbn_cancel' class='pull-right btn btn-sm btn-danger ml-1 mr-1' style="display: none;"><i class='fa fa-times'></i>&nbsp;&nbsp;Abbruch</button>
                 <div id='info_isbn'></div>
                 <hr style='margin: 12px 0 5px 0;'/>
-                <button id='bu_set_shelf' style='display: none;' class='pull-right btn btn-sm btn-success ml-1 mr-1' disabled>Buch liegt in <span class="shelf_here"></span></button>
+                <button id='bu_set_shelf' style='display: none;' class='pull-right btn btn-sm btn-success ml-1 mr-1' disabled>Buch liegt in <span class="shelf_here" style="font-weight: bold;"></span></button>
                 <div id='info_shelf'></div>
                 <hr style='margin: 12px 0 5px 0;'/>
                 <button id='bu_take_photo' class='pull-right btn btn-sm btn-success ml-1 mr-1'>Cover fotografieren</button>
@@ -160,7 +160,7 @@
                 }
             }
             $('#bu_scan_isbn').prop('disabled', false).show();
-                $('#bu_scan_isbn_cancel').hide();
+            $('#bu_scan_isbn_cancel').hide();
             if (book.has_cover) {
                 $('#cover').attr('src', `${BIB_HOST}/gen/covers/${book.stem}-400.jpg`).removeClass('none').show();
                 $('#no_cover').hide();
@@ -320,12 +320,5 @@
                 }
             });
         })
-        if (#{DEVELOPMENT == '1'}) {
-            // on_scan('bib:23F');
-            // on_scan('3792-007');
-        //     // on_scan('9999-016');
-        //     // on_scan('1000-016');
-        //     // on_scan('1053-016');
-        }
     });
 </script>

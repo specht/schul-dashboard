@@ -148,6 +148,7 @@ class Timetable
             unless merged_event_indices.empty?
                 last_event = @lesson_cache[merged_event_indices.last]
                 if last_event[:fach] == event[:fach] &&
+                    last_event[:lesson_key] == event[:lesson_key] &&
                     last_event[:raum] == event[:raum] &&
                     last_event[:klassen] == event[:klassen] &&
                     last_event[:lehrer] == event[:lehrer] &&
@@ -1599,6 +1600,8 @@ class Timetable
                                 e.delete('lehrer_list')
                                 e.delete('nc_folder')
                                 e.delete('orig_lesson_key')
+                                e.delete('vertretungs_text')
+                                e.delete('data')
                                 game = ['Fortnite', 'Brawl Stars', 'Fall Guys',
                                 'Among Us', 'Minecraft', 'Clash of Clans',
                                 'Sea of Thieves', 'Witch It', 'Rocket League'].sample

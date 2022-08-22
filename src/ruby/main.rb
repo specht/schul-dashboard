@@ -2346,14 +2346,14 @@ class Main < Sinatra::Base
         response = StringIO.open do |io|
             @@lessons[:lesson_keys].keys.sort.each do |lesson_key|
                 lesson_info = @@lessons[:lesson_keys][lesson_key]
-                if lesson_key.downcase[0, 2] == 'in' && @@schueler_for_lesson[lesson_key]
+                if (lesson_key.downcase[0, 2] == 'in' || lesson_key.downcase[0, 3] == 'itg') && @@schueler_for_lesson[lesson_key]
                     io.puts "> #{lesson_info[:pretty_folder_name]}"
                     lesson_info[:lehrer].each do |shorthand|
                         io.puts "+ #{@@shorthands[shorthand]}"
                     end
                     @@schueler_for_lesson[lesson_key].each do |email|
                         user = @@user_info[email]
-                        io.puts "#{user[:geschlecht]} #{user[:display_name]} <#{email}>"
+                        io.puts "#{user[:geschlecht]} #{user[:first_name]} <#{email}>"
                     end
                     io.puts
                 end

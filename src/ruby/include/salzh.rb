@@ -301,10 +301,12 @@ class Main < Sinatra::Base
     end
 
     def self.get_voluntary_testing_sus
-        rows = $neo4j.neo4j_query(<<~END_OF_QUERY).map do |x|
+        rows = $neo4j.neo4j_query(<<~END_OF_QUERY).select do |x|
             MATCH (u:User {voluntary_testing: true})
             RETURN u.email, u.last_skipped_voluntary_testing;
         END_OF_QUERY
+            @@user_info[x['u.email']]
+        end.map do |x|
             d = @@user_info[x['u.email']]
             d[:last_skipped_voluntary_testing] = x['u.last_skipped_voluntary_testing']
             d

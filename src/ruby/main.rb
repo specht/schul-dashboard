@@ -2338,6 +2338,31 @@ class Main < Sinatra::Base
         respond(:user_info => @@user_info, :etag => @@server_etag, :lessons => @@lessons)
     end
 
+    get '/api/get_hackschule_users' do
+        require_admin!
+        # > Klasse 7a
+        # + specht@gymnasiumsteglitz.de
+        # w Alessandria Klonaris <alessandria.klonaris@mail.gymnasiumsteglitz.de>
+        response = StringIO.open do |io|
+            @@lessons[:lesson_keys].keys.sort.each do |lesson_key|
+                lesson_info = @@lessons[:lesson_keys][lesson_key]
+                if lesson_key.downcase[0, 2] == 'in' && @@schueler_for_lesson[lesson_key]
+                    io.puts "> #{lesson_info[:pretty_folder_name]}"
+                    lesson_info[:lehrer].each do |shorthand|
+                        io.puts "+ #{@@shorthands[shorthand]}"
+                    end
+                    @@schueler_for_lesson[lesson_key].each do |email|
+                        user = @@user_info[email]
+                        io.puts "#{user[:geschlecht]} #{user[:display_name]} <#{email}>"
+                    end
+                    io.puts
+                end
+            end
+            io.string
+        end
+        respond_raw_with_mimetype(response, 'text/plain')
+    end
+
     before "/monitor/#{MONITOR_DEEP_LINK}" do
         unless MONITOR_DEEP_LINK.nil?
             @session_user = {

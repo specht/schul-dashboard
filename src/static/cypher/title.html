@@ -1,0 +1,47 @@
+<style>
+    .hack_progress {
+        display: flex;
+        justify-content: space-between;
+        position: relative;
+        margin-bottom: 30px;
+    }
+    .hack_progress span {
+        border-top: 1px dashed #0d60ae;
+        position: absolute;
+        top: 50%;
+        left: 0;
+        right: 0;
+        z-index: 1;
+    }
+    .hack_progress div {
+        background-color: #101729;
+        border: 3px solid #2f6f91;
+        z-index: 2;
+        width: 32px;
+        height: 32px;
+        display: inline-block;
+        border-radius: 100%;
+        color: #55beed;
+        text-align: center;
+        font-size: 20px;
+    }
+    .hack_progress div.active {
+        background-color: #001b4a;
+        border: 3px solid #0d60ae;
+    }
+</style>
+<div class='hack_progress' style='display: #{@cypher_level == 0 ? 'none': 'flex'};'>
+    <span></span>
+    <div class='#{@cypher_level >= 0 ? 'active': ''}'>#{@cypher_level >= 0 ? '१': ''}</div>
+    <div class='#{@cypher_level >= 1 ? 'active': ''}'>#{@cypher_level >= 1 ? '२': ''}</div>
+    <div class='#{@cypher_level >= 2 ? 'active': ''}'>#{@cypher_level >= 2 ? '३': ''}</div>
+    <div class='#{@cypher_level >= 3 ? 'active': ''}'>#{@cypher_level >= 3 ? '४': ''}</div>
+    <div class='#{@cypher_level >= 4 ? 'active': ''}'>#{@cypher_level >= 4 ? '५': ''}</div>
+    <div class='#{@cypher_level >= 5 ? 'active': ''}'>#{@cypher_level >= 5 ? '६': ''}</div>
+    <div class='#{@cypher_level >= 6 ? 'active': ''}'>#{@cypher_level >= 6 ? '७': ''}</div>
+    <div class='#{@cypher_level >= 7 ? 'active': ''}'>#{@cypher_level >= 7 ? '८': ''}</div>
+    <div class='#{@cypher_level >= 8 ? 'active': ''}'>#{@cypher_level >= 8 ? '९': ''}</div>
+    <div class='#{@cypher_level >= 9 ? 'active': ''}'>#{@cypher_level >= 9 ? '१०': ''}</div>
+</div>
+<h1>:: Dashboard Code Crackers // Level #{next_cypher_level} ::</h1>
+

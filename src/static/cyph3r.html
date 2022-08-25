@@ -1,0 +1,210 @@
+#{this_is_a_page_for_logged_in_users}
+<style>
+body {
+    background: none;
+    background-color: #021315;
+}
+
+h1 {
+    margin-top: 20px;
+    text-align: center;
+    color: #c3def1;
+    font-weight: bold;
+    border-top: 1px dashed #55beed;
+    border-bottom: 1px dashed #55beed;
+    padding: 30px 0;
+}
+
+h2 {
+    margin-top: 20px;
+    text-align: center;
+    color: #c3def1;
+    font-weight: bold;
+    border-top: 1px dashed #fad31c;
+    border-bottom: 1px dashed #fad31c;
+    padding: 30px 0;
+    margin-bottom: 40px;
+}
+
+p {
+    margin-top: 40px;
+    font-size: 20px;
+    text-align: center;
+    color: #c3def1;
+}
+
+p b {
+    font-weight: bold;
+    color: #f384ae;
+}
+p a {
+    font-weight: bold;
+    color: #f384ae;
+}
+.text-danger {
+    color: #d5291a;
+}
+.text-danger b {
+    font-weight: bold;
+    color: unset;
+    color: #ea2830;
+    padding: 5px;
+    border-radius: 4px;
+}
+p a:hover {
+    color: #f384ae;
+}
+.container {
+    background: none;
+    font-family: 'PT Mono', monospace;
+    box-shadow: none;
+}
+hr {
+    border-top: 1px dashed #55beed;
+    opacity: 0.5;
+    margin: 40px 0;
+}
+.name-pref, .cypher-reset, #cypher_reset_confirm_yes, #cypher_reset_confirm_no {
+    cursor: pointer;
+}
+p.name {
+    margin-top: 15px;
+}
+p.name * {
+    max-width: 100%;
+}
+</style>
+
+<script>
+
+var tr_1337 = {};
+
+function setCharAt(str, index, chr) {
+    if(index > str.length-1) return str;
+    return str.substring(0, index) + chr + str.substring(index + 1);
+}
+
+Array.prototype.sample = function(){
+    return this[Math.floor(Math.random()*this.length)];
+}
+
+function animate_1337(element) {
+    let text = $(element).text();
+    if ($(element).data('1337') !== true) {
+        $(element).data('1337', true);
+        $(element).data('s', 1);
+        $(element).data('text', $(element).text());
+    }
+    let l = $(element).data('text').length;
+    let t = $(element).data('s');
+    let finish = (t > 20 + l);
+    for (let i = 0; i < text.length; i++) {
+        let s = $(element).data('text')[i];
+        if (!finish) {
+            if (i > t && s !== ' ')
+                s = ':';
+            if (Math.random() < 1.0 - t / (20.0 + l))
+                s = (tr_1337[s] || [s]).sample();
+        }
+        text = setCharAt(text, i, s);
+    }
+
+    $(element).text(text);
+    if (!finish) {
+        let d = t - l;
+        if (d < 0)
+            d = 0;
+        if (d == 0) d = 2;
+        setTimeout(function() {
+            animate_1337(element);
+        }, d * 20);
+    }
+    $(element).data('s', t + 1);
+}
+
+window.addEventListener('load', function() {
+    let _tr = {
+        'A': ['4', 'Å'],
+        'a': ['å', 'α'],
+        'B': ['8', 'Б'],
+        'b': ['б', 'β'],
+        'D': ['Д', 'Δ'],
+        'd': ['д', 'ð', 'δ'],
+        'E': ['3', 'З', 'Э'],
+        'e': ['з', 'э', 'ε'],
+        'F': ['Ф'],
+        'f': ['ф'],
+        'G': ['Г'],
+        'g': ['г'],
+        'I': ['И'],
+        'i': ['и'],
+        'J': ['7'],
+        'K': ['К'],
+        'k': ['к', 'κ'],
+        'L': ['Л', 'Λ'],
+        'l': ['1', 'л', 'λ'],
+        'n': ['ŋ'],
+        'O': ['0', 'Ø'],
+        'o': ['ø'],
+        'P': ['П'],
+        'p': ['п'],
+        'R': ['Я'],
+        'S': ['5', 'Σ'],
+        't': ['τ'],
+        'Z': ['2']
+    };
+    for (let i = 65; i <= 90; i++) {
+        // upper case
+        let c = String.fromCharCode(i);
+        tr_1337[c] = [];
+        tr_1337[c].push(c);
+        tr_1337[c].push(c.toLowerCase());
+        tr_1337[c] = tr_1337[c].concat(_tr[c] || []);
+        // lower case
+        c = String.fromCharCode(i).toLowerCase();
+        tr_1337[c] = [];
+        tr_1337[c].push(c);
+        tr_1337[c].push(c.toUpperCase());
+        tr_1337[c] = tr_1337[c].concat(_tr[c] || []);
+    }
+    tr_1337['0'] = ['0', 'O', 'o'];
+    tr_1337['1'] = ['1', 'L', 'l'];
+    tr_1337['2'] = ['2', 'Z', 'z'];
+    tr_1337['3'] = ['3', 'E', 'З'];
+    tr_1337['4'] = ['4', 'A'];
+    tr_1337['5'] = ['5', 'S', 's'];
+    tr_1337['8'] = ['8', 'B'];
+    if (window.location.hash === '#debug')
+        $('.container').append($('<p>').text(JSON.stringify(tr_1337)));
+    animate_1337($('h1')[0]);
+    for (let element of $('b'))
+        animate_1337(element);
+    // for (let element of $('.name'))
+    //     animate_1337(element);
+    $('.name-pref').click(function(e) {
+        let target = $(e.target).closest('.name-pref');
+        let name = target.data('name');
+        api_call('/api/cypher_set_name', {name: name}, function(data) {
+            if (data.success)
+                window.location.reload();
+        });
+    });
+    $('.cypher-reset').click(function(e) {
+        $('#cypher_reset_confirm').show();
+    });
+    $('#cypher_reset_confirm_no').click(function() {
+        $('#cypher_reset_confirm').hide();
+    });
+    $('#cypher_reset_confirm_yes').click(function() {
+        api_call('/api/cypher_reset', {}, function(data) {
+            if (data.success)
+                window.location.reload();
+        });
+    });
+});
+
+</script>
+
+<div class='container'>
+    #{cypher_content()}
+</div>

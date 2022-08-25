@@ -2,7 +2,7 @@ FROM ruby:2-alpine
 MAINTAINER Dr. Michael Specht <specht@gymnasiumsteglitz.de>
 
 RUN apk update && apk upgrade
-RUN apk add libressl-dev cmake alpine-sdk less curl bash curl-dev ruby-dev imagemagick build-base docker libwebp-tools librsvg tzdata inkscape && rm -rf /var/cache/apk/*
+RUN apk add libressl-dev cmake alpine-sdk less curl bash curl-dev ruby-dev pkgconfig imagemagick imagemagick-dev imagemagick-libs build-base docker libwebp-tools librsvg tzdata inkscape ttf-droid && rm -rf /var/cache/apk/*
 RUN wget -O seabolt.zip https://github.com/neo4j-drivers/seabolt/archive/refs/tags/v1.7.4.zip
 RUN unzip seabolt.zip
 RUN cd seabolt-1.7.4 && ./make_release.sh

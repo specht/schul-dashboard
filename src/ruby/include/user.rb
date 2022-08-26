@@ -126,7 +126,15 @@ class Main < Sinatra::Base
     end
 
     def can_manage_bib_logged_in?
-        user_logged_in? && (CAN_MANAGE_BIB.include?(@session_user[:email]) && teacher_logged_in?)
+        flag = user_logged_in? && CAN_MANAGE_BIB.include?(@session_user[:email])
+        if flag
+            unless teacher_logged_in?
+                unless device_logged_in?
+                    flag = false
+                end
+            end
+        end
+        flag
     end
 
     def teacher_or_can_manage_bib_logged_in?

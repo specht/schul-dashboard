@@ -1,6 +1,6 @@
 require 'chunky_png'
-require 'rmagick'
-include Magick
+# require 'rmagick'
+# include Magick
 
 
 class Main < Sinatra::Base
@@ -316,80 +316,80 @@ class Main < Sinatra::Base
     end
 
     get '/api/chunky' do
-        # width = 960
-        # height = 640
-        # left = ChunkyPNG::Image.new(width, height, ChunkyPNG::Color::BLACK)
-        # right = ChunkyPNG::Image.new(width, height, ChunkyPNG::Color::BLACK)
-        # template = ChunkyPNG::Image.new(38, 19, ChunkyPNG::Color::BLACK)
-        # draw_text(template, "COBOL", "8x13B", ChunkyPNG::Color::WHITE)
-        # (0..19).each do |y|
-        #     (0..38).each do |x|
-        #         g = 255
-        #         px = x * 8 * 3 + (rand() * 6).floor.to_i + 6
-        #         py = y * 10 * 3 + (rand() * 10).floor.to_i + 10
-        #         c = %w(A B C D E F G H I J K L M N O P Q R S T U V W X Y Z).sample
-        #         sep = (rand() * 6).floor.to_i + 2
-        #         if (template.get_pixel(x, y) == ChunkyPNG::Color::WHITE)
-        #             sep = -6
-        #         end
-        #         draw_text(left, c, "6x10", ChunkyPNG::Color.rgba(g, 0, 0, 255), {:x => px, :y => py, :scale => 3})
-        #         draw_text(right, c, "6x10", ChunkyPNG::Color.rgba(0, g, 0, 255), {:x => px + sep, :y => py, :scale => 3})
-        #     end
-        # end
-        # png = ChunkyPNG::Image.new(width, height, ChunkyPNG::Color::BLACK)
-        # (0...height).each do |y|
-        #     (0...width).each do |x|
-        #         a = ChunkyPNG::Color::to_truecolor_alpha_bytes(ChunkyPNG::Color::parse(left.get_pixel(x, y)))
-        #         b = ChunkyPNG::Color::to_truecolor_alpha_bytes(ChunkyPNG::Color::parse(right.get_pixel(x, y)))
-        #         png.set_pixel(x, y, ChunkyPNG::Color::rgba(a[0] + b[0], a[1] + b[1], a[2] + b[2], a[3] + b[3]))
-        #     end
-        # end
-        # respond_raw_with_mimetype(png.to_blob, 'image/png')
-
-        png = Image.new(960, 320) do |img|
-            img.background_color = 'black'
-            img.format = 'PNG'
-        end
-        drawing = Draw.new
-        drawing.annotate(png, 0, 0, 0, 0, "scumm".upcase) { |txt|
-          txt.gravity = Magick::CenterGravity
-          txt.text_antialias = false
-          txt.pointsize = 240
-          txt.fill = "#ffffff"
-          txt.font = 'Droid-Sans-Bold'
-        }
-        pixels = png.get_pixels(0, 0, 960, 320)
-        # respond_raw_with_mimetype(png.to_blob, 'image/png')
         width = 960
-        height = 320
-        eye_sep = 80
-        perlin = ChunkyPNG::Image.from_file('/static/images/perlin.png')
-        png = ChunkyPNG::Image.new(width, height, ChunkyPNG::Color::BLACK)
-        # template = ChunkyPNG::Image.new(width - eye_sep, height, ChunkyPNG::Color::BLACK)
-        # draw_text(template, "COBOL", "8x13B", ChunkyPNG::Color::WHITE, {:scale => 20})
-        (0...width).each do |x|
-            (0...height).each do |y|
-                g = ChunkyPNG::Color::BLACK
-                if x < eye_sep
-                    # g = (rand() * 256).floor.to_i
-                    g = perlin.get_pixel(x % 80, y % 80)
-                else
-                    depth = 0
-                    x0 = x - eye_sep
-                    d = ((x - eye_sep / 2 - width / 2) ** 2 + (y - height / 2) ** 2) ** 0.5
-                    d *= 0.01
-                    x0 -= -d*d * 0.5
-                    if (pixels[y * 960 + x - eye_sep / 2] || Pixel.new(0, 0, 0, 1)).intensity > 0
-                    # if ((template.get_pixel(x0, y) || 0) >> 8) & 0xff > 0
-                        x0 = x - eye_sep + 10
-                    end
-                    x0 += 10
-                    g = png.get_pixel(x0.to_i, y) || ChunkyPNG::Color::BLACK
+        height = 640
+        left = ChunkyPNG::Image.new(width, height, ChunkyPNG::Color::BLACK)
+        right = ChunkyPNG::Image.new(width, height, ChunkyPNG::Color::BLACK)
+        template = ChunkyPNG::Image.new(38, 19, ChunkyPNG::Color::BLACK)
+        draw_text(template, "COBOL", "8x13B", ChunkyPNG::Color::WHITE)
+        (0..19).each do |y|
+            (0..38).each do |x|
+                g = 255
+                px = x * 8 * 3 + (rand() * 6).floor.to_i + 6
+                py = y * 10 * 3 + (rand() * 10).floor.to_i + 10
+                c = %w(A B C D E F G H I J K L M N O P Q R S T U V W X Y Z).sample
+                sep = (rand() * 6).floor.to_i + 2
+                if (template.get_pixel(x, y) == ChunkyPNG::Color::WHITE)
+                    sep = -6
                 end
-                png.set_pixel(x, y, g)
+                draw_text(left, c, "6x10", ChunkyPNG::Color.rgba(g, 0, 0, 255), {:x => px, :y => py, :scale => 3})
+                draw_text(right, c, "6x10", ChunkyPNG::Color.rgba(0, g, 0, 255), {:x => px + sep, :y => py, :scale => 3})
+            end
+        end
+        png = ChunkyPNG::Image.new(width, height, ChunkyPNG::Color::BLACK)
+        (0...height).each do |y|
+            (0...width).each do |x|
+                a = ChunkyPNG::Color::to_truecolor_alpha_bytes(ChunkyPNG::Color::parse(left.get_pixel(x, y)))
+                b = ChunkyPNG::Color::to_truecolor_alpha_bytes(ChunkyPNG::Color::parse(right.get_pixel(x, y)))
+                png.set_pixel(x, y, ChunkyPNG::Color::rgba(a[0] + b[0], a[1] + b[1], a[2] + b[2], a[3] + b[3]))
             end
         end
         respond_raw_with_mimetype(png.to_blob, 'image/png')
+
+        # png = Image.new(960, 320) do |img|
+        #     img.background_color = 'black'
+        #     img.format = 'PNG'
+        # end
+        # drawing = Draw.new
+        # drawing.annotate(png, 0, 0, 0, 0, "scumm".upcase) { |txt|
+        #   txt.gravity = Magick::CenterGravity
+        #   txt.text_antialias = false
+        #   txt.pointsize = 240
+        #   txt.fill = "#ffffff"
+        #   txt.font = 'Droid-Sans-Bold'
+        # }
+        # pixels = png.get_pixels(0, 0, 960, 320)
+        # # respond_raw_with_mimetype(png.to_blob, 'image/png')
+        # width = 960
+        # height = 320
+        # eye_sep = 80
+        # perlin = ChunkyPNG::Image.from_file('/static/images/perlin.png')
+        # png = ChunkyPNG::Image.new(width, height, ChunkyPNG::Color::BLACK)
+        # template = ChunkyPNG::Image.new(width - eye_sep, height, ChunkyPNG::Color::BLACK)
+        # draw_text(template, "COBOL", "8x13B", ChunkyPNG::Color::WHITE, {:scale => 20})
+        # (0...width).each do |x|
+        #     (0...height).each do |y|
+        #         g = ChunkyPNG::Color::BLACK
+        #         if x < eye_sep
+        #             # g = (rand() * 256).floor.to_i
+        #             g = perlin.get_pixel(x % 80, y % 80)
+        #         else
+        #             depth = 0
+        #             x0 = x - eye_sep
+        #             d = ((x - eye_sep / 2 - width / 2) ** 2 + (y - height / 2) ** 2) ** 0.5
+        #             d *= 0.01
+        #             x0 -= -d*d * 0.5
+        #             if (pixels[y * 960 + x - eye_sep / 2] || Pixel.new(0, 0, 0, 1)).intensity > 0
+        #             # if ((template.get_pixel(x0, y) || 0) >> 8) & 0xff > 0
+        #                 x0 = x - eye_sep + 10
+        #             end
+        #             x0 += 10
+        #             g = png.get_pixel(x0.to_i, y) || ChunkyPNG::Color::BLACK
+        #         end
+        #         png.set_pixel(x, y, g)
+        #     end
+        # end
+        # respond_raw_with_mimetype(png.to_blob, 'image/png')
     end
 
 end

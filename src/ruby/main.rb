@@ -1775,7 +1775,7 @@ class Main < Sinatra::Base
                                 io.puts "<a class='dropdown-item nav-icon' href='/bibliothek'><div class='icon'><i class='fa fa-book'></i></div><span class='label'>Bibliothek</span></a>"
                             # end
                         # end
-                        if teacher_or_sv_logged_in? || can_manage_bib_logged_in?
+                        if teacher_or_sv_logged_in?
                             io.puts "<div class='dropdown-divider'></div>"
                             if teacher_or_sv_logged_in?
                                 if teacher_logged_in?

@@ -1,7 +1,103 @@
 require 'chunky_png'
+require 'wavefile'
 # require 'rmagick'
 # include Magick
 
+class PixelFont
+    def self.load_font(path)
+        STDERR.puts "Loading font from #{path}..."
+        font = {}
+        File.open(path) do |f|
+            char = nil
+            f.each_line do |line|
+                if line[0, 9] == 'STARTCHAR'
+                    char = {}
+                elsif line[0, 8] == 'ENCODING'
+                    char[:encoding] = line.sub('ENCODING ', '').strip.to_i
+                elsif line[0, 7] == 'ENDCHAR'
+                    font[char[:encoding]] = char
+                    char = nil
+                elsif line[0, 3] == 'BBX'
+                    parts = line.split(' ')
+                    char[:width] = parts[1].to_i
+                    char[:height] = parts[2].to_i
+                elsif line[0, 6] == 'BITMAP'
+                    char[:bitmap] = []
+                else
+                    if char && char[:bitmap]
+                        char[:bitmap] << line.to_i(16)
+                    end
+                end
+            end
+        end
+        font
+    end
+
+    def self.draw_text(png, s, font, color, options = {})
+        @@cypher_fonts ||= {}
+        @@cypher_fonts[font] ||= load_font("fonts/ucs/#{font}.bdf")
+        options[:x] ||= 0
+        options[:y] ||= 0
+        options[:scale] ||= 1
+        dx = 0
+        s.each_char do |c|
+            glyph = @@cypher_fonts[font][c.ord]
+            if glyph
+                w = ((((glyph[:width] - 1) >> 3) + 1) << 3) - 1
+                (0...glyph[:height]).each do |iy|
+                    (0...glyph[:width]).each do |ix|
+                        if (((glyph[:bitmap][iy] >> (w - ix)) & 1) == 1)
+                            (0...options[:scale]).each do |oy|
+                                (0...options[:scale]).each do |ox|
+                                    png.set_pixel_if_within_bounds(options[:x] + (ix + dx) * options[:scale] + ox, options[:y] + iy * options[:scale] + oy, color)
+                                end
+                            end
+                        end
+                    end
+                end
+                dx += glyph[:width]
+            end
+        end
+    end
+
+    def self.text_width(s, font, options = {})
+        @@cypher_fonts ||= {}
+        @@cypher_fonts[font] ||= load_font("fonts/ucs/#{font}.bdf")
+        width = 0
+        s.each_char do |c|
+            glyph = @@cypher_fonts[font][c.ord]
+            if glyph
+                width += glyph[:width]
+            end
+        end
+        width
+    end
+end
+
+class BitmapFont
+    def self.load_font(path)
+        @@fonts ||= {}
+        return if @@fonts[path]
+        @@fonts[path] = {}
+        Dir[File.join(File.join('/app/cypher', path), '*.png')].each do |p|
+            c = File.basename(p).sub('.png', '')
+            b = ChunkyPNG::Image.from_file(p)
+            @@fonts[path][c] = b
+        end
+    end
+
+    def self.draw_text(png, s, font, x, y)
+        self.load_font(font)
+        s.each_char do |c|
+            if @@fonts[font][c]
+                png.compose!(@@fonts[font][c], x, y)
+                x += @@fonts[font][c].width + 3
+            elsif c == ' '
+                x += @@fonts[font]['A'].width + 3
+            end
+        end
+    end
+end
 
 class Main < Sinatra::Base
     MAX_CYPHER_LEVEL = 10
@@ -17,9 +113,9 @@ class Main < Sinatra::Base
     #  7. Image steganography (palette / LSB)
     #  8. GameBoy ROM cartridge https://laroldsjubilantjunkyard.com/tutorials/how-to-make-a-gameboy-game/minimal-gbdk-project/
     
-    CYPHER_LANGUAGES = %w(ada algol awk bash basic c cobol dbase delphi erlang fortran
-        go haskell java lisp logo lua masm modula oberon pascal perl php postscript
-        prolog ruby rust scala scumm smalltalk squeak swift tex zpl)
+    CYPHER_LANGUAGES = %w(Ada Algol awk Bash Basic C Cobol dBase Delphi Erlang Fortran
+        Go Haskell Java Lisp Logo Lua MASM Modula Oberon Pascal Perl PHP PostScript
+        Prolog Ruby Rust Scala Scumm Smalltalk Squeak Swift TeX ZPL)
 
     def caesar(s, shift)
         t = ''
@@ -246,94 +342,26 @@ class Main < Sinatra::Base
         respond(:alright => 'yeah')
     end
 
-    def load_font(path)
-        STDERR.puts "Loading font fron #{path}..."
-        font = {}
-        File.open(path) do |f|
-            char = nil
-            f.each_line do |line|
-                if line[0, 9] == 'STARTCHAR'
-                    char = {}
-                elsif line[0, 8] == 'ENCODING'
-                    char[:encoding] = line.sub('ENCODING ', '').strip.to_i
-                elsif line[0, 7] == 'ENDCHAR'
-                    font[char[:encoding]] = char
-                    char = nil
-                elsif line[0, 3] == 'BBX'
-                    parts = line.split(' ')
-                    char[:width] = parts[1].to_i
-                    char[:height] = parts[2].to_i
-                elsif line[0, 6] == 'BITMAP'
-                    char[:bitmap] = []
-                else
-                    if char && char[:bitmap]
-                        char[:bitmap] << line.to_i(16)
-                    end
-                end
-            end
-        end
-        font
-    end
-
-    def draw_text(png, s, font, color, options = {})
-        @@cypher_fonts ||= {}
-        @@cypher_fonts[font] ||= load_font("fonts/ucs/#{font}.bdf")
-        options[:x] ||= 0
-        options[:y] ||= 0
-        options[:scale] ||= 1
-        dx = 0
-        s.each_char do |c|
-            glyph = @@cypher_fonts[font][c.ord]
-            if glyph
-                w = ((((glyph[:width] - 1) >> 3) + 1) << 3) - 1
-                (0...glyph[:height]).each do |iy|
-                    (0...glyph[:width]).each do |ix|
-                        if (((glyph[:bitmap][iy] >> (w - ix)) & 1) == 1)
-                            (0...options[:scale]).each do |oy|
-                                (0...options[:scale]).each do |ox|
-                                    png.set_pixel_if_within_bounds(options[:x] + (ix + dx) * options[:scale] + ox, options[:y] + iy * options[:scale] + oy, color)
-                                end
-                            end
-                        end
-                    end
-                end
-                dx += glyph[:width]
-            end
-        end
-    end
-
-    def text_width(s, font, options = {})
-        @@cypher_fonts ||= {}
-        @@cypher_fonts[font] ||= load_font("fonts/ucs/#{font}.bdf")
-        width = 0
-        s.each_char do |c|
-            glyph = @@cypher_fonts[font][c.ord]
-            if glyph
-                width += glyph[:width]
-            end
-        end
-        width
-    end
-
     get '/api/chunky' do
         width = 960
-        height = 640
+        height = 480
         left = ChunkyPNG::Image.new(width, height, ChunkyPNG::Color::BLACK)
         right = ChunkyPNG::Image.new(width, height, ChunkyPNG::Color::BLACK)
-        template = ChunkyPNG::Image.new(38, 19, ChunkyPNG::Color::BLACK)
-        draw_text(template, "COBOL", "8x13B", ChunkyPNG::Color::WHITE)
+        template = ChunkyPNG::Image.new(38 + 100, 19, ChunkyPNG::Color::BLACK)
+        # def self.draw_text(png, s, font, color, options = {})
+        PixelFont::draw_text(template, "COBOL", "8x13B", ChunkyPNG::Color::WHITE, {:x => 1})
         (0..19).each do |y|
-            (0..38).each do |x|
+            (0..45).each do |x|
                 g = 255
-                px = x * 8 * 3 + (rand() * 6).floor.to_i + 6
-                py = y * 10 * 3 + (rand() * 10).floor.to_i + 10
+                px = x * 20 + (rand() * 6).floor.to_i + 6
+                py = y * 20 + (rand() * 10).floor.to_i + 10
                 c = %w(A B C D E F G H I J K L M N O P Q R S T U V W X Y Z).sample
-                sep = (rand() * 6).floor.to_i + 2
-                if (template.get_pixel(x, y) == ChunkyPNG::Color::WHITE)
+                sep = (rand() * 4).floor.to_i + 2
+                if (template.get_pixel(x, y - 4) == ChunkyPNG::Color::WHITE)
                     sep = -6
                 end
-                draw_text(left, c, "6x10", ChunkyPNG::Color.rgba(g, 0, 0, 255), {:x => px, :y => py, :scale => 3})
-                draw_text(right, c, "6x10", ChunkyPNG::Color.rgba(0, g, 0, 255), {:x => px + sep, :y => py, :scale => 3})
+                BitmapFont::draw_text(left, c, 'Alegreya-Sans-Regular/24', px, py)
+                BitmapFont::draw_text(right, c, 'Alegreya-Sans-Regular/24', px + sep, py)
             end
         end
         png = ChunkyPNG::Image.new(width, height, ChunkyPNG::Color::BLACK)
@@ -341,7 +369,9 @@ class Main < Sinatra::Base
             (0...width).each do |x|
                 a = ChunkyPNG::Color::to_truecolor_alpha_bytes(ChunkyPNG::Color::parse(left.get_pixel(x, y)))
                 b = ChunkyPNG::Color::to_truecolor_alpha_bytes(ChunkyPNG::Color::parse(right.get_pixel(x, y)))
-                png.set_pixel(x, y, ChunkyPNG::Color::rgba(a[0] + b[0], a[1] + b[1], a[2] + b[2], a[3] + b[3]))
+                ag = (a[0] * 0.299 + a[1] * 0.587 + a[2] * 0.114).to_i
+                bg = (b[0] * 0.299 + b[1] * 0.587 + b[2] * 0.114).to_i
+                png.set_pixel(x, y, ChunkyPNG::Color::rgba(ag, bg, 0, 255))
             end
         end
         respond_raw_with_mimetype(png.to_blob, 'image/png')
@@ -390,6 +420,62 @@ class Main < Sinatra::Base
         #     end
         # end
         # respond_raw_with_mimetype(png.to_blob, 'image/png')
+    end
+
+    get '/api/wave' do
+        samples = {}
+
+        word = 'OPARODENWALD'.upcase
+        template = ChunkyPNG::Image.new(word.size * 8, 13, ChunkyPNG::Color::BLACK)
+        PixelFont::draw_text(template, word, "8x13B", ChunkyPNG::Color::WHITE)
+        l = (44100 * 60.0 / 100).floor
+        (-36..36).each do |i|
+            WaveFile::Reader.new("/app/cypher/pitch/pitch#{i >= 0 ? '+': ''}#{i}.wav") do |reader|
+                buffer = reader.read(l)
+                samples[i.to_s] = buffer.samples
+            end
+        end
+        radio = []
+        WaveFile::Reader.new("/app/cypher/pitch/radio.wav") do |reader|
+            buffer = reader.read(reader.total_sample_frames)
+            radio = buffer.samples
+        end
+        tone = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]
+        # tone = [0, 2, 4, 5, 7, 9, 11, 12, 14, 16, 17, 19]
+        count = 0
+        WaveFile::Reader.new("/app/cypher/pitch/drums2.wav") do |drums_reader|
+            WaveFile::Writer.new("/gen/my_file.wav", WaveFile::Format.new(:mono, :pcm_16, 44100)) do |writer|
+                writer.write(WaveFile::Buffer.new(radio, WaveFile::Format.new(:mono, :pcm_16, 44100)))
+                (0...word.size * 8).each do |x|
+                    mix = samples['0'].dup.map { |x| 0 }
+                    yc = 0
+                    d = 100
+                    (0...13).each do |y|
+                        if template.get_pixel(x, y) == ChunkyPNG::Color::WHITE
+                            (samples[(tone[y] + 16).to_i.to_s] || samples['0']).each.with_index do |a, i|
+                                if i + yc * d < mix.size
+                                    mix[i + yc * d] += a
+                                end
+                            end
+                            yc += 1
+                        end
+                    end
+                    drums_buffer = drums_reader.read(l)
+                    drums = drums_buffer.samples
+                    (0...l).each do |i|
+                        if i < mix.size && i < drums.size
+                            mix[i] += drums[i] * 0.7
+                        end
+                    end
+                    mix = mix[0, l]
+                    count += mix.size
+                    buffer = WaveFile::Buffer.new(mix, WaveFile::Format.new(:mono, :pcm_16, 44100))
+                    writer.write(buffer)
+                end
+                writer.write(WaveFile::Buffer.new(radio.reverse, WaveFile::Format.new(:mono, :pcm_16, 44100)))
+            end
+        end
+        respond_raw_with_mimetype(File.read('/gen/my_file.wav'), 'audio/wav')
     end
 
 end

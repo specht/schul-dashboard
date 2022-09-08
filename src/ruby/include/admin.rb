@@ -363,6 +363,25 @@ class Main < Sinatra::Base
         respond_raw_with_mimetype(print_all_users, 'text/plain')
     end
 
+    def print_all_users_logo_didact
+        require_admin!
+        StringIO.open do |io|
+            @@klassen_order.each do |klasse|
+                @@schueler_for_klasse[klasse].each do |email|
+                    user = @@user_info[email]
+                    next if user[:geburtstag].nil?
+                    geburtstag = "#{user[:geburtstag][8, 2]}.#{user[:geburtstag][5, 2]}.#{user[:geburtstag][0, 4]}"
+                    io.puts "\"#{user[:last_name]}\";\"#{user[:first_name]}\";\"#{user[:klasse]}\";\"#{user[:geschlecht]}\";\"#{geburtstag}\""
+                end
+            end
+            io.string
+        end
+    end
+
+    get '/api/all_users_logo_didact' do
+        require_admin!
+        respond_raw_with_mimetype(print_all_users_logo_didact, 'text/plain')
+    end
 
     def print_email_accounts()
         require_admin!
@@ -542,7 +561,7 @@ class Main < Sinatra::Base
             to email
             bcc SMTP_FROM
             from SMTP_FROM
-            
+
             subject "Löschung des E-Mail-Postfaches in #{deletion_delay_weeks} Woche#{deletion_delay_weeks == 1 ? '' : 'n'}"
 
             StringIO.open do |io|
@@ -551,7 +570,7 @@ class Main < Sinatra::Base
                 io.puts "<p>Viele Grüße,<br />#{WEBSITE_MAINTAINER_NAME}</p>"
                 io.string
             end
-        end        
+        end
         neo4j_query(<<~END_OF_QUERY, :email => data[:email], :termination_date => termination_date.strftime('%Y-%m-%d'))
             MERGE (n:KnownEmailAddress {email: $email})
             SET n.scheduled_termination = $termination_date;
@@ -567,7 +586,7 @@ class Main < Sinatra::Base
             to email
             bcc SMTP_FROM
             from SMTP_FROM
-            
+
             subject "Beibehaltung des E-Mail-Postfaches"
 
             StringIO.open do |io|
@@ -576,7 +595,7 @@ class Main < Sinatra::Base
                 io.puts "<p>Viele Grüße,<br />#{WEBSITE_MAINTAINER_NAME}</p>"
                 io.string
             end
-        end        
+        end
         neo4j_query(<<~END_OF_QUERY, :email => data[:email])
             MERGE (n:KnownEmailAddress {email: $email})
             REMOVE n.scheduled_termination;

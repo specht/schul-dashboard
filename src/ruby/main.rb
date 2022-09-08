@@ -718,7 +718,8 @@ class Main < Sinatra::Base
                 :nc_login => record[:email].split('@').first.sub(/\.\d+$/, ''),
                 :matrix_login => matrix_login,
                 :initial_nc_password => record[:initial_nc_password],
-                :jitsi_disabled => disable_jitsi_for_email.include?(record[:email])
+                :jitsi_disabled => disable_jitsi_for_email.include?(record[:email]),
+                :geburtstag => record[:geburtstag]
             }
             raise "oops: duplicate matrix / nc login: #{matrix_login}" if @@email_for_matrix_login.include?(matrix_login)
             @@email_for_matrix_login[matrix_login] = record[:email]

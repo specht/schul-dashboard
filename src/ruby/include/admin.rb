@@ -371,7 +371,7 @@ class Main < Sinatra::Base
                     user = @@user_info[email]
                     next if user[:geburtstag].nil?
                     geburtstag = "#{user[:geburtstag][8, 2]}.#{user[:geburtstag][5, 2]}.#{user[:geburtstag][0, 4]}"
-                    io.puts "\"#{user[:last_name]}\";\"#{user[:first_name]}\";\"#{user[:klasse]}\";\"#{user[:geschlecht]}\";\"#{geburtstag}\""
+                    io.puts "#{user[:last_name]};#{user[:first_name]};#{user[:klasse]};#{user[:geschlecht]};#{geburtstag}"
                 end
             end
             io.string

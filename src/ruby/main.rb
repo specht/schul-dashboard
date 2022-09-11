@@ -55,6 +55,7 @@ require './include/directory.rb'
 require './include/event.rb'
 require './include/ext_user.rb'
 require './include/file.rb'
+require './include/gev.rb'
 require './include/groups.rb'
 require './include/hack.rb'
 require './include/homework.rb'
@@ -411,6 +412,7 @@ class SetupDatabase
                     "CREATE INDEX ON :Test(klasse)",
                     "CREATE INDEX ON :Test(fach)",
                     "CREATE INDEX ON :Test(datum)",
+                    "CREATE INDEX ON :User(ev)",
                 ].each do |s|
                     begin
                         neo4j_query(s)
@@ -703,6 +705,9 @@ class Main < Sinatra::Base
 
         parser.parse_schueler do |record|
             matrix_login = "@#{record[:email].split('@').first.sub(/\.\d+$/, '')}:#{MATRIX_DOMAIN_SHORT}"
+            unless KLASSEN_ORDER.include?(record[:klasse])
+                raise "Klasse #{record[:klasse]} is included in KLASSEN_ORDER"
+            end
             @@user_info[record[:email]] = {
                 :teacher => false,
                 :first_name => record[:first_name],
@@ -1116,14 +1121,16 @@ class Main < Sinatra::Base
                     email.nil?
                 end
             }
-            if @@klassenleiter[klasse]
-                @@mailing_lists["team.#{klasse.to_i}@#{SCHUL_MAIL_DOMAIN}"] ||= {
-                    :label => "Klassenleiterteam der Klassenstufe #{klasse.to_i}",
-                    :recipients => []
-                }
-                @@klassenleiter[klasse].each do |shorthand|
-                    if @@shorthands[shorthand]
-                        @@mailing_lists["team.#{klasse.to_i}@#{SCHUL_MAIL_DOMAIN}"][:recipients] << @@shorthands[shorthand]
+            if klasse.to_i > 0
+                if @@klassenleiter[klasse]
+                    @@mailing_lists["team.#{klasse.to_i}@#{SCHUL_MAIL_DOMAIN}"] ||= {
+                        :label => "Klassenleiterteam der Klassenstufe #{klasse.to_i}",
+                        :recipients => []
+                    }
+                    @@klassenleiter[klasse].each do |shorthand|
+                        if @@shorthands[shorthand]
+                            @@mailing_lists["team.#{klasse.to_i}@#{SCHUL_MAIL_DOMAIN}"][:recipients] << @@shorthands[shorthand]
+                        end
                     end
                 end
             end
@@ -1147,6 +1154,14 @@ class Main < Sinatra::Base
             end.map do |email|
                 "eltern.#{email}"
             end
+        }
+        temp = $neo4j.neo4j_query(<<~END_OF_QUERY).map { |x| { :email => x['u.email'] } }
+            MATCH (u:User {ev: true})
+            RETURN u.email;
+        END_OF_QUERY
+        @@mailing_lists["ev@#{SCHUL_MAIL_DOMAIN}"] = {
+            :label => "Alle Elternvertreter:innen",
+            :recipients => temp.map { |x| 'eltern.' + x[:email] }
         }
         @@antikenfahrt_mailing_lists.each_pair do |k, v|
             @@mailing_lists[k] = v
@@ -1766,6 +1781,9 @@ class Main < Sinatra::Base
                         io.puts "<a class='dropdown-item nav-icon' href='/login_nc'><div class='icon'><i class='fa fa-nextcloud'></i></div><span class='label'>In Nextcloud anmelden…</span></a>"
                         # if can_manage_agr_app_logged_in? || can_manage_bib_members_logged_in? || can_manage_bib_logged_in? || teacher_logged_in?
                             io.puts "<div class='dropdown-divider'></div>"
+                            if gev_logged_in?
+                                io.puts "<a class='dropdown-item nav-icon' href='/gev'><div class='icon'><i class='fa fa-users'></i></div><span class='label'>Gesamtelternvertretung</span></a>"
+                            end
                             if can_manage_agr_app_logged_in?
                                 io.puts "<a class='dropdown-item nav-icon' href='/agr_app'><div class='icon'><i class='fa fa-mobile'></i></div><span class='label'>Altgriechisch-App</span></a>"
                             end

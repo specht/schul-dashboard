@@ -352,7 +352,7 @@ function filter_events_by_timestamp(events, now) {
 }
 
 
-function load_recipients(id, callback, also_load_ext_users, sus_only) {
+function load_recipients(id, callback, also_load_ext_users, sus_only, parents_only) {
     let antikenfahrt_recipients = window.antikenfahrt_recipients;
     if (typeof (antikenfahrt_recipients) === 'undefined')
         antikenfahrt_recipients = { recipients: {}, groups: [] };
@@ -362,6 +362,8 @@ function load_recipients(id, callback, also_load_ext_users, sus_only) {
         can_handle_external_users = false;
     if (typeof (sus_only) === 'undefined')
         sus_only = false;
+    if (typeof (parents_only) === 'undefined')
+        parents_only = false;
     let uri = '/gen/w/' + id + '/recipients.json.gz';
     var oReq = new XMLHttpRequest();
     oReq.open('GET', uri, true);
@@ -386,6 +388,17 @@ function load_recipients(id, callback, also_load_ext_users, sus_only) {
                     for (let key in entries.recipients) {
                         if (key.charAt(0) != '/' && (entries.recipients[key].teacher || false) === false) {
                             new_recipients[key] = entries.recipients[key];
+                        }
+                    }
+                    entries.recipients = new_recipients;
+                }
+                if (parents_only) {
+                    entries.groups = [];
+                    let new_recipients = {};
+                    for (let key in entries.recipients) {
+                        if (key.charAt(0) != '/' && (entries.recipients[key].teacher || false) === false) {
+                            new_recipients['eltern.' + key] = entries.recipients[key];
+                            new_recipients['eltern.' + key].label = "Eltern von " + new_recipients['eltern.' + key].label;
                         }
                     }
                     entries.recipients = new_recipients;

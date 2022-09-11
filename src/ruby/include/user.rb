@@ -66,6 +66,11 @@ class Main < Sinatra::Base
         user_logged_in? && (@session_user[:teacher] == true)
     end
 
+    # Returns true if GEV is logged in.
+    def gev_logged_in?
+        user_logged_in? && (GEV_USERS.include?(@session_user[:email]) || admin_logged_in?)
+    end
+
     # Returns true if a device is logged in.
     def device_logged_in?
         !@session_device.nil?
@@ -257,6 +262,12 @@ class Main < Sinatra::Base
 
     def this_is_a_page_for_logged_in_users_who_can_manage_salzh
         unless can_manage_salzh_logged_in?
+            redirect "#{WEB_ROOT}/", 303
+        end
+    end
+
+    def this_is_a_page_for_logged_in_gev
+        unless gev_logged_in?
             redirect "#{WEB_ROOT}/", 303
         end
     end

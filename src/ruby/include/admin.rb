@@ -430,15 +430,15 @@ class Main < Sinatra::Base
                     }
                 end
             end
-            @@klassen_order.each do |klasse|
-                email = "ev.#{klasse}@#{SCHUL_MAIL_DOMAIN}"
-                data_for_required_email_address[email] = {
-                    :first_name => '',
-                    :last_name => "Elternvertreter:innen #{klasse}",
-                    :email => email,
-                    :password => Main.gen_password_for_email(email)
-                }
-            end
+            # @@klassen_order.each do |klasse|
+            #     email = "ev.#{klasse}@#{SCHUL_MAIL_DOMAIN}"
+            #     data_for_required_email_address[email] = {
+            #         :first_name => '',
+            #         :last_name => "Elternvertreter:innen #{klasse}",
+            #         :email => email,
+            #         :password => Main.gen_password_for_email(email)
+            #     }
+            # end
             @@mailing_lists.keys.each { |email| required_email_addresses << email }
             @@klassen_order.each do |klasse|
                 required_email_addresses << "ev.#{klasse}@#{SCHUL_MAIL_DOMAIN}"

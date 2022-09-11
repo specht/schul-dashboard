@@ -969,15 +969,15 @@ class Timetable
         end
         debug "Updating weeks: #{only_these_lesson_keys.to_a.join(', ')} (hide_from_sus: #{hide_from_sus})"
 
-        ical_tokens = {}
+        ical_info = {}
         result = neo4j_query(<<~END_OF_QUERY)
             MATCH (u:User)
             WHERE EXISTS(u.ical_token)
-            RETURN u.email, u.ical_token
+            RETURN u.email, u.ical_token, COALESCE(u.omit_ical_types, []) AS omit_ical_types;
         END_OF_QUERY
         result.each do |entry|
             next unless entry['u.ical_token'] =~ /^[a-zA-Z0-9]+$/
-            ical_tokens[entry['u.email']] = entry['u.ical_token']
+            ical_info[entry['u.email']] = {:token => entry['u.ical_token'], :omit_ical_types => Set.new(entry['omit_ical_types']) }
         end
 
         all_stream_restrictions = Main.get_all_stream_restrictions()
@@ -1195,10 +1195,22 @@ class Timetable
                         cache_indices += ((@lesson_events["_@#{user[:room]}"] || {})[p_yw] || Set.new())
                     end
                     events += cache_indices.map { |x| @lesson_cache[x] }
-                    events += holidays
-                    events += website_events
+                    holidays.each do |e|
+                        e2 = e.dup
+                        e2[:event_type] = :holiday
+                        events << e2
+                    end
+                    website_events.each do |e|
+                        e2 = e.dup
+                        e2[:event_type] = :website_event
+                        events << e2
+                    end
                     if user[:klasse]
-                        events += public_test_events_for_klasse[user[:klasse]] || []
+                        (public_test_events_for_klasse[user[:klasse]] || []).each do |e|
+                            e2 = e.dup
+                            e2[:event_type] = :public_test_event
+                            events << e2
+                        end
                     end
                     # add events
                     ((@events_for_user[email] || {})[p_yw] || {}).each_pair do |eid, info|
@@ -1222,7 +1234,8 @@ class Timetable
                                    :datum => event[:date],
                                    :start_time => event[:start_time],
                                    :end_time => event[:end_time],
-                                   :jitsi => event[:jitsi]
+                                   :jitsi => event[:jitsi],
+                                   :event_type => :event
                                 }
                     end
 
@@ -1243,13 +1256,15 @@ class Timetable
                         events << {
                             :start => datum,
                             :end => (Date.parse(datum) + 1).strftime('%Y-%m-%d'),
-                            :title => messages.join("<br />").gsub("\n", "<br />")
+                            :title => messages.join("<br />").gsub("\n", "<br />"),
+                            :event_type => :website_event
                         }
                     end
 
                     fixed_events = events.map do |e_old|
                         e = e_old.dup
                         if e[:lesson]
+                            e[:event_type] = :lesson
                             e[:label] = user[:teacher] ? e[:label_klasse].dup : e[:label_lehrer].dup
                             e[:label_lang] = user[:teacher] ? e[:label_klasse_lang].dup : e[:label_lehrer_lang].dup
                             if user[:teacher]
@@ -1471,7 +1486,8 @@ class Timetable
                                     fixed_events << {
                                         :start => "#{pt_y}-#{pt_md}",
                                         :end => (Date.parse("#{pt_y}-#{pt_md}") + 1).strftime('%Y-%m-%d'),
-                                        :title => title
+                                        :title => title,
+                                        :event_type => :birthday
                                     }
                                 end
                             end
@@ -1657,7 +1673,7 @@ class Timetable
                         end
                     end
 
-                    if ical_tokens[email]
+                    if ical_info[email]
                         ical_events[email] ||= []
                         write_events.each do |event|
                             # STDERR.puts event.keys.to_json
@@ -1731,7 +1747,11 @@ class Timetable
                                 io.puts "END:VEVENT"
                                 io.string.strip
                             end
-                            ical_events[email] << event_str unless event_str.nil?
+                            # debug ical_info[email][:omit_ical_types].to_json
+                            # debug event[:event_type].class
+                            unless ical_info[email][:omit_ical_types].include?(event[:event_type].to_s)
+                                ical_events[email] << event_str unless event_str.nil?
+                            end
                         end
                     end
                 end
@@ -1741,7 +1761,7 @@ class Timetable
         ical_events.each_pair do |email, events|
             next if @@user_info[email] && (!@@user_info[email][:teacher]) && hide_from_sus
             FileUtils::mkpath('/gen/ical')
-            File.open("/gen/ical/#{ical_tokens[email]}.ics", 'w') do |f|
+            File.open("/gen/ical/#{ical_info[email][:token]}.ics", 'w') do |f|
                 f.puts "BEGIN:VCALENDAR"
                 f.puts "VERSION:2.0"
                 f.puts "CALSCALE:GREGORIAN"

@@ -390,4 +390,35 @@ class Main < Sinatra::Base
         end
         result
     end
+
+    def get_omit_ical_types
+        types = neo4j_query_expect_one(<<~END_OF_QUERY, :email => @session_user[:email])['types']
+            MATCH (u:User {email: $email})
+            RETURN COALESCE(u.omit_ical_types, []) AS types;
+        END_OF_QUERY
+        types
+    end
+
+    post '/api/toggle_ical_omit_type' do
+        require_user!
+        data = parse_request_data(:required_keys => [:type])
+        type = data[:type]
+        assert(%w(website_event event lesson holiday birthday).include?(type))
+        omitted_types = neo4j_query_expect_one(<<~END_OF_QUERY, :email => @session_user[:email])['types']
+            MATCH (u:User {email: $email})
+            RETURN COALESCE(u.omit_ical_types, []) AS types;
+        END_OF_QUERY
+        if omitted_types.include?(type)
+            omitted_types.delete(type)
+        else
+            omitted_types << type
+        end
+        omitted_types = neo4j_query_expect_one(<<~END_OF_QUERY, :email => @session_user[:email], :types => omitted_types)['types']
+            MATCH (u:User {email: $email})
+            SET u.omit_ical_types = {types}
+            RETURN COALESCE(u.omit_ical_types, []) AS types;
+        END_OF_QUERY
+        trigger_update("_#{@session_user[:email]}")
+        respond(:result => omitted_types.include?(type))
+    end
 end

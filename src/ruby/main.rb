@@ -1522,6 +1522,7 @@ class Main < Sinatra::Base
                                         @session_user[:group2] = results.first['u'][:group2] || 'A'
                                         @session_user[:group_af] = results.first['u'][:group_af] || ''
                                         @session_user[:sus_may_contact_me] = results.first['u'][:sus_may_contact_me] || false
+                                        @session_user[:user_agent] = results.first['s'][:user_agent]
                                     end
                                 end
                             end

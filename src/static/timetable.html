@@ -43,6 +43,17 @@
             </div>
         </div>
         <div class='#{tablet_logged_in? ? '' : 'col-lg-2 col-md-12 side-panel'}'>
+            <div class='hint' style='display: #{(@session_user[:user_agent] || '').include?('WebView') ? 'block' : 'none'};'>
+                <p>
+                    <i class="fa fa-exclamation-triangle" style="font-size: 200%; color: #888; float: left; margin-right: 15px; margin-top: 5px; position: relative; top: 3px;"></i>
+                    <strong>Hinweis:</strong> Du benutzt die Dashboard-App für Android, die nicht mehr unterstützt wird. Bitte lösche die App und richte dir ggfs. einen Shortcut zur Dashboard-Website ein.
+                    Wie das geht, <a href='https://de.wikihow.com/Eine-Verkn%C3%BCpfung-f%C3%BCr-ein-Lesezeichen-auf-deinen-Android-Homebildschirm-legen'>erfährst du hier</a>.
+                </p>
+                <p>
+                    Falls du Fragen dazu hast, schreib bitte eine E-Mail an <a href='mailto:specht@gymnasiumsteglitz.de'>specht@gymnasiumsteglitz.de</a>.
+                </p>
+            </div>
+
             <div class='row'>
                 <div class='switch_week_panel'></div>
                 <div id='rsag' style='display: none;'>

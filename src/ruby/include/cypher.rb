@@ -97,6 +97,19 @@ class BitmapFont
             end
         end
     end
+
+    def self.text_width(s, font)
+        self.load_font(font)
+        width = 0
+        s.each_char do |c|
+            if @@fonts[font][c]
+                width += @@fonts[font][c].width + 3
+            elsif c == ' '
+                width += @@fonts[font]['A'].width + 3
+            end
+        end
+        width - 3
+    end
 end
 
 class Main < Sinatra::Base
@@ -104,18 +117,18 @@ class Main < Sinatra::Base
 
     #  1. Caesar
     #  2. Skytale
-    #  9. Superimpose two images
-    #  5. Anaglyph
-    #  4. Autostereogram
-    # 10. Aztec Code https://github.com/delimitry/aztec_code_generator
-    #  3. Audio spectrum (libfftw?)
-    #  6. Image metadata
-    #  7. Image steganography (palette / LSB)
-    #  8. GameBoy ROM cartridge https://laroldsjubilantjunkyard.com/tutorials/how-to-make-a-gameboy-game/minimal-gbdk-project/
-    
-    CYPHER_LANGUAGES = %w(Ada Algol awk Bash Basic C Cobol dBase Delphi Erlang Fortran
-        Go Haskell Java Lisp Logo Lua MASM Modula Oberon Pascal Perl PHP PostScript
-        Prolog Ruby Rust Scala Scumm Smalltalk Squeak Swift TeX ZPL)
+    #  3. Superimpose two images
+    #  4. Anaglyph
+    #  5. Autostereogram
+    #  6. Aztec Code https://github.com/delimitry/aztec_code_generator
+    #  7. Audio spectrum (libfftw?)
+    #  8. Image metadata
+    #  9. Image steganography (palette / LSB)
+    # 10. GameBoy ROM cartridge https://laroldsjubilantjunkyard.com/tutorials/how-to-make-a-gameboy-game/minimal-gbdk-project/
+
+    CYPHER_LANGUAGES = %w(Ada Algol awk Bash Basic Cobol dBase Delphi Erlang Fortran
+        Go Haskell Java Lisp Logo Lua MASM Modula Oberon Pascal Perl PHP
+        Prolog Ruby Rust Scala Scumm Squeak Swift TeX ZPL)
 
     def caesar(s, shift)
         t = ''
@@ -144,33 +157,43 @@ class Main < Sinatra::Base
         t
     end
 
+    def line_for_lang(lang)
+        [
+            "Das naechste Loesungswort lautet #{lang}",
+            "Das Passwort lautet #{lang}",
+            "Versuch es mal mit #{lang}",
+            "Wenn du #{lang} eingibst dann sollte es klappen",
+            "#{lang} ist das naechste Passwort"
+        ].sample
+    end
+
     def get_next_cypher_password
         @cypher_next_password = nil
         srand(@cypher_seed)
+        languages = CYPHER_LANGUAGES.shuffle
         if @cypher_level == 0
-            languages = CYPHER_LANGUAGES.shuffle
             lang = languages[@cypher_level]
-            line = [
-                "Das naechste Loesungswort lautet #{lang}",
-                "Das Passwort lautet #{lang}",
-                "Versuch es mal mit #{lang}",
-                "Wenn du #{lang} eingibst dann sollte es klappen",
-                "#{lang} ist das naechste Passwort"
-            ].sample
+            line = line_for_lang(lang)
             @cypher_next_password = lang
             @cypher_token = caesar(line, (rand * 25).floor + 1)
         elsif @cypher_level == 1
-            languages = CYPHER_LANGUAGES.shuffle
             lang = languages[@cypher_level]
-            line = [
-                "Das naechste Loesungswort lautet #{lang}",
-                "Das Passwort lautet #{lang}",
-                "Versuch es mal mit #{lang}",
-                "Wenn du #{lang} eingibst dann sollte es klappen",
-                "#{lang} ist das naechste Passwort"
-            ].sample
+            line = line_for_lang(lang)
             @cypher_next_password = lang
             @cypher_token = skytale(line, [3, 4, 5, 6].sample)
+        elsif @cypher_level == 2
+            lang = languages[@cypher_level]
+            line = line_for_lang(lang)
+            @cypher_next_password = lang
+            @cypher_token = line
+        elsif @cypher_level == 3
+            lang = languages[@cypher_level]
+            @cypher_next_password = lang
+            @cypher_token = nil
+        elsif @cypher_level == 4
+            lang = languages[@cypher_level]
+            @cypher_next_password = lang
+            @cypher_token = nil
         end
     end
 
@@ -205,7 +228,7 @@ class Main < Sinatra::Base
         STDERR.puts "CYPHER // #{@session_user[:email]} // level: #{@cypher_level}, next password: #{@cypher_next_password}#{@cypher_next_password.nil? ? '(nil)':''}"
 
         unless provided_password.nil? || @cypher_next_password.nil?
-            if provided_password == @cypher_next_password
+            if provided_password.downcase == @cypher_next_password.downcase
                 @cypher_level += 1
                 result = neo4j_query(<<~END_OF_QUERY, {:email => @session_user[:email], :cypher_level => @cypher_level})
                     MATCH (u:User {email: $email})
@@ -342,22 +365,88 @@ class Main < Sinatra::Base
         respond(:alright => 'yeah')
     end
 
+    get '/api/halpert' do
+        require_user!
+        result = neo4j_query_expect_one(<<~END_OF_QUERY, {:email => @session_user[:email]})
+            MATCH (u:User {email: $email})
+            RETURN COALESCE(u.cypher_level, 0) AS cypher_level,
+            u.cypher_seed AS cypher_seed,
+            COALESCE(u.failed_cypher_tries, 0) AS failed_cypher_tries,
+            COALESCE(u.cypher_name, '') AS cypher_name;
+        END_OF_QUERY
+        @cypher_level = result['cypher_level']
+        @cypher_seed = result['cypher_seed']
+        get_next_cypher_password()
+        width = 960
+        height = 480
+        letters = ChunkyPNG::Image.new(width, height, ChunkyPNG::Color::BLACK)
+        points = []
+        (0..14).each do |y|
+            (0..14).each do |x|
+                px = x * 30 + 10 + 20
+                py = y * 30 + 20
+                c = %w(A B C D E F G H I J K L M N O P Q R S T U V W X Y Z).sample
+                points << [px, py, c]
+            end
+        end
+
+        @cypher_token.gsub!(' ', '')
+
+        code_spots = (0...points.size).to_a
+        code_spots.shuffle!
+        code_spots = code_spots[0, @cypher_token.size].sort
+        debug code_spots.to_json
+        (0...@cypher_token.size).each do |i|
+            points[code_spots[i]][2] = @cypher_token[i].upcase
+            points[code_spots[i]] << :topsecret
+        end
+
+        points.each do |p|
+            BitmapFont::draw_text(letters, p[2], 'Alegreya-Sans-Regular/24', p[0] - (BitmapFont::text_width(p[2], 'Alegreya-Sans-Regular/24') / 2).to_i, p[1])
+            if p[3] == :topsecret
+                # BitmapFont::draw_text(letters, '_', 'Alegreya-Sans-Regular/36', p[0] + 480 - (BitmapFont::text_width('_', 'Alegreya-Sans-Regular/36') / 2).to_i, p[1] - 6)
+                letters.rect(p[0] + 480 - 12, p[1] - 12, p[0] + 480 + 12, p[1] + 12, ChunkyPNG::Color.rgb(128, 188, 66))
+            end
+        end
+
+        respond_raw_with_mimetype(letters.to_blob, 'image/png')
+    end
+
     get '/api/chunky' do
+        require_user!
+        result = neo4j_query_expect_one(<<~END_OF_QUERY, {:email => @session_user[:email]})
+            MATCH (u:User {email: $email})
+            RETURN COALESCE(u.cypher_level, 0) AS cypher_level,
+            u.cypher_seed AS cypher_seed,
+            COALESCE(u.failed_cypher_tries, 0) AS failed_cypher_tries,
+            COALESCE(u.cypher_name, '') AS cypher_name;
+        END_OF_QUERY
+        @cypher_level = result['cypher_level']
+        @cypher_seed = result['cypher_seed']
+        get_next_cypher_password()
         width = 960
         height = 480
         left = ChunkyPNG::Image.new(width, height, ChunkyPNG::Color::BLACK)
         right = ChunkyPNG::Image.new(width, height, ChunkyPNG::Color::BLACK)
         template = ChunkyPNG::Image.new(38 + 100, 19, ChunkyPNG::Color::BLACK)
-        # def self.draw_text(png, s, font, color, options = {})
-        PixelFont::draw_text(template, "COBOL", "8x13B", ChunkyPNG::Color::WHITE, {:x => 1})
-        (0..19).each do |y|
+        @cypher_next_password.upcase!
+        if @cypher_next_password.size < 6
+            PixelFont::draw_text(template, @cypher_next_password, "8x13B", ChunkyPNG::Color::WHITE, {:x => 22 - @cypher_next_password.size * 4})
+        elsif @cypher_next_password.size < 8
+            PixelFont::draw_text(template, @cypher_next_password, "6x13", ChunkyPNG::Color::WHITE, {:x => 22 - @cypher_next_password.size * 3 + 1})
+        else
+            PixelFont::draw_text(template, @cypher_next_password, "5x7", ChunkyPNG::Color::WHITE, {:x => 22 - (@cypher_next_password.size * 2.5).to_i + 1, :y => 4})
+        end
+        (0..21).each do |y|
             (0..45).each do |x|
-                g = 255
-                px = x * 20 + (rand() * 6).floor.to_i + 6
-                py = y * 20 + (rand() * 10).floor.to_i + 10
                 c = %w(A B C D E F G H I J K L M N O P Q R S T U V W X Y Z).sample
+                px = x * 20 + (rand() * 6).floor.to_i + 26 - (BitmapFont::text_width(c, 'Alegreya-Sans-Regular/24') / 2).to_i
+                py = y * 20 + (rand() * 10).floor.to_i + 10
                 sep = (rand() * 4).floor.to_i + 2
                 if (template.get_pixel(x, y - 4) == ChunkyPNG::Color::WHITE)
+                    c = %w(A B D E F G H K M N O P Q R S U V W X Y Z).sample
+                    px = x * 20 + (rand() * 2).floor.to_i + 26 - (BitmapFont::text_width(c, 'Alegreya-Sans-Regular/24') / 2).to_i
+                    py = y * 20 + 10
                     sep = -6
                 end
                 BitmapFont::draw_text(left, c, 'Alegreya-Sans-Regular/24', px, py)
@@ -375,51 +464,59 @@ class Main < Sinatra::Base
             end
         end
         respond_raw_with_mimetype(png.to_blob, 'image/png')
+    end
 
-        # png = Image.new(960, 320) do |img|
-        #     img.background_color = 'black'
-        #     img.format = 'PNG'
-        # end
-        # drawing = Draw.new
-        # drawing.annotate(png, 0, 0, 0, 0, "scumm".upcase) { |txt|
-        #   txt.gravity = Magick::CenterGravity
-        #   txt.text_antialias = false
-        #   txt.pointsize = 240
-        #   txt.fill = "#ffffff"
-        #   txt.font = 'Droid-Sans-Bold'
-        # }
-        # pixels = png.get_pixels(0, 0, 960, 320)
-        # # respond_raw_with_mimetype(png.to_blob, 'image/png')
-        # width = 960
-        # height = 320
-        # eye_sep = 80
-        # perlin = ChunkyPNG::Image.from_file('/static/images/perlin.png')
-        # png = ChunkyPNG::Image.new(width, height, ChunkyPNG::Color::BLACK)
-        # template = ChunkyPNG::Image.new(width - eye_sep, height, ChunkyPNG::Color::BLACK)
-        # draw_text(template, "COBOL", "8x13B", ChunkyPNG::Color::WHITE, {:scale => 20})
-        # (0...width).each do |x|
-        #     (0...height).each do |y|
-        #         g = ChunkyPNG::Color::BLACK
-        #         if x < eye_sep
-        #             # g = (rand() * 256).floor.to_i
-        #             g = perlin.get_pixel(x % 80, y % 80)
-        #         else
-        #             depth = 0
-        #             x0 = x - eye_sep
-        #             d = ((x - eye_sep / 2 - width / 2) ** 2 + (y - height / 2) ** 2) ** 0.5
-        #             d *= 0.01
-        #             x0 -= -d*d * 0.5
-        #             if (pixels[y * 960 + x - eye_sep / 2] || Pixel.new(0, 0, 0, 1)).intensity > 0
-        #             # if ((template.get_pixel(x0, y) || 0) >> 8) & 0xff > 0
-        #                 x0 = x - eye_sep + 10
-        #             end
-        #             x0 += 10
-        #             g = png.get_pixel(x0.to_i, y) || ChunkyPNG::Color::BLACK
-        #         end
-        #         png.set_pixel(x, y, g)
-        #     end
-        # end
-        # respond_raw_with_mimetype(png.to_blob, 'image/png')
+    get '/api/n_e_thing' do
+        require_user!
+        result = neo4j_query_expect_one(<<~END_OF_QUERY, {:email => @session_user[:email]})
+            MATCH (u:User {email: $email})
+            RETURN COALESCE(u.cypher_level, 0) AS cypher_level,
+            u.cypher_seed AS cypher_seed,
+            COALESCE(u.failed_cypher_tries, 0) AS failed_cypher_tries,
+            COALESCE(u.cypher_name, '') AS cypher_name;
+        END_OF_QUERY
+        @cypher_level = result['cypher_level']
+        @cypher_seed = result['cypher_seed']
+        get_next_cypher_password()
+        scale = 2
+        perlin = ChunkyPNG::Image.from_file('/static/images/perlin.png')
+        @cypher_next_password.upcase!
+        width = 960 * scale
+        height = (@cypher_next_password.size * 72 + 72 + 36) * scale
+        eye_sep = 80 * scale
+        png = ChunkyPNG::Image.new(width, height, ChunkyPNG::Color::BLACK)
+        template = ChunkyPNG::Image.new(width - eye_sep, height, ChunkyPNG::Color::BLACK)
+        offsets = (0...@cypher_next_password.size).to_a.shuffle
+        @cypher_next_password.each_char.with_index do |c, i|
+            BitmapFont::draw_text(template, c, 'Alegreya-Sans-Bold/72', (150 - BitmapFont::text_width(@cypher_next_password, 'Alegreya-Sans-Bold/72') / 2).to_i + BitmapFont::text_width(@cypher_next_password[0, i], 'Alegreya-Sans-Bold/72'), offsets[i] * 20)
+        end
+        # BitmapFont::draw_text(template, @cypher_next_password, 'Alegreya-Sans-Bold/72', (150 - BitmapFont::text_width(@cypher_next_password, 'Alegreya-Sans-Bold/72') / 2).to_i, 0)
+        xs = (width / 2 - eye_sep / 2).to_i
+        (0...height).each do |y|
+            (0...width).each do |x|
+                xf = x / scale
+                yf = y / scale
+                g = ChunkyPNG::Color::BLACK
+                if x < eye_sep
+                    g = perlin.get_pixel(x % 160, y % 160)
+                else
+                    depth = 0
+                    x0 = x - eye_sep
+                    d = ((x - eye_sep / 2 - width / 2) ** 2 + (y - height / 2) ** 2) ** 0.5
+                    d *= 0.01
+                    depth = d * d * 0.5
+                    depth *= 0.5
+                    depth = 0
+                    if ((template.get_pixel(x0 / 6, y / 6 - 10) || 0) >> 8) & 0xff > 0
+                        depth = 10
+                    end
+                    x0 += depth
+                    g = png.get_pixel(x0.to_i, y) || ChunkyPNG::Color::BLACK
+                end
+                png.set_pixel(x, y, g)
+            end
+        end
+        respond_raw_with_mimetype(png.to_blob, 'image/png')
     end
 
     get '/api/wave' do

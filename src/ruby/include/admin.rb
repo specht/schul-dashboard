@@ -602,4 +602,38 @@ class Main < Sinatra::Base
         END_OF_QUERY
         respond(:ok => 'yeah')
     end
+
+    def print_all_users_informatik_biber
+        require_admin!
+        StringIO.open do |io|
+            @@klassen_order.each do |klasse|
+                @@schueler_for_klasse[klasse].each do |email|
+                    user = @@user_info[email]
+                    biber_user_id = email
+                    biber_password = user[:biber_password]
+                    io.puts "#{Main.tr_klasse(user[:klasse])};#{user[:klasse].to_i};#{user[:first_name]};#{user[:last_name]};#{biber_user_id};#{biber_password};#{user[:geschlecht] == 'm' ? 'male' : 'female'}"
+                end
+            end
+            @@klassen_order.each do |klasse|
+                io.puts
+                io.puts "Informatik-Biber Klasse #{Main.tr_klasse(klasse)}"
+                io.puts '-' * "Informatik-Biber Klasse #{Main.tr_klasse(klasse)}".size
+                io.puts
+                io.puts "Anmeldung mit schulischer E-Mail-Adresse und 4-stelligem Passwort"
+                io.puts
+                @@schueler_for_klasse[klasse].each do |email|
+                    user = @@user_info[email]
+                    biber_user_id = email
+                    biber_password = user[:biber_password]
+                    io.puts "#{biber_password} #{user[:email]}"
+                end
+            end
+            io.string
+        end
+    end
+
+    get '/api/all_users_informatik_biber' do
+        require_admin!
+        respond_raw_with_mimetype(print_all_users_informatik_biber, 'text/plain')
+    end
 end

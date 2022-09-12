@@ -723,6 +723,7 @@ class Main < Sinatra::Base
                 :nc_login => record[:email].split('@').first.sub(/\.\d+$/, ''),
                 :matrix_login => matrix_login,
                 :initial_nc_password => record[:initial_nc_password],
+                :biber_password => Main.gen_password_for_email(record[:email] + 'biber')[0, 4].downcase,
                 :jitsi_disabled => disable_jitsi_for_email.include?(record[:email]),
                 :geburtstag => record[:geburtstag]
             }

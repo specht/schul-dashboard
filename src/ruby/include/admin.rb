@@ -456,8 +456,8 @@ class Main < Sinatra::Base
                     known_email_association[email] = :parents
                 elsif @@mailing_lists.include?(email)
                     known_email_association[email] = :mailing_list
-                elsif email[0, 3] == 'ev.' && @@klassen_order.include?(email.split('@').first.sub('ev.', ''))
-                    known_email_association[email] = :ev
+                # elsif email[0, 3] == 'ev.' && @@klassen_order.include?(email.split('@').first.sub('ev.', ''))
+                #     known_email_association[email] = :ev
                 end
             end
             required_email_addresses = (Set.new(required_email_addresses) - Set.new(email_addresses)).to_a.sort
@@ -516,7 +516,8 @@ class Main < Sinatra::Base
                     else
                         io.puts "<button class='btn btn-xs btn-success bu-mark-known-address' data-email='#{email}'>Bekannt</button>"
                         unless all_termination_dates[email]
-                            io.puts "<button class='btn btn-xs btn-danger bu-mark-for-termination' data-email='#{email}'>Löschen</button>"
+                            io.puts "<button class='btn btn-xs btn-danger bu-mark-for-termination' data-email='#{email}' data-weeks='4'>Löschen in 4 Wochen</button>"
+                            io.puts "<button class='btn btn-xs btn-danger bu-mark-for-termination' data-email='#{email}' data-weeks='1'>Löschen in 1 Woche</button>"
                         end
                     end
                     if all_termination_dates[email]
@@ -552,9 +553,9 @@ class Main < Sinatra::Base
 
     post '/api/mark_email_address_for_termination' do
         require_admin!
-        data = parse_request_data(:required_keys => [:email])
+        data = parse_request_data(:required_keys => [:email], :optional_keys => [:weeks], :types => {:weeks => Integer})
         email = data[:email]
-        deletion_delay_weeks = 4
+        deletion_delay_weeks = data[:weeks] || 4
         termination_date = (Date.today + deletion_delay_weeks * 7)
         termination_date_str = termination_date.strftime('%d.%m.%Y')
         deliver_mail do

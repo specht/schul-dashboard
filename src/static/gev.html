@@ -172,6 +172,19 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             );
     });
+    $('.ti_name').blur(function(e) {
+        let row = $(e.target).closest('tr');
+        let sus_email = row.data('email');
+        let name = $(e.target).val();
+        if (name !== row.data('name')) {
+            api_call('/api/set_ev_name', {email: sus_email, name: name}, function(data) {
+                if (data.success) {
+                    row.data('name', name);
+                    console.log(sus_email, name);
+                }
+            });
+        }
+    })
     load_recipients('#{@session_user[:id]}', function() {
     }, null, false, true);
 });

@@ -2,13 +2,15 @@ class Main < Sinatra::Base
 
     def print_gev_table()
         assert(gev_logged_in?)
-        temp = neo4j_query(<<~END_OF_QUERY).map { |x| { :email => x['u.email'] } }
+        temp = neo4j_query(<<~END_OF_QUERY).map { |x| { :email => x['u.email'], :name => x['u.ev_name'] } }
             MATCH (u:User {ev: true})
-            RETURN u.email;
+            RETURN u.email, u.ev_name;
         END_OF_QUERY
         gev = Set.new()
+        name_for_email = {}
         temp.each do |row|
             gev << row[:email]
+            name_for_email[row[:email]] = row[:name]
         end
         gev = gev.to_a.sort do |a, b|
             (@@user_info[a][:klasse] == @@user_info[b][:klasse]) ?
@@ -22,6 +24,7 @@ class Main < Sinatra::Base
             io.puts "<tr>"
             io.puts "<th>Elternvertreter:innen</th>"
             io.puts "<th>Klasse</th>"
+            io.puts "<th>Name</th>"
             io.puts "<th></th>"
             io.puts "</tr>"
             io.puts "</thead>"
@@ -31,6 +34,7 @@ class Main < Sinatra::Base
                 user = @@user_info[email]
                 io.puts "<td>Eltern von #{user[:display_name]}</td>"
                 io.puts "<td>#{tr_klasse(user[:klasse])}</td>"
+                io.puts "<td><input type='text' class='form-control ti_name' value='#{name_for_email[email]}'/></td>"
                 io.puts "<td><button class='btn btn-xs btn-danger bu-remove-ev'><i class='fa fa-trash'></i>&nbsp;&nbsp;Löschen</button></td>"
             io.puts "</tr>"
             end
@@ -107,6 +111,19 @@ class Main < Sinatra::Base
                 io.string
             end
         end
+        respond(:ok => true)
+    end
+
+    post '/api/set_ev_name' do
+        assert(gev_logged_in?)
+        data = parse_request_data(:required_keys => [:email, :name])
+        email = data[:email]
+        name = data[:name]
+        neo4j_query_expect_one(<<~END_OF_QUERY, :email => data[:email], :name => data[:name])
+            MATCH (u:User {email: $email, ev: TRUE})
+            SET u.ev_name = $name
+            RETURN u.ev_name;
+        END_OF_QUERY
         respond(:ok => true)
     end
 end

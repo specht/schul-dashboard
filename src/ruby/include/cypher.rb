@@ -121,10 +121,10 @@ class Main < Sinatra::Base
     #  4. Anaglyph
     #  5. Autostereogram
     #  6. Audio spectrum
-    #  7. Aztec Code https://github.com/delimitry/aztec_code_generator
-    #  8. Image metadata
-    #  9. Image steganography (palette / LSB)
-    # 10. GameBoy ROM cartridge https://laroldsjubilantjunkyard.com/tutorials/how-to-make-a-gameboy-game/minimal-gbdk-project/
+    #  7. GameBoy ROM cartridge
+    #  8. Aztec Code
+    #  9. Image metadata
+    # 10. Image steganography (palette / LSB)
 
     CYPHER_LANGUAGES = %w(Ada Algol awk Bash Basic Cobol dBase Delphi Erlang Fortran
         Go Haskell Java Lisp Logo Lua MASM Modula Oberon Pascal Perl PHP

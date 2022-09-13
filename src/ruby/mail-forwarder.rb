@@ -63,7 +63,7 @@ class Script
         results = Set.new()
         results |= Set.new(@@user_info.keys.select { |email| @@user_info[email][:teacher] })
         results |= Set.new(SV_USERS)
-        temp = neo4j_query(<<~END_OF_QUERY).map { |x| { :email => x['u.email'] } }
+        temp = $neo4j.neo4j_query(<<~END_OF_QUERY).map { |x| { :email => x['u.email'] } }
             MATCH (u:User {ev: true})
             RETURN u.email;
         END_OF_QUERY

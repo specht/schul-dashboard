@@ -120,8 +120,8 @@ class Main < Sinatra::Base
     #  3. Superimpose two images
     #  4. Anaglyph
     #  5. Autostereogram
-    #  6. Aztec Code https://github.com/delimitry/aztec_code_generator
-    #  7. Audio spectrum (libfftw?)
+    #  6. Audio spectrum
+    #  7. Aztec Code https://github.com/delimitry/aztec_code_generator
     #  8. Image metadata
     #  9. Image steganography (palette / LSB)
     # 10. GameBoy ROM cartridge https://laroldsjubilantjunkyard.com/tutorials/how-to-make-a-gameboy-game/minimal-gbdk-project/
@@ -175,7 +175,7 @@ class Main < Sinatra::Base
             lang = languages[@cypher_level]
             line = line_for_lang(lang)
             @cypher_next_password = lang
-            @cypher_token = caesar(line, (rand * 25).floor + 1)
+            @cypher_token = caesar(line, 3)
         elsif @cypher_level == 1
             lang = languages[@cypher_level]
             line = line_for_lang(lang)
@@ -194,6 +194,11 @@ class Main < Sinatra::Base
             lang = languages[@cypher_level]
             @cypher_next_password = lang
             @cypher_token = nil
+        elsif @cypher_level == 5
+            lang = languages[@cypher_level]
+            line = line_for_lang(lang)
+            @cypher_next_password = lang
+            @cypher_token = line
         end
     end
 
@@ -519,10 +524,22 @@ class Main < Sinatra::Base
         respond_raw_with_mimetype(png.to_blob, 'image/png')
     end
 
-    get '/api/wave' do
+    get '/api/formula' do
+        require_user!
+        result = neo4j_query_expect_one(<<~END_OF_QUERY, {:email => @session_user[:email]})
+            MATCH (u:User {email: $email})
+            RETURN COALESCE(u.cypher_level, 0) AS cypher_level,
+            u.cypher_seed AS cypher_seed,
+            COALESCE(u.failed_cypher_tries, 0) AS failed_cypher_tries,
+            COALESCE(u.cypher_name, '') AS cypher_name;
+        END_OF_QUERY
+        @cypher_level = result['cypher_level']
+        @cypher_seed = result['cypher_seed']
+        get_next_cypher_password()
+
         samples = {}
 
-        word = 'OPARODENWALD'.upcase
+        word = @cypher_next_password.upcase
         template = ChunkyPNG::Image.new(word.size * 8, 13, ChunkyPNG::Color::BLACK)
         PixelFont::draw_text(template, word, "8x13B", ChunkyPNG::Color::WHITE)
         l = (44100 * 60.0 / 100).floor
@@ -549,7 +566,7 @@ class Main < Sinatra::Base
                     d = 100
                     (0...13).each do |y|
                         if template.get_pixel(x, y) == ChunkyPNG::Color::WHITE
-                            (samples[(tone[y] + 16).to_i.to_s] || samples['0']).each.with_index do |a, i|
+                            (samples[(tone[y] + 15).to_i.to_s] || samples['0']).each.with_index do |a, i|
                                 if i + yc * d < mix.size
                                     mix[i + yc * d] += a
                                 end

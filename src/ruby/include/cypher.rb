@@ -199,6 +199,11 @@ class Main < Sinatra::Base
             line = line_for_lang(lang)
             @cypher_next_password = lang
             @cypher_token = line
+        elsif @cypher_level == 6
+            lang = languages[@cypher_level]
+            tag = Digest::SHA1.hexdigest("#{lang.downcase}-cypher").to_i(16).to_s(36)[0, 4]
+            @cypher_next_password = lang
+            @cypher_token = tag
         end
     end
 

@@ -333,6 +333,32 @@ class Main < Sinatra::Base
         respond(:entries => results)
     end
 
+    get "/api/get_frontpage_news_entries_with_keyword/#{WEBSITE_READ_INFO_SECRET}/:keyword" do
+        keyword = params[:keyword].downcase.strip
+        entries = neo4j_query(<<~END_OF_QUERY, {:keyword => keyword}).map { |x| x['n'] }
+            MATCH (n:NewsEntry)
+            WHERE n.published = true AND
+            (toLower(n.title) CONTAINS $keyword OR toLower(n.content) CONTAINS $keyword)
+            RETURN n
+            ORDER BY n.timestamp DESC
+            LIMIT 20;
+        END_OF_QUERY
+        results = []
+        entries.each do |entry|
+            content = entry[:content]
+            content = fix_images(content)
+            content = eval_lilypads(content)
+            results << {
+                :title => entry[:title],
+                :timestamp => entry[:timestamp],
+                :date => entry[:date],
+                :sticky => entry[:sticky],
+                :content_html => parse_markdown(content)
+            }
+        end
+        respond(:entries => results)
+    end
+
     post '/api/refresh_news_on_website' do
         require_user_who_can_manage_news!
         data = parse_request_data(:required_keys => [:staging])

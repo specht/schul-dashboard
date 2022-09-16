@@ -72,10 +72,18 @@
             </div>
         </div>
         <div class="col-md-6">
-            <hr />
-            <div id='unknown_book' style="display: none;">
+            <!-- <hr /> -->
+            <div id='unknown_book' style="display: none; margin-left: -15px; margin-right: -15px; margin-top: 15px;">
                 <div class="alert alert-danger">
                     Ein Buch mit der Stammsignatur <span id='unknown_stem'></span> befindet sich nicht im System.
+                </div>
+            </div>
+            <div id='new_or_old_exemplar_div' style="display: none; margin-left: -15px; margin-right: -15px; margin-top: 15px;">
+                <div class="alert alert-success">
+                    Das Exemplar <b><span class='new_or_old_barcode'></span></b> war bisher nicht bekannt und wurde gespeichert.
+                </div>
+                <div class="alert alert-warning">
+                    Das Exemplar <b><span class='new_or_old_barcode'></span></b> ist bereits bekannt.
                 </div>
             </div>
             <div id='stem_div'></div>
@@ -234,7 +242,20 @@
         if (parts.checksum) data.checksum = parts.checksum;
         last_scanned_parts = parts;
         bib_api_call('/jwt/scan_book', data, function (data) {
-            handle_scan_book(parts.stem, parts.bnr, data);
+            if (data.success) {
+                handle_scan_book(parts.stem, parts.bnr, data);
+                $('#new_or_old_exemplar_div').show();
+                $('.new_or_old_barcode').text(`${parts.stem}-${parts.bnr}`);
+                if (data.new_exemplar) {
+                    $('#new_or_old_exemplar_div .alert-warning').hide();
+                    $('#new_or_old_exemplar_div .alert-success').show();
+                } else {
+                    $('#new_or_old_exemplar_div .alert-warning').show();
+                    $('#new_or_old_exemplar_div .alert-success').hide();
+                }
+            } else {
+                $('#new_or_old_exemplar_div').hide();
+            }
         });
     }
 

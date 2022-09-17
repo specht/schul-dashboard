@@ -2067,11 +2067,6 @@ class Timetable
             rescue StandardError => e
                 STDERR.puts e
             end
-            begin
-                Main.refresh_bib_data()
-            rescue StandardError => e
-                STDERR.puts e
-            end
         end
 
         add_these_lesson_keys = Set.new()

@@ -430,7 +430,7 @@ class Main < Sinatra::Base
         StringIO.open do |io|
             io.puts "<div class='col-lg-12 col-md-4 col-sm-6'>"
             io.puts "<div class='hint'>"
-            io.puts "<div><span style='font-size: 200%; opacity: 0.7; float: left; margin-right: 8px;'><i class='fa fa-book'></i></span>#{n_to_s[@@bib_summoned_books[email].size] || 'Mehrere'} Bücher, die du ausgeliehen hast, werden dringend in der Bibliothek benötigt. Bitte bring es zurück und lege #{@@bib_summoned_books[email].size == 1 ? 'es' : 'sie'} ins <a target='_blank' href='https://rundgang.gymnasiumsteglitz.de/#g114'>Rückgaberegal</a> vor der Bibliothek.</div>"
+            io.puts "<div><span style='font-size: 200%; opacity: 0.7; float: left; margin-right: 8px;'><i class='fa fa-book'></i></span>#{n_to_s[@@bib_summoned_books[email].size] || 'Mehrere'} Bücher, die du ausgeliehen hast, #{@@bib_summoned_books[email].size == 1 ? 'wird' : 'werden'} dringend in der Bibliothek benötigt. Bitte bring es zurück und lege #{@@bib_summoned_books[email].size == 1 ? 'es' : 'sie'} ins <a target='_blank' href='https://rundgang.gymnasiumsteglitz.de/#g114'>Rückgaberegal</a> vor der Bibliothek.</div>"
             io.puts "<hr />"
             io.puts "<a href='/bibliothek' style='white-space: nowrap;' class='float-right btn btn-sm btn-success'>Zu deinen Büchern&nbsp;<i class='fa fa-angle-double-right'></i></a>"
             io.puts "<div style='clear: both;'></div>"

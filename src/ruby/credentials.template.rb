@@ -139,6 +139,7 @@ JWT_APPISS_AGRAPP = 'dashboard'
 JWT_APPKEY_AGRAPP = 'ein_langer_langer_richtig_langer_app_key'
 STREAM_SITE_URL = 'https://info.beispielschule.de/'
 JWT_SUB = 'beispielschule.de'
+BIB_HOST = 'https://bibliothek.beispielschule.de'
 JWT_APPKEY_BIB = 'ein_langer_langer_richtig_langer_app_key'
 # Hier kann, falls vorhanden, eine URL eingetragen werden, unter der aus dem
 # Ruby-Docker-Container ein GET-Request zu allRooms gemacht werden kann,

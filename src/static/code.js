@@ -484,9 +484,13 @@ function fix_scanned_book_barcode(s) {
 }
 
 function create_book_div(book, shelf, options = {}) {
-    let stem = $(`<span class='text-slate-500 pl-2 pr-1 py-1 absolute text-sm'>`).css('right', '0.5em').text(book.stem);
-    if (options.exemplar && options.exemplar.bnr)
-        stem.html(`<i class='fa fa-barcode'></i>&nbsp;&nbsp;${book.stem}-${options.exemplar.bnr}`);
+    let stem = $(`<span class='text-slate-500 pl-2 pr-1 py-1 absolute text-sm' style='z-index: 100; '>`).css('right', '0.5em').text(book.stem);
+    if (options.exemplar && options.exemplar.bnr) {
+        if (options.r && options.r.ts_summoned) {
+            stem.html($(`<div class='bg-persimmon-500 text-white px-2'>`).text('Bitte bringe dieses Buch in die Bibliothek zurück.'));
+        } else
+            stem.html(`<i class='fa fa-barcode'></i>&nbsp;&nbsp;${book.stem}-${options.exemplar.bnr}`);
+    }
     let cover_path = `${BIB_HOST}/gen/covers/${book.stem}-400.jpg`;
     let hover_classes = '';
     if (options.clickable) {

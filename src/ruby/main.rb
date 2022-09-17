@@ -610,6 +610,7 @@ class Main < Sinatra::Base
 
         @@index_for_klasse = {}
         @@predefined_external_users = {}
+        @@bib_summoned_books = {}
 
         parser = Parser.new()
         parser.parse_faecher do |fach, bezeichnung|
@@ -1200,6 +1201,18 @@ class Main < Sinatra::Base
         end
     end
 
+    def self.refresh_bib_data()
+        debug "Refreshing bib data..."
+        url = "#{BIB_HOST}/api/get_summoned_books"
+        res = Curl.get(url) do |http|
+            payload = {:exp => Time.now.to_i + 60, :email => 'timetable'}
+            http.headers['X-JWT'] = JWT.encode(payload, JWT_APPKEY_BIB, "HS256")
+        end
+        raise 'oops' if res.response_code != 200
+        @@bib_summoned_books = JSON.parse(res.body)
+        debug @@bib_summoned_books.to_yaml
+    end
+
     def self.compile_js()
         files = [
             '/include/jquery/jquery-3.4.1.min.js',
@@ -1300,6 +1313,13 @@ class Main < Sinatra::Base
                 response = http.request(Net::HTTP::Get.new("/api/update_all"))
             rescue StandardError => e
                 STDERR.puts e
+            end
+
+            debug "AYAYAYAYAYYYYYYYY"
+            begin
+                self.refresh_bib_data()
+            rescue StandardError => e
+                debug e
             end
 
             self.compile_js()
@@ -2333,7 +2353,6 @@ class Main < Sinatra::Base
         # require_user_who_can_manage_bib!
         debug "Creating bib token for #{@session_user[:email]}"
         payload = {
-            # :context => JSON.parse(data[:payload]),
             :email => @session_user[:email],
             :display_name => @session_user[:display_name],
             :can_manage_bib => can_manage_bib_logged_in?,

@@ -369,7 +369,7 @@ class Timetable
         hfk_ds = HOURS_FOR_KLASSE.keys.sort.first
 
         update_monitor()
-        
+
         Main.iterate_school_days do |ds, dow|
             HOURS_FOR_KLASSE.keys.sort.each do |k|
                 hfk_ds = k if ds >= k
@@ -1829,7 +1829,7 @@ class Timetable
             lesson_keys << "_#{user[:shorthand]}" if user[:teacher]
             if only_these_lesson_keys && (lesson_keys & only_these_lesson_keys).empty?
                 unless only_these_lesson_keys.include?(:all_messages) || only_these_lesson_keys.include?(:event)
-                    next 
+                    next
                 end
             end
             path = "/gen/w/#{user[:id]}/messages.json.gz"
@@ -2049,7 +2049,7 @@ class Timetable
             end
         end
     end
-    
+
     def update(only_these_lesson_keys)
         if only_these_lesson_keys.nil?
             begin
@@ -2067,10 +2067,15 @@ class Timetable
             rescue StandardError => e
                 STDERR.puts e
             end
+            begin
+                Main.refresh_bib_data()
+            rescue StandardError => e
+                STDERR.puts e
+            end
         end
-        
+
         add_these_lesson_keys = Set.new()
-        
+
         @lesson_info ||= {}
         @text_comments_for_user ||= {}
         @audio_comments_for_user ||= {}

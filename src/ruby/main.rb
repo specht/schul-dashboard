@@ -1206,7 +1206,7 @@ class Main < Sinatra::Base
         begin
             now = Time.now.to_i
             return if now - @@bib_summoned_books_last_ts < 60 * 60
-            @@bib_summoned_books_last_ts = noww
+            @@bib_summoned_books_last_ts = now
             @@bib_summoned_books = {}
             debug "Refreshing bib data..."
             url = "#{BIB_HOST}/api/get_summoned_books"
@@ -1431,7 +1431,7 @@ class Main < Sinatra::Base
         @latest_request_body = nil
         @latest_request_body_parsed = nil
 
-        refresh_bib_data()
+        self.class.refresh_bib_data()
 
         @session_device = nil
         @session_device_token = nil

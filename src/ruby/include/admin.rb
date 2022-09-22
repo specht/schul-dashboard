@@ -430,15 +430,15 @@ class Main < Sinatra::Base
                     }
                 end
             end
-            # @@klassen_order.each do |klasse|
-            #     email = "ev.#{klasse}@#{SCHUL_MAIL_DOMAIN}"
-            #     data_for_required_email_address[email] = {
-            #         :first_name => '',
-            #         :last_name => "Elternvertreter:innen #{klasse}",
-            #         :email => email,
-            #         :password => Main.gen_password_for_email(email)
-            #     }
-            # end
+            @@klassen_order.each do |klasse|
+                email = "ev.#{klasse}@#{SCHUL_MAIL_DOMAIN}"
+                data_for_required_email_address[email] = {
+                    :first_name => '',
+                    :last_name => "Elternvertreter:innen #{klasse}",
+                    :email => email,
+                    :password => Main.gen_password_for_email(email + Date.today.year.to_s)
+                }
+            end
             @@mailing_lists.keys.each { |email| required_email_addresses << email }
             @@klassen_order.each do |klasse|
                 required_email_addresses << "ev.#{klasse}@#{SCHUL_MAIL_DOMAIN}"
@@ -456,8 +456,8 @@ class Main < Sinatra::Base
                     known_email_association[email] = :parents
                 elsif @@mailing_lists.include?(email)
                     known_email_association[email] = :mailing_list
-                # elsif email[0, 3] == 'ev.' && @@klassen_order.include?(email.split('@').first.sub('ev.', ''))
-                #     known_email_association[email] = :ev
+                elsif email[0, 3] == 'ev.' && @@klassen_order.include?(email.split('@').first.sub('ev.', ''))
+                    known_email_association[email] = :ev
                 end
             end
             required_email_addresses = (Set.new(required_email_addresses) - Set.new(email_addresses)).to_a.sort

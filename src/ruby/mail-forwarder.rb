@@ -80,9 +80,9 @@ class Script
                 end
             end
         end
-        # @@klassen_order.each do |klasse|
-        #     results << "ev.#{klasse}@mail.gymnasiumsteglitz.de"
-        # end
+        @@klassen_order.each do |klasse|
+            results << "ev.#{klasse}@mail.gymnasiumsteglitz.de"
+        end
         results.map { |x| x.downcase }
     end
     

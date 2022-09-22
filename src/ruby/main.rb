@@ -610,6 +610,8 @@ class Main < Sinatra::Base
 
         @@index_for_klasse = {}
         @@predefined_external_users = {}
+        @@bib_summoned_books = {}
+        @@bib_summoned_books_last_ts = 0
 
         parser = Parser.new()
         parser.parse_faecher do |fach, bezeichnung|
@@ -1200,6 +1202,26 @@ class Main < Sinatra::Base
         end
     end
 
+    def self.refresh_bib_data()
+        begin
+            now = Time.now.to_i
+            return if now - @@bib_summoned_books_last_ts < 60 * 60
+            @@bib_summoned_books_last_ts = now
+            @@bib_summoned_books = {}
+            debug "Refreshing bib data..."
+            url = "#{BIB_HOST}/api/get_summoned_books"
+            res = Curl.get(url) do |http|
+                payload = {:exp => Time.now.to_i + 60, :email => 'timetable'}
+                http.headers['X-JWT'] = JWT.encode(payload, JWT_APPKEY_BIB, "HS256")
+            end
+            raise 'oops' if res.response_code != 200
+            @@bib_summoned_books = JSON.parse(res.body)
+            debug @@bib_summoned_books.to_yaml
+        rescue StandardError => e
+            debug e
+        end
+    end
+
     def self.compile_js()
         files = [
             '/include/jquery/jquery-3.4.1.min.js',
@@ -1301,6 +1323,8 @@ class Main < Sinatra::Base
             rescue StandardError => e
                 STDERR.puts e
             end
+
+            self.refresh_bib_data()
 
             self.compile_js()
             self.compile_css()
@@ -1406,6 +1430,8 @@ class Main < Sinatra::Base
 
         @latest_request_body = nil
         @latest_request_body_parsed = nil
+
+        self.class.refresh_bib_data()
 
         @session_device = nil
         @session_device_token = nil
@@ -2333,7 +2359,6 @@ class Main < Sinatra::Base
         # require_user_who_can_manage_bib!
         debug "Creating bib token for #{@session_user[:email]}"
         payload = {
-            # :context => JSON.parse(data[:payload]),
             :email => @session_user[:email],
             :display_name => @session_user[:display_name],
             :can_manage_bib => can_manage_bib_logged_in?,

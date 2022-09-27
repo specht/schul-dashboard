@@ -163,8 +163,8 @@ class Main < Sinatra::Base
         unless admin_logged_in?
             # make sure we have the right user unless an admin is logged in
             temp = neo4j_query_expect_one(<<~END_OF_QUERY, {:prid => prid, :email => @session_user[:email]})
-                MATCH (pu)-[rt:IS_PARTICIPANT]->(pr:PollRun {id: $prid})-[:RUNS]->(p:Poll)-[:ORGANIZED_BY]->(au:User {email: $email})
-                RETURN p.id;
+                MATCH (pr:PollRun {id: $prid})-[:RUNS]->(p:Poll)-[:ORGANIZED_BY]->(au:User {email: $email})
+                RETURN au.email;
             END_OF_QUERY
         end
         temp = neo4j_query_expect_one(<<~END_OF_QUERY, {:prid => prid})

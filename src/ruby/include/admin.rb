@@ -385,6 +385,34 @@ class Main < Sinatra::Base
         respond_raw_with_mimetype(print_all_sus_logo_didact, 'text/plain')
     end
 
+    def print_all_lul_logo_didact
+        require_admin!
+        StringIO.open do |io|
+            @@lehrer_order.sort do |a, b|
+                au = @@user_info[a]
+                bu = @@user_info[b]
+                au[:last_name].downcase <=> bu[:last_name].downcase
+            end.each do |email|
+                user = @@user_info[email]
+                io.puts "#{user[:last_name]};#{user[:first_name]};#{user[:shorthand]}"
+            end
+            path = '/data/lehrer/extra-ldc-accounts.csv'
+            if File.exists?(path)
+                File.open(path) do |f|
+                    f.each_line do |line|
+                        io.puts line
+                    end
+                end
+            end
+            io.string
+        end
+    end
+
+    get '/api/all_lul_logo_didact' do
+        require_admin!
+        respond_raw_with_mimetype(print_all_lul_logo_didact, 'text/plain')
+    end
+
     def print_email_accounts()
         require_admin!
         StringIO.open do |io|

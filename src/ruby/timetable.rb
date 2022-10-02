@@ -1585,7 +1585,7 @@ class Timetable
                                     end
                                 end
                             end
-                            event
+                            event.symbolize_keys
                         end
                         fixed_events.map! do |event|
                             # mark event as entfall FOR THIS PERSON only

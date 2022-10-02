@@ -1108,7 +1108,7 @@ class Timetable
                 unless (entry[:date] >= p1.strftime('%Y-%m-%d') || entry[:date] < p.strftime('%Y-%m-%d'))
                     website_events << {
                         :start => entry[:date],
-                        :end => (Date.parse(entry[:date]) + 1).strftime('%Y-%m-%d'),
+                        :end => entry[:date_end] ? (Date.parse(entry[:date_end]) + 1).strftime('%Y-%m-%d') : (Date.parse(entry[:date]) + 1).strftime('%Y-%m-%d'),
                         :title => entry[:title],
                         :label => entry[:title]
                     }

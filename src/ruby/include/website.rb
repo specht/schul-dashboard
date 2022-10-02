@@ -12,7 +12,12 @@ class Main < Sinatra::Base
         ts_now = DateTime.now.strftime('%Y-%m-%d')
         $neo4j.neo4j_query(<<~END_OF_QUERY, :today => ts_now).map { |x| x['e'] }
             MATCH (e:WebsiteEvent)
-            WHERE e.date < $today
+            WHERE e.date_end IS NULL AND e.date < $today
+            DELETE e;
+        END_OF_QUERY
+        $neo4j.neo4j_query(<<~END_OF_QUERY, :today => ts_now).map { |x| x['e'] }
+            MATCH (e:WebsiteEvent)
+            WHERE e.date_end IS NOT NULL AND e.date_end < $today
             DELETE e;
         END_OF_QUERY
         results = $neo4j.neo4j_query(<<~END_OF_QUERY, :today => ts_now).map { |x| x['e'] }
@@ -57,6 +62,16 @@ class Main < Sinatra::Base
         neo4j_query(<<~END_OF_QUERY, :id => data[:id], :date => data[:date])
             MATCH (e:WebsiteEvent {id: $id})
             SET e.date = $date;
+        END_OF_QUERY
+        respond(:result => 'yay')
+    end
+    
+    post '/api/change_website_event_date_end' do
+        require_user_who_can_manage_news!
+        data = parse_request_data(:required_keys => [:id, :date_end])
+        neo4j_query(<<~END_OF_QUERY, :id => data[:id], :date_end => data[:date_end])
+            MATCH (e:WebsiteEvent {id: $id})
+            SET e.date_end = $date_end;
         END_OF_QUERY
         respond(:result => 'yay')
     end
@@ -303,7 +318,7 @@ class Main < Sinatra::Base
         END_OF_QUERY
         data[:events] = results.map do |x|
             x.select do |k, v|
-                [:date, :title, :cancelled].include?(k)
+                [:date, :date_end, :title, :cancelled].include?(k)
             end
         end
         respond(data)

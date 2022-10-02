@@ -1216,7 +1216,7 @@ class Main < Sinatra::Base
             end
             raise 'oops' if res.response_code != 200
             @@bib_summoned_books = JSON.parse(res.body)
-            debug @@bib_summoned_books.to_yaml
+            # debug @@bib_summoned_books.to_yaml
         rescue StandardError => e
             debug e
         end

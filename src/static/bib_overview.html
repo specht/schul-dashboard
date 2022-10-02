@@ -1,13 +1,175 @@
 #{File.read('/static/_bib_public_template.html')}
 #{require_user_who_can_manage_bib!}
+<style>
+    html {
+        scroll-behavior: smooth;
+    }
+    .api_messages {
+        position: absolute;
+        top: 60px;
+        width: 60%;
+        left: 20%;
+        display: none;
+    }
+
+    .tab {
+        display: none;
+    }
+
+    @tailwind base;
+    @tailwind components;
+    @tailwind utilities;
+</style>
 <div class='container bg-white'>
     <div class="table-responsive" style="max-width: 100%; overflow-x: auto;">
-        <table class="table table-sm table-condensed narrow xs" style="display: table; user-select: none;" id='shelves_here'>
-        </table>
+        <div class='tab tab-bestaetigte-buecher'>
+            <h3>Bestätigte Bücher pro Klasse</h3>
+            <div id="klassen_activity_overview" class="flex justify-evenly w-full grid grid-cols-9 gap-1 mb-4">
+            </div>
+        </div>
+        <div class='tab tab-ausgeliehene-buecher'>
+            <h3>Geliehene Bücher pro Klasse</h3>
+            <p><em>Angezeigt werden alle Bücher, die mindestens 20% der Schülerinnen und Schüler dieser Klasse ausgeliehen haben.</em></p>
+            <div id="klassen_buecher_overview"></div>
+        </div>
+        <div class='tab tab-activity'>
+            <h3>Aktivität</h3>
+            <div id="activity_here" class="flex justify-evenly w-full grid grid-cols-12 gap-1 mb-4">
+            </div>
+        </div>
+        <div class='tab tab-shelves'>
+            <h3>Regale</h3>
+            <table class="table table-sm table-condensed narrow xs" style="display: table; user-select: none;" id='shelves_here'>
+            </table>
+        </div>
     </div>
 </div>
 <script>
+    var ACTIVITY_DURATIONS = [
+        ['lavender', '1d', 'letzte 24h'],
+        ['persimmon', '7d', 'letzte 7d'],
+        ['circus-zest', '28d', 'letzte 28d'],
+        ['daisy', 'all', 'jemals']];
+    var KLASSEN_BOOKS_CUTOFF = 0.2;
+
+    function handle_hash_change(hash) {
+        console.log(hash);
+        $('.tab-item').removeClass('font-bold shadow-md outline outline-1 outline-blue-500 bg-white');
+        $(`.tab-item-${hash}`).addClass('font-bold shadow-md outline outline-1 outline-blue-500 bg-white');
+        $('.tab').hide();
+        $(`.tab-${hash}`).show();
+    }
+
     window.addEventListener('load', function () {
+        addEventListener('hashchange', (event) => {
+            let hash = event.newURL.substr(event.newURL.indexOf('#') + 1);
+            handle_hash_change(hash);
+        });
+        if ('#{can_manage_bib_logged_in?}' === 'true') {
+            $(`<li class='mx-1'><a class='tab-item tab-item-shelves inline-block bg-slate-900 border border-blue-500 hover:bg-slate-200 rounded py-1 px-3' href='#shelves'><i class='fa fa-map-marker'></i>&nbsp;&nbsp;Regale</a></li>`).insertAfter($('#sub_menu_extra'));
+            $(`<li class='mx-1'><a class='tab-item tab-item-activity inline-block bg-slate-900 border border-blue-500 hover:bg-slate-200 rounded py-1 px-3' href='#activity'><i class='fa fa-clock-o'></i>&nbsp;&nbsp;Aktivität</a></li>`).insertAfter($('#sub_menu_extra'));
+            $(`<li class='mx-1'><a class='tab-item tab-item-ausgeliehene-buecher inline-block bg-slate-900 border border-blue-500 hover:bg-slate-200 rounded py-1 px-3' href='#ausgeliehene-buecher'><i class='fa fa-book'></i>&nbsp;&nbsp;Geliehene Bücher</a></li>`).insertAfter($('#sub_menu_extra'));
+            $(`<li class='mx-1'><a class='tab-item tab-item-bestaetigte-buecher inline-block bg-slate-900 border border-blue-500 hover:bg-slate-200 rounded py-1 px-3' href='#bestaetigte-buecher'><i class='fa fa-book'></i>&nbsp;&nbsp;Bestätigte Bücher</a></li>`).insertAfter($('#sub_menu_extra'));
+            $('#subsubmenu').show();
+            fix_subsubmenu();
+        }
+        if (window.location.hash === '') {
+            window.location.hash = '#bestaetigte-buecher';
+        }
+        handle_hash_change(window.location.hash.substr(1));
+        bib_api_call('/jwt/get_stats', {}, function(data) {
+            console.log(data);
+            let counts_for_klasse = {};
+            let books_for_klasse = {};
+            for (let klasse of klassen_order) {
+                counts_for_klasse[klasse] = [0, 0];
+                books_for_klasse[klasse] = {};
+            }
+            for (let email in db_user_info) {
+                let info = db_user_info[email];
+                if (info.no_tr_klasse) {
+                    counts_for_klasse[info.no_tr_klasse][0] += data.confirmed_count_for_user[email] || 0;
+                    counts_for_klasse[info.no_tr_klasse][1] += data.ausleihe_count_for_user[email] || 0;
+                    for (let stem of (data.books_for_user[email] || [])) {
+                        books_for_klasse[info.no_tr_klasse][stem] ||= 0;
+                        books_for_klasse[info.no_tr_klasse][stem] += 1;
+                    }
+                }
+            }
+            for (let klasse of klassen_order) {
+                let klassen_label = klassen_tr[klasse] || klasse;
+                let div = $(`<div class='flex justify-center items-center'>`);
+                div.append($(`<div class='text-center absolute text-base md:text-lg'><div class='text-lg' style='margin-bottom: -0.5em;'><b>${klassen_label}</b></div><span style='font-size: 90%;'>${counts_for_klasse[klasse][1]}</span></div>`));
+                let canvas = $(`<canvas>`).attr('height', '250');
+                div.append(canvas);
+                $('#klassen_activity_overview').append(div);
+
+                setTimeout(function() {
+                    new Chart(canvas, {
+                        type: 'doughnut',
+                        data: {
+                            labels: ['bestätigt', 'nicht bestätigt'],
+                            datasets: [
+                                {
+                                    data: [counts_for_klasse[klasse][0], counts_for_klasse[klasse][1] - counts_for_klasse[klasse][0]],
+                                    backgroundColor: [
+                                        CLING_COLORS[`${ACTIVITY_DURATIONS[0][0]}-500`],
+                                        CLING_COLORS[`slate-900`],
+                                    ],
+                                    borderWidth: 1,
+                                    hoverOffset: 4,
+                                },
+                            ],
+                        },
+                        options: {
+                            legend: {
+                                display: false
+                            },
+                            tooltips: {
+                                enabled: true
+                            }
+                        }
+                    });
+                }, 0);
+
+
+                let show_books = Object.keys(books_for_klasse[klasse]).filter((x) => {
+                    return (books_for_klasse[klasse][x] / schueler_for_klasse[klasse].length) >= KLASSEN_BOOKS_CUTOFF;
+                });
+
+                if (show_books.length > 0) {
+                    $('#klassen_buecher_overview').append($(`<h4>`).text(`Klasse ${klassen_tr[klasse] || klasse}`));
+
+                    let container = $(`<div class='flex justify-evenly w-full grid grid-cols-12 gap-1 mb-4'>`);
+                    $('#klassen_buecher_overview').append(container);
+
+                    for (let stem of show_books) {
+                        let book = data.book_details[stem];
+                        let div = create_book_div(book, null, {
+                            // compact: true,
+                            clickable: true,
+                            callback: function (book) {
+                                window.location.href = `/bib_book/${book.stem}`;
+                            }
+                        }).data('book', book);
+                        container.append(div);
+                    }
+                }
+
+            }
+            for (let key of Object.keys(data.actions_for_durations)) {
+                let actions = data.actions_for_durations[key];
+                let div = $(`<div class="col-span-4 md:col-span-2 xl:col-span-2 bg-gray-100 p-3 rounded-lg">`);
+                div.append($(`<h5 class="text-gray-500 italic">${key}</h5>`));
+                div.append($('<hr>'));
+                for (let x of ACTIVITY_DURATIONS) {
+                    color = x[0];
+                    let border_color = CLING_COLORS[`${color}-600`];
+                    div.append($(`<h4><span class="inline-block w-20 text-center"><span class="px-2 rounded-md bg-${color}-700 text-${color}-300 v-users-solved-1d font-bold">${actions[`count_${x[1]}`]}</span></span><span style='color: #666; font-size: 70%; font-style: italic; font-weight: normal;'>${x[2]}</span></h4>`));
+                }
+                $('#activity_here').append(div);
+            }
+        });
         bib_api_call('/jwt/get_shelves', {}, function (data) {
             if (data.success) {
                 console.log(data);

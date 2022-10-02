@@ -9,10 +9,23 @@
     window.addEventListener('load', function () {
         let tag = window.location.pathname.replace('/bib_postpone/', '');
         console.log(tag);
-        bib_api_call_no_jwt('/public/postpone', {tag: tag}, function (data) {
+        bib_api_call_no_jwt('/public/pre_postpone', {tag: tag}, function (data) {
             if (data.success) {
-                console.log(data);
-                $('#response').html(`Ihre Schülerinnen und Schüler werden ab dem ${moment.unix(data.new_ts_hide_before).format('L')} dazu aufgefordert, ihre Bücher zu bestätigen. Sie bekommen eine Woche vorher, ab dem ${moment.unix(data.new_ts_postpone_reminder).format('L')} die Gelegenheit, diesen Termin um zwei weitere Wochen in die Zukunft zu verschieben.`);
+                $('#response').append($('<p>').html(`Ihre Schülerinnen und Schüler werden <b>ab dem ${moment.unix(data.ts_hide_before).format('L')}</b> dazu aufgefordert, ihre Bücher zu bestätigen. Sie bekommen eine Woche vorher, <b>ab dem ${moment.unix(data.ts_postpone_reminder).format('L')}</b> die Gelegenheit, diesen Termin um zwei weitere Wochen in die Zukunft zu verschieben.`));
+                $('#response').append($('<hr>'));
+                let button = $(`<button class='btn btn-success'>`).html(`<i class='fa fa-clock-o'></i>&nbsp;&nbsp;Termin um eine Woche verschieben`);
+                $('#response').append(button);
+                button.click(function(e) {
+                    bib_api_call_no_jwt('/public/postpone', {tag: tag}, function (data) {
+                        if (data.success) {
+                            $('#response').empty();
+                            $('#response').append($('<p>').html(`Ihre Schülerinnen und Schüler werden <b>ab dem ${moment.unix(data.new_ts_hide_before).format('L')}</b> dazu aufgefordert, ihre Bücher zu bestätigen. Sie bekommen eine Woche vorher, <b>ab dem ${moment.unix(data.new_ts_postpone_reminder).format('L')}</b> die Gelegenheit, diesen Termin um zwei weitere Wochen in die Zukunft zu verschieben.`));
+                        } else {
+                            $('#response').html("Dieser Link ist nicht mehr gültig.");
+                        }
+                    });
+                });
+
             } else {
                 $('#response').html("Dieser Link ist nicht mehr gültig.");
             }

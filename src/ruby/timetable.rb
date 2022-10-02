@@ -1589,7 +1589,7 @@ class Timetable
                         end
                         fixed_events.map! do |event|
                             # mark event as entfall FOR THIS PERSON only
-                            if event[:klassen_removed]
+                            if @@user_info[email] && event[:klassen_removed]
                                 if event[:klassen_removed].include?(@@user_info[email][:klasse])
                                     event[:entfall] = true
                                 end

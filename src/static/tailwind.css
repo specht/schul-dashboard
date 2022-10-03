@@ -1759,11 +1759,11 @@ Ensure the default browser behavior of the `hidden` attribute.
     grid-column: span 2 / span 2;
   }
 
-  .xl\:col-span-4 {
-    grid-column: span 4 / span 4;
-  }
-
   .xl\:col-span-8 {
     grid-column: span 8 / span 8;
+  }
+
+  .xl\:col-span-4 {
+    grid-column: span 4 / span 4;
   }
 }

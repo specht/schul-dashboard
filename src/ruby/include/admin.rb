@@ -394,7 +394,7 @@ class Main < Sinatra::Base
                 au[:last_name].downcase <=> bu[:last_name].downcase
             end.each do |email|
                 user = @@user_info[email]
-                io.puts "#{user[:last_name]};#{user[:first_name]};#{user[:shorthand]}"
+                io.puts "#{user[:last_name]};#{user[:first_name].strip.empty? ? user[:last_name] : user[:first_name]};#{user[:shorthand]}"
             end
             path = '/data/lehrer/extra-ldc-accounts.csv'
             if File.exists?(path)

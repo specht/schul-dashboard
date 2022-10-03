@@ -32,6 +32,11 @@
             <p><em>Angezeigt werden alle Bücher, die mindestens 20% der Schülerinnen und Schüler dieser Klasse ausgeliehen haben.</em></p>
             <div id="klassen_buecher_overview"></div>
         </div>
+        <div class='tab tab-zurueckgeforderte-buecher'>
+            <h3>Zurückgeforderte Bücher</h3>
+            <div id="summoned_books_overview" class="flex justify-evenly w-full grid grid-cols-12 gap-1 mb-4">
+            </div>
+        </div>
         <div class='tab tab-activity'>
             <h3>Aktivität</h3>
             <div id="activity_here" class="flex justify-evenly w-full grid grid-cols-12 gap-1 mb-4">
@@ -68,8 +73,10 @@
         if ('#{can_manage_bib_logged_in?}' === 'true') {
             $(`<li class='mx-1'><a class='tab-item tab-item-shelves inline-block bg-slate-900 border border-blue-500 hover:bg-slate-200 rounded py-1 px-3' href='#shelves'><i class='fa fa-map-marker'></i>&nbsp;&nbsp;Regale</a></li>`).insertAfter($('#sub_menu_extra'));
             $(`<li class='mx-1'><a class='tab-item tab-item-activity inline-block bg-slate-900 border border-blue-500 hover:bg-slate-200 rounded py-1 px-3' href='#activity'><i class='fa fa-clock-o'></i>&nbsp;&nbsp;Aktivität</a></li>`).insertAfter($('#sub_menu_extra'));
+            $(`<li class='mx-1'><a class='tab-item tab-item-zurueckgeforderte-buecher inline-block bg-slate-900 border border-blue-500 hover:bg-slate-200 rounded py-1 px-3' href='#zurueckgeforderte-buecher'><i class='fa fa-book'></i>&nbsp;&nbsp;Zurückgeforderte Bücher</a></li>`).insertAfter($('#sub_menu_extra'));
             $(`<li class='mx-1'><a class='tab-item tab-item-ausgeliehene-buecher inline-block bg-slate-900 border border-blue-500 hover:bg-slate-200 rounded py-1 px-3' href='#ausgeliehene-buecher'><i class='fa fa-book'></i>&nbsp;&nbsp;Geliehene Bücher</a></li>`).insertAfter($('#sub_menu_extra'));
             $(`<li class='mx-1'><a class='tab-item tab-item-bestaetigte-buecher inline-block bg-slate-900 border border-blue-500 hover:bg-slate-200 rounded py-1 px-3' href='#bestaetigte-buecher'><i class='fa fa-book'></i>&nbsp;&nbsp;Bestätigte Bücher</a></li>`).insertAfter($('#sub_menu_extra'));
+            
             $('#subsubmenu').show();
             fix_subsubmenu();
         }
@@ -168,6 +175,65 @@
                     div.append($(`<h4><span class="inline-block w-20 text-center"><span class="px-2 rounded-md bg-${color}-700 text-${color}-300 v-users-solved-1d font-bold">${actions[`count_${x[1]}`]}</span></span><span style='color: #666; font-size: 70%; font-style: italic; font-weight: normal;'>${x[2]}</span></h4>`));
                 }
                 $('#activity_here').append(div);
+            }
+
+            // handle summoned books
+            let summoned_books_by_stem = {};
+            let summoned_books_state_by_stem = {};
+            for (let entry of data.summoned_books) {
+                if (!(entry['b.stem'] in summoned_books_by_stem))
+                    summoned_books_by_stem[entry['b.stem']] = [];
+                if (!(entry['b.stem'] in summoned_books_state_by_stem))
+                    summoned_books_state_by_stem[entry['b.stem']] = {present: 0, past: 0};
+                if (entry['r.ts_returned'])
+                    summoned_books_state_by_stem[entry['b.stem']].past += 1;
+                else
+                    summoned_books_state_by_stem[entry['b.stem']].present += 1;
+
+                summoned_books_by_stem[entry['b.stem']].push(entry);
+            }
+            let summoned_stems = Object.keys(summoned_books_by_stem).sort(function(a, b) {
+                return summoned_books_state_by_stem[b].present - summoned_books_state_by_stem[a].present;
+            });
+            for (let stem of summoned_stems) {
+                let entry = summoned_books_by_stem[stem];
+                let book_div = create_book_div(data.book_details[stem], null, 
+                    {clickable: true,
+                     callback: function (book) {
+                        window.location.href = `/bib_book/${book.stem}`;
+                     }
+                    }
+                );
+                $('#summoned_books_overview').append(book_div);
+                let div = $(`<div class='col-span-12 md:col-span-6 xl:col-span-8 p-2'>`);
+                if (summoned_books_state_by_stem[stem].present > 0) {
+                    let p = $('<p>');
+                    p.append(`<i class='text-circus-zest-500 fa fa-clock-o'></i>&nbsp;&nbsp;<b>Zurückgefordert und noch ausstehend: ${summoned_books_state_by_stem[stem].present} Exemplar${summoned_books_state_by_stem[stem].present == 1 ? '' : 'e'}</b>`);
+                    p.append($('<br />'));
+                    p.append($('<div>').html(summoned_books_by_stem[stem].filter(function(x) {
+                        return (x['r.ts_returned'] == null);
+                    }).map(function(x) {
+                        let email = x['u.email'];
+                        if (db_user_info[email]) {
+                            return `${db_user_info[email].display_name}${db_user_info[email].klasse ? ' (' + db_user_info[email].klasse + ')' : ''}`;
+                        } else {
+                            return `${email}`;
+                        }
+                    }).join(', ')));
+                    div.append(p);
+                }
+                if (summoned_books_state_by_stem[stem].past > 0) {
+                    let p = $('<p>');
+                    p.append(`<i class='text-bamboo-500 fa fa-check'></i>&nbsp;&nbsp;<b>Zurückgefordert und bereits zurückgegeben: ${summoned_books_state_by_stem[stem].past} Exemplar${summoned_books_state_by_stem[stem].past == 1 ? '' : 'e'}</b>`);
+                    let durations = summoned_books_by_stem[stem].filter(function(x) {
+                        return (x['r.ts_returned'] != null);
+                    }).map(function(x) {
+                        return x['r.ts_returned'] - x['r.ts_summoned'];
+                    })
+                    p.append(`<br />Benötigte Zeit: ${moment.duration(durations[0] * 1000).humanize()} – ${moment.duration(durations[durations.length - 1] * 1000).humanize()} (Median: ${moment.duration(durations[Math.floor(durations.length / 2)] * 1000).humanize()})`);
+                    div.append(p);
+                }
+                $('#summoned_books_overview').append(div);
             }
         });
         bib_api_call('/jwt/get_shelves', {}, function (data) {

@@ -546,7 +546,7 @@ class Main < Sinatra::Base
                             end.join(' / ')
                         end
                     end
-                    sheet.write_string(index + 1, x, label)
+                    sheet.write_string(index + 1, x, label.nil? ? '' : label)
                 end
             end
             workbook.close

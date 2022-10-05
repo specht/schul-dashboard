@@ -1108,7 +1108,7 @@ class Timetable
                 unless (entry[:date] >= p1.strftime('%Y-%m-%d') || entry[:date] < p.strftime('%Y-%m-%d'))
                     website_events << {
                         :start => entry[:date],
-                        :end => (Date.parse(entry[:date]) + 1).strftime('%Y-%m-%d'),
+                        :end => entry[:date_end] ? (Date.parse(entry[:date_end]) + 1).strftime('%Y-%m-%d') : (Date.parse(entry[:date]) + 1).strftime('%Y-%m-%d'),
                         :title => entry[:title],
                         :label => entry[:title]
                     }
@@ -1267,12 +1267,12 @@ class Timetable
                             e[:event_type] = :lesson
                             e[:label] = user[:teacher] ? e[:label_klasse].dup : e[:label_lehrer].dup
                             e[:label_lang] = user[:teacher] ? e[:label_klasse_lang].dup : e[:label_lehrer_lang].dup
-                            if user[:teacher]
-                                if e[:lesson_key] && @@lessons[:lesson_keys][e[:lesson_key]]
-                                    e[:label] = "<b>#{@@lessons[:lesson_keys][e[:lesson_key]][:pretty_folder_name].gsub(/\([^\)]+\)/, '').strip}</b> #{e[:label_klasse].scan(/\([^\)]+\)/)[0]}"
-                                    e[:label_lang] = "<b>#{@@lessons[:lesson_keys][e[:lesson_key]][:pretty_folder_name].gsub(/\([^\)]+\)/, '').strip}</b> #{e[:label_klasse].scan(/\([^\)]+\)/)[0]}"
-                                end
-                            end
+                            # if user[:teacher]
+                                # if e[:lesson_key] && @@lessons[:lesson_keys][e[:lesson_key]]
+                                    # e[:label] = "<b>#{@@lessons[:lesson_keys][e[:lesson_key]][:pretty_folder_name].gsub(/\([^\)]+\)/, '').strip}</b> #{e[:label_klasse].scan(/\([^\)]+\)/)[0]}"
+                                    # e[:label_lang] = "<b>#{@@lessons[:lesson_keys][e[:lesson_key]][:pretty_folder_name].gsub(/\([^\)]+\)/, '').strip}</b> #{e[:label_klasse].scan(/\([^\)]+\)/)[0]}"
+                                # end
+                            # end
                             e[:label_short] = user[:teacher] ? e[:label_klasse_short].dup : e[:label_lehrer_short].dup
                             if user[:is_room]
                                 e[:label] = e[:label_room].dup
@@ -1585,11 +1585,11 @@ class Timetable
                                     end
                                 end
                             end
-                            event
+                            event.symbolize_keys
                         end
                         fixed_events.map! do |event|
                             # mark event as entfall FOR THIS PERSON only
-                            if event[:klassen_removed]
+                            if @@user_info[email] && event[:klassen_removed]
                                 if event[:klassen_removed].include?(@@user_info[email][:klasse])
                                     event[:entfall] = true
                                 end

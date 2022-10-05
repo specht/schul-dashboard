@@ -17,7 +17,8 @@
                 <table class='table table-striped narrow' style='width: unset; min-width: 100%;'>
                     <thead>
                         <tr>
-                            <th style='width: 150px;'>Datum</th>
+                            <th style='width: 150px;'>Beginn</th>
+                            <th style='width: 150px;'>Ende</th>
                             <th style='min-width: 150px;'>Titel</th>
                             <th style='width: 120px;'>Löschen</th>
                         </tr>
@@ -55,14 +56,15 @@
         api_call('/api/get_website_events', {}, function (data) {
             $('.events-here').empty();
             if (data.success) {
-                console.log(data.events);
                 for (let entry of data.events) {
                     let row = $('<tr>');
                     row.data('id', entry.id);
-                    let ds = `${entry.date.substr(8, 2)}.${entry.date.substr(5, 2)}.${entry.date.substr(0, 4)}`;
                     let cell;
                     let ti_date = $("<input>").attr('type', 'date').addClass('form-control').val(entry.date);
                     cell = $('<td>').append(ti_date);
+                    row.append(cell);
+                    let ti_date_end = $("<input>").attr('type', 'date').addClass('form-control').val(entry.date_end);
+                    cell = $('<td>').append(ti_date_end);
                     row.append(cell);
                     let ti_title = $("<input>").attr('type', 'text').addClass('form-control').val(entry.title);
                     cell = $('<td>').append(ti_title);
@@ -78,6 +80,12 @@
                     ti_date.change(function (e) {
                         let id = $(e.target).closest('tr').data('id');
                         api_call('/api/change_website_event_date', { id: id, date: $(e.target).val() }, function (data) {
+                            refresh_events();
+                        });
+                    });
+                    ti_date_end.change(function (e) {
+                        let id = $(e.target).closest('tr').data('id');
+                        api_call('/api/change_website_event_date_end', { id: id, date_end: $(e.target).val() }, function (data) {
                             refresh_events();
                         });
                     });

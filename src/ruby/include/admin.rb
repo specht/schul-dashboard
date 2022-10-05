@@ -113,6 +113,8 @@ class Main < Sinatra::Base
             io.puts "<a class='btn btn-secondary' href='#monitor'>Monitor</a>"
             io.puts "<a class='btn btn-secondary' href='#bibliothek'>Bibliothek</a>"
             io.puts "<a class='btn btn-secondary' href='/lesson_keys'>Lesson Keys</a>"
+            io.puts "<a class='btn btn-secondary' href='/api/all_sus_logo_didact'>LDC: Alle SuS</a>"
+            io.puts "<a class='btn btn-secondary' href='/api/all_lul_logo_didact'>LDC: Alle Lehrkräfte</a>"
             io.puts "<hr />"
             io.puts "<h3 id='teachers'>Lehrerinnen und Lehrer</h3>"
             io.puts "<div style='max-width: 100%; overflow-x: auto;'>"
@@ -363,7 +365,7 @@ class Main < Sinatra::Base
         respond_raw_with_mimetype(print_all_users, 'text/plain')
     end
 
-    def print_all_users_logo_didact
+    def print_all_sus_logo_didact
         require_admin!
         StringIO.open do |io|
             @@klassen_order.each do |klasse|
@@ -378,9 +380,37 @@ class Main < Sinatra::Base
         end
     end
 
-    get '/api/all_users_logo_didact' do
+    get '/api/all_sus_logo_didact' do
         require_admin!
-        respond_raw_with_mimetype(print_all_users_logo_didact, 'text/plain')
+        respond_raw_with_mimetype(print_all_sus_logo_didact, 'text/plain')
+    end
+
+    def print_all_lul_logo_didact
+        require_admin!
+        StringIO.open do |io|
+            @@lehrer_order.sort do |a, b|
+                au = @@user_info[a]
+                bu = @@user_info[b]
+                au[:last_name].downcase <=> bu[:last_name].downcase
+            end.each do |email|
+                user = @@user_info[email]
+                io.puts "#{user[:last_name]};#{user[:first_name].strip.empty? ? user[:last_name] : user[:first_name]};#{user[:shorthand]}"
+            end
+            path = '/data/lehrer/extra-ldc-accounts.csv'
+            if File.exists?(path)
+                File.open(path) do |f|
+                    f.each_line do |line|
+                        io.puts line
+                    end
+                end
+            end
+            io.string
+        end
+    end
+
+    get '/api/all_lul_logo_didact' do
+        require_admin!
+        respond_raw_with_mimetype(print_all_lul_logo_didact, 'text/plain')
     end
 
     def print_email_accounts()

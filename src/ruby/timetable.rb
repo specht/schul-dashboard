@@ -506,7 +506,7 @@ class Timetable
                         matching_indices = (day_events[ventry[:stunde]] || []).select do |index|
                             event = @lesson_cache[index]
                             flag = false
-                            if !event[:regular] 
+                            if !event[:regular]
                                 if event[:stunde] == ventry[:stunde]
                                     vfach = ventry[:fach_alt] || ventry[:fach_neu]
                                     if (event[:fach] || []).first == vfach
@@ -524,10 +524,10 @@ class Timetable
                             # LEHRER
                             if ventry[:lehrer_alt] && ventry[:lehrer_neu].nil?
                                 event[:lehrer] = [ventry[:lehrer_alt], []]
-                            elsif ventry[:lehrer_alt] && ventry[:lehrer_neu] 
+                            elsif ventry[:lehrer_alt] && ventry[:lehrer_neu]
                                 # Lehrerwechsel
                                 event[:lehrer] = [ventry[:lehrer_alt], ventry[:lehrer_neu] ]
-                            elsif ventry[:lehrer_alt].nil? && ventry[:lehrer_neu] 
+                            elsif ventry[:lehrer_alt].nil? && ventry[:lehrer_neu]
                                 # Lehrerwechsel: mehr Lehrer als vorher
                                 event[:lehrer] = [[], ventry[:lehrer_neu] ]
                             end
@@ -535,10 +535,10 @@ class Timetable
                             # KLASSEN
                             if ventry[:klassen_alt] && ventry[:klassen_neu].nil?
                                 event[:klassen] = [ventry[:klassen_alt], []]
-                            elsif ventry[:klassen_alt] && ventry[:klassen_neu] 
+                            elsif ventry[:klassen_alt] && ventry[:klassen_neu]
                                 # Klassenwechsel
                                 event[:klassen] = [ventry[:klassen_alt], ventry[:klassen_neu] ]
-                            elsif ventry[:klassen_alt].nil? && ventry[:klassen_neu] 
+                            elsif ventry[:klassen_alt].nil? && ventry[:klassen_neu]
                                 # Klassenwechsel: mehr Klassen
                                 event[:klassen] = [[], ventry[:klassen_neu] ]
                             end
@@ -567,7 +567,7 @@ class Timetable
                             end
 
                             # RAUM
-                            if ventry[:raum_alt] && ventry[:raum_neu] 
+                            if ventry[:raum_alt] && ventry[:raum_neu]
                                 # Raumwechsel
                                 event[:raum] = [ventry[:raum_alt], ventry[:raum_neu] ]
                             end
@@ -606,6 +606,7 @@ class Timetable
                                 :vertretungs_text => ventry[:vertretungs_text],
                                 :regular => false
                             }
+
                             @lesson_cache << event
                             day_events[ventry[:stunde]] ||= Set.new()
                             day_events[ventry[:stunde]] << event[:cache_index]

@@ -110,16 +110,20 @@
         bib_api_call('/jwt/get_checked_out_books_for_email', { email: email }, function (data) {
             if (data.success) {
                 let div = $('<div>').appendTo($('#book_table'));
+                let headers = ['Signatur', 'Titel', 'Autor', 'Ausgeliehen', 'Bestätigt', 'Lehrkraft', 'Fach'];
+                if (#{can_manage_bib_special_access_logged_in?} === true) {
+                    headers.push('Ausleihe aufheben');
+                }
                 table = new SortableTable({
                     element: div,
                     xs: true,
-                    headers: ['Signatur', 'Titel', 'Autor', 'Ausgeliehen', 'Bestätigt', 'Lehrkraft', 'Fach'].map(function (x) {
+                    headers: headers.map(function (x) {
                         let th = $('<th>').text(x);
                         if (['Signatur', 'Ausgeliehen', 'Bestätigt'].indexOf(x) >= 0) th.data('type', 'int');
                         return th;
                     }),
                     rows: data.exemplare.map(function (entry) {
-                        return [
+                        let entries = [
                             entry.book.stem,
                             $('<td>').text(`${entry.book.stem}-${entry.exemplar.bnr}`).data('sort_value', entry.book.stem * 1000000 + entry.exemplar.bnr),
                             $('<td>').css('max-width', '300px').text(entry.book.title),
@@ -129,6 +133,25 @@
                             entry.r.teacher ? create_user_td_span_teacher(entry.r.teacher) : $('<td>').text('–'),
                             $('<td>').text(entry.r.fach || '–')
                         ];
+                        if (#{can_manage_bib_special_access_logged_in?} === true) {
+                            let button = $(`<button class='btn btn-danger btn-xs'><i class='fa fa-trash'></i>&nbsp;&nbsp;Ausleihe aufheben</button>`).data('stem', entry.book.stem).data('bnr', entry.exemplar.bnr);
+                            button.click(function(e) {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                let stem = $(e.target).data('stem');
+                                let bnr = $(e.target).data('bnr');
+                                showTemplateModal('Ausleihe aufheben',
+                                    `Sind Sie sicher, dass Sie die Ausleihe aufheben möchten?`,
+                                    "<i class='fa fa-trash'></i>&nbsp;&nbsp;Ausleihe aufheben", 'btn-danger',
+                                    'Abbrechen', 'btn-secondary', function () {
+                                        // console.log(`removing: ${sus_email}`);
+                                    }
+                                );
+
+                            });
+                            entries.push(button);
+                        }
+                        return entries;
                     }),
                     clickable_rows: true,
                     clickable_row_callback: row_clicked

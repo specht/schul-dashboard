@@ -142,6 +142,10 @@ class Main < Sinatra::Base
         flag
     end
 
+    def can_manage_bib_special_access_logged_in?
+        user_logged_in? && CAN_MANAGE_BIB_SPECIAL_ACCESS.include?(@session_user[:email])
+    end
+
     def teacher_or_can_manage_bib_logged_in?
         teacher_logged_in? || can_manage_bib_logged_in?
     end

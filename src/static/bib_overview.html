@@ -39,6 +39,8 @@
         </div>
         <div class='tab tab-activity'>
             <h3>Aktivität</h3>
+            <div id="ts_chart"></div>
+            <div id="ts_chart_management"></div>
             <div id="activity_here" class="flex justify-evenly w-full grid grid-cols-12 gap-1 mb-4">
             </div>
         </div>
@@ -55,6 +57,22 @@
         ['persimmon', '7d', 'letzte 7d'],
         ['circus-zest', '28d', 'letzte 28d'],
         ['daisy', 'all', 'jemals']];
+    var TS_COLOR = {
+        ts_checked_out: '#94d2bd',
+        ts_confirmed: '#bb3e03',
+        ts_returned: '#ee9b00',
+        ts_summoned: '#e07a5f',
+        ts_discarded: '#3d405b',
+        ts_removed_ausleihe: '#81b29a',
+    };
+    var TS_LABEL = {
+        ts_checked_out: 'Ausgeliehen',
+        ts_confirmed: 'Bestätigt',
+        ts_returned: 'Zurückgegeben',
+        ts_summoned: 'Zurückgefordert',
+        ts_discarded: 'Ausgemustert',
+        ts_removed_ausleihe: 'Ausleihe aufgehoben',
+    };
     var KLASSEN_BOOKS_CUTOFF = 0.2;
 
     function handle_hash_change(hash) {
@@ -76,7 +94,7 @@
             $(`<li class='mx-1'><a class='tab-item tab-item-zurueckgeforderte-buecher inline-block bg-slate-900 border border-blue-500 hover:bg-slate-200 rounded py-1 px-3' href='#zurueckgeforderte-buecher'><i class='fa fa-book'></i>&nbsp;&nbsp;Zurückgeforderte Bücher</a></li>`).insertAfter($('#sub_menu_extra'));
             $(`<li class='mx-1'><a class='tab-item tab-item-ausgeliehene-buecher inline-block bg-slate-900 border border-blue-500 hover:bg-slate-200 rounded py-1 px-3' href='#ausgeliehene-buecher'><i class='fa fa-book'></i>&nbsp;&nbsp;Geliehene Bücher</a></li>`).insertAfter($('#sub_menu_extra'));
             $(`<li class='mx-1'><a class='tab-item tab-item-bestaetigte-buecher inline-block bg-slate-900 border border-blue-500 hover:bg-slate-200 rounded py-1 px-3' href='#bestaetigte-buecher'><i class='fa fa-book'></i>&nbsp;&nbsp;Bestätigte Bücher</a></li>`).insertAfter($('#sub_menu_extra'));
-            
+
             $('#subsubmenu').show();
             fix_subsubmenu();
         }
@@ -103,6 +121,91 @@
                     }
                 }
             }
+
+            let options = {
+                type: 'bar',
+                options: {
+                    aspectRatio: 6,
+                    scales: {
+                        xAxes: [{
+                            type: 'time',
+                            time: {
+                                unit: 'month',
+                                stepSize: 1,
+                            },
+                        }],
+                        yAxes: [{
+                            ticks: {
+                                beginAtZero: true
+                            }
+                        }]
+                    },
+                    plugins: {
+                        legend: {
+                            display: false,
+                        },
+                    },
+                },
+                data: {
+                    labels: data.all_ts_keys,
+                    datasets: [],
+                },
+            };
+            for (let key of ['ts_checked_out', 'ts_confirmed', 'ts_returned']) {
+                options.data.datasets.push(
+                    {
+                        backgroundColor: TS_COLOR[key],
+                        data: data.all_ts_keys.map(function(x) { return data[key][x] || 0;}),
+                        label: TS_LABEL[key] || key,
+                    }
+                );
+            }
+            let canvas = $(`<canvas>`);
+            $('#ts_chart').append(canvas);
+            new Chart(canvas, options);
+
+            let options_management = {
+                type: 'bar',
+                options: {
+                    aspectRatio: 6,
+                    scales: {
+                        xAxes: [{
+                            type: 'time',
+                            time: {
+                                unit: 'month',
+                                stepSize: 1,
+                            },
+                        }],
+                        yAxes: [{
+                            ticks: {
+                                beginAtZero: true
+                            }
+                        }]
+                    },
+                    plugins: {
+                        legend: {
+                            display: false,
+                        },
+                    },
+                },
+                data: {
+                    labels: data.all_ts_keys,
+                    datasets: [],
+                },
+            };
+            for (let key of ['ts_summoned', 'ts_discarded', 'ts_removed_ausleihe']) {
+                options_management.data.datasets.push(
+                    {
+                        backgroundColor: TS_COLOR[key],
+                        data: data.all_ts_keys.map(function(x) { return data[key][x] || 0;}),
+                        label: TS_LABEL[key] || key,
+                    }
+                );
+            }
+            let canvas_management = $(`<canvas>`);
+            $('#ts_chart_management').append(canvas_management);
+            new Chart(canvas_management, options_management);
+
             for (let klasse of klassen_order) {
                 let klassen_label = klassen_tr[klasse] || klasse;
                 let div = $(`<div class='flex justify-center items-center'>`);

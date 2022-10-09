@@ -133,6 +133,7 @@
         <div id='stock_overview'></div>
         <div id='checked_out_all'></div>
         <div id='in_stock_all'></div>
+        <div id='in_limbo_all'></div>
         <div id='discarded_all'></div>
     </div>
 </div>
@@ -458,6 +459,33 @@
                         });
                     } else {
                         div.append($(`<div class='alert alert-warning'>keine Exemplare vorrätig</div>`));
+                    }
+                }
+
+                if (data.in_limbo_all && data.in_limbo_all.length > 0) {
+                    let div = $("<div>");
+                    $('#in_limbo_all').append($(`<h3>Exemplare in limbo: ${data.in_limbo_all.length}</h3>`));
+                    $('#in_limbo_all').append(div);
+                    if (data.in_limbo_all.length > 0) {
+                        new SortableTable({
+                            element: div,
+                            xs: true,
+                            headers: ['Signatur', 'in limbo seit'].map(function (x) {
+                                let th = $('<th>').text(x);
+                                if (['Signatur', 'in limbo seit'].indexOf(x) >= 0) th.data('type', 'int');
+                                return th;
+                            }),
+                            rows: data.in_limbo_all.map(function (entry) {
+                                console.log(entry.e.bnr);
+                                return [
+                                    `${book.stem}-${entry.e.bnr}`,
+                                    $('<td>').text(`${stem}-${entry.e.bnr}`).data('sort_value', entry.e.bnr),
+                                    $('<td>').text(`${moment.unix(entry.e.ts_in_limbo).format('L')}`),
+                                ];
+                            }),
+                            clickable_rows: true,
+                            clickable_row_callback: row_clicked
+                        });
                     }
                 }
 

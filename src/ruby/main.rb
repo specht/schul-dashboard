@@ -2362,6 +2362,7 @@ class Main < Sinatra::Base
             :email => @session_user[:email],
             :display_name => @session_user[:display_name],
             :can_manage_bib => can_manage_bib_logged_in?,
+            :can_manage_bib_special_access => can_manage_bib_special_access_logged_in?,
             :teacher => teacher_logged_in?,
             :exp => Time.now.to_i + BIB_JWT_TTL + BIB_JWT_TTL_EXTRA
         }

@@ -335,6 +335,7 @@ class Timetable
         @@birthday_entries = Main.class_variable_get(:@@birthday_entries)
         @@schueler_for_teacher = Main.class_variable_get(:@@schueler_for_teacher)
         @@lessons = Main.class_variable_get(:@@lessons)
+        @@original_lesson_key_for_lesson_key = Main.class_variable_get(:@@original_lesson_key_for_lesson_key)
         @@vertretungen = Main.class_variable_get(:@@vertretungen)
         @@vplan_timestamp = Main.class_variable_get(:@@vplan_timestamp)
         @@day_messages = Main.class_variable_get(:@@day_messages)
@@ -599,7 +600,7 @@ class Timetable
                                 :raum => ["#{ventry[:raum_alt]}", "#{ventry[:raum_neu]}"],
                                 :klassen => [ventry[:klassen_alt].to_a.sort, ventry[:klassen_neu].to_a.sort],
                                 :lehrer => [ventry[:lehrer_alt] || [], ventry[:lehrer_neu] || []],
-                                :lesson_key => 0,
+                                :lesson_key => (@@original_lesson_key_for_lesson_key[ventry[:fach_neu]] || Set.new()).first || 0,
                                 :lesson_offset => nil,
                                 :count => 1,
                                 :cache_index => @lesson_cache.size,

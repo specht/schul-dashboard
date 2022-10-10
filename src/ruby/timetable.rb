@@ -265,23 +265,23 @@ class Timetable
                 end
                 it.each_pair do |key, entries|
                     monitor_data[which][key] = []
-                    if which == :lehrer && salzh_info[key]
-                        filtered = salzh_info[key].select do |x|
-                            x[:status] == :salzh && x[:status_end_date] >= monitor_date
-                        end
-                        unless filtered.empty?
-                            klassen = {}
-                            filtered.each do |entry|
-                                klassen[entry[:klasse]] ||= {}
-                                klassen[entry[:klasse]][entry[:email]] = entry
-                            end
-                            klassen_sorted = klassen.keys.sort do |a, b|
-                                KLASSEN_ORDER.index(a) <=> KLASSEN_ORDER.index(b)
-                            end
-                            label = "<i class='fa fa-home'></i>&nbsp;&nbsp;Sie haben momentan <strong>#{filtered.size} SuS</strong> in <strong>#{klassen.size} Klasse#{klassen.size == 1 ? '' : 'n'} (#{klassen_sorted.map { |x| Main.tr_klasse(x) }.join(', ')})</strong> im saLzH."
-                            monitor_data[which][key] << {:type => 'extra', :salzh_sus => filtered, :salzh_sus_label => label}
-                        end
-                    end
+                    # if which == :lehrer && salzh_info[key]
+                    #     filtered = salzh_info[key].select do |x|
+                    #         x[:status] == :salzh && x[:status_end_date] >= monitor_date
+                    #     end
+                    #     unless filtered.empty?
+                    #         klassen = {}
+                    #         filtered.each do |entry|
+                    #             klassen[entry[:klasse]] ||= {}
+                    #             klassen[entry[:klasse]][entry[:email]] = entry
+                    #         end
+                    #         klassen_sorted = klassen.keys.sort do |a, b|
+                    #             KLASSEN_ORDER.index(a) <=> KLASSEN_ORDER.index(b)
+                    #         end
+                    #         label = "<i class='fa fa-home'></i>&nbsp;&nbsp;Sie haben momentan <strong>#{filtered.size} SuS</strong> in <strong>#{klassen.size} Klasse#{klassen.size == 1 ? '' : 'n'} (#{klassen_sorted.map { |x| Main.tr_klasse(x) }.join(', ')})</strong> im saLzH."
+                    #         monitor_data[which][key] << {:type => 'extra', :salzh_sus => filtered, :salzh_sus_label => label}
+                    #     end
+                    # end
                     entries.values.each do |tuple|
                         tuple.each.with_index do |entry, i|
                             if i > 0

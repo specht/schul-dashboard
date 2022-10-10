@@ -333,6 +333,9 @@ class Main < Sinatra::Base
             if hints.empty?
                 hints << "<span class='text-success'><i class='fa fa-check'></i></span>&nbsp;&nbsp;Dieser Tabletsatz ist eine gute Wahl für Ihre Unterrichtsstunde."
             end
+            if @@tablet_sets[x][:hint]
+                hints << "<span class='text-info'><i class='fa fa-info-circle'></i></span>&nbsp;&nbsp;#{@@tablet_sets[x][:hint]}"
+            end
             unless hints.empty?
                 tablet_sets[x][:hint] = hints.join('<br />')
             end

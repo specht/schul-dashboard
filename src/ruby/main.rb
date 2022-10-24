@@ -269,9 +269,7 @@ class SetupDatabase
                         RETURN nodes;
                     END_OF_QUERY
                     duplicate_peu.each do |entry|
-                        entry['nodes'].map do |x|
-                            x.props
-                        end.select do |node|
+                        entry['nodes'].select do |node|
                             STDERR.puts node.to_yaml
                             node[:name] != (main.class_variable_get(:@@predefined_external_users)[:recipients][node[:email]] || {})[:label]
                         end.each do |node|

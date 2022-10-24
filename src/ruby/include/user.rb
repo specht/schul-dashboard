@@ -419,7 +419,7 @@ class Main < Sinatra::Base
         end
         omitted_types = neo4j_query_expect_one(<<~END_OF_QUERY, :email => @session_user[:email], :types => omitted_types)['types']
             MATCH (u:User {email: $email})
-            SET u.omit_ical_types = {types}
+            SET u.omit_ical_types = $types
             RETURN COALESCE(u.omit_ical_types, []) AS types;
         END_OF_QUERY
         trigger_update("_#{@session_user[:email]}")

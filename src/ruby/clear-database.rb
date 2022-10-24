@@ -1,6 +1,5 @@
 #!/usr/bin/env ruby
-SKIP_COLLECT_DATA = true
-require './main.rb'
+require './neo4j.rb'
 
 class ClearDatabase
     include QtsNeo4j

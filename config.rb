@@ -148,10 +148,11 @@ docker_compose[:services][:neo4j] = {
 docker_compose[:services][:neo4j][:environment] = [
     'NEO4J_AUTH=none',
     'NEO4J_dbms_logs__timezone=SYSTEM',
+    #'NEO4J_dbms_allow__upgrade=true',
 ]
 docker_compose[:services][:neo4j][:user] = "#{UID}"
 
-docker_compose[:services][:timetable] = YAML.load(docker_compose[:services][:ruby].to_yaml)
+docker_compose[:services][:timetable] = YAML.load(docker_compose[:services][:ruby].to_yaml, aliases: true)
 docker_compose[:services][:timetable]['entrypoint'] = DEVELOPMENT ?
             'rerun -b --dir /app -s SIGKILL \'rackup --port 8080 --host 0.0.0.0 timetable-repl.ru\'' :
             'rackup --port 8080 --host 0.0.0.0 timetable-repl.ru'
@@ -160,13 +161,13 @@ docker_compose[:services][:ruby][:user] = "#{UID}"
 docker_compose[:services][:timetable][:user] = "#{UID}"
 
 if ENABLE_IMAGE_BOT
-    docker_compose[:services][:image_bot] = YAML.load(docker_compose[:services][:ruby].to_yaml)
+    docker_compose[:services][:image_bot] = YAML.load(docker_compose[:services][:ruby].to_yaml, aliases: true)
     docker_compose[:services][:image_bot]['entrypoint'] = DEVELOPMENT ?
                 'rerun -b --dir /app -s SIGKILL \'rackup --port 8080 --host 0.0.0.0 image-bot-repl.ru\'' :
                 'rackup --port 8080 --host 0.0.0.0 image-bot-repl.ru'
 end
 
-docker_compose[:services][:vplan_watcher] = YAML.load(docker_compose[:services][:ruby].to_yaml)
+docker_compose[:services][:vplan_watcher] = YAML.load(docker_compose[:services][:ruby].to_yaml, aliases: true)
 docker_compose[:services][:vplan_watcher]['entrypoint'] = DEVELOPMENT ?
             'rerun -b --dir /app -s SIGKILL \'ruby vplan-watcher.rb\'' :
             'ruby vplan-watcher.rb'
@@ -174,7 +175,7 @@ docker_compose[:services][:vplan_watcher]['entrypoint'] = DEVELOPMENT ?
 docker_compose[:services][:ruby][:user] = "#{UID}"
 docker_compose[:services][:timetable][:user] = "#{UID}"
 
-docker_compose[:services][:invitation_bot] = YAML.load(docker_compose[:services][:ruby].to_yaml)
+docker_compose[:services][:invitation_bot] = YAML.load(docker_compose[:services][:ruby].to_yaml, aliases: true)
 docker_compose[:services][:invitation_bot]['entrypoint'] = DEVELOPMENT ?
             'rerun -b --dir /app -s SIGKILL \'rackup --port 8080 --host 0.0.0.0 invitation-repl.ru\'' :
             'rackup --port 8080 --host 0.0.0.0 invitation-repl.ru'
@@ -182,7 +183,7 @@ docker_compose[:services][:ruby][:user] = "#{UID}"
 docker_compose[:services][:invitation_bot][:user] = "#{UID}"
 
 if ENABLE_MAIL_FORWARDER
-    docker_compose[:services][:mail_forwarder] = YAML.load(docker_compose[:services][:ruby].to_yaml)
+    docker_compose[:services][:mail_forwarder] = YAML.load(docker_compose[:services][:ruby].to_yaml, aliases: true)
     docker_compose[:services][:mail_forwarder].delete(:depends_on)
     docker_compose[:services][:mail_forwarder]['entrypoint'] = DEVELOPMENT ? 'rerun -b --dir /app -s SIGTERM \'ruby mail-forwarder.rb\'' : 'ruby mail-forwarder.rb'
     docker_compose[:services][:mail_forwarder][:user] = "#{UID}"

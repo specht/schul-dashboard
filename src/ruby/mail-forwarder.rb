@@ -53,7 +53,7 @@ class Script
         end
         if refresh
             STDERR.puts "Re-reading mailing lists from disk..."
-            @@mailing_list = YAML.load(File.read(path))
+            @@mailing_list = YAML.load(File.read(path), aliases: true)
             @@mailing_list_mtime = File.mtime(path)
         end
         @@mailing_list

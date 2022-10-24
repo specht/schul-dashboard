@@ -1,13 +1,15 @@
 #!/usr/bin/env ruby
-SKIP_COLLECT_DATA = true
-require './main.rb'
+
+require './neo4j.rb'
+require 'json'
+require 'yaml'
 
 class DumpDatabase
     include QtsNeo4j
-    
+
     def run
         transaction do
-            neo4j_query("MATCH (n) RETURN id(n) as id, labels(n) as labels, n as n;").each do |result|
+            neo4j_query("MATCH (n) RETURN id(n) as id, labels(n) as labels, n as n;") do |result|
                 node = {
                     :id => result['id'],
                     :labels => result['labels'],
@@ -15,7 +17,9 @@ class DumpDatabase
                 }
                 puts "n #{node.to_json}"
             end
-            neo4j_query("MATCH ()-[r]->() RETURN type(r) as type, id(r) as id, id(startnode(r)) as from, id(endnode(r)) as to, r as r;").each do |result|
+        end
+        transaction do
+            neo4j_query("MATCH ()-[r]->() RETURN type(r) as type, id(r) as id, id(startnode(r)) as from, id(endnode(r)) as to, r as r;") do |result|
                 relationship = {
                     :id => result['id'],
                     :type => result['type'],

@@ -11,7 +11,7 @@ require 'json'
 require 'jwt'
 require 'kramdown'
 require 'mail'
-require 'neo4j_ruby_driver'
+require './neo4j.rb'
 require 'net/http'
 require 'net/imap'
 require 'nextcloud'
@@ -136,118 +136,6 @@ HOMEWORK_FEEDBACK_EMOJIS = {'good' => '🙂',
 
 HOURS_FOR_KLASSE = {}
 
-module QtsNeo4j
-
-    class CypherError < StandardError
-        def initialize(code, message)
-            @code = code
-            @message = message
-        end
-
-        def to_s
-            "Cypher Error\n#{@code}\n#{@message}"
-        end
-    end
-
-    def transaction(&block)
-        @@neo4j_driver ||= Neo4j::Driver::GraphDatabase.driver('bolt://neo4j:7687')
-        if @has_bolt_session.nil?
-            begin
-                @has_bolt_session = true
-                @@neo4j_driver.session do |session|
-                    if @has_bolt_transaction.nil?
-                        begin
-                            session.write_transaction do |tx|
-                                @has_bolt_transaction = tx
-                                yield
-                            end
-                        ensure
-                            @has_bolt_transaction = nil
-                        end
-                    else
-                        yield
-                    end
-                end
-            rescue StandardError => e
-                debug("[NEO4J ERROR] #{e}")
-            ensure
-                @has_bolt_session = nil
-            end
-        else
-            yield
-        end
-    end
-
-    class ResultRow
-        def initialize(v)
-            @v = Hash[v.map { |k, v| [k.to_sym, v] }]
-        end
-
-        def props
-            @v
-        end
-    end
-
-    def wait_for_neo4j
-        delay = 1
-        10.times do
-            begin
-                neo4j_query("MATCH (n) RETURN n LIMIT 1;")
-                break
-            rescue
-                STDERR.puts $!
-                STDERR.puts "Retrying after #{delay} seconds..."
-                sleep delay
-                delay += 1
-            end
-        end
-    end
-
-    def parse_neo4j_result(x)
-        if x.is_a?(Neo4j::Driver::Types::Node) || x.is_a?(Neo4j::Driver::Types::Relationship)
-            #ResultRow.new(x.properties)
-            v = x.properties
-            Hash[v.map { |k, v| [k.to_sym, v] }]
-        elsif x.is_a?(Array)
-            x.map { |y| parse_neo4j_result(y) }
-        else
-            x
-        end
-    end
-
-    def neo4j_query(query_str, options = {})
-        transaction do
-            temp_result = nil
-            temp_result = @has_bolt_transaction.run(query_str, options)
-
-            result = []
-            temp_result.each do |row|
-                item = {}
-                row.keys.each.with_index do |key, i|
-                    v = row.values[i]
-                    item[key.to_s] = parse_neo4j_result(v)
-                end
-                result << item
-            end
-            result
-        end
-    end
-
-    def neo4j_query_expect_one(query_str, options = {})
-        result = neo4j_query(query_str, options)
-        unless result.size == 1
-            if DEVELOPMENT
-                debug '-' * 40
-                debug query_str
-                debug options.to_json
-                debug '-' * 40
-            end
-            raise "Expected one result but got #{result.size}"
-        end
-        result.first
-    end
-end
-
 class Neo4jGlobal
     include QtsNeo4j
 end
@@ -321,18 +209,51 @@ end
 class SetupDatabase
     include QtsNeo4j
 
-    def wait_for_neo4j
-        delay = 1
-        10.times do
-            begin
-                neo4j_query("MATCH (n) RETURN n LIMIT 1;")
-            rescue
-                debug "Waiting #{delay} seconds for Neo4j to come up..."
-                sleep delay
-                delay += 1
-            end
-        end
-    end
+    CONSTRAINTS_LIST = [
+        'LoginCode/tag',
+        'User/email',
+        'Session/sid',
+        'DeviceToken/token',
+        'DeviceLoginToken/token',
+        'Lesson/key',
+        'WebsiteEvent/key',
+        'TestEvent/key',
+        'TextComment/key',
+        'AudioComment/key',
+        'Message/key',
+        'NewsEntry/timestamp',
+        'Event/key',
+        'Poll/key',
+        'PollRun/key',
+        'PresenceToken/token',
+        'Tablet/id',
+        'TabletSet/id',
+        'PublicEventPerson/tag',
+        'MatrixAccessToken/access_token',
+        'KnownEmailAddress/email',
+        'SelfTestDay/datum'
+    ]
+
+    INDEX_LIST = [
+        'LoginCode/code',
+        'NextcloudLoginCode/code',
+        'LessonInfo/offset',
+        'TextComment/offset',
+        'AudioComment/offset',
+        'ExternalUser/entered_by',
+        'ExternalUser/email',
+        'PredefinedExternalUser/email',
+        'News/date',
+        'PollRun/start_date',
+        'PollRun/end_date',
+        'Booking/datum',
+        'Booking/confirmed',
+        'Booking/updated',
+        'Test/klasse',
+        'Test/fach',
+        'Test/datum',
+        'User/ev'
+    ]
 
     def setup(main)
         delay = 1
@@ -348,77 +269,52 @@ class SetupDatabase
                         RETURN nodes;
                     END_OF_QUERY
                     duplicate_peu.each do |entry|
-                        debug entry.to_yaml
-                        entry['nodes'].select do |node|
-                            node['name'] != main.class_variable_get(:@@predefined_external_users)[:recipients][node['email']][:label]
+                        entry['nodes'].map do |x|
+                            x.props
+                        end.select do |node|
+                            STDERR.puts node.to_yaml
+                            node[:name] != (main.class_variable_get(:@@predefined_external_users)[:recipients][node[:email]] || {})[:label]
                         end.each do |node|
-                            debug "DELETING PEU #{node['name']}"
-                            neo4j_query(<<~END_OF_QUERY, {:name => node['name'], :email => node['email']})
+                            debug "DELETING PEU #{node[:name]}"
+                            neo4j_query(<<~END_OF_QUERY, {:name => node[:name], :email => node[:email]})
                                 MATCH (n:PredefinedExternalUser {name: $name, email: $email})
                                 DETACH DELETE n;
                             END_OF_QUERY
                         end
                     end
                 end
-                debug "Removing all constraints and indexes..."
-                indexes = []
-#                     neo4j_query("CALL db.constraints").each do |constraint|
-#                         query = "DROP #{constraint['description']}"
-#                         neo4j_query(query)
-#                     end
-#                     neo4j_query("CALL db.indexes").each do |index|
-#                         query = "DROP #{index['description']}"
-#                         neo4j_query(query)
-#                     end
-
-                debug "Setting up constraints and indexes..."
-                [
-                    "CREATE CONSTRAINT ON (n:LoginCode) ASSERT n.tag IS UNIQUE",
-                    "CREATE CONSTRAINT ON (n:User) ASSERT n.email IS UNIQUE",
-                    "CREATE CONSTRAINT ON (n:Session) ASSERT n.sid IS UNIQUE",
-                    "CREATE CONSTRAINT ON (n:DeviceToken) ASSERT n.token IS UNIQUE",
-                    "CREATE CONSTRAINT ON (n:DeviceLoginToken) ASSERT n.token IS UNIQUE",
-                    "CREATE CONSTRAINT ON (n:Lesson) ASSERT n.key IS UNIQUE",
-                    "CREATE CONSTRAINT ON (n:WebsiteEvent) ASSERT n.key IS UNIQUE",
-                    "CREATE CONSTRAINT ON (n:TestEvent) ASSERT n.key IS UNIQUE",
-                    "CREATE CONSTRAINT ON (n:TextComment) ASSERT n.key IS UNIQUE",
-                    "CREATE CONSTRAINT ON (n:AudioComment) ASSERT n.key IS UNIQUE",
-                    "CREATE CONSTRAINT ON (n:Message) ASSERT n.key IS UNIQUE",
-                    "CREATE CONSTRAINT ON (n:NewsEntry) ASSERT n.timestamp IS UNIQUE",
-                    "CREATE CONSTRAINT ON (n:Event) ASSERT n.key IS UNIQUE",
-                    "CREATE CONSTRAINT ON (n:Poll) ASSERT n.key IS UNIQUE",
-                    "CREATE CONSTRAINT ON (n:PollRun) ASSERT n.key IS UNIQUE",
-                    "CREATE CONSTRAINT ON (n:PresenceToken) ASSERT n.token IS UNIQUE",
-                    "CREATE CONSTRAINT ON (n:Tablet) ASSERT n.id IS UNIQUE",
-                    "CREATE CONSTRAINT ON (n:TabletSet) ASSERT n.id IS UNIQUE",
-                    "CREATE CONSTRAINT ON (n:PublicEventPerson) ASSERT n.tag IS UNIQUE",
-                    "CREATE CONSTRAINT ON (n:MatrixAccessToken) ASSERT n.access_token IS UNIQUE",
-                    "CREATE CONSTRAINT ON (n:KnownEmailAddress) ASSERT n.email IS UNIQUE",
-                    "CREATE CONSTRAINT ON (n:SelfTestDay) ASSERT n.datum IS UNIQUE",
-                    "CREATE INDEX ON :LoginCode(code)",
-                    "CREATE INDEX ON :NextcloudLoginCode(code)",
-                    "CREATE INDEX ON :LessonInfo(offset)",
-                    "CREATE INDEX ON :TextComment(offset)",
-                    "CREATE INDEX ON :AudioComment(offset)",
-                    "CREATE INDEX ON :ExternalUser(entered_by)",
-                    "CREATE INDEX ON :ExternalUser(email)",
-                    "CREATE INDEX ON :PredefinedExternalUser(email)",
-                    "CREATE INDEX ON :News(date)",
-                    "CREATE INDEX ON :PollRun(start_date)",
-                    "CREATE INDEX ON :PollRun(end_date)",
-                    "CREATE INDEX ON :Booking(datum)",
-                    "CREATE INDEX ON :Booking(confirmed)",
-                    "CREATE INDEX ON :Booking(updated)",
-                    "CREATE INDEX ON :Test(klasse)",
-                    "CREATE INDEX ON :Test(fach)",
-                    "CREATE INDEX ON :Test(datum)",
-                    "CREATE INDEX ON :User(ev)",
-                ].each do |s|
-                    begin
-                        neo4j_query(s)
-                    rescue StandardError => e
-                        debug("failed running constraint query: #{s}")
-                    end
+                wanted_constraints = Set.new()
+                wanted_indexes = Set.new()
+                STDERR.puts "Setting up constraints and indexes..."
+                CONSTRAINTS_LIST.each do |constraint|
+                    constraint_name = constraint.gsub('/', '_')
+                    wanted_constraints << constraint_name
+                    label = constraint.split('/').first
+                    property = constraint.split('/').last
+                    query = "CREATE CONSTRAINT #{constraint_name} IF NOT EXISTS FOR (n:#{label}) REQUIRE n.#{property} IS UNIQUE"
+                    STDERR.puts query
+                    neo4j_query(query)
+                end
+                INDEX_LIST.each do |index|
+                    index_name = index.gsub('/', '_')
+                    wanted_indexes << index_name
+                    label = index.split('/').first
+                    property = index.split('/').last
+                    query = "CREATE INDEX #{index_name} IF NOT EXISTS FOR (n:#{label}) ON (n.#{property})"
+                    STDERR.puts query
+                    neo4j_query(query)
+                end
+                neo4j_query("SHOW ALL CONSTRAINTS").each do |row|
+                    next if wanted_constraints.include?(row['name'])
+                    query = "DROP CONSTRAINT #{row['name']}"
+                    STDERR.puts query
+                    neo4j_query(query)
+                end
+                neo4j_query("SHOW ALL INDEXES").each do |row|
+                    next if wanted_indexes.include?(row['name']) || wanted_constraints.include?(row['name'])
+                    query = "DROP INDEX #{row['name']}"
+                    STDERR.puts query
+                    neo4j_query(query)
                 end
                 transaction do
                     main.class_variable_get(:@@user_info).keys.each do |email|
@@ -1564,6 +1460,10 @@ class Main < Sinatra::Base
                 end
             end
         end
+    end
+
+    after '*' do
+        cleanup_neo4j()
     end
 
     after '/api/*' do

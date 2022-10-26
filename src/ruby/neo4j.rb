@@ -1,31 +1,74 @@
 require 'socket'
+require 'json'
 
 module QtsNeo4j
 
+    NEO4J_DEBUG = 0
+
     class CypherError < StandardError
-        def initialize(code, message)
-            @code = code
+        def initialize(message, buf = nil)
             @message = message
+            @buf = buf
         end
 
         def to_s
-            "Cypher Error\n#{@code}\n#{@message}"
+            @buf.nil? ? "#{@message}" : "#{@message} at buffer offset #{sprintf('0x%x', @buf.offset)}"
         end
     end
 
     class BoltBuffer
-        def initialize(data)
-            @data = data
+        def initialize(socket)
+            @socket = socket
+            @stream_ended = false
+            @data = []
             @offset = 0
         end
 
+        attr_reader :offset
+
+        # make sure we have at least n bytes in the buffer
+        def request(n)
+            while @offset + n > @data.length
+                length = @socket.read(2).unpack('n').first
+                # STDERR.puts "Reading next chunk at offset #{@offset}, got #{length} bytes (requested #{n} bytes)"
+                if length == 0
+                    @stream_ended = true
+                else
+                    if @offset > 0
+                        @data = @data[@offset, @data.size - @offset]
+                        @offset = 0
+                    end
+                    chunk = @socket.read(length).unpack('C*')
+                    @data += chunk
+                    if NEO4J_DEBUG >= 3
+                        dump()
+                    end
+                end
+            end
+        end
+
+        def flush()
+            # STDERR.write "Flushing buffer: "
+            loop do
+                length = @socket.read(2).unpack('n').first
+                # TODO: length should be 0, otherwise we're out of protocol
+                #       or we encountered features not yet implemented here
+                # STDERR.write "#{length} "
+                break if length == 0
+                @socket.read(length)
+            end
+            # STDERR.puts
+        end
+
         def next
+            request(1)
             v = @data[@offset]
             @offset += 1
             v
         end
 
         def next_s(length)
+            request(length)
             s = @data[@offset, length].pack('C*')
             s.force_encoding('UTF-8')
             @offset += length
@@ -33,69 +76,84 @@ module QtsNeo4j
         end
 
         def next_uint8()
+            request(1)
             i = @data[@offset]
             @offset += 1
             i
         end
 
         def next_uint16()
+            request(2)
             i = @data[@offset, 2].pack('C*').unpack('S>').first
             @offset += 2
             i
         end
 
         def next_uint32()
+            request(4)
             i = @data[@offset, 4].pack('C*').unpack('L>').first
             @offset += 4
             i
         end
 
         def next_uint64()
+            request(8)
             i = @data[@offset, 8].pack('C*').unpack('Q>').first
             @offset += 8
             i
         end
 
         def next_int8()
+            request(1)
             i = @data[@offset, 1].pack('C*').unpack('c').first
             @offset += 1
             i
         end
 
         def next_int16()
+            request(2)
             i = @data[@offset, 2].pack('C*').unpack('s>').first
             @offset += 2
             i
         end
 
         def next_int32()
+            request(4)
             i = @data[@offset, 4].pack('C*').unpack('l>').first
             @offset += 4
             i
         end
 
         def next_int64()
+            request(8)
             i = @data[@offset, 8].pack('C*').unpack('q>').first
             @offset += 8
             i
         end
 
+        def next_float()
+            request(8)
+            f = @data[@offset, 8].pack('C*').unpack('G').first
+            @offset += 8
+            f
+        end
+
         def peek
+            request(1)
             @data[@offset]
         end
 
         def eof?
-            @offset >= @data.size
-        end
-
-        def rewind
-            @offset = 0
+            @stream_ended
         end
 
         def dump
             offset = 0
             last_offset = 0
             while offset < @data.size
+                if offset % 16 == 0
+                    STDERR.write sprintf('%04x | ', offset)
+                end
                 STDERR.write sprintf("%02x ", @data[offset])
                 offset += 1
                 if offset % 16 == 0
@@ -116,6 +174,27 @@ module QtsNeo4j
             end
             STDERR.puts
         end
+    end
+
+    class Node < Hash
+        def initialize(id, labels, properties)
+            @id = id
+            @labels = labels
+            properties.each_pair { |k, v| self[k.to_sym] = v }
+        end
+        attr_reader :id, :labels
+    end
+
+    class Relationship < Hash
+        def initialize(id, start_node_id, end_node_id, type, properties)
+            @id = id
+            @start_node_id = start_node_id
+            @end_node_id = end_node_id
+            @type = type
+            properties.each_pair { |k, v| self[k.to_sym] = v }
+        end
+
+        attr_reader :id, :start_node_id, :end_node_id, :type
     end
 
     class BoltSocket
@@ -204,6 +283,8 @@ module QtsNeo4j
                 append_dict(v)
             elsif v.is_a? String
                 append_s(v)
+            elsif v.is_a? Symbol
+                append_s(v.to_s)
             elsif v.is_a? NilClass
                 append_uint8(0xC0)
             elsif v.is_a? TrueClass
@@ -230,6 +311,9 @@ module QtsNeo4j
                 else
                     raise "int is too big"
                 end
+            elsif v.is_a? Float
+                append_uint8(0xC1)
+                _append([v].pack('G'))
             else
                 raise "Type not supported: #{v.class}"
             end
@@ -301,7 +385,7 @@ module QtsNeo4j
             elsif f == 0xD2
                 buf.next_s(buf.next_uint32())
             else
-                raise sprintf("unknown string format %02x", f)
+                raise CypherError.new(sprintf("unknown string format %02x", f), buf)
             end
         end
 
@@ -319,10 +403,12 @@ module QtsNeo4j
             else
                 raise sprintf("unknown string dict %02x", f)
             end
+            # STDERR.puts "Parsing dict with #{count} entries"
             v = {}
             (0...count).map do
                 key = parse_s(buf)
                 value = parse(buf)
+                # STDERR.puts "#{key.to_s}: #{value.to_s}"
                 v[key] = value
             end
             v
@@ -349,9 +435,6 @@ module QtsNeo4j
         end
 
         def parse(buf)
-            if buf.eof?
-                raise 'End of buffer!'
-            end
             f = buf.peek
             if f >= 0x80 && f <= 0x8F || f == 0xD0 || f == 0xD1 || f == 0xD2
                 parse_s(buf)
@@ -397,6 +480,9 @@ module QtsNeo4j
             elsif f == 0xC0
                 buf.next
                 nil
+            elsif f == 0xC1
+                buf.next
+                buf.next_float()
             elsif f == 0xC2
                 buf.next
                 false
@@ -418,7 +504,7 @@ module QtsNeo4j
             elsif f >= 0xF0 && f <= 0xFF
                 buf.next
                 f - 0x100
-            elsif f >= 0 && f <= 0xF7
+            elsif f >= 0 && f <= 0x7F
                 buf.next
                 f
             else
@@ -427,22 +513,35 @@ module QtsNeo4j
         end
 
         def read_response(&block)
+            # loop do
+            #     part = []
+            #     loop do
+            #         length = @socket.read(2).unpack('n').first
+            #         break if length == 0
+            #         chunk = @socket.read(length).unpack('C*')
+            #         part += chunk
+            #     end
+            #     buffer = BoltBuffer.new(part)
+            #     # buffer.dump
+            #     response_dict = parse(buffer)
+            #     if response_dict[:marker] == BOLT_FAILURE
+            #         raise "Bolt error: #{response_dict[:data]['code']}\n#{response_dict[:data]['message']}"
+            #     end
+            #     yield response_dict if block_given?
+            #     break if [BOLT_SUCCESS, BOLT_FAILURE, BOLT_IGNORED].include?(response_dict[:marker])
+            # end
+            # nil
             loop do
-                part = []
-                loop do
-                    length = @socket.read(2).unpack('n').first
-                    break if length == 0
-                    chunk = @socket.read(length).unpack('C*')
-                    part += chunk
-                end
-                response_dict = parse(BoltBuffer.new(part))
+                buffer = BoltBuffer.new(@socket)
+                response_dict = parse(buffer)
+                buffer.flush()
                 if response_dict[:marker] == BOLT_FAILURE
-                    raise "Bolt error: #{response_dict[:data]['code']}"
+                    raise "Bolt error: #{response_dict[:data]['code']}\n#{response_dict[:data]['message']}"
                 end
+                # STDERR.puts response_dict.to_json
                 yield response_dict if block_given?
                 break if [BOLT_SUCCESS, BOLT_FAILURE, BOLT_IGNORED].include?(response_dict[:marker])
             end
-            nil
         end
 
         def connect()
@@ -474,6 +573,7 @@ module QtsNeo4j
             append_dict(data)
             flush()
             read_response() do |data|
+                # TODO: Get Neo4j version number here
                 # STDERR.puts " connection established (#{data[:data]['server']})"
             end
 
@@ -501,8 +601,11 @@ module QtsNeo4j
             begin
                 yield
             rescue
+                raise
                 if @transaction == 1
-                    # STDERR.puts "Rolling back transaction" if DEBUG
+                    # TODO: Not sure about this, read remaining response but don't block
+                    read_response()
+                    STDERR.puts "!!! Rolling back transaction !!!"
                     append_uint8(0xb1)
                     append_uint8(BOLT_ROLLBACK)
                     flush()
@@ -524,10 +627,17 @@ module QtsNeo4j
         end
 
         def run_query(query, data = {}, &block)
+            if NEO4J_DEBUG >= 1
+                STDERR.puts query
+                STDERR.puts data.to_json
+                STDERR.puts '-' * 40
+            end
             transaction do
                 append_uint8(0xb1)
+                # STDERR.puts "BOLT_RUN"
                 append_uint8(BOLT_RUN)
                 append_s(query)
+                # STDERR.puts "Running query with JSON data (#{data.to_json.size} bytes)"
                 append_dict(data)
                 append_dict({}) # options
                 flush()
@@ -537,6 +647,7 @@ module QtsNeo4j
                 end
 
                 append_uint8(0xb1)
+                # STDERR.puts "BOLT_PULL"
                 append_uint8(BOLT_PULL)
                 append_dict({:n => -1})
                 flush()
@@ -546,22 +657,32 @@ module QtsNeo4j
                         keys.each.with_index do |key, i|
                             value = data[:data][i]
                             if value.is_a? Hash
-                                if [BOLT_NODE, BOLT_RELATIONSHIP].include?(value[:marker])
-                                    value = value[:properties]
+                                if value[:marker] == BOLT_NODE
+                                    value = Node.new(value[:id], value[:labels], value[:properties])
+                                elsif value[:marker] == BOLT_RELATIONSHIP
+                                    value = Relationship.new(value[:id], value[:start_node_id], value[:end_node_id], value[:type], value[:properties])
+                                else
+                                    value = Hash[value.map { |k, v| [k.to_sym, v] }]
                                 end
-                                value = Hash[value.map { |k, v| [k.to_sym, v] }]
                             elsif value.is_a? Array
                                 value.map! do |v2|
                                     if v2.is_a? Hash
-                                        if [BOLT_NODE, BOLT_RELATIONSHIP].include?(v2[:marker])
-                                            v2 = v2[:properties]
+                                        if v2[:marker] == BOLT_NODE
+                                            v2 = Node.new(v2[:id], v2[:labels], v2[:properties])
+                                        elsif v2[:marker] == BOLT_RELATIONSHIP
+                                            v2 = Relationship.new(v2[:id], v2[:start_node_id], v2[:end_node_id], v2[:type], v2[:properties])
+                                        else
+                                            v2 = Hash[v2.map { |k, v| [k.to_sym, v] }]
                                         end
-                                        v2 = Hash[v2.map { |k, v| [k.to_sym, v] }]
                                     end
                                     v2
                                 end
                             end
                             entry[key] = value
+                        end
+                        if NEO4J_DEBUG >= 1
+                            STDERR.puts ">>> #{entry.to_json}"
+                            STDERR.puts '-' * 40
                         end
                         yield entry
                     end

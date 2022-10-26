@@ -3,7 +3,7 @@ require './neo4j.rb'
 
 class ClearDatabase
     include QtsNeo4j
-    
+
     def run
         if ARGV.include?('--srsly')
             transaction do

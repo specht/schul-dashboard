@@ -32,16 +32,11 @@ class LoadDump
                     label_key = node['labels'].sort.join('/')
                     node_batch_by_label[label_key] ||= []
                     node_batch_by_label[label_key] << node
-                    # node_id = neo4j_query_expect_one("CREATE (n:#{node['labels'].join(':')} $props) RETURN id(n) as id", :props => node['properties'])
-                    # node_tr[node['id']] = node_id['id']
                 elsif line[0] == 'r'
                     line = line[2, line.size - 2]
                     relationship = JSON.parse(line)
                     relationship_batch_by_type[relationship['type']] ||= []
                     relationship_batch_by_type[relationship['type']] << relationship
-                    # neo4j_query_expect_one("MATCH (from), (to) WHERE ID(from) = #{node_tr[relationship['from']]} AND ID(to) = #{node_tr[relationship['to']]} 
-                    # CREATE (from)-[r:#{relationship['type']} $props]->(to)
-                    # RETURN r;", :props => relationship['properties'])
                 else
                     STDERR.puts "Invalid entry: #{line}"
                     exit(1)
@@ -49,7 +44,14 @@ class LoadDump
             end
         end
         node_batch_by_label.each_pair do |label_key, batch|
-            batch.each_slice(256) do |slice|
+            while !batch.empty? do
+                slice = []
+                json_size = 0
+                while (!batch.empty?) && json_size < 0x20000 && slice.size < 256
+                    x = batch.shift
+                    slice << x
+                    json_size += x.to_json.size
+                end
                 ids = neo4j_query(<<~END_OF_QUERY, {:properties => slice.map { |x| x['properties']}})
                     UNWIND $properties AS props
                     CREATE (n:#{slice.first['labels'].join(':')})
@@ -78,7 +80,6 @@ class LoadDump
                     RETURN COUNT(r) AS count_r, COUNT(from) AS count_from, COUNT(to) AS count_to;
                 END_OF_QUERY
                 if count != slice.size
-                    STDERR.puts slice.to_yaml
                     raise "Ooops... expected #{slice.size} relationships, got #{count}."
                 end
                 r_count += slice.size

@@ -1118,7 +1118,7 @@ class Main < Sinatra::Base
 
     def self.compile_js()
         files = [
-            '/include/jquery/jquery-3.4.1.min.js',
+            '/include/jquery/jquery-3.6.1.min.js',
             '/include/jquery-ui/jquery-ui.min.js',
             '/include/popper.js/popper.min.js',
             '/include/bootstrap/bootstrap.min.js',

@@ -6,7 +6,7 @@ require 'zlib'
 require 'fileutils'
 
 class Timetable
-    include QtsNeo4j
+    include Neo4jBolt
     
     def initialize
         @lesson_cache = []

@@ -1,11 +1,11 @@
 #!/usr/bin/env ruby
 
-require './neo4j.rb'
+require 'neo4j_bolt'
 require 'json'
 require 'yaml'
 
 class LoadDump
-    include QtsNeo4j
+    include Neo4jBolt
 
     def run(path)
         unless ARGV.include?('--append-srsly')

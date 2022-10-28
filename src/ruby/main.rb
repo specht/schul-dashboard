@@ -11,7 +11,7 @@ require 'json'
 require 'jwt'
 require 'kramdown'
 require 'mail'
-require './neo4j.rb'
+require 'neo4j_bolt'
 require 'net/http'
 require 'net/imap'
 require 'nextcloud'
@@ -40,6 +40,9 @@ require './credentials.rb'
 require '/data/config.rb'
 $VERBOSE = warn_level
 DASHBOARD_SERVICE = ENV['DASHBOARD_SERVICE']
+
+Neo4jBolt.bolt_host = 'neo4j'
+Neo4jBolt.bolt_port = 7687
 
 BIB_JWT_TTL = 60
 BIB_JWT_TTL_EXTRA = 20
@@ -137,7 +140,7 @@ HOMEWORK_FEEDBACK_EMOJIS = {'good' => '🙂',
 HOURS_FOR_KLASSE = {}
 
 class Neo4jGlobal
-    include QtsNeo4j
+    include Neo4jBolt
 end
 
 $neo4j = Neo4jGlobal.new
@@ -207,7 +210,7 @@ def join_with_sep(list, a, b)
 end
 
 class SetupDatabase
-    include QtsNeo4j
+    include Neo4jBolt
 
     CONSTRAINTS_LIST = [
         'LoginCode/tag',
@@ -422,7 +425,7 @@ class SetupDatabase
 end
 
 class Main < Sinatra::Base
-    include QtsNeo4j
+    include Neo4jBolt
     helpers Sinatra::Cookies
 
     configure do

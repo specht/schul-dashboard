@@ -3,7 +3,7 @@ SKIP_COLLECT_DATA = true
 require './main.rb'
 
 class ImportNewsAttic
-    include QtsNeo4j
+    include Neo4jBolt
     
     def run(base_path)
         STDERR.puts "Loading news attic from #{base_path}..."

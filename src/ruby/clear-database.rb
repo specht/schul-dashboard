@@ -1,8 +1,8 @@
 #!/usr/bin/env ruby
-require './neo4j.rb'
+require 'neo4j_bolt'
 
 class ClearDatabase
-    include QtsNeo4j
+    include Neo4jBolt
 
     def run
         if ARGV.include?('--srsly')

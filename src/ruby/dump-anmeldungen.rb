@@ -3,7 +3,7 @@ SKIP_COLLECT_DATA = true
 require './main.rb'
 
 class DumpDatabase
-    include QtsNeo4j
+    include Neo4jBolt
     
     def run
         transaction do

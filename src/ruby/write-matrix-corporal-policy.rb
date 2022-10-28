@@ -7,7 +7,7 @@ require 'yaml'
 require 'http'
 
 class Script
-    include QtsNeo4j
+    include Neo4jBolt
     def run
         @@user_info = Main.class_variable_get(:@@user_info)
         policy_json = generate_matrix_corporal_policy().to_json

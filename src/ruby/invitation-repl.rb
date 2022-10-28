@@ -6,7 +6,7 @@ require 'fileutils'
 require 'thread'
 
 class Neo4jHelper
-    include QtsNeo4j
+    include Neo4jBolt
 end
 
 class InvitationRepl < Sinatra::Base

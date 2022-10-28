@@ -11,7 +11,7 @@ PING_TIME = DEVELOPMENT ? 1 : 1
 DELAYED_UPDATE_TIME = DEVELOPMENT ? 0 : 0
 
 class TimetableRepl < Sinatra::Base
-    include QtsNeo4j
+    include Neo4jBolt
     
     configure do
         set :show_exceptions, false

@@ -1818,7 +1818,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     audio.controls = true;
                     $('#bu_play_audio_comment').prop('disabled', false);
                     $('#bu_play_audio_comment').removeClass('btn-outline-secondary').addClass('btn-primary');
-                    audio_blob = new Blob(chunks, { 'type' : 'audio/ogg; codecs=opus' });
+                    audio_blob = new Blob(chunks, { 'type' : 'audio/mpeg-3' });
                     chunks = [];
                     let audioURL = window.URL.createObjectURL(audio_blob);
                     audio.src = audioURL;

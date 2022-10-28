@@ -1631,10 +1631,10 @@ class Main < Sinatra::Base
             nav_items.each do |x|
                 if x == :admin
                     io.puts "<li class='nav-item dropdown'>"
-                    io.puts "<a class='nav-link nav-icon dropdown-toggle' href='#' id='navbarDropdown' role='button' data-toggle='dropdown' aria-haspopup='true' aria-expanded='false'>"
+                    io.puts "<a class='nav-link nav-icon dropdown-toggle' href='#' id='navbarDropdownAdmin' role='button' data-toggle='dropdown' aria-haspopup='true' aria-expanded='false'>"
                     io.puts "<div class='icon'><i class='fa fa-wrench'></i></div>Administration"
                     io.puts "</a>"
-                    io.puts "<div class='dropdown-menu dropdown-menu-right' aria-labelledby='navbarDropdown'>"
+                    io.puts "<div class='dropdown-menu dropdown-menu-right' aria-labelledby='navbarDropdownAdmin'>"
                     printed_something = false
                     if user_who_can_manage_news_logged_in?
                         io.puts "<a class='dropdown-item nav-icon' href='/manage_news'><div class='icon'><i class='fa fa-newspaper-o'></i></div><span class='label'>News verwalten</span></a>"
@@ -1677,7 +1677,7 @@ class Main < Sinatra::Base
                     end
                 elsif x == :profile
                     io.puts "<li class='nav-item dropdown'>"
-                    io.puts "<a class='nav-link nav-icon dropdown-toggle' href='#' id='navbarDropdown' role='button' data-toggle='dropdown' aria-haspopup='true' aria-expanded='false'>"
+                    io.puts "<a class='nav-link nav-icon dropdown-toggle' href='#' id='navbarDropdownProfile' role='button' data-toggle='dropdown' aria-haspopup='true' aria-expanded='false'>"
                     display_name = htmlentities(@session_user[:display_name])
                     if @session_user[:klasse]
                         temp = [tr_klasse(@session_user[:klasse])]
@@ -1688,7 +1688,7 @@ class Main < Sinatra::Base
                     end
                     io.puts "<div class='icon nav_avatar'>#{user_icon(@session_user[:email], 'avatar-md')}</div><span class='menu-user-name'>#{display_name}</span>"
                     io.puts "</a>"
-                    io.puts "<div class='dropdown-menu dropdown-menu-right' aria-labelledby='navbarDropdown'>"
+                    io.puts "<div class='dropdown-menu dropdown-menu-right' aria-labelledby='navbarDropdownProfile'>"
                     unless external_user_logged_in?
                         io.puts "<a class='dropdown-item nav-icon' href='/profil'><div class='icon'>#{user_icon(@session_user[:email], 'avatar-sm')}</div><span class='label'>Profil</span></a>"
                     end
@@ -1759,10 +1759,10 @@ class Main < Sinatra::Base
                 elsif x == :kurse
                     unless (@@lessons_for_shorthand[@session_user[:shorthand]] || []).empty? && (@@lessons[:historic_lessons_for_shorthand][@session_user[:shorthand]] || []).empty?
                         io.puts "<li class='nav-item dropdown'>"
-                        io.puts "<a class='nav-link nav-icon dropdown-toggle' href='#' id='navbarDropdown' role='button' data-toggle='dropdown' aria-haspopup='true' aria-expanded='false'>"
+                        io.puts "<a class='nav-link nav-icon dropdown-toggle' href='#' id='navbarDropdownKurse' role='button' data-toggle='dropdown' aria-haspopup='true' aria-expanded='false'>"
                         io.puts "<div class='icon'><i class='fa fa-address-book'></i></div>Kurse"
                         io.puts "</a>"
-                        io.puts "<div class='dropdown-menu' aria-labelledby='navbarDropdown'>"
+                        io.puts "<div class='dropdown-menu' aria-labelledby='navbarDropdownKurse'>"
                         taken_lesson_keys = Set.new()
                         (@@lessons_for_shorthand[@session_user[:shorthand]] || []).each do |lesson_key|
                             lesson_info = @@lessons[:lesson_keys][lesson_key]
@@ -1805,10 +1805,10 @@ class Main < Sinatra::Base
                     end
                     unless klassen.empty?
                         io.puts "<li class='nav-item dropdown'>"
-                        io.puts "<a class='nav-link nav-icon dropdown-toggle' href='#' id='navbarDropdown' role='button' data-toggle='dropdown' aria-haspopup='true' aria-expanded='false'>"
+                        io.puts "<a class='nav-link nav-icon dropdown-toggle' href='#' id='navbarDropdownKlassen' role='button' data-toggle='dropdown' aria-haspopup='true' aria-expanded='false'>"
                         io.puts "<div class='icon'><i class='fa fa-address-book'></i></div>Klassen"
                         io.puts "</a>"
-                        io.puts "<div class='dropdown-menu' aria-labelledby='navbarDropdown'>"
+                        io.puts "<div class='dropdown-menu' aria-labelledby='navbarDropdownKlassen'>"
                         if can_see_all_timetables_logged_in?
                             klassen = @@klassen_order
                         end

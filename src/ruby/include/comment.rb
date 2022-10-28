@@ -4,9 +4,13 @@ class Main < Sinatra::Base
         if tag && tag.class == String && tag =~ /^[0-9a-zA-Z]+$/
             dir = tag[0, 2]
             filename = tag[2, tag.size - 2]
-            path = "/raw/uploads/audio_comment/#{dir}/#{filename}.ogg"
-            STDERR.puts "DELETING #{path}"
-            FileUtils::rm_f(path)
+            ['.ogg', '.mp3'].each do |ext|
+                path = "/raw/uploads/audio_comment/#{dir}/#{filename}#{ext}"
+                if File.exists?(path)
+                    STDERR.puts "DELETING #{path}"
+                    FileUtils::rm_f(path)
+                end
+            end
         end
     end
     
@@ -21,7 +25,7 @@ class Main < Sinatra::Base
         tag = RandomTag.to_base31(('f' + Digest::SHA1.hexdigest(blob)).to_i(16))[0, 16]
         id = RandomTag.generate(12)
         FileUtils.mkpath("/raw/uploads/audio_comment/#{tag[0, 2]}")
-        target_path = "/raw/uploads/audio_comment/#{tag[0, 2]}/#{tag[2, tag.size - 2]}.ogg"
+        target_path = "/raw/uploads/audio_comment/#{tag[0, 2]}/#{tag[2, tag.size - 2]}.mp3"
         FileUtils::mv(entry['tempfile'].path, target_path)
         FileUtils::chmod('a+r', target_path)
         old_tag = nil

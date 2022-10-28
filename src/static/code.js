@@ -272,7 +272,7 @@ function create_audio_player(from, tag, duration) {
     let indicator = $('<div>').addClass('player-indicator').appendTo(indicator_container);
     indicator.css('left', '0%');
     let duration_div = $('<div>').addClass('player-duration').html(duration_to_str(duration)).appendTo(player);
-    let url = '/raw/uploads/audio_comment/' + tag.substr(0, 2) + '/' + tag.substr(2, tag.length - 2) + '.ogg';
+    let url = '/raw/uploads/audio_comment/' + tag.substr(0, 2) + '/' + tag.substr(2, tag.length - 2) + '.mp3';
     (function (url, duration, button, icon, indicator, duration_div, seek) {
         function activate() {
             if (pb_url !== url) {

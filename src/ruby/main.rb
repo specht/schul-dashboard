@@ -284,39 +284,7 @@ class SetupDatabase
                         end
                     end
                 end
-                wanted_constraints = Set.new()
-                wanted_indexes = Set.new()
-                STDERR.puts "Setting up constraints and indexes..."
-                CONSTRAINTS_LIST.each do |constraint|
-                    constraint_name = constraint.gsub('/', '_')
-                    wanted_constraints << constraint_name
-                    label = constraint.split('/').first
-                    property = constraint.split('/').last
-                    query = "CREATE CONSTRAINT #{constraint_name} IF NOT EXISTS FOR (n:#{label}) REQUIRE n.#{property} IS UNIQUE"
-                    STDERR.puts query
-                    neo4j_query(query)
-                end
-                INDEX_LIST.each do |index|
-                    index_name = index.gsub('/', '_')
-                    wanted_indexes << index_name
-                    label = index.split('/').first
-                    property = index.split('/').last
-                    query = "CREATE INDEX #{index_name} IF NOT EXISTS FOR (n:#{label}) ON (n.#{property})"
-                    STDERR.puts query
-                    neo4j_query(query)
-                end
-                neo4j_query("SHOW ALL CONSTRAINTS").each do |row|
-                    next if wanted_constraints.include?(row['name'])
-                    query = "DROP CONSTRAINT #{row['name']}"
-                    STDERR.puts query
-                    neo4j_query(query)
-                end
-                neo4j_query("SHOW ALL INDEXES").each do |row|
-                    next if wanted_indexes.include?(row['name']) || wanted_constraints.include?(row['name'])
-                    query = "DROP INDEX #{row['name']}"
-                    STDERR.puts query
-                    neo4j_query(query)
-                end
+                setup_constraints_and_indexes(CONSTRAINTS_LIST, INDEX_LIST)
                 transaction do
                     main.class_variable_get(:@@user_info).keys.each do |email|
                         neo4j_query(<<~END_OF_QUERY, :email => email)

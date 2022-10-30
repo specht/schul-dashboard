@@ -200,7 +200,7 @@ File.open('cling-colors.html', 'w') do |f|
     f.puts "<html>"
     f.puts "<head>"
     f.puts "<style>"
-    f.puts "body { font-family: mono; font-size: 10pt; }"
+    f.puts "body { font-family: monospace; font-size: 10pt; }"
     f.puts ".name { display: inline-block; width: 8em; }"
     f.puts ".swatch { display: inline-block; text-align: center; padding: 0.5em 1em;}"
     colors = {}

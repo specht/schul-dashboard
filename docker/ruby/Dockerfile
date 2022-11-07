@@ -1,4 +1,4 @@
-FROM ruby:2-alpine
+FROM ruby:3-alpine
 # MUST BE RUBY 2 OR THE NEXTCLOUD GEM WON'T WORK :(
 
 RUN apk update && apk upgrade

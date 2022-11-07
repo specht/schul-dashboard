@@ -1042,10 +1042,12 @@ class Main < Sinatra::Base
                 }
             end
         end
-        File.open('/internal/mailing_lists.yaml.tmp', 'w') do |f|
-            f.puts @@mailing_lists.to_yaml
+        if DASHBOARD_SERVICE == 'ruby'
+            File.open('/internal/mailing_lists.yaml.tmp', 'w') do |f|
+                f.puts @@mailing_lists.to_yaml
+            end
+            FileUtils::mv('/internal/mailing_lists.yaml.tmp', '/internal/mailing_lists.yaml', force: true)
         end
-        FileUtils::mv('/internal/mailing_lists.yaml.tmp', '/internal/mailing_lists.yaml', force: true)
     end
 
     def self.compile_files(key, mimetype, paths)

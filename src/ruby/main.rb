@@ -2430,6 +2430,11 @@ class Main < Sinatra::Base
                     path = 'login'
                 end
             end
+        elsif path == 'schema'
+            if admin_logged_in?
+                command = "neo4j_bolt -h neo4j:7687 visualize | dot -Tsvg > /gen/schema-i6wbb4YtA5l2BzdNjedMtd.svg"
+                system(command)
+            end
         end
         if user_logged_in? && @session_user[:is_monitor]
             path = 'monitor'

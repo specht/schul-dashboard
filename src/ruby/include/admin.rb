@@ -107,7 +107,7 @@ class Main < Sinatra::Base
         all_homeschooling_users = Main.get_all_homeschooling_users()
         StringIO.open do |io|
             bolt_connections = neo4j_query("CALL dbms.listConnections();").size
-            io.puts "<span style='float: right;'>Aktive Bolt-Verbindungen: #{bolt_connections}</span>"
+            io.puts "<span style='float: right;'>Aktive Bolt-Verbindungen: #{bolt_connections} &nbsp; <a href='/schema'>Schema</a></span>"
             io.puts "<a class='btn btn-secondary' href='#teachers'>Lehrerinnen und Lehrer</a>"
             io.puts "<a class='btn btn-secondary' href='#sus'>Schülerinnen und Schüler</a>"
             io.puts "<a class='btn btn-secondary' href='#website'>Website</a>"

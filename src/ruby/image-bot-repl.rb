@@ -28,9 +28,9 @@ class ImageBotRepl < Sinatra::Base
                 unless File.exists?(jpg_path)
                     STDERR.puts jpg_path
                     if width == :p
-                        system("convert -auto-orient -colorspace RGB \"#{last_jpg_path}\" -blur 0x8 -quality 85 -sampling-factor 4:2:0 -strip \"#{jpg_path}\"")
+                        system("convert -auto-orient -set colorspace RGB  \"#{last_jpg_path}\" -blur 0x8 -quality 85 -sampling-factor 4:2:0 -strip \"#{jpg_path}\"")
                     else
-                        system("convert -auto-orient -colorspace RGB \"#{last_jpg_path}\" -resize #{width}x\\> -quality 85 -sampling-factor 4:2:0 -strip \"#{jpg_path}\"")
+                        system("convert -auto-orient -set colorspace RGB  \"#{last_jpg_path}\" -resize #{width}x\\> -quality 85 -sampling-factor 4:2:0 -strip \"#{jpg_path}\"")
                     end
                     file_count += 1
                 end

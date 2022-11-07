@@ -1,6 +1,7 @@
 /data/
 /docker/nginx/default.conf
 /docker/ruby/Gemfile
+/docker/ruby2/Gemfile
 /docker-compose.yaml
 /internal/
 /logs/

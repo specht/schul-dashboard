@@ -1,5 +1,4 @@
 FROM ruby:3-alpine
-# MUST BE RUBY 2 OR THE NEXTCLOUD GEM WON'T WORK :(
 
 RUN apk update && apk upgrade
 RUN apk add less curl bash curl-dev ruby-dev imagemagick build-base docker libwebp-tools librsvg tzdata inkscape graphviz && rm -rf /var/cache/apk/*

@@ -140,6 +140,19 @@ docker_compose[:services][:ruby] = {
 docker_compose[:services][:ruby][:depends_on] ||= []
 docker_compose[:services][:ruby][:depends_on] << :neo4j
 
+docker_compose[:services][:ruby2] = {
+    :build => './docker/ruby2',
+    :volumes => ['./src/ruby:/app:ro',
+                 './src/static:/static:ro',
+                 "#{INPUT_DATA_PATH}:/data:ro",
+                 "#{RAW_FILES_PATH}:/raw:ro",
+                 "#{VPLAN_FILES_PATH}:/vplan:ro",
+                 "#{INTERNAL_PATH}:/internal:ro",
+                 "#{GEN_FILES_PATH}:/gen:ro"],
+    :environment => env,
+    :working_dir => '/app'
+}
+
 docker_compose[:services][:neo4j] = {
     :build => './docker/neo4j',
     :volumes => ["#{NEO4J_DATA_PATH}:/data",
@@ -252,6 +265,7 @@ end
 
 FileUtils::mkpath(LOGS_PATH)
 FileUtils::cp('src/ruby/Gemfile', 'docker/ruby/')
+FileUtils::cp('src/ruby/Gemfile', 'docker/ruby2/')
 FileUtils::mkpath(File::join(RAW_FILES_PATH, 'uploads'))
 FileUtils::mkpath(File::join(RAW_FILES_PATH, 'uploads/audio_comment'))
 FileUtils::mkpath(File::join(RAW_FILES_PATH, 'uploads/images'))

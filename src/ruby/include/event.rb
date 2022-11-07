@@ -6,7 +6,7 @@ EVENT_TRACKS = {
     # 'schiene_sesb' => ['12:45', '13:00', '14:30', 'SESB-Schiene', 19],
     # 'schiene_4'    => ['13:45', '14:00', '15:30', 'Schiene 4', 19],
     # 'online'       => [    nil, '11:00', '12:30', 'Tag der Offenen Tür digital', 1000],
-    'schiene_1'    => [nil,  '18:00', '19:30', 'Schiene 1', 1000],
+    'schiene_1'    => ['17:30', '18:00', '19:30', 'Schiene 1', 1000],
 }
 EVENT_NAME = 'Tag der Offenen Tür'
 
@@ -304,7 +304,7 @@ class Main < Sinatra::Base
             from SMTP_FROM
             reply_to DASHBOARD_SUPPORT_EMAIL
             
-            subject "Ihre Anmeldung zum Tag der Offenen Tür am 08.01.2022"
+            subject "Ihre Anmeldung zur Info-Veranstaltung für Viertklässlereltern am 22.11.2022"
 
             event = EVENT_TRACKS[data[:track]]
             # 'schiene_1':    [ '9:15',  '9:30', '11:00', 'Schiene 1', 30],
@@ -314,19 +314,24 @@ class Main < Sinatra::Base
             titel = event[3]
 
             StringIO.open do |io|
-                if data[:track] == 'online'
-                    io.puts "<p>Sehr geehrte/r #{data[:name]},</p>"
-                    io.puts "<p>vielen Dank für Ihre Anmeldung für die #{titel} am Tag der Offenen Tür. Die Veranstaltung findet am 08.01.2022 um #{beginn} Uhr statt. Die Zugangsdaten für das Streaming erhalten Sie zeitnah zur Veranstaltung mit gesonderter Mail.</p>"
-                    io.puts "<p>Falls Sie Fragen haben, können Sie diese im Chat stellen; sie werden dann in der Veranstaltung live beantwortet.</p>"
-                    io.puts "<p>Für einen kleinen Vorab-Eindruck empfehlen wir Ihnen unseren <a href='https://rundgang.gymnasiumsteglitz.de/'>virtuellen 360°-Grad-Rundgang</a>.</p>"
-                    io.puts "<p>Mit freundlichen Grüßen</p>"
-                else
-                    io.puts "<p>Sehr geehrte/r #{data[:name]},</p>"
-                    io.puts "<p>vielen Dank für Ihre Anmeldung für die #{titel} am Tag der Offenen Tür. Die Veranstaltung findet am 08.01.2022 von #{beginn} bis #{ende} Uhr statt. Der Einlass ist um #{einlass} Uhr am Haupteingang des Gymnasium Steglitz, Heesestraße 15. Pro Kind kann aufgrund der Vorgaben leider nur eine Begleitperson eingelassen werden. Wir bitten um Verständnis, dass wir bei Einlass den 2G-Status erwachsener Begleitpersonen überprüfen und Ihre Kontaktdaten (Name, Vorname, E-Mail-Adresse) für eine ggf. notwendige Kontaktnachverfolgung erheben. Die entsprechenden Listen werden nach vier Wochen vernichtet. Zur Überprüfung des Impfstatus bringen Sie bitte einen digital lesbaren Impfnachweis (QR-Code) sowie ein Ausweisdokument mit. Wir weisen darauf hin, dass wir ohne Nachweise in dieser Form keinen Zutritt gewähren können. Sollten Sie Symptome einer Coronaerkrankung aufweisen (Husten, Schnupfen, erhöhte Temperatur etc.) verzichten Sie bitte auf einen Besuch.</p>"
-                    io.puts "<p>Wir weisen ferner darauf hin, dass während der gesamten Veranstaltung die Pflicht zum Tragen einer FFP2-Maske besteht. Wir bitten Sie darum, uns zu benachrichtigen, falls Sie nicht an dem gebuchten Termin teilnehmen können, damit wir den Platz neu vergeben können.</p>"
-                    io.puts "<p>Für einen kleinen Vorab-Eindruck empfehlen wir Ihnen unseren <a href='https://rundgang.gymnasiumsteglitz.de/'>virtuellen 360°-Grad-Rundgang</a>.</p>"
-                    io.puts "<p>Mit freundlichen Grüßen</p>"
-                end
+                # if data[:track] == 'online'
+                #     io.puts "<p>Sehr geehrte/r #{data[:name]},</p>"
+                #     io.puts "<p>vielen Dank für Ihre Anmeldung für die #{titel} am Tag der Offenen Tür. Die Veranstaltung findet am 08.01.2022 um #{beginn} Uhr statt. Die Zugangsdaten für das Streaming erhalten Sie zeitnah zur Veranstaltung mit gesonderter Mail.</p>"
+                #     io.puts "<p>Falls Sie Fragen haben, können Sie diese im Chat stellen; sie werden dann in der Veranstaltung live beantwortet.</p>"
+                #     io.puts "<p>Für einen kleinen Vorab-Eindruck empfehlen wir Ihnen unseren <a href='https://rundgang.gymnasiumsteglitz.de/'>virtuellen 360°-Grad-Rundgang</a>.</p>"
+                #     io.puts "<p>Mit freundlichen Grüßen</p>"
+                # else
+                #     io.puts "<p>Sehr geehrte/r #{data[:name]},</p>"
+                #     io.puts "<p>vielen Dank für Ihre Anmeldung für die #{titel} am Tag der Offenen Tür. Die Veranstaltung findet am 08.01.2022 von #{beginn} bis #{ende} Uhr statt. Der Einlass ist um #{einlass} Uhr am Haupteingang des Gymnasium Steglitz, Heesestraße 15. Pro Kind kann aufgrund der Vorgaben leider nur eine Begleitperson eingelassen werden. Wir bitten um Verständnis, dass wir bei Einlass den 2G-Status erwachsener Begleitpersonen überprüfen und Ihre Kontaktdaten (Name, Vorname, E-Mail-Adresse) für eine ggf. notwendige Kontaktnachverfolgung erheben. Die entsprechenden Listen werden nach vier Wochen vernichtet. Zur Überprüfung des Impfstatus bringen Sie bitte einen digital lesbaren Impfnachweis (QR-Code) sowie ein Ausweisdokument mit. Wir weisen darauf hin, dass wir ohne Nachweise in dieser Form keinen Zutritt gewähren können. Sollten Sie Symptome einer Coronaerkrankung aufweisen (Husten, Schnupfen, erhöhte Temperatur etc.) verzichten Sie bitte auf einen Besuch.</p>"
+                #     io.puts "<p>Wir weisen ferner darauf hin, dass während der gesamten Veranstaltung die Pflicht zum Tragen einer FFP2-Maske besteht. Wir bitten Sie darum, uns zu benachrichtigen, falls Sie nicht an dem gebuchten Termin teilnehmen können, damit wir den Platz neu vergeben können.</p>"
+                #     io.puts "<p>Für einen kleinen Vorab-Eindruck empfehlen wir Ihnen unseren <a href='https://rundgang.gymnasiumsteglitz.de/'>virtuellen 360°-Grad-Rundgang</a>.</p>"
+                #     io.puts "<p>Mit freundlichen Grüßen</p>"
+                # end
+                io.puts "<p>Sehr geehrte/r #{data[:name]},</p>"
+                io.puts "<p>vielen Dank für Ihre Anmeldung. Die Veranstaltung findet am 22.11.2022 von #{beginn} bis ca. #{ende} Uhr statt. Der Einlass ist ab #{einlass} Uhr am Haupteingang des Gymnasium Steglitz, Heesestraße 15. Um möglichst vielen Familien die Teilnahme zu ermöglichen, bitten wir darum, dass in der Regel nur eine Person pro Familie an der Veranstaltung teilnimmt. Sollten Sie Symptome einer Coronaerkrankung aufweisen (Husten, Schnupfen, erhöhte Temperatur etc.) verzichten Sie bitte auf einen Besuch."
+                io.puts "<p>Wir weisen ferner darauf hin, dass voraussichtlich während der gesamten Veranstaltung die Pflicht zum Tragen einer FFP2-Maske besteht. Wir bitten Sie darum, uns zu benachrichtigen, falls Sie nicht an dem gebuchten Termin teilnehmen können, damit wir den Platz neu vergeben können.</p>"
+                io.puts "<p>Für einen kleinen Vorab-Eindruck empfehlen wir Ihnen unseren <a href='https://rundgang.gymnasiumsteglitz.de/'>virtuellen 360°-Grad-Rundgang</a>.</p>"
+                io.puts "<p>Mit freundlichen Grüßen</p>"
                 io.string
             end
         end

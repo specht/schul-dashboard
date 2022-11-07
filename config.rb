@@ -147,7 +147,7 @@ docker_compose[:services][:ruby2] = {
                  "#{INPUT_DATA_PATH}:/data:ro",
                  "#{RAW_FILES_PATH}:/raw:ro",
                  "#{VPLAN_FILES_PATH}:/vplan:ro",
-                 "#{INTERNAL_PATH}:/internal",
+                 "#{INTERNAL_PATH}:/internal:ro",
                  "#{GEN_FILES_PATH}:/gen:ro"],
     :environment => env,
     :working_dir => '/app'

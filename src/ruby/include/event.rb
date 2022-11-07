@@ -331,7 +331,7 @@ class Main < Sinatra::Base
                 io.puts "<p>vielen Dank für Ihre Anmeldung. Die Veranstaltung findet am 22.11.2022 von #{beginn} bis ca. #{ende} Uhr statt. Der Einlass ist ab #{einlass} Uhr am Haupteingang des Gymnasium Steglitz, Heesestraße 15. Um möglichst vielen Familien die Teilnahme zu ermöglichen, bitten wir darum, dass in der Regel nur eine Person pro Familie an der Veranstaltung teilnimmt. Sollten Sie Symptome einer Coronaerkrankung aufweisen (Husten, Schnupfen, erhöhte Temperatur etc.) verzichten Sie bitte auf einen Besuch."
                 io.puts "<p>Wir weisen ferner darauf hin, dass voraussichtlich während der gesamten Veranstaltung die Pflicht zum Tragen einer FFP2-Maske besteht. Wir bitten Sie darum, uns zu benachrichtigen, falls Sie nicht an dem gebuchten Termin teilnehmen können, damit wir den Platz neu vergeben können.</p>"
                 io.puts "<p>Für einen kleinen Vorab-Eindruck empfehlen wir Ihnen unseren <a href='https://rundgang.gymnasiumsteglitz.de/'>virtuellen 360°-Grad-Rundgang</a>.</p>"
-                io.puts "<p>Mit freundlichen Grüßen</p>"
+                io.puts "<p>Mit freundlichen Grüßen<br />Antje Lükemann</p>"
                 io.string
             end
         end

@@ -1156,8 +1156,8 @@ class Main < Sinatra::Base
         self.collect_data() unless defined?(SKIP_COLLECT_DATA) && SKIP_COLLECT_DATA
         @@ws_clients = {}
         @@color_scheme_info = {}
+        @@compiled_files = {}
         if ENV['DASHBOARD_SERVICE'] == 'ruby' && (File.basename($0) == 'thin' || File.basename($0) == 'pry.rb')
-            @@compiled_files = {}
             setup.setup(self)
             COLOR_SCHEME_COLORS.each do |entry|
                 @@color_scheme_info[entry[0]] = [entry[1], entry[2]]

@@ -2365,6 +2365,7 @@ class Main < Sinatra::Base
         stored_groups = []
         stored_polls = []
         stored_poll_runs = []
+        lesson_notes_for_session_user = {}
         show_event = {}
         external_users_for_session_user = []
         if path == 'directory'
@@ -2484,6 +2485,22 @@ class Main < Sinatra::Base
                         end
                     end
                 end
+            end
+            unless teacher_logged_in?
+                @@lesson_notes_for_session_user_cache ||= {}
+                @@lesson_notes_for_session_user_last_timestamp ||= 0
+                rows = neo4j_query(<<~END_OF_QUERY, {:ts => @@lesson_notes_for_session_user_last_timestamp})
+                    MATCH (u:User)<-[:BY]-(n:LessonNote)-[:FOR]->(i:LessonInfo)-[:BELONGS_TO]->(l:Lesson)
+                    WHERE n.updated >= $ts
+                    RETURN u.email, n.text, i.offset, l.key, n.updated;
+                END_OF_QUERY
+                rows.each do |row|
+                    @@lesson_notes_for_session_user_last_timestamp = row['n.updated'] if row['n.updated'] > @@lesson_notes_for_session_user_last_timestamp
+                    @@lesson_notes_for_session_user_cache[row['u.email']] ||= {}
+                    @@lesson_notes_for_session_user_cache[row['u.email']][row['l.key']] ||= {}
+                    @@lesson_notes_for_session_user_cache[row['u.email']][row['l.key']][row['i.offset']] = row['n.text']
+                end
+                lesson_notes_for_session_user = @@lesson_notes_for_session_user_cache[@session_user[:email]] || {}
             end
         elsif path == 'messages'
             unless @session_user

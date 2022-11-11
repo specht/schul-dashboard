@@ -1365,18 +1365,6 @@ class Timetable
                                             data[k] = v if v
                                         end
                                     end
-                                    if @@lesson_keys_with_sus_feedback[lesson_key]
-                                        if @@lesson_keys_with_sus_feedback[lesson_key].include?(Date.parse(e[:datum]).wday)
-                                            data[:can_have_sus_feedback] = true
-                                            if @@user_info[email][:teacher]
-                                                # teacher
-                                            else
-                                                # SuS
-                                                # ((@lesson_notes_for_lesson_key[lesson_key] || {})[e[:lesson_offset]]
-                                            end
-                                        end
-                                    end
-
                                     events_with_data_cache[lesson_key][e[:lesson_offset]] = data
                                 end
                                 events_with_data_per_user_cache[lesson_key] ||= {}
@@ -1419,6 +1407,25 @@ class Timetable
                                         lesson_homework_feedback[e[:lesson_key]] ||= Main.get_homework_feedback_for_lesson_key(e[:lesson_key])
                                         if lesson_homework_feedback[e[:lesson_key]] && lesson_homework_feedback[e[:lesson_key]][e[:lesson_offset]]
                                             user_data[:homework_feedback] = lesson_homework_feedback[e[:lesson_key]][e[:lesson_offset]]
+                                        end
+                                    end
+
+                                    # add lesson notes
+                                    if @@lesson_keys_with_sus_feedback[e[:lesson_key]]
+                                        if @@lesson_keys_with_sus_feedback[e[:lesson_key]].include?(Date.parse(e[:datum]).wday)
+                                            user_data[:can_have_sus_feedback] = true
+                                            if user[:teacher]
+                                                # teacher
+                                                user_data[:lesson_notes] = ((@lesson_notes_for_lesson_key[e[:lesson_key]] || {})[e[:lesson_offset]] || {}).reject do |email, text|
+                                                    text.empty?
+                                                end
+                                            else
+                                                # SuS
+                                                lesson_note = ((@lesson_notes_for_lesson_key[e[:lesson_key]] || {})[e[:lesson_offset]] || {})[user[:email]]
+                                                if lesson_note
+                                                    user_data[:lesson_note] = lesson_note
+                                                end
+                                            end
                                         end
                                     end
 
@@ -2416,17 +2423,20 @@ class Timetable
             end
         end
         # now fetch all updated lesson
-        rows = neo4j_query(<<~END_OF_QUERY, {:ts => @lesson_info_last_timestamp})
+        @lesson_notes_last_timestamp ||= 0
+        rows = neo4j_query(<<~END_OF_QUERY, {:ts => @lesson_notes_last_timestamp})
             MATCH (u:User)<-[:BY]-(n:LessonNote)-[:FOR]->(i:LessonInfo)-[:BELONGS_TO]->(l:Lesson)
             WHERE n.updated >= $ts
-            RETURN u.email, n.text, i.offset, l.key;
+            RETURN u.email, n.text, i.offset, l.key, n.updated;
         END_OF_QUERY
+        fetched_lesson_note_count = rows.size
         rows.each do |row|
+            @lesson_notes_last_timestamp = row['n.updated'] if row['n.updated'] > @lesson_notes_last_timestamp
             @lesson_notes_for_lesson_key[row['l.key']] ||= {}
             @lesson_notes_for_lesson_key[row['l.key']][row['i.offset']] ||= {}
             @lesson_notes_for_lesson_key[row['l.key']][row['i.offset']][row['u.email']] = row['n.text']
         end
-        debug "Fetched #{fetched_lesson_info_count} updated lesson events, #{fetched_text_comments_count} updated text comments, #{fetched_audio_comments_count} updated audio comments, #{fetched_message_count} updated messages, #{fetched_event_count} updated events and #{fetched_public_test_entries} public test entries."
+        debug "Fetched #{fetched_lesson_info_count} updated lesson events, #{fetched_text_comments_count} updated text comments, #{fetched_audio_comments_count} updated audio comments, #{fetched_message_count} updated messages, #{fetched_event_count} updated events, #{fetched_public_test_entries} public test entries and #{fetched_lesson_note_count} lesson notes."
 
         unless add_these_lesson_keys.empty?
             only_these_lesson_keys = (only_these_lesson_keys || Set.new()) | add_these_lesson_keys

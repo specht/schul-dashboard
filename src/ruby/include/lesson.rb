@@ -5,7 +5,7 @@ class Main < Sinatra::Base
                                   :optional_keys => [:breakout_rooms, :booked_tablet_sets, :booked_tablet_sets_timespan],
                                   :max_body_length => 65536,
                                   :types => {
-                                      :lesson_offsets => Array, :data => Hash, 
+                                      :lesson_offsets => Array, :data => Hash,
                                       :breakout_rooms => Hash, :booked_tablet_sets => Array,
                                       :booked_tablet_sets_timespan => Hash})
         transaction do
@@ -726,7 +726,11 @@ class Main < Sinatra::Base
             SET n.text = $text
             SET n.updated = $timestamp;
         END_OF_QUERY
-        trigger_update(data[:lesson_key])
+        trigger_update("_#{@session_user[:email]}")
+        ((@@lessons[:lesson_keys][data[:lesson_key]] || {})[:lehrer] || []).each do |shorthand|
+            teacher_email = @@shorthands[shorthand]
+            trigger_update("_#{teacher_email}")
+        end
         respond(:ok => true)
     end
 end

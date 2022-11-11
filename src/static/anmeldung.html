@@ -35,7 +35,7 @@
                 Hiermit melden Sie sich für die Teilnahme an der Info-Veranstaltung für Viertklässlereltern am <strong>22. November 2022 um 18:00 Uhr</strong> an.
             </p>
             <p>
-                An der Veranstaltung nehmen angemeldete Teilnehmer*innen vorrangig teil. Bei hoher Nachfrage behalten wir uns vor, nur diese zur Veranstaltung zuzulassen.
+                An der Präsenzveranstaltung nehmen angemeldete Teilnehmer*innen vorrangig teil. Sollte die Anzahl der Anmeldungen die Maximalzahl übersteigen, ist eine Teilnahme nur noch im Livestream möglich. Auch im Livestram haben Sie die Möglichkeit, Fragen im Live-Chat zu stellen.
             </p>
             <!-- <p>
                 Während des Livestreams haben Sie die Möglichkeit, Fragen direkt im Chat zu stellen, die anschließend im Livestream beantwortet werden. 
@@ -46,11 +46,11 @@
             <hr />
             <!-- <hr /> -->
             <div>
-                <!-- <div class="table-responsive" style="max-width: 100%; overflow-x: auto;">
+                <div class="table-responsive" style="max-width: 100%; overflow-x: auto;">
                     <table class='table table-narrow narrow'>
                         #{print_public_event_table()}
                     </table>
-                </div> -->
+                </div>
                 <div class="form-group row">
                     <label for="ti_name" class="col-md-2 col-form-label">Name:</label>
                     <div class="col-md-10">
@@ -85,11 +85,11 @@
         data.name = $('#ti_name').val().trim();
         data.email = $('#ti_email').val().trim();
         data.track = null;
-        data.track = 'online';
-        data.track = 'schiene_1';
-        // let selected_buttons = $('.bu-track.selected');
-        // if (selected_buttons.length === 1)
-        //     data.track = $(selected_buttons[0]).data('track');
+        // data.track = 'online';
+        // data.track = 'schiene_1';
+        let selected_buttons = $('.bu-track.selected');
+        if (selected_buttons.length === 1)
+            data.track = $(selected_buttons[0]).data('track');
         return data;
     }
 

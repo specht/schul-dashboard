@@ -1,12 +1,12 @@
-EVENT_TRACK_ORDER = %w(schiene_1)
+EVENT_TRACK_ORDER = %w(schiene_1 online)
 EVENT_TRACKS = {
     # 'schiene_1'    => [ '9:15',  '9:30', '11:00', 'Schiene 1', 19],
     # 'schiene_2'    => ['10:45', '11:00', '12:30', 'Schiene 2', 19],
     # 'schiene_3'    => ['12:15', '12:30', '14:00', 'Schiene 3', 19],
     # 'schiene_sesb' => ['12:45', '13:00', '14:30', 'SESB-Schiene', 19],
     # 'schiene_4'    => ['13:45', '14:00', '15:30', 'Schiene 4', 19],
-    # 'online'       => [    nil, '11:00', '12:30', 'Tag der Offenen Tür digital', 1000],
-    'schiene_1'    => ['17:30', '18:00', '19:30', 'Schiene 1', 1000],
+    'schiene_1'    => ['17:30', '18:00', '19:30', 'Präsenz (Aula)', 110],
+    'online'       => ['17:50', '18:00', '19:30', 'Livestream (online)', 1000],
 }
 EVENT_NAME = 'Tag der Offenen Tür'
 
@@ -307,31 +307,25 @@ class Main < Sinatra::Base
             subject "Ihre Anmeldung zur Info-Veranstaltung für Viertklässlereltern am 22.11.2022"
 
             event = EVENT_TRACKS[data[:track]]
-            # 'schiene_1':    [ '9:15',  '9:30', '11:00', 'Schiene 1', 30],
             einlass = event[0]
             beginn = event[1]
             ende = event[2]
             titel = event[3]
 
             StringIO.open do |io|
-                # if data[:track] == 'online'
-                #     io.puts "<p>Sehr geehrte/r #{data[:name]},</p>"
-                #     io.puts "<p>vielen Dank für Ihre Anmeldung für die #{titel} am Tag der Offenen Tür. Die Veranstaltung findet am 08.01.2022 um #{beginn} Uhr statt. Die Zugangsdaten für das Streaming erhalten Sie zeitnah zur Veranstaltung mit gesonderter Mail.</p>"
-                #     io.puts "<p>Falls Sie Fragen haben, können Sie diese im Chat stellen; sie werden dann in der Veranstaltung live beantwortet.</p>"
-                #     io.puts "<p>Für einen kleinen Vorab-Eindruck empfehlen wir Ihnen unseren <a href='https://rundgang.gymnasiumsteglitz.de/'>virtuellen 360°-Grad-Rundgang</a>.</p>"
-                #     io.puts "<p>Mit freundlichen Grüßen</p>"
-                # else
-                #     io.puts "<p>Sehr geehrte/r #{data[:name]},</p>"
-                #     io.puts "<p>vielen Dank für Ihre Anmeldung für die #{titel} am Tag der Offenen Tür. Die Veranstaltung findet am 08.01.2022 von #{beginn} bis #{ende} Uhr statt. Der Einlass ist um #{einlass} Uhr am Haupteingang des Gymnasium Steglitz, Heesestraße 15. Pro Kind kann aufgrund der Vorgaben leider nur eine Begleitperson eingelassen werden. Wir bitten um Verständnis, dass wir bei Einlass den 2G-Status erwachsener Begleitpersonen überprüfen und Ihre Kontaktdaten (Name, Vorname, E-Mail-Adresse) für eine ggf. notwendige Kontaktnachverfolgung erheben. Die entsprechenden Listen werden nach vier Wochen vernichtet. Zur Überprüfung des Impfstatus bringen Sie bitte einen digital lesbaren Impfnachweis (QR-Code) sowie ein Ausweisdokument mit. Wir weisen darauf hin, dass wir ohne Nachweise in dieser Form keinen Zutritt gewähren können. Sollten Sie Symptome einer Coronaerkrankung aufweisen (Husten, Schnupfen, erhöhte Temperatur etc.) verzichten Sie bitte auf einen Besuch.</p>"
-                #     io.puts "<p>Wir weisen ferner darauf hin, dass während der gesamten Veranstaltung die Pflicht zum Tragen einer FFP2-Maske besteht. Wir bitten Sie darum, uns zu benachrichtigen, falls Sie nicht an dem gebuchten Termin teilnehmen können, damit wir den Platz neu vergeben können.</p>"
-                #     io.puts "<p>Für einen kleinen Vorab-Eindruck empfehlen wir Ihnen unseren <a href='https://rundgang.gymnasiumsteglitz.de/'>virtuellen 360°-Grad-Rundgang</a>.</p>"
-                #     io.puts "<p>Mit freundlichen Grüßen</p>"
-                # end
-                io.puts "<p>Sehr geehrte/r #{data[:name]},</p>"
-                io.puts "<p>vielen Dank für Ihre Anmeldung. Die Veranstaltung findet am 22.11.2022 von #{beginn} bis ca. #{ende} Uhr statt. Der Einlass ist ab #{einlass} Uhr am Haupteingang des Gymnasium Steglitz, Heesestraße 15. Um möglichst vielen Familien die Teilnahme zu ermöglichen, bitten wir darum, dass in der Regel nur eine Person pro Familie an der Veranstaltung teilnimmt. Sollten Sie Symptome einer Coronaerkrankung aufweisen (Husten, Schnupfen, erhöhte Temperatur etc.) verzichten Sie bitte auf einen Besuch."
-                io.puts "<p>Wir weisen ferner darauf hin, dass voraussichtlich während der gesamten Veranstaltung die Pflicht zum Tragen einer FFP2-Maske besteht. Wir bitten Sie darum, uns zu benachrichtigen, falls Sie nicht an dem gebuchten Termin teilnehmen können, damit wir den Platz neu vergeben können.</p>"
-                io.puts "<p>Für einen kleinen Vorab-Eindruck empfehlen wir Ihnen unseren <a href='https://rundgang.gymnasiumsteglitz.de/'>virtuellen 360°-Grad-Rundgang</a>.</p>"
-                io.puts "<p>Mit freundlichen Grüßen<br />Antje Lükemann</p>"
+                if data[:track] == 'online'
+                    io.puts "<p>Sehr geehrte/r #{data[:name]},</p>"
+                    io.puts "<p>vielen Dank für Ihre Anmeldung. Die Veranstaltung findet am 22.11.2022 von #{beginn} Uhr bis ca. #{ende} Uhr statt. Die Zugangsdaten für das Streaming erhalten Sie zeitnah zur Veranstaltung mit gesonderter Mail.</p>"
+                    io.puts "<p>Falls Sie Fragen haben, können Sie diese im Chat stellen; sie werden dann in der Veranstaltung live beantwortet.</p>"
+                    io.puts "<p>Für einen kleinen Vorab-Eindruck empfehlen wir Ihnen unseren <a href='https://rundgang.gymnasiumsteglitz.de/'>virtuellen 360°-Grad-Rundgang</a>.</p>"
+                    io.puts "<p>Mit freundlichen Grüßen<br />Antje Lükemann</p>"
+                else
+                    io.puts "<p>Sehr geehrte/r #{data[:name]},</p>"
+                    io.puts "<p>vielen Dank für Ihre Anmeldung. Die Veranstaltung findet am 22.11.2022 von #{beginn} Uhr bis ca. #{ende} Uhr statt. Der Einlass ist ab #{einlass} Uhr am Haupteingang des Gymnasium Steglitz, Heesestraße 15. Um möglichst vielen Familien die Teilnahme zu ermöglichen, bitten wir darum, dass in der Regel nur eine Person pro Familie an der Veranstaltung teilnimmt. Sollten Sie Symptome einer Coronaerkrankung aufweisen (Husten, Schnupfen, erhöhte Temperatur etc.) verzichten Sie bitte auf einen Besuch."
+                    io.puts "<p>Wir weisen ferner darauf hin, dass voraussichtlich während der gesamten Veranstaltung die Pflicht zum Tragen einer FFP2-Maske besteht. Wir bitten Sie darum, uns zu benachrichtigen, falls Sie nicht an dem gebuchten Termin teilnehmen können, damit wir den Platz neu vergeben können.</p>"
+                    io.puts "<p>Für einen kleinen Vorab-Eindruck empfehlen wir Ihnen unseren <a href='https://rundgang.gymnasiumsteglitz.de/'>virtuellen 360°-Grad-Rundgang</a>.</p>"
+                    io.puts "<p>Mit freundlichen Grüßen<br />Antje Lükemann</p>"
+                end
                 io.string
             end
         end
@@ -374,12 +368,12 @@ class Main < Sinatra::Base
 
                 sign_ups = get_sign_ups_for_public_event(EVENT_NAME)
 
-                io.puts "<div class='table-responsive' style='max-width: 100%; overflow-x: auto;'>"
-                io.puts "<table class='klassen_table table table-condensed table-striped narrow' style='width: unset; min-width: 100%;'>"
                 wrote_something = false
                 EVENT_TRACK_ORDER.each do |track|
                     next unless sign_ups[track]
-                    if wrote_something
+                    io.puts "<div class='table-responsive' style='max-width: 100%; overflow-x: auto;'>"
+                    io.puts "<table class='klassen_table table table-condensed table-striped narrow' style='width: unset; min-width: 100%;'>"
+                        if wrote_something
                         io.puts "<tr><td colspan='5' style='background-color: white;'></td></tr>"
                     end
                     wrote_something = true
@@ -407,17 +401,15 @@ class Main < Sinatra::Base
                         io.puts "</tr>"
                     end
                     io.puts "</tbody>"
-                end
-                io.puts "</table>"
-                io.puts "<textarea class='form-control' readonly>"
-                all_emails = []
-                sign_ups.each_pair do |track, rows|
-                    rows.each do |row|
+                    io.puts "</table>"
+                    io.puts "<textarea class='form-control' readonly>"
+                    all_emails = []
+                    sign_ups[track].each do |row|
                         all_emails << "#{row[:name]} <#{row[:email]}>"
                     end
+                    io.puts all_emails.uniq.join("\n")
+                    io.puts "</textarea>"
                 end
-                io.puts all_emails.uniq.join("\n")
-                io.puts "</textarea>"
                 io.puts "</div>"
             end
             io.puts "</div>"
@@ -465,11 +457,11 @@ class Main < Sinatra::Base
                 if (sign_ups[track] || []).size >= EVENT_TRACKS[track][4]
                     io.puts "<td><button class='btn btn-outline-secondary' disabled>ausgebucht</button></td>"
                 else
-                    io.puts "<td><button data-track='#{track}' class='bu-track btn btn-outline-info'>auswählen</button></td>"
+                    io.puts "<td><button data-track='#{track}' style='width: 8em;' class='bu-track btn btn-outline-info'>auswählen</button></td>"
                 end
             end
             io.puts "</tr>"
             io.string
-       end 
+       end
     end
 end

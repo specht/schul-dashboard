@@ -79,7 +79,7 @@
                 #{#print_lehrerzimmer_panel()}
                 #{#print_self_test_panel()}
                 #{print_current_polls()}
-                #{#print_salzh_panel()}
+                #{print_salzh_panel()}
             </div>
         </div>
         <div class='#{tablet_logged_in? ? 'col-md-4' : 'col-lg-8 col-md-12'}'>
@@ -121,6 +121,10 @@
                 <div class='col-md-12'>
                     <div class='vertretungs-text'></div>
                     <div class='lesson-infos-here'></div>
+                    <div class='sus-notes-here' style='display: none;'>
+                        <hr />
+                        <textarea id='ta_sus_notes' class='form-control' placeholder="Bitte gib hier ein, woran du in dieser Stunde gearbeitet hast (nur wenn es sich um eine Hybridstunde handelt, die zu Hause verbracht hast)."></textarea>
+                    </div>
                 </div>
             </div>
         </div>
@@ -672,6 +676,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
                 if (per_user.text_comments || per_user.audio_comments)
                     markers.append($('<span>').html("<i class='fa fa-comment'></i>"));
+                if (event_data.can_have_sus_feedback)
+                    markers.append($('<span>').html(`<i id='icon_hybrid_notes_${arg.event.extendedProps.lesson_key}_${arg.event.extendedProps.lesson_offset}' class='fa fa-file-o'></i>`));
+                // markers.append($('<span>').html("<i class='fa fa-file-text-o'></i>"));
                 div1b.append(markers);
 
                 let div2 = $('<div>');
@@ -1160,7 +1167,15 @@ document.addEventListener('DOMContentLoaded', function() {
                 else
                     body.append("<div class='text-muted'><i>(keine weiteren Informationen)</i></div>");
             }
-            
+
+            if (event_data.can_have_sus_feedback) {
+                $('.sus-notes-here').show();
+                $('#ta_sus_notes').data('lesson_key', event.lesson_key);
+                $('#ta_sus_notes').data('lesson_offset', event.lesson_offset);
+            }
+            else
+                $('.sus-notes-here').hide();
+
             $('#lessonModal').modal('show');
         }
     };
@@ -1443,6 +1458,21 @@ document.addEventListener('DOMContentLoaded', function() {
                     });
                 }
             );
+    });
+    $('#ta_sus_notes').change(function(e) {
+        let data = {
+            text: $('#ta_sus_notes').val().trim(),
+            lesson_key: $('#ta_sus_notes').data('lesson_key'),
+            lesson_offset: $('#ta_sus_notes').data('lesson_offset')
+        };
+        api_call('/api/set_hybrid_notes', data, function(data2) {
+            if (data2.success) {
+                if (data.text.length === 0)
+                    $(`#icon_hybrid_notes_${data.lesson_key}_${data.lesson_offset}`).removeClass('fa-file-text-o').addClass('fa-file-o');
+                else
+                    $(`#icon_hybrid_notes_${data.lesson_key}_${data.lesson_offset}`).removeClass('fa-file-o').addClass('fa-file-text-o');
+            }
+        });
     });
 });
 </script>

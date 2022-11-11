@@ -7,25 +7,25 @@ require 'fileutils'
 
 class Timetable
     include Neo4jBolt
-    
+
     def initialize
         @lesson_cache = []
         @lesson_events = nil
         update_timetables()
     end
-    
+
     def strike(s)
         (s && s.size > 0) ? "<s>#{s}</s>" : s
     end
-    
+
     def bold(s)
         (s && s.size > 0) ? "<b>#{s}</b>" : s
     end
-    
+
     def paren(s)
         (s && s.size > 0) ? "(#{s})" : s
     end
-    
+
     def fix_label_for_unicode(original)
         s = original.gsub('<b>', '').gsub('</b>', '')
         while true do
@@ -47,7 +47,7 @@ class Timetable
             s
         end
     end
-    
+
     def gen_label_lehrer(a, b)
         # a: fach, b: lehrer
         a0 = ''; a1 = ''; b0 = []; b1 = [];
@@ -66,7 +66,7 @@ class Timetable
         end
         s.gsub('<s>()</s>', '').strip
     end
-    
+
     def gen_label_klasse(a, b, c)
         # a: fach, b: klassen, c: lehrer
         b = [[]] if b.nil?
@@ -102,7 +102,7 @@ class Timetable
         end
         s.gsub('<s>()</s>', '').strip
     end
-    
+
     def gen_label_room(a, b, c)
         # a: fach, b: klassen, c: lehrer
         b = [[]] if b.nil?
@@ -135,7 +135,7 @@ class Timetable
         end
         s.gsub('<s>()</s>', '').strip
     end
-    
+
     def merge_same_events(cache_indices)
         # in / out: cache indices
         merged_event_indices = []
@@ -156,7 +156,7 @@ class Timetable
                     last_event[:label_klasse] == event[:label_klasse] &&
                     last_event[:vertretungs_text] == event[:vertretungs_text] &&
                     last_event[:stunde] + last_event[:count] == event[:stunde]
-                    
+
                     a = last_event[:start].split('T')[1].split(':').map { |x| x.to_i }
                     a = a[0] * 60 + a[1]
                     b = last_event[:end].split('T')[1].split(':').map { |x| x.to_i }
@@ -196,7 +196,7 @@ class Timetable
         end
         Set.new(merged_event_indices)
     end
-    
+
     def update_monitor()
         debug "Updating monitor..."
 
@@ -209,11 +209,11 @@ class Timetable
             monitor_date = Date.parse([@@config[:first_school_day], Date.today.to_s].max.to_s)
             while [6, 0].include?(monitor_date.wday) do
                 monitor_date += 1
-            end 
+            end
             monitor_date += offset
             while [6, 0].include?(monitor_date.wday) do
                 monitor_date += 1
-            end 
+            end
             monitor_date = monitor_date.strftime('%Y-%m-%d')
             if offset == 0
                 monitor_data_package[:today] = monitor_date
@@ -361,6 +361,7 @@ class Timetable
         end
         @@lehrer_order = Main.class_variable_get(:@@lehrer_order)
         @@room_ids = Main.class_variable_get(:@@room_ids)
+        @@lesson_keys_with_sus_feedback = Main.class_variable_get(:@@lesson_keys_with_sus_feedback)
 
         lesson_offset = {}
 
@@ -422,7 +423,7 @@ class Timetable
                     day_lesson_keys_for_stunde
                     day_lesson_keys_for_stunde[stunde] ||= Set.new()
                     day_lesson_keys_for_stunde[stunde] << lesson_key
-                    
+
                     event_regular = {
                         :lesson => true,
                         :datum => ds,
@@ -443,7 +444,7 @@ class Timetable
                     day_events_regular[stunde] << event_regular[:cache_index]
                 end
             end
-            
+
             # # 1b. add all Pausenaufsichten for today
             start_date = @@pausenaufsichten[:start_date_for_date][ds]
             if start_date
@@ -1364,6 +1365,17 @@ class Timetable
                                             data[k] = v if v
                                         end
                                     end
+                                    if @@lesson_keys_with_sus_feedback[lesson_key]
+                                        if @@lesson_keys_with_sus_feedback[lesson_key].include?(Date.parse(e[:datum]).wday)
+                                            data[:can_have_sus_feedback] = true
+                                            if @@user_info[email][:teacher]
+                                                # teacher
+                                            else
+                                                # SuS
+                                                # ((@lesson_notes_for_lesson_key[lesson_key] || {})[e[:lesson_offset]]
+                                            end
+                                        end
+                                    end
 
                                     events_with_data_cache[lesson_key][e[:lesson_offset]] = data
                                 end
@@ -1379,7 +1391,7 @@ class Timetable
                                             fach = @@faecher[fach] if @@faecher[fach]
                                             from = "#{(@@user_info[comment_info[:tcf] || ''] || {})[:display_last_name]} (#{fach})"
                                             user_data[:text_comments] << {
-                                                :comment => comment_info[:text_comment], 
+                                                :comment => comment_info[:text_comment],
                                                 :from => from,
                                                 :timestamp => comment_info[:timestamp],
                                                 :id => comment_info[:id]
@@ -1394,8 +1406,8 @@ class Timetable
                                             fach = @@faecher[fach] if @@faecher[fach]
                                             from = "#{(@@user_info[comment_info[:acf] || ''] || {})[:display_last_name]} (#{fach})"
                                             user_data[:audio_comments] << {
-                                                :tag => comment_info[:audio_comment_tag], 
-                                                :duration => comment_info[:duration], 
+                                                :tag => comment_info[:audio_comment_tag],
+                                                :duration => comment_info[:duration],
                                                 :from => from,
                                                 :timestamp => comment_info[:timestamp],
                                                 :id => comment_info[:id]
@@ -1780,7 +1792,7 @@ class Timetable
                 f.write(jitsi_count_for_dh.to_json)
             end
         end
-        
+
         holidays = []
         @@ferien_feiertage.each do |entry|
             unless (entry[:to] < @@config[:first_day] || entry[:from] > @@config[:last_day])
@@ -1809,7 +1821,7 @@ class Timetable
             FileUtils.mkpath(File.dirname(path))
             Zlib::GzipWriter.open(path) do |f|
                 events = []
-                events += holidays 
+                events += holidays
                 levents.keys.sort.each do |yw|
                     events += levents[yw].map { |x| @lesson_cache[x] }
                 end
@@ -1916,8 +1928,8 @@ class Timetable
                             homework_text << "Es befinden sich Hausaufgaben in der Nextcloud." if entry[:info][:homework_nc]
                             homework_text << "Es befinden sich Hausaufgaben im Lernraum." if entry[:info][:homework_lr]
                             chronological_homework << {
-                                :datum => datum, 
-                                :text => homework_text, 
+                                :datum => datum,
+                                :text => homework_text,
                                 :fach => fach,
                                 :lehrer => lehrer.map { |x| (@@user_info[@@shorthands[x]] || {})[:display_last_name]}.join(', '),
                                 :est_time => entry[:info][:homework_est_time].to_i,
@@ -1933,7 +1945,7 @@ class Timetable
         STDERR.puts
         return file_count
     end
-    
+
     def update_recipients(only_this_email = nil)
         debug "Updating recipients"
         # write recipients for each user
@@ -1996,7 +2008,7 @@ class Timetable
                     end
                     if groups_for_klasse.size > 1
                         groups_for_klasse.each do |group|
-                            recipients["/klasse/#{klasse}/#{group}"] = 
+                            recipients["/klasse/#{klasse}/#{group}"] =
                                     {:label => "Klasse #{klasse} (Gruppe #{group})",
                                      :entries => @@schueler_for_klasse[klasse].select { |email| group_for_sus[email] == group }
                                     }
@@ -2007,7 +2019,7 @@ class Timetable
                         next unless @@shorthands[shorthand]
                         teacher_emails << @@user_info[@@shorthands[shorthand]][:email]
                     end
-                    recipients["/klasse/#{klasse}/lehrer"] = 
+                    recipients["/klasse/#{klasse}/lehrer"] =
                             {:label => "Lehrer der Klasse #{klasse}",
                              :entries => teacher_emails
                             }
@@ -2080,6 +2092,7 @@ class Timetable
         @events_for_user ||= {}
         @lesson_info_last_timestamp ||= 0
         @public_test_entries_for_klasse ||= {}
+        @lesson_notes_for_lesson_key ||= {}
         fetched_lesson_info_count = 0
         fetched_text_comments_count = 0
         fetched_audio_comments_count = 0
@@ -2178,7 +2191,7 @@ class Timetable
             end
             tablet_set_ids = (updated_booked_tablet_sets_for_lesson_key_and_offset[row[:key]] || {})[row[:info][:offset]]
             if tablet_set_ids
-                tablet_set_ids.sort! 
+                tablet_set_ids.sort!
                 @lesson_info[row[:key]][row[:info][:offset]][:data][:booked_tablet_sets] = tablet_set_ids
                 @lesson_info[row[:key]][row[:info][:offset]][:data][:booked_tablet_sets_total_count] = tablet_set_ids.inject(0) { |sum, x| sum + ((@@tablet_sets[x] || {}) [:count] || 0)}
             end
@@ -2274,17 +2287,17 @@ class Timetable
                 ORDER BY m.created DESC;
             END_OF_QUERY
             new_rows.map! do |x|
-                {:info => x['m'], 
-                 :from => x['mf.email'], 
-                 :to_list => x['COLLECT(u.email)'], 
+                {:info => x['m'],
+                 :from => x['mf.email'],
+                 :to_list => x['COLLECT(u.email)'],
                  :rt_list => x['COLLECT(rt)'].map { |x| x.transform_keys { |y| y.to_sym }}
                 }
             end
             fetched_message_count = rows.size
             new_rows.each do |row|
-                row[:to_list].each.with_index do |to, to_index| 
+                row[:to_list].each.with_index do |to, to_index|
                     rt = row[:rt_list][to_index]
-                    @messages_for_user[to] ||= {} 
+                    @messages_for_user[to] ||= {}
                     @messages_last_timestamp = row[:info][:updated] if row[:info][:updated] > @messages_last_timestamp
                     if (rt || {})[:updated]
                         @messages_last_timestamp = rt[:updated] if rt[:updated] > @messages_last_timestamp
@@ -2402,8 +2415,19 @@ class Timetable
                 end
             end
         end
+        # now fetch all updated lesson
+        rows = neo4j_query(<<~END_OF_QUERY, {:ts => @lesson_info_last_timestamp})
+            MATCH (u:User)<-[:BY]-(n:LessonNote)-[:FOR]->(i:LessonInfo)-[:BELONGS_TO]->(l:Lesson)
+            WHERE n.updated >= $ts
+            RETURN u.email, n.text, i.offset, l.key;
+        END_OF_QUERY
+        rows.each do |row|
+            @lesson_notes_for_lesson_key[row['l.key']] ||= {}
+            @lesson_notes_for_lesson_key[row['l.key']][row['i.offset']] ||= {}
+            @lesson_notes_for_lesson_key[row['l.key']][row['i.offset']][row['u.email']] = row['n.text']
+        end
         debug "Fetched #{fetched_lesson_info_count} updated lesson events, #{fetched_text_comments_count} updated text comments, #{fetched_audio_comments_count} updated audio comments, #{fetched_message_count} updated messages, #{fetched_event_count} updated events and #{fetched_public_test_entries} public test entries."
-        
+
         unless add_these_lesson_keys.empty?
             only_these_lesson_keys = (only_these_lesson_keys || Set.new()) | add_these_lesson_keys
         end

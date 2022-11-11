@@ -950,10 +950,8 @@ class Main < Sinatra::Base
             debug("Undeclared rooms: #{undeclared_rooms.to_a.sort.join(' ')}")
         end
         @@lesson_keys_with_sus_feedback = {}
-        if DEVELOPMENT
-            if File.exists?('/data/kurswahl/sus_feedback.yaml')
-                @@lesson_keys_with_sus_feedback = YAML::load_file('/data/kurswahl/sus_feedback.yaml')
-            end
+        if File.exists?('/data/kurswahl/sus_feedback.yaml')
+            @@lesson_keys_with_sus_feedback = YAML::load_file('/data/kurswahl/sus_feedback.yaml')
         end
 
         if ENV['DASHBOARD_SERVICE'] == 'ruby'

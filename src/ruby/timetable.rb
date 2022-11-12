@@ -1995,6 +1995,17 @@ class Timetable
         end
         # debug groups_for_user.to_yaml
 
+        ev_users = Set.new()
+        ev_name_for_email = {}
+        temp = neo4j_query(<<~END_OF_QUERY) do |row|
+            MATCH (u:User {ev: true})
+            RETURN u.email, u.ev_name;
+        END_OF_QUERY
+            email = "eltern.#{row['u.email']}"
+            ev_users << email
+            ev_name_for_email[email] = row['u.ev_name']
+        end
+
         @@user_info.each_pair do |email, user|
             next if only_this_email && only_this_email != email
             next unless user[:teacher] || user[:sv]
@@ -2050,6 +2061,8 @@ class Timetable
                 if user[:can_see_all_timetables]
                     recipients['/eltern/*'] = {:label => 'Gesamte Elternschaft',
                                                :entries => @@user_info.select { |k, v| !v[:teacher]}.map { |k, v| 'eltern.' + k }}
+                    recipients['/ev/*'] = {:label => 'Gesamte Elternvertreter:innenschaft',
+                                               :entries => ev_users.to_a.sort}
                 end
                 if user[:teacher]
                     recipients['/lehrer/*'] = {:label => 'Gesamtes Kollegium',

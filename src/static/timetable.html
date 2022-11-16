@@ -1499,7 +1499,8 @@ document.addEventListener('DOMContentLoaded', function() {
         };
         api_call('/api/set_hybrid_notes', data, function(data2) {
             if (data2.success) {
-                lesson_notes[data.lesson_key] ||= {};
+                if (!(data.lesson_key in lesson_notes))
+                    lesson_notes[data.lesson_key] = {};
                 lesson_notes[data.lesson_key][data.lesson_offset] = data.text;
                 if (data.text.length === 0)
                     $(`#icon_hybrid_notes_${data.lesson_key}_${data.lesson_offset}`).removeClass('fa-file-text-o').addClass('fa-file-o');

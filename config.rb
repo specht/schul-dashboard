@@ -161,7 +161,7 @@ docker_compose[:services][:neo4j] = {
 docker_compose[:services][:neo4j][:environment] = [
     'NEO4J_AUTH=none',
     'NEO4J_dbms_logs__timezone=SYSTEM',
-    #'NEO4J_dbms_allow__upgrade=true',
+    'NEO4J_dbms_allow__upgrade=true',
 ]
 docker_compose[:services][:neo4j][:user] = "#{UID}"
 

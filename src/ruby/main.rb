@@ -1163,7 +1163,7 @@ class Main < Sinatra::Base
         @@compiled_files = {}
         debug "DASHBOARD_SERVICE: #{ENV['DASHBOARD_SERVICE']}"
         debug "File.basename($0): #{File.basename($0)}"
-        # if ENV['DASHBOARD_SERVICE'] == 'ruby' && (File.basename($0) == 'thin' || File.basename($0) == 'pry.rb')
+        if ENV['DASHBOARD_SERVICE'] == 'ruby' && (File.basename($0) == 'thin' || File.basename($0) == 'pry.rb')
             setup.setup(self)
             COLOR_SCHEME_COLORS.each do |entry|
                 @@color_scheme_info[entry[0]] = [entry[1], entry[2]]
@@ -1203,7 +1203,7 @@ class Main < Sinatra::Base
             self.compile_css()
             self.determine_lehrmittelverein_state_for_all()
             # STDERR.puts @@color_scheme_info.to_yaml
-        # end
+        end
         if ['thin', 'rackup'].include?(File.basename($0))
             debug('Server is up and running!')
         end

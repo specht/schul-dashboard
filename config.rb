@@ -149,7 +149,7 @@ docker_compose[:services][:ruby2] = {
                  "#{VPLAN_FILES_PATH}:/vplan:ro",
                  "#{INTERNAL_PATH}:/internal:ro",
                  "#{GEN_FILES_PATH}:/gen:ro"],
-    :environment => env,
+    :environment => env.dup,
     :working_dir => '/app'
 }
 

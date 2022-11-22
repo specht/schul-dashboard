@@ -605,8 +605,21 @@ class Main < Sinatra::Base
                 @@birthday_entries[birthday_md] << record[:email]
             end
         end
+        all_prefixes = {}
         @@user_info.keys.each do |email|
             @@user_info[email][:id] = Digest::SHA2.hexdigest(USER_ID_SALT + email).to_i(16).to_s(36)[0, 16]
+            (1..email.size).each do |length|
+                prefix = email[0, length]
+                all_prefixes[prefix] ||= Set.new()
+                all_prefixes[prefix] << email
+            end
+        end
+        @@user_info.keys.each do |email|
+            length = 1
+            while all_prefixes[email[0, length]].size > 1
+                length += 1
+            end
+            @@user_info[email][:shortest_prefix] = email[0, length]
         end
 
         @@tablets_for_school_streaming = Set.new()

@@ -457,6 +457,7 @@ class Main < Sinatra::Base
 
     def self.collect_data
         @@user_info = {}
+        @@login_shortcuts = {}
         @@email_for_matrix_login = {}
         @@shorthands = {}
         @@shorthand_order = []
@@ -477,6 +478,18 @@ class Main < Sinatra::Base
         @@predefined_external_users = {}
         @@bib_summoned_books = {}
         @@bib_summoned_books_last_ts = 0
+
+        if File.exists?('/data/login-shortcuts.txt')
+            File.open('/data/login-shortcuts.txt') do |f|
+                f.each_line do |line|
+                    line.strip!
+                    next if line.empty? || line[0] == '#'
+                    parts = line.split(' ')
+                    next if parts.size != 2
+                    @@login_shortcuts[parts[0]] = parts[1]
+                end
+            end
+        end
 
         parser = Parser.new()
         parser.parse_faecher do |fach, bezeichnung|
@@ -608,6 +621,13 @@ class Main < Sinatra::Base
         all_prefixes = {}
         @@user_info.keys.each do |email|
             @@user_info[email][:id] = Digest::SHA2.hexdigest(USER_ID_SALT + email).to_i(16).to_s(36)[0, 16]
+            (1..email.size).each do |length|
+                prefix = email[0, length]
+                all_prefixes[prefix] ||= Set.new()
+                all_prefixes[prefix] << email
+            end
+        end
+        @@login_shortcuts.keys.each do |email|
             (1..email.size).each do |length|
                 prefix = email[0, length]
                 all_prefixes[prefix] ||= Set.new()

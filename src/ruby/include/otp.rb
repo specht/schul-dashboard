@@ -6,7 +6,7 @@ class Main < Sinatra::Base
             REMOVE u.otp_token;
         END_OF_QUERY
     end
-    
+
     post '/api/regenerate_otp_token' do
         require_user!
         delete_session_user_otp_token()
@@ -18,25 +18,25 @@ class Main < Sinatra::Base
         @session_user[:otp_token] = token
         respond(:qr_code => session_user_otp_qr_code())
     end
-    
+
     post '/api/delete_otp_token' do
         require_user!
         delete_session_user_otp_token()
         respond(:ok => 'yeah')
     end
-    
+
     def session_user_otp_qr_code()
         require_user!
         otp_token = @session_user[:otp_token]
         return nil if otp_token.nil?
         totp = ROTP::TOTP.new(otp_token, issuer: "Dashboard")
-        uri = totp.provisioning_uri(@session_user[:email]) 
+        uri = totp.provisioning_uri(@session_user[:email])
         qrcode = RQRCode::QRCode.new(uri, 7)
         svg = qrcode.as_svg(offset: 0, color: '000', shape_rendering: 'crispEdges',
-                            module_size: 4, standalone: true)    
+                            module_size: 4, standalone: true)
         svg.gsub("\n", '')
     end
-    
+
     post '/api/login_otp' do
         data = parse_request_data(:required_keys => [:email])
         data[:email] = data[:email].strip.downcase

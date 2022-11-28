@@ -1,3 +1,4 @@
+#{require_user_who_can_manage_news!}
 <style>
     b.key {
         display: inline-block;
@@ -16,39 +17,52 @@
     }
 </style>
 
+<div class="modal" id="bookingModal" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title"></h5>
+        </div>
+        <div class="modal-body">
+            <div class='container-fluid' style='padding: 0;'>
+              <div class='row'>
+                  <div class='col-md-12' id='ti_booking_text'></div>
+              </div>
+              <div class="form-group row">
+                <label for="staticEmail" class="col-sm-2 col-form-label">Name:</label>
+                <div class="col-sm-10">
+                  <input type="text" class="form-control" id="ti_name">
+                </div>
+              </div>
+              <div class="form-group row">
+                <label for="staticEmail" class="col-sm-2 col-form-label">E-Mail:</label>
+                <div class="col-sm-10">
+                  <input type="text" class="form-control" id="ti_email">
+                </div>
+              </div>
+            </div>
+            <div id='thankyou' class='alert alert-success' style='display: none;'>
+                Vielen Dank für Ihre Anmeldung! Wir haben Ihnen eine E-Mail zur Anmeldebestätigung gesendet.
+            </div>
+            <div id='error' class='alert alert-danger' style='display: none;'>
+                Leider ist bei der Buchung ein Fehler aufgetreten. Versuchen Sie es bitte später noch einmal.
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-dismiss="modal"><i class='fa fa-times'></i>&nbsp;&nbsp;Abbrechen</button>
+            <button id='bu_submit' type='button' class="btn btn-success"><i class='fa fa-send'></i>&nbsp;&nbsp;Buchung abschließen</button>
+        </div>
+      </div>
+    </div>
+</div>
+
 <div class='container' style='padding-top: 30px;'>
     <div class='row'>
         <div class='col-md-12'>
-            <!-- <h3>Anmeldung zum Tag der Offenen Tür</h3> -->
-            <h3>Anmeldung zur Info-Veranstaltung für Viertklässlereltern</h3>
-            <!-- <p>
-                Hiermit melden Sie sich für die Teilnahme am Videostream zum Tag der Offenen Tür Digital am <strong>8. Januar 2022 um 11:00 Uhr</strong> an.
-            </p>
-            <p>
-                Während des Livestreams haben Sie die Möglichkeit, Fragen direkt im Chat zu stellen, die anschließend im Livestream beantwortet werden. 
-                Parallel stehen Ihnen unsere Fachleitungen und Fachkräfte der einzelnen Fachbereiche für Fragen in unserem Chatsystem zur Verfügung.
-            </p>
-            <p>
-                Die Teilnahme ist nur nach vorheriger Anmeldung möglich.
-            </p> -->
-            <p>
-                Hiermit melden Sie sich für die Teilnahme an der Info-Veranstaltung für Viertklässlereltern am <strong>22. November 2022 um 18:00 Uhr</strong> an.
-            </p>
-            <p>
-                An der Präsenzveranstaltung nehmen angemeldete Teilnehmer*innen vorrangig teil. Sollte die Anzahl der Anmeldungen die Maximalzahl übersteigen, ist eine Teilnahme nur noch im Livestream möglich. Auch im Livestram haben Sie die Möglichkeit, Fragen im Live-Chat zu stellen.
-            </p>
-            <!-- <p>
-                Während des Livestreams haben Sie die Möglichkeit, Fragen direkt im Chat zu stellen, die anschließend im Livestream beantwortet werden. 
-                Parallel stehen Ihnen unsere Fachleitungen und Fachkräfte der einzelnen Fachbereiche für Fragen in unserem Chatsystem zur Verfügung.
-            </p> -->
-
-
-            <hr />
-            <!-- <hr /> -->
             <div>
-                <div class="table-responsive" style="max-width: 100%; overflow-x: auto;">
+                #{print_public_event_table()}
+                <!-- <div class="table-responsive" style="max-width: 100%; overflow-x: auto;">
                     <table class='table table-narrow narrow'>
-                        #{print_public_event_table()}
                     </table>
                 </div>
                 <div class="form-group row">
@@ -73,7 +87,7 @@
                 </div>
                 <div id='error' class='alert alert-danger' style='display: none;'>
                     Fehler bei der Buchung.
-                </div>
+                </div> -->
             </div>
         </div>
     </div>
@@ -84,12 +98,6 @@
         let data = {};
         data.name = $('#ti_name').val().trim();
         data.email = $('#ti_email').val().trim();
-        data.track = null;
-        // data.track = 'online';
-        // data.track = 'schiene_1';
-        let selected_buttons = $('.bu-track.selected');
-        if (selected_buttons.length === 1)
-            data.track = $(selected_buttons[0]).data('track');
         return data;
     }
 
@@ -98,22 +106,18 @@
         let can_submit = true;
         if (data.name.length === 0) can_submit = false;
         if (data.email.length === 0) can_submit = false;
-        if (data.track === null) can_submit = false;
+        // if (data.track === null) can_submit = false;
         $('#bu_submit').prop('disabled', !can_submit);
     }
 
     window.addEventListener('load', function () {
-        $('.bu-track').click(function (e) {
-            let which = $(e.target).closest('.bu-track');
-            let prev = $('.bu-track.selected');
-            prev.removeClass('selected');
-            prev.removeClass('btn-info');
-            prev.addClass('btn-outline-info');
-            prev.html('auswählen');
-            which.addClass('selected');
-            which.removeClass('btn-outline-info');
-            which.addClass('btn-info');
-            which.html("<i class='fa fa-check'></i>&nbsp;&nbsp;ausgewählt");
+        $('.bu-book-public-event').click(function (e) {
+            let td = $(e.target).closest('td');
+            $('#ti_booking_text').html(td.find('.booking-text').html());
+            let table_div = $(e.target).closest('.table-responsive');
+            console.log(table_div.find('.event-title').html());
+            $('#bookingModal .modal-title').html(table_div.find('.event-title').html());
+            $('#bookingModal').modal('show');
             update_submit_button();
         });
         $('input').keyup(function (e) {

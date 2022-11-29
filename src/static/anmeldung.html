@@ -9,12 +9,6 @@
         width: 120px;
         float: left;
     }
-
-    input.form-control {
-        /* display: inline-block; */
-        /* width: auto; */
-
-    }
 </style>
 
 <div class="modal" id="bookingModal" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
@@ -45,12 +39,12 @@
                 Vielen Dank für Ihre Anmeldung! Wir haben Ihnen eine E-Mail zur Anmeldebestätigung gesendet.
             </div>
             <div id='error' class='alert alert-danger' style='display: none;'>
-                Leider ist bei der Buchung ein Fehler aufgetreten. Versuchen Sie es bitte später noch einmal.
+                Leider ist bei der Anmeldung ein Fehler aufgetreten. Versuchen Sie es bitte später noch einmal.
             </div>
         </div>
         <div class="modal-footer">
-            <button type="button" class="btn btn-secondary" data-dismiss="modal"><i class='fa fa-times'></i>&nbsp;&nbsp;Abbrechen</button>
-            <button id='bu_submit' type='button' class="btn btn-success"><i class='fa fa-send'></i>&nbsp;&nbsp;Buchung abschließen</button>
+            <button id='bu_submit' type='button' class="btn btn-success"><i class='fa fa-send'></i>&nbsp;&nbsp;Anmeldung abschließen</button>
+            <button id='bu_close' type="button" class="btn btn-outline-secondary" data-dismiss="modal"><i class='fa fa-times'></i>&nbsp;&nbsp;Abbrechen</button>
         </div>
       </div>
     </div>
@@ -61,43 +55,21 @@
         <div class='col-md-12'>
             <div>
                 #{print_public_event_table()}
-                <!-- <div class="table-responsive" style="max-width: 100%; overflow-x: auto;">
-                    <table class='table table-narrow narrow'>
-                    </table>
-                </div>
-                <div class="form-group row">
-                    <label for="ti_name" class="col-md-2 col-form-label">Name:</label>
-                    <div class="col-md-10">
-                        <input type="text" class="form-control" id="ti_name" placeholder="Name">
-                    </div>
-                </div>
-                <div class="form-group row">
-                    <label for="ti_email" class="col-md-2 col-form-label">E-Mail:</label>
-                    <div class="col-md-10">
-                        <input type="email" class="form-control" id="ti_email" placeholder="E-Mail-Adresse">
-                    </div>
-                </div>
-                <hr />
-                <div style='text-align: center;'>
-                    <button id='bu_submit' type="submit" class="btn btn-success" disabled><i
-                            class='fa fa-send'></i>&nbsp;&nbsp;Anmelden</button>
-                </div>
-                <div id='thankyou' class='alert alert-success' style='display: none;'>
-                    Vielen Dank für Ihre Anmeldung! Wir haben Ihnen eine E-Mail zur Anmeldebestätigung gesendet.
-                </div>
-                <div id='error' class='alert alert-danger' style='display: none;'>
-                    Fehler bei der Buchung.
-                </div> -->
             </div>
         </div>
     </div>
 </div>
 
 <script>
+    var event_key = null;
+    var entry_key = null;
+
     function collect_data() {
         let data = {};
         data.name = $('#ti_name').val().trim();
         data.email = $('#ti_email').val().trim();
+        data.event_key = event_key;
+        data.entry_key = entry_key;
         return data;
     }
 
@@ -112,11 +84,18 @@
 
     window.addEventListener('load', function () {
         $('.bu-book-public-event').click(function (e) {
+            $('#ti_name').val('');
             let td = $(e.target).closest('td');
+            entry_key = td.find('button').data('key');
             $('#ti_booking_text').html(td.find('.booking-text').html());
             let table_div = $(e.target).closest('.table-responsive');
             console.log(table_div.find('.event-title').html());
+            event_key = table_div.data('event-key');
             $('#bookingModal .modal-title').html(table_div.find('.event-title').html());
+            $('#bu_submit').prop('disabled', false);
+            $('#bu_close').html("<i class='fa fa-times'></i>&nbsp;&nbsp;Abbrechen").addClass('btn-outline-secondary').removeClass('btn-secondary');
+            $('#thankyou').hide();
+            $('#error').hide();
             $('#bookingModal').modal('show');
             update_submit_button();
         });
@@ -130,17 +109,14 @@
             update_submit_button();
         });
         $('#bu_submit').click(function (e) {
-            let data = collect_data();
-            $('.bu-track').prop('disabled', true);
-            $('#ti_name').prop('disabled', true);
-            $('#ti_email').prop('disabled', true);
-            api_call('/api/sign_up_for_event', { name: data.name, email: data.email, track: data.track }, function (data) {
+            api_call('/api/sign_up_for_public_event', collect_data(), function (data) {
                 console.log(data);
+                $('#bu_close').html("<i class='fa fa-times'></i>&nbsp;&nbsp;Schließen").removeClass('btn-outline-secondary').addClass('btn-secondary');
                 if (data.success) {
-                    $('#bu_submit').slideUp();
+                    $('#bu_submit').prop('disabled', true);
                     $('#thankyou').slideDown();
                 } else {
-                    $('#bu_submit').slideUp();
+                    $('#bu_submit').prop('disabled', true);
                     $('#error').slideDown();
                 }
             });

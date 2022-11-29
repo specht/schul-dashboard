@@ -172,7 +172,7 @@ class Main < Sinatra::Base
                 io.puts "<colgroup>"
                 io.puts "<col style='width: 180px;'/>"
                 colspan.times do
-                    io.puts "<col style='width: calc((100% - 180px) / #{colspan});'/>"
+                    io.puts "<col style='width: auto;'/>"
                 end
                 io.puts "</colgroup>"
                 io.puts "<tbody>"

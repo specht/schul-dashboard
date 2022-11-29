@@ -72,10 +72,18 @@
             </div>
         </div>
         <div class="col-md-6">
-            <hr />
-            <div id='unknown_book' style="display: none;">
+            <!-- <hr /> -->
+            <div id='unknown_book' style="display: none; margin-left: -15px; margin-right: -15px; margin-top: 15px;">
                 <div class="alert alert-danger">
                     Ein Buch mit der Stammsignatur <span id='unknown_stem'></span> befindet sich nicht im System.
+                </div>
+            </div>
+            <div id='new_or_old_exemplar_div' style="display: none; margin-left: -15px; margin-right: -15px; margin-top: 15px;">
+                <div class="alert alert-success">
+                    Das Exemplar <b><span class='new_or_old_barcode'></span></b> war bisher nicht bekannt und wurde gespeichert.
+                </div>
+                <div class="alert alert-warning">
+                    Das Exemplar <b><span class='new_or_old_barcode'></span></b> ist bereits bekannt.
                 </div>
             </div>
             <div id='stem_div'></div>
@@ -87,7 +95,7 @@
                 <button id='bu_scan_isbn_cancel' class='pull-right btn btn-sm btn-danger ml-1 mr-1' style="display: none;"><i class='fa fa-times'></i>&nbsp;&nbsp;Abbruch</button>
                 <div id='info_isbn'></div>
                 <hr style='margin: 12px 0 5px 0;'/>
-                <button id='bu_set_shelf' style='display: none;' class='pull-right btn btn-sm btn-success ml-1 mr-1' disabled>Buch liegt in <span class="shelf_here"></span></button>
+                <button id='bu_set_shelf' style='display: none;' class='pull-right btn btn-sm btn-success ml-1 mr-1' disabled>Buch liegt in <span class="shelf_here" style="font-weight: bold;"></span></button>
                 <div id='info_shelf'></div>
                 <hr style='margin: 12px 0 5px 0;'/>
                 <button id='bu_take_photo' class='pull-right btn btn-sm btn-success ml-1 mr-1'>Cover fotografieren</button>
@@ -160,7 +168,7 @@
                 }
             }
             $('#bu_scan_isbn').prop('disabled', false).show();
-                $('#bu_scan_isbn_cancel').hide();
+            $('#bu_scan_isbn_cancel').hide();
             if (book.has_cover) {
                 $('#cover').attr('src', `${BIB_HOST}/gen/covers/${book.stem}-400.jpg`).removeClass('none').show();
                 $('#no_cover').hide();
@@ -234,7 +242,20 @@
         if (parts.checksum) data.checksum = parts.checksum;
         last_scanned_parts = parts;
         bib_api_call('/jwt/scan_book', data, function (data) {
-            handle_scan_book(parts.stem, parts.bnr, data);
+            if (data.success) {
+                handle_scan_book(parts.stem, parts.bnr, data);
+                $('#new_or_old_exemplar_div').show();
+                $('.new_or_old_barcode').text(`${parts.stem}-${parts.bnr}`);
+                if (data.new_exemplar) {
+                    $('#new_or_old_exemplar_div .alert-warning').hide();
+                    $('#new_or_old_exemplar_div .alert-success').show();
+                } else {
+                    $('#new_or_old_exemplar_div .alert-warning').show();
+                    $('#new_or_old_exemplar_div .alert-success').hide();
+                }
+            } else {
+                $('#new_or_old_exemplar_div').hide();
+            }
         });
     }
 
@@ -320,12 +341,5 @@
                 }
             });
         })
-        if (#{DEVELOPMENT == '1'}) {
-            // on_scan('bib:23F');
-            // on_scan('3792-007');
-        //     // on_scan('9999-016');
-        //     // on_scan('1000-016');
-        //     // on_scan('1053-016');
-        }
     });
 </script>

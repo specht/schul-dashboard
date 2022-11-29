@@ -125,7 +125,8 @@
 </style>
 <div class='api_messages'></div>
 <script>
-    var db_user_info = #{ Hash[@@user_info.map { | k, v | [k, {:first_name => v[:first_name], :titel => v[:titel], :display_name => v[:display_name], :last_name => v[:last_name], :display_last_name => v[:display_last_name], :klasse => tr_klasse(v[:klasse]), :no_tr_klasse => v[:klasse], :klassen_order => @@klassen_index[v[:klasse]], :teacher => v[:teacher] }] }].to_json};
+    var db_user_info = #{ (teacher_logged_in? || can_manage_bib_logged_in?) ? Hash[@@user_info.map { | k, v | [k, {:first_name => v[:first_name], :titel => v[:titel], :display_name => v[:display_name], :last_name => v[:last_name], :display_last_name => v[:display_last_name], :klasse => tr_klasse(v[:klasse]), :no_tr_klasse => v[:klasse], :klassen_order => @@klassen_index[v[:klasse]], :teacher => v[:teacher] }] }].to_json : {}.to_json };
+    var schueler_for_klasse = #{ (teacher_logged_in? || can_manage_bib_logged_in?) ? @@schueler_for_klasse.to_json : {}.to_json };
     var klassen_order = #{ KLASSEN_ORDER.to_json };
     var klassen_order_reverse = {};
     for (let i = 0; i < klassen_order.length; i++) klassen_order_reverse[klassen_order[i]] = i;
@@ -304,6 +305,10 @@
                     href="/bib_orders"><i class='fa fa-shopping-cart'></i>&nbsp;&nbsp;Bestellungen</a>
             </li>
             <li style="display: #{can_manage_bib_logged_in? ? 'unset' : 'none'}; #{@session_device == 'bib-mobile' ? 'display: none;' : ''} border-left: 1px solid #ccc; height: 52px; margin: -10px 10px -10px 10px; margin-left: auto;">
+            </li>
+            <li class="mx-1" style="display: #{can_manage_bib_logged_in? ? 'unset' : 'none'};">
+                <a class="inline-block bg-slate-900 border border-blue-500 hover:bg-slate-200 rounded py-1 px-3"
+                    href="/bib_overview"><i class='fa fa-compass'></i>&nbsp;&nbsp;Übersicht</a>
             </li>
             <li class="mx-1" style="display: #{(can_manage_bib_logged_in? && @session_device != 'bib-mobile') ? 'unset' : 'none'};">
                 <a class="inline-block bg-slate-900 border border-blue-500 hover:bg-slate-200 rounded py-1 px-3"

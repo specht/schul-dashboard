@@ -26,7 +26,8 @@ window.addEventListener('load', function() {
     });
     $('.bu-mark-for-termination').click(function(e) {
         let email = $(e.target).data('email');
-        api_call('/api/mark_email_address_for_termination', {email: email}, function(data) {
+        let weeks = parseInt($(e.target).data('weeks'));
+        api_call('/api/mark_email_address_for_termination', {email: email, weeks: weeks}, function(data) {
             if (data.success)
                 window.location.reload();
         });

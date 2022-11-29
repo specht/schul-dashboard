@@ -106,6 +106,8 @@ class Main < Sinatra::Base
         end
         all_homeschooling_users = Main.get_all_homeschooling_users()
         StringIO.open do |io|
+            bolt_connections = neo4j_query("CALL dbms.listConnections();").size
+            io.puts "<span style='float: right;'>Aktive Bolt-Verbindungen: #{bolt_connections} &nbsp; <a href='/schema'>Schema</a></span>"
             io.puts "<a class='btn btn-secondary' href='#teachers'>Lehrerinnen und Lehrer</a>"
             io.puts "<a class='btn btn-secondary' href='#sus'>Schülerinnen und Schüler</a>"
             io.puts "<a class='btn btn-secondary' href='#website'>Website</a>"
@@ -113,6 +115,8 @@ class Main < Sinatra::Base
             io.puts "<a class='btn btn-secondary' href='#monitor'>Monitor</a>"
             io.puts "<a class='btn btn-secondary' href='#bibliothek'>Bibliothek</a>"
             io.puts "<a class='btn btn-secondary' href='/lesson_keys'>Lesson Keys</a>"
+            io.puts "<a class='btn btn-secondary' href='/api/all_sus_logo_didact'>LDC: Alle SuS</a>"
+            io.puts "<a class='btn btn-secondary' href='/api/all_lul_logo_didact'>LDC: Alle Lehrkräfte</a>"
             io.puts "<hr />"
             io.puts "<h3 id='teachers'>Lehrerinnen und Lehrer</h3>"
             io.puts "<div style='max-width: 100%; overflow-x: auto;'>"
@@ -363,6 +367,53 @@ class Main < Sinatra::Base
         respond_raw_with_mimetype(print_all_users, 'text/plain')
     end
 
+    def print_all_sus_logo_didact
+        require_admin!
+        StringIO.open do |io|
+            @@klassen_order.each do |klasse|
+                @@schueler_for_klasse[klasse].each do |email|
+                    user = @@user_info[email]
+                    next if user[:geburtstag].nil?
+                    geburtstag = "#{user[:geburtstag][8, 2]}.#{user[:geburtstag][5, 2]}.#{user[:geburtstag][0, 4]}"
+                    io.puts "#{user[:last_name]};#{user[:first_name]};#{user[:klasse]};#{user[:geschlecht]};#{geburtstag}"
+                end
+            end
+            io.string
+        end
+    end
+
+    get '/api/all_sus_logo_didact' do
+        require_admin!
+        respond_raw_with_mimetype(print_all_sus_logo_didact, 'text/plain')
+    end
+
+    def print_all_lul_logo_didact
+        require_admin!
+        StringIO.open do |io|
+            @@lehrer_order.sort do |a, b|
+                au = @@user_info[a]
+                bu = @@user_info[b]
+                au[:last_name].downcase <=> bu[:last_name].downcase
+            end.each do |email|
+                user = @@user_info[email]
+                io.puts "#{user[:last_name]};#{user[:first_name].strip.empty? ? user[:last_name] : user[:first_name]};#{user[:shorthand]}"
+            end
+            path = '/data/lehrer/extra-ldc-accounts.csv'
+            if File.exists?(path)
+                File.open(path) do |f|
+                    f.each_line do |line|
+                        io.puts line
+                    end
+                end
+            end
+            io.string
+        end
+    end
+
+    get '/api/all_lul_logo_didact' do
+        require_admin!
+        respond_raw_with_mimetype(print_all_lul_logo_didact, 'text/plain')
+    end
 
     def print_email_accounts()
         require_admin!
@@ -417,7 +468,7 @@ class Main < Sinatra::Base
                     :first_name => '',
                     :last_name => "Elternvertreter:innen #{klasse}",
                     :email => email,
-                    :password => Main.gen_password_for_email(email)
+                    :password => Main.gen_password_for_email(email + Date.today.year.to_s)
                 }
             end
             @@mailing_lists.keys.each { |email| required_email_addresses << email }
@@ -497,7 +548,8 @@ class Main < Sinatra::Base
                     else
                         io.puts "<button class='btn btn-xs btn-success bu-mark-known-address' data-email='#{email}'>Bekannt</button>"
                         unless all_termination_dates[email]
-                            io.puts "<button class='btn btn-xs btn-danger bu-mark-for-termination' data-email='#{email}'>Löschen</button>"
+                            io.puts "<button class='btn btn-xs btn-danger bu-mark-for-termination' data-email='#{email}' data-weeks='4'>Löschen in 4 Wochen</button>"
+                            io.puts "<button class='btn btn-xs btn-danger bu-mark-for-termination' data-email='#{email}' data-weeks='1'>Löschen in 1 Woche</button>"
                         end
                     end
                     if all_termination_dates[email]
@@ -533,16 +585,16 @@ class Main < Sinatra::Base
 
     post '/api/mark_email_address_for_termination' do
         require_admin!
-        data = parse_request_data(:required_keys => [:email])
+        data = parse_request_data(:required_keys => [:email], :optional_keys => [:weeks], :types => {:weeks => Integer})
         email = data[:email]
-        deletion_delay_weeks = 4
+        deletion_delay_weeks = data[:weeks] || 4
         termination_date = (Date.today + deletion_delay_weeks * 7)
         termination_date_str = termination_date.strftime('%d.%m.%Y')
         deliver_mail do
             to email
             bcc SMTP_FROM
             from SMTP_FROM
-            
+
             subject "Löschung des E-Mail-Postfaches in #{deletion_delay_weeks} Woche#{deletion_delay_weeks == 1 ? '' : 'n'}"
 
             StringIO.open do |io|
@@ -551,7 +603,7 @@ class Main < Sinatra::Base
                 io.puts "<p>Viele Grüße,<br />#{WEBSITE_MAINTAINER_NAME}</p>"
                 io.string
             end
-        end        
+        end
         neo4j_query(<<~END_OF_QUERY, :email => data[:email], :termination_date => termination_date.strftime('%Y-%m-%d'))
             MERGE (n:KnownEmailAddress {email: $email})
             SET n.scheduled_termination = $termination_date;
@@ -567,7 +619,7 @@ class Main < Sinatra::Base
             to email
             bcc SMTP_FROM
             from SMTP_FROM
-            
+
             subject "Beibehaltung des E-Mail-Postfaches"
 
             StringIO.open do |io|
@@ -576,11 +628,45 @@ class Main < Sinatra::Base
                 io.puts "<p>Viele Grüße,<br />#{WEBSITE_MAINTAINER_NAME}</p>"
                 io.string
             end
-        end        
+        end
         neo4j_query(<<~END_OF_QUERY, :email => data[:email])
             MERGE (n:KnownEmailAddress {email: $email})
             REMOVE n.scheduled_termination;
         END_OF_QUERY
         respond(:ok => 'yeah')
+    end
+
+    def print_all_users_informatik_biber
+        require_admin!
+        StringIO.open do |io|
+            @@klassen_order.each do |klasse|
+                @@schueler_for_klasse[klasse].each do |email|
+                    user = @@user_info[email]
+                    biber_user_id = email
+                    biber_password = user[:biber_password]
+                    io.puts "#{Main.tr_klasse(user[:klasse])};#{user[:klasse].to_i};#{user[:first_name]};#{user[:last_name]};#{biber_user_id};#{biber_password};#{user[:geschlecht] == 'm' ? 'male' : 'female'}"
+                end
+            end
+            @@klassen_order.each do |klasse|
+                io.puts
+                io.puts "Informatik-Biber Klasse #{Main.tr_klasse(klasse)}"
+                io.puts '-' * "Informatik-Biber Klasse #{Main.tr_klasse(klasse)}".size
+                io.puts
+                io.puts "Anmeldung mit schulischer E-Mail-Adresse und 4-stelligem Passwort"
+                io.puts
+                @@schueler_for_klasse[klasse].each do |email|
+                    user = @@user_info[email]
+                    biber_user_id = email
+                    biber_password = user[:biber_password]
+                    io.puts "#{biber_password} #{user[:email]}"
+                end
+            end
+            io.string
+        end
+    end
+
+    get '/api/all_users_informatik_biber' do
+        require_admin!
+        respond_raw_with_mimetype(print_all_users_informatik_biber, 'text/plain')
     end
 end

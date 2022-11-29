@@ -74,6 +74,8 @@
                     </div>
                 </div>
                 <div class='col-md-12'>
+                    <b>Tipp:</b> Um dich anzumelden, musst du nicht deine komplette E-Mail-Adresse angeben. Solange es eindeutig ist, kannst du dich auch mit einem kürzeren Präfix anmelden, also zum Beispiel:
+                    #{temp = @session_user[:email].split('@').first.split('.'); join_with_sep((0..temp.size).map { |c| temp[0, c].join('.') }.reject { |x| x.strip.empty? || x.strip.length < @@user_info[@session_user[:email]][:shortest_prefix].size}.map { |x| '<b>' + x + '</b>'}, ', ', ' oder ')  }
                     <hr />
                     Falls du hier falsche Angaben siehst, die du korrigieren lassen möchtest, schreib bitte eine E-Mail an <a href='mailto:#{DASHBOARD_SUPPORT_EMAIL}'>#{DASHBOARD_SUPPORT_EMAIL}</a>.
                     <hr />
@@ -133,6 +135,16 @@
                 <button class='btn bu-delete-ical btn-danger'><i class='fa fa-trash'></i>&nbsp;&nbsp;Löschen</button>
             </div>
             <div style='clear: both;'></div>
+            <div id='ical_options' style="margin-top: 20px; margin-bottom: 10px;">
+                <p>Hier kannst du auswählen, welche Informationen im iCal-Kalender auftauchen sollen:</p>
+                <div>
+                    <button class="btn btn-success bu-toggle-omit-ical mb-1 mr-1" data-omit-type='website_event'><i class='w-3 fa fa-check'></i>&nbsp;&nbsp;Schulweite Termine</button>
+                    <button class="btn btn-success bu-toggle-omit-ical mb-1 mr-1" data-omit-type='event'><i class='w-3 fa fa-check'></i>&nbsp;&nbsp;Meine Termine</button>
+                    <button class="btn btn-success bu-toggle-omit-ical mb-1 mr-1" data-omit-type='lesson'><i class='w-3 fa fa-check'></i>&nbsp;&nbsp;Unterricht</button>
+                    <button class="btn btn-success bu-toggle-omit-ical mb-1 mr-1" data-omit-type='holiday'><i class='w-3 fa fa-check'></i>&nbsp;&nbsp;Ferien und Feiertage</button>
+                    <button class="btn btn-success bu-toggle-omit-ical mb-1 mr-1" data-omit-type='birthday'><i class='w-3 fa fa-check'></i>&nbsp;&nbsp;Geburtstage</button>
+                </div>
+            </div>
 
             <hr />
             
@@ -195,17 +207,21 @@ var ical_token = "#{@session_user[:ical_token] || ''}";
 var otp_qr_code = '#{session_user_otp_qr_code()}';
 var color_scheme = '#{color_scheme}';
 var style_swatches = [];
+var omit_ical_types = #{get_omit_ical_types().to_json};
+var teacher_logged_in = #{@session_user[:teacher] == true};
 
 function refresh_ical_widget() {
     if (ical_token.length == 0) {
         $('.bu-clipboard-ical').hide();
         $('.bu-regenerate-ical').html("<i class='fa fa-refresh'></i>&nbsp;&nbsp;iCal-Link generieren");
         $('.bu-delete-ical').hide();
+        $('#ical_options').hide();
         $('#ti_ical_link').val('');
     } else {
         $('.bu-clipboard-ical').show();
         $('.bu-regenerate-ical').html("<i class='fa fa-refresh'></i>&nbsp;&nbsp;Neuen iCal-Link generieren");
         $('.bu-delete-ical').show();
+        $('#ical_options').slideDown();
         let link = '#{WEB_ROOT}/ical/' + ical_token + '.ics';
         $('#ti_ical_link').val(link);
     }
@@ -450,5 +466,29 @@ window.addEventListener('load', function () {
     });
     refresh_ical_widget();
     refresh_otp_widget();
+    for (let type of (omit_ical_types)) {
+        $(`.bu-toggle-omit-ical[data-omit-type="${type}"]`).removeClass('btn-success').addClass('btn-outline-secondary');
+        $(`.bu-toggle-omit-ical[data-omit-type="${type}"]`).find('i').removeClass('fa-check').addClass('fa-times');
+    }
+    if (!teacher_logged_in)
+        $(`.bu-toggle-omit-ical[data-omit-type="birthday"]`).hide();
+    $('.bu-toggle-omit-ical').click(function(e) {
+        let button = $(e.target).closest('button');
+        let type = button.data('omit-type');
+        let active = button.hasClass('btn-success');
+        console.log(button, type, active);
+        api_call('/api/toggle_ical_omit_type', {type: type}, function(data) {
+            if (data.success) {
+                console.log(data);
+                if (data.result) {
+                    button.removeClass('btn-success').addClass('btn-outline-secondary');
+                    button.find('i').removeClass('fa-check').addClass('fa-times');
+                } else {
+                    button.addClass('btn-success').removeClass('btn-outline-secondary');
+                    button.find('i').addClass('fa-check').removeClass('fa-times');
+                }
+            }
+        });
+    });
 });
 </script>

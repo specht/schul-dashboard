@@ -66,6 +66,11 @@ class Main < Sinatra::Base
         user_logged_in? && (@session_user[:teacher] == true)
     end
 
+    # Returns true if GEV is logged in.
+    def gev_logged_in?
+        user_logged_in? && (GEV_USERS.include?(@session_user[:email]) || admin_logged_in?)
+    end
+
     # Returns true if a device is logged in.
     def device_logged_in?
         !@session_device.nil?
@@ -126,7 +131,19 @@ class Main < Sinatra::Base
     end
 
     def can_manage_bib_logged_in?
-        user_logged_in? && (CAN_MANAGE_BIB.include?(@session_user[:email]) && teacher_logged_in?)
+        flag = user_logged_in? && CAN_MANAGE_BIB.include?(@session_user[:email])
+        if flag
+            unless teacher_logged_in?
+                unless device_logged_in?
+                    flag = false
+                end
+            end
+        end
+        flag
+    end
+
+    def can_manage_bib_special_access_logged_in?
+        user_logged_in? && CAN_MANAGE_BIB_SPECIAL_ACCESS.include?(@session_user[:email])
     end
 
     def teacher_or_can_manage_bib_logged_in?
@@ -253,6 +270,12 @@ class Main < Sinatra::Base
         end
     end
 
+    def this_is_a_page_for_logged_in_gev
+        unless gev_logged_in?
+            redirect "#{WEB_ROOT}/", 303
+        end
+    end
+
     # Put this on top of a webpage to assert that this page can be opened by admins only
     def this_is_a_page_for_logged_in_admins
         unless admin_logged_in?
@@ -370,5 +393,54 @@ class Main < Sinatra::Base
             result[email] = Main.tr_klasse(info[:klasse])
         end
         result
+    end
+
+    def get_omit_ical_types
+        types = neo4j_query_expect_one(<<~END_OF_QUERY, :email => @session_user[:email])['types']
+            MATCH (u:User {email: $email})
+            RETURN COALESCE(u.omit_ical_types, []) AS types;
+        END_OF_QUERY
+        types
+    end
+
+    post '/api/toggle_ical_omit_type' do
+        require_user!
+        data = parse_request_data(:required_keys => [:type])
+        type = data[:type]
+        assert(%w(website_event event lesson holiday birthday).include?(type))
+        omitted_types = neo4j_query_expect_one(<<~END_OF_QUERY, :email => @session_user[:email])['types']
+            MATCH (u:User {email: $email})
+            RETURN COALESCE(u.omit_ical_types, []) AS types;
+        END_OF_QUERY
+        if omitted_types.include?(type)
+            omitted_types.delete(type)
+        else
+            omitted_types << type
+        end
+        omitted_types = neo4j_query_expect_one(<<~END_OF_QUERY, :email => @session_user[:email], :types => omitted_types)['types']
+            MATCH (u:User {email: $email})
+            SET u.omit_ical_types = $types
+            RETURN COALESCE(u.omit_ical_types, []) AS types;
+        END_OF_QUERY
+        trigger_update("_#{@session_user[:email]}")
+        respond(:result => omitted_types.include?(type))
+    end
+
+    def print_summoned_books_panel()
+        require_user!
+        email = @session_user[:email]
+        return '' unless @@bib_summoned_books[email]
+        n_to_s = {1 => 'Eines der', 2 => 'Zwei', 3 => 'Drei', 4 => 'Vier', 5 => 'Fünf'}
+        StringIO.open do |io|
+            io.puts "<div class='col-lg-12 col-md-4 col-sm-6'>"
+            io.puts "<div class='hint'>"
+            io.puts "<div><span style='font-size: 200%; opacity: 0.7; float: left; margin-right: 8px;'><i class='fa fa-book'></i></span>#{n_to_s[@@bib_summoned_books[email].size] || 'Mehrere'} Bücher, die du ausgeliehen hast, #{@@bib_summoned_books[email].size == 1 ? 'wird' : 'werden'} dringend in der Bibliothek benötigt. Bitte bring #{@@bib_summoned_books[email].size == 1 ? 'es' : 'sie'} zurück und lege #{@@bib_summoned_books[email].size == 1 ? 'es' : 'sie'} ins <a target='_blank' href='https://rundgang.gymnasiumsteglitz.de/#g114'>Rückgaberegal</a> vor der Bibliothek.</div>"
+            io.puts "<hr />"
+            io.puts "<a href='/bibliothek' style='white-space: nowrap;' class='float-right btn btn-sm btn-success'>Zu deinen Büchern&nbsp;<i class='fa fa-angle-double-right'></i></a>"
+            io.puts "<div style='clear: both;'></div>"
+            io.puts "</div>"
+            io.puts "</div>"
+            io.string
+        end
     end
 end

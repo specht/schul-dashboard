@@ -1664,7 +1664,7 @@ document.addEventListener('DOMContentLoaded', function() {
                             });
                         }
                         let tag = pb_button.data('tag');
-                        pb_audio.src = '/raw/uploads/audio_comment/' + tag.substr(0, 2) + '/' + tag.substr(2, tag.length - 2) + '.ogg';
+                        pb_audio.src = '/raw/uploads/audio_comment/' + tag.substr(0, 2) + '/' + tag.substr(2, tag.length - 2) + '.mp3';
                         pb_audio.play();
                     });
                     audio_comment_cell.append(play_button);
@@ -1818,7 +1818,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     audio.controls = true;
                     $('#bu_play_audio_comment').prop('disabled', false);
                     $('#bu_play_audio_comment').removeClass('btn-outline-secondary').addClass('btn-primary');
-                    audio_blob = new Blob(chunks, { 'type' : 'audio/ogg; codecs=opus' });
+                    audio_blob = new Blob(chunks, { 'type' : 'audio/mpeg-3' });
                     chunks = [];
                     let audioURL = window.URL.createObjectURL(audio_blob);
                     audio.src = audioURL;

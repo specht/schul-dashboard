@@ -9,7 +9,7 @@ require 'cgi'
 require 'yaml'
 
 class Script
-    include QtsNeo4j
+    include Neo4jBolt
 
     def initialize
     end

@@ -190,7 +190,7 @@ class Main < Sinatra::Base
         STDERR.puts "HACK // #{@session_user[:email]} // level: #{@hack_level}, next password: #{@hack_next_password}#{@hack_next_password.nil? ? '(nil)':''}"
 
         unless provided_password.nil? || @hack_next_password.nil?
-            if provided_password == @hack_next_password
+            if provided_password.downcase == @hack_next_password.downcase
                 @hack_level += 1
                 result = neo4j_query(<<~END_OF_QUERY, {:email => @session_user[:email], :hack_level => @hack_level})
                     MATCH (u:User {email: $email})

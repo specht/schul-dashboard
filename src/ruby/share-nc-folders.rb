@@ -202,9 +202,9 @@ class Script
             wanted_nc_ids = Set.new(ARGV.map { |email| (@@user_info[email] || {})[:nc_login] })
         end
         STDERR.puts "Got wanted shares for #{wanted_shares.size} users."
-        File.open('/internal/debug/wanted-shares.yaml', 'w') do |f|
-            f.write wanted_shares.to_yaml
-        end
+        # File.open('/internal/debug/wanted-shares.yaml', 'w') do |f|
+        #     f.write wanted_shares.to_yaml
+        # end
         STDERR.puts "Collecting present shares..."
         present_shares = {}
         (@ocs.file_sharing.all || []).each do |share|
@@ -218,9 +218,9 @@ class Script
             }
         end
         STDERR.puts "Got present shares for #{present_shares.size} users."
-        File.open('/internal/debug/present-shares.yaml', 'w') do |f|
-            f.write present_shares.to_yaml
-        end
+        # File.open('/internal/debug/present-shares.yaml', 'w') do |f|
+        #     f.write present_shares.to_yaml
+        # end
 #         STDERR.puts present_shares.to_yaml
 #         exit
         wanted_shares.keys.sort.each do |user_id|

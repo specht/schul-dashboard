@@ -28,7 +28,7 @@
                 console.log(data);
                 for (let row of data.exemplare) {
                     let div = create_book_div(row.book, null, {
-                        exemplar: row.exemplar, clickable: true, callback: function (book) {
+                        exemplar: row.exemplar, r: row.r, clickable: true, callback: function (book) {
                             window.location.href = `/bib_book/${book.stem}`;
                         }
                     }).data('book', row.book);

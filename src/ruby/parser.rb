@@ -202,8 +202,8 @@ class Parser
             f.each_line do |line|
                 next if line.strip[0] == '#'
                 parts = line.split(',').map { |x| x.strip }
-                if parts.size == 3 
-                    yield :klasse => parts[0], :klassenleiter => [parts[1], parts[2]]
+                if parts.size > 1
+                    yield :klasse => parts[0], :klassenleiter => parts[1, parts.size - 1]
                 end
             end
         end
@@ -907,7 +907,7 @@ class Parser
         return kurse_for_schueler, schueler_for_kurs
     end
 
-    def parse_wahlpflichtkurswahl(user_info, lessons, lesson_key_tr)
+    def parse_wahlpflichtkurswahl(user_info, lessons, lesson_key_tr, schueler_for_klasse)
 #         debug "Parsing wahlpflichtkurswahl..."
         schueler_for_lesson_key = {}
         unassigned_names = Set.new()
@@ -921,23 +921,31 @@ class Parser
                         next
                     end
                     sus.each do |name|
-                        email = nil
-                        emails = user_info.select do |email, user_info|
-                            last_name = user_info[:last_name]
-                            first_name = user_info[:first_name]
-                            "#{first_name} #{last_name}" == name || email.sub("@#{SCHUL_MAIL_DOMAIN}", '') == name
-                        end.keys
-                        if emails.size == 1
-                            email = emails.to_a.first
-                        else
-                            unassigned_names << name
-                        end
-                        unless email
-                            debug "Wahlpflichtkurswahl: Can't assign #{name}!"
-                        end
-                        if email
+                        if name[0] == '@'
+                            klasse = name.sub('@', '')
                             schueler_for_lesson_key[lesson_key] ||= Set.new()
-                            schueler_for_lesson_key[lesson_key] << email
+                            schueler_for_klasse[klasse].each do |email|
+                                schueler_for_lesson_key[lesson_key] << email
+                            end
+                        else
+                            email = nil
+                            emails = user_info.select do |email, user_info|
+                                last_name = user_info[:last_name]
+                                first_name = user_info[:first_name]
+                                "#{first_name} #{last_name}" == name || email.sub("@#{SCHUL_MAIL_DOMAIN}", '') == name || email == name
+                            end.keys
+                            if emails.size == 1
+                                email = emails.to_a.first
+                            else
+                                unassigned_names << name
+                            end
+                            unless email
+                                debug "Wahlpflichtkurswahl: Can't assign #{name}!"
+                            end
+                            if email
+                                schueler_for_lesson_key[lesson_key] ||= Set.new()
+                                schueler_for_lesson_key[lesson_key] << email
+                            end
                         end
                     end
                 end
@@ -946,6 +954,7 @@ class Parser
             debug '-' * 50
             debug "ATTENTION: Error parsing wahlpflicht.yaml, skipping..."
             debug '-' * 50
+            # raise
         end
         unless unassigned_names.empty?
             debug "Kurswahl: Can't assign these names!"

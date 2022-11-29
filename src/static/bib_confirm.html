@@ -22,6 +22,12 @@
                     <i class='fa fa-check text-grass-500'></i>&nbsp;&nbsp;Danke, alle Bücher sind bestätigt!
                 </div>
             </div>
+            <div class='alert alert-warning'>
+                <b>Hinweis:</b>
+                #{teacher_logged_in? ?
+                    'Falls hier Bücher angezeigt werden, die Sie bereits zurückgegeben haben oder niemals bekommen haben, klären Sie diese Fälle bitte <b>nach den Herbstferien</b> mit Frau Harnack und Frau Kursawe in der Bibliothek.' :
+                    'Falls hier Bücher angezeigt werden, die du bereits zurückgegeben hast oder niemals bekommen hast, kläre diese Fälle bitte <b>nach den Herbstferien</b> mit Frau Harnack und Frau Kursawe in der Bibliothek.'}
+                </div>
         </div>
     </div>
     <div id='book_list' class="w-full grid grid-cols-12 gap-4 mb-4"></div>

@@ -272,7 +272,7 @@ function create_audio_player(from, tag, duration) {
     let indicator = $('<div>').addClass('player-indicator').appendTo(indicator_container);
     indicator.css('left', '0%');
     let duration_div = $('<div>').addClass('player-duration').html(duration_to_str(duration)).appendTo(player);
-    let url = '/raw/uploads/audio_comment/' + tag.substr(0, 2) + '/' + tag.substr(2, tag.length - 2) + '.ogg';
+    let url = '/raw/uploads/audio_comment/' + tag.substr(0, 2) + '/' + tag.substr(2, tag.length - 2) + '.mp3';
     (function (url, duration, button, icon, indicator, duration_div, seek) {
         function activate() {
             if (pb_url !== url) {
@@ -352,7 +352,7 @@ function filter_events_by_timestamp(events, now) {
 }
 
 
-function load_recipients(id, callback, also_load_ext_users, sus_only) {
+function load_recipients(id, callback, also_load_ext_users, sus_only, parents_only) {
     let antikenfahrt_recipients = window.antikenfahrt_recipients;
     if (typeof (antikenfahrt_recipients) === 'undefined')
         antikenfahrt_recipients = { recipients: {}, groups: [] };
@@ -362,6 +362,8 @@ function load_recipients(id, callback, also_load_ext_users, sus_only) {
         can_handle_external_users = false;
     if (typeof (sus_only) === 'undefined')
         sus_only = false;
+    if (typeof (parents_only) === 'undefined')
+        parents_only = false;
     let uri = '/gen/w/' + id + '/recipients.json.gz';
     var oReq = new XMLHttpRequest();
     oReq.open('GET', uri, true);
@@ -386,6 +388,17 @@ function load_recipients(id, callback, also_load_ext_users, sus_only) {
                     for (let key in entries.recipients) {
                         if (key.charAt(0) != '/' && (entries.recipients[key].teacher || false) === false) {
                             new_recipients[key] = entries.recipients[key];
+                        }
+                    }
+                    entries.recipients = new_recipients;
+                }
+                if (parents_only) {
+                    entries.groups = [];
+                    let new_recipients = {};
+                    for (let key in entries.recipients) {
+                        if (key.charAt(0) != '/' && (entries.recipients[key].teacher || false) === false) {
+                            new_recipients['eltern.' + key] = entries.recipients[key];
+                            new_recipients['eltern.' + key].label = "Eltern von " + new_recipients['eltern.' + key].label;
                         }
                     }
                     entries.recipients = new_recipients;
@@ -471,9 +484,13 @@ function fix_scanned_book_barcode(s) {
 }
 
 function create_book_div(book, shelf, options = {}) {
-    let stem = $(`<span class='text-slate-500 pl-2 pr-1 py-1 absolute text-sm'>`).css('right', '0.5em').text(book.stem);
-    if (options.exemplar && options.exemplar.bnr)
-        stem.html(`<i class='fa fa-barcode'></i>&nbsp;&nbsp;${book.stem}-${options.exemplar.bnr}`);
+    let stem = $(`<span class='text-slate-500 pl-2 pr-1 py-1 absolute text-sm' style='z-index: 100; '>`).css('right', '0.5em').text(book.stem);
+    if (options.exemplar && options.exemplar.bnr) {
+        if (options.r && options.r.ts_summoned) {
+            stem.html($(`<div class='bg-persimmon-500 text-white px-2'>`).text('Bitte bringe dieses Buch in die Bibliothek zurück.'));
+        } else
+            stem.html(`<i class='fa fa-barcode'></i>&nbsp;&nbsp;${book.stem}-${options.exemplar.bnr}`);
+    }
     let cover_path = `${BIB_HOST}/gen/covers/${book.stem}-400.jpg`;
     let hover_classes = '';
     if (options.clickable) {

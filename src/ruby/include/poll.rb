@@ -160,15 +160,22 @@ class Main < Sinatra::Base
     
     def get_poll_run_results(prid)
         require_teacher_or_sv!
-        temp = neo4j_query_expect_one(<<~END_OF_QUERY, {:prid => prid, :email => @session_user[:email]})
-            MATCH (pu)-[rt:IS_PARTICIPANT]->(pr:PollRun {id: $prid})-[:RUNS]->(p:Poll)-[:ORGANIZED_BY]->(au:User {email: $email})
+        unless admin_logged_in?
+            # make sure we have the right user unless an admin is logged in
+            temp = neo4j_query_expect_one(<<~END_OF_QUERY, {:prid => prid, :email => @session_user[:email]})
+                MATCH (pr:PollRun {id: $prid})-[:RUNS]->(p:Poll)-[:ORGANIZED_BY]->(au:User {email: $email})
+                RETURN au.email;
+            END_OF_QUERY
+        end
+        temp = neo4j_query_expect_one(<<~END_OF_QUERY, {:prid => prid})
+            MATCH (pu)-[rt:IS_PARTICIPANT]->(pr:PollRun {id: $prid})-[:RUNS]->(p:Poll)-[:ORGANIZED_BY]->(au:User)
             WHERE COALESCE(p.deleted, false) = false
             AND COALESCE(pr.deleted, false) = false
             AND COALESCE(rt.deleted, false) = false
             RETURN au.email, pr, p, COUNT(pu) AS participant_count;
         END_OF_QUERY
-        participants = neo4j_query(<<~END_OF_QUERY, {:prid => prid, :email => @session_user[:email]})
-            MATCH (pu)-[rt:IS_PARTICIPANT]->(pr:PollRun {id: $prid})-[:RUNS]->(p:Poll)-[:ORGANIZED_BY]->(au:User {email: $email})
+        participants = neo4j_query(<<~END_OF_QUERY, {:prid => prid})
+            MATCH (pu)-[rt:IS_PARTICIPANT]->(pr:PollRun {id: $prid})-[:RUNS]->(p:Poll)
             WHERE COALESCE(p.deleted, false) = false
             AND COALESCE(pr.deleted, false) = false
             AND COALESCE(rt.deleted, false) = false
@@ -179,12 +186,12 @@ class Main < Sinatra::Base
         end]
         poll = temp['p']
         poll_run = temp['pr']
-        poll[:organizer] = (@@user_info[temp['au.email']] || {})[:display_last_name]
+        poll[:organizer] = (@@user_info[temp['au.email']] || {})[:display_last_name] || temp['au.email']
         poll_run[:items] = JSON.parse(poll_run[:items])
         poll_run[:participant_count] = temp['participant_count']
         poll_run[:participants] = participants
-        responses = neo4j_query(<<~END_OF_QUERY, {:prid => prid, :email => @session_user[:email]}).map { |x| {:response => JSON.parse(x['prs.response']), :email => x['u.email']} }
-            MATCH (u)<-[:RESPONSE_BY]-(prs:PollResponse)-[:RESPONSE_TO]->(pr:PollRun {id: $prid})-[:RUNS]->(p:Poll)-[:ORGANIZED_BY]->(au:User {email: $email})
+        responses = neo4j_query(<<~END_OF_QUERY, {:prid => prid}).map { |x| {:response => JSON.parse(x['prs.response']), :email => x['u.email']} }
+            MATCH (u)<-[:RESPONSE_BY]-(prs:PollResponse)-[:RESPONSE_TO]->(pr:PollRun {id: $prid})-[:RUNS]->(p:Poll)
             WHERE (u:User OR u:ExternalUser OR u:PredefinedExternalUser)
             RETURN u.email, prs.response;
         END_OF_QUERY
@@ -539,7 +546,7 @@ class Main < Sinatra::Base
                             end.join(' / ')
                         end
                     end
-                    sheet.write_string(index + 1, x, label)
+                    sheet.write_string(index + 1, x, label.nil? ? '' : label)
                 end
             end
             workbook.close

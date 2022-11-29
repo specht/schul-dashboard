@@ -2,7 +2,7 @@
 
 require 'open3'
 
-Open3.popen2("sh -c '(cd ../../ && ./config.rb exec ruby ruby collect-nextcloud-files-from-sus.rb #{ARGV.join(' ')})'") do |fin, fout, wait|
+Open3.popen2("sh -c '(cd ../../ && ./config.rb run --rm ruby2 ruby collect-nextcloud-files-from-sus.rb #{ARGV.join(' ')})'") do |fin, fout, wait|
     lines = []
     error_lines = []
     failed = false

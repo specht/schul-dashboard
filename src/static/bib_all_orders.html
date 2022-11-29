@@ -57,15 +57,30 @@
                         // }
                     }
                     if (active_orders.length > 0) {
-                        new SortableTable({
+                        let temp = new SortableTable({
                             xs: true,
                             element: $('#order_table'),
-                            headers: ['Bestellt', 'Name', 'Signatur', 'Titel', 'Autor', 'Kurs', 'Klasse', 'Benötigt', 'Regal'].map(function (x) {
+                            headers: ['Bestellt', 'Name', 'Signatur', 'Titel', 'Autor', 'Kurs', 'Klasse', 'Benötigt', 'Regal', 'Zurückgestellt'].map(function (x) {
                                 let th = $('<th>').text(x);
                                 if (['Signatur', 'Bestellt', 'Benötigt'].indexOf(x) >= 0) th.data('type', 'int');
                                 return th;
                             }),
                             rows: active_orders.map(function(order) {
+                                let bu_pause = $(`<btn class='btn btn-xs btn-outline-secondary'>zurückstellen</btn>`);
+                                if (order.o.paused) 
+                                    bu_pause.removeClass('btn-outline-secondary').addClass('btn-danger').text('zurückgestellt');
+                                bu_pause.click(function(e) {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    bib_api_call('/jwt/toggle_order_paused', {oid: order.o.id}, function(data) {
+                                        if (data.success) {
+                                            if (data.order.paused)
+                                                bu_pause.removeClass('btn-outline-secondary').addClass('btn-danger').text('zurückgestellt');
+                                            else
+                                                bu_pause.addClass('btn-outline-secondary').removeClass('btn-danger').text('zurückstellen');
+                                        }
+                                    });
+                                });
                                 return [
                                     order.o.id,
                                     $('<td>').text(`${moment.unix(order.o.ts_order_placed).format('L')}`).data('sort_value', order.o.ts_order_placed),
@@ -74,14 +89,17 @@
                                     $('<td>').css('max-width', '280px').text(order.b.title),
                                     $('<td>').css('max-width', '180px').text(order.b.author),
                                     $('<td>').html(`${(kurse[order.o.lesson_key] || {}).fach || '(privat)'}`),
-                                    $('<td>').html(`${((kurse[order.o.lesson_key] || {}).klassen || []).join(', ') || '&ndash;'}`),
+                                    $('<td>').html(`${((kurse[order.o.lesson_key] || {}).klassen || []).map(function(x) {return klassen_tr[x] || x; }).join(', ') || '&ndash;'}`),
                                     $('<td>').html(`${order.count}`).data('sort_value', order.count),
                                     $('<td>').html(`${(order.locations || []).map(function(x) {return create_location_span(x); }).join('')}`).data('sort_value', (order.locations || ['0'])[0]),
+                                    $('<td>').append(bu_pause)
                                 ];
                             }),
                             clickable_rows: true,
                             clickable_row_callback: row_clicked
                         });
+                        temp.sort_rows(0, false);
+                        temp.sort_rows(9, true);
                     } else {
                         $('#order_table').append($(`<div class='alert alert-warning'>Es liegen keine Bestellungen vor.</div>`));
                     }

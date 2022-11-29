@@ -1,4 +1,4 @@
-FROM neo4j:3.5
+FROM neo4j:4.4-community
 
 RUN apt-get update && apt-get upgrade -y
 RUN apt-get install -y tzdata && rm -rf /var/cache/apt/*

@@ -13,7 +13,7 @@ unless SRSLY
 end
 
 class Script
-    include QtsNeo4j
+    include Neo4jBolt
     def run
         @@user_info = Main.class_variable_get(:@@user_info)
         @@lesson_key_back_tr = Main.class_variable_get(:@@lesson_key_back_tr)

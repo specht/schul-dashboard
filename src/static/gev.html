@@ -1,0 +1,191 @@
+#{this_is_a_page_for_logged_in_gev}
+<div class='container' style='padding-top: 30px;'>
+    <div class='row'>
+        <div class='col-md-12'>
+            <h2 style='margin-bottom: 30px;'>Elternvertreter:innen</h2>
+            <p>
+                Hier können Sie alle Elternvertreter:innen eintragen und ihnen somit das Recht einräumen,
+                von ihrer schulischen Eltern-E-Mail-Adresse aus für ihre jeweiligen Klassen die
+                E-Mail-Verteiler zu verwenden.
+            </p>
+            <p>
+                Sobald Sie Eltern eintragen, werden sie per E-Mail informiert
+                und Sie bekommen eine Kopie der E-Mail. Dasselbe gilt, wenn Sie Eltern das das Recht wieder
+                entziehen, weil z. B. eine Neuwahl zum Beginn des neuen Schuljahres stattgefunden hat. Auch
+                hier werden die jeweiligen Eltern wieder informiert.
+            </p>
+            <div class="form-group">
+                <input id='ti_recipients' class='form-control' placeholder='Eltern suchen…'><div class='recipient-input-dropdown' style='display: none;'></div></input>
+            </div>
+            #{print_gev_table()}
+        </div>
+    </div>
+</div>
+
+<script>
+var db_user_info = #{ Hash[@@user_info.map { | k, v | [k, {:first_name => v[:first_name], :titel => v[:titel], :display_name => v[:display_name], :last_name => v[:last_name], :display_last_name => v[:display_last_name], :klasse => tr_klasse(v[:klasse]), :klassen_order => @@klassen_index[v[:klasse]], :teacher => v[:teacher] }] }].to_json};
+var recipients = {};
+var recipients_cache = {};
+var autocomplete_results = {};
+var recipients_list = {};
+var net_recipients_list = [];
+var old_recipients_list = [];
+var old_message = '';
+var old_mid = null;
+var observer = null;
+var sent_messages = #{sent_messages.to_json};
+var antikenfahrt_recipients = #{@@antikenfahrt_recipients.to_json};
+var message_cache = {};
+var force_close = false;
+
+function gen_recipient_span(key, with_rm) {
+    if (!(key in recipients))
+        recipients[key] = {label: key};
+    let label = recipients[key].label;
+    if (recipients[key].entries)
+        label += ' (' + recipients[key].entries.length + ')';
+    else if (key.replace('eltern.', '') in db_user_info) {
+        label += ' (' + db_user_info[key.replace('eltern.', '')].klasse + ')';
+    }
+    let recipient = $('<span>').addClass('recipient').html(label);
+    if (with_rm) {
+        let rm_button = $('<span>').addClass('rm').data('key', key);
+        rm_button.click(function(e) {
+            remove_recipient($(e.target).data('key'));
+            $(e.target).closest('.recipient').remove();
+        });
+        recipient.addClass('with-rm').append(rm_button);
+    }
+    if (recipients[key].teacher)
+        recipient.addClass('teacher');
+    recipient.data('key', key);
+    return recipient;
+}
+
+function add_recipient(key) {
+    let parent_email = key;
+    let sus_email = key.replace('eltern.', '');
+    showTemplateModal('Elternvertreter:in hinzufügen',
+                `Sind Sie sicher, dass Sie die <b>${recipients[parent_email].label} (${db_user_info[sus_email].klasse})</b> als Elternvertreter:in hinzufügen möchten? Die Eltern werden umgehend per E-Mail darüber informiert, dass sie nun die E-Mail-Verteiler benutzen können.`,
+                "<i class='fa fa-check'></i>&nbsp;&nbsp;Elternvertreter:in hinzufügen", 'btn-success',
+                'Abbrechen', 'btn-secondary', function () {
+                    console.log(`adding: ${sus_email}`);
+                    api_call('/api/add_ev', {email: sus_email}, function(data) {
+                        window.location.reload();
+                    });
+                }
+            );
+    $('.recipient-input-dropdown').hide();
+    $('#ti_recipients').val('');
+    $('#ti_recipients').focus();
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    $('#ti_recipients').keydown(function(e) {
+        if ((e.keyCode === 9 || e.keyCode === 13) && ($(e.target).val().length > 0)) {
+            if (Object.keys(autocomplete_results).length === 1) {
+                let key = recipients_cache.keys[Object.keys(autocomplete_results)[0]];
+                add_recipient(key);
+            }
+            e.preventDefault();
+            e.stopPropagation();
+            return;
+        }
+    });
+    $('#ti_recipients').keyup(function(e) {
+        if ($('#ti_recipients')[0].selectionStart == $(e.target).val().length) {
+            let value = $(e.target).val();
+            let backspace_pressed = (e.keyCode === 8);
+            let space_at_end = value[value.length - 1] == ' ';
+            let search_terms = value.trim().toLowerCase().split(/\s+/);
+            let results = {};
+            for (let i = 0; i < search_terms.length; i++) {
+                let term = search_terms[i];
+                let term_results = {};
+                for (let key of Object.keys(recipients_cache.index[term] || {})) {
+                    term_results[key] = recipients_cache.index[term][key];
+                }
+                if (i == 0)
+                    results = term_results;
+                else {
+                    for (let k of Object.keys(results)) {
+                        if (k in term_results) {
+                            if (term_results[k] > results[k])
+                                results[k] = term_results[k];
+                        } else {
+                            delete results[k];
+                        }
+                    }
+                }
+            }
+            autocomplete_results = results;
+            result_keys = Object.keys(results).map(function(x) { return parseInt(x); });
+            if (result_keys.length === 0)
+                $('.recipient-input-dropdown').hide();
+            else {
+                if (result_keys.length === 1)
+                {
+                    if (!backspace_pressed) {
+                        let key = recipients_cache.keys[result_keys[0]];
+                        let label = recipients[key].label;
+                        $('#ti_recipients').val(label);
+                        $('#ti_recipients')[0].setSelectionRange(results[result_keys[0]] + (space_at_end ? 1 : 0), label.length);
+                    }
+                }
+                result_keys.sort(function(a, b) {
+                    let va = recipients[recipients_cache.keys[a]];
+                    let vb = recipients[recipients_cache.keys[b]];
+                    if (va.teacher === vb.teacher) {
+                        if (va.label < vb.label)
+                            return -1;
+                        return 1;
+                    } else {
+                        if (va.teacher)
+                            return -1;
+                        return 1;
+                    }
+                });
+                $('.recipient-input-dropdown').empty();
+                for (let key of result_keys) {
+                    let k = recipients_cache.keys[key];
+                    let r = gen_recipient_span(k);
+                    r.click(function(e) { 
+                        add_recipient($(e.target).data('key'));
+                    });
+                    $('.recipient-input-dropdown').append(r);
+                }
+                $('.recipient-input-dropdown').show();
+            }
+        }
+    });
+    $('.bu-remove-ev').click(function(e) {
+        let sus_email = $(e.target).closest('tr').data('email');
+        let parent_email = 'eltern.' + sus_email;
+        showTemplateModal('Elternvertreter:in löschen',
+                `Sind Sie sicher, dass Sie die <b>${recipients[parent_email].label} (${db_user_info[sus_email].klasse})</b> als Elternvertreter:in löschen möchten? Die Eltern werden umgehend per E-Mail darüber informiert, dass sie nun die E-Mail-Verteiler nicht mehr benutzen können.`,
+                "<i class='fa fa-trash'></i>&nbsp;&nbsp;Elternvertreter:in löschen", 'btn-danger',
+                'Abbrechen', 'btn-secondary', function () {
+                    console.log(`removing: ${sus_email}`);
+                    api_call('/api/remove_ev', {email: sus_email}, function(data) {
+                        window.location.reload();
+                    });
+                }
+            );
+    });
+    $('.ti_name').blur(function(e) {
+        let row = $(e.target).closest('tr');
+        let sus_email = row.data('email');
+        let name = $(e.target).val();
+        if (name !== row.data('name')) {
+            api_call('/api/set_ev_name', {email: sus_email, name: name}, function(data) {
+                if (data.success) {
+                    row.data('name', name);
+                    console.log(sus_email, name);
+                }
+            });
+        }
+    })
+    load_recipients('#{@session_user[:id]}', function() {
+    }, null, false, true);
+});
+</script>

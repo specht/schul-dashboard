@@ -3,6 +3,12 @@
     <div class='row'>
         <div class='col-md-12'>
             <h3>Lehrmittelverein</h3>
+            <div class="input-group mb-3">
+                <input id='ti_search' type="text" class="form-control" placeholder="Bitte gib einen Suchbegriff ein" />
+                <div class="input-group-append">
+                    <button id='bu_search' class="btn btn-success" type="button">Suchen</button>
+                </div>
+            </div>
             <div id='labels_here' class='mb-3'>Filter:&nbsp;&nbsp;</div>
             <div id='table_here'></div>
         </div>
@@ -14,18 +20,39 @@ STATE_STYLES = ['btn-danger', 'btn-success', 'btn-primary'];
 
 var db_user_info = #{ Hash[@@user_info.map { | k, v | [k, {:first_name => v[:first_name], :titel => v[:titel], :display_name => v[:display_name], :last_name => v[:last_name], :display_last_name => v[:display_last_name], :klasse => tr_klasse(v[:klasse]), :klassen_order => @@klassen_index[v[:klasse]], :teacher => v[:teacher] }] }].to_json};
 var user_table = null;
+var query = null;
+var selected_klassen = [];
 
 function user_filter(data) {
-    if (window.selected_klassen.length === 0)
-        return true;
-    else {
+    let klasse_result = true;
+    let query_result = true;
+    if (window.selected_klassen.length > 0) {
         let info = db_user_info[data] || {};
         if (info.teacher) {
-            return window.selected_klassen.indexOf('LK') >= 0;
+            klasse_result = (window.selected_klassen.indexOf('Lehrkräfte') >= 0);
         } else {
-            return window.selected_klassen.indexOf(info.klasse) >= 0;
+            klasse_result = (window.selected_klassen.indexOf(info.klasse) >= 0);
         }
     }
+    if (query !== null) {
+        let info = db_user_info[data] || {};
+        let s = (info.display_name || '').toLowerCase() + ' ' + data + ' ' + (info.klasse || '');
+        for (let q of query) {
+            if (s.indexOf(q) < 0)
+                query_result = false;
+        }
+    }
+    return klasse_result && query_result;
+}
+
+function perform_search() {
+    query = $('#ti_search').val().trim().toLowerCase();
+    if (query.length === 0) {
+        query = null;
+    } else {
+        query = query.split(/\s+/);
+    }
+    window.user_table.update_filter();
 }
 
 document.addEventListener('DOMContentLoaded', function() {
@@ -126,6 +153,15 @@ document.addEventListener('DOMContentLoaded', function() {
                 }),
             });
         }
+        $('#ti_search').focus();
+        $('#ti_search').keydown(function (e) {
+            if (e.key === 'Enter') {
+                perform_search();
+            }
+        });
+        $('#bu_search').click(function (e) {
+            perform_search();
+        });
     });
 });
 </script>

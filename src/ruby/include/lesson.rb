@@ -5,10 +5,10 @@ class Main < Sinatra::Base
                                   :optional_keys => [:breakout_rooms, :booked_tablet_sets, :booked_tablet_sets_timespan],
                                   :max_body_length => 65536,
                                   :types => {
-                                      :lesson_offsets => Array, :data => Hash, 
+                                      :lesson_offsets => Array, :data => Hash,
                                       :breakout_rooms => Hash, :booked_tablet_sets => Array,
                                       :booked_tablet_sets_timespan => Hash})
-        transaction do 
+        transaction do
             timestamp = Time.now.to_i
             data[:lesson_offsets].each do |lesson_offset|
                 results = neo4j_query(<<~END_OF_QUERY, :key => data[:lesson_key], :offset => lesson_offset, :data => data[:data], :timestamp => timestamp)
@@ -709,5 +709,28 @@ class Main < Sinatra::Base
         end
         # respond_raw_with_mimetype_and_filename(doc.render, 'application/pdf', "Klasse #{klasse}.pdf")
         respond_raw_with_mimetype(doc.render, 'application/pdf')
+    end
+
+    post '/api/set_hybrid_notes' do
+        require_user!
+        data = parse_request_data(:required_keys => [:lesson_key, :lesson_offset, :text],
+            :max_body_length => 4096,
+            :types => {:lesson_offset => Integer})
+        text = data[:text].strip
+        timestamp = Time.now.to_i
+        neo4j_query(<<~END_OF_QUERY, :lesson_key => data[:lesson_key], :lesson_offset => data[:lesson_offset], :text => text, :email => @session_user[:email], :timestamp => timestamp)
+            MERGE (u:User {email: $email})
+            MERGE (l:Lesson {key: $lesson_key})
+            MERGE (i:LessonInfo {offset: $lesson_offset})-[:BELONGS_TO]->(l)
+            MERGE (u)<-[:BY]-(n:LessonNote)-[:FOR]->(i)
+            SET n.text = $text
+            SET n.updated = $timestamp;
+        END_OF_QUERY
+        trigger_update("_#{@session_user[:email]}")
+        ((@@lessons[:lesson_keys][data[:lesson_key]] || {})[:lehrer] || []).each do |shorthand|
+            teacher_email = @@shorthands[shorthand]
+            trigger_update("_#{teacher_email}")
+        end
+        respond(:ok => true)
     end
 end

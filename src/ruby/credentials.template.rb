@@ -139,6 +139,7 @@ JWT_APPISS_AGRAPP = 'dashboard'
 JWT_APPKEY_AGRAPP = 'ein_langer_langer_richtig_langer_app_key'
 STREAM_SITE_URL = 'https://info.beispielschule.de/'
 JWT_SUB = 'beispielschule.de'
+BIB_HOST = 'https://bibliothek.beispielschule.de'
 JWT_APPKEY_BIB = 'ein_langer_langer_richtig_langer_app_key'
 # Hier kann, falls vorhanden, eine URL eingetragen werden, unter der aus dem
 # Ruby-Docker-Container ein GET-Request zu allRooms gemacht werden kann,
@@ -205,10 +206,12 @@ CAN_MANAGE_MONITORS_USERS = []
 CAN_MANAGE_ANTIKENFAHRT_USERS = []
 CAN_MANAGE_AGR_APP = []
 CAN_MANAGE_BIB = []
+CAN_MANAGE_BIB_SPECIAL_ACCESS = []
 CAN_MANAGE_BIB_MEMBERS = []
 CAN_MANAGE_BIB_PAYMENT = []
 CAN_MANAGE_TABLETS_USERS = []
 EXTERNAL_USERS = []
+GEV_USERS = []
 LEHRBUCHVEREIN_JAHR = 2022
 
 # Schülervertretung, kann:

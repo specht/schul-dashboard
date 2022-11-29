@@ -11,7 +11,7 @@ require 'json'
 require 'jwt'
 require 'kramdown'
 require 'mail'
-require 'neo4j_ruby_driver'
+require 'neo4j_bolt'
 require 'net/http'
 require 'net/imap'
 require 'nextcloud'
@@ -41,6 +41,9 @@ require '/data/config.rb'
 $VERBOSE = warn_level
 DASHBOARD_SERVICE = ENV['DASHBOARD_SERVICE']
 
+Neo4jBolt.bolt_host = 'neo4j'
+Neo4jBolt.bolt_port = 7687
+
 BIB_JWT_TTL = 60
 BIB_JWT_TTL_EXTRA = 20
 
@@ -50,10 +53,12 @@ require './include/bib_login.rb'
 require './include/color.rb'
 require './include/color-schemes.rb'
 require './include/comment.rb'
+require './include/cypher.rb'
 require './include/directory.rb'
 require './include/event.rb'
 require './include/ext_user.rb'
 require './include/file.rb'
+require './include/gev.rb'
 require './include/groups.rb'
 require './include/hack.rb'
 require './include/homework.rb'
@@ -68,6 +73,7 @@ require './include/message.rb'
 require './include/monitor.rb'
 require './include/otp.rb'
 require './include/poll.rb'
+require './include/public_event.rb'
 require './include/salzh.rb'
 require './include/stats.rb'
 require './include/tablet_set.rb'
@@ -134,120 +140,8 @@ HOMEWORK_FEEDBACK_EMOJIS = {'good' => '🙂',
 
 HOURS_FOR_KLASSE = {}
 
-module QtsNeo4j
-
-    class CypherError < StandardError
-        def initialize(code, message)
-            @code = code
-            @message = message
-        end
-
-        def to_s
-            "Cypher Error\n#{@code}\n#{@message}"
-        end
-    end
-
-    def transaction(&block)
-        @@neo4j_driver ||= Neo4j::Driver::GraphDatabase.driver('bolt://neo4j:7687')
-        if @has_bolt_session.nil?
-            begin
-                @has_bolt_session = true
-                @@neo4j_driver.session do |session|
-                    if @has_bolt_transaction.nil?
-                        begin
-                            session.write_transaction do |tx|
-                                @has_bolt_transaction = tx
-                                yield
-                            end
-                        ensure
-                            @has_bolt_transaction = nil
-                        end
-                    else
-                        yield
-                    end
-                end
-            rescue StandardError => e
-                debug("[NEO4J ERROR] #{e}")
-            ensure
-                @has_bolt_session = nil
-            end
-        else
-            yield
-        end
-    end
-
-    class ResultRow
-        def initialize(v)
-            @v = Hash[v.map { |k, v| [k.to_sym, v] }]
-        end
-
-        def props
-            @v
-        end
-    end
-
-    def wait_for_neo4j
-        delay = 1
-        10.times do
-            begin
-                neo4j_query("MATCH (n) RETURN n LIMIT 1;")
-                break
-            rescue
-                STDERR.puts $!
-                STDERR.puts "Retrying after #{delay} seconds..."
-                sleep delay
-                delay += 1
-            end
-        end
-    end
-
-    def parse_neo4j_result(x)
-        if x.is_a?(Neo4j::Driver::Types::Node) || x.is_a?(Neo4j::Driver::Types::Relationship)
-            #ResultRow.new(x.properties)
-            v = x.properties
-            Hash[v.map { |k, v| [k.to_sym, v] }]
-        elsif x.is_a?(Array)
-            x.map { |y| parse_neo4j_result(y) }
-        else
-            x
-        end
-    end
-
-    def neo4j_query(query_str, options = {})
-        transaction do
-            temp_result = nil
-            temp_result = @has_bolt_transaction.run(query_str, options)
-
-            result = []
-            temp_result.each do |row|
-                item = {}
-                row.keys.each.with_index do |key, i|
-                    v = row.values[i]
-                    item[key.to_s] = parse_neo4j_result(v)
-                end
-                result << item
-            end
-            result
-        end
-    end
-
-    def neo4j_query_expect_one(query_str, options = {})
-        result = neo4j_query(query_str, options)
-        unless result.size == 1
-            if DEVELOPMENT
-                debug '-' * 40
-                debug query_str
-                debug options.to_json
-                debug '-' * 40
-            end
-            raise "Expected one result but got #{result.size}"
-        end
-        result.first
-    end
-end
-
 class Neo4jGlobal
-    include QtsNeo4j
+    include Neo4jBolt
 end
 
 $neo4j = Neo4jGlobal.new
@@ -317,20 +211,54 @@ def join_with_sep(list, a, b)
 end
 
 class SetupDatabase
-    include QtsNeo4j
+    include Neo4jBolt
 
-    def wait_for_neo4j
-        delay = 1
-        10.times do
-            begin
-                neo4j_query("MATCH (n) RETURN n LIMIT 1;")
-            rescue
-                debug "Waiting #{delay} seconds for Neo4j to come up..."
-                sleep delay
-                delay += 1
-            end
-        end
-    end
+    CONSTRAINTS_LIST = [
+        'AudioComment/key',
+        'DeviceLoginToken/token',
+        'DeviceToken/token',
+        'Event/key',
+        'KnownEmailAddress/email',
+        'Lesson/key',
+        'LoginCode/tag',
+        'MatrixAccessToken/access_token',
+        'Message/key',
+        'NewsEntry/timestamp',
+        'Poll/key',
+        'PollRun/key',
+        'PresenceToken/token',
+        'PublicEventPerson/tag',
+        'PublicEventTrack/track',
+        'SelfTestDay/datum',
+        'Session/sid',
+        'Tablet/id',
+        'TabletSet/id',
+        'TestEvent/key',
+        'TextComment/key',
+        'User/email',
+        'WebsiteEvent/key'
+    ]
+
+    INDEX_LIST = [
+        'AudioComment/offset',
+        'Booking/confirmed',
+        'Booking/datum',
+        'Booking/updated',
+        'ExternalUser/email',
+        'ExternalUser/entered_by',
+        'LessonInfo/offset',
+        'LoginCode/code',
+        'News/date',
+        'NextcloudLoginCode/code',
+        'PollRun/end_date',
+        'PollRun/start_date',
+        'PredefinedExternalUser/email',
+        'Test/datum',
+        'Test/fach',
+        'Test/klasse',
+        'TextComment/offset',
+        'User/ev'
+    ]
 
     def setup(main)
         delay = 1
@@ -346,77 +274,19 @@ class SetupDatabase
                         RETURN nodes;
                     END_OF_QUERY
                     duplicate_peu.each do |entry|
-                        debug entry.to_yaml
                         entry['nodes'].select do |node|
-                            node['name'] != main.class_variable_get(:@@predefined_external_users)[:recipients][node['email']][:label]
+                            STDERR.puts node.to_yaml
+                            node[:name] != (main.class_variable_get(:@@predefined_external_users)[:recipients][node[:email]] || {})[:label]
                         end.each do |node|
-                            debug "DELETING PEU #{node['name']}"
-                            neo4j_query(<<~END_OF_QUERY, {:name => node['name'], :email => node['email']})
+                            debug "DELETING PEU #{node[:name]}"
+                            neo4j_query(<<~END_OF_QUERY, {:name => node[:name], :email => node[:email]})
                                 MATCH (n:PredefinedExternalUser {name: $name, email: $email})
                                 DETACH DELETE n;
                             END_OF_QUERY
                         end
                     end
                 end
-                debug "Removing all constraints and indexes..."
-                indexes = []
-#                     neo4j_query("CALL db.constraints").each do |constraint|
-#                         query = "DROP #{constraint['description']}"
-#                         neo4j_query(query)
-#                     end
-#                     neo4j_query("CALL db.indexes").each do |index|
-#                         query = "DROP #{index['description']}"
-#                         neo4j_query(query)
-#                     end
-
-                debug "Setting up constraints and indexes..."
-                [
-                    "CREATE CONSTRAINT ON (n:LoginCode) ASSERT n.tag IS UNIQUE",
-                    "CREATE CONSTRAINT ON (n:User) ASSERT n.email IS UNIQUE",
-                    "CREATE CONSTRAINT ON (n:Session) ASSERT n.sid IS UNIQUE",
-                    "CREATE CONSTRAINT ON (n:DeviceToken) ASSERT n.token IS UNIQUE",
-                    "CREATE CONSTRAINT ON (n:DeviceLoginToken) ASSERT n.token IS UNIQUE",
-                    "CREATE CONSTRAINT ON (n:Lesson) ASSERT n.key IS UNIQUE",
-                    "CREATE CONSTRAINT ON (n:WebsiteEvent) ASSERT n.key IS UNIQUE",
-                    "CREATE CONSTRAINT ON (n:TestEvent) ASSERT n.key IS UNIQUE",
-                    "CREATE CONSTRAINT ON (n:TextComment) ASSERT n.key IS UNIQUE",
-                    "CREATE CONSTRAINT ON (n:AudioComment) ASSERT n.key IS UNIQUE",
-                    "CREATE CONSTRAINT ON (n:Message) ASSERT n.key IS UNIQUE",
-                    "CREATE CONSTRAINT ON (n:NewsEntry) ASSERT n.timestamp IS UNIQUE",
-                    "CREATE CONSTRAINT ON (n:Event) ASSERT n.key IS UNIQUE",
-                    "CREATE CONSTRAINT ON (n:Poll) ASSERT n.key IS UNIQUE",
-                    "CREATE CONSTRAINT ON (n:PollRun) ASSERT n.key IS UNIQUE",
-                    "CREATE CONSTRAINT ON (n:PresenceToken) ASSERT n.token IS UNIQUE",
-                    "CREATE CONSTRAINT ON (n:Tablet) ASSERT n.id IS UNIQUE",
-                    "CREATE CONSTRAINT ON (n:TabletSet) ASSERT n.id IS UNIQUE",
-                    "CREATE CONSTRAINT ON (n:PublicEventPerson) ASSERT n.tag IS UNIQUE",
-                    "CREATE CONSTRAINT ON (n:MatrixAccessToken) ASSERT n.access_token IS UNIQUE",
-                    "CREATE CONSTRAINT ON (n:KnownEmailAddress) ASSERT n.email IS UNIQUE",
-                    "CREATE CONSTRAINT ON (n:SelfTestDay) ASSERT n.datum IS UNIQUE",
-                    "CREATE INDEX ON :LoginCode(code)",
-                    "CREATE INDEX ON :NextcloudLoginCode(code)",
-                    "CREATE INDEX ON :LessonInfo(offset)",
-                    "CREATE INDEX ON :TextComment(offset)",
-                    "CREATE INDEX ON :AudioComment(offset)",
-                    "CREATE INDEX ON :ExternalUser(entered_by)",
-                    "CREATE INDEX ON :ExternalUser(email)",
-                    "CREATE INDEX ON :PredefinedExternalUser(email)",
-                    "CREATE INDEX ON :News(date)",
-                    "CREATE INDEX ON :PollRun(start_date)",
-                    "CREATE INDEX ON :PollRun(end_date)",
-                    "CREATE INDEX ON :Booking(datum)",
-                    "CREATE INDEX ON :Booking(confirmed)",
-                    "CREATE INDEX ON :Booking(updated)",
-                    "CREATE INDEX ON :Test(klasse)",
-                    "CREATE INDEX ON :Test(fach)",
-                    "CREATE INDEX ON :Test(datum)",
-                ].each do |s|
-                    begin
-                        neo4j_query(s)
-                    rescue StandardError => e
-                        debug("failed running constraint query: #{s}")
-                    end
-                end
+                setup_constraints_and_indexes(CONSTRAINTS_LIST, INDEX_LIST)
                 transaction do
                     main.class_variable_get(:@@user_info).keys.each do |email|
                         neo4j_query(<<~END_OF_QUERY, :email => email)
@@ -525,7 +395,7 @@ class SetupDatabase
 end
 
 class Main < Sinatra::Base
-    include QtsNeo4j
+    include Neo4jBolt
     helpers Sinatra::Cookies
 
     configure do
@@ -589,6 +459,7 @@ class Main < Sinatra::Base
 
     def self.collect_data
         @@user_info = {}
+        @@login_shortcuts = {}
         @@email_for_matrix_login = {}
         @@shorthands = {}
         @@shorthand_order = []
@@ -607,6 +478,20 @@ class Main < Sinatra::Base
 
         @@index_for_klasse = {}
         @@predefined_external_users = {}
+        @@bib_summoned_books = {}
+        @@bib_summoned_books_last_ts = 0
+
+        if File.exists?('/data/login-shortcuts.txt')
+            File.open('/data/login-shortcuts.txt') do |f|
+                f.each_line do |line|
+                    line.strip!
+                    next if line.empty? || line[0] == '#'
+                    parts = line.split(' ')
+                    next if parts.size != 2
+                    @@login_shortcuts[parts[0]] = parts[1]
+                end
+            end
+        end
 
         parser = Parser.new()
         parser.parse_faecher do |fach, bezeichnung|
@@ -702,6 +587,9 @@ class Main < Sinatra::Base
 
         parser.parse_schueler do |record|
             matrix_login = "@#{record[:email].split('@').first.sub(/\.\d+$/, '')}:#{MATRIX_DOMAIN_SHORT}"
+            unless KLASSEN_ORDER.include?(record[:klasse])
+                raise "Klasse #{record[:klasse]} is included in KLASSEN_ORDER"
+            end
             @@user_info[record[:email]] = {
                 :teacher => false,
                 :first_name => record[:first_name],
@@ -717,7 +605,9 @@ class Main < Sinatra::Base
                 :nc_login => record[:email].split('@').first.sub(/\.\d+$/, ''),
                 :matrix_login => matrix_login,
                 :initial_nc_password => record[:initial_nc_password],
-                :jitsi_disabled => disable_jitsi_for_email.include?(record[:email])
+                :biber_password => Main.gen_password_for_email(record[:email] + 'biber')[0, 4].downcase,
+                :jitsi_disabled => disable_jitsi_for_email.include?(record[:email]),
+                :geburtstag => record[:geburtstag]
             }
             raise "oops: duplicate matrix / nc login: #{matrix_login}" if @@email_for_matrix_login.include?(matrix_login)
             @@email_for_matrix_login[matrix_login] = record[:email]
@@ -730,8 +620,28 @@ class Main < Sinatra::Base
                 @@birthday_entries[birthday_md] << record[:email]
             end
         end
+        all_prefixes = {}
         @@user_info.keys.each do |email|
             @@user_info[email][:id] = Digest::SHA2.hexdigest(USER_ID_SALT + email).to_i(16).to_s(36)[0, 16]
+            (1..email.size).each do |length|
+                prefix = email[0, length]
+                all_prefixes[prefix] ||= Set.new()
+                all_prefixes[prefix] << email
+            end
+        end
+        @@login_shortcuts.keys.each do |email|
+            (1..email.size).each do |length|
+                prefix = email[0, length]
+                all_prefixes[prefix] ||= Set.new()
+                all_prefixes[prefix] << email
+            end
+        end
+        @@user_info.keys.each do |email|
+            length = 1
+            while all_prefixes[email[0, length]].size > 1
+                length += 1
+            end
+            @@user_info[email][:shortest_prefix] = email[0, length]
         end
 
         @@tablets_for_school_streaming = Set.new()
@@ -967,7 +877,7 @@ class Main < Sinatra::Base
         end
 
         kurse_for_schueler, schueler_for_kurs = parser.parse_kurswahl(@@user_info.reject { |x, y| y[:teacher] }, @@lessons, lesson_key_tr, @@original_lesson_key_for_lesson_key)
-        wahlpflicht_sus_for_lesson_key = parser.parse_wahlpflichtkurswahl(@@user_info.reject { |x, y| y[:teacher] }, @@lessons, lesson_key_tr)
+        wahlpflicht_sus_for_lesson_key = parser.parse_wahlpflichtkurswahl(@@user_info.reject { |x, y| y[:teacher] }, @@lessons, lesson_key_tr, @@schueler_for_klasse)
 
         @@materialamt_for_lesson = {}
         rows = $neo4j.neo4j_query(<<~END_OF_QUERY)
@@ -1074,6 +984,10 @@ class Main < Sinatra::Base
         unless undeclared_rooms.empty?
             debug("Undeclared rooms: #{undeclared_rooms.to_a.sort.join(' ')}")
         end
+        @@lesson_keys_with_sus_feedback = {}
+        if File.exists?('/data/kurswahl/sus_feedback.yaml')
+            @@lesson_keys_with_sus_feedback = YAML::load_file('/data/kurswahl/sus_feedback.yaml')
+        end
 
         if ENV['DASHBOARD_SERVICE'] == 'ruby'
             FileUtils.rm_rf('/internal/debug/')
@@ -1114,14 +1028,16 @@ class Main < Sinatra::Base
                     email.nil?
                 end
             }
-            if @@klassenleiter[klasse]
-                @@mailing_lists["team.#{klasse.to_i}@#{SCHUL_MAIL_DOMAIN}"] ||= {
-                    :label => "Klassenleiterteam der Klassenstufe #{klasse.to_i}",
-                    :recipients => []
-                }
-                @@klassenleiter[klasse].each do |shorthand|
-                    if @@shorthands[shorthand]
-                        @@mailing_lists["team.#{klasse.to_i}@#{SCHUL_MAIL_DOMAIN}"][:recipients] << @@shorthands[shorthand]
+            if klasse.to_i > 0
+                if @@klassenleiter[klasse]
+                    @@mailing_lists["team.#{klasse.to_i}@#{SCHUL_MAIL_DOMAIN}"] ||= {
+                        :label => "Klassenleiterteam der Klassenstufe #{klasse.to_i}",
+                        :recipients => []
+                    }
+                    @@klassenleiter[klasse].each do |shorthand|
+                        if @@shorthands[shorthand]
+                            @@mailing_lists["team.#{klasse.to_i}@#{SCHUL_MAIL_DOMAIN}"][:recipients] << @@shorthands[shorthand]
+                        end
                     end
                 end
             end
@@ -1146,6 +1062,14 @@ class Main < Sinatra::Base
                 "eltern.#{email}"
             end
         }
+        temp = $neo4j.neo4j_query(<<~END_OF_QUERY).map { |x| { :email => x['u.email'] } }
+            MATCH (u:User {ev: true})
+            RETURN u.email;
+        END_OF_QUERY
+        @@mailing_lists["ev@#{SCHUL_MAIL_DOMAIN}"] = {
+            :label => "Alle Elternvertreter:innen",
+            :recipients => temp.map { |x| 'eltern.' + x[:email] }
+        }
         @@antikenfahrt_mailing_lists.each_pair do |k, v|
             @@mailing_lists[k] = v
         end
@@ -1157,10 +1081,12 @@ class Main < Sinatra::Base
                 }
             end
         end
-        File.open('/internal/mailing_lists.yaml.tmp', 'w') do |f|
-            f.puts @@mailing_lists.to_yaml
+        if DASHBOARD_SERVICE == 'ruby'
+            File.open('/internal/mailing_lists.yaml.tmp', 'w') do |f|
+                f.puts @@mailing_lists.to_yaml
+            end
+            FileUtils::mv('/internal/mailing_lists.yaml.tmp', '/internal/mailing_lists.yaml', force: true)
         end
-        FileUtils::mv('/internal/mailing_lists.yaml.tmp', '/internal/mailing_lists.yaml', force: true)
     end
 
     def self.compile_files(key, mimetype, paths)
@@ -1182,9 +1108,29 @@ class Main < Sinatra::Base
         end
     end
 
+    def self.refresh_bib_data()
+        begin
+            now = Time.now.to_i
+            return if now - @@bib_summoned_books_last_ts < 60 * 60
+            @@bib_summoned_books_last_ts = now
+            @@bib_summoned_books = {}
+            debug "Refreshing bib data..."
+            url = "#{BIB_HOST}/api/get_summoned_books"
+            res = Curl.get(url) do |http|
+                payload = {:exp => Time.now.to_i + 60, :email => 'timetable'}
+                http.headers['X-JWT'] = JWT.encode(payload, JWT_APPKEY_BIB, "HS256")
+            end
+            raise 'oops' if res.response_code != 200
+            @@bib_summoned_books = JSON.parse(res.body)
+            # debug @@bib_summoned_books.to_yaml
+        rescue StandardError => e
+            debug e
+        end
+    end
+
     def self.compile_js()
         files = [
-            '/include/jquery/jquery-3.4.1.min.js',
+            '/include/jquery/jquery-3.6.1.min.js',
             '/include/jquery-ui/jquery-ui.min.js',
             '/include/popper.js/popper.min.js',
             '/include/bootstrap/bootstrap.min.js',
@@ -1249,8 +1195,10 @@ class Main < Sinatra::Base
         self.collect_data() unless defined?(SKIP_COLLECT_DATA) && SKIP_COLLECT_DATA
         @@ws_clients = {}
         @@color_scheme_info = {}
+        @@compiled_files = {}
+        debug "DASHBOARD_SERVICE: #{ENV['DASHBOARD_SERVICE']}"
+        debug "File.basename($0): #{File.basename($0)}"
         if ENV['DASHBOARD_SERVICE'] == 'ruby' && (File.basename($0) == 'thin' || File.basename($0) == 'pry.rb')
-            @@compiled_files = {}
             setup.setup(self)
             COLOR_SCHEME_COLORS.each do |entry|
                 @@color_scheme_info[entry[0]] = [entry[1], entry[2]]
@@ -1283,6 +1231,8 @@ class Main < Sinatra::Base
             rescue StandardError => e
                 STDERR.puts e
             end
+
+            self.refresh_bib_data()
 
             self.compile_js()
             self.compile_css()
@@ -1388,6 +1338,8 @@ class Main < Sinatra::Base
 
         @latest_request_body = nil
         @latest_request_body_parsed = nil
+
+        self.class.refresh_bib_data()
 
         @session_device = nil
         @session_device_token = nil
@@ -1505,6 +1457,7 @@ class Main < Sinatra::Base
                                         @session_user[:group2] = results.first['u'][:group2] || 'A'
                                         @session_user[:group_af] = results.first['u'][:group_af] || ''
                                         @session_user[:sus_may_contact_me] = results.first['u'][:sus_may_contact_me] || false
+                                        @session_user[:user_agent] = results.first['s'][:user_agent]
                                     end
                                 end
                             end
@@ -1519,6 +1472,10 @@ class Main < Sinatra::Base
                 end
             end
         end
+    end
+
+    after '*' do
+        cleanup_neo4j()
     end
 
     after '/api/*' do
@@ -1685,10 +1642,10 @@ class Main < Sinatra::Base
             nav_items.each do |x|
                 if x == :admin
                     io.puts "<li class='nav-item dropdown'>"
-                    io.puts "<a class='nav-link nav-icon dropdown-toggle' href='#' id='navbarDropdown' role='button' data-toggle='dropdown' aria-haspopup='true' aria-expanded='false'>"
+                    io.puts "<a class='nav-link nav-icon dropdown-toggle' href='#' id='navbarDropdownAdmin' role='button' data-toggle='dropdown' aria-haspopup='true' aria-expanded='false'>"
                     io.puts "<div class='icon'><i class='fa fa-wrench'></i></div>Administration"
                     io.puts "</a>"
-                    io.puts "<div class='dropdown-menu dropdown-menu-right' aria-labelledby='navbarDropdown'>"
+                    io.puts "<div class='dropdown-menu dropdown-menu-right' aria-labelledby='navbarDropdownAdmin'>"
                     printed_something = false
                     if user_who_can_manage_news_logged_in?
                         io.puts "<a class='dropdown-item nav-icon' href='/manage_news'><div class='icon'><i class='fa fa-newspaper-o'></i></div><span class='label'>News verwalten</span></a>"
@@ -1731,7 +1688,7 @@ class Main < Sinatra::Base
                     end
                 elsif x == :profile
                     io.puts "<li class='nav-item dropdown'>"
-                    io.puts "<a class='nav-link nav-icon dropdown-toggle' href='#' id='navbarDropdown' role='button' data-toggle='dropdown' aria-haspopup='true' aria-expanded='false'>"
+                    io.puts "<a class='nav-link nav-icon dropdown-toggle' href='#' id='navbarDropdownProfile' role='button' data-toggle='dropdown' aria-haspopup='true' aria-expanded='false'>"
                     display_name = htmlentities(@session_user[:display_name])
                     if @session_user[:klasse]
                         temp = [tr_klasse(@session_user[:klasse])]
@@ -1742,7 +1699,7 @@ class Main < Sinatra::Base
                     end
                     io.puts "<div class='icon nav_avatar'>#{user_icon(@session_user[:email], 'avatar-md')}</div><span class='menu-user-name'>#{display_name}</span>"
                     io.puts "</a>"
-                    io.puts "<div class='dropdown-menu dropdown-menu-right' aria-labelledby='navbarDropdown'>"
+                    io.puts "<div class='dropdown-menu dropdown-menu-right' aria-labelledby='navbarDropdownProfile'>"
                     unless external_user_logged_in?
                         io.puts "<a class='dropdown-item nav-icon' href='/profil'><div class='icon'>#{user_icon(@session_user[:email], 'avatar-sm')}</div><span class='label'>Profil</span></a>"
                     end
@@ -1764,6 +1721,9 @@ class Main < Sinatra::Base
                         io.puts "<a class='dropdown-item nav-icon' href='/login_nc'><div class='icon'><i class='fa fa-nextcloud'></i></div><span class='label'>In Nextcloud anmelden…</span></a>"
                         # if can_manage_agr_app_logged_in? || can_manage_bib_members_logged_in? || can_manage_bib_logged_in? || teacher_logged_in?
                             io.puts "<div class='dropdown-divider'></div>"
+                            if gev_logged_in?
+                                io.puts "<a class='dropdown-item nav-icon' href='/gev'><div class='icon'><i class='fa fa-users'></i></div><span class='label'>Gesamtelternvertretung</span></a>"
+                            end
                             if can_manage_agr_app_logged_in?
                                 io.puts "<a class='dropdown-item nav-icon' href='/agr_app'><div class='icon'><i class='fa fa-mobile'></i></div><span class='label'>Altgriechisch-App</span></a>"
                             end
@@ -1774,7 +1734,7 @@ class Main < Sinatra::Base
                                 io.puts "<a class='dropdown-item nav-icon' href='/bibliothek'><div class='icon'><i class='fa fa-book'></i></div><span class='label'>Bibliothek</span></a>"
                             # end
                         # end
-                        if teacher_or_sv_logged_in? || can_manage_bib_logged_in?
+                        if teacher_or_sv_logged_in?
                             io.puts "<div class='dropdown-divider'></div>"
                             if teacher_or_sv_logged_in?
                                 if teacher_logged_in?
@@ -1810,10 +1770,10 @@ class Main < Sinatra::Base
                 elsif x == :kurse
                     unless (@@lessons_for_shorthand[@session_user[:shorthand]] || []).empty? && (@@lessons[:historic_lessons_for_shorthand][@session_user[:shorthand]] || []).empty?
                         io.puts "<li class='nav-item dropdown'>"
-                        io.puts "<a class='nav-link nav-icon dropdown-toggle' href='#' id='navbarDropdown' role='button' data-toggle='dropdown' aria-haspopup='true' aria-expanded='false'>"
+                        io.puts "<a class='nav-link nav-icon dropdown-toggle' href='#' id='navbarDropdownKurse' role='button' data-toggle='dropdown' aria-haspopup='true' aria-expanded='false'>"
                         io.puts "<div class='icon'><i class='fa fa-address-book'></i></div>Kurse"
                         io.puts "</a>"
-                        io.puts "<div class='dropdown-menu' aria-labelledby='navbarDropdown'>"
+                        io.puts "<div class='dropdown-menu' aria-labelledby='navbarDropdownKurse'>"
                         taken_lesson_keys = Set.new()
                         (@@lessons_for_shorthand[@session_user[:shorthand]] || []).each do |lesson_key|
                             lesson_info = @@lessons[:lesson_keys][lesson_key]
@@ -1856,10 +1816,10 @@ class Main < Sinatra::Base
                     end
                     unless klassen.empty?
                         io.puts "<li class='nav-item dropdown'>"
-                        io.puts "<a class='nav-link nav-icon dropdown-toggle' href='#' id='navbarDropdown' role='button' data-toggle='dropdown' aria-haspopup='true' aria-expanded='false'>"
+                        io.puts "<a class='nav-link nav-icon dropdown-toggle' href='#' id='navbarDropdownKlassen' role='button' data-toggle='dropdown' aria-haspopup='true' aria-expanded='false'>"
                         io.puts "<div class='icon'><i class='fa fa-address-book'></i></div>Klassen"
                         io.puts "</a>"
-                        io.puts "<div class='dropdown-menu' aria-labelledby='navbarDropdown'>"
+                        io.puts "<div class='dropdown-menu' aria-labelledby='navbarDropdownKlassen'>"
                         if can_see_all_timetables_logged_in?
                             klassen = @@klassen_order
                         end
@@ -2311,10 +2271,10 @@ class Main < Sinatra::Base
         # require_user_who_can_manage_bib!
         debug "Creating bib token for #{@session_user[:email]}"
         payload = {
-            # :context => JSON.parse(data[:payload]),
             :email => @session_user[:email],
             :display_name => @session_user[:display_name],
             :can_manage_bib => can_manage_bib_logged_in?,
+            :can_manage_bib_special_access => can_manage_bib_special_access_logged_in?,
             :teacher => teacher_logged_in?,
             :exp => Time.now.to_i + BIB_JWT_TTL + BIB_JWT_TTL_EXTRA
         }
@@ -2336,6 +2296,31 @@ class Main < Sinatra::Base
         diff = decoded_token["exp"] - Time.now.to_i
         assert(diff >= 0)
         respond(:user_info => @@user_info, :etag => @@server_etag, :lessons => @@lessons)
+    end
+
+    get '/api/get_hackschule_users' do
+        require_admin!
+        # > Klasse 7a
+        # + specht@gymnasiumsteglitz.de
+        # w Alessandria Klonaris <alessandria.klonaris@mail.gymnasiumsteglitz.de>
+        response = StringIO.open do |io|
+            @@lessons[:lesson_keys].keys.sort.each do |lesson_key|
+                lesson_info = @@lessons[:lesson_keys][lesson_key]
+                if (lesson_key.downcase[0, 2] == 'in' || lesson_key.downcase[0, 3] == 'itg') && @@schueler_for_lesson[lesson_key]
+                    io.puts "> #{lesson_info[:pretty_folder_name]}"
+                    lesson_info[:lehrer].each do |shorthand|
+                        io.puts "+ #{@@shorthands[shorthand]}"
+                    end
+                    @@schueler_for_lesson[lesson_key].each do |email|
+                        user = @@user_info[email]
+                        io.puts "#{user[:geschlecht]} #{user[:first_name]} <#{email}>"
+                    end
+                    io.puts
+                end
+            end
+            io.string
+        end
+        respond_raw_with_mimetype(response, 'text/plain')
     end
 
     before "/monitor/#{MONITOR_DEEP_LINK}" do
@@ -2413,6 +2398,7 @@ class Main < Sinatra::Base
         stored_groups = []
         stored_polls = []
         stored_poll_runs = []
+        lesson_notes_for_session_user = {}
         show_event = {}
         external_users_for_session_user = []
         if path == 'directory'
@@ -2488,6 +2474,11 @@ class Main < Sinatra::Base
                     path = 'login'
                 end
             end
+        elsif path == 'schema'
+            if admin_logged_in?
+                command = "neo4j_bolt -h neo4j:7687 visualize | dot -Tsvg > /gen/schema-i6wbb4YtA5l2BzdNjedMtd.svg"
+                system(command)
+            end
         end
         if user_logged_in? && @session_user[:is_monitor]
             path = 'monitor'
@@ -2527,6 +2518,22 @@ class Main < Sinatra::Base
                         end
                     end
                 end
+            end
+            unless teacher_logged_in?
+                @@lesson_notes_for_session_user_cache ||= {}
+                @@lesson_notes_for_session_user_last_timestamp ||= 0
+                rows = neo4j_query(<<~END_OF_QUERY, {:ts => @@lesson_notes_for_session_user_last_timestamp})
+                    MATCH (u:User)<-[:BY]-(n:LessonNote)-[:FOR]->(i:LessonInfo)-[:BELONGS_TO]->(l:Lesson)
+                    WHERE n.updated >= $ts
+                    RETURN u.email, n.text, i.offset, l.key, n.updated;
+                END_OF_QUERY
+                rows.each do |row|
+                    @@lesson_notes_for_session_user_last_timestamp = row['n.updated'] if row['n.updated'] > @@lesson_notes_for_session_user_last_timestamp
+                    @@lesson_notes_for_session_user_cache[row['u.email']] ||= {}
+                    @@lesson_notes_for_session_user_cache[row['u.email']][row['l.key']] ||= {}
+                    @@lesson_notes_for_session_user_cache[row['u.email']][row['l.key']][row['i.offset']] = row['n.text']
+                end
+                lesson_notes_for_session_user = @@lesson_notes_for_session_user_cache[@session_user[:email]] || {}
             end
         elsif path == 'messages'
             unless @session_user

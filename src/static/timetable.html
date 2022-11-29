@@ -43,6 +43,23 @@
             </div>
         </div>
         <div class='#{tablet_logged_in? ? '' : 'col-lg-2 col-md-12 side-panel'}'>
+            <div class='hint' style='display: #{(@session_user[:user_agent] || '').include?('WebView') ? 'block' : 'none'};'>
+                <p>
+                    <i class="fa fa-exclamation-triangle" style="font-size: 200%; color: #888; float: left; margin-right: 15px; margin-top: 5px; position: relative; top: 3px;"></i>
+                    <strong>Hinweis:</strong> Du benutzt die Dashboard-App für Android, die nicht mehr unterstützt wird.
+                    Bitte lösche die App und richte dir ggfs. einen Shortcut zur Dashboard-Website ein:
+                </p>
+                <p>
+                    <a href='https://dashboard.gymnasiumsteglitz.de' target="_blank">https://dashboard.gymnasiumsteglitz.de</a>
+                </p>
+                <p>
+                    Wie du einen Shortcut anlegen kannst, <a href='https://de.wikihow.com/Eine-Verkn%C3%BCpfung-f%C3%BCr-ein-Lesezeichen-auf-deinen-Android-Homebildschirm-legen'>erfährst du hier</a>.
+                </p>
+                <p>
+                    Falls du Fragen dazu hast, schreib bitte eine E-Mail an <a href='mailto:specht@gymnasiumsteglitz.de'>specht@gymnasiumsteglitz.de</a>.
+                </p>
+            </div>
+
             <div class='row'>
                 <div class='switch_week_panel'></div>
                 <div id='rsag' style='display: none;'>
@@ -58,10 +75,11 @@
                         </div>
                     </div>
                 </div>
+                #{print_summoned_books_panel()}
                 #{#print_lehrerzimmer_panel()}
                 #{#print_self_test_panel()}
                 #{print_current_polls()}
-                #{print_salzh_panel()}
+                #{#print_salzh_panel()}
             </div>
         </div>
         <div class='#{tablet_logged_in? ? 'col-md-4' : 'col-lg-8 col-md-12'}'>
@@ -88,7 +106,7 @@
 </div>
 
 <div class="modal" id="lessonModal" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
-  <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
+  <div class="modal-dialog modal-dialog-scrollable modal-lg modal-dialog-centered" role="document">
     <div class="modal-content">
       <div class="modal-header">
         <h5 class="modal-title" >
@@ -103,6 +121,10 @@
                 <div class='col-md-12'>
                     <div class='vertretungs-text'></div>
                     <div class='lesson-infos-here'></div>
+                    <div class='sus-notes-here' style='display: none;'>
+                        <hr />
+                        <textarea id='ta_sus_notes' style='height: 10rem;' class='form-control' placeholder="Bitte gib hier ein, woran du in dieser Stunde gearbeitet hast (nur wenn es sich um eine Hybridstunde handelt, die du zu Hause verbracht hast)."></textarea>
+                    </div>
                 </div>
             </div>
         </div>
@@ -125,7 +147,7 @@
   </div>
 </div>
 
-  <div class="modal" id="homeworkFeedbackModal" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
+<div class="modal" id="homeworkFeedbackModal" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
   <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
     <div class="modal-content">
       <div class="modal-header">
@@ -211,6 +233,7 @@
 
 <script>
 var my_lessons = #{(@@lessons_for_shorthand[@session_user[:shorthand]] || []).to_json};
+var sus_for_my_lessons = #{Hash[(@@lessons_for_shorthand[@session_user[:shorthand]] || []).map { |x| [x, (@@schueler_for_lesson[x] || []).map { |y| {:email => y, :display_name => @@user_info[y][:display_name]}}]}].to_json};
 var tablet_logged_in = ('#{tablet_logged_in?}' === 'true');
 var teacher_tablet_logged_in = ('#{teacher_tablet_logged_in?}' === 'true');
 var klassenraum_logged_in = ('#{klassenraum_logged_in?}' === 'true');
@@ -482,6 +505,8 @@ function install_physics_handler(e) {
     });
 }
 
+var lesson_notes = #{lesson_notes_for_session_user.to_json};
+
 document.addEventListener('DOMContentLoaded', function() {
     moment.locale('de');
     let narrow_window = ($(window).width() <= 640);
@@ -654,6 +679,15 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
                 if (per_user.text_comments || per_user.audio_comments)
                     markers.append($('<span>').html("<i class='fa fa-comment'></i>"));
+                if (per_user.can_have_sus_feedback) {
+                    if (teacher_logged_in) {
+                        if ((Object.keys(per_user.lesson_notes || {})).length > 0) {
+                            markers.append($('<span>').html(`${Object.keys(per_user.lesson_notes).length}x <i class='fa fa-file-text-o'></i>`));
+                        }
+                    } else {
+                        markers.append($('<span>').html(`<i id='icon_hybrid_notes_${arg.event.extendedProps.lesson_key}_${arg.event.extendedProps.lesson_offset}' class='fa ${(((lesson_notes[arg.event.extendedProps.lesson_key] || {})[arg.event.extendedProps.lesson_offset] || '').length > 0) ? 'fa-file-text-o': 'fa-file-o'}'></i>`));
+                    }
+                }
                 div1b.append(markers);
 
                 let div2 = $('<div>');
@@ -1142,7 +1176,38 @@ document.addEventListener('DOMContentLoaded', function() {
                 else
                     body.append("<div class='text-muted'><i>(keine weiteren Informationen)</i></div>");
             }
-            
+
+            if (per_user.can_have_sus_feedback) {
+                if (teacher_logged_in) {
+                    $('.sus-notes-here').empty().show().append($('<hr>'));
+                    // $('.sus-notes-here').append($('<b>Notizen von Schülerinnen und Schülern:</b>'));
+                    for (let entry of (sus_for_my_lessons[event.lesson_key] || [])) {
+                        if ((per_user.lesson_notes[entry.email] || '').length > 0) {
+                            $('.sus-notes-here').append($(`<p style='margin-bottom: 0.5rem;'>`).html(`<b>${entry.display_name}:</b> ${per_user.lesson_notes[entry.email]}`));
+                        }
+                    }
+                    let missing_sus = [];
+                    for (let entry of (sus_for_my_lessons[event.lesson_key] || [])) {
+                        if ((per_user.lesson_notes[entry.email] || '').length === 0) {
+                            missing_sus.push(entry.display_name);
+                        }
+                    }
+                    if (missing_sus.length > 0) {
+                        $('.sus-notes-here').append($('<hr>'));
+                        $('.sus-notes-here').append($(`<p>`).html(`<em>Keine Rückmeldung von: ${missing_sus.join(', ')}</em>`));
+                    }
+                    // sus_for_my_lessons
+
+                } else {
+                    $('.sus-notes-here').show();
+                    $('#ta_sus_notes').data('lesson_key', event.lesson_key);
+                    $('#ta_sus_notes').data('lesson_offset', event.lesson_offset);
+                    $('#ta_sus_notes').val(((lesson_notes[event.lesson_key] || {})[event.lesson_offset]) || '');
+                }
+            }
+            else
+                $('.sus-notes-here').hide();
+
             $('#lessonModal').modal('show');
         }
     };
@@ -1426,5 +1491,23 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             );
     });
-});
+    $('#ta_sus_notes').change(function(e) {
+        let data = {
+            text: $('#ta_sus_notes').val().trim(),
+            lesson_key: $('#ta_sus_notes').data('lesson_key'),
+            lesson_offset: $('#ta_sus_notes').data('lesson_offset')
+        };
+        api_call('/api/set_hybrid_notes', data, function(data2) {
+            if (data2.success) {
+                if (!(data.lesson_key in lesson_notes))
+                    lesson_notes[data.lesson_key] = {};
+                lesson_notes[data.lesson_key][data.lesson_offset] = data.text;
+                if (data.text.length === 0)
+                    $(`#icon_hybrid_notes_${data.lesson_key}_${data.lesson_offset}`).removeClass('fa-file-text-o').addClass('fa-file-o');
+                else
+                    $(`#icon_hybrid_notes_${data.lesson_key}_${data.lesson_offset}`).removeClass('fa-file-o').addClass('fa-file-text-o');
+                }
+            });
+        });
+    });
 </script>

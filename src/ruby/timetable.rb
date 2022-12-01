@@ -658,7 +658,7 @@ class Timetable
                         e[:lehrer_removed] = e[:lehrer].first
                     end
                     if e[:klassen] && e[:klassen].size > 1
-                        e[:klassen_removed] = e[:klassen].first
+                        e[:klassen_removed] = (Set.new(e[:klassen].first) - Set.new(e[:klassen].last)).to_a
                     end
                     if e[:raum] && e[:raum].size > 1
                         e[:raum_removed] = e[:raum].first

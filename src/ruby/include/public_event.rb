@@ -141,7 +141,7 @@ class Main < Sinatra::Base
                     row[:entries].each do |entry|
                         capacity = entry[:capacity] || 0
                         booked_count = (sign_ups[entry[:key]] || []).size
-                        io.puts "<td>#{entry[:description]} (#{booked_count} / #{capacity})<br /><div class='progress'><div class='progress-bar progress-bar-striped' role='progressbar' style='width: #{booked_count * 100 / capacity}%;'>#{(booked_count * 100 / capacity).to_i}%</div></div></td>"
+                        io.puts "<td><div style='display: flex; justify-content: space-between;'><div>#{entry[:description]}</div><div>(#{booked_count}/#{capacity})</div></div><div class='progress'><div class='progress-bar progress-bar-striped' role='progressbar' style='width: #{booked_count * 100 / capacity}%;'>#{(booked_count * 100 / capacity).to_i}%</div></div></td>"
                     end
                     io.puts "</tr>"
                 end
@@ -172,7 +172,7 @@ class Main < Sinatra::Base
                 io.puts "<colgroup>"
                 io.puts "<col style='width: 180px;'/>"
                 colspan.times do
-                    io.puts "<col style='width: calc((100% - 180px) / #{colspan});'/>"
+                    io.puts "<col style='width: auto;'/>"
                 end
                 io.puts "</colgroup>"
                 io.puts "<tbody>"
@@ -211,7 +211,7 @@ class Main < Sinatra::Base
                         if (sign_ups[entry[:key]] || []).size >= (entry[:capacity] || 0)
                             booked_out = true
                         end
-                        io.puts "<td><button data-event-key='#{event[:key]}' data-key='#{entry[:key]}' class='btn #{booked_out ? 'btn-outline-secondary' : 'btn-outline-success'} bu-book-public-event' #{booked_out ? 'disabled': ''}>#{entry[:description]}</button><div style='display: none;' class='booking-text'>#{text}</div></td>"
+                        io.puts "<td><button data-event-key='#{event[:key]}' data-key='#{entry[:key]}' class='btn #{booked_out ? 'btn-outline-secondary' : 'btn-info'} bu-book-public-event' #{booked_out ? 'disabled': ''}>#{entry[:description]}</button><div style='display: none;' class='booking-text'>#{text}</div></td>"
                     end
                     io.puts "</tr>"
                 end

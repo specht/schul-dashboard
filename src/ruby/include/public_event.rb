@@ -107,6 +107,7 @@ class Main < Sinatra::Base
         require_user_who_can_manage_news!
         self.class.refresh_public_event_config()
         StringIO.open do |io|
+            description_for_key_and_key = {}
             @@public_event_config.each.with_index do |event, event_index|
                 if event_index > 0
                     io.puts "<hr />"
@@ -123,7 +124,7 @@ class Main < Sinatra::Base
                 io.puts "<colgroup>"
                 io.puts "<col style='width: 180px;'/>"
                 colspan.times do
-                    io.puts "<col style='width: calc((100% - 180px) / #{colspan});'/>"
+                    io.puts "<col style='min-width: 200px;'/>"
                 end
                 io.puts "</colgroup>"
                 if event[:headings]
@@ -139,11 +140,36 @@ class Main < Sinatra::Base
                     io.puts "<tr>"
                     io.puts "<th>#{row[:description]}</th>"
                     row[:entries].each do |entry|
+                        description_for_key_and_key[event[:key]] ||= {}
+                        description_for_key_and_key[event[:key]][entry[:key]] ||= entry[:description]
                         capacity = entry[:capacity] || 0
                         booked_count = (sign_ups[entry[:key]] || []).size
                         io.puts "<td><div style='display: flex; justify-content: space-between;'><div>#{entry[:description]}</div><div>(#{booked_count}/#{capacity})</div></div><div class='progress'><div class='progress-bar progress-bar-striped' role='progressbar' style='width: #{booked_count * 100 / capacity}%;'>#{(booked_count * 100 / capacity).to_i}%</div></div></td>"
                     end
                     io.puts "</tr>"
+                end
+                io.puts "</tbody>"
+                io.puts "</table>"
+                io.puts "</div>"
+            end
+            @@public_event_config.each.with_index do |event, event_index|
+                sign_ups = get_sign_ups_for_public_event(event[:key])
+                next if sign_ups.empty?
+                io.puts "<hr />"
+                io.puts "<h4>#{event[:title]}</h4>"
+                io.puts "<div class='table-responsive' style='max-width: 100%; overflow-x: auto;' data-event-key='#{event[:key]}'>"
+                io.puts "<table style='table-layout: fixed;' class='table table-narrow narrow'>"
+                io.puts "<tr><th>E-Mail</th><th>Name</th><th>Track</th><th></th></tr>"
+                io.puts "<tbody>"
+                sign_ups.keys.sort.each do |key|
+                    sign_ups[key].each do |entry|
+                        io.puts "<tr>"
+                        io.puts "<td>#{entry[:email]}</td>"
+                        io.puts "<td>#{entry[:name]}</td>"
+                        io.puts "<td>#{description_for_key_and_key[event[:key]][key]}</td>"
+                        io.puts "<td><button class='btn btn-xs btn-danger bu-delete-signup' data-tag='#{entry[:tag]}'><i class='fa fa-trash'></i>&nbsp;&nbsp;Löschen</button></td>"
+                        io.puts "</tr>"
+                    end
                 end
                 io.puts "</tbody>"
                 io.puts "</table>"

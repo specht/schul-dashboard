@@ -907,6 +907,8 @@ class Main < Sinatra::Base
                     (lesson[:fach] == 'SpoJ' && user[:geschlecht] != 'm')
                 end
             end
+            lessons += wahlpflicht_sus_for_lesson_key.keys
+            lessons.uniq!
             unless user[:teacher]
                 lessons.each do |lesson_key|
                     if wahlpflicht_sus_for_lesson_key.include?(lesson_key)
@@ -919,6 +921,8 @@ class Main < Sinatra::Base
                 end
             end
         end
+        debug @@schueler_for_lesson['En_9c'].to_yaml
+        debug @@lessons_for_user['veronika.afanasieva@mail.gymnasiumsteglitz.de'].to_yaml
         @@schueler_for_lesson.each_pair do |lesson_key, emails|
             @@schueler_offset_in_lesson[lesson_key] ||= {}
             emails.sort! do |a, b|

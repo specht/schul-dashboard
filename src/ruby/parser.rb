@@ -956,6 +956,7 @@ class Parser
             debug '-' * 50
             # raise
         end
+        debug schueler_for_lesson_key['En_9c'].to_yaml
         unless unassigned_names.empty?
             debug "Kurswahl: Can't assign these names!"
             debug unassigned_names.to_a.sort.to_yaml

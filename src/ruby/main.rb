@@ -921,8 +921,6 @@ class Main < Sinatra::Base
                 end
             end
         end
-        debug @@schueler_for_lesson['En_9c'].to_yaml
-        debug @@lessons_for_user['veronika.afanasieva@mail.gymnasiumsteglitz.de'].to_yaml
         @@schueler_for_lesson.each_pair do |lesson_key, emails|
             @@schueler_offset_in_lesson[lesson_key] ||= {}
             emails.sort! do |a, b|

@@ -1534,11 +1534,20 @@ class Timetable
                         # if it's a schüler, only add events which have the right klasse
                         # (unless it's a phantom event)
                         fixed_events.reject! do |event|
-                            if event[:lesson] && (!event[:phantom_event]) && (!event[:pausenaufsicht])
+                            flag = if event[:lesson] && (!event[:phantom_event]) && (!event[:pausenaufsicht])
                                 !((event[:klassen].first).include?(user[:klasse]) || (event[:klassen].last).include?(user[:klasse]))
                             else
                                 false
                             end
+                            if flag
+                                if event[:lesson] && @@lessons_for_user[email].include?(event[:lesson_key])
+                                    flag = false
+                                end
+                            end
+                            # if flag
+                                # debug "Reject (klasse) :#{event.to_json}"
+                            # end
+                            flag
                         end
                         # also delete Kurs events for SuS who are not participating in that kurs
                         # (unless it's a phantom event)

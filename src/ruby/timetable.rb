@@ -1540,7 +1540,7 @@ class Timetable
                                 false
                             end
                             if flag
-                                if event[:lesson] && @@lessons_for_user[email].include?(event[:lesson_key])
+                                if event[:lesson] && (@@lessons_for_user[email] || {}).include?(event[:lesson_key])
                                     flag = false
                                 end
                             end

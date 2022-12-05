@@ -259,6 +259,7 @@ function duration_to_str(duration) {
 }
 
 function create_audio_player(from, tag, duration) {
+    let url = '/raw/uploads/audio_comment/' + tag.substr(0, 2) + '/' + tag.substr(2, tag.length - 2) + '.mp3';
     let player = $('<div>').addClass('audio-player');
     let top = $('<div>').addClass('player-top').appendTo(player);
     let icon = $('<i>').addClass('fa').addClass('fa-play');
@@ -267,12 +268,13 @@ function create_audio_player(from, tag, duration) {
     top.append(play_button);
     let seek = $('<div>').addClass('player-seek').appendTo(player);
     let progress = $('<div>').addClass('player-progress').appendTo(seek);
+    top.append(' ');
+    top.append($('<a>').attr('href', url).attr('target', '_blank').addClass('btn btn-secondary btn-xs').html("<i class='fa fa-download'></i>&nbsp;&nbsp;mp3"));
     top.append(play_button);
     let indicator_container = $('<div>').addClass('player-indicator-container').appendTo(progress);
     let indicator = $('<div>').addClass('player-indicator').appendTo(indicator_container);
     indicator.css('left', '0%');
     let duration_div = $('<div>').addClass('player-duration').html(duration_to_str(duration)).appendTo(player);
-    let url = '/raw/uploads/audio_comment/' + tag.substr(0, 2) + '/' + tag.substr(2, tag.length - 2) + '.mp3';
     (function (url, duration, button, icon, indicator, duration_div, seek) {
         function activate() {
             if (pb_url !== url) {

@@ -302,6 +302,7 @@ function create_audio_player(from, tag, duration) {
         button.click(function (e) {
             if (url == pb_url) {
                 if (!pb_playing) {
+                    pb_want_to_play = true;
                     activate();
                     pb_audio.play();
                 } else {
@@ -311,8 +312,9 @@ function create_audio_player(from, tag, duration) {
                 pb_audio.pause();
                 pb_audio.currentTime = 0;
                 setTimeout(function () {
+                    pb_want_to_play = true;
                     activate();
-                    pb_audio.play();
+                    // pb_audio.play();
                 }, 0);
             }
         });
@@ -320,6 +322,7 @@ function create_audio_player(from, tag, duration) {
     if (pb_audio === null) {
         pb_audio = document.createElement('audio');
         pb_audio.controls = false;
+        pb_audio.loop = false;
         pb_audio.addEventListener('play', function (e) {
             pb_playing = true;
             pb_widget.icon.removeClass('fa-play').addClass('fa-pause');
@@ -329,6 +332,8 @@ function create_audio_player(from, tag, duration) {
             pb_widget.indicator.css('left', '0%');
             pb_widget.button.find('.fa').removeClass('fa-pause').addClass('fa-play');
             pb_widget.duration_div.html(duration_to_str(pb_duration));
+            pb_playing = false;
+            pb_want_to_play = false;
         });
         pb_audio.addEventListener('pause', function () {
             pb_playing = false;
@@ -338,6 +343,13 @@ function create_audio_player(from, tag, duration) {
             pb_widget.indicator.css('left', '' + (100.0 * pb_audio.currentTime / pb_duration) + '%');
             if (pb_audio.currentTime > 0)
                 pb_widget.duration_div.html(duration_to_str(pb_audio.currentTime));
+        });
+        pb_audio.addEventListener('canplay', function(e) {
+            console.log('canplay!');
+            if (pb_want_to_play) {
+                pb_want_to_play = false;
+                pb_audio.play();
+            }
         });
     }
     return player;

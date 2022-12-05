@@ -242,7 +242,7 @@ if DEVELOPMENT
     docker_compose[:services][:invitation_bot][:ports] = ['127.0.0.1:8023:8080']
 else
     docker_compose[:services].values.each do |x|
-        x[:restart] = :always
+        x[:restart] = :always unless x == 'ruby2'
     end
 end
 

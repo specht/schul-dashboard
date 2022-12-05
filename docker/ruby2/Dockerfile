@@ -9,3 +9,4 @@ ADD Gemfile /
 RUN bundle install
 RUN adduser -D -u 1000 dashboard
 USER dashboard
+CMD ['bash']

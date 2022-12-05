@@ -283,6 +283,7 @@ function create_audio_player(from, tag, duration) {
                 pb_duration = duration;
                 pb_url = url;
                 pb_audio.src = url;
+                console.log(`Setting pb_audio.src to ${url}`);
             }
         }
 

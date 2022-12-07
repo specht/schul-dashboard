@@ -125,6 +125,8 @@ class Main < Sinatra::Base
     #  8. Aztec Code
     #  9. Image metadata
     # 10. Image steganography (palette / LSB)
+    # 11. Timing attack
+    # 12. Reverse speech
 
     CYPHER_LANGUAGES = %w(Ada Algol awk Bash Basic Cobol dBase Delphi Erlang Fortran
         Go Haskell Java Lisp Logo Lua MASM Modula Oberon Pascal Perl PHP
@@ -204,6 +206,11 @@ class Main < Sinatra::Base
             tag = Digest::SHA1.hexdigest("#{lang.downcase}-cypher").to_i(16).to_s(36)[0, 4]
             @cypher_next_password = lang
             @cypher_token = tag
+        elsif @cypher_level == 7
+            pin = (0..3).map { |x| rand(10).to_s }.join('')
+            tag = "PIN checked in 967 ns"
+            @cypher_next_password = pin
+            @cypher_token = tag
         end
     end
 
@@ -246,14 +253,21 @@ class Main < Sinatra::Base
                     u.failed_cypher_tries = 0;
                 END_OF_QUERY
             else
-                result = neo4j_query(<<~END_OF_QUERY, {:email => @session_user[:email]})
-                    MATCH (u:User {email: $email})
-                    SET u.failed_cypher_tries = COALESCE(u.failed_cypher_tries, 0) + 1;
-                END_OF_QUERY
-                if tries_left <= 1
+                if @cypher_level != 7
                     result = neo4j_query(<<~END_OF_QUERY, {:email => @session_user[:email]})
                         MATCH (u:User {email: $email})
-                        SET u.cypher_level = 0, u.failed_cypher_tries = 0, u.cypher_name = '';
+                        SET u.failed_cypher_tries = COALESCE(u.failed_cypher_tries, 0) + 1;
+                    END_OF_QUERY
+                    if tries_left <= 1
+                        result = neo4j_query(<<~END_OF_QUERY, {:email => @session_user[:email]})
+                            MATCH (u:User {email: $email})
+                            SET u.cypher_level = 0, u.failed_cypher_tries = 0, u.cypher_name = '';
+                        END_OF_QUERY
+                    end
+                else
+                    result = neo4j_query(<<~END_OF_QUERY, {:email => @session_user[:email]})
+                        MATCH (u:User {email: $email})
+                        SET u.failed_cypher_tries = 0;
                     END_OF_QUERY
                 end
             end

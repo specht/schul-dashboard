@@ -44,6 +44,11 @@ class Main < Sinatra::Base
         technikteam_logged_in? || teacher_logged_in?
     end
     
+    # Returns true if a user who can manage tablets or TechnikTeam-user or teacher is logged in.
+    def user_who_can_manage_tablets_or_technikteam_or_teacher_logged_in?
+        user_who_can_manage_tablets_logged_in? || technikteam_logged_in? || teacher_logged_in?
+    end
+    
     # Returns true if a user who can manage Antikenfahrt is logged in.
     def user_who_can_manage_antikenfahrt_logged_in?
         user_logged_in? && @session_user[:can_manage_antikenfahrt]
@@ -224,6 +229,11 @@ class Main < Sinatra::Base
     # Assert that TechnikTeam-user or teacher is logged in
     def require_technikteam_or_teacher!
         assert(technikteam_or_teacher_logged_in?)
+    end
+    
+    # Assert that TechnikTeam-user or teacher is logged in
+    def require_user_who_can_manage_tablets_or_technikteam_or_teacher!
+        assert(user_who_can_manage_tablets_or_technikteam_or_teacher_logged_in?)
     end
     
     # Assert that a user who can manage tablets is logged in

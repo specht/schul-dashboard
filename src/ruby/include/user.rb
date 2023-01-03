@@ -3,7 +3,7 @@ class Main < Sinatra::Base
     def user_logged_in?
         !@session_user.nil?
     end
-
+    
     # Returns true if a user who can upload vplan is logged in.
     def user_who_can_upload_vplan_logged_in?
         user_logged_in? && @session_user[:can_upload_vplan]
@@ -34,6 +34,16 @@ class Main < Sinatra::Base
         user_who_can_manage_tablets_logged_in? || teacher_logged_in?
     end
 
+    # Returns true if TechnikTeam-user is logged in.
+    def technikteam_logged_in?
+        user_logged_in? && @session_user[:technikteam]
+    end
+    
+    # Returns true if TechnikTeam-user or teacher is logged in.
+    def technikteam_or_teacher_logged_in?
+        technikteam_logged_in? || teacher_logged_in?
+    end
+    
     # Returns true if a user who can manage Antikenfahrt is logged in.
     def user_who_can_manage_antikenfahrt_logged_in?
         user_logged_in? && @session_user[:can_manage_antikenfahrt]
@@ -206,11 +216,25 @@ class Main < Sinatra::Base
         assert(user_who_can_manage_monitors_logged_in?)
     end
 
+    # Assert that TechnikTeam-user is logged in
+    def require_technikteam!
+        assert(technikteam_logged_in?)
+    end
+
+    # Assert that TechnikTeam-user or teacher is logged in
+    def require_technikteam_or_teacher!
+        assert(technikteam_or_teacher_logged_in?)
+    end
+    
     # Assert that a user who can manage tablets is logged in
     def require_user_who_can_manage_tablets!
         assert(user_who_can_manage_tablets_logged_in?)
     end
 
+    # Assert that a user who can manage tablets is logged in
+    def require_user_who_can_manage_tablets!
+        assert(user_who_can_manage_tablets_logged_in?)
+    end
     def require_user_who_can_manage_tablets_or_teacher!
         assert(user_who_can_manage_tablets_or_teacher_logged_in?)
     end

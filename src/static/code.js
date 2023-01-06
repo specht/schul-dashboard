@@ -259,6 +259,7 @@ function duration_to_str(duration) {
 }
 
 function create_audio_player(from, tag, duration) {
+    let url = '/raw/uploads/audio_comment/' + tag.substr(0, 2) + '/' + tag.substr(2, tag.length - 2) + '.mp3';
     let player = $('<div>').addClass('audio-player');
     let top = $('<div>').addClass('player-top').appendTo(player);
     let icon = $('<i>').addClass('fa').addClass('fa-play');
@@ -267,12 +268,13 @@ function create_audio_player(from, tag, duration) {
     top.append(play_button);
     let seek = $('<div>').addClass('player-seek').appendTo(player);
     let progress = $('<div>').addClass('player-progress').appendTo(seek);
+    top.append(' ');
+    top.append($('<a>').attr('href', url).attr('target', '_blank').addClass('btn btn-secondary btn-xs').html("<i class='fa fa-download'></i>&nbsp;&nbsp;mp3"));
     top.append(play_button);
     let indicator_container = $('<div>').addClass('player-indicator-container').appendTo(progress);
     let indicator = $('<div>').addClass('player-indicator').appendTo(indicator_container);
     indicator.css('left', '0%');
     let duration_div = $('<div>').addClass('player-duration').html(duration_to_str(duration)).appendTo(player);
-    let url = '/raw/uploads/audio_comment/' + tag.substr(0, 2) + '/' + tag.substr(2, tag.length - 2) + '.mp3';
     (function (url, duration, button, icon, indicator, duration_div, seek) {
         function activate() {
             if (pb_url !== url) {
@@ -283,6 +285,7 @@ function create_audio_player(from, tag, duration) {
                 pb_duration = duration;
                 pb_url = url;
                 pb_audio.src = url;
+                console.log(`Setting pb_audio.src to ${url}`);
             }
         }
 
@@ -301,6 +304,7 @@ function create_audio_player(from, tag, duration) {
         button.click(function (e) {
             if (url == pb_url) {
                 if (!pb_playing) {
+                    pb_want_to_play = true;
                     activate();
                     pb_audio.play();
                 } else {
@@ -310,8 +314,9 @@ function create_audio_player(from, tag, duration) {
                 pb_audio.pause();
                 pb_audio.currentTime = 0;
                 setTimeout(function () {
+                    pb_want_to_play = true;
                     activate();
-                    pb_audio.play();
+                    // pb_audio.play();
                 }, 0);
             }
         });
@@ -319,6 +324,7 @@ function create_audio_player(from, tag, duration) {
     if (pb_audio === null) {
         pb_audio = document.createElement('audio');
         pb_audio.controls = false;
+        pb_audio.loop = false;
         pb_audio.addEventListener('play', function (e) {
             pb_playing = true;
             pb_widget.icon.removeClass('fa-play').addClass('fa-pause');
@@ -328,6 +334,8 @@ function create_audio_player(from, tag, duration) {
             pb_widget.indicator.css('left', '0%');
             pb_widget.button.find('.fa').removeClass('fa-pause').addClass('fa-play');
             pb_widget.duration_div.html(duration_to_str(pb_duration));
+            pb_playing = false;
+            pb_want_to_play = false;
         });
         pb_audio.addEventListener('pause', function () {
             pb_playing = false;
@@ -337,6 +345,13 @@ function create_audio_player(from, tag, duration) {
             pb_widget.indicator.css('left', '' + (100.0 * pb_audio.currentTime / pb_duration) + '%');
             if (pb_audio.currentTime > 0)
                 pb_widget.duration_div.html(duration_to_str(pb_audio.currentTime));
+        });
+        pb_audio.addEventListener('canplay', function(e) {
+            console.log('canplay!');
+            if (pb_want_to_play) {
+                pb_want_to_play = false;
+                pb_audio.play();
+            }
         });
     }
     return player;

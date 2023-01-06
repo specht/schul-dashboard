@@ -25,11 +25,14 @@ class Main < Sinatra::Base
         tag = RandomTag.to_base31(('f' + Digest::SHA1.hexdigest(blob)).to_i(16))[0, 16]
         id = RandomTag.generate(12)
         FileUtils.mkpath("/raw/uploads/audio_comment/#{tag[0, 2]}")
+        temp_target_path = "/raw/uploads/audio_comment/#{tag[0, 2]}/#{tag[2, tag.size - 2]}.temp.mp3"
+        FileUtils::mv(entry['tempfile'].path, temp_target_path)
+        FileUtils::chmod('a+r', temp_target_path)
         target_path = "/raw/uploads/audio_comment/#{tag[0, 2]}/#{tag[2, tag.size - 2]}.mp3"
-        FileUtils::mv(entry['tempfile'].path, target_path)
+        system("ffmpeg -i \"#{temp_target_path}\" \"#{target_path}\"")
         FileUtils::chmod('a+r', target_path)
         old_tag = nil
-        transaction do 
+        transaction do
             timestamp = Time.now.to_i
             results = neo4j_query(<<~END_OF_QUERY, :session_email => @session_user[:email], :key => lesson_key, :offset => lesson_offset, :schueler => schueler, :audio_comment_tag => tag, :duration => duration, :timestamp => timestamp, :id => id)
                 MATCH (u:User {email: $schueler})

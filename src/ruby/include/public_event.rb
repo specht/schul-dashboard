@@ -148,7 +148,7 @@ class Main < Sinatra::Base
                         if capacity != 0
                             percent = booked_count * 100 / capacity
                         end
-                        io.puts "<td><div style='display: flex; justify-content: space-between;'><div>#{entry[:description]}</div><div>(#{booked_count}/#{capacity})</div></div><div class='progress'><div class='progress-bar progress-bar-striped' role='progressbar' style='width: #{booked_count * 100 / capacity}%;'>#{(percent).to_i}%</div></div></td>"
+                        io.puts "<td><div style='display: flex; justify-content: space-between;'><div>#{entry[:description]}</div><div>(#{booked_count}/#{capacity})</div></div><div class='progress'><div class='progress-bar progress-bar-striped' role='progressbar' style='width: #{percent}%;'>#{(percent).to_i}%</div></div></td>"
                     end
                     io.puts "</tr>"
                 end

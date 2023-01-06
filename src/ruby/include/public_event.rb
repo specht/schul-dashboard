@@ -195,70 +195,158 @@ class Main < Sinatra::Base
                     io.puts event[:description]
                 end
                 sign_ups = get_sign_ups_for_public_event(event[:key])
-                io.puts "<div class='table-responsive' style='max-width: 100%; overflow-x: auto;' data-event-key='#{event[:key]}'>"
-                io.puts "<div style='display: none;' class='event-title'>#{event[:title]}</div>"
-                io.puts "<table class='table table-narrow narrow'>"
-                colspan = event[:rows].map { |x| x[:entries].size }.max
-                io.puts "<colgroup>"
-                io.puts "<col style='width: 180px;'/>"
-                colspan.times do
-                    io.puts "<col style='width: auto;'/>"
-                end
-                io.puts "</colgroup>"
-                io.puts "<tbody>"
-                if event[:headings]
-                    io.puts "<tr>"
-                    io.puts "<th>#{event[:headings][0]}</th>"
-                    io.puts "<th colspan='#{colspan}'>#{event[:headings][1]}</th>"
-                    io.puts "</tr>"
-                end
-                event[:rows].each do |row|
-                    io.puts "<tr>"
-                    io.puts "<th>#{row[:description]}</th>"
-                    row[:entries].each do |entry|
-                        text = (event[:booking_text] || '').dup
-                        while true
-                            index = text.index('{')
-                            break if index.nil?
-                            length = 1
-                            balance = 1
-                            while index + length < text.size && balance > 0
-                                c = text[index + length]
-                                balance -= 1 if c == '}'
-                                balance += 1 if c == '{'
-                                length += 1
-                            end
-                            code = text[index + 1, length - 2]
-                            begin
-                                text[index, length] = eval(code).to_s || ''
-                            rescue
-                                debug "Error while evaluating for #{(@session_user || {})[:email]}:"
-                                debug code
-                                raise
-                            end
-                        end
-                        booked_out = false
-                        if (sign_ups[entry[:key]] || []).size >= (entry[:capacity] || 0)
-                            booked_out = true
-                        end
-                        io.puts "<td><button data-event-key='#{event[:key]}' data-key='#{entry[:key]}' class='btn #{booked_out ? 'btn-outline-secondary' : 'btn-info'} bu-book-public-event' #{booked_out ? 'disabled': ''}>#{entry[:description]}</button><div style='display: none;' class='booking-text'>#{text}</div></td>"
+                if event[:auto_rows]
+                    io.puts "<div class='table-responsive' style='max-width: 100%; overflow-x: auto;' data-event-key='#{event[:key]}'>"
+                    io.puts "<div style='display: none;' class='event-title'>#{event[:title]}</div>"
+                    io.puts "<table class='table table-narrow narrow th-middle'>"
+                    colspan = 1
+                    io.puts "<colgroup>"
+                    io.puts "<col style='width: 180px;'/>"
+                    colspan.times do
+                        io.puts "<col style='width: auto;'/>"
                     end
-                    io.puts "</tr>"
+                    io.puts "</colgroup>"
+                    io.puts "<tbody>"
+                    if event[:headings]
+                        io.puts "<tr>"
+                        io.puts "<th>#{event[:headings][0]}</th>"
+                        io.puts "<th colspan='#{colspan}'>#{event[:headings][1]}</th>"
+                        io.puts "</tr>"
+                    end
+                    event[:rows].each do |row|
+                        io.puts "<tr>"
+                        io.puts "<th>#{row[:description]}</th>"
+                        io.puts "<td>"
+                        row[:entries].each do |entry|
+                            text = (event[:booking_text] || '').dup
+                            while true
+                                index = text.index('{')
+                                break if index.nil?
+                                length = 1
+                                balance = 1
+                                while index + length < text.size && balance > 0
+                                    c = text[index + length]
+                                    balance -= 1 if c == '}'
+                                    balance += 1 if c == '{'
+                                    length += 1
+                                end
+                                code = text[index + 1, length - 2]
+                                begin
+                                    text[index, length] = eval(code).to_s || ''
+                                rescue
+                                    debug "Error while evaluating for #{(@session_user || {})[:email]}:"
+                                    debug code
+                                    raise
+                                end
+                            end
+                            booked_out = false
+                            if (sign_ups[entry[:key]] || []).size >= (entry[:capacity] || 0)
+                                booked_out = true
+                            end
+                            io.puts "<button data-event-key='#{event[:key]}' data-key='#{entry[:key]}' class='btn #{booked_out ? 'btn-outline-secondary' : 'btn-info'} bu-book-public-event' #{booked_out ? 'disabled': ''}>#{entry[:description]}</button><div style='display: none;' class='booking-text'>#{text}</div>"
+                        end
+                        io.puts "</td>"
+                        io.puts "</tr>"
+                    end
+                    io.puts "</tbody>"
+                    io.puts "</table>"
+                    io.puts "</div>"
+                else
+                    io.puts "<div class='table-responsive' style='max-width: 100%; overflow-x: auto;' data-event-key='#{event[:key]}'>"
+                    io.puts "<div style='display: none;' class='event-title'>#{event[:title]}</div>"
+                    io.puts "<table class='table table-narrow narrow th-middle'>"
+                    colspan = event[:rows].map { |x| x[:entries].size }.max
+                    io.puts "<colgroup>"
+                    io.puts "<col style='width: 180px;'/>"
+                    colspan.times do
+                        io.puts "<col style='width: auto;'/>"
+                    end
+                    io.puts "</colgroup>"
+                    io.puts "<tbody>"
+                    if event[:headings]
+                        io.puts "<tr>"
+                        io.puts "<th>#{event[:headings][0]}</th>"
+                        io.puts "<th colspan='#{colspan}'>#{event[:headings][1]}</th>"
+                        io.puts "</tr>"
+                    end
+                    event[:rows].each do |row|
+                        io.puts "<tr>"
+                        io.puts "<th>#{row[:description]}</th>"
+                        row[:entries].each do |entry|
+                            text = (event[:booking_text] || '').dup
+                            while true
+                                index = text.index('{')
+                                break if index.nil?
+                                length = 1
+                                balance = 1
+                                while index + length < text.size && balance > 0
+                                    c = text[index + length]
+                                    balance -= 1 if c == '}'
+                                    balance += 1 if c == '{'
+                                    length += 1
+                                end
+                                code = text[index + 1, length - 2]
+                                begin
+                                    text[index, length] = eval(code).to_s || ''
+                                rescue
+                                    debug "Error while evaluating for #{(@session_user || {})[:email]}:"
+                                    debug code
+                                    raise
+                                end
+                            end
+                            booked_out = false
+                            if (sign_ups[entry[:key]] || []).size >= (entry[:capacity] || 0)
+                                booked_out = true
+                            end
+                            io.puts "<td><button data-event-key='#{event[:key]}' data-key='#{entry[:key]}' class='btn #{booked_out ? 'btn-outline-secondary' : 'btn-info'} bu-book-public-event' #{booked_out ? 'disabled': ''}>#{entry[:description]}</button><div style='display: none;' class='booking-text'>#{text}</div></td>"
+                        end
+                        io.puts "</tr>"
+                    end
+                    io.puts "</tbody>"
+                    io.puts "</table>"
+                    io.puts "</div>"
                 end
-                io.puts "</tbody>"
-                io.puts "</table>"
-                io.puts "</div>"
             end
             io.string
+        end
+    end
+
+    def self.fix_public_event_config
+        debug "Fixing public event config!"
+        @@public_event_config.map! do |entry|
+            if entry[:auto_rows]
+                rows = []
+                entry[:auto_rows].each do |auto_entry|
+                    row = {}
+                    day = Date.parse(auto_entry[:day])
+                    row[:description] = "#{%w(So Mo Di Mi Do Fr Sa)[day.wday]}., #{day.strftime("%d.%m.%Y")}"
+                    row[:entries] = []
+                    auto_entry[:spans].each do |span|
+                        t = Time.parse("#{auto_entry[:day]}T#{span[0]}")
+                        while t <= Time.parse("#{auto_entry[:day]}T#{span[1]}")
+                            row[:entries] << {
+                                :key => "#{t.strftime("%Y-%m-%dT%H:%M")}",
+                                :description => "#{t.strftime("%H:%M")} Uhr",
+                                :capacity => 1,
+                            }
+                            t += auto_entry[:duration] * 60
+                        end
+                    end
+                    rows << row
+                end
+                entry[:rows] = rows
+            end
+            entry
         end
     end
 
     def self.refresh_public_event_config()
         @@public_event_config_timestamp ||= 0
         path = '/data/public_events/public_events.yaml'
-        if @@public_event_config_timestamp < File.mtime(path).to_i
+        if DEVELOPMENT || @@public_event_config_timestamp < File.mtime(path).to_i
             debug "Reloading public event config from #{path}!"
             @@public_event_config = YAML.load(File.read(path))
+            self.fix_public_event_config()
             @@public_event_config_timestamp = File.mtime(path).to_i
         end
     end

@@ -144,7 +144,11 @@ class Main < Sinatra::Base
                         description_for_key_and_key[event[:key]][entry[:key]] ||= entry[:description]
                         capacity = entry[:capacity] || 0
                         booked_count = (sign_ups[entry[:key]] || []).size
-                        io.puts "<td><div style='display: flex; justify-content: space-between;'><div>#{entry[:description]}</div><div>(#{booked_count}/#{capacity})</div></div><div class='progress'><div class='progress-bar progress-bar-striped' role='progressbar' style='width: #{booked_count * 100 / capacity}%;'>#{(booked_count * 100 / capacity).to_i}%</div></div></td>"
+                        percent = 0
+                        if capacity != 0
+                            percent = booked_count * 100 / capacity
+                        end
+                        io.puts "<td><div style='display: flex; justify-content: space-between;'><div>#{entry[:description]}</div><div>(#{booked_count}/#{capacity})</div></div><div class='progress'><div class='progress-bar progress-bar-striped' role='progressbar' style='width: #{booked_count * 100 / capacity}%;'>#{(percent).to_i}%</div></div></td>"
                     end
                     io.puts "</tr>"
                 end

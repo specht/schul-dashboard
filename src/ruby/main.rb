@@ -700,6 +700,10 @@ class Main < Sinatra::Base
             next unless @@user_info[email]
             @@user_info[email][:can_manage_tablets] = true
         end
+        (TECHNIKTEAM_USERS + ADMIN_USERS).each do |email|
+            next unless @@user_info[email]
+            @@user_info[email][:technikteam] = true
+        end
         (CAN_MANAGE_ANTIKENFAHRT_USERS + ADMIN_USERS).each do |email|
             next unless @@user_info[email]
             @@user_info[email][:can_manage_antikenfahrt] = true

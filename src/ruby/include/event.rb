@@ -1,6 +1,6 @@
 class Main < Sinatra::Base
     post '/api/save_event' do
-        require_teacher!
+        require_teacher_or_technikteam!
         data = parse_request_data(:required_keys => [:title, :jitsi, :date, :start_time,
                                                      :end_time, :recipients, :description],
                                   :types => {:recipients => Array},

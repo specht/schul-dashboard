@@ -1618,7 +1618,7 @@ class Main < Sinatra::Base
                 #     nav_items << :monitor
                 # end
                 nav_items << :messages
-                if admin_logged_in? || user_who_can_upload_files_logged_in? || user_who_can_manage_news_logged_in? || user_who_can_manage_monitors_logged_in? || user_who_can_manage_tablets_logged_in?
+                if admin_logged_in? || user_who_can_upload_files_logged_in? || user_who_can_manage_news_logged_in? || user_who_can_manage_monitors_logged_in? || user_who_can_manage_tablets_logged_in? || technikteam_logged_in?
                     nav_items << :admin
                 end
                 # nav_items << :advent_calendar #if advents_calendar_date_today > 0
@@ -1676,6 +1676,14 @@ class Main < Sinatra::Base
                     end
                     if user_who_can_manage_tablets_logged_in?
                         io.puts "<a class='dropdown-item nav-icon' href='/bookings'><div class='icon'><i class='fa fa-tablet'></i></div><span class='label'>Tablets</span></a>"
+                    end
+                    if technikteam_logged_in?
+                        io.puts "<a class='dropdown-item nav-icon' href='/bookings'><div class='icon'><i class='fa fa-tablet'></i></div><span class='label'>Tablets</span></a>"
+                        io.puts "<a class='dropdown-item nav-icon' href='/polls'><div class='icon'><i class='fa fa-bar-chart'></i></div><span class='label'>Umfragen</span></a>"
+                        io.puts "<a class='dropdown-item nav-icon' href='/prepare_vote'><div class='icon'><i class='fa fa-hand-paper-o'></i></div><span class='label'>Abstimmungen</span></a>"
+                        io.puts "<a class='dropdown-item nav-icon' href='/mailing_lists'><div class='icon'><i class='fa fa-envelope'></i></div><span class='label'>E-Mail-Verteiler</span></a>"
+                        io.puts "<a class='dropdown-item nav-icon' href='/groups'><div class='icon'><i class='fa fa-group'></i></div><span class='label'>Gruppen</span></a>"
+                        io.puts "<a class='dropdown-item nav-icon' href='/events'><div class='icon'><i class='fa fa-calendar-check-o'></i></div><span class='label'>Termine</span></a>"
                     end
                     if admin_logged_in?
                         io.puts "<div class='dropdown-divider'></div>"

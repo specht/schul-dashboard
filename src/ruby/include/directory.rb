@@ -31,6 +31,7 @@ class Main < Sinatra::Base
             io.puts "<th></th>"
             io.puts "<th>Name</th>"
             io.puts "<th>Vorname</th>"
+            io.puts "<th>Geburtsdatum</th>"
             io.puts "<th>Status</th>"
             if can_manage_salzh_logged_in?
                 io.puts "<th>Reguläre Testung</th>"
@@ -81,6 +82,7 @@ class Main < Sinatra::Base
                 end
                 io.puts "<td><div class='#{salzh_class}' style='#{salzh_style}'>#{record[:last_name]}</div></td>"
                 io.puts "<td><div class='#{salzh_class}' style='#{salzh_style}'>#{record[:first_name]}</div></td>"
+                io.puts "<td>#{Date.parse(record[:geburtstag]).strftime('%d.%m.%Y')}</td>"
                 salzh_label = ''
                 if salzh_status[email][:status]
                     salzh_label = "<span class='salzh-badge salzh-badge-big bg-#{SALZH_MODE_COLORS[(salzh_status[email] || {})[:status]]}'><i class='fa #{SALZH_MODE_ICONS[(salzh_status[email] || {})[:status]]}'></i></span>&nbsp;&nbsp;bis #{Date.parse(salzh_status[email][:status_end_date]).strftime('%d.%m.')}"

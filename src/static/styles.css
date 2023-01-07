@@ -2541,3 +2541,7 @@ table tr.has_hl.hl {
     background-color: #ffe617;
     transition: none;
 }
+
+table.th-middle th {
+    vertical-align: middle;
+}

@@ -91,8 +91,9 @@
         $('.bu-book-public-event').click(function (e) {
             $('#ti_name').val('');
             let td = $(e.target).closest('td');
-            entry_key = td.find('button').data('key');
-            $('#ti_booking_text').html(td.find('.booking-text').html());
+            let button = $(e.target).closest('button');
+            entry_key = button.data('key');
+            $('#ti_booking_text').html(button.next('.booking-text').html());
             let table_div = $(e.target).closest('.table-responsive');
             console.log(table_div.find('.event-title').html());
             event_key = table_div.data('event-key');

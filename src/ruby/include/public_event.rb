@@ -185,6 +185,7 @@ class Main < Sinatra::Base
 
     def print_public_event_table()
         self.class.refresh_public_event_config()
+        ts = Time.now.strftime("%Y-%m-%dT%H:%M")
         StringIO.open do |io|
             @@public_event_config.each.with_index do |event, event_index|
                 if event_index > 0
@@ -214,9 +215,7 @@ class Main < Sinatra::Base
                         io.puts "</tr>"
                     end
                     event[:rows].each do |row|
-                        io.puts "<tr>"
-                        io.puts "<th>#{row[:description]}</th>"
-                        io.puts "<td>"
+                        printed_row = false
                         row[:entries].each do |entry|
                             text = (event[:booking_text] || '').dup
                             while true
@@ -239,14 +238,25 @@ class Main < Sinatra::Base
                                     raise
                                 end
                             end
+                            if entry[:deadline]
+                                next if ts > entry[:deadline]
+                            end
                             booked_out = false
                             if (sign_ups[entry[:key]] || []).size >= (entry[:capacity] || 0)
                                 booked_out = true
                             end
-                            io.puts "<button data-event-key='#{event[:key]}' data-key='#{entry[:key]}' class='btn #{booked_out ? 'btn-outline-secondary' : 'btn-info'} bu-book-public-event' #{booked_out ? 'disabled': ''}>#{entry[:description]}</button><div style='display: none;' class='booking-text'>#{text}</div>"
+                            unless printed_row
+                                io.puts "<tr>"
+                                io.puts "<th>#{row[:description]}</th>"
+                                io.puts "<td>"
+                                printed_row = true
+                            end
+                            io.puts "<button data-event-key='#{event[:key]}' data-key='#{entry[:key]}' style='width: 5.3em;' class='btn #{booked_out ? 'btn-outline-secondary' : 'btn-info'} bu-book-public-event' #{booked_out ? 'disabled': ''}>#{entry[:description]}</button><div style='display: none;' class='booking-text'>#{text}</div>"
                         end
-                        io.puts "</td>"
-                        io.puts "</tr>"
+                        if printed_row
+                            io.puts "</td>"
+                            io.puts "</tr>"
+                        end
                     end
                     io.puts "</tbody>"
                     io.puts "</table>"
@@ -326,6 +336,7 @@ class Main < Sinatra::Base
                         while t <= Time.parse("#{auto_entry[:day]}T#{span[1]}")
                             row[:entries] << {
                                 :key => "#{t.strftime("%Y-%m-%dT%H:%M")}",
+                                :deadline => entry[:auto_rows_no_signup_deadline] ? "#{(t - entry[:auto_rows_no_signup_deadline] * 3600).strftime("%Y-%m-%dT%H:%M")}" : nil,
                                 :description => "#{t.strftime("%H:%M")} Uhr",
                                 :capacity => 1,
                             }

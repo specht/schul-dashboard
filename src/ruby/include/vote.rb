@@ -1,6 +1,6 @@
 class Main < Sinatra::Base
     post '/api/create_vote' do
-        require_teacher_or_sv!
+        require_technikteam_or_teacher_or_sv!
         data = parse_request_data(:required_keys => [:title, :date, :count],
                                   :types => {:count => Integer})
         possible_codes = (0..9999).to_a
@@ -29,7 +29,7 @@ class Main < Sinatra::Base
     end
     
     post '/api/get_votes' do
-        require_teacher_or_sv!
+        require_technikteam_or_teacher_or_sv!
         codes = neo4j_query(<<~END_OF_QUERY, :email => @session_user[:email]).map { |x| x['v.code'] }
             MATCH (v:Vote)-[:BELONGS_TO]->(:User {email: $email})
             RETURN v.code;
@@ -55,7 +55,7 @@ class Main < Sinatra::Base
     end
     
     post '/api/delete_vote' do
-        require_teacher_or_sv!
+        require_technikteam_or_teacher_or_sv!
         data = parse_request_data(:required_keys => [:code],
                                   :types => {:code => Integer})
         code = data[:code]
@@ -89,7 +89,7 @@ class Main < Sinatra::Base
     end
 
     get '/api/get_vote_pdf/*' do
-        require_teacher_or_sv!
+        require_technikteam_or_teacher_or_sv!
         code = request.path.sub('/api/get_vote_pdf/', '').to_i
         neo4j_query_expect_one(<<~END_OF_QUERY, :code => code, :email => @session_user[:email])
             MATCH (v:Vote {code: $code})-[:BELONGS_TO]->(u:User {email: $email})

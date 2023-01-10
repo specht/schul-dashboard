@@ -77,7 +77,7 @@ class Main < Sinatra::Base
     end
     
     post '/api/stop_poll_run' do
-        require_teacher_or_sv!
+        require_technikteam_or_teacher_or_sv!
         data = parse_request_data(:required_keys => [:prid])
         now_date = Date.today.strftime('%Y-%m-%d')
         now_time = (Time.now - 60).strftime('%H:%M')
@@ -159,7 +159,7 @@ class Main < Sinatra::Base
     end
     
     def get_poll_run_results(prid)
-        require_teacher_or_sv!
+        require_technikteam_or_teacher_or_sv!
         unless admin_logged_in?
             # make sure we have the right user unless an admin is logged in
             temp = neo4j_query_expect_one(<<~END_OF_QUERY, {:prid => prid, :email => @session_user[:email]})
@@ -402,7 +402,7 @@ class Main < Sinatra::Base
     end
     
     post '/api/get_poll_run_results' do
-        require_teacher_or_sv!
+        require_technikteam_or_teacher_or_sv!
         data = parse_request_data(:required_keys => [:prid])
         poll, poll_run, responses = get_poll_run_results(data[:prid])
         html = poll_run_results_to_html(poll, poll_run, responses)
@@ -410,7 +410,7 @@ class Main < Sinatra::Base
     end
     
     get '/api/poll_run_results_pdf/*' do
-        require_teacher_or_sv!
+        require_technikteam_or_teacher_or_sv!
         prid = request.path.sub('/api/poll_run_results_pdf/', '')
         poll, poll_run, responses = get_poll_run_results(prid)
         html = poll_run_results_to_html(poll, poll_run, responses, :pdf)
@@ -434,7 +434,7 @@ class Main < Sinatra::Base
     end
     
     get '/api/poll_run_results_zip/*' do
-        require_teacher_or_sv!
+        require_technikteam_or_teacher_or_sv!
         prid = request.path.sub('/api/poll_run_results_zip/', '')
         poll, poll_run, responses = get_poll_run_results(prid)
         
@@ -487,7 +487,7 @@ class Main < Sinatra::Base
     end
     
     get '/api/poll_run_results_xlsx/*' do
-        require_teacher_or_sv!
+        require_technikteam_or_teacher_or_sv!
         prid = request.path.sub('/api/poll_run_results_xlsx/', '')
         poll, poll_run, responses = get_poll_run_results(prid)
         file = Tempfile.new('foo')
@@ -568,7 +568,7 @@ class Main < Sinatra::Base
     end
 
     post '/api/save_poll' do
-        require_teacher_or_sv!
+        require_technikteam_or_teacher_or_sv!
         data = parse_request_data(:required_keys => [:title, :items],
                                   :max_body_length => 1024 * 1024,
                                   :max_string_length => 1024 * 1024)
@@ -591,7 +591,7 @@ class Main < Sinatra::Base
     end
 
     post '/api/update_poll' do
-        require_teacher_or_sv!
+        require_technikteam_or_teacher_or_sv!
         data = parse_request_data(:required_keys => [:pid, :title, :items],
                                   :types => {:recipients => Array},
                                   :max_body_length => 1024 * 1024,
@@ -617,7 +617,7 @@ class Main < Sinatra::Base
     end
     
     post '/api/delete_poll' do
-        require_teacher_or_sv!
+        require_technikteam_or_teacher_or_sv!
         data = parse_request_data(:required_keys => [:pid])
         id = data[:pid]
         transaction do 
@@ -633,7 +633,7 @@ class Main < Sinatra::Base
     end
     
     post '/api/save_poll_run' do
-        require_teacher_or_sv!
+        require_technikteam_or_teacher_or_sv!
         data = parse_request_data(:required_keys => [:pid, :anonymous,
                                                      :start_date, :start_time,
                                                      :end_date, :end_time, :recipients],
@@ -687,7 +687,7 @@ class Main < Sinatra::Base
     end
     
     post '/api/update_poll_run' do
-        require_teacher_or_sv!
+        require_technikteam_or_teacher_or_sv!
         data = parse_request_data(:required_keys => [:prid, :anonymous, :start_date, :start_time,
                                                      :end_date, :end_time, :recipients],
                                   :types => {:recipients => Array},
@@ -749,7 +749,7 @@ class Main < Sinatra::Base
     end
     
     post '/api/delete_poll_run' do
-        require_teacher_or_sv!
+        require_technikteam_or_teacher_or_sv!
         data = parse_request_data(:required_keys => [:prid])
         id = data[:prid]
         transaction do 
@@ -764,7 +764,7 @@ class Main < Sinatra::Base
     end
     
     post '/api/get_external_invitations_for_poll_run' do
-        require_teacher_or_sv!
+        require_technikteam_or_teacher_or_sv!
         data = parse_request_data(:optional_keys => [:prid])
         id = data[:prid]
         invitations = {}
@@ -837,7 +837,7 @@ class Main < Sinatra::Base
     end
     
     post '/api/invite_external_user_for_poll_run' do
-        require_teacher_or_sv!
+        require_technikteam_or_teacher_or_sv!
         data = parse_request_data(:required_keys => [:prid, :email])
         self.class.invite_external_user_for_poll_run(data[:prid], data[:email], @session_user[:email])
         respond({})

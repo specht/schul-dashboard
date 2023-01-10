@@ -3,7 +3,7 @@
     <div class='row'>
         <div class='col-md-8 offset-md-2'>
             <h2 style='margin-bottom: 30px;'>Nachrichten</h2>
-            <div style='display: #{teacher_or_sv_logged_in? ? 'block': 'none'}; position: relative;'>
+            <div style='display: #{technikteam_or_teacher_or_sv_logged_in? ? 'block': 'none'}; position: relative;'>
                 <div class='btn-group'>
                     <button id='bu-inbox' class='btn btn-primary'><i class='fa fa-inbox'></i>&nbsp;&nbsp;Posteingang</button>
                     <button id='bu-outbox' class='btn btn-outline-secondary'><i class='fa fa-inbox'></i>&nbsp;&nbsp;Postausgang</button>
@@ -528,7 +528,7 @@ document.addEventListener('DOMContentLoaded', function() {
                                 compose_message(to);
                             });
                         })(message.from_email);
-                        if ('#{teacher_logged_in?}' === 'true') {
+                        if ('#{technikteam_or_teacher_logged_in?}' === 'true') {
 //                             msg_buttons.append(toggle_mark_read_button);
                             msg_buttons.append(reply_button);
                         }
@@ -547,7 +547,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     };
     oReq.send();
-    if ('#{teacher_or_sv_logged_in?}' === 'true') {
+    if ('#{technikteam_or_teacher_or_sv_logged_in?}' === 'true') {
         load_recipients('#{@session_user[:id]}', function() {
             update_sent_messages();
         });

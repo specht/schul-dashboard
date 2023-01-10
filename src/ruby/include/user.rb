@@ -241,7 +241,7 @@ class Main < Sinatra::Base
     end
     
     # Assert that TechnikTeam-user or teacher or SV is logged in
-    def require_technikteam_or_teacher!
+    def require_technikteam_or_teacher_or_sv!
         assert(technikteam_or_teacher_or_sv_logged_in?)
     end
         

@@ -310,6 +310,10 @@ var tablet_set_info = #{@@tablet_sets.to_json};
                             Hier können Sie Schülerinnen und Schülern, die nicht an der Stunde teilnehmen können, mitteilen, was in der Stunde behandelt wird oder Arbeitsanweisungen geben. Dieses Feld ist für alle Schülerinnen und Schüler sichtbar (allerdings immer nur für eine Woche im voraus).
                         </div>
                         <textarea id='ti_stundenthema_text' style='height: 100px; margin-bottom: 15px;' class="form-control" disabled></textarea>
+                        <div class='button-with-label'>
+                            <button id='ti_lesson_fixed' data-state='off' class='btn_lesson_data btn btn-sm btn-outline-secondary' disabled><i class='fa fa-times'></i>&nbsp;&nbsp;fester Termin</button>
+                            <span>Sie bekommen eine E-Mail, falls sich die Stunde verschiebt.</span>
+                        </div>
                     </div>
                     <hr />
                     <div class="form-group">
@@ -489,7 +493,7 @@ var cursor = null;
 var force_pending_changes = false;
 var pending_changes = false;
 var data_keys = ['thema', 'notizen', 'hausaufgaben_text', 'ha_amt_text', 'stundenthema_text', 'homework_est_time'];
-var data_keys_bools = ['lesson_jitsi', 'lesson_nc', 'lesson_lr', 'homework_nc', 'homework_lr'];
+var data_keys_bools = ['lesson_jitsi', 'lesson_nc', 'lesson_lr', 'homework_nc', 'homework_lr', 'lesson_fixed'];
 var can_select = false;
 
 function sanitize_breakout_room_config(config) {
@@ -805,6 +809,16 @@ function selection_updated() {
             if (((lesson_data[single_selected_offset] || {}).info || {}).booked_tablet_sets) {
                 booked_tablet_sets_config = ((lesson_data[single_selected_offset] || {}).info || {}).booked_tablet_sets;
             }
+            button = $('#ti_lesson_fixed');
+            if (((lesson_data[single_selected_offset] || {}).info || {}).lesson_fixed) {
+                button.removeClass('btn-outline-secondary').removeClass('half').addClass('btn-info');
+                button.find('.fa').removeClass('fa-times').removeClass('fa-question-circle').addClass('fa-check');
+                button.data('state', 'yes');
+            } else {
+                button.removeClass('btn-info').removeClass('half').addClass('btn-outline-secondary');
+                button.find('.fa').removeClass('fa-check').removeClass('fa-question-circle').addClass('fa-times');
+                button.data('state', 'no');
+            }
         } else {
             $('.na-on-multi-select').show();
             $('#bu_feedback').removeClass('btn-success').addClass('btn-outline-secondary').prop('disabled', true);
@@ -939,6 +953,9 @@ function update_table() {
                 let cell = row.find('.tc_stundenthema');
                 cell.empty();
                 let printed_something = false;
+                if (((lesson_data[i] || {}).info || {}).lesson_fixed ?? false) {
+                    cell.append($(`<i style='display: inline; margin-right: 0.5em; font-size: 80%;' class='fa fa-calendar-check-o'></i>`));
+                }
                 cell.append($('<span>').html(((lesson_data[i] || {}).info || {})[key] || ''));
                 if ((!printed_something) && (((lesson_data[i] || {}).info || {})[key] || '').length == 0)
                     cell.append($('<span>').html('&ndash;'));
@@ -1071,6 +1088,9 @@ function save_changes() {
             end_time: time_span.end_time
         };
     }
+    data.datum_for_offset = {};
+    for (let offset of data.lesson_offsets)
+        data.datum_for_offset[offset] = window.time_span_for_lesson_offset[offset].datum;
     (function(data) {
         api_call('/api/save_lesson_data', data, function(result) {
             if (result.success) {
@@ -2077,7 +2097,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         });
                     }
                 }
-                else 
+                else
                 {
                     let row = $('<tr>').addClass('lesson-table-info-row');
                     let t0 = event.start.substr(8, 2) + '.' + event.start.substr(5, 2) + '.';

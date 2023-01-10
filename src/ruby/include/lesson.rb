@@ -2,12 +2,15 @@ class Main < Sinatra::Base
     post '/api/save_lesson_data' do
         require_teacher!
         data = parse_request_data(:required_keys => [:lesson_key, :lesson_offsets, :data],
-                                  :optional_keys => [:breakout_rooms, :booked_tablet_sets, :booked_tablet_sets_timespan],
+                                  :optional_keys => [:breakout_rooms, :booked_tablet_sets,
+                                                     :booked_tablet_sets_timespan,
+                                                     :datum_for_offset],
                                   :max_body_length => 65536,
                                   :types => {
                                       :lesson_offsets => Array, :data => Hash,
                                       :breakout_rooms => Hash, :booked_tablet_sets => Array,
-                                      :booked_tablet_sets_timespan => Hash})
+                                      :booked_tablet_sets_timespan => Hash,
+                                      :datum_for_offset => Hash})
         transaction do
             timestamp = Time.now.to_i
             data[:lesson_offsets].each do |lesson_offset|
@@ -25,6 +28,14 @@ class Main < Sinatra::Base
                     MATCH (t:Tablet)<-[:WHICH]-(b:Booking {to_be_deleted: true})-[:FOR]->(i:LessonInfo {offset: $offset})-[:BELONGS_TO]->(l:Lesson {key: $key})
                     DETACH DELETE b;
                 END_OF_QUERY
+                if data[:data]['lesson_fixed']
+                    datum = data[:datum_for_offset][lesson_offset.to_s]
+                    debug "Fixing lesson #{lesson_offset} to #{datum}!"
+                    neo4j_query(<<~END_OF_QUERY, :key => data[:lesson_key], :offset => lesson_offset, :datum => datum)
+                        MATCH (i:LessonInfo {offset: $offset})-[:BELONGS_TO]->(l:Lesson {key: $key})
+                        SET i.lesson_fixed_for = $datum;
+                    END_OF_QUERY
+                end
                 if data.include?(:breakout_rooms)
                     if data[:breakout_rooms].empty?
                         results = neo4j_query(<<~END_OF_QUERY, :key => data[:lesson_key], :offset => lesson_offset)
@@ -63,7 +74,7 @@ class Main < Sinatra::Base
         END_OF_QUERY
         return results.map { |x| x['l.key'] }
     end
-    
+
     post '/api/set_ha_amt_text_for_lesson' do
         # require teacher OR require schueler with HA amt enabled
         data = parse_request_data(:required_keys => [:lesson_key, :lesson_offset, :ha_amt_text],
@@ -80,7 +91,7 @@ class Main < Sinatra::Base
         trigger_update(data[:lesson_key])
         respond(:ok => true)
     end
-    
+
     post '/api/get_ha_amt_text_for_lesson' do
         # require teacher OR require schueler with HA amt enabled
         data = parse_request_data(:required_keys => [:lesson_key, :lesson_offset],
@@ -98,14 +109,14 @@ class Main < Sinatra::Base
         ha_amt_text ||= ''
         respond(:ha_amt_text => ha_amt_text)
     end
-    
+
     post '/api/force_jitsi_for_lesson' do
         assert(teacher_tablet_logged_in? || klassenraum_logged_in?)
         data = parse_request_data(:required_keys => [:lesson_key, :lesson_offset],
                                   :max_body_length => 1024,
                                   :types => {:lesson_offset => Integer})
         STDERR.puts "force_jitsi_for_lesson: #{data.to_json}"
-        transaction do 
+        transaction do
             timestamp = Time.now.to_i
             neo4j_query(<<~END_OF_QUERY, :key => data[:lesson_key], :offset => data[:lesson_offset], :data => {:lesson_jitsi => true}, :timestamp => timestamp)
                 MERGE (l:Lesson {key: $key})
@@ -117,7 +128,7 @@ class Main < Sinatra::Base
         trigger_update(data[:lesson_key])
         respond(:ok => true)
     end
-    
+
     def self.get_lesson_data(lesson_key)
         # purge unconfirmed tablet bookings for this lesson_key
         $neo4j.neo4j_query(<<~END_OF_QUERY, :key => lesson_key)
@@ -154,7 +165,7 @@ class Main < Sinatra::Base
             results[row[:comment][:offset]][:comments][row[:user][:email]] ||= {}
             if row[:comment][:comment]
                 results[row[:comment][:offset]][:comments][row[:user][:email]][:text_comment] = row[:comment][:comment]
-                results[row[:comment][:offset]][:comments][row[:user][:email]][:text_comment_from] = row[:text_comment_from] 
+                results[row[:comment][:offset]][:comments][row[:user][:email]][:text_comment_from] = row[:text_comment_from]
             end
         end
         rows = $neo4j.neo4j_query(<<~END_OF_QUERY, :key => lesson_key).map { |x| {:comment => x['c'], :user => x['u'], :audio_comment_from => x['acf.email'] } }
@@ -170,7 +181,7 @@ class Main < Sinatra::Base
             if row[:comment][:tag]
                 results[row[:comment][:offset]][:comments][row[:user][:email]][:audio_comment_tag] = row[:comment][:tag]
                 results[row[:comment][:offset]][:comments][row[:user][:email]][:duration] = row[:comment][:duration]
-                results[row[:comment][:offset]][:comments][row[:user][:email]][:audio_comment_from] = row[:audio_comment_from] 
+                results[row[:comment][:offset]][:comments][row[:user][:email]][:audio_comment_from] = row[:audio_comment_from]
             end
         end
         rows = $neo4j.neo4j_query(<<~END_OF_QUERY, :key => lesson_key).map { |x| {:offset => x['li.offset'], :feedback => x['hf'], :user => x['u.email'] }}
@@ -220,7 +231,7 @@ class Main < Sinatra::Base
             end
             results[offset][:feedback][:summary] = feedback_str
         end
-        
+
         rows = $neo4j.neo4j_query(<<~END_OF_QUERY, :key => lesson_key)
             MATCH (t:Tablet)<-[:WHICH]-(b:Booking {confirmed: true})-[:FOR]->(i:LessonInfo)-[:BELONGS_TO]->(l:Lesson {key: $key})
             RETURN t.id, i.offset;
@@ -256,20 +267,20 @@ class Main < Sinatra::Base
 
         results
     end
-    
+
     post '/api/get_lesson_data' do
         data = parse_request_data(:required_keys => [:lesson_key])
         results = Main.get_lesson_data(data[:lesson_key])
         respond(:results => results)
     end
-    
-    post '/api/insert_lesson' do 
+
+    post '/api/insert_lesson' do
         require_teacher!
         data = parse_request_data(:required_keys => [:lesson_key, :offset, :shift],
                                   :types => {:offset => Integer, :shift => Integer})
         timestamp = Time.now.to_i
         results = neo4j_query(<<~END_OF_QUERY, :key => data[:lesson_key], :offset => data[:offset], :shift => data[:shift], :timestamp => timestamp)
-            MATCH (n:LessonInfo)-[:BELONGS_TO]->(:Lesson {key: $key}) 
+            MATCH (n:LessonInfo)-[:BELONGS_TO]->(:Lesson {key: $key})
             WHERE n.offset >= $offset
             SET n.offset = n.offset + $shift
             SET n.updated = $timestamp;
@@ -277,8 +288,8 @@ class Main < Sinatra::Base
         trigger_update(data[:lesson_key])
         respond(:ok => 'yeah')
     end
-    
-    post '/api/delete_lessons' do 
+
+    post '/api/delete_lessons' do
         require_teacher!
         data = parse_request_data(:required_keys => [:lesson_key, :offsets],
                                   :types => {:offsets => Array},
@@ -292,11 +303,11 @@ class Main < Sinatra::Base
         timestamp = Time.now.to_i
         data[:offsets].each do |offset|
             results = neo4j_query(<<~END_OF_QUERY, :key => data[:lesson_key], :offset => offset - cumulative_offset, :timestamp => timestamp)
-                MATCH (n:LessonInfo {offset: $offset})-[:BELONGS_TO]->(:Lesson {key: $key}) 
+                MATCH (n:LessonInfo {offset: $offset})-[:BELONGS_TO]->(:Lesson {key: $key})
                 DETACH DELETE n;
             END_OF_QUERY
             results = neo4j_query(<<~END_OF_QUERY, :key => data[:lesson_key], :offset => offset - cumulative_offset, :timestamp => timestamp)
-                MATCH (n:LessonInfo)-[:BELONGS_TO]->(:Lesson {key: $key}) 
+                MATCH (n:LessonInfo)-[:BELONGS_TO]->(:Lesson {key: $key})
                 WHERE n.offset > $offset
                 SET n.offset = n.offset - 1
                 SET n.updated = $timestamp;
@@ -306,10 +317,10 @@ class Main < Sinatra::Base
         trigger_update(data[:lesson_key])
         respond(:ok => 'yeah')
     end
-    
+
     post '/api/book_streaming_tablet_for_lesson' do
         require_teacher!
-        data = parse_request_data(:required_keys => [:lesson_key, :offset, :datum, 
+        data = parse_request_data(:required_keys => [:lesson_key, :offset, :datum,
                                                      :start_time, :end_time],
                                   :types => {:offset => Integer})
 
@@ -321,10 +332,10 @@ class Main < Sinatra::Base
             MATCH (t:Tablet)<-[:WHICH]-(b:Booking {datum: $datum})-[:FOR]->(i:LessonInfo)-[:BELONGS_TO]->(l:Lesson)
             RETURN t.id, b, l.key;
         END_OF_QUERY
-        
+
         request_start_time = DateTime.parse("#{data[:datum]}T#{data[:start_time]}:00")
         request_end_time = DateTime.parse("#{data[:datum]}T#{data[:end_time]}:00")
-        
+
         favoured_tablets = Set.new()
         tablets_booked_today = Set.new()
         request_shorthands = @@lessons[:lesson_keys][data[:lesson_key]][:lehrer]
@@ -346,13 +357,13 @@ class Main < Sinatra::Base
                 end
             end
         end
-        
+
 #         debug "available_tablets: #{available_tablets.to_a.sort.join(', ')}"
 #         debug "tablets_booked_today: #{tablets_booked_today.to_a.sort.join(', ')}"
 #         debug "favoured_tablets: #{favoured_tablets.to_a.sort.join(', ')}"
-        
+
         favoured_tablets &= available_tablets
-        
+
         if available_tablets.empty?
             respond(:found_tablet => false)
         else
@@ -373,7 +384,7 @@ class Main < Sinatra::Base
                 neo4j_query(<<~END_OF_QUERY, data)
                     MERGE (l:Lesson {key: $lesson_key})
                     MERGE (i:LessonInfo {offset: $offset})-[:BELONGS_TO]->(l)
-                    
+
                     WITH l, i
                     MATCH (i)<-[:FOR]->(b2:Booking)-[:WHICH]->(:Tablet)
                     DETACH DELETE b2
@@ -381,10 +392,10 @@ class Main < Sinatra::Base
                 neo4j_query(<<~END_OF_QUERY, data)
                     MERGE (l:Lesson {key: $lesson_key})
                     MERGE (i:LessonInfo {offset: $offset})-[:BELONGS_TO]->(l)
-                    
+
                     WITH l, i
                     MATCH (t:Tablet {id: $tablet_id})
-                    
+
                     WITH l, i, t
                     MERGE (i)<-[:FOR]-(b:Booking)-[:WHICH]->(t)
                     SET b.updated = $timestamp
@@ -397,7 +408,7 @@ class Main < Sinatra::Base
             respond(:found_tablet => true, :tablet => which_tablet, :tablet_info => @@tablets[which_tablet])
         end
     end
-    
+
     post '/api/unbook_streaming_tablet_for_lesson' do
         require_teacher!
         data = parse_request_data(:required_keys => [:lesson_key, :offset],
@@ -419,7 +430,7 @@ class Main < Sinatra::Base
             END_OF_QUERY
         end
     end
-    
+
     post '/api/get_tablet_bookings' do
         require_admin!
         d0 = DateTime.now.strftime('%Y-%m-%d')
@@ -448,7 +459,7 @@ class Main < Sinatra::Base
         end
         respond(:bookings => results)
     end
-        
+
     def self.get_stream_restriction_for_lesson_key(lesson_key)
         results = $neo4j.neo4j_query_expect_one(<<~END_OF_QUERY, :key => lesson_key)['restriction']
             MERGE (l:Lesson {key: $key})
@@ -459,7 +470,7 @@ class Main < Sinatra::Base
         end
         results
     end
-    
+
     def self.get_all_stream_restrictions()
         temp = $neo4j.neo4j_query(<<~END_OF_QUERY)
             MATCH (l:Lesson)
@@ -476,7 +487,7 @@ class Main < Sinatra::Base
         end
         results
     end
-    
+
     def print_stream_restriction_table(klasse)
         lesson_keys = (@@lessons_for_shorthand[@session_user[:shorthand]] || []).select do |lesson_key|
             lesson_info = @@lessons[:lesson_keys][lesson_key]
@@ -526,7 +537,7 @@ class Main < Sinatra::Base
             io.string
         end
     end
-    
+
     post '/api/toggle_stream_restriction' do
         require_teacher!
         data = parse_request_data(:required_keys => [:lesson_key, :day],
@@ -541,7 +552,7 @@ class Main < Sinatra::Base
         trigger_update(data[:lesson_key])
         respond(:state => restrictions[day])
     end
-    
+
     get '/api/get_lesson_info_archive' do
         require_admin!
         file = Tempfile.new('lesson_info_archive')
@@ -573,7 +584,7 @@ class Main < Sinatra::Base
             zip = File.read(file.path)
             file.unlink
         end
-                                
+
         respond_raw_with_mimetype_and_filename(zip, 'application/zip', "lesson_info_archive.zip")
     end
 

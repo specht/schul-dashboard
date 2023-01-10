@@ -960,6 +960,54 @@ class Timetable
                 end
             end
         end
+
+        # Now detect all fixed lesson infos that have moved to another day, disabled lesson_fixed and send an e-mail
+        rows = neo4j_query(<<~END_OF_QUERY, {})
+            MATCH (i:LessonInfo {lesson_fixed: true})-[:BELONGS_TO]->(l:Lesson)
+            RETURN i.offset, l.key, i.lesson_fixed_for, i.stundenthema_text;
+        END_OF_QUERY
+        rows.each do |row|
+            debug row.to_json
+            lesson_key = row['l.key']
+            offset = row['i.offset']
+            fixed_for = row['i.lesson_fixed_for']
+            stundenthema = row['i.stundenthema_text']
+            cache_index = (@events_by_lesson_key_and_offset[lesson_key] || {})[offset]
+            if cache_index
+                entry = @lesson_cache[cache_index]
+                shorthands = @@lessons[:lesson_keys][lesson_key][:lehrer]
+                if fixed_for != entry[:datum]
+                    ds = "#{fixed_for[8, 2]}.#{fixed_for[5, 2]}.#{fixed_for[0, 4]}"
+                    ds_to = "#{entry[:datum][8, 2]}.#{entry[:datum][5, 2]}.#{entry[:datum][0, 4]}"
+                    fach = entry[:label_klasse_lang].gsub(/<[^>]+>/, '').strip
+                    # lesson has moved, set lesson_fixed to false
+                    neo4j_query(<<~END_OF_QUERY, {:lesson_key => lesson_key, :offset => offset, :timestamp => Time.now.to_i})
+                        MATCH (i:LessonInfo {offset: $offset})-[:BELONGS_TO]->(l:Lesson {key: $lesson_key})
+                        SET i.lesson_fixed = false
+                        SET i.updated = $timestamp;
+                    END_OF_QUERY
+                    shorthands.each do |shorthand|
+                        email = @@shorthands[shorthand]
+                        deliver_mail do
+                            to email
+                            bcc SMTP_FROM
+                            from SMTP_FROM
+
+                            subject "Stunde mit festem Termin verschoben: #{fach}"
+
+                            StringIO.open do |io|
+                                io.puts "<p>Hallo!</p>"
+                                io.puts "<p>Es tut mir leid, aber Ihre mit einem festen Termin geplante Stunde für #{fach} wurde aufgrund von Änderungen am Vertretungsplan vom #{ds} auf den #{ds_to} verschoben:</p>"
+                                io.puts "<p>#{stundenthema}</p>"
+                                io.puts "<p>Bitte korrigieren Sie ggfs. den Stundeneintrag im Dashboard.</p>"
+                                io.puts "<p>Viele Grüße,<br />#{WEBSITE_MAINTAINER_NAME}</p>"
+                                io.string
+                            end
+                        end
+                    end
+                end
+            end
+        end
     end
 
     def update_weeks(only_these_lesson_keys)

@@ -1,6 +1,6 @@
 class Main < Sinatra::Base
     post '/api/save_event' do
-        rrequire_user_who_can_manage_tablets_or_teacher!
+        require_user_who_can_manage_tablets_or_teacher!
         data = parse_request_data(:required_keys => [:title, :jitsi, :date, :start_time,
                                                      :end_time, :recipients, :description],
                                   :types => {:recipients => Array},

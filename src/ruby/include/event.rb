@@ -1,6 +1,6 @@
 class Main < Sinatra::Base
     post '/api/save_event' do
-        require_teacher!
+        rrequire_user_who_can_manage_tablets_or_teacher!
         data = parse_request_data(:required_keys => [:title, :jitsi, :date, :start_time,
                                                      :end_time, :recipients, :description],
                                   :types => {:recipients => Array},
@@ -56,7 +56,7 @@ class Main < Sinatra::Base
     end
     
     post '/api/update_event' do
-        require_teacher!
+        require_user_who_can_manage_tablets_or_teacher!
         data = parse_request_data(:required_keys => [:eid, :title, :jitsi, :date, :start_time,
                                                     :end_time, :recipients, :description],
                                 :types => {:recipients => Array},
@@ -122,7 +122,7 @@ class Main < Sinatra::Base
     end
     
     post '/api/delete_event' do
-        require_teacher!
+        require_user_who_can_manage_tablets_or_teacher!
         data = parse_request_data(:required_keys => [:eid])
         id = data[:eid]
         transaction do 
@@ -143,7 +143,7 @@ class Main < Sinatra::Base
     end
     
     post '/api/get_external_invitations_for_event' do
-        require_teacher!
+        require_user_who_can_manage_tablets_or_teacher!
         data = parse_request_data(:optional_keys => [:eid])
         id = data[:eid]
         invitations = {}
@@ -243,7 +243,7 @@ class Main < Sinatra::Base
     end
     
     post '/api/invite_external_user_for_event' do
-        require_teacher!
+        require_user_who_can_manage_tablets_or_teacher!
         data = parse_request_data(:required_keys => [:eid, :email])
         self.class.invite_external_user_for_event(data[:eid], data[:email], @session_user[:email])
         respond({})
@@ -256,7 +256,7 @@ class Main < Sinatra::Base
     end
     
     post '/api/send_missing_event_invitations' do
-        require_teacher!
+        require_user_who_can_manage_tablets_or_teacher!
         data = parse_request_data(:required_keys => [:eid])
         id = data[:eid]
         STDERR.puts "Sending missing invitations for event #{id}"

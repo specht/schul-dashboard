@@ -524,12 +524,13 @@ class Main < Sinatra::Base
             format_header = workbook.add_format({:bold => true})
             sheet.write(0, 0, 'Nachname', format_header)
             sheet.write(0, 1, 'Vorname', format_header)
-            sheet.write(0, 2, 'Klasse', format_header)
-            sheet.write(0, 3, 'Gruppe', format_header)
-            sheet.write(0, 4, 'E-Mail', format_header)
-            sheet.write(0, 5, 'E-Mail der Eltern', format_header)
+            sheet.write(0, 2, 'Geburtsdatum', format_header)
+            sheet.write(0, 3, 'Klasse', format_header)
+            sheet.write(0, 4, 'Gruppe', format_header)
+            sheet.write(0, 5, 'E-Mail', format_header)
+            sheet.write(0, 6, 'E-Mail der Eltern', format_header)
             sheet.set_column(0, 1, 16)
-            sheet.set_column(4, 5, 48)
+            sheet.set_column(5, 6, 48)
             iterate_directory(klasse) do |email, i|
                 user = @@user_info[email]
                 group2 = neo4j_query_expect_one(<<~END_OF_QUERY, :email => email)['group2']
@@ -538,10 +539,11 @@ class Main < Sinatra::Base
                 END_OF_QUERY
                 sheet.write(i + 1, 0, user[:last_name])
                 sheet.write(i + 1, 1, user[:first_name])
-                sheet.write(i + 1, 2, user[:klasse])
-                sheet.write(i + 1, 3, group2)
-                sheet.write(i + 1, 4, user[:email])
-                sheet.write(i + 1, 5, 'eltern.' + user[:email])
+                sheet.write(i + 1, 2, Date.parse(user[:geburtstag]).strftime('%d.%m.%Y'))
+                sheet.write(i + 1, 3, user[:klasse])
+                sheet.write(i + 1, 4, group2)
+                sheet.write(i + 1, 5, user[:email])
+                sheet.write(i + 1, 6, 'eltern.' + user[:email])
             end
             workbook.close
             result = File.read(file.path)

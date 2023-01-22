@@ -41,7 +41,7 @@ class Main < Sinatra::Base
 
     # Returns true if a teacher or SV is logged in.
     def teacher_or_sv_logged_in?
-        user_logged_in? && (teacher_logged_in? || @session_user[:sv])
+        user_logged_in? && (teacher_logged_in? || @session_user[:sv]) || user_who_can_manage_tablets_logged_in?
     end
 
     # Returns true if an admin is logged in.

@@ -1,7 +1,7 @@
 class Main < Sinatra::Base
     def external_users_for_session_user
         result = {:groups => [], :recipients => {}, :order => []}
-        return result unless teacher_logged_in?
+        return result unless user_who_can_manage_tablets_or_teacher_logged_in?
         # add pre-defined external users
         @@predefined_external_users[:groups].each do |x|
             result[:groups] << x
@@ -25,7 +25,7 @@ class Main < Sinatra::Base
     end
     
     post '/api/add_external_users' do
-        require_teacher!
+        require_user_who_can_manage_tablets_or_teacher!
         data = parse_request_data(:required_keys => [:text],
                                   :max_body_length => 1024 * 4,
                                   :max_string_length => 1024 * 4,
@@ -46,7 +46,7 @@ class Main < Sinatra::Base
     end
     
     post '/api/delete_external_user' do
-        require_teacher!
+        require_user_who_can_manage_tablets_or_teacher!
         data = parse_request_data(:required_keys => [:email])
         neo4j_query(<<~END_OF_QUERY, :session_email => @session_user[:email], :email => data[:email])
             MATCH (u:User {email: $session_email})-[:ENTERED_EXT_USER]->(e:ExternalUser {email: $email})

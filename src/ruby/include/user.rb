@@ -409,6 +409,27 @@ class Main < Sinatra::Base
         types
     end
 
+    post '/api/set_preferred_login_method' do
+        require_user!
+        data = parse_request_data(:required_keys => [:method])
+        assert(%w(email sms otp).include?(data[:method]))
+        neo4j_query_expect_one(<<~END_OF_QUERY, :email => @session_user[:email], :method => data[:method])
+            MATCH (u:User {email: $email})
+            SET u.preferred_login_method = $method
+            RETURN u.email;
+        END_OF_QUERY
+        respond(:method => data[:method])
+    end
+
+    def session_user_preferred_login_method
+        require_user!
+        method = neo4j_query_expect_one(<<~END_OF_QUERY, :email => @session_user[:email])['method']
+            MATCH (u:User {email: $email})
+            RETURN COALESCE(u.preferred_login_method, "email") AS method;
+        END_OF_QUERY
+        method
+    end
+
     post '/api/toggle_ical_omit_type' do
         require_user!
         data = parse_request_data(:required_keys => [:type])

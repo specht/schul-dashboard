@@ -2776,6 +2776,10 @@ class Main < Sinatra::Base
                         parts = request.env['REQUEST_PATH'].split('/')
                         login_tag = parts[2]
                         login_code = parts[3]
+                        login_method = neo4j_query_expect_one(<<~END_OF_QUERY, {:tag => login_tag})['method']
+                            MATCH (l:LoginCode {tag: $tag}) RETURN COALESCE(l.method, 'email') AS method;
+                        END_OF_QUERY
+                        STDERR.puts "[#{login_tag}] [#{login_method}] [#{login_code}]"
                     end
 
                     template_path = '_template'

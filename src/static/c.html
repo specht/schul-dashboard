@@ -7,14 +7,20 @@
             </p>-->
             <form id='form'>
             <div class="input-group mb-3">
-            <input type="number" id='code' class="form-control" placeholder="Bitte gib deinen Code ein" style='text-align: center;'>
-            <div class="input-group-append">
-                <button id='submit' class="btn btn-primary" type="submit">Anmelden</button>
-            </div>
+                <input type="number" id='code' class="form-control" placeholder="Bitte gib deinen Code ein" style='text-align: center;'>
+                <div class="input-group-append">
+                    <button id='submit' class="btn btn-primary" type="submit">Anmelden</button>
+                </div>
             </div>
             </form>
+            <div style="text-align: center; display: #{login_method == 'email' ? 'none' : 'block'};">
+                <button class="bu-send-code-via-email btn btn-sm btn-outline-secondary">Code per E-Mail senden</button>
+                <div class='alert send-code-via-email-confirmation' style="display: none;">
+                    Der Code wurde dir per E-Mail zugesendet.
+                </div>
+            </div>
             <div class='api_messages' style='display: none;'></div>
-        </div>        
+        </div>
     </div>
 </div>
 
@@ -42,5 +48,14 @@ window.addEventListener('load', function () {
         $('#submit').click();
     }
     $('#code').focus();
+    $('.bu-send-code-via-email').click(function(e) {
+        $('.bu-send-code-via-email').hide();
+        api_call('/api/revert_login_to_email', {tag: '#{login_tag}'}, function(data) {
+            if (data.success) {
+                $('.send-code-via-email-confirmation').slideDown();
+
+            }
+        });
+    });
 });
 </script>

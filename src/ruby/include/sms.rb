@@ -102,6 +102,7 @@ class Main < Sinatra::Base
         require_user!
         neo4j_query(<<~END_OF_QUERY, {:email => @session_user[:email]})
             MATCH (u:User {email: $email})
+            REMOVE u.preferred_login_method
             REMOVE u.telephone_number;
         END_OF_QUERY
         respond(:yay => 'sure')

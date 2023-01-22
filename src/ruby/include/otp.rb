@@ -3,7 +3,8 @@ class Main < Sinatra::Base
         require_user!
         result = neo4j_query(<<~END_OF_QUERY, :email => @session_user[:email])
             MATCH (u:User {email: $email})
-            REMOVE u.otp_token;
+            REMOVE u.otp_token
+            REMOVE u.preferred_login_method;
         END_OF_QUERY
     end
 

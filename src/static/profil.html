@@ -148,52 +148,66 @@
 
             <hr />
 
-            <h2 style='margin-bottom: 30px; margin-top: 30px;'>Anmeldung via OTP</h2>
-            <div class="otp-status alert">
-            </div>
-            <div class='otp-qr-code float-right' style='text-align: center; margin: 15px 0 15px 15px; background-color: #fff; padding: 15px; border-radius: 15px; box-shadow: 0 0 10px rgb(0 0 0 / 50%);'></div>
+            <h2 style='margin-bottom: 30px; margin-top: 30px;'>Anmeldung</h2>
             <p>
-            Wenn du dich anmelden möchtest, ohne dass du dir jedesmal einen Code per E-Mail senden lassen musst, kannst du dich per OTP anmelden.
+                Hier kannst du dein Standard-Anmeldeverfahren wählen:
             </p>
-            <p>
-            Generiere dafür einen QR-Code und scanne ihn mit einer OTP-App. Achtung, er wird dir nur einmal angezeigt! 
-            Die App zeigt dir 
-            dann einen Zahlencode an, der alle 30 Sekunden wechselt und mit dem du dich beim 
-            Dashboard anmelden kannst. Es gibt viele solcher Apps, z. B. für Android 
-            (<a href='https://play.google.com/store/apps/details?id=com.google.android.apps.authenticator2' target='_blank'>Google Authenticator</a>, 
-            <a href='https://play.google.com/store/apps/details?id=org.shadowice.flocke.andotp' target='_blank'>andOTP</a>)
-            oder für iOS
-            (<a href='https://apps.apple.com/us/app/google-authenticator/id388497605' target='_blank'>Google Authenticator</a>,
-            <a href='https://apps.apple.com/us/app/freeotp-authenticator/id872559395' target='_blank'>FreeOTP Authenticator</a>).
-            </p>
-            <p>
-            Unabhängig davon, ob du OTP aktiviert hast oder nicht, kannst du dich jederzeit mit dem normalen Code per E-Mail anmelden.
-            </p>
-            <p>
-            Bei Fragen, Hinweisen oder Problemen schreib bitte eine E-Mail an <a href='mailto:#{DASHBOARD_SUPPORT_EMAIL}'>#{DASHBOARD_SUPPORT_EMAIL}</a>.
-            </p>
-            <div class='float-right' style='margin-top: 5px;'>
-                <button class='btn bu-regenerate-otp btn-primary'><i class='fa fa-refresh'></i>&nbsp;&nbsp;Neu generieren</button>
-                <button class='btn bu-delete-otp btn-danger'><i class='fa fa-trash'></i>&nbsp;&nbsp;QR-Code löschen</button>
-            </div>
-            <div style="clear: both;"></div>
-
-            <div style="display: #{user_is_eligible_for_sms? ? 'block' : 'none'};">
-                <hr />
-                <h2 style='margin-bottom: 30px; margin-top: 30px;'>Anmeldung via SMS</h2>
-                <div class="sms-status alert">
+            <hr />
+            <div style="text-align: center; margin-bottom: 15px;">
+                <button id='bu_prefer_email' class="btn btn-success bu_choose_login_preference" data-method="email">Code per E-Mail erhalten</button>
+                <span style="display: #{user_is_eligible_for_sms? ? 'inline' : 'none'};">
+                &nbsp;
+                <div class="btn-group">
+                    <button id='bu_prefer_sms' type="button" class="btn btn-outline-secondary bu_choose_login_preference" data-method="sms">Code per SMS erhalten</button>
+                    <button type="button" class="btn btn-outline-secondary dropdown-toggle dropdown-toggle-split" data-toggle="dropdown" aria-expanded="false"></button>
+                    <div class="dropdown-menu">
+                        <button class="mi-add-phone-number dropdown-item">Telefonnummer hinterlegen</button>
+                        <button class="mi-delete-phone-number dropdown-item">Telefonnummer löschen</button>
+                    </div>
                 </div>
-                <p>
-                Wenn du deinen Anmeldecode per SMS erhalten möchtest, kannst du hier deine Telefonnummer eingeben.
-                Diese Nummer wird nur für diesen Zweck verwendet und niemals an dritte Personen weitergegeben.
-                </p>
-                <div class="input-group">
-                    <input id='ti_telephone_number' type="text" class="form-control" placeholder="Bitte gib deine Telefonnummer ein" value="#{session_user_telephone_number}">
-                        <div class="input-group-append">
-                            <button class="btn bu-save-sms btn-success"><i class='fa fa-check'></i>&nbsp;&nbsp;Speichern</button>
-                            <button class="btn bu-delete-sms btn-danger"><i class='fa fa-trash'></i>&nbsp;&nbsp;Löschen</button>
-                        </div>
-                    </input>
+                &nbsp;
+                </span>
+                <div class="btn-group">
+                    <button id='bu_prefer_otp' type="button" class="btn btn-outline-secondary bu_choose_login_preference" data-method="otp" disabled>OTP-Code eingeben</button>
+                    <button type="button" class="btn btn-outline-secondary dropdown-toggle dropdown-toggle-split" data-toggle="dropdown" aria-expanded="false"></button>
+                    <div class="dropdown-menu">
+                        <button class="mi-add-otp-code dropdown-item">OTP aktivieren</button>
+                        <button class="mi-delete-otp-code dropdown-item">OTP deaktivieren</button>
+                    </div>
+                </div>
+            </div>
+            <hr />
+            <p>
+                Hinweis: Falls du dein Telefon nicht dabei hast, kannst du jederzeit wieder auf die Anmeldung per E-Mail-Code ausweichen.
+            </p>
+        </div>
+    </div>
+</div>
+
+<div class='api_messages' style='display: none; position: fixed; left: 100px; right: 100px; top: 100px; z-index:300000;'></div>
+
+<div class="modal" id="phone_modal" tabindex="-1" role="dialog" aria-hidden="true" style='z-index: 200000;'>
+    <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Telefonnummer hinterlegen</h5>
+            </div>
+            <div class="modal-body">
+                <div id='sms_first_step'>
+                    <p>
+                        Wenn du deinen Anmeldecode per SMS erhalten möchtest, kannst du hier deine Telefonnummer eingeben.
+                        Diese Nummer wird nur für diesen Zweck verwendet und niemals an dritte Personen weitergegeben.
+                    </p>
+                    <p>
+                        Unabhängig davon, ob du die Anmeldung per SMS aktiviert hast oder nicht, kannst du dich jederzeit mit dem normalen Code per E-Mail anmelden.
+                    </p>
+                    <div class="input-group">
+                        <input style='text-align: center;' id='ti_telephone_number' type="text" class="form-control" placeholder="Bitte gib deine Telefonnummer ein" value="#{session_user_telephone_number}">
+                            <div class="input-group-append">
+                                <button class="btn bu-save-sms btn-success"><i class='fa fa-send'></i>&nbsp;&nbsp;Bestätigungscode anfordern</button>
+                            </div>
+                        </input>
+                    </div>
                 </div>
                 <div id="sms_confirm" style="display: none;">
                     <hr />
@@ -201,16 +215,59 @@
                         Es wurde soeben ein Bestätigungscode an deine Telefonnummer gesendet. Bitte gib ihn ein, um deine Telefonnummer zu bestätigen:
                     </p>
                     <div class="input-group">
-                        <input id='ti_confirm_telephone_number' type="text" class="form-control" placeholder="Bitte gib deinen Bestätigungscode ein">
+                        <input style='text-align: center;' id='ti_confirm_telephone_number' type="text" class="form-control" placeholder="Bitte gib deinen Bestätigungscode ein">
                             <div class="input-group-append">
                                 <button class="btn bu-confirm-sms btn-success"><i class='fa fa-check'></i>&nbsp;&nbsp;Telefonnummer bestätigen</button>
                             </div>
                         </input>
                     </div>
                 </div>
+                <div id="sms_thanks" style="display: none;">
+                    <hr />
+                    <p>
+                        Deine Telefonnummer wurde hinterlegt und das SMS-Verfahren aktiviert.
+                    </p>
+                </div>
             </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" data-dismiss="modal"><i class='fa fa-times'></i>&nbsp&nbsp;Schließen</button>
+            </div>
+        </div>
+    </div>
+</div>
 
-            <div class='api_messages' style='display: none;'></div>
+<div class="modal" id="otp_modal" tabindex="-1" role="dialog" aria-hidden="true" style='z-index: 200000;'>
+    <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Anmeldung via OTP aktivieren</h5>
+            </div>
+            <div class="modal-body">
+                <div class='otp-qr-code float-right' style='display: none; text-align: center; margin: 15px 0 15px 15px; background-color: #fff; padding: 15px; border-radius: 15px; box-shadow: 0 0 10px rgb(0 0 0 / 50%);'></div>
+                <p>
+                Wenn du dich anmelden möchtest, ohne dass du dir jedesmal einen Code per E-Mail senden lassen musst, kannst du dich per OTP anmelden.
+                </p>
+                <p>
+                Generiere dafür einen QR-Code und scanne ihn mit einer OTP-App. Achtung, er wird dir nur einmal angezeigt! 
+                Die App zeigt dir 
+                dann einen Zahlencode an, der alle 30 Sekunden wechselt und mit dem du dich beim 
+                Dashboard anmelden kannst. Es gibt viele solcher Apps, z. B. für Android 
+                (<a href='https://play.google.com/store/apps/details?id=com.google.android.apps.authenticator2' target='_blank'>Google Authenticator</a>, 
+                <a href='https://play.google.com/store/apps/details?id=org.shadowice.flocke.andotp' target='_blank'>andOTP</a>)
+                oder für iOS
+                (<a href='https://apps.apple.com/us/app/google-authenticator/id388497605' target='_blank'>Google Authenticator</a>,
+                <a href='https://apps.apple.com/us/app/freeotp-authenticator/id872559395' target='_blank'>FreeOTP Authenticator</a>).
+                </p>
+                <p>
+                Unabhängig davon, ob du OTP aktiviert hast oder nicht, kannst du dich jederzeit mit dem normalen Code per E-Mail anmelden.
+                </p>
+                <div style="text-align: center;">
+                    <button class="bu-generate-otp-code btn btn-success"><i class='fa fa-qrcode'></i>&nbsp;&nbsp;OTP aktivieren und QR-Code anzeigen</button>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" data-dismiss="modal"><i class='fa fa-times'></i>&nbsp&nbsp;Schließen</button>
+            </div>
         </div>
     </div>
 </div>
@@ -242,6 +299,7 @@ var unsaved_changes = false;
 var ical_token = "#{@session_user[:ical_token] || ''}";
 var otp_qr_code = '#{session_user_otp_qr_code()}';
 var telephone_number = '#{session_user_telephone_number()}';
+var preferred_login_method = '#{session_user_preferred_login_method()}';
 var color_scheme = '#{color_scheme}';
 var style_swatches = [];
 var omit_ical_types = #{get_omit_ical_types().to_json};
@@ -284,18 +342,61 @@ function refresh_otp_widget(show_qr_code) {
 
 function refresh_sms_widget() {
     if (telephone_number.length == 0) {
+        $('#bu_prefer_sms').prop('disabled', true).removeClass('btn-outline-success').addClass('btn-outline-secondary');
+        $('.mi-add-phone-number').show();
+        $('.mi-delete-phone-number').hide();
         $('.sms-status').removeClass('alert-success').addClass('alert-secondary');
         $('.sms-status').html(`<i class='fa fa-times text-secondary'></i>&nbsp;&nbsp;Die Anmeldung via SMS ist nicht aktiviert.`);
         $('.bu-save-sms').show();
         $('.bu-delete-sms').hide();
         $('#ti_telephone_number').attr('readonly', false);
     } else {
+        $('#bu_prefer_sms').prop('disabled', false).addClass('btn-outline-success').removeClass('btn-outline-secondary');
+        $('.mi-add-phone-number').hide();
+        $('.mi-delete-phone-number').show();
         $('.sms-status').addClass('alert-success').removeClass('alert-secondary');
         $('.sms-status').html(`<i class='fa fa-check text-success'></i>&nbsp;&nbsp;Die Anmeldung via SMS ist aktiviert.`);
         $('.bu-save-sms').hide();
         $('.bu-delete-sms').show();
         $('#ti_telephone_number').attr('readonly', true);
     }
+}
+
+function refresh_login_widget() {
+    if (telephone_number.length == 0) {
+        $('#bu_prefer_sms').prop('disabled', true);
+        $('.mi-add-phone-number').show();
+        $('.mi-delete-phone-number').hide();
+        $('.sms-status').removeClass('alert-success').addClass('alert-secondary');
+        $('.sms-status').html(`<i class='fa fa-times text-secondary'></i>&nbsp;&nbsp;Die Anmeldung via SMS ist nicht aktiviert.`);
+        $('.bu-save-sms').show();
+        $('.bu-delete-sms').hide();
+        $('#ti_telephone_number').attr('readonly', false);
+    } else {
+        $('#bu_prefer_sms').prop('disabled', false)
+        $('.mi-add-phone-number').hide();
+        $('.mi-delete-phone-number').show();
+        $('.sms-status').addClass('alert-success').removeClass('alert-secondary');
+        $('.sms-status').html(`<i class='fa fa-check text-success'></i>&nbsp;&nbsp;Die Anmeldung via SMS ist aktiviert.`);
+        $('.bu-save-sms').hide();
+        $('.bu-delete-sms').show();
+        $('#ti_telephone_number').attr('readonly', true);
+    }
+    if (otp_qr_code.length == 0) {
+        $('#bu_prefer_otp').prop('disabled', true);
+        $('.mi-add-otp-code').show();
+        $('.mi-delete-otp-code').hide();
+    } else {
+        $('#bu_prefer_otp').prop('disabled', false)
+        $('.mi-add-otp-code').hide();
+        $('.mi-delete-otp-code').show();
+    }
+    $('#bu_prefer_email').removeClass('btn-outline-secondary btn-success btn-outline-success');
+    $('#bu_prefer_email').addClass(preferred_login_method === 'email' ? 'btn-success' : ('btn-outline-success'));
+    $('#bu_prefer_sms').removeClass('btn-outline-secondary btn-success btn-outline-success');
+    $('#bu_prefer_sms').addClass(preferred_login_method === 'sms' ? 'btn-success' : (telephone_number.length === 0 ? 'btn-outline-secondary' : 'btn-outline-success'));
+    $('#bu_prefer_otp').removeClass('btn-outline-secondary btn-success btn-outline-success');
+    $('#bu_prefer_otp').addClass(preferred_login_method === 'otp' ? 'btn-success' : (otp_qr_code.length === 0 ? 'btn-outline-secondary' : 'btn-outline-success'));
 }
 
 function update_save_button()
@@ -511,7 +612,7 @@ window.addEventListener('load', function () {
         api_call('/api/regenerate_otp_token', {}, function(data) {
             if (data.success) {
                 otp_qr_code = data.qr_code;
-                refresh_otp_widget(true);
+                refresh_login_widget();
             }
         });
     });
@@ -519,7 +620,7 @@ window.addEventListener('load', function () {
         api_call('/api/delete_otp_token', {}, function(data) {
             if (data.success) {
                 otp_qr_code = '';
-                refresh_otp_widget(true);
+                refresh_login_widget();
             }
         });
     });
@@ -527,10 +628,10 @@ window.addEventListener('load', function () {
         api_call('/api/save_telephone_number', {telephone_number: $('#ti_telephone_number').val().trim() }, function(data) {
             if (data.success) {
                 confirm_sms_tag = data.tag;
-                $('#ti_confirm_telephone_number').val('');
                 $('#sms_confirm').slideDown();
                 $('#ti_telephone_number').prop('disabled', true);
-                refresh_sms_widget();
+                $('#ti_confirm_telephone_number').val('').focus();
+                refresh_login_widget();
             }
         });
     });
@@ -538,11 +639,19 @@ window.addEventListener('load', function () {
         api_call('/api/confirm_telephone_number', {tag: confirm_sms_tag, code: $('#ti_confirm_telephone_number').val().trim() }, function(data) {
             if (data.success) {
                 telephone_number = data.telephone_number;
-                $('#ti_telephone_number').val(telephone_number);
-                $('#sms_confirm').slideUp();
-                $('#ti_telephone_number').prop('disabled', false);
-                refresh_sms_widget();
                 confirm_sms_tag = null;
+                api_call('/api/set_preferred_login_method', {method: 'sms'}, function(data) {
+                    if (data.success) {
+                        preferred_login_method = data.method;
+                        refresh_login_widget();
+                        $('#ti_telephone_number').val(telephone_number);
+                        $('#sms_first_step').slideUp();
+                        $('#sms_confirm').slideUp();
+                        $('#sms_thanks').slideDown();
+                        $('#ti_telephone_number').prop('disabled', false);
+                        refresh_login_widget();
+                    }
+                });
             }
         });
     });
@@ -551,13 +660,75 @@ window.addEventListener('load', function () {
             if (data.success) {
                 telephone_number = '';
                 $('#ti_telephone_number').val(telephone_number);
-                refresh_sms_widget();
+                refresh_login_widget();
+            }
+        });
+    });
+    $('.bu-generate-otp-code').click(function(e) {
+        api_call('/api/regenerate_otp_token', {}, function(data) {
+            if (data.success) {
+                $('.bu-generate-otp-code').hide();
+                otp_qr_code = data.qr_code;
+                $('.otp-qr-code').append($(otp_qr_code)).show();
+                refresh_login_widget();
+            }
+        });
+    });
+    $('#phone_modal').on('shown.bs.modal', function(e) {
+        $('#ti_telephone_number').focus();
+    })
+    $('.mi-add-phone-number').click(function(e) {
+        $('#ti_telephone_number').val('').prop('disabled', false);
+        $('#ti_confirm_telephone_number').val('');
+        $('#sms_first_step').show();
+        $('#sms_confirm').hide();
+        $('#sms_thanks').hide();
+        $('#phone_modal').modal('show');
+    });
+    $('.mi-delete-phone-number').click(function(e) {
+        api_call('/api/delete_telephone_number', {}, function(data) {
+            if (data.success) {
+                telephone_number = '';
+                $('#ti_telephone_number').val(telephone_number);
+                preferred_login_method = 'email';
+                refresh_login_widget();
+            }
+        });
+    });
+    $('.mi-add-otp-code').click(function(e) {
+        $('.otp-qr-code').hide();
+        $('.bu-generate-otp-code').show();
+        $('#otp_modal').modal('show');
+    });
+    $('.mi-delete-otp-code').click(function(e) {
+        api_call('/api/delete_otp_token', {}, function(data) {
+            if (data.success) {
+                otp_qr_code = '';
+                preferred_login_method = 'email';
+                refresh_login_widget();
+            }
+        });
+    });
+    /* $('.mi-delete-phone-number').click(function(e) {
+        api_call('/api/delete_telephone_number', {}, function(data) {
+            if (data.success) {
+                telephone_number = '';
+                $('#ti_telephone_number').val(telephone_number);
+                preferred_login_method = 'email';
+                refresh_login_widget();
+            }
+        });
+    }); */
+    $('.bu_choose_login_preference').click(function(e) {
+        api_call('/api/set_preferred_login_method', {method: $(e.target).closest('button').data('method')}, function(data) {
+            if (data.success) {
+                preferred_login_method = data.method;
+                refresh_login_widget();
             }
         });
     });
     refresh_ical_widget();
-    refresh_otp_widget(false);
-    refresh_sms_widget();
+    refresh_login_widget();
     for (let type of (omit_ical_types)) {
         $(`.bu-toggle-omit-ical[data-omit-type="${type}"]`).removeClass('btn-success').addClass('btn-outline-secondary');
         $(`.bu-toggle-omit-ical[data-omit-type="${type}"]`).find('i').removeClass('fa-check').addClass('fa-times');

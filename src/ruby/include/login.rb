@@ -42,6 +42,47 @@ class Main < Sinatra::Base
         token
     end
 
+    post '/api/revert_login_to_email' do
+        data = parse_request_data(:required_keys => [:tag])
+        result = neo4j_query_expect_one(<<~END_OF_QUERY, :tag => data[:tag])
+            MATCH (l:LoginCode {tag: $tag})-[:BELONGS_TO]->(u:User)
+            SET l.tries = COALESCE(l.tries, 0) + 1
+            SET l.method = 'email'
+            RETURN l, u;
+        END_OF_QUERY
+        email_recipient = result['u'][:email]
+        random_code = result['l'][:code]
+        begin
+            deliver_mail do
+                # FOR NOW, DON'T SEND E-MAIL CODES FOR CHAT LOGINS
+                to email_recipient
+                bcc SMTP_FROM
+                from SMTP_FROM
+
+                subject "Dein Anmeldecode lautet #{random_code}"
+
+                StringIO.open do |io|
+                    io.puts "<p>Hallo!</p>"
+                    io.puts "<p>Dein Anmeldecode lautet:</p>"
+                    io.puts "<p style='font-size: 200%;'>#{random_code}</p>"
+                    io.puts "<p>Der Code ist für zehn Minuten gültig. Nachdem du eingeloggt bist, bleibst du für ein ganzes Jahr eingeloggt.</p>"
+    #                 link = "#{WEB_ROOT}/c/#{tag}/#{random_code}"
+    #                 io.puts "<p><a href='#{link}'>#{link}</a></p>"
+                    io.puts "<p>Falls du diese E-Mail nicht angefordert hast, hat jemand versucht, sich mit deiner E-Mail-Adresse auf <a href='https://#{WEBSITE_HOST}/'>https://#{WEBSITE_HOST}/</a> anzumelden. In diesem Fall musst du nichts weiter tun (es sei denn, du befürchtest, dass jemand anderes Zugriff auf dein E-Mail-Konto hat – dann solltest du dein E-Mail-Passwort ändern).</p>"
+                    io.puts "<p>Viele Grüße,<br />#{WEBSITE_MAINTAINER_NAME}</p>"
+                    io.string
+                end
+            end
+        rescue StandardError => e
+            if DEVELOPMENT
+                debug "Cannot send e-mail in DEVELOPMENT mode, continuing anyway:"
+                STDERR.puts e
+            else
+                raise e
+            end
+        end
+    end
+
     post '/api/confirm_login' do
         data = parse_request_data(:required_keys => [:tag, :code])
         data[:code] = data[:code].gsub(/[^0-9]/, '')
@@ -66,7 +107,7 @@ class Main < Sinatra::Base
             assert_with_delay(false, "Code expired", true)
         end
         assert(login_code[:tries] <= MAX_LOGIN_TRIES)
-        if login_code[:otp]
+        if login_code[:method] == 'otp'
             otp_token = user[:otp_token]
             assert(!otp_token.nil?)
             totp = ROTP::TOTP.new(otp_token, issuer: "Dashboard")
@@ -363,6 +404,17 @@ class Main < Sinatra::Base
             CREATE (l:LoginCode {tag: $tag, code: $code, valid_to: $valid_to})-[:BELONGS_TO]->(n)
             RETURN n, l;
         END_OF_QUERY
+        telephone_number = result['n'][:telephone_number]
+        preferred_login_method = result['n'][:preferred_login_method] || 'email'
+        if preferred_login_method == 'sms'
+            unless telephone_number && telephone_number.size > 0 && Main.sms_gateway_ready?
+                preferred_login_method = 'email'
+            end
+        end
+        neo4j_query(<<~END_OF_QUERY, :email => data[:email], :tag => tag, :method => preferred_login_method)
+            MATCH (l:LoginCode {tag: $tag})-[:BELONGS_TO]->(n:User {email: $email})
+            SET l.method = $method;
+        END_OF_QUERY
         if login_for_chat
             result = neo4j_query(<<~END_OF_QUERY, :tag => tag)
                 MATCH (l:LoginCode {tag: $tag})
@@ -370,7 +422,6 @@ class Main < Sinatra::Base
             END_OF_QUERY
         end
         email_recipient = data[:email]
-        telephone_number = result['n'][:telephone_number]
         if login_for_chat
             if @@user_info[data[:email]][:teacher]
                 # always allow login for teachers
@@ -379,8 +430,9 @@ class Main < Sinatra::Base
             end
         end
         begin
-            if telephone_number && Main.sms_gateway_ready?
+            if preferred_login_method == 'sms'
                 send_sms(telephone_number.deobfuscate(SMS_PHONE_NUMBER_PASSPHRASE), "Dein Anmeldecode lautet #{random_code}")
+            elsif preferred_login_method == 'otp'
             else
                 deliver_mail do
                     # FOR NOW, DON'T SEND E-MAIL CODES FOR CHAT LOGINS
@@ -427,7 +479,7 @@ class Main < Sinatra::Base
                 raise e
             end
         end
-        response_hash = {:tag => tag}
+        response_hash = {:tag => tag, :method => preferred_login_method}
         if login_for_chat
             response_hash[:chat_handle] = data[:email].split('@').first
         end

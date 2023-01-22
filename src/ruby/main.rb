@@ -27,6 +27,7 @@ require 'set'
 require 'sinatra/base'
 require 'sinatra/cookies'
 require 'time'
+require 'telephone_number'
 require 'timeout'
 require 'user_agent_parser'
 require 'write_xlsx'
@@ -75,6 +76,7 @@ require './include/otp.rb'
 require './include/poll.rb'
 require './include/public_event.rb'
 require './include/salzh.rb'
+require './include/sms.rb'
 require './include/stats.rb'
 require './include/tablet_set.rb'
 require './include/tests.rb'
@@ -1455,6 +1457,7 @@ class Main < Sinatra::Base
                                         @session_user[:color_scheme] = results.first['u'][:color_scheme]
                                         @session_user[:ical_token] = results.first['u'][:ical_token]
                                         @session_user[:otp_token] = results.first['u'][:otp_token]
+                                        @session_user[:telephone_number] = results.first['u'][:telephone_number]
                                         @session_user[:homeschooling] = results.first['u'][:homeschooling]
                                         @session_user[:group2] = results.first['u'][:group2] || 'A'
                                         @session_user[:group_af] = results.first['u'][:group_af] || ''

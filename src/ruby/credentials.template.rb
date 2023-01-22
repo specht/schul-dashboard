@@ -157,6 +157,8 @@ SESSION_SCRAMBLER = 'bitte_jeden_salt_nur_einmal_verwenden'
 EXTERNAL_USER_EVENT_SCRAMBLER = 'bitte_jeden_salt_nur_einmal_verwenden'
 LOGIN_CODE_SALT = 'bitte_jeden_salt_nur_einmal_verwenden'
 WEBSITE_READ_INFO_SECRET = 'bitte_ein_zufälliges_secret_generieren'
+SMS_GATEWAY_SECRET = 'bitte_ein_zufälliges_secret_generieren'
+SMS_AUTH_UNLOCKED_FOR = nil
 
 MESSAGE_DELAY = DEVELOPMENT ? 1 : 1
 LOGIN_STATS_D = [0, 7, 28, 1000]

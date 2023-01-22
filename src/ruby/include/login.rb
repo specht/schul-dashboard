@@ -380,7 +380,7 @@ class Main < Sinatra::Base
         end
         begin
             if telephone_number && Main.sms_gateway_ready?
-                send_sms(telephone_number, "Dein Anmeldecode lautet #{random_code}")
+                send_sms(telephone_number.deobfuscate(SMS_PHONE_NUMBER_PASSPHRASE), "Dein Anmeldecode lautet #{random_code}")
             else
                 deliver_mail do
                     # FOR NOW, DON'T SEND E-MAIL CODES FOR CHAT LOGINS

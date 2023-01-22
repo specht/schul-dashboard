@@ -278,7 +278,7 @@ end
 def perform_refresh
     last_update_timestamp = ''
     last_update_timestamp_path = '/vplan/timestamp.txt'
-    if File.exists?(last_update_timestamp_path)
+    if File.exist?(last_update_timestamp_path)
         last_update_timestamp = File.read(last_update_timestamp_path).strip
     end
     last_modified = last_update_timestamp

@@ -483,7 +483,7 @@ class Main < Sinatra::Base
         @@bib_summoned_books = {}
         @@bib_summoned_books_last_ts = 0
 
-        if File.exists?('/data/login-shortcuts.txt')
+        if File.exist?('/data/login-shortcuts.txt')
             File.open('/data/login-shortcuts.txt') do |f|
                 f.each_line do |line|
                     line.strip!
@@ -577,7 +577,7 @@ class Main < Sinatra::Base
         self.fix_stundenzeiten()
 
         disable_jitsi_for_email = Set.new()
-        if File.exists?('/data/schueler/disable-jitsi.txt')
+        if File.exist?('/data/schueler/disable-jitsi.txt')
             File.open('/data/schueler/disable-jitsi.txt') do |f|
                 f.each_line do |line|
                     line.strip!
@@ -989,7 +989,7 @@ class Main < Sinatra::Base
             debug("Undeclared rooms: #{undeclared_rooms.to_a.sort.join(' ')}")
         end
         @@lesson_keys_with_sus_feedback = {}
-        if File.exists?('/data/kurswahl/sus_feedback.yaml')
+        if File.exist?('/data/kurswahl/sus_feedback.yaml')
             @@lesson_keys_with_sus_feedback = YAML::load_file('/data/kurswahl/sus_feedback.yaml')
         end
 
@@ -2145,9 +2145,9 @@ class Main < Sinatra::Base
     end
 
     def advent_calendar_images
-        return [] unless File.exists?('advent-calendar-images.txt')
+        return [] unless File.exist?('advent-calendar-images.txt')
         File.read('advent-calendar-images.txt').split(/\s+/).map { |x| x.strip }.reject { |x| x.empty? }.map do |x|
-            unless File.exists?("/gen/ac-#{x}.png")
+            unless File.exist?("/gen/ac-#{x}.png")
                 system("wget -O /gen/ac-#{x}-dl.png https://pixel.hackschule.de/raw/uploads/#{x}.png")
                 system("convert /gen/ac-#{x}-dl.png -scale 1600% /gen/ac-#{x}.png")
             end
@@ -2767,7 +2767,7 @@ class Main < Sinatra::Base
                 show_offer = {}
 
                 path = File::join('/static', path) + '.html'
-                if File::exists?(path)
+                if File::exist?(path)
                     content = File::read(path, :encoding => 'utf-8')
 
                     @original_path = original_path

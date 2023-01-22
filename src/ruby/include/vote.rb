@@ -103,7 +103,7 @@ class Main < Sinatra::Base
         STDOUT.puts "Rendering PDF with #{codes.size} codes..."
         pdf = nil
         pdf_path = sprintf('/internal/vote/%04d.pdf', code)
-        unless File.exists?(pdf_path)
+        unless File.exist?(pdf_path)
             Prawn::Document::new(:page_size => 'A4', :page_layout => :landscape, :margin => [0, 0, 0, 0]) do
                 y = 0
                 x = 0

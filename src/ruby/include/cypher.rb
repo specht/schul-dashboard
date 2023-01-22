@@ -356,7 +356,7 @@ class Main < Sinatra::Base
                     end
                 end
                 path = "/static/cypher/level_#{@cypher_level + 1}.html"
-                if File.exists?(path)
+                if File.exist?(path)
                     io.puts File.read(path)
                 end
                 io.puts File.read('/static/cypher/form.html')

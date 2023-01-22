@@ -6,7 +6,7 @@ class Main < Sinatra::Base
             filename = tag[2, tag.size - 2]
             ['.ogg', '.mp3'].each do |ext|
                 path = "/raw/uploads/audio_comment/#{dir}/#{filename}#{ext}"
-                if File.exists?(path)
+                if File.exist?(path)
                     STDERR.puts "DELETING #{path}"
                     FileUtils::rm_f(path)
                 end

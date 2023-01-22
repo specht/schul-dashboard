@@ -32,7 +32,7 @@ def find_available_target_paths(target_filename, cp_target_dir, mv_target_dir)
         end
         cp_path = File.join(cp_target_dir, temp_target_filename)
         mv_path = File.join(mv_target_dir, temp_target_filename)
-        unless File.exists?(cp_path) || File.exists?(mv_path)
+        unless File.exist?(cp_path) || File.exist?(mv_path)
             return cp_path, mv_path
         end
         n += 1
@@ -69,7 +69,7 @@ end.each do |x|
     # can be omitted because source path already gets refreshed
     refresh_dirs << File.dirname(mv_path)
     unless DRY_RUN
-        unless File.exists?(File.dirname(mv_path))
+        unless File.exist?(File.dirname(mv_path))
             FileUtils::mkpath(File.dirname(mv_path))
         end
         FileUtils::mv(x, mv_path)
@@ -111,7 +111,7 @@ end.each do |x|
     end
     STDERR.puts "mv [#{x}] => [#{mv_path}]"
     unless DRY_RUN
-        unless File.exists?(File.dirname(mv_path))
+        unless File.exist?(File.dirname(mv_path))
             FileUtils::mkpath(File.dirname(mv_path))
         end
         FileUtils::mv(x, mv_path)
@@ -163,7 +163,7 @@ end.each do |x|
             end
         end
         STDERR.puts "Checking: #{File.dirname(mv_path)}"
-        unless File.exists?(File.dirname(mv_path))
+        unless File.exist?(File.dirname(mv_path))
             STDERR.puts "md [#{File.dirname(mv_path)}]"
             unless DRY_RUN
                 FileUtils::mkdir(File.dirname(mv_path))

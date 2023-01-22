@@ -225,7 +225,7 @@ class Timetable
             monitor_data = {:klassen => {}, :lehrer => {}, :timestamp => ts}
             monitor_data_package[:timestamp] ||= ts
             vplan_timestamp_path = '/vplan/timestamp.txt'
-            if File.exists?(vplan_timestamp_path)
+            if File.exist?(vplan_timestamp_path)
                 vplan_timestamp = File.read(vplan_timestamp_path)
                 parts = vplan_timestamp.split('-')
 

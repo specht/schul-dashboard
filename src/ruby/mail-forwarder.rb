@@ -71,7 +71,7 @@ class Script
             results << 'eltern.' + row[:email]
         end
         path = '/app/mail-forwarder-emails.txt'
-        if File.exists?(path)
+        if File.exist?(path)
             File.open(path) do |f|
                 f.each do |line|
                     line.strip!
@@ -109,7 +109,7 @@ class Script
                     storage_path = "/mails/#{message_id}"
                     mail_path = File.join(storage_path, 'mail')
                     recipients_path = File.join(storage_path, 'recipients.yaml')
-                    unless File.exists?(mail_path)
+                    unless File.exist?(mail_path)
                         FileUtils.mkpath(storage_path)
                         File.open(mail_path, 'w') do |f|
                             f.puts body

@@ -25,7 +25,7 @@ class ImageBotRepl < Sinatra::Base
             last_jpg_path = path
             (GEN_IMAGE_WIDTHS.reverse + [:p]).each do |width|
                 jpg_path = File.join("/gen/i/#{tag}-#{width}.jpg")
-                unless File.exists?(jpg_path)
+                unless File.exist?(jpg_path)
                     STDERR.puts jpg_path
                     if width == :p
                         system("convert -auto-orient -set colorspace RGB  \"#{last_jpg_path}\" -blur 0x8 -quality 85 -sampling-factor 4:2:0 -strip \"#{jpg_path}\"")
@@ -35,7 +35,7 @@ class ImageBotRepl < Sinatra::Base
                     file_count += 1
                 end
                 webp_path = File.join("/gen/i/#{tag}-#{width}.webp")
-                unless File.exists?(webp_path)
+                unless File.exist?(webp_path)
                     STDERR.puts webp_path
                     system("cwebp -quiet \"#{jpg_path}\" -q #{webp_path.include?('-b') ? 100 : 85} -o \"#{webp_path}\"")
                     file_count += 1
@@ -57,17 +57,17 @@ class ImageBotRepl < Sinatra::Base
             png_path = "/gen/bg/#{tag}.png"
             jpg_path = "/gen/bg/#{tag}.jpg"
             jpg_512_path = "/gen/bg/#{tag}-512.jpg"
-            unless File.exists?(png_path)
+            unless File.exist?(png_path)
                 STDERR.puts "Creating #{png_path}..."
                 system("inkscape --export-filename=#{png_path} #{svg_path}")
                 file_count += 1
             end
-            unless File.exists?(jpg_path)
+            unless File.exist?(jpg_path)
                 STDERR.puts "Creating #{jpg_path}..."
                 system("convert #{png_path} #{jpg_path}")
                 file_count += 1
             end
-            unless File.exists?(jpg_512_path)
+            unless File.exist?(jpg_512_path)
                 STDERR.puts "Creating #{jpg_512_path}..."
                 system("convert #{jpg_path} -resize 512x #{jpg_512_path}")
                 file_count += 1

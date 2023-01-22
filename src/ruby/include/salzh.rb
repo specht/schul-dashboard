@@ -991,9 +991,9 @@ class Main < Sinatra::Base
         return if wall_time < '12:00'
         today = Date.today.strftime('%Y-%m-%d')
         path = "/internal/salzh_protocol/#{today}.txt"
-        return if File.exists?(path)
+        return if File.exist?(path)
 
-        unless File.exists?(File.dirname(path))
+        unless File.exist?(File.dirname(path))
             FileUtils.mkpath(File.dirname(path))
         end
 

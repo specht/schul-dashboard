@@ -65,7 +65,7 @@ class Script
                 avatar_uri_nc = "#{NEXTCLOUD_URL_FROM_RUBY_CONTAINER}/index.php/avatar/#{info[:nc_login]}/512"
                 STDERR.write '.'
                 headers = {}
-                if stored_etag && (stored_path.nil? || File.exists?(stored_path))
+                if stored_etag && (stored_path.nil? || File.exist?(stored_path))
                     headers['If-None-Match'] = stored_etag.split('.').first 
                 end
                 response = http.headers(headers).get("/index.php/avatar/#{info[:nc_login]}/512")
@@ -76,7 +76,7 @@ class Script
                 avatar_cache_path = "/gen/a/#{raw_etag[0, 2]}/#{raw_etag[2, raw_etag.size]}.#{ext}"
                 if response.status.success?
                     STDERR.puts "Re-caching #{avatar_uri_nc} to #{avatar_cache_path}"
-                    unless File::exists?(avatar_cache_path)
+                    unless File::exist?(avatar_cache_path)
                         FileUtils::mkpath(File::dirname(avatar_cache_path))
                         File.open(avatar_cache_path, 'w') do |f|
                             f.write response.body

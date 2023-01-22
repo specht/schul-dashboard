@@ -86,7 +86,7 @@ class Parser
     def initialize
         @@chars = 'BCDFGHJKMNPQRSTVWXYZ23456789'.split('')
         @email_sub = {}
-        if File.exists?('/data/schueler/email-sub.txt')
+        if File.exist?('/data/schueler/email-sub.txt')
             File.open('/data/schueler/email-sub.txt') do |f|
                 f.each_line do |line|
                     parts = line.strip.split(' ').map { |x| x.strip }
@@ -95,7 +95,7 @@ class Parser
             end
         end
         @nc_sub = {}
-        if File.exists?('/data/lehrer/nc-sub.txt')
+        if File.exist?('/data/lehrer/nc-sub.txt')
             File.open('/data/lehrer/nc-sub.txt') do |f|
                 f.each_line do |line|
                     parts = line.strip.split(' ').map { |x| x.strip }
@@ -123,7 +123,7 @@ class Parser
     def parse_lehrer(&block)
 #         debug "Parsing lehrer..."
         path = '/data/lehrer/lehrer.csv'
-        unless File.exists?(path)
+        unless File.exist?(path)
             debug "...skipping because #{path} does not exist"
             return
         end
@@ -194,7 +194,7 @@ class Parser
     def parse_klassenleiter(&block)
 #         debug "Parsing klassenleiter..."
         path = '/data/klassenleiter/klassenleiter.txt'
-        unless File.exists?(path)
+        unless File.exist?(path)
             debug "...skipping because #{path} does not exist"
             return
         end
@@ -335,7 +335,7 @@ class Parser
 
         @force_email = {}
         path = '/data/schueler/email-sub-by-name.txt'
-        if File.exists?(path)
+        if File.exist?(path)
             File.open(path) do |f|
                 f.each_line do |line|
                     line.strip!
@@ -348,7 +348,7 @@ class Parser
         end
 
         path = '/data/schueler/ASCII.TXT'
-        unless File.exists?(path)
+        unless File.exist?(path)
             debug "...skipping because #{path} does not exist"
             return
         end
@@ -368,7 +368,7 @@ class Parser
     
     def parse_faecher
 #         debug "Parsing faecher..."
-        if File.exists?('/data/faecher/faecher.csv')
+        if File.exist?('/data/faecher/faecher.csv')
             CSV.foreach('/data/faecher/faecher.csv', :headers => true) do |line|
                 line = Hash[line]
                 next unless line['Fach']
@@ -384,7 +384,7 @@ class Parser
     
     def parse_ferien_feiertage
 #         debug "Parsing ferien/feiertage..."
-        if File.exists?('/data/ferien_feiertage/ferien_feiertage.csv')
+        if File.exist?('/data/ferien_feiertage/ferien_feiertage.csv')
             CSV.foreach('/data/ferien_feiertage/ferien_feiertage.csv', :headers => true) do |line|
                 line = Hash[line]
                 t0 = line['Beginn']
@@ -398,7 +398,7 @@ class Parser
     
     def parse_tage_infos
 #         debug "Parsing ferien/feiertage..."
-        if File.exists?('/data/ferien_feiertage/infos.csv')
+        if File.exist?('/data/ferien_feiertage/infos.csv')
             CSV.foreach('/data/ferien_feiertage/infos.csv', :headers => true) do |line|
                 line = Hash[line]
                 t0 = line['Beginn']
@@ -412,7 +412,7 @@ class Parser
     
     def parse_tablets
 #         debug "Parsing tablets..."
-        if File.exists?('/data/tablets/tablets.csv')
+        if File.exist?('/data/tablets/tablets.csv')
             CSV.foreach('/data/tablets/tablets.csv', :headers => true) do |line|
                 line = Hash[line]
                 next unless line['Bezeichnung']
@@ -436,7 +436,7 @@ class Parser
     def parse_tablet_sets
         #         debug "Parsing tablet sets..."
         path = '/data/tablets/tablet_sets.yaml'
-        if File.exists?(path)
+        if File.exist?(path)
             result = YAML::load(File.read(path))
             result.keys.each do |k|
                 if result[k][:only_these_rooms]
@@ -475,7 +475,7 @@ class Parser
         end
 
         unr_tr = {}
-        if File.exists?('/data/stundenplan/unr-tr.yaml')
+        if File.exist?('/data/stundenplan/unr-tr.yaml')
             unr_tr = YAML.load(File.read('/data/stundenplan/unr-tr.yaml'))
         end
 
@@ -843,7 +843,7 @@ class Parser
         schueler_for_kurs = {}
         name_tr = {}
         path = '/data/kurswahl/kurswahl-tr.txt'
-        if File.exists?('/data/kurswahl/kurswahl-tr.txt')
+        if File.exist?('/data/kurswahl/kurswahl-tr.txt')
             File.open(path, 'r:utf-8') do |f|
                 f.each_line do |line|
                     parts = line.split(/\s+/)
@@ -852,7 +852,7 @@ class Parser
             end
         end
         unassigned_names = Set.new()
-        if File.exists?('/data/kurswahl/kurswahl.TXT')
+        if File.exist?('/data/kurswahl/kurswahl.TXT')
             File.open('/data/kurswahl/kurswahl.TXT', 'r:utf-8') do |f|
                 f.each_line do |line|
                     line = line.encode('utf-8')
@@ -912,7 +912,7 @@ class Parser
         schueler_for_lesson_key = {}
         unassigned_names = Set.new()
         begin
-            if File.exists?('/data/kurswahl/wahlpflicht.yaml')
+            if File.exist?('/data/kurswahl/wahlpflicht.yaml')
                 wahlpflicht = YAML.load(File.read('/data/kurswahl/wahlpflicht.yaml'))
                 wahlpflicht.each_pair do |lesson_key, sus|
                     lesson_key = lesson_key_tr[lesson_key] || lesson_key
@@ -967,7 +967,7 @@ class Parser
     def parse_current_email_addresses
         email_addresses = []
         email_accounts_path = '/data/current-email-addresses.csv'
-        if File.exists?(email_accounts_path)
+        if File.exist?(email_accounts_path)
             CSV.foreach(email_accounts_path, headers: true, col_sep: ';') do |row|
                 email = row.to_h['E-Mail-Adresse']
                 email_addresses << email

@@ -4,7 +4,7 @@ class Main < Sinatra::Base
 
     def get_monitor_messages()
         data = {}
-        if File.exists?(MONITOR_MESSAGE_PATH)
+        if File.exist?(MONITOR_MESSAGE_PATH)
             data = JSON.parse(File.read(MONITOR_MESSAGE_PATH))
         end
         result = {
@@ -44,7 +44,7 @@ class Main < Sinatra::Base
             ws = info[:ws]
             monitor_data = {:klassen => {}, :timestamp => ''}
             monitor_data_path = '/vplan/monitor/monitor.json'
-            if File.exists?(monitor_data_path)
+            if File.exist?(monitor_data_path)
                 monitor_data = JSON.parse(File.read(monitor_data_path))
             end
             ws.send({:command => 'update_vplan', :data => monitor_data}.to_json)
@@ -71,7 +71,7 @@ class Main < Sinatra::Base
     post '/api/get_monitor_messages_raw' do
         require_user_who_can_manage_monitors!
         data = {'messages': '', 'images': ''}
-        if File.exists?(MONITOR_MESSAGE_PATH)
+        if File.exist?(MONITOR_MESSAGE_PATH)
             data = JSON.parse(File.read(MONITOR_MESSAGE_PATH))
         end
         respond(:data => data)

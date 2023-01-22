@@ -188,12 +188,25 @@
                 Diese Nummer wird nur für diesen Zweck verwendet und niemals an dritte Personen weitergegeben.
                 </p>
                 <div class="input-group">
-                    <input type="text" class="form-control" placeholder="Bitte gib deine Telefonnummer ein">
+                    <input id='ti_telephone_number' type="text" class="form-control" placeholder="Bitte gib deine Telefonnummer ein" value="#{session_user_telephone_number}">
                         <div class="input-group-append">
                             <button class="btn bu-save-sms btn-success"><i class='fa fa-check'></i>&nbsp;&nbsp;Speichern</button>
                             <button class="btn bu-delete-sms btn-danger"><i class='fa fa-trash'></i>&nbsp;&nbsp;Löschen</button>
                         </div>
                     </input>
+                </div>
+                <div id="sms_confirm" style="display: none;">
+                    <hr />
+                    <p>
+                        Es wurde soeben ein Bestätigungscode an deine Telefonnummer gesendet. Bitte gib ihn ein, um deine Telefonnummer zu bestätigen:
+                    </p>
+                    <div class="input-group">
+                        <input id='ti_confirm_telephone_number' type="text" class="form-control" placeholder="Bitte gib deinen Bestätigungscode ein">
+                            <div class="input-group-append">
+                                <button class="btn bu-confirm-sms btn-success"><i class='fa fa-check'></i>&nbsp;&nbsp;Telefonnummer bestätigen</button>
+                            </div>
+                        </input>
+                    </div>
                 </div>
             </div>
 
@@ -233,6 +246,7 @@ var color_scheme = '#{color_scheme}';
 var style_swatches = [];
 var omit_ical_types = #{get_omit_ical_types().to_json};
 var teacher_logged_in = #{@session_user[:teacher] == true};
+var confirm_sms_tag = null;
 
 function refresh_ical_widget() {
     if (ical_token.length == 0) {
@@ -269,10 +283,19 @@ function refresh_otp_widget(show_qr_code) {
 }
 
 function refresh_sms_widget() {
-    /* $('.bu-regenerate-otp').html("<i class='fa fa-refresh'></i>&nbsp;&nbsp;QR-Code generieren"); */
-    /* $('.bu-delete-otp').hide(); */
-    $('.sms-status').removeClass('alert-success').addClass('alert-secondary');
-    $('.sms-status').html(`<i class='fa fa-times text-secondary'></i>&nbsp;&nbsp;Die Anmeldung via SMS ist nicht aktiviert.`);
+    if (telephone_number.length == 0) {
+        $('.sms-status').removeClass('alert-success').addClass('alert-secondary');
+        $('.sms-status').html(`<i class='fa fa-times text-secondary'></i>&nbsp;&nbsp;Die Anmeldung via SMS ist nicht aktiviert.`);
+        $('.bu-save-sms').show();
+        $('.bu-delete-sms').hide();
+        $('#ti_telephone_number').attr('readonly', false);
+    } else {
+        $('.sms-status').addClass('alert-success').removeClass('alert-secondary');
+        $('.sms-status').html(`<i class='fa fa-check text-success'></i>&nbsp;&nbsp;Die Anmeldung via SMS ist aktiviert.`);
+        $('.bu-save-sms').hide();
+        $('.bu-delete-sms').show();
+        $('#ti_telephone_number').attr('readonly', true);
+    }
 }
 
 function update_save_button()
@@ -501,10 +524,25 @@ window.addEventListener('load', function () {
         });
     });
     $('.bu-save-sms').click(function(e) {
-        api_call('/api/save_telephone_number', {}, function(data) {
+        api_call('/api/save_telephone_number', {telephone_number: $('#ti_telephone_number').val().trim() }, function(data) {
+            if (data.success) {
+                confirm_sms_tag = data.tag;
+                $('#ti_confirm_telephone_number').val('');
+                $('#sms_confirm').slideDown();
+                $('#ti_telephone_number').prop('disabled', true);
+                refresh_sms_widget();
+            }
+        });
+    });
+    $('.bu-confirm-sms').click(function(e) {
+        api_call('/api/confirm_telephone_number', {tag: confirm_sms_tag, code: $('#ti_confirm_telephone_number').val().trim() }, function(data) {
             if (data.success) {
                 telephone_number = data.telephone_number;
+                $('#ti_telephone_number').val(telephone_number);
+                $('#sms_confirm').slideUp();
+                $('#ti_telephone_number').prop('disabled', false);
                 refresh_sms_widget();
+                confirm_sms_tag = null;
             }
         });
     });
@@ -512,6 +550,7 @@ window.addEventListener('load', function () {
         api_call('/api/delete_telephone_number', {}, function(data) {
             if (data.success) {
                 telephone_number = '';
+                $('#ti_telephone_number').val(telephone_number);
                 refresh_sms_widget();
             }
         });

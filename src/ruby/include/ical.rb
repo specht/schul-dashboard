@@ -9,7 +9,7 @@ class Main < Sinatra::Base
         result.each do |token|
             path = "/gen/ical/#{token}.ics"
             STDERR.puts path
-            if File.exists?(path)
+            if File.exist?(path)
                 FileUtils.rm(path)
             end
         end

@@ -1,3 +1,15 @@
+require 'base64'
+
+class String
+    def encrypt(key)
+        self
+    end
+
+    def decrypt(key)
+        self
+    end
+end
+
 class Main < Sinatra::Base
 
     def user_is_eligible_for_sms?
@@ -14,11 +26,11 @@ class Main < Sinatra::Base
         require_user!
         telephone_number = @session_user[:telephone_number]
         return nil if telephone_number.nil?
-        return telephone_number
+        return telephone_number.decrypt(SMS_PHONE_NUMBER_PASSPHRASE)
     end
 
     def send_sms(telephone_number, message)
-        data = {:telephone_number => telephone_number, :message => message}
+        data = {:telephone_number => telephone_number.decrypt(SMS_PHONE_NUMBER_PASSPHRASE), :message => message}
         @@ws_clients[:authenticated_sms].values.first[:ws].send(data.to_json)
     end
 
@@ -32,7 +44,7 @@ class Main < Sinatra::Base
         valid_to = Time.now + 600
         random_code = (0..5).map { |x| rand(10).to_s }.join('')
         send_sms(number, "Dein Bestätigungscode zur Aktivierung der SMS-Anmeldung lautet #{random_code}.")
-        neo4j_query(<<~END_OF_QUERY, {:email => @session_user[:email], :telephone_number => number, :tag => tag, :code => random_code, :valid_to => valid_to.to_i})
+        neo4j_query(<<~END_OF_QUERY, {:email => @session_user[:email], :telephone_number => number.encrypt(SMS_PHONE_NUMBER_PASSPHRASE), :tag => tag, :code => random_code, :valid_to => valid_to.to_i})
             MATCH (u:User {email: $email})
             CREATE (l:PhoneNumberConfirmation {tag: $tag, code: $code, valid_to: $valid_to, telephone_number: $telephone_number})-[:BELONGS_TO]->(u)
         END_OF_QUERY
@@ -73,13 +85,13 @@ class Main < Sinatra::Base
             MATCH (u:User {email: $email})
             SET u.telephone_number = $telephone_number;
         END_OF_QUERY
-        send_sms(sms_code[:telephone_number], "Die Anmeldung per SMS ist nun aktiviert.")
+        send_sms(sms_code[:telephone_number].decrypt(SMS_PHONE_NUMBER_PASSPHRASE), "Die Anmeldung per SMS ist nun aktiviert.")
 
         neo4j_query(<<~END_OF_QUERY, :tag => data[:tag])
             MATCH (l:PhoneNumberConfirmation {tag: $tag})
             DETACH DELETE l;
         END_OF_QUERY
-        respond(:ok => 'yeah', :telephone_number => sms_code[:telephone_number])
+        respond(:ok => 'yeah', :telephone_number => sms_code[:telephone_number].decrypt(SMS_PHONE_NUMBER_PASSPHRASE))
     end
 
     post '/api/delete_telephone_number' do

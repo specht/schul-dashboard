@@ -1751,6 +1751,11 @@ class Main < Sinatra::Base
                                 io.puts "<a class='dropdown-item nav-icon' href='/mailing_lists'><div class='icon'><i class='fa fa-envelope'></i></div><span class='label'>E-Mail-Verteiler</span></a>"
                                 io.puts "<a class='dropdown-item nav-icon' href='/groups'><div class='icon'><i class='fa fa-group'></i></div><span class='label'>Gruppen</span></a>"
                             end
+                        elsif user_who_can_manage_tablets_logged_in?
+                            io.puts "<div class='dropdown-divider'></div>"
+                            io.puts "<a class='dropdown-item nav-icon' href='/events'><div class='icon'><i class='fa fa-calendar-check-o'></i></div><span class='label'>Termine</span></a>"
+                            io.puts "<a class='dropdown-item nav-icon' href='/polls'><div class='icon'><i class='fa fa-bar-chart'></i></div><span class='label'>Umfragen</span></a>"
+                            io.puts "<a class='dropdown-item nav-icon' href='/groups'><div class='icon'><i class='fa fa-group'></i></div><span class='label'>Gruppen</span></a>"
                         end
                         # if @session_user[:can_upload_vplan]
                         #     io.puts "<div class='dropdown-divider'></div>"
@@ -2353,7 +2358,7 @@ class Main < Sinatra::Base
         # first things first
         # days_left = (Date.parse('2022-07-07') - Date.today).to_i
         # response.headers['X-Tage-Bis-Zu-Den-Sommerferien'] = "#{days_left}"
-        d4ys_left = (Date.parse('2022-12-24') - Date.today).to_i
+        d4ys_left = (Date.parse('2023-12-24') - Date.today).to_i
         response.headers['X-Tage-Bis-Weihnachten'] = "#{d4ys_left}"
 
         path = request.env['REQUEST_PATH']
@@ -2572,7 +2577,7 @@ class Main < Sinatra::Base
                 sent_messages = temp_order.map { |x| temp[x] }
             end
         elsif path == 'events'
-            unless teacher_logged_in?
+            unless user_who_can_manage_tablets_or_teacher_logged_in?
                 redirect "#{WEB_ROOT}/", 302
             else
                 stored_events = neo4j_query(<<~END_OF_QUERY, :email => @session_user[:email]).map { |x| {:info => x['e'], :recipient => x['u.email']} }
@@ -2608,7 +2613,7 @@ class Main < Sinatra::Base
                 end
             end
         elsif path == 'groups'
-            unless teacher_or_sv_logged_in?
+            unless teacher_or_sv_logged_in? || user_who_can_manage_tablets_or_teacher_logged_in?
                 redirect "#{WEB_ROOT}/", 302
             else
                 stored_groups = neo4j_query(<<~END_OF_QUERY, :email => @session_user[:email]).map { |x| {:info => x['g'], :recipient => x['u.email']} }
@@ -2640,7 +2645,7 @@ class Main < Sinatra::Base
                 end
             end
         elsif path == 'polls'
-            unless teacher_or_sv_logged_in?
+            unless teacher_or_sv_logged_in? || user_who_can_manage_tablets_or_teacher_logged_in?
                 redirect "#{WEB_ROOT}/", 302
             else
                 stored_polls = neo4j_query(<<~END_OF_QUERY, :email => @session_user[:email]).map { |x| {:info => x['p'], :recipient => x['u.email']} }

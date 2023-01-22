@@ -304,6 +304,12 @@ class Main < Sinatra::Base
         end
     end
 
+    def this_is_a_page_for_logged_in_teachers_or_sv_or_users_who_can_manage_tablets
+        unless teacher_or_sv_logged_in? || user_who_can_manage_tablets_logged_in?
+            redirect "#{WEB_ROOT}/", 303
+        end
+    end
+
     # Put this on top of a webpage to assert that this page can be opened by users who can upload vplan only
     def this_is_a_page_for_people_who_can_upload_vplan
         unless user_who_can_upload_vplan_logged_in?

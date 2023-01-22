@@ -2065,7 +2065,7 @@ class Timetable
 
         @@user_info.each_pair do |email, user|
             next if only_this_email && only_this_email != email
-            next unless user[:teacher] || user[:sv]
+            next unless user[:teacher] || user[:sv] || user[:can_manage_tablets]
             path = "/gen/w/#{user[:id]}/recipients.json.gz"
             FileUtils.mkpath(File.dirname(path))
             Zlib::GzipWriter.open(path) do |f|

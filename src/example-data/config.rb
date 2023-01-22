@@ -7,7 +7,7 @@ AUFSICHT_ZEIT = {
     0 => '08:35',
 }
 
-KLASSEN_ORDER = ['5a', '5b', '5c']
+KLASSEN_ORDER = ['5a', '5b', '5c', '11', '12']
 
 # Definition von Wechselwochen
 SWITCH_WEEKS = {'2021-08-09' => nil}

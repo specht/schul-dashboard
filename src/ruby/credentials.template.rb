@@ -83,7 +83,7 @@ TECHNIK_HILFE_WEBSITE_URL = 'https://hilfe.beispielschule.de'
 
 WEB_ROOT = DEVELOPMENT ? 'http://localhost:8025' : "https://#{WEBSITE_HOST}"
 
-MAX_LOGIN_TRIES = 5
+MAX_LOGIN_TRIES = 3
 
 # Das Dashboard benötigt einen Nextcloud-Account, der Admin-Rechte hat
 NEXTCLOUD_URL = 'http://localhost:8024'

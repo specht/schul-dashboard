@@ -85,6 +85,7 @@ class Main < Sinatra::Base
 
     post '/api/confirm_login' do
         data = parse_request_data(:required_keys => [:tag, :code])
+        debug "confirm_login(#{data[:tag]}, #{data[:code]})"
         data[:code] = data[:code].gsub(/[^0-9]/, '')
         begin
             result = neo4j_query_expect_one(<<~END_OF_QUERY, :tag => data[:tag])
@@ -94,18 +95,25 @@ class Main < Sinatra::Base
             END_OF_QUERY
         rescue
             respond({:error => 'code_expired'})
+            debug "tag not found"
             assert_with_delay(false, "Code expired", true)
         end
         user = result['u']
         login_code = result['l']
+        debug "Tries: #{login_code[:tries]}"
         if login_code[:tries] > MAX_LOGIN_TRIES
             neo4j_query(<<~END_OF_QUERY, :tag => data[:tag])
                 MATCH (l:LoginCode {tag: $tag})
                 DETACH DELETE l;
             END_OF_QUERY
             respond({:error => 'code_expired'})
+            debug "more than #{MAX_LOGIN_TRIES} tries"
             assert_with_delay(false, "Code expired", true)
         end
+        if login_code[:tries] == MAX_LOGIN_TRIES
+            respond({:error => 'code_expired'})
+        end
+
         assert(login_code[:tries] <= MAX_LOGIN_TRIES)
         if login_code[:method] == 'otp'
             otp_token = user[:otp_token]
@@ -113,9 +121,11 @@ class Main < Sinatra::Base
             totp = ROTP::TOTP.new(otp_token, issuer: "Dashboard")
             assert_with_delay(totp.verify(data[:code], drift_behind: 15, drift_ahead: 15), "Wrong OTP code entered for #{user[:email]}: #{data[:code]}", true)
         else
+            debug "comparing #{data[:code]} with #{login_code[:code]}"
             assert_with_delay(data[:code] == login_code[:code], "Wrong e-mail code entered for #{user[:email]}: #{data[:code]}", true)
         end
         if Time.at(login_code[:valid_to]) < Time.now
+            debug "code expired!"
             respond({:error => 'code_expired'})
         end
         assert(Time.at(login_code[:valid_to]) >= Time.now, 'code expired', true)

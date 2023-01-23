@@ -29,12 +29,14 @@ window.addEventListener('load', function () {
     $('#form').submit(function(e) { e.preventDefault(); });
     $('#submit').click(function(e) {
         api_call('/api/confirm_login', {tag: '#{login_tag}', code: $('#code').val()}, function(data) {
-//             console.log(data);
+            console.log(data);
             if (data.success === true) {
                 window.location.href = '/';
             } else {
-                if (data.error === 'code_expired')
-                    show_error_message('Dein Code ist bereits abgelaufen.');
+                if (data.error === 'code_expired') {
+                    $('#form').hide();
+                    show_error_message('Dein Anmeldecode ist abgelaufen.');
+                }
                 else
                     show_error_message('Bei der Anmeldung ist ein Fehler aufgetreten.');
                 $('#code').val('').focus();

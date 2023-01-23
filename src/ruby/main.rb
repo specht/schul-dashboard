@@ -1263,7 +1263,7 @@ class Main < Sinatra::Base
     end
 
     def assert_with_delay(condition, message = 'assertion failed', suppress_backtrace = false)
-        assert(condition, message, suppress_backtrace, 3.0)
+        assert(condition, message, suppress_backtrace, DEVELOPMENT ? 0.0 : 3.0)
     end
 
     def test_request_parameter(data, key, options)

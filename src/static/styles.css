@@ -2545,3 +2545,7 @@ table tr.has_hl.hl {
 table.th-middle th {
     vertical-align: middle;
 }
+
+.alert-white {
+    background-color: rgba(255, 255, 255, 0.5);
+}

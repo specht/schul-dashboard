@@ -149,6 +149,12 @@
             <hr />
 
             <h2 style='margin-bottom: 30px; margin-top: 30px;'>Anmeldung</h2>
+            <div class="alert alert-white phone-hint-div" style='display: none;'>
+                Hinweis: Wenn du deinen Anmeldecode per SMS erhalten möchtest, hinterlege deine Telefonnummer.
+                <div style="text-align: center; margin-top: 10px;">
+                    <button class='btn btn-success mi-add-phone-number'><i class='fa fa-mobile'></i>&nbsp;&nbsp;Telefonnummer hinterlegen</button>
+                </div>
+            </div>
             <p>
                 Hier kannst du dein Standard-Anmeldeverfahren wählen:
             </p>
@@ -364,6 +370,11 @@ function refresh_sms_widget() {
 
 function refresh_login_widget() {
     if (telephone_number.length == 0) {
+        if (`#{user_is_eligible_for_sms?}` === 'true')
+            $('.phone-hint-div').show();
+        else
+            $('.phone-hint-div').hide();
+        
         $('#bu_prefer_sms').prop('disabled', true);
         $('.mi-add-phone-number').show();
         $('.mi-delete-phone-number').hide();
@@ -373,6 +384,7 @@ function refresh_login_widget() {
         $('.bu-delete-sms').hide();
         $('#ti_telephone_number').attr('readonly', false);
     } else {
+        $('.phone-hint-div').hide();
         $('#bu_prefer_sms').prop('disabled', false)
         $('.mi-add-phone-number').hide();
         $('.mi-delete-phone-number').show();

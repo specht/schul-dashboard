@@ -149,39 +149,28 @@
             <hr />
 
             <h2 style='margin-bottom: 30px; margin-top: 30px;'>Anmeldung</h2>
-            <div class="alert alert-white phone-hint-div" style='display: none;'>
-                Hinweis: Wenn du deinen Anmeldecode per SMS erhalten möchtest, hinterlege deine Telefonnummer.
-                <div style="text-align: center; margin-top: 10px;">
-                    <button class='btn btn-success mi-add-phone-number'><i class='fa fa-mobile'></i>&nbsp;&nbsp;Telefonnummer hinterlegen</button>
-                </div>
-            </div>
             <p>
                 Hier kannst du dein Standard-Anmeldeverfahren wählen:
             </p>
             <hr />
-            <div style="text-align: center; margin-bottom: 15px;">
-                <button id='bu_prefer_email' class="btn btn-success bu_choose_login_preference" data-method="email">Code per E-Mail erhalten</button>
-                <span style="display: #{user_is_eligible_for_sms? ? 'inline' : 'none'};">
-                &nbsp;
-                <div class="btn-group">
-                    <button id='bu_prefer_sms' type="button" class="btn btn-outline-secondary bu_choose_login_preference" data-method="sms">Code per SMS erhalten</button>
-                    <button type="button" class="btn btn-outline-secondary dropdown-toggle dropdown-toggle-split" data-toggle="dropdown" aria-expanded="false"></button>
-                    <div class="dropdown-menu">
-                        <button class="mi-add-phone-number dropdown-item">Telefonnummer hinterlegen</button>
-                        <button class="mi-delete-phone-number dropdown-item">Telefonnummer löschen</button>
+            <div style="display: flex; align-items: start; gap: 10px; justify-content: center;">
+                <button id='bu_prefer_email' class="btn btn-success bu_choose_login_preference" data-method="email"><i class='fa fa-envelope'></i>&nbsp;&nbsp;Code per E-Mail erhalten</button>
+                <div style="display: #{user_is_eligible_for_sms? ? 'block' : 'none'}; text-align: center;">
+                    <button id='bu_prefer_sms' type="button" class="btn btn-outline-secondary bu_choose_login_preference" data-method="sms"><i class='fa fa-mobile'></i>&nbsp;&nbsp;Code per SMS erhalten</button>
+                    <div style="margin-top: 5px;">
+                        <button class="btn btn-xs btn-success mi-add-phone-number"><i class='fa fa-plus'></i>&nbsp;&nbsp;Nummer hinterlegen</button>
+                        <button class="btn btn-xs btn-outline-secondary mi-delete-phone-number"><i class='fa fa-trash'></i>&nbsp;&nbsp;Nummer löschen</button>
                     </div>
                 </div>
-                &nbsp;
-                </span>
-                <div class="btn-group">
-                    <button id='bu_prefer_otp' type="button" class="btn btn-outline-secondary bu_choose_login_preference" data-method="otp" disabled>OTP-Code eingeben</button>
-                    <button type="button" class="btn btn-outline-secondary dropdown-toggle dropdown-toggle-split" data-toggle="dropdown" aria-expanded="false"></button>
-                    <div class="dropdown-menu">
-                        <button class="mi-add-otp-code dropdown-item">OTP aktivieren</button>
-                        <button class="mi-delete-otp-code dropdown-item">OTP deaktivieren</button>
+                <div style="text-align: center;">
+                    <button id='bu_prefer_otp' type="button" class="btn btn-outline-secondary bu_choose_login_preference" data-method="otp"><i class='fa fa-qrcode'></i>&nbsp;&nbsp;OTP-Code eingeben</button>
+                    <div style="margin-top: 5px;">
+                        <button class="btn btn-xs btn-success mi-add-otp-code"><i class='fa fa-plus'></i>&nbsp;&nbsp;OTP aktivieren</button>
+                        <button class="btn btn-xs btn-outline-secondary mi-delete-otp-code"><i class='fa fa-trash'></i>&nbsp;&nbsp;OTP deaktivieren</button>
                     </div>
                 </div>
             </div>
+            
             <hr />
             <p>
                 Hinweis: Falls du dein Telefon nicht dabei hast, kannst du jederzeit wieder auf die Anmeldung per E-Mail-Code ausweichen.
@@ -210,7 +199,7 @@
                     <div class="input-group">
                         <input style='text-align: center;' id='ti_telephone_number' type="text" class="form-control" placeholder="Bitte gib deine Telefonnummer ein" value="#{session_user_telephone_number}">
                             <div class="input-group-append">
-                                <button class="btn bu-save-sms btn-success"><i class='fa fa-send'></i>&nbsp;&nbsp;Bestätigungscode anfordern</button>
+                                <button class="btn bu-save-sms btn-success"><i class='fa fa-send'></i>&nbsp;&nbsp;Code anfordern</button>
                             </div>
                         </input>
                     </div>
@@ -223,13 +212,12 @@
                     <div class="input-group">
                         <input style='text-align: center;' id='ti_confirm_telephone_number' type="text" class="form-control" placeholder="Bitte gib deinen Bestätigungscode ein">
                             <div class="input-group-append">
-                                <button class="btn bu-confirm-sms btn-success"><i class='fa fa-check'></i>&nbsp;&nbsp;Telefonnummer bestätigen</button>
+                                <button class="btn bu-confirm-sms btn-success"><i class='fa fa-check'></i>&nbsp;&nbsp;Bestätigen</button>
                             </div>
                         </input>
                     </div>
                 </div>
                 <div id="sms_thanks" style="display: none;">
-                    <hr />
                     <p>
                         Deine Telefonnummer wurde hinterlegt und das SMS-Verfahren aktiviert.
                     </p>
@@ -370,11 +358,6 @@ function refresh_sms_widget() {
 
 function refresh_login_widget() {
     if (telephone_number.length == 0) {
-        if (`#{user_is_eligible_for_sms?}` === 'true')
-            $('.phone-hint-div').show();
-        else
-            $('.phone-hint-div').hide();
-        
         $('#bu_prefer_sms').prop('disabled', true);
         $('.mi-add-phone-number').show();
         $('.mi-delete-phone-number').hide();
@@ -384,7 +367,6 @@ function refresh_login_widget() {
         $('.bu-delete-sms').hide();
         $('#ti_telephone_number').attr('readonly', false);
     } else {
-        $('.phone-hint-div').hide();
         $('#bu_prefer_sms').prop('disabled', false)
         $('.mi-add-phone-number').hide();
         $('.mi-delete-phone-number').show();
@@ -764,6 +746,12 @@ window.addEventListener('load', function () {
                 }
             }
         });
+    });
+    $('#ti_telephone_number').keydown(function(e) {
+        if (e.key === 'Enter') $('.bu-save-sms').click();
+    });
+    $('#ti_confirm_telephone_number').keydown(function(e) {
+        if (e.key === 'Enter') $('.bu-confirm-sms').click();
     });
 });
 </script>

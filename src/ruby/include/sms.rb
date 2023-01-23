@@ -36,6 +36,11 @@ class Main < Sinatra::Base
     def send_sms(telephone_number, message)
         data = {:telephone_number => telephone_number, :message => message}
         @@ws_clients[:authenticated_sms].values.first[:ws].send(data.to_json)
+        ds = Date.today.strftime('%Y-%m-%d')
+        neo4j_query(<<~END_OF_QUERY, {:ds => ds})
+            MERGE (d:SmsDay {ds: $ds})
+            SET d.count = COALESCE(d.count, 0) + 1;
+        END_OF_QUERY
     end
 
     post '/api/save_telephone_number' do

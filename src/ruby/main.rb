@@ -233,6 +233,7 @@ class SetupDatabase
         'PublicEventTrack/track',
         'SelfTestDay/datum',
         'Session/sid',
+        'SmsDay/ds',
         'Tablet/id',
         'TabletSet/id',
         'TestEvent/key',

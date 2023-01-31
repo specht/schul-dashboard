@@ -1,0 +1,209 @@
+#{this_is_a_page_for_logged_in_teachers}
+<style>
+    .safari_volume_indicator {
+        display: block;
+        position: fixed;
+        right: 4px;
+        bottom: 4px;
+        width: 45px;
+        height: 45px;
+        z-index: 100000;
+        padding-top: 5px;
+        border: 1px solid rgba(0,0,0,0.2);
+        border-radius: 100%;
+        box-shadow: rgb(0 0 0 / 20%) 0px -1px 10px;
+        font-size: 145%;
+        text-align: center;
+    }
+
+    .api_messages {
+        position: absolute;
+        top: 60px;
+        width: 80%;
+        left: 10%;
+        display: none;
+    }
+
+    body {
+        /* background: none; */
+        /* background-color: white; */
+        /* padding-top: 120px; */
+        background-attachment: fixed;
+    }
+
+    .api_messages {
+        position: fixed;
+        z-index: 101;
+    }
+
+    .submenu a {
+        white-space: nowrap;
+    }
+
+    .submenu {
+        overflow-x: auto;
+    }
+
+    .container {
+        padding-top: 15px;
+    }
+
+    .bib_management_only {
+        min-height: 50px;
+        border-top: 1px dashed #ddd;
+        padding: 10px;
+        background: linear-gradient(#eee 0px, #fff 50px);
+        margin-left: -15px;
+        margin-right: -15px;
+        margin-top: 15px;
+        padding-top: 30px;
+        display: none;
+    }
+
+    .bib_teacher_only {
+        display: none;
+    }
+
+    body {
+        #{@session_device ? 'padding-top: 0;' : '' }
+    }
+
+    .navbar {
+        #{@session_device ? 'display: none;' : '' }
+    }
+
+    #device_navbar {
+        #{@session_device ? '' : 'display: none;' }
+        background-color: white;
+        border-radius: 0;
+        padding: 10px 15px;
+        border-bottom: 1px solid rgba(0,0,0,0.1);
+        white-space: nowrap;
+        overflow-x: auto;
+    }
+
+    @media (max-width: 575px) {
+        ._barcode_widget > div:first-child {
+            height: 120px!important;
+        }
+
+        ._barcode_widget {
+            border-radius: 0!important;
+            margin: 0px -15px 15px -15px!important;
+            border: none!important;
+            border-bottom: 1px solid #ddd!important;
+        }
+    }
+
+    .sandbox-hint {
+        text-align: center;
+        background-color: #fce94f;
+        border-radius: 0;
+        padding: 5px 15px;
+        border-top: 1px solid rgba(0,0,0,0.1);
+        border-bottom: 1px solid rgba(0,0,0,0.1);
+        white-space: nowrap;
+        overflow-x: auto;
+    }
+
+    .sandbox-hint::-webkit-scrollbar {
+        display: none;
+    }
+
+    .sandbox-hint {
+        -ms-overflow-style: none;
+        scrollbar-width: none;
+    }
+
+    .container, .container-lg, .container-md, .container-sm, .container-xl {
+        max-width: 1500px;
+    }
+    @tailwind base;
+    @tailwind components;
+    @tailwind utilities;
+</style>
+
+<div class='api_messages'></div>
+<div id="device_navbar" class="container">
+    <img src='#{NEXTCLOUD_URL}/index.php/avatar/#{@session_user[:nc_login]}/256}' class='avatar-md'/>
+    <span style="display: inline-block; margin-left: 5px; position: relative; top: 2px;">#{@session_user[:display_name]}</span>
+    <button id='bu_logout' class="pull-right btn btn-sm btn-danger"><i class='fa fa-sign-out'></i>&nbsp;&nbsp;Abmelden</button>
+</div>
+<div class='container text-sm text-stone-200 sandbox-hint' style="display: none;">
+    <b>Sommerferien-Sandbox:</b> Dieser Teil des Dashboards befindet sich gerade in Entwicklung. Du darfst alles
+    ausprobieren, aber alle Änderungen werden zum Ende der Sommerferien (oder auch vorher mehrmals) zurückgesetzt. Falls
+    du Fragen, Hinweise oder Anmerkungen hast, schreib eine E-Mail an <a
+        href='mailto:specht@gymnasiumsteglitz.de'>specht@gymnasiumsteglitz.de</a>.
+</div>
+<div class='container' style='padding: 0; display: flex; background: white; border-radius: 0;'>
+    <section class="w-full" style="height: 51px; display: #{second_factor_time_left.nil? ? 'none' : 'block'}">
+        <ul class="submenu flex bg-white px-2.5 py-2"
+            style="border-bottom: 1px solid #eee; left: 0px; right: 0px; z-index: 100;">
+            <li class="mx-1">
+                <a class="inline-block bg-slate-900 border border-blue-500 hover:bg-slate-200 rounded py-1 px-3"
+                    href="/zeugnislisten"><i class='fa fa-book'></i>&nbsp;&nbsp;Zeugnislisten</a>
+            </li>
+            <li style="display: #{can_manage_bib_logged_in? ? 'unset' : 'none'}; #{@session_device == 'bib-mobile' ? 'display: none;' : ''} border-left: 1px solid #ccc; height: 52px; margin: -10px 10px -10px 10px; margin-left: auto;">
+            </li>
+            <li class="mx-1">
+                <button id='bu-refresh-second-factor' style='white-space: nowrap;' class="inline-block bg-slate-900 border border-blue-500 hover:bg-slate-200 rounded py-1 px-3"><i class='text-slate-600 fa fa-refresh'></i>&nbsp;&nbsp;<span style='display: inline-block; width: 3em;' id="sf-time-left"></span></button>
+            </li>
+            <li class="mx-1">
+                <button id='bu-delete-second-factor' style='white-space: nowrap;' class="inline-block bg-slate-900 border border-blue-500 hover:bg-slate-200 rounded py-1 px-3"><i class='text-slate-600 fa fa-sign-out'></i>&nbsp;&nbsp;Abmelden</button>
+            </li>
+        </ul>
+    </section>
+</div>
+<div id='subsubmenu' class='container'
+    style='padding: 0; display: flex; background: white; border-radius: 0; display: none;'>
+    <section class="w-full" style="height: 51px;">
+        <ul class="submenu flex bg-stone-900 px-2.5 py-2"
+            style="border-bottom: 1px solid #eee; left: 0px; right: 0px; z-index: 100;">
+            <li id='sub_menu_extra' style='margin-left: auto;'></li>
+        </ul>
+    </section>
+</div>
+
+<script>
+var second_factor_expires = Math.round((Date.now() / 1000.0) + #{second_factor_time_left || 0});
+
+function update_time_left() {
+    let seconds_left = Math.round(second_factor_expires - (Date.now() / 1000.0));
+    if (seconds_left <= 0 && ('#{second_factor_time_left.nil?}' !== 'true')) {
+        window.location.href = '/tresor';
+        return;
+    }
+    let minutes = Math.floor(seconds_left / 60.0);
+    let seconds = (seconds_left - minutes * 60);
+    $('#sf-time-left').text(`${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`);
+}
+
+window.addEventListener('load', function () {
+    update_time_left();
+    setInterval(function() {
+        update_time_left();
+    }, 1000);
+    $('#bu-refresh-second-factor').click(function(e) {
+        api_call('/api/refresh_second_factor', {}, function(data) {
+            if (data.success) {
+                second_factor_expires = Math.round((Date.now() / 1000.0) + data.time_left);
+                update_time_left();
+            }
+        });
+    })
+    $('#bu-delete-second-factor').click(function(e) {
+        api_call('/api/delete_second_factor', {}, function(data) {
+            if (data.success) {
+                window.location.href = '/tresor';
+                localStorage.setItem('tresor_jwt_token', null);
+            }
+        });
+    })
+    for (let x of $('.submenu a')) {
+        let href = $(x).attr('href');
+        if (window.location.pathname === href) {
+            $(x).removeClass('bg-white').addClass('font-bold shadow-md outline outline-1 outline-blue-500 bg-white');
+        }
+    }
+});
+</script>

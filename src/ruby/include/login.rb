@@ -1,3 +1,6 @@
+LOGIN_METHODS = {:email => 'Code per E-Mail', :sms => 'Code per SMS', :otp => 'OTP-Code'}
+LOGIN_METHODS_SHORT = {:email => 'E-Mail', :sms => 'SMS', :otp => 'OTP'}
+
 class Main < Sinatra::Base
     def create_session(email, expire_hours)
         sid = RandomTag::generate(24)
@@ -85,7 +88,6 @@ class Main < Sinatra::Base
 
     post '/api/confirm_login' do
         data = parse_request_data(:required_keys => [:tag, :code])
-        debug "confirm_login(#{data[:tag]}, #{data[:code]})"
         data[:code] = data[:code].gsub(/[^0-9]/, '')
         begin
             result = neo4j_query_expect_one(<<~END_OF_QUERY, :tag => data[:tag])
@@ -95,19 +97,16 @@ class Main < Sinatra::Base
             END_OF_QUERY
         rescue
             respond({:error => 'code_expired'})
-            debug "tag not found"
             assert_with_delay(false, "Code expired", true)
         end
         user = result['u']
         login_code = result['l']
-        debug "Tries: #{login_code[:tries]}"
         if login_code[:tries] > MAX_LOGIN_TRIES
             neo4j_query(<<~END_OF_QUERY, :tag => data[:tag])
                 MATCH (l:LoginCode {tag: $tag})
                 DETACH DELETE l;
             END_OF_QUERY
             respond({:error => 'code_expired'})
-            debug "more than #{MAX_LOGIN_TRIES} tries"
             assert_with_delay(false, "Code expired", true)
         end
         if login_code[:tries] == MAX_LOGIN_TRIES
@@ -121,15 +120,17 @@ class Main < Sinatra::Base
             totp = ROTP::TOTP.new(otp_token, issuer: "Dashboard")
             assert_with_delay(totp.verify(data[:code], drift_behind: 15, drift_ahead: 15), "Wrong OTP code entered for #{user[:email]}: #{data[:code]}", true)
         else
-            debug "comparing #{data[:code]} with #{login_code[:code]}"
             assert_with_delay(data[:code] == login_code[:code], "Wrong e-mail code entered for #{user[:email]}: #{data[:code]}", true)
         end
         if Time.at(login_code[:valid_to]) < Time.now
-            debug "code expired!"
             respond({:error => 'code_expired'})
         end
         assert(Time.at(login_code[:valid_to]) >= Time.now, 'code expired', true)
         session_id = create_session(user[:email], login_code[:tainted] ? 2 : 365 * 24)
+        neo4j_query(<<~END_OF_QUERY, :session_id => session_id, :method => login_code[:method])
+            MATCH (s:Session {sid: $session_id})
+            SET s.method = $method;
+        END_OF_QUERY
         neo4j_query(<<~END_OF_QUERY, :tag => data[:tag])
             MATCH (l:LoginCode {tag: $tag})
             DETACH DELETE l;
@@ -288,7 +289,7 @@ class Main < Sinatra::Base
                     END_OF_QUERY
                     results.each do |entry|
                         if entry[:email] && @@user_info[entry[:email]]
-                            users << {:sid => entry[:sid], :user => @@user_info[entry[:email]].dup}
+                            users << {:sid => entry[:sid], :user => @@user_info[entry[:email]].dup, :method => entry[:method]}
                         end
                     end
                 end
@@ -523,19 +524,21 @@ class Main < Sinatra::Base
             io.puts "<th>Gültig bis</th>"
             io.puts "<th>Zuletzt verwendet</th>"
             io.puts "<th>Gerät</th>"
+            io.puts "<th>Art</th>"
             io.puts "<th>Abmelden</th>"
             io.puts "</tr>"
             io.puts "</thead>"
             io.puts "<tbody>"
             sessions = get_current_user_sessions()
-            
+
             sessions.each do |s|
                 io.puts "<tr>"
                 d = s[:expires] ? Time.parse(s[:expires]).strftime('%d.%m.%Y') : '&ndash;'
                 io.puts "<td>#{d}</td>"
                 d = s[:last_access] ? Time.parse(s[:last_access]).strftime('%d.%m.%Y') : '&ndash;'
                 io.puts "<td>#{d}</td>"
-                io.puts "<td style='text-overflow: ellipsis;'>#{s[:user_agent] || 'unbekanntes Gerät'}</td>"
+                io.puts "<td style='text-overflow: ellipsis;'>#{(s[:sid] == @used_session[:sid]) ? '<i class=\'text-success fa fa-check\'></i>&nbsp;&nbsp;' : ''}#{s[:user_agent] || 'unbekanntes Gerät'}#{(s[:sid] == @used_session[:sid]) ? '<div style=\'font-size: 85%; margin-top: -5px;\'>(dieses Gerät)</div>' : ''}</td>"
+                io.puts "<td>#{LOGIN_METHODS[s[:method].to_sym] || '&ndash;'}</td>"
                 io.puts "<td><button class='btn btn-danger btn-xs btn-purge-session' data-purge-session='#{s[:scrambled_sid]}'><i class='fa fa-sign-out'></i>&nbsp;&nbsp;Gerät abmelden</button></td>"
                 io.puts "</tr>"
             end
@@ -632,5 +635,157 @@ class Main < Sinatra::Base
             users << [@@user_info[email][:display_name], code]
         end
         respond(:codes => users)
+    end
+
+    post '/api/second_login' do
+        require_user!
+        data = parse_request_data(:required_keys => [:method])
+        method = data[:method]
+        srand(Digest::SHA2.hexdigest(LOGIN_CODE_SALT).to_i + (Time.now.to_f * 1000000).to_i)
+        random_code = (0..5).map { |x| rand(10).to_s }.join('')
+        random_code = '654321' if DEVELOPMENT
+        tag = RandomTag::generate(8)
+        # debug "!!!!! #{data[:email]} => #{tag} / #{random_code} !!!!!"
+        valid_to = Time.now + 600
+        result = neo4j_query_expect_one(<<~END_OF_QUERY, :sid => @used_session[:sid], :tag => tag, :code => random_code, :valid_to => valid_to.to_i, :method => data[:method])
+            MATCH (u:User)<-[:BELONGS_TO]-(s:Session {sid: $sid})
+            CREATE (l:SecondLoginCode {tag: $tag, code: $code, valid_to: $valid_to, method: $method})-[:BELONGS_TO]->(s)
+            RETURN u, s, l;
+        END_OF_QUERY
+        telephone_number = result['u'][:telephone_number]
+        email_recipient = data[:email]
+        begin
+            if method == 'sms'
+                send_sms(telephone_number.deobfuscate(SMS_PHONE_NUMBER_PASSPHRASE), "Dein Anmeldecode lautet #{random_code}")
+            elsif method == 'otp'
+            else
+                deliver_mail do
+                    # FOR NOW, DON'T SEND E-MAIL CODES FOR CHAT LOGINS
+                    to email_recipient
+                    bcc SMTP_FROM
+                    from SMTP_FROM
+                    
+                    subject "Dein Anmeldecode lautet #{random_code}"
+
+                    StringIO.open do |io|
+                        io.puts "<p>Hallo!</p>"
+                        io.puts "<p>Dein Anmeldecode lautet:</p>"
+                        io.puts "<p style='font-size: 200%;'>#{random_code}</p>"
+                        io.puts "<p>Der Code ist für zehn Minuten gültig. Nachdem du eingeloggt bist, bleibst du für ein ganzes Jahr eingeloggt.</p>"
+        #                 link = "#{WEB_ROOT}/c/#{tag}/#{random_code}"
+        #                 io.puts "<p><a href='#{link}'>#{link}</a></p>"
+                        io.puts "<p>Falls du diese E-Mail nicht angefordert hast, hat jemand versucht, sich mit deiner E-Mail-Adresse auf <a href='https://#{WEBSITE_HOST}/'>https://#{WEBSITE_HOST}/</a> anzumelden. In diesem Fall musst du nichts weiter tun (es sei denn, du befürchtest, dass jemand anderes Zugriff auf dein E-Mail-Konto hat – dann solltest du dein E-Mail-Passwort ändern).</p>"
+                        io.puts "<p>Viele Grüße,<br />#{WEBSITE_MAINTAINER_NAME}</p>"
+                        io.string
+                    end
+                end
+            end
+        rescue StandardError => e
+            if DEVELOPMENT
+                debug "Cannot send e-mail in DEVELOPMENT mode, continuing anyway:"
+                STDERR.puts e
+            else
+                raise e
+            end
+        end
+        response_hash = {:tag => tag}
+        respond(response_hash)
+    end
+
+    post '/api/confirm_second_login' do
+        data = parse_request_data(:required_keys => [:tag, :code])
+        data[:code] = data[:code].gsub(/[^0-9]/, '')
+        begin
+            result = neo4j_query_expect_one(<<~END_OF_QUERY, :tag => data[:tag])
+                MATCH (l:SecondLoginCode {tag: $tag})-[:BELONGS_TO]->(s:Session)-[:BELONGS_TO]->(u:User)
+                SET l.tries = COALESCE(l.tries, 0) + 1
+                RETURN l, s, u;
+            END_OF_QUERY
+        rescue
+            respond({:error => 'code_expired'})
+            assert_with_delay(false, "Code expired", true)
+        end
+        user = result['u']
+        login_code = result['l']
+        if login_code[:tries] > MAX_LOGIN_TRIES
+            neo4j_query(<<~END_OF_QUERY, :tag => data[:tag])
+                MATCH (l:SecondLoginCode {tag: $tag})
+                DETACH DELETE l;
+            END_OF_QUERY
+            respond({:error => 'code_expired'})
+            assert_with_delay(false, "Code expired", true)
+        end
+        if login_code[:tries] == MAX_LOGIN_TRIES
+            respond({:error => 'code_expired'})
+        end
+
+        assert(login_code[:tries] <= MAX_LOGIN_TRIES)
+        if login_code[:method] == 'otp'
+            otp_token = user[:otp_token]
+            assert(!otp_token.nil?)
+            totp = ROTP::TOTP.new(otp_token, issuer: "Dashboard")
+            assert_with_delay(totp.verify(data[:code], drift_behind: 15, drift_ahead: 15), "Wrong OTP code entered for #{user[:email]}: #{data[:code]}", true)
+        else
+            assert_with_delay(data[:code] == login_code[:code], "Wrong e-mail code entered for #{user[:email]}: #{data[:code]}", true)
+        end
+        if Time.at(login_code[:valid_to]) < Time.now
+            respond({:error => 'code_expired'})
+        end
+        assert(Time.at(login_code[:valid_to]) >= Time.now, 'code expired', true)
+        neo4j_query(<<~END_OF_QUERY, :sid => @used_session[:sid])
+            MATCH (sf:SecondFactor)-[:BELONGS_TO]->(s:Session {sid: $sid})
+            DETACH DELETE sf;
+        END_OF_QUERY
+        neo4j_query(<<~END_OF_QUERY, :tag => data[:tag])
+            MATCH (l:SecondLoginCode {tag: $tag})
+            DETACH DELETE l;
+        END_OF_QUERY
+        neo4j_query(<<~END_OF_QUERY, :sid => @used_session[:sid], :method => login_code[:method], :ts_expire => Time.now.to_i + TRESOR_SECOND_FACTOR_TTL)
+            MATCH (s:Session {sid: $sid})
+            CREATE (sf:SecondFactor {method: $method, ts_expire: $ts_expire})-[:BELONGS_TO]->(s)
+        END_OF_QUERY
+        respond(:ok => 'yeah')
+    end
+
+    def purge_stale_second_factors
+        neo4j_query(<<~END_OF_QUERY, :ts_now => Time.now.to_i)
+            MATCH (sf:SecondFactor)
+            WHERE sf.ts_expire < $ts_now
+            DETACH DELETE sf;
+        END_OF_QUERY
+    end
+
+    def second_factor_time_left
+        require_user!
+        purge_stale_second_factors
+        factors = neo4j_query(<<~END_OF_QUERY, :sid => @used_session[:sid])
+            MATCH (sf:SecondFactor)-[:BELONGS_TO]->(s:Session {sid: $sid})
+            WHERE s.method IS NOT NULL AND s.method <> sf.method
+            RETURN sf;
+        END_OF_QUERY
+        return nil if factors.empty?
+        return factors.first['sf'][:ts_expire] - Time.now.to_i
+    end
+
+    post '/api/refresh_second_factor' do
+        require_user!
+        purge_stale_second_factors
+        factors = neo4j_query(<<~END_OF_QUERY, :sid => @used_session[:sid], :ts_expire => Time.now.to_i + TRESOR_SECOND_FACTOR_TTL)
+            MATCH (sf:SecondFactor)-[:BELONGS_TO]->(s:Session {sid: $sid})
+            WHERE s.method IS NOT NULL AND s.method <> sf.method
+            SET sf.ts_expire = $ts_expire
+            RETURN sf;
+        END_OF_QUERY
+        respond(:time_left => factors.first['sf'][:ts_expire] - Time.now.to_i)
+    end
+
+    post '/api/delete_second_factor' do
+        require_user!
+        purge_stale_second_factors
+        neo4j_query(<<~END_OF_QUERY, :sid => @used_session[:sid])
+            MATCH (sf:SecondFactor)-[:BELONGS_TO]->(s:Session {sid: $sid})
+            DETACH DELETE sf;
+        END_OF_QUERY
+        respond(:yay => 'sure')
     end
 end

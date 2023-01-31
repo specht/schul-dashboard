@@ -145,6 +145,33 @@ function bib_api_call_no_jwt(url, data, callback, options) {
     api_call(BIB_HOST + url, data_json, callback, { ...options});
 }
 
+function tresor_api_call(url, data, callback, options) {
+    let data_json = JSON.stringify(data);
+    let expired = localStorage.getItem('tresor_jwt_expired') || 0;
+    if (Date.now() > expired) {
+        // request new JWT
+        api_call('/api/get_tresor_jwt_token', {}, function (data) {
+            if (data.success) {
+                localStorage.setItem('tresor_jwt_token', data.token);
+                localStorage.setItem('tresor_jwt_expired', Date.now() + data.ttl * 1000);
+                let headers = {headers: {'X-JWT': data.token}};
+                api_call(TRESOR_HOST + url, data_json, callback, { ...options, ...headers });
+            } else {
+                show_error_message(data.error);
+            }
+        });
+    } else {
+        // re-use existing JWT
+        let headers = {headers: {'X-JWT': localStorage.getItem('tresor_jwt_token')}};
+        api_call(TRESOR_HOST + url, data_json, callback, { ...options, ...headers });
+    }
+}
+
+function tresor_api_call_no_jwt(url, data, callback, options) {
+    let data_json = JSON.stringify(data);
+    api_call(TRESOR_HOST + url, data_json, callback, { ...options});
+}
+
 function perform_logout() {
     // clear any short-lived JWT from local storage
     localStorage.clear();

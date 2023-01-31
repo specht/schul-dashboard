@@ -1,0 +1,99 @@
+#{this_is_a_page_for_logged_in_teachers}
+#{File.read('/static/_tresor_public_template.html')}
+<div class='container bg-white'>
+    <div class="w-full">
+        <div style="display: #{second_factor_time_left.nil? ? 'block' : 'none'}">
+            <div id="connection-failed" style="display: none;">
+                <p>
+                Der Datentresor konnte nicht erreicht werden. Bitte stellen Sie sicher, dass Sie sich in der Schule befinden und entweder an einem der Schulrechner oder im Schul-WLAN angemeldet sind.
+                </p>
+            </div>
+            <div id="connection-established" style="display: none;">
+                <div id="div-login">
+                    <p>
+                        Sie sind bereits per <strong>#{LOGIN_METHODS_SHORT[@used_session[:method].to_sym]}</strong> am Dashboard angemeldet. Um auf den Datentresor zugreifen zu können, müssen Sie sich mit einem weiteren Faktor ausweisen. Bitte wählen Sie aus den folgenden Möglichkeiten:
+                    </p>
+                    <div style="display: flex; align-items: start; gap: 10px; justify-content: center;">
+                        <button style='display: #{@used_session[:method] == 'email' ? 'none' : 'block'}' id='bu_sf_email' type="button" class="btn btn-outline-secondary bu_second_login" data-method="email" disabled><i class='fa fa-envelope'></i>&nbsp;&nbsp;Code per E-Mail erhalten</button>
+                        <button style='display: #{((@used_session[:method] == 'sms') || !Main.sms_gateway_ready?) ? 'none' : 'block'}' id='bu_sf_sms' type="button" class="btn btn-outline-secondary bu_second_login" data-method="sms" disabled><i class='fa fa-mobile'></i>&nbsp;&nbsp;Code per SMS erhalten</button>
+                        <button style='display: #{@used_session[:method] == 'otp' ? 'none' : 'block'}' id='bu_sf_otp' type="button" class="btn btn-outline-secondary bu_second_login" data-method="otp" disabled><i class='fa fa-qrcode'></i>&nbsp;&nbsp;OTP-Code eingeben</button>
+                    </div>
+                    <div style='color: #888; margin-top: 1em; text-align: center; display: #{((@used_session[:method] != 'sms') && !Main.sms_gateway_ready?) ? 'block' : 'none'}'>
+                        <em>
+                            Hinweis: Momentan können leider keine SMS versendet werden.
+                        </em>
+                    </div>
+                    <hr />
+                    <p>
+                        <em>
+                        Hinweis: Falls Sie eines der nicht verfügbaren Anmeldeverfahren freischalten möchten, können Sie dies <a href='/profil#anmeldung'>im Profil tun</a>, indem Sie eine Telefonnummer hinterlegen oder einen OTP-Code einscannen.
+                        </em>
+                    </p>
+                </div>
+                <div id="div-confirm-login" style="display: none;" class="col-md-6 offset-md-3">
+                    <form id='form'>
+                        <div class="input-group mb-3">
+                            <input type="number" id='code' class="form-control" placeholder="Bitte gib deinen Code ein" style='text-align: center;'>
+                            <div class="input-group-append">
+                                <button id='submit' class="btn btn-primary" type="submit">Anmelden</button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+var first_login_method = "#{@used_session[:method]}";
+var otp_qr_code = '#{session_user_otp_qr_code()}';
+var telephone_number = '#{session_user_telephone_number()}';
+
+window.addEventListener('load', function () {
+    tresor_api_call_no_jwt('/public/ping', {}, function(data) {
+        if (data.success) {
+            $('#bu_sf_email').removeClass('btn-outline-secondary').addClass('btn-success').prop('disabled', false);
+            if (otp_qr_code.length > 0)
+                $('#bu_sf_otp').removeClass('btn-outline-secondary').addClass('btn-success').prop('disabled', false);
+            if (telephone_number.length > 0)
+                $('#bu_sf_sms').removeClass('btn-outline-secondary').addClass('btn-success').prop('disabled', false);
+            $('#connection-established').show();
+        } else {
+            $('.api_messages').hide();
+            $('#connection-failed').show();
+        }
+    });
+    $('.bu_second_login').click(function(e) {
+        let button = $(e.target);
+        let method = button.data('method');
+        console.log(`trying login via ${method}`);
+        api_call('/api/second_login', {method: method}, function(data) {
+            console.log(data);
+            $('#div-login').slideUp();
+            $('#div-confirm-login').slideDown();
+            $('#code').focus();
+            let tag = data.tag;
+
+            $('#form').submit(function(e) { e.preventDefault(); });
+            $('#submit').click(function(e) {
+                api_call('/api/confirm_second_login', {tag: tag, code: $('#code').val()}, function(data) {
+                    console.log(data);
+                    if (data.success === true) {
+                        window.location.href = '/tresor';
+                    } else {
+                        if (data.error === 'code_expired') {
+                            $('#form').hide();
+                            show_error_message('Dein Anmeldecode ist abgelaufen.');
+                        }
+                        else
+                            show_error_message('Bei der Anmeldung ist ein Fehler aufgetreten.');
+                        $('#code').val('').focus();
+                    }
+                });
+            });
+        });
+    });
+});
+
+</script>

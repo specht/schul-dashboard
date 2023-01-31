@@ -48,6 +48,10 @@ Neo4jBolt.bolt_port = 7687
 BIB_JWT_TTL = 60
 BIB_JWT_TTL_EXTRA = 20
 
+TRESOR_SECOND_FACTOR_TTL = 60 * 10
+TRESOR_JWT_TTL = 60
+TRESOR_JWT_TTL_EXTRA = 20
+
 require './background-renderer.rb'
 require './include/admin.rb'
 require './include/bib_login.rb'
@@ -82,6 +86,7 @@ require './include/tablet_set.rb'
 require './include/tests.rb'
 require './include/test_events.rb'
 require './include/theme.rb'
+require './include/tresor.rb'
 require './include/user.rb'
 require './include/vote.rb'
 require './include/website.rb'
@@ -223,6 +228,7 @@ class SetupDatabase
         'KnownEmailAddress/email',
         'Lesson/key',
         'LoginCode/tag',
+        'SecondLoginCode/tag',
         'MatrixAccessToken/access_token',
         'Message/key',
         'NewsEntry/timestamp',
@@ -251,6 +257,8 @@ class SetupDatabase
         'ExternalUser/entered_by',
         'LessonInfo/offset',
         'LoginCode/code',
+        'SecondFactor/ts_expire',
+        'SecondLoginCode/code',
         'News/date',
         'NextcloudLoginCode/code',
         'PollRun/end_date',
@@ -895,7 +903,12 @@ class Main < Sinatra::Base
         @@lessons_for_user = {}
         @@schueler_for_lesson = {}
         @@schueler_offset_in_lesson = {}
-        @@user_info.each_pair do |email, user|
+        @@user_info.keys.sort do |a, b|
+            (@@user_info[a][:last_name].downcase == @@user_info[b][:last_name].downcase) ?
+            (@@user_info[a][:first_name].downcase <=> @@user_info[b][:first_name].downcase) :
+            (@@user_info[a][:last_name].downcase <=> @@user_info[b][:last_name].downcase)
+        end.each do |email|
+            user = @@user_info[email]
             lessons = (user[:teacher] ? @@lessons_for_shorthand[user[:shorthand]] : @@lessons_for_klasse[user[:klasse]]).dup
             unless user[:teacher]
                 if ['11', '12'].include?(user[:klasse])
@@ -926,10 +939,10 @@ class Main < Sinatra::Base
         end
         @@schueler_for_lesson.each_pair do |lesson_key, emails|
             @@schueler_offset_in_lesson[lesson_key] ||= {}
-            emails.sort! do |a, b|
+            sorted_emails = emails.sort do |a, b|
                 @@user_info[a][:display_name] <=> @@user_info[b][:display_name]
             end
-            emails.each.with_index do |email, i|
+            sorted_emails.each.with_index do |email, i|
                 @@schueler_offset_in_lesson[lesson_key][email] = i
             end
         end
@@ -1365,6 +1378,7 @@ class Main < Sinatra::Base
 
         # before any API request, determine currently logged in user via the provided session ID
         @session_user = nil
+        @used_session = nil
         if request.cookies.include?('sid')
             sid = request.cookies['sid']
 #             debug "SID: [#{sid}]"
@@ -1385,6 +1399,7 @@ class Main < Sinatra::Base
                             end
                             session_expiry = session[:expires]
                             if DateTime.parse(session_expiry) > DateTime.now
+                                @used_session = session.to_h
                                 email = results.first['u'][:email]
                                 if email == "tablet@#{SCHUL_MAIL_DOMAIN}"
                                     if @@tablets_which_are_lehrer_tablets.include?(session[:tablet_id])
@@ -1618,6 +1633,9 @@ class Main < Sinatra::Base
                 #     nav_items << :monitor
                 # end
                 nav_items << :messages
+                if user_is_eligible_for_tresor?
+                    nav_items << :tresor
+                end
                 if admin_logged_in? || user_who_can_upload_files_logged_in? || user_who_can_manage_news_logged_in? || user_who_can_manage_monitors_logged_in? || user_who_can_manage_tablets_logged_in?
                     nav_items << :admin
                 end
@@ -1847,6 +1865,10 @@ class Main < Sinatra::Base
                     else
                         io.puts "<a class='nav-link nav-icon' href='/messages'><div class='icon'><i class='fa fa-comment'></i></div>Nachrichten</a>"
                     end
+                    io.puts "</li>"
+                elsif x == :tresor
+                    io.puts "<li class='nav-item text-nowrap'>"
+                    io.puts "<a class='nav-link nav-icon' href='/tresor'><div class='icon'><i class='fa fa-database'></i></div>Datentresor</a>"
                     io.puts "</li>"
                 else
                     io.puts "<li class='nav-item text-nowrap'>"
@@ -2291,6 +2313,20 @@ class Main < Sinatra::Base
         }
         token = JWT.encode payload, JWT_APPKEY_BIB, algorithm = 'HS256', header_fields = {:typ => 'JWT'}
         respond(:token => token, :ttl => BIB_JWT_TTL)
+    end
+
+    post '/api/get_tresor_jwt_token' do
+        require_teacher!
+        assert(!(second_factor_time_left.nil?))
+        debug "Creating tresor token for #{@session_user[:email]}"
+        payload = {
+            :email => @session_user[:email],
+            :display_name => @session_user[:display_name],
+            :teacher => teacher_logged_in?,
+            :exp => Time.now.to_i + TRESOR_JWT_TTL + TRESOR_JWT_TTL_EXTRA
+        }
+        token = JWT.encode payload, DATENTRESOR_JWT_APPKEY, algorithm = 'HS256', header_fields = {:typ => 'JWT'}
+        respond(:token => token, :ttl => TRESOR_JWT_TTL)
     end
 
     get '/api/get_bib_dump_etag' do

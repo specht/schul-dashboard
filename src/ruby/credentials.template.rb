@@ -160,6 +160,9 @@ WEBSITE_READ_INFO_SECRET = 'bitte_ein_zufälliges_secret_generieren'
 SMS_GATEWAY_SECRET = 'bitte_ein_zufälliges_secret_generieren'
 SMS_PHONE_NUMBER_PASSPHRASE = 'bitte_ein_zufälliges_secret_generieren'
 SMS_AUTH_UNLOCKED_FOR = nil
+DATENTRESOR_UNLOCKED_FOR = nil
+DATENTRESOR_HOST = ''
+DATENTRESOR_JWT_APPKEY = ''
 
 MESSAGE_DELAY = DEVELOPMENT ? 1 : 1
 LOGIN_STATS_D = [0, 7, 28, 1000]

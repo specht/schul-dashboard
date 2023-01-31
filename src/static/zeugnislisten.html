@@ -1,0 +1,109 @@
+#{this_is_a_page_for_logged_in_teachers}
+#{File.read('/static/_tresor_public_template.html')}
+<style>
+    tr.focused {
+        background-color: #fce98d;
+    }
+</style>
+<div class='container bg-white'>
+    <div class="w-full">
+        <div id="kurs_buttons_here"></div>
+        <div id="noten_here"></div>
+    </div>
+</div>
+
+<script>
+let SCHULJAHR = '2022_23';
+let HALBJAHR = '1';
+var kurse = #{(@@lessons_for_shorthand[@session_user[:shorthand]] || []).map { |x| @@lessons[:lesson_keys][x].merge({:lesson_key => x}) }.to_json};
+var sus_for_kurs = #{Hash[(@@lessons_for_shorthand[@session_user[:shorthand]] || []).map { |x| [x, @@schueler_for_lesson[x]] }].to_json};
+var user_info = #{@@user_info.to_json};
+
+window.addEventListener('load', function () {
+    for (let kurs of kurse) {
+        let button = $(`<button style='white-space: nowrap;' class='inline-block bg-slate-900 border border-blue-500 hover:bg-slate-200 rounded py-1 px-3 mr-1 mb-1'>${kurs.pretty_folder_name}</button>`);
+        $('#kurs_buttons_here').append(button);
+        button.click(function(e) {
+            let lesson_key = kurs.lesson_key;
+            console.log(`Loading ${lesson_key}`);
+            let path_array = [];
+            path_array.push(['Schuljahr', SCHULJAHR]);
+            path_array.push(['Halbjahr', HALBJAHR]);
+            path_array.push(['Fach', lesson_key]);
+            path_array.push(['Email', sus_for_kurs[lesson_key]]);
+            tresor_api_call('/jwt/get_many', {path_array: path_array, key: 'Note'}, function(data) {
+                if (data.success) {
+                    console.log(data.results);
+                    $('#noten_here').empty();
+                    let table = new SortableTable({
+                        element: $('#noten_here'),
+                        xs: true,
+                        headers: ['Nr.', 'Nachname', 'Vorname', 'Klasse', kurs.fach].map(function (x) {
+                            let th = $('<th>').text(x);
+                            return th;
+                        }),
+                        rows: sus_for_kurs[lesson_key].map(function (email, index) {
+                            let input = $(`<input class='form-control' style='width: 3em; text-align: center; height: calc(1.5em + 2px);'>`)
+                            input.val(data.results[`Schuljahr:${SCHULJAHR}/Halbjahr:${HALBJAHR}/Fach:${lesson_key}/Email:${email}`]);
+                            input.focus(function(e) {
+                                input.select();
+                                $('#noten_here').find('tr').removeClass('focused');
+                                input.closest('tr').addClass('focused');
+                                $(e.target).data('old_value', $(e.target).val());
+                            });
+                            input.blur(function(e) {
+                                $('#noten_here').find('tr').removeClass('focused');
+                                let value = $(e.target).val().trim();
+                                if (value !== $(e.target).data('old_value')) {
+                                    let path = `Schuljahr:${SCHULJAHR}/Halbjahr:${HALBJAHR}/Fach:${lesson_key}/Email:${email}`;
+                                    tresor_api_call('/jwt/store', {path: path, key: 'Note', value: value}, function(data) {
+
+                                    });
+                                }
+                            });
+                            input.keydown(function(e) {
+                                if (e.key === 'Enter' || e.key === 'ArrowDown') {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    let row = $(e.target).closest('tr');
+                                    let this_index = $(e.target).closest('td').index();
+                                    let next_row = row.next('tr');
+                                    if (next_row.length === 0) {
+                                        next_row = row.closest('tbody').find('tr').first();
+                                    }
+                                    next_row.find('td').eq(this_index).find('input').focus().select();
+                                }
+                                if (e.key === 'ArrowUp') {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    let row = $(e.target).closest('tr');
+                                    let this_index = $(e.target).closest('td').index();
+                                    let next_row = row.prev('tr');
+                                    if (next_row.length === 0) {
+                                        next_row = row.closest('tbody').find('tr').last()
+                                    }
+                                    next_row.find('td').eq(this_index).find('input').focus().select();
+                                }
+                            });
+                            return [
+                                email,
+                                `<td>${index + 1}.</td>`,
+                                `<td>${user_info[email].last_name}</td>`,
+                                `<td>${user_info[email].first_name}</td>`,
+                                // `<td>${moment(user_info[email].geburtstag).format('L')}</td>`,
+                                `<td>${user_info[email].klasse}</td>`,
+                                $('<td>').append(input),
+                            ];
+                        }),
+                        sortable: false,
+                        // filter_callback: user_filter,
+                        // clickable_rows: true,
+                        // clickable_row_callback: row_clicked
+                    });
+                    // window.user_table.sort_rows(2, false);
+                }
+            });
+        });
+    }
+});
+</script>

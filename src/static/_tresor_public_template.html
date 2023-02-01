@@ -116,8 +116,16 @@
     }
 
     .container, .container-lg, .container-md, .container-sm, .container-xl {
-        max-width: 1500px;
+        max-width: calc(100% - 30px);
     }
+
+    #bu-refresh-second-factor {
+        transition: background 1s ease;
+    }
+    #bu-refresh-second-factor .fa {
+        transition: color 1s ease;
+    }
+
     @tailwind base;
     @tailwind components;
     @tailwind utilities;
@@ -135,7 +143,7 @@
     du Fragen, Hinweise oder Anmerkungen hast, schreib eine E-Mail an <a
         href='mailto:specht@gymnasiumsteglitz.de'>specht@gymnasiumsteglitz.de</a>.
 </div>
-<div class='container' style='padding: 0; display: flex; background: white; border-radius: 0;'>
+<div id='submenu' class='container' style='padding: 0; display: flex; background: white; border-radius: 0;'>
     <section class="w-full" style="height: 51px; display: #{second_factor_time_left.nil? ? 'none' : 'block'}">
         <ul class="submenu flex bg-white px-2.5 py-2"
             style="border-bottom: 1px solid #eee; left: 0px; right: 0px; z-index: 100;">
@@ -146,7 +154,7 @@
             <li style="display: #{can_manage_bib_logged_in? ? 'unset' : 'none'}; #{@session_device == 'bib-mobile' ? 'display: none;' : ''} border-left: 1px solid #ccc; height: 52px; margin: -10px 10px -10px 10px; margin-left: auto;">
             </li>
             <li class="mx-1">
-                <button id='bu-refresh-second-factor' style='white-space: nowrap;' class="inline-block bg-slate-900 border border-blue-500 hover:bg-slate-200 rounded py-1 px-3"><i class='text-slate-600 fa fa-refresh'></i>&nbsp;&nbsp;<span style='display: inline-block; width: 3em;' id="sf-time-left"></span></button>
+                <button id='bu-refresh-second-factor' style='white-space: nowrap;' class="inline-block bg-slate-900 border border-blue-500 rounded py-1 px-3"><i class='text-slate-600 fa fa-clock-o'></i>&nbsp;&nbsp;<span style='display: inline-block; width: 3em;' id="sf-time-left"></span></button>
             </li>
             <li class="mx-1">
                 <button id='bu-delete-second-factor' style='white-space: nowrap;' class="inline-block bg-slate-900 border border-blue-500 hover:bg-slate-200 rounded py-1 px-3"><i class='text-slate-600 fa fa-sign-out'></i>&nbsp;&nbsp;Abmelden</button>
@@ -176,9 +184,30 @@ function update_time_left() {
     let minutes = Math.floor(seconds_left / 60.0);
     let seconds = (seconds_left - minutes * 60);
     $('#sf-time-left').text(`${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`);
+
+    if (seconds_left <= 60) {
+        $('#bu-refresh-second-factor').removeClass('bg-slate-900 bg-amber-300').addClass('bg-red-400');
+        $('#bu-refresh-second-factor .fa').removeClass('text-slate-600 bg-amber-600').addClass('text-red-600');
+    } else if (seconds_left <= 120) {
+        $('#bu-refresh-second-factor').removeClass('bg-slate-900 bg-red-400').addClass('bg-amber-300');
+        $('#bu-refresh-second-factor .fa').removeClass('text-slate-600 text-red-600').addClass('text-amber-600');
+    } else {
+        $('#bu-refresh-second-factor').removeClass('bg-red-400 bg-amber-300').addClass('bg-slate-900');
+        $('#bu-refresh-second-factor .fa').removeClass('text-red-600 text-amber-600').addClass('text-slate-600');
+    }
 }
 
 window.addEventListener('load', function () {
+    tresor_api_call_no_jwt('/public/ping', {}, function(data) {
+        console.log(data);
+        if (!data.success) {
+            if (window.location.pathname !== '/tresor')
+                window.location.href = '/tresor';
+            show_error_message('Es konnte keine Verbindung zum Datentresor hergestellt werden. Stellen Sie sicher, dass Sie sich in der Schule befinden und an einem der Computer im Silentium oder im WLAN angemeldet sind.');
+            $('#submenu').hide();
+            $('#subsubmenu').hide();
+        }
+    });
     update_time_left();
     setInterval(function() {
         update_time_left();

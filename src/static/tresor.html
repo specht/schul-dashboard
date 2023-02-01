@@ -8,7 +8,7 @@
                 Der Datentresor konnte nicht erreicht werden. Bitte stellen Sie sicher, dass Sie sich in der Schule befinden und entweder an einem der Schulrechner oder im Schul-WLAN angemeldet sind.
                 </p>
             </div>
-            <div id="connection-established" style="display: none;">
+            <div id="connection-established">
                 <div id="div-login">
                     <p>
                         Sie sind bereits per <strong>#{LOGIN_METHODS_SHORT[@used_session[:method].to_sym]}</strong> am Dashboard angemeldet. Um auf den Datentresor zugreifen zu können, müssen Sie sich mit einem weiteren Faktor ausweisen. Bitte wählen Sie aus den folgenden Möglichkeiten:
@@ -51,19 +51,11 @@ var otp_qr_code = '#{session_user_otp_qr_code()}';
 var telephone_number = '#{session_user_telephone_number()}';
 
 window.addEventListener('load', function () {
-    tresor_api_call_no_jwt('/public/ping', {}, function(data) {
-        if (data.success) {
-            $('#bu_sf_email').removeClass('btn-outline-secondary').addClass('btn-success').prop('disabled', false);
-            if (otp_qr_code.length > 0)
-                $('#bu_sf_otp').removeClass('btn-outline-secondary').addClass('btn-success').prop('disabled', false);
-            if (telephone_number.length > 0)
-                $('#bu_sf_sms').removeClass('btn-outline-secondary').addClass('btn-success').prop('disabled', false);
-            $('#connection-established').show();
-        } else {
-            $('.api_messages').hide();
-            $('#connection-failed').show();
-        }
-    });
+    $('#bu_sf_email').removeClass('btn-outline-secondary').addClass('btn-success').prop('disabled', false);
+    if (otp_qr_code.length > 0)
+        $('#bu_sf_otp').removeClass('btn-outline-secondary').addClass('btn-success').prop('disabled', false);
+    if (telephone_number.length > 0)
+        $('#bu_sf_sms').removeClass('btn-outline-secondary').addClass('btn-success').prop('disabled', false);
     $('.bu_second_login').click(function(e) {
         let button = $(e.target);
         let method = button.data('method');

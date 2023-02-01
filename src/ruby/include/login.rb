@@ -767,16 +767,20 @@ class Main < Sinatra::Base
         return factors.first['sf'][:ts_expire] - Time.now.to_i
     end
 
-    post '/api/refresh_second_factor' do
-        require_user!
-        purge_stale_second_factors
+    def refresh_second_factor
         factors = neo4j_query(<<~END_OF_QUERY, :sid => @used_session[:sid], :ts_expire => Time.now.to_i + TRESOR_SECOND_FACTOR_TTL)
             MATCH (sf:SecondFactor)-[:BELONGS_TO]->(s:Session {sid: $sid})
             WHERE s.method IS NOT NULL AND s.method <> sf.method
             SET sf.ts_expire = $ts_expire
             RETURN sf;
         END_OF_QUERY
-        respond(:time_left => factors.first['sf'][:ts_expire] - Time.now.to_i)
+        return factors.first['sf'][:ts_expire] - Time.now.to_i
+    end
+
+    post '/api/refresh_second_factor' do
+        require_user!
+        purge_stale_second_factors
+        respond(:time_left => refresh_second_factor())
     end
 
     post '/api/delete_second_factor' do

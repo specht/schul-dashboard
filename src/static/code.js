@@ -152,6 +152,8 @@ function tresor_api_call(url, data, callback, options) {
         // request new JWT
         api_call('/api/get_tresor_jwt_token', {}, function (data) {
             if (data.success) {
+                second_factor_expires = Math.round((Date.now() / 1000.0) + data.time_left);
+                update_time_left();
                 localStorage.setItem('tresor_jwt_token', data.token);
                 localStorage.setItem('tresor_jwt_expired', Date.now() + data.ttl * 1000);
                 let headers = {headers: {'X-JWT': data.token}};

@@ -90,6 +90,7 @@ require './include/tresor.rb'
 require './include/user.rb'
 require './include/vote.rb'
 require './include/website.rb'
+require './include/zeugnisse.rb'
 require './parser.rb'
 
 Faye::WebSocket.load_adapter('thin')
@@ -604,6 +605,7 @@ class Main < Sinatra::Base
             @@user_info[record[:email]] = {
                 :teacher => false,
                 :first_name => record[:first_name],
+                :official_first_name => record[:official_first_name],
                 :display_first_name => record[:display_first_name],
                 :display_last_name => record[:display_last_name],
                 :display_name_official => record[:display_name_official],
@@ -2318,6 +2320,7 @@ class Main < Sinatra::Base
     post '/api/get_tresor_jwt_token' do
         require_teacher!
         assert(!(second_factor_time_left.nil?))
+        purge_stale_second_factors
         debug "Creating tresor token for #{@session_user[:email]}"
         payload = {
             :email => @session_user[:email],
@@ -2326,7 +2329,7 @@ class Main < Sinatra::Base
             :exp => Time.now.to_i + TRESOR_JWT_TTL + TRESOR_JWT_TTL_EXTRA
         }
         token = JWT.encode payload, DATENTRESOR_JWT_APPKEY, algorithm = 'HS256', header_fields = {:typ => 'JWT'}
-        respond(:token => token, :ttl => TRESOR_JWT_TTL)
+        respond(:token => token, :ttl => TRESOR_JWT_TTL, :time_left => refresh_second_factor())
     end
 
     get '/api/get_bib_dump_etag' do

@@ -2,6 +2,7 @@ source 'https://rubygems.org'
 
 gem 'chunky_png'
 gem 'curb'
+gem 'docx'
 gem 'faye-websocket'
 gem 'htmlentities'
 gem 'http'

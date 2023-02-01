@@ -313,6 +313,7 @@ class Parser
         end
 
         record = {:first_name => rufname,
+                  :official_first_name => vorname,
                   :last_name => nachname,
                   :email => email,
                   :geburtstag => geburtstag,

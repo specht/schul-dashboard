@@ -48,6 +48,26 @@ window.addEventListener('load', function () {
     }
 });
 
+let noten_allowed_values = [
+    '1+', '1', '1-',
+    '2+', '2', '2-',
+    '3+', '3', '3-',
+    '4+', '4', '4-',
+    '5+', '5', '5-',
+    '6', 'n.e.', 'o.B.',
+];
+
+let noten_mark = ['4-', '5+', '5', '5-', '6'];
+
+function input_note_apply_style(input) {
+    let value = $(input).val().trim();
+    if (noten_mark.indexOf(value) >= -1)
+        input.addClass('marked');
+    else
+        input.removeClass('marked');
+}
+
+
 function load_noten_table(container, lesson_keys, emails) {
     let path_array = [];
     path_array.push(['Schuljahr', SCHULJAHR]);
@@ -71,8 +91,8 @@ function load_noten_table(container, lesson_keys, emails) {
                     let cells = [
                         email,
                         `<td style='text-align: right;'>${index + 1}.</td>`,
-                        `<td>${user_info[email].last_name}</td>`,
-                        `<td>${user_info[email].official_first_name}</td>`,
+                        `<td style='max-width: 10em;'>${user_info[email].last_name}</td>`,
+                        `<td style='max-width: 10em;'>${user_info[email].official_first_name}</td>`,
                         // `<td>${moment(user_info[email].geburtstag).format('L')}</td>`,
                         `<td>${klassen_tr[user_info[email].klasse] ?? user_info[email].klasse}</td>`,
                     ];

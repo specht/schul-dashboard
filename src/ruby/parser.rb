@@ -965,6 +965,54 @@ class Parser
         return schueler_for_lesson_key
     end
 
+    def parse_sesb(user_info, schueler_for_klasse)
+#         debug "Parsing wahlpflichtkurswahl..."
+        sesb_sus = Set.new()
+        unassigned_names = Set.new()
+        begin
+            if File.exist?('/data/schueler/sesb.yaml')
+                sus = YAML.load(File.read('/data/schueler/sesb.yaml'))
+                sus.each do |name|
+                    if name[0] == '@'
+                        klasse = name.sub('@', '')
+                        schueler_for_klasse[klasse].each do |email|
+                            sesb_sus << email
+                        end
+                    else
+                        email = nil
+                        emails = user_info.select do |email, user_info|
+                            last_name = user_info[:last_name]
+                            first_name = user_info[:first_name]
+                            "#{first_name} #{last_name}" == name || email.sub("@#{SCHUL_MAIL_DOMAIN}", '') == name || email == name
+                        end.keys
+                        if emails.size == 1
+                            email = emails.to_a.first
+                        else
+                            unassigned_names << name
+                        end
+                        unless email
+                            debug "Wahlpflichtkurswahl: Can't assign #{name}!"
+                        end
+                        if email
+                            sesb_sus << email
+                        end
+                    end
+                end
+            end
+        rescue
+            debug '-' * 50
+            debug "ATTENTION: Error parsing sesb.yaml, skipping..."
+            debug '-' * 50
+            raise
+        end
+        unless unassigned_names.empty?
+            debug "SESB: Can't assign these names!"
+            debug unassigned_names.to_a.sort.to_yaml
+        end
+        # debug "Wahlpflichtkurswahl: got SuS for #{schueler_for_lesson_key.size} lesson keys."
+        return sesb_sus
+    end
+        
     def parse_current_email_addresses
         email_addresses = []
         email_accounts_path = '/data/current-email-addresses.csv'

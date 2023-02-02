@@ -39,6 +39,7 @@ warn_level = $VERBOSE
 $VERBOSE = nil
 require './credentials.rb'
 require '/data/config.rb'
+require '/data/zeugnisse/config.rb'
 $VERBOSE = warn_level
 DASHBOARD_SERVICE = ENV['DASHBOARD_SERVICE']
 
@@ -614,6 +615,7 @@ class Main < Sinatra::Base
                 :email => record[:email],
                 :id => record[:id],
                 :klasse => record[:klasse],
+                :klassenstufe => record[:klasse].to_i,
                 :geschlecht => record[:geschlecht],
                 :nc_login => record[:email].split('@').first.sub(/\.\d+$/, ''),
                 :matrix_login => matrix_login,
@@ -891,6 +893,10 @@ class Main < Sinatra::Base
 
         kurse_for_schueler, schueler_for_kurs = parser.parse_kurswahl(@@user_info.reject { |x, y| y[:teacher] }, @@lessons, lesson_key_tr, @@original_lesson_key_for_lesson_key)
         wahlpflicht_sus_for_lesson_key = parser.parse_wahlpflichtkurswahl(@@user_info.reject { |x, y| y[:teacher] }, @@lessons, lesson_key_tr, @@schueler_for_klasse)
+        sesb_sus = parser.parse_sesb(@@user_info.reject { |x, y| y[:teacher] }, @@schueler_for_klasse)
+        sesb_sus.each do |email|
+            @@user_info[email][:sesb] = true
+        end
 
         @@materialamt_for_lesson = {}
         rows = $neo4j.neo4j_query(<<~END_OF_QUERY)

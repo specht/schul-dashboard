@@ -7,6 +7,9 @@
 </style>
 <div class='container bg-white'>
     <div class="w-full">
+        <h2>Zeugnisse #{ZEUGNIS_SCHULJAHR.sub('_', '/')} (#{ZEUGNIS_HALBJAHR}. Halbjahr)</h2>
+        <h3>Zeugnislisten</h3>
+        <div id="zeugnislisten_table_here"></div>
         <h3>Klassen</h3>
         <div id="klassen_buttons_here"></div>
         <h3>Kurse</h3>
@@ -21,16 +24,42 @@ var SCHULJAHR = '2022_23';
 var HALBJAHR = '1';
 var kurse = #{(@@lessons_for_shorthand[@session_user[:shorthand]] || []).map { |x| @@lessons[:lesson_keys][x].merge({:lesson_key => x}) }.to_json};
 var sus_for_kurs = #{Hash[(@@lessons_for_shorthand[@session_user[:shorthand]] || []).map { |x| [x, @@schueler_for_lesson[x]] }].to_json};
-var klassen_order = #{KLASSEN_ORDER.to_json};
+var zeugnis_klassen_order = #{ZEUGNIS_KLASSEN_ORDER.to_json};
 var klassen_tr = #{KLASSEN_TR.to_json};
 var user_info = #{@@user_info.to_json};
-var kurse_for_klasse = #{Hash[KLASSEN_ORDER.map { |klasse| [klasse, @@lessons_for_klasse[klasse].map { |x| @@lessons[:lesson_keys][x].merge({:lesson_key => x})}]}].to_json};
+var kurse_for_klasse = #{Hash[ZEUGNIS_KLASSEN_ORDER.map { |klasse| [klasse, @@lessons_for_klasse[klasse].map { |x| @@lessons[:lesson_keys][x].merge({:lesson_key => x})}]}].to_json};
 var kurs_info = #{@@lessons[:lesson_keys].to_json};
 var schueler_for_klasse = #{@@schueler_for_klasse.to_json};
+var faecher_for_zeugnis = #{FAECHER_FOR_ZEUGNIS[ZEUGNIS_SCHULJAHR][ZEUGNIS_HALBJAHR].to_json};
 
 window.addEventListener('load', function () {
-    for (let klasse of klassen_order) {
-        if (klasse === '11' || klasse === '12') continue;
+    let table = $(`<table class='table xs' style='width: unset;'>`);
+    $('#zeugnislisten_table_here').append(table);
+    for (let klasse of zeugnis_klassen_order) {
+        let lesson_keys_for_fach = {};
+        let shorthands_for_fach = {};
+        for (let kurs of kurse_for_klasse[klasse]) {
+            lesson_keys_for_fach[kurs.fach] ??= [];
+            lesson_keys_for_fach[kurs.fach].push(kurs.lesson_key);
+            for (let lehrer of kurs.lehrer) {
+                let fach = consolidate_fach(kurs.fach);
+                shorthands_for_fach[fach] ??= {};
+                shorthands_for_fach[fach][lehrer] = true;
+            }
+        }
+        let tr = $(`<tr style='line-height: 1em;'>`).appendTo(table);
+        tr.append($(`<td style='width: 6em;'>`).html(`${klassen_tr[klasse] ?? klasse} <span style='font-size: 85%; color: #888;'>(${schueler_for_klasse[klasse].length} SuS)</span>`));
+        let faecher = faecher_for_emails(schueler_for_klasse[klasse]);
+        for (let fach of faecher) {
+            fach = consolidate_fach(fach);
+            if (Object.keys(shorthands_for_fach[fach] ?? {}).length === 0) {
+                console.log(klasse, fach, kurse_for_klasse[klasse]);
+            }
+            tr.append($(`<td style='width: 5em;'>`).html(`<span style='width: 2.1em; display: inline-block;'>${fach}</span> <span style='font-size: 85%; color: #888;'>${Object.keys(shorthands_for_fach[fach] ?? {}).join(' ')}</span>`));
+        }
+    }
+
+    for (let klasse of zeugnis_klassen_order) {
         let button = $(`<button style='white-space: nowrap;' class='inline-block bg-slate-900 border border-blue-500 hover:bg-slate-200 rounded py-1 px-3 mr-1 mb-1'>${klassen_tr[klasse] ?? klasse}</button>`);
         $('#klassen_buttons_here').append(button);
         button.click(function(e) {
@@ -47,6 +76,17 @@ window.addEventListener('load', function () {
         });
     }
 });
+
+function consolidate_fach(fach) {
+    if (fach === 'DeP') return 'D';
+    if (fach === 'NgrP') return 'Ngr';
+    if (fach === 'GeNgr') return 'Ge';
+    if (fach === 'PolNgr') return 'Pol';
+    if (fach === 'BioNgr') return 'Bio';
+    if (fach === 'EkNgr') return 'Ek';
+    if (fach === 'EthNgr') return 'Eth';
+    return fach;
+}
 
 let noten_allowed_values = [
     '1+', '1', '1-',
@@ -67,8 +107,33 @@ function input_note_apply_style(input) {
         input.removeClass('marked');
 }
 
+function zeugnis_key_for_email(email) {
+    let sesb = user_info[email].sesb ?? false;
+    let klassenstufe = user_info[email].klassenstufe;
+    let zeugnis_key = `${klassenstufe}${sesb ? '_sesb' : ''}`;
+    return zeugnis_key;
+}
+
+function faecher_for_emails(emails) {
+    let zeugnis_keys = {};
+    for (let email of emails) {
+        zeugnis_keys[zeugnis_key_for_email(email)] = true;
+    }
+    let faecher = [];
+    for (let key of Object.keys(zeugnis_keys).sort()) {
+        for (let fach of faecher_for_zeugnis[key]) {
+            if (faecher.indexOf(fach) < 0)
+                faecher.push(fach);
+        }
+    }
+    return faecher;
+}
 
 function load_noten_table(container, lesson_keys, emails) {
+    // for (let lesson_key of lesson_keys) {
+    //     let info = kurs_info[lesson_key];
+    //     console.log(info.fach);
+    // }
     let path_array = [];
     path_array.push(['Schuljahr', SCHULJAHR]);
     path_array.push(['Halbjahr', HALBJAHR]);

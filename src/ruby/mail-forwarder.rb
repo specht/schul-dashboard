@@ -97,7 +97,7 @@ class Script
             # - delete mail from Inbox
             loop do
                 imap = Net::IMAP.new(SCHUL_MAIL_LOGIN_IMAP_HOST)
-                imap.authenticate('LOGIN', MAILING_LIST_EMAIL, MAILING_LIST_PASSWORD)
+                imap.authenticate('PLAIN', MAILING_LIST_EMAIL, MAILING_LIST_PASSWORD)
                 imap.select('INBOX')
                 imap.search(['NOT', 'DELETED']).each do |mid|
                     body = imap.fetch(mid, 'RFC822')[0].attr['RFC822']

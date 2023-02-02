@@ -31,6 +31,7 @@ var kurse_for_klasse = #{Hash[ZEUGNIS_KLASSEN_ORDER.map { |klasse| [klasse, @@le
 var kurs_info = #{@@lessons[:lesson_keys].to_json};
 var schueler_for_klasse = #{@@schueler_for_klasse.to_json};
 var faecher_for_zeugnis = #{FAECHER_FOR_ZEUGNIS[ZEUGNIS_SCHULJAHR][ZEUGNIS_HALBJAHR].to_json};
+var zeugnis_formular_fehler = #{Hash[FAECHER_FOR_ZEUGNIS[ZEUGNIS_SCHULJAHR][ZEUGNIS_HALBJAHR].keys.map { |key| [key, check_zeugnisformular(key)] }].to_json};
 
 window.addEventListener('load', function () {
     let table = $(`<table class='table xs' style='width: unset;'>`);
@@ -48,14 +49,14 @@ window.addEventListener('load', function () {
             }
         }
         let tr = $(`<tr style='line-height: 1em;'>`).appendTo(table);
-        tr.append($(`<td style='width: 6em;'>`).html(`${klassen_tr[klasse] ?? klasse} <span style='font-size: 85%; color: #888;'>(${schueler_for_klasse[klasse].length} SuS)</span>`));
+        tr.append($(`<td>`).html(`${klassen_tr[klasse] ?? klasse}<br /><span style='font-size: 85%; color: #888;'>(${schueler_for_klasse[klasse].length} SuS)</span>`));
         let faecher = faecher_for_emails(schueler_for_klasse[klasse]);
         for (let fach of faecher) {
             fach = consolidate_fach(fach);
             if (Object.keys(shorthands_for_fach[fach] ?? {}).length === 0) {
                 console.log(klasse, fach, kurse_for_klasse[klasse]);
             }
-            tr.append($(`<td style='width: 5em;'>`).html(`<span style='width: 2.1em; display: inline-block;'>${fach}</span> <span style='font-size: 85%; color: #888;'>${Object.keys(shorthands_for_fach[fach] ?? {}).join(' ')}</span>`));
+            tr.append($(`<td style='width: 3em;'>`).html(`<span>${fach}</span><br /><span style='font-size: 85%; color: #888;'>${Object.keys(shorthands_for_fach[fach] ?? {}).join('/')}</span>`));
         }
     }
 

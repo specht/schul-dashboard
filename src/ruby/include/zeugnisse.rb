@@ -216,11 +216,8 @@ class Main < Sinatra::Base
             system(command)
             command = "HOME=/internal/lowriter_home lowriter --convert-to pdf \"#{out_path_docx}\" --outdir \"#{File.dirname(out_path_docx)}\""
             system(command)
-            final_path = File.join('/gen', 'zeugnisse', "#{zeugnis_sha1}.pdf")
-            FileUtils.mkpath(File.join('/gen', 'zeugnisse'))
-            FileUtils.cp(out_path_pdf, final_path)
-            pdf_path = final_path
+            pdf_path = Base64::strict_encode64(File.read(out_path_pdf))
         end
-        respond(:yay => 'sure', :pdf_path => pdf_path)
+        respond(:yay => 'sure', :pdf_base64 => pdf_path)
     end
 end

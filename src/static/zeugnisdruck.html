@@ -53,7 +53,6 @@ function load_zeugnis_table(container, klasse, edit_noten) {
                 `<td>${sesb_for_email[email] ? 'SESB' : 'altsprachlich'}</td>`,
             ];
             let zeugnis_key = liste.schueler[index].zeugnis_key;
-            console.log(zeugnis_key);
             if (zeugnis_formular_fehler[zeugnis_key] === null) {
                 let bu_zeugnis_pdf = $("<button class='btn btn-xs btn-success'>").html("<i class='fa fa-file-pdf-o'></i>&nbsp;&nbsp;Zeugnis</i>");
                 cells.push($('<td>').append(bu_zeugnis_pdf));
@@ -68,7 +67,8 @@ function load_zeugnis_table(container, klasse, edit_noten) {
                     tresor_api_call('/jwt/get_many', {path_arrays: [path_array], key: 'Note'}, function(data) {
                         api_call('/api/print_zeugnis', {schueler: [`${klasse}/${index}`], paths: path_array, values: data.results[0]}, function(data2) {
                             if (data2.success) {
-                                window.open(data2.pdf_path, '_blank');
+                                open_pdf(data2.pdf_base64);
+                                // window.open(data2.pdf_path, '_blank');
                             }
                         });
                     });
@@ -81,6 +81,19 @@ function load_zeugnis_table(container, klasse, edit_noten) {
         sortable: false,
     });
     container.find('.table').css('width', 'unset');
+}
+
+function open_pdf(data) {
+    let s = atob(data);
+    let bytes = new Uint8Array(s.length);
+    for (let i = 0; i < s.length; i++) {
+        bytes[i] = s.charCodeAt(i);
+    }
+    let blob = new Blob([bytes], {type: "application/pdf"})
+    console.log(blob);
+    var url = window.URL.createObjectURL(blob);
+    console.log(url);
+    window.open(url, '_blank');
 }
 
 </script>

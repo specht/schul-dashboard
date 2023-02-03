@@ -1,0 +1,17 @@
+#{this_is_a_page_for_logged_in_admins}
+<script>
+</script>
+<div class='container-fluid' style='padding-top: 30px; background-color: #fff;'>
+    <div class='row'>
+        <div class='col-md-12'>
+            <table class="table narrow" style="width: unset;">
+                <tr>
+                    <th>Name</th>
+                    <th>Klasse</th>
+                    <th>Kurse</th>
+                </tr>
+                #{@@user_info.keys.select { |x| ['11', '12'].include?(@@user_info[x][:klasse]) }.map { |email| [email, (@@kurse_for_schueler[email] || Set.new()).to_a] }.sort { |a, b| a[1].size <=> b[1].size }.map { |x| "<tr><td>#{@@user_info[x[0]][:display_name]}</td><td>#{@@user_info[x[0]][:klasse]}</td><td>#{x[1].size} Kurse</td></tr>" }.join('') }
+            </table>
+        </div>
+    </div>
+</div>

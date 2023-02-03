@@ -124,6 +124,7 @@ class Main < Sinatra::Base
             io.puts "<a class='btn btn-secondary' href='#monitor'>Monitor</a>"
             io.puts "<a class='btn btn-secondary' href='#bibliothek'>Bibliothek</a>"
             io.puts "<a class='btn btn-secondary' href='/lesson_keys'>Lesson Keys</a>"
+            io.puts "<a class='btn btn-secondary' href='/sus_ohne_kurse'>SuS ohne Kurse</a>"
             io.puts "<a class='btn btn-secondary' href='/api/all_sus_logo_didact'>LDC: Alle SuS</a>"
             io.puts "<a class='btn btn-secondary' href='/api/all_lul_logo_didact'>LDC: Alle Lehrkräfte</a>"
             io.puts "<hr />"

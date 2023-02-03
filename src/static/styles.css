@@ -86,7 +86,7 @@
     font-weight: 400;
     src: url(/fonts/gfs_neohellenic_italic.ttf) format('truetype');
 }
-  
+
 @font-face {
     font-family: 'GFSNeohellenic';
     font-style: italic;
@@ -100,8 +100,35 @@
     font-weight: 400;
     src: url(/fonts/SLC_.ttf) format('truetype');
 }
-  
 
+@font-face {
+    font-family: 'IBM Plex Sans';
+    font-style: italic;
+    font-weight: 400;
+    font-display: swap;
+    src: url(/fonts/IBMPlexSans-Italic.ttf) format('truetype');
+}
+@font-face {
+    font-family: 'IBM Plex Sans';
+    font-style: italic;
+    font-weight: 700;
+    font-display: swap;
+    src: url(/fonts/IBMPlexSans-BoldItalic.ttf) format('truetype');
+}
+@font-face {
+    font-family: 'IBM Plex Sans';
+    font-style: normal;
+    font-weight: 400;
+    font-display: swap;
+    src: url(/fonts/IBMPlexSans-Regular.ttf) format('truetype');
+}
+@font-face {
+    font-family: 'IBM Plex Sans';
+    font-style: normal;
+    font-weight: 700;
+    font-display: swap;
+    src: url(/fonts/IBMPlexSans-Bold.ttf) format('truetype');
+}
 
 /* Riffic und Billy funktionieren gut, sind aber nicht im Repository enthalten,
  * da sie kommerzielle Fonts und somit nicht frei verfügbar sind.

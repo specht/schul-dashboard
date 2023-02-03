@@ -60,10 +60,6 @@
         display: none;
     }
 
-    .bib_teacher_only {
-        display: none;
-    }
-
     body {
         #{@session_device ? 'padding-top: 0;' : '' }
     }
@@ -126,6 +122,40 @@
         transition: color 1s ease;
     }
 
+    tr.focused {
+        background-color: #fce98d;
+    }
+    div.note {
+        position: relative;
+        /* font-family: 'IBM Plex Sans'; */
+        /* font-size: 90%; */
+    }
+    div.note:after {
+        position: absolute;
+        width: 1.5em;
+        height: 1.5em;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        border-radius: 100%;
+        content: '';
+        pointer-events: none;
+    }
+    div.note.marked:after {
+        outline: 2px solid #d5291a;
+        background-color: rgba(213, 41, 26, 0.1);
+    }
+    div.note input {
+        margin-left: auto;
+        margin-right: auto;
+    }
+    div.note input:disabled {
+        background: none;
+        border: none;
+        padding: 0;
+        width: 2em!important;
+    }
+
     @tailwind base;
     @tailwind components;
     @tailwind utilities;
@@ -154,6 +184,14 @@
             <li class="mx-1">
                 <a class="inline-block bg-slate-900 border border-blue-500 hover:bg-slate-200 rounded py-1 px-3"
                     href="/zeugnislisten"><i class='fa fa-book'></i>&nbsp;&nbsp;Zeugnislisten</a>
+            </li>
+            <li class="mx-1">
+                <a class="inline-block bg-slate-900 border border-blue-500 hover:bg-slate-200 rounded py-1 px-3"
+                    href="/zeugniskonferenz"><i class='fa fa-book'></i>&nbsp;&nbsp;Zeugniskonferenz</a>
+            </li>
+            <li class="mx-1">
+                <a class="inline-block bg-slate-900 border border-blue-500 hover:bg-slate-200 rounded py-1 px-3"
+                    href="/zeugnisdruck"><i class='fa fa-book'></i>&nbsp;&nbsp;Zeugnisdruck</a>
             </li>
             <li style="display: #{can_manage_bib_logged_in? ? 'unset' : 'none'}; #{@session_device == 'bib-mobile' ? 'display: none;' : ''} border-left: 1px solid #ccc; height: 52px; margin: -10px 10px -10px 10px; margin-left: auto;">
             </li>
@@ -239,4 +277,136 @@ window.addEventListener('load', function () {
         }
     }
 });
+
+let noten_allowed_values = [
+    '1+', '1', '1-',
+    '2+', '2', '2-',
+    '3+', '3', '3-',
+    '4+', '4', '4-',
+    '5+', '5', '5-',
+    '6', 'n.e.', 'o.B.',
+];
+
+let noten_mark = ['4-', '5+', '5', '5-', '6'];
+
+function input_note_apply_style_and_fix(input, callback) {
+    let value = $(input).val().trim();
+    let original_value = `${value}`;
+    if (value.toLowerCase().replace(/[\.\s]+/g, '') == 'ne') value = 'n.e.';
+    if (value.toLowerCase().replace(/[\.\s]+/g, '') == 'ob') value = 'o.B.';
+    if (noten_allowed_values.indexOf(value) < 0) value = '';
+    if (original_value !== value) {
+        $(input).val(value);
+        input_note_apply_style_and_fix($(input), callback);
+        return;
+    } else {
+        if (noten_mark.indexOf(value) >= 0)
+            $(input).closest('.note').addClass('marked');
+        else
+            $(input).closest('.note').removeClass('marked');
+        if (typeof(callback) !== 'undefined') callback(value);
+    }
+}
+
+function load_noten_table(container, klasse, edit_noten) {
+    // for (let lesson_key of lesson_keys) {
+    //     let info = kurs_info[lesson_key];
+    //     console.log(info.fach);
+    // }
+    let path_array = [];
+    path_array.push(['Schuljahr', ZEUGNIS_SCHULJAHR]);
+    path_array.push(['Halbjahr', ZEUGNIS_HALBJAHR]);
+    let liste = zeugnisliste_for_klasse[klasse];
+    let faecher = liste.faecher;
+    let emails = liste.schueler.map(function(x) { return x.email; });
+    path_array.push(['Fach', faecher]);
+    path_array.push(['Email', emails]);
+    container.empty();
+    let t0 = Date.now();
+    tresor_api_call('/jwt/get_many', {path_arrays: [path_array], key: 'Note'}, function(data) {
+        let t1 = Date.now();
+        console.log(`request took ${t1 - t0} ms.`);
+        if (data.success) {
+            let table = new SortableTable({
+                element: container,
+                xs: true,
+                headers: (['Nr.', 'Nachname', 'Vorname', 'Geburtsdatum', 'Klasse'].concat(faecher.map(function(fach) { 
+                    let fach_label = fach;
+                    if (liste.wahlfach[fach]) fach_label = `(${fach})`;
+                    return `${fach_label}<br /><span style='font-size: 85%; font-weight: normal;'>(${liste.lehrer_for_fach[fach].join(', ')})</span>`; 
+                }))).map(function (x) {
+                    let th = $('<th>').html(x);
+                    if (['Nr.', 'Nachname', 'Vorname', 'Geburtsdatum', 'Klasse'].indexOf(x) < 0) th.css('text-align', 'center');
+                    return th;
+                }),
+                rows: emails.map(function (email, index) {
+                    let cells = [
+                        email,
+                        `<td style='text-align: right;'>${index + 1}.</td>`,
+                        `<td style='max-width: 10em;'>${liste.schueler[index].last_name}</td>`,
+                        `<td style='max-width: 10em;'>${liste.schueler[index].official_first_name}</td>`,
+                        `<td>${moment(liste.schueler[index].geburtstag).format('L')}</td>`,
+                        `<td>${klassen_tr[klasse] ?? klasse}</td>`,
+                    ];
+                    for (let fi = 0; fi < faecher.length; fi++) {
+                        let fach = faecher[fi];
+                        let input = $(`<input placeholder='--' class='form-control' style='width: 3em; text-align: center; height: calc(1.5em + 2px);'>`)
+                        if (!edit_noten || !my_zeugnisliste[`${klasse}/${fach}`]) {
+                            input.prop('disabled', true);
+                        }
+                        input.val(data.results[0][0][0][fi][index]);
+                        input.focus(function(e) {
+                            input.select();
+                            container.find('tr').removeClass('focused');
+                            input.closest('tr').addClass('focused');
+                            $(e.target).data('old_value', $(e.target).val());
+                        });
+                        input.blur(function(e) {
+                            container.find('tr').removeClass('focused');
+                            let value = $(e.target).val().trim();
+                            if (value !== $(e.target).data('old_value')) {
+                                let path = `Schuljahr:${ZEUGNIS_SCHULJAHR}/Halbjahr:${ZEUGNIS_HALBJAHR}/Fach:${fach}/Email:${email}`;
+                                input_note_apply_style_and_fix($(e.target), function(value) {
+                                    $(e.target).data('old_value', value);
+                                    tresor_api_call('/jwt/store', {path: path, key: 'Note', value: value}, function(data) {
+                                    });
+                                });
+                            }
+                        });
+                        input.keydown(function(e) {
+                            if (e.key === 'Enter' || e.key === 'ArrowDown') {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                let row = $(e.target).closest('tr');
+                                let this_index = $(e.target).closest('td').index();
+                                let next_row = row.next('tr');
+                                if (next_row.length === 0) {
+                                    next_row = row.closest('tbody').find('tr').first();
+                                }
+                                next_row.find('td').eq(this_index).find('input').focus().select();
+                            }
+                            if (e.key === 'ArrowUp') {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                let row = $(e.target).closest('tr');
+                                let this_index = $(e.target).closest('td').index();
+                                let next_row = row.prev('tr');
+                                if (next_row.length === 0) {
+                                    next_row = row.closest('tbody').find('tr').last()
+                                }
+                                next_row.find('td').eq(this_index).find('input').focus().select();
+                            }
+                        });
+                        cells.push($('<td>').append($(`<div class='note'>`).append(input)));
+                        input_note_apply_style_and_fix(input);
+                    }
+                    return cells;
+                }),
+                sortable: false,
+            });
+            container.find('.table').css('width', 'unset');
+        }
+    });
+}
+
 </script>

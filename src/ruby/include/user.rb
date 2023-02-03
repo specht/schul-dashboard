@@ -49,6 +49,10 @@ class Main < Sinatra::Base
         user_logged_in? && ADMIN_USERS.include?(@session_user[:email])
     end
 
+    def zeugnis_admin_logged_in?
+        user_logged_in? && ZEUGNIS_ADMIN_USERS.include?(@session_user[:email])
+    end
+
     def admin_2fa_hotline_logged_in?
         admin_logged_in? && DATENTRESOR_HOTLINE_USERS.include?(@session_user[:email])
     end
@@ -176,6 +180,10 @@ class Main < Sinatra::Base
     # Assert that an admin is logged in
     def require_admin!
         assert(admin_logged_in?)
+    end
+
+    def require_zeugnis_admin!
+        assert(zeugnis_admin_logged_in?)
     end
 
     def require_admin_2fa_hotline!

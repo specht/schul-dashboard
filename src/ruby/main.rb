@@ -687,6 +687,9 @@ class Main < Sinatra::Base
         ADMIN_USERS.each do |email|
             @@user_info[email][:admin] = true
         end
+        ZEUGNIS_ADMIN_USERS.each do |email|
+            @@user_info[email][:zeugnis_admin] = true
+        end
         (CAN_SEE_ALL_TIMETABLES_USERS + ADMIN_USERS).each do |email|
             next unless @@user_info[email]
             @@user_info[email][:can_see_all_timetables] = true

@@ -18,7 +18,7 @@ var zeugnisliste_for_klasse = #{@@zeugnisliste_for_klasse.to_json};
 var zeugnisliste_for_lehrer = #{@@zeugnisliste_for_lehrer.to_json};
 
 var faecher_for_zeugnis = #{FAECHER_FOR_ZEUGNIS[ZEUGNIS_SCHULJAHR][ZEUGNIS_HALBJAHR].to_json};
-var zeugnis_formular_fehler = #{Hash[FAECHER_FOR_ZEUGNIS[ZEUGNIS_SCHULJAHR][ZEUGNIS_HALBJAHR].keys.map { |key| [key, check_zeugnisformular(key)] }].to_json};
+var zeugnis_formular_fehler = #{Hash[FAECHER_FOR_ZEUGNIS[ZEUGNIS_SCHULJAHR][ZEUGNIS_HALBJAHR].keys.map { |key| [key, @@zeugnisse[:formulare][key][:formular_fehler]] }].to_json};
 
 window.addEventListener('load', function () {
     render_zeugnisformulare();

@@ -2,7 +2,7 @@
 #{File.read('/static/_tresor_public_template.html')}
 <div class='container bg-white'>
     <div class="w-full">
-        <h3>Zeugnislisten #{ZEUGNIS_SCHULJAHR.sub('_', '/')} (#{ZEUGNIS_HALBJAHR}. Halbjahr)</h3>
+        <h3>Zeugniskonferenz #{ZEUGNIS_SCHULJAHR.sub('_', '/')} (#{ZEUGNIS_HALBJAHR}. Halbjahr)</h3>
         <div id="klassen_buttons_here"></div>
         <hr />
         <div id="noten_here"></div>
@@ -20,13 +20,12 @@ var my_klassen = #{@@klassen_for_shorthand[@session_user[:shorthand]].select { |
 
 window.addEventListener('load', function () {
     for (let klasse of zeugnis_klassen_order) {
-        if (my_klassen.indexOf(klasse) >= 0) {
-            let button = $(`<button style='white-space: nowrap;' class='inline-block bg-slate-900 border border-blue-500 hover:bg-slate-200 rounded py-1 px-3 mr-1 mb-1'>${klassen_tr[klasse] ?? klasse}</button>`);
-            $('#klassen_buttons_here').append(button);
-            button.click(function(e) {
-                load_noten_table($('#noten_here'), klasse, true);
-            });
-        }
+        let button = $(`<button style='white-space: nowrap;' class='inline-block bg-slate-900 border border-blue-500 hover:bg-slate-200 rounded py-1 px-3 mr-1 mb-1'>${klassen_tr[klasse] ?? klasse}</button>`);
+        $('#klassen_buttons_here').append(button);
+        button.click(function(e) {
+            load_noten_table($('#noten_here'), klasse, false);
+        });
     }
 });
+
 </script>

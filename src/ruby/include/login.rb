@@ -825,6 +825,44 @@ class Main < Sinatra::Base
         respond(:yay => 'sure')
     end
 
+    post '/api/fresh_2fa_credentials_for_user' do
+        require_admin_2fa_hotline!
+        data = parse_request_data(:required_keys => [:email])
+        today = DateTime.now.strftime('%Y-%m-%d')
+        result = neo4j_query_expect_one(<<~END_OF_QUERY, {:email => data[:email]})
+            MATCH (u:User {email: $email})
+            RETURN u.telephone_number, u.telephone_number_changed, u.otp_token, u.otp_token_changed;
+        END_OF_QUERY
+        respond({
+            :has_fresh_sms => result['u.telephone_number'] && result['u.telephone_number_changed'] == today,
+            :has_fresh_otp => result['u.otp_token'] && result['u.otp_token_changed'] == today
+        })
+    end
+
+    post '/api/unlock_2fa_sms_now' do
+        require_admin_2fa_hotline!
+        data = parse_request_data(:required_keys => [:email])
+        yesterday = (DateTime.now - 1).strftime('%Y-%m-%d')
+        result = neo4j_query_expect_one(<<~END_OF_QUERY, {:email => data[:email], :day => yesterday})
+            MATCH (u:User {email: $email})
+            SET u.telephone_number_changed = $day
+            RETURN u;
+        END_OF_QUERY
+        respond(:yay => 'sure')
+    end
+
+    post '/api/unlock_2fa_otp_now' do
+        require_admin_2fa_hotline!
+        data = parse_request_data(:required_keys => [:email])
+        yesterday = (DateTime.now - 1).strftime('%Y-%m-%d')
+        result = neo4j_query_expect_one(<<~END_OF_QUERY, {:email => data[:email], :day => yesterday})
+            MATCH (u:User {email: $email})
+            SET u.otp_token_changed = $day
+            RETURN u;
+        END_OF_QUERY
+        respond(:yay => 'sure')
+    end
+
     post '/api/allow_ad_hoc_2fa_request' do
         require_admin_2fa_hotline!
         data = parse_request_data(:required_keys => [:email])

@@ -220,17 +220,26 @@
               <div class='row'>
                   <div class='col-md-12'>
                     <p>
-                    Sie können nun den Zugang zum Datentresor für <strong><span id="ad_hoc_login_name_here"></span></strong> (<span id="ad_hoc_login_email_here"></span>) freischalten.
+                    Sie können nun den Zugang zum Datentresor für <strong><span class="ad_hoc_login_name_here"></span></strong> (<span id="ad_hoc_login_email_here"></span>) freischalten.
                     </p>
                     <div class='alert alert-warning'>
-                          <i class='fa fa-exclamation-circle'></i>&nbsp;&nbsp;Achtung, bitte vergewissern Sie sich, dass Sie die richtige Person am Telefon haben.
+                          <i class='fa fa-exclamation-circle'></i>&nbsp;&nbsp;<b>Achtung!</b> Bitte vergewissern Sie sich, dass Sie die richtige Person am Telefon haben.
+                    </div>
+                    <div class='alert alert-secondary div_ad_hoc_fresh_sms'>
+                        Für <span class="ad_hoc_login_name_here"></span> wurde heute eine neue Telefonnummer hinterlegt, die erst ab morgen zur Anmeldung am Datentresor verwendet werden kann.
+                        <br />
+                    </div>
+                    <div class='alert alert-secondary div_ad_hoc_fresh_otp'>
+                        Für <span class="ad_hoc_login_name_here"></span> wurde heute ein neuer OTP-Code hinterlegt, der erst ab morgen zur Anmeldung am Datentresor verwendet werden kann.
                     </div>
                   </div>
               </div>
           </div>
         </div>
         <div class="modal-footer">
-          <button id='bu_perform_ad_hoc_signin' type='button' class="btn btn-success"><i class='fa fa-sign-in'></i>&nbsp;&nbsp;Anmeldung erlauben</button>
+        <button class="btn btn-secondary div_ad_hoc_fresh_sms bu_unlock_2fa_sms"><i class='fa fa-mobile'></i>&nbsp;&nbsp;SMS jetzt freigeben</button>
+        <button class="btn btn-secondary div_ad_hoc_fresh_otp bu_unlock_2fa_otp"><i class='fa fa-qrcode'></i>&nbsp;&nbsp;OTP jetzt freigeben</button>
+        <button id='bu_perform_ad_hoc_signin' type='button' class="btn btn-success"><i class='fa fa-sign-in'></i>&nbsp;&nbsp;Anmeldung erlauben</button>
           <button type="button" class="btn btn-danger" data-dismiss="modal"><i class='fa fa-times'></i>&nbsp;&nbsp;Anmeldung ablehnen</button>
         </div>
       </div>
@@ -1543,15 +1552,34 @@ document.addEventListener('DOMContentLoaded', function() {
     $('.bu_open_ad_hoc_2fa_request').click(function(e) {
         let email = $(e.target).data('email');
         let name = $(e.target).data('name');
-        $('#ad_hoc_login_name_here').text(name);
-        $('#ad_hoc_login_email_here').text(email);
-        $('#adHoc2FaRequestModal').modal('show');
+        api_call('/api/fresh_2fa_credentials_for_user', {email: email}, function(data) {
+            console.log(data);
+            $('.ad_hoc_login_name_here').text(name);
+            $('#ad_hoc_login_email_here').text(email);
+            $('.div_ad_hoc_fresh_sms').hide();
+            $('.div_ad_hoc_fresh_otp').hide();
+            if (data.has_fresh_sms)
+                $('.div_ad_hoc_fresh_sms').show();
+            if (data.has_fresh_otp)
+                $('.div_ad_hoc_fresh_otp').show();
+            $('#adHoc2FaRequestModal').modal('show');
+        });
     })
     $('#bu_perform_ad_hoc_signin').click(function(e) {
         api_call('/api/allow_ad_hoc_2fa_request', {email: $('#ad_hoc_login_email_here').text()}, function(data) {
             if (data.success) {
                 window.location.href = '/';
             }
+        });
+    });
+    $('.bu_unlock_2fa_sms').click(function(e) {
+        api_call('/api/unlock_2fa_sms_now', {email: $('#ad_hoc_login_email_here').text()}, function(data) {
+            $('.div_ad_hoc_fresh_sms').hide();
+        });
+    });
+    $('.bu_unlock_2fa_otp').click(function(e) {
+        api_call('/api/unlock_2fa_otp_now', {email: $('#ad_hoc_login_email_here').text()}, function(data) {
+            $('.div_ad_hoc_fresh_otp').hide();
         });
     });
 });

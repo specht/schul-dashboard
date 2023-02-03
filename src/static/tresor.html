@@ -13,25 +13,33 @@
                     <p>
                         Sie sind bereits per <strong>#{LOGIN_METHODS_SHORT[@used_session[:method].to_sym]}</strong> am Dashboard angemeldet. Um auf den Datentresor zugreifen zu können, müssen Sie sich mit einem weiteren Faktor ausweisen. Bitte wählen Sie aus den folgenden Möglichkeiten:
                     </p>
-                    <div style="display: flex; align-items: start; gap: 10px; justify-content: center;">
+                    <div style="display: flex; align-items: start; gap: 10px; justify-content: center; margin-bottom: 1em;">
                         <button style='display: #{@used_session[:method] == 'email' ? 'none' : 'block'}' id='bu_sf_email' type="button" class="btn btn-outline-secondary bu_second_login" data-method="email" disabled><i class='fa fa-envelope'></i>&nbsp;&nbsp;Code per E-Mail erhalten</button>
                         <button style='display: #{((@used_session[:method] == 'sms') || !Main.sms_gateway_ready?) ? 'none' : 'block'}' id='bu_sf_sms' type="button" class="btn btn-outline-secondary bu_second_login" data-method="sms" disabled><i class='fa fa-mobile'></i>&nbsp;&nbsp;Code per SMS erhalten</button>
                         <button style='display: #{@used_session[:method] == 'otp' ? 'none' : 'block'}' id='bu_sf_otp' type="button" class="btn btn-outline-secondary bu_second_login" data-method="otp" disabled><i class='fa fa-qrcode'></i>&nbsp;&nbsp;OTP-Code eingeben</button>
                     </div>
-                    <div style='color: #888; margin-top: 1em; text-align: center; display: #{((@used_session[:method] != 'sms') && !Main.sms_gateway_ready?) ? 'block' : 'none'}'>
+                    <div style='color: #888; margin-top: 1em;text-align: center; display: #{((@used_session[:method] != 'sms') && !Main.sms_gateway_ready?) ? 'block' : 'none'}'>
                         <em>
                             Hinweis: Momentan können leider keine SMS versendet werden.
                         </em>
                     </div>
+                    <p id="hint-no-good-telephone-number" style="display: none;">
+                        <b>Hinweis:</b> Da Sie die SMS-Anmeldung erst heute aktiviert haben, können Sie sich aus Sicherheitsgründen noch nicht damit anmelden. Ab morgen ist die Anmeldung dann möglich.
+                    </p>
+                    <p id="hint-no-good-otp-token" style="display: none;">
+                        <b>Hinweis:</b> Da Sie die OTP-Anmeldung erst heute aktiviert haben, können Sie sich aus Sicherheitsgründen noch nicht damit anmelden. Ab morgen ist die Anmeldung dann möglich.
+                    </p>
                     <hr />
                     <p>
                         <em>
-                        Hinweis: Falls Sie eines der nicht verfügbaren Anmeldeverfahren freischalten möchten, können Sie dies <a href='/profil#anmeldung'>im Profil tun</a>, indem Sie eine Telefonnummer hinterlegen oder einen OTP-Code einscannen.
+                        Hinweis: Falls Sie eines der nicht verfügbaren Anmeldeverfahren freischalten möchten, können Sie dies <a href='/profil#anmeldung'>im Profil tun</a>, indem Sie eine Telefonnummer hinterlegen (Klick auf »Nummer hinterlegen«) oder einen OTP-Code einscannen (Klick auf »OTP aktivieren«). Bitte
+                        beachten Sie, dass Sie ein neu eingerichtetes Anmeldeverfahren aus Sicherheitsgründen erst ab dem darauffolgenden Tag 
+                        für den Zugang zum Datentresor verwenden können.
                         </em>
                     </p>
                     <p style="display: #{DATENTRESOR_HOTLINE.empty? ? 'none': 'block'};">
                         <em>
-                        Für den Fall, dass Sie alles versucht haben und nicht weiterkommen oder es dringend ist, können Sie auch <a href='#'>#{DATENTRESOR_HOTLINE} anrufen</a>. Sie werden dann telefonisch freigeschaltet.
+                        Für den Fall, dass Sie alles versucht haben und nicht weiterkommen oder es dringend ist, können Sie auch <a id='hotline-2fa' href='#'>#{DATENTRESOR_HOTLINE} anrufen</a>. Sie werden dann telefonisch freigeschaltet.
                         </em>
                     </p>
                 </div>
@@ -50,17 +58,50 @@
     </div>
 </div>
 
+<div class="modal" id="__2fa_modal" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true" style='z-index: 200000;'>
+    <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+            <h5 class="modal-title">Datentresor-Hotline</h5>
+        </div>
+        <div class="modal-body">
+            <img src="/hotline.jpg" style="float: right; margin-left: 10px; height: 210px; border-radius: 15px;"/>
+            <p><b>Schritt 1</b> &ndash; Bitte rufen Sie #{DATENTRESOR_HOTLINE_MIT_NUMMERN} an.</p>
+            <p><b>Schritt 2</b> &ndash; Klicken Sie auf »Anmeldung anfordern«, sobald das Gespräch hergestellt ist.</p>
+            <p><button id='bu_request_signin_ad_hoc' class="btn btn-success"><i class='fa fa-send'></i>&nbsp;&nbsp;Anmeldung anfordern</button></p>
+            <p><b>Schritt 3</b> &ndash; Klicken Sie auf »Anmelden«, sobald Sie die Freigabe erhalten haben.</p>
+            <p></p><button id='bu_perform_signin_ad_hoc' class="btn btn-success"><i class='fa fa-sign-in'></i>&nbsp;&nbsp;Anmelden</button></p>
+        </div>
+        <div class="modal-footer">
+            <button id='bu_close_poll_response_modal' type="button" class="btn btn-secondary" data-dismiss="modal">Schließen</button>
+        </div>
+    </div>
+</div>
+
 <script>
 var first_login_method = "#{@used_session[:method] || 'email'}";
 var otp_qr_code = '#{session_user_otp_qr_code()}';
+var otp_token_good_for_tresor = #{session_user_otp_token_good_for_tresor()};
 var telephone_number = '#{session_user_telephone_number()}';
+var telephone_number_good_for_tresor = #{session_user_telephone_number_good_for_tresor()};
 
 window.addEventListener('load', function () {
+    console.log('sf: #{second_factor_time_left}');
     $('#bu_sf_email').removeClass('btn-outline-secondary').addClass('btn-success').prop('disabled', false);
-    if (otp_qr_code.length > 0)
-        $('#bu_sf_otp').removeClass('btn-outline-secondary').addClass('btn-success').prop('disabled', false);
-    if (telephone_number.length > 0)
-        $('#bu_sf_sms').removeClass('btn-outline-secondary').addClass('btn-success').prop('disabled', false);
+    if (otp_qr_code.length > 0) {
+        if (otp_token_good_for_tresor) {
+            $('#bu_sf_otp').removeClass('btn-outline-secondary').addClass('btn-success').prop('disabled', false);
+        } else {
+            $('#hint-no-good-otp-token').show();
+        }
+    }
+    if (telephone_number.length > 0) {
+        if (telephone_number_good_for_tresor) {
+            $('#bu_sf_sms').removeClass('btn-outline-secondary').addClass('btn-success').prop('disabled', false);
+        } else {
+            $('#hint-no-good-telephone-number').show();
+        }
+    }
     $('.bu_second_login').click(function(e) {
         let button = $(e.target);
         let method = button.data('method');
@@ -91,6 +132,51 @@ window.addEventListener('load', function () {
             });
         });
     });
+    $('#__2fa_modal').on('shown.bs.modal', function() {
+        $('#bu_request_signin_ad_hoc').prop('disabled', false);
+        $('#bu_perform_signin_ad_hoc').prop('disabled', true);
+    });
+    $('#__2fa_modal').on('hidden.bs.modal', function() {
+        clear_ad_hoc_2fa_request();
+        api_call('/api/second_factor_time_left', {}, function(data) {
+            if (data.success) {
+                if (data.time_left !== null) {
+                    window.location.reload();
+                }
+            }
+        });
+    });
+    $('#hotline-2fa').click(function(e) {
+        $('#__2fa_modal').modal('show');
+        e.preventDefault();
+    })
+    $('#bu_request_signin_ad_hoc').click(function(e) {
+        create_ad_hoc_2fa_request();
+    })
+
+    $('#bu_perform_signin_ad_hoc').click(function(e) {
+        api_call('/api/second_factor_time_left', {}, function(data) {
+            console.log(data);
+            if (data.success) {
+                if (data.time_left === null) return; else {
+                    window.location.reload();
+                }
+            }
+        });
+    })
 });
+
+function create_ad_hoc_2fa_request() {
+    console.log("Creating ad-hoc 2FA request")
+    api_call('/api/create_ad_hoc_2fa_request', {}, function(data) {
+        $('#bu_request_signin_ad_hoc').prop('disabled', true);
+        $('#bu_perform_signin_ad_hoc').prop('disabled', false);
+    });
+}
+
+function clear_ad_hoc_2fa_request() {
+    console.log("Clearing ad-hoc 2FA request")
+    api_call('/api/clear_ad_hoc_2fa_request', {}, function(data) {});
+}
 
 </script>

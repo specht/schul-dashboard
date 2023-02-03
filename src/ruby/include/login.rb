@@ -654,11 +654,13 @@ class Main < Sinatra::Base
             RETURN u, s, l;
         END_OF_QUERY
         telephone_number = result['u'][:telephone_number]
-        email_recipient = data[:email]
+        email_recipient = @session_user[:email]
         begin
             if method == 'sms'
+                assert(session_user_telephone_number_good_for_tresor)
                 send_sms(telephone_number.deobfuscate(SMS_PHONE_NUMBER_PASSPHRASE), "Dein Anmeldecode lautet #{random_code}")
             elsif method == 'otp'
+                assert(session_user_otp_token_good_for_tresor)
             else
                 deliver_mail do
                     # FOR NOW, DON'T SEND E-MAIL CODES FOR CHAT LOGINS
@@ -685,6 +687,7 @@ class Main < Sinatra::Base
             if DEVELOPMENT
                 debug "Cannot send e-mail in DEVELOPMENT mode, continuing anyway:"
                 STDERR.puts e
+                STDERR.puts e.backtrace
             else
                 raise e
             end
@@ -733,13 +736,13 @@ class Main < Sinatra::Base
             respond({:error => 'code_expired'})
         end
         assert(Time.at(login_code[:valid_to]) >= Time.now, 'code expired', true)
-        neo4j_query(<<~END_OF_QUERY, :sid => @used_session[:sid])
-            MATCH (sf:SecondFactor)-[:BELONGS_TO]->(s:Session {sid: $sid})
-            DETACH DELETE sf;
-        END_OF_QUERY
         neo4j_query(<<~END_OF_QUERY, :tag => data[:tag])
             MATCH (l:SecondLoginCode {tag: $tag})
             DETACH DELETE l;
+        END_OF_QUERY
+        neo4j_query(<<~END_OF_QUERY, :sid => @used_session[:sid])
+            MATCH (sf:SecondFactor)-[:BELONGS_TO]->(s:Session {sid: $sid})
+            DETACH DELETE sf;
         END_OF_QUERY
         neo4j_query(<<~END_OF_QUERY, :sid => @used_session[:sid], :method => login_code[:method], :ts_expire => Time.now.to_i + TRESOR_SECOND_FACTOR_TTL)
             MATCH (s:Session {sid: $sid})
@@ -761,17 +764,22 @@ class Main < Sinatra::Base
         purge_stale_second_factors
         factors = neo4j_query(<<~END_OF_QUERY, :sid => @used_session[:sid])
             MATCH (sf:SecondFactor)-[:BELONGS_TO]->(s:Session {sid: $sid})
-            WHERE s.method IS NOT NULL AND s.method <> sf.method
+            WHERE COALESCE(s.method, 'email') <> sf.method
             RETURN sf;
         END_OF_QUERY
         return nil if factors.empty?
         return factors.first['sf'][:ts_expire] - Time.now.to_i
     end
 
+    post '/api/second_factor_time_left' do
+        require_user!
+        respond(:time_left => second_factor_time_left())
+    end
+
     def refresh_second_factor
         factors = neo4j_query(<<~END_OF_QUERY, :sid => @used_session[:sid], :ts_expire => Time.now.to_i + TRESOR_SECOND_FACTOR_TTL)
             MATCH (sf:SecondFactor)-[:BELONGS_TO]->(s:Session {sid: $sid})
-            WHERE s.method IS NOT NULL AND s.method <> sf.method
+            WHERE COALESCE(s.method, 'email') <> sf.method
             SET sf.ts_expire = $ts_expire
             RETURN sf;
         END_OF_QUERY
@@ -793,4 +801,55 @@ class Main < Sinatra::Base
         END_OF_QUERY
         respond(:yay => 'sure')
     end
+
+    post '/api/create_ad_hoc_2fa_request' do
+        require_teacher!
+        ts_expire = Time.now.to_i + 10 * 60
+        neo4j_query(<<~END_OF_QUERY, :email => @session_user[:email])
+            MATCH (ahr:AdHocTwoFaRequest)-[:BELONGS_TO]->(s:Session)-[:BELONGS_TO]->(u:User {email: $email})
+            DETACH DELETE ahr;
+        END_OF_QUERY
+        neo4j_query(<<~END_OF_QUERY, :sid => @used_session[:sid], :ts_expire => ts_expire)
+            MATCH (s:Session {sid: $sid})
+            CREATE (ahr:AdHocTwoFaRequest {ts_expire: $ts_expire})-[:BELONGS_TO]->(s);
+        END_OF_QUERY
+        respond(:yay => 'sure')
+    end
+
+    post '/api/clear_ad_hoc_2fa_request' do
+        require_teacher!
+        neo4j_query(<<~END_OF_QUERY, :email => @session_user[:email])
+            MATCH (ahr:AdHocTwoFaRequest)-[:BELONGS_TO]->(s:Session)-[:BELONGS_TO]->(u:User {email: $email})
+            DETACH DELETE ahr;
+        END_OF_QUERY
+        respond(:yay => 'sure')
+    end
+
+    post '/api/allow_ad_hoc_2fa_request' do
+        require_admin_2fa_hotline!
+        data = parse_request_data(:required_keys => [:email])
+        ts = Time.now.to_i
+        neo4j_query(<<~END_OF_QUERY, {:ts => ts})
+            MATCH (ahr:AdHocTwoFaRequest)-[:BELONGS_TO]->(s:Session)-[:BELONGS_TO]->(u:User)
+            WHERE $ts > ahr.ts_expire
+            DETACH DELETE ahr;
+        END_OF_QUERY
+        sid = neo4j_query_expect_one(<<~END_OF_QUERY, :email => data[:email])['s.sid']
+            MATCH (ahr:AdHocTwoFaRequest)-[:BELONGS_TO]->(s:Session)-[:BELONGS_TO]->(u:User {email: $email})
+            RETURN s.sid;
+        END_OF_QUERY
+        neo4j_query(<<~END_OF_QUERY, :email => data[:email])
+            MATCH (ahr:AdHocTwoFaRequest)-[:BELONGS_TO]->(s:Session)-[:BELONGS_TO]->(u:User {email: $email})
+            DETACH DELETE ahr;
+        END_OF_QUERY
+        neo4j_query(<<~END_OF_QUERY, :sid => sid)
+            MATCH (sf:SecondFactor)-[:BELONGS_TO]->(s:Session {sid: $sid})
+            DETACH DELETE sf;
+        END_OF_QUERY
+        neo4j_query(<<~END_OF_QUERY, :sid => sid, :method => 'ad-hoc', :ts_expire => Time.now.to_i + TRESOR_SECOND_FACTOR_TTL)
+            MATCH (s:Session {sid: $sid})
+            CREATE (sf:SecondFactor {method: $method, ts_expire: $ts_expire})-[:BELONGS_TO]->(s)
+        END_OF_QUERY
+    end
+
 end

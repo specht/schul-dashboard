@@ -1487,7 +1487,9 @@ class Main < Sinatra::Base
                                         @session_user[:color_scheme] = results.first['u'][:color_scheme]
                                         @session_user[:ical_token] = results.first['u'][:ical_token]
                                         @session_user[:otp_token] = results.first['u'][:otp_token]
+                                        @session_user[:otp_token_changed] = results.first['u'][:otp_token_changed] || '2023-02-02'
                                         @session_user[:telephone_number] = results.first['u'][:telephone_number]
+                                        @session_user[:telephone_number_changed] = results.first['u'][:telephone_number_changed] || '2023-02-02'
                                         @session_user[:homeschooling] = results.first['u'][:homeschooling]
                                         @session_user[:group2] = results.first['u'][:group2] || 'A'
                                         @session_user[:group_af] = results.first['u'][:group_af] || ''

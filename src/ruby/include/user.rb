@@ -47,8 +47,10 @@ class Main < Sinatra::Base
     # Returns true if an admin is logged in.
     def admin_logged_in?
         user_logged_in? && ADMIN_USERS.include?(@session_user[:email])
-        # TODO: Erm
-#         false
+    end
+
+    def admin_2fa_hotline_logged_in?
+        admin_logged_in? && DATENTRESOR_HOTLINE_USERS.include?(@session_user[:email])
     end
 
     # Returns true if a user who can see all timetables is logged in.
@@ -174,6 +176,10 @@ class Main < Sinatra::Base
     # Assert that an admin is logged in
     def require_admin!
         assert(admin_logged_in?)
+    end
+
+    def require_admin_2fa_hotline!
+        assert(admin_2fa_hotline_logged_in?)
     end
 
     # Assert that a teacher is logged in
@@ -465,6 +471,35 @@ class Main < Sinatra::Base
             io.puts "<hr />"
             io.puts "<a href='/bibliothek' style='white-space: nowrap;' class='float-right btn btn-sm btn-success'>Zu deinen Büchern&nbsp;<i class='fa fa-angle-double-right'></i></a>"
             io.puts "<div style='clear: both;'></div>"
+            io.puts "</div>"
+            io.puts "</div>"
+            io.string
+        end
+    end
+
+    def print_ad_hoc_2fa_panel()
+        return '' unless admin_2fa_hotline_logged_in?
+        require_admin_2fa_hotline!
+        ts = Time.now.to_i
+        neo4j_query(<<~END_OF_QUERY, {:ts => ts})
+            MATCH (ahr:AdHocTwoFaRequest)-[:BELONGS_TO]->(s:Session)-[:BELONGS_TO]->(u:User)
+            WHERE $ts > ahr.ts_expire
+            DETACH DELETE ahr;
+        END_OF_QUERY
+        users = neo4j_query(<<~END_OF_QUERY).map { |x| x['u'] }
+            MATCH (ahr:AdHocTwoFaRequest)-[:BELONGS_TO]->(s:Session)-[:BELONGS_TO]->(u:User)
+            RETURN u;
+        END_OF_QUERY
+        return '' if users.empty?
+        StringIO.open do |io|
+            io.puts "<div class='col-lg-12 col-md-4 col-sm-6'>"
+            io.puts "<div class='hint'>"
+            io.puts "<p><b>Datentresor-Hotline</b></p>"
+            io.puts "<hr />"
+            users.each do |user|
+                io.puts "<button class='bu_open_ad_hoc_2fa_request button btn btn-success' data-email='#{user[:email]}' data-name='#{@@user_info[user[:email]][:display_name]}'><i class='fa fa-phone'></i>&nbsp;&nbsp;#{@@user_info[user[:email]][:display_name_official]}&nbsp;&nbsp;<i class='fa fa-angle-double-right'></i></button>"
+            end
+            # io.puts "<div><span style='font-size: 200%; opacity: 0.7; float: left; margin-right: 8px;'><i class='fa fa-book'></i></span>#{n_to_s[@@bib_summoned_books[email].size] || 'Mehrere'} Bücher, die du ausgeliehen hast, #{@@bib_summoned_books[email].size == 1 ? 'wird' : 'werden'} dringend in der Bibliothek benötigt. Bitte bring #{@@bib_summoned_books[email].size == 1 ? 'es' : 'sie'} zurück und lege #{@@bib_summoned_books[email].size == 1 ? 'es' : 'sie'} ins <a target='_blank' href='https://rundgang.gymnasiumsteglitz.de/#g114'>Rückgaberegal</a> vor der Bibliothek.</div>"
             io.puts "</div>"
             io.puts "</div>"
             io.string

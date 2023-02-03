@@ -4,6 +4,7 @@ class Main < Sinatra::Base
         result = neo4j_query(<<~END_OF_QUERY, :email => @session_user[:email])
             MATCH (u:User {email: $email})
             REMOVE u.otp_token
+            REMOVE u.otp_token_changed
             REMOVE u.preferred_login_method;
         END_OF_QUERY
     end
@@ -12,9 +13,11 @@ class Main < Sinatra::Base
         require_user!
         delete_session_user_otp_token()
         token = ROTP::Base32.random()
-        result = neo4j_query(<<~END_OF_QUERY, :email => @session_user[:email], :token => token)
+        today = DateTime.now.strftime('%Y-%m-%d')
+        result = neo4j_query(<<~END_OF_QUERY, :email => @session_user[:email], :token => token, :today => today)
             MATCH (u:User {email: $email})
-            SET u.otp_token = $token;
+            SET u.otp_token = $token
+            SET u.otp_token_changed = $today;
         END_OF_QUERY
         @session_user[:otp_token] = token
         session_user = @session_user.dup
@@ -56,6 +59,13 @@ class Main < Sinatra::Base
         svg = qrcode.as_svg(offset: 0, color: '000', shape_rendering: 'crispEdges',
                             module_size: 4, standalone: true)
         svg.gsub("\n", '')
+    end
+
+    def session_user_otp_token_good_for_tresor()
+        require_user!
+        otp_token = @session_user[:otp_token]
+        return false if otp_token.nil?
+        return @session_user[:otp_token_changed] < DateTime.now.strftime('%Y-%m-%d')
     end
 
     post '/api/login_otp' do

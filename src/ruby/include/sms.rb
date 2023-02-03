@@ -30,7 +30,14 @@ class Main < Sinatra::Base
         require_user!
         telephone_number = @session_user[:telephone_number]
         return nil if telephone_number.nil?
-        return telephone_number.deobfuscate(SMS_PHONE_NUMBER_PASSPHRASE)
+        return '(redacted)'
+    end
+
+    def session_user_telephone_number_good_for_tresor()
+        require_user!
+        telephone_number = @session_user[:telephone_number]
+        return false if telephone_number.nil?
+        return @session_user[:telephone_number_changed] < DateTime.now.strftime('%Y-%m-%d')
     end
 
     def send_sms(telephone_number, message)
@@ -46,7 +53,11 @@ class Main < Sinatra::Base
     post '/api/save_telephone_number' do
         require_user!
         data = parse_request_data(:required_keys => [:telephone_number])
-        number = TelephoneNumber.parse(data[:telephone_number], :de)
+        telephone_number = data[:telephone_number].strip
+        if telephone_number[0, 2] == '00'
+            telephone_number = '+' + telephone_number[2, telephone_number.size - 2]
+        end
+        number = TelephoneNumber.parse(telephone_number, :de)
         raise 'oops' unless number.valid?
         number = number.e164_number()
         tag = RandomTag::generate(8)
@@ -90,9 +101,11 @@ class Main < Sinatra::Base
         end
         assert(Time.at(sms_code[:valid_to]) >= Time.now, 'code expired', true)
 
-        neo4j_query(<<~END_OF_QUERY, :email => @session_user[:email], :telephone_number => sms_code[:telephone_number])
+        today = DateTime.now.strftime('%Y-%m-%d')
+        neo4j_query(<<~END_OF_QUERY, :email => @session_user[:email], :telephone_number => sms_code[:telephone_number], :today => today)
             MATCH (u:User {email: $email})
-            SET u.telephone_number = $telephone_number;
+            SET u.telephone_number = $telephone_number
+            SET u.telephone_number_changed = $today;
         END_OF_QUERY
         send_sms(sms_code[:telephone_number].deobfuscate(SMS_PHONE_NUMBER_PASSPHRASE), "Die Anmeldung per SMS ist nun aktiviert.")
 
@@ -125,6 +138,7 @@ class Main < Sinatra::Base
         neo4j_query(<<~END_OF_QUERY, {:email => @session_user[:email]})
             MATCH (u:User {email: $email})
             REMOVE u.preferred_login_method
+            REMOVE u.telephone_number_changed
             REMOVE u.telephone_number;
         END_OF_QUERY
         respond(:yay => 'sure')

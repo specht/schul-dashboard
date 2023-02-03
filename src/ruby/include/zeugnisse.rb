@@ -213,7 +213,7 @@ class Main < Sinatra::Base
             end
             command = "cd \"#{File.join(out_path_dir, formular_sha1)}\"; zip -r \"#{out_path_docx}\" ."
             system(command)
-            command = "lowriter --convert-to pdf \"#{out_path_docx}\" --outdir \"#{File.dirname(out_path_docx)}\""
+            command = "HOME=/internal lowriter --convert-to pdf \"#{out_path_docx}\" --outdir \"#{File.dirname(out_path_docx)}\""
             system(command)
             final_path = File.join('/gen', 'zeugnisse', "#{zeugnis_sha1}.pdf")
             FileUtils.mkpath(File.join('/gen', 'zeugnisse'))

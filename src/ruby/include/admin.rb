@@ -107,6 +107,13 @@ class Main < Sinatra::Base
         all_homeschooling_users = Main.get_all_homeschooling_users()
         users_with_telephone_number = Set.new(neo4j_query("MATCH (u:User) WHERE u.telephone_number IS NOT NULL RETURN u.email").map { |x| x['u.email']})
         users_with_otp = Set.new(neo4j_query("MATCH (u:User) WHERE u.otp_token IS NOT NULL RETURN u.email").map { |x| x['u.email']})
+        twofa_status = {}
+        (users_with_telephone_number | users_with_otp).each do |email|
+            methods = []
+            methods << "<i class='fa fa-mobile'></i>&nbsp;&nbsp;SMS" if users_with_telephone_number.include?(email)
+            methods << "<i class='fa fa-qrcode'></i>&nbsp;&nbsp;OTP" if users_with_otp.include?(email)
+            twofa_status[email] = methods.join(' / ')
+        end
         StringIO.open do |io|
             bolt_connections = neo4j_query("CALL dbms.listConnections();").size
             io.puts "<span style='float: right;'>SMS Gateway: #{Main.sms_gateway_ready? ? 'online' : 'offline'} / Aktive Bolt-Verbindungen: #{bolt_connections} / <a href='/schema'>Schema</a></span>"
@@ -153,7 +160,7 @@ class Main < Sinatra::Base
                 end
                 io.puts "<td><a class='btn btn-xs btn-secondary' href='/timetable/#{user[:id]}'><i class='fa fa-calendar'></i>&nbsp;&nbsp;Stundenplan</a></td>"
                 io.puts "<td><button class='btn btn-warning btn-xs btn-impersonate' data-impersonate-email='#{user[:email]}'><i class='fa fa-id-badge'></i>&nbsp;&nbsp;Anmelden</button></td>"
-                io.puts "<td>#{users_with_telephone_number.include?(email) ? 'SMS' : ''} #{users_with_otp.include?(email) ? 'OTP' : ''}</td>"
+                io.puts "<td>#{twofa_status[email]}</td>"
                 if all_sessions.include?(email)
                     io.puts "<td><button class='btn-sessions btn btn-xs btn-secondary' data-sessions-id='#{@@user_info[email][:id]}'>#{all_sessions[email].size} Session#{all_sessions[email].size == 1 ? '' : 's'}</button></td>"
                 else
@@ -213,7 +220,7 @@ class Main < Sinatra::Base
                     # else
                     #     io.puts "<td><button class='btn btn-secondary btn-xs btn-toggle-homeschooling' data-email='#{user[:email]}'><i class='fa fa-building'></i>&nbsp;&nbsp;Präsenz</button></td>"
                     # end
-                    io.puts "<td>#{users_with_telephone_number.include?(email) ? 'SMS' : ''} #{users_with_otp.include?(email) ? 'OTP' : ''}</td>"
+                    io.puts "<td>#{twofa_status[email]}</td>"
                     if all_sessions.include?(email)
                         io.puts "<td><button class='btn-sessions btn btn-xs btn-secondary' data-sessions-id='#{@@user_info[email][:id]}'>#{all_sessions[email].size} Session#{all_sessions[email].size == 1 ? '' : 's'}</button></td>"
                     else

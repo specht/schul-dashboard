@@ -27,7 +27,11 @@
                     <p>
                         <em>
                         Hinweis: Falls Sie eines der nicht verfügbaren Anmeldeverfahren freischalten möchten, können Sie dies <a href='/profil#anmeldung'>im Profil tun</a>, indem Sie eine Telefonnummer hinterlegen oder einen OTP-Code einscannen.
-                        Für den Fall, dass Sie alles versucht haben und nicht weiterkommen, rufen Sie bitte Herrn Specht oder Herrn Winkler an, dann können Sie auch telefonisch freigeschaltet werden.
+                        </em>
+                    </p>
+                    <p style="display: #{DATENTRESOR_HOTLINE.empty? ? 'none': 'block'};">
+                        <em>
+                        Für den Fall, dass Sie alles versucht haben und nicht weiterkommen oder es dringend ist, können Sie auch <a href='#'>#{DATENTRESOR_HOTLINE} anrufen</a>. Sie werden dann telefonisch freigeschaltet.
                         </em>
                     </p>
                 </div>
@@ -47,7 +51,7 @@
 </div>
 
 <script>
-var first_login_method = "#{@used_session[:method]}";
+var first_login_method = "#{@used_session[:method] || 'email'}";
 var otp_qr_code = '#{session_user_otp_qr_code()}';
 var telephone_number = '#{session_user_telephone_number()}';
 

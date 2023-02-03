@@ -17,6 +17,25 @@ class Main < Sinatra::Base
             SET u.otp_token = $token;
         END_OF_QUERY
         @session_user[:otp_token] = token
+        session_user = @session_user.dup
+
+        deliver_mail do
+            to session_user[:email]
+            bcc SMTP_FROM
+            from SMTP_FROM
+
+            subject "Dashboard: OTP-Anmeldung aktiviert"
+
+            StringIO.open do |io|
+                io.puts "<p>Hallo!</p>"
+                io.puts "<p>Die OTP-Anmeldung wurde aktiviert.</p>"
+                io.puts "<p>Falls Sie diese Aktivierung nicht selbst veranlasst haben, setzen Sie sich bitte dringend mit #{WEBSITE_MAINTAINER_NAME_AKKUSATIV} unter der E-Mail-Adresse <a href='mailto:#{WEBSITE_MAINTAINER_EMAIL}'>#{WEBSITE_MAINTAINER_EMAIL}</a> in Verbindung.</p>"
+                io.puts "<p>Die Aktivierung erfolgte am #{DateTime.now.strftime('%d.%m.%Y')} um #{DateTime.now.strftime('%H:%M')} Uhr (Gerät: #{session_user[:user_agent]}, IP: #{session_user[:ip]}).</p>"
+                io.puts "<p>Viele Grüße,<br />#{WEBSITE_MAINTAINER_NAME}</p>"
+                io.string
+            end
+        end
+
         respond(:qr_code => session_user_otp_qr_code(true))
     end
 

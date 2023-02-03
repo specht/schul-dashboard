@@ -1016,6 +1016,10 @@ class Main < Sinatra::Base
         end
 
         if ENV['DASHBOARD_SERVICE'] == 'ruby'
+            self.parse_zeugnisformulare()
+        end
+
+        if ENV['DASHBOARD_SERVICE'] == 'ruby'
             FileUtils.rm_rf('/internal/debug/')
             FileUtils.mkpath('/internal/debug/')
             Main.class_variables.each do |x|
@@ -1263,7 +1267,6 @@ class Main < Sinatra::Base
             self.compile_js()
             self.compile_css()
             self.determine_lehrmittelverein_state_for_all()
-            self.parse_zeugnisformulare()
             # STDERR.puts @@color_scheme_info.to_yaml
         end
 
@@ -1410,6 +1413,7 @@ class Main < Sinatra::Base
                             session_expiry = session[:expires]
                             if DateTime.parse(session_expiry) > DateTime.now
                                 @used_session = session.to_h
+                                @used_session[:method] ||= 'email'
                                 email = results.first['u'][:email]
                                 if email == "tablet@#{SCHUL_MAIL_DOMAIN}"
                                     if @@tablets_which_are_lehrer_tablets.include?(session[:tablet_id])
@@ -1489,6 +1493,7 @@ class Main < Sinatra::Base
                                         @session_user[:group_af] = results.first['u'][:group_af] || ''
                                         @session_user[:sus_may_contact_me] = results.first['u'][:sus_may_contact_me] || false
                                         @session_user[:user_agent] = results.first['s'][:user_agent]
+                                        @session_user[:ip] = request.ip
                                     end
                                 end
                             end

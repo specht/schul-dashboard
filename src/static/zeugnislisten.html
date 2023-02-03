@@ -4,90 +4,65 @@
     tr.focused {
         background-color: #fce98d;
     }
+    div.note {
+        position: relative;
+    }
+    div.note:after {
+        position: absolute;
+        width: 1.5em;
+        height: 1.5em;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        border-radius: 100%;
+        content: '';
+        pointer-events: none;
+    }
+    div.note.marked:after {
+        outline: 2px solid #d5291a;
+        background-color: rgba(213, 41, 26, 0.1);
+    }
+    div.note input {
+        margin-left: auto;
+        margin-right: auto;
+    }
+    div.note input:disabled {
+        background: none;
+        border: none;
+        padding: 0;
+        width: 2em!important;
+    }
 </style>
 <div class='container bg-white'>
     <div class="w-full">
-        <h2>Zeugnisse #{ZEUGNIS_SCHULJAHR.sub('_', '/')} (#{ZEUGNIS_HALBJAHR}. Halbjahr)</h2>
-        <h3>Zeugnislisten</h3>
-        <div id="zeugnislisten_table_here"></div>
-        <h3>Klassen</h3>
+        <h3>Zeugnislisten #{ZEUGNIS_SCHULJAHR.sub('_', '/')} (#{ZEUGNIS_HALBJAHR}. Halbjahr)</h3>
         <div id="klassen_buttons_here"></div>
-        <h3>Kurse</h3>
-        <div id="kurs_buttons_here"></div>
         <hr />
         <div id="noten_here"></div>
     </div>
 </div>
 
 <script>
-var SCHULJAHR = '2022_23';
-var HALBJAHR = '1';
-var kurse = #{(@@lessons_for_shorthand[@session_user[:shorthand]] || []).map { |x| @@lessons[:lesson_keys][x].merge({:lesson_key => x}) }.to_json};
-var sus_for_kurs = #{Hash[(@@lessons_for_shorthand[@session_user[:shorthand]] || []).map { |x| [x, @@schueler_for_lesson[x]] }].to_json};
+var ZEUGNIS_SCHULJAHR = "#{ZEUGNIS_SCHULJAHR}";
+var ZEUGNIS_HALBJAHR = "#{ZEUGNIS_HALBJAHR}";
 var zeugnis_klassen_order = #{ZEUGNIS_KLASSEN_ORDER.to_json};
 var klassen_tr = #{KLASSEN_TR.to_json};
-var user_info = #{@@user_info.to_json};
-var kurse_for_klasse = #{Hash[ZEUGNIS_KLASSEN_ORDER.map { |klasse| [klasse, @@lessons_for_klasse[klasse].map { |x| @@lessons[:lesson_keys][x].merge({:lesson_key => x})}]}].to_json};
-var kurs_info = #{@@lessons[:lesson_keys].to_json};
-var schueler_for_klasse = #{@@schueler_for_klasse.to_json};
-var faecher_for_zeugnis = #{FAECHER_FOR_ZEUGNIS[ZEUGNIS_SCHULJAHR][ZEUGNIS_HALBJAHR].to_json};
-var zeugnis_formular_fehler = #{Hash[FAECHER_FOR_ZEUGNIS[ZEUGNIS_SCHULJAHR][ZEUGNIS_HALBJAHR].keys.map { |key| [key, check_zeugnisformular(key)] }].to_json};
+var zeugnisliste_for_klasse = #{@@zeugnisliste_for_klasse.to_json};
+var my_zeugnisliste = #{@@zeugnisliste_for_lehrer[@session_user[:shorthand]].to_json};
+var my_klassen = #{@@klassen_for_shorthand[@session_user[:shorthand]].select { |x| ZEUGNIS_KLASSEN_ORDER.include?(x) }.to_json};
 
 window.addEventListener('load', function () {
-    let table = $(`<table class='table xs' style='width: unset;'>`);
-    $('#zeugnislisten_table_here').append(table);
     for (let klasse of zeugnis_klassen_order) {
-        let lesson_keys_for_fach = {};
-        let shorthands_for_fach = {};
-        for (let kurs of kurse_for_klasse[klasse]) {
-            lesson_keys_for_fach[kurs.fach] ??= [];
-            lesson_keys_for_fach[kurs.fach].push(kurs.lesson_key);
-            for (let lehrer of kurs.lehrer) {
-                let fach = consolidate_fach(kurs.fach);
-                shorthands_for_fach[fach] ??= {};
-                shorthands_for_fach[fach][lehrer] = true;
-            }
-        }
-        let tr = $(`<tr style='line-height: 1em;'>`).appendTo(table);
-        tr.append($(`<td>`).html(`${klassen_tr[klasse] ?? klasse}<br /><span style='font-size: 85%; color: #888;'>(${schueler_for_klasse[klasse].length} SuS)</span>`));
-        let faecher = faecher_for_emails(schueler_for_klasse[klasse]);
-        for (let fach of faecher) {
-            fach = consolidate_fach(fach);
-            if (Object.keys(shorthands_for_fach[fach] ?? {}).length === 0) {
-                console.log(klasse, fach, kurse_for_klasse[klasse]);
-            }
-            tr.append($(`<td style='width: 3em;'>`).html(`<span>${fach}</span><br /><span style='font-size: 85%; color: #888;'>${Object.keys(shorthands_for_fach[fach] ?? {}).join('/')}</span>`));
+        if (my_klassen.indexOf(klasse) >= 0) {
+            let button = $(`<button style='white-space: nowrap;' class='inline-block bg-slate-900 border border-blue-500 hover:bg-slate-200 rounded py-1 px-3 mr-1 mb-1'>${klassen_tr[klasse] ?? klasse}</button>`);
+            $('#klassen_buttons_here').append(button);
+            button.click(function(e) {
+                load_noten_table($('#noten_here'), klasse);
+            });
         }
     }
-
-    for (let klasse of zeugnis_klassen_order) {
-        let button = $(`<button style='white-space: nowrap;' class='inline-block bg-slate-900 border border-blue-500 hover:bg-slate-200 rounded py-1 px-3 mr-1 mb-1'>${klassen_tr[klasse] ?? klasse}</button>`);
-        $('#klassen_buttons_here').append(button);
-        button.click(function(e) {
-            load_noten_table($('#noten_here'), kurse_for_klasse[klasse].map(function(x) { return x.lesson_key }), schueler_for_klasse[klasse]);
-        });
-    }
-
-    for (let kurs of kurse) {
-        let button = $(`<button style='white-space: nowrap;' class='inline-block bg-slate-900 border border-blue-500 hover:bg-slate-200 rounded py-1 px-3 mr-1 mb-1'>${kurs.pretty_folder_name}</button>`);
-        $('#kurs_buttons_here').append(button);
-        button.click(function(e) {
-            let lesson_key = kurs.lesson_key;
-            load_noten_table($('#noten_here'), [lesson_key], sus_for_kurs[lesson_key]);
-        });
-    }
+    load_noten_table($('#noten_here'), '10a');
 });
-
-function consolidate_fach(fach) {
-    if (fach === 'DeP') return 'D';
-    if (fach === 'NgrP') return 'Ngr';
-    if (fach === 'GeNgr') return 'Ge';
-    if (fach === 'PolNgr') return 'Pol';
-    if (fach === 'BioNgr') return 'Bio';
-    if (fach === 'EkNgr') return 'Ek';
-    if (fach === 'EthNgr') return 'Eth';
-    return fach;
-}
 
 let noten_allowed_values = [
     '1+', '1', '1-',
@@ -100,72 +75,72 @@ let noten_allowed_values = [
 
 let noten_mark = ['4-', '5+', '5', '5-', '6'];
 
-function input_note_apply_style(input) {
+function input_note_apply_style_and_fix(input, callback) {
     let value = $(input).val().trim();
-    if (noten_mark.indexOf(value) >= -1)
-        input.addClass('marked');
-    else
-        input.removeClass('marked');
-}
-
-function zeugnis_key_for_email(email) {
-    let sesb = user_info[email].sesb ?? false;
-    let klassenstufe = user_info[email].klassenstufe;
-    let zeugnis_key = `${klassenstufe}${sesb ? '_sesb' : ''}`;
-    return zeugnis_key;
-}
-
-function faecher_for_emails(emails) {
-    let zeugnis_keys = {};
-    for (let email of emails) {
-        zeugnis_keys[zeugnis_key_for_email(email)] = true;
+    let original_value = `${value}`;
+    if (value.toLowerCase().replace(/[\.\s]+/g, '') == 'ne') value = 'n.e.';
+    if (value.toLowerCase().replace(/[\.\s]+/g, '') == 'ob') value = 'o.B.';
+    if (noten_allowed_values.indexOf(value) < 0) value = '';
+    if (original_value !== value) {
+        $(input).val(value);
+        input_note_apply_style_and_fix($(input), callback);
+        return;
+    } else {
+        if (noten_mark.indexOf(value) >= 0)
+            $(input).closest('.note').addClass('marked');
+        else
+            $(input).closest('.note').removeClass('marked');
+        if (typeof(callback) !== 'undefined') callback(value);
     }
-    let faecher = [];
-    for (let key of Object.keys(zeugnis_keys).sort()) {
-        for (let fach of faecher_for_zeugnis[key]) {
-            if (faecher.indexOf(fach) < 0)
-                faecher.push(fach);
-        }
-    }
-    return faecher;
 }
 
-function load_noten_table(container, lesson_keys, emails) {
+function load_noten_table(container, klasse) {
     // for (let lesson_key of lesson_keys) {
     //     let info = kurs_info[lesson_key];
     //     console.log(info.fach);
     // }
     let path_array = [];
-    path_array.push(['Schuljahr', SCHULJAHR]);
-    path_array.push(['Halbjahr', HALBJAHR]);
-    path_array.push(['Fach', lesson_keys]);
+    path_array.push(['Schuljahr', ZEUGNIS_SCHULJAHR]);
+    path_array.push(['Halbjahr', ZEUGNIS_HALBJAHR]);
+    let liste = zeugnisliste_for_klasse[klasse];
+    let faecher = liste.faecher;
+    let emails = liste.schueler.map(function(x) { return x.email; });
+    path_array.push(['Fach', faecher]);
     path_array.push(['Email', emails]);
     container.empty();
     let t0 = Date.now();
-    tresor_api_call('/jwt/get_many', {path_array: path_array, key: 'Note'}, function(data) {
+    tresor_api_call('/jwt/get_many', {path_arrays: [path_array], key: 'Note'}, function(data) {
         let t1 = Date.now();
         console.log(`request took ${t1 - t0} ms.`);
         if (data.success) {
             let table = new SortableTable({
                 element: container,
                 xs: true,
-                headers: (['Nr.', 'Nachname', 'Vorname', 'Klasse'].concat(lesson_keys.map(function(lk) { let kurs = kurs_info[lk]; return `${kurs.fach}<br /><span style='font-size: 85%; font-weight: normal;'>(${kurs.lehrer.join(', ')})</span>`; }))).map(function (x) {
+                headers: (['Nr.', 'Nachname', 'Vorname', 'Geburtsdatum', 'Klasse'].concat(faecher.map(function(fach) { 
+                    let fach_label = fach;
+                    if (liste.wahlfach[fach]) fach_label = `(${fach})`;
+                    return `${fach_label}<br /><span style='font-size: 85%; font-weight: normal;'>(${liste.lehrer_for_fach[fach].join(', ')})</span>`; 
+                }))).map(function (x) {
                     let th = $('<th>').html(x);
+                    if (['Nr.', 'Nachname', 'Vorname', 'Geburtsdatum', 'Klasse'].indexOf(x) < 0) th.css('text-align', 'center');
                     return th;
                 }),
                 rows: emails.map(function (email, index) {
                     let cells = [
                         email,
                         `<td style='text-align: right;'>${index + 1}.</td>`,
-                        `<td style='max-width: 10em;'>${user_info[email].last_name}</td>`,
-                        `<td style='max-width: 10em;'>${user_info[email].official_first_name}</td>`,
-                        // `<td>${moment(user_info[email].geburtstag).format('L')}</td>`,
-                        `<td>${klassen_tr[user_info[email].klasse] ?? user_info[email].klasse}</td>`,
+                        `<td style='max-width: 10em;'>${liste.schueler[index].last_name}</td>`,
+                        `<td style='max-width: 10em;'>${liste.schueler[index].official_first_name}</td>`,
+                        `<td>${moment(liste.schueler[index].geburtstag).format('L')}</td>`,
+                        `<td>${klassen_tr[klasse] ?? klasse}</td>`,
                     ];
-                    for (let lki = 0; lki < lesson_keys.length; lki++) {
-                        let lesson_key = lesson_keys[lki];
-                        let input = $(`<input class='form-control' style='width: 3em; text-align: center; height: calc(1.5em + 2px);'>`)
-                        input.val(data.results[0][0][lki][index]);
+                    for (let fi = 0; fi < faecher.length; fi++) {
+                        let fach = faecher[fi];
+                        let input = $(`<input placeholder='--' class='form-control' style='width: 3em; text-align: center; height: calc(1.5em + 2px);'>`)
+                        if (!my_zeugnisliste[`${klasse}/${fach}`]) {
+                            input.prop('disabled', true);
+                        }
+                        input.val(data.results[0][0][0][fi][index]);
                         input.focus(function(e) {
                             input.select();
                             container.find('tr').removeClass('focused');
@@ -176,8 +151,11 @@ function load_noten_table(container, lesson_keys, emails) {
                             container.find('tr').removeClass('focused');
                             let value = $(e.target).val().trim();
                             if (value !== $(e.target).data('old_value')) {
-                                let path = `Schuljahr:${SCHULJAHR}/Halbjahr:${HALBJAHR}/Fach:${lesson_key}/Email:${email}`;
-                                tresor_api_call('/jwt/store', {path: path, key: 'Note', value: value}, function(data) {
+                                let path = `Schuljahr:${ZEUGNIS_SCHULJAHR}/Halbjahr:${ZEUGNIS_HALBJAHR}/Fach:${fach}/Email:${email}`;
+                                input_note_apply_style_and_fix($(e.target), function(value) {
+                                    $(e.target).data('old_value', value);
+                                    tresor_api_call('/jwt/store', {path: path, key: 'Note', value: value}, function(data) {
+                                    });
                                 });
                             }
                         });
@@ -205,7 +183,8 @@ function load_noten_table(container, lesson_keys, emails) {
                                 next_row.find('td').eq(this_index).find('input').focus().select();
                             }
                         });
-                        cells.push($('<td>').append(input));
+                        cells.push($('<td>').append($(`<div class='note'>`).append(input)));
+                        input_note_apply_style_and_fix(input);
                     }
                     return cells;
                 }),

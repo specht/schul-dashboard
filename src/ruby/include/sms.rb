@@ -100,6 +100,23 @@ class Main < Sinatra::Base
             MATCH (l:PhoneNumberConfirmation {tag: $tag})
             DETACH DELETE l;
         END_OF_QUERY
+        session_user = @session_user.dup
+        deliver_mail do
+            to session_user[:email]
+            bcc SMTP_FROM
+            from SMTP_FROM
+
+            subject "Dashboard: SMS-Anmeldung aktiviert"
+
+            StringIO.open do |io|
+                io.puts "<p>Hallo!</p>"
+                io.puts "<p>Die SMS-Anmeldung wurde aktiviert.</p>"
+                io.puts "<p>Falls Sie diese Aktivierung nicht selbst veranlasst haben, setzen Sie sich bitte dringend mit #{WEBSITE_MAINTAINER_NAME_AKKUSATIV} unter der E-Mail-Adresse <a href='mailto:#{WEBSITE_MAINTAINER_EMAIL}'>#{WEBSITE_MAINTAINER_EMAIL}</a> in Verbindung.</p>"
+                io.puts "<p>Die Aktivierung erfolgte am #{DateTime.now.strftime('%d.%m.%Y')} um #{DateTime.now.strftime('%H:%M')} Uhr (Gerät: #{session_user[:user_agent]}, IP: #{session_user[:ip]}).</p>"
+                io.puts "<p>Viele Grüße,<br />#{WEBSITE_MAINTAINER_NAME}</p>"
+                io.string
+            end
+        end
         respond(:ok => 'yeah', :telephone_number => sms_code[:telephone_number].deobfuscate(SMS_PHONE_NUMBER_PASSPHRASE))
     end
 

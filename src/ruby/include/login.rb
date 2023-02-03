@@ -506,6 +506,7 @@ class Main < Sinatra::Base
         END_OF_QUERY
         sessions.map do |s|
             s[:scrambled_sid] = Digest::SHA2.hexdigest(SESSION_SCRAMBLER + s[:sid]).to_i(16).to_s(36)[0, 16]
+            s[:method] ||= 'email'
             s
         end
     end

@@ -807,33 +807,52 @@ class Main < Sinatra::Base
         poll = temp['p']
         session_user = @@user_info[temp['u.email']][:display_last_name]
         code = Digest::SHA2.hexdigest(EXTERNAL_USER_EVENT_SCRAMBLER + data[:prid] + data[:email]).to_i(16).to_s(36)[0, 8]
-        deliver_mail do
-            to data[:email]
-            bcc SMTP_FROM
-            from SMTP_FROM
-            reply_to "#{@@user_info[session_user_email][:display_name]} <#{session_user_email}>"
-
-            subject "Einladung zur Umfrage: #{poll[:title]}"
-
-            StringIO.open do |io|
-                io.puts "<p>Sie haben eine Einladung zu einer Umfrage erhalten.</p>"
-                io.puts "<p>"
-                io.puts "Eingeladen von: #{session_user}<br />"
-                io.puts "Titel: #{poll[:title]}<br />"
-                io.puts "Datum und Uhrzeit: #{Time.parse(poll_run[:start_date]).strftime('%d.%m.%Y')}, #{poll_run[:start_time]} &ndash; #{Time.parse(poll_run[:end_date]).strftime('%d.%m.%Y')}, #{poll_run[:end_time]}<br />"
-                link = WEB_ROOT + "/p/#{data[:prid]}/#{code}"
-                io.puts "</p>"
-                io.puts "<p>Link zur Umfrage:<br /><a href='#{link}'>#{link}</a></p>"
-                io.puts "<p>Bitte geben Sie den Link nicht weiter. Er ist personalisiert und nur im angegebenen Zeitraum gültig.</p>"
-                io.string
-            end
-        end
         rows = $neo4j.neo4j_query(<<~END_OF_QUERY, data)
             MATCH (pr:PollRun {id: $prid})<-[rt:IS_PARTICIPANT]-(r)
             WHERE (r:ExternalUser OR r:PredefinedExternalUser) AND (r.email = $email) AND COALESCE(rt.deleted, false) = false AND COALESCE(pr.deleted, false) = false
-            SET rt.invitations = COALESCE(rt.invitations, []) + [$timestamp]
             REMOVE rt.invitation_requested
         END_OF_QUERY
+        begin
+            deliver_mail do
+                to data[:email]
+                bcc SMTP_FROM
+                from SMTP_FROM
+                reply_to "#{@@user_info[session_user_email][:display_name]} <#{session_user_email}>"
+
+                subject "Einladung zur Umfrage: #{poll[:title]}"
+
+                StringIO.open do |io|
+                    io.puts "<p>Sie haben eine Einladung zu einer Umfrage erhalten.</p>"
+                    io.puts "<p>"
+                    io.puts "Eingeladen von: #{session_user}<br />"
+                    io.puts "Titel: #{poll[:title]}<br />"
+                    io.puts "Datum und Uhrzeit: #{Time.parse(poll_run[:start_date]).strftime('%d.%m.%Y')}, #{poll_run[:start_time]} &ndash; #{Time.parse(poll_run[:end_date]).strftime('%d.%m.%Y')}, #{poll_run[:end_time]}<br />"
+                    link = WEB_ROOT + "/p/#{data[:prid]}/#{code}"
+                    io.puts "</p>"
+                    io.puts "<p>Link zur Umfrage:<br /><a href='#{link}'>#{link}</a></p>"
+                    io.puts "<p>Bitte geben Sie den Link nicht weiter. Er ist personalisiert und nur im angegebenen Zeitraum gültig.</p>"
+                    io.string
+                end
+            end
+            rows = $neo4j.neo4j_query(<<~END_OF_QUERY, data)
+                MATCH (pr:PollRun {id: $prid})<-[rt:IS_PARTICIPANT]-(r)
+                WHERE (r:ExternalUser OR r:PredefinedExternalUser) AND (r.email = $email) AND COALESCE(rt.deleted, false) = false AND COALESCE(pr.deleted, false) = false
+                SET rt.invitations = COALESCE(rt.invitations, []) + [$timestamp];
+            END_OF_QUERY
+        rescue
+            deliver_mail do
+                to session_user_email
+                bcc SMTP_FROM
+                from SMTP_FROM
+
+                subject "Einladung zur Umfrage konnte nicht gesendet werden: #{poll[:title]}"
+
+                StringIO.open do |io|
+                    io.puts "<p>Die Einladung an #{data[:email]} konnte nicht gesendet werden. Bitte überprüfen Sie, ob die E-Mail-Adresse korrekt ist.</p>"
+                    io.string
+                end
+            end
+        end
     end
     
     post '/api/invite_external_user_for_poll_run' do

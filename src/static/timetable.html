@@ -519,7 +519,8 @@ function physics_animation_step(t) {
 }
 
 function install_physics_handler(e) {
-    if (moment().format('YYYY-MM-DD') !== '2022-04-03')
+    return;
+    if (`#{DEVELOPMENT}` !== '1' && moment().format('YYYY-MM-DD') !== '2023-04-01')
         return;
     if (e.data('physics_handler_installed') === 1)
         return;

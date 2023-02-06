@@ -109,9 +109,10 @@ class Main < Sinatra::Base
         wf_count = 0
         FAECHER_FOR_ZEUGNIS[ZEUGNIS_SCHULJAHR][ZEUGNIS_HALBJAHR][key].each do |tag|
             if tag[0] == '$'
-                wf_count += 1
-                required_tags << "$WF#{wf_count}"
-                required_tags << "#WF#{wf_count}"
+                # wf_count += 1
+                # required_tags << "$WF#{wf_count}"
+                # required_tags << "##{wf_count}"
+                required_tags << "##{tag[1, tag.size - 1]}"
             else
                 required_tags << "##{tag}"
             end

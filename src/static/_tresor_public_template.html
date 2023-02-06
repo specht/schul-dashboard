@@ -156,6 +156,10 @@
         width: 2em!important;
     }
 
+    .container, .container-lg, .container-md, .container-sm, .container-xl {
+        max-width: 1500px;
+    }
+
     @tailwind base;
     @tailwind components;
     @tailwind utilities;
@@ -173,8 +177,8 @@
     du Fragen, Hinweise oder Anmerkungen hast, schreib eine E-Mail an <a
         href='mailto:specht@gymnasiumsteglitz.de'>specht@gymnasiumsteglitz.de</a>.
 </div>
-<div id='submenu' class='container' style='padding: 0; display: flex; background: white; border-radius: 0;'>
-    <section class="w-full" style="height: 51px; display: #{second_factor_time_left.nil? ? 'none' : 'block'}">
+<div id='submenu' class='container' style='padding: 0; display: flex; background: white; border-radius: 0; display: #{second_factor_time_left.nil? ? 'none' : 'block'};'>
+    <section class="w-full" style="height: 51px; display: #{second_factor_time_left.nil? ? 'none' : 'block'};">
         <ul class="submenu flex bg-white px-2.5 py-2"
             style="border-bottom: 1px solid #eee; left: 0px; right: 0px; z-index: 100;">
             <li class="mx-1">
@@ -245,7 +249,8 @@ window.addEventListener('load', function () {
         if (!data.success) {
             if (window.location.pathname !== '/tresor')
                 window.location.href = '/tresor';
-            show_error_message('Es konnte keine Verbindung zum Datentresor hergestellt werden. Stellen Sie sicher, dass Sie sich in der Schule befinden und an einem der Computer im Silentium oder im WLAN angemeldet sind.');
+            $('#connection-failed').show();
+            $('.api_messages').hide();
             $('#submenu').hide();
             $('#subsubmenu').hide();
         }

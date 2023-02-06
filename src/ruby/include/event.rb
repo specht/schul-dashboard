@@ -204,7 +204,7 @@ class Main < Sinatra::Base
                     io.puts "<p>"
                     io.puts "Eingeladen von: #{session_user}<br />"
                     io.puts "Titel: #{event[:title]}<br />"
-                    io.puts "Datum und Uhrzeit: #{Time.parse(event[:date]).strftime('%d.%m.%Y')}, #{event[:start_time]} &ndash; #{event[:end_time]}<br />"
+                    io.puts "Datum und Uhrzeit: #{WEEKDAYS[Time.parse(event[:date]).wday]}., den #{Time.parse(event[:date]).strftime('%d.%m.%Y')}, #{event[:start_time]} &ndash; #{event[:end_time]}<br />"
                     link = WEB_ROOT + "/e/#{data[:eid]}/#{code}"
                     io.puts "</p>"
                     io.puts "<p>Link zum Termin:<br /><a href='#{link}'>#{link}</a></p>"
@@ -226,9 +226,10 @@ class Main < Sinatra::Base
                     io.puts "<p>"
                     io.puts "E-Mail: #{data[:email]}<br />"
                     io.puts "Titel: #{event[:title]}<br />"
-                    io.puts "Datum und Uhrzeit: #{Time.parse(event[:date]).strftime('%d.%m.%Y')}, #{event[:start_time]} &ndash; #{event[:end_time]}<br />"
+                    io.puts "Datum und Uhrzeit: #{WEEKDAYS[Time.parse(event[:date]).wday]}., den #{Time.parse(event[:date]).strftime('%d.%m.%Y')}, #{event[:start_time]} &ndash; #{event[:end_time]}<br />"
                     link = WEB_ROOT + "/e/#{data[:eid]}/#{code}"
                     io.puts "</p>"
+                    io.puts "<p>Link zum Termin:<br /><a href='#{link}'>#{link}</a></p>"
                     io.puts "<p>Bitte überprüfen Sie die E-Mail-Adresse, sie ist vermutlich falsch.</p>"
                     io.string
                 end

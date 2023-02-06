@@ -826,7 +826,7 @@ class Main < Sinatra::Base
                     io.puts "<p>"
                     io.puts "Eingeladen von: #{session_user}<br />"
                     io.puts "Titel: #{poll[:title]}<br />"
-                    io.puts "Datum und Uhrzeit: #{Time.parse(poll_run[:start_date]).strftime('%d.%m.%Y')}, #{poll_run[:start_time]} &ndash; #{Time.parse(poll_run[:end_date]).strftime('%d.%m.%Y')}, #{poll_run[:end_time]}<br />"
+                    io.puts "Datum und Uhrzeit: #{WEEKDAYS[Time.parse(poll_run[:start_date]).wday]}., den #{Time.parse(poll_run[:start_date]).strftime('%d.%m.%Y')}, #{poll_run[:start_time]} &ndash; #{WEEKDAYS[Time.parse(poll_run[:end_date]).wday]}., den #{Time.parse(poll_run[:end_date]).strftime('%d.%m.%Y')}, #{poll_run[:end_time]}<br />"
                     link = WEB_ROOT + "/p/#{data[:prid]}/#{code}"
                     io.puts "</p>"
                     io.puts "<p>Link zur Umfrage:<br /><a href='#{link}'>#{link}</a></p>"
@@ -845,10 +845,18 @@ class Main < Sinatra::Base
                 bcc SMTP_FROM
                 from SMTP_FROM
 
-                subject "Einladung zur Umfrage konnte nicht gesendet werden: #{poll[:title]}"
+                subject "Einladung zur Umfrage konnte nicht versendet werden: #{poll[:title]}"
 
                 StringIO.open do |io|
-                    io.puts "<p>Die Einladung an #{data[:email]} konnte nicht gesendet werden. Bitte überprüfen Sie, ob die E-Mail-Adresse korrekt ist.</p>"
+                    io.puts "<p>Die Einladung für die folgende Umfrage konnte nicht versendet werden:</p>"
+                    io.puts "<p>"
+                    io.puts "E-Mail: #{data[:email]}<br />"
+                    io.puts "Titel: #{poll[:title]}<br />"
+                    io.puts "Datum und Uhrzeit: #{WEEKDAYS[Time.parse(poll_run[:start_date]).wday]}., den #{Time.parse(poll_run[:start_date]).strftime('%d.%m.%Y')}, #{poll_run[:start_time]} &ndash; #{WEEKDAYS[Time.parse(poll_run[:end_date]).wday]}., den #{Time.parse(poll_run[:end_date]).strftime('%d.%m.%Y')}, #{poll_run[:end_time]}<br />"
+                    link = WEB_ROOT + "/p/#{data[:prid]}/#{code}"
+                    io.puts "</p>"
+                    io.puts "<p>Link zur Umfrage:<br /><a href='#{link}'>#{link}</a></p>"
+                    io.puts "<p>Bitte überprüfen Sie die E-Mail-Adresse, sie ist vermutlich falsch.</p>"
                     io.string
                 end
             end

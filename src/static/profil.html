@@ -73,9 +73,9 @@
                         </div>
                     </div>
                 </div>
-                <div class='col-md-12'>
+                <div class='col-md-12' style="display: none;">
                     <b>Tipp:</b> Um dich anzumelden, musst du nicht deine komplette E-Mail-Adresse angeben. Solange es eindeutig ist, kannst du dich auch mit einem kürzeren Präfix anmelden, also zum Beispiel:
-                    #{temp = @session_user[:email].split('@').first.split('.'); join_with_sep((0..temp.size).map { |c| temp[0, c].join('.') }.reject { |x| x.strip.empty? || x.strip.length < @@user_info[@session_user[:email]][:shortest_prefix].size}.map { |x| '<b>' + x + '</b>'}, ', ', ' oder ')  }
+                    #{#temp = @session_user[:email].split('@').first.split('.'); join_with_sep((0..temp.size).map { |c| temp[0, c].join('.') }.reject { |x| x.strip.empty? || x.strip.length < @@user_info[@session_user[:email]][:shortest_prefix].size}.map { |x| '<b>' + x + '</b>'}, ', ', ' oder ')  }
                     <hr />
                     Falls du hier falsche Angaben siehst, die du korrigieren lassen möchtest, schreib bitte eine E-Mail an <a href='mailto:#{DASHBOARD_SUPPORT_EMAIL}'>#{DASHBOARD_SUPPORT_EMAIL}</a>.
                     <hr />

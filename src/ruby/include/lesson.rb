@@ -726,6 +726,7 @@ class Main < Sinatra::Base
         require_user!
         data = parse_request_data(:required_keys => [:lesson_key, :lesson_offset, :text],
             :max_body_length => 4096,
+            :max_string_length => 4096,
             :types => {:lesson_offset => Integer})
         text = data[:text].strip
         timestamp = Time.now.to_i

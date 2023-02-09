@@ -109,7 +109,7 @@
         if (db_user_info[email]) {
             $('#klasse_here').text(db_user_info[email].klasse)
             if (klassenleiter[db_user_info[email].no_tr_klasse]) {
-                $('#klassenleiter_here').text(klassenleiter[db_user_info[email].no_tr_klasse].map(function(x) { return db_user_info[shorthands[x]].display_name; }).join(', '));
+                $('#klassenleiter_here').text(klassenleiter[db_user_info[email].no_tr_klasse].map(function(x) { return (db_user_info[shorthands[x]] ?? {}).display_name; }).join(', '));
                 $('#tr_klassenleiter').show();
                 console.log(klassenleiter[db_user_info[email].no_tr_klasse]);
             }

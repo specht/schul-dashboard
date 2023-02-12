@@ -60,7 +60,10 @@ class Main < Sinatra::Base
         END_OF_QUERY
         tests.each do |event|
             user_info = @@user_info[event[:user][:email]]
-            title = "#{event[:test][:typ]} #{event[:test][:fach]} (#{@@user_info[event[:user][:email]][:shorthand]})"
+            title = "#{event[:test][:typ]} #{event[:test][:fach]}"
+            if @@user_info[event[:user][:email]]
+                title += " (#{@@user_info[event[:user][:email]][:shorthand]})"
+            end
             unless (event[:test][:kommentar] || '').strip.empty?
                 title += " – #{event[:test][:kommentar]}"
             end

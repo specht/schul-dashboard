@@ -511,16 +511,16 @@ class Timetable
                             if !event[:regular]
                                 if event[:stunde] == ventry[:stunde]
                                     vfach = ventry[:fach_alt] || ventry[:fach_neu]
-                                    # UPDATE 2023-02-21: Match fewer lessons (Pn Klausur AGR)
-                                    if ds >= '2023-02-21'
-                                        vfach = ventry[:fach_alt]
-                                    end
+                                    # # UPDATE 2023-02-21: Match fewer lessons (Pn Klausur AGR)
+                                    # if ds >= '2023-02-21'
+                                    #     vfach = ventry[:fach_alt]
+                                    # end
                                     if (event[:fach] || []).first == vfach
                                         vlehrer = ventry[:lehrer_alt] || ventry[:lehrer_neu] || []
-                                        # UPDATE 2023-02-21: Match fewer lessons (Pn Klausur AGR)
-                                        if ds >= '2023-02-21'
-                                            vlehrer = ventry[:lehrer_alt]
-                                        end
+                                        # # UPDATE 2023-02-21: Match fewer lessons (Pn Klausur AGR)
+                                        # if ds >= '2023-02-21'
+                                        #     vlehrer = ventry[:lehrer_alt]
+                                        # end
                                         unless (Set.new(event[:lehrer].first) & Set.new(vlehrer)).empty?
                                             flag = true
                                         end

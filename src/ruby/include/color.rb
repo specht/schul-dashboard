@@ -128,7 +128,7 @@ class Main < Sinatra::Base
         contrast_color = rgb_to_hex(mix(hex_to_rgb(primary_color), color_scheme[0] == 'l' ? [0, 0, 0] : [255, 255, 255], 0.7))
         color_palette = {
             :is_light => light,
-            :primary => primary_color, 
+            :primary => light ? primary_color : darken(primary_color, 0.5),
             :primary_color_darker => primary_color_darker,
             :disabled => disabled_color, 
             :darker => darker_color, 

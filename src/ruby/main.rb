@@ -1188,6 +1188,10 @@ class Main < Sinatra::Base
             '/sortable-table.js',
             '/include/print.min.js',
             '/include/odometer.min.js',
+            '/include/zoom.min.js',
+            '/include/turn.min.js',
+            '/include/scissor.min.js',
+            '/include/hash.js',
         ]
 
         self.compile_files(:js, 'application/javascript', files)

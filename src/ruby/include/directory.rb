@@ -191,6 +191,7 @@ class Main < Sinatra::Base
             io.puts "<a href='/api/directory_xlsx/#{klasse}' class='btn btn-primary'><i class='fa fa-file-excel-o'></i>&nbsp;&nbsp;Excel-Tabelle herunterladen</a>"
             io.puts "<a href='/api/directory_timetex_pdf/by_last_name/#{klasse}' class='btn btn-primary'><i class='fa fa-file-pdf-o'></i>&nbsp;&nbsp;Timetex-PDF herunterladen</a>"
             io.puts "<a href='/api/directory_timetex_pdf/by_first_name/#{klasse}' class='btn btn-primary'><i class='fa fa-file-pdf-o'></i>&nbsp;&nbsp;Timetex-PDF herunterladen (nach Vornamen sortiert)</a>"
+            io.puts "<a href='/api/directory_json/#{klasse}' class='btn btn-primary'><i class='fa fa-file-code-o'></i>&nbsp;&nbsp;JSON herunterladen</a>"
 #             io.puts "</div>"
             io.puts "<hr style='margin: 3em 0;'/>"
             io.puts "<h3>Lehrer der Klasse #{tr_klasse(klasse)}</h3>"
@@ -554,6 +555,24 @@ class Main < Sinatra::Base
         respond_raw_with_mimetype_and_filename(result, 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', "Klasse #{klasse}.xlsx")
     end
     
+    get '/api/directory_json/*' do
+        require_teacher!
+        klasse = request.path.sub('/api/directory_json/', '')
+        entries = []
+        iterate_directory(klasse) do |email, i|
+            user = @@user_info[email]
+            entries << {
+                :first_name => user[:first_name],
+                :last_name => user[:last_name],
+                :display_name => user[:display_name],
+                :email => user[:email],
+                :geschlecht => user[:geschlecht],
+                :nc_login => user[:nc_login],
+            }
+        end
+        respond_raw_with_mimetype(entries.to_json, 'application/json')
+    end
+
     post '/api/toggle_group2_for_user' do
         require_teacher!
         data = parse_request_data(:required_keys => [:email])

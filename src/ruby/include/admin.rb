@@ -431,6 +431,29 @@ class Main < Sinatra::Base
         respond_raw_with_mimetype(print_all_lul_logo_didact, 'text/plain')
     end
 
+    get '/api/get_all_sus_emails' do
+        require_admin!
+        emails = StringIO.open do |io|
+            KLASSEN_ORDER.each do |klasse|
+                io.puts "Klasse #{tr_klasse(klasse)}"
+                io.puts
+                @@schueler_for_klasse[klasse].sort.each do |email|
+                    user = @@user_info[email]
+                    io.print "#{user[:official_first_name]}"
+                    if user[:first_name] != user[:official_first_name]
+                        io.print " (#{user[:first_name]})"
+                    end
+                    io.puts " #{user[:last_name]}"
+                    io.puts "#{email}"
+                    io.puts
+                end
+                # io.puts
+            end
+            io.string
+        end
+        respond_raw_with_mimetype(emails, 'text/plain')
+    end
+
     def print_email_accounts()
         require_admin!
         StringIO.open do |io|

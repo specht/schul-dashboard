@@ -169,13 +169,11 @@ function place_sus(silent) {
 }
 
 function seat_suitable_for_kid(seat_index, kid_index) {
-    return true;
-    /*
+    // return true;
     if (sus[kid_index].geschlecht === 'm')
-        return seats[seat_index][0] % 2 === 0;
+        return seat_index % 2 === 0;
     else
-        return seats[seat_index][0] % 2 === 1;
-    */
+        return seat_index % 2 === 1;
 }
 
 function shuffle_plan() {

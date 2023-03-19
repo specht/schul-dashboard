@@ -1,0 +1,322 @@
+#{require_teacher!}
+<style>
+body {
+    margin: 0;
+    width: 100vw;
+    height: 100vh;
+    overflow: hidden;
+    padding: 0;
+    background: none;
+    background-color: #fff;
+    font-family: 'Alegreya Sans';
+}
+
+h1 {
+    margin-top: 1vh;
+    font-size: 3vh;
+}
+
+h2 {
+    font-weight: normal;
+    font-size: 2.2vh;
+}
+
+p {
+    font-size: 2vh;
+}
+
+.place {
+    transition: top 1s ease-out 0s, 
+        left 1s ease-out 0s, 
+        width 1s ease-out 0s, 
+        height 1s ease-out 0s, 
+        opacity 1s ease-out 0s, 
+        transform 1s ease-out 0s;
+    width: 5vh;
+    height: 5vh;
+    box-shadow: 0 0 0.7vh rgba(0,0,0,0.5);
+    background-color: #fff;
+    border-radius: 1vh;
+    position: absolute;
+    overflow: hidden;
+    transform: translate(-50%, -50%), rotate(0deg);
+    display: flex;
+    justify-content: center;
+}
+
+.place img {
+    margin-top: 0.5vh;
+    width: 75%;
+    height: 75%;
+    /* margin: 0.1cm 0.5cm; */
+    border-radius: 10%;
+    object-fit: cover;
+    background-size: cover;
+}
+
+.label {
+    z-index: 100;
+    position: absolute;
+    top: 80%;
+    width: 100%;
+    text-align: center;
+    font-size: 2vh;
+    color: #000;
+}
+
+.days {
+    z-index: 101;
+    position: absolute;
+    bottom: 0;
+    width: 100%;
+    text-align: center;
+    font-size: 18px;
+    color: #000;
+    background-color: #fff;
+    border-top: 1px solid #aaa;
+    border-bottom: 1px solid #aaa;
+    border-left: 1px solid #aaa;
+}
+
+.days span {
+    width: 20%;
+    display: inline-block;
+    color: #aaa;
+}
+
+.teacher {
+    box-shadow: 0 0 0.7vh rgba(0,0,0,0.5);
+    background-color: #fff;
+    border-radius: 1vh;
+    position: absolute;
+    left: 50%;
+    top: 1vh;
+    text-align: center;
+    font-size: 3vh;
+    color: #000;
+    padding: 1vh 20vh;
+    transform: translate(-50%, 0);
+}
+#seats {
+    /* box-shadow: 0 0 5vh rgba(0,0,0,0.3); */
+    position: relative;
+    margin-left: auto;
+    margin-right: auto;
+    top: 10px;
+    width: 100px;
+    height: 100px;
+}
+.navbar {
+    display: none;
+}
+</style>
+<script>
+
+var sus = [];
+
+Array.prototype.sample = function () {
+    return this[Math.floor((Math.random() * this.length))];
+}
+
+var WIDTH = 1;
+var HEIGHT = 1;
+var scale = 16.0;
+var klasse = '';
+var raum = '';
+
+var seats = [];
+
+var seats_dict = {
+    '207': [
+        [0, 0], [1, 0], [3, 0], [4, 0], [6, 0], [7, 0],
+        [0, 1], [1, 1], [3, 1], [4, 1], [6, 1], [7, 1],
+        [0, 2], [1, 2], [3, 2], [4, 2], [6, 2], [7, 2],
+        [0, 3], [1, 3], [3, 3], [4, 3], [6, 3], [7, 3],
+        [0, 4], [1, 4], [3, 4], [4, 4], [6, 4], [7, 4],
+        [0, 5], [1, 5],
+    ],
+};
+
+var place_for_sus = [];
+
+var rules = [
+    // ['max.mustermann', [0, 5], [1, 2]],
+];
+
+function place_sus(silent) {
+    // return;
+    if (typeof(silent) === 'undefined') silent = false;
+    let i = 0;
+    for (let place of $('.place')) {
+        place = $(place);
+        let seat = seats[place_for_sus[i] ?? 0];
+        let phi = place.data('phi');
+        if (Math.random() < 0.5)
+            phi -= 360.0;
+        else
+            phi += 360.0;
+        place.data('phi', phi);
+        place.css('width', `${scale * 0.9}px`);
+        place.css('height', `${scale * 0.9}px`);
+        place.find('.label').css('font-size', `${scale * 0.12}px`);
+        place.css('left', `${seat[0] * scale}px`);
+        place.css('top', `${seat[1] * scale}px`);
+        if (!silent) {
+            place.css('transform', `rotate(${phi}deg)`);
+        }
+        i += 1;
+    }
+}
+
+function seat_suitable_for_kid(seat_index, kid_index) {
+    return true;
+    /*
+    if (sus[kid_index].geschlecht === 'm')
+        return seats[seat_index][0] % 2 === 0;
+    else
+        return seats[seat_index][0] % 2 === 1;
+    */
+}
+
+function shuffle_plan() {
+    place_for_sus = [];
+    let available_places = {};
+    let available_sus = {};
+    for (let i = 0; i < seats.length; i++) {
+        let seat = seats[i];
+        let key = `${seat[0]}/${seat[1]}`;
+        available_places[key] = i;
+    }
+    for (let i = 0; i < sus.length; i++) {
+        let key = `${i}`;
+        available_sus[key] = i;
+    }
+    for (let rule of rules) {
+        sus_index = -1;
+        for (let i = 0; i < sus.length; i++) {
+            let kid = sus[i];
+            if (kid.nc_login === rule[0]) sus_index = i;
+        }
+        for (let i = 0; i < 1000; i++) {
+            let x = Math.floor(Math.random() * (rule[1][1] + 1 - rule[1][0]) + rule[1][0]);
+            let y = Math.floor(Math.random() * (rule[2][1] + 1 - rule[2][0]) + rule[2][0]);
+            let key = `${x}/${y}`;
+            if (key in available_places) {
+                if (seat_suitable_for_kid(available_places[key], sus_index)) {
+                    place_for_sus[sus_index] = available_places[key];
+                    delete available_places[key];
+                    delete available_sus[sus_index];
+                    break;
+                }
+            }
+        }
+    }
+    while (Object.keys(available_sus).length > 0) {
+        let sus_index = Object.keys(available_sus)[0];
+        for (let i = 0; i < 1000; i++) {
+            let key = Object.keys(available_places).sample();
+            if (key in available_places) {
+                if (seat_suitable_for_kid(available_places[key], sus_index)) {
+                    place_for_sus[sus_index] = available_places[key];
+                    delete available_places[key];
+                    delete available_sus[sus_index];
+                    break;
+                }
+            }
+        }
+        if (sus_index in available_sus) {
+            console.log(`Couldn't place ${sus_index}!`);
+            for (let i = 0; i < 1000; i++) {
+                let key = Object.keys(available_places).sample();
+                if (key in available_places) {
+                    place_for_sus[sus_index] = available_places[key];
+                    delete available_places[key];
+                    delete available_sus[sus_index];
+                    break;
+                }
+            }
+        }
+    }
+    place_sus();
+}
+
+function fix_scale() {
+    let width = document.documentElement.clientWidth;
+    let height = document.documentElement.clientHeight;
+    $('#seats').css('height', `${height * 0.88 - 10}px`);
+    scale = (height * 0.88 - 10) / HEIGHT;
+    $('#seats').css('width', `${(height * 0.88 - 10) * WIDTH / HEIGHT}px`);
+    place_sus(true);
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    let path = window.location.pathname.replace("/sitzplan/", '').split('/');
+    klasse = path[0];
+    raum = path[1];
+    seats = seats_dict[raum];
+    if (seats == null)
+        window.location.href = '/';
+    $('#label_klasse').text(klasse);
+    $('#label_raum').text(raum);
+    $('#label_datum').text(moment.unix(moment.now() / 1000).format("DD.MM.YYYY"));
+    // /api/directory_json/
+    jQuery.get(`/api/directory_json/${klasse}`, {}, function(data) {
+        sus = data;
+        if (sus == null || sus.length === 0)
+            window.location.href = '/';
+        WIDTH = 1;
+        HEIGHT = 1;
+        for (let seat of seats) {
+            if (seat[0] + 1 > WIDTH) WIDTH = seat[0] + 1;
+            if (seat[1] + 1 > HEIGHT) HEIGHT = seat[1] + 1;
+        }
+        fix_scale();
+        place_for_sus = [];
+        for (let i = 0; i < sus.length; i++) {
+            let seat = seats[i];
+            let kid = sus[i];
+            let place = $(`<div class='place'>`).data('phi', 0.0).css('opacity', 0);
+            let image = $(`<img style="background-image: url(https://nextcloud.gymnasiumsteglitz.de/index.php/avatar/${sus[i].nc_login}/128), url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mO88h8AAq0B1REmZuEAAAAASUVORK5CYII=);">`);
+            place.append(image);
+            let label = $(`<div class='label'>`).html(kid.first_name);
+            place.append(label);
+            $('#seats').append(place);
+            place_for_sus.push(i);
+        }
+        window.addEventListener('resize', function(e) {
+            fix_scale();
+        });
+        document.addEventListener('keydown', function(e) {
+            let audio = $('#audio')[0];
+            if (audio.ended) return;
+
+            if (e.code === 'Space') {
+            for (let place of $('.place')) {
+                place = $(place);
+                place.css('opacity', 1.0);
+            };
+
+            shuffle_plan();
+            audio.play();
+            }
+            if (e.code === 'KeyA') {
+            place_sus();
+            }
+            if (e.code === 'KeyC') {
+            let old = JSON.parse(JSON.stringify(seats));
+            let shift = 3;
+            seats = [];
+            for (let i = 0; i < old.length; i++) {
+                seats.push(old[(2 * old.length - i + shift) % old.length]);
+            }
+            place_sus();
+            }
+        });
+    })
+});
+</script>
+<h1>Sitzplan der Kasse <span id="label_klasse"></span> (Raum <span id="label_raum"></span>)</h1>
+<h2>Neuer Sitzplan ab <span id="label_datum"></span></h2>
+<div class='teacher'>Tafel</div>
+<div id="seats"></div>
+<audio id='audio' src="/preis.mp3"></audio>

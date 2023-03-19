@@ -141,6 +141,9 @@
         content: '';
         pointer-events: none;
     }
+    div.note.empty input {
+        background-color: rgba(225, 177, 20, 0.481);
+    }
     div.note.marked:after {
         outline: 2px solid #d5291a;
         background-color: rgba(213, 41, 26, 0.1);
@@ -253,6 +256,8 @@ window.addEventListener('load', function () {
             $('.api_messages').hide();
             $('#submenu').hide();
             $('#subsubmenu').hide();
+        } else {
+            $('#connection-established').show();
         }
     });
     update_time_left();
@@ -300,6 +305,11 @@ function input_note_apply_style_and_fix(input, callback) {
     if (value.toLowerCase().replace(/[\.\s]+/g, '') == 'ne') value = 'n.e.';
     if (value.toLowerCase().replace(/[\.\s]+/g, '') == 'ob') value = 'o.B.';
     if (noten_allowed_values.indexOf(value) < 0) value = '';
+    if (value === '') 
+        $(input).closest('.note').addClass('empty');
+    else
+        $(input).closest('.note').removeClass('empty');
+
     if (original_value !== value) {
         $(input).val(value);
         input_note_apply_style_and_fix($(input), callback);

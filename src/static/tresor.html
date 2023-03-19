@@ -3,12 +3,12 @@
 <div class='container bg-white'>
     <div class="w-full">
         <div id="connection-failed" style="display: none;">
-            <p>
+            <p style="text-align: center;" class="alert alert-danger">
             Der Datentresor konnte nicht erreicht werden. Bitte stellen Sie sicher, dass Sie sich in der Schule befinden und entweder an einem der Schulrechner oder im Schul-WLAN angemeldet sind.
             </p>
         </div>
         <div style="display: #{second_factor_time_left.nil? ? 'block' : 'none'};">
-            <div id="connection-established">
+            <div id="connection-established" style="display: none;">
                 <div id="div-login">
                     <p>
                         Sie sind bereits per <strong>#{LOGIN_METHODS_SHORT[@used_session[:method].to_sym]}</strong> am Dashboard angemeldet. Um auf den Datentresor zugreifen zu können, müssen Sie sich mit einem weiteren Faktor ausweisen. Bitte wählen Sie aus den folgenden Möglichkeiten:

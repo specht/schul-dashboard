@@ -3,6 +3,41 @@ require 'wavefile'
 # require 'rmagick'
 # include Magick
 
+CW_TR = [
+    ".-", "-...", "-.-.", "-..", ".", "..-.", "--.", "....", "..",
+    ".---", "-.-", ".-..", "--", "-.", "---", ".--.", "--.-",
+    ".-.", "...", "-", "..-", "...-", ".--", "-..-", "-.--", "--.."
+]
+
+def cw_pattern(word)
+    pattern = ''
+    word.each_char do |c|
+        c = c.upcase
+        ci = c.ord - 'A'.ord
+        if c == ' '
+            pattern += '       '
+            while pattern.length % 8 != 0
+                pattern += ' '
+            end
+        else
+            cw = CW_TR[ci]
+            (0...cw.size).each do |cwi|
+                if cw[cwi] == '.'
+                    pattern += '.'
+                else
+                    pattern += '...'
+                end
+                if cwi < cw.size - 1
+                    pattern += ' '
+                else
+                    pattern += '   '
+                end
+            end
+        end
+    end
+    pattern
+end
+
 class PixelFont
     def self.load_font(path)
         STDERR.puts "Loading font from #{path}..."
@@ -208,9 +243,40 @@ class Main < Sinatra::Base
             @cypher_token = tag
         elsif @cypher_level == 7
             pin = (0..3).map { |x| rand(10).to_s }.join('')
-            tag = "PIN checked in 967 ns"
+            tag = ''
+            provided_password = neo4j_query_expect_one(<<~END_OF_QUERY, {:email => @session_user[:email]})['provided']
+                MATCH (u:User {email: $email})
+                RETURN COALESCE(u.cypher_provided, '') AS provided;
+            END_OF_QUERY
+            srand(Time.now.to_i)
+            provided_password = nil if provided_password.strip.empty?
+            unless provided_password.nil?
+                t = rand(5) + 1
+                if provided_password.size == 4
+                    (0...4).each do |i|
+                        t += rand(10) + 55
+                        if provided_password[i] == pin[i]
+                        else
+                            break
+                        end
+                    end
+                else
+                    t += rand(5) + 1
+                end
+                tag = "Die Überprüfung der PIN dauerte <b>#{t} ns</b>."
+            end
             @cypher_next_password = pin
             @cypher_token = tag
+        elsif @cypher_level == 8
+            lang = languages[@cypher_level]
+            line = line_for_lang(lang)
+            @cypher_next_password = lang
+            @cypher_token = line
+        elsif @cypher_level == 9
+            lang = languages[@cypher_level]
+            line = line_for_lang(lang)
+            @cypher_next_password = lang
+            @cypher_token = line
         end
     end
 
@@ -231,7 +297,10 @@ class Main < Sinatra::Base
         @cypher_seed = result['cypher_seed']
         @cypher_name = result['cypher_name'].strip
         failed_cypher_tries = result['failed_cypher_tries']
-        tries_left = 3 - failed_cypher_tries
+        @tries_left = 3 - failed_cypher_tries
+        if @cypher_level == 7
+            @tries_left = 50 - failed_cypher_tries
+        end
         if @cypher_seed.nil? || (@cypher_level == 0 && provided_password.nil?)
             @cypher_seed = Time.now.to_i
             result = neo4j_query(<<~END_OF_QUERY, {:email => @session_user[:email], :cypher_seed => @cypher_seed})
@@ -245,34 +314,34 @@ class Main < Sinatra::Base
         STDERR.puts "CYPHER // #{@session_user[:email]} // level: #{@cypher_level}, next password: #{@cypher_next_password}#{@cypher_next_password.nil? ? '(nil)':''}"
 
         unless provided_password.nil? || @cypher_next_password.nil?
+            result = neo4j_query(<<~END_OF_QUERY, {:email => @session_user[:email], :cypher_provided => provided_password })
+                MATCH (u:User {email: $email})
+                SET u.cypher_provided = $cypher_provided;
+            END_OF_QUERY
             if provided_password.downcase == @cypher_next_password.downcase
                 @cypher_level += 1
                 result = neo4j_query(<<~END_OF_QUERY, {:email => @session_user[:email], :cypher_level => @cypher_level})
                     MATCH (u:User {email: $email})
                     SET u.cypher_level = $cypher_level,
-                    u.failed_cypher_tries = 0;
+                    u.failed_cypher_tries = 0
+                    REMOVE u.cypher_provided;
                 END_OF_QUERY
             else
-                if @cypher_level != 7
+                result = neo4j_query(<<~END_OF_QUERY, {:email => @session_user[:email]})
+                    MATCH (u:User {email: $email})
+                    SET u.failed_cypher_tries = COALESCE(u.failed_cypher_tries, 0) + 1;
+                END_OF_QUERY
+                if @tries_left <= 1
                     result = neo4j_query(<<~END_OF_QUERY, {:email => @session_user[:email]})
                         MATCH (u:User {email: $email})
-                        SET u.failed_cypher_tries = COALESCE(u.failed_cypher_tries, 0) + 1;
-                    END_OF_QUERY
-                    if tries_left <= 1
-                        result = neo4j_query(<<~END_OF_QUERY, {:email => @session_user[:email]})
-                            MATCH (u:User {email: $email})
-                            SET u.cypher_level = 0, u.failed_cypher_tries = 0, u.cypher_name = '';
-                        END_OF_QUERY
-                    end
-                else
-                    result = neo4j_query(<<~END_OF_QUERY, {:email => @session_user[:email]})
-                        MATCH (u:User {email: $email})
-                        SET u.failed_cypher_tries = 0;
+                        SET u.cypher_level = 0, u.failed_cypher_tries = 0, u.cypher_name = ''
+                        REMOVE u.cypher_provided;
                     END_OF_QUERY
                 end
             end
         end
         unless provided_password.nil?
+            debug "REDIRECTING!"
             redirect "#{WEB_ROOT}/cyph3r", 302
         end
 
@@ -347,8 +416,7 @@ class Main < Sinatra::Base
                     end
                 else
                     if @cypher_level > 0
-                        tries_left = 3 - failed_cypher_tries
-                        io.puts "<p class='text-danger'><b>Achtung!</b> Deine letzte Antwort war leider falsch. Du hast noch <b>#{tries_left} Versuch#{tries_left == 1 ? '' : 'e'}</b>, bevor du wieder von vorn beginnen musst.</p>"
+                        io.puts "<p class='text-danger'><b>Achtung!</b> Deine letzte Antwort war leider falsch. Du hast noch <b>#{@tries_left} Versuch#{@tries_left == 1 ? '' : 'e'}</b>, bevor du wieder von vorn beginnen musst.</p>"
                         io.puts "<hr />"
                     else
                         io.puts "<p class='text-danger'><b>Achtung!</b> Deine letzte Antwort war leider falsch.</p>"
@@ -384,7 +452,8 @@ class Main < Sinatra::Base
         require_user!
         neo4j_query(<<~END_OF_QUERY, {:email => @session_user[:email]})
             MATCH (u:User {email: $email})
-            SET u.cypher_level = 0, u.failed_cypher_tries = 0, u.cypher_name = '';
+            SET u.cypher_level = 0, u.failed_cypher_tries = 0, u.cypher_name = ''
+            REMOVE u.cypher_provided;
         END_OF_QUERY
         respond(:alright => 'yeah')
     end
@@ -610,5 +679,61 @@ class Main < Sinatra::Base
         end
         respond_raw_with_mimetype(File.read('/gen/my_file.wav'), 'audio/wav')
     end
+
+    get '/api/cw' do
+        require_user!
+        result = neo4j_query_expect_one(<<~END_OF_QUERY, {:email => @session_user[:email]})
+            MATCH (u:User {email: $email})
+            RETURN COALESCE(u.cypher_level, 0) AS cypher_level,
+            u.cypher_seed AS cypher_seed,
+            COALESCE(u.failed_cypher_tries, 0) AS failed_cypher_tries,
+            COALESCE(u.cypher_name, '') AS cypher_name;
+        END_OF_QUERY
+        @cypher_level = result['cypher_level']
+        @cypher_seed = result['cypher_seed']
+        get_next_cypher_password()
+
+        samples = {}
+
+        debug "next password: #{@cypher_next_password}, cypher token: #{@cypher_token}"
+        # @cypher_token = "DARGOBERT DACK EHRENMANN"
+        pattern = ' ' * 32 + cw_pattern(@cypher_token) + ' ' * 32
+        # pattern = ('.' + ' ' * 7) * 64
+        debug pattern
+
+        l = (44100 * 60.0 / 125.0 / 4.0).floor
+        word = @cypher_next_password.upcase
+        WaveFile::Reader.new("/app/cypher/cw/cantina.wav") do |cantina_reader|
+            WaveFile::Writer.new("/gen/my_file.wav", WaveFile::Format.new(:mono, :pcm_16, 44100)) do |writer|
+                # writer.write(WaveFile::Buffer.new(radio, WaveFile::Format.new(:mono, :pcm_16, 44100)))
+                (0...pattern.size).each do |x|
+                    cantina_buffer = cantina_reader.read(l)
+                    cantina = cantina_buffer.samples
+                    # cantina.reverse!
+                    if pattern[x] == '.'
+                        (0...l).each do |i|
+                            s = Math.sin(i.to_f / (44100.0 / 641.0) * (Math::PI * 2.0)) * 10000
+                            f = (l - i) / 100.0
+                            f = 1.0 if f > 1.0
+                            s *= f
+                            cantina[i] += s
+                        end
+                    end
+
+                    # (0...l).each do |i|
+                    #     if i < mix.size && i < drums.size
+                    #         mix[i] += drums[i] * 0.7
+                    #     end
+                    # end
+                    # mix = mix[0, l]
+                    buffer = WaveFile::Buffer.new(cantina, WaveFile::Format.new(:mono, :pcm_16, 44100))
+                    writer.write(buffer)
+                end
+                # writer.write(WaveFile::Buffer.new(radio.reverse, WaveFile::Format.new(:mono, :pcm_16, 44100)))
+            end
+        end
+        respond_raw_with_mimetype(File.read('/gen/my_file.wav'), 'audio/wav')
+    end
+
 
 end

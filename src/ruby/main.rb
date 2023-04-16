@@ -710,6 +710,10 @@ class Main < Sinatra::Base
             next unless @@user_info[email]
             @@user_info[email][:can_manage_news] = true
         end
+        (CAN_MANAGE_AGS_USERS + ADMIN_USERS).each do |email|
+            next unless @@user_info[email]
+            @@user_info[email][:can_manage_ags] = true
+        end
         (CAN_MANAGE_MONITORS_USERS + ADMIN_USERS).each do |email|
             next unless @@user_info[email]
             @@user_info[email][:can_manage_monitors] = true
@@ -1713,6 +1717,11 @@ class Main < Sinatra::Base
                         io.puts "<a class='dropdown-item nav-icon' href='/manage_monitor'><div class='icon'><i class='fa fa-tv'></i></div><span class='label'>Monitore verwalten</span></a>"
                         printed_something = true
                     end
+                    # if user_who_can_manage_ags_logged_in?
+                    #     io.puts "<div class='dropdown-divider'></div>" if printed_something
+                    #     io.puts "<a class='dropdown-item nav-icon' href='/manage_ags'><div class='icon'><i class='fa fa-community'></i></div><span class='label'>AGs verwalten</span></a>"
+                    #     printed_something = true
+                    # end
                     if admin_logged_in?
                         io.puts "<div class='dropdown-divider'></div>" if printed_something
                         io.puts "<a class='dropdown-item nav-icon' href='/admin'><div class='icon'><i class='fa fa-wrench'></i></div><span class='label'>Administration</span></a>"

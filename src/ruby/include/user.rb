@@ -19,6 +19,11 @@ class Main < Sinatra::Base
         user_logged_in? && @session_user[:can_manage_news]
     end
 
+    # Returns true if a user who can manage AGs is logged in.
+    def user_who_can_manage_ags_logged_in?
+        user_logged_in? && @session_user[:can_manage_ags]
+    end
+
     # Returns true if a user who can manage monitors is logged in.
     def user_who_can_manage_monitors_logged_in?
         user_logged_in? && @session_user[:can_manage_monitors]

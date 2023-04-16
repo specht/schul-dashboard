@@ -2,3 +2,7 @@
     Willkommen in der letzten Runde! <br />
     Noch einen Schritt, und du bekommst Zutritt zur <b>Dashboard Code Crackers Hall of Fame</b>.
 </p>
+<p>
+    A B&nbsp;C&#32;D
+    #{code = cw_pattern(@cypher_token).gsub('... ', '-').gsub('. ', '.').gsub(/\s+/, ' ').split(''); STEGO_TEXT.split(' ').zip(code).map { |x| x[1] ||= ' '; x[1] = {' ' => ' ', '.' => '&#32;', '-' => '&nbsp;'}[x[1]]; x.join('') }.join('').gsub(/(steganograph\w+|cryptograph\w+|cover\w+|conceal\w+|subtle|hidden|obscur\w+|encryp\w+)/i, '<b>\1</b>')}
+</p>

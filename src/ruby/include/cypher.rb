@@ -9,6 +9,37 @@ CW_TR = [
     ".-.", "...", "-", "..-", "...-", ".--", "-..-", "-.--", "--.."
 ]
 
+STEGO_TEXT = <<~EOS.gsub("\n", ' ').gsub(/\s+/, ' ')
+    Steganography (/ˌstɛɡəˈnɒɡrəfi/) is the practice of representing information
+    within another message or physical object, in such a manner that the presence
+    of the information is not evident to human inspection. In computing/electronic
+    contexts, a computer file, message, image, or video is concealed within another
+    file, message, image, or video. The word steganography comes from Greek
+    steganographia, which combines the words steganós (στεγανός), meaning "covered
+    or concealed", and -graphia (γραφή) meaning "writing". The first recorded use
+    of the term was in 1499 by Johannes Trithemius in his Steganographia, a treatise
+    on cryptography and steganography, disguised as a book on magic. Generally, the
+    hidden messages appear to be (or to be part of) something else: images, articles,
+    shopping lists, or some other cover text. For example, the hidden message may be
+    in invisible ink between the visible lines of a private letter. Some
+    implementations of steganography that lack a shared secret are forms of security
+    through obscurity, and key-dependent steganographic schemes adhere to Kerckhoffs's
+    principle. The advantage of steganography over cryptography alone is that the
+    intended secret message does not attract attention to itself as an object of
+    scrutiny. Plainly visible encrypted messages, no matter how unbreakable they are,
+    arouse interest and may in themselves be incriminating in countries in which
+    encryption is illegal. Whereas cryptography is the practice of protecting the
+    contents of a message alone, steganography is concerned with concealing the fact
+    that a secret message is being sent and its contents. Steganography includes the
+    concealment of information within computer files. In digital steganography,
+    electronic communications may include steganographic coding inside of a transport
+    layer, such as a document file, image file, program, or protocol. Media files are
+    ideal for steganographic transmission because of their large size. For example,
+    a sender might start with an innocuous image file and adjust the color of every
+    hundredth pixel to correspond to a letter in the alphabet. The change is so subtle
+    that someone who is not specifically looking for it is unlikely to notice the change.
+EOS
+
 def cw_pattern(word)
     pattern = ''
     word.each_char do |c|
@@ -149,19 +180,6 @@ end
 
 class Main < Sinatra::Base
     MAX_CYPHER_LEVEL = 10
-
-    #  1. Caesar
-    #  2. Skytale
-    #  3. Superimpose two images
-    #  4. Anaglyph
-    #  5. Autostereogram
-    #  6. Audio spectrum
-    #  7. GameBoy ROM cartridge
-    #  8. Aztec Code
-    #  9. Image metadata
-    # 10. Image steganography (palette / LSB)
-    # 11. Timing attack
-    # 12. Reverse speech
 
     CYPHER_LANGUAGES = %w(Ada Algol awk Bash Basic Cobol dBase Delphi Erlang Fortran
         Go Haskell Java Lisp Logo Lua MASM Modula Oberon Pascal Perl PHP
@@ -699,7 +717,7 @@ class Main < Sinatra::Base
         # @cypher_token = "DARGOBERT DACK EHRENMANN"
         pattern = ' ' * 32 + cw_pattern(@cypher_token) + ' ' * 32
         # pattern = ('.' + ' ' * 7) * 64
-        debug pattern
+        # debug pattern
 
         l = (44100 * 60.0 / 125.0 / 4.0).floor
         word = @cypher_next_password.upcase

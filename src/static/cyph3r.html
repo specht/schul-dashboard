@@ -75,6 +75,10 @@ p.name * {
 }
 </style>
 
+<div class='container'>
+    #{cypher_content()}
+</div>
+
 <script>
 
 var tr_1337 = {};
@@ -201,12 +205,9 @@ window.addEventListener('load', function() {
                 window.location.reload();
         });
     });
-    if ('#{@cypher_level}' === '7')
+    if ('#{@cypher_level}' === '7') {
         $('input').focus();
+    }
 });
 
 </script>
-
-<div class='container'>
-    #{cypher_content()}
-</div>

@@ -2,11 +2,11 @@
 <html lang="de">
 <head>
     <!--
-    
+
               +++++++++++++++++++++++++++++++++++
               +++ HALLO LIEBE INFORMATIK-FANS +++
               +++++++++++++++++++++++++++++++++++
-                
+
                  _____________________
                 /                 `   \
                 |  .-----------.  |   |-----.
@@ -22,25 +22,25 @@
                  / _/_/_/_/_/_/_/_/_/_/ /   /
                 / _/_/_/_/_/_/_/_/_/_/ /   /
                / _/_/_/_______/_/_/_/ / __/
-              /______________________/ /    
+              /______________________/ /
               \______________________\/
 
-    Ihr könnt euch gern ein ganz eigenes Farbschema setzen, indem ihr 
+    Ihr könnt euch gern ein ganz eigenes Farbschema setzen, indem ihr
     die Developer-Console öffnet und folgenden Befehl eingebt:
-    
-    api_call('/api/set_color_scheme', {scheme: 'laaaaaabbbbbbcccccc'}, 
+
+    api_call('/api/set_color_scheme', {scheme: 'laaaaaabbbbbbcccccc'},
     function(data) { if (data.success) window.location.reload(); });
-    
+
     Dabei musst du folgende Regeln beachten:
     - bei 'scheme' musst du genau 19 Zeichen einsetzen:
       - erster Buchstabe: 'l' für 'light' oder 'd' für 'dark'
       - aaaaaa: Farbe (links)  in HTML-Notation
       - bbbbbb: Farbe (Mitte)  in HTML-Notation
-      - cccccc: Farbe (rechts) in HTML-Notation    
-    
-    Falls dir das eigene Farbschema nicht gefällt, kannst du im Profil 
-    jederzeit wieder eines der anderen Farbschemata wählen. Ansonsten 
-    bleibt das Farbschema so lange aktiv, bis du es wieder veränderst 
+      - cccccc: Farbe (rechts) in HTML-Notation
+
+    Falls dir das eigene Farbschema nicht gefällt, kannst du im Profil
+    jederzeit wieder eines der anderen Farbschemata wählen. Ansonsten
+    bleibt das Farbschema so lange aktiv, bis du es wieder veränderst
     oder zurücksetzt.
 
     Achtung, es kann eine Weile dauern, bis dein neues Farbschema sichtbar
@@ -53,17 +53,26 @@
     -------------------------------------------------------------------
 
     Wenn du Lust auf eine digitale Schnitzeljagd im Dashboard hast,
-    versuch es mal hier: 
+    versuch es mal hier:
 
     #{WEB_ROOT}/h4ck
-    
+
+    -------------------------------------------------------------------
+    +++ NOCH NEUER +++ NOCH NEUER +++ NOCH NEUER +++ NOCH NEUER +++++++
+    -------------------------------------------------------------------
+
+    Wenn du Dashboard Hackers durchgespielt hast, versuch es mal mit
+    der Fortsetzung »Dashboard Code Crackers«:
+
+    #{WEB_ROOT}/cyph3r
+
     -->
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="msapplication-TileColor" content="#{color_palette[:darker]}">
     <meta name="theme-color" content="#{color_palette[:darker]}">
-    
+
     <title>Dashboard #{SCHUL_NAME}</title>
     #{meta_tags || ''}
     <link href="/tailwind.css?123" rel="stylesheet" />

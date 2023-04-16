@@ -267,27 +267,20 @@ class Main < Sinatra::Base
                 RETURN COALESCE(u.cypher_provided, '') AS provided;
             END_OF_QUERY
             srand(Time.now.to_i)
-            provided_password = nil if provided_password.strip.empty?
+            provided_password = '    ' if provided_password.strip.empty?
             unless provided_password.nil?
                 t = rand(5) + 1
-                if provided_password.size == 4
-                    (0...4).each do |i|
-                        t += rand(10) + 55
-                        if provided_password[i] == pin[i]
-                        else
-                            break
-                        end
-                    end
-                else
-                    t += rand(5) + 1
+                (0...4).each do |i|
+                    t += rand(10) + 55
+                    break unless provided_password[i] == pin[i]
                 end
-                tag = "Die Überprüfung der PIN dauerte <b>#{t} ns</b>."
+                tag = "Die Überprüfung der PIN dauerte #{t} µs."
             end
             @cypher_next_password = pin
             @cypher_token = tag
         elsif @cypher_level == 8
             lang = languages[@cypher_level]
-            line = line_for_lang(lang)
+            line = "Das naechste Loesungswort lautet #{lang}"
             @cypher_next_password = lang
             @cypher_token = line
         elsif @cypher_level == 9

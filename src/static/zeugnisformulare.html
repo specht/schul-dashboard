@@ -1,4 +1,4 @@
-#{this_is_a_page_for_logged_in_teachers}
+#{this_is_a_page_for_logged_in_zeugnis_admins}
 #{File.read('/static/_tresor_public_template.html')}
 <div class='container bg-white'>
     <div class="w-full">
@@ -49,7 +49,9 @@ function render_zeugnislisten() {
         let tr = $(`<tr style='line-height: 1em;'>`).appendTo(table);
         tr.append($(`<td style='width: 4em;'>`).html(`<b>${klassen_tr[klasse] ?? klasse}</b><br /><span style='font-size: 85%; color: #888;'>(${zeugnisliste_for_klasse[klasse].schueler.length} SuS)</span>`));
         for (let fach of zeugnisliste_for_klasse[klasse].faecher) {
-            tr.append($(`<td style='width: 3em;'>`).html(`<span>${fach}</span><br /><span style='font-size: 85%; color: #888;'>${zeugnisliste_for_klasse[klasse].lehrer_for_fach[fach].join('/')}</span>`));
+            let lehrer_liste = zeugnisliste_for_klasse[klasse].lehrer_for_fach[fach];
+            if (lehrer_liste.length === 0) lehrer_liste = [`<b style='background-color: rgba(255, 0, 0, 0.3); padding: 0 0.2em;'>--</b>`];
+            tr.append($(`<td style='width: 3em;'>`).html(`<span>${fach}</span><br /><span style='font-size: 85%; color: #888;'>${lehrer_liste.join('/')}</span>`));
         }
     }
 }

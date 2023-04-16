@@ -302,6 +302,13 @@ class Main < Sinatra::Base
         end
     end
 
+    # Put this on top of a webpage to assert that this page can be opened by zeugnis admins only
+    def this_is_a_page_for_logged_in_zeugnis_admins
+        unless zeugnis_admin_logged_in?
+            redirect "#{WEB_ROOT}/", 303
+        end
+    end
+
     # Put this on top of a webpage to assert that this page can be opened by teachers only
     def this_is_a_page_for_logged_in_teachers
         unless teacher_logged_in?

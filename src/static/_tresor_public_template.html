@@ -36,6 +36,13 @@
         z-index: 101;
     }
 
+    #submenu {
+        position: fixed;
+        top: 57px;
+        z-index: 100;
+        border-bottom: 1px solid #bbb;
+    }
+
     .submenu a {
         white-space: nowrap;
     }
@@ -161,6 +168,15 @@
 
     .container, .container-lg, .container-md, .container-sm, .container-xl {
         max-width: 1500px;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
+    }
+
+    .extra-padding {
+        padding-top: 72px;
+    }
+
+    .form-control:disabled {
+        opacity: 1.0;
     }
 
     @tailwind base;
@@ -174,33 +190,27 @@
     <span style="display: inline-block; margin-left: 5px; position: relative; top: 2px;">#{@session_user[:display_name]}</span>
     <button id='bu_logout' class="pull-right btn btn-sm btn-danger"><i class='fa fa-sign-out'></i>&nbsp;&nbsp;Abmelden</button>
 </div>
-<div class='container text-sm text-stone-200 sandbox-hint' style="display: none;">
-    <b>Sommerferien-Sandbox:</b> Dieser Teil des Dashboards befindet sich gerade in Entwicklung. Du darfst alles
-    ausprobieren, aber alle Änderungen werden zum Ende der Sommerferien (oder auch vorher mehrmals) zurückgesetzt. Falls
-    du Fragen, Hinweise oder Anmerkungen hast, schreib eine E-Mail an <a
-        href='mailto:specht@gymnasiumsteglitz.de'>specht@gymnasiumsteglitz.de</a>.
-</div>
 <div id='submenu' class='container' style='padding: 0; display: flex; background: white; border-radius: 0; display: #{second_factor_time_left.nil? ? 'none' : 'block'};'>
     <section class="w-full" style="height: 51px; display: #{second_factor_time_left.nil? ? 'none' : 'block'};">
         <ul class="submenu flex bg-white px-2.5 py-2"
             style="border-bottom: 1px solid #eee; left: 0px; right: 0px; z-index: 100;">
-            <li class="mx-1">
+            <li class="mx-1" style="display: #{zeugnis_admin_logged_in? ? 'unset' : 'none'};">
                 <a class="inline-block bg-slate-900 border border-blue-500 hover:bg-slate-200 rounded py-1 px-3"
-                    href="/zeugnisformulare"><i class='fa fa-book'></i>&nbsp;&nbsp;Zeugnisformulare</a>
+                    href="/zeugnisformulare"><i class='fa fa-file-word-o'></i>&nbsp;&nbsp;Zeugnisformulare</a>
             </li>
             <li class="mx-1">
                 <a class="inline-block bg-slate-900 border border-blue-500 hover:bg-slate-200 rounded py-1 px-3"
-                    href="/zeugnislisten"><i class='fa fa-book'></i>&nbsp;&nbsp;Zeugnislisten</a>
+                    href="/zeugnislisten"><i class='fa fa-table'></i>&nbsp;&nbsp;Zeugnislisten</a>
             </li>
-            <li class="mx-1">
+            <li class="mx-1" style="display: #{((!@session_user[:klassenleitung].nil?) || zeugnis_admin_logged_in?) ? 'unset' : 'none'};">
                 <a class="inline-block bg-slate-900 border border-blue-500 hover:bg-slate-200 rounded py-1 px-3"
-                    href="/zeugniskonferenz"><i class='fa fa-book'></i>&nbsp;&nbsp;Zeugniskonferenz</a>
+                    href="/zeugnis_fehltage"><i class='fa fa-clock-o'></i>&nbsp;&nbsp;Fehltage #{(@session_user[:klassenleitung] || []).map { |x| tr_klasse(x) }.join(', ')}</a>
             </li>
-            <li class="mx-1">
+            <li class="mx-1" style="display: #{((!@session_user[:klassenleitung].nil?) || zeugnis_admin_logged_in?) ? 'unset' : 'none'};">
                 <a class="inline-block bg-slate-900 border border-blue-500 hover:bg-slate-200 rounded py-1 px-3"
-                    href="/zeugnisdruck"><i class='fa fa-book'></i>&nbsp;&nbsp;Zeugnisdruck</a>
+                    href="/zeugnisdruck"><i class='fa fa-print'></i>&nbsp;&nbsp;Zeugnisdruck</a>
             </li>
-            <li style="display: #{can_manage_bib_logged_in? ? 'unset' : 'none'}; #{@session_device == 'bib-mobile' ? 'display: none;' : ''} border-left: 1px solid #ccc; height: 52px; margin: -10px 10px -10px 10px; margin-left: auto;">
+            <li style="border-left: 1px solid #ccc; height: 52px; margin: -10px 10px -10px 10px; margin-left: auto;">
             </li>
             <li class="mx-1">
                 <button id='bu-refresh-second-factor' style='white-space: nowrap;' class="inline-block bg-slate-900 border border-blue-500 rounded py-1 px-3"><i class='text-slate-600 fa fa-clock-o'></i>&nbsp;&nbsp;<span style='display: inline-block; width: 3em;' id="sf-time-left"></span></button>
@@ -223,8 +233,23 @@
 
 <script>
 var second_factor_expires = Math.round((Date.now() / 1000.0) + #{second_factor_time_left || 0});
+var edit_enabled = false;
+
+function update_edit_button() {
+    let button = $('#bu_toggle_edit');
+    if (edit_enabled) {
+        button.html(`<i class='fa fa-unlock'></i>&nbsp;&nbsp;Tabelle für Bearbeitung schließen`);
+        button.removeClass('btn-secondary').addClass('btn-success');
+    } else {
+        button.html(`<i class='fa fa-lock'></i>&nbsp;&nbsp;Tabelle für Bearbeitung öffnen`);
+        button.removeClass('btn-success').addClass('btn-secondary');
+    }
+}
 
 function update_time_left() {
+    if ('#{second_factor_time_left.nil?}' === 'true') {
+        $('.bg-white').removeClass('extra-padding');
+    }
     let seconds_left = Math.round(second_factor_expires - (Date.now() / 1000.0));
     if (seconds_left <= 0 && ('#{second_factor_time_left.nil?}' !== 'true')) {
         window.location.href = '/tresor';
@@ -247,6 +272,7 @@ function update_time_left() {
 }
 
 window.addEventListener('load', function () {
+    $('.bg-white').addClass('extra-padding');
     tresor_api_call_no_jwt('/public/ping', {}, function(data) {
         console.log(data);
         if (!data.success) {
@@ -256,6 +282,7 @@ window.addEventListener('load', function () {
             $('.api_messages').hide();
             $('#submenu').hide();
             $('#subsubmenu').hide();
+            $('.bg-white').removeClass('extra-padding');
         } else {
             $('#connection-established').show();
         }
@@ -323,6 +350,27 @@ function input_note_apply_style_and_fix(input, callback) {
     }
 }
 
+function input_anzahl_apply_style_and_fix(input, callback) {
+    let value = $(input).val().trim();
+    let original_value = `${value}`;
+    let number = parseInt(value);
+    if (isNaN(number)) number = '';
+    if (number < 0) number = '';
+    if (number === '')
+        $(input).closest('.note').addClass('empty');
+    else
+        $(input).closest('.note').removeClass('empty');
+    value = `${number}`;
+
+    if (original_value !== value) {
+        $(input).val(value);
+        input_anzahl_apply_style_and_fix($(input), callback);
+        return;
+    } else {
+        if (typeof(callback) !== 'undefined') callback(value);
+    }
+}
+
 function load_noten_table(container, klasse, edit_noten) {
     // for (let lesson_key of lesson_keys) {
     //     let info = kurs_info[lesson_key];
@@ -336,22 +384,24 @@ function load_noten_table(container, klasse, edit_noten) {
     let emails = liste.schueler.map(function(x) { return x.email; });
     path_array.push(['Fach', faecher]);
     path_array.push(['Email', emails]);
-    container.empty();
     let t0 = Date.now();
-    tresor_api_call('/jwt/get_many', {path_arrays: [path_array], key: 'Note'}, function(data) {
+    tresor_api_call('/jwt/get_many', {path_arrays: [path_array], key: 'Wert'}, function(data) {
         let t1 = Date.now();
         console.log(`request took ${t1 - t0} ms.`);
         if (data.success) {
+            container.empty();
             let table = new SortableTable({
                 element: container,
                 xs: true,
-                headers: (['Nr.', 'Nachname', 'Vorname', 'Geburtsdatum', 'Klasse'].concat(faecher.map(function(fach) { 
+                headers: (['Nr.', 'Nachname', 'Vorname', 'Klasse'].concat(faecher.map(function(fach) { 
                     let fach_label = fach;
                     if (liste.wahlfach[fach]) fach_label = `(${fach})`;
-                    return `${fach_label}<br /><span style='font-size: 85%; font-weight: normal;'>(${liste.lehrer_for_fach[fach].join(', ')})</span>`; 
+                    let lehrer_liste = liste.lehrer_for_fach[fach];
+                    if (lehrer_liste.length === 0) lehrer_liste = ['--'];
+                    return `${fach_label}<br /><span style='font-size: 85%; font-weight: normal;'>(${lehrer_liste.join(', ')})</span>`; 
                 }))).map(function (x) {
                     let th = $('<th>').html(x);
-                    if (['Nr.', 'Nachname', 'Vorname', 'Geburtsdatum', 'Klasse'].indexOf(x) < 0) th.css('text-align', 'center');
+                    if (['Nr.', 'Nachname', 'Vorname', 'Klasse'].indexOf(x) < 0) th.css('text-align', 'center');
                     return th;
                 }),
                 rows: emails.map(function (email, index) {
@@ -360,13 +410,13 @@ function load_noten_table(container, klasse, edit_noten) {
                         `<td style='text-align: right;'>${index + 1}.</td>`,
                         `<td style='max-width: 10em;'>${liste.schueler[index].last_name}</td>`,
                         `<td style='max-width: 10em;'>${liste.schueler[index].official_first_name}</td>`,
-                        `<td>${moment(liste.schueler[index].geburtstag).format('L')}</td>`,
+                        // `<td>${moment(liste.schueler[index].geburtstag).format('L')}</td>`,
                         `<td>${klassen_tr[klasse] ?? klasse}</td>`,
                     ];
                     for (let fi = 0; fi < faecher.length; fi++) {
                         let fach = faecher[fi];
                         let input = $(`<input placeholder='--' class='form-control' style='width: 3em; text-align: center; height: calc(1.5em + 2px);'>`)
-                        if (!edit_noten || !my_zeugnisliste[`${klasse}/${fach}`]) {
+                        if (!edit_noten || ((!my_zeugnisliste[`${klasse}/${fach}`]) && ('#{zeugnis_admin_logged_in?}' === 'false'))) {
                             input.prop('disabled', true);
                         }
                         input.val(data.results[0][0][0][fi][index]);
@@ -383,7 +433,7 @@ function load_noten_table(container, klasse, edit_noten) {
                                 let path = `Schuljahr:${ZEUGNIS_SCHULJAHR}/Halbjahr:${ZEUGNIS_HALBJAHR}/Fach:${fach}/Email:${email}`;
                                 input_note_apply_style_and_fix($(e.target), function(value) {
                                     $(e.target).data('old_value', value);
-                                    tresor_api_call('/jwt/store', {path: path, key: 'Note', value: value}, function(data) {
+                                    tresor_api_call('/jwt/store', {path: path, key: 'Wert', value: value}, function(data) {
                                     });
                                 });
                             }
@@ -414,6 +464,112 @@ function load_noten_table(container, klasse, edit_noten) {
                         });
                         cells.push($('<td>').append($(`<div class='note'>`).append(input)));
                         input_note_apply_style_and_fix(input);
+                    }
+                    return cells;
+                }),
+                sortable: false,
+            });
+            container.find('.table').css('width', 'unset');
+        }
+    });
+}
+
+function load_fehltage_table(container, klasse, edit_noten) {
+    // for (let lesson_key of lesson_keys) {
+    //     let info = kurs_info[lesson_key];
+    //     console.log(info.fach);
+    // }
+    let path_array = [];
+    path_array.push(['Schuljahr', ZEUGNIS_SCHULJAHR]);
+    path_array.push(['Halbjahr', ZEUGNIS_HALBJAHR]);
+    let liste = zeugnisliste_for_klasse[klasse];
+    let items = ['VT', 'VT_UE', 'VS', 'VS_UE', 'VSP'];
+    let emails = liste.schueler.map(function(x) { return x.email; });
+    path_array.push(['Fehltage', items]);
+    path_array.push(['Email', emails]);
+    let t0 = Date.now();
+    tresor_api_call('/jwt/get_many', {path_arrays: [path_array], key: 'Wert'}, function(data) {
+        let t1 = Date.now();
+        console.log(`request took ${t1 - t0} ms.`);
+        if (data.success) {
+            container.empty();
+            let table = new SortableTable({
+                element: container,
+                xs: true,
+                headers: (['Nr.', 'Nachname', 'Vorname', 'Klasse'].concat(items.map(function(fach) {
+                    let fach_label = {
+                        'VT': 'Versäumte<br />Tage',
+                        'VT_UE': 'davon UE',
+                        'VS': 'Versäumte<br />Stunden',
+                        'VS_UE': 'davon UE',
+                        'VSP': 'Verspätungen',
+                    }[fach] ?? fach;
+                    return `${fach_label}`;
+                }))).map(function (x) {
+                    let th = $('<th>').html(x);
+                    if (['Nr.', 'Nachname', 'Vorname', 'Klasse'].indexOf(x) < 0) th.css('text-align', 'center');
+                    return th;
+                }),
+                rows: emails.map(function (email, index) {
+                    let cells = [
+                        email,
+                        `<td style='text-align: right;'>${index + 1}.</td>`,
+                        `<td style='max-width: 10em;'>${liste.schueler[index].last_name}</td>`,
+                        `<td style='max-width: 10em;'>${liste.schueler[index].official_first_name}</td>`,
+                        // `<td>${moment(liste.schueler[index].geburtstag).format('L')}</td>`,
+                        `<td>${klassen_tr[klasse] ?? klasse}</td>`,
+                    ];
+                    for (let fi = 0; fi < items.length; fi++) {
+                        let item = items[fi];
+                        let input = $(`<input placeholder='--' class='form-control' style='width: 3em; text-align: center; height: calc(1.5em + 2px);'>`)
+                        if (!edit_noten || ((!my_zeugnisliste[`${klasse}/${item}`]) && ('#{zeugnis_admin_logged_in?}' === 'false'))) {
+                            input.prop('disabled', true);
+                        }
+                        input.val(data.results[0][0][0][fi][index]);
+                        input.focus(function(e) {
+                            input.select();
+                            container.find('tr').removeClass('focused');
+                            input.closest('tr').addClass('focused');
+                            $(e.target).data('old_value', $(e.target).val());
+                        });
+                        input.blur(function(e) {
+                            container.find('tr').removeClass('focused');
+                            let value = $(e.target).val().trim();
+                            if (value !== $(e.target).data('old_value')) {
+                                let path = `Schuljahr:${ZEUGNIS_SCHULJAHR}/Halbjahr:${ZEUGNIS_HALBJAHR}/Fehltage:${item}/Email:${email}`;
+                                input_anzahl_apply_style_and_fix($(e.target), function(value) {
+                                    $(e.target).data('old_value', value);
+                                    tresor_api_call('/jwt/store', {path: path, key: 'Wert', value: value}, function(data) {
+                                    });
+                                });
+                            }
+                        });
+                        input.keydown(function(e) {
+                            if (e.key === 'Enter' || e.key === 'ArrowDown') {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                let row = $(e.target).closest('tr');
+                                let this_index = $(e.target).closest('td').index();
+                                let next_row = row.next('tr');
+                                if (next_row.length === 0) {
+                                    next_row = row.closest('tbody').find('tr').first();
+                                }
+                                next_row.find('td').eq(this_index).find('input').focus().select();
+                            }
+                            if (e.key === 'ArrowUp') {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                let row = $(e.target).closest('tr');
+                                let this_index = $(e.target).closest('td').index();
+                                let next_row = row.prev('tr');
+                                if (next_row.length === 0) {
+                                    next_row = row.closest('tbody').find('tr').last()
+                                }
+                                next_row.find('td').eq(this_index).find('input').focus().select();
+                            }
+                        });
+                        cells.push($('<td>').append($(`<div class='note'>`).append(input)));
+                            input_anzahl_apply_style_and_fix(input);
                     }
                     return cells;
                 }),

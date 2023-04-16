@@ -4,6 +4,7 @@ class Main < Sinatra::Base
         return false unless user_logged_in?
         return false if DATENTRESOR_UNLOCKED_FOR.nil?
         return false unless teacher_logged_in?
+        return true if teacher_logged_in? && DEVELOPMENT
         return teacher_logged_in? && DATENTRESOR_UNLOCKED_FOR.include?(@session_user[:email])
     end
 

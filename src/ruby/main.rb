@@ -562,6 +562,13 @@ class Main < Sinatra::Base
         @@klassenleiter = {}
         parser.parse_klassenleiter do |record|
             @@klassenleiter[record[:klasse]] = record[:klassenleiter]
+            record[:klassenleiter].each do |shorthand|
+                if @@shorthands[shorthand]
+                    email = @@shorthands[shorthand]
+                    @@user_info[email][:klassenleitung] ||= []
+                    @@user_info[email][:klassenleitung] << record[:klasse]
+                end
+            end
         end
         @@shorthand_order = @@shorthands.keys.sort do |a, b|
             a.downcase <=> b.downcase

@@ -2,11 +2,9 @@
 #{File.read('/static/_tresor_public_template.html')}
 <div class='container bg-white'>
     <div class="w-full">
-        <h3>Zeugnislisten #{ZEUGNIS_SCHULJAHR.sub('_', '/')} (#{ZEUGNIS_HALBJAHR}. Halbjahr)</h3>
+        <h3>Fehltage #{ZEUGNIS_SCHULJAHR.sub('_', '/')} (#{ZEUGNIS_HALBJAHR}. Halbjahr)</h3>
         <p>
-            Bitte wählen Sie eine Klasse, für die Sie Noten eintragen möchten.
-            Tragen Sie dann die Noten <b>mit Tendenzen</b> in die entsprechenden Felder (inkl. »ne« für »nicht erteilt« und »ob« für »ohne Bewertung«).
-            Noten von 4- bis 6 werden automatisch rot markiert.
+            Bitte tragen Sie hier die Fehlzeiten für Ihre Klasse ein.
         </p>
         <div id="klassen_buttons_here"></div>
         <hr />
@@ -16,7 +14,7 @@
                 <em>Hinweis: Nutzen Sie diese Schaltfläche, um die Tabelle vor versehentlichen Änderungen zu schützen. Sobald Werte ändern, sind diese automatisch gespeichert &ndash; es ist nicht nötig, die Bearbeitung durch nochmaliges Drücken dieser Schaltfläche abzuschließen.</em>
             </p>
         </div>
-        <div id="noten_here"></div>
+        <div id="fehltage_here"></div>
     </div>
 </div>
 
@@ -27,7 +25,7 @@ var zeugnis_klassen_order = #{ZEUGNIS_KLASSEN_ORDER.to_json};
 var klassen_tr = #{KLASSEN_TR.to_json};
 var zeugnisliste_for_klasse = #{@@zeugnisliste_for_klasse.to_json};
 var my_zeugnisliste = #{@@zeugnisliste_for_lehrer[@session_user[:shorthand]].to_json};
-var my_klassen = #{(zeugnis_admin_logged_in? ? KLASSEN_ORDER : @@klassen_for_shorthand[@session_user[:shorthand]]).select { |x| ZEUGNIS_KLASSEN_ORDER.include?(x) }.to_json};
+var my_klassen = #{(zeugnis_admin_logged_in? ? KLASSEN_ORDER : @session_user[:klassenleitung]).select { |x| ZEUGNIS_KLASSEN_ORDER.include?(x) }.to_json};
 var clicked_klasse = null;
 
 window.addEventListener('load', function () {
@@ -39,7 +37,7 @@ window.addEventListener('load', function () {
                 $('#edit_button_here').show();
                 clicked_klasse = klasse;
                 edit_enabled = false;
-                load_noten_table($('#noten_here'), klasse, edit_enabled);
+                load_fehltage_table($('#fehltage_here'), klasse, edit_enabled);
                 update_edit_button();
             });
             if (my_klassen.length === 1)
@@ -48,8 +46,9 @@ window.addEventListener('load', function () {
     }
     $('#bu_toggle_edit').click(function(e) {
         edit_enabled = !edit_enabled;
-        load_noten_table($('#noten_here'), clicked_klasse, edit_enabled);
+        load_fehltage_table($('#fehltage_here'), clicked_klasse, edit_enabled);
         update_edit_button();
     });
 });
+
 </script>

@@ -5,6 +5,7 @@
 # d.paragraphs.each { |p| p.each_text_run { |tr| puts tr.substitute('A', 'B') }};
 # d.save('out.docx')
 # lowriter --convert-to pdf [in path]
+# merge PDFs: gs -dBATCH -dNOPAUSE -q -sDEVICE=pdfwrite -sOutputFile=merged.pdf z1.pdf z2.pdf
 
 class Main < Sinatra::Base
     def self.parse_zeugnisformulare
@@ -62,6 +63,9 @@ class Main < Sinatra::Base
         kurse_for_klasse = Hash[ZEUGNIS_KLASSEN_ORDER.map do |klasse|
             [klasse, @@lessons_for_klasse[klasse].map { |x| @@lessons[:lesson_keys][x].merge({:lesson_key => x})}]
         end]
+        if ZEUGNIS_USE_MOCK_NAMES
+            srand(0)
+        end
         ZEUGNIS_KLASSEN_ORDER.each do |klasse|
             lesson_keys_for_fach = {}
             shorthands_for_fach = {}
@@ -76,11 +80,18 @@ class Main < Sinatra::Base
                     @@zeugnisliste_for_lehrer[shorthand]["#{klasse}/#{fach}"] = true
                 end
             end
+            @@klassenleiter[klasse].each do |shorthand|
+                ['VT', 'VT_UE', 'VS', 'VS_UE', 'VSP'].each do |item|
+                    @@zeugnisliste_for_lehrer[shorthand] ||= {}
+                    @@zeugnisliste_for_lehrer[shorthand]["#{klasse}/#{item}"] = true
+                end
+            end
             faecher = self.zeugnis_faecher_for_emails(@@schueler_for_klasse[klasse])
             @@zeugnisliste_for_klasse[klasse] = {}
             @@zeugnisliste_for_klasse[klasse][:faecher] = faecher.map do |x|
                 x[0] == '$' ? x[1, x.size - 1] : x
             end
+            @@zeugnisliste_for_klasse[klasse][:faecher].uniq!
             @@zeugnisliste_for_klasse[klasse][:wahlfach] = Hash[faecher.map do |x|
                 [x.sub('$', ''), x[0] == '$' ? true : false]
             end]
@@ -95,6 +106,11 @@ class Main < Sinatra::Base
                     'm' => JSON.parse(File.read('mock/vornamen-m.json')),
                     'w' => JSON.parse(File.read('mock/vornamen-w.json'))
                 }
+            end
+
+            @@zeugnisliste_for_klasse[klasse][:index_for_schueler] ||= {}
+            @@schueler_for_klasse[klasse].each.with_index do |email, index|
+                @@zeugnisliste_for_klasse[klasse][:index_for_schueler][email] = index
             end
 
             @@zeugnisliste_for_klasse[klasse][:schueler] = @@schueler_for_klasse[klasse].map do |email|
@@ -177,17 +193,32 @@ class Main < Sinatra::Base
     post '/api/print_zeugnis' do
         # require_zeugnis_admin!
         data = parse_request_data(
-            :required_keys => [:schueler, :paths, :values],
-            :types => {:schueler => Array, :paths => Array, :values => Array},
+            :required_keys => [
+                :schueler,
+                :paths_fach, :values_fach,
+                :paths_fehltage, :values_fehltage,
+            ],
+            :types => {:schueler => Array,
+                :paths_fach => Array, :values_fach => Array,
+                :paths_fehltage => Array, :values_fehltage => Array,
+            },
             :max_body_length => 1024 * 1024 * 10,
             :max_string_length => 1024 * 1024 * 10,
         )
-        cache = parse_paths_and_values(data[:paths], data[:values])
-        pdf_path = ''
+        cache = {}
+        cache.merge!(parse_paths_and_values(data[:paths_fach], data[:values_fach]))
+        cache.merge!(parse_paths_and_values(data[:paths_fehltage], data[:values_fehltage]))
+        debug cache.to_yaml
+        docx_paths = []
+
+        merged_id = data.to_json
+        merged_sha1 = Digest::SHA1.hexdigest(merged_id).to_i(16).to_s(36)
+        merged_out_path_pdf = File.join("/internal/zeugnisse/out/#{merged_sha1}.pdf")
+
         data[:schueler].each do |schueler|
             parts = schueler.split('/')
             klasse = parts[0]
-            index = parts[1].to_i
+            index = @@zeugnisliste_for_klasse[klasse][:index_for_schueler][parts[1]]
             sus_info = @@zeugnisliste_for_klasse[klasse][:schueler][index]
             email = sus_info[:email]
             zeugnis_key = sus_info[:zeugnis_key]
@@ -207,8 +238,13 @@ class Main < Sinatra::Base
             faecher_info.each do |fach|
                 info["##{fach}"] = cache["Schuljahr:#{ZEUGNIS_SCHULJAHR}/Halbjahr:#{ZEUGNIS_HALBJAHR}/Fach:#{fach}/Email:#{email}"] || '--'
             end
+            ['VT', 'VT_UE', 'VS', 'VS_UE', 'VSP'].each do |item|
+                v = cache["Schuljahr:#{ZEUGNIS_SCHULJAHR}/Halbjahr:#{ZEUGNIS_HALBJAHR}/Fehltage:#{item}/Email:#{email}"] || '--'
+                v = '--' if v == '0'
+                info["##{item}"] = v
+            end
             zeugnis_id = "#{ZEUGNIS_SCHULJAHR}/#{ZEUGNIS_HALBJAHR}/#{zeugnis_key}/#{info.to_json}"
-            zeugnis_sha1 = Digest::SHA1.hexdigest(zeugnis_id)
+            zeugnis_sha1 = Digest::SHA1.hexdigest(zeugnis_id).to_i(16).to_s(36)
             debug "Printing Zeugnis for #{sus_info[:official_first_name]} #{sus_info[:last_name]} => #{zeugnis_sha1}"
             out_path_docx = File.join("/internal/zeugnisse/out/#{zeugnis_sha1}.docx")
             out_path_pdf = File.join("/internal/zeugnisse/out/#{zeugnis_sha1}.pdf")
@@ -220,15 +256,29 @@ class Main < Sinatra::Base
             @@zeugnisse[:formulare][zeugnis_key][:tags].each do |tag|
                 doc.gsub!("#{tag}.", info[tag] || '')
             end
+
             File.open(File.join(out_path_dir, formular_sha1, 'word', 'document.xml'), 'w') do |f|
                 f.write doc
             end
             command = "cd \"#{File.join(out_path_dir, formular_sha1)}\"; zip -r \"#{out_path_docx}\" ."
             system(command)
-            command = "HOME=/internal/lowriter_home lowriter --convert-to pdf \"#{out_path_docx}\" --outdir \"#{File.dirname(out_path_docx)}\""
-            system(command)
-            pdf_path = Base64::strict_encode64(File.read(out_path_pdf))
+            FileUtils::rm_rf(File.join(out_path_dir))
+            docx_paths << out_path_docx
         end
-        respond(:yay => 'sure', :pdf_base64 => pdf_path)
+
+        command = "HOME=/internal/lowriter_home lowriter --convert-to pdf #{docx_paths.join(' ')} --outdir \"#{File.dirname(docx_paths.first)}\""
+        system(command)
+
+        command = "gs -dBATCH -dNOPAUSE -q -sDEVICE=pdfwrite -sOutputFile=#{merged_out_path_pdf} #{docx_paths.map { |x| x.sub('.docx', '.pdf')}.join(' ')}"
+        system(command)
+        raw_pdf_data = Base64::strict_encode64(File.read(merged_out_path_pdf))
+        FileUtils::rm_f(merged_out_path_pdf)
+        docx_paths.each do |path|
+            FileUtils::rm_f(path)
+            FileUtils::rm_f(path.sub('.docx', '.pdf'))
+        end
+
+        respond(:yay => 'sure', :pdf_base64 => raw_pdf_data)
     end
 end
+

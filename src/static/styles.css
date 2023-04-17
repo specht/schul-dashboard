@@ -875,7 +875,7 @@ s {
     padding: .25rem 0;
     box-shadow: 0 0 2px rgba(0, 0, 0, 0.6);
     overflow-x: hidden;
-    backdrop-filter: blur(10px);
+    /* backdrop-filter: blur(10px); */
 }
 
 .ttc:hover {

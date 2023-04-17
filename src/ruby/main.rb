@@ -309,7 +309,7 @@ class SetupDatabase
                 end
                 transaction do
                     main.class_variable_get(:@@tablets).keys.each do |id|
-                        neo4j_query(<<~END_OF_QUERY, :id => id)
+                    neo4j_query(<<~END_OF_QUERY, :id => id)
                             MERGE (u:Tablet {id: $id})
                         END_OF_QUERY
                     end

@@ -697,6 +697,8 @@ class Main < Sinatra::Base
                 print_mailing_list(io, list_email)
                 remaining_mailing_lists.delete(list_email)
             end
+            print_mailing_list(io, "kl@#{SCHUL_MAIL_DOMAIN}")
+            remaining_mailing_lists.delete("kl@#{SCHUL_MAIL_DOMAIN}")
             io.puts "<tr><th colspan='3'>Gesamte Schule</th></tr>"
             ["sus@#{SCHUL_MAIL_DOMAIN}",
              "eltern@#{SCHUL_MAIL_DOMAIN}",

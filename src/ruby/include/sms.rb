@@ -59,7 +59,7 @@ class Main < Sinatra::Base
             telephone_number = '+' + telephone_number[2, telephone_number.size - 2]
         end
         number = TelephoneNumber.parse(telephone_number, :de)
-        raise 'oops' unless number.valid?
+        raise 'oopsie daisy' unless number.valid?
         number = number.e164_number()
         tag = RandomTag::generate(8)
         valid_to = Time.now + 600

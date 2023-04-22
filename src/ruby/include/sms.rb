@@ -42,6 +42,7 @@ class Main < Sinatra::Base
 
     def send_sms(telephone_number, message)
         data = {:telephone_number => telephone_number, :message => message}
+        debug "Sending SMS: #{data.to_json}"
         @@ws_clients[:authenticated_sms].values.first[:ws].send(data.to_json)
         ds = Date.today.strftime('%Y-%m-%d')
         neo4j_query(<<~END_OF_QUERY, {:ds => ds})

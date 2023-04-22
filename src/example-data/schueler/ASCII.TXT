@@ -2,5 +2,5 @@ Mustermann	Max	5a	m
 Mustermann	Elisabeth	5a	w	Elli
 Mustermann	Mallory	5a	m
 Mustermann	Alice	12	w
-Mustermann	Bob	13	m
+Mustermann	Bob	12	m
 

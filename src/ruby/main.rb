@@ -39,7 +39,10 @@ warn_level = $VERBOSE
 $VERBOSE = nil
 require './credentials.rb'
 require '/data/config.rb'
-require '/data/zeugnisse/config.rb'
+begin
+    require '/data/zeugnisse/config.rb'
+rescue
+end
 $VERBOSE = warn_level
 DASHBOARD_SERVICE = ENV['DASHBOARD_SERVICE']
 

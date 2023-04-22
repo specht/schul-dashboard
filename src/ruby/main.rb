@@ -1053,6 +1053,7 @@ class Main < Sinatra::Base
     def self.update_mailing_lists()
         self.update_antikenfahrt_groups()
         @@mailing_lists = {}
+        all_kl = Set.new()
         @@klassen_order.each do |klasse|
             next unless @@schueler_for_klasse.include?(klasse)
             @@mailing_lists["klasse.#{klasse}@#{SCHUL_MAIL_DOMAIN}"] = {
@@ -1082,6 +1083,7 @@ class Main < Sinatra::Base
                     @@klassenleiter[klasse].each do |shorthand|
                         if @@shorthands[shorthand]
                             @@mailing_lists["team.#{klasse.to_i}@#{SCHUL_MAIL_DOMAIN}"][:recipients] << @@shorthands[shorthand]
+                            all_kl << @@shorthands[shorthand]
                         end
                     end
                 end
@@ -1114,6 +1116,10 @@ class Main < Sinatra::Base
         @@mailing_lists["ev@#{SCHUL_MAIL_DOMAIN}"] = {
             :label => "Alle Elternvertreter:innen",
             :recipients => temp.map { |x| 'eltern.' + x[:email] }
+        }
+        @@mailing_lists["kl@#{SCHUL_MAIL_DOMAIN}"] = {
+            :label => "Alle Klassenleiter:innen",
+            :recipients => all_kl.to_a.sort
         }
         @@antikenfahrt_mailing_lists.each_pair do |k, v|
             @@mailing_lists[k] = v

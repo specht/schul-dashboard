@@ -1321,6 +1321,7 @@ span.bv {
 }
 
 .text-comment {
+    border-radius: 5px;
     background-color: #fff;
     padding: 10px 15px;
     box-shadow: 0 0 5px rgba(0, 0, 0, 0.3);

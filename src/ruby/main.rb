@@ -1819,12 +1819,10 @@ class Main < Sinatra::Base
                                 io.puts "<a class='dropdown-item nav-icon' href='/prepare_vote'><div class='icon'><i class='fa fa-hand-paper-o'></i></div><span class='label'>Abstimmungen</span></a>"
                                 io.puts "<a class='dropdown-item nav-icon' href='/mailing_lists'><div class='icon'><i class='fa fa-envelope'></i></div><span class='label'>E-Mail-Verteiler</span></a>"
                                 io.puts "<a class='dropdown-item nav-icon' href='/groups'><div class='icon'><i class='fa fa-group'></i></div><span class='label'>Gruppen</span></a>"
+                                if user_who_can_manage_tablets_logged_in?
+                                    io.puts "<a class='dropdown-item nav-icon' href='/events'><div class='icon'><i class='fa fa-calendar-check-o'></i></div><span class='label'>Termine</span></a>"
+                                end
                             end
-                        elsif user_who_can_manage_tablets_logged_in?
-                            io.puts "<div class='dropdown-divider'></div>"
-                            io.puts "<a class='dropdown-item nav-icon' href='/events'><div class='icon'><i class='fa fa-calendar-check-o'></i></div><span class='label'>Termine</span></a>"
-                            io.puts "<a class='dropdown-item nav-icon' href='/polls'><div class='icon'><i class='fa fa-bar-chart'></i></div><span class='label'>Umfragen</span></a>"
-                            io.puts "<a class='dropdown-item nav-icon' href='/groups'><div class='icon'><i class='fa fa-group'></i></div><span class='label'>Gruppen</span></a>"
                         end
                         # if @session_user[:can_upload_vplan]
                         #     io.puts "<div class='dropdown-divider'></div>"

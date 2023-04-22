@@ -160,7 +160,7 @@
                         cell.css('position', 'relative');
                         for (let booking of tablet_bookings[d][tablet_id]) {
                             let div = $('<div>').css('overflow', 'hidden').css('font-size', '90%').css('background-color', '#fff').css('box-shadow', '0 0 3px rgba(0,0,0,0.2)').css('padding', '0 3px');
-                            div.addClass('timespan-booking');
+                            div.addClass('timespan-booking hover:outline hover:outline-1 hover:shadow-lg hover:outline-gray-400 cursor-pointer rounded');
                             div.css('position', 'absolute');
                             // div.html(`<span class='tis' style='background-color: ${booking.tablet.bg_color}; color: ${booking.tablet.fg_color};'>${tablet_id}</span> ${booking.lesson}`);
                             div.html(`${booking.booking.start_time} <b>${booking.shorthand}</b> ${booking.lesson || ''}`);

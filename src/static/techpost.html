@@ -1,0 +1,114 @@
+#{require_user!}
+<div class='container' style='padding-top: 30px;'>
+    <div class='row'>
+        <div class="col-md-12">
+            <h2 style="margin-bottom: 30px;">Technikamt (Beta)</h2>
+            <hr>
+            <p>
+                Du bist in deiner Klasse Technikamt und kannst deshalb hier Probleme mit der Schultechnik melden.
+                
+            </p>
+            <hr>
+            <div class='row'>
+                <div class='col-md-7'>
+                    <div class="form-group">
+                        <label>Problem</label>
+                        <input type="text" class="form-control" placeholder="z.B. Das Gerät gibt kein Bild aus, wenn ..." id='tp_problem_description' />
+                    </div>
+                </div>
+                <div class='col-md-2'>
+                    <div class="form-group">
+                        <label>Datum</label>
+                        <input type="date" class="form-control" id='tp_date' value='#{Date.today.to_s}' />
+                    </div>
+                </div>
+                <div class='col-md-3'>
+                    <div class="form-group">
+                        <label>Gerät</label>
+                        <input type="text" class="form-control" placeholder="z.B. Computer 2 / C2 ..." id='tp_problem_device' />
+                    </div>
+                </div>
+            </div>
+            <div class='row' style='margin-bottom: 15px;'>
+                <div class='col-md-12'>
+                    <button id='tp_report_problem' class='btn btn-success pull-right' disabled><i class='fa fa-send'></i>&nbsp;&nbsp;Absenden</button>
+                </div>
+            </div>
+            <div class='row'>
+                <div class='col-md-12' style='max-width: 100%; overflow-x: auto;'>
+                    <table class='table narrow table-striped' style='width: unset; min-width: 100%;'>
+                    <thead><tr>
+                    <th>Datum</th>
+                    <th>Problem</th>
+                    <th>Gerät</th>
+                    <th>Behoben</th>
+                    </tr></thead>
+                    <tbody id='problems_here'>
+                    </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<script>
+    function update_submit_button() {
+        let problem = $('#tp_problem_description').val().trim();
+        let date = $('#tp_date').val().trim();
+        let device = $('#tp_problem_device').val();
+        $('#tp_report_problem').prop('disabled', !(problem.length > 0 && device.length > 0));
+    }
+
+    function refresh_tech_problems() {
+        api_call('/api/get_tech_problems', {}, function(data) {
+            if (data.success) {
+                $('#problems_here').empty();
+                for (let entry of data.tech_problems) {
+                    let row = $('<tr>');
+                    row.append($('<td>').text(moment(entry.date).format('ddd, D.M.Y')));
+                    row.append($('<td>').text(entry.problem));
+                    row.append($('<td>').text('' + entry.device));
+                    let tp_delete = $('<button>').addClass('btn').addClass('btn-xs').addClass('btn-danger').html("<i class='fa fa-trash'></i>&nbsp;&nbsp;Behoben");
+                    
+                    tp_delete.data('code', entry.code);
+                    tp_delete.click(function(e) {
+                        showTemplateModal('Problem löschen', 
+                            'Bist Du sicher, dass Du dieses Problem löschen möchtest?',
+                            "<i class='fa fa-trash'></i>&nbsp;&nbsp;Problem löschen", 'btn-danger',
+                            'Abbrechen', 'btn-secondary', function() {
+                                api_call('/api/delete_tech_problem', {code: $(e.target).data('code')}, function(data) {
+                                    if (data.success)
+                                        refresh_tech_problems();
+                                });
+                            }
+                        );
+                    });
+                    row.append($('<td>').append(tp_delete));
+                    
+                    $('#problems_here').append(row);
+                }
+            }
+        });
+    }
+
+
+    document.addEventListener('DOMContentLoaded', function() {
+    moment.locale('de');
+    update_submit_button();
+    $('#tp_problem_description').keyup(function(e) { update_submit_button(); });
+    $('#tp_problem_descriptione').change(function(e) { update_submit_button(); });
+    $('#tp_date').change(function(e) { update_submit_button(); });
+    $('#tp_problem_device').keyup(function(e) { update_submit_button(); });
+    $('#tp_problem_device').change(function(e) { update_submit_button(); });
+    $('#tp_report_problem').click(function(e) {
+        let problem = $('#tp_problem_description').val().trim();
+        let date = $('#tp_date').val().trim();
+        let device = $('#tp_problem_device').val();
+        api_call('/api/report_tech_problem', {problem: problem, date: date, device: device}, function(data) {
+            console.log(data);
+            refresh_tech_problems();
+        });
+    });
+    refresh_tech_problems();
+    })
+</script>

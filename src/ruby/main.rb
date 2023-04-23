@@ -82,6 +82,7 @@ require './include/poll.rb'
 require './include/public_event.rb'
 require './include/salzh.rb'
 require './include/sms.rb'
+require './include/techpost.rb'
 require './include/stats.rb'
 require './include/tablet_set.rb'
 require './include/tests.rb'
@@ -1681,6 +1682,9 @@ class Main < Sinatra::Base
                 if admin_logged_in? || user_who_can_upload_files_logged_in? || user_who_can_manage_news_logged_in? || user_who_can_manage_monitors_logged_in? || user_who_can_manage_tablets_logged_in?
                     nav_items << :admin
                 end
+                if user_who_can_manage_tablets_logged_in?
+                    nav_items << :techteam
+                end
                 # nav_items << :advent_calendar #if advents_calendar_date_today > 0
                 nav_items << :profile
                 new_messages_count_s = new_messages_count.to_s
@@ -1752,7 +1756,7 @@ class Main < Sinatra::Base
                     io.puts "</div>"
                     io.puts "</li>"
                 elsif x == :advent_calendar
-                    unless admin_logged_in?
+                    unless user_who_can_manage_tablets_logged_in?
                         io.puts "<li class='nav-item text-nowrap'>"
                         io.puts "<a class='bu-launch-adventskalender nav-link nav-icon'><div class='icon'><i class='fa fa-snowflake-o'></i></div>Adventskalender</a>"
                         io.puts "</li>"
@@ -1903,6 +1907,9 @@ class Main < Sinatra::Base
                         io.puts "</div>"
                         io.puts "</li>"
                     end
+                elsif x == :techteam
+                    io.puts "<li class='nav-item text-nowrap'>"
+                    io.puts "<a class='nav-link nav-icon' href='/techpost'><div class='icon'><i class='fa fa-wrench'></i><i class='fa fa-laptop'></i></div>Technikamt (Beta)</a>"
                 elsif x == :messages
                     io.puts "<li class='nav-item text-nowrap'>"
                     if new_messages_count > 0

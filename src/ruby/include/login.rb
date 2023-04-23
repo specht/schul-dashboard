@@ -545,7 +545,7 @@ class Main < Sinatra::Base
             end
             if sessions.size > 1
                 io.puts "<tr>"
-                io.puts "<td colspan='4'><button class='float-right btn btn-danger btn-xs btn-purge-session' data-purge-session='_all'><i class='fa fa-sign-out'></i>&nbsp;&nbsp;Alle Geräte abmelden</button></td>"            
+                io.puts "<td colspan='5'><button class='float-right btn btn-danger btn-xs btn-purge-session' data-purge-session='_all'><i class='fa fa-sign-out'></i>&nbsp;&nbsp;Alle Geräte abmelden</button></td>"            
                 io.puts "</tr>"
             end
             io.puts "</tbody>"

@@ -1756,7 +1756,7 @@ class Main < Sinatra::Base
                     io.puts "</div>"
                     io.puts "</li>"
                 elsif x == :advent_calendar
-                    unless user_who_can_manage_tablets_logged_in?
+                    unless admin_logged_in?
                         io.puts "<li class='nav-item text-nowrap'>"
                         io.puts "<a class='bu-launch-adventskalender nav-link nav-icon'><div class='icon'><i class='fa fa-snowflake-o'></i></div>Adventskalender</a>"
                         io.puts "</li>"

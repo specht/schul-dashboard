@@ -2,10 +2,12 @@
 <div class='container' style='padding-top: 30px;'>
     <div class='row'>
         <div class="col-md-12">
-            <h2 style="margin-bottom: 30px;">Technikamt</h2>
+            <h2 style="margin-bottom: 30px;">Technikamt (Admin)</h2>
             <hr>
             <p>
-                Du bist in deiner Klasse Technikamt und kannst deshalb hier Probleme mit der Schultechnik melden.
+                Du bist Teil des TechnikTeams und kannst deshalb hier Probleme mit Geräten aufnehmen und auch <b>schließen</b>.
+                <br>
+                Zurzeit können
                 
             </p>
             <hr>
@@ -41,7 +43,7 @@
                     <th>Datum</th>
                     <th>Problem</th>
                     <th>Gerät</th>
-                    <th>Löschen</th>
+                    <th>Behoben</th>
                     </tr></thead>
                     <tbody id='problems_here'>
                     </tbody>
@@ -60,7 +62,7 @@
     }
 
     function refresh_tech_problems() {
-        api_call('/api/get_tech_problems', {}, function(data) {
+        api_call('/api/get_tech_problems_admin', {}, function(data) {
             if (data.success) {
                 $('#problems_here').empty();
                 for (let entry of data.tech_problems) {
@@ -68,15 +70,15 @@
                     row.append($('<td>').text(moment(entry.date).format('ddd, D.M.Y')));
                     row.append($('<td>').text(entry.problem));
                     row.append($('<td>').text('' + entry.device));
-                    let tp_delete = $('<button>').addClass('btn').addClass('btn-xs').addClass('btn-danger').html("<i class='fa fa-trash'></i>&nbsp;&nbsp;Löschen");
+                    let tp_delete = $('<button>').addClass('btn').addClass('btn-xs').addClass('btn-warning').html("<i class='fa fa-trash'></i>&nbsp;&nbsp;Behoben");
                     
                     tp_delete.data('code', entry.code);
                     tp_delete.click(function(e) {
-                        showTemplateModal('Problem löschen', 
-                            'Bist Du sicher, dass Du dieses Problem löschen möchtest? Es ist dann für das TechnikTeam nicht mehr sichtbar.',
-                            "<i class='fa fa-trash'></i>&nbsp;&nbsp;Problem löschen", 'btn-danger',
+                        showTemplateModal('Problem behoben', 
+                            'Bist Du sicher? Das Problem wird dabei unwiederrufbar gelöscht.',
+                            "<i class='fa fa-trash'></i>&nbsp;&nbsp;Problem behoben", 'btn-warning',
                             'Abbrechen', 'btn-secondary', function() {
-                                api_call('/api/delete_tech_problem', {code: $(e.target).data('code')}, function(data) {
+                                api_call('/api/delete_tech_problem_admin', {code: $(e.target).data('code')}, function(data) {
                                     if (data.success)
                                         refresh_tech_problems();
                                 });

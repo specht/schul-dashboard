@@ -29,12 +29,17 @@ class Main < Sinatra::Base
         user_logged_in? && @session_user[:can_manage_monitors]
     end
 
+    # Returns true if a techpost user is logged in.
+    def techpost_user_logged_in?
+        user_logged_in? && @session_user[:techpost]
+    end
+
     # Returns true if a user who can manage tablets is logged in.
     def user_who_can_manage_tablets_logged_in?
         user_logged_in? && @session_user[:can_manage_tablets]
     end
 
-    # Returns true if a user who can manage tablets is logged in.
+    # Returns true if a user who can manage tablets or teacher is logged in.
     def user_who_can_manage_tablets_or_teacher_logged_in?
         user_who_can_manage_tablets_logged_in? || teacher_logged_in?
     end
@@ -223,6 +228,11 @@ class Main < Sinatra::Base
     # Assert that a user who can manage monitors is logged in
     def require_user_who_can_manage_monitors!
         assert(user_who_can_manage_monitors_logged_in?)
+    end
+
+    # Assert that a techpost user is logged in
+    def require_techpost_user!
+        assert(techpost_user_logged_in?)
     end
 
     # Assert that a user who can manage tablets is logged in

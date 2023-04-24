@@ -1,6 +1,6 @@
 class Main < Sinatra::Base
     post '/api/report_tech_problem' do
-        require_user!
+        require_techpost_user!
         data = parse_request_data(:required_keys => [:problem, :date, :device],)
         possible_codes = (0..9999).to_a
         Dir['/internal/tech_problem/*.json'].each do |path|
@@ -26,7 +26,7 @@ class Main < Sinatra::Base
     end
 
     post '/api/get_tech_problems' do
-        require_user!
+        require_techpost_user!
         codes = neo4j_query(<<~END_OF_QUERY, :email => @session_user[:email]).map { |x| x['v.code'] }
             MATCH (v:TechProblem)-[:BELONGS_TO]->(:User {email: $email})
             RETURN v.code;
@@ -78,7 +78,7 @@ class Main < Sinatra::Base
     end
 
     post '/api/delete_tech_problem' do
-        require_user_who_can_manage_tablets!
+        require_techpost_user!
         data = parse_request_data(:required_keys => [:code],
                                   :types => {:code => Integer})
         code = data[:code]

@@ -730,6 +730,10 @@ class Main < Sinatra::Base
             next unless @@user_info[email]
             @@user_info[email][:can_manage_tablets] = true
         end
+        (TECHPOST_USERS + CAN_MANAGE_TABLETS_USERS).each do |email|
+            next unless @@user_info[email]
+            @@user_info[email][:techpost] = true
+        end
         (CAN_MANAGE_ANTIKENFAHRT_USERS + ADMIN_USERS).each do |email|
             next unless @@user_info[email]
             @@user_info[email][:can_manage_antikenfahrt] = true
@@ -1682,7 +1686,7 @@ class Main < Sinatra::Base
                 if admin_logged_in? || user_who_can_upload_files_logged_in? || user_who_can_manage_news_logged_in? || user_who_can_manage_monitors_logged_in? || user_who_can_manage_tablets_logged_in?
                     nav_items << :admin
                 end
-                if user_who_can_manage_tablets_logged_in?
+                if techpost_user_logged_in?
                     nav_items << :techteam
                 end
                 # nav_items << :advent_calendar #if advents_calendar_date_today > 0
@@ -1745,6 +1749,7 @@ class Main < Sinatra::Base
                     end
                     if user_who_can_manage_tablets_logged_in?
                         io.puts "<a class='dropdown-item nav-icon' href='/bookings'><div class='icon'><i class='fa fa-tablet'></i></div><span class='label'>Tablets</span></a>"
+                        io.puts "<a class='dropdown-item nav-icon' href='/techpostadmin'><div class='icon'><i class='fa fa-laptop'></i></div><span class='label'>Technikamt (Admin)</span></a>"
                     end
                     if admin_logged_in?
                         io.puts "<div class='dropdown-divider'></div>"
@@ -1909,7 +1914,7 @@ class Main < Sinatra::Base
                     end
                 elsif x == :techteam
                     io.puts "<li class='nav-item text-nowrap'>"
-                    io.puts "<a class='nav-link nav-icon' href='/techpost'><div class='icon'><i class='fa fa-wrench'></i><i class='fa fa-laptop'></i></div>Technikamt (Beta)</a>"
+                    io.puts "<a class='nav-link nav-icon' href='/techpost'><div class='icon'><i class='fa fa-laptop'></i></div>Technikamt</a>"
                 elsif x == :messages
                     io.puts "<li class='nav-item text-nowrap'>"
                     if new_messages_count > 0

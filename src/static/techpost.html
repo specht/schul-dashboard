@@ -1,4 +1,4 @@
-#{require_user_who_can_manage_tablets!}
+#{require_user!}
 <div class='container' style='padding-top: 30px;'>
     <div class='row'>
         <div class="col-md-12">
@@ -16,16 +16,16 @@
                         <input type="text" class="form-control" placeholder="z.B. Das Gerät gibt kein Bild aus, wenn ..." id='tp_problem_description' />
                     </div>
                 </div>
-                <div class='col-md-2'>
-                    <div class="form-group">
-                        <label>Datum</label>
-                        <input type="date" class="form-control" id='tp_date' value='#{Date.today.to_s}' />
-                    </div>
-                </div>
                 <div class='col-md-3'>
                     <div class="form-group">
                         <label>Gerät</label>
                         <input type="text" class="form-control" placeholder="z.B. Computer 2 / C2 ..." id='tp_problem_device' />
+                    </div>
+                </div>
+                <div class='col-md-2'>
+                    <div class="form-group">
+                        <label>Datum</label>
+                        <input type="date" class="form-control" id='tp_date' value='#{Date.today.to_s}' />
                     </div>
                 </div>
             </div>

@@ -18,16 +18,16 @@
                         <input type="text" class="form-control" placeholder="z.B. Das Gerät gibt kein Bild aus, wenn ..." id='tp_problem_description' />
                     </div>
                 </div>
-                <div class='col-md-2'>
-                    <div class="form-group">
-                        <label>Datum</label>
-                        <input type="date" class="form-control" id='tp_date' value='#{Date.today.to_s}' />
-                    </div>
-                </div>
                 <div class='col-md-3'>
                     <div class="form-group">
                         <label>Gerät</label>
                         <input type="text" class="form-control" placeholder="z.B. Computer 2 / C2 ..." id='tp_problem_device' />
+                    </div>
+                </div>
+                <div class='col-md-2'>
+                    <div class="form-group">
+                        <label>Datum</label>
+                        <input type="date" class="form-control" id='tp_date' value='#{Date.today.to_s}' />
                     </div>
                 </div>
             </div>
@@ -41,6 +41,8 @@
                     <table class='table narrow table-striped' style='width: unset; min-width: 100%;'>
                     <thead><tr>
                     <th>Datum</th>
+                    <th>Name</th>
+                    <th>Klasse</th>
                     <th>Problem</th>
                     <th>Gerät</th>
                     <th>Behoben</th>
@@ -68,6 +70,8 @@
                 for (let entry of data.tech_problems) {
                     let row = $('<tr>');
                     row.append($('<td>').text(moment(entry.date).format('ddd, D.M.Y')));
+                    row.append($('<td>').text(entry.user));
+                    row.append($('<td>').text(entry.class));
                     row.append($('<td>').text(entry.problem));
                     row.append($('<td>').text('' + entry.device));
                     let tp_delete = $('<button>').addClass('btn').addClass('btn-xs').addClass('btn-warning').html("<i class='fa fa-trash'></i>&nbsp;&nbsp;Behoben");

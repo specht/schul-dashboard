@@ -10,6 +10,8 @@ class Main < Sinatra::Base
         code = possible_codes.sample
 
         problem_data = {
+            :user => @session_user[:display_name],
+            :class => @session_user[:klasse],
             :token => RandomTag.generate(24),
             :problem => data[:problem],
             :date => data[:date],

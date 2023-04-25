@@ -245,10 +245,11 @@ class SetupDatabase
         'SmsDay/ds',
         'Tablet/id',
         'TabletSet/id',
+        'TechProblem/token',
         'TestEvent/key',
         'TextComment/key',
         'User/email',
-        'WebsiteEvent/key'
+        'WebsiteEvent/key',
     ]
 
     INDEX_LIST = [
@@ -730,9 +731,9 @@ class Main < Sinatra::Base
             next unless @@user_info[email]
             @@user_info[email][:can_manage_tablets] = true
         end
-        (TECHPOST_USERS + CAN_MANAGE_TABLETS_USERS).each do |email|
+        (CAN_REPORT_TECH_PROBLEMS_USERS + CAN_MANAGE_TABLETS_USERS + ADMIN_USERS).each do |email|
             next unless @@user_info[email]
-            @@user_info[email][:techpost] = true
+            @@user_info[email][:can_report_tech_problems] = true
         end
         (CAN_MANAGE_ANTIKENFAHRT_USERS + ADMIN_USERS).each do |email|
             next unless @@user_info[email]
@@ -1686,7 +1687,7 @@ class Main < Sinatra::Base
                 if admin_logged_in? || user_who_can_upload_files_logged_in? || user_who_can_manage_news_logged_in? || user_who_can_manage_monitors_logged_in? || user_who_can_manage_tablets_logged_in?
                     nav_items << :admin
                 end
-                if techpost_user_logged_in?
+                if user_who_can_report_tech_problems_logged_in?
                     nav_items << :techteam
                 end
                 # nav_items << :advent_calendar #if advents_calendar_date_today > 0
@@ -1828,9 +1829,9 @@ class Main < Sinatra::Base
                                 io.puts "<a class='dropdown-item nav-icon' href='/prepare_vote'><div class='icon'><i class='fa fa-hand-paper-o'></i></div><span class='label'>Abstimmungen</span></a>"
                                 io.puts "<a class='dropdown-item nav-icon' href='/mailing_lists'><div class='icon'><i class='fa fa-envelope'></i></div><span class='label'>E-Mail-Verteiler</span></a>"
                                 io.puts "<a class='dropdown-item nav-icon' href='/groups'><div class='icon'><i class='fa fa-group'></i></div><span class='label'>Gruppen</span></a>"
-                                # if user_who_can_manage_tablets_logged_in?
-                                #     io.puts "<a class='dropdown-item nav-icon' href='/events'><div class='icon'><i class='fa fa-calendar-check-o'></i></div><span class='label'>Termine</span></a>"
-                                # end
+                                if user_who_can_manage_tablets_logged_in?
+                                    io.puts "<a class='dropdown-item nav-icon' href='/events'><div class='icon'><i class='fa fa-calendar-check-o'></i></div><span class='label'>Termine</span></a>"
+                                end
                             end
                         end
                         # if @session_user[:can_upload_vplan]

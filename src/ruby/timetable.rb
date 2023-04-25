@@ -1277,7 +1277,11 @@ class Timetable
                         event = info[:event]
                         organized_by = info[:organized_by]
                         if @@user_info[organized_by]
-                            organized_by = @@user_info[organized_by][:display_last_name]
+                            if @@user_info[organized_by][:teacher]
+                                organized_by = @@user_info[organized_by][:display_last_name]
+                            else
+                                organized_by = @@user_info[organized_by][:display_name]
+                            end
                         end
                         event[:start_time] = fix_h_to_hh(event[:start_time])
                         event[:end_time] = fix_h_to_hh(event[:end_time])

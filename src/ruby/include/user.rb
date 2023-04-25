@@ -30,8 +30,8 @@ class Main < Sinatra::Base
     end
 
     # Returns true if a techpost user is logged in.
-    def techpost_user_logged_in?
-        user_logged_in? && @session_user[:techpost]
+    def user_who_can_report_tech_problems_logged_in?
+        user_logged_in? && @session_user[:can_report_tech_problems]
     end
 
     # Returns true if a user who can manage tablets is logged in.
@@ -236,8 +236,8 @@ class Main < Sinatra::Base
     end
 
     # Assert that a techpost user is logged in
-    def require_techpost_user!
-        assert(techpost_user_logged_in?)
+    def require_user_who_can_report_tech_problems!
+        assert(user_who_can_report_tech_problems_logged_in?)
     end
 
     # Assert that a user who can manage tablets is logged in

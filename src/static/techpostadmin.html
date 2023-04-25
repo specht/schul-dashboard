@@ -5,9 +5,9 @@
             <h2 style="margin-bottom: 30px;">Technikamt (Admin)</h2>
             <hr>
             <p>
-                Du bist Teil des TechnikTeams und kannst deshalb hier Probleme mit Geräten aufnehmen und auch <b>schließen</b>.
+                Du bist Teil des TechnikTeams (oder Admin im Dashboard) und kannst deshalb hier Probleme mit Geräten aufnehmen und auch <b>schließen</b>.
                 <br>
-                Zurzeit können
+                Zurzeit können  Probleme melden.
                 
             </p>
             <hr>
@@ -69,20 +69,20 @@
                 $('#problems_here').empty();
                 for (let entry of data.tech_problems) {
                     let row = $('<tr>');
-                    row.append($('<td>').text(moment(entry.date).format('ddd, D.M.Y')));
-                    row.append($('<td>').text(entry.user));
-                    row.append($('<td>').text(entry.class));
-                    row.append($('<td>').text(entry.problem));
-                    row.append($('<td>').text('' + entry.device));
+                    row.append($('<td>').text(moment(entry.problem.date).format('ddd, D.M.Y')));
+                    row.append($('<td>').text(entry.display_name));
+                    row.append($('<td>').text(entry.klasse));
+                    row.append($('<td>').text(entry.problem.problem));
+                    row.append($('<td>').text('' + entry.problem.device));
                     let tp_delete = $('<button>').addClass('btn').addClass('btn-xs').addClass('btn-warning').html("<i class='fa fa-trash'></i>&nbsp;&nbsp;Behoben");
                     
-                    tp_delete.data('code', entry.code);
+                    tp_delete.data('token', entry.problem.token);
                     tp_delete.click(function(e) {
                         showTemplateModal('Problem behoben', 
                             'Bist Du sicher? Das Problem wird dabei unwiederrufbar gelöscht.',
                             "<i class='fa fa-trash'></i>&nbsp;&nbsp;Problem behoben", 'btn-warning',
                             'Abbrechen', 'btn-secondary', function() {
-                                api_call('/api/delete_tech_problem_admin', {code: $(e.target).data('code')}, function(data) {
+                                api_call('/api/delete_tech_problem_admin', {token: $(e.target).data('token')}, function(data) {
                                     if (data.success)
                                         refresh_tech_problems();
                                 });
@@ -98,7 +98,7 @@
     }
 
 
-    document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', function() {
     moment.locale('de');
     update_submit_button();
     $('#tp_problem_description').keyup(function(e) { update_submit_button(); });

@@ -96,7 +96,7 @@ class Script
             #     - sent: []
             # - delete mail from Inbox
             loop do
-                imap = Net::IMAP.new(SCHUL_MAIL_LOGIN_IMAP_HOST)
+                imap = Net::IMAP.new(SCHUL_MAIL_LOGIN_IMAP_HOST, :ssl => true)
                 imap.authenticate('PLAIN', MAILING_LIST_EMAIL, MAILING_LIST_PASSWORD)
                 imap.select('INBOX')
                 imap.search(['NOT', 'DELETED']).each do |mid|

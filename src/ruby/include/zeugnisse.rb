@@ -78,6 +78,7 @@ class Main < Sinatra::Base
                     shorthands_for_fach[fach][shorthand] = true
                     @@zeugnisliste_for_lehrer[shorthand] ||= {}
                     @@zeugnisliste_for_lehrer[shorthand]["#{klasse}/#{fach}"] = true
+                    @@zeugnisliste_for_lehrer[shorthand]["#{klasse}/SV/#{fach}"] = true
                 end
             end
             @@klassenleiter[klasse].each do |shorthand|

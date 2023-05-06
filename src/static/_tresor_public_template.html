@@ -36,10 +36,16 @@
         z-index: 101;
     }
 
-    #submenu {
-        position: fixed;
+    #submenu_container {
+        position:fixed;
         top: 57px;
+        left: 0;
+        right: 0;
         z-index: 100;
+    }
+
+    #submenu {
+        /* position: fixed; */
         border-bottom: 1px solid #bbb;
     }
 
@@ -167,7 +173,7 @@
     }
 
     .container, .container-lg, .container-md, .container-sm, .container-xl {
-        max-width: 1500px;
+        max-width: 1600px;
         box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
     }
 
@@ -190,6 +196,7 @@
     <span style="display: inline-block; margin-left: 5px; position: relative; top: 2px;">#{@session_user[:display_name]}</span>
     <button id='bu_logout' class="pull-right btn btn-sm btn-danger"><i class='fa fa-sign-out'></i>&nbsp;&nbsp;Abmelden</button>
 </div>
+<div id='submenu_container'>
 <div id='submenu' class='container' style='padding: 0; display: flex; background: white; border-radius: 0; display: #{second_factor_time_left.nil? ? 'none' : 'block'};'>
     <section class="w-full" style="height: 51px; display: #{second_factor_time_left.nil? ? 'none' : 'block'};">
         <ul class="submenu flex bg-white px-2.5 py-2"
@@ -202,13 +209,21 @@
                 <a class="inline-block bg-slate-900 border border-blue-500 hover:bg-slate-200 rounded py-1 px-3"
                     href="/zeugnislisten"><i class='fa fa-table'></i>&nbsp;&nbsp;Zeugnislisten</a>
             </li>
+            <li class="mx-1">
+                <a class="inline-block bg-slate-900 border border-blue-500 hover:bg-slate-200 rounded py-1 px-3"
+                    href="/angebote_bemerkungen"><i class='fa fa-table'></i>&nbsp;&nbsp;Angebote und Bemerkungen</a>
+            </li>
             <li class="mx-1" style="display: #{((!@session_user[:klassenleitung].nil?) || zeugnis_admin_logged_in?) ? 'unset' : 'none'};">
                 <a class="inline-block bg-slate-900 border border-blue-500 hover:bg-slate-200 rounded py-1 px-3"
-                    href="/zeugnis_fehltage"><i class='fa fa-clock-o'></i>&nbsp;&nbsp;Fehltage #{(@session_user[:klassenleitung] || []).map { |x| tr_klasse(x) }.join(', ')}</a>
+                    href="/zeugnis_fehltage"><i class='fa fa-clock-o'></i>&nbsp;&nbsp;Fehltage</a>
             </li>
             <li class="mx-1" style="display: #{((!@session_user[:klassenleitung].nil?) || zeugnis_admin_logged_in?) ? 'unset' : 'none'};">
                 <a class="inline-block bg-slate-900 border border-blue-500 hover:bg-slate-200 rounded py-1 px-3"
                     href="/zeugnisdruck"><i class='fa fa-print'></i>&nbsp;&nbsp;Zeugnisdruck</a>
+            </li>
+            <li class="mx-1">
+                <a class="inline-block bg-slate-900 border border-blue-500 hover:bg-slate-200 rounded py-1 px-3"
+                    href="/anlage_sozialverhalten"><i class='fa fa-table'></i>&nbsp;&nbsp;Anlage Sozialverhalten</a>
             </li>
             <li style="border-left: 1px solid #ccc; height: 52px; margin: -10px 10px -10px 10px; margin-left: auto;">
             </li>
@@ -230,10 +245,12 @@
         </ul>
     </section>
 </div>
+</div>
 
 <script>
 var second_factor_expires = Math.round((Date.now() / 1000.0) + #{second_factor_time_left || 0});
 var edit_enabled = false;
+var FAECHER_SPRACHEN = #{FAECHER_SPRACHEN.to_json};
 
 function update_edit_button() {
     let button = $('#bu_toggle_edit');
@@ -390,20 +407,34 @@ function load_noten_table(container, klasse, edit_noten) {
         console.log(`request took ${t1 - t0} ms.`);
         if (data.success) {
             container.empty();
+            let header_cells = [];
+            for (let item of ['Nr.', 'Nachname', 'Vorname', 'Klasse']) {
+                let label = `${item}`;
+                let th = $('<th>').html(label);
+                header_cells.push(th);
+            }
+            for (let fach of faecher) {
+                let fach_label = fach;
+                if (liste.wahlfach[fach]) fach_label = `(${fach})`;
+                let lehrer_liste = liste.lehrer_for_fach[fach] ?? [];
+                if (lehrer_liste.length === 0) lehrer_liste = ['--'];
+                let label = `${fach_label}<br /><span style='font-size: 85%; font-weight: normal;'>(${lehrer_liste.join(', ')})</span>`;
+                let th = $('<th>').html(label);
+                th.css('text-align', 'center');
+                header_cells.push(th);
+                if (FAECHER_SPRACHEN.indexOf(fach) >= 0) {
+                    for (let suffix of ['_AT', '_SL']) {
+                        let label = `<span style='font-weight: normal;'>(${suffix.replace('_', '')})</span><br />&nbsp;`;
+                        let th = $('<th>').html(label);
+                        th.css('text-align', 'center');
+                        header_cells.push(th);
+                    }
+                }
+            }
             let table = new SortableTable({
                 element: container,
                 xs: true,
-                headers: (['Nr.', 'Nachname', 'Vorname', 'Klasse'].concat(faecher.map(function(fach) { 
-                    let fach_label = fach;
-                    if (liste.wahlfach[fach]) fach_label = `(${fach})`;
-                    let lehrer_liste = liste.lehrer_for_fach[fach];
-                    if (lehrer_liste.length === 0) lehrer_liste = ['--'];
-                    return `${fach_label}<br /><span style='font-size: 85%; font-weight: normal;'>(${lehrer_liste.join(', ')})</span>`; 
-                }))).map(function (x) {
-                    let th = $('<th>').html(x);
-                    if (['Nr.', 'Nachname', 'Vorname', 'Klasse'].indexOf(x) < 0) th.css('text-align', 'center');
-                    return th;
-                }),
+                headers: header_cells,
                 rows: emails.map(function (email, index) {
                     let cells = [
                         email,
@@ -415,55 +446,63 @@ function load_noten_table(container, klasse, edit_noten) {
                     ];
                     for (let fi = 0; fi < faecher.length; fi++) {
                         let fach = faecher[fi];
-                        let input = $(`<input placeholder='--' class='form-control' style='width: 3em; text-align: center; height: calc(1.5em + 2px);'>`)
-                        if (!edit_noten || ((!my_zeugnisliste[`${klasse}/${fach}`]) && ('#{zeugnis_admin_logged_in?}' === 'false'))) {
-                            input.prop('disabled', true);
+                        let suffixes = [''];
+                        if (FAECHER_SPRACHEN.indexOf(fach) >= 0) {
+                            suffixes.push('_AT');
+                            suffixes.push('_SL');
                         }
-                        input.val(data.results[0][0][0][fi][index]);
-                        input.focus(function(e) {
-                            input.select();
-                            container.find('tr').removeClass('focused');
-                            input.closest('tr').addClass('focused');
-                            $(e.target).data('old_value', $(e.target).val());
-                        });
-                        input.blur(function(e) {
-                            container.find('tr').removeClass('focused');
-                            let value = $(e.target).val().trim();
-                            if (value !== $(e.target).data('old_value')) {
-                                let path = `Schuljahr:${ZEUGNIS_SCHULJAHR}/Halbjahr:${ZEUGNIS_HALBJAHR}/Fach:${fach}/Email:${email}`;
-                                input_note_apply_style_and_fix($(e.target), function(value) {
-                                    $(e.target).data('old_value', value);
-                                    tresor_api_call('/jwt/store', {path: path, key: 'Wert', value: value}, function(data) {
+
+                        for (let suffix of suffixes) {
+                            let input = $(`<input placeholder='--' class='form-control' style='width: 3em; text-align: center; height: calc(1.5em + 2px);'>`)
+                            if (!edit_noten || ((!my_zeugnisliste[`${klasse}/${fach}${suffix}`]) && ('#{zeugnis_admin_logged_in?}' === 'false'))) {
+                                input.prop('disabled', true);
+                            }
+                            input.val(data.results[0][0][0][fi][index]);
+                            input.focus(function(e) {
+                                input.select();
+                                container.find('tr').removeClass('focused');
+                                input.closest('tr').addClass('focused');
+                                $(e.target).data('old_value', $(e.target).val());
+                            });
+                            input.blur(function(e) {
+                                container.find('tr').removeClass('focused');
+                                let value = $(e.target).val().trim();
+                                if (value !== $(e.target).data('old_value')) {
+                                    let path = `Schuljahr:${ZEUGNIS_SCHULJAHR}/Halbjahr:${ZEUGNIS_HALBJAHR}/Fach:${fach}${suffix}/Email:${email}`;
+                                    input_note_apply_style_and_fix($(e.target), function(value) {
+                                        $(e.target).data('old_value', value);
+                                        tresor_api_call('/jwt/store', {path: path, key: 'Wert', value: value}, function(data) {
+                                        });
                                     });
-                                });
-                            }
-                        });
-                        input.keydown(function(e) {
-                            if (e.key === 'Enter' || e.key === 'ArrowDown') {
-                                e.preventDefault();
-                                e.stopPropagation();
-                                let row = $(e.target).closest('tr');
-                                let this_index = $(e.target).closest('td').index();
-                                let next_row = row.next('tr');
-                                if (next_row.length === 0) {
-                                    next_row = row.closest('tbody').find('tr').first();
                                 }
-                                next_row.find('td').eq(this_index).find('input').focus().select();
-                            }
-                            if (e.key === 'ArrowUp') {
-                                e.preventDefault();
-                                e.stopPropagation();
-                                let row = $(e.target).closest('tr');
-                                let this_index = $(e.target).closest('td').index();
-                                let next_row = row.prev('tr');
-                                if (next_row.length === 0) {
-                                    next_row = row.closest('tbody').find('tr').last()
+                            });
+                            input.keydown(function(e) {
+                                if (e.key === 'Enter' || e.key === 'ArrowDown') {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    let row = $(e.target).closest('tr');
+                                    let this_index = $(e.target).closest('td').index();
+                                    let next_row = row.next('tr');
+                                    if (next_row.length === 0) {
+                                        next_row = row.closest('tbody').find('tr').first();
+                                    }
+                                    next_row.find('td').eq(this_index).find('input').focus().select();
                                 }
-                                next_row.find('td').eq(this_index).find('input').focus().select();
-                            }
-                        });
-                        cells.push($('<td>').append($(`<div class='note'>`).append(input)));
-                        input_note_apply_style_and_fix(input);
+                                if (e.key === 'ArrowUp') {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    let row = $(e.target).closest('tr');
+                                    let this_index = $(e.target).closest('td').index();
+                                    let next_row = row.prev('tr');
+                                    if (next_row.length === 0) {
+                                        next_row = row.closest('tbody').find('tr').last()
+                                    }
+                                    next_row.find('td').eq(this_index).find('input').focus().select();
+                                }
+                            });
+                            cells.push($('<td>').append($(`<div class='note'>`).append(input)));
+                            input_note_apply_style_and_fix(input);
+                        }
                     }
                     return cells;
                 }),
@@ -579,5 +618,112 @@ function load_fehltage_table(container, klasse, edit_noten) {
         }
     });
 }
+
+function load_sozialverhalten_table(container, klasse, edit_noten) {
+    // for (let lesson_key of lesson_keys) {
+    //     let info = kurs_info[lesson_key];
+    //     console.log(info.fach);
+    // }
+    let path_array = [];
+    path_array.push(['Schuljahr', ZEUGNIS_SCHULJAHR]);
+    path_array.push(['Halbjahr', ZEUGNIS_HALBJAHR]);
+    let liste = zeugnisliste_for_klasse[klasse];
+    let items = ['ZV', 'LLB', 'SSK', 'KF', 'SV'];
+    let emails = liste.schueler.map(function(x) { return x.email; });
+    path_array.push(['SV', items]);
+    path_array.push(['Email', emails]);
+    let t0 = Date.now();
+    tresor_api_call('/jwt/get_many', {path_arrays: [path_array], key: 'Wert'}, function(data) {
+        let t1 = Date.now();
+        console.log(`request took ${t1 - t0} ms.`);
+        if (data.success) {
+            container.empty();
+            let table = new SortableTable({
+                element: container,
+                xs: true,
+                headers: (['Nr.', 'Nachname', 'Vorname', 'Klasse'].concat(items.map(function(fach) {
+                    let fach_label = {
+                        'ZV': 'Zuverlässigkeit',
+                        'LLB': 'Leistungs- und<br />Lernbereitschaft',
+                        'SSK': 'Selbständigkeit',
+                        'KF': 'Kooperations-<br />fähigkeit',
+                        'SV': 'Soziales<br />Verhalten',
+                    }[fach] ?? fach;
+                    return `${fach_label}`;
+                }))).map(function (x) {
+                    let th = $('<th>').html(x);
+                    if (['Nr.', 'Nachname', 'Vorname', 'Klasse'].indexOf(x) < 0) th.css('text-align', 'center');
+                    return th;
+                }),
+                rows: emails.map(function (email, index) {
+                    let cells = [
+                        email,
+                        `<td style='text-align: right;'>${index + 1}.</td>`,
+                        `<td style='max-width: 10em;'>${liste.schueler[index].last_name}</td>`,
+                        `<td style='max-width: 10em;'>${liste.schueler[index].official_first_name}</td>`,
+                        // `<td>${moment(liste.schueler[index].geburtstag).format('L')}</td>`,
+                        `<td>${klassen_tr[klasse] ?? klasse}</td>`,
+                    ];
+                    for (let fi = 0; fi < items.length; fi++) {
+                        let item = items[fi];
+                        let input = $(`<input placeholder='--' class='form-control' style='width: 3em; text-align: center; height: calc(1.5em + 2px);'>`)
+                        if (!edit_noten || ((!my_zeugnisliste[`${klasse}/${item}`]) && ('#{zeugnis_admin_logged_in?}' === 'false'))) {
+                            input.prop('disabled', true);
+                        }
+                        input.val(data.results[0][0][0][fi][index]);
+                        input.focus(function(e) {
+                            input.select();
+                            container.find('tr').removeClass('focused');
+                            input.closest('tr').addClass('focused');
+                            $(e.target).data('old_value', $(e.target).val());
+                        });
+                        input.blur(function(e) {
+                            container.find('tr').removeClass('focused');
+                            let value = $(e.target).val().trim();
+                            if (value !== $(e.target).data('old_value')) {
+                                let path = `Schuljahr:${ZEUGNIS_SCHULJAHR}/Halbjahr:${ZEUGNIS_HALBJAHR}/Fehltage:${item}/Email:${email}`;
+                                input_anzahl_apply_style_and_fix($(e.target), function(value) {
+                                    $(e.target).data('old_value', value);
+                                    tresor_api_call('/jwt/store', {path: path, key: 'Wert', value: value}, function(data) {
+                                    });
+                                });
+                            }
+                        });
+                        input.keydown(function(e) {
+                            if (e.key === 'Enter' || e.key === 'ArrowDown') {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                let row = $(e.target).closest('tr');
+                                let this_index = $(e.target).closest('td').index();
+                                let next_row = row.next('tr');
+                                if (next_row.length === 0) {
+                                    next_row = row.closest('tbody').find('tr').first();
+                                }
+                                next_row.find('td').eq(this_index).find('input').focus().select();
+                            }
+                            if (e.key === 'ArrowUp') {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                let row = $(e.target).closest('tr');
+                                let this_index = $(e.target).closest('td').index();
+                                let next_row = row.prev('tr');
+                                if (next_row.length === 0) {
+                                    next_row = row.closest('tbody').find('tr').last()
+                                }
+                                next_row.find('td').eq(this_index).find('input').focus().select();
+                            }
+                        });
+                        cells.push($('<td>').append($(`<div class='note'>`).append(input)));
+                            input_anzahl_apply_style_and_fix(input);
+                    }
+                    return cells;
+                }),
+                sortable: false,
+            });
+            container.find('.table').css('width', 'unset');
+        }
+    });
+}
+
 
 </script>

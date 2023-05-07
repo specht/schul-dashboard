@@ -23,6 +23,7 @@ class Main < Sinatra::Base
             doc = File.read(File.join(out_path, 'word', 'document.xml'))
             tags = doc.scan(/[#\$][A-Za-z0-9_]+\./)
             key = File.basename(path).sub('.docx', '')
+            debug "#{key} (#{out_path}): #{tags.to_json}"
             @@zeugnisse[:formulare][key] ||= {}
             @@zeugnisse[:formulare][key][:sha1] = sha1
             @@zeugnisse[:formulare][key][:tags] = tags.map { |x| x[0, x.size - 1] }
@@ -78,6 +79,10 @@ class Main < Sinatra::Base
                     shorthands_for_fach[fach][shorthand] = true
                     @@zeugnisliste_for_lehrer[shorthand] ||= {}
                     @@zeugnisliste_for_lehrer[shorthand]["#{klasse}/#{fach}"] = true
+                    if FAECHER_SPRACHEN.include?(fach)
+                        @@zeugnisliste_for_lehrer[shorthand]["#{klasse}/#{fach}_AT"] = true
+                        @@zeugnisliste_for_lehrer[shorthand]["#{klasse}/#{fach}_SL"] = true
+                    end
                     @@zeugnisliste_for_lehrer[shorthand]["#{klasse}/SV/#{fach}"] = true
                 end
             end
@@ -142,6 +147,10 @@ class Main < Sinatra::Base
                 required_tags << "##{tag[1, tag.size - 1]}"
             else
                 required_tags << "##{tag}"
+            end
+            if DETAIL_NOTEN[key].include?(tag)
+                required_tags << "##{tag}_AT"
+                required_tags << "##{tag}_SL"
             end
         end
         required_tags << '#Zeugnisdatum'
@@ -224,6 +233,15 @@ class Main < Sinatra::Base
             email = sus_info[:email]
             zeugnis_key = sus_info[:zeugnis_key]
             faecher_info = @@zeugnisliste_for_klasse[klasse][:faecher]
+            faecher_info_extra = []
+            faecher_info.each do |fach|
+                if FAECHER_SPRACHEN.include?(fach)
+                    faecher_info_extra << "#{fach}_AT"
+                    faecher_info_extra << "#{fach}_SL"
+                end
+            end
+            faecher_info += faecher_info_extra
+            STDERR.puts faecher_info.to_json
             wahlfach_info = @@zeugnisliste_for_klasse[klasse][:wahlfach]
             # :zeugnis_key => self.zeugnis_key_for_email(email),
             # :official_first_name => @@user_info[email][:official_first_name],

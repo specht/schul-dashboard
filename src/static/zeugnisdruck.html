@@ -53,7 +53,14 @@ function get_zeugnis_pdf(klasse, emails) {
     path_array_fach.push(['Schuljahr', ZEUGNIS_SCHULJAHR]);
     path_array_fach.push(['Halbjahr', ZEUGNIS_HALBJAHR]);
     let liste = zeugnisliste_for_klasse[klasse];
-    let faecher = liste.faecher;
+    let faecher = [];
+    for (let fach of liste.faecher) {
+        faecher.push(fach);
+        if (FAECHER_SPRACHEN.indexOf(fach) >= 0) {
+            faecher.push(`${fach}_AT`);
+            faecher.push(`${fach}_SL`);
+        }
+    }
     path_array_fach.push(['Fach', faecher]);
     path_array_fach.push(['Email', emails]);
 

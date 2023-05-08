@@ -44,11 +44,11 @@
         <div id="edit_button_here" style="display: none; margin-bottom: 0.5em;">
             <button id="bu_toggle_edit" class='btn btn-secondary'></button>
             <p style="margin-top: 0.5em;">
-                <em>Hinweis: Nutzen Sie diese Schaltfläche, um die Tabelle vor versehentlichen Änderungen zu schützen. Sobald Werte ändern, sind diese automatisch gespeichert &ndash; es ist nicht nötig, die Bearbeitung durch nochmaliges Drücken dieser Schaltfläche abzuschließen.</em>
+                <em>Hinweis: Nutzen Sie diese Schaltfläche, um die Tabelle vor versehentlichen Änderungen zu schützen. Sobald Sie Werte ändern, sind diese automatisch gespeichert &ndash; es ist nicht nötig, die Bearbeitung durch nochmaliges Drücken dieser Schaltfläche abzuschließen.</em>
             </p>
         </div>
 
-        <div id="noten_here"></div>
+        <div class='tresor_table_container' id="noten_here"></div>
     </div>
 </div>
 
@@ -59,7 +59,8 @@ var zeugnis_klassen_order = #{ZEUGNIS_KLASSEN_ORDER.to_json};
 var klassen_tr = #{KLASSEN_TR.to_json};
 var zeugnisliste_for_klasse = #{@@zeugnisliste_for_klasse.to_json};
 var my_zeugnisliste = #{@@zeugnisliste_for_lehrer[@session_user[:shorthand]].to_json};
-var my_klassen = #{(zeugnis_admin_logged_in? ? KLASSEN_ORDER : @@klassen_for_shorthand[@session_user[:shorthand]]).select { |x| ZEUGNIS_KLASSEN_ORDER.include?(x) }.to_json};
+//var my_klassen = #{(zeugnis_admin_logged_in? ? KLASSEN_ORDER : @@klassen_for_shorthand[@session_user[:shorthand]]).select { |x| ZEUGNIS_KLASSEN_ORDER.include?(x) }.to_json};
+var my_klassen = #{(@@zeugnisliste_for_lehrer[@session_user[:shorthand]]).keys.map { |x| x.split('/').first }.sort.uniq.to_json};
 var clicked_klasse = null;
 
 window.addEventListener('load', function () {

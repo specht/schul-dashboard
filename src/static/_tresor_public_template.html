@@ -185,6 +185,16 @@
         opacity: 1.0;
     }
 
+    .tresor_table_container td {
+        position: relative;
+    }
+
+    .tresor_icon {
+        position: absolute;
+        right: 0;
+        top: 0;
+    }
+
     @tailwind base;
     @tailwind components;
     @tailwind utilities;
@@ -349,7 +359,7 @@ function input_note_apply_style_and_fix(input, callback) {
     if (value.toLowerCase().replace(/[\.\s]+/g, '') == 'ne') value = 'n.e.';
     if (value.toLowerCase().replace(/[\.\s]+/g, '') == 'ob') value = 'o.B.';
     if (noten_allowed_values.indexOf(value) < 0) value = '';
-    if (value === '') 
+    if (value === '')
         $(input).closest('.note').addClass('empty');
     else
         $(input).closest('.note').removeClass('empty');
@@ -382,6 +392,25 @@ function input_anzahl_apply_style_and_fix(input, callback) {
     if (original_value !== value) {
         $(input).val(value);
         input_anzahl_apply_style_and_fix($(input), callback);
+        return;
+    } else {
+        if (typeof(callback) !== 'undefined') callback(value);
+    }
+}
+
+function input_tendenz_apply_style_and_fix(input, callback) {
+    let value = $(input).val().trim().toLowerCase();
+    let original_value = `${value}`;
+    if (value == '0') value = 'o';
+    if (!(value === '-' || value === 'o' || value === '+' || value == '++'))
+        value = '';
+    if (value === '')
+        $(input).closest('.note').addClass('empty');
+    else
+        $(input).closest('.note').removeClass('empty');
+    if (original_value !== value) {
+        $(input).val(value);
+        input_tendenz_apply_style_and_fix($(input), callback);
         return;
     } else {
         if (typeof(callback) !== 'undefined') callback(value);
@@ -471,8 +500,17 @@ function load_noten_table(container, klasse, edit_noten) {
                             if (value !== $(e.target).data('old_value')) {
                                 let path = `Schuljahr:${ZEUGNIS_SCHULJAHR}/Halbjahr:${ZEUGNIS_HALBJAHR}/Fach:${fach}/Email:${email}`;
                                 input_note_apply_style_and_fix($(e.target), function(value) {
-                                    $(e.target).data('old_value', value);
+                                    input.closest('td').find('i.fa').remove();
                                     tresor_api_call('/jwt/store', {path: path, key: 'Wert', value: value}, function(data) {
+                                        if (data.success) {
+                                            $(e.target).data('old_value', value);
+                                        } else {
+                                            $(e.target).val($(e.target).data('old_value'));
+                                            input_note_apply_style_and_fix($(e.target), function(value) {
+                                                let icon = $(`<i class='fa fa-times tresor_icon text-danger'>`);
+                                                icon.appendTo(input.closest('td'));
+                                            });
+                                        }
                                     });
                                 });
                             }
@@ -577,8 +615,17 @@ function load_fehltage_table(container, klasse, edit_noten) {
                             if (value !== $(e.target).data('old_value')) {
                                 let path = `Schuljahr:${ZEUGNIS_SCHULJAHR}/Halbjahr:${ZEUGNIS_HALBJAHR}/Fehltage:${item}/Email:${email}`;
                                 input_anzahl_apply_style_and_fix($(e.target), function(value) {
-                                    $(e.target).data('old_value', value);
+                                    input.closest('td').find('i.fa').remove();
                                     tresor_api_call('/jwt/store', {path: path, key: 'Wert', value: value}, function(data) {
+                                        if (data.success) {
+                                            $(e.target).data('old_value', value);
+                                        } else {
+                                            $(e.target).val($(e.target).data('old_value'));
+                                            input_anzahl_apply_style_and_fix($(e.target), function(value) {
+                                                let icon = $(`<i class='fa fa-times tresor_icon text-danger'>`);
+                                                icon.appendTo(input.closest('td'));
+                                            });
+                                        }
                                     });
                                 });
                             }
@@ -630,47 +677,46 @@ function load_sozialverhalten_table(container, klasse, edit_noten) {
     let liste = zeugnisliste_for_klasse[klasse];
     let items = ['ZV', 'LLB', 'SSK', 'KF', 'SV'];
     let emails = liste.schueler.map(function(x) { return x.email; });
+    let faecher = liste.faecher;
     path_array.push(['SV', items]);
+    path_array.push(['Fach', faecher]);
     path_array.push(['Email', emails]);
     let t0 = Date.now();
+    let my_faecher = [];
+    for (let fach of faecher) {
+        if (my_zeugnisliste[`${klasse}/${fach}`]) my_faecher.push(fach);
+    }
+
     tresor_api_call('/jwt/get_many', {path_arrays: [path_array], key: 'Wert'}, function(data) {
         let t1 = Date.now();
         console.log(`request took ${t1 - t0} ms.`);
         if (data.success) {
             container.empty();
-            let table = new SortableTable({
-                element: container,
-                xs: true,
-                headers: (['Nr.', 'Nachname', 'Vorname', 'Klasse'].concat(items.map(function(fach) {
-                    let fach_label = {
-                        'ZV': 'Zuverlässigkeit',
-                        'LLB': 'Leistungs- und<br />Lernbereitschaft',
-                        'SSK': 'Selbständigkeit',
-                        'KF': 'Kooperations-<br />fähigkeit',
-                        'SV': 'Soziales<br />Verhalten',
-                    }[fach] ?? fach;
-                    return `${fach_label}`;
-                }))).map(function (x) {
-                    let th = $('<th>').html(x);
-                    if (['Nr.', 'Nachname', 'Vorname', 'Klasse'].indexOf(x) < 0) th.css('text-align', 'center');
-                    return th;
-                }),
-                rows: emails.map(function (email, index) {
-                    let cells = [
-                        email,
-                        `<td style='text-align: right;'>${index + 1}.</td>`,
-                        `<td style='max-width: 10em;'>${liste.schueler[index].last_name}</td>`,
-                        `<td style='max-width: 10em;'>${liste.schueler[index].official_first_name}</td>`,
-                        // `<td>${moment(liste.schueler[index].geburtstag).format('L')}</td>`,
-                        `<td>${klassen_tr[klasse] ?? klasse}</td>`,
-                    ];
+            let rows = [];
+            for (let index = 0; index < emails.length; index++) {
+                let email = emails[index];
+                for (let fach_index = 0; fach_index < my_faecher.length; fach_index++) {
+                    let fach = my_faecher[fach_index];
+                    let cells = [email];
+                    if (fach_index === 0) {
+                        cells.push(`<td style='text-align: right;'>${index + 1}.</td>`);
+                        cells.push(`<td style='max-width: 10em;'>${liste.schueler[index].last_name}</td>`);
+                        cells.push(`<td style='max-width: 10em;'>${liste.schueler[index].official_first_name}</td>`);
+                        cells.push(`<td>${klassen_tr[klasse] ?? klasse}</td>`);
+                    } else {
+                        cells.push(`<td></td>`);
+                        cells.push(`<td></td>`);
+                        cells.push(`<td></td>`);
+                        cells.push(`<td></td>`);
+                    }
+                    cells.push(`<td>${fach}</td>`);
                     for (let fi = 0; fi < items.length; fi++) {
                         let item = items[fi];
                         let input = $(`<input placeholder='--' class='form-control' style='width: 3em; text-align: center; height: calc(1.5em + 2px);'>`)
-                        if (!edit_noten || ((!my_zeugnisliste[`${klasse}/${item}`]) && ('#{zeugnis_admin_logged_in?}' === 'false'))) {
+                        if (!edit_noten || ((!my_zeugnisliste[`${klasse}/${item}/${fach}`]) && ('#{zeugnis_admin_logged_in?}' === 'false'))) {
                             input.prop('disabled', true);
                         }
-                        input.val(data.results[0][0][0][fi][index]);
+                        input.val(data.results[0][0][0][fi][fach_index][index]);
                         input.focus(function(e) {
                             input.select();
                             container.find('tr').removeClass('focused');
@@ -681,15 +727,24 @@ function load_sozialverhalten_table(container, klasse, edit_noten) {
                             container.find('tr').removeClass('focused');
                             let value = $(e.target).val().trim();
                             if (value !== $(e.target).data('old_value')) {
-                                let path = `Schuljahr:${ZEUGNIS_SCHULJAHR}/Halbjahr:${ZEUGNIS_HALBJAHR}/Fehltage:${item}/Email:${email}`;
-                                input_anzahl_apply_style_and_fix($(e.target), function(value) {
-                                    $(e.target).data('old_value', value);
+                                let path = `Schuljahr:${ZEUGNIS_SCHULJAHR}/Halbjahr:${ZEUGNIS_HALBJAHR}/SV:${item}/Fach:${fach}/Email:${email}`;
+                                input_tendenz_apply_style_and_fix($(e.target), function(value) {
+                                    input.closest('td').find('i.fa').remove();
                                     tresor_api_call('/jwt/store', {path: path, key: 'Wert', value: value}, function(data) {
+                                        if (data.success) {
+                                            $(e.target).data('old_value', value);
+                                        } else {
+                                            $(e.target).val($(e.target).data('old_value'));
+                                            input_tendenz_apply_style_and_fix($(e.target), function(value) {
+                                                let icon = $(`<i class='fa fa-times tresor_icon text-danger'>`);
+                                                    icon.appendTo(input.closest('td'));
+                                                });
+                                            }
+                                        });
                                     });
-                                });
-                            }
-                        });
-                        input.keydown(function(e) {
+                                }
+                            });
+                            input.keydown(function(e) {
                             if (e.key === 'Enter' || e.key === 'ArrowDown') {
                                 e.preventDefault();
                                 e.stopPropagation();
@@ -714,10 +769,29 @@ function load_sozialverhalten_table(container, klasse, edit_noten) {
                             }
                         });
                         cells.push($('<td>').append($(`<div class='note'>`).append(input)));
-                            input_anzahl_apply_style_and_fix(input);
+                        input_tendenz_apply_style_and_fix(input);
                     }
-                    return cells;
+                    rows.push(cells);
+                }
+            }
+            let table = new SortableTable({
+                element: container,
+                xs: true,
+                headers: (['Nr.', 'Nachname', 'Vorname', 'Klasse', 'Fach'].concat(items.map(function(fach) {
+                    let fach_label = {
+                        'ZV': 'Zuverlässigkeit',
+                        'LLB': 'Leistungs- und<br />Lernbereitschaft',
+                        'SSK': 'Selbständigkeit',
+                        'KF': 'Kooperations-<br />fähigkeit',
+                        'SV': 'Soziales<br />Verhalten',
+                    }[fach] ?? fach;
+                    return `${fach_label}`;
+                }))).map(function (x) {
+                    let th = $('<th>').html(x);
+                    if (['Nr.', 'Nachname', 'Vorname', 'Klasse'].indexOf(x) < 0) th.css('text-align', 'center');
+                    return th;
                 }),
+                rows: rows,
                 sortable: false,
             });
             container.find('.table').css('width', 'unset');

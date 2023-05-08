@@ -59,6 +59,13 @@ class Main < Sinatra::Base
     end
 
     def self.determine_zeugnislisten()
+        @@all_zeugnis_faecher = Set.new()
+        FAECHER_FOR_ZEUGNIS[ZEUGNIS_SCHULJAHR][ZEUGNIS_HALBJAHR].each_pair do |key, faecher|
+            faecher.each do |fach|
+                @@all_zeugnis_faecher << fach.sub('$', '')
+            end
+        end
+
         @@zeugnisliste_for_klasse = {}
         @@zeugnisliste_for_lehrer = {}
         kurse_for_klasse = Hash[ZEUGNIS_KLASSEN_ORDER.map do |klasse|
@@ -71,6 +78,7 @@ class Main < Sinatra::Base
             lesson_keys_for_fach = {}
             shorthands_for_fach = {}
             kurse_for_klasse[klasse].each do |kurs|
+                next unless @@all_zeugnis_faecher.include?(kurs[:fach])
                 lesson_keys_for_fach[kurs[:fach]] ||= []
                 lesson_keys_for_fach[kurs[:fach]] << kurs[:lesson_key]
                 kurs[:lehrer].each do |shorthand|
@@ -83,7 +91,9 @@ class Main < Sinatra::Base
                         @@zeugnisliste_for_lehrer[shorthand]["#{klasse}/#{fach}_AT"] = true
                         @@zeugnisliste_for_lehrer[shorthand]["#{klasse}/#{fach}_SL"] = true
                     end
-                    @@zeugnisliste_for_lehrer[shorthand]["#{klasse}/SV/#{fach}"] = true
+                    ['ZV', 'LLB', 'SSK', 'KF', 'SV'].each do |item|
+                        @@zeugnisliste_for_lehrer[shorthand]["#{klasse}/#{item}/#{fach}"] = true
+                    end
                 end
             end
             @@klassenleiter[klasse].each do |shorthand|

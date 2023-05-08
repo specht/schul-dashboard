@@ -683,6 +683,7 @@ function load_sozialverhalten_table(container, klasse, edit_noten) {
     for (let fach of faecher) {
         if (my_zeugnisliste[`${klasse}/${fach}`]) my_faecher.push(fach);
     }
+    if (my_zeugnisliste[`${klasse}/VT`]) my_faecher.push('_KL');
     path_array.push(['Fach', my_faecher]);
     path_array.push(['Email', emails]);
     let t0 = Date.now();
@@ -709,7 +710,10 @@ function load_sozialverhalten_table(container, klasse, edit_noten) {
                         cells.push(`<td></td>`);
                         cells.push(`<td></td>`);
                     }
-                    cells.push(`<td>${fach}</td>`);
+                    if (fach === '_KL')
+                        cells.push(`<td>KL</td>`);
+                    else
+                        cells.push(`<td>${fach}</td>`);
                     for (let fi = 0; fi < items.length; fi++) {
                         let item = items[fi];
                         let input = $(`<input placeholder='--' class='form-control' style='width: 3em; text-align: center; height: calc(1.5em + 2px);'>`)

@@ -151,6 +151,10 @@ class Main < Sinatra::Base
                     @@zeugnisliste_for_lehrer[shorthand] ||= {}
                     @@zeugnisliste_for_lehrer[shorthand]["#{klasse}/#{item}"] = true
                 end
+                ['ZV', 'LLB', 'SSK', 'KF', 'SV'].each do |item|
+                    @@zeugnisliste_for_lehrer[shorthand] ||= {}
+                    @@zeugnisliste_for_lehrer[shorthand]["#{klasse}/#{item}/_KL"] = true
+                end
             end
             path = "#{ZEUGNIS_SCHULJAHR}/#{ZEUGNIS_HALBJAHR}/#{klasse}/_KL"
             if delegates[path]
@@ -162,6 +166,10 @@ class Main < Sinatra::Base
                     ['VT', 'VT_UE', 'VS', 'VS_UE', 'VSP'].each do |item|
                         @@zeugnisliste_for_lehrer[shorthand] ||= {}
                         @@zeugnisliste_for_lehrer[shorthand]["#{klasse}/#{item}"] = true
+                    end
+                    ['ZV', 'LLB', 'SSK', 'KF', 'SV'].each do |item|
+                        @@zeugnisliste_for_lehrer[shorthand] ||= {}
+                        @@zeugnisliste_for_lehrer[shorthand]["#{klasse}/#{item}/_KL"] = true
                     end
                 end
             end
@@ -239,8 +247,19 @@ class Main < Sinatra::Base
         required_tags << '#VSP'
         required_tags << '#Angebote'
         required_tags << '#Bemerkungen'
+        optional_tags = []
+
+        optional_tags << '#Wahlpflicht_1'
+        optional_tags << '#Wahlpflicht_2'
+        optional_tags << '#Wahlpflicht_3'
+
+        optional_tags << '#Wahlpflicht_1_Note'
+        optional_tags << '#Wahlpflicht_2_Note'
+        optional_tags << '#Wahlpflicht_3_Note'
+
         missing_tags = Set.new(required_tags) - Set.new(@@zeugnisse[:formulare][key][:tags])
         superfluous_tags = Set.new(@@zeugnisse[:formulare][key][:tags]) - Set.new(required_tags)
+        superfluous_tags -= Set.new(optional_tags)
         errors = []
         unless missing_tags.empty?
             errors << "fehlende Markierungen: #{missing_tags.join(', ')}"
@@ -281,10 +300,13 @@ class Main < Sinatra::Base
                 :schueler,
                 :paths_fach, :values_fach,
                 :paths_fehltage, :values_fehltage,
+                :paths_ab, :values_ab,
+                :format
             ],
             :types => {:schueler => Array,
                 :paths_fach => Array, :values_fach => Array,
                 :paths_fehltage => Array, :values_fehltage => Array,
+                :paths_ab => Array, :values_ab => Array,
             },
             :max_body_length => 1024 * 1024 * 10,
             :max_string_length => 1024 * 1024 * 10,
@@ -292,12 +314,15 @@ class Main < Sinatra::Base
         cache = {}
         cache.merge!(parse_paths_and_values(data[:paths_fach], data[:values_fach]))
         cache.merge!(parse_paths_and_values(data[:paths_fehltage], data[:values_fehltage]))
+        cache.merge!(parse_paths_and_values(data[:paths_ab], data[:values_ab]))
         debug cache.to_yaml
         docx_paths = []
 
         merged_id = data.to_json
         merged_sha1 = Digest::SHA1.hexdigest(merged_id).to_i(16).to_s(36)
         merged_out_path_pdf = File.join("/internal/zeugnisse/out/#{merged_sha1}.pdf")
+        merged_out_path_docx = File.join("/internal/zeugnisse/out/#{merged_sha1}.docx")
+        last_zeugnis_name = ''
 
         data[:schueler].each do |schueler|
             parts = schueler.split('/')
@@ -323,7 +348,9 @@ class Main < Sinatra::Base
             # :geburtstag => @@user_info[email][:geburtstag],
             # :geschlecht => @@user_info[email][:geschlecht],
             info = {}
-            info['#Name'] = "#{sus_info[:official_first_name]} #{sus_info[:last_name]}"
+            name = "#{sus_info[:official_first_name]} #{sus_info[:last_name]}"
+            info['#Name'] = name
+            last_zeugnis_name = name
             info['#Geburtsdatum'] = "#{Date.parse(sus_info[:geburtstag]).strftime('%d.%m.%Y')}"
             info['#Klasse'] = Main.tr_klasse(klasse)
             info['#Zeugnisdatum'] = ZEUGNIS_DATUM
@@ -336,6 +363,14 @@ class Main < Sinatra::Base
                 v = '--' if v == '0'
                 info["##{item}"] = v
             end
+            ['Angebote', 'Bemerkungen'].each do |item|
+                v = cache["Schuljahr:#{ZEUGNIS_SCHULJAHR}/Halbjahr:#{ZEUGNIS_HALBJAHR}/AB:#{item}/Email:#{email}"] || '--'
+                info["##{item}"] = v
+            end
+            # TODO: Wahlfächer
+            info["#Wahlpflicht_1_Note"] = '--'
+            info["#Wahlpflicht_2_Note"] = '--'
+            info["#Wahlpflicht_3_Note"] = '--'
             zeugnis_id = "#{ZEUGNIS_SCHULJAHR}/#{ZEUGNIS_HALBJAHR}/#{zeugnis_key}/#{info.to_json}"
             zeugnis_sha1 = Digest::SHA1.hexdigest(zeugnis_id).to_i(16).to_s(36)
             debug "Printing Zeugnis for #{sus_info[:official_first_name]} #{sus_info[:last_name]} => #{zeugnis_sha1}"
@@ -359,19 +394,28 @@ class Main < Sinatra::Base
             docx_paths << out_path_docx
         end
 
-        command = "HOME=/internal/lowriter_home lowriter --convert-to pdf #{docx_paths.join(' ')} --outdir \"#{File.dirname(docx_paths.first)}\""
-        system(command)
+        if data[:format] == 'docx'
+            raw_docx_data = Base64::strict_encode64(File.read(docx_paths.first))
+            docx_paths.each do |path|
+                FileUtils::rm_f(path)
+            end
 
-        command = "gs -dBATCH -dNOPAUSE -q -sDEVICE=pdfwrite -sOutputFile=#{merged_out_path_pdf} #{docx_paths.map { |x| x.sub('.docx', '.pdf')}.join(' ')}"
-        system(command)
-        raw_pdf_data = Base64::strict_encode64(File.read(merged_out_path_pdf))
-        FileUtils::rm_f(merged_out_path_pdf)
-        docx_paths.each do |path|
-            FileUtils::rm_f(path)
-            FileUtils::rm_f(path.sub('.docx', '.pdf'))
+            respond(:yay => 'sure', :docx_base64 => raw_docx_data, :name => last_zeugnis_name)
+        else
+            command = "HOME=/internal/lowriter_home lowriter --convert-to pdf #{docx_paths.join(' ')} --outdir \"#{File.dirname(docx_paths.first)}\""
+            system(command)
+
+            command = "gs -dBATCH -dNOPAUSE -q -sDEVICE=pdfwrite -sOutputFile=#{merged_out_path_pdf} #{docx_paths.map { |x| x.sub('.docx', '.pdf')}.join(' ')}"
+            system(command)
+            raw_pdf_data = Base64::strict_encode64(File.read(merged_out_path_pdf))
+            FileUtils::rm_f(merged_out_path_pdf)
+            docx_paths.each do |path|
+                FileUtils::rm_f(path)
+                FileUtils::rm_f(path.sub('.docx', '.pdf'))
+            end
+
+            respond(:yay => 'sure', :pdf_base64 => raw_pdf_data, :name => last_zeugnis_name)
         end
-
-        respond(:yay => 'sure', :pdf_base64 => raw_pdf_data)
     end
 
     post '/api/zeugnis_delegate' do

@@ -22,7 +22,7 @@ var zeugnis_klassen_order = #{ZEUGNIS_KLASSEN_ORDER.to_json};
 var klassen_tr = #{KLASSEN_TR.to_json};
 var zeugnisliste_for_klasse = #{@@zeugnisliste_for_klasse.to_json};
 var my_zeugnisliste = #{@@zeugnisliste_for_lehrer[@session_user[:shorthand]].to_json};
-var my_klassen = #{(@@zeugnisliste_for_lehrer[@session_user[:shorthand]]).keys.select { |x| x.include?('/VT')}.map { |x| x.split('/').first }.sort.uniq.to_json};
+var my_klassen = #{zeugnis_admin_logged_in? ? ZEUGNIS_KLASSEN_ORDER : (@@zeugnisliste_for_lehrer[@session_user[:shorthand]]).keys.select { |x| x.include?('/VT')}.map { |x| x.split('/').first }.sort.uniq.to_json};
 var clicked_klasse = null;
 
 window.addEventListener('load', function () {

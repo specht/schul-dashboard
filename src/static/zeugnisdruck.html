@@ -21,7 +21,7 @@ var klassen_tr = #{KLASSEN_TR.to_json};
 var zeugnisliste_for_klasse = #{@@zeugnisliste_for_klasse.to_json};
 var sesb_for_email = #{Hash[@@user_info.keys.map { |x| [x, @@user_info[x][:sesb]]}].to_json};
 var zeugnis_formular_fehler = #{Hash[FAECHER_FOR_ZEUGNIS[ZEUGNIS_SCHULJAHR][ZEUGNIS_HALBJAHR].keys.map { |key| [key, @@zeugnisse[:formulare][key][:formular_fehler]] }].to_json};
-var my_klassen = #{(@@zeugnisliste_for_lehrer[@session_user[:shorthand]]).keys.select { |x| x.include?('/VT')}.map { |x| x.split('/').first }.sort.uniq.to_json};
+var my_klassen = #{zeugnis_admin_logged_in? ? ZEUGNIS_KLASSEN_ORDER : (@@zeugnisliste_for_lehrer[@session_user[:shorthand]]).keys.select { |x| x.include?('/VT')}.map { |x| x.split('/').first }.sort.uniq.to_json};
 
 window.addEventListener('load', function () {
     setTimeout(function() {

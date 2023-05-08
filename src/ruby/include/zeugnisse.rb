@@ -68,22 +68,47 @@ class Main < Sinatra::Base
 
         @@zeugnisliste_for_klasse = {}
         @@zeugnisliste_for_lehrer = {}
+
         kurse_for_klasse = Hash[ZEUGNIS_KLASSEN_ORDER.map do |klasse|
             [klasse, @@lessons_for_klasse[klasse].map { |x| @@lessons[:lesson_keys][x].merge({:lesson_key => x})}]
         end]
+
+        delegates = {}
+        delegates_for_klasse = {}
+        rows = $neo4j.neo4j_query(<<~END_OF_QUERY, :path => "#{ZEUGNIS_SCHULJAHR}/#{ZEUGNIS_HALBJAHR}/")
+            MATCH (n:ZeugnisDelegate)-[:WHO]->(u:User)
+            WHERE n.path STARTS WITH $path
+            RETURN n.path AS path, u.email AS email;
+        END_OF_QUERY
+        rows.each do |row|
+            delegates[row['path']] ||= Set.new()
+            delegates[row['path']] << row['email']
+            klasse = row['path'].split('/')[2]
+            delegates_for_klasse[klasse] ||= {}
+            delegates_for_klasse[klasse][row['path']] ||= Set.new()
+            delegates_for_klasse[klasse][row['path']] << row['email']
+        end
+
         if ZEUGNIS_USE_MOCK_NAMES
             srand(0)
         end
         ZEUGNIS_KLASSEN_ORDER.each do |klasse|
             lesson_keys_for_fach = {}
             shorthands_for_fach = {}
-            kurse_for_klasse[klasse].each do |kurs|
+            # get teachers from stundenplan
+            (kurse_for_klasse[klasse]).each do |kurs|
                 next unless @@all_zeugnis_faecher.include?(kurs[:fach])
                 lesson_keys_for_fach[kurs[:fach]] ||= []
                 lesson_keys_for_fach[kurs[:fach]] << kurs[:lesson_key]
-                kurs[:lehrer].each do |shorthand|
-                    fach = ZEUGNIS_CONSOLIDATE_FACH[kurs[:fach]] || kurs[:fach]
-                    shorthands_for_fach[fach] ||= {};
+                fach = ZEUGNIS_CONSOLIDATE_FACH[kurs[:fach]] || kurs[:fach]
+                shorthands = kurs[:lehrer]
+                # check if we have delegate overrides
+                path = "#{ZEUGNIS_SCHULJAHR}/#{ZEUGNIS_HALBJAHR}/#{klasse}/#{fach}"
+                if delegates[path]
+                    shorthands = delegates[path].to_a.map { |email| @@user_info[email][:shorthand] }
+                end
+                shorthands.each do |shorthand|
+                    shorthands_for_fach[fach] ||= {}
                     shorthands_for_fach[fach][shorthand] = true
                     @@zeugnisliste_for_lehrer[shorthand] ||= {}
                     @@zeugnisliste_for_lehrer[shorthand]["#{klasse}/#{fach}"] = true
@@ -96,14 +121,53 @@ class Main < Sinatra::Base
                     end
                 end
             end
+            # get teachers from delegate entries
+            (delegates_for_klasse[klasse] || {}).each_pair do |path, emails|
+                fach = path.split('/')[3]
+                emails.each do |email|
+                    shorthand = @@user_info[email][:shorthand]
+                    shorthands_for_fach[fach] ||= {}
+                    shorthands_for_fach[fach][shorthand] = true
+                    @@zeugnisliste_for_lehrer[shorthand] ||= {}
+                    @@zeugnisliste_for_lehrer[shorthand]["#{klasse}/#{fach}"] = true
+                    if FAECHER_SPRACHEN.include?(fach)
+                        @@zeugnisliste_for_lehrer[shorthand]["#{klasse}/#{fach}_AT"] = true
+                        @@zeugnisliste_for_lehrer[shorthand]["#{klasse}/#{fach}_SL"] = true
+                    end
+                    ['ZV', 'LLB', 'SSK', 'KF', 'SV'].each do |item|
+                        @@zeugnisliste_for_lehrer[shorthand]["#{klasse}/#{item}/#{fach}"] = true
+                    end
+                end
+
+            end
+            
+            @@zeugnisliste_for_klasse[klasse] = {}
+            @@zeugnisliste_for_klasse[klasse][:lehrer_for_fach] = {}
+            @@zeugnisliste_for_klasse[klasse][:lehrer_for_fach_is_delegate] = {}
             @@klassenleiter[klasse].each do |shorthand|
+                @@zeugnisliste_for_klasse[klasse][:lehrer_for_fach]['_KL'] ||= []
+                @@zeugnisliste_for_klasse[klasse][:lehrer_for_fach]['_KL'] << shorthand
                 ['VT', 'VT_UE', 'VS', 'VS_UE', 'VSP'].each do |item|
                     @@zeugnisliste_for_lehrer[shorthand] ||= {}
                     @@zeugnisliste_for_lehrer[shorthand]["#{klasse}/#{item}"] = true
                 end
             end
+            path = "#{ZEUGNIS_SCHULJAHR}/#{ZEUGNIS_HALBJAHR}/#{klasse}/_KL"
+            if delegates[path]
+                @@zeugnisliste_for_klasse[klasse][:lehrer_for_fach]['_KL'] = []
+                @@zeugnisliste_for_klasse[klasse][:lehrer_for_fach_is_delegate]['_KL'] = true
+                delegates[path].each do |email|
+                    shorthand = @@user_info[email][:shorthand]
+                    @@zeugnisliste_for_klasse[klasse][:lehrer_for_fach]['_KL'] << shorthand
+                    ['VT', 'VT_UE', 'VS', 'VS_UE', 'VSP'].each do |item|
+                        @@zeugnisliste_for_lehrer[shorthand] ||= {}
+                        @@zeugnisliste_for_lehrer[shorthand]["#{klasse}/#{item}"] = true
+                    end
+                end
+            end
+            @@zeugnisliste_for_klasse[klasse][:lehrer_for_fach]['_KL'] ||= []
+            @@zeugnisliste_for_klasse[klasse][:lehrer_for_fach]['_KL'].uniq!
             faecher = self.zeugnis_faecher_for_emails(@@schueler_for_klasse[klasse])
-            @@zeugnisliste_for_klasse[klasse] = {}
             @@zeugnisliste_for_klasse[klasse][:faecher] = faecher.map do |x|
                 x[0] == '$' ? x[1, x.size - 1] : x
             end
@@ -111,9 +175,10 @@ class Main < Sinatra::Base
             @@zeugnisliste_for_klasse[klasse][:wahlfach] = Hash[faecher.map do |x|
                 [x.sub('$', ''), x[0] == '$' ? true : false]
             end]
-            @@zeugnisliste_for_klasse[klasse][:lehrer_for_fach] = {}
             @@zeugnisliste_for_klasse[klasse][:faecher].each do |fach|
                 @@zeugnisliste_for_klasse[klasse][:lehrer_for_fach][fach] = (shorthands_for_fach[fach] || {}).keys
+                path = "#{ZEUGNIS_SCHULJAHR}/#{ZEUGNIS_HALBJAHR}/#{klasse}/#{fach}"
+                @@zeugnisliste_for_klasse[klasse][:lehrer_for_fach_is_delegate][fach] = delegates.include?(path)
             end
             @mock = {}
             if ZEUGNIS_USE_MOCK_NAMES
@@ -208,7 +273,6 @@ class Main < Sinatra::Base
         end
         result
     end
-
 
     post '/api/print_zeugnis' do
         # require_zeugnis_admin!
@@ -308,6 +372,30 @@ class Main < Sinatra::Base
         end
 
         respond(:yay => 'sure', :pdf_base64 => raw_pdf_data)
+    end
+
+    post '/api/zeugnis_delegate' do
+        require_zeugnis_admin!
+        data = parse_request_data(:required_keys => [:klasse, :fach, :shorthands])
+        emails = Set.new()
+        data[:shorthands].split(',').each do |shorthand|
+            emails << @@shorthands[shorthand.strip]
+        end
+        debug "zeugnis_delegate: #{data[:klasse]} / #{data[:fach]} / #{emails.to_a.to_json}"
+        path = "#{ZEUGNIS_SCHULJAHR}/#{ZEUGNIS_HALBJAHR}/#{data[:klasse]}/#{data[:fach]}"
+        transaction do
+            neo4j_query(<<~END_OF_QUERY, :path => path)
+                MATCH (n:ZeugnisDelegate {path: $path})
+                DETACH DELETE n;
+            END_OF_QUERY
+            neo4j_query(<<~END_OF_QUERY, :path => path, :emails => emails.to_a)
+                MERGE (n:ZeugnisDelegate {path: $path})
+                WITH n
+                MATCH (u:User) WHERE u.email IN $emails
+                CREATE (n)-[:WHO]->(u);
+            END_OF_QUERY
+        end
+        self.class.determine_zeugnislisten()
     end
 end
 

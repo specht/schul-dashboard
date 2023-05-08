@@ -221,7 +221,7 @@
             </li>
             <li class="mx-1">
                 <a class="inline-block bg-slate-900 border border-blue-500 hover:bg-slate-200 rounded py-1 px-3"
-                    href="/angebote_bemerkungen"><i class='fa fa-table'></i>&nbsp;&nbsp;Angebote und Bemerkungen</a>
+                    href="/zeugnis_angebote_bemerkungen"><i class='fa fa-table'></i>&nbsp;&nbsp;Angebote und Bemerkungen</a>
             </li>
             <li class="mx-1" style="display: #{((!@session_user[:klassenleitung].nil?) || zeugnis_admin_logged_in?) ? 'unset' : 'none'};">
                 <a class="inline-block bg-slate-900 border border-blue-500 hover:bg-slate-200 rounded py-1 px-3"
@@ -679,13 +679,13 @@ function load_sozialverhalten_table(container, klasse, edit_noten) {
     let emails = liste.schueler.map(function(x) { return x.email; });
     let faecher = liste.faecher;
     path_array.push(['SV', items]);
-    path_array.push(['Fach', faecher]);
-    path_array.push(['Email', emails]);
-    let t0 = Date.now();
     let my_faecher = [];
     for (let fach of faecher) {
         if (my_zeugnisliste[`${klasse}/${fach}`]) my_faecher.push(fach);
     }
+    path_array.push(['Fach', my_faecher]);
+    path_array.push(['Email', emails]);
+    let t0 = Date.now();
 
     tresor_api_call('/jwt/get_many', {path_arrays: [path_array], key: 'Wert'}, function(data) {
         let t1 = Date.now();
@@ -798,6 +798,84 @@ function load_sozialverhalten_table(container, klasse, edit_noten) {
         }
     });
 }
+
+function load_angebote_bemerkungen_table(container, klasse, edit_noten) {
+    // for (let lesson_key of lesson_keys) {
+    //     let info = kurs_info[lesson_key];
+    //     console.log(info.fach);
+    // }
+    let path_array = [];
+    path_array.push(['Schuljahr', ZEUGNIS_SCHULJAHR]);
+    path_array.push(['Halbjahr', ZEUGNIS_HALBJAHR]);
+    let liste = zeugnisliste_for_klasse[klasse];
+    let items = ['Angebote', 'Bemerkungen'];
+    let emails = liste.schueler.map(function(x) { return x.email; });
+    path_array.push(['AB', items]);
+    path_array.push(['Email', emails]);
+    let t0 = Date.now();
+    tresor_api_call('/jwt/get_many', {path_arrays: [path_array], key: 'Wert'}, function(data) {
+        let t1 = Date.now();
+        console.log(`request took ${t1 - t0} ms.`);
+        if (data.success) {
+            container.empty();
+            let table = new SortableTable({
+                element: container,
+                xs: true,
+                headers: (['Nr.', 'Nachname', 'Vorname', 'Klasse'].concat(items.map(function(fach) {
+                    return `${fach}`;
+                }))).map(function (x) {
+                    let th = $('<th>').html(x);
+                    if (['Nr.', 'Nachname', 'Vorname', 'Klasse'].indexOf(x) < 0) th.css('text-align', 'center');
+                    return th;
+                }),
+                rows: emails.map(function (email, index) {
+                    let cells = [
+                        email,
+                        `<td style='text-align: right;'>${index + 1}.</td>`,
+                        `<td style='max-width: 10em;'>${liste.schueler[index].last_name}</td>`,
+                        `<td style='max-width: 10em;'>${liste.schueler[index].official_first_name}</td>`,
+                        // `<td>${moment(liste.schueler[index].geburtstag).format('L')}</td>`,
+                        `<td>${klassen_tr[klasse] ?? klasse}</td>`,
+                    ];
+                    for (let fi = 0; fi < items.length; fi++) {
+                        let item = items[fi];
+                        let input = $(`<textarea placeholder='--' class='form-control' style='width: 100%;' ${edit_noten ? '' : 'disabled readonly'}>`);
+                        input.val(data.results[0][0][0][fi][index]);
+                        input.focus(function(e) {
+                            input.select();
+                            container.find('tr').removeClass('focused');
+                            input.closest('tr').addClass('focused');
+                            $(e.target).data('old_value', $(e.target).val());
+                        });
+                        input.blur(function(e) {
+                            container.find('tr').removeClass('focused');
+                            let value = $(e.target).val().trim();
+                            if (value !== $(e.target).data('old_value')) {
+                                let path = `Schuljahr:${ZEUGNIS_SCHULJAHR}/Halbjahr:${ZEUGNIS_HALBJAHR}/AB:${item}/Email:${email}`;
+                                input.closest('td').find('i.fa').remove();
+                                tresor_api_call('/jwt/store', {path: path, key: 'Wert', value: value}, function(data) {
+                                    if (data.success) {
+                                        $(e.target).data('old_value', value);
+                                    } else {
+                                        $(e.target).val($(e.target).data('old_value'));
+                                        let icon = $(`<i class='fa fa-times tresor_icon text-danger'>`);
+                                        icon.appendTo(input.closest('td'));
+                                    }
+                                });
+                            }
+                        });
+                        cells.push($(`<td style='width: 50%;'>`).append($(`<div>`).append(input)));
+                    }
+                    return cells;
+                }),
+                sortable: false,
+            });
+            container.find('.table').css('width', 'unset');
+        }
+    });
+}
+
+
 
 
 </script>

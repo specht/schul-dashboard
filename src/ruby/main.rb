@@ -49,7 +49,7 @@ Neo4jBolt.bolt_port = 7687
 BIB_JWT_TTL = 60
 BIB_JWT_TTL_EXTRA = 20
 
-TRESOR_SECOND_FACTOR_TTL = 60 * 10
+TRESOR_SECOND_FACTOR_TTL = DEVELOPMENT ? 60 * 10 * 6 : 60 * 10
 TRESOR_JWT_TTL = 60
 TRESOR_JWT_TTL_EXTRA = 20
 
@@ -247,7 +247,8 @@ class SetupDatabase
         'TestEvent/key',
         'TextComment/key',
         'User/email',
-        'WebsiteEvent/key'
+        'WebsiteEvent/key',
+        'ZeugnisDelegate/path'
     ]
 
     INDEX_LIST = [

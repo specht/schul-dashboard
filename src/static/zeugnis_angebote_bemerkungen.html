@@ -2,10 +2,7 @@
 #{File.read('/static/_tresor_public_template.html')}
 <div class='container bg-white'>
     <div class="w-full">
-        <h3>Fehltage #{ZEUGNIS_SCHULJAHR.sub('_', '/')} (#{ZEUGNIS_HALBJAHR}. Halbjahr)</h3>
-        <p>
-            Bitte tragen Sie hier die Fehlzeiten für Ihre Klasse ein.
-        </p>
+        <h3>Angebote und Bemerkungen #{ZEUGNIS_SCHULJAHR.sub('_', '/')} (#{ZEUGNIS_HALBJAHR}. Halbjahr)</h3>
         <div id="klassen_buttons_here"></div>
         <hr />
         <div id="edit_button_here" style="display: none; margin-bottom: 0.5em;">
@@ -14,7 +11,7 @@
                 <em>Hinweis: Nutzen Sie diese Schaltfläche, um die Tabelle vor versehentlichen Änderungen zu schützen. Sobald Sie Werte ändern, sind diese automatisch gespeichert &ndash; es ist nicht nötig, die Bearbeitung durch nochmaliges Drücken dieser Schaltfläche abzuschließen.</em>
             </p>
         </div>
-        <div class='tresor_table_container' id="fehltage_here"></div>
+        <div class='tresor_table_container' id="angebote_bemerkungen_here"></div>
     </div>
 </div>
 
@@ -37,7 +34,7 @@ window.addEventListener('load', function () {
                 $('#edit_button_here').show();
                 clicked_klasse = klasse;
                 edit_enabled = false;
-                load_fehltage_table($('#fehltage_here'), klasse, edit_enabled);
+                load_angebote_bemerkungen_table($('#angebote_bemerkungen_here'), klasse, edit_enabled);
                 update_edit_button();
             });
             if (my_klassen.length === 1)
@@ -46,7 +43,7 @@ window.addEventListener('load', function () {
     }
     $('#bu_toggle_edit').click(function(e) {
         edit_enabled = !edit_enabled;
-        load_fehltage_table($('#fehltage_here'), clicked_klasse, edit_enabled);
+        load_angebote_bemerkungen_table($('#angebote_bemerkungen_here'), clicked_klasse, edit_enabled);
         update_edit_button();
     });
 });

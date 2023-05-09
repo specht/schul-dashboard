@@ -8,7 +8,7 @@
             <hr>
                 Du bist in deiner Klasse Technikamt und kannst deshalb hier Probleme mit der Schultechnik melden.<br><br>
                 <div class="alert alert-warning">
-                    Bei Fragen oder Problemen, wende dich gerne an Peter-J. Germelmann.<br><br><a class="btn btn-success" href="mailto:peter-julius.germelmann@mail.gymnasiumsteglitz.de"><i class='fa fa-envelope'></i>&nbsp;&nbsp;E-Mail</a>
+                    Bei Fragen oder Problemen, wende dich gerne an Peter-J. Germelmann.<br><br><a class="btn btn-primary" href="mailto:peter-julius.germelmann@mail.gymnasiumsteglitz.de"><i class='fa fa-envelope'></i>&nbsp;&nbsp;E-Mail</a>
                 </div>
             <hr>
             <div class='row'>
@@ -43,7 +43,7 @@
                     <th>Datum</th>
                     <th>Problem</th>
                     <th>Gerät</th>
-                    <th>Behoben</th>
+                    <th>Status</th>
                     </tr></thead>
                     <tbody id='problems_here'>
                     </tbody>
@@ -70,13 +70,13 @@
                     row.append($('<td>').text(moment(entry.problem.date).format('ddd, D.M.Y')));
                     row.append($('<td>').text(entry.problem.problem));
                     row.append($('<td>').text('' + entry.problem.device));
-                    let tp_fixed = $('<button disabled>').addClass('btn').addClass('btn-xs').addClass('btn-success').html("<i class='fa fa-check'></i>&nbsp;&nbsp;Behoben");
-                    let tp_not_fixed = $('<button disabled>').addClass('btn').addClass('btn-xs').addClass('btn-warning').html("<i class='fa fa-clock-o'></i>&nbsp;&nbsp;noch nicht Behoben");
+                    let tp_fixed = $('<td>').html("<i class='text-success fa fa-check'></i>&nbsp;&nbsp;Behoben");
+                    let tp_not_fixed = $('<td>').html("<i class='text-danger fa fa-clock-o'></i>&nbsp;&nbsp;noch nicht Behoben");
 
                     if (entry.problem.fixed == false) {
-                        row.append($('<td>').append(tp_not_fixed));
+                        row.append(tp_not_fixed);
                     } else {
-                        row.append($('<td>').append(tp_fixed));
+                        row.append(tp_fixed);
                     }
                     $('#problems_here').append(row);
                 }

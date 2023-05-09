@@ -10,6 +10,7 @@ class Main < Sinatra::Base
             SET v.device = $device 
             SET v.date = $date
             SET v.problem = $problem
+            SET v.fixed = false
             RETURN v.token;
         END_OF_QUERY
 
@@ -59,18 +60,44 @@ class Main < Sinatra::Base
         respond(:tech_problems => problems)
     end
 
-    post '/api/delete_tech_problem' do
-        require_user_who_can_report_tech_problems!
+    post '/api/fix_tech_problem_admin' do
+        require_user_who_can_manage_tablets!
         data = parse_request_data(:required_keys => [:token])
         token = data[:token]
         debug token
-        neo4j_query_expect_one(<<~END_OF_QUERY, :token => token)
+        problems = neo4j_query_expect_one(<<~END_OF_QUERY, :token => token)
             MATCH (v:TechProblem {token: $token})
-            DETACH DELETE v
+            SET v.fixed = true
             RETURN v;
         END_OF_QUERY
         respond(:ok => true)
     end
+
+    post '/api/unfix_tech_problem_admin' do
+        require_user_who_can_manage_tablets!
+        data = parse_request_data(:required_keys => [:token])
+        token = data[:token]
+        debug token
+        problems = neo4j_query_expect_one(<<~END_OF_QUERY, :token => token)
+            MATCH (v:TechProblem {token: $token})
+            SET v.fixed = false
+            RETURN v;
+        END_OF_QUERY
+        respond(:ok => true)
+    end
+
+    # post '/api/delete_tech_problem' do
+    #     require_user_who_can_report_tech_problems!
+    #     data = parse_request_data(:required_keys => [:token])
+    #     token = data[:token]
+    #     debug token
+    #     neo4j_query_expect_one(<<~END_OF_QUERY, :token => token)
+    #         MATCH (v:TechProblem {token: $token})
+    #         DETACH DELETE v
+    #         RETURN v;
+    #     END_OF_QUERY
+    #     respond(:ok => true)
+    # end
 
     post '/api/delete_tech_problem_admin' do
         require_user_who_can_manage_tablets!

@@ -2,7 +2,9 @@
 <div class='container' style='padding-top: 30px;'>
     <div class='row'>
         <div class="col-md-12">
-            <h2 style="margin-bottom: 30px;">Technikamt</h2>
+            <h2 style="margin-bottom: 30px;">Technikamt
+                <!-- &nbsp;&nbsp;<i class="fa fa-tv fa-lg"></i>&nbsp;<i class="fa fa-laptop fa-lg"></i>&nbsp;<i class="fa fa-tablet fa-lg"></i> -->
+            </h2>
             <hr>
                 Du bist in deiner Klasse Technikamt und kannst deshalb hier Probleme mit der Schultechnik melden.<br><br>
                 <div class="alert alert-warning">
@@ -31,7 +33,7 @@
             </div>
             <div class='row' style='margin-bottom: 15px;'>
                 <div class='col-md-12'>
-                    <button id='tp_report_problem' class='btn btn-success pull-right' disabled><i class='fa fa-send'></i>&nbsp;&nbsp;Absenden</button>
+                    <button id='tp_report_problem' title="Dies kann nicht rückgängig gemacht werden!" class='btn btn-success pull-right' disabled><i class='fa fa-send'></i>&nbsp;&nbsp;Absenden</button>
                 </div>
             </div>
             <div class='row'>
@@ -41,7 +43,7 @@
                     <th>Datum</th>
                     <th>Problem</th>
                     <th>Gerät</th>
-                    <th>Löschen</th>
+                    <th>Behoben</th>
                     </tr></thead>
                     <tbody id='problems_here'>
                     </tbody>
@@ -68,23 +70,14 @@
                     row.append($('<td>').text(moment(entry.problem.date).format('ddd, D.M.Y')));
                     row.append($('<td>').text(entry.problem.problem));
                     row.append($('<td>').text('' + entry.problem.device));
-                    let tp_delete = $('<button>').addClass('btn').addClass('btn-xs').addClass('btn-danger').html("<i class='fa fa-trash'></i>&nbsp;&nbsp;Löschen");
-                    
-                    tp_delete.data('token', entry.problem.token);
-                    tp_delete.click(function(e) {
-                        showTemplateModal('Problem löschen', 
-                            'Bist Du sicher, dass Du dieses Problem löschen möchtest? Es ist dann für das TechnikTeam nicht mehr sichtbar.',
-                            "<i class='fa fa-trash'></i>&nbsp;&nbsp;Problem löschen", 'btn-danger',
-                            'Abbrechen', 'btn-secondary', function() {
-                                api_call('/api/delete_tech_problem', {token: $(e.target).data('token')}, function(data) {
-                                    if (data.success)
-                                        refresh_tech_problems();
-                                });
-                            }
-                        );
-                    });
-                    row.append($('<td>').append(tp_delete));
-                    
+                    let tp_fixed = $('<button disabled>').addClass('btn').addClass('btn-xs').addClass('btn-success').html("<i class='fa fa-check'></i>&nbsp;&nbsp;Behoben");
+                    let tp_not_fixed = $('<button disabled>').addClass('btn').addClass('btn-xs').addClass('btn-warning').html("<i class='fa fa-clock-o'></i>&nbsp;&nbsp;noch nicht Behoben");
+
+                    if (entry.problem.fixed == false) {
+                        row.append($('<td>').append(tp_not_fixed));
+                    } else {
+                        row.append($('<td>').append(tp_fixed));
+                    }
                     $('#problems_here').append(row);
                 }
             }

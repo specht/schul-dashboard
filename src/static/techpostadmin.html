@@ -43,16 +43,61 @@
                     <th>Problem</th>
                     <th>Gerät</th>
                     <th>Behoben</th>
+                    <th>Löschen</th>
                     </tr></thead>
                     <tbody id='problems_here'>
                     </tbody>
                     </table>
                 </div>
             </div>
+            <div class='row' style='margin-bottom: 15px;'>
+                <div class='col-md-12'>
+                    <button class='bu-compose btn btn-primary'><i class='fa fa-eye'></i>&nbsp;&nbsp;Behobene Probleme</button>
+                </div>
+            </div>
         </div>
     </div>
 </div>
+
+<div class="modal" id="composeModal" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-centered" role="document">
+      <div class="modal-content">
+       <div class="modal-header">
+          <h5 class="modal-title">Behobene Probleme</h5>
+        </div>
+        <div class="modal-body">
+            <div class='row'>
+                <div class='col-md-12' style='max-width: 100%; overflow-x: auto;'>
+                    <table class='table narrow table-striped' style='width: unset; min-width: 100%;'>
+                    <thead><tr>
+                    <th>Datum</th>
+                    <th>Name</th>
+                    <th>Klasse</th>
+                    <th>Problem</th>
+                    <th>Gerät</th>
+                    <th>Nicht behoben</th>
+                    <th>Löschen</th>
+                    </tr></thead>
+                    <tbody id='fixed_problems_here'>
+                    </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        <div class="modal-footer">
+          <button id='bu_close_message_modal' type="button" class="btn btn-secondary" data-dismiss="modal">Schließen</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
 <script>
+
+    function compose_fixed_problems() {
+        $('#composeModal').modal('show');
+        refresh_fixed_tech_problems();
+    }
+
     function update_submit_button() {
         let problem = $('#tp_problem_description').val().trim();
         let date = $('#tp_date').val().trim();
@@ -65,30 +110,94 @@
             if (data.success) {
                 $('#problems_here').empty();
                 for (let entry of data.tech_problems) {
-                    let row = $('<tr>');
-                    row.append($('<td>').text(moment(entry.problem.date).format('ddd, D.M.Y')));
-                    row.append($('<td>').text(entry.display_name));
-                    row.append($('<td>').text(entry.klasse));
-                    row.append($('<td>').text(entry.problem.problem));
-                    row.append($('<td>').text('' + entry.problem.device));
-                    let tp_delete = $('<button>').addClass('btn').addClass('btn-xs').addClass('btn-warning').html("<i class='fa fa-trash'></i>&nbsp;&nbsp;Behoben");
-                    
-                    tp_delete.data('token', entry.problem.token);
-                    tp_delete.click(function(e) {
-                        showTemplateModal('Problem behoben', 
-                            'Bist Du sicher? Das Problem wird dabei unwiederrufbar gelöscht.',
-                            "<i class='fa fa-trash'></i>&nbsp;&nbsp;Problem behoben", 'btn-warning',
-                            'Abbrechen', 'btn-secondary', function() {
-                                api_call('/api/delete_tech_problem_admin', {token: $(e.target).data('token')}, function(data) {
-                                    if (data.success)
-                                        refresh_tech_problems();
-                                });
-                            }
-                        );
-                    });
-                    row.append($('<td>').append(tp_delete));
-                    
-                    $('#problems_here').append(row);
+                    if (entry.problem.fixed == false) { 
+                        let row = $('<tr>');
+                        row.append($('<td>').text(moment(entry.problem.date).format('ddd, D.M.Y')));
+                        row.append($('<td>').text(entry.display_name));
+                        row.append($('<td>').text(entry.klasse));
+                        row.append($('<td>').text(entry.problem.problem));
+                        row.append($('<td>').text('' + entry.problem.device));
+
+                        let tp_fixed = $('<button>').addClass('btn').addClass('btn-xs').addClass('btn-success').html("<i class='fa fa-check'></i>&nbsp;&nbsp;Behoben");
+                        tp_fixed.data('token', entry.problem.token);
+                        tp_fixed.click(function(e) {
+
+                            api_call('/api/fix_tech_problem_admin', {token: $(e.target).data('token')}, function(data) {
+                                if (data.success)
+                                    refresh_tech_problems();
+                            });
+
+                        });
+                        row.append($('<td>').append(tp_fixed));
+
+                        let tp_delete = $('<button>').addClass('btn').addClass('btn-xs').addClass('btn-danger').html("<i class='fa fa-trash'></i>&nbsp;&nbsp;Löschen");
+                        tp_delete.data('token', entry.problem.token);
+                        tp_delete.click(function(e) {
+                            showTemplateModal('Problem löschen', 
+                                'Bist Du sicher? Das Problem wird dabei unwiederrufbar gelöscht.',
+                                "<i class='fa fa-trash'></i>&nbsp;&nbsp;Problem löschen", 'btn-danger',
+                                'Abbrechen', 'btn-secondary', function() {
+                                    api_call('/api/delete_tech_problem_admin', {token: $(e.target).data('token')}, function(data) {
+                                        if (data.success)
+                                            refresh_tech_problems();
+                                    });
+                                }
+                            );
+                        });
+                        row.append($('<td>').append(tp_delete));
+                        
+                        $('#problems_here').append(row);
+                    }
+                }
+            }
+        });
+    }
+
+    function refresh_fixed_tech_problems() {
+        api_call('/api/get_tech_problems_admin', {}, function(data) {
+            if (data.success) {
+                refresh_tech_problems();
+                $('#fixed_problems_here').empty();
+                for (let entry of data.tech_problems) {
+                    if (entry.problem.fixed == true) { 
+                        let row = $('<tr>');
+                        row.append($('<td>').text(moment(entry.problem.date).format('ddd, D.M.Y')));
+                        row.append($('<td>').text(entry.display_name));
+                        row.append($('<td>').text(entry.klasse));
+                        row.append($('<td>').text(entry.problem.problem));
+                        row.append($('<td>').text('' + entry.problem.device));
+
+                        let tp_fixed = $('<button>').addClass('btn').addClass('btn-xs').addClass('btn-warning').html("<i class='fa fa-times'></i>&nbsp;&nbsp;Nicht Behoben");
+                        tp_fixed.data('token', entry.problem.token);
+                        tp_fixed.click(function(e) {
+
+                            api_call('/api/unfix_tech_problem_admin', {token: $(e.target).data('token')}, function(data) {
+                                if (data.success)
+                                    refresh_fixed_tech_problems();
+                                    refresh_tech_problems();
+                            });
+
+                        });
+                        row.append($('<td>').append(tp_fixed));
+
+                        let tp_delete = $('<button>').addClass('btn').addClass('btn-xs').addClass('btn-danger').html("<i class='fa fa-trash'></i>&nbsp;&nbsp;Löschen");
+                        tp_delete.data('token', entry.problem.token);
+                        tp_delete.click(function(e) {
+                            showTemplateModal('Problem löschen', 
+                                'Bist Du sicher? Das Problem wird dabei unwiederrufbar gelöscht.',
+                                "<i class='fa fa-trash'></i>&nbsp;&nbsp;Problem löschen", 'btn-danger',
+                                'Abbrechen', 'btn-secondary', function() {
+                                    api_call('/api/delete_tech_problem_admin', {token: $(e.target).data('token')}, function(data) {
+                                        if (data.success)
+                                            refresh_tech_problems();
+                                    });
+                                }
+                            );
+                        });
+                        row.append($('<td>').append(tp_delete));
+                        
+                        $('#fixed_problems_here').append(row);
+                    }
                 }
             }
         });
@@ -113,5 +222,8 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
     refresh_tech_problems();
+    $('.bu-compose').click(function(e) {
+        compose_fixed_problems();
+    });
     })
 </script>

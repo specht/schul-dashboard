@@ -11,6 +11,7 @@ class Main < Sinatra::Base
             SET v.date = $date
             SET v.problem = $problem
             SET v.fixed = false
+            SET v.comment = false
             RETURN v.token;
         END_OF_QUERY
 
@@ -30,6 +31,19 @@ class Main < Sinatra::Base
             
             end
         end
+        respond(:ok => true)
+    end
+
+    post '/api/comment_tech_problem_admin' do
+        require_user_who_can_manage_tablets!
+        data = parse_request_data(:required_keys => [:token, :comment],)
+        token = data[:token]
+        comment = data[:comment]
+        problems = neo4j_query_expect_one(<<~END_OF_QUERY, :token => token, :comment => comment)
+            MATCH (v:TechProblem {token: $token})
+            SET v.comment = $comment
+            RETURN v;
+        END_OF_QUERY
         respond(:ok => true)
     end
 

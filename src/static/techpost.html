@@ -8,7 +8,7 @@
             <hr>
                 Du bist in deiner Klasse Technikamt und kannst deshalb hier Probleme mit der Schultechnik melden.<br><br>
                 <div class="alert alert-warning">
-                    Bei Fragen oder Problemen, wende dich gerne an Peter-J. Germelmann.<br><br><a class="btn btn-primary" href="mailto:peter-julius.germelmann@mail.gymnasiumsteglitz.de"><i class='fa fa-envelope'></i>&nbsp;&nbsp;E-Mail</a>
+                    Du kannst gerne ein paar Probe-Meldungen abschicken. Bei Fragen oder Problemen, wende dich gerne an Peter-J. Germelmann.<br><br><a class="btn btn-primary" href="mailto:peter-julius.germelmann@mail.gymnasiumsteglitz.de"><i class='fa fa-envelope'></i>&nbsp;&nbsp;E-Mail</a>
                 </div>
             <hr>
             <div class='row'>
@@ -44,6 +44,7 @@
                     <th>Problem</th>
                     <th>Gerät</th>
                     <th>Status</th>
+                    <th>Kommentar</th>
                     </tr></thead>
                     <tbody id='problems_here'>
                     </tbody>
@@ -78,6 +79,12 @@
                     } else {
                         row.append(tp_fixed);
                     }
+                    if (entry.problem.comment == false) {
+                        row.append($('<td>').html("<i class='text'>Das TechnikTeam hat (noch) keinen Kommentar hinterlassen.</i>"));
+                    } else {
+                        row.append($('<td>').text('' + entry.problem.comment));
+                    }
+
                     $('#problems_here').append(row);
                 }
             }

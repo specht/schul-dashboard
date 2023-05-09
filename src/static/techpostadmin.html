@@ -43,6 +43,7 @@
                     <th>Problem</th>
                     <th>Gerät</th>
                     <th>Behoben</th>
+                    <th>Kommentar</th>
                     <th>Löschen</th>
                     </tr></thead>
                     <tbody id='problems_here'>
@@ -76,6 +77,7 @@
                     <th>Problem</th>
                     <th>Gerät</th>
                     <th>Nicht behoben</th>
+                    <th>Kommentar</th>
                     <th>Löschen</th>
                     </tr></thead>
                     <tbody id='fixed_problems_here'>
@@ -130,6 +132,48 @@
                         });
                         row.append($('<td>').append(tp_fixed));
 
+                        let tp_comment = $('<button>').addClass('btn').addClass('btn-xs').addClass('btn-primary').html("<i class='fa fa-plus'></i>&nbsp;&nbsp;Kommentar");
+                        tp_comment.data('token', entry.problem.token);
+                        tp_comment.click(function(e) {
+                            showTemplateModal('Kommentar hinzufügen', 
+                                '<textarea type="text" id="tp_comment_input" class="form-control" placeholder="Kommentar"></textarea>',
+                                "<i class='fa fa-check'></i>&nbsp;&nbsp;Speichern", 'btn-success',
+                                'Abbrechen', 'btn-secondary', function() {
+                                    let comment = $('#tp_comment_input').val();
+                                    let token = $(e.target).data('token');
+                                    api_call('/api/comment_tech_problem_admin', {token: token, comment: comment}, function(data) {
+                                        if (data.success)
+                                            refresh_tech_problems();
+                                    });
+                                }
+                            );
+                        });
+
+                        let tp_update_comment = $('<button>').addClass('btn').addClass('btn-xs').addClass('btn-primary').html("<i class='fa fa-pencil'></i>");
+                        tp_update_comment.data('token', entry.problem.token);
+                        tp_update_comment.click(function(e) {
+                            showTemplateModal('Kommentar aktualisieren', 
+                                '<textarea type="text" id="tp_comment_input" class="form-control" placeholder="Kommentar"></textarea>',
+                                "<i class='fa fa-check'></i>&nbsp;&nbsp;Speichern", 'btn-success',
+                                'Abbrechen', 'btn-secondary', function() {
+                                    let comment = $('#tp_comment_input').val();
+                                    let token = $(e.target).data('token');
+                                    api_call('/api/comment_tech_problem_admin', {token: token, comment: comment}, function(data) {
+                                        if (data.success)
+                                            refresh_tech_problems();
+                                    });
+                                }
+                            );
+                        });
+                        
+
+                        if (entry.problem.comment == false) {
+                            row.append($('<td>').append(tp_comment));
+                        } else {
+                            row.append($('<td>').text('' + entry.problem.comment + ' ').append(tp_update_comment));
+                        }
+
+
                         let tp_delete = $('<button>').addClass('btn').addClass('btn-xs').addClass('btn-danger').html("<i class='fa fa-trash'></i>&nbsp;&nbsp;Löschen");
                         tp_delete.data('token', entry.problem.token);
                         tp_delete.click(function(e) {
@@ -140,6 +184,7 @@
                                     api_call('/api/delete_tech_problem_admin', {token: $(e.target).data('token')}, function(data) {
                                         if (data.success)
                                             refresh_tech_problems();
+                                            refresh_fixed_tech_problems();
                                     });
                                 }
                             );
@@ -194,6 +239,47 @@
                                 }
                             );
                         });
+
+                        let tp_comment = $('<button>').addClass('btn').addClass('btn-xs').addClass('btn-primary').html("<i class='fa fa-plus'></i>&nbsp;&nbsp;Kommentar");
+                        tp_comment.data('token', entry.problem.token);
+                        tp_comment.click(function(e) {
+                            showTemplateModal('Kommentar hinzufügen', 
+                                '<textarea type="text" id="tp_comment_input" class="form-control" placeholder="Kommentar"></textarea>',
+                                "<i class='fa fa-check'></i>&nbsp;&nbsp;Speichern", 'btn-success',
+                                'Abbrechen', 'btn-secondary', function() {
+                                    let comment = $('#tp_comment_input').val();
+                                    let token = $(e.target).data('token');
+                                    api_call('/api/comment_tech_problem_admin', {token: token, comment: comment}, function(data) {
+                                        if (data.success)
+                                            refresh_fixed_tech_problems();
+                                    });
+                                }
+                            );
+                        });
+
+                        let tp_update_comment = $('<button>').addClass('btn').addClass('btn-xs').addClass('btn-primary').html("<i class='fa fa-pencil'></i>");
+                        tp_update_comment.data('token', entry.problem.token);
+                        tp_update_comment.click(function(e) {
+                            showTemplateModal('Kommentar aktualisieren', 
+                                '<textarea type="text" id="tp_comment_input" class="form-control" placeholder="Kommentar"></textarea>',
+                                "<i class='fa fa-check'></i>&nbsp;&nbsp;Speichern", 'btn-success',
+                                'Abbrechen', 'btn-secondary', function() {
+                                    let comment = $('#tp_comment_input').val();
+                                    let token = $(e.target).data('token');
+                                    api_call('/api/comment_tech_problem_admin', {token: token, comment: comment}, function(data) {
+                                        if (data.success)
+                                            refresh_fixed_tech_problems();
+                                    });
+                                }
+                            );
+                        });
+
+                        if (entry.problem.comment == false) {
+                            row.append($('<td>').append(tp_comment));
+                        } else {
+                            row.append($('<td>').text('' + entry.problem.comment + ' ').append(tp_update_comment));
+                        }
+
                         row.append($('<td>').append(tp_delete));
                         
                         $('#fixed_problems_here').append(row);

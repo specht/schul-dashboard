@@ -2,15 +2,7 @@
 #{File.read('/static/_tresor_public_template.html')}
 <div class='container bg-white'>
     <div class="w-full">
-        <h3>Zeugnislisten #{ZEUGNIS_SCHULJAHR.sub('_', '/')} (#{ZEUGNIS_HALBJAHR}. Halbjahr)</h3>
-        <p>
-            Bitte wählen Sie eine Klasse, für die Sie Noten eintragen möchten.
-            Tragen Sie dann die Noten <b>mit Tendenzen</b> in die entsprechenden Felder (inkl. »ne« für »nicht erteilt« und »ob« für »ohne Bewertung«).
-            Noten von 4- bis 6 werden automatisch rot markiert.
-        </p>
-        <p>
-            Sprachenfächer haben drei Eingabefelder. Hier können Sie zusätzlich zur Gesamtnote auch Einzelnoten für den allgemeinen Teil (AT) oder schriftliche Leistungen (SL) eingeben.
-        </p>
+        <h3>Angebote und Bemerkungen #{ZEUGNIS_SCHULJAHR.sub('_', '/')} (#{ZEUGNIS_HALBJAHR}. Halbjahr)</h3>
         <div id="klassen_buttons_here"></div>
         <hr />
         <div id="edit_button_here" style="display: none; margin-bottom: 0.5em;">
@@ -19,7 +11,7 @@
                 <em>Hinweis: Nutzen Sie diese Schaltfläche, um die Tabelle vor versehentlichen Änderungen zu schützen. Sobald Sie Werte ändern, sind diese automatisch gespeichert &ndash; es ist nicht nötig, die Bearbeitung durch nochmaliges Drücken dieser Schaltfläche abzuschließen.</em>
             </p>
         </div>
-        <div class='tresor_table_container' id="noten_here"></div>
+        <div class='tresor_table_container' id="angebote_bemerkungen_here"></div>
     </div>
 </div>
 
@@ -30,7 +22,7 @@ var zeugnis_klassen_order = #{ZEUGNIS_KLASSEN_ORDER.to_json};
 var klassen_tr = #{KLASSEN_TR.to_json};
 var zeugnisliste_for_klasse = #{@@zeugnisliste_for_klasse.to_json};
 var my_zeugnisliste = #{@@zeugnisliste_for_lehrer[@session_user[:shorthand]].to_json};
-var my_klassen = #{(zeugnis_admin_logged_in? ? KLASSEN_ORDER : @@zeugnisliste_for_lehrer[@session_user[:shorthand]].keys.map{ |x| x.split('/').first }.uniq).to_json};
+var my_klassen = #{zeugnis_admin_logged_in? ? ZEUGNIS_KLASSEN_ORDER : (@@zeugnisliste_for_lehrer[@session_user[:shorthand]]).keys.select { |x| x.include?('/VT')}.map { |x| x.split('/').first }.sort.uniq.to_json};
 var clicked_klasse = null;
 
 window.addEventListener('load', function () {
@@ -42,7 +34,7 @@ window.addEventListener('load', function () {
                 $('#edit_button_here').show();
                 clicked_klasse = klasse;
                 edit_enabled = false;
-                load_noten_table($('#noten_here'), klasse, edit_enabled);
+                load_angebote_bemerkungen_table($('#angebote_bemerkungen_here'), klasse, edit_enabled);
                 update_edit_button();
             });
             if (my_klassen.length === 1)
@@ -51,8 +43,9 @@ window.addEventListener('load', function () {
     }
     $('#bu_toggle_edit').click(function(e) {
         edit_enabled = !edit_enabled;
-        load_noten_table($('#noten_here'), clicked_klasse, edit_enabled);
+        load_angebote_bemerkungen_table($('#angebote_bemerkungen_here'), clicked_klasse, edit_enabled);
         update_edit_button();
     });
 });
+
 </script>

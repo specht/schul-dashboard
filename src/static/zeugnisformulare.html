@@ -5,6 +5,9 @@
         <h3>Zeugnisformulare #{ZEUGNIS_SCHULJAHR.sub('_', '/')} (#{ZEUGNIS_HALBJAHR}. Halbjahr)</h3>
         <div id="zeugnisformulare_table_here"></div>
         <h3>Zeugnislisten #{ZEUGNIS_SCHULJAHR.sub('_', '/')} (#{ZEUGNIS_HALBJAHR}. Halbjahr)</h3>
+        <p>
+            Klicken Sie auf die Kürzel, um Eintragungen zu delegieren. Geben Sie dann ein Kürzel oder mehrere durch Komma getrennte Kürzel ein.
+        </p>
         <div id="zeugnislisten_table_here"></div>
     </div>
 </div>
@@ -45,13 +48,61 @@ function render_zeugnisformulare() {
 function render_zeugnislisten() {
     let table = $(`<table class='table xs' style='width: unset;'>`);
     $('#zeugnislisten_table_here').append(table);
+    let fach_order = [];
+    for (let klasse of zeugnis_klassen_order) {
+        for (let fach of zeugnisliste_for_klasse[klasse].faecher) {
+            if (fach_order.indexOf(fach) < 0)
+                fach_order.push(fach);
+        }
+    }
+
+    let tr = $(`<tr>`).appendTo(table);
+    $('<th>').appendTo(tr);
+    $('<th>').text('Klassenleitung').appendTo(tr);
+    for (let fach of fach_order) {
+        $(`<th style='text-align: center;'>`).text(fach).appendTo(tr);
+    }
+
     for (let klasse of zeugnis_klassen_order) {
         let tr = $(`<tr style='line-height: 1em;'>`).appendTo(table);
-        tr.append($(`<td style='width: 4em;'>`).html(`<b>${klassen_tr[klasse] ?? klasse}</b><br /><span style='font-size: 85%; color: #888;'>(${zeugnisliste_for_klasse[klasse].schueler.length} SuS)</span>`));
-        for (let fach of zeugnisliste_for_klasse[klasse].faecher) {
-            let lehrer_liste = zeugnisliste_for_klasse[klasse].lehrer_for_fach[fach];
-            if (lehrer_liste.length === 0) lehrer_liste = [`<b style='background-color: rgba(255, 0, 0, 0.3); padding: 0 0.2em;'>--</b>`];
-            tr.append($(`<td style='width: 3em;'>`).html(`<span>${fach}</span><br /><span style='font-size: 85%; color: #888;'>${lehrer_liste.join('/')}</span>`));
+        tr.append($(`<td style='width: 7em;'>`).html(`<b style='display: inline-block; width: 2em;'>${klassen_tr[klasse] ?? klasse}</b> (${zeugnisliste_for_klasse[klasse].schueler.length} SuS)`));
+        for (let fach of (['_KL'].concat(fach_order))) {
+            if ((fach === '_KL') || (zeugnisliste_for_klasse[klasse].faecher.indexOf(fach) >= 0)) {
+                let lehrer_liste = zeugnisliste_for_klasse[klasse].lehrer_for_fach[fach];
+
+                let button_class = 'btn-outline-secondary';
+                if (lehrer_liste.length === 0) {
+                    lehrer_liste = [`<b style='padding: 0 0.2em;'>--</b>`];
+                    button_class = 'btn-danger';
+                }
+                if (zeugnisliste_for_klasse[klasse].lehrer_for_fach_is_delegate[fach]) {
+                    button_class = 'btn-warning';
+                }
+
+                let button = $(`<button class='btn btn-xs ${button_class}'>`).html(`${lehrer_liste.join(', ')}`);
+                tr.append($(`<td style='position: relative; text-align: center;'>`).append(button));
+                button.click(function(e) {
+                    let input = $(`<input class='form-control' style='position: absolute; left: 0; top: 0; background-color: #fff; z-index: 100;'>`);
+                    button.closest('td').append(input);
+                    input.focus();
+                    input.on('blur', function(e) {
+                        let value = input.val().trim();
+                        input.remove();
+                        api_call('/api/zeugnis_delegate', {klasse: klasse, fach: fach, shorthands: value}, function(data) {
+                            if (data.success) window.location.reload();
+                        });
+                    });
+                    input.on('keydown', function(e) {
+                        if (e.key === 'Enter') {
+                            input.trigger('blur');
+                        } else if (e.key === 'Escape') {
+                            input.remove();
+                        }
+                    });
+                });
+            } else {
+                tr.append($(`<td>`));
+            }
         }
     }
 }

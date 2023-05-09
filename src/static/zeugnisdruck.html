@@ -21,7 +21,7 @@ var klassen_tr = #{KLASSEN_TR.to_json};
 var zeugnisliste_for_klasse = #{@@zeugnisliste_for_klasse.to_json};
 var sesb_for_email = #{Hash[@@user_info.keys.map { |x| [x, @@user_info[x][:sesb]]}].to_json};
 var zeugnis_formular_fehler = #{Hash[FAECHER_FOR_ZEUGNIS[ZEUGNIS_SCHULJAHR][ZEUGNIS_HALBJAHR].keys.map { |key| [key, @@zeugnisse[:formulare][key][:formular_fehler]] }].to_json};
-var my_klassen = #{(zeugnis_admin_logged_in? ? KLASSEN_ORDER : @session_user[:klassenleitung]).select { |x| ZEUGNIS_KLASSEN_ORDER.include?(x) }.to_json};
+var my_klassen = #{zeugnis_admin_logged_in? ? ZEUGNIS_KLASSEN_ORDER : (@@zeugnisliste_for_lehrer[@session_user[:shorthand]]).keys.select { |x| x.include?('/VT')}.map { |x| x.split('/').first }.sort.uniq.to_json};
 
 window.addEventListener('load', function () {
     setTimeout(function() {
@@ -31,12 +31,12 @@ window.addEventListener('load', function () {
                 $('#klassen_buttons_here').append(button);
                 button.click(function(e) {
                     $('#button_here').empty();
-                    let button = $(`<button class='btn btn-success'>`).html(`<i class='fa fa-file-pdf-o'></i>&nbsp;&nbsp;Alle Zeugnisse der Klasse ${klassen_tr[klasse] ?? klasse}`);
+                    let button = $(`<button class='btn btn-success'>`).html(`<i class='fa fa-file-pdf-o'></i>&nbsp;&nbsp;Alle Zeugnisse der Klasse ${klassen_tr[klasse] ?? klasse} (PDF)`);
                     $('#button_here').append(button);
                     button.click(function(e) {
                         let liste = zeugnisliste_for_klasse[klasse];
                         let emails = liste.schueler.map(function(x) { return x.email; });
-                        get_zeugnis_pdf(klasse, emails);
+                        get_zeugnis(klasse, emails, 'pdf');
                     });
 
                     load_zeugnis_table($('#zeugnisse_here'), klasse);
@@ -48,12 +48,19 @@ window.addEventListener('load', function () {
     }, 0);
 });
 
-function get_zeugnis_pdf(klasse, emails) {
+function get_zeugnis(klasse, emails, format) {
     let path_array_fach = [];
     path_array_fach.push(['Schuljahr', ZEUGNIS_SCHULJAHR]);
     path_array_fach.push(['Halbjahr', ZEUGNIS_HALBJAHR]);
     let liste = zeugnisliste_for_klasse[klasse];
-    let faecher = liste.faecher;
+    let faecher = [];
+    for (let fach of liste.faecher) {
+        faecher.push(fach);
+        if (FAECHER_SPRACHEN.indexOf(fach) >= 0) {
+            faecher.push(`${fach}_AT`);
+            faecher.push(`${fach}_SL`);
+        }
+    }
     path_array_fach.push(['Fach', faecher]);
     path_array_fach.push(['Email', emails]);
 
@@ -62,14 +69,25 @@ function get_zeugnis_pdf(klasse, emails) {
     path_array_fehltage.push(['Halbjahr', ZEUGNIS_HALBJAHR]);
     path_array_fehltage.push(['Fehltage', ['VT', 'VT_UE', 'VS', 'VS_UE', 'VSP']]);
     path_array_fehltage.push(['Email', emails]);
-    tresor_api_call('/jwt/get_many', {path_arrays: [path_array_fach, path_array_fehltage], key: 'Wert'}, function(data) {
+
+    let path_array_ab = [];
+    path_array_ab.push(['Schuljahr', ZEUGNIS_SCHULJAHR]);
+    path_array_ab.push(['Halbjahr', ZEUGNIS_HALBJAHR]);
+    path_array_ab.push(['AB', ['Angebote', 'Bemerkungen']]);
+    path_array_ab.push(['Email', emails]);
+
+    tresor_api_call('/jwt/get_many', {path_arrays: [path_array_fach, path_array_fehltage, path_array_ab], key: 'Wert'}, function(data) {
         console.log(data);
-        api_call('/api/print_zeugnis', {schueler: emails.map(function(email) { return `${klasse}/${email}`; }),
+        api_call('/api/print_zeugnis', {format: format, schueler: emails.map(function(email) { return `${klasse}/${email}`; }),
             paths_fach: path_array_fach, values_fach: data.results[0],
             paths_fehltage: path_array_fehltage, values_fehltage: data.results[1],
+            paths_ab: path_array_ab, values_ab: data.results[2],
         }, function(data2) {
             if (data2.success) {
-                open_pdf(data2.pdf_base64);
+                if (format === 'pdf')
+                    open_pdf(data2.pdf_base64, emails.length === 1 ? data2.name : `Klasse ${klassen_tr[klasse] ?? klasse}`);
+                else
+                    open_docx(data2.docx_base64, data2.name);
             }
         });
     });
@@ -101,10 +119,14 @@ function load_zeugnis_table(container, klasse, edit_noten) {
             ];
             let zeugnis_key = liste.schueler[index].zeugnis_key;
             if (zeugnis_formular_fehler[zeugnis_key] === null) {
-                let bu_zeugnis_pdf = $("<button class='btn btn-xs btn-success'>").html("<i class='fa fa-file-pdf-o'></i>&nbsp;&nbsp;Zeugnis</i>");
-                cells.push($('<td>').append(bu_zeugnis_pdf));
+                let bu_zeugnis_pdf = $("<button class='btn btn-xs btn-success'>").html("<i class='fa fa-file-pdf-o'></i>&nbsp;&nbsp;Zeugnis (PDF)</i>");
+                let bu_zeugnis_docx = $("<button class='btn btn-xs btn-outline-secondary'>").html("<i class='fa fa-file-word-o'></i>&nbsp;&nbsp;Zeugnis (docx)</i>");
+                cells.push($('<td>').append(bu_zeugnis_pdf).append('&nbsp;').append(bu_zeugnis_docx));
                 bu_zeugnis_pdf.click(function(e) {
-                    get_zeugnis_pdf(klasse, [email]);
+                    get_zeugnis(klasse, [email], 'pdf');
+                });
+                bu_zeugnis_docx.click(function(e) {
+                    get_zeugnis(klasse, [email], 'docx');
                 });
             } else {
                 cells.push($(`<td style='color: #888; font-size: 90%;'>`).html('Formular unvollständig'));
@@ -116,7 +138,7 @@ function load_zeugnis_table(container, klasse, edit_noten) {
     container.find('.table').css('width', 'unset');
 }
 
-function open_pdf(data) {
+function open_pdf(data, name) {
     let s = atob(data);
     let bytes = new Uint8Array(s.length);
     for (let i = 0; i < s.length; i++) {
@@ -124,9 +146,27 @@ function open_pdf(data) {
     }
     let blob = new Blob([bytes], {type: "application/pdf"})
     console.log(blob);
-    var url = window.URL.createObjectURL(blob);
-    console.log(url);
-    window.open(url, '_blank');
+    // var url = window.URL.createObjectURL(blob);
+    // console.log(url);
+    // window.open(url, '_blank');
+    let a = document.createElement('a');
+    a.href = window.URL.createObjectURL(blob);
+    a.download = `Zeugnis ${name}.pdf`;
+    a.click();
+}
+
+function open_docx(data, name) {
+    let s = atob(data);
+    let bytes = new Uint8Array(s.length);
+    for (let i = 0; i < s.length; i++) {
+        bytes[i] = s.charCodeAt(i);
+    }
+    let blob = new Blob([bytes], {type: "application/vnd.openxmlformats-officedocument.wordprocessingml.document"})
+    console.log(blob);
+    let a = document.createElement('a');
+    a.href = window.URL.createObjectURL(blob);
+    a.download = `Zeugnis ${name}.docx`;
+    a.click();
 }
 
 </script>

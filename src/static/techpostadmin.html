@@ -136,7 +136,7 @@
                         tp_comment.data('token', entry.problem.token);
                         tp_comment.click(function(e) {
                             showTemplateModal('Kommentar hinzufügen', 
-                                '<textarea type="text" id="tp_comment_input" class="form-control" placeholder="Kommentar"></textarea>',
+                                '<textarea type="text" id="tp_comment_input" class="form-control" placeholder="z.B. Danke für deinen Beitrag"></textarea>',
                                 "<i class='fa fa-check'></i>&nbsp;&nbsp;Speichern", 'btn-success',
                                 'Abbrechen', 'btn-secondary', function() {
                                     let comment = $('#tp_comment_input').val();
@@ -153,7 +153,7 @@
                         tp_update_comment.data('token', entry.problem.token);
                         tp_update_comment.click(function(e) {
                             showTemplateModal('Kommentar aktualisieren', 
-                                '<textarea type="text" id="tp_comment_input" class="form-control" placeholder="Kommentar"></textarea>',
+                                '<textarea type="text" id="tp_comment_input" class="form-control" placeholder="z.B. Danke für deinen Beitrag (leer lassen, um den Kommentar zu löschen)"></textarea>',
                                 "<i class='fa fa-check'></i>&nbsp;&nbsp;Speichern", 'btn-success',
                                 'Abbrechen', 'btn-secondary', function() {
                                     let comment = $('#tp_comment_input').val();
@@ -234,6 +234,7 @@
                                 'Abbrechen', 'btn-secondary', function() {
                                     api_call('/api/delete_tech_problem_admin', {token: $(e.target).data('token')}, function(data) {
                                         if (data.success)
+                                            refresh_fixed_tech_problems();
                                             refresh_tech_problems();
                                     });
                                 }
@@ -244,7 +245,7 @@
                         tp_comment.data('token', entry.problem.token);
                         tp_comment.click(function(e) {
                             showTemplateModal('Kommentar hinzufügen', 
-                                '<textarea type="text" id="tp_comment_input" class="form-control" placeholder="Kommentar"></textarea>',
+                                '<textarea type="text" id="tp_comment_input" class="form-control" placeholder="z.B. Danke für deinen Beitrag"></textarea>',
                                 "<i class='fa fa-check'></i>&nbsp;&nbsp;Speichern", 'btn-success',
                                 'Abbrechen', 'btn-secondary', function() {
                                     let comment = $('#tp_comment_input').val();
@@ -261,7 +262,7 @@
                         tp_update_comment.data('token', entry.problem.token);
                         tp_update_comment.click(function(e) {
                             showTemplateModal('Kommentar aktualisieren', 
-                                '<textarea type="text" id="tp_comment_input" class="form-control" placeholder="Kommentar"></textarea>',
+                                '<textarea type="text" id="tp_comment_input" class="form-control" placeholder="z.B. Danke für deinen Beitrag (leer lassen, um den Kommentar zu löschen)"></textarea>',
                                 "<i class='fa fa-check'></i>&nbsp;&nbsp;Speichern", 'btn-success',
                                 'Abbrechen', 'btn-secondary', function() {
                                     let comment = $('#tp_comment_input').val();

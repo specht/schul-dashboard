@@ -206,7 +206,13 @@ ADMIN_USERS = ['clarke@beispielschule.de']
 ZEUGNIS_ADMIN_USERS = []
 ZEUGNIS_USE_MOCK_NAMES = false
 
-# List aller E-Mail-Adressen von Nutzer*innen,
+# Liste aller E-Mail-Adressen von Nutzer*innen,
+# die Tablet-Buchungen anderer einsehen und aufheben können,
+# Technikprobleme melden und verwalten können und die
+# Aula Tools nutzen können.
+TECHNIKTEAM = []
+
+# Liste aller E-Mail-Adressen von Nutzer*innen,
 # die alle Stundenpläne sehen können sollen
 CAN_SEE_ALL_TIMETABLES_USERS = []
 CAN_MANAGE_SALZH_USERS = []

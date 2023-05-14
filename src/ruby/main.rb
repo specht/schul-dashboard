@@ -55,6 +55,7 @@ TRESOR_JWT_TTL_EXTRA = 20
 
 require './background-renderer.rb'
 require './include/admin.rb'
+require './include/aula.rb'
 require './include/bib_login.rb'
 require './include/color.rb'
 require './include/color-schemes.rb'
@@ -728,19 +729,23 @@ class Main < Sinatra::Base
             next unless @@user_info[email]
             @@user_info[email][:can_manage_monitors] = true
         end
-        (CAN_MANAGE_TABLETS_USERS + ADMIN_USERS).each do |email|
+        (CAN_MANAGE_TABLETS_USERS + TECHNIKTEAM + ADMIN_USERS).each do |email|
             next unless @@user_info[email]
             @@user_info[email][:can_manage_tablets] = true
         end
-        (CAN_REPORT_TECH_PROBLEMS_USERS + CAN_MANAGE_TABLETS_USERS + ADMIN_USERS).each do |email|
+        (CAN_REPORT_TECH_PROBLEMS_USERS + TECHNIKTEAM + ADMIN_USERS).each do |email|
             next unless @@user_info[email]
             @@user_info[email][:can_report_tech_problems] = true
+        end
+        (TECHNIKTEAM).each do |email|
+            next unless @@user_info[email]
+            @@user_info[email][:technikteam] = true
         end
         (CAN_MANAGE_ANTIKENFAHRT_USERS + ADMIN_USERS).each do |email|
             next unless @@user_info[email]
             @@user_info[email][:can_manage_antikenfahrt] = true
         end
-        SV_USERS.each do |email|
+        (SV_USERS + TECHNIKTEAM).each do |email|
             next unless @@user_info[email]
             @@user_info[email][:sv] = true
         end
@@ -1688,6 +1693,9 @@ class Main < Sinatra::Base
                 if admin_logged_in? || user_who_can_upload_files_logged_in? || user_who_can_manage_news_logged_in? || user_who_can_manage_monitors_logged_in? || user_who_can_manage_tablets_logged_in?
                     nav_items << :admin
                 end
+                if technikteam_logged_in?
+                    nav_items << :aula
+                end
                 if user_who_can_report_tech_problems_logged_in?
                     nav_items << :techteam
                 end
@@ -1830,9 +1838,6 @@ class Main < Sinatra::Base
                                 io.puts "<a class='dropdown-item nav-icon' href='/prepare_vote'><div class='icon'><i class='fa fa-hand-paper-o'></i></div><span class='label'>Abstimmungen</span></a>"
                                 io.puts "<a class='dropdown-item nav-icon' href='/mailing_lists'><div class='icon'><i class='fa fa-envelope'></i></div><span class='label'>E-Mail-Verteiler</span></a>"
                                 io.puts "<a class='dropdown-item nav-icon' href='/groups'><div class='icon'><i class='fa fa-group'></i></div><span class='label'>Gruppen</span></a>"
-                                if user_who_can_manage_tablets_logged_in?
-                                    io.puts "<a class='dropdown-item nav-icon' href='/events'><div class='icon'><i class='fa fa-calendar-check-o'></i></div><span class='label'>Termine</span></a>"
-                                end
                             end
                         end
                         # if @session_user[:can_upload_vplan]
@@ -1917,6 +1922,16 @@ class Main < Sinatra::Base
                 elsif x == :techteam
                     io.puts "<li class='nav-item text-nowrap'>"
                     io.puts "<a class='nav-link nav-icon' href='/techpost'><div class='icon'><i class='fa fa-laptop'></i></div>Technikamt</a>"
+                elsif x == :aula
+                    io.puts "<li class='nav-item dropdown'>"
+                    io.puts "<a class='nav-link nav-icon dropdown-toggle' href='#' id='navbarDropdownAdmin' role='button' data-toggle='dropdown' aria-haspopup='true' aria-expanded='false'>"
+                    io.puts "<div class='icon'><i class='fa fa-wrench'></i></div>Aulatechnik"
+                    io.puts "</a>"
+                    io.puts "<div class='dropdown-menu dropdown-menu-right' aria-labelledby='navbarDropdownAdmin'>"
+                    io.puts "<a class='dropdown-item nav-icon' href='/aula_light'><div class='icon'><i class='fa fa-lightbulb-o'></i></div>Licht</a>"
+                    io.puts "<a class='dropdown-item nav-icon' href='/aula_progress'><div class='icon'><i class='fa fa-bars'></i></div>Ablauf</a>"
+                    io.puts "</div>"
+                    io.puts "</li>"
                 elsif x == :messages
                     io.puts "<li class='nav-item text-nowrap'>"
                     if new_messages_count > 0

@@ -29,6 +29,11 @@ class Main < Sinatra::Base
         user_logged_in? && @session_user[:can_manage_monitors]
     end
 
+    # Returns true if a TechnikTeam is logged in.
+    def technikteam_logged_in?
+        user_logged_in? && @session_user[:technikteam]
+    end
+
     # Returns true if a techpost user is logged in.
     def user_who_can_report_tech_problems_logged_in?
         user_logged_in? && @session_user[:can_report_tech_problems]
@@ -233,6 +238,11 @@ class Main < Sinatra::Base
     # Assert that a user who can manage monitors is logged in
     def require_user_who_can_manage_monitors!
         assert(user_who_can_manage_monitors_logged_in?)
+    end
+
+    # Assert that a TechnikTeam user is logged in
+    def require_technikteam!
+        assert(technikteam_logged_in?)
     end
 
     # Assert that a techpost user is logged in

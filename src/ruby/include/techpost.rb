@@ -16,7 +16,7 @@ class Main < Sinatra::Base
         END_OF_QUERY
 
         deliver_mail do
-            to CAN_MANAGE_TABLETS_USERS
+            to TECHNIKTEAM
             bcc SMTP_FROM
             from SMTP_FROM
 

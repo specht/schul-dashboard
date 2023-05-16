@@ -1,0 +1,139 @@
+#{require_technikteam!}
+<div class='container-fluid' style='padding-top: 30px; background-color: #000; color: #fff;'>
+    <div class='row'>
+        <div class="col-md-12">
+            <h2 style='margin-bottom: 30px;'>Aula Ablauf</h2>
+            <hr>
+            <button class='btn btn-success bu-new-event'><i class='fa fa-list'></i>&nbsp;&nbsp;Neuer Eintrag</button>
+            <button class='btn btn-danger bu-clear-list pull-right'><i class='fa fa-trash'></i>&nbsp;&nbsp;Liste leeren</button>
+            <hr>
+            <div class='aula-events-container' style='max-width: 100%; overflow-x: auto;'>
+                <table class='table table-striped narrow' style='width: unset; min-width: 100%; color: #fff;'>
+                    <thead>
+                        <tr>
+                            <th style='width: 100px;'>Reihenfolge</th>
+                            <th style='width: 150px;'>Zeitunkt</th>
+                            <th style='min-width: 150px;'>Beschreibung</th>
+                            <th style='width: 120px;'>Fertig</th> 
+                            <th style='width: 120px;'>Löschen</th>
+                        </tr>
+                    </thead>
+                    <tbody class='events-here'>
+                    </tbody>
+                </table>
+            </div>
+            <br>
+            <!-- <button class='btn btn-primary bu-pdf'><i class='fa fa-file-pdf-o '></i>&nbsp;&nbsp;Download</button> -->
+            <!-- <a href='/api/aula_event_pdf' class='btn btn-primary'><i class='fa fa-file-pdf-o'></i>&nbsp;&nbsp;Download</a> -->
+        </div>
+    </div>
+</div>
+
+<script>
+    function refresh_events() {
+        api_call('/api/get_aula_events', {}, function (data) {
+            $('.events-here').empty();
+            if (data.success) {
+                for (let entry of data.events) {
+                    let row = $('<tr>');
+                    row.data('id', entry.id);
+                    let cell;
+                    let ti_number = $("<input>").addClass('form-control').val(entry.number);
+                    cell = $('<td>').append(ti_number);
+                    row.append(cell);
+                    let ti_time = $("<input>").attr('type', 'time').addClass('form-control').val(entry.time);
+                    cell = $('<td>').append(ti_time);
+                    row.append(cell);
+                    let ti_title = $("<input>").attr('type', 'text').addClass('form-control').val(entry.title);
+                    cell = $('<td>').append(ti_title);
+                    row.append(cell);
+                    let bu_finished = $('<button>').addClass('btn').addClass('btn').addClass('btn-success').html("<i class='fa fa-check'></i>&nbsp;&nbsp;Fertig");
+                    let bu_unfinished = $('<button>').addClass('btn').addClass('btn').addClass('btn-outline-success').html("<i class='fa fa-check'></i>&nbsp;&nbsp;Fertig");
+                    if (entry.finished == false) {
+                        row.append($('<td>').append(bu_unfinished));
+                    } else {
+                        row.append($('<td>').append(bu_finished));
+                    }
+                    let bu_delete = $('<button>').addClass('btn').addClass('btn').addClass('btn-danger').html("<i class='fa fa-trash'></i>&nbsp;&nbsp;Löschen");
+                    row.append($('<td>').append(bu_delete));
+                    $('.events-here').append(row);
+                    bu_unfinished.click(function (e) {
+                        let id = $(e.target).closest('tr').data('id');
+                        $('.bu-perform-finish-aula-event').data('finish_id', id);
+                        api_call('/api/finish_aula_event', { id: id }, function (data) {
+                            refresh_events();
+                        });
+                    });
+                    bu_finished.click(function (e) {
+                        let id = $(e.target).closest('tr').data('id');
+                        $('.bu-perform-unfinish-aula-event').data('unfinish_id', id);
+                        api_call('/api/unfinish_aula_event', { id: id }, function (data) {
+                            refresh_events();
+                        });
+                    });
+                    bu_delete.click(function (e) {
+                        let id = $(e.target).closest('tr').data('id');
+                        $('.bu-perform-delete-aula-event').data('delete_id', id);
+                        api_call('/api/delete_aula_event', { id: id }, function (data) {
+                            refresh_events();
+                        });
+                    });
+                    ti_number.change(function (e) {
+                        let id = $(e.target).closest('tr').data('id');
+                        api_call('/api/change_aula_event_number', { id: id, number: $(e.target).val() }, function (data) {
+                            refresh_events();
+                        });
+                    });
+                    ti_time.change(function (e) {
+                        let id = $(e.target).closest('tr').data('id');
+                        api_call('/api/change_aula_event_time', { id: id, time: $(e.target).val() }, function (data) {
+                            refresh_events();
+                        });
+                    });
+                    ti_title.change(function (e) {
+                        let id = $(e.target).closest('tr').data('id');
+                        api_call('/api/change_aula_event_title', { id: id, title: $(e.target).val() }, function (data) {
+                            refresh_events();
+                        });
+                    });
+                }
+            }
+        });
+    }
+
+    document.addEventListener('DOMContentLoaded', function () {
+        refresh_events();
+        $('.bu-new-event').click(function (e) {
+            api_call('/api/create_aula_event', {}, function (data) {
+                refresh_events();
+            });
+        });
+        $('.bu-clear-list').click(function (e) {
+            api_call('/api/clear_aula_events', {}, function (data) {
+                refresh_events();
+            });
+        });
+        // $('.bu-pdf').click(function (e) {
+        //     api_call('/api/get_aula_events', {}, function (data) {
+        //         if (data.success) {
+        //             for (let entry of data.events) {
+        //                 let row = $('<tr>');
+        //                 row.data('id', entry.id);
+        //                 let cell;
+        //                 let ti_number = $("<input>").addClass('form-control').val(entry.number);
+        //                 cell = $('<td>').append(ti_number);
+        //                 row.append(cell);
+        //                 let ti_time = $("<input>").attr('type', 'time').addClass('form-control').val(entry.time);
+        //                 cell = $('<td>').append(ti_time);
+        //                 row.append(cell);
+        //                 let ti_title = $("<input>").attr('type', 'text').addClass('form-control').val(entry.title);
+        //                 cell = $('<td>').append(ti_title);
+        //                 row.append(cell);
+                        
+        //             }
+        //         }
+        //     });
+        // });
+
+        });
+</script>

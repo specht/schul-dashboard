@@ -121,21 +121,48 @@ class Main < Sinatra::Base
     #     respond_raw_with_mimetype(doc.render, 'application/pdf')
     # end
 
-    # get '/api/aula_event_pdf' do
-    #     require_technikteam!
-    #     pdf = StringIO.open do |io|
-    #         io.puts "<style>"
-    #         io.puts "body { font-size: 12pt; line-height: 120%; }"
-    #         io.puts "table { width: 100%; }"
-    #         io.puts ".pdf-space-above td {padding-top: 0.2em; }"
-    #         io.puts ".pdf-space-below td {padding-bottom: 0.2em; }"
-    #         io.puts ".page-break { page-break-after: always; border-top: none; margin-bottom: 0; }"
-    #         io.puts "</style>"
-    #         io.puts "Test"
-    #         io.string
-    #     end
-    #     c = Curl.post('http://weasyprint:5001/pdf', {:data => pdf}.to_json)
-    #     pdf = c.body_str
-    #     respond_raw_with_mimetype(pdf, 'application/pdf')
-    # end
+    get '/api/aula_event_pdf' do
+        results = $neo4j.neo4j_query(<<~END_OF_QUERY).map { |x| x['e'] }
+        MATCH (e:AulaEvent)
+        RETURN e
+        ORDER BY e.number, e.title;
+        END_OF_QUERY
+        # number = results[:title]
+        debug results
+        time = Time.new
+        require_technikteam!
+        pdf = StringIO.open do |io|
+            io.puts "<style>"
+            io.puts "body { font-size: 12pt; line-height: 120%; }"
+            io.puts "table, th, td { width: 100%; border: 1px solid black; }"
+            io.puts ".pdf-space-above td {padding-top: 0.2em; }"
+            io.puts ".pdf-space-below td {padding-bottom: 0.2em; }"
+            io.puts ".page-break { page-break-after: always; border-top: none; margin-bottom: 0; }"
+            io.puts "</style>"
+            io.puts "<h1>Ablauf Aula</h1>"
+            io.puts "<br>"
+            io.puts "<table>"
+            io.puts "<thead>"
+            io.puts "<tr>"
+            io.puts "<th style='width: 110px;'>Reihenfolge</th>"
+            io.puts "<th style='width: 110px;'>Zeitunkt</th>"
+            io.puts "<th style='width: 300px;'>Beschreibung</th>"
+            io.puts "<th style='width: 120px;'>Fertig?</th>"
+            io.puts "</tr>"
+            io.puts "</thead>"
+            io.puts "<tbody>"
+            io.puts "</tbody>"
+            io.puts "</table>"
+            # io.puts "#{results}"
+            # io.puts time.day
+            # io.puts "."
+            # io.puts time.month
+            # io.puts "."
+            # io.puts time.year
+            io.string
+        end
+        c = Curl.post('http://weasyprint:5001/pdf', {:data => pdf}.to_json)
+        pdf = c.body_str
+        respond_raw_with_mimetype(pdf, 'application/pdf')
+    end
 end

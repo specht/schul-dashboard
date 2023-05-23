@@ -1164,7 +1164,7 @@ class Main < Sinatra::Base
     def self.refresh_bib_data()
         begin
             now = Time.now.to_i
-            return if now - @@bib_summoned_books_last_ts < 60 * 60
+            return if now - @@bib_summoned_books_last_ts < 60 * (DEVELOPMENT ? 1 : 60)
             @@bib_summoned_books_last_ts = now
             @@bib_summoned_books = {}
             debug "Refreshing bib data..."

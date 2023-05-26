@@ -1,5 +1,8 @@
-#{require_technikteam!}
+#{require_user_who_can_manage_tablets!}
 <style>
+    /* code {
+        color: #000;
+    } */
     .rund {
         border-radius: 100%;
         width: 45px;
@@ -21,6 +24,9 @@
             <div class="alert alert-warning">
                 Die DMX-Kanal Nummern werden noch ergänzt. Bei Fragen oder Problemen, wende dich gerne an Peter-J. Germelmann.<br><br><a class="btn btn-primary" href="mailto:peter-julius.germelmann@mail.gymnasiumsteglitz.de"><i class='fa fa-envelope'></i>&nbsp;&nbsp;E-Mail</a>
             </div>
+            <br>
+            <button id="write_dmx_channels" class='btn btn-primary' target='_blank'>DMX-Kanäle schreiben</button>
+            <br><br>
             <!-- <hr>
             Vorne: 24<br>
             Mitte vorne: 8<br>
@@ -41,6 +47,7 @@
             <button class='btn btn-primary rund' target='_blank'>00</button>
             <button class='btn btn-success rund' target='_blank'>00</button>
             &nbsp;&nbsp;Konventionell&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+            <div id="last_change" class="pull-right"></div>
             <br><br>
             <div class="table-responsive" style="max-width: 100%; overflow-x: auto;">
                 <table class='table table-narrow narrow table-sm table-striped'>
@@ -52,22 +59,22 @@
                             <td></td>
                             <td></td>
                             <td></td>
-                            <td><button id="00 " class='btn btn-secondary scheinwerfer rund' target='_blank'></button></td>
+                            <td><button id="u" class='btn btn-secondary scheinwerfer rund' target='_blank'>u</button></td>
                             <td></td>
                             <td></td>
                             <td></td>
                             <td></td>
-                            <td><button id="00" class='btn btn-secondary scheinwerfer rund' target='_blank'></button></td>
+                            <td><button id="u" class='btn btn-secondary scheinwerfer rund' target='_blank'>u</button></td>
                             <td></td>
                             <td></td>
                             <td></td>
                             <td></td>
-                            <td><button id="00" class='btn btn-secondary scheinwerfer rund' target='_blank'></button></td>
+                            <td><button id="u" class='btn btn-secondary scheinwerfer rund' target='_blank'>u</button></td>
                             <td></td>
                             <td></td>
                             <td></td>
                             <td></td>
-                            <td><button id="00" class='btn btn-secondary scheinwerfer rund' target='_blank'></button></td>
+                            <td><button id="u" class='btn btn-secondary scheinwerfer rund' target='_blank'>u</button></td>
                             <td></td>
                             <td></td>
                             <td></td>
@@ -76,7 +83,7 @@
                             <td></td>
                         </tr>
                         <tr>
-                            <td><button id="00" class='btn btn-primary scheinwerfer rund' target='_blank'>11</button></td>
+                            <td><button id="030" class='btn btn-primary scheinwerfer rund' target='_blank'>11</button></td>
                             <td></td>
                             <td></td>
                             <td></td>
@@ -103,40 +110,17 @@
                             <td></td>
                             <td></td>
                             <td></td>
-                            <td><button id="00" class='btn btn-primary scheinwerfer rund' target='_blank'>12</button></td>
+                            <td><button id="029" class='btn btn-primary scheinwerfer rund' target='_blank'>12</button></td>
                         </tr>
                         <tr>
                             <td></td>
                             <td></td>
                             <td></td>
                             <td></td>
-                            <td><button id="00" class='btn btn-warning scheinwerfer rund' target='_blank'>25</button></td>
+                            <td><button id="035" class='btn btn-warning scheinwerfer rund' target='_blank'>25</button></td>
                             <td></td>
                             <td></td>
-                            <td><button id="00" class='btn btn-warning scheinwerfer eckig' target='_blank'>26</button></td>
-                            <td></td>
-                            <td></td>
-                            <td></td>
-                            <td></td>
-                            <td></td>
-                            <td></td>
-                            <td></td>
-                            <td></td>
-                            <td></td>
-                            <td></td>
-                            <td></td>
-                            <td></td>
-                            <td><button id="00" class='btn btn-warning scheinwerfer eckig' target='_blank'>27</button></td>
-                            <td></td>
-                            <td></td>
-                            <td><button id="00" class='btn btn-warning scheinwerfer rund' target='_blank'>28</button></td>
-                            <td></td>
-                            <td></td>
-                            <td></td>
-                            <td></td>
-                        </tr>
-                        <tr>
-                            <td><button id="00" class='btn btn-secondary scheinwerfer rund' target='_blank'></button></td>
+                            <td><button id="031" class='btn btn-warning scheinwerfer eckig' target='_blank'>26</button></td>
                             <td></td>
                             <td></td>
                             <td></td>
@@ -149,54 +133,77 @@
                             <td></td>
                             <td></td>
                             <td></td>
+                            <td><button id="034" class='btn btn-warning scheinwerfer eckig' target='_blank'>27</button></td>
                             <td></td>
                             <td></td>
-                            <td></td>
-                            <td></td>
-                            <td></td>
-                            <td></td>
-                            <td></td>
-                            <td></td>
-                            <td></td>
-                            <td></td>
-                            <td></td>
-                            <td></td>
-                            <td></td>
-                            <td></td>
-                            <td><button id="00" class='btn btn-secondary scheinwerfer rund' target='_blank'></button></td>
-                        </tr>
-                        <tr>
-                            <td></td>
-                            <td></td>
-                            <td></td>
-                            <td></td>
-                            <td><button id="00" class='btn btn-warning scheinwerfer eckig' target='_blank'>19</button></td>
-                            <td></td>
-                            <td></td>
-                            <td><button id="00" class='btn btn-success scheinwerfer rund' target='_blank'>17</button></td>
-                            <td></td>
-                            <td></td>
-                            <td><button id="00" class='btn btn-warning scheinwerfer eckig' target='_blank'>20</button></td>
-                            <td></td>
-                            <td></td>
-                            <td><button id="00" class='btn btn-warning scheinwerfer eckig' target='_blank'>38</button></td>
-                            <td><button id="00" class='btn btn-warning scheinwerfer eckig' target='_blank'>38</button></td>
-                            <td></td>
-                            <td></td>
-                            <td><button id="00" class='btn btn-warning scheinwerfer eckig' target='_blank'>21</button></td>
-                            <td></td>
-                            <td></td>
-                            <td><button id="00" class='btn btn-success scheinwerfer rund' target='_blank'>18</button></td>
-                            <td></td>
-                            <td></td>
-                            <td><button id="00" class='btn btn-warning scheinwerfer eckig' target='_blank'>22</button></td>
+                            <td><button id="036" class='btn btn-warning scheinwerfer rund' target='_blank'>28</button></td>
                             <td></td>
                             <td></td>
                             <td></td>
                             <td></td>
                         </tr>
                         <tr>
-                            <td><button id="00" class='btn btn-warning scheinwerfer rund' target='_blank'>29</button></td>
+                            <td><button id="00" class='btn btn-secondary scheinwerfer rund' target='_blank'>u</button></td>
+                            <td></td>
+                            <td></td>
+                            <td></td>
+                            <td></td>
+                            <td></td>
+                            <td></td>
+                            <td></td>
+                            <td></td>
+                            <td></td>
+                            <td></td>
+                            <td></td>
+                            <td></td>
+                            <td></td>
+                            <td></td>
+                            <td></td>
+                            <td></td>
+                            <td></td>
+                            <td></td>
+                            <td></td>
+                            <td></td>
+                            <td></td>
+                            <td></td>
+                            <td></td>
+                            <td></td>
+                            <td></td>
+                            <td></td>
+                            <td><button id="00" class='btn btn-secondary scheinwerfer rund' target='_blank'>u</button></td>
+                        </tr>
+                        <tr>
+                            <td></td>
+                            <td></td>
+                            <td></td>
+                            <td></td>
+                            <td><button id="024" class='btn btn-warning scheinwerfer eckig' target='_blank'>19</button></td>
+                            <td></td>
+                            <td></td>
+                            <td><button id=" 20" class='btn btn-success scheinwerfer rund' target='_blank'>17</button></td>
+                            <td></td>
+                            <td></td>
+                            <td><button id="023" class='btn btn-warning scheinwerfer eckig' target='_blank'></button></td>
+                            <td></td>
+                            <td></td>
+                            <td><button id="028" class='btn btn-warning scheinwerfer eckig' target='_blank'>38</button></td>
+                            <td><button id="027" class='btn btn-warning scheinwerfer eckig' target='_blank'>38</button></td>
+                            <td></td>
+                            <td></td>
+                            <td><button id="021" class='btn btn-warning scheinwerfer eckig' target='_blank'>21</button></td>
+                            <td></td>
+                            <td></td>
+                            <td><button id="022" class='btn btn-success scheinwerfer rund' target='_blank'>18</button></td>
+                            <td></td>
+                            <td></td>
+                            <td><button id="019" class='btn btn-warning scheinwerfer eckig' target='_blank'>22</button></td>
+                            <td></td>
+                            <td></td>
+                            <td></td>
+                            <td></td>
+                        </tr>
+                        <tr>
+                            <td><button id="041" class='btn btn-warning scheinwerfer rund' target='_blank'>29</button></td>
                             <td></td>
                             <td></td>
                             <td></td>
@@ -223,35 +230,35 @@
                             <td></td>
                             <td></td>
                             <td></td>
-                            <td><button id="00" class='btn btn-warning scheinwerfer rund' target='_blank'>30</button></td>
+                            <td><button id="048" class='btn btn-warning scheinwerfer rund' target='_blank'>30</button></td>
                         </tr>
                         <tr>
                             <td></td>
                             <td></td>
-                            <td><button id="00" class='btn btn-warning scheinwerfer eckig' target='_blank'>31</button></td>
-                            <td><button id="00" class='btn btn-warning scheinwerfer eckig' target='_blank'>32</button></td>
-                            <td><button id="00" class='btn btn-primary scheinwerfer rund' target='_blank'>7</button></td>
-                            <td><button id="00" class='btn btn-warning scheinwerfer rund' target='_blank'>33</button></td>
-                            <td><button id="00" class='btn btn-warning scheinwerfer rund' target='_blank'>1</button></td>
-                            <td><button id="00" class='btn btn-danger scheinwerfer eckig' target='_blank'>13</button></td>        
-                            <td><button id="00" class='btn btn-warning scheinwerfer rund' target='_blank'>2</button></td>                       
-                            <td><button id="00" class='btn btn-danger scheinwerfer eckig' target='_blank'>14</button></td>
-                            <td><button id="00" class='btn btn-primary scheinwerfer rund' target='_blank'>8</button></td>
+                            <td><button id="042" class='btn btn-warning scheinwerfer eckig' target='_blank'>31</button></td>
+                            <td><button id="038" class='btn btn-warning scheinwerfer eckig' target='_blank'>32</button></td>
+                            <td><button id="039" class='btn btn-primary scheinwerfer rund' target='_blank'>7</button></td>
+                            <td><button id="040" class='btn btn-warning scheinwerfer rund' target='_blank'>33</button></td>
+                            <td><button id="006" class='btn btn-warning scheinwerfer rund' target='_blank'>1</button></td>
+                            <td><button id="013" class='btn btn-danger scheinwerfer eckig' target='_blank'>13</button></td>        
+                            <td><button id="004" class='btn btn-warning scheinwerfer rund' target='_blank'>2</button></td>                       
+                            <td><button id="003" class='btn btn-danger scheinwerfer eckig' target='_blank'>14</button></td>
+                            <td><button id="002" class='btn btn-primary scheinwerfer rund' target='_blank'>8</button></td>
                             <td><button id="001" class='btn btn-warning scheinwerfer rund' target='_blank'>3</button></td>
-                            <td><button id="00" class='btn btn-warning scheinwerfer rund' target='_blank'>23</button></td>
-                            <td><button id="00" class='btn btn-warning scheinwerfer rund' target='_blank'>37</button></td>
-                            <td><button id="00" class='btn btn-warning scheinwerfer rund' target='_blank'>24</button></td>
-                            <td><button id="00" class='btn btn-warning scheinwerfer rund' target='_blank'>23</button></td>
-                            <td><button id="00" class='btn btn-warning scheinwerfer rund' target='_blank'>4</button></td>
-                            <td><button id="00" class='btn btn-primary scheinwerfer rund' target='_blank'>9</button></td>
-                            <td><button id="00" class='btn btn-danger scheinwerfer eckig' target='_blank'>15</button></td>
-                            <td><button id="00" class='btn btn-warning scheinwerfer rund' target='_blank'>5</button></td>
-                            <td><button id="00" class='btn btn-danger scheinwerfer eckig' target='_blank'>16</button></td>
-                            <td><button id="00" class='btn btn-warning scheinwerfer rund' target='_blank'>6</button></td>
-                            <td><button id="00" class='btn btn-warning scheinwerfer rund' target='_blank'>34</button></td>
-                            <td><button id="00" class='btn btn-primary scheinwerfer rund' target='_blank'>10</button></td>
-                            <td><button id="00" class='btn btn-warning scheinwerfer eckig' target='_blank'>35</button></td>
-                            <td><button id="00" class='btn btn-warning scheinwerfer eckig' target='_blank'>36</button></td>
+                            <td><button id="016" class='btn btn-warning scheinwerfer rund' target='_blank'>23</button></td>
+                            <td><button id="017" class='btn btn-warning scheinwerfer rund' target='_blank'>37</button></td>
+                            <td><button id="015" class='btn btn-warning scheinwerfer rund' target='_blank'>24</button></td>
+                            <td><button id="018" class='btn btn-warning scheinwerfer rund' target='_blank'>23</button></td>
+                            <td><button id="008" class='btn btn-warning scheinwerfer rund' target='_blank'>4</button></td>
+                            <td><button id="007" class='btn btn-primary scheinwerfer rund' target='_blank'>9</button></td>
+                            <td><button id="009" class='btn btn-danger scheinwerfer eckig' target='_blank'>15</button></td>
+                            <td><button id="010" class='btn btn-warning scheinwerfer rund' target='_blank'>5</button></td>
+                            <td><button id="011" class='btn btn-danger scheinwerfer eckig' target='_blank'>16</button></td>
+                            <td><button id="012" class='btn btn-warning scheinwerfer rund' target='_blank'>6</button></td>
+                            <td><button id="046" class='btn btn-warning scheinwerfer rund' target='_blank'>34</button></td>
+                            <td><button id="047" class='btn btn-primary scheinwerfer rund' target='_blank'>10</button></td>
+                            <td><button id="045" class='btn btn-warning scheinwerfer eckig' target='_blank'>35</button></td>
+                            <td><button id="044" class='btn btn-warning scheinwerfer eckig' target='_blank'>36</button></td>
                             <td></td>
                             <td></td>
                         </tr>
@@ -263,11 +270,36 @@
     </div>
 </div>
 <script>
+    function refresh_aula_light() {
+        api_call('/api/get_light', function(data) {
+            for (let entry of data.light) {
+                $('#' + entry.lightdata.dmx).html('Test')
+            }
+        });
+    } 
+
+
 document.addEventListener('DOMContentLoaded', function () {
+    refresh_aula_light();
     $('.scheinwerfer').click(function (e) {
-        for (let i = 0; i < 46; i++) {
-            $('.scheinwerfer').html();
-        }
+        var dmx = e.target.id;
+        api_call('/api/get_light_data', {dmx: dmx}, function(data) {
+        let entry = data.light
+            showTemplateModal('Channel <b><code>' + entry + '</code></b>',
+            'Dieser Scheinwerfer liegt auf dem DMX-Kanal <b><code>' + entry + '</code></b>.<br><br><input type="number" id="al_desk_channel" class="form-control" placeholder="Channel auf dem Lichtpult" value="' + entry + '"></input>',
+            "<i class='fa fa-check'></i>&nbsp;&nbsp;Speichern", 'btn-success',
+            'Abbrechen', 'btn-secondary', function() {
+                let input_desk = $('#al_desk_channel').val();
+                api_call('/api/set_desk_number', {dmx: dmx, desk: input_desk}, function(data) {
+                    if (data.success)
+                        refresh_aula_light();
+                });
+            })
+            
     });
-});
+        });
+    });
+    $('#write_dmx_channels').click(function (e) {
+        // for (let i of )
+    });
 </script>

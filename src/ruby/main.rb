@@ -1924,12 +1924,13 @@ class Main < Sinatra::Base
                     io.puts "<a class='nav-link nav-icon' href='/techpost'><div class='icon'><i class='fa fa-laptop'></i></div>Technikamt</a>"
                 elsif x == :aula
                     io.puts "<li class='nav-item dropdown'>"
-                    io.puts "<a class='nav-link nav-icon dropdown-toggle' href='#' id='navbarDropdownAdmin' role='button' data-toggle='dropdown' aria-haspopup='true' aria-expanded='false'>"
+                    io.puts "<a class='nav-link nav-icon dropdown-toggle' href='#' id='navbarDropdownAula' role='button' data-toggle='dropdown' aria-haspopup='true' aria-expanded='false'>"
                     io.puts "<div class='icon'><i class='fa fa-wrench'></i></div>Aulatechnik"
                     io.puts "</a>"
-                    io.puts "<div class='dropdown-menu dropdown-menu-right' aria-labelledby='navbarDropdownAdmin'>"
-                    io.puts "<a class='dropdown-item nav-icon' href='/aula_light'><div class='icon'><i class='fa fa-lightbulb-o'></i></div>Licht</a>"
-                    io.puts "<a class='dropdown-item nav-icon' href='/aula_progress'><div class='icon'><i class='fa fa-bars'></i></div>Ablauf</a>"
+                    io.puts "<div class='dropdown-menu dropdown-menu-right' aria-labelledby='navbarDropdownAula'>"
+                    io.puts "<a class='dropdown-item nav-icon' href='/aula_light'><div class='icon'><i class='fa fa-lightbulb-o'></i></div><span class='label'>Licht</span></a>"
+                    io.puts "<a class='dropdown-item nav-icon' style='display: none;' href='/aula_sound'><div class='icon'><i class='fa fa-music'></i></div><span class='label'>Ton</span></a>"
+                    io.puts "<a class='dropdown-item nav-icon' href='/aula_progress'><div class='icon'><i class='fa fa-bars'></i></div><span class='label'>Ablauf</span></a>"
                     io.puts "</div>"
                     io.puts "</li>"
                 elsif x == :messages
@@ -2148,6 +2149,46 @@ class Main < Sinatra::Base
             end
         end
     end
+
+    # def print_timetable_chooser_technikteam()
+    #     if technikteam_logged_in? && can_see_all_timetables_logged_in?
+    #         StringIO.open do |io|
+    #             io.puts "<div class='col-lg-12 col-md-4 col-sm-6'>"
+    #             io.puts "<div style='margin-bottom: 15px; font-size: 90% ;padding: 10px; margin-bottom: 10px;'>"
+    #             temp = StringIO.open do |tio|
+    #                 @@klassen_order.each do |klasse|
+    #                     id = @@klassen_id[klasse]
+    #                     tio.puts "<a data-klasse='#{klasse}' data-id='#{id}' onclick=\"load_timetable('#{id}');\" class='btn btn-sm ttc ttc-klasse'>#{tr_klasse(klasse)}</a>"
+    #                 end
+    #                 tio.string
+    #             end
+    #             io.puts temp
+    #             io.puts '<hr />'
+    #             temp = StringIO.open do |tio|
+    #                 @@lehrer_order.each do |email|
+    #                     id = @@user_info[email][:id]
+    #                     next unless @@user_info[email][:can_log_in]
+    #                     next unless can_see_all_timetables_logged_in? || email == @session_user[:email]
+    #                     tio.puts "<a data-id='#{id}' onclick=\"load_timetable('#{id}'); window.selected_shorthand = '#{@@user_info[email][:shorthand]}'; \" class='btn btn-sm ttc ttc-teacher'>#{@@user_info[email][:shorthand]}</a>"
+    #                 end
+    #                 tio.string
+    #             end
+    #             io.puts temp
+    #             io.puts '<hr />'
+    #             temp = StringIO.open do |tio|
+    #                 ROOM_ORDER.each do |room|
+    #                     id = @@room_ids[room]
+    #                     tio.puts "<a data-id='#{id}' onclick=\"load_timetable('#{id}');\" class='btn btn-sm ttc ttc-room'>#{room}</a>"
+    #                 end
+    #                 tio.string
+    #             end
+    #             io.puts temp
+    #             io.puts "</div>"
+    #             io.puts "</div>"
+    #             io.string
+    #         end
+    #     end
+    # end
 
     def print_test_klassen_chooser(active = nil)
         StringIO.open do |io|
@@ -2607,7 +2648,7 @@ class Main < Sinatra::Base
         end
         if path == 'timetable'
             redirect "#{WEB_ROOT}/", 302 unless @session_user
-            if teacher_logged_in? || tablet_logged_in?
+            if teacher_logged_in? || tablet_logged_in? || can_see_all_timetables_logged_in?
                 parts = request.env['REQUEST_PATH'].split('/')
                 timetable_id = parts[2]
                 if tablet_logged_in?

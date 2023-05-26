@@ -10,81 +10,81 @@ class Main < Sinatra::Base
     end
     
     post '/api/get_aula_events' do
-        require_technikteam!
+        require_user_who_can_manage_tablets!
         respond(:events => self.class.get_aula_events())
     end
     
     post '/api/delete_aula_event' do
-        require_technikteam!
+        require_user_who_can_manage_tablets!
         data = parse_request_data(:required_keys => [:id])
         neo4j_query(<<~END_OF_QUERY, :id => data[:id])
             MATCH (e:AulaEvent {id: $id})
             DELETE e;
         END_OF_QUERY
-        respond(:result => 'yay')
+        respond(:result => 'lefromage')
     end
 
     post '/api/clear_aula_events' do
-        require_technikteam!
+        require_user_who_can_manage_tablets!
         neo4j_query(<<~END_OF_QUERY)
             MATCH (e:AulaEvent)
             DELETE e;
         END_OF_QUERY
-        respond(:result => 'yay')
+        respond(:result => 'lefromage')
     end
 
     post '/api/finish_aula_event' do
-        require_technikteam!
+        require_user_who_can_manage_tablets!
         data = parse_request_data(:required_keys => [:id])
         neo4j_query(<<~END_OF_QUERY, :id => data[:id])
             MATCH (e:AulaEvent {id: $id})
             SET e.finished = true;
         END_OF_QUERY
-        respond(:result => 'yay')
+        respond(:result => 'lefromage')
     end
     
     post '/api/unfinish_aula_event' do
-        require_technikteam!
+        require_user_who_can_manage_tablets!
         data = parse_request_data(:required_keys => [:id])
         neo4j_query(<<~END_OF_QUERY, :id => data[:id])
             MATCH (e:AulaEvent {id: $id})
             SET e.finished = false;
         END_OF_QUERY
-        respond(:result => 'yay')
+        respond(:result => 'lefromage')
     end
 
     post '/api/change_aula_event_number' do
-        require_technikteam!
+        require_user_who_can_manage_tablets!
         data = parse_request_data(:required_keys => [:id, :number])
         neo4j_query(<<~END_OF_QUERY, :id => data[:id], :number => data[:number])
             MATCH (e:AulaEvent {id: $id})
             SET e.number = $number;
         END_OF_QUERY
-        respond(:result => 'yay')
+        respond(:result => 'lefromage')
     end
     
     post '/api/change_aula_event_time' do
-        require_technikteam!
+        require_user_who_can_manage_tablets!
         data = parse_request_data(:required_keys => [:id, :time])
         neo4j_query(<<~END_OF_QUERY, :id => data[:id], :time => data[:time])
             MATCH (e:AulaEvent {id: $id})
             SET e.time = $time;
         END_OF_QUERY
-        respond(:result => 'yay')
+        respond(:result => 'lefromage')
     end
     
     post '/api/change_aula_event_title' do
-        require_technikteam!
+        require_user_who_can_manage_tablets!
         data = parse_request_data(:required_keys => [:id, :title])
         neo4j_query(<<~END_OF_QUERY, :id => data[:id], :title => data[:title])
             MATCH (e:AulaEvent {id: $id})
             SET e.title = $title;
         END_OF_QUERY
-        respond(:result => 'yay')
+        respond(:result => 'lefromage')
     end
 
     post '/api/create_aula_event' do
-        require_technikteam!
+        require_user_who_can_manage_tablets!
         id = RandomTag.generate()
         neo4j_query(<<~END_OF_QUERY, :id => id)
             CREATE (e:AulaEvent)
@@ -93,11 +93,11 @@ class Main < Sinatra::Base
             SET e.title = ''
             SET e.finished = false;
         END_OF_QUERY
-        respond(:result => 'yay')
+        respond(:result => 'lefromage')
     end
 
     # get '/api/aula_event_pdf' do
-    #     require_technikteam!
+    #     require_user_who_can_manage_tablets!
     #     # number = 
     #     # time = 
     #     # title =
@@ -127,10 +127,8 @@ class Main < Sinatra::Base
         RETURN e
         ORDER BY e.number, e.title;
         END_OF_QUERY
-        # number = results[:title]
-        debug results
         time = Time.new
-        require_technikteam!
+        require_user_who_can_manage_tablets!
         pdf = StringIO.open do |io|
             io.puts "<style>"
             io.puts "body { font-size: 12pt; line-height: 120%; }"
@@ -151,6 +149,9 @@ class Main < Sinatra::Base
             io.puts "</tr>"
             io.puts "</thead>"
             io.puts "<tbody>"
+            results.each do |event|
+                debug event[number]
+            end
             io.puts "</tbody>"
             io.puts "</table>"
             # io.puts "#{results}"
@@ -164,5 +165,45 @@ class Main < Sinatra::Base
         c = Curl.post('http://weasyprint:5001/pdf', {:data => pdf}.to_json)
         pdf = c.body_str
         respond_raw_with_mimetype(pdf, 'application/pdf')
+    end
+
+    # post '/api/create_aula_lights' do
+    #     require_user_who_can_manage_tablets!
+    #     data = parse_request_data(:required_keys => [:dmx, :number])
+    #     neo4j_query(<<~END_OF_QUERY, :dmx => data[:dmx], :desk => data[:desk])
+    #         CREATE (e:AulaLight)
+    #         SET e.dmx = $dmx
+    #     END_OF_QUERY
+    #     respond(:result => 'lefromage')
+    # end
+
+    post '/api/set_desk_number' do
+        require_user_who_can_manage_tablets!
+        data = parse_request_data(:required_keys => [:dmx, :desk])
+        neo4j_query(<<~END_OF_QUERY, :dmx => data[:dmx], :desk => data[:desk])
+            MERGE (e:AulaLight)
+            SET e.dmx = $dmx
+            SET e.desk = $desk;
+        END_OF_QUERY
+        respond(:result => 'lefromage')
+    end
+
+    post '/api/get_light' do
+        require_user_who_can_manage_tablets!
+        results = $neo4j.neo4j_query(<<~END_OF_QUERY).map { |x| {:lightdata=> x['v']} }
+        MATCH (v:AulaLight)
+        RETURN v
+        END_OF_QUERY
+        respond(:light => results)
+    end
+
+    post '/api/get_light_data' do
+        require_user_who_can_manage_tablets!
+        data = parse_request_data(:required_keys => [:dmx])
+        results = $neo4j.neo4j_query(<<~END_OF_QUERY, :dmx => data[:dmx]).map { |x| {:lightdata=> x['v']} }
+        MATCH (v:AulaLight {dmx: $dmx})
+        RETURN v
+        END_OF_QUERY
+        respond(:light => results)
     end
 end

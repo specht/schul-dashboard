@@ -43,6 +43,7 @@
                     <th>Problem</th>
                     <th>Gerät</th>
                     <th>Behoben</th>
+                    <th>Nicht Behoben</th>
                     <th>Kommentar</th>
                     <th>Löschen</th>
                     </tr></thead>
@@ -53,18 +54,18 @@
             </div>
             <div class='row' style='margin-bottom: 15px;'>
                 <div class='col-md-12'>
-                    <button class='bu-compose btn btn-primary'><i class='fa fa-eye'></i>&nbsp;&nbsp;Behobene Probleme</button>
+                    <button class='bu-fixed-problems btn btn-primary'><i class='fa fa-eye'></i>&nbsp;&nbsp;ausgeblendete Probleme</button>
                 </div>
             </div>
         </div>
     </div>
 </div>
 
-<div class="modal" id="composeModal" tabindex="-1" role="dialog" aria-hidden="true">
+<div class="modal" id="composeFixed" tabindex="-1" role="dialog" aria-hidden="true">
     <div class="modal-dialog modal-xl modal-dialog-centered" role="document">
       <div class="modal-content">
        <div class="modal-header">
-          <h5 class="modal-title">Behobene Probleme</h5>
+          <h5 class="modal-title">ausgeblendete Probleme</h5>
         </div>
         <div class="modal-body">
             <div class='row'>
@@ -76,7 +77,7 @@
                     <th>Klasse</th>
                     <th>Problem</th>
                     <th>Gerät</th>
-                    <th>Nicht behoben</th>
+                    <th>In Bearbeitung</th>
                     <th>Kommentar</th>
                     <th>Löschen</th>
                     </tr></thead>
@@ -87,16 +88,16 @@
             </div>
         </div>
         <div class="modal-footer">
-          <button id='bu_close_message_modal' type="button" class="btn btn-secondary" data-dismiss="modal">Schließen</button>
+          <button type="button" class="btn btn-secondary" data-dismiss="modal">Schließen</button>
         </div>
       </div>
     </div>
-  </div>
+</div>
 
 <script>
 
     function compose_fixed_problems() {
-        $('#composeModal').modal('show');
+        $('#composeFixed').modal('show');
         refresh_fixed_tech_problems();
     }
 
@@ -112,7 +113,7 @@
             if (data.success) {
                 $('#problems_here').empty();
                 for (let entry of data.tech_problems) {
-                    if (entry.problem.fixed == false) { 
+                    if (entry.problem.fixed == false && entry.problem.not_fixed == false) { 
                         let row = $('<tr>');
                         row.append($('<td>').text(moment(entry.problem.date).format('ddd, D.M.Y')));
                         row.append($('<td>').text(entry.display_name));
@@ -130,8 +131,20 @@
                             });
 
                         });
-                        row.append($('<td>').append(tp_fixed));
 
+                        let tp_not_fixed = $('<button>').addClass('btn').addClass('btn-xs').addClass('btn-danger').html("<i class='fa fa-times'></i>&nbsp;&nbsp;Nicht Behoben");
+                        tp_not_fixed.data('token', entry.problem.token);
+                        tp_not_fixed.click(function(e) {
+
+                            api_call('/api/not_fix_tech_problem_admin', {token: $(e.target).data('token')}, function(data) {
+                                if (data.success)
+                                    refresh_tech_problems();
+                            });
+
+                        });
+                        row.append($('<td>').append(tp_fixed));
+                        row.append($('<td>').append(tp_not_fixed));
+                        
                         let tp_comment = $('<button>').addClass('btn').addClass('btn-xs').addClass('btn-primary').html("<i class='fa fa-plus'></i>&nbsp;&nbsp;Kommentar");
                         tp_comment.data('token', entry.problem.token);
                         tp_comment.click(function(e) {
@@ -204,15 +217,19 @@
                 refresh_tech_problems();
                 $('#fixed_problems_here').empty();
                 for (let entry of data.tech_problems) {
-                    if (entry.problem.fixed == true) { 
+                    if (entry.problem.fixed == true  || entry.problem.not_fixed == true) { 
                         let row = $('<tr>');
                         row.append($('<td>').text(moment(entry.problem.date).format('ddd, D.M.Y')));
                         row.append($('<td>').text(entry.display_name));
                         row.append($('<td>').text(entry.klasse));
-                        row.append($('<td>').text(entry.problem.problem));
+                        if (entry.problem.not_fixed == true) {
+                            row.append($('<td>').addClass('text-danger').text(entry.problem.problem));
+                        } else {
+                            row.append($('<td>').addClass('text-success').text(entry.problem.problem));
+                        }
                         row.append($('<td>').text('' + entry.problem.device));
 
-                        let tp_fixed = $('<button>').addClass('btn').addClass('btn-xs').addClass('btn-warning').html("<i class='fa fa-times'></i>&nbsp;&nbsp;Nicht Behoben");
+                        let tp_fixed = $('<button>').addClass('btn').addClass('btn-xs').addClass('btn-warning').html("<i class='fa fa-times'></i>&nbsp;&nbsp;In Bearbeitung");
                         tp_fixed.data('token', entry.problem.token);
                         tp_fixed.click(function(e) {
 
@@ -309,7 +326,7 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
     refresh_tech_problems();
-    $('.bu-compose').click(function(e) {
+    $('.bu-fixed-problems').click(function(e) {
         compose_fixed_problems();
     });
     })

@@ -11,6 +11,7 @@ class Main < Sinatra::Base
             SET v.date = $date
             SET v.problem = $problem
             SET v.fixed = false
+            SET v.not_fixed = false
             SET v.comment = false
             RETURN v.token;
         END_OF_QUERY
@@ -53,8 +54,6 @@ class Main < Sinatra::Base
             MATCH (v:TechProblem)-[:BELONGS_TO]->(:User {email: $email})
             RETURN v;
         END_OF_QUERY
-
-        debug problems.to_yaml
         respond(:tech_problems => problems)
     end
     
@@ -69,8 +68,6 @@ class Main < Sinatra::Base
             x[:klasse] = @@user_info[x[:email]][:klasse]
             x
         end
-
-        debug problems.to_yaml
         respond(:tech_problems => problems)
     end
 
@@ -78,10 +75,10 @@ class Main < Sinatra::Base
         require_user_who_can_manage_tablets!
         data = parse_request_data(:required_keys => [:token])
         token = data[:token]
-        debug token
         problems = neo4j_query_expect_one(<<~END_OF_QUERY, :token => token)
             MATCH (v:TechProblem {token: $token})
             SET v.fixed = true
+            SET v.not_fixed = false
             RETURN v;
         END_OF_QUERY
         respond(:ok => true)
@@ -91,10 +88,23 @@ class Main < Sinatra::Base
         require_user_who_can_manage_tablets!
         data = parse_request_data(:required_keys => [:token])
         token = data[:token]
-        debug token
         problems = neo4j_query_expect_one(<<~END_OF_QUERY, :token => token)
             MATCH (v:TechProblem {token: $token})
             SET v.fixed = false
+            SET v.not_fixed = false
+            RETURN v;
+        END_OF_QUERY
+        respond(:ok => true)
+    end
+
+    post '/api/not_fix_tech_problem_admin' do
+        require_user_who_can_manage_tablets!
+        data = parse_request_data(:required_keys => [:token])
+        token = data[:token]
+        problems = neo4j_query_expect_one(<<~END_OF_QUERY, :token => token)
+            MATCH (v:TechProblem {token: $token})
+            SET v.fixed = false
+            SET v.not_fixed = true
             RETURN v;
         END_OF_QUERY
         respond(:ok => true)
@@ -117,7 +127,6 @@ class Main < Sinatra::Base
         require_user_who_can_manage_tablets!
         data = parse_request_data(:required_keys => [:token])
         token = data[:token]
-        debug token
         problems = neo4j_query_expect_one(<<~END_OF_QUERY, :token => token)
             MATCH (v:TechProblem {token: $token})
             DETACH DELETE v

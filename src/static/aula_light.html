@@ -25,8 +25,6 @@
                 Die DMX-Kanal Nummern werden noch ergänzt. Bei Fragen oder Problemen, wende dich gerne an Peter-J. Germelmann.<br><br><a class="btn btn-primary" href="mailto:peter-julius.germelmann@mail.gymnasiumsteglitz.de"><i class='fa fa-envelope'></i>&nbsp;&nbsp;E-Mail</a>
             </div>
             <br>
-            <button id="write_dmx_channels" class='btn btn-primary' target='_blank'>DMX-Kanäle schreiben</button>
-            <br><br>
             <!-- <hr>
             Vorne: 24<br>
             Mitte vorne: 8<br>
@@ -285,7 +283,7 @@ document.addEventListener('DOMContentLoaded', function () {
         var dmx = e.target.id;
         api_call('/api/get_light_data', {dmx: dmx}, function(data) {
         let entry = data.light
-            showTemplateModal('Channel <b><code>' + entry + '</code></b>',
+            showTemplateModal('Channel <b><code>"' + entry + '"</code></b>',
             'Dieser Scheinwerfer liegt auf dem DMX-Kanal <b><code>' + entry + '</code></b>.<br><br><input type="number" id="al_desk_channel" class="form-control" placeholder="Channel auf dem Lichtpult" value="' + entry + '"></input>',
             "<i class='fa fa-check'></i>&nbsp;&nbsp;Speichern", 'btn-success',
             'Abbrechen', 'btn-secondary', function() {
@@ -299,7 +297,7 @@ document.addEventListener('DOMContentLoaded', function () {
     });
         });
     });
-    $('#write_dmx_channels').click(function (e) {
-        // for (let i of )
-    });
+    // $('#write_dmx_channels').click(function (e) {
+    //     // for (let i of )
+    // });
 </script>

@@ -496,6 +496,7 @@ class Main < Sinatra::Base
         @@index_for_klasse = {}
         @@predefined_external_users = {}
         @@bib_summoned_books = {}
+        @@bib_unconfirmed_books = {}
         @@bib_summoned_books_last_ts = 0
 
         if File.exist?('/data/login-shortcuts.txt')
@@ -1174,7 +1175,7 @@ class Main < Sinatra::Base
     def self.refresh_bib_data()
         begin
             now = Time.now.to_i
-            return if now - @@bib_summoned_books_last_ts < 60 * 60
+            return if now - @@bib_summoned_books_last_ts < 60 * (DEVELOPMENT ? 1 : 60)
             @@bib_summoned_books_last_ts = now
             @@bib_summoned_books = {}
             debug "Refreshing bib data..."
@@ -1185,6 +1186,15 @@ class Main < Sinatra::Base
             end
             raise 'oops' if res.response_code != 200
             @@bib_summoned_books = JSON.parse(res.body)
+
+            @@bib_unconfirmed_books = {}
+            url = "#{BIB_HOST}/api/get_unconfirmed_books"
+            res = Curl.get(url) do |http|
+                payload = {:exp => Time.now.to_i + 60, :email => 'timetable'}
+                http.headers['X-JWT'] = JWT.encode(payload, JWT_APPKEY_BIB, "HS256")
+            end
+            raise 'oops' if res.response_code != 200
+            @@bib_unconfirmed_books = JSON.parse(res.body)
             # debug @@bib_summoned_books.to_yaml
         rescue StandardError => e
             debug e

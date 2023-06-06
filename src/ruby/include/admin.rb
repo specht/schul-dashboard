@@ -366,6 +366,58 @@ class Main < Sinatra::Base
         end
     end
 
+    def print_lesson_keys_history
+        require_admin!
+        StringIO.open do |io|
+            start_dates = @@lessons[:timetables].keys.sort
+            data = {}
+            start_dates.each do |start_date|
+                @@lessons[:timetables][start_date].each_pair do |lesson_key, info|
+                    info[:stunden].each_pair do |dow, info2|
+                        info2.each_pair do |stunde, info3|
+                            klassen = info3[:klassen]
+                            lehrer = info3[:lehrer]
+                            fach = @@lessons[:lesson_keys][lesson_key][:fach]
+                            klassen.each do |klasse|
+                                data[klasse] ||= {}
+                                data[klasse][fach] ||= {}
+                                data[klasse][fach][start_date] ||= {}
+                                lehrer.each do |l|
+                                    data[klasse][fach][start_date][l] = true
+                                end
+                            end
+                        end
+                    end
+                end
+            end
+            KLASSEN_ORDER.each do |klasse|
+                next if klasse.to_i > 10
+                io.puts "<h3>Klasse #{tr_klasse(klasse)}</h3>"
+                io.puts "<table class='table table-condensed table-striped table-sm'>"
+                io.puts "<thead>"
+                io.puts "<tr>"
+                io.puts "<th>ab</th>"
+                data[klasse].keys.sort.each do |fach|
+                    io.puts "<th>#{fach}</th>"
+                end
+                io.puts "</tr>"
+                io.puts "</thead>"
+                io.puts "<tbody>"
+                start_dates.each do |start_date|
+                    io.puts "<tr>"
+                    io.puts "<td>#{start_date}</td>"
+                    data[klasse].keys.sort.each do |fach|
+                        io.puts "<td>#{(data[klasse][fach][start_date] || {'-' => true}).keys.sort.join(', ')}</td>"
+                    end
+                    io.puts "</tr>"
+                end
+                io.puts "</tbody>"
+                io.puts "</table>"
+            end
+            io.string
+        end
+    end
+
     def print_all_users
         require_admin!
         StringIO.open do |io|

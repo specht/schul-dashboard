@@ -130,7 +130,7 @@ class Main < Sinatra::Base
             # get teachers from delegate entries
             (delegates_for_klasse[klasse] || {}).each_pair do |path, emails|
                 fach = path.split('/')[3]
-                emails.each do |email|
+                emails.to_a.sort.each do |email|
                     shorthand = @@user_info[email][:shorthand]
                     shorthands_for_fach[fach] ||= {}
                     shorthands_for_fach[fach][shorthand] = true

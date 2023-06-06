@@ -28,6 +28,12 @@ class Main < Sinatra::Base
             @@zeugnisse[:formulare][key][:sha1] = sha1
             @@zeugnisse[:formulare][key][:tags] = tags.map { |x| x[0, x.size - 1] }
             @@zeugnisse[:formulare][key][:formular_fehler] = self.check_zeugnisformular(key)
+            if ZEUGNIS_HALBJAHR == '2'
+                unless doc.include?('<w:strike/></w:rPr><w:t>nicht</w:t>')
+                    @@zeugnisse[:formulare][key][:formular_fehler] ||= []
+                    @@zeugnisse[:formulare][key][:formular_fehler] << "fehlende Versetzungsmarkierung (<s>nicht</s>)"
+                end
+            end
         end
 
         self.determine_zeugnislisten()
@@ -256,6 +262,7 @@ class Main < Sinatra::Base
         optional_tags << '#Wahlpflicht_1_Note'
         optional_tags << '#Wahlpflicht_2_Note'
         optional_tags << '#Wahlpflicht_3_Note'
+        optional_tags << '#Vorname'
 
         missing_tags = Set.new(required_tags) - Set.new(@@zeugnisse[:formulare][key][:tags])
         superfluous_tags = Set.new(@@zeugnisse[:formulare][key][:tags]) - Set.new(required_tags)
@@ -348,9 +355,13 @@ class Main < Sinatra::Base
             # :geburtstag => @@user_info[email][:geburtstag],
             # :geschlecht => @@user_info[email][:geschlecht],
             info = {}
-            name = "#{sus_info[:official_first_name]} #{sus_info[:last_name]}"
+            last_name_parts = sus_info[:last_name].split(',').map { |x| x.strip }.reverse
+            name = "#{sus_info[:official_first_name]} #{last_name_parts.join(' ')}"
             info['#Name'] = name
             last_zeugnis_name = name
+            info['#Vorname'] = "#{sus_info[:official_first_name]}"
+            # info['#NICHT'] = '<w:r><w:rPr><w:strike/></w:rPr><w:t>nicht</w:t></w:r>'
+            # info['#NICHT'] = 'nicht'
             info['#Geburtsdatum'] = "#{Date.parse(sus_info[:geburtstag]).strftime('%d.%m.%Y')}"
             info['#Klasse'] = Main.tr_klasse(klasse)
             info['#Zeugnisdatum'] = ZEUGNIS_DATUM
@@ -383,6 +394,10 @@ class Main < Sinatra::Base
             doc = File.read(File.join(out_path_dir, formular_sha1, 'word', 'document.xml'))
             @@zeugnisse[:formulare][zeugnis_key][:tags].each do |tag|
                 doc.gsub!("#{tag}.", info[tag] || '')
+            end
+            # TODO: Fix this
+            if ZEUGNIS_HALBJAHR == '2'
+                doc.gsub!('<w:strike/></w:rPr><w:t>nicht</w:t>', '</w:rPr><w:t>nicht</w:t>')
             end
 
             File.open(File.join(out_path_dir, formular_sha1, 'word', 'document.xml'), 'w') do |f|

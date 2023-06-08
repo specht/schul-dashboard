@@ -852,13 +852,13 @@ function load_angebote_bemerkungen_table(container, klasse, edit_noten) {
                         email,
                         `<td style='text-align: right;'>${index + 1}.</td>`,
                         `<td class='tdsticky' style='max-width: 10em;'>${liste.schueler[index].last_name}</td>`,
-                        `<td style='max-width: 10em;'>${liste.schueler[index].official_first_name}</td>`,
+                        `<td style='max-width: 10em; user-select: all;'>${liste.schueler[index].official_first_name}</td>`,
                         // `<td>${moment(liste.schueler[index].geburtstag).format('L')}</td>`,
                         `<td>${klassen_tr[klasse] ?? klasse}</td>`,
                     ];
                     for (let fi = 0; fi < items.length; fi++) {
                         let item = items[fi];
-                        let input = $(`<textarea placeholder='--' class='form-control' style='width: 100%;' ${edit_noten ? '' : 'disabled readonly'}>`);
+                        let input = $(`<textarea placeholder='--' class='form-control' style='width: 100%; height: 10em;' ${edit_noten ? '' : 'disabled readonly'}>`);
                         input.val(data.results[0][0][0][fi][index]);
                         input.focus(function(e) {
                             input.select();

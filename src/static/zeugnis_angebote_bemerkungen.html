@@ -10,6 +10,14 @@
             <p style="margin-top: 0.5em;">
                 <em>Hinweis: Nutzen Sie diese Schaltfläche, um die Tabelle vor versehentlichen Änderungen zu schützen. Sobald Sie Werte ändern, sind diese automatisch gespeichert &ndash; es ist nicht nötig, die Bearbeitung durch nochmaliges Drücken dieser Schaltfläche abzuschließen.</em>
             </p>
+            <hr />
+            <h4>Textbausteine</h4>
+            <div id="text-blocks"></div>
+            <!-- <input type='text' class='form-control' value="(NAME) hat am Religionsunterricht der Evangelischen Kirche Berlin-Brandenburg teilgenommen. Der Träger kann eine eigene Teilnahmebescheinigung bzw. Beurteilung erteilen."></input>
+            <input type='text' class='form-control' value="(NAME) hat am Religionsunterricht in Trägerschaft des Erzbistums Berlin teilgenommen. Der Träger kann eine eigene Teilnahmebescheinigung bzw. Beurteilung erteilen. "></input>
+            <input type='text' class='form-control' value="(NAME) hat die Probezeit bestanden."></input>
+            <input type='text' class='form-control' value="(NAME) hat die Probezeit nicht bestanden und besucht im kommenden Schuljahr die Jahrgangsstufe 6 der Grundschule."></input>
+            <input type='text' class='form-control' value="(NAME) hat die Probezeit nicht bestanden und besucht im kommenden Schuljahr die Jahrgangsstufe 8 der Integrierten Sekundarschule/Gemeinschaftsschule."></input> -->
         </div>
         <div class='tresor_table_container' id="angebote_bemerkungen_here"></div>
     </div>
@@ -31,11 +39,21 @@ window.addEventListener('load', function () {
             let button = $(`<button style='white-space: nowrap;' class='inline-block bg-slate-900 border border-blue-500 hover:bg-slate-200 rounded py-1 px-3 mr-1 mb-1'>${klassen_tr[klasse] ?? klasse}</button>`);
             $('#klassen_buttons_here').append(button);
             button.click(function(e) {
+                $('#klassen_buttons_here button').removeClass('bg-amber-300 hover:bg-amber-300').addClass('bg-slate-900 hover:bg-slate-200');
+                $(e.target).addClass('bg-amber-300 hover:bg-amber-300').removeClass('bg-slate-900 hover:bg-slate-200');
                 $('#edit_button_here').show();
                 clicked_klasse = klasse;
                 edit_enabled = false;
                 load_angebote_bemerkungen_table($('#angebote_bemerkungen_here'), klasse, edit_enabled);
                 update_edit_button();
+                /*
+                <div class="input-group">
+                    <input id="ti_nc_login" type="text" class="form-control" value="Sp" readonly="">
+                    <div class="input-group-append">
+                        <button class="btn btn-secondary btn-clipboard" data-clipboard-action="copy" data-clipboard-target="#ti_nc_login"><i class="fa fa-clipboard"></i>&nbsp;&nbsp;Kopieren</button>
+                    </div>
+                </div>
+                */
             });
             if (my_klassen.length === 1)
                 button.click();

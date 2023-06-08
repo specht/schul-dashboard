@@ -215,6 +215,10 @@
                 <a class="inline-block bg-slate-900 border border-blue-500 hover:bg-slate-200 rounded py-1 px-3"
                     href="/zeugnisformulare"><i class='fa fa-file-word-o'></i>&nbsp;&nbsp;Zeugnisformulare</a>
             </li>
+            <li class="mx-1" style="display: #{zeugnis_admin_logged_in? ? 'unset' : 'none'};">
+                <a class="inline-block bg-slate-900 border border-blue-500 hover:bg-slate-200 rounded py-1 px-3"
+                    href="/zeugnisuebersicht"><i class='fa fa-dashboard'></i>&nbsp;&nbsp;Übersicht</a>
+            </li>
             <li class="mx-1">
                 <a class="inline-block bg-slate-900 border border-blue-500 hover:bg-slate-200 rounded py-1 px-3"
                     href="/zeugnislisten"><i class='fa fa-table'></i>&nbsp;&nbsp;Zeugnislisten</a>
@@ -348,7 +352,7 @@ let noten_allowed_values = [
     '3+', '3', '3-',
     '4+', '4', '4-',
     '5+', '5', '5-',
-    '6', 'n.e.', 'o.B.',
+    '6', 'n.e.', 'o.B.', 'befr.'
 ];
 
 let noten_mark = ['4-', '5+', '5', '5-', '6'];
@@ -358,6 +362,7 @@ function input_note_apply_style_and_fix(input, callback) {
     let original_value = `${value}`;
     if (value.toLowerCase().replace(/[\.\s]+/g, '') == 'ne') value = 'n.e.';
     if (value.toLowerCase().replace(/[\.\s]+/g, '') == 'ob') value = 'o.B.';
+    if (value.toLowerCase().replace(/[\.\s]+/g, '') == 'befr') value = 'befr.';
     if (noten_allowed_values.indexOf(value) < 0) value = '';
     if (value === '')
         $(input).closest('.note').addClass('empty');
@@ -399,8 +404,10 @@ function input_anzahl_apply_style_and_fix(input, callback) {
 }
 
 function input_tendenz_apply_style_and_fix(input, callback) {
-    let value = $(input).val().trim().toLowerCase();
+    let value = $(input).val().trim();
     let original_value = `${value}`;
+    value = value.toLowerCase();
+    if (value == 'O') value = 'o';
     if (value == '0') value = 'o';
     if (!(value === '-' || value === 'o' || value === '+' || value == '++'))
         value = '';
@@ -448,6 +455,7 @@ function load_noten_table(container, klasse, edit_noten) {
             for (let item of ['Nr.', 'Nachname', 'Vorname', 'Klasse']) {
                 let label = `${item}`;
                 let th = $('<th>').html(label);
+                if (item === 'Nachname') th.addClass('thsticky');
                 header_cells.push(th);
             }
             for (let fach of faecher) {
@@ -476,7 +484,7 @@ function load_noten_table(container, klasse, edit_noten) {
                     let cells = [
                         email,
                         `<td style='text-align: right;'>${index + 1}.</td>`,
-                        `<td style='max-width: 10em;'>${liste.schueler[index].last_name}</td>`,
+                        `<td class='tdsticky' style='max-width: 10em;'>${liste.schueler[index].last_name}</td>`,
                         `<td style='max-width: 10em;'>${liste.schueler[index].official_first_name}</td>`,
                         // `<td>${moment(liste.schueler[index].geburtstag).format('L')}</td>`,
                         `<td>${klassen_tr[klasse] ?? klasse}</td>`,
@@ -490,6 +498,7 @@ function load_noten_table(container, klasse, edit_noten) {
                         input.val(data.results[0][0][0][fi][index]);
                         input.focus(function(e) {
                             input.select();
+                            // input[0].scrollIntoView({behavior: 'instant', block: 'center', inline: 'center'});
                             container.find('tr').removeClass('focused');
                             input.closest('tr').addClass('focused');
                             $(e.target).data('old_value', $(e.target).val());
@@ -584,6 +593,7 @@ function load_fehltage_table(container, klasse, edit_noten) {
                     return `${fach_label}`;
                 }))).map(function (x) {
                     let th = $('<th>').html(x);
+                    if (x === 'Nachname') th.addClass('thsticky');
                     if (['Nr.', 'Nachname', 'Vorname', 'Klasse'].indexOf(x) < 0) th.css('text-align', 'center');
                     return th;
                 }),
@@ -591,7 +601,7 @@ function load_fehltage_table(container, klasse, edit_noten) {
                     let cells = [
                         email,
                         `<td style='text-align: right;'>${index + 1}.</td>`,
-                        `<td style='max-width: 10em;'>${liste.schueler[index].last_name}</td>`,
+                        `<td class='tdsticky' style='max-width: 10em;'>${liste.schueler[index].last_name}</td>`,
                         `<td style='max-width: 10em;'>${liste.schueler[index].official_first_name}</td>`,
                         // `<td>${moment(liste.schueler[index].geburtstag).format('L')}</td>`,
                         `<td>${klassen_tr[klasse] ?? klasse}</td>`,
@@ -605,6 +615,7 @@ function load_fehltage_table(container, klasse, edit_noten) {
                         input.val(data.results[0][0][0][fi][index]);
                         input.focus(function(e) {
                             input.select();
+                            // input[0].scrollIntoView({behavior: 'instant', block: 'center', inline: 'center'});
                             container.find('tr').removeClass('focused');
                             input.closest('tr').addClass('focused');
                             $(e.target).data('old_value', $(e.target).val());
@@ -701,7 +712,7 @@ function load_sozialverhalten_table(container, klasse, edit_noten) {
                     let cells = [email];
                     if (fach_index === 0) {
                         cells.push(`<td style='text-align: right;'>${index + 1}.</td>`);
-                        cells.push(`<td style='max-width: 10em;'>${liste.schueler[index].last_name}</td>`);
+                        cells.push(`<td class='tdsticky' style='max-width: 10em;'>${liste.schueler[index].last_name}</td>`);
                         cells.push(`<td style='max-width: 10em;'>${liste.schueler[index].official_first_name}</td>`);
                         cells.push(`<td>${klassen_tr[klasse] ?? klasse}</td>`);
                     } else {
@@ -723,6 +734,7 @@ function load_sozialverhalten_table(container, klasse, edit_noten) {
                         input.val(data.results[0][0][0][fi][fach_index][index]);
                         input.focus(function(e) {
                             input.select();
+                            // input[0].scrollIntoView({behavior: 'instant', block: 'center', inline: 'center'});
                             container.find('tr').removeClass('focused');
                             input.closest('tr').addClass('focused');
                             $(e.target).data('old_value', $(e.target).val());
@@ -792,6 +804,7 @@ function load_sozialverhalten_table(container, klasse, edit_noten) {
                     return `${fach_label}`;
                 }))).map(function (x) {
                     let th = $('<th>').html(x);
+                    if (x === 'Nachname') th.addClass('thsticky');
                     if (['Nr.', 'Nachname', 'Vorname', 'Klasse'].indexOf(x) < 0) th.css('text-align', 'center');
                     return th;
                 }),
@@ -829,6 +842,8 @@ function load_angebote_bemerkungen_table(container, klasse, edit_noten) {
                     return `${fach}`;
                 }))).map(function (x) {
                     let th = $('<th>').html(x);
+                    if (x === 'Nachname') th.addClass('thsticky');
+
                     if (['Nr.', 'Nachname', 'Vorname', 'Klasse'].indexOf(x) < 0) th.css('text-align', 'center');
                     return th;
                 }),
@@ -836,7 +851,7 @@ function load_angebote_bemerkungen_table(container, klasse, edit_noten) {
                     let cells = [
                         email,
                         `<td style='text-align: right;'>${index + 1}.</td>`,
-                        `<td style='max-width: 10em;'>${liste.schueler[index].last_name}</td>`,
+                        `<td class='tdsticky' style='max-width: 10em;'>${liste.schueler[index].last_name}</td>`,
                         `<td style='max-width: 10em;'>${liste.schueler[index].official_first_name}</td>`,
                         // `<td>${moment(liste.schueler[index].geburtstag).format('L')}</td>`,
                         `<td>${klassen_tr[klasse] ?? klasse}</td>`,
@@ -847,6 +862,7 @@ function load_angebote_bemerkungen_table(container, klasse, edit_noten) {
                         input.val(data.results[0][0][0][fi][index]);
                         input.focus(function(e) {
                             input.select();
+                            // input[0].scrollIntoView({behavior: 'instant', block: 'center', inline: 'center'});
                             container.find('tr').removeClass('focused');
                             input.closest('tr').addClass('focused');
                             $(e.target).data('old_value', $(e.target).val());

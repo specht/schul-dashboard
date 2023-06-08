@@ -2586,3 +2586,17 @@ table.th-middle th {
 .table th {
     line-height: 1em;
 }
+
+td.tdsticky {
+    position: sticky!important;
+    background-color: #fff;
+    left: 0;
+    z-index: 100;
+}
+
+th.thsticky {
+    position: sticky!important;
+    background-color: #fff;
+    left: 0;
+    z-index: 100;
+}

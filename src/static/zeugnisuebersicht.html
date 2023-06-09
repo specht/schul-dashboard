@@ -12,14 +12,10 @@
         text-align: center;
         width: 1cm;
     }
-    #zeugnisuebersicht-here td .dot {
-        color: white;
-        display: inline-block;
-        width: 2em;
-        height: 2em;
-        border-radius: 50%;
-        padding-top: 0.2em;
-
+    #zeugnisuebersicht-here td .ramp {
+        color: #fff;
+        padding: 0.2em 0.4em;
+        border-radius: 4px;
     }
 </style>
 
@@ -41,23 +37,30 @@ window.addEventListener('load', function () {
     }
     let path_arrays = [];
     for (let klasse of zeugnis_klassen_order) {
-        let path_array = [];
-        path_array.push(['Schuljahr', ZEUGNIS_SCHULJAHR]);
-        path_array.push(['Halbjahr', ZEUGNIS_HALBJAHR]);
         let liste = zeugnisliste_for_klasse[klasse];
         let faecher = liste.faecher;
-        let faecher_for_paths = [];
-        for (let fach of faecher) {
-            faecher_for_paths.push(fach);
-            // if (FAECHER_SPRACHEN.indexOf(fach) >= 0) {
-            //     faecher_for_paths.push(`${fach}_AT`);
-            //     faecher_for_paths.push(`${fach}_SL`);
-            // }
-        }
         let emails = liste.schueler.map(function(x) { return x.email; });
-        path_array.push(['Fach', faecher_for_paths]);
-        path_array.push(['Email', emails]);
-        path_arrays.push(path_array);
+        {
+            // add zeugnisnoten
+            let path_array = [];
+            path_array.push(['Schuljahr', ZEUGNIS_SCHULJAHR]);
+            path_array.push(['Halbjahr', ZEUGNIS_HALBJAHR]);
+            path_array.push(['Fach', faecher.concat([])]);
+            path_array.push(['Email', emails]);
+            path_arrays.push(path_array);
+        }
+
+        {
+            // add sozialnoten
+            let path_array = [];
+            path_array.push(['Schuljahr', ZEUGNIS_SCHULJAHR]);
+            path_array.push(['Halbjahr', ZEUGNIS_HALBJAHR]);
+            let items = ['ZV', 'LLB', 'SSK', 'KF', 'SV'];
+            path_array.push(['SV', items]);
+            path_array.push(['Fach', faecher.concat(['_KL'])]);
+            path_array.push(['Email', emails]);
+            path_arrays.push(path_array);
+        }
     }
     let div = $('#zeugnisuebersicht-here');
     // for (let x = 0; x <= 1.0; x += 0.1) {
@@ -65,40 +68,86 @@ window.addEventListener('load', function () {
     //     span.appendTo(div);
     // }
     // return;
+    console.log(path_arrays);
     tresor_api_call('/jwt/get_many_present', {path_arrays: path_arrays, key: 'Wert'}, function(data) {
         // console.log(data);
+        let counts = {};
         for (let klassen_index = 0; klassen_index < zeugnis_klassen_order.length; klassen_index++) {
             let klasse = zeugnis_klassen_order[klassen_index];
+            let liste = zeugnisliste_for_klasse[klasse];
+            let faecher = liste.faecher;
+            for (let fach_index = 0; fach_index < faecher.length; fach_index++) {
+                let fach = faecher[fach_index];
+                let present_count = 0;
+                let total_count = 0;
+                for (let sus_index = 0; sus_index < liste.schueler.length; sus_index++) {
+                    let email = liste.schueler[sus_index];
+                    total_count++;
+                    if (data.results[klassen_index * 2 + 0][0][0][fach_index][sus_index])
+                        present_count++;
+                }
+                counts[`${klasse}/${fach}`] ??= [0, 0];
+                counts[`${klasse}/${fach}`][0] += present_count;
+                counts[`${klasse}/${fach}`][1] += total_count;
+            }
+            let faecher_and_kl = faecher.concat(['_KL']);
+            for (let fach_index = 0; fach_index < faecher_and_kl.length; fach_index++) {
+                let fach = faecher_and_kl[fach_index];
+                for (let item_index = 0; item_index < 5; item_index++) {
+                    let present_count = 0;
+                    let total_count = 0;
+                    for (let sus_index = 0; sus_index < liste.schueler.length; sus_index++) {
+                        let email = liste.schueler[sus_index];
+                        total_count++;
+                        if (data.results[klassen_index * 2 + 1][0][0][item_index][fach_index][sus_index])
+                            present_count++;
+                    }
+                    counts[`${klasse}/${fach}/SV`] ??= [0, 0];
+                    counts[`${klasse}/${fach}/SV`][0] += present_count;
+                    counts[`${klasse}/${fach}/SV`][1] += total_count;
+                }
+            }
+
+            // console.log(counts);
+
             div.append($(`<h4>`).text(`Klasse ${klassen_tr[klasse] ?? klasse}`));
             let table = $(`<table class='table xs' style='width: unset;'>`);
             div.append(table);
-            let liste = zeugnisliste_for_klasse[klasse];
-            let faecher = liste.faecher;
             let row = $('<tr>').appendTo(table);
             row.append($(`<th>`));
             for (let fach_index = 0; fach_index < faecher.length; fach_index++) {
                 let fach = faecher[fach_index];
                 row.append($(`<th>`).text(fach));
             }
+            row.append($(`<th>`).text('KL'));
             row = $('<tr>').appendTo(table);
-            row.append($(`<th>`).text('Zeugnisnoten'));
+            row.append($(`<th>`).text('Zeugnisnoten').css('text-align', 'left'));
             for (let fach_index = 0; fach_index < faecher.length; fach_index++) {
                 let fach = faecher[fach_index];
-                let present = [];
-                let absent = [];
-                for (let sus_index = 0; sus_index < liste.schueler.length; sus_index++) {
-                    let email = liste.schueler[sus_index];
-                    if (data.results[klassen_index][0][0][fach_index][sus_index])
-                        present.push(email);
-                    else
-                        absent.push(email);
-                }
-                let present_count = present.length;
-                let total_count = present.length + absent.length;
-                let p = 0.0;
-                if (total_count > 0)
-                    p = present_count / total_count;
-                row.append($(`<td>`).append($(`<span class='dot'>`).text(`${present.length}`).css('background-color', lerpColor(red_green_ramp(p), '#ffffff', 0.7)).css('color', lerpColor(red_green_ramp(p), '#000000', 0.8))));
+                let present_count = counts[`${klasse}/${fach}`][0];
+                let total_count = counts[`${klasse}/${fach}`][1];
+                // if (present_count === 0)
+                //     row.append($(`<td>`).append($(`<span>`).html(`<i class='fa fa-times'></i>`).css('color', '#888')));
+                // else 
+                if (present_count === total_count)
+                    row.append($(`<td>`).append($(`<span>`).html(`<i class='fa fa-check-circle'></i>`).css('color', '#4aa03f')));
+                else
+                    row.append($(`<td>`).append($(`<span>`).text(`${present_count}/${total_count}`).css('background-color', red_green_ramp(present_count / total_count)).addClass('ramp')));
+            }
+            row.append($(`<td>`).html('&ndash;'));
+            row = $('<tr>').appendTo(table);
+            row.append($(`<th>`).text('Sozialverhalten').css('text-align', 'left'));
+
+            for (let fach of faecher.concat(['_KL'])) {
+                let present_count = counts[`${klasse}/${fach}/SV`][0];
+                let total_count = counts[`${klasse}/${fach}/SV`][1];
+                // if (present_count === 0)
+                    // row.append($(`<td>`).append($(`<span>`).html(`<i class='fa fa-times'></i>`).css('color', '#888')));
+                // else 
+                if (present_count === total_count)
+                    row.append($(`<td>`).append($(`<span>`).html(`<i class='fa fa-check-circle'></i>`).css('color', '#4aa03f')));
+                else
+                   row.append($(`<td>`).append($(`<span>`).text(`${present_count}/${total_count}`).css('background-color', red_green_ramp(present_count / total_count)).addClass('ramp')));
             }
         }
     });

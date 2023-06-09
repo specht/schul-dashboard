@@ -41,7 +41,7 @@ function render_zeugnisformulare() {
         if (key.indexOf('_sesb') >= 0) label += ' (SESB)';
         tr.append($(`<td>`).html(label));
         tr.append($(`<td>`).html((zeugnis_formular_fehler[key] === null) ? "<i class='fa fa-check text-green-500'></i>" : "<i class='fa fa-exclamation-circle text-red-600'></i>"));
-        tr.append($(`<td style='white-space: unset;'>`).html((zeugnis_formular_fehler[key] ?? ['Formular vollständig']).join(' ')));
+        tr.append($(`<td style='white-space: unset;'>`).html((zeugnis_formular_fehler[key] ?? ['Formular vollständig']).join(', ')));
     }
 }
 

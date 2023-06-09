@@ -96,7 +96,7 @@ class Main < Sinatra::Base
         end
 
         if ZEUGNIS_USE_MOCK_NAMES
-            srand(0)
+            srand(42)
         end
         ZEUGNIS_KLASSEN_ORDER.each do |klasse|
             lesson_keys_for_fach = {}

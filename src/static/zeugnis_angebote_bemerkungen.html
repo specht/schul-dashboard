@@ -4,20 +4,14 @@
     <div class="w-full">
         <h3>Angebote und Bemerkungen #{ZEUGNIS_SCHULJAHR.sub('_', '/')} (#{ZEUGNIS_HALBJAHR}. Halbjahr)</h3>
         <div id="klassen_buttons_here"></div>
+        <div id="text-blocks"></div>
         <hr />
         <div id="edit_button_here" style="display: none; margin-bottom: 0.5em;">
             <button id="bu_toggle_edit" class='btn btn-secondary'></button>
             <p style="margin-top: 0.5em;">
-                <em>Hinweis: Nutzen Sie diese Schaltfläche, um die Tabelle vor versehentlichen Änderungen zu schützen. Sobald Sie Werte ändern, sind diese automatisch gespeichert &ndash; es ist nicht nötig, die Bearbeitung durch nochmaliges Drücken dieser Schaltfläche abzuschließen.</em>
+                <em>Hinweis: Nutzen Sie diese Schaltfläche, um die Tabelle vor versehentlichen Änderungen zu schützen. Sobald Sie Werte ändern, sind diese automatisch gespeichert &ndash; es ist nicht nötig, die Bearbeitung durch nochmaliges Drücken dieser Schaltfläche abzuschließen. Sie müssen lediglich das Eingabefeld verlassen, um den eingetragenen Wert zu speichern.</em>
             </p>
-            <hr />
-            <h4>Textbausteine</h4>
-            <div id="text-blocks"></div>
-            <!-- <input type='text' class='form-control' value="(NAME) hat am Religionsunterricht der Evangelischen Kirche Berlin-Brandenburg teilgenommen. Der Träger kann eine eigene Teilnahmebescheinigung bzw. Beurteilung erteilen."></input>
-            <input type='text' class='form-control' value="(NAME) hat am Religionsunterricht in Trägerschaft des Erzbistums Berlin teilgenommen. Der Träger kann eine eigene Teilnahmebescheinigung bzw. Beurteilung erteilen. "></input>
-            <input type='text' class='form-control' value="(NAME) hat die Probezeit bestanden."></input>
-            <input type='text' class='form-control' value="(NAME) hat die Probezeit nicht bestanden und besucht im kommenden Schuljahr die Jahrgangsstufe 6 der Grundschule."></input>
-            <input type='text' class='form-control' value="(NAME) hat die Probezeit nicht bestanden und besucht im kommenden Schuljahr die Jahrgangsstufe 8 der Integrierten Sekundarschule/Gemeinschaftsschule."></input> -->
+            <!-- <hr /> -->
         </div>
         <div class='tresor_table_container' id="angebote_bemerkungen_here"></div>
     </div>
@@ -33,6 +27,14 @@ var my_zeugnisliste = #{@@zeugnisliste_for_lehrer[@session_user[:shorthand]].to_
 var my_klassen = #{zeugnis_admin_logged_in? ? ZEUGNIS_KLASSEN_ORDER : (@@zeugnisliste_for_lehrer[@session_user[:shorthand]]).keys.select { |x| x.include?('/VT')}.map { |x| x.split('/').first }.sort.uniq.to_json};
 var clicked_klasse = null;
 
+var bemerkungen_templates = [
+    "(NAME) hat am Religionsunterricht der Evangelischen Kirche Berlin-Brandenburg teilgenommen. Der Träger kann eine eigene Teilnahmebescheinigung bzw. Beurteilung erteilen.",
+    "(NAME) hat am Religionsunterricht in Trägerschaft des Erzbistums Berlin teilgenommen. Der Träger kann eine eigene Teilnahmebescheinigung bzw. Beurteilung erteilen.",
+    "(NAME) hat die Probezeit bestanden.",
+    "(NAME) hat die Probezeit nicht bestanden und besucht im kommenden Schuljahr die Jahrgangsstufe 6 der Grundschule.",
+    "(NAME) hat die Probezeit nicht bestanden und besucht im kommenden Schuljahr die Jahrgangsstufe 8 der Integrierten Sekundarschule/Gemeinschaftsschule.",
+];
+
 window.addEventListener('load', function () {
     for (let klasse of zeugnis_klassen_order) {
         if (my_klassen.indexOf(klasse) >= 0) {
@@ -46,14 +48,17 @@ window.addEventListener('load', function () {
                 edit_enabled = false;
                 load_angebote_bemerkungen_table($('#angebote_bemerkungen_here'), klasse, edit_enabled);
                 update_edit_button();
-                /*
-                <div class="input-group">
-                    <input id="ti_nc_login" type="text" class="form-control" value="Sp" readonly="">
-                    <div class="input-group-append">
-                        <button class="btn btn-secondary btn-clipboard" data-clipboard-action="copy" data-clipboard-target="#ti_nc_login"><i class="fa fa-clipboard"></i>&nbsp;&nbsp;Kopieren</button>
-                    </div>
-                </div>
-                */
+                $('#text-blocks').empty();
+                $('#text-blocks').append($(`<hr>`));
+                for (let i = 0; i < bemerkungen_templates.length; i++) {
+                    let template = bemerkungen_templates[i];
+                    let group = $(`<div class='input-group'>`);
+                    $('#text-blocks').append(group);
+                    group.append($(`<input id='text_template_${i}' type="text" class="form-control" readonly>`).val(template));
+                    let button = $(`<button class="btn btn-outline-secondary btn-clipboard" data-clipboard-action="copy" data-clipboard-target="#text_template_${i}"><i class="fa fa-clipboard"></i>&nbsp;&nbsp;Kopieren</button>`);
+                    group.append($(`<div class='input-group-append'>`).append(button));
+                }
+                install_clipboard_handler('.btn-clipboard');
             });
             if (my_klassen.length === 1)
                 button.click();

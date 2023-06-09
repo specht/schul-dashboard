@@ -33,7 +33,7 @@ window.addEventListener('load', function () {
                     $('#klassen_buttons_here button').removeClass('bg-amber-300 hover:bg-amber-300').addClass('bg-slate-900 hover:bg-slate-200');
                     $(e.target).addClass('bg-amber-300 hover:bg-amber-300').removeClass('bg-slate-900 hover:bg-slate-200');
                     $('#button_here').empty();
-                    let button = $(`<button class='btn btn-success'>`).html(`<i class='fa fa-file-pdf-o'></i>&nbsp;&nbsp;Alle Zeugnisse der Klasse ${klassen_tr[klasse] ?? klasse} (PDF)`);
+                    let button = $(`<button id='bu_print_all' disabled class='btn btn-success'>`).html(`<i class='fa fa-file-pdf-o'></i>&nbsp;&nbsp;Alle Zeugnisse der Klasse ${klassen_tr[klasse] ?? klasse} (PDF)`);
                     $('#button_here').append(button);
                     button.click(function(e) {
                         let liste = zeugnisliste_for_klasse[klasse];
@@ -75,7 +75,7 @@ function get_zeugnis(klasse, emails, format) {
     let path_array_ab = [];
     path_array_ab.push(['Schuljahr', ZEUGNIS_SCHULJAHR]);
     path_array_ab.push(['Halbjahr', ZEUGNIS_HALBJAHR]);
-    path_array_ab.push(['AB', ['Angebote', 'Bemerkungen']]);
+    path_array_ab.push(['AB', ['Angebote', 'Bemerkungen', 'Versetzt']]);
     path_array_ab.push(['Email', emails]);
 
     tresor_api_call('/jwt/get_many', {path_arrays: [path_array_fach, path_array_fehltage, path_array_ab], key: 'Wert'}, function(data) {
@@ -100,6 +100,13 @@ function load_zeugnis_table(container, klasse, edit_noten) {
     let liste = zeugnisliste_for_klasse[klasse];
     let faecher = liste.faecher;
     let emails = liste.schueler.map(function(x) { return x.email; });
+    all_good = true;
+    for (let index = 0; index < liste.schueler.length; index++) {
+        let zeugnis_key = liste.schueler[index].zeugnis_key;
+        if (zeugnis_formular_fehler[zeugnis_key] !== null)
+            all_good = false;
+    }
+    $('#bu_print_all').prop('disabled', !all_good);
 
     let table = new SortableTable({
         element: container,

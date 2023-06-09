@@ -1,13 +1,78 @@
 #{this_is_a_page_for_logged_in_teachers}
 #{File.read('/static/_tresor_public_template.html')}
+<style>
+    .expl_table td span {
+        display: inline-block;
+        background-color: #eee;
+        padding: 0em 0.8em;
+        border-radius: 4px;
+        margin: 0 0.2em;
+    }
+    .expl_table td div.note {
+        display: inline-block;
+    }
+</style>
 <div class='container bg-white'>
     <div class="w-full">
         <h3>Zeugnislisten #{ZEUGNIS_SCHULJAHR.sub('_', '/')} (#{ZEUGNIS_HALBJAHR}. Halbjahr)</h3>
         <p>
-            Bitte wählen Sie eine Klasse, für die Sie Noten eintragen möchten.
-            Tragen Sie dann die Noten <b>mit Tendenzen</b> in die entsprechenden Felder (inkl. »ne« für »nicht erteilt« und »ob« für »ohne Bewertung«).
-            Noten von 4- bis 6 werden automatisch rot markiert.
-        </p>
+            Bitte wählen Sie eine Klasse, für die Sie Noten eintragen möchten. Sie können die folgenden Eintragungen vornehmen:
+            
+        <table class="expl_table table table-sm" style="width: unset;">
+            <tr>
+                <th style="line-height: unset;">Noten</th>
+                <td>
+                    <span>1+</span>
+                    <span>1</span>
+                    <span>1-</span>
+                    <span>2+</span>
+                    <span>2</span>
+                    <span>2-</span>
+                    <span>3+</span>
+                    <span>3</span>
+                    <span>3-</span>
+                    <span>4+</span>
+                    <span>4</span>
+                    <div class="note marked"><span>4-</span></div>
+                    <div class="note marked"><span>5+</span></div>
+                    <div class="note marked"><span>5</span></div>
+                    <div class="note marked"><span>5-</span></div>
+                    <div class="note marked"><span>6</span></div>
+                    <br />
+                    Hinweis: Noten von 4- bis 6 werden automatisch rot markiert.
+                </td>
+            </tr>
+            <tr>
+                <th style="line-height: unset;">nicht erteilt</th>
+                <td>
+                    <span>n. e.</span>
+                </td>
+            </tr>
+            <tr>
+                <th style="line-height: unset;">ohne Bewertung</th>
+                <td>
+                    <span>o. B.</span>
+                </td>
+            </tr>
+            <tr>
+                <th style="line-height: unset;">befreit</th>
+                <td>
+                    <span>befr.</span>
+                </td>
+            </tr>
+            <tr>
+                <th style="line-height: unset;">leer</th>
+                <td>
+                    <span>&times;</span>
+                    <br />
+                    Hinweis: Tragen Sie ein »x« ein, wenn der Eintrag im Zeugnisdruck leer bleiben soll, z. B. in den folgenden Fällen:
+                    <ul style="list-style-type: disc; margin-left: 1em;">
+                        <li>weil es sich z. B. um ein Wahlfach handelt und die Schülerin / der Schüler das Fach nicht gewählt hat</li>
+                        <li>weil es sich z. B. um eine Teilnote in einem Sprachenfach handelt, die nicht eingetragen werden soll</li>
+                    </ul>
+                </td>
+            </tr>
+        </table>
         <p>
             Sprachenfächer haben drei Eingabefelder. Hier können Sie zusätzlich zur Gesamtnote auch Einzelnoten für den allgemeinen Teil (AT) oder schriftliche Leistungen (SL) eingeben.
         </p>
@@ -16,7 +81,7 @@
         <div id="edit_button_here" style="display: none; margin-bottom: 0.5em;">
             <button id="bu_toggle_edit" class='btn btn-secondary'></button>
             <p style="margin-top: 0.5em;">
-                <em>Hinweis: Nutzen Sie diese Schaltfläche, um die Tabelle vor versehentlichen Änderungen zu schützen. Sobald Sie Werte ändern, sind diese automatisch gespeichert &ndash; es ist nicht nötig, die Bearbeitung durch nochmaliges Drücken dieser Schaltfläche abzuschließen.</em>
+                <em>Hinweis: Nutzen Sie diese Schaltfläche, um die Tabelle vor versehentlichen Änderungen zu schützen. Sobald Sie Werte ändern, sind diese automatisch gespeichert &ndash; es ist nicht nötig, die Bearbeitung durch nochmaliges Drücken dieser Schaltfläche abzuschließen. Sie müssen lediglich das Eingabefeld verlassen, um den eingetragenen Wert zu speichern.</em>
             </p>
         </div>
         <div class='tresor_table_container' id="noten_here"></div>

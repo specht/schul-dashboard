@@ -1,4 +1,4 @@
-#{this_is_a_page_for_logged_in_zeugnis_admins}
+#{this_is_a_page_for_logged_in_teachers}
 #{File.read('/static/_tresor_public_template.html')}
 <div class='container bg-white'>
     <div class="w-full">
@@ -25,6 +25,13 @@ var ZEUGNIS_HALBJAHR = "#{ZEUGNIS_HALBJAHR}";
 var zeugnis_klassen_order = #{ZEUGNIS_KLASSEN_ORDER.to_json};
 var klassen_tr = #{KLASSEN_TR.to_json};
 var zeugnisliste_for_klasse = #{@@zeugnisliste_for_klasse.to_json};
+var zeugnisliste_for_lehrer = #{@@zeugnisliste_for_lehrer.to_json};
+var my_zeugnisliste = #{(@@zeugnisliste_for_lehrer[@session_user[:shorthand]] || {}).to_json};
+var my_klassen = #{(@@zeugnisliste_for_lehrer[@session_user[:shorthand]]).keys.map { |x| x.split('/').first }.sort.uniq.to_json};
+
+function have_or_admin(key) {
+    return my_zeugnisliste[key] || `#{zeugnis_admin_logged_in?}` === 'true';
+}
 
 window.addEventListener('load', function () {
 
@@ -63,14 +70,15 @@ window.addEventListener('load', function () {
         }
     }
     let div = $('#zeugnisuebersicht-here');
-    // for (let x = 0; x <= 1.0; x += 0.1) {
-    //     let span = $(`<span style='display: inline-block; width: 2em; height: 2em; border-radius: 50%; background-color: ${red_green_ramp(x)}; color: white; text-align: center; padding-top: 0.2em; margin-right: 0.5em;'>`).text(`${x.toFixed(1)}`);
-    //     span.appendTo(div);
-    // }
-    // return;
-    console.log(path_arrays);
+    let lehrer_for_zeugnis_key = {};
+    for (let shorthand of Object.keys(zeugnisliste_for_lehrer)) {
+        for (let key of Object.keys(zeugnisliste_for_lehrer[shorthand])) {
+            lehrer_for_zeugnis_key[key] ??= [];
+            lehrer_for_zeugnis_key[key].push(shorthand);
+        }
+    }
+    console.log(lehrer_for_zeugnis_key);
     tresor_api_call('/jwt/get_many_present', {path_arrays: path_arrays, key: 'Wert'}, function(data) {
-        // console.log(data);
         let counts = {};
         for (let klassen_index = 0; klassen_index < zeugnis_klassen_order.length; klassen_index++) {
             let klasse = zeugnis_klassen_order[klassen_index];
@@ -86,14 +94,21 @@ window.addEventListener('load', function () {
                     if (data.results[klassen_index * 2 + 0][0][0][fach_index][sus_index])
                         present_count++;
                 }
-                counts[`${klasse}/${fach}`] ??= [0, 0];
-                counts[`${klasse}/${fach}`][0] += present_count;
-                counts[`${klasse}/${fach}`][1] += total_count;
+                let key = `${klasse}/${fach}`;
+                counts[key] ??= [0, 0];
+                counts[key][0] += present_count;
+                counts[key][1] += total_count;
+                for (let shorthand of (lehrer_for_zeugnis_key[key] ?? [])) {
+                    counts[shorthand] ??= [0, 0];
+                    counts[shorthand][0] += present_count;
+                    counts[shorthand][1] += total_count;
+                }
             }
             let faecher_and_kl = faecher.concat(['_KL']);
             for (let fach_index = 0; fach_index < faecher_and_kl.length; fach_index++) {
                 let fach = faecher_and_kl[fach_index];
                 for (let item_index = 0; item_index < 5; item_index++) {
+                    let item = ['ZV', 'LLB', 'SSK', 'KF', 'SV'][item_index];
                     let present_count = 0;
                     let total_count = 0;
                     for (let sus_index = 0; sus_index < liste.schueler.length; sus_index++) {
@@ -102,14 +117,35 @@ window.addEventListener('load', function () {
                         if (data.results[klassen_index * 2 + 1][0][0][item_index][fach_index][sus_index])
                             present_count++;
                     }
-                    counts[`${klasse}/${fach}/SV`] ??= [0, 0];
-                    counts[`${klasse}/${fach}/SV`][0] += present_count;
-                    counts[`${klasse}/${fach}/SV`][1] += total_count;
+                    let key = `${klasse}/${fach}/SV`;
+                    counts[key] ??= [0, 0];
+                    counts[key][0] += present_count;
+                    counts[key][1] += total_count;
+                    key = `${klasse}/${item}/${fach}`;
+                    for (let shorthand of (lehrer_for_zeugnis_key[key] ?? [])) {
+                        counts[shorthand] ??= [0, 0];
+                        counts[shorthand][0] += present_count;
+                        counts[shorthand][1] += total_count;
+                    }
                 }
             }
-
-            // console.log(counts);
-
+        }
+        
+        let my_counts = counts['#{@session_user[:shorthand]}'] ?? [0, 0];
+        let my_present = my_counts[0];
+        let my_total = my_counts[1];
+        if (my_total > 0) {
+            // div.append($(`<h4>`).text(`Noten von #{@session_user[:display_name]}`));
+            div.append($('<p>').html(`Sie haben bisher <strong>${my_present} von ${my_total}</strong> benötigten Noten eingetragen.`));
+            div.append($('<p>').append($(`<div class='progress'>`).append($(`<div class='progress-bar progress-bar-striped bg-success' style="width: ${my_present * 100 / my_total}%">${(my_present * 100 / my_total).toFixed(1)}%</div>`))));
+            div.append($('<p>').html(`<em>Hinweis:</em> Um ein Notenfeld »auszufüllen«, das im Zeugnisdruck leer bleiben soll (z. B. Teilnoten bei Sprachfächern oder Noten bei Wahlfächern), geben Sie bitte »x« in das entsprechende Eingabefeld ein. Dann bleibt das Feld auf dem Zeugnis leer, es wird in dieser Übersicht aber mitgezählt.`));
+        }
+        for (let klassen_index = 0; klassen_index < zeugnis_klassen_order.length; klassen_index++) {
+            let klasse = zeugnis_klassen_order[klassen_index];
+            if (!(my_klassen.indexOf(klasse) >= 0 || `#{zeugnis_admin_logged_in?}` === 'true'))
+                continue;
+            let liste = zeugnisliste_for_klasse[klasse];
+            let faecher = liste.faecher;
             div.append($(`<h4>`).text(`Klasse ${klassen_tr[klasse] ?? klasse}`));
             let table = $(`<table class='table xs' style='width: unset;'>`);
             div.append(table);
@@ -117,34 +153,40 @@ window.addEventListener('load', function () {
             row.append($(`<th>`));
             for (let fach_index = 0; fach_index < faecher.length; fach_index++) {
                 let fach = faecher[fach_index];
-                row.append($(`<th>`).text(fach));
+                if (have_or_admin(`${klasse}/${fach}`)) {
+                    row.append($(`<th>`).text(fach));
+                }
             }
-            row.append($(`<th>`).text('KL'));
+            if (have_or_admin(`${klasse}/SV/_KL`))
+                row.append($(`<th>`).text('KL'));
             row = $('<tr>').appendTo(table);
             row.append($(`<th>`).text('Zeugnisnoten').css('text-align', 'left'));
             for (let fach_index = 0; fach_index < faecher.length; fach_index++) {
                 let fach = faecher[fach_index];
                 let present_count = counts[`${klasse}/${fach}`][0];
                 let total_count = counts[`${klasse}/${fach}`][1];
-                // if (present_count === 0)
-                //     row.append($(`<td>`).append($(`<span>`).html(`<i class='fa fa-times'></i>`).css('color', '#888')));
-                // else 
-                if (present_count === total_count)
-                    row.append($(`<td>`).append($(`<span>`).html(`<i class='fa fa-check-circle'></i>`).css('color', '#4aa03f')));
-                else
-                    row.append($(`<td>`).append($(`<span>`).text(`${present_count}/${total_count}`).css('background-color', red_green_ramp(present_count / total_count)).addClass('ramp')));
+                if (have_or_admin(`${klasse}/${fach}`)) {
+                    if (total_count === 0)
+                        row.append($(`<td>`).append($(`<span>`).html(`<i class='fa fa-danger'></i>`).css('color', '#a40000')));
+                    else if (present_count === total_count)
+                        row.append($(`<td>`).append($(`<span>`).html(`<i class='fa fa-check-circle'></i>`).css('color', '#4aa03f')));
+                    else
+                        row.append($(`<td>`).append($(`<span>`).text(`${present_count}/${total_count}`).css('background-color', red_green_ramp(present_count / total_count)).addClass('ramp')));
+                }
             }
-            row.append($(`<td>`).html('&ndash;'));
+            if (have_or_admin(`${klasse}/SV/_KL`))
+                row.append($(`<td>`).html('&ndash;'));
             row = $('<tr>').appendTo(table);
             row.append($(`<th>`).text('Sozialverhalten').css('text-align', 'left'));
-
             for (let fach of faecher.concat(['_KL'])) {
+                if (!have_or_admin(`${klasse}/SV/${fach}`))
+                    continue;
+
                 let present_count = counts[`${klasse}/${fach}/SV`][0];
                 let total_count = counts[`${klasse}/${fach}/SV`][1];
-                // if (present_count === 0)
-                    // row.append($(`<td>`).append($(`<span>`).html(`<i class='fa fa-times'></i>`).css('color', '#888')));
-                // else 
-                if (present_count === total_count)
+                if (total_count === 0)
+                    row.append($(`<td>`).append($(`<span>`).html(`<i class='fa fa-danger'></i>`).css('color', '#a40000')));
+                else if (present_count === total_count)
                     row.append($(`<td>`).append($(`<span>`).html(`<i class='fa fa-check-circle'></i>`).css('color', '#4aa03f')));
                 else
                    row.append($(`<td>`).append($(`<span>`).text(`${present_count}/${total_count}`).css('background-color', red_green_ramp(present_count / total_count)).addClass('ramp')));

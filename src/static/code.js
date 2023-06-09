@@ -661,3 +661,22 @@ function create_location_span(location) {
 function join_with_sep(list, a, b) {
     return list.length == 1 ? list[0] : [list.slice(0, list.length - 1).join(a), list[list.length - 1]].join(b);
 }
+
+function lerpColor(a, b, amount) {
+   let ah = parseInt(a.replace(/#/g, ''), 16),
+       ar = ah >> 16, ag = ah >> 8 & 0xff, ab = ah & 0xff,
+       bh = parseInt(b.replace(/#/g, ''), 16),
+       br = bh >> 16, bg = bh >> 8 & 0xff, bb = bh & 0xff,
+       rr = ar + amount * (br - ar),
+       rg = ag + amount * (bg - ag),
+       rb = ab + amount * (bb - ab);
+
+    return '#' + ((1 << 24) + (rr << 16) + (rg << 8) + rb | 0).toString(16).slice(1);
+}
+
+function red_green_ramp(x) {
+    if (x < 0.5)
+        return lerpColor('#a40000', '#fdb717', x / 0.5);
+    else
+        return lerpColor('#fdb717', '#4aa03f', (x - 0.5) / 0.5);
+}

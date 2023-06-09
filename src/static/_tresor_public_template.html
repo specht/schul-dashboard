@@ -235,7 +235,7 @@
                 <a class="inline-block bg-slate-900 border border-blue-500 hover:bg-slate-200 rounded py-1 px-3"
                     href="/zeugnislisten"><i class='fa fa-table'></i>&nbsp;&nbsp;Zeugnislisten</a>
             </li>
-            <li class="mx-1">
+            <li class="mx-1" style="display: #{((!@session_user[:klassenleitung].nil?) || zeugnis_admin_logged_in?) ? 'unset' : 'none'};">
                 <a class="inline-block bg-slate-900 border border-blue-500 hover:bg-slate-200 rounded py-1 px-3"
                     href="/zeugnis_angebote_bemerkungen"><i class='fa fa-table'></i>&nbsp;&nbsp;Angebote und Bemerkungen</a>
             </li>
@@ -912,7 +912,7 @@ function load_angebote_bemerkungen_table(container, klasse, edit_noten) {
                         if (item === 'Versetzt') {
                             let fach = item;
                             input = $(`<input placeholder='--' class='form-control' style='width: 4em; text-align: center; height: calc(1.5em + 2px);'>`)
-                            if (!edit_noten || ((!my_zeugnisliste[`${klasse}/${fach}`]) && ('#{zeugnis_admin_logged_in?}' === 'false'))) {
+                            if (!edit_noten) {
                                 input.prop('disabled', true);
                             }
                             let value = data.results[0][0][0][fi][index];

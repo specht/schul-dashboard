@@ -977,7 +977,7 @@ function load_angebote_bemerkungen_table(container, klasse, edit_noten) {
                             input = $(`<textarea placeholder='--' class='form-control' style='width: 100%; height: 10em;' ${edit_noten ? '' : 'disabled readonly'}>`);
                             input.val(data.results[0][0][0][fi][index]);
                             input.focus(function(e) {
-                                input.select();
+                                // input.select();
                                 // input[0].scrollIntoView({behavior: 'instant', block: 'center', inline: 'center'});
                                 container.find('tr').removeClass('focused');
                                 input.closest('tr').addClass('focused');

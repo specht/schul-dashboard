@@ -328,6 +328,10 @@ window.addEventListener('load', function () {
             $('.bg-white').removeClass('extra-padding');
         } else {
             $('#connection-established').show();
+            if ('#{second_factor_time_left.nil?}' !== 'true') {
+                if (window.location.pathname === '/tresor')
+                    window.location.href = '/zeugnisuebersicht';
+            }
         }
     });
     update_time_left();

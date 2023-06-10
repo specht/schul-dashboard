@@ -3,7 +3,7 @@
 <div class='container bg-white'>
     <div class="w-full">
         <h3>Zeugnisübersicht #{ZEUGNIS_SCHULJAHR.sub('_', '/')} (#{ZEUGNIS_HALBJAHR}. Halbjahr)</h3>
-        <div id="zeugnisuebersicht-here"></div>
+        <div id="zeugnisuebersicht-here" class="row"></div>
     </div>
 </div>
 
@@ -136,6 +136,7 @@ window.addEventListener('load', function () {
         let my_total = my_counts[1];
         if (my_total > 0) {
             // div.append($(`<h4>`).text(`Noten von #{@session_user[:display_name]}`));
+            let div = $(`<div class='col-md-12'>`).appendTo('#zeugnisuebersicht-here');
             div.append($('<p>').html(`Sie haben bisher <strong>${my_present} von ${my_total}</strong> benötigten Eintragungen vorgenommen.`));
             div.append($('<p>').append($(`<div class='progress'>`).append($(`<div class='progress-bar progress-bar-striped bg-success' style="width: ${my_present * 100 / my_total}%">${(my_present * 100 / my_total).toFixed(1)}%</div>`))));
             div.append($('<p>').html(`<em>Hinweis:</em> Um ein Notenfeld »auszufüllen«, das im Zeugnisdruck leer bleiben soll (z. B. Teilnoten bei Sprachfächern oder Noten bei Wahlfächern), geben Sie bitte »x« in das entsprechende Eingabefeld ein. Dann bleibt das Feld auf dem Zeugnis leer, es wird in dieser Übersicht aber mitgezählt.`));
@@ -146,6 +147,7 @@ window.addEventListener('load', function () {
                 continue;
             let liste = zeugnisliste_for_klasse[klasse];
             let faecher = liste.faecher;
+            let div = $(`<div class='col-md-4 col-lg-3'>`).appendTo('#zeugnisuebersicht-here');
             div.append($(`<h4>`).text(`Klasse ${klassen_tr[klasse] ?? klasse}`));
             let table = $(`<table class='table xs' style='width: unset;'>`);
             div.append(table);

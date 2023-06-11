@@ -368,7 +368,7 @@ let noten_allowed_values = [
     '3+', '3', '3-',
     '4+', '4', '4-',
     '5+', '5', '5-',
-    '6', 'n.e.', 'o.B.', 'befr.', '×',
+    '6', 'n.e.', 'o.B.', 'befr.', 't.b.', 'z.b.', '×',
 ];
 
 let versetzt_allowed_values = [
@@ -383,6 +383,8 @@ function input_note_apply_style_and_fix(input, callback) {
     if (value.toLowerCase().replace(/[\.\s]+/g, '') == 'ne') value = 'n.e.';
     if (value.toLowerCase().replace(/[\.\s]+/g, '') == 'ob') value = 'o.B.';
     if (value.toLowerCase().replace(/[\.\s]+/g, '') == 'befr') value = 'befr.';
+    if (value.toLowerCase().replace(/[\.\s]+/g, '') == 'tb') value = 't.b.';
+    if (value.toLowerCase().replace(/[\.\s]+/g, '') == 'zb') value = 'z.b.';
     if (value.toLowerCase().replace(/[\.\s]+/g, '') == 'x') value = '×';
     if (noten_allowed_values.indexOf(value) < 0) value = '';
     if (value === '')

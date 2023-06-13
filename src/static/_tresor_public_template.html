@@ -161,6 +161,18 @@
         outline: 2px solid #d5291a;
         background-color: rgba(213, 41, 26, 0.1);
     }
+    div.note.marked-big {
+        position: relative;
+        top: 0.5em;
+    }
+    div.note.marked-big:after {
+        outline: 2px solid #d5291a;
+        background-color: rgba(213, 41, 26, 0.1);
+        padding: 1em;
+    }
+    div.note.empty_x input {
+        color: #888;
+    }
     div.note input {
         margin-left: auto;
         margin-right: auto;
@@ -211,19 +223,19 @@
     <section class="w-full" style="height: 51px; display: #{second_factor_time_left.nil? ? 'none' : 'block'};">
         <ul class="submenu flex bg-white px-2.5 py-2"
             style="border-bottom: 1px solid #eee; left: 0px; right: 0px; z-index: 100;">
-            <li class="mx-1" style="display: #{zeugnis_admin_logged_in? ? 'unset' : 'none'};">
+            <li class="mx-1">
                 <a class="inline-block bg-slate-900 border border-blue-500 hover:bg-slate-200 rounded py-1 px-3"
-                    href="/zeugnisformulare"><i class='fa fa-file-word-o'></i>&nbsp;&nbsp;Zeugnisformulare</a>
+                    href="/zeugnisuebersicht"><i class='fa fa-dashboard'></i>&nbsp;&nbsp;Übersicht</a>
             </li>
             <li class="mx-1" style="display: #{zeugnis_admin_logged_in? ? 'unset' : 'none'};">
                 <a class="inline-block bg-slate-900 border border-blue-500 hover:bg-slate-200 rounded py-1 px-3"
-                    href="/zeugnisuebersicht"><i class='fa fa-dashboard'></i>&nbsp;&nbsp;Übersicht</a>
+                    href="/zeugnisformulare"><i class='fa fa-file-word-o'></i>&nbsp;&nbsp;Zeugnisformulare</a>
             </li>
             <li class="mx-1">
                 <a class="inline-block bg-slate-900 border border-blue-500 hover:bg-slate-200 rounded py-1 px-3"
                     href="/zeugnislisten"><i class='fa fa-table'></i>&nbsp;&nbsp;Zeugnislisten</a>
             </li>
-            <li class="mx-1">
+            <li class="mx-1" style="display: #{((!@session_user[:klassenleitung].nil?) || zeugnis_admin_logged_in?) ? 'unset' : 'none'};">
                 <a class="inline-block bg-slate-900 border border-blue-500 hover:bg-slate-200 rounded py-1 px-3"
                     href="/zeugnis_angebote_bemerkungen"><i class='fa fa-table'></i>&nbsp;&nbsp;Angebote und Bemerkungen</a>
             </li>
@@ -316,6 +328,10 @@ window.addEventListener('load', function () {
             $('.bg-white').removeClass('extra-padding');
         } else {
             $('#connection-established').show();
+            if ('#{second_factor_time_left.nil?}' !== 'true') {
+                if (window.location.pathname === '/tresor')
+                    window.location.href = '/zeugnisuebersicht';
+            }
         }
     });
     update_time_left();
@@ -352,7 +368,11 @@ let noten_allowed_values = [
     '3+', '3', '3-',
     '4+', '4', '4-',
     '5+', '5', '5-',
-    '6', 'n.e.', 'o.B.', 'befr.'
+    '6', 'n.e.', 'o.B.', 'befr.', 't.b.', 'z.b.', '×',
+];
+
+let versetzt_allowed_values = [
+    'ja', 'nein'
 ];
 
 let noten_mark = ['4-', '5+', '5', '5-', '6'];
@@ -363,6 +383,9 @@ function input_note_apply_style_and_fix(input, callback) {
     if (value.toLowerCase().replace(/[\.\s]+/g, '') == 'ne') value = 'n.e.';
     if (value.toLowerCase().replace(/[\.\s]+/g, '') == 'ob') value = 'o.B.';
     if (value.toLowerCase().replace(/[\.\s]+/g, '') == 'befr') value = 'befr.';
+    if (value.toLowerCase().replace(/[\.\s]+/g, '') == 'tb') value = 't.b.';
+    if (value.toLowerCase().replace(/[\.\s]+/g, '') == 'zb') value = 'z.b.';
+    if (value.toLowerCase().replace(/[\.\s]+/g, '') == 'x') value = '×';
     if (noten_allowed_values.indexOf(value) < 0) value = '';
     if (value === '')
         $(input).closest('.note').addClass('empty');
@@ -378,6 +401,38 @@ function input_note_apply_style_and_fix(input, callback) {
             $(input).closest('.note').addClass('marked');
         else
             $(input).closest('.note').removeClass('marked');
+        if (value === '×')
+            $(input).closest('.note').addClass('empty_x');
+        else
+            $(input).closest('.note').removeClass('empty_x');
+
+        if (typeof(callback) !== 'undefined') callback(value);
+    }
+}
+
+function input_versetzt_apply_style_and_fix(input, callback) {
+    let value = $(input).val().trim();
+    let original_value = `${value}`;
+    if (value.toLowerCase().replace(/[\.\s]+/g, '') == 'j') value = 'ja';
+    if (value.toLowerCase().replace(/[\.\s]+/g, '') == 'ja') value = 'ja';
+    if (value.toLowerCase().replace(/[\.\s]+/g, '') == 'n') value = 'nein';
+    if (value.toLowerCase().replace(/[\.\s]+/g, '') == 'nein') value = 'nein';
+    if (versetzt_allowed_values.indexOf(value) < 0) value = '';
+    if (value === '')
+        $(input).closest('.note').addClass('empty');
+    else
+        $(input).closest('.note').removeClass('empty');
+
+    if (original_value !== value) {
+        $(input).val(value);
+        input_versetzt_apply_style_and_fix($(input), callback);
+        return;
+    } else {
+        if (value === 'nein')
+            $(input).closest('.note').addClass('marked-big');
+        else
+            $(input).closest('.note').removeClass('marked-big');
+
         if (typeof(callback) !== 'undefined') callback(value);
     }
 }
@@ -495,7 +550,8 @@ function load_noten_table(container, klasse, edit_noten) {
                         if (!edit_noten || ((!my_zeugnisliste[`${klasse}/${fach}`]) && ('#{zeugnis_admin_logged_in?}' === 'false'))) {
                             input.prop('disabled', true);
                         }
-                        input.val(data.results[0][0][0][fi][index]);
+                        let value = data.results[0][0][0][fi][index];
+                        input.val(value);
                         input.focus(function(e) {
                             input.select();
                             // input[0].scrollIntoView({behavior: 'instant', block: 'center', inline: 'center'});
@@ -825,7 +881,7 @@ function load_angebote_bemerkungen_table(container, klasse, edit_noten) {
     path_array.push(['Schuljahr', ZEUGNIS_SCHULJAHR]);
     path_array.push(['Halbjahr', ZEUGNIS_HALBJAHR]);
     let liste = zeugnisliste_for_klasse[klasse];
-    let items = ['Angebote', 'Bemerkungen'];
+    let items = ['Versetzt', 'Angebote', 'Bemerkungen'];
     let emails = liste.schueler.map(function(x) { return x.email; });
     path_array.push(['AB', items]);
     path_array.push(['Email', emails]);
@@ -833,6 +889,7 @@ function load_angebote_bemerkungen_table(container, klasse, edit_noten) {
     tresor_api_call('/jwt/get_many', {path_arrays: [path_array], key: 'Wert'}, function(data) {
         let t1 = Date.now();
         console.log(`request took ${t1 - t0} ms.`);
+        console.log(data);
         if (data.success) {
             container.empty();
             let table = new SortableTable({
@@ -843,7 +900,6 @@ function load_angebote_bemerkungen_table(container, klasse, edit_noten) {
                 }))).map(function (x) {
                     let th = $('<th>').html(x);
                     if (x === 'Nachname') th.addClass('thsticky');
-
                     if (['Nr.', 'Nachname', 'Vorname', 'Klasse'].indexOf(x) < 0) th.css('text-align', 'center');
                     return th;
                 }),
@@ -858,33 +914,106 @@ function load_angebote_bemerkungen_table(container, klasse, edit_noten) {
                     ];
                     for (let fi = 0; fi < items.length; fi++) {
                         let item = items[fi];
-                        let input = $(`<textarea placeholder='--' class='form-control' style='width: 100%; height: 10em;' ${edit_noten ? '' : 'disabled readonly'}>`);
-                        input.val(data.results[0][0][0][fi][index]);
-                        input.focus(function(e) {
-                            input.select();
-                            // input[0].scrollIntoView({behavior: 'instant', block: 'center', inline: 'center'});
-                            container.find('tr').removeClass('focused');
-                            input.closest('tr').addClass('focused');
-                            $(e.target).data('old_value', $(e.target).val());
-                        });
-                        input.blur(function(e) {
-                            container.find('tr').removeClass('focused');
-                            let value = $(e.target).val().trim();
-                            if (value !== $(e.target).data('old_value')) {
-                                let path = `Schuljahr:${ZEUGNIS_SCHULJAHR}/Halbjahr:${ZEUGNIS_HALBJAHR}/AB:${item}/Email:${email}`;
-                                input.closest('td').find('i.fa').remove();
-                                tresor_api_call('/jwt/store', {path: path, key: 'Wert', value: value}, function(data) {
-                                    if (data.success) {
-                                        $(e.target).data('old_value', value);
-                                    } else {
-                                        $(e.target).val($(e.target).data('old_value'));
-                                        let icon = $(`<i class='fa fa-times tresor_icon text-danger'>`);
-                                        icon.appendTo(input.closest('td'));
-                                    }
-                                });
+                        let input = null;
+                        if (item === 'Versetzt') {
+                            let fach = item;
+                            input = $(`<input placeholder='--' class='form-control' style='width: 4em; text-align: center; height: calc(1.5em + 2px);'>`)
+                            if (!edit_noten) {
+                                input.prop('disabled', true);
                             }
-                        });
-                        cells.push($(`<td style='width: 50%;'>`).append($(`<div>`).append(input)));
+                            let value = data.results[0][0][0][fi][index];
+                            console.log(email, value);
+                            if (value === null) value = 'ja';
+                            input.val(value);
+                            input.focus(function(e) {
+                                input.select();
+                                // input[0].scrollIntoView({behavior: 'instant', block: 'center', inline: 'center'});
+                                container.find('tr').removeClass('focused');
+                                input.closest('tr').addClass('focused');
+                                $(e.target).data('old_value', $(e.target).val());
+                            });
+                            input.blur(function(e) {
+                                container.find('tr').removeClass('focused');
+                                let value = $(e.target).val().trim();
+                                if (value !== $(e.target).data('old_value')) {
+                                    let path = `Schuljahr:${ZEUGNIS_SCHULJAHR}/Halbjahr:${ZEUGNIS_HALBJAHR}/AB:${item}/Email:${email}`;
+                                    input_versetzt_apply_style_and_fix($(e.target), function(value) {
+                                        input.closest('td').find('i.fa').remove();
+                                        tresor_api_call('/jwt/store', {path: path, key: 'Wert', value: value}, function(data) {
+                                            if (data.success) {
+                                                $(e.target).data('old_value', value);
+                                            } else {
+                                                $(e.target).val($(e.target).data('old_value'));
+                                                input_versetzt_apply_style_and_fix($(e.target), function(value) {
+                                                    let icon = $(`<i class='fa fa-times tresor_icon text-danger'>`);
+                                                    icon.appendTo(input.closest('td'));
+                                                });
+                                            }
+                                        });
+                                    });
+                                }
+                            });
+                            input.keydown(function(e) {
+                                if (e.key === 'Enter' || e.key === 'ArrowDown') {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    let row = $(e.target).closest('tr');
+                                    let this_index = $(e.target).closest('td').index();
+                                    let next_row = row.next('tr');
+                                    if (next_row.length === 0) {
+                                        next_row = row.closest('tbody').find('tr').first();
+                                    }
+                                    next_row.find('td').eq(this_index).find('input').focus().select();
+                                }
+                                if (e.key === 'ArrowUp') {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    let row = $(e.target).closest('tr');
+                                    let this_index = $(e.target).closest('td').index();
+                                    let next_row = row.prev('tr');
+                                    if (next_row.length === 0) {
+                                        next_row = row.closest('tbody').find('tr').last()
+                                    }
+                                    next_row.find('td').eq(this_index).find('input').focus().select();
+                                }
+                            });
+                            cells.push($('<td>').append($(`<div class='note'>`).append(input)));
+                            input_versetzt_apply_style_and_fix(input);
+                        } else {
+                            input = $(`<textarea placeholder='--' class='form-control' style='width: 100%; height: 10em;' ${edit_noten ? '' : 'disabled readonly'}>`);
+                            input.val(data.results[0][0][0][fi][index]);
+                            input.focus(function(e) {
+                                // input.select();
+                                // input[0].scrollIntoView({behavior: 'instant', block: 'center', inline: 'center'});
+                                container.find('tr').removeClass('focused');
+                                input.closest('tr').addClass('focused');
+                                $(e.target).data('old_value', $(e.target).val());
+                            });
+                            input.blur(function(e) {
+                                container.find('tr').removeClass('focused');
+                                let value = $(e.target).val().trim();
+                                if (value !== $(e.target).data('old_value')) {
+                                    let path = `Schuljahr:${ZEUGNIS_SCHULJAHR}/Halbjahr:${ZEUGNIS_HALBJAHR}/AB:${item}/Email:${email}`;
+                                    input.closest('td').find('i.fa').remove();
+                                    tresor_api_call('/jwt/store', {path: path, key: 'Wert', value: value}, function(data) {
+                                        if (data.success) {
+                                            $(e.target).data('old_value', value);
+                                        } else {
+                                            $(e.target).val($(e.target).data('old_value'));
+                                            let icon = $(`<i class='fa fa-times tresor_icon text-danger'>`);
+                                            icon.appendTo(input.closest('td'));
+                                        }
+                                    });
+                                }
+                            });
+                            input.on('keyup', function(e) {
+                                let text = input.val();
+                                console.log(text);
+                                text = text.replace(RegExp(/\(NAME\)/g), liste.schueler[index].official_first_name);
+                                input.val(text);
+                            });
+                            cells.push($(`<td style='${item !== 'Versetzt' ? 'width: 50%;' : ''}'>`).append($(`<div>`).append(input)));
+                        }
                     }
                     return cells;
                 }),

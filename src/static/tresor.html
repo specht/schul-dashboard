@@ -34,7 +34,7 @@
                         <em>
                         Hinweis: Falls Sie eines der nicht verfügbaren Anmeldeverfahren freischalten möchten, können Sie dies <a href='/profil#anmeldung'>im Profil tun</a>, indem Sie eine Telefonnummer hinterlegen (Klick auf »Nummer hinterlegen«) oder einen OTP-Code einscannen (Klick auf »OTP aktivieren«). Bitte
                         beachten Sie, dass Sie ein neu eingerichtetes Anmeldeverfahren aus Sicherheitsgründen erst ab dem darauffolgenden Tag 
-                        für den Zugang zum Datentresor verwenden können.
+                        für den Zugang zum Datentresor verwenden können. 
                         </em>
                     </p>
                     <p style="display: #{DATENTRESOR_HOTLINE.empty? ? 'none': 'block'};">
@@ -42,6 +42,10 @@
                         Für den Fall, dass Sie alles versucht haben und nicht weiterkommen oder es dringend ist, können Sie auch <a id='hotline-2fa' href='#'>#{DATENTRESOR_HOTLINE} anrufen</a>. Sie werden dann telefonisch freigeschaltet.
                         </em>
                     </p>
+                    <p>
+                        Ein kleines Einführungsvideo können Sie <a href="https://youtu.be/a3x2rwFbOr0" target="_blank">hier</a> sehen.
+                    </p>
+                    <div style="clear: both;"></div>
                 </div>
                 <div id="div-confirm-login" style="display: none;" class="col-md-6 offset-md-3">
                     <form id='form'>
@@ -86,7 +90,6 @@ var telephone_number = '#{session_user_telephone_number()}';
 var telephone_number_good_for_tresor = #{session_user_telephone_number_good_for_tresor()};
 
 window.addEventListener('load', function () {
-    console.log('sf: #{second_factor_time_left}');
     $('#bu_sf_email').removeClass('btn-outline-secondary').addClass('btn-success').prop('disabled', false);
     if (otp_qr_code.length > 0) {
         if (otp_token_good_for_tresor) {

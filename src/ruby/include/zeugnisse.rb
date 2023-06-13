@@ -96,7 +96,7 @@ class Main < Sinatra::Base
         end
 
         if ZEUGNIS_USE_MOCK_NAMES
-            srand(0)
+            srand(42)
         end
         ZEUGNIS_KLASSEN_ORDER.each do |klasse|
             lesson_keys_for_fach = {}
@@ -360,8 +360,6 @@ class Main < Sinatra::Base
             info['#Name'] = name
             last_zeugnis_name = name
             info['#Vorname'] = "#{sus_info[:official_first_name]}"
-            # info['#NICHT'] = '<w:r><w:rPr><w:strike/></w:rPr><w:t>nicht</w:t></w:r>'
-            # info['#NICHT'] = 'nicht'
             info['#Geburtsdatum'] = "#{Date.parse(sus_info[:geburtstag]).strftime('%d.%m.%Y')}"
             info['#Klasse'] = Main.tr_klasse(klasse)
             info['#Zeugnisdatum'] = ZEUGNIS_DATUM
@@ -393,11 +391,17 @@ class Main < Sinatra::Base
             FileUtils.cp_r("/internal/zeugnisse/formulare/#{formular_sha1}/", out_path_dir)
             doc = File.read(File.join(out_path_dir, formular_sha1, 'word', 'document.xml'))
             @@zeugnisse[:formulare][zeugnis_key][:tags].each do |tag|
-                doc.gsub!("#{tag}.", info[tag] || '')
+                value = info[tag] || ''
+                if value == '×'
+                    value = '--'
+                end
+                doc.gsub!("#{tag}.", value)
             end
             # TODO: Fix this
             if ZEUGNIS_HALBJAHR == '2'
-                doc.gsub!('<w:strike/></w:rPr><w:t>nicht</w:t>', '</w:rPr><w:t>nicht</w:t>')
+                if cache["Schuljahr:#{ZEUGNIS_SCHULJAHR}/Halbjahr:#{ZEUGNIS_HALBJAHR}/AB:Versetzt/Email:#{email}"] == 'nein'
+                    doc.gsub!('<w:strike/></w:rPr><w:t>nicht</w:t>', '</w:rPr><w:t>nicht</w:t>')
+                end
             end
 
             File.open(File.join(out_path_dir, formular_sha1, 'word', 'document.xml'), 'w') do |f|

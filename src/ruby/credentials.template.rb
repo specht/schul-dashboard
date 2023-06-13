@@ -231,9 +231,9 @@ CAN_REPORT_TECH_PROBLEMS_USERS = []
 CAN_MANAGE_TABLETS_USERS = []
 EXTERNAL_USERS = []
 GEV_USERS = []
-LEHRBUCHVEREIN_JAHR = 2022
+LEHRBUCHVEREIN_JAHR = 2023
 
-# Schülervertretung, kann:
+# SV (Schülervertretung) kann:
 # - Nachrichten an SuS schreiben
 # - Umfragen unter SuS starten
 # - Abstimmungen starten

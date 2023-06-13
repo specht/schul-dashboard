@@ -33,8 +33,8 @@
             Seite links: 2 + 1 (LED)<br>
             Seite rechts: 2 + 1 (LED)<br>
             <hr> -->
-            <button disabled class='btn btn-secondary eckig box' target='_blank'>L</button>
-            <button disabled class='btn btn-secondary eckig box' target='_blank'>R</button>
+            <button disabled class='btn btn-outline-secondary eckig box' target='_blank'>L</button>
+            <button disabled class='btn btn-outline-secondary eckig box' target='_blank'>R</button>
             &nbsp;&nbsp;Lautsprecher&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
             <button class='start btn btn-secondary rund' target='_blank'>00</button>
             &nbsp;&nbsp;LED&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
@@ -57,22 +57,22 @@
                             <td></td>
                             <td></td>
                             <td></td>
-                            <td><button id="u" class='btn btn-secondary scheinwerfer rund' target='_blank'>u</button></td>
+                            <td><button id="u" class='btn btn-secondary scheinwerfer rund u' target='_blank'>u</button></td>
                             <td></td>
                             <td></td>
                             <td></td>
                             <td></td>
-                            <td><button id="u" class='btn btn-secondary scheinwerfer rund' target='_blank'>u</button></td>
+                            <td><button id="u" class='btn btn-secondary scheinwerfer rund u' target='_blank'>u</button></td>
                             <td></td>
                             <td></td>
                             <td></td>
                             <td></td>
-                            <td><button id="u" class='btn btn-secondary scheinwerfer rund' target='_blank'>u</button></td>
+                            <td><button id="u" class='btn btn-secondary scheinwerfer rund u' target='_blank'>u</button></td>
                             <td></td>
                             <td></td>
                             <td></td>
                             <td></td>
-                            <td><button id="u" class='btn btn-secondary scheinwerfer rund' target='_blank'>u</button></td>
+                            <td><button id="u" class='btn btn-secondary scheinwerfer rund u' target='_blank'>u</button></td>
                             <td></td>
                             <td></td>
                             <td></td>
@@ -141,7 +141,7 @@
                             <td></td>
                         </tr>
                         <tr>
-                            <td><button id="00" class='btn btn-secondary scheinwerfer rund' target='_blank'>u</button></td>
+                            <td><button id="u" class='btn btn-secondary scheinwerfer rund u' target='_blank'>u</button></td>
                             <td></td>
                             <td></td>
                             <td></td>
@@ -168,7 +168,7 @@
                             <td></td>
                             <td></td>
                             <td></td>
-                            <td><button id="00" class='btn btn-secondary scheinwerfer rund' target='_blank'>u</button></td>
+                            <td><button id="u" class='btn btn-secondary scheinwerfer rund u' target='_blank'>u</button></td>
                         </tr>
                         <tr>
                             <td></td>
@@ -181,7 +181,7 @@
                             <td><button id=" 20" class='btn btn-success scheinwerfer rund' target='_blank'>17</button></td>
                             <td></td>
                             <td></td>
-                            <td><button id="023" class='btn btn-warning scheinwerfer eckig' target='_blank'></button></td>
+                            <td><button id="023" class='btn btn-warning scheinwerfer eckig' target='_blank'>20</button></td>
                             <td></td>
                             <td></td>
                             <td><button id="028" class='btn btn-warning scheinwerfer eckig' target='_blank'>38</button></td>
@@ -205,7 +205,7 @@
                             <td></td>
                             <td></td>
                             <td></td>
-                            <td><button id="boxL" disabled class='btn btn-secondary eckig box' target='_blank'>L</button></td>
+                            <td><button id="boxL" disabled class='btn btn-outline-secondary eckig box' target='_blank'>L</button></td>
                             <td></td>
                             <td></td>
                             <td></td>
@@ -224,7 +224,7 @@
                             <td></td>
                             <td></td>
                             <td></td>
-                            <td><button id="boxR" disabled class='btn btn-secondary eckig box' target='_blank'>R</button></td>
+                            <td><button id="boxR" disabled class='btn btn-outline-secondary eckig box' target='_blank'>R</button></td>
                             <td></td>
                             <td></td>
                             <td></td>
@@ -269,6 +269,7 @@
 </div>
 <script>
     function refresh_aula_light() {
+        $('.u').html('⚠️')
         api_call('/api/get_light', function(data) {
             for (let entry of data.light) {
                 $('#' + entry.lightdata.dmx).html('Test')
@@ -281,10 +282,11 @@ document.addEventListener('DOMContentLoaded', function () {
     refresh_aula_light();
     $('.scheinwerfer').click(function (e) {
         var dmx = e.target.id;
+        var desk = e.target.innerHTML
         api_call('/api/get_light_data', {dmx: dmx}, function(data) {
-        let entry = data.light
-            showTemplateModal('Channel <b><code>"' + entry + '"</code></b>',
-            'Dieser Scheinwerfer liegt auf dem DMX-Kanal <b><code>' + entry + '</code></b>.<br><br><input type="number" id="al_desk_channel" class="form-control" placeholder="Channel auf dem Lichtpult" value="' + entry + '"></input>',
+            let entry = data.light
+            showTemplateModal('Channel <b><code>"' + entry.lightdata.desk + '"</code></b>',
+            'Dieser Scheinwerfer liegt auf dem DMX-Kanal <b><code>' + dmx + '</code></b>.<br><br><input type="number" id="al_desk_channel" class="form-control" placeholder="Channel auf dem Lichtpult" value="' + desk + '"></input>',
             "<i class='fa fa-check'></i>&nbsp;&nbsp;Speichern", 'btn-success',
             'Abbrechen', 'btn-secondary', function() {
                 let input_desk = $('#al_desk_channel').val();

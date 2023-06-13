@@ -54,7 +54,7 @@
             </div>
             <div class='row' style='margin-bottom: 15px;'>
                 <div class='col-md-12'>
-                    <button class='bu-fixed-problems btn btn-primary'><i class='fa fa-eye'></i>&nbsp;&nbsp;ausgeblendete Probleme</button>
+                    <button class='bu-fixed-problems btn btn-primary'><i class='fa fa-eye'></i>&nbsp;&nbsp;Ausgeblendete Probleme</button>
                 </div>
             </div>
         </div>
@@ -65,7 +65,7 @@
     <div class="modal-dialog modal-xl modal-dialog-centered" role="document">
       <div class="modal-content">
        <div class="modal-header">
-          <h5 class="modal-title">ausgeblendete Probleme</h5>
+          <h5 class="modal-title">Ausgeblendete Probleme</h5>
         </div>
         <div class="modal-body">
             <div class='row'>
@@ -132,7 +132,7 @@
 
                         });
 
-                        let tp_not_fixed = $('<button>').addClass('btn').addClass('btn-xs').addClass('btn-danger').html("<i class='fa fa-times'></i>&nbsp;&nbsp;Nicht Behoben");
+                        let tp_not_fixed = $('<button>').addClass('btn').addClass('btn-xs').addClass('btn-warning').html("<i class='fa fa-times'></i>&nbsp;&nbsp;Nicht Behoben");
                         tp_not_fixed.data('token', entry.problem.token);
                         tp_not_fixed.click(function(e) {
 

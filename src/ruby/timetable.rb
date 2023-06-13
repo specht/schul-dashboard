@@ -681,11 +681,16 @@ class Timetable
                             (@@user_info[@@shorthands[y]] || {})[:display_last_name] || y
                         end
                     end
+                    lehrer_name = e[:lehrer].map do |x|
+                        x.map do |y|
+                            (@@user_info[@@shorthands[y]] || {})[:last_name] || y
+                        end
+                    end
                     e[:label_lehrer_short] = gen_label_lehrer(e[:fach], e[:lehrer])
                     e[:label_klasse_short] = gen_label_klasse(e[:fach], e[:klassen], e[:lehrer])
                     e[:label_room_short] = gen_label_room(e[:fach], e[:klassen], e[:lehrer])
-                    e[:label_lehrer] = gen_label_lehrer(fach_lang, e[:lehrer])
-                    e[:label_klasse] = gen_label_klasse(fach_lang, e[:klassen], e[:lehrer])
+                    e[:label_lehrer] = gen_label_lehrer(fach_lang, lehrer_name)
+                    e[:label_klasse] = gen_label_klasse(fach_lang, e[:klassen], lehrer_name)
                     e[:label_room] = gen_label_room(fach_lang, e[:klassen], e[:lehrer])
                     e[:label_lehrer_lang] = gen_label_lehrer(fach_lang, lehrer_lang)
                     e[:label_klasse_lang] = gen_label_klasse(fach_lang, e[:klassen], lehrer_lang)
@@ -728,10 +733,13 @@ class Timetable
                     lehrer_lang = e[:lehrer].map do |y|
                         (@@user_info[@@shorthands[y]] || {})[:display_last_name] || y
                     end
+                    lehrer_name = e[:lehrer].map do |y|
+                        (@@user_info[@@shorthands[y]] || {})[:last_name] || y
+                    end
                     e[:label_lehrer_short] = gen_label_lehrer([e[:fach]], [e[:lehrer]])
                     e[:label_klasse_short] = gen_label_klasse([e[:fach]], [e[:klassen]], [e[:lehrer]])
-                    e[:label_lehrer] = gen_label_lehrer([fach_lang], [e[:lehrer]])
-                    e[:label_klasse] = gen_label_klasse([fach_lang], [e[:klassen]], [e[:lehrer]])
+                    e[:label_lehrer] = gen_label_lehrer([fach_lang], [lehrer_name])
+                    e[:label_klasse] = gen_label_klasse([fach_lang], [e[:klassen]], [lehrer_name])
                     e[:label_lehrer_lang] = gen_label_lehrer([fach_lang], [lehrer_lang])
                     e[:label_klasse_lang] = gen_label_klasse([fach_lang], [e[:klassen]], [lehrer_lang])
                     e[:klassen] = [e[:klassen]]

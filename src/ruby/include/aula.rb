@@ -181,7 +181,7 @@ class Main < Sinatra::Base
         require_user_who_can_manage_tablets!
         data = parse_request_data(:required_keys => [:dmx, :desk])
         neo4j_query(<<~END_OF_QUERY, :dmx => data[:dmx], :desk => data[:desk])
-            MERGE (e:AulaLight)
+            MERGE (e:AulaLight {dmx: $dmx})
             SET e.dmx = $dmx
             SET e.desk = $desk;
         END_OF_QUERY

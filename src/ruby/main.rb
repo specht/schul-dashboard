@@ -1070,17 +1070,17 @@ class Main < Sinatra::Base
         @@klassen_order.each do |klasse|
             next unless @@schueler_for_klasse.include?(klasse)
             @@mailing_lists["klasse.#{klasse}@#{SCHUL_MAIL_DOMAIN}"] = {
-                :label => "SuS der Klasse #{klasse}",
+                :label => "SuS der Klasse #{tr_klasse(klasse)}",
                 :recipients => @@schueler_for_klasse[klasse]
             }
             @@mailing_lists["eltern.#{klasse}@#{SCHUL_MAIL_DOMAIN}"] = {
-                :label => "Eltern der Klasse #{klasse}",
+                :label => "Eltern der Klasse #{tr_klasse(klasse)}",
                 :recipients => @@schueler_for_klasse[klasse].map do |email|
                     "eltern.#{email}"
                 end
             }
             @@mailing_lists["lehrer.#{klasse}@#{SCHUL_MAIL_DOMAIN}"] = {
-                :label => "Lehrer der Klasse #{klasse}",
+                :label => "Lehrer der Klasse #{tr_klasse(klasse)}",
                 :recipients => ((@@teachers_for_klasse[klasse] || {}).keys.sort).map do |shorthand|
                     email = @@shorthands[shorthand]
                 end.reject do |email|

@@ -28,6 +28,7 @@ var zeugnisliste_for_klasse = #{@@zeugnisliste_for_klasse.to_json};
 var zeugnisliste_for_lehrer = #{@@zeugnisliste_for_lehrer.to_json};
 var my_zeugnisliste = #{(@@zeugnisliste_for_lehrer[@session_user[:shorthand]] || {}).to_json};
 var my_klassen = #{(@@zeugnisliste_for_lehrer[@session_user[:shorthand]]).keys.map { |x| x.split('/').first }.sort.uniq.to_json};
+var shorthands = #{@@shorthands.keys.sort { |a, b| a.downcase <=> b.downcase }.reject { |x| x[0] == '_'}.to_json};
 
 function have_or_admin(key) {
     return my_zeugnisliste[key] || `#{zeugnis_admin_logged_in?}` === 'true';
@@ -77,7 +78,6 @@ window.addEventListener('load', function () {
             lehrer_for_zeugnis_key[key].push(shorthand);
         }
     }
-    console.log(lehrer_for_zeugnis_key);
     tresor_api_call('/jwt/get_many_present', {path_arrays: path_arrays, key: 'Wert'}, function(data) {
         let counts = {};
         for (let klassen_index = 0; klassen_index < zeugnis_klassen_order.length; klassen_index++) {
@@ -130,6 +130,7 @@ window.addEventListener('load', function () {
                 }
             }
         }
+        console.log(counts);
         
         let my_counts = counts['#{@session_user[:shorthand]}'] ?? [0, 0];
         let my_present = my_counts[0];
@@ -192,6 +193,26 @@ window.addEventListener('load', function () {
                     row.append($(`<td>`).append($(`<span>`).html(`<i class='fa fa-check-circle'></i>`).css('color', '#4aa03f')));
                 else
                    row.append($(`<td>`).append($(`<span>`).text(`${present_count}/${total_count}`).css('background-color', red_green_ramp(present_count / total_count)).addClass('ramp')));
+            }
+        }
+        if (`#{zeugnis_admin_logged_in?}` === 'true') {
+            // also print progress per teacher
+            let div = $(`<div class='col-md-12'>`).appendTo('#zeugnisuebersicht-here');
+            div.append($(`<h4>`).text(`Eintragungen pro Lehrkaft`));
+            let table = $(`<table class='table table-sm'>`).appendTo(div);
+            let row = $(`<tr>`).appendTo(table);
+            row.append($(`<th>`).text("Kürzel"));
+            row.append($(`<th>`).text("Eintragungen"));
+            row.append($(`<th>`).text("Fortschritt"));
+            for (let shorthand of shorthands) {
+                let x = counts[shorthand] ?? [0, 0];
+                let my_present = x[0];
+                let my_total = x[1];
+                if (my_total === 0) continue;
+                let row = $(`<tr>`).appendTo(table);
+                row.append($(`<td style='width: unset;'>`).text(shorthand));
+                row.append($(`<td style='width: unset;'>`).text(`${my_present} von ${my_total}`));
+                row.append($(`<td style='width: 100%;'>`).append($(`<div class='progress'>`).append($(`<div class='progress-bar progress-bar-striped bg-success' style="width: ${my_present * 100 / my_total}%">${(my_present * 100 / my_total).toFixed(1)}%</div>`))));
             }
         }
     });

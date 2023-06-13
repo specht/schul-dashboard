@@ -776,9 +776,9 @@ function load_sozialverhalten_table(container, klasse, edit_noten) {
                         cells.push(`<td></td>`);
                     }
                     if (fach === '_KL')
-                        cells.push(`<td>KL</td>`);
+                        cells.push(`<td class='tdsticky' style='left: 5em;'>KL</td>`);
                     else
-                        cells.push(`<td>${fach}</td>`);
+                        cells.push(`<td class='tdsticky' style='left: 5em;'>${fach}</td>`);
                     for (let fi = 0; fi < items.length; fi++) {
                         let item = items[fi];
                         let input = $(`<input placeholder='--' class='form-control' style='width: 3em; text-align: center; height: calc(1.5em + 2px);'>`)
@@ -857,8 +857,9 @@ function load_sozialverhalten_table(container, klasse, edit_noten) {
                     }[fach] ?? fach;
                     return `${fach_label}`;
                 }))).map(function (x) {
-                    let th = $('<th>').html(x);
-                    if (x === 'Nachname') th.addClass('thsticky');
+                    let th = $(`<th>`).html(x);
+                    if (x === 'Nachname' || x === 'Fach') th.addClass('thsticky');
+                    if (x === 'Fach') th.css('left', '5em');
                     if (['Nr.', 'Nachname', 'Vorname', 'Klasse'].indexOf(x) < 0) th.css('text-align', 'center');
                     return th;
                 }),

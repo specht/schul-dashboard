@@ -462,7 +462,9 @@ function input_tendenz_apply_style_and_fix(input, callback) {
     value = value.toLowerCase();
     if (value == 'O') value = 'o';
     if (value == '0') value = 'o';
-    if (!(value === '-' || value === 'o' || value === '+' || value == '++'))
+    if (value.toLowerCase().replace(/[\.\s]+/g, '') == 'x') value = '×';
+
+    if (!(value === '-' || value === 'o' || value === '+' || value == '++' || value == '×'))
         value = '';
     if (value === '')
         $(input).closest('.note').addClass('empty');
@@ -473,6 +475,10 @@ function input_tendenz_apply_style_and_fix(input, callback) {
         input_tendenz_apply_style_and_fix($(input), callback);
         return;
     } else {
+        if (value === '×')
+            $(input).closest('.note').addClass('empty_x');
+        else
+            $(input).closest('.note').removeClass('empty_x');
         if (typeof(callback) !== 'undefined') callback(value);
     }
 }

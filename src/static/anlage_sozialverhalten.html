@@ -15,6 +15,16 @@
         text-align: center;
         border-radius: 4px;
     }
+    .expl_table td span {
+        display: inline-block;
+        background-color: #eee;
+        padding: 0em 0.8em;
+        border-radius: 4px;
+        margin: 0 0.2em;
+    }
+    .expl_table td div.note {
+        display: inline-block;
+    }
 </style>
 <div class='container bg-white'>
     <div class="w-full">
@@ -29,16 +39,44 @@
         <p><b>Kooperationsfähigkeit:</b> Die Schülerin / Der Schüler arbeitet zielgerichtet mit anderen zusammen und übernimmt eigenverantwortlich Aufgaben. Sie / Er hört anderen zu und geht auf andere ein. Sie / Er erfüllt die Erwartungen …</p>
         <p><b>Soziales Verhalten:</b> Die Schülerin / Der Schüler respektiert andere Meinungen. Sie / Er setzt sich für ihre /seine Überzeugungen ein, beachtet Regeln und Vereinbarungen und geht konstruktiv mit Konflikten um. Sie / Er ist hilfsbereit. Sie / Er erfüllt die Erwartungen …</p>
 
+        <table class="expl_table table table-sm" style="width: unset;">
+            <tr>
+                <th style="line-height: unset;">…in besonderem Maße.</th>
+                <td>
+                    <span>++</span>
+                </td>
+            </tr>
+            <tr>
+                <th style="line-height: unset;">…voll.</th>
+                <td>
+                    <span>+</span>
+                </td>
+            </tr>
+            <tr>
+                <th style="line-height: unset;">…nicht immer.</th>
+                <td>
+                    <span>o</span>
+                </td>
+            </tr>
+            <tr>
+                <th style="line-height: unset;">…nicht.</th>
+                <td>
+                    <span>-</span>
+                </td>
+            </tr>
+            <tr>
+                <th style="line-height: unset;">leer</th>
+                <td>
+                    <span>&times;</span>
+                    <br />
+                    Hinweis: Tragen Sie ein »x« ein, wenn der Eintrag im Zeugnisdruck leer bleiben soll, z. B. wenn die Schülerin / der Schüler vom Unterricht befreit war.
+                </td>
+            </tr>
+        </table>
         <p>
-            Bitte vergeben Sie in jeder Kategorie eines der folgenden Symbole:
-            <ul class="legend">
-                <li><span>++</span> …in besonderem Maße.</li>
-                <li><span>+</span> …voll.</li>
-                <li><span>o</span> …nicht immer.</li>
-                <li><span>-</span> …nicht.</li>
-            </ul>
             Bitte wählen Sie eine Klasse, für die Sie Bewertungen eintragen möchten.
         </p>
+
         <div id="klassen_buttons_here"></div>
         <hr />
         <div id="edit_button_here" style="display: none; margin-bottom: 0.5em;">

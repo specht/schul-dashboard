@@ -360,6 +360,12 @@ window.addEventListener('load', function () {
             $(x).removeClass('bg-white').addClass('font-bold shadow-md outline outline-1 outline-blue-500 bg-white');
         }
     }
+    window.addEventListener('scroll', function(e) {
+        let div = $('.tresor_table_container');
+        let dy = div.offset().top - $(window).scrollTop() - 122;
+        if (dy > 0) dy = 0;
+        $('.tresor_table_container thead').css('position', 'relative').css('top', `${-dy}px`).css('background-color', '#fff').css('z-index', 100);
+    });
 });
 
 let noten_allowed_values = [
@@ -368,7 +374,7 @@ let noten_allowed_values = [
     '3+', '3', '3-',
     '4+', '4', '4-',
     '5+', '5', '5-',
-    '6', 'n.e.', 'o.B.', 'befr.', 't.b.', 'z.b.', '×',
+    '6', 'n.e.', 'o.B.', 'befr.', '×',
 ];
 
 let versetzt_allowed_values = [
@@ -383,8 +389,6 @@ function input_note_apply_style_and_fix(input, callback) {
     if (value.toLowerCase().replace(/[\.\s]+/g, '') == 'ne') value = 'n.e.';
     if (value.toLowerCase().replace(/[\.\s]+/g, '') == 'ob') value = 'o.B.';
     if (value.toLowerCase().replace(/[\.\s]+/g, '') == 'befr') value = 'befr.';
-    if (value.toLowerCase().replace(/[\.\s]+/g, '') == 'tb') value = 't.b.';
-    if (value.toLowerCase().replace(/[\.\s]+/g, '') == 'zb') value = 'z.b.';
     if (value.toLowerCase().replace(/[\.\s]+/g, '') == 'x') value = '×';
     if (noten_allowed_values.indexOf(value) < 0) value = '';
     if (value === '')
@@ -464,7 +468,9 @@ function input_tendenz_apply_style_and_fix(input, callback) {
     value = value.toLowerCase();
     if (value == 'O') value = 'o';
     if (value == '0') value = 'o';
-    if (!(value === '-' || value === 'o' || value === '+' || value == '++'))
+    if (value.toLowerCase().replace(/[\.\s]+/g, '') == 'x') value = '×';
+
+    if (!(value === '-' || value === 'o' || value === '+' || value == '++' || value == '×'))
         value = '';
     if (value === '')
         $(input).closest('.note').addClass('empty');
@@ -475,6 +481,10 @@ function input_tendenz_apply_style_and_fix(input, callback) {
         input_tendenz_apply_style_and_fix($(input), callback);
         return;
     } else {
+        if (value === '×')
+            $(input).closest('.note').addClass('empty_x');
+        else
+            $(input).closest('.note').removeClass('empty_x');
         if (typeof(callback) !== 'undefined') callback(value);
     }
 }
@@ -778,9 +788,9 @@ function load_sozialverhalten_table(container, klasse, edit_noten) {
                         cells.push(`<td></td>`);
                     }
                     if (fach === '_KL')
-                        cells.push(`<td>KL</td>`);
+                        cells.push(`<td class='tdsticky' style='left: 5em;'>KL</td>`);
                     else
-                        cells.push(`<td>${fach}</td>`);
+                        cells.push(`<td class='tdsticky' style='left: 5em;'>${fach}</td>`);
                     for (let fi = 0; fi < items.length; fi++) {
                         let item = items[fi];
                         let input = $(`<input placeholder='--' class='form-control' style='width: 3em; text-align: center; height: calc(1.5em + 2px);'>`)
@@ -859,8 +869,9 @@ function load_sozialverhalten_table(container, klasse, edit_noten) {
                     }[fach] ?? fach;
                     return `${fach_label}`;
                 }))).map(function (x) {
-                    let th = $('<th>').html(x);
-                    if (x === 'Nachname') th.addClass('thsticky');
+                    let th = $(`<th>`).html(x);
+                    if (x === 'Nachname' || x === 'Fach') th.addClass('thsticky');
+                    if (x === 'Fach') th.css('left', '5em');
                     if (['Nr.', 'Nachname', 'Vorname', 'Klasse'].indexOf(x) < 0) th.css('text-align', 'center');
                     return th;
                 }),

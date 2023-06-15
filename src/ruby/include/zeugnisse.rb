@@ -365,7 +365,11 @@ class Main < Sinatra::Base
             info['#Zeugnisdatum'] = ZEUGNIS_DATUM
             info['@Geschlecht'] = sus_info[:geschlecht]
             faecher_info.each do |fach|
-                info["##{fach}"] = cache["Schuljahr:#{ZEUGNIS_SCHULJAHR}/Halbjahr:#{ZEUGNIS_HALBJAHR}/Fach:#{fach}/Email:#{email}"] || '--'
+                note = cache["Schuljahr:#{ZEUGNIS_SCHULJAHR}/Halbjahr:#{ZEUGNIS_HALBJAHR}/Fach:#{fach}/Email:#{email}"] || '--'
+                if note =~ /^\d[\-+]$/
+                    note = "#{note.to_i}"
+                end
+                info["##{fach}"] = note
             end
             ['VT', 'VT_UE', 'VS', 'VS_UE', 'VSP'].each do |item|
                 v = cache["Schuljahr:#{ZEUGNIS_SCHULJAHR}/Halbjahr:#{ZEUGNIS_HALBJAHR}/Fehltage:#{item}/Email:#{email}"] || '--'

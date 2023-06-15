@@ -207,6 +207,15 @@
         top: 0;
     }
 
+    .tresor_table_container .table thead th {
+        border-bottom: none;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
+    }
+
+    .tresor_table_container .table thead {
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
+    }
+
     @tailwind base;
     @tailwind components;
     @tailwind utilities;
@@ -362,9 +371,9 @@ window.addEventListener('load', function () {
     }
     window.addEventListener('scroll', function(e) {
         let div = $('.tresor_table_container');
-        let dy = div.offset().top - $(window).scrollTop() - 122;
+        let dy = div.offset().top - $(window).scrollTop() - 120;
         if (dy > 0) dy = 0;
-        $('.tresor_table_container thead').css('position', 'relative').css('top', `${-dy}px`).css('background-color', '#fff').css('z-index', 100);
+        $('.tresor_table_container thead').css('position', 'relative').css('top', `${-dy}px`).css('background-color', '#fff').css('z-index', 101);
     });
 });
 
@@ -517,7 +526,7 @@ function load_noten_table(container, klasse, edit_noten) {
         if (data.success) {
             container.empty();
             let header_cells = [];
-            for (let item of ['Nr.', 'Nachname', 'Vorname', 'Klasse']) {
+            for (let item of ['Nr.', 'Nachname', 'Vorname', 'Klasse', 'Zeugniskonf.']) {
                 let label = `${item}`;
                 let th = $('<th>').html(label);
                 if (item === 'Nachname') th.addClass('thsticky');
@@ -552,8 +561,16 @@ function load_noten_table(container, klasse, edit_noten) {
                         `<td class='tdsticky' style='max-width: 10em;'>${liste.schueler[index].last_name}</td>`,
                         `<td style='max-width: 10em;'>${liste.schueler[index].official_first_name}</td>`,
                         // `<td>${moment(liste.schueler[index].geburtstag).format('L')}</td>`,
-                        `<td>${klassen_tr[klasse] ?? klasse}</td>`,
+                        `<td style='text-align: center;'>${klassen_tr[klasse] ?? klasse}</td>`,
                     ];
+                    let bu_consider = $(`<button class='btn btn-xs btn-outline-secondary'>`).text('besprechen');
+                    cells.push($('<td>').append(bu_consider));
+                    bu_consider.on('click', function(e) {
+                        let path = `Schuljahr:${ZEUGNIS_SCHULJAHR}/Halbjahr:${ZEUGNIS_HALBJAHR}/marked_for_zk/Email:${email}`;
+                        tresor_api_call('/jwt/toggle', {path: path, key: 'Wert'}, function(data) {
+                            console.log(data);
+                        });
+                    });
                     for (let fi = 0; fi < faecher_for_paths.length; fi++) {
                         let fach = faecher_for_paths[fi];
                         let input = $(`<input placeholder='--' class='form-control' style='width: 3em; text-align: center; height: calc(1.5em + 2px);'>`)

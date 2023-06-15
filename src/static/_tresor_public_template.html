@@ -503,6 +503,7 @@ function load_noten_table(container, klasse, edit_noten) {
     //     let info = kurs_info[lesson_key];
     //     console.log(info.fach);
     // }
+    let path_arrays = [];
     let path_array = [];
     path_array.push(['Schuljahr', ZEUGNIS_SCHULJAHR]);
     path_array.push(['Halbjahr', ZEUGNIS_HALBJAHR]);
@@ -519,8 +520,17 @@ function load_noten_table(container, klasse, edit_noten) {
     let emails = liste.schueler.map(function(x) { return x.email; });
     path_array.push(['Fach', faecher_for_paths]);
     path_array.push(['Email', emails]);
+    path_arrays.push(path_array);
+
+    let path_array_2 = [];
+    path_array_2.push(['Schuljahr', ZEUGNIS_SCHULJAHR]);
+    path_array_2.push(['Halbjahr', ZEUGNIS_HALBJAHR]);
+    path_array_2.push(['ZK', 'marked']);
+    path_array_2.push(['Email', emails]);
+    path_arrays.push(path_array_2);
+
     let t0 = Date.now();
-    tresor_api_call('/jwt/get_many', {path_arrays: [path_array], key: 'Wert'}, function(data) {
+    tresor_api_call('/jwt/get_many', {path_arrays: path_arrays, key: 'Wert'}, function(data) {
         let t1 = Date.now();
         console.log(`request took ${t1 - t0} ms.`);
         if (data.success) {
@@ -550,6 +560,7 @@ function load_noten_table(container, klasse, edit_noten) {
                     }
                 }
             }
+            let zk_consider_for_email = {};
             let table = new SortableTable({
                 element: container,
                 xs: true,
@@ -566,7 +577,7 @@ function load_noten_table(container, klasse, edit_noten) {
                     let bu_consider = $(`<button class='btn btn-xs btn-outline-secondary'>`).text('besprechen');
                     cells.push($('<td>').append(bu_consider));
                     bu_consider.on('click', function(e) {
-                        let path = `Schuljahr:${ZEUGNIS_SCHULJAHR}/Halbjahr:${ZEUGNIS_HALBJAHR}/marked_for_zk/Email:${email}`;
+                        let path = `Schuljahr:${ZEUGNIS_SCHULJAHR}/Halbjahr:${ZEUGNIS_HALBJAHR}/ZK:marked/Email:${email}`;
                         tresor_api_call('/jwt/toggle', {path: path, key: 'Wert'}, function(data) {
                             console.log(data);
                         });

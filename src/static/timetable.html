@@ -359,7 +359,7 @@ function render_timetable(result, successCallback) {
     //         $('.timetable_updated').html("<i class='fa fa-warning text-danger'></i>&nbsp;&nbsp;Vertretungsplan wird gerade aktualisiert, bitte demnächst noch einmal neu laden.");
     // }
 
-    let wrote_weekend_event_header = false;
+    var wrote_weekend_event_header = false;
     $('.weekend_events').hide();
     $('.weekend_events').empty();
     for (let event of events)
@@ -370,21 +370,22 @@ function render_timetable(result, successCallback) {
         if (event.is_event)
             event.color = color_palette.shifted;
         if (event.is_event && [6, 0].indexOf(new Date(event.datum).getDay()) >= 0) {
-//                                 console.log(event);
-            if (!wrote_weekend_event_header) {
-                $('.weekend_events').append($('<p><b>Termine am Wochenende</b></p>'));
+            if (wrote_weekend_event_header == false) {
+                $('.weekend_events').append($('<p><b>Termine am Wochenende</b></p><hr />'));
                 $('.weekend_events').show();
+            } else {
+                $('.weekend_events').append('<hr />')
             }
-
             let time_str = '' + parseInt(event.datum.substr(8, 2)) + '.' + event.datum.substr(5, 2) + '.' + event.datum.substr(0, 4) + '<br />' + event.start_time + '&ndash;' + event.end_time;
-            $('.weekend_events').append($('<hr /><p>' + time_str + '<br /><b>' + event.event_title + '</b><br />' + event.organized_by));
+            $('.weekend_events').append($('<p>' + time_str + '<br /><b>' + event.event_title + '</b><br />' + event.organized_by));
             $('.weekend_events').append(fix_bad_html($('<div>').html(event.description)));
-            $('.weekend_events').append($('<a href="/jitsi/event/' + event.eid + '" target="_blank" class="btn btn-sm btn-primary"><i class="fa fa-microphone"></i>&nbsp;&nbsp;Zum Jitsi-Raum&nbsp;&nbsp;<i class="fa fa-angle-double-right"></i></a></p>'));
+            if (event.jitsi == true) {
+                $('.weekend_events').append($('<a href="/jitsi/event/' + event.eid + '" target="_blank" class="btn btn-sm btn-primary"><i class="fa fa-microphone"></i>&nbsp;&nbsp;Zum Jitsi-Raum&nbsp;&nbsp;<i class="fa fa-angle-double-right"></i></a></p>'));
+            }
+        var wrote_weekend_event_header = true;
         }
 
     }
-    if (wrote_weekend_event_header)
-        $('.weekend_events').append('<hr />')
     if (tablet_logged_in) {
         events = events.filter(x => x.lesson);
         for (let event of events) {

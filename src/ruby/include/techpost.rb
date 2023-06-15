@@ -24,10 +24,12 @@ class Main < Sinatra::Base
             subject "Neues Technikproblem"
 
             StringIO.open do |io|
-                io.puts "<p>Hallo TechnikTeam, "
+                io.puts "<p>Liebes TechnikTeam,"
                 io.puts "<p>es liegt ein neues Technikproblem vor.</p>"
                 io.puts "<p>Das Problem betrifft #{data[:device]} und lautet: „#{data[:problem]}“</p>"
+                io.puts "<a href='/techpostadmin'>Probleme ansehen</a>"
                 io.puts "<p>Viele Grüße</p>"
+                io.puts "<p>Dashboard #{SCHUL_NAME_AN_DATIV} #{SCHUL_NAME}</p>"
                 io.string
             
             end

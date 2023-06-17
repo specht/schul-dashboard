@@ -204,6 +204,8 @@ class Main < Sinatra::Base
         MATCH (v:AulaLight {dmx: $dmx})
         RETURN v
         END_OF_QUERY
-        respond(:light => results)
+        if results != []
+            respond(:light => results)
+        end
     end
 end

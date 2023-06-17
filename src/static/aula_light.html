@@ -281,25 +281,43 @@
 document.addEventListener('DOMContentLoaded', function () {
     refresh_aula_light();
     $('.scheinwerfer').click(function (e) {
-        var dmx = e.target.id;
-        var desk = e.target.innerHTML
+        let dmx = e.target.id;
+        let desk = e.target.innerHTML
         api_call('/api/get_light_data', {dmx: dmx}, function(data) {
-            let entry = data.light
-            showTemplateModal('Channel <b><code>"' + entry.lightdata.desk + '"</code></b>',
-            'Dieser Scheinwerfer liegt auf dem DMX-Kanal <b><code>' + dmx + '</code></b>.<br><br><input type="number" id="al_desk_channel" class="form-control" placeholder="Channel auf dem Lichtpult" value="' + desk + '"></input>',
-            "<i class='fa fa-check'></i>&nbsp;&nbsp;Speichern", 'btn-success',
-            'Abbrechen', 'btn-secondary', function() {
-                let input_desk = $('#al_desk_channel').val();
-                api_call('/api/set_desk_number', {dmx: dmx, desk: input_desk}, function(data) {
-                    if (data.success)
-                        refresh_aula_light();
-                });
-            })
-            
+            if (typeof data.light !== "undefined") {
+                for (let entry of data.light) {
+                    console.log(entry)
+                    showTemplateModal('Channel <b><code>"' + entry.lightdata.desk + '"</code></b>',
+                    'Dieser Scheinwerfer liegt auf dem DMX-Kanal <b><code>' + entry.lightdata.dmx + '</code></b>.<br><br><input type="number" id="al_desk_channel" class="form-control" placeholder="Channel auf dem Lichtpult" value="' + entry.lightdata.desk + '"></input>',
+                    "<i class='fa fa-check'></i>&nbsp;&nbsp;Speichern", 'btn-success',
+                    'Abbrechen', 'btn-secondary', function() {
+                        let input_desk = $('#al_desk_channel').val();
+                        api_call('/api/set_desk_number', {dmx: dmx, desk: input_desk}, function(data) {
+                            if (data.success)
+                                refresh_aula_light();
+                        });
+                    })
+                }
+            } else if (dmx != "u") {
+                let dmx = e.target.id;
+                showTemplateModal('Neuer Channel',
+                    'Dieser Scheinwerfer liegt auf dem DMX-Kanal <b><code>' + dmx + '</code></b>.<br><br><input type="number" id="al_desk_channel" class="form-control" placeholder="Channel auf dem Lichtpult"></input>',
+                    "<i class='fa fa-check'></i>&nbsp;&nbsp;Speichern", 'btn-success',
+                    'Abbrechen', 'btn-secondary', function() {
+                        let input_desk = $('#al_desk_channel').val();
+                        api_call('/api/set_desk_number', {dmx: dmx, desk: input_desk}, function(data) {
+                            if (data.success)
+                                refresh_aula_light();
+                        });
+                })
+            } else {
+                showTemplateModal('Kein DMX-Kanal gefunden',
+                    'Für diesen Scheinwerfer wurde noch kein DMX-Kanal hinterlegt.',
+                    '','',
+                    'Schließen', 'btn-secondary'
+                )
+            }
     });
         });
     });
-    // $('#write_dmx_channels').click(function (e) {
-    //     // for (let i of )
-    // });
 </script>

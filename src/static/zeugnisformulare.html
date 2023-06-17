@@ -22,6 +22,7 @@ var zeugnisliste_for_lehrer = #{@@zeugnisliste_for_lehrer.to_json};
 
 var faecher_for_zeugnis = #{FAECHER_FOR_ZEUGNIS[ZEUGNIS_SCHULJAHR][ZEUGNIS_HALBJAHR].to_json};
 var zeugnis_formular_fehler = #{Hash[FAECHER_FOR_ZEUGNIS[ZEUGNIS_SCHULJAHR][ZEUGNIS_HALBJAHR].keys.map { |key| [key, @@zeugnisse[:formulare][key][:formular_fehler]] }].to_json};
+var zeugnis_formular_tags = #{Hash[FAECHER_FOR_ZEUGNIS[ZEUGNIS_SCHULJAHR][ZEUGNIS_HALBJAHR].keys.map { |key| [key, @@zeugnisse[:formulare][key][:tags]] }].to_json};
 
 window.addEventListener('load', function () {
     render_zeugnisformulare();
@@ -42,6 +43,8 @@ function render_zeugnisformulare() {
         tr.append($(`<td>`).html(label));
         tr.append($(`<td>`).html((zeugnis_formular_fehler[key] === null) ? "<i class='fa fa-check text-green-500'></i>" : "<i class='fa fa-exclamation-circle text-red-600'></i>"));
         tr.append($(`<td style='white-space: unset;'>`).html((zeugnis_formular_fehler[key] ?? ['Formular vollständig']).join(', ')));
+        // tr = $(`<tr style='line-height: 1em;'>`).appendTo(table);
+        // tr.append($(`<td colspan='3' style='white-space: unset;'>`).html((zeugnis_formular_tags[key]).join(', ')));
     }
 }
 

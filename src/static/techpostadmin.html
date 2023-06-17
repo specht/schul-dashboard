@@ -191,7 +191,7 @@
                         tp_delete.data('token', entry.problem.token);
                         tp_delete.click(function(e) {
                             showTemplateModal('Problem löschen', 
-                                'Bist Du sicher? Das Problem wird dabei unwiederrufbar gelöscht.',
+                                'Bist Du sicher? Das Problem wird dabei unwiderrufbar gelöscht.',
                                 "<i class='fa fa-trash'></i>&nbsp;&nbsp;Problem löschen", 'btn-danger',
                                 'Abbrechen', 'btn-secondary', function() {
                                     api_call('/api/delete_tech_problem_admin', {token: $(e.target).data('token')}, function(data) {
@@ -246,7 +246,7 @@
                         tp_delete.data('token', entry.problem.token);
                         tp_delete.click(function(e) {
                             showTemplateModal('Problem löschen', 
-                                'Bist Du sicher? Das Problem wird dabei unwiederrufbar gelöscht.',
+                                'Bist Du sicher? Das Problem wird dabei unwiderrufbar gelöscht.',
                                 "<i class='fa fa-trash'></i>&nbsp;&nbsp;Problem löschen", 'btn-danger',
                                 'Abbrechen', 'btn-secondary', function() {
                                     api_call('/api/delete_tech_problem_admin', {token: $(e.target).data('token')}, function(data) {

@@ -4,7 +4,7 @@
         <div class="col-md-12">
             <h2 style="margin-bottom: 30px;">Technikamt
                 <!-- &nbsp;&nbsp;<i class="fa fa-tv fa-lg"></i>&nbsp;<i class="fa fa-laptop fa-lg"></i>&nbsp;<i class="fa fa-tablet fa-lg"></i> -->
-                <button id="frequent_problems" class='btn btn-primary pull-right'><i class='fa fa-question-circle'></i>&nbsp;&nbsp;Häufige Fragen und Probleme</button>                
+                <button id="frequent_problems" class='btn btn-primary pull-right'><i class='fa fa-question-circle'></i>&nbsp;&nbsp;Häufige Fragen und Probleme</button>
             </h2>
             <hr>
                 Du bist in deiner Klasse Technikamt und kannst deshalb hier Probleme mit der Schultechnik melden.<br><br>
@@ -130,7 +130,7 @@ document.addEventListener('DOMContentLoaded', function() {
     moment.locale('de');
     update_submit_button();
     $('#tp_problem_description').keyup(function(e) { update_submit_button(); });
-    $('#tp_problem_descriptione').change(function(e) { update_submit_button(); });
+    $('#tp_problem_description').change(function(e) { update_submit_button(); });
     $('#tp_date').change(function(e) { update_submit_button(); });
     $('#tp_problem_device').keyup(function(e) { update_submit_button(); });
     $('#tp_problem_device').change(function(e) { update_submit_button(); });

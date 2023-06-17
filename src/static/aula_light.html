@@ -20,7 +20,9 @@
 <div class='container-fluid' style='padding-top: 30px; background-color: #000; color: #fff;'>
     <div class='row'>
         <div class="col-md-12">
-            <h2 style="margin-bottom: 30px;">Aula Licht</h2>
+            <h2 style="margin-bottom: 30px;">Aula Licht    
+            <button id="super_user" class='btn pull-right' style="color: #000;">&nbsp;&nbsp;Super User</button>
+            </h2>
             <div class="alert alert-warning">
                 Die DMX-Kanal Nummern werden noch ergänzt. Bei Fragen oder Problemen, wende dich gerne an Peter-J. Germelmann.<br><br><a class="btn btn-primary" href="mailto:peter-julius.germelmann@mail.gymnasiumsteglitz.de"><i class='fa fa-envelope'></i>&nbsp;&nbsp;E-Mail</a>
             </div>
@@ -267,7 +269,51 @@
         </div>
     </div>
 </div>
+<div class="modal" id="composeModal" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-centered" role="document">
+      <div class="modal-content">
+       <div class="modal-header">
+          <h5 class="modal-title">Super User</h5>
+        </div>
+        <div class="modal-body">
+            <div class='row'>
+                <div class='col-md-12' style='max-width: 100%; overflow-x: auto;'>
+                    <div class="row">
+                        <div class='col-md-6'>
+                            <div class="form-group">
+                                <label>DMX</label>
+                                <input type="number" class="form-control" id='dmx' />
+                            </div>
+                        </div>
+                        <div class='col-md-6'>
+                            <div class="form-group">
+                                <label>Pult</label>
+                                <input type="number" class="form-control" id='desk' />
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button id='su_submit' class='btn btn-success' disabled><i class='fa fa-send'></i>&nbsp;&nbsp;Absenden</button>
+          <button type="button" class="btn btn-secondary" data-dismiss="modal">Schließen</button>
+        </div>
+      </div>
+    </div>
+</div>
 <script>
+
+    function update_submit_button() {
+        let dmx = $('#dmx').val();
+        let desk = $('#desk').val();
+        $('#su_submit').prop('disabled', !(dmx.length > 0 && desk.length > 0));
+    }
+
+    function compose_super_user() {
+        $('#composeModal').modal('show');
+    }
+
     function refresh_aula_light() {
         $('.u').html('⚠️');
         api_call('/api/get_light', {}, function(data) {
@@ -281,6 +327,23 @@
 
 document.addEventListener('DOMContentLoaded', function () {
     refresh_aula_light();
+    update_submit_button();
+    $('#desk').keyup(function(e) { update_submit_button(); });
+    $('#desk').change(function(e) { update_submit_button(); });
+    $('#dmx').keyup(function(e) { update_submit_button(); });
+    $('#dmx').change(function(e) { update_submit_button(); });
+    $('#su_submit').click(function(e) {
+        let dmx = $('#dmx').val();
+        let desk = $('#desk').val();
+        api_call('/api/set_desk_number', {dmx: dmx, desk: desk}, function(data) {
+            if (data.success)
+                refresh_aula_light();
+                $('#dmx').val('');
+                $('#desk').val('');
+                update_submit_button();
+        });
+    });
+
     $('.scheinwerfer').click(function (e) {
         let dmx = e.target.id;
         let desk = e.target.innerHTML
@@ -320,5 +383,8 @@ document.addEventListener('DOMContentLoaded', function () {
             }
     });
         });
+    $('#super_user').click(function(e) {
+        compose_super_user();
+    });
     });
 </script>

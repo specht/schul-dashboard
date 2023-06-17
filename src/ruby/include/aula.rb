@@ -191,8 +191,8 @@ class Main < Sinatra::Base
     post '/api/get_light' do
         require_user_who_can_manage_tablets!
         results = $neo4j.neo4j_query(<<~END_OF_QUERY).map { |x| {:lightdata=> x['v']} }
-        MATCH (v:AulaLight)
-        RETURN v
+            MATCH (v:AulaLight)
+            RETURN v
         END_OF_QUERY
         respond(:light => results)
     end
@@ -201,8 +201,8 @@ class Main < Sinatra::Base
         require_user_who_can_manage_tablets!
         data = parse_request_data(:required_keys => [:dmx])
         results = $neo4j.neo4j_query(<<~END_OF_QUERY, :dmx => data[:dmx]).map { |x| {:lightdata=> x['v']} }
-        MATCH (v:AulaLight {dmx: $dmx})
-        RETURN v
+            MATCH (v:AulaLight {dmx: $dmx})
+            RETURN v
         END_OF_QUERY
         if results != []
             respond(:light => results)

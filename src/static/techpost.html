@@ -3,8 +3,7 @@
     <div class='row'>
         <div class="col-md-12">
             <h2 style="margin-bottom: 30px;">Technikamt
-                <!-- &nbsp;&nbsp;<i class="fa fa-tv fa-lg"></i>&nbsp;<i class="fa fa-laptop fa-lg"></i>&nbsp;<i class="fa fa-tablet fa-lg"></i> -->
-                <button id="frequent_problems" class='btn btn-primary pull-right'><i class='fa fa-question-circle'></i>&nbsp;&nbsp;Häufige Fragen und Probleme</button>
+                <button id="frequent_problems" class='btn btn-primary pull-right' style="display: none;"><i class='fa fa-question-circle'></i>&nbsp;&nbsp;Häufige Fragen und Probleme</button>
             </h2>
             <hr>
                 Du bist in deiner Klasse Technikamt und kannst deshalb hier Probleme mit der Schultechnik melden.<br><br>
@@ -22,6 +21,36 @@
                 <div class='col-md-3'>
                     <div class="form-group">
                         <label>Gerät</label>
+                        <!-- <div class="btn-group" style='width: 100%;'>
+                            <button type="button" class="-dropdown btn btn-outline-secondary dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                                Gerät wählen
+                            </button>
+                            <div class="dropdown-menu">
+                                <a class='dropdown-item btn' data-device='C2'>Computer 2 (C2)</a>
+                                <a class='dropdown-item btn' data-device='C5'>Computer 5 (C5)</a>
+                                <a class='dropdown-item btn' data-device='B1'>Beamer 1 (B1)</a>
+                                <a class='dropdown-item btn' data-device='B2'>Beamer 2 (B2)</a>
+                                <a class='dropdown-item btn' data-device='B3'>Beamer 3 (B3)</a>
+                                <a class='dropdown-item btn' data-device='B4'>Beamer 4 (B4)</a>
+                                <a class='dropdown-item btn' data-device='B1'>Beamer 5 (B5)</a>
+                                <a class='dropdown-item btn' data-device='MB1'>Multi-Beamer 1</a>
+                                <a class='dropdown-item btn' data-device='MB2'>Multi-Beamer 2</a>
+                                <a class='dropdown-item btn' data-device='MB3'>Multi-Beamer 3</a>
+                                <a class='dropdown-item btn' data-device='MB4'>Multi-Beamer 4</a>
+                                <a class='dropdown-item btn' data-device='MB5'>Multi-Beamer 5</a>
+                                <a class='dropdown-item btn' data-device='MB6'>Multi-Beamer 6</a>
+                                <a class='dropdown-item btn' data-device='D1'>DVD-Player 1 (D1)</a>
+                                <a class='dropdown-item btn' data-device='D2'>DVD-Player 2 (D2)</a>
+                                <a class='dropdown-item btn' data-device='D3'>DVD-Player 3 (D3)</a>
+                                <a class='dropdown-item btn' data-device='D4'>DVD-Player 4 (D4)</a>
+
+
+                                <a class='dropdown-item btn' data-device='C'>Computer</a>
+                                <a class='dropdown-item btn' data-device='B'>Beamer</a>
+                                <a class='dropdown-item btn' data-device='MB'>Multi-Beamer</a>
+                                <a class='dropdown-item btn' data-device='D'>DVD-Player</a>
+                            </div>
+                        </div> -->
                         <input type="text" class="form-control" placeholder="z.B. Computer 2 / C2 ..." id='tp_problem_device' />
                     </div>
                 </div>
@@ -103,7 +132,7 @@
                     row.append($('<td>').text(entry.problem.problem));
                     row.append($('<td>').text('' + entry.problem.device));
                     let tp_fixed = $('<td>').html("<i class='text-success fa fa-check'></i>&nbsp;&nbsp;Behoben");
-                    let tp_progress = $('<td>').html("<i class='text-secondary fa fa-clock-o'></i><a class='text-secondary'>&nbsp;&nbsp;in Bearbeitung</a>");
+                    let tp_progress = $('<td>').html("<i class='text-secondary fa fa-clock-o'></i>&nbsp;&nbsp;in Bearbeitung");
                     let tp_not_fixed = $('<td>').html("<i class='text-danger fa fa-times'></i>&nbsp;&nbsp;nicht Behoben");
 
                     if (entry.problem.fixed == true) {

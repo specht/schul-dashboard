@@ -148,12 +148,12 @@
                         let tp_comment = $('<button>').addClass('btn').addClass('btn-xs').addClass('btn-primary').html("<i class='fa fa-plus'></i>&nbsp;&nbsp;Kommentar");
                         tp_comment.data('token', entry.problem.token);
                         tp_comment.click(function(e) {
+                            let token = entry.problem.token
                             showTemplateModal('Kommentar hinzufügen', 
                                 '<textarea type="text" id="tp_comment_input" class="form-control" placeholder="z.B. Danke für deinen Beitrag"></textarea>',
                                 "<i class='fa fa-check'></i>&nbsp;&nbsp;Speichern", 'btn-success',
                                 'Abbrechen', 'btn-secondary', function() {
                                     let comment = $('#tp_comment_input').val();
-                                    let token = $(e.target).data('token');
                                     api_call('/api/comment_tech_problem_admin', {token: token, comment: comment}, function(data) {
                                         if (data.success)
                                             refresh_tech_problems();
@@ -165,12 +165,13 @@
                         let tp_update_comment = $('<button>').addClass('btn').addClass('btn-xs').addClass('btn-primary').html("<i class='fa fa-pencil'></i>");
                         tp_update_comment.data('token', entry.problem.token);
                         tp_update_comment.click(function(e) {
+                            let token = entry.problem.token
+                            let old_comment = entry.problem.comment
                             showTemplateModal('Kommentar aktualisieren', 
-                                '<textarea type="text" id="tp_comment_input" class="form-control" placeholder="z.B. Danke für deinen Beitrag (leer lassen, um den Kommentar zu löschen)"></textarea>',
+                                '<textarea type="text" id="tp_comment_input" class="form-control" placeholder="z.B. Danke für deinen Beitrag (leer lassen, um den Kommentar zu löschen)">' + old_comment + '</textarea>',
                                 "<i class='fa fa-check'></i>&nbsp;&nbsp;Speichern", 'btn-success',
                                 'Abbrechen', 'btn-secondary', function() {
                                     let comment = $('#tp_comment_input').val();
-                                    let token = $(e.target).data('token');
                                     api_call('/api/comment_tech_problem_admin', {token: token, comment: comment}, function(data) {
                                         if (data.success)
                                             refresh_tech_problems();
@@ -261,12 +262,12 @@
                         let tp_comment = $('<button>').addClass('btn').addClass('btn-xs').addClass('btn-primary').html("<i class='fa fa-plus'></i>&nbsp;&nbsp;Kommentar");
                         tp_comment.data('token', entry.problem.token);
                         tp_comment.click(function(e) {
+                            let token = entry.problem.token
                             showTemplateModal('Kommentar hinzufügen', 
                                 '<textarea type="text" id="tp_comment_input" class="form-control" placeholder="z.B. Danke für deinen Beitrag"></textarea>',
                                 "<i class='fa fa-check'></i>&nbsp;&nbsp;Speichern", 'btn-success',
                                 'Abbrechen', 'btn-secondary', function() {
                                     let comment = $('#tp_comment_input').val();
-                                    let token = $(e.target).data('token');
                                     api_call('/api/comment_tech_problem_admin', {token: token, comment: comment}, function(data) {
                                         if (data.success)
                                             refresh_fixed_tech_problems();
@@ -278,12 +279,13 @@
                         let tp_update_comment = $('<button>').addClass('btn').addClass('btn-xs').addClass('btn-primary').html("<i class='fa fa-pencil'></i>");
                         tp_update_comment.data('token', entry.problem.token);
                         tp_update_comment.click(function(e) {
+                            let token = entry.problem.token
+                            let old_comment = entry.problem.comment
                             showTemplateModal('Kommentar aktualisieren', 
-                                '<textarea type="text" id="tp_comment_input" class="form-control" placeholder="z.B. Danke für deinen Beitrag (leer lassen, um den Kommentar zu löschen)"></textarea>',
+                                '<textarea type="text" id="tp_comment_input" class="form-control" placeholder="z.B. Danke für deinen Beitrag (leer lassen, um den Kommentar zu löschen)">' + old_comment + '</textarea>',
                                 "<i class='fa fa-check'></i>&nbsp;&nbsp;Speichern", 'btn-success',
                                 'Abbrechen', 'btn-secondary', function() {
                                     let comment = $('#tp_comment_input').val();
-                                    let token = $(e.target).data('token');
                                     api_call('/api/comment_tech_problem_admin', {token: token, comment: comment}, function(data) {
                                         if (data.success)
                                             refresh_fixed_tech_problems();

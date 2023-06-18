@@ -149,10 +149,7 @@ function print_zeugniskonferenz_sheets() {
         console.log(data.results);
         api_call('/api/print_zeugniskonferenz_sheets', {paths: path_arrays, values: data.results}, function(data2) {
             if (data2.success) {
-                // if (format === 'pdf')
-                //     open_pdf(data2.pdf_base64, emails.length === 1 ? data2.name : `Klasse ${klassen_tr[klasse] ?? klasse}`);
-                // else
-                //     open_docx(data2.docx_base64, data2.name);
+                open_pdf_with_filename(data2.pdf_base64, data2.name);
             }
         });
     });

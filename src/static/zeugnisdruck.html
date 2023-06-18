@@ -147,35 +147,5 @@ function load_zeugnis_table(container, klasse, edit_noten) {
     container.find('.table').css('width', 'unset');
 }
 
-function open_pdf(data, name) {
-    let s = atob(data);
-    let bytes = new Uint8Array(s.length);
-    for (let i = 0; i < s.length; i++) {
-        bytes[i] = s.charCodeAt(i);
-    }
-    let blob = new Blob([bytes], {type: "application/pdf"})
-    console.log(blob);
-    // var url = window.URL.createObjectURL(blob);
-    // console.log(url);
-    // window.open(url, '_blank');
-    let a = document.createElement('a');
-    a.href = window.URL.createObjectURL(blob);
-    a.download = `Zeugnis ${name}.pdf`;
-    a.click();
-}
-
-function open_docx(data, name) {
-    let s = atob(data);
-    let bytes = new Uint8Array(s.length);
-    for (let i = 0; i < s.length; i++) {
-        bytes[i] = s.charCodeAt(i);
-    }
-    let blob = new Blob([bytes], {type: "application/vnd.openxmlformats-officedocument.wordprocessingml.document"})
-    console.log(blob);
-    let a = document.createElement('a');
-    a.href = window.URL.createObjectURL(blob);
-    a.download = `Zeugnis ${name}.docx`;
-    a.click();
-}
 
 </script>

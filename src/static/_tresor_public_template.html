@@ -399,7 +399,7 @@ let versetzt_allowed_values = [
     'ja', 'nein'
 ];
 
-let noten_mark = ['4-', '5+', '5', '5-', '6'];
+let noten_mark = #{NOTEN_MARK.to_json};
 // consider_cache is true if any of the marks for a given e-mail address is marked
 let consider_cache = {};
 
@@ -1100,7 +1100,39 @@ function load_angebote_bemerkungen_table(container, klasse, edit_noten) {
     });
 }
 
+function open_pdf(data, name) {
+    open_pdf_with_filename(data, `Zeugnis ${name}.pdf`);
+}
 
+function open_pdf_with_filename(data, filename) {
+    let s = atob(data);
+    let bytes = new Uint8Array(s.length);
+    for (let i = 0; i < s.length; i++) {
+        bytes[i] = s.charCodeAt(i);
+    }
+    let blob = new Blob([bytes], {type: "application/pdf"})
+    console.log(blob);
+    // var url = window.URL.createObjectURL(blob);
+    // console.log(url);
+    // window.open(url, '_blank');
+    let a = document.createElement('a');
+    a.href = window.URL.createObjectURL(blob);
+    a.download = filename;
+    a.click();
+}
 
+function open_docx(data, name) {
+    let s = atob(data);
+    let bytes = new Uint8Array(s.length);
+    for (let i = 0; i < s.length; i++) {
+        bytes[i] = s.charCodeAt(i);
+    }
+    let blob = new Blob([bytes], {type: "application/vnd.openxmlformats-officedocument.wordprocessingml.document"})
+    console.log(blob);
+    let a = document.createElement('a');
+    a.href = window.URL.createObjectURL(blob);
+    a.download = `Zeugnis ${name}.docx`;
+    a.click();
+}
 
 </script>

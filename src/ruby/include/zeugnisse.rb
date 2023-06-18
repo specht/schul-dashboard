@@ -322,11 +322,11 @@ class Main < Sinatra::Base
         cache.merge!(parse_paths_and_values(data[:paths_fach], data[:values_fach]))
         cache.merge!(parse_paths_and_values(data[:paths_fehltage], data[:values_fehltage]))
         cache.merge!(parse_paths_and_values(data[:paths_ab], data[:values_ab]))
-        debug cache.to_yaml
+        # debug cache.to_yaml
         docx_paths = []
 
         merged_id = data.to_json
-        merged_sha1 = Digest::SHA1.hexdigest(merged_id).to_i(16).to_s(36)
+        merged_sha1 = Digest::SHA1.hexdigest("zeugnis_#{merged_id}").to_i(16).to_s(36)
         merged_out_path_pdf = File.join("/internal/zeugnisse/out/#{merged_sha1}.pdf")
         merged_out_path_docx = File.join("/internal/zeugnisse/out/#{merged_sha1}.docx")
         last_zeugnis_name = ''
@@ -464,5 +464,133 @@ class Main < Sinatra::Base
         end
         self.class.determine_zeugnislisten()
     end
+
+    post '/api/print_zeugniskonferenz_sheets' do
+        require_zeugnis_admin!
+        data = parse_request_data(
+            :required_keys => [
+                :paths, :values
+            ],
+            :types => {:schueler => Array,
+                :paths => Array, :values => Array,
+            },
+            :max_body_length => 1024 * 1024 * 10,
+            :max_string_length => 1024 * 1024 * 10,
+        )
+        cache = {}
+        cache.merge!(parse_paths_and_values(data[:paths], data[:values]))
+        debug cache.to_yaml
+
+        merged_id = data.to_json
+        merged_sha1 = Digest::SHA1.hexdigest("zeugniskonferenz_sheets_#{merged_id}").to_i(16).to_s(36)
+        merged_out_path_pdf = File.join("/internal/zeugnisse/out/#{merged_sha1}.pdf")
+
+        respond(:yay => 'sure')
+
+        # data[:schueler].each do |schueler|
+        #     parts = schueler.split('/')
+        #     klasse = parts[0]
+        #     index = @@zeugnisliste_for_klasse[klasse][:index_for_schueler][parts[1]]
+        #     sus_info = @@zeugnisliste_for_klasse[klasse][:schueler][index]
+        #     email = sus_info[:email]
+        #     zeugnis_key = sus_info[:zeugnis_key]
+        #     faecher_info = @@zeugnisliste_for_klasse[klasse][:faecher]
+        #     faecher_info_extra = []
+        #     faecher_info.each do |fach|
+        #         if FAECHER_SPRACHEN.include?(fach)
+        #             faecher_info_extra << "#{fach}_AT"
+        #             faecher_info_extra << "#{fach}_SL"
+        #         end
+        #     end
+        #     faecher_info += faecher_info_extra
+        #     STDERR.puts faecher_info.to_json
+        #     wahlfach_info = @@zeugnisliste_for_klasse[klasse][:wahlfach]
+        #     info = {}
+        #     last_name_parts = sus_info[:last_name].split(',').map { |x| x.strip }.reverse
+        #     name = "#{sus_info[:official_first_name]} #{last_name_parts.join(' ')}"
+        #     info['#Name'] = name
+        #     last_zeugnis_name = name
+        #     info['#Vorname'] = "#{sus_info[:official_first_name]}"
+        #     info['#Geburtsdatum'] = "#{Date.parse(sus_info[:geburtstag]).strftime('%d.%m.%Y')}"
+        #     info['#Klasse'] = Main.tr_klasse(klasse)
+        #     info['#Zeugnisdatum'] = ZEUGNIS_DATUM
+        #     info['@Geschlecht'] = sus_info[:geschlecht]
+        #     faecher_info.each do |fach|
+        #         note = cache["Schuljahr:#{ZEUGNIS_SCHULJAHR}/Halbjahr:#{ZEUGNIS_HALBJAHR}/Fach:#{fach}/Email:#{email}"] || '--'
+        #         if note =~ /^\d[\-+]$/
+        #             note = "#{note.to_i}"
+        #         end
+        #         info["##{fach}"] = note
+        #     end
+        #     ['VT', 'VT_UE', 'VS', 'VS_UE', 'VSP'].each do |item|
+        #         v = cache["Schuljahr:#{ZEUGNIS_SCHULJAHR}/Halbjahr:#{ZEUGNIS_HALBJAHR}/Fehltage:#{item}/Email:#{email}"] || '--'
+        #         v = '--' if v == '0'
+        #         info["##{item}"] = v
+        #     end
+        #     ['Angebote', 'Bemerkungen'].each do |item|
+        #         v = cache["Schuljahr:#{ZEUGNIS_SCHULJAHR}/Halbjahr:#{ZEUGNIS_HALBJAHR}/AB:#{item}/Email:#{email}"] || '--'
+        #         info["##{item}"] = v
+        #     end
+        #     # TODO: Wahlfächer
+        #     info["#Wahlpflicht_1_Note"] = '--'
+        #     info["#Wahlpflicht_2_Note"] = '--'
+        #     info["#Wahlpflicht_3_Note"] = '--'
+        #     zeugnis_id = "#{ZEUGNIS_SCHULJAHR}/#{ZEUGNIS_HALBJAHR}/#{zeugnis_key}/#{info.to_json}"
+        #     zeugnis_sha1 = Digest::SHA1.hexdigest(zeugnis_id).to_i(16).to_s(36)
+        #     debug "Printing Zeugnis for #{sus_info[:official_first_name]} #{sus_info[:last_name]} => #{zeugnis_sha1}"
+        #     out_path_docx = File.join("/internal/zeugnisse/out/#{zeugnis_sha1}.docx")
+        #     out_path_pdf = File.join("/internal/zeugnisse/out/#{zeugnis_sha1}.pdf")
+        #     out_path_dir = File.join("/internal/zeugnisse/out/#{zeugnis_sha1}")
+        #     FileUtils.mkpath(out_path_dir)
+        #     formular_sha1 = @@zeugnisse[:formulare][zeugnis_key][:sha1]
+        #     FileUtils.cp_r("/internal/zeugnisse/formulare/#{formular_sha1}/", out_path_dir)
+        #     doc = File.read(File.join(out_path_dir, formular_sha1, 'word', 'document.xml'))
+        #     @@zeugnisse[:formulare][zeugnis_key][:tags].each do |tag|
+        #         value = info[tag] || ''
+        #         if value == '×'
+        #             value = '--'
+        #         end
+        #         doc.gsub!("#{tag}.", value)
+        #     end
+        #     # TODO: Fix this
+        #     if ZEUGNIS_HALBJAHR == '2'
+        #         if cache["Schuljahr:#{ZEUGNIS_SCHULJAHR}/Halbjahr:#{ZEUGNIS_HALBJAHR}/AB:Versetzt/Email:#{email}"] == 'nein'
+        #             doc.gsub!('<w:strike/></w:rPr><w:t>nicht</w:t>', '</w:rPr><w:t>nicht</w:t>')
+        #         end
+        #     end
+
+        #     File.open(File.join(out_path_dir, formular_sha1, 'word', 'document.xml'), 'w') do |f|
+        #         f.write doc
+        #     end
+        #     command = "cd \"#{File.join(out_path_dir, formular_sha1)}\"; zip -r \"#{out_path_docx}\" ."
+        #     system(command)
+        #     FileUtils::rm_rf(File.join(out_path_dir))
+        #     docx_paths << out_path_docx
+        # end
+
+        # if data[:format] == 'docx'
+        #     raw_docx_data = Base64::strict_encode64(File.read(docx_paths.first))
+        #     docx_paths.each do |path|
+        #         FileUtils::rm_f(path)
+        #     end
+
+        #     respond(:yay => 'sure', :docx_base64 => raw_docx_data, :name => last_zeugnis_name)
+        # else
+        #     command = "HOME=/internal/lowriter_home lowriter --convert-to pdf #{docx_paths.join(' ')} --outdir \"#{File.dirname(docx_paths.first)}\""
+        #     system(command)
+
+        #     command = "gs -dBATCH -dNOPAUSE -q -sDEVICE=pdfwrite -sOutputFile=#{merged_out_path_pdf} #{docx_paths.map { |x| x.sub('.docx', '.pdf')}.join(' ')}"
+        #     system(command)
+        #     raw_pdf_data = Base64::strict_encode64(File.read(merged_out_path_pdf))
+        #     FileUtils::rm_f(merged_out_path_pdf)
+        #     docx_paths.each do |path|
+        #         FileUtils::rm_f(path)
+        #         FileUtils::rm_f(path.sub('.docx', '.pdf'))
+        #     end
+
+        #     respond(:yay => 'sure', :pdf_base64 => raw_pdf_data, :name => last_zeugnis_name)
+        # end
+    end
+
 end
 

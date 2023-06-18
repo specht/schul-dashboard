@@ -210,10 +210,13 @@
 
     .tresor_table_container .table thead th {
         border-bottom: none;
-        box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
     }
 
     .tresor_table_container .table thead {
+        transition: box-shadow 0.5s ease-out;
+    }
+
+    .tresor_table_container .table thead.shadow {
         box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
     }
 
@@ -377,6 +380,8 @@ window.addEventListener('load', function () {
             let dy = div.offset().top - $(window).scrollTop() - my;
             if (dy > 0) dy = 0;
             $('.tresor_table_container thead').css('position', 'relative').css('top', `${-dy}px`).css('background-color', '#fff').css('z-index', 101);
+            $('.tresor_table_container thead').toggleClass('shadow', dy !== 0);
+
         }
     });
 });

@@ -391,6 +391,8 @@ let versetzt_allowed_values = [
 ];
 
 let noten_mark = ['4-', '5+', '5', '5-', '6'];
+// consider_cache is true if any of the marks for a given e-mail address is marked
+let consider_cache = {};
 
 function input_note_apply_style_and_fix(input, callback) {
     let value = $(input).val().trim();
@@ -498,6 +500,14 @@ function input_tendenz_apply_style_and_fix(input, callback) {
     }
 }
 
+function style_consider_button(button, flag) {
+    if (flag) {
+        button.removeClass('btn-outline-secondary').addClass('btn-danger').html(`<i class='fa fa-check'></i>&nbsp;&nbsp;besprechen`);
+    } else {
+        button.removeClass('btn-danger').addClass('btn-outline-secondary').html(`nicht besprechen`);
+    }
+}
+
 function load_noten_table(container, klasse, edit_noten) {
     // for (let lesson_key of lesson_keys) {
     //     let info = kurs_info[lesson_key];
@@ -531,8 +541,10 @@ function load_noten_table(container, klasse, edit_noten) {
 
     let t0 = Date.now();
     tresor_api_call('/jwt/get_many', {path_arrays: path_arrays, key: 'Wert'}, function(data) {
+        consider_cache = {};
         let t1 = Date.now();
         console.log(`request took ${t1 - t0} ms.`);
+        console.log(data);
         if (data.success) {
             container.empty();
             let header_cells = [];
@@ -560,12 +572,12 @@ function load_noten_table(container, klasse, edit_noten) {
                     }
                 }
             }
-            let zk_consider_for_email = {};
             let table = new SortableTable({
                 element: container,
                 xs: true,
                 headers: header_cells,
                 rows: emails.map(function (email, index) {
+                    let consider_this = (data.results[1][0][0][0][index] === true);
                     let cells = [
                         email,
                         `<td style='text-align: right;'>${index + 1}.</td>`,
@@ -574,12 +586,22 @@ function load_noten_table(container, klasse, edit_noten) {
                         // `<td>${moment(liste.schueler[index].geburtstag).format('L')}</td>`,
                         `<td style='text-align: center;'>${klassen_tr[klasse] ?? klasse}</td>`,
                     ];
-                    let bu_consider = $(`<button class='btn btn-xs btn-outline-secondary'>`).text('besprechen');
+                    let bu_consider = $(`<button class='btn btn-xs'>`);
+                    style_consider_button(bu_consider, false);
+                    if (!edit_noten)
+                        bu_consider.prop('disabled', true);
                     cells.push($('<td>').append(bu_consider));
                     bu_consider.on('click', function(e) {
                         let path = `Schuljahr:${ZEUGNIS_SCHULJAHR}/Halbjahr:${ZEUGNIS_HALBJAHR}/ZK:marked/Email:${email}`;
                         tresor_api_call('/jwt/toggle', {path: path, key: 'Wert'}, function(data) {
                             console.log(data);
+                            if (data.success) {
+                                if (data.value === true) {
+                                    style_consider_button(bu_consider, true);
+                                } else {
+                                    style_consider_button(bu_consider, consider_cache[email]);
+                                }
+                            }
                         });
                     });
                     for (let fi = 0; fi < faecher_for_paths.length; fi++) {
@@ -589,6 +611,10 @@ function load_noten_table(container, klasse, edit_noten) {
                             input.prop('disabled', true);
                         }
                         let value = data.results[0][0][0][fi][index];
+                        if (noten_mark.indexOf(value) >= 0) {
+                            consider_cache[email] = true;
+                            consider_this = true;
+                        }
                         input.val(value);
                         input.focus(function(e) {
                             input.select();
@@ -645,6 +671,8 @@ function load_noten_table(container, klasse, edit_noten) {
                         cells.push($('<td>').append($(`<div class='note'>`).append(input)));
                         input_note_apply_style_and_fix(input);
                     }
+                    if (consider_this)
+                        style_consider_button(bu_consider, true);
                     return cells;
                 }),
                 sortable: false,

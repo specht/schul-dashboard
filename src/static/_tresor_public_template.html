@@ -890,11 +890,23 @@ function load_sozialverhalten_table(container, klasse, edit_noten) {
                                         });
                                     });
                                 }
-                            });
-                            input.keydown(function(e) {
+                        });
+                        input.keydown(function(e) {
                             if (e.key === 'Enter' || e.key === 'ArrowDown') {
                                 e.preventDefault();
                                 e.stopPropagation();
+                                let row = $(e.target).closest('tr');
+                                let this_index = $(e.target).closest('td').index();
+                                let next_row = row.next('tr');
+                                if (next_row.length === 0) {
+                                    next_row = row.closest('tbody').find('tr').first();
+                                }
+                                next_row.find('td').eq(this_index).find('input').focus().select();
+                            }
+                            if (e.key === '1' || e.key === '2' || e.key === '3' || e.key === '4') {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                $(e.target).val({'1': '++', '2': '+', '3': 'o', '4': '-'}[e.key]);
                                 let row = $(e.target).closest('tr');
                                 let this_index = $(e.target).closest('td').index();
                                 let next_row = row.next('tr');

@@ -1088,6 +1088,12 @@ function load_angebote_bemerkungen_table(container, klasse, edit_noten) {
                                 text = text.replace(RegExp(/\(NAME\)/g), liste.schueler[index].official_first_name);
                                 input.val(text);
                             });
+                            input.on('paste', function(e) {
+                                let text = input.val();
+                                console.log(text);
+                                text = text.replace(RegExp(/\(NAME\)/g), liste.schueler[index].official_first_name);
+                                input.val(text);
+                            });
                             cells.push($(`<td style='${item !== 'Versetzt' ? 'width: 50%;' : ''}'>`).append($(`<div>`).append(input)));
                         }
                     }

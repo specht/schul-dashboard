@@ -7,6 +7,8 @@
 # lowriter --convert-to pdf [in path]
 # merge PDFs: gs -dBATCH -dNOPAUSE -q -sDEVICE=pdfwrite -sOutputFile=merged.pdf z1.pdf z2.pdf
 
+require '/static/fragments.rb'
+
 class Main < Sinatra::Base
     def self.parse_zeugnisformulare
         FileUtils.mkpath('/internal/lowriter_home')
@@ -322,11 +324,11 @@ class Main < Sinatra::Base
         cache.merge!(parse_paths_and_values(data[:paths_fach], data[:values_fach]))
         cache.merge!(parse_paths_and_values(data[:paths_fehltage], data[:values_fehltage]))
         cache.merge!(parse_paths_and_values(data[:paths_ab], data[:values_ab]))
-        debug cache.to_yaml
+        # debug cache.to_yaml
         docx_paths = []
 
         merged_id = data.to_json
-        merged_sha1 = Digest::SHA1.hexdigest(merged_id).to_i(16).to_s(36)
+        merged_sha1 = Digest::SHA1.hexdigest("zeugnis_#{merged_id}").to_i(16).to_s(36)
         merged_out_path_pdf = File.join("/internal/zeugnisse/out/#{merged_sha1}.pdf")
         merged_out_path_docx = File.join("/internal/zeugnisse/out/#{merged_sha1}.docx")
         last_zeugnis_name = ''
@@ -464,5 +466,30 @@ class Main < Sinatra::Base
         end
         self.class.determine_zeugnislisten()
     end
+
+    post '/api/print_zeugniskonferenz_sheets' do
+        require_zeugnis_admin!
+        data = parse_request_data(
+            :required_keys => [
+                :paths, :values
+            ],
+            :types => {:schueler => Array,
+                :paths => Array, :values => Array,
+            },
+            :max_body_length => 1024 * 1024 * 10,
+            :max_string_length => 1024 * 1024 * 10,
+        )
+        cache = {}
+        (0...data[:paths].size).each do |i|
+            cache.merge!(parse_paths_and_values(data[:paths][i], data[:values][i]))
+        end
+
+        # File.open('/internal/zeugniskonferenz_cache.json', 'w') do |f|
+        #     f.write(cache.to_json)
+        # end
+
+        respond(:yay => 'sure', :pdf_base64 => Base64.strict_encode64(get_zeugniskonferenz_sheets_pdf(cache)), :name => 'Zeugniskonferenzen.pdf')
+    end
+
 end
 

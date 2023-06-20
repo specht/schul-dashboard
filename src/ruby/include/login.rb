@@ -180,7 +180,7 @@ class Main < Sinatra::Base
     end
     
     post '/api/login_as_teacher_tablet' do
-        require_admin!
+        require_user_who_can_manage_tablets!
         logout()
         session_id = create_session("lehrer.tablet@#{SCHUL_MAIL_DOMAIN}", 365 * 24)
         purge_missing_sessions(session_id, true)
@@ -197,7 +197,7 @@ class Main < Sinatra::Base
     end
     
     post '/api/login_as_kurs_tablet' do
-        require_admin!
+        require_user_who_can_manage_tablets!
         data = parse_request_data(:required_keys => [:shorthands],
                                   :max_body_length => 1024,
                                   :types => {:shorthands => Array})
@@ -212,7 +212,7 @@ class Main < Sinatra::Base
     end
 
     post '/api/login_as_tablet' do
-        require_admin!
+        require_user_who_can_manage_tablets!
         data = parse_request_data(:required_keys => [:id])
         assert(@@tablets.include?(data[:id]))
         logout()
@@ -226,7 +226,7 @@ class Main < Sinatra::Base
     end
 
     post '/api/login_as_special' do
-        require_admin!
+        require_user_who_can_manage_tablets!
         data = parse_request_data(:required_keys => [:prefix])
         assert(%w(monitor monitor-sek monitor-lz).include?(data[:prefix]))
         logout()
@@ -236,7 +236,7 @@ class Main < Sinatra::Base
     end
 
     post '/api/login_as_device' do
-        require_admin!
+        require_user_who_can_manage_tablets!
         data = parse_request_data(:required_keys => [:device])
         assert(%w(bib-mobile bib-station bib-station-with-printer).include?(data[:device]))
         logout()

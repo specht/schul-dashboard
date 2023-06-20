@@ -8,3 +8,18 @@
   ]
   :count: 20
   :prio_unterstufe: true
+"Satz 1 / Koffer 2":
+  :standort: Sekretariat
+  :form_factor: Rollkoffer
+  :only_these_rooms: [
+    106, 107, 108, 111, 112, 113, 116, # Altbau EG
+    130, 129, 128, 127, 126, 122, # Neubau EG
+    201, 202, 203, 204, 207, 212, 213, 214, 215, 216, 226, 225, 224, 223, 221, 220, 219 # Neubau 1. OG
+  ]
+  :count: 20
+  :prio_unterstufe: true
+"Satz 2":
+  :standort: Unbekannt
+  :form_factor: Rollkoffer
+  :count: 9999
+  :prio_unterstufe: true

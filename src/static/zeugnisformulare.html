@@ -9,6 +9,8 @@
             Klicken Sie auf die Kürzel, um Eintragungen zu delegieren. Geben Sie dann ein Kürzel oder mehrere durch Komma getrennte Kürzel ein.
         </p>
         <div id="zeugnislisten_table_here"></div>
+        <h3>Listen für die Zeugniskonferenzen</h3>
+        <button id='bu_print_zeugniskonferenz_sheets' class="btn btn-success"><i class='fa fa-file-pdf-o'></i>&nbsp;&nbsp;Listen herunterladen</button>
     </div>
 </div>
 
@@ -27,6 +29,10 @@ var zeugnis_formular_tags = #{Hash[FAECHER_FOR_ZEUGNIS[ZEUGNIS_SCHULJAHR][ZEUGNI
 window.addEventListener('load', function () {
     render_zeugnisformulare();
     render_zeugnislisten();
+    $('#bu_print_zeugniskonferenz_sheets').on('click', function(e) {
+        print_zeugniskonferenz_sheets();
+        
+    });
 });
 
 function render_zeugnisformulare() {
@@ -108,6 +114,45 @@ function render_zeugnislisten() {
             }
         }
     }
+}
+
+function print_zeugniskonferenz_sheets() {
+    let path_arrays = [];
+    for (let klasse of zeugnis_klassen_order) {
+        let path_array_fach = [];
+        path_array_fach.push(['Schuljahr', ZEUGNIS_SCHULJAHR]);
+        path_array_fach.push(['Halbjahr', ZEUGNIS_HALBJAHR]);
+
+        let liste = zeugnisliste_for_klasse[klasse];
+        let faecher = [];
+        for (let fach of liste.faecher) {
+            faecher.push(fach);
+            if (FAECHER_SPRACHEN.indexOf(fach) >= 0) {
+                faecher.push(`${fach}_AT`);
+                faecher.push(`${fach}_SL`);
+            }
+        }
+        let emails = liste.schueler.map(function(x) { return x.email; });
+        path_array_fach.push(['Fach', faecher]);
+        path_array_fach.push(['Email', emails]);
+        path_arrays.push(path_array_fach);
+
+        let path_array_2 = [];
+        path_array_2.push(['Schuljahr', ZEUGNIS_SCHULJAHR]);
+        path_array_2.push(['Halbjahr', ZEUGNIS_HALBJAHR]);
+        path_array_2.push(['ZK', 'marked']);
+        path_array_2.push(['Email', emails]);
+        path_arrays.push(path_array_2);
+    }
+
+    tresor_api_call('/jwt/get_many', {path_arrays: path_arrays, key: 'Wert'}, function(data) {
+        console.log(data.results);
+        api_call('/api/print_zeugniskonferenz_sheets', {paths: path_arrays, values: data.results}, function(data2) {
+            if (data2.success) {
+                open_pdf_with_filename(data2.pdf_base64, data2.name);
+            }
+        });
+    });
 }
 
 </script>

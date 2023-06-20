@@ -907,13 +907,22 @@ function load_sozialverhalten_table(container, klasse, edit_noten) {
                                 e.preventDefault();
                                 e.stopPropagation();
                                 $(e.target).val({'1': '++', '2': '+', '3': 'o', '4': '-'}[e.key]);
-                                let row = $(e.target).closest('tr');
-                                let this_index = $(e.target).closest('td').index();
-                                let next_row = row.next('tr');
-                                if (next_row.length === 0) {
-                                    next_row = row.closest('tbody').find('tr').first();
+                                if (jump_table_direction === 'rows') {
+                                    let row = $(e.target).closest('tr');
+                                    let this_index = $(e.target).closest('td').index();
+                                    let next_row = row.next('tr');
+                                    if (next_row.length === 0) {
+                                        next_row = row.closest('tbody').find('tr').first();
+                                    }
+                                    next_row.find('td').eq(this_index).find('input').focus().select();
+                                } else {
+                                    let this_index = $(e.target).closest('td').index();
+                                    let n = $(e.target).closest('tr').find('td').length;
+                                    if (this_index < n - 1)
+                                        $(e.target).closest('tr').find('td').eq(this_index + 1).find('input').focus().select();
+                                    else 
+                                        $(e.target).closest('tr').find('input').eq(0).focus().select();
                                 }
-                                next_row.find('td').eq(this_index).find('input').focus().select();
                             }
                             if (e.key === 'ArrowUp') {
                                 e.preventDefault();

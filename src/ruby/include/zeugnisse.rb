@@ -512,7 +512,7 @@ class Main < Sinatra::Base
         #     f.write(cache.to_json)
         # end
 
-        respond(:yay => 'sure', :pdf_base64 => Base64.strict_encode64(get_zeugnislisten_sheets_pdf(cache)), :name => 'Zeugniskonferenzen.pdf')
+        respond(:yay => 'sure', :pdf_base64 => Base64.strict_encode64(get_zeugnislisten_sheets_pdf(cache)), :name => 'Zeugnislisten.pdf')
     end
 
 end

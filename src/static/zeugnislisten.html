@@ -91,7 +91,7 @@
         <div id="klassen_buttons_here"></div>
         <hr />
         <div id="edit_button_here" style="display: none; margin-bottom: 0.5em;">
-            <button id="bu_toggle_edit" class='btn btn-secondary'></button>
+            <button id="bu_toggle_edit" class='btn btn-secondary' #{(zeugnis_admin_logged_in? || Time.now.strftime('%Y-%m-%dT%H:%M:%S') < '2023-06-26T09:00:00') ? '' : 'disabled'}></button>
             <p style="margin-top: 0.5em;">
                 <em>Hinweis: Nutzen Sie diese Schaltfläche, um die Tabelle vor versehentlichen Änderungen zu schützen. Sobald Sie Werte ändern, sind diese automatisch gespeichert &ndash; es ist nicht nötig, die Bearbeitung durch nochmaliges Drücken dieser Schaltfläche abzuschließen. Sie müssen lediglich das Eingabefeld verlassen, um den eingetragenen Wert zu speichern.</em>
             </p>

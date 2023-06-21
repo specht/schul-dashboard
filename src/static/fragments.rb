@@ -283,4 +283,189 @@ class Main
         end
         return doc.render
     end
+
+    def get_zeugnislisten_sheets_pdf(cache)
+        doc = Prawn::Document.new(:page_size => 'A4', :page_layout => :portrait, :margin => 0) do
+            font_families.update("RobotoCondensed" => {
+                :normal => "/app/fonts/RobotoCondensed-Regular.ttf",
+                :italic => "/app/fonts/RobotoCondensed-Italic.ttf",
+                :bold => "/app/fonts/RobotoCondensed-Bold.ttf",
+                :bold_italic => "/app/fonts/RobotoCondensed-BoldItalic.ttf"
+            })
+            font_families.update("Roboto" => {
+                :normal => "/app/fonts/Roboto-Regular.ttf",
+                :italic => "/app/fonts/Roboto-Italic.ttf",
+                :bold => "/app/fonts/Roboto-Bold.ttf",
+                :bold_italic => "/app/fonts/Roboto-BoldItalic.ttf"
+            })
+            first_page = true
+            line_width 0.1.mm
+            font('Roboto') do
+                ZEUGNIS_KLASSEN_ORDER.each do |klasse|
+                    liste = @@zeugnisliste_for_klasse[klasse]
+                    nr_width = 10.mm
+                    name_width = 66.mm
+                    deutsch_width = (19.cm - nr_width - name_width) / 15.0 * 3.0
+                    sprachen_width = (19.cm - nr_width - name_width) / 15.0 * 4.0
+                    n_klasse = liste[:schueler].size
+                    n_per_page = 10
+                    n_pages = ((n_klasse - 1) / n_per_page).floor + 1
+                    offset = 0
+                    start_new_page unless first_page
+                    first_page = false
+                    font('Roboto') do
+                        bounding_box([1.5.cm, 287.mm], width: 18.cm, height: 10.cm) do
+                            float { text "Gymnasium Steglitz 06Y13", :align => :left }
+                            float { text "Steglitz-Zehlendorf", :align => :right }
+                        end
+                        line [1.5.cm, 280.mm], [19.5.cm, 280.mm]
+                        line [1.5.cm, 10.mm], [19.5.cm, 10.mm]
+                        stroke
+                        bounding_box([2.cm, 260.mm], width: 17.cm, height: 25.cm) do
+                            text "<b>Zeugnisliste</b>", :align => :center, :inline_format => true, :size => 24
+                            move_down 2.cm
+                            text "der", :align => :center, :inline_format => true
+                            move_down 1.5.cm
+                            text "<b>Klasse #{Main.tr_klasse(klasse)}</b>", :align => :center, :inline_format => true, :size => 16
+                            move_down 0.8.cm
+                            text "für das Schuljahr #{ZEUGNIS_SCHULJAHR.sub('_', '-')}/#{ZEUGNIS_HALBJAHR}", :align => :center, :inline_format => true, :size => 16
+                            move_down 1.5.cm
+                            klassenleitung = @@klassenleiter[klasse].map do |shorthand|
+                                email = @@shorthands[shorthand]
+                                @@user_info[email][:display_name_official]
+                            end
+                            text "Klassenleitung: #{klassenleitung.join(', ')}", :align => :center, :inline_format => true
+                            move_down 7.cm
+                            text "Die Zeugnisse wurden erteilt:", :align => :center
+                            move_down 1.cm
+                            text "1. am #{'_' * 30} #{' ' * 7} #{'_' * 30}", :align => :center
+                            float do
+                                translate 10.cm, 0 do
+                                    @@klassenleiter[klasse].each do |shorthand|
+                                        email = @@shorthands[shorthand]
+                                        text "Klassenleitung #{@@user_info[email][:display_name_official]}", :align => :left, :size => 7
+                                        move_down 7.mm
+                                    end
+                                end
+                            end
+                            move_down 5.mm
+                            text "2. am #{'_' * 30} #{' ' * 7} #{'_' * 30}", :align => :center
+                            move_down 1.cm
+                            text "Die allgemeinen Beurteilungen sind auf besonderer Liste beigefügt.", :align => :center, :size => 10
+                            move_down 2.mm
+                            text "Leistungen: 1 = sehr gut, 2 = gut, 3 = befriedigend, 4 = ausreichend, 5 = mangelhaft, 6 = ungenügend", :align => :center, :size => 10
+                            move_down 2.mm
+                            text "Es können auch Noten mit Tendenzen eingetragen werden.", :align => :center, :size => 10
+                        end
+                    end
+                    while n_klasse > 0 do
+                        [0, 1].each do |side|
+                            start_new_page
+                            bounding_box([1.cm, 287.mm], width: 19.cm, height: 277.mm) do
+                                line_width 0.3.mm
+                                stroke_bounds
+                                h = 277.mm / 11
+                                if side == 0
+                                    line_width 0.1.mm
+                                    (1..14).each do |x|
+                                        line [nr_width + name_width + sprachen_width / 4.0 * x, 0.0], [nr_width + name_width + sprachen_width / 4.0 * x, 277.mm - h / 4.0]
+                                    end
+                                    line [nr_width + name_width, 277.mm - h / 4.0, 19.cm, 277.mm - h / 4.0]
+                                    stroke
+                                    line_width 0.3.mm
+                                    line [nr_width, 0.0], [nr_width, 277.mm]
+                                    line [nr_width + name_width, 0.0], [nr_width + name_width, 277.mm]
+                                    line [nr_width + name_width + deutsch_width, 0.0], [nr_width + name_width + deutsch_width, 277.mm]
+                                    (1..2).each do |x|
+                                        line [nr_width + name_width + deutsch_width + sprachen_width * x, 0.0], [nr_width + name_width + deutsch_width + sprachen_width * x, 277.mm]
+                                    end
+                                    stroke
+                                    font('RobotoCondensed') do
+                                        bounding_box([nr_width + name_width, 277.mm], width: sprachen_width / 4.0 * 3, height: h / 4.0) do
+                                            text "Deutsch", :align => :center, :valign => :center
+                                        end
+                                        (1..3).each do |i|
+                                            bounding_box([nr_width + name_width + deutsch_width + sprachen_width * (i - 1), 277.mm], width: sprachen_width, height: h / 4.0) do
+                                                float { text "#{i}. Fremdsprache", :align => :center, :valign => :center }
+                                            end
+                                        end
+                                        bounding_box([nr_width + name_width, 277.mm - h / 4.0], width: sprachen_width / 4.0, height: h / 4.0 * 3 - 1.mm) do
+                                            translate(sprachen_width / 4.0 * 0, 0.0) { text "ges", :align => :center, :valign => :bottom, :size => 11}
+                                            translate(sprachen_width / 4.0 * 1, 0.0) { text "AT", :align => :center, :valign => :bottom, :size => 11}
+                                            translate(sprachen_width / 4.0 * 2, 0.0) { text "SL", :align => :center, :valign => :bottom, :size => 11}
+                                        end
+                                        (1..3).each do |i|
+                                            bounding_box([nr_width + name_width + deutsch_width + sprachen_width * (i - 1), 277.mm - h / 4.0], width: sprachen_width / 4.0, height: h / 4.0 * 3 - 1.mm) do
+                                                translate(sprachen_width / 4.0 * 0, 0.0) { text "Fach", :align => :center, :valign => :bottom, :size => 11}
+                                                translate(sprachen_width / 4.0 * 1, 0.0) { text "ges", :align => :center, :valign => :bottom, :size => 11}
+                                                translate(sprachen_width / 4.0 * 2, 0.0) { text "AT", :align => :center, :valign => :bottom, :size => 11}
+                                                translate(sprachen_width / 4.0 * 3, 0.0) { text "SL", :align => :center, :valign => :bottom, :size => 11}
+                                            end
+                                        end
+                                    end
+                                end
+                                (1..10).each do |y|
+                                    line_width 0.3.mm
+                                    line [0.0, h * y], [19.cm, h * y]
+                                    stroke
+                                    (1..3).each do |sy|
+                                        line_width 0.1.mm
+                                        line [0.0, h * (y - sy / 4.0)], [19.cm, h * (y - sy / 4.0)]
+                                        stroke
+                                    end
+                                    i = 10 - y + offset
+                                    y2 = 10 - y
+                                    schueler = liste[:schueler][i]
+                                    if schueler
+                                        email = schueler[:email]
+                                        font('RobotoCondensed') do
+                                            if side == 0
+                                                bounding_box([nr_width + 3.mm, h * y], width: name_width - 3.mm, height: h / 4.0) do
+                                                    text "#{elide_string(@@user_info[email][:last_name], name_width - 3.mm)}", :valign => :center
+                                                end
+                                                bounding_box([nr_width + 8.mm, h * (y - 0.25)], width: name_width - 8.mm, height: h / 4.0) do
+                                                    text "#{elide_string(@@user_info[email][:official_first_name], name_width - 8.mm)}", :valign => :center
+                                                end
+                                                bounding_box([nr_width + 3.mm, h * (y - 0.5)], width: name_width - 6.mm, height: h / 4.0) do
+                                                    text "#{elide_string(Date.parse(@@user_info[email][:geburtstag]).strftime('%d.%m.%Y'), name_width - 8.mm)}", :valign => :center, :align => :right
+                                                end
+                                                bounding_box([nr_width + 3.mm, h * (y - 0.75)], width: name_width - 3.mm, height: h / 4.0) do
+                                                    if @@user_info[email][:sesb]
+                                                    else
+                                                        text "#{elide_string('Fs-Folge: Englisch – Latein – Altgriechisch', name_width - 3.mm, {:size => 10})}", :valign => :center, :size => 10
+                                                    end
+                                                end
+                                                font('Roboto') do
+                                                    bounding_box([nr_width + name_width, 277.mm - (y2 + 1) * h - h / 4.0 * 2], width: sprachen_width / 4.0, height: h / 4.0 * 3) do
+                                                        note = cache["Schuljahr:#{ZEUGNIS_SCHULJAHR}/Halbjahr:#{ZEUGNIS_HALBJAHR}/Fach:D/Email:#{email}"]
+                                                        note = '' if note == '×'
+                                                        text "#{note}".gsub('-', '–'), :align => :center, :valign => :center
+                                                    end
+                                                    bounding_box([nr_width + name_width + 1 * sprachen_width / 4.0, 277.mm - (y2 + 1) * h - h / 4.0 * 2], width: sprachen_width / 4.0, height: h / 4.0 * 3) do
+                                                        note = cache["Schuljahr:#{ZEUGNIS_SCHULJAHR}/Halbjahr:#{ZEUGNIS_HALBJAHR}/Fach:D_AT/Email:#{email}"]
+                                                        note = '' if note == '×'
+                                                        text "#{note}".gsub('-', '–'), :align => :center, :valign => :center
+                                                    end
+                                                    bounding_box([nr_width + name_width + 2 * sprachen_width / 4.0, 277.mm - (y2 + 1) * h - h / 4.0 * 2], width: sprachen_width / 4.0, height: h / 4.0 * 3) do
+                                                        note = cache["Schuljahr:#{ZEUGNIS_SCHULJAHR}/Halbjahr:#{ZEUGNIS_HALBJAHR}/Fach:D_SL/Email:#{email}"]
+                                                        note = '' if note == '×'
+                                                        text "#{note}".gsub('-', '–'), :align => :center, :valign => :center
+                                                    end
+                                                end
+                                            end
+                                        end
+                                    end
+                                end
+                            end
+                        end
+
+                        n_klasse -= n_per_page
+                        offset += n_per_page
+                    end
+                    start_new_page
+                end
+            end
+        end
+        return doc.render
+    end
 end

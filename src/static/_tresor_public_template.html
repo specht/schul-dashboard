@@ -290,6 +290,9 @@
 var second_factor_expires = Math.round((Date.now() / 1000.0) + #{second_factor_time_left || 0});
 var edit_enabled = false;
 var FAECHER_SPRACHEN = #{FAECHER_SPRACHEN.to_json};
+var zeugnisliste_closed = #{(zeugnis_admin_logged_in? || Time.now.strftime('%Y-%m-%dT%H:%M:%S') < '2023-06-26T09:00:00') ? 'false' : 'true'};
+console.log("ARRRRRRRRRRRGH!!!!!!!!!!!!!!!!!!!");
+zeugnisliste_closed = true;
 
 function update_edit_button() {
     let button = $('#bu_toggle_edit');
@@ -616,7 +619,7 @@ function load_noten_table(container, klasse, edit_noten) {
                     for (let fi = 0; fi < faecher_for_paths.length; fi++) {
                         let fach = faecher_for_paths[fi];
                         let input = $(`<input placeholder='--' class='form-control' style='width: 3em; text-align: center; height: calc(1.5em + 2px);'>`)
-                        if (!edit_noten || ((!my_zeugnisliste[`${klasse}/${fach}`]) && ('#{zeugnis_admin_logged_in?}' === 'false'))) {
+                        if (zeugnisliste_closed || (!edit_noten || ((!my_zeugnisliste[`${klasse}/${fach}`]) && ('#{zeugnis_admin_logged_in?}' === 'false')))) {
                             input.prop('disabled', true);
                         }
                         let value = data.results[0][0][0][fi][index];

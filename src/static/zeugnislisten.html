@@ -90,8 +90,11 @@
         </p>
         <div id="klassen_buttons_here"></div>
         <hr />
+        <div class="alert alert-warning">
+            <i class='fa fa-clock-o'></i>&nbsp;&nbsp;Die Eintragung der Zensuren ist noch bis Montag, den 26. Juni 2023 um 9:00 Uhr morgens möglich. Anschließend können noch SuS für Zeugniskonferenz markiert werden.
+        </div>
         <div id="edit_button_here" style="display: none; margin-bottom: 0.5em;">
-            <button id="bu_toggle_edit" class='btn btn-secondary' #{(zeugnis_admin_logged_in? || Time.now.strftime('%Y-%m-%dT%H:%M:%S') < '2023-06-26T09:00:00') ? '' : 'disabled'}></button>
+            <button id="bu_toggle_edit" class='btn btn-secondary'></button>
             <p style="margin-top: 0.5em;">
                 <em>Hinweis: Nutzen Sie diese Schaltfläche, um die Tabelle vor versehentlichen Änderungen zu schützen. Sobald Sie Werte ändern, sind diese automatisch gespeichert &ndash; es ist nicht nötig, die Bearbeitung durch nochmaliges Drücken dieser Schaltfläche abzuschließen. Sie müssen lediglich das Eingabefeld verlassen, um den eingetragenen Wert zu speichern.</em>
             </p>

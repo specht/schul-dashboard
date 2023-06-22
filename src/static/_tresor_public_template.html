@@ -291,8 +291,6 @@ var second_factor_expires = Math.round((Date.now() / 1000.0) + #{second_factor_t
 var edit_enabled = false;
 var FAECHER_SPRACHEN = #{FAECHER_SPRACHEN.to_json};
 var zeugnisliste_closed = #{(zeugnis_admin_logged_in? || Time.now.strftime('%Y-%m-%dT%H:%M:%S') < '2023-06-26T09:00:00') ? 'false' : 'true'};
-console.log("ARRRRRRRRRRRGH!!!!!!!!!!!!!!!!!!!");
-zeugnisliste_closed = true;
 
 function update_edit_button() {
     let button = $('#bu_toggle_edit');

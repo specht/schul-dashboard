@@ -40,11 +40,21 @@ class BoxPrinter
         @height = height
     end
 
-    def print(x, y, s)
-        @pdf.bounding_box([@left + x * @width, @top - y * @height], width: @width, height: @height) do
-            s = '' if s == '×'
-            s = "#{s}".gsub('-', '–')
-            @pdf.text s, :align => :center, :valign => :center, :size => 11
+    def print(x, y, s, **opts)
+        opts[:width] ||= 1
+        opts[:height] ||= 1
+        opts[:size] ||= 11
+        opts[:rotate] ||= 0
+        opts[:align] ||= :center
+        left = @left + x * @width
+        top = @top - y * @height
+        width = @width * opts[:width]
+        height = @height * opts[:height]
+        at = [left, top]
+        s = '' if s == '×'
+        s = "#{s}".gsub('-', '–').strip
+        unless s.empty?
+            @pdf.text_box s, :at => at, :width => width, :height => height, :align => opts[:align], :valign => :center, :size => opts[:size], :inline_format => true, :rotate => opts[:rotate], :overflow => :shrink_to_fit
         end
     end
 end
@@ -323,12 +333,20 @@ class Main
                     liste = @@zeugnisliste_for_klasse[klasse]
                     nr_width = 10.mm
                     name_width = 66.mm
-                    deutsch_width = (19.cm - nr_width - name_width) / 15.0 * 3.0
-                    sprachen_width = (19.cm - nr_width - name_width) / 15.0 * 4.0
-                    lboxwidth = (19.cm - nr_width - name_width) / 15.0
+                    bem_width = 50.mm
+                    cols_left  = %w(D D_AT D_SL Fach En En_AT En_SL Fach La La_AT La_SL . . . .)
+                    if klasse.to_i > 7
+                        cols_left  = %w(D D_AT D_SL Fach En En_AT En_SL Fach La La_AT La_SL Fach Agr Agr_AT Agr_SL)
+                    end
+                    cols_right = %w(Gewi Eth Ek Ge Pb Ma Nawi Ph Ch Bio Ku Mu Sp FF1 . FF2 . FF3 . VT VT_UE VS VS_UE VSP)
+
+                    lboxwidth = (19.cm - nr_width - name_width) / cols_left.size
                     lboxheight = 277.mm / 11 / 4
+                    rboxwidth = (19.cm - bem_width) / cols_right.size
+                    rboxheight = 277.mm / 11 / 4
 
                     left = BoxPrinter.new(self, nr_width + name_width, 277.mm - lboxheight * 4, lboxwidth, lboxheight)
+                    right = BoxPrinter.new(self, 0.0, 277.mm - rboxheight * 4, rboxwidth, rboxheight)
 
                     n_klasse = liste[:schueler].size
                     n_per_page = 10
@@ -390,39 +408,73 @@ class Main
                                 h = 277.mm / 11
                                 if side == 0
                                     line_width 0.1.mm
-                                    (1..14).each do |x|
-                                        line [nr_width + name_width + sprachen_width / 4.0 * x, 0.0], [nr_width + name_width + sprachen_width / 4.0 * x, 277.mm - h / 4.0]
+                                    (0...cols_left.size).each do |x|
+                                        line [nr_width + name_width + lboxwidth * x, 0.0], [nr_width + name_width + lboxwidth * x, 277.mm - h / 4.0]
                                     end
                                     line [nr_width + name_width, 277.mm - h / 4.0, 19.cm, 277.mm - h / 4.0]
                                     stroke
                                     line_width 0.3.mm
                                     line [nr_width, 0.0], [nr_width, 277.mm]
                                     line [nr_width + name_width, 0.0], [nr_width + name_width, 277.mm]
-                                    line [nr_width + name_width + deutsch_width, 0.0], [nr_width + name_width + deutsch_width, 277.mm]
+                                    line [nr_width + name_width + lboxwidth * 3, 0.0], [nr_width + name_width + lboxwidth * 3, 277.mm]
                                     (1..2).each do |x|
-                                        line [nr_width + name_width + deutsch_width + sprachen_width * x, 0.0], [nr_width + name_width + deutsch_width + sprachen_width * x, 277.mm]
+                                        line [nr_width + name_width + lboxwidth * 3 + lboxwidth * 4 * x, 0.0], [nr_width + name_width + lboxwidth * 3 + lboxwidth * 4 * x, 277.mm]
                                     end
                                     stroke
                                     font('RobotoCondensed') do
-                                        bounding_box([nr_width + name_width, 277.mm], width: sprachen_width / 4.0 * 3, height: h / 4.0) do
-                                            text "Deutsch", :align => :center, :valign => :center, :size => 11
-                                        end
-                                        (1..3).each do |i|
-                                            bounding_box([nr_width + name_width + deutsch_width + sprachen_width * (i - 1), 277.mm], width: sprachen_width, height: h / 4.0) do
-                                                float { text "#{i}. Fremdsprache", :align => :center, :valign => :center, :size => 11 }
+                                        left.print(0, -4, 'Deutsch', :width => 3)
+                                        left.print(3, -4, '1. Fremdsprache', :width => 4)
+                                        left.print(7, -4, '2. Fremdsprache', :width => 4)
+                                        left.print(11, -4, '3. Fremdsprache', :width => 4)
+                                        cols_left.each.with_index do |f, i|
+                                            s = "#{f}"
+                                            s = '' if s == '.'
+                                            s = 'AT' if s[-3, 3] == '_AT'
+                                            s = 'SL' if s[-3, 3] == '_SL'
+                                            s = 'ges' if ['D', 'En', 'La', 'Agr', 'Fr'].include?(s)
+                                            left.print(i, -3, s)
+                                            translate 2.mm, -3.mm do
+                                                left.print(i, -1, (liste[:lehrer_for_fach][f] || []).join(' '), :rotate => 90, :align => :left, :width => 2)
                                             end
                                         end
-                                        bounding_box([nr_width + name_width, 277.mm - h / 4.0], width: sprachen_width / 4.0, height: h / 4.0 * 3 - 1.mm) do
-                                            translate(sprachen_width / 4.0 * 0, 0.0) { text "ges", :align => :center, :valign => :bottom, :size => 11}
-                                            translate(sprachen_width / 4.0 * 1, 0.0) { text "AT", :align => :center, :valign => :bottom, :size => 11}
-                                            translate(sprachen_width / 4.0 * 2, 0.0) { text "SL", :align => :center, :valign => :bottom, :size => 11}
-                                        end
-                                        (1..3).each do |i|
-                                            bounding_box([nr_width + name_width + deutsch_width + sprachen_width * (i - 1), 277.mm - h / 4.0], width: sprachen_width / 4.0, height: h / 4.0 * 3 - 1.mm) do
-                                                translate(sprachen_width / 4.0 * 0, 0.0) { text "Fach", :align => :center, :valign => :bottom, :size => 11}
-                                                translate(sprachen_width / 4.0 * 1, 0.0) { text "ges", :align => :center, :valign => :bottom, :size => 11}
-                                                translate(sprachen_width / 4.0 * 2, 0.0) { text "AT", :align => :center, :valign => :bottom, :size => 11}
-                                                translate(sprachen_width / 4.0 * 3, 0.0) { text "SL", :align => :center, :valign => :bottom, :size => 11}
+                                    end
+                                elsif side == 1
+                                    line_width 0.1.mm
+                                    (1..24).each do |x|
+                                        line [rboxwidth * x, 0.0], [rboxwidth * x, 277.mm - h / 4.0]
+                                    end
+                                    line [0.mm, 277.mm - h / 4.0, 19.cm - bem_width, 277.mm - h / 4.0]
+                                    stroke
+                                    line_width 0.3.mm
+                                    [5, 6, 10, 11, 12, 13, 15, 17, 19, 24].each do |k|
+                                        line [rboxwidth * k, 0.0], [rboxwidth * k, 277.mm]
+                                    end
+                                    line [rboxwidth * 21, 0.0], [rboxwidth * 21, 277.mm - rboxheight]
+                                    line [rboxwidth * 23, 0.0], [rboxwidth * 23, 277.mm - rboxheight]
+                                    stroke
+                                    font('RobotoCondensed') do
+                                        right.print(0, -4, 'Gesellschaftswiss.', :width => 5)
+                                        right.print(6, -4, 'Naturwiss.', :width => 4)
+                                        right.print(19, -4, 'Versäumnisse', :width => 5)
+                                        cols_right.each.with_index do |f, i|
+                                            s = "#{f}"
+                                            s = '' if s == '.'
+                                            s = 'AT' if s[-3, 3] == '_AT'
+                                            s = 'SL' if s[-3, 3] == '_SL'
+                                            s = 'ges' if ['Gewi', 'Nawi'].include?(s)
+                                            if %w(VT VT_UE VS VS_UE VSP).include?(f)
+                                                translate 1.4.mm, -3.mm do
+                                                    right.print(i, -1, {'VT' => 'Tage', 'VT_UE' => 'UE', 'VS' => 'Stunden', 'VS_UE' => 'UE', 'VSP' => 'Versp.'}[s], :rotate => 90, :align => :left, :width => 3)
+                                                end
+                                            elsif %w(Ma Ku Mu Sp).include?(f)
+                                                right.print(i, -4, s)
+                                            elsif %w(FF1 FF2 FF3).include?(f)
+                                                right.print(i, -4, "Freies Fach #{f.gsub('F', '')}", :width => 2)
+                                            else
+                                                right.print(i, -3, s)
+                                            end
+                                            translate 1.4.mm, -3.mm do
+                                                right.print(i, -1, (liste[:lehrer_for_fach][f] || []).join(' '), :rotate => 90, :align => :left, :width => 2)
                                             end
                                         end
                                     end
@@ -443,19 +495,19 @@ class Main
                                         email = schueler[:email]
                                         font('RobotoCondensed') do
                                             if side == 0
-                                                bounding_box([nr_width + 3.mm, h * y], width: name_width - 3.mm, height: h / 4.0) do
-                                                    text "#{elide_string(schueler[:last_name], name_width - 3.mm)}", :valign => :center, :size => 11
+                                                bounding_box([nr_width + 2.mm, h * y], width: name_width - 2.mm, height: h / 4.0) do
+                                                    text "#{elide_string(schueler[:last_name], name_width - 2.mm)}", :valign => :center, :size => 11
                                                 end
-                                                bounding_box([nr_width + 8.mm, h * (y - 0.25)], width: name_width - 8.mm, height: h / 4.0) do
-                                                    text "#{elide_string(schueler[:official_first_name], name_width - 8.mm)}", :valign => :center, :size => 11
+                                                bounding_box([nr_width + 7.mm, h * (y - 0.25)], width: name_width - 7.mm, height: h / 4.0) do
+                                                    text "#{elide_string(schueler[:official_first_name], name_width - 7.mm)}", :valign => :center, :size => 11
                                                 end
-                                                bounding_box([nr_width + 3.mm, h * (y - 0.5)], width: name_width - 6.mm, height: h / 4.0) do
-                                                    text "#{elide_string(Date.parse(schueler[:geburtstag]).strftime('%d.%m.%Y'), name_width - 8.mm)}", :valign => :center, :align => :right, :size => 11
+                                                bounding_box([nr_width + 2.mm, h * (y - 0.5)], width: name_width - 4.mm, height: h / 4.0) do
+                                                    text "#{elide_string(Date.parse(schueler[:geburtstag]).strftime('%d.%m.%Y'), name_width - 6.mm)}", :valign => :center, :align => :right, :size => 11
                                                 end
-                                                bounding_box([nr_width + 3.mm, h * (y - 0.75)], width: name_width - 3.mm, height: h / 4.0) do
+                                                bounding_box([nr_width + 2.mm, h * (y - 0.75)], width: name_width - 2.mm, height: h / 4.0) do
                                                     if schueler[:zeugnis_key].include?('sesb')
                                                     else
-                                                        text "#{elide_string('Fs-Folge: Englisch – Latein – Altgriechisch', name_width - 3.mm, {:size => 10})}", :valign => :center, :size => 10
+                                                        text "#{elide_string('Fs-Folge: Englisch – Latein – Altgriechisch', name_width - 2.mm, {:size => 10})}", :valign => :center, :size => 10
                                                     end
                                                 end
                                                 font('Roboto') do
@@ -467,12 +519,18 @@ class Main
                                                         lang = ['En', 'La']
                                                         lang << 'Agr' if klasse.to_i >= 8
                                                         lang.each.with_index do |l, li|
-                                                            left.print(li * 4 + 3, y2 * 4 + 3, l)
+                                                            font('RobotoCondensed') do
+                                                                left.print(li * 4 + 3, y2 * 4 + 3, l)
+                                                            end
                                                             left.print(li * 4 + 4, y2 * 4 + 3, cache["Schuljahr:#{ZEUGNIS_SCHULJAHR}/Halbjahr:#{ZEUGNIS_HALBJAHR}/Fach:#{l}/Email:#{email}"])
                                                             left.print(li * 4 + 5, y2 * 4 + 3, cache["Schuljahr:#{ZEUGNIS_SCHULJAHR}/Halbjahr:#{ZEUGNIS_HALBJAHR}/Fach:#{l}_AT/Email:#{email}"])
                                                             left.print(li * 4 + 6, y2 * 4 + 3, cache["Schuljahr:#{ZEUGNIS_SCHULJAHR}/Halbjahr:#{ZEUGNIS_HALBJAHR}/Fach:#{l}_SL/Email:#{email}"])
                                                         end
                                                     end
+                                                end
+                                            elsif side == 1
+                                                cols_right.each.with_index do |f, i|
+                                                    right.print(i, y2 * 4 + 3, cache["Schuljahr:#{ZEUGNIS_SCHULJAHR}/Halbjahr:#{ZEUGNIS_HALBJAHR}/Fach:#{f}/Email:#{email}"])
                                                 end
                                             end
                                         end

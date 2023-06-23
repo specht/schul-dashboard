@@ -31,6 +31,24 @@ class Prawn::Document
     end
 end
 
+class BoxPrinter
+    def initialize(pdf, left, top, width, height)
+        @pdf = pdf
+        @left = left
+        @top = top
+        @width = width
+        @height = height
+    end
+
+    def print(x, y, s)
+        @pdf.bounding_box([@left + x * @width, @top - y * @height], width: @width, height: @height) do
+            s = '' if s == '×'
+            s = "#{s}".gsub('-', '–')
+            @pdf.text s, :align => :center, :valign => :center, :size => 11
+        end
+    end
+end
+
 class Main
     def get_zeugniskonferenz_sheets_pdf(cache)
         klassen_for_shorthands = {}
@@ -171,17 +189,17 @@ class Main
                                 font('RobotoCondensed') do
                                     bounding_box([0.mm, row_height * (n_per_page + 1)], width: nr_width - 1.mm, height: row_height) do
                                         move_down row_height * 0.5 - 6
-                                        text "<b>Nr.</b>", :align => :right, :inline_format => true, :size => 12
+                                        text "<b>Nr.</b>", :align => :right, :inline_format => true, :size => 11
                                     end
                                     bounding_box([nr_width + 2.mm, row_height * (n_per_page + 1)], width: name_width - 2.mm, height: row_height) do
                                         move_down row_height * 0.5 - 6
-                                        text "<b>Name</b>", :align => :left, :inline_format => true, :size => 12
+                                        text "<b>Name</b>", :align => :left, :inline_format => true, :size => 11
                                     end
                                     (0...liste[:faecher].size).each do |x|
                                         bounding_box([(nr_width + name_width) + fach_width * x, row_height * (n_per_page + 1)], width: fach_width, height: row_height) do
                                             move_down row_height * 0.5 - 6
                                             fach = liste[:faecher][x]
-                                            text "<b>#{fach}</b>#{FAECHER_SPRACHEN.include?(fach) ? '<sup>1</sup>' : ''}", :align => :center, :inline_format => true, :size => 12
+                                            text "<b>#{fach}</b>#{FAECHER_SPRACHEN.include?(fach) ? '<sup>1</sup>' : ''}", :align => :center, :inline_format => true, :size => 11
                                             # stroke_bounds
                                         end
                                     end
@@ -190,17 +208,17 @@ class Main
                                         email = consider_sus_for_klasse[klasse][j]
                                         bounding_box([0.mm, row_height * (n_per_page - i)], width: nr_width - 1.mm, height: row_height) do
                                             move_down row_height * 0.5 - 12
-                                            text "#{i + offset + 1}.", :align => :right, :inline_format => true, :size => 12
+                                            text "#{i + offset + 1}.", :align => :right, :inline_format => true, :size => 11
                                             # stroke_bounds
                                         end
                                         bounding_box([nr_width + 2.mm, row_height * (n_per_page - i)], width: name_width - 2.mm, height: row_height) do
                                             move_down row_height * 0.5 - 12
                                             s = "#{@@user_info[email][:last_name]}"
-                                            text elide_string(s, name_width - 2.mm, {:size => 12}), :align => :left, :inline_format => true, :size => 12
+                                            text elide_string(s, name_width - 2.mm, {:size => 11}), :align => :left, :inline_format => true, :size => 11
                                             save_graphics_state do
                                                 translate 2.mm, 0.mm
                                                 s = "#{@@user_info[email][:official_first_name]}"
-                                                text elide_string(s, name_width - 2.mm - 2.mm, {:size => 12}), :align => :left, :inline_format => true, :size => 12
+                                                text elide_string(s, name_width - 2.mm - 2.mm, {:size => 11}), :align => :left, :inline_format => true, :size => 11
                                             end
                                             # stroke_bounds
                                         end
@@ -212,7 +230,7 @@ class Main
                                                         note = cache["Schuljahr:#{ZEUGNIS_SCHULJAHR}/Halbjahr:#{ZEUGNIS_HALBJAHR}/Fach:#{fach}_AT/Email:#{email}"]
                                                         if note
                                                             float do
-                                                                text "#{note.gsub('-', '–').gsub('×', '')}", :align => :center, :size => 12, :final_gap => false, :valign => :center
+                                                                text "#{note.gsub('-', '–').gsub('×', '')}", :align => :center, :size => 11, :final_gap => false, :valign => :center
                                                                 if NOTEN_MARK.include?(note)
                                                                     save_graphics_state do
                                                                         translate(fach_width / 4, row_height / 4)
@@ -227,7 +245,7 @@ class Main
                                                         note = cache["Schuljahr:#{ZEUGNIS_SCHULJAHR}/Halbjahr:#{ZEUGNIS_HALBJAHR}/Fach:#{fach}_SL/Email:#{email}"]
                                                         if note
                                                             float do
-                                                                text "#{note.gsub('-', '–').gsub('×', '')}", :align => :center, :size => 12, :final_gap => false, :valign => :center
+                                                                text "#{note.gsub('-', '–').gsub('×', '')}", :align => :center, :size => 11, :final_gap => false, :valign => :center
                                                                 if NOTEN_MARK.include?(note)
                                                                     save_graphics_state do
                                                                         translate(fach_width / 4, row_height / 4)
@@ -242,7 +260,7 @@ class Main
                                                         note = cache["Schuljahr:#{ZEUGNIS_SCHULJAHR}/Halbjahr:#{ZEUGNIS_HALBJAHR}/Fach:#{fach}/Email:#{email}"]
                                                         if note
                                                             float do
-                                                                text "#{note.gsub('-', '–').gsub('×', '')}", :align => :center, :size => 12, :final_gap => false, :valign => :center
+                                                                text "#{note.gsub('-', '–').gsub('×', '')}", :align => :center, :size => 11, :final_gap => false, :valign => :center
                                                                 if NOTEN_MARK.include?(note)
                                                                     save_graphics_state do
                                                                         translate(fach_width / 4, row_height / 2)
@@ -255,7 +273,7 @@ class Main
                                                 else
                                                     note = cache["Schuljahr:#{ZEUGNIS_SCHULJAHR}/Halbjahr:#{ZEUGNIS_HALBJAHR}/Fach:#{fach}/Email:#{email}"]
                                                     if note
-                                                        text "#{note.gsub('-', '–').gsub('×', '')}", :align => :center, :inline_format => true, :size => 12, :valign => :center
+                                                        text "#{note.gsub('-', '–').gsub('×', '')}", :align => :center, :inline_format => true, :size => 11, :valign => :center
                                                         if NOTEN_MARK.include?(note)
                                                             save_graphics_state do
                                                                 translate(fach_width / 2, row_height / 2)
@@ -307,6 +325,11 @@ class Main
                     name_width = 66.mm
                     deutsch_width = (19.cm - nr_width - name_width) / 15.0 * 3.0
                     sprachen_width = (19.cm - nr_width - name_width) / 15.0 * 4.0
+                    lboxwidth = (19.cm - nr_width - name_width) / 15.0
+                    lboxheight = 277.mm / 11 / 4
+
+                    left = BoxPrinter.new(self, nr_width + name_width, 277.mm - lboxheight * 4, lboxwidth, lboxheight)
+
                     n_klasse = liste[:schueler].size
                     n_per_page = 10
                     n_pages = ((n_klasse - 1) / n_per_page).floor + 1
@@ -382,11 +405,11 @@ class Main
                                     stroke
                                     font('RobotoCondensed') do
                                         bounding_box([nr_width + name_width, 277.mm], width: sprachen_width / 4.0 * 3, height: h / 4.0) do
-                                            text "Deutsch", :align => :center, :valign => :center
+                                            text "Deutsch", :align => :center, :valign => :center, :size => 11
                                         end
                                         (1..3).each do |i|
                                             bounding_box([nr_width + name_width + deutsch_width + sprachen_width * (i - 1), 277.mm], width: sprachen_width, height: h / 4.0) do
-                                                float { text "#{i}. Fremdsprache", :align => :center, :valign => :center }
+                                                float { text "#{i}. Fremdsprache", :align => :center, :valign => :center, :size => 11 }
                                             end
                                         end
                                         bounding_box([nr_width + name_width, 277.mm - h / 4.0], width: sprachen_width / 4.0, height: h / 4.0 * 3 - 1.mm) do
@@ -421,35 +444,34 @@ class Main
                                         font('RobotoCondensed') do
                                             if side == 0
                                                 bounding_box([nr_width + 3.mm, h * y], width: name_width - 3.mm, height: h / 4.0) do
-                                                    text "#{elide_string(@@user_info[email][:last_name], name_width - 3.mm)}", :valign => :center
+                                                    text "#{elide_string(schueler[:last_name], name_width - 3.mm)}", :valign => :center, :size => 11
                                                 end
                                                 bounding_box([nr_width + 8.mm, h * (y - 0.25)], width: name_width - 8.mm, height: h / 4.0) do
-                                                    text "#{elide_string(@@user_info[email][:official_first_name], name_width - 8.mm)}", :valign => :center
+                                                    text "#{elide_string(schueler[:official_first_name], name_width - 8.mm)}", :valign => :center, :size => 11
                                                 end
                                                 bounding_box([nr_width + 3.mm, h * (y - 0.5)], width: name_width - 6.mm, height: h / 4.0) do
-                                                    text "#{elide_string(Date.parse(@@user_info[email][:geburtstag]).strftime('%d.%m.%Y'), name_width - 8.mm)}", :valign => :center, :align => :right
+                                                    text "#{elide_string(Date.parse(schueler[:geburtstag]).strftime('%d.%m.%Y'), name_width - 8.mm)}", :valign => :center, :align => :right, :size => 11
                                                 end
                                                 bounding_box([nr_width + 3.mm, h * (y - 0.75)], width: name_width - 3.mm, height: h / 4.0) do
-                                                    if @@user_info[email][:sesb]
+                                                    if schueler[:zeugnis_key].include?('sesb')
                                                     else
                                                         text "#{elide_string('Fs-Folge: Englisch – Latein – Altgriechisch', name_width - 3.mm, {:size => 10})}", :valign => :center, :size => 10
                                                     end
                                                 end
                                                 font('Roboto') do
-                                                    bounding_box([nr_width + name_width, 277.mm - (y2 + 1) * h - h / 4.0 * 2], width: sprachen_width / 4.0, height: h / 4.0 * 3) do
-                                                        note = cache["Schuljahr:#{ZEUGNIS_SCHULJAHR}/Halbjahr:#{ZEUGNIS_HALBJAHR}/Fach:D/Email:#{email}"]
-                                                        note = '' if note == '×'
-                                                        text "#{note}".gsub('-', '–'), :align => :center, :valign => :center
-                                                    end
-                                                    bounding_box([nr_width + name_width + 1 * sprachen_width / 4.0, 277.mm - (y2 + 1) * h - h / 4.0 * 2], width: sprachen_width / 4.0, height: h / 4.0 * 3) do
-                                                        note = cache["Schuljahr:#{ZEUGNIS_SCHULJAHR}/Halbjahr:#{ZEUGNIS_HALBJAHR}/Fach:D_AT/Email:#{email}"]
-                                                        note = '' if note == '×'
-                                                        text "#{note}".gsub('-', '–'), :align => :center, :valign => :center
-                                                    end
-                                                    bounding_box([nr_width + name_width + 2 * sprachen_width / 4.0, 277.mm - (y2 + 1) * h - h / 4.0 * 2], width: sprachen_width / 4.0, height: h / 4.0 * 3) do
-                                                        note = cache["Schuljahr:#{ZEUGNIS_SCHULJAHR}/Halbjahr:#{ZEUGNIS_HALBJAHR}/Fach:D_SL/Email:#{email}"]
-                                                        note = '' if note == '×'
-                                                        text "#{note}".gsub('-', '–'), :align => :center, :valign => :center
+                                                    left.print(0, y2 * 4 + 3, cache["Schuljahr:#{ZEUGNIS_SCHULJAHR}/Halbjahr:#{ZEUGNIS_HALBJAHR}/Fach:D/Email:#{email}"])
+                                                    left.print(1, y2 * 4 + 3, cache["Schuljahr:#{ZEUGNIS_SCHULJAHR}/Halbjahr:#{ZEUGNIS_HALBJAHR}/Fach:D_AT/Email:#{email}"])
+                                                    left.print(2, y2 * 4 + 3, cache["Schuljahr:#{ZEUGNIS_SCHULJAHR}/Halbjahr:#{ZEUGNIS_HALBJAHR}/Fach:D_SL/Email:#{email}"])
+                                                    if schueler[:zeugnis_key].include?('sesb')
+                                                    else
+                                                        lang = ['En', 'La']
+                                                        lang << 'Agr' if klasse.to_i >= 8
+                                                        lang.each.with_index do |l, li|
+                                                            left.print(li * 4 + 3, y2 * 4 + 3, l)
+                                                            left.print(li * 4 + 4, y2 * 4 + 3, cache["Schuljahr:#{ZEUGNIS_SCHULJAHR}/Halbjahr:#{ZEUGNIS_HALBJAHR}/Fach:#{l}/Email:#{email}"])
+                                                            left.print(li * 4 + 5, y2 * 4 + 3, cache["Schuljahr:#{ZEUGNIS_SCHULJAHR}/Halbjahr:#{ZEUGNIS_HALBJAHR}/Fach:#{l}_AT/Email:#{email}"])
+                                                            left.print(li * 4 + 6, y2 * 4 + 3, cache["Schuljahr:#{ZEUGNIS_SCHULJAHR}/Halbjahr:#{ZEUGNIS_HALBJAHR}/Fach:#{l}_SL/Email:#{email}"])
+                                                        end
                                                     end
                                                 end
                                             end
@@ -469,3 +491,4 @@ class Main
         return doc.render
     end
 end
+

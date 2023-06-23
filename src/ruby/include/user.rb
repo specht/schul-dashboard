@@ -481,6 +481,27 @@ class Main < Sinatra::Base
         method
     end
 
+    post '/api/set_jump_table_direction' do
+        require_user!
+        data = parse_request_data(:required_keys => [:method])
+        assert(%w(rows columns).include?(data[:method]))
+        neo4j_query_expect_one(<<~END_OF_QUERY, :email => @session_user[:email], :method => data[:method])
+            MATCH (u:User {email: $email})
+            SET u.jump_table_direction = $method
+            RETURN u.email;
+        END_OF_QUERY
+        respond(:method => data[:method])
+    end
+
+    def session_user_jump_table_direction
+        require_user!
+        method = neo4j_query_expect_one(<<~END_OF_QUERY, :email => @session_user[:email])['method']
+            MATCH (u:User {email: $email})
+            RETURN COALESCE(u.jump_table_direction, "rows") AS method;
+        END_OF_QUERY
+        method
+    end
+
     post '/api/toggle_ical_omit_type' do
         require_user!
         data = parse_request_data(:required_keys => [:type])

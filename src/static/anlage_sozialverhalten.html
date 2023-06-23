@@ -74,7 +74,14 @@
             </tr>
         </table>
         <div class="alert alert-success span-hl">
-            Tipp: Nutzen Sie die Tasten <span>1</span>, <span>2</span>, <span>3</span> und <span>4</span>, um die Noten <span>++</span>, <span>+</span>, <span>o</span> und <span>-</span> zu vergeben und anschließend gleich automatisch in die nächste Zeile zu springen.
+            <p>
+                Tipp: Nutzen Sie die Tasten <span>1</span>, <span>2</span>, <span>3</span> und <span>4</span>, um die Noten <span>++</span>, <span>+</span>, <span>o</span> und <span>-</span> zu vergeben und anschließend gleich automatisch in die nächste Zeile zu springen.
+            </p>
+            <p>
+                Wählen Sie hier, ob Sie dabei von oben nach unten oder von links nach rechts springen möchten:
+            </p>
+            <button id='bu_jump_row' class="btn btn-outline-secondary"><i class="fa fa-long-arrow-down"></i>&nbsp;&nbsp;von Zeile zu Zeile</button> &nbsp;
+            <button id='bu_jump_column' class="btn btn-outline-secondary"><i class="fa fa-long-arrow-right"></i>&nbsp;&nbsp;von Spalte zu Spalte</button>
         </div>
         <p>
             Bitte wählen Sie eine Klasse, für die Sie Bewertungen eintragen möchten.
@@ -103,8 +110,20 @@ var my_zeugnisliste = #{@@zeugnisliste_for_lehrer[@session_user[:shorthand]].to_
 //var my_klassen = #{(zeugnis_admin_logged_in? ? KLASSEN_ORDER : @@klassen_for_shorthand[@session_user[:shorthand]]).select { |x| ZEUGNIS_KLASSEN_ORDER.include?(x) }.to_json};
 var my_klassen = #{(@@zeugnisliste_for_lehrer[@session_user[:shorthand]]).keys.map { |x| x.split('/').first }.sort.uniq.to_json};
 var clicked_klasse = null;
+var jump_table_direction = '#{session_user_jump_table_direction}';
+
+function refresh_jump_table_direction_buttons() {
+    if (jump_table_direction == 'rows') {
+        $('#bu_jump_row').removeClass('btn-outline-secondary').addClass('btn-success');
+        $('#bu_jump_column').removeClass('btn-success').addClass('btn-outline-secondary');
+    } else {
+        $('#bu_jump_column').removeClass('btn-outline-secondary').addClass('btn-success');
+        $('#bu_jump_row').removeClass('btn-success').addClass('btn-outline-secondary');
+    }
+}
 
 window.addEventListener('load', function () {
+    refresh_jump_table_direction_buttons();
     for (let klasse of zeugnis_klassen_order) {
         if (my_klassen.indexOf(klasse) >= 0) {
             let button = $(`<button style='white-space: nowrap;' class='inline-block bg-slate-900 border border-blue-500 hover:bg-slate-200 rounded py-1 px-3 mr-1 mb-1'>${klassen_tr[klasse] ?? klasse}</button>`);
@@ -126,6 +145,22 @@ window.addEventListener('load', function () {
         edit_enabled = !edit_enabled;
         load_sozialverhalten_table($('#noten_here'), clicked_klasse, edit_enabled);
         update_edit_button();
+    });
+    $('#bu_jump_row').click(function(e) {
+        api_call('/api/set_jump_table_direction', {method: 'rows'}, function(data) {
+            if (data.success) {
+                jump_table_direction = data.method;
+                refresh_jump_table_direction_buttons();
+            }
+        });
+    });
+    $('#bu_jump_column').click(function(e) {
+        api_call('/api/set_jump_table_direction', {method: 'columns'}, function(data) {
+            if (data.success) {
+                jump_table_direction = data.method;
+                refresh_jump_table_direction_buttons();
+            }
+        });
     });
 });
 </script>

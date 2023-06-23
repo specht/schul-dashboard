@@ -20,9 +20,10 @@ class Main
         @@zeugnisliste_for_klasse = YAML::load(File.read('/internal/debug/@@zeugnisliste_for_klasse.yaml'))
         @@shorthands = YAML::load(File.read('/internal/debug/@@shorthands.yaml'))
         @@user_info = YAML::load(File.read('/internal/debug/@@user_info.yaml'))
+        @@klassenleiter = YAML::load(File.read('/internal/debug/@@klassenleiter.yaml'))
 
         File.open('/internal/out.pdf', 'w') do |f|
-            f.write get_zeugniskonferenz_sheets_pdf(cache)
+            f.write get_zeugnislisten_sheets_pdf(cache)
         end
     end
 end

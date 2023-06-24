@@ -13,6 +13,8 @@ class Main < Sinatra::Base
             SET v.fixed = false
             SET v.not_fixed = false
             SET v.comment = false
+            SET v.hidden = false
+            SET v.hidden_admin = false
             RETURN v.token;
         END_OF_QUERY
 
@@ -112,18 +114,57 @@ class Main < Sinatra::Base
         respond(:ok => true)
     end
 
-    # post '/api/delete_tech_problem' do
-    #     require_user_who_can_report_tech_problems!
-    #     data = parse_request_data(:required_keys => [:token])
-    #     token = data[:token]
-    #     debug token
-    #     neo4j_query_expect_one(<<~END_OF_QUERY, :token => token)
-    #         MATCH (v:TechProblem {token: $token})
-    #         DETACH DELETE v
-    #         RETURN v;
-    #     END_OF_QUERY
-    #     respond(:ok => true)
-    # end
+    post '/api/hide_tech_problem' do
+        require_user_who_can_report_tech_problems!
+        data = parse_request_data(:required_keys => [:token])
+        token = data[:token]
+        debug token
+        neo4j_query_expect_one(<<~END_OF_QUERY, :token => token)
+            MATCH (v:TechProblem {token: $token})
+            SET v.hidden = true
+            RETURN v;
+        END_OF_QUERY
+        respond(:ok => true)
+    end
+
+    post '/api/unhide_tech_problem' do
+        require_user_who_can_report_tech_problems!
+        data = parse_request_data(:required_keys => [:token])
+        token = data[:token]
+        debug token
+        neo4j_query_expect_one(<<~END_OF_QUERY, :token => token)
+            MATCH (v:TechProblem {token: $token})
+            SET v.hidden = false
+            RETURN v;
+        END_OF_QUERY
+        respond(:ok => true)
+    end
+
+    post '/api/hide_tech_problem_admin' do
+        require_user_who_can_manage_tablets!
+        data = parse_request_data(:required_keys => [:token])
+        token = data[:token]
+        debug token
+        neo4j_query_expect_one(<<~END_OF_QUERY, :token => token)
+            MATCH (v:TechProblem {token: $token})
+            SET v.hidden_admin = true
+            RETURN v;
+        END_OF_QUERY
+        respond(:ok => true)
+    end
+
+    post '/api/unhide_tech_problem_admin' do
+        require_user_who_can_manage_tablets!
+        data = parse_request_data(:required_keys => [:token])
+        token = data[:token]
+        debug token
+        neo4j_query_expect_one(<<~END_OF_QUERY, :token => token)
+            MATCH (v:TechProblem {token: $token})
+            SET v.hidden_admin = false
+            RETURN v;
+        END_OF_QUERY
+        respond(:ok => true)
+    end
 
     post '/api/delete_tech_problem_admin' do
         require_user_who_can_manage_tablets!
@@ -137,4 +178,53 @@ class Main < Sinatra::Base
         respond(:ok => true)
     end
 
+    def print_tablet_login()
+        require_user_who_can_manage_tablets!
+        StringIO.open do |io|
+            io.puts "<p>Mit einem Klick auf diesen Button kannst du dieses Gerät dauerhaft als Lehrer-Tablet anmelden.</p>"
+            io.puts "<button class='btn btn-primary bu_login_teacher_tablet'><i class='fa fa-sign-in'></i>&nbsp;&nbsp;Lehrer-Tablet-Modus aktivieren</button>"
+            io.puts "<hr />"
+            io.puts "<p>Bitte wähle ein order mehrere Kürzel, um dieses Gerät dauerhaft als Kurs-Tablet anzumelden.</p>"
+            @@shorthands.keys.sort.each do |shorthand|
+                io.puts "<button class='btn-teacher-for-kurs-tablet-login btn btn-xs btn-outline-secondary' data-shorthand='#{shorthand}'>#{shorthand}</button>"
+            end
+            io.puts "<br /><br >"
+            io.puts "<button class='btn btn-primary bu_login_kurs_tablet' disabled><i class='fa fa-sign-in'></i>&nbsp;&nbsp;Kurs-Tablet-Modus aktivieren</button>"
+            io.puts "<hr />"
+            io.puts "<p>Bitte wähle ein Tablet, um dieses Gerät dauerhaft als dieses Tablet anzumelden.</p>"
+            @@tablets.keys.each do |id|
+                tablet = @@tablets[id]
+                io.puts "<button class='btn-tablet-login btn btn-xs btn-outline-secondary' data-id='#{id}' style='background-color: #{tablet[:bg_color]}; color: #{tablet[:fg_color]};'>#{id}</button>"
+            end
+            io.puts "<hr />"
+            io.puts "<div style='max-width: 100%; overflow-x: auto;'>"
+            io.puts "<table class='table table-condensed table-striped narrow' style='width: unset; min-width: 100%;'>"
+            io.puts "<thead>"
+            io.puts "<tr>"
+            io.puts "<th>Typ</th>"
+            io.puts "<th>Gerät</th>"
+            io.puts "<th>Abmelden</th>"
+            io.puts "</tr>"
+            io.puts "</thead>"
+            io.puts "<tbody>"
+            get_sessions_for_user("lehrer.tablet@#{SCHUL_MAIL_DOMAIN}").each do |session|
+                io.puts "<tr>"
+                io.puts "<td>Lehrer-Tablet</td>"
+                io.puts "<td>#{session[:user_agent]}</td>"
+                io.puts "<td><button class='btn btn-xs btn-danger btn-purge-session' data-email='lehrer.tablet@#{SCHUL_MAIL_DOMAIN}' data-scrambled-sid='#{session[:scrambled_sid]}'>Abmelden</button></td>"
+                io.puts "</tr>"
+            end
+            get_sessions_for_user("kurs.tablet@#{SCHUL_MAIL_DOMAIN}").each do |session|
+                io.puts "<tr>"
+                io.puts "<td>Kurs-Tablet (#{(session[:shorthands] || []).sort.join(', ')})</td>"
+                io.puts "<td>#{session[:user_agent]}</td>"
+                io.puts "<td><button class='btn btn-xs btn-danger btn-purge-session' data-email='kurs.tablet@#{SCHUL_MAIL_DOMAIN}' data-scrambled-sid='#{session[:scrambled_sid]}'>Abmelden</button></td>"
+                io.puts "</tr>"
+            end
+            io.puts "</tbody>"
+            io.puts "</table>"
+            io.puts "</div>"
+            io.string
+        end
+    end
 end

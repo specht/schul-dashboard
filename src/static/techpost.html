@@ -3,7 +3,7 @@
     <div class='row'>
         <div class="col-md-12">
             <h2 style="margin-bottom: 30px;">Technikamt
-                <button id="frequent_problems" class='btn btn-primary pull-right' style="display: none;"><i class='fa fa-question-circle'></i>&nbsp;&nbsp;Häufige Fragen und Probleme</button>
+                <button id="frequent_problems" class='btn btn-warning pull-right'><i class='fa fa-question-circle'></i>&nbsp;&nbsp;Häufige Fragen und Probleme</button>
             </h2>
             <hr>
                 Du bist in deiner Klasse Technikamt und kannst deshalb hier Probleme mit der Schultechnik melden.<br><br>
@@ -63,6 +63,7 @@
             </div>
             <div class='row' style='margin-bottom: 15px;'>
                 <div class='col-md-12'>
+                    <button class='bu-hidden-problems btn btn-secondary'><i class='fa fa-eye-slash'></i>&nbsp;&nbsp;Ausgeblendete Probleme</button>
                     <button id='tp_report_problem' title="Dies kann nicht rückgängig gemacht werden!" class='btn btn-success pull-right' disabled><i class='fa fa-send'></i>&nbsp;&nbsp;Absenden</button>
                 </div>
             </div>
@@ -75,6 +76,7 @@
                     <th>Gerät</th>
                     <th>Status</th>
                     <th>Kommentar</th>
+                    <th>Ausblenden</th>
                     </tr></thead>
                     <tbody id='problems_here'>
                     </tbody>
@@ -99,7 +101,10 @@
                     <h3>Wenn nichts mehr geht</h3>
                     Ziehe den Stecker und halte den Power-Button so lange gedrückt, bis der Laptop aus ist. Warte einen Augenblick und Drücke den Button nun kurz, sodass das Gerät wieder startet. Sollte das Problem weiterhin bestehen, hilft nichts außer Warten... 
                     <br><b>Achtung:</b> Falls der Computer gerade ein Update macht, kann dieses Verfahren das Betriebssystem zerstören.
-                    <h3></h3>
+                    <div class="text-muted"><br>
+                        Hier werden noch Sachen erganzt. <br>
+                        Vorschläge? Meldet euch gerne bei uns, wenn ihr meint, dass hier noch etwas fehlt.
+                    </div>
                 </div>
             </div>
         </div>
@@ -109,10 +114,49 @@
       </div>
     </div>
 </div>
+
+<div class="modal" id="composeHidden" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-centered" role="document">
+      <div class="modal-content">
+       <div class="modal-header">
+          <h5 class="modal-title">Ausgeblendete Probleme</h5>
+        </div>
+        <div class="modal-body">
+            <div class='row'>
+                <div class='col-md-12' style='max-width: 100%; overflow-x: auto;'>
+                    <table class='table narrow table-striped' style='width: unset; min-width: 100%;'>
+                    <thead id="head_hidden_problems_here">
+                    <!-- <tr>
+                    <th>Datum</th>
+                    <th>Problem</th>
+                    <th>Gerät</th>
+                    <th>Status</th>
+                    <th>Kommentar</th>
+                    <th>Einblenden</th>
+                    </tr> -->
+                    </thead>
+                    <tbody id='hidden_problems_here'>
+                    </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-dismiss="modal">Schließen</button>
+        </div>
+      </div>
+    </div>
+</div>
+
 <script>
 
     function compose_frequent_problems() {
         $('#composeModal').modal('show');
+    }
+
+    function compose_hidden_problems() {
+        $('#composeHidden').modal('show');
+        refresh_hidden_tech_problems();
     }
 
     function update_submit_button() {
@@ -127,28 +171,111 @@
             if (data.success) {
                 $('#problems_here').empty();
                 for (let entry of data.tech_problems) {
-                    let row = $('<tr>');
-                    row.append($('<td>').text(moment(entry.problem.date).format('ddd, D.M.Y')));
-                    row.append($('<td>').text(entry.problem.problem));
-                    row.append($('<td>').text('' + entry.problem.device));
-                    let tp_fixed = $('<td>').html("<i class='text-success fa fa-check'></i>&nbsp;&nbsp;Behoben");
-                    let tp_progress = $('<td>').html("<i class='text-secondary fa fa-clock-o'></i>&nbsp;&nbsp;in Bearbeitung");
-                    let tp_not_fixed = $('<td>').html("<i class='text-danger fa fa-times'></i>&nbsp;&nbsp;nicht Behoben");
+                    if (entry.problem.hidden == false) {
+                        let row = $('<tr>');
+                        row.append($('<td>').text(moment(entry.problem.date).format('ddd, D.M.Y')));
+                        row.append($('<td>').text(entry.problem.problem));
+                        row.append($('<td>').text('' + entry.problem.device));
+                        let tp_fixed = $('<td>').html("<i class='text-success fa fa-check'></i>&nbsp;&nbsp;Behoben");
+                        let tp_progress = $('<td>').html("<i class='text-secondary fa fa-clock-o'></i>&nbsp;&nbsp;in Bearbeitung");
+                        let tp_not_fixed = $('<td>').html("<i class='text-danger fa fa-times'></i>&nbsp;&nbsp;konnte nicht Behoben werden");
+                        let tp_see_comment = $('<td>').html("<i class='fa fa-eye'></i>&nbsp;&nbsp;siehe Kommentar");
 
-                    if (entry.problem.fixed == true) {
-                        row.append(tp_fixed);
-                    } else if (entry.problem.not_fixed == true) {
-                        row.append(tp_not_fixed);
-                    } else {
-                        row.append(tp_progress);
-                    }
-                    if (entry.problem.comment == false) {
-                        row.append($('<td>').html("<i class='text-muted'>Das TechnikTeam hat (noch) keinen Kommentar hinterlassen.</i>"));
-                    } else {
-                        row.append($('<td>').text('' + entry.problem.comment));
-                    }
+                        if (entry.problem.fixed == true) {
+                            row.append(tp_fixed);
+                        } else if (entry.problem.not_fixed == true) {
+                            row.append(tp_not_fixed);
+                        } else if (entry.problem.comment != "" && entry.problem.fixed == false && entry.problem.not_fixed == false) {
+                            row.append(tp_see_comment)
+                        } else {
+                            row.append(tp_progress);
+                        }
 
-                    $('#problems_here').append(row);
+                        if (entry.problem.comment == false) {
+                            row.append($('<td>').html("<i class='text-muted'>Das TechnikTeam hat (noch) keinen Kommentar hinterlassen.</i>"));
+                        } else {
+                            row.append($('<td>').text('' + entry.problem.comment));
+                        }
+
+                        let tp_hide = $('<button>').addClass('btn').addClass('btn-xs').addClass('btn-secondary').html("<i class='fa fa-eye-slash'></i>&nbsp;&nbsp;Ausblenden");
+                            
+                        tp_hide.data('token', entry.problem.token);
+                        tp_hide.click(function(e) {
+                            api_call('/api/hide_tech_problem', {token: $(e.target).data('token')}, function(data) {
+                                if (data.success)
+                                    refresh_tech_problems();
+                                    refresh_hidden_tech_problems();
+                            });
+                        });
+                        row.append($('<td>').append(tp_hide))
+
+                        $('#problems_here').append(row);
+                    }
+                }
+            }
+        });
+    }
+
+    function refresh_hidden_tech_problems() {
+        api_call('/api/get_tech_problems', {}, function(data) {
+            if (data.success) {
+                $('#hidden_problems_here').empty();
+                $('#head_hidden_problems_here').empty();
+                for (let entry of data.tech_problems) {
+                    if (entry.problem.hidden == true) {
+                        let row = $('<tr>');
+                        row.append($('<td>').text(moment(entry.problem.date).format('ddd, D.M.Y')));
+                        row.append($('<td>').text(entry.problem.problem));
+                        row.append($('<td>').text('' + entry.problem.device));
+                        let tp_fixed = $('<td>').html("<i class='text-success fa fa-check'></i>&nbsp;&nbsp;Behoben");
+                        let tp_progress = $('<td>').html("<i class='text-secondary fa fa-clock-o'></i>&nbsp;&nbsp;in Bearbeitung");
+                        let tp_not_fixed = $('<td>').html("<i class='text-danger fa fa-times'></i>&nbsp;&nbsp;konnte nicht Behoben werden");
+                        let tp_see_comment = $('<td>').html("<i class='fa fa-eye'></i>&nbsp;&nbsp;siehe Kommentar");
+
+                        if (entry.problem.fixed == true) {
+                            row.append(tp_fixed);
+                        } else if (entry.problem.not_fixed == true) {
+                            row.append(tp_not_fixed);
+                        } else if (entry.problem.comment != "" && entry.problem.fixed == false && entry.problem.not_fixed == false) {
+                            row.append(tp_see_comment)
+                        } else {
+                            row.append(tp_progress);
+                        }
+
+                        if (entry.problem.comment == false) {
+                            row.append($('<td>').html("<i class='text-muted'>Das TechnikTeam hat (noch) keinen Kommentar hinterlassen.</i>"));
+                        } else {
+                            row.append($('<td>').text('' + entry.problem.comment));
+                        }
+
+                        let tp_hide = $('<button>').addClass('btn').addClass('btn-xs').addClass('btn-success').html("<i class='fa fa-eye'></i>&nbsp;&nbsp;Einblenden");
+                            
+                        tp_hide.data('token', entry.problem.token);
+                        tp_hide.click(function(e) {
+                            api_call('/api/unhide_tech_problem', {token: $(e.target).data('token')}, function(data) {
+                                if (data.success)
+                                    refresh_tech_problems();
+                                    refresh_hidden_tech_problems();
+                            });
+                        });
+                        row.append($('<td>').append(tp_hide))
+
+                        $('#hidden_problems_here').append(row);
+                        let at_least_one_row = true;
+                    }
+                }
+                if ($('#hidden_problems_here').html()) {
+                    let head_row = $('<tr>')
+                    head_row.append($('<th>').text('Datum'))
+                    head_row.append($('<th>').text('Problem'))
+                    head_row.append($('<th>').text('Gerät'))
+                    head_row.append($('<th>').text('Status'))
+                    head_row.append($('<th>').text('Kommentar'))
+                    head_row.append($('<th>').text('Einblenden'))
+                    $('#head_hidden_problems_here').append(head_row);
+                } else {
+                    $('#head_hidden_problems_here').empty();
+                    $('#head_hidden_problems_here').html("<i><div class='text-muted'>Keine ausgeblendeten Probleme gefunden!</div></i>");
                 }
             }
         });
@@ -177,5 +304,10 @@ document.addEventListener('DOMContentLoaded', function() {
     $('#frequent_problems').click(function(e) {
         compose_frequent_problems();
     });
+
+    $('.bu-hidden-problems').click(function(e) {
+        compose_hidden_problems();
+    });
+
     })
 </script>

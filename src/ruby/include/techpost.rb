@@ -13,6 +13,8 @@ class Main < Sinatra::Base
             SET v.fixed = false
             SET v.not_fixed = false
             SET v.comment = false
+            SET v.hidden = false
+            SET v.hidden_admin = false
             RETURN v.token;
         END_OF_QUERY
 
@@ -112,18 +114,57 @@ class Main < Sinatra::Base
         respond(:ok => true)
     end
 
-    # post '/api/delete_tech_problem' do
-    #     require_user_who_can_report_tech_problems!
-    #     data = parse_request_data(:required_keys => [:token])
-    #     token = data[:token]
-    #     debug token
-    #     neo4j_query_expect_one(<<~END_OF_QUERY, :token => token)
-    #         MATCH (v:TechProblem {token: $token})
-    #         DETACH DELETE v
-    #         RETURN v;
-    #     END_OF_QUERY
-    #     respond(:ok => true)
-    # end
+    post '/api/hide_tech_problem' do
+        require_user_who_can_report_tech_problems!
+        data = parse_request_data(:required_keys => [:token])
+        token = data[:token]
+        debug token
+        neo4j_query_expect_one(<<~END_OF_QUERY, :token => token)
+            MATCH (v:TechProblem {token: $token})
+            SET v.hidden = true
+            RETURN v;
+        END_OF_QUERY
+        respond(:ok => true)
+    end
+
+    post '/api/unhide_tech_problem' do
+        require_user_who_can_report_tech_problems!
+        data = parse_request_data(:required_keys => [:token])
+        token = data[:token]
+        debug token
+        neo4j_query_expect_one(<<~END_OF_QUERY, :token => token)
+            MATCH (v:TechProblem {token: $token})
+            SET v.hidden = false
+            RETURN v;
+        END_OF_QUERY
+        respond(:ok => true)
+    end
+
+    post '/api/hide_tech_problem_admin' do
+        require_user_who_can_manage_tablets!
+        data = parse_request_data(:required_keys => [:token])
+        token = data[:token]
+        debug token
+        neo4j_query_expect_one(<<~END_OF_QUERY, :token => token)
+            MATCH (v:TechProblem {token: $token})
+            SET v.hidden_admin = true
+            RETURN v;
+        END_OF_QUERY
+        respond(:ok => true)
+    end
+
+    post '/api/unhide_tech_problem_admin' do
+        require_user_who_can_manage_tablets!
+        data = parse_request_data(:required_keys => [:token])
+        token = data[:token]
+        debug token
+        neo4j_query_expect_one(<<~END_OF_QUERY, :token => token)
+            MATCH (v:TechProblem {token: $token})
+            SET v.hidden_admin = false
+            RETURN v;
+        END_OF_QUERY
+        respond(:ok => true)
+    end
 
     post '/api/delete_tech_problem_admin' do
         require_user_who_can_manage_tablets!

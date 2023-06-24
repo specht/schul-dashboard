@@ -575,7 +575,7 @@ class Main < Sinatra::Base
     end
     
     post '/api/purge_session_for_user' do
-        require_admin!
+        require_user_who_can_manage_tablets!
         data = parse_request_data(:required_keys => [:scrambled_sid, :email])
         sessions = get_sessions_for_user(data[:email]).select { |x| x[:scrambled_sid] == data[:scrambled_sid] }
         sessions.each do |s|

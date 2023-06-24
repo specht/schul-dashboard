@@ -569,4 +569,23 @@ class Main < Sinatra::Base
             io.string
         end
     end
+
+    def print_tresor_countdown_panel()
+        return '' unless teacher_logged_in?
+        return '' if Time.now.strftime('%Y-%m-%sT%H:%M:%S') >= '2023-06-26T09:00:00'
+        StringIO.open do |io|
+            io.puts "<div class='col-lg-12 col-md-4 col-sm-6'>"
+            io.puts "<div class='hint'>"
+            io.puts "<p><b>Noteneingabe im Datentresor</b></p>"
+            io.puts "<hr />"
+            io.puts "<p>Die Noteneingabe im Datentresor schließt am Montag um 9:00 Uhr.</p>"
+            io.puts "<div id='tresor_countdown_here' style='display: none;' data-ts='#{Time.now.to_i}'>"
+            io.puts "</div>"
+            # io.puts "<div><span style='font-size: 200%; opacity: 0.7; float: left; margin-right: 8px;'><i class='fa fa-book'></i></span>#{n_to_s[@@bib_summoned_books[email].size] || 'Mehrere'} Bücher, die du ausgeliehen hast, #{@@bib_summoned_books[email].size == 1 ? 'wird' : 'werden'} dringend in der Bibliothek benötigt. Bitte bring #{@@bib_summoned_books[email].size == 1 ? 'es' : 'sie'} zurück und lege #{@@bib_summoned_books[email].size == 1 ? 'es' : 'sie'} ins <a target='_blank' href='https://rundgang.gymnasiumsteglitz.de/#g114'>Rückgaberegal</a> vor der Bibliothek.</div>"
+            io.puts "</div>"
+            io.puts "</div>"
+            io.string
+        end
+    end
+
 end

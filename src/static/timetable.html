@@ -8,6 +8,14 @@
         background-color: #{color_palette[:is_light] ? 'rgba(255, 255, 255, 0.3)' : 'rgba(255, 255, 255, 0.2)'};
         /* background-color: rgba(#{hex_to_rgb(color_palette[:main_text]).map { |x| x.to_s }.join(', ')}, 0.2); */
     }
+    .odometer.odometer-theme-default {
+        font-family: unset;
+        font-weight: bold;
+    }
+    #tresor_countdown_here {
+        font-size: 200%;
+        text-align: center;
+    }
 </style>
 <div class='container-fluid' style='padding-top: 30px;'>
     <div class='row'>
@@ -79,6 +87,7 @@
                 </div>
                 #{print_ad_hoc_2fa_panel()}
                 #{print_summoned_books_panel()}
+                #{print_tresor_countdown_panel()}
                 #{#print_lehrerzimmer_panel()}
                 #{#print_self_test_panel()}
                 #{print_current_polls()}
@@ -1582,6 +1591,28 @@ document.addEventListener('DOMContentLoaded', function() {
         api_call('/api/unlock_2fa_otp_now', {email: $('#ad_hoc_login_email_here').text()}, function(data) {
             $('.div_ad_hoc_fresh_otp').hide();
         });
+    });
+    window.addEventListener('load', function() {
+        if ($('#tresor_countdown_here').length > 0) {
+            setInterval(function() {
+                let ts0 = moment();
+                let ts1 = moment('2023-06-26 09:00:00+0200');
+                if (ts0.isBefore(ts1)) {
+                    let d = moment.duration(ts1.diff(ts0));
+                    let h = Math.floor(d.asHours());
+                    let m = Math.floor(d.asMinutes()) - h * 60;
+                    let s = Math.floor(d.asSeconds()) - h * 60 * 60 - m * 60;
+                    h = `${h}`; m = `${m}`; s = `${s}`;
+                    if (h.length < 2) h = '0' + h;
+                    if (m.length < 2) m = '0' + m;
+                    if (s.length < 2) s = '0' + s;
+                    $('#tresor_countdown_here').text(`${h} : ${m} : ${s}`);
+                    $('#tresor_countdown_here').slideDown();
+                } else {
+                    $('#tresor_countdown_here').slideUp();
+                }
+            }, 1000);
+        }
     });
 });
 

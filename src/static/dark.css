@@ -1,0 +1,30 @@
+/* #{color_palette.to_json} */
+
+body {
+    color: #fff;
+}
+
+.navbar {
+    background-color: #222!important;
+    color: rgba(255, 255, 255, 0.9);
+}
+
+.container {
+    background-color: rgba(0, 0, 0, 0.75);
+}
+
+.fc-view-harness, table {
+    background-color: rgba(0, 0, 0, 0.3);
+}
+
+.ttc {
+    background-color: rgba(0, 0, 0, 0.5);
+}
+
+.ttc:hover {
+    background-color: rgba(0, 0, 0, 0.3);
+}
+
+.navbar-light .navbar-nav .nav-link {
+    color: rgba(255, 255, 255, 0.9);
+}

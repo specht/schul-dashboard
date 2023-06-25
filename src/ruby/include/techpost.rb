@@ -88,18 +88,18 @@ class Main < Sinatra::Base
         respond(:ok => true)
     end
 
-    post '/api/unfix_tech_problem_admin' do
-        require_user_who_can_manage_tablets!
-        data = parse_request_data(:required_keys => [:token])
-        token = data[:token]
-        problems = neo4j_query_expect_one(<<~END_OF_QUERY, :token => token)
-            MATCH (v:TechProblem {token: $token})
-            SET v.fixed = false
-            SET v.not_fixed = false
-            RETURN v;
-        END_OF_QUERY
-        respond(:ok => true)
-    end
+    # post '/api/unfix_tech_problem_admin' do
+    #     require_user_who_can_manage_tablets!
+    #     data = parse_request_data(:required_keys => [:token])
+    #     token = data[:token]
+    #     problems = neo4j_query_expect_one(<<~END_OF_QUERY, :token => token)
+    #         MATCH (v:TechProblem {token: $token})
+    #         SET v.fixed = false
+    #         SET v.not_fixed = false
+    #         RETURN v;
+    #     END_OF_QUERY
+    #     respond(:ok => true)
+    # end
 
     post '/api/not_fix_tech_problem_admin' do
         require_user_who_can_manage_tablets!
@@ -161,6 +161,8 @@ class Main < Sinatra::Base
         neo4j_query_expect_one(<<~END_OF_QUERY, :token => token)
             MATCH (v:TechProblem {token: $token})
             SET v.hidden_admin = false
+            SET v.fixed = false
+            SET v.not_fixed = false
             RETURN v;
         END_OF_QUERY
         respond(:ok => true)

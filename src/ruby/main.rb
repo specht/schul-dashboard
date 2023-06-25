@@ -734,7 +734,7 @@ class Main < Sinatra::Base
             next unless @@user_info[email]
             @@user_info[email][:can_manage_tablets] = true
         end
-        (CAN_REPORT_TECH_PROBLEMS_USERS + TECHNIKTEAM).each do |email|
+        (CAN_REPORT_TECH_PROBLEMS_USERS + TECHNIKTEAM + ADMIN_USERS).each do |email|
             next unless @@user_info[email]
             @@user_info[email][:can_report_tech_problems] = true
         end

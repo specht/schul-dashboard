@@ -226,6 +226,10 @@ input {
     background-color: #fff;
 }
 
+.white {
+    background-color: #fff;
+}
+
 .head {
     background-color: #eee;
     border-bottom: 1px solid #bbb;

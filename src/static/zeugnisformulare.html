@@ -127,6 +127,7 @@ function print_pdf_sheets(path) {
         path_array_fach.push(['Halbjahr', ZEUGNIS_HALBJAHR]);
 
         let liste = zeugnisliste_for_klasse[klasse];
+        console.log(liste.faecher);
         let faecher = [];
         for (let fach of liste.faecher) {
             faecher.push(fach);
@@ -135,6 +136,7 @@ function print_pdf_sheets(path) {
                 faecher.push(`${fach}_SL`);
             }
         }
+        console.log(klasse, faecher);
         let emails = liste.schueler.map(function(x) { return x.email; });
         path_array_fach.push(['Fach', faecher]);
         path_array_fach.push(['Email', emails]);
@@ -149,7 +151,8 @@ function print_pdf_sheets(path) {
     }
 
     tresor_api_call('/jwt/get_many', {path_arrays: path_arrays, key: 'Wert'}, function(data) {
-        console.log(data.results);
+        // console.log(path_arrays);
+        // console.log(data.results);
         api_call(path, {paths: path_arrays, values: data.results}, function(data2) {
             if (data2.success) {
                 open_pdf_with_filename(data2.pdf_base64, data2.name);

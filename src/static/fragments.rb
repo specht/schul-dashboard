@@ -330,25 +330,23 @@ class Main
             line_width 0.1.mm
             font('Roboto') do
                 ZEUGNIS_KLASSEN_ORDER.each do |klasse|
+                    next unless klasse == '10o'
                     liste = @@zeugnisliste_for_klasse[klasse]
                     nr_width = 10.mm
                     name_width = 66.mm
                     bem_width = 50.mm
-                    cols_left  = %w(D D_AT D_SL Fach En En_AT En_SL Fach La La_AT La_SL . . . .)
-                    if klasse.to_i > 7
-                        cols_left  = %w(D D_AT D_SL Fach En En_AT En_SL Fach La La_AT La_SL Fach Agr Agr_AT Agr_SL)
-                    end
-                    cols_right = %w(Gewi Eth Ek Ge Pb Ma Nawi Ph Ch Bio Ku Mu Sp FF1 . FF2 . FF3 . VT VT_UE VS VS_UE VSP)
+                    cols_left_template  = %w(D D_AT D_SL FS1_Fach FS1 FS1_AT FS1_SL FS2_Fach FS2 FS2_AT FS2_SL FS3_Fach FS3 FS3_AT FS3_SL)
+                    cols_right_template = %w(Gewi Eth Ek Ge Pb Ma Nawi Ph Ch Bio Ku Mu Sp FF1 . FF2 . FF3 . VT VT_UE VS VS_UE VSP)
 
-                    missing_faecher = liste[:faecher]
-                    (cols_left + cols_right).each do |x|
-                        missing_faecher.delete(x)
-                    end
-                    STDERR.puts "#{klasse}: #{missing_faecher.to_json}"
+                    # missing_faecher = liste[:faecher]
+                    # (cols_left + cols_right).each do |x|
+                    #     missing_faecher.delete(x)
+                    # end
+                    # STDERR.puts "#{klasse}: #{missing_faecher.to_json}"
 
-                    lboxwidth = (19.cm - nr_width - name_width) / cols_left.size
+                    lboxwidth = (19.cm - nr_width - name_width) / cols_left_template.size
                     lboxheight = 277.mm / 11 / 4
-                    rboxwidth = (19.cm - bem_width) / cols_right.size
+                    rboxwidth = (19.cm - bem_width) / cols_right_template.size
                     rboxheight = 277.mm / 11 / 4
 
                     left = BoxPrinter.new(self, nr_width + name_width, 277.mm - lboxheight * 4, lboxwidth, lboxheight)
@@ -414,7 +412,7 @@ class Main
                                 h = 277.mm / 11
                                 if side == 0
                                     line_width 0.1.mm
-                                    (0...cols_left.size).each do |x|
+                                    (0...cols_left_template.size).each do |x|
                                         line [nr_width + name_width + lboxwidth * x, 0.0], [nr_width + name_width + lboxwidth * x, 277.mm - h / 4.0]
                                     end
                                     line [nr_width + name_width, 277.mm - h / 4.0, 19.cm, 277.mm - h / 4.0]
@@ -428,19 +426,26 @@ class Main
                                     end
                                     stroke
                                     font('RobotoCondensed') do
+                                        bounding_box([2.mm, h * 10.6], width: nr_width - 2.mm, height: h / 4.0) do
+                                            text "Nr.", :valign => :center, :size => 11
+                                        end
+                                        bounding_box([nr_width + 2.mm, h * 10.6], width: name_width - 2.mm, height: h / 4.0) do
+                                            text "Name, Vorname und Geburtstag", :valign => :center, :size => 11
+                                        end
                                         left.print(0, -4, 'Deutsch', :width => 3)
                                         left.print(3, -4, '1. Fremdsprache', :width => 4)
                                         left.print(7, -4, '2. Fremdsprache', :width => 4)
                                         left.print(11, -4, '3. Fremdsprache', :width => 4)
-                                        cols_left.each.with_index do |f, i|
+                                        cols_left_template.each.with_index do |f, i|
                                             s = "#{f}"
                                             s = '' if s == '.'
                                             s = 'AT' if s[-3, 3] == '_AT'
                                             s = 'SL' if s[-3, 3] == '_SL'
-                                            s = 'ges' if ['D', 'En', 'La', 'Agr', 'Fr'].include?(s)
+                                            s = 'ges' if ['FS1', 'FS2', 'FS3', 'D', 'En', 'La', 'Agr', 'Fr'].include?(s)
+                                            s = '' if s[-5, 5] == '_Fach'
                                             left.print(i, -3, s)
                                             translate 2.mm, -3.mm do
-                                                left.print(i, -1, (liste[:lehrer_for_fach][f] || []).join(' '), :rotate => 90, :align => :left, :width => 2)
+                                                left.print(i, -1, (liste[:lehrer_for_fach][f] || []).join(', '), :rotate => 90, :align => :left, :width => 2)
                                             end
                                         end
                                     end
@@ -462,7 +467,7 @@ class Main
                                         right.print(0, -4, 'Gesellschaftswiss.', :width => 5)
                                         right.print(6, -4, 'Naturwiss.', :width => 4)
                                         right.print(19, -4, 'Versäumnisse', :width => 5)
-                                        cols_right.each.with_index do |f, i|
+                                        cols_right_template.each.with_index do |f, i|
                                             s = "#{f}"
                                             s = '' if s == '.'
                                             s = 'AT' if s[-3, 3] == '_AT'
@@ -480,12 +485,31 @@ class Main
                                                 right.print(i, -3, s)
                                             end
                                             translate 1.4.mm, -3.mm do
-                                                right.print(i, -1, (liste[:lehrer_for_fach][f] || []).join(' '), :rotate => 90, :align => :left, :width => 2)
+                                                right.print(i, -1, (liste[:lehrer_for_fach][f] || []).join(', '), :rotate => 90, :align => :left, :width => 2)
                                             end
                                         end
                                     end
                                 end
                                 (1..10).each do |y|
+                                    i = 10 - y + offset
+                                    y2 = 10 - y
+                                    schueler = liste[:schueler][i]
+                                    next if schueler.nil?
+                                    cols_left = cols_left_template.map do |x2|
+                                        x = "#{x2}"
+                                        if schueler[:zeugnis_key].include?('sesb')
+                                            x.gsub!('FS1', 'Ngr')
+                                            x.gsub!('FS2', 'En')
+                                            x.gsub!('FS3', 'Fr')
+                                        else
+                                            x.gsub!('FS1', 'En')
+                                            x.gsub!('FS2', 'La')
+                                            x.gsub!('FS3', 'Agr')
+                                        end
+                                        x
+                                    end
+                                    STDERR.puts "#{schueler[:email]} #{cols_left.to_json}"
+                                    cols_right = cols_right_template.map { |x| x }
                                     line_width 0.3.mm
                                     line [0.0, h * y], [19.cm, h * y]
                                     stroke
@@ -494,47 +518,39 @@ class Main
                                         line [0.0, h * (y - sy / 4.0)], [19.cm, h * (y - sy / 4.0)]
                                         stroke
                                     end
-                                    i = 10 - y + offset
-                                    y2 = 10 - y
-                                    schueler = liste[:schueler][i]
-                                    if schueler
-                                        email = schueler[:email]
-                                        font('RobotoCondensed') do
-                                            if side == 0
-                                                bounding_box([nr_width + 2.mm, h * y], width: name_width - 2.mm, height: h / 4.0) do
-                                                    text "#{elide_string(schueler[:last_name], name_width - 2.mm)}", :valign => :center, :size => 11
+                                    email = schueler[:email]
+                                    font('RobotoCondensed') do
+                                        if side == 0
+                                            bounding_box([2.mm, h * y], width: nr_width - 4.mm, height: h / 4.0) do
+                                                text "#{y2 + offset + 1}.", :align => :right, :valign => :center, :size => 11
+                                            end
+                                            bounding_box([nr_width + 2.mm, h * y], width: name_width - 2.mm, height: h / 4.0) do
+                                                text "#{elide_string(schueler[:last_name], name_width - 2.mm)}", :valign => :center, :size => 11
+                                            end
+                                            bounding_box([nr_width + 7.mm, h * (y - 0.25)], width: name_width - 7.mm, height: h / 4.0) do
+                                                text "#{elide_string(schueler[:official_first_name], name_width - 7.mm)}", :valign => :center, :size => 11
+                                            end
+                                            bounding_box([nr_width + 2.mm, h * (y - 0.5)], width: name_width - 4.mm, height: h / 4.0) do
+                                                text "#{elide_string(Date.parse(schueler[:geburtstag]).strftime('%d.%m.%Y'), name_width - 6.mm)}", :valign => :center, :align => :right, :size => 11
+                                            end
+                                            bounding_box([nr_width + 2.mm, h * (y - 0.75)], width: name_width - 2.mm, height: h / 4.0) do
+                                                if schueler[:zeugnis_key].include?('sesb')
+                                                    text "#{elide_string('Fs-Folge: Neugriechisch – Englisch – Französisch', name_width - 2.mm, {:size => 9})}", :valign => :center, :size => 9
+                                                else
+                                                    text "#{elide_string('Fs-Folge: Englisch – Latein – Altgriechisch', name_width - 2.mm, {:size => 10})}", :valign => :center, :size => 10
                                                 end
-                                                bounding_box([nr_width + 7.mm, h * (y - 0.25)], width: name_width - 7.mm, height: h / 4.0) do
-                                                    text "#{elide_string(schueler[:official_first_name], name_width - 7.mm)}", :valign => :center, :size => 11
-                                                end
-                                                bounding_box([nr_width + 2.mm, h * (y - 0.5)], width: name_width - 4.mm, height: h / 4.0) do
-                                                    text "#{elide_string(Date.parse(schueler[:geburtstag]).strftime('%d.%m.%Y'), name_width - 6.mm)}", :valign => :center, :align => :right, :size => 11
-                                                end
-                                                bounding_box([nr_width + 2.mm, h * (y - 0.75)], width: name_width - 2.mm, height: h / 4.0) do
-                                                    if schueler[:zeugnis_key].include?('sesb')
+                                            end
+                                            font('Roboto') do
+                                                cols_left.each.with_index do |f, i|
+                                                    if f[-5, 5] == '_Fach'
+                                                        left.print(i, y2 * 4 + 3, "#{f.sub('_Fach', '')}")
                                                     else
-                                                        text "#{elide_string('Fs-Folge: Englisch – Latein – Altgriechisch', name_width - 2.mm, {:size => 10})}", :valign => :center, :size => 10
+                                                        left.print(i, y2 * 4 + 3, cache["Schuljahr:#{ZEUGNIS_SCHULJAHR}/Halbjahr:#{ZEUGNIS_HALBJAHR}/Fach:#{f}/Email:#{email}"])
                                                     end
                                                 end
-                                                font('Roboto') do
-                                                    left.print(0, y2 * 4 + 3, cache["Schuljahr:#{ZEUGNIS_SCHULJAHR}/Halbjahr:#{ZEUGNIS_HALBJAHR}/Fach:D/Email:#{email}"])
-                                                    left.print(1, y2 * 4 + 3, cache["Schuljahr:#{ZEUGNIS_SCHULJAHR}/Halbjahr:#{ZEUGNIS_HALBJAHR}/Fach:D_AT/Email:#{email}"])
-                                                    left.print(2, y2 * 4 + 3, cache["Schuljahr:#{ZEUGNIS_SCHULJAHR}/Halbjahr:#{ZEUGNIS_HALBJAHR}/Fach:D_SL/Email:#{email}"])
-                                                    if schueler[:zeugnis_key].include?('sesb')
-                                                    else
-                                                        lang = ['En', 'La']
-                                                        lang << 'Agr' if klasse.to_i >= 8
-                                                        lang.each.with_index do |l, li|
-                                                            font('RobotoCondensed') do
-                                                                left.print(li * 4 + 3, y2 * 4 + 3, l)
-                                                            end
-                                                            left.print(li * 4 + 4, y2 * 4 + 3, cache["Schuljahr:#{ZEUGNIS_SCHULJAHR}/Halbjahr:#{ZEUGNIS_HALBJAHR}/Fach:#{l}/Email:#{email}"])
-                                                            left.print(li * 4 + 5, y2 * 4 + 3, cache["Schuljahr:#{ZEUGNIS_SCHULJAHR}/Halbjahr:#{ZEUGNIS_HALBJAHR}/Fach:#{l}_AT/Email:#{email}"])
-                                                            left.print(li * 4 + 6, y2 * 4 + 3, cache["Schuljahr:#{ZEUGNIS_SCHULJAHR}/Halbjahr:#{ZEUGNIS_HALBJAHR}/Fach:#{l}_SL/Email:#{email}"])
-                                                        end
-                                                    end
-                                                end
-                                            elsif side == 1
+                                            end
+                                        elsif side == 1
+                                            font('Roboto') do
                                                 cols_right.each.with_index do |f, i|
                                                     right.print(i, y2 * 4 + 3, cache["Schuljahr:#{ZEUGNIS_SCHULJAHR}/Halbjahr:#{ZEUGNIS_HALBJAHR}/Fach:#{f}/Email:#{email}"])
                                                 end

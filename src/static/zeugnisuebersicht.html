@@ -216,8 +216,14 @@ window.addEventListener('load', function () {
                 let row = $(`<tr>`).appendTo(table);
                 row.append($(`<td style='width: unset;'>`).text(shorthand));
                 row.append($(`<td style='width: unset;'>`).text(`${my_present_noten} von ${my_total_noten}`));
-                row.append($(`<td style='width: 40%;'>`).append($(`<div class='progress'>`).append($(`<div class='progress-bar progress-bar-striped bg-success' style="width: ${my_present_noten * 100 / my_total_noten}%">${(my_present_noten * 100 / my_total_noten).toFixed(1)}%</div>`))));
-                row.append($(`<td style='width: unset;'>`).text(`${my_present_sv} von ${my_total_sv}`));
+                if (my_total_noten > 0)
+                    row.append($(`<td style='width: 40%;'>`).append($(`<div class='progress'>`).append($(`<div class='progress-bar progress-bar-striped bg-success' style="width: ${my_present_noten * 100 / my_total_noten}%">${(my_present_noten * 100 / my_total_noten).toFixed(1)}%</div>`))));
+                else
+                    row.append($(`<td>`));
+                if (my_total_sv > 0)
+                    row.append($(`<td style='width: unset;'>`).text(`${my_present_sv} von ${my_total_sv}`));
+                    else
+                row.append($(`<td>`));
                 row.append($(`<td style='width: 40%;'>`).append($(`<div class='progress'>`).append($(`<div class='progress-bar progress-bar-striped bg-success' style="width: ${my_present_sv * 100 / my_total_sv}%">${(my_present_sv * 100 / my_total_sv).toFixed(1)}%</div>`))));
             }
         }

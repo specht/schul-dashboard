@@ -537,6 +537,7 @@ function load_noten_table(container, klasse, edit_noten) {
             faecher_for_paths.push(`${fach}_SL`);
         }
     }
+    console.log(faecher_for_paths);
     let emails = liste.schueler.map(function(x) { return x.email; });
     path_array.push(['Fach', faecher_for_paths]);
     path_array.push(['Email', emails]);
@@ -554,7 +555,6 @@ function load_noten_table(container, klasse, edit_noten) {
         consider_cache = {};
         let t1 = Date.now();
         console.log(`request took ${t1 - t0} ms.`);
-        console.log(data);
         if (data.success) {
             container.empty();
             let header_cells = [];

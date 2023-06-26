@@ -1596,7 +1596,8 @@ document.addEventListener('DOMContentLoaded', function() {
         if ($('#tresor_countdown_here').length > 0) {
             setInterval(function() {
                 let ts0 = moment();
-                let ts1 = moment('2023-06-26 09:00:00+0200');
+                let deadline = $('#tresor_countdown_here').data('deadline');
+                let ts1 = moment.unix(deadline);
                 if (ts0.isBefore(ts1)) {
                     let d = moment.duration(ts1.diff(ts0));
                     let h = Math.floor(d.asHours());

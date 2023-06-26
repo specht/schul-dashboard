@@ -340,6 +340,12 @@ class Main
                     end
                     cols_right = %w(Gewi Eth Ek Ge Pb Ma Nawi Ph Ch Bio Ku Mu Sp FF1 . FF2 . FF3 . VT VT_UE VS VS_UE VSP)
 
+                    missing_faecher = liste[:faecher]
+                    (cols_left + cols_right).each do |x|
+                        missing_faecher.delete(x)
+                    end
+                    STDERR.puts "#{klasse}: #{missing_faecher.to_json}"
+
                     lboxwidth = (19.cm - nr_width - name_width) / cols_left.size
                     lboxheight = 277.mm / 11 / 4
                     rboxwidth = (19.cm - bem_width) / cols_right.size

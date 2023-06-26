@@ -130,7 +130,7 @@ window.addEventListener('load', function () {
                 }
             }
         }
-        console.log(counts);
+        // console.log(counts);
         
         let my_counts = counts['#{@session_user[:shorthand]}'] ?? [0, 0];
         let my_present = my_counts[0];
@@ -157,7 +157,7 @@ window.addEventListener('load', function () {
             for (let fach_index = 0; fach_index < faecher.length; fach_index++) {
                 let fach = faecher[fach_index];
                 if (have_or_admin(`${klasse}/${fach}`)) {
-                    row.append($(`<th>`).text(fach));
+                    row.append($(`<th>`).html(`${fach}<br /><span style='font-weight: normal; font-size: 90%;'>${liste.lehrer_for_fach[fach].join(', ')}</span>`));
                 }
             }
             if (have_or_admin(`${klasse}/SV/_KL`))

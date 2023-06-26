@@ -464,7 +464,7 @@ class Main
                                             s = 'ges' if ['Gewi', 'Nawi'].include?(s)
                                             if %w(VT VT_UE VS VS_UE VSP).include?(f)
                                                 translate 1.4.mm, -3.mm do
-                                                    right.print(i, -1, {'VT' => 'Tage', 'VT_UE' => 'UE', 'VS' => 'Stunden', 'VS_UE' => 'UE', 'VSP' => 'Versp.'}[s], :rotate => 90, :align => :left, :width => 3)
+                                                    right.print(i, -1, {'VT' => 'Tage', 'VT_UE' => 'unentsch.', 'VS' => 'Stunden', 'VS_UE' => 'unentsch.', 'VSP' => 'Versp.'}[s], :rotate => 90, :align => :left, :width => 3)
                                                 end
                                             elsif %w(Ma Ku Mu Sp).include?(f)
                                                 right.print(i, -4, s)

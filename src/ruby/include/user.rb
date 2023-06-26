@@ -573,7 +573,7 @@ class Main < Sinatra::Base
     def print_tresor_countdown_panel()
         return '' unless teacher_logged_in?
         deadline = '2023-06-26T09:00:00'
-        if Time.now.strftime('%Y-%m-%sT%H:%M:%S') <= deadline
+        if Time.now.strftime('%Y-%m-%dT%H:%M:%S') <= deadline
             return StringIO.open do |io|
                 io.puts "<div class='col-lg-12 col-md-4 col-sm-6'>"
                 io.puts "<div class='hint'>"
@@ -588,7 +588,7 @@ class Main < Sinatra::Base
             end
         end
         deadline = '2023-06-28T09:00:00'
-        if Time.now.strftime('%Y-%m-%sT%H:%M:%S') <= deadline
+        if Time.now.strftime('%Y-%m-%dT%H:%M:%S') <= deadline
             return StringIO.open do |io|
                 io.puts "<div class='col-lg-12 col-md-4 col-sm-6'>"
                 io.puts "<div class='hint'>"

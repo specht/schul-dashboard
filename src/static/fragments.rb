@@ -236,63 +236,73 @@ class Main
                                             fach = liste[:faecher][x]
                                             bounding_box([(nr_width + name_width) + fach_width * x, row_height * (n_per_page - i)], width: fach_width, height: row_height) do
                                                 if FAECHER_SPRACHEN.include?(fach)
+                                                    line [0, row_height * 0.5], [fach_width * 0.5, row_height * 0.5]
+                                                    line [fach_width * 0.5, 0], [fach_width * 0.5, row_height]
+                                                    stroke
                                                     bounding_box([0.mm, row_height], width: fach_width / 2, height: row_height / 2) do
                                                         note = cache["Schuljahr:#{ZEUGNIS_SCHULJAHR}/Halbjahr:#{ZEUGNIS_HALBJAHR}/Fach:#{fach}_AT/Email:#{email}"]
                                                         if note
                                                             float do
-                                                                text "#{note.gsub('-', '–').gsub('×', '')}", :align => :center, :size => 11, :final_gap => false, :valign => :center
                                                                 if NOTEN_MARK.include?(note)
                                                                     save_graphics_state do
                                                                         translate(fach_width / 4, row_height / 4)
-                                                                        stroke_circle [0, 0], 12
+                                                                        fill_color i % 2 == 0 ? 'f0f0f0' : 'ffffff'
+                                                                        fill_circle [0, 0], 11
+                                                                        stroke_circle [0, 0], 11
                                                                     end
                                                                 end
+                                                                text "#{note.gsub('-', '–').gsub('×', '')}", :align => :center, :size => 11, :final_gap => false, :valign => :center
                                                             end
                                                         end
-                                                        stroke_bounds
+                                                        # stroke_bounds
                                                     end
                                                     bounding_box([0.mm, row_height / 2], width: fach_width / 2, height: row_height / 2) do
                                                         note = cache["Schuljahr:#{ZEUGNIS_SCHULJAHR}/Halbjahr:#{ZEUGNIS_HALBJAHR}/Fach:#{fach}_SL/Email:#{email}"]
                                                         if note
                                                             float do
-                                                                text "#{note.gsub('-', '–').gsub('×', '')}", :align => :center, :size => 11, :final_gap => false, :valign => :center
                                                                 if NOTEN_MARK.include?(note)
                                                                     save_graphics_state do
                                                                         translate(fach_width / 4, row_height / 4)
-                                                                        stroke_circle [0, 0], 12
+                                                                        fill_color i % 2 == 0 ? 'f0f0f0' : 'ffffff'
+                                                                        fill_circle [0, 0], 11
+                                                                        stroke_circle [0, 0], 11
                                                                     end
                                                                 end
+                                                                text "#{note.gsub('-', '–').gsub('×', '')}", :align => :center, :size => 11, :final_gap => false, :valign => :center
                                                             end
                                                         end
-                                                        stroke_bounds
+                                                        # stroke_bounds
                                                     end
                                                     bounding_box([fach_width / 2, row_height], width: fach_width / 2, height: row_height) do
                                                         note = cache["Schuljahr:#{ZEUGNIS_SCHULJAHR}/Halbjahr:#{ZEUGNIS_HALBJAHR}/Fach:#{fach}/Email:#{email}"]
                                                         if note
                                                             float do
-                                                                text "#{note.gsub('-', '–').gsub('×', '')}", :align => :center, :size => 11, :final_gap => false, :valign => :center
                                                                 if NOTEN_MARK.include?(note)
                                                                     save_graphics_state do
                                                                         translate(fach_width / 4, row_height / 2)
-                                                                        stroke_circle [0, 0], 12
+                                                                        fill_color i % 2 == 0 ? 'f0f0f0' : 'ffffff'
+                                                                        fill_circle [0, 0], 11
+                                                                        stroke_circle [0, 0], 11
                                                                     end
                                                                 end
+                                                                text "#{note.gsub('-', '–').gsub('×', '')}", :align => :center, :size => 11, :final_gap => false, :valign => :center
                                                             end
                                                         end
                                                     end
                                                 else
                                                     note = cache["Schuljahr:#{ZEUGNIS_SCHULJAHR}/Halbjahr:#{ZEUGNIS_HALBJAHR}/Fach:#{fach}/Email:#{email}"]
                                                     if note
-                                                        text "#{note.gsub('-', '–').gsub('×', '')}", :align => :center, :inline_format => true, :size => 11, :valign => :center
                                                         if NOTEN_MARK.include?(note)
                                                             save_graphics_state do
                                                                 translate(fach_width / 2, row_height / 2)
-                                                                stroke_circle [0, 0], 12
+                                                                fill_color i % 2 == 0 ? 'f0f0f0' : 'ffffff'
+                                                                fill_circle [0, 0], 11
+                                                                stroke_circle [0, 0], 11
                                                             end
                                                         end
+                                                        text "#{note.gsub('-', '–').gsub('×', '')}", :align => :center, :inline_format => true, :size => 11, :valign => :center
                                                     end
                                                 end
-                                                # stroke_bounds
                                             end
                                         end
                                     end

@@ -74,6 +74,8 @@ class Main
                     klassen_for_shorthands[shorthand] << klasse
                 end
             end
+            klassen_for_shorthands['Lü'] ||= Set.new()
+            klassen_for_shorthands['Lü'] << klasse
             liste[:schueler].each do |schueler|
                 # STDERR.puts schueler.to_yaml
                 email = schueler[:email]
@@ -154,7 +156,7 @@ class Main
                                     text "<sup>1</sup>links oben: allgemeiner Teil, links unten: schriftliche Leistungen, falls abweichend; rechts: Gesamt", :align => :left, :inline_format => true, :size => 10
                                 end
                                 bounding_box([210.mm, 23.mm], width: 70.mm, height: 15.mm) do
-                                    text "<b>VERTRAULICH</b>", :align => :center, :inline_format => true, :size => 24, :valign => :center
+                                    text "<b>VERTRAULICH</b>", :align => :center, :inline_format => true, :size => 24, :valign => :center, :rotate => 5
                                     # stroke_bounds
                                 end
                             end

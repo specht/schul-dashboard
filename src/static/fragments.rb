@@ -132,11 +132,13 @@ class Main
                         name_width = 4.cm
                         fach_width = (267.mm - (nr_width + name_width)) / liste[:faecher].size
                         n_klasse = consider_sus_for_klasse[klasse].size
+                        kpage = 0
                         n_per_page = 10
                         n_pages = ((n_klasse - 1) / n_per_page).floor + 1
                         offset = 0
                         while n_klasse > 0 do
                             page += 1
+                            kpage += 1
                             start_new_page unless first_page
                             first_page = false
                             font('Roboto') do
@@ -166,7 +168,7 @@ class Main
                                     move_down(1.mm)
                                     text "#{ZEUGNIS_HALBJAHR}. Halbjahr, Schuljahr #{ZEUGNIS_SCHULJAHR.gsub('_', '/')}", :align => :center, :inline_format => true
                                     move_down(3.mm)
-                                    text "Seite #{page} von #{n_pages}", :align => :center, :inline_format => true
+                                    text "Seite #{kpage} von #{n_pages}", :align => :center, :inline_format => true
                                 end
                             end
                             bounding_box([15.mm, 210.mm - 35.mm], width: 267.mm, height: 15.cm) do

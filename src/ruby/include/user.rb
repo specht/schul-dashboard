@@ -602,6 +602,21 @@ class Main < Sinatra::Base
                 io.string
             end
         end
+        deadline = '2023-06-30T09:00:00'
+        if Time.now.strftime('%Y-%m-%dT%H:%M:%S') <= deadline
+            return StringIO.open do |io|
+                io.puts "<div class='col-lg-12 col-md-4 col-sm-6'>"
+                io.puts "<div class='hint'>"
+                io.puts "<p><b>Eintragung der Noten für das Arbeits- und Sozialverhalten</b></p>"
+                io.puts "<hr />"
+                io.puts "<p>Die Möglichkeit für Eintragungen der Noten für das Arbeits- und Sozialverhalten endet am Freitag um 9:00 Uhr. Bitte tragen Sie bis dahin fehlende Noten ein, damit die Klassenleitungen bis zu den Zeugniskonferenzen die Listen drucken können.</p>"
+                io.puts "<div id='tresor_countdown_here' style='display: none;' data-deadline='#{Time.parse(deadline).to_i}'>"
+                io.puts "</div>"
+                io.puts "</div>"
+                io.puts "</div>"
+                io.string
+            end
+        end
         return ''
     end
 

@@ -119,6 +119,7 @@ class Main
             })
             first_page = true
             line_width 0.1.mm
+            page = 0
             font('Roboto') do
                 klassen_for_shorthands.keys.sort do |a, b|
                     a.downcase <=> b.downcase
@@ -133,7 +134,6 @@ class Main
                         n_klasse = consider_sus_for_klasse[klasse].size
                         n_per_page = 10
                         n_pages = ((n_klasse - 1) / n_per_page).floor + 1
-                        page = 0
                         offset = 0
                         while n_klasse > 0 do
                             page += 1
@@ -317,6 +317,10 @@ class Main
                             n_klasse -= n_per_page
                             offset += n_per_page
                         end
+                    end
+                    if page % 2 != 0
+                        page += 1
+                        start_new_page
                     end
                 end
             end

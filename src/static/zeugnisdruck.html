@@ -40,6 +40,12 @@ window.addEventListener('load', function () {
                         let emails = liste.schueler.map(function(x) { return x.email; });
                         get_zeugnis(klasse, emails, 'pdf');
                     });
+                    let button2 = $(`<button id='bu_print_all_sozial' class='btn btn-info'>`).html(`<i class='fa fa-file-pdf-o'></i>&nbsp;&nbsp;Alle Sozialzeugnisse der Klasse ${klassen_tr[klasse] ?? klasse} (PDF)`);
+                    $('#button_here').append(`&nbsp;&nbsp;`);
+                    $('#button_here').append(button2);
+                    button2.click(function(e) {
+                        get_sozialzeugnis(klasse);
+                    });
 
                     load_zeugnis_table($('#zeugnisse_here'), klasse);
                 });
@@ -92,6 +98,37 @@ function get_zeugnis(klasse, emails, format) {
                     open_docx(data2.docx_base64, data2.name);
             }
         });
+    });
+}
+
+function get_sozialzeugnis(klasse) {
+    let path_array = [];
+    path_array.push(['Schuljahr', ZEUGNIS_SCHULJAHR]);
+    path_array.push(['Halbjahr', ZEUGNIS_HALBJAHR]);
+    let liste = zeugnisliste_for_klasse[klasse];
+    let items = ['ZV', 'LLB', 'SSK', 'KF', 'SV'];
+    let emails = liste.schueler.map(function(x) { return x.email; });
+    let faecher = liste.faecher;
+    path_array.push(['SV', items]);
+    let my_faecher = [];
+    my_faecher.push('_KL');
+    path_array.push(['Fach', my_faecher]);
+    path_array.push(['Email', emails]);
+
+    tresor_api_call('/jwt/get_many', {path_arrays: [path_array], key: 'Wert'}, function(data) {
+        console.log(data);
+        // api_call('/api/print_zeugnis', {format: format, schueler: emails.map(function(email) { return `${klasse}/${email}`; }),
+        //     paths_fach: path_array_fach, values_fach: data.results[0],
+        //     paths_fehltage: path_array_fehltage, values_fehltage: data.results[1],
+        //     paths_ab: path_array_ab, values_ab: data.results[2],
+        // }, function(data2) {
+        //     if (data2.success) {
+        //         if (format === 'pdf')
+        //             open_pdf(data2.pdf_base64, emails.length === 1 ? data2.name : `Klasse ${klassen_tr[klasse] ?? klasse}`);
+        //         else
+        //             open_docx(data2.docx_base64, data2.name);
+        //     }
+        // });
     });
 }
 

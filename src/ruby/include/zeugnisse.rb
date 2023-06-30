@@ -515,5 +515,27 @@ class Main < Sinatra::Base
         respond(:yay => 'sure', :pdf_base64 => Base64.strict_encode64(get_zeugnislisten_sheets_pdf(cache)), :name => 'Zeugnislisten.pdf')
     end
 
+    post '/api/print_sozialzeugnis' do
+        # require_zeugnis_admin!
+        data = parse_request_data(
+            :required_keys => [
+                :paths, :values, :klasse
+            ],
+            :types => {:schueler => Array,
+                :paths => Array, :values => Array,
+            },
+            :max_body_length => 1024 * 1024 * 10,
+            :max_string_length => 1024 * 1024 * 10,
+        )
+        cache = {}
+        cache.merge!(parse_paths_and_values(data[:paths], data[:values]))
+
+        File.open('/internal/zeugniskonferenz_cache.json', 'w') do |f|
+            f.write(cache.to_json)
+        end
+
+        respond(:yay => 'sure', :pdf_base64 => Base64.strict_encode64(get_sozialzeugnis_pdf(data[:klasse], cache)), :name => 'Zeugniskonferenzen.pdf')
+    end
+
 end
 

@@ -588,5 +588,141 @@ class Main
         end
         return doc.render
     end
+
+    def get_sozialzeugnis_pdf(klasse, cache)
+        doc = Prawn::Document.new(:page_size => 'A4', :page_layout => :portrait, :margin => 0) do
+            font_families.update("RobotoCondensed" => {
+                :normal => "/app/fonts/RobotoCondensed-Regular.ttf",
+                :italic => "/app/fonts/RobotoCondensed-Italic.ttf",
+                :bold => "/app/fonts/RobotoCondensed-Bold.ttf",
+                :bold_italic => "/app/fonts/RobotoCondensed-BoldItalic.ttf"
+            })
+            font_families.update("Roboto" => {
+                :normal => "/app/fonts/Roboto-Regular.ttf",
+                :italic => "/app/fonts/Roboto-Italic.ttf",
+                :bold => "/app/fonts/Roboto-Bold.ttf",
+                :bold_italic => "/app/fonts/Roboto-BoldItalic.ttf"
+            })
+            font_families.update("AlegreyaSans" => {
+                :normal => "/app/fonts/AlegreyaSans-Regular.ttf",
+                :italic => "/app/fonts/AlegreyaSans-Italic.ttf",
+                :bold => "/app/fonts/AlegreyaSans-Bold.ttf",
+                :bold_italic => "/app/fonts/AlegreyaSans-BoldItalic.ttf"
+            })
+            first_page = true
+            line_width 0.1.mm
+            liste = @@zeugnisliste_for_klasse[klasse]
+            faecher = liste[:faecher]
+            faecher << '_KL'
+            liste[:schueler].each do |schueler|
+                email = schueler[:email]
+                start_new_page unless first_page
+                first_page = false
+                mark_width = 4.cm
+                w = (18.cm - mark_width) / faecher.size
+                hh = 5.mm
+                h = 5.mm
+                bounding_box([15.mm, 297.mm - 15.mm], :width => 18.cm, :height => 267.mm) do
+                    font('AlegreyaSans') do
+                        image "/data/gyst.jpg", :at => [0, 267.mm], :width => 2.5.cm
+                        image "/data/sesb.jpg", :at => [16.2.cm, 267.mm], :width => 1.8.cm
+                        move_down 2.mm
+                        text "Gymnasium Steglitz", :size => 24, :align => :center
+                        text "Anlage zum Arbeits- und Sozialverhalten", :align => :center
+                        line [0, 2.1.mm], [3.cm, 2.1.mm]
+                        float do
+                            bounding_box([1.mm, 2.mm], :width => 10.cm, :height => 4.mm) do
+                                # stroke_bounds
+                                text "<sup>1</sup> Klassenleitung", :inline_format => true, :size => 8
+                            end
+                        end
+                        stroke
+                        move_down 7.mm
+                        float do
+                            move_up 3.mm
+                            text "für <b>#{schueler[:official_first_name]} #{schueler[:last_name]}</b><br />Klasse #{Main.tr_klasse(klasse)}", :size => 13, :inline_format => true, :align => :center
+                        end
+                        float do
+                            move_down 2.5.mm
+                            text "Schuljahr #{ZEUGNIS_SCHULJAHR.sub('_', '/')}", :size => 13, :align => :right
+                        end
+
+                        move_down 5.mm
+
+                        SOZIALNOTEN_CATS.each.with_index do |cat, cat_index|
+                            move_down 3.mm
+                            text "<b>#{cat[1]}</b>", :inline_format => true, :size => 13
+                            move_down 1.mm
+                            s = "#{cat[2]}"
+                            s.gsub!('Die Schülerin / Der Schüler', schueler[:official_first_name])
+                            s.gsub!('Sie / Er', schueler[:geschlecht] == 'w' ? 'Sie' : 'Er')
+                            s.gsub!('ihre / seine', schueler[:geschlecht] == 'w' ? 'ihre' : 'seine')
+                            text s, :size => 11
+                            move_down 1.mm
+                            bounding_box([0, cursor], :width => 18.cm, :height => hh + 4 * h) do
+                                # stroke_bounds
+                                (0..4).each do |y|
+                                    line [0, y * h], [18.cm, y * h]
+                                end
+                                line [0, hh + 4 * h], [18.cm, hh + 4 * h]
+                                line [0, 0], [0, hh + 4 * h]
+                                line [mark_width + faecher.size * w, 0], [mark_width + faecher.size * w, hh + 4 * h]
+                                stroke
+                                (0...faecher.size).each do |x|
+                                    fach = faecher[x]
+                                    line [mark_width + x * w, 0], [mark_width + x * w, hh + 4 * h]
+                                    stroke
+                                    bounding_box([mark_width + x * w, h * 4 + hh], :width => w, :height => hh) do
+                                        # stroke_bounds
+                                        move_up 0.5.mm
+                                        text "#{fach.sub('_KL', 'KL<sup>1</sup>')}", :size => 11, :valign => :center, :align => :center, :inline_format => true
+                                    end
+                                    item = cat[0]
+                                    note = cache["Schuljahr:#{ZEUGNIS_SCHULJAHR}/Halbjahr:#{ZEUGNIS_HALBJAHR}/SV:#{item}/Fach:#{fach}/Email:#{email}"]
+                                    # STDERR.puts "[#{note}]"
+                                    y = -1
+                                    y = 3 if note == '++'
+                                    y = 2 if note == '+'
+                                    y = 1 if note == 'o'
+                                    y = 0 if note == '-'
+                                    if y >= 0
+                                        bounding_box([mark_width + x * w, h * (y + 1)], :width => w, :height => h) do
+                                            # stroke_bounds
+                                            move_up 1.mm
+                                            text "×", :size => 13, :valign => :center, :align => :center, :inline_format => true
+                                        end
+                                    end
+                                end
+                                SOZIALNOTEN_MARKS.reverse.each.with_index do |mark, y|
+                                    bounding_box([0.0, (y + 1) * h], :width => 18.cm, :height => h) do
+                                        # stroke_bounds
+                                    end
+                                    bounding_box([1.mm, (y + 1) * h], :width => mark_width, :height => h) do
+                                        move_up 0.5.mm
+                                        text "…#{mark[1]}", :size => 11, :valign => :center, :align => :left
+                                    end
+                                end
+                            end
+                        end
+                        bounding_box([18.cm / 4 * 0, 1.2.cm], :width => 18.cm / 4, :height => 1.cm) do
+                            text "Berlin, den #{ZEUGNIS_DATUM}", :size => 11
+                        end
+                        ['Klassenleitung', 'Schulleitung', 'Kenntnis genommen:<br />Erziehungsberechtige/r'].each.with_index do |x, i|
+                            bounding_box([18.cm / 4 * (i + 1), 1.2.cm], :width => 18.cm / 4 * 0.9, :height => 1.5.cm) do
+                                line [0, 9.5.mm], [18.cm / 4 * 0.9, 9.5.mm]
+                                stroke
+                                move_down 6.mm
+                                float do
+                                    text x, :size => 11, :align => :center, :inline_format => true
+                                end
+                            end
+                        end
+                    end
+                end
+            end
+        end
+        return doc.render
+    end
+
 end
 

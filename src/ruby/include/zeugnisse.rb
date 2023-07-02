@@ -232,10 +232,10 @@ class Main < Sinatra::Base
         wf_count = 0
         FAECHER_FOR_ZEUGNIS[ZEUGNIS_SCHULJAHR][ZEUGNIS_HALBJAHR][key].each do |tag|
             if tag[0] == '$'
-                # wf_count += 1
-                # required_tags << "$WF#{wf_count}"
-                # required_tags << "##{wf_count}"
-                required_tags << "##{tag[1, tag.size - 1]}"
+                wf_count += 1
+                required_tags << "#WF#{wf_count}"
+                required_tags << "#WF#{wf_count}_Name"
+                # required_tags << "##{tag[1, tag.size - 1]}"
             else
                 required_tags << "##{tag}"
             end
@@ -255,15 +255,9 @@ class Main < Sinatra::Base
         required_tags << '#VSP'
         required_tags << '#Angebote'
         required_tags << '#Bemerkungen'
+        required_tags << '#WeitereBemerkungen' if key.include?('sesb')
         optional_tags = []
 
-        optional_tags << '#Wahlpflicht_1'
-        optional_tags << '#Wahlpflicht_2'
-        optional_tags << '#Wahlpflicht_3'
-
-        optional_tags << '#Wahlpflicht_1_Note'
-        optional_tags << '#Wahlpflicht_2_Note'
-        optional_tags << '#Wahlpflicht_3_Note'
         optional_tags << '#Vorname'
 
         missing_tags = Set.new(required_tags) - Set.new(@@zeugnisse[:formulare][key][:tags])
@@ -366,26 +360,38 @@ class Main < Sinatra::Base
             info['#Klasse'] = Main.tr_klasse(klasse)
             info['#Zeugnisdatum'] = ZEUGNIS_DATUM
             info['@Geschlecht'] = sus_info[:geschlecht]
+            wf_tr = {}
+            wf_count = 0
+            faecher_info.each do |fach|
+                if wahlfach_info[fach]
+                    if cache["Schuljahr:#{ZEUGNIS_SCHULJAHR}/Halbjahr:#{ZEUGNIS_HALBJAHR}/Fach:#{fach}/Email:#{email}"]
+                        wf_count += 1
+                        wf_tr[fach] = "WF#{wf_count}"
+                        info["#WF#{wf_count}_Name"] = "Wahlfach #{@@faecher[fach] || fach}"
+                    end
+                end
+            end
+            # TODO: Wahlfächer
+            info["#WF1"] = '--'
+            info["#WF2"] = '--'
+            info["#WF3"] = '--'
             faecher_info.each do |fach|
                 note = cache["Schuljahr:#{ZEUGNIS_SCHULJAHR}/Halbjahr:#{ZEUGNIS_HALBJAHR}/Fach:#{fach}/Email:#{email}"] || '--'
                 if note =~ /^\d[\-+]$/
                     note = "#{note.to_i}"
                 end
-                info["##{fach}"] = note
+                fach_tr = wf_tr[fach] || fach
+                info["##{fach_tr}"] = note
             end
             ['VT', 'VT_UE', 'VS', 'VS_UE', 'VSP'].each do |item|
                 v = cache["Schuljahr:#{ZEUGNIS_SCHULJAHR}/Halbjahr:#{ZEUGNIS_HALBJAHR}/Fehltage:#{item}/Email:#{email}"] || '--'
                 v = '--' if v == '0'
                 info["##{item}"] = v
             end
-            ['Angebote', 'Bemerkungen'].each do |item|
+            ['Angebote', 'Bemerkungen', 'WeitereBemerkungen'].each do |item|
                 v = cache["Schuljahr:#{ZEUGNIS_SCHULJAHR}/Halbjahr:#{ZEUGNIS_HALBJAHR}/AB:#{item}/Email:#{email}"] || '--'
                 info["##{item}"] = v
             end
-            # TODO: Wahlfächer
-            info["#Wahlpflicht_1_Note"] = '--'
-            info["#Wahlpflicht_2_Note"] = '--'
-            info["#Wahlpflicht_3_Note"] = '--'
             zeugnis_id = "#{ZEUGNIS_SCHULJAHR}/#{ZEUGNIS_HALBJAHR}/#{zeugnis_key}/#{info.to_json}"
             zeugnis_sha1 = Digest::SHA1.hexdigest(zeugnis_id).to_i(16).to_s(36)
             debug "Printing Zeugnis for #{sus_info[:official_first_name]} #{sus_info[:last_name]} => #{zeugnis_sha1}"

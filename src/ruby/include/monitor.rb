@@ -116,4 +116,119 @@ class Main < Sinatra::Base
             ws.rack_response
         end
     end
+
+    def get_monitor_zeugniskonferenzen
+        rows = neo4j_query(<<~END_OF_QUERY)
+            MATCH (m:MonitorZeugniskonferenz)
+            RETURN m.key, COALESCE(m.value, FALSE) AS value;
+        END_OF_QUERY
+        result = {}
+        rows.each do |row|
+            result[row['m.key']] = row['value']
+        end
+        result['flur'] ||= false
+        result['lz'] ||= false
+        result['sek'] ||= false
+        result
+    end
+
+    post '/api/get_monitor_zeugniskonferenzen' do
+        respond(:result => get_monitor_zeugniskonferenzen())
+    end
+
+    post '/api/toggle_monitor_zeugniskonferenzen' do
+        require_user_who_can_manage_monitors!
+        data = parse_request_data(:required_keys => [:key])
+        result = neo4j_query_expect_one(<<~END_OF_QUERY, {:key => data[:key]})
+            MERGE (m:MonitorZeugniskonferenz {key: $key})
+            SET m.value = NOT COALESCE(m.value, FALSE)
+            RETURN COALESCE(m.value, FALSE) AS result;
+        END_OF_QUERY
+        self.class.force_reload_monitors()
+        respond(:result => result['result'])
+    end
+
+    def running_zeugniskonferenzen
+        sha1_and_t0_list = neo4j_query(<<~END_OF_QUERY, {:t1 => Time.now.to_i}).map { |x| [x['m.sha1'], x['m.t0']] }
+            MATCH (m:MonitorZeugniskonferenzState)
+            WHERE m.t1 IS NULL
+            RETURN m.sha1, m.t0;
+        END_OF_QUERY
+        sha1_list = Set.new(sha1_and_t0_list.map { |x| x[0] })
+        t0_for_sha1 = {}
+        sha1_and_t0_list.each do |entry|
+            t0_for_sha1[entry[0]] = entry[1]
+        end
+        result = {}
+        today = Date.today.strftime('%Y-%m-%d')
+        (ZEUGNISKONFERENZEN[today] || []).each do |entry|
+            sha1 = Digest::SHA1.hexdigest([today, entry].to_json)[0, 16]
+            if sha1_list.include?(sha1)
+                result[entry[0]] = t0_for_sha1[sha1]
+            end
+        end
+        result
+    end
+
+    def finished_zeugniskonferenzen
+        sha1_list = neo4j_query(<<~END_OF_QUERY, {:t1 => Time.now.to_i}).map { |x| x['m.sha1'] }
+            MATCH (m:MonitorZeugniskonferenzState)
+            WHERE m.t1 IS NOT NULL
+            RETURN m.sha1;
+        END_OF_QUERY
+        sha1_list = Set.new(sha1_list)
+        result = []
+        today = Date.today.strftime('%Y-%m-%d')
+        (ZEUGNISKONFERENZEN[today] || []).each do |entry|
+            sha1 = Digest::SHA1.hexdigest([today, entry].to_json)[0, 16]
+            if sha1_list.include?(sha1)
+                result << entry[0]
+            end
+        end
+        result
+    end
+
+    post '/api/start_zeugniskonferenz' do
+        require_user_who_can_manage_monitors!
+        data = parse_request_data(:required_keys => [:start_time])
+        start_time = data[:start_time]
+        today = Date.today.strftime('%Y-%m-%d')
+        found_entry = nil
+        (ZEUGNISKONFERENZEN[today] || []).each do |entry|
+            if entry[0] == start_time
+                found_entry = entry
+                break
+            end
+        end
+        result = neo4j_query(<<~END_OF_QUERY, {:t1 => Time.now.to_i})
+            MATCH (m:MonitorZeugniskonferenzState)
+            WHERE m.t1 IS NULL
+            SET m.t1 = $t1;
+        END_OF_QUERY
+        if found_entry
+            sha1 = Digest::SHA1.hexdigest([today, found_entry].to_json)[0, 16]
+            STDERR.puts sha1
+            result = neo4j_query_expect_one(<<~END_OF_QUERY, {:sha1 => sha1, :t0 => Time.now.to_i})
+                MERGE (m:MonitorZeugniskonferenzState {sha1: $sha1})
+                SET m.t0 = $t0
+                REMOVE m.t1
+                RETURN m;
+            END_OF_QUERY
+            self.class.force_reload_monitors()
+        end
+        respond()
+    end
+
+    post '/api/stop_zeugniskonferenz' do
+        require_user_who_can_manage_monitors!
+        today = Date.today.strftime('%Y-%m-%d')
+
+        result = neo4j_query(<<~END_OF_QUERY, {:t1 => Time.now.to_i})
+            MATCH (m:MonitorZeugniskonferenzState)
+            WHERE m.t1 IS NULL
+            SET m.t1 = $t1;
+        END_OF_QUERY
+        self.class.force_reload_monitors()
+        respond()
+    end
 end

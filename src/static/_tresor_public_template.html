@@ -236,6 +236,10 @@
         background: linear-gradient(135deg, #fff 0%, #fff 47%, #800 50%, #fff 53%, #fff 100%);
     }
 
+    .bu_start_zeugniskonferenz, .bu_stop_zeugniskonferenz {
+        margin-bottom: 3px;
+    }
+
     @tailwind base;
     @tailwind components;
     @tailwind utilities;
@@ -302,6 +306,12 @@
 </div>
 </div>
 
+<div class="container" style="padding-top: 72px; background-color: #fff; border-radius: 0; display: #{(zeugnis_admin_logged_in? && ZEUGNISKONFERENZEN.include?(Date.today.strftime('%Y-%m-%d'))) ? 'block' : 'none'};">
+<h4>Heutige Zeugniskonferenzen</h4>
+<p>Bitte klicken Sie auf eine Klasse, wenn die Zeugniskonferenz beginnt. Klicken Sie auf »Beenden«, wenn eine Zeugniskonferenz vorbei ist.</p>
+<div id="div_zeugniskonferenzen"></div>
+</div>
+
 <script>
 var second_factor_expires = Math.round((Date.now() / 1000.0) + #{second_factor_time_left || 0});
 var edit_enabled = false;
@@ -309,6 +319,10 @@ var FAECHER_SPRACHEN = #{FAECHER_SPRACHEN.to_json};
 var zeugnisliste_closed = #{(zeugnis_admin_logged_in? || Time.now.strftime('%Y-%m-%dT%H:%M:%S') < '2023-06-26T09:00:00') ? 'false' : 'true'};
 var zeugnisliste_consider_closed = #{(zeugnis_admin_logged_in? || Time.now.strftime('%Y-%m-%dT%H:%M:%S') < '2023-06-28T09:00:00') ? 'false' : 'true'};
 var sozialverhalten_closed = #{(zeugnis_admin_logged_in? || Time.now.strftime('%Y-%m-%dT%H:%M:%S') < '2023-07-03T20:00:00') ? 'false' : 'true'};
+var zeugniskonferenzen_today = #{(ZEUGNISKONFERENZEN[Date.today.strftime('%Y-%m-%d')] || []).to_json};
+var zeugnis_admin_and_konferenz = #{(zeugnis_admin_logged_in? && ZEUGNISKONFERENZEN.include?(Date.today.strftime('%Y-%m-%d')))};
+var running_zeugniskonferenzen = #{running_zeugniskonferenzen.to_json};
+var finished_zeugniskonferenzen = #{finished_zeugniskonferenzen.to_json};
 
 function update_edit_button() {
     let button = $('#bu_toggle_edit');
@@ -403,6 +417,43 @@ window.addEventListener('load', function () {
 
         }
     });
+    if (zeugnis_admin_and_konferenz) {
+        $('.extra-padding').removeClass('extra-padding');
+        $('#div_zeugniskonferenzen').empty();
+        let something_running = false;
+        for (let entry of zeugniskonferenzen_today) {
+            let klasse = entry[1];
+            let start_time = entry[0];
+            let button = $(`<button class='btn btn-outline-secondary bu_start_zeugniskonferenz'>`).text(`${start_time} ${klasse == 'OS' ? '' : 'Klasse '}${klassen_tr[klasse] ?? klasse}`);
+            $('#div_zeugniskonferenzen').append(button).append(' ');
+            if (start_time in running_zeugniskonferenzen) {
+                button.removeClass('btn-outline-secondary').addClass('btn-success');
+                something_running = true;
+            }
+            button.on('click', function(e) {
+                api_call('/api/start_zeugniskonferenz', {start_time: start_time}, function(data) {
+                    if (data.success) {
+                        $('.bu_start_zeugniskonferenz').removeClass('btn-success').addClass('btn-outline-secondary');
+                        button.removeClass('btn-outline-secondary').addClass('btn-success');
+                        $('.bu_stop_zeugniskonferenz').removeClass('btn-outline-secondary').addClass('btn-danger');
+                    }
+                });
+            });
+        }
+        let button = $(`<button class='btn btn-outline-secondary bu_stop_zeugniskonferenz'>`).text(`Beenden`);
+        $('#div_zeugniskonferenzen').append(button).append(' ');
+        if (something_running) {
+            $('.bu_stop_zeugniskonferenz').removeClass('btn-outline-secondary').addClass('btn-danger');
+        }
+        button.on('click', function(e) {
+            api_call('/api/stop_zeugniskonferenz', {}, function(data) {
+                if (data.success) {
+                    $('.bu_start_zeugniskonferenz').removeClass('btn-success').addClass('btn-outline-secondary');
+                    $('.bu_stop_zeugniskonferenz').removeClass('btn-danger').addClass('btn-outline-secondary');
+                }
+            });
+        });
+    }
 });
 
 let noten_allowed_values = [

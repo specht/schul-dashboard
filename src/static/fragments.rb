@@ -615,22 +615,18 @@ class Main
             liste[:schueler].each do |schueler|
                 email = schueler[:email]
                 start_new_page unless first_page
-                faecher = [] + liste[:faecher]
+                faecher = liste[:faecher].clone
                 faecher << '_KL'
                 faecher.reject! do |fach|
-                    # if liste[:wahlfach][fach] == true
-                        flag = true
-                        SOZIALNOTEN_CATS.each.with_index do |cat, cat_index|
-                            item = cat[0]
-                            note = cache["Schuljahr:#{ZEUGNIS_SCHULJAHR}/Halbjahr:#{ZEUGNIS_HALBJAHR}/SV:#{item}/Fach:#{fach}/Email:#{email}"]
-                            if ['++', '+', 'o', '-'].include?(note)
-                                flag = false
-                            end
+                    flag = true
+                    SOZIALNOTEN_CATS.each.with_index do |cat, cat_index|
+                        item = cat[0]
+                        note = cache["Schuljahr:#{ZEUGNIS_SCHULJAHR}/Halbjahr:#{ZEUGNIS_HALBJAHR}/SV:#{item}/Fach:#{fach}/Email:#{email}"]
+                        if ['++', '+', 'o', '-'].include?(note)
+                            flag = false
                         end
-                        flag
-                    # else
-                        # false
-                    # end
+                    end
+                    flag
                 end
                 first_page = false
                 mark_width = 4.cm

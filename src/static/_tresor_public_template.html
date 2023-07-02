@@ -437,7 +437,7 @@ function input_note_apply_style_and_fix(input, callback) {
     }
     let overlay = $(input).next('input');
     overlay.val($(input).data('value_pre'));
-    if ($(input).data('value_pre') === $(input).data('old_value')) {
+    if ($(input).data('value_pre') === (value === '' ? null : value)) {
         overlay.hide();
         $(input).css('outline', 'none').css('font-weight', 'normal');
     }
@@ -710,7 +710,7 @@ function load_noten_table(container, klasse, edit_noten) {
                                 next_row.find('td').eq(this_index).find('input').focus().select();
                             }
                         });
-                        let pre_marker = $(`<input placeholder="--" class="form-control" style="width: 3em; text-align: center;height: calc(1.5em + 2px); position: absolute; top: 0; left: 0; transform: translate(-30%, -30%) scale(0.8); z-index: 1000; color: #444; pointer-events: none; width:1.2em!important; height: 1.2em!important; background-color: #fff; border-bottom-right-radius: 50%; box-shadow: 0 0 0.2em rgba(0,0,0,0.9);" disabled="" value="">`).val(data.results[0][0][0][fi][index][1]);
+                        let pre_marker = $(`<input placeholder="--" class="form-control" style="width: 3em; text-align: center;height: calc(1.5em + 2px); position: absolute; top: 0; left: 0; transform: translate(-30%, -30%) scale(0.8); color: #444; z-index: 1; pointer-events: none; width:1.2em!important; height: 1.2em!important; background-color: #fff; border-bottom-right-radius: 50%; box-shadow: 0 0 0.2em rgba(0,0,0,0.9);" disabled="" value="">`).val(data.results[0][0][0][fi][index][1]);
                         input.data('value_pre', data.results[0][0][0][fi][index][1]);
                         cells.push($('<td>').append($(`<div class='note'>`).append(input).append(pre_marker)));
                         input_note_apply_style_and_fix(input);

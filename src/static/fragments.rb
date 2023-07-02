@@ -526,7 +526,7 @@ class Main
                                         end
                                         x
                                     end
-                                    STDERR.puts "#{schueler[:email]} #{cols_left.to_json}"
+                                    # STDERR.puts "#{schueler[:email]} #{cols_left.to_json}"
                                     cols_right = cols_right_template.map { |x| x }
                                     line_width 0.3.mm
                                     line [0.0, h * y], [19.cm, h * y]
@@ -612,11 +612,26 @@ class Main
             first_page = true
             line_width 0.1.mm
             liste = @@zeugnisliste_for_klasse[klasse]
-            faecher = liste[:faecher]
-            faecher << '_KL'
             liste[:schueler].each do |schueler|
                 email = schueler[:email]
                 start_new_page unless first_page
+                faecher = [] + liste[:faecher]
+                faecher << '_KL'
+                faecher.reject! do |fach|
+                    # if liste[:wahlfach][fach] == true
+                        flag = true
+                        SOZIALNOTEN_CATS.each.with_index do |cat, cat_index|
+                            item = cat[0]
+                            note = cache["Schuljahr:#{ZEUGNIS_SCHULJAHR}/Halbjahr:#{ZEUGNIS_HALBJAHR}/SV:#{item}/Fach:#{fach}/Email:#{email}"]
+                            if ['++', '+', 'o', '-'].include?(note)
+                                flag = false
+                            end
+                        end
+                        flag
+                    # else
+                        # false
+                    # end
+                end
                 first_page = false
                 mark_width = 4.cm
                 w = (18.cm - mark_width) / faecher.size

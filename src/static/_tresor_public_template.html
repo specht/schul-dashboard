@@ -435,6 +435,16 @@ function input_note_apply_style_and_fix(input, callback) {
 
         if (typeof(callback) !== 'undefined') callback(value);
     }
+    let overlay = $(input).next('input');
+    overlay.val($(input).data('value_pre'));
+    if ($(input).data('value_pre') === $(input).data('old_value')) {
+        overlay.hide();
+        $(input).css('outline', 'none').css('font-weight', 'normal');
+    }
+    else {
+        overlay.show();
+        $(input).css('outline', '2px solid rgb(74, 160, 63)').css('font-weight', 'bold');
+    }
 }
 
 function input_versetzt_apply_style_and_fix(input, callback) {
@@ -525,6 +535,8 @@ function load_noten_table(container, klasse, edit_noten) {
     //     let info = kurs_info[lesson_key];
     //     console.log(info.fach);
     // }
+
+
     let path_arrays = [];
     let path_array = [];
     path_array.push(['Schuljahr', ZEUGNIS_SCHULJAHR]);
@@ -552,8 +564,24 @@ function load_noten_table(container, klasse, edit_noten) {
     path_array_2.push(['Email', emails]);
     path_arrays.push(path_array_2);
 
+    /*
+      get_many_cutoff:
+
+      null / null: no value
+      1 / null: show 1
+      1 / 2: show 2 with old value 1
+      null / 2: show 2
+    */
+
+        /*
+    <div class="note">
+        <input placeholder="--" class="form-control" style="width: 3em;text-align: center;height: calc(1.5em + 2px);color: green;outline: 2px solid darkseagreen;" disabled="">
+        <input placeholder="--" class="form-control" style="width: 3em;text-align: center;height: calc(1.5em + 2px);position: absolute;top: 0;left: 0;transform: translate(-30%, -30%) scale(0.7);z-index: 1000;" disabled="" value="5+"></div>
+    */
+
+
     let t0 = Date.now();
-    tresor_api_call('/jwt/get_many', {path_arrays: path_arrays, key: 'Wert'}, function(data) {
+    tresor_api_call('/jwt/get_many_cutoff', {path_arrays: path_arrays, key: 'Wert'}, function(data) {
         consider_cache = {};
         let t1 = Date.now();
         console.log(`request took ${t1 - t0} ms.`);
@@ -589,7 +617,7 @@ function load_noten_table(container, klasse, edit_noten) {
                 xs: true,
                 headers: header_cells,
                 rows: emails.map(function (email, index) {
-                    let consider_this = (data.results[1][0][0][0][index] === true);
+                    let consider_this = (data.results[1][0][0][0][index][0] === true);
                     let cells = [
                         email,
                         `<td style='text-align: right;'>${index + 1}.</td>`,
@@ -622,7 +650,7 @@ function load_noten_table(container, klasse, edit_noten) {
                         if (zeugnisliste_closed || (!edit_noten || ((!my_zeugnisliste[`${klasse}/${fach}`]) && ('#{zeugnis_admin_logged_in?}' === 'false')))) {
                             input.prop('disabled', true);
                         }
-                        let value = data.results[0][0][0][fi][index];
+                        let value = data.results[0][0][0][fi][index][0];
                         if (noten_mark.indexOf(value) >= 0) {
                             consider_cache[email] = true;
                             consider_this = true;
@@ -644,7 +672,9 @@ function load_noten_table(container, klasse, edit_noten) {
                                     input.closest('td').find('i.fa').remove();
                                     tresor_api_call('/jwt/store', {path: path, key: 'Wert', value: value}, function(data) {
                                         if (data.success) {
-                                            $(e.target).data('old_value', value);
+                                            $(e.target).data('old_value', data.value);
+                                            $(e.target).data('value_pre', data.value_pre);
+                                            input_note_apply_style_and_fix($(e.target), function(value) {});
                                         } else {
                                             $(e.target).val($(e.target).data('old_value'));
                                             input_note_apply_style_and_fix($(e.target), function(value) {
@@ -680,7 +710,9 @@ function load_noten_table(container, klasse, edit_noten) {
                                 next_row.find('td').eq(this_index).find('input').focus().select();
                             }
                         });
-                        cells.push($('<td>').append($(`<div class='note'>`).append(input)));
+                        let pre_marker = $(`<input placeholder="--" class="form-control" style="width: 3em; text-align: center;height: calc(1.5em + 2px); position: absolute; top: 0; left: 0; transform: translate(-30%, -30%) scale(0.8); z-index: 1000; color: #444; pointer-events: none; width:1.2em!important; height: 1.2em!important; background-color: #fff; border-bottom-right-radius: 50%; box-shadow: 0 0 0.2em rgba(0,0,0,0.9);" disabled="" value="">`).val(data.results[0][0][0][fi][index][1]);
+                        input.data('value_pre', data.results[0][0][0][fi][index][1]);
+                        cells.push($('<td>').append($(`<div class='note'>`).append(input).append(pre_marker)));
                         input_note_apply_style_and_fix(input);
                     }
                     if (consider_this)

@@ -25,7 +25,7 @@ class Main
         File.open('/internal/out.pdf', 'w') do |f|
             # f.write get_zeugnislisten_sheets_pdf(cache)
             # f.write get_zeugniskonferenz_sheets_pdf(cache)
-            f.write get_sozialzeugnis_pdf('10o', cache)
+            f.write get_sozialzeugnis_pdf('10a', cache)
         end
     end
 end

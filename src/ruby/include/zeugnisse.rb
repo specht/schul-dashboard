@@ -349,7 +349,7 @@ class Main < Sinatra::Base
                 end
             end
             faecher_info += faecher_info_extra
-            STDERR.puts faecher_info.to_json
+            # STDERR.puts faecher_info.to_json
             wahlfach_info = @@zeugnisliste_for_klasse[klasse][:wahlfach]
             # :zeugnis_key => self.zeugnis_key_for_email(email),
             # :official_first_name => @@user_info[email][:official_first_name],
@@ -530,9 +530,9 @@ class Main < Sinatra::Base
         cache = {}
         cache.merge!(parse_paths_and_values(data[:paths], data[:values]))
 
-        File.open('/internal/zeugniskonferenz_cache.json', 'w') do |f|
-            f.write(cache.to_json)
-        end
+        # File.open('/internal/zeugniskonferenz_cache.json', 'w') do |f|
+        #     f.write(cache.to_json)
+        # end
 
         respond(:yay => 'sure', :pdf_base64 => Base64.strict_encode64(get_sozialzeugnis_pdf(data[:klasse], cache)), :name => 'Zeugniskonferenzen.pdf')
     end

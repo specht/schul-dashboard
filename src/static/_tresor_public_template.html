@@ -1274,4 +1274,18 @@ function open_docx(data, name) {
     a.click();
 }
 
+function open_xlsx(data, name) {
+    let s = atob(data);
+    let bytes = new Uint8Array(s.length);
+    for (let i = 0; i < s.length; i++) {
+        bytes[i] = s.charCodeAt(i);
+    }
+    let blob = new Blob([bytes], {type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"})
+    console.log(blob);
+    let a = document.createElement('a');
+    a.href = window.URL.createObjectURL(blob);
+    a.download = `Zeugnisliste ${name}.xlsx`;
+    a.click();
+}
+
 </script>

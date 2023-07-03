@@ -48,6 +48,14 @@ window.addEventListener('load', function () {
                     button2.click(function(e) {
                         get_sozialzeugnis(klasse);
                     });
+                    let button3 = $(`<button id='bu_print_all' class='btn btn-secondary'>`).html(`<i class='fa fa-file-excel-o'></i>&nbsp;&nbsp;Alle Noten der Klasse ${klassen_tr[klasse] ?? klasse} (XLSX)`);
+                        $('#button_here').append(`&nbsp;&nbsp;`);
+                    $('#button_here').append(button3);
+                    button3.click(function(e) {
+                        let liste = zeugnisliste_for_klasse[klasse];
+                        let emails = liste.schueler.map(function(x) { return x.email; });
+                        get_zeugnis(klasse, emails, 'xlsx');
+                    });
 
                     load_zeugnis_table($('#zeugnisse_here'), klasse);
                 });
@@ -87,7 +95,7 @@ function get_zeugnis(klasse, emails, format) {
     path_array_ab.push(['Email', emails]);
 
     tresor_api_call('/jwt/get_many', {path_arrays: [path_array_fach, path_array_fehltage, path_array_ab], key: 'Wert'}, function(data) {
-        console.log(data);
+        // console.log(data);
         api_call('/api/print_zeugnis', {format: format, schueler: emails.map(function(email) { return `${klasse}/${email}`; }),
             paths_fach: path_array_fach, values_fach: data.results[0],
             paths_fehltage: path_array_fehltage, values_fehltage: data.results[1],
@@ -96,8 +104,10 @@ function get_zeugnis(klasse, emails, format) {
             if (data2.success) {
                 if (format === 'pdf')
                     open_pdf(data2.pdf_base64, emails.length === 1 ? data2.name : `Klasse ${klassen_tr[klasse] ?? klasse}`);
-                else
+                else if (format === 'docx')
                     open_docx(data2.docx_base64, data2.name);
+                else if (format === 'xlsx')
+                    open_xlsx(data2.xlsx_base64, data2.name);
             }
         });
     });

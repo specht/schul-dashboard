@@ -498,6 +498,50 @@
         border-radius: 5px;
     }
 
+    .indeterminate-progress-bar {
+        /* Color */
+        background-color: #d1d5db;
+
+        /* Rounded border */
+        border-radius: 9999px;
+
+        margin-top: 1vw;
+
+        /* Size */
+        height: 1vw;
+
+        position: relative;
+        overflow: hidden;
+    }
+
+    .indeterminate-progress-bar__progress {
+        /* Color */
+        background-color: #{color_palette[:primary]};
+
+        /* Rounded border */
+        border-radius: 9999px;
+
+        /* Absolute position */
+        position: absolute;
+        bottom: 0;
+        top: 0;
+        width: 50%;
+
+        /* Move the bar infinitely */
+        animation-duration: 2s;
+        animation-iteration-count: infinite;
+        animation-name: indeterminate-progress-bar;
+    }
+
+    @keyframes indeterminate-progress-bar {
+        from {
+            left: -50%;
+        }
+        to {
+            left: 100%;
+        }
+    }
+
 </style>
 
 <div class="embed-responsive embed-responsive-16by9">
@@ -1070,6 +1114,7 @@
                     }
                 }
                 let div = $(`<div class='klasse ${(this_animated && (!seen_first_animated)) ? 'conic' : ''}' style='background-color: #fff; height: 10.5vw; font-size: 2vw;'>`).html(`${entry[0]}&nbsp;&nbsp;&nbsp;&nbsp;<b>${klasse === 'OS' ? '' : 'Klasse'} ${klassen_tr[klasse] ?? klasse}</b>`);
+                if (seen_first_animated) this_animated = false;
                 if (this_animated) seen_first_animated = true;
                 div.append($('<br>'));
                 if (entry[0] in running_zeugniskonferenzen) {
@@ -1078,11 +1123,19 @@
                     let span = $(`<span class='ticking_time' data-ts='${running_zeugniskonferenzen[entry[0]]}'>`);
                     div.append(`läuft seit `);
                     div.append(span);
-                }
-                if (finished_zeugniskonferenzen.indexOf(entry[0]) >= 0) {
+                } else if (finished_zeugniskonferenzen.indexOf(entry[0]) >= 0) {
                     div.append($(`<i class='fa fa-check'></i>`));
                     div.append('&nbsp;&nbsp;');
                     div.append(`beendet`);
+                } else {
+                    if (this_animated) {
+                        div.append($(`<i class='fa fa-clock-o'></i>`));
+                        div.append('&nbsp;&nbsp;');
+                        div.append(`warte auf Beginn`);
+                    }
+                }
+                if (this_animated) {
+                    div.append($(`<div class="indeterminate-progress-bar"><div class="indeterminate-progress-bar__progress"></div></div>`));
                 }
                 $('.main').append($(`<div>`).append(div));
             }

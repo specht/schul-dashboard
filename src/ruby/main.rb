@@ -2198,6 +2198,8 @@ class Main < Sinatra::Base
     end
 
     def pick_random_color_scheme()
+        today = Date.today.strftime('%Y-%m-%d')
+        return 'la2c6e80d60aea2c6e80' if ZEUGNISKONFERENZEN.include?(today)
         @@default_color_scheme ||= {}
         jd = (Date.today + 1).jd
         return @@default_color_scheme[jd] if @@default_color_scheme[jd]

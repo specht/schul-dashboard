@@ -506,7 +506,7 @@ class Main < Sinatra::Base
             if data[:format] == 'docx'
                 raw_docx_data = Base64::strict_encode64(File.read(docx_paths.first))
                 docx_paths.each do |path|
-                    FileUtils::rm_f(path)
+                    # FileUtils::rm_f(path)
                 end
 
                 respond(:yay => 'sure', :docx_base64 => raw_docx_data, :name => last_zeugnis_name)
@@ -519,8 +519,8 @@ class Main < Sinatra::Base
                 raw_pdf_data = Base64::strict_encode64(File.read(merged_out_path_pdf))
                 FileUtils::rm_f(merged_out_path_pdf)
                 docx_paths.each do |path|
-                    FileUtils::rm_f(path)
-                    FileUtils::rm_f(path.sub('.docx', '.pdf'))
+                    # FileUtils::rm_f(path)
+                    # FileUtils::rm_f(path.sub('.docx', '.pdf'))
                 end
 
                 respond(:yay => 'sure', :pdf_base64 => raw_pdf_data, :name => last_zeugnis_name)

@@ -348,7 +348,7 @@ class Main
             line_width 0.1.mm
             font('Roboto') do
                 ZEUGNIS_KLASSEN_ORDER.each do |klasse|
-                    next unless klasse == '10o'
+                    next unless klasse == '9b'
                     liste = @@zeugnisliste_for_klasse[klasse]
                     nr_width = 10.mm
                     name_width = 66.mm
@@ -464,6 +464,7 @@ class Main
                                             left.print(i, -3, s)
                                             translate 2.mm, -3.mm do
                                                 left.print(i, -1, (liste[:lehrer_for_fach][f] || []).join(', '), :rotate => 90, :align => :left, :width => 2)
+                                                # left.print(i, -1, f, :rotate => 90, :align => :left, :width => 2)
                                             end
                                         end
                                     end
@@ -512,6 +513,14 @@ class Main
                                     i = 10 - y + offset
                                     y2 = 10 - y
                                     schueler = liste[:schueler][i]
+                                    line_width 0.3.mm
+                                    line [0.0, h * y], [19.cm, h * y]
+                                    stroke
+                                    (1..3).each do |sy|
+                                        line_width 0.1.mm
+                                        line [0.0, h * (y - sy / 4.0)], [19.cm, h * (y - sy / 4.0)]
+                                        stroke
+                                    end
                                     next if schueler.nil?
                                     cols_left = cols_left_template.map do |x2|
                                         x = "#{x2}"
@@ -522,20 +531,16 @@ class Main
                                         else
                                             x.gsub!('FS1', 'En')
                                             x.gsub!('FS2', 'La')
-                                            x.gsub!('FS3', 'Agr')
+                                            if klasse.to_i >= 8
+                                                x.gsub!('FS3', 'Agr')
+                                            else
+                                                x.gsub!('FS3', '')
+                                            end
                                         end
                                         x
                                     end
                                     # STDERR.puts "#{schueler[:email]} #{cols_left.to_json}"
                                     cols_right = cols_right_template.map { |x| x }
-                                    line_width 0.3.mm
-                                    line [0.0, h * y], [19.cm, h * y]
-                                    stroke
-                                    (1..3).each do |sy|
-                                        line_width 0.1.mm
-                                        line [0.0, h * (y - sy / 4.0)], [19.cm, h * (y - sy / 4.0)]
-                                        stroke
-                                    end
                                     email = schueler[:email]
                                     font('RobotoCondensed') do
                                         if side == 0
@@ -571,6 +576,11 @@ class Main
                                             font('Roboto') do
                                                 cols_right.each.with_index do |f, i|
                                                     right.print(i, y2 * 4 + 3, cache["Schuljahr:#{ZEUGNIS_SCHULJAHR}/Halbjahr:#{ZEUGNIS_HALBJAHR}/Fach:#{f}/Email:#{email}"])
+                                                end
+                                                ['VT', 'VT_UE', 'VS', 'VS_UE', 'VSP'].each.with_index do |item, i|
+                                                    value = cache["Schuljahr:#{ZEUGNIS_SCHULJAHR}/Halbjahr:#{ZEUGNIS_HALBJAHR}/Fehltage:#{item}/Email:#{email}"]
+                                                    value = '--' if value == '0' || value.nil?
+                                                    right.print(19 + i, y2 * 4 + 3, value)
                                                 end
                                             end
                                         end
@@ -651,7 +661,10 @@ class Main
                         move_down 7.mm
                         float do
                             move_up 3.mm
-                            text "für <b>#{schueler[:official_first_name]} #{schueler[:last_name]}</b><br />Klasse #{Main.tr_klasse(klasse)}", :size => 13, :inline_format => true, :align => :center
+                            last_name_parts = schueler[:last_name].split(',').map { |x| x.strip }.reverse
+                            name = "#{schueler[:official_first_name]} #{last_name_parts.join(' ')}"
+            
+                            text "für <b>#{name}</b><br />Klasse #{Main.tr_klasse(klasse)}", :size => 13, :inline_format => true, :align => :center
                         end
                         float do
                             move_down 2.5.mm

@@ -148,6 +148,13 @@ function print_pdf_sheets(path) {
         path_array_2.push(['ZK', 'marked']);
         path_array_2.push(['Email', emails]);
         path_arrays.push(path_array_2);
+
+        let path_array_3 = [];
+        path_array_3.push(['Schuljahr', ZEUGNIS_SCHULJAHR]);
+        path_array_3.push(['Halbjahr', ZEUGNIS_HALBJAHR]);
+        path_array_3.push(['Fehltage', ['VT', 'VT_UE', 'VS', 'VS_UE', 'VSP']]);
+        path_array_3.push(['Email', emails]);
+        path_arrays.push(path_array_3);
     }
 
     tresor_api_call('/jwt/get_many', {path_arrays: path_arrays, key: 'Wert'}, function(data) {

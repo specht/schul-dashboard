@@ -26,7 +26,7 @@
                     </li>
                 </ol>
             </div>
-            <div class="input-group mt-1 mb-2">
+            <div id='discard_stem_ig' class="input-group mt-1 mb-2">
                 <input id='ti_discard_stem' type="text" class="form-control" style="text-align: center;" placeholder="Bitte geben Sie die Stammsignatur ein">
                 <div class="input-group-append">
                     <button id='bu_send_discard_stem_find' class="btn btn-success" type="button">Senden</button>
@@ -41,7 +41,7 @@
                     <b>Titel:</b> <span id="ti_title"></span>
                 </div>
                 <button id='bu_discard_1' class="btn btn-danger"><i class='fa fa-trash'></i>&nbsp;&nbsp;Ausmustern</button>
-                <button id='bu_discard_2' display='none;' class="btn btn-danger"><i class='fa fa-trash'></i>&nbsp;&nbsp;Ja ich bin mir ganz sicher, weg damit!</button>
+                <button id='bu_discard_2' style='display: none;' class="btn btn-danger"><i class='fa fa-trash'></i>&nbsp;&nbsp;Ja ich bin mir ganz sicher, weg damit!</button>
             </div>
         </div>
     </div>
@@ -112,10 +112,25 @@
             let stem = parseInt($('#ti_discard_stem').val().trim());
             bib_api_call('/jwt/get_book', { stem: stem }, function (data) {
                 if (data.success) {
+                    $('#discard_stem_ig').slideUp();
                     $('#ti_author').text(data.book.author);
                     $('#ti_title').text(data.book.title);
                     $('#div_discard_stem_sub').slideDown();
                     console.log(data);
+                }
+            });
+        });
+
+        $('#bu_discard_1').on('click', function(e) {
+            $('#bu_discard_1').prop('disabled', true);
+            $('#bu_discard_2').show();
+        });
+
+        $('#bu_discard_2').on('click', function(e) {
+            let stem = parseInt($('#ti_discard_stem').val().trim());
+            bib_api_call('/jwt/discard_stem', { stem: stem }, function (data) {
+                if (data.success) {
+                    $('#div_discard_stem').slideUp();
                 }
             });
         });

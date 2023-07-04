@@ -12,6 +12,39 @@
         </div>
     </div>
     <div id='book_table'></div>
+    <div style='display: #{can_manage_bib_special_access_logged_in? ? 'block' : 'none'};'>
+        <button id='bu_open_div_discard_stem' class="btn btn-outline-secondary"><i class='fa fa-warning'></i>&nbsp;&nbsp;Stammsignatur ausmustern</button>
+        <div id="div_discard_stem" style="display: none;">
+            <h3>Stammsignatur ausmustern</h3>
+            <div class="alert alert-danger">
+                Achtung: Diese Funktion ist nur mit Spezialberechtigung verfügbar.
+                Bitte vergewissern Sie sich doppelt und dreifach, dass Sie die richtige Stammsignatur eingeben, bevor Sie auf »Ausmustern« drücken.
+                <ol style='list-style: decimal; padding-left: 2em;'>
+                    <li>Bitte geben Sie zuerst die Stammsignatur ein und drücken Sie auf »Senden«.</li>
+                    <li>Vergewissern Sie sich, dass es sich um das richtige Buch handelt. Anschließend können Sie
+                        mit einem Klick auf »Ausmustern« alle Exemplare dieses Buches ausmustern.
+                    </li>
+                </ol>
+            </div>
+            <div class="input-group mt-1 mb-2">
+                <input id='ti_discard_stem' type="text" class="form-control" style="text-align: center;" placeholder="Bitte geben Sie die Stammsignatur ein">
+                <div class="input-group-append">
+                    <button id='bu_send_discard_stem_find' class="btn btn-success" type="button">Senden</button>
+                </div>
+            </div>
+            <div id="div_discard_stem_sub" style="display: none;">
+                <p>
+                    Sind Sie sicher, dass Sie alle Exemplare dieses Buches ausmustern möchten?
+                </p>
+                <div class="alert alert-warning">
+                    <b>Autor:</b> <span id="ti_author"></span><br />
+                    <b>Titel:</b> <span id="ti_title"></span>
+                </div>
+                <button id='bu_discard_1' class="btn btn-danger"><i class='fa fa-trash'></i>&nbsp;&nbsp;Ausmustern</button>
+                <button id='bu_discard_2' display='none;' class="btn btn-danger"><i class='fa fa-trash'></i>&nbsp;&nbsp;Ja ich bin mir ganz sicher, weg damit!</button>
+            </div>
+        </div>
+    </div>
 </div>
 <script>
     var divs_for_signature = {};
@@ -67,6 +100,24 @@
         let widget = new BarcodeWidget({
             element: $('#barcode_widget'),
             on_scan: on_scan
+        });
+
+        $('#bu_open_div_discard_stem').on('click', function(e) {
+            $('#bu_open_div_discard_stem').hide();
+            $('#div_discard_stem').slideDown();
+            $('#ti_discard_stem').focus();
+        });
+
+        $('#bu_send_discard_stem_find').on('click', function(e) {
+            let stem = parseInt($('#ti_discard_stem').val().trim());
+            bib_api_call('/jwt/get_book', { stem: stem }, function (data) {
+                if (data.success) {
+                    $('#ti_author').text(data.book.author);
+                    $('#ti_title').text(data.book.title);
+                    $('#div_discard_stem_sub').slideDown();
+                    console.log(data);
+                }
+            });
         });
     });
 </script>

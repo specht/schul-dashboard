@@ -512,12 +512,14 @@ class Main < Sinatra::Base
                 respond(:yay => 'sure', :docx_base64 => raw_docx_data, :name => last_zeugnis_name)
             else
                 command = "HOME=/internal/lowriter_home lowriter --convert-to pdf #{docx_paths.join(' ')} --outdir \"#{File.dirname(docx_paths.first)}\""
+                STDERR.puts command
                 system(command)
 
                 command = "gs -dBATCH -dNOPAUSE -q -sDEVICE=pdfwrite -sOutputFile=#{merged_out_path_pdf} #{docx_paths.map { |x| x.sub('.docx', '.pdf')}.join(' ')}"
+                STDERR.puts command
                 system(command)
                 raw_pdf_data = Base64::strict_encode64(File.read(merged_out_path_pdf))
-                FileUtils::rm_f(merged_out_path_pdf)
+                # FileUtils::rm_f(merged_out_path_pdf)
                 docx_paths.each do |path|
                     # FileUtils::rm_f(path)
                     # FileUtils::rm_f(path.sub('.docx', '.pdf'))

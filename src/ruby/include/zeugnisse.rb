@@ -403,10 +403,13 @@ class Main < Sinatra::Base
                 parts = schueler.split('/')
                 klasse = parts[0]
                 index = @@zeugnisliste_for_klasse[klasse][:index_for_schueler][parts[1]]
-                sus_info = @@zeugnisliste_for_klasse[klasse][:schueler][index]
+                sus_info = @@zeugnisliste_for_klasse[klasse][:schueler][index].clone
                 email = sus_info[:email]
                 zeugnis_key = sus_info[:zeugnis_key]
-                faecher_info = @@zeugnisliste_for_klasse[klasse][:faecher]
+                faecher_info = []
+                @@zeugnisliste_for_klasse[klasse][:faecher].each do |fach|
+                    faecher_info << fach
+                end
                 faecher_info_extra = []
                 faecher_info.each do |fach|
                     if FAECHER_SPRACHEN.include?(fach)

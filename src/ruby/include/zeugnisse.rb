@@ -515,7 +515,8 @@ class Main < Sinatra::Base
                 STDERR.puts command
                 system(command)
 
-                command = "gs -dBATCH -dNOPAUSE -q -sDEVICE=pdfwrite -sOutputFile=#{merged_out_path_pdf} #{docx_paths.map { |x| x.sub('.docx', '.pdf')}.join(' ')}"
+                # command = "gs -dBATCH -dNOPAUSE -q -sDEVICE=pdfwrite -sOutputFile=#{merged_out_path_pdf} #{docx_paths.map { |x| x.sub('.docx', '.pdf')}.join(' ')}"
+                command = "pdfunite #{docx_paths.map { |x| x.sub('.docx', '.pdf')}.join(' ')} #{merged_out_path_pdf}"
                 STDERR.puts command
                 system(command)
                 raw_pdf_data = Base64::strict_encode64(File.read(merged_out_path_pdf))

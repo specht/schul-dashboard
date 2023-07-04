@@ -336,9 +336,6 @@ class Main < Sinatra::Base
                 sheet.set_column(3, 3, 6)
                 sheet.set_column(4, 4, 16)
                 # sheet.write_string(index + 1, 0, (@@user_info[email] || {})[:last_name] || 'NN')
-                STDERR.puts '-' * 40
-                STDERR.puts @@zeugnisliste_for_klasse[klasse][:schueler].to_yaml
-                STDERR.puts '-' * 40
                 data[:schueler].each do |schueler|
                     parts = schueler.split('/')
                     klasse = parts[0]
@@ -407,6 +404,9 @@ class Main < Sinatra::Base
                 klasse = parts[0]
                 index = @@zeugnisliste_for_klasse[klasse][:index_for_schueler][parts[1]]
                 sus_info = @@zeugnisliste_for_klasse[klasse][:schueler][index].clone
+                STDERR.puts '-' * 40
+                STDERR.puts sus_info.to_yaml
+                STDERR.puts '-' * 40
                 email = sus_info[:email]
                 zeugnis_key = sus_info[:zeugnis_key]
                 faecher_info = []

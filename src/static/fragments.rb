@@ -79,8 +79,8 @@ class Main
             liste[:schueler].each do |schueler|
                 # STDERR.puts schueler.to_yaml
                 email = schueler[:email]
-                first_name = schueler[:official_first_name]
-                last_name = schueler[:last_name]
+                first_name = "#{schueler[:official_first_name]}"
+                last_name = "#{schueler[:last_name]}"
                 liste[:faecher].each do |fach|
                     sub_faecher = [fach]
                     if FAECHER_SPRACHEN.include?(fach)

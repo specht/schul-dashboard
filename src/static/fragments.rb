@@ -57,6 +57,24 @@ class BoxPrinter
             @pdf.text_box s, :at => at, :width => width, :height => height, :align => opts[:align], :valign => :center, :size => opts[:size], :inline_format => true, :rotate => opts[:rotate], :overflow => :shrink_to_fit
         end
     end
+
+    def print_note(x, y, v, v_prev)
+        print(x, y, v)
+        if v != v_prev
+            left = @left + x * @width + @width * 0.2
+            top = @top - y * @height
+            @pdf.fill_color 'ffffff'
+            @pdf.fill_circle([left, top], 6)
+            @pdf.fill_color '000000'
+            @pdf.stroke_circle([left, top], 6)
+            d = 1.5.mm
+            @pdf.line([left - d, top - d], [left + d, top + d])
+            @pdf.stroke
+            @pdf.translate -@width * 0.3, @height * 0.5 do
+                print(x, y, "<b>#{v_prev}</b>", :size => 6)
+            end
+        end
+    end
 end
 
 class Main
@@ -88,13 +106,13 @@ class Main
                         sub_faecher << "#{fach}_SL"
                     end
                     sub_faecher.each do |sub_fach|
-                        note = cache["Schuljahr:#{ZEUGNIS_SCHULJAHR}/Halbjahr:#{ZEUGNIS_HALBJAHR}/Fach:#{sub_fach}/Email:#{email}"]
+                        note = cache["Schuljahr:#{ZEUGNIS_SCHULJAHR}/Halbjahr:#{ZEUGNIS_HALBJAHR}/Fach:#{sub_fach}/Email:#{email}"][0]
                         if NOTEN_MARK.include?(note)
                             consider_sus_for_klasse[klasse] << email
                         end
                     end
                 end
-                zk_marked = cache["Schuljahr:#{ZEUGNIS_SCHULJAHR}/Halbjahr:#{ZEUGNIS_HALBJAHR}/ZK:marked/Email:#{email}"]
+                zk_marked = cache["Schuljahr:#{ZEUGNIS_SCHULJAHR}/Halbjahr:#{ZEUGNIS_HALBJAHR}/ZK:marked/Email:#{email}"][0]
                 if zk_marked
                     consider_sus_for_klasse[klasse] << email
                 end
@@ -244,7 +262,7 @@ class Main
                                                     line [fach_width * 0.5, 0], [fach_width * 0.5, row_height]
                                                     stroke
                                                     bounding_box([0.mm, row_height], width: fach_width / 2, height: row_height / 2) do
-                                                        note = cache["Schuljahr:#{ZEUGNIS_SCHULJAHR}/Halbjahr:#{ZEUGNIS_HALBJAHR}/Fach:#{fach}_AT/Email:#{email}"]
+                                                        note = cache["Schuljahr:#{ZEUGNIS_SCHULJAHR}/Halbjahr:#{ZEUGNIS_HALBJAHR}/Fach:#{fach}_AT/Email:#{email}"][0]
                                                         if note
                                                             float do
                                                                 if NOTEN_MARK.include?(note)
@@ -261,7 +279,7 @@ class Main
                                                         # stroke_bounds
                                                     end
                                                     bounding_box([0.mm, row_height / 2], width: fach_width / 2, height: row_height / 2) do
-                                                        note = cache["Schuljahr:#{ZEUGNIS_SCHULJAHR}/Halbjahr:#{ZEUGNIS_HALBJAHR}/Fach:#{fach}_SL/Email:#{email}"]
+                                                        note = cache["Schuljahr:#{ZEUGNIS_SCHULJAHR}/Halbjahr:#{ZEUGNIS_HALBJAHR}/Fach:#{fach}_SL/Email:#{email}"][0]
                                                         if note
                                                             float do
                                                                 if NOTEN_MARK.include?(note)
@@ -278,7 +296,7 @@ class Main
                                                         # stroke_bounds
                                                     end
                                                     bounding_box([fach_width / 2, row_height], width: fach_width / 2, height: row_height) do
-                                                        note = cache["Schuljahr:#{ZEUGNIS_SCHULJAHR}/Halbjahr:#{ZEUGNIS_HALBJAHR}/Fach:#{fach}/Email:#{email}"]
+                                                        note = cache["Schuljahr:#{ZEUGNIS_SCHULJAHR}/Halbjahr:#{ZEUGNIS_HALBJAHR}/Fach:#{fach}/Email:#{email}"][0]
                                                         if note
                                                             float do
                                                                 if NOTEN_MARK.include?(note)
@@ -294,7 +312,7 @@ class Main
                                                         end
                                                     end
                                                 else
-                                                    note = cache["Schuljahr:#{ZEUGNIS_SCHULJAHR}/Halbjahr:#{ZEUGNIS_HALBJAHR}/Fach:#{fach}/Email:#{email}"]
+                                                    note = cache["Schuljahr:#{ZEUGNIS_SCHULJAHR}/Halbjahr:#{ZEUGNIS_HALBJAHR}/Fach:#{fach}/Email:#{email}"][0]
                                                     if note
                                                         if NOTEN_MARK.include?(note)
                                                             save_graphics_state do
@@ -348,19 +366,68 @@ class Main
             line_width 0.1.mm
             font('Roboto') do
                 ZEUGNIS_KLASSEN_ORDER.each do |klasse|
-                    next unless klasse == '9b'
-                    liste = @@zeugnisliste_for_klasse[klasse]
-                    nr_width = 10.mm
-                    name_width = 66.mm
-                    bem_width = 50.mm
+                    # next unless klasse == '10o'
+                    liste = @@zeugnisliste_for_klasse[klasse].clone
+
                     cols_left_template  = %w(D D_AT D_SL FS1_Fach FS1 FS1_AT FS1_SL FS2_Fach FS2 FS2_AT FS2_SL FS3_Fach FS3 FS3_AT FS3_SL)
                     cols_right_template = %w(Gewi Eth Ek Ge Pb Ma Nawi Ph Ch Bio Ku Mu Sp FF1 . FF2 . FF3 . VT VT_UE VS VS_UE VSP)
 
-                    # missing_faecher = liste[:faecher]
-                    # (cols_left + cols_right).each do |x|
-                    #     missing_faecher.delete(x)
-                    # end
-                    # STDERR.puts "#{klasse}: #{missing_faecher.to_json}"
+                    faecher_for_fs = {
+                        1 => Set.new(),
+                        2 => Set.new(),
+                        3 => Set.new()
+                    }
+                    wahlfaecher = Set.new()
+                    # determine lehrer for FS1, FS2, FS3
+                    liste[:schueler].each do |schueler|
+                        fs = []
+                        if schueler[:zeugnis_key].include?('sesb')
+                            fs << 'Ngr'
+                            fs << 'En'
+                            fs << 'Fr'
+                        else
+                            fs << 'En'
+                            fs << 'La'
+                            fs << 'Agr' if klasse.to_i >= 8
+                        end
+                        faecher_for_fs[1] << fs[0]
+                        faecher_for_fs[2] << fs[1]
+                        faecher_for_fs[3] << fs[2] if fs[2]
+                        handled_faecher = Set.new(cols_left_template) | Set.new(cols_right_template)
+                        handled_faecher |= Set.new(fs)
+                        liste[:faecher].each do |fach|
+                            if liste[:wahlfach][fach]
+                                v = (cache["Schuljahr:#{ZEUGNIS_SCHULJAHR}/Halbjahr:#{ZEUGNIS_HALBJAHR}/Fach:#{fach}/Email:#{schueler[:email]}"] || [])[0]
+                                if v && v != '×'
+                                    unless handled_faecher.include?(fach)
+                                        wahlfaecher << fach
+                                    end
+                                end
+                            end
+                        end
+                    end
+
+                    extra_wahlfach_count = 0
+                    if wahlfaecher.size > 3
+                        extra_wahlfach_count = wahlfaecher.size - 3
+                        (0...extra_wahlfach_count).to_a.reverse.each do |i|
+                            cols_right_template.insert(19, '.')
+                            cols_right_template.insert(19, "FF#{i + 4}")
+                        end
+                    end
+
+                    wahlfaecher = wahlfaecher.to_a
+
+                    faecher_for_fs = Hash[faecher_for_fs.map { |k, v| [k, v.to_a.sort] }]
+                    (1..3).each do |i|
+                        liste[:lehrer_for_fach]["FS#{i}"] = faecher_for_fs[i].map do |x|
+                            "#{liste[:lehrer_for_fach][x].join(' ')} (#{x})"
+                        end
+                    end
+
+                    nr_width = 10.mm
+                    name_width = 66.mm
+                    bem_width = 50.mm
 
                     lboxwidth = (19.cm - nr_width - name_width) / cols_left_template.size
                     lboxheight = 277.mm / 11 / 4
@@ -462,9 +529,22 @@ class Main
                                             s = 'ges' if ['FS1', 'FS2', 'FS3', 'D', 'En', 'La', 'Agr', 'Fr'].include?(s)
                                             s = '' if s[-5, 5] == '_Fach'
                                             left.print(i, -3, s)
+                                            f2 = f.clone
+                                            if ['FS1', 'FS2', 'FS3'].include?(f)
+                                                f2 = ''
+                                            end
+                                            if f.include?('_Fach')
+                                                f2 = f.sub('_Fach', '')
+                                            end
                                             translate 2.mm, -3.mm do
-                                                left.print(i, -1, (liste[:lehrer_for_fach][f] || []).join(', '), :rotate => 90, :align => :left, :width => 2)
-                                                # left.print(i, -1, f, :rotate => 90, :align => :left, :width => 2)
+                                                if ['FS1', 'FS2', 'FS3'].include?(f2)
+                                                    diff = (liste[:lehrer_for_fach][f2] || []).size == 1 ? [0, 0] : [-1.mm, -1.mm]
+                                                    translate *diff do
+                                                        left.print(i, -1, (liste[:lehrer_for_fach][f2] || []).join("\n"), :rotate => 90, :align => :left, :width => 2)
+                                                    end
+                                                else
+                                                    left.print(i, -1, (liste[:lehrer_for_fach][f2] || []).join(', '), :rotate => 90, :align => :left, :width => 2)
+                                                end
                                             end
                                         end
                                     end
@@ -476,16 +556,21 @@ class Main
                                     line [0.mm, 277.mm - h / 4.0, 19.cm - bem_width, 277.mm - h / 4.0]
                                     stroke
                                     line_width 0.3.mm
-                                    [5, 6, 10, 11, 12, 13, 15, 17, 19, 24].each do |k|
+                                    # [5, 6, 10, 11, 12, 13, 15, 17, 19, 24].each do |k|
+                                    [5, 6, 10, 11, 12, 13, 13 + (3 + extra_wahlfach_count) * 2 + 5].each do |k|
                                         line [rboxwidth * k, 0.0], [rboxwidth * k, 277.mm]
                                     end
-                                    line [rboxwidth * 21, 0.0], [rboxwidth * 21, 277.mm - rboxheight]
-                                    line [rboxwidth * 23, 0.0], [rboxwidth * 23, 277.mm - rboxheight]
+                                    (0..(3 + extra_wahlfach_count)).each do |i|
+                                        k = i * 2 + 13
+                                        line [rboxwidth * k, 0.0], [rboxwidth * k, 277.mm]
+                                    end
+                                    line [rboxwidth * (21 + extra_wahlfach_count * 2), 0.0], [rboxwidth * (21 + extra_wahlfach_count * 2), 277.mm - rboxheight]
+                                    line [rboxwidth * (23 + extra_wahlfach_count * 2), 0.0], [rboxwidth * (23 + extra_wahlfach_count * 2), 277.mm - rboxheight]
                                     stroke
                                     font('RobotoCondensed') do
                                         right.print(0, -4, 'Gesellschaftswiss.', :width => 5)
                                         right.print(6, -4, 'Naturwiss.', :width => 4)
-                                        right.print(19, -4, 'Versäumnisse', :width => 5)
+                                        right.print(19 + extra_wahlfach_count * 2, -4, 'Versäumnisse', :width => 5)
                                         cols_right_template.each.with_index do |f, i|
                                             s = "#{f}"
                                             s = '' if s == '.'
@@ -498,8 +583,13 @@ class Main
                                                 end
                                             elsif %w(Ma Ku Mu Sp).include?(f)
                                                 right.print(i, -4, s)
-                                            elsif %w(FF1 FF2 FF3).include?(f)
+                                            elsif %w(FF1 FF2 FF3 FF4 FF5 FF6).include?(f)
                                                 right.print(i, -4, "Freies Fach #{f.gsub('F', '')}", :width => 2)
+                                                wf = wahlfaecher[f.sub('FF', '').to_i - 1]
+                                                right.print(i, -3, wf)
+                                                translate 1.4.mm, -3.mm do
+                                                    right.print(i, -1, (liste[:lehrer_for_fach][wf] || []).join(', '), :rotate => 90, :align => :left, :width => 2)
+                                                end
                                             else
                                                 right.print(i, -3, s)
                                             end
@@ -568,19 +658,32 @@ class Main
                                                     if f[-5, 5] == '_Fach'
                                                         left.print(i, y2 * 4 + 3, "#{f.sub('_Fach', '')}")
                                                     else
-                                                        left.print(i, y2 * 4 + 3, cache["Schuljahr:#{ZEUGNIS_SCHULJAHR}/Halbjahr:#{ZEUGNIS_HALBJAHR}/Fach:#{f}/Email:#{email}"])
+                                                        v = (cache["Schuljahr:#{ZEUGNIS_SCHULJAHR}/Halbjahr:#{ZEUGNIS_HALBJAHR}/Fach:#{f}/Email:#{email}"] || [])[0]
+                                                        v_prev = (cache["Schuljahr:#{ZEUGNIS_SCHULJAHR}/Halbjahr:#{ZEUGNIS_HALBJAHR}/Fach:#{f}/Email:#{email}"] || [])[1]
+                                                        left.print_note(i, y2 * 4 + 3, v, v_prev)
                                                     end
                                                 end
                                             end
                                         elsif side == 1
                                             font('Roboto') do
                                                 cols_right.each.with_index do |f, i|
-                                                    right.print(i, y2 * 4 + 3, cache["Schuljahr:#{ZEUGNIS_SCHULJAHR}/Halbjahr:#{ZEUGNIS_HALBJAHR}/Fach:#{f}/Email:#{email}"])
+                                                    f2 = f.dup
+                                                    if %w(FF1 FF2 FF3 FF4 FF5 FF6).include?(f)
+                                                        f2 = wahlfaecher[f.sub('FF', '').to_i - 1]
+                                                    end
+                                                    v = (cache["Schuljahr:#{ZEUGNIS_SCHULJAHR}/Halbjahr:#{ZEUGNIS_HALBJAHR}/Fach:#{f2}/Email:#{email}"] || [])[0]
+                                                    v_prev = (cache["Schuljahr:#{ZEUGNIS_SCHULJAHR}/Halbjahr:#{ZEUGNIS_HALBJAHR}/Fach:#{f2}/Email:#{email}"] || [])[1]
+                                                    right.print_note(i, y2 * 4 + 3, v, v_prev)
                                                 end
                                                 ['VT', 'VT_UE', 'VS', 'VS_UE', 'VSP'].each.with_index do |item, i|
-                                                    value = cache["Schuljahr:#{ZEUGNIS_SCHULJAHR}/Halbjahr:#{ZEUGNIS_HALBJAHR}/Fehltage:#{item}/Email:#{email}"]
-                                                    value = '--' if value == '0' || value.nil?
+                                                    value = cache["Schuljahr:#{ZEUGNIS_SCHULJAHR}/Halbjahr:#{ZEUGNIS_HALBJAHR}/Fehltage:#{item}/Email:#{email}"][0]
+                                                    value = '' if value == '0' || value.nil?
                                                     right.print(19 + i, y2 * 4 + 3, value)
+                                                end
+                                                font('RobotoCondensed') do
+                                                    bounding_box([cols_right_template.size * rboxwidth + 1.mm, h * y], width: bem_width - 2.mm, height: h / 4.0) do
+                                                        text "#{elide_string(schueler[:last_name] + ', ' + schueler[:official_first_name], bem_width - 2.mm)}", :valign => :center, :size => 11
+                                                    end
                                                 end
                                             end
                                         end

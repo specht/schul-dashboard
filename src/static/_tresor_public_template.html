@@ -655,7 +655,7 @@ function load_noten_table(container, klasse, edit_noten) {
         if (data.success) {
             container.empty();
             let header_cells = [];
-            for (let item of ['Nr.', 'Nachname', 'Vorname', 'Klasse', 'Zeugniskonf.']) {
+            for (let item of ['Nr.', 'Nachname', 'Vorname', 'Klasse', 'Bildungsgang', 'Zeugniskonf.']) {
                 let label = `${item}`;
                 let th = $('<th>').html(label);
                 if (item === 'Nachname') th.addClass('thsticky');
@@ -685,6 +685,9 @@ function load_noten_table(container, klasse, edit_noten) {
                 headers: header_cells,
                 rows: emails.map(function (email, index) {
                     let consider_this = (data.results[1][0][0][0][index][0] === true);
+                    let bildungsgang = 'altsprachlich';
+                    if (liste.schueler[index].zeugnis_key.indexOf('sesb') >= 0)
+                        bildungsgang = 'SESB';
                     let cells = [
                         email,
                         `<td style='text-align: right;'>${index + 1}.</td>`,
@@ -692,6 +695,7 @@ function load_noten_table(container, klasse, edit_noten) {
                         `<td style='max-width: 10em;'>${liste.schueler[index].official_first_name}</td>`,
                         // `<td>${moment(liste.schueler[index].geburtstag).format('L')}</td>`,
                         `<td style='text-align: center;'>${klassen_tr[klasse] ?? klasse}</td>`,
+                        `<td>${bildungsgang}</td>`,
                     ];
                     let bu_consider = $(`<button class='btn btn-xs'>`);
                     style_consider_button(bu_consider, false);

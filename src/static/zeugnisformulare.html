@@ -157,7 +157,7 @@ function print_pdf_sheets(path) {
         path_arrays.push(path_array_3);
     }
 
-    tresor_api_call('/jwt/get_many', {path_arrays: path_arrays, key: 'Wert'}, function(data) {
+    tresor_api_call('/jwt/get_many_cutoff', {path_arrays: path_arrays, key: 'Wert'}, function(data) {
         // console.log(path_arrays);
         // console.log(data.results);
         api_call(path, {paths: path_arrays, values: data.results}, function(data2) {

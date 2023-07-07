@@ -506,7 +506,7 @@ class Main < Sinatra::Base
             if data[:format] == 'docx'
                 raw_docx_data = Base64::strict_encode64(File.read(docx_paths.first))
                 docx_paths.each do |path|
-                    # FileUtils::rm_f(path)
+                    FileUtils::rm_f(path)
                 end
 
                 respond(:yay => 'sure', :docx_base64 => raw_docx_data, :name => last_zeugnis_name)
@@ -520,10 +520,10 @@ class Main < Sinatra::Base
                 STDERR.puts command
                 system(command)
                 raw_pdf_data = Base64::strict_encode64(File.read(merged_out_path_pdf))
-                # FileUtils::rm_f(merged_out_path_pdf)
+                FileUtils::rm_f(merged_out_path_pdf)
                 docx_paths.each do |path|
-                    # FileUtils::rm_f(path)
-                    # FileUtils::rm_f(path.sub('.docx', '.pdf'))
+                    FileUtils::rm_f(path)
+                    FileUtils::rm_f(path.sub('.docx', '.pdf'))
                 end
 
                 respond(:yay => 'sure', :pdf_base64 => raw_pdf_data, :name => last_zeugnis_name)
@@ -596,9 +596,9 @@ class Main < Sinatra::Base
             cache.merge!(parse_paths_and_values(data[:paths][i], data[:values][i]))
         end
 
-        File.open('/internal/zeugniskonferenz_cache.json', 'w') do |f|
-            f.write(cache.to_json)
-        end
+        # File.open('/internal/zeugniskonferenz_cache.json', 'w') do |f|
+        #     f.write(cache.to_json)
+        # end
 
         respond(:yay => 'sure', :pdf_base64 => Base64.strict_encode64(get_zeugnislisten_sheets_pdf(cache)), :name => 'Zeugnislisten.pdf')
     end

@@ -597,7 +597,7 @@ function create_book_div(book, shelf, options = {}) {
             let discarded_span = '';
             if (options.exemplar && options.exemplar.ts_discarded) {
                 let t = moment.unix(options.exemplar.ts_discarded);
-                discarded_span = $(`<span class='bg-red-400 text-red-900 px-2 py-1 rounded mr-2'>`).text(`ausgemustert am ${t.format('L')}`);
+                discarded_span = $(`<span class='bg-red-300 text-red-900 px-2 py-1 rounded mr-2'>`).text(`ausgemustert am ${t.format('L')}`);
             }
             let shelf_span = '';
             if (typeof(shelf) !== 'undefined' && shelf !== null) {

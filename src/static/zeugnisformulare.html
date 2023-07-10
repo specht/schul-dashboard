@@ -12,6 +12,7 @@
         <h3>Listen zum ausdrucken</h3>
         <button id='bu_print_zeugniskonferenz_sheets' class="btn btn-success"><i class='fa fa-file-pdf-o'></i>&nbsp;&nbsp;Listen für die Zeugniskonferenzen</button>
         <button id='bu_print_zeugnislisten_sheets' class="btn btn-success"><i class='fa fa-file-pdf-o'></i>&nbsp;&nbsp;Zeugnislisten</button>
+        <button id='bu_print_fehlzeiten_sheets' class="btn btn-success"><i class='fa fa-file-pdf-o'></i>&nbsp;&nbsp;Fehlzeitenstatistik</button>
     </div>
 </div>
 
@@ -35,6 +36,9 @@ window.addEventListener('load', function () {
     });
     $('#bu_print_zeugnislisten_sheets').on('click', function(e) {
         print_pdf_sheets('/api/print_zeugnislisten_sheets');
+    });
+    $('#bu_print_fehlzeiten_sheets').on('click', function(e) {
+        print_pdf_sheets('/api/print_fehlzeiten_sheets');
     });
 });
 

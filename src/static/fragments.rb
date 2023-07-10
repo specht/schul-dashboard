@@ -1026,5 +1026,197 @@ class Main
         return doc.render
     end
 
+    def get_fehlzeiten_sheets_pdf(cache)
+        doc = Prawn::Document.new(:page_size => 'A4', :page_layout => :landscape, :margin => 0) do
+            font_families.update("RobotoCondensed" => {
+                :normal => "/app/fonts/RobotoCondensed-Regular.ttf",
+                :italic => "/app/fonts/RobotoCondensed-Italic.ttf",
+                :bold => "/app/fonts/RobotoCondensed-Bold.ttf",
+                :bold_italic => "/app/fonts/RobotoCondensed-BoldItalic.ttf"
+            })
+            font_families.update("Roboto" => {
+                :normal => "/app/fonts/Roboto-Regular.ttf",
+                :italic => "/app/fonts/Roboto-Italic.ttf",
+                :bold => "/app/fonts/Roboto-Bold.ttf",
+                :bold_italic => "/app/fonts/Roboto-BoldItalic.ttf"
+            })
+            font('RobotoCondensed') do
+                move_down 1.cm
+                text "Statistischer Erhebungsbogen der Fehlzeiten", :inline_format => true, :align => :center, :size => 14
+                text "im <b>#{ZEUGNIS_HALBJAHR}. Schulhalbjahr #{ZEUGNIS_SCHULJAHR.gsub('_', '/')}</b>", :inline_format => true, :align => :center, :size => 14
+                text "an öffentlichen allgemeinbildenen Schulen", :inline_format => true, :align => :center, :size => 14
+                text "<b>06Y13 Gymnasium Steglitz</b>", :inline_format => true, :align => :center, :size => 14
+
+                line_width 0.1.mm
+                t = 35.mm
+                l = 15.mm
+                width = 297.mm - l * 2
+                height = 210.mm - t - 1.cm
+                count = ZEUGNIS_KLASSEN_ORDER.size + 2
+                th = 20.mm
+                tth= 6.mm
+                w = width / 19
+                h = (height - th) / count
+
+                data = {}
+                marked = Set.new()
+                row56 = nil
+                row710 = ZEUGNIS_KLASSEN_ORDER.size + 1
+                ZEUGNIS_KLASSEN_ORDER.each.with_index do |klasse, i|
+                    row56 ||= i if klasse.to_i >= 7
+                end
+                data["#{row56}/1"] = 0
+                data["#{row710}/1"] = 0
+                data["-1/3"] = 'keinen'
+                data["-1/4"] = '1–4'
+                data["-1/5"] = '5–7'
+                data["-1/6"] = '8–10'
+                data["-1/7"] = '11–20'
+                data["-1/8"] = '21–40'
+                data["-1/9"] = '>40'
+                data["-1/10"] = 'keinen'
+                data["-1/11"] = '1–4'
+                data["-1/12"] = '5–7'
+                data["-1/13"] = '8–10'
+                data["-1/14"] = '11–20'
+                data["-1/15"] = '21–40'
+                data["-1/16"] = '>40'
+                data["-1/17"] = "insge-\nsamt"
+                data["-1/18"] = "darunter\nunent-\nschul-\ndigte"
+                ZEUGNIS_KLASSEN_ORDER.each.with_index do |klasse, i|
+                    # next unless klasse == '7c'
+                    liste = @@zeugnisliste_for_klasse[klasse]
+                    y = i
+                    if klasse.to_i >= 7
+                        y += 1
+                    end
+                    (0...19).each do |x|
+                        key = "#{y}/#{x}"
+                        v = nil
+                        if x == 0
+                            data[key] = "#{Main.tr_klasse(klasse)}"
+                        elsif x == 1
+                            v = liste[:schueler].size
+                        elsif x == 2
+                            v = 0
+                            liste[:schueler].each do |sus|
+                                email = sus[:email]
+                                v += (cache["Schuljahr:#{ZEUGNIS_SCHULJAHR}/Halbjahr:#{ZEUGNIS_HALBJAHR}/Fehltage:VSP/Email:#{email}"][0] || '0').to_i
+                            end
+                        elsif x == 17
+                            v = 0
+                            liste[:schueler].each do |sus|
+                                email = sus[:email]
+                                v += (cache["Schuljahr:#{ZEUGNIS_SCHULJAHR}/Halbjahr:#{ZEUGNIS_HALBJAHR}/Fehltage:VT/Email:#{email}"][0] || '0').to_i
+                            end
+                        elsif x == 18
+                            v = 0
+                            liste[:schueler].each do |sus|
+                                email = sus[:email]
+                                v += (cache["Schuljahr:#{ZEUGNIS_SCHULJAHR}/Halbjahr:#{ZEUGNIS_HALBJAHR}/Fehltage:VT_UE/Email:#{email}"][0] || '0').to_i
+                            end
+                        end
+                        if v
+                            data[key] = v
+                            if klasse.to_i < 7
+                                data["#{row56}/#{x}"] ||= 0
+                                data["#{row56}/#{x}"] += v
+                            else
+                                data["#{row710}/#{x}"] ||= 0
+                                data["#{row710}/#{x}"] += v
+                            end
+                        end
+                    end
+                    liste[:schueler].each do |sus|
+                        email = sus[:email]
+                        [['VT', 3], ['VT_UE', 10]].each do |pair|
+                            v = (cache["Schuljahr:#{ZEUGNIS_SCHULJAHR}/Halbjahr:#{ZEUGNIS_HALBJAHR}/Fehltage:#{pair[0]}/Email:#{email}"][0] || '0').to_i
+                            x = 0
+                            [0, 4, 7, 10, 20, 40, 10000000].each.with_index do |min, i|
+                                if v > min
+                                    x = i + 1
+                                end
+                            end
+                            data["#{y}/#{x + pair[1]}"] ||= 0
+                            data["#{y}/#{x + pair[1]}"] += 1
+                            if klasse.to_i < 7
+                                data["#{row56}/#{x + pair[1]}"] ||= 0
+                                data["#{row56}/#{x + pair[1]}"] += 1
+                            else
+                                data["#{row710}/#{x + pair[1]}"] ||= 0
+                                data["#{row710}/#{x + pair[1]}"] += 1
+                            end
+                        end
+                    end
+                end
+                marked << row56
+                marked << row710
+                data["#{row56}/0"] = "5–6"
+                data["#{row710}/0"] = "7–10"
+
+                bounding_box([l, 210.mm - t], :width => width, :height => height) do
+                    bounding_box([0 * w, height], :width => w, :height => th) do
+                        text "Klasse", :align => :center, :valign => :center, :inline_format => true
+                    end
+                    bounding_box([1 * w, height], :width => w, :height => th) do
+                        text "SuS\nins-\ngesamt", :align => :center, :valign => :center, :inline_format => true
+                    end
+                    bounding_box([2 * w, height], :width => w, :height => th) do
+                        text "Verspä-\ntungen", :align => :center, :valign => :center, :inline_format => true
+                    end
+                    bounding_box([3 * w, height], :width => w * 7, :height => tth) do
+                        text "Anzahl der SuS mit ____ Fehltagen", :align => :center, :valign => :center, :inline_format => true
+                    end
+                    bounding_box([10 * w, height], :width => w * 7, :height => tth) do
+                        text "Anzahl der SuS mit unentschuldigten ____ Fehltagen", :align => :center, :valign => :center, :inline_format => true
+                    end
+                    bounding_box([17 * w, height], :width => w * 2, :height => tth) do
+                        text "Fehltage", :align => :center, :valign => :center, :inline_format => true
+                    end
+                    (0...19).each do |x|
+                        bounding_box([x * w, height - tth], :width => w, :height => th - tth) do
+                            s = "#{data["-1/#{x}"]}"
+                            text s, :align => :center, :valign => :center, :inline_format => true, :size => x == 18 ? 8 : 12
+                        end
+                    end
+                    (0...(ZEUGNIS_KLASSEN_ORDER.size + 2)).each.with_index do |klasse, y|
+                        (0...19).each do |x|
+                            bounding_box([x * w, height - th - h * y], :width => w, :height => h) do
+                                s = "#{data["#{y}/#{x}"]}".strip
+                                s = '–' if s.empty?
+                                if marked.include?(y)
+                                    s = "<b>#{s}</b>"
+                                    fill_color "eeeeee"
+                                    rectangle [0, h], w, h
+                                    fill
+                                    fill_color "000000"
+                                end
+                                text s, :align => :center, :valign => :center, :inline_format => true
+                            end
+                        end
+                    end
+                    stroke_bounds
+                    (0...count).each do |y|
+                        line [0.0, height - th - y * h], [width, height - th - y * h]
+                        stroke
+                    end
+                    (1...19).each do |x|
+                        if [1, 2, 3, 10, 17].include?(x)
+                            line [x * w, 0.0], [x * w, height]
+                        else
+                            line [x * w, 0.0], [x * w, height - tth]
+                        end
+                        stroke
+                    end
+                    line [3 * w, height - tth], [19 * w, height - tth]
+                    stroke
+                end
+
+                puts ZEUGNIS_KLASSEN_ORDER.to_yaml
+            end
+        end
+        return doc.render
+    end
+
 end
 

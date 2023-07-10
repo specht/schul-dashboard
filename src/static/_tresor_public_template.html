@@ -220,6 +220,26 @@
         box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
     }
 
+    div.note input.pre-note-marker {
+        text-align: center;
+        position: absolute;
+        top: 0;
+        left: 0;
+        transform: translate(-30%, -30%) scale(0.8);
+        color: #444;
+        z-index: 1;
+        pointer-events: none;
+        width:1.2em!important;
+        height: 1.2em!important;
+        border-bottom-right-radius: 50%;
+        box-shadow: 0 0 0.2em rgba(0,0,0,0.9);
+        background: linear-gradient(135deg, #fff 0%, #fff 47%, #800 50%, #fff 53%, #fff 100%);
+    }
+
+    .bu_start_zeugniskonferenz, .bu_stop_zeugniskonferenz {
+        margin-bottom: 3px;
+    }
+
     @tailwind base;
     @tailwind components;
     @tailwind utilities;
@@ -286,10 +306,23 @@
 </div>
 </div>
 
+<div class="container" style="padding-top: 72px; background-color: #fff; border-radius: 0; display: #{(zeugnis_admin_logged_in? && ZEUGNISKONFERENZEN.include?(Date.today.strftime('%Y-%m-%d'))) ? 'block' : 'none'};">
+<h4>Heutige Zeugniskonferenzen</h4>
+<p>Bitte klicken Sie auf eine Klasse, wenn die Zeugniskonferenz beginnt. Klicken Sie auf »Beenden«, wenn eine Zeugniskonferenz vorbei ist.</p>
+<div id="div_zeugniskonferenzen"></div>
+</div>
+
 <script>
 var second_factor_expires = Math.round((Date.now() / 1000.0) + #{second_factor_time_left || 0});
 var edit_enabled = false;
 var FAECHER_SPRACHEN = #{FAECHER_SPRACHEN.to_json};
+var zeugnisliste_closed = #{(zeugnis_admin_logged_in? || Time.now.strftime('%Y-%m-%dT%H:%M:%S') < '2023-06-26T09:00:00') ? 'false' : 'true'};
+var zeugnisliste_consider_closed = #{(zeugnis_admin_logged_in? || Time.now.strftime('%Y-%m-%dT%H:%M:%S') < '2023-06-28T09:00:00') ? 'false' : 'true'};
+var sozialverhalten_closed = #{(zeugnis_admin_logged_in? || Time.now.strftime('%Y-%m-%dT%H:%M:%S') < '2023-07-05T12:00:00') ? 'false' : 'true'};
+var zeugniskonferenzen_today = #{(ZEUGNISKONFERENZEN[Date.today.strftime('%Y-%m-%d')] || []).to_json};
+var zeugnis_admin_and_konferenz = #{(zeugnis_admin_logged_in? && ZEUGNISKONFERENZEN.include?(Date.today.strftime('%Y-%m-%d')))};
+var running_zeugniskonferenzen = #{running_zeugniskonferenzen.to_json};
+var finished_zeugniskonferenzen = #{finished_zeugniskonferenzen.to_json};
 
 function update_edit_button() {
     let button = $('#bu_toggle_edit');
@@ -384,6 +417,43 @@ window.addEventListener('load', function () {
 
         }
     });
+    if (zeugnis_admin_and_konferenz) {
+        $('.extra-padding').removeClass('extra-padding');
+        $('#div_zeugniskonferenzen').empty();
+        let something_running = false;
+        for (let entry of zeugniskonferenzen_today) {
+            let klasse = entry[1];
+            let start_time = entry[0];
+            let button = $(`<button class='btn btn-outline-secondary bu_start_zeugniskonferenz'>`).text(`${start_time} ${klasse == 'OS' ? '' : 'Klasse '}${klassen_tr[klasse] ?? klasse}`);
+            $('#div_zeugniskonferenzen').append(button).append(' ');
+            if (start_time in running_zeugniskonferenzen) {
+                button.removeClass('btn-outline-secondary').addClass('btn-success');
+                something_running = true;
+            }
+            button.on('click', function(e) {
+                api_call('/api/start_zeugniskonferenz', {start_time: start_time}, function(data) {
+                    if (data.success) {
+                        $('.bu_start_zeugniskonferenz').removeClass('btn-success').addClass('btn-outline-secondary');
+                        button.removeClass('btn-outline-secondary').addClass('btn-success');
+                        $('.bu_stop_zeugniskonferenz').removeClass('btn-outline-secondary').addClass('btn-danger');
+                    }
+                });
+            });
+        }
+        let button = $(`<button class='btn btn-outline-secondary bu_stop_zeugniskonferenz'>`).text(`Beenden`);
+        $('#div_zeugniskonferenzen').append(button).append(' ');
+        if (something_running) {
+            $('.bu_stop_zeugniskonferenz').removeClass('btn-outline-secondary').addClass('btn-danger');
+        }
+        button.on('click', function(e) {
+            api_call('/api/stop_zeugniskonferenz', {}, function(data) {
+                if (data.success) {
+                    $('.bu_start_zeugniskonferenz').removeClass('btn-success').addClass('btn-outline-secondary');
+                    $('.bu_stop_zeugniskonferenz').removeClass('btn-danger').addClass('btn-outline-secondary');
+                }
+            });
+        });
+    }
 });
 
 let noten_allowed_values = [
@@ -431,6 +501,16 @@ function input_note_apply_style_and_fix(input, callback) {
             $(input).closest('.note').removeClass('empty_x');
 
         if (typeof(callback) !== 'undefined') callback(value);
+    }
+    let overlay = $(input).next('input');
+    overlay.val($(input).data('value_pre'));
+    if ($(input).data('value_pre') === (value === '' ? null : value)) {
+        overlay.hide();
+        $(input).css('outline', 'none').css('font-weight', 'normal');
+    }
+    else {
+        overlay.show();
+        $(input).css('outline', '2px solid rgb(74, 160, 63)').css('font-weight', 'bold');
     }
 }
 
@@ -522,6 +602,8 @@ function load_noten_table(container, klasse, edit_noten) {
     //     let info = kurs_info[lesson_key];
     //     console.log(info.fach);
     // }
+
+
     let path_arrays = [];
     let path_array = [];
     path_array.push(['Schuljahr', ZEUGNIS_SCHULJAHR]);
@@ -536,6 +618,7 @@ function load_noten_table(container, klasse, edit_noten) {
             faecher_for_paths.push(`${fach}_SL`);
         }
     }
+    console.log(faecher_for_paths);
     let emails = liste.schueler.map(function(x) { return x.email; });
     path_array.push(['Fach', faecher_for_paths]);
     path_array.push(['Email', emails]);
@@ -548,16 +631,31 @@ function load_noten_table(container, klasse, edit_noten) {
     path_array_2.push(['Email', emails]);
     path_arrays.push(path_array_2);
 
+    /*
+      get_many_cutoff:
+
+      null / null: no value
+      1 / null: show 1
+      1 / 2: show 2 with old value 1
+      null / 2: show 2
+    */
+
+        /*
+    <div class="note">
+        <input placeholder="--" class="form-control" style="width: 3em;text-align: center;height: calc(1.5em + 2px);color: green;outline: 2px solid darkseagreen;" disabled="">
+        <input placeholder="--" class="form-control" style="width: 3em;text-align: center;height: calc(1.5em + 2px);position: absolute;top: 0;left: 0;transform: translate(-30%, -30%) scale(0.7);z-index: 1000;" disabled="" value="5+"></div>
+    */
+
+
     let t0 = Date.now();
-    tresor_api_call('/jwt/get_many', {path_arrays: path_arrays, key: 'Wert'}, function(data) {
+    tresor_api_call('/jwt/get_many_cutoff', {path_arrays: path_arrays, key: 'Wert'}, function(data) {
         consider_cache = {};
         let t1 = Date.now();
         console.log(`request took ${t1 - t0} ms.`);
-        console.log(data);
         if (data.success) {
             container.empty();
             let header_cells = [];
-            for (let item of ['Nr.', 'Nachname', 'Vorname', 'Klasse', 'Zeugniskonf.']) {
+            for (let item of ['Nr.', 'Nachname', 'Vorname', 'Klasse', 'Bildungsgang', 'Zeugniskonf.']) {
                 let label = `${item}`;
                 let th = $('<th>').html(label);
                 if (item === 'Nachname') th.addClass('thsticky');
@@ -586,7 +684,10 @@ function load_noten_table(container, klasse, edit_noten) {
                 xs: true,
                 headers: header_cells,
                 rows: emails.map(function (email, index) {
-                    let consider_this = (data.results[1][0][0][0][index] === true);
+                    let consider_this = (data.results[1][0][0][0][index][0] === true);
+                    let bildungsgang = 'altsprachlich';
+                    if (liste.schueler[index].zeugnis_key.indexOf('sesb') >= 0)
+                        bildungsgang = 'SESB';
                     let cells = [
                         email,
                         `<td style='text-align: right;'>${index + 1}.</td>`,
@@ -594,10 +695,11 @@ function load_noten_table(container, klasse, edit_noten) {
                         `<td style='max-width: 10em;'>${liste.schueler[index].official_first_name}</td>`,
                         // `<td>${moment(liste.schueler[index].geburtstag).format('L')}</td>`,
                         `<td style='text-align: center;'>${klassen_tr[klasse] ?? klasse}</td>`,
+                        `<td>${bildungsgang}</td>`,
                     ];
                     let bu_consider = $(`<button class='btn btn-xs'>`);
                     style_consider_button(bu_consider, false);
-                    if (!edit_noten)
+                    if (zeugnisliste_consider_closed || (!edit_noten))
                         bu_consider.prop('disabled', true);
                     cells.push($('<td>').append(bu_consider));
                     bu_consider.on('click', function(e) {
@@ -616,10 +718,11 @@ function load_noten_table(container, klasse, edit_noten) {
                     for (let fi = 0; fi < faecher_for_paths.length; fi++) {
                         let fach = faecher_for_paths[fi];
                         let input = $(`<input placeholder='--' class='form-control' style='width: 3em; text-align: center; height: calc(1.5em + 2px);'>`)
-                        if (!edit_noten || ((!my_zeugnisliste[`${klasse}/${fach}`]) && ('#{zeugnis_admin_logged_in?}' === 'false'))) {
+                        input.on('dragstart', function(e) { e.preventDefault(); e.stopPropagation(); });
+                        if (zeugnisliste_closed || (!edit_noten || ((!my_zeugnisliste[`${klasse}/${fach}`]) && ('#{zeugnis_admin_logged_in?}' === 'false')))) {
                             input.prop('disabled', true);
                         }
-                        let value = data.results[0][0][0][fi][index];
+                        let value = data.results[0][0][0][fi][index][0];
                         if (noten_mark.indexOf(value) >= 0) {
                             consider_cache[email] = true;
                             consider_this = true;
@@ -641,7 +744,9 @@ function load_noten_table(container, klasse, edit_noten) {
                                     input.closest('td').find('i.fa').remove();
                                     tresor_api_call('/jwt/store', {path: path, key: 'Wert', value: value}, function(data) {
                                         if (data.success) {
-                                            $(e.target).data('old_value', value);
+                                            $(e.target).data('old_value', data.value);
+                                            $(e.target).data('value_pre', data.value_pre);
+                                            input_note_apply_style_and_fix($(e.target), function(value) {});
                                         } else {
                                             $(e.target).val($(e.target).data('old_value'));
                                             input_note_apply_style_and_fix($(e.target), function(value) {
@@ -677,7 +782,10 @@ function load_noten_table(container, klasse, edit_noten) {
                                 next_row.find('td').eq(this_index).find('input').focus().select();
                             }
                         });
-                        cells.push($('<td>').append($(`<div class='note'>`).append(input)));
+                        let pre_value = data.results[0][0][0][fi][index][1];
+                        let pre_marker = $(`<input placeholder="--" class="form-control pre-note-marker" disabled="" value="">`).val(pre_value);
+                        input.data('value_pre', pre_value);
+                        cells.push($('<td>').append($(`<div class='note'>`).append(input).append(pre_marker)));
                         input_note_apply_style_and_fix(input);
                     }
                     if (consider_this)
@@ -740,6 +848,7 @@ function load_fehltage_table(container, klasse, edit_noten) {
                     for (let fi = 0; fi < items.length; fi++) {
                         let item = items[fi];
                         let input = $(`<input placeholder='--' class='form-control' style='width: 3em; text-align: center; height: calc(1.5em + 2px);'>`)
+                        input.on('dragstart', function(e) { e.preventDefault(); e.stopPropagation(); });
                         if (!edit_noten || ((!my_zeugnisliste[`${klasse}/${item}`]) && ('#{zeugnis_admin_logged_in?}' === 'false'))) {
                             input.prop('disabled', true);
                         }
@@ -859,7 +968,8 @@ function load_sozialverhalten_table(container, klasse, edit_noten) {
                     for (let fi = 0; fi < items.length; fi++) {
                         let item = items[fi];
                         let input = $(`<input placeholder='--' class='form-control' style='width: 3em; text-align: center; height: calc(1.5em + 2px);'>`)
-                        if (!edit_noten || ((!my_zeugnisliste[`${klasse}/${item}/${fach}`]) && ('#{zeugnis_admin_logged_in?}' === 'false'))) {
+                        input.on('dragstart', function(e) { e.preventDefault(); e.stopPropagation(); });
+                        if (sozialverhalten_closed || (!edit_noten || ((!my_zeugnisliste[`${klasse}/${item}/${fach}`]) && ('#{zeugnis_admin_logged_in?}' === 'false')))) {
                             input.prop('disabled', true);
                         }
                         input.val(data.results[0][0][0][fi][fach_index][index]);
@@ -907,13 +1017,22 @@ function load_sozialverhalten_table(container, klasse, edit_noten) {
                                 e.preventDefault();
                                 e.stopPropagation();
                                 $(e.target).val({'1': '++', '2': '+', '3': 'o', '4': '-'}[e.key]);
-                                let row = $(e.target).closest('tr');
-                                let this_index = $(e.target).closest('td').index();
-                                let next_row = row.next('tr');
-                                if (next_row.length === 0) {
-                                    next_row = row.closest('tbody').find('tr').first();
+                                if (jump_table_direction === 'rows') {
+                                    let row = $(e.target).closest('tr');
+                                    let this_index = $(e.target).closest('td').index();
+                                    let next_row = row.next('tr');
+                                    if (next_row.length === 0) {
+                                        next_row = row.closest('tbody').find('tr').first();
+                                    }
+                                    next_row.find('td').eq(this_index).find('input').focus().select();
+                                } else {
+                                    let this_index = $(e.target).closest('td').index();
+                                    let n = $(e.target).closest('tr').find('td').length;
+                                    if (this_index < n - 1)
+                                        $(e.target).closest('tr').find('td').eq(this_index + 1).find('input').focus().select();
+                                    else 
+                                        $(e.target).closest('tr').find('input').eq(0).focus().select();
                                 }
-                                next_row.find('td').eq(this_index).find('input').focus().select();
                             }
                             if (e.key === 'ArrowUp') {
                                 e.preventDefault();
@@ -969,7 +1088,17 @@ function load_angebote_bemerkungen_table(container, klasse, edit_noten) {
     path_array.push(['Schuljahr', ZEUGNIS_SCHULJAHR]);
     path_array.push(['Halbjahr', ZEUGNIS_HALBJAHR]);
     let liste = zeugnisliste_for_klasse[klasse];
+    let have_sesb = false;
+    for (let schueler of liste.schueler) {
+        let key = schueler.zeugnis_key;
+        if (key.indexOf('sesb') >= 0) {
+            have_sesb = true;
+            break;
+        }
+    }
     let items = ['Versetzt', 'Angebote', 'Bemerkungen'];
+    if (have_sesb)
+        items.push('WeitereBemerkungen');
     let emails = liste.schueler.map(function(x) { return x.email; });
     path_array.push(['AB', items]);
     path_array.push(['Email', emails]);
@@ -986,7 +1115,7 @@ function load_angebote_bemerkungen_table(container, klasse, edit_noten) {
                 headers: (['Nr.', 'Nachname', 'Vorname', 'Klasse'].concat(items.map(function(fach) {
                     return `${fach}`;
                 }))).map(function (x) {
-                    let th = $('<th>').html(x);
+                    let th = $('<th>').html(x.replace('WeitereBemerkungen', 'Weitere Bemerkungen (Rückseite)'));
                     if (x === 'Nachname') th.addClass('thsticky');
                     if (['Nr.', 'Nachname', 'Vorname', 'Klasse'].indexOf(x) < 0) th.css('text-align', 'center');
                     return th;
@@ -1006,6 +1135,7 @@ function load_angebote_bemerkungen_table(container, klasse, edit_noten) {
                         if (item === 'Versetzt') {
                             let fach = item;
                             input = $(`<input placeholder='--' class='form-control' style='width: 4em; text-align: center; height: calc(1.5em + 2px);'>`)
+                            input.on('dragstart', function(e) { e.preventDefault(); e.stopPropagation(); });
                             if (!edit_noten) {
                                 input.prop('disabled', true);
                             }
@@ -1069,6 +1199,7 @@ function load_angebote_bemerkungen_table(container, klasse, edit_noten) {
                             input_versetzt_apply_style_and_fix(input);
                         } else {
                             input = $(`<textarea placeholder='--' class='form-control' style='width: 100%; height: 10em;' ${edit_noten ? '' : 'disabled readonly'}>`);
+                            input.on('dragstart', function(e) { e.preventDefault(); e.stopPropagation(); });
                             input.val(data.results[0][0][0][fi][index]);
                             input.focus(function(e) {
                                 // input.select();
@@ -1100,7 +1231,7 @@ function load_angebote_bemerkungen_table(container, klasse, edit_noten) {
                                 text = text.replace(RegExp(/\(NAME\)/g), liste.schueler[index].official_first_name);
                                 input.val(text);
                             });
-                            cells.push($(`<td style='${item !== 'Versetzt' ? 'width: 50%;' : ''}'>`).append($(`<div>`).append(input)));
+                            cells.push($(`<td style='${item !== 'Versetzt' ? (have_sesb ? 'width: 33%;' : 'width: 50%;') : ''}'>`).append($(`<div>`).append(input)));
                         }
                     }
                     return cells;
@@ -1144,6 +1275,20 @@ function open_docx(data, name) {
     let a = document.createElement('a');
     a.href = window.URL.createObjectURL(blob);
     a.download = `Zeugnis ${name}.docx`;
+    a.click();
+}
+
+function open_xlsx(data, name) {
+    let s = atob(data);
+    let bytes = new Uint8Array(s.length);
+    for (let i = 0; i < s.length; i++) {
+        bytes[i] = s.charCodeAt(i);
+    }
+    let blob = new Blob([bytes], {type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"})
+    console.log(blob);
+    let a = document.createElement('a');
+    a.href = window.URL.createObjectURL(blob);
+    a.download = `Zeugnisliste ${name}.xlsx`;
     a.click();
 }
 

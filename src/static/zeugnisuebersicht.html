@@ -99,9 +99,9 @@ window.addEventListener('load', function () {
                 counts[key][0] += present_count;
                 counts[key][1] += total_count;
                 for (let shorthand of (lehrer_for_zeugnis_key[key] ?? [])) {
-                    counts[shorthand] ??= [0, 0];
-                    counts[shorthand][0] += present_count;
-                    counts[shorthand][1] += total_count;
+                    counts[`${shorthand}/Noten`] ??= [0, 0];
+                    counts[`${shorthand}/Noten`][0] += present_count;
+                    counts[`${shorthand}/Noten`][1] += total_count;
                 }
             }
             let faecher_and_kl = faecher.concat(['_KL']);
@@ -123,9 +123,9 @@ window.addEventListener('load', function () {
                     counts[key][1] += total_count;
                     key = `${klasse}/${item}/${fach}`;
                     for (let shorthand of (lehrer_for_zeugnis_key[key] ?? [])) {
-                        counts[shorthand] ??= [0, 0];
-                        counts[shorthand][0] += present_count;
-                        counts[shorthand][1] += total_count;
+                        counts[`${shorthand}/SV`] ??= [0, 0];
+                        counts[`${shorthand}/SV`][0] += present_count;
+                        counts[`${shorthand}/SV`][1] += total_count;
                     }
                 }
             }
@@ -157,7 +157,7 @@ window.addEventListener('load', function () {
             for (let fach_index = 0; fach_index < faecher.length; fach_index++) {
                 let fach = faecher[fach_index];
                 if (have_or_admin(`${klasse}/${fach}`)) {
-                    row.append($(`<th>`).text(fach));
+                    row.append($(`<th>`).html(`${fach}<br /><span style='font-weight: normal; font-size: 90%;'>${liste.lehrer_for_fach[fach].join(', ')}</span>`));
                 }
             }
             if (have_or_admin(`${klasse}/SV/_KL`))
@@ -203,16 +203,28 @@ window.addEventListener('load', function () {
             let row = $(`<tr>`).appendTo(table);
             row.append($(`<th>`).text("Kürzel"));
             row.append($(`<th>`).text("Eintragungen"));
-            row.append($(`<th>`).text("Fortschritt"));
+            row.append($(`<th colspan='2'>`).text("Fortschritt Zeugnisnoten"));
+            row.append($(`<th colspan='2'>`).text("Fortschritt Anlage Sozial- und Arbeitsverhalten"));
             for (let shorthand of shorthands) {
-                let x = counts[shorthand] ?? [0, 0];
-                let my_present = x[0];
-                let my_total = x[1];
-                if (my_total === 0) continue;
+                let x_noten = counts[`${shorthand}/Noten`] ?? [0, 0];
+                let my_present_noten = x_noten[0];
+                let my_total_noten = x_noten[1];
+                let x_sv = counts[`${shorthand}/SV`] ?? [0, 0];
+                let my_present_sv = x_sv[0];
+                let my_total_sv = x_sv[1];
+                if (my_total_noten === 0 && my_total_sv === 0) continue;
                 let row = $(`<tr>`).appendTo(table);
                 row.append($(`<td style='width: unset;'>`).text(shorthand));
-                row.append($(`<td style='width: unset;'>`).text(`${my_present} von ${my_total}`));
-                row.append($(`<td style='width: 100%;'>`).append($(`<div class='progress'>`).append($(`<div class='progress-bar progress-bar-striped bg-success' style="width: ${my_present * 100 / my_total}%">${(my_present * 100 / my_total).toFixed(1)}%</div>`))));
+                row.append($(`<td style='width: unset;'>`).text(`${my_present_noten} von ${my_total_noten}`));
+                if (my_total_noten > 0)
+                    row.append($(`<td style='width: 40%;'>`).append($(`<div class='progress'>`).append($(`<div class='progress-bar progress-bar-striped bg-success' style="width: ${my_present_noten * 100 / my_total_noten}%">${(my_present_noten * 100 / my_total_noten).toFixed(1)}%</div>`))));
+                else
+                    row.append($(`<td>`));
+                if (my_total_sv > 0)
+                    row.append($(`<td style='width: unset;'>`).text(`${my_present_sv} von ${my_total_sv}`));
+                    else
+                row.append($(`<td>`));
+                row.append($(`<td style='width: 40%;'>`).append($(`<div class='progress'>`).append($(`<div class='progress-bar progress-bar-striped bg-success' style="width: ${my_present_sv * 100 / my_total_sv}%">${(my_present_sv * 100 / my_total_sv).toFixed(1)}%</div>`))));
             }
         }
     });

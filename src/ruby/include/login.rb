@@ -696,6 +696,15 @@ class Main < Sinatra::Base
         respond(response_hash)
     end
 
+    def tresor_second_factor_ttl
+        today = Date.today.strftime('%Y-%m-%d')
+        if zeugnis_admin_logged_in? && ZEUGNISKONFERENZEN.include?(today)
+            TRESOR_SECOND_FACTOR_TTL * 4
+        else
+            TRESOR_SECOND_FACTOR_TTL
+        end
+    end
+
     post '/api/confirm_second_login' do
         data = parse_request_data(:required_keys => [:tag, :code])
         data[:code] = data[:code].gsub(/[^0-9]/, '')
@@ -744,7 +753,7 @@ class Main < Sinatra::Base
             MATCH (sf:SecondFactor)-[:BELONGS_TO]->(s:Session {sid: $sid})
             DETACH DELETE sf;
         END_OF_QUERY
-        neo4j_query(<<~END_OF_QUERY, :sid => @used_session[:sid], :method => login_code[:method], :ts_expire => Time.now.to_i + TRESOR_SECOND_FACTOR_TTL)
+        neo4j_query(<<~END_OF_QUERY, :sid => @used_session[:sid], :method => login_code[:method], :ts_expire => Time.now.to_i + tresor_second_factor_ttl())
             MATCH (s:Session {sid: $sid})
             CREATE (sf:SecondFactor {method: $method, ts_expire: $ts_expire})-[:BELONGS_TO]->(s)
         END_OF_QUERY
@@ -777,7 +786,7 @@ class Main < Sinatra::Base
     end
 
     def refresh_second_factor
-        factors = neo4j_query(<<~END_OF_QUERY, :sid => @used_session[:sid], :ts_expire => Time.now.to_i + TRESOR_SECOND_FACTOR_TTL)
+        factors = neo4j_query(<<~END_OF_QUERY, :sid => @used_session[:sid], :ts_expire => Time.now.to_i + tresor_second_factor_ttl())
             MATCH (sf:SecondFactor)-[:BELONGS_TO]->(s:Session {sid: $sid})
             WHERE COALESCE(s.method, 'email') <> sf.method
             SET sf.ts_expire = $ts_expire
@@ -884,7 +893,7 @@ class Main < Sinatra::Base
             MATCH (sf:SecondFactor)-[:BELONGS_TO]->(s:Session {sid: $sid})
             DETACH DELETE sf;
         END_OF_QUERY
-        neo4j_query(<<~END_OF_QUERY, :sid => sid, :method => 'ad-hoc', :ts_expire => Time.now.to_i + TRESOR_SECOND_FACTOR_TTL)
+        neo4j_query(<<~END_OF_QUERY, :sid => sid, :method => 'ad-hoc', :ts_expire => Time.now.to_i + tresor_second_factor_ttl())
             MATCH (s:Session {sid: $sid})
             CREATE (sf:SecondFactor {method: $method, ts_expire: $ts_expire})-[:BELONGS_TO]->(s)
         END_OF_QUERY

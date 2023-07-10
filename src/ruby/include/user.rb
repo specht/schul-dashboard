@@ -481,6 +481,27 @@ class Main < Sinatra::Base
         method
     end
 
+    post '/api/set_jump_table_direction' do
+        require_user!
+        data = parse_request_data(:required_keys => [:method])
+        assert(%w(rows columns).include?(data[:method]))
+        neo4j_query_expect_one(<<~END_OF_QUERY, :email => @session_user[:email], :method => data[:method])
+            MATCH (u:User {email: $email})
+            SET u.jump_table_direction = $method
+            RETURN u.email;
+        END_OF_QUERY
+        respond(:method => data[:method])
+    end
+
+    def session_user_jump_table_direction
+        require_user!
+        method = neo4j_query_expect_one(<<~END_OF_QUERY, :email => @session_user[:email])['method']
+            MATCH (u:User {email: $email})
+            RETURN COALESCE(u.jump_table_direction, "rows") AS method;
+        END_OF_QUERY
+        method
+    end
+
     post '/api/toggle_ical_omit_type' do
         require_user!
         data = parse_request_data(:required_keys => [:type])
@@ -568,4 +589,55 @@ class Main < Sinatra::Base
             io.string
         end
     end
+
+    def print_tresor_countdown_panel()
+        return '' unless teacher_logged_in?
+        deadline = '2023-06-26T09:00:00'
+        if Time.now.strftime('%Y-%m-%dT%H:%M:%S') <= deadline
+            return StringIO.open do |io|
+                io.puts "<div class='col-lg-12 col-md-4 col-sm-6'>"
+                io.puts "<div class='hint'>"
+                io.puts "<p><b>Noteneingabe im Datentresor</b></p>"
+                io.puts "<hr />"
+                io.puts "<p>Die Noteneingabe im Datentresor schließt am Montag um 9:00 Uhr.</p>"
+                io.puts "<div id='tresor_countdown_here' style='display: none;' data-deadline='#{Time.parse(deadline).to_i}'>"
+                io.puts "</div>"
+                io.puts "</div>"
+                io.puts "</div>"
+                io.string
+            end
+        end
+        deadline = '2023-06-28T09:00:00'
+        if Time.now.strftime('%Y-%m-%dT%H:%M:%S') <= deadline
+            return StringIO.open do |io|
+                io.puts "<div class='col-lg-12 col-md-4 col-sm-6'>"
+                io.puts "<div class='hint'>"
+                io.puts "<p><b>Markierung von SuS in den Listen für die Zeugniskonferenzen</b></p>"
+                io.puts "<hr />"
+                io.puts "<p>Klassenleitungen: Bitte markieren Sie SuS, die Sie in den Zeug&shy;nis&shy;kon&shy;feren&shy;zen besprechen möchten, bis Mittwoch um 9:00 Uhr. Hinweis: Alle SuS mit einer Note ab 4– sind schon auto&shy;matisch markiert.</p>"
+                io.puts "<div id='tresor_countdown_here' style='display: none;' data-deadline='#{Time.parse(deadline).to_i}'>"
+                io.puts "</div>"
+                io.puts "</div>"
+                io.puts "</div>"
+                io.string
+            end
+        end
+        deadline = '2023-07-05T12:00:00'
+        if Time.now.strftime('%Y-%m-%dT%H:%M:%S') <= deadline
+            return StringIO.open do |io|
+                io.puts "<div class='col-lg-12 col-md-4 col-sm-6'>"
+                io.puts "<div class='hint'>"
+                io.puts "<p><b>Eintragung der Noten für das Arbeits- und Sozialverhalten</b></p>"
+                io.puts "<hr />"
+                io.puts "<p>Die Möglichkeit für Eintragungen der Noten für das Arbeits- und Sozialverhalten endet am Mittwoch um 12:00 Uhr. Bitte tragen Sie bis dahin fehlende Noten ein, damit die Klassenleitungen bis zu den Zeugniskonferenzen die Listen drucken können.</p>"
+                io.puts "<div id='tresor_countdown_here' style='display: none;' data-deadline='#{Time.parse(deadline).to_i}'>"
+                io.puts "</div>"
+                io.puts "</div>"
+                io.puts "</div>"
+                io.string
+            end
+        end
+        return ''
+    end
+
 end

@@ -1,0 +1,170 @@
+/* #{color_palette.to_json} */
+
+body {
+    color: #fff;
+}
+
+.lesson_pane, .lc_table {
+    background-color: #000;
+}
+
+.alert {
+    background-color: rgba(0, 0, 0, 0.5);
+}
+
+.btn-warning {
+    color: #fff;
+}
+
+.white {
+    background-color: #000!important;
+}
+
+.dropzone {
+    background-color: #222;
+}
+
+.ttc {
+    color: #fff;
+}
+
+.fc-timegrid-col.fc-day-today, .fc-daygrid-day.fc-day-today {
+    background-color: rgba(255, 255, 255, 0.1)!important;
+} 
+
+.api_messages {
+    border-color: #333!important;
+    background-color: #222!important;
+}
+
+.modal-footer {
+    border-top:1px solid rgba(0, 0, 0, 0.2)
+}
+
+.modal-header {
+    border-bottom:1px solid rgba(0, 0, 0, 0.2)
+}
+
+.form-control {
+    background-color: #222!important;
+    color: rgba(255, 255, 255, 0.9)!important;
+    border-color: #333!important;
+}
+
+.active {
+    background-color: rgba(30, 30, 30, 0.8)!important;
+}
+
+.btn {
+    background: rgba(0,0,0,0);
+}
+
+.card {
+    background-color: #222!important;
+}
+
+.text-comment {
+    border-radius: 5px;
+    background-color: #222;
+    padding: 10px 15px;
+    box-shadow: 0 0 5px rgba(0, 0, 0, 0.3);
+/*     margin: 0 -15px; */
+    margin-bottom: 15px;
+}
+
+.text-comment .from {
+    border-bottom: 1px solid #222;
+    margin: -10px -15px 10px -15px;
+    padding: 10px 15px 8px 15px;
+    box-shadow: inset 0 -10px 10px -10px rgba(0, 0, 0, 0.2);
+    background-color: #0f0f0f;
+    border-top-left-radius: 4px;
+    border-top-right-radius: 4px;
+    position: relative;
+}
+
+.table {
+    color: rgba(255, 255, 255, 0.9);
+    background-color: #222!important;
+}
+.table th {
+    color: rgba(255, 255, 255, 0.9);
+    background-color: #333!important;
+}
+
+.dropdown-item:focus, .dropdown-item:hover {
+    background-color: rgba(255, 255, 255, 0.3);
+    color: rgba(255, 255, 255, 0.9);
+}
+
+.nav-icon {
+    color: rgba(255, 255, 255, 0.9);
+}
+
+.nav-icon .icon {
+    color: rgba(255, 255, 255, 0.9);
+}
+
+.nav-link {
+    color: rgba(255, 255, 255, 0.9)!important;
+}
+
+.nav-link:hover {
+    color: rgba(255, 255, 255, 0.9)!important;
+}
+
+.dropdown-menu {
+    background-color: #222!important;
+    color: rgba(255, 255, 255, 0.9);
+}
+
+.dropdown-icon {
+    background-color: #222!important;
+    color: rgba(255, 255, 255, 0.9)!important;
+}
+.dropdown-icon:hover {
+    color: rgba(255, 255, 255, 0.9)!important;
+}
+
+.brand-brand {
+    color: rgba(255, 255, 255, 0.9);
+}
+
+.modal-content {
+    background-color: #222!important;
+    color: rgba(255, 255, 255, 0.9);
+}
+
+.foot {
+    background-color: #222;
+    color: #bbb!important;
+}
+
+.foot a {
+    color: #bbb;
+}
+
+.navbar {
+    background-color: #222!important;
+    color: rgba(255, 255, 255, 0.9);
+}
+
+.container {
+    background-color: rgba(0, 0, 0, 0.75);
+}
+
+.fc-view-harness, table {
+    background-color: rgba(0, 0, 0, 0.3);
+}
+
+.ttc {
+    background-color: rgba(0, 0, 0, 0.5);
+}
+
+.ttc:hover {
+    background-color: rgba(0, 0, 0, 0.3);
+}
+
+.navbar-light .navbar-nav {
+    color: rgba(255, 255, 255, 0.9);
+}

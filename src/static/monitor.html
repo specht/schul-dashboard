@@ -458,6 +458,90 @@
         background-size: cover;
         transition: opacity 3s linear;
     }
+
+    @keyframes rotate {
+        100% {
+            transform: rotate(1turn);
+        }
+    }
+
+    .conic {
+        overflow: hidden;
+        position: relative;
+    }
+    .conic::before {
+        content: '';
+        position: absolute;
+        z-index: -2;
+        left: -50%;
+        top: -98%;
+        width: 200%;
+        height: 300%;
+        /* background-color: #1a232a; */
+        background-repeat: no-repeat;
+        background-position: 0 0;
+        background-image: linear-gradient(transparent, #{color_palette[:contrast]}, transparent 80%);
+        /* background-color: red; */
+        animation: rotate 8s linear infinite;
+    }
+    
+    .conic::after {
+        content: '';
+        position: absolute;
+        z-index: -1;
+        left: 0.5vw;
+        top: 0.5vw;
+        width: calc(100% - 1vw);
+        height: calc(100% - 1vw);
+        /* backdrop-filter: blur(10px); */
+        background-color: #fff;
+        border-radius: 5px;
+    }
+
+    .indeterminate-progress-bar {
+        /* Color */
+        background-color: #d1d5db;
+
+        /* Rounded border */
+        border-radius: 9999px;
+
+        margin-top: 1vw;
+
+        /* Size */
+        height: 1vw;
+
+        position: relative;
+        overflow: hidden;
+    }
+
+    .indeterminate-progress-bar__progress {
+        /* Color */
+        background-color: #{color_palette[:primary]};
+
+        /* Rounded border */
+        border-radius: 9999px;
+
+        /* Absolute position */
+        position: absolute;
+        bottom: 0;
+        top: 0;
+        width: 50%;
+
+        /* Move the bar infinitely */
+        animation-duration: 2s;
+        animation-iteration-count: infinite;
+        animation-name: indeterminate-progress-bar;
+    }
+
+    @keyframes indeterminate-progress-bar {
+        from {
+            left: -50%;
+        }
+        to {
+            left: 100%;
+        }
+    }
+
 </style>
 
 <div class="embed-responsive embed-responsive-16by9">
@@ -528,6 +612,11 @@
     var image_swap_timer = null;
     var klassen_tr = #{KLASSEN_TR.to_json};
     var server_time_diff = 0;
+    var zeugniskonferenzen_today = #{(ZEUGNISKONFERENZEN[Date.today.strftime('%Y-%m-%d')] || []).to_json};
+    var zeugniskonferenzen_enabled = #{get_monitor_zeugniskonferenzen().to_json};
+    var showing_zeugniskonferenzen = false;
+    var running_zeugniskonferenzen = #{running_zeugniskonferenzen.to_json};
+    var finished_zeugniskonferenzen = #{finished_zeugniskonferenzen.to_json};
 
     var ws = null;
     var ws_timer_id = null;
@@ -633,7 +722,7 @@
                 images = data.data.images;
                 image_index = 0;
                 refresh_images();
-            } else if (data.command == 'update_vplan') {
+            } else if (data.command == 'update_vplan' && (!showing_zeugniskonferenzen)) {
                 if (data.timestamp !== last_vplan_timestamp) {
                     last_vplan_timestamp = data.timestamp;
                     data = data.data;
@@ -863,6 +952,22 @@
         }
 
         last_timestamp = timestamp;
+
+        if (showing_zeugniskonferenzen) {
+            for (let span of $('.ticking_time')) {
+                span = $(span);
+                let ts = span.data('ts');
+                diff = server_time() - ts;
+                let minutes = Math.floor(diff / 60);
+                diff -= minutes * 60;
+                let seconds = diff;
+                let sm = `${minutes}`;
+                if (sm.length < 2) sm = '0' + sm;
+                let ss = `${seconds}`;
+                if (ss.length < 2) ss = '0' + ss;
+                span.text(`${sm}:${ss}`);
+            }
+        }
         window.requestAnimationFrame(animation_step);
     }
 
@@ -972,6 +1077,20 @@
             $('.main').hide();
             $('.main_lz').show();
         }
+
+        if (monitor_mode === 'public') {
+            showing_zeugniskonferenzen = zeugniskonferenzen_enabled.flur;
+        } else if (monitor_mode === 'lehrerzimmer') {
+            showing_zeugniskonferenzen = zeugniskonferenzen_enabled.lz;
+        } else if (monitor_mode === 'sekretariat') {
+            showing_zeugniskonferenzen = zeugniskonferenzen_enabled.sek;
+        }
+
+        if (showing_zeugniskonferenzen) {
+            $('.main_sek').hide();
+            $('.main_lz').hide();
+            $('.main').show();
+        }
         /* else { */
             /* if (#{advents_calendar_date_today() || -1} >= 0) */
                 /* $('.monitor_advent_calendar').show(); */
@@ -982,20 +1101,60 @@
             a += ` von <b>${attribution[1]}</b>`;
         $('.color_scheme').html(a);
         moment.locale('de');
-        let col = null;
-        let i = 0;
-        for (let klasse of klassen) {
-            if (i % 7 == 0) {
-                col = $('<div>');
-                col.appendTo($('.main'));
+        if (showing_zeugniskonferenzen) {
+            let seen_first_animated = false;
+            for (let entry of zeugniskonferenzen_today) {
+                let klasse = entry[1];
+                let this_animated = false;
+                if (entry[0] in running_zeugniskonferenzen) {
+                    this_animated = true;
+                } else if (Object.keys(running_zeugniskonferenzen).length === 0) {
+                    if (finished_zeugniskonferenzen.indexOf(entry[0]) < 0) {
+                        this_animated = true;
+                    }
+                }
+                let div = $(`<div class='klasse ${(this_animated && (!seen_first_animated)) ? 'conic' : ''}' style='background-color: #fff; height: 10.5vw; font-size: 2vw;'>`).html(`${entry[0]}&nbsp;&nbsp;&nbsp;&nbsp;<b>${klasse === 'OS' ? '' : 'Klasse'} ${klassen_tr[klasse] ?? klasse}</b>`);
+                if (seen_first_animated) this_animated = false;
+                if (this_animated) seen_first_animated = true;
+                div.append($('<br>'));
+                if (entry[0] in running_zeugniskonferenzen) {
+                    div.append($(`<i class='fa fa-clock-o'></i>`));
+                    div.append('&nbsp;&nbsp;');
+                    let span = $(`<span class='ticking_time' data-ts='${running_zeugniskonferenzen[entry[0]]}'>`);
+                    div.append(`läuft seit `);
+                    div.append(span);
+                } else if (finished_zeugniskonferenzen.indexOf(entry[0]) >= 0) {
+                    div.append($(`<i class='fa fa-check'></i>`));
+                    div.append('&nbsp;&nbsp;');
+                    div.append(`beendet`);
+                } else {
+                    if (this_animated) {
+                        div.append($(`<i class='fa fa-clock-o'></i>`));
+                        div.append('&nbsp;&nbsp;');
+                        div.append(`warte auf Beginn`);
+                    }
+                }
+                if (this_animated) {
+                    div.append($(`<div class="indeterminate-progress-bar"><div class="indeterminate-progress-bar__progress"></div></div>`));
+                }
+                $('.main').append($(`<div>`).append(div));
             }
-            let box = $('<div>');
-            let div = $('<div>').addClass('klasse').addClass(`k${klasse}`).appendTo(box);
-            div.append($('<h3>').text(`${klassen_tr[klasse] || klasse}`))
-            let content = $('<div>').addClass('content').appendTo(div);
-            klassen_div[klasse] = content;
-            col.append(box);
-            i += 1;
+        } else {
+            let col = null;
+            let i = 0;
+            for (let klasse of klassen) {
+                if (i % 7 == 0) {
+                    col = $('<div>');
+                    col.appendTo($('.main'));
+                }
+                let box = $('<div>');
+                let div = $('<div>').addClass('klasse').addClass(`k${klasse}`).appendTo(box);
+                div.append($('<h3>').text(`${klassen_tr[klasse] || klasse}`))
+                let content = $('<div>').addClass('content').appendTo(div);
+                klassen_div[klasse] = content;
+                col.append(box);
+                i += 1;
+            }
         }
         window.requestAnimationFrame(animation_step);
     });

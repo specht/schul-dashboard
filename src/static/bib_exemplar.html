@@ -3,14 +3,18 @@
 <div class='container bg-white' style="padding-top: 15px;">
     <div id='book_here' class="w-full grid grid-cols-8 gap-4 mb-4"></div>
     <div style="clear: both"></div>
-    <div id='exemplar_info' class="alert alert-warning">
-        (TODO: Hier erscheinen die aktuelle + vergangene Ausleihen)
-    </div>
+    <div id='checked_out'></div>
+    <div id='past_check_outs'></div>
 </div>
 <script>
 
     var stem = null;
     var bnr = null;
+
+    function row_clicked(data) {
+        console.log(data);
+        window.location = `/bib_user/${encodeURIComponent(data)}`;
+    }
 
     window.addEventListener('load', function () {
         let stem_s = window.location.pathname.replace('/bib_exemplar/', '');
@@ -39,6 +43,94 @@
                     }
                 }).data('book', data.book);
                 $('#book_here').append(div);
+                if (data.checked_out_all) {
+                    let div = $("<div>");
+                    let checked_out_this_bnr = [];
+                    if (data.exemplar.r) {
+                        checked_out_this_bnr.push({r: data.exemplar.r, u: data.exemplar.u});
+                    }
+                    $('#checked_out').append($(`<h3>Ausgeliehene Exemplare: ${checked_out_this_bnr.length}</h3>`));
+                    $('#checked_out').append(div);
+                    if (checked_out_this_bnr.length > 0) {
+                        new SortableTable({
+                            element: div,
+                            xs: true,
+                            headers: ['Signatur', 'Nachname', 'Vorname', 'Klasse', 'Ausleihdatum', 'Bestätigt', 'Lehrkraft', 'Fach', 'Zurückfordern'].map(function (x) {
+                                let th = $('<th>').text(x);
+                                if (['Signatur', 'Klasse', 'Ausleihdatum', 'Bestätigt'].indexOf(x) >= 0) th.data('type', 'int');
+                                return th;
+                            }),
+                            rows: checked_out_this_bnr.map(function (entry) {
+                                let bu_summon_book = $(`<button class='bu-summon-book btn btn-xs btn-outline-secondary'>zurückfordern</button>`);
+                                if (entry.r.ts_summoned) {
+                                    bu_summon_book.removeClass('btn-outline-secondary').addClass('btn-warning').text('zurückgefordert');
+                                    bu_summon_book.data('ts_summoned', entry.r.ts_summoned);
+                                }
+                                bu_summon_book.click(function(e) {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    let button = $(e.target);
+                                    bib_api_call('/jwt/toggle_summon_exemplar', {stem: stem, bnr: bnr}, function(data) {
+                                        console.log(data);
+                                        if (data.ts_summoned) {
+                                            button.removeClass('btn-outline-secondary').addClass('btn-warning').text('zurückgefordert');
+                                        } else {
+                                            button.addClass('btn-outline-secondary').removeClass('btn-warning').text('zurückfordern');
+                                        }
+                                    });
+                                });
+                                return [
+                                    entry.u.email,
+                                    $('<td>').text(`${stem}-${bnr}`).data('sort_value', bnr),
+                                    create_user_td_span(entry.u.email),
+                                    $('<td>').html((db_user_info[entry.u.email] || {}).klasse || '&ndash;').data('sort_value', (db_user_info[entry.u.email] || {}).klassen_order),
+                                    $('<td>').text(`${moment.unix(entry.r.ts_checked_out).format('L')}`).data('sort_value', entry.r.ts_checked_out),
+                                    create_confirmed_td(entry.r, data.server_ts, false),
+                                    entry.r.teacher ? create_user_td_span_teacher(entry.r.teacher) : $('<td>').text('–'),
+                                    $('<td>').text(entry.r.fach || '–'),
+                                    $('<td>').append(bu_summon_book)
+                                ];
+                            }),
+                            clickable_rows: true,
+                            clickable_row_callback: row_clicked
+                        });
+                    } else {
+                        div.append($(`<div class='alert alert-warning'>Exemplar ist momentan nicht ausgeliehen</div>`));
+                    }
+                }
+                if (data.past_check_outs) {
+                    let div = $("<div>");
+                    $('#past_check_outs').append($(`<h3>Vergangene Ausleihen: ${data.past_check_outs.length}</h3>`));
+                    $('#past_check_outs').append(div);
+                    if (data.past_check_outs.length > 0) {
+                        new SortableTable({
+                            element: div,
+                            xs: true,
+                            headers: ['Signatur', 'Name', 'Vorname', 'Klasse', 'Ausleihdatum', 'Bestätigt', 'Rückgabe', 'Lehrkraft', 'Fach'].map(function (x) {
+                                let th = $('<th>').text(x);
+                                if (['Signatur', 'Klasse', 'Ausleihdatum', 'Bestätigt', 'Rückgabe'].indexOf(x) >= 0) th.data('type', 'int');
+                                return th;
+                            }),
+                            rows: data.past_check_outs.map(function (entry) {
+                                return [
+                                    entry.u.email,
+                                    $('<td>').text(`${stem}-${bnr}`).data('sort_value', bnr),
+                                    create_user_td_span(entry.u.email),
+                                    $('<td>').html((db_user_info[entry.u.email] || {}).klasse || '&ndash;').data('sort_value', (db_user_info[entry.u.email] || {}).klassen_order),
+                                    $('<td>').text(`${moment.unix(entry.r.ts_checked_out).format('L')}`).data('sort_value', entry.r.ts_checked_out),
+                                    create_confirmed_td(entry.r, data.server_ts, false),
+                                    $('<td>').text(`${moment.unix(entry.r.ts_returned).format('L')}`).data('sort_value', entry.r.ts_returned),
+                                    entry.r.teacher ? create_user_td_span_teacher(entry.r.teacher) : $('<td>').text('–'),
+                                    $('<td>').text(entry.r.fach || '–')
+                                ];
+                            }),
+                            clickable_rows: true,
+                            clickable_row_callback: row_clicked
+                        });
+                    } else {
+                        div.append($(`<div class='alert alert-warning'>keine vergangenen Ausleihen</div>`));
+                    }
+                }
             }
         });
     });

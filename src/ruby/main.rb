@@ -1707,7 +1707,9 @@ class Main < Sinatra::Base
                     nav_items << :aula
                 end
                 if user_who_can_report_tech_problems_logged_in?
-                    nav_items << :techteam
+                    unless admin_logged_in?
+                        nav_items << :techteam
+                    end
                 end
                 # nav_items << :advent_calendar #if advents_calendar_date_today > 0
                 nav_items << :profile

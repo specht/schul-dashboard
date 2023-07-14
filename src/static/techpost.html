@@ -70,14 +70,7 @@
             <div class='row'>
                 <div class='col-md-12' style='max-width: 100%; overflow-x: auto;'>
                     <table class='table narrow table-striped' style='width: unset; min-width: 100%;'>
-                    <thead><tr>
-                    <th>Datum</th>
-                    <th>Problem</th>
-                    <th>Gerät</th>
-                    <th>Status</th>
-                    <th>Kommentar</th>
-                    <th>Ausblenden</th>
-                    </tr></thead>
+                    <thead id='head_problems_here'></thead>
                     <tbody id='problems_here'>
                     </tbody>
                     </table>
@@ -210,6 +203,20 @@
                         row.append($('<td>').append(tp_hide))
 
                         $('#problems_here').append(row);
+                    }
+
+                    if ($('#problems_here').html()) {
+                        let head_row = $('<tr>')
+                        head_row.append($('<th>').text('Datum'))
+                        head_row.append($('<th>').text('Problem'))
+                        head_row.append($('<th>').text('Gerät'))
+                        head_row.append($('<th>').text('Status'))
+                        head_row.append($('<th>').text('Kommentar'))
+                        head_row.append($('<th>').text('Ausblenden'))
+                        $('#head_problems_here').append(head_row);
+                    } else {
+                        $('#head_problems_here').empty();
+                        $('#head_problems_here').html("<i><div class='text-muted'>Keine Probleme gefunden!</div></i>");
                     }
                 }
             }

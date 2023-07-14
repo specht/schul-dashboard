@@ -457,7 +457,11 @@ class Parser
                 if result[k][:only_these_rooms]
                     result[k][:only_these_rooms].map! { |x| x.to_s }
                 end
-                result[k][:label] = "#{result[k][:form_factor]} mit #{result[k][:count]} Tablets"
+                if result[k][:is_tablet_set]
+                    result[k][:label] = "#{result[k][:form_factor]} mit #{result[k][:count]} Tablets"
+                else
+                    result[k][:label] = "#{result[k][:form_factor]}"
+                end
             end
             return result
         end

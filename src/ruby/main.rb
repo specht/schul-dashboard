@@ -734,7 +734,7 @@ class Main < Sinatra::Base
             next unless @@user_info[email]
             @@user_info[email][:can_manage_tablets] = true
         end
-        (CAN_REPORT_TECH_PROBLEMS_USERS + TECHNIKTEAM).each do |email|
+        (CAN_REPORT_TECH_PROBLEMS_USERS + TECHNIKTEAM + ADMIN_USERS).each do |email|
             next unless @@user_info[email]
             @@user_info[email][:can_report_tech_problems] = true
         end
@@ -1707,7 +1707,9 @@ class Main < Sinatra::Base
                     nav_items << :aula
                 end
                 if user_who_can_report_tech_problems_logged_in?
-                    nav_items << :techteam
+                    unless admin_logged_in?
+                        nav_items << :techteam
+                    end
                 end
                 # nav_items << :advent_calendar #if advents_calendar_date_today > 0
                 nav_items << :profile
@@ -1776,7 +1778,7 @@ class Main < Sinatra::Base
                         io.puts "<a class='dropdown-item nav-icon' href='/show_all_login_codes'><div class='icon'><i class='fa fa-key-modern'></i></div><span class='label'>Live-Anmeldungen</span></a>"
                         io.puts "<a class='dropdown-item nav-icon' href='/email_accounts'><div class='icon'><i class='fa fa-envelope'></i></div><span class='label'>E-Mail-Postfächer</span></a>"
                         io.puts "<a class='dropdown-item nav-icon' href='/stats'><div class='icon'><i class='fa fa-bar-chart'></i></div><span class='label'>Statistiken</span></a>"
-                        io.puts "<a class='dropdown-item nav-icon' href='/show_all_login_codes'><div class='icon'><i class='fa fa-music'></i></div><span class='label'>Aula</span></a>"
+                        io.puts "<a class='dropdown-item nav-icon' href='/aula'><div class='icon'><i class='fa fa-music'></i></div><span class='label'>Aula</span></a>"
                         printed_something = true
                     end
                     io.puts "</div>"

@@ -21,73 +21,39 @@
   :prio_unterstufe: true
   :is_tablet_set: true
 
+"Computer 1":
+  :standort: Sekretariat
+  :form_factor: Koffer
+  :is_tablet_set: false
+  :hint: Test
+
 "Computer 2":
-  :standort: Sekretariat, Safe
+  :standort: Sekretariat
   :form_factor: Koffer
   :is_tablet_set: false
 
-"Computer 5":
-  :standort: Sekretariat, Safe
+"Computer 3":
+  :standort: Sekretariat
   :form_factor: Koffer
   :is_tablet_set: false
 
-"Beamer 1?":
-  :standort: Sekretariat, Safe
+"Computer 2":
+  :standort: Sekretariat
   :form_factor: Koffer
   :is_tablet_set: false
 
-"Beamer 2?":
-  :standort: Sekretariat, Safe
-  :form_factor: Koffer
-  :is_tablet_set: false
-
-"Multi-Beamer 1":
-  :standort: Sekretariat, Safe
-  :form_factor: Koffer
-  :is_tablet_set: false
-
-"Multi-Beamer 2":
-  :standort: Sekretariat, Safe
-  :form_factor: Koffer
-  :is_tablet_set: false
-
-"Multi-Beamer 3":
-  :standort: Sekretariat, Safe
-  :form_factor: Koffer
-  :is_tablet_set: false
-
-"Multi-Beamer 4":
-  :standort: Sekretariat, Safe
-  :form_factor: Koffer
-  :is_tablet_set: false
-
-"Multi-Beamer 5":
-  :standort: Sekretariat, Safe
+"Beamer 5":
+  :standort: Sekretariat
   :form_factor: Koffer
   :is_tablet_set: false
 
 "Multi-Beamer 6":
-  :standort: Sekretariat, Safe
+  :standort: Sekretariat
   :form_factor: Koffer
   :is_tablet_set: false
 
 "DVD-Player 1":
-  :standort: Sekretariat, Rollwagen
+  :standort: Sekretariat
   :form_factor: Koffer
   :is_tablet_set: false
-
-"DVD-Player 2":
-  :standort: Sekretariat, Rollwagen
-  :form_factor: Koffer
-  :is_tablet_set: false
-
-"DVD-Player 3":
-  :standort: Sekretariat, Safe
-  :form_factor: Koffer
-  :is_tablet_set: false
-
-"DVD-Player 4":
-  :standort: Sekretariat, Rollwagen
-  :form_factor: Koffer
-  :is_tablet_set: false
-
+  

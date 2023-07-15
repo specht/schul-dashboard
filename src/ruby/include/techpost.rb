@@ -26,7 +26,7 @@ class Main < Sinatra::Base
             subject "Neues Technikproblem"
 
             StringIO.open do |io|
-                io.puts "<p>Liebes TechnikTeam,"
+                io.puts "<p>Liebes TechnikTeam,</p>"
                 io.puts "<p>es liegt ein neues Technikproblem vor.</p>"
                 io.puts "<p>Das Problem betrifft #{data[:device]} und lautet: „#{data[:problem]}“</p>"
                 io.puts "<a href='/techpostadmin'>Probleme ansehen</a>"
@@ -69,6 +69,7 @@ class Main < Sinatra::Base
         END_OF_QUERY
         problems.map! do |x|
             x[:display_name] = @@user_info[x[:email]][:display_name]
+            x[:nc_login] = @@user_info[x[:email]][:nc_login]
             x[:klasse] = @@user_info[x[:email]][:klasse]
             x
         end

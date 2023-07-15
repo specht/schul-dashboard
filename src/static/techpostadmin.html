@@ -5,7 +5,7 @@
             <h2 style="margin-bottom: 30px;">Technikamt (Admin)</h2>
             <hr>
             <p>
-                Du bist Teil des TechnikTeams und kannst deshalb hier Probleme mit Geräten aufnehmen und auch <b>schließen</b>. Auch kannst du dich als Tablet anmelden.  
+                Du bist #{(admin_logged_in?) ? 'Admin im Dashboard' : 'Teil des TechnikTeams'} und kannst deshalb hier Probleme mit Geräten aufnehmen und auch <b>schließen</b>. Auch kannst du dich als Tablet anmelden.  
             </p>
             <hr>
             <div class='row'>
@@ -37,11 +37,11 @@
                 <div class='col-md-12' style='max-width: 100%; overflow-x: auto;'>
                     <table class='table narrow table-striped' style='width: unset; min-width: 100%;'>
                     <thead><tr>
-                    <th>Datum</th>
                     <th>Name</th>
                     <th>Klasse</th>
                     <th>Problem</th>
                     <th>Gerät</th>
+                    <th>Datum</th>
                     <th style="width: 140px;">Behoben</th>
                     <th style="width: 140px;">Nicht Behoben</th>
                     <th style="width: 140px;">Kommentar</th>
@@ -76,11 +76,11 @@
                 <div class='col-md-12' style='max-width: 100%; overflow-x: auto;'>
                     <table class='table narrow table-striped' style='width: unset; min-width: 100%;'>
                     <thead><tr>
-                    <th>Datum</th>
                     <th>Name</th>
                     <th>Klasse</th>
                     <th>Problem</th>
                     <th>Gerät</th>
+                    <th>Datum</th>
                     <th style="width: 140px;">Kommentar</th>
                     <th style="width: 140px;">Technikamt</th>
                     <th style="width: 140px;">Einblenden</th>
@@ -174,11 +174,15 @@
                 for (let entry of data.tech_problems) {
                     if (entry.problem.fixed == false && entry.problem.not_fixed == false && entry.problem.hidden_admin == false) { 
                         let row = $('<tr>');
-                        row.append($('<td>').text(moment(entry.problem.date).format('ddd, D.M.Y')));
-                        row.append($('<td>').text(entry.display_name));
-                        row.append($('<td>').text(entry.klasse));
+                        row.append($('<td>').html("<img src='#{NEXTCLOUD_URL}/index.php/avatar/" + entry.nc_login + "/256}' class='icon avatar-md'/>&nbsp;&nbsp;&nbsp;" + entry.display_name));
+                        if (entry.klasse) {
+                            row.append($('<td>').text(entry.klasse));
+                        } else {
+                            row.append($('<td>').html('<i class="fa fa-user-o"></i>'));
+                        }
                         row.append($('<td>').text(entry.problem.problem));
                         row.append($('<td>').text('' + entry.problem.device));
+                        row.append($('<td>').text(moment(entry.problem.date).format('ddd, D.M.Y')));
 
                         let tp_fixed = $('<button>').addClass('btn').addClass('btn-xs').addClass('btn-success').html("<i class='fa fa-check'></i>&nbsp;&nbsp;Behoben");
                         tp_fixed.data('token', entry.problem.token);
@@ -315,8 +319,7 @@
                 for (let entry of data.tech_problems) {
                     if (entry.problem.fixed == true  || entry.problem.not_fixed == true || entry.problem.hidden_admin == true) { 
                         let row = $('<tr>');
-                        row.append($('<td>').text(moment(entry.problem.date).format('ddd, D.M.Y')));
-                        row.append($('<td>').text(entry.display_name));
+                        row.append($('<td>').html("<img src='#{NEXTCLOUD_URL}/index.php/avatar/" + entry.nc_login + "/256}' class='icon avatar-md'/>&nbsp;&nbsp;&nbsp;" + entry.display_name));
                         row.append($('<td>').text(entry.klasse));
                         if (entry.problem.not_fixed == true) {
                             row.append($('<td>').addClass('text-danger').text(entry.problem.problem));
@@ -326,6 +329,7 @@
                             row.append($('<td>').text(entry.problem.problem));
                         }
                         row.append($('<td>').text('' + entry.problem.device));
+                        row.append($('<td>').text(moment(entry.problem.date).format('ddd, D.M.Y')));
 
                         // let tp_fixed = $('<button>').addClass('btn').addClass('btn-xs').addClass('btn-warning').html("<i class='fa fa-times'></i>&nbsp;&nbsp;In Bearbeitung");
                         // tp_fixed.data('token', entry.problem.token);

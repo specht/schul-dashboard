@@ -180,11 +180,18 @@ class Main < Sinatra::Base
     post '/api/set_desk_number' do
         require_user_who_can_manage_tablets!
         data = parse_request_data(:required_keys => [:dmx, :desk])
-        neo4j_query(<<~END_OF_QUERY, :dmx => data[:dmx], :desk => data[:desk])
-            MERGE (e:AulaLight {dmx: $dmx})
-            SET e.dmx = $dmx
-            SET e.desk = $desk;
-        END_OF_QUERY
+        if data[:desk] == ""
+            neo4j_query(<<~END_OF_QUERY, :dmx => data[:dmx], :desk => data[:desk])
+                MATCH (e:AulaLight {dmx: $dmx})
+                DELETE e   
+            END_OF_QUERY
+        else
+            neo4j_query(<<~END_OF_QUERY, :dmx => data[:dmx], :desk => data[:desk])
+                MERGE (e:AulaLight {dmx: $dmx})
+                SET e.dmx = $dmx
+                SET e.desk = $desk;
+            END_OF_QUERY
+        end
         respond(:result => 'lefromage')
     end
 

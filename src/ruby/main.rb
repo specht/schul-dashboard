@@ -1778,7 +1778,7 @@ class Main < Sinatra::Base
                         io.puts "<a class='dropdown-item nav-icon' href='/show_all_login_codes'><div class='icon'><i class='fa fa-key-modern'></i></div><span class='label'>Live-Anmeldungen</span></a>"
                         io.puts "<a class='dropdown-item nav-icon' href='/email_accounts'><div class='icon'><i class='fa fa-envelope'></i></div><span class='label'>E-Mail-Postfächer</span></a>"
                         io.puts "<a class='dropdown-item nav-icon' href='/stats'><div class='icon'><i class='fa fa-bar-chart'></i></div><span class='label'>Statistiken</span></a>"
-                        io.puts "<a class='dropdown-item nav-icon' href='/show_all_login_codes'><div class='icon'><i class='fa fa-music'></i></div><span class='label'>Aula</span></a>"
+                        io.puts "<a class='dropdown-item nav-icon' href='/aula'><div class='icon'><i class='fa fa-music'></i></div><span class='label'>Aula</span></a>"
                         printed_something = true
                     end
                     io.puts "</div>"

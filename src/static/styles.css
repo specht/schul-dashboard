@@ -2605,3 +2605,14 @@ th.thsticky {
     z-index: 100;
 }
 
+.table .th-marked {
+    background-color: rgba(254,244,165,0.4)!important;
+}
+
+.table .marked {
+    background-color: rgba(254,244,165,0.6)!important;
+}
+
+.timespan-booking {
+    background-color: rgb(255, 255, 255);
+}

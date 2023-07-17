@@ -162,14 +162,14 @@
                     console.log(today)
                     console.log(someday)
                     if (+today == +someday) {
-                        table.append($('<tr>').append($('<th>').css('background-color', 'rgba(254,244,165,0.5)').attr('colspan', 2).text(moment(d).format('ddd, L'))));
+                        table.append($('<tr>').append($('<th>').addClass('th-marked').attr('colspan', 2).text(moment(d).format('ddd, L'))));
                     } else {
-                        table.append($('<tr>').append($('<th>').css('background-color', 'rgba(255,255,255,0.5)').attr('colspan', 2).text(moment(d).format('ddd, L'))));
+                        table.append($('<tr>').append($('<th>').attr('colspan', 2).text(moment(d).format('ddd, L'))));
                     }
                     for (let tablet_id in (tablet_bookings[d] || {})) {
                         let row = $('<tr>');
                         if (+today == +someday) {
-                            row.css('background-color', 'rgba(254,244,165)')
+                            row.addClass('marked')
                         }
                         table.append(row);
                         row.append($('<td>').html(`${tablet_id}`));
@@ -178,7 +178,7 @@
                         row.append(cell);
                         cell.css('position', 'relative');
                         for (let booking of tablet_bookings[d][tablet_id]) {
-                            var div = $('<div>').css('overflow', 'hidden').css('font-size', '90%').css('background-color', '#fff').css('box-shadow', '0 0 3px rgba(0,0,0,0.2)').css('padding', '0 3px');
+                            var div = $('<div>').css('overflow', 'hidden').css('font-size', '90%').css('box-shadow', '0 0 3px rgba(0,0,0,0.2)').css('padding', '0 3px');
                             div.addClass('timespan-booking hover:outline hover:outline-1 hover:shadow-lg hover:outline-gray-400 cursor-pointer rounded');
                             div.css('position', 'absolute');
                             // div.html(`<span class='tis' style='background-color: ${booking.tablet.bg_color}; color: ${booking.tablet.fg_color};'>${tablet_id}</span> ${booking.lesson}`);

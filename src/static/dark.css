@@ -85,11 +85,23 @@ body {
 
 .table {
     color: rgba(255, 255, 255, 0.9);
-    background-color: #222!important;
+    background-color: rgba(0, 0, 0, 0.2)!important;
 }
 .table th {
     color: rgba(255, 255, 255, 0.9);
-    background-color: #333!important;
+    background-color: rgba(0, 0, 0, 0.3)!important;
+}
+
+.table .th-marked {
+    background-color: rgba(254,244,165,0.2)!important;
+}
+
+.table .marked {
+    background-color: rgba(254,244,165,0.3)!important;
+}
+
+.timespan-booking {
+    background-color: rgba(255, 255, 255, 0.2);
 }
 
 .dropdown-item:focus, .dropdown-item:hover {

@@ -201,10 +201,10 @@
                         row.append($('<td>').text(moment(entry.problem.date).format('ddd, D.M.Y')));
                         row.append($('<td>').text(entry.problem.problem));
                         row.append($('<td>').text('' + entry.problem.device));
-                        let tp_fixed = $('<td>').html("<i class='text-success fa fa-check'></i>&nbsp;&nbsp;Behoben");
-                        let tp_progress = $('<td>').html("<i class='text-secondary fa fa-clock-o'></i>&nbsp;&nbsp;in Bearbeitung");
-                        let tp_not_fixed = $('<td>').html("<i class='text-danger fa fa-times'></i>&nbsp;&nbsp;konnte nicht Behoben werden");
-                        let tp_see_comment = $('<td>').html("<i class='fa fa-eye'></i>&nbsp;&nbsp;siehe Kommentar");
+                        let tp_fixed = $('<td>').html("<i class='text-success fa fa-check' title='Behoben'></i>");
+                        let tp_progress = $('<td>').html("<i class='text-secondary fa fa-clock-o' title='In Bearbeitung'></i>");
+                        let tp_not_fixed = $('<td>').html("<i class='text-danger fa fa-times' title='Nicht behoben'></i>");
+                        let tp_see_comment = $('<td>').html("<i class='text-primary fa fa-commenting' title='Siehe Kommentar'></i>");
 
                         if (entry.problem.fixed == true) {
                             row.append(tp_fixed);
@@ -265,10 +265,10 @@
                         row.append($('<td>').text(moment(entry.problem.date).format('ddd, D.M.Y')));
                         row.append($('<td>').text(entry.problem.problem));
                         row.append($('<td>').text('' + entry.problem.device));
-                        let tp_fixed = $('<td>').html("<i class='text-success fa fa-check'></i>&nbsp;&nbsp;Behoben");
-                        let tp_progress = $('<td>').html("<i class='text-secondary fa fa-clock-o'></i>&nbsp;&nbsp;in Bearbeitung");
-                        let tp_not_fixed = $('<td>').html("<i class='text-danger fa fa-times'></i>&nbsp;&nbsp;konnte nicht Behoben werden");
-                        let tp_see_comment = $('<td>').html("<i class='fa fa-eye'></i>&nbsp;&nbsp;siehe Kommentar");
+                        let tp_fixed = $('<td>').html("<i class='text-success fa fa-check' title='Behoben'></i>");
+                        let tp_progress = $('<td>').html("<i class='text-secondary fa fa-clock-o' title='In Bearbeitung'></i>");
+                        let tp_not_fixed = $('<td>').html("<i class='text-danger fa fa-times' title='Nicht behoben'></i>");
+                        let tp_see_comment = $('<td>').html("<i class='text-primary fa fa-commenting' title='Siehe Kommentar'></i>");
 
                         if (entry.problem.fixed == true) {
                             row.append(tp_fixed);

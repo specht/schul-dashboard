@@ -162,6 +162,8 @@ class Main < Sinatra::Base
         neo4j_query_expect_one(<<~END_OF_QUERY, :token => token)
             MATCH (v:TechProblem {token: $token})
             SET v.hidden_admin = false
+            SET v.fixed = false
+            SET v.not_fixed = false
             RETURN v;
         END_OF_QUERY
         respond(:ok => true)

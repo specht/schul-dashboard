@@ -148,16 +148,28 @@
             if (data.success) {
                 let tablet_bookings = data.bookings;
                 for (let d of Object.keys(tablet_bookings).sort()) {
-                    let table = $('#bookings-here');         
-                    if (new Date(d) < new Date) {
+                    let table = $('#bookings-here');
+                    const today = new Date();
+                    const someday = new Date(d);
+                    today.setHours(0);
+                    today.setMinutes(0);
+                    today.setSeconds(0);
+                    today.setMilliseconds(0);
+                    someday.setHours(0);
+                    someday.setMinutes(0);
+                    someday.setSeconds(0);
+                    someday.setMilliseconds(0);
+                    console.log(today)
+                    console.log(someday)
+                    if (+today == +someday) {
                         table.append($('<tr>').append($('<th>').css('background-color', 'rgba(254,244,165,0.5)').attr('colspan', 2).text(moment(d).format('ddd, L'))));
                     } else {
                         table.append($('<tr>').append($('<th>').css('background-color', 'rgba(255,255,255,0.5)').attr('colspan', 2).text(moment(d).format('ddd, L'))));
                     }
                     for (let tablet_id in (tablet_bookings[d] || {})) {
                         let row = $('<tr>');
-                        if (new Date(d) < new Date) {
-                            row.css('background-color', '#fef4a5')
+                        if (+today == +someday) {
+                            row.css('background-color', 'rgba(254,244,165)')
                         }
                         table.append(row);
                         row.append($('<td>').html(`${tablet_id}`));

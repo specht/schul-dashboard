@@ -83,7 +83,7 @@
                     <th>Datum</th>
                     <th style="width: 140px;">Kommentar</th>
                     <th style="width: 140px;">Technikamt</th>
-                    <th style="width: 140px;">Einblenden</th>
+                    <th style="width: 140px;">TechnikTeam</th>
                     <th style="width: 140px;">Löschen</th>
                     </tr></thead>
                     <tbody id='fixed_problems_here'>
@@ -270,11 +270,21 @@
                         let tp_hide_admin = $('<button>').addClass('btn').addClass('btn-xs').addClass('btn-info').html("<i class='fa fa-wrench'></i>&nbsp;&nbsp;Eingeblendet");
                         tp_hide_admin.data('token', entry.problem.token);
                         tp_hide_admin.click(function(e) {
-                            api_call('/api/hide_tech_problem_admin', {token: $(e.target).data('token')}, function(data) {
+                            if (entry.problem.comment != "") {
+                                api_call('/api/hide_tech_problem_admin', {token: $(e.target).data('token')}, function(data) {
                                 if (data.success)
                                     refresh_tech_problems();
                                     refresh_fixed_tech_problems();
-                            });
+                                });
+                            } else {
+                                showTemplateModal('Ausblenden nicht möglich',
+                                'Bitte reagiere erst auf diese Meldung, indem du einen Kommentar schreibst und/oder das Problem als „behoben“ oder „nicht behoben“ markierst.',
+                                '','',
+                                'Schließen', 'btn-secondary'
+                                )
+                            }
+                                                        
+
                         });
 
                         if (entry.problem.hidden == false) {
@@ -383,14 +393,24 @@
                             let token = entry.problem.token
                             let old_comment = entry.problem.comment
                             showTemplateModal('Kommentar aktualisieren', 
-                                '<textarea type="text" id="tp_comment_input" class="form-control" placeholder="z.B. Danke für deinen Beitrag (leer lassen, um den Kommentar zu löschen)">' + old_comment + '</textarea>',
+                                '<div class="alert alert-warning">Falls das Problem nicht als „behoben“ oder „nicht behoben“ markiert ist, kannst du den Kommentar erst, nachdem du das Problem für das TechnikTeam wieder eingeblendet hast löschen.</div><textarea type="text" id="tp_comment_input" class="form-control" placeholder="z.B. Danke für deinen Beitrag (leer lassen, um den Kommentar zu löschen)">' + old_comment + '</textarea>',
                                 "<i class='fa fa-check'></i>&nbsp;&nbsp;Speichern", 'btn-success',
                                 'Abbrechen', 'btn-secondary', function() {
                                     let comment = $('#tp_comment_input').val();
-                                    api_call('/api/comment_tech_problem_admin', {token: token, comment: comment}, function(data) {
-                                        if (data.success)
-                                            refresh_fixed_tech_problems();
-                                    });
+                                    if (comment != "" || entry.problem.fixed || entry.problem.not_fixed) {
+                                        api_call('/api/comment_tech_problem_admin', {token: token, comment: comment}, function(data) {
+                                            if (data.success)
+                                                refresh_fixed_tech_problems();
+                                        });
+                                    } else {
+                                        // refresh_fixed_tech_problems();
+                                        // showTemplateModal('Blende das Problem zuerst wieder ein',
+                                        // 'Da das Problem nach dem Löschen des Kommentars unbeantwortet wäre musst du es erst wieder einblenden, um den Kommentar zu löschen.',
+                                        // '','',
+                                        // 'Schließen', 'btn-secondary'
+                                        // )
+                                        console.log("Test")
+                                    }
                                 }
                             );
                         });

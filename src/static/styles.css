@@ -2612,6 +2612,10 @@
   .table .marked {
       background-color: rgba(254,244,165,0.6)!important;
   }
+
+  .table .th-bookings {
+    background-color: rgba(255, 255, 255, 0.5);
+  }
   
   .timespan-booking {
       background-color: rgb(255, 255, 255);

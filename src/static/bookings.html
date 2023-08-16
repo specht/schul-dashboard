@@ -164,11 +164,7 @@
                     if (+today == +someday) {
                         table.append($('<tr>').append($('<th>').addClass('th-marked').attr('colspan', 2).text(moment(d).format('ddd, L'))));
                     } else {
-<<<<<<< HEAD
-                        table.append($('<tr>').append($('<th>').attr('colspan', 2).text(moment(d).format('ddd, L'))));
-=======
                         table.append($('<tr>').append($('<th>').addClass('th').attr('colspan', 2).text(moment(d).format('ddd, L'))));
->>>>>>> lefromage
                     }
                     for (let tablet_id in (tablet_bookings[d] || {})) {
                         let row = $('<tr>');

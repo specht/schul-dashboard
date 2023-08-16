@@ -159,10 +159,8 @@
                     someday.setMinutes(0);
                     someday.setSeconds(0);
                     someday.setMilliseconds(0);
-                    console.log(today)
-                    console.log(someday)
                     if (+today == +someday) {
-                        table.append($('<tr>').append($('<th>').addClass('th-marked').attr('colspan', 2).text(moment(d).format('ddd, L'))));
+                        table.append($('<tr>').append($('<th>').addClass('th-marked').attr('colspan', 2).text('Heute')));
                     } else {
                         table.append($('<tr>').append($('<th>').addClass('th-bookings').attr('colspan', 2).text(moment(d).format('ddd, L'))));
                     }

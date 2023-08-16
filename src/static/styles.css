@@ -2606,11 +2606,11 @@
   }
   
   .table .th-marked {
-      background-color: rgba(254,244,165,0.4)!important;
+      background-color: rgba(254,244,165,0.8)!important;
   }
   
   .table .marked {
-      background-color: rgba(254,244,165,0.6)!important;
+      background-color: rgba(254,244,165,0.4)!important;
   }
 
   .table .th-bookings {

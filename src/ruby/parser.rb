@@ -460,7 +460,7 @@ class Parser
                 if result[k][:is_tablet_set]
                     result[k][:label] = "#{result[k][:form_factor]} mit #{result[k][:count]} Tablets"
                 else
-                    result[k][:label] = "#{result[k][:form_factor]}"
+                    result[k][:label] = "#{result[k][:form_factor]} mit einem Gerät"
                 end
             end
             return result

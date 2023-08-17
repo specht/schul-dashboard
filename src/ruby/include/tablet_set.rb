@@ -350,8 +350,6 @@ class Main < Sinatra::Base
             if hints.empty?
                 if @@tablet_sets[x][:is_tablet_set] == true
                     hints << "<span class='text-success'><i class='fa fa-check'></i></span>&nbsp;&nbsp;Dieser Tabletsatz ist eine gute Wahl für Ihre Unterrichtsstunde."
-                else
-                    hints << ""
                 end
             end
             if @@tablet_sets[x][:hint]

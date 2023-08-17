@@ -24,36 +24,43 @@
 "Computer 1":
   :standort: Sekretariat
   :form_factor: Koffer
+  :count: 1
   :is_tablet_set: false
   :hint: Test
 
 "Computer 2":
   :standort: Sekretariat
   :form_factor: Koffer
+  :count: 1
   :is_tablet_set: false
 
 "Computer 3":
   :standort: Sekretariat
   :form_factor: Koffer
+  :count: 1
   :is_tablet_set: false
 
 "Computer 2":
   :standort: Sekretariat
   :form_factor: Koffer
+  :count: 1
   :is_tablet_set: false
 
 "Beamer 5":
   :standort: Sekretariat
   :form_factor: Koffer
+  :count: 1
   :is_tablet_set: false
 
 "Multi-Beamer 6":
   :standort: Sekretariat
   :form_factor: Koffer
+  :count: 1
   :is_tablet_set: false
 
 "DVD-Player 1":
   :standort: Sekretariat
   :form_factor: Koffer
+  :count: 1
   :is_tablet_set: false
   

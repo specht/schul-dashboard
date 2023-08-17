@@ -1028,12 +1028,14 @@ document.addEventListener('DOMContentLoaded', function() {
                 jitsi_link += '@' + encodeURI(window.selected_shorthand);
             }
             if (event_data.booked_tablet_sets) {
-                let p = $('<p>').html(`Für diese Unterrichtsstunde wurden <strong>${event_data.booked_tablet_sets_total_count} Tablets</strong> reserviert. Bitte bringen Sie sie gleich nach dem Unterricht wieder zurück.`);
+                let p = $('<p>').html(`Für diese Unterrichtsstunde wurden insgesamt <strong>${event_data.booked_tablet_sets_total_count} Geräte</strong> reserviert. Bitte bringen Sie sie gleich nach dem Unterricht wieder zurück.`);
                 body.append(p);
                 let list = $('<ul>');
                 body.append(list);
                 for (let tablet_set_id of event_data.booked_tablet_sets) {
-                    let item = $('<li>').html(`<strong>${tablet_set_id}</strong> (${tablet_set_info[tablet_set_id].count} Tablets): ${tablet_set_info[tablet_set_id].standort}`);//<br/>___PRINT_HINTS_HERE___Die Tablets werden schon 5 Minuten nach Stundenende schon wieder gebraucht)`);
+                    let is_tablet = `${tablet_set_info[tablet_set_id].is_tablet_set}` === 'true';
+                    let count = is_tablet ? ` (${tablet_set_info[tablet_set_id].count} Tablets) ` : '';
+                    let item = $('<li>').html(`<strong>${tablet_set_id}</strong>${count}: ${tablet_set_info[tablet_set_id].standort}`);//<br/>___PRINT_HINTS_HERE___Die Tablets werden schon 5 Minuten nach Stundenende schon wieder gebraucht)`);
                     list.append(item);
                 }
                 wrote_something = true;

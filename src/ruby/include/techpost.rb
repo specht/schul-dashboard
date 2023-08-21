@@ -19,6 +19,7 @@ class Main < Sinatra::Base
         END_OF_QUERY
 
         for mail_adress in TECHNIKTEAM do
+            name = @session_user[:display_name]
             deliver_mail do
                 to mail_adress
                 bcc SMTP_FROM
@@ -28,7 +29,7 @@ class Main < Sinatra::Base
 
                 StringIO.open do |io|
                     io.puts "<p>Liebes TechnikTeam,</p>"
-                    io.puts "<p>es liegt ein neues Technikproblem vor. Das Problem betrifft #{data[:device]} und lautet: „#{data[:problem]}“ Das Problem wurde von #{@session_user[:display_name]}</p>"
+                    io.puts "<p>es liegt ein neues Technikproblem vor. Das Problem betrifft #{data[:device]} und lautet: „#{data[:problem]}“ Das Problem wurde von #{name} abgesendet</p>"
                     io.puts "<a href='#{WEBSITE_HOST}/techpostadmin'>Probleme ansehen</a>"
                     io.puts "<p>Viele Grüße<br>Dashboard #{SCHUL_NAME_AN_DATIV} #{SCHUL_NAME}</p>"
                     io.string

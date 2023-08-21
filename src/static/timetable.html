@@ -1028,8 +1028,13 @@ document.addEventListener('DOMContentLoaded', function() {
                 jitsi_link += '@' + encodeURI(window.selected_shorthand);
             }
             if (event_data.booked_tablet_sets) {
-                let p = $('<p>').html(`Für diese Unterrichtsstunde wurden insgesamt <strong>${event_data.booked_tablet_sets_total_count} Geräte</strong> reserviert. Bitte bringen Sie sie gleich nach dem Unterricht wieder zurück.`);
-                body.append(p);
+                if (`${event_data.booked_tablet_sets_total_count}` > 1) {
+                    let p = $('<p>').html(`Für diese Unterrichtsstunde wurden insgesamt <strong>${event_data.booked_tablet_sets_total_count} Geräte</strong> reserviert. Bitte bringen Sie sie gleich nach dem Unterricht wieder zurück.`);
+                    body.append(p);
+                } else {
+                    let p = $('<p>').html(`Für diese Unterrichtsstunde wurde insgesamt <strong>ein Gerät</strong> reserviert. Bitte bringen Sie es gleich nach dem Unterricht wieder zurück.`);
+                    body.append(p);
+                }
                 let list = $('<ul>');
                 body.append(list);
                 for (let tablet_set_id of event_data.booked_tablet_sets) {

@@ -18,25 +18,25 @@ class Main < Sinatra::Base
             RETURN v.token;
         END_OF_QUERY
 
-        deliver_mail do
-            to TECHNIKTEAM
-            bcc SMTP_FROM
-            from SMTP_FROM
+        for mail_adress in TECHNIKTEAM do
+            deliver_mail do
+                to mail_adress
+                bcc SMTP_FROM
+                from SMTP_FROM
 
-            subject "Neues Technikproblem"
+                subject "Neues Technikproblem"
 
-            StringIO.open do |io|
-                io.puts "<p>Liebes TechnikTeam,</p>"
-                io.puts "<p>es liegt ein neues Technikproblem vor.</p>"
-                io.puts "<p>Das Problem betrifft #{data[:device]} und lautet: „#{data[:problem]}“</p>"
-                io.puts "<a href='/techpostadmin'>Probleme ansehen</a>"
-                io.puts "<p>Viele Grüße</p>"
-                io.puts "<p>Dashboard #{SCHUL_NAME_AN_DATIV} #{SCHUL_NAME}</p>"
-                io.string
-            
+                StringIO.open do |io|
+                    io.puts "<p>Liebes TechnikTeam,</p>"
+                    io.puts "<p>es liegt ein neues Technikproblem vor. Das Problem betrifft #{data[:device]} und lautet: „#{data[:problem]}“ Das Problem wurde von #{@session_user[:display_name]}</p>"
+                    io.puts "<a href='#{WEBSITE_HOST}/techpostadmin'>Probleme ansehen</a>"
+                    io.puts "<p>Viele Grüße<br>Dashboard #{SCHUL_NAME_AN_DATIV} #{SCHUL_NAME}</p>"
+                    io.string
+                
+                end
             end
+            respond(:ok => true)
         end
-        respond(:ok => true)
     end
 
     post '/api/comment_tech_problem_admin' do

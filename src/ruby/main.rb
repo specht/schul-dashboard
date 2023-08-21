@@ -2160,48 +2160,34 @@ class Main < Sinatra::Base
                 io.puts "</div>"
                 io.string
             end
+        elsif technikteam_logged_in?
+            StringIO.open do |io|
+                io.puts "<div style='margin-bottom: 15px;'>"
+                temp = StringIO.open do |tio|
+                    @@lehrer_order.each do |email|
+                        id = @@user_info[email][:id]
+                        next unless @@user_info[email][:can_log_in]
+                        next unless can_see_all_timetables_logged_in? || email == @session_user[:email]
+                        tio.puts "<a data-id='#{id}' onclick=\"load_timetable('#{id}'); window.selected_shorthand = '#{@@user_info[email][:shorthand]}'; \" class='btn btn-sm ttc ttc-teacher'>#{@@user_info[email][:shorthand]}</a>"
+                    end
+                    tio.string
+                end
+                io.puts temp
+                io.puts "<hr>"
+                temp = StringIO.open do |tio|
+                    ROOM_ORDER.each do |room|
+                        id = @@room_ids[room]
+                        tio.puts "<a data-id='#{id}' onclick=\"load_timetable('#{id}');\" class='btn btn-sm ttc ttc-room'>#{room}</a>"
+                    end
+                    tio.string
+                end
+                io.puts temp
+
+                io.puts "</div>"
+                io.string
+            end
         end
     end
-
-    # def print_timetable_chooser_sus()
-    #     if technikteam_logged_in? && can_see_all_timetables_logged_in?
-    #         StringIO.open do |io|
-    #             io.puts "<div class='col-lg-12 col-md-4 col-sm-6'>"
-    #             io.puts "<div style='margin-bottom: 10px;'>"
-    #             temp = StringIO.open do |tio|
-    #                 @@klassen_order.each do |klasse|
-    #                     id = @@klassen_id[klasse]
-    #                     tio.puts "<a data-klasse='#{klasse}' data-id='#{id}' onclick=\"load_timetable('#{id}');\" class='btn btn-sm ttc ttc-klasse'>#{tr_klasse(klasse)}</a>"
-    #                 end
-    #                 tio.string
-    #             end
-    #             io.puts temp
-    #             io.puts '<hr />'
-    #             temp = StringIO.open do |tio|
-    #                 ROOM_ORDER.each do |room|
-    #                     id = @@room_ids[room]
-    #                     tio.puts "<a data-id='#{id}' onclick=\"load_timetable('#{id}');\" class='btn btn-sm ttc ttc-room'>#{room}</a>"
-    #                 end
-    #                 tio.string
-    #             end
-    #             io.puts temp
-    #                             io.puts '<hr />'
-    #             temp = StringIO.open do |tio|
-    #                 @@lehrer_order.each do |email|
-    #                     id = @@user_info[email][:id]
-    #                     next unless @@user_info[email][:can_log_in]
-    #                     next unless can_see_all_timetables_logged_in? || email == @session_user[:email]
-    #                     tio.puts "<a data-id='#{id}' onclick=\"load_timetable('#{id}'); window.selected_shorthand = '#{@@user_info[email][:shorthand]}'; \" class='btn btn-sm ttc ttc-teacher'>#{@@user_info[email][:shorthand]}</a>"
-    #                 end
-    #                 tio.string
-    #             end
-    #             io.puts temp
-    #             io.puts "</div>"
-    #             io.puts "</div>"
-    #             io.string
-    #         end
-    #     end
-    # end
 
     def print_test_klassen_chooser(active = nil)
         StringIO.open do |io|

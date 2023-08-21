@@ -92,7 +92,6 @@
                 #{#print_self_test_panel()}
                 #{print_current_polls()}
                 #{#print_salzh_panel()}
-                #{#print_timetable_chooser_sus()}
             </div>
         </div>
         <div class='#{tablet_logged_in? ? 'col-md-4' : 'col-lg-8 col-md-12'}'>
@@ -111,9 +110,9 @@
             </div>
         </div>
         <div class='#{tablet_logged_in? ? 'col-md-6' : 'col-lg-2 col-md-12 side-panel'} timetable_chooser tablet_timetable_chooser' style='#{tablet_logged_in? ? 'display: none;' : ''}'>
-            #{print_timetable_chooser()}
-            <div class='hint weekend_events' style='display: none;'></div>
             <div class='hint future_homework' style='display: none;'></div>
+            <div class='hint weekend_events' style='display: none;'></div>
+            #{print_timetable_chooser()}
         </div>
     </div>
 </div>

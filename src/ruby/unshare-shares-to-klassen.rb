@@ -1,4 +1,5 @@
 #!/usr/bin/env ruby
+SKIP_DATA_COLLECTION = true
 require './main.rb'
 require './parser.rb'
 require 'set'
@@ -64,6 +65,7 @@ class Script
         present_shares = {}
         (@ocs.file_sharing.all || []).each do |share|
             next if share['share_with'].nil?
+            next if share['uid_owner'] == 'Dashboard'
             present_shares[share['share_with']] ||= {}
             present_shares[share['share_with']][share['path']] = {
                 :permissions => share['permissions'].to_i,

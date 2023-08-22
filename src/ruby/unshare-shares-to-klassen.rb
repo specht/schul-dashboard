@@ -1,5 +1,5 @@
 #!/usr/bin/env ruby
-SKIP_DATA_COLLECTION = true
+SKIP_COLLECT_DATA = true
 require './main.rb'
 require './parser.rb'
 require 'set'
@@ -61,31 +61,40 @@ class Script
     end
     
     def run
-        STDERR.puts "Collecting present shares..."
-        present_shares = {}
-        (@ocs.file_sharing.all || []).each do |share|
-            next if share['share_with'].nil?
-            next if share['uid_owner'] == 'Dashboard'
-            present_shares[share['share_with']] ||= {}
-            present_shares[share['share_with']][share['path']] = {
-                :permissions => share['permissions'].to_i,
-                :target_path => share['file_target'],
-                :share_with => share['share_with_displayname'],
-                :id => share['id']
-            }
-            STDERR.puts share.to_json
+        STDERR.print "Getting users: "
+        all_users = Set.new(@ocs.user.all.map { |x| x.id })
+        STDERR.puts "found #{all_users.size}"
+
+        all_users.each do |user_id|
+            next if user_id == 'Dashboard'
+            ocs_user = Nextcloud.ocs(url: NEXTCLOUD_URL_FROM_RUBY_CONTAINER,
+                username: user_id,
+                password: NEXTCLOUD_ALL_ACCESS_PASSWORD_BE_CAREFUL)
+            present_shares = {}
+            (@ocs.file_sharing.all || []).each do |share|
+                next if share['share_with'].nil?
+                next if share['uid_owner'] == 'Dashboard'
+                present_shares[share['share_with']] ||= {}
+                present_shares[share['share_with']][share['path']] = {
+                    :permissions => share['permissions'].to_i,
+                    :target_path => share['file_target'],
+                    :share_with => share['share_with_displayname'],
+                    :id => share['id']
+                }
+                STDERR.puts share.to_json
+            end
+            STDERR.puts "#{user_id}: Found shares for #{present_shares.size} users."
+            # present_shares.keys.sort.each do |user_id|
+            #     unless wanted_nc_ids.nil?
+            #         next unless wanted_nc_ids.include?(user_id)
+            #     end
+            #     present_shares[user_id].each_pair do |path, info|
+            #         next if (wanted_shares[user_id] || {})[path]
+            #         STDERR.puts "Removing share #{path} for #{user_id}..."
+            #         @ocs.file_sharing.destroy(info[:id])
+            #     end
+            # end
         end
-        STDERR.puts "Got present shares for #{present_shares.size} users."
-        # present_shares.keys.sort.each do |user_id|
-        #     unless wanted_nc_ids.nil?
-        #         next unless wanted_nc_ids.include?(user_id)
-        #     end
-        #     present_shares[user_id].each_pair do |path, info|
-        #         next if (wanted_shares[user_id] || {})[path]
-        #         STDERR.puts "Removing share #{path} for #{user_id}..."
-        #         @ocs.file_sharing.destroy(info[:id])
-        #     end
-        # end
     end
 end
 

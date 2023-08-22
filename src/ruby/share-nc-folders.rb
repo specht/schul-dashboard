@@ -14,7 +14,7 @@ SHARE_CREATE = 4
 SHARE_DELETE = 8
 SHARE_SHARE = 16
 
-ALSO_SHARE_OS_FOLDERS = true
+ALSO_SHARE_OS_FOLDERS = false
 HTTP_READ_TIMEOUT = 60 * 10
 
 # This is a really ugly way to monkey patch an increased HTTP read timeout into the dachinat/nextcloud gem.
@@ -113,7 +113,6 @@ class Script
             lesson_info = @@lessons[:lesson_keys][lesson_key]
             # only handle lessons which have actual Klassen
             next if (Set.new(lesson_info[:klassen]) & Set.new(@@klassen_order)).empty?
-            next if (Set.new(lesson_info[:klassen]) & Set.new(['5a'])).empty?
             unless ALSO_SHARE_OS_FOLDERS
                 next unless (Set.new(lesson_info[:klassen]) & Set.new(['11', '12'])).empty?
             end

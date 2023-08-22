@@ -83,11 +83,19 @@ class Main < Sinatra::Base
         data = parse_request_data(:required_keys => [:token, :comment],)
         token = data[:token]
         comment = data[:comment]
-        problems = neo4j_query_expect_one(<<~END_OF_QUERY, :token => token, :comment => comment)
-            MATCH (v:TechProblem {token: $token})
-            SET v.comment = $comment
-            RETURN v;
-        END_OF_QUERY
+        if comment
+            problems = neo4j_query_expect_one(<<~END_OF_QUERY, :token => token, :comment => comment)
+                MATCH (v:TechProblem {token: $token})
+                SET v.comment = $comment
+                RETURN v;
+            END_OF_QUERY
+        else
+            problems = neo4j_query_expect_one(<<~END_OF_QUERY, :token => token, :comment => comment)
+                MATCH (v:TechProblem {token: $token})
+                SET v.comment = false
+                RETURN v;
+            END_OF_QUERY
+        end
         respond(:ok => true)
     end
 

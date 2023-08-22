@@ -1733,11 +1733,11 @@ class Timetable
                                     ['Besenflug', 'Hooch'],
                                     ['Verteidigung gegen die dunklen Künste', 'Carrow']
                                 ].sample
-                                e[:label_lehrer_lang] = "<b>#{subject[1]}</b>"
-                                e[:label_lehrer_short] = "<b>#{subject[1]}</b>"
-                                e[:label_lang] = "<b>#{subject[0]} (#{subject[1]})</b>"
-                                e[:label_short] = "<b>#{subject[0]} (#{subject[1]})</b>"
-                                e[:label] = "<b>#{subject[0]} (#{subject[1]})</b>"
+                                e[:label_lehrer_lang] = "#{subject[1]}"
+                                e[:label_lehrer_short] = "#{subject[1]}"
+                                e[:label_lang] = "<b>#{subject[0]}</b> (#{subject[1]})"
+                                e[:label_short] = "<b>#{subject[0]}</b> (#{subject[1]})"
+                                e[:label] = "<b>#{subject[0]}</b> (#{subject[1]})"
                             end
                             e
                         end

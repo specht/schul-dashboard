@@ -81,7 +81,7 @@ class Script
                     :share_with => share['share_with_displayname'],
                     :id => share['id']
                 }
-                STDERR.puts "#{user_id}: #{share.to_json}"
+                STDERR.puts "#{user_id}: #{share['share_with']} #{share['path']}"
             end
             # present_shares.keys.sort.each do |user_id|
             #     unless wanted_nc_ids.nil?

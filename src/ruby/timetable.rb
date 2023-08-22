@@ -1724,14 +1724,14 @@ class Timetable
                                 e.delete(:vertretungs_text)
                                 e.delete(:data)
                                 subject = [
-                                    ['Geschichte der Zauberei', 'Binns'],
-                                    ['Astronomie', 'Sinistra'],
-                                    ['Kräuterkunde', 'Longbottom'],
-                                    ['Muggelkunde', 'Carrow'],
-                                    ['Pflege magischer Geschöpfe', 'Kesselbrand'],
-                                    ['Arithmantik', 'Vektor'],
+                                    ['Zauberkunst', 'Flitwick'],
+                                    ['Wahrsagen', 'Trelawney'],
+                                    ['Kräuterkunde', 'Sprout'],
+                                    ['Muggelkunde', 'Burbage'],
+                                    ['Pflege magischer Geschöpfe', 'Hagrid'],
+                                    ['Zaubertränke', 'Snape'],
                                     ['Besenflug', 'Hooch'],
-                                    ['Verteidigung gegen die dunklen Künste', 'Carrow']
+                                    ['Verteidigung gegen die dunklen Künste', 'Lupin']
                                 ].sample
                                 e[:label_lehrer_lang] = "#{subject[1]}"
                                 e[:label_lehrer_short] = "#{subject[1]}"

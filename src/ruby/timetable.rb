@@ -1723,14 +1723,21 @@ class Timetable
                                 e.delete(:orig_lesson_key)
                                 e.delete(:vertretungs_text)
                                 e.delete(:data)
-                                game = ['Fortnite', 'Brawl Stars', 'Fall Guys',
-                                'Among Us', 'Minecraft', 'Clash of Clans',
-                                'Sea of Thieves', 'Witch It', 'Rocket League'].sample
-                                e[:label_lehrer_lang] = "<b>#{game}</b>"
-                                e[:label_lehrer_short] = "<b>#{game}</b>"
-                                e[:label_lang] = "<b>#{game}</b>"
-                                e[:label_short] = "<b>#{game}</b>"
-                                e[:label] = "<b>#{game}</b>"
+                                subject = [
+                                    ['Geschichte der Zauberei', 'Binns'],
+                                    ['Astronomie', 'Sinistra'],
+                                    ['Kräuterkunde', 'Longbottom'],
+                                    ['Muggelkunde', 'Carrow'],
+                                    ['Pflege magischer Geschöpfe', 'Kesselbrand'],
+                                    ['Arithmantik', 'Vektor'],
+                                    ['Besenflug', 'Hooch'],
+                                    ['Verteidigung gegen die dunklen Künste', 'Carrow']
+                                ].sample
+                                e[:label_lehrer_lang] = "<b>#{subject[1]}</b>"
+                                e[:label_lehrer_short] = "<b>#{subject[1]}</b>"
+                                e[:label_lang] = "<b>#{subject[0]} (#{subject[1]})</b>"
+                                e[:label_short] = "<b>#{subject[0]} (#{subject[1]})</b>"
+                                e[:label] = "<b>#{subject[0]} (#{subject[1]})</b>"
                             end
                             e
                         end

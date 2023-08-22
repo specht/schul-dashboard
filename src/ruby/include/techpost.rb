@@ -17,9 +17,26 @@ class Main < Sinatra::Base
             SET v.hidden_admin = false
             RETURN v.token;
         END_OF_QUERY
+        name = @session_user[:display_name]
+        mail_adress = @session_user[:email]
+        deliver_mail do
+            to mail_adress
+            bcc SMTP_FROM
+            from SMTP_FROM
 
+            subject "Neues Technikproblem"
+
+            StringIO.open do |io|
+                io.puts "<p>Hallo!</p>"
+                io.puts "<p>du hast soeben ein neues Technikproblem angelegt. Das Problem betrifft #{data[:device]} und lautet: „#{data[:problem]}“</p>"
+                io.puts "<a href='#{WEBSITE_HOST}/techpost'>Probleme ansehen</a>"
+                io.puts "<p>Diese E-Mail dient nur als Bestätigung, du musst also nicht weiter tun.</p>"
+                io.puts "<p>Viele Grüße<br>Dashboard #{SCHUL_NAME_AN_DATIV} #{SCHUL_NAME}</p>"
+                io.string
+            
+            end
+        end
         for mail_adress in TECHNIKTEAM do
-            name = @session_user[:display_name]
             deliver_mail do
                 to mail_adress
                 bcc SMTP_FROM

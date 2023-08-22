@@ -1770,7 +1770,7 @@ class Main < Sinatra::Base
                         io.puts "<a class='dropdown-item nav-icon' href='/admin'><div class='icon'><i class='fa fa-wrench'></i></div><span class='label'>Administration</span></a>"
                     end
                     if user_who_can_manage_tablets_logged_in?
-                        io.puts "<a class='dropdown-item nav-icon' href='/bookings'><div class='icon'><i class='fa fa-tablet'></i></div><span class='label'>Tablets</span></a>"
+                        io.puts "<a class='dropdown-item nav-icon' href='/bookings'><div class='icon'><i class='fa fa-tablet'></i></div><span class='label'>Buchungnen</span></a>"
                         io.puts "<a class='dropdown-item nav-icon' href='/techpostadmin'><div class='icon'><i class='fa fa-laptop'></i></div><span class='label'>Technikamt (Admin)</span></a>"
                     end
                     if admin_logged_in?
@@ -2168,19 +2168,21 @@ class Main < Sinatra::Base
                         id = @@user_info[email][:id]
                         next unless @@user_info[email][:can_log_in]
                         next unless can_see_all_timetables_logged_in? || email == @session_user[:email]
-                        tio.puts "<a data-id='#{id}' onclick=\"load_timetable('#{id}'); window.selected_shorthand = '#{@@user_info[email][:shorthand]}'; \" class='btn btn-sm ttc ttc-teacher'>#{@@user_info[email][:shorthand]}</a>"
+                        tio.puts "<a data-id='#{id}' onclick=\"load_timetable('#{id}'); window.selected_shorthand = '#{@@user_info[email][:shorthand]}'; \" class='btn btn-sm ttc ttc-teacher' style='display: none;'>#{@@user_info[email][:shorthand]}</a>"
                     end
                     tio.string
                 end
+                io.puts "<button class='btn btn-xs ttc bu-show-alle-teacher' style='margin-left: 0.5em; width: unset; padding: 0.25rem 0.5rem; display: inline-block;' onclick=\"$('.ttc-teacher').show(); $('.bu-show-alle-teacher').hide();\">Alle Lehrkräfte</button>"
                 io.puts temp
                 io.puts "<hr>"
                 temp = StringIO.open do |tio|
                     ROOM_ORDER.each do |room|
                         id = @@room_ids[room]
-                        tio.puts "<a data-id='#{id}' onclick=\"load_timetable('#{id}');\" class='btn btn-sm ttc ttc-room'>#{room}</a>"
+                        tio.puts "<a data-id='#{id}' onclick=\"load_timetable('#{id}');\" class='btn btn-sm ttc ttc-room' style='display: none;'>#{room}</a>"
                     end
                     tio.string
                 end
+                io.puts "<button class='btn btn-xs ttc bu-show-alle-rooms' style='margin-left: 0.5em; width: unset; padding: 0.25rem 0.5rem; display: inline-block;' onclick=\"$('.ttc-room').show(); $('.bu-show-alle-rooms').hide();\">Alle Räume</button>"
                 io.puts temp
 
                 io.puts "</div>"

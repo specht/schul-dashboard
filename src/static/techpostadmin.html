@@ -274,7 +274,6 @@
                                 api_call('/api/hide_tech_problem_admin', {token: $(e.target).data('token')}, function(data) {
                                 if (data.success)
                                     refresh_tech_problems();
-                                    refresh_fixed_tech_problems();
                                 });
                             } else {
                                 showTemplateModal('Ausblenden nicht möglich',
@@ -287,30 +286,45 @@
 
                         });
 
-                        if (entry.problem.hidden == false) {
-                            let tp_hide = $('<button>').addClass('btn').addClass('btn-xs').addClass('btn-info').html("<i class='fa fa-user'></i>&nbsp;&nbsp;Eingeblendet");
-                            tp_hide.data('token', entry.problem.token);
-                            tp_hide.click(function(e) {
-                                api_call('/api/hide_tech_problem', {token: $(e.target).data('token')}, function(data) {
+                        let tp_mail = $('<button>')
+                            .addClass('btn btn-xs btn-success')
+                            .html("<i class='fa fa-envelope'></i>")
+                            .data('token', entry.problem.token)
+                            .click(function(e) {
+                                let token = $(this).data('token');
+                                api_call('/api/mail_tech_problem', {token: token}, function(data) {
                                     if (data.success)
                                         refresh_tech_problems();
-                                        refresh_fixed_tech_problems();
                                 });
                             });
-                            row.append($('<td>').append(tp_hide));
+
+                        if (entry.problem.hidden == false) {
+                            let tp_hide = $('<button>')
+                                .addClass('btn btn-xs btn-info')
+                                .html("<i class='fa fa-eye'></i>")
+                                .data('token', entry.problem.token)
+                                .click(function(e) {
+                                    let token = $(this).data('token');
+                                    api_call('/api/hide_tech_problem', {token: token}, function(data) {
+                                        if (data.success)
+                                            refresh_tech_problems();
+                                    });
+                                });
+                            row.append($('<td>').append(tp_hide).append('&nbsp;').append(tp_mail));
                             row.append($('<td>').append(tp_hide_admin));
                         } else {
-                            let tp_hide = $('<button>').addClass('btn').addClass('btn-xs').addClass('btn-secondary').html("<i class='fa fa-user'></i>&nbsp;&nbsp;Ausgeblendet");
-                            tp_hide.data('token', entry.problem.token);
-                            tp_hide.click(function(e) {
-                                api_call('/api/unhide_tech_problem', {token: $(e.target).data('token')}, function(data) {
-                                    if (data.success)
-                                        refresh_tech_problems();
-                                        refresh_fixed_tech_problems();
+                            let tp_hide = $('<button>')
+                                .addClass('btn btn-xs btn-secondary')
+                                .html("<i class='fa fa-eye-slash'></i>")
+                                .data('token', entry.problem.token)
+                                .click(function(e) {
+                                    let token = $(this).data('token');
+                                    api_call('/api/unhide_tech_problem', {token: token}, function(data) {
+                                        if (data.success)
+                                            refresh_tech_problems();
+                                    });
                                 });
-                            });
-                            
-                            row.append($('<td>').append(tp_hide));
+                            row.append($('<td>').append(tp_hide).append('&nbsp;').append(tp_mail));
                             row.append($('<td>').append(tp_hide_admin));
                         }
                         row.append($('<td>').append(tp_delete));
@@ -431,29 +445,45 @@
                             });
                         });
 
-                        if (entry.problem.hidden == false) {
-                            let tp_hide = $('<button>').addClass('btn').addClass('btn-xs').addClass('btn-info').html("<i class='fa fa-user'></i>&nbsp;&nbsp;Eingeblendet");
-                            tp_hide.data('token', entry.problem.token);
-                            tp_hide.click(function(e) {
-                                api_call('/api/hide_tech_problem', {token: $(e.target).data('token')}, function(data) {
+                        let tp_mail = $('<button>')
+                            .addClass('btn btn-xs btn-success')
+                            .html("<i class='fa fa-envelope'></i>")
+                            .data('token', entry.problem.token)
+                            .click(function(e) {
+                                let token = $(this).data('token');
+                                api_call('/api/mail_tech_problem', {token: token}, function(data) {
                                     if (data.success)
-                                        refresh_tech_problems();
                                         refresh_fixed_tech_problems();
                                 });
                             });
-                            row.append($('<td>').append(tp_hide));
+
+                        if (entry.problem.hidden == false) {
+                            let tp_hide = $('<button>')
+                                .addClass('btn btn-xs btn-info')
+                                .html("<i class='fa fa-eye'></i>")
+                                .data('token', entry.problem.token)
+                                .click(function(e) {
+                                    let token = $(this).data('token');
+                                    api_call('/api/hide_tech_problem', {token: token}, function(data) {
+                                        if (data.success)
+                                            refresh_fixed_tech_problems();
+                                    });
+                                });
+                            row.append($('<td>').append(tp_hide).append('&nbsp;').append(tp_mail));
                             row.append($('<td>').append(tp_hide_admin));
                         } else {
-                            let tp_hide = $('<button>').addClass('btn').addClass('btn-xs').addClass('btn-secondary').html("<i class='fa fa-user'></i>&nbsp;&nbsp;Ausgeblendet");
-                            tp_hide.data('token', entry.problem.token);
-                            tp_hide.click(function(e) {
-                                api_call('/api/unhide_tech_problem', {token: $(e.target).data('token')}, function(data) {
-                                    if (data.success)
-                                        refresh_tech_problems();
-                                        refresh_fixed_tech_problems();
+                            let tp_hide = $('<button>')
+                                .addClass('btn btn-xs btn-secondary')
+                                .html("<i class='fa fa-eye-slash'></i>")
+                                .data('token', entry.problem.token)
+                                .click(function(e) {
+                                    let token = $(this).data('token');
+                                    api_call('/api/unhide_tech_problem', {token: token}, function(data) {
+                                        if (data.success)
+                                            refresh_fixed_tech_problems();
+                                    });
                                 });
-                            });
-                            row.append($('<td>').append(tp_hide));
+                            row.append($('<td>').append(tp_hide).append('&nbsp;').append(tp_mail));
                             row.append($('<td>').append(tp_hide_admin));
                         }
                         row.append($('<td>').append(tp_delete));

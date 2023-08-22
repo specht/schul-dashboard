@@ -28,7 +28,7 @@ class Main < Sinatra::Base
 
             StringIO.open do |io|
                 io.puts "<p>Hallo!</p>"
-                io.puts "<p>du hast soeben ein neues Technikproblem angelegt. Das Problem betrifft #{data[:device]} und lautet: „#{data[:problem]}“</p>"
+                io.puts "<p>Du hast soeben ein neues Technikproblem angelegt. Das Problem betrifft #{data[:device]} und lautet: „#{data[:problem]}“</p>"
                 io.puts "<a href='#{WEBSITE_HOST}/techpost'>Probleme ansehen</a>"
                 io.puts "<p>Diese E-Mail dient nur als Bestätigung, du musst also nicht weiter tun.</p>"
                 io.puts "<p>Viele Grüße<br>Dashboard #{SCHUL_NAME_AN_DATIV} #{SCHUL_NAME}</p>"
@@ -137,7 +137,6 @@ class Main < Sinatra::Base
         require_user_who_can_report_tech_problems!
         data = parse_request_data(:required_keys => [:token])
         token = data[:token]
-        debug token
         neo4j_query_expect_one(<<~END_OF_QUERY, :token => token)
             MATCH (v:TechProblem {token: $token})
             SET v.hidden = true
@@ -150,7 +149,6 @@ class Main < Sinatra::Base
         require_user_who_can_report_tech_problems!
         data = parse_request_data(:required_keys => [:token])
         token = data[:token]
-        debug token
         neo4j_query_expect_one(<<~END_OF_QUERY, :token => token)
             MATCH (v:TechProblem {token: $token})
             SET v.hidden = false
@@ -159,11 +157,76 @@ class Main < Sinatra::Base
         respond(:ok => true)
     end
 
+    post '/api/mail_tech_problem' do
+        require_user_who_can_manage_tablets!
+        data = parse_request_data(:required_keys => [:token])
+        token = data[:token]
+        data = neo4j_query(<<~END_OF_QUERY, :token => token)
+            MATCH (v:TechProblem {token: $token})-[:BELONGS_TO]->(u:User)
+            RETURN v, u.email;
+        END_OF_QUERY
+        problem = data.first["v"]
+        mail_adress = data.first["u.email"]
+
+        if problem[:fixed]
+            state = "„Behoben“"
+        elsif problem[:not_fixed]
+            state = "„Nicht behoben“"
+        elsif problem[:comment]
+            state = "„Siehe Kommentar“" 
+        else 
+            state = "„In Bearbeitung“"
+        end
+
+        if problem[:comment] && state == "„Siehe Kommentar“"
+            comment = " Der Kommentar lautet: „#{problem[:comment]}“."
+        elsif
+            comment = " Außerdem hat das TechnikTeam einen Kommentar geschrieben: „#{problem[:comment]}“."
+        end
+        deliver_mail do
+            to mail_adress
+            bcc SMTP_FROM
+            from SMTP_FROM
+
+            subject "Neuigkeiten zu deinem Technikproblem"
+
+            StringIO.open do |io|
+                io.puts "<p>Hallo!</p>"
+                io.puts "<p>Es gibt Neuigkeiten zu deinem Technikproblem:</p>"
+                io.puts "<p>Das Problem hat jetzt den Status #{state}.#{comment}</p>"
+                io.puts "<a href='#{WEBSITE_HOST}/techpost'>Probleme ansehen</a>"
+                io.puts "<p>Viele Grüße<br>Dashboard #{SCHUL_NAME_AN_DATIV} #{SCHUL_NAME}</p>"
+                io.string
+            
+            end
+        end
+        admin_mail_adress = @session_user[:email]
+        deliver_mail do
+            to admin_mail_adress
+            bcc SMTP_FROM
+            from SMTP_FROM
+
+            subject "Kopie: Neuigkeiten zu deinem Technikproblem"
+
+            StringIO.open do |io|
+                io.puts "<p>Diese E-Mail wurde an #{mail_adress} gesendet.</p>"
+                io.puts "<p></p>"
+                io.puts "<p>Hallo!</p>"
+                io.puts "<p>Es gibt Neuigkeiten zu deinem Technikproblem:</p>"
+                io.puts "<p>Das Problem hat jetzt den Status #{state}.#{comment}</p>"
+                io.puts "<a href='#{WEBSITE_HOST}/techpost'>Probleme ansehen</a>"
+                io.puts "<p>Viele Grüße<br>Dashboard #{SCHUL_NAME_AN_DATIV} #{SCHUL_NAME}</p>"
+                io.string
+            
+            end
+        end
+        respond(:ok => true)
+    end
+
     post '/api/hide_tech_problem_admin' do
         require_user_who_can_manage_tablets!
         data = parse_request_data(:required_keys => [:token])
         token = data[:token]
-        debug token
         neo4j_query_expect_one(<<~END_OF_QUERY, :token => token)
             MATCH (v:TechProblem {token: $token})
             SET v.hidden_admin = true
@@ -176,7 +239,6 @@ class Main < Sinatra::Base
         require_user_who_can_manage_tablets!
         data = parse_request_data(:required_keys => [:token])
         token = data[:token]
-        debug token
         neo4j_query_expect_one(<<~END_OF_QUERY, :token => token)
             MATCH (v:TechProblem {token: $token})
             SET v.hidden_admin = false

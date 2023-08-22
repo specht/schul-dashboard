@@ -2,7 +2,6 @@ class Main < Sinatra::Base
     post '/api/report_tech_problem' do
         require_user_who_can_report_tech_problems!
         data = parse_request_data(:required_keys => [:problem, :date, :device],)
-
         token = RandomTag.generate(24)
         neo4j_query_expect_one(<<~END_OF_QUERY, :token => token, :email => @session_user[:email], :device => data[:device], :date => data[:date], :problem => data[:problem])
             MATCH (u:User {email: $email})
@@ -54,8 +53,29 @@ class Main < Sinatra::Base
                 
                 end
             end
-            respond(:ok => true)
         end
+        respond(:ok => true)
+    end
+
+    post '/api/report_tech_problem_quiet' do
+        require_user_who_can_manage_tablets!
+        data = parse_request_data(:required_keys => [:problem, :date, :device],)
+        token = RandomTag.generate(24)
+        neo4j_query_expect_one(<<~END_OF_QUERY, :token => token, :email => @session_user[:email], :device => data[:device], :date => data[:date], :problem => data[:problem])
+            MATCH (u:User {email: $email})
+            CREATE (v:TechProblem {token: $token})-[:BELONGS_TO]->(u)
+            SET v.device = $device 
+            SET v.date = $date
+            SET v.problem = $problem
+            SET v.fixed = false
+            SET v.not_fixed = false
+            SET v.comment = false
+            SET v.hidden = false
+            SET v.hidden_admin = false
+            SET v.mail_count = 0
+            RETURN v.token;
+        END_OF_QUERY
+        respond(:ok => true)
     end
 
     post '/api/comment_tech_problem_admin' do

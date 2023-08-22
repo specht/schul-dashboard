@@ -697,9 +697,11 @@ class Main < Sinatra::Base
         @@tablet_sets = parser.parse_tablet_sets || {}
 
         ADMIN_USERS.each do |email|
+            next unless @@user_info[email]
             @@user_info[email][:admin] = true
         end
         ZEUGNIS_ADMIN_USERS.each do |email|
+            next unless @@user_info[email]
             @@user_info[email][:zeugnis_admin] = true
         end
         (CAN_SEE_ALL_TIMETABLES_USERS + ADMIN_USERS).each do |email|

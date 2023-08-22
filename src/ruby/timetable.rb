@@ -1703,38 +1703,39 @@ class Timetable
                     write_events = fixed_events.reject { |x| x[:deleted] || x['deleted']}
                     if @@user_info[email] && (!@@user_info[email][:teacher]) && hide_from_sus
                         write_events.map! do |e|
-                            if e['lesson']
-                                e.delete('raum')
-                                e.delete('lesson_key')
-                                e.delete('label_lehrer_short')
-                                e.delete('label_klasse_short')
-                                e.delete('label_lehrer')
-                                e.delete('label_klasse')
-                                e.delete('label_lehrer_lang')
-                                e.delete('label_klasse_lang')
-                                e.delete('label')
-                                e.delete('label_lang')
-                                e.delete('label_short')
-                                e.delete('label_room')
-                                e.delete('label_room_lang')
-                                e.delete('label_room_short')
-                                e.delete('lehrer_list')
-                                e.delete('nc_folder')
-                                e.delete('orig_lesson_key')
-                                e.delete('vertretungs_text')
-                                e.delete('data')
+                            if e[:lesson]
+                                e.delete(:raum)
+                                e.delete(:lesson_key)
+                                e.delete(:label_lehrer_short)
+                                e.delete(:label_klasse_short)
+                                e.delete(:label_lehrer)
+                                e.delete(:label_klasse)
+                                e.delete(:label_lehrer_lang)
+                                e.delete(:label_klasse_lang)
+                                e.delete(:label)
+                                e.delete(:label_lang)
+                                e.delete(:label_short)
+                                e.delete(:label_room)
+                                e.delete(:label_room_lang)
+                                e.delete(:label_room_short)
+                                e.delete(:lehrer_list)
+                                e.delete(:nc_folder)
+                                e.delete(:orig_lesson_key)
+                                e.delete(:vertretungs_text)
+                                e.delete(:data)
                                 game = ['Fortnite', 'Brawl Stars', 'Fall Guys',
                                 'Among Us', 'Minecraft', 'Clash of Clans',
                                 'Sea of Thieves', 'Witch It', 'Rocket League'].sample
-                                e['label_lehrer_lang'] = "<b>#{game}</b>"
-                                e['label_lehrer_short'] = "<b>#{game}</b>"
-                                e['label_lang'] = "<b>#{game}</b>"
-                                e['label_short'] = "<b>#{game}</b>"
-                                e['label'] = "<b>#{game}</b>"
+                                e[:label_lehrer_lang] = "<b>#{game}</b>"
+                                e[:label_lehrer_short] = "<b>#{game}</b>"
+                                e[:label_lang] = "<b>#{game}</b>"
+                                e[:label_short] = "<b>#{game}</b>"
+                                e[:label] = "<b>#{game}</b>"
                             end
                             e
                         end
                     end
+
 
                     # if user[:is_room]
                     #     STDERR.puts write_events.to_yaml

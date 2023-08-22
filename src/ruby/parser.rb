@@ -509,10 +509,11 @@ class Parser
             use_tr_date = unr_tr.keys.select { |x| x <= timetable_start_date }.first
             use_tr = unr_tr[use_tr_date] || {}
             line_cache = {}
+            separator = timetable_start_date < '2023-08-28' ? "\t" : ","
             File.open(path, 'r:utf-8') do |f|
                 f.each_line do |line|
                     line = line.encode('utf-8')
-                    parts = line.split("\t").map do |x| 
+                    parts = line.split(separator).map do |x| 
                         x = x.strip
                         if x[0] == '"' && x[x.size - 1] == '"'
                             x = x[1, x.size - 2]
@@ -532,7 +533,7 @@ class Parser
             File.open(path, 'r:utf-8') do |f|
                 f.each_line do |line|
                     line = line.encode('utf-8')
-                    parts = line.split("\t").map do |x|
+                    parts = line.split(separator).map do |x|
                         x = x.strip
                         if x[0] == '"' && x[x.size - 1] == '"'
                             x = x[1, x.size - 2]
@@ -608,7 +609,7 @@ class Parser
                             historic_lessons_for_shorthand[shorthand] ||= Set.new()
                             historic_lessons_for_shorthand[shorthand] << lesson_key
                         end
-                        if timetable_start_date == current_timetable_start_date
+                        if (Date.today.to_s < config[:first_school_day]) || (timetable_start_date == current_timetable_start_date)
                             info_for_lesson_key[lesson_key][:lehrer] |= stunden_info[:lehrer]
                         end
                         info_for_lesson_key[lesson_key][:klassen] |= stunden_info[:klassen]
@@ -803,12 +804,13 @@ class Parser
         Dir['/data/pausenaufsichten/*.TXT'].sort.each do |path|
             start_date = File.basename(path).sub('.TXT', '')
             next if start_date < config[:first_school_day]
+            separator = start_date < '2023-08-28' ? "\t" : ","
             all_pausenaufsichten[:start_dates] << start_date
             all_pausenaufsichten[:aufsichten][start_date] = {}
             File.open(path, File.basename(path) >= '2020-10-26.TXT' ? 'r:utf-8' : 'r:iso-8859-1') do |f|
                 f.each_line do |line|
                     line = line.encode('utf-8')
-                    parts = line.split("\t").map do |x|
+                    parts = line.split(separator).map do |x|
                         x = x.strip
                         if x[0] == '"' && x[x.size - 1] == '"'
                             x = x[1, x.size - 2]
@@ -819,7 +821,7 @@ class Parser
                     shorthand = parts[1]
                     next if (shorthand || '').empty?
                     dow = parts[2].to_i - 1
-                    stunde = parts[3].to_i - 1
+                    stunde = parts[3].to_i
                     minutes = parts[4].to_i
                     all_pausenaufsichten[:aufsichten][start_date][shorthand] ||= {}
                     all_pausenaufsichten[:aufsichten][start_date][shorthand][dow] ||= {}

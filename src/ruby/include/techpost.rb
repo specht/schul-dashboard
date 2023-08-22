@@ -202,7 +202,7 @@ class Main < Sinatra::Base
 
         if problem[:comment] && state == "„Siehe Kommentar“"
             comment = " Der Kommentar lautet: „#{problem[:comment]}“."
-        elsif
+        elsif problem[:comment]
             comment = " Außerdem hat das TechnikTeam einen Kommentar geschrieben: „#{problem[:comment]}“."
         end
         deliver_mail do

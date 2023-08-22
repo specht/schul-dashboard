@@ -70,29 +70,15 @@ class Script
             ocs_user = Nextcloud.ocs(url: NEXTCLOUD_URL_FROM_RUBY_CONTAINER,
                 username: user_id,
                 password: NEXTCLOUD_ALL_ACCESS_PASSWORD_BE_CAREFUL)
-            present_shares = {}
             (ocs_user.file_sharing.all || []).each do |share|
                 next if share['share_with'].nil?
                 next if share['uid_owner'] == 'Dashboard'
-                present_shares[share['share_with']] ||= {}
-                present_shares[share['share_with']][share['path']] = {
-                    :permissions => share['permissions'].to_i,
-                    :target_path => share['file_target'],
-                    :share_with => share['share_with_displayname'],
-                    :id => share['id']
-                }
+                next unless share['share_with'][0, 7] == 'Klasse '
                 STDERR.puts "#{user_id}: #{share['share_with']} #{share['path']}"
+                if ARGV.include?('--srsly')
+                    ocs_user.file_sharing.destroy(share['id'])
+                end
             end
-            # present_shares.keys.sort.each do |user_id|
-            #     unless wanted_nc_ids.nil?
-            #         next unless wanted_nc_ids.include?(user_id)
-            #     end
-            #     present_shares[user_id].each_pair do |path, info|
-            #         next if (wanted_shares[user_id] || {})[path]
-            #         STDERR.puts "Removing share #{path} for #{user_id}..."
-            #         ocs_user.file_sharing.destroy(info[:id])
-            #     end
-            # end
         end
     end
 end

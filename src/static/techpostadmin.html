@@ -286,9 +286,11 @@
 
                         });
 
+                        let tp_mail_count = entry.problem.mail_count
+
                         let tp_mail = $('<button>')
                             .addClass('btn btn-xs btn-success')
-                            .html("<i class='fa fa-envelope'></i>")
+                            .html("<i class='fa fa-envelope'></i>&nbsp;&nbsp;(" + tp_mail_count + ")")
                             .data('token', entry.problem.token)
                             .click(function(e) {
                                 let token = $(this).data('token');
@@ -445,9 +447,11 @@
                             });
                         });
 
+                        let tp_mail_count = entry.problem.mail_count
+
                         let tp_mail = $('<button>')
                             .addClass('btn btn-xs btn-success')
-                            .html("<i class='fa fa-envelope'></i>")
+                            .html("<i class='fa fa-envelope'></i>&nbsp;(" + tp_mail_count + ")")
                             .data('token', entry.problem.token)
                             .click(function(e) {
                                 let token = $(this).data('token');

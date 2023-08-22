@@ -15,6 +15,7 @@ class Main < Sinatra::Base
             SET v.comment = false
             SET v.hidden = false
             SET v.hidden_admin = false
+            SET v.mail_count = 0
             RETURN v.token;
         END_OF_QUERY
         name = @session_user[:display_name]
@@ -163,6 +164,7 @@ class Main < Sinatra::Base
         token = data[:token]
         data = neo4j_query(<<~END_OF_QUERY, :token => token)
             MATCH (v:TechProblem {token: $token})-[:BELONGS_TO]->(u:User)
+            SET v.mail_count = v.mail_count + 1
             RETURN v, u.email;
         END_OF_QUERY
         problem = data.first["v"]

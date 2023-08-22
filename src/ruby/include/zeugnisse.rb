@@ -152,7 +152,7 @@ class Main < Sinatra::Base
             @@zeugnisliste_for_klasse[klasse] = {}
             @@zeugnisliste_for_klasse[klasse][:lehrer_for_fach] = {}
             @@zeugnisliste_for_klasse[klasse][:lehrer_for_fach_is_delegate] = {}
-            @@klassenleiter[klasse].each do |shorthand|
+            (@@klassenleiter[klasse] || []).each do |shorthand|
                 @@zeugnisliste_for_klasse[klasse][:lehrer_for_fach]['_KL'] ||= []
                 @@zeugnisliste_for_klasse[klasse][:lehrer_for_fach]['_KL'] << shorthand
                 ['VT', 'VT_UE', 'VS', 'VS_UE', 'VSP'].each do |item|

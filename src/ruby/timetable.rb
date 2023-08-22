@@ -902,6 +902,10 @@ class Timetable
                         SET i.updated = $timestamp
                         DETACH DELETE b;
                     END_OF_QUERY
+
+                    # don't send mails if the booking was in the past for whatever reason
+                    next if booking[:datum] < Date.today.to_s
+                    
                     shorthands.each do |shorthand|
                         email = @@shorthands[shorthand]
                         user_info = @@user_info[email]
@@ -1007,6 +1011,10 @@ class Timetable
                         SET i.lesson_fixed = false
                         SET i.updated = $timestamp;
                     END_OF_QUERY
+
+                    # don't send mails if the booking was in the past for whatever reason
+                    next if fixed_for < Date.today.to_s
+
                     shorthands.each do |shorthand|
                         email = @@shorthands[shorthand]
                         deliver_mail do
@@ -1703,38 +1711,46 @@ class Timetable
                     write_events = fixed_events.reject { |x| x[:deleted] || x['deleted']}
                     if @@user_info[email] && (!@@user_info[email][:teacher]) && hide_from_sus
                         write_events.map! do |e|
-                            if e['lesson']
-                                e.delete('raum')
-                                e.delete('lesson_key')
-                                e.delete('label_lehrer_short')
-                                e.delete('label_klasse_short')
-                                e.delete('label_lehrer')
-                                e.delete('label_klasse')
-                                e.delete('label_lehrer_lang')
-                                e.delete('label_klasse_lang')
-                                e.delete('label')
-                                e.delete('label_lang')
-                                e.delete('label_short')
-                                e.delete('label_room')
-                                e.delete('label_room_lang')
-                                e.delete('label_room_short')
-                                e.delete('lehrer_list')
-                                e.delete('nc_folder')
-                                e.delete('orig_lesson_key')
-                                e.delete('vertretungs_text')
-                                e.delete('data')
-                                game = ['Fortnite', 'Brawl Stars', 'Fall Guys',
-                                'Among Us', 'Minecraft', 'Clash of Clans',
-                                'Sea of Thieves', 'Witch It', 'Rocket League'].sample
-                                e['label_lehrer_lang'] = "<b>#{game}</b>"
-                                e['label_lehrer_short'] = "<b>#{game}</b>"
-                                e['label_lang'] = "<b>#{game}</b>"
-                                e['label_short'] = "<b>#{game}</b>"
-                                e['label'] = "<b>#{game}</b>"
+                            if e[:lesson]
+                                e.delete(:raum)
+                                e.delete(:lesson_key)
+                                e.delete(:label_lehrer_short)
+                                e.delete(:label_klasse_short)
+                                e.delete(:label_lehrer)
+                                e.delete(:label_klasse)
+                                e.delete(:label_lehrer_lang)
+                                e.delete(:label_klasse_lang)
+                                e.delete(:label)
+                                e.delete(:label_lang)
+                                e.delete(:label_short)
+                                e.delete(:label_room)
+                                e.delete(:label_room_lang)
+                                e.delete(:label_room_short)
+                                e.delete(:lehrer_list)
+                                e.delete(:nc_folder)
+                                e.delete(:orig_lesson_key)
+                                e.delete(:vertretungs_text)
+                                e.delete(:data)
+                                subject = [
+                                    ['Zauberkunst', 'Flitwick'],
+                                    ['Wahrsagen', 'Trelawney'],
+                                    ['Kräuterkunde', 'Sprout'],
+                                    ['Muggelkunde', 'Burbage'],
+                                    ['Pflege magischer Geschöpfe', 'Hagrid'],
+                                    ['Zaubertränke', 'Snape'],
+                                    ['Besenflug', 'Hooch'],
+                                    ['Verteidigung gegen die dunklen Künste', 'Lupin']
+                                ].sample
+                                e[:label_lehrer_lang] = "#{subject[1]}"
+                                e[:label_lehrer_short] = "#{subject[1]}"
+                                e[:label_lang] = "<b>#{subject[0]}</b> (#{subject[1]})"
+                                e[:label_short] = "<b>#{subject[0]}</b> (#{subject[1]})"
+                                e[:label] = "<b>#{subject[0]}</b> (#{subject[1]})"
                             end
                             e
                         end
                     end
+
 
                     # if user[:is_room]
                     #     STDERR.puts write_events.to_yaml

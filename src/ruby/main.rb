@@ -1017,17 +1017,19 @@ class Main < Sinatra::Base
         @@rooms_for_shorthand = {}
         room_order_set = Set.new(ROOM_ORDER)
         undeclared_rooms = Set.new()
-        timetable_today.each_pair do |lesson_key, info|
-            info[:stunden].each_pair do |wday, day_info|
-                day_info.each_pair do |stunde, lesson_info|
-                    lesson_info[:lehrer].each do |shorthand|
-                        (lesson_info[:raum] || '').split('/').each do |room|
-                            unless (room || '').strip.empty?
-                                if room_order_set.include?(room)
-                                    @@rooms_for_shorthand[shorthand] ||= Set.new()
-                                    @@rooms_for_shorthand[shorthand] << room
-                                else
-                                    undeclared_rooms << room
+        unless timetable_today.nil?
+            timetable_today.each_pair do |lesson_key, info|
+                info[:stunden].each_pair do |wday, day_info|
+                    day_info.each_pair do |stunde, lesson_info|
+                        lesson_info[:lehrer].each do |shorthand|
+                            (lesson_info[:raum] || '').split('/').each do |room|
+                                unless (room || '').strip.empty?
+                                    if room_order_set.include?(room)
+                                        @@rooms_for_shorthand[shorthand] ||= Set.new()
+                                        @@rooms_for_shorthand[shorthand] << room
+                                    else
+                                        undeclared_rooms << room
+                                    end
                                 end
                             end
                         end

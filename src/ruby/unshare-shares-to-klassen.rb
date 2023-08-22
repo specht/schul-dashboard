@@ -71,7 +71,7 @@ class Script
                 username: user_id,
                 password: NEXTCLOUD_ALL_ACCESS_PASSWORD_BE_CAREFUL)
             present_shares = {}
-            (@ocs.file_sharing.all || []).each do |share|
+            (ocs_user.file_sharing.all || []).each do |share|
                 next if share['share_with'].nil?
                 next if share['uid_owner'] == 'Dashboard'
                 present_shares[share['share_with']] ||= {}
@@ -91,7 +91,7 @@ class Script
             #     present_shares[user_id].each_pair do |path, info|
             #         next if (wanted_shares[user_id] || {})[path]
             #         STDERR.puts "Removing share #{path} for #{user_id}..."
-            #         @ocs.file_sharing.destroy(info[:id])
+            #         ocs_user.file_sharing.destroy(info[:id])
             #     end
             # end
         end

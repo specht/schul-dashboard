@@ -45,11 +45,12 @@ class Script
             ocs_user = Nextcloud.ocs(url: NEXTCLOUD_URL_FROM_RUBY_CONTAINER,
                                      username: user_id,
                                      password: NEXTCLOUD_ALL_ACCESS_PASSWORD_BE_CAREFUL)
-            STDERR.puts "Moving [#{user_id}]/Unterricht to /Archiv-Jahresbeginn-22-23..."
+            STDERR.puts "Moving [#{user_id}]/Unterricht to /Archiv-Jahresbeginn-23-24..."
             if srsly
-                result = ocs_user.webdav.directory.move('/Unterricht', '/Archiv-Jahresbeginn-22-23')
+                result = ocs_user.webdav.directory.move('/Unterricht', '/Archiv-Jahresbeginn-23-24')
                 if result[:status] != 'ok'
                     STDERR.puts "Error!"
+                    STDERR.puts result.to_json
                 end
             end
         end

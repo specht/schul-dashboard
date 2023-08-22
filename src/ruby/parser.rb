@@ -802,6 +802,7 @@ class Parser
         all_pausenaufsichten = {:aufsichten => {}, :start_dates => []}
         Dir['/data/pausenaufsichten/*.TXT'].sort.each do |path|
             start_date = File.basename(path).sub('.TXT', '')
+            next if start_date < config[:first_school_day]
             all_pausenaufsichten[:start_dates] << start_date
             all_pausenaufsichten[:aufsichten][start_date] = {}
             File.open(path, File.basename(path) >= '2020-10-26.TXT' ? 'r:utf-8' : 'r:iso-8859-1') do |f|

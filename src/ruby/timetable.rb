@@ -957,6 +957,10 @@ class Timetable
                         SET i.updated = $timestamp
                         DETACH DELETE b;
                     END_OF_QUERY
+
+                    # don't send mails if the booking was in the past for whatever reason
+                    next if booking[:datum] < Date.today.to_s
+                    
                     shorthands.each do |shorthand|
                         email = @@shorthands[shorthand]
                         deliver_mail do

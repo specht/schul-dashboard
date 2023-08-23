@@ -419,6 +419,21 @@ class Main < Sinatra::Base
         set :show_exceptions, false
     end
 
+    def hide_timetables_from_sus
+        if DEVELOPMENT
+            false
+        else
+            hide_from_sus = false
+            now = Time.now
+            if now.strftime('%Y-%m-%d') < @@config[:first_school_day]
+                hide_from_sus = true
+            elsif now.strftime('%Y-%m-%d') == @@config[:first_school_day]
+                hide_from_sus = now.strftime('%H:%M:%S') < '09:00:00'
+            end
+            hide_from_sus
+        end
+    end
+
     def self.iterate_school_days(options = {}, &block)
         day = Date.parse(@@config[:first_day])
         last_day = Date.parse(@@config[:last_day])
@@ -2167,33 +2182,33 @@ class Main < Sinatra::Base
                 io.string
             end
         elsif technikteam_logged_in?
-            StringIO.open do |io|
-                io.puts "<div style='margin-bottom: 15px;'>"
-                temp = StringIO.open do |tio|
-                    @@lehrer_order.each do |email|
-                        id = @@user_info[email][:id]
-                        next unless @@user_info[email][:can_log_in]
-                        next unless can_see_all_timetables_logged_in? || email == @session_user[:email]
-                        tio.puts "<a data-id='#{id}' onclick=\"load_timetable('#{id}'); window.selected_shorthand = '#{@@user_info[email][:shorthand]}'; \" class='btn btn-sm ttc ttc-teacher' style='display: none;'>#{@@user_info[email][:shorthand]}</a>"
-                    end
-                    tio.string
-                end
-                io.puts "<button class='btn btn-xs ttc bu-show-alle-teacher' style='margin-left: 0.5em; width: unset; padding: 0.25rem 0.5rem; display: inline-block;' onclick=\"$('.ttc-teacher').show(); $('.bu-show-alle-teacher').hide();\">Alle Lehrkräfte</button>"
-                io.puts temp
-                io.puts "<hr>"
-                temp = StringIO.open do |tio|
-                    ROOM_ORDER.each do |room|
-                        id = @@room_ids[room]
-                        tio.puts "<a data-id='#{id}' onclick=\"load_timetable('#{id}');\" class='btn btn-sm ttc ttc-room' style='display: none;'>#{room}</a>"
-                    end
-                    tio.string
-                end
-                io.puts "<button class='btn btn-xs ttc bu-show-alle-rooms' style='margin-left: 0.5em; width: unset; padding: 0.25rem 0.5rem; display: inline-block;' onclick=\"$('.ttc-room').show(); $('.bu-show-alle-rooms').hide();\">Alle Räume</button>"
-                io.puts temp
+            # StringIO.open do |io|
+            #     io.puts "<div style='margin-bottom: 15px;'>"
+            #     temp = StringIO.open do |tio|
+            #         @@lehrer_order.each do |email|
+            #             id = @@user_info[email][:id]
+            #             next unless @@user_info[email][:can_log_in]
+            #             next unless can_see_all_timetables_logged_in? || email == @session_user[:email]
+            #             tio.puts "<a data-id='#{id}' onclick=\"load_timetable('#{id}'); window.selected_shorthand = '#{@@user_info[email][:shorthand]}'; \" class='btn btn-sm ttc ttc-teacher' style='display: none;'>#{@@user_info[email][:shorthand]}</a>"
+            #         end
+            #         tio.string
+            #     end
+            #     io.puts "<button class='btn btn-xs ttc bu-show-alle-teacher' style='margin-left: 0.5em; width: unset; padding: 0.25rem 0.5rem; display: inline-block;' onclick=\"$('.ttc-teacher').show(); $('.bu-show-alle-teacher').hide();\">Alle Lehrkräfte</button>"
+            #     io.puts temp
+            #     io.puts "<hr>"
+            #     temp = StringIO.open do |tio|
+            #         ROOM_ORDER.each do |room|
+            #             id = @@room_ids[room]
+            #             tio.puts "<a data-id='#{id}' onclick=\"load_timetable('#{id}');\" class='btn btn-sm ttc ttc-room' style='display: none;'>#{room}</a>"
+            #         end
+            #         tio.string
+            #     end
+            #     io.puts "<button class='btn btn-xs ttc bu-show-alle-rooms' style='margin-left: 0.5em; width: unset; padding: 0.25rem 0.5rem; display: inline-block;' onclick=\"$('.ttc-room').show(); $('.bu-show-alle-rooms').hide();\">Alle Räume</button>"
+            #     io.puts temp
 
-                io.puts "</div>"
-                io.string
-            end
+            #     io.puts "</div>"
+            #     io.string
+            # end
         end
     end
 
@@ -2263,13 +2278,15 @@ class Main < Sinatra::Base
         end
     end
 
-    def pick_random_color_scheme()
+    def pick_random_color_scheme(go_wild = false)
         today = Date.today.strftime('%Y-%m-%d')
         return 'la2c6e80d60aea2c6e80' if ZEUGNISKONFERENZEN.include?(today)
         @@default_color_scheme ||= {}
         jd = (Date.today + 1).jd
         return @@default_color_scheme[jd] if @@default_color_scheme[jd]
-        srand(DEVELOPMENT ? (Time.now.to_f * 1000).to_i : jd)
+        unless go_wild
+            srand(DEVELOPMENT ? (Time.now.to_f * 1000).to_i : jd)
+        end
         which = nil
         style = nil
         while true do

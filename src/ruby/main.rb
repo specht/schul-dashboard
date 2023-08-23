@@ -419,6 +419,21 @@ class Main < Sinatra::Base
         set :show_exceptions, false
     end
 
+    def hide_timetables_from_sus
+        if DEVELOPMENT
+            false
+        else
+            hide_from_sus = false
+            now = Time.now
+            if now.strftime('%Y-%m-%d') < @@config[:first_school_day]
+                hide_from_sus = true
+            elsif now.strftime('%Y-%m-%d') == @@config[:first_school_day]
+                hide_from_sus = now.strftime('%H:%M:%S') < '09:00:00'
+            end
+            hide_from_sus
+        end
+    end
+
     def self.iterate_school_days(options = {}, &block)
         day = Date.parse(@@config[:first_day])
         last_day = Date.parse(@@config[:last_day])
@@ -2261,13 +2276,15 @@ class Main < Sinatra::Base
         end
     end
 
-    def pick_random_color_scheme()
+    def pick_random_color_scheme(go_wild = false)
         today = Date.today.strftime('%Y-%m-%d')
         return 'la2c6e80d60aea2c6e80' if ZEUGNISKONFERENZEN.include?(today)
         @@default_color_scheme ||= {}
         jd = (Date.today + 1).jd
         return @@default_color_scheme[jd] if @@default_color_scheme[jd]
-        srand(DEVELOPMENT ? (Time.now.to_f * 1000).to_i : jd)
+        unless go_wild
+            srand(DEVELOPMENT ? (Time.now.to_f * 1000).to_i : jd)
+        end
         which = nil
         style = nil
         while true do

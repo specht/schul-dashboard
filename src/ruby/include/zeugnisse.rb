@@ -7,7 +7,7 @@
 # lowriter --convert-to pdf [in path]
 # merge PDFs: gs -dBATCH -dNOPAUSE -q -sDEVICE=pdfwrite -sOutputFile=merged.pdf z1.pdf z2.pdf
 
-require '/static/fragments.rb'
+require './fragments/fragments.rb'
 
 class Main < Sinatra::Base
     def self.parse_zeugnisformulare

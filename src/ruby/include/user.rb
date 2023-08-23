@@ -640,9 +640,34 @@ class Main < Sinatra::Base
         return ''
     end
 
-    get '/api/get_timetable_pdf' do
-        require_user!
-        respond_raw_with_mimetype(get_timetable_pdf(@session_user[:klasse]), 'application/pdf')
+    # get '/api/get_timetable_pdf' do
+    #     require_user!
+    #     respond_raw_with_mimetype(get_timetable_pdf(@session_user[:klasse], @session_user[:color_scheme] || @@standard_color_scheme), 'application/pdf')
+    # end
+
+    get '/api/get_timetable_pdf_for_klasse/:klasse' do
+        require_teacher!
+        klasse = params[:klasse]
+        STDERR.puts "Priting timetables for #{klasse}..."
+        colors = []
+        @@schueler_for_klasse[klasse].size.times do
+            color_scheme = %w(
+                lab8bbfa27776ab8bbe
+                l7146749f6976cc8b79
+                l94b2a1ff7d03e0ff03
+                l55beedf9b935e5185d
+                lcc1ccca66aaab4bbbb
+                l0b2f3ad0a9f5f8e0f7
+                la2c6e80d60aea2c6e8
+                le8e33b6ca705f8f8df
+            ).sample
+            # d160520069960025061
+            # d4aa03f003f2e80bc42
+            color_scheme += [0, 1, 2, 5, 6, 7].sample.to_s
+            colors << color_scheme
+        end
+        colors.shuffle!
+        respond_raw_with_mimetype(get_timetables_pdf(klasse, colors), 'application/pdf')
     end
 
 end

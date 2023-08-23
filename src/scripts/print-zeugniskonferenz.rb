@@ -4,6 +4,7 @@ require 'date'
 require 'json'
 require 'yaml'
 require 'set'
+require '../main.rb'
 require './fragments.rb'
 
 KLASSEN_ORDER = ['5a', '5b', '5c', '6a', '6b', '6c', '7a', '7b', '7c', '7e', '8a', '8b', '8c', '8d', '8e', '9a', '9b', '9c', '9e', '10a', '10b', '10o']
@@ -163,8 +164,8 @@ class Main
         File.open("/internal/out.pdf", 'w') do |f|
             # f.write get_zeugnislisten_sheets_pdf(cache)
             # f.write get_zeugniskonferenz_sheets_pdf(cache)
-            f.write get_fehlzeiten_sheets_pdf(cache)
-            # f.write get_timetable_pdf(klasse)
+            # f.write get_fehlzeiten_sheets_pdf(cache)
+            f.write get_timetable_pdf('5a', pick_random_color_scheme())
         end
         # self.fix_stundenzeiten()
 

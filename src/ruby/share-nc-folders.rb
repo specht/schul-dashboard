@@ -56,7 +56,7 @@ end
 class Script
     def initialize
         @ocs = Nextcloud.ocs(url: NEXTCLOUD_URL_FROM_RUBY_CONTAINER,
-                             username: NEXTCLOUD_USER, 
+                             username: NEXTCLOUD_USER,
                              password: NEXTCLOUD_PASSWORD)
     end
     
@@ -67,7 +67,6 @@ class Script
         @@lessons = Main.class_variable_get(:@@lessons)
         @@faecher = Main.class_variable_get(:@@faecher)
         @@shorthands = Main.class_variable_get(:@@shorthands)
-        @@schueler_for_klasse = Main.class_variable_get(:@@schueler_for_klasse)
         @@schueler_for_lesson = Main.class_variable_get(:@@schueler_for_lesson)
         @@lessons_for_shorthand = Main.class_variable_get(:@@lessons_for_shorthand)
         @@materialamt_for_lesson = Main.class_variable_get(:@@materialamt_for_lesson)

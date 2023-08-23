@@ -419,21 +419,6 @@ class Main < Sinatra::Base
         set :show_exceptions, false
     end
 
-    def hide_timetables_from_sus
-        if DEVELOPMENT
-            false
-        else
-            hide_from_sus = false
-            now = Time.now
-            if now.strftime('%Y-%m-%d') < @@config[:first_school_day]
-                hide_from_sus = true
-            elsif now.strftime('%Y-%m-%d') == @@config[:first_school_day]
-                hide_from_sus = now.strftime('%H:%M:%S') < '09:00:00'
-            end
-            hide_from_sus
-        end
-    end
-
     def self.iterate_school_days(options = {}, &block)
         day = Date.parse(@@config[:first_day])
         last_day = Date.parse(@@config[:last_day])

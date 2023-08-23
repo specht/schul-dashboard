@@ -203,7 +203,7 @@ class Main < Sinatra::Base
             io.puts "<tbody>"
             @@klassen_order.each do |klasse|
                 io.puts "<tr>"
-                io.puts "<th colspan='7'>Klasse #{klasse}</th>"
+                io.puts "<th colspan='7'>Klasse #{tr_klasse(klasse)}</th>"
                 io.puts "</tr>"
                 (@@schueler_for_klasse[klasse] || []).each do |email|
                     io.puts "<tr class='user_row'>"

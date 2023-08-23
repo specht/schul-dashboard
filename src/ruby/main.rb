@@ -740,7 +740,7 @@ class Main < Sinatra::Base
             next unless @@user_info[email]
             @@user_info[email][:can_report_tech_problems] = true
         end
-        TECHNIKTEAM.each do |email|
+        (TECHNIKTEAM + ADMIN_USERS).each do |email|
             next unless @@user_info[email]
             @@user_info[email][:technikteam] = true
         end
@@ -1708,7 +1708,9 @@ class Main < Sinatra::Base
                     nav_items << :admin
                 end
                 if technikteam_logged_in?
-                    nav_items << :aula
+                    unless admin_logged_in?
+                        nav_items << :aula
+                    end
                 end
                 if user_who_can_report_tech_problems_logged_in?
                     unless admin_logged_in?

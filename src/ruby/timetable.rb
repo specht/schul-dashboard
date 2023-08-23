@@ -1039,23 +1039,14 @@ class Timetable
         end
     end
 
-    def hide_timetables_from_sus
-        # if DEVELOPMENT
-        #     false
-        # else
-            hide_from_sus = false
-            now = Time.now
-            if now.strftime('%Y-%m-%d') < @@config[:first_school_day]
-                hide_from_sus = true
-            elsif now.strftime('%Y-%m-%d') == @@config[:first_school_day]
-                hide_from_sus = now.strftime('%H:%M:%S') < '09:00:00'
-            end
-            hide_from_sus
-        # end
-    end
-
     def update_weeks(only_these_lesson_keys)
-        hide_from_sus = hide_timetables_from_sus()
+        hide_from_sus = false
+        now = Time.now
+        if now.strftime('%Y-%m-%d') < @@config[:first_school_day]
+            hide_from_sus = true
+        elsif now.strftime('%Y-%m-%d') == @@config[:first_school_day]
+            hide_from_sus = now.strftime('%H:%M:%S') < '09:00:00'
+        end
         debug "Updating weeks: #{only_these_lesson_keys.to_a.join(', ')} (hide_from_sus: #{hide_from_sus})"
 
         ical_info = {}

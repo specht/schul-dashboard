@@ -855,6 +855,9 @@ class Main
 
     def get_timetable_pdf(klasse)
         today = Time.now.strftime('%Y-%m-%d')
+        if today < @@config[:first_school_day]
+            today = @@config[:first_school_day]
+        end
         # STDERR.puts @@lessons.keys.to_yaml
         d = @@lessons[:start_date_for_date][today]
         timetable = {}
@@ -898,11 +901,11 @@ class Main
             dx = 0.mm
             dy = 0.3.mm
             bs = 1.3
-            color_scheme = COLOR_SCHEME_COLORS.reject { |x| x[0][0] == 'd' }.map { |x| x[0] }.sample
-            color_scheme += %w(0 1 2 5 6 7).sample
-            scale -1, :origin => [297.mm / 2, 210.mm / 2] do
-                image("/gen/bg/bg-#{color_scheme}.jpg", :at => [-297.mm * (bs - 1.0) * 0.5, 210.mm], :width => 297.mm * bs, :height => 210.mm * bs)
-            end
+            # color_scheme = COLOR_SCHEME_COLORS.reject { |x| x[0][0] == 'd' }.map { |x| x[0] }.sample
+            # color_scheme += %w(0 1 2 5 6 7).sample
+            # scale -1, :origin => [297.mm / 2, 210.mm / 2] do
+            #     image("/gen/bg/bg-#{color_scheme}.jpg", :at => [-297.mm * (bs - 1.0) * 0.5, 210.mm], :width => 297.mm * bs, :height => 210.mm * bs)
+            # end
             image('/app/images/timetable1-back.png', :at => [0, 210.mm], :width => 297.mm, :height => 210.mm)
 
             # STDERR.puts COLOR_SCHEME_COLORS.to_yaml

@@ -2165,33 +2165,33 @@ class Main < Sinatra::Base
                 io.string
             end
         elsif technikteam_logged_in?
-            StringIO.open do |io|
-                io.puts "<div style='margin-bottom: 15px;'>"
-                temp = StringIO.open do |tio|
-                    @@lehrer_order.each do |email|
-                        id = @@user_info[email][:id]
-                        next unless @@user_info[email][:can_log_in]
-                        next unless can_see_all_timetables_logged_in? || email == @session_user[:email]
-                        tio.puts "<a data-id='#{id}' onclick=\"load_timetable('#{id}'); window.selected_shorthand = '#{@@user_info[email][:shorthand]}'; \" class='btn btn-sm ttc ttc-teacher' style='display: none;'>#{@@user_info[email][:shorthand]}</a>"
-                    end
-                    tio.string
-                end
-                io.puts "<button class='btn btn-xs ttc bu-show-alle-teacher' style='margin-left: 0.5em; width: unset; padding: 0.25rem 0.5rem; display: inline-block;' onclick=\"$('.ttc-teacher').show(); $('.bu-show-alle-teacher').hide();\">Alle Lehrkräfte</button>"
-                io.puts temp
-                io.puts "<hr>"
-                temp = StringIO.open do |tio|
-                    ROOM_ORDER.each do |room|
-                        id = @@room_ids[room]
-                        tio.puts "<a data-id='#{id}' onclick=\"load_timetable('#{id}');\" class='btn btn-sm ttc ttc-room' style='display: none;'>#{room}</a>"
-                    end
-                    tio.string
-                end
-                io.puts "<button class='btn btn-xs ttc bu-show-alle-rooms' style='margin-left: 0.5em; width: unset; padding: 0.25rem 0.5rem; display: inline-block;' onclick=\"$('.ttc-room').show(); $('.bu-show-alle-rooms').hide();\">Alle Räume</button>"
-                io.puts temp
+            # StringIO.open do |io|
+            #     io.puts "<div style='margin-bottom: 15px;'>"
+            #     temp = StringIO.open do |tio|
+            #         @@lehrer_order.each do |email|
+            #             id = @@user_info[email][:id]
+            #             next unless @@user_info[email][:can_log_in]
+            #             next unless can_see_all_timetables_logged_in? || email == @session_user[:email]
+            #             tio.puts "<a data-id='#{id}' onclick=\"load_timetable('#{id}'); window.selected_shorthand = '#{@@user_info[email][:shorthand]}'; \" class='btn btn-sm ttc ttc-teacher' style='display: none;'>#{@@user_info[email][:shorthand]}</a>"
+            #         end
+            #         tio.string
+            #     end
+            #     io.puts "<button class='btn btn-xs ttc bu-show-alle-teacher' style='margin-left: 0.5em; width: unset; padding: 0.25rem 0.5rem; display: inline-block;' onclick=\"$('.ttc-teacher').show(); $('.bu-show-alle-teacher').hide();\">Alle Lehrkräfte</button>"
+            #     io.puts temp
+            #     io.puts "<hr>"
+            #     temp = StringIO.open do |tio|
+            #         ROOM_ORDER.each do |room|
+            #             id = @@room_ids[room]
+            #             tio.puts "<a data-id='#{id}' onclick=\"load_timetable('#{id}');\" class='btn btn-sm ttc ttc-room' style='display: none;'>#{room}</a>"
+            #         end
+            #         tio.string
+            #     end
+            #     io.puts "<button class='btn btn-xs ttc bu-show-alle-rooms' style='margin-left: 0.5em; width: unset; padding: 0.25rem 0.5rem; display: inline-block;' onclick=\"$('.ttc-room').show(); $('.bu-show-alle-rooms').hide();\">Alle Räume</button>"
+            #     io.puts temp
 
-                io.puts "</div>"
-                io.string
-            end
+            #     io.puts "</div>"
+            #     io.string
+            # end
         end
     end
 

@@ -14,9 +14,6 @@ SHARE_ARCHIVED_FILES = ARGV.include?('--share-archived')
 SHARE_SOURCE_FOLDER = SHARE_ARCHIVED_FILES ? 'Unterricht-22-23' : 'Unterricht'
 SHARE_TARGET_FOLDER = SHARE_ARCHIVED_FILES ? 'Archiv-Jahresbeginn-23-24' : 'Unterricht'
 SRSLY = ARGV.include?('--srsly')
-argv = ARGV.dup
-argv.delete('--share-archived')
-argv.delete('--srsly')
 
 ALSO_SHARE_OS_FOLDERS = true
 
@@ -72,6 +69,10 @@ class Script
     end
 
     def run
+        argv = ARGV.dup
+        argv.delete('--share-archived')
+        argv.delete('--srsly')
+
         @@debug_archive = {}
         if SHARE_ARCHIVED_FILES
             Zip::File.open(DEBUG_ARCHIVE_PATH) do |zip_file|

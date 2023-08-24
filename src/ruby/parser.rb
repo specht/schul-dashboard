@@ -859,73 +859,103 @@ class Parser
         return all_pausenaufsichten
     end
     
-    def parse_kurswahl(user_info, lessons, lesson_key_tr, original_lesson_key_for_lesson_key)
-#         debug "Parsing kurswahl..."
+    def parse_kurswahl(user_info, lessons, lesson_key_tr, original_lesson_key_for_lesson_key, shorthands)
         kurse_for_schueler = {}
         schueler_for_kurs = {}
-        name_tr = {}
-        path = '/data/kurswahl/kurswahl-tr.txt'
-        if File.exist?('/data/kurswahl/kurswahl-tr.txt')
-            File.open(path, 'r:utf-8') do |f|
+        email_for_name = {}
+        user_info.each_pair do |email, info|
+            name = "#{info[:last_name].split(', ').reverse.join(' ')}, #{info[:official_first_name]}"
+            STDERR.puts name
+            email_for_name[name] = email
+        end
+        Dir['/data/kurswahl/csv/*.csv'].sort.each do |path|
+            STDERR.puts File.basename(path)
+            File.open(path) do |f|
                 f.each_line do |line|
-                    parts = line.split(/\s+/)
-                    name_tr[parts[0]] = parts[1]
+                    line = line.force_encoding('CP1252')
+                    line = line.encode('UTF-8')
+                    parts = line.split(';')
+                    sus_name = parts[0]
+                    shorthand = parts[3]
+                    kurs_id = parts[5]
+                    fach = kurs_id.split('-').first
+                    STDERR.puts "#{kurs_id} #{shorthand} #{sus_name} #{fach}/#{shorthand}"
+                    while sus_name.length > 0
+                        break if email_for_name.include?(sus_name)
+                        name_parts = sus_name.split(' ')
+                        sus_name = name_parts[0, name_parts.size - 1].join(' ')
+                    end
+                    raise 'unknown shorthand' unless shorthands.include?(shorthand)
+                    raise 'unknown name' unless email_for_name.include?(sus_name)
                 end
             end
         end
-        unassigned_names = Set.new()
-        if File.exist?('/data/kurswahl/kurswahl.TXT')
-            File.open('/data/kurswahl/kurswahl.TXT', 'r:utf-8') do |f|
-                f.each_line do |line|
-                    line = line.encode('utf-8')
-                    next if line.strip.empty?
-                    parts = line.split("\t").map do |x| 
-                        x = x.strip
-                        if x[0] == '"' && x[x.size - 1] == '"'
-                            x = x[1, x.size - 2]
-                        end
-                        x.strip
-                    end
-                    name = parts[0]
-                    email = nil
-                    if name_tr.include?(name)
-                        email = name_tr[name]
-                    else
-                        emails = user_info.select do |email, user_info|
-                            last_name = user_info[:last_name]
-                            first_name = user_info[:first_name]
-                            ['11', '12'].include?(user_info[:klasse]) && ("#{last_name}#{first_name[0, name.size - last_name.size]}" == name)
-                        end.keys
-                        if emails.size == 1
-                            email = emails.to_a.first
-                        else
-                            unassigned_names << name
-                        end
-                    end
-                    lesson_keys = original_lesson_key_for_lesson_key[parts[2]] || Set.new()
-                    if lesson_keys.empty?
-                        debug "Kurswahl: Can't assign #{parts[2]}!"
-                        debug line
-                    end
-                    unless email
-                        debug "Kurswahl: Can't assign #{name}!"
-                        debug line
-                    end
-                    if email && lesson_keys.size > 0
-                        lesson_keys.each do |lesson_key|
-                            kurse_for_schueler[email] ||= Set.new()
-                            kurse_for_schueler[email] << lesson_key
-                            schueler_for_kurs[lesson_key] ||= Set.new()
-                            schueler_for_kurs[lesson_key] << email
-                        end
-                    end
-                end
-            end
-        end
-        unless unassigned_names.empty?
-            debug "Kurswahl: Can't assign these names!"
-            debug unassigned_names.to_a.sort.to_yaml
-        end
+# #         debug "Parsing kurswahl..."
+#         kurse_for_schueler = {}
+#         schueler_for_kurs = {}
+#         name_tr = {}
+#         path = '/data/kurswahl/kurswahl-tr.txt'
+#         if File.exist?('/data/kurswahl/kurswahl-tr.txt')
+#             File.open(path, 'r:utf-8') do |f|
+#                 f.each_line do |line|
+#                     parts = line.split(/\s+/)
+#                     name_tr[parts[0]] = parts[1]
+#                 end
+#             end
+#         end
+#         unassigned_names = Set.new()
+#         if File.exist?('/data/kurswahl/kurswahl.TXT')
+#             File.open('/data/kurswahl/kurswahl.TXT', 'r:utf-8') do |f|
+#                 f.each_line do |line|
+#                     line = line.encode('utf-8')
+#                     next if line.strip.empty?
+#                     parts = line.split("\t").map do |x| 
+#                         x = x.strip
+#                         if x[0] == '"' && x[x.size - 1] == '"'
+#                             x = x[1, x.size - 2]
+#                         end
+#                         x.strip
+#                     end
+#                     name = parts[0]
+#                     email = nil
+#                     if name_tr.include?(name)
+#                         email = name_tr[name]
+#                     else
+#                         emails = user_info.select do |email, user_info|
+#                             last_name = user_info[:last_name]
+#                             first_name = user_info[:first_name]
+#                             ['11', '12'].include?(user_info[:klasse]) && ("#{last_name}#{first_name[0, name.size - last_name.size]}" == name)
+#                         end.keys
+#                         if emails.size == 1
+#                             email = emails.to_a.first
+#                         else
+#                             unassigned_names << name
+#                         end
+#                     end
+#                     lesson_keys = original_lesson_key_for_lesson_key[parts[2]] || Set.new()
+#                     if lesson_keys.empty?
+#                         debug "Kurswahl: Can't assign #{parts[2]}!"
+#                         debug line
+#                     end
+#                     unless email
+#                         debug "Kurswahl: Can't assign #{name}!"
+#                         debug line
+#                     end
+#                     if email && lesson_keys.size > 0
+#                         lesson_keys.each do |lesson_key|
+#                             kurse_for_schueler[email] ||= Set.new()
+#                             kurse_for_schueler[email] << lesson_key
+#                             schueler_for_kurs[lesson_key] ||= Set.new()
+#                             schueler_for_kurs[lesson_key] << email
+#                         end
+#                     end
+#                 end
+#             end
+#         end
+#         unless unassigned_names.empty?
+#             debug "Kurswahl: Can't assign these names!"
+#             debug unassigned_names.to_a.sort.to_yaml
+#         end
         return kurse_for_schueler, schueler_for_kurs
     end
 

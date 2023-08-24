@@ -15,7 +15,7 @@ function delay(time) {
     const browser = await puppeteer.launch({headless: true});
     const page = await browser.newPage();
 
-    await page.setViewport({width: 1200, height: 800});
+    await page.setViewport({width: 900, height: 1200});
     await page.goto('http://localhost:8025');
     await page.waitForSelector('#email');
     await page.click('#email');
@@ -37,6 +37,7 @@ function delay(time) {
         let id = entry[1];
         let path = entry[2];
         let display_name = entry[3];
+        console.log(`${klasse} ${display_name}`);
         await page.goto(`http://localhost:8025/timetable/${id}`);
         await page.waitForSelector('.fc-view-harness', {timeout: 0});
         let dir = `./timetable_screenshots/${path}`;

@@ -13,7 +13,7 @@ DEBUG_ARCHIVE_PATH = '/data/debug_archives/2023-07-23.zip'
 SHARE_ARCHIVED_FILES = ARGV.include?('--share-archived')
 SHARE_SOURCE_FOLDER = SHARE_ARCHIVED_FILES ? 'Unterricht-22-23' : 'Unterricht'
 SHARE_TARGET_FOLDER = SHARE_ARCHIVED_FILES ? 'Archiv-Jahresbeginn-23-24' : 'Unterricht'
-SRSLY = true
+SRSLY = ARGV.include?('--srsly')
 
 ALSO_SHARE_OS_FOLDERS = true
 
@@ -102,6 +102,10 @@ class Script
             @@schueler_for_lesson = Main.class_variable_get(:@@schueler_for_lesson)
             @@lessons_for_shorthand = Main.class_variable_get(:@@lessons_for_shorthand)
             @@materialamt_for_lesson = Main.class_variable_get(:@@materialamt_for_lesson)
+        end
+
+        unless SRSLY
+            STDERR.puts "Attention: Doing nothing unless you specify --srsly!"
         end
 
 #         @ocs.file_sharing.all.each do |share|
@@ -254,8 +258,7 @@ class Script
         # File.open('/internal/debug/present-shares.yaml', 'w') do |f|
         #     f.write present_shares.to_yaml
         # end
-#         STDERR.puts present_shares.to_yaml
-#         exit
+        STDERR.puts wanted_nc_ids.to_yaml
         wanted_shares.keys.sort.each do |user_id|
             unless wanted_nc_ids.nil?
                 next unless wanted_nc_ids.include?(user_id)

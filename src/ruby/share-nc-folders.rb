@@ -13,6 +13,7 @@ DEBUG_ARCHIVE_PATH = '/data/debug_archives/2023-07-23.zip'
 SHARE_ARCHIVED_FILES = ARGV.include('--share-archived')
 SHARE_SOURCE_FOLDER = SHARE_ARCHIVED_FILES ? 'Unterricht-22-23' : 'Unterricht'
 SHARE_TARGET_FOLDER = SHARE_ARCHIVED_FILES ? 'Archiv-Jahresbeginn-23-24' : 'Unterricht'
+SRSLY = false
 
 ALSO_SHARE_OS_FOLDERS = true
 
@@ -241,6 +242,8 @@ class Script
         (@ocs.file_sharing.all || []).each do |share|
             next if share['share_with'].nil?
             present_shares[share['share_with']] ||= {}
+            STDERR.puts share.to_yaml
+            exit
             present_shares[share['share_with']][share['path']] = {
                 :permissions => share['permissions'].to_i,
                 :target_path => share['file_target'],
@@ -293,7 +296,9 @@ class Script
                     contents_count = (dir2.contents || []).size
                     if contents_count == 0
                         STDERR.puts "DELETING [#{user_id}]#{path}"
-                        ocs_user.webdav.directory.destroy(path.gsub(' ', '%20'))
+                        if SRSLY
+                            ocs_user.webdav.directory.destroy(path.gsub(' ', '%20'))
+                        end
                     else
                         STDERR.puts "KEEPING [#{user_id}]#{path} because it has #{contents_count} files."
                     end
@@ -303,6 +308,10 @@ class Script
             wanted_shares[user_id].each_pair do |path, info|
                 next if ((((present_shares[user_id] || {})[path]) || {})[:target_path] || '').gsub(' ', '%20') == info[:target_path] &&
                     (((present_shares[user_id] || {})[path]) || {})[:permissions] == info[:permissions]
+                unless SRSLY
+                    STDERR.puts "Would share (if SRSLY): #{path} => #{user_id}"
+                    next
+                end
                 begin
                     unless (present_shares[user_id] || {})[path] && ((((present_shares[user_id] || {})[path]) || {})[:target_path].gsub(' ', '%20') == info[:target_path].gsub(' ', '%20'))
                         unless ((((present_shares[user_id] || {})[path]) || {})[:target_path] || '').gsub(' ', '%20') == info[:target_path].gsub(' ', '%20')
@@ -356,7 +365,9 @@ class Script
             present_shares[user_id].each_pair do |path, info|
                 next if (wanted_shares[user_id] || {})[path]
                 STDERR.puts "Removing share #{path} for #{user_id}..."
-                @ocs.file_sharing.destroy(info[:id])
+                if SRSLY
+                    @ocs.file_sharing.destroy(info[:id])
+                end
             end
         end
 

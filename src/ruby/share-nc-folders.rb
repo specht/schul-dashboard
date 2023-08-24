@@ -76,32 +76,32 @@ class Script
                     if entry.file?
                         content = nil
                         entry.get_input_stream { |io| content = io.read }
-                        @@debug_archive[File.basename(entry.name).sub('.yaml', '').to_sym] = content
+                        @@debug_archive[File.basename(entry.name).sub('.yaml', '').to_sym] = YAML.load(content)
                     end
                 end
             end
         end
 
         if SHARE_ARCHIVED_FILES
-            @@user_info = JSON.parse(@@debug_archive[:@@user_info])
-            @@klassen_order = JSON.parse(@@debug_archive[:@@klassen_order])
-            @@lessons_for_klasse = JSON.parse(@@debug_archive[:@@lessons_for_klasse])
-            @@lessons = JSON.parse(@@debug_archive[:@@lessons])
-            @@faecher = JSON.parse(@@debug_archive[:@@faecher])
-            @@shorthands = JSON.parse(@@debug_archive[:@@shorthands])
-            @@schueler_for_lesson = JSON.parse(@@debug_archive[:@@schueler_for_lesson])
-            @@lessons_for_shorthand = JSON.parse(@@debug_archive[:@@lessons_for_shorthand])
-            @@materialamt_for_lesson = JSON.parse(@@debug_archive[:@@materialamt_for_lesson])
+            @@user_info = @@debug_archive[:@@user_info]
+            @@klassen_order = @@debug_archive[:@@klassen_order]
+            @@lessons_for_klasse = @@debug_archive[:@@lessons_for_klasse]
+            @@lessons = @@debug_archive[:@@lessons]
+            @@faecher = @@debug_archive[:@@faecher]
+            @@shorthands = @@debug_archive[:@@shorthands]
+            @@schueler_for_lesson = @@debug_archive[:@@schueler_for_lesson]
+            @@lessons_for_shorthand = @@debug_archive[:@@lessons_for_shorthand]
+            @@materialamt_for_lesson = @@debug_archive[:@@materialamt_for_lesson]
         else
-            @@user_info = JSON.parse(Main.class_variable_get(:@@user_info).to_json)
-            @@klassen_order = JSON.parse(Main.class_variable_get(:@@klassen_order).to_json)
-            @@lessons_for_klasse = JSON.parse(Main.class_variable_get(:@@lessons_for_klasse).to_json)
-            @@lessons = JSON.parse(Main.class_variable_get(:@@lessons).to_json)
-            @@faecher = JSON.parse(Main.class_variable_get(:@@faecher).to_json)
-            @@shorthands = JSON.parse(Main.class_variable_get(:@@shorthands).to_json)
-            @@schueler_for_lesson = JSON.parse(Main.class_variable_get(:@@schueler_for_lesson).to_json)
-            @@lessons_for_shorthand = JSON.parse(Main.class_variable_get(:@@lessons_for_shorthand).to_json)
-            @@materialamt_for_lesson = JSON.parse(Main.class_variable_get(:@@materialamt_for_lesson).to_json)
+            @@user_info = Main.class_variable_get(:@@user_info)
+            @@klassen_order = Main.class_variable_get(:@@klassen_order)
+            @@lessons_for_klasse = Main.class_variable_get(:@@lessons_for_klasse)
+            @@lessons = Main.class_variable_get(:@@lessons)
+            @@faecher = Main.class_variable_get(:@@faecher)
+            @@shorthands = Main.class_variable_get(:@@shorthands)
+            @@schueler_for_lesson = Main.class_variable_get(:@@schueler_for_lesson)
+            @@lessons_for_shorthand = Main.class_variable_get(:@@lessons_for_shorthand)
+            @@materialamt_for_lesson = Main.class_variable_get(:@@materialamt_for_lesson)
         end
 
 #         @ocs.file_sharing.all.each do |share|
@@ -122,15 +122,15 @@ class Script
             end
         end
 
-        latest_lesson_keys = Set.new(@@lessons['timetables'][@@lessons['timetables'].keys.sort.last].keys)
+        latest_lesson_keys = Set.new(@@lessons[:timetables][@@lessons[:timetables].keys.sort.last].keys)
         all_lesson_keys = Set.new()
         all_shorthands_for_lesson = {}
-        @@lessons['timetables'].keys.sort.each do |date|
-            all_lesson_keys |= Set.new(@@lessons['timetables'][date].keys)
-            @@lessons['timetables'][date].each_pair do |lesson_key, lesson_info|
-                lesson_info['stunden'].each_pair do |dow, dow_info|
+        @@lessons[:timetables].keys.sort.each do |date|
+            all_lesson_keys |= Set.new(@@lessons[:timetables][date].keys)
+            @@lessons[:timetables][date].each_pair do |lesson_key, lesson_info|
+                lesson_info[:stunden].each_pair do |dow, dow_info|
                     dow_info.each_pair do |stunde, stunden_info|
-                        stunden_info['lehrer'].each do |shorthand|
+                        stunden_info[:lehrer].each do |shorthand|
                             all_shorthands_for_lesson[lesson_key] ||= Set.new()
                             all_shorthands_for_lesson[lesson_key] << shorthand
                         end
@@ -142,38 +142,38 @@ class Script
         # STDERR.puts "latest lesson keys: #{latest_lesson_keys.size}"
         # STDERR.puts "Diff: #{(all_lesson_keys - latest_lesson_keys).to_a.sort.join(' ')}"
         all_lesson_keys.each do |lesson_key|
-            lesson_info = @@lessons['lesson_keys'][lesson_key]
+            lesson_info = @@lessons[:lesson_keys][lesson_key]
             # only handle lessons which have actual Klassen
-            next if (Set.new(lesson_info['klassen']) & Set.new(@@klassen_order)).empty?
+            next if (Set.new(lesson_info[:klassen]) & Set.new(@@klassen_order)).empty?
             unless ALSO_SHARE_OS_FOLDERS
-                next unless (Set.new(lesson_info['klassen']) & Set.new(['11', '12'])).empty?
+                next unless (Set.new(lesson_info[:klassen]) & Set.new(['11', '12'])).empty?
             end
             next if lesson_key[0, 8] == 'Testung_'
 
             folder_name = "#{lesson_key}"
-            fach = lesson_info['fach']
+            fach = lesson_info[:fach]
             fach = @@faecher[fach] || fach
             next if fach.empty?
-            pretty_folder_name = lesson_info['pretty_folder_name']
-            teachers = Set.new(lesson_info['lehrer'])
+            pretty_folder_name = lesson_info[:pretty_folder_name]
+            teachers = Set.new(lesson_info[:lehrer])
             teachers |= all_shorthands_for_lesson[lesson_key] || Set.new()
             teachers.each do |shorthand|
                 email = @@shorthands[shorthand]
                 next if email.nil?
                 user = @@user_info[email]
-                user_id = user['nc_login']
+                user_id = user[:nc_login]
                 email_for_user_id[user_id] = email
                 wanted_shares[user_id] ||= {}
                 wanted_shares[user_id]["/#{SHARE_SOURCE_FOLDER}/#{folder_name}"] = {
                     :permissions => SHARE_READ | SHARE_UPDATE | SHARE_CREATE | SHARE_DELETE,
                     :target_path => "/#{SHARE_TARGET_FOLDER}/#{pretty_folder_name}",
-                    :share_with => user['display_name']
+                    :share_with => user[:display_name]
                 }
             end
             (@@schueler_for_lesson[lesson_key] || []).each do |email|
                 user = @@user_info[email]
-                name = user['display_name']
-                user_id = user['nc_login']
+                name = user[:display_name]
+                user_id = user[:nc_login]
                 email_for_user_id[user_id] = email
                 wanted_shares[user_id] ||= {}
                 pretty_folder_name = "#{fach.gsub('/', '-')}"
@@ -188,23 +188,23 @@ class Script
                     wanted_shares[user_id]["/#{SHARE_SOURCE_FOLDER}/#{folder_name}/Ausgabeordner-Materialamt"] = {
                         :permissions => permissions,
                         :target_path => "/#{SHARE_TARGET_FOLDER}/#{pretty_folder_name.gsub(' ', '%20')}/Ausgabeordner (Materialamt)",
-                        :share_with => user['display_name']
+                        :share_with => user[:display_name]
                     }
                 end
                 wanted_shares[user_id]["/#{SHARE_SOURCE_FOLDER}/#{folder_name}/Ausgabeordner"] = {
                     :permissions => SHARE_READ,
                     :target_path => "/#{SHARE_TARGET_FOLDER}/#{pretty_folder_name.gsub(' ', '%20')}/Ausgabeordner",
-                    :share_with => user['display_name']
+                    :share_with => user[:display_name]
                 }
                 wanted_shares[user_id]["/#{SHARE_SOURCE_FOLDER}/#{folder_name}/SuS/#{name}/Einsammelordner"] = {
                     :permissions => SHARE_READ | SHARE_UPDATE | SHARE_CREATE | SHARE_DELETE,
                     :target_path => "/#{SHARE_TARGET_FOLDER}/#{pretty_folder_name.gsub(' ', '%20')}/Einsammelordner",
-                    :share_with => user['display_name']
+                    :share_with => user[:display_name]
                 }
                 wanted_shares[user_id]["/#{SHARE_SOURCE_FOLDER}/#{folder_name}/SuS/#{name}/Rückgabeordner"] = {
                     :permissions => SHARE_READ | SHARE_UPDATE | SHARE_CREATE | SHARE_DELETE,
                     :target_path => "/#{SHARE_TARGET_FOLDER}/#{pretty_folder_name.gsub(' ', '%20')}/Rückgabeordner",
-                    :share_with => user['display_name']
+                    :share_with => user[:display_name]
                 }
             end
             next
@@ -212,8 +212,8 @@ class Script
         wanted_shares.keys.each do |user_id|
             src_for_target_path = {}
             wanted_shares[user_id].each_pair do |src, info|
-                src_for_target_path[info['target_path']] ||= Set.new()
-                src_for_target_path[info['target_path']] << src
+                src_for_target_path[info[:target_path]] ||= Set.new()
+                src_for_target_path[info[:target_path]] << src
             end
             src_for_target_path.each_pair do |target_path, sources|
                 if sources.size > 1
@@ -224,14 +224,14 @@ class Script
                     end
                 end
             end
-            target_paths = wanted_shares[user_id].values.map { |x| x['target_path'] }
+            target_paths = wanted_shares[user_id].values.map { |x| x[:target_path] }
             if target_paths.sort.uniq.size != wanted_shares[user_id].size
                 raise "Ouch! We didn't catch something in the code above."
             end
         end
         wanted_nc_ids = nil
         unless ARGV.empty?
-            wanted_nc_ids = Set.new(ARGV.map { |email| (@@user_info[email] || {})['nc_login'] })
+            wanted_nc_ids = Set.new(ARGV.map { |email| (@@user_info[email] || {})[:nc_login] })
         end
         STDERR.puts "Got wanted shares for #{wanted_shares.size} users."
         # File.open('/internal/debug/wanted-shares.yaml', 'w') do |f|
@@ -245,10 +245,10 @@ class Script
             STDERR.puts share.to_yaml
             exit
             present_shares[share['share_with']][share['path']] = {
-                'permissions' => share['permissions'].to_i,
-                'target_path' => share['file_target'],
-                'share_with' => share['share_with_displayname'],
-                'id' => share['id']
+                :permissions => share['permissions'].to_i,
+                :target_path => share['file_target'],
+                :share_with => share['share_with_displayname'],
+                :id => share['id']
             }
         end
         STDERR.puts "Got present shares for #{present_shares.size} users."
@@ -267,7 +267,7 @@ class Script
                                      username: user_id,
                                      password: NEXTCLOUD_ALL_ACCESS_PASSWORD_BE_CAREFUL)
             wanted_dirs = Set.new()
-            wanted_shares[user_id].values.map { |x| x['target_path'] + '/' }.each do |path|
+            wanted_shares[user_id].values.map { |x| x[:target_path] + '/' }.each do |path|
                 parts = path.split('/')
                 parts.each.with_index do |part, _|
                     sub_path = parts[0, _ + 1].join('/') + '/'
@@ -306,20 +306,20 @@ class Script
             end
             created_sub_paths = Set.new()
             wanted_shares[user_id].each_pair do |path, info|
-                next if ((((present_shares[user_id] || {})[path]) || {})['target_path'] || '').gsub(' ', '%20') == info['target_path'] &&
-                    (((present_shares[user_id] || {})[path]) || {})['permissions'] == info['permissions']
+                next if ((((present_shares[user_id] || {})[path]) || {})[:target_path] || '').gsub(' ', '%20') == info[:target_path] &&
+                    (((present_shares[user_id] || {})[path]) || {})[:permissions] == info[:permissions]
                 unless SRSLY
                     STDERR.puts "Would share (if SRSLY): #{path} => #{user_id}"
                     next
                 end
                 begin
-                    unless (present_shares[user_id] || {})[path] && ((((present_shares[user_id] || {})[path]) || {})['target_path'].gsub(' ', '%20') == info['target_path'].gsub(' ', '%20'))
-                        unless ((((present_shares[user_id] || {})[path]) || {})['target_path'] || '').gsub(' ', '%20') == info['target_path'].gsub(' ', '%20')
+                    unless (present_shares[user_id] || {})[path] && ((((present_shares[user_id] || {})[path]) || {})[:target_path].gsub(' ', '%20') == info[:target_path].gsub(' ', '%20'))
+                        unless ((((present_shares[user_id] || {})[path]) || {})[:target_path] || '').gsub(' ', '%20') == info[:target_path].gsub(' ', '%20')
                             STDERR.puts "Removing share #{path} for #{user_id}..."
-                            @ocs.file_sharing.destroy((((present_shares[user_id] || {})[path]) || {})['id'])
+                            @ocs.file_sharing.destroy((((present_shares[user_id] || {})[path]) || {})[:id])
                         end
                         STDERR.puts "Sharing #{path} to [#{user_id}]..."
-                        _temp = @ocs.file_sharing.create(path, 0, user_id, nil, nil, info['permissions'])
+                        _temp = @ocs.file_sharing.create(path, 0, user_id, nil, nil, info[:permissions])
                     end
                     shares = (@ocs.file_sharing.specific(path.gsub(' ', '%20')) || []).select { |x| x['share_with'] == user_id }
                     if shares.size != 1
@@ -327,12 +327,12 @@ class Script
                         raise 'oops'
                     end
                     share = shares.first
-                    if share['permissions'].to_i != info['permissions']
+                    if share['permissions'].to_i != info[:permissions]
                         STDERR.puts "Updating permissions [#{user_id}]#{share['file_target']}..."
-                        @ocs.file_sharing.update_permissions(share['id'], info['permissions'])
+                        @ocs.file_sharing.update_permissions(share['id'], info[:permissions])
                     end
-                    if share['file_target'].gsub(' ', '%20') != info['target_path'].gsub(' ', '%20')
-                        dir_parts = File.dirname(info['target_path']).split('/')
+                    if share['file_target'].gsub(' ', '%20') != info[:target_path].gsub(' ', '%20')
+                        dir_parts = File.dirname(info[:target_path]).split('/')
                         dir_parts.each.with_index do |p, _|
                             sub_path = dir_parts[0, _ + 1].join('/')
                             next if sub_path.empty?
@@ -342,16 +342,16 @@ class Script
                                 created_sub_paths << sub_path
                             end
                         end
-                        if share['file_target'] != info['target_path']
-                            STDERR.puts "Moving [#{user_id}]#{share['file_target']} to #{info['target_path']}..."
-                            result = ocs_user.webdav.directory.move(share['file_target'], info['target_path'])
-                            if result['status'] != 'ok'
+                        if share['file_target'] != info[:target_path]
+                            STDERR.puts "Moving [#{user_id}]#{share['file_target']} to #{info[:target_path]}..."
+                            result = ocs_user.webdav.directory.move(share['file_target'], info[:target_path])
+                            if result[:status] != 'ok'
                                 STDERR.puts "Error!"
                                 STDERR.puts result.to_yaml
                                 exit(1)
                             end
                         else
-                            STDERR.puts "Not moving [#{user_id}]#{share['file_target']} to #{info['target_path']} because they're identical"
+                            STDERR.puts "Not moving [#{user_id}]#{share['file_target']} to #{info[:target_path]} because they're identical"
                         end
                     end
                 rescue StandardError => e
@@ -366,7 +366,7 @@ class Script
                 next if (wanted_shares[user_id] || {})[path]
                 STDERR.puts "Removing share #{path} for #{user_id}..."
                 if SRSLY
-                    @ocs.file_sharing.destroy(info['id'])
+                    @ocs.file_sharing.destroy(info[:id])
                 end
             end
         end

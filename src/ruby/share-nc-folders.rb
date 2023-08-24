@@ -242,8 +242,7 @@ class Script
         (@ocs.file_sharing.all || []).each do |share|
             next if share['share_with'].nil?
             present_shares[share['share_with']] ||= {}
-            STDERR.puts share.to_yaml
-            exit
+            next unless share['path'] == "/#{SHARE_SOURCE_FOLDER}"
             present_shares[share['share_with']][share['path']] = {
                 :permissions => share['permissions'].to_i,
                 :target_path => share['file_target'],

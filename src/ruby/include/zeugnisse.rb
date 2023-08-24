@@ -67,6 +67,8 @@ class Main < Sinatra::Base
     end
 
     def self.determine_zeugnislisten()
+        STDERR.puts "ATTENTION determine_zeugnislisten() IS DOING NOTHING RIGHT NOW"
+        return
         @@all_zeugnis_faecher = Set.new()
         FAECHER_FOR_ZEUGNIS[ZEUGNIS_SCHULJAHR][ZEUGNIS_HALBJAHR].each_pair do |key, faecher|
             faecher.each do |fach|

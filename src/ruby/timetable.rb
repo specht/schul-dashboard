@@ -1047,6 +1047,7 @@ class Timetable
         elsif now.strftime('%Y-%m-%d') == @@config[:first_school_day]
             hide_from_sus = now.strftime('%H:%M:%S') < '09:00:00'
         end
+        hide_from_sus = false if DEVELOPMENT
         debug "Updating weeks: #{only_these_lesson_keys.to_a.join(', ')} (hide_from_sus: #{hide_from_sus})"
 
         ical_info = {}

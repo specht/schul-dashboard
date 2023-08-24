@@ -14,7 +14,7 @@ SHARE_CREATE = 4
 SHARE_DELETE = 8
 SHARE_SHARE = 16
 
-ALSO_SHARE_OS_FOLDERS = false
+ALSO_SHARE_OS_FOLDERS = true
 HTTP_READ_TIMEOUT = 60 * 10
 
 # This is a really ugly way to monkey patch an increased HTTP read timeout into the dachinat/nextcloud gem.

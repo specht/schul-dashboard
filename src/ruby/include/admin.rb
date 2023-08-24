@@ -629,4 +629,19 @@ class Main < Sinatra::Base
         require_admin!
         respond_raw_with_mimetype(print_all_users_informatik_biber, 'text/plain')
     end
+
+    get '/api/get_all_user_ids' do
+        require_admin!
+        result = []
+        @@user_info.each_pair do |email, info|
+            path = 'unknown'
+            if info[:teacher]
+                path = 'Lehrer'
+            else
+                path = "Klasse #{info[:klasse]}"
+            end
+            result << [email, info[:id], path, info[:display_name]]
+        end
+        respond(:users => result)
+    end
 end

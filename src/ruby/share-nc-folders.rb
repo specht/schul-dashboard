@@ -14,6 +14,9 @@ SHARE_ARCHIVED_FILES = ARGV.include?('--share-archived')
 SHARE_SOURCE_FOLDER = SHARE_ARCHIVED_FILES ? 'Unterricht-22-23' : 'Unterricht'
 SHARE_TARGET_FOLDER = SHARE_ARCHIVED_FILES ? 'Archiv-Jahresbeginn-23-24' : 'Unterricht'
 SRSLY = ARGV.include?('--srsly')
+argv = ARGV.dup
+argv.delete('--share-archived')
+argv.delete('--srsly')
 
 ALSO_SHARE_OS_FOLDERS = true
 
@@ -234,8 +237,8 @@ class Script
             end
         end
         wanted_nc_ids = nil
-        unless ARGV.empty?
-            wanted_nc_ids = Set.new(ARGV.map { |email| (@@user_info[email] || {})[:nc_login] })
+        unless argv.empty?
+            wanted_nc_ids = Set.new(argv.map { |email| (@@user_info[email] || {})[:nc_login] })
         end
         STDERR.puts "Got wanted shares for #{wanted_shares.size} users."
         # File.open('/internal/debug/wanted-shares.yaml', 'w') do |f|
@@ -258,7 +261,6 @@ class Script
         # File.open('/internal/debug/present-shares.yaml', 'w') do |f|
         #     f.write present_shares.to_yaml
         # end
-        STDERR.puts wanted_nc_ids.to_yaml
         wanted_shares.keys.sort.each do |user_id|
             unless wanted_nc_ids.nil?
                 next unless wanted_nc_ids.include?(user_id)

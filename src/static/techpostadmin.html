@@ -271,7 +271,7 @@
                             );
                         });
 
-                        let tp_hide_admin = $('<button>').addClass('btn').addClass('btn-xs').addClass('btn-info').html("<i class='fa fa-wrench'></i>&nbsp;&nbsp;Eingeblendet");
+                        let tp_hide_admin = $('<button>').addClass('btn').addClass('btn-xs').addClass('btn-info').html("<i class='fa fa-eye'></i>");
                         tp_hide_admin.data('token', entry.problem.token);
                         tp_hide_admin.click(function(e) {
                             if (entry.problem.comment != "") {
@@ -289,6 +289,17 @@
                                                         
 
                         });
+                        let tp_i_will_fix_it = $('<button title="Ich kümmere mich darum">')
+                            .addClass('btn btn-xs btn-warning')
+                            .html("<i class='fa fa-user'></i>")
+                            .data('token', entry.problem.token)
+                            .click(function(e) {
+                                let token = $(this).data('token');
+                                api_call('/api/i_will_fix_tech_problem', {token: token}, function(data) {
+                                    if (data.success)
+                                        refresh_tech_problems();
+                                });
+                            });
 
                         let tp_mail_count = entry.problem.mail_count
 
@@ -317,7 +328,6 @@
                                     });
                                 });
                             row.append($('<td>').append(tp_hide).append('&nbsp;').append(tp_mail));
-                            row.append($('<td>').append(tp_hide_admin));
                         } else {
                             let tp_hide = $('<button>')
                                 .addClass('btn btn-xs btn-secondary')
@@ -331,8 +341,8 @@
                                     });
                                 });
                             row.append($('<td>').append(tp_hide).append('&nbsp;').append(tp_mail));
-                            row.append($('<td>').append(tp_hide_admin));
                         }
+                        row.append($('<td>').append(tp_hide_admin).append('&nbsp;').append(tp_i_will_fix_it));
                         row.append($('<td>').append(tp_delete));
                         $('#problems_here').append(row);
                     }

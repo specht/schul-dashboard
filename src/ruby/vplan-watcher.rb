@@ -18,13 +18,14 @@ $VERBOSE = warn_level
 CONFIG = YAML::load_file('/data/config.yaml')
 
 TIMETABLE_JSON_KEYS = {
-    6 => [:klasse, :stunde, :fach, :raum, :lehrer, :text],
+    # 6 => [:klasse, :stunde, :fach, :raum, :lehrer, :text],
+    6 => [:stunde, :klasse, :lehrer, :raum, :fach, :text],
     7 => [:vnr, :stunde, :klasse, :lehrer, :raum, :fach, :text],
 }
 
 def assert(condition, message = 'assertion failed', suppress_backtrace = false, delay = nil)
     unless condition
-        debug_error message
+        STDERR.puts message
         e = StandardError.new(message)
         e.set_backtrace([]) if suppress_backtrace
         sleep delay unless delay.nil?
@@ -120,7 +121,8 @@ def handle_vplan_html_file(contents, removed_days)
                 if tr.size == 6
                     # Klassenvertretungsplan:
                     headings = tr.map { |x| x.text }.join(' / ')
-                    assert(headings == 'Klasse(n) / Stunde / Fach / Raum / (Lehrer) / Text')
+                    # assert(headings == 'Klasse(n) / Stunde / Fach / Raum / (Lehrer) / Text')
+                    assert(headings == 'Stunde / Klasse(n) / (Lehrer) / (Raum) / (Fach) / Text')
                 elsif tr.size == 7
                     # Lehrervertretungsplan: Vtr-Nr.	Stunde	Klasse(n)	(Lehrer)	(Raum)	(Fach)	Text
                     headings = tr.map { |x| x.text }.join(' / ')

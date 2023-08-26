@@ -822,7 +822,8 @@ class Parser
                     next if (shorthand || '').empty?
                     dow = parts[2].to_i - 1
                     stunde = parts[3].to_i
-                    minutes = parts[4].to_i
+                    #minutes = parts[4].to_i
+                    minutes = AUFSICHT_DAUER[stunde]
                     all_pausenaufsichten[:aufsichten][start_date][shorthand] ||= {}
                     all_pausenaufsichten[:aufsichten][start_date][shorthand][dow] ||= {}
                     h = AUFSICHT_ZEIT[stunde].split(':')[0].to_i

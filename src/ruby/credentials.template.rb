@@ -184,8 +184,6 @@ KLASSEN_TR = {'8o' => '8ω'}
 TIMETABLE_ENTRIES_VISIBLE_AHEAD_DAYS = 7
 AUFSICHT_ZEIT = {1 => '08:00', 2 => '09:00', 3 => '09:55', 4 => '10:40',
                  6 => '12:50', 7 => '13:40', 8 => '14:30'}
-PAUSENAUFSICHT_DAUER = {1 => 25, 2 => 15, 3 => 15, 4 => 20, 6 => 40,
-                        7 => 40, 8 => 15}
 
 KLASSEN_ORDER = ['5a', '11', '12']
 ROOM_ORDER = %w(101 102 103 104)

@@ -822,7 +822,8 @@ class Parser
                     next if (shorthand || '').empty?
                     dow = parts[2].to_i - 1
                     stunde = parts[3].to_i
-                    minutes = parts[4].to_i
+                    #minutes = parts[4].to_i
+                    minutes = AUFSICHT_DAUER[stunde]
                     all_pausenaufsichten[:aufsichten][start_date][shorthand] ||= {}
                     all_pausenaufsichten[:aufsichten][start_date][shorthand][dow] ||= {}
                     h = AUFSICHT_ZEIT[stunde].split(':')[0].to_i
@@ -859,73 +860,110 @@ class Parser
         return all_pausenaufsichten
     end
     
-    def parse_kurswahl(user_info, lessons, lesson_key_tr, original_lesson_key_for_lesson_key)
-#         debug "Parsing kurswahl..."
+    def parse_kurswahl(user_info, lessons, lesson_key_tr, original_lesson_key_for_lesson_key, shorthands)
         kurse_for_schueler = {}
         schueler_for_kurs = {}
-        name_tr = {}
-        path = '/data/kurswahl/kurswahl-tr.txt'
-        if File.exist?('/data/kurswahl/kurswahl-tr.txt')
-            File.open(path, 'r:utf-8') do |f|
+        email_for_name = {}
+        user_info.each_pair do |email, info|
+            name = "#{info[:last_name].split(', ').reverse.join(' ')}, #{info[:official_first_name]}"
+            email_for_name[name] = email
+        end
+        lesson_keys_for_tag = {}
+        lessons[:lesson_keys].keys.each do |lesson_key|
+            unless (Set.new(lessons[:lesson_keys][lesson_key][:klassen]) & Set.new(['11', '12'])).empty?
+                tag = "#{lessons[:lesson_keys][lesson_key][:lehrer].join(',')}/#{lesson_key.split('_').first}"
+                lesson_keys_for_tag[tag] ||= []
+                lesson_keys_for_tag[tag] << lesson_key
+            end
+        end
+        kurs_ids_for_tag = {}
+        emails_for_kurs_id = {}
+        kurs_id_tr = {}
+        if File.exist?('/data/kurswahl/kurs_id_tr.yaml')
+            kurs_id_tr = YAML.load(File.read('/data/kurswahl/kurs_id_tr.yaml'))
+        end
+        Dir['/data/kurswahl/csv/*.csv'].sort.each do |path|
+            File.open(path) do |f|
                 f.each_line do |line|
-                    parts = line.split(/\s+/)
-                    name_tr[parts[0]] = parts[1]
+                    line = line.force_encoding('CP1252')
+                    line = line.encode('UTF-8')
+                    parts = line.split(';')
+                    sus_name = parts[0]
+                    shorthand = parts[3]
+                    fach = parts[5].split('-').first
+                    tag = "#{shorthand}/#{fach}"
+                    kurs_id = File.basename(path).split('.').first
+                    kurs_ids_for_tag[tag] ||= Set.new()
+                    kurs_ids_for_tag[tag] << kurs_id
+                    while sus_name.length > 0
+                        break if email_for_name.include?(sus_name)
+                        name_parts = sus_name.split(' ')
+                        sus_name = name_parts[0, name_parts.size - 1].join(' ')
+                    end
+                    unless shorthands.include?(shorthand)
+                        STDERR.puts "Warning: Unknown shorthand #{shorthand}"
+                        next
+                    end
+                    unless email_for_name.include?(sus_name)
+                        STDERR.puts "Warning: Unknown SuS name #{sus_name}"
+                        next
+                    end
+                    emails_for_kurs_id[kurs_id] ||= []
+                    emails_for_kurs_id[kurs_id] << email_for_name[sus_name]
                 end
             end
         end
-        unassigned_names = Set.new()
-        if File.exist?('/data/kurswahl/kurswahl.TXT')
-            File.open('/data/kurswahl/kurswahl.TXT', 'r:utf-8') do |f|
-                f.each_line do |line|
-                    line = line.encode('utf-8')
-                    next if line.strip.empty?
-                    parts = line.split("\t").map do |x| 
-                        x = x.strip
-                        if x[0] == '"' && x[x.size - 1] == '"'
-                            x = x[1, x.size - 2]
-                        end
-                        x.strip
+        debug_logs = StringIO.open do |io|
+            kurs_ids_for_tag.each_pair { |tag, ids| kurs_ids_for_tag[tag] = ids.to_a }
+            (Set.new(kurs_ids_for_tag.keys) | Set.new(lesson_keys_for_tag.keys)).to_a.sort.each do |tag|
+                if kurs_ids_for_tag[tag] && lesson_keys_for_tag[tag]
+                    if kurs_ids_for_tag[tag].size == 1 && lesson_keys_for_tag[tag].size == 1
+                        # normal one on one mapping
+                        kurs_id_tr[kurs_ids_for_tag[tag].first] = lesson_keys_for_tag[tag].first
+                        next
                     end
-                    name = parts[0]
-                    email = nil
-                    if name_tr.include?(name)
-                        email = name_tr[name]
-                    else
-                        emails = user_info.select do |email, user_info|
-                            last_name = user_info[:last_name]
-                            first_name = user_info[:first_name]
-                            ['11', '12'].include?(user_info[:klasse]) && ("#{last_name}#{first_name[0, name.size - last_name.size]}" == name)
-                        end.keys
-                        if emails.size == 1
-                            email = emails.to_a.first
-                        else
-                            unassigned_names << name
-                        end
-                    end
-                    lesson_keys = original_lesson_key_for_lesson_key[parts[2]] || Set.new()
-                    if lesson_keys.empty?
-                        debug "Kurswahl: Can't assign #{parts[2]}!"
-                        debug line
-                    end
-                    unless email
-                        debug "Kurswahl: Can't assign #{name}!"
-                        debug line
-                    end
-                    if email && lesson_keys.size > 0
-                        lesson_keys.each do |lesson_key|
-                            kurse_for_schueler[email] ||= Set.new()
-                            kurse_for_schueler[email] << lesson_key
-                            schueler_for_kurs[lesson_key] ||= Set.new()
-                            schueler_for_kurs[lesson_key] << email
+                    if kurs_ids_for_tag[tag].size == 2 && lesson_keys_for_tag[tag].size == 1
+                        if lesson_keys_for_tag[tag].first =~ /11~12$/
+                            kursnummern = kurs_ids_for_tag[tag].map { |x| x.match(/(\d+)_/)[1].to_i }.sort
+                            if kursnummern[0] < 100 && kursnummern[1] >= 100
+                                # ["Gk04_mu","Gk105_mu"] ["mu_11~12"] (jahrgangsuebergreifend)
+                                kurs_id_tr[kurs_ids_for_tag[tag].first] = lesson_keys_for_tag[tag].first
+                                kurs_id_tr[kurs_ids_for_tag[tag].last] = lesson_keys_for_tag[tag].first
+                                next
+                            end
                         end
                     end
                 end
+                io.puts "#{tag}: #{kurs_ids_for_tag[tag].to_json} #{lesson_keys_for_tag[tag].to_json}"
+            end
+            io.string
+        end
+
+        unassigned_kurs_ids = []
+
+        emails_for_kurs_id.each_pair do |kurs_id, emails|
+            if kurs_id_tr[kurs_id]
+                lesson_key = kurs_id_tr[kurs_id]
+                emails.each do |email|
+                    schueler_for_kurs[lesson_key] ||= Set.new()
+                    schueler_for_kurs[lesson_key] << email
+                    kurse_for_schueler[email] ||= Set.new()
+                    kurse_for_schueler[email] << lesson_key
+                end
+            else
+                unassigned_kurs_ids << kurs_id
             end
         end
-        unless unassigned_names.empty?
-            debug "Kurswahl: Can't assign these names!"
-            debug unassigned_names.to_a.sort.to_yaml
+
+        unless unassigned_kurs_ids.empty?
+            STDERR.puts ">>> Warning: Could not assign #{unassigned_kurs_ids.size} of #{emails_for_kurs_id.size} kurs IDs:"
+            unassigned_kurs_ids.each do |kurs_id|
+                STDERR.puts "#{kurs_id}"
+            end
+            STDERR.puts ">>> See here for details:"
+            STDERR.puts debug_logs
         end
+
         return kurse_for_schueler, schueler_for_kurs
     end
 

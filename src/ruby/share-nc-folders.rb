@@ -7,6 +7,15 @@ require 'fileutils'
 require 'nextcloud'
 require 'cgi'
 require 'yaml'
+require 'zip'
+
+DEBUG_ARCHIVE_PATH = '/data/debug_archives/2023-07-23.zip'
+SHARE_ARCHIVED_FILES = ARGV.include?('--share-archived')
+SHARE_SOURCE_FOLDER = SHARE_ARCHIVED_FILES ? 'Unterricht-22-23' : 'Unterricht'
+SHARE_TARGET_FOLDER = SHARE_ARCHIVED_FILES ? 'Archiv-Jahresbeginn-23-24' : 'Unterricht'
+SRSLY = ARGV.include?('--srsly')
+
+ALSO_SHARE_OS_FOLDERS = true
 
 SHARE_READ = 1
 SHARE_UPDATE = 2
@@ -14,7 +23,6 @@ SHARE_CREATE = 4
 SHARE_DELETE = 8
 SHARE_SHARE = 16
 
-ALSO_SHARE_OS_FOLDERS = false
 HTTP_READ_TIMEOUT = 60 * 10
 
 # This is a really ugly way to monkey patch an increased HTTP read timeout into the dachinat/nextcloud gem.
@@ -35,16 +43,16 @@ module Nextcloud
                 req["OCS-APIRequest"] = true
                 req.basic_auth @username, @password
                 req["Content-Type"] = "application/x-www-form-urlencoded"
-        
+
                 req["Depth"] = 0 if depth
                 req["Destination"] = destination if destination
-        
+
                 req.set_form_data(params) if params
                 req.body = body if body
-        
+
                 http.request(req)
             end
-    
+
             # if ![201, 204, 207].include? response.code
             #   raise Errors::Error.new("Nextcloud received invalid status code")
             # end
@@ -56,29 +64,61 @@ end
 class Script
     def initialize
         @ocs = Nextcloud.ocs(url: NEXTCLOUD_URL_FROM_RUBY_CONTAINER,
-                             username: NEXTCLOUD_USER, 
+                             username: NEXTCLOUD_USER,
                              password: NEXTCLOUD_PASSWORD)
     end
-    
+
     def run
-        @@user_info = Main.class_variable_get(:@@user_info)
-        @@klassen_order = Main.class_variable_get(:@@klassen_order)
-        @@lessons_for_klasse = Main.class_variable_get(:@@lessons_for_klasse)
-        @@lessons = Main.class_variable_get(:@@lessons)
-        @@faecher = Main.class_variable_get(:@@faecher)
-        @@shorthands = Main.class_variable_get(:@@shorthands)
-        @@schueler_for_klasse = Main.class_variable_get(:@@schueler_for_klasse)
-        @@schueler_for_lesson = Main.class_variable_get(:@@schueler_for_lesson)
-        @@lessons_for_shorthand = Main.class_variable_get(:@@lessons_for_shorthand)
-        @@materialamt_for_lesson = Main.class_variable_get(:@@materialamt_for_lesson)
-        
+        argv = ARGV.dup
+        argv.delete('--share-archived')
+        argv.delete('--srsly')
+
+        @@debug_archive = {}
+        if SHARE_ARCHIVED_FILES
+            Zip::File.open(DEBUG_ARCHIVE_PATH) do |zip_file|
+                zip_file.each do |entry|
+                    if entry.file?
+                        content = nil
+                        entry.get_input_stream { |io| content = io.read }
+                        @@debug_archive[File.basename(entry.name).sub('.yaml', '').to_sym] = YAML.load(content)
+                    end
+                end
+            end
+        end
+
+        if SHARE_ARCHIVED_FILES
+            @@user_info = @@debug_archive[:@@user_info]
+            @@klassen_order = @@debug_archive[:@@klassen_order]
+            @@lessons_for_klasse = @@debug_archive[:@@lessons_for_klasse]
+            @@lessons = @@debug_archive[:@@lessons]
+            @@faecher = @@debug_archive[:@@faecher]
+            @@shorthands = @@debug_archive[:@@shorthands]
+            @@schueler_for_lesson = @@debug_archive[:@@schueler_for_lesson]
+            @@lessons_for_shorthand = @@debug_archive[:@@lessons_for_shorthand]
+            @@materialamt_for_lesson = @@debug_archive[:@@materialamt_for_lesson]
+        else
+            @@user_info = Main.class_variable_get(:@@user_info)
+            @@klassen_order = Main.class_variable_get(:@@klassen_order)
+            @@lessons_for_klasse = Main.class_variable_get(:@@lessons_for_klasse)
+            @@lessons = Main.class_variable_get(:@@lessons)
+            @@faecher = Main.class_variable_get(:@@faecher)
+            @@shorthands = Main.class_variable_get(:@@shorthands)
+            @@schueler_for_lesson = Main.class_variable_get(:@@schueler_for_lesson)
+            @@lessons_for_shorthand = Main.class_variable_get(:@@lessons_for_shorthand)
+            @@materialamt_for_lesson = Main.class_variable_get(:@@materialamt_for_lesson)
+        end
+
+        unless SRSLY
+            STDERR.puts "Attention: Doing nothing unless you specify --srsly!"
+        end
+
 #         @ocs.file_sharing.all.each do |share|
 #             STDERR.puts sprintf('[%5s] %s => [%s]%s', share['id'], share['path'], share['share_with'], share['file_target'])
 #             STDERR.puts share.to_yaml
 #             @ocs.file_sharing.destroy(share['id'])
 #         end
 #         return
-        
+
         wanted_shares = {}
         email_for_user_id = {}
 
@@ -132,9 +172,9 @@ class Script
                 user_id = user[:nc_login]
                 email_for_user_id[user_id] = email
                 wanted_shares[user_id] ||= {}
-                wanted_shares[user_id]["/Unterricht/#{folder_name}"] = {
+                wanted_shares[user_id]["/#{SHARE_SOURCE_FOLDER}/#{folder_name}"] = {
                     :permissions => SHARE_READ | SHARE_UPDATE | SHARE_CREATE | SHARE_DELETE,
-                    :target_path => "/Unterricht/#{pretty_folder_name}",
+                    :target_path => "/#{SHARE_TARGET_FOLDER}/#{pretty_folder_name}",
                     :share_with => user[:display_name]
                 }
             end
@@ -153,25 +193,25 @@ class Script
                     if @@materialamt_for_lesson[lesson_key].include?(email)
                         permissions = SHARE_READ | SHARE_UPDATE | SHARE_CREATE | SHARE_DELETE
                     end
-                    wanted_shares[user_id]["/Unterricht/#{folder_name}/Ausgabeordner-Materialamt"] = {
+                    wanted_shares[user_id]["/#{SHARE_SOURCE_FOLDER}/#{folder_name}/Ausgabeordner-Materialamt"] = {
                         :permissions => permissions,
-                        :target_path => "/Unterricht/#{pretty_folder_name.gsub(' ', '%20')}/Ausgabeordner (Materialamt)",
+                        :target_path => "/#{SHARE_TARGET_FOLDER}/#{pretty_folder_name.gsub(' ', '%20')}/Ausgabeordner (Materialamt)",
                         :share_with => user[:display_name]
                     }
                 end
-                wanted_shares[user_id]["/Unterricht/#{folder_name}/Ausgabeordner"] = {
+                wanted_shares[user_id]["/#{SHARE_SOURCE_FOLDER}/#{folder_name}/Ausgabeordner"] = {
                     :permissions => SHARE_READ,
-                    :target_path => "/Unterricht/#{pretty_folder_name.gsub(' ', '%20')}/Ausgabeordner",
+                    :target_path => "/#{SHARE_TARGET_FOLDER}/#{pretty_folder_name.gsub(' ', '%20')}/Ausgabeordner",
                     :share_with => user[:display_name]
                 }
-                wanted_shares[user_id]["/Unterricht/#{folder_name}/SuS/#{name}/Einsammelordner"] = {
+                wanted_shares[user_id]["/#{SHARE_SOURCE_FOLDER}/#{folder_name}/SuS/#{name}/Einsammelordner"] = {
                     :permissions => SHARE_READ | SHARE_UPDATE | SHARE_CREATE | SHARE_DELETE,
-                    :target_path => "/Unterricht/#{pretty_folder_name.gsub(' ', '%20')}/Einsammelordner",
+                    :target_path => "/#{SHARE_TARGET_FOLDER}/#{pretty_folder_name.gsub(' ', '%20')}/Einsammelordner",
                     :share_with => user[:display_name]
                 }
-                wanted_shares[user_id]["/Unterricht/#{folder_name}/SuS/#{name}/Rückgabeordner"] = {
+                wanted_shares[user_id]["/#{SHARE_SOURCE_FOLDER}/#{folder_name}/SuS/#{name}/Rückgabeordner"] = {
                     :permissions => SHARE_READ | SHARE_UPDATE | SHARE_CREATE | SHARE_DELETE,
-                    :target_path => "/Unterricht/#{pretty_folder_name.gsub(' ', '%20')}/Rückgabeordner",
+                    :target_path => "/#{SHARE_TARGET_FOLDER}/#{pretty_folder_name.gsub(' ', '%20')}/Rückgabeordner",
                     :share_with => user[:display_name]
                 }
             end
@@ -198,8 +238,8 @@ class Script
             end
         end
         wanted_nc_ids = nil
-        unless ARGV.empty?
-            wanted_nc_ids = Set.new(ARGV.map { |email| (@@user_info[email] || {})[:nc_login] })
+        unless argv.empty?
+            wanted_nc_ids = Set.new(argv.map { |email| (@@user_info[email] || {})[:nc_login] })
         end
         STDERR.puts "Got wanted shares for #{wanted_shares.size} users."
         # File.open('/internal/debug/wanted-shares.yaml', 'w') do |f|
@@ -210,6 +250,7 @@ class Script
         (@ocs.file_sharing.all || []).each do |share|
             next if share['share_with'].nil?
             present_shares[share['share_with']] ||= {}
+            next unless share['path'] == "/#{SHARE_SOURCE_FOLDER}"
             present_shares[share['share_with']][share['path']] = {
                 :permissions => share['permissions'].to_i,
                 :target_path => share['file_target'],
@@ -221,15 +262,13 @@ class Script
         # File.open('/internal/debug/present-shares.yaml', 'w') do |f|
         #     f.write present_shares.to_yaml
         # end
-#         STDERR.puts present_shares.to_yaml
-#         exit
         wanted_shares.keys.sort.each do |user_id|
             unless wanted_nc_ids.nil?
                 next unless wanted_nc_ids.include?(user_id)
                 # STDERR.puts "Wanted shares for #{user_id}:"
                 # STDERR.puts wanted_shares[user_id].to_yaml
             end
-            ocs_user = Nextcloud.ocs(url: NEXTCLOUD_URL_FROM_RUBY_CONTAINER, 
+            ocs_user = Nextcloud.ocs(url: NEXTCLOUD_URL_FROM_RUBY_CONTAINER,
                                      username: user_id,
                                      password: NEXTCLOUD_ALL_ACCESS_PASSWORD_BE_CAREFUL)
             wanted_dirs = Set.new()
@@ -237,13 +276,13 @@ class Script
                 parts = path.split('/')
                 parts.each.with_index do |part, _|
                     sub_path = parts[0, _ + 1].join('/') + '/'
-                    wanted_dirs << sub_path.gsub('%20', ' ') unless sub_path == '/' || sub_path == '/Unterricht/'
+                    wanted_dirs << sub_path.gsub('%20', ' ') unless sub_path == '/' || sub_path == "/#{SHARE_TARGET_FOLDER}/"
                 end
             end
 #             STDERR.puts wanted_dirs.to_a.sort.to_yaml
             result = []
             begin
-                result = ocs_user.webdav.directory.find('/Unterricht').contents
+                result = ocs_user.webdav.directory.find("/#{SHARE_TARGET_FOLDER}").contents
             rescue NoMethodError => e
             end
             (result || []).each do |dir|
@@ -262,7 +301,9 @@ class Script
                     contents_count = (dir2.contents || []).size
                     if contents_count == 0
                         STDERR.puts "DELETING [#{user_id}]#{path}"
-                        ocs_user.webdav.directory.destroy(path.gsub(' ', '%20'))
+                        if SRSLY
+                            ocs_user.webdav.directory.destroy(path.gsub(' ', '%20'))
+                        end
                     else
                         STDERR.puts "KEEPING [#{user_id}]#{path} because it has #{contents_count} files."
                     end
@@ -272,6 +313,10 @@ class Script
             wanted_shares[user_id].each_pair do |path, info|
                 next if ((((present_shares[user_id] || {})[path]) || {})[:target_path] || '').gsub(' ', '%20') == info[:target_path] &&
                     (((present_shares[user_id] || {})[path]) || {})[:permissions] == info[:permissions]
+                unless SRSLY
+                    STDERR.puts "Would share (if SRSLY): #{path} => #{user_id}"
+                    next
+                end
                 begin
                     unless (present_shares[user_id] || {})[path] && ((((present_shares[user_id] || {})[path]) || {})[:target_path].gsub(' ', '%20') == info[:target_path].gsub(' ', '%20'))
                         unless ((((present_shares[user_id] || {})[path]) || {})[:target_path] || '').gsub(' ', '%20') == info[:target_path].gsub(' ', '%20')
@@ -325,7 +370,9 @@ class Script
             present_shares[user_id].each_pair do |path, info|
                 next if (wanted_shares[user_id] || {})[path]
                 STDERR.puts "Removing share #{path} for #{user_id}..."
-                @ocs.file_sharing.destroy(info[:id])
+                if SRSLY
+                    @ocs.file_sharing.destroy(info[:id])
+                end
             end
         end
 

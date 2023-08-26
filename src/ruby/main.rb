@@ -419,21 +419,6 @@ class Main < Sinatra::Base
         set :show_exceptions, false
     end
 
-    def hide_timetables_from_sus
-        if DEVELOPMENT
-            false
-        else
-            hide_from_sus = false
-            now = Time.now
-            if now.strftime('%Y-%m-%d') < @@config[:first_school_day]
-                hide_from_sus = true
-            elsif now.strftime('%Y-%m-%d') == @@config[:first_school_day]
-                hide_from_sus = now.strftime('%H:%M:%S') < '09:00:00'
-            end
-            hide_from_sus
-        end
-    end
-
     def self.iterate_school_days(options = {}, &block)
         day = Date.parse(@@config[:first_day])
         last_day = Date.parse(@@config[:last_day])
@@ -935,7 +920,7 @@ class Main < Sinatra::Base
             last_start_date = start_date
         end
 
-        kurse_for_schueler, schueler_for_kurs = parser.parse_kurswahl(@@user_info.reject { |x, y| y[:teacher] }, @@lessons, lesson_key_tr, @@original_lesson_key_for_lesson_key)
+        kurse_for_schueler, schueler_for_kurs = parser.parse_kurswahl(@@user_info.reject { |x, y| y[:teacher] }, @@lessons, lesson_key_tr, @@original_lesson_key_for_lesson_key, @@shorthands)
         @@kurse_for_schueler = kurse_for_schueler
         wahlpflicht_sus_for_lesson_key = parser.parse_wahlpflichtkurswahl(@@user_info.reject { |x, y| y[:teacher] }, @@lessons, lesson_key_tr, @@schueler_for_klasse)
         sesb_sus = parser.parse_sesb(@@user_info.reject { |x, y| y[:teacher] }, @@schueler_for_klasse)

@@ -1047,6 +1047,7 @@ class Timetable
         elsif now.strftime('%Y-%m-%d') == @@config[:first_school_day]
             hide_from_sus = now.strftime('%H:%M:%S') < '09:00:00'
         end
+        hide_from_sus = false if DEVELOPMENT
         debug "Updating weeks: #{only_these_lesson_keys.to_a.join(', ')} (hide_from_sus: #{hide_from_sus})"
 
         ical_info = {}
@@ -1230,10 +1231,11 @@ class Timetable
             temp.each_pair do |email, user|
                 path = "/gen/w/#{user[:id]}/#{p_yw}.json.gz"
                 if @@user_info[email] && (!@@user_info[email][:teacher]) && hide_from_sus
-                    if now.strftime('%Y-%m-%d') >= (Date.parse(@@config[:first_school_day]) - 2).strftime('%Y-%m-%d')
-                        FileUtils::rm_f(path)
-                        next
-                    end
+                    # # Blank all schueler timetables on the weekend before school starts
+                    # if now.strftime('%Y-%m-%d') >= (Date.parse(@@config[:first_school_day]) - 2).strftime('%Y-%m-%d')
+                    #     FileUtils::rm_f(path)
+                    #     next
+                    # end
                 end
                 lesson_keys = @@lessons_for_user[email].dup
                 if email[0] == '_'

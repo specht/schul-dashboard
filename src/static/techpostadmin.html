@@ -301,6 +301,18 @@
                                 });
                             });
 
+                        let fixer = entry.fnc_login ? $('<button>').html("&nbsp;<img src='#{NEXTCLOUD_URL}/index.php/avatar/" + entry.fnc_login + "/256}' class='icon avatar-md'/>") : "";
+                        if (entry.fnc_login) {    
+                            fixer.data('token', entry.problem.token);
+                            fixer.click(function(e) {
+                                    let token = $(this).data('token');
+                                    api_call('/api/i_will_not_fix_tech_problem', {token: token}, function(data) {
+                                        if (data.success)
+                                            refresh_tech_problems();
+                                    });
+                                });
+                        }
+                        
                         let tp_mail_count = entry.problem.mail_count
 
                         let tp_mail = $('<button>')
@@ -342,7 +354,7 @@
                                 });
                             row.append($('<td>').append(tp_hide).append('&nbsp;').append(tp_mail));
                         }
-                        row.append($('<td>').append(tp_hide_admin).append('&nbsp;').append(tp_i_will_fix_it));
+                        row.append($('<td>').append(tp_hide_admin).append('&nbsp;').append(tp_i_will_fix_it).append(fixer));
                         row.append($('<td>').append(tp_delete));
                         $('#problems_here').append(row);
                     }

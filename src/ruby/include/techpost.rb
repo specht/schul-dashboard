@@ -112,13 +112,15 @@ class Main < Sinatra::Base
         require_user_who_can_manage_tablets!
         problems = neo4j_query(<<~END_OF_QUERY, :email => @session_user[:email]).map { |x| {:problem => x['v'], :email => x['u.email'], :femail => x['f.email']} }
             MATCH (v:TechProblem)-[:BELONGS_TO]->(u:User)
-            MATCH (v:TechProblem)-[:WILL_BE_FIXED_BY]->(f:User)
+            OPTIONAL MATCH (v:TechProblem)-[:WILL_BE_FIXED_BY]->(f:User)
             RETURN v, u.email, f.email;
         END_OF_QUERY
         problems.map! do |x|
             x[:display_name] = @@user_info[x[:email]][:display_name]
             x[:nc_login] = @@user_info[x[:email]][:nc_login]
-            x[:fnc_login] = @@user_info[x[:femail]][:nc_login]
+            if x[:femail]
+                x[:fnc_login] = @@user_info[x[:femail]][:nc_login]
+            end
             x[:klasse] = @@user_info[x[:email]][:klasse]
             x
         end
@@ -288,8 +290,19 @@ class Main < Sinatra::Base
         neo4j_query_expect_one(<<~END_OF_QUERY, :token => token, :email => @session_user[:email])
             MATCH (v:TechProblem {token: $token})
             MATCH (u:User {email: $email})
-            CREATE (v)-[:WILL_BE_FIXED_BY]->(u)
+            MERGE (v)-[:WILL_BE_FIXED_BY]->(u)
             RETURN v;
+        END_OF_QUERY
+        respond(:ok => true)
+    end
+
+    post '/api/i_will_not_fix_tech_problem' do
+        require_user_who_can_manage_tablets!
+        data = parse_request_data(:required_keys => [:token])
+        token = data[:token]
+        neo4j_query(<<~END_OF_QUERY, :token => token, :email => @session_user[:email])
+            MATCH (v:TechProblem {token: $token})-[r:WILL_BE_FIXED_BY]->(u:User {email: $email})
+            DELETE r;
         END_OF_QUERY
         respond(:ok => true)
     end

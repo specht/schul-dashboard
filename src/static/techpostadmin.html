@@ -180,9 +180,9 @@
                         let row = $('<tr>');
                         row.append($('<td>').html("<img src='#{NEXTCLOUD_URL}/index.php/avatar/" + entry.nc_login + "/256}' class='icon avatar-md'/>&nbsp;&nbsp;&nbsp;" + entry.display_name));
                         if (entry.klasse) {
-                            row.append($('<td>').text(entry.klasse));
+                            row.append($('<td title="Schüler">').text(entry.klasse));
                         } else {
-                            row.append($('<td>').html('<i class="fa fa-user-o"></i>'));
+                            row.append($('<td title="Lehrer">').html('<i class="fa fa-users"></i>'));
                         }
                         row.append($('<td>').text(entry.problem.problem));
                         row.append($('<td>').text('' + entry.problem.device));
@@ -289,19 +289,7 @@
                                                         
 
                         });
-                        let tp_i_will_fix_it = $('<button title="Ich kümmere mich darum">')
-                            .addClass('btn btn-xs btn-warning')
-                            .html("<i class='fa fa-user'></i>")
-                            .data('token', entry.problem.token)
-                            .click(function(e) {
-                                let token = $(this).data('token');
-                                api_call('/api/i_will_fix_tech_problem', {token: token}, function(data) {
-                                    if (data.success)
-                                        refresh_tech_problems();
-                                });
-                            });
-
-                        let fixer = entry.fnc_login ? $('<button>').html("&nbsp;<img src='#{NEXTCLOUD_URL}/index.php/avatar/" + entry.fnc_login + "/256}' class='icon avatar-md'/>") : "";
+                        let fixer = entry.fnc_login ? $('<button title="' + entry.fdisplay_name + ' kümmert sich um das Problem.<">').html("<img src='#{NEXTCLOUD_URL}/index.php/avatar/" + entry.fnc_login + "/256}' class='icon avatar-md'/>") : $('<button title="Ich kümmere mich darum">').addClass('btn btn-xs btn-warning').html("<i class='fa fa-user-plus'></i>");
                         if (entry.fnc_login) {    
                             fixer.data('token', entry.problem.token);
                             fixer.click(function(e) {
@@ -311,8 +299,17 @@
                                             refresh_tech_problems();
                                     });
                                 });
-                        }
+                        } else {
+                            fixer.data('token', entry.problem.token)
+                            fixer.click(function(e) {
+                                let token = $(this).data('token');
+                                api_call('/api/i_will_fix_tech_problem', {token: token}, function(data) {
+                                    if (data.success)
+                                        refresh_tech_problems();
+                                });
+                            });
                         
+                        }
                         let tp_mail_count = entry.problem.mail_count
 
                         let tp_mail = $('<button>')
@@ -354,7 +351,7 @@
                                 });
                             row.append($('<td>').append(tp_hide).append('&nbsp;').append(tp_mail));
                         }
-                        row.append($('<td>').append(tp_hide_admin).append('&nbsp;').append(tp_i_will_fix_it).append(fixer));
+                        row.append($('<td>').append(tp_hide_admin).append('&nbsp;').append(fixer));
                         row.append($('<td>').append(tp_delete));
                         $('#problems_here').append(row);
                     }

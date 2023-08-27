@@ -120,6 +120,7 @@ class Main < Sinatra::Base
             x[:nc_login] = @@user_info[x[:email]][:nc_login]
             if x[:femail]
                 x[:fnc_login] = @@user_info[x[:femail]][:nc_login]
+                x[:fdisplay_name] = @@user_info[x[:femail]][:display_name]
             end
             x[:klasse] = @@user_info[x[:email]][:klasse]
             x

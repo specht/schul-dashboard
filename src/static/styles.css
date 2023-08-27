@@ -2628,20 +2628,57 @@ th.thsticky {
     box-shadow: 0.05em 0.05em 0.5em rgba(0,0,0,0.3);
 }
 
+.explainer {
+    position: relative;
+    /* background-color: #333; */
+    padding-bottom: 4em;
+}
+
 .image_carousel {
     max-width: 100%;
     white-space: nowrap;
-    overflow-x: hidden;
+    overflow-x: auto;
 }
 
 .image_carousel img {
-    max-height: 70vh;
+    max-height: 50vh;
     margin: 1em;
     box-shadow: 0 0 1em rgba(0, 0, 0, 0.2);
     border-radius: 1em;
 }
 
 .image_carousel img.active {
-    border: 3px solid #888;
-    box-shadow: 0 0 1em rgba(0, 0, 0, 0.6);
+    border: 2px solid #888;
+    box-shadow: 0 0 1em rgba(0, 0, 0, 0.4);
+}
+
+.explainer .control-buttons {
+    position: absolute;
+    right: 0;
+    bottom: 0;
+    margin: 1em;
+}
+
+.image_carousel div {
+    display: inline-block;
+    position: relative;
+}
+
+.image_carousel div span {
+    position: absolute;
+    bottom: 1em;
+    left: 50%;
+    transform: translate(-50%, 0.5em);
+    background-color: #fff;
+    border-radius: 1em;
+    width: 1.6em;
+    height: 1.6em;
+    text-align: center;
+    box-shadow: 0 0 0.5em rgba(0, 0, 0, 0.5);
+}
+
+.explainer .hl {
+    position: absolute;
+    border: 2px dashed red;
+    box-shadow: 0 0 0.5em rgba(0, 0, 0, 0.5);
 }

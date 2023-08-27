@@ -2640,10 +2640,14 @@ th.thsticky {
     overflow-x: auto;
 }
 
+.image_carousel > div {
+    margin: 0.5em;
+    position: relative;
+}
+
 .image_carousel img {
     max-height: 50vh;
-    margin: 1em;
-    box-shadow: 0 0 1em rgba(0, 0, 0, 0.2);
+    box-shadow: 0 0 0.5em rgba(0, 0, 0, 0.2);
     border-radius: 1em;
 }
 

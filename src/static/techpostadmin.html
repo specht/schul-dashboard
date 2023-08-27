@@ -289,7 +289,7 @@
                                                         
 
                         });
-                        let fixer = entry.fnc_login ? $('<button title="' + entry.fdisplay_name + ' kümmert sich um das Problem.<">').html("<img src='#{NEXTCLOUD_URL}/index.php/avatar/" + entry.fnc_login + "/256}' class='icon avatar-md'/>") : $('<button title="Ich kümmere mich darum">').addClass('btn btn-xs btn-warning').html("<i class='fa fa-user-plus'></i>");
+                        let fixer = entry.fnc_login ? $('<button title="' + entry.fdisplay_name + ' kümmert sich um das Problem.">').html("<img src='#{NEXTCLOUD_URL}/index.php/avatar/" + entry.fnc_login + "/256}' class='icon avatar-md'/>") : $('<button title="Ich kümmere mich darum">').addClass('btn btn-xs btn-warning').html("<i class='fa fa-user-plus'></i>");
                         if (entry.fnc_login) {    
                             fixer.data('token', entry.problem.token);
                             fixer.click(function(e) {

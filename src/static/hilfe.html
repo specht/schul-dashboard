@@ -11,13 +11,31 @@ h3 {
 .github { display: block; }
 </style>
 
+<script>
+    function install_explainers() {
+        for (let explainer of $('.explainer')) {
+            console.log(explainer);
+            // $(explainer).find('.captions div').hide();
+        }
+    }
+
+    window.addEventListener('load', function() {
+        install_explainers();
+    });
+</script>
+
 <div class='container' style='padding-top: 30px;'>
     <div class='row'>
         <div class='col-md-12'>
             <h2>Alles rund um deine E-Mail-Adresse</h2>
             <p>
             Jede Schülerin und jeder Schüler #{SCHUL_NAME_AN_DATIV} #{SCHUL_NAME} hat eine eigene E-Mail-Adresse, die auf <em>@#{SCHUL_MAIL_DOMAIN}</em> endet.
-            Du solltest dafür Zettel mit deinen Zugangsdaten erhalten haben.
+            Du solltest dafür Zettel mit deinen Zugangsdaten erhalten haben. Um deine E-Mails abzurufen, kannst du dich unter 
+            <a href="https://mail.ionos.de/" target="_blank">https://mail.ionos.de/</a> mit deinen Zugangsdaten anmelden.
+            </p>
+            <p></p>
+            Wir empfehlen dir jedoch (und ebenso deinen Eltern für ihre Eltern-E-Mail-Adresse) dringend, dein Konto einer App (wie z. B. Gmail oder Apple Mail oder Thunderbird)
+            hinzuzufügen, damit du nicht immer dein Passwort eingeben musst und automatisch benachrichtigt wirst, sobald du eine neue E-Mail erhalten hast.
             </p>
 
             <h3>Passwort ändern</h3>
@@ -26,11 +44,28 @@ h3 {
             Bitte ändere als erstes dein Passwort! Dein E-Mail-Passwort ist besonders wichtig, deshalb verwende bitte ein neues Passwort, das du nirgendwo anders verwendest oder verwendet hast.
             </p>
 
-            <h3>Weiterleitung einrichten</h3>
+            <!-- <img class='app_icon pull-right' src="/images/gmail.png" style="transform: rotate(5deg);"> -->
+            
+            <h3>Einrichtung von Gmail (Android)</h3>
 
-            <p>
-            Falls du bereits eine E-Mail-Adresse hast, kannst du mit einer Weiterleitung dafür sorgen, dass alle E-Mails, die du unter deiner neuen Adresse bekommst, einfach an deine vorhandene E-Mail-Adresse weitergeleitet werden.
-            </p>
+            <div class="explainer">
+                <div class="image_carousel">
+                    <div><img src="/images/email-gmail/01.png"><div class="hl" style="left: 3%; top: 5.7%; width: 14%; height: 6.5%;"></div></div>
+                    <div><img src="/images/email-gmail/02.png"><div class="hl" style="left: 1%; top: 75%; width: 43%; height: 7%;"></div></div>
+                    <div><img src="/images/email-gmail/03.png"><div class="hl" style="left: 2%; top: 22.2%; width: 39%; height: 7%;"></div></div>
+                    <div><img src="/images/email-gmail/04.png"><div class="hl" style="left: 2%; top: 68%; width: 39%; height: 7%;"></div></div>
+                    <div><img src="/images/email-gmail/05.png"></div>
+                    <div><img src="/images/email-gmail/06.png"><div class="hl" style="left: 0%; top: 38%; width: 41%; height: 7%;"></div></div>
+                    <div><img src="/images/email-gmail/07.png"></div>
+                    <div><img src="/images/email-gmail/08.png"></div>
+                    <div><img src="/images/email-gmail/09.png"></div>
+                    <div><img src="/images/email-gmail/10.png"></div>
+                    <div><img src="/images/email-gmail/11.png"></div>
+                    <div><img src="/images/email-gmail/12.png"></div>
+                </div>
+            </div>
+
+            <hr />
 
             <h3>E-Mail-Programm konfigurieren</h3>
 
@@ -62,40 +97,6 @@ h3 {
             </div>
 
             <hr />
-
-            <!-- <div class="alert alert-success">
-                <p>
-                    <strong>Wichtiger Hinweis:</strong> Am besten ist es, wenn du deine E-Mail-Adresse auf deinem Smartphone hinzufügst. Dies hat zwei Vorteile:
-                </p>
-                <ul>
-                    <li>1. Du musst dein Passwort nicht jedesmal eingeben</li>
-                    <li>2. Du verpasst keine E-Mails, weil du benachrichtigt wirst, sobald du eine neue E-Mail erhalten hast</li>
-                </ul>
-                <p>
-                    Du kannst deine schulische E-Mail-Adresse einfach deiner normalen E-Mail-App hinzufügen. Wie das geht, erfährst du hier.
-                </p>
-                <img class='app_icon' src="/images/gmail.png">
-                <img class='app_icon' src="/images/apple-mail.png">
-            </div>
-
-            <h3>Einrichtung von Gmail (Android)</h3>
-
-            <div class="image_carousel">
-                <img src="/images/email-gmail/01.png" class="active">
-                <img src="/images/email-gmail/02.png">
-                <img src="/images/email-gmail/03.png">
-                <img src="/images/email-gmail/04.png">
-                <img src="/images/email-gmail/05.png">
-                <img src="/images/email-gmail/06.png">
-                <img src="/images/email-gmail/07.png">
-                <img src="/images/email-gmail/08.png">
-                <img src="/images/email-gmail/09.png">
-                <img src="/images/email-gmail/10.png">
-                <img src="/images/email-gmail/11.png">
-                <img src="/images/email-gmail/12.png">
-            </div>
-
-            <hr /> -->
 
             <p style='text-align: center;'>
             Hilfe bei der Einrichtung von Outlook findest du auch auf den Hilfe-Seiten von IONOS:

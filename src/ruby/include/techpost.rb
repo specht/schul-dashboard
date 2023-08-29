@@ -3,7 +3,7 @@ class Main < Sinatra::Base
         require_user_who_can_report_tech_problems!
         data = parse_request_data(:required_keys => [:problem, :date, :device],)
         token = RandomTag.generate(24)
-        neo4j = neo4j_query_expect_one(<<~END_OF_QUERY, :token => token, :email => @session_user[:email], :device => data[:device], :date => data[:date], :problem => data[:problem])
+        neo4j_entry = neo4j_query_expect_one(<<~END_OF_QUERY, :token => token, :email => @session_user[:email], :device => data[:device], :date => data[:date], :problem => data[:problem])
             MATCH (u:User {email: $email})
             CREATE (v:TechProblem {token: $token})-[:BELONGS_TO]->(u)
             SET v.device = $device 
@@ -62,7 +62,7 @@ class Main < Sinatra::Base
             subject "Debug: Neues Technikproblem"
 
             StringIO.open do |io|
-                io.puts "<p>#{neo4j}</p>"
+                io.puts "<p>#{neo4j_entry}</p>"
                 io.string
             
             end
@@ -74,7 +74,7 @@ class Main < Sinatra::Base
         require_user_who_can_manage_tablets!
         data = parse_request_data(:required_keys => [:problem, :date, :device],)
         token = RandomTag.generate(24)
-        neo4j = neo4j_query_expect_one(<<~END_OF_QUERY, :token => token, :email => @session_user[:email], :device => data[:device], :date => data[:date], :problem => data[:problem])
+        neo4j_entry = neo4j_query_expect_one(<<~END_OF_QUERY, :token => token, :email => @session_user[:email], :device => data[:device], :date => data[:date], :problem => data[:problem])
             MATCH (u:User {email: $email})
             CREATE (v:TechProblem {token: $token})-[:BELONGS_TO]->(u)
             SET v.device = $device 
@@ -97,7 +97,7 @@ class Main < Sinatra::Base
             subject "Debug: Neues Technikproblem"
 
             StringIO.open do |io|
-                io.puts "<p>#{neo4j}</p>"
+                io.puts "<p>#{neo4j_entry}</p>"
                 io.string
             
             end

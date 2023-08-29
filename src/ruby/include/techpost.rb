@@ -3,7 +3,7 @@ class Main < Sinatra::Base
         require_user_who_can_report_tech_problems!
         data = parse_request_data(:required_keys => [:problem, :date, :device],)
         token = RandomTag.generate(24)
-        neo4j_query_expect_one(<<~END_OF_QUERY, :token => token, :email => @session_user[:email], :device => data[:device], :date => data[:date], :problem => data[:problem])
+        neo4j = neo4j_query_expect_one(<<~END_OF_QUERY, :token => token, :email => @session_user[:email], :device => data[:device], :date => data[:date], :problem => data[:problem])
             MATCH (u:User {email: $email})
             CREATE (v:TechProblem {token: $token})-[:BELONGS_TO]->(u)
             SET v.device = $device 
@@ -15,7 +15,7 @@ class Main < Sinatra::Base
             SET v.hidden = false
             SET v.hidden_admin = false
             SET v.mail_count = 0
-            RETURN v.token;
+            RETURN v, u;
         END_OF_QUERY
         name = @session_user[:display_name]
         mail_adress = @session_user[:email]
@@ -54,6 +54,19 @@ class Main < Sinatra::Base
                 end
             end
         end
+        deliver_mail do
+            to WANTS_TO_RECEIVE_TECHPOST_DEBUG_MAIL
+            bcc SMTP_FROM
+            from SMTP_FROM
+
+            subject "Debug: Neues Technikproblem"
+
+            StringIO.open do |io|
+                io.puts "<p>#{neo4j}</p>"
+                io.string
+            
+            end
+        end
         respond(:ok => true)
     end
 
@@ -61,7 +74,7 @@ class Main < Sinatra::Base
         require_user_who_can_manage_tablets!
         data = parse_request_data(:required_keys => [:problem, :date, :device],)
         token = RandomTag.generate(24)
-        neo4j_query_expect_one(<<~END_OF_QUERY, :token => token, :email => @session_user[:email], :device => data[:device], :date => data[:date], :problem => data[:problem])
+        neo4j = neo4j_query_expect_one(<<~END_OF_QUERY, :token => token, :email => @session_user[:email], :device => data[:device], :date => data[:date], :problem => data[:problem])
             MATCH (u:User {email: $email})
             CREATE (v:TechProblem {token: $token})-[:BELONGS_TO]->(u)
             SET v.device = $device 
@@ -73,9 +86,22 @@ class Main < Sinatra::Base
             SET v.hidden = false
             SET v.hidden_admin = false
             SET v.mail_count = 0
-            RETURN v.token;
+            RETURN v, u;
         END_OF_QUERY
         respond(:ok => true)
+        deliver_mail do
+            to WANTS_TO_RECEIVE_TECHPOST_DEBUG_MAIL
+            bcc SMTP_FROM
+            from SMTP_FROM
+
+            subject "Debug: Neues Technikproblem"
+
+            StringIO.open do |io|
+                io.puts "<p>#{neo4j}</p>"
+                io.string
+            
+            end
+        end
     end
 
     post '/api/comment_tech_problem_admin' do
@@ -249,7 +275,7 @@ class Main < Sinatra::Base
                 io.puts "<p>Hallo!</p>"
                 io.puts "<p>Es gibt Neuigkeiten zu deinem Technikproblem:</p>"
                 io.puts "<p>Das Problem hat jetzt den Status #{state}.#{comment}</p>"
-                io.puts "<a href='#{WEBSITE_HOST}/techpost'>Probleme ansehen</a>"
+                # io.puts "<a href='#{WEBSITE_HOST}/techpost'>Probleme ansehen</a>"
                 io.puts "<p>Viele Grüße<br>Dashboard #{SCHUL_NAME_AN_DATIV} #{SCHUL_NAME}</p>"
                 io.string
             

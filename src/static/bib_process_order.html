@@ -289,7 +289,7 @@
                 fulfillments_table = new SortableTable({
                     xs: true,
                     element: $('#fulfillments_table'),
-                    headers: ['Datum', 'Exemplare', 'Beleg'].map(function (x) {
+                    headers: ['Datum', 'Exemplare', 'bearbeitet von', 'Beleg'].map(function (x) {
                         let th = $('<th>').text(x);
                         if (['Datum', 'Exemplare'].indexOf(x) >= 0) th.data('type', 'int');
                         return th;
@@ -303,6 +303,7 @@
                             fulfillment.id,
                             $('<td>').html(`${moment.unix(fulfillment.ts).format('L')}`),
                             $('<td>').html(`${fulfillment.bnrs.length}`),
+                            $('<td>').html(`${create_user_label(fulfillment.email)}`),
                             $('<td>').append(button),
                         ];
                     }),

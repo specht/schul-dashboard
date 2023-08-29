@@ -15,7 +15,7 @@ class Main < Sinatra::Base
             SET v.hidden = false
             SET v.hidden_admin = false
             SET v.mail_count = 0
-            RETURN v, u;
+            RETURN v, u.email;
         END_OF_QUERY
         name = @session_user[:display_name]
         mail_adress = @session_user[:email]
@@ -86,7 +86,7 @@ class Main < Sinatra::Base
             SET v.hidden = false
             SET v.hidden_admin = false
             SET v.mail_count = 0
-            RETURN v, u;
+            RETURN v, u.email;
         END_OF_QUERY
         respond(:ok => true)
         deliver_mail do

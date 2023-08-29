@@ -275,7 +275,8 @@
                         tp_hide_admin.data('token', entry.problem.token);
                         tp_hide_admin.click(function(e) {
                             if (entry.problem.comment != "") {
-                                api_call('/api/hide_tech_problem_admin', {token: $(e.target).data('token')}, function(data) {
+                                let token = $(this).data('token');
+                                api_call('/api/hide_tech_problem_admin', {token: token}, function(data) {
                                 if (data.success)
                                     refresh_tech_problems();
                                 });
@@ -460,10 +461,11 @@
                             row.append($('<td>').text('' + entry.problem.comment + ' ').append(tp_update_comment));
                         }
 
-                        let tp_hide_admin = $('<button>').addClass('btn').addClass('btn-xs').addClass('btn-secondary').html("<i class='fa fa-wrench'></i>&nbsp;&nbsp;Ausgeblendet");
+                        let tp_hide_admin = $('<button>').addClass('btn').addClass('btn-xs').addClass('btn-secondary').html("<i class='fa fa-eye-slash'></i>");
                         tp_hide_admin.data('token', entry.problem.token);
                         tp_hide_admin.click(function(e) {
-                            api_call('/api/unhide_tech_problem_admin', {token: $(e.target).data('token')}, function(data) {
+                            let token = $(this).data('token');
+                            api_call('/api/unhide_tech_problem_admin', {token: token}, function(data) {
                                 if (data.success)
                                     refresh_tech_problems();
                                     refresh_fixed_tech_problems();

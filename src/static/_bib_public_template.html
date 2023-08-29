@@ -138,6 +138,30 @@
     var sound_initialized_by_user_interaction = false;
     var is_safari = false;//(navigator.userAgent.indexOf('Safari') >= 0 && navigator.userAgent.indexOf('Chrome') < 0);
 
+    function create_user_label(email) {
+        if (db_user_info[email]) {
+            let parts = [];
+            for (let key of ['last_name', 'first_name']) {
+                if (db_user_info[email].teacher) {
+                    if (key === 'last_name' && db_user_info[email].titel) {
+                        parts.push(`${db_user_info[email].titel} ${db_user_info[email][key]}`);
+                    } else {
+                        parts.push(`${db_user_info[email][key]}`);
+                    }
+                } else {
+                    parts.push(`${(db_user_info[email] || {})[key]}`);
+                }
+            }
+            if (db_user_info[email].teacher) {
+                return `<span class='bg-amber-200 p-1 rounded'>${parts.join(', ')}</span>`;
+            } else {
+                return parts.join(', ');
+            }
+        } else {
+            return email;
+        }
+    }
+
     function create_user_td_span(email) {
         if (db_user_info[email]) {
             let parts = [];

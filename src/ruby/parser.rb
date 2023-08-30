@@ -944,11 +944,15 @@ class Parser
         emails_for_kurs_id.each_pair do |kurs_id, emails|
             if kurs_id_tr[kurs_id]
                 lesson_key = kurs_id_tr[kurs_id]
-                emails.each do |email|
-                    schueler_for_kurs[lesson_key] ||= Set.new()
-                    schueler_for_kurs[lesson_key] << email
-                    kurse_for_schueler[email] ||= Set.new()
-                    kurse_for_schueler[email] << lesson_key
+                if lessons[:lesson_keys].include?(lesson_key)
+                    emails.each do |email|
+                        schueler_for_kurs[lesson_key] ||= Set.new()
+                        schueler_for_kurs[lesson_key] << email
+                        kurse_for_schueler[email] ||= Set.new()
+                        kurse_for_schueler[email] << lesson_key
+                    end
+                else
+                    unassigned_kurs_ids << kurs_id
                 end
             else
                 unassigned_kurs_ids << kurs_id

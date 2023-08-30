@@ -346,6 +346,24 @@ class Main < Sinatra::Base
         respond(:ok => true)
     end
 
+    def print_techpost_superuser()
+        require_user_who_can_manage_tablets!
+        problems = neo4j_query(<<~END_OF_QUERY, :email => @session_user[:email]).map { |x| {:problem => x['v'], :email => x['u.email'], :femail => x['f.email']} }
+            MATCH (v:TechProblem)-[:BELONGS_TO]->(u:User)
+            OPTIONAL MATCH (v:TechProblem)-[:WILL_BE_FIXED_BY]->(f:User)
+            RETURN v, u.email, f.email;
+        END_OF_QUERY
+        StringIO.open do |io|
+            io.puts "<h3>User die Zugriff auf diese Seite haben</h3>"
+            io.puts "<p><code>#{TECHNIKTEAM + CAN_MANAGE_TABLETS_USERS + ADMIN_USERS}</code></p>"
+            io.puts "<h3>Aktuelle Probleme im json-Format</h3>"
+            for problem in problems do
+                io.puts "<p><code>#{problem.to_json}</code></p>"
+            end
+            io.string
+        end
+    end
+
     def print_tablet_login()
         require_user_who_can_manage_tablets!
         StringIO.open do |io|

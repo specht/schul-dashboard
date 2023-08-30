@@ -3,6 +3,7 @@
     <div class='row'>
         <div class="col-md-12">
             <h2 style="margin-bottom: 30px;">Technikamt (Admin)</h2>
+            <button class='bu-safe btn pull-right' style="color: #fff;"><i class='fa fa-laptop'></i>&nbsp;&nbsp;Super User</button>
             <hr>
             <p>
                 Du bist #{(admin_logged_in?) ? 'Admin im Dashboard' : 'Teil des TechnikTeams'} und kannst deshalb hier Probleme mit Geräten aufnehmen und auch <b>schließen</b>. Auch kannst du dich als Tablet anmelden.  
@@ -61,7 +62,6 @@
                 <div class='col-md-12'>
                     <button class='bu-fixed-problems btn btn-primary'><i class='fa fa-eye'></i>&nbsp;&nbsp;Ausgeblendete Probleme</button>
                     <button class='bu-tablets btn btn-warning'><i class='fa fa-tablet'></i>&nbsp;&nbsp;Tablets</button>
-                    <button class='bu-safe btn btn-success' style="display: none;"><i class='fa fa-laptop'></i>&nbsp;&nbsp;Geräte im Safe</button>
                 </div>
             </div>
         </div>
@@ -122,22 +122,16 @@
     </div>
 </div>
 
-<div class="modal" id="composeSafe" tabindex="-1" role="dialog" aria-hidden="true">
+<div class="modal" id="composeSuperUser" tabindex="-1" role="dialog" aria-hidden="true">
     <div class="modal-dialog modal-xl modal-dialog-centered" role="document">
       <div class="modal-content">
        <div class="modal-header">
-          <h5 class="modal-title">Geräte im Safe</h5>
+          <h5 class="modal-title">Super User</h5>
         </div>
         <div class="modal-body">
             <div class='row'>
                 <div class='col-md-12' style='max-width: 100%; overflow-x: auto;'>
-                    <div class="safe-devices">
-                        <b>Aktuell sollte im Safe stehen:</b><br>
-                        - 2 Computer<br>
-                        - 3 Beamer<br>
-                        - 6 Multi-Beamer<br>
-                        - 4 DVD-Player
-                    </div>
+                    #{print_techpost_superuser()}
                 </div>
             </div>
         </div>
@@ -159,8 +153,8 @@
         $('#composeTablets').modal('show');
     }
 
-    function compose_safe() {
-        $('#composeSafe').modal('show');
+    function compose_SuperUser() {
+        $('#composeSuperUser').modal('show');
     }
 
     function update_submit_button() {
@@ -560,7 +554,7 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     $('.bu-safe').click(function(e) {
-        compose_safe();
+        compose_SuperUser();
     });
 
     $('.btn-purge-session').click(function (e) {

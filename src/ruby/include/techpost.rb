@@ -354,11 +354,13 @@ class Main < Sinatra::Base
             RETURN v, u.email, f.email;
         END_OF_QUERY
         StringIO.open do |io|
-            io.puts "<h3>User die Zugriff auf diese Seite haben</h3>"
-            io.puts "<p><code>#{TECHNIKTEAM + CAN_MANAGE_TABLETS_USERS + ADMIN_USERS}</code></p>"
+            io.puts "<h3>User, die Zugriff auf diese Seite haben</h3>"
+            io.puts "<div class='alert alert-info'><code>#{TECHNIKTEAM + CAN_MANAGE_TABLETS_USERS + ADMIN_USERS}</code></div>"
+            io.puts "<h3>User, die Probleme melden können</h3>"
+            io.puts "<div class='alert alert-info'><code>#{TECHNIKTEAM + CAN_MANAGE_TABLETS_USERS + ADMIN_USERS + CAN_REPORT_TECH_PROBLEMS_USERS}</code></div>"
             io.puts "<h3>Aktuelle Probleme im json-Format</h3>"
             for problem in problems do
-                io.puts "<p><code>#{problem.to_json}</code></p>"
+                io.puts "<div class='alert alert-info'><code>#{problem.to_json}</code></div>"
             end
             io.string
         end

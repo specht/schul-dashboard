@@ -157,6 +157,20 @@
         $('#composeSuperUser').modal('show');
     }
 
+    function compose_clear_all() {
+        showTemplateModal('Alle Probleme löschen', 
+            'Bist Du sicher? Dabei werden alle Probleme gelöscht.<br>Tu dies nur nach Absprache mit dem TechnikTeam und allen Usern die Zugriff auf diese Funktion haben.<br>Das TechnikTeam wird per E-Mail darüber informiert.',
+            "<i class='fa fa-trash'></i>&nbsp;&nbsp;Ich bin mir sicher (Alles löschen)", 'btn-danger',
+            'Abbrechen', 'btn-secondary', function() {
+                api_call('/api/clear_all_tech_problems_admin', {}, function(data) {
+                    if (data.success)
+                        refresh_tech_problems();
+                        refresh_fixed_tech_problems();
+                });
+            }
+        );
+    }
+
     function update_submit_button() {
         let problem = $('#tp_problem_description').val().trim();
         let date = $('#tp_date').val().trim();
@@ -172,7 +186,7 @@
                 for (let entry of data.tech_problems) {
                     if (entry.problem.fixed == false && entry.problem.not_fixed == false && entry.problem.hidden_admin == false) { 
                         let row = $('<tr>');
-                        row.append($('<td>').html("<img src='#{NEXTCLOUD_URL}/index.php/avatar/" + entry.nc_login + "/256}' class='icon avatar-md'/>&nbsp;&nbsp;&nbsp;" + entry.display_name));
+                        row.append($('<td>').html("<img src='#{NEXTCLOUD_URL}/index.php/avatar/" + entry.nc_login + "/256' class='icon avatar-md'/>&nbsp;&nbsp;&nbsp;" + entry.display_name));
                         if (entry.klasse) {
                             row.append($('<td title="Schüler">').text(entry.klasse));
                         } else {
@@ -363,7 +377,7 @@
                 for (let entry of data.tech_problems) {
                     if (entry.problem.fixed == true  || entry.problem.not_fixed == true || entry.problem.hidden_admin == true) { 
                         let row = $('<tr>');
-                        row.append($('<td>').html("<img src='#{NEXTCLOUD_URL}/index.php/avatar/" + entry.nc_login + "/256}' class='icon avatar-md'/>&nbsp;&nbsp;&nbsp;" + entry.display_name));
+                        row.append($('<td>').html("<img src='#{NEXTCLOUD_URL}/index.php/avatar/" + entry.nc_login + "/256' class='icon avatar-md'/>&nbsp;&nbsp;&nbsp;" + entry.display_name));
                         row.append($('<td>').text(entry.klasse));
                         if (entry.problem.not_fixed == true) {
                             row.append($('<td>').addClass('text-danger').text(entry.problem.problem));
@@ -532,6 +546,8 @@ document.addEventListener('DOMContentLoaded', function() {
         let device = $('#tp_problem_device').val();
         api_call('/api/report_tech_problem', {problem: problem, date: date, device: device}, function(data) {
             console.log(data);
+            $('#tp_problem_device').val("");
+            update_submit_button();
             refresh_tech_problems();
         });
     });
@@ -541,6 +557,8 @@ document.addEventListener('DOMContentLoaded', function() {
         let device = $('#tp_problem_device').val();
         api_call('/api/report_tech_problem_quiet', {problem: problem, date: date, device: device}, function(data) {
             console.log(data);
+            $('#tp_problem_device').val("");
+            update_submit_button();
             refresh_tech_problems();
         });
     });
@@ -555,6 +573,10 @@ document.addEventListener('DOMContentLoaded', function() {
 
     $('.bu-safe').click(function(e) {
         compose_SuperUser();
+    });
+
+    $('.bu-clear-all').click(function(e) {
+        compose_clear_all();
     });
 
     $('.btn-purge-session').click(function (e) {

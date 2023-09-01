@@ -670,4 +670,9 @@ class Main < Sinatra::Base
         respond_raw_with_mimetype(get_timetables_pdf(klasse, colors), 'application/pdf')
     end
 
+    get '/api/get_single_timetable_pdf' do
+        require_user!
+        respond_raw_with_mimetype(get_single_timetable_pdf(@session_user[:email]), 'application/pdf')
+    end
+
 end

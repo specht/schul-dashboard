@@ -48,6 +48,7 @@ class Main < Sinatra::Base
             io.puts "<a class='btn btn-secondary' href='/sus_ohne_kurse'>SuS ohne Kurse</a>"
             io.puts "<a class='btn btn-secondary' href='/api/all_sus_logo_didact'>LDC: Alle SuS</a>"
             io.puts "<a class='btn btn-secondary' href='/api/all_lul_logo_didact'>LDC: Alle Lehrkräfte</a>"
+            io.puts "<a class='btn btn-secondary' href='/api/all_sus_untis'>Untis: Alle SuS</a>"
             io.puts "<hr />"
             io.puts "<h3 id='teachers'>Lehrerinnen und Lehrer</h3>"
             io.puts "<div style='max-width: 100%; overflow-x: auto;'>"
@@ -300,6 +301,43 @@ class Main < Sinatra::Base
     get '/api/all_users' do
         require_admin!
         respond_raw_with_mimetype(print_all_users, 'text/plain')
+    end
+
+    def print_all_sus_untis
+        require_admin!
+        StringIO.open do |io|
+            count = 0
+            @@klassen_order.each do |klasse|
+                @@schueler_for_klasse[klasse].each do |email|
+                    count += 1
+                    user = @@user_info[email]
+                    parts = []
+                    parts << "#{user[:last_name]}#{user[:first_name]}".gsub(' ', '').gsub('-', '').gsub(',', '')
+                    parts << user[:last_name]
+                    parts << ""
+                    parts << ""
+                    parts << ""
+                    parts << ""
+                    parts << user[:geschlecht].upcase
+                    parts << user[:first_name]
+                    parts << "#{count}"
+                    parts << "#{user[:klasse]}"
+                    parts << "#{count}"
+                    parts << ""
+                    parts << "#{user[:geburtstag][0, 4]}#{user[:geburtstag][5, 2]}#{user[:geburtstag][8, 2]}"
+                    parts << ""
+                    # ["\"Mustermann\"", "\"Mustermann\"", "", "", "", "", "\"W\"", "\"Max\"", "\"1\"", "\"5a\"", "\"1\"", "", "\"19670101\"", "", "\r"]
+                    # io.puts "#{user[:last_name]}\t#{user[:first_name]}\t#{user[:klasse]}\t#{user[:geschlecht]}\t#{geburtstag}"
+                    io.puts parts.map { |x| '"' + x + '"'}.join("\t")
+                end
+            end
+            io.string
+        end
+    end
+
+    get '/api/all_sus_untis' do
+        require_admin!
+        respond_raw_with_mimetype(print_all_sus_untis, 'text/plain')
     end
 
     def print_all_sus_logo_didact

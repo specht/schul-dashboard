@@ -444,7 +444,8 @@ class Main < Sinatra::Base
             for technikamt in get_technikamt do
                 display_name = @@user_info[technikamt][:display_name]
                 nc_login = @@user_info[technikamt][:nc_login]
-                io.puts "<img src='http://localhost:8024/index.php/avatar/#{nc_login}/256' class='icon avatar-md'>&nbsp;#{display_name}"
+                klasse = @@user_info[technikamt][:klasse]
+                io.puts "<img src='http://localhost:8024/index.php/avatar/#{nc_login}/256' class='icon avatar-md'>&nbsp;#{display_name} (#{klasse})"
             end
             io.puts "</code></div>"
             io.puts "<div class='alert alert-warning'><code>#{get_technikamt}</code></div>"

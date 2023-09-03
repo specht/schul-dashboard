@@ -1,8 +1,8 @@
 class Main < Sinatra::Base
 
     def check_has_technikamt(email)
-        results = neo4j_query(<<~END_OF_QUERY)
-            MATCH (u:User {email: '#{email}'})-[:HAS_AMT {amt: 'technikamt'}]->(v:Techpost)
+        results = neo4j_query(<<~END_OF_QUERY, :email => email)
+            MATCH (u:User {email: $email})-[:HAS_AMT {amt: 'technikamt'}]->(v:Techpost)
             RETURN CASE WHEN EXISTS((u)-[:HAS_AMT {amt: 'technikamt'}]->(v)) THEN true ELSE false END AS hasRelation;
         END_OF_QUERY
         return results

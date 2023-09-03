@@ -424,7 +424,7 @@ class Main < Sinatra::Base
             for tech_admin in TECHNIKTEAM + CAN_MANAGE_TABLETS_USERS + ADMIN_USERS do
                 display_name = @@user_info[tech_admin][:display_name]
                 nc_login = @@user_info[tech_admin][:nc_login]
-                io.puts "<img src='http://localhost:8024/index.php/avatar/#{nc_login}/256' class='icon avatar-md'>&nbsp;#{display_name}"
+                io.puts "<img src='#{NEXTCLOUD_URL}/index.php/avatar/#{nc_login}/256' class='icon avatar-md'>&nbsp;#{display_name}"
             end
             io.puts "</code></div>"
             io.puts "<div class='alert alert-info'><code>#{TECHNIKTEAM + CAN_MANAGE_TABLETS_USERS + ADMIN_USERS}</code></div>"
@@ -434,7 +434,7 @@ class Main < Sinatra::Base
             #     for tech_admin in CAN_REPORT_TECH_PROBLEMS_USERS do
             #         display_name = @@user_info[tech_admin][:display_name]
             #         nc_login = @@user_info[tech_admin][:nc_login]
-            #         io.puts "<img src='http://localhost:8024/index.php/avatar/#{nc_login}/256' class='icon avatar-md'>&nbsp;#{display_name}"
+            #         io.puts "<img src='#{NEXTCLOUD_URL}/index.php/avatar/#{nc_login}/256' class='icon avatar-md'>&nbsp;#{display_name}"
             #     end
             #     io.puts "</code></div>"
             #     io.puts "<div class='alert alert-warning'><code>#{CAN_REPORT_TECH_PROBLEMS_USERS}</code></div>"
@@ -445,7 +445,7 @@ class Main < Sinatra::Base
                 display_name = @@user_info[technikamt][:display_name]
                 nc_login = @@user_info[technikamt][:nc_login]
                 klasse = @@user_info[technikamt][:klasse]
-                io.puts "<img src='http://localhost:8024/index.php/avatar/#{nc_login}/256' class='icon avatar-md'>&nbsp;#{display_name} (#{klasse})"
+                io.puts "<img src='#{NEXTCLOUD_URL}/index.php/avatar/#{nc_login}/256' class='icon avatar-md'>&nbsp;#{display_name} (#{klasse})"
             end
             io.puts "</code></div>"
             io.puts "<div class='alert alert-warning'><code>#{get_technikamt}</code></div>"

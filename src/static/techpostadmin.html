@@ -644,6 +644,11 @@ document.addEventListener('DOMContentLoaded', function() {
             $('#bu_send_message').removeClass('btn-outline-secondary').addClass('btn-success').prop('disabled', false);
         else
             $('#bu_send_message').removeClass('btn-success').addClass('btn-outline-secondary').prop('disabled', true);
+
+        if (can_send())
+            $('#bu_delete_message').removeClass('btn-outline-secondary').addClass('btn-danger').prop('disabled', false);
+        else
+            $('#bu_delete_message').removeClass('btn-danger').addClass('btn-outline-secondary').prop('disabled', true);
     }
 
     function can_send() {
@@ -654,6 +659,12 @@ document.addEventListener('DOMContentLoaded', function() {
     function send_message() {
         let email = $('#ti_email').data('email');
         api_call('/api/add_techpost', { email: email}, function (data) {
+        });
+    }
+
+    function delete_message() {
+        let email = $('#ti_email').data('email');
+        api_call('/api/delete_techpost', { email: email}, function (data) {
         });
     }
 
@@ -752,6 +763,11 @@ document.addEventListener('DOMContentLoaded', function() {
         $('#bu_send_message').click(function (e) {
             send_message();
         });
+
+        $('#bu_delete_message').click(function (e) {
+            delete_message();
+        });
+
 
         $('#ti_recipients').keydown(function (e) {
             if ((e.keyCode === 9 || e.keyCode === 13) && ($(e.target).val().length > 0)) {

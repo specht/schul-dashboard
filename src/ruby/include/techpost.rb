@@ -14,7 +14,7 @@ class Main < Sinatra::Base
             RETURN u.email;
         END_OF_QUERY
         debug results
-        return results
+        return results.map { |result| result["u.email"] }
     end
 
     post '/api/report_tech_problem' do
@@ -400,6 +400,17 @@ class Main < Sinatra::Base
         respond(:ok => true)
     end
 
+    post '/api/delete_techpost' do
+        require_technikteam!
+        data = parse_request_data(:required_keys => [:email])
+        email = data[:email]
+        neo4j_query(<<~END_OF_QUERY, :email => email)
+            MATCH (u:User {email: $email})-[r:HAS_AMT {amt: 'technikamt'}]->(v:Techpost)
+            DELETE r;
+        END_OF_QUERY
+        respond(:ok => true)
+    end
+
     def print_techpost_superuser()
         require_user_who_can_manage_tablets!
         problems = neo4j_query(<<~END_OF_QUERY, :email => @session_user[:email]).map { |x| {:problem => x['v'], :email => x['u.email'], :femail => x['f.email']} }
@@ -436,8 +447,7 @@ class Main < Sinatra::Base
                 io.puts "<img src='http://localhost:8024/index.php/avatar/#{nc_login}/256' class='icon avatar-md'>&nbsp;#{display_name}"
             end
             io.puts "</code></div>"
-            io.puts "<div class='alert alert-warning'><code>#{CAN_REPORT_TECH_PROBLEMS_USERS}</code></div>"
-            io.puts "<p>Debug: #{get_technikamt}</p>"
+            io.puts "<div class='alert alert-warning'><code>#{get_technikamt}</code></div>"
             unless problems == []
                 io.puts "<br><h3>Aktuelle Probleme im json-Format</h3>"
                 for problem in problems do
@@ -450,8 +460,8 @@ class Main < Sinatra::Base
             io.puts "</div>"
             io.puts "<div class='alert alert-info'>"
             io.puts "<div class='form-group'><input id='ti_recipients' class='form-control' placeholder='User suchen…' /><div class='recipient-input-dropdown' style='display: none;'></div></input></div>"
-            io.puts "<div class='form-group row'><label for='ti_email' class='col-sm-1 col-form-label'>Name:</label><div class='col-sm-3'><input type='text' readonly class='form-control' id='ti_email' placeholder=''></div><div id='publish_message_btn_container'><button disabled id='bu_send_message' class='btn btn-outline-secondary'><i class='fa fa-plus'></i>&nbsp;&nbsp;<span>Hinzufügen</span></button></div></div>"
-            io.puts "</div>"
+            io.puts "<div class='form-group row'><label for='ti_email' class='col-sm-1 col-form-label'>Name:</label><div class='col-sm-3'><input type='text' readonly class='form-control' id='ti_email' placeholder=''></div><div id='publish_message_btn_container'><button disabled id='bu_send_message' class='btn btn-outline-secondary'><i class='fa fa-plus'></i>&nbsp;&nbsp;<span>Hinzufügen</span></button>&nbsp;&nbsp;<button disabled id='bu_delete_message' class='btn btn-outline-secondary'><i class='fa fa-times'></i>&nbsp;&nbsp;<span>Entfernen</span></button></div></div>"
+            io.puts "Hinweis: Die Änderungen werden erst nach dem Neuladen der Seite sichtbar.</div>"
             io.string
         end
     end

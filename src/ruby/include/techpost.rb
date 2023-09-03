@@ -1,4 +1,22 @@
 class Main < Sinatra::Base
+
+    def check_has_technikamt(email)
+        results = neo4j_query(<<~END_OF_QUERY)
+            MATCH (u:User {email: '#{email}'})-[:HAS_AMT {amt: 'technikamt'}]->(v:Techpost)
+            RETURN CASE WHEN EXISTS((u)-[:HAS_AMT {amt: 'technikamt'}]->(v)) THEN true ELSE false END AS hasRelation;
+        END_OF_QUERY
+        return results
+    end
+    
+    def get_technikamt
+        results = neo4j_query(<<~END_OF_QUERY)
+            MATCH (u:User)-[:HAS_AMT {amt: 'technikamt'}]->(v:Techpost)
+            RETURN u.email;
+        END_OF_QUERY
+        debug results
+        return results
+    end
+
     post '/api/report_tech_problem' do
         require_user_who_can_report_tech_problems!
         data = parse_request_data(:required_keys => [:problem, :date, :device],)
@@ -370,6 +388,18 @@ class Main < Sinatra::Base
         end
     end
 
+    post '/api/add_techpost' do
+        require_technikteam!
+        data = parse_request_data(:required_keys => [:email])
+        email = data[:email]
+        neo4j_query(<<~END_OF_QUERY, :email => email)
+            MATCH (u:User {email: $email})
+            MERGE (v:Techpost)
+            MERGE (u)-[:HAS_AMT {amt: 'technikamt'}]->(v)
+        END_OF_QUERY
+        respond(:ok => true)
+    end
+
     def print_techpost_superuser()
         require_user_who_can_manage_tablets!
         problems = neo4j_query(<<~END_OF_QUERY, :email => @session_user[:email]).map { |x| {:problem => x['v'], :email => x['u.email'], :femail => x['f.email']} }
@@ -378,37 +408,49 @@ class Main < Sinatra::Base
             RETURN v, u.email, f.email;
         END_OF_QUERY
         StringIO.open do |io|
-            unless TECHNIKTEAM + CAN_MANAGE_TABLETS_USERS + ADMIN_USERS == []
-                io.puts "<h3>User, die Zugriff auf diese Seite haben</h3>"
-                io.puts "<div class='alert alert-info'><code>"
-                for tech_admin in TECHNIKTEAM + CAN_MANAGE_TABLETS_USERS + ADMIN_USERS do
-                    display_name = @@user_info[tech_admin][:display_name]
-                    nc_login = @@user_info[tech_admin][:nc_login]
-                    io.puts "<img src='http://localhost:8024/index.php/avatar/#{nc_login}/256' class='icon avatar-md'>&nbsp;#{display_name}"
-                end
-                io.puts "</code></div>"
-                io.puts "<div class='alert alert-info'><code>#{TECHNIKTEAM + CAN_MANAGE_TABLETS_USERS + ADMIN_USERS}</code></div>"
+            io.puts "<h3>User, die Zugriff auf diese Seite haben</h3>"
+            io.puts "<div class='alert alert-info'><code>"
+            for tech_admin in TECHNIKTEAM + CAN_MANAGE_TABLETS_USERS + ADMIN_USERS do
+                display_name = @@user_info[tech_admin][:display_name]
+                nc_login = @@user_info[tech_admin][:nc_login]
+                io.puts "<img src='http://localhost:8024/index.php/avatar/#{nc_login}/256' class='icon avatar-md'>&nbsp;#{display_name}"
             end
-            unless CAN_REPORT_TECH_PROBLEMS_USERS == []
-                io.puts "<h3>User, die Probleme melden können (Alle oben genannten plus:)</h3>"
-                io.puts "<div class='alert alert-warning'><code>"
-                for tech_admin in CAN_REPORT_TECH_PROBLEMS_USERS do
-                    display_name = @@user_info[tech_admin][:display_name]
-                    nc_login = @@user_info[tech_admin][:nc_login]
-                    io.puts "<img src='http://localhost:8024/index.php/avatar/#{nc_login}/256' class='icon avatar-md'>&nbsp;#{display_name}"
-                end
-                io.puts "</code></div>"
-                io.puts "<div class='alert alert-warning'><code>#{CAN_REPORT_TECH_PROBLEMS_USERS}</code></div>"
+            io.puts "</code></div>"
+            io.puts "<div class='alert alert-info'><code>#{TECHNIKTEAM + CAN_MANAGE_TABLETS_USERS + ADMIN_USERS}</code></div>"
+            # unless CAN_REPORT_TECH_PROBLEMS_USERS == []
+            #     io.puts "<br><h3>User, die Probleme melden können (Alle oben genannten plus:)</h3>"
+            #     io.puts "<div class='alert alert-warning'><code>"
+            #     for tech_admin in CAN_REPORT_TECH_PROBLEMS_USERS do
+            #         display_name = @@user_info[tech_admin][:display_name]
+            #         nc_login = @@user_info[tech_admin][:nc_login]
+            #         io.puts "<img src='http://localhost:8024/index.php/avatar/#{nc_login}/256' class='icon avatar-md'>&nbsp;#{display_name}"
+            #     end
+            #     io.puts "</code></div>"
+            #     io.puts "<div class='alert alert-warning'><code>#{CAN_REPORT_TECH_PROBLEMS_USERS}</code></div>"
+            # end
+            io.puts "<br><h3>User, die Probleme melden können (Alle oben genannten plus:)</h3>"
+            io.puts "<div class='alert alert-warning'><code>"
+            for technikamt in get_technikamt do
+                display_name = @@user_info[technikamt][:display_name]
+                nc_login = @@user_info[technikamt][:nc_login]
+                io.puts "<img src='http://localhost:8024/index.php/avatar/#{nc_login}/256' class='icon avatar-md'>&nbsp;#{display_name}"
             end
+            io.puts "</code></div>"
+            io.puts "<div class='alert alert-warning'><code>#{CAN_REPORT_TECH_PROBLEMS_USERS}</code></div>"
+            io.puts "<p>Debug: #{get_technikamt}</p>"
             unless problems == []
-                io.puts "<h3>Aktuelle Probleme im json-Format</h3>"
+                io.puts "<br><h3>Aktuelle Probleme im json-Format</h3>"
                 for problem in problems do
                     io.puts "<div class='alert alert-success'><code>#{problem.to_json}</code></div>"
                 end
             end
-            io.puts "<h3>Super Funktionen</h3>"
+            io.puts "<br><h3>Super Funktionen</h3>"
             io.puts "<div class='alert alert-info'>"
             io.puts "<button class='bu-clear-all btn btn-danger'><i class='fa fa-trash'></i>&nbsp;&nbsp;Alle Probleme löschen</button>"
+            io.puts "</div>"
+            io.puts "<div class='alert alert-info'>"
+            io.puts "<div class='form-group'><input id='ti_recipients' class='form-control' placeholder='User suchen…' /><div class='recipient-input-dropdown' style='display: none;'></div></input></div>"
+            io.puts "<div class='form-group row'><label for='ti_email' class='col-sm-1 col-form-label'>Name:</label><div class='col-sm-3'><input type='text' readonly class='form-control' id='ti_email' placeholder=''></div><div id='publish_message_btn_container'><button disabled id='bu_send_message' class='btn btn-outline-secondary'><i class='fa fa-plus'></i>&nbsp;&nbsp;<span>Hinzufügen</span></button></div></div>"
             io.puts "</div>"
             io.string
         end

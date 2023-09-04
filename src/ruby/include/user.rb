@@ -447,7 +447,7 @@ class Main < Sinatra::Base
     end
 
     def klasse_for_sus
-        require_teacher!
+        require_user_who_can_manage_tablets_or_teacher!
         result = {}
         @@user_info.each_pair do |email, info|
             next if info[:teacher]

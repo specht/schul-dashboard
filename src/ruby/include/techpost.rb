@@ -420,22 +420,24 @@ class Main < Sinatra::Base
         END_OF_QUERY
         StringIO.open do |io|
             io.puts "<h3>User, die Zugriff auf diese Seite haben</h3>"
-            # io.puts "<div class='alert alert-info'><code>"
+            io.puts "<div class='alert alert-danger'><code>"
             # for tech_admin in TECHNIKTEAM + CAN_MANAGE_TABLETS_USERS + ADMIN_USERS do
             #     display_name = @@user_info[tech_admin][:display_name]
             #     nc_login = @@user_info[tech_admin][:nc_login]
             #     io.puts "<img src='#{NEXTCLOUD_URL}/index.php/avatar/#{nc_login}/256' class='icon avatar-md'>&nbsp;#{display_name}"
             # end
-            # io.puts "</code></div>"
+            io.puts "</code><div class='text-muted'>Diese Funtion steht zurzeit, aufgrund eines technischen Fehlers, nicht zur Verfügung. Bitte nutzen Sie die Liste unten.</div><code>"
+            io.puts "</code></div>"
             io.puts "<div class='alert alert-info'><code>#{TECHNIKTEAM + CAN_MANAGE_TABLETS_USERS + ADMIN_USERS}</code></div>"
             io.puts "<br><h3>User, die Probleme melden können (Alle oben genannten plus:)</h3>"
-            io.puts "<div class='alert alert-warning'><code>"
-            for technikamt in get_technikamt do
-                display_name = @@user_info[technikamt][:display_name]
-                nc_login = @@user_info[technikamt][:nc_login]
-                klasse = @@user_info[technikamt][:klasse]
-                io.puts "<img src='#{NEXTCLOUD_URL}/index.php/avatar/#{nc_login}/256' class='icon avatar-md'>&nbsp;#{display_name} (#{klasse})"
-            end
+            io.puts "<div class='alert alert-danger'><code>"
+            # for technikamt in get_technikamt do
+            #     display_name = @@user_info[technikamt][:display_name]
+            #     nc_login = @@user_info[technikamt][:nc_login]
+            #     klasse = @@user_info[technikamt][:klasse]
+            #     io.puts "<img src='#{NEXTCLOUD_URL}/index.php/avatar/#{nc_login}/256' class='icon avatar-md'>&nbsp;#{display_name} (#{klasse})"
+            # end
+            io.puts "</code><div class='text-muted'>Diese Funtion steht zurzeit, aufgrund eines technischen Fehlers, nicht zur Verfügung. Bitte nutzen Sie die Liste unten.</div><code>"
             io.puts "</code></div>"
             io.puts "<div class='alert alert-warning'><code>#{get_technikamt}</code></div>"
             unless problems == []

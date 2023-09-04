@@ -428,17 +428,6 @@ class Main < Sinatra::Base
             # end
             # io.puts "</code></div>"
             io.puts "<div class='alert alert-info'><code>#{TECHNIKTEAM + CAN_MANAGE_TABLETS_USERS + ADMIN_USERS}</code></div>"
-            # unless CAN_REPORT_TECH_PROBLEMS_USERS == []
-            #     io.puts "<br><h3>User, die Probleme melden können (Alle oben genannten plus:)</h3>"
-            #     io.puts "<div class='alert alert-warning'><code>"
-            #     for tech_admin in CAN_REPORT_TECH_PROBLEMS_USERS do
-            #         display_name = @@user_info[tech_admin][:display_name]
-            #         nc_login = @@user_info[tech_admin][:nc_login]
-            #         io.puts "<img src='#{NEXTCLOUD_URL}/index.php/avatar/#{nc_login}/256' class='icon avatar-md'>&nbsp;#{display_name}"
-            #     end
-            #     io.puts "</code></div>"
-            #     io.puts "<div class='alert alert-warning'><code>#{CAN_REPORT_TECH_PROBLEMS_USERS}</code></div>"
-            # end
             io.puts "<br><h3>User, die Probleme melden können (Alle oben genannten plus:)</h3>"
             io.puts "<div class='alert alert-warning'><code>"
             for technikamt in get_technikamt do

@@ -64,7 +64,7 @@ class Main < Sinatra::Base
 
                 StringIO.open do |io|
                     io.puts "<p>Liebes TechnikTeam,</p>"
-                    io.puts "<p>es liegt ein neues Technikproblem vor. Das Problem betrifft #{data[:device]} und lautet: „#{data[:problem]}“ Das Problem wurde von #{name} abgesendet</p>"
+                    io.puts "<p>es liegt ein neues Technikproblem vor. Das Problem betrifft #{data[:device]} und lautet: „#{data[:problem]}“ Das Problem wurde von #{name} abgesendet.</p>"
                     # io.puts "<a href='#{WEBSITE_HOST}/techpostadmin'>Probleme ansehen</a>"
                     io.puts "<p>Viele Grüße<br>Dashboard #{SCHUL_NAME_AN_DATIV} #{SCHUL_NAME}</p>"
                     io.string
@@ -426,7 +426,7 @@ class Main < Sinatra::Base
             #     nc_login = @@user_info[tech_admin][:nc_login]
             #     io.puts "<img src='#{NEXTCLOUD_URL}/index.php/avatar/#{nc_login}/256' class='icon avatar-md'>&nbsp;#{display_name}"
             # end
-            io.puts "</code><div class='text-muted'>Diese Funtion steht zurzeit, aufgrund eines technischen Fehlers, nicht zur Verfügung. Bitte nutzen Sie die Liste unten.</div><code>"
+            io.puts "</code><div class='text-muted'>Diese Funktion steht zurzeit, aufgrund eines technischen Fehlers, nicht zur Verfügung. Bitte nutzen Sie die Liste unten.</div><code>"
             io.puts "</code></div>"
             io.puts "<div class='alert alert-info'><code>#{TECHNIKTEAM + CAN_MANAGE_TABLETS_USERS + ADMIN_USERS}</code></div>"
             io.puts "<br><h3>User, die Probleme melden können (Alle oben genannten plus:)</h3>"
@@ -437,7 +437,7 @@ class Main < Sinatra::Base
             #     klasse = @@user_info[technikamt][:klasse]
             #     io.puts "<img src='#{NEXTCLOUD_URL}/index.php/avatar/#{nc_login}/256' class='icon avatar-md'>&nbsp;#{display_name} (#{klasse})"
             # end
-            io.puts "</code><div class='text-muted'>Diese Funtion steht zurzeit, aufgrund eines technischen Fehlers, nicht zur Verfügung. Bitte nutzen Sie die Liste unten.</div><code>"
+            io.puts "</code><div class='text-muted'>Diese Funktion steht zurzeit, aufgrund eines technischen Fehlers, nicht zur Verfügung. Bitte nutzen Sie die Liste unten.</div><code>"
             io.puts "</code></div>"
             io.puts "<div class='alert alert-warning'><code>#{get_technikamt}</code></div>"
             unless problems == []

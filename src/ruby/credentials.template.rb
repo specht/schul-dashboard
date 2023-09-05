@@ -230,13 +230,6 @@ CAN_MANAGE_BIB = []
 CAN_MANAGE_BIB_SPECIAL_ACCESS = []
 CAN_MANAGE_BIB_MEMBERS = []
 CAN_MANAGE_BIB_PAYMENT = []
-
-# Liste aller E-Mail-Adressen von Nutzer*innen,
-# die in ihrer Klasse anderer Technikamt sind,
-# sie können Technikprobleme melden, die dann vom
-# TechnikTeam bearbeitet werden können
-CAN_REPORT_TECH_PROBLEMS_USERS = []
-
 CAN_MANAGE_TABLETS_USERS = []
 EXTERNAL_USERS = []
 GEV_USERS = []

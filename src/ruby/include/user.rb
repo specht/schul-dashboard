@@ -34,10 +34,10 @@ class Main < Sinatra::Base
         user_logged_in? && @session_user[:technikteam]
     end
 
-    # Returns true if a techpost user is logged in.
-    def user_who_can_report_tech_problems_logged_in?
-        user_logged_in? && @session_user[:can_report_tech_problems]
-    end
+    # # Returns true if a techpost user is logged in.
+    # def user_who_can_report_tech_problems_logged_in?
+    #     user_logged_in? && @session_user[:can_report_tech_problems]
+    # end
 
     # Returns true if a user who can manage tablets is logged in.
     def user_who_can_manage_tablets_logged_in?
@@ -150,6 +150,11 @@ class Main < Sinatra::Base
         else
             return get_ha_amt_lesson_keys.include?(lesson_key)
         end
+    end
+
+    # Returns true if a techpost user is logged in.
+    def user_who_can_report_tech_problems_logged_in?
+        user_logged_in? && check_has_technikamt(@session_user[:email]) == [{"hasRelation"=>true}]
     end
 
     def can_manage_agr_app_logged_in?
@@ -442,7 +447,7 @@ class Main < Sinatra::Base
     end
 
     def klasse_for_sus
-        require_teacher!
+        require_user_who_can_manage_tablets_or_teacher!
         result = {}
         @@user_info.each_pair do |email, info|
             next if info[:teacher]

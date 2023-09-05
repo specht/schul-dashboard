@@ -157,6 +157,11 @@ class Main < Sinatra::Base
         user_logged_in? && check_has_technikamt(@session_user[:email]) == [{"hasRelation"=>true}]
     end
 
+    # Returns true if a techpost or better user is logged in.
+    def user_who_can_report_tech_problems_or_better_logged_in?
+        user_logged_in? && (check_has_technikamt(@session_user[:email]) == [{"hasRelation"=>true}] || @session_user[:can_manage_tablets])
+    end
+
     def can_manage_agr_app_logged_in?
         user_logged_in? && CAN_MANAGE_AGR_APP.include?(@session_user[:email])
     end
@@ -253,6 +258,11 @@ class Main < Sinatra::Base
     # Assert that a techpost user is logged in
     def require_user_who_can_report_tech_problems!
         assert(user_who_can_report_tech_problems_logged_in?)
+    end
+
+    # Assert that a techpost user is logged in
+    def require_user_who_can_report_tech_problems_or_better!
+        assert(user_who_can_report_tech_problems_or_better_logged_in?)
     end
 
     # Assert that a user who can manage tablets is logged in

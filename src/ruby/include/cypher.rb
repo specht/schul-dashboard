@@ -268,7 +268,7 @@ class Main < Sinatra::Base
             END_OF_QUERY
             srand(Time.now.to_i)
             provided_password = '    ' if provided_password.strip.empty?
-            unless provided_password.nil?
+            unless provided_password == '    '
                 t = rand(5) + 1
                 (0...4).each do |i|
                     t += rand(10) + 55

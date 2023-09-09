@@ -402,3 +402,26 @@ window.addEventListener('keyup', function (e) {
 		keys[KEYS[k]] = false;
 });
 
+window.addEventListener('load', function() {
+	let button = $(`<button>`).css('z-index', 1000).css('position', 'fixed').html('Lets go').insertBefore(renderer.domElement);
+	button.on('click', function() {
+		if ( typeof( DeviceMotionEvent ) !== "undefined" && typeof( DeviceMotionEvent.requestPermission ) === "function" ) {
+			// (optional) Do something before API request prompt.
+			DeviceMotionEvent.requestPermission()
+				.then( response => {
+				// (optional) Do something after API prompt dismissed.
+				if ( response == "granted" ) {
+					window.addEventListener( "devicemotion", (e) => {
+						console.log(e);
+
+						camera.yaw = e.x;
+					})
+				}
+			})
+				.catch( console.error )
+		} else {
+			alert( "DeviceMotionEvent is not defined" );
+		}
+	});
+});
+

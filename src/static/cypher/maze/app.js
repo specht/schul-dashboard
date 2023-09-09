@@ -16,7 +16,7 @@ function load_level() {
 		let group = new THREE.Group();
 		GROUPS.push(group);
 		scene.add(group);
-		while (i <= x) {
+		while (i < x) {
 			sector_for_x[i] = s;
 			i += 1;
 		}
@@ -210,44 +210,15 @@ document.body.appendChild(renderer.domElement);
 var lm_renderer = new THREE.WebGLRenderer({ antialias: false });
 lm_renderer.setClearColor("#000");
 lm_renderer.setSize(LIGHT_ΜAP_SIZE, LIGHT_ΜAP_SIZE);
-// document.body.appendChild(lm_renderer.domElement);
-// lm_renderer.domElement.classList.add('overlay');
 
 let renderTarget = new THREE.WebGLRenderTarget(LIGHT_ΜAP_SIZE, LIGHT_ΜAP_SIZE, {type: THREE.UnsignedByteType});
 
 let texture_loader = new THREE.TextureLoader();
 
-// let marble = texture_loader.load('https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/red_brick_plaster_patch_02/red_brick_plaster_patch_02_diff_1k.jpg');
-// let marble = texture_loader.load('https://www.the3rdsequence.com/texturedb/download/32/texture/jpg/2048/smooth+white+tile-2048x2048.jpg');
-// let marble = texture_loader.load('https://www.the3rdsequence.com/texturedb/download/116/texture/jpg/2048/irregular+wood+planks-2048x2048.jpg');
-// let marble = texture_loader.load('/cypher/maze/brickwall.jpg');
 let marble = texture_loader.load('/cypher/maze/smooth+white+tile-2048x2048.jpg');
 marble.wrapS = THREE.RepeatWrapping;
 marble.wrapT = THREE.RepeatWrapping;
 marble.anisotropy = ANISOTROPY;
-
-let light_material = new THREE.ShaderMaterial({
-	vertexShader: document.getElementById('vertex-shader').textContent,
-	fragmentShader: document.getElementById('fragment-shader-light').textContent
-});
-
-// let light;
-// light = new THREE.Mesh(new THREE.SphereGeometry(1), light_material);
-// light.scale.x = 0.4;
-// light.scale.y = 0.4;
-// light.scale.z = 0.4;
-// light.position.x = LIGHT_X;
-// light.position.y = LIGHT_Y;
-// light.position.z = LIGHT_Z;
-// light_scene.add(light);
-// light = new THREE.Mesh(new THREE.SphereGeometry(1), light_material);
-// light.scale.x = 0.4;
-// light.scale.y = 0.4;
-// light.scale.z = 0.4;
-// light.position.x = 2;
-// light.position.y = LIGHT_Y-3;
-// light.position.z = 12;
-// light_scene.add(light);
 
 function map(x, y, z) {
 	if (x < 0 || x >= MAP_SIZE_X || y < 0 || y >= MAP_SIZE_Y || z < 0 || z >= MAP_SIZE_Z)
@@ -281,8 +252,6 @@ const indices = [];
 indices.push(0, 1, 2);
 indices.push(0, 2, 3);
 
-var light_hash = {};
-
 var face_material = new THREE.ShaderMaterial({
 	uniforms: {
 		texscale: { value: 1 },
@@ -309,16 +278,10 @@ for (let z = 0; z < MAP_SIZE_Z; z++) {
 					geometry.setAttribute('uv', new THREE.Float32BufferAttribute( uv, 2 ) );
 					geometry.setAttribute('lightness', new THREE.BufferAttribute(lightness, 1));
 
-					let light_face_material = new THREE.ShaderMaterial({
-						vertexShader: document.getElementById('vertex-shader').textContent,
-						fragmentShader: document.getElementById('fragment-shader-lightmap-no-tex').textContent,
-					});
-
 					let face = new THREE.Mesh(geometry, face_material);
 					face.position.set(x + t.px, y + t.py, z + t.pz);
 					face.rotation.set(t.rx, t.ry, t.rz);
 					face.updateMatrix();
-					let light_hashes = [];
 					for (let k = 0; k < 4; k++) {
 						let matrix = face.matrix;
 						let v = new THREE.Vector3(
@@ -356,18 +319,6 @@ for (let z = 0; z < MAP_SIZE_Z; z++) {
 							n = new THREE.Vector3(0, 0, -1);
 						if (i === 5)
 							n = new THREE.Vector3(0, 0, 1);
-
-						if (!(key in light_hash)) {
-							light_hash[key] = {
-								p: p,
-								dir: i,
-								n: n,
-								lightness: USE_LIGHT_MAPS ? 0 : 1,
-								faces: [],
-							};
-						}
-						light_hash[key].faces.push(faces.length);
-						light_hashes.push(key);
 					}
 
 					GROUPS[MAP_SECTOR_FOR_X[x]].add(face);
@@ -376,193 +327,45 @@ for (let z = 0; z < MAP_SIZE_Z; z++) {
 					light_face.material = map(x, y, z) == 99 ? light_material : light_face.material;
 					light_scene.add(light_face);
 					face_count += 1;
-					faces.push({face: face, light_hashes: light_hashes});
+					faces.push({face: face});
 				}
 			}
 		}
 	}
 }
 
-let new_light_hash = {};
-let hash_tr = {};
-for (let hash in light_hash) {
-	let data = light_hash[hash];
-	let key = 0;
-	key *= 6;
-	key += data.dir;
-	key *= MAP_SIZE_X * MAP_MAX_SUBDIV_SIZE;
-	key += Math.round(data.p.x) * MAP_MAX_SUBDIV_SIZE;
-	key *= MAP_SIZE_Y * MAP_MAX_SUBDIV_SIZE;
-	key += Math.round(data.p.y) * MAP_MAX_SUBDIV_SIZE;
-	key *= MAP_SIZE_Z * MAP_MAX_SUBDIV_SIZE;
-	key += Math.round(data.p.z) * MAP_MAX_SUBDIV_SIZE;
-	hash_tr[hash] = key;
-	if (!(key in new_light_hash)) {
-		new_light_hash[key] = data;
-		new_light_hash[key].psum = new THREE.Vector3(0, 0, 0);
-		new_light_hash[key].pcount = 0;
-	}
-	new_light_hash[key].psum.add(data.p);
-	new_light_hash[key].pcount += 1;
-}
-let labels = [];
-for (let hash in new_light_hash) {
-	new_light_hash[hash].p = new_light_hash[hash].psum.multiplyScalar(1.0 / new_light_hash[hash].pcount);
-}
-
-light_hash = new_light_hash;
-
-let all_light_hashes = Object.keys(light_hash).sort();
-
-// for (let i = 0; i < all_light_hashes.length; i++) {
-// 	let hash = all_light_hashes[i];
-// 	let p = light_hash[hash].p
-// 	let p2 = light_hash[hash].p.clone().project(camera);
-// 	let x = (p2.x / p2.z) * window.innerWidth / 2 + window.innerWidth / 2;
-// 	let y = (p2.y / p2.z) * window.innerHeight / 2 + window.innerHeight / 2;
-// 	let el = document.createElement('div');
-// 	el.classList.add('label');
-// 	el.innerHTML = `${i}`;
-// 	el.dataset.hash = hash;
-// 	labels.push(el);
-// 	document.querySelector('body').appendChild(el);
-// }
-
-for (let i = 0; i < faces.length; i++) {
-	faces[i].light_hashes = faces[i].light_hashes.map(function(x) {
-		return hash_tr[x];
-	});
-}
-
-
-// if (!USE_LIGHT_MAPS) {
-// 	for (let hash of all_light_hashes) {
-// 		let g = new THREE.SphereGeometry(0.02);
-// 		let pick_sphere = new THREE.Mesh(g, light_material);
-// 		pick_sphere.position.set(light_hash[hash].p.x, light_hash[hash].p.y, light_hash[hash].p.z)
-// 		scene.add(pick_sphere);
-// 		// pick_sphere = new THREE.Mesh(g, material3);
-// 		// pick_sphere.position.set(
-// 		// 	light_hash[hash].p.x + light_hash[hash].n.x * 0.1, 
-// 		// 	light_hash[hash].p.y + light_hash[hash].n.y * 0.1, 
-// 		// 	light_hash[hash].p.z + light_hash[hash].n.z * 0.1)
-// 		// scene.add(pick_sphere);
-// 	}
-// }
-
-// for (let i = 0; i < 14; i++)
-// 	faces[i].geometry.setAttribute('lightness', new THREE.BufferAttribute(new Float32Array([1.0, 1.0, 0.7, 0.7]), 1));
 for (let i = 0; i < faces.length; i++) {
 	let face = faces[i].face;
-	let light_hashes = faces[i].light_hashes;
 	let lightnesses = [];
 	for (let k = 0; k < 4; k++)
-		lightnesses.push(light_hash[light_hashes[k]].lightness);
+		lightnesses.push(Math.random() * 0.2 + 0.8);
 	face.geometry.setAttribute('lightness', new THREE.BufferAttribute(new Float32Array(lightnesses), 1));
 }
 
 var light_cam = new THREE.PerspectiveCamera(160, 1.0, 0.001, 1000);
-// light_cam.rotation.x = Math.PI / 2;
 
-// renderer.toneMapping = THREE.ACESFilmicToneMapping;
-// renderer.toneMappingExposure = 2;
-// renderer.outputEncoding = THREE.sRGBEncoding;
-
-var light_hash_index = 0;
-
-// Render Loop
 var render = function () {
 	requestAnimationFrame(render);
 	let t = clock.getElapsedTime();
-	// light_cam.matrix.set(faces[0].matrix.clone());
-	// light_cam.matrix.makeRotationZ(Math.PI);
-	
-	// if (clock.elapsedTime < 1.0)
-		// console.log(camera.position);
-	
-	// light_cam.position.x = camera.position.x;
-	// light_cam.position.y = 1.005;
-	// light_cam.position.z = camera.position.z;
 	cam.animate_to(Math.floor(t * 200));
 	camera.position.set(cam.from.x, cam.from.y + Math.sin(t * 3) * 0.01, cam.from.z);
 	camera.rotation.set(0, 0, 0);
 	camera.rotateOnAxis(new THREE.Vector3(0, 1, 0), cam.yaw);
 	camera.rotateOnAxis(new THREE.Vector3(1, 0, 0), cam.pitch);
 	camera.rotateOnAxis(new THREE.Vector3(0, 0, 1), cam.roll);
-	for (let i = 0; i < 10; i++) {
-		// light_cam.(faces[i].matrix);
-		// let hash = faces[294].light_hashes[2];
-		document.querySelector('#stats').innerHTML = `Faces:  ${face_count}, Light probe points: ${light_hash_index} / ${Object.keys(light_hash).length}`;
-
-		if (USE_LIGHT_MAPS && light_hash_index < all_light_hashes.length) {
-			let hash = all_light_hashes[light_hash_index];
-			light_hash_index += 1;
-			light_cam.position.set(light_hash[hash].p.x, light_hash[hash].p.y, light_hash[hash].p.z);
-			if (light_hash[hash].dir < 6) {
-				// let n = light_hash[hash].n;
-				// light_cam.lookAt(light_hash[hash].p.x + n.x, light_hash[hash].p.y + n.y, light_hash[hash].p.z + n.z);
-				// lm_renderer.setRenderTarget(renderTarget);
-				// lm_renderer.setSize(renderTarget.width, renderTarget.height);
-				// lm_renderer.render(light_scene, light_cam);
-				// let buffer = new Uint8Array(LIGHT_ΜAP_SIZE * LIGHT_ΜAP_SIZE * 4);
-				// lm_renderer.readRenderTargetPixels(renderTarget, 0, 0, LIGHT_ΜAP_SIZE, LIGHT_ΜAP_SIZE, buffer);
-				// let sum = 0;
-				// for (let k = 0; k < LIGHT_ΜAP_SIZE * LIGHT_ΜAP_SIZE; k++)
-				// 	sum += buffer[k << 2];
-				// sum /= LIGHT_ΜAP_SIZE * LIGHT_ΜAP_SIZE * 255;
-				// sum = Math.pow(sum, 0.45);
-				sum = Math.random() * 0.2 + 0.8;
-				light_hash[hash].lightness = sum;
-				// for (let j of light_hash[hash].faces) {
-				// 	let face = faces[j].face;
-				// 	let light_hashes = faces[j].light_hashes;
-				// 	let lightnesses = [];
-				// 	for (let k = 0; k < 4; k++)
-				// 		lightnesses.push(light_hash[light_hashes[k]].lightness);
-				// 	face.geometry.setAttribute('lightness', new THREE.BufferAttribute(new Float32Array(lightnesses), 1));
-				// }
-			}
-			if (light_hash_index === all_light_hashes.length) {
-				light_hash_index += 1;
-				for (let j = 0; j < faces.length; j++) {
-					let face = faces[j].face;
-					let light_hashes = faces[j].light_hashes;
-					let lightnesses = [];
-					for (let k = 0; k < 4; k++)
-						lightnesses.push(light_hash[light_hashes[k]].lightness);
-					face.geometry.setAttribute('lightness', new THREE.BufferAttribute(new Float32Array(lightnesses), 1));
-				}
-			}
-		}
-	}
 	renderer.setRenderTarget(null);
 	renderer.setSize(window.innerWidth, window.innerHeight);
-	// effect.render(scene, camera);
 	let x = Math.floor(camera.position.x);
 	let sector = MAP_SECTOR_FOR_X[x];
-	for (let i = 0; i < GROUPS.length; i++) {
-		GROUPS[i].visible = i >= sector - 2 && i <= sector + 2;
-	}
+	// console.log(sector);
+	let looking_right = Math.sin(cam.yaw) < 0.0;
+	for (let i = 0; i < GROUPS.length; i++)
+		GROUPS[i].visible = looking_right ? (i >= sector - 1 && i <= sector + 3) : (i >= sector - 3 && i <= sector + 1);
 	renderer.render(scene, camera);
-	// console.log();
 
 	let frustum = new THREE.Frustum();
 	frustum.setFromProjectionMatrix(new THREE.Matrix4().multiplyMatrices( camera.projectionMatrix, camera.matrixWorldInverse ));
 
-	// for (let el of labels) {
-	// 	let hash = el.dataset.hash;
-	// 	if (frustum.containsPoint(light_hash[hash].p)) {
-	// 		let p2 = light_hash[hash].p.clone().project(camera);
-	// 		let x = (p2.x / p2.z) * window.innerWidth / 2 + window.innerWidth / 2;
-	// 		let y = (-p2.y / p2.z) * window.innerHeight / 2 + window.innerHeight / 2;
-	// 		el.style.left = `${Math.round(x)}px`;
-	// 		el.style.top = `${Math.round(y)}px`;
-	// 		el.style.display = 'inline-block';
-	// 	} else {
-	// 		el.style.display = 'none';
-	// 	}
-	// }
-	
 	if (keys.left) cam.pan(0.7);
 	if (keys.right) cam.pan(-0.7);
 	if (keys.up) cam.tilt(-0.7);
@@ -573,7 +376,6 @@ var render = function () {
 	if (keys.strafe_down) cam.boom(-1);
 	if (keys.strafe_left) cam.truck(-1);
 	if (keys.strafe_right) cam.truck(1);
-	// if (keys.jump) cam.velocity.y = 0.05;
 	if (keys.lightmap) light_hash_index = 0;
 };
 
@@ -592,7 +394,7 @@ window.addEventListener('resize', () => {
 window.addEventListener('keydown', function (e) {
 	for (let k in KEYS) if (e.code === k)
 		keys[KEYS[k]] = true;
-	if (e.key === 'm') face_material.wireframe = !face_material.wireframe;
+	if (e.code === 'KeyM') face_material.wireframe = !face_material.wireframe;
 });
 
 window.addEventListener('keyup', function (e) {

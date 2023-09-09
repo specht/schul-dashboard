@@ -406,8 +406,9 @@ window.addEventListener('load', function() {
 	let button = $(`<button>Lets go</button>`).css('position', 'fixed').css('z-index', 1000).insertBefore(renderer.domElement);
 	button.on('click', function() {
 		addEventListener("deviceorientationabsolute", (event) => {
-			button.text(`${event.beta}`);
+			button.text(`${event.beta} ${event.gamma}`);
 			cam.pitch = (event.beta - 90) * Math.PI / 180;
+			cam.yaw = (event.gamma - 90) * Math.PI / 180;
 			// $('canvas').hide();
 		});
 	});

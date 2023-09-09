@@ -403,9 +403,12 @@ window.addEventListener('keyup', function (e) {
 });
 
 window.addEventListener('load', function() {
-	addEventListener("deviceorientationabsolute", (event) => {
-		camera.yaw = event.gamma * Math.PI / 180;
-		// $('canvas').hide();
+	let button = $(`<button>Lets go</button>`).css('position', 'fixed').css('z-index', 1000).insertBefore(render.domElement);
+	button.on('click', function() {
+		addEventListener("deviceorientationabsolute", (event) => {
+			camera.yaw = event.gamma * Math.PI / 180;
+			// $('canvas').hide();
+		});
 	});
 });
 

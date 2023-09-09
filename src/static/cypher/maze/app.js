@@ -407,7 +407,7 @@ window.addEventListener('load', function() {
 	button.on('click', function() {
 		addEventListener("deviceorientationabsolute", (event) => {
 			button.text(`${event.beta}`);
-			cam.pitch = event.beta * Math.PI / 180;
+			cam.pitch = (event.beta - 90) * Math.PI / 180;
 			// $('canvas').hide();
 		});
 	});

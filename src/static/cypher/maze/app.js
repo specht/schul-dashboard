@@ -407,7 +407,7 @@ window.addEventListener('load', function() {
 	button.on('click', function() {
 		addEventListener("deviceorientationabsolute", (event) => {
 			button.text(`${event.gamma}`);
-			cam.yaw = event.gamma * Math.PI / 180;
+			cam.yaw = event.beta * Math.PI / 180;
 			// $('canvas').hide();
 		});
 	});

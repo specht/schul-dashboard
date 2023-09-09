@@ -403,6 +403,7 @@ window.addEventListener('keyup', function (e) {
 });
 
 window.addEventListener('load', function() {
+	return;
 	let button = $(`<button>`).css('z-index', 1000).css('position', 'fixed').html('Lets go').insertBefore(renderer.domElement);
 	button.on('click', function() {
 		if ( typeof( DeviceMotionEvent ) !== "undefined" && typeof( DeviceMotionEvent.requestPermission ) === "function" ) {

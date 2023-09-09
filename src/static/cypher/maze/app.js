@@ -404,7 +404,8 @@ window.addEventListener('keyup', function (e) {
 
 window.addEventListener('load', function() {
 	addEventListener("deviceorientationabsolute", (event) => {
-		$('canvas').hide();
+		camera.yaw = event.gamma * Math.PI / 180;
+		// $('canvas').hide();
 	});
 });
 

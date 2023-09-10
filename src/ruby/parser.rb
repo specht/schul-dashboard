@@ -290,6 +290,9 @@ class Parser
                 break if "#{vorname}.#{nachname}".size <= 20
             end
         end
+        if @force_first_name["#{vorname} #{nachname}"]
+            vorname = @force_first_name["#{vorname} #{nachname}"]
+        end
         klasse = parts[2].strip.gsub(/\s+/, ' ')
         # fix Klasse in WinSchule export
         klasse = Main::fix_parsed_klasse(klasse)
@@ -354,10 +357,24 @@ class Parser
             File.open(path) do |f|
                 f.each_line do |line|
                     line.strip!
+                    next if line.empty?
                     parts = line.split(' ')
                     email = parts[0]
                     name = parts[1, parts.size - 1].join(' ')
                     @force_email[name] = email
+                end
+            end
+        end
+
+        @force_first_name = {}
+        path = '/data/schueler/first-name-sub-by-name.txt'
+        if File.exist?(path)
+            File.open(path) do |f|
+                f.each_line do |line|
+                    line.strip!
+                    next if line.empty?
+                    parts = line.split('/')
+                    @force_first_name[parts[0].strip] = parts[1].strip
                 end
             end
         end

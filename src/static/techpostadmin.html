@@ -176,7 +176,7 @@
             'Bist Du sicher? Dabei erhalten alle Technikamt-Schüler diese E-Mail.<br>Das TechnikTeam wird per E-Mail darüber informiert und erhält eine.',
             "<i class='fa fa-send'></i>&nbsp;&nbsp;Ich bin mir sicher (E-Mails versenden)", 'btn-warning',
             'Abbrechen', 'btn-secondary', function() {
-                api_call('/api/send_techpost_welcome_mail', {}, function(data) {
+                api_call('/api/send_all_techpost_welcome_mail', {}, function(data) {
                     if (data.success)
                         refresh_tech_problems();
                         refresh_fixed_tech_problems();
@@ -642,6 +642,13 @@ document.addEventListener('DOMContentLoaded', function() {
     $('.bu-edit-techpost').click(function (e) {
             let email = $(e.target).data('email');
             api_call('/api/delete_techpost', { email: email}, function (data) {
+                window.location.reload;
+            });
+    });
+
+    $('.bu-send-single-welcome-mail').click(function (e) {
+            let email = $(e.target).data('email');
+            api_call('/api/send_single_techpost_welcome_mail', { email: email}, function (data) {
                 window.location.reload;
             });
     });

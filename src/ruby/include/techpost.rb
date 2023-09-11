@@ -17,7 +17,7 @@ class Main < Sinatra::Base
         return results.map { |result| result["u.email"] }
     end
 
-    post '/api/send_techpost_welcome_mail' do
+    post '/api/send_all_techpost_welcome_mail' do
         require_user_who_can_manage_tablets!
         deliver_mail do
             bcc get_technikamt
@@ -27,12 +27,32 @@ class Main < Sinatra::Base
 
             StringIO.open do |io|
                 io.puts "<p>Hallo!</p>"
-                io.puts "<p>Das TechnikTeam hat dir soeben die Funktion „Technikamt“ im Dashboard freigeschaltet. Herzlichen Glückwunsch, du gehörst zu den ersten, die diese Funktion nutzen dürfen!</p>"
-                io.puts "<p>Du solltest die Funktion schon im Rahmen eines Workshops kennengelernt haben. Gerne kannst du jetzt die Funktion testen (schreib aber bitte immer dazu, wenn es dich um einen Test handelt).</p>"
+                io.puts "<p>Das TechnikTeam hat dir soeben die Funktion „Technikamt“ im Dashboard freigeschaltet. Herzlichen Glückwunsch, du gehörst zu den Ersten, die diese Funktion nutzen dürfen!</p>"
+                io.puts "<p>Du solltest die Funktion schon im Rahmen eines Workshops kennengelernt haben. Gerne kannst du jetzt die Funktion testen (schreib aber bitte immer dazu, wenn es sich um einen Test handelt).</p>"
                 io.puts "<p>Falls du diese Nachricht unerwartet bekommst oder Probleme beim Anmelden im Dashboard hast, melde dich einfach bei Peter-J. Germelmann (peter-julius.germelmann@mail.gymnasiumsteglitz.de).</p>"
                 io.puts "<p>Viele Grüße<br>Das TechnikTeam #{SCHUL_NAME_AN_DATIV} #{SCHUL_NAME}</p>"
                 io.string
-            
+            end
+        end
+        respond(:ok => true)
+    end
+
+    post '/api/send_single_techpost_welcome_mail' do
+        require_user_who_can_manage_tablets!
+        data = parse_request_data(:required_keys => [:email],)
+        deliver_mail do
+            to data[:email]
+            from SMTP_FROM
+
+            subject "Du bist Technikamt im Dashboard!"
+
+            StringIO.open do |io|
+                io.puts "<p>Hallo!</p>"
+                io.puts "<p>Das TechnikTeam hat dir soeben die Funktion „Technikamt“ im Dashboard freigeschaltet. Herzlichen Glückwunsch, du gehörst zu den Ersten, die diese Funktion nutzen dürfen!</p>"
+                io.puts "<p>Du solltest die Funktion schon im Rahmen eines Workshops kennengelernt haben. Gerne kannst du jetzt die Funktion testen (schreib aber bitte immer dazu, wenn es sich um einen Test handelt).</p>"
+                io.puts "<p>Falls du diese Nachricht unerwartet bekommst oder Probleme beim Anmelden im Dashboard hast, melde dich einfach bei Peter-J. Germelmann (peter-julius.germelmann@mail.gymnasiumsteglitz.de).</p>"
+                io.puts "<p>Viele Grüße<br>Das TechnikTeam #{SCHUL_NAME_AN_DATIV} #{SCHUL_NAME}</p>"
+                io.string
             end
         end
         respond(:ok => true)
@@ -451,14 +471,19 @@ class Main < Sinatra::Base
             io.puts "</code></div>"
             io.puts "<div class='alert alert-info'><code>#{TECHNIKTEAM + CAN_MANAGE_TABLETS_USERS + ADMIN_USERS}</code></div>"
             io.puts "<br><h3>User, die Probleme melden können (Alle oben genannten plus:)</h3>"
-            io.puts "<div class='alert alert-warning'><code>"
-            io.puts "</code><div class='text-muted'>Klicke auf einen Nutzer, um ihm die Berechtigungen für das Technikamt zu entziehen.</div><code>"
+            io.puts "<div class='alert alert-warning'>"
+            # io.puts "<div class='text-muted'>Klicke auf einen Nutzer, um ihm die Berechtigungen für das Technikamt zu entziehen.</div>"
+            io.puts "<table class='table narrow table-striped' style='width: unset; min-width: 100%;'>"
+            io.puts "<thead>"
+            io.puts "<tr><td>User</td><td>Bearbeiten</td></tr>"
+            io.puts "</thead><tbody>"
             for technikamt in get_technikamt do
                 display_name = @@user_info[technikamt][:display_name]
                 nc_login = @@user_info[technikamt][:nc_login]
                 klasse = @@user_info[technikamt][:klasse]
-                io.puts "<button class='bu-edit-techpost' data-email='#{technikamt}'><img src='#{NEXTCLOUD_URL}/index.php/avatar/#{nc_login}/256' class='icon avatar-md'>&nbsp;#{display_name} (#{klasse})</button>"
+                io.puts "<tr><td><code><img src='#{NEXTCLOUD_URL}/index.php/avatar/#{nc_login}/256' class='icon avatar-md'>&nbsp;#{display_name} (#{klasse})</code></td><td><button class='btn btn-xs btn-danger bu-edit-techpost' data-email='#{technikamt}'><i class='fa fa-trash'></i>&nbsp;&nbsp;Rechte entziehen</button>&nbsp;<button class='btn btn-xs btn-success bu-send-single-welcome-mail' data-email='#{technikamt}'><i class='fa fa-envelope'></i>&nbsp;&nbsp;Willkommens-E-Mail versenden</button></td></tr>"
             end
+            io.puts "</table></tbody>"
             # io.puts "</code><div class='text-muted'>Diese Funktion steht zurzeit, aufgrund eines technischen Fehlers, nicht zur Verfügung. Bitte nutzen Sie die Liste unten.</div><code>"
             io.puts "</code></div>"
             io.puts "<div class='alert alert-warning'><code>#{get_technikamt}</code></div>"

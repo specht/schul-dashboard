@@ -340,6 +340,43 @@ class Main < Sinatra::Base
         respond_raw_with_mimetype(print_all_sus_untis, 'text/plain')
     end
 
+    def print_all_kurse_untis
+        require_admin!
+        StringIO.open do |io|
+            count = 0
+            @@klassen_order.each do |klasse|
+                @@schueler_for_klasse[klasse].each do |email|
+                    count += 1
+                    user = @@user_info[email]
+                    parts = []
+                    parts << "#{user[:last_name]}#{user[:first_name]}".gsub(' ', '').gsub('-', '').gsub(',', '')
+                    parts << user[:last_name]
+                    parts << ""
+                    parts << ""
+                    parts << ""
+                    parts << ""
+                    parts << user[:geschlecht].upcase
+                    parts << user[:first_name]
+                    parts << "#{count}"
+                    parts << "#{user[:klasse]}"
+                    parts << "#{count}"
+                    parts << ""
+                    parts << "#{user[:geburtstag][0, 4]}#{user[:geburtstag][5, 2]}#{user[:geburtstag][8, 2]}"
+                    parts << ""
+                    # ["\"Mustermann\"", "\"Mustermann\"", "", "", "", "", "\"W\"", "\"Max\"", "\"1\"", "\"5a\"", "\"1\"", "", "\"19670101\"", "", "\r"]
+                    # io.puts "#{user[:last_name]}\t#{user[:first_name]}\t#{user[:klasse]}\t#{user[:geschlecht]}\t#{geburtstag}"
+                    io.puts parts.map { |x| '"' + x + '"'}.join("\t")
+                end
+            end
+            io.string
+        end
+    end
+
+    get '/api/all_kurse_untis' do
+        require_admin!
+        respond_raw_with_mimetype(print_all_kurse_untis, 'text/plain')
+    end
+
     def print_all_sus_logo_didact
         require_admin!
         StringIO.open do |io|

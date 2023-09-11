@@ -9,37 +9,6 @@ CW_TR = [
     ".-.", "...", "-", "..-", "...-", ".--", "-..-", "-.--", "--.."
 ]
 
-STEGO_TEXT = <<~EOS.gsub("\n", ' ').gsub(/\s+/, ' ')
-    Steganography (/ˌstɛɡəˈnɒɡrəfi/) is the practice of representing information
-    within another message or physical object, in such a manner that the presence
-    of the information is not evident to human inspection. In computing/electronic
-    contexts, a computer file, message, image, or video is concealed within another
-    file, message, image, or video. The word steganography comes from Greek
-    steganographia, which combines the words steganós (στεγανός), meaning "covered
-    or concealed", and -graphia (γραφή) meaning "writing". The first recorded use
-    of the term was in 1499 by Johannes Trithemius in his Steganographia, a treatise
-    on cryptography and steganography, disguised as a book on magic. Generally, the
-    hidden messages appear to be (or to be part of) something else: images, articles,
-    shopping lists, or some other cover text. For example, the hidden message may be
-    in invisible ink between the visible lines of a private letter. Some
-    implementations of steganography that lack a shared secret are forms of security
-    through obscurity, and key-dependent steganographic schemes adhere to Kerckhoffs's
-    principle. The advantage of steganography over cryptography alone is that the
-    intended secret message does not attract attention to itself as an object of
-    scrutiny. Plainly visible encrypted messages, no matter how unbreakable they are,
-    arouse interest and may in themselves be incriminating in countries in which
-    encryption is illegal. Whereas cryptography is the practice of protecting the
-    contents of a message alone, steganography is concerned with concealing the fact
-    that a secret message is being sent and its contents. Steganography includes the
-    concealment of information within computer files. In digital steganography,
-    electronic communications may include steganographic coding inside of a transport
-    layer, such as a document file, image file, program, or protocol. Media files are
-    ideal for steganographic transmission because of their large size. For example,
-    a sender might start with an innocuous image file and adjust the color of every
-    hundredth pixel to correspond to a letter in the alphabet. The change is so subtle
-    that someone who is not specifically looking for it is unlikely to notice the change.
-EOS
-
 def cw_pattern(word)
     pattern = ''
     word.each_char do |c|
@@ -268,7 +237,7 @@ class Main < Sinatra::Base
             END_OF_QUERY
             srand(Time.now.to_i)
             provided_password = '    ' if provided_password.strip.empty?
-            unless provided_password.nil?
+            unless provided_password == '    '
                 t = rand(5) + 1
                 (0...4).each do |i|
                     t += rand(10) + 55
@@ -284,10 +253,10 @@ class Main < Sinatra::Base
             @cypher_next_password = lang
             @cypher_token = line
         elsif @cypher_level == 9
-            lang = languages[@cypher_level]
-            line = line_for_lang(lang)
+            lang = languages[@cypher_level].upcase
+            # line = line_for_lang(lang)
             @cypher_next_password = lang
-            @cypher_token = line
+            @cypher_token = nil
         end
     end
 
@@ -744,6 +713,134 @@ class Main < Sinatra::Base
             end
         end
         respond_raw_with_mimetype(File.read('/gen/my_file.wav'), 'audio/wav')
+    end
+
+    def print_maze_defs()
+        room_heights = [
+            [1, 1, 1],
+            [1, 2, 2],
+            [1, 3, 2],
+            [2, 5, 4],
+            [1, 4, 3],
+            [1, 3, 2],
+            [2, 5, 3],
+            [1, 4, 2],
+            [2, 3, 2],
+            [1, 2, 1],
+        ]
+        StringIO.open do |io|
+            font = JSON.parse(File.read('maze-font-processed.json'))
+            cypher_content()
+            word = @cypher_next_password.upcase
+            bitmap = []
+            depth = 7
+            width = 1
+            height = 1
+            z0 = 1
+            z1 = 3
+            tz = 2
+            x0 = nil
+            x1 = nil
+            y0 = nil
+            y1 = nil
+            sections = []
+            tunnel_length = 16
+            [:test, :for_real].each do |mode|
+                ox = 0
+                oy = 0
+                if mode == :for_real
+                    x0 -= 1
+                    y0 -= 1
+                    x1 += 1
+                    y1 += 1
+                    width = x1 - x0 + 1
+                    height = y1 - y0 + 1
+                    (0...depth).each do |z|
+                        level = []
+                        (0...height).each do |y|
+                            level << '1' * width
+                        end
+                        bitmap << level
+                    end
+                end
+                (0...word.size).each do |i0|
+                    z0 = room_heights[i0][0]
+                    z1 = room_heights[i0][1]
+                    tz = room_heights[i0][2]
+        
+                    i1 = i0 + 1
+                    c0 = word[i0]
+                    c1 = word[i1]
+                    font[c0]['cells'].each do |pair|
+                        x = pair[0] + ox
+                        y = pair[1] + oy
+                        if mode == :test
+                            x0 ||= x
+                            x0 = x if x < x0
+                            x1 ||= x
+                            x1 = x if x > x1
+                            y0 ||= y
+                            y0 = y if y < y0
+                            y1 ||= y
+                            y1 = y if y > y1
+                        else
+                            (z0..z1).each do |z|
+                                bitmap[z][y - y0][x - x0] = '0'
+                                if z == tz
+                                    if i0 == 0
+                                        if x - ox == font[c0]['entry'][0] && y - oy == font[c0]['entry'][1]
+                                            bitmap[z][y - y0][x - x0] = 'A'
+                                        end
+                                        if x - ox - 1 == font[c0]['entry'][0] && y - oy == font[c0]['entry'][1]
+                                            bitmap[z][y - y0][x - x0] = 'B'
+                                        end
+                                    end
+                                    if x - ox == font[c0]['exit'][0] && y - oy == font[c0]['exit'][1]
+                                        if i0 > 0
+                                            sections << x - x0 - tunnel_length + 2 if mode == :for_real
+                                        end
+                                        sections << x - x0 + 1 if mode == :for_real
+                                    end
+                                end
+                            end
+                        end
+                    end
+                    if i1 < word.size
+                        (1...tunnel_length).each do |dx|
+                            x = font[c0]['exit'][0] + dx + ox
+                            y = font[c0]['exit'][1] + oy
+                            if mode == :for_real
+                                bitmap[tz][y - y0][x - x0] = '0'
+                            end
+                        end
+                        ox += font[c0]['exit'][0] - font[c1]['entry'][0] + tunnel_length
+                        oy += font[c0]['exit'][1] - font[c1]['entry'][1]
+                    end
+                end
+            end
+            sections << bitmap[0][0].size
+            io.puts '<script type="text/plain" id="level">'
+            bitmap.each do |level|
+                level.each do |row|
+                    row.each_char do |c|
+                        if c == '0'
+                            io.print ((0...13).to_a.sample + 'a'.ord).chr
+                        elsif c == '1'
+                            io.print ((0...13).to_a.sample + 13 + 'a'.ord).chr
+                        else
+                            io.print c
+                        end
+                    end
+                    io.puts
+                end
+                io.puts
+            end
+            io.puts "</script>"
+            io.puts '<script type="text/plain" id="level_sectors">'
+            io.puts sections.to_json
+            io.puts "</script>"
+            io.string
+        end
     end
 
 

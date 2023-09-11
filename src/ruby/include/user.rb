@@ -559,20 +559,20 @@ class Main < Sinatra::Base
                 io.string
             end
         end
-        if @@bib_unconfirmed_books[email] && (!teacher_logged_in?)
-            n_to_s = {1 => 'Eines', 2 => 'Zwei', 3 => 'Drei', 4 => 'Vier', 5 => 'Fünf'}
-            result += StringIO.open do |io|
-                io.puts "<div class='col-lg-12 col-md-4 col-sm-6'>"
-                io.puts "<div class='hint'>"
-                io.puts "<div><span style='font-size: 200%; float: left; margin-right: 8px;'>🙁</span>#{n_to_s[@@bib_unconfirmed_books[email].size] || 'Mehrere'} deiner ent&shy;lieh&shy;enen Bücher #{@@bib_unconfirmed_books[email].size == 1 ? 'wurde' : 'wurden'} von dir noch nicht bestätigt. <strong>Bitte scanne #{@@bib_unconfirmed_books[email].size == 1 ? 'das Buch' : 'die Bücher'} jetzt ein.</strong></div>"
-                io.puts "<hr />"
-                io.puts "<a href='/bib_confirm' style='white-space: nowrap;' class='float-right btn btn-sm btn-success'><i class='fa fa-barcode'></i>&nbsp;&nbsp;Bücher bestätigen</a>"
-                io.puts "<div style='clear: both;'></div>"
-                io.puts "</div>"
-                io.puts "</div>"
-                io.string
-            end
-        end
+        # if @@bib_unconfirmed_books[email] && (!teacher_logged_in?)
+        #     n_to_s = {1 => 'Eines', 2 => 'Zwei', 3 => 'Drei', 4 => 'Vier', 5 => 'Fünf'}
+        #     result += StringIO.open do |io|
+        #         io.puts "<div class='col-lg-12 col-md-4 col-sm-6'>"
+        #         io.puts "<div class='hint'>"
+        #         io.puts "<div><span style='font-size: 200%; float: left; margin-right: 8px;'>🙁</span>#{n_to_s[@@bib_unconfirmed_books[email].size] || 'Mehrere'} deiner ent&shy;lieh&shy;enen Bücher #{@@bib_unconfirmed_books[email].size == 1 ? 'wurde' : 'wurden'} von dir noch nicht bestätigt. <strong>Bitte scanne #{@@bib_unconfirmed_books[email].size == 1 ? 'das Buch' : 'die Bücher'} jetzt ein.</strong></div>"
+        #         io.puts "<hr />"
+        #         io.puts "<a href='/bib_confirm' style='white-space: nowrap;' class='float-right btn btn-sm btn-success'><i class='fa fa-barcode'></i>&nbsp;&nbsp;Bücher bestätigen</a>"
+        #         io.puts "<div style='clear: both;'></div>"
+        #         io.puts "</div>"
+        #         io.puts "</div>"
+        #         io.string
+        #     end
+        # end
         result
     end
 

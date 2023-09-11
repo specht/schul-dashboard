@@ -570,6 +570,7 @@ class Parser
                         lehrer = @mock_shorthand[lehrer]
                         next if lehrer.nil?
                     end
+                    original_fach = parts[3]
                     fach = parts[3].gsub('/', '-')
                     raum = parts[4].split('~').join('/')
                     dow = parts[5].to_i - 1

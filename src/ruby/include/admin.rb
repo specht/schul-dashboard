@@ -354,7 +354,7 @@ class Main < Sinatra::Base
                         parts = []
                         parts << "#{user[:last_name]}#{user[:first_name]}".gsub(' ', '').gsub('-', '').gsub(',', '')
                         parts << ""
-                        parts << lesson_key
+                        parts << @@original_fach_for_lesson_key[lesson_key] || lesson_key
                         parts << ""
                         parts << "#{klasse}"
                         parts << ""
@@ -362,7 +362,7 @@ class Main < Sinatra::Base
                         parts << ""
                         parts << ""
                         parts << ""
-                        parts << lesson_key
+                        parts << @@original_fach_for_lesson_key[lesson_key] || lesson_key
                         parts << ""
                         parts << "1"
                         io.puts parts.map { |x| '"' + x + '"'}.join("\t")

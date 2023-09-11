@@ -731,7 +731,7 @@ class Main < Sinatra::Base
         StringIO.open do |io|
             font = JSON.parse(File.read('maze-font-processed.json'))
             cypher_content()
-            word = @cypher_next_password.upcase
+            word = @cypher_next_password.upcase.gsub(/[^A-Z]/, '')
             bitmap = []
             depth = 7
             width = 1

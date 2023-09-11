@@ -777,6 +777,12 @@ class Main < Sinatra::Base
         # end
 
         @@lessons, @@vertretungen, @@vplan_timestamp, @@day_messages, @@lesson_key_back_tr, @@original_lesson_key_for_lesson_key = parser.parse_timetable(@@config, lesson_key_tr)
+        @@original_fach_for_lesson_key = {}
+        @@original_lesson_key_for_lesson_key.each_pair do |k, vl|
+            vl.each do |v|
+                @@original_fach_for_lesson_key[v] = k
+            end
+        end
         @@current_lesson_key_order = []
         @@current_lesson_key_info = {}
         if DASHBOARD_SERVICE == 'ruby'

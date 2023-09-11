@@ -49,6 +49,7 @@ class Main < Sinatra::Base
             io.puts "<a class='btn btn-secondary' href='/api/all_sus_logo_didact'>LDC: Alle SuS</a>"
             io.puts "<a class='btn btn-secondary' href='/api/all_lul_logo_didact'>LDC: Alle Lehrkräfte</a>"
             io.puts "<a class='btn btn-secondary' href='/api/all_sus_untis'>Untis: Alle SuS</a>"
+            io.puts "<a class='btn btn-secondary' href='/api/all_kurse_untis'>Untis: Alle Kurse</a>"
             io.puts "<hr />"
             io.puts "<h3 id='teachers'>Lehrerinnen und Lehrer</h3>"
             io.puts "<div style='max-width: 100%; overflow-x: auto;'>"
@@ -338,6 +339,43 @@ class Main < Sinatra::Base
     get '/api/all_sus_untis' do
         require_admin!
         respond_raw_with_mimetype(print_all_sus_untis, 'text/plain')
+    end
+
+    def print_all_kurse_untis
+        require_admin!
+        StringIO.open do |io|
+            count = 0
+            @@klassen_order.each do |klasse|
+                next unless ['11', '12'].include?(klasse)
+                @@schueler_for_klasse[klasse].each do |email|
+                    @@kurse_for_schueler[email].each do |lesson_key|
+                        count += 1
+                        user = @@user_info[email]
+                        parts = []
+                        parts << "#{user[:last_name]}#{user[:first_name]}".gsub(' ', '').gsub('-', '').gsub(',', '')
+                        parts << ""
+                        parts << @@original_fach_for_lesson_key[lesson_key] || lesson_key
+                        parts << ""
+                        parts << "#{klasse}"
+                        parts << ""
+                        parts << ""
+                        parts << ""
+                        parts << ""
+                        parts << ""
+                        parts << @@original_fach_for_lesson_key[lesson_key] || lesson_key
+                        parts << ""
+                        parts << "1"
+                        io.puts parts.map { |x| '"' + x + '"'}.join("\t")
+                    end
+                end
+            end
+            io.string
+        end
+    end
+
+    get '/api/all_kurse_untis' do
+        require_admin!
+        respond_raw_with_mimetype(print_all_kurse_untis, 'text/plain')
     end
 
     def print_all_sus_logo_didact

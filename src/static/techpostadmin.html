@@ -33,7 +33,7 @@
                 <div class='col-md-12'>
                     <div class="pull-right">
                         <button id='tp_report_problem_quiet' class='btn btn-outline-secondary' disabled><i class='fa fa-bell-slash '></i>&nbsp;&nbsp;Stumm Absenden (Für Testzwecke)</button>
-                        <button id='tp_report_problem' class='btn btn-success' disabled><i class='fa fa-send'></i>&nbsp;&nbsp;Absenden</button>
+                        <button id='tp_report_problem' class='btn btn-outline-secondary' disabled><i class='fa fa-send'></i>&nbsp;&nbsp;Absenden</button>
                     </div>
                 </div>
             </div>
@@ -186,11 +186,21 @@
     }
 
     function update_submit_button() {
+        if (can_send_problem())
+            $('#tp_report_problem').removeClass('btn-outline-secondary').addClass('btn-success').prop('disabled', false);
+        else
+            $('#tp_report_problem').removeClass('btn-success').addClass('btn-outline-secondary').prop('disabled', true);
+
+        if (can_send_problem())
+            $('#tp_report_problem_quiet').removeClass('btn-outline-secondary').addClass('btn-secondary').prop('disabled', false);
+        else
+            $('#tp_report_problem_quiet').removeClass('btn-secondary').addClass('btn-outline-secondary').prop('disabled', true);
+    }
+
+    function can_send_problem() {
         let problem = $('#tp_problem_description').val().trim();
-        let date = $('#tp_date').val().trim();
         let device = $('#tp_problem_device').val();
-        $('#tp_report_problem').prop('disabled', !(problem.length > 0 && device.length > 0));
-        $('#tp_report_problem_quiet').prop('disabled', !(problem.length > 0 && device.length > 0));
+        return problem.length > 0 && device.length > 0 ;
     }
 
     function refresh_tech_problems() {

@@ -469,7 +469,7 @@ class Main < Sinatra::Base
             # end
             io.puts "</code><div class='text-muted'>Diese Funktion steht zurzeit, aufgrund eines technischen Fehlers, nicht zur Verfügung. Bitte nutzen Sie die Liste unten.</div><code>"
             io.puts "</code></div>"
-            io.puts "<div class='alert alert-info'><code>#{TECHNIKTEAM + CAN_MANAGE_TABLETS_USERS + ADMIN_USERS}</code></div>"
+            io.puts "<div class='alert alert-info'><code>#{(TECHNIKTEAM + CAN_MANAGE_TABLETS_USERS + ADMIN_USERS).uniq.sort}</code></div>"
             io.puts "<br><h3>User, die Probleme melden können (Alle oben genannten plus:)</h3>"
             io.puts "<div class='alert alert-warning'>"
             # io.puts "<div class='text-muted'>Klicke auf einen Nutzer, um ihm die Berechtigungen für das Technikamt zu entziehen.</div>"

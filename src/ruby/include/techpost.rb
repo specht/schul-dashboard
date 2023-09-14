@@ -20,7 +20,7 @@ class Main < Sinatra::Base
     post '/api/send_all_techpost_welcome_mail' do
         require_user_who_can_manage_tablets!
         deliver_mail do
-            bcc get_technikamt
+            bcc get_technikamt()
             from SMTP_FROM
 
             subject "Du bist Technikamt im Dashboard!"

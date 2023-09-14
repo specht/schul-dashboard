@@ -173,7 +173,7 @@
 
     function send_welcome_mail() {
         showTemplateModal('Willkommens-E-Mail versenden', 
-            'Bist Du sicher? Dabei erhalten alle Technikamt-Schüler diese E-Mail.<br>Das TechnikTeam wird per E-Mail darüber informiert und erhält eine.',
+            'Bist Du sicher? Dabei erhalten alle Technikamt-Schüler diese E-Mail.<br>Das TechnikTeam wird per E-Mail darüber informiert und erhält eine Kopie.',
             "<i class='fa fa-send'></i>&nbsp;&nbsp;Ich bin mir sicher (E-Mails versenden)", 'btn-warning',
             'Abbrechen', 'btn-secondary', function() {
                 api_call('/api/send_all_techpost_welcome_mail', {}, function(data) {

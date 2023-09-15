@@ -14,48 +14,59 @@ class Main < Sinatra::Base
             RETURN u.email;
         END_OF_QUERY
         debug results
-        return results.map { |result| result["u.email"] }
+        return results.map { |result| result["u.email"] } || []
     end
+    
+    def send_welcome_mail(recipients)
+        for mail_adress in recipients do
+            deliver_mail do
+                to mail_adress
+                bcc SMTP_FROM
+                from SMTP_FROM
 
-    post '/api/send_all_techpost_welcome_mail' do
-        require_user_who_can_manage_tablets!
-        deliver_mail do
-            bcc get_technikamt()
-            from SMTP_FROM
+                subject "Du bist Technikamt im Dashboard!"
 
-            subject "Du bist Technikamt im Dashboard!"
-
-            StringIO.open do |io|
-                io.puts "<p>Hallo!</p>"
-                io.puts "<p>Das TechnikTeam hat dir soeben die Funktion „Technikamt“ im Dashboard freigeschaltet. Herzlichen Glückwunsch, du gehörst zu den Ersten, die diese Funktion nutzen dürfen!</p>"
-                io.puts "<p>Du solltest die Funktion schon im Rahmen eines Workshops kennengelernt haben. Gerne kannst du jetzt die Funktion testen (schreib aber bitte immer dazu, wenn es sich um einen Test handelt).</p>"
-                io.puts "<p>Falls du diese Nachricht unerwartet bekommst oder Probleme beim Anmelden im Dashboard hast, melde dich einfach bei Peter-J. Germelmann (peter-julius.germelmann@mail.gymnasiumsteglitz.de).</p>"
-                io.puts "<p>Viele Grüße<br>Das TechnikTeam #{SCHUL_NAME_AN_DATIV} #{SCHUL_NAME}</p>"
-                io.string
+                StringIO.open do |io|
+                    io.puts "<p>Hallo!</p>"
+                    io.puts "<p>Das TechnikTeam hat dir soeben die Funktion „Technikamt“ im Dashboard freigeschaltet. Herzlichen Glückwunsch, du gehörst zu den Ersten, die diese Funktion nutzen dürfen!</p>"
+                    io.puts "<p>Du solltest die Funktion schon im Rahmen eines Workshops kennengelernt haben. Gerne kannst du jetzt die Funktion testen (schreib aber bitte immer dazu, wenn es sich um einen Test handelt).</p>"
+                    io.puts "<p>Falls du diese Nachricht unerwartet bekommst oder Probleme beim Anmelden im Dashboard hast, melde dich einfach bei Peter-J. Germelmann (peter-julius.germelmann@mail.gymnasiumsteglitz.de).</p>"
+                    io.puts "<p>Viele Grüße<br>Das TechnikTeam #{SCHUL_NAME_AN_DATIV} #{SCHUL_NAME}</p>"
+                    io.string
+                end
             end
         end
         respond(:ok => true)
+    end
+
+
+    post '/api/send_all_techpost_welcome_mail' do
+        require_user_who_can_manage_tablets!
+        recipients = get_technikamt()
+        send_welcome_mail recipients
+        display_name = @session_user[:display_name]
+        deliver_mail do
+            to WANTS_TO_RECEIVE_TECHPOST_DEBUG_MAIL
+            bcc SMTP_FROM
+            from SMTP_FROM
+
+            subject "Willkommens-E-Mail versendet"
+
+            StringIO.open do |io|
+                io.puts "<p>Hallo!</p>"
+                io.puts "<p>#{display_name} hat soeben eine Willkommens-E-Mail an alle Technikämter versendet. Du musst/kannst nichts weiter tun, diese E-Mail dient nur als Info.</p>"
+                io.string
+            
+            end
+        end
     end
 
     post '/api/send_single_techpost_welcome_mail' do
         require_user_who_can_manage_tablets!
         data = parse_request_data(:required_keys => [:email],)
-        deliver_mail do
-            to data[:email]
-            from SMTP_FROM
-
-            subject "Du bist Technikamt im Dashboard!"
-
-            StringIO.open do |io|
-                io.puts "<p>Hallo!</p>"
-                io.puts "<p>Das TechnikTeam hat dir soeben die Funktion „Technikamt“ im Dashboard freigeschaltet. Herzlichen Glückwunsch, du gehörst zu den Ersten, die diese Funktion nutzen dürfen!</p>"
-                io.puts "<p>Du solltest die Funktion schon im Rahmen eines Workshops kennengelernt haben. Gerne kannst du jetzt die Funktion testen (schreib aber bitte immer dazu, wenn es sich um einen Test handelt).</p>"
-                io.puts "<p>Falls du diese Nachricht unerwartet bekommst oder Probleme beim Anmelden im Dashboard hast, melde dich einfach bei Peter-J. Germelmann (peter-julius.germelmann@mail.gymnasiumsteglitz.de).</p>"
-                io.puts "<p>Viele Grüße<br>Das TechnikTeam #{SCHUL_NAME_AN_DATIV} #{SCHUL_NAME}</p>"
-                io.string
-            end
-        end
-        respond(:ok => true)
+        recipients = []
+        recipients.append(data[:email])
+        send_welcome_mail recipients
     end
 
     post '/api/report_tech_problem' do
@@ -495,8 +506,7 @@ class Main < Sinatra::Base
             end
             io.puts "<br><h3>Super Funktionen</h3>"
             io.puts "<div class='alert alert-info'>"
-            io.puts "<button class='bu-clear-all btn btn-danger'><i class='fa fa-trash'></i>&nbsp;&nbsp;Alle Probleme löschen</button>"
-            io.puts "<button class='bu-send-welcome-mail btn btn-warning'><i class='fa fa-envelope'></i>&nbsp;&nbsp;Willkommens-E-Mail versenden</button>"
+            io.puts "<button class='bu-clear-all btn btn-danger'><i class='fa fa-trash'></i>&nbsp;&nbsp;Alle Probleme löschen</button>&nbsp<button class='bu-send-welcome-mail btn btn-warning'><i class='fa fa-envelope'></i>&nbsp;&nbsp;Willkommens-E-Mail versenden</button>"
             io.puts "</div>"
             io.puts "<div class='alert alert-info'>"
             io.puts "<div class='form-group'><input id='ti_recipients' class='form-control' placeholder='User suchen…' /><div class='recipient-input-dropdown' style='display: none;'></div></input></div>"

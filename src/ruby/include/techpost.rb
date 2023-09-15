@@ -100,7 +100,7 @@ class Main < Sinatra::Base
                 io.puts "<p>Hallo!</p>"
                 io.puts "<p>Du hast soeben ein neues Technikproblem angelegt. Das Problem betrifft #{data[:device]} und lautet: „#{data[:problem]}“</p>"
                 # io.puts "<a href='#{WEBSITE_HOST}/techpost'>Probleme ansehen</a>"
-                io.puts "<p>Diese E-Mail dient nur als Bestätigung, du musst also nicht weiter tun.</p>"
+                io.puts "<p>Diese E-Mail dient nur als Bestätigung, du musst also nichts weiter tun.</p>"
                 io.puts "<p>Viele Grüße<br>Dashboard #{SCHUL_NAME_AN_DATIV} #{SCHUL_NAME}</p>"
                 io.string
             

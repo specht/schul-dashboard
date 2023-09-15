@@ -652,7 +652,9 @@ document.addEventListener('DOMContentLoaded', function() {
     $('.bu-edit-techpost').click(function (e) {
             let email = $(e.target).data('email');
             api_call('/api/delete_techpost', { email: email}, function (data) {
-                window.location.reload;
+                if (data.success) {
+                    $(e.target).closest('tr').remove();
+                }
             });
     });
 

@@ -192,7 +192,7 @@ function place_sus(silent) {
 }
 
 function seat_suitable_for_kid(seat_index, kid_index) {
-    // return true;
+    return true;
     if (sus[kid_index].geschlecht === 'm')
         return seat_index % 2 === 0;
     else

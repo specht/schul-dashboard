@@ -571,6 +571,7 @@ class Parser
                         next if lehrer.nil?
                     end
                     original_fach = parts[3]
+                    next if (parts[3] || '').strip.empty?
                     fach = parts[3].gsub('/', '-')
                     raum = parts[4].split('~').join('/')
                     dow = parts[5].to_i - 1

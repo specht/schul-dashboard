@@ -440,6 +440,30 @@ class Main < Sinatra::Base
         end
     end
 
+    post '/api/kick_all_techposts_admin' do
+        require_technikteam!
+        neo4j_query(<<~END_OF_QUERY)
+            MATCH (u:User)-[r:HAS_AMT {amt: 'technikamt'}]->(v:Techpost)
+            DELETE r;
+        END_OF_QUERY
+        display_name = @session_user[:display_name]
+        respond(:ok => true)
+        deliver_mail do
+            to WANTS_TO_RECEIVE_TECHPOST_DEBUG_MAIL
+            bcc SMTP_FROM
+            from SMTP_FROM
+
+            subject "Alle Technikämter entfernt"
+
+            StringIO.open do |io|
+                io.puts "<p>Hallo!</p>"
+                io.puts "<p>#{display_name} hat soeben alle Technikämter entfernt. Diese können deshalb keine Probleme mehr melden. Du musst/kannst nichts weiter tun, diese E-Mail dient nur als Info.</p>"
+                io.string
+            
+            end
+        end
+    end
+
     post '/api/add_techpost' do
         require_technikteam!
         data = parse_request_data(:required_keys => [:email])
@@ -506,11 +530,11 @@ class Main < Sinatra::Base
             end
             io.puts "<br><h3>Super Funktionen</h3>"
             io.puts "<div class='alert alert-info'>"
-            io.puts "<button class='bu-clear-all btn btn-danger'><i class='fa fa-trash'></i>&nbsp;&nbsp;Alle Probleme löschen</button>&nbsp<button class='bu-send-welcome-mail btn btn-warning'><i class='fa fa-envelope'></i>&nbsp;&nbsp;Willkommens-E-Mail versenden</button>"
+            io.puts "<button class='bu-clear-all btn btn-danger'><i class='fa fa-trash'></i>&nbsp;&nbsp;Alle Probleme löschen</button>&nbsp<button class='bu-kick-all btn btn-danger'><i class='fa fa-user-times'></i>&nbsp;&nbsp;Alle Technikamt-User entfernen</button>&nbsp<button class='bu-send-welcome-mail btn btn-warning'><i class='fa fa-envelope'></i>&nbsp;&nbsp;Willkommens-E-Mails versenden</button>"
             io.puts "</div>"
             io.puts "<div class='alert alert-info'>"
             io.puts "<div class='form-group'><input id='ti_recipients' class='form-control' placeholder='User suchen…' /><div class='recipient-input-dropdown' style='display: none;'></div></input></div>"
-            io.puts "<div class='form-group row'><label for='ti_email' class='col-sm-1 col-form-label'>Name:</label><div class='col-sm-3'><input type='text' readonly class='form-control' id='ti_email' placeholder=''></div><div id='publish_message_btn_container'><button disabled id='bu_send_message' class='btn btn-outline-secondary'><i class='fa fa-plus'></i>&nbsp;&nbsp;<span>Hinzufügen</span></button>&nbsp;&nbsp;<button disabled id='bu_delete_message' class='btn btn-outline-secondary'><i class='fa fa-times'></i>&nbsp;&nbsp;<span>Entfernen</span></button></div></div>"
+            io.puts "<div class='form-group row'><label for='ti_email' class='col-sm-1 col-form-label'>Name:</label><div class='col-sm-3'><input type='text' readonly class='form-control' id='ti_email' placeholder=''></div><div id='publish_message_btn_container'><button disabled id='bu_send_message' class='btn btn-outline-secondary'><i class='fa fa-plus'></i>&nbsp;&nbsp;<span>Hinzufügen</span></button>&nbsp;<button disabled id='bu_delete_message' class='btn btn-outline-secondary'><i class='fa fa-times'></i>&nbsp;&nbsp;<span>Entfernen</span></button></div></div>"
             io.puts "Hinweis: Die Änderungen werden erst nach dem Neuladen der Seite sichtbar.</div>"
             io.string
         end

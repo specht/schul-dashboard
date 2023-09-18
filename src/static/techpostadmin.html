@@ -171,6 +171,20 @@
         );
     }
 
+    function compose_kick_all() {
+        showTemplateModal('Alle Technikamt-User entfernen', 
+            'Bist Du sicher? Dabei werden alle Technikamt-User entfernt.<br>Tu dies nur nach Absprache mit dem TechnikTeam und allen Usern die Zugriff auf diese Funktion haben.<br>Das TechnikTeam wird per E-Mail darüber informiert.',
+            "<i class='fa fa-user-times'></i>&nbsp;&nbsp;Ich bin mir sicher (Alle entfernen)", 'btn-danger',
+            'Abbrechen', 'btn-secondary', function() {
+                api_call('/api/kick_all_techposts_admin', {}, function(data) {
+                    if (data.success)
+                        refresh_tech_problems();
+                        refresh_fixed_tech_problems();
+                });
+            }
+        );
+    }
+
     function send_welcome_mail() {
         showTemplateModal('Willkommens-E-Mail versenden', 
             'Bist Du sicher? Dabei erhalten alle Technikamt-Schüler diese E-Mail.<br>Das TechnikTeam wird per E-Mail darüber informiert und erhält eine Kopie.',
@@ -602,6 +616,9 @@ document.addEventListener('DOMContentLoaded', function() {
     $('.bu-clear-all').click(function(e) {
         compose_clear_all();
     });
+    $('.bu-kick-all').click(function(e) {
+        compose_kick_all();
+    })
 
     $('.bu-send-welcome-mail').click(function(e) {
         send_welcome_mail();

@@ -340,11 +340,13 @@ class Main < Sinatra::Base
                     end
                 end
             end
-            unless klasse5or6.nil?
-                if klasse5or6 && !@@tablet_sets[x][:prio_unterstufe]
-                    hints << "<span class='text-danger'><i class='fa fa-warning'></i></span>&nbsp;&nbsp;Sie buchen einen Tabletsatz für eine Unterstufenklasse, dieser Tabletsatz ist allerdings für die Unterstufe nicht so leicht zu transportieren. Bitte wählen Sie deshalb – falls möglich – einen anderen Tabletsatz."
-                elsif !klasse5or6 && @@tablet_sets[x][:prio_unterstufe]
-                    hints << "<span class='text-danger'><i class='fa fa-warning'></i></span>&nbsp;&nbsp;Sie buchen einen Tabletsatz für die Mittel- oder Oberstufe, dieser Tabletsatz ist allerdings für die Unterstufe besonders leicht zu transportieren. Bitte wählen Sie deshalb – falls möglich – einen anderen Tabletsatz."
+            unless !@@tablet_sets[x][:is_tablet_set]
+                unless klasse5or6.nil?
+                    if klasse5or6 && !@@tablet_sets[x][:prio_unterstufe]
+                        hints << "<span class='text-danger'><i class='fa fa-warning'></i></span>&nbsp;&nbsp;Sie buchen einen Tabletsatz für eine Unterstufenklasse, dieser Tabletsatz ist allerdings für die Unterstufe nicht so leicht zu transportieren. Bitte wählen Sie deshalb – falls möglich – einen anderen Tabletsatz."
+                    elsif !klasse5or6 && @@tablet_sets[x][:prio_unterstufe]
+                        hints << "<span class='text-danger'><i class='fa fa-warning'></i></span>&nbsp;&nbsp;Sie buchen einen Tabletsatz für die Mittel- oder Oberstufe, dieser Tabletsatz ist allerdings für die Unterstufe besonders leicht zu transportieren. Bitte wählen Sie deshalb – falls möglich – einen anderen Tabletsatz."
+                    end
                 end
             end
             if hints.empty?

@@ -571,6 +571,7 @@ class Parser
                         next if lehrer.nil?
                     end
                     original_fach = parts[3]
+                    next if (parts[3] || '').strip.empty?
                     fach = parts[3].gsub('/', '-')
                     raum = parts[4].split('~').join('/')
                     dow = parts[5].to_i - 1
@@ -1014,7 +1015,12 @@ class Parser
                             emails = user_info.select do |email, user_info|
                                 last_name = user_info[:last_name]
                                 first_name = user_info[:first_name]
-                                "#{first_name} #{last_name}" == name || email.sub("@#{SCHUL_MAIL_DOMAIN}", '') == name || email == name
+                                official_first_name = user_info[:official_first_name]
+                                "#{first_name} #{last_name}" == name ||
+                                "#{last_name}, #{first_name}" == name ||
+                                "#{last_name}, #{official_first_name}" == name ||
+                                email.sub("@#{SCHUL_MAIL_DOMAIN}", '') == name ||
+                                email == name
                             end.keys
                             if emails.size == 1
                                 email = emails.to_a.first
@@ -1036,7 +1042,7 @@ class Parser
             debug '-' * 50
             debug "ATTENTION: Error parsing wahlpflicht.yaml, skipping..."
             debug '-' * 50
-            # raise
+            raise
         end
         unless unassigned_names.empty?
             debug "Kurswahl: Can't assign these names!"

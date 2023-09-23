@@ -37,7 +37,7 @@ function delay(time) {
         let id = entry[1];
         let path = entry[2];
         let display_name = entry[3];
-        console.log(`${klasse} ${display_name}`);
+        console.log(`${display_name}`);
         await page.goto(`http://localhost:8025/timetable/${id}`);
         await page.waitForSelector('.fc-view-harness', {timeout: 0});
         let dir = `./timetable_screenshots/${path}`;

@@ -210,7 +210,7 @@
                                     $('#unbookTabletSetModal .extra_info_reason').hide();
                                     $('#unbookTabletSetModal .extra_info_lesson').show();
                                     $('#fach_here').html(booking.lesson);
-                                } else if (booking.booking.reason != "") {
+                                } else if (typeof(booking.booking.reason) === 'undefined' || booking.booking.reason != "") {
                                     $('#unbookTabletSetModal .extra_info_lesson').hide();
                                     $('#unbookTabletSetModal .extra_info_reason').show();
                                     $('#reason_here').html(booking.booking.reason);

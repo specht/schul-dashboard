@@ -1313,7 +1313,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     $('.future_homework').append($('<p>').html(moment(entry.datum).format('ddd, D.M.Y')));
                 }
                 last_date = entry.datum;
-                let div = $("<p style='white-space: pre-line;'>").html('<b>' + entry.fach + ':</b> ' + entry.text.join('<br />'));
+                let div = $("<p class='ha_text' style='white-space: pre-line;'>").html('<b>' + entry.fach + ':</b> ' + entry.text.join('<br />'));
                 $('.future_homework').append(div);
                 if ((entry.est_time || 0) > 0)
                     $('.future_homework').append($('<p>').html(`Geplanter Zeitaufwand: ${entry.est_time} Minuten`));
@@ -1404,6 +1404,18 @@ document.addEventListener('DOMContentLoaded', function() {
                     });
                 }
             }
+            for (let div of $('.ha_text')) {
+                if (div.scrollHeight > 300) {
+                    let button = $(`<button class='btn btn-sm btn-outline-secondary mb-1'>mehr anzeigen…</button>`);
+                    button.on('click', function(e) {
+                        button.remove();
+                        $(div).removeClass('ha_text');
+                    });
+                    button.insertAfter(div);
+                    console.log('ouch');
+                }
+            }
+
         }
 
         oReq.onload = function(e) {

@@ -2686,3 +2686,9 @@ th.thsticky {
     border: 2px dashed red;
     box-shadow: 0 0 0.5em rgba(0, 0, 0, 0.5);
 }
+
+.ha_text {
+    max-height: 300px;
+    overflow-y: hidden;
+    overflow-x: hidden!important;
+}

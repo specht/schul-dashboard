@@ -507,6 +507,7 @@ class Main < Sinatra::Base
             io.puts "<tr><td>User</td></tr>"
             io.puts "</thead><tbody>"
             for tech_admin in (TECHNIKTEAM + CAN_MANAGE_TABLETS_USERS + ADMIN_USERS).uniq.sort do
+                next unless @@user_info[tech_admin]
                 display_name = @@user_info[tech_admin][:display_name]
                 nc_login = @@user_info[tech_admin][:nc_login]
                 io.puts "<tr><td><code><img src='#{NEXTCLOUD_URL}/index.php/avatar/#{nc_login}/256' class='icon avatar-md'>&nbsp;#{display_name}</code></td></tr>"

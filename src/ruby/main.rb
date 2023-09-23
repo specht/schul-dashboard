@@ -650,6 +650,7 @@ class Main < Sinatra::Base
         all_prefixes = {}
         @@user_info.keys.each do |email|
             @@user_info[email][:id] = Digest::SHA2.hexdigest(USER_ID_SALT + email).to_i(16).to_s(36)[0, 16]
+            @@user_info[email][:public_id] = Digest::SHA2.hexdigest(USER_ID_SALT + 'public' + email).to_i(16).to_s(36)[0, 16]
             (1..email.size).each do |length|
                 prefix = email[0, length]
                 all_prefixes[prefix] ||= Set.new()
@@ -1923,27 +1924,34 @@ class Main < Sinatra::Base
                         io.puts "</li>"
                     end
                 elsif x == :directory
+                    remaining_klassen = KLASSEN_ORDER.dup
                     klassen = @@klassen_for_shorthand[@session_user[:shorthand]] || []
                     if user_who_can_manage_antikenfahrt_logged_in?
                         klassen << '11'
                         klassen << '12'
                         klassen.uniq!
                     end
-                    unless klassen.empty?
-                        io.puts "<li class='nav-item dropdown'>"
-                        io.puts "<a class='nav-link nav-icon dropdown-toggle' href='#' id='navbarDropdownKlassen' role='button' data-toggle='dropdown' aria-haspopup='true' aria-expanded='false'>"
-                        io.puts "<div class='icon'><i class='fa fa-address-book'></i></div>Klassen"
-                        io.puts "</a>"
-                        io.puts "<div class='dropdown-menu' aria-labelledby='navbarDropdownKlassen'>"
-                        if can_see_all_timetables_logged_in?
-                            klassen = @@klassen_order
-                        end
-                        klassen.each do |klasse|
-                            io.puts "<a class='dropdown-item nav-icon' href='/directory/#{klasse}'><div class='icon'><i class='fa fa-address-book'></i></div><span class='label'>Klasse #{tr_klasse(klasse)}</span></a>"
-                        end
-                        io.puts "</div>"
-                        io.puts "</li>"
+                    io.puts "<li class='nav-item dropdown'>"
+                    io.puts "<a class='nav-link nav-icon dropdown-toggle' href='#' id='navbarDropdownKlassen' role='button' data-toggle='dropdown' aria-haspopup='true' aria-expanded='false'>"
+                    io.puts "<div class='icon'><i class='fa fa-address-book'></i></div>Klassen"
+                    io.puts "</a>"
+                    io.puts "<div class='dropdown-menu' aria-labelledby='navbarDropdownKlassen'>"
+                    if can_see_all_timetables_logged_in?
+                        klassen = @@klassen_order
                     end
+                    klassen.each do |klasse|
+                        io.puts "<a class='dropdown-item nav-icon' href='/directory/#{klasse}'><div class='icon'><i class='fa fa-address-book'></i></div><span class='label'>Klasse #{tr_klasse(klasse)}</span></a>"
+                        remaining_klassen.delete(klasse)
+                    end
+                    unless remaining_klassen.empty?
+                        io.puts "<div class='dropdown-divider'></div>"
+                        remaining_klassen.each do |klasse|
+                            io.puts "<a class='dropdown-item nav-icon' href='/directory/#{klasse}'><div class='icon'><i class='fa fa-address-book'></i></div><span class='label'>Klasse #{tr_klasse(klasse)}</span></a>"
+                            remaining_klassen.delete(klasse)
+                        end
+                    end
+                    io.puts "</div>"
+                    io.puts "</li>"
                 elsif x == :techteam
                     io.puts "<li class='nav-item text-nowrap'>"
                     io.puts "<a class='nav-link nav-icon' href='/techpost'><div class='icon'><i class='fa fa-laptop'></i></div>Technikamt</a>"
@@ -2054,30 +2062,6 @@ class Main < Sinatra::Base
     end
 
     def print_timetable_chooser()
-        # if can_see_all_timetables_logged_in?
-        #     StringIO.open do |io|
-        #         io.puts "<div style='margin-bottom: 15px;'>"
-        #         unless teacher_tablet_logged_in?
-        #             @@klassen_order.each do |klasse|
-        #                 id = @@klassen_id[klasse]
-        #                 io.puts "<a data-klasse='#{klasse}' data-id='#{id}' onclick=\"window.location.href = '/timetable/#{id}' + window.location.hash;\" class='btn btn-sm ttc'>#{tr_klasse(klasse)}</a>"
-        #             end
-        #             io.puts '<hr />'
-        #         end
-        #         @@lehrer_order.each do |email|
-        #             id = @@user_info[email][:id]
-        #             next unless @@user_info[email][:can_log_in]
-        #             io.puts "<a data-id='#{id}' onclick=\"window.location.href = '/timetable/#{id}' + window.location.hash;\" class='btn btn-sm ttc'>#{@@user_info[email][:shorthand]}</a>"
-        #         end
-        #         io.puts '<hr />'
-        #         ROOM_ORDER.each do |room|
-        #             id = room
-        #             # next unless @@user_info[email][:can_log_in]
-        #             io.puts "<a data-id='#{id}' onclick=\"window.location.href = '/timetable/#{id}' + window.location.hash;\" class='btn btn-sm ttc'>#{room}</a>"
-        #         end
-        #         io.puts "</div>"
-        #         io.string
-        #     end
         if kurs_tablet_logged_in?
             StringIO.open do |io|
                 io.puts "<div style='margin-bottom: 15px;'>"
@@ -2107,9 +2091,9 @@ class Main < Sinatra::Base
                 temp = StringIO.open do |tio|
                     @@lehrer_order.each do |email|
                         next if teacher_tablet_logged_in? && @@user_info[email][:shorthand][0] == '_'
-                        id = @@user_info[email][:id]
+                        id = (email == @session_user[:email]) ? @@user_info[email][:id] : @@user_info[email][:public_id]
                         next unless @@user_info[email][:can_log_in]
-                        next unless can_see_all_timetables_logged_in? || email == @session_user[:email]
+                        # next unless can_see_all_timetables_logged_in? || email == @session_user[:email]
                         hide = (email != @session_user[:email])
                         hide = false if teacher_tablet_logged_in?
                         hidden_something = true if hide
@@ -2573,7 +2557,7 @@ class Main < Sinatra::Base
             parts = request.env['REQUEST_PATH'].split('/')
             klasse = parts[2]
 #             STDERR.puts @@teachers_for_klasse[klasse].to_yaml
-            unless can_see_all_timetables_logged_in? || (@@teachers_for_klasse[klasse] || {}).include?(@session_user[:shorthand])
+            unless teacher_logged_in?
                 redirect "#{WEB_ROOT}/", 302
             end
         elsif path == 'show_login_codes'

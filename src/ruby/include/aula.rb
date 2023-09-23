@@ -132,7 +132,8 @@ class Main < Sinatra::Base
         pdf = StringIO.open do |io|
             io.puts "<style>"
             io.puts "body { font-family: Roboto; font-size: 12pt; line-height: 120%; }"
-            io.puts "table, th, td { width: 100%; border: 1px solid black; }"
+            io.puts "table { border-collapse: collapse; width: 100%; }"
+            io.puts "td, th { border: 1px solid #dddddd; text-align: left; padding: 8px; }"
             io.puts ".pdf-space-above td {padding-top: 0.2em; }"
             io.puts ".pdf-space-below td {padding-bottom: 0.2em; }"
             io.puts ".page-break { page-break-after: always; border-top: none; margin-bottom: 0; }"

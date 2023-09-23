@@ -22,8 +22,8 @@ class Main < Sinatra::Base
             results[booking[:datum]][tablet_set[:id]] ||= []
             entry = {
                 :booking => booking,
-                :last_name => (@@user_info[email] || {})[:display_last_name] || 'NN',
-                :shorthand => (@@user_info[email] || {})[:shorthand] || 'NN',
+                :last_name => (@@user_info[email] || {})[:display_last_name] || (@@user_info[email] || {})[:display_name] || 'NN',
+                :shorthand => (@@user_info[email] || {})[:shorthand] || '<i class="fa fa-user"></i>',
                 :tablet_set => tablet_set[:id]
             }
             if row['l']
@@ -46,19 +46,21 @@ class Main < Sinatra::Base
             :start_time => start_time,
             :end_time => end_time
         }
-        rows = neo4j_query(<<~END_OF_QUERY, data).map { |x| {:tablet_set_id => x['t.id'], :lesson_key => x['l.key'], :email => x['u.email'] } }
+        rows = neo4j_query(<<~END_OF_QUERY, data).map { |x| {:tablet_set_id => x['t.id'], :lesson_key => x['l.key'], :reason => x['b.reason'], :email => x['u.email'] } }
             MATCH (t:TabletSet)<-[:BOOKED]-(b:Booking {datum: $datum})-[:BOOKED_BY]->(u:User)
             WHERE NOT ((b.end_time <= $start_time) OR (b.start_time >= $end_time))
             OPTIONAL MATCH (b)-[:FOR]->(i:LessonInfo)-[:BELONGS_TO]->(l:Lesson)
-            RETURN t.id, l.key, u.email;
+            RETURN t.id, l.key, b.reason, u.email;
         END_OF_QUERY
+        debug rows
         result = {}
         rows.each do |row|
             result[row[:tablet_set_id]] ||= []
             result[row[:tablet_set_id]] << {
                 :lesson_key => row[:lesson_key],
+                :reason => row[:reason],
                 :email => row[:email],
-                :display_name => (@@user_info[row[:email]] || {})[:display_last_name_dativ] || 'NN'
+                :display_name => (@@user_info[row[:email]] || {})[:display_last_name_dativ] || (@@user_info[row[:email]] || {})[:display_name] || 'NN'
             }
         end
         result
@@ -67,7 +69,7 @@ class Main < Sinatra::Base
     # return all booked tablet sets for a specific day
     def already_booked_tablet_sets_for_day(datum)
         require_user_who_can_manage_tablets_or_teacher!
-        rows = neo4j_query(<<~END_OF_QUERY, { :datum => datum }).map { |x| {:tablet_set_id => x['t.id'], :lesson_key => x['l.key'], :start_time => x['b.start_time'], :end_time => x['b.end_time'], :email => x['u.email'] } }
+        rows = neo4j_query(<<~END_OF_QUERY, { :datum => datum }).map { |x| {:tablet_set_id => x['t.id'], :lesson_key => x['l.key'], :reason =>x['b.reason'], :start_time => x['b.start_time'], :end_time => x['b.end_time'], :email => x['u.email'] } }
             MATCH (t:TabletSet)<-[:BOOKED]-(b:Booking {datum: $datum})-[:BOOKED_BY]->(u:User)
             OPTIONAL MATCH (b)-[:FOR]->(i:LessonInfo)-[:BELONGS_TO]->(l:Lesson)
             RETURN t.id, l.key, b.start_time, b.end_time, u.email;
@@ -77,8 +79,9 @@ class Main < Sinatra::Base
             result[row[:tablet_set_id]] ||= []
             result[row[:tablet_set_id]] << {
                 :lesson_key => row[:lesson_key],
+                :reason => row[:reason],
                 :email => row[:email],
-                :display_name => (@@user_info[row[:email]] || {})[:display_last_name_dativ] || 'NN',
+                :display_name => (@@user_info[row[:email]] || {})[:display_last_name_dativ] || (@@user_info[row[:email]] || {})[:display_name] || 'NN',
                 :start_time => row[:start_time],
                 :end_time => row[:end_time]
             }
@@ -152,7 +155,7 @@ class Main < Sinatra::Base
     end
 
     # book a list of tablet sets for a specific lesson, or unbook all tablet sets
-    def book_tablet_set_for_timespan(datum, start_time, end_time, tablet_sets)
+    def book_tablet_set_for_timespan(datum, start_time, end_time, reason, tablet_sets)
         require_user_who_can_manage_tablets!
         conflicting_tablets = []
         unless tablet_sets.empty?
@@ -174,12 +177,13 @@ class Main < Sinatra::Base
                     :timestamp => timestamp,
                     :datum => datum,
                     :start_time => start_time,
-                    :end_time => end_time
+                    :end_time => end_time,
+                    :reason => reason
                 }
                 # create booking node
                 neo4j_query(<<~END_OF_QUERY, data)
                     MATCH (u:User {email: $email})
-                    CREATE (u)<-[:BOOKED_BY]-(b:Booking {datum: $datum, start_time: $start_time, end_time: $end_time})
+                    CREATE (u)<-[:BOOKED_BY]-(b:Booking {datum: $datum, start_time: $start_time, end_time: $end_time, reason: $reason})
                     SET b.updated = $timestamp
 
                     WITH b
@@ -276,6 +280,7 @@ class Main < Sinatra::Base
             hints = []
             if booked_tablet_sets_timespan[x]
                 booked_tablet_sets_timespan[x].to_a.each do |entry|
+                    debug entry[:reason]
                     if entry[:lesson_key]
                         pretty_fach = fach_for_lesson_key(entry[:lesson_key])
                         if @@tablet_sets[x][:is_tablet_set] == true
@@ -285,9 +290,9 @@ class Main < Sinatra::Base
                         end
                     else
                         if @@tablet_sets[x][:is_tablet_set] == true
-                            hints << "<span class='text-danger'><i class='fa fa-warning'></i></span>&nbsp;&nbsp;Dieser Tabletsatz wurde bereits von <b>#{entry[:display_name]}</b> gebucht."
+                            hints << "<span class='text-danger'><i class='fa fa-warning'></i></span>&nbsp;&nbsp;Dieser Tabletsatz wurde bereits von <b>#{entry[:display_name]}</b> gebucht#{entry[:reason] != "" ? ': ' + entry[:reason] : ''}."
                         else
-                            hints << "<span class='text-danger'><i class='fa fa-warning'></i></span>&nbsp;&nbsp;Dieses Gerät wurde bereits von <b>#{entry[:display_name]}</b> gebucht."
+                            hints << "<span class='text-danger'><i class='fa fa-warning'></i></span>&nbsp;&nbsp;Dieses Gerät wurde bereits von <b>#{entry[:display_name]}</b> gebucht#{entry[:reason] != '' ? ': ' + entry[:reason] : ''}."
                         end
                     end
                 end
@@ -307,9 +312,9 @@ class Main < Sinatra::Base
                     if t <= TABLET_SET_WARNING_BEFORE_MINUTES
                         pretty_fach = fach_for_lesson_key(booking[:lesson_key])
                         if @@tablet_sets[x][:is_tablet_set] == true
-                            hints << "<span class='text-danger'><i class='fa fa-clock-o'></i></span>&nbsp;&nbsp;Dieser Tabletsatz wird bis #{t} Minuten vor Stundenbeginn noch von <b>#{booking[:display_name]}</b> benötigt#{booking[:lesson_key] ? ': ' + pretty_fach : ''}"
+                            hints << "<span class='text-danger'><i class='fa fa-clock-o'></i></span>&nbsp;&nbsp;Dieser Tabletsatz wird bis #{t} Minuten vor Stundenbeginn noch von <b>#{booking[:display_name]}</b> benötigt#{booking[:lesson_key] ? ': ' + pretty_fach : ''}."
                         else
-                            hints << "<span class='text-danger'><i class='fa fa-clock-o'></i></span>&nbsp;&nbsp;Dieses Gerät wird bis #{t} Minuten vor Stundenbeginn noch von <b>#{booking[:display_name]}</b> benötigt#{booking[:lesson_key] ? ': ' + pretty_fach : ''}"
+                            hints << "<span class='text-danger'><i class='fa fa-clock-o'></i></span>&nbsp;&nbsp;Dieses Gerät wird bis #{t} Minuten vor Stundenbeginn noch von <b>#{booking[:display_name]}</b> benötigt#{booking[:lesson_key] ? ': ' + pretty_fach : ''}."
                         end
                     end
                 end
@@ -319,9 +324,9 @@ class Main < Sinatra::Base
                     if t <= TABLET_SET_WARNING_AFTER_MINUTES
                         pretty_fach = fach_for_lesson_key(booking[:lesson_key])
                         if @@tablet_sets[x][:is_tablet_set] == true
-                            hints << "<span class='text-danger'><i class='fa fa-clock-o'></i></span>&nbsp;&nbsp;Dieser Tabletsatz wird bereits #{t} Minuten nach Stundenende von <b>#{booking[:display_name]}</b> benötigt#{booking[:lesson_key] ? ': ' + pretty_fach : ''}"
+                            hints << "<span class='text-danger'><i class='fa fa-clock-o'></i></span>&nbsp;&nbsp;Dieser Tabletsatz wird bereits #{t} Minuten nach Stundenende von <b>#{booking[:display_name]}</b> benötigt#{booking[:lesson_key] ? ': ' + pretty_fach : ''}."
                         else
-                            hints << "<span class='text-danger'><i class='fa fa-clock-o'></i></span>&nbsp;&nbsp;Dieses Gerät wird bereits #{t} Minuten nach Stundenende von <b>#{booking[:display_name]}</b> benötigt#{booking[:lesson_key] ? ': ' + pretty_fach : ''}"
+                            hints << "<span class='text-danger'><i class='fa fa-clock-o'></i></span>&nbsp;&nbsp;Dieses Gerät wird bereits #{t} Minuten nach Stundenende von <b>#{booking[:display_name]}</b> benötigt#{booking[:lesson_key] ? ': ' + pretty_fach : ''}."
                         end
                     end
                 end
@@ -446,10 +451,10 @@ class Main < Sinatra::Base
 
     post '/api/book_tablet_sets_for_timespan' do
         require_user_who_can_manage_tablets!
-        data = parse_request_data(:required_keys => [:datum, :start_time, :end_time, :tablet_sets],
+        data = parse_request_data(:required_keys => [:datum, :start_time, :end_time, :reason, :tablet_sets],
             :types => {:tablet_sets => Array})
 
-        book_tablet_set_for_timespan(data[:datum], data[:start_time], data[:end_time], data[:tablet_sets])
+        book_tablet_set_for_timespan(data[:datum], data[:start_time], data[:end_time], data[:reason], data[:tablet_sets])
         respond(:yay => 'ok')
     end
 end

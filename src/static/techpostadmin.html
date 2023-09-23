@@ -3,7 +3,6 @@
     <div class='row'>
         <div class="col-md-12">
             <h2 style="margin-bottom: 30px;">Technikamt (Admin)</h2>
-            <button class='bu-safe btn pull-right' style="color: #fff;"><i class='fa fa-laptop'></i>&nbsp;&nbsp;Super User</button>
             <hr>
             <p>
                 Du bist #{(admin_logged_in?) ? 'Admin im Dashboard' : 'Teil des TechnikTeams'} und kannst deshalb hier Probleme mit Geräten aufnehmen und auch <b>schließen</b>. Auch kannst du dich als Tablet anmelden.  
@@ -62,6 +61,7 @@
                 <div class='col-md-12'>
                     <button class='bu-fixed-problems btn btn-primary'><i class='fa fa-eye'></i>&nbsp;&nbsp;Ausgeblendete Probleme</button>
                     <button class='bu-tablets btn btn-warning'><i class='fa fa-tablet'></i>&nbsp;&nbsp;Tablets</button>
+                    <button class='bu-safe btn btn-secondary'><i class='fa fa-wrench'></i>&nbsp;&nbsp;Super User</button>
                 </div>
             </div>
         </div>
@@ -706,11 +706,6 @@ document.addEventListener('DOMContentLoaded', function() {
             $('#bu_send_message').removeClass('btn-outline-secondary').addClass('btn-success').prop('disabled', false);
         else
             $('#bu_send_message').removeClass('btn-success').addClass('btn-outline-secondary').prop('disabled', true);
-
-        if (can_send())
-            $('#bu_delete_message').removeClass('btn-outline-secondary').addClass('btn-danger').prop('disabled', false);
-        else
-            $('#bu_delete_message').removeClass('btn-danger').addClass('btn-outline-secondary').prop('disabled', true);
     }
 
     function can_send() {

@@ -14,6 +14,7 @@
                             <th style='width: 100px;'>Reihenfolge</th>
                             <th style='width: 150px;'>Zeitunkt</th>
                             <th style='min-width: 150px;'>Beschreibung</th>
+                            <th style='width: 120px;'>Licht</th> 
                             <th style='width: 120px;'>Fertig</th> 
                             <th style='width: 120px;'>Löschen</th>
                         </tr>
@@ -22,8 +23,8 @@
                     </tbody>
                 </table>
             </div>
-            <!-- <br>
-            <a href='/api/aula_event_pdf' class='btn btn-primary'><i class='fa fa-file-pdf-o'></i>&nbsp;&nbsp;Download</a> -->
+            <br>
+            <a href='/api/aula_event_pdf' class='btn btn-primary'><i class='fa fa-file-pdf-o'></i>&nbsp;&nbsp;Download</a>
         </div>
     </div>
 </div>
@@ -37,7 +38,7 @@
                     let row = $('<tr>');
                     row.data('id', entry.id);
                     let cell;
-                    let ti_number = $("<input>").addClass('form-control').val(entry.number);
+                    let ti_number = $("<input>").attr('type', 'number').addClass('form-control').val(entry.number);
                     cell = $('<td>').append(ti_number);
                     row.append(cell);
                     let ti_time = $("<input>").attr('type', 'time').addClass('form-control').val(entry.time);
@@ -46,6 +47,8 @@
                     let ti_title = $("<input>").attr('type', 'text').addClass('form-control').val(entry.title);
                     cell = $('<td>').append(ti_title);
                     row.append(cell);
+                    let bu_light = $('<button>').addClass('btn').addClass('btn-warning').html("<i class='fa fa-lightbulb-o'></i>&nbsp;&nbsp;Licht");
+                    row.append($('<td>').append(bu_light));
                     let bu_finished = $('<button>').addClass('btn').addClass('btn').addClass('btn-success').html("<i class='fa fa-check'></i>&nbsp;&nbsp;Fertig");
                     let bu_unfinished = $('<button>').addClass('btn').addClass('btn').addClass('btn-outline-success').html("<i class='fa fa-check'></i>&nbsp;&nbsp;Fertig");
                     if (entry.finished == false) {
@@ -56,6 +59,20 @@
                     let bu_delete = $('<button>').addClass('btn').addClass('btn').addClass('btn-danger').html("<i class='fa fa-trash'></i>&nbsp;&nbsp;Löschen");
                     row.append($('<td>').append(bu_delete));
                     $('.events-here').append(row);
+                    bu_light.click(function (e) {
+                        let id = $(e.target).closest('tr').data('id');
+                        $('.bu-perform-set-light-aula-event').data('delete_id', id);
+                        showTemplateModal('Lichter setzen',
+                            'Hier kannst du belibige Lichter setzen, indem du alle Kanalnummern (nicht DMX!) durch Kommas getrennt angibst.<br><textarea class="form-control" type id="desk-array"></textarea>',
+                            "<i class='fa fa-save'></i>&nbsp;&nbsp;Speichern", 'btn-success',
+                            'Abbrechen', 'btn-secondary', function () {
+                                let desk_array = $('#desk-array').val();
+                                api_call('/api/set_light_aula_event', { id: id, desk_array: desk_array }, function (data) {
+                                    refresh_events();
+                                });
+                            }
+                        );
+                    });
                     bu_unfinished.click(function (e) {
                         let id = $(e.target).closest('tr').data('id');
                         $('.bu-perform-finish-aula-event').data('finish_id', id);

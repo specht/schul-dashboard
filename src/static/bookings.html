@@ -36,6 +36,9 @@
                 <div class='extra_info_lesson'>
                     <strong>Fach:</strong> <span id='fach_here'></span> <br />
                 </div>
+                <div class='extra_info_reason'>
+                    <strong>Grund:</strong> <span id='reason_here'></span> <br />
+                </div>
             </div>
             <div class="modal-footer">
                 <button id='bu_delete_tablet_set_booking' type="button" class="btn btn-danger"><i
@@ -55,22 +58,28 @@
             </div>
             <div class="modal-body">
                 <div class='row'>
-                    <div class='col-md-4'>
+                    <div class='col-md-2'>
                         <div class="form-group">
                             <label>Datum</label>
                             <input type="date" class="form-control" id='ti_datum' value='#{Date.today.to_s}' />
                         </div>
                     </div>
-                    <div class='col-md-4'>
+                    <div class='col-md-2'>
                         <div class="form-group">
                             <label>Beginn</label>
                             <input type="time" class="form-control" id='ti_start_time' value='08:00' />
                         </div>
                     </div>
-                    <div class='col-md-4'>
+                    <div class='col-md-2'>
                         <div class="form-group">
                             <label>Ende</label>
                             <input type="time" class="form-control" id='ti_end_time' value='10:00' />
+                        </div>
+                    </div>
+                    <div class='col-md-6'>
+                        <div class="form-group">
+                            <label>Grund/Beschreibung</label>
+                            <input class="form-control" id='ti_reason' />
                         </div>
                     </div>
                 </div>
@@ -198,10 +207,16 @@
                                 $('#date_here').text(moment(booking.booking.datum).format('ddd, L'));
                                 $('#timespan_here').text(`${booking.booking.start_time} – ${booking.booking.end_time}`);
                                 if (booking.lesson) {
+                                    $('#unbookTabletSetModal .extra_info_reason').hide();
                                     $('#unbookTabletSetModal .extra_info_lesson').show();
                                     $('#fach_here').html(booking.lesson);
+                                } else if (booking.booking.reason != "") {
+                                    $('#unbookTabletSetModal .extra_info_lesson').hide();
+                                    $('#unbookTabletSetModal .extra_info_reason').show();
+                                    $('#reason_here').html(booking.booking.reason);
                                 } else {
                                     $('#unbookTabletSetModal .extra_info_lesson').hide();
+                                    $('#unbookTabletSetModal .extra_info_reason').hide();
                                 }
                                 $('#user_here').html(booking.last_name);
                                 $('#unbookTabletSetModal').modal('show');
@@ -291,6 +306,7 @@
                 datum: $('#ti_datum').val(),
                 start_time: $('#ti_start_time').val(),
                 end_time: $('#ti_end_time').val(),
+                reason: $('#ti_reason').val(),
                 tablet_sets: booked_tablet_sets_config
             };
             api_call('/api/book_tablet_sets_for_timespan', data, function(data) {

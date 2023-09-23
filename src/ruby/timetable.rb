@@ -1612,6 +1612,14 @@ class Timetable
                                 event
                             end
                         end
+                        if user[:is_klasse]
+                            fixed_events.map! do |event|
+                                event.delete(:data)
+                                event.delete(:per_user)
+                                event.delete(:lesson_offset)
+                                event
+                            end
+                        end
                         if (!user[:is_room]) && (!user[:teacher])
                             # if it's a schüler, remove pausenaufsichten
                             fixed_events.reject! do |event|

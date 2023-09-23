@@ -131,7 +131,7 @@ class Main < Sinatra::Base
         time = Time.new
         pdf = StringIO.open do |io|
             io.puts "<style>"
-            io.puts "body { font-size: 12pt; line-height: 120%; }"
+            io.puts "body { font-family: Roboto; font-size: 12pt; line-height: 120%; }"
             io.puts "table, th, td { width: 100%; border: 1px solid black; }"
             io.puts ".pdf-space-above td {padding-top: 0.2em; }"
             io.puts ".pdf-space-below td {padding-bottom: 0.2em; }"

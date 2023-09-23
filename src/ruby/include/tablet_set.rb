@@ -22,7 +22,7 @@ class Main < Sinatra::Base
             results[booking[:datum]][tablet_set[:id]] ||= []
             entry = {
                 :booking => booking,
-                :last_name => (@@user_info[email] || {})[:display_last_name] || (@@user_info[email] || {})[:display_name] || 'NN',
+                :last_name => (@@user_info[email] || {})[:shorthand] ? (@@user_info[email] || {})[:display_last_name] || 'NN' : (@@user_info[email] || {})[:display_name] || 'NN',
                 :shorthand => (@@user_info[email] || {})[:shorthand] || '<i class="fa fa-user"></i>',
                 :tablet_set => tablet_set[:id]
             }

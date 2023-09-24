@@ -14,8 +14,8 @@
                             <th style='width: 100px;'>Reihenfolge</th>
                             <th style='width: 150px;'>Zeitunkt</th>
                             <th style='min-width: 150px;'>Beschreibung</th>
-                            <th style='min-width: 150px;'>Licht</th> 
-                            <th style='width: 120px;'>Bearbeiten</th> 
+                            <!-- <th style='min-width: 150px;'>Licht</th> 
+                            <th style='width: 120px;'>Bearbeiten</th>  -->
                             <th style='width: 120px;'>Fertig</th> 
                             <th style='width: 120px;'>Löschen</th>
                         </tr>
@@ -48,10 +48,10 @@
                     let ti_title = $("<input>").attr('type', 'text').addClass('form-control').val(entry.title);
                     cell = $('<td>').append(ti_title);
                     row.append(cell);
-                    let ti_light = $("<input>").text(entry.desk_array);
+                    let ti_light = $("<code>").text(entry.desk_array);
                     let bu_light = $('<button>').addClass('btn').addClass('btn-warning').html("<i class='fa fa-lightbulb-o'></i>&nbsp;&nbsp;Licht");
-                    row.append($('<td>').append(ti_light));
-                    row.append($('<td>').append(bu_light));
+                    // row.append($('<td>').append(ti_light));
+                    // row.append($('<td>').append(bu_light));
                     let bu_finished = $('<button>').addClass('btn').addClass('btn').addClass('btn-success').html("<i class='fa fa-check'></i>&nbsp;&nbsp;Fertig");
                     let bu_unfinished = $('<button>').addClass('btn').addClass('btn').addClass('btn-outline-success').html("<i class='fa fa-check'></i>&nbsp;&nbsp;Fertig");
                     if (entry.finished == false) {

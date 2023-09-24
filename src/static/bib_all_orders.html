@@ -2,7 +2,7 @@
 #{File.read('/static/_bib_public_template.html')}
 <style>
     .container, .container-lg, .container-md, .container-sm, .container-xl {
-        max-width: 1500px;
+        max-width: 1600px;
     }
 </style>
 <div class='container bg-white' style="padding-top: 15px;">
@@ -60,7 +60,7 @@
                         let temp = new SortableTable({
                             xs: true,
                             element: $('#order_table'),
-                            headers: ['Bestellt', 'Name', 'Signatur', 'Titel', 'Autor', 'Kurs', 'Klasse', 'Benötigt', 'Regal', 'Zurückgestellt'].map(function (x) {
+                            headers: ['Bestellt', 'Name', 'Signatur', 'Titel', 'Autor', 'Kurs', 'Klasse', 'Benötigt', 'Regal', 'Zurückgestellt', 'Löschen'].map(function (x) {
                                 let th = $('<th>').text(x);
                                 if (['Signatur', 'Bestellt', 'Benötigt'].indexOf(x) >= 0) th.data('type', 'int');
                                 return th;
@@ -81,6 +81,24 @@
                                         }
                                     });
                                 });
+                                let bu_delete = $(`<btn class='btn btn-xs btn-outline-danger'>löschen</btn>`);
+                                bu_delete.click(function(e) {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    showTemplateModal('Bestellung löschen',
+                                        'Sind Sie sicher, dass Sie die Bestellung löschen möchten?',
+                                        "<i class='fa fa-trash'></i>&nbsp;&nbsp;Bestellung löschen", 'btn-danger',
+                                        'Abbrechen', 'btn-secondary', function () {
+                                            console.log(order.o.id);
+                                            bib_api_call('/jwt/cancel_order', {oid: order.o.id}, function(data) {
+                                                console.log(data);
+                                                if (data.success) {
+                                                    bu_delete.closest('tr').remove();
+                                                }
+                                            });
+                                        }
+                                    );
+                                });
                                 return [
                                     order.o.id,
                                     $('<td>').text(`${moment.unix(order.o.ts_order_placed).format('L')}`).data('sort_value', order.o.ts_order_placed),
@@ -92,7 +110,8 @@
                                     $('<td>').html(`${((kurse[order.o.lesson_key] || {}).klassen || []).map(function(x) {return klassen_tr[x] || x; }).join(', ') || '&ndash;'}`),
                                     $('<td>').html(`${order.count}`).data('sort_value', order.count),
                                     $('<td>').html(`${(order.locations || []).map(function(x) {return create_location_span(x); }).join('')}`).data('sort_value', (order.locations || ['0'])[0]),
-                                    $('<td>').append(bu_pause)
+                                    $('<td>').append(bu_pause),
+                                    $('<td>').append(bu_delete),
                                 ];
                             }),
                             clickable_rows: true,

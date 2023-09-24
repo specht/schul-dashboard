@@ -2,9 +2,9 @@ WECHSELUNTERRICHT_KLASSENSTUFEN = []
 KLASSEN_TR = {'9o' => '9ω'}
 TIMETABLE_ENTRIES_VISIBLE_AHEAD_DAYS = 7
 AUFSICHT_ZEIT = {
-    # 0 bedeutet: vor der 1. Stunde
+    # 1 bedeutet: vor der 1. Stunde
     # endet die Aufsicht um 8:35
-    0 => '08:35',
+    1 => '08:35',
 }
 
 KLASSEN_ORDER = ['5a', '5b', '5c', '11', '12']

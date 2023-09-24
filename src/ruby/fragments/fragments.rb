@@ -853,8 +853,225 @@ class Main
         return doc.render
     end
 
-    def get_timetable_pdf(klasse)
+    def get_single_timetable_pdf(email)
         today = Time.now.strftime('%Y-%m-%d')
+        if today < @@config[:first_school_day]
+            today = @@config[:first_school_day]
+        end
+        klasse = @@user_info[email][:klasse]
+        d = @@lessons[:start_date_for_date][today]
+        timetable = {}
+        max_stunden = 1
+        @@lessons[:timetables][d].each_pair do |lesson_key, lesson_info|
+            lesson_info[:stunden].each_pair do |day, stunden|
+                stunden.each_pair do |stunde, info|
+                    if info[:klassen].include?(klasse)
+                        if @@lessons_for_user[email].include?(lesson_key)
+                            timetable[day] ||= {}
+                            x = info.clone
+                            x[:lesson_key] = lesson_key
+                            timetable[day][stunde] ||= []
+                            timetable[day][stunde] << x
+                            max_stunden = stunde if stunde > max_stunden
+                        end
+                    end
+                end
+            end
+        end
+        # STDERR.puts timetable.to_yaml
+        hours_key = HOURS_FOR_KLASSE.keys.reject do |x|
+            today < x
+        end.max
+
+        hours = HOURS_FOR_KLASSE[hours_key][klasse]
+        _self = self
+
+        doc = Prawn::Document.new(:page_size => 'A4', :page_layout => :landscape, :margin => 0) do
+            font_families.update("myfont" => {
+                :normal => "/app/fonts/AlegreyaSans-Regular.ttf",
+                :bold => "/app/fonts/AlegreyaSans-Bold.ttf",
+                # :normal => "/app/fonts/Pacifico-Regular.ttf",
+                # :bold => "/app/fonts/Pacifico-Regular.ttf",
+                # :normal => "/app/fonts/Signika-Regular.ttf",
+                # :bold => "/app/fonts/Signika-Bold.ttf",
+                # :normal => "/app/fonts/LilitaOne-Regular.ttf",
+            })
+            # fscale = 1.0
+            # dx = 0
+            # dy = 0
+            fscale = 0.85 # 0.95
+            dx = 0.mm
+            dy = 0.3.mm
+            bs = 1.3
+            color_scheme = @@user_info[email][:color_scheme] || STANDARD_COLOR_SCHEME #'la2c6e80d60aea2c6e80'
+            scale -1, :origin => [297.mm / 2, 210.mm / 2] do
+                image("/gen/bg/bg-#{color_scheme}.jpg", :at => [-297.mm * (bs - 1.0) * 0.5, 210.mm], :width => 297.mm * bs, :height => 210.mm * bs)
+            end
+            image("/app/images/timetable-back-light.png", :at => [0, 210.mm], :width => 297.mm, :height => 210.mm)
+
+            # STDERR.puts COLOR_SCHEME_COLORS.to_yaml
+            # exit
+            palette = _self.color_palette_for_color_scheme(color_scheme)
+            # STDERR.puts palette.to_yaml
+            col1 = palette[:primary]
+            col2 = palette[:primary_color_darker]
+            textcol = palette[:main_text]
+            
+            font('myfont') do
+                move_down 10.mm
+                float do
+                    translate dx, dy do
+                        fill_color 'ffffff'
+                        stroke_color 'ffffff'
+                        text_rendering_mode(:stroke) do
+                            line_width 1.mm
+                            text('<b>Stundenplan</b>', :align => :center, :size => 36 * fscale, :inline_format => true)
+                        end
+                    end
+                end
+                fill_color color_scheme[0] == 'l' ? '222222' : 'eeeeee'
+                float do
+                    translate dx, dy do
+                        text_rendering_mode(:fill) do
+                            text('<b>Stundenplan</b>', :align => :center, :size => 36 * fscale, :inline_format => true)
+                        end
+                    end
+                end
+                move_down 1.2.cm
+                float do
+                    translate dx, dy do
+                        fill_color 'ffffff'
+                        stroke_color 'ffffff'
+                        text_rendering_mode(:stroke) do
+                            line_width 1.mm
+                            text("Klasse #{Main.tr_klasse(klasse)}", :align => :center, :size => 18 * fscale)
+                        end
+                    end
+                end
+                fill_color color_scheme[0] == 'l' ? '222222' : 'eeeeee'
+                float do
+                    translate dx, dy do
+                        text_rendering_mode(:fill) do
+                            text("Klasse #{Main.tr_klasse(klasse)}", :align => :center, :size => 18 * fscale)
+                        end
+                    end
+                end
+                fill_color '222222'
+                left = 22.mm
+                bottom = 25.mm
+                width = 254.mm
+                height = 140.mm
+                tw = 30.mm
+                w = (width - tw) / 5.0
+                h = height / (max_stunden + 1)
+                line_width 0.1.mm
+                bounding_box([left, bottom + height], :width => width, :height => height) do
+                    # line [0.0, 0.0], [0.0, height]
+                    # (0..5).each do |x|
+                    #     line [tw + w * x, 0.0], [tw + w * x, height]
+                    #     stroke
+                    # end
+                    # (0..(max_stunden + 1)).each do |y|
+                    #     line [0.0, h * y], [width, h * y]
+                    #     stroke
+                    # end
+                    # bounding_box([0.0, height], :width => tw, :height => h) do
+                    #     rounded_rectangle([1.mm, h - 1.mm], tw - 2.mm, h - 2.mm, 2.mm)
+                    #     fill_color 'fad31c'
+                    #     fill
+                    #     fill_color '222222'
+                    #     text_box "<b>Stunde</b>", :at => [3.mm, h - 1.mm], :width => tw - 6.mm, :height => h - 2.mm, :align => :left, :valign => :center, :size => 18, :overflow => :shrink_to_fit, :inline_format => true
+                    # end
+                    %w(Montag Dienstag Mittwoch Donnerstag Freitag).each.with_index do |s, x|
+                        bounding_box([tw + x * w, height], :width => w, :height => h) do
+                            rounded_rectangle([0.5.mm, h - 0.5.mm], w - 1.mm, h - 1.mm, 2.mm)
+                            # fill_color palette[:primary_color_much_lighter][1, 6]
+                            # stroke_color palette[:primary][1, 6]
+                            fill_color 'ffffff'
+                            stroke_color 'aaaaaa'
+                            fill_and_stroke
+                            # fill
+                            fill_color '222222'
+                            translate dx, dy do
+                                text_box "<b>#{s}</b>", :at => [3.mm, h - 1.mm], :width => w - 6.mm, :height => h - 2.mm, :align => :center, :valign => :center, :size => 18 * fscale, :overflow => :shrink_to_fit, :inline_format => true
+                            end
+                        end
+                    end
+                    (1..max_stunden).each do |y|
+                        bounding_box([0.0, height - y * h], :width => tw, :height => h) do
+                            # stroke_bounds
+                            rounded_rectangle([0.5.mm, h - 0.5.mm], tw - 1.mm, h - 1.mm, 2.mm)
+                            # fill_color palette[:primary_color_much_lighter][1, 6]
+                            # stroke_color palette[:primary][1, 6]
+                            fill_color 'ffffff'
+                            stroke_color 'aaaaaa'
+
+                            fill_and_stroke
+                            fill_color '222222'
+                            text_box "<b>#{y}. Stunde</b>", :at => [1.mm, h - 1.mm], :width => tw - 2.mm, :height => h / 2, :align => :center, :valign => :bottom, :size => 16 * fscale, :overflow => :shrink_to_fit, :inline_format => true
+                            text_box "#{hours[y][0]} – #{hours[y][1]}", :at => [1.mm, h / 2 - 1.mm], :width => tw - 2.mm, :height => h / 2 - 2.mm, :align => :center, :valign => :top, :size => 14 * fscale, :overflow => :shrink_to_fit
+                        end
+                        (0..4).each do |x|
+                            info = (timetable[x] || {})[y]
+                            if info
+                                bounding_box([tw + x * w, height - y * h], :width => w, :height => h) do
+                                    # stroke_bounds
+                                    transparent(0.5, 0.5) do
+                                        rounded_rectangle([0.5.mm, h - 0.5.mm], w - 1.mm, h - 1.mm, 2.mm)
+                                        # fill_color palette[:primary_color_much_lighter][1, 6]
+                                        # stroke_color palette[:primary][1, 6]
+                                        fill_color 'ffffff'
+                                        stroke_color 'aaaaaa'
+                                        fill_and_stroke
+                                    end
+                                    fill_color '222222'
+                                    faecher = []
+                                    rooms = []
+                                    info.each do |x|
+                                        lesson_key = x[:lesson_key]
+                                        fach = @@lessons[:lesson_keys][lesson_key][:fach]
+                                        fach = @@faecher[fach] || fach
+                                        fach.gsub!('Sport Jungen', 'Sport')
+                                        fach.gsub!('Sport Mädchen', 'Sport')
+                                        fach.gsub!('Evangelische Religionslehre', 'Religion')
+                                        fach.gsub!('Katholische Religionslehre', 'Religion')
+                                        fach.gsub!('Informationstechnischer Grundkurs', 'ITG')
+                                        fach.gsub!('Politische Bildung', 'Politik')
+                                        fach.gsub!('Gesellschaftswissenschaften', 'Gewi')
+                                        fach.gsub!('Naturwissenschaften', 'Nawi')
+                                        fach.gsub!('Streicher Anfänger', 'AGs')
+                                        fach.gsub!('Basketball', 'AGs')
+                                        fach.gsub!('Schach', 'AGs')
+                                        fach.gsub!('Unterstufenorchester', 'AGs')
+                                        fach.gsub!('AG Garten', 'AGs')
+                                        fach.gsub!('BlblA', 'AGs')
+                                        fach.gsub!('neugriechisch', 'ngr')
+                                        fach.gsub!('(ngr)', '')
+                                        fach.gsub!('Partnersprache', 'PS')
+                                        fach.strip!
+                                        faecher << fach
+                                        rooms << x[:raum] unless fach == 'AGs'
+                                    end
+                                    translate dx, dy do
+                                        text_box "<b>#{faecher.uniq.join("\n")}</b>", :at => [3.mm, h - 1.mm], :width => w - 13.mm, :height => h - 2.mm, :align => :left, :valign => :center, :size => 16 * fscale, :overflow => :shrink_to_fit, :inline_format => true
+                                        text_box "#{rooms.join("\n")}", :at => [3.mm, h - 1.mm], :width => w - 6.mm, :height => h - 2.mm, :align => :right, :valign => :center, :size => 14 * fscale, :overflow => :shrink_to_fit, :inline_format => true
+                                    end
+                                end
+                            end
+                        end
+                    end
+                end
+            end
+            image('/app/images/timetable1-front.png', :at => [0, 210.mm], :width => 297.mm, :height => 210.mm)
+        end
+        return doc.render
+    end
+
+    def get_timetables_pdf(klasse, colors)
+        today = Time.now.strftime('%Y-%m-%d')
+        if today < @@config[:first_school_day]
+            today = @@config[:first_school_day]
+        end
         # STDERR.puts @@lessons.keys.to_yaml
         d = @@lessons[:start_date_for_date][today]
         timetable = {}
@@ -898,130 +1115,132 @@ class Main
             dx = 0.mm
             dy = 0.3.mm
             bs = 1.3
-            color_scheme = COLOR_SCHEME_COLORS.reject { |x| x[0][0] == 'd' }.map { |x| x[0] }.sample
-            color_scheme += %w(0 1 2 5 6 7).sample
-            scale -1, :origin => [297.mm / 2, 210.mm / 2] do
-                image("/gen/bg/bg-#{color_scheme}.jpg", :at => [-297.mm * (bs - 1.0) * 0.5, 210.mm], :width => 297.mm * bs, :height => 210.mm * bs)
-            end
-            image('/app/images/timetable1-back.png', :at => [0, 210.mm], :width => 297.mm, :height => 210.mm)
+            colors.each.with_index do |color_scheme, index|
+                start_new_page if index > 0
+                scale -1, :origin => [297.mm / 2, 210.mm / 2] do
+                    image("/gen/bg/bg-#{color_scheme}.jpg", :at => [-297.mm * (bs - 1.0) * 0.5, 210.mm], :width => 297.mm * bs, :height => 210.mm * bs)
+                end
+                image("/app/images/timetable-back-light.png", :at => [0, 210.mm], :width => 297.mm, :height => 210.mm)
 
-            # STDERR.puts COLOR_SCHEME_COLORS.to_yaml
-            # exit
-            palette = _self.color_palette_for_color_scheme(color_scheme)
-            # STDERR.puts palette.to_yaml
-            col1 = palette[:primary]
-            col2 = palette[:primary_color_darker]
-            textcol = palette[:main_text]
-            
-            fill_color '222222'
-            font('myfont') do
-                move_down 10.mm
-                translate dx, dy do
-                    text('<b>Stundenplan</b>', :align => :center, :size => 36 * fscale, :inline_format => true)
-                end
-                # move_up 3.mm
-                translate dx, dy do
-                    text("Klasse #{Main.tr_klasse(klasse)}", :align => :center, :size => 18 * fscale)
-                end
-                left = 22.mm
-                bottom = 25.mm
-                width = 254.mm
-                height = 140.mm
-                tw = 30.mm
-                w = (width - tw) / 5.0
-                h = height / (max_stunden + 1)
-                line_width 0.1.mm
-                bounding_box([left, bottom + height], :width => width, :height => height) do
-                    # line [0.0, 0.0], [0.0, height]
-                    # (0..5).each do |x|
-                    #     line [tw + w * x, 0.0], [tw + w * x, height]
-                    #     stroke
-                    # end
-                    # (0..(max_stunden + 1)).each do |y|
-                    #     line [0.0, h * y], [width, h * y]
-                    #     stroke
-                    # end
-                    # bounding_box([0.0, height], :width => tw, :height => h) do
-                    #     rounded_rectangle([1.mm, h - 1.mm], tw - 2.mm, h - 2.mm, 2.mm)
-                    #     fill_color 'fad31c'
-                    #     fill
-                    #     fill_color '222222'
-                    #     text_box "<b>Stunde</b>", :at => [3.mm, h - 1.mm], :width => tw - 6.mm, :height => h - 2.mm, :align => :left, :valign => :center, :size => 18, :overflow => :shrink_to_fit, :inline_format => true
-                    # end
-                    %w(Montag Dienstag Mittwoch Donnerstag Freitag).each.with_index do |s, x|
-                        bounding_box([tw + x * w, height], :width => w, :height => h) do
-                            rounded_rectangle([0.5.mm, h - 0.5.mm], w - 1.mm, h - 1.mm, 2.mm)
-                            fill_color palette[:primary_color_much_lighter][1, 6]
-                            stroke_color palette[:primary][1, 6]
-                            fill_and_stroke
-                            # fill
-                            fill_color '222222'
-                            translate dx, dy do
-                                text_box "<b>#{s}</b>", :at => [3.mm, h - 1.mm], :width => w - 6.mm, :height => h - 2.mm, :align => :center, :valign => :center, :size => 18 * fscale, :overflow => :shrink_to_fit, :inline_format => true
+                # STDERR.puts COLOR_SCHEME_COLORS.to_yaml
+                # exit
+                palette = _self.color_palette_for_color_scheme(color_scheme)
+                # STDERR.puts palette.to_yaml
+                col1 = palette[:primary]
+                col2 = palette[:primary_color_darker]
+                textcol = palette[:main_text]
+                
+                fill_color color_scheme[0] == 'l' ? '222222' : 'eeeeee'
+                font('myfont') do
+                    move_down 10.mm
+                    translate dx, dy do
+                        text('<b>Stundenplan</b>', :align => :center, :size => 36 * fscale, :inline_format => true)
+                    end
+                    # move_up 3.mm
+                    translate dx, dy do
+                        text("Klasse #{Main.tr_klasse(klasse)}", :align => :center, :size => 18 * fscale)
+                    end
+                    fill_color '222222'
+                    left = 22.mm
+                    bottom = 25.mm
+                    width = 254.mm
+                    height = 140.mm
+                    tw = 30.mm
+                    w = (width - tw) / 5.0
+                    h = height / (max_stunden + 1)
+                    line_width 0.1.mm
+                    bounding_box([left, bottom + height], :width => width, :height => height) do
+                        # line [0.0, 0.0], [0.0, height]
+                        # (0..5).each do |x|
+                        #     line [tw + w * x, 0.0], [tw + w * x, height]
+                        #     stroke
+                        # end
+                        # (0..(max_stunden + 1)).each do |y|
+                        #     line [0.0, h * y], [width, h * y]
+                        #     stroke
+                        # end
+                        # bounding_box([0.0, height], :width => tw, :height => h) do
+                        #     rounded_rectangle([1.mm, h - 1.mm], tw - 2.mm, h - 2.mm, 2.mm)
+                        #     fill_color 'fad31c'
+                        #     fill
+                        #     fill_color '222222'
+                        #     text_box "<b>Stunde</b>", :at => [3.mm, h - 1.mm], :width => tw - 6.mm, :height => h - 2.mm, :align => :left, :valign => :center, :size => 18, :overflow => :shrink_to_fit, :inline_format => true
+                        # end
+                        %w(Montag Dienstag Mittwoch Donnerstag Freitag).each.with_index do |s, x|
+                            bounding_box([tw + x * w, height], :width => w, :height => h) do
+                                rounded_rectangle([0.5.mm, h - 0.5.mm], w - 1.mm, h - 1.mm, 2.mm)
+                                fill_color palette[:primary_color_much_lighter][1, 6]
+                                stroke_color palette[:primary][1, 6]
+                                fill_and_stroke
+                                # fill
+                                fill_color '222222'
+                                translate dx, dy do
+                                    text_box "<b>#{s}</b>", :at => [3.mm, h - 1.mm], :width => w - 6.mm, :height => h - 2.mm, :align => :center, :valign => :center, :size => 18 * fscale, :overflow => :shrink_to_fit, :inline_format => true
+                                end
                             end
                         end
-                    end
-                    (1..max_stunden).each do |y|
-                        bounding_box([0.0, height - y * h], :width => tw, :height => h) do
-                            # stroke_bounds
-                            rounded_rectangle([0.5.mm, h - 0.5.mm], tw - 1.mm, h - 1.mm, 2.mm)
-                            fill_color palette[:primary_color_much_lighter][1, 6]
-                            stroke_color palette[:primary][1, 6]
-                            fill_and_stroke
-                            fill_color '222222'
-                            text_box "<b>#{y}. Stunde</b>", :at => [1.mm, h - 1.mm], :width => tw - 2.mm, :height => h / 2, :align => :center, :valign => :bottom, :size => 16 * fscale, :overflow => :shrink_to_fit, :inline_format => true
-                            text_box "#{hours[y][0]} – #{hours[y][1]}", :at => [1.mm, h / 2 - 1.mm], :width => tw - 2.mm, :height => h / 2 - 2.mm, :align => :center, :valign => :top, :size => 14 * fscale, :overflow => :shrink_to_fit
-                        end
-                        (0..4).each do |x|
-                            info = (timetable[x] || {})[y]
-                            if info
-                                bounding_box([tw + x * w, height - y * h], :width => w, :height => h) do
-                                    # stroke_bounds
-                                    transparent(0.5, 0.5) do
-                                        rounded_rectangle([0.5.mm, h - 0.5.mm], w - 1.mm, h - 1.mm, 2.mm)
-                                        fill_color palette[:primary_color_much_lighter][1, 6]
-                                        stroke_color palette[:primary][1, 6]
-                                        fill_and_stroke
-                                    end
-                                    fill_color '222222'
-                                    faecher = []
-                                    rooms = []
-                                    info.each do |x|
-                                        lesson_key = x[:lesson_key]
-                                        fach = @@lessons[:lesson_keys][lesson_key][:fach]
-                                        fach = @@faecher[fach] || fach
-                                        fach.gsub!('Sport Jungen', 'Sport')
-                                        fach.gsub!('Sport Mädchen', 'Sport')
-                                        fach.gsub!('Evangelische Religionslehre', 'Religion')
-                                        fach.gsub!('Katholische Religionslehre', 'Religion')
-                                        fach.gsub!('Informationstechnischer Grundkurs', 'ITG')
-                                        fach.gsub!('Politische Bildung', 'Politik')
-                                        fach.gsub!('Gesellschaftswissenschaften', 'Gewi')
-                                        fach.gsub!('Naturwissenschaften', 'Nawi')
-                                        fach.gsub!('Streicher Anfänger', 'AGs')
-                                        fach.gsub!('Basketball', 'AGs')
-                                        fach.gsub!('Schach', 'AGs')
-                                        fach.gsub!('Unterstufenorchester', 'AGs')
-                                        fach.gsub!('AG Garten', 'AGs')
-                                        fach.gsub!('BlblA', 'AGs')
-                                        fach.gsub!('neugriechisch', 'ngr')
-                                        fach.gsub!('(ngr)', '')
-                                        fach.gsub!('Partnersprache', 'PS')
-                                        fach.strip!
-                                        faecher << fach
-                                        rooms << x[:raum] unless fach == 'AGs'
-                                    end
-                                    translate dx, dy do
-                                        text_box "<b>#{faecher.uniq.join("\n")}</b>", :at => [3.mm, h - 1.mm], :width => w - 13.mm, :height => h - 2.mm, :align => :left, :valign => :center, :size => 16 * fscale, :overflow => :shrink_to_fit, :inline_format => true
-                                        text_box "#{rooms.join("\n")}", :at => [3.mm, h - 1.mm], :width => w - 6.mm, :height => h - 2.mm, :align => :right, :valign => :center, :size => 14 * fscale, :overflow => :shrink_to_fit, :inline_format => true
+                        (1..max_stunden).each do |y|
+                            bounding_box([0.0, height - y * h], :width => tw, :height => h) do
+                                # stroke_bounds
+                                rounded_rectangle([0.5.mm, h - 0.5.mm], tw - 1.mm, h - 1.mm, 2.mm)
+                                fill_color palette[:primary_color_much_lighter][1, 6]
+                                stroke_color palette[:primary][1, 6]
+                                fill_and_stroke
+                                fill_color '222222'
+                                text_box "<b>#{y}. Stunde</b>", :at => [1.mm, h - 1.mm], :width => tw - 2.mm, :height => h / 2, :align => :center, :valign => :bottom, :size => 16 * fscale, :overflow => :shrink_to_fit, :inline_format => true
+                                text_box "#{hours[y][0]} – #{hours[y][1]}", :at => [1.mm, h / 2 - 1.mm], :width => tw - 2.mm, :height => h / 2 - 2.mm, :align => :center, :valign => :top, :size => 14 * fscale, :overflow => :shrink_to_fit
+                            end
+                            (0..4).each do |x|
+                                info = (timetable[x] || {})[y]
+                                if info
+                                    bounding_box([tw + x * w, height - y * h], :width => w, :height => h) do
+                                        # stroke_bounds
+                                        transparent(0.5, 0.5) do
+                                            rounded_rectangle([0.5.mm, h - 0.5.mm], w - 1.mm, h - 1.mm, 2.mm)
+                                            fill_color palette[:primary_color_much_lighter][1, 6]
+                                            stroke_color palette[:primary][1, 6]
+                                            fill_and_stroke
+                                        end
+                                        fill_color '222222'
+                                        faecher = []
+                                        rooms = []
+                                        info.each do |x|
+                                            lesson_key = x[:lesson_key]
+                                            fach = @@lessons[:lesson_keys][lesson_key][:fach]
+                                            fach = @@faecher[fach] || fach
+                                            fach.gsub!('Sport Jungen', 'Sport')
+                                            fach.gsub!('Sport Mädchen', 'Sport')
+                                            fach.gsub!('Evangelische Religionslehre', 'Religion')
+                                            fach.gsub!('Katholische Religionslehre', 'Religion')
+                                            fach.gsub!('Informationstechnischer Grundkurs', 'ITG')
+                                            fach.gsub!('Politische Bildung', 'Politik')
+                                            fach.gsub!('Gesellschaftswissenschaften', 'Gewi')
+                                            fach.gsub!('Naturwissenschaften', 'Nawi')
+                                            fach.gsub!('Streicher Anfänger', 'AGs')
+                                            fach.gsub!('Basketball', 'AGs')
+                                            fach.gsub!('Schach', 'AGs')
+                                            fach.gsub!('Unterstufenorchester', 'AGs')
+                                            fach.gsub!('AG Garten', 'AGs')
+                                            fach.gsub!('BlblA', 'AGs')
+                                            fach.gsub!('neugriechisch', 'ngr')
+                                            fach.gsub!('(ngr)', '')
+                                            fach.gsub!('Partnersprache', 'PS')
+                                            fach.strip!
+                                            faecher << fach
+                                            rooms << x[:raum] unless fach == 'AGs'
+                                        end
+                                        translate dx, dy do
+                                            text_box "<b>#{faecher.uniq.join("\n")}</b>", :at => [3.mm, h - 1.mm], :width => w - 13.mm, :height => h - 2.mm, :align => :left, :valign => :center, :size => 16 * fscale, :overflow => :shrink_to_fit, :inline_format => true
+                                            text_box "#{rooms.join("\n")}", :at => [3.mm, h - 1.mm], :width => w - 6.mm, :height => h - 2.mm, :align => :right, :valign => :center, :size => 14 * fscale, :overflow => :shrink_to_fit, :inline_format => true
+                                        end
                                     end
                                 end
                             end
                         end
                     end
                 end
+                image('/app/images/timetable1-front.png', :at => [0, 210.mm], :width => 297.mm, :height => 210.mm)
             end
-            image('/app/images/timetable1-front.png', :at => [0, 210.mm], :width => 297.mm, :height => 210.mm)
         end
         return doc.render
     end

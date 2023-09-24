@@ -10,34 +10,89 @@ h3 {
 .foot { padding-right: 40px; }
 .github { display: block; }
 </style>
-    
+
+<script>
+    function install_explainers() {
+        for (let explainer of $('.explainer')) {
+            console.log(explainer);
+            // $(explainer).find('.captions div').hide();
+        }
+    }
+
+    window.addEventListener('load', function() {
+        install_explainers();
+    });
+</script>
+
 <div class='container' style='padding-top: 30px;'>
     <div class='row'>
         <div class='col-md-12'>
             <h2>Alles rund um deine E-Mail-Adresse</h2>
             <p>
             Jede Schülerin und jeder Schüler #{SCHUL_NAME_AN_DATIV} #{SCHUL_NAME} hat eine eigene E-Mail-Adresse, die auf <em>@#{SCHUL_MAIL_DOMAIN}</em> endet.
-            Du solltest dafür Zettel mit deinen Zugangsdaten erhalten haben.
+            Du solltest dafür einen Zettel mit deinen Zugangsdaten erhalten haben. Um deine E-Mails abzurufen, kannst du dich unter 
+            <a href="https://mail.ionos.de/" target="_blank">https://mail.ionos.de/</a> mit deinen Zugangsdaten anmelden.
             </p>
-            
+            <p></p>
+            Wir empfehlen dir jedoch (und ebenso deinen Eltern für ihre Eltern-E-Mail-Adresse) dringend, dein Konto einer App (wie z. B. Gmail oder Apple Mail oder Thunderbird)
+            hinzuzufügen, damit du nicht immer dein Passwort eingeben musst und automatisch benachrichtigt wirst, sobald du eine neue E-Mail erhalten hast.
+            </p>
+
             <h3>Passwort ändern</h3>
-            
+
             <p>
             Bitte ändere als erstes dein Passwort! Dein E-Mail-Passwort ist besonders wichtig, deshalb verwende bitte ein neues Passwort, das du nirgendwo anders verwendest oder verwendet hast.
             </p>
+
+            <!-- <img class='app_icon pull-right' src="/images/gmail.png" style="transform: rotate(5deg);"> -->
             
-            <h3>Weiterleitung einrichten</h3>
-            
-            <p>
-            Falls du bereits eine E-Mail-Adresse hast, kannst du mit einer Weiterleitung dafür sorgen, dass alle E-Mails, die du unter deiner neuen Adresse bekommst, einfach an deine vorhandene E-Mail-Adresse weitergeleitet werden.
-            </p>
-            
+            <h3>Einrichtung von Gmail (Android)</h3>
+
+            <div class="explainer">
+                <div class="image_carousel">
+                    <div><img src="/images/email-gmail/01.png"><div class="hl" style="left: 3%; top: 5.7%; width: 14%; height: 6.5%;"></div></div>
+                    <div><img src="/images/email-gmail/02.png"><div class="hl" style="left: 1%; top: 75%; width: 43%; height: 7%;"></div></div>
+                    <div><img src="/images/email-gmail/03.png"><div class="hl" style="left: 2%; top: 22.2%; width: 39%; height: 7%;"></div></div>
+                    <div><img src="/images/email-gmail/04.png"><div class="hl" style="left: 2%; top: 68%; width: 39%; height: 7%;"></div></div>
+                    <div><img src="/images/email-gmail/05.png"></div>
+                    <div><img src="/images/email-gmail/06.png"><div class="hl" style="left: 0%; top: 38%; width: 41%; height: 7%;"></div></div>
+                    <div><img src="/images/email-gmail/07.png"></div>
+                    <div><img src="/images/email-gmail/08.png"></div>
+                    <div><img src="/images/email-gmail/09.png"></div>
+                    <div><img src="/images/email-gmail/10.png"></div>
+                    <div><img src="/images/email-gmail/11.png"></div>
+                    <div><img src="/images/email-gmail/12.png"></div>
+                </div>
+            </div>
+
+            <hr />
+
+            <h3>Einrichtung von Apple Mail (iOS)</h3>
+
+            <div class="explainer">
+                <div class="image_carousel">
+                    <div><img src="/images/email-apple-mail/01.PNG"><div class="hl" style="left: -1%; top: 3%; width: 35%; height: 6.5%;"></div></div>
+                    <div><img src="/images/email-apple-mail/02.PNG"><div class="hl" style="left: 70%; top: 3%; width: 30%; height: 7%;"></div></div>
+                    <!-- <div><img src="/images/email-apple-mail/03.PNG"></div> -->
+                    <div><img src="/images/email-apple-mail/04.PNG"><div class="hl" style="left: 5%; top: 30.5%; width: 43%; height: 7%;"></div></div>
+                    <div><img src="/images/email-apple-mail/05.PNG"><div class="hl" style="left: 5%; top: 45%; width: 90%; height: 7%;"></div></div>
+                    <div><img src="/images/email-apple-mail/06.PNG"><div class="hl" style="left: 5%; top: 33.5%; width: 90%; height: 7%;"></div></div>
+                    <div><img src="/images/email-apple-mail/07.PNG"><div class="hl" style="left: 5%; top: 75.7%; width: 90%; height: 7%;"></div></div>
+                    <div><img src="/images/email-apple-mail/08.PNG"><div class="hl" style="left: 5%; top: 18%; width: 90%; height: 7%;"></div></div>
+                    <div><img src="/images/email-apple-mail/09.PNG"></div>
+                    <div><img src="/images/email-apple-mail/10.PNG"></div>
+                    <div><img src="/images/email-apple-mail/11.PNG"></div>
+                </div>
+            </div>
+
+            <hr />
+
             <h3>E-Mail-Programm konfigurieren</h3>
-            
+
             <p>
             Falls du bereits ein E-Mail-Programm (wie z. B. Thunderbird, Outlook, Apple Mail) oder eine E-Mail-App (wie z. B. Gmail) verwendest, kannst du sie so einstellen, dass deine schulischen E-Mails ebenfalls abgerufen werden und du auch von dieser Adresse E-Mails versenden kannst. Dafür benötigst du die folgenden Informationen:
             </p>
-            
+
             <div class='row'>
                 <div class='col-md-6'>
                     <table class='table'>
@@ -60,24 +115,24 @@ h3 {
                     </table>
                 </div>
             </div>
-            
+
             <hr />
-            
+
             <p style='text-align: center;'>
             Hilfe bei der Einrichtung von Outlook findest du auch auf den Hilfe-Seiten von IONOS:
             </p>
-            
+
             <p style='text-align: center;'>
             <a class='btn btn-lg btn-success' href='https://www.ionos.de/hilfe/e-mail/meine-e-mails/' target='_blank'><i class='fa fa-wrench'></i>&nbsp;&nbsp;E-Mail-Programme einrichten</a>
             </p>
-            
+
             <hr />
             <h3>Webmail verwenden</h3>
-            
+
             <p>
             Wenn du gar nichts einstellen willst, kannst du dich auch einfach regelmäßig auf der Webmail-Seite <a href='https://mail.ionos.de' target='_blank'>https://mail.ionos.de</a> anmelden und nachschauen, ob du eine Nachricht bekommen hast. Diese Variante hat jedoch den Nachteil, dass du leicht Nachrichten verpassen kannst, wenn du nicht regelmäßig nachschaust.
             </p>
-            
-        </div>        
+
+        </div>
     </div>
 </div>

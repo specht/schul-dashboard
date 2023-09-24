@@ -92,7 +92,6 @@
                 #{#print_self_test_panel()}
                 #{print_current_polls()}
                 #{#print_salzh_panel()}
-                #{#print_timetable_chooser_sus()}
             </div>
         </div>
         <div class='#{tablet_logged_in? ? 'col-md-4' : 'col-lg-8 col-md-12'}'>
@@ -111,9 +110,9 @@
             </div>
         </div>
         <div class='#{tablet_logged_in? ? 'col-md-6' : 'col-lg-2 col-md-12 side-panel'} timetable_chooser tablet_timetable_chooser' style='#{tablet_logged_in? ? 'display: none;' : ''}'>
-            #{print_timetable_chooser()}
-            <div class='hint weekend_events' style='display: none;'></div>
             <div class='hint future_homework' style='display: none;'></div>
+            <div class='hint weekend_events' style='display: none;'></div>
+            #{print_timetable_chooser()}
         </div>
     </div>
 </div>
@@ -683,6 +682,12 @@ document.addEventListener('DOMContentLoaded', function() {
 //                 if (arg.event.extendedProps.vnr)
 //                     fach.html('#' + arg.event.extendedProps.vnr + ' ' + fach.html());
                 div1.append(fach);
+                if (`#{DEVELOPMENT}` === 'true') {
+                    if (arg.event.extendedProps.lesson_key !== 0) {
+                        div1.append($(`<div>`).text(`[${arg.event.extendedProps.lesson_key}]`));
+                    }
+                }
+
                 let div1b = $('<div>').addClass('line2');
                 if (arg.event.extendedProps.vertretungs_text)
                 {
@@ -1028,12 +1033,19 @@ document.addEventListener('DOMContentLoaded', function() {
                 jitsi_link += '@' + encodeURI(window.selected_shorthand);
             }
             if (event_data.booked_tablet_sets) {
-                let p = $('<p>').html(`Für diese Unterrichtsstunde wurden <strong>${event_data.booked_tablet_sets_total_count} Tablets</strong> reserviert. Bitte bringen Sie sie gleich nach dem Unterricht wieder zurück.`);
-                body.append(p);
+                if (`${event_data.booked_tablet_sets_total_count}` > 1) {
+                    let p = $('<p>').html(`Für diese Unterrichtsstunde wurden insgesamt <strong>${event_data.booked_tablet_sets_total_count} Geräte</strong> reserviert. Bitte bringen Sie sie gleich nach dem Unterricht wieder zurück.`);
+                    body.append(p);
+                } else {
+                    let p = $('<p>').html(`Für diese Unterrichtsstunde wurde insgesamt <strong>ein Gerät</strong> reserviert. Bitte bringen Sie es gleich nach dem Unterricht wieder zurück.`);
+                    body.append(p);
+                }
                 let list = $('<ul>');
                 body.append(list);
                 for (let tablet_set_id of event_data.booked_tablet_sets) {
-                    let item = $('<li>').html(`<strong>${tablet_set_id}</strong> (${tablet_set_info[tablet_set_id].count} Tablets): ${tablet_set_info[tablet_set_id].standort}`);//<br/>___PRINT_HINTS_HERE___Die Tablets werden schon 5 Minuten nach Stundenende schon wieder gebraucht)`);
+                    let is_tablet = `${tablet_set_info[tablet_set_id].is_tablet_set}` === 'true';
+                    let count = is_tablet ? ` (${tablet_set_info[tablet_set_id].count} Tablets) ` : '';
+                    let item = $('<li>').html(`<strong>${tablet_set_id}</strong>${count}: ${tablet_set_info[tablet_set_id].standort}`);//<br/>___PRINT_HINTS_HERE___Die Tablets werden schon 5 Minuten nach Stundenende schon wieder gebraucht)`);
                     list.append(item);
                 }
                 wrote_something = true;
@@ -1301,7 +1313,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     $('.future_homework').append($('<p>').html(moment(entry.datum).format('ddd, D.M.Y')));
                 }
                 last_date = entry.datum;
-                let div = $("<p style='white-space: pre-line;'>").html('<b>' + entry.fach + ':</b> ' + entry.text.join('<br />'));
+                let div = $("<p class='ha_text' style='white-space: pre-line;'>").html('<b>' + entry.fach + ':</b> ' + entry.text.join('<br />'));
                 $('.future_homework').append(div);
                 if ((entry.est_time || 0) > 0)
                     $('.future_homework').append($('<p>').html(`Geplanter Zeitaufwand: ${entry.est_time} Minuten`));
@@ -1392,6 +1404,18 @@ document.addEventListener('DOMContentLoaded', function() {
                     });
                 }
             }
+            for (let div of $('.ha_text')) {
+                if (div.scrollHeight > 300) {
+                    let button = $(`<button class='btn btn-sm btn-outline-secondary mb-1'>mehr anzeigen…</button>`);
+                    button.on('click', function(e) {
+                        button.remove();
+                        $(div).removeClass('ha_text');
+                    });
+                    button.insertAfter(div);
+                    console.log('ouch');
+                }
+            }
+
         }
 
         oReq.onload = function(e) {

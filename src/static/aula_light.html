@@ -315,11 +315,11 @@
     }
 
     function refresh_aula_light() {
+        $('.scheinwerfer').html('');
         $('.u').html('⚠️');
         api_call('/api/get_light', {}, function(data) {
             for (let entry of data.light) {
-                $('#' + entry.lightdata.dmx).html('' + entry.lightdata.dmx + '');
-                $('#' + entry.lightdata.dmx).html('' + entry.lightdata.desk);
+                $('#' + entry.lightdata.dmx).html(entry.lightdata.desk);
             }
         });
     } 

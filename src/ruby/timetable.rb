@@ -902,6 +902,10 @@ class Timetable
                         SET i.updated = $timestamp
                         DETACH DELETE b;
                     END_OF_QUERY
+
+                    # don't send mails if the booking was in the past for whatever reason
+                    next if booking[:datum] < Date.today.to_s
+                    
                     shorthands.each do |shorthand|
                         email = @@shorthands[shorthand]
                         user_info = @@user_info[email]
@@ -957,6 +961,10 @@ class Timetable
                         SET i.updated = $timestamp
                         DETACH DELETE b;
                     END_OF_QUERY
+
+                    # don't send mails if the booking was in the past for whatever reason
+                    next if booking[:datum] < Date.today.to_s
+                    
                     shorthands.each do |shorthand|
                         email = @@shorthands[shorthand]
                         deliver_mail do
@@ -1003,6 +1011,10 @@ class Timetable
                         SET i.lesson_fixed = false
                         SET i.updated = $timestamp;
                     END_OF_QUERY
+
+                    # don't send mails if the booking was in the past for whatever reason
+                    next if fixed_for < Date.today.to_s
+
                     shorthands.each do |shorthand|
                         email = @@shorthands[shorthand]
                         deliver_mail do
@@ -1033,8 +1045,9 @@ class Timetable
         if now.strftime('%Y-%m-%d') < @@config[:first_school_day]
             hide_from_sus = true
         elsif now.strftime('%Y-%m-%d') == @@config[:first_school_day]
-            hide_from_sus = now.strftime('%H:%M:%S') < '09:00:00'
+            hide_from_sus = now.strftime('%H:%M:%S') < '08:10:00'
         end
+        hide_from_sus = false if DEVELOPMENT
         debug "Updating weeks: #{only_these_lesson_keys.to_a.join(', ')} (hide_from_sus: #{hide_from_sus})"
 
         ical_info = {}
@@ -1216,640 +1229,668 @@ class Timetable
                 }
             end
             temp.each_pair do |email, user|
-                path = "/gen/w/#{user[:id]}/#{p_yw}.json.gz"
-                if @@user_info[email] && (!@@user_info[email][:teacher]) && hide_from_sus
-                    if now.strftime('%Y-%m-%d') >= (Date.parse(@@config[:first_school_day]) - 2).strftime('%Y-%m-%d')
-                        FileUtils::rm_f(path)
-                        next
+                [:private, :public].each do |mode|
+                    path = "/gen/w/#{user[(mode == :private) ? :id : :public_id]}/#{p_yw}.json.gz"
+                    if @@user_info[email] && (!@@user_info[email][:teacher]) && hide_from_sus
+                        # # Blank all schueler timetables on the weekend before school starts
+                        # if now.strftime('%Y-%m-%d') >= (Date.parse(@@config[:first_school_day]) - 2).strftime('%Y-%m-%d')
+                        #     FileUtils::rm_f(path)
+                        #     next
+                        # end
                     end
-                end
-                lesson_keys = @@lessons_for_user[email].dup
-                if email[0] == '_'
-                    lesson_keys = Set.new(@@lessons_for_klasse[user[:klasse]])
-                end
-                lesson_keys ||= Set.new()
-                lesson_keys << "_#{user[:klasse]}" if user[:is_klasse]
-                lesson_keys << "_@#{user[:room]}" if user[:is_room]
-                if user[:teacher]
-                    lesson_keys << "_#{user[:shorthand]}"
-                    (@@lessons_for_shorthand[user[:shorthand]] || []).each do |lesson_key|
-                        lesson_keys << lesson_key
+                    lesson_keys = @@lessons_for_user[email].dup
+                    if email[0] == '_'
+                        lesson_keys = Set.new(@@lessons_for_klasse[user[:klasse]])
                     end
-                end
-                lesson_keys << "_#{user[:email]}"
-                next if only_these_lesson_keys && (lesson_keys & only_these_lesson_keys).empty?
-#                 unless logged_emails.include?(email)
-#                     STDERR.puts email
-#                     logged_emails << email
-#                 end
-                FileUtils.mkpath(File.dirname(path))
-                file_count += 1
-                Zlib::GzipWriter.open(path) do |f|
-                    events = []
-                    cache_indices = Set.new()
-                    lesson_keys.each do |lesson_key|
-                        if (@@user_info[email] || {})[:teacher]
-                            cache_indices += ((@lesson_events[lesson_key] || {})[p_yw] || Set.new())
-                        else
-                            cache_indices += ((@lesson_events[lesson_key] || {})[p_yw] || []).select do |x|
-                                @lesson_cache[x][:datum] < regular_events_from
-                            end
-                            cache_indices += ((@lesson_events_regular[lesson_key] || {})[p_yw] || []).select do |x|
-                                @lesson_cache[x][:datum] >= regular_events_from
-                            end
+                    lesson_keys ||= Set.new()
+                    lesson_keys << "_#{user[:klasse]}" if user[:is_klasse]
+                    lesson_keys << "_@#{user[:room]}" if user[:is_room]
+                    if user[:teacher]
+                        lesson_keys << "_#{user[:shorthand]}"
+                        (@@lessons_for_shorthand[user[:shorthand]] || []).each do |lesson_key|
+                            lesson_keys << lesson_key
                         end
                     end
-                    if user[:is_room]
-                        cache_indices += ((@lesson_events["_@#{user[:room]}"] || {})[p_yw] || Set.new())
-                    end
-                    events += cache_indices.map { |x| @lesson_cache[x] }
-                    holidays.each do |e|
-                        e2 = e.dup
-                        e2[:event_type] = :holiday
-                        events << e2
-                    end
-                    website_events.each do |e|
-                        e2 = e.dup
-                        e2[:event_type] = :website_event
-                        events << e2
-                    end
-                    if user[:klasse]
-                        (public_test_events_for_klasse[user[:klasse]] || []).each do |e|
+                    lesson_keys << "_#{user[:email]}"
+                    next if only_these_lesson_keys && (lesson_keys & only_these_lesson_keys).empty?
+    #                 unless logged_emails.include?(email)
+    #                     STDERR.puts email
+    #                     logged_emails << email
+    #                 end
+                    FileUtils.mkpath(File.dirname(path))
+                    file_count += 1
+                    Zlib::GzipWriter.open(path) do |f|
+                        events = []
+                        cache_indices = Set.new()
+                        lesson_keys.each do |lesson_key|
+                            if (@@user_info[email] || {})[:teacher]
+                                cache_indices += ((@lesson_events[lesson_key] || {})[p_yw] || Set.new())
+                            else
+                                cache_indices += ((@lesson_events[lesson_key] || {})[p_yw] || []).select do |x|
+                                    @lesson_cache[x][:datum] < regular_events_from
+                                end
+                                cache_indices += ((@lesson_events_regular[lesson_key] || {})[p_yw] || []).select do |x|
+                                    @lesson_cache[x][:datum] >= regular_events_from
+                                end
+                            end
+                        end
+                        if user[:is_room]
+                            cache_indices += ((@lesson_events["_@#{user[:room]}"] || {})[p_yw] || Set.new())
+                        end
+                        events += cache_indices.map { |x| @lesson_cache[x] }
+                        holidays.each do |e|
                             e2 = e.dup
-                            e2[:event_type] = :public_test_event
+                            e2[:event_type] = :holiday
                             events << e2
                         end
-                    end
-                    # add events
-                    ((@events_for_user[email] || {})[p_yw] || {}).each_pair do |eid, info|
-                        event = info[:event]
-                        organized_by = info[:organized_by]
-                        if @@user_info[organized_by]
-                            if @@user_info[organized_by][:teacher]
-                                organized_by = @@user_info[organized_by][:display_last_name]
-                            else
-                                organized_by = @@user_info[organized_by][:display_name]
+                        website_events.each do |e|
+                            e2 = e.dup
+                            e2[:event_type] = :website_event
+                            events << e2
+                        end
+                        if user[:klasse]
+                            (public_test_events_for_klasse[user[:klasse]] || []).each do |e|
+                                e2 = e.dup
+                                e2[:event_type] = :public_test_event
+                                events << e2
                             end
                         end
-                        event[:start_time] = fix_h_to_hh(event[:start_time])
-                        event[:end_time] = fix_h_to_hh(event[:end_time])
-                        events << {:lesson => false,
-                                   :start => "#{event[:date]}T#{event[:start_time]}",
-                                   :end => "#{event[:date]}T#{event[:end_time]}",
-                                   :event_title => "#{event[:title]}",
-                                   :description => "#{event[:description]}",
-                                   :organized_by => organized_by,
-                                   :organized_by_email => info[:organized_by],
-                                   :eid => event[:id],
-                                   :is_event => true,
-                                   :room_name => event[:title].gsub(/\s/, '_').gsub(/[^a-zA-Z0-9_]/, '') + '_' + event[:id][0, 8],
-                                   :datum => event[:date],
-                                   :start_time => event[:start_time],
-                                   :end_time => event[:end_time],
-                                   :jitsi => event[:jitsi],
-                                   :event_type => :event
-                                }
-                    end
+                        # add events
+                        if mode == :private
+                            ((@events_for_user[email] || {})[p_yw] || {}).each_pair do |eid, info|
+                                event = info[:event]
+                                organized_by = info[:organized_by]
+                                if @@user_info[organized_by]
+                                    if @@user_info[organized_by][:teacher]
+                                        organized_by = @@user_info[organized_by][:display_last_name]
+                                    else
+                                        organized_by = @@user_info[organized_by][:display_name]
+                                    end
+                                end
+                                event[:start_time] = fix_h_to_hh(event[:start_time])
+                                event[:end_time] = fix_h_to_hh(event[:end_time])
+                                events << {:lesson => false,
+                                        :start => "#{event[:date]}T#{event[:start_time]}",
+                                        :end => "#{event[:date]}T#{event[:end_time]}",
+                                        :event_title => "#{event[:title]}",
+                                        :description => "#{event[:description]}",
+                                        :organized_by => organized_by,
+                                        :organized_by_email => info[:organized_by],
+                                        :eid => event[:id],
+                                        :is_event => true,
+                                        :room_name => event[:title].gsub(/\s/, '_').gsub(/[^a-zA-Z0-9_]/, '') + '_' + event[:id][0, 8],
+                                        :datum => event[:date],
+                                        :start_time => event[:start_time],
+                                        :end_time => event[:end_time],
+                                        :jitsi => event[:jitsi],
+                                        :event_type => :event
+                                        }
+                            end
+                        end
 
-                    day_message_target = nil
-                    if @@user_info[email]
-                        if @@user_info[email][:teacher]
-                            day_message_target = @@user_info[email][:shorthand]
+                        day_message_target = nil
+                        if @@user_info[email]
+                            if @@user_info[email][:teacher]
+                                day_message_target = @@user_info[email][:shorthand]
+                            else
+                                day_message_target = @@user_info[email][:klasse]
+                            end
                         else
-                            day_message_target = @@user_info[email][:klasse]
+                            if email[0] == '_' && KLASSEN_ORDER.include?(email[1, email.size - 1])
+                                day_message_target = email[1, email.size- 1]
+                            end
                         end
-                    else
-                        if email[0] == '_' && KLASSEN_ORDER.include?(email[1, email.size - 1])
-                            day_message_target = email[1, email.size- 1]
+
+                        ((@@day_messages[p_yw] || {})[day_message_target] || {}).each_pair do |datum, messages|
+                            events << {
+                                :start => datum,
+                                :end => (Date.parse(datum) + 1).strftime('%Y-%m-%d'),
+                                :title => messages.join("<br />").gsub("\n", "<br />"),
+                                :event_type => :website_event
+                            }
                         end
-                    end
 
-                    ((@@day_messages[p_yw] || {})[day_message_target] || {}).each_pair do |datum, messages|
-                        events << {
-                            :start => datum,
-                            :end => (Date.parse(datum) + 1).strftime('%Y-%m-%d'),
-                            :title => messages.join("<br />").gsub("\n", "<br />"),
-                            :event_type => :website_event
-                        }
-                    end
-
-                    fixed_events = events.map do |e_old|
-                        e = e_old.dup
-                        if e[:lesson]
-                            e[:event_type] = :lesson
-                            e[:label] = user[:teacher] ? e[:label_klasse].dup : e[:label_lehrer].dup
-                            e[:label_lang] = user[:teacher] ? e[:label_klasse_lang].dup : e[:label_lehrer_lang].dup
-                            # if user[:teacher]
-                                # if e[:lesson_key] && @@lessons[:lesson_keys][e[:lesson_key]]
-                                    # e[:label] = "<b>#{@@lessons[:lesson_keys][e[:lesson_key]][:pretty_folder_name].gsub(/\([^\)]+\)/, '').strip}</b> #{e[:label_klasse].scan(/\([^\)]+\)/)[0]}"
-                                    # e[:label_lang] = "<b>#{@@lessons[:lesson_keys][e[:lesson_key]][:pretty_folder_name].gsub(/\([^\)]+\)/, '').strip}</b> #{e[:label_klasse].scan(/\([^\)]+\)/)[0]}"
+                        fixed_events = events.map do |e_old|
+                            e = e_old.dup
+                            if e[:lesson]
+                                e[:event_type] = :lesson
+                                e[:label] = user[:teacher] ? e[:label_klasse].dup : e[:label_lehrer].dup
+                                e[:label_lang] = user[:teacher] ? e[:label_klasse_lang].dup : e[:label_lehrer_lang].dup
+                                # if user[:teacher]
+                                    # if e[:lesson_key] && @@lessons[:lesson_keys][e[:lesson_key]]
+                                        # e[:label] = "<b>#{@@lessons[:lesson_keys][e[:lesson_key]][:pretty_folder_name].gsub(/\([^\)]+\)/, '').strip}</b> #{e[:label_klasse].scan(/\([^\)]+\)/)[0]}"
+                                        # e[:label_lang] = "<b>#{@@lessons[:lesson_keys][e[:lesson_key]][:pretty_folder_name].gsub(/\([^\)]+\)/, '').strip}</b> #{e[:label_klasse].scan(/\([^\)]+\)/)[0]}"
+                                    # end
                                 # end
-                            # end
-                            e[:label_short] = user[:teacher] ? e[:label_klasse_short].dup : e[:label_lehrer_short].dup
-                            if user[:is_room]
-                                e[:label] = e[:label_room].dup
-                                e[:label_lang] = e[:label_room_lang].dup
-                                e[:label_short] = e[:label_room_short].dup
-                            end
-                            if e[:nc_folder]
-                                e[:nc_folder] = user[:teacher] ? e[:nc_folder][:teacher].dup : e[:nc_folder][:sus].dup
-                            end
-                            if e[:nc_collect_folder]
-                                e[:nc_collect_folder] = user[:teacher] ? e[:nc_collect_folder][:teacher].dup : e[:nc_collect_folder][:sus].dup
-                            end
-                            if e[:nc_return_folder]
-                                e[:nc_return_folder] = user[:teacher] ? e[:nc_return_folder][:teacher].dup : e[:nc_return_folder][:sus].dup
-                            end
-                            lesson_key = e[:lesson_key]
-                            if e[:lesson] && (lesson_key != 0) && e[:lesson_offset]
-                                # 5. add information from database
-                                events_with_data_cache[lesson_key] ||= {}
-                                unless events_with_data_cache[lesson_key].include?(e[:lesson_offset])
-                                    data = {}
-                                    [:hausaufgaben_text, :stundenthema_text, :notizen].each do |k|
-                                        values = Set.new()
-                                        (0...e[:count]).each do |o|
-                                            v = (((@lesson_info[lesson_key] || {})[e[:lesson_offset] + o] || {})[:data] || {})[k] || ''
-                                            values << v unless v.empty?
-                                        end
-                                        unless values.empty?
-                                            data[k] = values.to_a.join('<br />')
-                                        end
-                                    end
-                                    [:lesson_jitsi, :lesson_nc, :lesson_lr, :homework_nc, :homework_lr, :breakout_rooms_roaming].each do |k|
-                                        flag = false
-                                        (0...e[:count]).each do |o|
-                                            if (((@lesson_info[lesson_key] || {})[e[:lesson_offset] + o] || {})[:data] || {})[k]
-                                                flag = true
-                                            end
-                                        end
-                                        if flag
-                                            data[k] = true
-                                        end
-                                    end
-                                    [:homework_est_time].each do |k|
-                                        sum = 0
-                                        (0...e[:count]).each do |o|
-                                            v = ((((@lesson_info[lesson_key] || {})[e[:lesson_offset] + o] || {})[:data] || {})[k] || '').strip
-                                            sum += v.to_i unless v.empty?
-                                        end
-                                        if sum > 0
-                                            data[k] = sum.to_s
-                                        end
-                                    end
-                                    [:breakout_rooms, :breakout_room_participants].each do |k|
-                                        (0...e[:count]).each do |o|
-                                            v = (((@lesson_info[lesson_key] || {})[e[:lesson_offset] + o] || {})[:data] || {})[k] || []
-                                            if v && (!v.empty?)
-                                                data[k] = v
-                                            end
-                                        end
-                                    end
-                                    [:booked_tablet].each do |k|
-                                        (0...e[:count]).each do |o|
-                                            v = (((@lesson_info[lesson_key] || {})[e[:lesson_offset] + o] || {})[:data] || {})[k] || []
-                                            if v && (!v.empty?)
-                                                tablet_id = v
-                                                data[k] = v
-                                                tablet_info = @@tablets[tablet_id]
-                                                data[:booked_tablet_label_long] = "<span class='tis' style='background-color: #{tablet_info[:bg_color]}; color: #{tablet_info[:fg_color]};'>#{tablet_id}</span> (#{tablet_info[:lagerort]})"
-                                                data[:booked_tablet_label_short] = "<span class='tis' style='background-color: #{tablet_info[:bg_color]}; color: #{tablet_info[:fg_color]};'>#{tablet_id}</span>"
-                                            end
-                                        end
-                                    end
-                                    [:booked_tablet_sets].each do |k|
-                                        (0...e[:count]).each do |o|
-                                            v = (((@lesson_info[lesson_key] || {})[e[:lesson_offset] + o] || {})[:data] || {})[k] || []
-                                            if v && (!v.empty?)
-                                                data[k] = v
-                                                # tablet_info = @@tablets[tablet_id]
-                                                # data[:booked_tablet_label_long] = "<span class='tis' style='background-color: #{tablet_info[:bg_color]}; color: #{tablet_info[:fg_color]};'>#{tablet_id}</span> (#{tablet_info[:lagerort]})"
-                                                # data[:booked_tablet_label_short] = "<span class='tis' style='background-color: #{tablet_info[:bg_color]}; color: #{tablet_info[:fg_color]};'>#{tablet_id}</span>"
-                                            end
-                                        end
-                                    end
-                                    [:booked_tablet_sets_total_count].each do |k|
-                                        (0...e[:count]).each do |o|
-                                            v = (((@lesson_info[lesson_key] || {})[e[:lesson_offset] + o] || {})[:data] || {})[k]
-                                            data[k] = v if v
-                                        end
-                                    end
-                                    events_with_data_cache[lesson_key][e[:lesson_offset]] = data
+                                e[:label_short] = user[:teacher] ? e[:label_klasse_short].dup : e[:label_lehrer_short].dup
+                                if user[:is_room]
+                                    e[:label] = e[:label_room].dup
+                                    e[:label_lang] = e[:label_room_lang].dup
+                                    e[:label_short] = e[:label_room_short].dup
                                 end
-                                events_with_data_per_user_cache[lesson_key] ||= {}
-                                events_with_data_per_user_cache[lesson_key][e[:lesson_offset]] ||= {}
-                                unless events_with_data_per_user_cache[lesson_key][e[:lesson_offset]].include?(email)
-                                    user_data = {}
-                                    (0...e[:count]).each do |o|
-                                        comment_info = (((@lesson_info[lesson_key] || {})[e[:lesson_offset] + o] || {})[:comments] || {})[email] || {}
-                                        if comment_info[:text_comment]
-                                            user_data[:text_comments] ||= []
-                                            fach = @@lessons[:lesson_keys][lesson_key][:fach]
-                                            fach = @@faecher[fach] if @@faecher[fach]
-                                            from = "#{(@@user_info[comment_info[:tcf] || ''] || {})[:display_last_name]} (#{fach})"
-                                            user_data[:text_comments] << {
-                                                :comment => comment_info[:text_comment],
-                                                :from => from,
-                                                :timestamp => comment_info[:timestamp],
-                                                :id => comment_info[:id]
-                                            }
+                                if e[:nc_folder]
+                                    e[:nc_folder] = user[:teacher] ? e[:nc_folder][:teacher].dup : e[:nc_folder][:sus].dup
+                                end
+                                if e[:nc_collect_folder]
+                                    e[:nc_collect_folder] = user[:teacher] ? e[:nc_collect_folder][:teacher].dup : e[:nc_collect_folder][:sus].dup
+                                end
+                                if e[:nc_return_folder]
+                                    e[:nc_return_folder] = user[:teacher] ? e[:nc_return_folder][:teacher].dup : e[:nc_return_folder][:sus].dup
+                                end
+                                lesson_key = e[:lesson_key]
+                                if e[:lesson] && (lesson_key != 0) && e[:lesson_offset]
+                                    # 5. add information from database
+                                    events_with_data_cache[lesson_key] ||= {}
+                                    unless events_with_data_cache[lesson_key].include?(e[:lesson_offset])
+                                        data = {}
+                                        [:hausaufgaben_text, :stundenthema_text, :notizen].each do |k|
+                                            values = Set.new()
+                                            (0...e[:count]).each do |o|
+                                                v = (((@lesson_info[lesson_key] || {})[e[:lesson_offset] + o] || {})[:data] || {})[k] || ''
+                                                values << v unless v.empty?
+                                            end
+                                            unless values.empty?
+                                                data[k] = values.to_a.join('<br />')
+                                            end
                                         end
-                                    end
-                                    (0...e[:count]).each do |o|
-                                        comment_info = (((@lesson_info[lesson_key] || {})[e[:lesson_offset] + o] || {})[:comments] || {})[email] || {}
-                                        if comment_info[:audio_comment_tag]
-                                            user_data[:audio_comments] ||= []
-                                            fach = @@lessons[:lesson_keys][lesson_key][:fach]
-                                            fach = @@faecher[fach] if @@faecher[fach]
-                                            from = "#{(@@user_info[comment_info[:acf] || ''] || {})[:display_last_name]} (#{fach})"
-                                            user_data[:audio_comments] << {
-                                                :tag => comment_info[:audio_comment_tag],
-                                                :duration => comment_info[:duration],
-                                                :from => from,
-                                                :timestamp => comment_info[:timestamp],
-                                                :id => comment_info[:id]
-                                            }
-                                        end
-                                    end
-                                    # add homework feedback
-                                    if user[:teacher]
-                                        lesson_homework_feedback[e[:lesson_key]] ||= Main.get_homework_feedback_for_lesson_key(e[:lesson_key])
-                                        if lesson_homework_feedback[e[:lesson_key]] && lesson_homework_feedback[e[:lesson_key]][e[:lesson_offset]]
-                                            user_data[:homework_feedback] = lesson_homework_feedback[e[:lesson_key]][e[:lesson_offset]]
-                                        end
-                                    end
-
-                                    # add lesson notes
-                                    if @@lesson_keys_with_sus_feedback[e[:lesson_key]]
-                                        if @@lesson_keys_with_sus_feedback[e[:lesson_key]].include?(Date.parse(e[:datum]).wday)
-                                            user_data[:can_have_sus_feedback] = true
-                                            if user[:teacher]
-                                                # teacher
-                                                user_data[:lesson_notes] = ((@lesson_notes_for_lesson_key[e[:lesson_key]] || {})[e[:lesson_offset]] || {}).reject do |email, text|
-                                                    text.empty?
+                                        [:lesson_jitsi, :lesson_nc, :lesson_lr, :homework_nc, :homework_lr, :breakout_rooms_roaming].each do |k|
+                                            flag = false
+                                            (0...e[:count]).each do |o|
+                                                if (((@lesson_info[lesson_key] || {})[e[:lesson_offset] + o] || {})[:data] || {})[k]
+                                                    flag = true
                                                 end
-                                            else
-                                                # SuS
-                                                lesson_note = ((@lesson_notes_for_lesson_key[e[:lesson_key]] || {})[e[:lesson_offset]] || {})[user[:email]]
-                                                if lesson_note
-                                                    user_data[:lesson_note] = lesson_note
+                                            end
+                                            if flag
+                                                data[k] = true
+                                            end
+                                        end
+                                        [:homework_est_time].each do |k|
+                                            sum = 0
+                                            (0...e[:count]).each do |o|
+                                                v = ((((@lesson_info[lesson_key] || {})[e[:lesson_offset] + o] || {})[:data] || {})[k] || '').strip
+                                                sum += v.to_i unless v.empty?
+                                            end
+                                            if sum > 0
+                                                data[k] = sum.to_s
+                                            end
+                                        end
+                                        [:breakout_rooms, :breakout_room_participants].each do |k|
+                                            (0...e[:count]).each do |o|
+                                                v = (((@lesson_info[lesson_key] || {})[e[:lesson_offset] + o] || {})[:data] || {})[k] || []
+                                                if v && (!v.empty?)
+                                                    data[k] = v
                                                 end
                                             end
                                         end
+                                        [:booked_tablet].each do |k|
+                                            (0...e[:count]).each do |o|
+                                                v = (((@lesson_info[lesson_key] || {})[e[:lesson_offset] + o] || {})[:data] || {})[k] || []
+                                                if v && (!v.empty?)
+                                                    tablet_id = v
+                                                    data[k] = v
+                                                    tablet_info = @@tablets[tablet_id]
+                                                    data[:booked_tablet_label_long] = "<span class='tis' style='background-color: #{tablet_info[:bg_color]}; color: #{tablet_info[:fg_color]};'>#{tablet_id}</span> (#{tablet_info[:lagerort]})"
+                                                    data[:booked_tablet_label_short] = "<span class='tis' style='background-color: #{tablet_info[:bg_color]}; color: #{tablet_info[:fg_color]};'>#{tablet_id}</span>"
+                                                end
+                                            end
+                                        end
+                                        [:booked_tablet_sets].each do |k|
+                                            (0...e[:count]).each do |o|
+                                                v = (((@lesson_info[lesson_key] || {})[e[:lesson_offset] + o] || {})[:data] || {})[k] || []
+                                                if v && (!v.empty?)
+                                                    data[k] = v
+                                                    # tablet_info = @@tablets[tablet_id]
+                                                    # data[:booked_tablet_label_long] = "<span class='tis' style='background-color: #{tablet_info[:bg_color]}; color: #{tablet_info[:fg_color]};'>#{tablet_id}</span> (#{tablet_info[:lagerort]})"
+                                                    # data[:booked_tablet_label_short] = "<span class='tis' style='background-color: #{tablet_info[:bg_color]}; color: #{tablet_info[:fg_color]};'>#{tablet_id}</span>"
+                                                end
+                                            end
+                                        end
+                                        [:booked_tablet_sets_total_count].each do |k|
+                                            (0...e[:count]).each do |o|
+                                                v = (((@lesson_info[lesson_key] || {})[e[:lesson_offset] + o] || {})[:data] || {})[k]
+                                                data[k] = v if v
+                                            end
+                                        end
+                                        events_with_data_cache[lesson_key][e[:lesson_offset]] = data
                                     end
+                                    events_with_data_per_user_cache[lesson_key] ||= {}
+                                    events_with_data_per_user_cache[lesson_key][e[:lesson_offset]] ||= {}
+                                    unless events_with_data_per_user_cache[lesson_key][e[:lesson_offset]].include?(email)
+                                        user_data = {}
+                                        (0...e[:count]).each do |o|
+                                            comment_info = (((@lesson_info[lesson_key] || {})[e[:lesson_offset] + o] || {})[:comments] || {})[email] || {}
+                                            if comment_info[:text_comment]
+                                                user_data[:text_comments] ||= []
+                                                fach = @@lessons[:lesson_keys][lesson_key][:fach]
+                                                fach = @@faecher[fach] if @@faecher[fach]
+                                                from = "#{(@@user_info[comment_info[:tcf] || ''] || {})[:display_last_name]} (#{fach})"
+                                                user_data[:text_comments] << {
+                                                    :comment => comment_info[:text_comment],
+                                                    :from => from,
+                                                    :timestamp => comment_info[:timestamp],
+                                                    :id => comment_info[:id]
+                                                }
+                                            end
+                                        end
+                                        (0...e[:count]).each do |o|
+                                            comment_info = (((@lesson_info[lesson_key] || {})[e[:lesson_offset] + o] || {})[:comments] || {})[email] || {}
+                                            if comment_info[:audio_comment_tag]
+                                                user_data[:audio_comments] ||= []
+                                                fach = @@lessons[:lesson_keys][lesson_key][:fach]
+                                                fach = @@faecher[fach] if @@faecher[fach]
+                                                from = "#{(@@user_info[comment_info[:acf] || ''] || {})[:display_last_name]} (#{fach})"
+                                                user_data[:audio_comments] << {
+                                                    :tag => comment_info[:audio_comment_tag],
+                                                    :duration => comment_info[:duration],
+                                                    :from => from,
+                                                    :timestamp => comment_info[:timestamp],
+                                                    :id => comment_info[:id]
+                                                }
+                                            end
+                                        end
+                                        # add homework feedback
+                                        if user[:teacher]
+                                            lesson_homework_feedback[e[:lesson_key]] ||= Main.get_homework_feedback_for_lesson_key(e[:lesson_key])
+                                            if lesson_homework_feedback[e[:lesson_key]] && lesson_homework_feedback[e[:lesson_key]][e[:lesson_offset]]
+                                                user_data[:homework_feedback] = lesson_homework_feedback[e[:lesson_key]][e[:lesson_offset]]
+                                            end
+                                        end
 
-                                    events_with_data_per_user_cache[lesson_key][e[:lesson_offset]][email] = user_data
-                                end
-                                e[:data] = events_with_data_cache[lesson_key][e[:lesson_offset]]
-                                e[:per_user] = events_with_data_per_user_cache[lesson_key][e[:lesson_offset]][email]
-                            end
-                        end
-                        e
-                    end
-                    if user[:teacher]
-                        fixed_events.map! do |event|
-                            if event[:lesson] && event[:lesson_key]
-                                event[:schueler_for_lesson] = (@@schueler_for_lesson[event[:lesson_key]] || []).map do |email|
-                                    {:display_name => @@user_info[email][:display_name],
-                                     :nc_login => @@user_info[email][:nc_login]
-                                    }
-                                end
-                            end
-                            # mark event as entfall FOR THIS PERSON only
-                            if event[:lehrer_removed]
-                                if event[:lehrer_removed].include?(@@user_info[email][:shorthand])
-                                    event[:entfall] = true
-                                end
-                            end
-                            event
-                        end
-                        # inject saLzH SuS for this lesson, if any
-                        fixed_events.map! do |event|
-                            if event[:lesson] && event[:lesson_key]
-                                lesson_sus = Set.new(@@schueler_for_lesson[event[:lesson_key]] || [])
-                                salzh_sus = Set.new(@@current_salzh_status_by_email.keys)
-                                intersection = (lesson_sus & salzh_sus).select do |email|
-                                    @@current_salzh_status_by_email[email][:status_end_date] >= event[:datum]
-                                end
-                                if intersection.size > 0
-                                    intersection_sorted = intersection.to_a.sort
-                                    contact_person_sus = intersection_sorted.select do |email|
-                                        @@current_salzh_status_by_email[email][:status] == :contact_person
-                                    end
-                                    unless contact_person_sus.empty?
-                                        event[:contact_person_sus] = contact_person_sus.map do |email|
-                                            @@user_info[email][:display_name]
+                                        # add lesson notes
+                                        if @@lesson_keys_with_sus_feedback[e[:lesson_key]]
+                                            if @@lesson_keys_with_sus_feedback[e[:lesson_key]].include?(Date.parse(e[:datum]).wday)
+                                                user_data[:can_have_sus_feedback] = true
+                                                if user[:teacher]
+                                                    # teacher
+                                                    user_data[:lesson_notes] = ((@lesson_notes_for_lesson_key[e[:lesson_key]] || {})[e[:lesson_offset]] || {}).reject do |email, text|
+                                                        text.empty?
+                                                    end
+                                                else
+                                                    # SuS
+                                                    lesson_note = ((@lesson_notes_for_lesson_key[e[:lesson_key]] || {})[e[:lesson_offset]] || {})[user[:email]]
+                                                    if lesson_note
+                                                        user_data[:lesson_note] = lesson_note
+                                                    end
+                                                end
+                                            end
                                         end
+
+                                        events_with_data_per_user_cache[lesson_key][e[:lesson_offset]][email] = user_data
                                     end
-                                    salzh_sus = intersection_sorted.select do |email|
-                                        @@current_salzh_status_by_email[email][:status] == :salzh
-                                    end
-                                    unless contact_person_sus.empty?
-                                        event[:salzh_sus] = salzh_sus.map do |email|
-                                            @@user_info[email][:display_name]
-                                        end
-                                    end
+                                    e[:data] = events_with_data_cache[lesson_key][e[:lesson_offset]]
+                                    e[:per_user] = events_with_data_per_user_cache[lesson_key][e[:lesson_offset]][email]
                                 end
-                            end
-                            event
-                        end
-                        # inject birthdays
-                        p0 = p - 2
-                        while p0 < p1 - 2 do
-                            p_md = p0.strftime('%m-%d')
-                            p_y = p0.strftime('%Y')
-                            pt_md = p0.strftime('%m-%d')
-                            pt_y = p0.strftime('%Y')
-                            day_label = nil
-                            if [0, 6].include?(p0.wday)
-                                day_label = p0.strftime('%d.%m.')
-                                pt_md = p.strftime('%m-%d')
-                                pt_y = p.strftime('%Y')
-                            end
-                            if @@birthday_entries[p_md]
-                                @@birthday_entries[p_md].each do |email|
-                                    next unless (@@schueler_for_teacher[user[:shorthand]] || {}).include?(email)
-                                    title = "🎂 #{@@user_info[email][:display_name]} (#{Main.tr_klasse(@@user_info[email][:klasse])})"
-                                    if day_label
-                                        title += " (am #{day_label})"
-                                    end
-                                    fixed_events << {
-                                        :start => "#{pt_y}-#{pt_md}",
-                                        :end => (Date.parse("#{pt_y}-#{pt_md}") + 1).strftime('%Y-%m-%d'),
-                                        :title => title,
-                                        :event_type => :birthday
-                                    }
-                                end
-                            end
-                            p0 += 1
-                        end
-                    end
-                    if user[:is_room]
-                        fixed_events.reject! do |event|
-                            event[:lesson] && (!(event[:raum] || '').split('/').include?(user[:room]))
-                        end
-                        fixed_events.map! do |event|
-                            event.delete(:data)
-                            event.delete(:per_user)
-                            event.delete(:lesson_offset)
-                            event
-                        end
-                    end
-                    if (!user[:is_room]) && (!user[:teacher])
-                        # if it's a schüler, remove pausenaufsichten
-                        fixed_events.reject! do |event|
-                            event[:pausenaufsicht]
-                        end
-                        # if it's a schüler, only add events which have the right klasse
-                        # (unless it's a phantom event)
-                        fixed_events.reject! do |event|
-                            flag = if event[:lesson] && (!event[:phantom_event]) && (!event[:pausenaufsicht])
-                                !((event[:klassen].first).include?(user[:klasse]) || (event[:klassen].last).include?(user[:klasse]))
-                            else
-                                false
-                            end
-                            if flag
-                                if event[:lesson] && (@@lessons_for_user[email] || {}).include?(event[:lesson_key])
-                                    flag = false
-                                end
-                            end
-                            # if flag
-                                # debug "Reject (klasse) :#{event.to_json}"
-                            # end
-                            flag
-                        end
-                        # also delete Kurs events for SuS who are not participating in that kurs
-                        # (unless it's a phantom event)
-                        fixed_events.reject! do |event|
-                            if event[:lesson] && (!event[:phantom_event]) && (!event[:pausenaufsicht])
-                                if event[:klassen].first.include?('11') || event[:klassen].first.include?('12') || event[:klassen].last.include?('11') || event[:klassen].last.include?('12')
-                                    # also handle entfall lessons: check orig_lesson_key first, lesson_key otherwise
-                                    check_lesson_key = event[:orig_lesson_key] || event[:lesson_key]
-                                    (check_lesson_key != 0) && (@@lessons_for_user[user[:email]]) && (!@@lessons_for_user[user[:email]].include?(check_lesson_key))
-                                else
-                                    false
-                                end
-                            else
-                                false
-                            end
-                        end
-                        # delete Notizen and booked tablet info for SuS
-                        fixed_events.map! do |event|
-                            if event[:data]
-                                event[:data].delete(:notizen)
-                                event[:data].delete(:booked_tablet)
-                                event[:data].delete(:booked_tablet_label_long)
-                                event[:data].delete(:booked_tablet_label_short)
-                                event[:data].delete(:booked_tablet_sets)
-                            end
-                            event
-                        end
-                        # unless SuS is permanently at home delete lesson_jitsi flag
-                        # in some cases
-                        # fixed_events.map! do |event|
-                        #     if event[:lesson] && event[:data]
-                        #         unless Main.stream_allowed_for_date_lesson_key_and_email(event[:datum], event[:lesson_key], email, all_stream_restrictions[event[:lesson_key]], all_homeschooling_users.include?(email), group_for_sus[email])
-                        #             event[:data] = event[:data].reject { |x| x == :lesson_jitsi }
-                        #         end
-                        #     end
-                        #     event
-                        # end
-                        # add schueler_offset_in_lesson for SuS
-                        fixed_events.map! do |event|
-                            if event[:lesson_key]
-                                event[:schueler_offset_in_lesson] = (@@schueler_offset_in_lesson[event[:lesson_key]] || {})[user[:email]] || 0
-                            end
-                            event
-                        end
-                        # add future homework for SuS
-                        fixed_events.map! do |_event|
-                            # TODO: this code can't work because we're using symbols from parsed JSON
-                            # but it's kind of okay because we don't need homework in the lesson modal
-                            event = JSON.parse(_event.to_json)
-                            if (all_homework[event[:lesson_key]] || {})[event[:datum]]
-                                all_homework[event[:lesson_key]][event[:datum]].each_pair do |k, v|
-#                                                 [:hausaufgaben_text, :homework_nc, :homework_lr].each do |k|
-                                    if [:homework_nc, :homework_lr].include?(k)
-                                        event[:data][k] = (event[:data][k] || false) || v
-                                    elsif k == :hausaufgaben_text
-                                        parts = []
-                                        parts << event[:data][k] if event[:data][k]
-                                        parts << v
-                                        event[:data][k] = parts.join('<br />').strip
-                                    elsif k == :homework_est_time
-                                        parts = []
-                                        parts << event[:data][k] if event[:data][k]
-                                        parts << v
-                                        event[:data][k] = (parts.map { |x| x.to_i }.sum).to_s
-                                    end
-                                end
-                            end
-                            event.symbolize_keys
-                        end
-                        fixed_events.map! do |event|
-                            # mark event as entfall FOR THIS PERSON only
-                            if @@user_info[email] && event[:klassen_removed]
-                                if event[:klassen_removed].include?(@@user_info[email][:klasse])
-                                    event[:entfall] = true
-                                end
-                            end
-                            event
-                        end
-                    end
-                    write_events = fixed_events.reject { |x| x[:deleted] || x['deleted']}
-                    if @@user_info[email] && (!@@user_info[email][:teacher]) && hide_from_sus
-                        write_events.map! do |e|
-                            if e['lesson']
-                                e.delete('raum')
-                                e.delete('lesson_key')
-                                e.delete('label_lehrer_short')
-                                e.delete('label_klasse_short')
-                                e.delete('label_lehrer')
-                                e.delete('label_klasse')
-                                e.delete('label_lehrer_lang')
-                                e.delete('label_klasse_lang')
-                                e.delete('label')
-                                e.delete('label_lang')
-                                e.delete('label_short')
-                                e.delete('label_room')
-                                e.delete('label_room_lang')
-                                e.delete('label_room_short')
-                                e.delete('lehrer_list')
-                                e.delete('nc_folder')
-                                e.delete('orig_lesson_key')
-                                e.delete('vertretungs_text')
-                                e.delete('data')
-                                game = ['Fortnite', 'Brawl Stars', 'Fall Guys',
-                                'Among Us', 'Minecraft', 'Clash of Clans',
-                                'Sea of Thieves', 'Witch It', 'Rocket League'].sample
-                                e['label_lehrer_lang'] = "<b>#{game}</b>"
-                                e['label_lehrer_short'] = "<b>#{game}</b>"
-                                e['label_lang'] = "<b>#{game}</b>"
-                                e['label_short'] = "<b>#{game}</b>"
-                                e['label'] = "<b>#{game}</b>"
                             end
                             e
                         end
-                    end
-
-                    # if user[:is_room]
-                    #     STDERR.puts write_events.to_yaml
-                    # end
-
-                    f.print({:events => write_events,
-                             :vplan_timestamp => @@vplan_timestamp,
-                             :switch_week => Main.get_switch_week_for_date(p)}.to_json)
-                    if only_these_lesson_keys.nil? && email[0] != '_'
-                        write_events.each do |event|
-                            # re-parse because keys are strings for SuS and symbols for LuL (?)
-                            event = JSON.parse(event.to_json)
-                            next if event['start'][0, 10] < Date.today.strftime('%Y-%m-%d')
-
-                            key = nil
-                            date = nil
-                            tstart = nil
-                            tend = nil
-                            if event['lesson']
-                                if (event['data'] || {})['lesson_jitsi']
-                                    key = "#{event['lesson_key']}/#{event['lesson_offset']}"
-                                    date = event['start'][0, 10]
-                                    tstart = event['start'][11, 5]
-                                    tend = event['end'][11, 5]
+                        if user[:teacher]
+                            fixed_events.map! do |event|
+                                if event[:lesson] && event[:lesson_key]
+                                    event[:schueler_for_lesson] = (@@schueler_for_lesson[event[:lesson_key]] || []).map do |email|
+                                        {:display_name => @@user_info[email][:display_name],
+                                        :nc_login => @@user_info[email][:nc_login]
+                                        }
+                                    end
                                 end
-                            elsif event['is_event']
-                                if event['jitsi']
-                                    key = "#{event['eid']}"
-                                    date = event['start'][0, 10]
-                                    tstart = event['start'][11, 5]
-                                    tend = event['end'][11, 5]
+                                # mark event as entfall FOR THIS PERSON only
+                                if event[:lehrer_removed]
+                                    if event[:lehrer_removed].include?(@@user_info[email][:shorthand])
+                                        event[:entfall] = true
+                                    end
                                 end
+                                event
                             end
-                            if key
-                                jitsi_count_for_dh[date] ||= {}
-                                jitsi_count_for_dh[date][key] ||= {:start => tstart, :end => tend, :count => 0}
-                                jitsi_count_for_dh[date][key][:count] += 1
+                            # inject saLzH SuS for this lesson, if any
+                            fixed_events.map! do |event|
+                                if event[:lesson] && event[:lesson_key]
+                                    lesson_sus = Set.new(@@schueler_for_lesson[event[:lesson_key]] || [])
+                                    salzh_sus = Set.new(@@current_salzh_status_by_email.keys)
+                                    intersection = (lesson_sus & salzh_sus).select do |email|
+                                        @@current_salzh_status_by_email[email][:status_end_date] >= event[:datum]
+                                    end
+                                    if intersection.size > 0
+                                        intersection_sorted = intersection.to_a.sort
+                                        contact_person_sus = intersection_sorted.select do |email|
+                                            @@current_salzh_status_by_email[email][:status] == :contact_person
+                                        end
+                                        unless contact_person_sus.empty?
+                                            event[:contact_person_sus] = contact_person_sus.map do |email|
+                                                @@user_info[email][:display_name]
+                                            end
+                                        end
+                                        salzh_sus = intersection_sorted.select do |email|
+                                            @@current_salzh_status_by_email[email][:status] == :salzh
+                                        end
+                                        unless contact_person_sus.empty?
+                                            event[:salzh_sus] = salzh_sus.map do |email|
+                                                @@user_info[email][:display_name]
+                                            end
+                                        end
+                                    end
+                                end
+                                event
+                            end
+                            # inject birthdays
+                            p0 = p - 2
+                            while p0 < p1 - 2 do
+                                p_md = p0.strftime('%m-%d')
+                                p_y = p0.strftime('%Y')
+                                pt_md = p0.strftime('%m-%d')
+                                pt_y = p0.strftime('%Y')
+                                day_label = nil
+                                if [0, 6].include?(p0.wday)
+                                    day_label = p0.strftime('%d.%m.')
+                                    pt_md = p.strftime('%m-%d')
+                                    pt_y = p.strftime('%Y')
+                                end
+                                if @@birthday_entries[p_md]
+                                    @@birthday_entries[p_md].each do |email|
+                                        next unless (@@schueler_for_teacher[user[:shorthand]] || {}).include?(email)
+                                        title = "🎂 #{@@user_info[email][:display_name]} (#{Main.tr_klasse(@@user_info[email][:klasse])})"
+                                        if day_label
+                                            title += " (am #{day_label})"
+                                        end
+                                        fixed_events << {
+                                            :start => "#{pt_y}-#{pt_md}",
+                                            :end => (Date.parse("#{pt_y}-#{pt_md}") + 1).strftime('%Y-%m-%d'),
+                                            :title => title,
+                                            :event_type => :birthday
+                                        }
+                                    end
+                                end
+                                p0 += 1
                             end
                         end
-                    end
-
-                    if ical_info[email]
-                        ical_events[email] ||= []
-                        write_events.each do |event|
-                            # STDERR.puts event.keys.to_json
-                            event_str = StringIO.open do |io|
-                                # if event[:is_event]
-                                #     io.puts "BEGIN:VEVENT"
-                                #     io.puts "DTSTART;TZID=Europe/Berlin:#{event[:start].gsub('-', '').gsub(':', '')}00"
-                                #     io.puts "DTEND;TZID=Europe/Berlin:#{event[:end].gsub('-', '').gsub(':', '')}00"
-                                #     io.puts "SUMMARY:#{fix_label_for_unicode(event[:event_title])}"
-                                #     io.puts "DESCRIPTION:#{event[:description].gsub("\n", "\\n")}"
-                                #     io.puts "END:VEVENT"
-                                # end
-                                next if event[:label].nil? && event[:title].nil? && event[:event_title].nil?
-                                io.puts "BEGIN:VEVENT"
-                                if event[:start].include?('T')
-                                    io.puts "DTSTART;TZID=Europe/Berlin:#{event[:start].gsub('-', '').gsub(':', '')}00"
-                                    io.puts "DTEND;TZID=Europe/Berlin:#{event[:end].gsub('-', '').gsub(':', '')}00"
+                        if user[:is_room]
+                            fixed_events.reject! do |event|
+                                event[:lesson] && (!(event[:raum] || '').split('/').include?(user[:room]))
+                            end
+                            fixed_events.map! do |event|
+                                event.delete(:data)
+                                event.delete(:per_user)
+                                event.delete(:lesson_offset)
+                                event
+                            end
+                        end
+                        if user[:is_klasse]
+                            fixed_events.map! do |event|
+                                event.delete(:data)
+                                event.delete(:per_user)
+                                event.delete(:lesson_offset)
+                                event
+                            end
+                        end
+                        if (!user[:is_room]) && (!user[:teacher])
+                            # if it's a schüler, remove pausenaufsichten
+                            fixed_events.reject! do |event|
+                                event[:pausenaufsicht]
+                            end
+                            # if it's a schüler, only add events which have the right klasse
+                            # (unless it's a phantom event)
+                            fixed_events.reject! do |event|
+                                flag = if event[:lesson] && (!event[:phantom_event]) && (!event[:pausenaufsicht])
+                                    !((event[:klassen].first).include?(user[:klasse]) || (event[:klassen].last).include?(user[:klasse]))
                                 else
-                                    io.puts "DTSTART;TZID=Europe/Berlin:#{event[:start].gsub('-', '')}"
-                                    io.puts "DTEND;TZID=Europe/Berlin:#{event[:end].gsub('-', '')}"
+                                    false
                                 end
-                                io.puts "SUMMARY:#{fix_label_for_unicode(event[:label] || event[:title] || event[:event_title])}"
-                                temp = StringIO.open do |io2|
-                                    data = event[:data] || {}
-                                    if data[:stundenthema_text]
-                                        io2.puts data[:stundenthema_text]
-                                        io2.puts
+                                if flag
+                                    if event[:lesson] && (@@lessons_for_user[email] || {}).include?(event[:lesson_key])
+                                        flag = false
                                     end
-                                    if data[:lesson_jitsi] || data[:lesson_nc] || data[:lesson_lr]
-                                        options = []
-                                        options << 'Jitsi' if data[:lesson_jitsi]
-                                        options << 'Nextcloud' if data[:lesson_nc]
-                                        options << 'Lernraum' if data[:lesson_lr]
-                                        io2.puts "Die Stunde wird per #{options.join(' / ')} durchgeführt."
-                                        io2.puts
+                                end
+                                # if flag
+                                    # debug "Reject (klasse) :#{event.to_json}"
+                                # end
+                                flag
+                            end
+                            # also delete Kurs events for SuS who are not participating in that kurs
+                            # (unless it's a phantom event)
+                            fixed_events.reject! do |event|
+                                if event[:lesson] && (!event[:phantom_event]) && (!event[:pausenaufsicht])
+                                    if event[:klassen].first.include?('11') || event[:klassen].first.include?('12') || event[:klassen].last.include?('11') || event[:klassen].last.include?('12')
+                                        # also handle entfall lessons: check orig_lesson_key first, lesson_key otherwise
+                                        check_lesson_key = event[:orig_lesson_key] || event[:lesson_key]
+                                        (check_lesson_key != 0) && (@@lessons_for_user[user[:email]]) && (!@@lessons_for_user[user[:email]].include?(check_lesson_key))
+                                    else
+                                        false
                                     end
-                                    if data[:notizen]
-                                        io2.puts data[:notizen]
-                                        io2.puts
+                                else
+                                    false
+                                end
+                            end
+                            # delete Notizen and booked tablet info for SuS
+                            fixed_events.map! do |event|
+                                if event[:data]
+                                    event[:data].delete(:notizen)
+                                    event[:data].delete(:booked_tablet)
+                                    event[:data].delete(:booked_tablet_label_long)
+                                    event[:data].delete(:booked_tablet_label_short)
+                                    event[:data].delete(:booked_tablet_sets)
+                                end
+                                event
+                            end
+                            # unless SuS is permanently at home delete lesson_jitsi flag
+                            # in some cases
+                            # fixed_events.map! do |event|
+                            #     if event[:lesson] && event[:data]
+                            #         unless Main.stream_allowed_for_date_lesson_key_and_email(event[:datum], event[:lesson_key], email, all_stream_restrictions[event[:lesson_key]], all_homeschooling_users.include?(email), group_for_sus[email])
+                            #             event[:data] = event[:data].reject { |x| x == :lesson_jitsi }
+                            #         end
+                            #     end
+                            #     event
+                            # end
+                            # add schueler_offset_in_lesson for SuS
+                            fixed_events.map! do |event|
+                                if event[:lesson_key]
+                                    event[:schueler_offset_in_lesson] = (@@schueler_offset_in_lesson[event[:lesson_key]] || {})[user[:email]] || 0
+                                end
+                                event
+                            end
+                            # add future homework for SuS
+                            fixed_events.map! do |_event|
+                                # TODO: this code can't work because we're using symbols from parsed JSON
+                                # but it's kind of okay because we don't need homework in the lesson modal
+                                event = JSON.parse(_event.to_json)
+                                if (all_homework[event[:lesson_key]] || {})[event[:datum]]
+                                    all_homework[event[:lesson_key]][event[:datum]].each_pair do |k, v|
+    #                                                 [:hausaufgaben_text, :homework_nc, :homework_lr].each do |k|
+                                        if [:homework_nc, :homework_lr].include?(k)
+                                            event[:data][k] = (event[:data][k] || false) || v
+                                        elsif k == :hausaufgaben_text
+                                            parts = []
+                                            parts << event[:data][k] if event[:data][k]
+                                            parts << v
+                                            event[:data][k] = parts.join('<br />').strip
+                                        elsif k == :homework_est_time
+                                            parts = []
+                                            parts << event[:data][k] if event[:data][k]
+                                            parts << v
+                                            event[:data][k] = (parts.map { |x| x.to_i }.sum).to_s
+                                        end
                                     end
-                                    if data[:hausaufgaben_text] || data[:homework_nc] || data[:homework_lr]
-                                        options = []
-                                        options << 'Nextcloud' if data[:homework_nc]
-                                        options << 'Lernraum' if data[:homework_lr]
-                                        options_label = ''
-                                        options_label = " (#{options.join(' / ')})" unless options.empty?
-                                        io2.print "Hausaufgaben#{options_label}"
-                                        if data[:hausaufgaben_text]
-                                            io2.print ': '
-                                            io2.puts data[:hausaufgaben_text]
-                                        else
+                                end
+                                event.symbolize_keys
+                            end
+                            fixed_events.map! do |event|
+                                # mark event as entfall FOR THIS PERSON only
+                                if @@user_info[email] && event[:klassen_removed]
+                                    if event[:klassen_removed].include?(@@user_info[email][:klasse])
+                                        event[:entfall] = true
+                                    end
+                                end
+                                event
+                            end
+                        end
+                        write_events = fixed_events.reject { |x| x[:deleted] || x['deleted']}
+                        if mode == :public
+                            write_events.map! do |e|
+                                e.delete(:data)
+                                e.delete(:per_user)
+                                e
+                            end
+                        end
+                        if @@user_info[email] && (!@@user_info[email][:teacher]) && hide_from_sus
+                            write_events.map! do |e|
+                                if e[:lesson]
+                                    e.delete(:raum)
+                                    e.delete(:lesson_key)
+                                    e.delete(:label_lehrer_short)
+                                    e.delete(:label_klasse_short)
+                                    e.delete(:label_lehrer)
+                                    e.delete(:label_klasse)
+                                    e.delete(:label_lehrer_lang)
+                                    e.delete(:label_klasse_lang)
+                                    e.delete(:label)
+                                    e.delete(:label_lang)
+                                    e.delete(:label_short)
+                                    e.delete(:label_room)
+                                    e.delete(:label_room_lang)
+                                    e.delete(:label_room_short)
+                                    e.delete(:lehrer_list)
+                                    e.delete(:nc_folder)
+                                    e.delete(:orig_lesson_key)
+                                    e.delete(:vertretungs_text)
+                                    e.delete(:data)
+                                    subject = [
+                                        ['Zauberkunst', 'Flitwick'],
+                                        ['Wahrsagen', 'Trelawney'],
+                                        ['Kräuterkunde', 'Sprout'],
+                                        ['Muggelkunde', 'Burbage'],
+                                        ['Pflege magischer Geschöpfe', 'Hagrid'],
+                                        ['Zaubertränke', 'Snape'],
+                                        ['Besenflug', 'Hooch'],
+                                        ['Verteidigung gegen die dunklen Künste', 'Lupin']
+                                    ].sample
+                                    e[:label_lehrer_lang] = "#{subject[1]}"
+                                    e[:label_lehrer_short] = "#{subject[1]}"
+                                    e[:label_lang] = "<b>#{subject[0]}</b> (#{subject[1]})"
+                                    e[:label_short] = "<b>#{subject[0]}</b> (#{subject[1]})"
+                                    e[:label] = "<b>#{subject[0]}</b> (#{subject[1]})"
+                                end
+                                e
+                            end
+                        end
+
+
+                        # if user[:is_room]
+                        #     STDERR.puts write_events.to_yaml
+                        # end
+
+                        f.print({:events => write_events,
+                                :vplan_timestamp => @@vplan_timestamp,
+                                :switch_week => Main.get_switch_week_for_date(p)}.to_json)
+                        if only_these_lesson_keys.nil? && email[0] != '_'
+                            write_events.each do |event|
+                                # re-parse because keys are strings for SuS and symbols for LuL (?)
+                                event = JSON.parse(event.to_json)
+                                next if event['start'][0, 10] < Date.today.strftime('%Y-%m-%d')
+
+                                key = nil
+                                date = nil
+                                tstart = nil
+                                tend = nil
+                                if event['lesson']
+                                    if (event['data'] || {})['lesson_jitsi']
+                                        key = "#{event['lesson_key']}/#{event['lesson_offset']}"
+                                        date = event['start'][0, 10]
+                                        tstart = event['start'][11, 5]
+                                        tend = event['end'][11, 5]
+                                    end
+                                elsif event['is_event']
+                                    if event['jitsi']
+                                        key = "#{event['eid']}"
+                                        date = event['start'][0, 10]
+                                        tstart = event['start'][11, 5]
+                                        tend = event['end'][11, 5]
+                                    end
+                                end
+                                if key
+                                    jitsi_count_for_dh[date] ||= {}
+                                    jitsi_count_for_dh[date][key] ||= {:start => tstart, :end => tend, :count => 0}
+                                    jitsi_count_for_dh[date][key][:count] += 1
+                                end
+                            end
+                        end
+
+                        if ical_info[email]
+                            ical_events[email] ||= []
+                            write_events.each do |event|
+                                # STDERR.puts event.keys.to_json
+                                event_str = StringIO.open do |io|
+                                    # if event[:is_event]
+                                    #     io.puts "BEGIN:VEVENT"
+                                    #     io.puts "DTSTART;TZID=Europe/Berlin:#{event[:start].gsub('-', '').gsub(':', '')}00"
+                                    #     io.puts "DTEND;TZID=Europe/Berlin:#{event[:end].gsub('-', '').gsub(':', '')}00"
+                                    #     io.puts "SUMMARY:#{fix_label_for_unicode(event[:event_title])}"
+                                    #     io.puts "DESCRIPTION:#{event[:description].gsub("\n", "\\n")}"
+                                    #     io.puts "END:VEVENT"
+                                    # end
+                                    next if event[:label].nil? && event[:title].nil? && event[:event_title].nil?
+                                    io.puts "BEGIN:VEVENT"
+                                    if event[:start].include?('T')
+                                        io.puts "DTSTART;TZID=Europe/Berlin:#{event[:start].gsub('-', '').gsub(':', '')}00"
+                                        io.puts "DTEND;TZID=Europe/Berlin:#{event[:end].gsub('-', '').gsub(':', '')}00"
+                                    else
+                                        io.puts "DTSTART;TZID=Europe/Berlin:#{event[:start].gsub('-', '')}"
+                                        io.puts "DTEND;TZID=Europe/Berlin:#{event[:end].gsub('-', '')}"
+                                    end
+                                    io.puts "SUMMARY:#{fix_label_for_unicode(event[:label] || event[:title] || event[:event_title])}"
+                                    temp = StringIO.open do |io2|
+                                        data = event[:data] || {}
+                                        if data[:stundenthema_text]
+                                            io2.puts data[:stundenthema_text]
                                             io2.puts
                                         end
-                                        io2.puts
+                                        if data[:lesson_jitsi] || data[:lesson_nc] || data[:lesson_lr]
+                                            options = []
+                                            options << 'Jitsi' if data[:lesson_jitsi]
+                                            options << 'Nextcloud' if data[:lesson_nc]
+                                            options << 'Lernraum' if data[:lesson_lr]
+                                            io2.puts "Die Stunde wird per #{options.join(' / ')} durchgeführt."
+                                            io2.puts
+                                        end
+                                        if data[:notizen]
+                                            io2.puts data[:notizen]
+                                            io2.puts
+                                        end
+                                        if data[:hausaufgaben_text] || data[:homework_nc] || data[:homework_lr]
+                                            options = []
+                                            options << 'Nextcloud' if data[:homework_nc]
+                                            options << 'Lernraum' if data[:homework_lr]
+                                            options_label = ''
+                                            options_label = " (#{options.join(' / ')})" unless options.empty?
+                                            io2.print "Hausaufgaben#{options_label}"
+                                            if data[:hausaufgaben_text]
+                                                io2.print ': '
+                                                io2.puts data[:hausaufgaben_text]
+                                            else
+                                                io2.puts
+                                            end
+                                            io2.puts
+                                        end
+                                        if event[:vertretungs_text]
+                                            io2.puts event[:vertretungs_text]
+                                            io2.puts
+                                        end
+                                        if event[:description]
+                                            io2.puts event[:description].gsub(/<\/?[^>]+>/, '')
+                                            io2.puts
+                                            io.puts "X-ALT-DESC;FMTTYPE=text/html:#{event[:description].gsub("\n", ' ')}"
+                                        end
+                                        io2.string.strip
                                     end
-                                    if event[:vertretungs_text]
-                                        io2.puts event[:vertretungs_text]
-                                        io2.puts
+                                    unless temp.empty?
+                                        io.puts "DESCRIPTION:#{temp.gsub("\n", "\\n")}"
                                     end
-                                    if event[:description]
-                                        io2.puts event[:description].gsub(/<\/?[^>]+>/, '')
-                                        io2.puts
-                                        io.puts "X-ALT-DESC;FMTTYPE=text/html:#{event[:description].gsub("\n", ' ')}"
-                                    end
-                                    io2.string.strip
+    #                                 io.puts "UID:#{tag}-#{event[:tag]}"
+                                    io.puts "END:VEVENT"
+                                    io.string.strip
                                 end
-                                unless temp.empty?
-                                    io.puts "DESCRIPTION:#{temp.gsub("\n", "\\n")}"
+                                # debug ical_info[email][:omit_ical_types].to_json
+                                # debug event[:event_type].class
+                                unless ical_info[email][:omit_ical_types].include?(event[:event_type].to_s)
+                                    ical_events[email] << event_str unless event_str.nil?
                                 end
-#                                 io.puts "UID:#{tag}-#{event[:tag]}"
-                                io.puts "END:VEVENT"
-                                io.string.strip
-                            end
-                            # debug ical_info[email][:omit_ical_types].to_json
-                            # debug event[:event_type].class
-                            unless ical_info[email][:omit_ical_types].include?(event[:event_type].to_s)
-                                ical_events[email] << event_str unless event_str.nil?
                             end
                         end
                     end

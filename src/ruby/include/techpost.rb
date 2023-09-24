@@ -1,10 +1,79 @@
 class Main < Sinatra::Base
-    post '/api/report_tech_problem' do
-        require_user_who_can_report_tech_problems!
-        data = parse_request_data(:required_keys => [:problem, :date, :device],)
 
+    def check_has_technikamt(email)
+        results = neo4j_query(<<~END_OF_QUERY, :email => email)
+            MATCH (u:User {email: $email})-[:HAS_AMT {amt: 'technikamt'}]->(v:Techpost)
+            RETURN CASE WHEN EXISTS((u)-[:HAS_AMT {amt: 'technikamt'}]->(v)) THEN true ELSE false END AS hasRelation;
+        END_OF_QUERY
+        return results
+    end
+    
+    def get_technikamt
+        results = neo4j_query(<<~END_OF_QUERY)
+            MATCH (u:User)-[:HAS_AMT {amt: 'technikamt'}]->(v:Techpost)
+            RETURN u.email;
+        END_OF_QUERY
+        debug results
+        return results.map { |result| result["u.email"] } || []
+    end
+    
+    def send_welcome_mail(recipients)
+        for mail_adress in recipients do
+            deliver_mail do
+                to mail_adress
+                bcc SMTP_FROM
+                from SMTP_FROM
+
+                subject "Du bist Technikamt im Dashboard!"
+
+                StringIO.open do |io|
+                    io.puts "<p>Hallo!</p>"
+                    io.puts "<p>Das TechnikTeam hat dir soeben die Funktion „Technikamt“ im Dashboard freigeschaltet. Herzlichen Glückwunsch, du gehörst zu den Ersten, die diese Funktion nutzen dürfen!</p>"
+                    io.puts "<p>Du solltest die Funktion schon im Rahmen eines Workshops kennengelernt haben. Gerne kannst du jetzt die Funktion testen (schreib aber bitte immer dazu, wenn es sich um einen Test handelt).</p>"
+                    io.puts "<p>Falls du diese Nachricht unerwartet bekommst oder Probleme beim Anmelden im Dashboard hast, melde dich einfach bei Peter-J. Germelmann (peter-julius.germelmann@mail.gymnasiumsteglitz.de).</p>"
+                    io.puts "<p>Viele Grüße<br>Das TechnikTeam #{SCHUL_NAME_AN_DATIV} #{SCHUL_NAME}</p>"
+                    io.string
+                end
+            end
+        end
+        respond(:ok => true)
+    end
+
+
+    post '/api/send_all_techpost_welcome_mail' do
+        require_user_who_can_manage_tablets!
+        recipients = get_technikamt()
+        send_welcome_mail recipients
+        display_name = @session_user[:display_name]
+        deliver_mail do
+            to WANTS_TO_RECEIVE_TECHPOST_DEBUG_MAIL
+            bcc SMTP_FROM
+            from SMTP_FROM
+
+            subject "Willkommens-E-Mail versendet"
+
+            StringIO.open do |io|
+                io.puts "<p>Hallo!</p>"
+                io.puts "<p>#{display_name} hat soeben eine Willkommens-E-Mail an alle Technikämter versendet. Du musst/kannst nichts weiter tun, diese E-Mail dient nur als Info.</p>"
+                io.string
+            
+            end
+        end
+    end
+
+    post '/api/send_single_techpost_welcome_mail' do
+        require_user_who_can_manage_tablets!
+        data = parse_request_data(:required_keys => [:email],)
+        recipients = []
+        recipients.append(data[:email])
+        send_welcome_mail recipients
+    end
+
+    post '/api/report_tech_problem' do
+        require_user_who_can_report_tech_problems_or_better!
+        data = parse_request_data(:required_keys => [:problem, :date, :device],)
         token = RandomTag.generate(24)
-        neo4j_query_expect_one(<<~END_OF_QUERY, :token => token, :email => @session_user[:email], :device => data[:device], :date => data[:date], :problem => data[:problem])
+        neo4j_entry = neo4j_query_expect_one(<<~END_OF_QUERY, :token => token, :email => @session_user[:email], :device => data[:device], :date => data[:date], :problem => data[:problem])
             MATCH (u:User {email: $email})
             CREATE (v:TechProblem {token: $token})-[:BELONGS_TO]->(u)
             SET v.device = $device 
@@ -15,23 +84,55 @@ class Main < Sinatra::Base
             SET v.comment = false
             SET v.hidden = false
             SET v.hidden_admin = false
-            RETURN v.token;
+            SET v.mail_count = 0
+            RETURN v, u.email;
         END_OF_QUERY
-
+        name = @session_user[:display_name]
+        mail_adress = @session_user[:email]
         deliver_mail do
-            to TECHNIKTEAM
+            to mail_adress
             bcc SMTP_FROM
             from SMTP_FROM
 
             subject "Neues Technikproblem"
 
             StringIO.open do |io|
-                io.puts "<p>Liebes TechnikTeam,</p>"
-                io.puts "<p>es liegt ein neues Technikproblem vor.</p>"
-                io.puts "<p>Das Problem betrifft #{data[:device]} und lautet: „#{data[:problem]}“</p>"
-                io.puts "<a href='/techpostadmin'>Probleme ansehen</a>"
-                io.puts "<p>Viele Grüße</p>"
-                io.puts "<p>Dashboard #{SCHUL_NAME_AN_DATIV} #{SCHUL_NAME}</p>"
+                io.puts "<p>Hallo!</p>"
+                io.puts "<p>Du hast soeben ein neues Technikproblem angelegt. Das Problem betrifft #{data[:device]} und lautet: „#{data[:problem]}“</p>"
+                # io.puts "<a href='#{WEBSITE_HOST}/techpost'>Probleme ansehen</a>"
+                io.puts "<p>Diese E-Mail dient nur als Bestätigung, du musst also nichts weiter tun.</p>"
+                io.puts "<p>Viele Grüße<br>Dashboard #{SCHUL_NAME_AN_DATIV} #{SCHUL_NAME}</p>"
+                io.string
+            
+            end
+        end
+        for mail_adress in TECHNIKTEAM do
+            deliver_mail do
+                to mail_adress
+                bcc SMTP_FROM
+                from SMTP_FROM
+
+                subject "Neues Technikproblem"
+
+                StringIO.open do |io|
+                    io.puts "<p>Liebes TechnikTeam,</p>"
+                    io.puts "<p>es liegt ein neues Technikproblem vor. Das Problem betrifft #{data[:device]} und lautet: „#{data[:problem]}“ Das Problem wurde von #{name} abgesendet.</p>"
+                    # io.puts "<a href='#{WEBSITE_HOST}/techpostadmin'>Probleme ansehen</a>"
+                    io.puts "<p>Viele Grüße<br>Dashboard #{SCHUL_NAME_AN_DATIV} #{SCHUL_NAME}</p>"
+                    io.string
+                
+                end
+            end
+        end
+        deliver_mail do
+            to WANTS_TO_RECEIVE_TECHPOST_DEBUG_MAIL
+            bcc SMTP_FROM
+            from SMTP_FROM
+
+            subject "Debug: Neues Technikproblem"
+
+            StringIO.open do |io|
+                io.puts "<p>#{neo4j_entry}</p>"
                 io.string
             
             end
@@ -39,16 +140,58 @@ class Main < Sinatra::Base
         respond(:ok => true)
     end
 
+    post '/api/report_tech_problem_quiet' do
+        require_user_who_can_report_tech_problems_or_better!
+        data = parse_request_data(:required_keys => [:problem, :date, :device],)
+        token = RandomTag.generate(24)
+        neo4j_entry = neo4j_query_expect_one(<<~END_OF_QUERY, :token => token, :email => @session_user[:email], :device => data[:device], :date => data[:date], :problem => data[:problem])
+            MATCH (u:User {email: $email})
+            CREATE (v:TechProblem {token: $token})-[:BELONGS_TO]->(u)
+            SET v.device = $device 
+            SET v.date = $date
+            SET v.problem = $problem
+            SET v.fixed = false
+            SET v.not_fixed = false
+            SET v.comment = false
+            SET v.hidden = false
+            SET v.hidden_admin = false
+            SET v.mail_count = 0
+            RETURN v, u.email;
+        END_OF_QUERY
+        respond(:ok => true)
+        deliver_mail do
+            to WANTS_TO_RECEIVE_TECHPOST_DEBUG_MAIL
+            bcc SMTP_FROM
+            from SMTP_FROM
+
+            subject "Debug: Neues Technikproblem"
+
+            StringIO.open do |io|
+                io.puts "<p>#{neo4j_entry}</p>"
+                io.string
+            
+            end
+        end
+    end
+
     post '/api/comment_tech_problem_admin' do
         require_user_who_can_manage_tablets!
         data = parse_request_data(:required_keys => [:token, :comment],)
         token = data[:token]
         comment = data[:comment]
-        problems = neo4j_query_expect_one(<<~END_OF_QUERY, :token => token, :comment => comment)
-            MATCH (v:TechProblem {token: $token})
-            SET v.comment = $comment
-            RETURN v;
-        END_OF_QUERY
+        if comment != ""
+            problems = neo4j_query_expect_one(<<~END_OF_QUERY, :token => token, :comment => comment)
+                MATCH (v:TechProblem {token: $token})
+                SET v.comment = $comment
+                RETURN v;
+            END_OF_QUERY
+        else
+            problems = neo4j_query_expect_one(<<~END_OF_QUERY, :token => token, :comment => comment)
+                MATCH (v:TechProblem {token: $token})
+                SET v.comment = false
+                RETURN v;
+            END_OF_QUERY
+        end
         respond(:ok => true)
     end
 
@@ -63,13 +206,18 @@ class Main < Sinatra::Base
     
     post '/api/get_tech_problems_admin' do
         require_user_who_can_manage_tablets!
-        problems = neo4j_query(<<~END_OF_QUERY, :email => @session_user[:email]).map { |x| {:problem => x['v'], :email => x['u.email']} }
+        problems = neo4j_query(<<~END_OF_QUERY, :email => @session_user[:email]).map { |x| {:problem => x['v'], :email => x['u.email'], :femail => x['f.email']} }
             MATCH (v:TechProblem)-[:BELONGS_TO]->(u:User)
-            RETURN v, u.email;
+            OPTIONAL MATCH (v:TechProblem)-[:WILL_BE_FIXED_BY]->(f:User)
+            RETURN v, u.email, f.email;
         END_OF_QUERY
         problems.map! do |x|
             x[:display_name] = @@user_info[x[:email]][:display_name]
             x[:nc_login] = @@user_info[x[:email]][:nc_login]
+            if x[:femail]
+                x[:fnc_login] = @@user_info[x[:femail]][:nc_login]
+                x[:fdisplay_name] = @@user_info[x[:femail]][:display_name]
+            end
             x[:klasse] = @@user_info[x[:email]][:klasse]
             x
         end
@@ -119,7 +267,6 @@ class Main < Sinatra::Base
         require_user_who_can_report_tech_problems!
         data = parse_request_data(:required_keys => [:token])
         token = data[:token]
-        debug token
         neo4j_query_expect_one(<<~END_OF_QUERY, :token => token)
             MATCH (v:TechProblem {token: $token})
             SET v.hidden = true
@@ -132,7 +279,6 @@ class Main < Sinatra::Base
         require_user_who_can_report_tech_problems!
         data = parse_request_data(:required_keys => [:token])
         token = data[:token]
-        debug token
         neo4j_query_expect_one(<<~END_OF_QUERY, :token => token)
             MATCH (v:TechProblem {token: $token})
             SET v.hidden = false
@@ -141,11 +287,77 @@ class Main < Sinatra::Base
         respond(:ok => true)
     end
 
+    post '/api/mail_tech_problem' do
+        require_user_who_can_manage_tablets!
+        data = parse_request_data(:required_keys => [:token])
+        token = data[:token]
+        data = neo4j_query(<<~END_OF_QUERY, :token => token)
+            MATCH (v:TechProblem {token: $token})-[:BELONGS_TO]->(u:User)
+            SET v.mail_count = v.mail_count + 1
+            RETURN v, u.email;
+        END_OF_QUERY
+        problem = data.first["v"]
+        mail_adress = data.first["u.email"]
+
+        if problem[:fixed]
+            state = "„Behoben“"
+        elsif problem[:not_fixed]
+            state = "„Nicht behoben“"
+        elsif problem[:comment]
+            state = "„Siehe Kommentar“" 
+        else 
+            state = "„In Bearbeitung“"
+        end
+
+        if problem[:comment] && state == "„Siehe Kommentar“"
+            comment = " Der Kommentar lautet: „#{problem[:comment]}“."
+        elsif problem[:comment]
+            comment = " Außerdem hat das TechnikTeam einen Kommentar geschrieben: „#{problem[:comment]}“."
+        end
+        deliver_mail do
+            to mail_adress
+            bcc SMTP_FROM
+            from SMTP_FROM
+
+            subject "Neuigkeiten zu deinem Technikproblem"
+
+            StringIO.open do |io|
+                io.puts "<p>Hallo!</p>"
+                io.puts "<p>Es gibt Neuigkeiten zu deinem Technikproblem:</p>"
+                io.puts "<p>Das Problem hat jetzt den Status #{state}.#{comment}</p>"
+                # io.puts "<a href='#{WEBSITE_HOST}/techpost'>Probleme ansehen</a>"
+                io.puts "<p>Viele Grüße<br>Dashboard #{SCHUL_NAME_AN_DATIV} #{SCHUL_NAME}</p>"
+                io.string
+            
+            end
+        end
+        admin_mail_adress = @session_user[:email]
+        deliver_mail do
+            to admin_mail_adress
+            bcc SMTP_FROM
+            from SMTP_FROM
+
+            subject "Kopie: Neuigkeiten zu deinem Technikproblem"
+
+            StringIO.open do |io|
+                io.puts "<p>Diese E-Mail wurde an #{mail_adress} gesendet.</p>"
+                io.puts "<p></p>"
+                io.puts "<p>Hallo!</p>"
+                io.puts "<p>Es gibt Neuigkeiten zu deinem Technikproblem:</p>"
+                io.puts "<p>Das Problem hat jetzt den Status #{state}.#{comment}</p>"
+                # io.puts "<a href='#{WEBSITE_HOST}/techpost'>Probleme ansehen</a>"
+                io.puts "<p>Viele Grüße<br>Dashboard #{SCHUL_NAME_AN_DATIV} #{SCHUL_NAME}</p>"
+                io.string
+            
+            end
+        end
+        respond(:ok => true)
+    end
+
     post '/api/hide_tech_problem_admin' do
         require_user_who_can_manage_tablets!
         data = parse_request_data(:required_keys => [:token])
         token = data[:token]
-        debug token
         neo4j_query_expect_one(<<~END_OF_QUERY, :token => token)
             MATCH (v:TechProblem {token: $token})
             SET v.hidden_admin = true
@@ -158,13 +370,36 @@ class Main < Sinatra::Base
         require_user_who_can_manage_tablets!
         data = parse_request_data(:required_keys => [:token])
         token = data[:token]
-        debug token
         neo4j_query_expect_one(<<~END_OF_QUERY, :token => token)
             MATCH (v:TechProblem {token: $token})
             SET v.hidden_admin = false
             SET v.fixed = false
             SET v.not_fixed = false
             RETURN v;
+        END_OF_QUERY
+        respond(:ok => true)
+    end
+
+    post '/api/i_will_fix_tech_problem' do
+        require_user_who_can_manage_tablets!
+        data = parse_request_data(:required_keys => [:token])
+        token = data[:token]
+        neo4j_query_expect_one(<<~END_OF_QUERY, :token => token, :email => @session_user[:email])
+            MATCH (v:TechProblem {token: $token})
+            MATCH (u:User {email: $email})
+            MERGE (v)-[:WILL_BE_FIXED_BY]->(u)
+            RETURN v;
+        END_OF_QUERY
+        respond(:ok => true)
+    end
+
+    post '/api/i_will_not_fix_tech_problem' do
+        require_user_who_can_manage_tablets!
+        data = parse_request_data(:required_keys => [:token])
+        token = data[:token]
+        neo4j_query(<<~END_OF_QUERY, :token => token, :email => @session_user[:email])
+            MATCH (v:TechProblem {token: $token})-[r:WILL_BE_FIXED_BY]->(u:User {email: $email})
+            DELETE r;
         END_OF_QUERY
         respond(:ok => true)
     end
@@ -179,6 +414,184 @@ class Main < Sinatra::Base
             RETURN v;
         END_OF_QUERY
         respond(:ok => true)
+    end
+
+    post '/api/clear_all_tech_problems_admin' do
+        require_technikteam!
+        neo4j_query(<<~END_OF_QUERY)
+            MATCH (v:TechProblem)
+            DETACH DELETE v
+        END_OF_QUERY
+        display_name = @session_user[:display_name]
+        respond(:ok => true)
+        deliver_mail do
+            to WANTS_TO_RECEIVE_TECHPOST_DEBUG_MAIL
+            bcc SMTP_FROM
+            from SMTP_FROM
+
+            subject "Alle Probleme gelöscht"
+
+            StringIO.open do |io|
+                io.puts "<p>Hallo!</p>"
+                io.puts "<p>#{display_name} hat soeben alle Technikprobleme gelöscht. Du musst/kannst nichts weiter tun, diese E-Mail dient nur als Info.</p>"
+                io.string
+            
+            end
+        end
+    end
+
+    post '/api/kick_all_techposts_admin' do
+        require_technikteam!
+        neo4j_query(<<~END_OF_QUERY)
+            MATCH (u:User)-[r:HAS_AMT {amt: 'technikamt'}]->(v:Techpost)
+            DELETE r;
+        END_OF_QUERY
+        display_name = @session_user[:display_name]
+        respond(:ok => true)
+        deliver_mail do
+            to WANTS_TO_RECEIVE_TECHPOST_DEBUG_MAIL
+            bcc SMTP_FROM
+            from SMTP_FROM
+
+            subject "Alle Technikämter entfernt"
+
+            StringIO.open do |io|
+                io.puts "<p>Hallo!</p>"
+                io.puts "<p>#{display_name} hat soeben alle Technikämter entfernt. Diese können deshalb keine Probleme mehr melden. Du musst/kannst nichts weiter tun, diese E-Mail dient nur als Info.</p>"
+                io.string
+            
+            end
+        end
+    end
+
+    post '/api/add_techpost' do
+        require_technikteam!
+        data = parse_request_data(:required_keys => [:email])
+        email = data[:email]
+        neo4j_query(<<~END_OF_QUERY, :email => email)
+            MATCH (u:User {email: $email})
+            MERGE (v:Techpost)
+            MERGE (u)-[:HAS_AMT {amt: 'technikamt'}]->(v)
+        END_OF_QUERY
+        respond(:ok => true)
+    end
+
+    post '/api/delete_techpost' do
+        require_technikteam!
+        data = parse_request_data(:required_keys => [:email])
+        email = data[:email]
+        neo4j_query(<<~END_OF_QUERY, :email => email)
+            MATCH (u:User {email: $email})-[r:HAS_AMT {amt: 'technikamt'}]->(v:Techpost)
+            DELETE r;
+        END_OF_QUERY
+        respond(:ok => true)
+    end
+
+    get '/api/tech_problem_pdf' do
+        require_user_who_can_manage_tablets!
+        data = parse_request_data(:required_keys => [:token])
+        token = data[:token]
+        problems = neo4j_query_expect_one(<<~END_OF_QUERY, :token => token)
+            MATCH (v:TechProblem {token: $token})
+            RETURN v;
+        END_OF_QUERY
+        problem = problems.first["v"]
+        debug problem
+        pdf = StringIO.open do |io|
+            io.puts "<style>"
+            io.puts "body { font-family: Roboto; font-size: 12pt; line-height: 120%; }"
+            io.puts "table { border-collapse: collapse; width: 100%; }"
+            io.puts "td, th { border: 1px solid #dddddd; text-align: left; padding: 8px; }"
+            io.puts ".pdf-space-above td {padding-top: 0.2em; }"
+            io.puts ".pdf-space-below td {padding-bottom: 0.2em; }"
+            io.puts ".page-break { page-break-after: always; border-top: none; margin-bottom: 0; }"
+            io.puts "</style>"
+            io.puts "<h1></h1>"
+            io.puts "<br>"
+            io.puts "<table>"
+            io.puts "<tbody>"
+            io.puts "<tr>"
+            io.puts "<td>Problem</td>"
+            io.puts "<td>#{}</td>"
+            io.puts "</tr>"
+            io.puts "<tr>"
+            io.puts "<td>Gerät</td>"
+            io.puts "<td>#{}</td>"
+            io.puts "</tr>"
+            io.puts "<tr>"
+            io.puts "<td>Absender</td>"
+            io.puts "<td>#{}</td>"
+            io.puts "</tr>"
+            io.puts "</tbody>"
+            io.puts "</table>"
+            io.string
+        end
+        c = Curl.post('http://weasyprint:5001/pdf', {:data => pdf}.to_json)
+        pdf = c.body_str
+        respond_raw_with_mimetype(pdf, 'application/pdf')
+    end
+
+    def print_techpost_superuser()
+        require_user_who_can_manage_tablets!
+        problems = neo4j_query(<<~END_OF_QUERY, :email => @session_user[:email]).map { |x| {:problem => x['v'], :email => x['u.email'], :femail => x['f.email']} }
+            MATCH (v:TechProblem)-[:BELONGS_TO]->(u:User)
+            OPTIONAL MATCH (v:TechProblem)-[:WILL_BE_FIXED_BY]->(f:User)
+            RETURN v, u.email, f.email;
+        END_OF_QUERY
+        StringIO.open do |io|
+            io.puts "<h3>User, die Zugriff auf diese Seite haben</h3>"
+            io.puts "<div class='row' style='margin-bottom: 15px;'><div class='col-md-12'>"
+            # for tech_admin in TECHNIKTEAM + CAN_MANAGE_TABLETS_USERS + ADMIN_USERS do
+            #     display_name = @@user_info[tech_admin][:display_name]
+            #     nc_login = @@user_info[tech_admin][:nc_login]
+            #     io.puts "<img src='#{NEXTCLOUD_URL}/index.php/avatar/#{nc_login}/256' class='icon avatar-md'>&nbsp;#{display_name}"
+            # end
+            io.puts "<table class='table narrow table-striped' style='width: unset; min-width: 100%;'>"
+            io.puts "<thead>"
+            io.puts "<tr><td>User</td></tr>"
+            io.puts "</thead><tbody>"
+            for tech_admin in (TECHNIKTEAM + CAN_MANAGE_TABLETS_USERS + ADMIN_USERS).uniq.sort do
+                next unless @@user_info[tech_admin]
+                display_name = @@user_info[tech_admin][:display_name]
+                nc_login = @@user_info[tech_admin][:nc_login]
+                io.puts "<tr><td><code><img src='#{NEXTCLOUD_URL}/index.php/avatar/#{nc_login}/256' class='icon avatar-md'>&nbsp;#{display_name}</code></td></tr>"
+            end
+            io.puts "</tbody></table>"
+            io.puts "</div></div>"
+            io.puts "<div class='row' style='margin-bottom: 15px;'><div class='col-md-12'><div class='alert alert-info'><code>#{(TECHNIKTEAM + CAN_MANAGE_TABLETS_USERS + ADMIN_USERS).uniq.sort}</code></div></div></div>"
+            io.puts "<br><h3>User, die Probleme melden können (Alle oben genannten plus:)</h3>"
+            io.puts "<div class='row' style='margin-bottom: 15px;'><div class='col-md-12'>"
+            io.puts "<table class='table narrow table-striped' style='width: unset; min-width: 100%;'>"
+            io.puts "<thead>"
+            io.puts "<tr><td>User</td><td>Bearbeiten</td></tr>"
+            io.puts "</thead><tbody>"
+            for technikamt in get_technikamt do
+                display_name = @@user_info[technikamt][:display_name]
+                nc_login = @@user_info[technikamt][:nc_login]
+                klasse = @@user_info[technikamt][:klasse]
+                io.puts "<tr><td><code><img src='#{NEXTCLOUD_URL}/index.php/avatar/#{nc_login}/256' class='icon avatar-md'>&nbsp;#{display_name} (#{klasse})</code></td><td><button class='btn btn-xs btn-danger bu-edit-techpost' data-email='#{technikamt}'><i class='fa fa-trash'></i>&nbsp;&nbsp;Rechte entziehen</button>&nbsp;<button class='btn btn-xs btn-success bu-send-single-welcome-mail' data-email='#{technikamt}'><i class='fa fa-envelope'></i>&nbsp;&nbsp;Willkommens-E-Mail versenden</button></td></tr>"
+            end
+            io.puts "</tbody></table>"
+            io.puts "</div></div>"
+            io.puts "<div class='row' style='margin-bottom: 15px;'><div class='col-md-12'><div class='alert alert-info'><code>#{get_technikamt}</code></div></div></div>"
+            unless problems == []
+                io.puts "<br><h3>Aktuelle Probleme im json-Format</h3>"
+                io.puts "<div class='row' style='margin-bottom: 15px;'><div class='col-md-12'>"
+                for problem in problems do
+                    io.puts "<div class='alert alert-info'><code>#{problem.to_json}</code></div>"
+                end
+                io.puts "</div></div>"
+            end
+            io.puts "<br><h3>Super Funktionen</h3>"
+            io.puts "<div class='row' style='margin-bottom: 15px;'><div class='col-md-12'>"
+            io.puts "<button class='bu-clear-all btn btn-danger'><i class='fa fa-trash'></i>&nbsp;&nbsp;Alle Probleme löschen</button>&nbsp<button class='bu-kick-all btn btn-danger'><i class='fa fa-user-times'></i>&nbsp;&nbsp;Alle Technikamt-User entfernen</button>&nbsp<button class='bu-send-welcome-mail btn btn-warning'><i class='fa fa-envelope'></i>&nbsp;&nbsp;Willkommens-E-Mails versenden</button>"
+            io.puts "</div></div>"
+            io.puts "<div class='row' style='margin-bottom: 15px;'><div class='col-md-12'>"
+            io.puts "<div class='form-group'><input id='ti_recipients' class='form-control' placeholder='User suchen…' /><div class='recipient-input-dropdown' style='display: none;'></div></input></div>"
+            io.puts "<div class='form-group row'><label for='ti_email' class='col-sm-1 col-form-label'>Name:</label><div class='col-sm-3'><input type='text' readonly class='form-control' id='ti_email' placeholder=''></div><div id='publish_message_btn_container'><button disabled id='bu_send_message' class='btn btn-outline-secondary'><i class='fa fa-plus'></i>&nbsp;&nbsp;<span>Hinzufügen</span></button></div></div>"
+            io.puts "Hinweis: Die Änderungen werden erst nach dem Neuladen der Seite sichtbar.</div></div>"
+            io.string
+        end
     end
 
     def print_tablet_login()

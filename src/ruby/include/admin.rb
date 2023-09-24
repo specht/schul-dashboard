@@ -1,81 +1,3 @@
-FOLDERS = %w( Agr~116a          ch-G32~458a       En~124a            gb~663a             ku1~688a          Ma~465a           Ph~224a
-    Agr~126a          ch-G33~460a       En~145a            gb~675a             Ku~21a            Ma~519a           Ph~400a
-    Agr~135a          CH-L15-115~728a   en1~667a           gb-G136~462a        ku2~780a          Ma~52a            Ph~521a
-    Agr~147a          D~113a            En~17a             gb-G40~457a         Ku~30a            Ma~551a           Ph~583a
-    Agr~158a          D~122a            En~189a            Ge~1186a            Ku~382a           Ma~579a           Ph~68a
-    agr1~663a         D~133a            En~199a            Ge~127a             Ku~39a            MA~624a           PH~728a
-    Agr~191a          D~143a            En~209a            Ge~136a             Ku~401a           Ma~62a            Ph~79a
-    agr2~675a         D~155a            En~221a            Ge~150a             Ku~48a            Ma~73a            Ph~834a
-    Agr~283a          D~15a             En~241a            Ge~161a             Ku~537a           Ma~87a            Ph~93a
-    Agr~307a          D~197a            en2~672a           ge1~660a            Ku~565a           ma-G124~728a      ph-G128~463a
-    Agr~549a          D~1a              En~26a             Ge~215a             Ku~57a            ma-G125~393a      ph-G30~449a
-    Agr~754a          D~207a           'EN 2~836a'         ge2~675a            Ku~595a           ma-G126~393a      PH-L14-114~728a
-    Agr~765a          D~219a            En~291a            Ge~290a             Ku~71a            ma-G127~293a      pl1~667a
-    agr-G109~460a     D~24a             En~35a             Ge~527a             KU~728a           ma-G26~728a       pl1~852a
-    agr-G114~471a     D~300a            EN~362a            Ge~555a             Ku~764a           ma-G27~479a       pl2~786a
-    agr-G115~462a     D~33a             En~44a             Ge~65a              Ku~767a           ma-G28~466a       pl-G123~474a
-    agr-G15~456a      D~42a             En~470a            GE~728a             Ku~768a           ma-G29~466a       pl-G25~458a
-    agr-G16~458a      D~513a            En~515a            Ge~76a              Ku~83a            ma-G29~728a       Pol~1182a
-    agr-G17~457a      D~51a             En~53a             ge-G118~471a        Ku~97a            ma-G30~486a       Pol~1184a
-    agr-G18~474a      D~541a            En~543a            ge-G119~462a        ku-G06~449a       ma-G31~486a       Pol~162a
-    AGR-L09~352a      D~571a            En~573a            ge-G120~461a        ku-G07~475a       ma-G32~362a       Pol~216a
-    AGR-L09~477a      D~61a             En~5a              ge-G21~460a         ku-G106~463a      MA-L113~293a      Pol~218a
-    AGR-L109~291a     D~72a             EN~624a            ge-G22~456a         ku-G141~461a      MA-L13~450a       Pol~381a
-    AGR-L109~836a     D~86a             En~63a             GE-L11-111~728a     KU-L03~362a       mo~691a           Pol~529a
-    Ba~231a           D~99a             En~74a             GeNgr~136a          KU-L03~728a       mo-G45-140~464a   Pol~557a
-    Ba~856a           dc-G43-138~474a   En~88a             GeNgr-PolNgr~386a   KU-L103~293a      Mu~109a           Pol~587a
-    bb-G66-166~452a   de03~352a         en-G08-10~458a     Ge-Pol~127a         La~115a           Mu~118a           Pol~66a
-    BD~856a           de1~354a          en-G107-09~471a    Ge-Pol~196a         La~125a           Mu~129a           Pol~761a
-    bi1~660a          de1~624a          en-G11~475a        Ge-Pol~290a         La~134a           Mu~13a            Pol~77a
-    bi2~672a          DE~362a           EN-L04-06~477a     Ge-Pol~294a         La~146a           mu1~830a          PolNgr~762a
-    bi-G131~463a      DE~836a           EN-L05-07~450a     Ge-Pol~90a          La~157a           Mu~22a            pw1~663a
-    bi-G132~460a      deb~786a          EN-L104-06~733a    Ge-PolNgr~105a      la1~660a          mu2~780a          pw2~672a
-    bi-G34~459a       de-G01~468a       EN-L104-106~728a   Ge-PolNgr~587a      La~18a            Mu~31a            PW~728a
-    bi-G35~456a       de-G02~352a       EN-L105-07~293a    Gewi~19a            La~190a           Mu~40a            pw-G116~460a
-    BI-L115~624a      de-G02~468a       Eth~111a           Gewi~28a            La~200a           Mu~49a            pw-G20~457a
-    BI-L116~293a      de-G03~450a       Eth~121a           Gewi~37a            La~210a           Mu~535a           PW-L10-110~728a
-    BI-L12-112~728a   de-G04~354a       Eth~132a           Gewi~46a            la2~781a          Mu~563a           RU~636a
-    BI-L16~450a       de-G04~450a       Eth~142a           Gewi~55a            La~27a            Mu~58a            Sp~14a
-    Bio~139a          de-G101~292a      Eth~152a           Gewi~9a             LA~352a           Mu~593a           sp1~634a
-    Bio~165a          de-G102~291a      Eth~164a           gg~668a             La~36a            Mu~70a            Sp~229a
-    Bio~192a          de-G103~291a      Eth~195a           gg~781a             La~45a            Mu~766a           Sp~23a
-    Bio~201a          de-G104~292a      Eth~204a           gg-G134~473a        La~517a           Mu~768a           Sp~282a
-    Bio~211a          DE-L01~477a       Eth~214a           gg-G38~459a         La~547a           Mu~82a            Sp~296a
-    BIO~362a          DE-L101~293a      Eth~533a           gp~660a             La~54a            Mu~96a            Sp~32a
-    Bio~523a          DeP~100a          Eth~561a           gp~784a             La~64a            mu-G05~475a       Sp~41a
-    Bio~752a          DeP~575a          Eth~591a           gp-G135~470a        La~75a            mu-G105~461a      Sp~50a
-    Bio~760a          ds1~636a          Eth~751a           gp-G39~456a         La~7a             MU-L02-102~728a   Sp~59a
-    Bio~81a           ds-G19~452a       Eth~84a            GY~856a             LA~836a           Nawi~11a          Sp~756a
-    Bio~95a           dw-G46~460a       Eth~98a            gy-G60-160~452a     La~89a            Nawi~20a          SpNgr~112a
-    BioNgr~108a       Ek~151a           EthNgr~228a        gy-G64-164~455a     la-G112~473a      Nawi~29a          SpNgr~597a
-    BioNgr~139a       Ek~163a           evR~177a           ij-G44-139~474a     la-G113~470a      Nawi~38a          SpoJ~154a
-    BioNgr~225a       ek1~667a          evR~206a           In~137a             la-G13~475a       Nawi~47a          SpoJ~4a
-    BioNgr~581a       ek1~784a          evR~277a           In~153a             la-G14~459a       Nawi~56a          SpoJ~508a
-    bm-G70-170~452a   Ek~217a           evR~305a           In~166a             LA-L08~477a       Ngr~134a          SpoJ~85a
-    cc~786a           ek2~786a          evR~387a           in1~672a            LA-L108~291a      Ngr~220a          SpoJ~8a
-    cc-G42~474a       Ek~380a           evR~458a           In~218a             Lat~784a          NGR~352a          SpoM~1178a
-    Ch~107a           Ek~399a           evR~459a           inf-G36-133~460a    lc-G41-137~474a   Ngr~571a          SpoM~154a
-    Ch~117a           Ek~404a           evR~460a           ITG~521a            lch~786a          NGR~836a          SpoM~4a
-    Ch~128a           Ek~467a           evR~471a           ITG~68a             Ma~101a           Ngr~99a           SpoM~508a
-    Ch~138a           Ek~531a           evR~471b           ITG~759a            Ma~114a           NGR-L117~291a     SpoM~8a
-    Ch~148a           Ek~67a            evR~859a           ITG~79a             Ma~123a           NGR-L17~477a      spT~786a
-    Ch~159a           EK~728a           evR~860a           ITG~93a             Ma~144a           NGR-L18~477a      StrA~231a
-    ch1~609a          Ek~762a           evR~861a           katR~206a           Ma~156a           NgrP~100a         SW~856a
-    Ch~193a           Ek~78a            fi-G76-176~451a    katR~277a           Ma~16a            NgrP~575a         sw-G62-162~452a
-    Ch~202a           Ek~92a            FöMa~601a          katR~281a           ma1~726a          pb~672a           TA~651a
-    Ch~212a           ek-G121~474a      Fr~1005a           katR~459a           Ma~188a           pb-G37-142~460a   TE~856a
-    Ch~226a           ek-G122~470a      Fr~1006a           katR~471a           Ma~198a           Ph~107a           ts-G72-172~452a
-    ch2~750a          ek-G23~458a       Fr~103a            katR~859a           Ma~208a           Ph~149a           TT~651a
-    Ch~543a           ek-G24~459a       fr1~672a           Ku~110a             Ma~223a           ph1~609a          tt-G74-174~455a
-    Ch~585a           EkNgr~106a        Fr~222a            Ku~119a             Ma~25a            Ph~160a           UChor~231a
-    CH~728a           EkNgr~227a        Fr~269a            Ku~12a              Ma~34a            ph1~688a          UOrch~231a
-    ch-G129~471a      EkNgr~381a        Fr~573a            Ku~130a             MA~362a           Ph~194a           vb-G68-168~455a
-    ch-G130~461a      EkNgr~589a        Fr~944a            Ku~141a             Ma~3a             Ph~203a           VO~651a
-    ch-G31~449a       En~102a           fr-G12-110~460a    ku1~609a            Ma~43a            Ph~213a           zdw~672a
-).sort
-   
-   
-
 class Main < Sinatra::Base
     post '/api/impersonate' do
         require_admin!
@@ -123,10 +45,11 @@ class Main < Sinatra::Base
             io.puts "<a class='btn btn-secondary' href='#tablets'>Tablets</a>"
             io.puts "<a class='btn btn-secondary' href='#monitor'>Monitor</a>"
             io.puts "<a class='btn btn-secondary' href='#bibliothek'>Bibliothek</a>"
-            io.puts "<a class='btn btn-secondary' href='/lesson_keys'>Lesson Keys</a>"
             io.puts "<a class='btn btn-secondary' href='/sus_ohne_kurse'>SuS ohne Kurse</a>"
             io.puts "<a class='btn btn-secondary' href='/api/all_sus_logo_didact'>LDC: Alle SuS</a>"
             io.puts "<a class='btn btn-secondary' href='/api/all_lul_logo_didact'>LDC: Alle Lehrkräfte</a>"
+            io.puts "<a class='btn btn-secondary' href='/api/all_sus_untis'>Untis: Alle SuS</a>"
+            io.puts "<a class='btn btn-secondary' href='/api/all_kurse_untis'>Untis: Alle Kurse</a>"
             io.puts "<hr />"
             io.puts "<h3 id='teachers'>Lehrerinnen und Lehrer</h3>"
             io.puts "<div style='max-width: 100%; overflow-x: auto;'>"
@@ -203,7 +126,7 @@ class Main < Sinatra::Base
             io.puts "<tbody>"
             @@klassen_order.each do |klasse|
                 io.puts "<tr>"
-                io.puts "<th colspan='7'>Klasse #{klasse}</th>"
+                io.puts "<th colspan='7'>Klasse #{tr_klasse(klasse)}</th>"
                 io.puts "</tr>"
                 (@@schueler_for_klasse[klasse] || []).each do |email|
                     io.puts "<tr class='user_row'>"
@@ -314,63 +237,6 @@ class Main < Sinatra::Base
         end
     end
     
-    def print_lesson_keys
-        require_admin!
-        STDERR.puts FOLDERS.to_yaml
-        StringIO.open do |io|
-            io.puts "<table class='table table-condensed table-striped'>"
-            io.puts "<thead>"
-            io.puts "<tr>"
-            io.puts "<th>Lesson Key</th>"
-            io.puts "<th>(Before)</th>"
-            io.puts "<th>Fach</th>"
-            io.puts "<th>Klassen</th>"
-            io.puts "<th>SuS</th>"
-            io.puts "<th>Stunden</th>"
-            io.puts "<th>Termine</th>"
-            io.puts "<th>Lehrer</th>"
-            io.puts "</tr>"
-            io.puts "</thead>"
-            io.puts "<tbody>"
-            @@current_lesson_key_order.each do |lesson_key|
-                pretty_fach = @@faecher[lesson_key.split('_').first.split('-').first] || ''
-                row_style = ''
-                if pretty_fach.include?(' GK')
-                    row_style = 'background-color: #fce94f;'
-                elsif pretty_fach.include?(' LK')
-                    row_style = 'background-color: #fcaf3e;'
-                elsif !(Set.new(@@lessons[:lesson_keys][lesson_key][:klassen]) & Set.new(KLASSEN_ORDER)).empty?
-                    # row_style = 'background-color: #73a946;'
-                end
-                io.puts "<tr style='#{row_style}'>"
-                io.puts "<td>#{lesson_key}</td>"
-                old_lesson_key = @@lesson_key_back_tr[lesson_key] || ''
-                io.puts "<td>#{old_lesson_key} #{good_bad_icon(FOLDERS.include?(old_lesson_key))}</td>"
-                io.puts "<td>#{pretty_fach}</td>"
-                info = @@current_lesson_key_info[lesson_key]
-                io.puts "<td>#{@@lessons[:lesson_keys][lesson_key][:klassen].sort { |a, b| (a.to_i == b.to_i) ? (a <=> b) : (a.to_i <=> b.to_i) }.map { |x| tr_klasse(x) }.join(', ')}</td>"
-                sus_list = []
-                (@@schueler_for_lesson[lesson_key] || []).each.with_index do |email, i|
-                    sus_list << "#{i + 1}. #{@@user_info[email][:display_name]}"
-                end
-                io.puts "<td>#{sus_list.size}&nbsp;SuS#{sus_list.size == 0 ? "<i class='fa fa-warning text-danger'></i>" : ''}</td>"
-                icon = ''
-                if pretty_fach.include?(' LK') 
-                    icon = good_bad_icon(info[:stunden].size == 5)
-                elsif pretty_fach.include?(' GK')                     
-                    icon = good_bad_icon(info[:stunden].size == 3)
-                end
-                io.puts "<td>#{info[:stunden].size} #{icon}</td>"
-                io.puts "<td>#{info[:stunden].map {|x| y = x.split('/'); ['Mo', 'Di', 'Mi', 'Do', 'Fr'][y[0].to_i] + '/' + y[1].to_i.to_s}.join(', ')}</td>"
-                io.puts "<td>#{@@lessons[:lesson_keys][lesson_key][:lehrer].sort.join(', ')}</td>"
-                io.puts "</tr>"
-            end
-            io.puts "</tbody>"
-            io.puts "</table>"
-            io.string
-        end
-    end
-
     def print_lesson_keys_history
         require_admin!
         StringIO.open do |io|
@@ -436,6 +302,80 @@ class Main < Sinatra::Base
     get '/api/all_users' do
         require_admin!
         respond_raw_with_mimetype(print_all_users, 'text/plain')
+    end
+
+    def print_all_sus_untis
+        require_admin!
+        StringIO.open do |io|
+            count = 0
+            @@klassen_order.each do |klasse|
+                @@schueler_for_klasse[klasse].each do |email|
+                    count += 1
+                    user = @@user_info[email]
+                    parts = []
+                    parts << "#{user[:last_name]}#{user[:first_name]}".gsub(' ', '').gsub('-', '').gsub(',', '')
+                    parts << user[:last_name]
+                    parts << ""
+                    parts << ""
+                    parts << ""
+                    parts << ""
+                    parts << user[:geschlecht].upcase
+                    parts << user[:first_name]
+                    parts << "#{count}"
+                    parts << "#{user[:klasse]}"
+                    parts << "#{count}"
+                    parts << ""
+                    parts << "#{user[:geburtstag][0, 4]}#{user[:geburtstag][5, 2]}#{user[:geburtstag][8, 2]}"
+                    parts << ""
+                    # ["\"Mustermann\"", "\"Mustermann\"", "", "", "", "", "\"W\"", "\"Max\"", "\"1\"", "\"5a\"", "\"1\"", "", "\"19670101\"", "", "\r"]
+                    # io.puts "#{user[:last_name]}\t#{user[:first_name]}\t#{user[:klasse]}\t#{user[:geschlecht]}\t#{geburtstag}"
+                    io.puts parts.map { |x| '"' + x + '"'}.join("\t")
+                end
+            end
+            io.string
+        end
+    end
+
+    get '/api/all_sus_untis' do
+        require_admin!
+        respond_raw_with_mimetype(print_all_sus_untis, 'text/plain')
+    end
+
+    def print_all_kurse_untis
+        require_admin!
+        StringIO.open do |io|
+            count = 0
+            @@klassen_order.each do |klasse|
+                next unless ['11', '12'].include?(klasse)
+                @@schueler_for_klasse[klasse].each do |email|
+                    @@kurse_for_schueler[email].each do |lesson_key|
+                        count += 1
+                        user = @@user_info[email]
+                        parts = []
+                        parts << "#{user[:last_name]}#{user[:first_name]}".gsub(' ', '').gsub('-', '').gsub(',', '')
+                        parts << ""
+                        parts << @@original_fach_for_lesson_key[lesson_key] || lesson_key
+                        parts << ""
+                        parts << "#{klasse}"
+                        parts << ""
+                        parts << ""
+                        parts << ""
+                        parts << ""
+                        parts << ""
+                        parts << @@original_fach_for_lesson_key[lesson_key] || lesson_key
+                        parts << ""
+                        parts << "1"
+                        io.puts parts.map { |x| '"' + x + '"'}.join("\t")
+                    end
+                end
+            end
+            io.string
+        end
+    end
+
+    get '/api/all_kurse_untis' do
+        require_admin!
+        respond_raw_with_mimetype(print_all_kurse_untis, 'text/plain')
     end
 
     def print_all_sus_logo_didact
@@ -764,5 +704,20 @@ class Main < Sinatra::Base
     get '/api/all_users_informatik_biber' do
         require_admin!
         respond_raw_with_mimetype(print_all_users_informatik_biber, 'text/plain')
+    end
+
+    get '/api/get_all_user_ids' do
+        require_admin!
+        result = []
+        @@user_info.each_pair do |email, info|
+            path = 'unknown'
+            if info[:teacher]
+                path = 'Lehrer'
+            else
+                path = "Klasse #{info[:klasse]}"
+            end
+            result << [email, info[:id], path, info[:display_name]]
+        end
+        respond(:users => result)
     end
 end

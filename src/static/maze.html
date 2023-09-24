@@ -1,0 +1,53 @@
+<style>
+  canvas {
+    width: 100%;
+    height: 100%;
+    position: fixed;
+    top: 0;
+    left: 0;
+  }
+
+  canvas.overlay {
+    position: absolute;
+    top: 0;
+    right: 0;
+    box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+  }
+</style>
+<script src="/cypher/maze/three.min.js"></script>
+<script type="x-shader/x-vertex" id="vertex-shader">
+  varying vec2 vuv;
+  attribute float lightness;
+  varying float _lightness;
+  out vec3 pos;
+  out float depth;
+
+  void main() {
+    _lightness = lightness;
+    vuv = uv;
+    gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+    pos = position;
+    depth = gl_Position.z;
+  }
+</script>
+
+<script type="x-shader/x-fragment" id="fragment-shader-lightmap">
+  uniform sampler2D texture1;
+  uniform float texscale;
+  varying float _lightness;
+
+  varying vec2 vuv;
+  in vec3 pos;
+  in float depth;
+
+  void main() {
+    gl_FragColor = texture2D(texture1, vuv * texscale);
+    gl_FragColor.rgb *= _lightness;
+    gl_FragColor.rgb *= clamp(2.0 / depth + 0.3, 0.0, 1.0);
+  }
+</script>
+
+#{print_maze_defs()}
+
+<div id="stats">Stats</div>
+<script src="/cypher/maze/app.js?#{Time.now.to_i}"></script>

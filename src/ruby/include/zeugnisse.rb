@@ -7,7 +7,7 @@
 # lowriter --convert-to pdf [in path]
 # merge PDFs: gs -dBATCH -dNOPAUSE -q -sDEVICE=pdfwrite -sOutputFile=merged.pdf z1.pdf z2.pdf
 
-require '/static/fragments.rb'
+require './fragments/fragments.rb'
 
 class Main < Sinatra::Base
     def self.parse_zeugnisformulare
@@ -67,6 +67,8 @@ class Main < Sinatra::Base
     end
 
     def self.determine_zeugnislisten()
+        STDERR.puts "ATTENTION determine_zeugnislisten() IS DOING NOTHING RIGHT NOW"
+        return
         @@all_zeugnis_faecher = Set.new()
         FAECHER_FOR_ZEUGNIS[ZEUGNIS_SCHULJAHR][ZEUGNIS_HALBJAHR].each_pair do |key, faecher|
             faecher.each do |fach|
@@ -78,7 +80,7 @@ class Main < Sinatra::Base
         @@zeugnisliste_for_lehrer = {}
 
         kurse_for_klasse = Hash[ZEUGNIS_KLASSEN_ORDER.map do |klasse|
-            [klasse, @@lessons_for_klasse[klasse].map { |x| @@lessons[:lesson_keys][x].merge({:lesson_key => x})}]
+            [klasse, (@@lessons_for_klasse[klasse] || []).map { |x| @@lessons[:lesson_keys][x].merge({:lesson_key => x})}]
         end]
 
         delegates = {}
@@ -152,7 +154,7 @@ class Main < Sinatra::Base
             @@zeugnisliste_for_klasse[klasse] = {}
             @@zeugnisliste_for_klasse[klasse][:lehrer_for_fach] = {}
             @@zeugnisliste_for_klasse[klasse][:lehrer_for_fach_is_delegate] = {}
-            @@klassenleiter[klasse].each do |shorthand|
+            (@@klassenleiter[klasse] || []).each do |shorthand|
                 @@zeugnisliste_for_klasse[klasse][:lehrer_for_fach]['_KL'] ||= []
                 @@zeugnisliste_for_klasse[klasse][:lehrer_for_fach]['_KL'] << shorthand
                 ['VT', 'VT_UE', 'VS', 'VS_UE', 'VSP'].each do |item|

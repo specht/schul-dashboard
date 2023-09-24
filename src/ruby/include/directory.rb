@@ -32,14 +32,14 @@ class Main < Sinatra::Base
             io.puts "<th>Name</th>"
             io.puts "<th>Vorname</th>"
             io.puts "<th>Geburtsdatum</th>"
-            io.puts "<th>Status</th>"
-            if can_manage_salzh_logged_in?
-                io.puts "<th>Reguläre Testung</th>"
-                io.puts "<th>Freiwilliges saLzH bis</th>"
-            end
-            if klassenleiter_logged_in
-                io.puts "<th>Freiwillige Testung</th>"
-            end
+            # io.puts "<th>Status</th>"
+            # if can_manage_salzh_logged_in?
+            #     io.puts "<th>Reguläre Testung</th>"
+            #     io.puts "<th>Freiwilliges saLzH bis</th>"
+            # end
+            # if klassenleiter_logged_in
+            #     io.puts "<th>Freiwillige Testung</th>"
+            # end
             io.puts "<th>E-Mail-Adresse</th>"
             # io.puts "<th style='width: 140px;'>Homeschooling</th>"
             if ['11', '12'].include?(klasse)
@@ -83,38 +83,38 @@ class Main < Sinatra::Base
                 io.puts "<td><div class='#{salzh_class}' style='#{salzh_style}'>#{record[:last_name]}</div></td>"
                 io.puts "<td><div class='#{salzh_class}' style='#{salzh_style}'>#{record[:first_name]}</div></td>"
                 io.puts "<td>#{Date.parse(record[:geburtstag]).strftime('%d.%m.%Y')}</td>"
-                salzh_label = ''
-                if salzh_status[email][:status]
-                    salzh_label = "<span class='salzh-badge salzh-badge-big bg-#{SALZH_MODE_COLORS[(salzh_status[email] || {})[:status]]}'><i class='fa #{SALZH_MODE_ICONS[(salzh_status[email] || {})[:status]]}'></i></span>&nbsp;&nbsp;bis #{Date.parse(salzh_status[email][:status_end_date]).strftime('%d.%m.')}"
+                # salzh_label = ''
+                # if salzh_status[email][:status]
+                #     salzh_label = "<span class='salzh-badge salzh-badge-big bg-#{SALZH_MODE_COLORS[(salzh_status[email] || {})[:status]]}'><i class='fa #{SALZH_MODE_ICONS[(salzh_status[email] || {})[:status]]}'></i></span>&nbsp;&nbsp;bis #{Date.parse(salzh_status[email][:status_end_date]).strftime('%d.%m.')}"
 
-                    # salzh_label = "<div class='bg-#{SALZH_MODE_COLORS[(salzh_status[email] || {})[:status]]}' style='text-align: center; padding: 4px; margin: -4px; border-radius: 4px;'><i class='fa #{SALZH_MODE_ICONS[(salzh_status[email] || {})[:status]]}'></i>&nbsp;&nbsp;bis #{Date.parse(salzh_status[email][:status_end_date]).strftime('%d.%m.')}</div>"
-                end
-                io.puts "<td>#{salzh_label}</td>"
-                if can_manage_salzh_logged_in?
-                    io.puts "<td>"
-                    testing_required = salzh_status[email][:testing_required]
-                    if testing_required
-                        io.puts "<button class='btn btn-sm btn-success bu_toggle_testing_required'><i class='fa fa-check'></i>&nbsp;&nbsp;notwendig</button>"
-                    else
-                        io.puts "<button class='btn btn-sm btn-outline-secondary bu_toggle_testing_required'><i class='fa fa-times'></i>&nbsp;&nbsp;nicht notwendig</button>"
-                    end
-                    io.puts "</td>"
+                #     # salzh_label = "<div class='bg-#{SALZH_MODE_COLORS[(salzh_status[email] || {})[:status]]}' style='text-align: center; padding: 4px; margin: -4px; border-radius: 4px;'><i class='fa #{SALZH_MODE_ICONS[(salzh_status[email] || {})[:status]]}'></i>&nbsp;&nbsp;bis #{Date.parse(salzh_status[email][:status_end_date]).strftime('%d.%m.')}</div>"
+                # end
+                # io.puts "<td>#{salzh_label}</td>"
+                # if can_manage_salzh_logged_in?
+                #     io.puts "<td>"
+                #     testing_required = salzh_status[email][:testing_required]
+                #     if testing_required
+                #         io.puts "<button class='btn btn-sm btn-success bu_toggle_testing_required'><i class='fa fa-check'></i>&nbsp;&nbsp;notwendig</button>"
+                #     else
+                #         io.puts "<button class='btn btn-sm btn-outline-secondary bu_toggle_testing_required'><i class='fa fa-times'></i>&nbsp;&nbsp;nicht notwendig</button>"
+                #     end
+                #     io.puts "</td>"
 
-                    io.puts "<td>"
-                    freiwillig_salzh = salzh_status[email][:freiwillig_salzh]
-                    io.puts "<div class='input-group'><input type='date' class='form-control ti_freiwillig_salzh' value='#{freiwillig_salzh}' /><div class='input-group-append'><button #{freiwillig_salzh.nil? ? 'disabled' : ''} class='btn #{freiwillig_salzh.nil? ? 'btn-outline-secondary' : 'btn-danger'} bu_delete_freiwillig_salzh'><i class='fa fa-trash'></i></button></div></div>"
-                    io.puts "</td>"
-                end
-                if klassenleiter_logged_in
-                    io.puts "<td>"
-                    voluntary_testing = salzh_status[email][:voluntary_testing]
-                    if voluntary_testing
-                        io.puts "<button class='btn btn-sm btn-success bu_toggle_voluntary_testing'><i class='fa fa-check'></i>&nbsp;&nbsp;nimmt teil</button>"
-                    else
-                        io.puts "<button class='btn btn-sm btn-outline-secondary bu_toggle_voluntary_testing'><i class='fa fa-times'></i>&nbsp;&nbsp;nimmt nicht teil</button>"
-                    end
-                    io.puts "</td>"
-                end
+                #     io.puts "<td>"
+                #     freiwillig_salzh = salzh_status[email][:freiwillig_salzh]
+                #     io.puts "<div class='input-group'><input type='date' class='form-control ti_freiwillig_salzh' value='#{freiwillig_salzh}' /><div class='input-group-append'><button #{freiwillig_salzh.nil? ? 'disabled' : ''} class='btn #{freiwillig_salzh.nil? ? 'btn-outline-secondary' : 'btn-danger'} bu_delete_freiwillig_salzh'><i class='fa fa-trash'></i></button></div></div>"
+                #     io.puts "</td>"
+                # end
+                # if klassenleiter_logged_in
+                #     io.puts "<td>"
+                #     voluntary_testing = salzh_status[email][:voluntary_testing]
+                #     if voluntary_testing
+                #         io.puts "<button class='btn btn-sm btn-success bu_toggle_voluntary_testing'><i class='fa fa-check'></i>&nbsp;&nbsp;nimmt teil</button>"
+                #     else
+                #         io.puts "<button class='btn btn-sm btn-outline-secondary bu_toggle_voluntary_testing'><i class='fa fa-times'></i>&nbsp;&nbsp;nimmt nicht teil</button>"
+                #     end
+                #     io.puts "</td>"
+                # end
                 io.puts "<td>"
                 print_email_field(io, record[:email])
                 io.puts "</td>"
@@ -192,7 +192,9 @@ class Main < Sinatra::Base
             io.puts "<a href='/api/directory_timetex_pdf/by_last_name/#{klasse}' class='btn btn-primary'><i class='fa fa-file-pdf-o'></i>&nbsp;&nbsp;Timetex-PDF herunterladen</a>"
             io.puts "<a href='/api/directory_timetex_pdf/by_first_name/#{klasse}' class='btn btn-primary'><i class='fa fa-file-pdf-o'></i>&nbsp;&nbsp;Timetex-PDF herunterladen (nach Vornamen sortiert)</a>"
             io.puts "<a href='/api/directory_json/#{klasse}' class='btn btn-primary'><i class='fa fa-file-code-o'></i>&nbsp;&nbsp;JSON herunterladen</a>"
-#             io.puts "</div>"
+            io.puts "<hr style='margin: 3em 0;'/>"
+            io.puts "<h3>Stundenpläne der Klasse #{tr_klasse(klasse)} zum Ausdrucken</h3>"
+            io.puts "<a href='/api/get_timetable_pdf_for_klasse/#{klasse}' target='_blank' class='btn btn-primary'><i class='fa fa-file-pdf-o'></i>&nbsp;&nbsp;PDF herunterladen (#{@@schueler_for_klasse[klasse].size} Seiten)</a>"
             io.puts "<hr style='margin: 3em 0;'/>"
             io.puts "<h3>Lehrer der Klasse #{tr_klasse(klasse)}</h3>"
             io.puts "<div class='table-responsive'>"

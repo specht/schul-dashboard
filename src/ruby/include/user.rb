@@ -34,10 +34,10 @@ class Main < Sinatra::Base
         user_logged_in? && @session_user[:technikteam]
     end
 
-    # Returns true if a techpost user is logged in.
-    def user_who_can_report_tech_problems_logged_in?
-        user_logged_in? && @session_user[:can_report_tech_problems]
-    end
+    # # Returns true if a techpost user is logged in.
+    # def user_who_can_report_tech_problems_logged_in?
+    #     user_logged_in? && @session_user[:can_report_tech_problems]
+    # end
 
     # Returns true if a user who can manage tablets is logged in.
     def user_who_can_manage_tablets_logged_in?
@@ -152,6 +152,16 @@ class Main < Sinatra::Base
         end
     end
 
+    # Returns true if a techpost user is logged in.
+    def user_who_can_report_tech_problems_logged_in?
+        user_logged_in? && check_has_technikamt(@session_user[:email]) == [{"hasRelation"=>true}]
+    end
+
+    # Returns true if a techpost or better user is logged in.
+    def user_who_can_report_tech_problems_or_better_logged_in?
+        user_logged_in? && (check_has_technikamt(@session_user[:email]) == [{"hasRelation"=>true}] || @session_user[:can_manage_tablets])
+    end
+
     def can_manage_agr_app_logged_in?
         user_logged_in? && CAN_MANAGE_AGR_APP.include?(@session_user[:email])
     end
@@ -248,6 +258,11 @@ class Main < Sinatra::Base
     # Assert that a techpost user is logged in
     def require_user_who_can_report_tech_problems!
         assert(user_who_can_report_tech_problems_logged_in?)
+    end
+
+    # Assert that a techpost user is logged in
+    def require_user_who_can_report_tech_problems_or_better!
+        assert(user_who_can_report_tech_problems_or_better_logged_in?)
     end
 
     # Assert that a user who can manage tablets is logged in
@@ -442,7 +457,7 @@ class Main < Sinatra::Base
     end
 
     def klasse_for_sus
-        require_teacher!
+        require_user_who_can_manage_tablets_or_teacher!
         result = {}
         @@user_info.each_pair do |email, info|
             next if info[:teacher]
@@ -544,20 +559,20 @@ class Main < Sinatra::Base
                 io.string
             end
         end
-        if @@bib_unconfirmed_books[email] && (!teacher_logged_in?)
-            n_to_s = {1 => 'Eines', 2 => 'Zwei', 3 => 'Drei', 4 => 'Vier', 5 => 'Fünf'}
-            result += StringIO.open do |io|
-                io.puts "<div class='col-lg-12 col-md-4 col-sm-6'>"
-                io.puts "<div class='hint'>"
-                io.puts "<div><span style='font-size: 200%; float: left; margin-right: 8px;'>🙁</span>#{n_to_s[@@bib_unconfirmed_books[email].size] || 'Mehrere'} deiner ent&shy;lieh&shy;enen Bücher #{@@bib_unconfirmed_books[email].size == 1 ? 'wurde' : 'wurden'} von dir noch nicht bestätigt. <strong>Bitte scanne #{@@bib_unconfirmed_books[email].size == 1 ? 'das Buch' : 'die Bücher'} jetzt ein.</strong></div>"
-                io.puts "<hr />"
-                io.puts "<a href='/bib_confirm' style='white-space: nowrap;' class='float-right btn btn-sm btn-success'><i class='fa fa-barcode'></i>&nbsp;&nbsp;Bücher bestätigen</a>"
-                io.puts "<div style='clear: both;'></div>"
-                io.puts "</div>"
-                io.puts "</div>"
-                io.string
-            end
-        end
+        # if @@bib_unconfirmed_books[email] && (!teacher_logged_in?)
+        #     n_to_s = {1 => 'Eines', 2 => 'Zwei', 3 => 'Drei', 4 => 'Vier', 5 => 'Fünf'}
+        #     result += StringIO.open do |io|
+        #         io.puts "<div class='col-lg-12 col-md-4 col-sm-6'>"
+        #         io.puts "<div class='hint'>"
+        #         io.puts "<div><span style='font-size: 200%; float: left; margin-right: 8px;'>🙁</span>#{n_to_s[@@bib_unconfirmed_books[email].size] || 'Mehrere'} deiner ent&shy;lieh&shy;enen Bücher #{@@bib_unconfirmed_books[email].size == 1 ? 'wurde' : 'wurden'} von dir noch nicht bestätigt. <strong>Bitte scanne #{@@bib_unconfirmed_books[email].size == 1 ? 'das Buch' : 'die Bücher'} jetzt ein.</strong></div>"
+        #         io.puts "<hr />"
+        #         io.puts "<a href='/bib_confirm' style='white-space: nowrap;' class='float-right btn btn-sm btn-success'><i class='fa fa-barcode'></i>&nbsp;&nbsp;Bücher bestätigen</a>"
+        #         io.puts "<div style='clear: both;'></div>"
+        #         io.puts "</div>"
+        #         io.puts "</div>"
+        #         io.string
+        #     end
+        # end
         result
     end
 
@@ -638,6 +653,41 @@ class Main < Sinatra::Base
             end
         end
         return ''
+    end
+
+    # get '/api/get_timetable_pdf' do
+    #     require_user!
+    #     respond_raw_with_mimetype(get_timetable_pdf(@session_user[:klasse], @session_user[:color_scheme] || @@standard_color_scheme), 'application/pdf')
+    # end
+
+    get '/api/get_timetable_pdf_for_klasse/:klasse' do
+        require_teacher!
+        klasse = params[:klasse]
+        STDERR.puts "Priting timetables for #{klasse}..."
+        colors = []
+        @@schueler_for_klasse[klasse].size.times do
+            color_scheme = %w(
+                lab8bbfa27776ab8bbe
+                l7146749f6976cc8b79
+                l94b2a1ff7d03e0ff03
+                l55beedf9b935e5185d
+                lcc1ccca66aaab4bbbb
+                l0b2f3ad0a9f5f8e0f7
+                la2c6e80d60aea2c6e8
+                le8e33b6ca705f8f8df
+            ).sample
+            # d160520069960025061
+            # d4aa03f003f2e80bc42
+            color_scheme += [0, 1, 2, 5, 6, 7].sample.to_s
+            colors << color_scheme
+        end
+        colors.shuffle!
+        respond_raw_with_mimetype(get_timetables_pdf(klasse, colors), 'application/pdf')
+    end
+
+    get '/api/get_single_timetable_pdf' do
+        require_user!
+        respond_raw_with_mimetype(get_single_timetable_pdf(@session_user[:email]), 'application/pdf')
     end
 
 end

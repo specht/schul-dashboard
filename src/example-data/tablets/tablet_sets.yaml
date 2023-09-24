@@ -1,59 +1,9 @@
-"Satz 1 / Koffer 1":
+"Tabletsatz 1":
   :standort: Sekretariat
   :form_factor: Rollkoffer
   :only_these_rooms: [
-    106, 107, 108, 111, 112, 113, 116, # Altbau EG
-    130, 129, 128, 127, 126, 122, # Neubau EG
-    201, 202, 203, 204, 207, 212, 213, 214, 215, 216, 226, 225, 224, 223, 221, 220, 219 # Neubau 1. OG
+    100, 101, 102
   ]
   :count: 20
   :prio_unterstufe: true
   :is_tablet_set: true
-"Satz 1 / Koffer 2":
-  :standort: Sekretariat
-  :form_factor: Rollkoffer
-  :only_these_rooms: [
-    106, 107, 108, 111, 112, 113, 116, # Altbau EG
-    130, 129, 128, 127, 126, 122, # Neubau EG
-    201, 202, 203, 204, 207, 212, 213, 214, 215, 216, 226, 225, 224, 223, 221, 220, 219 # Neubau 1. OG
-  ]
-  :count: 20
-  :prio_unterstufe: true
-  :is_tablet_set: true
-
-"Computer 1":
-  :standort: Sekretariat
-  :form_factor: Koffer
-  :is_tablet_set: false
-  :hint: Test
-
-"Computer 2":
-  :standort: Sekretariat
-  :form_factor: Koffer
-  :is_tablet_set: false
-
-"Computer 3":
-  :standort: Sekretariat
-  :form_factor: Koffer
-  :is_tablet_set: false
-
-"Computer 2":
-  :standort: Sekretariat
-  :form_factor: Koffer
-  :is_tablet_set: false
-
-"Beamer 5":
-  :standort: Sekretariat
-  :form_factor: Koffer
-  :is_tablet_set: false
-
-"Multi-Beamer 6":
-  :standort: Sekretariat
-  :form_factor: Koffer
-  :is_tablet_set: false
-
-"DVD-Player 1":
-  :standort: Sekretariat
-  :form_factor: Koffer
-  :is_tablet_set: false
-  

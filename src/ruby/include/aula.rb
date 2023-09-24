@@ -13,6 +13,16 @@ class Main < Sinatra::Base
         require_user_who_can_manage_tablets!
         respond(:events => self.class.get_aula_events())
     end
+
+    post '/api/set_light_aula_event' do
+        require_user_who_can_manage_tablets!
+        data = parse_request_data(:required_keys => [:id, :desk_array])
+        desk_array = data[:desk_array].split(',').map { |s| s.to_i }
+        neo4j_query(<<~END_OF_QUERY, :id => data[:id], :desk_array => desk_array)
+            MATCH (e:AulaEvent {id: $id})
+            SET e.desk_array = $desk_array;
+        END_OF_QUERY
+    end
     
     post '/api/delete_aula_event' do
         require_user_who_can_manage_tablets!

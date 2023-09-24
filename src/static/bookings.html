@@ -261,15 +261,24 @@
             // if (data.available_tablet_sets[key].blocked_by && data.available_tablet_sets[key].blocked_by.length > 0) {
             //     bu_book_tablet_set.prop('disabled', true).hide();
             // }
+            if (!tablet_sets[key].is_tablet_set) {
+                row.hide();
+            }
             div.append(row);
             row = $('<tr>').addClass('annotation_row');
             row.append($('<td>').attr('colspan', 4));
-            div.append(row);
-            row.hide();
             tablet_set_booking_widgets[key] = {
                 button: bu_book_tablet_set,
                 hint_row: row
             };
+        }
+        if ($('tr:hidden').length > 0) {
+            let button = $(`<button class='btn btn-sm btn-outline-secondary mb-1'>Alle Geräte anzeigen</button>`);
+            button.on('click', function(e) {
+                button.remove();
+                $('tr:hidden').show();
+            });
+            div.append(button);
         }
         $('#tabletSetModal').modal('show');
 

@@ -487,6 +487,50 @@ class Main < Sinatra::Base
         respond(:ok => true)
     end
 
+    get '/api/tech_problem_pdf' do
+        require_user_who_can_manage_tablets!
+        data = parse_request_data(:required_keys => [:token])
+        token = data[:token]
+        problems = neo4j_query_expect_one(<<~END_OF_QUERY, :token => token)
+            MATCH (v:TechProblem {token: $token})
+            RETURN v;
+        END_OF_QUERY
+        problem = problems.first["v"]
+        debug problem
+        pdf = StringIO.open do |io|
+            io.puts "<style>"
+            io.puts "body { font-family: Roboto; font-size: 12pt; line-height: 120%; }"
+            io.puts "table { border-collapse: collapse; width: 100%; }"
+            io.puts "td, th { border: 1px solid #dddddd; text-align: left; padding: 8px; }"
+            io.puts ".pdf-space-above td {padding-top: 0.2em; }"
+            io.puts ".pdf-space-below td {padding-bottom: 0.2em; }"
+            io.puts ".page-break { page-break-after: always; border-top: none; margin-bottom: 0; }"
+            io.puts "</style>"
+            io.puts "<h1></h1>"
+            io.puts "<br>"
+            io.puts "<table>"
+            io.puts "<tbody>"
+            io.puts "<tr>"
+            io.puts "<td>Problem</td>"
+            io.puts "<td>#{}</td>"
+            io.puts "</tr>"
+            io.puts "<tr>"
+            io.puts "<td>Gerät</td>"
+            io.puts "<td>#{}</td>"
+            io.puts "</tr>"
+            io.puts "<tr>"
+            io.puts "<td>Absender</td>"
+            io.puts "<td>#{}</td>"
+            io.puts "</tr>"
+            io.puts "</tbody>"
+            io.puts "</table>"
+            io.string
+        end
+        c = Curl.post('http://weasyprint:5001/pdf', {:data => pdf}.to_json)
+        pdf = c.body_str
+        respond_raw_with_mimetype(pdf, 'application/pdf')
+    end
+
     def print_techpost_superuser()
         require_user_who_can_manage_tablets!
         problems = neo4j_query(<<~END_OF_QUERY, :email => @session_user[:email]).map { |x| {:problem => x['v'], :email => x['u.email'], :femail => x['f.email']} }

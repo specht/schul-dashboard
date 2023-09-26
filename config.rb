@@ -278,6 +278,7 @@ FileUtils::mkpath(INTERNAL_PATH)
 FileUtils::mkpath(File::join(INTERNAL_PATH, 'vote'))
 FileUtils::mkpath(NEO4J_DATA_PATH)
 FileUtils::mkpath(NEO4J_LOGS_PATH)
+FileUtils::mkpath(File::join(INTERNAL_PATH, 'aula_light'))
 
 if DEVELOPMENT && ARGV == ['up']
     fork do

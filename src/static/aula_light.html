@@ -168,6 +168,7 @@ document.addEventListener('DOMContentLoaded', function () {
         let structure_input = $('#structure_input').val();
         api_call('/api/set_light_structure', {structure_input: structure_input}, function(data) {
             if (data.success)
+                $('#composeConfig').modal('hide');
                 refresh_aula_light();
                 update_upload_button();
         });

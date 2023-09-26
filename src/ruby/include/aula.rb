@@ -204,8 +204,9 @@ class Main < Sinatra::Base
 
     post '/api/set_light_structure' do
         require_user_who_can_manage_tablets!
-        data = parse_request_data(:required_keys => [:new_config])
-        File.write("/internal/aula_light/current_config.txt", data[:new_config])
+        data = parse_request_data(:required_keys => [:structure_input], :max_body_length => 1024 * 1024, :max_string_length => 1024 * 1024, :max_value_lengths => {:structure_input => 1024 * 1024})
+        File.write("/internal/aula_light/current_config.txt", data[:structure_input])
+        respond(:result => 'lefromage')
     end
 
     post '/api/set_desk_number' do

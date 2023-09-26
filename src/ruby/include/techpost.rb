@@ -141,7 +141,7 @@ class Main < Sinatra::Base
     end
 
     post '/api/report_tech_problem_quiet' do
-        require_user_who_can_manage_tablets!
+        require_user_who_can_report_tech_problems_or_better!
         data = parse_request_data(:required_keys => [:problem, :date, :device],)
         token = RandomTag.generate(24)
         neo4j_entry = neo4j_query_expect_one(<<~END_OF_QUERY, :token => token, :email => @session_user[:email], :device => data[:device], :date => data[:date], :problem => data[:problem])
@@ -487,6 +487,50 @@ class Main < Sinatra::Base
         respond(:ok => true)
     end
 
+    get '/api/tech_problem_pdf' do
+        require_user_who_can_manage_tablets!
+        data = parse_request_data(:required_keys => [:token])
+        token = data[:token]
+        problems = neo4j_query_expect_one(<<~END_OF_QUERY, :token => token)
+            MATCH (v:TechProblem {token: $token})
+            RETURN v;
+        END_OF_QUERY
+        problem = problems.first["v"]
+        debug problem
+        pdf = StringIO.open do |io|
+            io.puts "<style>"
+            io.puts "body { font-family: Roboto; font-size: 12pt; line-height: 120%; }"
+            io.puts "table { border-collapse: collapse; width: 100%; }"
+            io.puts "td, th { border: 1px solid #dddddd; text-align: left; padding: 8px; }"
+            io.puts ".pdf-space-above td {padding-top: 0.2em; }"
+            io.puts ".pdf-space-below td {padding-bottom: 0.2em; }"
+            io.puts ".page-break { page-break-after: always; border-top: none; margin-bottom: 0; }"
+            io.puts "</style>"
+            io.puts "<h1></h1>"
+            io.puts "<br>"
+            io.puts "<table>"
+            io.puts "<tbody>"
+            io.puts "<tr>"
+            io.puts "<td>Problem</td>"
+            io.puts "<td>#{}</td>"
+            io.puts "</tr>"
+            io.puts "<tr>"
+            io.puts "<td>Gerät</td>"
+            io.puts "<td>#{}</td>"
+            io.puts "</tr>"
+            io.puts "<tr>"
+            io.puts "<td>Absender</td>"
+            io.puts "<td>#{}</td>"
+            io.puts "</tr>"
+            io.puts "</tbody>"
+            io.puts "</table>"
+            io.string
+        end
+        c = Curl.post('http://weasyprint:5001/pdf', {:data => pdf}.to_json)
+        pdf = c.body_str
+        respond_raw_with_mimetype(pdf, 'application/pdf')
+    end
+
     def print_techpost_superuser()
         require_user_who_can_manage_tablets!
         problems = neo4j_query(<<~END_OF_QUERY, :email => @session_user[:email]).map { |x| {:problem => x['v'], :email => x['u.email'], :femail => x['f.email']} }
@@ -496,18 +540,27 @@ class Main < Sinatra::Base
         END_OF_QUERY
         StringIO.open do |io|
             io.puts "<h3>User, die Zugriff auf diese Seite haben</h3>"
-            io.puts "<div class='alert alert-danger'><code>"
+            io.puts "<div class='row' style='margin-bottom: 15px;'><div class='col-md-12'>"
             # for tech_admin in TECHNIKTEAM + CAN_MANAGE_TABLETS_USERS + ADMIN_USERS do
             #     display_name = @@user_info[tech_admin][:display_name]
             #     nc_login = @@user_info[tech_admin][:nc_login]
             #     io.puts "<img src='#{NEXTCLOUD_URL}/index.php/avatar/#{nc_login}/256' class='icon avatar-md'>&nbsp;#{display_name}"
             # end
-            io.puts "</code><div class='text-muted'>Diese Funktion steht zurzeit, aufgrund eines technischen Fehlers, nicht zur Verfügung. Bitte nutzen Sie die Liste unten.</div><code>"
-            io.puts "</code></div>"
-            io.puts "<div class='alert alert-info'><code>#{(TECHNIKTEAM + CAN_MANAGE_TABLETS_USERS + ADMIN_USERS).uniq.sort}</code></div>"
+            io.puts "<table class='table narrow table-striped' style='width: unset; min-width: 100%;'>"
+            io.puts "<thead>"
+            io.puts "<tr><td>User</td></tr>"
+            io.puts "</thead><tbody>"
+            for tech_admin in (TECHNIKTEAM + CAN_MANAGE_TABLETS_USERS + ADMIN_USERS).uniq.sort do
+                next unless @@user_info[tech_admin]
+                display_name = @@user_info[tech_admin][:display_name]
+                nc_login = @@user_info[tech_admin][:nc_login]
+                io.puts "<tr><td><code><img src='#{NEXTCLOUD_URL}/index.php/avatar/#{nc_login}/256' class='icon avatar-md'>&nbsp;#{display_name}</code></td></tr>"
+            end
+            io.puts "</tbody></table>"
+            io.puts "</div></div>"
+            io.puts "<div class='row' style='margin-bottom: 15px;'><div class='col-md-12'><div class='alert alert-info'><code>#{(TECHNIKTEAM + CAN_MANAGE_TABLETS_USERS + ADMIN_USERS).uniq.sort}</code></div></div></div>"
             io.puts "<br><h3>User, die Probleme melden können (Alle oben genannten plus:)</h3>"
-            io.puts "<div class='alert alert-warning'>"
-            # io.puts "<div class='text-muted'>Klicke auf einen Nutzer, um ihm die Berechtigungen für das Technikamt zu entziehen.</div>"
+            io.puts "<div class='row' style='margin-bottom: 15px;'><div class='col-md-12'>"
             io.puts "<table class='table narrow table-striped' style='width: unset; min-width: 100%;'>"
             io.puts "<thead>"
             io.puts "<tr><td>User</td><td>Bearbeiten</td></tr>"
@@ -518,24 +571,25 @@ class Main < Sinatra::Base
                 klasse = @@user_info[technikamt][:klasse]
                 io.puts "<tr><td><code><img src='#{NEXTCLOUD_URL}/index.php/avatar/#{nc_login}/256' class='icon avatar-md'>&nbsp;#{display_name} (#{klasse})</code></td><td><button class='btn btn-xs btn-danger bu-edit-techpost' data-email='#{technikamt}'><i class='fa fa-trash'></i>&nbsp;&nbsp;Rechte entziehen</button>&nbsp;<button class='btn btn-xs btn-success bu-send-single-welcome-mail' data-email='#{technikamt}'><i class='fa fa-envelope'></i>&nbsp;&nbsp;Willkommens-E-Mail versenden</button></td></tr>"
             end
-            io.puts "</table></tbody>"
-            # io.puts "</code><div class='text-muted'>Diese Funktion steht zurzeit, aufgrund eines technischen Fehlers, nicht zur Verfügung. Bitte nutzen Sie die Liste unten.</div><code>"
-            io.puts "</code></div>"
-            io.puts "<div class='alert alert-warning'><code>#{get_technikamt}</code></div>"
+            io.puts "</tbody></table>"
+            io.puts "</div></div>"
+            io.puts "<div class='row' style='margin-bottom: 15px;'><div class='col-md-12'><div class='alert alert-info'><code>#{get_technikamt}</code></div></div></div>"
             unless problems == []
                 io.puts "<br><h3>Aktuelle Probleme im json-Format</h3>"
+                io.puts "<div class='row' style='margin-bottom: 15px;'><div class='col-md-12'>"
                 for problem in problems do
-                    io.puts "<div class='alert alert-success'><code>#{problem.to_json}</code></div>"
+                    io.puts "<div class='alert alert-info'><code>#{problem.to_json}</code></div>"
                 end
+                io.puts "</div></div>"
             end
             io.puts "<br><h3>Super Funktionen</h3>"
-            io.puts "<div class='alert alert-info'>"
+            io.puts "<div class='row' style='margin-bottom: 15px;'><div class='col-md-12'>"
             io.puts "<button class='bu-clear-all btn btn-danger'><i class='fa fa-trash'></i>&nbsp;&nbsp;Alle Probleme löschen</button>&nbsp<button class='bu-kick-all btn btn-danger'><i class='fa fa-user-times'></i>&nbsp;&nbsp;Alle Technikamt-User entfernen</button>&nbsp<button class='bu-send-welcome-mail btn btn-warning'><i class='fa fa-envelope'></i>&nbsp;&nbsp;Willkommens-E-Mails versenden</button>"
-            io.puts "</div>"
-            io.puts "<div class='alert alert-info'>"
+            io.puts "</div></div>"
+            io.puts "<div class='row' style='margin-bottom: 15px;'><div class='col-md-12'>"
             io.puts "<div class='form-group'><input id='ti_recipients' class='form-control' placeholder='User suchen…' /><div class='recipient-input-dropdown' style='display: none;'></div></input></div>"
-            io.puts "<div class='form-group row'><label for='ti_email' class='col-sm-1 col-form-label'>Name:</label><div class='col-sm-3'><input type='text' readonly class='form-control' id='ti_email' placeholder=''></div><div id='publish_message_btn_container'><button disabled id='bu_send_message' class='btn btn-outline-secondary'><i class='fa fa-plus'></i>&nbsp;&nbsp;<span>Hinzufügen</span></button>&nbsp;<button disabled id='bu_delete_message' class='btn btn-outline-secondary'><i class='fa fa-times'></i>&nbsp;&nbsp;<span>Entfernen</span></button></div></div>"
-            io.puts "Hinweis: Die Änderungen werden erst nach dem Neuladen der Seite sichtbar.</div>"
+            io.puts "<div class='form-group row'><label for='ti_email' class='col-sm-1 col-form-label'>Name:</label><div class='col-sm-3'><input type='text' readonly class='form-control' id='ti_email' placeholder=''></div><div id='publish_message_btn_container'><button disabled id='bu_send_message' class='btn btn-outline-secondary'><i class='fa fa-plus'></i>&nbsp;&nbsp;<span>Hinzufügen</span></button></div></div>"
+            io.puts "Hinweis: Die Änderungen werden erst nach dem Neuladen der Seite sichtbar.</div></div>"
             io.string
         end
     end

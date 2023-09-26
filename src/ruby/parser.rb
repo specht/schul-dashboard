@@ -180,10 +180,10 @@ class Parser
             display_name = "#{titel} #{display_name}".strip
             display_name = 'NN' if display_name.empty?
             if force_display_name
-                display_name = force_display_name 
+                display_name = force_display_name
                 display_last_name = force_display_name
             end
-            
+
             record = {:email => email,
                       :shorthand => shorthand,
                       :first_name => first_name,
@@ -886,6 +886,10 @@ class Parser
         user_info.each_pair do |email, info|
             name = "#{info[:last_name].split(', ').reverse.join(' ')}, #{info[:official_first_name]}"
             email_for_name[name] = email
+            name = "#{info[:last_name].split(', ').reverse.join(' ')}, #{info[:display_first_name]}"
+            email_for_name[name] = email
+            name = "#{info[:last_name].split(', ').reverse.join(' ')}, #{info[:first_name]}"
+            email_for_name[name] = email
         end
         lesson_keys_for_tag = {}
         lessons[:lesson_keys].keys.each do |lesson_key|
@@ -906,6 +910,8 @@ class Parser
                 f.each_line do |line|
                     line = line.force_encoding('CP1252')
                     line = line.encode('UTF-8')
+                    line.strip!
+                    next if line.empty?
                     parts = line.split(';')
                     sus_name = parts[0]
                     shorthand = parts[3]
@@ -920,11 +926,11 @@ class Parser
                         sus_name = name_parts[0, name_parts.size - 1].join(' ')
                     end
                     unless shorthands.include?(shorthand)
-                        STDERR.puts "Warning: Unknown shorthand #{shorthand}"
+                        STDERR.puts "Warning: Unknown shorthand »#{shorthand}«"
                         next
                     end
                     unless email_for_name.include?(sus_name)
-                        STDERR.puts "Warning: Unknown SuS name #{sus_name}"
+                        STDERR.puts "Warning: Unknown SuS name »#{sus_name}« in #{File.basename(path)}\n#{line}"
                         next
                     end
                     emails_for_kurs_id[kurs_id] ||= []

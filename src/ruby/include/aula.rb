@@ -13,6 +13,16 @@ class Main < Sinatra::Base
         require_user_who_can_manage_tablets!
         respond(:events => self.class.get_aula_events())
     end
+
+    post '/api/set_light_aula_event' do
+        require_user_who_can_manage_tablets!
+        data = parse_request_data(:required_keys => [:id, :desk_array])
+        desk_array = data[:desk_array].split(',').map { |s| s.to_i }
+        neo4j_query(<<~END_OF_QUERY, :id => data[:id], :desk_array => desk_array)
+            MATCH (e:AulaEvent {id: $id})
+            SET e.desk_array = $desk_array;
+        END_OF_QUERY
+    end
     
     post '/api/delete_aula_event' do
         require_user_who_can_manage_tablets!
@@ -122,17 +132,18 @@ class Main < Sinatra::Base
     # end
 
     get '/api/aula_event_pdf' do
+        require_user_who_can_manage_tablets!
         results = $neo4j.neo4j_query(<<~END_OF_QUERY).map { |x| x['e'] }
-        MATCH (e:AulaEvent)
-        RETURN e
-        ORDER BY e.number, e.title;
+            MATCH (e:AulaEvent)
+            RETURN e
+            ORDER BY e.number, e.title;
         END_OF_QUERY
         time = Time.new
-        require_user_who_can_manage_tablets!
         pdf = StringIO.open do |io|
             io.puts "<style>"
-            io.puts "body { font-size: 12pt; line-height: 120%; }"
-            io.puts "table, th, td { width: 100%; border: 1px solid black; }"
+            io.puts "body { font-family: Roboto; font-size: 12pt; line-height: 120%; }"
+            io.puts "table { border-collapse: collapse; width: 100%; }"
+            io.puts "td, th { border: 1px solid #dddddd; text-align: left; padding: 8px; }"
             io.puts ".pdf-space-above td {padding-top: 0.2em; }"
             io.puts ".pdf-space-below td {padding-bottom: 0.2em; }"
             io.puts ".page-break { page-break-after: always; border-top: none; margin-bottom: 0; }"
@@ -142,15 +153,20 @@ class Main < Sinatra::Base
             io.puts "<table>"
             io.puts "<thead>"
             io.puts "<tr>"
-            io.puts "<th style='width: 110px;'>Reihenfolge</th>"
-            io.puts "<th style='width: 110px;'>Zeitunkt</th>"
-            io.puts "<th style='width: 300px;'>Beschreibung</th>"
-            io.puts "<th style='width: 120px;'>Fertig?</th>"
+            io.puts "<th style='width: 100px;'>Reihenfolge</th>"
+            io.puts "<th style='width: 100px;'>Zeitunkt (geplant)</th>"
+            io.puts "<th style='width: 400px;'>Beschreibung</th>"
+            # io.puts "<th style='width: 120px;'>Fertig?</th>"
             io.puts "</tr>"
             io.puts "</thead>"
             io.puts "<tbody>"
-            results.each do |event|
-                debug event[number]
+            for event in results do
+                io.puts "<tr>"
+                io.puts "<td>#{event[:number]}</td>"
+                io.puts "<td>#{event[:time]}</td>"
+                io.puts "<td>#{event[:title]}</td>"
+                # io.puts "<td>#{finished}</td>"
+                io.puts "</tr>"
             end
             io.puts "</tbody>"
             io.puts "</table>"

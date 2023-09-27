@@ -302,7 +302,14 @@ class Script
                 else
                     dir2 = ocs_user.webdav.directory.find(path.gsub(' ', '%20'))
                     contents_count = (dir2.contents || []).size
-                    if contents_count == 0
+                    just_unterricht_shares = true
+                    (dir2.contents || []).each do |x|
+                        href = x.href
+                        unless ['/Ausgabeordner/', '/Einsammelordner/', '/R%c3%bcckgabeordner/'].any? { |y| href[href.size - y.size, y.size] == y }
+                            just_unterricht_shares = false
+                        end
+                    end
+                    if contents_count == 0 || just_unterricht_shares
                         STDERR.puts "DELETING [#{user_id}]#{path}"
                         if SRSLY
                             ocs_user.webdav.directory.destroy(path.gsub(' ', '%20'))
@@ -310,9 +317,6 @@ class Script
                     else
                         STDERR.puts "KEEPING [#{user_id}]#{path} because it has #{contents_count} files."
                         STDERR.puts (dir2.contents || []).to_yaml
-#                        - !ruby/object:Nextcloud::Models::Directory
-#                          href: "/remote.php/dav/files/Bu/Unterricht/Franz%c3%b6sisch%20(9a%2c%209b%2c%209c%2c%209%cf%89)/Ausgabeordner/"
-
                     end
                 end
             end

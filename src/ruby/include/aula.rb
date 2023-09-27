@@ -195,7 +195,14 @@ class Main < Sinatra::Base
 
     def print_light_structure()
         require_user_who_can_manage_tablets!
-        current_config = File.read("/internal/aula_light/current_config.txt")
+        file_path = "/internal/aula_light/current_config.txt"
+
+        if File.exist?(file_path)
+            current_config = File.read(file_path)
+        else
+            current_config = ""
+        end
+        
         StringIO.open do |io|
             io.puts "#{current_config}"
             io.string

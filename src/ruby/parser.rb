@@ -114,6 +114,17 @@ class Parser
                 end
             end
         end
+        @last_name_sub = {}
+        if File.exist?('/data/schueler/last-name-sub.txt')
+            File.open('/data/schueler/last-name-sub.txt') do |f|
+                f.each_line do |line|
+                    space_index = line.index(' ')
+                    email = line[0, space_index]
+                    last_name = line[space_index, line.size].strip
+                    @last_name_sub[email] = last_name
+                end
+            end
+        end
         @use_mock_names = false
         if USE_MOCK_NAMES
             @use_mock_names = true
@@ -317,6 +328,9 @@ class Parser
         email = name_to_email(rufname, nachname)
         if @first_name_sub[email]
             vorname = @first_name_sub[email]
+        end
+        if @last_name_sub[email]
+            nachname = @last_name_sub[email]
         end
         name = "#{vorname} #{nachname}"
         if @force_email[name]

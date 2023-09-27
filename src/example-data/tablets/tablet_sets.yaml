@@ -7,3 +7,13 @@
   :count: 20
   :prio_unterstufe: true
   :is_tablet_set: true
+
+"Computer 1":
+  :standort: Sekretariat
+  :form_factor: Koffer mit einem Gerät
+  :only_these_rooms: [
+    100, 101, 102
+  ]
+  :count: 1
+  :is_tablet_set: false
+  :hint: Beispiel

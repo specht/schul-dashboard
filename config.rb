@@ -171,6 +171,7 @@ docker_compose[:services][:timetable]['entrypoint'] = DEVELOPMENT ?
             'rackup --port 8080 --host 0.0.0.0 timetable-repl.ru'
 
 docker_compose[:services][:ruby][:user] = "#{UID}"
+docker_compose[:services][:ruby2][:user] = "#{UID}"
 docker_compose[:services][:timetable][:user] = "#{UID}"
 
 if ENABLE_IMAGE_BOT
@@ -184,9 +185,6 @@ docker_compose[:services][:vplan_watcher] = YAML.load(docker_compose[:services][
 docker_compose[:services][:vplan_watcher]['entrypoint'] = DEVELOPMENT ?
             'rerun -b --dir /app -s SIGKILL \'ruby vplan-watcher.rb\'' :
             'ruby vplan-watcher.rb'
-
-docker_compose[:services][:ruby][:user] = "#{UID}"
-docker_compose[:services][:timetable][:user] = "#{UID}"
 
 docker_compose[:services][:invitation_bot] = YAML.load(docker_compose[:services][:ruby].to_yaml)
 docker_compose[:services][:invitation_bot]['entrypoint'] = DEVELOPMENT ?

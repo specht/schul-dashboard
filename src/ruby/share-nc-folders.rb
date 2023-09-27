@@ -249,6 +249,7 @@ class Script
         present_shares = {}
         (@ocs.file_sharing.all || []).each do |share|
             STDERR.puts share.to_yaml
+            exit
             next if share['share_with'].nil?
             present_shares[share['share_with']] ||= {}
             next unless share['path'] == "/#{SHARE_SOURCE_FOLDER}"

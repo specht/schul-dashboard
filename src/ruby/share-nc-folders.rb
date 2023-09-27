@@ -306,6 +306,7 @@ class Script
                         end
                     else
                         STDERR.puts "KEEPING [#{user_id}]#{path} because it has #{contents_count} files."
+                        STDERR.puts (dir2.contents || []).to_yaml
                     end
                 end
             end

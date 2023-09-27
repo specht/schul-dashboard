@@ -248,11 +248,9 @@ class Script
         STDERR.puts "Collecting present shares..."
         present_shares = {}
         (@ocs.file_sharing.all || []).each do |share|
-            STDERR.puts share.to_yaml
-            exit
             next if share['share_with'].nil?
             present_shares[share['share_with']] ||= {}
-            next unless share['path'] == "/#{SHARE_SOURCE_FOLDER}"
+            next unless share['path'].index("/#{SHARE_SOURCE_FOLDER}/") == 0
             present_shares[share['share_with']][share['path']] = {
                 :permissions => share['permissions'].to_i,
                 :target_path => share['file_target'],

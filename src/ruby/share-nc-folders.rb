@@ -259,9 +259,12 @@ class Script
             }
         end
         STDERR.puts "Got present shares for #{present_shares.size} users."
-        # File.open('/internal/debug/present-shares.yaml', 'w') do |f|
-        #     f.write present_shares.to_yaml
-        # end
+        File.open('/internal/debug/present-shares.yaml', 'w') do |f|
+            f.write present_shares.to_yaml
+        end
+        File.open('/internal/debug/wanted-shares.yaml', 'w') do |f|
+            f.write wanted_shares.to_yaml
+        end
         wanted_shares.keys.sort.each do |user_id|
             unless wanted_nc_ids.nil?
                 next unless wanted_nc_ids.include?(user_id)
@@ -307,6 +310,9 @@ class Script
                     else
                         STDERR.puts "KEEPING [#{user_id}]#{path} because it has #{contents_count} files."
                         STDERR.puts (dir2.contents || []).to_yaml
+#                        - !ruby/object:Nextcloud::Models::Directory
+#                          href: "/remote.php/dav/files/Bu/Unterricht/Franz%c3%b6sisch%20(9a%2c%209b%2c%209c%2c%209%cf%89)/Ausgabeordner/"
+
                     end
                 end
             end

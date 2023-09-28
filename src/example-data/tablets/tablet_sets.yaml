@@ -10,7 +10,7 @@
 
 "Computer 1":
   :standort: Sekretariat
-  :form_factor: Koffer mit einem Gerät
+  :form_factor: Koffer
   :only_these_rooms: [
     100, 101, 102
   ]

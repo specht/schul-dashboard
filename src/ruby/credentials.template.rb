@@ -193,6 +193,13 @@ GROUP_AF_ICONS = {
     'gr' => '🇬🇷'
 }
 GROUP_AF_ICON_KEYS = GROUP_AF_ICONS.keys.sort
+GROUP_FT_ICONS = {
+    'nawi' => '🧪',
+    'gewi' => '👪',
+    'musik' => '🎹',
+    'medien' => '📽️',
+}
+GROUP_FT_ICON_KEYS = GROUP_FT_ICONS.keys.sort
 
 # tablet booking pre and post time, in minutes
 STREAMING_TABLET_BOOKING_TIME_PRE = 5

@@ -51,6 +51,19 @@ document.addEventListener('DOMContentLoaded', function() {
     } else {
         $('.group-af-button').addClass('disabled');
     }
+    if ('#{admin_logged_in?}' === 'true') {
+        $('.group-ft-button').click(function(e) {
+            let button = $(e.target).closest('.group-ft-button');
+            let email = button.data('email');
+            api_call('/api/toggle_group_ft_for_user', {email: email}, function(data) {
+                if (data.success) {
+                    button.text(#{GROUP_FT_ICONS.to_json}[data.group_ft]);
+                }
+            });
+        });
+    } else {
+        $('.group-ft-button').addClass('disabled');
+    }
     $('.btn-toggle-homeschooling').click(function(e) {
         let email = $(e.target).data('email');
         api_call('/api/toggle_homeschooling', {email: email}, function(data) {

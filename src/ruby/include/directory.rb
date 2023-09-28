@@ -45,6 +45,9 @@ class Main < Sinatra::Base
             if ['11', '12'].include?(klasse)
                 io.puts "<th>Antikenfahrt</th>"
             end
+            if ['5', '6'].include?(klasse[0])
+                io.puts "<th>Forschertage</th>"
+            end
             io.puts "<th>A/B</th>"
             io.puts "<th>Letzter Zugriff</th>"
             io.puts "<th>Eltern-E-Mail-Adresse</th>"
@@ -54,15 +57,17 @@ class Main < Sinatra::Base
             results = neo4j_query(<<~END_OF_QUERY, :email_addresses => @@schueler_for_klasse[klasse])
                 MATCH (u:User)
                 WHERE u.email IN $email_addresses
-                RETURN u.email, u.last_access, COALESCE(u.group2, 'A') AS group2, COALESCE(u.group_af, '') AS group_af;
+                RETURN u.email, u.last_access, COALESCE(u.group2, 'A') AS group2, COALESCE(u.group_af, '') AS group_af, COALESCE(u.group_ft, '') AS group_ft;
             END_OF_QUERY
             last_access = {}
             group2_for_email = {}
             group_af_for_email = {}
+            group_ft_for_email = {}
             results.each do |x|
                 last_access[x['u.email']] = x['u.last_access']
                 group2_for_email[x['u.email']] = x['group2']
                 group_af_for_email[x['u.email']] = x['group_af']
+                group_ft_for_email[x['u.email']] = x['group_ft']
             end
 
             (@@schueler_for_klasse[klasse] || []).sort do |a, b|
@@ -126,6 +131,9 @@ class Main < Sinatra::Base
                 # end
                 if ['11', '12'].include?(klasse)
                     io.puts "<td><div class='group-af-button #{user_who_can_manage_antikenfahrt_logged_in? ? '' : 'disabled'}' data-email='#{email}'>#{GROUP_AF_ICONS[group_af_for_email[email]]}</div></td>"
+                end
+                if ['5', '6'].include?(klasse[0])
+                    io.puts "<td><div class='group-ft-button #{admin_logged_in? ? '' : 'disabled'}' data-email='#{email}'>#{GROUP_FT_ICONS[group_ft_for_email[email]] || '❓'}</div></td>"
                 end
                 io.puts "<td><div class='group2-button group2-#{group2_for_email[email]}' data-email='#{email}'>#{group2_for_email[email]}</div></td>"
                 la_label = 'noch nie angemeldet'
@@ -391,6 +399,54 @@ class Main < Sinatra::Base
         end
     end
     
+    def self.update_forschertage_groups()
+        results = $neo4j.neo4j_query(<<~END_OF_QUERY).map { |x| {:email => x['email'], :group_ft => x['group_ft'] }}
+            MATCH (u:User)
+            RETURN u.email AS email, COALESCE(u.group_ft, '') AS group_ft;
+        END_OF_QUERY
+        groups = {}
+        main_user_info = @@user_info
+        results.each do |row|
+            next unless ['nawi', 'gewi', 'musik', 'medien'].include?(row[:group_ft])
+            user_info = main_user_info[row[:email]]
+            next unless user_info
+            next unless user_info[:teacher] == false
+            next unless ['5', '6'].include?(user_info[:klasse][0])
+            groups[user_info[:klasse][0]] ||= {}
+            groups[user_info[:klasse][0]][row[:group_ft]] ||= []
+            groups[user_info[:klasse][0]][row[:group_ft]] << row[:email]
+        end
+        @@forschertage_recipients = {
+            :recipients => {},
+            :groups => []
+        }
+        @@forschertage_mailing_lists = {}
+        ['5', '6'].each do |klasse|
+            ['nawi', 'gewi', 'musik', 'medien'].each do |group_ft|
+                next if ((groups[klasse] || {})[group_ft] || []).empty?
+                @@antikenfahrt_recipients[:groups] << "/ft/#{klasse}/#{group_ft}/sus"
+                @@antikenfahrt_recipients[:recipients]["/ft/#{klasse}/#{group_ft}/sus"] = {
+                    :label => "Forschertage #{GROUP_FT_ICONS[group_ft]} – SuS #{klasse}",
+                    :entries => groups[klasse][group_ft]
+                }
+                @@antikenfahrt_recipients[:groups] << "/af/#{klasse}/#{group_ft}/eltern"
+                @@antikenfahrt_recipients[:recipients]["/af/#{klasse}/#{group_ft}/eltern"] = {
+                    :label => "Forschertage #{GROUP_FT_ICONS[group_ft]} – Eltern #{klasse} (extern)",
+                    :external => true,
+                    :entries => groups[klasse][group_ft].map { |x| 'eltern.' + x }
+                }
+                @@antikenfahrt_mailing_lists["forschertage.#{group_ft}.#{klasse}@#{SCHUL_MAIL_DOMAIN}"] = {
+                    :label => "Forschertage #{GROUP_FT_ICONS[group_ft]} – SuS Klassenstufe #{klasse}",
+                    :recipients => groups[klasse][group_ft]
+                }
+                @@antikenfahrt_mailing_lists["forschertage.#{group_ft}.eltern.#{klasse}@#{SCHUL_MAIL_DOMAIN}"] = {
+                    :label => "Forschertage #{GROUP_FT_ICONS[group_ft]} – Eltern Klassenstufe #{klasse}",
+                    :recipients => groups[klasse][group_ft].map { |x| 'eltern.' + x }
+                }
+            end
+        end
+    end
+    
     post '/api/toggle_homeschooling' do
         data = parse_request_data(:required_keys => [:email])
         email = data[:email]
@@ -617,6 +673,27 @@ class Main < Sinatra::Base
         respond(:group_af => group_af)
     end
     
+    post '/api/toggle_group_ft_for_user' do
+        require_admin!
+        data = parse_request_data(:required_keys => [:email])
+        email = data[:email]
+        group_ft = neo4j_query_expect_one(<<~END_OF_QUERY, :email => email)['group_ft']
+            MATCH (u:User {email: $email})
+            RETURN COALESCE(u.group_ft, '') AS group_ft;
+        END_OF_QUERY
+        index = GROUP_FT_ICON_KEYS.index(group_ft) || 0
+        index = (index + 1) % GROUP_FT_ICON_KEYS.size
+        group_ft = neo4j_query_expect_one(<<~END_OF_QUERY, :email => email, :group_ft => GROUP_FT_ICON_KEYS[index])['group_ft']
+            MATCH (u:User {email: $email})
+            SET u.group_ft = $group_ft
+            RETURN u.group_ft AS group_ft;
+        END_OF_QUERY
+        Main.update_forschertage_groups()
+        Main.update_mailing_lists()
+
+        respond(:group_ft => group_ft)
+    end
+    
     def schueler_for_lesson(lesson_key)
         results = (@@schueler_for_lesson[lesson_key] || []).map do |email| 
             i = {}
@@ -685,6 +762,17 @@ class Main < Sinatra::Base
                     ['gr', 'it'].each do |group_af|
                         ['', '.eltern'].each do |extra|
                             list_email = "antikenfahrt.#{group_af}#{extra}.#{klasse}@#{SCHUL_MAIL_DOMAIN}"
+                            if @@mailing_lists[list_email]
+                                print_mailing_list(io, list_email)
+                                remaining_mailing_lists.delete(list_email)
+                            end
+                        end
+                    end
+                end
+                if ['5', '6'].include?(klasse)
+                    ['nawi', 'gewi', 'musik', 'medien'].each do |group_ft|
+                        ['', '.eltern'].each do |extra|
+                            list_email = "forschertage.#{group_ft}#{extra}.#{klasse}@#{SCHUL_MAIL_DOMAIN}"
                             if @@mailing_lists[list_email]
                                 print_mailing_list(io, list_email)
                                 remaining_mailing_lists.delete(list_email)

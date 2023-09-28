@@ -3,7 +3,7 @@
 <style>
     .modal-body strong {
         display: inline-block;
-        width: 120px;
+        width: 100px;
     }
 </style>
 
@@ -193,7 +193,13 @@
                             div.addClass('timespan-booking hover:outline hover:outline-1 hover:shadow-lg hover:outline-gray-400 cursor-pointer rounded');
                             div.css('position', 'absolute');
                             // div.html(`<span class='tis' style='background-color: ${booking.tablet.bg_color}; color: ${booking.tablet.fg_color};'>${tablet_id}</span> ${booking.lesson}`);
-                            div.html(`${booking.booking.start_time} <b>${booking.shorthand}</b> ${booking.lesson || ''}`);
+                            console.log(booking.booking.start_time + ":" + booking.booking.reason)
+                            if (typeof(booking.booking.reason) === 'undefined') {
+                                div.html(`${booking.booking.start_time} <b>${booking.shorthand}</b> ${booking.lesson || ''}`);
+                            } else {
+                                console.log("Else: " + booking.booking.start_time + ":" + booking.booking.reason)
+                                div.html(`${booking.booking.start_time} <b>${booking.shorthand}</b> ${booking.booking.reason || ''}`);
+                            }
                             let t0 = parseInt(booking.booking.start_time.substr(0, 2)) * 60 + parseInt(booking.booking.start_time.substr(3, 2));
                             let t1 = parseInt(booking.booking.end_time.substr(0, 2)) * 60 + parseInt(booking.booking.end_time.substr(3, 2));
                             let l = (t0 - (7.5 * 60)) / (19 * 60 - 8 * 60) * 100.0;

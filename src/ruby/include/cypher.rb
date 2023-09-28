@@ -170,6 +170,9 @@ class Main < Sinatra::Base
 
     def skytale(s, w)
         s = s.upcase.gsub(' ', '')
+        while s.size % w != 0
+            s += 'Z'
+        end
         t = ''
         (0...w).each do |x|
             i = x

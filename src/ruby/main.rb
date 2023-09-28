@@ -1955,7 +1955,6 @@ class Main < Sinatra::Base
                         io.puts "<div class='dropdown-divider'></div>"
                         remaining_klassen.each do |klasse|
                             io.puts "<a class='dropdown-item nav-icon' href='/directory/#{klasse}'><div class='icon'><i class='fa fa-address-book'></i></div><span class='label'>Klasse #{tr_klasse(klasse)}</span></a>"
-                            remaining_klassen.delete(klasse)
                         end
                     end
                     io.puts "</div>"

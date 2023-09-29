@@ -194,10 +194,10 @@ GROUP_AF_ICONS = {
 }
 GROUP_AF_ICON_KEYS = GROUP_AF_ICONS.keys.sort
 GROUP_FT_ICONS = {
-    'nawi' => '🧪',
-    'gewi' => '👪',
-    'musik' => '🎹',
-    'medien' => '📽️',
+    'nawi' => '🧪 Nawi',
+    'gewi' => '👪 Gewi',
+    'musik' => '🎹 Musik',
+    'medien' => '📽️ Medien',
 }
 GROUP_FT_ICON_KEYS = GROUP_FT_ICONS.keys.sort
 

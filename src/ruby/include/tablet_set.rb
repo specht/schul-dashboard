@@ -331,17 +331,19 @@ class Main < Sinatra::Base
                     end
                 end
             end
-            if lesson_key && @@tablet_sets[x][:only_these_rooms]
-                timetable_date = @@lessons[:start_date_for_date][datum]
-                wday = (Date.parse(datum).wday + 6) % 7
-                raum = nil
-                begin
-                    raum = @@lessons[:timetables][timetable_date][lesson_key][:stunden][wday].values.first[:raum]
-                rescue
-                end
-                if raum
-                    unless @@tablet_sets[x][:only_these_rooms].include?(raum)
-                        hints << "<span class='text-danger'><i class='fa fa-warning'></i></span>&nbsp;&nbsp;Dieser Tabletsatz ist weit vom Raum #{raum} entfernt. Bitte wählen Sie deshalb – falls möglich – einen anderen Tabletsatz."
+            unless !@@tablet_sets[x][:is_tablet_set]
+                if lesson_key && @@tablet_sets[x][:only_these_rooms]
+                    timetable_date = @@lessons[:start_date_for_date][datum]
+                    wday = (Date.parse(datum).wday + 6) % 7
+                    raum = nil
+                    begin
+                        raum = @@lessons[:timetables][timetable_date][lesson_key][:stunden][wday].values.first[:raum]
+                    rescue
+                    end
+                    if raum
+                        unless @@tablet_sets[x][:only_these_rooms].include?(raum)
+                            hints << "<span class='text-danger'><i class='fa fa-warning'></i></span>&nbsp;&nbsp;Dieser Tabletsatz ist weit vom Raum #{raum} entfernt. Bitte wählen Sie deshalb – falls möglich – einen anderen Tabletsatz."
+                        end
                     end
                 end
             end

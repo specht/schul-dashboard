@@ -109,6 +109,7 @@
 </div>
 
 <script>
+    var all_devices_displayed = false;
 
     var booking_to_be_deleted = null;
     var booking_span_to_be_deleted = null;
@@ -138,10 +139,10 @@
                     }
                     if (entry.hint) {
                         tablet_set_booking_widgets[key].hint_row.find('td').html(entry.hint);
-                        if ($('tr:hidden').length > 0) {
-                            tablet_set_booking_widgets[key].hint_row.hide();
-                        } else {
+                        if (all_devices_displayed || entry.is_tablet_set) {
                             tablet_set_booking_widgets[key].hint_row.show();
+                        } else {
+                            tablet_set_booking_widgets[key].hint_row.hide();
                         }
                     } else {
                         tablet_set_booking_widgets[key].hint_row.hide();
@@ -288,6 +289,7 @@
             let button = $(`<button class='btn btn-sm btn-outline-secondary mb-1'>Alle Geräte anzeigen</button>`);
             button.on('click', function(e) {
                 button.remove();
+                all_devices_displayed = true
                 $('tr:hidden').show();
             });
             div.append(button);

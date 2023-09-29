@@ -490,6 +490,8 @@ class Main < Sinatra::Base
         @@current_email_addresses = []
         @@antikenfahrt_recipients = {}
         @@antikenfahrt_mailing_lists = {}
+        @@forschertage_recipients = {}
+        @@forschertage_mailing_lists = {}
         @@birthday_entries = {}
         @@server_etag = RandomTag.generate(24)
 
@@ -1006,6 +1008,7 @@ class Main < Sinatra::Base
 
         @@mailing_lists = {}
         self.update_antikenfahrt_groups()
+        self.update_forschertage_groups()
         self.update_mailing_lists()
         @@current_email_addresses = parser.parse_current_email_addresses()
 
@@ -1076,6 +1079,7 @@ class Main < Sinatra::Base
 
     def self.update_mailing_lists()
         self.update_antikenfahrt_groups()
+        self.update_forschertage_groups()
         @@mailing_lists = {}
         all_kl = Set.new()
         @@klassen_order.each do |klasse|
@@ -1146,6 +1150,9 @@ class Main < Sinatra::Base
             :recipients => all_kl.to_a.sort
         }
         @@antikenfahrt_mailing_lists.each_pair do |k, v|
+            @@mailing_lists[k] = v
+        end
+        @@forschertage_mailing_lists.each_pair do |k, v|
             @@mailing_lists[k] = v
         end
         if DEVELOPMENT
@@ -1551,6 +1558,7 @@ class Main < Sinatra::Base
                                         @session_user[:homeschooling] = results.first['u'][:homeschooling]
                                         @session_user[:group2] = results.first['u'][:group2] || 'A'
                                         @session_user[:group_af] = results.first['u'][:group_af] || ''
+                                        @session_user[:group_ft] = results.first['u'][:group_ft] || ''
                                         @session_user[:sus_may_contact_me] = results.first['u'][:sus_may_contact_me] || false
                                         @session_user[:user_agent] = results.first['s'][:user_agent]
                                         @session_user[:ip] = request.ip
@@ -1947,7 +1955,6 @@ class Main < Sinatra::Base
                         io.puts "<div class='dropdown-divider'></div>"
                         remaining_klassen.each do |klasse|
                             io.puts "<a class='dropdown-item nav-icon' href='/directory/#{klasse}'><div class='icon'><i class='fa fa-address-book'></i></div><span class='label'>Klasse #{tr_klasse(klasse)}</span></a>"
-                            remaining_klassen.delete(klasse)
                         end
                     end
                     io.puts "</div>"

@@ -2184,7 +2184,8 @@ class Main < Sinatra::Base
     def print_test_klassen_chooser(active = nil)
         StringIO.open do |io|
             io.puts "<div style='margin-bottom: 15px;'>"
-            klassen_for_session_user.each do |klasse|
+            # klassen_for_session_user.each do |klasse|
+            KLASSEN_ORDER.each do |klasse|
                 next if ['11', '12'].include?(klasse)
                 io.puts "<a data-klasse='#{klasse}' class='btn btn-sm ttc #{klasse == active ? 'active': ''}'>#{tr_klasse(klasse)}</a>"
             end

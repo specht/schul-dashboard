@@ -197,7 +197,7 @@ class Main < Sinatra::Base
     def line_for_lang_dont_end_on_lang(lang)
         [
             "Wenn du #{lang} eingibst dann sollte es klappen",
-            "#{lang} ist das naechste Passwort"
+            "#{lang} ist das naechste Passwort",
             "Du solltest es mal mit #{lang} versuchen"
         ].sample
     end

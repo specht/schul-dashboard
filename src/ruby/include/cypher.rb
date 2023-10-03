@@ -194,6 +194,14 @@ class Main < Sinatra::Base
         ].sample
     end
 
+    def line_for_lang_dont_end_on_lang(lang)
+        [
+            "Wenn du #{lang} eingibst dann sollte es klappen",
+            "#{lang} ist das naechste Passwort"
+            "Du solltest es mal mit #{lang} versuchen"
+        ].sample
+    end
+
     def get_next_cypher_password
         @cypher_next_password = nil
         srand(@cypher_seed)
@@ -205,7 +213,7 @@ class Main < Sinatra::Base
             @cypher_token = caesar(line, 3)
         elsif @cypher_level == 1
             lang = languages[@cypher_level]
-            line = line_for_lang(lang)
+            line = line_for_lang_dont_end_on_lang(lang)
             @cypher_next_password = lang
             @cypher_token = skytale(line, [3, 4, 5, 6].sample)
         elsif @cypher_level == 2

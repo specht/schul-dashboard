@@ -45,9 +45,7 @@
                     <th>Problem</th>
                     <th>Gerät</th>
                     <th>Datum</th>
-                    <th style="width: 140px;">Behoben</th>
-                    <th style="width: 140px;">Nicht Behoben</th>
-                    <th style="width: 140px;">Kommentar</th>
+                    <th>Status</th>
                     <th style="width: 140px;">Technikamt</th>
                     <th style="width: 140px;">TechnikTeam</th>
                     <th style="width: 140px;">Löschen</th>
@@ -255,9 +253,7 @@
                             });
 
                         });
-                        row.append($('<td>').append(tp_fixed));
-                        row.append($('<td>').append(tp_not_fixed));
-                        
+
                         let tp_comment = $('<button>').addClass('btn').addClass('btn-xs').addClass('btn-primary').html("<i class='fa fa-plus'></i>&nbsp;&nbsp;Kommentar");
                         tp_comment.data('token', entry.problem.token);
                         tp_comment.click(function(e) {
@@ -295,9 +291,9 @@
                         
 
                         if (entry.problem.comment == false) {
-                            row.append($('<td>').append(tp_comment));
+                            row.append($('<td>').append(tp_fixed).append('&nbsp;').append(tp_not_fixed).append('&nbsp;').append(tp_comment));
                         } else {
-                            row.append($('<td>').text('' + entry.problem.comment + ' ').append(tp_update_comment));
+                            row.append($('<td>').append(tp_fixed).append('&nbsp;').append(tp_not_fixed).text('' + entry.problem.comment + ' ').append(tp_update_comment));
                         }
 
 

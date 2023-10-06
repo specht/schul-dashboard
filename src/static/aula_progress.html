@@ -1,4 +1,22 @@
 #{require_user_who_can_manage_tablets!}
+<style>
+    /* code {
+        color: #000;
+    } */
+    .rund {
+        border-radius: 100%;
+        width: 40px;
+        height: 40px;
+    }
+    .eckig {
+        width: 40px;
+        height: 40px;
+    }
+    .box {
+        width: 40px;
+        height: 40px;
+    }
+</style>
 <div class='container-fluid' style='padding-top: 30px; background-color: #000; color: #fff;'>
     <div class='row'>
         <div class="col-md-12">
@@ -14,8 +32,8 @@
                             <th style='width: 100px;'>Reihenfolge</th>
                             <th style='width: 150px;'>Zeitunkt</th>
                             <th style='min-width: 150px;'>Beschreibung</th>
-                            <!-- <th style='min-width: 150px;'>Licht</th> 
-                            <th style='width: 120px;'>Bearbeiten</th>  -->
+                            <th style='min-width: 150px;'>Licht</th> 
+                            <th style='width: 120px;'>Bearbeiten</th> 
                             <th style='width: 120px;'>Fertig</th> 
                             <th style='width: 120px;'>Löschen</th>
                         </tr>
@@ -29,8 +47,26 @@
         </div>
     </div>
 </div>
+<div class="modal" id="composeLightConfig" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-centered" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Licht konfigurieren</h5>
+            </div>
+            <div class="modal-body">
+                Klicke hier alle Lichter an, die in dieser Konfiguration leuchten sollen.
+                <div class="table-responsive" style="max-width: 100%; overflow-x: auto;"><table class='table-narrow narrow table-sm table-striped'>#{print_light_structure()}</table></div>
+            </div>
+            <div class="modal-footer">
+                <button id='save_light_config' class='btn btn-success'><i class='fa fa-save'></i>&nbsp;&nbsp;Speichern</button>
+                <button type="button" class="btn btn-secondary btn-outline" data-dismiss="modal">Schließen</button>
+            </div>
+        </div>
+    </div>
+</div>
 
 <script>
+    var buttons = document.querySelectorAll('[class^="btn-"]');
     function refresh_events() {
         api_call('/api/get_aula_events', {}, function (data) {
             $('.events-here').empty();
@@ -50,8 +86,8 @@
                     row.append(cell);
                     let ti_light = $("<code>").text(entry.desk_array);
                     let bu_light = $('<button>').addClass('btn').addClass('btn-warning').html("<i class='fa fa-lightbulb-o'></i>&nbsp;&nbsp;Licht");
-                    // row.append($('<td>').append(ti_light));
-                    // row.append($('<td>').append(bu_light));
+                    row.append($('<td>').append(ti_light));
+                    row.append($('<td>').append(bu_light));
                     let bu_finished = $('<button>').addClass('btn').addClass('btn').addClass('btn-success').html("<i class='fa fa-check'></i>&nbsp;&nbsp;Fertig");
                     let bu_unfinished = $('<button>').addClass('btn').addClass('btn').addClass('btn-outline-success').html("<i class='fa fa-check'></i>&nbsp;&nbsp;Fertig");
                     if (entry.finished == false) {
@@ -65,16 +101,7 @@
                     bu_light.click(function (e) {
                         let id = $(e.target).closest('tr').data('id');
                         $('.bu-perform-set-light-aula-event').data('delete_id', id);
-                        showTemplateModal('Lichter setzen',
-                            'Hier kannst du belibige Lichter setzen, indem du alle Kanalnummern (nicht DMX!) durch Kommas getrennt angibst.<br><textarea class="form-control" type id="desk-array"></textarea>',
-                            "<i class='fa fa-save'></i>&nbsp;&nbsp;Speichern", 'btn-success',
-                            'Abbrechen', 'btn-secondary', function () {
-                                let desk_array = $('#desk-array').val();
-                                api_call('/api/set_light_aula_event', { id: id, desk_array: desk_array }, function (data) {
-                                    refresh_events();
-                                });
-                            }
-                        );
+                        $('#composeLightConfig').modal('show');
                     });
                     bu_unfinished.click(function (e) {
                         let id = $(e.target).closest('tr').data('id');
@@ -121,6 +148,21 @@
     }
 
     document.addEventListener('DOMContentLoaded', function () {
+        var buttons = document.querySelectorAll('.scheinwerfer');
+        buttons.forEach(function(button) {
+            var classes = button.classList;
+            var newClasses = [];
+            for (var i = 0; i < classes.length; i++) {
+                if (classes[i].startsWith('btn-')) {
+                    var originalClass = classes[i];
+                    var newClass = 'btn-outline-' + originalClass.substr(4);
+                    newClasses.push(newClass);
+                } else {
+                    newClasses.push(classes[i]);
+                }
+            }
+            button.className = newClasses.join(' ');
+        });
         refresh_events();
         $('.bu-new-event').click(function (e) {
             api_call('/api/create_aula_event', {}, function (data) {
@@ -138,5 +180,24 @@
                 });
 
         });;
+
+        $('.scheinwerfer').click(function (e) {
+            let dmx = e.target.id;
+            $('#' + dmx + '').addClass('selected')
+            var targetButton = document.getElementById(dmx);
+
+            if (targetButton) {
+                var classes = targetButton.classList;
+                for (var i = 0; i < classes.length; i++) {
+                    if (classes[i].startsWith('btn-outline-')) {
+                        var originalClass = 'btn-' + classes[i].substr(12);
+                        classes.remove(classes[i]);
+                        classes.add(originalClass);
+                        break;
+                    }
+                }
+            }
+        });
+
         });
 </script>

@@ -1858,6 +1858,11 @@ class Main < Sinatra::Base
                                 io.puts "<a class='dropdown-item nav-icon' href='/bibliothek'><div class='icon'><i class='fa fa-book'></i></div><span class='label'>Bibliothek</span></a>"
                             # end
                         # end
+                        unless teacher_logged_in?
+                            if @session_user[:klasse].to_i < 11
+                                io.puts "<a class='dropdown-item nav-icon' href='/directory/#{@session_user[:klasse]}'><div class='icon'><i class='fa fa-users'></i></div><span class='label'>Meine Klasse</span></a>"
+                            end
+                        end
                         if teacher_or_sv_logged_in?
                             io.puts "<div class='dropdown-divider'></div>"
                             if teacher_or_sv_logged_in?

@@ -1,6 +1,6 @@
 class Main < Sinatra::Base
     def mail_addresses_table(klasse)
-        require_teacher!
+        assert((teacher_logged_in?) || (@session_user[:klasse] == klasse))
         klassenleiter_logged_in = (@@klassenleiter[klasse] || []).include?(@session_user[:shorthand]) || admin_logged_in?
         all_homeschooling_users = Main.get_all_homeschooling_users()
         salzh_status = Main.get_salzh_status_for_emails(Main.class_variable_get(:@@schueler_for_klasse)[klasse] || [])
@@ -11,12 +11,14 @@ class Main < Sinatra::Base
             # io.puts "Bitte überprüfen Sie die <strong>Gruppenzuordnung (A/B)</strong> und markieren Sie alle Kinder, die aus gesundheitlichen Gründen / Quarantäne nicht in die Schule kommen können, als <strong>»zu Hause«</strong>."
 #             io.puts "Auf die Jitsi-Streams können momentan nur SuS zugreifen, die laut ihrer Gruppenzuordnung in der aktuellen Woche zu Hause sind oder explizit als »zu Hause« markiert sind."
             # io.puts "</div>"
-            io.puts "<div class='pull-right' style='position: relative; top: 10px;'>"
-            [:salzh, :contact_person, :hotspot_klasse].each do |status|
-                salzh_label = "<span style='margin-left: 2em;'><span class='salzh-badge salzh-badge-big bg-#{SALZH_MODE_COLORS[status]}'><i class='fa #{SALZH_MODE_ICONS[status]}'></i></span>&nbsp;#{SALZH_MODE_LABEL[status]}</span>"
-                io.puts salzh_label
+            if teacher_logged_in?
+                io.puts "<div class='pull-right' style='position: relative; top: 10px;'>"
+                [:salzh, :contact_person, :hotspot_klasse].each do |status|
+                    salzh_label = "<span style='margin-left: 2em;'><span class='salzh-badge salzh-badge-big bg-#{SALZH_MODE_COLORS[status]}'><i class='fa #{SALZH_MODE_ICONS[status]}'></i></span>&nbsp;#{SALZH_MODE_LABEL[status]}</span>"
+                    io.puts salzh_label
+                end
+                io.puts "</div>"
             end
-            io.puts "</div>"
             io.puts "<h3>Klasse #{tr_klasse(klasse)}</h3>"
             io.puts "<p>"
             io.puts "</p>"
@@ -31,7 +33,7 @@ class Main < Sinatra::Base
             io.puts "<th></th>"
             io.puts "<th>Name</th>"
             io.puts "<th>Vorname</th>"
-            io.puts "<th>Geburtsdatum</th>"
+            io.puts "<th>Geburtsdatum</th>" if teacher_logged_in?
             # io.puts "<th>Status</th>"
             # if can_manage_salzh_logged_in?
             #     io.puts "<th>Reguläre Testung</th>"
@@ -42,15 +44,19 @@ class Main < Sinatra::Base
             # end
             io.puts "<th>E-Mail-Adresse</th>"
             # io.puts "<th style='width: 140px;'>Homeschooling</th>"
-            if ['11', '12'].include?(klasse)
-                io.puts "<th>Antikenfahrt</th>"
+            if teacher_logged_in?
+                if ['11', '12'].include?(klasse)
+                    io.puts "<th>Antikenfahrt</th>"
+                end
+                if ['5', '6'].include?(klasse[0])
+                    io.puts "<th>Forschertage</th>"
+                end
             end
-            if ['5', '6'].include?(klasse[0])
-                io.puts "<th>Forschertage</th>"
+            if teacher_logged_in?
+                io.puts "<th>A/B</th>"
+                io.puts "<th>Letzter Zugriff</th>"
+                io.puts "<th>Eltern-E-Mail-Adresse</th>"
             end
-            io.puts "<th>A/B</th>"
-            io.puts "<th>Letzter Zugriff</th>"
-            io.puts "<th>Eltern-E-Mail-Adresse</th>"
             io.puts "</tr>"
             io.puts "</thead>"
             io.puts "<tbody>"
@@ -81,13 +87,17 @@ class Main < Sinatra::Base
                 io.puts "<td>#{user_icon(email, 'avatar-md')}</td>"
                 salzh_style = ''
                 salzh_class = ''
-                if salzh_status[email] && [:contact_person, :salzh].include?(salzh_status[email][:status])
-                    salzh_style = 'padding: 2px 4px; margin: -2px -4px; display: inline-block; border-radius: 4px;'
-                    salzh_class = "bg-#{SALZH_MODE_COLORS[(salzh_status[email] || {})[:status]]}"
+                if teacher_logged_in?
+                    if salzh_status[email] && [:contact_person, :salzh].include?(salzh_status[email][:status])
+                        salzh_style = 'padding: 2px 4px; margin: -2px -4px; display: inline-block; border-radius: 4px;'
+                        salzh_class = "bg-#{SALZH_MODE_COLORS[(salzh_status[email] || {})[:status]]}"
+                    end
                 end
                 io.puts "<td><div class='#{salzh_class}' style='#{salzh_style}'>#{record[:last_name]}</div></td>"
                 io.puts "<td><div class='#{salzh_class}' style='#{salzh_style}'>#{record[:first_name]}</div></td>"
-                io.puts "<td>#{Date.parse(record[:geburtstag]).strftime('%d.%m.%Y')}</td>"
+                if teacher_logged_in?
+                    io.puts "<td>#{Date.parse(record[:geburtstag]).strftime('%d.%m.%Y')}</td>"
+                end
                 # salzh_label = ''
                 # if salzh_status[email][:status]
                 #     salzh_label = "<span class='salzh-badge salzh-badge-big bg-#{SALZH_MODE_COLORS[(salzh_status[email] || {})[:status]]}'><i class='fa #{SALZH_MODE_ICONS[(salzh_status[email] || {})[:status]]}'></i></span>&nbsp;&nbsp;bis #{Date.parse(salzh_status[email][:status_end_date]).strftime('%d.%m.')}"
@@ -123,88 +133,100 @@ class Main < Sinatra::Base
                 io.puts "<td>"
                 print_email_field(io, record[:email])
                 io.puts "</td>"
-                homeschooling_button_disabled = klassenleiter_logged_in ? '' : 'disabled'
+                # homeschooling_button_disabled = klassenleiter_logged_in ? '' : 'disabled'
                 # if all_homeschooling_users.include?(email)
                 #     io.puts "<td><button #{homeschooling_button_disabled} class='btn btn-info btn-xs btn-toggle-homeschooling' data-email='#{email}'><i class='fa fa-home'></i>&nbsp;&nbsp;zu Hause</button></td>"
                 # else
                 #     io.puts "<td><button #{homeschooling_button_disabled} class='btn btn-secondary btn-xs btn-toggle-homeschooling' data-email='#{email}'><i class='fa fa-building'></i>&nbsp;&nbsp;Präsenz</button></td>"
                 # end
-                if ['11', '12'].include?(klasse)
-                    io.puts "<td><div class='group-af-button #{user_who_can_manage_antikenfahrt_logged_in? ? '' : 'disabled'}' data-email='#{email}'>#{GROUP_AF_ICONS[group_af_for_email[email]]}</div></td>"
-                end
-                if ['5', '6'].include?(klasse[0])
-                    io.puts "<td><div class='group-ft-button #{admin_logged_in? ? '' : 'disabled'}' data-email='#{email}'>#{GROUP_FT_ICONS[group_ft_for_email[email]] || '❓'}</div></td>"
-                end
-                io.puts "<td><div class='group2-button group2-#{group2_for_email[email]}' data-email='#{email}'>#{group2_for_email[email]}</div></td>"
-                la_label = 'noch nie angemeldet'
-                today = Date.today.to_s
-                if last_access[email]
-                    days = (Date.today - Date.parse(last_access[email])).to_i
-                    if days == 0
-                        la_label = 'heute'
-                    elsif days == 1
-                        la_label = 'gestern'
-                    elsif days == 2
-                        la_label = 'vorgestern'
-                    elsif days == 3
-                        la_label = 'vor 3 Tagen'
-                    elsif days == 4
-                        la_label = 'vor 4 Tagen'
-                    elsif days == 5
-                        la_label = 'vor 5 Tagen'
-                    elsif days == 6
-                        la_label = 'vor 6 Tagen'
-                    elsif days < 14
-                        la_label = 'vor 1 Woche'
-                    elsif days < 21
-                        la_label = 'vor 2 Wochen'
-                    elsif days < 28
-                        la_label = 'vor 3 Wochen'
-                    elsif days < 35
-                        la_label = 'vor 4 Wochen'
-                    else
-                        la_label = 'vor mehreren Wochen'
+                if teacher_logged_in?
+                    if ['11', '12'].include?(klasse)
+                        io.puts "<td><div class='group-af-button #{user_who_can_manage_antikenfahrt_logged_in? ? '' : 'disabled'}' data-email='#{email}'>#{GROUP_AF_ICONS[group_af_for_email[email]]}</div></td>"
+                    end
+                    if ['5', '6'].include?(klasse[0])
+                        io.puts "<td><div class='group-ft-button #{admin_logged_in? ? '' : 'disabled'}' data-email='#{email}'>#{GROUP_FT_ICONS[group_ft_for_email[email]] || '❓'}</div></td>"
                     end
                 end
-                io.puts "<td>#{la_label}</td>"
-                io.puts "<td>"
-                print_email_field(io, "eltern.#{record[:email]}")
+                if teacher_logged_in?
+                    io.puts "<td><div class='group2-button group2-#{group2_for_email[email]}' data-email='#{email}'>#{group2_for_email[email]}</div></td>"
+                    la_label = 'noch nie angemeldet'
+                    today = Date.today.to_s
+                    if last_access[email]
+                        days = (Date.today - Date.parse(last_access[email])).to_i
+                        if days == 0
+                            la_label = 'heute'
+                        elsif days == 1
+                            la_label = 'gestern'
+                        elsif days == 2
+                            la_label = 'vorgestern'
+                        elsif days == 3
+                            la_label = 'vor 3 Tagen'
+                        elsif days == 4
+                            la_label = 'vor 4 Tagen'
+                        elsif days == 5
+                            la_label = 'vor 5 Tagen'
+                        elsif days == 6
+                            la_label = 'vor 6 Tagen'
+                        elsif days < 14
+                            la_label = 'vor 1 Woche'
+                        elsif days < 21
+                            la_label = 'vor 2 Wochen'
+                        elsif days < 28
+                            la_label = 'vor 3 Wochen'
+                        elsif days < 35
+                            la_label = 'vor 4 Wochen'
+                        else
+                            la_label = 'vor mehreren Wochen'
+                        end
+                    end
+                    io.puts "<td>#{la_label}</td>"
+                    io.puts "<td>"
+                    print_email_field(io, "eltern.#{record[:email]}")
+                    io.puts "</td>"
+                end
+                io.puts "</tr>"
+            end
+            if teacher_logged_in?
+                io.puts "<tr>"
+                io.puts "<td colspan='3'></td>"
+                io.puts "<td colspan='2'><b>E-Mail an die Klasse #{tr_klasse(klasse)}</b></td>"
+                io.puts "<td></td>"
+                io.puts "<td colspan='3'><b>E-Mail an alle Eltern der Klasse #{tr_klasse(klasse)}</b></td>"
+                io.puts "</tr>"
+                io.puts "<tr class='user_row'>"
+                io.puts "<td colspan='3'></td>"
+                io.puts "<td colspan='2'>"
+                print_email_field(io, "klasse.#{klasse}@#{SCHUL_MAIL_DOMAIN}")
+                io.puts "</td>"
+                io.puts "<td></td>"
+                io.puts "<td colspan='3'>"
+                print_email_field(io, "eltern.#{klasse}@#{SCHUL_MAIL_DOMAIN}")
                 io.puts "</td>"
                 io.puts "</tr>"
             end
-            io.puts "<tr>"
-            io.puts "<td colspan='3'></td>"
-            io.puts "<td colspan='2'><b>E-Mail an die Klasse #{tr_klasse(klasse)}</b></td>"
-            io.puts "<td></td>"
-            io.puts "<td colspan='3'><b>E-Mail an alle Eltern der Klasse #{tr_klasse(klasse)}</b></td>"
-            io.puts "</tr>"
-            io.puts "<tr class='user_row'>"
-            io.puts "<td colspan='3'></td>"
-            io.puts "<td colspan='2'>"
-            print_email_field(io, "klasse.#{klasse}@#{SCHUL_MAIL_DOMAIN}")
-            io.puts "</td>"
-            io.puts "<td></td>"
-            io.puts "<td colspan='3'>"
-            print_email_field(io, "eltern.#{klasse}@#{SCHUL_MAIL_DOMAIN}")
-            io.puts "</td>"
-            io.puts "</tr>"
             io.puts "</tbody>"
             io.puts "</table>"
             io.puts "</div>"
-            io.puts "<a class='btn btn-primary' href='/show_login_codes/#{klasse}'><i class='fa fa-sign-in'></i>&nbsp;&nbsp;Live-Anmeldungen der Klasse zeigen</a>"
+            if teacher_logged_in?
+                io.puts "<a class='btn btn-primary' href='/show_login_codes/#{klasse}'><i class='fa fa-sign-in'></i>&nbsp;&nbsp;Live-Anmeldungen der Klasse zeigen</a>"
+            end
             # io.puts print_stream_restriction_table(klasse)
+            if teacher_logged_in?
+                io.puts "<hr style='margin: 3em 0;'/>"
+                io.puts "<h3>Schülerlisten Klasse #{tr_klasse(klasse)}</h3>"
+    #             io.puts "<div style='text-align: center;'>"
+                io.puts "<a href='/api/directory_xlsx/#{klasse}' class='btn btn-primary'><i class='fa fa-file-excel-o'></i>&nbsp;&nbsp;Excel-Tabelle herunterladen</a>"
+                io.puts "<a href='/api/directory_timetex_pdf/by_last_name/#{klasse}' class='btn btn-primary'><i class='fa fa-file-pdf-o'></i>&nbsp;&nbsp;Timetex-PDF herunterladen</a>"
+                io.puts "<a href='/api/directory_timetex_pdf/by_first_name/#{klasse}' class='btn btn-primary'><i class='fa fa-file-pdf-o'></i>&nbsp;&nbsp;Timetex-PDF herunterladen (nach Vornamen sortiert)</a>"
+                io.puts "<a href='/api/directory_json/#{klasse}' class='btn btn-primary'><i class='fa fa-file-code-o'></i>&nbsp;&nbsp;JSON herunterladen</a>"
+            end
+            if teacher_logged_in?
+                io.puts "<hr style='margin: 3em 0;'/>"
+                io.puts "<h3>Stundenpläne der Klasse #{tr_klasse(klasse)} zum Ausdrucken</h3>"
+                io.puts "<a href='/api/get_timetable_pdf_for_klasse/#{klasse}' target='_blank' class='btn btn-primary'><i class='fa fa-file-pdf-o'></i>&nbsp;&nbsp;PDF herunterladen (#{@@schueler_for_klasse[klasse].size} Seiten)</a>"
+            end
             io.puts "<hr style='margin: 3em 0;'/>"
-            io.puts "<h3>Schülerlisten Klasse #{tr_klasse(klasse)}</h3>"
-#             io.puts "<div style='text-align: center;'>"
-            io.puts "<a href='/api/directory_xlsx/#{klasse}' class='btn btn-primary'><i class='fa fa-file-excel-o'></i>&nbsp;&nbsp;Excel-Tabelle herunterladen</a>"
-            io.puts "<a href='/api/directory_timetex_pdf/by_last_name/#{klasse}' class='btn btn-primary'><i class='fa fa-file-pdf-o'></i>&nbsp;&nbsp;Timetex-PDF herunterladen</a>"
-            io.puts "<a href='/api/directory_timetex_pdf/by_first_name/#{klasse}' class='btn btn-primary'><i class='fa fa-file-pdf-o'></i>&nbsp;&nbsp;Timetex-PDF herunterladen (nach Vornamen sortiert)</a>"
-            io.puts "<a href='/api/directory_json/#{klasse}' class='btn btn-primary'><i class='fa fa-file-code-o'></i>&nbsp;&nbsp;JSON herunterladen</a>"
-            io.puts "<hr style='margin: 3em 0;'/>"
-            io.puts "<h3>Stundenpläne der Klasse #{tr_klasse(klasse)} zum Ausdrucken</h3>"
-            io.puts "<a href='/api/get_timetable_pdf_for_klasse/#{klasse}' target='_blank' class='btn btn-primary'><i class='fa fa-file-pdf-o'></i>&nbsp;&nbsp;PDF herunterladen (#{@@schueler_for_klasse[klasse].size} Seiten)</a>"
-            io.puts "<hr style='margin: 3em 0;'/>"
-            io.puts "<h3>Lehrer der Klasse #{tr_klasse(klasse)}</h3>"
+            io.puts "<h3>Lehrkräfte der Klasse #{tr_klasse(klasse)}</h3>"
             io.puts "<div class='table-responsive'>"
             io.puts "<table class='table table-condensed table-striped narrow'>"
             io.puts "<thead>"
@@ -253,7 +275,7 @@ class Main < Sinatra::Base
                 old_is_klassenleiter = is_klassenleiter
                 io.puts "<td>#{shorthand}#{is_klassenleiter ? ' (KL)' : ''}</td>"
 #                 io.puts "<td>#{((lehrer[:titel] || '') + ' ' + (lehrer[:last_name] || shorthand)).strip}</td>"
-                io.puts "<td>#{lehrer[:display_name] || ''}</td>"
+                io.puts "<td>#{lehrer[teacher_logged_in? ? :display_name : :display_name_official] || ''}</td>"
                 hours = @@teachers_for_klasse[klasse][shorthand].keys.sort do |a, b|
                     @@teachers_for_klasse[klasse][shorthand][b] <=> @@teachers_for_klasse[klasse][shorthand][a]
                 end.map do |x|
@@ -271,16 +293,18 @@ class Main < Sinatra::Base
                 end
                 io.puts "</tr>"
             end
-            io.puts "<tr>"
-            io.puts "<td colspan='3'></td>"
-            io.puts "<td><b>E-Mail an alle Lehrer/innen der Klasse #{tr_klasse(klasse)}</b></td>"
-            io.puts "</tr>"
-            io.puts "<tr class='user_row'>"
-            io.puts "<td colspan='3'></td>"
-            io.puts "<td>"
-            print_email_field(io, "lehrer.#{klasse}@#{SCHUL_MAIL_DOMAIN}")
-            io.puts "</td>"
-            io.puts "</tr>"
+            if teacher_logged_in?
+                io.puts "<tr>"
+                io.puts "<td colspan='3'></td>"
+                io.puts "<td><b>E-Mail an alle Lehrer/innen der Klasse #{tr_klasse(klasse)}</b></td>"
+                io.puts "</tr>"
+                io.puts "<tr class='user_row'>"
+                io.puts "<td colspan='3'></td>"
+                io.puts "<td>"
+                print_email_field(io, "lehrer.#{klasse}@#{SCHUL_MAIL_DOMAIN}")
+                io.puts "</td>"
+                io.puts "</tr>"
+            end
             io.puts "</tbody>"
             io.puts "</table>"
             io.puts "</div>"

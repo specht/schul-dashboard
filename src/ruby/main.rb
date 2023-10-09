@@ -2565,7 +2565,7 @@ class Main < Sinatra::Base
             parts = request.env['REQUEST_PATH'].split('/')
             klasse = parts[2]
 #             STDERR.puts @@teachers_for_klasse[klasse].to_yaml
-            unless teacher_logged_in?
+            unless (teacher_logged_in?) || (@session_user[:klasse] == klasse)
                 redirect "#{WEB_ROOT}/", 302
             end
         elsif path == 'show_login_codes'

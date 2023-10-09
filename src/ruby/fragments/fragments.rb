@@ -853,12 +853,13 @@ class Main
         return doc.render
     end
 
-    def get_single_timetable_pdf(email)
+    def get_single_timetable_pdf(email, color_scheme)
         today = Time.now.strftime('%Y-%m-%d')
         if today < @@config[:first_school_day]
             today = @@config[:first_school_day]
         end
         klasse = @@user_info[email][:klasse]
+        display_name = @@user_info[email][:display_name]
         d = @@lessons[:start_date_for_date][today]
         timetable = {}
         max_stunden = 1
@@ -903,7 +904,6 @@ class Main
             dx = 0.mm
             dy = 0.3.mm
             bs = 1.3
-            color_scheme = @@user_info[email][:color_scheme] || STANDARD_COLOR_SCHEME #'la2c6e80d60aea2c6e80'
             scale -1, :origin => [297.mm / 2, 210.mm / 2] do
                 image("/gen/bg/bg-#{color_scheme}.jpg", :at => [-297.mm * (bs - 1.0) * 0.5, 210.mm], :width => 297.mm * bs, :height => 210.mm * bs)
             end
@@ -944,7 +944,7 @@ class Main
                         stroke_color 'ffffff'
                         text_rendering_mode(:stroke) do
                             line_width 1.mm
-                            text("Klasse #{Main.tr_klasse(klasse)}", :align => :center, :size => 18 * fscale)
+                            text("#{display_name} (#{Main.tr_klasse(klasse)})", :align => :center, :size => 18 * fscale)
                         end
                     end
                 end
@@ -952,7 +952,7 @@ class Main
                 float do
                     translate dx, dy do
                         text_rendering_mode(:fill) do
-                            text("Klasse #{Main.tr_klasse(klasse)}", :align => :center, :size => 18 * fscale)
+                            text("#{display_name} (#{Main.tr_klasse(klasse)})", :align => :center, :size => 18 * fscale)
                         end
                     end
                 end

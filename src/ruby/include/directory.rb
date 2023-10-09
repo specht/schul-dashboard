@@ -19,7 +19,11 @@ class Main < Sinatra::Base
                 end
                 io.puts "</div>"
             end
-            io.puts "<h3>Klasse #{tr_klasse(klasse)}</h3>"
+            io.puts "<h3>Klasse #{tr_klasse(klasse)}"
+            if sus_logged_in?
+                io.puts "<a href='/api/get_single_timetable_pdf' target='_blank' class='btn btn-primary pull-right'><i class='fa fa-file-pdf-o'></i>&nbsp;&nbsp;Stundenplan zum Drucken herunterladen</a>"
+            end
+            io.puts "</h3>"
             io.puts "<p>"
             io.puts "</p>"
             # <div style='max-width: 100%; overflow-x: auto;'>

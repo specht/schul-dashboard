@@ -925,8 +925,8 @@ class Main
                 move_down 10.mm
                 float do
                     translate dx, dy do
-                        fill_color color_scheme[0] == 'l' ? 'ffffff' : '444444'
-                        stroke_color color_scheme[0] == 'l' ? 'ffffff' : '444444'
+                        fill_color color_scheme[0] == 'l' ? 'ffffff' : '222222'
+                        stroke_color color_scheme[0] == 'l' ? 'ffffff' : '222222'
                         text_rendering_mode(:stroke) do
                             line_width 1.mm
                             text('<b>Stundenplan</b>', :align => :center, :size => 36 * fscale, :inline_format => true)
@@ -944,8 +944,8 @@ class Main
                 move_down 1.2.cm
                 float do
                     translate dx, dy do
-                        fill_color color_scheme[0] == 'l' ? 'ffffff' : '444444'
-                        stroke_color color_scheme[0] == 'l' ? 'ffffff' : '444444'
+                        fill_color color_scheme[0] == 'l' ? 'ffffff' : '222222'
+                        stroke_color color_scheme[0] == 'l' ? 'ffffff' : '222222'
                         text_rendering_mode(:stroke) do
                             line_width 1.mm
                             text("#{display_name} (#{Main.tr_klasse(klasse)})", :align => :center, :size => 18 * fscale)

@@ -183,14 +183,25 @@
 
         $('.scheinwerfer').click(function (e) {
             let dmx = e.target.id;
-            $('#' + dmx + '').addClass('selected')
             var targetButton = document.getElementById(dmx);
 
-            if (targetButton) {
+            if (targetButton && !$('#' + dmx + '').hasClass('selected')) {
+                $('#' + dmx + '').addClass('selected')
                 var classes = targetButton.classList;
                 for (var i = 0; i < classes.length; i++) {
                     if (classes[i].startsWith('btn-outline-')) {
                         var originalClass = 'btn-' + classes[i].substr(12);
+                        classes.remove(classes[i]);
+                        classes.add(originalClass);
+                        break;
+                    }
+                }
+            } else {
+                $('#' + dmx + '').removeClass('selected')
+                var classes = targetButton.classList;
+                for (var i = 0; i < classes.length; i++) {
+                    if (classes[i].startsWith('btn-')) {
+                        var originalClass = 'btn-outline-' + classes[i].substr(4);
                         classes.remove(classes[i]);
                         classes.add(originalClass);
                         break;

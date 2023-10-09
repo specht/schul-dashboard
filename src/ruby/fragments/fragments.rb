@@ -905,7 +905,11 @@ class Main
             dy = 0.3.mm
             bs = 1.3
             scale -1, :origin => [297.mm / 2, 210.mm / 2] do
-                image("/gen/bg/bg-#{color_scheme}.jpg", :at => [-297.mm * (bs - 1.0) * 0.5, 210.mm], :width => 297.mm * bs, :height => 210.mm * bs)
+                jpg_path = "/gen/bg/bg-#{color_scheme}.jpg"
+                unless File.exist?(jpg_path)
+                    jpg_path = "/gen/bg/bg-#{color_scheme}0.jpg"
+                end
+                image(jpg_path, :at => [-297.mm * (bs - 1.0) * 0.5, 210.mm], :width => 297.mm * bs, :height => 210.mm * bs)
             end
             image("/app/images/timetable-back-light.png", :at => [0, 210.mm], :width => 297.mm, :height => 210.mm)
 

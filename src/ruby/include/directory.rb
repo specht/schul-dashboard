@@ -226,6 +226,7 @@ class Main < Sinatra::Base
                 io.puts "<h3>Stundenpläne der Klasse #{tr_klasse(klasse)} zum Ausdrucken</h3>"
             elsif sus_logged_in?
                 io.puts "<h3>Stundenpläne zum Ausdrucken</h3>"
+                io.puts "<p>Den Hintergrund der Stundenpläne kannst über dein Profil verändern, da immer der Hintergrund aus deinem Dashboard genommen wird.</p>"
             end
             if teacher_logged_in?
                 io.puts "<a href='/api/get_timetable_pdf_for_klasse/#{klasse}' target='_blank' class='btn btn-primary'><i class='fa fa-file-pdf-o'></i>&nbsp;&nbsp;PDF herunterladen (#{@@schueler_for_klasse[klasse].size} Seiten)</a>"

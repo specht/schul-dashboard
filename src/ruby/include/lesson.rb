@@ -257,6 +257,7 @@ class Main < Sinatra::Base
         rows.each do |entry|
             offset = entry['i.offset']
             tablet_set_id = entry['t.id']
+            next if @@tablet_sets[tablet_set_id].nil?
             results[offset] ||= {}
             results[offset][:info] ||= {}
             results[offset][:info][:booked_tablet_sets] ||= []

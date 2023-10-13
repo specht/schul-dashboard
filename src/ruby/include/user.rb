@@ -687,7 +687,14 @@ class Main < Sinatra::Base
 
     get '/api/get_single_timetable_pdf' do
         require_user!
-        respond_raw_with_mimetype(get_single_timetable_pdf(@session_user[:email], @session_user[:color_scheme] || @@standard_color_scheme), 'application/pdf')
+        use_png_addition = false
+        respond_raw_with_mimetype(get_single_timetable_pdf(@session_user[:email], @session_user[:color_scheme] || @@standard_color_scheme, use_png_addition), 'application/pdf')
+    end
+
+    get '/api/get_single_timetable_with_png_addition_pdf' do
+        require_user!
+        use_png_addition = true
+        respond_raw_with_mimetype(get_single_timetable_pdf(@session_user[:email], @session_user[:color_scheme] || @@standard_color_scheme, use_png_addition), 'application/pdf')
     end
 
 end

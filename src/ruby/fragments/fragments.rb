@@ -704,7 +704,7 @@ class Main
         return doc.render
     end
 
-    def get_sozialzeugnis_pdf(klasse, cache)
+    def get_sozialzeugnis_pdf(klasse, cache, use_png_addition)
         doc = Prawn::Document.new(:page_size => 'A4', :page_layout => :portrait, :margin => 0) do
             font_families.update("RobotoCondensed" => {
                 :normal => "/app/fonts/RobotoCondensed-Regular.ttf",
@@ -853,7 +853,7 @@ class Main
         return doc.render
     end
 
-    def get_single_timetable_pdf(email, color_scheme)
+    def get_single_timetable_pdf(email, color_scheme, use_png_addition)
         today = Time.now.strftime('%Y-%m-%d')
         if today < @@config[:first_school_day]
             today = @@config[:first_school_day]
@@ -1066,7 +1066,9 @@ class Main
                     end
                 end
             end
-            image('/app/images/timetable1-front.png', :at => [0, 210.mm], :width => 297.mm, :height => 210.mm)
+            if use_png_addition
+                image('/app/images/timetable1-front.png', :at => [0, 210.mm], :width => 297.mm, :height => 210.mm)
+            end
         end
         return doc.render
     end

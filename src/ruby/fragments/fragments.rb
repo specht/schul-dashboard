@@ -704,7 +704,7 @@ class Main
         return doc.render
     end
 
-    def get_sozialzeugnis_pdf(klasse, cache, use_png_addition)
+    def get_sozialzeugnis_pdf(klasse, cache)
         doc = Prawn::Document.new(:page_size => 'A4', :page_layout => :portrait, :margin => 0) do
             font_families.update("RobotoCondensed" => {
                 :normal => "/app/fonts/RobotoCondensed-Regular.ttf",

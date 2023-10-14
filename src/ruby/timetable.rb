@@ -1243,7 +1243,7 @@ class Timetable
                         lesson_keys = Set.new(@@lessons_for_klasse[user[:klasse]])
                     end
                     lesson_keys ||= Set.new()
-                    lesson_keys << "_#{user[:klasse]}" if user[:is_klasse]
+                    lesson_keys << "_#{user[:klasse]}" unless user[:teacher]
                     lesson_keys << "_@#{user[:room]}" if user[:is_room]
                     if user[:teacher]
                         lesson_keys << "_#{user[:shorthand]}"

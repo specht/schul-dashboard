@@ -67,6 +67,7 @@
 
 <script>
     var buttons = document.querySelectorAll('[class^="btn-"]');
+    var selected_row_id_for_light = 0;
     function refresh_events() {
         api_call('/api/get_aula_events', {}, function (data) {
             $('.events-here').empty();
@@ -100,8 +101,10 @@
                     $('.events-here').append(row);
                     bu_light.click(function (e) {
                         let id = $(e.target).closest('tr').data('id');
-                        $('.bu-perform-set-light-aula-event').data('delete_id', id);
-                        $('#composeLightConfig').modal('show');
+                        selected_row_id_for_light = id;
+                        $('.bu-perform-set-light-aula-event').data('light_id', id);
+                        show_error_message(selected_row_id_for_light);
+                        $('#composeLightConfig').modal('show').data('light_id', id);
                     });
                     bu_unfinished.click(function (e) {
                         let id = $(e.target).closest('tr').data('id');
@@ -184,7 +187,6 @@
         $('.scheinwerfer').click(function (e) {
             let dmx = e.target.id;
             var targetButton = document.getElementById(dmx);
-
             if (targetButton && !$('#' + dmx + '').hasClass('selected')) {
                 $('#' + dmx + '').addClass('selected')
                 var classes = targetButton.classList;

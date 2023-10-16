@@ -290,9 +290,9 @@ class Main < Sinatra::Base
                         end
                     else
                         if @@tablet_sets[x][:is_tablet_set] == true
-                            hints << "<span class='text-danger'><i class='fa fa-warning'></i></span>&nbsp;&nbsp;Dieser Tabletsatz wurde bereits von <b>#{entry[:display_name]}</b> gebucht#{entry[:reason] != "" ? ': ' + entry[:reason] : ''}."
+                            hints << "<span class='text-danger'><i class='fa fa-warning'></i></span>&nbsp;&nbsp;Dieser Tabletsatz wurde bereits von <b>#{entry[:display_name]}</b> gebucht#{entry[:reason] != "" ? ': ' : ''} #{entry[:reason]}."
                         else
-                            hints << "<span class='text-danger'><i class='fa fa-warning'></i></span>&nbsp;&nbsp;Dieses Gerät wurde bereits von <b>#{entry[:display_name]}</b> gebucht#{entry[:reason] != '' ? ': ' + entry[:reason] : ''}."
+                            hints << "<span class='text-danger'><i class='fa fa-warning'></i></span>&nbsp;&nbsp;Dieses Gerät wurde bereits von <b>#{entry[:display_name]}</b> gebucht#{entry[:reason] != "" ? ': ' : ''} #{entry[:reason]}."
                         end
                     end
                 end

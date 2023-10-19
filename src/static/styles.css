@@ -2691,3 +2691,7 @@ th.thsticky {
     overflow-y: hidden;
     overflow-x: hidden!important;
 }
+
+#calendar > div.fc-view-harness.fc-view-harness-active > div > table > tbody > tr.fc-scrollgrid-section.fc-scrollgrid-section-liquid > td > div > div {
+    overflow-y: hidden!important;
+}

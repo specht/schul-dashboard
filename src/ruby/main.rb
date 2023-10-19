@@ -2096,30 +2096,34 @@ class Main < Sinatra::Base
                 io.puts "</div>"
                 io.string
             end
-        elsif teacher_logged_in?
+        elsif teacher_logged_in? || technikteam_logged_in?
             StringIO.open do |io|
                 io.puts "<div style='margin-bottom: 15px;'>"
-                hidden_something = false
-                temp = StringIO.open do |tio|
-                    @@lehrer_order.each do |email|
-                        next if teacher_tablet_logged_in? && @@user_info[email][:shorthand][0] == '_'
-                        id = (email == @session_user[:email]) ? @@user_info[email][:id] : @@user_info[email][:public_id]
-                        next unless @@user_info[email][:can_log_in]
-                        # next unless can_see_all_timetables_logged_in? || email == @session_user[:email]
-                        hide = (email != @session_user[:email])
-                        hide = false if teacher_tablet_logged_in?
-                        hidden_something = true if hide
-                        style = hide ? 'display: none;' : ''
-                        tio.puts "<a data-id='#{id}' onclick=\"load_timetable('#{id}'); window.selected_shorthand = '#{@@user_info[email][:shorthand]}'; \" class='btn btn-sm ttc ttc-teacher' style='#{style}'>#{@@user_info[email][:shorthand]}</a>"
+                if teacher_logged_in?
+                    hidden_something = false
+                    temp = StringIO.open do |tio|
+                        @@lehrer_order.each do |email|
+                            next if teacher_tablet_logged_in? && @@user_info[email][:shorthand][0] == '_'
+                            id = (email == @session_user[:email]) ? @@user_info[email][:id] : @@user_info[email][:public_id]
+                            next unless @@user_info[email][:can_log_in]
+                            # next unless can_see_all_timetables_logged_in? || email == @session_user[:email]
+                            hide = (email != @session_user[:email])
+                            hide = false if teacher_tablet_logged_in?
+                            hidden_something = true if hide
+                            style = hide ? 'display: none;' : ''
+                            tio.puts "<a data-id='#{id}' onclick=\"load_timetable('#{id}'); window.selected_shorthand = '#{@@user_info[email][:shorthand]}'; \" class='btn btn-sm ttc ttc-teacher' style='#{style}'>#{@@user_info[email][:shorthand]}</a>"
+                        end
+                        tio.string
                     end
-                    tio.string
+                    if hidden_something
+                        io.puts "<button class='btn btn-xs ttc bu-show-alle-teacher pull-right' style='margin-left: 0.5em; width: unset; padding: 0.25rem 0.5rem; display: inline-block;' onclick=\"$('.ttc-teacher').show(); $('.bu-show-alle-teacher').hide();\">Alle Lehrkräfte</button>"
+                    end
+                    io.puts temp
+                    unless teacher_tablet_logged_in?
+                        io.puts '<hr />'
+                    end
                 end
-                if hidden_something
-                    io.puts "<button class='btn btn-xs ttc bu-show-alle-teacher pull-right' style='margin-left: 0.5em; width: unset; padding: 0.25rem 0.5rem; display: inline-block;' onclick=\"$('.ttc-teacher').show(); $('.bu-show-alle-teacher').hide();\">Alle Lehrkräfte</button>"
-                end
-                io.puts temp
                 unless teacher_tablet_logged_in?
-                    io.puts '<hr />'
 
                     hidden_something = false
                     all_hidden = @@klassen_order.all? do |klasse|
@@ -2168,21 +2172,21 @@ class Main < Sinatra::Base
                 io.puts "</div>"
                 io.string
             end
-        elsif technikteam_logged_in?
-            StringIO.open do |io|
-                io.puts "<div style='margin-bottom: 15px;'>"
-                temp = StringIO.open do |tio|
-                    ROOM_ORDER.each do |room|
-                        id = @@room_ids[room]
-                        tio.puts "<a data-id='#{id}' onclick=\"load_timetable('#{id}');\" class='btn btn-sm ttc ttc-room'>#{room}</a>"
-                    end
-                    tio.string
-                end
-                io.puts temp
+        # elsif technikteam_logged_in?
+        #     StringIO.open do |io|
+        #         io.puts "<div style='margin-bottom: 15px;'>"
+        #         temp = StringIO.open do |tio|
+        #             ROOM_ORDER.each do |room|
+        #                 id = @@room_ids[room]
+        #                 tio.puts "<a data-id='#{id}' onclick=\"load_timetable('#{id}');\" class='btn btn-sm ttc ttc-room'>#{room}</a>"
+        #             end
+        #             tio.string
+        #         end
+        #         io.puts temp
                 
-                io.puts "</div>"
-                io.string
-            end
+        #         io.puts "</div>"
+        #         io.string
+        #     end
         end
     end
 

@@ -115,6 +115,7 @@ p {
 <script>
 
 var sus = [];
+var sus_names = {};
 
 Array.prototype.sample = function () {
     return this[Math.floor((Math.random() * this.length))];
@@ -130,7 +131,7 @@ var seats = [];
 
 var seats_dict = {
     '107': [
-        [0, 0], [1, 0], [2, 0], [3, 0], [5, 0], [6, 0], [7, 0], [8, 0],
+        [0, 0], [1, 0], [2, 0], [3, 0],         [6, 0], [7, 0], [8, 0],
         [0, 1], [1, 1], [2, 1], [3, 1], [5, 1], [6, 1], [7, 1], [8, 1],
         [0, 2], [1, 2], [2, 2], [3, 2], [5, 2], [6, 2], [7, 2], [8, 2],
         [0, 3], [1, 3], [2, 3], [3, 3], [5, 3], [6, 3], [7, 3], [8, 3],
@@ -213,6 +214,7 @@ function shuffle_plan() {
         available_sus[key] = i;
     }
     for (let rule of rules) {
+        if (!(rule[0] in sus_names)) continue;
         sus_index = -1;
         for (let i = 0; i < sus.length; i++) {
             let kid = sus[i];
@@ -283,6 +285,9 @@ document.addEventListener('DOMContentLoaded', function() {
     // /api/directory_json/
     jQuery.get(`/api/directory_json/${klasse}`, {}, function(data) {
         sus = data;
+        for (let entry of sus) {
+            sus_names[entry.nc_login] = true;
+        }
         if (sus == null || sus.length === 0)
             window.location.href = '/';
         WIDTH = 1;
@@ -312,25 +317,25 @@ document.addEventListener('DOMContentLoaded', function() {
             if (audio.ended) return;
 
             if (e.code === 'Space') {
-            for (let place of $('.place')) {
-                place = $(place);
-                place.css('opacity', 1.0);
-            };
+                for (let place of $('.place')) {
+                    place = $(place);
+                    place.css('opacity', 1.0);
+                };
 
-            shuffle_plan();
-            audio.play();
+                shuffle_plan();
+                audio.play();
             }
             if (e.code === 'KeyA') {
-            place_sus();
+                place_sus();
             }
             if (e.code === 'KeyC') {
-            let old = JSON.parse(JSON.stringify(seats));
-            let shift = 3;
-            seats = [];
-            for (let i = 0; i < old.length; i++) {
-                seats.push(old[(2 * old.length - i + shift) % old.length]);
-            }
-            place_sus();
+                let old = JSON.parse(JSON.stringify(seats));
+                let shift = 3;
+                seats = [];
+                for (let i = 0; i < old.length; i++) {
+                    seats.push(old[(2 * old.length - i + shift) % old.length]);
+                }
+                place_sus();
             }
         });
     })

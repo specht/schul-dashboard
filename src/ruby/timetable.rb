@@ -1812,7 +1812,7 @@ class Timetable
                             end
                         end
 
-                        if ical_info[email]
+                        if ical_info[email] && mode == :private
                             ical_events[email] ||= []
                             write_events.each do |event|
                                 # STDERR.puts event.keys.to_json
@@ -1906,7 +1906,7 @@ class Timetable
                 f.puts "VERSION:2.0"
                 f.puts "CALSCALE:GREGORIAN"
                 f.puts "X-WR-CALNAME:Dashboard #{SCHUL_NAME}"
-                events.sort.uniq.each do |e|
+                events.each do |e|
                     x = e.strip
                     f.puts x unless x.empty?
                 end

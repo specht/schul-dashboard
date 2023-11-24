@@ -187,6 +187,9 @@ class Main < Sinatra::Base
         self.class.refresh_public_event_config()
         ts = Time.now.strftime("%Y-%m-%dT%H:%M")
         StringIO.open do |io|
+            if @@public_event_config.empty?
+                io.puts "<p>Es sind momentan keine Veranstaltungen geplant, bitte versuchen Sie es später noch einmal.</p>"
+            end
             @@public_event_config.each.with_index do |event, event_index|
                 if event_index > 0
                     io.puts "<hr />"
@@ -356,7 +359,7 @@ class Main < Sinatra::Base
         path = '/data/public_events/public_events.yaml'
         if DEVELOPMENT || @@public_event_config_timestamp < File.mtime(path).to_i
             debug "Reloading public event config from #{path}!"
-            @@public_event_config = YAML.load(File.read(path))
+            @@public_event_config = YAML.load(File.read(path)) || []
             self.fix_public_event_config()
             @@public_event_config_timestamp = File.mtime(path).to_i
         end

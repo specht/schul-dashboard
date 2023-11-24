@@ -6,15 +6,13 @@ class DumpDatabase
     include Neo4jBolt
     
     def run
-        transaction do
-            rows = neo4j_query(<<~END_OF_QUERY, :mode => ARGV.first).map { |x| x['n'] }
-                MATCH (n:PublicEventPerson {mode: $mode})-[:SIGNED_UP_FOR]->(e:PublicEvent {name: "Info-Abend für Viertklässler-Eltern"})
-                RETURN n
-                ORDER BY n.timestamp;
-            END_OF_QUERY
-            rows.each do |row|
-                puts "#{row[:name]} <#{row[:email]}>"
-            end
+        puts "Track\tTimestamp\tName\tE-Mail"
+        neo4j_query(<<~END_OF_QUERY).each do |row|
+            MATCH (n:PublicEventPerson)-[:SIGNED_UP_FOR]->(e:PublicEventTrack)
+            RETURN n, e
+            ORDER BY e.track, n.timestamp;
+        END_OF_QUERY
+            puts "#{row['e'][:track]}\t#{row['n'][:timestamp]}\t#{row['n'][:name]}\t#{row['n'][:email]}"
         end
     end
 end

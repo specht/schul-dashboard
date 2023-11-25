@@ -989,7 +989,7 @@ function update_table() {
         }
         if (((lesson_data[i] || {}).info || {}).booked_tablet_sets) {
             let span = $('<span>').addClass('bv');
-            span.html(`<i class='fa fa-tablet'></i> <span style='font-weight: normal;'>&times;${(lesson_data[i].info.booked_tablet_sets_tablet_count) || 0}</span>`);
+            span.html(`<i class='fa fa-laptop'></i> <i class='fa fa-tablet'></i> <span style='font-weight: normal;'>&times;${(lesson_data[i].info.booked_tablet_sets_tablet_count) || 0}</span>`);
             cell.append(span);
             wrote_something = true;
         }
@@ -1531,12 +1531,27 @@ document.addEventListener('DOMContentLoaded', function() {
                     bu_book_tablet_set.prop('disabled', true).hide();
                 }
                 div.append(row);
+                if (!data.available_tablet_sets[key].is_tablet_set) {
+                    row.hide();
+                }
                 if (data.available_tablet_sets[key].hint) {
                     row = $('<tr>').addClass('annotation_row');
                     row.append($('<td>').attr('colspan', 4).css('white-space', 'unset').css('position', 'relative').css('top', '-10px').html(data.available_tablet_sets[key].hint));
                     div.append(row);
+                    if (!data.available_tablet_sets[key].is_tablet_set) {
+                        row.hide();
+                    }
                 }
             }
+            if ($('tr:hidden').length > 0) {
+            let button = $(`<button class='btn btn-sm btn-outline-secondary mb-1'>Alle Geräte anzeigen</button>`);
+            button.on('click', function(e) {
+                button.remove();
+                all_devices_displayed = true
+                $('tr:hidden').show();
+            });
+            div.append(button);
+        }
             $('#tabletSetModal').modal('show');
         });
     });

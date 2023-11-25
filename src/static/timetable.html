@@ -713,7 +713,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         markers.append($(event_data.booked_tablet_label_short));
                 }
                 if (event_data.booked_tablet_sets) {
-                    markers.append($('<span>').css('font-weight', 'normal').html(`<i class='fa fa-tablet'></i> &times;${event_data.booked_tablet_sets_total_count}`));
+                    markers.append($('<span>').css('font-weight', 'normal').html(`<i class='fa fa-laptop'></i> <i class='fa fa-tablet'></i> &times;${event_data.booked_tablet_sets_total_count}`));
                 }
                 let contact_person_sus = arg.event.extendedProps.contact_person_sus || [];
                 if (contact_person_sus.length > 0) {

@@ -71,7 +71,10 @@
             <div class='row' style='margin-bottom: 15px;'>
                 <div class='col-md-12'>
                     <button class='bu-hidden-problems btn btn-secondary'><i class='fa fa-eye-slash'></i>&nbsp;&nbsp;Ausgeblendete Probleme</button>
-                    <button id='tp_report_problem' title="Dies kann nicht rückgängig gemacht werden!" class='btn btn-outline-secondary s pull-right' disabled><i class='fa fa-send'></i>&nbsp;&nbsp;Absenden</button>
+                    <div class="pull-right">
+                        <button id='tp_report_problem_quiet' class='btn btn-outline-secondary' disabled><i class='fa fa-bell-slash '></i>&nbsp;&nbsp;Stumm Absenden (Für Testzwecke)</button>
+                        <button id='tp_report_problem' class='btn btn-outline-secondary' disabled><i class='fa fa-send'></i>&nbsp;&nbsp;Absenden</button>
+                    </div>
                 </div>
             </div>
             <div class='row'>
@@ -188,6 +191,11 @@
             $('#tp_report_problem').removeClass('btn-outline-secondary').addClass('btn-success').prop('disabled', false);
         else
             $('#tp_report_problem').removeClass('btn-success').addClass('btn-outline-secondary').prop('disabled', true);
+
+        if (can_send_problem())
+            $('#tp_report_problem_quiet').removeClass('btn-outline-secondary').addClass('btn-secondary').prop('disabled', false);
+        else
+            $('#tp_report_problem_quiet').removeClass('btn-secondary').addClass('btn-outline-secondary').prop('disabled', true);
     }
 
     function can_send_problem() {
@@ -339,6 +347,17 @@ document.addEventListener('DOMContentLoaded', function() {
         let date = $('#tp_date').val().trim();
         let device = $('#tp_problem_device').val();
         api_call('/api/report_tech_problem', {problem: problem, date: date, device: device}, function(data) {
+            console.log(data);
+            $('#tp_problem_device').val("");
+            update_submit_button();
+            refresh_tech_problems();
+        });
+    });
+    $('#tp_report_problem_quiet').click(function(e) {
+        let problem = $('#tp_problem_description').val().trim();
+        let date = $('#tp_date').val().trim();
+        let device = $('#tp_problem_device').val();
+        api_call('/api/report_tech_problem_quiet', {problem: problem, date: date, device: device}, function(data) {
             console.log(data);
             $('#tp_problem_device').val("");
             update_submit_button();

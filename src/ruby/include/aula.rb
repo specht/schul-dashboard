@@ -193,6 +193,29 @@ class Main < Sinatra::Base
     #     respond(:result => 'lefromage')
     # end
 
+    def print_light_structure()
+        require_user_who_can_manage_tablets!
+        file_path = "/internal/aula_light/current_config.txt"
+
+        if File.exist?(file_path)
+            current_config = File.read(file_path)
+        else
+            current_config = ""
+        end
+        
+        StringIO.open do |io|
+            io.puts "#{current_config}"
+            io.string
+        end
+    end
+
+    post '/api/set_light_structure' do
+        require_user_who_can_manage_tablets!
+        data = parse_request_data(:required_keys => [:structure_input], :max_body_length => 1024 * 1024, :max_string_length => 1024 * 1024, :max_value_lengths => {:structure_input => 1024 * 1024})
+        File.write("/internal/aula_light/current_config.txt", data[:structure_input])
+        respond(:result => 'lefromage')
+    end
+
     post '/api/set_desk_number' do
         require_user_who_can_manage_tablets!
         data = parse_request_data(:required_keys => [:dmx, :desk])

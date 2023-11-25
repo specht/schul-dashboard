@@ -188,11 +188,18 @@ AUFSICHT_ZEIT = {1 => '08:00', 2 => '09:00', 3 => '09:55', 4 => '10:40',
 KLASSEN_ORDER = ['5a', '11', '12']
 ROOM_ORDER = %w(101 102 103 104)
 GROUP_AF_ICONS = {
-    '' => '🏠',
-    'it' => '🇮🇹',
-    'gr' => '🇬🇷'
+    ''   => "<span style='font-size:120%;'>🏠</span>",
+    'it' => "<span style='font-size:120%;'>🇮🇹</span>",
+    'gr' => "<span style='font-size:120%;'>🇬🇷</span>"
 }
 GROUP_AF_ICON_KEYS = GROUP_AF_ICONS.keys.sort
+GROUP_FT_ICONS = {
+    'nawi'   => "<span style='font-size:120%;'>🧪</span> Nawi",
+    'gewi'   => "<span style='font-size:120%;'>👪</span> Gewi",
+    'musik'  => "<span style='font-size:120%;'>🎹</span> Musik",
+    'medien' => "<span style='font-size:120%;'>📽️</span> Medien",
+}
+GROUP_FT_ICON_KEYS = GROUP_FT_ICONS.keys.sort
 
 # tablet booking pre and post time, in minutes
 STREAMING_TABLET_BOOKING_TIME_PRE = 5

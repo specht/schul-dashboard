@@ -115,6 +115,7 @@ p {
 <script>
 
 var sus = [];
+var sus_names = {};
 
 Array.prototype.sample = function () {
     return this[Math.floor((Math.random() * this.length))];
@@ -135,6 +136,13 @@ var seats_dict = {
         [0, 2], [1, 2], [2, 2], [3, 2], [5, 2], [6, 2], [7, 2], [8, 2],
         [0, 3], [1, 3], [2, 3], [3, 3], [5, 3], [6, 3], [7, 3], [8, 3],
     ],
+    '113': [
+        [0, 0], [1, 0], [2, 0], [3, 0], [5, 0], [6, 0], [7, 0], [8, 0],
+        [0, 1], [1, 1], [2, 1], [3, 1], [5, 1], [6, 1], [7, 1], [8, 1],
+        [0, 2], [1, 2], [2, 2], [3, 2], [5, 2], [6, 2], [7, 2], [8, 2],
+        [0, 3], [1, 3], [2, 3], [3, 3], [5, 3], [6, 3], [7, 3], [8, 3],
+                        [2, 4], [3, 4],
+    ],
     '202': [
                         [3, 0], [4, 0],
         [0, 1], [1, 1], [3, 1], [4, 1], [6, 1], [7, 1],
@@ -142,6 +150,14 @@ var seats_dict = {
         [0, 3], [1, 3], [3, 3], [4, 3], [6, 3], [7, 3],
         [0, 4], [1, 4], [3, 4], [4, 4], [6, 4], [7, 4],
         [0, 5], [1, 5], [3, 5], [4, 5], [6, 5], [7, 5],
+    ],
+    '203': [
+        [0, 0], [1, 0], [3, 0], [4, 0], [6, 0], [7, 0],
+        [0, 1], [1, 1], [3, 1], [4, 1], [6, 1], [7, 1],
+        [0, 2], [1, 2], [3, 2], [4, 2], [6, 2], [7, 2],
+        [0, 3], [1, 3], [3, 3], [4, 3], [6, 3], [7, 3],
+        [0, 4], [1, 4], [3, 4], [4, 4], [6, 4], [7, 4],
+                                                [7, 5],
     ],
     '204': [
         [0, 0], [1, 0], [3, 0], [4, 0], [6, 0], [7, 0],
@@ -158,12 +174,22 @@ var seats_dict = {
         [0, 4], [1, 4], [3, 4], [4, 4], [6, 4], [7, 4],
         [0, 5], [1, 5], [3, 5], [4, 5], [6, 5], [7, 5],
     ],
+    '307': [
+        [0, 0], [1, 0], [3, 0], [4, 0], [6, 0], [7, 0],
+        [0, 1], [1, 1], [3, 1], [4, 1], [6, 1], [7, 1],
+        [0, 2], [1, 2], [3, 2], [4, 2], [6, 2], [7, 2],
+        [0, 3], [1, 3], [3, 3], [4, 3], [6, 3], [7, 3],
+        [0, 4], [1, 4], [3, 4], [4, 4], [6, 4], [7, 4],
+    ],
 };
 
 var place_for_sus = [];
 
 var rules = [
-    // ['max.mustermann', [0, 5], [1, 2]],
+    ['josephine.buendgen', [0, 7], [0, 1]],
+    ['malia.grollmann', [0, 7], [0, 1]],
+    ['helin.feng', [0, 7], [0, 1]],
+    ['lasse.schuster', [0, 7], [0, 1]],
 ];
 
 function place_sus(silent) {
@@ -192,11 +218,13 @@ function place_sus(silent) {
 }
 
 function seat_suitable_for_kid(seat_index, kid_index) {
+    if (['6a', '9a', '5a'].indexOf(klasse) >= 0) {
+        if (sus[kid_index].geschlecht === 'm')
+            return seat_index % 2 === 0;
+        else
+            return seat_index % 2 === 1;
+    }
     return true;
-    if (sus[kid_index].geschlecht === 'm')
-        return seat_index % 2 === 0;
-    else
-        return seat_index % 2 === 1;
 }
 
 function shuffle_plan() {
@@ -213,6 +241,7 @@ function shuffle_plan() {
         available_sus[key] = i;
     }
     for (let rule of rules) {
+        if (!(rule[0] in sus_names)) continue;
         sus_index = -1;
         for (let i = 0; i < sus.length; i++) {
             let kid = sus[i];
@@ -231,6 +260,7 @@ function shuffle_plan() {
                 }
             }
         }
+        console.log(rule[0], place_for_sus[sus_index]);
     }
     while (Object.keys(available_sus).length > 0) {
         let sus_index = Object.keys(available_sus)[0];
@@ -283,6 +313,9 @@ document.addEventListener('DOMContentLoaded', function() {
     // /api/directory_json/
     jQuery.get(`/api/directory_json/${klasse}`, {}, function(data) {
         sus = data;
+        for (let entry of sus) {
+            sus_names[entry.nc_login] = true;
+        }
         if (sus == null || sus.length === 0)
             window.location.href = '/';
         WIDTH = 1;
@@ -312,25 +345,25 @@ document.addEventListener('DOMContentLoaded', function() {
             if (audio.ended) return;
 
             if (e.code === 'Space') {
-            for (let place of $('.place')) {
-                place = $(place);
-                place.css('opacity', 1.0);
-            };
+                for (let place of $('.place')) {
+                    place = $(place);
+                    place.css('opacity', 1.0);
+                };
 
-            shuffle_plan();
-            audio.play();
+                shuffle_plan();
+                audio.play();
             }
             if (e.code === 'KeyA') {
-            place_sus();
+                place_sus();
             }
             if (e.code === 'KeyC') {
-            let old = JSON.parse(JSON.stringify(seats));
-            let shift = 3;
-            seats = [];
-            for (let i = 0; i < old.length; i++) {
-                seats.push(old[(2 * old.length - i + shift) % old.length]);
-            }
-            place_sus();
+                let old = JSON.parse(JSON.stringify(seats));
+                let shift = 3;
+                seats = [];
+                for (let i = 0; i < old.length; i++) {
+                    seats.push(old[(2 * old.length - i + shift) % old.length]);
+                }
+                place_sus();
             }
         });
     })

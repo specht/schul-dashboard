@@ -147,7 +147,7 @@ docker_compose[:services][:ruby2] = {
                  "#{INPUT_DATA_PATH}:/data:ro",
                  "#{RAW_FILES_PATH}:/raw:ro",
                  "#{VPLAN_FILES_PATH}:/vplan:ro",
-                 "#{INTERNAL_PATH}:/internal:ro",
+                 "#{INTERNAL_PATH}:/internal",
                  "#{GEN_FILES_PATH}:/gen:ro"],
     :environment => env.dup,
     :working_dir => '/app'
@@ -171,6 +171,7 @@ docker_compose[:services][:timetable]['entrypoint'] = DEVELOPMENT ?
             'rackup --port 8080 --host 0.0.0.0 timetable-repl.ru'
 
 docker_compose[:services][:ruby][:user] = "#{UID}"
+docker_compose[:services][:ruby2][:user] = "#{UID}"
 docker_compose[:services][:timetable][:user] = "#{UID}"
 
 if ENABLE_IMAGE_BOT
@@ -184,9 +185,6 @@ docker_compose[:services][:vplan_watcher] = YAML.load(docker_compose[:services][
 docker_compose[:services][:vplan_watcher]['entrypoint'] = DEVELOPMENT ?
             'rerun -b --dir /app -s SIGKILL \'ruby vplan-watcher.rb\'' :
             'ruby vplan-watcher.rb'
-
-docker_compose[:services][:ruby][:user] = "#{UID}"
-docker_compose[:services][:timetable][:user] = "#{UID}"
 
 docker_compose[:services][:invitation_bot] = YAML.load(docker_compose[:services][:ruby].to_yaml)
 docker_compose[:services][:invitation_bot]['entrypoint'] = DEVELOPMENT ?
@@ -278,6 +276,7 @@ FileUtils::mkpath(INTERNAL_PATH)
 FileUtils::mkpath(File::join(INTERNAL_PATH, 'vote'))
 FileUtils::mkpath(NEO4J_DATA_PATH)
 FileUtils::mkpath(NEO4J_LOGS_PATH)
+FileUtils::mkpath(File::join(INTERNAL_PATH, 'aula_light'))
 
 if DEVELOPMENT && ARGV == ['up']
     fork do

@@ -13,7 +13,6 @@ class Main < Sinatra::Base
             MATCH (u:User)-[:HAS_AMT {amt: 'technikamt'}]->(v:Techpost)
             RETURN u.email;
         END_OF_QUERY
-        debug results
         return results.map { |result| result["u.email"] } || []
     end
     

@@ -490,6 +490,8 @@ class Main < Sinatra::Base
         @@current_email_addresses = []
         @@antikenfahrt_recipients = {}
         @@antikenfahrt_mailing_lists = {}
+        @@forschertage_recipients = {}
+        @@forschertage_mailing_lists = {}
         @@birthday_entries = {}
         @@server_etag = RandomTag.generate(24)
 
@@ -1006,6 +1008,7 @@ class Main < Sinatra::Base
 
         @@mailing_lists = {}
         self.update_antikenfahrt_groups()
+        self.update_forschertage_groups()
         self.update_mailing_lists()
         @@current_email_addresses = parser.parse_current_email_addresses()
 
@@ -1076,6 +1079,7 @@ class Main < Sinatra::Base
 
     def self.update_mailing_lists()
         self.update_antikenfahrt_groups()
+        self.update_forschertage_groups()
         @@mailing_lists = {}
         all_kl = Set.new()
         @@klassen_order.each do |klasse|
@@ -1146,6 +1150,9 @@ class Main < Sinatra::Base
             :recipients => all_kl.to_a.sort
         }
         @@antikenfahrt_mailing_lists.each_pair do |k, v|
+            @@mailing_lists[k] = v
+        end
+        @@forschertage_mailing_lists.each_pair do |k, v|
             @@mailing_lists[k] = v
         end
         if DEVELOPMENT
@@ -1551,6 +1558,7 @@ class Main < Sinatra::Base
                                         @session_user[:homeschooling] = results.first['u'][:homeschooling]
                                         @session_user[:group2] = results.first['u'][:group2] || 'A'
                                         @session_user[:group_af] = results.first['u'][:group_af] || ''
+                                        @session_user[:group_ft] = results.first['u'][:group_ft] || ''
                                         @session_user[:sus_may_contact_me] = results.first['u'][:sus_may_contact_me] || false
                                         @session_user[:user_agent] = results.first['s'][:user_agent]
                                         @session_user[:ip] = request.ip
@@ -1850,6 +1858,11 @@ class Main < Sinatra::Base
                                 io.puts "<a class='dropdown-item nav-icon' href='/bibliothek'><div class='icon'><i class='fa fa-book'></i></div><span class='label'>Bibliothek</span></a>"
                             # end
                         # end
+                        unless teacher_logged_in?
+                            if @session_user[:klasse].to_i < 11
+                                io.puts "<a class='dropdown-item nav-icon' href='/directory/#{@session_user[:klasse]}'><div class='icon'><i class='fa fa-users'></i></div><span class='label'>Meine Klasse</span></a>"
+                            end
+                        end
                         if teacher_or_sv_logged_in?
                             io.puts "<div class='dropdown-divider'></div>"
                             if teacher_or_sv_logged_in?
@@ -1947,7 +1960,6 @@ class Main < Sinatra::Base
                         io.puts "<div class='dropdown-divider'></div>"
                         remaining_klassen.each do |klasse|
                             io.puts "<a class='dropdown-item nav-icon' href='/directory/#{klasse}'><div class='icon'><i class='fa fa-address-book'></i></div><span class='label'>Klasse #{tr_klasse(klasse)}</span></a>"
-                            remaining_klassen.delete(klasse)
                         end
                     end
                     io.puts "</div>"
@@ -2159,6 +2171,17 @@ class Main < Sinatra::Base
         elsif technikteam_logged_in?
             StringIO.open do |io|
                 io.puts "<div style='margin-bottom: 15px;'>"
+                io.puts "<a data-id='#{@session_user[:id]}' onclick=\"load_timetable('#{@session_user[:id]}');\" class='btn btn-sm ttc active' style='width: 100%; padding: 0.25rem 0.5rem; display: inline-block;'>Persönlicher Stundenplan (#{tr_klasse(@session_user[:klasse])})</a><hr>"
+                temp = StringIO.open do |tio|
+                    @@klassen_order.each do |klasse|
+                        id = @@klassen_id[klasse]
+                        tio.puts "<a data-klasse='#{klasse}' data-id='#{id}' onclick=\"load_timetable('#{id}');\" class='btn btn-sm ttc ttc-klasse'>#{tr_klasse(klasse)}</a>"
+                    end
+                    tio.string
+                end
+                io.puts temp
+
+                io.puts '<hr />'
                 temp = StringIO.open do |tio|
                     ROOM_ORDER.each do |room|
                         id = @@room_ids[room]
@@ -2167,7 +2190,7 @@ class Main < Sinatra::Base
                     tio.string
                 end
                 io.puts temp
-                
+
                 io.puts "</div>"
                 io.string
             end
@@ -2177,7 +2200,8 @@ class Main < Sinatra::Base
     def print_test_klassen_chooser(active = nil)
         StringIO.open do |io|
             io.puts "<div style='margin-bottom: 15px;'>"
-            klassen_for_session_user.each do |klasse|
+            # klassen_for_session_user.each do |klasse|
+            KLASSEN_ORDER.each do |klasse|
                 next if ['11', '12'].include?(klasse)
                 io.puts "<a data-klasse='#{klasse}' class='btn btn-sm ttc #{klasse == active ? 'active': ''}'>#{tr_klasse(klasse)}</a>"
             end
@@ -2596,7 +2620,7 @@ class Main < Sinatra::Base
             parts = request.env['REQUEST_PATH'].split('/')
             klasse = parts[2]
 #             STDERR.puts @@teachers_for_klasse[klasse].to_yaml
-            unless teacher_logged_in?
+            unless (teacher_logged_in?) || (@session_user[:klasse] == klasse)
                 redirect "#{WEB_ROOT}/", 302
             end
         elsif path == 'show_login_codes'

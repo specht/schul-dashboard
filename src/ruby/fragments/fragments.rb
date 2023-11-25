@@ -853,12 +853,13 @@ class Main
         return doc.render
     end
 
-    def get_single_timetable_pdf(email)
+    def get_single_timetable_pdf(email, color_scheme, use_png_addition)
         today = Time.now.strftime('%Y-%m-%d')
         if today < @@config[:first_school_day]
             today = @@config[:first_school_day]
         end
         klasse = @@user_info[email][:klasse]
+        display_name = @@user_info[email][:display_name]
         d = @@lessons[:start_date_for_date][today]
         timetable = {}
         max_stunden = 1
@@ -903,9 +904,12 @@ class Main
             dx = 0.mm
             dy = 0.3.mm
             bs = 1.3
-            color_scheme = @@user_info[email][:color_scheme] || STANDARD_COLOR_SCHEME #'la2c6e80d60aea2c6e80'
             scale -1, :origin => [297.mm / 2, 210.mm / 2] do
-                image("/gen/bg/bg-#{color_scheme}.jpg", :at => [-297.mm * (bs - 1.0) * 0.5, 210.mm], :width => 297.mm * bs, :height => 210.mm * bs)
+                jpg_path = "/gen/bg/bg-#{color_scheme}.jpg"
+                unless File.exist?(jpg_path)
+                    jpg_path = "/gen/bg/bg-#{color_scheme}0.jpg"
+                end
+                image(jpg_path, :at => [-297.mm * (bs - 1.0) * 0.5, 210.mm], :width => 297.mm * bs, :height => 210.mm * bs)
             end
             image("/app/images/timetable-back-light.png", :at => [0, 210.mm], :width => 297.mm, :height => 210.mm)
 
@@ -921,8 +925,8 @@ class Main
                 move_down 10.mm
                 float do
                     translate dx, dy do
-                        fill_color 'ffffff'
-                        stroke_color 'ffffff'
+                        fill_color color_scheme[0] == 'l' ? 'ffffff' : '222222'
+                        stroke_color color_scheme[0] == 'l' ? 'ffffff' : '222222'
                         text_rendering_mode(:stroke) do
                             line_width 1.mm
                             text('<b>Stundenplan</b>', :align => :center, :size => 36 * fscale, :inline_format => true)
@@ -940,11 +944,11 @@ class Main
                 move_down 1.2.cm
                 float do
                     translate dx, dy do
-                        fill_color 'ffffff'
-                        stroke_color 'ffffff'
+                        fill_color color_scheme[0] == 'l' ? 'ffffff' : '222222'
+                        stroke_color color_scheme[0] == 'l' ? 'ffffff' : '222222'
                         text_rendering_mode(:stroke) do
                             line_width 1.mm
-                            text("Klasse #{Main.tr_klasse(klasse)}", :align => :center, :size => 18 * fscale)
+                            text("#{display_name} (#{Main.tr_klasse(klasse)})", :align => :center, :size => 18 * fscale)
                         end
                     end
                 end
@@ -952,7 +956,7 @@ class Main
                 float do
                     translate dx, dy do
                         text_rendering_mode(:fill) do
-                            text("Klasse #{Main.tr_klasse(klasse)}", :align => :center, :size => 18 * fscale)
+                            text("#{display_name} (#{Main.tr_klasse(klasse)})", :align => :center, :size => 18 * fscale)
                         end
                     end
                 end
@@ -1062,7 +1066,9 @@ class Main
                     end
                 end
             end
-            image('/app/images/timetable1-front.png', :at => [0, 210.mm], :width => 297.mm, :height => 210.mm)
+            if use_png_addition
+                image('/app/images/timetable1-front.png', :at => [0, 210.mm], :width => 297.mm, :height => 210.mm)
+            end
         end
         return doc.render
     end

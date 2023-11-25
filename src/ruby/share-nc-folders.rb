@@ -250,7 +250,7 @@ class Script
         (@ocs.file_sharing.all || []).each do |share|
             next if share['share_with'].nil?
             present_shares[share['share_with']] ||= {}
-            next unless share['path'] == "/#{SHARE_SOURCE_FOLDER}"
+            next unless share['path'].index("/#{SHARE_SOURCE_FOLDER}/") == 0
             present_shares[share['share_with']][share['path']] = {
                 :permissions => share['permissions'].to_i,
                 :target_path => share['file_target'],
@@ -259,9 +259,12 @@ class Script
             }
         end
         STDERR.puts "Got present shares for #{present_shares.size} users."
-        # File.open('/internal/debug/present-shares.yaml', 'w') do |f|
-        #     f.write present_shares.to_yaml
-        # end
+        File.open('/internal/debug/present-shares.yaml', 'w') do |f|
+            f.write present_shares.to_yaml
+        end
+        File.open('/internal/debug/wanted-shares.yaml', 'w') do |f|
+            f.write wanted_shares.to_yaml
+        end
         wanted_shares.keys.sort.each do |user_id|
             unless wanted_nc_ids.nil?
                 next unless wanted_nc_ids.include?(user_id)
@@ -299,13 +302,25 @@ class Script
                 else
                     dir2 = ocs_user.webdav.directory.find(path.gsub(' ', '%20'))
                     contents_count = (dir2.contents || []).size
-                    if contents_count == 0
+                    just_unterricht_shares = true
+                    (dir2.contents || []).each do |x|
+                        href = x.href
+                        unless ['/Ausgabeordner/', '/Einsammelordner/', '/R%c3%bcckgabeordner/',
+                                '/Ausgabeordner-Materialamt/',
+                                '/Auto-Einsammelordner%20(von%20SuS%20an%20mich)/',
+                                'Auto-R%c3%bcckgabeordner%20(von%20mir%20an%20SuS)/',
+                                '/SuS/'].any? { |y| href[href.size - y.size, y.size] == y }
+                            just_unterricht_shares = false
+                        end
+                    end
+                    if contents_count == 0 || just_unterricht_shares
                         STDERR.puts "DELETING [#{user_id}]#{path}"
                         if SRSLY
                             ocs_user.webdav.directory.destroy(path.gsub(' ', '%20'))
                         end
                     else
                         STDERR.puts "KEEPING [#{user_id}]#{path} because it has #{contents_count} files."
+                        # STDERR.puts (dir2.contents || []).to_yaml
                     end
                 end
             end

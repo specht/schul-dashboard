@@ -11,6 +11,7 @@ SCHUL_NAME = "Beispielschule"
 SCHUL_NAME_AN_DATIV = "an der"
 # Schul-Icon
 SCHUL_ICON = "brand.png"
+DARK_SCHUL_ICON = "brand.png"
 
 # E-Mail-Adresse der Schulleitung für das Impressum
 SCHULLEITUNG_EMAIL = 'schulleitung@beispielschule.de'

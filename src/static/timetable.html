@@ -1,7 +1,7 @@
 #{this_is_a_page_for_logged_in_users}
 <style>
     .fc-v-event .fc-event-main, .fc-h-event .fc-event-main {
-        color: #{color_palette[:main_text]};
+        color: #{@session_user[:dark] ? '#fff' : color_palette[:main_text]};
     }
 
     .cem span {
@@ -372,11 +372,11 @@ function render_timetable(result, successCallback) {
     $('.weekend_events').empty();
     for (let event of events)
     {
-        event.color = color_palette.primary;
+        event.color = #{@session_user[:dark] ? '"rgba(0, 0, 0, 0.5)"' : 'color_palette.primary'};
         if (event.entfall)
-            event.color = color_palette.disabled;
+            event.color = #{@session_user[:dark] ? '"rgba(255, 255, 255, 0.3)"' : 'color_palette.disabled'};
         if (event.is_event)
-            event.color = color_palette.shifted;
+            event.color = #{@session_user[:dark] ? '"rgba(0, 0, 0, 0.5)"' : 'color_palette.shifted'};
         if (event.is_event && [6, 0].indexOf(new Date(event.datum).getDay()) >= 0) {
             if (wrote_weekend_event_header == false) {
                 $('.weekend_events').append($('<p><b>Termine am Wochenende</b></p><hr />'));
@@ -665,12 +665,12 @@ document.addEventListener('DOMContentLoaded', function() {
                 raum.addClass('condensed');
 
                 raum.css('position', 'absolute').css('right', '-1px');
-                raum.css('background-color', color_palette.primary);
+                raum.css('background-color', #{@session_user[:dark] ? '"rgba(0, 0, 0, 0)"' : 'color_palette.primary'});
                 raum.css('padding-right', '2px');
                 
                 raum.css('padding-left', '4px');
                 if (arg.event.extendedProps.entfall)
-                    raum.css('background-color', color_palette.disabled);
+                    raum.css('background-color', #{@session_user[:dark] ? '"rgba(0, 0, 0, 0)"' : 'color_palette.disabled'});
                 div0.append(t).append(raum);
                 
                 let div1 = $('<div>');
@@ -701,7 +701,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (per_user.audio_comments)
                     per_user.audio_comments = filter_events_by_timestamp(per_user.audio_comments, show_messages_from);
                 
-                let markers = $('<span>').addClass('cem').css('background-color', arg.event.extendedProps.entfall ? color_palette.disabled : (arg.event.extendedProps.is_event ? color_palette.shifted : color_palette.primary));
+                let markers = $('<span>').addClass('cem').css('background-color', arg.event.extendedProps.entfall ? #{@session_user[:dark] ? '"rgba(255, 255, 255, 0.3)"' : 'color_palette.disabled'} : (arg.event.extendedProps.is_event ? #{@session_user[:dark] ? '"rgba(0, 0, 0, 0.5)"' : 'color_palette.shifted'} : #{@session_user[:dark] ? '"rgba(0, 0, 0, 0.5)"' : 'color_palette.primary'}));
                 if (event_data.stundenthema_text)
                     markers.append($('<span>').html("<i class='fa fa-info-circle'></i>"));
                 if (event_data.lesson_jitsi) {
@@ -859,7 +859,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 div1b.append(span);
                 div1b.append('&nbsp;');
                 
-                let markers = $('<span>').addClass('cem').css('background-color', arg.event.extendedProps.entfall ? color_palette.disabled : (arg.event.extendedProps.is_event ? color_palette.shifted : color_palette.primary));
+                let markers = $('<span>').addClass('cem').css('background-color', arg.event.extendedProps.entfall ? #{@session_user[:dark] ? '"rgba(255, 255, 255, 0.3)"' : 'color_palette.disabled'} : (arg.event.extendedProps.is_event ? #{@session_user[:dark] ? '"rgba(0, 0, 0, 0.5)"' : 'color_palette.shifted'} : #{@session_user[:dark] ? '"rgba(0, 0, 0, 0.5)"' : 'color_palette.primary'}));
                 if (event_data.jitsi)
                     markers.append($('<span>').addClass('mute').html('Jitsi'));
                 div1b.append(markers);

@@ -428,21 +428,21 @@ function render_timetable(result, successCallback) {
             let day_s = '' + i;
             if (day_s.length < 2)
                 day_s = '0' + day_s;
-            let ds = '2021-12-' + day_s;
+            let ds = '2023-12-' + day_s;
             let wday = new Date(ds).getDay();
             if (wday == 6) {
                 // Saturday
                 let day_s = '' + (i + 2);
                 if (day_s.length < 2)
                     day_s = '0' + day_s;
-                ds = '2021-12-' + day_s;
+                ds = '2023-12-' + day_s;
                 title += ' (Sa)';
             } else if (wday == 0) {
                 // Sunday
                 let day_s = '' + (i + 1);
                 if (day_s.length < 2)
                     day_s = '0' + day_s;
-                ds = '2021-12-' + day_s;
+                ds = '2023-12-' + day_s;
                 title += ' (So)';
             }
             if (today >= ds)

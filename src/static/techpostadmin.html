@@ -169,6 +169,20 @@
         );
     }
 
+    function compose_clear_aula_lights() {
+        showTemplateModal('Den Plan Aula-Scheinwerfer löschen', 
+            'Bist Du sicher? Dabei wird der gesamte Plan der Scheinwerfer in der Aula gelöscht. Dies ist notwendig, wenn Fehler im hochgeladenen HTML vorliegen, die die Seite vorübergehend unbenutzbar machen.<br>Tu dies nur nach Absprache mit dem TechnikTeam und allen Usern die Zugriff auf diese Funktion haben.',
+            "<i class='fa fa-trash'></i>&nbsp;&nbsp;Ich bin mir sicher (Alles löschen)", 'btn-danger',
+            'Abbrechen', 'btn-secondary', function() {
+                api_call('/api/set_light_structure', {structure_input: ""}, function(data) {
+                    if (data.success)
+                        refresh_tech_problems();
+                        refresh_fixed_tech_problems();
+                });
+            }
+        );
+    }
+
     function compose_kick_all() {
         showTemplateModal('Alle Technikamt-User entfernen', 
             'Bist Du sicher? Dabei werden alle Technikamt-User entfernt.<br>Tu dies nur nach Absprache mit dem TechnikTeam und allen Usern die Zugriff auf diese Funktion haben.<br>Das TechnikTeam wird per E-Mail darüber informiert.',
@@ -611,6 +625,9 @@ document.addEventListener('DOMContentLoaded', function() {
 
     $('.bu-clear-all').click(function(e) {
         compose_clear_all();
+    });
+    $('.bu-clear-aula-lights').click(function(e) {
+        compose_clear_aula_lights();
     });
     $('.bu-kick-all').click(function(e) {
         compose_kick_all();

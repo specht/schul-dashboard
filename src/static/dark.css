@@ -258,3 +258,8 @@ body {
 .hint {
     background-color: rgba(0, 0, 0, 0.75);
 }
+
+.color-scheme-usage {
+    background-color: rgba(0, 0, 0, 0.75)!important;
+    color: #fff;
+}

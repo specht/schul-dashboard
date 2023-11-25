@@ -112,16 +112,20 @@
                 
                 <hr />
             </div> -->
-            <h2 style='margin-bottom: 30px; margin-top: 30px;'>Dunkel/Hell</h2>
+            <h2 style='margin-bottom: 30px; margin-top: 30px;'>Helligkeit</h2>
             <div class="col-md-12">
                 <div class='row'>
                     <div class="col-md-6">
-                        <label>Hintergrund</label>
-                        <input #{color_scheme[0] == 'd' ? 'checked' : ''} type="checkbox" data-toggle="toggle" data-on="dunkel" data-off="hell" data-onstyle="secondary" data-offstyle="secondary" id='dark_switch'>
+                        <div style="display: flex; flex-direction: row; justify-content: space-between;">
+                            <label style="margin-top: 0.4em;">Hintergrund</label>
+                            <input #{color_scheme[0] == 'd' ? 'checked' : ''} type="checkbox" data-toggle="toggle" data-on="dunkel" data-off="hell" data-onstyle="secondary" data-offstyle="secondary" id='dark_switch'>
+                        </div>
                     </div>
                     <div class="col-md-6">
-                        <label>GUI</label>
-                        <input #{@session_user[:dark] ? 'checked' : ''} type="checkbox" data-toggle="toggle" data-on="dunkel" data-off="hell" data-onstyle="secondary" data-offstyle="secondary" id='dark_css_switch'>
+                        <div style="display: flex; flex-direction: row; justify-content: space-between;">
+                            <label style="margin-top: 0.4em;">Benutzeroberfläche</label>
+                            <input #{@session_user[:dark] ? 'checked' : ''} type="checkbox" data-toggle="toggle" data-on="dunkel" data-off="hell" data-onstyle="secondary" data-offstyle="secondary" id='dark_css_switch'>
+                        </div>
                     </div>
                 </div>
             </div>

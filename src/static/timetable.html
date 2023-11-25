@@ -374,7 +374,7 @@ function render_timetable(result, successCallback) {
     {
         event.color = #{@session_user[:dark] ? '"rgba(0, 0, 0, 0.5)"' : 'color_palette.primary'};
         if (event.entfall)
-            event.color = #{@session_user[:dark] ? '"rgba(255, 255, 255, 0.3)"' : 'color_palette.disabled'};
+            event.color = #{@session_user[:dark] ? '"rgba(0, 0, 0, 0.5)"' : 'color_palette.disabled'};
         if (event.is_event)
             event.color = #{@session_user[:dark] ? '"rgba(0, 0, 0, 0.5)"' : 'color_palette.shifted'};
         if (event.is_event && [6, 0].indexOf(new Date(event.datum).getDay()) >= 0) {
@@ -665,12 +665,12 @@ document.addEventListener('DOMContentLoaded', function() {
                 raum.addClass('condensed');
 
                 raum.css('position', 'absolute').css('right', '-1px');
-                raum.css('background-color', #{@session_user[:dark] ? '"rgba(0, 0, 0, 0)"' : 'color_palette.primary'});
+                raum.css('background-color', #{@session_user[:dark] ? '"rgba(0, 0, 0, 0.0)"' : 'color_palette.primary'});
                 raum.css('padding-right', '2px');
                 
                 raum.css('padding-left', '4px');
                 if (arg.event.extendedProps.entfall)
-                    raum.css('background-color', #{@session_user[:dark] ? '"rgba(0, 0, 0, 0)"' : 'color_palette.disabled'});
+                    raum.css('background-color', #{@session_user[:dark] ? '"rgba(0, 0, 0, 0.0)"' : 'color_palette.disabled'});
                 div0.append(t).append(raum);
                 
                 let div1 = $('<div>');

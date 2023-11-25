@@ -134,6 +134,7 @@ class Main
             :primary_color_much_lighter => primary_color_much_lighter,
             :primary_color_darker => primary_color_darker,
             :primary_color_much_darker => primary_color_much_darker,
+            :primary_color_dark => rgb_to_hex(mix(hex_to_rgb(primary_color), [0, 0, 0], 0.8)),
             :disabled => disabled_color,
             :darker => darker_color,
             :shifted => desaturated_color,

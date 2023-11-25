@@ -618,8 +618,8 @@ function showTemplateModalWithInput(title, text, confirm_label, confirm_class,
 }
 </script>
 
-<nav class="navbar navbar-expand-md navbar-light fixed-top justify-content-end">
-        <a class="navbar-brand" href="/"><img src='/#{@session_user[:dark] ? DARK_SCHUL_ICON : SCHUL_ICON}' style='width: 24px; height: 24px; position: relative; top: -2px;' /><span class='brand-brand'>&nbsp;&nbsp;{BRAND}</span></a>
+<nav class="navbar navbar-expand-md navbar-#{(@session_user || {})[:dark] ? 'dark' : 'light'} fixed-top justify-content-end">
+        <a class="navbar-brand" href="/"><img src='/#{(@session_user || {})[:dark] ? DARK_SCHUL_ICON : SCHUL_ICON}' style='width: 24px; height: 24px; position: relative; top: -2px;' /><span class='brand-brand'>&nbsp;&nbsp;{BRAND}</span></a>
     <div class='ml-auto'></div>
     #{nav_items(color_palette[:primary_color], now, new_messages_count)}
 </nav>

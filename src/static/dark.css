@@ -12,6 +12,18 @@ body {
     background-color: rgba(0, 0, 0, 0.5);
 }
 
+.fc .fc-button-primary, .fc .fc-button:disabled, .fc .fc-button:not(:disabled):active {
+    background-color: rgba(0, 0, 0, 0.5);
+}
+
+.fc .fc-button-primary:hover {
+    background-color: rgba(0, 0, 0, 0.7);
+}
+
+.fc-theme-standard td, .fc-theme-standard th {
+    border: 1px dotted rgba(255,255,255,0.1);
+}
+
 .btn {
     color: #fff;
 }
@@ -28,9 +40,27 @@ body {
     color: #fff;
 }
 
+.ttc:hover {
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.btn:hover {
+    color: unset;
+}
+
+.ttc.active {
+    border: 1px solid rgba(0, 0, 0, 0.5);
+}
+
 .fc-timegrid-col.fc-day-today, .fc-daygrid-day.fc-day-today {
     background-color: rgba(255, 255, 255, 0.1)!important;
 } 
+
+#lessonModal .vertretungs-text {
+    background-color: rgba(0, 0, 0, 0.5);
+    border-top: 1px solid rgba(0, 0, 0, 0.5);
+    border-bottom: 1px solid rgba(0, 0, 0, 0.5);
+}
 
 .api_messages {
     border-color: #333!important;
@@ -46,9 +76,9 @@ body {
 }
 
 .form-control {
-    background-color: #222!important;
+    background-color: rgba(0, 0, 0, 0.5)!important;
     color: rgba(255, 255, 255, 0.9)!important;
-    border-color: #333!important;
+    border-color: rgba(255, 255, 255, 0.2)!important;
 }
 
 .active {

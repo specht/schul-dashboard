@@ -3047,7 +3047,42 @@ class Main < Sinatra::Base
                     status 404
                 end
             else
-                status 404
+                debug path
+                if path == "site.webmanifest"
+                    path = File::join('/static', path)
+                    if File::exist?(path)
+                        content = File::read(path, :encoding => 'utf-8')
+                        purge_missing_sessions()
+                        while true
+                            index = s.index('#{')
+                            break if index.nil?
+                            length = 2
+                            balance = 1
+                            while index + length < s.size && balance > 0
+                                c = s[index + length]
+                                balance -= 1 if c == '}'
+                                balance += 1 if c == '{'
+                                length += 1
+                            end
+                            code = s[index + 2, length - 3]
+                            begin
+    #                             STDERR.puts code
+                                s[index, length] = eval(code).to_s || ''
+                            rescue
+                                debug "Error while evaluating for #{(@session_user || {})[:email]}:"
+                                debug code
+                                raise
+                            end
+                        end
+                        s.gsub!('<!--PAGE_TITLE-->', @page_title)
+                        s.gsub!('<!--PAGE_DESCRIPTION-->', @page_description)
+                        s
+                    else
+                        status 404
+                    end
+                else
+                    status 404
+                end
             end
         else
             status 404

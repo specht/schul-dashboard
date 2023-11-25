@@ -307,7 +307,7 @@
                         if (entry.problem.comment == false) {
                             row.append($('<td>').append(tp_fixed).append('&nbsp;').append(tp_not_fixed).append('&nbsp;').append(tp_comment));
                         } else {
-                            row.append($('<td>').append(tp_fixed).append('&nbsp;').append(tp_not_fixed).text('' + entry.problem.comment + ' ').append(tp_update_comment));
+                            row.append($('<td>').append(tp_fixed).append('&nbsp;').append(tp_not_fixed).append('&nbsp;').append('' + entry.problem.comment + ' ').append(tp_update_comment));
                         }
 
 
@@ -499,13 +499,11 @@
                                                 refresh_fixed_tech_problems();
                                         });
                                     } else {
-                                        // refresh_fixed_tech_problems();
-                                        // showTemplateModal('Blende das Problem zuerst wieder ein',
-                                        // 'Da das Problem nach dem Löschen des Kommentars unbeantwortet wäre musst du es erst wieder einblenden, um den Kommentar zu löschen.',
-                                        // '','',
-                                        // 'Schließen', 'btn-secondary'
-                                        // )
-                                        console.log("Test")
+                                        showTemplateModal('Blende das Problem zuerst wieder ein',
+                                        'Da das Problem nach dem Löschen des Kommentars unbeantwortet wäre musst du es erst wieder einblenden, um den Kommentar zu löschen.',
+                                        '','',
+                                        'Schließen', 'btn-secondary'
+                                        )
                                     }
                                 }
                             );

@@ -115,6 +115,7 @@ class Main
     def color_palette_for_color_scheme(color_scheme)
         primary_color = '#' + color_scheme[7, 6]
         light = luminance(primary_color) > 160
+        primary_color_lighter = rgb_to_hex(mix(hex_to_rgb(primary_color), hex_to_rgb('#ffffff'), 0.3))
         primary_color_much_lighter = rgb_to_hex(mix(hex_to_rgb(desaturate(primary_color)), hex_to_rgb('#ffffff'), 0.8))
         primary_color_darker = darken(primary_color, 0.8)
         primary_color_much_darker = rgb_to_hex(mix(hex_to_rgb(desaturate(primary_color)), hex_to_rgb('#000000'), 0.5))
@@ -131,6 +132,7 @@ class Main
         color_palette = {
             :is_light => light,
             :primary => primary_color,
+            :primary_color_lighter => primary_color_lighter,
             :primary_color_much_lighter => primary_color_much_lighter,
             :primary_color_darker => primary_color_darker,
             :primary_color_much_darker => primary_color_much_darker,

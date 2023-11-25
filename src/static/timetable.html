@@ -268,6 +268,12 @@
     color: #fff;
 }
 
+#{(@session_user || {})[:dark] ? '' : '/*'}
+.fc-timegrid-event-harness, .ttc {
+    box-shadow: 0 0 3px #{color_palette[:primary_color_lighter]};
+}
+#{(@session_user || {})[:dark] ? '' : '*/'}
+
 /* .streaming-button { */
 /*     position: absolute; */
 /*     top: 1px; */
@@ -390,7 +396,7 @@ function render_timetable(result, successCallback) {
             if (event.jitsi == true) {
                 $('.weekend_events').append($('<a href="/jitsi/event/' + event.eid + '" target="_blank" class="btn btn-sm btn-primary"><i class="fa fa-microphone"></i>&nbsp;&nbsp;Zum Jitsi-Raum&nbsp;&nbsp;<i class="fa fa-angle-double-right"></i></a></p>'));
             }
-        var wrote_weekend_event_header = true;
+            wrote_weekend_event_header = true;
         }
 
     }

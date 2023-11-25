@@ -519,6 +519,7 @@ class Main < Sinatra::Base
     def print_sessions()
         require_user!
         StringIO.open do |io|
+            io.puts "<div class='table-responsive' style='max-width: 100%; overflow-x: auto;'>"
             io.puts "<table class='table table-condensed table-striped table-narrow'>"
             io.puts "<thead>"
             io.puts "<tr>"
@@ -550,6 +551,7 @@ class Main < Sinatra::Base
             end
             io.puts "</tbody>"
             io.puts "</table>"
+            io.puts "</div>"
             io.string
         end
     end

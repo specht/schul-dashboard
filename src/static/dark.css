@@ -104,6 +104,10 @@ body {
     background-color: rgba(255, 255, 255, 0.2);
 }
 
+.dropdown-item {
+    color: rgba(255, 255, 255, 0.9);
+}
+
 .dropdown-item:focus, .dropdown-item:hover {
     background-color: rgba(255, 255, 255, 0.3);
     color: rgba(255, 255, 255, 0.9);
@@ -219,4 +223,8 @@ body {
 
 .lesson_table tr.current {
     outline: 1px solid rgba(254,244,165,0.3)!important;
+}
+
+.hint {
+    background-color: rgba(0, 0, 0, 0.75);
 }

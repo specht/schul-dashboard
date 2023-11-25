@@ -112,10 +112,21 @@
                 
                 <hr />
             </div> -->
-            
+            <h2 style='margin-bottom: 30px; margin-top: 30px;'>Dunkel/Hell</h2>
+            <div class="col-md-12">
+                <div class='row'>
+                    <div class="col-md-6">
+                        <label>Hintergrund</label>
+                        <input #{color_scheme[0] == 'd' ? 'checked' : ''} type="checkbox" data-toggle="toggle" data-on="dunkel" data-off="hell" data-onstyle="secondary" data-offstyle="secondary" id='dark_switch'>
+                    </div>
+                    <div class="col-md-6">
+                        <label>GUI</label>
+                        <input #{@session_user[:dark] ? 'checked' : ''} type="checkbox" data-toggle="toggle" data-on="dunkel" data-off="hell" data-onstyle="secondary" data-offstyle="secondary" id='dark_css_switch'>
+                    </div>
+                </div>
+            </div>
             <h2 style='margin-bottom: 30px; margin-top: 30px;'>Farbschema</h2>
             <div class='row swatches' style='position: relative;'>
-                <input #{color_scheme[0] == 'd' ? 'checked' : ''} type="checkbox" data-toggle="toggle" data-on="dunkel" data-off="hell" data-onstyle="secondary" data-offstyle="secondary" id='dark_switch'>
             </div>
             
             <h2 style='margin-bottom: 30px; margin-top: 30px;'>Muster</h2>
@@ -446,6 +457,15 @@ window.addEventListener('load', function () {
                 changeThemeColor(data.darker);
                 for (let style of [0, 1, 2, 3, 4, 5, 6, 7, 8, 9])
                     style_swatches[style].css('background-image', 'url(/gen/bg/bg-' + color_scheme.substr(0, 19) + style + '.jpg)');
+            }
+        });
+    });
+    $('#dark_css_switch').change(function(e) {
+        let checked = $(e.target).is(':checked');
+        let mode = checked ? "dark" : "light";
+        api_call('/api/set_css', {mode: mode}, function(data) {
+            if (data.success) {
+                location.reload();
             }
         });
     });

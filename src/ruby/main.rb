@@ -1550,6 +1550,7 @@ class Main < Sinatra::Base
                                     if @session_user
                                         @session_user[:font] = results.first['u'][:font]
                                         @session_user[:color_scheme] = results.first['u'][:color_scheme]
+                                        @session_user[:dark] = results.first['u'][:dark]
                                         @session_user[:ical_token] = results.first['u'][:ical_token]
                                         @session_user[:otp_token] = results.first['u'][:otp_token]
                                         @session_user[:otp_token_changed] = results.first['u'][:otp_token_changed] || '2023-02-02'
@@ -2285,6 +2286,20 @@ class Main < Sinatra::Base
         return color_scheme
     end
 
+    post '/api/set_css' do
+        require_user!
+        data = parse_request_data(:required_keys => [:mode])
+        dark = data[:mode] == "dark" ? true : false
+        
+        results = neo4j_query(<<~END_OF_QUERY, :email => @session_user[:email], :dark => dark)
+            MATCH (u:User {email: $email})
+            SET u.dark = $dark;
+        END_OF_QUERY
+        
+        respond(:ok => true)
+    end
+    
+
     def get_open_doors_for_user()
         require_user!
         doors = neo4j_query_expect_one(<<~END_OF_QUERY, :email => @session_user[:email])['doors']
@@ -2535,8 +2550,8 @@ class Main < Sinatra::Base
             color_scheme += '0'
         end
         color_palette = color_palette_for_color_scheme(color_scheme)
-
-        s = File.read('/static/dark.css')
+        
+        s = @session_user[:dark] ? File.read('/static/dark.css') : ""
         while true
             index = s.index('#{')
             break if index.nil?

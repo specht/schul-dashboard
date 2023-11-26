@@ -314,3 +314,7 @@ body {
 .groups-container tbody tr:hover {
     background-color: rgba(254,244,165,0.3);
 }
+
+.fc-timegrid-event-harness-inset .fc-timegrid-event,.fc-timegrid-event.fc-event-mirror {
+    box-shadow: none;
+}

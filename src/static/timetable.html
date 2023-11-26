@@ -707,7 +707,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (per_user.audio_comments)
                     per_user.audio_comments = filter_events_by_timestamp(per_user.audio_comments, show_messages_from);
                 
-                let markers = $('<span>').addClass('cem').css('background-color', arg.event.extendedProps.entfall ? #{@session_user[:dark] ? '"rgba(255, 255, 255, 0.3)"' : 'color_palette.disabled'} : (arg.event.extendedProps.is_event ? #{@session_user[:dark] ? '"rgba(0, 0, 0, 0.5)"' : 'color_palette.shifted'} : #{@session_user[:dark] ? '"rgba(0, 0, 0, 0.5)"' : 'color_palette.primary'}));
+                let markers = $('<span>').addClass('cem');
                 if (event_data.stundenthema_text)
                     markers.append($('<span>').html("<i class='fa fa-info-circle'></i>"));
                 if (event_data.lesson_jitsi) {
@@ -865,7 +865,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 div1b.append(span);
                 div1b.append('&nbsp;');
                 
-                let markers = $('<span>').addClass('cem').css('background-color', arg.event.extendedProps.entfall ? #{@session_user[:dark] ? '"rgba(255, 255, 255, 0.3)"' : 'color_palette.disabled'} : (arg.event.extendedProps.is_event ? #{@session_user[:dark] ? '"rgba(0, 0, 0, 0.5)"' : 'color_palette.shifted'} : #{@session_user[:dark] ? '"rgba(0, 0, 0, 0.5)"' : 'color_palette.primary'}));
+                let markers = $('<span>').addClass('cem');
                 if (event_data.jitsi)
                     markers.append($('<span>').addClass('mute').html('Jitsi'));
                 div1b.append(markers);

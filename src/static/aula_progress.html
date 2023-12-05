@@ -22,7 +22,7 @@
         <div class="col-md-12">
             <h2 style='margin-bottom: 30px;'>Aula Ablauf</h2>
             <hr>
-            <button class='btn btn-light bu-new-event'><i class='fa fa-list'></i>&nbsp;&nbsp;Neuer Eintrag</button>
+            <button class='btn btn-success bu-new-event'><i class='fa fa-list'></i>&nbsp;&nbsp;Neuer Eintrag</button>
             <button class='btn btn-danger bu-clear-list pull-right'><i class='fa fa-trash'></i>&nbsp;&nbsp;Liste leeren</button>
             <hr>
             <div class='aula-events-container' style='max-width: 100%; overflow-x: auto;'>
@@ -32,8 +32,8 @@
                             <th style='width: 100px;'>Reihenfolge</th>
                             <th style='width: 150px;'>Zeitunkt</th>
                             <th style='min-width: 150px;'>Beschreibung</th>
-                            <th style='min-width: 150px;'>Licht</th> 
-                            <th style='width: 120px;'>Bearbeiten</th> 
+                            <!-- <th style='min-width: 150px;'>Licht</th> 
+                            <th style='width: 120px;'>Bearbeiten</th>  -->
                             <th style='width: 120px;'>Fertig</th> 
                             <th style='width: 120px;'>Löschen</th>
                         </tr>
@@ -87,8 +87,8 @@
                     row.append(cell);
                     let ti_light = $("<code>").text(entry.desk_array);
                     let bu_light = $('<button>').addClass('btn').addClass('btn-warning').html("<i class='fa fa-lightbulb-o'></i>&nbsp;&nbsp;Licht");
-                    row.append($('<td>').append(ti_light));
-                    row.append($('<td>').append(bu_light));
+                    // row.append($('<td>').append(ti_light));
+                    // row.append($('<td>').append(bu_light));
                     let bu_finished = $('<button>').addClass('btn').addClass('btn').addClass('btn-success').html("<i class='fa fa-check'></i>&nbsp;&nbsp;Fertig");
                     let bu_unfinished = $('<button>').addClass('btn').addClass('btn').addClass('btn-outline-secondary').html("<i class='fa fa-times'></i>&nbsp;&nbsp;Fertig");
                     if (entry.finished == false) {

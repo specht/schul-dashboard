@@ -90,7 +90,7 @@
                     row.append($('<td>').append(ti_light));
                     row.append($('<td>').append(bu_light));
                     let bu_finished = $('<button>').addClass('btn').addClass('btn').addClass('btn-success').html("<i class='fa fa-check'></i>&nbsp;&nbsp;Fertig");
-                    let bu_unfinished = $('<button>').addClass('btn').addClass('btn').addClass('btn-outline-success').html("<i class='fa fa-check'></i>&nbsp;&nbsp;Fertig");
+                    let bu_unfinished = $('<button>').addClass('btn').addClass('btn').addClass('btn-outline-secondary').html("<i class='fa fa-times'></i>&nbsp;&nbsp;Fertig");
                     if (entry.finished == false) {
                         row.append($('<td>').append(bu_unfinished));
                     } else {
@@ -198,6 +198,7 @@
                         break;
                     }
                 }
+                targetButton.style.backgroundColor = window.getComputedStyle(targetButton).getPropertyValue('border-color');
             } else {
                 $('#' + dmx + '').removeClass('selected')
                 var classes = targetButton.classList;
@@ -209,6 +210,7 @@
                         break;
                     }
                 }
+                targetButton.style.backgroundColor = 'rgba(0, 0, 0, 0)';
             }
         });
 

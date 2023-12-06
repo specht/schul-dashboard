@@ -4,7 +4,7 @@ class Main < Sinatra::Base
         results = $neo4j.neo4j_query(<<~END_OF_QUERY).map { |x| x['e'] }
             MATCH (e:AulaEvent)
             RETURN e
-            ORDER BY e.number, e.title;
+            ORDER BY toInteger(e.number), e.title;
         END_OF_QUERY
         results
     end

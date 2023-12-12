@@ -717,6 +717,10 @@ Ensure the default browser behavior of the `hidden` attribute.
   grid-template-columns: repeat(9, minmax(0, 1fr));
 }
 
+.flex-wrap {
+  flex-wrap: wrap;
+}
+
 .items-center {
   align-items: center;
 }

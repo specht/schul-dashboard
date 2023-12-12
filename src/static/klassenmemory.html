@@ -2,21 +2,67 @@
 <div class='container-fluid' style='padding-top: 30px;'>
     <div class='row'>
         <div class='col-lg-8 col-md-12 offset-lg-2'>
-            <div id='calendar' style='margin-bottom: 30px;'>
+            <div id='stage' style='margin-bottom: 30px;'>
+                <img id="sus-foto" class="sus-foto">
             </div>
         </div>
     </div>
 </div>
+<style>
+    #stage {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        align-items: center;
+    }
+    .sus-foto {
+        background-color: white;
+        width: min(80vw, 50vh);
+        height: min(80vw, 50vh);
+        object-fit: cover;
+        object-position: 50% 10%;
+        border-radius: 15%;
+        box-shadow: 0 0 30px 0 rgba(0,0,0,1), inset 0 0 30px 0 rgba(0,0,0,0.5);
+        border: 0.5em solid white;
+    }
+</style>
 
 <script>
-    window.addEventListener('load', function() {
-        var s=document.createElement('script');
-        s.src='http://crypto-js.googlecode.com/svn/tags/3.1.2/build/rollups/aes.js';
-        document.body.appendChild(s);
-        $.get('/fotos/5a-0.jpg.crypt', function(data) {
-            // data = atob(data);
-            console.log(data);
-        });
-        // /fotos/5a-0.jpg.crypt
+
+var passphrase = '';
+
+async function decryptData(encryptedData, password) {
+    const enc = new TextEncoder();
+    const salt = base64ToBytes(encryptedData.salt);
+    const iv = base64ToBytes(encryptedData.iv);
+    const ciphertext = base64ToBytes(encryptedData.data);
+    const keyMaterial = await window.crypto.subtle.importKey("raw", enc.encode(password),
+        {name: "PBKDF2", "hash": "SHA-1"}, false, ["deriveBits", "deriveKey"]);
+
+    const key = await window.crypto.subtle.deriveKey({name: "PBKDF2", salt: salt,
+        iterations: 20000, hash: "SHA-1", length: "256"}, keyMaterial, {name: "AES-CBC",
+        hash: "SHA-1", length: 256}, true, ["encrypt", "decrypt"]);
+
+    const decryptedData = await window.crypto.subtle.decrypt({name: "AES-CBC", iv: iv.buffer}, key, ciphertext.buffer);
+    return new TextDecoder().decode(decryptedData);
+}
+
+function base64ToBytes(base64) {
+    const binaryString = window.atob(base64);
+    const bytes = new Uint8Array(binaryString.length);
+    for (let i = 0; i < binaryString.length; i++) {
+        bytes[i] = binaryString.charCodeAt(i);
+    }
+    return bytes;
+}
+
+var foto_for_email = {};
+
+window.addEventListener('load', function() {
+    $.get('/api/fotos/2023-5a-0.json', function(data) {
+        decryptData(data, passphrase).then(function(decrypted) {
+            $('#sus-foto').attr('src', 'data:image/jpeg;base64,' + decrypted);
+        }).catch(err => console.error(err));
     });
+});
 </script>

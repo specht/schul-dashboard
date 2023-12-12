@@ -26,7 +26,6 @@ docker_compose[:services][:nginx] = {
         "#{RAW_FILES_PATH}:/raw:ro",
         "#{GEN_FILES_PATH}:/gen:ro",
         "#{LOGS_PATH}:/var/log/nginx",
-        "#{INPUT_DATA_PATH}/schueler/fotos:/fotos:ro",
     ]
 }
 if !DEVELOPMENT
@@ -78,11 +77,6 @@ nginx_config = <<~eos
         location /raw/ {
             rewrite ^/raw(.*)$ $1 break;
             root /raw;
-        }
-
-        location /fotos/ {
-            rewrite ^/fotos(.*)$ $1 break;
-            root /fotos;
         }
 
         location /f/ {

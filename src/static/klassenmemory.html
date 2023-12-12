@@ -1,0 +1,22 @@
+#{this_is_a_page_for_logged_in_teachers}
+<div class='container-fluid' style='padding-top: 30px;'>
+    <div class='row'>
+        <div class='col-lg-8 col-md-12 offset-lg-2'>
+            <div id='calendar' style='margin-bottom: 30px;'>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    window.addEventListener('load', function() {
+        var s=document.createElement('script');
+        s.src='http://crypto-js.googlecode.com/svn/tags/3.1.2/build/rollups/aes.js';
+        document.body.appendChild(s);
+        $.get('/fotos/5a-0.jpg.crypt', function(data) {
+            // data = atob(data);
+            console.log(data);
+        });
+        // /fotos/5a-0.jpg.crypt
+    });
+</script>

@@ -1,15 +1,9 @@
 #{this_is_a_page_for_logged_in_teachers}
-<div class='container-fluid' style='padding-top: 30px;'>
-    <div class='row'>
-        <div class='col-lg-8 col-md-12 offset-lg-2'>
-            <div id='stage' style='margin-bottom: 30px;'>
-                <img id="sus-foto" class="sus-foto">
-            </div>
-        </div>
-    </div>
-</div>
 <style>
     #stage {
+        text-align: center;
+    }
+    #sus-frame {
         display: flex;
         flex-wrap: wrap;
         justify-content: center;
@@ -18,14 +12,34 @@
     .sus-foto {
         background-color: white;
         width: min(80vw, 50vh);
-        height: min(80vw, 50vh);
+        height: calc(1.3 * min(80vw, 50vh));
         object-fit: cover;
         object-position: 50% 10%;
-        border-radius: 15%;
+        border-radius: 3vw;
         box-shadow: 0 0 30px 0 rgba(0,0,0,1), inset 0 0 30px 0 rgba(0,0,0,0.5);
         border: 0.5em solid white;
     }
 </style>
+<div class='container bg-whites' style='padding-top: 30px;'>
+    <div class='row'>
+        <div class='col-lg-8 col-md-12 offset-lg-2'>
+            <form id='form' autocomplete='off'>
+                <div class="input-group mb-3">
+                    <input type="password" id='password' class="form-control" placeholder="Bitte gib das Passwort ein, um das Klassenmemory zu starten" style="text-align: center;">
+                    <div class="input-group-append">
+                        <button id='submit_password' class="btn btn-primary" type="submit">Passwort absenden</button>
+                    </div>
+                </div>
+            </form>
+            <div id='stage' style='display: none; margin-bottom: 30px;'>
+                <div id="sus-frame">
+                    <img id="sus-foto" class="sus-foto">
+                </div>
+                <div style="font-size: 2em;">LABEL</div>
+            </div>
+        </div>
+    </div>
+</div>
 
 <script>
 
@@ -59,10 +73,17 @@ function base64ToBytes(base64) {
 var foto_for_email = {};
 
 window.addEventListener('load', function() {
-    $.get('/api/fotos/2023-5a-0.json', function(data) {
-        decryptData(data, passphrase).then(function(decrypted) {
-            $('#sus-foto').attr('src', 'data:image/jpeg;base64,' + decrypted);
-        }).catch(err => console.error(err));
+    $('#password').focus();
+    $('#submit_password').on('click', function(e) {
+        e.preventDefault();
+        passphrase = $('#password').val().trim();
+        $('#form').hide();
+        $('#stage').show();
+        $.get('/api/fotos/2023-5a-0.json', function(data) {
+            decryptData(data, passphrase).then(function(decrypted) {
+                $('#sus-foto').attr('src', 'data:image/jpeg;base64,' + decrypted);
+            }).catch(err => console.error(err));
+        });
     });
 });
 </script>

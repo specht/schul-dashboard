@@ -7,7 +7,7 @@
             <hr />
             <div class='polls-here'>
             </div>
-        </div>        
+        </div>
     </div>
 </div>
 
@@ -286,10 +286,10 @@ function pending_changes() {
 function pending_changes_run() {
     let flag = false;
     let current_poll_run_json = JSON.stringify(current_poll_run);
-    
+
 //     console.log(stored_poll_run_json);
 //     console.log(current_poll_run_json);
-    
+
     if (current_poll_run_json !== stored_poll_run_json)
         flag = true;
     if (old_recipients_list.join('/') !== net_recipients_list.join('/'))
@@ -479,7 +479,7 @@ function update_net_recipients_list() {
     for (let key in recipients_list) {
         let entry = recipients[key];
         if (entry.entries)
-            for (let email of entry.entries) 
+            for (let email of entry.entries)
                 net_recipients_hash[email] = true;
         else
             net_recipients_hash[key] = true;
@@ -556,8 +556,8 @@ function gen_recipient_span(key, with_rm) {
     let recipient = $('<span>').addClass('recipient').html(label);
     if (with_rm) {
         let rm_button = $('<span>').addClass('rm').data('key', key);
-        rm_button.click(function(e) { 
-            remove_recipient($(e.target).data('key')); 
+        rm_button.click(function(e) {
+            remove_recipient($(e.target).data('key'));
             $(e.target).closest('.recipient').remove();
         });
         recipient.addClass('with-rm').append(rm_button);
@@ -632,7 +632,7 @@ function update_stored_polls() {
     $('.polls-here').empty();
     let poll_runs_for_poll = {};
     for (let poll_run of stored_poll_runs) {
-        if (!(poll_run.pid in poll_runs_for_poll)) 
+        if (!(poll_run.pid in poll_runs_for_poll))
             poll_runs_for_poll[poll_run.pid] = [];
         poll_runs_for_poll[poll_run.pid].push(poll_run);
     }
@@ -662,7 +662,7 @@ function update_stored_polls() {
             e.stopPropagation();
             let pid = $(e.target).closest('.poll-div').data('pid');
             (function(pid) {
-                showTemplateModal('Umfrage löschen', 
+                showTemplateModal('Umfrage löschen',
                     'Sind Sie sicher, dass Sie diese Umfrage löschen möchten?',
                     "<i class='fa fa-trash'></i>&nbsp;&nbsp;Umfrage löschen", 'btn-danger',
                     'Abbrechen', 'btn-secondary', function() {
@@ -680,7 +680,7 @@ function update_stored_polls() {
             for (let poll_run of (poll_runs_for_poll[poll.pid] || [])) {
                 let run_div = $('<div>').addClass('poll-run-div').data('prid', poll_run.prid).data('pid', poll.pid);
                 $('.polls-here').append(run_div);
-                
+
                 let m_start = moment(`${poll_run.info.start_date}T${poll_run.info.start_time}:00`);
                 let row = $('<tr>');
                 let diff = moment(`${poll_run.info.end_date}T${poll_run.info.end_time}:00`).unix() - moment(`${poll_run.info.start_date}T${poll_run.info.start_time}:00`).unix();
@@ -757,7 +757,7 @@ function update_stored_polls() {
                     e.stopPropagation();
                     let pid = $(e.target).closest('.poll-run-div').data('pid');
                     let prid = $(e.target).closest('.poll-run-div').data('prid');
-                    showTemplateModal('Umfrage stoppen', 
+                    showTemplateModal('Umfrage stoppen',
                         'Sind Sie sicher, dass Sie diese Umfrage stoppen möchten?',
                         "<i class='fa fa-times'></i>&nbsp;&nbsp;Umfrage stoppen", 'btn-danger',
                         'Abbrechen', 'btn-secondary', function() {
@@ -769,7 +769,7 @@ function update_stored_polls() {
                     e.stopPropagation();
                     let pid = $(e.target).closest('.poll-run-div').data('pid');
                     let prid = $(e.target).closest('.poll-run-div').data('prid');
-                    showTemplateModal('Durchführung löschen', 
+                    showTemplateModal('Durchführung löschen',
                         'Sind Sie sicher, dass Sie diese Durchführung löschen möchten?',
                         "<i class='fa fa-trash'></i>&nbsp;&nbsp;Durchführung löschen", 'btn-danger',
                         'Abbrechen', 'btn-secondary', function() {
@@ -793,7 +793,7 @@ function update_external_users_for_session_user() {
         let bu_delete = $('<button>').data('email', email).addClass('btn').addClass('btn-xs').addClass('btn-danger').html("<i class='fa fa-trash'></i>");
         row.append($('<td>').append(bu_delete));
         bu_delete.click(function(e) {
-            showTemplateModal('Externen Teilnehmer löschen', 
+            showTemplateModal('Externen Teilnehmer löschen',
                 'Sind Sie sicher, dass Sie diesen externen Teilnehmer aus Ihrem Adressbuch löschen möchten?',
                 "<i class='fa fa-trash'></i>&nbsp;&nbsp;Externen Teilnehmer löschen", 'btn-danger',
                 'Abbrechen', 'btn-secondary', function() {
@@ -827,7 +827,7 @@ function update_current_poll() {
     for (let item_index in current_poll.items) {
         item_index = parseInt(item_index);
         let item = current_poll.items[item_index];
-        
+
         let button_div = $('<div>').addClass('float-right');//.css('margin', '10px 0');
         let bu_rm = $('<button>').attr('title', 'Eintrag löschen').addClass('ml-1').addClass('btn').addClass('btn-sm').addClass('btn-danger').html("<i class='fa fa-trash'></i>").data('item-index', item_index);
         let bu_up = $('<button>').attr('title', 'Eintrag nach oben verschieben').addClass('ml-1').addClass('btn').addClass('btn-sm').addClass('btn-primary').html("<i class='fa fa-arrow-up'></i>").data('item-index', item_index);
@@ -1009,7 +1009,7 @@ function new_poll_run(pid) {
         return;
     }
     $('#ti_poll_run_poll_title').val(current_poll_run_poll.poll.title);
-    
+
     let minutes = 10;
     let m = moment();
     $('#ti_run_start_date').val(m.format('YYYY-MM-DD'));
@@ -1021,7 +1021,7 @@ function new_poll_run(pid) {
     current_poll_run.start_time = $('#ti_run_start_time').val();
     current_poll_run.end_date = $('#ti_run_end_date').val();
     current_poll_run.end_time = $('#ti_run_end_time').val();
-    
+
     $('#bu_poll_run_anonymous').addClass('btn-outline-secondary').removeClass('btn-primary').prop('disabled', false);
     $('#bu_poll_run_non_anonymous').addClass('btn-outline-secondary').removeClass('btn-primary').prop('disabled', false);
     $('#ti_run_start_date').prop('disabled', false);
@@ -1087,7 +1087,7 @@ function edit_poll_run(prid) {
     $('#ti_run_start_date').prop('disabled', true);
     $('#ti_run_start_time').prop('disabled', true);
     $('.bu-poll-run-spontaneous-dropdown').prop('disabled', true);
-        
+
     $('.bu-send-invitation').prop('disabled', false).removeClass('btn-outline-secondary').addClass('btn-success');
     $('.recipients_list').empty();
     old_prid = current_poll_run.prid;
@@ -1123,7 +1123,6 @@ function stop_poll_run(prid) {
             update_stored_polls();
         }
     });
-    
 }
 
 document.addEventListener('DOMContentLoaded', function() {
@@ -1146,47 +1145,47 @@ document.addEventListener('DOMContentLoaded', function() {
             ['table', ['table']],
             ['insert', ['link']],
             ['view', ['codeview', 'help']],
-        ],      
+        ],
     });
-    
+
     $('#composeModal').on('hide.bs.modal', function(e) {
         if (pending_changes() && (!force_close)) {
             $('#save_poll_btn_container').effect('shake', {direction: 'left', distance: 4});
             e.preventDefault();
             e.stopImmediatePropagation();
-            return false; 
+            return false;
         }
     });
-    
+
     $('#pollRunModal').on('hide.bs.modal', function(e) {
         if (pending_changes_run() && (!force_close)) {
             $('#save_poll_run_btn_container').effect('shake', {direction: 'left', distance: 4});
             e.preventDefault();
             e.stopImmediatePropagation();
-            return false; 
+            return false;
         }
     });
-    
+
     $('.bu-new-poll').click(function(e) {
         new_poll();
     });
-    
+
     $('#bu_discard_poll').click(function(e) {
         discard_poll();
     });
-    
+
     $('#bu_save_poll').click(function(e) {
         save_poll();
     });
-    
+
     $('#bu_save_poll_run').click(function(e) {
         save_poll_run();
     });
-    
+
     $('#bu_discard_poll_run').click(function(e) {
         discard_poll_run();
     });
-    
+
     $('#ti_recipients').keydown(function(e) {
         if ((e.keyCode === 9 || e.keyCode === 13) && ($(e.target).val().length > 0)) {
             if (Object.keys(autocomplete_results).length === 1) {
@@ -1257,7 +1256,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 for (let key of result_keys) {
                     let k = recipients_cache.keys[key];
                     let r = gen_recipient_span(k);
-                    r.click(function(e) { 
+                    r.click(function(e) {
                         add_recipient($(e.target).data('key'));
                     });
                     $('.recipient-input-dropdown').append(r);
@@ -1292,20 +1291,20 @@ document.addEventListener('DOMContentLoaded', function() {
         }
         update_buttons();
     });
-    
+
     $('.bu_open_ext_users_modal').click(function(e) {
             $('#ti_add_ext_users').val('');
         $('#externalUsersModal').modal('show');
     });
-    
-    $('#ti_add_ext_users').keyup(function(e) { 
+
+    $('#ti_add_ext_users').keyup(function(e) {
         $('#bu_add_ext_users').prop('disabled', $('#ti_add_ext_users').val().trim().length === 0);
     });
-    
-    $('#ti_add_ext_users').change(function(e) { 
+
+    $('#ti_add_ext_users').change(function(e) {
         $('#bu_add_ext_users').prop('disabled', $('#ti_add_ext_users').val().trim().length === 0);
     });
-    
+
     $('#bu_add_ext_users').click(function(e) {
         api_call('/api/add_external_users', {text: $('#ti_add_ext_users').val().trim()}, function(data) {
             if (data.success) {
@@ -1316,7 +1315,7 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     });
-    
+
     $('#bu_send_missing_invitations').click(function(e) {
         api_call('/api/send_missing_poll_run_invitations', {prid: old_prid}, function(data) {
             console.log(data);
@@ -1326,11 +1325,11 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     });
-    
+
     load_recipients('#{@session_user[:id]}', function() {
         update_stored_polls();
         update_external_users_for_session_user();
-        if (window.location.hash.length > 1) 
+        if (window.location.hash.length > 1)
         {
             let pid = window.location.hash.substr(1);
             edit_poll(pid);

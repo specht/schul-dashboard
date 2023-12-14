@@ -97,6 +97,7 @@ var KLASSEN_TR = #{KLASSEN_TR.to_json};
 var schueler_for_klasse = #{@@schueler_for_klasse.to_json};
 var user_info = #{@@user_info.to_json};
 var email_for_foto_paths = #{get_emails_for_foto_paths().to_json};
+var email_for_foto_paths_emails = Object.values(email_for_foto_paths);
 
 async function decryptData(encryptedData, password) {
     const enc = new TextEncoder();
@@ -123,7 +124,6 @@ function base64ToBytes(base64) {
     return bytes;
 }
 
-var foto_for_email = {};
 var current_klasse = '5a';
 var email_for_name = {};
 
@@ -153,18 +153,22 @@ window.addEventListener('load', function() {
         });
         $('#klassen-div').append(bu_klasse);
     }
-    function refresh() {
-        let url = `/api/fotos/2023-${current_klasse}-0.json`;
-        console.log(url);
-        $('#sus_here').empty();
+    function refresh_autocomplete() {
         $('#current_names').empty();
         email_for_name = {};
         for (let email of schueler_for_klasse[current_klasse] ?? schueler_for_klasse['11'].concat(schueler_for_klasse['12'])) {
             let name = `${user_info[email].display_first_name} ${user_info[email].last_name}`;
             email_for_name[name] = email;
-            $('#current_names').append($(`<option value='${name}'>`));
+            if (!(email_for_foto_paths_emails.indexOf(email) >= 0)) {
+                $('#current_names').append($(`<option value='${name}'>`));
+            }
         }
-        // current_names
+    }
+    function refresh() {
+        let url = `/api/fotos/2023-${current_klasse}-0.json`;
+        console.log(url);
+        $('#sus_here').empty();
+        refresh_autocomplete();
         api_call(`/api/get_fotos/${current_klasse}`, {}, function(data) {
             if (data.success) {
                 for (let path of data.paths) {
@@ -206,11 +210,14 @@ window.addEventListener('load', function() {
                                         label.show();
                                         if (email.length === 0) {
                                             delete email_for_foto_paths[path];
+                                            email_for_foto_paths_emails = Object.values(email_for_foto_paths);
                                             label.text('(kein Name zugeordnet)').addClass('nodata');
                                         } else {
                                             email_for_foto_paths[path] = email;
+                                            email_for_foto_paths_emails = Object.values(email_for_foto_paths);
                                             label.text(name).removeClass('nodata');
                                         }
+                                        refresh_autocomplete();
                                     }
                                 });
                             });

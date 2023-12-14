@@ -8,23 +8,47 @@
         flex-wrap: wrap;
         justify-content: center;
         align-items: center;
+        position: relative;
+        border-radius: 3vw;
     }
     .sus-foto {
         background-color: white;
         width: min(80vw, 50vh);
-        height: calc(1.3 * min(80vw, 50vh));
+        height: calc(1.5 * min(80vw, 50vh));
         object-fit: cover;
         object-position: 50% 10%;
-        border-radius: 3vw;
-        box-shadow: 0 0 30px 0 rgba(0,0,0,1), inset 0 0 30px 0 rgba(0,0,0,0.5);
+        box-shadow: 0 0 1em 0 rgba(0,0,0,0.5), inset 0 0 1em 0 rgba(0,0,0,0.5);
         border: 0.5em solid white;
+    }
+    .sus-label {
+        width: min(80vw, 50vh);
+        position: absolute;
+        bottom: 0;
+        font-size: calc(min(80vw, 50vh) * 0.1);
+        background-color: rgba(255, 255, 255, 0.9);
+        box-shadow: 0 0 1em rgba(0, 0, 0, 0.5);
+        /* font-weight: bold; */
+        color: #000;
+        padding: 0.2em;
+        line-height: 110%;
+    }
+    .sus-foto-sm {
+        background-color: white;
+        width: min(16vw, 10vh);
+        height: calc(1.0 * min(16vw, 10vh));
+        object-fit: cover;
+        object-position: 50% 5%;
+        box-shadow: 0 0 0.1em 0 rgba(0,0,0,0.5), inset 0 0 0.1em 0 rgba(0,0,0,0.5);
+        margin: 0.1em;
+        border: 0.1em solid white;
     }
 </style>
 <div class='container-fluid' style='padding-top: 30px;'>
     <div class='row'>
-        <div class="col-lg-2 col-md-12 side-panel">
+        <div class="col-lg-3 col-md-12 side-panel">
+            <div id="fotos"></div>
         </div>
-        <div class="col-lg-8 col-md-12">
+        <div class="col-lg-6 col-md-12">
             <form id='form' autocomplete='off'>
                 <div class="input-group mb-3">
                     <input type="password" id='password' class="form-control" placeholder="Bitte gib das Passwort ein, um das Klassenmemory zu starten" style="text-align: center;">
@@ -36,11 +60,11 @@
             <div id='stage' style='display: none; margin-bottom: 30px;'>
                 <div id="sus-frame">
                     <img id="sus-foto" class="sus-foto">
+                    <div class="sus-label">Cornelius Hans</div>
                 </div>
-                <div style="font-size: 2em;">LABEL</div>
             </div>
         </div>
-        <div id="klassen-div" class="col-lg-2 col-md-12 side-panel timetable_chooser tablet_timetable_chooser">
+        <div id="klassen-div" class="col-lg-3 col-md-12 side-panel timetable_chooser tablet_timetable_chooser">
         </div>
     </div>
 </div>
@@ -51,6 +75,8 @@ var passphrase = '';
 var FOTO_PASSWORD = #{FOTO_PASSWORD.to_json};
 var KLASSEN_ORDER = #{KLASSEN_ORDER.to_json};
 var KLASSEN_TR = #{KLASSEN_TR.to_json};
+var schueler_for_klasse = #{@@schueler_for_klasse.to_json};
+var user_info = #{@@user_info.to_json};
 
 async function decryptData(encryptedData, password) {
     const enc = new TextEncoder();
@@ -109,6 +135,20 @@ window.addEventListener('load', function() {
             decryptData(data, passphrase).then(function(decrypted) {
                 $('#sus-foto').attr('src', 'data:image/jpeg;base64,' + decrypted);
             }).catch(err => console.error(err));
+        });
+        $('#fotos').empty();
+        api_call(`/api/get_fotos/${current_klasse}`, {}, function(data) {
+            if (data.success) {
+                for (let path of data.paths) {
+                    let url = `/api/fotos/${path}`;
+                    $.get(url, function(data) {
+                        decryptData(data, passphrase).then(function(decrypted) {
+                            let photo = $('<img class="sus-foto-sm">').attr('src', 'data:image/jpeg;base64,' + decrypted);
+                            photo.appendTo($('#fotos'));
+                        }).catch(err => console.error(err));
+                    });
+                }
+            }
         });
     }
 });

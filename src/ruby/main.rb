@@ -2520,6 +2520,29 @@ class Main < Sinatra::Base
         respond_raw_with_mimetype(File.read("/data/schueler/fotos/#{path}"), 'application/json')
     end
 
+    post '/api/get_fotos/:klasse' do
+        require_teacher!
+        klasse = params[:klasse]
+        respond(:paths => Dir["/data/schueler/fotos/2023-#{klasse}-*.json"].sort.map { |x| File.basename(x) })
+    end
+
+    post '/api/assign_name_to_foto' do
+        require_teacher!
+        data = parse_request_data(:required_keys => [:email, :path])
+        if data[:path].strip.empty?
+            neo4j_query(<<~END_OF_QUERY, {:email => data[:email], :path => data[:path]})
+                MATCH (u:User {email: $email})
+                REMOVE u.foto_path;
+            END_OF_QUERY
+        else
+            neo4j_query(<<~END_OF_QUERY, {:email => data[:email], :path => data[:path]})
+                MATCH (u:User {email: $email})
+                SET u.foto_path = $path;
+            END_OF_QUERY
+        end
+        respond(:yay => 'sure')
+    end
+
     before "/monitor/#{MONITOR_DEEP_LINK}" do
         unless MONITOR_DEEP_LINK.nil?
             @session_user = {

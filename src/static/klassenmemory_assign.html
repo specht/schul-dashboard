@@ -3,51 +3,72 @@
     #stage {
         text-align: center;
     }
-    #sus-frame {
+    .sus-frame {
         display: flex;
         flex-wrap: wrap;
         justify-content: center;
         align-items: center;
         position: relative;
-        border-radius: 3vw;
+        border-radius: 1vw;
+        /* border: 1px solid red; */
+        overflow: hidden;
+        width: min(32vw, 20vh);
+        height: calc(1.5 * min(32vw, 20vh));
+        border: 0.3em solid white;
+        box-shadow: 0 0 0.5em 0 rgba(0,0,0,0.2), inset 0 0 1em 0 rgba(0,0,0,0.5);
+        margin: 0.5em;
     }
     .sus-foto {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
         background-color: white;
-        width: min(80vw, 50vh);
-        height: calc(1.5 * min(80vw, 50vh));
         object-fit: cover;
         object-position: 50% 10%;
         box-shadow: 0 0 1em 0 rgba(0,0,0,0.5), inset 0 0 1em 0 rgba(0,0,0,0.5);
-        border: 0.5em solid white;
     }
     .sus-label {
-        width: min(80vw, 50vh);
+        width: 100%;
         position: absolute;
         bottom: 0;
-        font-size: calc(min(80vw, 50vh) * 0.1);
+        font-size: calc(min(80vw, 50vh) * 0.04);
         background-color: rgba(255, 255, 255, 0.9);
         box-shadow: 0 0 1em rgba(0, 0, 0, 0.5);
         /* font-weight: bold; */
         color: #000;
         padding: 0.2em;
+        padding-top: 0.3em;
         line-height: 110%;
+    }
+    .sus-label.nodata {
+        color: #cc3729;
+    }
+    .sus-edit {
+        width: 100%;
+        position: absolute;
+        bottom: 0;
+        font-size: calc(min(80vw, 50vh) * 0.04);
+        padding: 0.2em;
+        font-size: 12pt;
     }
     .sus-foto-sm {
         background-color: white;
         width: min(32vw, 20vh);
-        height: calc(1.0 * min(32vw, 20vh));
+        height: calc(1.5 * min(32vw, 20vh));
         object-fit: cover;
         object-position: 50% 5%;
         box-shadow: 0 0 0.1em 0 rgba(0,0,0,0.5), inset 0 0 0.1em 0 rgba(0,0,0,0.5);
-        margin: 0.1em;
-        border: 0.1em solid white;
+        /* border: 0.1em solid white; */
     }
 </style>
 <div class='container-fluid' style='padding-top: 30px;'>
     <div class='row'>
-        <div class="col-lg-3 col-md-12 side-panel">
-        </div>
-        <div class="col-lg-6 col-md-12 bg-white">
+        <div class="col-md-12">
+            <div id="klassen-div" style="text-align: center; padding-bottom: 1em;">
+            </div>
+    
             <form id='form' autocomplete='off'>
                 <div class="input-group mb-3">
                     <input type="password" id='password' class="form-control" placeholder="Bitte gib das Passwort ein, um das Klassenmemory zu starten" style="text-align: center;">
@@ -57,22 +78,9 @@
                 </div>
             </form>
             <div id='stage' style='display: none; margin-bottom: 30px;'>
-                <div class='table-responsive' style='max-width: 100%; overflow-x: auto;'>
-                    <table class='table table-condensed table-striped narrow' style='width: unset; min-width: 100%;'>
-                        <thead>
-                            <tr>
-                                <th>Foto</th>
-                                <th>Name</th>
-                            </tr>
-                        </thead>
-                        <tbody id="sus_rows">
-
-                        </tbody>
-                    </table>
+                <div id="sus_here">
                 </div>
             </div>
-        </div>
-        <div id="klassen-div" class="col-lg-3 col-md-12 side-panel timetable_chooser tablet_timetable_chooser">
         </div>
     </div>
 </div>
@@ -88,6 +96,7 @@ var KLASSEN_ORDER = #{KLASSEN_ORDER.to_json};
 var KLASSEN_TR = #{KLASSEN_TR.to_json};
 var schueler_for_klasse = #{@@schueler_for_klasse.to_json};
 var user_info = #{@@user_info.to_json};
+var email_for_foto_paths = #{get_emails_for_foto_paths().to_json};
 
 async function decryptData(encryptedData, password) {
     const enc = new TextEncoder();
@@ -132,8 +141,12 @@ window.addEventListener('load', function() {
         $('#submit_password').click();
     }
     for (let klasse of KLASSEN_ORDER) {
+        if (klasse === '11') klasse = 'OS';
+        if (klasse === '12') continue;
         let bu_klasse = $(`<button class='btn btn-sm ttc' style='margin: 0.2em;'>`).text(KLASSEN_TR[klasse] ?? klasse).data('klasse', klasse);
         bu_klasse.on('click', function(e) {
+            $('.ttc').removeClass('active');
+            $(e.target).closest('.ttc').addClass('active');
             current_klasse = $(e.target).closest('button').data('klasse');
             console.log(`refreshing ${klasse}!`);
             refresh();
@@ -143,11 +156,11 @@ window.addEventListener('load', function() {
     function refresh() {
         let url = `/api/fotos/2023-${current_klasse}-0.json`;
         console.log(url);
-        $('#sus_rows').empty();
+        $('#sus_here').empty();
         $('#current_names').empty();
         email_for_name = {};
-        for (let email of schueler_for_klasse[current_klasse] ?? []) {
-            let name = `${user_info[email].official_first_name} ${user_info[email].last_name}`;
+        for (let email of schueler_for_klasse[current_klasse] ?? schueler_for_klasse['11'].concat(schueler_for_klasse['12'])) {
+            let name = `${user_info[email].display_first_name} ${user_info[email].last_name}`;
             email_for_name[name] = email;
             $('#current_names').append($(`<option value='${name}'>`));
         }
@@ -155,22 +168,65 @@ window.addEventListener('load', function() {
         api_call(`/api/get_fotos/${current_klasse}`, {}, function(data) {
             if (data.success) {
                 for (let path of data.paths) {
+                    console.log(path);
                     let url = `/api/fotos/${path}`;
                     $.get(url, function(data) {
                         decryptData(data, passphrase).then(function(decrypted) {
+                            let frame = $(`<div class='sus-frame'>`);
                             let photo = $('<img class="sus-foto-sm">').attr('src', 'data:image/jpeg;base64,' + decrypted);
-                            let row = $('<tr>');
-                            row.append($('<td>').append(photo));
-                            let ti_name = $(`<input type='text' list='current_names' class='form-control' placeholder='Bitte geben Sie einen Namen ein'>`);
-                            row.append($('<td>').append(ti_name));
-                            $('#sus_rows').append(row);
+                            let div = $(`<div style='display: inline-block;'>`);
+                            div.append(frame);
+                            frame.append(photo);
+                            let label = $(`<div class='sus-label'>`).text('(kein Name zugeordnet)').addClass('nodata');
+                            if (path in email_for_foto_paths) {
+                                let email = email_for_foto_paths[path];
+                                let name = `${user_info[email].display_first_name} ${user_info[email].last_name}`;
+                                label.text(name).removeClass('nodata');
+                            }
+                            frame.append(label);
+                            let ti_name = $(`<input class='sus-edit' type='text' list='current_names' class='form-control' style='text-align: center;' placeholder='Bitte geben Sie einen Namen ein'>`);
+                            frame.append(ti_name);
+                            $('#sus_here').append(div);
+                            ti_name.hide();
+                            ti_name.on('keydown', function(e) {
+                                if (e.key === 'Enter') {
+                                    e.preventDefault();
+                                    $(e.target).trigger('change');
+                                }
+                            });
                             ti_name.on('change', function(e) {
                                 let name = $(e.target).val().trim();
-                                if (name.length > 0) {
-                                    let email = email_for_name[name];
-                                    api_call('/api/assign_name_to_foto', {email: email, path: path}, function(data) {
-                                    });
-                                }
+                                let email = email_for_name[name] ?? '';
+                                api_call('/api/assign_name_to_foto', {email: email, path: path}, function(data) {
+                                    if (data.success) {
+                                        let frame = $(e.target).closest('.sus-frame');
+                                        let label = frame.find('.sus-label');
+                                        let ti_name = frame.find('.sus-edit');
+                                        ti_name.hide();
+                                        label.show();
+                                        if (email.length === 0) {
+                                            delete email_for_foto_paths[path];
+                                            label.text('(kein Name zugeordnet)').addClass('nodata');
+                                        } else {
+                                            email_for_foto_paths[path] = email;
+                                            label.text(name).removeClass('nodata');
+                                        }
+                                    }
+                                });
+                            });
+                            ti_name.on('blur', function(e) {
+                                let frame = $(e.target).closest('.sus-frame');
+                                let label = frame.find('.sus-label');
+                                let ti_name = frame.find('.sus-edit');
+                                ti_name.hide();
+                                label.show();
+                            });
+                            label.on('click', function(e) {
+                                let frame = $(e.target).closest('.sus-frame');
+                                let label = frame.find('.sus-label');
+                                let ti_name = frame.find('.sus-edit');
+                                label.hide();
+                                ti_name.show().focus();
                             });
                         }).catch(err => console.error(err));
                     });

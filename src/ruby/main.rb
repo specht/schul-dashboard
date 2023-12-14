@@ -274,7 +274,8 @@ class SetupDatabase
         'Test/fach',
         'Test/klasse',
         'TextComment/offset',
-        'User/ev'
+        'User/ev',
+        'User/foto_path'
     ]
 
     def setup(main)
@@ -2523,15 +2524,15 @@ class Main < Sinatra::Base
     post '/api/get_fotos/:klasse' do
         require_teacher!
         klasse = params[:klasse]
-        respond(:paths => Dir["/data/schueler/fotos/2023-#{klasse}-*.json"].sort.map { |x| File.basename(x) })
+        respond(:paths => Dir["/data/schueler/fotos/2023-#{klasse}-*.json"].shuffle.map { |x| File.basename(x) })
     end
 
     post '/api/assign_name_to_foto' do
         require_teacher!
         data = parse_request_data(:required_keys => [:email, :path])
-        if data[:path].strip.empty?
+        if data[:email].strip.empty?
             neo4j_query(<<~END_OF_QUERY, {:email => data[:email], :path => data[:path]})
-                MATCH (u:User {email: $email})
+                MATCH (u:User {foto_path: $path})
                 REMOVE u.foto_path;
             END_OF_QUERY
         else
@@ -2541,6 +2542,19 @@ class Main < Sinatra::Base
             END_OF_QUERY
         end
         respond(:yay => 'sure')
+    end
+
+    def get_emails_for_foto_paths
+        require_teacher!
+        results = {}
+        neo4j_query(<<~END_OF_QUERY).each do |row|
+            MATCH (u:User)
+            WHERE u.foto_path IS NOT NULL
+            RETURN u.email AS email, u.foto_path AS path;
+        END_OF_QUERY
+            results[row['path']] = row['email']
+        end
+        results
     end
 
     before "/monitor/#{MONITOR_DEEP_LINK}" do

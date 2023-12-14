@@ -20,9 +20,11 @@
         border: 0.5em solid white;
     }
 </style>
-<div class='container bg-whites' style='padding-top: 30px;'>
+<div class='container-fluid' style='padding-top: 30px;'>
     <div class='row'>
-        <div class='col-lg-8 col-md-12 offset-lg-2'>
+        <div class="col-lg-2 col-md-12 side-panel">
+        </div>
+        <div class="col-lg-8 col-md-12">
             <form id='form' autocomplete='off'>
                 <div class="input-group mb-3">
                     <input type="password" id='password' class="form-control" placeholder="Bitte gib das Passwort ein, um das Klassenmemory zu starten" style="text-align: center;">
@@ -38,12 +40,17 @@
                 <div style="font-size: 2em;">LABEL</div>
             </div>
         </div>
+        <div id="klassen-div" class="col-lg-2 col-md-12 side-panel timetable_chooser tablet_timetable_chooser">
+        </div>
     </div>
 </div>
 
 <script>
 
 var passphrase = '';
+var FOTO_PASSWORD = #{FOTO_PASSWORD.to_json};
+var KLASSEN_ORDER = #{KLASSEN_ORDER.to_json};
+var KLASSEN_TR = #{KLASSEN_TR.to_json};
 
 async function decryptData(encryptedData, password) {
     const enc = new TextEncoder();
@@ -71,6 +78,7 @@ function base64ToBytes(base64) {
 }
 
 var foto_for_email = {};
+var current_klasse = '5a';
 
 window.addEventListener('load', function() {
     $('#password').focus();
@@ -79,11 +87,29 @@ window.addEventListener('load', function() {
         passphrase = $('#password').val().trim();
         $('#form').hide();
         $('#stage').show();
-        $.get('/api/fotos/2023-5a-0.json', function(data) {
+        refresh();
+    });
+    if (FOTO_PASSWORD !== null) {
+        $('#password').val(FOTO_PASSWORD);
+        $('#submit_password').click();
+    }
+    for (let klasse of KLASSEN_ORDER) {
+        let bu_klasse = $(`<button class='btn btn-sm ttc' style='margin: 0.2em;'>`).text(KLASSEN_TR[klasse] ?? klasse).data('klasse', klasse);
+        bu_klasse.on('click', function(e) {
+            current_klasse = $(e.target).closest('button').data('klasse');
+            console.log(`refreshing ${klasse}!`);
+            refresh();
+        });
+        $('#klassen-div').append(bu_klasse);
+    }
+    function refresh() {
+        let url = `/api/fotos/2023-${current_klasse}-0.json`;
+        console.log(url);
+        $.get(url, function(data) {
             decryptData(data, passphrase).then(function(decrypted) {
                 $('#sus-foto').attr('src', 'data:image/jpeg;base64,' + decrypted);
             }).catch(err => console.error(err));
         });
-    });
+    }
 });
 </script>

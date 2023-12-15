@@ -79,6 +79,14 @@
     var change_stem = false;
     var hooray_weve_completed_this_order = false;
 
+    function append_skip_button(element) {
+        let bu_skip = $(`<button class='btn btn-outline-secondary btn-xs bu-skip' style='margin-left: 1em;'>`).text('Überspringen');
+        element.append(bu_skip);
+        bu_skip.click(function(e) {
+            append_barcode({stem: -1, bnr: Object.keys(already_scanned_barcodes).length + 1});
+        });
+    }
+
     function append_barcode(parts) {
         if (scan_widget === null || Object.keys(already_scanned_barcodes).length >= scan_table.element.find('tr').length)
             return;
@@ -90,12 +98,13 @@
             sound.play('success');
             let tr = scan_table.element.find('tr').eq(Object.keys(already_scanned_barcodes).length);
             tr.data('barcode_parts', parts);
-            tr.find('td').eq(3).text(`${parts.stem}-${parts.bnr}`);
+            tr.find('td').eq(3).text(parts.stem < 0 ? `(übersprungen)` : `${parts.stem}-${parts.bnr}`);
             scan_table.highlight_row(tr);
             already_scanned_barcodes[barcode] = true;
 
             tr = scan_table.element.find('tr').eq(Object.keys(already_scanned_barcodes).length);
             tr.find('td').eq(3).html(`<i class='text-slate-500 fa fa-circle-o-notch fa-spin'></i>`);
+            append_skip_button(tr.find('td').eq(3));
 
             if (scan_table.element.find('tr').length > 1)
                 $('#scan_hint').slideDown();
@@ -323,6 +332,8 @@
             $('#bu_change_stem').prop('disabled', false).show();
             let tr = scan_table.element.find('tr').eq(0);
             tr.find('td').eq(3).html(`<i class='text-slate-500 fa fa-circle-o-notch fa-spin'></i>`);
+            append_skip_button(tr.find('td').eq(3));
+
 
             // if ('#{DEVELOPMENT}' === '1') {
             //     setTimeout(function() {
@@ -346,7 +357,7 @@
             for (let row of scan_table.element.find('tr')) {
                 let email = $(row).data('row_data');
                 let barcode_parts = $(row).data('barcode_parts');
-                if (barcode_parts) {
+                if (barcode_parts && barcode_parts.stem >= 0) {
                     data.users.push(email);
                     data.stems.push(barcode_parts.stem);
                     data.bnrs.push(barcode_parts.bnr);

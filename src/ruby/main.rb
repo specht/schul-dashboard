@@ -2595,7 +2595,7 @@ class Main < Sinatra::Base
         end
         color_palette = color_palette_for_color_scheme(color_scheme)
 
-        s = @session_user[:dark] ? File.read('/static/dark.css') : ""
+        s = (@session_user || {})[:dark] ? File.read('/static/dark.css') : ""
         while true
             index = s.index('#{')
             break if index.nil?

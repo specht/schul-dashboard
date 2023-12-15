@@ -1872,7 +1872,7 @@ class Main < Sinatra::Base
                                     # if can_manage_salzh_logged_in?
                                     #     io.puts "<a class='dropdown-item nav-icon' href='/salzh'><div class='icon'><i class='fa fa-home'></i></div><span class='label'>Testungen</span></a>"
                                     # end
-                                    # io.puts "<a class='dropdown-item nav-icon' href='/klassenmemory'><div class='icon'><i class='fa fa-user'></i></div><span class='label'>Klassenmemory</span></a>"
+                                    io.puts "<a class='dropdown-item nav-icon' href='/klassenmemory_assign'><div class='icon'><i class='fa fa-user'></i></div><span class='label'>Klassenmemory</span></a>"
                                     io.puts "<a class='dropdown-item nav-icon' href='/tests'><div class='icon'><i class='fa fa-file-text-o'></i></div><span class='label'>Klassenarbeiten</span></a>"
                                 end
                                 io.puts "<a class='dropdown-item nav-icon' href='/events'><div class='icon'><i class='fa fa-calendar-check-o'></i></div><span class='label'>Termine</span></a>"

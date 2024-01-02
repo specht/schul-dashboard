@@ -82,13 +82,13 @@
     <style>
     body {
         #{ path == '/static/h4ck.html' || path == '/static/cyph3r.html' ? '/*' : ''} 
-        background-image: url(#{File.exist?('/static/gen/bg/bg-#{color_scheme}.jpg') ? '/gen/bg/bg-#{color_scheme}.jpg' : '/gen/bg/bg-#{color_scheme[0, color_scheme.size - 1]}0.svg'});
+        background-image: url(#{File.exist?('/gen/bg/bg-' + color_scheme + '.jpg') ? '/gen/bg/bg-#{color_scheme}.jpg' : '/gen/bg/bg-#{color_scheme[0, color_scheme.size - 1]}0.svg'});
         background-color: #{color_scheme[0] == 'l' ? '#f8f8f8' : '#080808'};
-        #{ path == '/static/h4ck.html' || path == '/static/cyph3r.html' ? '*/ transition: none;' : ''} 
+        #{ path == '/static/h4ck.html' || path == '/static/cyph3r.html' ? '*/ transition: none;' : ''}
         background-repeat: no-repeat;
         background-size: max(100vw, 1920px);
         background-position: 50% 0%;
-        #{css_for_font(font_family).map { |k, v| "#{k}: #{v};"}.join("\n")}
+        #{css_for_font(font_family).map { |k, v| "#{k}: #{v};"}.join(' ')}
     }
 
     .fc-view-harness, table {

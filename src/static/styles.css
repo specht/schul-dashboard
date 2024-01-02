@@ -1091,6 +1091,8 @@ s {
         margin-right: -15px;
         padding-left: 15px;
         padding-right: 15px;
+        margin-top: -30px;
+        padding-top: 30px;
     }
 }
 
@@ -1101,10 +1103,11 @@ s {
         width: 25%;
         height: 100%;
         margin-left: -30px;
-        padding: 10px 15px;
+        margin-top: -30px;
+        padding: 30px 15px;
         box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
         overflow-y: auto;
-        padding-bottom: 120px;
+        padding-bottom: 80px;
     }
     
     .lc_table {

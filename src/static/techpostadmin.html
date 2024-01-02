@@ -1,5 +1,11 @@
 #{require_user_who_can_manage_tablets!}
-<div class='container-fluid white' style='padding-top: 30px;'>
+<style>
+    body {
+        background-image: none;
+        background-color: #{@session_user[:dark] ? '#000' : '#fff'};
+    }
+</style>
+<div class='container-fluid white'>
     <div class='row'>
         <div class="col-md-12">
             <h2 style="margin-bottom: 30px;">Technikamt (Admin)</h2>

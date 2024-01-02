@@ -1,5 +1,5 @@
 #{this_is_a_page_for_logged_in_users}
-<div class='container' style='padding-top: 30px; background-color: #fff;'>
+<div class='container' style='padding-top: 30px; background-color: #{@session_user[:dark] ? '#000' : '#fff'};'>
     <div class='row'>
         <div class='col-md-12'>
             <h3>Lehrmittelverein</h3>

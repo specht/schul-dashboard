@@ -245,18 +245,25 @@ class Script
         # File.open('/internal/debug/wanted-shares.yaml', 'w') do |f|
         #     f.write wanted_shares.to_yaml
         # end
-        STDERR.puts "Collecting present shares..."
         present_shares = {}
-        (@ocs.file_sharing.all || []).each do |share|
-            next if share['share_with'].nil?
-            present_shares[share['share_with']] ||= {}
-            next unless share['path'].index("/#{SHARE_SOURCE_FOLDER}/") == 0
-            present_shares[share['share_with']][share['path']] = {
-                :permissions => share['permissions'].to_i,
-                :target_path => share['file_target'],
-                :share_with => share['share_with_displayname'],
-                :id => share['id']
-            }
+        if ARGV.include?('--use-cached')
+            present_shares = YAML.load(File.read('present-shares-cache.yaml'))
+        else
+            STDERR.puts "Collecting present shares... (hint: specify --use-cached to re-use data in present-shares-cache.yaml)"
+            (@ocs.file_sharing.all || []).each do |share|
+                next if share['share_with'].nil?
+                present_shares[share['share_with']] ||= {}
+                next unless share['path'].index("/#{SHARE_SOURCE_FOLDER}/") == 0
+                present_shares[share['share_with']][share['path']] = {
+                    :permissions => share['permissions'].to_i,
+                    :target_path => share['file_target'],
+                    :share_with => share['share_with_displayname'],
+                    :id => share['id']
+                }
+            end
+            File.open('present-shares-cache.yaml', 'w') do |f|
+                f.write present_shares.to_yaml
+            end
         end
         STDERR.puts "Got present shares for #{present_shares.size} users."
         File.open('/internal/debug/present-shares.yaml', 'w') do |f|

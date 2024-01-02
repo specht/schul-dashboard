@@ -247,9 +247,9 @@ class Script
         # end
         present_shares = {}
         if ARGV.include?('--use-cached')
-            present_shares = YAML.load(File.read('present-shares-cache.yaml'))
+            present_shares = YAML.load(File.read('/internal/debug/present-shares-cache.yaml'))
         else
-            STDERR.puts "Collecting present shares... (hint: specify --use-cached to re-use data in present-shares-cache.yaml)"
+            STDERR.puts "Collecting present shares... (hint: specify --use-cached to re-use data in /internal/debug/present-shares-cache.yaml)"
             (@ocs.file_sharing.all || []).each do |share|
                 next if share['share_with'].nil?
                 present_shares[share['share_with']] ||= {}
@@ -261,7 +261,7 @@ class Script
                     :id => share['id']
                 }
             end
-            File.open('present-shares-cache.yaml', 'w') do |f|
+            File.open('/internal/debug/present-shares-cache.yaml', 'w') do |f|
                 f.write present_shares.to_yaml
             end
         end

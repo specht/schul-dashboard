@@ -2582,7 +2582,7 @@ class Main < Sinatra::Base
     end
 
     get '/api/dark.css' do
-        color_scheme = @session_user[:color_scheme]
+        color_scheme = (@session_user || {})[:color_scheme]
         unless color_scheme =~ /^[ld][0-9a-f]{18}[0-9]?$/
             unless user_logged_in?
                 color_scheme = pick_random_color_scheme()
@@ -2594,8 +2594,8 @@ class Main < Sinatra::Base
             color_scheme += '0'
         end
         color_palette = color_palette_for_color_scheme(color_scheme)
-        
-        s = @session_user[:dark] ? File.read('/static/dark.css') : ""
+
+        s = (@session_user || {})[:dark] ? File.read('/static/dark.css') : ""
         while true
             index = s.index('#{')
             break if index.nil?

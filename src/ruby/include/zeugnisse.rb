@@ -247,6 +247,7 @@ class Main < Sinatra::Base
             end
         end
         required_tags << '#Zeugnisdatum'
+        required_tags << '#Schuljahr'
         required_tags << '#Name'
         required_tags << '#Geburtsdatum'
         required_tags << '#Klasse'
@@ -439,6 +440,7 @@ class Main < Sinatra::Base
                 info['#Geburtsdatum'] = "#{Date.parse(sus_info[:geburtstag]).strftime('%d.%m.%Y')}"
                 info['#Klasse'] = Main.tr_klasse(klasse)
                 info['#Zeugnisdatum'] = ZEUGNIS_DATUM
+                info['#Schuljahr'] = ZEUGNIS_SCHULJAHR.gsub('_', '/')
                 info['@Geschlecht'] = sus_info[:geschlecht]
                 wf_tr = {}
                 wf_count = 0

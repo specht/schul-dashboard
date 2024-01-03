@@ -1,7 +1,7 @@
 <style>
     body {
         background-image: none;
-        background-color: #{@session_user[:dark] ? '#000' : '#fff'};
+        background-color: #{(@session_user || {})[:dark] ? '#000' : '#fff'};
     }
     </style>
 <div class='container-fluid solid white'>

@@ -2,7 +2,7 @@
 <style>
     body {
         background-image: none;
-        background-color: #{@session_user[:dark] ? '#000' : '#fff'};
+        background-color: #{(@session_user || {})[:dark] ? '#000' : '#fff'};
     }
 </style>
 <div class='container-fluid' style='padding-top: 30px; background-color: #fff;'>

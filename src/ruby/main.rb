@@ -1551,6 +1551,7 @@ class Main < Sinatra::Base
                                     if @session_user
                                         @session_user[:font] = results.first['u'][:font]
                                         @session_user[:color_scheme] = results.first['u'][:color_scheme]
+                                        @session_user[:new_design] = results.first['u'][:new_design]
                                         @session_user[:dark] = results.first['u'][:dark]
                                         @session_user[:ical_token] = results.first['u'][:ical_token]
                                         @session_user[:otp_token] = results.first['u'][:otp_token]
@@ -2288,7 +2289,7 @@ class Main < Sinatra::Base
         return color_scheme
     end
 
-    post '/api/set_css' do
+    post '/api/set_dark_css' do
         require_user!
         data = parse_request_data(:required_keys => [:mode])
         dark = data[:mode] == "dark" ? true : false
@@ -2300,7 +2301,19 @@ class Main < Sinatra::Base
         
         respond(:ok => true)
     end
-    
+
+    post '/api/set_design_css' do
+        require_user!
+        data = parse_request_data(:required_keys => [:mode])
+        new_design = data[:mode] == "neu" ? true : false
+        
+        results = neo4j_query(<<~END_OF_QUERY, :email => @session_user[:email], :new_design => new_design)
+            MATCH (u:User {email: $email})
+            SET u.new_design = $new_design;
+        END_OF_QUERY
+        
+        respond(:ok => true)
+    end
 
     def get_open_doors_for_user()
         require_user!
@@ -2596,6 +2609,45 @@ class Main < Sinatra::Base
         color_palette = color_palette_for_color_scheme(color_scheme)
 
         s = (@session_user || {})[:dark] ? File.read('/static/dark.css') : ""
+        while true
+            index = s.index('#{')
+            break if index.nil?
+            length = 2
+            balance = 1
+            while index + length < s.size && balance > 0
+                c = s[index + length]
+                balance -= 1 if c == '}'
+                balance += 1 if c == '{'
+                length += 1
+            end
+            code = s[index + 2, length - 3]
+            begin
+#                             STDERR.puts code
+                s[index, length] = eval(code).to_s || ''
+            rescue
+                debug "Error while evaluating for #{(@session_user || {})[:email]}:"
+                debug code
+                raise
+            end
+        end
+        respond_raw_with_mimetype(s, 'text/css')
+    end
+
+    get '/api/new_design.css' do
+        color_scheme = (@session_user || {})[:color_scheme]
+        unless color_scheme =~ /^[ld][0-9a-f]{18}[0-9]?$/
+            unless user_logged_in?
+                color_scheme = pick_random_color_scheme()
+            else
+                color_scheme = @@standard_color_scheme
+            end
+        end
+        if color_scheme.size < 20
+            color_scheme += '0'
+        end
+        color_palette = color_palette_for_color_scheme(color_scheme)
+
+        s = (@session_user || {})[:new_design] ? File.read('/static/new_design.css') : ""
         while true
             index = s.index('#{')
             break if index.nil?

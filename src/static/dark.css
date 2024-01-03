@@ -215,7 +215,7 @@ body {
 }
 
 .navbar {
-    border-bottom: 1px solid rgba(255, 255, 255, 0.2)!important;
+    border: 1px solid rgba(255, 255, 255, 0.2)!important;
     background-color: #111!important;
 }
 

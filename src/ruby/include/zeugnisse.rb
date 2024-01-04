@@ -515,7 +515,7 @@ class Main < Sinatra::Base
 
                 respond(:yay => 'sure', :docx_base64 => raw_docx_data, :name => last_zeugnis_name)
             else
-                command = "HOME=/internal/lowriter_home lowriter --convert-to pdf #{docx_paths.join(' ')} --outdir \"#{File.dirname(docx_paths.first)}\""
+                command = "HOME=/internal/lowriter_home lowriter --headless --convert-to 'pdf:writer_pdf_Export:{\"ExportFormFields\":{\"type\":\"boolean\",\"value\":\"false\"}}' #{docx_paths.join(' ')} --outdir \"#{File.dirname(docx_paths.first)}\""
                 STDERR.puts command
                 system(command)
 

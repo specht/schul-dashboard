@@ -62,6 +62,10 @@ class Main < Sinatra::Base
     end
 
     get '/api/login_for_device/:token' do
+        unless user_logged_in?
+            redirect "#{WEB_ROOT}/", 302
+            return
+        end
         require_user!
         login_token = params[:token]
         # fetch device token for login token

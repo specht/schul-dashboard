@@ -27,14 +27,14 @@
     font-style: normal;
     font-weight: 400;
     font-display: swap;
-    src: local('Roboto Condensed'), local('RobotoCondensed-Regular'), url(/fonts/ieVl2ZhZI2eCN5jzbjEETS9weq8-59U.ttf) format('truetype');
+    src: url(/fonts/ieVl2ZhZI2eCN5jzbjEETS9weq8-59U.ttf) format('truetype');
 }
 @font-face {
     font-family: 'Roboto Condensed';
     font-style: normal;
     font-weight: 700;
     font-display: swap;
-    src: local('Roboto Condensed Bold'), local('RobotoCondensed-Bold'), url(/fonts/ieVi2ZhZI2eCN5jzbjEETS9weq8-32meKCM.ttf) format('truetype');
+    src: url(/fonts/ieVi2ZhZI2eCN5jzbjEETS9weq8-32meKCM.ttf) format('truetype');
 }
 
 @font-face {

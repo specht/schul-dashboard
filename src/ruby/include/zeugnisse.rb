@@ -593,8 +593,10 @@ class Main < Sinatra::Base
             cache.merge!(parse_paths_and_values(data[:paths][i], data[:values][i]))
         end
 
-        # File.open('/internal/zeugniskonferenz_cache.json', 'w') do |f|
-        #     f.write(cache.to_json)
+        # if DEVELOPMENT
+        #     File.open('/internal/zeugniskonferenz_cache.json', 'w') do |f|
+        #         f.write(cache.to_json)
+        #     end
         # end
 
         respond(:yay => 'sure', :pdf_base64 => Base64.strict_encode64(get_zeugnislisten_sheets_pdf(cache)), :name => 'Zeugnislisten.pdf')

@@ -280,10 +280,10 @@
                 <a class="inline-block bg-slate-900 border border-blue-500 hover:bg-slate-200 rounded py-1 px-3"
                     href="/zeugnisdruck"><i class='fa fa-print'></i>&nbsp;&nbsp;Zeugnisdruck</a>
             </li>
-            <!-- <li class="mx-1">
+            <li class="mx-1" style='#{NEED_SOZIALVERHALTEN ? '' : 'display: none;'}'>
                 <a class="inline-block bg-slate-900 border border-blue-500 hover:bg-slate-200 rounded py-1 px-3"
                     href="/anlage_sozialverhalten"><i class='fa fa-table'></i>&nbsp;&nbsp;Anlage Sozialverhalten</a>
-            </li> -->
+            </li>
             <li style="border-left: 1px solid #ccc; height: 52px; margin: -10px 10px -10px 10px; margin-left: auto;">
             </li>
             <li class="mx-1">
@@ -316,9 +316,9 @@
 var second_factor_expires = Math.round((Date.now() / 1000.0) + #{second_factor_time_left || 0});
 var edit_enabled = false;
 var FAECHER_SPRACHEN = #{FAECHER_SPRACHEN.to_json};
-var zeugnisliste_closed = #{(zeugnis_admin_logged_in? || Time.now.strftime('%Y-%m-%dT%H:%M:%S') < '2023-06-26T09:00:00') ? 'false' : 'true'};
-var zeugnisliste_consider_closed = #{(zeugnis_admin_logged_in? || Time.now.strftime('%Y-%m-%dT%H:%M:%S') < '2023-06-28T09:00:00') ? 'false' : 'true'};
-var sozialverhalten_closed = #{(zeugnis_admin_logged_in? || Time.now.strftime('%Y-%m-%dT%H:%M:%S') < '2023-07-05T12:00:00') ? 'false' : 'true'};
+var zeugnisliste_closed = #{(zeugnis_admin_logged_in? || Time.now.strftime('%Y-%m-%dT%H:%M:%S') < DEADLINE_NOTENEINTRAGUNG) ? 'false' : 'true'};
+var zeugnisliste_consider_closed = #{(zeugnis_admin_logged_in? || Time.now.strftime('%Y-%m-%dT%H:%M:%S') < DEADLINE_CONSIDER) ? 'false' : 'true'};
+var sozialverhalten_closed = #{(zeugnis_admin_logged_in? || Time.now.strftime('%Y-%m-%dT%H:%M:%S') < DEADLINE_SOZIALNOTEN) ? 'false' : 'true'};
 var zeugniskonferenzen_today = #{(ZEUGNISKONFERENZEN[Date.today.strftime('%Y-%m-%d')] || []).to_json};
 var zeugnis_admin_and_konferenz = #{(zeugnis_admin_logged_in? && ZEUGNISKONFERENZEN.include?(Date.today.strftime('%Y-%m-%d')))};
 var running_zeugniskonferenzen = #{running_zeugniskonferenzen.to_json};

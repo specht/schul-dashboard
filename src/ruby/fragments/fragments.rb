@@ -423,7 +423,7 @@ class Main
                     faecher_for_fs = Hash[faecher_for_fs.map { |k, v| [k, v.to_a.sort] }]
                     (1..3).each do |i|
                         liste[:lehrer_for_fach]["FS#{i}"] = faecher_for_fs[i].map do |x|
-                            "#{liste[:lehrer_for_fach][x].join(' ')} (#{x})"
+                            "#{(liste[:lehrer_for_fach][x] || []).join(' ')} (#{x})"
                         end
                     end
 

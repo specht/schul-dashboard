@@ -69,12 +69,6 @@ class Main < Sinatra::Base
     def self.determine_zeugnislisten()
         # STDERR.puts "ATTENTION determine_zeugnislisten() IS DOING NOTHING RIGHT NOW"
         # return
-        @@all_zeugnis_faecher = Set.new()
-        FAECHER_FOR_ZEUGNIS[ZEUGNIS_SCHULJAHR][ZEUGNIS_HALBJAHR].each_pair do |key, faecher|
-            faecher.each do |fach|
-                @@all_zeugnis_faecher << fach.sub('$', '')
-            end
-        end
 
         @@zeugnisliste_for_klasse = {}
         @@zeugnisliste_for_lehrer = {}
@@ -107,7 +101,6 @@ class Main < Sinatra::Base
             shorthands_for_fach = {}
             # get teachers from stundenplan
             (kurse_for_klasse[klasse]).each do |kurs|
-                next unless @@all_zeugnis_faecher.include?(kurs[:fach])
                 lesson_keys_for_fach[kurs[:fach]] ||= []
                 lesson_keys_for_fach[kurs[:fach]] << kurs[:lesson_key]
                 fach = ZEUGNIS_CONSOLIDATE_FACH[kurs[:fach]] || kurs[:fach]

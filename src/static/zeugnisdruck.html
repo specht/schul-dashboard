@@ -40,14 +40,16 @@ window.addEventListener('load', function () {
                         let emails = liste.schueler.map(function(x) { return x.email; });
                         get_zeugnis(klasse, emails, 'pdf');
                     });
-                    let button2 = $(`<button id='bu_print_all_sozial' class='btn btn-info'>`).html(`<i class='fa fa-file-pdf-o'></i>&nbsp;&nbsp;Alle Sozialzeugnisse der Klasse ${klassen_tr[klasse] ?? klasse} (PDF)`);
-                    $('#button_here').append(`&nbsp;&nbsp;`);
-                    $('#button_here').append(button2);
-                    if ('#{zeugnis_admin_logged_in? || (Time.now.strftime('%Y-%m-%dT%H:%M:%S') > '2023-07-05T12:00:00') ? 'true' : 'false'}' === 'false')
-                        button2.prop('disabled', true);
-                    button2.click(function(e) {
-                        get_sozialzeugnis(klasse);
-                    });
+                    if ('#{NEED_SOZIALVERHALTEN}' === 'true') {
+                        let button2 = $(`<button id='bu_print_all_sozial' class='btn btn-info'>`).html(`<i class='fa fa-file-pdf-o'></i>&nbsp;&nbsp;Alle Sozialzeugnisse der Klasse ${klassen_tr[klasse] ?? klasse} (PDF)`);
+                        $('#button_here').append(`&nbsp;&nbsp;`);
+                        $('#button_here').append(button2);
+                        if ('#{zeugnis_admin_logged_in? || (Time.now.strftime('%Y-%m-%dT%H:%M:%S') > DEADLINE_SOZIALNOTEN) ? 'true' : 'false'}' === 'false')
+                            button2.prop('disabled', true);
+                        button2.click(function(e) {
+                            get_sozialzeugnis(klasse);
+                        });
+                    }
                     let button3 = $(`<button id='bu_print_all' class='btn btn-secondary'>`).html(`<i class='fa fa-file-excel-o'></i>&nbsp;&nbsp;Alle Noten der Klasse ${klassen_tr[klasse] ?? klasse} (XLSX)`);
                         $('#button_here').append(`&nbsp;&nbsp;`);
                     $('#button_here').append(button3);

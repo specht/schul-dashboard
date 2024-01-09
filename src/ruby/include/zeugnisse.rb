@@ -25,7 +25,7 @@ class Main < Sinatra::Base
             doc = File.read(File.join(out_path, 'word', 'document.xml'))
             tags = doc.scan(/[#\$][A-Za-z0-9_]+\./)
             key = File.basename(path).sub('.docx', '')
-            debug "#{key} (#{out_path}): #{tags.to_json}"
+            # debug "#{key} (#{out_path}): #{tags.to_json}"
             @@zeugnisse[:formulare][key] ||= {}
             @@zeugnisse[:formulare][key][:sha1] = sha1
             @@zeugnisse[:formulare][key][:tags] = tags.map { |x| x[0, x.size - 1] }

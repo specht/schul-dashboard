@@ -732,7 +732,9 @@ class Parser
                 # TODO: fix this
                 next unless jentry.is_a? Array
                 if jentry[0].nil?
-                    debug "ATTENTION: #{datum} #{sha1} #{jentry.to_json}"
+                    if DASHBOARD_SERVICE == 'ruby'
+                        debug "ATTENTION: #{datum} #{sha1} #{jentry.to_json}"
+                    end
                     next
                 end
                 if jentry[0].include?('-')
@@ -755,6 +757,7 @@ class Parser
 
                     entry = {
                         # :vnr => parts[0].to_i,
+                        :sha1 => sha1,
                         :datum => datum,
                         :stunde => stunde,
                         :klassen_alt => Set.new((jentry[1][0] || '').gsub('~', '/').gsub(',', '/').split('/')).to_a.map { |x| x.strip }.reject { |x| x.empty? }.sort,
@@ -953,7 +956,9 @@ class Parser
                     end
                 end
             rescue StandardError => e
-                STDERR.puts "Error parsing #{path}: #{e}"
+                if DASHBOARD_SERVICE == 'ruby'
+                    STDERR.puts "Error parsing #{path}: #{e}"
+                end
             end
         end
         debug_logs = StringIO.open do |io|
@@ -1002,13 +1007,15 @@ class Parser
             end
         end
 
-        unless unassigned_kurs_ids.empty?
-            STDERR.puts ">>> Warning: Could not assign #{unassigned_kurs_ids.size} of #{emails_for_kurs_id.size} kurs IDs:"
-            unassigned_kurs_ids.each do |kurs_id|
-                STDERR.puts "#{kurs_id}"
+        if DASHBOARD_SERVICE == 'ruby'
+            unless unassigned_kurs_ids.empty?
+                STDERR.puts ">>> Warning: Could not assign #{unassigned_kurs_ids.size} of #{emails_for_kurs_id.size} kurs IDs:"
+                unassigned_kurs_ids.each do |kurs_id|
+                    STDERR.puts "#{kurs_id}"
+                end
+                STDERR.puts ">>> See here for details:"
+                STDERR.puts debug_logs
             end
-            STDERR.puts ">>> See here for details:"
-            STDERR.puts debug_logs
         end
 
         return kurse_for_schueler, schueler_for_kurs

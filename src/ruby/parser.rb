@@ -919,37 +919,41 @@ class Parser
         if File.exist?('/data/kurswahl/kurs_id_tr.yaml')
             kurs_id_tr = YAML.load(File.read('/data/kurswahl/kurs_id_tr.yaml'))
         end
-        Dir['/data/kurswahl/csv/*.csv'].sort.each do |path|
-            File.open(path) do |f|
-                f.each_line do |line|
-                    line = line.force_encoding('CP1252')
-                    line = line.encode('UTF-8')
-                    line.strip!
-                    next if line.empty?
-                    parts = line.split(';')
-                    sus_name = parts[0]
-                    shorthand = parts[3]
-                    fach = parts[5].split('-').first
-                    tag = "#{shorthand}/#{fach}"
-                    kurs_id = File.basename(path).split('.').first
-                    kurs_ids_for_tag[tag] ||= Set.new()
-                    kurs_ids_for_tag[tag] << kurs_id
-                    while sus_name.length > 0
-                        break if email_for_name.include?(sus_name)
-                        name_parts = sus_name.split(' ')
-                        sus_name = name_parts[0, name_parts.size - 1].join(' ')
+        Dir['/data/kurswahl/csv/2024-01/**/*.csv'].sort.each do |path|
+            begin
+                File.open(path) do |f|
+                    f.each_line do |line|
+                        line = line.force_encoding('CP1252')
+                        line = line.encode('UTF-8')
+                        line.strip!
+                        next if line.empty?
+                        parts = line.split(';')
+                        sus_name = parts[0]
+                        shorthand = parts[2]
+                        fach = parts[3].split('-').first
+                        tag = "#{shorthand}/#{fach}"
+                        kurs_id = File.basename(path).split('.').first
+                        kurs_ids_for_tag[tag] ||= Set.new()
+                        kurs_ids_for_tag[tag] << kurs_id
+                        while sus_name.length > 0
+                            break if email_for_name.include?(sus_name)
+                            name_parts = sus_name.split(' ')
+                            sus_name = name_parts[0, name_parts.size - 1].join(' ')
+                        end
+                        unless shorthands.include?(shorthand)
+                            STDERR.puts "Warning: Unknown shorthand »#{shorthand}«"
+                            next
+                        end
+                        unless email_for_name.include?(sus_name)
+                            STDERR.puts "Warning: Unknown SuS name »#{sus_name}« in #{File.basename(path)}\n#{line}"
+                            next
+                        end
+                        emails_for_kurs_id[kurs_id] ||= []
+                        emails_for_kurs_id[kurs_id] << email_for_name[sus_name]
                     end
-                    unless shorthands.include?(shorthand)
-                        STDERR.puts "Warning: Unknown shorthand »#{shorthand}«"
-                        next
-                    end
-                    unless email_for_name.include?(sus_name)
-                        STDERR.puts "Warning: Unknown SuS name »#{sus_name}« in #{File.basename(path)}\n#{line}"
-                        next
-                    end
-                    emails_for_kurs_id[kurs_id] ||= []
-                    emails_for_kurs_id[kurs_id] << email_for_name[sus_name]
                 end
+            rescue StandardError => e
+                STDERR.puts "Error parsing #{path}: #{e}"
             end
         end
         debug_logs = StringIO.open do |io|

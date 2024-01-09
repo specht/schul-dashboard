@@ -637,7 +637,7 @@ class Main < Sinatra::Base
                 io.string
             end
         end
-        if NEED_SOZIALVERHALTEN
+        if need_sozialverhalten()
             deadline = DEADLINE_SOZIALNOTEN
             if Time.now.strftime('%Y-%m-%dT%H:%M:%S') <= deadline && (DateTime.parse(deadline) - DateTime.now).to_f < 7.0
                 return StringIO.open do |io|

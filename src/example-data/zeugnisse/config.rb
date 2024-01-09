@@ -11,11 +11,5 @@ FAECHER_FOR_ZEUGNIS = {
     },
 }
 
-ANLAGE_AS_FOR_ZEUGNIS = {
-    '2022_23' => {
-        '1' => []
-    },
-}
-
 ZEUGNIS_CONSOLIDATE_FACH = {
 }

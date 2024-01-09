@@ -286,7 +286,7 @@
                 <a class="inline-block bg-slate-900 border border-blue-500 hover:bg-slate-200 rounded py-1 px-3"
                     href="/zeugnisdruck"><i class='fa fa-print'></i>&nbsp;&nbsp;Zeugnisdruck</a>
             </li>
-            <li class="mx-1" style='#{NEED_SOZIALVERHALTEN ? '' : 'display: none;'}'>
+            <li class="mx-1" style='#{need_sozialverhalten() ? '' : 'display: none;'}'>
                 <a class="inline-block bg-slate-900 border border-blue-500 hover:bg-slate-200 rounded py-1 px-3"
                     href="/anlage_sozialverhalten"><i class='fa fa-table'></i>&nbsp;&nbsp;Anlage Sozialverhalten</a>
             </li>
@@ -965,7 +965,7 @@ function load_sozialverhalten_table(container, klasse, edit_noten) {
     path_array.push(['Schuljahr', ZEUGNIS_SCHULJAHR]);
     path_array.push(['Halbjahr', ZEUGNIS_HALBJAHR]);
     let liste = zeugnisliste_for_klasse[klasse];
-    let items = ['ZV', 'LLB', 'SSK', 'KF', 'SV'];
+    let items = #{SOZIALNOTEN_KEYS.to_json};
     let emails = liste.schueler.map(function(x) { return x.email; });
     let faecher = liste.faecher;
     path_array.push(['SV', items]);

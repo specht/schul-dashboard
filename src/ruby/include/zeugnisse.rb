@@ -66,12 +66,22 @@ class Main < Sinatra::Base
         return faecher + faecher_wf
     end
 
+    def need_sozialverhalten()
+        # return true if session user has sozialnoten to enter
+        return false unless user_logged_in?
+        return false unless teacher_logged_in?
+        return true if @@need_sozialverhalten[@session_user[:shorthand]]
+        return false
+    end
+
     def self.determine_zeugnislisten()
         # STDERR.puts "ATTENTION determine_zeugnislisten() IS DOING NOTHING RIGHT NOW"
         # return
 
         @@zeugnisliste_for_klasse = {}
         @@zeugnisliste_for_lehrer = {}
+        # @@need_sozialverhalten is a hash of teacher shorthands and klassen
+        @@need_sozialverhalten = {}
 
         kurse_for_klasse = Hash[ZEUGNIS_KLASSEN_ORDER.map do |klasse|
             [klasse, (@@lessons_for_klasse[klasse] || []).map { |x| @@lessons[:lesson_keys][x].merge({:lesson_key => x})}]
@@ -96,6 +106,21 @@ class Main < Sinatra::Base
         if ZEUGNIS_USE_MOCK_NAMES
             srand(42)
         end
+        need_sv_for_klasse = {}
+        ((ANLAGE_SOZIALVERHALTEN[ZEUGNIS_SCHULJAHR] || {})[ZEUGNIS_HALBJAHR] || []).each do |entry|
+            if entry == '*'
+                ZEUGNIS_KLASSEN_ORDER.each do |klasse|
+                    need_sv_for_klasse[klasse] = true
+                end
+            else
+                if ZEUGNIS_KLASSEN_ORDER.include?(entry)
+                    need_sv_for_klasse[entry] = true
+                else
+                    raise "zeugnis config: unknown klasse #{entry}"
+                end
+            end
+        end
+
         ZEUGNIS_KLASSEN_ORDER.each do |klasse|
             lesson_keys_for_fach = {}
             shorthands_for_fach = {}
@@ -104,6 +129,7 @@ class Main < Sinatra::Base
                 lesson_keys_for_fach[kurs[:fach]] ||= []
                 lesson_keys_for_fach[kurs[:fach]] << kurs[:lesson_key]
                 fach = ZEUGNIS_CONSOLIDATE_FACH[kurs[:fach]] || kurs[:fach]
+                # next unless FAECHER_FOR_ZEUGNIS[ZEUGNIS_SCHULJAHR][ZEUGNIS_HALBJAHR].include?(fach) || FAECHER_FOR_ZEUGNIS[ZEUGNIS_SCHULJAHR][ZEUGNIS_HALBJAHR].include?('$' + fach)
                 shorthands = kurs[:lehrer]
                 # check if we have delegate overrides
                 path = "#{ZEUGNIS_SCHULJAHR}/#{ZEUGNIS_HALBJAHR}/#{klasse}/#{fach}"
@@ -119,14 +145,19 @@ class Main < Sinatra::Base
                         @@zeugnisliste_for_lehrer[shorthand]["#{klasse}/#{fach}_AT"] = true
                         @@zeugnisliste_for_lehrer[shorthand]["#{klasse}/#{fach}_SL"] = true
                     end
-                    ['ZV', 'LLB', 'SSK', 'KF', 'SV'].each do |item|
-                        @@zeugnisliste_for_lehrer[shorthand]["#{klasse}/#{item}/#{fach}"] = true
+                    if need_sv_for_klasse[klasse]
+                        SOZIALNOTEN_KEYS.each do |item|
+                            @@zeugnisliste_for_lehrer[shorthand]["#{klasse}/#{item}/#{fach}"] = true
+                        end
+                        @@need_sozialverhalten[shorthand] = true
+                        @@need_sozialverhalten[klasse] = true
                     end
                 end
             end
             # get teachers from delegate entries
             (delegates_for_klasse[klasse] || {}).each_pair do |path, emails|
                 fach = path.split('/')[3]
+                # next unless FAECHER_FOR_ZEUGNIS[ZEUGNIS_SCHULJAHR][ZEUGNIS_HALBJAHR].include?(fach) || FAECHER_FOR_ZEUGNIS[ZEUGNIS_SCHULJAHR][ZEUGNIS_HALBJAHR].include?('$' + fach)
                 emails.to_a.sort.each do |email|
                     shorthand = @@user_info[email][:shorthand]
                     shorthands_for_fach[fach] ||= {}
@@ -137,8 +168,12 @@ class Main < Sinatra::Base
                         @@zeugnisliste_for_lehrer[shorthand]["#{klasse}/#{fach}_AT"] = true
                         @@zeugnisliste_for_lehrer[shorthand]["#{klasse}/#{fach}_SL"] = true
                     end
-                    ['ZV', 'LLB', 'SSK', 'KF', 'SV'].each do |item|
-                        @@zeugnisliste_for_lehrer[shorthand]["#{klasse}/#{item}/#{fach}"] = true
+                    if need_sv_for_klasse[klasse]
+                        SOZIALNOTEN_KEYS.each do |item|
+                            @@zeugnisliste_for_lehrer[shorthand]["#{klasse}/#{item}/#{fach}"] = true
+                        end
+                        @@need_sozialverhalten[shorthand] = true
+                        @@need_sozialverhalten[klasse] = true
                     end
                 end
 
@@ -154,9 +189,13 @@ class Main < Sinatra::Base
                     @@zeugnisliste_for_lehrer[shorthand] ||= {}
                     @@zeugnisliste_for_lehrer[shorthand]["#{klasse}/#{item}"] = true
                 end
-                ['ZV', 'LLB', 'SSK', 'KF', 'SV'].each do |item|
-                    @@zeugnisliste_for_lehrer[shorthand] ||= {}
-                    @@zeugnisliste_for_lehrer[shorthand]["#{klasse}/#{item}/_KL"] = true
+                if need_sv_for_klasse[klasse]
+                    SOZIALNOTEN_KEYS.each do |item|
+                        @@zeugnisliste_for_lehrer[shorthand] ||= {}
+                        @@zeugnisliste_for_lehrer[shorthand]["#{klasse}/#{item}/_KL"] = true
+                    end
+                    @@need_sozialverhalten[shorthand] = true
+                    @@need_sozialverhalten[klasse] = true
                 end
             end
             path = "#{ZEUGNIS_SCHULJAHR}/#{ZEUGNIS_HALBJAHR}/#{klasse}/_KL"
@@ -170,9 +209,13 @@ class Main < Sinatra::Base
                         @@zeugnisliste_for_lehrer[shorthand] ||= {}
                         @@zeugnisliste_for_lehrer[shorthand]["#{klasse}/#{item}"] = true
                     end
-                    ['ZV', 'LLB', 'SSK', 'KF', 'SV'].each do |item|
-                        @@zeugnisliste_for_lehrer[shorthand] ||= {}
-                        @@zeugnisliste_for_lehrer[shorthand]["#{klasse}/#{item}/_KL"] = true
+                    if need_sv_for_klasse[klasse]
+                        SOZIALNOTEN_KEYS.each do |item|
+                            @@zeugnisliste_for_lehrer[shorthand] ||= {}
+                            @@zeugnisliste_for_lehrer[shorthand]["#{klasse}/#{item}/_KL"] = true
+                        end
+                        @@need_sozialverhalten[shorthand] = true
+                        @@need_sozialverhalten[klasse] = true
                     end
                 end
             end

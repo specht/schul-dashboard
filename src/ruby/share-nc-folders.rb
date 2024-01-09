@@ -348,7 +348,6 @@ class Script
                         end
                         STDERR.puts "Sharing #{path} to [#{user_id}]..."
                         _temp = @ocs.file_sharing.create(path, 0, user_id, nil, nil, info[:permissions])
-                        STDERR.puts _temp.to_yaml
                     end
                     shares = (@ocs.file_sharing.specific(path.gsub(' ', '%20')) || []).select { |x| x['share_with'] == user_id }
                     if shares.size != 1

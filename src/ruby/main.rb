@@ -930,13 +930,14 @@ class Main < Sinatra::Base
             last_start_date = start_date
         end
 
-        kurse_for_schueler, schueler_for_kurs = parser.parse_kurswahl(@@user_info.reject { |x, y| y[:teacher] }, @@lessons, lesson_key_tr, @@original_lesson_key_for_lesson_key, @@shorthands)
-        @@kurse_for_schueler = kurse_for_schueler
-        wahlpflicht_sus_for_lesson_key = parser.parse_wahlpflichtkurswahl(@@user_info.reject { |x, y| y[:teacher] }, @@lessons, lesson_key_tr, @@schueler_for_klasse)
         sesb_sus = parser.parse_sesb(@@user_info.reject { |x, y| y[:teacher] }, @@schueler_for_klasse)
         sesb_sus.each do |email|
             @@user_info[email][:sesb] = true
         end
+        
+        kurse_for_schueler, schueler_for_kurs = parser.parse_kurswahl(@@user_info.reject { |x, y| y[:teacher] }, @@lessons, lesson_key_tr, @@original_lesson_key_for_lesson_key, @@shorthands)
+        @@kurse_for_schueler = kurse_for_schueler
+        wahlpflicht_sus_for_lesson_key = parser.parse_wahlpflichtkurswahl(@@user_info.reject { |x, y| y[:teacher] }, @@lessons, lesson_key_tr, @@schueler_for_klasse)
 
         @@materialamt_for_lesson = {}
         rows = $neo4j.neo4j_query(<<~END_OF_QUERY)

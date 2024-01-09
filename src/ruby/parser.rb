@@ -1029,9 +1029,17 @@ class Parser
                     end
                     sus.each do |name|
                         if name[0] == '@'
-                            klasse = name.sub('@', '')
+                            klasse = name.sub('@', '').split('_').first
+                            specifier = name.sub('@', '').sub(klasse, '')
                             schueler_for_lesson_key[lesson_key] ||= Set.new()
                             schueler_for_klasse[klasse].each do |email|
+                                if specifier == '_sesb'
+                                    next unless user_info[email][:sesb]
+                                elsif specifier == '_not_sesb'
+                                    next if user_info[email][:sesb]
+                                else
+                                    raise "Unknown specifier in wahlpflicht.yaml: #{specifier}!"
+                                end
                                 schueler_for_lesson_key[lesson_key] << email
                             end
                         else
@@ -1102,7 +1110,7 @@ class Parser
                             unassigned_names << name
                         end
                         unless email
-                            debug "Wahlpflichtkurswahl: Can't assign #{name}!"
+                            debug "SESB: Can't assign #{name}!"
                         end
                         if email
                             sesb_sus << email

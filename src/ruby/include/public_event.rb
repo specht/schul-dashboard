@@ -37,7 +37,7 @@ class Main < Sinatra::Base
             to data[:email]
             bcc SMTP_FROM
             from SMTP_FROM
-            reply_to DASHBOARD_SUPPORT_EMAIL
+            reply_to SCHULLEITUNG_EMAIL
 
             subject event[:mail_subject]
 

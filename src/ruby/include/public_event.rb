@@ -195,8 +195,15 @@ class Main < Sinatra::Base
                     io.puts "<hr />"
                 end
                 io.puts "<h3>#{event[:title]}</h3>"
+                not_yet = false
+                if event[:not_before] && Time.now.strftime('%Y-%m-%dT%H:%M:%S') < event[:not_before]
+                    not_yet = true
+                end
                 if event[:description]
                     io.puts event[:description]
+                end
+                if not_yet && event[:not_before_description]
+                    io.puts event[:not_before_description]
                 end
                 sign_ups = get_sign_ups_for_public_event(event[:key])
                 if event[:auto_rows]
@@ -246,6 +253,9 @@ class Main < Sinatra::Base
                             end
                             booked_out = false
                             if (sign_ups[entry[:key]] || []).size >= (entry[:capacity] || 0)
+                                booked_out = true
+                            end
+                            if not_yet
                                 booked_out = true
                             end
                             unless printed_row
@@ -309,6 +319,9 @@ class Main < Sinatra::Base
                             end
                             booked_out = false
                             if (sign_ups[entry[:key]] || []).size >= (entry[:capacity] || 0)
+                                booked_out = true
+                            end
+                            if not_yet
                                 booked_out = true
                             end
                             io.puts "<td><button data-event-key='#{event[:key]}' data-key='#{entry[:key]}' class='btn #{booked_out ? 'btn-outline-secondary' : 'btn-info'} bu-book-public-event' #{booked_out ? 'disabled': ''}>#{entry[:description]}</button><div style='display: none;' class='booking-text'>#{text}</div></td>"

@@ -1554,6 +1554,7 @@ class Main < Sinatra::Base
                                         @session_user[:color_scheme] = results.first['u'][:color_scheme]
                                         @session_user[:new_design] = results.first['u'][:new_design]
                                         @session_user[:dark] = results.first['u'][:dark]
+                                        @session_user[:recognize_stats_public] = results.first['u'][:recognize_stats_public]
                                         @session_user[:ical_token] = results.first['u'][:ical_token]
                                         @session_user[:otp_token] = results.first['u'][:otp_token]
                                         @session_user[:otp_token_changed] = results.first['u'][:otp_token_changed] || '2023-02-02'
@@ -2556,6 +2557,92 @@ class Main < Sinatra::Base
             END_OF_QUERY
         end
         respond(:yay => 'sure')
+    end
+
+    def get_recognized_emails()
+        result = {}
+        neo4j_query(<<~END_OF_QUERY, {:session_email => @session_user[:email]}).each do |x|
+            MATCH (u:User {email: $session_email})-[r:RECOGNIZED]->(u2:User)
+            RETURN u2.email, r.ts;
+        END_OF_QUERY
+            result[x['u2.email']] = x['r.ts']
+        end
+        result
+    end
+
+    post '/api/foto_recognize' do
+        require_teacher!
+        data = parse_request_data(:required_keys => [:email])
+        ts = Time.now.to_i
+        neo4j_query(<<~END_OF_QUERY, {:session_email => @session_user[:email], :email => data[:email], :ts => ts})
+            MATCH (u:User {email: $session_email})
+            MATCH (u2:User {email: $email})
+            MERGE (u)-[r:RECOGNIZED]->(u2)
+            SET r.ts = $ts;
+        END_OF_QUERY
+        respond(:yay => 'sure', :ts => ts)
+    end
+
+    post '/api/foto_unrecognize' do
+        require_teacher!
+        data = parse_request_data(:required_keys => [:email1, :email2])
+        neo4j_query(<<~END_OF_QUERY, {:session_email => @session_user[:email], :email => data[:email1]})
+            MATCH (u:User {email: $session_email})-[r:RECOGNIZED]->(u2:User {email: $email})
+            DELETE r;
+        END_OF_QUERY
+        neo4j_query(<<~END_OF_QUERY, {:session_email => @session_user[:email], :email => data[:email2]})
+            MATCH (u:User {email: $session_email})-[r:RECOGNIZED]->(u2:User {email: $email})
+            DELETE r;
+        END_OF_QUERY
+        respond(:yay => 'sure')
+    end
+
+    post '/api/get_recognize_hall_of_fame' do
+        require_teacher!
+        data = parse_request_data()
+        ts = (Time.now - 365 * 3600 * 24).to_i
+        hall_of_fame = {}
+        neo4j_query(<<~END_OF_QUERY, {:ts => ts})
+            MATCH (u:User)-[r:RECOGNIZED]->(u2:User)
+            WHERE r.ts < $ts
+            DELETE r;
+        END_OF_QUERY
+        neo4j_query(<<~END_OF_QUERY).each do |row|
+            MATCH (u:User)-[r:RECOGNIZED]->(u2:User)
+            WHERE COALESCE(u.recognize_stats_public, TRUE) = TRUE
+            RETURN u.email, u2.email;
+        END_OF_QUERY
+            who = row['u.email']
+            whom = row['u2.email']
+            if @@user_info[whom] && !@@user_info[:teacher]
+                klasse = @@user_info[whom][:klasse]
+                stufe = klasse.to_i
+                stufe = 'WK' if klasse[0, 2] == 'WK'
+                stufe = 'OS' if ['11', '12'].include?(klasse[0, 2])
+                hall_of_fame[who] ||= {}
+                hall_of_fame[who][:stufe] ||= {}
+                hall_of_fame[who][:stufe][stufe] ||= 0
+                hall_of_fame[who][:stufe][stufe] += 1
+            end
+        end
+        result = []
+        hall_of_fame.each do |email, data|
+            result << {:email => email, :stufe => data[:stufe], :total => data[:stufe].values.sum }
+        end
+        result.sort! do |a, b|
+            b[:total] <=> a[:total]
+        end
+        respond(:yay => 'sure', :result => result)
+    end
+
+    post '/api/toggle_show_recognize_hall_of_fame' do
+        require_teacher!
+        flag = neo4j_query_expect_one(<<~END_OF_QUERY, :email => @session_user[:email])['u.recognize_stats_public']
+            MATCH (u:User {email: $email})
+            SET u.recognize_stats_public = NOT COALESCE(u.recognize_stats_public, TRUE)
+            RETURN u.recognize_stats_public;
+        END_OF_QUERY
+        respond(:flag => flag)
     end
 
     def get_emails_for_foto_paths

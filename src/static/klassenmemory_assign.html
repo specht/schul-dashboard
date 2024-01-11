@@ -62,6 +62,18 @@
         box-shadow: 0 0 0.1em 0 rgba(0,0,0,0.5), inset 0 0 0.1em 0 rgba(0,0,0,0.5);
         /* border: 0.1em solid white; */
     }
+    #quiz-curtain {
+        position: fixed;
+        left: 0;
+        top: 0;
+        width: 100vw;
+        height: 100vh;
+        background-color: #f8f8f8;
+        z-index: 1000;
+        padding-top: 60px;
+        color: #111;
+        display: none;
+    }
 </style>
 <div class='container-fluid'>
     <div class='row'>
@@ -86,18 +98,25 @@
     </div>
 </div>
 
+<div id="quiz-curtain">
+    <h1>Hello</h1>
+    <h1>Hello</h1>
+    <h1>Hello</h1>
+</div>
+
 <datalist id="current_names">
 </datalist>
 
 <script>
 
 var passphrase = '';
-var FOTO_PASSWORD = null;//#{FOTO_PASSWORD.to_json};
+var FOTO_PASSWORD = #{FOTO_PASSWORD.to_json};
 var KLASSEN_ORDER = #{KLASSEN_ORDER.to_json};
 var KLASSEN_TR = #{KLASSEN_TR.to_json};
 var schueler_for_klasse = #{@@schueler_for_klasse.to_json};
 var user_info = #{@@user_info.to_json};
 var email_for_foto_paths = #{get_emails_for_foto_paths().to_json};
+var email_for_foto_paths_rev = {};
 var email_for_foto_paths_emails = Object.values(email_for_foto_paths);
 
 async function decryptData(encryptedData, password) {
@@ -128,7 +147,25 @@ function base64ToBytes(base64) {
 var current_klasse = '5a';
 var email_for_name = {};
 
+/*
+ ROOKIE: Klasse auswählen: Foto mit Name wird ausgewählt + 3 weitere Namen mit gleichem Geschlecht: der richtige Name muss ausgewählt werden
+ NOVICE: Klassenstufe auswählen: Foto mit Name wird ausgewählt + 3 weitere Namen mit gleichem Geschlecht: der richtige Name muss ausgewählt werden
+ EXPERT: ganze Schule, weitere Namen werden aus gleicher Klassenstufe +/- 1 ausgewählt
+ wenn ein Foto korrekt erkannt wurde: DB: Eintrag mit Zeitstempel, verfällt nach einem Jahr
+ wenn ein Foto nicht korrent erkannt wurde: DB-Eintrag wird entfernt
+ HALL OF FAME: Liste der 10 besten Lehrkräfte (es zählen nur erkannte SuS, die noch an der Schule sind)
+ */
+
+function resetQuiz() {
+
+}
+
 window.addEventListener('load', function() {
+    email_for_foto_paths_rev = {};
+    for (let path in email_for_foto_paths) {
+        let email = email_for_foto_paths[path];
+        email_for_foto_paths_rev[email] = path;
+    }
     $('#password').focus();
     $('#submit_password').on('click', function(e) {
         e.preventDefault();
@@ -155,13 +192,19 @@ window.addEventListener('load', function() {
         });
         $('#klassen-div').append(bu_klasse);
     }
+    let bu_quiz = $(`<button class='btn btn-sm ttc' style='margin: 0.2em; width: 5em;'>`).html(`<i style='display: inline-block; margin: 0 0.2em 0 0.5em;' class='fa fa-play'></i>&nbsp;&nbsp;Quiz!`).data('quiz', 'yeah');
+        bu_quiz.on('click', function(e) {
+        resetQuiz();
+        $('#quiz-curtain').fadeIn();
+    });
+    // $('#klassen-div').append(bu_quiz);
     function refresh_autocomplete() {
         $('#current_names').empty();
         email_for_name = {};
         for (let email of schueler_for_klasse[current_klasse] ?? schueler_for_klasse['11'].concat(schueler_for_klasse['12'])) {
             let name = `${user_info[email].display_first_name} ${user_info[email].last_name}`;
             email_for_name[name] = email;
-            if (!(email_for_foto_paths_emails.indexOf(email) >= 0)) {
+            if (!(email in email_for_foto_paths_rev)) {
                 $('#current_names').append($(`<option value='${name}'>`));
             }
         }
@@ -174,7 +217,6 @@ window.addEventListener('load', function() {
         api_call(`/api/get_fotos/${current_klasse}`, {}, function(data) {
             if (data.success) {
                 for (let path of data.paths) {
-                    console.log(path);
                     let url = `/api/fotos/${path}`;
                     $.get(url, function(data) {
                         decryptData(data, passphrase).then(function(decrypted) {
@@ -213,10 +255,20 @@ window.addEventListener('load', function() {
                                         if (email.length === 0) {
                                             delete email_for_foto_paths[path];
                                             email_for_foto_paths_emails = Object.values(email_for_foto_paths);
+                                            email_for_foto_paths_rev = {};
+                                            for (let path in email_for_foto_paths) {
+                                                let email = email_for_foto_paths[path];
+                                                email_for_foto_paths_rev[email] = path;
+                                            }
                                             label.text('(kein Name zugeordnet)').addClass('nodata');
                                         } else {
                                             email_for_foto_paths[path] = email;
                                             email_for_foto_paths_emails = Object.values(email_for_foto_paths);
+                                            email_for_foto_paths_rev = {};
+                                            for (let path in email_for_foto_paths) {
+                                                let email = email_for_foto_paths[path];
+                                                email_for_foto_paths_rev[email] = path;
+                                            }
                                             label.text(name).removeClass('nodata');
                                         }
                                         refresh_autocomplete();

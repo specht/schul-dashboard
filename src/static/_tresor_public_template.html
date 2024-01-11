@@ -1157,6 +1157,8 @@ function load_angebote_bemerkungen_table(container, klasse, edit_noten) {
                     let th = $('<th>').html(x.replace('WeitereBemerkungen', 'Weitere Bemerkungen (Rückseite)'));
                     if (x === 'Nachname') th.addClass('thsticky');
                     if (['Nr.', 'Nachname', 'Vorname', 'Klasse'].indexOf(x) < 0) th.css('text-align', 'center');
+                    if (x === 'Angebote') th.append($(`<p style='margin-bottom: 0; font-weight: normal; font-style: italic;'>(Hier werden <u>nur</u> AGs eingetragen)</p>`));
+                    if (x === 'Bemerkungen') th.append($(`<p style='margin-bottom: 0; font-weight: normal; font-style: italic;'>(Hier wird <u>alles andere</u> eingetragen)</p>`));
                     return th;
                 }),
                 rows: emails.map(function (email, index) {

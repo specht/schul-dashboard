@@ -2645,6 +2645,11 @@ class Main < Sinatra::Base
         respond(:flag => flag)
     end
 
+    get '/api/jauch' do
+        require_teacher!
+        respond_raw_with_mimetype(File.read('/data/jauch.png'), 'image/png')
+    end
+
     def get_emails_for_foto_paths
         require_teacher!
         results = {}

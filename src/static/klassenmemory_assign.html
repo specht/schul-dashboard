@@ -147,7 +147,7 @@
 
 <div id="quiz-curtain">
 </div>
-<div class="container div_quiz" style="display: none;" id="div_quiz_root">
+<div class="container div_quiz" style="display: none; overflow: hidden;" id="div_quiz_root">
     <div class="row">
         <div class="col-md-12">
             <div class="right-top-button"><i class='fa fa-times'></i></div>
@@ -172,11 +172,13 @@
             <button class="btn btn-lg btn-success w-100 bu_play" data-which="schule">Ganze Schule üben</button><br>
             <p style="line-height: 1em; margin-top: 0.5em;"><em>»Mir ist das alles zu einfach! Ich möchte <b>alle</b> Namen kennen!«</em></p>
         </div>
-        <div class="col-md-8">
+        <div class="col-md-8" style="position: relative;">
             <button id='toggle_show_recognize_hall_of_fame' class="pull-right btn btn-sm btn-outline-info"></button>
             <h3>Hall of Fame</h3>
             <!-- <p>Hier siehst du demnächst, welche Lehrkraft die meisten Namen korrekt zuordnen kann.</p> -->
-            <div id="hall-of-fame"></div>
+            <div id="hall-of-fame">
+            </div>
+            <img src="/api/jauch" style="position: absolute; right: 10px; bottom: -30px; height: 160px;">
         </div>
     </div>
 </div>

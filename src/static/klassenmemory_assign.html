@@ -449,7 +449,23 @@ window.addEventListener('load', function() {
     for (let klasse of KLASSEN_ORDER) {
         let original_klasse = `${klasse}`;
         if (klasse === '11') klasse = 'OS';
+        if (klasse === '12') klasse = 'OS';
+        let stufe = null;
+        if (klasse.substring(0, 2) === 'WK')
+            stufe = 'WK';
+        else if (klasse === 'OS')
+            stufe = 'OS';
+        else stufe = `${parseInt(klasse)}`;
+        if (klassenstufen.indexOf(stufe) < 0)
+            klassenstufen.push(stufe);
+
+        schueler_for_klassenstufe[stufe] ??= [];
+        for (let email of schueler_for_klasse[original_klasse])
+            schueler_for_klassenstufe[stufe].push(email);
+        klassenstufe_for_klasse[original_klasse] = stufe;
+
         if (klasse === '12') continue;
+
         let bu_klasse = $(`<button class='btn btn-sm ttc' style='margin: 0.2em;'>`).text(KLASSEN_TR[klasse] ?? klasse).data('klasse', klasse);
         bu_klasse.on('click', function(e) {
             $('.ttc').removeClass('active');
@@ -465,19 +481,6 @@ window.addEventListener('load', function() {
             pickNextTask();
         });
         $('.klassen-buttons-here').append(bu_play_klasse);
-        let stufe = null;
-        if (klasse.substring(0, 2) === 'WK')
-            stufe = 'WK';
-        else if (klasse === 'OS')
-            stufe = 'OS';
-        else stufe = `${parseInt(klasse)}`;
-        if (klassenstufen.indexOf(stufe) < 0)
-            klassenstufen.push(stufe);
-
-        schueler_for_klassenstufe[stufe] ??= [];
-        for (let email of schueler_for_klasse[original_klasse])
-            schueler_for_klassenstufe[stufe].push(email);
-        klassenstufe_for_klasse[original_klasse] = stufe;
     }
     for (let stufe of klassenstufen) {
         let bu_play_klassenstufe = $(`<button class='btn btn-sm ttc' style='margin: 0.2em;'>`).text(stufe).data('stufe', stufe);

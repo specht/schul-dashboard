@@ -67,6 +67,13 @@
     .sus-label.nodata {
         color: #cc3729;
     }
+    .sus-quiz-label {
+        opacity: 0;
+    }
+    .sus-quiz-label.shown {
+        transition: opacity 0.2s ease-out;
+        opacity: 1;
+    }
     .sus-edit {
         width: 100%;
         position: absolute;
@@ -189,7 +196,12 @@
             <div id="quiz-foto" style="text-align: center; margin-bottom: 1em;"></div>
             <hr>
         </div>
-        <div class="col-md-6">
+    </div>
+    <div class="row">
+        <div class="col-md-12" id="name-buttons-here" style="text-align: center; min-height: 172px;">
+
+        </div>
+        <!-- <div class="col-md-6">
             <button class="btn btn-lg btn-secondary w-100 mb-3 bu-name" id="bu-name-0"></button>
         </div>
         <div class="col-md-6">
@@ -200,10 +212,7 @@
         </div>
         <div class="col-md-6">
             <button class="btn btn-lg btn-secondary w-100 mb-3 bu-name" id="bu-name-3"></button>
-        </div>
-        <div class="col-md-12">
-            <button class="btn btn-sm btn-outline-secondary w-100 bu-name" id="bu-name-skip">Überspringen</button>
-        </div>
+        </div> -->
     </div>
 </div>
 
@@ -227,6 +236,12 @@ var klassenstufe_for_klasse = {};
 var my_recognized_emails = #{get_recognized_emails().to_json};
 var klassenstufen = [];
 var recognize_stats_public = #{(@session_user[:recognize_stats_public] != false)};
+var email_for_display_name = {};
+
+for (let email in user_info) {
+    let info = user_info[email];
+    email_for_display_name[info.display_name] = email;
+}
 
 async function decryptData(encryptedData, password) {
     const enc = new TextEncoder();
@@ -346,6 +361,127 @@ function quiz_back() {
 
 var quiz_solution = null;
 var quiz_solution_nr = null;
+var quiz_prefix = '';
+var quiz_list = null;
+var all_sus_emails = Object.keys(user_info).filter((x) => user_info[x].teacher === false);
+
+function prefixMatch(name, prefix) {
+    let a = name.toUpperCase().replace(/[^A-Z]/g, '');
+    let b = prefix.toUpperCase().replace(/[^A-Z]/g, '');
+    return a.substring(0, prefix.length) === b.substring(0, prefix.length);
+}
+
+function updatePrefix() {
+    let geschlecht = user_info[quiz_solution].geschlecht;
+    let stufe = klassenstufe_for_klasse[user_info[quiz_solution].klasse];
+    let part_length = 0;
+
+    let next_parts = {};
+    let candidates = [];
+    while (Object.keys(next_parts).length < 4) {
+        part_length += 1;
+        console.log(part_length);
+        if (part_length > user_info[quiz_solution].display_name.length)
+            break;
+        next_parts = {};
+        candidates = [];
+        for (let email of all_sus_emails) {
+            if (email in email_for_foto_paths_rev) {
+                if (email !== quiz_solution) {
+                    if (user_info[email].geschlecht === geschlecht) {
+                        // if (klassenstufe_for_klasse[user_info[email].klasse] === stufe)
+                        if (prefixMatch(user_info[email].display_name, quiz_prefix)) {
+                            candidates.push(email);
+                            let s = user_info[email].display_name.substring(0, quiz_prefix.length + part_length);
+                            if (s.indexOf(' ') >= 0)
+                                s = user_info[email].display_name;
+                            next_parts[s] = true;
+                        }
+                    }
+                }
+            }
+        }
+    }
+    let next_part_solution = user_info[quiz_solution].display_name.substring(0, quiz_prefix.length + part_length);
+    if (next_part_solution.indexOf(' ') >= 0)
+        next_part_solution = user_info[quiz_solution].display_name;
+    delete next_parts[next_part_solution];
+    let next_parts_sorted = Object.keys(next_parts).sort((a, b) => Math.random());
+    next_parts_sorted = next_parts_sorted.slice(0, 10);
+    next_parts_sorted.push(next_part_solution);
+    next_parts_sorted = next_parts_sorted.sort();
+    console.log(`candidates: ${candidates.length}`);
+    console.log(`next parts,`, next_parts_sorted);
+    $('#name-buttons-here').empty();
+    for (let i = 0; i < next_parts_sorted.length; i++) {
+        let name = next_parts_sorted[i];
+        let button = $(`<button class='btn btn-lg btn-secondary' style='margin: 5px; min-width: 3em;'>`).text(`${name}`);
+        $('#name-buttons-here').append(button);
+        button.on('click', function(e) {
+            if (name === user_info[quiz_solution].display_name) {
+                // correct answer!
+                api_call('/api/foto_recognize', {email: quiz_solution}, function(data) {
+                    if (data.success) {
+                        button.removeClass('btn-secondary').addClass('btn-success');
+                        button.css('pointer-events', 'none');
+                        $('.sus-quiz-label').addClass('shown');
+                        for (let button of $('#name-buttons-here .btn')) {
+                            if (button !== e.target)
+                                $(button).addClass('name-button-gone');
+                        }
+                        setTimeout(function() {
+                            pickNextTask();
+                        }, 1000);
+                    }
+                });
+            } else if (user_info[quiz_solution].display_name.substr(0, name.length) !== name) {
+                // wrong answer!
+                let email1 = quiz_solution;
+                let email2 = email_for_display_name[name] ?? '';
+                api_call('/api/foto_unrecognize', {email1: email1, email2: email2}, function(data) {
+                    if (data.success) {
+                        delete my_recognized_emails[email1];
+                        delete my_recognized_emails[email2];
+                        button.removeClass('btn-secondary').addClass('btn-danger');
+                        $('.sus-quiz-label').addClass('shown');
+                        for (let button of $('#name-buttons-here .btn')) {
+                            if (button !== e.target)
+                                $(button).addClass('name-button-gone');
+                        }
+                        $('.bu-dont-know').remove();
+                        $(`<button class='btn btn-lg btn-secondary' style='margin: 5px; min-width: 3em;'>`).html(`<i class='fa fa-angle-double-right '></i>`).appendTo($('#name-buttons-here')).on('click', function(e) {
+                            pickNextTask();
+                        });
+                    }
+                });
+            } else {
+                quiz_prefix = name;
+                updatePrefix();
+            }
+        });
+    }
+    if (next_parts_sorted.length > 1) {
+        let button = $(`<button class='btn btn-lg btn-outline-secondary bu-dont-know' style='margin: 5px; min-width: 3em;'>`).text(`🤔`);
+        $('#name-buttons-here').append(button);
+        button.on('click', function(e) {
+            // wrong answer!
+            let email1 = quiz_solution;
+            let email2 = email_for_display_name[name] ?? '';
+            api_call('/api/foto_unrecognize', {email1: email1, email2: email2}, function(data) {
+                if (data.success) {
+                    delete my_recognized_emails[email1];
+                    delete my_recognized_emails[email2];
+                    $('.sus-quiz-label').addClass('shown');
+                    $('#name-buttons-here .btn').prop('disabled', true);
+                    $('.bu-dont-know').remove();
+                    $(`<button class='btn btn-lg btn-secondary' style='margin: 5px; min-width: 3em;'>`).html(`<i class='fa fa-angle-double-right '></i>`).appendTo($('#name-buttons-here')).on('click', function(e) {
+                        pickNextTask();
+                    });
+                }
+            });
+        });
+    }
+}
 
 function pickNextTask() {
     let parts = quiz_path.split('/');
@@ -355,7 +491,6 @@ function pickNextTask() {
     $('#quiz-foto').css('opacity', 0);
 
     let photos = [];
-    let candidates = [];
     let list = [];
     if (mode === 'klasse') {
         list = schueler_for_klasse;
@@ -365,33 +500,28 @@ function pickNextTask() {
         list = {'all': Object.keys(user_info).filter((x) => user_info[x].teacher === false)};
         which = 'all';
     }
-    for (let email of list[which])
+    quiz_list = list[which];
+    for (let email of quiz_list)
         if (email in email_for_foto_paths_rev)
             if (email !== quiz_solution)
                 photos.push(email);
     photos = photos.sort((a, b) => ((Math.floor((my_recognized_emails[a] ?? 0) / 3600.0)) + Math.random()) - ((Math.floor((my_recognized_emails[b] ?? 0) / 3600.0)) + Math.random()));
     quiz_solution = photos[0];
-    let geschlecht = user_info[quiz_solution].geschlecht;
-    let stufe = klassenstufe_for_klasse[user_info[quiz_solution].klasse];
-    for (let email of list[which])
-        if (email in email_for_foto_paths_rev)
-            if (user_info[email].geschlecht === geschlecht)
-                if (klassenstufe_for_klasse[user_info[email].klasse] === stufe)
-                    if (email !== quiz_solution)
-                        candidates.push(email);
-    // TODO: Always have enough candidates but sort them by priority
-    // TODO: prefer candidates the user has not recognized yet
-    candidates = candidates.sort((a, b) => ((Math.floor((my_recognized_emails[a] ?? 0) / 3600.0)) + Math.random()) - ((Math.floor((my_recognized_emails[b] ?? 0) / 3600.0)) + Math.random()));
-    candidates = candidates.slice(0, 3);
-    candidates.push(quiz_solution);
-    candidates = candidates.sort((a, b) => 0.5 - Math.random());
-    quiz_solution_nr = null;
-    for (let i = 0; i < 4; i++) {
-        $(`#bu-name-${i}`).text(user_info[candidates[i]].display_name);
-        $(`#bu-name-${i}`).data('email', candidates[i]);
-        if (candidates[i] === quiz_solution)
-            quiz_solution_nr = i;
-    }
+    quiz_prefix = '';
+    updatePrefix();
+    // // TODO: Always have enough candidates but sort them by priority
+    // // TODO: prefer candidates the user has not recognized yet
+    // candidates = candidates.sort((a, b) => ((Math.floor((my_recognized_emails[a] ?? 0) / 3600.0)) + Math.random()) - ((Math.floor((my_recognized_emails[b] ?? 0) / 3600.0)) + Math.random()));
+    // candidates = candidates.slice(0, 3);
+    // candidates.push(quiz_solution);
+    // candidates = candidates.sort((a, b) => 0.5 - Math.random());
+    // quiz_solution_nr = null;
+    // for (let i = 0; i < 4; i++) {
+    //     $(`#bu-name-${i}`).text(user_info[candidates[i]].display_name);
+    //     $(`#bu-name-${i}`).data('email', candidates[i]);
+    //     if (candidates[i] === quiz_solution)
+    //         quiz_solution_nr = i;
+    // }
     // bu-name
     fetch_cached_photo(email_for_foto_paths_rev[quiz_solution], function(data) {
         let frame = $(`<div class='sus-frame sus-frame-md'>`);
@@ -399,6 +529,8 @@ function pickNextTask() {
         let div = $(`<div style='display: inline-block;'>`);
         div.append(frame);
         frame.append(photo);
+        let label = $(`<div class="sus-label sus-quiz-label" style="font-size: calc(min(80vw, 50vh) * 0.06);">${user_info[quiz_solution].display_name} (${KLASSEN_TR[user_info[quiz_solution].klasse] ?? user_info[quiz_solution].klasse})</div>`);
+        frame.append(label);
         $('#quiz-foto').empty().append(div);
         $('#quiz-foto').css('opacity', 1);
     });
@@ -495,7 +627,7 @@ window.addEventListener('load', function() {
     update_hall_of_fame();
     console.log(klassenstufen);
     let bu_quiz = $(`<button class='btn btn-sm ttc' style='margin: 0.2em; width: 5em;'>`).html(`<i style='display: inline-block; margin: 0 0.2em 0 0.5em;' class='fa fa-play'></i>&nbsp;&nbsp;Quiz!`).data('quiz', 'yeah');
-        bu_quiz.on('click', function(e) {
+    bu_quiz.on('click', function(e) {
         resetQuiz();
         $('#quiz-curtain').fadeIn();
     });
@@ -658,6 +790,10 @@ window.addEventListener('load', function() {
                 }
             }
         });
+    }
+    if ('#{DEVELOPMENT}' === 'true') {
+        bu_quiz.click();
+        $('button[data-which="schule"]').click();
     }
 });
 </script>

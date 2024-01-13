@@ -422,6 +422,7 @@ function updatePrefix() {
                 // correct answer!
                 api_call('/api/foto_recognize', {email: quiz_solution}, function(data) {
                     if (data.success) {
+                        my_recognized_emails[quiz_solution] = data.ts;
                         button.removeClass('btn-secondary').addClass('btn-success');
                         button.css('pointer-events', 'none');
                         $('.sus-quiz-label').addClass('shown');

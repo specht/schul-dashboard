@@ -567,7 +567,7 @@ window.addEventListener('load', function() {
     $('#password').focus();
     $('#submit_password').on('click', function(e) {
         e.preventDefault();
-        passphrase = $('#password').val().trim();
+        passphrase = $('#password').val().trim().toLowerCase();
         $('#form').hide();
         $('#stage').show();
         $('#klassen-div').show();

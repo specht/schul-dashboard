@@ -1,4 +1,10 @@
 #{require_user_who_can_manage_tablets!}
+<style>
+    body {
+        background-image: none;
+        background-color: #{(@session_user || {})[:dark] ? '#000' : '#fff'};
+    }
+</style>
 <div class='container-fluid' style='padding-top: 30px; background-color: #000; color: #fff;'>
     <div class='row'>
         <div class="col-md-12">

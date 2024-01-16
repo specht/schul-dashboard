@@ -11,14 +11,14 @@ class Main < Sinatra::Base
             # io.puts "Bitte überprüfen Sie die <strong>Gruppenzuordnung (A/B)</strong> und markieren Sie alle Kinder, die aus gesundheitlichen Gründen / Quarantäne nicht in die Schule kommen können, als <strong>»zu Hause«</strong>."
 #             io.puts "Auf die Jitsi-Streams können momentan nur SuS zugreifen, die laut ihrer Gruppenzuordnung in der aktuellen Woche zu Hause sind oder explizit als »zu Hause« markiert sind."
             # io.puts "</div>"
-            if teacher_logged_in?
-                io.puts "<div class='pull-right' style='position: relative; top: 10px;'>"
-                [:salzh, :contact_person, :hotspot_klasse].each do |status|
-                    salzh_label = "<span style='margin-left: 2em;'><span class='salzh-badge salzh-badge-big bg-#{SALZH_MODE_COLORS[status]}'><i class='fa #{SALZH_MODE_ICONS[status]}'></i></span>&nbsp;#{SALZH_MODE_LABEL[status]}</span>"
-                    io.puts salzh_label
-                end
-                io.puts "</div>"
-            end
+            # if teacher_logged_in?
+            #     io.puts "<div class='pull-right' style='position: relative; top: 10px;'>"
+            #     [:salzh, :contact_person, :hotspot_klasse].each do |status|
+            #         salzh_label = "<span style='margin-left: 2em;'><span class='salzh-badge salzh-badge-big bg-#{SALZH_MODE_COLORS[status]}'><i class='fa #{SALZH_MODE_ICONS[status]}'></i></span>&nbsp;#{SALZH_MODE_LABEL[status]}</span>"
+            #         io.puts salzh_label
+            #     end
+            #     io.puts "</div>"
+            # end
             io.puts "<h3>Klasse #{tr_klasse(klasse)}"
             io.puts "</h3>"
             io.puts "<p>"

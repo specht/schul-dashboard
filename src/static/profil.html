@@ -128,6 +128,14 @@
                         </div>
                     </div>
                 </div>
+                <div class='row'>
+                    <div class="col-md-6">
+                        <div style="display: flex; flex-direction: row; justify-content: space-between;">
+                            <label style="margin-top: 0.4em;">Design</label>
+                            <input #{@session_user[:new_design] ? 'checked' : ''} type="checkbox" data-toggle="toggle" data-on="neu" data-off="alt" data-onstyle="secondary" data-offstyle="secondary" id='design_css_switch'>
+                        </div>
+                    </div>
+                </div>
             </div>
             <h2 style='margin-bottom: 30px; margin-top: 30px;'>Farbschema</h2>
             <div class='row swatches' style='position: relative;'>
@@ -467,7 +475,16 @@ window.addEventListener('load', function () {
     $('#dark_css_switch').change(function(e) {
         let checked = $(e.target).is(':checked');
         let mode = checked ? "dark" : "light";
-        api_call('/api/set_css', {mode: mode}, function(data) {
+        api_call('/api/set_dark_css', {mode: mode}, function(data) {
+            if (data.success) {
+                location.reload();
+            }
+        });
+    });
+    $('#design_css_switch').change(function(e) {
+        let checked = $(e.target).is(':checked');
+        let mode = checked ? "neu" : "alt";
+        api_call('/api/set_design_css', {mode: mode}, function(data) {
             if (data.success) {
                 location.reload();
             }

@@ -476,6 +476,10 @@ class Timetable
             # 2. patch today's lessons based on vertretungsplan
             if @@vertretungen[ds]
                 @@vertretungen[ds].each do |ventry|
+                    # if ventry[:sha1] == '11534e41' && DASHBOARD_SERVICE == 'timetable'
+                    #     STDERR.puts '-' * 50
+                    #     STDERR.puts ventry.to_json
+                    # end
                     handled_ventry = false
                     if ventry[:before_stunde]
                         # ventry refers to a Pausenaufsichtsvertretung
@@ -507,6 +511,9 @@ class Timetable
                         # find matching day_events entry (the lesson that matches this ventry)
                         matching_indices = (day_events[ventry[:stunde]] || []).select do |index|
                             event = @lesson_cache[index]
+                            # if ventry[:sha1] == '11534e41' && DASHBOARD_SERVICE == 'timetable'
+                            #     STDERR.puts event.to_json
+                            # end
                             flag = false
                             if !event[:regular]
                                 if event[:stunde] == ventry[:stunde]
@@ -529,6 +536,9 @@ class Timetable
                             end
                             flag
                         end
+                        # if ventry[:sha1] == '11534e41' && DASHBOARD_SERVICE == 'timetable'
+                        #     STDERR.puts "matching_indices: #{matching_indices.to_json}"
+                        # end
                         if matching_indices.size == 1
                             event = @lesson_cache[matching_indices.first]
 
@@ -992,7 +1002,7 @@ class Timetable
             RETURN i.offset, l.key, i.lesson_fixed_for, i.stundenthema_text;
         END_OF_QUERY
         rows.each do |row|
-            debug row.to_json
+            # debug row.to_json
             lesson_key = row['l.key']
             offset = row['i.offset']
             fixed_for = row['i.lesson_fixed_for']

@@ -930,13 +930,14 @@ class Main < Sinatra::Base
             last_start_date = start_date
         end
 
-        kurse_for_schueler, schueler_for_kurs = parser.parse_kurswahl(@@user_info.reject { |x, y| y[:teacher] }, @@lessons, lesson_key_tr, @@original_lesson_key_for_lesson_key, @@shorthands)
-        @@kurse_for_schueler = kurse_for_schueler
-        wahlpflicht_sus_for_lesson_key = parser.parse_wahlpflichtkurswahl(@@user_info.reject { |x, y| y[:teacher] }, @@lessons, lesson_key_tr, @@schueler_for_klasse)
         sesb_sus = parser.parse_sesb(@@user_info.reject { |x, y| y[:teacher] }, @@schueler_for_klasse)
         sesb_sus.each do |email|
             @@user_info[email][:sesb] = true
         end
+        
+        kurse_for_schueler, schueler_for_kurs = parser.parse_kurswahl(@@user_info.reject { |x, y| y[:teacher] }, @@lessons, lesson_key_tr, @@original_lesson_key_for_lesson_key, @@shorthands)
+        @@kurse_for_schueler = kurse_for_schueler
+        wahlpflicht_sus_for_lesson_key = parser.parse_wahlpflichtkurswahl(@@user_info.reject { |x, y| y[:teacher] }, @@lessons, lesson_key_tr, @@schueler_for_klasse)
 
         @@materialamt_for_lesson = {}
         rows = $neo4j.neo4j_query(<<~END_OF_QUERY)
@@ -1551,7 +1552,9 @@ class Main < Sinatra::Base
                                     if @session_user
                                         @session_user[:font] = results.first['u'][:font]
                                         @session_user[:color_scheme] = results.first['u'][:color_scheme]
+                                        @session_user[:new_design] = results.first['u'][:new_design]
                                         @session_user[:dark] = results.first['u'][:dark]
+                                        @session_user[:recognize_stats_public] = results.first['u'][:recognize_stats_public]
                                         @session_user[:ical_token] = results.first['u'][:ical_token]
                                         @session_user[:otp_token] = results.first['u'][:otp_token]
                                         @session_user[:otp_token_changed] = results.first['u'][:otp_token_changed] || '2023-02-02'
@@ -2288,7 +2291,7 @@ class Main < Sinatra::Base
         return color_scheme
     end
 
-    post '/api/set_css' do
+    post '/api/set_dark_css' do
         require_user!
         data = parse_request_data(:required_keys => [:mode])
         dark = data[:mode] == "dark" ? true : false
@@ -2300,7 +2303,19 @@ class Main < Sinatra::Base
         
         respond(:ok => true)
     end
-    
+
+    post '/api/set_design_css' do
+        require_user!
+        data = parse_request_data(:required_keys => [:mode])
+        new_design = data[:mode] == "neu" ? true : false
+        
+        results = neo4j_query(<<~END_OF_QUERY, :email => @session_user[:email], :new_design => new_design)
+            MATCH (u:User {email: $email})
+            SET u.new_design = $new_design;
+        END_OF_QUERY
+        
+        respond(:ok => true)
+    end
 
     def get_open_doors_for_user()
         require_user!
@@ -2544,6 +2559,97 @@ class Main < Sinatra::Base
         respond(:yay => 'sure')
     end
 
+    def get_recognized_emails()
+        result = {}
+        neo4j_query(<<~END_OF_QUERY, {:session_email => @session_user[:email]}).each do |x|
+            MATCH (u:User {email: $session_email})-[r:RECOGNIZED]->(u2:User)
+            RETURN u2.email, r.ts;
+        END_OF_QUERY
+            result[x['u2.email']] = x['r.ts']
+        end
+        result
+    end
+
+    post '/api/foto_recognize' do
+        require_teacher!
+        data = parse_request_data(:required_keys => [:email])
+        ts = Time.now.to_i
+        neo4j_query(<<~END_OF_QUERY, {:session_email => @session_user[:email], :email => data[:email], :ts => ts})
+            MATCH (u:User {email: $session_email})
+            MATCH (u2:User {email: $email})
+            MERGE (u)-[r:RECOGNIZED]->(u2)
+            SET r.ts = $ts;
+        END_OF_QUERY
+        respond(:yay => 'sure', :ts => ts)
+    end
+
+    post '/api/foto_unrecognize' do
+        require_teacher!
+        data = parse_request_data(:required_keys => [:email1, :email2])
+        neo4j_query(<<~END_OF_QUERY, {:session_email => @session_user[:email], :email => data[:email1]})
+            MATCH (u:User {email: $session_email})-[r:RECOGNIZED]->(u2:User {email: $email})
+            DELETE r;
+        END_OF_QUERY
+        neo4j_query(<<~END_OF_QUERY, {:session_email => @session_user[:email], :email => data[:email2]})
+            MATCH (u:User {email: $session_email})-[r:RECOGNIZED]->(u2:User {email: $email})
+            DELETE r;
+        END_OF_QUERY
+        respond(:yay => 'sure')
+    end
+
+    post '/api/get_recognize_hall_of_fame' do
+        require_teacher!
+        data = parse_request_data()
+        ts = (Time.now - 365 * 3600 * 24).to_i
+        hall_of_fame = {}
+        neo4j_query(<<~END_OF_QUERY, {:ts => ts})
+            MATCH (u:User)-[r:RECOGNIZED]->(u2:User)
+            WHERE r.ts < $ts
+            DELETE r;
+        END_OF_QUERY
+        neo4j_query(<<~END_OF_QUERY).each do |row|
+            MATCH (u:User)-[r:RECOGNIZED]->(u2:User)
+            WHERE COALESCE(u.recognize_stats_public, TRUE) = TRUE
+            RETURN u.email, u2.email;
+        END_OF_QUERY
+            who = row['u.email']
+            whom = row['u2.email']
+            if @@user_info[whom] && !@@user_info[:teacher]
+                klasse = @@user_info[whom][:klasse]
+                stufe = klasse.to_i
+                stufe = 'WK' if klasse[0, 2] == 'WK'
+                stufe = 'OS' if ['11', '12'].include?(klasse[0, 2])
+                hall_of_fame[who] ||= {}
+                hall_of_fame[who][:stufe] ||= {}
+                hall_of_fame[who][:stufe][stufe] ||= 0
+                hall_of_fame[who][:stufe][stufe] += 1
+            end
+        end
+        result = []
+        hall_of_fame.each do |email, data|
+            result << {:email => email, :stufe => data[:stufe], :total => data[:stufe].values.sum }
+        end
+        result.sort! do |a, b|
+            b[:total] <=> a[:total]
+        end
+        respond(:yay => 'sure', :result => result)
+    end
+
+    post '/api/toggle_show_recognize_hall_of_fame' do
+        require_teacher!
+        flag = neo4j_query_expect_one(<<~END_OF_QUERY, :email => @session_user[:email])['u.recognize_stats_public']
+            MATCH (u:User {email: $email})
+            SET u.recognize_stats_public = NOT COALESCE(u.recognize_stats_public, TRUE)
+            RETURN u.recognize_stats_public;
+        END_OF_QUERY
+        respond(:flag => flag)
+    end
+
+    get '/api/jauch' do
+        require_teacher!
+        respond_raw_with_mimetype(File.read('/data/jauch.png'), 'image/png')
+    end
+
     def get_emails_for_foto_paths
         require_teacher!
         results = {}
@@ -2596,6 +2702,45 @@ class Main < Sinatra::Base
         color_palette = color_palette_for_color_scheme(color_scheme)
 
         s = (@session_user || {})[:dark] ? File.read('/static/dark.css') : ""
+        while true
+            index = s.index('#{')
+            break if index.nil?
+            length = 2
+            balance = 1
+            while index + length < s.size && balance > 0
+                c = s[index + length]
+                balance -= 1 if c == '}'
+                balance += 1 if c == '{'
+                length += 1
+            end
+            code = s[index + 2, length - 3]
+            begin
+#                             STDERR.puts code
+                s[index, length] = eval(code).to_s || ''
+            rescue
+                debug "Error while evaluating for #{(@session_user || {})[:email]}:"
+                debug code
+                raise
+            end
+        end
+        respond_raw_with_mimetype(s, 'text/css')
+    end
+
+    get '/api/new_design.css' do
+        color_scheme = (@session_user || {})[:color_scheme]
+        unless color_scheme =~ /^[ld][0-9a-f]{18}[0-9]?$/
+            unless user_logged_in?
+                color_scheme = pick_random_color_scheme()
+            else
+                color_scheme = @@standard_color_scheme
+            end
+        end
+        if color_scheme.size < 20
+            color_scheme += '0'
+        end
+        color_palette = color_palette_for_color_scheme(color_scheme)
+
+        s = (@session_user || {})[:new_design] ? File.read('/static/new_design.css') : ""
         while true
             index = s.index('#{')
             break if index.nil?

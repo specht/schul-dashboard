@@ -60,7 +60,8 @@ class BoxPrinter
         end
     end
 
-    def print_note(x, y, v, v_prev)
+    def print_note(x, y, v, v_prev, fill_color = '000000')
+        @pdf.fill_color(fill_color)
         print(x, y, v)
         if v != v_prev
             left = @left + x * @width + @width * 0.2
@@ -371,8 +372,8 @@ class Main
                     # next unless klasse == '10o'
                     liste = @@zeugnisliste_for_klasse[klasse].clone
 
-                    cols_left_template  = %w(D D_AT D_SL FS1_Fach FS1 FS1_AT FS1_SL FS2_Fach FS2 FS2_AT FS2_SL FS3_Fach FS3 FS3_AT FS3_SL)
-                    cols_right_template = %w(Gewi Eth Ek Ge Pb Ma Nawi Ph Ch Bio Ku Mu Sp FF1 . FF2 . FF3 . VT VT_UE VS VS_UE VSP)
+                    cols_left_template  = %w(De De_AT De_SL FS1_Fach FS1 FS1_AT FS1_SL FS2_Fach FS2 FS2_AT FS2_SL FS3_Fach FS3 FS3_AT FS3_SL)
+                    cols_right_template = %w(Gewi Eth Geo Ge PB Ma Nawi Phy Ch Bio Ku Mu Sp FF1 . FF2 . FF3 . VT VT_UE VS VS_UE VSP)
 
                     faecher_for_fs = {
                         1 => Set.new(),
@@ -386,11 +387,11 @@ class Main
                         if schueler[:zeugnis_key].include?('sesb')
                             fs << 'Ngr'
                             fs << 'En'
-                            fs << 'Fr'
+                            fs << 'Frz'
                         else
                             fs << 'En'
                             fs << 'La'
-                            fs << 'Agr' if klasse.to_i >= 8
+                            fs << 'AGr' if klasse.to_i >= 8
                         end
                         faecher_for_fs[1] << fs[0]
                         faecher_for_fs[2] << fs[1]
@@ -423,7 +424,7 @@ class Main
                     faecher_for_fs = Hash[faecher_for_fs.map { |k, v| [k, v.to_a.sort] }]
                     (1..3).each do |i|
                         liste[:lehrer_for_fach]["FS#{i}"] = faecher_for_fs[i].map do |x|
-                            "#{liste[:lehrer_for_fach][x].join(' ')} (#{x})"
+                            "#{(liste[:lehrer_for_fach][x] || []).join(' ')} (#{x})"
                         end
                     end
 
@@ -619,12 +620,12 @@ class Main
                                         if schueler[:zeugnis_key].include?('sesb')
                                             x.gsub!('FS1', 'Ngr')
                                             x.gsub!('FS2', 'En')
-                                            x.gsub!('FS3', 'Fr')
+                                            x.gsub!('FS3', 'Frz')
                                         else
                                             x.gsub!('FS1', 'En')
                                             x.gsub!('FS2', 'La')
                                             if klasse.to_i >= 8
-                                                x.gsub!('FS3', 'Agr')
+                                                x.gsub!('FS3', 'AGr')
                                             else
                                                 x.gsub!('FS3', '')
                                             end
@@ -660,6 +661,11 @@ class Main
                                                     if f[-5, 5] == '_Fach'
                                                         left.print(i, y2 * 4 + 3, "#{f.sub('_Fach', '')}")
                                                     else
+                                                        SHOW_PREVIOUS_NOTEN.each.with_index do |prev_entry, k|
+                                                            f_fixed = f.split('_').map.with_index { |x, j| j == 0 ? (prev_entry[:tr][x] || x) : x }.join('_')
+                                                            v = (cache["Schuljahr:#{prev_entry[:keys][0]}/Halbjahr:#{prev_entry[:keys][1]}/Fach:#{f_fixed}/Email:#{email}"] || [])[0]
+                                                            left.print_note(i, y2 * 4 + 1 + k, v, v, '888888')
+                                                        end
                                                         v = (cache["Schuljahr:#{ZEUGNIS_SCHULJAHR}/Halbjahr:#{ZEUGNIS_HALBJAHR}/Fach:#{f}/Email:#{email}"] || [])[0]
                                                         v_prev = (cache["Schuljahr:#{ZEUGNIS_SCHULJAHR}/Halbjahr:#{ZEUGNIS_HALBJAHR}/Fach:#{f}/Email:#{email}"] || [])[1]
                                                         left.print_note(i, y2 * 4 + 3, v, v_prev)
@@ -672,6 +678,11 @@ class Main
                                                     f2 = f.dup
                                                     if %w(FF1 FF2 FF3 FF4 FF5 FF6).include?(f)
                                                         f2 = wahlfaecher[f.sub('FF', '').to_i - 1]
+                                                    end
+                                                    SHOW_PREVIOUS_NOTEN.each.with_index do |prev_entry, k|
+                                                        f_fixed = f.split('_').map.with_index { |x, j| j == 0 ? (prev_entry[:tr][x] || x) : x }.join('_')
+                                                        v = (cache["Schuljahr:#{prev_entry[:keys][0]}/Halbjahr:#{prev_entry[:keys][1]}/Fach:#{f_fixed}/Email:#{email}"] || [])[0]
+                                                        right.print_note(i, y2 * 4 + 1 + k, v, v, '888888')
                                                     end
                                                     v = (cache["Schuljahr:#{ZEUGNIS_SCHULJAHR}/Halbjahr:#{ZEUGNIS_HALBJAHR}/Fach:#{f2}/Email:#{email}"] || [])[0]
                                                     v_prev = (cache["Schuljahr:#{ZEUGNIS_SCHULJAHR}/Halbjahr:#{ZEUGNIS_HALBJAHR}/Fach:#{f2}/Email:#{email}"] || [])[1]

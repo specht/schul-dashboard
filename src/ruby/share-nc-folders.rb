@@ -247,6 +247,7 @@ class Script
         # end
         present_shares = {}
         if ARGV.include?('--use-cached')
+            STDERR.puts "Loading present shares from cache..."
             present_shares = YAML.load(File.read('/internal/debug/present-shares-cache.yaml'))
         else
             STDERR.puts "Collecting present shares... (hint: specify --use-cached to re-use data in /internal/debug/present-shares-cache.yaml)"

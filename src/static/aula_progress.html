@@ -1,5 +1,9 @@
 #{require_user_who_can_manage_tablets!}
 <style>
+    body {
+        background-image: none;
+        background-color: #{(@session_user || {})[:dark] ? '#000' : '#fff'};
+    }
     /* code {
         color: #000;
     } */

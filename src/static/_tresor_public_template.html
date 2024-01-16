@@ -24,6 +24,12 @@
         display: none;
     }
 
+    .past-note {
+        color: #888;
+    }
+
+    #{Time.now.strftime('%Y-%m-%dT%H:%M:%S') < NOTEN_CUTOFF ? 'div.note input.pre-note-marker { display: none!important; }' : ''}
+
     body {
         /* background: none; */
         /* background-color: white; */
@@ -280,7 +286,7 @@
                 <a class="inline-block bg-slate-900 border border-blue-500 hover:bg-slate-200 rounded py-1 px-3"
                     href="/zeugnisdruck"><i class='fa fa-print'></i>&nbsp;&nbsp;Zeugnisdruck</a>
             </li>
-            <li class="mx-1">
+            <li class="mx-1" style='#{need_sozialverhalten() ? '' : 'display: none;'}'>
                 <a class="inline-block bg-slate-900 border border-blue-500 hover:bg-slate-200 rounded py-1 px-3"
                     href="/anlage_sozialverhalten"><i class='fa fa-table'></i>&nbsp;&nbsp;Anlage Sozialverhalten</a>
             </li>
@@ -316,9 +322,9 @@
 var second_factor_expires = Math.round((Date.now() / 1000.0) + #{second_factor_time_left || 0});
 var edit_enabled = false;
 var FAECHER_SPRACHEN = #{FAECHER_SPRACHEN.to_json};
-var zeugnisliste_closed = #{(zeugnis_admin_logged_in? || Time.now.strftime('%Y-%m-%dT%H:%M:%S') < '2023-06-26T09:00:00') ? 'false' : 'true'};
-var zeugnisliste_consider_closed = #{(zeugnis_admin_logged_in? || Time.now.strftime('%Y-%m-%dT%H:%M:%S') < '2023-06-28T09:00:00') ? 'false' : 'true'};
-var sozialverhalten_closed = #{(zeugnis_admin_logged_in? || Time.now.strftime('%Y-%m-%dT%H:%M:%S') < '2023-07-05T12:00:00') ? 'false' : 'true'};
+var zeugnisliste_closed = #{(zeugnis_admin_logged_in? || Time.now.strftime('%Y-%m-%dT%H:%M:%S') < DEADLINE_NOTENEINTRAGUNG) ? 'false' : 'true'};
+var zeugnisliste_consider_closed = #{(zeugnis_admin_logged_in? || Time.now.strftime('%Y-%m-%dT%H:%M:%S') < DEADLINE_CONSIDER) ? 'false' : 'true'};
+var sozialverhalten_closed = #{(zeugnis_admin_logged_in? || Time.now.strftime('%Y-%m-%dT%H:%M:%S') < DEADLINE_SOZIALNOTEN) ? 'false' : 'true'};
 var zeugniskonferenzen_today = #{(ZEUGNISKONFERENZEN[Date.today.strftime('%Y-%m-%d')] || []).to_json};
 var zeugnis_admin_and_konferenz = #{(zeugnis_admin_logged_in? && ZEUGNISKONFERENZEN.include?(Date.today.strftime('%Y-%m-%d')))};
 var running_zeugniskonferenzen = #{running_zeugniskonferenzen.to_json};
@@ -463,6 +469,7 @@ let noten_allowed_values = [
     '4+', '4', '4-',
     '5+', '5', '5-',
     '6', 'n.e.', 'o.B.', 'befr.', '×',
+    't.b.', 'z.b.'
 ];
 
 let versetzt_allowed_values = [
@@ -470,6 +477,7 @@ let versetzt_allowed_values = [
 ];
 
 let noten_mark = #{NOTEN_MARK.to_json};
+let show_previous_noten = #{(SHOW_PREVIOUS_NOTEN || []).to_json};
 // consider_cache is true if any of the marks for a given e-mail address is marked
 let consider_cache = {};
 
@@ -480,6 +488,8 @@ function input_note_apply_style_and_fix(input, callback) {
     if (value.toLowerCase().replace(/[\.\s]+/g, '') == 'ob') value = 'o.B.';
     if (value.toLowerCase().replace(/[\.\s]+/g, '') == 'befr') value = 'befr.';
     if (value.toLowerCase().replace(/[\.\s]+/g, '') == 'x') value = '×';
+    if (value.toLowerCase().replace(/[\.\s]+/g, '') == 'tb') value = 't.b.';
+    if (value.toLowerCase().replace(/[\.\s]+/g, '') == 'zb') value = 'z.b.';
     if (noten_allowed_values.indexOf(value) < 0) value = '';
     if (value === '')
         $(input).closest('.note').addClass('empty');
@@ -631,6 +641,28 @@ function load_noten_table(container, klasse, edit_noten) {
     path_array_2.push(['Email', emails]);
     path_arrays.push(path_array_2);
 
+    for (let prev_entry of show_previous_noten) {
+        let path_array = [];
+        path_array.push(['Schuljahr', prev_entry.keys[0]]);
+        path_array.push(['Halbjahr', prev_entry.keys[1]]);
+        let liste = zeugnisliste_for_klasse[klasse];
+        let faecher = liste.faecher;
+        let faecher_for_paths = [];
+        for (let original_fach of faecher) {
+            let fach = prev_entry.tr[original_fach] ?? original_fach;
+            faecher_for_paths.push(fach);
+            if (FAECHER_SPRACHEN.indexOf(original_fach) >= 0) {
+                faecher_for_paths.push(`${fach}_AT`);
+                faecher_for_paths.push(`${fach}_SL`);
+            }
+        }
+        let emails = liste.schueler.map(function(x) { return x.email; });
+        path_array.push(['Fach', faecher_for_paths]);
+        path_array.push(['Email', emails]);
+        path_arrays.push(path_array);
+    }
+
+    
     /*
       get_many_cutoff:
 
@@ -690,18 +722,18 @@ function load_noten_table(container, klasse, edit_noten) {
                         bildungsgang = 'SESB';
                     let cells = [
                         email,
-                        `<td style='text-align: right;'>${index + 1}.</td>`,
-                        `<td class='tdsticky' style='max-width: 10em;'>${liste.schueler[index].last_name}</td>`,
-                        `<td style='max-width: 10em;'>${liste.schueler[index].official_first_name}</td>`,
+                        `<td style='text-align: right; vertical-align: bottom;'>${index + 1}.</td>`,
+                        `<td class='tdsticky' style='max-width: 10em; vertical-align: bottom;'>${liste.schueler[index].last_name}</td>`,
+                        `<td style='max-width: 10em; vertical-align: bottom;'>${liste.schueler[index].official_first_name}</td>`,
                         // `<td>${moment(liste.schueler[index].geburtstag).format('L')}</td>`,
-                        `<td style='text-align: center;'>${klassen_tr[klasse] ?? klasse}</td>`,
-                        `<td>${bildungsgang}</td>`,
+                        `<td style='text-align: center; vertical-align: bottom;'>${klassen_tr[klasse] ?? klasse}</td>`,
+                        `<td style=' vertical-align: bottom;'>${bildungsgang}</td>`,
                     ];
                     let bu_consider = $(`<button class='btn btn-xs'>`);
                     style_consider_button(bu_consider, false);
                     if (zeugnisliste_consider_closed || (!edit_noten))
                         bu_consider.prop('disabled', true);
-                    cells.push($('<td>').append(bu_consider));
+                    cells.push($(`<td style='vertical-align: bottom;'>`).append(bu_consider));
                     bu_consider.on('click', function(e) {
                         let path = `Schuljahr:${ZEUGNIS_SCHULJAHR}/Halbjahr:${ZEUGNIS_HALBJAHR}/ZK:marked/Email:${email}`;
                         tresor_api_call('/jwt/toggle', {path: path, key: 'Wert'}, function(data) {
@@ -785,7 +817,14 @@ function load_noten_table(container, klasse, edit_noten) {
                         let pre_value = data.results[0][0][0][fi][index][1];
                         let pre_marker = $(`<input placeholder="--" class="form-control pre-note-marker" disabled="" value="">`).val(pre_value);
                         input.data('value_pre', pre_value);
-                        cells.push($('<td>').append($(`<div class='note'>`).append(input).append(pre_marker)));
+                        let cell = $('<td>');
+                        for (let i = 0; i < show_previous_noten.length; i++) {
+                            let input = $(`<input disabled placeholder='' class='past-note form-control' style='width: 3em; text-align: center; height: calc(1.5em + 2px);'>`);
+                            input.val(data.results[2 + i][0][0][fi][index][0]);
+                            cell.append($(`<div class='note'>`).append(input));
+                        }
+                        cell.append($(`<div class='note'>`).append(input).append(pre_marker));
+                        cells.push(cell);
                         input_note_apply_style_and_fix(input);
                     }
                     if (consider_this)
@@ -926,7 +965,7 @@ function load_sozialverhalten_table(container, klasse, edit_noten) {
     path_array.push(['Schuljahr', ZEUGNIS_SCHULJAHR]);
     path_array.push(['Halbjahr', ZEUGNIS_HALBJAHR]);
     let liste = zeugnisliste_for_klasse[klasse];
-    let items = ['ZV', 'LLB', 'SSK', 'KF', 'SV'];
+    let items = #{SOZIALNOTEN_KEYS.to_json};
     let emails = liste.schueler.map(function(x) { return x.email; });
     let faecher = liste.faecher;
     path_array.push(['SV', items]);
@@ -1118,6 +1157,8 @@ function load_angebote_bemerkungen_table(container, klasse, edit_noten) {
                     let th = $('<th>').html(x.replace('WeitereBemerkungen', 'Weitere Bemerkungen (Rückseite)'));
                     if (x === 'Nachname') th.addClass('thsticky');
                     if (['Nr.', 'Nachname', 'Vorname', 'Klasse'].indexOf(x) < 0) th.css('text-align', 'center');
+                    if (x === 'Angebote') th.append($(`<p style='margin-bottom: 0; font-weight: normal; font-style: italic;'>(Hier werden <u>nur</u> AGs eingetragen)</p>`));
+                    if (x === 'Bemerkungen') th.append($(`<p style='margin-bottom: 0; font-weight: normal; font-style: italic;'>(Hier wird <u>alles andere</u> eingetragen)</p>`));
                     return th;
                 }),
                 rows: emails.map(function (email, index) {

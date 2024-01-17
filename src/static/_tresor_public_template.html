@@ -819,7 +819,7 @@ function load_noten_table(container, klasse, edit_noten) {
                         input.data('value_pre', pre_value);
                         let cell = $('<td>');
                         for (let i = 0; i < show_previous_noten.length; i++) {
-                            let input = $(`<input disabled placeholder='' class='past-note form-control' style='width: 3em; text-align: center; height: calc(1.5em + 2px);'>`);
+                            let input = $(`<input disabled placeholder='' class='past-note form-control' style='width: 3em; text-align: center; height: calc(1.5em + 2px); font-size: 85%;'>`);
                             input.val(data.results[2 + i][0][0][fi][index][0]);
                             cell.append($(`<div class='note'>`).append(input));
                         }

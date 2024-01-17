@@ -1848,6 +1848,12 @@ class Main < Sinatra::Base
                     io.puts "<a class='dropdown-item nav-icon' href='/login'><div class='icon'><i class='fa fa-sign-in'></i></div><span class='label'>Zusätzliche Anmeldung…</span></a>"
                     unless external_user_logged_in?
                         io.puts "<a class='dropdown-item nav-icon' href='/login_nc'><div class='icon'><i class='fa fa-nextcloud'></i></div><span class='label'>In Nextcloud anmelden…</span></a>"
+                        if @session_user[:dark]
+                            io.puts "<button class='dropdown-item nav-icon nav-light'><div class='icon'><i class='fa fa-sun-o'></i></div><span class='label'>Hell</span></button>"
+                        else
+                            io.puts "<button class='dropdown-item nav-icon nav-dark'><div class='icon'><i class='fa fa-moon'></i></div><span class='label'>Dunkel</span></button>"
+                        end
+
                         # if can_manage_agr_app_logged_in? || can_manage_bib_members_logged_in? || can_manage_bib_logged_in? || teacher_logged_in?
                             io.puts "<div class='dropdown-divider'></div>"
                             if gev_logged_in?

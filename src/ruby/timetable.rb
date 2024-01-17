@@ -396,8 +396,8 @@ class Timetable
                         entry[:start_time] = HOURS_FOR_KLASSE[hfk_ds][hfk_klasse][stunde][0]
                         entry[:end_time] = HOURS_FOR_KLASSE[hfk_ds][hfk_klasse][stunde][1]
                     else
-                        entry[:start_time] = HOURS_FOR_KLASSE[hfk_ds]['7a'][stunde][0]
-                        entry[:end_time] = HOURS_FOR_KLASSE[hfk_ds]['7a'][stunde][1]
+                        entry[:start_time] = (HOURS_FOR_KLASSE[hfk_ds]['7a'] || HOURS_FOR_KLASSE[hfk_ds]['5a'])[stunde][0]
+                        entry[:end_time] = (HOURS_FOR_KLASSE[hfk_ds]['7a'] || HOURS_FOR_KLASSE[hfk_ds]['5a'])[stunde][1]
                     end
                     event = {
                         :lesson => true,
@@ -607,8 +607,8 @@ class Timetable
                                 start_time = HOURS_FOR_KLASSE[hfk_ds][hfk_klasse][ventry[:stunde]][0]
                                 end_time = HOURS_FOR_KLASSE[hfk_ds][hfk_klasse][ventry[:stunde]][1]
                             else
-                                start_time = HOURS_FOR_KLASSE[hfk_ds]['7a'][ventry[:stunde]][0]
-                                end_time = HOURS_FOR_KLASSE[hfk_ds]['7a'][ventry[:stunde]][1]
+                                start_time = (HOURS_FOR_KLASSE[hfk_ds]['7a'] || HOURS_FOR_KLASSE[hfk_ds]['5a'])[ventry[:stunde]][0]
+                                end_time = (HOURS_FOR_KLASSE[hfk_ds]['7a'] || HOURS_FOR_KLASSE[hfk_ds]['5a'])[ventry[:stunde]][1]
                             end
                             event = {
                                 :lesson => true,

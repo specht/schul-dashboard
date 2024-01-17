@@ -799,6 +799,22 @@ window.addEventListener('load', function() {
         let row = $(e.target).closest('tbody');
         row.next().toggle();
     });
+    $('.nav-dark').click(function(e) {
+        let mode = "dark"
+        api_call('/api/set_dark_css', {mode: mode}, function(data) {
+            if (data.success) {
+                location.reload();
+            }
+        });
+    });
+    $('.nav-light').click(function(e) {
+        let mode = "light"
+        api_call('/api/set_dark_css', {mode: mode}, function(data) {
+            if (data.success) {
+                location.reload();
+            }
+        });
+    });
 });
 
 function install_clipboard_handler(selector) {

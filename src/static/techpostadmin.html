@@ -922,7 +922,7 @@ document.addEventListener('DOMContentLoaded', function() {
         if ('#{teacher_or_sv_logged_in?}' === 'true') {
             load_recipients('#{@session_user[:id]}', function () {
                 // console.log(recipients);
-            }, null, true);
+            }, null);
         }
         });
 </script>

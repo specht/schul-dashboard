@@ -2176,7 +2176,7 @@ class Timetable
                         recipients[email] = {:label => @@user_info[email][:display_name]}
                     end
                 end
-                if user[:teacher]
+                if user[:teacher] || user[:technikteam]
                     @@user_info.each_pair do |email, user|
                         next unless user[:teacher]
                         recipients[email] = {:label => @@user_info[email][:display_name],

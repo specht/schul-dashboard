@@ -104,7 +104,7 @@ class Main < Sinatra::Base
     end
 
     def public_events_table()
-        require_user_who_can_manage_news!
+        require_admin_or_sekretariat!
         self.class.refresh_public_event_config()
         StringIO.open do |io|
             description_for_key_and_key = {}
@@ -170,8 +170,12 @@ class Main < Sinatra::Base
                         io.puts "<tr>"
                         io.puts "<td>#{entry[:email]}</td>"
                         io.puts "<td>#{entry[:name]}</td>"
-                        io.puts "<td>#{description_for_key_and_key[event[:key]][key]}</td>"
-                        io.puts "<td><button class='btn btn-xs btn-danger bu-delete-signup' data-tag='#{entry[:tag]}'><i class='fa fa-trash'></i>&nbsp;&nbsp;Löschen</button></td>"
+                        io.puts "<td>#{(event[:headings] || [''])[0]} #{description_for_key_and_key[event[:key]][key]}</td>"
+                        if admin_logged_in?
+                            io.puts "<td><button class='btn btn-xs btn-danger bu-delete-signup' data-tag='#{entry[:tag]}'><i class='fa fa-trash'></i>&nbsp;&nbsp;Löschen</button></td>"
+                        else
+                            io.puts "<td></td>"
+                        end
                         io.puts "</tr>"
                     end
                 end

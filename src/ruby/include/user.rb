@@ -69,6 +69,10 @@ class Main < Sinatra::Base
         user_logged_in? && ADMIN_USERS.include?(@session_user[:email])
     end
 
+    def sekretariat_logged_in?
+        user_logged_in? && SEKRETARIAT_USERS.include?(@session_user[:email])
+    end
+
     def zeugnis_admin_logged_in?
         user_logged_in? && ZEUGNIS_ADMIN_USERS.include?(@session_user[:email])
     end
@@ -210,6 +214,11 @@ class Main < Sinatra::Base
     # Assert that an admin is logged in
     def require_admin!
         assert(admin_logged_in?)
+    end
+
+    # Assert that an admin is logged in
+    def require_admin_or_sekretariat!
+        assert(admin_logged_in? || sekretariat_logged_in?)
     end
 
     def require_zeugnis_admin!

@@ -209,6 +209,7 @@ STREAMING_TABLET_BOOKING_TIME_POST = 15
 # Liste aller E-Mail-Adressen von Nutzer*innen,
 # die Administratorenrechte haben sollen
 ADMIN_USERS = ['clarke@beispielschule.de']
+SEKRETARIAT_USERS = []
 ZEUGNIS_ADMIN_USERS = []
 ZEUGNIS_USE_MOCK_NAMES = false
 

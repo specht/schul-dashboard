@@ -108,6 +108,7 @@ class Main < Sinatra::Base
         self.class.refresh_public_event_config()
         StringIO.open do |io|
             description_for_key_and_key = {}
+            row_description_for_key_and_key = {}
             @@public_event_config.each.with_index do |event, event_index|
                 if event_index > 0
                     io.puts "<hr />"
@@ -142,6 +143,10 @@ class Main < Sinatra::Base
                     row[:entries].each do |entry|
                         description_for_key_and_key[event[:key]] ||= {}
                         description_for_key_and_key[event[:key]][entry[:key]] ||= entry[:description]
+                        if entry[:row_description]
+                            row_description_for_key_and_key[event[:key]] ||= {}
+                            row_description_for_key_and_key[event[:key]][entry[:key]] ||= entry[:row_description]
+                        end
                         capacity = entry[:capacity] || 0
                         booked_count = (sign_ups[entry[:key]] || []).size
                         percent = 0
@@ -157,6 +162,7 @@ class Main < Sinatra::Base
                 io.puts "</div>"
             end
             @@public_event_config.each.with_index do |event, event_index|
+                STDERR.puts event.to_yaml
                 sign_ups = get_sign_ups_for_public_event(event[:key])
                 next if sign_ups.empty?
                 io.puts "<hr />"
@@ -170,7 +176,7 @@ class Main < Sinatra::Base
                         io.puts "<tr>"
                         io.puts "<td>#{entry[:email]}</td>"
                         io.puts "<td>#{entry[:name]}</td>"
-                        io.puts "<td>#{(event[:headings] || [''])[0]} #{description_for_key_and_key[event[:key]][key]}</td>"
+                        io.puts "<td>#{[row_description_for_key_and_key[event[:key]][key], description_for_key_and_key[event[:key]][key]].reject { |x| x.nil? }.join(' / ')}</td>"
                         if admin_logged_in?
                             io.puts "<td><button class='btn btn-xs btn-danger bu-delete-signup' data-tag='#{entry[:tag]}'><i class='fa fa-trash'></i>&nbsp;&nbsp;Löschen</button></td>"
                         else
@@ -358,6 +364,7 @@ class Main < Sinatra::Base
                                 :key => "#{t.strftime("%Y-%m-%dT%H:%M")}",
                                 :deadline => entry[:auto_rows_no_signup_deadline] ? "#{(t - entry[:auto_rows_no_signup_deadline] * 3600).strftime("%Y-%m-%dT%H:%M")}" : nil,
                                 :description => "#{t.strftime("%H:%M")} Uhr",
+                                :row_description => row[:description],
                                 :capacity => 1,
                             }
                             t += auto_entry[:duration] * 60

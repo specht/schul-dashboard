@@ -1807,6 +1807,10 @@ class Main < Sinatra::Base
                         io.puts "<a class='dropdown-item nav-icon' href='/aula'><div class='icon'><i class='fa fa-music'></i></div><span class='label'>Aula</span></a>"
                         printed_something = true
                     end
+                    if teacher_logged_in? && (admin_logged_in? || sekretariat_logged_in?)
+                        io.puts "<a class='dropdown-item nav-icon' href='/anmeldungen'><div class='icon'><i class='fa fa-calendar-o'></i></div><span class='label'>Anmeldungen</span></a>"
+                        printed_something = true
+                    end
                     io.puts "</div>"
                     io.puts "</li>"
                 elsif x == :advent_calendar

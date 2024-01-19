@@ -833,12 +833,35 @@ class Main < Sinatra::Base
             lesson_info = @@lessons[:lesson_keys][lesson_key]
             fach = lesson_info[:fach]
             fach = @@faecher[fach] || fach
+            pretty_fach = "#{fach.gsub('/', '-')}"
             pretty_folder_name = "#{fach.gsub('/', '-')} (#{lesson_info[:klassen].sort.map { |x| tr_klasse(x) }.join(', ')})"
             lesson_info[:lehrer].each do |shorthand|
                 pretty_folder_names_for_teacher[shorthand] ||= {}
                 pretty_folder_names_for_teacher[shorthand][pretty_folder_name] ||= Set.new()
                 pretty_folder_names_for_teacher[shorthand][pretty_folder_name] << lesson_key
             end
+            pretty_fach_short = "#{pretty_fach}"
+            pretty_fach_short.gsub!('Sport Jungen', 'Sport')
+            pretty_fach_short.gsub!('Sport Mädchen', 'Sport')
+            pretty_fach_short.gsub!('Evangelische Religionslehre', 'Religion')
+            pretty_fach_short.gsub!('Katholische Religionslehre', 'Religion')
+            pretty_fach_short.gsub!('Informationstechnischer Grundkurs', 'ITG')
+            pretty_fach_short.gsub!('Politische Bildung', 'Politik')
+            pretty_fach_short.gsub!('Gesellschaftswissenschaften', 'Gewi')
+            pretty_fach_short.gsub!('Naturwissenschaften', 'Nawi')
+            pretty_fach_short.gsub!('Streicher Anfänger', 'AGs')
+            pretty_fach_short.gsub!('Basketball', 'AGs')
+            pretty_fach_short.gsub!('Schach', 'AGs')
+            pretty_fach_short.gsub!('Unterstufenorchester', 'AGs')
+            pretty_fach_short.gsub!('AG Garten', 'AGs')
+            pretty_fach_short.gsub!('BlblA', 'AGs')
+            pretty_fach_short.gsub!('neugriechisch', 'ngr')
+            pretty_fach_short.gsub!('(ngr)', '')
+            pretty_fach_short.gsub!('Partnersprache', 'PS')
+            pretty_fach_short.strip!
+
+            @@lessons[:lesson_keys][lesson_key][:pretty_fach] = pretty_fach
+            @@lessons[:lesson_keys][lesson_key][:pretty_fach_short] = pretty_fach_short
             @@lessons[:lesson_keys][lesson_key][:pretty_folder_name] = pretty_folder_name
         end
         # if we have 2x Chemie GK (11) for one teacher, differentiate with A and B
@@ -2695,6 +2718,11 @@ class Main < Sinatra::Base
 
     get '/p/:tag' do
         redirect "#{WEB_ROOT}/bib_postpone/#{params[:tag]}", 302
+    end
+
+    get '/api/get_room_timetable_pdf' do
+        require_teacher!
+        respond_raw_with_mimetype(get_room_timetable_pdf(), 'application/pdf')
     end
 
     get '/api/dark.css' do

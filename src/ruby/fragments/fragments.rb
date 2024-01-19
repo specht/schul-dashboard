@@ -864,6 +864,113 @@ class Main
         return doc.render
     end
 
+    def get_room_timetable_pdf()
+        today = Time.now.strftime('%Y-%m-%d')
+        if today < @@config[:first_school_day]
+            today = @@config[:first_school_day]
+        end
+        d = @@lessons[:start_date_for_date][today]
+        timetable = {}
+        max_stunden = {}
+        @@lessons[:timetables][d].each_pair do |lesson_key, lesson_info|
+            lesson_info[:stunden].each_pair do |day, stunden|
+                stunden.each_pair do |stunde, info|
+                    next if (info[:raum] || '').empty?
+                    timetable[info[:raum]] ||= {}
+                    timetable[info[:raum]][day] ||= {}
+                    x = info.clone
+                    x[:lesson_key] = lesson_key
+                    timetable[info[:raum]][day][stunde] ||= []
+                    timetable[info[:raum]][day][stunde] << x
+                    max_stunden[info[:raum]] ||= stunde
+                    max_stunden[info[:raum]] = stunde if stunde > max_stunden[info[:raum]]
+                end
+            end
+        end
+        hours_key = HOURS_FOR_KLASSE.keys.reject do |x|
+            today < x
+        end.max
+
+        _self = self
+
+        doc = Prawn::Document.new(:page_size => 'A4', :page_layout => :portrait, :margin => 0) do
+            font_families.update("myfont" => {
+                :normal => "/app/fonts/AlegreyaSans-Regular.ttf",
+                :bold => "/app/fonts/AlegreyaSans-Bold.ttf",
+            })
+
+            first_page = true
+            timetable.keys.sort.each do |room|
+                start_new_page unless first_page
+                first_page = false
+                font('myfont') do
+                    left = 15.mm
+                    bottom = 15.mm
+                    width = 180.mm
+                    height = 267.mm
+                    tw = width / 5.0
+                    th = (height - 30.mm) / 11.0
+                    line_width 0.1.mm
+                    text_box "<b>#{room[0] =~ /\d/ ? 'Raum ' : ''}#{room}</b>", :at => [left, bottom + height + 5.mm], :width => width, :height => 15.mm, :align => :center, :valign => :center, :size => 18, :overflow => :shrink_to_fit, :inline_format => true
+                    bounding_box([left, bottom + height], :width => width, :height => height) do
+                        %w(Montag Dienstag Mittwoch Donnerstag Freitag).each.with_index do |tag, tag_index|
+                            bounding_box([tw * tag_index, (bottom + height - 15.mm)], :width => tw, :height => th) do
+                                text_box "<b>#{tag}</b>", :at => [2.mm, th + 2.mm], :width => tw - 4.mm, :height => th - 2.mm, :align => :center, :valign => :bottom, :size => 11, :overflow => :shrink_to_fit, :inline_format => true
+                                # stroke_bounds
+                            end
+                        end
+                        (1..11).each do |stunde|
+                            bounding_box([-tw, (bottom + height - 15.mm) - th * stunde], :width => tw, :height => th) do
+                                text_box "<b>#{stunde}</b>", :at => [2.mm, th - 2.mm], :width => tw - 6.mm, :height => th - 4.mm, :align => :right, :valign => :center, :size => 11, :overflow => :shrink_to_fit, :inline_format => true
+                                # stroke_bounds
+                            end
+                        end
+
+                        # Draw dashed grid
+                        stroke_color "888888"
+                        dash(3)
+                        (1...13).each do |y|
+                            stroke_horizontal_line 0, width, :at => height - y * th
+                        end
+                        (0...6).each do |x|
+                            stroke_vertical_line (bottom + height - 15.mm) - th * 1, (bottom + height - 15.mm) - th * 12, :at => x * tw
+                        end
+                        undash
+                        stroke_color "000000"
+
+                        timetable[room].each_pair do |tag, stunden|
+                            stunden.each_pair do |stunde, _info|
+                                info = _info.first
+                                lesson_key = info[:lesson_key]
+                                lesson_info = @@lessons[:lesson_keys][lesson_key]
+                                hours = HOURS_FOR_KLASSE[hours_key][info[:klassen].first] || HOURS_FOR_KLASSE[hours_key]['7a']
+                                bounding_box([tw * tag, (bottom + height - 15.mm) - th * stunde], :width => tw, :height => th) do
+                                    text = StringIO.open do |io|
+                                        io.puts "#{hours[stunde][0]} – #{hours[stunde][1]}"
+                                        io.print "<b>#{lesson_info[:pretty_fach_short]}</b> "
+                                        klassen = "#{info[:klassen].sort.map { |x| Main.tr_klasse(x) }.join(', ')}".strip
+                                        unless klassen.empty?
+                                            io.print "(#{klassen})"
+                                        end
+                                        io.puts
+                                        begin
+                                            io.puts "#{info[:lehrer].map { |x| @@user_info[@@shorthands[x]][:display_last_name]}.join(', ')}"
+                                        rescue
+                                        end
+                                        io.string
+                                    end
+                                    text_box text, :at => [2.mm, th - 1.mm], :width => tw - 4.mm, :height => th - 2.mm, :align => :left, :valign => :top, :size => 11, :overflow => :shrink_to_fit, :inline_format => true
+                                    stroke_bounds
+                                end
+                            end
+                        end
+                    end
+                end
+            end
+        end
+        return doc.render
+    end
+
     def get_single_timetable_pdf(email, color_scheme, use_png_addition)
         today = Time.now.strftime('%Y-%m-%d')
         if today < @@config[:first_school_day]
@@ -1046,6 +1153,7 @@ class Main
                                         lesson_key = x[:lesson_key]
                                         fach = @@lessons[:lesson_keys][lesson_key][:fach]
                                         fach = @@faecher[fach] || fach
+                                        # TODO: This substitution is redundant now and already contained in @@lessons[:lesson_keys][lesson_key]
                                         fach.gsub!('Sport Jungen', 'Sport')
                                         fach.gsub!('Sport Mädchen', 'Sport')
                                         fach.gsub!('Evangelische Religionslehre', 'Religion')

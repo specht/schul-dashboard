@@ -131,7 +131,7 @@
 </style>
 <div class='container-fluid'>
     <div class='row'>
-        <div class="col-md-8 offset-md-4">
+        <div class="col-md-6 offset-md-3">
             <form id='form' autocomplete='off'>
                 <div class="input-group mb-3">
                     <input type="text" autocomplete="off" id='password' class="form-control" placeholder="Bitte gib das Passwort ein, um das Klassenmemory zu starten" style="text-align: center; max-width: 30em;">
@@ -182,7 +182,6 @@
         <div class="col-md-8" style="position: relative;">
             <button id='toggle_show_recognize_hall_of_fame' class="pull-right btn btn-sm btn-outline-info"></button>
             <h3>Hall of Fame</h3>
-            <!-- <p>Hier siehst du demnächst, welche Lehrkraft die meisten Namen korrekt zuordnen kann.</p> -->
             <div id="hall-of-fame">
             </div>
             <img src="/api/jauch" style="position: absolute; right: 10px; bottom: -30px; height: 160px; pointer-events: none;">
@@ -201,18 +200,6 @@
         <div class="col-md-12" id="name-buttons-here" style="text-align: center; min-height: 172px;">
 
         </div>
-        <!-- <div class="col-md-6">
-            <button class="btn btn-lg btn-secondary w-100 mb-3 bu-name" id="bu-name-0"></button>
-        </div>
-        <div class="col-md-6">
-            <button class="btn btn-lg btn-secondary w-100 mb-3 bu-name" id="bu-name-1"></button>
-        </div>
-        <div class="col-md-6">
-            <button class="btn btn-lg btn-secondary w-100 mb-3 bu-name" id="bu-name-2"></button>
-        </div>
-        <div class="col-md-6">
-            <button class="btn btn-lg btn-secondary w-100 mb-3 bu-name" id="bu-name-3"></button>
-        </div> -->
     </div>
 </div>
 
@@ -510,20 +497,6 @@ function pickNextTask() {
     quiz_solution = photos[0];
     quiz_prefix = '';
     updatePrefix();
-    // // TODO: Always have enough candidates but sort them by priority
-    // // TODO: prefer candidates the user has not recognized yet
-    // candidates = candidates.sort((a, b) => ((Math.floor((my_recognized_emails[a] ?? 0) / 3600.0)) + Math.random()) - ((Math.floor((my_recognized_emails[b] ?? 0) / 3600.0)) + Math.random()));
-    // candidates = candidates.slice(0, 3);
-    // candidates.push(quiz_solution);
-    // candidates = candidates.sort((a, b) => 0.5 - Math.random());
-    // quiz_solution_nr = null;
-    // for (let i = 0; i < 4; i++) {
-    //     $(`#bu-name-${i}`).text(user_info[candidates[i]].display_name);
-    //     $(`#bu-name-${i}`).data('email', candidates[i]);
-    //     if (candidates[i] === quiz_solution)
-    //         quiz_solution_nr = i;
-    // }
-    // bu-name
     fetch_cached_photo(email_for_foto_paths_rev[quiz_solution], function(data) {
         let frame = $(`<div class='sus-frame sus-frame-md'>`);
         let photo = $('<img class="sus-foto-md">').attr('src', 'data:image/jpeg;base64,' + data);
@@ -599,7 +572,7 @@ window.addEventListener('load', function() {
             schueler_for_klassenstufe[stufe].push(email);
         klassenstufe_for_klasse[original_klasse] = stufe;
 
-        if (klasse === '12') continue;
+        if (original_klasse === '12') continue;
 
         let bu_klasse = $(`<button class='btn btn-sm ttc' style='margin: 0.2em;'>`).text(KLASSEN_TR[klasse] ?? klasse).data('klasse', klasse);
         bu_klasse.on('click', function(e) {
@@ -791,10 +764,6 @@ window.addEventListener('load', function() {
                 }
             }
         });
-    }
-    if ('#{DEVELOPMENT}' === 'true') {
-        bu_quiz.click();
-        $('button[data-which="schule"]').click();
     }
 });
 </script>

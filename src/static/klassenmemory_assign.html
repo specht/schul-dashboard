@@ -32,6 +32,7 @@
         object-fit: cover;
         object-position: 50% 10%;
         box-shadow: 0 0 1em 0 rgba(0,0,0,0.5), inset 0 0 1em 0 rgba(0,0,0,0.5);
+        background-size: cover;
     }
     .sus-foto-sm {
         background-color: white;
@@ -40,6 +41,7 @@
         object-fit: cover;
         object-position: 50% 5%;
         box-shadow: 0 0 0.1em 0 rgba(0,0,0,0.5), inset 0 0 0.1em 0 rgba(0,0,0,0.5);
+        background-size: cover;
         /* border: 0.1em solid white; */
     }
     .sus-foto-md {
@@ -49,6 +51,7 @@
         object-fit: cover;
         object-position: 50% 5%;
         box-shadow: 0 0 0.1em 0 rgba(0,0,0,0.5), inset 0 0 0.1em 0 rgba(0,0,0,0.5);
+        background-size: cover;
         /* border: 0.1em solid white; */
     }
     .sus-label {
@@ -129,7 +132,7 @@
         transition: transform 0.2s ease-out, opacity 0.2s ease-out;
     }
 </style>
-<div class='container container-fluid' style='background: none; backdrop-filter: none; box-shadow: none;'>
+<div class='container container-fluid' style='background: none; backdrop-filter: none; box-shadow: none; max-width: unset;'>
     <div class='row'>
         <div class="col-md-8 offset-md-2">
             <form id='form' autocomplete='off'>
@@ -499,7 +502,7 @@ function pickNextTask() {
     updatePrefix();
     fetch_cached_photo(email_for_foto_paths_rev[quiz_solution], function(data) {
         let frame = $(`<div class='sus-frame sus-frame-md'>`);
-        let photo = $('<img class="sus-foto-md">').attr('src', 'data:image/jpeg;base64,' + data);
+        let photo = $('<div class="sus-foto-md">').css('background-image', `url(data:image/jpeg;base64,${data})`);
         let div = $(`<div style='display: inline-block;'>`);
         div.append(frame);
         frame.append(photo);
@@ -692,7 +695,7 @@ window.addEventListener('load', function() {
                 for (let path of data.paths) {
                     fetch_cached_photo(path, function(decrypted) {
                         let frame = $(`<div class='sus-frame'>`);
-                        let photo = $('<img class="sus-foto-sm">').attr('src', 'data:image/jpeg;base64,' + decrypted);
+                        let photo = $('<div class="sus-foto-sm">').css('background-image', `url(data:image/jpeg;base64,${decrypted})`);
                         let div = $(`<div style='display: inline-block;'>`);
                         div.append(frame);
                         frame.append(photo);

@@ -154,29 +154,5 @@
                 }
             );
         });
-        api_call('/api/get_monitor_zeugniskonferenzen', {}, function(data) {
-            if (data.success) {
-                for (let key of ['flur', 'lz', 'sek']) {
-                    let button = $(`.bu-allow-zeugniskonferenzen-monitor-${key}`);
-                    if (data.result[key]) {
-                        button.removeClass('btn-outline-secondary').addClass('btn-warning');
-                    } else {
-                        button.removeClass('btn-warning').addClass('btn-outline-secondary');
-                    }
-                    button.on('click', function(e) {
-                        api_call('/api/toggle_monitor_zeugniskonferenzen', {key: key}, function(data2) {
-                            if (data2.success) {
-                                if (data2.result) {
-                                    button.removeClass('btn-outline-secondary').addClass('btn-warning');
-                                } else {
-                                    button.removeClass('btn-warning').addClass('btn-outline-secondary');
-                                }
-                            }
-                        });
-                    });
-                }
-            }
-            console.log(data);
-        });
     });
 </script>

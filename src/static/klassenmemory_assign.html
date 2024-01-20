@@ -134,10 +134,10 @@
 </style>
 <div class='container container-fluid' style='background: none; backdrop-filter: none; box-shadow: none; max-width: unset;'>
     <div class='row'>
-        <div class="col-md-8 offset-md-2">
+        <div class="col-md-6 offset-md-3">
             <form id='form' autocomplete='off'>
                 <div class="input-group mb-3">
-                    <input type="text" autocomplete="off" id='password' class="form-control" placeholder="Bitte gib das Passwort ein, um das Klassenmemory zu starten" style="text-align: center; max-width: 30em;">
+                    <input type="text" autocomplete="off" id='password' class="form-control" placeholder="Bitte gib das Passwort ein, um das Klassenmemory zu starten" style="text-align: center;">
                     <div class="input-group-append">
                         <button id='submit_password' class="btn btn-primary" type="submit">Passwort absenden</button>
                     </div>
@@ -212,7 +212,7 @@
 <script>
 
 var passphrase = '';
-var FOTO_PASSWORD = #{FOTO_PASSWORD.to_json};
+var FOTO_PASSWORD = null;//#{FOTO_PASSWORD.to_json};
 var KLASSEN_ORDER = #{KLASSEN_ORDER.to_json};
 var KLASSEN_TR = #{KLASSEN_TR.to_json};
 var schueler_for_klasse = #{@@schueler_for_klasse.to_json};

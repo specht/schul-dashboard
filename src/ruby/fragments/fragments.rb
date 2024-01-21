@@ -235,6 +235,7 @@ class Main
                                             move_down row_height * 0.5 - 6
                                             fach = liste[:faecher][x]
                                             text "<b>#{fach}</b>#{FAECHER_SPRACHEN.include?(fach) ? '<sup>1</sup>' : ''}", :align => :center, :inline_format => true, :size => 11
+                                            text "#{(liste[:lehrer_for_fach][fach] || []).join(', ')}", :align => :center, :inline_format => true, :size => 8
                                             # stroke_bounds
                                         end
                                     end
@@ -310,7 +311,7 @@ class Main
                                                                         stroke_circle [0, 0], 11
                                                                     end
                                                                 end
-                                                                text "#{note.gsub('-', '–').gsub('×', '')}", :align => :center, :size => 11, :final_gap => false, :valign => :center
+                                                                text "#{note.gsub('-', '–')}", :align => :center, :size => 11, :final_gap => false, :valign => :center
                                                             end
                                                         end
                                                     end
@@ -325,7 +326,7 @@ class Main
                                                                 stroke_circle [0, 0], 11
                                                             end
                                                         end
-                                                        text "#{note.gsub('-', '–').gsub('×', '')}", :align => :center, :inline_format => true, :size => 11, :valign => :center
+                                                        text "#{note.gsub('-', '–')}", :align => :center, :inline_format => true, :size => 11, :valign => :center
                                                     end
                                                 end
                                             end

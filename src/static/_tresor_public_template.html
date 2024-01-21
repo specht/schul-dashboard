@@ -680,6 +680,9 @@ function load_noten_table(container, klasse, edit_noten) {
 
 
     let t0 = Date.now();
+    // tresor_api_call('/jwt/get_many_tags', {path_arrays: path_arrays, key: 'Wert'}, function(data) {
+    //     console.log(data);
+    // });
     tresor_api_call('/jwt/get_many_cutoff', {path_arrays: path_arrays, key: 'Wert'}, function(data) {
         consider_cache = {};
         let t1 = Date.now();

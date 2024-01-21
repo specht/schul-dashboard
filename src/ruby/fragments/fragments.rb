@@ -940,31 +940,76 @@ class Main
                         stroke_color "000000"
 
                         timetable[room].each_pair do |tag, stunden|
+                            entries = []
                             stunden.each_pair do |stunde, _info|
                                 info = _info.first
                                 lesson_key = info[:lesson_key]
                                 lesson_info = @@lessons[:lesson_keys][lesson_key]
                                 hours = HOURS_FOR_KLASSE[hours_key][info[:klassen].first] || HOURS_FOR_KLASSE[hours_key]['7a']
-                                bounding_box([tw * tag, (bottom + height - 15.mm) - th * stunde], :width => tw, :height => th) do
+                                entries << {}
+                                entries.last[:stunde] = stunde
+                                entries.last[:t0] = hours[stunde][0]
+                                entries.last[:t1] = hours[stunde][1]
+                                entries.last[:count] = 1
+                                entries.last[:text] = StringIO.open do |io|
+                                    io.print "<b>#{lesson_info[:pretty_fach_short]}</b> "
+                                    klassen = "#{info[:klassen].sort.map { |x| Main.tr_klasse(x) }.join(', ')}".strip
+                                    unless klassen.empty?
+                                        io.print "(#{klassen})"
+                                    end
+                                    io.puts
+                                    begin
+                                        io.puts "#{info[:lehrer].map { |x| @@user_info[@@shorthands[x]][:display_last_name]}.join(', ')}"
+                                    rescue
+                                    end
+                                    io.string
+                                end
+                            end
+                            entries.sort_by! { |x| x[:stunde] }
+                            new_entries = []
+                            entries.each do |entry|
+                                if new_entries.empty?
+                                    new_entries << entry
+                                else
+                                    if new_entries.last[:stunde] + new_entries.last[:count] == entry[:stunde] && new_entries.last[:text] == entry[:text]
+                                        new_entries.last[:t1] = entry[:t1]
+                                        new_entries.last[:count] += 1
+                                    else
+                                        new_entries << entry
+                                    end
+                                end
+                            end
+                            new_entries.each do |entry|
+                                stunde = entry[:stunde]
+                                bounding_box([tw * tag, (bottom + height - 15.mm) - th * stunde + th * (entry[:count] - 1)], :width => tw, :height => th * entry[:count]) do
+                                    rounded_rectangle [1.mm, th - 1.mm], tw - 2.mm, th * entry[:count] - 2.mm, 2.mm
+                                    fill_color "ffffff"
+                                    fill_and_stroke
+                                    fill_color "000000"
                                     text = StringIO.open do |io|
-                                        io.puts "#{hours[stunde][0]} – #{hours[stunde][1]}"
-                                        io.print "<b>#{lesson_info[:pretty_fach_short]}</b> "
-                                        klassen = "#{info[:klassen].sort.map { |x| Main.tr_klasse(x) }.join(', ')}".strip
-                                        unless klassen.empty?
-                                            io.print "(#{klassen})"
-                                        end
-                                        io.puts
-                                        begin
-                                            io.puts "#{info[:lehrer].map { |x| @@user_info[@@shorthands[x]][:display_last_name]}.join(', ')}"
-                                        rescue
-                                        end
+                                        io.puts "#{entry[:t0]} – #{entry[:t1]}"
+                                        io.puts entry[:text]
                                         io.string
                                     end
-                                    text_box text, :at => [2.mm, th - 1.mm], :width => tw - 4.mm, :height => th - 2.mm, :align => :left, :valign => :top, :size => 11, :overflow => :shrink_to_fit, :inline_format => true
-                                    stroke_bounds
+                                    text_box text, :at => [2.mm, th - 1.mm], :width => tw - 4.mm, :height => th * entry[:count] - 2.mm, :align => :left, :valign => :top, :size => 11, :overflow => :shrink_to_fit, :inline_format => true
                                 end
                             end
                         end
+                        url = "#{WEBSITE_HOST}/room/#{room}"
+                        bounding_box([147.mm, 50.mm], :width => 30.mm, :height => 40.mm) do
+                            rounded_rectangle([0, 40.mm], 3.cm, 4.0.cm, 2.mm)
+                            fill_color "ffffff"
+                            fill_and_stroke
+                            fill_color "000000"
+                            move_to 0, 40.mm
+                            font_size 10
+                            default_leading 0
+                            move_down 2.mm
+                            text "Aktuelle Informationen:", :align => :center
+                            print_qr_code(url, :pos => [0.mm, 30.mm], :extent => 30.mm, :stroke => false)
+                        end
+                                                # svg = qrcode.as_svg(offset: 0, color: '000', shape_rendering: 'crispEdges',
+                            # module_size: 4, standalone: true).gsub("\n", '')
                     end
                 end
             end

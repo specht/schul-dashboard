@@ -496,10 +496,12 @@ function input_note_apply_style_and_fix(input, callback) {
     if (value.toLowerCase().replace(/[\.\s]+/g, '') == 'tb') value = 't.b.';
     if (value.toLowerCase().replace(/[\.\s]+/g, '') == 'zb') value = 'z.b.';
     if (noten_allowed_values.indexOf(value) < 0) value = '';
-    if (value === '')
-        $(input).closest('.note').addClass('empty');
-    else
-        $(input).closest('.note').removeClass('empty');
+    if ($(input).data('optional') !== true) {
+        if (value === '')
+            $(input).closest('.note').addClass('empty');
+        else
+            $(input).closest('.note').removeClass('empty');
+    }
 
     if (original_value !== value) {
         $(input).val(value);
@@ -825,6 +827,10 @@ function load_noten_table(container, klasse, edit_noten) {
                         let pre_value = data.results[0][0][0][fi][index][1];
                         let pre_marker = $(`<input placeholder="--" class="form-control pre-note-marker" disabled="" value="">`).val(pre_value);
                         input.data('value_pre', pre_value);
+                        if (fach.substr(-3) === '_AT' || fach.substr(-3) === '_SL') {
+                            input.data('optional', true);
+                            pre_marker.data('optional', true);
+                        }
                         let cell = $('<td>');
                         for (let i = 0; i < show_previous_noten.length; i++) {
                             let input = $(`<input disabled placeholder='' class='past-note form-control' style='width: 3em; text-align: center; height: calc(1.5em + 2px); font-size: 85%;'>`);

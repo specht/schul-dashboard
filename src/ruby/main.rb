@@ -1453,6 +1453,10 @@ class Main < Sinatra::Base
     end
 
     before '*' do
+        if DEVELOPMENT
+            debug "Re-including fragments.rb!"
+            Kernel.send(:load, '/app/fragments/fragments.rb')
+        end
         if DEVELOPMENT && request.path[0, 5] != '/api/'
             self.class.compile_js()
             self.class.compile_css()

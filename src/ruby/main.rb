@@ -845,6 +845,7 @@ class Main < Sinatra::Base
             pretty_fach_short.gsub!('Sport Mädchen', 'Sport')
             pretty_fach_short.gsub!('Evangelische Religionslehre', 'Religion')
             pretty_fach_short.gsub!('Katholische Religionslehre', 'Religion')
+            pretty_fach_short.gsub!('Politikwissenschaft', 'Politik')
             pretty_fach_short.gsub!('Informationstechnischer Grundkurs', 'ITG')
             pretty_fach_short.gsub!('Politische Bildung', 'Politik')
             pretty_fach_short.gsub!('Gesellschaftswissenschaften', 'Gewi')

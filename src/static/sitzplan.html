@@ -92,7 +92,7 @@ p {
     border-radius: 1vh;
     position: absolute;
     left: 50%;
-    top: 1vh;
+    top: -8vh;
     text-align: center;
     font-size: 3vh;
     color: #000;
@@ -107,6 +107,22 @@ p {
     top: 10px;
     width: 100px;
     height: 100px;
+    transition: all 1s ease-out;
+}
+#seats.flipped {
+    transform: rotate(180deg);
+}
+#seats .place img {
+    transition: all 1s ease-out;
+}
+#seats .place .label {
+    transition: all 1s ease-out;
+}
+#seats.flipped .place img {
+    transform: rotate(180deg);
+}
+#seats.flipped .place .label {
+    transform: rotate(180deg);
 }
 .navbar {
     display: none;
@@ -382,6 +398,10 @@ document.addEventListener('DOMContentLoaded', function() {
             let audio = $('#audio')[0];
             if (audio.ended) return;
 
+            if (e.code === 'KeyR') {
+                $('#seats').toggleClass('flipped');
+            }
+
             if (e.code === 'Space') {
                 for (let place of $('.place')) {
                     place = $(place);
@@ -409,6 +429,7 @@ document.addEventListener('DOMContentLoaded', function() {
 </script>
 <h1>Sitzplan der Klasse <span id="label_klasse"></span> (Raum <span id="label_raum"></span>)</h1>
 <h2>Neuer Sitzplan ab <span id="label_datum"></span></h2>
-<div class='teacher'>Tafel</div>
-<div id="seats"></div>
+<div id="seats">
+    <div class='teacher'>Tafel</div>
+</div>
 <audio id='audio' src="/preis.mp3"></audio>

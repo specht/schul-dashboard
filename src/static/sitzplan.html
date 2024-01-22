@@ -396,11 +396,11 @@ document.addEventListener('DOMContentLoaded', function() {
         });
         document.addEventListener('keydown', function(e) {
             let audio = $('#audio')[0];
-            if (audio.ended) return;
 
             if (e.code === 'KeyR') {
                 $('#seats').toggleClass('flipped');
             }
+            if (audio.ended) return;
 
             if (e.code === 'Space') {
                 for (let place of $('.place')) {

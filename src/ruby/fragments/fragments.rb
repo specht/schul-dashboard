@@ -905,9 +905,9 @@ class Main
                 start_new_page unless first_page
                 first_page = false
                 font('myfont') do
-                    left = 15.mm
+                    left = 20.mm
                     bottom = 15.mm
-                    width = 180.mm
+                    width = 170.mm
                     height = 267.mm
                     tw = width / 5.0
                     th = (height - 30.mm) / 11.0
@@ -996,7 +996,7 @@ class Main
                             end
                         end
                         url = "#{WEBSITE_HOST}/room/#{room}"
-                        bounding_box([147.mm, 50.mm], :width => 30.mm, :height => 40.mm) do
+                        bounding_box([138.mm, 50.mm], :width => 30.mm, :height => 40.mm) do
                             rounded_rectangle([0, 40.mm], 3.cm, 4.0.cm, 2.mm)
                             fill_color "ffffff"
                             fill_and_stroke

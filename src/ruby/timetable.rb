@@ -1624,9 +1624,9 @@ class Timetable
                         end
                         if user[:is_klasse]
                             fixed_events.map! do |event|
-                                event.delete(:data)
+                                # event.delete(:data)
                                 event.delete(:per_user)
-                                event.delete(:lesson_offset)
+                                # event.delete(:lesson_offset)
                                 event
                             end
                         end

@@ -859,6 +859,7 @@ class Main < Sinatra::Base
             pretty_fach_short.gsub!('neugriechisch', 'ngr')
             pretty_fach_short.gsub!('(ngr)', '')
             pretty_fach_short.gsub!('Partnersprache', 'PS')
+            pretty_fach_short.gsub!('Förderstunde', 'Fö')
             pretty_fach_short.strip!
 
             @@lessons[:lesson_keys][lesson_key][:pretty_fach] = pretty_fach

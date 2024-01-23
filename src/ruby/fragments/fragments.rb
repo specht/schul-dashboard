@@ -915,7 +915,7 @@ class Main
             first_page = true
             klassenraum_for_klasse = {}
             timetable.keys.sort.each do |room|
-                next unless room == '113'
+                # next unless room == '113'
 
                 klassen_histogram = {}
 
@@ -1035,6 +1035,51 @@ class Main
                                     io.string
                                 end
                             end
+                            if klasse_for_room
+                                klassen_timetable[klasse_for_room][tag].each_pair do |stunde, _info|
+                                    info = _info.first
+                                    if info[:klassen].include?(klasse_for_room) && !(stunden_taken.include?(stunde))
+                                        lesson_key = info[:lesson_key]
+                                        lesson_info = @@lessons[:lesson_keys][lesson_key]
+                                        hours = HOURS_FOR_KLASSE[hours_key][info[:klassen].first] || HOURS_FOR_KLASSE[hours_key]['7a']
+                                        entries << {}
+                                        stunden_taken << stunde
+                                        entries.last[:other] = true
+                                        entries.last[:stunde] = stunde
+                                        entries.last[:raum] = info[:raum]
+                                        entries.last[:t0] = hours[stunde][0]
+                                        entries.last[:t1] = hours[stunde][1]
+                                        entries.last[:count] = 1
+                                        entries.last[:text] = StringIO.open do |io|
+                                            io.print "<b>#{lesson_info[:pretty_fach_short]}</b> "
+                                            io.puts room
+                                            klassen = "#{info[:klassen].sort.map { |x| Main.tr_klasse(x) }.join(', ')}".strip
+                                            unless klassen.empty?
+                                                io.print "(#{klassen})"
+                                            end
+                                            io.puts
+                                            begin
+                                                io.puts "#{info[:lehrer].map { |x| @@user_info[@@shorthands[x]][:display_last_name]}.join(', ')}"
+                                            rescue
+                                            end
+                                            io.string
+                                        end
+                                        entries.last[:label] = StringIO.open do |io|
+                                            io.print "<b>#{lesson_info[:pretty_fach_short]}</b> "
+                                            klassen = "#{info[:klassen].sort.map { |x| Main.tr_klasse(x) }.join(', ')}".strip
+                                            unless klassen.empty?
+                                                io.print "(#{klassen})"
+                                            end
+                                            io.puts
+                                            begin
+                                                io.puts "#{info[:lehrer].map { |x| @@user_info[@@shorthands[x]][:display_last_name]}.join(', ')}"
+                                            rescue
+                                            end
+                                            io.string
+                                        end
+                                    end
+                                end
+                            end
                             entries.sort_by! { |x| x[:stunde] }
                             new_entries = []
                             entries.each do |entry|
@@ -1052,9 +1097,17 @@ class Main
                             new_entries.each do |entry|
                                 stunde = entry[:stunde]
                                 bounding_box([tw * tag, (bottom + height - 15.mm) - th * stunde + th * (entry[:count] - 1)], :width => tw, :height => th * entry[:count]) do
+                                    if entry[:other]
+                                        dash(1)
+                                    end
                                     rounded_rectangle [1.mm, th - 1.mm], tw - 2.mm, th * entry[:count] - 2.mm, 2.mm
-                                    fill_color "ffffff"
+                                    if entry[:other]
+                                        fill_color "ffffff"
+                                    else
+                                        fill_color "e0e0e0"
+                                    end
                                     fill_and_stroke
+                                    undash
                                     fill_color "000000"
                                     text = StringIO.open do |io|
                                         io.puts "#{entry[:t0]} – #{entry[:t1]}"
@@ -1066,19 +1119,19 @@ class Main
                                 end
                             end
                         end
-                        # url = "#{WEBSITE_HOST}/room/#{room}"
-                        # bounding_box([138.mm, 50.mm], :width => 30.mm, :height => 40.mm) do
-                        #     rounded_rectangle([0, 40.mm], 3.cm, 4.0.cm, 2.mm)
-                        #     fill_color "ffffff"
-                        #     fill_and_stroke
-                        #     fill_color "000000"
-                        #     move_to 0, 40.mm
-                        #     font_size 10
-                        #     default_leading 0
-                        #     move_down 2.mm
-                        #     text "Aktuelle Informationen:", :align => :center
-                        #     print_qr_code(url, :pos => [0.mm, 30.mm], :extent => 30.mm, :stroke => false)
-                        # end
+                        url = "#{WEBSITE_HOST}/room/#{room}"
+                        bounding_box([138.mm, 50.mm], :width => 30.mm, :height => 40.mm) do
+                            rounded_rectangle([0, 40.mm], 3.cm, 4.0.cm, 2.mm)
+                            fill_color "ffffff"
+                            fill_and_stroke
+                            fill_color "000000"
+                            move_to 0, 40.mm
+                            font_size 10
+                            default_leading 0
+                            move_down 2.mm
+                            text "Aktuelle Informationen:", :align => :center
+                            print_qr_code(url, :pos => [0.mm, 30.mm], :extent => 30.mm, :stroke => false)
+                        end
                     end
                 end
             end

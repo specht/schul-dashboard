@@ -1,0 +1,55 @@
+<div class='container'>
+    <div class='row'>
+        <div class='col-md-8 offset-md-2' id="text-here">
+        </div>
+    </div>
+</div>
+<style>
+    .navbar {
+        display: none;
+    }
+    body {
+        padding-top: 0;
+    }
+    #text-here {
+        font-size: 150%;
+    }
+</style>
+<script>
+window.addEventListener('load', function () {
+    const typewriter = new Typewriter('#text-here');
+    typewriter.typeString(`Hallo!`)
+      .pauseFor(500)
+      .typeString('<br>Ich werde jetzt versuchen, deine Gedanken zu erraten.')
+      .pauseFor(2500)
+      .deleteChars(8)
+      .typeString('<strong>lesen!<strong>')
+      .pauseFor(1000)
+      .typeString('<br>')
+      .pauseFor(1500)
+      .typeString(`Du gehst in die #{@session_user[:klasse][0, 2] == 'WK' ? 'Willkommensklasse' : @session_user[:klasse].to_i.to_s + '. Klasse'}.`)
+      .pauseFor(1000)
+      .typeString('<br>Richtig?')
+      .pauseFor(1000)
+      .typeString('<br>')
+      .pauseFor(2500)
+      .typeString(`Du bist im Gymnasium Steglitz und stehst vorm Raum ${window.location.search.split('=')[1]}.`)
+      .pauseFor(1000)
+      .typeString('<br>')
+      .pauseFor(1000)
+      .typeString(`Du heißt `)
+      .pauseFor(1000)
+      .typeString(`Thaddäus (nein Spaß)`)
+      .deleteChars(20)
+      .typeString(`#{@session_user[:first_name]}!`)
+      .typeString('<br>')
+      .pauseFor(1000)
+      .typeString('Und du weißt schon')
+      .pauseFor(1000)
+      .typeString(' , dass du dein Handy im Schulhaus nicht benutzen darfst, <b>oder?</b>')
+      .pauseFor(1000)
+      .typeString('<br>😉')
+      .pauseFor(2500)
+      .start();
+});
+</script>

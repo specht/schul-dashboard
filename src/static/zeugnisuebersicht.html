@@ -154,7 +154,7 @@ window.addEventListener('load', function () {
                 continue;
             let liste = zeugnisliste_for_klasse[klasse];
             let faecher = liste.faecher;
-            let div = $(`<div class='#{zeugnis_admin_logged_in? ? 'col-md-12' : 'col-md-4 col-lg-4'}'>`).appendTo('#zeugnisuebersicht-here');
+            let div = $(`<div class='${have_or_admin_or_kl(`${klasse}/`) ? 'col-md-12' : 'col-md-4 col-lg-4'}'>`).appendTo('#zeugnisuebersicht-here');
             div.append($(`<h4>`).text(`Klasse ${klassen_tr[klasse] ?? klasse}`));
             let table = $(`<table class='table xs' style='width: unset;'>`);
             div.append(table);

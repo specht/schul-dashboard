@@ -30,9 +30,14 @@ var my_zeugnisliste = #{(@@zeugnisliste_for_lehrer[@session_user[:shorthand]] ||
 var my_klassen = #{(@@zeugnisliste_for_lehrer[@session_user[:shorthand]]).keys.map { |x| x.split('/').first }.sort.uniq.to_json};
 var shorthands = #{@@shorthands.keys.sort { |a, b| a.downcase <=> b.downcase }.reject { |x| x[0] == '_'}.to_json};
 var need_sozialverhalten = #{@@need_sozialverhalten.to_json};
+var klassenleiter = #{@@klassenleiter.to_json};
 
 function have_or_admin(key) {
     return my_zeugnisliste[key] || `#{zeugnis_admin_logged_in?}` === 'true';
+}
+
+function have_or_admin_or_kl(key) {
+    return my_zeugnisliste[key] || `#{zeugnis_admin_logged_in?}` === 'true' || klassenleiter[key.split('/')[0]].indexOf('#{@session_user[:shorthand]}') >= 0;
 }
 
 window.addEventListener('load', function () {
@@ -157,7 +162,7 @@ window.addEventListener('load', function () {
             row.append($(`<th>`));
             for (let fach_index = 0; fach_index < faecher.length; fach_index++) {
                 let fach = faecher[fach_index];
-                if (have_or_admin(`${klasse}/${fach}`)) {
+                if (have_or_admin_or_kl(`${klasse}/${fach}`)) {
                     row.append($(`<th>`).html(`${fach}<br /><span style='font-weight: normal; font-size: 90%;'>${liste.lehrer_for_fach[fach].join(', ')}</span>`));
                 }
             }
@@ -169,13 +174,14 @@ window.addEventListener('load', function () {
                 let fach = faecher[fach_index];
                 let present_count = counts[`${klasse}/${fach}`][0];
                 let total_count = counts[`${klasse}/${fach}`][1];
-                if (have_or_admin(`${klasse}/${fach}`)) {
+                if (have_or_admin_or_kl(`${klasse}/${fach}`)) {
                     if (total_count === 0)
                         row.append($(`<td>`).append($(`<span>`).html(`<i class='fa fa-danger'></i>`).css('color', '#a40000')));
                     else if (present_count === total_count)
                         row.append($(`<td>`).append($(`<span>`).html(`<i class='fa fa-check-circle'></i>`).css('color', '#4aa03f')));
                     else
                         row.append($(`<td>`).append($(`<span>`).text(`${present_count}/${total_count}`).css('background-color', red_green_ramp(present_count / total_count)).addClass('ramp')));
+                    row.children().last().css('opacity', have_or_admin(`${klasse}/${fach}`) ? 1.0 : 0.5);
                 }
             }
             if (need_sozialverhalten[klasse] && have_or_admin(`${klasse}/SV/_KL`))
@@ -184,7 +190,7 @@ window.addEventListener('load', function () {
             if (need_sozialverhalten[klasse]) {
                 row.append($(`<th>`).text('Sozialverhalten').css('text-align', 'left'));
                 for (let fach of faecher.concat(['_KL'])) {
-                    if (!have_or_admin(`${klasse}/SV/${fach}`))
+                    if (!have_or_admin_or_kl(`${klasse}/SV/${fach}`))
                         continue;
 
                     let present_count = counts[`${klasse}/${fach}/SV`][0];
@@ -194,7 +200,8 @@ window.addEventListener('load', function () {
                     else if (present_count === total_count)
                         row.append($(`<td>`).append($(`<span>`).html(`<i class='fa fa-check-circle'></i>`).css('color', '#4aa03f')));
                     else
-                    row.append($(`<td>`).append($(`<span>`).text(`${present_count}/${total_count}`).css('background-color', red_green_ramp(present_count / total_count)).addClass('ramp')));
+                        row.append($(`<td>`).append($(`<span>`).text(`${present_count}/${total_count}`).css('background-color', red_green_ramp(present_count / total_count)).addClass('ramp')));
+                    row.children().last().css('opacity', have_or_admin(`${klasse}/SV/${fach}`) ? 1.0 : 0.5);
                 }
             }
         }

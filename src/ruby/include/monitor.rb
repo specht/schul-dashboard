@@ -163,7 +163,6 @@ class Main < Sinatra::Base
         today = Date.today.strftime('%Y-%m-%d')
         (ZEUGNISKONFERENZEN[today] || []).each do |entry|
             sha1 = Digest::SHA1.hexdigest([today, entry].to_json)[0, 16]
-            STDERR.puts "#{sha1} #{entry.to_json}"
             if sha1_list.include?(sha1)
                 result[entry[0]] = t0_for_sha1[sha1]
             end

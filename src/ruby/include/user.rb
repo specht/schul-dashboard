@@ -29,6 +29,11 @@ class Main < Sinatra::Base
         user_logged_in? && @session_user[:can_manage_monitors]
     end
 
+    # Returns true if a developer is logged in.
+    def development_logged_in?
+        user_logged_in? && @session_user[:development]
+    end
+
     # Returns true if a TechnikTeam is logged in.
     def technikteam_logged_in?
         user_logged_in? && @session_user[:technikteam]
@@ -259,6 +264,11 @@ class Main < Sinatra::Base
         assert(user_who_can_manage_monitors_logged_in?)
     end
 
+    # Assert that a developer is logged in
+    def require_development!
+        assert(development_logged_in?)
+    end
+
     # Assert that a TechnikTeam user is logged in
     def require_technikteam!
         assert(technikteam_logged_in?)
@@ -409,6 +419,13 @@ class Main < Sinatra::Base
     # Put this on top of a webpage to assert that this page can be opened by users who can manage monitors only
     def this_is_a_page_for_people_who_can_manage_monitors
         unless user_who_can_manage_monitors_logged_in?
+            redirect "#{WEB_ROOT}/", 303
+        end
+    end
+
+    # Put this on top of a webpage to assert that this page can be opened by developers only
+    def this_is_a_page_for_logged_in_developers
+        unless development_logged_in?
             redirect "#{WEB_ROOT}/", 303
         end
     end

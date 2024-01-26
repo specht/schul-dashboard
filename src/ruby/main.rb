@@ -61,6 +61,7 @@ require './include/color.rb'
 require './include/color-schemes.rb'
 require './include/comment.rb'
 require './include/cypher.rb'
+require './include/development.rb'
 require './include/directory.rb'
 require './include/event.rb'
 require './include/ext_user.rb'
@@ -747,6 +748,10 @@ class Main < Sinatra::Base
         (TECHNIKTEAM + ADMIN_USERS).each do |email|
             next unless @@user_info[email]
             @@user_info[email][:technikteam] = true
+        end
+        (DEVELOPERS).each do |email|
+            next unless @@user_info[email]
+            @@user_info[email][:development] = true
         end
         (CAN_MANAGE_ANTIKENFAHRT_USERS + ADMIN_USERS).each do |email|
             next unless @@user_info[email]

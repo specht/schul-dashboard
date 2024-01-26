@@ -212,6 +212,7 @@ ADMIN_USERS = ['clarke@beispielschule.de']
 SEKRETARIAT_USERS = []
 ZEUGNIS_ADMIN_USERS = []
 ZEUGNIS_USE_MOCK_NAMES = false
+DEVELOPERS = []
 
 # Liste aller E-Mail-Adressen von Nutzer*innen,
 # die Tablet-Buchungen anderer einsehen und aufheben können,

@@ -17,6 +17,14 @@
     </div>
 </div>
 
+<style>
+h4 {
+    font-weight: bold;
+    font-size: 110%;
+    margin: 0.5em;
+}
+</style>
+
 <script>
 var ZEUGNIS_SCHULJAHR = "#{ZEUGNIS_SCHULJAHR}";
 var ZEUGNIS_HALBJAHR = "#{ZEUGNIS_HALBJAHR}";
@@ -28,12 +36,27 @@ var my_klassen = #{zeugnis_admin_logged_in? ? ZEUGNIS_KLASSEN_ORDER : (@@zeugnis
 var clicked_klasse = null;
 
 var bemerkungen_templates = [
-    "(NAME) hat am Religionsunterricht der Evangelischen Kirche Berlin-Brandenburg teilgenommen. Der Träger kann eine eigene Teilnahmebescheinigung bzw. Beurteilung erteilen.",
-    "(NAME) hat am Religionsunterricht in Trägerschaft des Erzbistums Berlin teilgenommen. Der Träger kann eine eigene Teilnahmebescheinigung bzw. Beurteilung erteilen.",
-    "(NAME) hat erfolgreich am dreitägigen Sozialpraktikum teilgenommen.",
-    // "(NAME) hat die Probezeit bestanden.",
-    // "(NAME) hat die Probezeit nicht bestanden und besucht im kommenden Schuljahr die Jahrgangsstufe 6 der Grundschule.",
-    // "(NAME) hat die Probezeit nicht bestanden und besucht im kommenden Schuljahr die Jahrgangsstufe 8 der Integrierten Sekundarschule/Gemeinschaftsschule.",
+    ['Probejahr (Halbjahr)', '(NAME) hat im Fall der Nichtversetzung das Probejahr nicht bestanden und muss nach §7 Abs. 1 Sek-1-VO das Gymnasium verlassen.'],
+    ['Probejahr (Versetzungszeugnis)', '(NAME) hat die Probezeit bestanden.'],
+    ['Probejahr (Versetzungszeugnis)', '(NAME) hat die Probezeit nicht bestanden und besucht im kommenden Schuljahr die Jahrgangsstufe 6 der Primarstufe.'],
+    ['Probejahr (Versetzungszeugnis)', '(NAME) hat die Probezeit nicht bestanden und besucht im kommenden Schuljahr die Jahrgangsstufe 8 der Integrierten Sekundarschule/Gemeinschaftsschule.'],
+    ['Bei Schüler*innen, die ggf. das Gymnasium verlassen müssen', '(NAME) muss im Falle der Nichtversetzung nach §26, Abs. 1 Sek.-I-Ordnung das Gymnasium verlassen.'],
+    ['Notenschutz', 'Auf die Bewertung der Lesefertigkeit und des Rechtschreibens wurde verzichtet.'],
+    ['Notenschutz', 'Auf die Bewertung der Lesefertigkeit wurde verzichtet.'],
+    ['Notenschutz', 'Auf die Bewertung des Rechtschreibens wurde verzichtet.'],
+    ['Epochale Fächer (Halbjahr)', 'Die Fächer … und … werden epochal unterrichtet.'],
+    ['Epochale Fächer (Versetzungszeugnis)', 'Die Fächer … und … wurden epochal unterrichtet.'],
+    ["Religionsunterricht", "(NAME) nahm am Religionsunterricht der Evangelischen Kirche Berlin-Brandenburg  teilgenommen. Der Träger kann eine eigene Teilnahmebescheinigung bzw. Beurteilung erteilen."],
+    ["Religionsunterricht", "(NAME) nahm am Religionsunterricht in Trägerschaft des Erzbistums Berlin teil. Der Träger kann eine eigene Teilnahmebescheinigung bzw. Beurteilung erteilen."],
+    ['Nachprüfung (Versetzungszeugnis)', "(NAME) ist berechtigt, an einer Nachprüfung im Fach … /in einem der Fächer … teilzunehmen."],
+    ['4– / Teilnoten 5', 'Die Leistungen im Fach … waren nur schwach ausreichend / mangelhaft.'],
+    ['4– / Teilnoten 5', 'Die schriftlichen Leistungen im Fach … waren nur schwach ausreichend / mangelhaft.'],
+    ['4– / Teilnoten 5', 'Die mündlichen Leistungen im Fach … waren nur schwach ausreichend / mangelhaft.'],
+    ['Versetzungsbemerkungen', 'Bei gleichbleibendem Leistungsstand ist die Versetzung gefährdet.'],
+    ['Versetzungsbemerkungen', 'Bei gleichbleibendem Leistungsstand ist die Versetzung sehr gefährdet.'],
+    ['Versetzungsbemerkungen', 'Bei gleichbleibendem Leistungsstand ist die Versetzung sehr stark gefährdet.'],
+    ["Sozialpraktikum", "(NAME) hat erfolgreich am dreitägigen Sozialpraktikum teilgenommen."],
+
 ];
 
 window.addEventListener('load', function () {
@@ -51,8 +74,15 @@ window.addEventListener('load', function () {
                 update_edit_button();
                 $('#text-blocks').empty();
                 $('#text-blocks').append($(`<hr>`));
+                let last_heading = null;
                 for (let i = 0; i < bemerkungen_templates.length; i++) {
                     let template = bemerkungen_templates[i];
+                    let heading = template[0];
+                    template = template[1];
+                    if (heading !== last_heading) {
+                        $('#text-blocks').append($(`<h4>`).text(heading));
+                    }
+                    last_heading = heading;
                     let group = $(`<div class='input-group'>`);
                     $('#text-blocks').append(group);
                     group.append($(`<input id='text_template_${i}' type="text" class="form-control" readonly>`).val(template));

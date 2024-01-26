@@ -1281,6 +1281,7 @@ class Main < Sinatra::Base
             '/include/turn.min.js',
             '/include/scissor.min.js',
             '/include/hash.js',
+            '/include/typewriter.js',
         ]
 
         self.compile_files(:js, 'application/javascript', files)
@@ -2815,6 +2816,16 @@ class Main < Sinatra::Base
             end
         end
         respond_raw_with_mimetype(s, 'text/css')
+    end
+
+    get '/room/:room' do
+        if teacher_logged_in?
+            redirect "#{WEB_ROOT}/timetable/#{@@room_ids[params[:room]]}", 302
+        elsif user_logged_in?
+            redirect "#{WEB_ROOT}/clairvoyant?raum=#{params[:room]}", 302
+        else
+            redirect "#{WEB_ROOT}/", 302
+        end
     end
 
     get '/*' do

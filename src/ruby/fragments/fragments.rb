@@ -887,7 +887,7 @@ class Main
                         max_stunden[info[:raum]] ||= stunde
                         max_stunden[info[:raum]] = stunde if stunde > max_stunden[info[:raum]]
                     end
-                    info[:klassen].each do |klasse|                    
+                    info[:klassen].each do |klasse|
                         klassen_timetable[klasse] ||= {}
                         klassen_timetable[klasse][day] ||= {}
                         x = info.clone

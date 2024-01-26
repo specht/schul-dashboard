@@ -922,7 +922,7 @@ class Parser
         if File.exist?('/data/kurswahl/kurs_id_tr.yaml')
             kurs_id_tr = YAML.load(File.read('/data/kurswahl/kurs_id_tr.yaml'))
         end
-        Dir['/data/kurswahl/csv/2024-01/**/*.csv'].sort.each do |path|
+        Dir['/data/kurswahl/csv/2024-02/**/*.csv'].sort.each do |path|
             begin
                 File.open(path) do |f|
                     f.each_line do |line|
@@ -933,7 +933,7 @@ class Parser
                         parts = line.split(';')
                         sus_name = parts[0]
                         shorthand = parts[2]
-                        fach = parts[3].split('-').first
+                        fach = parts[4].split('-').first
                         tag = "#{shorthand}/#{fach}"
                         kurs_id = File.basename(path).split('.').first
                         kurs_ids_for_tag[tag] ||= Set.new()

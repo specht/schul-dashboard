@@ -1833,6 +1833,9 @@ class Main < Sinatra::Base
                         io.puts "<a class='dropdown-item nav-icon' href='/bookings'><div class='icon'><i class='fa fa-tablet'></i></div><span class='label'>Buchungen</span></a>"
                         io.puts "<a class='dropdown-item nav-icon' href='/techpostadmin'><div class='icon'><i class='fa fa-laptop'></i></div><span class='label'>Technikamt (Admin)</span></a>"
                     end
+                    if development_logged_in?
+                        io.puts "<a class='dropdown-item nav-icon' href='/development'><div class='icon'><i class='fa fa-code'></i></div><span class='label'>Development</span></a>"
+                    end
                     if admin_logged_in?
                         io.puts "<div class='dropdown-divider'></div>"
                         io.puts "<a class='dropdown-item nav-icon' href='/show_all_login_codes'><div class='icon'><i class='fa fa-key-modern'></i></div><span class='label'>Live-Anmeldungen</span></a>"

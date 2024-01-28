@@ -751,7 +751,7 @@ class Main < Sinatra::Base
         end
         (DEVELOPERS).each do |email|
             next unless @@user_info[email]
-            @@user_info[email][:development] = true
+            @@user_info[email][:developer] = true
         end
         (CAN_MANAGE_ANTIKENFAHRT_USERS + ADMIN_USERS).each do |email|
             next unless @@user_info[email]
@@ -1834,7 +1834,7 @@ class Main < Sinatra::Base
                         io.puts "<a class='dropdown-item nav-icon' href='/bookings'><div class='icon'><i class='fa fa-tablet'></i></div><span class='label'>Buchungen</span></a>"
                         io.puts "<a class='dropdown-item nav-icon' href='/techpostadmin'><div class='icon'><i class='fa fa-laptop'></i></div><span class='label'>Technikamt (Admin)</span></a>"
                     end
-                    if development_logged_in?
+                    if developer_logged_in?
                         io.puts "<a class='dropdown-item nav-icon' href='/development'><div class='icon'><i class='fa fa-code'></i></div><span class='label'>Development</span></a>"
                     end
                     if admin_logged_in?

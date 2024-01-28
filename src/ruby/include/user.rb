@@ -30,8 +30,8 @@ class Main < Sinatra::Base
     end
 
     # Returns true if a developer is logged in.
-    def development_logged_in?
-        user_logged_in? && @session_user[:development]
+    def developer_logged_in?
+        user_logged_in? && @session_user[:developer]
     end
 
     # Returns true if a TechnikTeam is logged in.
@@ -265,8 +265,8 @@ class Main < Sinatra::Base
     end
 
     # Assert that a developer is logged in
-    def require_development!
-        assert(development_logged_in?)
+    def require_developer!
+        assert(developer_logged_in?)
     end
 
     # Assert that a TechnikTeam user is logged in
@@ -425,7 +425,7 @@ class Main < Sinatra::Base
 
     # Put this on top of a webpage to assert that this page can be opened by developers only
     def this_is_a_page_for_logged_in_developers
-        unless development_logged_in?
+        unless developer_logged_in?
             redirect "#{WEB_ROOT}/", 303
         end
     end

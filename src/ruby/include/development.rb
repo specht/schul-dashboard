@@ -1,6 +1,6 @@
 class Main < Sinatra::Base
     def print_dev_stats()
-        require_development!
+        require_developer!
         dark = neo4j_query(<<~END_OF_QUERY)
             MATCH (u:User {dark: true})
             RETURN COUNT(u) AS userCount;

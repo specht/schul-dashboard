@@ -45,8 +45,8 @@ window.addEventListener('load', function () {
                         let button2 = $(`<button id='bu_print_all_sozial' class='btn btn-info'>`).html(`<i class='fa fa-file-pdf-o'></i>&nbsp;&nbsp;Alle Sozialzeugnisse der Klasse ${klassen_tr[klasse] ?? klasse} (PDF)`);
                         $('#button_here').append(`&nbsp;&nbsp;`);
                         $('#button_here').append(button2);
-                        if ('#{zeugnis_admin_logged_in? || (Time.now.strftime('%Y-%m-%dT%H:%M:%S') > DEADLINE_SOZIALNOTEN) ? 'true' : 'false'}' === 'false')
-                            button2.prop('disabled', true);
+                        // if ('#{zeugnis_admin_logged_in? || (Time.now.strftime('%Y-%m-%dT%H:%M:%S') > DEADLINE_SOZIALNOTEN) ? 'true' : 'false'}' === 'false')
+                        //     button2.prop('disabled', true);
                         button2.click(function(e) {
                             get_sozialzeugnis(klasse);
                         });

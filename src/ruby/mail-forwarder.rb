@@ -166,7 +166,7 @@ class Script
                     mail_path = File.join(File.dirname(path), 'mail')
                     STDERR.puts "mail_path: #{mail_path}"
                     mail = Mail.read_from_string(File.read(mail_path))
-                    STDERR.puts "mail:"
+                    # STDERR.puts "mail:"
                     mail.to = nil
                     mail.cc = []
                     mail.bcc = []
@@ -176,7 +176,7 @@ class Script
                     while !recipients[:pending].empty?
                         recipient = recipients[:pending].first
                         mail.to = recipient
-                        STDERR.puts mail
+                        # STDERR.puts mail
                         STDERR.puts "Forwarding mail to #{recipient}..."
                         mail.deliver!
                         recipients[:pending].delete_at(0)

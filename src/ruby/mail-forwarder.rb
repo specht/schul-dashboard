@@ -14,8 +14,8 @@ Mail.defaults do
         :address => SMTP_SERVER,
         :port => 587,
         :domain => SMTP_DOMAIN,
-        :user_name => MAILING_LIST_EMAIL,
-        :password => MAILING_LIST_PASSWORD,
+        :user_name => SMTP_USER,
+        :password => SMTP_PASSWORD,
         :authentication => 'login',
         :enable_starttls_auto => true
     }

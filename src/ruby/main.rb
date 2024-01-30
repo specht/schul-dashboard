@@ -1187,13 +1187,11 @@ class Main < Sinatra::Base
         @@forschertage_mailing_lists.each_pair do |k, v|
             @@mailing_lists[k] = v
         end
-        if DEVELOPMENT
-            VERTEILER_TEST_EMAILS.each do |email|
-                @@mailing_lists[email] = {
-                    :label => "Dev-Verteiler #{email}",
-                    :recipients => VERTEILER_DEVELOPMENT_EMAILS
-                }
-            end
+        VERTEILER_TEST_EMAILS.each do |email|
+            @@mailing_lists[email] = {
+                :label => "Dev-Verteiler #{email}",
+                :recipients => VERTEILER_DEVELOPMENT_EMAILS
+            }
         end
         if DASHBOARD_SERVICE == 'ruby'
             File.open('/internal/mailing_lists.yaml.tmp', 'w') do |f|

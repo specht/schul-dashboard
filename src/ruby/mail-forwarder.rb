@@ -152,7 +152,6 @@ class Script
             end
         end
         t2 = Thread.new do
-            sleep MAIL_FORWARDER_SLEEP / 2
             # Second thread: check for e-mails to send
             # - glob for /mails/*/recipients.yaml
             #   - read /mails/*/recipients.yaml

@@ -443,9 +443,13 @@ class Main < Sinatra::Base
                 klasse = parts[0]
                 index = @@zeugnisliste_for_klasse[klasse][:index_for_schueler][parts[1]]
                 sus_info = @@zeugnisliste_for_klasse[klasse][:schueler][index].clone
-                STDERR.puts '-' * 40
-                STDERR.puts sus_info.to_yaml
-                STDERR.puts '-' * 40
+                if DEVELOPMENT
+                    STDERR.puts '-' * 40
+                    STDERR.puts sus_info.to_yaml
+                    STDERR.puts '-' * 40
+                    STDERR.puts @@zeugnisliste_for_klasse[klasse].to_yaml
+                end
+
                 email = sus_info[:email]
                 zeugnis_key = sus_info[:zeugnis_key]
                 faecher_info = []
@@ -500,6 +504,8 @@ class Main < Sinatra::Base
                     end
                     fach_tr = wf_tr[fach] || fach
                     info["##{fach_tr}"] = note
+                    # Also add the note to the original fach because of hybrid klassen 9o mixup AGr / $AGr (wahlfach for some)
+                    info["##{fach}"] = note
                 end
                 ['VT', 'VT_UE', 'VS', 'VS_UE', 'VSP'].each do |item|
                     v = cache["Schuljahr:#{ZEUGNIS_SCHULJAHR}/Halbjahr:#{ZEUGNIS_HALBJAHR}/Fehltage:#{item}/Email:#{email}"] || '--'
@@ -509,6 +515,11 @@ class Main < Sinatra::Base
                 ['Angebote', 'Bemerkungen', 'WeitereBemerkungen'].each do |item|
                     v = cache["Schuljahr:#{ZEUGNIS_SCHULJAHR}/Halbjahr:#{ZEUGNIS_HALBJAHR}/AB:#{item}/Email:#{email}"] || '--'
                     info["##{item}"] = v
+                end
+                if DEVELOPMENT
+                    STDERR.puts faecher_info.to_yaml
+                    STDERR.puts cache.to_yaml
+                    STDERR.puts info.to_yaml
                 end
                 zeugnis_id = "#{ZEUGNIS_SCHULJAHR}/#{ZEUGNIS_HALBJAHR}/#{zeugnis_key}/#{info.to_json}"
                 zeugnis_sha1 = Digest::SHA1.hexdigest(zeugnis_id).to_i(16).to_s(36)

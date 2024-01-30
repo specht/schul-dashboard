@@ -5,19 +5,20 @@ require 'yaml'
 require 'net/imap'
 require './main.rb'
 
-MAIL_FORWARDER_SLEEP = DEVELOPMENT ? 60 : 60
+MAIL_FORWARDER_SLEEP = DEVELOPMENT ? 10 : 60
 MAIL_FORWARD_BATCH_SIZE = 30
 
 Mail.defaults do
-  delivery_method :smtp, { 
-      :address => SCHUL_MAIL_LOGIN_SMTP_HOST,
-      :port => 587,
-      :domain => SCHUL_MAIL_DOMAIN,
-      :user_name => MAILING_LIST_EMAIL,
-      :password => MAILING_LIST_PASSWORD,
-      :authentication => 'plain',
-      :enable_starttls_auto => true
-  }
+    # delivery_method :logger
+    delivery_method :smtp, {
+        :address => SMTP_SERVER,
+        :port => 587,
+        :domain => SMTP_DOMAIN,
+        :user_name => MAILING_LIST_EMAIL,
+        :password => MAILING_LIST_PASSWORD,
+        :authentication => 'login',
+        :enable_starttls_auto => true
+    }
 end
 
 class Script

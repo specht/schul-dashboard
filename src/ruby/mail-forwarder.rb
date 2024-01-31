@@ -165,7 +165,9 @@ class Script
                     mail_path = File.join(File.dirname(path), 'mail')
                     STDERR.puts "mail_path: #{mail_path}"
                     mail = Mail.read_from_string(File.read(mail_path))
-                    # STDERR.puts "mail:"
+                    # E-Mail-Verteiler did not work in January 2024,
+                    # let's remove the Return-Path header to make it work again.
+                    mail['Return-Path'] = nil
                     mail.to = nil
                     mail.cc = []
                     mail.bcc = []

@@ -2653,9 +2653,17 @@ class Main < Sinatra::Base
             WHERE r.ts < $ts
             DELETE r;
         END_OF_QUERY
+        anons = Set.new()
+        neo4j_query(<<~END_OF_QUERY).each do |row|
+            MATCH (u:User)
+            WHERE COALESCE(u.recognize_stats_public, TRUE) <> TRUE
+            RETURN u.email;
+        END_OF_QUERY
+            anons << row['u.email']
+        end
+
         neo4j_query(<<~END_OF_QUERY).each do |row|
             MATCH (u:User)-[r:RECOGNIZED]->(u2:User)
-            WHERE COALESCE(u.recognize_stats_public, TRUE) = TRUE
             RETURN u.email, u2.email;
         END_OF_QUERY
             who = row['u.email']
@@ -2673,6 +2681,7 @@ class Main < Sinatra::Base
         end
         result = []
         hall_of_fame.each do |email, data|
+            email = nil if anons.include?(email)
             result << {:email => email, :stufe => data[:stufe], :total => data[:stufe].values.sum }
         end
         result.sort! do |a, b|

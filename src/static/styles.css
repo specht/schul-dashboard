@@ -2695,3 +2695,7 @@ th.thsticky {
 #calendar > div.fc-view-harness.fc-view-harness-active > div > table > tbody > tr.fc-scrollgrid-section.fc-scrollgrid-section-liquid > td > div > div {
     overflow-y: hidden!important;
 }
+
+tr.palerow td {
+    opacity: 0.5;
+}

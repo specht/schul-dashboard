@@ -212,7 +212,7 @@
 <script>
 
 var passphrase = '';
-var FOTO_PASSWORD = null;//#{FOTO_PASSWORD.to_json};
+var FOTO_PASSWORD = #{FOTO_PASSWORD.to_json};
 var KLASSEN_ORDER = #{KLASSEN_ORDER.to_json};
 var KLASSEN_TR = #{KLASSEN_TR.to_json};
 var schueler_for_klasse = #{@@schueler_for_klasse.to_json};
@@ -272,7 +272,12 @@ function update_hall_of_fame() {
             tr = $('<tr>').appendTo(tbody);
             $('<td>').text(last_total !== row.total ? `${place}.` : '').appendTo(tr);
             last_total = row.total;
-            $('<td>').text(user_info[row.email].display_name).appendTo(tr);
+            if (row.email === null) {
+                $('<td>').text('(anonym)').appendTo(tr);
+                tr.addClass('palerow');
+            } else {
+                $('<td>').text(user_info[row.email].display_name).appendTo(tr);
+            }
             $(`<td style='text-align: center;'>`).text(`${row.total}`).appendTo(tr);
             for (let stufe of klassenstufen) {
                 let percent = (row.stufe[stufe] ?? 0) / schueler_for_klassenstufe[stufe].length;

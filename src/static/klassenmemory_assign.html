@@ -268,6 +268,7 @@ function update_hall_of_fame() {
         let place = 0;
         let last_total = null;
         for (let row of data.result) {
+            if (row.email === null) continue;
             place += 1;
             tr = $('<tr>').appendTo(tbody);
             $('<td>').text(last_total !== row.total ? `${place}.` : '').appendTo(tr);

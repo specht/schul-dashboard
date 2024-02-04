@@ -759,11 +759,13 @@ class Main < Sinatra::Base
         io.puts "<td style='text-align: right;'><button data-list-email='#{list_email}' class='btn btn-warning btn-sm bu-toggle-adresses'>#{info[:recipients].size} Adressen&nbsp;&nbsp;<i class='fa fa-chevron-down'></i></button></td>"
         io.puts "</tr>"
         io.puts "<tbody style='display: none;' class='list_email_emails' data-list-email='#{list_email}'>"
+        emails = []
         info[:recipients].sort do |a, b|
             an = ((@@user_info[a.sub(/^eltern\./, '')] || {})[:display_name] || '').downcase
             bn = ((@@user_info[b.sub(/^eltern\./, '')] || {})[:display_name] || '').downcase
             an <=> bn
         end.each do |email|
+            emails << email
             name = (@@user_info[email] || {})[:display_name] || ''
             if email[0, 7] == 'eltern.'
                 name = (@@user_info[email.sub('eltern.', '')] || {})[:display_name] || ''
@@ -776,7 +778,13 @@ class Main < Sinatra::Base
             io.puts "</td>"
             io.puts "</tr>"
         end
-        io.puts "</tbody>"
+        io.puts "<tr class='user_row'>"
+        io.puts "<td>Bei Verteiler-Ausfall (bitte in BCC)</td>"
+        io.puts "<td colspan='2'>"
+        print_email_field(io, emails.join('; '))
+        io.puts "</td>"
+        io.puts "</tr>"
+    io.puts "</tbody>"
     end
     
     def print_mailing_lists()

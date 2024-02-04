@@ -5,19 +5,20 @@ require 'yaml'
 require 'net/imap'
 require './main.rb'
 
-MAIL_FORWARDER_SLEEP = DEVELOPMENT ? 60 : 60
+MAIL_FORWARDER_SLEEP = DEVELOPMENT ? 10 : 60
 MAIL_FORWARD_BATCH_SIZE = 30
 
 Mail.defaults do
-  delivery_method :smtp, { 
-      :address => SCHUL_MAIL_LOGIN_SMTP_HOST,
-      :port => 587,
-      :domain => SCHUL_MAIL_DOMAIN,
-      :user_name => MAILING_LIST_EMAIL,
-      :password => MAILING_LIST_PASSWORD,
-      :authentication => 'plain',
-      :enable_starttls_auto => true
-  }
+    # delivery_method :logger
+    delivery_method :smtp, {
+        :address => SMTP_SERVER,
+        :port => 587,
+        :domain => SMTP_DOMAIN,
+        :user_name => SMTP_USER,
+        :password => SMTP_PASSWORD,
+        :authentication => 'login',
+        :enable_starttls_auto => true
+    }
 end
 
 class Script
@@ -151,7 +152,6 @@ class Script
             end
         end
         t2 = Thread.new do
-            sleep MAIL_FORWARDER_SLEEP / 2
             # Second thread: check for e-mails to send
             # - glob for /mails/*/recipients.yaml
             #   - read /mails/*/recipients.yaml
@@ -163,7 +163,11 @@ class Script
             loop do
                 Dir["/mails/*/recipients.yaml"].each do |path|
                     mail_path = File.join(File.dirname(path), 'mail')
+                    STDERR.puts "mail_path: #{mail_path}"
                     mail = Mail.read_from_string(File.read(mail_path))
+                    # E-Mail-Verteiler did not work in January 2024,
+                    # let's remove the Return-Path header to make it work again.
+                    mail['Return-Path'] = nil
                     mail.to = nil
                     mail.cc = []
                     mail.bcc = []
@@ -173,7 +177,8 @@ class Script
                     while !recipients[:pending].empty?
                         recipient = recipients[:pending].first
                         mail.to = recipient
-                        STDERR.puts "Forwarding mail to #{recipient...}"
+                        # STDERR.puts mail
+                        STDERR.puts "Forwarding mail to #{recipient}..."
                         mail.deliver!
                         recipients[:pending].delete_at(0)
                         recipients[:sent] << recipient

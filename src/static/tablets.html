@@ -49,6 +49,7 @@ document.addEventListener('DOMContentLoaded', function() {
     })
     $('.bu-remove-tablet').click(function (e) {
             let code = $(e.target).data('code');
+            code = JSON.stringify(code);
             api_call('/api/remove_mobile_device', {code: code}, function (data) {
                 if (data.success) {
                     $(e.target).closest('tr').remove();

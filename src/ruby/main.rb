@@ -86,6 +86,7 @@ require './include/salzh.rb'
 require './include/sms.rb'
 require './include/techpost.rb'
 require './include/stats.rb'
+require './include/tablet.rb'
 require './include/tablet_set.rb'
 require './include/tests.rb'
 require './include/test_events.rb'
@@ -230,6 +231,7 @@ class SetupDatabase
         'DeviceLoginToken/token',
         'DeviceToken/token',
         'Event/key',
+        'SchulTablet/code',
         'KnownEmailAddress/email',
         'Lesson/key',
         'LoginCode/tag',
@@ -1831,7 +1833,8 @@ class Main < Sinatra::Base
                         io.puts "<a class='dropdown-item nav-icon' href='/admin'><div class='icon'><i class='fa fa-wrench'></i></div><span class='label'>Administration</span></a>"
                     end
                     if user_who_can_manage_tablets_logged_in?
-                        io.puts "<a class='dropdown-item nav-icon' href='/bookings'><div class='icon'><i class='fa fa-tablet'></i></div><span class='label'>Buchungen</span></a>"
+                        io.puts "<a class='dropdown-item nav-icon' href='/tablets'><div class='icon'><i class='fa fa-tablet'></i></div><span class='label'>Tablets</span></a>"
+                        io.puts "<a class='dropdown-item nav-icon' href='/bookings'><div class='icon'><i class='fa fa-bookmark'></i></div><span class='label'>Buchungen</span></a>"
                         io.puts "<a class='dropdown-item nav-icon' href='/techpostadmin'><div class='icon'><i class='fa fa-laptop'></i></div><span class='label'>Technikamt (Admin)</span></a>"
                     end
                     if developer_logged_in?

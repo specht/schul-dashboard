@@ -612,7 +612,7 @@
     var image_swap_timer = null;
     var klassen_tr = #{KLASSEN_TR.to_json};
     var server_time_diff = 0;
-    var zeugniskonferenzen_today = #{(ZEUGNISKONFERENZEN[Date.today.strftime('%Y-%m-%d')] || []).to_json};
+    var zeugniskonferenzen_today = #{(ZEUGNISKONFERENZEN).to_json};
     var zeugniskonferenzen_enabled = #{get_monitor_zeugniskonferenzen().to_json};
     var showing_zeugniskonferenzen = false;
     var running_zeugniskonferenzen = #{running_zeugniskonferenzen.to_json};

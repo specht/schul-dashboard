@@ -207,10 +207,12 @@ body {
 }
 
 /* .container, .ttc, .fc .fc-view-harness, .hint, .weekend_events, .future_homework {
+    -webkit-backdrop-filter: blur(10px);
     backdrop-filter: blur(10px);
 } */
 
 .container, .fc .fc-view-harness, .hint, .weekend_events, .future_homework {
+    -webkit-backdrop-filter: blur(10px);
     backdrop-filter: blur(10px);
 }
 

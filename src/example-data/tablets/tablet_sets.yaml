@@ -1,10 +1,25 @@
 "Tabletsatz 1":
+  :prefix: 1
   :standort: Sekretariat
   :form_factor: Rollkoffer
   :only_these_rooms: [
     100, 101, 102
   ]
-  :count: 20
+  :includes: [
+    18n, 21
+  ]
+  :includes_not: [
+    20, 18
+  ]
+  :count: 34
+  :prio_unterstufe: true
+  :is_tablet_set: true
+
+"Tabletsatz 2":
+  :prefix: 2
+  :standort: Sekretariat
+  :form_factor: Rollkoffer
+  :count: 30
   :prio_unterstufe: true
   :is_tablet_set: true
 

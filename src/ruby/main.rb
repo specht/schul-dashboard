@@ -99,7 +99,7 @@ require './include/zeugnisse.rb'
 require './parser.rb'
 
 Faye::WebSocket.load_adapter('thin')
-Faye::WebSocket.load_adapter('puma')
+# Faye::WebSocket.load_adapter('puma')
 
 def remove_accents(s)
     I18n.transliterate(s.gsub('ä', 'ae').gsub('ö', 'oe').gsub('ü', 'ue').gsub('Ä', 'Ae').gsub('Ö', 'Oe').gsub('Ü', 'Ue').gsub('ß', 'ss').gsub('ė', 'e').gsub('š', 's'))

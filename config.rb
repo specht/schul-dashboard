@@ -134,9 +134,10 @@ docker_compose[:services][:ruby] = {
     :environment => env,
     :working_dir => '/app',
     :entrypoint =>  DEVELOPMENT ?
-        'rerun -b --dir /app --ignore "*fragments.rb" -s SIGKILL \'puma -p 3000 -w 4 --preload -t 0:16 -e development\'' :
-        'puma -p 3000 -w 4 --preload -t 0:16 -e production'
-}
+        'rerun -b --dir /app --ignore "*fragments.rb" -s SIGKILL \'thin --rackup config.ru --threaded start -e development\'' :
+        # 'rerun -b --dir /app --ignore "*fragments.rb" -s SIGKILL \'puma -p 3000 -w 4 --preload -t 0:16 -e development\'' :
+        'thin --rackup config.ru --threaded start -e production'}
+        # 'puma -p 3000 -w 4 --preload -t 0:16 -e production'
 docker_compose[:services][:ruby][:depends_on] ||= []
 docker_compose[:services][:ruby][:depends_on] << :neo4j
 

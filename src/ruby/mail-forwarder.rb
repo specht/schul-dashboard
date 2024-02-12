@@ -168,6 +168,7 @@ class Script
                     # E-Mail-Verteiler did not work in January 2024,
                     # let's remove the Return-Path header to make it work again.
                     mail['Return-Path'] = nil
+                    mail['Envelope-To'] = nil
                     mail.to = nil
                     mail.cc = []
                     mail.bcc = []

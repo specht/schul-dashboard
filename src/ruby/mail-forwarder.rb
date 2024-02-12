@@ -179,6 +179,9 @@ class Script
                         mail.to = recipient
                         # STDERR.puts mail
                         STDERR.puts "Forwarding mail to #{recipient}..."
+                        File.open(File.join(File.dirname(path), 'last_forwarded_mail'), 'w') do |f|
+                            f.write mail.to_s
+                        end
                         mail.deliver!
                         recipients[:pending].delete_at(0)
                         recipients[:sent] << recipient

@@ -199,6 +199,7 @@ class Script
                                 io.puts "Die meisten Mails gehen durch, aber manche nicht. Wir arbeiten an einer Lösung des Problems. Bitte entschuldigen Sie die Unannehmlichkeiten.\r\n\r\n"
                                 io.puts "Bitte senden Sie Ihre E-Mail noch einmal direkt an die folgenden Empfängeraddressen, die Sie per Copy & Paste in BCC setzen können:\r\n\r\n"
                                 io.puts "#{recipients[:pending].join(', ')}\r\n\r\n"
+                                io.puts "Bitte beachten Sie, dass sich die oben stehenden Empfängeradressen in Zukunft ändern können. Wir bitten Sie deshalb um Geduld und darum, weiterhin die E-Mail-Verteileradressen zu verwenden.\r\n\r\n"
                                 io.puts "Bei Fragen schreiben Sie bitte an #{WEBSITE_MAINTAINER_EMAIL}.\r\n\r\n"
                                 io.puts "Vielen Dank für Ihr Verständnis!\r\n\r\n"
                                 io.string

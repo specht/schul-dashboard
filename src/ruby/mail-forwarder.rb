@@ -208,7 +208,9 @@ class Script
                         end
                         sleep 0.1
                     end
-                    FileUtils::mv(path, path + '.archived')
+                    if File.exist?(path)
+                        FileUtils::mv(path, path + '.archived')
+                    end
 #                     File.open(mail_path, 'w') { |f| f.puts 'nothing to see here' }
                 end
                 sleep MAIL_FORWARDER_SLEEP

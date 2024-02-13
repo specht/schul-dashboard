@@ -183,7 +183,24 @@ class Script
                         File.open(File.join(File.dirname(path), 'last_forwarded_mail'), 'w') do |f|
                             f.write mail.to_s
                         end
-                        mail.deliver!
+                        begin
+                            mail.deliver!
+                        rescue StandardError => e
+                            # sending failed!
+                            # 1. notify WEBSITE_MAINTAINER_EMAIL
+                            _subject = "Mail Forwarder failed: #{mail.subject}"
+                            _body = "The mail forwarder failed to forward a mail from #{mail[:from].formatted.first} to #{recipient}.\r\n\r\n"
+                            deliver_mail(_body) do
+                                to WEBSITE_MAINTAINER_EMAIL
+                                bcc SMTP_FROM
+                                from SMTP_FROM
+                                subject _subject
+                            end
+                            # 2. rename recipients.yaml to recipients.yaml.failed
+                            FileUtils::mv(path, path + '.failed')
+                            # 3. break from loop
+                            break
+                        end
                         recipients[:pending].delete_at(0)
                         recipients[:sent] << recipient
                         File.open(path, 'w') do |f|

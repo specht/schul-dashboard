@@ -189,10 +189,24 @@ class Script
                             # sending failed!
                             STDERR.puts "Forwarding mail failed, notifying admin..."
                             # 1. notify WEBSITE_MAINTAINER_EMAIL
-                            _subject = "Mail Forwarder failed: #{mail.subject}"
-                            _body = "The mail forwarder failed to forward a mail from #{mail[:from].formatted.first} to #{recipient}.\r\n\r\n"
+                            _subject = "E-Mail-Weiterleitung fehlgeschlagen: #{mail.subject}"
+                            _body = StringIO.open do |io|
+                                # "The mail forwarder failed to forward a mail from #{mail[:from].formatted.first} to #{recipient}.\r\n\r\n"
+                                io.puts "Hallo!\r\n\r\n"
+                                io.puts "Wir haben momentan leider bei manchen E-Mails technische Probleme mit der Weiterleitung. Die folgende E-Mail konnte nicht an #{recipient} weitergeleitet werden:\r\n\r\n"
+                                io.puts "Betreff: #{mail.subject}\r\n"
+                                io.puts "Absender: #{mail[:from].formatted.first}\r\n"
+                                io.puts "\r\n\r\n"
+                                io.puts "Die meisten Mails gehen durch, aber manche nicht. Wir arbeiten an einer Lösung des Problems. Bitte entschuldigen Sie die Unannehmlichkeiten.\r\n\r\n"
+                                io.puts "Bitte senden Sie Ihre E-Mail noch einmal direkt an die folgenden Empfängeraddressen, die Sie in BCC setzen können:\r\n\r\n"
+                                io.puts "#{recipients[:pending].join(', ')}\r\n\r\n"
+                                io.puts "Bei Fragen schreiben Sie bitte an #{WEBSITE_MAINTAINER_EMAIL}.\r\n\r\n"
+                                io.puts "Vielen Dank für Ihr Verständnis!\r\n\r\n"
+                                io.string
+                            end
                             deliver_mail(_body) do
                                 to WEBSITE_MAINTAINER_EMAIL
+                                cc WEBSITE_MAINTAINER_EMAIL
                                 bcc SMTP_FROM
                                 from SMTP_FROM
                                 subject _subject

@@ -86,6 +86,7 @@ require './include/salzh.rb'
 require './include/sms.rb'
 require './include/techpost.rb'
 require './include/stats.rb'
+require './include/tablet.rb'
 require './include/tablet_set.rb'
 require './include/tests.rb'
 require './include/test_events.rb'
@@ -98,6 +99,7 @@ require './include/zeugnisse.rb'
 require './parser.rb'
 
 Faye::WebSocket.load_adapter('thin')
+# Faye::WebSocket.load_adapter('puma')
 
 def remove_accents(s)
     I18n.transliterate(s.gsub('ä', 'ae').gsub('ö', 'oe').gsub('ü', 'ue').gsub('Ä', 'Ae').gsub('Ö', 'Oe').gsub('Ü', 'Ue').gsub('ß', 'ss').gsub('ė', 'e').gsub('š', 's'))
@@ -230,6 +232,7 @@ class SetupDatabase
         'DeviceLoginToken/token',
         'DeviceToken/token',
         'Event/key',
+        'SchulTablet/code',
         'KnownEmailAddress/email',
         'Lesson/key',
         'LoginCode/tag',
@@ -1324,7 +1327,7 @@ class Main < Sinatra::Base
         @@compiled_files = {}
         debug "DASHBOARD_SERVICE: #{ENV['DASHBOARD_SERVICE']}"
         debug "File.basename($0): #{File.basename($0)}"
-        if ENV['DASHBOARD_SERVICE'] == 'ruby' && (File.basename($0) == 'thin' || File.basename($0) == 'pry.rb')
+        if ENV['DASHBOARD_SERVICE'] == 'ruby' && (File.basename($0) == 'thin' || File.basename($0) == 'pry.rb' || File.basename($0) == 'puma')
             setup.setup(self)
             COLOR_SCHEME_COLORS.each do |entry|
                 @@color_scheme_info[entry[0]] = [entry[1], entry[2]]
@@ -1366,7 +1369,7 @@ class Main < Sinatra::Base
             # STDERR.puts @@color_scheme_info.to_yaml
         end
 
-        if ['thin', 'rackup'].include?(File.basename($0))
+        if ['puma', 'thin', 'rackup'].include?(File.basename($0))
             debug('Server is up and running!')
         end
         if ENV['DASHBOARD_SERVICE'] == 'ruby' && File.basename($0) == 'pry.rb'
@@ -1829,7 +1832,8 @@ class Main < Sinatra::Base
                         io.puts "<a class='dropdown-item nav-icon' href='/admin'><div class='icon'><i class='fa fa-wrench'></i></div><span class='label'>Administration</span></a>"
                     end
                     if user_who_can_manage_tablets_logged_in?
-                        io.puts "<a class='dropdown-item nav-icon' href='/bookings'><div class='icon'><i class='fa fa-tablet'></i></div><span class='label'>Buchungen</span></a>"
+                        io.puts "<a class='dropdown-item nav-icon' href='/tablets'><div class='icon'><i class='fa fa-tablet'></i></div><span class='label'>Tablets</span></a>"
+                        io.puts "<a class='dropdown-item nav-icon' href='/bookings'><div class='icon'><i class='fa fa-bookmark'></i></div><span class='label'>Buchungen</span></a>"
                         io.puts "<a class='dropdown-item nav-icon' href='/techpostadmin'><div class='icon'><i class='fa fa-laptop'></i></div><span class='label'>Technikamt (Admin)</span></a>"
                     end
                     if developer_logged_in?
@@ -2653,9 +2657,17 @@ class Main < Sinatra::Base
             WHERE r.ts < $ts
             DELETE r;
         END_OF_QUERY
+        anons = Set.new()
+        neo4j_query(<<~END_OF_QUERY).each do |row|
+            MATCH (u:User)
+            WHERE COALESCE(u.recognize_stats_public, TRUE) <> TRUE
+            RETURN u.email;
+        END_OF_QUERY
+            anons << row['u.email']
+        end
+
         neo4j_query(<<~END_OF_QUERY).each do |row|
             MATCH (u:User)-[r:RECOGNIZED]->(u2:User)
-            WHERE COALESCE(u.recognize_stats_public, TRUE) = TRUE
             RETURN u.email, u2.email;
         END_OF_QUERY
             who = row['u.email']
@@ -2673,6 +2685,7 @@ class Main < Sinatra::Base
         end
         result = []
         hall_of_fame.each do |email, data|
+            email = nil if anons.include?(email)
             result << {:email => email, :stufe => data[:stufe], :total => data[:stufe].values.sum }
         end
         result.sort! do |a, b|

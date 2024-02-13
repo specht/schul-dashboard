@@ -135,8 +135,9 @@ docker_compose[:services][:ruby] = {
     :working_dir => '/app',
     :entrypoint =>  DEVELOPMENT ?
         'rerun -b --dir /app --ignore "*fragments.rb" -s SIGKILL \'thin --rackup config.ru --threaded start -e development\'' :
-        'thin --rackup config.ru --threaded start -e production'
-}
+        # 'rerun -b --dir /app --ignore "*fragments.rb" -s SIGKILL \'puma -p 3000 -w 4 --preload -t 0:16 -e development\'' :
+        'thin --rackup config.ru --threaded start -e production'}
+        # 'puma -p 3000 -w 4 --preload -t 0:16 -e production'
 docker_compose[:services][:ruby][:depends_on] ||= []
 docker_compose[:services][:ruby][:depends_on] << :neo4j
 
@@ -284,4 +285,6 @@ if DEVELOPMENT && ARGV == ['up']
     end
 end
 
-system("docker-compose --project-name #{PROJECT_NAME} #{ARGV.map { |x| '"' + x + '"'}.join(' ')}")
+`docker compose 2> /dev/null`
+DOCKER_COMPOSE = ($? == 0) ? 'docker compose' : 'docker-compose'
+system("#{DOCKER_COMPOSE} --compatibility --project-name #{PROJECT_NAME} #{ARGV.map { |x| '"' + x + '"'}.join(' ')}")

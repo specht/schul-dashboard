@@ -168,6 +168,7 @@ class Script
                     # E-Mail-Verteiler did not work in January 2024,
                     # let's remove the Return-Path header to make it work again.
                     mail['Return-Path'] = nil
+                    mail['In-Reply-To'] = nil
                     mail.to = nil
                     mail.cc = []
                     mail.bcc = []
@@ -179,6 +180,9 @@ class Script
                         mail.to = recipient
                         # STDERR.puts mail
                         STDERR.puts "Forwarding mail to #{recipient}..."
+                        File.open(File.join(File.dirname(path), 'last_forwarded_mail'), 'w') do |f|
+                            f.write mail.to_s
+                        end
                         mail.deliver!
                         recipients[:pending].delete_at(0)
                         recipients[:sent] << recipient

@@ -187,6 +187,7 @@ class Script
                             mail.deliver!
                         rescue StandardError => e
                             # sending failed!
+                            STDERR.puts "Forwarding mail failed, notifying admin..."
                             # 1. notify WEBSITE_MAINTAINER_EMAIL
                             _subject = "Mail Forwarder failed: #{mail.subject}"
                             _body = "The mail forwarder failed to forward a mail from #{mail[:from].formatted.first} to #{recipient}.\r\n\r\n"

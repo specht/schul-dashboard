@@ -189,6 +189,7 @@ class Script
                             # sending failed!
                             STDERR.puts "Forwarding mail failed, notifying admin..."
                             # 1. notify WEBSITE_MAINTAINER_EMAIL
+                            _sender = mail[:from].formatted.first
                             _subject = "E-Mail-Weiterleitung fehlgeschlagen: #{mail.subject}"
                             _body = StringIO.open do |io|
                                 # "The mail forwarder failed to forward a mail from #{mail[:from].formatted.first} to #{recipient}.\r\n\r\n"
@@ -205,7 +206,7 @@ class Script
                                 io.string
                             end
                             deliver_mail(_body) do
-                                to WEBSITE_MAINTAINER_EMAIL
+                                to _sender
                                 cc WEBSITE_MAINTAINER_EMAIL
                                 bcc SMTP_FROM
                                 from SMTP_FROM

@@ -59,6 +59,12 @@ window.addEventListener('load', function () {
                         let emails = liste.schueler.map(function(x) { return x.email; });
                         get_zeugnis(klasse, emails, 'xlsx');
                     });
+                    let button4 = $(`<button id='bu_print_all' class='btn btn-info'>`).html(`<i class='fa fa-file-pdf-o'></i>&nbsp;&nbsp;Zeugnisliste Klasse ${klassen_tr[klasse] ?? klasse} (PDF)`);
+                        $('#button_here').append(`&nbsp;&nbsp;`);
+                    $('#button_here').append(button4);
+                    button4.click(function(e) {
+                        print_pdf_sheets('/api/print_zeugnislisten_sheets', {klasse: klasse});
+                    });
 
                     load_zeugnis_table($('#zeugnisse_here'), klasse);
                 });

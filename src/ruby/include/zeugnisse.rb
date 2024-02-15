@@ -631,17 +631,23 @@ class Main < Sinatra::Base
     end
 
     post '/api/print_zeugnislisten_sheets' do
-        require_zeugnis_admin!
+        require_teacher!
         data = parse_request_data(
             :required_keys => [
                 :paths, :values
             ],
+            :optional_keys => [:klasse],
             :types => {:schueler => Array,
                 :paths => Array, :values => Array,
             },
             :max_body_length => 1024 * 1024 * 10,
             :max_string_length => 1024 * 1024 * 10,
         )
+        if data[:klasse]
+            assert(@session_user[:klassenleitung].include?(data[:klasse]) || zeugnis_admin_logged_in?)
+        else
+            require_zeugnis_admin!
+        end
         cache = {}
         (0...data[:paths].size).each do |i|
             cache.merge!(parse_paths_and_values(data[:paths][i], data[:values][i]))
@@ -653,7 +659,11 @@ class Main < Sinatra::Base
         #     end
         # end
 
-        respond(:yay => 'sure', :pdf_base64 => Base64.strict_encode64(get_zeugnislisten_sheets_pdf(cache)), :name => 'Zeugnislisten.pdf')
+        filename = 'Zeugnislisten.pdf'
+        if data[:klasse]
+            filename = "Zeugnisliste Klasse #{tr_klasse(data[:klasse])}.pdf"
+        end
+        respond(:yay => 'sure', :pdf_base64 => Base64.strict_encode64(get_zeugnislisten_sheets_pdf(cache, data[:klasse])), :name => filename)
     end
 
     post '/api/print_fehlzeiten_sheets' do

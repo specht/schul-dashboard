@@ -352,7 +352,7 @@ class Main
         return doc.render
     end
 
-    def get_zeugnislisten_sheets_pdf(cache)
+    def get_zeugnislisten_sheets_pdf(cache, only_this_klasse = nil)
         doc = Prawn::Document.new(:page_size => 'A4', :page_layout => :portrait, :margin => 0) do
             font_families.update("RobotoCondensed" => {
                 :normal => "/app/fonts/RobotoCondensed-Regular.ttf",
@@ -369,8 +369,7 @@ class Main
             first_page = true
             line_width 0.1.mm
             font('Roboto') do
-                ZEUGNIS_KLASSEN_ORDER.each do |klasse|
-                    # next unless klasse == '10o'
+                (only_this_klasse.nil? ? ZEUGNIS_KLASSEN_ORDER : [only_this_klasse]).each do |klasse|
                     liste = @@zeugnisliste_for_klasse[klasse].clone
 
                     cols_left_template  = %w(De De_AT De_SL FS1_Fach FS1 FS1_AT FS1_SL FS2_Fach FS2 FS2_AT FS2_SL FS3_Fach FS3 FS3_AT FS3_SL)

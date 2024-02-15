@@ -964,7 +964,8 @@ class Main
                     tw = width / 5.0
                     th = (height - 30.mm) / max_room_stunden
                     line_width 0.1.mm
-                    text_box "<b>#{room[0] =~ /\d/ ? 'Raum ' : ''}#{room}</b>", :at => [left, bottom + height + 5.mm], :width => width, :height => 15.mm, :align => :center, :valign => :center, :size => 18, :overflow => :shrink_to_fit, :inline_format => true
+                    text_box "<b>#{room[0] =~ /\d/ ? 'Raum ' : ''}#{room}</b>", :at => [left, bottom + height + 5.mm], :width => width, :height => 15.mm, :align => :left, :valign => :center, :size => 18, :overflow => :shrink_to_fit, :inline_format => true
+                    text_box "<b>#{klasse_for_room ? 'Klasse ' + _self.tr_klasse(klasse_for_room) : ''}</b>", :at => [left, bottom + height + 5.mm], :width => width, :height => 15.mm, :align => :right, :valign => :center, :size => 18, :overflow => :shrink_to_fit, :inline_format => true
                     bounding_box([left, bottom + height], :width => width, :height => height) do
                         %w(Montag Dienstag Mittwoch Donnerstag Freitag).each.with_index do |tag, tag_index|
                             bounding_box([tw * tag_index, (bottom + height - 15.mm)], :width => tw, :height => th) do

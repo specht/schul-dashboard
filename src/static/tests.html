@@ -106,7 +106,7 @@
     color: #fff;
 }
 .fc .fc-toolbar-title {
-    background-color: rgba(255, 255, 255, 0.5);
+    background-color: #{(@session_user || {})[:dark] ? 'rgba(0, 0, 0, 0.5)' : 'rgba(255, 255, 255, 0.5)'} ;
     -webkit-backdrop-filter: blur(10px);
     backdrop-filter: blur(10px);
     padding: 8px 16px;

@@ -119,19 +119,19 @@ body {
 
 .table {
     color: rgba(255, 255, 255, 0.9);
-    background-color: rgba(0, 0, 0, 0.2)!important;
+    background-color: rgba(255, 255, 255, 0.05);
 }
 .table th {
     color: rgba(255, 255, 255, 0.9);
-    background-color: rgba(0, 0, 0, 0.3)!important;
+    background-color: rgba(255, 255, 255, 0.1);
 }
 
 .table .th-marked {
-    background-color: rgba(254,244,165,0.2)!important;
+    background-color: rgba(254,244,165,0.2);
 }
 
 .table .marked {
-    background-color: rgba(254,244,165,0.3)!important;
+    background-color: rgba(254,244,165,0.3);
 }
 
 .timespan-booking {
@@ -317,4 +317,14 @@ body {
 
 .fc-timegrid-event-harness-inset .fc-timegrid-event,.fc-timegrid-event.fc-event-mirror {
     box-shadow: none;
+}
+
+.input-group-text{
+    background: rgba(0,0,0,0);
+    color: rgba(255, 255, 255, 0.9);
+    border-color: rgba(255, 255, 255, 0.2);
+}
+
+.poll-run-div {
+    background-color: rgba(255, 255, 255, 0.05);
 }

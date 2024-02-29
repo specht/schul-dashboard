@@ -2094,6 +2094,7 @@ class Timetable
             group_for_sus[x['u.email']] = x['group2']
         end
         groups_for_user = {}
+        # TODO: Also handle angebote!
         users_with_defined_groups = nil
         if only_this_email
             users_with_defined_groups = [only_this_email]
@@ -2288,6 +2289,9 @@ class Timetable
                 add_these_lesson_keys << "_#{ou_email}"
             elsif lesson_key =~ /^_groups_/
                 email = lesson_key.sub('_groups_/', '')
+                update_recipients(email)
+            elsif lesson_key =~ /^_angebote_/
+                email = lesson_key.sub('_angebote_/', '')
                 update_recipients(email)
             elsif lesson_key =~ /^_klasse_/
                 klasse = lesson_key.sub('_klasse_', '')

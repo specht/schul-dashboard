@@ -55,6 +55,7 @@ TRESOR_JWT_TTL_EXTRA = 20
 
 require './background-renderer.rb'
 require './include/admin.rb'
+require './include/angebote.rb'
 require './include/aula.rb'
 require './include/bib_login.rb'
 require './include/color.rb'
@@ -228,15 +229,15 @@ class SetupDatabase
     include Neo4jBolt
 
     CONSTRAINTS_LIST = [
+        'Angebot/key',
         'AudioComment/key',
         'DeviceLoginToken/token',
         'DeviceToken/token',
         'Event/key',
-        'SchulTablet/code',
+        'Group/key',
         'KnownEmailAddress/email',
         'Lesson/key',
         'LoginCode/tag',
-        'SecondLoginCode/tag',
         'MatrixAccessToken/access_token',
         'Message/key',
         'NewsEntry/timestamp',
@@ -245,6 +246,8 @@ class SetupDatabase
         'PresenceToken/token',
         'PublicEventPerson/tag',
         'PublicEventTrack/track',
+        'SchulTablet/code',
+        'SecondLoginCode/tag',
         'SelfTestDay/datum',
         'Session/sid',
         'SmsDay/ds',
@@ -1930,9 +1933,12 @@ class Main < Sinatra::Base
                                 end
                                 io.puts "<a class='dropdown-item nav-icon' href='/events'><div class='icon'><i class='fa fa-calendar-check-o'></i></div><span class='label'>Termine</span></a>"
                                 io.puts "<a class='dropdown-item nav-icon' href='/polls'><div class='icon'><i class='fa fa-bar-chart'></i></div><span class='label'>Umfragen</span></a>"
-                                io.puts "<a class='dropdown-item nav-icon' href='/prepare_vote'><div class='icon'><i class='fa fa-hand-paper-o'></i></div><span class='label'>Abstimmungen</span></a>"
+                                # io.puts "<a class='dropdown-item nav-icon' href='/prepare_vote'><div class='icon'><i class='fa fa-hand-paper-o'></i></div><span class='label'>Abstimmungen</span></a>"
                                 io.puts "<a class='dropdown-item nav-icon' href='/mailing_lists'><div class='icon'><i class='fa fa-envelope'></i></div><span class='label'>E-Mail-Verteiler</span></a>"
-                                io.puts "<a class='dropdown-item nav-icon' href='/groups'><div class='icon'><i class='fa fa-group'></i></div><span class='label'>Gruppen</span></a>"
+                                if teacher_logged_in?
+                                    io.puts "<a class='dropdown-item nav-icon' href='/angebote'><div class='icon'><i class='fa fa-group'></i></div><span class='label'>AGs und Angebote</span></a>"
+                                end
+                                io.puts "<a class='dropdown-item nav-icon' href='/groups'><div class='icon'><i class='fa fa-group'></i></div><span class='label'>Meine Gruppen</span></a>"
                             end
                         end
                         # if @session_user[:can_upload_vplan]
@@ -2888,6 +2894,7 @@ class Main < Sinatra::Base
         sent_messages = []
         stored_events = []
         stored_groups = []
+        stored_angebote = []
         stored_polls = []
         stored_poll_runs = []
         lesson_notes_for_session_user = {}
@@ -3128,6 +3135,12 @@ class Main < Sinatra::Base
                     e = temp[x]
                     e
                 end
+            end
+        elsif path == 'angebote'
+            unless teacher_logged_in?
+                redirect "#{WEB_ROOT}/", 302
+            else
+                stored_angebote = get_angebote()
             end
         elsif path == 'polls'
             unless teacher_or_sv_logged_in? || user_who_can_manage_tablets_or_teacher_logged_in?

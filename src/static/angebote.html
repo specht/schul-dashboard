@@ -1,0 +1,482 @@
+#{this_is_a_page_for_logged_in_teachers}
+<div class='container'>
+    <div class='row'>
+        <div class='col-md-12'>
+            <h2 style='margin-bottom: 30px;'>AGs und Angebote</h2>
+            <p>
+                Bitte tragen Sie hier AGs ein, die Sie als verantwortliche Lehrkraft anbieten und betreuen.
+                Ein Eintrag hat folgende Auswirkungen:
+            </p>
+            <ul style="list-style: unset; margin-left: 1em;">
+                <li>bei der Erstellung der Zeugnisse ist für Klassenleitungen gleich ersichtlich, wer an welcher AG teilnimmt und die Abfrage von AGs entfällt</li>
+                <li>Lehrkräfte können nachsehen, wer z. B. alles in der Musical-AG ist, wenn eine Generalprobe ansteht</li>
+                <li>Schülerinnen und Schüler sehen, dass sie in einer bestimmten AG angemeldet sind</li>
+                <li>es wird auch E-Mail-Verteiler für diese Gruppen geben (in Planung)</li>
+            </ul>
+            <p>
+                Bitte pflegen Sie die Einträge und aktualisieren Sie sie regelmäßig. Sie können gern auch weitere Angebote oder Gruppierungen eintragen,
+                die keine AG im eigentlichen Sinne sind, z. B. die Teilnahme am Religionsunterricht oder das Amt des Klassensprechers.
+            </p>
+            <p>
+                Bitte beachten Sie, dass diese Einträge für alle Lehrkräfte sichtbar sind, aber nur von der erstellenden Lehrkraft bearbeitet werden können.
+            </p>
+            <button class='btn btn-success bu-new-angebot'><i class='fa fa-plus'></i>&nbsp;&nbsp;Neues Angebot</button>
+            <hr />
+            <div class='angebote-container' style='max-width: 100%; overflow-x: auto;'>
+                <table class='table table-striped narrow' style='width: unset; min-width: 100%;'>
+                <thead>
+                    <tr>
+                        <th>Angebot</th>
+                        <th>Verantwortlich</th>
+                        <th>Teilnehmer</th>
+                    </tr>
+                </thead>
+                <tbody class='angebote-here'>
+                </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal" id="angebotModal" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-scrollable modal-xl modal-dialog-centered" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title lb_title">Neues Angebot</h5>
+            </div>
+            <div class="modal-body">
+                <div class='row'>
+                    <div class='col-md-12'>
+                        <div class="form-group">
+                            <label>Name</label>
+                            <input id='ti_name' class='form-control' type='text' placeholder='Bitte geben Sie den Namen des Angebotes ein, z. B. »Musical-AG«'></input>
+                        </div>
+                    </div>
+                </div>
+                <hr />
+                <div class="form-group">
+                    <label style='width: 100%;'>Teilnehmer</label>
+                    <input id='ti_recipients' class='form-control' placeholder='Teilnehmer suchen…' /><div class='recipient-input-dropdown' style='display: none;'></div></input>
+                </div>
+                <div class="form-group">
+                    <div class='recipients_list'>
+                    </div>
+                    <p style='margin-top: 10px;' id='recipient_count'>keine Teilnehmer</p>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <div id='save_angebot_btn_container'>
+                    <button id='bu_discard_angebot' class='btn btn-outline-secondary' disabled><i class='fa fa-times'></i>&nbsp;&nbsp;<span>Verwerfen</span></button>
+                    <button id='bu_save_angebot' class='btn btn-outline-secondary' disabled><i class='fa fa-check'></i>&nbsp;&nbsp;<span>Speichern</span></button>
+                </div>
+                <button id='bu_delete_angebot' type="button" class="btn btn-outline-secondary" disabled style='display: none;'><i class='fa fa-trash'></i>&nbsp;&nbsp;Angebot löschen</button>
+                <button id='bu_close_angebot_modal' type="button" class="btn btn-secondary" data-dismiss="modal">Schließen</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    tr.clickable {
+        cursor: pointer;
+    }
+    tr.clickable:hover td {
+        background-color: rgba(255, 255, 255, 0.5);
+    }
+</style>
+
+<script>
+var recipients = {};
+var recipients_cache = {};
+var autocomplete_results = {};
+var recipients_list = {};
+var net_recipients_list = [];
+var old_name = ''
+var old_recipients_list = [];
+var old_aid = null;
+var stored_angebote = #{stored_angebote.to_json};
+var external_users_for_session_user = #{external_users_for_session_user.to_json};
+var antikenfahrt_recipients = #{@@antikenfahrt_recipients.to_json};
+CAN_HANDLE_EXTERNAL_USERS = true;
+var force_close = false;
+var display_name_for_email = #{Hash[@@user_info.map { |email, info| [email, info[:display_name]] }].to_json};
+var klasse_for_email = #{Hash[@@user_info.map { |email, info| [email, tr_klasse(info[:klasse])] }].to_json};
+
+function can_send() {
+    return (net_recipients_list.length > 0) && $('#ti_name').val().trim().length > 0;
+}
+
+function pending_changes() {
+    let flag = (old_recipients_list.join('/') !== net_recipients_list.join('/')) ||
+        (old_name !== $('#ti_name').val());
+    return flag;
+}
+
+function update_buttons() {
+    if (old_aid) {
+        $('#bu_delete_angebot').prop('disabled', false).show().removeClass('btn-outline-secondary').addClass('btn-danger');
+        $('#bu_discard_angebot span').html('Änderungen verwerfen');
+        $('#bu_save_angebot span').html('Änderungen speichern');
+    } else {
+        $('#bu_delete_angebot').prop('disabled', true).hide().addClass('btn-outline-secondary').removeClass('btn-danger');
+        $('#bu_discard_angebot span').html('Verwerfen');
+        $('#bu_save_angebot span').html('Speichern');
+    }
+    if (pending_changes()) {
+        $('#bu_discard_angebot').removeClass('btn-outline-secondary').addClass('btn-secondary').prop('disabled', false);
+        $('#bu_close_angebot_modal').removeClass('btn-secondary').addClass('btn-outline-secondary').prop('disabled', true);
+        if (can_send())
+            $('#bu_save_angebot').removeClass('btn-outline-secondary').addClass('btn-success').prop('disabled', false);
+        else
+            $('#bu_save_angebot').removeClass('btn-success').addClass('btn-outline-secondary').prop('disabled', true);
+    } else {
+        $('#bu_discard_angebot').removeClass('btn-secondary').addClass('btn-outline-secondary').prop('disabled', true);
+        $('#bu_close_angebot_modal').removeClass('btn-outline-secondary').addClass('btn-secondary').prop('disabled', false);
+        $('#bu_save_angebot').removeClass('btn-success').addClass('btn-outline-secondary').prop('disabled', true);
+    }
+}
+
+function discard_angebot() {
+    force_close = true;
+    $('#angebotModal').modal('hide');
+}
+
+function save_angebot() {
+    let description = $('#summernote').summernote('code');
+    let submit_data = {
+        name: $('#ti_name').val().trim(),
+        recipients: net_recipients_list
+    };
+    old_name = submit_data.name;
+    old_recipients_list = [...net_recipients_list];
+    if (old_aid === null) {
+        api_call('/api/save_angebot', submit_data, function(data) {
+            if (data.success) {
+                stored_angebote.unshift(data.angebot);
+                force_close = true;
+                $('#angebotModal').modal('hide');
+                old_aid = data.angebot.aid;
+                update_net_recipients_list();
+                update_buttons();
+                update_stored_angebote();
+            }
+        });
+    } else {
+        submit_data.aid = old_aid;
+        api_call('/api/update_angebot', submit_data, function(data) {
+            if (data.success) {
+                stored_angebote = stored_angebote.map(function(a) {
+                    if (a.aid === data.aid)
+                        a = data.angebot;
+                    return a;
+                });
+                force_close = true;
+                $('#angebotModal').modal('hide');
+                update_net_recipients_list();
+                update_buttons();
+                update_stored_angebote();
+            }
+        });
+    }
+}
+
+function delete_angebot() {
+    if (!old_aid)
+        return;
+    api_call('/api/delete_angebot', {aid: old_aid}, function(data) {
+        if (data.success) {
+            old_recipients_list = net_recipients_list;
+            force_close = true;
+            $('#angebotModal').modal('hide');
+            stored_angebote = stored_angebote.filter(x => x.aid !== data.aid);
+            update_stored_angebote();
+        }
+    });
+}
+
+function update_net_recipients_list() {
+    let net_recipients_hash = {};
+    for (let key in recipients_list) {
+        let entry = recipients[key];
+        if (entry.entries)
+            for (let email of entry.entries)
+                net_recipients_hash[email] = true;
+        else
+            net_recipients_hash[key] = true;
+    }
+    net_recipients_list = Object.keys(net_recipients_hash).sort();
+
+    if (net_recipients_list.length === 0)
+        $('#recipient_count').html('keine Teilnehmer');
+    else
+        $('#recipient_count').html(` ${net_recipients_list.length} Teilnehmer`);
+    update_buttons();
+}
+
+function gen_recipient_span(key, with_rm) {
+    if (!(key in recipients))
+        recipients[key] = {label: key};
+    let label = recipients[key].label;
+    if (recipients[key].entries)
+        label += ' (' + recipients[key].entries.length + ')';
+    let recipient = $('<span>').addClass('recipient').html(label);
+    if (with_rm) {
+        let rm_button = $('<span>').addClass('rm').data('key', key);
+        rm_button.click(function(e) {
+            remove_recipient($(e.target).data('key'));
+            $(e.target).closest('.recipient').remove();
+        });
+        recipient.addClass('with-rm').append(rm_button);
+    }
+    if (recipients[key].teacher)
+        recipient.addClass('teacher');
+    recipient.data('key', key);
+    return recipient;
+}
+
+function add_recipient(key) {
+    if (!(key in recipients_list)) {
+        recipients_list[key] = true;
+        $('.recipients_list').append(gen_recipient_span(key, true));
+    }
+    $('.recipient-input-dropdown').hide();
+    $('#ti_recipients').val('');
+    $('#ti_name').focus();
+    update_net_recipients_list();
+}
+
+function remove_recipient(key) {
+    delete recipients_list[key];
+    update_net_recipients_list();
+}
+
+function compact_address_list(emails) {
+    let result = [];
+    for (let key of recipients_cache.angebote) {
+        let all_in = true;
+        for (let email of recipients[key].entries) {
+            if (emails.indexOf(email) < 0) {
+                all_in = false;
+                break;
+            }
+        }
+        if (all_in) {
+            result.push(key);
+            let new_emails = [];
+            for (let email of emails)
+                if (recipients[key].entries.indexOf(email) < 0)
+                    new_emails.push(email);
+            emails = new_emails;
+        }
+    }
+    for (let email of emails)
+        result.push(email);
+    return result;
+}
+
+function edit_angebot(angebot) {
+    $('.recipients_list').empty();
+    recipients_list = {};
+    for (let email of angebot.recipients) {
+        recipients_list[email] = true;
+        $('.recipients_list').append(gen_recipient_span(email, true));
+    }
+    old_aid = angebot.aid;
+    update_net_recipients_list();
+    $('#angebotModal').modal('show');
+    force_close = false;
+    $('.lb_title').text(angebot.info.name);
+    $('#ti_name').val(angebot.info.name);
+    old_name = angebot.info.name;
+    old_recipients_list = [...net_recipients_list];
+    $('#ti_recipients').val('');
+    $('#ti_recipients').focus();
+    update_buttons();
+}
+
+function update_stored_angebote() {
+    $('.angebote-here').empty();
+    for (angebot of stored_angebote) {
+        let row = $('<tr>');
+        let cell = $('<td>');
+        cell.text(angebot.info.name);
+        row.append(cell);
+        row.append($('<td>').html(`${display_name_for_email[angebot.owner] ?? angebot.owner}`));
+        row.append($(`<td style='white-space: normal;'>`).html(angebot.recipients.map((email) => { return `${display_name_for_email[email] ?? email} (${klasse_for_email[email]})`; }).join(', ')));
+        row.data('aid', angebot.aid);
+        if (angebot.owner === '#{@session_user[:email]}') {
+            row.addClass('clickable');
+            (function(angebot) {
+                row.click(function(e) {
+                    edit_angebot(angebot);
+                });
+            })(angebot);
+        }
+        $('.angebote-here').append(row);
+    };
+}
+
+function new_angebot() {
+    $('.lb_title').text('Neues Angebot');
+    $('#ti_name').val('');
+
+    recipients_list = {};
+    update_net_recipients_list();
+    $('.recipients_list').empty();
+    $('#angebotModal').modal('show');
+    force_close = false;
+    old_recipients_list = [];
+    old_aid = null;
+    $('#ti_recipients').val('');
+    $('#ti_name').focus();
+    update_buttons();
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    $('#angebotModal').on('hide.bs.modal', function(e) {
+        if ($(e.target).attr('id') === 'angebotModal' && pending_changes() && (!force_close)) {
+            $('#save_angebot_btn_container').effect('shake', {direction: 'left', distance: 4});
+            e.preventDefault();
+            e.stopImmediatePropagation();
+            return false;
+        }
+    });
+
+    $('.bu-new-angebot').click(function(e) {
+        new_angebot();
+    });
+
+    $('#bu_discard_angebot').click(function(e) {
+        discard_angebot();
+    });
+
+    $('#bu_save_angebot').click(function(e) {
+        save_angebot();
+    });
+
+    $('#bu_delete_angebot').click(function(e) {
+        showTemplateModal('Angebot löschen',
+            'Sind Sie sicher, dass Sie dieses Angebot löschen möchten?',
+            "<i class='fa fa-trash'></i>&nbsp;&nbsp;Angebot löschen", 'btn-danger',
+            'Abbrechen', 'btn-secondary', function() {
+                delete_angebot();
+            }
+        );
+    });
+
+    $('#ti_recipients').keydown(function(e) {
+        if ((e.keyCode === 9 || e.keyCode === 13) && ($(e.target).val().length > 0)) {
+            if (Object.keys(autocomplete_results).length === 1) {
+                let key = recipients_cache.keys[Object.keys(autocomplete_results)[0]];
+                add_recipient(key);
+            }
+            e.preventDefault();
+            e.stopPropagation();
+            if (e.keyCode === 9)
+                $('#ti_recipients').focus();
+            return;
+        }
+    });
+    $('#ti_recipients').keyup(function(e) {
+        if ($('#ti_recipients')[0].selectionStart == $(e.target).val().length) {
+            let value = $(e.target).val();
+            let backspace_pressed = (e.keyCode === 8);
+            let space_at_end = value[value.length - 1] == ' ';
+            let search_terms = value.trim().toLowerCase().split(/\s+/);
+            let results = {};
+            for (let i = 0; i < search_terms.length; i++) {
+                let term = search_terms[i];
+                let term_results = {};
+                for (let key of Object.keys(recipients_cache.index[term] || {})) {
+                    term_results[key] = recipients_cache.index[term][key];
+                }
+                if (i == 0)
+                    results = term_results;
+                else {
+                    for (let k of Object.keys(results)) {
+                        if (k in term_results) {
+                            if (term_results[k] > results[k])
+                                results[k] = term_results[k];
+                        } else {
+                            delete results[k];
+                        }
+                    }
+                }
+            }
+            autocomplete_results = results;
+            result_keys = Object.keys(results).map(function(x) { return parseInt(x); });
+            if (result_keys.length === 0)
+                $('.recipient-input-dropdown').hide();
+            else {
+                if (result_keys.length === 1)
+                {
+                    if (!backspace_pressed) {
+                        let key = recipients_cache.keys[result_keys[0]];
+                        let label = recipients[key].label;
+                        $('#ti_recipients').val(label);
+                        $('#ti_recipients')[0].setSelectionRange(results[result_keys[0]] + (space_at_end ? 1 : 0), label.length);
+                    }
+                }
+                result_keys.sort(function(a, b) {
+                    let va = recipients[recipients_cache.keys[a]];
+                    let vb = recipients[recipients_cache.keys[b]];
+                    if (va.teacher === vb.teacher) {
+                        if (va.label < vb.label)
+                            return -1;
+                        return 1;
+                    } else {
+                        if (va.teacher)
+                            return -1;
+                        return 1;
+                    }
+                });
+                $('.recipient-input-dropdown').empty();
+                for (let key of result_keys) {
+                    let k = recipients_cache.keys[key];
+                    let r = gen_recipient_span(k);
+                    r.click(function(e) {
+                        add_recipient($(e.target).data('key'));
+                    });
+                    $('.recipient-input-dropdown').append(r);
+                }
+                $('.recipient-input-dropdown').show();
+            }
+        }
+    });
+    for (let key of ['#ti_name', '#ti_date', '#ti_start_time', '#ti_end_time']) {
+        $(key).keyup(function(e) { update_buttons(); });
+        $(key).change(function(e) { update_buttons(); });
+    }
+//     $('.bu-compose').click();
+
+    $('.btn_lesson_data').click(function(e) {
+        let button = $(e.target);
+        if (button.data('state') === 'yes') {
+            button.removeClass('btn-info').addClass('btn-outline-secondary');
+            button.find('.fa').removeClass('fa-check').removeClass('fa-question-circle').addClass('fa-times');
+            button.data('state', 'no');
+            button.blur();
+        }
+        else {
+            button.removeClass('btn-outline-secondary').addClass('btn-info');
+            button.find('.fa').removeClass('fa-times').removeClass('fa-question-circle').addClass('fa-check');
+            button.data('state', 'yes');
+        }
+        update_buttons();
+    });
+
+    load_recipients('#{@session_user[:id]}', function() {
+        update_stored_angebote();
+        if (window.location.hash.length > 1)
+        {
+            let aid = window.location.hash.substr(1);
+            for (let angebot of stored_angebote) {
+                if (angebot.aid === aid)
+                    edit_angebot(angebot);
+            }
+            window.location.hash = '';
+        }
+    }, {groups: []});
+});
+</script>

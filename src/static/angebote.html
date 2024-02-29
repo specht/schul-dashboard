@@ -54,7 +54,6 @@
                         </div>
                     </div>
                 </div>
-                <hr />
                 <div class="form-group">
                     <label style='width: 100%;'>Teilnehmer</label>
                     <input id='ti_recipients' class='form-control' placeholder='Teilnehmer suchen…' /><div class='recipient-input-dropdown' style='display: none;'></div></input>
@@ -96,9 +95,6 @@ var old_name = ''
 var old_recipients_list = [];
 var old_aid = null;
 var stored_angebote = #{stored_angebote.to_json};
-var external_users_for_session_user = #{external_users_for_session_user.to_json};
-var antikenfahrt_recipients = #{@@antikenfahrt_recipients.to_json};
-CAN_HANDLE_EXTERNAL_USERS = true;
 var force_close = false;
 var display_name_for_email = #{Hash[@@user_info.map { |email, info| [email, info[:display_name]] }].to_json};
 var klasse_for_email = #{Hash[@@user_info.map { |email, info| [email, tr_klasse(info[:klasse])] }].to_json};
@@ -477,6 +473,6 @@ document.addEventListener('DOMContentLoaded', function() {
             }
             window.location.hash = '';
         }
-    }, {groups: []});
+    }, {groups: []}, true);
 });
 </script>

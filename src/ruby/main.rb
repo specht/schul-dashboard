@@ -2900,6 +2900,7 @@ class Main < Sinatra::Base
         lesson_notes_for_session_user = {}
         show_event = {}
         external_users_for_session_user = []
+        angebote_for_session_user = []
         if path == 'directory'
             redirect "#{WEB_ROOT}/", 302 unless @session_user
             parts = request.env['REQUEST_PATH'].split('/')
@@ -3141,6 +3142,12 @@ class Main < Sinatra::Base
                 redirect "#{WEB_ROOT}/", 302
             else
                 stored_angebote = get_angebote()
+            end
+        elsif path == 'profil'
+            unless user_logged_in?
+                redirect "#{WEB_ROOT}/", 302
+            else
+                angebote_for_session_user = get_angebote_for_session_user()
             end
         elsif path == 'polls'
             unless teacher_or_sv_logged_in? || user_who_can_manage_tablets_or_teacher_logged_in?

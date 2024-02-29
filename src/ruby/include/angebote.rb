@@ -131,4 +131,25 @@ class Main < Sinatra::Base
         trigger_update("_angebote_/#{@session_user[:email]}")
         respond(:ok => true, :aid => data[:aid])
     end
+
+    def get_angebote_for_session_user
+        require_user!
+        angebote = []
+        neo4j_query(<<~END_OF_QUERY, {:email => @session_user[:email]}).each do |row|
+            MATCH (u:User {email: $email})-[:IS_PART_OF]->(a:Angebot)-[:DEFINED_BY]->(ou:User)
+            RETURN a, ou.email;
+        END_OF_QUERY
+            owner = row['ou.email']
+            angebot = row['a']
+            next unless @@user_info[owner]
+            angebote << {
+                :owner => @@user_info[owner][:display_name],
+                :name => angebot[:name],
+            }
+        end
+        angebote.sort! do |a, b|
+            a[:name].downcase <=> b[:name].downcase
+        end
+        angebote
+    end
 end

@@ -292,11 +292,13 @@ class Main < Sinatra::Base
         token = data[:token]
         data = neo4j_query(<<~END_OF_QUERY, :token => token)
             MATCH (v:TechProblem {token: $token})-[:BELONGS_TO]->(u:User)
+            OPTIONAL MATCH (v:TechProblem {token: $token})-[:WILL_BE_FIXED_BY]->(f:User)
             SET v.mail_count = v.mail_count + 1
-            RETURN v, u.email;
+            RETURN v, u.email, f.email;
         END_OF_QUERY
         problem = data.first["v"]
         mail_adress = data.first["u.email"]
+        femail = data.first["f.email"]
 
         if problem[:fixed]
             state = "„Behoben“"
@@ -317,6 +319,7 @@ class Main < Sinatra::Base
             to mail_adress
             bcc SMTP_FROM
             from SMTP_FROM
+            reply_to femail
 
             subject "Neuigkeiten zu deinem Technikproblem"
 
@@ -324,7 +327,10 @@ class Main < Sinatra::Base
                 io.puts "<p>Hallo!</p>"
                 io.puts "<p>Es gibt Neuigkeiten zu deinem Technikproblem:</p>"
                 io.puts "<p>Das Problem hat jetzt den Status #{state}.#{comment}</p>"
-                # io.puts "<a href='#{WEBSITE_HOST}/techpost'>Probleme ansehen</a>"
+                if femail
+                    io.puts "<p>Zurzeit betreut #{@@user_info[femail][:display_name]} das Problem. Wende dich bei Fragen gerne an ihn/sie"
+                end
+                    # io.puts "<a href='#{WEBSITE_HOST}/techpost'>Probleme ansehen</a>"
                 io.puts "<p>Viele Grüße<br>Dashboard #{SCHUL_NAME_AN_DATIV} #{SCHUL_NAME}</p>"
                 io.string
             
@@ -344,7 +350,10 @@ class Main < Sinatra::Base
                 io.puts "<p>Hallo!</p>"
                 io.puts "<p>Es gibt Neuigkeiten zu deinem Technikproblem:</p>"
                 io.puts "<p>Das Problem hat jetzt den Status #{state}.#{comment}</p>"
-                # io.puts "<a href='#{WEBSITE_HOST}/techpost'>Probleme ansehen</a>"
+                if femail
+                    io.puts "<p>Zurzeit betreut #{@@user_info[femail][:display_name]} das Problem. Wende dich bei Fragen gerne an ihn/sie"
+                end
+                    # io.puts "<a href='#{WEBSITE_HOST}/techpost'>Probleme ansehen</a>"
                 io.puts "<p>Viele Grüße<br>Dashboard #{SCHUL_NAME_AN_DATIV} #{SCHUL_NAME}</p>"
                 io.string
             

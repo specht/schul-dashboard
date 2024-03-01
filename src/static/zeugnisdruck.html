@@ -22,6 +22,7 @@ var zeugnisliste_for_klasse = #{@@zeugnisliste_for_klasse.to_json};
 var sesb_for_email = #{Hash[@@user_info.keys.map { |x| [x, @@user_info[x][:sesb]]}].to_json};
 var zeugnis_formular_fehler = #{Hash[FAECHER_FOR_ZEUGNIS[ZEUGNIS_SCHULJAHR][ZEUGNIS_HALBJAHR].keys.map { |key| [key, @@zeugnisse[:formulare][key][:formular_fehler]] }].to_json};
 var my_klassen = #{zeugnis_admin_logged_in? ? ZEUGNIS_KLASSEN_ORDER : (@@zeugnisliste_for_lehrer[@session_user[:shorthand]]).keys.select { |x| x.include?('/VT')}.map { |x| x.split('/').first }.sort.uniq.to_json};
+var need_sozialverhalten = #{@@need_sozialverhalten.to_json};
 
 window.addEventListener('load', function () {
     setTimeout(function() {
@@ -40,14 +41,16 @@ window.addEventListener('load', function () {
                         let emails = liste.schueler.map(function(x) { return x.email; });
                         get_zeugnis(klasse, emails, 'pdf');
                     });
-                    let button2 = $(`<button id='bu_print_all_sozial' class='btn btn-info'>`).html(`<i class='fa fa-file-pdf-o'></i>&nbsp;&nbsp;Alle Sozialzeugnisse der Klasse ${klassen_tr[klasse] ?? klasse} (PDF)`);
-                    $('#button_here').append(`&nbsp;&nbsp;`);
-                    $('#button_here').append(button2);
-                    if ('#{zeugnis_admin_logged_in? || (Time.now.strftime('%Y-%m-%dT%H:%M:%S') > '2023-07-05T12:00:00') ? 'true' : 'false'}' === 'false')
-                        button2.prop('disabled', true);
-                    button2.click(function(e) {
-                        get_sozialzeugnis(klasse);
-                    });
+                    if (need_sozialverhalten[klasse]) {
+                        let button2 = $(`<button id='bu_print_all_sozial' class='btn btn-info'>`).html(`<i class='fa fa-file-pdf-o'></i>&nbsp;&nbsp;Alle Sozialzeugnisse der Klasse ${klassen_tr[klasse] ?? klasse} (PDF)`);
+                        $('#button_here').append(`&nbsp;&nbsp;`);
+                        $('#button_here').append(button2);
+                        // if ('#{zeugnis_admin_logged_in? || (Time.now.strftime('%Y-%m-%dT%H:%M:%S') > DEADLINE_SOZIALNOTEN) ? 'true' : 'false'}' === 'false')
+                        //     button2.prop('disabled', true);
+                        button2.click(function(e) {
+                            get_sozialzeugnis(klasse);
+                        });
+                    }
                     let button3 = $(`<button id='bu_print_all' class='btn btn-secondary'>`).html(`<i class='fa fa-file-excel-o'></i>&nbsp;&nbsp;Alle Noten der Klasse ${klassen_tr[klasse] ?? klasse} (XLSX)`);
                         $('#button_here').append(`&nbsp;&nbsp;`);
                     $('#button_here').append(button3);
@@ -55,6 +58,12 @@ window.addEventListener('load', function () {
                         let liste = zeugnisliste_for_klasse[klasse];
                         let emails = liste.schueler.map(function(x) { return x.email; });
                         get_zeugnis(klasse, emails, 'xlsx');
+                    });
+                    let button4 = $(`<button id='bu_print_all' class='btn btn-info'>`).html(`<i class='fa fa-file-pdf-o'></i>&nbsp;&nbsp;Zeugnisliste Klasse ${klassen_tr[klasse] ?? klasse} (PDF)`);
+                        $('#button_here').append(`&nbsp;&nbsp;`);
+                    $('#button_here').append(button4);
+                    button4.click(function(e) {
+                        print_pdf_sheets('/api/print_zeugnislisten_sheets', {klasse: klasse});
                     });
 
                     load_zeugnis_table($('#zeugnisse_here'), klasse);
@@ -118,7 +127,7 @@ function get_sozialzeugnis(klasse) {
     path_array.push(['Schuljahr', ZEUGNIS_SCHULJAHR]);
     path_array.push(['Halbjahr', ZEUGNIS_HALBJAHR]);
     let liste = zeugnisliste_for_klasse[klasse];
-    let items = ['ZV', 'LLB', 'SSK', 'KF', 'SV'];
+    let items = #{SOZIALNOTEN_KEYS.to_json};
     let emails = liste.schueler.map(function(x) { return x.email; });
     let faecher = liste.faecher;
     path_array.push(['SV', items]);

@@ -27,14 +27,14 @@
     font-style: normal;
     font-weight: 400;
     font-display: swap;
-    src: local('Roboto Condensed'), local('RobotoCondensed-Regular'), url(/fonts/ieVl2ZhZI2eCN5jzbjEETS9weq8-59U.ttf) format('truetype');
+    src: url(/fonts/ieVl2ZhZI2eCN5jzbjEETS9weq8-59U.ttf) format('truetype');
 }
 @font-face {
     font-family: 'Roboto Condensed';
     font-style: normal;
     font-weight: 700;
     font-display: swap;
-    src: local('Roboto Condensed Bold'), local('RobotoCondensed-Bold'), url(/fonts/ieVi2ZhZI2eCN5jzbjEETS9weq8-32meKCM.ttf) format('truetype');
+    src: url(/fonts/ieVi2ZhZI2eCN5jzbjEETS9weq8-32meKCM.ttf) format('truetype');
 }
 
 @font-face {
@@ -207,10 +207,12 @@ body {
 }
 
 /* .container, .ttc, .fc .fc-view-harness, .hint, .weekend_events, .future_homework {
+    -webkit-backdrop-filter: blur(10px);
     backdrop-filter: blur(10px);
 } */
 
 .container, .fc .fc-view-harness, .hint, .weekend_events, .future_homework {
+    -webkit-backdrop-filter: blur(10px);
     backdrop-filter: blur(10px);
 }
 
@@ -246,7 +248,7 @@ input {
 
 .navbar {
     box-shadow: rgba(0,0,0,0.2) 0px 1px 10px;
-    border-bottom: 1px solid #bbb;
+    border: 1px solid #bbb;
     background-color: #fff!important;
     /* background-color: rgba(255,255,255,0.7)!important; */
 }
@@ -2694,4 +2696,8 @@ th.thsticky {
 
 #calendar > div.fc-view-harness.fc-view-harness-active > div > table > tbody > tr.fc-scrollgrid-section.fc-scrollgrid-section-liquid > td > div > div {
     overflow-y: hidden!important;
+}
+
+tr.palerow td {
+    opacity: 0.5;
 }

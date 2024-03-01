@@ -1,4 +1,10 @@
-<div class='container-fluid white' style='padding-top: 30px;'>
+<style>
+    body {
+        background-image: none;
+        background-color: #{(@session_user || {})[:dark] ? '#000' : '#fff'};
+    }
+    </style>
+<div class='container-fluid solid white'>
     <div>
     #{mail_addresses_table(klasse)}
     </div>

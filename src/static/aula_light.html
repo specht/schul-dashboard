@@ -1,5 +1,29 @@
 #{require_user_who_can_manage_tablets!}
 <style>
+    .aula-element {
+        box-shadow: 0 0 0.7vh rgba(0,0,0,0.5);
+        background-color: rgba(255, 255, 255, 0.2);
+        border-radius: 1vh;
+        position: absolute;
+        text-align: center;
+        font-size: 3vh;
+        left: 50%;
+        padding: 1vh 80vh;
+    }
+    .audience {
+        transform: translate(-50%, 0%);
+    }
+    body {
+        background-image: none;
+        background-color: #000;
+    }
+    .table {
+        background-color: rgba(0,0,0,0);
+    }
+    td, tr {
+        text-align: center;
+        vertical-align: middle;
+    }
     /* code {
         color: #000;
     } */
@@ -16,6 +40,9 @@
         width: 45px;
         height: 45px;
     }
+    .traverse {
+        background-color: rgba(255, 255, 255, 0.2)!important;
+    }
 </style>
 <div class='container-fluid' style='padding-top: 30px; background-color: #000; color: #fff;'>
     <div class='row'>
@@ -24,9 +51,6 @@
             <button id="config_upload" class='btn btn-primary pull-right'><i class='fa fa-upload'></i>&nbsp;&nbsp;Konfiguration hochladen</button>
             <button id="super_user" class='btn pull-right' style="color: #000;">&nbsp;&nbsp;Super User</button>
             </h2>
-            <div class="alert alert-warning">
-                Die DMX-Kanal Nummern werden noch ergänzt. Bei Fragen oder Problemen, wende dich gerne an Peter-J. Germelmann.<br><br><a class="btn btn-primary" href="mailto:peter-julius.germelmann@mail.gymnasiumsteglitz.de"><i class='fa fa-envelope'></i>&nbsp;&nbsp;E-Mail</a>
-            </div>
             <br>
             <!-- <hr>
             Vorne: 24<br>
@@ -57,7 +81,8 @@
                     </tbody>
                 </table>
             </div>
-        </div>
+            <br>          
+            <div class="aula-element audience">Publikum</div>
         </div>
     </div>
 </div>

@@ -134,9 +134,10 @@ docker_compose[:services][:ruby] = {
     :environment => env,
     :working_dir => '/app',
     :entrypoint =>  DEVELOPMENT ?
-        'rerun -b --dir /app -s SIGKILL \'thin --rackup config.ru --threaded start -e development\'' :
-        'thin --rackup config.ru --threaded start -e production'
-}
+        'rerun -b --dir /app --ignore "*fragments.rb" -s SIGKILL \'thin --rackup config.ru --threaded start -e development\'' :
+        # 'rerun -b --dir /app --ignore "*fragments.rb" -s SIGKILL \'puma -p 3000 -w 4 --preload -t 0:16 -e development\'' :
+        'thin --rackup config.ru --threaded start -e production'}
+        # 'puma -p 3000 -w 4 --preload -t 0:16 -e production'
 docker_compose[:services][:ruby][:depends_on] ||= []
 docker_compose[:services][:ruby][:depends_on] << :neo4j
 
@@ -167,7 +168,7 @@ docker_compose[:services][:neo4j][:user] = "#{UID}"
 
 docker_compose[:services][:timetable] = YAML.load(docker_compose[:services][:ruby].to_yaml)
 docker_compose[:services][:timetable]['entrypoint'] = DEVELOPMENT ?
-            'rerun -b --dir /app -s SIGKILL \'rackup --port 8080 --host 0.0.0.0 timetable-repl.ru\'' :
+            'rerun -b --dir /app --ignore "*fragments.rb" -s SIGKILL \'rackup --port 8080 --host 0.0.0.0 timetable-repl.ru\'' :
             'rackup --port 8080 --host 0.0.0.0 timetable-repl.ru'
 
 docker_compose[:services][:ruby][:user] = "#{UID}"
@@ -177,18 +178,18 @@ docker_compose[:services][:timetable][:user] = "#{UID}"
 if ENABLE_IMAGE_BOT
     docker_compose[:services][:image_bot] = YAML.load(docker_compose[:services][:ruby].to_yaml)
     docker_compose[:services][:image_bot]['entrypoint'] = DEVELOPMENT ?
-                'rerun -b --dir /app -s SIGKILL \'rackup --port 8080 --host 0.0.0.0 image-bot-repl.ru\'' :
+                'rerun -b --dir /app --ignore "*fragments.rb" -s SIGKILL \'rackup --port 8080 --host 0.0.0.0 image-bot-repl.ru\'' :
                 'rackup --port 8080 --host 0.0.0.0 image-bot-repl.ru'
 end
 
 docker_compose[:services][:vplan_watcher] = YAML.load(docker_compose[:services][:ruby].to_yaml)
 docker_compose[:services][:vplan_watcher]['entrypoint'] = DEVELOPMENT ?
-            'rerun -b --dir /app -s SIGKILL \'ruby vplan-watcher.rb\'' :
+            'rerun -b --dir /app --ignore "*fragments.rb" -s SIGKILL \'ruby vplan-watcher.rb\'' :
             'ruby vplan-watcher.rb'
 
 docker_compose[:services][:invitation_bot] = YAML.load(docker_compose[:services][:ruby].to_yaml)
 docker_compose[:services][:invitation_bot]['entrypoint'] = DEVELOPMENT ?
-            'rerun -b --dir /app -s SIGKILL \'rackup --port 8080 --host 0.0.0.0 invitation-repl.ru\'' :
+            'rerun -b --dir /app --ignore "*fragments.rb" -s SIGKILL \'rackup --port 8080 --host 0.0.0.0 invitation-repl.ru\'' :
             'rackup --port 8080 --host 0.0.0.0 invitation-repl.ru'
 docker_compose[:services][:ruby][:user] = "#{UID}"
 docker_compose[:services][:invitation_bot][:user] = "#{UID}"
@@ -196,7 +197,7 @@ docker_compose[:services][:invitation_bot][:user] = "#{UID}"
 if ENABLE_MAIL_FORWARDER
     docker_compose[:services][:mail_forwarder] = YAML.load(docker_compose[:services][:ruby].to_yaml)
     docker_compose[:services][:mail_forwarder].delete(:depends_on)
-    docker_compose[:services][:mail_forwarder]['entrypoint'] = DEVELOPMENT ? 'rerun -b --dir /app -s SIGTERM \'ruby mail-forwarder.rb\'' : 'ruby mail-forwarder.rb'
+    docker_compose[:services][:mail_forwarder]['entrypoint'] = DEVELOPMENT ? 'rerun -b --dir /app --ignore "*fragments.rb" -s SIGTERM \'ruby mail-forwarder.rb\'' : 'ruby mail-forwarder.rb'
     docker_compose[:services][:mail_forwarder][:user] = "#{UID}"
     docker_compose[:services][:mail_forwarder][:volumes] << "#{MAIL_FORWARDER_PATH}:/mails"
 end
@@ -284,4 +285,6 @@ if DEVELOPMENT && ARGV == ['up']
     end
 end
 
-system("docker-compose --project-name #{PROJECT_NAME} #{ARGV.map { |x| '"' + x + '"'}.join(' ')}")
+`docker compose 2> /dev/null`
+DOCKER_COMPOSE = ($? == 0) ? 'docker compose' : 'docker-compose'
+system("#{DOCKER_COMPOSE} --compatibility --project-name #{PROJECT_NAME} #{ARGV.map { |x| '"' + x + '"'}.join(' ')}")

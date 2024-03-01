@@ -396,8 +396,8 @@ class Timetable
                         entry[:start_time] = HOURS_FOR_KLASSE[hfk_ds][hfk_klasse][stunde][0]
                         entry[:end_time] = HOURS_FOR_KLASSE[hfk_ds][hfk_klasse][stunde][1]
                     else
-                        entry[:start_time] = HOURS_FOR_KLASSE[hfk_ds]['7a'][stunde][0]
-                        entry[:end_time] = HOURS_FOR_KLASSE[hfk_ds]['7a'][stunde][1]
+                        entry[:start_time] = (HOURS_FOR_KLASSE[hfk_ds]['7a'] || HOURS_FOR_KLASSE[hfk_ds]['5a'])[stunde][0]
+                        entry[:end_time] = (HOURS_FOR_KLASSE[hfk_ds]['7a'] || HOURS_FOR_KLASSE[hfk_ds]['5a'])[stunde][1]
                     end
                     event = {
                         :lesson => true,
@@ -476,6 +476,10 @@ class Timetable
             # 2. patch today's lessons based on vertretungsplan
             if @@vertretungen[ds]
                 @@vertretungen[ds].each do |ventry|
+                    # if ventry[:sha1] == '11534e41' && DASHBOARD_SERVICE == 'timetable'
+                    #     STDERR.puts '-' * 50
+                    #     STDERR.puts ventry.to_json
+                    # end
                     handled_ventry = false
                     if ventry[:before_stunde]
                         # ventry refers to a Pausenaufsichtsvertretung
@@ -507,6 +511,9 @@ class Timetable
                         # find matching day_events entry (the lesson that matches this ventry)
                         matching_indices = (day_events[ventry[:stunde]] || []).select do |index|
                             event = @lesson_cache[index]
+                            # if ventry[:sha1] == '11534e41' && DASHBOARD_SERVICE == 'timetable'
+                            #     STDERR.puts event.to_json
+                            # end
                             flag = false
                             if !event[:regular]
                                 if event[:stunde] == ventry[:stunde]
@@ -529,6 +536,9 @@ class Timetable
                             end
                             flag
                         end
+                        # if ventry[:sha1] == '11534e41' && DASHBOARD_SERVICE == 'timetable'
+                        #     STDERR.puts "matching_indices: #{matching_indices.to_json}"
+                        # end
                         if matching_indices.size == 1
                             event = @lesson_cache[matching_indices.first]
 
@@ -597,8 +607,8 @@ class Timetable
                                 start_time = HOURS_FOR_KLASSE[hfk_ds][hfk_klasse][ventry[:stunde]][0]
                                 end_time = HOURS_FOR_KLASSE[hfk_ds][hfk_klasse][ventry[:stunde]][1]
                             else
-                                start_time = HOURS_FOR_KLASSE[hfk_ds]['7a'][ventry[:stunde]][0]
-                                end_time = HOURS_FOR_KLASSE[hfk_ds]['7a'][ventry[:stunde]][1]
+                                start_time = (HOURS_FOR_KLASSE[hfk_ds]['7a'] || HOURS_FOR_KLASSE[hfk_ds]['5a'])[ventry[:stunde]][0]
+                                end_time = (HOURS_FOR_KLASSE[hfk_ds]['7a'] || HOURS_FOR_KLASSE[hfk_ds]['5a'])[ventry[:stunde]][1]
                             end
                             event = {
                                 :lesson => true,
@@ -992,7 +1002,7 @@ class Timetable
             RETURN i.offset, l.key, i.lesson_fixed_for, i.stundenthema_text;
         END_OF_QUERY
         rows.each do |row|
-            debug row.to_json
+            # debug row.to_json
             lesson_key = row['l.key']
             offset = row['i.offset']
             fixed_for = row['i.lesson_fixed_for']
@@ -1614,9 +1624,9 @@ class Timetable
                         end
                         if user[:is_klasse]
                             fixed_events.map! do |event|
-                                event.delete(:data)
+                                # event.delete(:data)
                                 event.delete(:per_user)
-                                event.delete(:lesson_offset)
+                                # event.delete(:lesson_offset)
                                 event
                             end
                         end
@@ -2084,6 +2094,7 @@ class Timetable
             group_for_sus[x['u.email']] = x['group2']
         end
         groups_for_user = {}
+        # TODO: Also handle angebote!
         users_with_defined_groups = nil
         if only_this_email
             users_with_defined_groups = [only_this_email]
@@ -2166,7 +2177,7 @@ class Timetable
                         recipients[email] = {:label => @@user_info[email][:display_name]}
                     end
                 end
-                if user[:teacher]
+                if user[:teacher] || user[:technikteam]
                     @@user_info.each_pair do |email, user|
                         next unless user[:teacher]
                         recipients[email] = {:label => @@user_info[email][:display_name],
@@ -2278,6 +2289,9 @@ class Timetable
                 add_these_lesson_keys << "_#{ou_email}"
             elsif lesson_key =~ /^_groups_/
                 email = lesson_key.sub('_groups_/', '')
+                update_recipients(email)
+            elsif lesson_key =~ /^_angebote_/
+                email = lesson_key.sub('_angebote_/', '')
                 update_recipients(email)
             elsif lesson_key =~ /^_klasse_/
                 klasse = lesson_key.sub('_klasse_', '')

@@ -29,6 +29,11 @@ class Main < Sinatra::Base
         user_logged_in? && @session_user[:can_manage_monitors]
     end
 
+    # Returns true if a developer is logged in.
+    def developer_logged_in?
+        user_logged_in? && @session_user[:developer]
+    end
+
     # Returns true if a TechnikTeam is logged in.
     def technikteam_logged_in?
         user_logged_in? && @session_user[:technikteam]
@@ -67,6 +72,10 @@ class Main < Sinatra::Base
     # Returns true if an admin is logged in.
     def admin_logged_in?
         user_logged_in? && ADMIN_USERS.include?(@session_user[:email])
+    end
+
+    def sekretariat_logged_in?
+        user_logged_in? && SEKRETARIAT_USERS.include?(@session_user[:email])
     end
 
     def zeugnis_admin_logged_in?
@@ -212,6 +221,11 @@ class Main < Sinatra::Base
         assert(admin_logged_in?)
     end
 
+    # Assert that an admin is logged in
+    def require_admin_or_sekretariat!
+        assert(admin_logged_in? || sekretariat_logged_in?)
+    end
+
     def require_zeugnis_admin!
         assert(zeugnis_admin_logged_in?)
     end
@@ -248,6 +262,11 @@ class Main < Sinatra::Base
     # Assert that a user who can manage monitors is logged in
     def require_user_who_can_manage_monitors!
         assert(user_who_can_manage_monitors_logged_in?)
+    end
+
+    # Assert that a developer is logged in
+    def require_developer!
+        assert(developer_logged_in?)
     end
 
     # Assert that a TechnikTeam user is logged in
@@ -400,6 +419,13 @@ class Main < Sinatra::Base
     # Put this on top of a webpage to assert that this page can be opened by users who can manage monitors only
     def this_is_a_page_for_people_who_can_manage_monitors
         unless user_who_can_manage_monitors_logged_in?
+            redirect "#{WEB_ROOT}/", 303
+        end
+    end
+
+    # Put this on top of a webpage to assert that this page can be opened by developers only
+    def this_is_a_page_for_logged_in_developers
+        unless developer_logged_in?
             redirect "#{WEB_ROOT}/", 303
         end
     end
@@ -607,8 +633,8 @@ class Main < Sinatra::Base
 
     def print_tresor_countdown_panel()
         return '' unless teacher_logged_in?
-        deadline = '2023-06-26T09:00:00'
-        if Time.now.strftime('%Y-%m-%dT%H:%M:%S') <= deadline
+        deadline = DEADLINE_NOTENEINTRAGUNG
+        if Time.now.strftime('%Y-%m-%dT%H:%M:%S') <= deadline && (DateTime.parse(deadline) - DateTime.now).to_f < 7.0
             return StringIO.open do |io|
                 io.puts "<div class='col-lg-12 col-md-4 col-sm-6'>"
                 io.puts "<div class='hint'>"
@@ -622,8 +648,8 @@ class Main < Sinatra::Base
                 io.string
             end
         end
-        deadline = '2023-06-28T09:00:00'
-        if Time.now.strftime('%Y-%m-%dT%H:%M:%S') <= deadline
+        deadline = DEADLINE_CONSIDER
+        if Time.now.strftime('%Y-%m-%dT%H:%M:%S') <= deadline && (DateTime.parse(deadline) - DateTime.now).to_f < 7.0
             return StringIO.open do |io|
                 io.puts "<div class='col-lg-12 col-md-4 col-sm-6'>"
                 io.puts "<div class='hint'>"
@@ -637,19 +663,21 @@ class Main < Sinatra::Base
                 io.string
             end
         end
-        deadline = '2023-07-05T12:00:00'
-        if Time.now.strftime('%Y-%m-%dT%H:%M:%S') <= deadline
-            return StringIO.open do |io|
-                io.puts "<div class='col-lg-12 col-md-4 col-sm-6'>"
-                io.puts "<div class='hint'>"
-                io.puts "<p><b>Eintragung der Noten für das Arbeits- und Sozialverhalten</b></p>"
-                io.puts "<hr />"
-                io.puts "<p>Die Möglichkeit für Eintragungen der Noten für das Arbeits- und Sozialverhalten endet am Mittwoch um 12:00 Uhr. Bitte tragen Sie bis dahin fehlende Noten ein, damit die Klassenleitungen bis zu den Zeugniskonferenzen die Listen drucken können.</p>"
-                io.puts "<div id='tresor_countdown_here' style='display: none;' data-deadline='#{Time.parse(deadline).to_i}'>"
-                io.puts "</div>"
-                io.puts "</div>"
-                io.puts "</div>"
-                io.string
+        if need_sozialverhalten()
+            deadline = DEADLINE_SOZIALNOTEN
+            if Time.now.strftime('%Y-%m-%dT%H:%M:%S') <= deadline && (DateTime.parse(deadline) - DateTime.now).to_f < 7.0
+                return StringIO.open do |io|
+                    io.puts "<div class='col-lg-12 col-md-4 col-sm-6'>"
+                    io.puts "<div class='hint'>"
+                    io.puts "<p><b>Eintragung der Noten für das Arbeits- und Sozialverhalten</b></p>"
+                    io.puts "<hr />"
+                    io.puts "<p>Die Möglichkeit für Eintragungen der Noten für das Arbeits- und Sozialverhalten endet am Mittwoch um 12:00 Uhr. Bitte tragen Sie bis dahin fehlende Noten ein, damit die Klassenleitungen rechtzeitig vor der Zeugnisausgabe die Sozialzeugnisse drucken können.</p>"
+                    io.puts "<div id='tresor_countdown_here' style='display: none;' data-deadline='#{Time.parse(deadline).to_i}'>"
+                    io.puts "</div>"
+                    io.puts "</div>"
+                    io.puts "</div>"
+                    io.string
+                end
             end
         end
         return ''

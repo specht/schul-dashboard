@@ -1,0 +1,18 @@
+.navbar {
+    box-shadow: rgba(0,0,0,0.2);
+    border-radius: 10px;
+    margin: 10px;
+}
+
+.container {
+    margin-top: 25px;
+    border-radius: 10px;
+    padding-top: 10px; 
+}
+
+.lesson_pane {
+    margin-top: 20px;
+    padding: 10px 15px;
+    border-top-left-radius: 10px;
+    padding-bottom: 120px;
+}

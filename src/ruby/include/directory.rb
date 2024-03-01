@@ -11,14 +11,14 @@ class Main < Sinatra::Base
             # io.puts "Bitte überprüfen Sie die <strong>Gruppenzuordnung (A/B)</strong> und markieren Sie alle Kinder, die aus gesundheitlichen Gründen / Quarantäne nicht in die Schule kommen können, als <strong>»zu Hause«</strong>."
 #             io.puts "Auf die Jitsi-Streams können momentan nur SuS zugreifen, die laut ihrer Gruppenzuordnung in der aktuellen Woche zu Hause sind oder explizit als »zu Hause« markiert sind."
             # io.puts "</div>"
-            if teacher_logged_in?
-                io.puts "<div class='pull-right' style='position: relative; top: 10px;'>"
-                [:salzh, :contact_person, :hotspot_klasse].each do |status|
-                    salzh_label = "<span style='margin-left: 2em;'><span class='salzh-badge salzh-badge-big bg-#{SALZH_MODE_COLORS[status]}'><i class='fa #{SALZH_MODE_ICONS[status]}'></i></span>&nbsp;#{SALZH_MODE_LABEL[status]}</span>"
-                    io.puts salzh_label
-                end
-                io.puts "</div>"
-            end
+            # if teacher_logged_in?
+            #     io.puts "<div class='pull-right' style='position: relative; top: 10px;'>"
+            #     [:salzh, :contact_person, :hotspot_klasse].each do |status|
+            #         salzh_label = "<span style='margin-left: 2em;'><span class='salzh-badge salzh-badge-big bg-#{SALZH_MODE_COLORS[status]}'><i class='fa #{SALZH_MODE_ICONS[status]}'></i></span>&nbsp;#{SALZH_MODE_LABEL[status]}</span>"
+            #         io.puts salzh_label
+            #     end
+            #     io.puts "</div>"
+            # end
             io.puts "<h3>Klasse #{tr_klasse(klasse)}"
             io.puts "</h3>"
             io.puts "<p>"
@@ -759,11 +759,13 @@ class Main < Sinatra::Base
         io.puts "<td style='text-align: right;'><button data-list-email='#{list_email}' class='btn btn-warning btn-sm bu-toggle-adresses'>#{info[:recipients].size} Adressen&nbsp;&nbsp;<i class='fa fa-chevron-down'></i></button></td>"
         io.puts "</tr>"
         io.puts "<tbody style='display: none;' class='list_email_emails' data-list-email='#{list_email}'>"
+        emails = []
         info[:recipients].sort do |a, b|
             an = ((@@user_info[a.sub(/^eltern\./, '')] || {})[:display_name] || '').downcase
             bn = ((@@user_info[b.sub(/^eltern\./, '')] || {})[:display_name] || '').downcase
             an <=> bn
         end.each do |email|
+            emails << email
             name = (@@user_info[email] || {})[:display_name] || ''
             if email[0, 7] == 'eltern.'
                 name = (@@user_info[email.sub('eltern.', '')] || {})[:display_name] || ''
@@ -776,7 +778,13 @@ class Main < Sinatra::Base
             io.puts "</td>"
             io.puts "</tr>"
         end
-        io.puts "</tbody>"
+        io.puts "<tr class='user_row'>"
+        io.puts "<td>Bei Verteiler-Ausfall (bitte in BCC)</td>"
+        io.puts "<td colspan='2'>"
+        print_email_field(io, emails.join('; '))
+        io.puts "</td>"
+        io.puts "</tr>"
+    io.puts "</tbody>"
     end
     
     def print_mailing_lists()

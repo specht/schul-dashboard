@@ -2,7 +2,7 @@
 <style>
 body {
     background-image: none;
-    background-color: #fff;
+    background-color: #{(@session_user || {})[:dark] ? '#000' : '#fff'};
 }
 </style>
 <script>
@@ -258,10 +258,10 @@ var tablet_set_info = #{@@tablet_sets.to_json};
     </div>
 </div>
 
-<div class='container-fluid solid white' style='padding-top: 30px;'>
+<div class='container-fluid solid white'>
     <div class='api_messages overlay'></div>
     <div class='row' style='position: relative;'>
-        <div class='col-md-3'>
+        <div class='col-md-3' style='margin-top: -20px;'>
             <div class='lesson_pane'>
                 <p class='status_label'>&nbsp;</p>
                 <div class="form-group bu-save-discard-container">

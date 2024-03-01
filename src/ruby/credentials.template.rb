@@ -209,8 +209,10 @@ STREAMING_TABLET_BOOKING_TIME_POST = 15
 # Liste aller E-Mail-Adressen von Nutzer*innen,
 # die Administratorenrechte haben sollen
 ADMIN_USERS = ['clarke@beispielschule.de']
+SEKRETARIAT_USERS = []
 ZEUGNIS_ADMIN_USERS = []
 ZEUGNIS_USE_MOCK_NAMES = false
+DEVELOPERS = []
 
 # Liste aller E-Mail-Adressen von Nutzer*innen,
 # die Tablet-Buchungen anderer einsehen und aufheben können,
@@ -282,3 +284,5 @@ SEMI_PUBLIC_LINKS = []
 
 EXCLUDE_FROM_SELF_TEST_REPORT = []
 ZEUGNISKONFERENZEN = []
+
+FOTO_PASSWORD = nil

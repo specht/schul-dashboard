@@ -25,7 +25,7 @@ class Main < Sinatra::Base
             doc = File.read(File.join(out_path, 'word', 'document.xml'))
             tags = doc.scan(/[#\$][A-Za-z0-9_]+\./)
             key = File.basename(path).sub('.docx', '')
-            debug "#{key} (#{out_path}): #{tags.to_json}"
+            # debug "#{key} (#{out_path}): #{tags.to_json}"
             @@zeugnisse[:formulare][key] ||= {}
             @@zeugnisse[:formulare][key][:sha1] = sha1
             @@zeugnisse[:formulare][key][:tags] = tags.map { |x| x[0, x.size - 1] }
@@ -66,18 +66,22 @@ class Main < Sinatra::Base
         return faecher + faecher_wf
     end
 
+    def need_sozialverhalten()
+        # return true if session user has sozialnoten to enter
+        return false unless user_logged_in?
+        return false unless teacher_logged_in?
+        return true if @@need_sozialverhalten[@session_user[:shorthand]]
+        return false
+    end
+
     def self.determine_zeugnislisten()
-        STDERR.puts "ATTENTION determine_zeugnislisten() IS DOING NOTHING RIGHT NOW"
-        return
-        @@all_zeugnis_faecher = Set.new()
-        FAECHER_FOR_ZEUGNIS[ZEUGNIS_SCHULJAHR][ZEUGNIS_HALBJAHR].each_pair do |key, faecher|
-            faecher.each do |fach|
-                @@all_zeugnis_faecher << fach.sub('$', '')
-            end
-        end
+        # STDERR.puts "ATTENTION determine_zeugnislisten() IS DOING NOTHING RIGHT NOW"
+        # return
 
         @@zeugnisliste_for_klasse = {}
         @@zeugnisliste_for_lehrer = {}
+        # @@need_sozialverhalten is a hash of teacher shorthands and klassen
+        @@need_sozialverhalten = {}
 
         kurse_for_klasse = Hash[ZEUGNIS_KLASSEN_ORDER.map do |klasse|
             [klasse, (@@lessons_for_klasse[klasse] || []).map { |x| @@lessons[:lesson_keys][x].merge({:lesson_key => x})}]
@@ -102,15 +106,30 @@ class Main < Sinatra::Base
         if ZEUGNIS_USE_MOCK_NAMES
             srand(42)
         end
+        need_sv_for_klasse = {}
+        ((ANLAGE_SOZIALVERHALTEN[ZEUGNIS_SCHULJAHR] || {})[ZEUGNIS_HALBJAHR] || []).each do |entry|
+            if entry == '*'
+                ZEUGNIS_KLASSEN_ORDER.each do |klasse|
+                    need_sv_for_klasse[klasse] = true
+                end
+            else
+                if ZEUGNIS_KLASSEN_ORDER.include?(entry)
+                    need_sv_for_klasse[entry] = true
+                else
+                    raise "zeugnis config: unknown klasse #{entry}"
+                end
+            end
+        end
+
         ZEUGNIS_KLASSEN_ORDER.each do |klasse|
             lesson_keys_for_fach = {}
             shorthands_for_fach = {}
             # get teachers from stundenplan
             (kurse_for_klasse[klasse]).each do |kurs|
-                next unless @@all_zeugnis_faecher.include?(kurs[:fach])
                 lesson_keys_for_fach[kurs[:fach]] ||= []
                 lesson_keys_for_fach[kurs[:fach]] << kurs[:lesson_key]
                 fach = ZEUGNIS_CONSOLIDATE_FACH[kurs[:fach]] || kurs[:fach]
+                # next unless FAECHER_FOR_ZEUGNIS[ZEUGNIS_SCHULJAHR][ZEUGNIS_HALBJAHR].include?(fach) || FAECHER_FOR_ZEUGNIS[ZEUGNIS_SCHULJAHR][ZEUGNIS_HALBJAHR].include?('$' + fach)
                 shorthands = kurs[:lehrer]
                 # check if we have delegate overrides
                 path = "#{ZEUGNIS_SCHULJAHR}/#{ZEUGNIS_HALBJAHR}/#{klasse}/#{fach}"
@@ -126,14 +145,19 @@ class Main < Sinatra::Base
                         @@zeugnisliste_for_lehrer[shorthand]["#{klasse}/#{fach}_AT"] = true
                         @@zeugnisliste_for_lehrer[shorthand]["#{klasse}/#{fach}_SL"] = true
                     end
-                    ['ZV', 'LLB', 'SSK', 'KF', 'SV'].each do |item|
-                        @@zeugnisliste_for_lehrer[shorthand]["#{klasse}/#{item}/#{fach}"] = true
+                    if need_sv_for_klasse[klasse]
+                        SOZIALNOTEN_KEYS.each do |item|
+                            @@zeugnisliste_for_lehrer[shorthand]["#{klasse}/#{item}/#{fach}"] = true
+                        end
+                        @@need_sozialverhalten[shorthand] = true
+                        @@need_sozialverhalten[klasse] = true
                     end
                 end
             end
             # get teachers from delegate entries
             (delegates_for_klasse[klasse] || {}).each_pair do |path, emails|
                 fach = path.split('/')[3]
+                # next unless FAECHER_FOR_ZEUGNIS[ZEUGNIS_SCHULJAHR][ZEUGNIS_HALBJAHR].include?(fach) || FAECHER_FOR_ZEUGNIS[ZEUGNIS_SCHULJAHR][ZEUGNIS_HALBJAHR].include?('$' + fach)
                 emails.to_a.sort.each do |email|
                     shorthand = @@user_info[email][:shorthand]
                     shorthands_for_fach[fach] ||= {}
@@ -144,8 +168,12 @@ class Main < Sinatra::Base
                         @@zeugnisliste_for_lehrer[shorthand]["#{klasse}/#{fach}_AT"] = true
                         @@zeugnisliste_for_lehrer[shorthand]["#{klasse}/#{fach}_SL"] = true
                     end
-                    ['ZV', 'LLB', 'SSK', 'KF', 'SV'].each do |item|
-                        @@zeugnisliste_for_lehrer[shorthand]["#{klasse}/#{item}/#{fach}"] = true
+                    if need_sv_for_klasse[klasse]
+                        SOZIALNOTEN_KEYS.each do |item|
+                            @@zeugnisliste_for_lehrer[shorthand]["#{klasse}/#{item}/#{fach}"] = true
+                        end
+                        @@need_sozialverhalten[shorthand] = true
+                        @@need_sozialverhalten[klasse] = true
                     end
                 end
 
@@ -161,9 +189,13 @@ class Main < Sinatra::Base
                     @@zeugnisliste_for_lehrer[shorthand] ||= {}
                     @@zeugnisliste_for_lehrer[shorthand]["#{klasse}/#{item}"] = true
                 end
-                ['ZV', 'LLB', 'SSK', 'KF', 'SV'].each do |item|
-                    @@zeugnisliste_for_lehrer[shorthand] ||= {}
-                    @@zeugnisliste_for_lehrer[shorthand]["#{klasse}/#{item}/_KL"] = true
+                if need_sv_for_klasse[klasse]
+                    SOZIALNOTEN_KEYS.each do |item|
+                        @@zeugnisliste_for_lehrer[shorthand] ||= {}
+                        @@zeugnisliste_for_lehrer[shorthand]["#{klasse}/#{item}/_KL"] = true
+                    end
+                    @@need_sozialverhalten[shorthand] = true
+                    @@need_sozialverhalten[klasse] = true
                 end
             end
             path = "#{ZEUGNIS_SCHULJAHR}/#{ZEUGNIS_HALBJAHR}/#{klasse}/_KL"
@@ -177,9 +209,13 @@ class Main < Sinatra::Base
                         @@zeugnisliste_for_lehrer[shorthand] ||= {}
                         @@zeugnisliste_for_lehrer[shorthand]["#{klasse}/#{item}"] = true
                     end
-                    ['ZV', 'LLB', 'SSK', 'KF', 'SV'].each do |item|
-                        @@zeugnisliste_for_lehrer[shorthand] ||= {}
-                        @@zeugnisliste_for_lehrer[shorthand]["#{klasse}/#{item}/_KL"] = true
+                    if need_sv_for_klasse[klasse]
+                        SOZIALNOTEN_KEYS.each do |item|
+                            @@zeugnisliste_for_lehrer[shorthand] ||= {}
+                            @@zeugnisliste_for_lehrer[shorthand]["#{klasse}/#{item}/_KL"] = true
+                        end
+                        @@need_sozialverhalten[shorthand] = true
+                        @@need_sozialverhalten[klasse] = true
                     end
                 end
             end
@@ -247,6 +283,7 @@ class Main < Sinatra::Base
             end
         end
         required_tags << '#Zeugnisdatum'
+        required_tags << '#Schuljahr'
         required_tags << '#Name'
         required_tags << '#Geburtsdatum'
         required_tags << '#Klasse'
@@ -406,9 +443,13 @@ class Main < Sinatra::Base
                 klasse = parts[0]
                 index = @@zeugnisliste_for_klasse[klasse][:index_for_schueler][parts[1]]
                 sus_info = @@zeugnisliste_for_klasse[klasse][:schueler][index].clone
-                STDERR.puts '-' * 40
-                STDERR.puts sus_info.to_yaml
-                STDERR.puts '-' * 40
+                if DEVELOPMENT
+                    STDERR.puts '-' * 40
+                    STDERR.puts sus_info.to_yaml
+                    STDERR.puts '-' * 40
+                    STDERR.puts @@zeugnisliste_for_klasse[klasse].to_yaml
+                end
+
                 email = sus_info[:email]
                 zeugnis_key = sus_info[:zeugnis_key]
                 faecher_info = []
@@ -439,6 +480,7 @@ class Main < Sinatra::Base
                 info['#Geburtsdatum'] = "#{Date.parse(sus_info[:geburtstag]).strftime('%d.%m.%Y')}"
                 info['#Klasse'] = Main.tr_klasse(klasse)
                 info['#Zeugnisdatum'] = ZEUGNIS_DATUM
+                info['#Schuljahr'] = ZEUGNIS_SCHULJAHR.gsub('_', '/')
                 info['@Geschlecht'] = sus_info[:geschlecht]
                 wf_tr = {}
                 wf_count = 0
@@ -462,6 +504,8 @@ class Main < Sinatra::Base
                     end
                     fach_tr = wf_tr[fach] || fach
                     info["##{fach_tr}"] = note
+                    # Also add the note to the original fach because of hybrid klassen 9o mixup AGr / $AGr (wahlfach for some)
+                    info["##{fach}"] = note
                 end
                 ['VT', 'VT_UE', 'VS', 'VS_UE', 'VSP'].each do |item|
                     v = cache["Schuljahr:#{ZEUGNIS_SCHULJAHR}/Halbjahr:#{ZEUGNIS_HALBJAHR}/Fehltage:#{item}/Email:#{email}"] || '--'
@@ -471,6 +515,11 @@ class Main < Sinatra::Base
                 ['Angebote', 'Bemerkungen', 'WeitereBemerkungen'].each do |item|
                     v = cache["Schuljahr:#{ZEUGNIS_SCHULJAHR}/Halbjahr:#{ZEUGNIS_HALBJAHR}/AB:#{item}/Email:#{email}"] || '--'
                     info["##{item}"] = v
+                end
+                if DEVELOPMENT
+                    STDERR.puts faecher_info.to_yaml
+                    STDERR.puts cache.to_yaml
+                    STDERR.puts info.to_yaml
                 end
                 zeugnis_id = "#{ZEUGNIS_SCHULJAHR}/#{ZEUGNIS_HALBJAHR}/#{zeugnis_key}/#{info.to_json}"
                 zeugnis_sha1 = Digest::SHA1.hexdigest(zeugnis_id).to_i(16).to_s(36)
@@ -513,7 +562,7 @@ class Main < Sinatra::Base
 
                 respond(:yay => 'sure', :docx_base64 => raw_docx_data, :name => last_zeugnis_name)
             else
-                command = "HOME=/internal/lowriter_home lowriter --convert-to pdf #{docx_paths.join(' ')} --outdir \"#{File.dirname(docx_paths.first)}\""
+                command = "HOME=/internal/lowriter_home lowriter --headless --convert-to 'pdf:writer_pdf_Export:{\"ExportFormFields\":{\"type\":\"boolean\",\"value\":\"false\"}}' #{docx_paths.join(' ')} --outdir \"#{File.dirname(docx_paths.first)}\""
                 STDERR.puts command
                 system(command)
 
@@ -582,27 +631,39 @@ class Main < Sinatra::Base
     end
 
     post '/api/print_zeugnislisten_sheets' do
-        require_zeugnis_admin!
+        require_teacher!
         data = parse_request_data(
             :required_keys => [
                 :paths, :values
             ],
+            :optional_keys => [:klasse],
             :types => {:schueler => Array,
                 :paths => Array, :values => Array,
             },
             :max_body_length => 1024 * 1024 * 10,
             :max_string_length => 1024 * 1024 * 10,
         )
+        if data[:klasse]
+            assert(@session_user[:klassenleitung].include?(data[:klasse]) || zeugnis_admin_logged_in?)
+        else
+            require_zeugnis_admin!
+        end
         cache = {}
         (0...data[:paths].size).each do |i|
             cache.merge!(parse_paths_and_values(data[:paths][i], data[:values][i]))
         end
 
-        # File.open('/internal/zeugniskonferenz_cache.json', 'w') do |f|
-        #     f.write(cache.to_json)
+        # if DEVELOPMENT
+        #     File.open('/internal/zeugniskonferenz_cache.json', 'w') do |f|
+        #         f.write(cache.to_json)
+        #     end
         # end
 
-        respond(:yay => 'sure', :pdf_base64 => Base64.strict_encode64(get_zeugnislisten_sheets_pdf(cache)), :name => 'Zeugnislisten.pdf')
+        filename = 'Zeugnislisten.pdf'
+        if data[:klasse]
+            filename = "Zeugnisliste Klasse #{tr_klasse(data[:klasse])}.pdf"
+        end
+        respond(:yay => 'sure', :pdf_base64 => Base64.strict_encode64(get_zeugnislisten_sheets_pdf(cache, data[:klasse])), :name => filename)
     end
 
     post '/api/print_fehlzeiten_sheets' do

@@ -55,12 +55,14 @@ TRESOR_JWT_TTL_EXTRA = 20
 
 require './background-renderer.rb'
 require './include/admin.rb'
+require './include/angebote.rb'
 require './include/aula.rb'
 require './include/bib_login.rb'
 require './include/color.rb'
 require './include/color-schemes.rb'
 require './include/comment.rb'
 require './include/cypher.rb'
+require './include/development.rb'
 require './include/directory.rb'
 require './include/event.rb'
 require './include/ext_user.rb'
@@ -85,6 +87,7 @@ require './include/salzh.rb'
 require './include/sms.rb'
 require './include/techpost.rb'
 require './include/stats.rb'
+require './include/tablet.rb'
 require './include/tablet_set.rb'
 require './include/tests.rb'
 require './include/test_events.rb'
@@ -97,6 +100,7 @@ require './include/zeugnisse.rb'
 require './parser.rb'
 
 Faye::WebSocket.load_adapter('thin')
+# Faye::WebSocket.load_adapter('puma')
 
 def remove_accents(s)
     I18n.transliterate(s.gsub('ä', 'ae').gsub('ö', 'oe').gsub('ü', 'ue').gsub('Ä', 'Ae').gsub('Ö', 'Oe').gsub('Ü', 'Ue').gsub('ß', 'ss').gsub('ė', 'e').gsub('š', 's'))
@@ -225,14 +229,15 @@ class SetupDatabase
     include Neo4jBolt
 
     CONSTRAINTS_LIST = [
+        'Angebot/key',
         'AudioComment/key',
         'DeviceLoginToken/token',
         'DeviceToken/token',
         'Event/key',
+        'Group/key',
         'KnownEmailAddress/email',
         'Lesson/key',
         'LoginCode/tag',
-        'SecondLoginCode/tag',
         'MatrixAccessToken/access_token',
         'Message/key',
         'NewsEntry/timestamp',
@@ -241,6 +246,8 @@ class SetupDatabase
         'PresenceToken/token',
         'PublicEventPerson/tag',
         'PublicEventTrack/track',
+        'SchulTablet/code',
+        'SecondLoginCode/tag',
         'SelfTestDay/datum',
         'Session/sid',
         'SmsDay/ds',
@@ -274,7 +281,8 @@ class SetupDatabase
         'Test/fach',
         'Test/klasse',
         'TextComment/offset',
-        'User/ev'
+        'User/ev',
+        'User/foto_path'
     ]
 
     def setup(main)
@@ -747,6 +755,10 @@ class Main < Sinatra::Base
             next unless @@user_info[email]
             @@user_info[email][:technikteam] = true
         end
+        (DEVELOPERS).each do |email|
+            next unless @@user_info[email]
+            @@user_info[email][:developer] = true
+        end
         (CAN_MANAGE_ANTIKENFAHRT_USERS + ADMIN_USERS).each do |email|
             next unless @@user_info[email]
             @@user_info[email][:can_manage_antikenfahrt] = true
@@ -832,12 +844,37 @@ class Main < Sinatra::Base
             lesson_info = @@lessons[:lesson_keys][lesson_key]
             fach = lesson_info[:fach]
             fach = @@faecher[fach] || fach
+            pretty_fach = "#{fach.gsub('/', '-')}"
             pretty_folder_name = "#{fach.gsub('/', '-')} (#{lesson_info[:klassen].sort.map { |x| tr_klasse(x) }.join(', ')})"
             lesson_info[:lehrer].each do |shorthand|
                 pretty_folder_names_for_teacher[shorthand] ||= {}
                 pretty_folder_names_for_teacher[shorthand][pretty_folder_name] ||= Set.new()
                 pretty_folder_names_for_teacher[shorthand][pretty_folder_name] << lesson_key
             end
+            pretty_fach_short = "#{pretty_fach}"
+            pretty_fach_short.gsub!('Sport Jungen', 'Sport')
+            pretty_fach_short.gsub!('Sport Mädchen', 'Sport')
+            pretty_fach_short.gsub!('Evangelische Religionslehre', 'Religion')
+            pretty_fach_short.gsub!('Katholische Religionslehre', 'Religion')
+            pretty_fach_short.gsub!('Politikwissenschaft', 'Politik')
+            pretty_fach_short.gsub!('Informationstechnischer Grundkurs', 'ITG')
+            pretty_fach_short.gsub!('Politische Bildung', 'Politik')
+            pretty_fach_short.gsub!('Gesellschaftswissenschaften', 'Gewi')
+            pretty_fach_short.gsub!('Naturwissenschaften', 'Nawi')
+            pretty_fach_short.gsub!('Streicher Anfänger', 'AGs')
+            pretty_fach_short.gsub!('Basketball', 'AGs')
+            pretty_fach_short.gsub!('Schach', 'AGs')
+            pretty_fach_short.gsub!('Unterstufenorchester', 'AGs')
+            pretty_fach_short.gsub!('AG Garten', 'AGs')
+            pretty_fach_short.gsub!('BlblA', 'AGs')
+            pretty_fach_short.gsub!('neugriechisch', 'ngr')
+            pretty_fach_short.gsub!('(ngr)', '')
+            pretty_fach_short.gsub!('Partnersprache', 'PS')
+            pretty_fach_short.gsub!('Förderstunde', 'Fö')
+            pretty_fach_short.strip!
+
+            @@lessons[:lesson_keys][lesson_key][:pretty_fach] = pretty_fach
+            @@lessons[:lesson_keys][lesson_key][:pretty_fach_short] = pretty_fach_short
             @@lessons[:lesson_keys][lesson_key][:pretty_folder_name] = pretty_folder_name
         end
         # if we have 2x Chemie GK (11) for one teacher, differentiate with A and B
@@ -929,13 +966,14 @@ class Main < Sinatra::Base
             last_start_date = start_date
         end
 
-        kurse_for_schueler, schueler_for_kurs = parser.parse_kurswahl(@@user_info.reject { |x, y| y[:teacher] }, @@lessons, lesson_key_tr, @@original_lesson_key_for_lesson_key, @@shorthands)
-        @@kurse_for_schueler = kurse_for_schueler
-        wahlpflicht_sus_for_lesson_key = parser.parse_wahlpflichtkurswahl(@@user_info.reject { |x, y| y[:teacher] }, @@lessons, lesson_key_tr, @@schueler_for_klasse)
         sesb_sus = parser.parse_sesb(@@user_info.reject { |x, y| y[:teacher] }, @@schueler_for_klasse)
         sesb_sus.each do |email|
             @@user_info[email][:sesb] = true
         end
+        
+        kurse_for_schueler, schueler_for_kurs = parser.parse_kurswahl(@@user_info.reject { |x, y| y[:teacher] }, @@lessons, lesson_key_tr, @@original_lesson_key_for_lesson_key, @@shorthands)
+        @@kurse_for_schueler = kurse_for_schueler
+        wahlpflicht_sus_for_lesson_key = parser.parse_wahlpflichtkurswahl(@@user_info.reject { |x, y| y[:teacher] }, @@lessons, lesson_key_tr, @@schueler_for_klasse)
 
         @@materialamt_for_lesson = {}
         rows = $neo4j.neo4j_query(<<~END_OF_QUERY)
@@ -1155,13 +1193,11 @@ class Main < Sinatra::Base
         @@forschertage_mailing_lists.each_pair do |k, v|
             @@mailing_lists[k] = v
         end
-        if DEVELOPMENT
-            VERTEILER_TEST_EMAILS.each do |email|
-                @@mailing_lists[email] = {
-                    :label => "Dev-Verteiler #{email}",
-                    :recipients => VERTEILER_DEVELOPMENT_EMAILS
-                }
-            end
+        VERTEILER_TEST_EMAILS.each do |email|
+            @@mailing_lists[email] = {
+                :label => "Dev-Verteiler #{email}",
+                :recipients => VERTEILER_DEVELOPMENT_EMAILS
+            }
         end
         if DASHBOARD_SERVICE == 'ruby'
             File.open('/internal/mailing_lists.yaml.tmp', 'w') do |f|
@@ -1249,6 +1285,7 @@ class Main < Sinatra::Base
             '/include/turn.min.js',
             '/include/scissor.min.js',
             '/include/hash.js',
+            '/include/typewriter.js',
         ]
 
         self.compile_files(:js, 'application/javascript', files)
@@ -1293,7 +1330,7 @@ class Main < Sinatra::Base
         @@compiled_files = {}
         debug "DASHBOARD_SERVICE: #{ENV['DASHBOARD_SERVICE']}"
         debug "File.basename($0): #{File.basename($0)}"
-        if ENV['DASHBOARD_SERVICE'] == 'ruby' && (File.basename($0) == 'thin' || File.basename($0) == 'pry.rb')
+        if ENV['DASHBOARD_SERVICE'] == 'ruby' && (File.basename($0) == 'thin' || File.basename($0) == 'pry.rb' || File.basename($0) == 'puma')
             setup.setup(self)
             COLOR_SCHEME_COLORS.each do |entry|
                 @@color_scheme_info[entry[0]] = [entry[1], entry[2]]
@@ -1335,7 +1372,7 @@ class Main < Sinatra::Base
             # STDERR.puts @@color_scheme_info.to_yaml
         end
 
-        if ['thin', 'rackup'].include?(File.basename($0))
+        if ['puma', 'thin', 'rackup'].include?(File.basename($0))
             debug('Server is up and running!')
         end
         if ENV['DASHBOARD_SERVICE'] == 'ruby' && File.basename($0) == 'pry.rb'
@@ -1427,6 +1464,10 @@ class Main < Sinatra::Base
     end
 
     before '*' do
+        if DEVELOPMENT
+            debug "Re-including fragments.rb!"
+            Kernel.send(:load, '/app/fragments/fragments.rb')
+        end
         if DEVELOPMENT && request.path[0, 5] != '/api/'
             self.class.compile_js()
             self.class.compile_css()
@@ -1550,7 +1591,9 @@ class Main < Sinatra::Base
                                     if @session_user
                                         @session_user[:font] = results.first['u'][:font]
                                         @session_user[:color_scheme] = results.first['u'][:color_scheme]
+                                        @session_user[:new_design] = results.first['u'][:new_design]
                                         @session_user[:dark] = results.first['u'][:dark]
+                                        @session_user[:recognize_stats_public] = results.first['u'][:recognize_stats_public]
                                         @session_user[:ical_token] = results.first['u'][:ical_token]
                                         @session_user[:otp_token] = results.first['u'][:otp_token]
                                         @session_user[:otp_token_changed] = results.first['u'][:otp_token_changed] || '2023-02-02'
@@ -1792,8 +1835,12 @@ class Main < Sinatra::Base
                         io.puts "<a class='dropdown-item nav-icon' href='/admin'><div class='icon'><i class='fa fa-wrench'></i></div><span class='label'>Administration</span></a>"
                     end
                     if user_who_can_manage_tablets_logged_in?
-                        io.puts "<a class='dropdown-item nav-icon' href='/bookings'><div class='icon'><i class='fa fa-tablet'></i></div><span class='label'>Buchungen</span></a>"
+                        io.puts "<a class='dropdown-item nav-icon' href='/tablets'><div class='icon'><i class='fa fa-tablet'></i></div><span class='label'>Tablets</span></a>"
+                        io.puts "<a class='dropdown-item nav-icon' href='/bookings'><div class='icon'><i class='fa fa-bookmark'></i></div><span class='label'>Buchungen</span></a>"
                         io.puts "<a class='dropdown-item nav-icon' href='/techpostadmin'><div class='icon'><i class='fa fa-laptop'></i></div><span class='label'>Technikamt (Admin)</span></a>"
+                    end
+                    if developer_logged_in?
+                        io.puts "<a class='dropdown-item nav-icon' href='/development'><div class='icon'><i class='fa fa-code'></i></div><span class='label'>Development</span></a>"
                     end
                     if admin_logged_in?
                         io.puts "<div class='dropdown-divider'></div>"
@@ -1801,6 +1848,10 @@ class Main < Sinatra::Base
                         io.puts "<a class='dropdown-item nav-icon' href='/email_accounts'><div class='icon'><i class='fa fa-envelope'></i></div><span class='label'>E-Mail-Postfächer</span></a>"
                         io.puts "<a class='dropdown-item nav-icon' href='/stats'><div class='icon'><i class='fa fa-bar-chart'></i></div><span class='label'>Statistiken</span></a>"
                         io.puts "<a class='dropdown-item nav-icon' href='/aula'><div class='icon'><i class='fa fa-music'></i></div><span class='label'>Aula</span></a>"
+                        printed_something = true
+                    end
+                    if teacher_logged_in? && (admin_logged_in? || sekretariat_logged_in?)
+                        io.puts "<a class='dropdown-item nav-icon' href='/anmeldungen'><div class='icon'><i class='fa fa-calendar-o'></i></div><span class='label'>Anmeldungen</span></a>"
                         printed_something = true
                     end
                     io.puts "</div>"
@@ -1844,6 +1895,12 @@ class Main < Sinatra::Base
                     io.puts "<a class='dropdown-item nav-icon' href='/login'><div class='icon'><i class='fa fa-sign-in'></i></div><span class='label'>Zusätzliche Anmeldung…</span></a>"
                     unless external_user_logged_in?
                         io.puts "<a class='dropdown-item nav-icon' href='/login_nc'><div class='icon'><i class='fa fa-nextcloud'></i></div><span class='label'>In Nextcloud anmelden…</span></a>"
+                        if @session_user[:dark]
+                            io.puts "<button class='dropdown-item nav-icon nav-light'><div class='icon'><i class='fa fa-sun-o'></i></div><span class='label'>Hell</span></button>"
+                        else
+                            io.puts "<button class='dropdown-item nav-icon nav-dark'><div class='icon'><i class='fa fa-moon'></i></div><span class='label'>Dunkel</span></button>"
+                        end
+
                         # if can_manage_agr_app_logged_in? || can_manage_bib_members_logged_in? || can_manage_bib_logged_in? || teacher_logged_in?
                             io.puts "<div class='dropdown-divider'></div>"
                             if gev_logged_in?
@@ -1868,16 +1925,20 @@ class Main < Sinatra::Base
                             io.puts "<div class='dropdown-divider'></div>"
                             if teacher_or_sv_logged_in?
                                 if teacher_logged_in?
-                                    if can_manage_salzh_logged_in?
-                                        io.puts "<a class='dropdown-item nav-icon' href='/salzh'><div class='icon'><i class='fa fa-home'></i></div><span class='label'>Testungen</span></a>"
-                                    end
+                                    # if can_manage_salzh_logged_in?
+                                    #     io.puts "<a class='dropdown-item nav-icon' href='/salzh'><div class='icon'><i class='fa fa-home'></i></div><span class='label'>Testungen</span></a>"
+                                    # end
+                                    io.puts "<a class='dropdown-item nav-icon' href='/klassenmemory_assign'><div class='icon'><i class='fa fa-user'></i></div><span class='label'>Klassenmemory</span></a>"
                                     io.puts "<a class='dropdown-item nav-icon' href='/tests'><div class='icon'><i class='fa fa-file-text-o'></i></div><span class='label'>Klassenarbeiten</span></a>"
                                 end
                                 io.puts "<a class='dropdown-item nav-icon' href='/events'><div class='icon'><i class='fa fa-calendar-check-o'></i></div><span class='label'>Termine</span></a>"
                                 io.puts "<a class='dropdown-item nav-icon' href='/polls'><div class='icon'><i class='fa fa-bar-chart'></i></div><span class='label'>Umfragen</span></a>"
-                                io.puts "<a class='dropdown-item nav-icon' href='/prepare_vote'><div class='icon'><i class='fa fa-hand-paper-o'></i></div><span class='label'>Abstimmungen</span></a>"
+                                # io.puts "<a class='dropdown-item nav-icon' href='/prepare_vote'><div class='icon'><i class='fa fa-hand-paper-o'></i></div><span class='label'>Abstimmungen</span></a>"
                                 io.puts "<a class='dropdown-item nav-icon' href='/mailing_lists'><div class='icon'><i class='fa fa-envelope'></i></div><span class='label'>E-Mail-Verteiler</span></a>"
-                                io.puts "<a class='dropdown-item nav-icon' href='/groups'><div class='icon'><i class='fa fa-group'></i></div><span class='label'>Gruppen</span></a>"
+                                if teacher_logged_in?
+                                    io.puts "<a class='dropdown-item nav-icon' href='/angebote'><div class='icon'><i class='fa fa-group'></i></div><span class='label'>AGs und Angebote</span></a>"
+                                end
+                                io.puts "<a class='dropdown-item nav-icon' href='/groups'><div class='icon'><i class='fa fa-group'></i></div><span class='label'>Meine Gruppen</span></a>"
                             end
                         end
                         # if @session_user[:can_upload_vplan]
@@ -2286,7 +2347,7 @@ class Main < Sinatra::Base
         return color_scheme
     end
 
-    post '/api/set_css' do
+    post '/api/set_dark_css' do
         require_user!
         data = parse_request_data(:required_keys => [:mode])
         dark = data[:mode] == "dark" ? true : false
@@ -2298,7 +2359,19 @@ class Main < Sinatra::Base
         
         respond(:ok => true)
     end
-    
+
+    post '/api/set_design_css' do
+        require_user!
+        data = parse_request_data(:required_keys => [:mode])
+        new_design = data[:mode] == "neu" ? true : false
+        
+        results = neo4j_query(<<~END_OF_QUERY, :email => @session_user[:email], :new_design => new_design)
+            MATCH (u:User {email: $email})
+            SET u.new_design = $new_design;
+        END_OF_QUERY
+        
+        respond(:ok => true)
+    end
 
     def get_open_doors_for_user()
         require_user!
@@ -2513,6 +2586,148 @@ class Main < Sinatra::Base
         respond_raw_with_mimetype(response, 'text/plain')
     end
 
+    get '/api/fotos/:path' do
+        require_teacher!
+        path = params[:path]
+        respond_raw_with_mimetype(File.read("/data/schueler/fotos/#{path}"), 'application/json')
+    end
+
+    post '/api/get_fotos/:klasse' do
+        require_teacher!
+        klasse = params[:klasse]
+        respond(:paths => Dir["/data/schueler/fotos/2023-#{klasse}-*.json"].shuffle.map { |x| File.basename(x) })
+    end
+
+    post '/api/assign_name_to_foto' do
+        require_teacher!
+        data = parse_request_data(:required_keys => [:email, :path])
+        if data[:email].strip.empty?
+            neo4j_query(<<~END_OF_QUERY, {:email => data[:email], :path => data[:path]})
+                MATCH (u:User {foto_path: $path})
+                REMOVE u.foto_path;
+            END_OF_QUERY
+        else
+            neo4j_query(<<~END_OF_QUERY, {:email => data[:email], :path => data[:path]})
+                MATCH (u:User {email: $email})
+                SET u.foto_path = $path;
+            END_OF_QUERY
+        end
+        respond(:yay => 'sure')
+    end
+
+    def get_recognized_emails()
+        result = {}
+        neo4j_query(<<~END_OF_QUERY, {:session_email => @session_user[:email]}).each do |x|
+            MATCH (u:User {email: $session_email})-[r:RECOGNIZED]->(u2:User)
+            RETURN u2.email, r.ts;
+        END_OF_QUERY
+            result[x['u2.email']] = x['r.ts']
+        end
+        result
+    end
+
+    post '/api/foto_recognize' do
+        require_teacher!
+        data = parse_request_data(:required_keys => [:email])
+        ts = Time.now.to_i
+        neo4j_query(<<~END_OF_QUERY, {:session_email => @session_user[:email], :email => data[:email], :ts => ts})
+            MATCH (u:User {email: $session_email})
+            MATCH (u2:User {email: $email})
+            MERGE (u)-[r:RECOGNIZED]->(u2)
+            SET r.ts = $ts;
+        END_OF_QUERY
+        respond(:yay => 'sure', :ts => ts)
+    end
+
+    post '/api/foto_unrecognize' do
+        require_teacher!
+        data = parse_request_data(:required_keys => [:email1, :email2])
+        neo4j_query(<<~END_OF_QUERY, {:session_email => @session_user[:email], :email => data[:email1]})
+            MATCH (u:User {email: $session_email})-[r:RECOGNIZED]->(u2:User {email: $email})
+            DELETE r;
+        END_OF_QUERY
+        neo4j_query(<<~END_OF_QUERY, {:session_email => @session_user[:email], :email => data[:email2]})
+            MATCH (u:User {email: $session_email})-[r:RECOGNIZED]->(u2:User {email: $email})
+            DELETE r;
+        END_OF_QUERY
+        respond(:yay => 'sure')
+    end
+
+    post '/api/get_recognize_hall_of_fame' do
+        require_teacher!
+        data = parse_request_data()
+        ts = (Time.now - 365 * 3600 * 24).to_i
+        hall_of_fame = {}
+        neo4j_query(<<~END_OF_QUERY, {:ts => ts})
+            MATCH (u:User)-[r:RECOGNIZED]->(u2:User)
+            WHERE r.ts < $ts
+            DELETE r;
+        END_OF_QUERY
+        anons = Set.new()
+        neo4j_query(<<~END_OF_QUERY).each do |row|
+            MATCH (u:User)
+            WHERE COALESCE(u.recognize_stats_public, TRUE) <> TRUE
+            RETURN u.email;
+        END_OF_QUERY
+            anons << row['u.email']
+        end
+
+        neo4j_query(<<~END_OF_QUERY).each do |row|
+            MATCH (u:User)-[r:RECOGNIZED]->(u2:User)
+            RETURN u.email, u2.email;
+        END_OF_QUERY
+            who = row['u.email']
+            whom = row['u2.email']
+            if @@user_info[whom] && !@@user_info[:teacher]
+                klasse = @@user_info[whom][:klasse]
+                stufe = klasse.to_i
+                stufe = 'WK' if klasse[0, 2] == 'WK'
+                stufe = 'OS' if ['11', '12'].include?(klasse[0, 2])
+                hall_of_fame[who] ||= {}
+                hall_of_fame[who][:stufe] ||= {}
+                hall_of_fame[who][:stufe][stufe] ||= 0
+                hall_of_fame[who][:stufe][stufe] += 1
+            end
+        end
+        result = []
+        hall_of_fame.each do |email, data|
+            email = nil if anons.include?(email)
+            result << {:email => email, :stufe => data[:stufe], :total => data[:stufe].values.sum }
+        end
+        result.sort! do |a, b|
+            b[:total] <=> a[:total]
+        end
+        respond(:yay => 'sure', :result => result)
+    end
+
+    post '/api/toggle_show_recognize_hall_of_fame' do
+        require_teacher!
+        flag = neo4j_query_expect_one(<<~END_OF_QUERY, :email => @session_user[:email])['u.recognize_stats_public']
+            MATCH (u:User {email: $email})
+            SET u.recognize_stats_public = NOT COALESCE(u.recognize_stats_public, TRUE)
+            RETURN u.recognize_stats_public;
+        END_OF_QUERY
+        respond(:flag => flag)
+    end
+
+    get '/api/jauch' do
+        require_teacher!
+        respond_raw_with_mimetype(File.read('/data/jauch.png'), 'image/png')
+    end
+
+    def get_emails_for_foto_paths
+        require_teacher!
+        results = {}
+        neo4j_query(<<~END_OF_QUERY).each do |row|
+            MATCH (u:User)
+            WHERE u.foto_path IS NOT NULL
+            RETURN u.email AS email, u.foto_path AS path;
+        END_OF_QUERY
+            results[row['path']] = row['email']
+        end
+        results
+    end
+
     before "/monitor/#{MONITOR_DEEP_LINK}" do
         unless MONITOR_DEEP_LINK.nil?
             @session_user = {
@@ -2537,8 +2752,13 @@ class Main < Sinatra::Base
         redirect "#{WEB_ROOT}/bib_postpone/#{params[:tag]}", 302
     end
 
+    get '/api/get_room_timetable_pdf' do
+        require_teacher!
+        respond_raw_with_mimetype(get_room_timetable_pdf(), 'application/pdf')
+    end
+
     get '/api/dark.css' do
-        color_scheme = @session_user[:color_scheme]
+        color_scheme = (@session_user || {})[:color_scheme]
         unless color_scheme =~ /^[ld][0-9a-f]{18}[0-9]?$/
             unless user_logged_in?
                 color_scheme = pick_random_color_scheme()
@@ -2550,8 +2770,8 @@ class Main < Sinatra::Base
             color_scheme += '0'
         end
         color_palette = color_palette_for_color_scheme(color_scheme)
-        
-        s = @session_user[:dark] ? File.read('/static/dark.css') : ""
+
+        s = (@session_user || {})[:dark] ? File.read('/static/dark.css') : ""
         while true
             index = s.index('#{')
             break if index.nil?
@@ -2574,6 +2794,55 @@ class Main < Sinatra::Base
             end
         end
         respond_raw_with_mimetype(s, 'text/css')
+    end
+
+    get '/api/new_design.css' do
+        color_scheme = (@session_user || {})[:color_scheme]
+        unless color_scheme =~ /^[ld][0-9a-f]{18}[0-9]?$/
+            unless user_logged_in?
+                color_scheme = pick_random_color_scheme()
+            else
+                color_scheme = @@standard_color_scheme
+            end
+        end
+        if color_scheme.size < 20
+            color_scheme += '0'
+        end
+        color_palette = color_palette_for_color_scheme(color_scheme)
+
+        s = (@session_user || {})[:new_design] ? File.read('/static/new_design.css') : ""
+        while true
+            index = s.index('#{')
+            break if index.nil?
+            length = 2
+            balance = 1
+            while index + length < s.size && balance > 0
+                c = s[index + length]
+                balance -= 1 if c == '}'
+                balance += 1 if c == '{'
+                length += 1
+            end
+            code = s[index + 2, length - 3]
+            begin
+#                             STDERR.puts code
+                s[index, length] = eval(code).to_s || ''
+            rescue
+                debug "Error while evaluating for #{(@session_user || {})[:email]}:"
+                debug code
+                raise
+            end
+        end
+        respond_raw_with_mimetype(s, 'text/css')
+    end
+
+    get '/room/:room' do
+        if teacher_logged_in?
+            redirect "#{WEB_ROOT}/timetable/#{@@room_ids[params[:room]]}", 302
+        elsif user_logged_in?
+            redirect "#{WEB_ROOT}/clairvoyant?raum=#{params[:room]}", 302
+        else
+            redirect "#{WEB_ROOT}/", 302
+        end
     end
 
     get '/*' do
@@ -2625,11 +2894,13 @@ class Main < Sinatra::Base
         sent_messages = []
         stored_events = []
         stored_groups = []
+        stored_angebote = []
         stored_polls = []
         stored_poll_runs = []
         lesson_notes_for_session_user = {}
         show_event = {}
         external_users_for_session_user = []
+        angebote_for_session_user = []
         if path == 'directory'
             redirect "#{WEB_ROOT}/", 302 unless @session_user
             parts = request.env['REQUEST_PATH'].split('/')
@@ -2865,6 +3136,18 @@ class Main < Sinatra::Base
                     e = temp[x]
                     e
                 end
+            end
+        elsif path == 'angebote'
+            unless teacher_logged_in?
+                redirect "#{WEB_ROOT}/", 302
+            else
+                stored_angebote = get_angebote()
+            end
+        elsif path == 'profil'
+            unless user_logged_in?
+                redirect "#{WEB_ROOT}/", 302
+            else
+                angebote_for_session_user = get_angebote_for_session_user()
             end
         elsif path == 'polls'
             unless teacher_or_sv_logged_in? || user_who_can_manage_tablets_or_teacher_logged_in?

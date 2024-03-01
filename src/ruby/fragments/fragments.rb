@@ -60,7 +60,8 @@ class BoxPrinter
         end
     end
 
-    def print_note(x, y, v, v_prev)
+    def print_note(x, y, v, v_prev, fill_color = '000000')
+        @pdf.fill_color(fill_color)
         print(x, y, v)
         if v != v_prev
             left = @left + x * @width + @width * 0.2
@@ -234,6 +235,7 @@ class Main
                                             move_down row_height * 0.5 - 6
                                             fach = liste[:faecher][x]
                                             text "<b>#{fach}</b>#{FAECHER_SPRACHEN.include?(fach) ? '<sup>1</sup>' : ''}", :align => :center, :inline_format => true, :size => 11
+                                            text "#{(liste[:lehrer_for_fach][fach] || []).join(', ')}", :align => :center, :inline_format => true, :size => 8
                                             # stroke_bounds
                                         end
                                     end
@@ -309,7 +311,7 @@ class Main
                                                                         stroke_circle [0, 0], 11
                                                                     end
                                                                 end
-                                                                text "#{note.gsub('-', '–').gsub('×', '')}", :align => :center, :size => 11, :final_gap => false, :valign => :center
+                                                                text "#{note.gsub('-', '–')}", :align => :center, :size => 11, :final_gap => false, :valign => :center
                                                             end
                                                         end
                                                     end
@@ -324,7 +326,7 @@ class Main
                                                                 stroke_circle [0, 0], 11
                                                             end
                                                         end
-                                                        text "#{note.gsub('-', '–').gsub('×', '')}", :align => :center, :inline_format => true, :size => 11, :valign => :center
+                                                        text "#{note.gsub('-', '–')}", :align => :center, :inline_format => true, :size => 11, :valign => :center
                                                     end
                                                 end
                                             end
@@ -350,7 +352,7 @@ class Main
         return doc.render
     end
 
-    def get_zeugnislisten_sheets_pdf(cache)
+    def get_zeugnislisten_sheets_pdf(cache, only_this_klasse = nil)
         doc = Prawn::Document.new(:page_size => 'A4', :page_layout => :portrait, :margin => 0) do
             font_families.update("RobotoCondensed" => {
                 :normal => "/app/fonts/RobotoCondensed-Regular.ttf",
@@ -367,12 +369,11 @@ class Main
             first_page = true
             line_width 0.1.mm
             font('Roboto') do
-                ZEUGNIS_KLASSEN_ORDER.each do |klasse|
-                    # next unless klasse == '10o'
+                (only_this_klasse.nil? ? ZEUGNIS_KLASSEN_ORDER : [only_this_klasse]).each do |klasse|
                     liste = @@zeugnisliste_for_klasse[klasse].clone
 
-                    cols_left_template  = %w(D D_AT D_SL FS1_Fach FS1 FS1_AT FS1_SL FS2_Fach FS2 FS2_AT FS2_SL FS3_Fach FS3 FS3_AT FS3_SL)
-                    cols_right_template = %w(Gewi Eth Ek Ge Pb Ma Nawi Ph Ch Bio Ku Mu Sp FF1 . FF2 . FF3 . VT VT_UE VS VS_UE VSP)
+                    cols_left_template  = %w(De De_AT De_SL FS1_Fach FS1 FS1_AT FS1_SL FS2_Fach FS2 FS2_AT FS2_SL FS3_Fach FS3 FS3_AT FS3_SL)
+                    cols_right_template = %w(Gewi Eth Geo Ge PB Ma Nawi Phy Ch Bio Ku Mu Sp FF1 . FF2 . FF3 . VT VT_UE VS VS_UE VSP)
 
                     faecher_for_fs = {
                         1 => Set.new(),
@@ -386,11 +387,11 @@ class Main
                         if schueler[:zeugnis_key].include?('sesb')
                             fs << 'Ngr'
                             fs << 'En'
-                            fs << 'Fr'
+                            fs << 'Frz'
                         else
                             fs << 'En'
                             fs << 'La'
-                            fs << 'Agr' if klasse.to_i >= 8
+                            fs << 'AGr' if klasse.to_i >= 8
                         end
                         faecher_for_fs[1] << fs[0]
                         faecher_for_fs[2] << fs[1]
@@ -423,7 +424,7 @@ class Main
                     faecher_for_fs = Hash[faecher_for_fs.map { |k, v| [k, v.to_a.sort] }]
                     (1..3).each do |i|
                         liste[:lehrer_for_fach]["FS#{i}"] = faecher_for_fs[i].map do |x|
-                            "#{liste[:lehrer_for_fach][x].join(' ')} (#{x})"
+                            "#{(liste[:lehrer_for_fach][x] || []).join(' ')} (#{x})"
                         end
                     end
 
@@ -619,12 +620,12 @@ class Main
                                         if schueler[:zeugnis_key].include?('sesb')
                                             x.gsub!('FS1', 'Ngr')
                                             x.gsub!('FS2', 'En')
-                                            x.gsub!('FS3', 'Fr')
+                                            x.gsub!('FS3', 'Frz')
                                         else
                                             x.gsub!('FS1', 'En')
                                             x.gsub!('FS2', 'La')
                                             if klasse.to_i >= 8
-                                                x.gsub!('FS3', 'Agr')
+                                                x.gsub!('FS3', 'AGr')
                                             else
                                                 x.gsub!('FS3', '')
                                             end
@@ -660,6 +661,11 @@ class Main
                                                     if f[-5, 5] == '_Fach'
                                                         left.print(i, y2 * 4 + 3, "#{f.sub('_Fach', '')}")
                                                     else
+                                                        SHOW_PREVIOUS_NOTEN.each.with_index do |prev_entry, k|
+                                                            f_fixed = f.split('_').map.with_index { |x, j| j == 0 ? (prev_entry[:tr][x] || x) : x }.join('_')
+                                                            v = (cache["Schuljahr:#{prev_entry[:keys][0]}/Halbjahr:#{prev_entry[:keys][1]}/Fach:#{f_fixed}/Email:#{email}"] || [])[0]
+                                                            left.print_note(i, y2 * 4 + 1 + k, v, v, '888888')
+                                                        end
                                                         v = (cache["Schuljahr:#{ZEUGNIS_SCHULJAHR}/Halbjahr:#{ZEUGNIS_HALBJAHR}/Fach:#{f}/Email:#{email}"] || [])[0]
                                                         v_prev = (cache["Schuljahr:#{ZEUGNIS_SCHULJAHR}/Halbjahr:#{ZEUGNIS_HALBJAHR}/Fach:#{f}/Email:#{email}"] || [])[1]
                                                         left.print_note(i, y2 * 4 + 3, v, v_prev)
@@ -672,6 +678,11 @@ class Main
                                                     f2 = f.dup
                                                     if %w(FF1 FF2 FF3 FF4 FF5 FF6).include?(f)
                                                         f2 = wahlfaecher[f.sub('FF', '').to_i - 1]
+                                                    end
+                                                    SHOW_PREVIOUS_NOTEN.each.with_index do |prev_entry, k|
+                                                        f_fixed = f.split('_').map.with_index { |x, j| j == 0 ? (prev_entry[:tr][x] || x) : x }.join('_')
+                                                        v = (cache["Schuljahr:#{prev_entry[:keys][0]}/Halbjahr:#{prev_entry[:keys][1]}/Fach:#{f_fixed}/Email:#{email}"] || [])[0]
+                                                        right.print_note(i, y2 * 4 + 1 + k, v, v, '888888')
                                                     end
                                                     v = (cache["Schuljahr:#{ZEUGNIS_SCHULJAHR}/Halbjahr:#{ZEUGNIS_HALBJAHR}/Fach:#{f2}/Email:#{email}"] || [])[0]
                                                     v_prev = (cache["Schuljahr:#{ZEUGNIS_SCHULJAHR}/Halbjahr:#{ZEUGNIS_HALBJAHR}/Fach:#{f2}/Email:#{email}"] || [])[1]
@@ -849,6 +860,284 @@ class Main
                     end
                 end
             end
+        end
+        return doc.render
+    end
+
+    def get_room_timetable_pdf()
+        today = Time.now.strftime('%Y-%m-%d')
+        if today < @@config[:first_school_day]
+            today = @@config[:first_school_day]
+        end
+        d = @@lessons[:start_date_for_date][today]
+        timetable = {}
+        max_stunden = {}
+        klassen_timetable = {}
+        @@lessons[:timetables][d].each_pair do |lesson_key, lesson_info|
+            lesson_info[:stunden].each_pair do |day, stunden|
+                stunden.each_pair do |stunde, info|
+                    unless (info[:raum] || '').empty?
+                        timetable[info[:raum]] ||= {}
+                        timetable[info[:raum]][day] ||= {}
+                        x = info.clone
+                        x[:lesson_key] = lesson_key
+                        timetable[info[:raum]][day][stunde] ||= []
+                        timetable[info[:raum]][day][stunde] << x
+                        max_stunden[info[:raum]] ||= stunde
+                        max_stunden[info[:raum]] = stunde if stunde > max_stunden[info[:raum]]
+                    end
+                    info[:klassen].each do |klasse|
+                        klassen_timetable[klasse] ||= {}
+                        klassen_timetable[klasse][day] ||= {}
+                        x = info.clone
+                        x[:lesson_key] = lesson_key
+                        klassen_timetable[klasse][day][stunde] ||= []
+                        klassen_timetable[klasse][day][stunde] << x
+                        max_stunden[klasse] ||= stunde
+                        max_stunden[klasse] = stunde if stunde > max_stunden[klasse]
+                    end
+                end
+            end
+        end
+        hours_key = HOURS_FOR_KLASSE.keys.reject do |x|
+            today < x
+        end.max
+
+        _self = self
+
+        doc = Prawn::Document.new(:page_size => 'A4', :page_layout => :portrait, :margin => 0) do
+            font_families.update("myfont" => {
+                :normal => "/app/fonts/AlegreyaSans-Regular.ttf",
+                :bold => "/app/fonts/AlegreyaSans-Bold.ttf",
+            })
+
+            first_page = true
+            klassenraum_for_klasse = {}
+            timetable.keys.sort.each do |room|
+                # next unless room == '113'
+
+                klassen_histogram = {}
+
+                max_room_stunden = 0
+                max_klassen_stunden = 0
+                timetable[room].each_pair do |tag, stunden|
+                    entries = []
+                    stunden.each_pair do |stunde, _info|
+                        info = _info.first
+                        max_room_stunden = stunde if stunde > max_room_stunden
+                        info[:klassen].each do |klasse|
+                            next if ['11', '12'].include?(klasse)
+                            next unless KLASSEN_ORDER.include?(klasse)
+                            klassen_histogram[klasse] ||= 0
+                            klassen_histogram[klasse] += 1
+                        end
+                    end
+                end
+
+                klasse_for_room = nil
+
+                klassen_histogram.each_pair do |klasse, stunden|
+                    if stunden >= 20
+                        klasse_for_room = klasse
+                        klassenraum_for_klasse[klasse] ||= []
+                        klassenraum_for_klasse[klasse] << room
+                    end
+                end
+
+                if klasse_for_room
+                    max_klassen_stunden = max_stunden[klasse_for_room]
+                end
+
+                # if max_klassen_stunden == 0
+                    max_room_stunden = 11
+                # end
+
+                STDERR.puts "Raum #{room}: #{max_room_stunden} Stunden, Klasse #{klasse_for_room}: #{max_klassen_stunden} Stunden"
+
+                start_new_page unless first_page
+                first_page = false
+                font('myfont') do
+                    left = 20.mm
+                    bottom = 15.mm
+                    width = 170.mm
+                    height = 267.mm
+                    tw = width / 5.0
+                    th = (height - 30.mm) / max_room_stunden
+                    line_width 0.1.mm
+                    text_box "<b>#{room[0] =~ /\d/ ? 'Raum ' : ''}#{room}</b>", :at => [left, bottom + height + 5.mm], :width => width, :height => 15.mm, :align => :left, :valign => :center, :size => 18, :overflow => :shrink_to_fit, :inline_format => true
+                    text_box "<b>#{klasse_for_room ? 'Klasse ' + _self.tr_klasse(klasse_for_room) : ''}</b>", :at => [left, bottom + height + 5.mm], :width => width, :height => 15.mm, :align => :right, :valign => :center, :size => 18, :overflow => :shrink_to_fit, :inline_format => true
+                    bounding_box([left, bottom + height], :width => width, :height => height) do
+                        %w(Montag Dienstag Mittwoch Donnerstag Freitag).each.with_index do |tag, tag_index|
+                            bounding_box([tw * tag_index, (bottom + height - 15.mm)], :width => tw, :height => th) do
+                                text_box "<b>#{tag}</b>", :at => [2.mm, th + 2.mm], :width => tw - 4.mm, :height => th - 2.mm, :align => :center, :valign => :bottom, :size => 11, :overflow => :shrink_to_fit, :inline_format => true
+                                # stroke_bounds
+                            end
+                        end
+                        (1..max_room_stunden).each do |stunde|
+                            bounding_box([-tw, (bottom + height - 15.mm) - th * stunde], :width => tw, :height => th) do
+                                text_box "<b>#{stunde}</b>", :at => [2.mm, th - 2.mm], :width => tw - 6.mm, :height => th - 4.mm, :align => :right, :valign => :center, :size => 11, :overflow => :shrink_to_fit, :inline_format => true
+                                # stroke_bounds
+                            end
+                        end
+
+                        # Draw dashed grid
+                        stroke_color "888888"
+                        dash(3)
+                        (1...(max_room_stunden + 2)).each do |y|
+                            stroke_horizontal_line 0, width, :at => height - y * th
+                        end
+                        (0...6).each do |x|
+                            stroke_vertical_line (bottom + height - 15.mm) - th * 1, (bottom + height - 15.mm) - th * (max_room_stunden + 1), :at => x * tw
+                        end
+                        undash
+                        stroke_color "000000"
+
+                        timetable[room].each_pair do |tag, stunden|
+                            entries = []
+                            stunden_taken = Set.new()
+                            stunden.each_pair do |stunde, _info|
+                                info = _info.first
+                                lesson_key = info[:lesson_key]
+                                lesson_info = @@lessons[:lesson_keys][lesson_key]
+                                hours = HOURS_FOR_KLASSE[hours_key][info[:klassen].first] || HOURS_FOR_KLASSE[hours_key]['7a']
+                                entries << {}
+                                stunden_taken << stunde
+                                entries.last[:stunde] = stunde
+                                entries.last[:raum] = info[:raum]
+                                entries.last[:t0] = hours[stunde][0]
+                                entries.last[:t1] = hours[stunde][1]
+                                entries.last[:count] = 1
+                                entries.last[:text] = StringIO.open do |io|
+                                    io.print "<b>#{lesson_info[:pretty_fach_short]}</b> "
+                                    io.puts room
+                                    klassen = "#{info[:klassen].sort.map { |x| Main.tr_klasse(x) }.join(', ')}".strip
+                                    unless klassen.empty?
+                                        io.print "(#{klassen})"
+                                    end
+                                    io.puts
+                                    begin
+                                        io.puts "#{info[:lehrer].map { |x| @@user_info[@@shorthands[x]][:display_last_name]}.join(', ')}"
+                                    rescue
+                                    end
+                                    io.string
+                                end
+                                entries.last[:label] = StringIO.open do |io|
+                                    io.print "<b>#{lesson_info[:pretty_fach_short]}</b> "
+                                    klassen = "#{info[:klassen].sort.map { |x| Main.tr_klasse(x) }.join(', ')}".strip
+                                    unless klassen.empty?
+                                        io.print "(#{klassen})"
+                                    end
+                                    io.puts
+                                    begin
+                                        io.puts "#{info[:lehrer].map { |x| @@user_info[@@shorthands[x]][:display_last_name]}.join(', ')}"
+                                    rescue
+                                    end
+                                    io.string
+                                end
+                            end
+                            if klasse_for_room
+                                klassen_timetable[klasse_for_room][tag].each_pair do |stunde, _info|
+                                    info = _info.first
+                                    if info[:klassen].include?(klasse_for_room) && !(stunden_taken.include?(stunde))
+                                        lesson_key = info[:lesson_key]
+                                        lesson_info = @@lessons[:lesson_keys][lesson_key]
+                                        hours = HOURS_FOR_KLASSE[hours_key][info[:klassen].first] || HOURS_FOR_KLASSE[hours_key]['7a']
+                                        entries << {}
+                                        stunden_taken << stunde
+                                        entries.last[:other] = true
+                                        entries.last[:stunde] = stunde
+                                        entries.last[:raum] = info[:raum]
+                                        entries.last[:t0] = hours[stunde][0]
+                                        entries.last[:t1] = hours[stunde][1]
+                                        entries.last[:count] = 1
+                                        entries.last[:text] = StringIO.open do |io|
+                                            io.print "<b>#{lesson_info[:pretty_fach_short]}</b> "
+                                            io.puts room
+                                            klassen = "#{info[:klassen].sort.map { |x| Main.tr_klasse(x) }.join(', ')}".strip
+                                            unless klassen.empty?
+                                                io.print "(#{klassen})"
+                                            end
+                                            io.puts
+                                            begin
+                                                io.puts "#{info[:lehrer].map { |x| @@user_info[@@shorthands[x]][:display_last_name]}.join(', ')}"
+                                            rescue
+                                            end
+                                            io.string
+                                        end
+                                        entries.last[:label] = StringIO.open do |io|
+                                            io.print "<b>#{lesson_info[:pretty_fach_short]}</b> "
+                                            klassen = "#{info[:klassen].sort.map { |x| Main.tr_klasse(x) }.join(', ')}".strip
+                                            unless klassen.empty?
+                                                io.print "(#{klassen})"
+                                            end
+                                            io.puts
+                                            begin
+                                                io.puts "#{info[:lehrer].map { |x| @@user_info[@@shorthands[x]][:display_last_name]}.join(', ')}"
+                                            rescue
+                                            end
+                                            io.string
+                                        end
+                                    end
+                                end
+                            end
+                            entries.sort_by! { |x| x[:stunde] }
+                            new_entries = []
+                            entries.each do |entry|
+                                if new_entries.empty?
+                                    new_entries << entry
+                                else
+                                    if new_entries.last[:stunde] + new_entries.last[:count] == entry[:stunde] && new_entries.last[:text] == entry[:text]
+                                        new_entries.last[:t1] = entry[:t1]
+                                        new_entries.last[:count] += 1
+                                    else
+                                        new_entries << entry
+                                    end
+                                end
+                            end
+                            new_entries.each do |entry|
+                                stunde = entry[:stunde]
+                                bounding_box([tw * tag, (bottom + height - 15.mm) - th * stunde + th * (entry[:count] - 1)], :width => tw, :height => th * entry[:count]) do
+                                    if entry[:other]
+                                        dash(1)
+                                    end
+                                    rounded_rectangle [1.mm, th - 1.mm], tw - 2.mm, th * entry[:count] - 2.mm, 2.mm
+                                    if entry[:other]
+                                        fill_color "ffffff"
+                                    else
+                                        fill_color "e0e0e0"
+                                    end
+                                    fill_and_stroke
+                                    undash
+                                    fill_color "000000"
+                                    text = StringIO.open do |io|
+                                        io.puts "#{entry[:t0]} – #{entry[:t1]}"
+                                        io.puts entry[:label]
+                                        io.string
+                                    end
+                                    text_box text, :at => [2.mm, th - 2.mm], :width => tw - 3.mm, :height => th * entry[:count] - 4.mm, :align => :left, :valign => :top, :size => 11, :overflow => :shrink_to_fit, :inline_format => true
+                                    text_box entry[:raum], :at => [2.mm, th - 2.mm], :width => tw - 4.mm, :height => th * entry[:count] - 4.mm, :align => :right, :valign => :top, :size => 11, :overflow => :shrink_to_fit, :inline_format => true
+                                end
+                            end
+                        end
+                        url = "#{WEBSITE_HOST}/room/#{room}"
+                        bounding_box([138.mm, 50.mm], :width => 30.mm, :height => 40.mm) do
+                            rounded_rectangle([0, 40.mm], 3.cm, 4.0.cm, 2.mm)
+                            fill_color "ffffff"
+                            fill_and_stroke
+                            fill_color "000000"
+                            move_to 0, 40.mm
+                            font_size 10
+                            default_leading 0
+                            move_down 2.mm
+                            text "Aktuelle Informationen:", :align => :center
+                            print_qr_code(url, :pos => [0.mm, 30.mm], :extent => 30.mm, :stroke => false)
+                        end
+                    end
+                end
+            end
+            # KLASSEN_ORDER.each do |klasse|
+            #     STDERR.puts "Klasse #{klasse}: #{(klassenraum_for_klasse[klasse] || []).join(', ')}"
+            # end
         end
         return doc.render
     end
@@ -1035,6 +1324,7 @@ class Main
                                         lesson_key = x[:lesson_key]
                                         fach = @@lessons[:lesson_keys][lesson_key][:fach]
                                         fach = @@faecher[fach] || fach
+                                        # TODO: This substitution is redundant now and already contained in @@lessons[:lesson_keys][lesson_key]
                                         fach.gsub!('Sport Jungen', 'Sport')
                                         fach.gsub!('Sport Mädchen', 'Sport')
                                         fach.gsub!('Evangelische Religionslehre', 'Religion')

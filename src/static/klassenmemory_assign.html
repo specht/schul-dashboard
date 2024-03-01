@@ -1,0 +1,778 @@
+#{this_is_a_page_for_logged_in_teachers}
+<style>
+    #stage {
+        text-align: center;
+    }
+    .sus-frame {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        align-items: center;
+        position: relative;
+        border-radius: 1vw;
+        /* border: 1px solid red; */
+        overflow: hidden;
+        width: min(32vw, 20vh);
+        height: calc(1.5 * min(32vw, 20vh));
+        border: 0.3em solid white;
+        box-shadow: 0 0 0.5em 0 rgba(0,0,0,0.2), inset 0 0 1em 0 rgba(0,0,0,0.5);
+        margin: 0.5em;
+    }
+    .sus-frame-md {
+        width: min(64vw, 40vh);
+        height: calc(1.5 * min(64vw, 40vh));
+    }
+    .sus-foto {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        background-color: white;
+        object-fit: cover;
+        object-position: 50% 10%;
+        box-shadow: 0 0 1em 0 rgba(0,0,0,0.5), inset 0 0 1em 0 rgba(0,0,0,0.5);
+        background-size: cover;
+    }
+    .sus-foto-sm {
+        background-color: white;
+        width: min(32vw, 20vh);
+        height: calc(1.5 * min(32vw, 20vh));
+        object-fit: cover;
+        object-position: 50% 5%;
+        box-shadow: 0 0 0.1em 0 rgba(0,0,0,0.5), inset 0 0 0.1em 0 rgba(0,0,0,0.5);
+        background-size: cover;
+        /* border: 0.1em solid white; */
+    }
+    .sus-foto-md {
+        background-color: white;
+        width: min(64vw, 40vh);
+        height: calc(1.5 * min(64vw, 40vh));
+        object-fit: cover;
+        object-position: 50% 5%;
+        box-shadow: 0 0 0.1em 0 rgba(0,0,0,0.5), inset 0 0 0.1em 0 rgba(0,0,0,0.5);
+        background-size: cover;
+        /* border: 0.1em solid white; */
+    }
+    .sus-label {
+        width: 100%;
+        position: absolute;
+        bottom: 0;
+        font-size: calc(min(80vw, 50vh) * 0.04);
+        background-color: rgba(255, 255, 255, 0.9);
+        box-shadow: 0 0 1em rgba(0, 0, 0, 0.5);
+        /* font-weight: bold; */
+        color: #000;
+        padding: 0.2em;
+        padding-top: 0.3em;
+        line-height: 110%;
+    }
+    .sus-label.nodata {
+        color: #cc3729;
+    }
+    .sus-quiz-label {
+        opacity: 0;
+    }
+    .sus-quiz-label.shown {
+        transition: opacity 0.2s ease-out;
+        opacity: 1;
+    }
+    .sus-edit {
+        width: 100%;
+        position: absolute;
+        bottom: 0;
+        font-size: calc(min(80vw, 50vh) * 0.04);
+        padding: 0.2em;
+        font-size: 12pt;
+    }
+    #quiz-curtain {
+        position: fixed;
+        left: 0;
+        top: 0;
+        width: 100vw;
+        height: 100vh;
+        background-color: rgba(0, 0, 0, 0.8);
+        z-index: 1000;
+        padding-top: 57px;
+        color: #111;
+        display: none;
+    }
+    .div_quiz {
+        position: absolute;
+        top: 57px;
+        left: auto;
+        right: auto;
+        z-index: 1001;
+        background-color: #fff;
+        transform: translate(calc(-50% + 50vw), 0);
+    }
+    .right-top-button {
+        position: absolute;
+        right: 0.5em;
+        border: 1px solid #ddd;
+        border-radius: 100%;
+        width: 2em;
+        height: 2em;
+        font-size: 1.5em;
+        color: #444;
+        text-align: center;
+        padding-top: 0.25em;
+        box-shadow: 0 0 5px rgba(0,0,0,0.2);
+        cursor: pointer;
+    }
+    .right-top-button:hover {
+        box-shadow: 0 0 5px rgba(0,0,0,0.5);
+        color: #000;
+        border: 1px solid #aaa;
+    }
+    .name-button-gone {
+        /*transform: translate(calc(-100% - 30px));*/
+        transform: scale(0);
+        opacity: 0;
+        transition: transform 0.2s ease-out, opacity 0.2s ease-out;
+    }
+</style>
+<div class='container container-fluid' style='background: none; backdrop-filter: none; box-shadow: none; max-width: unset;'>
+    <div class='row'>
+        <div class="col-md-6 offset-md-3">
+            <form id='form' autocomplete='off'>
+                <div class="input-group mb-3">
+                    <input type="text" autocomplete="off" id='password' class="form-control" placeholder="Bitte gib das Passwort ein, um das Klassenmemory zu starten" style="text-align: center;">
+                    <div class="input-group-append">
+                        <button id='submit_password' class="btn btn-primary" type="submit">Passwort absenden</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+        <div class="col-md-12">
+            <div id="klassen-div" style="display: none; text-align: center; padding-bottom: 1em;">
+            </div>
+            <div id='stage' style='display: none; margin-bottom: 30px;'>
+                <div id="sus_here">
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="quiz-curtain">
+</div>
+<div class="container div_quiz" style="display: none; overflow: hidden;" id="div_quiz_root">
+    <div class="row">
+        <div class="col-md-12">
+            <div class="right-top-button"><i class='fa fa-times'></i></div>
+            <h1>Klassen-Memory</h1>
+            <p>
+                Nutze das Klassen-Memory, um Namen und Gesichter deiner Schülerinnen und Schüler zu lernen!
+                Gerade für Lehrkräfte mit Fächern, die nur wenige Stunden pro Woche unterrichtet werden, ist es
+                schwierig, sich alle Namen zu merken. Dafür gibt es dieses Klassen-Memory. Aber auch für
+                Pausenaufsichten ist es hilfreich, wenn möglichst viele Lehrkräfte möglichst viele Kinder mit
+                ihrem Namen kennen.
+            </p>
+        </div>
+        <div class="col-md-4">
+            <button class="btn btn-lg btn-success w-100 bu_play" data-which="klasse">Einzelne Klasse üben</button><br>
+            <p style="line-height: 1em; margin-top: 0.5em;"><em>»Ich bin schon froh, wenn ich die Kinder aus meiner Klasse erkenne.«</em></p>
+            <div class="klassen-buttons-here"></div>
+            <hr>
+            <button class="btn btn-lg btn-success w-100 bu_play" data-which="klassenstufe">Ganze Klassenstufe üben</button><br>
+            <p style="line-height: 1em; margin-top: 0.5em;"><em>Erhöhter Schwierigkeitsgrad: Hier kannst du die Namen aller Kinder einer Klassenstufe üben.</em></p>
+            <div class="klassenstufen-buttons-here"></div>
+            <hr>
+            <button class="btn btn-lg btn-success w-100 bu_play" data-which="schule">Ganze Schule üben</button><br>
+            <p style="line-height: 1em; margin-top: 0.5em;"><em>»Mir ist das alles zu einfach! Ich möchte <b>alle</b> Namen kennen!«</em></p>
+        </div>
+        <div class="col-md-8" style="position: relative;">
+            <button id='toggle_show_recognize_hall_of_fame' class="pull-right btn btn-sm btn-outline-info"></button>
+            <h3>Hall of Fame</h3>
+            <div id="hall-of-fame">
+            </div>
+            <img src="/api/jauch" style="position: absolute; right: 10px; bottom: -30px; height: 160px; pointer-events: none;">
+        </div>
+    </div>
+</div>
+<div class="container div_quiz" style="display: none;" id="div_quiz_play">
+    <div class="row">
+        <div class="col-md-12">
+            <div class="right-top-button"><i class='fa fa-arrow-left'></i></div>
+            <div id="quiz-foto" style="text-align: center; margin-bottom: 1em;"></div>
+            <hr>
+        </div>
+    </div>
+    <div class="row">
+        <div class="col-md-12" id="name-buttons-here" style="text-align: center; min-height: 172px;">
+
+        </div>
+    </div>
+</div>
+
+<datalist id="current_names">
+</datalist>
+
+<script>
+
+var passphrase = '';
+var FOTO_PASSWORD = #{FOTO_PASSWORD.to_json};
+var KLASSEN_ORDER = #{KLASSEN_ORDER.to_json};
+var KLASSEN_TR = #{KLASSEN_TR.to_json};
+var schueler_for_klasse = #{@@schueler_for_klasse.to_json};
+var user_info = #{@@user_info.to_json};
+var email_for_foto_paths = #{get_emails_for_foto_paths().to_json};
+var email_for_foto_paths_rev = {};
+var email_for_foto_paths_emails = Object.values(email_for_foto_paths);
+var quiz_path = '/';
+var schueler_for_klassenstufe = {};
+var klassenstufe_for_klasse = {};
+var my_recognized_emails = #{get_recognized_emails().to_json};
+var klassenstufen = [];
+var recognize_stats_public = #{(@session_user[:recognize_stats_public] != false)};
+var email_for_display_name = {};
+
+for (let email in user_info) {
+    let info = user_info[email];
+    email_for_display_name[info.display_name] = email;
+}
+
+async function decryptData(encryptedData, password) {
+    const enc = new TextEncoder();
+    const salt = base64ToBytes(encryptedData.salt);
+    const iv = base64ToBytes(encryptedData.iv);
+    const ciphertext = base64ToBytes(encryptedData.data);
+    const keyMaterial = await window.crypto.subtle.importKey("raw", enc.encode(password),
+        {name: "PBKDF2", "hash": "SHA-1"}, false, ["deriveBits", "deriveKey"]);
+
+    const key = await window.crypto.subtle.deriveKey({name: "PBKDF2", salt: salt,
+        iterations: 20000, hash: "SHA-1", length: "256"}, keyMaterial, {name: "AES-CBC",
+        hash: "SHA-1", length: 256}, true, ["encrypt", "decrypt"]);
+
+    const decryptedData = await window.crypto.subtle.decrypt({name: "AES-CBC", iv: iv.buffer}, key, ciphertext.buffer);
+    return new TextDecoder().decode(decryptedData);
+}
+
+function update_hall_of_fame() {
+    api_call('/api/get_recognize_hall_of_fame', {}, function(data) {
+        console.log(data);
+        $('#hall-of-fame').empty();
+        let div = $(`<div class="table-responsive" style="max-width: 100%; overflow-x: auto;">`).appendTo($('#hall-of-fame'))
+        let table = $(`<table class="table table-condensed table-striped narrow" style="width: unset; min-width: 100%;">`).appendTo(div);;
+        let thead = $(`<thead>`).appendTo(table);
+        let tbody = $(`<tbody>`).appendTo(table);
+        let tr = $('<tr>').appendTo(thead);
+        $('<th>').text('Platz').appendTo(tr);
+        $('<th>').text('Name').appendTo(tr);
+        $(`<th style='text-align: center;'>`).text('Gesamt').appendTo(tr);
+        for (let stufe of klassenstufen) {
+            $(`<th style='text-align: center;'>`).text(stufe).appendTo(tr);
+        }
+
+        let place = 0;
+        let last_total = null;
+        for (let row of data.result) {
+            // if (row.email === null) continue;
+            place += 1;
+            tr = $('<tr>').appendTo(tbody);
+            $('<td>').text(last_total !== row.total ? `${place}.` : '').appendTo(tr);
+            last_total = row.total;
+            if (row.email === null) {
+                $('<td>').text('(anonym)').appendTo(tr);
+                tr.addClass('palerow');
+            } else {
+                $('<td>').text(user_info[row.email].display_name).appendTo(tr);
+            }
+            $(`<td style='text-align: center;'>`).text(`${row.total}`).appendTo(tr);
+            for (let stufe of klassenstufen) {
+                let percent = (row.stufe[stufe] ?? 0) / schueler_for_klassenstufe[stufe].length;
+                $(`<td style='text-align: center; background-color: rgba(74, 160, 63, ${percent})'>`).html(`${row.stufe[stufe] ?? '&ndash;'}`).appendTo(tr);
+            }
+        }
+    });
+}
+
+let photo_cache = {};
+
+function fetch_cached_photo(path, callback) {
+    if (path in photo_cache) {
+        callback(photo_cache[path]);
+    } else {
+        let url = `/api/fotos/${path}`;
+        $.get(url, function(data) {
+            decryptData(data, passphrase).then(function(decrypted) {
+                photo_cache[path] = decrypted;
+                callback(photo_cache[path]);
+            });
+        });
+    }
+}
+
+function base64ToBytes(base64) {
+    const binaryString = window.atob(base64);
+    const bytes = new Uint8Array(binaryString.length);
+    for (let i = 0; i < binaryString.length; i++) {
+        bytes[i] = binaryString.charCodeAt(i);
+    }
+    return bytes;
+}
+
+var current_klasse = '5a';
+var email_for_name = {};
+
+/*
+ ROOKIE: Klasse auswählen: Foto mit Name wird ausgewählt + 3 weitere Namen mit gleichem Geschlecht: der richtige Name muss ausgewählt werden
+ NOVICE: Klassenstufe auswählen: Foto mit Name wird ausgewählt + 3 weitere Namen mit gleichem Geschlecht: der richtige Name muss ausgewählt werden
+ EXPERT: ganze Schule, weitere Namen werden aus gleicher Klassenstufe +/- 1 ausgewählt
+ wenn ein Foto korrekt erkannt wurde: DB: Eintrag mit Zeitstempel, verfällt nach einem Jahr
+ wenn ein Foto nicht korrent erkannt wurde: DB-Eintrag wird entfernt (für falsch gewählten Namen UND die Person auf dem Foto)
+ HALL OF FAME: Liste der 10 besten Lehrkräfte (es zählen nur erkannte SuS, die noch an der Schule sind)
+ */
+
+function resetQuiz() {
+    quiz_path = '/';
+    $('.div_quiz').hide();
+    $('#div_quiz_root').fadeIn();
+    $('.klassen-buttons-here').hide();
+    $('.klassenstufen-buttons-here').hide();
+}
+
+function quiz_navigate(path) {
+    quiz_path = path;
+    if (quiz_path === '/') {
+        $('#div_quiz_root').show();
+        $('#div_quiz_play').hide();
+    } else {
+        $('#div_quiz_play').show();
+        $('#div_quiz_root').hide();
+    }
+}
+
+function quiz_back() {
+    if (quiz_path === '/') {
+        $('#quiz-curtain').fadeOut();
+        $('.div_quiz').fadeOut();
+    }
+    else {
+        quiz_navigate('/');
+        update_hall_of_fame();
+    }
+}
+
+var quiz_solution = null;
+var quiz_solution_nr = null;
+var quiz_prefix = '';
+var quiz_list = null;
+var all_sus_emails = Object.keys(user_info).filter((x) => user_info[x].teacher === false);
+
+function prefixMatch(name, prefix) {
+    let a = name.toUpperCase().replace(/[^A-Z]/g, '');
+    let b = prefix.toUpperCase().replace(/[^A-Z]/g, '');
+    return a.substring(0, prefix.length) === b.substring(0, prefix.length);
+}
+
+function updatePrefix() {
+    let geschlecht = user_info[quiz_solution].geschlecht;
+    let stufe = klassenstufe_for_klasse[user_info[quiz_solution].klasse];
+    let part_length = 0;
+
+    let next_parts = {};
+    let candidates = [];
+    while (Object.keys(next_parts).length < 4) {
+        part_length += 1;
+        console.log(part_length);
+        if (part_length > user_info[quiz_solution].display_name.length)
+            break;
+        next_parts = {};
+        candidates = [];
+        for (let email of all_sus_emails) {
+            if (email in email_for_foto_paths_rev) {
+                if (email !== quiz_solution) {
+                    if (user_info[email].geschlecht === geschlecht) {
+                        // if (klassenstufe_for_klasse[user_info[email].klasse] === stufe)
+                        if (prefixMatch(user_info[email].display_name, quiz_prefix)) {
+                            candidates.push(email);
+                            let s = user_info[email].display_name.substring(0, quiz_prefix.length + part_length);
+                            if (s.indexOf(' ') >= 0)
+                                s = user_info[email].display_name;
+                            next_parts[s] = true;
+                        }
+                    }
+                }
+            }
+        }
+    }
+    let next_part_solution = user_info[quiz_solution].display_name.substring(0, quiz_prefix.length + part_length);
+    if (next_part_solution.indexOf(' ') >= 0)
+        next_part_solution = user_info[quiz_solution].display_name;
+    delete next_parts[next_part_solution];
+    let next_parts_sorted = Object.keys(next_parts).sort((a, b) => Math.random());
+    next_parts_sorted = next_parts_sorted.slice(0, 10);
+    next_parts_sorted.push(next_part_solution);
+    next_parts_sorted = next_parts_sorted.sort();
+    console.log(`candidates: ${candidates.length}`);
+    console.log(`next parts,`, next_parts_sorted);
+    $('#name-buttons-here').empty();
+    for (let i = 0; i < next_parts_sorted.length; i++) {
+        let name = next_parts_sorted[i];
+        let button = $(`<button class='btn btn-lg btn-secondary' style='margin: 5px; min-width: 3em;'>`).text(`${name}`);
+        $('#name-buttons-here').append(button);
+        button.on('click', function(e) {
+            if (name === user_info[quiz_solution].display_name) {
+                // correct answer!
+                api_call('/api/foto_recognize', {email: quiz_solution}, function(data) {
+                    if (data.success) {
+                        my_recognized_emails[quiz_solution] = data.ts;
+                        button.removeClass('btn-secondary').addClass('btn-success');
+                        button.css('pointer-events', 'none');
+                        $('.sus-quiz-label').addClass('shown');
+                        for (let button of $('#name-buttons-here .btn')) {
+                            if (button !== e.target)
+                                $(button).addClass('name-button-gone');
+                        }
+                        setTimeout(function() {
+                            pickNextTask();
+                        }, 1000);
+                    }
+                });
+            } else if (user_info[quiz_solution].display_name.substr(0, name.length) !== name) {
+                // wrong answer!
+                let email1 = quiz_solution;
+                let email2 = email_for_display_name[name] ?? '';
+                api_call('/api/foto_unrecognize', {email1: email1, email2: email2}, function(data) {
+                    if (data.success) {
+                        delete my_recognized_emails[email1];
+                        delete my_recognized_emails[email2];
+                        button.removeClass('btn-secondary').addClass('btn-danger');
+                        $('.sus-quiz-label').addClass('shown');
+                        for (let button of $('#name-buttons-here .btn')) {
+                            if (button !== e.target)
+                                $(button).addClass('name-button-gone');
+                        }
+                        $('.bu-dont-know').remove();
+                        $(`<button class='btn btn-lg btn-secondary' style='margin: 5px; min-width: 3em;'>`).html(`<i class='fa fa-angle-double-right '></i>`).appendTo($('#name-buttons-here')).on('click', function(e) {
+                            pickNextTask();
+                        });
+                    }
+                });
+            } else {
+                quiz_prefix = name;
+                updatePrefix();
+            }
+        });
+    }
+    if (next_parts_sorted.length > 1) {
+        let button = $(`<button class='btn btn-lg btn-outline-secondary bu-dont-know' style='margin: 5px; min-width: 3em;'>`).text(`🤔`);
+        $('#name-buttons-here').append(button);
+        button.on('click', function(e) {
+            // wrong answer!
+            let email1 = quiz_solution;
+            let email2 = email_for_display_name[name] ?? '';
+            api_call('/api/foto_unrecognize', {email1: email1, email2: email2}, function(data) {
+                if (data.success) {
+                    delete my_recognized_emails[email1];
+                    delete my_recognized_emails[email2];
+                    $('.sus-quiz-label').addClass('shown');
+                    $('#name-buttons-here .btn').prop('disabled', true);
+                    $('.bu-dont-know').remove();
+                    $(`<button class='btn btn-lg btn-secondary' style='margin: 5px; min-width: 3em;'>`).html(`<i class='fa fa-angle-double-right '></i>`).appendTo($('#name-buttons-here')).on('click', function(e) {
+                        pickNextTask();
+                    });
+                }
+            });
+        });
+    }
+}
+
+function pickNextTask() {
+    let parts = quiz_path.split('/');
+    let mode = parts[2];
+    let which = parts[3];
+    console.log(`${mode} / ${which}`);
+    $('#quiz-foto').css('opacity', 0);
+
+    let photos = [];
+    let list = [];
+    if (mode === 'klasse') {
+        list = schueler_for_klasse;
+    } else if (mode === 'klassenstufe') {
+        list = schueler_for_klassenstufe;
+    } else if (mode === 'schule') {
+        list = {'all': Object.keys(user_info).filter((x) => user_info[x].teacher === false)};
+        which = 'all';
+    }
+    quiz_list = list[which];
+    for (let email of quiz_list)
+        if (email in email_for_foto_paths_rev)
+            if (email !== quiz_solution)
+                photos.push(email);
+    photos = photos.sort((a, b) => ((Math.floor((my_recognized_emails[a] ?? 0) / 3600.0)) + Math.random()) - ((Math.floor((my_recognized_emails[b] ?? 0) / 3600.0)) + Math.random()));
+    quiz_solution = photos[0];
+    quiz_prefix = '';
+    updatePrefix();
+    fetch_cached_photo(email_for_foto_paths_rev[quiz_solution], function(data) {
+        let frame = $(`<div class='sus-frame sus-frame-md'>`);
+        let photo = $('<div class="sus-foto-md">').css('background-image', `url(data:image/jpeg;base64,${data})`);
+        let div = $(`<div style='display: inline-block;'>`);
+        div.append(frame);
+        frame.append(photo);
+        let label = $(`<div class="sus-label sus-quiz-label" style="font-size: calc(min(80vw, 50vh) * 0.06);">${user_info[quiz_solution].display_name} (${KLASSEN_TR[user_info[quiz_solution].klasse] ?? user_info[quiz_solution].klasse})</div>`);
+        frame.append(label);
+        $('#quiz-foto').empty().append(div);
+        $('#quiz-foto').css('opacity', 1);
+    });
+}
+
+function update_recognize_stats_button() {
+    if (recognize_stats_public) {
+        $('#toggle_show_recognize_hall_of_fame').addClass('btn-outline-info').removeClass('btn-outline-secondary').html(`<i class='fa fa-check'></i>&nbsp;&nbsp;Ja, zeig meine Ergebnisse in der Hall of Fame an!`);
+    } else {
+        $('#toggle_show_recognize_hall_of_fame').removeClass('btn-outline-info').addClass('btn-outline-secondary').html(`<i class='fa fa-times'></i>&nbsp;&nbsp;Nein, ich möchte nicht in der Hall of Fame auftauchen.`);
+    }
+}
+
+window.addEventListener('load', function() {
+    update_recognize_stats_button();
+    $('.right-top-button').on('click', function(e) {
+        quiz_back();
+    });
+    $('#toggle_show_recognize_hall_of_fame').on('click', function(e) {
+        api_call('/api/toggle_show_recognize_hall_of_fame', {}, function(data) {
+            if (data.success) {
+                recognize_stats_public = data.flag;
+                update_recognize_stats_button();
+                update_hall_of_fame();
+            }
+        });
+    });
+    email_for_foto_paths_rev = {};
+    for (let path in email_for_foto_paths) {
+        let email = email_for_foto_paths[path];
+        email_for_foto_paths_rev[email] = path;
+    }
+    $('#password').focus();
+    $('#submit_password').on('click', function(e) {
+        e.preventDefault();
+        passphrase = $('#password').val().trim().toLowerCase();
+        $('#form').hide();
+        $('#stage').show();
+        $('#klassen-div').show();
+        refresh();
+    });
+    if (FOTO_PASSWORD !== null) {
+        $('#password').val(FOTO_PASSWORD);
+        $('#submit_password').click();
+    }
+    klassenstufen = [];
+    schueler_for_klasse['OS'] = [];
+    schueler_for_klasse['OS'] = schueler_for_klasse['OS'].concat(schueler_for_klasse['11']);
+    schueler_for_klasse['OS'] = schueler_for_klasse['OS'].concat(schueler_for_klasse['12']);
+    for (let klasse of KLASSEN_ORDER) {
+        let original_klasse = `${klasse}`;
+        if (klasse === '11') klasse = 'OS';
+        if (klasse === '12') klasse = 'OS';
+        let stufe = null;
+        if (klasse.substring(0, 2) === 'WK')
+            stufe = 'WK';
+        else if (klasse === 'OS')
+            stufe = 'OS';
+        else stufe = `${parseInt(klasse)}`;
+        if (klassenstufen.indexOf(stufe) < 0)
+            klassenstufen.push(stufe);
+
+        schueler_for_klassenstufe[stufe] ??= [];
+        for (let email of schueler_for_klasse[original_klasse])
+            schueler_for_klassenstufe[stufe].push(email);
+        klassenstufe_for_klasse[original_klasse] = stufe;
+
+        if (original_klasse === '12') continue;
+
+        let bu_klasse = $(`<button class='btn btn-sm ttc' style='margin: 0.2em;'>`).text(KLASSEN_TR[klasse] ?? klasse).data('klasse', klasse);
+        bu_klasse.on('click', function(e) {
+            $('.ttc').removeClass('active');
+            $(e.target).closest('.ttc').addClass('active');
+            current_klasse = $(e.target).closest('button').data('klasse');
+            console.log(`refreshing ${klasse}!`);
+            refresh();
+        });
+        $('#klassen-div').append(bu_klasse);
+        let bu_play_klasse = $(`<button class='btn btn-sm ttc' style='margin: 0.2em;'>`).text(KLASSEN_TR[klasse] ?? klasse).data('klasse', klasse);
+        bu_play_klasse.on('click', function(e) {
+            quiz_navigate(`/play/klasse/${klasse}`);
+            pickNextTask();
+        });
+        $('.klassen-buttons-here').append(bu_play_klasse);
+    }
+    for (let stufe of klassenstufen) {
+        let bu_play_klassenstufe = $(`<button class='btn btn-sm ttc' style='margin: 0.2em;'>`).text(stufe).data('stufe', stufe);
+            bu_play_klassenstufe.on('click', function(e) {
+            quiz_navigate(`/play/klassenstufe/${stufe}`);
+            pickNextTask();
+        });
+        $('.klassenstufen-buttons-here').append(bu_play_klassenstufe);
+    }
+    update_hall_of_fame();
+    console.log(klassenstufen);
+    let bu_quiz = $(`<button class='btn btn-sm ttc' style='margin: 0.2em; width: 5em;'>`).html(`<i style='display: inline-block; margin: 0 0.2em 0 0.5em;' class='fa fa-play'></i>&nbsp;&nbsp;Quiz!`).data('quiz', 'yeah');
+    bu_quiz.on('click', function(e) {
+        resetQuiz();
+        $('#quiz-curtain').fadeIn();
+    });
+    $('#quiz-curtain .container').on('click', function(e) {
+        e.stopPropagation();
+    });
+    $('#quiz-curtain').on('click', function(e) {
+        quiz_back();
+    });
+    $('.bu_play').on('click', function(e) {
+        let which = $(e.target).closest('.bu_play').data('which');
+        if (which === 'klasse') $('.klassen-buttons-here').slideDown();
+        if (which === 'klassenstufe') $('.klassenstufen-buttons-here').slideDown();
+        if (which === 'schule') {
+            quiz_navigate('/play/schule');
+            pickNextTask();
+        }
+    });
+    $('#klassen-div').append(bu_quiz);
+    $('.bu-name').on('click', function(e) {
+        let button = $(e.target).closest('.bu-name');
+        let which = button.attr('id').substring(8);
+        // which is either 0, 1, 2, 3 or skip
+        if (which === 'skip') {
+            pickNextTask();
+            return;
+        }
+        if (which === `${quiz_solution_nr}`) {
+            // correct answer!
+            api_call('/api/foto_recognize', {email: quiz_solution}, function(data) {
+                console.log(data);
+                if (data.success) {
+                    my_recognized_emails[quiz_solution] = data.ts;
+                }
+            });
+            button.removeClass('btn-secondary').addClass('btn-success');
+            for (let i = 0; i < 4; i++) {
+                if (i !== quiz_solution_nr)
+                    $(`#bu-name-${i}`).addClass('name-button-gone');
+            }
+            setTimeout(function() {
+                $('.bu-name').removeClass('name-button-gone');
+                button.removeClass('btn-success').addClass('btn-secondary');
+                pickNextTask();
+            }, 1000);
+        } else {
+            // wrong answer!
+            let email1 = quiz_solution;
+            let email2 = $(e.target).closest('.bu-name').data('email');
+            api_call('/api/foto_unrecognize', {email1: email1, email2: email2}, function(data) {
+                if (data.success) {
+                    delete my_recognized_emails[email1];
+                    delete my_recognized_emails[email2];
+                }
+            });
+            let button = $(`#bu-name-${quiz_solution_nr}`);
+            button.text(`${user_info[quiz_solution].display_name} (${KLASSEN_TR[user_info[quiz_solution].klasse] ?? user_info[quiz_solution].klasse})`);
+            button.removeClass('btn-secondary').addClass('btn-danger');
+            for (let i = 0; i < 4; i++) {
+                if (i !== quiz_solution_nr)
+                    $(`#bu-name-${i}`).addClass('name-button-gone');
+            }
+            setTimeout(function() {
+                $('.bu-name').removeClass('name-button-gone');
+                button.removeClass('btn-danger').addClass('btn-secondary');
+                pickNextTask();
+            }, 3000);
+        }
+    });
+    function refresh_autocomplete() {
+        $('#current_names').empty();
+        email_for_name = {};
+        for (let email of schueler_for_klasse[current_klasse] ?? schueler_for_klasse['11'].concat(schueler_for_klasse['12'])) {
+            let name = `${user_info[email].display_first_name} ${user_info[email].last_name}`;
+            email_for_name[name] = email;
+            if (!(email in email_for_foto_paths_rev)) {
+                $('#current_names').append($(`<option value='${name}'>`));
+            }
+        }
+    }
+    function refresh() {
+        let url = `/api/fotos/2023-${current_klasse}-0.json`;
+        console.log(url);
+        $('#sus_here').empty();
+        refresh_autocomplete();
+        api_call(`/api/get_fotos/${current_klasse}`, {}, function(data) {
+            if (data.success) {
+                for (let path of data.paths) {
+                    fetch_cached_photo(path, function(decrypted) {
+                        let frame = $(`<div class='sus-frame'>`);
+                        let photo = $('<div class="sus-foto-sm">').css('background-image', `url(data:image/jpeg;base64,${decrypted})`);
+                        let div = $(`<div style='display: inline-block;'>`);
+                        div.append(frame);
+                        frame.append(photo);
+                        let label = $(`<div class='sus-label'>`).text('(kein Name zugeordnet)').addClass('nodata');
+                        if (path in email_for_foto_paths) {
+                            let email = email_for_foto_paths[path];
+                            let name = `${user_info[email].display_first_name} ${user_info[email].last_name}`;
+                            label.text(name).removeClass('nodata');
+                        }
+                        frame.append(label);
+                        let ti_name = $(`<input class='sus-edit' type='text' list='current_names' class='form-control' style='text-align: center;' placeholder='Bitte geben Sie einen Namen ein'>`);
+                        frame.append(ti_name);
+                        $('#sus_here').append(div);
+                        ti_name.hide();
+                        ti_name.on('keydown', function(e) {
+                            if (e.key === 'Enter') {
+                                e.preventDefault();
+                                $(e.target).trigger('change');
+                            }
+                        });
+                        ti_name.on('change', function(e) {
+                            let name = $(e.target).val().trim();
+                            let email = email_for_name[name] ?? '';
+                            api_call('/api/assign_name_to_foto', {email: email, path: path}, function(data) {
+                                if (data.success) {
+                                    let frame = $(e.target).closest('.sus-frame');
+                                    let label = frame.find('.sus-label');
+                                    let ti_name = frame.find('.sus-edit');
+                                    ti_name.hide();
+                                    label.show();
+                                    if (email.length === 0) {
+                                        delete email_for_foto_paths[path];
+                                        email_for_foto_paths_emails = Object.values(email_for_foto_paths);
+                                        email_for_foto_paths_rev = {};
+                                        for (let path in email_for_foto_paths) {
+                                            let email = email_for_foto_paths[path];
+                                            email_for_foto_paths_rev[email] = path;
+                                        }
+                                        label.text('(kein Name zugeordnet)').addClass('nodata');
+                                    } else {
+                                        email_for_foto_paths[path] = email;
+                                        email_for_foto_paths_emails = Object.values(email_for_foto_paths);
+                                        email_for_foto_paths_rev = {};
+                                        for (let path in email_for_foto_paths) {
+                                            let email = email_for_foto_paths[path];
+                                            email_for_foto_paths_rev[email] = path;
+                                        }
+                                        label.text(name).removeClass('nodata');
+                                    }
+                                    refresh_autocomplete();
+                                }
+                            });
+                        });
+                        ti_name.on('blur', function(e) {
+                            let frame = $(e.target).closest('.sus-frame');
+                            let label = frame.find('.sus-label');
+                            let ti_name = frame.find('.sus-edit');
+                            ti_name.hide();
+                            label.show();
+                        });
+                        label.on('click', function(e) {
+                            let frame = $(e.target).closest('.sus-frame');
+                            let label = frame.find('.sus-label');
+                            let ti_name = frame.find('.sus-edit');
+                            label.hide();
+                            ti_name.show().focus();
+                        });
+                    });
+                }
+            }
+        });
+    }
+});
+</script>

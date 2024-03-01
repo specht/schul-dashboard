@@ -732,7 +732,9 @@ class Parser
                 # TODO: fix this
                 next unless jentry.is_a? Array
                 if jentry[0].nil?
-                    debug "ATTENTION: #{datum} #{sha1} #{jentry.to_json}"
+                    if DASHBOARD_SERVICE == 'ruby'
+                        debug "ATTENTION: #{datum} #{sha1} #{jentry.to_json}"
+                    end
                     next
                 end
                 if jentry[0].include?('-')
@@ -755,6 +757,7 @@ class Parser
 
                     entry = {
                         # :vnr => parts[0].to_i,
+                        :sha1 => sha1,
                         :datum => datum,
                         :stunde => stunde,
                         :klassen_alt => Set.new((jentry[1][0] || '').gsub('~', '/').gsub(',', '/').split('/')).to_a.map { |x| x.strip }.reject { |x| x.empty? }.sort,
@@ -919,36 +922,42 @@ class Parser
         if File.exist?('/data/kurswahl/kurs_id_tr.yaml')
             kurs_id_tr = YAML.load(File.read('/data/kurswahl/kurs_id_tr.yaml'))
         end
-        Dir['/data/kurswahl/csv/*.csv'].sort.each do |path|
-            File.open(path) do |f|
-                f.each_line do |line|
-                    line = line.force_encoding('CP1252')
-                    line = line.encode('UTF-8')
-                    line.strip!
-                    next if line.empty?
-                    parts = line.split(';')
-                    sus_name = parts[0]
-                    shorthand = parts[3]
-                    fach = parts[5].split('-').first
-                    tag = "#{shorthand}/#{fach}"
-                    kurs_id = File.basename(path).split('.').first
-                    kurs_ids_for_tag[tag] ||= Set.new()
-                    kurs_ids_for_tag[tag] << kurs_id
-                    while sus_name.length > 0
-                        break if email_for_name.include?(sus_name)
-                        name_parts = sus_name.split(' ')
-                        sus_name = name_parts[0, name_parts.size - 1].join(' ')
+        Dir['/data/kurswahl/csv/2024-02/**/*.csv'].sort.each do |path|
+            begin
+                File.open(path) do |f|
+                    f.each_line do |line|
+                        line = line.force_encoding('CP1252')
+                        line = line.encode('UTF-8')
+                        line.strip!
+                        next if line.empty?
+                        parts = line.split(';')
+                        sus_name = parts[0]
+                        shorthand = parts[2]
+                        fach = parts[4].split('-').first
+                        tag = "#{shorthand}/#{fach}"
+                        kurs_id = File.basename(path).split('.').first
+                        kurs_ids_for_tag[tag] ||= Set.new()
+                        kurs_ids_for_tag[tag] << kurs_id
+                        while sus_name.length > 0
+                            break if email_for_name.include?(sus_name)
+                            name_parts = sus_name.split(' ')
+                            sus_name = name_parts[0, name_parts.size - 1].join(' ')
+                        end
+                        unless shorthands.include?(shorthand)
+                            STDERR.puts "Warning: Unknown shorthand »#{shorthand}«"
+                            next
+                        end
+                        unless email_for_name.include?(sus_name)
+                            STDERR.puts "Warning: Unknown SuS name »#{sus_name}« in #{File.basename(path)}\n#{line}"
+                            next
+                        end
+                        emails_for_kurs_id[kurs_id] ||= []
+                        emails_for_kurs_id[kurs_id] << email_for_name[sus_name]
                     end
-                    unless shorthands.include?(shorthand)
-                        STDERR.puts "Warning: Unknown shorthand »#{shorthand}«"
-                        next
-                    end
-                    unless email_for_name.include?(sus_name)
-                        STDERR.puts "Warning: Unknown SuS name »#{sus_name}« in #{File.basename(path)}\n#{line}"
-                        next
-                    end
-                    emails_for_kurs_id[kurs_id] ||= []
-                    emails_for_kurs_id[kurs_id] << email_for_name[sus_name]
+                end
+            rescue StandardError => e
+                if DASHBOARD_SERVICE == 'ruby'
+                    STDERR.puts "Error parsing #{path}: #{e}"
                 end
             end
         end
@@ -998,13 +1007,15 @@ class Parser
             end
         end
 
-        unless unassigned_kurs_ids.empty?
-            STDERR.puts ">>> Warning: Could not assign #{unassigned_kurs_ids.size} of #{emails_for_kurs_id.size} kurs IDs:"
-            unassigned_kurs_ids.each do |kurs_id|
-                STDERR.puts "#{kurs_id}"
+        if DASHBOARD_SERVICE == 'ruby'
+            unless unassigned_kurs_ids.empty?
+                STDERR.puts ">>> Warning: Could not assign #{unassigned_kurs_ids.size} of #{emails_for_kurs_id.size} kurs IDs:"
+                unassigned_kurs_ids.each do |kurs_id|
+                    STDERR.puts "#{kurs_id}"
+                end
+                STDERR.puts ">>> See here for details:"
+                STDERR.puts debug_logs
             end
-            STDERR.puts ">>> See here for details:"
-            STDERR.puts debug_logs
         end
 
         return kurse_for_schueler, schueler_for_kurs
@@ -1025,9 +1036,17 @@ class Parser
                     end
                     sus.each do |name|
                         if name[0] == '@'
-                            klasse = name.sub('@', '')
+                            klasse = name.sub('@', '').split('_').first
+                            specifier = name.sub('@', '').sub(klasse, '')
                             schueler_for_lesson_key[lesson_key] ||= Set.new()
                             schueler_for_klasse[klasse].each do |email|
+                                if specifier == '_sesb'
+                                    next unless user_info[email][:sesb]
+                                elsif specifier == '_not_sesb'
+                                    next if user_info[email][:sesb]
+                                else
+                                    raise "Unknown specifier in wahlpflicht.yaml: #{specifier}!"
+                                end
                                 schueler_for_lesson_key[lesson_key] << email
                             end
                         else
@@ -1098,7 +1117,7 @@ class Parser
                             unassigned_names << name
                         end
                         unless email
-                            debug "Wahlpflichtkurswahl: Can't assign #{name}!"
+                            debug "SESB: Can't assign #{name}!"
                         end
                         if email
                             sesb_sus << email

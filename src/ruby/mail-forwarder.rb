@@ -5,19 +5,20 @@ require 'yaml'
 require 'net/imap'
 require './main.rb'
 
-MAIL_FORWARDER_SLEEP = DEVELOPMENT ? 60 : 60
+MAIL_FORWARDER_SLEEP = DEVELOPMENT ? 10 : 60
 MAIL_FORWARD_BATCH_SIZE = 30
 
 Mail.defaults do
-  delivery_method :smtp, { 
-      :address => SCHUL_MAIL_LOGIN_SMTP_HOST,
-      :port => 587,
-      :domain => SCHUL_MAIL_DOMAIN,
-      :user_name => MAILING_LIST_EMAIL,
-      :password => MAILING_LIST_PASSWORD,
-      :authentication => 'plain',
-      :enable_starttls_auto => true
-  }
+    # delivery_method :logger
+    delivery_method :smtp, {
+        :address => SMTP_SERVER,
+        :port => 587,
+        :domain => SMTP_DOMAIN,
+        :user_name => SMTP_USER,
+        :password => SMTP_PASSWORD,
+        :authentication => 'login',
+        :enable_starttls_auto => true
+    }
 end
 
 class Script
@@ -151,7 +152,6 @@ class Script
             end
         end
         t2 = Thread.new do
-            sleep MAIL_FORWARDER_SLEEP / 2
             # Second thread: check for e-mails to send
             # - glob for /mails/*/recipients.yaml
             #   - read /mails/*/recipients.yaml
@@ -163,7 +163,12 @@ class Script
             loop do
                 Dir["/mails/*/recipients.yaml"].each do |path|
                     mail_path = File.join(File.dirname(path), 'mail')
+                    STDERR.puts "mail_path: #{mail_path}"
                     mail = Mail.read_from_string(File.read(mail_path))
+                    # E-Mail-Verteiler did not work in January 2024,
+                    # let's remove the Return-Path header to make it work again.
+                    mail['Return-Path'] = nil
+                    mail['In-Reply-To'] = nil
                     mail.to = nil
                     mail.cc = []
                     mail.bcc = []
@@ -173,8 +178,45 @@ class Script
                     while !recipients[:pending].empty?
                         recipient = recipients[:pending].first
                         mail.to = recipient
-                        STDERR.puts "Forwarding mail to #{recipient...}"
-                        mail.deliver!
+                        # STDERR.puts mail
+                        STDERR.puts "Forwarding mail to #{recipient}..."
+                        File.open(File.join(File.dirname(path), 'last_forwarded_mail'), 'w') do |f|
+                            f.write mail.to_s
+                        end
+                        begin
+                            mail.deliver!
+                        rescue StandardError => e
+                            # sending failed!
+                            STDERR.puts "Forwarding mail failed, notifying admin..."
+                            # 1. notify WEBSITE_MAINTAINER_EMAIL
+                            _sender = mail[:from].formatted.first
+                            _subject = "E-Mail-Weiterleitung fehlgeschlagen: #{mail.subject}"
+                            _body = StringIO.open do |io|
+                                # "The mail forwarder failed to forward a mail from #{mail[:from].formatted.first} to #{recipient}.\r\n\r\n"
+                                io.puts "Hallo!\r\n\r\n"
+                                io.puts "Wir haben momentan leider bei manchen E-Mails technische Probleme mit der Weiterleitung. Die folgende E-Mail konnte leider nicht weitergeleitet werden:\r\n\r\n"
+                                io.puts "Betreff: #{mail.subject}\r\n"
+                                io.puts "Absender: #{mail[:from].formatted.first}\r\n\r\n"
+                                io.puts "Die meisten Mails gehen durch, aber manche nicht. Wir arbeiten an einer Lösung des Problems. Bitte entschuldigen Sie die Unannehmlichkeiten.\r\n\r\n"
+                                io.puts "Bitte senden Sie Ihre E-Mail noch einmal direkt an die folgenden Empfängeraddressen, die Sie per Copy & Paste in BCC setzen können:\r\n\r\n"
+                                io.puts "#{recipients[:pending].join(', ')}\r\n\r\n"
+                                io.puts "Bitte beachten Sie, dass sich die oben stehenden Empfängeradressen in Zukunft ändern können. Wir bitten Sie deshalb um Geduld und darum, weiterhin die E-Mail-Verteileradressen zu verwenden.\r\n\r\n"
+                                io.puts "Bei Fragen schreiben Sie bitte an #{WEBSITE_MAINTAINER_EMAIL}.\r\n\r\n"
+                                io.puts "Vielen Dank für Ihr Verständnis!\r\n\r\n"
+                                io.string
+                            end
+                            deliver_mail(_body) do
+                                to _sender
+                                cc WEBSITE_MAINTAINER_EMAIL
+                                bcc SMTP_FROM
+                                from SMTP_FROM
+                                subject _subject
+                            end
+                            # 2. rename recipients.yaml to recipients.yaml.failed
+                            FileUtils::mv(path, path + '.failed')
+                            # 3. break from loop
+                            break
+                        end
                         recipients[:pending].delete_at(0)
                         recipients[:sent] << recipient
                         File.open(path, 'w') do |f|
@@ -182,7 +224,9 @@ class Script
                         end
                         sleep 0.1
                     end
-                    FileUtils::mv(path, path + '.archived')
+                    if File.exist?(path)
+                        FileUtils::mv(path, path + '.archived')
+                    end
 #                     File.open(mail_path, 'w') { |f| f.puts 'nothing to see here' }
                 end
                 sleep MAIL_FORWARDER_SLEEP

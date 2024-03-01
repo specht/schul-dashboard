@@ -1,5 +1,5 @@
 #{this_is_a_page_for_logged_in_users}
-<div class='container' style='padding-top: 30px;'>
+<div class='container'>
     <div class='row'>
         <div class='col-md-8 offset-md-2'>
             <h2 style='margin-bottom: 30px;'>Nachrichten</h2>
@@ -161,7 +161,7 @@ function update_net_recipients_list() {
     for (let key in recipients_list) {
         let entry = recipients[key];
         if (entry.entries)
-            for (let email of entry.entries) 
+            for (let email of entry.entries)
                 net_recipients_hash[email] = true;
         else
             net_recipients_hash[key] = true;
@@ -183,8 +183,8 @@ function gen_recipient_span(key, with_rm) {
     let recipient = $('<span>').addClass('recipient').html(label);
     if (with_rm) {
         let rm_button = $('<span>').addClass('rm').data('key', key);
-        rm_button.click(function(e) { 
-            remove_recipient($(e.target).data('key')); 
+        rm_button.click(function(e) {
+            remove_recipient($(e.target).data('key'));
             $(e.target).closest('.recipient').remove();
         });
         recipient.addClass('with-rm').append(rm_button);
@@ -343,7 +343,7 @@ document.addEventListener('DOMContentLoaded', function() {
         rootMargin: '100px',
         threshold: 1.0
     });
-    
+
     $('#summernote').summernote({
         placeholder: 'Bitte geben Sie Ihre Nachricht ein',
         callbacks: {
@@ -357,37 +357,38 @@ document.addEventListener('DOMContentLoaded', function() {
             ['style', ['style']],
             ['font', ['bold', 'underline', 'clear']],
             ['fontname', ['fontname']],
+            ['fontsize', ['fontsize']],
             ['color', ['color']],
             ['para', ['ul', 'ol', 'paragraph']],
             ['table', ['table']],
             ['insert', ['link']],
             ['view', ['codeview', 'help']],
-        ],      
+        ],
     });
-    
+
     $('#composeModal').on('hide.bs.modal', function(e) {
         if ($(e.target).attr('id') === 'composeModal' && pending_changes() && (!force_close)) {
             $('#publish_message_btn_container').effect('shake', {direction: 'left', distance: 4});
             e.preventDefault();
             e.stopImmediatePropagation();
-            return false; 
+            return false;
         }
     });
-    
+
     $('.bu-compose').click(function(e) {
         compose_message();
     });
-    
+
     $('#bu_discard_message').click(function(e) {
         discard_message();
     });
-    
+
     $('#bu_send_message').click(function(e) {
         send_message();
     });
-    
+
     $('#bu_delete_message').click(function(e) {
-        showTemplateModal('Nachricht löschen', 
+        showTemplateModal('Nachricht löschen',
             'Sind Sie sicher, dass Sie diese Nachricht löschen möchten?',
             "<i class='fa fa-trash'></i>&nbsp;&nbsp;Nachricht löschen", 'btn-danger',
             'Abbrechen', 'btn-secondary', function() {
@@ -395,21 +396,21 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         );
     });
-    
+
     $('#bu-inbox').click(function(e) {
         $('#bu-inbox').removeClass('btn-outline-secondary').addClass('btn-primary');
         $('#bu-outbox').removeClass('btn-primary').addClass('btn-outline-secondary');
         $('.messages-container-inbox').show();
         $('.messages-container-outbox').hide();
     });
-    
+
     $('#bu-outbox').click(function(e) {
         $('#bu-outbox').removeClass('btn-outline-secondary').addClass('btn-primary');
         $('#bu-inbox').removeClass('btn-primary').addClass('btn-outline-secondary');
         $('.messages-container-outbox').show();
         $('.messages-container-inbox').hide();
     });
-    
+
     $('#ti_recipients').keydown(function(e) {
         if ((e.keyCode === 9 || e.keyCode === 13) && ($(e.target).val().length > 0)) {
             if (Object.keys(autocomplete_results).length === 1) {
@@ -478,7 +479,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 for (let key of result_keys) {
                     let k = recipients_cache.keys[key];
                     let r = gen_recipient_span(k);
-                    r.click(function(e) { 
+                    r.click(function(e) {
                         add_recipient($(e.target).data('key'));
                     });
                     $('.recipient-input-dropdown').append(r);
@@ -551,6 +552,6 @@ document.addEventListener('DOMContentLoaded', function() {
         load_recipients('#{@session_user[:id]}', function() {
             update_sent_messages();
         });
-    }   
+    }
 });
 </script>

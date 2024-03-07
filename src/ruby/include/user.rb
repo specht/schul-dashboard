@@ -44,6 +44,11 @@ class Main < Sinatra::Base
     #     user_logged_in? && @session_user[:can_report_tech_problems]
     # end
 
+    # Returns true if a user who can use aula is logged in.
+    def user_who_can_use_aula_logged_in?
+        user_logged_in? && @session_user[:can_use_aula]
+    end
+
     # Returns true if a user who can manage tablets is logged in.
     def user_who_can_manage_tablets_logged_in?
         user_logged_in? && @session_user[:can_manage_tablets]
@@ -282,6 +287,11 @@ class Main < Sinatra::Base
     # Assert that a techpost user is logged in
     def require_user_who_can_report_tech_problems_or_better!
         assert(user_who_can_report_tech_problems_or_better_logged_in?)
+    end
+
+    # Assert that a user who can use aula is logged in
+    def require_user_who_can_use_aula!
+        assert(user_who_can_use_aula_logged_in?)
     end
 
     # Assert that a user who can manage tablets is logged in

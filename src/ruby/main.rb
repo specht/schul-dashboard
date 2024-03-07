@@ -743,6 +743,10 @@ class Main < Sinatra::Base
             next unless @@user_info[email]
             @@user_info[email][:can_manage_monitors] = true
         end
+        (CAN_USE_AULA_USERS + CAN_MANAGE_TABLETS_USERS + TECHNIKTEAM + ADMIN_USERS).each do |email|
+            next unless @@user_info[email]
+            @@user_info[email][:can_use_aula] = true
+        end
         (CAN_MANAGE_TABLETS_USERS + TECHNIKTEAM + ADMIN_USERS).each do |email|
             next unless @@user_info[email]
             @@user_info[email][:can_manage_tablets] = true
@@ -1766,7 +1770,7 @@ class Main < Sinatra::Base
                 if admin_logged_in? || user_who_can_upload_files_logged_in? || user_who_can_manage_news_logged_in? || user_who_can_manage_monitors_logged_in? || user_who_can_manage_tablets_logged_in?
                     nav_items << :admin
                 end
-                if technikteam_logged_in?
+                if user_who_can_use_aula_logged_in?
                     unless admin_logged_in?
                         nav_items << :aula
                     end

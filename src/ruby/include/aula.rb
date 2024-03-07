@@ -10,12 +10,12 @@ class Main < Sinatra::Base
     end
     
     post '/api/get_aula_events' do
-        require_user_who_can_manage_tablets!
+        require_user_who_can_use_aula!
         respond(:events => self.class.get_aula_events())
     end
 
     post '/api/set_light_aula_event' do
-        require_user_who_can_manage_tablets!
+        require_user_who_can_use_aula!
         data = parse_request_data(:required_keys => [:id, :desk_array])
         desk_array = data[:desk_array].split(',').map { |s| s.to_i }
         neo4j_query(<<~END_OF_QUERY, :id => data[:id], :desk_array => desk_array)
@@ -25,7 +25,7 @@ class Main < Sinatra::Base
     end
     
     post '/api/delete_aula_event' do
-        require_user_who_can_manage_tablets!
+        require_user_who_can_use_aula!
         data = parse_request_data(:required_keys => [:id])
         neo4j_query(<<~END_OF_QUERY, :id => data[:id])
             MATCH (e:AulaEvent {id: $id})
@@ -44,7 +44,7 @@ class Main < Sinatra::Base
     end
 
     post '/api/finish_aula_event' do
-        require_user_who_can_manage_tablets!
+        require_user_who_can_use_aula!
         data = parse_request_data(:required_keys => [:id])
         neo4j_query(<<~END_OF_QUERY, :id => data[:id])
             MATCH (e:AulaEvent {id: $id})
@@ -54,7 +54,7 @@ class Main < Sinatra::Base
     end
     
     post '/api/unfinish_aula_event' do
-        require_user_who_can_manage_tablets!
+        require_user_who_can_use_aula!
         data = parse_request_data(:required_keys => [:id])
         neo4j_query(<<~END_OF_QUERY, :id => data[:id])
             MATCH (e:AulaEvent {id: $id})
@@ -64,7 +64,7 @@ class Main < Sinatra::Base
     end
 
     post '/api/change_aula_event_number' do
-        require_user_who_can_manage_tablets!
+        require_user_who_can_use_aula!
         data = parse_request_data(:required_keys => [:id, :number])
         neo4j_query(<<~END_OF_QUERY, :id => data[:id], :number => data[:number])
             MATCH (e:AulaEvent {id: $id})
@@ -74,7 +74,7 @@ class Main < Sinatra::Base
     end
     
     post '/api/change_aula_event_time' do
-        require_user_who_can_manage_tablets!
+        require_user_who_can_use_aula!
         data = parse_request_data(:required_keys => [:id, :time])
         neo4j_query(<<~END_OF_QUERY, :id => data[:id], :time => data[:time])
             MATCH (e:AulaEvent {id: $id})
@@ -84,7 +84,7 @@ class Main < Sinatra::Base
     end
     
     post '/api/change_aula_event_title' do
-        require_user_who_can_manage_tablets!
+        require_user_who_can_use_aula!
         data = parse_request_data(:required_keys => [:id, :title])
         neo4j_query(<<~END_OF_QUERY, :id => data[:id], :title => data[:title])
             MATCH (e:AulaEvent {id: $id})
@@ -94,7 +94,7 @@ class Main < Sinatra::Base
     end
 
     post '/api/create_aula_event' do
-        require_user_who_can_manage_tablets!
+        require_user_who_can_use_aula!
         id = RandomTag.generate()
         neo4j_query(<<~END_OF_QUERY, :id => id)
             CREATE (e:AulaEvent)
@@ -107,7 +107,7 @@ class Main < Sinatra::Base
     end
 
     # get '/api/aula_event_pdf' do
-    #     require_user_who_can_manage_tablets!
+    #     require_user_who_can_use_aula!
     #     # number = 
     #     # time = 
     #     # title =
@@ -132,7 +132,7 @@ class Main < Sinatra::Base
     # end
 
     get '/api/aula_event_pdf' do
-        require_user_who_can_manage_tablets!
+        require_user_who_can_use_aula!
         results = $neo4j.neo4j_query(<<~END_OF_QUERY).map { |x| x['e'] }
             MATCH (e:AulaEvent)
             RETURN e
@@ -184,7 +184,7 @@ class Main < Sinatra::Base
     end
 
     # post '/api/create_aula_lights' do
-    #     require_user_who_can_manage_tablets!
+    #     require_user_who_can_use_aula!
     #     data = parse_request_data(:required_keys => [:dmx, :number])
     #     neo4j_query(<<~END_OF_QUERY, :dmx => data[:dmx], :desk => data[:desk])
     #         CREATE (e:AulaLight)
@@ -194,7 +194,7 @@ class Main < Sinatra::Base
     # end
 
     def print_light_structure()
-        require_user_who_can_manage_tablets!
+        require_user_who_can_use_aula!
         file_path = "/internal/aula_light/current_config.txt"
 
         if File.exist?(file_path)
@@ -235,7 +235,7 @@ class Main < Sinatra::Base
     end
 
     post '/api/get_light' do
-        require_user_who_can_manage_tablets!
+        require_user_who_can_use_aula!
         results = $neo4j.neo4j_query(<<~END_OF_QUERY).map { |x| {:lightdata=> x['v']} }
             MATCH (v:AulaLight)
             RETURN v
@@ -244,7 +244,7 @@ class Main < Sinatra::Base
     end
 
     post '/api/get_light_data' do
-        require_user_who_can_manage_tablets!
+        require_user_who_can_use_aula!
         data = parse_request_data(:required_keys => [:dmx])
         results = $neo4j.neo4j_query(<<~END_OF_QUERY, :dmx => data[:dmx]).map { |x| {:lightdata=> x['v']} }
             MATCH (v:AulaLight {dmx: $dmx})

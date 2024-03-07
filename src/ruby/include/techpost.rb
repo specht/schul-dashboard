@@ -217,7 +217,7 @@ class Main < Sinatra::Base
                 x[:fnc_login] = @@user_info[x[:femail]][:nc_login]
                 x[:fdisplay_name] = @@user_info[x[:femail]][:display_name]
             end
-            x[:klasse] = @@user_info[x[:email]][:klasse]
+            x[:klasse] = tr_klasse(@@user_info[x[:email]][:klasse])
             x
         end
         respond(:tech_problems => problems)
@@ -576,7 +576,7 @@ class Main < Sinatra::Base
             for technikamt in get_technikamt do
                 display_name = @@user_info[technikamt][:display_name]
                 nc_login = @@user_info[technikamt][:nc_login]
-                klasse = @@user_info[technikamt][:klasse]
+                klasse = tr_klasse(@@user_info[technikamt][:klasse])
                 io.puts "<tr><td><code><img src='#{NEXTCLOUD_URL}/index.php/avatar/#{nc_login}/256' class='icon avatar-md'>&nbsp;#{display_name} (#{klasse})</code></td><td><button class='btn btn-xs btn-danger bu-edit-techpost' data-email='#{technikamt}'><i class='fa fa-trash'></i>&nbsp;&nbsp;Rechte entziehen</button>&nbsp;<button class='btn btn-xs btn-success bu-send-single-welcome-mail' data-email='#{technikamt}'><i class='fa fa-envelope'></i>&nbsp;&nbsp;Willkommens-E-Mail versenden</button></td></tr>"
             end
             io.puts "</tbody></table>"

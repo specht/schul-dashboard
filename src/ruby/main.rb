@@ -1122,7 +1122,11 @@ class Main < Sinatra::Base
     def self.update_mailing_lists()
         self.update_antikenfahrt_groups()
         self.update_forschertage_groups()
+        self.update_angebote_groups()
         @@mailing_lists = {}
+        @@angebote_mailing_lists.each_pair do |k, v|
+            @@mailing_lists[k] = v
+        end
         all_kl = Set.new()
         @@klassen_order.each do |klasse|
             next unless @@schueler_for_klasse.include?(klasse)
@@ -1196,12 +1200,6 @@ class Main < Sinatra::Base
         end
         @@forschertage_mailing_lists.each_pair do |k, v|
             @@mailing_lists[k] = v
-        end
-        VERTEILER_TEST_EMAILS.each do |email|
-            @@mailing_lists[email] = {
-                :label => "Dev-Verteiler #{email}",
-                :recipients => VERTEILER_DEVELOPMENT_EMAILS
-            }
         end
         if DASHBOARD_SERVICE == 'ruby'
             File.open('/internal/mailing_lists.yaml.tmp', 'w') do |f|

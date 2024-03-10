@@ -479,6 +479,69 @@ class Main < Sinatra::Base
             end
         end
     end
+
+    def self.update_angebote_groups()
+        @@angebote_mailing_lists = {}
+        $neo4j.neo4j_query(<<~END_OF_QUERY).map { |x| {:info => x['a'], :recipient => x['u.email'], :owner => x['ou.email'] } }.each do |row|
+            MATCH (a:Angebot)-[:DEFINED_BY]->(ou:User)
+            WITH a, ou
+            OPTIONAL MATCH (u:User)-[r:IS_PART_OF]->(a)
+            RETURN a, u.email, ou.email
+            ORDER BY a.created DESC, a.id;
+        END_OF_QUERY
+            list_email = remove_accents(row[:info][:name].downcase).split(/[^a-z]+/).map { |x| x.strip }.reject { |x| x.empty? }.join('-') + '@' + MAILING_LIST_DOMAIN
+            @@angebote_mailing_lists[list_email] ||= {
+                :label => row[:info][:name],
+                :recipients => [],
+            }
+            @@angebote_mailing_lists[list_email][:recipients] << row[:recipient]
+        end
+                # results = $neo4j.neo4j_query(<<~END_OF_QUERY).map { |x| {:email => x['email'], :group_ft => x['group_ft'] }}
+        #     MATCH (u:User)
+        #     RETURN u.email AS email, COALESCE(u.group_ft, '') AS group_ft;
+        # END_OF_QUERY
+        # groups = {}
+        # main_user_info = @@user_info
+        # results.each do |row|
+        #     next unless ['nawi', 'gewi', 'musik', 'medien'].include?(row[:group_ft])
+        #     user_info = main_user_info[row[:email]]
+        #     next unless user_info
+        #     next unless user_info[:teacher] == false
+        #     next unless ['5', '6'].include?(user_info[:klasse][0])
+        #     groups[user_info[:klasse][0]] ||= {}
+        #     groups[user_info[:klasse][0]][row[:group_ft]] ||= []
+        #     groups[user_info[:klasse][0]][row[:group_ft]] << row[:email]
+        # end
+        # @@forschertage_recipients = {
+        #     :recipients => {},
+        #     :groups => []
+        # }
+        # @@forschertage_mailing_lists = {}
+        # ['5', '6'].each do |klasse|
+        #     ['nawi', 'gewi', 'musik', 'medien'].each do |group_ft|
+        #         next if ((groups[klasse] || {})[group_ft] || []).empty?
+        #         @@antikenfahrt_recipients[:groups] << "/ft/#{klasse}/#{group_ft}/sus"
+        #         @@antikenfahrt_recipients[:recipients]["/ft/#{klasse}/#{group_ft}/sus"] = {
+        #             :label => "Forschertage #{GROUP_FT_ICONS[group_ft]} – SuS #{klasse}",
+        #             :entries => groups[klasse][group_ft]
+        #         }
+        #         @@antikenfahrt_recipients[:groups] << "/af/#{klasse}/#{group_ft}/eltern"
+        #         @@antikenfahrt_recipients[:recipients]["/af/#{klasse}/#{group_ft}/eltern"] = {
+        #             :label => "Forschertage #{GROUP_FT_ICONS[group_ft]} – Eltern #{klasse} (extern)",
+        #             :external => true,
+        #             :entries => groups[klasse][group_ft].map { |x| 'eltern.' + x }
+        #         }
+        #         @@antikenfahrt_mailing_lists["forschertage.#{group_ft}.#{klasse}@#{MAILING_LIST_DOMAIN}"] = {
+        #             :label => "Forschertage #{GROUP_FT_ICONS[group_ft]} – SuS Klassenstufe #{klasse}",
+        #             :recipients => groups[klasse][group_ft]
+        #         }
+        #         @@antikenfahrt_mailing_lists["forschertage.#{group_ft}.eltern.#{klasse}@#{MAILING_LIST_DOMAIN}"] = {
+        #             :label => "Forschertage #{GROUP_FT_ICONS[group_ft]} – Eltern Klassenstufe #{klasse}",
+        #             :recipients => groups[klasse][group_ft].map { |x| 'eltern.' + x }
+        #         }
+        #     end
+        # end
+    end
     
     post '/api/toggle_homeschooling' do
         data = parse_request_data(:required_keys => [:email])
@@ -778,12 +841,12 @@ class Main < Sinatra::Base
             io.puts "</td>"
             io.puts "</tr>"
         end
-        io.puts "<tr class='user_row'>"
-        io.puts "<td>Bei Verteiler-Ausfall (bitte in BCC)</td>"
-        io.puts "<td colspan='2'>"
-        print_email_field(io, emails.join('; '))
-        io.puts "</td>"
-        io.puts "</tr>"
+        # io.puts "<tr class='user_row'>"
+        # io.puts "<td>Bei Verteiler-Ausfall (bitte in BCC)</td>"
+        # io.puts "<td colspan='2'>"
+        # print_email_field(io, emails.join('; '))
+        # io.puts "</td>"
+        # io.puts "</tr>"
     io.puts "</tbody>"
     end
     
@@ -824,7 +887,7 @@ class Main < Sinatra::Base
             end
             io.puts "<tr><th colspan='3'>Klassenleiter-Teams</th></tr>"
             [5, 6, 7, 8, 9, 10].each do |klasse|
-                list_email = "team.#{klasse}@mail.gymnasiumsteglitz.de"
+                list_email = "team.#{klasse}@#{MAILING_LIST_DOMAIN}"
                 print_mailing_list(io, list_email)
                 remaining_mailing_lists.delete(list_email)
             end
@@ -832,10 +895,24 @@ class Main < Sinatra::Base
             remaining_mailing_lists.delete("kl@#{MAILING_LIST_DOMAIN}")
             io.puts "<tr><th colspan='3'>Gesamte Schule</th></tr>"
             ["sus@#{MAILING_LIST_DOMAIN}",
+             "lehrer@#{MAILING_LIST_DOMAIN}",
              "eltern@#{MAILING_LIST_DOMAIN}",
-             "lehrer@#{MAILING_LIST_DOMAIN}"].each do |list_email|
+             "ev@#{MAILING_LIST_DOMAIN}",
+            ].each do |list_email|
                 print_mailing_list(io, list_email)
                 remaining_mailing_lists.delete(list_email)
+            end
+            io.puts "<tr><th colspan='3'>Forschertage</th></tr>"
+            [5, 6].each do |klasse|
+                ['gewi', 'medien', 'musik', 'nawi'].each do |group_ft|
+                    ['', '.eltern'].each do |extra|
+                        list_email = "forschertage.#{group_ft}#{extra}.#{klasse}@#{MAILING_LIST_DOMAIN}"
+                        if @@mailing_lists[list_email]
+                            print_mailing_list(io, list_email)
+                            remaining_mailing_lists.delete(list_email)
+                        end
+                    end
+                end
             end
             unless remaining_mailing_lists.empty?
                 io.puts "<tr><th colspan='3'>Weitere E-Mail-Verteiler</th></tr>"

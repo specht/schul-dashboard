@@ -70,6 +70,8 @@ class Main < Sinatra::Base
         }
         # update recipients
         trigger_update("_angebote_/#{@session_user[:email]}")
+        Main.update_angebote_groups()
+        Main.update_mailing_lists()
         respond(:ok => true, :angebot => angebot)
     end
 
@@ -113,6 +115,8 @@ class Main < Sinatra::Base
         }
         # update recipients
         trigger_update("_angebote_/#{@session_user[:email]}")
+        Main.update_angebote_groups()
+        Main.update_mailing_lists()
         respond(:ok => true, :angebot => angebot, :aid => angebot[:aid])
     end
 
@@ -129,6 +133,8 @@ class Main < Sinatra::Base
         end
         # update recipients
         trigger_update("_angebote_/#{@session_user[:email]}")
+        Main.update_angebote_groups()
+        Main.update_mailing_lists()
         respond(:ok => true, :aid => data[:aid])
     end
 

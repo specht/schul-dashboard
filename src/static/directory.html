@@ -49,7 +49,7 @@ document.addEventListener('DOMContentLoaded', function() {
             let email = button.data('email');
             api_call('/api/toggle_group_af_for_user', {email: email}, function(data) {
                 if (data.success) {
-                    button.text(#{GROUP_AF_ICONS.to_json}[data.group_af]);
+                    button.html(#{GROUP_AF_ICONS.to_json}[data.group_af]);
                 }
             });
         });

@@ -489,58 +489,15 @@ class Main < Sinatra::Base
             RETURN a, u.email, ou.email
             ORDER BY a.created DESC, a.id;
         END_OF_QUERY
-            list_email = remove_accents(row[:info][:name].downcase).split(/[^a-z]+/).map { |x| x.strip }.reject { |x| x.empty? }.join('-') + '@' + MAILING_LIST_DOMAIN
-            @@angebote_mailing_lists[list_email] ||= {
-                :label => row[:info][:name],
-                :recipients => [],
-            }
-            @@angebote_mailing_lists[list_email][:recipients] << row[:recipient]
+            ['', 'eltern.'].each do |who|
+                list_email = who + remove_accents(row[:info][:name].downcase).split(/[^a-z]+/).map { |x| x.strip }.reject { |x| x.empty? }.join('-') + '@' + MAILING_LIST_DOMAIN
+                @@angebote_mailing_lists[list_email] ||= {
+                    :label => row[:info][:name] + who.empty? ? '' : ' (Eltern)',
+                    :recipients => [],
+                }
+                @@angebote_mailing_lists[list_email][:recipients] << row[:recipient]
+            end
         end
-                # results = $neo4j.neo4j_query(<<~END_OF_QUERY).map { |x| {:email => x['email'], :group_ft => x['group_ft'] }}
-        #     MATCH (u:User)
-        #     RETURN u.email AS email, COALESCE(u.group_ft, '') AS group_ft;
-        # END_OF_QUERY
-        # groups = {}
-        # main_user_info = @@user_info
-        # results.each do |row|
-        #     next unless ['nawi', 'gewi', 'musik', 'medien'].include?(row[:group_ft])
-        #     user_info = main_user_info[row[:email]]
-        #     next unless user_info
-        #     next unless user_info[:teacher] == false
-        #     next unless ['5', '6'].include?(user_info[:klasse][0])
-        #     groups[user_info[:klasse][0]] ||= {}
-        #     groups[user_info[:klasse][0]][row[:group_ft]] ||= []
-        #     groups[user_info[:klasse][0]][row[:group_ft]] << row[:email]
-        # end
-        # @@forschertage_recipients = {
-        #     :recipients => {},
-        #     :groups => []
-        # }
-        # @@forschertage_mailing_lists = {}
-        # ['5', '6'].each do |klasse|
-        #     ['nawi', 'gewi', 'musik', 'medien'].each do |group_ft|
-        #         next if ((groups[klasse] || {})[group_ft] || []).empty?
-        #         @@antikenfahrt_recipients[:groups] << "/ft/#{klasse}/#{group_ft}/sus"
-        #         @@antikenfahrt_recipients[:recipients]["/ft/#{klasse}/#{group_ft}/sus"] = {
-        #             :label => "Forschertage #{GROUP_FT_ICONS[group_ft]} – SuS #{klasse}",
-        #             :entries => groups[klasse][group_ft]
-        #         }
-        #         @@antikenfahrt_recipients[:groups] << "/af/#{klasse}/#{group_ft}/eltern"
-        #         @@antikenfahrt_recipients[:recipients]["/af/#{klasse}/#{group_ft}/eltern"] = {
-        #             :label => "Forschertage #{GROUP_FT_ICONS[group_ft]} – Eltern #{klasse} (extern)",
-        #             :external => true,
-        #             :entries => groups[klasse][group_ft].map { |x| 'eltern.' + x }
-        #         }
-        #         @@antikenfahrt_mailing_lists["forschertage.#{group_ft}.#{klasse}@#{MAILING_LIST_DOMAIN}"] = {
-        #             :label => "Forschertage #{GROUP_FT_ICONS[group_ft]} – SuS Klassenstufe #{klasse}",
-        #             :recipients => groups[klasse][group_ft]
-        #         }
-        #         @@antikenfahrt_mailing_lists["forschertage.#{group_ft}.eltern.#{klasse}@#{MAILING_LIST_DOMAIN}"] = {
-        #             :label => "Forschertage #{GROUP_FT_ICONS[group_ft]} – Eltern Klassenstufe #{klasse}",
-        #             :recipients => groups[klasse][group_ft].map { |x| 'eltern.' + x }
-        #         }
-        #     end
-        # end
     end
     
     post '/api/toggle_homeschooling' do

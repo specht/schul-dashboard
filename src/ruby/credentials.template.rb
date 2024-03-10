@@ -61,6 +61,7 @@ end
 
 # Mailing-Liste
 MAILING_LIST_EMAIL = DEVELOPMENT ? 'verteiler.dev@mail.beispielschule.de' : 'verteiler@mail.beispielschule.de'
+MAILING_LIST_DOMAIN = 'verteiler.beispielschule.de'
 MAILING_LIST_PASSWORD = '1234_bitte_generiere_ein_zufälliges_passwort'
 VERTEILER_TEST_EMAILS = ["verteiler.test@#{SCHUL_MAIL_DOMAIN}"]
 VERTEILER_DEVELOPMENT_EMAILS = ['admin@beispielschule.de']

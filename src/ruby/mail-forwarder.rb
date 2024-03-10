@@ -119,28 +119,88 @@ class Script
                             STDERR.puts "[#{Time.now.strftime('%Y-%m-%d %H:%M')}] Bouncing mail back to invalid sender #{mail.from[0]}: #{mail.subject}"
                             mail.reply_to = "#{MAIL_SUPPORT_NAME} <#{MAIL_SUPPORT_EMAIL}>"
                             mail.to = ["#{mail.from[0]}"]
-                            mail.from = [MAILING_LIST_EMAIL]
+                            mail.from = [SMTP_FROM]
                             mail.cc = []
                             mail.bcc = []
                             mail.subject = "[Nicht zustellbar: Ungültige Absender-Adresse] #{mail.subject}"
                             mail.body = "Sie haben versucht, eine E-Mail an den Verteiler zu schicken,  allerdings ist Ihre Absender-Adresse nicht für den Versand an Verteileradressen freigeschaltet.\r\n\r\nBitte verwenden Sie Ihre schulische E-Mail-Adresse oder schreiben Sie eine E-Mail an #{MAIL_SUPPORT_EMAIL}, um sich für den Versand freischalten zu lassen.\r\n\r\n"
-                            mail.deliver!
-                            imap.copy(mid, 'Bounced')
+                            begin
+                                mail.deliver!
+                                imap.copy(mid, 'Bounced')
+                            rescue StandardError => e
+                                imap.copy(mid, 'External')
+                            end
                         else
                             all_recipients = Set.new
                             recipients = ((mail.to || []) + (mail.cc || []) + (mail.bcc || []))
+                            mailing_list_email_suffix = MAILING_LIST_EMAIL.split('@').last
+                            non_existing_mailing_list_addresses = Set.new()
+                            existing_mailing_list_addresses = Set.new()
+                            relocated_mailing_list_addresses = Set.new()
                             recipients.each do |m|
-                                if fresh_mailing_list().include?(m.downcase)
-                                    all_recipients |= Set.new(fresh_mailing_list()[m.downcase][:recipients])
+                                suffix = m.downcase.split('@').last
+                                if suffix == mailing_list_email_suffix
+                                    if m.downcase != MAILING_LIST_EMAIL.downcase
+                                        if fresh_mailing_list().include?(m.downcase)
+                                            all_recipients |= Set.new(fresh_mailing_list()[m.downcase][:recipients])
+                                            existing_mailing_list_addresses << m.downcase
+                                        else
+                                            non_existing_mailing_list_addresses << m.downcase
+                                        end
+                                    end
+                                else
+                                    if suffix == mailing_list_email_suffix.split('.').map.with_index { |x, i| i == 0 ? 'mail' : x }.join('.')
+                                        relocated_mailing_list_addresses << m.split('@').first + '@' + mailing_list_email_suffix
+                                    end
                                 end
                             end
-                            File.open(recipients_path, 'w') do |f|
-                                data = {:pending => all_recipients.to_a.sort,
-                                        :sent => []}
-                                f.puts data.to_yaml
+                            unless all_recipients.empty?
+                                File.open(recipients_path, 'w') do |f|
+                                    data = {:pending => all_recipients.to_a.sort,
+                                            :sent => []}
+                                    f.puts data.to_yaml
+                                end
+                                STDERR.puts "Received new mail: #{mail_subject} (#{mail.message_id}) for #{all_recipients.size} recipients..."
+                                imap.copy(mid, 'Forwarded')
                             end
-                            STDERR.puts "Received new mail: #{mail_subject} (#{mail.message_id}) for #{all_recipients.size} recipients..."
-                            imap.copy(mid, 'Forwarded')
+                            if all_recipients.empty? || (!non_existing_mailing_list_addresses.empty?) || (!relocated_mailing_list_addresses.empty?)
+                                STDERR.puts "[#{Time.now.strftime('%Y-%m-%d %H:%M')}] Bouncing mail back to sender #{mail.from[0]}: #{mail.subject}"
+                                mail.reply_to = "#{MAIL_SUPPORT_NAME} <#{MAIL_SUPPORT_EMAIL}>"
+                                mail.to = ["#{mail.from[0]}"]
+                                mail.from = [SMTP_FROM]
+                                mail.cc = []
+                                mail.bcc = []
+                                if non_existing_mailing_list_addresses.empty? && relocated_mailing_list_addresses.empty?
+                                    mail.subject = "[Nicht zustellbar: Keine Empfänger] #{mail.subject}"
+                                else
+                                    mail.subject = "[Nicht zustellbar: Ungültige Verteiler-Adresse] #{mail.subject}"
+                                end
+                                mail.body = StringIO.open do |io|
+                                    io.puts "Sie haben versucht, eine E-Mail an den Verteiler zu senden.\r\n\r\n"
+                                    unless existing_mailing_list_addresses.empty?
+                                        io.puts "Die E-Mail wurde an folgende Verteiler ausgeliefert:\r\n\r\n"
+                                        io.puts existing_mailing_list_addresses.to_a.sort.join("\r\n")
+                                        io.puts "\r\n"
+                                    end
+                                    unless non_existing_mailing_list_addresses.empty?
+                                        io.puts "Die E-Mail wurde an folgende Verteiler nicht ausgeliefert, da diese Verteiler nicht existieren:\r\n\r\n"
+                                        io.puts non_existing_mailing_list_addresses.to_a.sort.join("\r\n")
+                                        io.puts "\r\n"
+                                    end
+                                    unless relocated_mailing_list_addresses.empty?
+                                        io.puts "Bitte beachten Sie, dass sich alle Verteileradressen geändert haben. Statt @#{MAILING_LIST_DOMAIN.split('.').map.with_index { |x, i| i == 0 ? 'mail' : x }.join('.')} verwenden Sie nun bitte immer @#{MAILING_LIST_DOMAIN}. Die neue Verteileradresse lautet also:\r\n\r\n"
+                                        io.puts relocated_mailing_list_addresses.to_a.sort.join("\r\n")
+                                        io.puts "\r\n"
+                                    end
+                                    if all_recipients.empty?
+                                        io.puts "Die E-Mail wurde an niemanden weitergeleitet."
+                                        io.puts "\r\n"
+                                    end
+                                    io.string
+                                end
+                                mail.deliver!
+                                imap.copy(mid, 'Bounced')
+                            end
                         end
                     end
                     imap.store(mid, '+FLAGS', [:Deleted])
@@ -184,7 +244,11 @@ class Script
                             f.write mail.to_s
                         end
                         begin
-                            mail.deliver!
+                            if DEVELOPMENT && !(VERTEILER_DEVELOPMENT_EMAILS.include?(recipient))
+                                STDERR.puts "(skipping mail forwarding because we're in development mode)"
+                            else
+                                mail.deliver!
+                            end
                         rescue StandardError => e
                             # sending failed!
                             STDERR.puts "Forwarding mail failed, notifying admin..."

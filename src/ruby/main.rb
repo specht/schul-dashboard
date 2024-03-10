@@ -1126,17 +1126,17 @@ class Main < Sinatra::Base
         all_kl = Set.new()
         @@klassen_order.each do |klasse|
             next unless @@schueler_for_klasse.include?(klasse)
-            @@mailing_lists["klasse.#{klasse}@#{SCHUL_MAIL_DOMAIN}"] = {
+            @@mailing_lists["klasse.#{klasse}@#{MAILING_LIST_DOMAIN}"] = {
                 :label => "SuS der Klasse #{tr_klasse(klasse)}",
                 :recipients => @@schueler_for_klasse[klasse]
             }
-            @@mailing_lists["eltern.#{klasse}@#{SCHUL_MAIL_DOMAIN}"] = {
+            @@mailing_lists["eltern.#{klasse}@#{MAILING_LIST_DOMAIN}"] = {
                 :label => "Eltern der Klasse #{tr_klasse(klasse)}",
                 :recipients => @@schueler_for_klasse[klasse].map do |email|
                     "eltern.#{email}"
                 end
             }
-            @@mailing_lists["lehrer.#{klasse}@#{SCHUL_MAIL_DOMAIN}"] = {
+            @@mailing_lists["lehrer.#{klasse}@#{MAILING_LIST_DOMAIN}"] = {
                 :label => "Lehrer der Klasse #{tr_klasse(klasse)}",
                 :recipients => ((@@teachers_for_klasse[klasse] || {}).keys.sort).map do |shorthand|
                     email = @@shorthands[shorthand]
@@ -1146,32 +1146,32 @@ class Main < Sinatra::Base
             }
             if klasse.to_i > 0
                 if @@klassenleiter[klasse]
-                    @@mailing_lists["team.#{klasse.to_i}@#{SCHUL_MAIL_DOMAIN}"] ||= {
+                    @@mailing_lists["team.#{klasse.to_i}@#{MAILING_LIST_DOMAIN}"] ||= {
                         :label => "Klassenleiterteam der Klassenstufe #{klasse.to_i}",
                         :recipients => []
                     }
                     @@klassenleiter[klasse].each do |shorthand|
                         if @@shorthands[shorthand]
-                            @@mailing_lists["team.#{klasse.to_i}@#{SCHUL_MAIL_DOMAIN}"][:recipients] << @@shorthands[shorthand]
+                            @@mailing_lists["team.#{klasse.to_i}@#{MAILING_LIST_DOMAIN}"][:recipients] << @@shorthands[shorthand]
                             all_kl << @@shorthands[shorthand]
                         end
                     end
                 end
             end
         end
-        @@mailing_lists["lehrer@#{SCHUL_MAIL_DOMAIN}"] = {
+        @@mailing_lists["lehrer@#{MAILING_LIST_DOMAIN}"] = {
             :label => "Gesamtes Kollegium",
             :recipients => @@user_info.keys.select do |email|
                 @@user_info[email][:teacher] && @@user_info[email][:can_log_in] && email != 'vorstand.gev@gymnasiumsteglitz.de'
             end
         }
-        @@mailing_lists["sus@#{SCHUL_MAIL_DOMAIN}"] = {
+        @@mailing_lists["sus@#{MAILING_LIST_DOMAIN}"] = {
             :label => "Alle Schülerinnen und Schüler",
             :recipients => @@user_info.keys.select do |email|
                 !@@user_info[email][:teacher]
             end
         }
-        @@mailing_lists["eltern@#{SCHUL_MAIL_DOMAIN}"] = {
+        @@mailing_lists["eltern@#{MAILING_LIST_DOMAIN}"] = {
             :label => "Alle Eltern",
             :recipients => @@user_info.keys.select do |email|
                 !@@user_info[email][:teacher]
@@ -1183,11 +1183,11 @@ class Main < Sinatra::Base
             MATCH (u:User {ev: true})
             RETURN u.email;
         END_OF_QUERY
-        @@mailing_lists["ev@#{SCHUL_MAIL_DOMAIN}"] = {
+        @@mailing_lists["ev@#{MAILING_LIST_DOMAIN}"] = {
             :label => "Alle Elternvertreter:innen",
             :recipients => temp.map { |x| 'eltern.' + x[:email] }
         }
-        @@mailing_lists["kl@#{SCHUL_MAIL_DOMAIN}"] = {
+        @@mailing_lists["kl@#{MAILING_LIST_DOMAIN}"] = {
             :label => "Alle Klassenleiter:innen",
             :recipients => all_kl.to_a.sort
         }

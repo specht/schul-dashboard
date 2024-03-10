@@ -468,11 +468,11 @@ class Main < Sinatra::Base
                     :external => true,
                     :entries => groups[klasse][group_ft].map { |x| 'eltern.' + x }
                 }
-                @@antikenfahrt_mailing_lists["forschertage.#{group_ft}.#{klasse}@#{SCHUL_MAIL_DOMAIN}"] = {
+                @@antikenfahrt_mailing_lists["forschertage.#{group_ft}.#{klasse}@#{MAILING_LIST_DOMAIN}"] = {
                     :label => "Forschertage #{GROUP_FT_ICONS[group_ft]} – SuS Klassenstufe #{klasse}",
                     :recipients => groups[klasse][group_ft]
                 }
-                @@antikenfahrt_mailing_lists["forschertage.#{group_ft}.eltern.#{klasse}@#{SCHUL_MAIL_DOMAIN}"] = {
+                @@antikenfahrt_mailing_lists["forschertage.#{group_ft}.eltern.#{klasse}@#{MAILING_LIST_DOMAIN}"] = {
                     :label => "Forschertage #{GROUP_FT_ICONS[group_ft]} – Eltern Klassenstufe #{klasse}",
                     :recipients => groups[klasse][group_ft].map { |x| 'eltern.' + x }
                 }
@@ -793,16 +793,16 @@ class Main < Sinatra::Base
             remaining_mailing_lists = Set.new(@@mailing_lists.keys)
             @@klassen_order.each do |klasse|
                 io.puts "<tr><th colspan='3'>Klasse #{tr_klasse(klasse)}</th></tr>"
-                ["klasse.#{klasse}@#{SCHUL_MAIL_DOMAIN}",
-                 "eltern.#{klasse}@#{SCHUL_MAIL_DOMAIN}",
-                 "lehrer.#{klasse}@#{SCHUL_MAIL_DOMAIN}"].each do |list_email|
+                ["klasse.#{klasse}@#{MAILING_LIST_DOMAIN}",
+                 "eltern.#{klasse}@#{MAILING_LIST_DOMAIN}",
+                 "lehrer.#{klasse}@#{MAILING_LIST_DOMAIN}"].each do |list_email|
                     print_mailing_list(io, list_email)
                     remaining_mailing_lists.delete(list_email)
                 end
                 if ['11', '12'].include?(klasse)
                     ['gr', 'it'].each do |group_af|
                         ['', '.eltern'].each do |extra|
-                            list_email = "antikenfahrt.#{group_af}#{extra}.#{klasse}@#{SCHUL_MAIL_DOMAIN}"
+                            list_email = "antikenfahrt.#{group_af}#{extra}.#{klasse}@#{MAILING_LIST_DOMAIN}"
                             if @@mailing_lists[list_email]
                                 print_mailing_list(io, list_email)
                                 remaining_mailing_lists.delete(list_email)
@@ -813,7 +813,7 @@ class Main < Sinatra::Base
                 if ['5', '6'].include?(klasse)
                     ['nawi', 'gewi', 'musik', 'medien'].each do |group_ft|
                         ['', '.eltern'].each do |extra|
-                            list_email = "forschertage.#{group_ft}#{extra}.#{klasse}@#{SCHUL_MAIL_DOMAIN}"
+                            list_email = "forschertage.#{group_ft}#{extra}.#{klasse}@#{MAILING_LIST_DOMAIN}"
                             if @@mailing_lists[list_email]
                                 print_mailing_list(io, list_email)
                                 remaining_mailing_lists.delete(list_email)
@@ -828,12 +828,12 @@ class Main < Sinatra::Base
                 print_mailing_list(io, list_email)
                 remaining_mailing_lists.delete(list_email)
             end
-            print_mailing_list(io, "kl@#{SCHUL_MAIL_DOMAIN}")
-            remaining_mailing_lists.delete("kl@#{SCHUL_MAIL_DOMAIN}")
+            print_mailing_list(io, "kl@#{MAILING_LIST_DOMAIN}")
+            remaining_mailing_lists.delete("kl@#{MAILING_LIST_DOMAIN}")
             io.puts "<tr><th colspan='3'>Gesamte Schule</th></tr>"
-            ["sus@#{SCHUL_MAIL_DOMAIN}",
-             "eltern@#{SCHUL_MAIL_DOMAIN}",
-             "lehrer@#{SCHUL_MAIL_DOMAIN}"].each do |list_email|
+            ["sus@#{MAILING_LIST_DOMAIN}",
+             "eltern@#{MAILING_LIST_DOMAIN}",
+             "lehrer@#{MAILING_LIST_DOMAIN}"].each do |list_email|
                 print_mailing_list(io, list_email)
                 remaining_mailing_lists.delete(list_email)
             end

@@ -1196,10 +1196,12 @@ class Timetable
             end
             website_events = []
             Main.get_website_events.each do |entry|
-                unless (entry[:date] >= p1.strftime('%Y-%m-%d') || entry[:date] < p.strftime('%Y-%m-%d'))
+                start_date = entry[:date]
+                end_date = entry[:date_end] ? (Date.parse(entry[:date_end]) + 1).strftime('%Y-%m-%d') : (Date.parse(entry[:date]) + 1).strftime('%Y-%m-%d')
+                unless (start_date >= p1.strftime('%Y-%m-%d') || end_date < p.strftime('%Y-%m-%d'))
                     website_events << {
-                        :start => entry[:date],
-                        :end => entry[:date_end] ? (Date.parse(entry[:date_end]) + 1).strftime('%Y-%m-%d') : (Date.parse(entry[:date]) + 1).strftime('%Y-%m-%d'),
+                        :start => start_date,
+                        :end => end_date,
                         :title => entry[:title],
                         :label => entry[:title]
                     }

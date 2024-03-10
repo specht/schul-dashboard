@@ -189,7 +189,7 @@ class Main < Sinatra::Base
             end
             if teacher_logged_in?
                 io.puts "<tr>"
-                io.puts "<td colspan='3'></td>"
+                io.puts "<td colspan='4'></td>"
                 io.puts "<td colspan='2'><b>E-Mail an die Klasse #{tr_klasse(klasse)}</b></td>"
                 io.puts "<td></td>"
                 io.puts "<td colspan='3'><b>E-Mail an alle Eltern der Klasse #{tr_klasse(klasse)}</b></td>"

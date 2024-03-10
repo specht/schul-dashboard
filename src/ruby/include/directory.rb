@@ -495,7 +495,7 @@ class Main < Sinatra::Base
                     :label => row[:info][:name] + (who.empty? ? '' : ' (Eltern)'),
                     :recipients => [],
                 }
-                @@angebote_mailing_lists[list_email][:recipients] << row[:recipient]
+                @@angebote_mailing_lists[list_email][:recipients] << who + row[:recipient]
             end
         end
     end

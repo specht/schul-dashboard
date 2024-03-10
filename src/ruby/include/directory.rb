@@ -195,7 +195,7 @@ class Main < Sinatra::Base
                 io.puts "<td colspan='3'><b>E-Mail an alle Eltern der Klasse #{tr_klasse(klasse)}</b></td>"
                 io.puts "</tr>"
                 io.puts "<tr class='user_row'>"
-                io.puts "<td colspan='3'></td>"
+                io.puts "<td colspan='4'></td>"
                 io.puts "<td colspan='2'>"
                 print_email_field(io, "klasse.#{klasse}@#{MAILING_LIST_DOMAIN}")
                 io.puts "</td>"

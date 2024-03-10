@@ -492,7 +492,7 @@ class Main < Sinatra::Base
             ['', 'eltern.'].each do |who|
                 list_email = who + remove_accents(row[:info][:name].downcase).split(/[^a-z]+/).map { |x| x.strip }.reject { |x| x.empty? }.join('-') + '@' + MAILING_LIST_DOMAIN
                 @@angebote_mailing_lists[list_email] ||= {
-                    :label => row[:info][:name] + who.empty? ? '' : ' (Eltern)',
+                    :label => row[:info][:name] + (who.empty? ? '' : ' (Eltern)'),
                     :recipients => [],
                 }
                 @@angebote_mailing_lists[list_email][:recipients] << row[:recipient]

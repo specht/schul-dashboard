@@ -1767,7 +1767,7 @@ class Main < Sinatra::Base
                 if user_is_eligible_for_tresor?
                     nav_items << :tresor
                 end
-                if admin_logged_in? || user_who_can_upload_files_logged_in? || user_who_can_manage_news_logged_in? || user_who_can_manage_monitors_logged_in? || user_who_can_manage_tablets_logged_in?
+                if admin_logged_in? || user_who_can_upload_files_logged_in? || user_who_can_manage_news_logged_in? || user_who_can_manage_monitors_logged_in? || user_who_can_manage_tablets_logged_in? || developer_logged_in?
                     nav_items << :admin
                 end
                 if user_who_can_use_aula_logged_in?

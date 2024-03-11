@@ -24,7 +24,7 @@ end
 class Script
     def initialize
 #         @shutdown = false
-#         Signal.trap("TERM") do 
+#         Signal.trap("TERM") do
 #             STDERR.puts "Caught SIGTERM"
 #             @shutdown = true
 #         end
@@ -86,7 +86,7 @@ class Script
         end
         results.map { |x| x.downcase }
     end
-    
+
     def run
         t1 = Thread.new do
             # First thread: check for new mails
@@ -104,6 +104,7 @@ class Script
                     body = imap.fetch(mid, 'RFC822')[0].attr['RFC822']
                     mail = Mail.read_from_string(body)
                     from_address = Mail::Address.new(mail.from.first).address
+                    from_address_suffix_with_at = '@' + from_address.split('@').last
                     mail_body = mail.body
                     mail_subject = mail.subject
                     message_id = mail.message_id
@@ -115,7 +116,7 @@ class Script
                         File.open(mail_path, 'w') do |f|
                             f.puts body
                         end
-                        unless allowed_senders().include?(from_address.downcase)
+                        unless allowed_senders().include?(from_address.downcase) && MAILING_LIST_FORWARDER_ACCOUNTS.include?(from_address_suffix_with_at)
                             STDERR.puts "[#{Time.now.strftime('%Y-%m-%d %H:%M')}] Bouncing mail back to invalid sender #{mail.from[0]}: #{mail.subject}"
                             mail.reply_to = "#{MAIL_SUPPORT_NAME} <#{MAIL_SUPPORT_EMAIL}>"
                             mail.to = ["#{mail.from[0]}"]
@@ -225,10 +226,9 @@ class Script
                     mail_path = File.join(File.dirname(path), 'mail')
                     STDERR.puts "mail_path: #{mail_path}"
                     mail = Mail.read_from_string(File.read(mail_path))
-                    # E-Mail-Verteiler did not work in January 2024,
-                    # let's remove the Return-Path header to make it work again.
-                    mail['Return-Path'] = nil
-                    mail['In-Reply-To'] = nil
+                    from_address = Mail::Address.new(mail.from.first).address
+                    from_address_suffix_with_at = '@' + from_address.split('@').last
+                    mail.delivery_method :smtp, MAILING_LIST_FORWARDER_ACCOUNTS[from_address_suffix_with_at]
                     mail.to = nil
                     mail.cc = []
                     mail.bcc = []

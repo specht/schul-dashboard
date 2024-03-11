@@ -47,15 +47,15 @@ DASHBOARD_SUPPORT_EMAIL = 'dashboard@beispielschule.de'
 
 if defined? Mail
     Mail.defaults do
-    delivery_method :smtp, {
-        :address => SMTP_SERVER,
-        :port => 587,
-        :domain => SMTP_DOMAIN,
-        :user_name => SMTP_USER,
-        :password => SMTP_PASSWORD,
-        :authentication => 'login',
-        :enable_starttls_auto => true
-    }
+        delivery_method :smtp, {
+            :address => SMTP_SERVER,
+            :port => 587,
+            :domain => SMTP_DOMAIN,
+            :user_name => SMTP_USER,
+            :password => SMTP_PASSWORD,
+            :authentication => 'login',
+            :enable_starttls_auto => true
+        }
     end
 end
 
@@ -66,6 +66,17 @@ MAILING_LIST_PASSWORD = '1234_bitte_generiere_ein_zufälliges_passwort'
 VERTEILER_DEVELOPMENT_EMAILS = ['admin@beispielschule.de']
 MAIL_SUPPORT_NAME = 'Mail-Support Beispielschule'
 MAIL_SUPPORT_EMAIL = 'mailsupport@beispielschule.de'
+MAILING_LIST_FORWARDER_ACCOUNTS = {
+    '@beispielschule.de' => {
+        :address => SMTP_SERVER,
+        :port => 587,
+        :domain => SMTP_DOMAIN,
+        :user_name => SMTP_USER,
+        :password => SMTP_PASSWORD,
+        :authentication => 'login',
+        :enable_starttls_auto => true
+    }
+}
 
 # Domain, auf der die Live-Seite läuft
 WEBSITE_HOST = 'dashboard.beispielschule.de'

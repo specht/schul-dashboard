@@ -27,7 +27,7 @@
                 <thead>
                     <tr>
                         <th>Angebot</th>
-                        <th>Verantwortlich</th>
+                        <th class="xs-hide">Verantwortlich</th>
                         <th>Teilnehmer</th>
                     </tr>
                 </thead>
@@ -296,9 +296,10 @@ function update_stored_angebote() {
     for (angebot of stored_angebote) {
         let row = $('<tr>');
         let cell = $('<td>');
-        cell.text(angebot.info.name);
+        cell.append($('<span>').text(angebot.info.name));
+        cell.append($(`<div class='xs-show'>`).html(`${display_name_for_email[angebot.owner] ?? angebot.owner}`));
         row.append(cell);
-        row.append($('<td>').html(`${display_name_for_email[angebot.owner] ?? angebot.owner}`));
+        row.append($(`<td class='xs-hide'>`).html(`${display_name_for_email[angebot.owner] ?? angebot.owner}`));
         row.append($(`<td style='white-space: normal;'>`).html(angebot.recipients.map((email) => { return `${display_name_for_email[email] ?? email} (${klasse_for_email[email]})`; }).join(', ')));
         row.data('aid', angebot.aid);
         if (angebot.owner === '#{@session_user[:email]}') {

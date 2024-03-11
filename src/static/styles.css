@@ -2701,3 +2701,11 @@ th.thsticky {
 tr.palerow td {
     opacity: 0.5;
 }
+
+.xs-hide { display: none; }
+.xs-show { display: block; }
+
+@media (min-width: 768px) {
+    .xs-hide { display: block; }
+    .xs-show { display: none; }
+}

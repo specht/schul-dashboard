@@ -118,19 +118,16 @@ class Script
                         end
                         unless allowed_senders().include?(from_address.downcase) && MAILING_LIST_FORWARDER_ACCOUNTS.include?(from_address_suffix_with_at)
                             STDERR.puts "[#{Time.now.strftime('%Y-%m-%d %H:%M')}] Bouncing mail back to invalid sender #{mail.from[0]}: #{mail.subject}"
-                            mail.reply_to = "#{MAIL_SUPPORT_NAME} <#{MAIL_SUPPORT_EMAIL}>"
-                            mail.to = ["#{mail.from[0]}"]
-                            mail.from = [SMTP_FROM]
-                            mail.cc = []
-                            mail.bcc = []
-                            mail.subject = "[Nicht zustellbar: Ungültige Absender-Adresse] #{mail.subject}"
-                            mail.body = "Sie haben versucht, eine E-Mail an den Verteiler zu schicken,  allerdings ist Ihre Absender-Adresse nicht für den Versand an Verteileradressen freigeschaltet.\r\n\r\nBitte verwenden Sie Ihre schulische E-Mail-Adresse oder schreiben Sie eine E-Mail an #{MAIL_SUPPORT_EMAIL}, um sich für den Versand freischalten zu lassen.\r\n\r\n"
-                            begin
-                                mail.deliver!
-                                imap.copy(mid, 'Bounced')
-                            rescue StandardError => e
-                                imap.copy(mid, 'External')
+                            deliver_mail do |m2|
+                                m2.reply_to = "#{MAIL_SUPPORT_NAME} <#{MAIL_SUPPORT_EMAIL}>"
+                                m2.to = ["#{mail.from[0]}"]
+                                m2.from = [SMTP_FROM]
+                                m2.cc = []
+                                m2.bcc = []
+                                m2.subject = "[Nicht zustellbar: Ungültige Absender-Adresse] #{mail.subject}"
+                                m2.body = "Sie haben versucht, eine E-Mail an den Verteiler zu schicken,  allerdings ist Ihre Absender-Adresse nicht für den Versand an Verteileradressen freigeschaltet.\r\n\r\nBitte verwenden Sie Ihre schulische E-Mail-Adresse oder schreiben Sie eine E-Mail an #{MAIL_SUPPORT_EMAIL}, um sich für den Versand freischalten zu lassen.\r\n\r\n"
                             end
+                            imap.copy(mid, 'Bounced')
                         else
                             all_recipients = Set.new
                             recipients = ((mail.to || []) + (mail.cc || []) + (mail.bcc || []))

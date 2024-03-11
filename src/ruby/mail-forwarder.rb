@@ -76,7 +76,7 @@ class Script
             File.open(path) do |f|
                 f.each do |line|
                     line.strip!
-                    next if line[0] == '#'
+                    next if line[0] == '#' || line.empty?
                     results << line
                 end
             end

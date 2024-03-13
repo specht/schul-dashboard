@@ -131,6 +131,12 @@
         opacity: 0;
         transition: transform 0.2s ease-out, opacity 0.2s ease-out;
     }
+
+    @media print {
+        .sus-foto-sm, .sus-foto-md {
+            display: none;
+        }
+    }
 </style>
 <div class='container container-fluid' style='background: none; backdrop-filter: none; box-shadow: none; max-width: unset;'>
     <div class='row'>

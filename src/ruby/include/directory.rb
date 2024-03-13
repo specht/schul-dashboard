@@ -873,7 +873,11 @@ class Main < Sinatra::Base
             end
             unless remaining_mailing_lists.empty?
                 io.puts "<tr><th colspan='3'>Weitere E-Mail-Verteiler</th></tr>"
-                remaining_mailing_lists.to_a.sort.each do |list_email|
+                remaining_mailing_lists.to_a.sort do |a, b|
+                    ia = @@mailing_lists[a]
+                    ib = @@mailing_lists[b]
+                    ia[:label].downcase <=> ib[:label].downcase
+                end.each do |list_email|
                     print_mailing_list(io, list_email)
                 end
             end

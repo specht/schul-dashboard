@@ -244,6 +244,7 @@ class SetupDatabase
         'Poll/key',
         'PollRun/key',
         'PresenceToken/token',
+        'Projekt/nr',
         'PublicEventPerson/tag',
         'PublicEventTrack/track',
         'SchulTablet/code',

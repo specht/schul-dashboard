@@ -1,0 +1,50 @@
+#{this_is_a_page_for_logged_in_teachers}
+<div class='container'>
+    <div class='row'>
+        <div class='col-md-12'>
+            <h2 style='margin-bottom: 30px;'>Projekttage #{Date.today.year}</h2>
+            <div class='projekte-container'>
+                <table class='table table-xs narrow' style='width: unset; min-width: 100%;'>
+                <thead>
+                    <tr>
+                        <th>Nr.</th>
+                        <th>Titel</th>
+                        <th>Kategorie</th>
+                        <th>Klassenstufe</th>
+                        <th>Verantwortlich</th>
+                        <th>Lehrkräfte</th>
+                    </tr>
+                </thead>
+                <tbody class='projekte-here'>
+                </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+var display_name_for_email = #{Hash[@@user_info.map { |email, info| [email, info[:teacher] ? info[:display_name_official] : info[:display_name]] }].to_json};
+document.addEventListener('DOMContentLoaded', function() {
+    api_call('/api/get_projekte', {}, function(data) {
+        if (data.success) {
+            for (let projekt of data.projekte) {
+                console.log(projekt);
+                let row = $(`<tr>`);
+                row.append($(`<td>`).text(projekt.nr));
+                row.append($(`<td style='white-space: wrap;'>`).text(projekt.title));
+                row.append($(`<td style='white-space: wrap;'>`).text(projekt.categories.join(', ')));
+                    // 
+                row.append($(`<td>`).text(projekt.klassen_label));
+                row.append($(`<td style='white-space: wrap;'>`).text(projekt.organized_by.map(function(x) { return display_name_for_email[x] ?? x; }).join(', ')));
+                row.append($(`<td style='white-space: wrap;'>`).text(projekt.supervised_by.map(function(x) { return display_name_for_email[x] ?? x; }).join(', ')));
+                $('.projekte-here').append(row);
+                row = $(`<tr>`);
+                row.append($(`<td style='border-top: none;'>`));
+                row.append($(`<td colspan='5' style='border-top: none; white-space: wrap; ${(projekt.description ?? '').trim().length === 0 ? 'opacity: 0.5;' : ''}'>`).text(projekt.description ?? '(keine Beschreibung)'));
+                $('.projekte-here').append(row);
+            }
+        }
+    });
+});
+</script>

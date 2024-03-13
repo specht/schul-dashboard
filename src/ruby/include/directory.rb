@@ -490,7 +490,7 @@ class Main < Sinatra::Base
             ORDER BY a.created DESC, a.id;
         END_OF_QUERY
             ['', 'eltern.'].each do |who|
-                list_email = who + remove_accents(row[:info][:name].downcase).split(/[^a-z]+/).map { |x| x.strip }.reject { |x| x.empty? }.join('-') + '@' + MAILING_LIST_DOMAIN
+                list_email = who + remove_accents(row[:info][:name].downcase).split(/[^a-z0-9]+/).map { |x| x.strip }.reject { |x| x.empty? }.join('-') + '@' + MAILING_LIST_DOMAIN
                 @@angebote_mailing_lists[list_email] ||= {
                     :label => row[:info][:name] + (who.empty? ? '' : ' (Eltern)'),
                     :recipients => [],

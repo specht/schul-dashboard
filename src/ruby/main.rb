@@ -82,6 +82,7 @@ require './include/message.rb'
 require './include/monitor.rb'
 require './include/otp.rb'
 require './include/poll.rb'
+require './include/projekte.rb'
 require './include/public_event.rb'
 require './include/salzh.rb'
 require './include/sms.rb'
@@ -1924,7 +1925,16 @@ class Main < Sinatra::Base
                             # if can_manage_bib_logged_in? || teacher_logged_in?
                                 io.puts "<a class='dropdown-item nav-icon' href='/bibliothek'><div class='icon'><i class='fa fa-book'></i></div><span class='label'>Bibliothek</span></a>"
                             # end
-                        # end
+                            if user_logged_in?
+                                if teacher_logged_in?
+                                    io.puts "<a class='dropdown-item nav-icon' href='/projekttage'><div class='icon'><i class='fa fa-rocket'></i></div><span class='label'>Projekttage</span></a>"
+                                elsif @session_user[:klasse] == '11'
+                                    io.puts "<a class='dropdown-item nav-icon' href='/projekttage_orga'><div class='icon'><i class='fa fa-rocket'></i></div><span class='label'>Projekttage</span></a>"
+                                elsif @session_user[:klasse].to_i < 10
+                                    # io.puts "<a class='dropdown-item nav-icon' href='/projekttage_sus'><div class='icon'><i class='fa fa-rocket'></i></div><span class='label'>Projekttage</span></a>"
+                                end
+                            end
+                            # end
                         unless teacher_logged_in?
                             if @session_user[:klasse].to_i < 11
                                 io.puts "<a class='dropdown-item nav-icon' href='/directory/#{@session_user[:klasse]}'><div class='icon'><i class='fa fa-users'></i></div><span class='label'>Meine Klasse</span></a>"

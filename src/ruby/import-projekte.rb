@@ -66,17 +66,34 @@ sheet.each do |row|
     break if row['Vorname'].nil?
     email = find_email_for_name(row['Vorname'], row['Nachname'], first_name_to_email, last_name_to_email)
     title = row['Titel']
-    STDERR.puts "E-Mail: #{email}"
     lehrer = [row['Koll 1'], row['Koll 2']].join('/').split('/').reject { |x| (x || '').strip.empty? }.map { |x| shorthands[x.strip] }.reject { |x| x.nil? }
     cats = (row['Kategorie'] || '').split('/').map { |x| x.strip }.reject { |x| x.empty? }
-    nr = (row['Nr'] || '').to_s.strip
-    STDERR.puts "Titel: #{title} (#{cats.join(', ')})"
+    nr = (row['Nr'] || '').to_s.strip.gsub(/\s/, '').strip
+    jahrgang = (row['Jahrgang'] || '').strip.downcase
+    min_klasse = 5
+    max_klasse = 9
+    if jahrgang.include?('nur')
+        min_klasse = jahrgang.gsub('nur', '').strip.to_i
+        max_klasse = min_klasse
+    elsif jahrgang.include?('-')
+        min_klasse = jahrgang.split('-')[0].to_i
+        max_klasse = jahrgang.split('-')[1].to_i
+    end
+    if nr.empty?
+        nr = 'Dok'
+        min_klasse = nil
+        max_klasse = nil
+    end
+    STDERR.puts "E-Mail: #{email}"
+    STDERR.puts "Titel: [#{nr}] #{title} (#{cats.join(', ')}) (Klassen #{min_klasse} bis #{max_klasse})"
     STDERR.puts "Lehrer: #{lehrer.join(', ')}"
     STDERR.puts '-' * 40
     data = {
         :title => title,
         :categories => cats,
-        :nr => nr
+        :nr => nr,
+        :min_klasse => min_klasse,
+        :max_klasse => max_klasse,
     }
     neo4j_query(<<~END_OF_QUERY, {:nr => data[:nr], :data => data})
         MERGE (p:Projekt {nr: $nr})
@@ -86,13 +103,13 @@ sheet.each do |row|
         neo4j_query(<<~END_OF_QUERY, {:nr => data[:nr], :email => email})
             MATCH (p:Projekt {nr: $nr})
             MATCH (u:User {email: $email})
-            CREATE (u)-[:SUPERVISES]->(p);
+            CREATE (p)-[:SUPERVISED_BY]->(u);
         END_OF_QUERY
     end
     neo4j_query(<<~END_OF_QUERY, {:nr => data[:nr], :email => email})
         MATCH (p:Projekt {nr: $nr})
         MATCH (u:User {email: $email})
-        CREATE (u)-[:ORGANIZES]->(p);
+        CREATE (p)-[:ORGANIZED_BY]->(u);
     END_OF_QUERY
 end
 

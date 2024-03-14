@@ -8,7 +8,7 @@ require './credentials.rb'
 require '/data/config.rb'
 
 class String
-    # The extended characters map used by removeaccents. The accented characters 
+    # The extended characters map used by removeaccents. The accented characters
     # are coded here using their numerical equivalent to sidestep encoding issues.
     # These correspond to ISO-8859-1 encoding.
     ACCENTS_MAPPING = {
@@ -33,21 +33,21 @@ class String
         'OE' => [188],
         'oe' => [189]
     }
-    
-    
+
+
     # Remove the accents from the string. Uses String::ACCENTS_MAPPING as the source map.
-    def removeaccents    
+    def removeaccents
         str = String.new(self)
         String::ACCENTS_MAPPING.each {|letter,accents|
         packed = accents.pack('U*')
         rxp = Regexp.new("[#{packed}]", nil)
         str.gsub!(rxp, letter)
         }
-        
+
         str
     end
-    
-    
+
+
     # Convert a string to a format suitable for a URL without ever using escaped characters.
     # It calls strip, removeaccents, downcase (optional) then removes the spaces (optional)
     # and finally removes any characters matching the default regexp (/[^-_A-Za-z0-9]/).
@@ -61,7 +61,7 @@ class String
         options[:downcase] ||= true
         options[:convert_spaces] ||= false
         options[:regexp] ||= /[^-_A-Za-z0-9]/
-        
+
         str = self.strip.removeaccents
         str.downcase! if options[:downcase]
         str.gsub!(/\ /,'-') if options[:convert_spaces]
@@ -73,7 +73,7 @@ class String
         options[:downcase] ||= true
         options[:convert_spaces] ||= false
         options[:regexp] ||= /[^-_A-Za-z0-9]/
-        
+
         str = self.strip.removeaccents
         str.downcase! if options[:downcase]
         str.gsub!(/\ /,'_') if options[:convert_spaces]
@@ -82,7 +82,7 @@ class String
 end
 
 class Parser
-    
+
     def initialize
         @@chars = 'BCDFGHJKMNPQRSTVWXYZ23456789'.split('')
         @email_sub = {}
@@ -137,11 +137,11 @@ class Parser
         @mock[:vornamen] = JSON.parse(File.read('mock/vornamen-m.json'))
         @mock[:vornamen] += JSON.parse(File.read('mock/vornamen-w.json'))
     end
-    
+
     def first_letter_dot(s)
         (s && s.length > 0) ? "#{s[0]}." : s
     end
-    
+
     def parse_lehrer(&block)
 #         debug "Parsing lehrer..."
         path = '/data/lehrer/lehrer.csv'
@@ -159,7 +159,7 @@ class Parser
             last_name = (line['Nachname'] || '').strip
             geschlecht = line['Geschlecht']
             force_display_name = line['Anzeigename']
-            
+
             if @use_mock_names
                 unless EXCLUDE_FROM_MOCKIFICATION.include?(email)
                     first_name = @mock[:vornamen].sample
@@ -172,7 +172,7 @@ class Parser
                     @mock_shorthand[shorthand] = shorthand
                 end
             end
-            
+
             titel = (line['Titel'] || '').strip
             display_name = last_name.dup
             if display_name.include?(',')
@@ -212,7 +212,7 @@ class Parser
             yield record
         end
     end
-    
+
     def parse_klassenleiter(&block)
 #         debug "Parsing klassenleiter..."
         path = '/data/klassenleiter/klassenleiter.txt'
@@ -230,7 +230,7 @@ class Parser
             end
         end
     end
-    
+
     def name_to_email(vorname, nachname)
         if nachname.include?(',')
             _ = nachname.split(',').map { |x| x.strip }
@@ -266,13 +266,13 @@ class Parser
                 break
             end
             password = ''
-            8.times do 
+            8.times do
                 c = @@chars.sample.dup
                 c.downcase! if [0, 1].sample == 1
                 password += c
             end
             password += '-'
-            4.times do 
+            4.times do
                 c = @@chars.sample.dup
                 c.downcase! if [0, 1].sample == 1
                 password += c
@@ -280,15 +280,15 @@ class Parser
         end
         password
     end
-    
+
     def gen_password_for_email(email)
         gen_password(email, EMAIL_PASSWORD_SALT)
     end
-    
+
     def gen_password_for_nc(email)
         gen_password(email, NEXTCLOUD_PASSWORD_SALT)
     end
-    
+
     def handle_schueler_line(line)
         line = line.encode('utf-8')
         parts = line.split("\t")
@@ -411,7 +411,40 @@ class Parser
 
         srand()
     end
-    
+
+    def parse_geschwister(user_info)
+        user_info.each_pair do |email, info|
+            unless info[:teacher]
+                info[:sibling_index] = 0
+            end
+        end
+
+        path = "/data/schueler/geschwister.txt"
+        if File.exist?(path)
+            File.open(path) do |f|
+                f.each_line do |line|
+                    line.strip!
+                    next if line.empty? || line[0] == '#'
+                    emails = line.split(/\s+/)
+                    emails.select! do |email|
+                        unless user_info[email]
+                            STDERR.puts "Warning: #{email} unknown and ignored in #{path}"
+                        end
+                        user_info[email] && (!user_info[:teacher])
+                    end
+                    emails.sort! do |a, b|
+                        (user_info[a][:klasse].to_i == user_info[b][:klasse].to_i) ?
+                        (a.downcase <=> b.downcase) :
+                        (user_info[b][:klasse].to_i <=> user_info[a][:klasse].to_i)
+                    end
+                    emails.each.with_index do |email, index|
+                        user_info[email][:sibling_index] = index
+                    end
+                end
+            end
+        end
+    end
+
     def parse_faecher
 #         debug "Parsing faecher..."
         if File.exist?('/data/faecher/faecher.csv')
@@ -421,13 +454,13 @@ class Parser
                 fach = line['Fach'].strip
                 bezeichnung = line['Bezeichnung']
                 if bezeichnung
-                    bezeichnung.strip! 
+                    bezeichnung.strip!
                     yield fach, bezeichnung
                 end
             end
         end
     end
-    
+
     def parse_ferien_feiertage
 #         debug "Parsing ferien/feiertage..."
         if File.exist?('/data/ferien_feiertage/ferien_feiertage.csv')
@@ -441,7 +474,7 @@ class Parser
             end
         end
     end
-    
+
     def parse_tage_infos
 #         debug "Parsing ferien/feiertage..."
         if File.exist?('/data/ferien_feiertage/infos.csv')
@@ -455,7 +488,7 @@ class Parser
             end
         end
     end
-    
+
     def parse_tablets
 #         debug "Parsing tablets..."
         if File.exist?('/data/tablets/tablets.csv')
@@ -470,7 +503,7 @@ class Parser
                 status = (line['Aktueller Status'] || '').strip
                 school_streaming = (line['Unterrichtseinsatz Streaming aus der Schule'] || '').strip
                 lehrer_modus = (line['Lehrer-Modus'] || '').strip
-                record = {:id => id, :color => color, 
+                record = {:id => id, :color => color,
                           :status => status, :lagerort => lagerort }
                 record[:school_streaming] = true unless school_streaming.empty?
                 record[:lehrer_modus] = true unless lehrer_modus.empty?
@@ -478,7 +511,7 @@ class Parser
             end
         end
     end
-    
+
     def parse_tablet_sets
         #         debug "Parsing tablet sets..."
         path = '/data/tablets/tablet_sets.yaml'
@@ -498,13 +531,13 @@ class Parser
         end
         return nil
     end
-            
+
     def notify_if_different(a, b)
         if a != b
             debug "UNEXPECTED DIFFERENCE: #{a} <=> #{b}"
         end
     end
-    
+
     def parse_timetable(config, lesson_key_tr = {})
         historic_lessons_for_shorthand = {}
         sub_keys_for_unr_fach = {}
@@ -544,7 +577,7 @@ class Parser
             File.open(path, 'r:utf-8') do |f|
                 f.each_line do |line|
                     line = line.encode('utf-8')
-                    parts = line.split(separator).map do |x| 
+                    parts = line.split(separator).map do |x|
                         x = x.strip
                         if x[0] == '"' && x[x.size - 1] == '"'
                             x = x[1, x.size - 2]
@@ -655,7 +688,7 @@ class Parser
                             :lehrer => Set.new(),
                             :klassen => Set.new()
                         }
-                        
+
                         all_lessons[:lesson_keys][lesson_key][:unr] << unr_fach.split('_')[1].to_i
                         all_lessons[:lesson_keys][lesson_key][:lehrer] |= info_for_lesson_key[lesson_key][:lehrer]
                         all_lessons[:lesson_keys][lesson_key][:klassen] |= info_for_lesson_key[lesson_key][:klassen]
@@ -834,7 +867,7 @@ class Parser
         all_lessons[:historic_lessons_for_shorthand] = historic_lessons_for_shorthand
         return all_lessons, vertretungen, vplan_timestamp, day_messages, lesson_key_back_tr, original_lesson_key_for_lesson_key
     end
-    
+
     def parse_pausenaufsichten(config)
         all_pausenaufsichten = {:aufsichten => {}, :start_dates => []}
         Dir['/data/pausenaufsichten/*.TXT'].sort.each do |path|
@@ -895,7 +928,7 @@ class Parser
 
         return all_pausenaufsichten
     end
-    
+
     def parse_kurswahl(user_info, lessons, lesson_key_tr, original_lesson_key_for_lesson_key, shorthands)
         kurse_for_schueler = {}
         schueler_for_kurs = {}
@@ -1138,7 +1171,7 @@ class Parser
         # debug "Wahlpflichtkurswahl: got SuS for #{schueler_for_lesson_key.size} lesson keys."
         return sesb_sus
     end
-        
+
     def parse_current_email_addresses
         email_addresses = []
         email_accounts_path = '/data/current-email-addresses.csv'

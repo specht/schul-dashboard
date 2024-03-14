@@ -683,6 +683,7 @@ class Main < Sinatra::Base
             end
             @@user_info[email][:shortest_prefix] = email[0, length]
         end
+        parser.parse_geschwister(@@user_info)
 
         @@tablets_for_school_streaming = Set.new()
         @@tablets_which_are_lehrer_tablets = Set.new()

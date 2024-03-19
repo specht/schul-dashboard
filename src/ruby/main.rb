@@ -1604,6 +1604,9 @@ class Main < Sinatra::Base
                                         @session_user[:color_scheme] = results.first['u'][:color_scheme]
                                         @session_user[:new_design] = results.first['u'][:new_design]
                                         @session_user[:dark] = results.first['u'][:dark]
+                                        if DEVELOPMENT || Date.today.strftime('%Y-%m-%d') == '2024-03-20'
+                                            @session_user[:dark] = true
+                                        end
                                         @session_user[:recognize_stats_public] = results.first['u'][:recognize_stats_public]
                                         @session_user[:ical_token] = results.first['u'][:ical_token]
                                         @session_user[:otp_token] = results.first['u'][:otp_token]

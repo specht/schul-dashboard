@@ -80,6 +80,7 @@
     <link href="/gen/css/compiled-#{compiled_css_sha1}.css" rel="stylesheet" />
 
     <style>
+    #{(DEVELOPMENT || Date.today.strftime('%Y-%m-%d') == '2024-03-20') ? 'html { -moz-filter: grayscale(100%); -webkit-filter: grayscale(100%); filter: gray; filter: grayscale(100%); }' : ''}
     body {
         #{ path == '/static/h4ck.html' || path == '/static/cyph3r.html' ? '/*' : ''} 
         background-image: url(#{File.exist?('/gen/bg/bg-' + color_scheme + '.jpg') ? '/gen/bg/bg-#{color_scheme}.jpg' : '/gen/bg/bg-#{color_scheme[0, color_scheme.size - 1]}0.svg'});

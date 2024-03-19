@@ -1606,6 +1606,7 @@ class Main < Sinatra::Base
                                         @session_user[:dark] = results.first['u'][:dark]
                                         if DEVELOPMENT || Date.today.strftime('%Y-%m-%d') == '2024-03-20'
                                             @session_user[:dark] = true
+                                            @session_user[:color_scheme][0] = 'd'
                                         end
                                         @session_user[:recognize_stats_public] = results.first['u'][:recognize_stats_public]
                                         @session_user[:ical_token] = results.first['u'][:ical_token]

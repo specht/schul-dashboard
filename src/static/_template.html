@@ -80,7 +80,9 @@
     <link href="/gen/css/compiled-#{compiled_css_sha1}.css" rel="stylesheet" />
 
     <style>
-    #{(DEVELOPMENT || Date.today.strftime('%Y-%m-%d') == '2024-03-20') ? 'html { -moz-filter: grayscale(100%); -webkit-filter: grayscale(100%); filter: gray; filter: grayscale(100%); }' : ''}
+    #{(DEVELOPMENT || Date.today.strftime('%Y-%m-%d') == '2024-03-20') ? 'html { -moz-filter: grayscale(100%); -webkit-filter: grayscale(100%); filter: gray; filter: grayscale(100%); } #main_container::after { height: calc(max(100%,100vh)); width: 100%; pointer-events: none; opacity: 0.2; content: ""; background-image: url("grain/grain.jpg"); z-index: 9000; background-size: contain; position: absolute; left: 0; top: 0; right: 0; bottom: 0;}' : ''}
+    .modal {z-index: 8000;}
+    .navbar {z-index: 8000;}
     body {
         #{ path == '/static/h4ck.html' || path == '/static/cyph3r.html' ? '/*' : ''} 
         background-image: url(#{File.exist?('/gen/bg/bg-' + color_scheme + '.jpg') ? '/gen/bg/bg-#{color_scheme}.jpg' : '/gen/bg/bg-#{color_scheme[0, color_scheme.size - 1]}0.svg'});
@@ -631,7 +633,7 @@ function showTemplateModalWithInput(title, text, confirm_label, confirm_class,
 Es werden gerade Wartungsarbeiten durchgeführt und das Dashboard ist in wenigen Minuten wieder online.
 </p>
 </div>
-<div style='display: #{MAINTENANCE_MODE ? 'none' : 'block'}'>
+<div style='position: relative; display: #{MAINTENANCE_MODE ? 'none' : 'block'}' id="main_container">
 #{CONTENT}
 </div>
 <!-- <div class='snowman'></div> -->

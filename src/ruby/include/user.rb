@@ -735,4 +735,16 @@ class Main < Sinatra::Base
         respond_raw_with_mimetype(get_single_timetable_pdf(@session_user[:email], @session_user[:color_scheme] || @@standard_color_scheme, use_png_addition), 'application/pdf')
     end
 
+    post '/api/set_color_options' do
+        require_user!
+        data = parse_request_data(:required_keys => [:hue, :saturation, :brightness, :contrast, :sepia, :analog],
+                                  :types => {:hue => Numeric, :saturation => Numeric, :brightness => Numeric, :contrast => Numeric, :sepia => Numeric, :analog => Numeric})
+        neo4j_query_expect_one(<<~END_OF_QUERY, :email => @session_user[:email], :hue => data[:hue], :saturation => data[:saturation], :brightness => data[:brightness], :contrast => data[:contrast], :sepia => data[:sepia], :analog => data[:analog])
+            MATCH (u:User {email: $email})
+            SET u.hue = $hue, u.saturation = $saturation, u.brightness = $brightness, u.contrast = $contrast, u.sepia = $sepia, u.analog = $analog
+            RETURN u;
+        END_OF_QUERY
+        respond(:success => true)
+    end
+
 end

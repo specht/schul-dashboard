@@ -1604,6 +1604,12 @@ class Main < Sinatra::Base
                                         @session_user[:color_scheme] = results.first['u'][:color_scheme]
                                         @session_user[:new_design] = results.first['u'][:new_design]
                                         @session_user[:dark] = results.first['u'][:dark]
+                                        @session_user[:hue] = results.first['u'][:hue]
+                                        @session_user[:saturation] = results.first['u'][:saturation]
+                                        @session_user[:brightness] = results.first['u'][:brightness]
+                                        @session_user[:contrast] = results.first['u'][:contrast]
+                                        @session_user[:sepia] = results.first['u'][:sepia]
+                                        @session_user[:analog] = results.first['u'][:analog]
                                         # if DEVELOPMENT || Date.today.strftime('%Y-%m-%d') == '2024-03-20'
                                         #     @session_user[:dark] = true
                                         #     @session_user[:color_scheme][0] = 'd'

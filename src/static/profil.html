@@ -150,38 +150,40 @@
                             <input #{@session_user[:new_design] ? 'checked' : ''} type="checkbox" data-toggle="toggle" data-on="neu" data-off="alt" data-onstyle="secondary" data-offstyle="secondary" id='design_css_switch'>
                         </div>
                     </div>
+                </div>
+            </div>
+            <h2 style='margin-bottom: 30px; margin-top: 30px;'>Farbeinstellungen</h2>
+            <div class="col-md-12">
+                <div class="row">
                     <div class="col-md-12 mb-4">
                     </div>
-                    <!-- <div class="col-md-3">
+                    <div class="col-md-6 mt-2">
+                        <label>Farbton</label>
+                        <input type="range" data-type='hue' class="form-control-range" id="ti_hue" min="-90" max="90" value="#{(@session_user || {})[:hue] || 0.0}" step="1.0">
+                    </div>
+                    <div class="col-md-6 mt-2">
                         <label>Sättigung</label>
+                        <input type="range" data-type='saturation' class="form-control-range" id="ti_saturation" min="0.0" max="2.0" value="#{(@session_user || {})[:saturation] || 1.0}" step="0.01">
                     </div>
-                    <div class="col-md-9">
-                        <input type="range" class="form-control-range" id="ti_saturation" min="0.0" max="2.0" value="1.0" step="0.1">
-                    </div>
-                    <div class="col-md-3">
+                    <div class="col-md-6 mt-2">
                         <label>Helligkeit</label>
+                        <input type="range" data-type='brightness' class="form-control-range" id="ti_brightness" min="0.5" max="1.5" value="#{(@session_user || {})[:brightness] || 1.0}" step="0.01">
                     </div>
-                    <div class="col-md-9">
-                        <input type="range" class="form-control-range" id="ti_brightness" min="0.0" max="2.0" value="1.0" step="0.1">
-                    </div>
-                    <div class="col-md-3">
+                    <div class="col-md-6 mt-2">
                         <label>Kontrast</label>
+                        <input type="range" data-type='contrast' class="form-control-range" id="ti_contrast" min="0.5" max="1.5" value="#{(@session_user || {})[:contrast] || 1.0}" step="0.01">
                     </div>
-                    <div class="col-md-9">
-                        <input type="range" class="form-control-range" id="ti_contrast" min="0.0" max="2.0" value="1.0" step="0.1">
-                    </div>
-                    <div class="col-md-3">
+                    <div class="col-md-6 mt-2">
                         <label>Sepia</label>
+                        <input type="range" data-type='sepia' class="form-control-range" id="ti_sepia" min="0.0" max="1.0" value="#{(@session_user || {})[:sepia] || 0.0}" step="0.01">
                     </div>
-                    <div class="col-md-9">
-                        <input type="range" class="form-control-range" id="ti_sepia" min="0.0" max="2.0" value="1.0" step="0.1">
-                    </div>
-                    <div class="col-md-3">
+                    <div class="col-md-6 mt-2">
                         <label>Analog</label>
+                        <input type="range" data-type='analog' class="form-control-range" id="ti_analog" min="0.0" max="0.25" value="#{(@session_user || {})[:analog] || 0.0}" step="0.025">
                     </div>
-                    <div class="col-md-9">
-                        <input type="range" class="form-control-range" id="ti_grain" min="0.0" max="0.25" value="0.0" step="0.025">
-                    </div> -->
+                    <div class="col-md-12 mt-2">
+                        <div class="pull-right"><button id='bu_reset_colors' class='btn btn-success'><i class='fa fa-undo'></i>&nbsp;&nbsp;Farbeinstellungen zurücksetzen</button></div>
+                    </div>
                 </div>
             </div>
             <h2 style='margin-bottom: 30px; margin-top: 30px;'>Farbschema</h2>
@@ -487,14 +489,45 @@ function changeThemeColor(color) {
     x.setAttribute('content', color);
 }
 
+var color_options = {
+    hue: #{(@session_user || {})[:hue] || 0.0},
+    saturation: #{(@session_user || {})[:saturation] || 1.0},
+    brightness: #{(@session_user || {})[:brightness] || 1.0},
+    contrast: #{(@session_user || {})[:contrast] || 1.0},
+    sepia: #{(@session_user || {})[:sepia] || 0.0},
+    analog: #{(@session_user || {})[:analog] || 0.0},
+};
+
+function update_color_css() {
+    for (let key of ['-moz-filter', '-webkit-filter', 'filter']) {
+        $('html').css(key, `hue-rotate(${color_options.hue}deg) saturate(${color_options.saturation}) brightness(${color_options.brightness}) contrast(${color_options.contrast}) sepia(${color_options.sepia})`);
+    }
+    document.documentElement.style.setProperty('--analog-opacity', color_options.analog);
+    api_call('/api/set_color_options', color_options, function(data) {});
+}
+
 window.addEventListener('load', function () {
-/* $("#ex6").on("slide", function(slideEvt) {
-	$("#ex6SliderVal").text(slideEvt.value);
-}); */
-    $('#ti_grain').on('input', function(e) {
-        let value = parseFloat($('#ti_grain').val());
-        console.log(value);
-        $('.grain_overlay').css('opacity', value);
+    $('#ti_hue, #ti_saturation, #ti_brightness, #ti_contrast, #ti_sepia, #ti_analog').on('input', function(e) {
+        let value = parseFloat($(e.target).closest('input').val());
+        color_options[$(e.target).data('type')] = value;
+        update_color_css();
+    });
+    $('#bu_reset_colors').on('click', function(e) {
+        color_options = {
+            hue: 0.0,
+            saturation: 1.0,
+            brightness: 1.0,
+            contrast: 1.0,
+            sepia: 0.0,
+            analog: 0.0,
+        };
+        $('#ti_hue').val(0.0);
+        $('#ti_saturation').val(1.0);
+        $('#ti_brightness').val(1.0);
+        $('#ti_contrast').val(1.0);
+        $('#ti_sepia').val(0.0);
+        $('#ti_analog').val(0.0);
+        update_color_css();
     });
     install_clipboard_handler('.btn-clipboard');
     $('.bu_set_font').click(function(e) {

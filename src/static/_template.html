@@ -80,14 +80,19 @@
     <link href="/gen/css/compiled-#{compiled_css_sha1}.css" rel="stylesheet" />
 
     <style>
-    /* html {
-        -moz-filter: grayscale(50%);
-        -webkit-filter: grayscale(50%);
-        filter: saturate(50%) sepia(50%) brightness(0.9) contrast(1.2);
+    html {
+        -moz-filter: hue-rotate(#{(@session_user || {})[:hue] || 0}deg) saturate(#{(@session_user || {})[:saturation] || 1.0}) brightness(#{(@session_user || {})[:brightness] || 1.0}) contrast(#{(@session_user || {})[:contrast] || 1.0}) sepia(#{(@session_user || {})[:sepia] || 0.0});
+        -webkit-filter: hue-rotate(#{(@session_user || {})[:hue] || 0}deg) saturate(#{(@session_user || {})[:saturation] || 1.0}) brightness(#{(@session_user || {})[:brightness] || 1.0}) contrast(#{(@session_user || {})[:contrast] || 1.0}) sepia(#{(@session_user || {})[:sepia] || 0.0});
+        filter: hue-rotate(#{(@session_user || {})[:hue] || 0}deg) saturate(#{(@session_user || {})[:saturation] || 1.0}) brightness(#{(@session_user || {})[:brightness] || 1.0}) contrast(#{(@session_user || {})[:contrast] || 1.0}) sepia(#{(@session_user || {})[:sepia] || 0.0});
+        transition: filter 0.25s ease-out;
+    }
+    :root {
+        --analog-opacity: #{(@session_user || {})[:analog] || 0};
     }
     .navbar::after, .foot::after, #main_container::after, .container::after, .dropdown-menu::after, .modal::after {
         pointer-events: none;
-        opacity: 0.3;
+        opacity: var(--analog-opacity);
+        transition: opacity 0.25s ease-out;
         content: "";
         background-image: url("grain/grain.jpg");
         background-size: 2000px;
@@ -98,7 +103,7 @@
         right: 0;
         bottom: 0;
         border-radius: inherit;
-    } */
+    }
     .modal {z-index: 8000;}
     .navbar {z-index: 8000;}
     body {

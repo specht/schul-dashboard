@@ -132,25 +132,55 @@
             <h2 style='margin-bottom: 30px; margin-top: 30px;'>Helligkeit</h2>
             <div class="col-md-12">
                 <div class='row'>
-                    <div class="col-md-6">
+                    <div class="col-md-4">
                         <div style="display: flex; flex-direction: row; justify-content: space-between;">
                             <label style="margin-top: 0.4em;">Hintergrund</label>
                             <input #{color_scheme[0] == 'd' ? 'checked' : ''} type="checkbox" data-toggle="toggle" data-on="dunkel" data-off="hell" data-onstyle="secondary" data-offstyle="secondary" id='dark_switch'>
                         </div>
                     </div>
-                    <div class="col-md-6">
+                    <div class="col-md-4">
                         <div style="display: flex; flex-direction: row; justify-content: space-between;">
                             <label style="margin-top: 0.4em;">Benutzeroberfläche</label>
                             <input #{@session_user[:dark] ? 'checked' : ''} type="checkbox" data-toggle="toggle" data-on="dunkel" data-off="hell" data-onstyle="secondary" data-offstyle="secondary" id='dark_css_switch'>
                         </div>
                     </div>
-                </div>
-                <div class='row'>
-                    <div class="col-md-6">
+                    <div class="col-md-4">
                         <div style="display: flex; flex-direction: row; justify-content: space-between;">
                             <label style="margin-top: 0.4em;">Design</label>
                             <input #{@session_user[:new_design] ? 'checked' : ''} type="checkbox" data-toggle="toggle" data-on="neu" data-off="alt" data-onstyle="secondary" data-offstyle="secondary" id='design_css_switch'>
                         </div>
+                    </div>
+                    <div class="col-md-12 mb-4">
+                    </div>
+                    <div class="col-md-3">
+                        <label>Sättigung</label>
+                    </div>
+                    <div class="col-md-9">
+                        <input type="range" class="form-control-range" id="ti_saturation" min="0.0" max="2.0" value="1.0" step="0.1">
+                    </div>
+                    <div class="col-md-3">
+                        <label>Helligkeit</label>
+                    </div>
+                    <div class="col-md-9">
+                        <input type="range" class="form-control-range" id="ti_brightness" min="0.0" max="2.0" value="1.0" step="0.1">
+                    </div>
+                    <div class="col-md-3">
+                        <label>Kontrast</label>
+                    </div>
+                    <div class="col-md-9">
+                        <input type="range" class="form-control-range" id="ti_contrast" min="0.0" max="2.0" value="1.0" step="0.1">
+                    </div>
+                    <div class="col-md-3">
+                        <label>Sepia</label>
+                    </div>
+                    <div class="col-md-9">
+                        <input type="range" class="form-control-range" id="ti_sepia" min="0.0" max="2.0" value="1.0" step="0.1">
+                    </div>
+                    <div class="col-md-3">
+                        <label>Analog</label>
+                    </div>
+                    <div class="col-md-9">
+                        <input type="range" class="form-control-range" id="ti_grain" min="0.0" max="0.25" value="0.0" step="0.025">
                     </div>
                 </div>
             </div>
@@ -458,6 +488,14 @@ function changeThemeColor(color) {
 }
 
 window.addEventListener('load', function () {
+/* $("#ex6").on("slide", function(slideEvt) {
+	$("#ex6SliderVal").text(slideEvt.value);
+}); */
+    $('#ti_grain').on('input', function(e) {
+        let value = parseFloat($('#ti_grain').val());
+        console.log(value);
+        $('.grain_overlay').css('opacity', value);
+    });
     install_clipboard_handler('.btn-clipboard');
     $('.bu_set_font').click(function(e) {
         $('.bu_set_font').removeClass('btn-success').addClass('btn-secondary');

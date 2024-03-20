@@ -80,7 +80,26 @@
     <link href="/gen/css/compiled-#{compiled_css_sha1}.css" rel="stylesheet" />
 
     <style>
-    #{(DEVELOPMENT || Date.today.strftime('%Y-%m-%d') == '2024-03-20') ? 'html { -moz-filter: grayscale(100%); -webkit-filter: grayscale(100%); filter: gray; filter: grayscale(100%); } #main_container::after { height: calc(max(100%,100vh) + 200px); width: 100%; pointer-events: none; opacity: 0.2; content: ""; background-image: url("grain/grain.jpg"); z-index: 9000; background-size: contain; position: absolute; left: 0; top: -100px; right: 0; bottom: -100px;}' : ''}
+    html {
+        /* -moz-filter: grayscale(50%); */
+        /* -webkit-filter: grayscale(50%); */
+        /* filter: saturate(0%) sepia(50%) brightness(0.9) contrast(1.2); */
+    }
+    .grain_overlay {
+        height: calc(max(100%,100vh) + 200px);
+        width: 100%;
+        pointer-events: none;
+        opacity: 0;
+        content: "";
+        background-image: url("grain/grain.jpg");
+        z-index: 9000;
+        background-size: 2000px;
+        position: absolute;
+        left: 0;
+        top: -100px;
+        right: 0;
+        bottom: -100px;
+    }
     .modal {z-index: 8000;}
     .navbar {z-index: 8000;}
     body {
@@ -635,6 +654,7 @@ Es werden gerade Wartungsarbeiten durchgeführt und das Dashboard ist in wenigen
 </div>
 <div style='position: relative; display: #{MAINTENANCE_MODE ? 'none' : 'block'}' id="main_container">
 #{CONTENT}
+    <div class="grain_overlay"></div>
 </div>
 <!-- <div class='snowman'></div> -->
 <div class='foot text-muted'>

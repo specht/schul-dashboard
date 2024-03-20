@@ -80,26 +80,25 @@
     <link href="/gen/css/compiled-#{compiled_css_sha1}.css" rel="stylesheet" />
 
     <style>
-    html {
-        /* -moz-filter: grayscale(50%); */
-        /* -webkit-filter: grayscale(50%); */
-        /* filter: saturate(0%) sepia(50%) brightness(0.9) contrast(1.2); */
+    /* html {
+        -moz-filter: grayscale(50%);
+        -webkit-filter: grayscale(50%);
+        filter: saturate(50%) sepia(50%) brightness(0.9) contrast(1.2);
     }
-    .grain_overlay {
-        height: calc(max(100%,100vh) + 200px);
-        width: 100%;
+    .navbar::after, .foot::after, #main_container::after, .container::after, .dropdown-menu::after, .modal::after {
         pointer-events: none;
-        opacity: 0;
+        opacity: 0.3;
         content: "";
         background-image: url("grain/grain.jpg");
-        z-index: 9000;
         background-size: 2000px;
+        background-position: 50% 50%;
         position: absolute;
         left: 0;
-        top: -100px;
+        top: 0;
         right: 0;
-        bottom: -100px;
-    }
+        bottom: 0;
+        border-radius: inherit;
+    } */
     .modal {z-index: 8000;}
     .navbar {z-index: 8000;}
     body {

@@ -201,7 +201,7 @@
 body {
     margin-top: 0;
     padding-top: 56px;
-    margin-bottom: 35px;
+    margin-bottom: 24px;
     font-size: 12pt;
     transition: background-image 0.3s ease, background-color 0.3s ease;
 }

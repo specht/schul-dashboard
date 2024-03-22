@@ -467,6 +467,7 @@ var timetable_id = '#{timetable_id}';
 
 function load_timetable(id) {
     timetable_id = id;
+    reload_print_button();
     window.calendar.refetchEvents();
 }
 
@@ -561,6 +562,16 @@ function install_physics_handler(e) {
     });
 }
 
+function reload_print_button() {
+    if (timetable_id == '#{@session_user[:id]}' && #{sus_logged_in?}) {
+        $('.fc-print-button').html('<i class="fa fa-print"></i>');
+        $('.fc-print-button').show();
+    } else {
+        console.log("hide")
+        $('.fc-print-button').hide();
+    };
+}
+
 var lesson_notes = #{lesson_notes_for_session_user.to_json};
 
 document.addEventListener('DOMContentLoaded', function() {
@@ -573,7 +584,7 @@ document.addEventListener('DOMContentLoaded', function() {
     let options = {
         initialView: (narrow_window || tablet_logged_in) ? 'timeGridDay' : 'timeGridWeek',
         dayHeaderFormat: { weekday: 'short', month: 'numeric', day: 'numeric', omitCommas: true },
-        headerToolbar: {start: '', center: '', end: tablet_logged_in ? '' : 'today prev,next'},
+        headerToolbar: {start: '', center: '', end: tablet_logged_in ? '' : 'print today prev,next'},
         allDaySlot: true,
         slotMinTime: '#{@session_user[:teacher] ? '07:00' : '07:00'}',
         slotMaxTime: '22:00',
@@ -1289,6 +1300,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     window.calendar = new FullCalendar.Calendar(document.getElementById('calendar'), options);
     window.calendar.render();
+    reload_print_button();
     $('#lessonModal').on('hidden.bs.modal', function() {
         if (pb_playing)
         {
@@ -1543,6 +1555,11 @@ document.addEventListener('DOMContentLoaded', function() {
     $('.bu-discard-ha-amt-text-changes').click(function(e) {
         $('#lessonModal').modal('hide');
     });
+
+    $('.fc-print-button').click(function(e) {
+        window.open('/api/get_single_timetable_pdf', '_blank');
+    });
+
     let temp = '#{Digest::SHA1.hexdigest(@session_user[:email] + 'hey')}';
     if (temp === '1df442d73157838343b7f13f5111772228a7adb3')
         rsag();

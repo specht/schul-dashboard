@@ -1,6 +1,6 @@
 Mustermann	Max	5a	m	01.01.2010
 Mustermann	Elisabeth	5a	w	02.01.2010	Elli
 Mustermann	Mallory	5a	m	03.01.2010
-Mustermann	Alice	12	w	04.01.2010
+Mustermann	Alice	11	w	04.01.2010
 Mustermann	Bob	12	m	05.01.2010
 

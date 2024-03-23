@@ -15,7 +15,7 @@
     }
     body {
         background-image: none;
-        background-color: #000;
+        background-color: #{(@session_user || {})[:dark] ? '#000' : '#fff'};
     }
     .table {
         background-color: rgba(0,0,0,0);
@@ -44,12 +44,14 @@
         background-color: rgba(255, 255, 255, 0.2)!important;
     }
 </style>
-<div class='container-fluid' style='padding-top: 30px; background-color: #000; color: #fff;'>
+<div class='container-fluid' style='padding-top: 30px;'>
     <div class='row'>
         <div class="col-md-12">
             <h2 style="margin-bottom: 30px;">Aula Licht
-            <button id="config_upload" class='btn btn-primary pull-right'><i class='fa fa-upload'></i>&nbsp;&nbsp;Konfiguration hochladen</button>
-            <button id="super_user" class='btn pull-right' style="color: #000;">&nbsp;&nbsp;Super User</button>
+            <div class="pull-right">
+                <button id='config_upload' class='btn btn-primary' #{technikteam_logged_in? ? '' : 'style="display: none"'};><i class='fa fa-edit '></i>&nbsp;&nbsp;Konfiguration bearbeiten</button>
+                <button id='super_user' class='btn btn-success'><i class='fa fa-bolt'></i>&nbsp;&nbsp;Schnelleingabe</button>
+            </div>
             </h2>
             <div class='api_messages'></div>
             <br>
@@ -124,7 +126,7 @@
     <div class="modal-dialog modal-xl modal-dialog-centered" role="document">
       <div class="modal-content">
        <div class="modal-header">
-          <h5 class="modal-title">Konfiguration hochladen</h5>
+          <h5 class="modal-title">Konfiguration bearbeiten</h5>
         </div>
         <div class="modal-body">
             <div class="alert alert-danger">Diese Funktion ändert die gesamte Seite. Eine falsche Nutzung kann die Seite vorrübergehend unbenutzbar machen. Bitte erstelle deshalb immer eine Sicherheitskopie, bevor du Änderungen vornimmst.</div>

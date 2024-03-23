@@ -43,7 +43,7 @@
                 </div>
             </div>
             <div class='row'>                
-                <div class='col-md-12' style='max-width: 100%; overflow-x: auto;'>
+                <div class='col-md-12 techproblems-container' style='max-width: 100%; overflow-x: auto;'>
                     <table class='table narrow table-striped' style='width: unset; min-width: 100%;'>
                     <thead><tr>
                     <th>Name</th>
@@ -51,6 +51,7 @@
                     <th>Problem</th>
                     <th>Gerät</th>
                     <th>Datum</th>
+                    <th>Status</th>
                     </tr></thead>
                     <tbody id='problems_here'>
                     </tbody>
@@ -240,21 +241,21 @@
                     if (entry.problem.fixed == false && entry.problem.not_fixed == false && entry.problem.hidden_admin == false) {
                         let row = $('<tr>');
                         let token = entry.problem.token;
+                        let fixed = "<i class='text-success fa fa-check' title='Behoben'></i>";
+                        let progress = "<i class='text-secondary fa fa-clock-o' title='In Bearbeitung'></i>";
+                        let not_fixed = "<i class='text-danger fa fa-times' title='Nicht behoben'></i>";
+                        let see_comment = "<i class='text-primary fa fa-commenting' title='Siehe Kommentar'></i>";
+                        let current_state = "Unbekannt"
+                        if (entry.problem.fixed == true) {
+                            current_state = fixed
+                        } else if (entry.problem.not_fixed == true) {
+                            current_state = not_fixed
+                        } else if (entry.problem.comment != "" && entry.problem.fixed == false && entry.problem.not_fixed == false) {
+                            current_state = see_comment
+                        } else {
+                            current_state = progress
+                        }
                         function get_modal() {
-                            let fixed = "<i class='text-success fa fa-check' title='Behoben'></i>";
-                            let progress = "<i class='text-secondary fa fa-clock-o' title='In Bearbeitung'></i>";
-                            let not_fixed = "<i class='text-danger fa fa-times' title='Nicht behoben'></i>";
-                            let see_comment = "<i class='text-primary fa fa-commenting' title='Siehe Kommentar'></i>";
-                            let current_state = "Unbekannt"
-                            if (entry.problem.fixed == true) {
-                                current_state = fixed
-                            } else if (entry.problem.not_fixed == true) {
-                                current_state = not_fixed
-                            } else if (entry.problem.comment != "" && entry.problem.fixed == false && entry.problem.not_fixed == false) {
-                                current_state = see_comment
-                            } else {
-                                current_state = progress
-                            }
                             let klasse = entry.klasse ? ` (${entry.klasse})` : ""
                             let tp_delete = "<button class='btn btn-danger tp-delete';><i class='fa fa-trash '></i></button>"
                             let tp_hide_admin = "<button class='btn btn-info tp-hide-admin'><i class='fa fa-eye'></i></button>"
@@ -425,6 +426,7 @@
                         row.append($('<td>').text(entry.problem.problem));
                         row.append($('<td>').text('' + entry.problem.device));
                         row.append($('<td>').text(moment(entry.problem.date).format('ddd, D.M.Y')));
+                        row.append($('<td>').html(current_state));
                         $('#problems_here').append(row);
                     }
                 }

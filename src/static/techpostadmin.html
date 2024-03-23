@@ -51,10 +51,6 @@
                     <th>Problem</th>
                     <th>Gerät</th>
                     <th>Datum</th>
-                    <th>Status</th>
-                    <th style="width: 140px;">Technikamt</th>
-                    <th style="width: 140px;">TechnikTeam</th>
-                    <th style="width: 140px;">Löschen</th>
                     </tr></thead>
                     <tbody id='problems_here'>
                     </tbody>
@@ -239,46 +235,159 @@
         api_call('/api/get_tech_problems_admin', {}, function(data) {
             if (data.success) {
                 $('#problems_here').empty();
+                /* $('#__template_modal .modal-body').empty(); */
                 for (let entry of data.tech_problems) {
-                    if (entry.problem.fixed == false && entry.problem.not_fixed == false && entry.problem.hidden_admin == false) { 
+                    if (entry.problem.fixed == false && entry.problem.not_fixed == false && entry.problem.hidden_admin == false) {
                         let row = $('<tr>');
-                        row.append($('<td>').html("<img src='#{NEXTCLOUD_URL}/index.php/avatar/" + entry.nc_login + "/256' class='icon avatar-md'/>&nbsp;&nbsp;&nbsp;" + entry.display_name));
-                        if (entry.klasse) {
-                            row.append($('<td title="Schüler">').text(entry.klasse));
-                        } else {
-                            row.append($('<td title="Lehrer">').html('<i class="fa fa-users"></i>'));
-                        }
-                        row.append($('<td>').text(entry.problem.problem));
-                        row.append($('<td>').text('' + entry.problem.device));
-                        row.append($('<td>').text(moment(entry.problem.date).format('ddd, D.M.Y')));
+                        let token = entry.problem.token;
+                        function get_modal() {
+                            let fixed = "<i class='text-success fa fa-check' title='Behoben'></i>";
+                            let progress = "<i class='text-secondary fa fa-clock-o' title='In Bearbeitung'></i>";
+                            let not_fixed = "<i class='text-danger fa fa-times' title='Nicht behoben'></i>";
+                            let see_comment = "<i class='text-primary fa fa-commenting' title='Siehe Kommentar'></i>";
+                            let current_state = "Unbekannt"
+                            if (entry.problem.fixed == true) {
+                                current_state = fixed
+                            } else if (entry.problem.not_fixed == true) {
+                                current_state = not_fixed
+                            } else if (entry.problem.comment != "" && entry.problem.fixed == false && entry.problem.not_fixed == false) {
+                                current_state = see_comment
+                            } else {
+                                current_state = progress
+                            }
+                            let klasse = entry.klasse ? ` (${entry.klasse})` : ""
+                            let tp_delete = "<button class='btn btn-danger tp-delete';><i class='fa fa-trash '></i></button>"
+                            let tp_hide_admin = "<button class='btn btn-info tp-hide-admin'><i class='fa fa-eye'></i></button>"
+                            let fixer = entry.fnc_login ? `<button title='${entry.fdisplay_name} kümmert sich um das Problem.' class='tp-fixer'><img src='#{NEXTCLOUD_URL}/index.php/avatar/${entry.fnc_login}/256' class='icon avatar-md'/></button>` : "<button title='Ich kümmere mich darum' class='btn btn-warning tp-fixer'><i class='fa fa-user-plus'></i></button>";
+                            let tp_fixed = "<button class='btn btn-success tp-fixed'><i class='fa fa-check'></i>&nbsp;&nbsp;Behoben</button>"
+                            let tp_not_fixed = "<button class='btn btn-warning tp-not-fixed'><i class='fa fa-times'></i>&nbsp;&nbsp;Nicht Behoben</button>"
+                            let mail_count = entry.problem.mail_count
+                            let tp_mail = `<button class='btn btn-success tp-mail'><i class='fa fa-envelope'></i>&nbsp;&nbsp;(${mail_count})</button>`
+                            let tp_hide = "<button class='btn btn-info tp-hide'><i class='fa fa-eye'></i></button>"
+                            if (entry.problem.hidden) {
+                                tp_hide = "<button class='btn btn-secondary tp-hide'><i class='fa fa-eye-slash'></i></button>"
+                            }
 
-                        let tp_fixed = $('<button>').addClass('btn').addClass('btn-xs').addClass('btn-success').html("<i class='fa fa-check'></i>&nbsp;&nbsp;Behoben");
-                        tp_fixed.data('token', entry.problem.token);
-                        tp_fixed.click(function(e) {
+                            let tp_comment = "<button class='btn btn-xs btn-primary tp-comment'><i class='fa fa-plus'></i>&nbsp;&nbsp;Kommentar</button>"
+                            let tp_update_comment = "<button class='btn btn-xs btn-primary tp-update-comment'><i class='fa fa-pencil'></i></button>"
+                            let comment = tp_comment
 
-                            api_call('/api/fix_tech_problem_admin', {token: $(e.target).data('token')}, function(data) {
-                                if (data.success)
-                                    refresh_tech_problems();
+                            if (entry.problem.comment) {
+                                comment = `${entry.problem.comment} ${tp_update_comment}`;
+                            }
+                            $('#__template_modal .modal-footer').empty();
+                            let modalContent = `<p>Problem: <b>${entry.problem.problem}</b><br>
+                                Gerät: <b>${entry.problem.device}</b><br>
+                                Datum: <b>${moment(entry.problem.date).format('dddd, D.M.Y')}</b><br>
+                                Absender: <b>${entry.display_name}${klasse}</b><br>
+                                Status: <b>${current_state}</b><br>
+                                Kommentar: <b>${comment}</b></p>
+                                <div class='pull-left'>
+                                    ${tp_fixed}
+                                    ${tp_not_fixed}
+                                    ${tp_mail}
+                                    ${tp_hide}
+                                </div>
+                                <div class='pull-right'>
+                                    ${fixer}
+                                    ${tp_hide_admin}
+                                    ${tp_delete}
+                                </div>`;
+                            $('#__template_modal .modal-title').html(entry.problem.problem);
+                            $('#__template_modal .modal-body').html(modalContent);
+                            $('#__template_modal .modal-footer').empty();
+                            let bu_cancel = $('<button>').addClass('btn btn-secondary').html('Schließen').attr('data-dismiss', 'modal');
+                            $('#__template_modal .modal-footer').append(bu_cancel);
+                            $('#__template_modal').modal('show');
+                            
+                            $('.tp-fixed').click(function() {
+                                api_call('/api/fix_tech_problem_admin', {token: entry.problem.token}, function(data) {
+                                    if (data.success) {
+                                        refresh_tech_problems();
+                                        $('#__template_modal').modal('hide');
+                                    }
+                                });
                             });
-
-                        });
-
-                        let tp_not_fixed = $('<button>').addClass('btn').addClass('btn-xs').addClass('btn-warning').html("<i class='fa fa-times'></i>&nbsp;&nbsp;Nicht Behoben");
-                        tp_not_fixed.data('token', entry.problem.token);
-                        tp_not_fixed.click(function(e) {
-
-                            api_call('/api/not_fix_tech_problem_admin', {token: $(e.target).data('token')}, function(data) {
-                                if (data.success)
-                                    refresh_tech_problems();
+                            $('.tp-not-fixed').click(function() {
+                                api_call('/api/not_fix_tech_problem_admin', {token: entry.problem.token}, function(data) {
+                                    if (data.success) {
+                                        refresh_tech_problems();
+                                        $('#__template_modal').modal('hide');
+                                    }
                             });
+                            });
+                            $('.tp-mail').click(function() {
+                                api_call('/api/mail_tech_problem', {token: entry.problem.token}, function(data) {
+                                    if (data.success) {
+                                        refresh_tech_problems();
+                                        $('#__template_modal').modal('hide');
+                                    }
+                                });
+                            });
+                            $('.tp-hide').click(function() {
+                                if (entry.problem.hidden) {
+                                    api_call('/api/unhide_tech_problem', {token: token}, function(data) {
+                                        if (data.success)
+                                            refresh_tech_problems();
+                                            $('#__template_modal').modal('hide');
+                                    });
+                                } else {
+                                    api_call('/api/hide_tech_problem', {token: token}, function(data) {
+                                        if (data.success)
+                                            refresh_tech_problems();
+                                            $('#__template_modal').modal('hide');
+                                    });
+                                }
+                            });
+                            $('.tp-fixer').click(function() {
+                                if (entry.fnc_login) {    
+                                    api_call('/api/i_will_not_fix_tech_problem', {token: token}, function(data) {
+                                        if (data.success)
+                                            refresh_tech_problems();
+                                            $('#__template_modal').modal('hide');
 
-                        });
+                                    });
+                                } else {
+                                    api_call('/api/i_will_fix_tech_problem', {token: token}, function(data) {
+                                        if (data.success)
+                                            refresh_tech_problems();
+                                            $('#__template_modal').modal('hide');
 
-                        let tp_comment = $('<button>').addClass('btn').addClass('btn-xs').addClass('btn-primary').html("<i class='fa fa-plus'></i>&nbsp;&nbsp;Kommentar");
-                        tp_comment.data('token', entry.problem.token);
-                        tp_comment.click(function(e) {
-                            let token = entry.problem.token
-                            showTemplateModal('Kommentar hinzufügen', 
+                                    });
+                                
+                                }
+                            });
+                            $('.tp-hide-admin').click(function() {
+                                if (entry.problem.comment != "") {
+                                    api_call('/api/hide_tech_problem_admin', {token: token}, function(data) {
+                                        if (data.success)
+                                            refresh_tech_problems();
+                                            $('#__template_modal').modal('hide');
+                                    });
+                                } else {
+                                    showTemplateModal('Ausblenden nicht möglich',
+                                        'Bitte reagiere erst auf diese Meldung, indem du einen Kommentar schreibst und/oder das Problem als „behoben“ oder „nicht behoben“ markierst.',
+                                        '',
+                                        '',
+                                        'Schließen', 'btn-secondary'
+                                    );
+                                }
+                            })
+                            $('.tp-delete').click(function() {
+                                showTemplateModal('Problem löschen', 
+                                'Bist Du sicher? Das Problem wird dabei unwiderrufbar gelöscht.',
+                                "<i class='fa fa-trash'></i>&nbsp;&nbsp;Problem löschen", 'btn-danger',
+                                'Abbrechen', 'btn-secondary', function() {
+                                    api_call('/api/delete_tech_problem_admin', {token: token}, function(data) {
+                                        if (data.success)
+                                            refresh_tech_problems();
+                                            refresh_fixed_tech_problems();
+                                            $('#__template_modal').modal('hide');
+                                    });
+                                })
+                            });
+                            $('.tp-comment').click(function() {
+                                showTemplateModal('Kommentar hinzufügen', 
                                 '<textarea type="text" id="tp_comment_input" class="form-control" placeholder="z.B. Danke für deinen Beitrag"></textarea>',
                                 "<i class='fa fa-check'></i>&nbsp;&nbsp;Speichern", 'btn-success',
                                 'Abbrechen', 'btn-secondary', function() {
@@ -288,15 +397,11 @@
                                             refresh_tech_problems();
                                     });
                                 }
-                            );
-                        });
-
-                        let tp_update_comment = $('<button>').addClass('btn').addClass('btn-xs').addClass('btn-primary').html("<i class='fa fa-pencil'></i>");
-                        tp_update_comment.data('token', entry.problem.token);
-                        tp_update_comment.click(function(e) {
-                            let token = entry.problem.token
-                            let old_comment = entry.problem.comment
-                            showTemplateModal('Kommentar aktualisieren', 
+                                );
+                            })
+                            $('.tp-update-comment').click(function() {
+                                let old_comment = entry.problem.comment
+                                showTemplateModal('Kommentar aktualisieren', 
                                 '<textarea type="text" id="tp_comment_input" class="form-control" placeholder="z.B. Danke für deinen Beitrag (leer lassen, um den Kommentar zu löschen)">' + old_comment + '</textarea>',
                                 "<i class='fa fa-check'></i>&nbsp;&nbsp;Speichern", 'btn-success',
                                 'Abbrechen', 'btn-secondary', function() {
@@ -305,123 +410,28 @@
                                         if (data.success)
                                             refresh_tech_problems();
                                     });
-                                }
-                            );
-                        });
-                        
-
-                        if (entry.problem.comment == false) {
-                            row.append($('<td>').append(tp_fixed).append('&nbsp;').append(tp_not_fixed).append('&nbsp;').append(tp_comment));
+                                }); 
+                            })
+                        };
+                        row.click(function(e) {
+                            get_modal();
+                        })
+                        row.append($('<td>').html("<img src='#{NEXTCLOUD_URL}/index.php/avatar/" + entry.nc_login + "/256' class='icon avatar-md'/>&nbsp;&nbsp;&nbsp;" + entry.display_name));
+                        if (entry.klasse) {
+                            row.append($('<td title="Schüler">').text(entry.klasse));
                         } else {
-                            row.append($('<td>').append(tp_fixed).append('&nbsp;').append(tp_not_fixed).append('&nbsp;').append('' + entry.problem.comment + ' ').append(tp_update_comment));
+                            row.append($('<td title="Lehrer">').html('<i class="fa fa-users"></i>'));
                         }
-
-
-                        let tp_delete = $('<button>').addClass('btn').addClass('btn-xs').addClass('btn-danger').html("<i class='fa fa-trash'></i>&nbsp;&nbsp;Löschen");
-                        tp_delete.data('token', entry.problem.token);
-                        tp_delete.click(function(e) {
-                            showTemplateModal('Problem löschen', 
-                                'Bist Du sicher? Das Problem wird dabei unwiderrufbar gelöscht.',
-                                "<i class='fa fa-trash'></i>&nbsp;&nbsp;Problem löschen", 'btn-danger',
-                                'Abbrechen', 'btn-secondary', function() {
-                                    api_call('/api/delete_tech_problem_admin', {token: $(e.target).data('token')}, function(data) {
-                                        if (data.success)
-                                            refresh_tech_problems();
-                                            refresh_fixed_tech_problems();
-                                    });
-                                }
-                            );
-                        });
-
-                        let tp_hide_admin = $('<button>').addClass('btn').addClass('btn-xs').addClass('btn-info').html("<i class='fa fa-eye'></i>");
-                        tp_hide_admin.data('token', entry.problem.token);
-                        tp_hide_admin.click(function(e) {
-                            if (entry.problem.comment != "") {
-                                let token = $(this).data('token');
-                                api_call('/api/hide_tech_problem_admin', {token: token}, function(data) {
-                                if (data.success)
-                                    refresh_tech_problems();
-                                });
-                            } else {
-                                showTemplateModal('Ausblenden nicht möglich',
-                                'Bitte reagiere erst auf diese Meldung, indem du einen Kommentar schreibst und/oder das Problem als „behoben“ oder „nicht behoben“ markierst.',
-                                '','',
-                                'Schließen', 'btn-secondary'
-                                )
-                            }
-                                                        
-
-                        });
-                        let fixer = entry.fnc_login ? $('<button title="' + entry.fdisplay_name + ' kümmert sich um das Problem.">').html("<img src='#{NEXTCLOUD_URL}/index.php/avatar/" + entry.fnc_login + "/256}' class='icon avatar-md'/>") : $('<button title="Ich kümmere mich darum">').addClass('btn btn-xs btn-warning').html("<i class='fa fa-user-plus'></i>");
-                        if (entry.fnc_login) {    
-                            fixer.data('token', entry.problem.token);
-                            fixer.click(function(e) {
-                                    let token = $(this).data('token');
-                                    api_call('/api/i_will_not_fix_tech_problem', {token: token}, function(data) {
-                                        if (data.success)
-                                            refresh_tech_problems();
-                                    });
-                                });
-                        } else {
-                            fixer.data('token', entry.problem.token)
-                            fixer.click(function(e) {
-                                let token = $(this).data('token');
-                                api_call('/api/i_will_fix_tech_problem', {token: token}, function(data) {
-                                    if (data.success)
-                                        refresh_tech_problems();
-                                });
-                            });
-                        
-                        }
-                        let tp_mail_count = entry.problem.mail_count
-
-                        let tp_mail = $('<button>')
-                            .addClass('btn btn-xs btn-success')
-                            .html("<i class='fa fa-envelope'></i>&nbsp;&nbsp;(" + tp_mail_count + ")")
-                            .data('token', entry.problem.token)
-                            .click(function(e) {
-                                let token = $(this).data('token');
-                                api_call('/api/mail_tech_problem', {token: token}, function(data) {
-                                    if (data.success)
-                                        refresh_tech_problems();
-                                });
-                            });
-
-                        if (entry.problem.hidden == false) {
-                            let tp_hide = $('<button>')
-                                .addClass('btn btn-xs btn-info')
-                                .html("<i class='fa fa-eye'></i>")
-                                .data('token', entry.problem.token)
-                                .click(function(e) {
-                                    let token = $(this).data('token');
-                                    api_call('/api/hide_tech_problem', {token: token}, function(data) {
-                                        if (data.success)
-                                            refresh_tech_problems();
-                                    });
-                                });
-                            row.append($('<td>').append(tp_hide).append('&nbsp;').append(tp_mail));
-                        } else {
-                            let tp_hide = $('<button>')
-                                .addClass('btn btn-xs btn-secondary')
-                                .html("<i class='fa fa-eye-slash'></i>")
-                                .data('token', entry.problem.token)
-                                .click(function(e) {
-                                    let token = $(this).data('token');
-                                    api_call('/api/unhide_tech_problem', {token: token}, function(data) {
-                                        if (data.success)
-                                            refresh_tech_problems();
-                                    });
-                                });
-                            row.append($('<td>').append(tp_hide).append('&nbsp;').append(tp_mail));
-                        }
-                        row.append($('<td>').append(tp_hide_admin).append('&nbsp;').append(fixer));
-                        row.append($('<td>').append(tp_delete));
+                        row.append($('<td>').text(entry.problem.problem));
+                        row.append($('<td>').text('' + entry.problem.device));
+                        row.append($('<td>').text(moment(entry.problem.date).format('ddd, D.M.Y')));
                         $('#problems_here').append(row);
                     }
                 }
-            }
+            }       
         });
-    }
+    };
+    
 
     function refresh_fixed_tech_problems() {
         api_call('/api/get_tech_problems_admin', {}, function(data) {

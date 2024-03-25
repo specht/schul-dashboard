@@ -72,7 +72,7 @@
                 <div class='col-md-12'>
                     <button class='bu-hidden-problems btn btn-secondary'><i class='fa fa-eye-slash'></i>&nbsp;&nbsp;Ausgeblendete Probleme</button>
                     <div class="pull-right">
-                        <button id='tp_report_problem_quiet' class='btn btn-outline-secondary' disabled><i class='fa fa-bell-slash '></i>&nbsp;&nbsp;Stumm Absenden (Für Testzwecke)</button>
+                        <!-- <button id='tp_report_problem_quiet' class='btn btn-outline-secondary' disabled><i class='fa fa-bell-slash '></i>&nbsp;&nbsp;Stumm Absenden (Für Testzwecke)</button> -->
                         <button id='tp_report_problem' class='btn btn-outline-secondary' disabled><i class='fa fa-send'></i>&nbsp;&nbsp;Absenden</button>
                     </div>
                 </div>
@@ -353,17 +353,17 @@ document.addEventListener('DOMContentLoaded', function() {
             refresh_tech_problems();
         });
     });
-    $('#tp_report_problem_quiet').click(function(e) {
-        let problem = $('#tp_problem_description').val().trim();
-        let date = $('#tp_date').val().trim();
-        let device = $('#tp_problem_device').val();
-        api_call('/api/report_tech_problem_quiet', {problem: problem, date: date, device: device}, function(data) {
-            console.log(data);
-            $('#tp_problem_device').val("");
-            update_submit_button();
-            refresh_tech_problems();
-        });
-    });
+    // $('#tp_report_problem_quiet').click(function(e) {
+    //     let problem = $('#tp_problem_description').val().trim();
+    //     let date = $('#tp_date').val().trim();
+    //     let device = $('#tp_problem_device').val();
+    //     api_call('/api/report_tech_problem_quiet', {problem: problem, date: date, device: device}, function(data) {
+    //         console.log(data);
+    //         $('#tp_problem_device').val("");
+    //         update_submit_button();
+    //         refresh_tech_problems();
+    //     });
+    // });
     refresh_tech_problems();
 
     $('#bu-device-select').click(function(e) {

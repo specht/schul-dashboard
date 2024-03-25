@@ -254,6 +254,7 @@
                         }
                         function get_modal() {
                             let klasse = entry.klasse ? ` (${entry.klasse})` : ""
+                            let tp_print = "<button class='btn btn-primary tp-print'><i class='fa fa-print'></i></button>"
                             let tp_delete = "<button class='btn btn-danger tp-delete';><i class='fa fa-trash '></i></button>"
                             let tp_hide_admin = "<button class='btn btn-info tp-hide-admin'><i class='fa fa-eye'></i></button>"
                             let fixer = entry.fnc_login ? `<button title='${entry.fdisplay_name} kümmert sich um das Problem.' class='tp-fixer'><img src='#{NEXTCLOUD_URL}/index.php/avatar/${entry.fnc_login}/256' class='icon avatar-md'/></button>` : "<button title='Ich kümmere mich darum' class='btn btn-warning tp-fixer'><i class='fa fa-user-plus'></i></button>";
@@ -295,7 +296,7 @@
                             $('#__template_modal .modal-body').html(modalContent);
                             $('#__template_modal .modal-footer').empty();
                             let bu_cancel = $('<button>').addClass('btn btn-secondary').html('Schließen').attr('data-dismiss', 'modal');
-                            $('#__template_modal .modal-footer').append(bu_cancel);
+                            $('#__template_modal .modal-footer').append(tp_print).append(bu_cancel);
                             $('#__template_modal').modal('show');
                             
                             $('.tp-fixed').click(function() {
@@ -371,6 +372,9 @@
                                     );
                                 }
                             })
+                            $('.tp-print').click(function() {
+                                window.open(`/api/get_tech_problem_pdf/${token}`, '_blank');
+                            });
                             $('.tp-delete').click(function() {
                                 showTemplateModal('Problem löschen', 
                                 'Bist Du sicher? Das Problem wird dabei unwiderrufbar gelöscht.',
@@ -457,6 +461,7 @@
                         }
                         function get_modal() {
                             let klasse = entry.klasse ? ` (${entry.klasse})` : ""
+                            let tp_print = "<button class='btn btn-primary tp-print';><i class='fa fa-print'></i></button>"
                             let tp_delete = "<button class='btn btn-danger tp-delete';><i class='fa fa-trash '></i></button>"
                             let tp_unhide_admin = "<button class='btn btn-secondary tp-unhide-admin'><i class='fa fa-eye-slash'></i></button>"
                             let fixer = entry.fnc_login ? `<button title='${entry.fdisplay_name} kümmert sich um das Problem.' class='tp-fixer'><img src='#{NEXTCLOUD_URL}/index.php/avatar/${entry.fnc_login}/256' class='icon avatar-md'/></button>` : "<button title='Ich kümmere mich darum' class='btn btn-warning tp-fixer'><i class='fa fa-user-plus'></i></button>";
@@ -498,7 +503,7 @@
                             $('#__template_modal .modal-body').html(modalContent);
                             $('#__template_modal .modal-footer').empty();
                             let bu_cancel = $('<button>').addClass('btn btn-secondary').html('Schließen').attr('data-dismiss', 'modal');
-                            $('#__template_modal .modal-footer').append(bu_cancel);
+                            $('#__template_modal .modal-footer').append(tp_print).append(bu_cancel);
                             $('#__template_modal').modal('show');
                             
                             $('.tp-fixed').click(function() {
@@ -573,6 +578,9 @@
                                         $('#__template_modal').modal('hide');
                                 });
                             })
+                            $('.tp-print').click(function() {
+                                window.open(`/api/get_tech_problem_pdf/${token}`, '_blank');
+                            });
                             $('.tp-delete').click(function() {
                                 showTemplateModal('Problem löschen', 
                                 'Bist Du sicher? Das Problem wird dabei unwiderrufbar gelöscht.',

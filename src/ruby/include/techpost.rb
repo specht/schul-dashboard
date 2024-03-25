@@ -140,7 +140,7 @@ class Main < Sinatra::Base
     end
 
     post '/api/report_tech_problem_quiet' do
-        require_user_who_can_report_tech_problems_or_better!
+        require_user_who_can_manage_tablets!
         data = parse_request_data(:required_keys => [:problem, :date, :device],)
         token = RandomTag.generate(24)
         neo4j_entry = neo4j_query_expect_one(<<~END_OF_QUERY, :token => token, :email => @session_user[:email], :device => data[:device], :date => data[:date], :problem => data[:problem])
@@ -495,16 +495,33 @@ class Main < Sinatra::Base
         respond(:ok => true)
     end
 
-    get '/api/tech_problem_pdf' do
+    get '/api/get_tech_problem_pdf/*' do
         require_user_who_can_manage_tablets!
-        data = parse_request_data(:required_keys => [:token])
-        token = data[:token]
-        problems = neo4j_query_expect_one(<<~END_OF_QUERY, :token => token)
-            MATCH (v:TechProblem {token: $token})
-            RETURN v;
+        token = request.path.sub('/api/get_tech_problem_pdf/', '')
+        problems = neo4j_query(<<~END_OF_QUERY, :token => token)
+            MATCH (v:TechProblem {token: $token})-[:BELONGS_TO]->(u:User)
+            OPTIONAL MATCH (v:TechProblem {token: $token})-[:WILL_BE_FIXED_BY]->(f:User)
+            RETURN v, u, f;
         END_OF_QUERY
         problem = problems.first["v"]
-        debug problem
+        user = problems.first["u"]
+        fixer = problems.first["f"]
+        fixed = "Behoben";
+        progress = "In Bearbeitung";
+        not_fixed = "Nicht behoben";
+        see_comment = "Siehe Kommentar";
+        current_state = "Unbekannt"
+        if problem[:fixed]
+            current_state = fixed
+        elsif problem[:not_fixed]
+            current_state = not_fixed
+        elsif problem[:comment] && !problem[:fixed] && !problem[:not_fixed]
+            current_state = see_comment
+        else
+            current_state = progress
+        end
+        today = Date.today.strftime('%d.%m.%Y')
+        debug current_state
         pdf = StringIO.open do |io|
             io.puts "<style>"
             io.puts "body { font-family: Roboto; font-size: 12pt; line-height: 120%; }"
@@ -513,25 +530,50 @@ class Main < Sinatra::Base
             io.puts ".pdf-space-above td {padding-top: 0.2em; }"
             io.puts ".pdf-space-below td {padding-bottom: 0.2em; }"
             io.puts ".page-break { page-break-after: always; border-top: none; margin-bottom: 0; }"
+            io.puts ".footer { position: absolute; bottom: 0; width: 100%; }"
             io.puts "</style>"
-            io.puts "<h1></h1>"
+            io.puts "<h1>Problemmeldung</h1>"
             io.puts "<br>"
+            io.puts "<p>Es wurde folgendes Problem über das Dashboard #{SCHUL_NAME_AN_DATIV} #{SCHUL_NAME} gemeldet:</p>"
             io.puts "<table>"
             io.puts "<tbody>"
             io.puts "<tr>"
             io.puts "<td>Problem</td>"
-            io.puts "<td>#{}</td>"
+            io.puts "<td><b>#{problem[:problem]}</b></td>"
             io.puts "</tr>"
             io.puts "<tr>"
-            io.puts "<td>Gerät</td>"
-            io.puts "<td>#{}</td>"
+            io.puts "<td>Gerät / Raum</td>"
+            io.puts "<td><b>#{problem[:device]}</b></td>"
+            io.puts "</tr>"
+            io.puts "<tr>"
+            io.puts "<td>Datum</td>"
+            io.puts "<td><b>#{(Date.parse(problem[:date])).strftime('%d.%m.%Y')}</b></td>"
             io.puts "</tr>"
             io.puts "<tr>"
             io.puts "<td>Absender</td>"
-            io.puts "<td>#{}</td>"
+            io.puts "<td><b>#{@@user_info[user[:email]][:display_name]}#{@@user_info[user[:email]][:klasse] ? " (#{@@user_info[user[:email]][:klasse]})" : ""}</b><br>#{user[:email]}</td>"
             io.puts "</tr>"
+            if fixer
+                io.puts "<tr>"
+                io.puts "<td>Aktuelle Betreuung</td>"
+                io.puts "<td><b>#{fixer ? @@user_info[fixer[:email]][:display_name] : ""}#{fixer ? @@user_info[fixer[:email]][:klasse] ? " (#{@@user_info[fixer[:email]][:klasse]})" : "" : ""}</b>#{fixer ? "<br>" + fixer[:email] : ""}</td>"
+                io.puts "</tr>"
+            end
+            io.puts "<tr>"
+            io.puts "<td>Status</td>"
+            io.puts "<td><b>#{current_state}</b></td>"
+            io.puts "</tr>"
+            if problem[:comment]
+                io.puts "<tr>"
+                io.puts "<td>Kommentar</td>"
+                io.puts "<td><b>#{problem[:comment] ? "" + problem[:comment] + "": ""}</b></td>"
+                io.puts "</tr>"
+            end
             io.puts "</tbody>"
             io.puts "</table>"
+            io.puts "<div class='footer'>"
+            io.puts "<p>Stand: <b>#{Time.now.strftime('%d.%m.%Y %H:%M')}</b></p>"
+            io.puts "</div>"
             io.string
         end
         c = Curl.post('http://weasyprint:5001/pdf', {:data => pdf}.to_json)

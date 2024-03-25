@@ -399,12 +399,10 @@ class Main
                         handled_faecher = Set.new(cols_left_template) | Set.new(cols_right_template)
                         handled_faecher |= Set.new(fs)
                         liste[:faecher].each do |fach|
-                            if liste[:wahlfach][fach]
-                                v = (cache["Schuljahr:#{ZEUGNIS_SCHULJAHR}/Halbjahr:#{ZEUGNIS_HALBJAHR}/Fach:#{fach}/Email:#{schueler[:email]}"] || [])[0]
-                                if v && v != '×'
-                                    unless handled_faecher.include?(fach)
-                                        wahlfaecher << fach
-                                    end
+                            v = (cache["Schuljahr:#{ZEUGNIS_SCHULJAHR}/Halbjahr:#{ZEUGNIS_HALBJAHR}/Fach:#{fach}/Email:#{schueler[:email]}"] || [])[0]
+                            if v && v != '×'
+                                unless handled_faecher.include?(fach)
+                                    wahlfaecher << fach
                                 end
                             end
                         end

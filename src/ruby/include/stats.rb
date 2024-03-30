@@ -3,7 +3,7 @@ class Main < Sinatra::Base
         login_seen = {}
         LOGIN_STATS_D.each do |d|
             login_counts = neo4j_query(<<~END_OF_QUERY, :today => (Date.today - d).to_s)
-                MATCH (u:User) WHERE EXISTS(u.last_access) AND u.last_access >= $today
+                MATCH (u:User) WHERE u.last_access IS NOT NULL AND u.last_access >= $today
                 RETURN u.email;
             END_OF_QUERY
             login_counts.map { |x| x['u.email'] }.each do |email|

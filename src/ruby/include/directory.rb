@@ -579,18 +579,18 @@ class Main < Sinatra::Base
     get '/api/print_offline_users' do
         require_admin!
         emails = neo4j_query(<<~END_OF_QUERY).map { |x| x['u.email'] }
-            MATCH (u:User) WHERE NOT EXISTS(u.last_access)
+            MATCH (u:User) WHERE u.last_access IS NULL
             RETURN u.email;
         END_OF_QUERY
         never_seen_users = Set.new(emails)
         emails = neo4j_query(<<~END_OF_QUERY).map { |x| x['u.email'] }
-            MATCH (u:User) WHERE EXISTS(u.last_access)
+            MATCH (u:User) WHERE u.last_access IS NOT NULL
             RETURN u.email;
         END_OF_QUERY
         seen_users = Set.new(emails)
-        
+
         main = self
-        doc = Prawn::Document.new(:page_size => 'A4', :page_layout => :portrait, 
+        doc = Prawn::Document.new(:page_size => 'A4', :page_layout => :portrait,
                                   :margin => 2.cm) do
             @@klassen_order.each_with_index do |klasse, i|
                 font_size 12

@@ -120,6 +120,8 @@ class Main < Sinatra::Base
             totp = ROTP::TOTP.new(otp_token, issuer: "Dashboard")
             assert_with_delay(totp.verify(data[:code], drift_behind: 15, drift_ahead: 15), "Wrong OTP code entered for #{user[:email]}: #{data[:code]}", true)
         else
+            STDERR.puts data.to_yaml
+            STDERR.puts login_code.to_yaml
             assert_with_delay(data[:code] == login_code[:code], "Wrong e-mail code entered for #{user[:email]}: #{data[:code]}", true)
         end
         if Time.at(login_code[:valid_to]) < Time.now
@@ -415,6 +417,7 @@ class Main < Sinatra::Base
             CREATE (l:LoginCode {tag: $tag, code: $code, valid_to: $valid_to})-[:BELONGS_TO]->(n)
             RETURN n, l;
         END_OF_QUERY
+        STDERR.puts neo4j_query("MATCH (l:LoginCode) RETURN l;").to_a.to_json
         telephone_number = result['n'][:telephone_number]
         preferred_login_method = result['n'][:preferred_login_method] || 'email'
         if preferred_login_method == 'sms'

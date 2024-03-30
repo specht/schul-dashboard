@@ -134,10 +134,14 @@ docker_compose[:services][:ruby] = {
     :environment => env,
     :working_dir => '/app',
     :entrypoint =>  DEVELOPMENT ?
-        'rerun -b --dir /app --ignore "*fragments.rb" -s SIGKILL \'thin --rackup config.ru --threaded start -e development\'' :
-        # 'rerun -b --dir /app --ignore "*fragments.rb" -s SIGKILL \'puma -p 3000 -w 4 --preload -t 0:16 -e development\'' :
-        'thin --rackup config.ru --threaded start -e production'}
-        # 'puma -p 3000 -w 4 --preload -t 0:16 -e production'
+        # 'rerun -b --dir /app --ignore "*fragments.rb" -s SIGKILL \'thin --rackup config.ru --threaded start -e development\'' :
+        'rerun -b --dir /app --dir /neo4j_bolt --ignore "*fragments.rb" -s SIGKILL \'puma -p 3000 -w 4 --preload -t 0:1 -e development\'' :
+        # 'thin --rackup config.ru --threaded start -e production'
+        'puma -p 3000 -w 4 --preload -t 0:1 -e production'
+        }
+    if DEVELOPMENT
+        docker_compose[:services][:ruby][:volumes] << "/home/michael/programming/neo4j_bolt:/neo4j_bolt:ro"
+    end
 docker_compose[:services][:ruby][:depends_on] ||= []
 docker_compose[:services][:ruby][:depends_on] << :neo4j
 
@@ -161,7 +165,7 @@ docker_compose[:services][:neo4j] = {
 }
 docker_compose[:services][:neo4j][:environment] = [
     'NEO4J_AUTH=none',
-    'NEO4J_dbms_logs__timezone=SYSTEM',
+    # 'NEO4J_dbms_logs__timezone=SYSTEM',
     # 'NEO4J_dbms_allow__upgrade=true',
 ]
 docker_compose[:services][:neo4j][:user] = "#{UID}"

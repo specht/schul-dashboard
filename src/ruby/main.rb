@@ -11,7 +11,7 @@ require 'json'
 require 'jwt'
 require 'kramdown'
 require 'mail'
-require 'neo4j_bolt'
+require ENV['DEVELOPMENT'] ? '/neo4j_bolt/lib/neo4j_bolt.rb' : 'neo4j_bolt'
 require 'net/http'
 require 'net/imap'
 require 'nextcloud'
@@ -42,6 +42,12 @@ require '/data/config.rb'
 require '/data/zeugnisse/config.rb'
 $VERBOSE = warn_level
 DASHBOARD_SERVICE = ENV['DASHBOARD_SERVICE']
+
+if ENV['DEVELOPMENT']
+    STDERR.puts "=" * 40
+    STDERR.puts "Attention: Using live neo4j_bolt gem from /neo4j_bolt!"
+    STDERR.puts "=" * 40
+end
 
 Neo4jBolt.bolt_host = 'neo4j'
 Neo4jBolt.bolt_port = 7687
@@ -413,6 +419,7 @@ class SetupDatabase
                 break
             rescue
                 debug $!
+                debug $!.backtrace.join("\n")
                 debug "Retrying setup after #{delay} seconds..."
                 sleep delay
                 delay += 1
@@ -3303,6 +3310,8 @@ class Main < Sinatra::Base
                     @original_path = original_path
                     @task_slug = slug
                     if original_path == 'c'
+                        STDERR.puts neo4j_query("MATCH (l:LoginCode) RETURN l;").to_a.to_json
+
                         parts = request.env['REQUEST_PATH'].split('/')
                         login_tag = parts[2]
                         login_code = parts[3]

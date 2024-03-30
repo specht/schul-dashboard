@@ -1063,7 +1063,7 @@ class Timetable
         ical_info = {}
         result = neo4j_query(<<~END_OF_QUERY)
             MATCH (u:User)
-            WHERE EXISTS(u.ical_token)
+            WHERE u.ical_token IS NOT NULL
             RETURN u.email, u.ical_token, COALESCE(u.omit_ical_types, []) AS omit_ical_types;
         END_OF_QUERY
         result.each do |entry|

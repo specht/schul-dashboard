@@ -19,7 +19,7 @@ class Main < Sinatra::Base
         END_OF_QUERY
         $neo4j.neo4j_query(<<~END_OF_QUERY, :today => today)
             MATCH (u:User)
-            WHERE EXISTS(u.freiwillig_salzh) AND u.freiwillig_salzh < $today
+            WHERE u.freiwillig_salzh IS NOT NULL AND u.freiwillig_salzh < $today
             REMOVE u.freiwillig_salzh;
         END_OF_QUERY
         $neo4j.neo4j_query(<<~END_OF_QUERY, :today => today)
@@ -1000,7 +1000,7 @@ class Main < Sinatra::Base
         Main.purge_stale_salzh_entries(true)
         rows = $neo4j.neo4j_query(<<~END_OF_QUERY).map { |x| x['u.email'] }
             MATCH (u:User)
-            WHERE EXISTS(u.freiwillig_salzh)
+            WHERE u.freiwillig_salzh IS NOT NULL
             RETURN u.email;
         END_OF_QUERY
         File.open(path, 'w') do |f|

@@ -625,7 +625,8 @@ class Main < Sinatra::Base
         parser.parse_schueler do |record|
             matrix_login = "@#{record[:email].split('@').first.sub(/\.\d+$/, '')}:#{MATRIX_DOMAIN_SHORT}"
             unless KLASSEN_ORDER.include?(record[:klasse])
-                raise "Klasse #{record[:klasse]} is included in KLASSEN_ORDER"
+                next
+                # raise "Klasse #{record[:klasse]} is included in KLASSEN_ORDER"
             end
             @@user_info[record[:email]] = {
                 :teacher => false,

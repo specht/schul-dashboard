@@ -541,7 +541,7 @@ class Parser
         end
     end
 
-    def parse_timetable(config, lesson_key_tr = {})
+    def parse_timetable(config, lesson_key_tr = {}, shorthands)
         historic_lessons_for_shorthand = {}
         sub_keys_for_unr_fach = {}
         lesson_keys_for_unr = {}
@@ -567,6 +567,7 @@ class Parser
 
         lesson_key_back_tr = {}
         original_lesson_key_for_lesson_key = {}
+        shorthands_for_fach = {}
 
         Dir['/data/stundenplan/*.TXT'].sort.each do |path|
             timetable_start_date = File.basename(path).sub('.TXT', '')
@@ -644,6 +645,11 @@ class Parser
                     }
                     lessons[fach_unr_key]["#{dow}/#{stunde}"][raum][:lehrer] << lehrer
                     lessons[fach_unr_key]["#{dow}/#{stunde}"][raum][:klassen] << klasse
+                    fach_for_verteiler = FACH_CONSOLIDATE_FOR_VERTEILER[fach.downcase.split('_').first]
+                    if fach_for_verteiler && (!lehrer.strip.empty?) && shorthands[lehrer.strip]
+                        shorthands_for_fach[fach_for_verteiler] ||= Set.new()
+                        shorthands_for_fach[fach_for_verteiler] << lehrer.strip
+                    end
                 end
             end
             fixed_lessons = {}
@@ -868,7 +874,7 @@ class Parser
             vertretungen[entry[:datum]] << entry
         end
         all_lessons[:historic_lessons_for_shorthand] = historic_lessons_for_shorthand
-        return all_lessons, vertretungen, vplan_timestamp, day_messages, lesson_key_back_tr, original_lesson_key_for_lesson_key
+        return all_lessons, vertretungen, vplan_timestamp, day_messages, lesson_key_back_tr, original_lesson_key_for_lesson_key, shorthands_for_fach
     end
 
     def parse_pausenaufsichten(config)

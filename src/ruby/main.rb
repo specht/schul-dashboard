@@ -490,6 +490,7 @@ class Main < Sinatra::Base
         @@email_for_matrix_login = {}
         @@shorthands = {}
         @@shorthand_order = []
+        @@shorthands_for_fach = {}
         @@schueler_for_klasse = {}
         @@faecher = {}
         @@ferien_feiertage = []
@@ -799,7 +800,7 @@ class Main < Sinatra::Base
         #     debug lesson_key_tr.to_yaml
         # end
 
-        @@lessons, @@vertretungen, @@vplan_timestamp, @@day_messages, @@lesson_key_back_tr, @@original_lesson_key_for_lesson_key = parser.parse_timetable(@@config, lesson_key_tr)
+        @@lessons, @@vertretungen, @@vplan_timestamp, @@day_messages, @@lesson_key_back_tr, @@original_lesson_key_for_lesson_key, @@shorthands_for_fach = parser.parse_timetable(@@config, lesson_key_tr, @@shorthands)
         @@original_fach_for_lesson_key = {}
         @@original_lesson_key_for_lesson_key.each_pair do |k, vl|
             vl.each do |v|
@@ -832,7 +833,7 @@ class Main < Sinatra::Base
         end
 
         # patch lesson_keys in @@lessons and @@vertretungen
-        @@lessons, @@vertretungen = parser.parse_timetable(@@config, lesson_key_tr)
+        @@lessons, @@vertretungen = parser.parse_timetable(@@config, lesson_key_tr, @@shorthands)
         # patch @@faecher
         @@lessons[:lesson_keys].each_pair do |lesson_key, info|
             # STDERR.puts "[#{lesson_key}]"
@@ -1167,6 +1168,7 @@ class Main < Sinatra::Base
                 end
             end
         end
+
         @@mailing_lists["lehrer@#{MAILING_LIST_DOMAIN}"] = {
             :label => "Gesamtes Kollegium",
             :recipients => @@user_info.keys.select do |email|
@@ -1199,6 +1201,12 @@ class Main < Sinatra::Base
             :label => "Alle Klassenleiter:innen",
             :recipients => all_kl.to_a.sort
         }
+        @@shorthands_for_fach.each_pair do |fach, shorthands|
+            @@mailing_lists["lehrer.#{fach.downcase}@#{MAILING_LIST_DOMAIN}"] = {
+                :label => "Alle Lehrkräfte im Fach #{fach}",
+                :recipients => shorthands.map { |x| @@shorthands[x] }
+            }
+        end
         @@antikenfahrt_mailing_lists.each_pair do |k, v|
             @@mailing_lists[k] = v
         end

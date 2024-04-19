@@ -310,7 +310,7 @@ class Main < Sinatra::Base
                 io.puts "<tr class='user_row'>"
                 io.puts "<td colspan='3'></td>"
                 io.puts "<td>"
-                print_email_field(io, "lehrer.#{klasse}@#{SCHUL_MAIL_DOMAIN}")
+                print_email_field(io, "lehrer.#{klasse}@#{MAILING_LIST_DOMAIN}")
                 io.puts "</td>"
                 io.puts "</tr>"
             end

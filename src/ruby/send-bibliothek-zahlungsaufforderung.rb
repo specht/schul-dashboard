@@ -2,9 +2,10 @@
 require './main.rb'
 require './parser.rb'
 require 'digest/sha2'
+require 'girocode'
 require 'yaml'
 
-EMPFAENGER = 'Lehr und Lernmittelhilfe des Gymnasiums Steglitz e. V.'
+EMPFAENGER = 'Lehr- und Lernmittelhilfe des Gymnasiums Steglitz e. V.'
 IBAN = 'DE91860100900603917908'
 BIC = 'PBNKDEFFXXX'
 BANK = 'Postbank - Ndl. der Deutsche Bank AG'
@@ -55,6 +56,7 @@ class Script
             ((@@klassen_order.index(a[:klasse]) || -1) <=> (@@klassen_order.index(b[:klasse]) || -1))
         end.each do |record|
             email = record[:email]
+            next if (@@user_info[email][:siblings_next_year] || []).empty?
             STDERR.puts record.to_yaml
             sesb = sesb_sus.include?(email)
             klassenstufe = record[:klasse].to_i
@@ -88,8 +90,25 @@ class Script
             doc.gsub!('#BEITRAG_SESB_3.', "#{BEITRAG_SESB_3.to_s} €")
             doc.gsub!('#SUS_KLASSENSTUFE.', klassenstufe_next.to_s)
             doc.gsub!('#SUS_ZUG_DATIV.', sesb ? 'SESB-Zug' : 'altsprachlichen Zug')
-            sibling_index = @@user_info[email][:sibling_index]
-            doc.gsub!('#SUS_GESCHWISTER_UND_BEITRAG_SATZ.', "Sibling index: #{sibling_index}.")
+
+            amount = 1.23
+
+            doc.gsub!('#BETRAG.', sprintf('%.2f €', amount).sub('.', ','))
+
+            sibling_index_next_year = @@user_info[email][:sibling_index_next_year]
+            satz = StringIO.open do |io|
+                if sibling_index_next_year == 0
+                    io.puts "Da uns keine weiteren, älteren Geschwisterkinder bekannt sind, beträgt der Beitrag für Ihr Kind im nächsten Schuljahr #{BEITRAG_AS_1} €."
+                elsif sibling_index_next_year == 1
+                    older_siblings = join_with_sep(@@user_info[email][:older_siblings].reverse.map { |x| @@user_info[x][:display_first_name] }, ', ', ' und ')
+                    io.puts "Da uns ein weiteres, älteres Geschwisterkind bekannt ist (#{older_siblings}), beträgt der Beitrag für Ihr Kind im nächsten Schuljahr #{BEITRAG_AS_2} €."
+                elsif sibling_index_next_year >= 2
+                    older_siblings = join_with_sep(@@user_info[email][:older_siblings].reverse.map { |x| @@user_info[x][:display_first_name] }, ', ', ' und ')
+                    io.puts "Da uns #{sibling_index_next_year > 2 ? 'mindestens ' : ''}zwei weitere, ältere Geschwisterkinder bekannt sind (#{older_siblings}), beträgt der Beitrag für Ihr Kind im nächsten Schuljahr #{BEITRAG_AS_3} €."
+                end
+                io.string
+            end
+            doc.gsub!('#SUS_GESCHWISTER_UND_BEITRAG_SATZ.', satz)
 
             #girocode EMPFAENGER.gsub(' ', '')
 
@@ -97,12 +116,25 @@ class Script
             File.open(File.join(out_path_dir, formular_sha1, 'word', 'document.xml'), 'w') do |f|
                 f.write doc
             end
+            code = Girocode.new(
+                iban: IBAN,
+                bic: BIC,
+                name: EMPFAENGER,
+                currency: 'EUR',
+                amount: amount,
+                bto_info: "Beitrag #{NEXT_SCHULJAHR} #{record[:display_name]}",
+            )
+            File.open(File.join(out_path_dir, formular_sha1, 'word', 'media', 'image2.png'), 'w') do |f|
+                f.write code.to_png
+            end
+
             command = "cd \"#{File.join(out_path_dir, formular_sha1)}\"; zip -r \"#{out_path_docx}\" ."
             system(command)
-            FileUtils::rm_rf(File.join(out_path_dir))
+            # FileUtils::rm_rf(File.join(out_path_dir))
             command = "HOME=/internal/lowriter_home lowriter --headless --convert-to 'pdf:writer_pdf_Export:{\"ExportFormFields\":{\"type\":\"boolean\",\"value\":\"false\"}}' \"#{out_path_docx}\" --outdir \"#{File.dirname(out_path_docx)}\""
             STDERR.puts command
             system(command)
+            FileUtils::rm_rf(out_path_docx)
 
             # now send mail
             email = 'specht@gymnasiumsteglitz.de'

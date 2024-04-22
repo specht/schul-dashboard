@@ -436,12 +436,20 @@ class Parser
                         user_info[email] && (!user_info[:teacher])
                     end
                     emails.sort! do |a, b|
-                        (user_info[a][:klasse].to_i == user_info[b][:klasse].to_i) ?
+                        (user_info[a][:geburtstag] == user_info[b][:geburtstag]) ?
                         (a.downcase <=> b.downcase) :
-                        (user_info[b][:klasse].to_i <=> user_info[a][:klasse].to_i)
+                        (user_info[a][:geburtstag] <=> user_info[b][:geburtstag])
                     end
                     emails.each.with_index do |email, index|
                         user_info[email][:sibling_index] = index
+                        user_info[email][:older_siblings] = emails[0, index]
+                        user_info[email][:siblings] = emails.dup
+                    end
+                    emails.reject! { |x| user_info[x][:klasse].to_i > 11}
+                    emails.each.with_index do |email, index|
+                        user_info[email][:sibling_index_next_year] = index
+                        user_info[email][:older_siblings_next_year] = emails[0, index]
+                        user_info[email][:siblings_next_year] = emails.dup
                     end
                 end
             end

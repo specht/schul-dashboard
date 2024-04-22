@@ -4,6 +4,19 @@ require './parser.rb'
 require 'digest/sha2'
 require 'yaml'
 
+EMPFAENGER = 'Lehr und Lernmittelhilfe des Gymnasiums Steglitz e. V.'
+IBAN = 'DE91860100900603917908'
+BIC = 'PBNKDEFFXXX'
+BANK = 'Postbank - Ndl. der Deutsche Bank AG'
+NEXT_SCHULJAHR = '2024/25'
+
+BEITRAG_AS_1 = 60
+BEITRAG_AS_2 = 50
+BEITRAG_AS_3 = 40
+BEITRAG_SESB_1 = 50
+BEITRAG_SESB_2 = 40
+BEITRAG_SESB_3 = 40
+
 class Script
     def run
 
@@ -32,19 +45,24 @@ class Script
                        }
         end
         @@klassen_order = Main.class_variable_get(:@@klassen_order)
+        @@user_info = Main.class_variable_get(:@@user_info)
+        @@schueler_for_klasse = Main.class_variable_get(:@@schueler_for_klasse)
+        sesb_sus = Set.new(parser.parse_sesb(@@user_info.reject { |x, y| y[:teacher] }, @@schueler_for_klasse))
+
         entries.sort do |a, b|
             (a[:klasse] == b[:klasse]) ?
             ([a[:last_name], a[:display_first_name]].join('/') <=> [b[:last_name], b[:display_first_name]].join('/')) :
             ((@@klassen_order.index(a[:klasse]) || -1) <=> (@@klassen_order.index(b[:klasse]) || -1))
         end.each do |record|
-            STDERR.puts record.to_yaml
             email = record[:email]
-            email = 'specht@gymnasiumsteglitz.de'
+            STDERR.puts record.to_yaml
+            sesb = sesb_sus.include?(email)
             klassenstufe = record[:klasse].to_i
             klassenstufe_next = klassenstufe + 1
             STDERR.puts "next: #{klassenstufe_next}"
             brief_id = "#{ZEUGNIS_SCHULJAHR}/Beitragsaufforderung/#{email}"
             brief_sha1 = Digest::SHA1.hexdigest(brief_id).to_i(16).to_s(36)
+            brief_sha1 = "Beitragsaufforderung #{NEXT_SCHULJAHR.gsub('/', '-')} #{record[:display_name]}"
 
             out_path_docx = File.join("/internal/bibliothek/out/#{brief_sha1}.docx")
             out_path_pdf = File.join("/internal/bibliothek/out/#{brief_sha1}.pdf")
@@ -54,9 +72,26 @@ class Script
             FileUtils.cp_r("/internal/bibliothek/formulare/#{formular_sha1}/", out_path_dir)
             doc = File.read(File.join(out_path_dir, formular_sha1, 'word', 'document.xml'))
             doc.gsub!('#SUS_NAME.', record[:display_name])
+            doc.gsub!('#SUS_VORNAME.', record[:display_first_name])
             doc.gsub!('#DATUM.', Date.today.strftime('%d.%m.%Y'))
             doc.gsub!('#MV_DATUM.', '6. Mai 2024')
             doc.gsub!('#NEXT_SCHULJAHR.', '2024/25')
+            doc.gsub!('#EMPFAENGER.', EMPFAENGER)
+            doc.gsub!('#IBAN.', IBAN.chars.each_slice(4).to_a.map { |x| x.join('') }.join(' '))
+            doc.gsub!('#BIC.', BIC)
+            doc.gsub!('#BANK.', BANK)
+            doc.gsub!('#BEITRAG_AS_1.', "#{BEITRAG_AS_1.to_s} €")
+            doc.gsub!('#BEITRAG_AS_2.', "#{BEITRAG_AS_2.to_s} €")
+            doc.gsub!('#BEITRAG_AS_3.', "#{BEITRAG_AS_3.to_s} €")
+            doc.gsub!('#BEITRAG_SESB_1.', "#{BEITRAG_SESB_1.to_s} €")
+            doc.gsub!('#BEITRAG_SESB_2.', "#{BEITRAG_SESB_2.to_s} €")
+            doc.gsub!('#BEITRAG_SESB_3.', "#{BEITRAG_SESB_3.to_s} €")
+            doc.gsub!('#SUS_KLASSENSTUFE.', klassenstufe_next.to_s)
+            doc.gsub!('#SUS_ZUG_DATIV.', sesb ? 'SESB-Zug' : 'altsprachlichen Zug')
+            sibling_index = @@user_info[email][:sibling_index]
+            doc.gsub!('#SUS_GESCHWISTER_UND_BEITRAG_SATZ.', "Sibling index: #{sibling_index}.")
+
+            #girocode EMPFAENGER.gsub(' ', '')
 
 
             File.open(File.join(out_path_dir, formular_sha1, 'word', 'document.xml'), 'w') do |f|
@@ -65,10 +100,12 @@ class Script
             command = "cd \"#{File.join(out_path_dir, formular_sha1)}\"; zip -r \"#{out_path_docx}\" ."
             system(command)
             FileUtils::rm_rf(File.join(out_path_dir))
-            command = "HOME=/internal/lowriter_home lowriter --headless --convert-to 'pdf:writer_pdf_Export:{\"ExportFormFields\":{\"type\":\"boolean\",\"value\":\"false\"}}' #{out_path_docx} --outdir \"#{File.dirname(out_path_docx)}\""
+            command = "HOME=/internal/lowriter_home lowriter --headless --convert-to 'pdf:writer_pdf_Export:{\"ExportFormFields\":{\"type\":\"boolean\",\"value\":\"false\"}}' \"#{out_path_docx}\" --outdir \"#{File.dirname(out_path_docx)}\""
             STDERR.puts command
             system(command)
 
+            # now send mail
+            email = 'specht@gymnasiumsteglitz.de'
             break
         end
     end

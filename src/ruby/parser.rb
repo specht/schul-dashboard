@@ -1039,6 +1039,12 @@ class Parser
 
         unassigned_kurs_ids = []
 
+        if ENV['DASHBOARD_SERVICE'] == 'ruby'
+            File.open('/internal/kurs_id_tr.yaml', 'w') do |f|
+                f.write kurs_id_tr.to_yaml
+            end
+        end
+
         emails_for_kurs_id.each_pair do |kurs_id, emails|
             if kurs_id_tr[kurs_id]
                 lesson_key = kurs_id_tr[kurs_id]

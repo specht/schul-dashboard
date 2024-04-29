@@ -730,6 +730,19 @@ class Parser
             lessons = fixed_lessons
             all_lessons[:timetables][timetable_start_date] = lessons
         end
+        if File.exist?('/data/lehrer/extra-lehrer-fuer-fach.txt')
+            File.open('/data/lehrer/extra-lehrer-fuer-fach.txt') do |f|
+                f.each_line do |line|
+                    line.strip!
+                    next if line[0] == '#'
+                    parts = line.split(',').map { |x| x.strip }
+                    fach = parts[0]
+                    shorthand = parts[1]
+                    shorthands_for_fach[fach] ||= Set.new()
+                    shorthands_for_fach[fach] << shorthand
+                end
+            end
+        end
         all_lessons[:lesson_keys].keys.each do |lesson_key|
             all_lessons[:lesson_keys][lesson_key][:klassen] = all_lessons[:lesson_keys][lesson_key][:klassen].to_a.sort
             all_lessons[:lesson_keys][lesson_key][:lehrer] = all_lessons[:lesson_keys][lesson_key][:lehrer].to_a.sort

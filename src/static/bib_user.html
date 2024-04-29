@@ -150,7 +150,7 @@
                                 let stem = $(e.target).data('stem');
                                 let bnr = $(e.target).data('bnr');
                                 showTemplateModal('Ausleihe aufheben',
-                                    `Sind Sie sicher, dass Sie die Ausleihe aufheben möchten?<br />Signatur: <b>${entry.book.stem}-${entry.exemplar.bnr}</b><br/>Autor: <b>${entry.book.author}</b></br>Titel:<b> ${entry.book.title}</b>`,
+                                    `Sind Sie sicher, dass Sie die Ausleihe aufheben möchten? <b>Achtung:</b> Das Exemplar wird dadurch in den <b>»in limbo«-Status</b> versetzt.<br />Signatur: <b>${entry.book.stem}-${entry.exemplar.bnr}</b><br/>Autor: <b>${entry.book.author}</b></br>Titel:<b> ${entry.book.title}</b>`,
                                     "<i class='fa fa-trash'></i>&nbsp;&nbsp;Ausleihe aufheben", 'btn-danger',
                                     'Abbrechen', 'btn-secondary', function () {
                                         bib_api_call('/jwt/remove_ausleihe', {stem: entry.book.stem, bnr: entry.exemplar.bnr}, function(data) {

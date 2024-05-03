@@ -150,6 +150,7 @@
                 return;
             }
             bib_api_call('/jwt/verify_scanned_barcode', parts, function (data) {
+                scan_widget.handle_error(data);
                 if (data.success) {
                     append_barcode(parts);
                 } else {

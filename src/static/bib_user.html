@@ -57,6 +57,7 @@
     var lehrmittelverein_state_cache = #{@@lehrmittelverein_state_cache.to_json};
     var klassenleiter = #{@@klassenleiter.to_json};
     var shorthands = #{@@shorthands.to_json};
+    var barcode_widget = null;
 
     function row_clicked(stem) {
         window.location = `/bib_book/${stem}`;
@@ -79,6 +80,7 @@
         if (parts.checksum) data.checksum = parts.checksum;
         console.log(data);
         bib_api_call('/jwt/verify_scanned_barcode', parts, function (data2) {
+            barcode_widget.handle_error(data2);
             if (data2.success) {
                 bib_api_call('/jwt/checkout_exemplar_for_user', data, function (data) {
                     console.log(data);
@@ -233,7 +235,7 @@
         });
         $('#bu_checkout').click(function(e) {
             $('#bu_checkout').prop('disabled', true);
-            new BarcodeWidget({
+            barcode_widget = new BarcodeWidget({
                 element: $('#barcode_widget'),
                 on_scan: on_scan
             });

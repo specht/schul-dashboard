@@ -12,6 +12,7 @@ Neo4jBolt.bolt_host = 'neo4j'
 Neo4jBolt.bolt_port = 7687
 
 SRSLY = ARGV.include?('--srsly')
+UPDATE_INFO = ARGV.include?('--update-info')
 
 unless SRSLY
     puts "Not doing anything, specify --srsly to actually import data."
@@ -69,13 +70,14 @@ sheet.each do |row|
     lehrer = [row['Koll 1'], row['Koll 2']].join('/').split('/').reject { |x| (x || '').strip.empty? }.map { |x| shorthands[x.strip] }.reject { |x| x.nil? }
     cats = (row['Kategorie'] || '').split('/').map { |x| x.strip }.reject { |x| x.empty? }
     nr = (row['Nr'] || '').to_s.strip.gsub(/\s/, '').strip
-    jahrgang = (row['Jahrgang'] || '').strip.downcase
+    jahrgang = (row['Jg'] || '')
     min_klasse = 5
     max_klasse = 9
-    if jahrgang.include?('nur')
-        min_klasse = jahrgang.gsub('nur', '').strip.to_i
-        max_klasse = min_klasse
+    if jahrgang.is_a?(Integer)
+        min_klasse = jahrgang
+        max_klasse = jahrgang
     elsif jahrgang.include?('-')
+        jahrgang = jahrgang.strip.downcase
         min_klasse = jahrgang.split('-')[0].to_i
         max_klasse = jahrgang.split('-')[1].to_i
     end
@@ -84,9 +86,13 @@ sheet.each do |row|
         min_klasse = nil
         max_klasse = nil
     end
+    capacity = row['TN']
     STDERR.puts "E-Mail: #{email}"
     STDERR.puts "Titel: [#{nr}] #{title} (#{cats.join(', ')}) (Klassen #{min_klasse} bis #{max_klasse})"
     STDERR.puts "Lehrer: #{lehrer.join(', ')}"
+    if capacity
+        STDERR.puts "Kapazität: #{capacity}"
+    end
     STDERR.puts '-' * 40
     data = {
         :title => title,
@@ -95,21 +101,40 @@ sheet.each do |row|
         :min_klasse => min_klasse,
         :max_klasse => max_klasse,
     }
-    neo4j_query(<<~END_OF_QUERY, {:nr => data[:nr], :data => data})
-        MERGE (p:Projekt {nr: $nr})
-        SET p = $data;
-    END_OF_QUERY
-    lehrer.each do |email|
+    if SRSLY
+        neo4j_query(<<~END_OF_QUERY, {:nr => data[:nr], :data => data})
+            MERGE (p:Projekt {nr: $nr})
+            SET p = $data;
+        END_OF_QUERY
+        lehrer.each do |email|
+            neo4j_query(<<~END_OF_QUERY, {:nr => data[:nr], :email => email})
+                MATCH (p:Projekt {nr: $nr})
+                MATCH (u:User {email: $email})
+                CREATE (p)-[:SUPERVISED_BY]->(u);
+            END_OF_QUERY
+        end
         neo4j_query(<<~END_OF_QUERY, {:nr => data[:nr], :email => email})
             MATCH (p:Projekt {nr: $nr})
             MATCH (u:User {email: $email})
-            CREATE (p)-[:SUPERVISED_BY]->(u);
+            CREATE (p)-[:ORGANIZED_BY]->(u);
         END_OF_QUERY
     end
-    neo4j_query(<<~END_OF_QUERY, {:nr => data[:nr], :email => email})
-        MATCH (p:Projekt {nr: $nr})
-        MATCH (u:User {email: $email})
-        CREATE (p)-[:ORGANIZED_BY]->(u);
-    END_OF_QUERY
+    if UPDATE_INFO
+        data = {
+            :nr => nr,
+            :min_klasse => min_klasse,
+            :max_klasse => max_klasse,
+        }
+        neo4j_query(<<~END_OF_QUERY, {:nr => data[:nr], :min_klasse => data[:min_klasse], :max_klasse => data[:max_klasse]})
+            MATCH (p:Projekt {nr: $nr})
+            SET p.min_klasse = $min_klasse, p.max_klasse = $max_klasse;
+        END_OF_QUERY
+        unless capacity.nil?
+            neo4j_query(<<~END_OF_QUERY, {:nr => data[:nr], :capacity => capacity})
+                MATCH (p:Projekt {nr: $nr})
+                SET p.capacity = $capacity;
+            END_OF_QUERY
+        end
+    end
 end
 

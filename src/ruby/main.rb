@@ -1949,7 +1949,7 @@ class Main < Sinatra::Base
                                 if teacher_logged_in?
                                     io.puts "<a class='dropdown-item nav-icon' href='/projekttage'><div class='icon'><i class='fa fa-rocket'></i></div><span class='label'>Projekttage</span></a>"
                                 elsif @session_user[:klasse] == '11'
-                                    # io.puts "<a class='dropdown-item nav-icon' href='/projekttage_orga'><div class='icon'><i class='fa fa-rocket'></i></div><span class='label'>Projekttage</span></a>"
+                                    io.puts "<a class='dropdown-item nav-icon' href='/projekttage_orga'><div class='icon'><i class='fa fa-rocket'></i></div><span class='label'>Projekttage</span></a>"
                                 elsif @session_user[:klasse].to_i < 10
                                     # io.puts "<a class='dropdown-item nav-icon' href='/projekttage_sus'><div class='icon'><i class='fa fa-rocket'></i></div><span class='label'>Projekttage</span></a>"
                                 end

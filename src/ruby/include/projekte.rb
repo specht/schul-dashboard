@@ -11,6 +11,7 @@ class Main < Sinatra::Base
                 :nr => p[:nr],
                 :title => p[:title],
                 :description => p[:description],
+                :exkursion_hint => p[:exkursion_hint],
                 :categories => p[:categories],
                 :min_klasse => p[:min_klasse],
                 :max_klasse => p[:max_klasse],
@@ -29,6 +30,7 @@ class Main < Sinatra::Base
                 :nr => p[:nr],
                 :title => p[:title],
                 :description => p[:description],
+                :exkursion_hint => p[:exkursion_hint],
                 :categories => p[:categories],
                 :min_klasse => p[:min_klasse],
                 :max_klasse => p[:max_klasse],
@@ -77,11 +79,12 @@ class Main < Sinatra::Base
 
     post '/api/update_project' do
         require_user!
-        data = parse_request_data(:required_keys => [:nr, :title, :description])
-        projekt = neo4j_query_expect_one(<<~END_OF_QUERY, {:nr => data[:nr], :email => @session_user[:email], :title => data[:title], :description => data[:description]})['p']
+        data = parse_request_data(:required_keys => [:nr, :title, :description, :exkursion_hint])
+        projekt = neo4j_query_expect_one(<<~END_OF_QUERY, {:nr => data[:nr], :email => @session_user[:email], :title => data[:title], :description => data[:description], :exkursion_hint => data[:exkursion_hint]})['p']
             MATCH (p:Projekt {nr: $nr})-[:ORGANIZED_BY]->(u:User {email: $email})
             SET p.title = $title
             SET p.description = $description
+            SET p.exkursion_hint = $exkursion_hint
             RETURN p;
         END_OF_QUERY
     end

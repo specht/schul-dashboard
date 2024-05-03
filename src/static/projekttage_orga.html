@@ -41,7 +41,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 col = $(`<div class='col-md-12'>`).appendTo(row);
                 form_group = $(`<div class='form-group'>`).appendTo(col);
                 form_group.append($(`<label>`).text('Kurze Beschreibung'));
-                let ti_description = $(`<textarea style='height: 100px;' placeholder='Bitte gib eine kurze Beschreibung deines Projektes ein' class='form-control' readonly>`).val(projekt.description);
+                let ti_description = $(`<textarea style='height: 100px;' placeholder='Bitte gib eine kurze Beschreibung deines Projektes ein. Dies ist der Werbetext, der den Schülerinnen und Schülern der 5. bis 9. Klassen später für dein Projekt angezeigt wird.' class='form-control' readonly>`).val(projekt.description);
                 form_group.append(ti_description);
                 row = $(`<div class='row'>`).appendTo($('.projekte-container'));
                 col = $(`<div class='col-md-6'>`).appendTo(row);
@@ -54,21 +54,29 @@ document.addEventListener('DOMContentLoaded', function() {
                 form_group.append($(`<input type='text' class='form-control' readonly>`).val(projekt.supervised_by.map(function(x) {return display_name_for_email[x] ?? x;} ).join(', ')));
                 row = $(`<div class='row'>`).appendTo($('.projekte-container'));
                 col = $(`<div class='col-md-12'>`).appendTo(row);
+                form_group = $(`<div class='form-group'>`).appendTo(col);
+                form_group.append($(`<label>`).text('Geplante Exkursionen'));
+                let ti_exkursion_hint = $(`<textarea style='height: 100px;' placeholder='Bitte schreib hier rein, welche Exkursionen ihr plant mit Tag, Uhrzeit, Ziel. Diese Information ist für Lehrkräfte sichtbar, aber nicht für eure Teilnehmerinnen und Teilnehmer.' class='form-control' readonly>`).val(projekt.exkursion_hint);
+                form_group.append(ti_exkursion_hint);
+                row = $(`<div class='row'>`).appendTo($('.projekte-container'));
+                col = $(`<div class='col-md-12'>`).appendTo(row);
                 let bu_edit = $(`<button class='btn btn-success pull-right ml-2'>`).html(`<i class='fa fa-edit'></i>&nbsp;&nbsp;Bearbeiten`).appendTo(col);
                 let bu_save = $(`<button class='btn btn-success pull-right ml-2'>`).html(`<i class='fa fa-check'></i>&nbsp;&nbsp;Änderungen speichern`).hide().appendTo(col);
                 let bu_discard = $(`<button class='btn btn-outline-secondary pull-right ml-2'>`).html(`<i class='fa fa-times'></i>&nbsp;&nbsp;Änderungen verwerfen`).hide().appendTo(col);
                 bu_edit.on('click', function(e) {
                     ti_title.prop('readonly', false).data('old_value', ti_title.val());
                     ti_description.prop('readonly', false).data('old_value', ti_description.val()).focus();
+                    ti_exkursion_hint.prop('readonly', false).data('old_value', ti_exkursion_hint.val());
                     bu_edit.hide();
                     bu_save.show();
                     bu_discard.show();
                 });
                 bu_save.on('click', function(e) {
-                    api_call('/api/update_project', {nr: projekt.nr, title: ti_title.val().trim(), description: ti_description.val().trim()}, function(data) {
+                    api_call('/api/update_project', {nr: projekt.nr, title: ti_title.val().trim(), description: ti_description.val().trim(), exkursion_hint: ti_exkursion_hint.val().trim()}, function(data) {
                         if (data.success) {
                             ti_title.prop('readonly', true);
                             ti_description.prop('readonly', true);
+                            ti_exkursion_hint.prop('readonly', true);
                             bu_edit.show();
                             bu_save.hide();
                             bu_discard.hide();
@@ -78,6 +86,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 bu_discard.on('click', function(e) {
                     ti_title.prop('readonly', true).val(ti_title.data('old_value'));
                     ti_description.prop('readonly', true).val(ti_description.data('old_value'));
+                    ti_exkursion_hint.prop('readonly', true).val(ti_exkursion_hint.data('old_value'));
                     bu_edit.show();
                     bu_save.hide();
                     bu_discard.hide();

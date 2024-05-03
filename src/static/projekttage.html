@@ -32,7 +32,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 console.log(projekt);
                 let row = $(`<tr>`);
                 row.append($(`<td>`).text(projekt.nr));
-                row.append($(`<td style='white-space: wrap;'>`).text(projekt.title));
+                row.append($(`<td style='white-space: wrap; font-weight: bold;'>`).text(projekt.title));
                 row.append($(`<td style='white-space: wrap;'>`).text(projekt.categories.join(', ')));
                     // 
                 row.append($(`<td>`).text(projekt.klassen_label));
@@ -41,7 +41,11 @@ document.addEventListener('DOMContentLoaded', function() {
                 $('.projekte-here').append(row);
                 row = $(`<tr>`);
                 row.append($(`<td style='border-top: none;'>`));
-                row.append($(`<td colspan='5' style='border-top: none; white-space: wrap; ${(projekt.description ?? '').trim().length === 0 ? 'opacity: 0.5;' : ''}'>`).text(projekt.description ?? '(keine Beschreibung)'));
+                row.append($(`<td colspan='6' style='border-top: none; white-space: wrap; ${(projekt.description ?? '').trim().length === 0 ? 'opacity: 0.5;' : ''}'>`).text("Beschreibung: " + (projekt.description ?? '(keine Beschreibung)')));
+                $('.projekte-here').append(row);
+                row = $(`<tr>`);
+                row.append($(`<td style='border-top: none;'>`));
+                row.append($(`<td colspan='6' style='border-top: none; white-space: wrap; ${(projekt.exkursion_hint ?? '').trim().length === 0 ? 'opacity: 0.5;' : ''}'>`).text("Geplante Exkursionen: " + (projekt.exkursion_hint ?? '(keine Informationen zu geplanten Exkursionen)')));
                 $('.projekte-here').append(row);
             }
         }

@@ -28,7 +28,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 let form_group = $(`<div class='form-group'>`).appendTo(col);
                 form_group.append($(`<label>`).text('Nr.'));
                 form_group.append($(`<input type='text' class='form-control' readonly>`).val(projekt.nr));
-                col = $(`<div class='col-md-9'>`).appendTo(row);
+                col = $(`<div class='col-md-7'>`).appendTo(row);
                 form_group = $(`<div class='form-group'>`).appendTo(col);
                 form_group.append($(`<label>`).text('Titel'));
                 let ti_title = $(`<input type='text' placeholder='Bitte gib einen aussagekräftigen Titel für dein Projekt ein' class='form-control' readonly>`).val(projekt.title);
@@ -37,6 +37,10 @@ document.addEventListener('DOMContentLoaded', function() {
                 form_group = $(`<div class='form-group'>`).appendTo(col);
                 form_group.append($(`<label>`).text('Klassenstufe'));
                 form_group.append($(`<input type='text' class='form-control' readonly>`).val(projekt.klassen_label));
+                col = $(`<div class='col-md-2'>`).appendTo(row);
+                form_group = $(`<div class='form-group'>`).appendTo(col);
+                form_group.append($(`<label>`).text('Kapazität'));
+                form_group.append($(`<input type='text' class='form-control' readonly>`).val(`max. ${projekt.capacity}`));
                 row = $(`<div class='row'>`).appendTo($('.projekte-container'));
                 col = $(`<div class='col-md-12'>`).appendTo(row);
                 form_group = $(`<div class='form-group'>`).appendTo(col);

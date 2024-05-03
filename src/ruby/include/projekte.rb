@@ -15,6 +15,7 @@ class Main < Sinatra::Base
                 :categories => p[:categories],
                 :min_klasse => p[:min_klasse],
                 :max_klasse => p[:max_klasse],
+                :capacity => p[:capacity],
                 :organized_by => [],
                 :supervised_by => [],
             }
@@ -34,6 +35,7 @@ class Main < Sinatra::Base
                 :categories => p[:categories],
                 :min_klasse => p[:min_klasse],
                 :max_klasse => p[:max_klasse],
+                :capacity => p[:capacity],
                 :organized_by => [],
                 :supervised_by => [],
             }

@@ -4,20 +4,23 @@
         <div class='col-md-12'>
             <h2 style='margin-bottom: 30px;'>Projekttage #{Date.today.year}</h2>
             <div class='projekte-container'>
-                <table class='table table-xs narrow' style='width: unset; min-width: 100%;'>
-                <thead>
-                    <tr>
-                        <th>Nr.</th>
-                        <th>Titel</th>
-                        <th>Kategorie</th>
-                        <th>Klassenstufe</th>
-                        <th>Verantwortlich</th>
-                        <th>Lehrkräfte</th>
-                    </tr>
-                </thead>
-                <tbody class='projekte-here'>
-                </tbody>
-                </table>
+                <div style='max-width: 100%; overflow-x: auto;'>
+                    <table class='table table-xs narrow' style='width: unset; min-width: 100%;'>
+                    <thead>
+                        <tr>
+                            <th>Nr.</th>
+                            <th>Titel</th>
+                            <th>Kategorie</th>
+                            <th>Klassenstufe</th>
+                            <th>Kapazität</th>
+                            <th>Verantwortlich</th>
+                            <th>Lehrkräfte</th>
+                        </tr>
+                    </thead>
+                    <tbody class='projekte-here'>
+                    </tbody>
+                    </table>
+                </div>
             </div>
         </div>
     </div>
@@ -34,18 +37,18 @@ document.addEventListener('DOMContentLoaded', function() {
                 row.append($(`<td>`).text(projekt.nr));
                 row.append($(`<td style='white-space: wrap; font-weight: bold;'>`).text(projekt.title));
                 row.append($(`<td style='white-space: wrap;'>`).text(projekt.categories.join(', ')));
-                    // 
                 row.append($(`<td>`).text(projekt.klassen_label));
+                row.append($(`<td>`).text(projekt.capacity ?? '–'));
                 row.append($(`<td style='white-space: wrap;'>`).text(projekt.organized_by.map(function(x) { return display_name_for_email[x] ?? x; }).join(', ')));
                 row.append($(`<td style='white-space: wrap;'>`).text(projekt.supervised_by.map(function(x) { return display_name_for_email[x] ?? x; }).join(', ')));
                 $('.projekte-here').append(row);
                 row = $(`<tr>`);
                 row.append($(`<td style='border-top: none;'>`));
-                row.append($(`<td colspan='6' style='border-top: none; white-space: wrap; ${(projekt.description ?? '').trim().length === 0 ? 'opacity: 0.5;' : ''}'>`).text("Beschreibung: " + (projekt.description ?? '(keine Beschreibung)')));
+                row.append($(`<td colspan='6' style='border-top: none; white-space: wrap; ${(projekt.description ?? '').trim().length === 0 ? 'color: #ef4538;' : ''}'>`).text("Beschreibung: " + (projekt.description ?? '(keine Beschreibung)')));
                 $('.projekte-here').append(row);
                 row = $(`<tr>`);
                 row.append($(`<td style='border-top: none;'>`));
-                row.append($(`<td colspan='6' style='border-top: none; white-space: wrap; ${(projekt.exkursion_hint ?? '').trim().length === 0 ? 'opacity: 0.5;' : ''}'>`).text("Geplante Exkursionen: " + (projekt.exkursion_hint ?? '(keine Informationen zu geplanten Exkursionen)')));
+                row.append($(`<td colspan='6' style='border-top: none; white-space: wrap; ${(projekt.exkursion_hint ?? '').trim().length === 0 ? 'color: #ef4538;' : ''}'>`).text("Geplante Exkursionen: " + (projekt.exkursion_hint ?? '(keine Informationen zu geplanten Exkursionen)')));
                 $('.projekte-here').append(row);
             }
         }

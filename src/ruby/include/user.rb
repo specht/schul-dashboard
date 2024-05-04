@@ -693,6 +693,29 @@ class Main < Sinatra::Base
         return ''
     end
 
+    def print_projektwahl_countdown_panel()
+        return '' unless DEVELOPMENT
+        if teacher_logged_in? || @session_user[:klasse].to_i > 9
+            return ''
+        end
+        deadline = DEADLINE_PROJEKTWAHL
+        if Time.now.strftime('%Y-%m-%dT%H:%M:%S') <= deadline && (DateTime.parse(deadline) - DateTime.now).to_f < 7.0
+            return StringIO.open do |io|
+                io.puts "<div class='col-lg-12 col-md-4 col-sm-6'>"
+                io.puts "<div class='hint'>"
+                io.puts "<p><b>Wähle dein Projekt</b></p>"
+                io.puts "<hr />"
+                io.puts "<p>Die Möglichkeit zur Wahl eines Projektes für die Projekttage endet am Sonntag!</p>"
+                io.puts "<div id='projektwahl_countdown_here' style='display: none;' data-deadline='#{Time.parse(deadline).to_i}'>"
+                io.puts "</div>"
+                io.puts "</div>"
+                io.puts "</div>"
+                io.string
+            end
+        end
+        return ''
+    end
+
     # get '/api/get_timetable_pdf' do
     #     require_user!
     #     respond_raw_with_mimetype(get_timetable_pdf(@session_user[:klasse], @session_user[:color_scheme] || @@standard_color_scheme), 'application/pdf')

@@ -66,7 +66,7 @@ class Main < Sinatra::Base
     end
 
     post '/api/get_projekte' do
-        require_teacher!
+        require_user!
         respond(:projekte => get_projekte())
     end
 

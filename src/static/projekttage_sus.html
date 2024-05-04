@@ -1,0 +1,65 @@
+<div class='container'>
+    <div class='row'>
+        <div class='col-md-12'>
+            <h2 style='margin-bottom: 30px;'>Projekttage #{Date.today.year}</h2>
+        </div>
+    </div>
+    <div class='row projekte-here'>
+    </div>
+</div>
+
+<style>
+    .card {
+        background-color: #f8f9fa;
+        border: 1px solid #bebfc1;
+        border-radius: 8px;
+        padding: 20px;
+        margin-bottom: 20px;
+        height: 240px;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        position: relative;
+        display: block;
+    }
+    .polaroid {
+        /* position: absolute; */
+        /* top: 5px; */
+        /* right: 5px; */
+        display: block;
+        background-color: #ddd;
+        padding: 10px;
+        border: 10px solid #ffffff;
+        border-bottom: 50px solid #fff;
+        border-radius: 2px;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.2), 0 0 10px rgba(0, 0, 0, 0.2) inset;
+        transform: rotate(2deg);
+        width: 150px;
+        height: 180px;
+        float: right;
+    }
+</style>
+
+<script>
+var display_name_for_email = #{Hash[@@user_info.map { |email, info| [email, info[:teacher] ? info[:display_name_official] : info[:display_name]] }].to_json};
+var this_klasse = #{@session_user[:klassenstufe] || 'null'};
+document.addEventListener('DOMContentLoaded', function() {
+    api_call('/api/get_projekte', {}, function(data) {
+        if (data.success) {
+            for (let projekt of data.projekte) {
+                console.log(projekt);
+                if (projekt.min_klasse === null)
+                    continue;
+                let scaffold = $(`<div class='col-md-6'>`);
+                let photo = $(`<div class='polaroid'>`);
+                let card = $(`<div class='card'>`)
+                    .append(photo)
+                    .append($(`<h4>`).text(projekt.title))
+                    .append($(`<p>`).text(`${projekt.organized_by.map(function(x) { return display_name_for_email[x]; }).join(', ')}`))
+                    .append($(`<p>`).text(projekt.description));
+                // photo.css('transform', `rotate(${Math.random() * 10 - 5}deg)`);
+                scaffold.append(card);
+                $('.projekte-here').append(scaffold);
+            }
+        }
+    });
+});
+</script>

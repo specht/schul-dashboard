@@ -40,6 +40,7 @@ $VERBOSE = nil
 require './credentials.rb'
 require '/data/config.rb'
 require '/data/zeugnisse/config.rb'
+require '/data/projekte/config.rb'
 $VERBOSE = warn_level
 DASHBOARD_SERVICE = ENV['DASHBOARD_SERVICE']
 
@@ -1950,8 +1951,8 @@ class Main < Sinatra::Base
                                     io.puts "<a class='dropdown-item nav-icon' href='/projekttage'><div class='icon'><i class='fa fa-rocket'></i></div><span class='label'>Projekttage</span></a>"
                                 elsif @session_user[:klasse] == '11'
                                     io.puts "<a class='dropdown-item nav-icon' href='/projekttage_orga'><div class='icon'><i class='fa fa-rocket'></i></div><span class='label'>Projekttage</span></a>"
-                                elsif @session_user[:klasse].to_i < 10
-                                    # io.puts "<a class='dropdown-item nav-icon' href='/projekttage_sus'><div class='icon'><i class='fa fa-rocket'></i></div><span class='label'>Projekttage</span></a>"
+                                elsif @session_user[:klasse].to_i < 10 && DEVELOPMENT
+                                    io.puts "<a class='dropdown-item nav-icon' href='/projekttage_sus'><div class='icon'><i class='fa fa-rocket'></i></div><span class='label'>Projekttage</span></a>"
                                 end
                             end
                             # end

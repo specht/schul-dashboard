@@ -2737,3 +2737,25 @@ tr.palerow td {
     .xs-hide { display: block; }
     .xs-show { display: none; }
 }
+
+.polaroid {
+    display: block;
+    background-color: #ddd;
+    padding: 10px;
+    border: 10px solid #ffffff;
+    border-bottom: 50px solid #fff;
+    border-radius: 2px;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.2), 0 0 10px rgba(0, 0, 0, 0.2) inset;
+    transform: rotate(2deg);
+    width: 150px;
+    height: 180px;
+    float: right;
+    background-size: cover;
+}
+
+.polaroid.big {
+    width: 100%;
+    padding-bottom: 90%;
+    transform: none;
+    float: unset;
+}

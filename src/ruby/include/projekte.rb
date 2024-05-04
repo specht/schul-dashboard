@@ -11,6 +11,7 @@ class Main < Sinatra::Base
                 :nr => p[:nr],
                 :title => p[:title],
                 :description => p[:description],
+                :photo => p[:photo],
                 :exkursion_hint => p[:exkursion_hint],
                 :categories => p[:categories],
                 :min_klasse => p[:min_klasse],
@@ -31,6 +32,7 @@ class Main < Sinatra::Base
                 :nr => p[:nr],
                 :title => p[:title],
                 :description => p[:description],
+                :photo => p[:photo],
                 :exkursion_hint => p[:exkursion_hint],
                 :categories => p[:categories],
                 :min_klasse => p[:min_klasse],
@@ -87,6 +89,26 @@ class Main < Sinatra::Base
             SET p.title = $title
             SET p.description = $description
             SET p.exkursion_hint = $exkursion_hint
+            RETURN p;
+        END_OF_QUERY
+    end
+
+    post '/api/set_photo_for_project' do
+        require_user!
+        data = parse_request_data(:required_keys => [:nr, :photo])
+        projekt = neo4j_query_expect_one(<<~END_OF_QUERY, {:nr => data[:nr], :email => @session_user[:email], :photo => data[:photo]})
+            MATCH (p:Projekt {nr: $nr})-[:ORGANIZED_BY]->(u:User {email: $email})
+            SET p.photo = $photo
+            RETURN p;
+        END_OF_QUERY
+    end
+
+    post '/api/delete_photo_for_project' do
+        require_user!
+        data = parse_request_data(:required_keys => [:nr])
+        projekt = neo4j_query_expect_one(<<~END_OF_QUERY, {:nr => data[:nr], :email => @session_user[:email]})
+            MATCH (p:Projekt {nr: $nr})-[:ORGANIZED_BY]->(u:User {email: $email})
+            REMOVE p.photo
             RETURN p;
         END_OF_QUERY
     end

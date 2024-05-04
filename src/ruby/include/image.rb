@@ -1,3 +1,5 @@
+require 'digest'
+
 class Main < Sinatra::Base
     post '/api/upload_image' do
         require_user_who_can_upload_files!
@@ -15,8 +17,33 @@ class Main < Sinatra::Base
         end
         trigger_update_images()
         respond(:uploaded => 'yeah')
-    end    
-    
+    end
+
+    post '/api/upload_sus_image' do
+        require_user!
+        entry = params['file']
+        filename = entry['filename']
+        blob = entry['tempfile'].read
+        sha1 = Digest::SHA1.hexdigest(blob)[0, 16]
+        path = "/raw/uploads/images/sus-#{sha1}.#{filename.split('.').last}"
+        File.open(path, 'w') do |f|
+            f.write(blob)
+        end
+        trigger_update_images()
+        display_name = @session_user[:display_name]
+        deliver_mail("New photo was uploaded by #{display_name} as sus-#{sha1}") do
+            to WEBSITE_MAINTAINER_EMAIL
+            bcc SMTP_FROM
+            from SMTP_FROM
+
+            subject "SuS Image Upload from #{display_name}"
+
+            filename = "sus-#{sha1}.#{filename.split('.').last}"
+            add_file :content_type => entry['type'], :content => blob, :filename => filename
+        end
+        respond(:uploaded => 'yeah', :stored_path => "sus-#{sha1}", :stored_path_full => "sus-#{sha1}.#{filename.split('.').last}")
+    end
+
     post '/api/delete_image' do
         require_user_who_can_upload_files!
         data = parse_request_data(:required_keys => [:slug])
@@ -37,8 +64,8 @@ class Main < Sinatra::Base
             end
         end
         respond(:deleted => 'yeah')
-    end    
-    
+    end
+
     post '/api/get_all_images' do
         require_user_who_can_upload_files!
         images = []
@@ -51,5 +78,5 @@ class Main < Sinatra::Base
         end
         images.sort! { |a, b| b[:timestamp] <=> a[:timestamp] }
         respond(:images => images)
-    end    
+    end
 end

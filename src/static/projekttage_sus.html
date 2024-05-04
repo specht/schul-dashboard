@@ -20,22 +20,6 @@
         position: relative;
         display: block;
     }
-    .polaroid {
-        /* position: absolute; */
-        /* top: 5px; */
-        /* right: 5px; */
-        display: block;
-        background-color: #ddd;
-        padding: 10px;
-        border: 10px solid #ffffff;
-        border-bottom: 50px solid #fff;
-        border-radius: 2px;
-        box-shadow: 0 0 10px rgba(0, 0, 0, 0.2), 0 0 10px rgba(0, 0, 0, 0.2) inset;
-        transform: rotate(2deg);
-        width: 150px;
-        height: 180px;
-        float: right;
-    }
 </style>
 
 <script>
@@ -50,6 +34,8 @@ document.addEventListener('DOMContentLoaded', function() {
                     continue;
                 let scaffold = $(`<div class='col-md-6'>`);
                 let photo = $(`<div class='polaroid'>`);
+                if (projekt.photo)
+                    photo.css('background-image', `url(/gen/i/${projekt.photo}-256.jpg)`);
                 let card = $(`<div class='card'>`)
                     .append(photo)
                     .append($(`<h4>`).text(projekt.title))

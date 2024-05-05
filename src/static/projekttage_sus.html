@@ -16,10 +16,11 @@
         border-radius: 8px;
         padding: 20px;
         margin-bottom: 20px;
-        height: 240px;
+        height: 280px;
         box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
         position: relative;
         display: block;
+        overflow: hidden;
     }
 </style>
 
@@ -33,15 +34,18 @@ document.addEventListener('DOMContentLoaded', function() {
                 console.log(projekt);
                 if (projekt.min_klasse === null)
                     continue;
-                let scaffold = $(`<div class='col-md-6'>`);
-                let photo = $(`<div class='polaroid'>`);
+                let scaffold = $(`<div class='col-md-12'>`);
+                let photo = $(`<div class='polaroid' style='width: 200px; height: 240px; margin-left: 10px;'>`);
                 if (projekt.photo)
-                    photo.css('background-image', `url(/gen/i/${projekt.photo}-256.jpg)`);
-                let card = $(`<div class='card'>`)
-                    .append(photo)
-                    .append($(`<h4>`).text(projekt.title))
-                    .append($(`<p>`).text(`${projekt.organized_by.map(function(x) { return display_name_for_email[x]; }).join(', ')}`))
-                    .append($(`<p>`).text(projekt.description));
+                    photo.css('background-image', `url(/gen/i/${projekt.photo}-512.jpg)`);
+                let card = $(`<div class='card'>`);
+                card.append(photo);
+                card.append($(`<h4>`).text(projekt.title));
+                let div = $(`<div style='position: relative; top: -5px;'>`).appendTo(card);
+                for (let cat of projekt.categories)
+                    div.append($(`<span class='badge badge-success' style='margin-right: 5px;'>`).text(cat));
+                card.append($(`<p>`).text(`${projekt.organized_by.map(function(x) { return display_name_for_email[x]; }).join(', ')}`));
+                card.append($(`<p style='font-style: italic;'>`).text(projekt.description ?? '(noch keine Beschreibung vorhanden)'));
                 // photo.css('transform', `rotate(${Math.random() * 10 - 5}deg)`);
                 scaffold.append(card);
                 $('.projekte-here').append(scaffold);

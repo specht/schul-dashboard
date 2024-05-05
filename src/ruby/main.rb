@@ -1948,10 +1948,10 @@ class Main < Sinatra::Base
                             # end
                             if user_logged_in?
                                 if teacher_logged_in?
-                                    io.puts "<a class='dropdown-item nav-icon' href='/projekttage'><div class='icon'><i class='fa fa-rocket'></i></div><span class='label'>Projekttage</span></a>"
+                                    io.puts "<a class='dropdown-item nav-icon' href='/projekttage_sus'><div class='icon'><i class='fa fa-rocket'></i></div><span class='label'>Projekttage</span></a>"
                                 elsif @session_user[:klasse] == '11'
                                     io.puts "<a class='dropdown-item nav-icon' href='/projekttage_orga'><div class='icon'><i class='fa fa-rocket'></i></div><span class='label'>Projekttage</span></a>"
-                                elsif @session_user[:klasse].to_i < 10 && DEVELOPMENT
+                                elsif user_eligible_for_projekt_katalog? && DEVELOPMENT
                                     io.puts "<a class='dropdown-item nav-icon' href='/projekttage_sus'><div class='icon'><i class='fa fa-rocket'></i></div><span class='label'>Projekttage</span></a>"
                                 end
                             end

@@ -6,6 +6,7 @@ class Main < Sinatra::Base
     end
 
     def user_eligible_for_projektwahl?
+        return false unless DEVELOPMENT
         return false if @session_user[:teacher]
         return @session_user[:klassenstufe] >= 5 && @session_user[:klassenstufe] <= 9
     end

@@ -3,6 +3,10 @@
     <div class='row'>
         <div class='col-md-12'>
             <h2 style='margin-bottom: 30px;'>Projekttage #{Date.today.year}</h2>
+            <div class="alert" style="background-color: rgba(255, 255, 255, 0.8); #{user_eligible_for_projektwahl? ? '' : 'display: none;'}">
+                Wähle mindestens drei Projekte, die dich interessieren. Du kannst sie später noch ändern. Falls du weniger als drei Projekte wählst,
+                werden wir weitere zufällige Projekte für dich wählen, damit es insgesamt mindestens drei Projekte sind, mit denen du in die Auslosung gehst.
+            </div>
         </div>
     </div>
     <div class='row projekte-here'>
@@ -16,15 +20,39 @@
         border-radius: 8px;
         padding: 20px;
         margin-bottom: 20px;
-        height: 280px;
+        min-height: 280px;
         box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
         position: relative;
         display: block;
         overflow: hidden;
     }
+    .emojis {
+        margin: 0.5em 0;
+    }
+    .emojis img {
+        margin-right: 5px;
+        border: 1px dashed rgba(0, 0, 0, 0.5);
+        padding: 5px;
+        border-radius: 8px;
+        width: 40px;
+        opacity: 0.5;
+        cursor: pointer;
+    }
+    .emojis img.active {
+        opacity: 1;
+        border: 1px solid rgba(0, 0, 0, 0.5);
+        background-color: #fff;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
+    }
 </style>
 
 <script>
+var choice_level_label = [
+    'Ohne mich!',
+    'Ich könnte mir vorstellen, an diesem Projekt teilzunehmen.',
+    'Ich würde mich freuen, an diesem Projekt teilzunehmen.',
+    'Ich würde wirklich sehr gern an diesem Projekt teilnehmen.',
+];
 var display_name_for_email = #{Hash[@@user_info.map { |email, info| [email, info[:teacher] ? info[:display_name_official] : info[:display_name]] }].to_json};
 var this_klasse = #{@session_user[:klassenstufe] || 'null'};
 document.addEventListener('DOMContentLoaded', function() {
@@ -46,6 +74,39 @@ document.addEventListener('DOMContentLoaded', function() {
                     div.append($(`<span class='badge badge-success' style='margin-right: 5px;'>`).text(cat));
                 card.append($(`<p style='font-style: italic;'>`).text(`${projekt.organized_by.map(function(x) { return display_name_for_email[x]; }).join(', ')}`));
                 card.append($(`<p>`).text(projekt.description ?? '(noch keine Beschreibung vorhanden)'));
+                if ('#{user_eligible_for_projektwahl?}' === 'true') {
+                    $(`<hr style='border-top: 1px dashed rgba(0,0,0,0.3);'>`).appendTo(card);
+                    $(`<p>`).text(`Teile uns hier mit, wie sehr du dich für dieses Projekt interessierst:`).appendTo(card);
+                    div = $(`<div class='emojis'>`).appendTo(card);
+                    let codepoints = [0x1fae5, 0x1f914, 0x1f60d, 0x1f525];
+                    for (let i = 0; i < codepoints.length; i++) {
+                        let codepoint = codepoints[i];
+                        let img = $(`<img src='/images/emoji_u${codepoint.toString(16)}.png'>`).data('index', i);
+                        if (i === 0) img.addClass('active');
+                        div.append(img);
+                        img.on('click', function() {
+                            let index = $(this).data('index');
+                            $(this).parent().find('img').removeClass('active');
+                            $(this).addClass('active');
+                            $(this).closest('.card').find('._verdict').text(`»${choice_level_label[index]}«`);
+                        });
+                    }
+                    let verdict = $(`<p class='_verdict' style='font-style: italic;'>`).text(`»${choice_level_label[0]}«`);
+                    verdict.appendTo(card);
+                }
+                if ('#{teacher_logged_in?}' === 'true') {
+                    $(`<hr style='border-top: 1px dashed rgba(0,0,0,0.3);'>`).appendTo(card);
+                    if (projekt.exkursion_hint) {
+                        card.append($(`<p style='font-style: italic;'>`).text(projekt.exkursion_hint).prepend($(`<strong>Exkursionen: </strong>`)));
+                    } else {
+                        card.append($(`<p style='font-style: italic;' class='text-muted'>`).text(`Exkursionen: keine Informationen vorhanden`));
+                    }
+                    if (projekt.extra_hint) {
+                        card.append($(`<p style='font-style: italic;'>`).text(projekt.extra_hint).prepend($(`<strong>Tablets: </strong>`)));
+                    } else {
+                        card.append($(`<p style='font-style: italic;' class='text-muted'>`).text(`Tablets: keine Informationen vorhanden`));
+                    }
+                }
                 // photo.css('transform', `rotate(${Math.random() * 10 - 5}deg)`);
                 scaffold.append(card);
                 $('.projekte-here').append(scaffold);

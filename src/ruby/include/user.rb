@@ -695,9 +695,7 @@ class Main < Sinatra::Base
 
     def print_projektwahl_countdown_panel()
         return '' unless DEVELOPMENT
-        if teacher_logged_in? || @session_user[:klasse].to_i > 9
-            return ''
-        end
+        return '' unless user_eligible_for_projektwahl?
         deadline = DEADLINE_PROJEKTWAHL
         if Time.now.strftime('%Y-%m-%dT%H:%M:%S') <= deadline && (DateTime.parse(deadline) - DateTime.now).to_f < 7.0
             return StringIO.open do |io|

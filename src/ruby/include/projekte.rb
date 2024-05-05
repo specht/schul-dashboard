@@ -1,5 +1,15 @@
 class Main < Sinatra::Base
 
+    def user_eligible_for_projekt_katalog?
+        return true if @session_user[:teacher]
+        return @session_user[:klassenstufe] >= 5
+    end
+
+    def user_eligible_for_projektwahl?
+        return false if @session_user[:teacher]
+        return @session_user[:klassenstufe] >= 5 && @session_user[:klassenstufe] <= 9
+    end
+
     def get_projekte
         projekte = {}
         neo4j_query(<<~END_OF_QUERY).each do |row|
@@ -13,6 +23,7 @@ class Main < Sinatra::Base
                 :description => p[:description],
                 :photo => p[:photo],
                 :exkursion_hint => p[:exkursion_hint],
+                :extra_hint => p[:extra_hint],
                 :categories => p[:categories],
                 :min_klasse => p[:min_klasse],
                 :max_klasse => p[:max_klasse],
@@ -34,6 +45,7 @@ class Main < Sinatra::Base
                 :description => p[:description],
                 :photo => p[:photo],
                 :exkursion_hint => p[:exkursion_hint],
+                :extra_hint => p[:extra_hint],
                 :categories => p[:categories],
                 :min_klasse => p[:min_klasse],
                 :max_klasse => p[:max_klasse],
@@ -83,12 +95,13 @@ class Main < Sinatra::Base
 
     post '/api/update_project' do
         require_user!
-        data = parse_request_data(:required_keys => [:nr, :title, :description, :exkursion_hint])
-        projekt = neo4j_query_expect_one(<<~END_OF_QUERY, {:nr => data[:nr], :email => @session_user[:email], :title => data[:title], :description => data[:description], :exkursion_hint => data[:exkursion_hint]})['p']
+        data = parse_request_data(:required_keys => [:nr, :title, :description, :exkursion_hint, :extra_hint])
+        projekt = neo4j_query_expect_one(<<~END_OF_QUERY, {:nr => data[:nr], :email => @session_user[:email], :title => data[:title], :description => data[:description], :exkursion_hint => data[:exkursion_hint], :extra_hint => data[:extra_hint]})['p']
             MATCH (p:Projekt {nr: $nr})-[:ORGANIZED_BY]->(u:User {email: $email})
             SET p.title = $title
             SET p.description = $description
             SET p.exkursion_hint = $exkursion_hint
+            SET p.extra_hint = $extra_hint
             RETURN p;
         END_OF_QUERY
     end

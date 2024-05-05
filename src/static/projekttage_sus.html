@@ -44,8 +44,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 let div = $(`<div style='position: relative; top: -5px;'>`).appendTo(card);
                 for (let cat of projekt.categories)
                     div.append($(`<span class='badge badge-success' style='margin-right: 5px;'>`).text(cat));
-                card.append($(`<p>`).text(`${projekt.organized_by.map(function(x) { return display_name_for_email[x]; }).join(', ')}`));
-                card.append($(`<p style='font-style: italic;'>`).text(projekt.description ?? '(noch keine Beschreibung vorhanden)'));
+                card.append($(`<p style='font-style: italic;'>`).text(`${projekt.organized_by.map(function(x) { return display_name_for_email[x]; }).join(', ')}`));
+                card.append($(`<p>`).text(projekt.description ?? '(noch keine Beschreibung vorhanden)'));
                 // photo.css('transform', `rotate(${Math.random() * 10 - 5}deg)`);
                 scaffold.append(card);
                 $('.projekte-here').append(scaffold);

@@ -10,6 +10,7 @@ IBAN = 'DE91860100900603917908'
 BIC = 'PBNKDEFFXXX'
 BANK = 'Postbank - Ndl. der Deutsche Bank AG'
 NEXT_SCHULJAHR = '2024/25'
+ZAHLUNGSFRIST = '01.07.2024'
 
 BEITRAG_AS_1 = 60
 BEITRAG_AS_2 = 50
@@ -98,6 +99,7 @@ class Script
             doc.gsub!('#DATUM.', Date.today.strftime('%d.%m.%Y'))
             doc.gsub!('#MV_DATUM.', '6. Mai 2024')
             doc.gsub!('#NEXT_SCHULJAHR.', '2024/25')
+            doc.gsub!('#ZAHLUNGSFRIST.', ZAHLUNGSFRIST)
             doc.gsub!('#EMPFAENGER.', EMPFAENGER)
             doc.gsub!('#IBAN.', IBAN.chars.each_slice(4).to_a.map { |x| x.join('') }.join(' '))
             doc.gsub!('#BIC.', BIC)

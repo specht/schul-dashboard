@@ -4,8 +4,12 @@
         <div class='col-md-12'>
             <h2 style='margin-bottom: 30px;'>Projekttage #{Date.today.year}</h2>
             <div class="alert" style="background-color: rgba(255, 255, 255, 0.8); #{user_eligible_for_projektwahl? ? '' : 'display: none;'}">
-                Wähle mindestens drei Projekte, die dich interessieren. Du kannst sie später noch ändern. Falls du weniger als drei Projekte wählst,
-                werden wir weitere zufällige Projekte für dich wählen, damit es insgesamt mindestens drei Projekte sind, mit denen du in die Auslosung gehst.
+                Wähle mindestens drei Projekte, die dich interessieren.
+                Du kannst sie später noch ändern. Falls du weniger als
+                drei Projekte wählst, werden wir weitere zufällige Projekte
+                für dich wählen, damit es insgesamt mindestens drei Projekte
+                sind, mit denen du in die Auslosung gehst. Du kannst dich
+                natürlich auch für mehr als drei Projekte anmelden.
             </div>
         </div>
     </div>
@@ -48,7 +52,7 @@
 
 <script>
 var choice_level_label = [
-    'Ohne mich!',
+    'Ich habe kein Interesse an diesem Projekt.',
     'Ich könnte mir vorstellen, an diesem Projekt teilzunehmen.',
     'Ich würde mich freuen, an diesem Projekt teilzunehmen.',
     'Ich würde wirklich sehr gern an diesem Projekt teilnehmen.',

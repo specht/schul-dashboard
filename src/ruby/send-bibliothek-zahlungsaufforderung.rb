@@ -78,6 +78,8 @@ class Script
                 subject += DIGITS[subject_i % DIGITS.length]
                 subject_i /= DIGITS.length
             end
+            subject += ' '
+            subject += email.split('@')[0].split('.').join(' ').upcase
             sesb = sesb_sus.include?(email)
             klassenstufe = record[:klasse].to_i
             klassenstufe_next = klassenstufe + 1
@@ -144,11 +146,16 @@ class Script
                 name: EMPFAENGER,
                 currency: 'EUR',
                 amount: amount,
-                bto_info: "Beitrag #{NEXT_SCHULJAHR} #{record[:display_name]}",
+                bto_info: subject,
+                reference: subject.split(' ').first,
             )
             File.open(File.join(out_path_dir, formular_sha1, 'word', 'media', 'image2.png'), 'w') do |f|
                 f.write code.to_png
             end
+
+            command = "convert \"#{File.join(out_path_dir, formular_sha1, 'word', 'media', 'image2.png')}\" -trim +repage \"#{File.join(out_path_dir, formular_sha1, 'word', 'media', 'image3.png')}\""
+            system(command)
+            FileUtils.mv(File.join(out_path_dir, formular_sha1, 'word', 'media', 'image3.png'), File.join(out_path_dir, formular_sha1, 'word', 'media', 'image2.png'))
 
             command = "cd \"#{File.join(out_path_dir, formular_sha1)}\"; zip -r \"#{out_path_docx}\" ."
             system(command)

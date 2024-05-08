@@ -5,7 +5,7 @@ require 'digest/sha2'
 require 'girocode'
 require 'yaml'
 
-EMPFAENGER = 'Lehr- und Lernmittelhilfe des Gymnasiums Steglitz e. V.'
+EMPFAENGER = 'Lehr- und Lernmittelhilfe des Gymnasium Steglitz e. V.'
 IBAN = 'DE91860100900603917908'
 BIC = 'PBNKDEFFXXX'
 BANK = 'Postbank - Ndl. der Deutsche Bank AG'
@@ -61,7 +61,7 @@ class Script
         end.each do |record|
             email = record[:email]
             # next if (@@user_info[email][:siblings_next_year] || []).empty?
-            next unless email == 'carolina.hoffmann@mail.gymnasiumsteglitz.de'
+            # next unless email == 'carolina.hoffmann@mail.gymnasiumsteglitz.de'
             subject_i = Digest::SHA1.hexdigest("BIB/#{NEXT_SCHULJAHR}/#{email}").to_i(16)
             subject = ''
             2.times do
@@ -122,15 +122,15 @@ class Script
             satz = StringIO.open do |io|
                 if sibling_index_next_year == 0
                     amount = sesb ? BEITRAG_SESB_1 : BEITRAG_AS_1
-                    io.puts "Da uns keine weiteren, älteren Geschwisterkinder bekannt sind, beträgt der Beitrag für Ihr Kind im nächsten Schuljahr #{sprintf('%.2f', amount).sub('.', ',')} €."
+                    io.puts "Da uns keine weiteren, älteren Geschwisterkinder bekannt sind, beträgt der Beitrag für Ihr Kind im nächsten Schuljahr #{sprintf('%d', amount).sub('.', ',')} €."
                 elsif sibling_index_next_year == 1
                     amount = sesb ? BEITRAG_SESB_2 : BEITRAG_AS_2
                     older_siblings = join_with_sep(@@user_info[email][:older_siblings].reverse.map { |x| @@user_info[x][:display_first_name] }, ', ', ' und ')
-                    io.puts "Da uns ein weiteres, älteres Geschwisterkind bekannt ist (#{older_siblings}), beträgt der Beitrag für Ihr Kind im nächsten Schuljahr #{sprintf('%.2f', amount).sub('.', ',')} €."
+                    io.puts "Da uns ein weiteres, älteres Geschwisterkind bekannt ist (#{older_siblings}), beträgt der Beitrag für Ihr Kind im nächsten Schuljahr #{sprintf('%d', amount).sub('.', ',')} €."
                 elsif sibling_index_next_year >= 2
                     amount = sesb ? BEITRAG_SESB_3 : BEITRAG_AS_3
                     older_siblings = join_with_sep(@@user_info[email][:older_siblings].reverse.map { |x| @@user_info[x][:display_first_name] }, ', ', ' und ')
-                    io.puts "Da uns #{sibling_index_next_year > 2 ? 'mindestens ' : ''}zwei weitere, ältere Geschwisterkinder bekannt sind (#{older_siblings}), beträgt der Beitrag für Ihr Kind im nächsten Schuljahr #{sprintf('%.2f', amount).sub('.', ',')} €."
+                    io.puts "Da uns #{sibling_index_next_year > 2 ? 'mindestens ' : ''}zwei weitere, ältere Geschwisterkinder bekannt sind (#{older_siblings}), beträgt der Beitrag für Ihr Kind im nächsten Schuljahr #{sprintf('%d', amount).sub('.', ',')} €."
                 end
                 io.string
             end
@@ -150,7 +150,7 @@ class Script
                 reference: subject.split(' ').first,
             )
             File.open(File.join(out_path_dir, formular_sha1, 'word', 'media', 'image2.png'), 'w') do |f|
-                f.write code.to_png
+                f.write code.to_png(module_px_size: 8)
             end
 
             command = "convert \"#{File.join(out_path_dir, formular_sha1, 'word', 'media', 'image2.png')}\" -trim +repage \"#{File.join(out_path_dir, formular_sha1, 'word', 'media', 'image3.png')}\""
@@ -167,7 +167,6 @@ class Script
 
             # now send mail
             email = 'specht@gymnasiumsteglitz.de'
-            break
         end
     end
 end

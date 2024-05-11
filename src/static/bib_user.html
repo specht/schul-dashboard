@@ -57,6 +57,7 @@
     var lehrmittelverein_state_cache = #{@@lehrmittelverein_state_cache.to_json};
     var klassenleiter = #{@@klassenleiter.to_json};
     var shorthands = #{@@shorthands.to_json};
+    var barcode_widget = null;
 
     function row_clicked(stem) {
         window.location = `/bib_book/${stem}`;
@@ -79,6 +80,7 @@
         if (parts.checksum) data.checksum = parts.checksum;
         console.log(data);
         bib_api_call('/jwt/verify_scanned_barcode', parts, function (data2) {
+            barcode_widget.handle_error(data2);
             if (data2.success) {
                 bib_api_call('/jwt/checkout_exemplar_for_user', data, function (data) {
                     console.log(data);
@@ -150,7 +152,7 @@
                                 let stem = $(e.target).data('stem');
                                 let bnr = $(e.target).data('bnr');
                                 showTemplateModal('Ausleihe aufheben',
-                                    `Sind Sie sicher, dass Sie die Ausleihe aufheben möchten?<br />Signatur: <b>${entry.book.stem}-${entry.exemplar.bnr}</b><br/>Autor: <b>${entry.book.author}</b></br>Titel:<b> ${entry.book.title}</b>`,
+                                    `Sind Sie sicher, dass Sie die Ausleihe aufheben möchten? <b>Achtung:</b> Das Exemplar wird dadurch in den <b>»in limbo«-Status</b> versetzt.<br />Signatur: <b>${entry.book.stem}-${entry.exemplar.bnr}</b><br/>Autor: <b>${entry.book.author}</b></br>Titel:<b> ${entry.book.title}</b>`,
                                     "<i class='fa fa-trash'></i>&nbsp;&nbsp;Ausleihe aufheben", 'btn-danger',
                                     'Abbrechen', 'btn-secondary', function () {
                                         bib_api_call('/jwt/remove_ausleihe', {stem: entry.book.stem, bnr: entry.exemplar.bnr}, function(data) {
@@ -233,7 +235,7 @@
         });
         $('#bu_checkout').click(function(e) {
             $('#bu_checkout').prop('disabled', true);
-            new BarcodeWidget({
+            barcode_widget = new BarcodeWidget({
                 element: $('#barcode_widget'),
                 on_scan: on_scan
             });

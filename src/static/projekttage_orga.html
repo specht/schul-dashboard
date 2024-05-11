@@ -8,9 +8,14 @@
             </div>
             <div class="api_messages mt-2"></div>
             <hr>
+            <h3>Anmeldungen und E-Mail-Verteiler</h3>
             <div class="alert alert-warning">
                 Hier wirst du später sehen, welche Schülerinnen und Schüler sich für dein Projekt angemeldet haben und es wird dann auch E-Mail-Verteiler geben, damit du alle Teilnehmer:innen und/oder deren Eltern per E-Mail kontaktieren kannst.
             </div>
+            <hr>
+            <h3>Projektkatalog</h3>
+            <p>Hier findest du eine Übersicht der anderen Projekte:</p>
+            <a href="/projekttage_sus" class="btn btn-primary"><i class="fa fa-book"></i>&nbsp;&nbsp;Zum Projektkatalog</a>
         </div>
     </div>
 </div>
@@ -18,6 +23,7 @@
 <script>
 var display_name_for_email = #{Hash[@@user_info.map { |email, info| [email, info[:teacher] ? info[:display_name_official] : info[:display_name]] }].to_json};
 document.addEventListener('DOMContentLoaded', function() {
+    Dropzone.autoDiscover = false;
     api_call('/api/get_projekte_for_orga_sus', {}, function(data) {
         if (data.success) {
             for (let nr in data.projekte) {
@@ -28,7 +34,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 let form_group = $(`<div class='form-group'>`).appendTo(col);
                 form_group.append($(`<label>`).text('Nr.'));
                 form_group.append($(`<input type='text' class='form-control' readonly>`).val(projekt.nr));
-                col = $(`<div class='col-md-9'>`).appendTo(row);
+                col = $(`<div class='col-md-7'>`).appendTo(row);
                 form_group = $(`<div class='form-group'>`).appendTo(col);
                 form_group.append($(`<label>`).text('Titel'));
                 let ti_title = $(`<input type='text' placeholder='Bitte gib einen aussagekräftigen Titel für dein Projekt ein' class='form-control' readonly>`).val(projekt.title);
@@ -37,21 +43,78 @@ document.addEventListener('DOMContentLoaded', function() {
                 form_group = $(`<div class='form-group'>`).appendTo(col);
                 form_group.append($(`<label>`).text('Klassenstufe'));
                 form_group.append($(`<input type='text' class='form-control' readonly>`).val(projekt.klassen_label));
+                col = $(`<div class='col-md-2'>`).appendTo(row);
+                form_group = $(`<div class='form-group'>`).appendTo(col);
+                form_group.append($(`<label>`).text('Kapazität'));
+                form_group.append($(`<input type='text' class='form-control' readonly>`).val(`max. ${projekt.capacity}`));
                 row = $(`<div class='row'>`).appendTo($('.projekte-container'));
-                col = $(`<div class='col-md-12'>`).appendTo(row);
+                col = $(`<div class='col-md-9'>`).appendTo(row);
                 form_group = $(`<div class='form-group'>`).appendTo(col);
                 form_group.append($(`<label>`).text('Kurze Beschreibung'));
-                let ti_description = $(`<textarea style='height: 100px;' placeholder='Bitte gib eine kurze Beschreibung deines Projektes ein' class='form-control' readonly>`).val(projekt.description);
+                let ti_description = $(`<textarea style='height: 153px;' placeholder='Bitte gib eine kurze Beschreibung deines Projektes ein. Dies ist der Werbetext, der den Schülerinnen und Schülern der 5. bis 9. Klassen später für dein Projekt angezeigt wird.' class='form-control' readonly>`).val(projekt.description);
                 form_group.append(ti_description);
-                row = $(`<div class='row'>`).appendTo($('.projekte-container'));
-                col = $(`<div class='col-md-6'>`).appendTo(row);
                 form_group = $(`<div class='form-group'>`).appendTo(col);
                 form_group.append($(`<label>`).text('Organisiert von'));
                 form_group.append($(`<input type='text' class='form-control' readonly>`).val(projekt.organized_by.map(function(x) {return display_name_for_email[x] ?? x;} ).join(', ')));
-                col = $(`<div class='col-md-6'>`).appendTo(row);
                 form_group = $(`<div class='form-group'>`).appendTo(col);
                 form_group.append($(`<label>`).text('Betreuende Lehrkräfte'));
                 form_group.append($(`<input type='text' class='form-control' readonly>`).val(projekt.supervised_by.map(function(x) {return display_name_for_email[x] ?? x;} ).join(', ')));
+                col = $(`<div class='col-md-3 pt-10'>`).appendTo(row);
+                let photo = $(`<div class='polaroid big'>`).appendTo(col);
+                let div = $(`<div class='mt-2 mb-1'>`).appendTo(col);
+                let bu_upload_photo = $(`<button class='btn btn-sm btn-success mr-2'>`).text('Foto hochladen').appendTo(div);
+                let bu_delete_photo = $(`<button class='btn btn-sm btn-danger'>`).text('Foto löschen').appendTo(div);
+                let upload_form = $(`<form action='/api/upload_sus_image' class='dropzone' id='my-awesome-dropzone' style='display: none;'></form>`).appendTo(div);
+                if (projekt.photo) {
+                    photo.css('background-image', `url(/gen/i/${projekt.photo}-256.jpg)`);
+                } else {
+                    bu_delete_photo.prop('disabled', true);
+                    bu_delete_photo.removeClass('btn-danger').addClass('btn-outline-secondary');
+                }
+
+                let dropzone = new Dropzone('#my-awesome-dropzone', {
+                    acceptedFiles: 'image/*',
+                    autoProcessQueue: true,
+                    uploadMultiple: false,
+                    init: function () {
+                        this.on("success", function (file, data) {
+                            data = JSON.parse(data);
+                            console.log(data);
+                            console.log('yay');
+                            api_call('/api/set_photo_for_project', {nr: projekt.nr, photo: data.stored_path}, function(data2) {
+                                bu_delete_photo.prop('disabled', false);
+                                bu_delete_photo.addClass('btn-danger').removeClass('btn-outline-secondary');
+                                photo.css('background-image', `url(/raw/uploads/images/${data.stored_path_full})`);
+                            });
+                        });
+                    }
+                });
+                bu_upload_photo.on('click', function(e) {
+                    dropzone.hiddenFileInput.click()
+                });
+                bu_delete_photo.on('click', function(e) {
+                    api_call('/api/delete_photo_for_project', {nr: projekt.nr}, function(data) {
+                        bu_delete_photo.prop('disabled', true);
+                        bu_delete_photo.removeClass('btn-danger').addClass('btn-outline-secondary');
+                        photo.css('background-image', `none`);
+                    });
+                });
+
+                // row = $(`<div class='row'>`).appendTo($('.projekte-container'));
+                // col = $(`<div class='col-md-6'>`).appendTo(row);
+                // col = $(`<div class='col-md-6'>`).appendTo(row);
+                row = $(`<div class='row'>`).appendTo($('.projekte-container'));
+                col = $(`<div class='col-md-12'>`).appendTo(row);
+                form_group = $(`<div class='form-group'>`).appendTo(col);
+                form_group.append($(`<label>`).text('Geplante Exkursionen'));
+                let ti_exkursion_hint = $(`<textarea style='height: 100px;' placeholder='Bitte schreib hier rein, welche Exkursionen ihr plant mit Tag, Uhrzeit, Ziel. Diese Information ist für Lehrkräfte sichtbar, aber nicht für eure Teilnehmerinnen und Teilnehmer.' class='form-control' readonly>`).val(projekt.exkursion_hint);
+                form_group.append(ti_exkursion_hint);
+                row = $(`<div class='row'>`).appendTo($('.projekte-container'));
+                col = $(`<div class='col-md-12'>`).appendTo(row);
+                form_group = $(`<div class='form-group'>`).appendTo(col);
+                form_group.append($(`<label>`).text('Tablets'));
+                let ti_extra_hint = $(`<textarea style='height: 100px;' placeholder='Falls ihr Tablets für euer Projekt benötigt, schreibt es bitte hier rein (wie viele Tablets und wann genau). Herr Winkler wird euch kontaktieren, bis dahin gibt es keine Garantie, dass ihr die Tablets auch bekommen werdet.' class='form-control' readonly>`).val(projekt.extra_hint);
+                form_group.append(ti_extra_hint);
                 row = $(`<div class='row'>`).appendTo($('.projekte-container'));
                 col = $(`<div class='col-md-12'>`).appendTo(row);
                 let bu_edit = $(`<button class='btn btn-success pull-right ml-2'>`).html(`<i class='fa fa-edit'></i>&nbsp;&nbsp;Bearbeiten`).appendTo(col);
@@ -60,15 +123,19 @@ document.addEventListener('DOMContentLoaded', function() {
                 bu_edit.on('click', function(e) {
                     ti_title.prop('readonly', false).data('old_value', ti_title.val());
                     ti_description.prop('readonly', false).data('old_value', ti_description.val()).focus();
+                    ti_exkursion_hint.prop('readonly', false).data('old_value', ti_exkursion_hint.val());
+                    ti_extra_hint.prop('readonly', false).data('old_value', ti_extra_hint.val());
                     bu_edit.hide();
                     bu_save.show();
                     bu_discard.show();
                 });
                 bu_save.on('click', function(e) {
-                    api_call('/api/update_project', {nr: projekt.nr, title: ti_title.val().trim(), description: ti_description.val().trim()}, function(data) {
+                    api_call('/api/update_project', {nr: projekt.nr, title: ti_title.val().trim(), description: ti_description.val().trim(), exkursion_hint: ti_exkursion_hint.val().trim(), extra_hint: ti_extra_hint.val().trim()}, function(data) {
                         if (data.success) {
                             ti_title.prop('readonly', true);
                             ti_description.prop('readonly', true);
+                            ti_exkursion_hint.prop('readonly', true);
+                            ti_extra_hint.prop('readonly', true);
                             bu_edit.show();
                             bu_save.hide();
                             bu_discard.hide();
@@ -78,6 +145,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 bu_discard.on('click', function(e) {
                     ti_title.prop('readonly', true).val(ti_title.data('old_value'));
                     ti_description.prop('readonly', true).val(ti_description.data('old_value'));
+                    ti_exkursion_hint.prop('readonly', true).val(ti_exkursion_hint.data('old_value'));
+                    ti_extra_hint.prop('readonly', true).val(ti_extra_hint.data('old_value'));
                     bu_edit.show();
                     bu_save.hide();
                     bu_discard.hide();

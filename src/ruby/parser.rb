@@ -402,7 +402,10 @@ class Parser
         File.open(path, 'r:utf-8') do |f|
             f.each_line do |line|
                 next if line.strip[0] == '#' || line.strip.empty?
-                yield handle_schueler_line(line)
+                record = handle_schueler_line(line)
+                if KLASSEN_ORDER.include?(record[:klasse])
+                    yield record
+                end
             end
         end
         if DEMO_ACCOUNT_EMAIL
@@ -433,12 +436,20 @@ class Parser
                         user_info[email] && (!user_info[:teacher])
                     end
                     emails.sort! do |a, b|
-                        (user_info[a][:klasse].to_i == user_info[b][:klasse].to_i) ?
+                        (user_info[a][:geburtstag] == user_info[b][:geburtstag]) ?
                         (a.downcase <=> b.downcase) :
-                        (user_info[b][:klasse].to_i <=> user_info[a][:klasse].to_i)
+                        (user_info[a][:geburtstag] <=> user_info[b][:geburtstag])
                     end
                     emails.each.with_index do |email, index|
                         user_info[email][:sibling_index] = index
+                        user_info[email][:older_siblings] = emails[0, index]
+                        user_info[email][:siblings] = emails.dup
+                    end
+                    emails.reject! { |x| user_info[x][:klasse].to_i > 11}
+                    emails.each.with_index do |email, index|
+                        user_info[email][:sibling_index_next_year] = index
+                        user_info[email][:older_siblings_next_year] = emails[0, index]
+                        user_info[email][:siblings_next_year] = emails.dup
                     end
                 end
             end
@@ -538,7 +549,7 @@ class Parser
         end
     end
 
-    def parse_timetable(config, lesson_key_tr = {})
+    def parse_timetable(config, lesson_key_tr = {}, shorthands)
         historic_lessons_for_shorthand = {}
         sub_keys_for_unr_fach = {}
         lesson_keys_for_unr = {}
@@ -564,6 +575,7 @@ class Parser
 
         lesson_key_back_tr = {}
         original_lesson_key_for_lesson_key = {}
+        shorthands_for_fach = {}
 
         Dir['/data/stundenplan/*.TXT'].sort.each do |path|
             timetable_start_date = File.basename(path).sub('.TXT', '')
@@ -641,6 +653,11 @@ class Parser
                     }
                     lessons[fach_unr_key]["#{dow}/#{stunde}"][raum][:lehrer] << lehrer
                     lessons[fach_unr_key]["#{dow}/#{stunde}"][raum][:klassen] << klasse
+                    fach_for_verteiler = FACH_CONSOLIDATE_FOR_VERTEILER[fach.downcase.split('_').first]
+                    if fach_for_verteiler && (!lehrer.strip.empty?) && shorthands[lehrer.strip]
+                        shorthands_for_fach[fach_for_verteiler] ||= Set.new()
+                        shorthands_for_fach[fach_for_verteiler] << lehrer.strip
+                    end
                 end
             end
             fixed_lessons = {}
@@ -712,6 +729,19 @@ class Parser
             end
             lessons = fixed_lessons
             all_lessons[:timetables][timetable_start_date] = lessons
+        end
+        if File.exist?('/data/lehrer/extra-lehrer-fuer-fach.txt')
+            File.open('/data/lehrer/extra-lehrer-fuer-fach.txt') do |f|
+                f.each_line do |line|
+                    line.strip!
+                    next if line[0] == '#'
+                    parts = line.split(',').map { |x| x.strip }
+                    fach = parts[0]
+                    shorthand = parts[1]
+                    shorthands_for_fach[fach] ||= Set.new()
+                    shorthands_for_fach[fach] << shorthand
+                end
+            end
         end
         all_lessons[:lesson_keys].keys.each do |lesson_key|
             all_lessons[:lesson_keys][lesson_key][:klassen] = all_lessons[:lesson_keys][lesson_key][:klassen].to_a.sort
@@ -865,7 +895,7 @@ class Parser
             vertretungen[entry[:datum]] << entry
         end
         all_lessons[:historic_lessons_for_shorthand] = historic_lessons_for_shorthand
-        return all_lessons, vertretungen, vplan_timestamp, day_messages, lesson_key_back_tr, original_lesson_key_for_lesson_key
+        return all_lessons, vertretungen, vplan_timestamp, day_messages, lesson_key_back_tr, original_lesson_key_for_lesson_key, shorthands_for_fach
     end
 
     def parse_pausenaufsichten(config)
@@ -1021,6 +1051,12 @@ class Parser
         end
 
         unassigned_kurs_ids = []
+
+        if ENV['DASHBOARD_SERVICE'] == 'ruby'
+            File.open('/internal/kurs_id_tr.yaml', 'w') do |f|
+                f.write kurs_id_tr.to_yaml
+            end
+        end
 
         emails_for_kurs_id.each_pair do |kurs_id, emails|
             if kurs_id_tr[kurs_id]

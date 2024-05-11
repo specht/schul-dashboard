@@ -12,7 +12,7 @@
         font-family: unset;
         font-weight: bold;
     }
-    #tresor_countdown_here {
+    #tresor_countdown_here, #projektwahl_countdown_here {
         font-size: 200%;
         text-align: center;
     }
@@ -91,6 +91,7 @@
                 #{#print_lehrerzimmer_panel()}
                 #{#print_self_test_panel()}
                 #{print_current_polls()}
+                #{print_projektwahl_countdown_panel()}
                 #{#print_salzh_panel()}
             </div>
         </div>
@@ -286,7 +287,7 @@
 </style>
 
 <script>
-var my_lessons = #{(@@lessons_for_shorthand[@session_user[:shorthand]] || []).to_json};
+var my_lessons = #{(@@lessons[:historic_lessons_for_shorthand][@session_user[:shorthand]] || []).to_json};
 var sus_for_my_lessons = #{Hash[(@@lessons_for_shorthand[@session_user[:shorthand]] || []).map { |x| [x, (@@schueler_for_lesson[x] || []).map { |y| {:email => y, :display_name => @@user_info[y][:display_name]}}]}].to_json};
 var tablet_logged_in = ('#{tablet_logged_in?}' === 'true');
 var teacher_tablet_logged_in = ('#{teacher_tablet_logged_in?}' === 'true');
@@ -1660,6 +1661,27 @@ document.addEventListener('DOMContentLoaded', function() {
                     $('#tresor_countdown_here').slideDown();
                 } else {
                     $('#tresor_countdown_here').slideUp();
+                }
+            }, 1000);
+        }
+        if ($('#projektwahl_countdown_here').length > 0) {
+            setInterval(function() {
+                let ts0 = moment();
+                let deadline = $('#projektwahl_countdown_here').data('deadline');
+                let ts1 = moment.unix(deadline);
+                if (ts0.isBefore(ts1)) {
+                    let d = moment.duration(ts1.diff(ts0));
+                    let h = Math.floor(d.asHours());
+                    let m = Math.floor(d.asMinutes()) - h * 60;
+                    let s = Math.floor(d.asSeconds()) - h * 60 * 60 - m * 60;
+                    h = `${h}`; m = `${m}`; s = `${s}`;
+                    if (h.length < 2) h = '0' + h;
+                    if (m.length < 2) m = '0' + m;
+                    if (s.length < 2) s = '0' + s;
+                    $('#projektwahl_countdown_here').text(`${h} : ${m} : ${s}`);
+                    $('#projektwahl_countdown_here').slideDown();
+                } else {
+                    $('#projektwahl_countdown_here').slideUp();
                 }
             }, 1000);
         }

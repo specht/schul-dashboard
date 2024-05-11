@@ -26,6 +26,8 @@ class BarcodeWidget {
         container.append(video_container);
         container.append(hint);
         container.append(input_group);
+        this.checksum_hint = $(`<div style='display: none;' class='text-sm mt-3'>`).html(`<span class='text-danger'>Hinweis:</span> Dieses Exemplar hat eine Prüfziffer, weshalb der Barcode vom tatsächlichen Exemplar gescannt werden muss.`).appendTo(container);
+        this.checksum_hint_special_access = $(`<span style='display: none;' class='text-sm mt-3'>`).html(`Da du mit <b>speziellen Rechten</b> angemeldet bist, kannst du &ndash; wenn du dir sicher bist, was du tust &ndash; diese Hürde jedoch umgehen, indem du die folgende Prüfsumme einfach an den Barcode anhängst: <span class='_checksum_here' style='font-weight: bold; font-family: monospace;'></span>`).appendTo(this.checksum_hint);
         this.element.append(container);
         this.text_input = text_input;
         this.submit_button = submit_button;
@@ -111,5 +113,21 @@ class BarcodeWidget {
         this.text_input.prop('disabled', true);
         this.submit_button.prop('disabled', true);
         this.disabled = true;
+    }
+
+    handle_error(data) {
+        this.checksum_hint.slideUp();
+        this.checksum_hint_special_access.slideUp();
+        if (data.error) {
+            console.log(data.error);
+            if (data.error.indexOf('checksum_required_but_absent') === 0) {
+                this.checksum_hint.slideDown();
+                if (data.error.indexOf('checksum_required_but_absent [') === 0) {
+                    let checksum = data.error.match(/\[(\w+)\]/)[1];
+                    this.checksum_hint_special_access.slideDown();
+                    this.checksum_hint_special_access.find('._checksum_here').text(`-${checksum}`);
+                }
+            }
+        }
     }
 }

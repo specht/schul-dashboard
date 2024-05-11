@@ -26,6 +26,21 @@ p {
     font-size: 2vh;
 }
 
+.keys {
+    position: absolute;
+    top: 0;
+    right: 1em;
+}
+
+.keys > span {
+    background-color: #444;
+    color: #ddd;
+    font-family: monospace;
+    font-weight: bold;
+    padding: 0.2em 0.5em;
+    border-radius: 0.2em;
+}
+
 .place {
     transition: top 1s ease-out 0s, 
         left 1s ease-out 0s, 
@@ -147,6 +162,12 @@ var seats = [];
 
 var seats_dict = {
     '107': [
+        [0, 0], [1, 0], [2, 0], [3, 0], [5, 0], [6, 0], [7, 0], [8, 0],
+        [0, 1], [1, 1], [2, 1], [3, 1], [5, 1], [6, 1], [7, 1], [8, 1],
+        [0, 2], [1, 2], [2, 2], [3, 2], [5, 2], [6, 2], [7, 2], [8, 2],
+        [0, 3], [1, 3], [2, 3], [3, 3], [5, 3], [6, 3], [7, 3], [8, 3],
+    ],
+    '112': [
         [0, 0], [1, 0], [2, 0], [3, 0], [5, 0], [6, 0], [7, 0], [8, 0],
         [0, 1], [1, 1], [2, 1], [3, 1], [5, 1], [6, 1], [7, 1], [8, 1],
         [0, 2], [1, 2], [2, 2], [3, 2], [5, 2], [6, 2], [7, 2], [8, 2],
@@ -440,5 +461,11 @@ document.addEventListener('DOMContentLoaded', function() {
 <h2>Neuer Sitzplan ab <span id="label_datum"></span></h2>
 <div id="seats">
     <div class='teacher'>Tafel</div>
+</div>
+<div class="keys">
+    <span>Leer</span>
+    <span>A</span>
+    <span>C</span>
+    <span>R</span>
 </div>
 <audio id='audio' src="/preis.mp3"></audio>

@@ -536,7 +536,7 @@ class Timetable
                             end
                             flag
                         end
-                        # if ventry[:sha1] == '11534e41' && DASHBOARD_SERVICE == 'timetable'
+                        # if ventry[:sha1] == '0305b407' && DASHBOARD_SERVICE == 'timetable'
                         #     STDERR.puts "matching_indices: #{matching_indices.to_json}"
                         # end
                         if matching_indices.size == 1
@@ -627,6 +627,12 @@ class Timetable
                                 :vertretungs_text => ventry[:vertretungs_text],
                                 :regular => false
                             }
+
+                            # for some reason, some teacher entries may end up as ["AB, CD"]
+                            # instead of ["AB", "CD"], this gets fixed here:
+                            event[:lehrer].map! do |x|
+                                x.flatten.map { |y| y.split(',') }.flatten.map { |x| x.strip }.uniq
+                            end
 
                             @lesson_cache << event
                             day_events[ventry[:stunde]] ||= Set.new()

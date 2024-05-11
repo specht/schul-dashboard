@@ -310,7 +310,7 @@ class Main < Sinatra::Base
                 io.puts "<tr class='user_row'>"
                 io.puts "<td colspan='3'></td>"
                 io.puts "<td>"
-                print_email_field(io, "lehrer.#{klasse}@#{SCHUL_MAIL_DOMAIN}")
+                print_email_field(io, "lehrer.#{klasse}@#{MAILING_LIST_DOMAIN}")
                 io.puts "</td>"
                 io.puts "</tr>"
             end
@@ -772,6 +772,8 @@ class Main < Sinatra::Base
         return unless @@mailing_lists.include?(list_email)
         io.puts "<tr class='user_row'>"
         info = @@mailing_lists[list_email]
+        STDERR.puts list_email
+        STDERR.puts info.to_yaml
         io.puts "<td class='list_email_label'>#{info[:label]}</td>"
         io.puts "<td>"
         print_email_field(io, list_email)

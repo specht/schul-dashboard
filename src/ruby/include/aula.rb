@@ -131,6 +131,48 @@ class Main < Sinatra::Base
     #     respond_raw_with_mimetype(doc.render, 'application/pdf')
     # end
 
+    get '/api/dmx_patch_pdf' do
+        require_user_who_can_use_aula!
+        results = $neo4j.neo4j_query(<<~END_OF_QUERY).map { |x| x['e'] }
+            MATCH (e:AulaLight)
+            RETURN e
+            ORDER BY e.dmx, e.title;
+        END_OF_QUERY
+        time = Time.new
+        pdf = StringIO.open do |io|
+            io.puts "<style>"
+            io.puts "body { font-family: Roboto; font-size: 12pt; line-height: 120%; }"
+            io.puts "table { border-collapse: collapse; width: 100%; }"
+            io.puts "td, th { border: 1px solid #dddddd; text-align: left; padding: 8px; }"
+            io.puts ".pdf-space-above td {padding-top: 0.2em; }"
+            io.puts ".pdf-space-below td {padding-bottom: 0.2em; }"
+            io.puts ".page-break { page-break-after: always; border-top: none; margin-bottom: 0; }"
+            io.puts "</style>"
+            io.puts "<h1>DMX Patch-Plan</h1>"
+            io.puts "<br>"
+            io.puts "<table>"
+            io.puts "<thead>"
+            io.puts "<tr>"
+            io.puts "<th style='width: 100px;'>DMX</th>"
+            io.puts "<th style='width: 100px;'>Channel</th>"
+            io.puts "</tr>"
+            io.puts "</thead>"
+            io.puts "<tbody>"
+            for light in results do
+                io.puts "<tr>"
+                io.puts "<td>#{light[:dmx]}</td>"
+                io.puts "<td>#{light[:desk]}</td>"
+                io.puts "</tr>"
+            end
+            io.puts "</tbody>"
+            io.puts "</table>"
+            io.string
+        end
+        c = Curl.post('http://weasyprint:5001/pdf', {:data => pdf}.to_json)
+        pdf = c.body_str
+        respond_raw_with_mimetype(pdf, 'application/pdf')
+    end
+
     get '/api/aula_event_pdf' do
         require_user_who_can_use_aula!
         results = $neo4j.neo4j_query(<<~END_OF_QUERY).map { |x| x['e'] }

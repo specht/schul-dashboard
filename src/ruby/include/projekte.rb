@@ -97,12 +97,13 @@ class Main < Sinatra::Base
     post '/api/update_project' do
         require_user!
         data = parse_request_data(:required_keys => [:nr, :title, :description, :exkursion_hint, :extra_hint])
-        projekt = neo4j_query_expect_one(<<~END_OF_QUERY, {:nr => data[:nr], :email => @session_user[:email], :title => data[:title], :description => data[:description], :exkursion_hint => data[:exkursion_hint], :extra_hint => data[:extra_hint]})['p']
+        projekt = neo4j_query_expect_one(<<~END_OF_QUERY, {:nr => data[:nr], :email => @session_user[:email], :title => data[:title], :description => data[:description], :exkursion_hint => data[:exkursion_hint], :extra_hint => data[:extra_hint], :ts => Time.now.to_i})['p']
             MATCH (p:Projekt {nr: $nr})-[:ORGANIZED_BY]->(u:User {email: $email})
             SET p.title = $title
             SET p.description = $description
             SET p.exkursion_hint = $exkursion_hint
             SET p.extra_hint = $extra_hint
+            SET p.ts_updated = $ts
             RETURN p;
         END_OF_QUERY
     end
@@ -110,9 +111,10 @@ class Main < Sinatra::Base
     post '/api/set_photo_for_project' do
         require_user!
         data = parse_request_data(:required_keys => [:nr, :photo])
-        projekt = neo4j_query_expect_one(<<~END_OF_QUERY, {:nr => data[:nr], :email => @session_user[:email], :photo => data[:photo]})
+        projekt = neo4j_query_expect_one(<<~END_OF_QUERY, {:nr => data[:nr], :email => @session_user[:email], :photo => data[:photo], :ts => Time.now.to_i})
             MATCH (p:Projekt {nr: $nr})-[:ORGANIZED_BY]->(u:User {email: $email})
             SET p.photo = $photo
+            SET p.ts_updates = $ts
             RETURN p;
         END_OF_QUERY
     end
@@ -120,9 +122,10 @@ class Main < Sinatra::Base
     post '/api/delete_photo_for_project' do
         require_user!
         data = parse_request_data(:required_keys => [:nr])
-        projekt = neo4j_query_expect_one(<<~END_OF_QUERY, {:nr => data[:nr], :email => @session_user[:email]})
+        projekt = neo4j_query_expect_one(<<~END_OF_QUERY, {:nr => data[:nr], :email => @session_user[:email], :ts => Time.now.to_i})
             MATCH (p:Projekt {nr: $nr})-[:ORGANIZED_BY]->(u:User {email: $email})
             REMOVE p.photo
+            SET p.ts_updated = $ts
             RETURN p;
         END_OF_QUERY
     end

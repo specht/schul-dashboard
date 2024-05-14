@@ -96,7 +96,7 @@ class Main < Sinatra::Base
 
     post '/api/update_project' do
         require_user!
-        data = parse_request_data(:required_keys => [:nr, :title, :description, :exkursion_hint, :extra_hint])
+        data = parse_request_data(:required_keys => [:nr, :title, :description, :exkursion_hint, :extra_hint], :max_body_length => 16384, :max_string_length => 8192)
         projekt = neo4j_query_expect_one(<<~END_OF_QUERY, {:nr => data[:nr], :email => @session_user[:email], :title => data[:title], :description => data[:description], :exkursion_hint => data[:exkursion_hint], :extra_hint => data[:extra_hint], :ts => Time.now.to_i})['p']
             MATCH (p:Projekt {nr: $nr})-[:ORGANIZED_BY]->(u:User {email: $email})
             SET p.title = $title

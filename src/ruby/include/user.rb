@@ -732,7 +732,7 @@ class Main < Sinatra::Base
                             io.puts "<p>Du hast noch keinen Werbetext für dein Projekt eingegeben und auch kein Bild hochgeladen. Bitte trage diese Informationen unter »Projekttage« nach und hilf mit, dass dieser arme Smiley wieder glücklich wird.</p>"
                         elsif count == 1
                             if (projekt[:description] || '').strip.empty?
-                                io.puts "<p>Du hast zwar schon ein Bild hochgeladen, aber noch keine Werbetext geschrieben. You can do it!</p>"
+                                io.puts "<p>Du hast zwar schon ein Bild hochgeladen, aber noch keinen Werbetext geschrieben. You can do it!</p>"
                             else
                                 io.puts "<p>Du hast zwar schon einen Werbetext geschrieben, aber noch kein Bild hochgeladen. You can do it!</p>"
                             end

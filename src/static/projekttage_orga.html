@@ -66,7 +66,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 let bu_delete_photo = $(`<button class='btn btn-sm btn-danger'>`).text('Foto löschen').appendTo(div);
                 let upload_form = $(`<form action='/api/upload_sus_image' class='dropzone' id='my-awesome-dropzone' style='display: none;'></form>`).appendTo(div);
                 if (projekt.photo) {
-                    photo.css('background-image', `url(/gen/i/${projekt.photo}-256.jpg)`);
+                    photo.css('background-image', `url(/api/get_sus_photo/${projekt.photo}-512.jpg)`);
                 } else {
                     bu_delete_photo.prop('disabled', true);
                     bu_delete_photo.removeClass('btn-danger').addClass('btn-outline-secondary');
@@ -84,7 +84,7 @@ document.addEventListener('DOMContentLoaded', function() {
                             api_call('/api/set_photo_for_project', {nr: projekt.nr, photo: data.stored_path}, function(data2) {
                                 bu_delete_photo.prop('disabled', false);
                                 bu_delete_photo.addClass('btn-danger').removeClass('btn-outline-secondary');
-                                photo.css('background-image', `url(/raw/uploads/images/${data.stored_path_full})`);
+                                photo.css('background-image', `url(/api/get_sus_photo/${data.stored_path}-512.jpg)`);
                             });
                         });
                     }

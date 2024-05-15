@@ -69,7 +69,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 let scaffold = $(`<div class='col-md-12'>`);
                 let photo = $(`<div class='polaroid' style='width: 200px; height: 240px; margin-left: 10px;'>`);
                 if (projekt.photo)
-                    photo.css('background-image', `url(/gen/i/${projekt.photo}-512.jpg)`);
+                    photo.css('background-image', `url(/api/get_sus_photo/${projekt.photo}-512.jpg)`);
                 let card = $(`<div class='card'>`);
                 card.append(photo);
                 card.append($(`<h4>`).text(projekt.title));

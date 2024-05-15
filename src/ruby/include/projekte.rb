@@ -11,6 +11,23 @@ class Main < Sinatra::Base
         return @session_user[:klassenstufe] >= 5 && @session_user[:klassenstufe] <= 9
     end
 
+    def parse_projekt_node(p)
+        {
+            :nr => p[:nr],
+            :title => p[:title],
+            :description => p[:description],
+            :photo => p[:photo],
+            :exkursion_hint => p[:exkursion_hint],
+            :extra_hint => p[:extra_hint],
+            :categories => p[:categories],
+            :min_klasse => p[:min_klasse],
+            :max_klasse => p[:max_klasse],
+            :capacity => p[:capacity],
+            :organized_by => [],
+            :supervised_by => [],
+        }
+    end
+
     def get_projekte
         projekte = {}
         neo4j_query(<<~END_OF_QUERY).each do |row|
@@ -18,20 +35,7 @@ class Main < Sinatra::Base
             RETURN p, u.email;
         END_OF_QUERY
             p = row['p']
-            projekte[p[:nr]] ||= {
-                :nr => p[:nr],
-                :title => p[:title],
-                :description => p[:description],
-                :photo => p[:photo],
-                :exkursion_hint => p[:exkursion_hint],
-                :extra_hint => p[:extra_hint],
-                :categories => p[:categories],
-                :min_klasse => p[:min_klasse],
-                :max_klasse => p[:max_klasse],
-                :capacity => p[:capacity],
-                :organized_by => [],
-                :supervised_by => [],
-            }
+            projekte[p[:nr]] ||= parse_projekt_node(p)
             projekte[p[:nr]][:organized_by] << row['u.email']
         end
 
@@ -40,20 +44,7 @@ class Main < Sinatra::Base
             RETURN p, u.email;
         END_OF_QUERY
             p = row['p']
-            projekte[p[:nr]] ||= {
-                :nr => p[:nr],
-                :title => p[:title],
-                :description => p[:description],
-                :photo => p[:photo],
-                :exkursion_hint => p[:exkursion_hint],
-                :extra_hint => p[:extra_hint],
-                :categories => p[:categories],
-                :min_klasse => p[:min_klasse],
-                :max_klasse => p[:max_klasse],
-                :capacity => p[:capacity],
-                :organized_by => [],
-                :supervised_by => [],
-            }
+            projekte[p[:nr]] ||= parse_projekt_node(p)
             projekte[p[:nr]][:supervised_by] << row['u.email']
         end
         projekte_list = []

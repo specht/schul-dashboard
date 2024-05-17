@@ -1135,6 +1135,7 @@ class Main < Sinatra::Base
         end
         all_kl = Set.new()
         @@klassen_order.each do |klasse|
+            klasse = klasse.downcase
             next unless @@schueler_for_klasse.include?(klasse)
             @@mailing_lists["klasse.#{klasse}@#{MAILING_LIST_DOMAIN}"] = {
                 :label => "SuS der Klasse #{tr_klasse(klasse)}",

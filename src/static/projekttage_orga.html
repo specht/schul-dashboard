@@ -66,7 +66,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 let bu_delete_photo = $(`<button class='btn btn-sm btn-danger'>`).text('Foto löschen').appendTo(div);
                 let upload_form = $(`<form action='/api/upload_sus_image' class='dropzone' id='my-awesome-dropzone' style='display: none;'></form>`).appendTo(div);
                 if (projekt.photo) {
-                    photo.css('background-image', `url(/gen/i/${projekt.photo}-256.jpg)`);
+                    photo.css('background-image', `url(/api/get_sus_photo/${projekt.photo}-512.jpg)`);
                 } else {
                     bu_delete_photo.prop('disabled', true);
                     bu_delete_photo.removeClass('btn-danger').addClass('btn-outline-secondary');
@@ -84,7 +84,7 @@ document.addEventListener('DOMContentLoaded', function() {
                             api_call('/api/set_photo_for_project', {nr: projekt.nr, photo: data.stored_path}, function(data2) {
                                 bu_delete_photo.prop('disabled', false);
                                 bu_delete_photo.addClass('btn-danger').removeClass('btn-outline-secondary');
-                                photo.css('background-image', `url(/raw/uploads/images/${data.stored_path_full})`);
+                                photo.css('background-image', `url(/api/get_sus_photo/${data.stored_path}-512.jpg)`);
                             });
                         });
                     }
@@ -104,13 +104,12 @@ document.addEventListener('DOMContentLoaded', function() {
                 // col = $(`<div class='col-md-6'>`).appendTo(row);
                 // col = $(`<div class='col-md-6'>`).appendTo(row);
                 row = $(`<div class='row'>`).appendTo($('.projekte-container'));
-                col = $(`<div class='col-md-12'>`).appendTo(row);
+                col = $(`<div class='col-md-6'>`).appendTo(row);
                 form_group = $(`<div class='form-group'>`).appendTo(col);
                 form_group.append($(`<label>`).text('Geplante Exkursionen'));
                 let ti_exkursion_hint = $(`<textarea style='height: 100px;' placeholder='Bitte schreib hier rein, welche Exkursionen ihr plant mit Tag, Uhrzeit, Ziel. Diese Information ist für Lehrkräfte sichtbar, aber nicht für eure Teilnehmerinnen und Teilnehmer.' class='form-control' readonly>`).val(projekt.exkursion_hint);
                 form_group.append(ti_exkursion_hint);
-                row = $(`<div class='row'>`).appendTo($('.projekte-container'));
-                col = $(`<div class='col-md-12'>`).appendTo(row);
+                col = $(`<div class='col-md-6'>`).appendTo(row);
                 form_group = $(`<div class='form-group'>`).appendTo(col);
                 form_group.append($(`<label>`).text('Tablets'));
                 let ti_extra_hint = $(`<textarea style='height: 100px;' placeholder='Falls ihr Tablets für euer Projekt benötigt, schreibt es bitte hier rein (wie viele Tablets und wann genau). Herr Winkler wird euch kontaktieren, bis dahin gibt es keine Garantie, dass ihr die Tablets auch bekommen werdet.' class='form-control' readonly>`).val(projekt.extra_hint);

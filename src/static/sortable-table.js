@@ -5,6 +5,7 @@ class SortableTable {
         this.element = options.element;
         this.headers = options.headers;
         this.rows = options.rows;
+        this.row_classes = options.row_classes;
         this.clickable_row_callback = options.clickable_row_callback;
         this.filter_callback = options.filter_callback;
         this.options = options;
@@ -37,20 +38,26 @@ class SortableTable {
         let tbody = $('<tbody>');
         this.tbody = tbody;
         table.append(tbody);
-        for (let row of options.rows) {
-            this.add_row(row, false);
+        let row_classes = options.row_classes ?? [];
+        for (let i = 0; i < options.rows.length; i++) {
+            let row = options.rows[i];
+            this.add_row(row, false, false, row_classes[i] ?? []);
         }
         this.element.append(table_div);
         table.css('display', 'table');
     }
 
-    add_row(row, highlight, prepend) {
+    add_row(row, highlight, prepend, row_classes) {
+        if (typeof(row_classes) === 'undefined' )
+            row_classes = [];
         if (typeof(prepend) === 'undefined')
             prepend = false;
         if (row === null) return;
         if (typeof(highlight) === 'undefined')
             highlight = true;
         let tr = $('<tr>');
+        for (let c of row_classes)
+            tr.addClass(c);
         let self = this;
         if (this.options.clickable_rows) {
             tr.addClass('clickable_row');

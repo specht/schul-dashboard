@@ -800,12 +800,12 @@ class Main < Sinatra::Base
             io.puts "</td>"
             io.puts "</tr>"
         end
-        # io.puts "<tr class='user_row'>"
-        # io.puts "<td>Bei Verteiler-Ausfall (bitte in BCC)</td>"
-        # io.puts "<td colspan='2'>"
-        # print_email_field(io, emails.join('; '))
-        # io.puts "</td>"
-        # io.puts "</tr>"
+        io.puts "<tr class='user_row'>"
+        io.puts "<td>Bei Verteiler-Ausfall (bitte in BCC)</td>"
+        io.puts "<td colspan='2'>"
+        print_email_field(io, emails.join('; '))
+        io.puts "</td>"
+        io.puts "</tr>"
     io.puts "</tbody>"
     end
     

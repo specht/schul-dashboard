@@ -1,5 +1,10 @@
 #{File.read('/static/_bib_public_template.html')}
 #{require_user_who_can_manage_bib!}
+<style>
+    .row-green td {
+        background-color: #B0D387;
+    }
+</style>
 <div class='container bg-white'>
     <div class="input-group mb-3">
         <input id='ti_search' type="text" class="form-control" placeholder="Bitte gib einen Suchbegriff ein" />
@@ -104,6 +109,12 @@
                             $('<td>').html(`${entry.ausleih_count === 0 ? '&ndash;' : entry.ausleih_count}`).data('sort_value', entry.ausleih_count || 0),
                             $('<td>').html(`${entry.confirm_count ? entry.confirm_count : '&ndash;'}`).data('sort_value', entry.confirm_count || 0),
                         ];
+                    }),
+                    row_classes: data.users.map(function (entry) {
+                        if ((db_user_info[entry.email] || {}).klasse == 12 && entry.ausleih_count === 0)
+                            return ['row-green'];
+                        else
+                            return [];
                     }),
                     filter_callback: user_filter,
                     clickable_rows: true,

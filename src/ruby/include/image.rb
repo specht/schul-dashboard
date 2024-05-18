@@ -25,11 +25,15 @@ class Main < Sinatra::Base
         filename = entry['filename']
         blob = entry['tempfile'].read
         sha1 = Digest::SHA1.hexdigest(blob)[0, 16]
-        path = "/raw/uploads/images/sus-#{sha1}.#{filename.split('.').last}"
+        path = "/internal/sus_uploads/images/sus-#{sha1}.#{filename.split('.').last}"
         File.open(path, 'w') do |f|
             f.write(blob)
         end
-        trigger_update_images()
+        [512].each do |width|
+            jpg_path = "/internal/sus_uploads/images/sus-#{sha1}-512.jpg"
+            system("convert -auto-orient -set colorspace RGB  \"#{path}\" -resize #{width}x#{width}^ -quality 85 -sampling-factor 4:2:0 -strip \"#{jpg_path}\"")
+        end
+        FileUtils.rm_f(path)
         display_name = @session_user[:display_name]
         deliver_mail("New photo was uploaded by #{display_name} as sus-#{sha1}") do
             to WEBSITE_MAINTAINER_EMAIL
@@ -38,10 +42,17 @@ class Main < Sinatra::Base
 
             subject "SuS Image Upload from #{display_name}"
 
-            filename = "sus-#{sha1}.#{filename.split('.').last}"
-            add_file :content_type => entry['type'], :content => blob, :filename => filename
+            filename = "sus-#{sha1}.jpg"
+            add_file :content_type => entry['type'], :content => File.read("/internal/sus_uploads/images/sus-#{sha1}-512.jpg"), :filename => filename
         end
-        respond(:uploaded => 'yeah', :stored_path => "sus-#{sha1}", :stored_path_full => "sus-#{sha1}.#{filename.split('.').last}")
+        respond(:uploaded => 'yeah', :stored_path => "sus-#{sha1}")
+    end
+
+    get '/api/get_sus_photo/:slug' do
+        require_user!
+        slug = params[:slug]
+        path = "/internal/sus_uploads/images/#{slug}"
+        respond_raw_with_mimetype(File.read(path), 'image/jpeg')
     end
 
     post '/api/delete_image' do

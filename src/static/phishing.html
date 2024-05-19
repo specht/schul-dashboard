@@ -12,19 +12,57 @@
         <div class="col-md-12">
             <h2>Phishing</h2>
             <p>
-                Du hast wahrscheinlich am [Datum] eine E-Mail bekommen, in der du dazu aufgefordert worden bist, eine E-Mail-Adresse und ein Passwort einzugeben.
+                Du hast wahrscheinlich am #{PHISHING_RECEIVING_DATE} eine E-Mail bekommen, in der du dazu aufgefordert worden bist, eine E-Mail-Adresse und ein Passwort einzugeben.
                 Zuerst einmal möchten wir dich entwarnen; Deine E-Mail-Adresse wird nicht gelöscht, das sollte auch nie passieren.
                 Vielleicht ist dir aber in der Mail etwas Verdächtiges aufgefallen...
             </p>
             <p>
                 Die Mail sollte ungefähr so ausgesehen haben:
             </p>
+            <div class='alert alert-success'>
+                Wenn du mit der Maus über die Markierungen fährtst, erhälst du die passenden Erklärungen.
+            </div>
             #{print_phishing_mail}
             <hr>
+            <h3>Woran kann man es erkennen?</h3>
             <p>
-                Nach dem Klicken auf den Link kamst du zu einer Seite, auf der du zuerst aufgefordert wurdest, deine E-Mail-Adresse anzugeben.
+                Generell sollte man bei offensichtlichen Rechtschreibfehlern genauer hinsehen, diese sind ein erster Indiz für eine bösartige E-Mail. 
+                Hier ist zusätzlich die Absenderadresse interessant. Über eine kurze Suche lässt sich die echteit der Domain verifizieren, die hier nicht gegeben ist. 
+                Am auffälligsten ist aber vielleicht die Drohung (manchmal auch durch eine ablaufende Zeit verstäkt, z.B. drei Tage), die einen hohen Druck auf den Empfänger 
+                aufbauen möchte.
             </p>
-            <p>Wir würden uns freuen, wenn du an unserer Umfrage teilnehmen würdest. Wir freuen uns über hilfreiche Kritik, Fragen oder Tipps für einen nächsten Durchlauf: <button class='btn btn-success bu-launch-poll' data-poll-run-id='#{PHISHING_POLL_RUN_ID}'>Zur Umfrage&nbsp;<i class='fa fa-angle-double-right'></i></button></p>
+            <p>
+                Zum Zweck der anonymisierten Datenerhebung darüber, wie geübt die Schülerschaft und das Kollegium im Erkennen von sogenannten Phishing E-Mails 
+                sind, hat dieser Test stattgefunden. Die erhobenen Daten werden nach der Verarbeitung und Auswertung hier dargestellt.
+            </p>
+            <h3>Individuelle Rückmeldung</h3>
+            <p>
+                Je nachdem welche Schritte du gegangen bist, kannst du dir hier ansehen, woran man hier die Phishing E-Mail erkennen und als solche identifizieren
+                konnte. Da wir nicht wissen, was du in der Mail anglickt hast, können wir dir leider keine individuelle Rückmeldung geben.
+            </p>
+            <h3>Datenschutz</h3>
+            <p>
+                Nach dem Klicken auf den Link kamst du zu einer Seite, auf der du zuerst aufgefordert wurdest, deine E-Mail-Adresse und dein Passwort anzugeben. 
+                Solltst du dort Dateb eingebenhaben, brauchst du dir keine Sorgen machen; Deine Eingaben wurden nicht gespeichert und ebenfalls nicht an den Server gesendet.
+                Das Verfahren wurde so datensparend wie möglich gestaltet: Wir haben nur die allerwichtigsten Daten erhoben.
+                Das sind folgende:
+                <ul>
+                    <li><b>Lehrer oder Schüler?</b></li>
+                    <li><b>Grobe Klassenstufe</b> (5/6, 7/8, 9/10 oder 11/12)</li>
+                    <li><b>Geschlecht</b></li>
+                </ul>
+                <ul>
+                    <li><b>Tracking in der E-Mail</b> Wurde die E-Mail angezeigt?</li>
+                    <li><b>Link</b> Wurde auf den Link geklickt?</li>
+                    <li><b>Eingaben</b> Wurden E-Mail und auch das Passwort eingegeben?</li>
+                    <li><b>Betriebssystem und Browser mit Version</b></li>
+                </ul>
+            </p>
+            <h3>Umfrage</h3>
+            <p>
+                Wir würden uns freuen, wenn du an unserer Umfrage teilnehmen würdest. Wir freuen uns über hilfreiche Kritik, Fragen oder Tipps für einen nächsten Durchlauf: 
+                <button class='btn btn-success bu-launch-poll' data-poll-run-id='#{PHISHING_POLL_RUN_ID}'>Zur Umfrage&nbsp;<i class='fa fa-angle-double-right'></i></button>
+            </p>
         </div>
     </div>
 </div>

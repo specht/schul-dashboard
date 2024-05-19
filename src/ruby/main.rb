@@ -2100,7 +2100,7 @@ class Main < Sinatra::Base
                     io.puts "</li>"
                 elsif x == :phishing
                     io.puts "<li class='nav-item text-nowrap'>"
-                    io.puts "<a class='nav-link nav-icon' href='/phishing'><div class='icon'><i class='fa fa-envelope-open'></i></div>Phishing</a>"
+                    io.puts "<a class='nav-link nav-icon' href='/phishing'><div class='icon'>🦈</div>Phishing</a>"
                     io.puts "</li>"
                 else
                     io.puts "<li class='nav-item text-nowrap'>"

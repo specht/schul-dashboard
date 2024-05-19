@@ -761,8 +761,8 @@ class Main < Sinatra::Base
                 io.puts "<div class='hint'>"
                 io.puts "<p><b>Phishing</b></p>"
                 io.puts "<hr />"
-                io.puts "<p>Sieh dir an, was es mit der E-Mail vom [Datum] auf sich hatte.</p>"
-                io.puts "<p><a href='/phishing' class='btn btn-primary'><i class='fa fa-envelope-open'></i>&nbsp;&nbsp;Phishing</a></p>"
+                io.puts "<p>Sieh dir an, was es mit der E-Mail vom #{PHISHING_RECEIVING_DATE} auf sich hatte.</p>"
+                io.puts "<p><a href='/phishing' class='btn btn-primary'>🦈&nbsp;&nbsp;Phishing&nbsp;<i class='fa fa-angle-double-right'></i></a></p>"
                 io.puts "</div>"
                 io.puts "</div>"
                 io.string

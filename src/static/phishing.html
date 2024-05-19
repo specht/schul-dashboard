@@ -1,0 +1,30 @@
+<style>
+    mark {
+        background-color:orange;
+        border-radius:5px;
+    }
+    .threat {
+        background-color: orangered;
+    }
+</style>
+<div class="container">
+    <div class="row">
+        <div class="col-md-12">
+            <h2>Phishing</h2>
+            <p>
+                Du hast wahrscheinlich am [Datum] eine E-Mail bekommen, in der du dazu aufgefordert worden bist, eine E-Mail-Adresse und ein Passwort einzugeben.
+                Zuerst einmal möchten wir dich entwarnen; Deine E-Mail-Adresse wird nicht gelöscht, das sollte auch nie passieren.
+                Vielleicht ist dir aber in der Mail etwas Verdächtiges aufgefallen...
+            </p>
+            <p>
+                Die Mail sollte ungefähr so ausgesehen haben:
+            </p>
+            #{print_phishing_mail}
+            <hr>
+            <p>
+                Nach dem Klicken auf den Link kamst du zu einer Seite, auf der du zuerst aufgefordert wurdest, deine E-Mail-Adresse anzugeben.
+            </p>
+            <p>Wir würden uns freuen, wenn du an unserer Umfrage teilnehmen würdest. Wir freuen uns über hilfreiche Kritik, Fragen oder Tipps für einen nächsten Durchlauf: <button class='btn btn-success bu-launch-poll' data-poll-run-id='#{PHISHING_POLL_RUN_ID}'>Zur Umfrage&nbsp;<i class='fa fa-angle-double-right'></i></button></p>
+        </div>
+    </div>
+</div>

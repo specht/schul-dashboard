@@ -357,6 +357,7 @@ function launch_poll(prid, external_code) {
     (function(external_code) {
         api_call('/api/get_poll_run', {prid: prid, external_code: external_code}, function(data) {
             if (data.success) {
+                console.log(data)
                 poll_run_data.prid = data.poll_run.id;
                 poll_run_data.external_code = external_code;
                 poll_run_data.poll = data.poll;
@@ -456,7 +457,7 @@ function launch_poll(prid, external_code) {
                     }
                 }
                 collect_poll_run_data();
-                if (external_code !== null && external_code.length > 0)
+                if (external_code !== null && external_code.length > 0 || data.poll_run.visible == "no")
                     $('#bu_hide_poll_run').hide();
                 else
                     $('#bu_hide_poll_run').show();

@@ -68,10 +68,18 @@
             </div>
             <div class="modal-body" style='min-height: 300px;'>
                 <div class='row'>
-                    <div class='col-md-12'>
+                    <div class='#{developer_logged_in? ? "col-md-10" : "col-md-12"}'>
                         <div class="form-group">
                             <label>Titel</label>
                             <input id='ti_poll_run_poll_title' disabled readonly class='form-control' type='text' placeholder='Bitte geben Sie den Titel des Termins ein'></input>
+                        </div>
+                    </div>
+                    <div class='col-md-2' style="display: #{developer_logged_in? ? 'block' : 'none'}">
+                        <div class="form-group">
+                            <label>Sichbarkeit (Dev)</label>
+                            <div class='button-with-label'>
+                                <button id='visible' data-state='yes' class='btn_visible btn btn-info'><i class='fa fa-check'></i>&nbsp;&nbsp;Sichtbar</button>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -379,8 +387,10 @@ function save_poll_run() {
         start_time: current_poll_run.start_time,
         end_date: current_poll_run.end_date,
         end_time: current_poll_run.end_time,
+        visible: current_poll_run.visible,
         recipients: net_recipients_list
     };
+    console.log(submit_data)
     old_recipients_list = [...net_recipients_list];
     if (old_prid === null) {
         api_call('/api/save_poll_run', submit_data, function(data) {
@@ -1021,11 +1031,13 @@ function new_poll_run(pid) {
     current_poll_run.start_time = $('#ti_run_start_time').val();
     current_poll_run.end_date = $('#ti_run_end_date').val();
     current_poll_run.end_time = $('#ti_run_end_time').val();
+    current_poll_run.visible = $('#visible').data('state');
 
     $('#bu_poll_run_anonymous').addClass('btn-outline-secondary').removeClass('btn-primary').prop('disabled', false);
     $('#bu_poll_run_non_anonymous').addClass('btn-outline-secondary').removeClass('btn-primary').prop('disabled', false);
     $('#ti_run_start_date').prop('disabled', false);
     $('#ti_run_start_time').prop('disabled', false);
+    $('#visible').prop('disabled', false);
     $('.bu-poll-run-spontaneous-dropdown').prop('disabled', false);
     old_prid = null;
     recipients_list = {};
@@ -1067,14 +1079,24 @@ function edit_poll_run(prid) {
         start_date: current_poll_run.info.start_date,
         start_time: current_poll_run.info.start_time,
         end_date: current_poll_run.info.end_date,
-        end_time: current_poll_run.info.end_time
+        end_time: current_poll_run.info.end_time,
+        visible: current_poll_run.info.visible
     };
     $('#ti_poll_run_poll_title').val(current_poll_run_poll.poll.title);
-    console.log(current_poll_run);
     $('#ti_run_start_date').val(current_poll_run.start_date);
     $('#ti_run_start_time').val(current_poll_run.start_time);
     $('#ti_run_end_date').val(current_poll_run.end_date);
     $('#ti_run_end_time').val(current_poll_run.end_time);
+    if (current_poll_run.visible == 'no') {
+        $('#visible').data('state', current_poll_run.visible).prop('disabled', true);
+        $('#visible').removeClass('btn-info').addClass('btn-outline-secondary');
+        $('#visible').find('.fa').removeClass('fa-check').removeClass('fa-question-circle').addClass('fa-times');
+        $('#visible').blur();
+    } else {
+        $('#visible').data('state', current_poll_run.visible).prop('disabled', true);
+        $('#visible').removeClass('btn-outline-secondary').addClass('btn-info');
+        $('#visible').find('.fa').removeClass('fa-times').removeClass('fa-question-circle').addClass('fa-check');
+    }
     if (current_poll_run.anonymous) {
         $('#bu_poll_run_anonymous').removeClass('btn-outline-secondary').addClass('btn-primary');
         $('#bu_poll_run_non_anonymous').addClass('btn-outline-secondary').removeClass('btn-primary');
@@ -1276,7 +1298,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 //     $('.bu-compose').click();
 
-    $('.btn_lesson_data').click(function(e) {
+    $('.btn_visible').click(function(e) {
         let button = $(e.target);
         if (button.data('state') === 'yes') {
             button.removeClass('btn-info').addClass('btn-outline-secondary');
@@ -1378,6 +1400,7 @@ document.addEventListener('DOMContentLoaded', function() {
         current_poll_run.start_time = $('#ti_run_start_time').val();
         current_poll_run.end_date = $('#ti_run_end_date').val();
         current_poll_run.end_time = $('#ti_run_end_time').val();
+        current_poll_run.visible = $('#visible').data('state');
         update_run_buttons();
     });
     $('#bu_poll_run_anonymous').click(function(e) {

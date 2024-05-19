@@ -40,6 +40,7 @@ $VERBOSE = nil
 require './credentials.rb'
 require '/data/config.rb'
 require '/data/zeugnisse/config.rb'
+require '/data/phishing/config.rb'
 require '/data/projekte/config.rb'
 $VERBOSE = warn_level
 DASHBOARD_SERVICE = ENV['DASHBOARD_SERVICE']
@@ -82,6 +83,7 @@ require './include/matrix.rb'
 require './include/message.rb'
 require './include/monitor.rb'
 require './include/otp.rb'
+require './include/phishing.rb'
 require './include/poll.rb'
 require './include/projekte.rb'
 require './include/public_event.rb'
@@ -1808,6 +1810,9 @@ class Main < Sinatra::Base
                         nav_items << :techteam
                     end
                 end
+                if DEVELOPMENT
+                    nav_items << :phishing
+                end
                 # nav_items << :advent_calendar #if advents_calendar_date_today > 0
                 nav_items << :profile
                 new_messages_count_s = new_messages_count.to_s
@@ -2092,6 +2097,10 @@ class Main < Sinatra::Base
                 elsif x == :tresor
                     io.puts "<li class='nav-item text-nowrap'>"
                     io.puts "<a class='nav-link nav-icon' href='/tresor'><div class='icon'><i class='fa fa-database'></i></div>Datentresor</a>"
+                    io.puts "</li>"
+                elsif x == :phishing
+                    io.puts "<li class='nav-item text-nowrap'>"
+                    io.puts "<a class='nav-link nav-icon' href='/phishing'><div class='icon'><i class='fa fa-envelope-open'></i></div>Phishing</a>"
                     io.puts "</li>"
                 else
                     io.puts "<li class='nav-item text-nowrap'>"

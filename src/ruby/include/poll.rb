@@ -636,54 +636,56 @@ class Main < Sinatra::Base
         require_teacher_or_sv!
         data = parse_request_data(:required_keys => [:pid, :anonymous,
                                                      :start_date, :start_time,
-                                                     :end_date, :end_time, :recipients],
+                                                     :end_date, :end_time, :visible, :recipients],
                                   :types => {:recipients => Array},
                                   :max_body_length => 1024 * 1024)
-        id = RandomTag.generate(12)
-        timestamp = Time.now.to_i
-        assert(['true', 'false'].include?(data[:anonymous]))
-        poll_run = neo4j_query_expect_one(<<~END_OF_QUERY, :session_email => @session_user[:email], :timestamp => timestamp, :id => id, :pid => data[:pid], :anonymous => (data[:anonymous] == 'true'), :start_date => data[:start_date], :start_time => data[:start_time], :end_date => data[:end_date], :end_time => data[:end_time])['pr']
-            MATCH (p:Poll {id: $pid})-[:ORGANIZED_BY]->(a:User {email: $session_email})
-            CREATE (pr:PollRun {id: $id, anonymous: $anonymous, start_date: $start_date, start_time: $start_time, end_date: $end_date, end_time: $end_time})
-            SET pr.created = $timestamp
-            SET pr.updated = $timestamp
-            SET pr.items = p.items
-            CREATE (pr)-[:RUNS]->(p)
-            RETURN pr;
-        END_OF_QUERY
-        # link regular users
-        neo4j_query(<<~END_OF_QUERY, :prid => id, :recipients => data[:recipients].select {|x| @@user_info.include?(x)} )
-            MATCH (pr:PollRun {id: $prid})
-            WITH DISTINCT pr
-            MATCH (u:User)
-            WHERE u.email IN $recipients
-            CREATE (u)-[:IS_PARTICIPANT]->(pr);
-        END_OF_QUERY
-        # link external users from address book
-        neo4j_query(<<~END_OF_QUERY, :prid => id, :recipients => data[:recipients].reject {|x| @@user_info.include?(x)}, :session_email => @session_user[:email] )
-            MATCH (pr:PollRun {id: $prid})
-            WITH DISTINCT pr
-            MATCH (u:ExternalUser {entered_by: $session_email})
-            WHERE u.email IN $recipients
-            CREATE (u)-[:IS_PARTICIPANT]->(pr);
-        END_OF_QUERY
-        # link external users (predefined)
-#         STDERR.puts data[:recipients].select {|x| @@predefined_external_users[:recipients].include?(x) }.to_yaml
-        temp = neo4j_query(<<~END_OF_QUERY, :prid => id, :recipients => data[:recipients].select {|x| @@predefined_external_users[:recipients].include?(x) })
-            MATCH (pr:PollRun {id: $prid})
-            WITH DISTINCT pr
-            MATCH (u:PredefinedExternalUser)
-            WHERE u.email IN $recipients
-            CREATE (u)-[:IS_PARTICIPANT]->(pr);
-        END_OF_QUERY
-#         STDERR.puts temp.to_yaml
-        poll_run = {
-            :prid => poll_run[:id], 
-            :info => poll_run,
-            :recipients => data[:recipients],
-        }
-#         trigger_update("_poll_run_#{poll_run[:prid]}")
-        respond(:ok => true, :poll_run => poll_run)
+        unless data[:visible] == "no" && !developer_logged_in?
+            id = RandomTag.generate(12)
+            timestamp = Time.now.to_i
+            assert(['true', 'false'].include?(data[:anonymous]))
+            poll_run = neo4j_query_expect_one(<<~END_OF_QUERY, :session_email => @session_user[:email], :timestamp => timestamp, :id => id, :pid => data[:pid], :anonymous => (data[:anonymous] == 'true'), :start_date => data[:start_date], :start_time => data[:start_time], :end_date => data[:end_date], :end_time => data[:end_time], :visible => data[:visible])['pr']
+                MATCH (p:Poll {id: $pid})-[:ORGANIZED_BY]->(a:User {email: $session_email})
+                CREATE (pr:PollRun {id: $id, anonymous: $anonymous, start_date: $start_date, start_time: $start_time, end_date: $end_date, end_time: $end_time, visible: $visible})
+                SET pr.created = $timestamp
+                SET pr.updated = $timestamp
+                SET pr.items = p.items
+                CREATE (pr)-[:RUNS]->(p)
+                RETURN pr;
+            END_OF_QUERY
+            # link regular users
+            neo4j_query(<<~END_OF_QUERY, :prid => id, :recipients => data[:recipients].select {|x| @@user_info.include?(x)} )
+                MATCH (pr:PollRun {id: $prid})
+                WITH DISTINCT pr
+                MATCH (u:User)
+                WHERE u.email IN $recipients
+                CREATE (u)-[:IS_PARTICIPANT]->(pr);
+            END_OF_QUERY
+            # link external users from address book
+            neo4j_query(<<~END_OF_QUERY, :prid => id, :recipients => data[:recipients].reject {|x| @@user_info.include?(x)}, :session_email => @session_user[:email] )
+                MATCH (pr:PollRun {id: $prid})
+                WITH DISTINCT pr
+                MATCH (u:ExternalUser {entered_by: $session_email})
+                WHERE u.email IN $recipients
+                CREATE (u)-[:IS_PARTICIPANT]->(pr);
+            END_OF_QUERY
+            # link external users (predefined)
+    #         STDERR.puts data[:recipients].select {|x| @@predefined_external_users[:recipients].include?(x) }.to_yaml
+            temp = neo4j_query(<<~END_OF_QUERY, :prid => id, :recipients => data[:recipients].select {|x| @@predefined_external_users[:recipients].include?(x) })
+                MATCH (pr:PollRun {id: $prid})
+                WITH DISTINCT pr
+                MATCH (u:PredefinedExternalUser)
+                WHERE u.email IN $recipients
+                CREATE (u)-[:IS_PARTICIPANT]->(pr);
+            END_OF_QUERY
+    #         STDERR.puts temp.to_yaml
+            poll_run = {
+                :prid => poll_run[:id], 
+                :info => poll_run,
+                :recipients => data[:recipients],
+            }
+    #         trigger_update("_poll_run_#{poll_run[:prid]}")
+            respond(:ok => true, :poll_run => poll_run)
+        end
     end
     
     post '/api/update_poll_run' do
@@ -888,6 +890,7 @@ class Main < Sinatra::Base
             AND COALESCE(p.deleted, false) = false
             AND $today >= pr.start_date
             AND $today <= pr.end_date
+            AND pr.visible <> "no"
             RETURN pr, p.title, a.email, COALESCE(rt.hide, FALSE) AS hidden
             ORDER BY pr.end_date, pr.end_time;
         END_OF_QUERY

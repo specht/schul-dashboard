@@ -752,6 +752,26 @@ class Main < Sinatra::Base
         return ''
     end
 
+    def print_phishing_panel()
+        start = PHISHING_HINT_START
+        ende = PHISHING_HINT_END
+        if Time.now.strftime('%Y-%m-%dT%H:%M:%S') >= start && Time.now.strftime('%Y-%m-%dT%H:%M:%S') <= ende
+            return StringIO.open do |io|
+                io.puts "<div class='col-lg-12 col-md-4 col-sm-6'>"
+                io.puts "<div class='hint'>"
+                io.puts "<p><b>Phishing</b></p>"
+                io.puts "<hr />"
+                io.puts "<p>Sieh dir an, was es mit der E-Mail vom [Datum] auf sich hatte.</p>"
+                io.puts "<p><a href='/phishing' class='btn btn-primary'><i class='fa fa-envelope-open'></i>&nbsp;&nbsp;Phishing</a></p>"
+                io.puts "</div>"
+                io.puts "</div>"
+                io.string
+            end
+        end
+        return ''
+    end
+
+
     # get '/api/get_timetable_pdf' do
     #     require_user!
     #     respond_raw_with_mimetype(get_timetable_pdf(@session_user[:klasse], @session_user[:color_scheme] || @@standard_color_scheme), 'application/pdf')

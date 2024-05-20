@@ -1810,7 +1810,9 @@ class Main < Sinatra::Base
                         nav_items << :techteam
                     end
                 end
-                if DEVELOPMENT
+                start = PHISHING_HINT_START
+                ende = PHISHING_HINT_END
+                if Time.now.strftime('%Y-%m-%dT%H:%M:%S') >= start && Time.now.strftime('%Y-%m-%dT%H:%M:%S') <= ende || developer_logged_in?
                     nav_items << :phishing
                 end
                 # nav_items << :advent_calendar #if advents_calendar_date_today > 0

@@ -772,8 +772,6 @@ class Main < Sinatra::Base
         return unless @@mailing_lists.include?(list_email)
         io.puts "<tr class='user_row'>"
         info = @@mailing_lists[list_email]
-        STDERR.puts list_email
-        STDERR.puts info.to_yaml
         io.puts "<td class='list_email_label'>#{info[:label]}</td>"
         io.puts "<td>"
         print_email_field(io, list_email)

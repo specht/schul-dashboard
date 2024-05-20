@@ -73,7 +73,21 @@ class Main < Sinatra::Base
 
     post '/api/get_projekte' do
         require_user!
-        respond(:projekte => get_projekte())
+        result = {:projekte => get_projekte()}
+        if user_eligible_for_projektwahl?
+            vote_for_project_nr = {}
+            neo4j_query(<<~END_OF_QUERY, {:email => @session_user[:email]}).each do |row|
+                MATCH (u:User {email: $email})-[v:VOTED_FOR]->(p:Projekt)
+                RETURN p.nr, v.vote;
+            END_OF_QUERY
+                vote_for_project_nr[row['p.nr']] = row['v.vote']
+            end
+            result[:projekte].map! do |p|
+                p[:session_user_vote] = vote_for_project_nr[p[:nr]] || 0
+                p
+            end
+        end
+        respond(result)
     end
 
     post '/api/get_projekte_for_orga_sus' do
@@ -119,5 +133,26 @@ class Main < Sinatra::Base
             SET p.ts_updated = $ts
             RETURN p;
         END_OF_QUERY
+    end
+
+    post '/api/vote_for_project' do
+        require_user!
+        assert(user_eligible_for_projektwahl?)
+        data = parse_request_data(:required_keys => [:nr, :vote], :types => {:vote => Integer})
+        if data[:vote] == 0
+            neo4j_query(<<~END_OF_QUERY, {:nr => data[:nr], :email => @session_user[:email], :ts => Time.now.to_i, :vote => data[:vote]})
+                MATCH (u:User {email: $email})-[v:VOTED_FOR]->(p:Projekt {nr: $nr})
+                DELETE v;
+            END_OF_QUERY
+        else
+            neo4j_query_expect_one(<<~END_OF_QUERY, {:nr => data[:nr], :email => @session_user[:email], :ts => Time.now.to_i, :vote => data[:vote]})
+                MATCH (u:User {email: $email})
+                MATCH (p:Projekt {nr: $nr})
+                MERGE (u)-[v:VOTED_FOR]->(p)
+                SET v.ts_updated = $ts
+                SET v.vote = $vote
+                RETURN p;
+            END_OF_QUERY
+        end
     end
 end

@@ -3,27 +3,52 @@ require './main.rb'
 require './parser.rb'
 require 'digest/sha2'
 require 'girocode'
+require 'uri'
 require 'yaml'
-
-EMPFAENGER = 'Lehr- und Lernmittelhilfe des Gymnasium Steglitz e. V.'
-IBAN = 'DE91860100900603917908'
-BIC = 'PBNKDEFFXXX'
-BANK = 'Postbank - Ndl. der Deutsche Bank AG'
-NEXT_SCHULJAHR = '2024/25'
-ZAHLUNGSFRIST = '01.07.2024'
-
-BEITRAG_AS_1 = 60
-BEITRAG_AS_2 = 50
-BEITRAG_AS_3 = 40
-BEITRAG_SESB_1 = 50
-BEITRAG_SESB_2 = 40
-BEITRAG_SESB_3 = 40
 
 LETTERS = 'BCDFHJLMNPQRSTVWYZ'
 DIGITS = '23456789'
 
+# Please change these values in /data/bibliothek/config.rb
+LBV_EMPFAENGER = nil
+LBV_IBAN = nil
+LBV_BIC = nil
+LBV_BANK = nil
+LBV_NEXT_SCHULJAHR = nil
+LBV_ZAHLUNGSFRIST = nil
+
+LBV_BEITRAG_AS_1 = nil
+LBV_BEITRAG_AS_2 = nil
+LBV_BEITRAG_AS_3 = nil
+LBV_BEITRAG_SESB_1 = nil
+LBV_BEITRAG_SESB_2 = nil
+LBV_BEITRAG_SESB_3 = nil
+
+if File.exist?('/data/bibliothek/config.rb')
+    verbose = $VERBOSE
+    $VERBOSE = nil
+    require '/data/bibliothek/config.rb'
+    $VERBOSE = verbose
+end
+
+if LBV_EMPFAENGER.nil?
+    STDERR.puts "Please set LBV_EMPFAENGER etc. in /data/bibliothek/config.rb"
+    exit(1)
+end
+
 class Script
     def run
+
+        files = ['https://dashboard.gymnasiumsteglitz.de/f/Informationen%20zum%20Schulbuchverein%20(Stand%2005-2024).pdf',
+                 'https://dashboard.gymnasiumsteglitz.de/f/Beitrittserkl%C3%A4rung%20(Stand%2005-2024).pdf']
+
+        pdf_for_path = {}
+
+        if ARGV.include?('--welcome')
+            files.each do |path|
+                pdf_for_path[path] = `curl --output - \"#{path}\"`
+            end
+        end
 
         path = "/data/bibliothek/Beitragsaufforderung.docx"
         sha1 = Digest::SHA1.hexdigest(File.read(path))
@@ -61,8 +86,8 @@ class Script
         end.each do |record|
             email = record[:email]
             # next if (@@user_info[email][:siblings_next_year] || []).empty?
-            # next unless email == 'carolina.hoffmann@mail.gymnasiumsteglitz.de'
-            subject_i = Digest::SHA1.hexdigest("BIB/#{NEXT_SCHULJAHR}/#{email}").to_i(16)
+            next unless email == 'carolina.hoffmann@mail.gymnasiumsteglitz.de'
+            subject_i = Digest::SHA1.hexdigest("BIB/#{LBV_NEXT_SCHULJAHR}/#{email}").to_i(16)
             subject = ''
             2.times do
                 subject += LETTERS[subject_i % LETTERS.length]
@@ -87,7 +112,7 @@ class Script
             STDERR.puts "next: #{klassenstufe_next}"
             brief_id = "#{ZEUGNIS_SCHULJAHR}/Beitragsaufforderung/#{email}"
             brief_sha1 = Digest::SHA1.hexdigest(brief_id).to_i(16).to_s(36)
-            brief_sha1 = "Beitragsaufforderung #{NEXT_SCHULJAHR.gsub('/', '-')} #{record[:display_name]}"
+            brief_sha1 = "Beitragsaufforderung #{LBV_NEXT_SCHULJAHR.gsub('/', '-')} #{record[:display_name]}"
 
             out_path_docx = File.join("/internal/bibliothek/out/#{brief_sha1}.docx")
             out_path_pdf = File.join("/internal/bibliothek/out/#{brief_sha1}.pdf")
@@ -101,17 +126,17 @@ class Script
             doc.gsub!('#DATUM.', Date.today.strftime('%d.%m.%Y'))
             doc.gsub!('#MV_DATUM.', '6. Mai 2024')
             doc.gsub!('#NEXT_SCHULJAHR.', '2024/25')
-            doc.gsub!('#ZAHLUNGSFRIST.', ZAHLUNGSFRIST)
-            doc.gsub!('#EMPFAENGER.', EMPFAENGER)
-            doc.gsub!('#IBAN.', IBAN.chars.each_slice(4).to_a.map { |x| x.join('') }.join(' '))
-            doc.gsub!('#BIC.', BIC)
-            doc.gsub!('#BANK.', BANK)
-            doc.gsub!('#BEITRAG_AS_1.', "#{BEITRAG_AS_1.to_s} €")
-            doc.gsub!('#BEITRAG_AS_2.', "#{BEITRAG_AS_2.to_s} €")
-            doc.gsub!('#BEITRAG_AS_3.', "#{BEITRAG_AS_3.to_s} €")
-            doc.gsub!('#BEITRAG_SESB_1.', "#{BEITRAG_SESB_1.to_s} €")
-            doc.gsub!('#BEITRAG_SESB_2.', "#{BEITRAG_SESB_2.to_s} €")
-            doc.gsub!('#BEITRAG_SESB_3.', "#{BEITRAG_SESB_3.to_s} €")
+            doc.gsub!('#ZAHLUNGSFRIST.', LBV_ZAHLUNGSFRIST)
+            doc.gsub!('#EMPFAENGER.', LBV_EMPFAENGER)
+            doc.gsub!('#IBAN.', LBV_IBAN.chars.each_slice(4).to_a.map { |x| x.join('') }.join(' '))
+            doc.gsub!('#BIC.', LBV_BIC)
+            doc.gsub!('#BANK.', LBV_BANK)
+            doc.gsub!('#BEITRAG_AS_1.', "#{LBV_BEITRAG_AS_1.to_s} €")
+            doc.gsub!('#BEITRAG_AS_2.', "#{LBV_BEITRAG_AS_2.to_s} €")
+            doc.gsub!('#BEITRAG_AS_3.', "#{LBV_BEITRAG_AS_3.to_s} €")
+            doc.gsub!('#BEITRAG_SESB_1.', "#{LBV_BEITRAG_SESB_1.to_s} €")
+            doc.gsub!('#BEITRAG_SESB_2.', "#{LBV_BEITRAG_SESB_2.to_s} €")
+            doc.gsub!('#BEITRAG_SESB_3.', "#{LBV_BEITRAG_SESB_3.to_s} €")
             doc.gsub!('#SUS_KLASSENSTUFE.', klassenstufe_next.to_s)
             doc.gsub!('#SUS_ZUG_DATIV.', sesb ? 'SESB-Zug' : 'altsprachlichen Zug')
             doc.gsub!('#VERWENDUNGSZWECK.', subject)
@@ -121,14 +146,14 @@ class Script
             sibling_index_next_year = @@user_info[email][:sibling_index_next_year] || 0
             satz = StringIO.open do |io|
                 if sibling_index_next_year == 0
-                    amount = sesb ? BEITRAG_SESB_1 : BEITRAG_AS_1
+                    amount = sesb ? LBV_BEITRAG_SESB_1 : LBV_BEITRAG_AS_1
                     io.puts "Da uns keine weiteren, älteren Geschwisterkinder bekannt sind, beträgt der Beitrag für Ihr Kind im nächsten Schuljahr #{sprintf('%d', amount).sub('.', ',')} €."
                 elsif sibling_index_next_year == 1
-                    amount = sesb ? BEITRAG_SESB_2 : BEITRAG_AS_2
+                    amount = sesb ? LBV_BEITRAG_SESB_2 : LBV_BEITRAG_AS_2
                     older_siblings = join_with_sep(@@user_info[email][:older_siblings].reverse.map { |x| @@user_info[x][:display_first_name] }, ', ', ' und ')
                     io.puts "Da uns ein weiteres, älteres Geschwisterkind bekannt ist (#{older_siblings}), beträgt der Beitrag für Ihr Kind im nächsten Schuljahr #{sprintf('%d', amount).sub('.', ',')} €."
                 elsif sibling_index_next_year >= 2
-                    amount = sesb ? BEITRAG_SESB_3 : BEITRAG_AS_3
+                    amount = sesb ? LBV_BEITRAG_SESB_3 : LBV_BEITRAG_AS_3
                     older_siblings = join_with_sep(@@user_info[email][:older_siblings].reverse.map { |x| @@user_info[x][:display_first_name] }, ', ', ' und ')
                     io.puts "Da uns #{sibling_index_next_year > 2 ? 'mindestens ' : ''}zwei weitere, ältere Geschwisterkinder bekannt sind (#{older_siblings}), beträgt der Beitrag für Ihr Kind im nächsten Schuljahr #{sprintf('%d', amount).sub('.', ',')} €."
                 end
@@ -141,9 +166,9 @@ class Script
                 f.write doc
             end
             code = Girocode.new(
-                iban: IBAN,
-                bic: BIC,
-                name: EMPFAENGER,
+                iban: LBV_IBAN,
+                bic: LBV_BIC,
+                name: LBV_EMPFAENGER,
                 currency: 'EUR',
                 amount: amount,
                 bto_info: subject,
@@ -165,8 +190,129 @@ class Script
             system(command)
             FileUtils::rm_rf(out_path_docx)
 
-            # now send mail
-            email = 'specht@gymnasiumsteglitz.de'
+            pdf_path = File.join(File.dirname(out_path_docx), File.basename(out_path_docx).sub('.docx', '.pdf'))
+
+            email = 'eltern.' + email
+            act_as_sender = 'schulbuchverein@gymnasiumsteglitz.de'
+            if DEVELOPMENT
+                email = WEBSITE_MAINTAINER_EMAIL
+                act_as_sender = WEBSITE_MAINTAINER_EMAIL
+            end
+            if ARGV.include?('--welcome')
+                if klassenstufe_next == 7
+                    mail = Mail.new do
+                        charset = 'UTF-8'
+                        to email
+                        bcc [SMTP_FROM, act_as_sender]
+                        from act_as_sender
+                        reply_to act_as_sender
+    
+                        subject "Informationen zum Schulbuchverein / Ende der Lernmittelfreiheit ab Klasse 7"
+                        content_type 'multipart/mixed'
+    
+                        message = StringIO.open do |io|
+                            io.puts <<~END_OF_MAIL
+                                <p>Sehr geehrte Eltern von #{record[:display_name]},</p>
+                                <p>hiermit informieren wir Sie darüber, dass ab dem kommenden Schuljahr für #{record[:display_first_name]} die Lernmittelfreiheit endet.</p>
+                                <p>Ab Klasse 7 beschafft der Lehr- und Lernmittelverein des Gymnasium Steglitz die Schulbücher (siehe angehängtes Informationsschreiben). Dies bedeutet, dass Sie im kommenden Schuljahr den regulären Beitrag zum Lehr- und Lernmittelverein zahlen müssen, wenn Sie Mitglied werden möchten oder durch Geschwisterkinder bereits Mitglied sind.</p>
+                                <p>Sollten Sie dem Verein noch nicht beigetreten sein, können Sie dies gerne tun, indem Sie die angehängte Beitrittserklärung ausfüllen und uns per E-Mail an <a href='mailto:schulbuchverein@gymnasiumsteglitz.de'>schulbuchverein@gymnasiumsteglitz.de</a> senden oder im Sekretariat abgeben.</p>
+                                <p>Die Schulbücher ab Klasse 7 werden in üblicher Weise über den Verein beschafft. In den nächsten Tagen erhalten Sie die Aufforderung zur Zahlung des Mitgliedsbeitrags für Ihr Kind.</p>
+                                <p>Sollten Sie sich gegen eine Mitgliedschaft entscheiden, sind Sie verpflichtet, die Schulbücher auf eigene Kosten – bis zur gesetzlich festgelegten Obergrenze – selbst zu beschaffen. Bitte wenden Sie sich in diesem Fall an die Lehrkräfte der Schulbücherei.</p>
+                                <p>Wir hoffen, dass Ihr Kind weiterhin mit Lehr- und Lernmitteln bestens ausgestattet sein wird!</p>
+                                <p>Für Rückfragen stehen wir Ihnen selbstverständlich gerne zur Verfügung.</p>
+                                <p>Mit freundlichen Grüßen</p>
+                                <p>
+                                Dr. Christoph Hellriegel<br>
+                                Vorsitzender
+                                </p>
+                                <p>
+                                Alice Beaucamp<br>
+                                Stellvertretende Vorsitzende
+                                </p>
+                                <p>
+                                Lehr- und Lernmittelhilfe des Gymnasium Steglitz e.V.<br>
+                                E-Mail: <a href='mailto:schulbuchverein@gymnasiumsteglitz.de'>schulbuchverein@gymnasiumsteglitz.de</a><br>
+                                Web: <a href='https://gymnasiumsteglitz.de/lehrbuchverein'>https://gymnasiumsteglitz.de/lehrbuchverein</a><br>
+                                </p>
+                            END_OF_MAIL
+                            io.string
+                        end
+    
+                        part(:content_type => 'multipart/alternative') do |p|
+                            p.part 'text/html' do |p|
+                                p.content_type = 'text/html; charset=UTF-8'
+                                p.body = message
+                            end
+                            p.part 'text/plain' do |p|
+                                p.body = mail_html_to_plain_text(message)
+                            end
+                        end
+    
+                        pdf_for_path.each_pair do |path, pdf|
+                            add_file :content_type => 'application/pdf', :content => pdf, :filename => URI.decode_uri_component(File.basename(path))
+                        end
+                    end
+                    if ARGV.include?('--srsly')
+                        mail.deliver!
+                    else
+                        STDERR.puts "Not sending mail to #{email} unless you specify --srsly!"
+                    end
+                end
+            else
+                mail = Mail.new do
+                    charset = 'UTF-8'
+                    to email
+                    bcc [SMTP_FROM, act_as_sender]
+                    from act_as_sender
+                    reply_to act_as_sender
+
+                    subject "Beitragszahlung zum Schulbuchverein für das Schuljahr #{LBV_NEXT_SCHULJAHR}"
+                    content_type 'multipart/mixed'
+
+                    message = StringIO.open do |io|
+                        io.puts <<~END_OF_MAIL
+                            <p>Sehr geehrte Eltern von #{record[:display_name]},</p>
+                            <p>hiermit möchten wir Sie daran erinnern, dass die jährliche Zahlung des Beitrags zum Schulbuchverein zum #{LBV_ZAHLUNGSFRIST} fällig wird.</p>
+                            <p>Alle Informationen zur Beitragshöhe und Zahlungsweise finden Sie in der angehängten Beitragsaufforderung.</p>
+                            <p>Bitte beachten Sie, dass wir das Verfahren für die Beitragszahlung in diesem Jahr angepasst haben, um die Zuordnung der Zahlungseingänge zu erleichtern:</p>
+                            <p><b>--- Bitte tätigen Sie für jedes beitragspflichtige Kind eine eigene Überweisung und nutzen Sie nur den im Schreiben angegebenen Verwendungszweck! ---</b></p>
+                            <p>Für Rückfragen stehen wir gerne per E-Mail unter <a href='mailto:schulbuchverein@gymnasiumsteglitz.de'>schulbuchverein@gymnasiumsteglitz.de</a> zur Verfügung.</p>
+                            <p>Mit freundlichen Grüßen</p>
+                            <p>
+                            Dr. Christoph Hellriegel<br>
+                            Vorsitzender
+                            </p>
+                            <p>
+                            Alice Beaucamp<br>
+                            Stellvertretende Vorsitzende
+                            </p>
+                            <p>
+                            Lehr- und Lernmittelhilfe des Gymnasium Steglitz e.V.<br>
+                            E-Mail: <a href='mailto:schulbuchverein@gymnasiumsteglitz.de'>schulbuchverein@gymnasiumsteglitz.de</a><br>
+                            Web: <a href='https://gymnasiumsteglitz.de/lehrbuchverein'>https://gymnasiumsteglitz.de/lehrbuchverein</a><br>
+                            </p>
+                        END_OF_MAIL
+                        io.string
+                    end
+
+                    part(:content_type => 'multipart/alternative') do |p|
+                        p.part 'text/html' do |p|
+                            p.content_type = 'text/html; charset=UTF-8'
+                            p.body = message
+                        end
+                        p.part 'text/plain' do |p|
+                            p.body = mail_html_to_plain_text(message)
+                        end
+                    end
+
+                    add_file :content_type => 'application/pdf', :content => File.read(pdf_path), :filename => "#{brief_sha1}.pdf"
+                end
+                if ARGV.include?('--srsly')
+                    mail.deliver!
+                else
+                    STDERR.puts "Not sending mail to #{email} unless you specify --srsly!"
+                end
+            end
         end
     end
 end

@@ -202,7 +202,7 @@ class Script
                         <p>Für Rückfragen stehen wir gerne per E-Mail unter <a href='mailto:schulbuchverein@gymnasiumsteglitz.de'>schulbuchverein@gymnasiumsteglitz.de</a> zur Verfügung.</p>
                         <p>Mit freundlichen Grüßen</p>
                         <p>
-                        Dr Christoph Hellriegel<br>
+                        Dr. Christoph Hellriegel<br>
                         Vorsitzender
                         </p>
                         <p>

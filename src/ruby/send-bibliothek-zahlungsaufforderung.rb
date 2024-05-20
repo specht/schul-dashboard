@@ -185,7 +185,7 @@ class Script
             mail = Mail.new do
                 charset = 'UTF-8'
                 to email
-                bcc act_as_sender
+                bcc [SMTP_FROM, act_as_sender]
                 from act_as_sender
                 reply_to act_as_sender
 

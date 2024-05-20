@@ -204,6 +204,7 @@ class Parser
                       :display_last_name => display_last_name,
                       :display_name_official => display_last_name,
                       :display_last_name_dativ => display_last_name.sub('Herr ', 'Herrn '),
+                      :geschlecht => geschlecht,
                       :can_log_in => (line['Deaktiviert'] || '').empty?,
                       :nc_login => @nc_sub[email] || shorthand.gsub('ä', 'ae').gsub('ö', 'oe').gsub('ü', 'ue'),
                       :matrix_login => "@#{email.split('@').first}:#{MATRIX_DOMAIN_SHORT}",

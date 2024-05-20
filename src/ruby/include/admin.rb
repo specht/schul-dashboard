@@ -447,6 +447,37 @@ class Main < Sinatra::Base
         respond_raw_with_mimetype(emails, 'text/plain')
     end
 
+    get '/api/get_all_entries_for_phishing_training' do
+        require_admin!
+        entries = []
+        @@user_info.each_pair do |email, info|
+            level = nil
+            if info[:teacher]
+                level = 'teacher'
+            elsif [5, 6].include?(info[:klassenstufe])
+                level = '5_6'
+            elsif [7, 8].include?(info[:klassenstufe])
+                level = '7_8'
+            elsif [9, 10].include?(info[:klassenstufe])
+                level = '9_10'
+            elsif [11, 12].include?(info[:klassenstufe])
+                level = '11_12'
+            end
+            if level.nil?
+                STDERR.puts "Cannot determine level for #{info[:klasse]} #{email}, skipping..."
+                next
+            end
+            entry = {
+                :email => email,
+                :geschlecht => info[:geschlecht],
+                :level => level
+            }
+            entries << entry
+        end
+        entries.shuffle!
+        respond_raw_with_mimetype(entries.to_json, 'application/json')
+    end
+
     def print_email_accounts()
         require_admin!
         StringIO.open do |io|

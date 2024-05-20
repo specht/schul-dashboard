@@ -566,6 +566,7 @@ class Main < Sinatra::Base
                 :display_name_official => record[:display_name_official],
                 :display_last_name => record[:display_last_name],
                 :display_last_name_dativ => record[:display_last_name_dativ],
+                :geschlecht => record[:geschlecht],
                 :email => record[:email],
                 :can_log_in => record[:can_log_in],
                 :nc_login => record[:nc_login],

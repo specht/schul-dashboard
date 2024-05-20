@@ -182,6 +182,10 @@ class Script
 
             email = 'eltern.' + email
             act_as_sender = 'schulbuchverein@gymnasiumsteglitz.de'
+            if DEVELOPMENT
+                email = WEBSITE_MAINTAINER_EMAIL
+                act_as_sender = WEBSITE_MAINTAINER_EMAIL
+            end
             mail = Mail.new do
                 charset = 'UTF-8'
                 to email
@@ -210,7 +214,7 @@ class Script
                         Stellvertretende Vorsitzende
                         </p>
                         <p>
-                        Lehr- und Lernmittelhilfe des Gymnasium Stegltz e.V.<br>
+                        Lehr- und Lernmittelhilfe des Gymnasium Steglitz e.V.<br>
                         E-Mail: <a href='mailto:schulbuchverein@gymnasiumsteglitz.de'>schulbuchverein@gymnasiumsteglitz.de</a><br>
                         Web: <a href='https://gymnasiumsteglitz.de/lehrbuchverein'>https://gymnasiumsteglitz.de/lehrbuchverein</a><br>
                         </p>

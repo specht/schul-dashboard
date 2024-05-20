@@ -3,6 +3,7 @@ require './main.rb'
 require './parser.rb'
 require 'digest/sha2'
 require 'girocode'
+require 'uri'
 require 'yaml'
 
 LETTERS = 'BCDFHJLMNPQRSTVWYZ'
@@ -37,6 +38,17 @@ end
 
 class Script
     def run
+
+        files = ['https://dashboard.gymnasiumsteglitz.de/f/Informationen%20zum%20Schulbuchverein%20(Stand%2005-2024).pdf',
+                 'https://dashboard.gymnasiumsteglitz.de/f/Beitrittserkl%C3%A4rung%20(Stand%2005-2024).pdf']
+
+        pdf_for_path = {}
+
+        if ARGV.include?('--welcome')
+            files.each do |path|
+                pdf_for_path[path] = `curl --output - \"#{path}\"`
+            end
+        end
 
         path = "/data/bibliothek/Beitragsaufforderung.docx"
         sha1 = Digest::SHA1.hexdigest(File.read(path))
@@ -186,58 +198,120 @@ class Script
                 email = WEBSITE_MAINTAINER_EMAIL
                 act_as_sender = WEBSITE_MAINTAINER_EMAIL
             end
-            mail = Mail.new do
-                charset = 'UTF-8'
-                to email
-                bcc [SMTP_FROM, act_as_sender]
-                from act_as_sender
-                reply_to act_as_sender
-
-                subject "Beitragszahlung zum Schulbuchverein für das Schuljahr #{LBV_NEXT_SCHULJAHR}"
-                content_type 'multipart/mixed'
-
-                message = StringIO.open do |io|
-                    io.puts <<~END_OF_MAIL
-                        <p>Sehr geehrte Eltern von #{record[:display_name]},</p>
-                        <p>hiermit möchten wir Sie daran erinnern, dass die jährliche Zahlung des Beitrags zum Schulbuchverein zum #{LBV_ZAHLUNGSFRIST} fällig wird.</p>
-                        <p>Alle Informationen zur Beitragshöhe und Zahlungsweise finden Sie in der angehängten Beitragsaufforderung.</p>
-                        <p>Bitte beachten Sie, dass wir das Verfahren für die Beitragszahlung in diesem Jahr angepasst haben, um die Zuordnung der Zahlungseingänge zu erleichtern:</p>
-                        <p><b>--- Bitte tätigen Sie für jedes beitragspflichtige Kind eine eigene Überweisung und nutzen Sie nur den im Schreiben angegebenen Verwendungszweck! ---</b></p>
-                        <p>Für Rückfragen stehen wir gerne per E-Mail unter <a href='mailto:schulbuchverein@gymnasiumsteglitz.de'>schulbuchverein@gymnasiumsteglitz.de</a> zur Verfügung.</p>
-                        <p>Mit freundlichen Grüßen</p>
-                        <p>
-                        Dr. Christoph Hellriegel<br>
-                        Vorsitzender
-                        </p>
-                        <p>
-                        Alice Beaucamp<br>
-                        Stellvertretende Vorsitzende
-                        </p>
-                        <p>
-                        Lehr- und Lernmittelhilfe des Gymnasium Steglitz e.V.<br>
-                        E-Mail: <a href='mailto:schulbuchverein@gymnasiumsteglitz.de'>schulbuchverein@gymnasiumsteglitz.de</a><br>
-                        Web: <a href='https://gymnasiumsteglitz.de/lehrbuchverein'>https://gymnasiumsteglitz.de/lehrbuchverein</a><br>
-                        </p>
-                    END_OF_MAIL
-                    io.string
-                end
-
-                part(:content_type => 'multipart/alternative') do |p|
-                    p.part 'text/html' do |p|
-                        p.content_type = 'text/html; charset=UTF-8'
-                        p.body = message
+            if ARGV.include?('--welcome')
+                if klassenstufe_next == 7
+                    mail = Mail.new do
+                        charset = 'UTF-8'
+                        to email
+                        bcc [SMTP_FROM, act_as_sender]
+                        from act_as_sender
+                        reply_to act_as_sender
+    
+                        subject "Informationen zum Schulbuchverein / Ende der Lernmittelfreiheit ab Klasse 7"
+                        content_type 'multipart/mixed'
+    
+                        message = StringIO.open do |io|
+                            io.puts <<~END_OF_MAIL
+                                <p>Sehr geehrte Eltern von #{record[:display_name]},</p>
+                                <p>hiermit informieren wir Sie darüber, dass ab dem kommenden Schuljahr für #{record[:display_first_name]} die Lernmittelfreiheit endet.</p>
+                                <p>Ab Klasse 7 beschafft der Lehr- und Lernmittelverein des Gymnasium Steglitz die Schulbücher (siehe angehängtes Informationsschreiben). Dies bedeutet, dass Sie im kommenden Schuljahr den regulären Beitrag zum Lehr- und Lernmittelverein zahlen müssen, wenn Sie Mitglied werden möchten oder durch Geschwisterkinder bereits Mitglied sind.</p>
+                                <p>Sollten Sie dem Verein noch nicht beigetreten sein, können Sie dies gerne tun, indem Sie die angehängte Beitrittserklärung ausfüllen und uns per E-Mail an <a href='mailto:schulbuchverein@gymnasiumsteglitz.de'>schulbuchverein@gymnasiumsteglitz.de</a> senden oder im Sekretariat abgeben.</p>
+                                <p>Die Schulbücher ab Klasse 7 werden in üblicher Weise über den Verein beschafft. In den nächsten Tagen erhalten Sie die Aufforderung zur Zahlung des Mitgliedsbeitrags für Ihr Kind.</p>
+                                <p>Sollten Sie sich gegen eine Mitgliedschaft entscheiden, sind Sie verpflichtet, die Schulbücher auf eigene Kosten – bis zur gesetzlich festgelegten Obergrenze – selbst zu beschaffen. Bitte wenden Sie sich in diesem Fall an die Lehrkräfte der Schulbücherei.</p>
+                                <p>Wir hoffen, dass Ihr Kind weiterhin mit Lehr- und Lernmitteln bestens ausgestattet sein wird!</p>
+                                <p>Für Rückfragen stehen wir Ihnen selbstverständlich gerne zur Verfügung.</p>
+                                <p>Mit freundlichen Grüßen</p>
+                                <p>
+                                Dr. Christoph Hellriegel<br>
+                                Vorsitzender
+                                </p>
+                                <p>
+                                Alice Beaucamp<br>
+                                Stellvertretende Vorsitzende
+                                </p>
+                                <p>
+                                Lehr- und Lernmittelhilfe des Gymnasium Steglitz e.V.<br>
+                                E-Mail: <a href='mailto:schulbuchverein@gymnasiumsteglitz.de'>schulbuchverein@gymnasiumsteglitz.de</a><br>
+                                Web: <a href='https://gymnasiumsteglitz.de/lehrbuchverein'>https://gymnasiumsteglitz.de/lehrbuchverein</a><br>
+                                </p>
+                            END_OF_MAIL
+                            io.string
+                        end
+    
+                        part(:content_type => 'multipart/alternative') do |p|
+                            p.part 'text/html' do |p|
+                                p.content_type = 'text/html; charset=UTF-8'
+                                p.body = message
+                            end
+                            p.part 'text/plain' do |p|
+                                p.body = mail_html_to_plain_text(message)
+                            end
+                        end
+    
+                        pdf_for_path.each_pair do |path, pdf|
+                            add_file :content_type => 'application/pdf', :content => pdf, :filename => URI.decode_uri_component(File.basename(path))
+                        end
                     end
-                    p.part 'text/plain' do |p|
-                        p.body = mail_html_to_plain_text(message)
+                    if ARGV.include?('--srsly')
+                        mail.deliver!
+                    else
+                        STDERR.puts "Not sending mail to #{email} unless you specify --srsly!"
                     end
                 end
-
-                add_file :content_type => 'application/pdf', :content => File.read(pdf_path), :filename => "#{brief_sha1}.pdf"
-            end
-            if ARGV.include?('--srsly')
-                mail.deliver!
             else
-                STDERR.puts "Not sending mail to #{email} unless you specify --srsly!"
+                mail = Mail.new do
+                    charset = 'UTF-8'
+                    to email
+                    bcc [SMTP_FROM, act_as_sender]
+                    from act_as_sender
+                    reply_to act_as_sender
+
+                    subject "Beitragszahlung zum Schulbuchverein für das Schuljahr #{LBV_NEXT_SCHULJAHR}"
+                    content_type 'multipart/mixed'
+
+                    message = StringIO.open do |io|
+                        io.puts <<~END_OF_MAIL
+                            <p>Sehr geehrte Eltern von #{record[:display_name]},</p>
+                            <p>hiermit möchten wir Sie daran erinnern, dass die jährliche Zahlung des Beitrags zum Schulbuchverein zum #{LBV_ZAHLUNGSFRIST} fällig wird.</p>
+                            <p>Alle Informationen zur Beitragshöhe und Zahlungsweise finden Sie in der angehängten Beitragsaufforderung.</p>
+                            <p>Bitte beachten Sie, dass wir das Verfahren für die Beitragszahlung in diesem Jahr angepasst haben, um die Zuordnung der Zahlungseingänge zu erleichtern:</p>
+                            <p><b>--- Bitte tätigen Sie für jedes beitragspflichtige Kind eine eigene Überweisung und nutzen Sie nur den im Schreiben angegebenen Verwendungszweck! ---</b></p>
+                            <p>Für Rückfragen stehen wir gerne per E-Mail unter <a href='mailto:schulbuchverein@gymnasiumsteglitz.de'>schulbuchverein@gymnasiumsteglitz.de</a> zur Verfügung.</p>
+                            <p>Mit freundlichen Grüßen</p>
+                            <p>
+                            Dr. Christoph Hellriegel<br>
+                            Vorsitzender
+                            </p>
+                            <p>
+                            Alice Beaucamp<br>
+                            Stellvertretende Vorsitzende
+                            </p>
+                            <p>
+                            Lehr- und Lernmittelhilfe des Gymnasium Steglitz e.V.<br>
+                            E-Mail: <a href='mailto:schulbuchverein@gymnasiumsteglitz.de'>schulbuchverein@gymnasiumsteglitz.de</a><br>
+                            Web: <a href='https://gymnasiumsteglitz.de/lehrbuchverein'>https://gymnasiumsteglitz.de/lehrbuchverein</a><br>
+                            </p>
+                        END_OF_MAIL
+                        io.string
+                    end
+
+                    part(:content_type => 'multipart/alternative') do |p|
+                        p.part 'text/html' do |p|
+                            p.content_type = 'text/html; charset=UTF-8'
+                            p.body = message
+                        end
+                        p.part 'text/plain' do |p|
+                            p.body = mail_html_to_plain_text(message)
+                        end
+                    end
+
+                    add_file :content_type => 'application/pdf', :content => File.read(pdf_path), :filename => "#{brief_sha1}.pdf"
+                end
+                if ARGV.include?('--srsly')
+                    mail.deliver!
+                else
+                    STDERR.puts "Not sending mail to #{email} unless you specify --srsly!"
+                end
             end
         end
     end

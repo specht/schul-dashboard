@@ -125,7 +125,11 @@ class Script
                 doc = File.read(File.join(out_path_dir, formular_sha1, 'word', 'document.xml'))
                 doc.gsub!('#SUS_NAME.', record[:display_name])
                 doc.gsub!('#SUS_VORNAME.', record[:display_first_name])
-                doc.gsub!('#DATUM.', Date.today.strftime('%d.%m.%Y'))
+                # doc.gsub!('#DATUM.', Date.today.strftime('%d.%m.%Y'))
+                if Date.today.year != 2024
+                    raise "Date is not 2024!"
+                end
+                doc.gsub!('#DATUM.', '24.05.2024')
                 doc.gsub!('#MV_DATUM.', '6. Mai 2024')
                 doc.gsub!('#NEXT_SCHULJAHR.', '2024/25')
                 doc.gsub!('#ZAHLUNGSFRIST.', LBV_ZAHLUNGSFRIST)

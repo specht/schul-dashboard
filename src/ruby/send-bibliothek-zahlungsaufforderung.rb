@@ -64,6 +64,7 @@ class Script
 
         parser = Parser.new()
         entries = []
+        email_for_subject = {}
 
         parser.parse_schueler do |record|
             entries << {:email => record[:email],
@@ -104,6 +105,7 @@ class Script
             end
             subject += ' '
             subject += email.split('@')[0].split('.').join(' ').upcase
+            email_for_subject[subject.split(' ').first] = email
             sesb = sesb_sus.include?(email)
             klassenstufe = record[:klasse].to_i
             klassenstufe_next = klassenstufe + 1
@@ -316,6 +318,9 @@ class Script
                     STDERR.puts "Not sending mail to #{recipient} unless you specify --srsly!"
                 end
             end
+        end
+        File.open('/internal/bibliothek/out/email_for_subject.yaml', 'w') do |f|
+            f.write email_for_subject.to_yaml
         end
     end
 end

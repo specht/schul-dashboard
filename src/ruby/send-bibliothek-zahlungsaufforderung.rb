@@ -108,7 +108,6 @@ class Script
             klassenstufe = record[:klasse].to_i
             klassenstufe_next = klassenstufe + 1
             next if klassenstufe_next < 7
-            STDERR.puts "next: #{klassenstufe_next}"
             brief_id = "#{ZEUGNIS_SCHULJAHR}/Beitragsaufforderung/#{email}"
             brief_sha1 = Digest::SHA1.hexdigest(brief_id).to_i(16).to_s(36)
             brief_sha1 = "Beitragsaufforderung #{LBV_NEXT_SCHULJAHR.gsub('/', '-')} #{record[:display_name]}"
@@ -192,18 +191,18 @@ class Script
                 FileUtils::rm_rf(out_path_docx)
             end
 
-            email = 'eltern.' + email
+            recipient = 'eltern.' + email
             act_as_sender = 'schulbuchverein@gymnasiumsteglitz.de'
             if DEVELOPMENT
-                email = WEBSITE_MAINTAINER_EMAIL
+                recipient = WEBSITE_MAINTAINER_EMAIL
                 act_as_sender = WEBSITE_MAINTAINER_EMAIL
             end
             if ARGV.include?('--welcome')
                 if klassenstufe_next == 7
-                    STDERR.puts "Sending welcome mail to #{email} (#{@@user_info[email.sub('eltern.', '')][:klasse]})"
+                    STDERR.puts "Sending welcome mail to #{email} (#{@@user_info[email][:klasse]})"
                     mail = Mail.new do
                         charset = 'UTF-8'
-                        to email
+                        to recipient
                         bcc [SMTP_FROM, act_as_sender]
                         from act_as_sender
                         reply_to act_as_sender
@@ -238,7 +237,7 @@ class Script
                             END_OF_MAIL
                             io.string
                         end
-    
+
                         part(:content_type => 'multipart/alternative') do |p|
                             p.part 'text/html' do |p|
                                 p.content_type = 'text/html; charset=UTF-8'
@@ -248,7 +247,7 @@ class Script
                                 p.body = mail_html_to_plain_text(message)
                             end
                         end
-    
+
                         pdf_for_path.each_pair do |path, pdf|
                             add_file :content_type => 'application/pdf', :content => pdf, :filename => URI.decode_uri_component(File.basename(path))
                         end
@@ -256,14 +255,14 @@ class Script
                     if ARGV.include?('--srsly')
                         mail.deliver!
                     else
-                        STDERR.puts "Not sending mail to #{email} unless you specify --srsly!"
+                        STDERR.puts "Not sending mail to #{recipient} unless you specify --srsly!"
                     end
                 end
             else
-                STDERR.puts "Sending Beitragsaufforderung mail to #{email} (#{@@user_info[email.sub('eltern.', '')][:klasse]})"
+                STDERR.puts "Sending Beitragsaufforderung mail to #{email} (#{@@user_info[email][:klasse]})"
                 mail = Mail.new do
                     charset = 'UTF-8'
-                    to email
+                    to recipient
                     bcc [SMTP_FROM, act_as_sender]
                     from act_as_sender
                     reply_to act_as_sender
@@ -312,7 +311,7 @@ class Script
                 if ARGV.include?('--srsly')
                     mail.deliver!
                 else
-                    STDERR.puts "Not sending mail to #{email} unless you specify --srsly!"
+                    STDERR.puts "Not sending mail to #{recipient} unless you specify --srsly!"
                 end
             end
         end

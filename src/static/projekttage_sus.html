@@ -107,7 +107,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 card.append($(`<p>`).text(projekt.description ?? '(noch keine Beschreibung vorhanden)'));
                 if ('#{user_eligible_for_projektwahl?}' === 'true') {
                     $(`<hr class='dashed'>`).appendTo(card);
-                    if (#{@session_user[:klassenstufe]} >= projekt.min_klasse && #{@session_user[:klassenstufe]} <= projekt.max_klasse) {
+                    if (#{@session_user[:klassenstufe] || 0} >= projekt.min_klasse && #{@session_user[:klassenstufe] || 0} <= projekt.max_klasse) {
                         $(`<p>`).text(`Teile uns hier mit, wie sehr du dich für dieses Projekt interessierst:`).appendTo(card);
                         div = $(`<div class='emojis'>`).appendTo(card);
                         let codepoints = [0x1fae5, 0x1f914, 0x1f60d, 0x1f525];

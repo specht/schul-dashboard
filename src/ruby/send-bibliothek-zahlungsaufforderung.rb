@@ -86,7 +86,6 @@ class Script
         end.each do |record|
             email = record[:email]
             # next if (@@user_info[email][:siblings_next_year] || []).empty?
-            next unless email == 'carolina.hoffmann@mail.gymnasiumsteglitz.de'
             subject_i = Digest::SHA1.hexdigest("BIB/#{LBV_NEXT_SCHULJAHR}/#{email}").to_i(16)
             subject = ''
             2.times do
@@ -116,81 +115,82 @@ class Script
 
             out_path_docx = File.join("/internal/bibliothek/out/#{brief_sha1}.docx")
             out_path_pdf = File.join("/internal/bibliothek/out/#{brief_sha1}.pdf")
-            out_path_dir = File.join("/internal/bibliothek/out/#{brief_sha1}")
-            FileUtils.mkpath(out_path_dir)
-            formular_sha1 = sha1
-            FileUtils.cp_r("/internal/bibliothek/formulare/#{formular_sha1}/", out_path_dir)
-            doc = File.read(File.join(out_path_dir, formular_sha1, 'word', 'document.xml'))
-            doc.gsub!('#SUS_NAME.', record[:display_name])
-            doc.gsub!('#SUS_VORNAME.', record[:display_first_name])
-            doc.gsub!('#DATUM.', Date.today.strftime('%d.%m.%Y'))
-            doc.gsub!('#MV_DATUM.', '6. Mai 2024')
-            doc.gsub!('#NEXT_SCHULJAHR.', '2024/25')
-            doc.gsub!('#ZAHLUNGSFRIST.', LBV_ZAHLUNGSFRIST)
-            doc.gsub!('#EMPFAENGER.', LBV_EMPFAENGER)
-            doc.gsub!('#IBAN.', LBV_IBAN.chars.each_slice(4).to_a.map { |x| x.join('') }.join(' '))
-            doc.gsub!('#BIC.', LBV_BIC)
-            doc.gsub!('#BANK.', LBV_BANK)
-            doc.gsub!('#BEITRAG_AS_1.', "#{LBV_BEITRAG_AS_1.to_s} €")
-            doc.gsub!('#BEITRAG_AS_2.', "#{LBV_BEITRAG_AS_2.to_s} €")
-            doc.gsub!('#BEITRAG_AS_3.', "#{LBV_BEITRAG_AS_3.to_s} €")
-            doc.gsub!('#BEITRAG_SESB_1.', "#{LBV_BEITRAG_SESB_1.to_s} €")
-            doc.gsub!('#BEITRAG_SESB_2.', "#{LBV_BEITRAG_SESB_2.to_s} €")
-            doc.gsub!('#BEITRAG_SESB_3.', "#{LBV_BEITRAG_SESB_3.to_s} €")
-            doc.gsub!('#SUS_KLASSENSTUFE.', klassenstufe_next.to_s)
-            doc.gsub!('#SUS_ZUG_DATIV.', sesb ? 'SESB-Zug' : 'altsprachlichen Zug')
-            doc.gsub!('#VERWENDUNGSZWECK.', subject)
 
-            amount = 0
+            unless File.exist?(out_path_pdf)
+                out_path_dir = File.join("/internal/bibliothek/out/#{brief_sha1}")
+                FileUtils.mkpath(out_path_dir)
+                formular_sha1 = sha1
+                FileUtils.cp_r("/internal/bibliothek/formulare/#{formular_sha1}/", out_path_dir)
+                doc = File.read(File.join(out_path_dir, formular_sha1, 'word', 'document.xml'))
+                doc.gsub!('#SUS_NAME.', record[:display_name])
+                doc.gsub!('#SUS_VORNAME.', record[:display_first_name])
+                doc.gsub!('#DATUM.', Date.today.strftime('%d.%m.%Y'))
+                doc.gsub!('#MV_DATUM.', '6. Mai 2024')
+                doc.gsub!('#NEXT_SCHULJAHR.', '2024/25')
+                doc.gsub!('#ZAHLUNGSFRIST.', LBV_ZAHLUNGSFRIST)
+                doc.gsub!('#EMPFAENGER.', LBV_EMPFAENGER)
+                doc.gsub!('#IBAN.', LBV_IBAN.chars.each_slice(4).to_a.map { |x| x.join('') }.join(' '))
+                doc.gsub!('#BIC.', LBV_BIC)
+                doc.gsub!('#BANK.', LBV_BANK)
+                doc.gsub!('#BEITRAG_AS_1.', "#{LBV_BEITRAG_AS_1.to_s} €")
+                doc.gsub!('#BEITRAG_AS_2.', "#{LBV_BEITRAG_AS_2.to_s} €")
+                doc.gsub!('#BEITRAG_AS_3.', "#{LBV_BEITRAG_AS_3.to_s} €")
+                doc.gsub!('#BEITRAG_SESB_1.', "#{LBV_BEITRAG_SESB_1.to_s} €")
+                doc.gsub!('#BEITRAG_SESB_2.', "#{LBV_BEITRAG_SESB_2.to_s} €")
+                doc.gsub!('#BEITRAG_SESB_3.', "#{LBV_BEITRAG_SESB_3.to_s} €")
+                doc.gsub!('#SUS_KLASSENSTUFE.', klassenstufe_next.to_s)
+                doc.gsub!('#SUS_ZUG_DATIV.', sesb ? 'SESB-Zug' : 'altsprachlichen Zug')
+                doc.gsub!('#VERWENDUNGSZWECK.', subject)
 
-            sibling_index_next_year = @@user_info[email][:sibling_index_next_year] || 0
-            satz = StringIO.open do |io|
-                if sibling_index_next_year == 0
-                    amount = sesb ? LBV_BEITRAG_SESB_1 : LBV_BEITRAG_AS_1
-                    io.puts "Da uns keine weiteren, älteren Geschwisterkinder bekannt sind, beträgt der Beitrag für Ihr Kind im nächsten Schuljahr #{sprintf('%d', amount).sub('.', ',')} €."
-                elsif sibling_index_next_year == 1
-                    amount = sesb ? LBV_BEITRAG_SESB_2 : LBV_BEITRAG_AS_2
-                    older_siblings = join_with_sep(@@user_info[email][:older_siblings].reverse.map { |x| @@user_info[x][:display_first_name] }, ', ', ' und ')
-                    io.puts "Da uns ein weiteres, älteres Geschwisterkind bekannt ist (#{older_siblings}), beträgt der Beitrag für Ihr Kind im nächsten Schuljahr #{sprintf('%d', amount).sub('.', ',')} €."
-                elsif sibling_index_next_year >= 2
-                    amount = sesb ? LBV_BEITRAG_SESB_3 : LBV_BEITRAG_AS_3
-                    older_siblings = join_with_sep(@@user_info[email][:older_siblings].reverse.map { |x| @@user_info[x][:display_first_name] }, ', ', ' und ')
-                    io.puts "Da uns #{sibling_index_next_year > 2 ? 'mindestens ' : ''}zwei weitere, ältere Geschwisterkinder bekannt sind (#{older_siblings}), beträgt der Beitrag für Ihr Kind im nächsten Schuljahr #{sprintf('%d', amount).sub('.', ',')} €."
+                amount = 0
+
+                sibling_index_next_year = @@user_info[email][:sibling_index_next_year] || 0
+                satz = StringIO.open do |io|
+                    if sibling_index_next_year == 0
+                        amount = sesb ? LBV_BEITRAG_SESB_1 : LBV_BEITRAG_AS_1
+                        io.puts "Da uns keine weiteren, älteren Geschwisterkinder bekannt sind, beträgt der Beitrag für Ihr Kind im nächsten Schuljahr #{sprintf('%d', amount).sub('.', ',')} €."
+                    elsif sibling_index_next_year == 1
+                        amount = sesb ? LBV_BEITRAG_SESB_2 : LBV_BEITRAG_AS_2
+                        older_siblings = join_with_sep(@@user_info[email][:older_siblings].reverse.map { |x| @@user_info[x][:display_first_name] }, ', ', ' und ')
+                        io.puts "Da uns ein weiteres, älteres Geschwisterkind bekannt ist (#{older_siblings}), beträgt der Beitrag für Ihr Kind im nächsten Schuljahr #{sprintf('%d', amount).sub('.', ',')} €."
+                    elsif sibling_index_next_year >= 2
+                        amount = sesb ? LBV_BEITRAG_SESB_3 : LBV_BEITRAG_AS_3
+                        older_siblings = join_with_sep(@@user_info[email][:older_siblings].reverse.map { |x| @@user_info[x][:display_first_name] }, ', ', ' und ')
+                        io.puts "Da uns #{sibling_index_next_year > 2 ? 'mindestens ' : ''}zwei weitere, ältere Geschwisterkinder bekannt sind (#{older_siblings}), beträgt der Beitrag für Ihr Kind im nächsten Schuljahr #{sprintf('%d', amount).sub('.', ',')} €."
+                    end
+                    io.string
                 end
-                io.string
+                doc.gsub!('#SUS_GESCHWISTER_UND_BEITRAG_SATZ.', satz)
+                doc.gsub!('#BETRAG.', sprintf('%.2f €', amount).sub('.', ','))
+
+                File.open(File.join(out_path_dir, formular_sha1, 'word', 'document.xml'), 'w') do |f|
+                    f.write doc
+                end
+                code = Girocode.new(
+                    iban: LBV_IBAN,
+                    bic: LBV_BIC,
+                    name: LBV_EMPFAENGER,
+                    currency: 'EUR',
+                    amount: amount,
+                    bto_info: subject,
+                    reference: subject.split(' ').first,
+                )
+                File.open(File.join(out_path_dir, formular_sha1, 'word', 'media', 'image2.png'), 'w') do |f|
+                    f.write code.to_png(module_px_size: 8)
+                end
+
+                command = "convert \"#{File.join(out_path_dir, formular_sha1, 'word', 'media', 'image2.png')}\" -trim +repage \"#{File.join(out_path_dir, formular_sha1, 'word', 'media', 'image3.png')}\""
+                system(command)
+                FileUtils.mv(File.join(out_path_dir, formular_sha1, 'word', 'media', 'image3.png'), File.join(out_path_dir, formular_sha1, 'word', 'media', 'image2.png'))
+
+                command = "cd \"#{File.join(out_path_dir, formular_sha1)}\"; zip -r \"#{out_path_docx}\" ."
+                system(command)
+                FileUtils::rm_rf(File.join(out_path_dir))
+                command = "HOME=/internal/lowriter_home lowriter --headless --convert-to 'pdf:writer_pdf_Export:{\"ExportFormFields\":{\"type\":\"boolean\",\"value\":\"false\"}}' \"#{out_path_docx}\" --outdir \"#{File.dirname(out_path_docx)}\""
+                STDERR.puts command
+                system(command)
+                FileUtils::rm_rf(out_path_docx)
             end
-            doc.gsub!('#SUS_GESCHWISTER_UND_BEITRAG_SATZ.', satz)
-            doc.gsub!('#BETRAG.', sprintf('%.2f €', amount).sub('.', ','))
-
-            File.open(File.join(out_path_dir, formular_sha1, 'word', 'document.xml'), 'w') do |f|
-                f.write doc
-            end
-            code = Girocode.new(
-                iban: LBV_IBAN,
-                bic: LBV_BIC,
-                name: LBV_EMPFAENGER,
-                currency: 'EUR',
-                amount: amount,
-                bto_info: subject,
-                reference: subject.split(' ').first,
-            )
-            File.open(File.join(out_path_dir, formular_sha1, 'word', 'media', 'image2.png'), 'w') do |f|
-                f.write code.to_png(module_px_size: 8)
-            end
-
-            command = "convert \"#{File.join(out_path_dir, formular_sha1, 'word', 'media', 'image2.png')}\" -trim +repage \"#{File.join(out_path_dir, formular_sha1, 'word', 'media', 'image3.png')}\""
-            system(command)
-            FileUtils.mv(File.join(out_path_dir, formular_sha1, 'word', 'media', 'image3.png'), File.join(out_path_dir, formular_sha1, 'word', 'media', 'image2.png'))
-
-            command = "cd \"#{File.join(out_path_dir, formular_sha1)}\"; zip -r \"#{out_path_docx}\" ."
-            system(command)
-            FileUtils::rm_rf(File.join(out_path_dir))
-            command = "HOME=/internal/lowriter_home lowriter --headless --convert-to 'pdf:writer_pdf_Export:{\"ExportFormFields\":{\"type\":\"boolean\",\"value\":\"false\"}}' \"#{out_path_docx}\" --outdir \"#{File.dirname(out_path_docx)}\""
-            STDERR.puts command
-            system(command)
-            FileUtils::rm_rf(out_path_docx)
-
-            pdf_path = File.join(File.dirname(out_path_docx), File.basename(out_path_docx).sub('.docx', '.pdf'))
 
             email = 'eltern.' + email
             act_as_sender = 'schulbuchverein@gymnasiumsteglitz.de'
@@ -307,7 +307,7 @@ class Script
                         end
                     end
 
-                    add_file :content_type => 'application/pdf', :content => File.read(pdf_path), :filename => "#{brief_sha1}.pdf"
+                    add_file :content_type => 'application/pdf', :content => File.read(out_path_pdf), :filename => "#{brief_sha1}.pdf"
                 end
                 if ARGV.include?('--srsly')
                     mail.deliver!

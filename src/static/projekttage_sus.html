@@ -3,7 +3,7 @@
     <div class='row'>
         <div class='col-md-12'>
             <h2 style='margin-bottom: 30px;'>Projekttage #{Date.today.year}</h2>
-            <div class="alert" style="background-color: rgba(255, 255, 255, 0.8); #{user_eligible_for_projektwahl? ? '' : 'display: none;'}">
+            <div class="alert mono-alert" style="#{user_eligible_for_projektwahl? ? '' : 'display: none;'}">
                 <h3>Wähle deine Lieblingsprojekte!</h3>
                 Wähle mindestens drei Projekte, die dich interessieren.
                 Du kannst sie später noch ändern. Falls du weniger als
@@ -19,6 +19,13 @@
 </div>
 
 <style>
+    .mono-alert {
+        background-color: rgba(255, 255, 255, 0.8);
+    }
+    body.dark .mono-alert {
+        background-color: rgba(0, 0, 0, 0.5);
+        border: 1px solid rgba(255, 255, 255, 0.3);
+    }
     .card {
         background-color: #f8f9fa;
         border: 1px solid #bebfc1;
@@ -49,6 +56,20 @@
         background-color: #fff;
         box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
     }
+    body.dark .emojis img {
+        border: 1px dashed rgba(255, 255, 255, 0.5);
+    }
+    body.dark .emojis img.active {
+        border: 1px solid rgba(255, 255, 255, 1);
+        background-color: #111!important;
+        box-shadow: 0 0 10px #fff;
+    }
+    hr.dashed {
+        border-top: 1px dashed rgba(0,0,0,0.3);
+    }
+    body.dark hr.dashed {
+        border-top: 1px dashed rgba(255, 255, 255, 0.3);
+    }
 </style>
 
 <script>
@@ -77,32 +98,41 @@ document.addEventListener('DOMContentLoaded', function() {
                 let div = $(`<div style='position: relative; top: -5px;'>`).appendTo(card);
                 for (let cat of projekt.categories)
                     div.append($(`<span class='badge badge-success' style='margin-right: 5px;'>`).text(cat));
+                if (projekt.min_klasse === projekt.max_klasse) {
+                    div.append($(`<span class='badge badge-warning' style='margin-right: 5px;'>`).text(`nur Klasse ${projekt.min_klasse}`));
+                } else {
+                    div.append($(`<span class='badge badge-warning' style='margin-right: 5px;'>`).text(`Klasse ${projekt.min_klasse} – ${projekt.max_klasse}`));
+                }
                 card.append($(`<p style='font-style: italic;'>`).text(`${projekt.organized_by.map(function(x) { return display_name_for_email[x]; }).join(', ')}`));
                 card.append($(`<p>`).text(projekt.description ?? '(noch keine Beschreibung vorhanden)'));
                 if ('#{user_eligible_for_projektwahl?}' === 'true') {
-                    $(`<hr style='border-top: 1px dashed rgba(0,0,0,0.3);'>`).appendTo(card);
-                    $(`<p>`).text(`Teile uns hier mit, wie sehr du dich für dieses Projekt interessierst:`).appendTo(card);
-                    div = $(`<div class='emojis'>`).appendTo(card);
-                    let codepoints = [0x1fae5, 0x1f914, 0x1f60d, 0x1f525];
-                    for (let i = 0; i < codepoints.length; i++) {
-                        let codepoint = codepoints[i];
-                        let img = $(`<img src='/images/emoji_u${codepoint.toString(16)}.png'>`).data('index', i);
-                        if (i === projekt.session_user_vote) img.addClass('active');
-                        div.append(img);
-                        img.on('click', function() {
-                            let self = this;
-                            let index = $(this).data('index');
-                            api_call('/api/vote_for_project', {nr: projekt.nr, vote: index}, function(data) {
-                                if (data.success) {
-                                    $(self).parent().find('img').removeClass('active');
-                                    $(self).addClass('active');
-                                    $(self).closest('.card').find('._verdict').text(`»${choice_level_label[index]}«`);
-                                }
+                    $(`<hr class='dashed'>`).appendTo(card);
+                    if (#{@session_user[:klassenstufe]} >= projekt.min_klasse && #{@session_user[:klassenstufe]} <= projekt.max_klasse) {
+                        $(`<p>`).text(`Teile uns hier mit, wie sehr du dich für dieses Projekt interessierst:`).appendTo(card);
+                        div = $(`<div class='emojis'>`).appendTo(card);
+                        let codepoints = [0x1fae5, 0x1f914, 0x1f60d, 0x1f525];
+                        for (let i = 0; i < codepoints.length; i++) {
+                            let codepoint = codepoints[i];
+                            let img = $(`<img src='/images/emoji_u${codepoint.toString(16)}.png'>`).data('index', i);
+                            if (i === projekt.session_user_vote) img.addClass('active');
+                            div.append(img);
+                            img.on('click', function() {
+                                let self = this;
+                                let index = $(this).data('index');
+                                api_call('/api/vote_for_project', {nr: projekt.nr, vote: index}, function(data) {
+                                    if (data.success) {
+                                        $(self).parent().find('img').removeClass('active');
+                                        $(self).addClass('active');
+                                        $(self).closest('.card').find('._verdict').text(`»${choice_level_label[index]}«`);
+                                    }
+                                });
                             });
-                        });
+                        }
+                        let verdict = $(`<p class='_verdict' style='font-style: italic;'>`).text(`»${choice_level_label[0]}«`);
+                        verdict.appendTo(card);
+                    } else {
+                        card.append($(`<p style='font-style: italic;'>`).text(`Du kannst dieses Projekt leider nicht wählen, da es nicht für deine Klassenstufe vorgesehen ist.`));
                     }
-                    let verdict = $(`<p class='_verdict' style='font-style: italic;'>`).text(`»${choice_level_label[0]}«`);
-                    verdict.appendTo(card);
                 }
                 if ('#{teacher_logged_in?}' === 'true') {
                     $(`<hr style='border-top: 1px dashed rgba(0,0,0,0.3);'>`).appendTo(card);

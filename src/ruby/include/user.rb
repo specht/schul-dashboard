@@ -721,7 +721,7 @@ class Main < Sinatra::Base
                     count = 0
                     count += 1 unless (projekt[:description] || '').strip.empty?
                     count += 1 unless (projekt[:photo] || '').strip.empty?
-                    emoji = %w(😭 🥲 🙂)[count]
+                    emoji = %w(😭 🥲 🥳)[count]
                     unless count == 2 && (Time.now.to_i - (projekt[:ts_updated] || 0) > 3600)
                         io.puts "<div class='col-lg-12 col-md-4 col-sm-6'>"
                         io.puts "<div class='hint'>"

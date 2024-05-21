@@ -200,6 +200,7 @@ class Script
             end
             if ARGV.include?('--welcome')
                 if klassenstufe_next == 7
+                    STDERR.puts "Sending welcome mail to #{email} (#{@@user_info[email.sub('eltern.', '')][:klasse]})"
                     mail = Mail.new do
                         charset = 'UTF-8'
                         to email
@@ -259,6 +260,7 @@ class Script
                     end
                 end
             else
+                STDERR.puts "Sending Beitragsaufforderung mail to #{email} (#{@@user_info[email.sub('eltern.', '')][:klasse]})"
                 mail = Mail.new do
                     charset = 'UTF-8'
                     to email

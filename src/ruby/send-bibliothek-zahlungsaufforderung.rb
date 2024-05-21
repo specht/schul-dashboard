@@ -107,7 +107,7 @@ class Script
             sesb = sesb_sus.include?(email)
             klassenstufe = record[:klasse].to_i
             klassenstufe_next = klassenstufe + 1
-            next if klassenstufe_next < 7
+            next if klassenstufe_next < 7 || klassenstufe > 11
             brief_id = "#{ZEUGNIS_SCHULJAHR}/Beitragsaufforderung/#{email}"
             brief_sha1 = Digest::SHA1.hexdigest(brief_id).to_i(16).to_s(36)
             brief_sha1 = "Beitragsaufforderung #{LBV_NEXT_SCHULJAHR.gsub('/', '-')} #{record[:display_name]}"
@@ -254,6 +254,7 @@ class Script
                     end
                     if ARGV.include?('--srsly')
                         mail.deliver!
+                        sleep 5
                     else
                         STDERR.puts "Not sending mail to #{recipient} unless you specify --srsly!"
                     end
@@ -310,6 +311,7 @@ class Script
                 end
                 if ARGV.include?('--srsly')
                     mail.deliver!
+                    sleep 5
                 else
                     STDERR.puts "Not sending mail to #{recipient} unless you specify --srsly!"
                 end

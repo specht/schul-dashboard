@@ -260,7 +260,7 @@ class Script
                     end
                     if ARGV.include?('--srsly')
                         mail.deliver!
-                        sleep 5
+                        sleep 2
                     else
                         STDERR.puts "Not sending mail to #{recipient} unless you specify --srsly!"
                     end
@@ -317,7 +317,7 @@ class Script
                 end
                 if ARGV.include?('--srsly')
                     mail.deliver!
-                    sleep 5
+                    sleep 2
                 else
                     STDERR.puts "Not sending mail to #{recipient} unless you specify --srsly!"
                 end

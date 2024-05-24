@@ -2742,7 +2742,7 @@ tr.palerow td {
     display: block;
     background-color: #ddd;
     padding: 10px;
-    border: 10px solid #ffffff;
+    border: 10px solid #fff;
     border-bottom: 50px solid #fff;
     border-radius: 2px;
     box-shadow: 0 0 10px rgba(0, 0, 0, 0.2), 0 0 10px rgba(0, 0, 0, 0.2) inset;
@@ -2752,6 +2752,13 @@ tr.palerow td {
     float: right;
     background-size: cover;
 }
+
+body.dark .polaroid {
+    background-color: #555;
+    border: 10px solid #333;
+    border-bottom: 50px solid #333;
+}
+
 
 .polaroid.big {
     width: 100%;

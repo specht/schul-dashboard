@@ -286,7 +286,7 @@
     #{PAGE_CSS_HERE}
 </head>
 
-<body>
+<body #{(@session_user || {})[:dark] ? 'class=\'dark\'' : ''}>
 
 <script>
 var poll_run_data = null;

@@ -212,6 +212,12 @@ class Main < Sinatra::Base
         user_logged_in? && (EXTERNAL_USERS.include?(@session_user[:email]))
     end
 
+    def running_pishing_training?
+        start = PHISHING_HINT_START
+        ende = PHISHING_HINT_END
+        user_logged_in? && (@session_user[:klassenstufe] || @session_user[:teacher]) && Time.now.strftime('%Y-%m-%dT%H:%M:%S') >= start && Time.now.strftime('%Y-%m-%dT%H:%M:%S') <= ende
+    end
+
     def require_device!
         assert(!@session_device.nil?)
     end
@@ -337,6 +343,10 @@ class Main < Sinatra::Base
 
     def require_teacher_for_lesson_or_ha_amt_logged_in(lesson_key)
         assert(teacher_for_lesson_or_ha_amt_logged_in?(lesson_key))
+    end
+
+    def require_running_phishing_training!
+        assert(running_pishing_training?)
     end
 
     # Put this on top of a webpage to assert that this page can be opened by logged in users only
@@ -755,14 +765,14 @@ class Main < Sinatra::Base
     def print_phishing_panel()
         start = PHISHING_HINT_START
         ende = PHISHING_HINT_END
-        if Time.now.strftime('%Y-%m-%dT%H:%M:%S') >= start && Time.now.strftime('%Y-%m-%dT%H:%M:%S') <= ende
+        if running_pishing_training?
             return StringIO.open do |io|
                 io.puts "<div class='col-lg-12 col-md-4 col-sm-6'>"
                 io.puts "<div class='hint'>"
-                io.puts "<p><b>Phishing</b></p>"
+                io.puts "<p><b>Phishing Prävention</b></p>"
                 io.puts "<hr />"
                 io.puts "<p>Sieh dir an, was es mit der E-Mail vom #{PHISHING_RECEIVING_DATE} auf sich hatte.</p>"
-                io.puts "<p><a href='/phishing' class='btn btn-primary'>🦈&nbsp;&nbsp;Phishing&nbsp;<i class='fa fa-angle-double-right'></i></a></p>"
+                io.puts "<p><a href='/phishing' class='btn btn-primary'>🦈&nbsp;&nbsp;Phishing Prävention&nbsp;<i class='fa fa-angle-double-right'></i></a></p>"
                 io.puts "</div>"
                 io.puts "</div>"
                 io.string

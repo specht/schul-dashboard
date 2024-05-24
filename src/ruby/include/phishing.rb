@@ -122,9 +122,7 @@ class Main < Sinatra::Base
         </div>
         </div>"
 
-        start = PHISHING_HINT_START
-        ende = PHISHING_HINT_END
-        if Time.now.strftime('%Y-%m-%dT%H:%M:%S') >= start && Time.now.strftime('%Y-%m-%dT%H:%M:%S') <= ende
+        if running_pishing_training? || developer_logged_in?
             return StringIO.open do |io|
                 if [5, 6].include?(@session_user[:klassenstufe])
                     io.puts us

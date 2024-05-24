@@ -1811,9 +1811,7 @@ class Main < Sinatra::Base
                         nav_items << :techteam
                     end
                 end
-                start = PHISHING_HINT_START
-                ende = PHISHING_HINT_END
-                if Time.now.strftime('%Y-%m-%dT%H:%M:%S') >= start && Time.now.strftime('%Y-%m-%dT%H:%M:%S') <= ende || developer_logged_in?
+                if running_pishing_training? || developer_logged_in?
                     nav_items << :phishing
                 end
                 # nav_items << :advent_calendar #if advents_calendar_date_today > 0
@@ -2103,7 +2101,7 @@ class Main < Sinatra::Base
                     io.puts "</li>"
                 elsif x == :phishing
                     io.puts "<li class='nav-item text-nowrap'>"
-                    io.puts "<a class='nav-link nav-icon' href='/phishing'><div class='icon'>🦈</div>Phishing</a>"
+                    io.puts "<a class='nav-link nav-icon' href='/phishing'><div class='icon'>🦈</div>Phishing Prävention</a>"
                     io.puts "</li>"
                 else
                     io.puts "<li class='nav-item text-nowrap'>"

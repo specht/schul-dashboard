@@ -215,13 +215,13 @@ class Main < Sinatra::Base
     def running_pishing_training?
         start = PHISHING_START
         ende = PHISHING_END
-        user_logged_in? && (@session_user[:klassenstufe] || @session_user[:teacher]) && Time.now.strftime('%Y-%m-%dT%H:%M:%S') >= start && Time.now.strftime('%Y-%m-%dT%H:%M:%S') <= ende
+        user_logged_in? && (schueler_logged_in? || teacher_logged_in?) && Time.now.strftime('%Y-%m-%dT%H:%M:%S') >= start && Time.now.strftime('%Y-%m-%dT%H:%M:%S') <= ende
     end
 
     def running_pishing_training_hint?
         start = PHISHING_HINT_START
         ende = PHISHING_HINT_END
-        user_logged_in? && (@session_user[:klassenstufe] || @session_user[:teacher]) && Time.now.strftime('%Y-%m-%dT%H:%M:%S') >= start && Time.now.strftime('%Y-%m-%dT%H:%M:%S') <= ende
+        user_logged_in? && (schueler_logged_in? || teacher_logged_in?) && Time.now.strftime('%Y-%m-%dT%H:%M:%S') >= start && Time.now.strftime('%Y-%m-%dT%H:%M:%S') <= ende
     end
 
     def require_device!

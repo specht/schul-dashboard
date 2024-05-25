@@ -87,6 +87,7 @@ require './include/phishing.rb'
 require './include/poll.rb'
 require './include/projekte.rb'
 require './include/public_event.rb'
+require './include/roles.rb'
 require './include/salzh.rb'
 require './include/sms.rb'
 require './include/techpost.rb'
@@ -573,7 +574,8 @@ class Main < Sinatra::Base
                 :can_log_in => record[:can_log_in],
                 :nc_login => record[:nc_login],
                 :matrix_login => record[:matrix_login],
-                :initial_nc_password => record[:initial_nc_password]
+                :initial_nc_password => record[:initial_nc_password],
+                :roles => Set.new([:teacher]),
             }
             matrix_login = record[:matrix_login]
             raise "oops: duplicate matrix / nc login: #{matrix_login}" if @@email_for_matrix_login.include?(matrix_login)
@@ -652,7 +654,8 @@ class Main < Sinatra::Base
                 :initial_nc_password => record[:initial_nc_password],
                 :biber_password => Main.gen_password_for_email(record[:email] + 'biber')[0, 4].downcase,
                 :jitsi_disabled => disable_jitsi_for_email.include?(record[:email]),
-                :geburtstag => record[:geburtstag]
+                :geburtstag => record[:geburtstag],
+                :roles => Set.new([:schueler]),
             }
             raise "oops: duplicate matrix / nc login: #{matrix_login}" if @@email_for_matrix_login.include?(matrix_login)
             @@email_for_matrix_login[matrix_login] = record[:email]
@@ -665,6 +668,82 @@ class Main < Sinatra::Base
                 @@birthday_entries[birthday_md] << record[:email]
             end
         end
+
+        parser.parse_extra_accounts do |record|
+            if @@user_info[record[:email]]
+                raise "Extra account already exists: #{record[:email]}!"
+            end
+            @@user_info[record[:email]] = {
+                :teacher => false,
+                :first_name => record[:first_name],
+                :last_name => record[:last_name],
+                :titel => record[:titel],
+                :display_name => record[:display_name],
+                :display_name_official => record[:display_name_official],
+                :display_last_name => record[:display_last_name],
+                :display_last_name_dativ => record[:display_last_name_dativ],
+                :geschlecht => record[:geschlecht],
+                :email => record[:email],
+                :can_log_in => true,
+                :roles => Set.new()
+            }
+        end
+
+        # Now we have schueler, teacher, and extra accounts, now assign the roles
+        File.open('/data/roles/roles.txt') do |f|
+            role = nil
+            f.each_line do |line|
+                line.strip!
+                next if line.empty?
+                if line[0, 2] == '>>'
+                    role = line[2, line.size - 2].strip.downcase.to_sym
+                    raise "Unknown role: #{role.to_s.upcase} in /data/roles/roles.txt!" unless AVAILABLE_ROLES.include?(role)
+                else
+                    email = line.downcase
+                    if @@user_info.include?(email)
+                        @@user_info[email][:roles] << role
+                    else
+                        debug "Warning: Not assigning role #{role.to_s.upcase} to unknown email address #{email}, skipping..."
+                    end
+                end
+            end
+        end
+
+        # now apply transitive roles
+        loop do
+            upgraded_someone = false
+            ROLE_TRANSITIONS.split("\n").each do |line|
+                line.strip!
+                next if line[0] == '#' || line.empty?
+                parts = line.split("=>")
+                role_from = parts[0].strip.to_sym
+                roles_to = parts[1].split(/\s+/).map { |x| x.strip }.reject { |x| x.empty? }.map { |x| x.to_sym }
+                raise "Unknown role in ROLE_TRANSITIONS: #{role_from}" unless AVAILABLE_ROLES.include?(role_from)
+                roles_to.each do |role|
+                    raise "Unknown role in ROLE_TRANSITIONS: #{role}" unless  AVAILABLE_ROLES.include?(role)
+                end
+                @@user_info.keys.each do |email|
+                    if @@user_info[email][:roles].include?(role_from)
+                        roles_to.each do |role|
+                            unless @@user_info[email][:roles].include?(role)
+                                @@user_info[email][:roles] << role
+                                upgraded_someone = true
+                            end
+                        end
+                    end
+                end
+            end
+            break unless upgraded_someone
+        end
+
+        @@users_for_role = {}
+        @@user_info.each_pair do |email, info|
+            info[:roles].each do |role|
+                @@users_for_role[role] ||= []
+                @@users_for_role[role] << email
+            end
+        end
+
         all_prefixes = {}
         @@user_info.keys.each do |email|
             @@user_info[email][:id] = Digest::SHA2.hexdigest(USER_ID_SALT + email).to_i(16).to_s(36)[0, 16]
@@ -716,70 +795,66 @@ class Main < Sinatra::Base
 
         @@tablet_sets = parser.parse_tablet_sets || {}
 
-        ADMIN_USERS.each do |email|
-            next unless @@user_info[email]
-            @@user_info[email][:admin] = true
-        end
-        ZEUGNIS_ADMIN_USERS.each do |email|
-            next unless @@user_info[email]
-            @@user_info[email][:zeugnis_admin] = true
-        end
-        (CAN_SEE_ALL_TIMETABLES_USERS + ADMIN_USERS).each do |email|
-            next unless @@user_info[email]
-            @@user_info[email][:can_see_all_timetables] = true
-        end
-        (CAN_MANAGE_SALZH_USERS + ADMIN_USERS).each do |email|
-            next unless @@user_info[email]
-            @@user_info[email][:can_manage_salzh] = true
-        end
-        (CAN_UPLOAD_VPLAN_USERS + ADMIN_USERS).each do |email|
-            next unless @@user_info[email]
-            @@user_info[email][:can_upload_vplan] = true
-        end
-        (CAN_UPLOAD_FILES_USERS + ADMIN_USERS).each do |email|
-            next unless @@user_info[email]
-            @@user_info[email][:can_upload_files] = true
-        end
-        (CAN_MANAGE_NEWS_USERS + ADMIN_USERS).each do |email|
-            next unless @@user_info[email]
-            @@user_info[email][:can_manage_news] = true
-        end
-        (CAN_MANAGE_AGS_USERS + ADMIN_USERS).each do |email|
-            next unless @@user_info[email]
-            @@user_info[email][:can_manage_ags] = true
-        end
-        (CAN_MANAGE_MONITORS_USERS + ADMIN_USERS).each do |email|
-            next unless @@user_info[email]
-            @@user_info[email][:can_manage_monitors] = true
-        end
-        (CAN_USE_AULA_USERS + CAN_MANAGE_TABLETS_USERS + TECHNIKTEAM + ADMIN_USERS).each do |email|
-            next unless @@user_info[email]
-            @@user_info[email][:can_use_aula] = true
-        end
-        (CAN_MANAGE_TABLETS_USERS + TECHNIKTEAM + ADMIN_USERS).each do |email|
-            next unless @@user_info[email]
-            @@user_info[email][:can_manage_tablets] = true
-        end
-        (CAN_REPORT_TECH_PROBLEMS_USERS + TECHNIKTEAM + ADMIN_USERS).each do |email|
-            next unless @@user_info[email]
-            @@user_info[email][:can_report_tech_problems] = true
-        end
-        (TECHNIKTEAM + ADMIN_USERS).each do |email|
-            next unless @@user_info[email]
-            @@user_info[email][:technikteam] = true
-        end
-        (DEVELOPERS).each do |email|
-            next unless @@user_info[email]
-            @@user_info[email][:developer] = true
-        end
-        (CAN_MANAGE_ANTIKENFAHRT_USERS + ADMIN_USERS).each do |email|
-            next unless @@user_info[email]
-            @@user_info[email][:can_manage_antikenfahrt] = true
-        end
-        (SV_USERS + TECHNIKTEAM).each do |email|
-            next unless @@user_info[email]
-            @@user_info[email][:sv] = true
-        end
+        # ADMIN_USERS.each do |email|
+        #     next unless @@user_info[email]
+        #     @@user_info[email][:admin] = true
+        # end
+        # ZEUGNIS_ADMIN_USERS.each do |email|
+        #     next unless @@user_info[email]
+        #     @@user_info[email][:zeugnis_admin] = true
+        # end
+        # (CAN_SEE_ALL_TIMETABLES_USERS + ADMIN_USERS).each do |email|
+        #     next unless @@user_info[email]
+        #     @@user_info[email][:can_see_all_timetables] = true
+        # end
+        # (CAN_MANAGE_SALZH_USERS + ADMIN_USERS).each do |email|
+        #     next unless @@user_info[email]
+        #     @@user_info[email][:can_manage_salzh] = true
+        # end
+        # (CAN_UPLOAD_VPLAN_USERS + ADMIN_USERS).each do |email|
+        #     next unless @@user_info[email]
+        #     @@user_info[email][:can_upload_vplan] = true
+        # end
+        # (CAN_UPLOAD_FILES_USERS + ADMIN_USERS).each do |email|
+        #     next unless @@user_info[email]
+        #     @@user_info[email][:can_upload_files] = true
+        # end
+        # (CAN_MANAGE_NEWS_USERS + ADMIN_USERS).each do |email|
+        #     next unless @@user_info[email]
+        #     @@user_info[email][:can_manage_news] = true
+        # end
+        # (CAN_MANAGE_MONITORS_USERS + ADMIN_USERS).each do |email|
+        #     next unless @@user_info[email]
+        #     @@user_info[email][:can_manage_monitors] = true
+        # end
+        # (CAN_USE_AULA_USERS + CAN_MANAGE_TABLETS_USERS + TECHNIKTEAM + ADMIN_USERS).each do |email|
+        #     next unless @@user_info[email]
+        #     @@user_info[email][:can_use_aula] = true
+        # end
+        # (CAN_MANAGE_TABLETS_USERS + TECHNIKTEAM + ADMIN_USERS).each do |email|
+        #     next unless @@user_info[email]
+        #     @@user_info[email][:can_manage_tablets] = true
+        # end
+        # (CAN_REPORT_TECH_PROBLEMS_USERS + TECHNIKTEAM + ADMIN_USERS).each do |email|
+        #     next unless @@user_info[email]
+        #     @@user_info[email][:can_report_tech_problems] = true
+        # end
+        # (TECHNIKTEAM + ADMIN_USERS).each do |email|
+        #     next unless @@user_info[email]
+        #     @@user_info[email][:technikteam] = true
+        # end
+        # (DEVELOPERS).each do |email|
+        #     next unless @@user_info[email]
+        #     @@user_info[email][:developer] = true
+        # end
+        # (CAN_MANAGE_ANTIKENFAHRT_USERS + ADMIN_USERS).each do |email|
+        #     next unless @@user_info[email]
+        #     @@user_info[email][:can_manage_antikenfahrt] = true
+        # end
+        # (SV_USERS + TECHNIKTEAM).each do |email|
+        #     next unless @@user_info[email]
+        #     @@user_info[email][:sv] = true
+        # end
 
         # add Eltern
         @@predefined_external_users = {:groups => [], :recipients => {}}
@@ -1783,7 +1858,9 @@ class Main < Sinatra::Base
             new_messages_count_s = nil
             nav_items = []
             if user_logged_in?
-                nav_items << ['/', 'Stundenplan', 'fa fa-calendar']
+                if teacher_logged_in? || schueler_logged_in?
+                    nav_items << ['/', 'Stundenplan', 'fa fa-calendar']
+                end
                 if teacher_logged_in?
                     nav_items << :kurse
                     nav_items << :directory
@@ -1794,7 +1871,9 @@ class Main < Sinatra::Base
                 # if user_who_can_manage_monitors_logged_in?
                 #     nav_items << :monitor
                 # end
-                nav_items << :messages
+                if teacher_logged_in? || schueler_logged_in?
+                    nav_items << :messages
+                end
                 if user_is_eligible_for_tresor?
                     nav_items << :tresor
                 end
@@ -1824,13 +1903,6 @@ class Main < Sinatra::Base
             else
                 nav_items << ['/hilfe', 'Hilfe', 'fa fa-question-circle']
                 nav_items << ['/', 'Anmelden', 'fa fa-sign-in']
-            end
-            if external_user_logged_in?
-                nav_items = []
-                if can_manage_bib_payment_logged_in?
-                    nav_items << ['/', 'Lehrmittelverein', 'fa fa-book']
-                    nav_items << :profile
-                end
             end
             return nil if nav_items.empty?
             io.puts "<button class='navbar-toggler' type='button' data-toggle='collapse' data-target='#navbarTogglerDemo02' aria-controls='navbarTogglerDemo02' aria-expanded='false' aria-label='Toggle navigation'>"
@@ -1863,11 +1935,6 @@ class Main < Sinatra::Base
                         io.puts "<a class='dropdown-item nav-icon' href='/manage_monitor'><div class='icon'><i class='fa fa-tv'></i></div><span class='label'>Monitore verwalten</span></a>"
                         printed_something = true
                     end
-                    # if user_who_can_manage_ags_logged_in?
-                    #     io.puts "<div class='dropdown-divider'></div>" if printed_something
-                    #     io.puts "<a class='dropdown-item nav-icon' href='/manage_ags'><div class='icon'><i class='fa fa-community'></i></div><span class='label'>AGs verwalten</span></a>"
-                    #     printed_something = true
-                    # end
                     if admin_logged_in?
                         io.puts "<div class='dropdown-divider'></div>" if printed_something
                         io.puts "<a class='dropdown-item nav-icon' href='/admin'><div class='icon'><i class='fa fa-wrench'></i></div><span class='label'>Administration</span></a>"
@@ -1914,14 +1981,10 @@ class Main < Sinatra::Base
                     io.puts "<div class='icon nav_avatar'>#{user_icon(@session_user[:email], 'avatar-md')}</div><span class='menu-user-name'>#{display_name}</span>"
                     io.puts "</a>"
                     io.puts "<div class='dropdown-menu dropdown-menu-right' aria-labelledby='navbarDropdownProfile'>"
-                    unless external_user_logged_in?
-                        io.puts "<a class='dropdown-item nav-icon' href='/profil'><div class='icon'>#{user_icon(@session_user[:email], 'avatar-sm')}</div><span class='label'>Profil</span></a>"
-                    end
+                    io.puts "<a class='dropdown-item nav-icon' href='/profil'><div class='icon'>#{user_icon(@session_user[:email], 'avatar-sm')}</div><span class='label'>Profil</span></a>"
                     sessions = all_sessions()
                     if sessions.size > 1
-                        unless external_user_logged_in?
-                            io.puts "<div class='dropdown-divider'></div>"
-                        end
+                        io.puts "<div class='dropdown-divider'></div>"
                         sessions[1, sessions.size - 1].each.with_index do |entry, _|
                             display_name = htmlentities(entry[:user][:display_name])
                             if entry[:user][:klasse]
@@ -1931,75 +1994,79 @@ class Main < Sinatra::Base
                         end
                     end
                     io.puts "<a class='dropdown-item nav-icon' href='/login'><div class='icon'><i class='fa fa-sign-in'></i></div><span class='label'>Zusätzliche Anmeldung…</span></a>"
-                    unless external_user_logged_in?
+                    if user_with_role_logged_in?(:can_use_nextcloud)
                         io.puts "<a class='dropdown-item nav-icon' href='/login_nc'><div class='icon'><i class='fa fa-nextcloud'></i></div><span class='label'>In Nextcloud anmelden…</span></a>"
-                        if @session_user[:dark]
-                            io.puts "<button class='dropdown-item nav-icon nav-light'><div class='icon'><i class='fa fa-sun-o'></i></div><span class='label'>Hell</span></button>"
-                        else
-                            io.puts "<button class='dropdown-item nav-icon nav-dark'><div class='icon'><i class='fa fa-moon'></i></div><span class='label'>Dunkel</span></button>"
-                        end
-
-                        # if can_manage_agr_app_logged_in? || can_manage_bib_members_logged_in? || can_manage_bib_logged_in? || teacher_logged_in?
-                            io.puts "<div class='dropdown-divider'></div>"
-                            if gev_logged_in?
-                                io.puts "<a class='dropdown-item nav-icon' href='/gev'><div class='icon'><i class='fa fa-users'></i></div><span class='label'>Gesamtelternvertretung</span></a>"
-                            end
-                            if can_manage_agr_app_logged_in?
-                                io.puts "<a class='dropdown-item nav-icon' href='/agr_app'><div class='icon'><i class='fa fa-mobile'></i></div><span class='label'>Altgriechisch-App</span></a>"
-                            end
-                            if can_manage_bib_members_logged_in?
-                                io.puts "<a class='dropdown-item nav-icon' href='/lehrbuchverein'><div class='icon'><i class='fa fa-book'></i></div><span class='label'>Lehrmittelverein</span></a>"
-                            end
-                            # if can_manage_bib_logged_in? || teacher_logged_in?
-                                io.puts "<a class='dropdown-item nav-icon' href='/bibliothek'><div class='icon'><i class='fa fa-book'></i></div><span class='label'>Bibliothek</span></a>"
-                            # end
-                            if user_logged_in?
-                                if teacher_logged_in?
-                                    io.puts "<a class='dropdown-item nav-icon' href='/projekttage_sus'><div class='icon'><i class='fa fa-rocket'></i></div><span class='label'>Projekttage</span></a>"
-                                elsif @session_user[:klasse] == '11'
-                                    io.puts "<a class='dropdown-item nav-icon' href='/projekttage_orga'><div class='icon'><i class='fa fa-rocket'></i></div><span class='label'>Projekttage</span></a>"
-                                elsif user_eligible_for_projekt_katalog? && DEVELOPMENT
-                                    io.puts "<a class='dropdown-item nav-icon' href='/projekttage_sus'><div class='icon'><i class='fa fa-rocket'></i></div><span class='label'>Projekttage</span></a>"
-                                end
-                            end
-                            # end
-                        unless teacher_logged_in?
-                            if @session_user[:klasse].to_i < 11
-                                io.puts "<a class='dropdown-item nav-icon' href='/directory/#{@session_user[:klasse]}'><div class='icon'><i class='fa fa-users'></i></div><span class='label'>Meine Klasse</span></a>"
-                            end
-                        end
-                        if teacher_or_sv_logged_in?
-                            io.puts "<div class='dropdown-divider'></div>"
-                            if teacher_or_sv_logged_in?
-                                if teacher_logged_in?
-                                    # if can_manage_salzh_logged_in?
-                                    #     io.puts "<a class='dropdown-item nav-icon' href='/salzh'><div class='icon'><i class='fa fa-home'></i></div><span class='label'>Testungen</span></a>"
-                                    # end
-                                    io.puts "<a class='dropdown-item nav-icon' href='/klassenmemory_assign'><div class='icon'><i class='fa fa-user'></i></div><span class='label'>Klassenmemory</span></a>"
-                                    io.puts "<a class='dropdown-item nav-icon' href='/tests'><div class='icon'><i class='fa fa-file-text-o'></i></div><span class='label'>Klassenarbeiten</span></a>"
-                                end
-                                io.puts "<a class='dropdown-item nav-icon' href='/events'><div class='icon'><i class='fa fa-calendar-check-o'></i></div><span class='label'>Termine</span></a>"
-                                io.puts "<a class='dropdown-item nav-icon' href='/polls'><div class='icon'><i class='fa fa-bar-chart'></i></div><span class='label'>Umfragen</span></a>"
-                                # io.puts "<a class='dropdown-item nav-icon' href='/prepare_vote'><div class='icon'><i class='fa fa-hand-paper-o'></i></div><span class='label'>Abstimmungen</span></a>"
-                                io.puts "<a class='dropdown-item nav-icon' href='/mailing_lists'><div class='icon'><i class='fa fa-envelope'></i></div><span class='label'>E-Mail-Verteiler</span></a>"
-                                if teacher_logged_in?
-                                    io.puts "<a class='dropdown-item nav-icon' href='/angebote'><div class='icon'><i class='fa fa-group'></i></div><span class='label'>AGs und Angebote</span></a>"
-                                end
-                                io.puts "<a class='dropdown-item nav-icon' href='/groups'><div class='icon'><i class='fa fa-group'></i></div><span class='label'>Meine Gruppen</span></a>"
-                            end
-                        end
-                        # if @session_user[:can_upload_vplan]
-                        #     io.puts "<div class='dropdown-divider'></div>"
-                        #     io.puts "<a class='dropdown-item nav-icon' href='/upload_vplan_html'><div class='icon'><i class='fa fa-upload'></i></div><span class='label'>Vertretungsplan hochladen</span></a>"
-                        # end
-                        io.puts "<div class='dropdown-divider'></div>"
-                        # if true
-                        #     io.puts "<a class='dropdown-item nav-icon' href='/h4ck'><div class='icon'><i class='fa fa-rocket'></i></div><span class='label'>Dashboard Hackers</span></a>"
-                        # end
-                        # if admin_logged_in?
-                        #     io.puts "<a class='bu-launch-adventskalender dropdown-item nav-icon'><div class='icon'><i class='fa fa-snowflake-o'></i></div><span class='label'>Adventskalender</span></a>"
-                        # end
                     end
+                    if @session_user[:dark]
+                        io.puts "<button class='dropdown-item nav-icon nav-light'><div class='icon'><i class='fa fa-sun-o'></i></div><span class='label'>Hell</span></button>"
+                    else
+                        io.puts "<button class='dropdown-item nav-icon nav-dark'><div class='icon'><i class='fa fa-moon'></i></div><span class='label'>Dunkel</span></button>"
+                    end
+
+                    printed_divider = false
+                    if gev_logged_in?
+                        io.puts "<div class='dropdown-divider'></div>" unless printed_divider
+                        printed_divider = true
+                        io.puts "<a class='dropdown-item nav-icon' href='/gev'><div class='icon'><i class='fa fa-users'></i></div><span class='label'>Gesamtelternvertretung</span></a>"
+                    end
+                    if can_manage_agr_app_logged_in?
+                        io.puts "<div class='dropdown-divider'></div>" unless printed_divider
+                        printed_divider = true
+                        io.puts "<a class='dropdown-item nav-icon' href='/agr_app'><div class='icon'><i class='fa fa-mobile'></i></div><span class='label'>Altgriechisch-App</span></a>"
+                    end
+                    if can_manage_bib_members_logged_in?
+                        io.puts "<div class='dropdown-divider'></div>" unless printed_divider
+                        printed_divider = true
+                        io.puts "<a class='dropdown-item nav-icon' href='/lehrbuchverein'><div class='icon'><i class='fa fa-book'></i></div><span class='label'>Lehrmittelverein</span></a>"
+                    end
+                    if schueler_logged_in? || teacher_logged_in?
+                        io.puts "<div class='dropdown-divider'></div>" unless printed_divider
+                        printed_divider = true
+                        io.puts "<a class='dropdown-item nav-icon' href='/bibliothek'><div class='icon'><i class='fa fa-book'></i></div><span class='label'>Bibliothek</span></a>"
+                    end
+                    if user_logged_in?
+                        if teacher_logged_in?
+                            io.puts "<a class='dropdown-item nav-icon' href='/projekttage_sus'><div class='icon'><i class='fa fa-rocket'></i></div><span class='label'>Projekttage</span></a>"
+                        elsif @session_user[:klasse] == '11'
+                            io.puts "<a class='dropdown-item nav-icon' href='/projekttage_orga'><div class='icon'><i class='fa fa-rocket'></i></div><span class='label'>Projekttage</span></a>"
+                        elsif user_eligible_for_projekt_katalog? && DEVELOPMENT
+                            io.puts "<a class='dropdown-item nav-icon' href='/projekttage_sus'><div class='icon'><i class='fa fa-rocket'></i></div><span class='label'>Projekttage</span></a>"
+                        end
+                    end
+                    if schueler_logged_in?
+                        if @session_user[:klasse].to_i < 11
+                            io.puts "<a class='dropdown-item nav-icon' href='/directory/#{@session_user[:klasse]}'><div class='icon'><i class='fa fa-users'></i></div><span class='label'>Meine Klasse</span></a>"
+                        end
+                    end
+                    if teacher_or_sv_logged_in?
+                        io.puts "<div class='dropdown-divider'></div>"
+                        if teacher_logged_in?
+                            # if can_manage_salzh_logged_in?
+                            #     io.puts "<a class='dropdown-item nav-icon' href='/salzh'><div class='icon'><i class='fa fa-home'></i></div><span class='label'>Testungen</span></a>"
+                            # end
+                            io.puts "<a class='dropdown-item nav-icon' href='/klassenmemory_assign'><div class='icon'><i class='fa fa-user'></i></div><span class='label'>Klassenmemory</span></a>"
+                            io.puts "<a class='dropdown-item nav-icon' href='/tests'><div class='icon'><i class='fa fa-file-text-o'></i></div><span class='label'>Klassenarbeiten</span></a>"
+                        end
+                        io.puts "<a class='dropdown-item nav-icon' href='/events'><div class='icon'><i class='fa fa-calendar-check-o'></i></div><span class='label'>Termine</span></a>"
+                        io.puts "<a class='dropdown-item nav-icon' href='/polls'><div class='icon'><i class='fa fa-bar-chart'></i></div><span class='label'>Umfragen</span></a>"
+                        # io.puts "<a class='dropdown-item nav-icon' href='/prepare_vote'><div class='icon'><i class='fa fa-hand-paper-o'></i></div><span class='label'>Abstimmungen</span></a>"
+                        io.puts "<a class='dropdown-item nav-icon' href='/mailing_lists'><div class='icon'><i class='fa fa-envelope'></i></div><span class='label'>E-Mail-Verteiler</span></a>"
+                        if teacher_logged_in?
+                            io.puts "<a class='dropdown-item nav-icon' href='/angebote'><div class='icon'><i class='fa fa-group'></i></div><span class='label'>AGs und Angebote</span></a>"
+                        end
+                        io.puts "<a class='dropdown-item nav-icon' href='/groups'><div class='icon'><i class='fa fa-group'></i></div><span class='label'>Meine Gruppen</span></a>"
+                    end
+                    # if @session_user[:can_upload_vplan]
+                    #     io.puts "<div class='dropdown-divider'></div>"
+                    #     io.puts "<a class='dropdown-item nav-icon' href='/upload_vplan_html'><div class='icon'><i class='fa fa-upload'></i></div><span class='label'>Vertretungsplan hochladen</span></a>"
+                    # end
+                    io.puts "<div class='dropdown-divider'></div>"
+                    # if true
+                    #     io.puts "<a class='dropdown-item nav-icon' href='/h4ck'><div class='icon'><i class='fa fa-rocket'></i></div><span class='label'>Dashboard Hackers</span></a>"
+                    # end
+                    # if admin_logged_in?
+                    #     io.puts "<a class='bu-launch-adventskalender dropdown-item nav-icon'><div class='icon'><i class='fa fa-snowflake-o'></i></div><span class='label'>Adventskalender</span></a>"
+                    # end
                     io.puts "<a class='dropdown-item nav-icon' href='/hilfe'><div class='icon'><i class='fa fa-question-circle'></i></div><span class='label'>Hilfe</span></a>"
                     io.puts "<div class='dropdown-divider'></div>"
                     io.puts "<a class='dropdown-item nav-icon' href='#' onclick='perform_logout();'><div class='icon'><i class='fa fa-sign-out'></i></div><span class='label'>Abmelden</span></a>"
@@ -3007,14 +3074,7 @@ class Main < Sinatra::Base
                     redirect "#{WEB_ROOT}/bib_browse", 302
                     return
                 else
-                    if external_user_logged_in?
-                        path = ''
-                        if can_manage_bib_payment_logged_in?
-                            path = 'lehrbuchverein'
-                        end
-                    else
-                        path = 'timetable'
-                    end
+                    path = 'timetable'
                 end
             else
                 if @session_device
@@ -3068,7 +3128,7 @@ class Main < Sinatra::Base
                     end
                 end
             end
-            unless teacher_logged_in?
+            if schueler_logged_in?
                 @@lesson_notes_for_session_user_cache ||= {}
                 @@lesson_notes_for_session_user_last_timestamp ||= 0
                 rows = neo4j_query(<<~END_OF_QUERY, {:ts => @@lesson_notes_for_session_user_last_timestamp})
@@ -3274,11 +3334,6 @@ class Main < Sinatra::Base
             end
         end
 
-        if external_user_logged_in?
-            unless ['lehrbuchverein', 'login', 'hilfe'].include?(path)
-                redirect "#{WEB_ROOT}/", 302
-            end
-        end
         new_messages_count = 0
         unread_message_ids = []
         if user_logged_in?

@@ -6,7 +6,7 @@
         <div class='col-md-8 offset-md-2'>
             <h2 style='margin-bottom: 30px;'>Profil</h2>
             <div class='row'>
-                <div class='col-md-9'>
+                <div class='#{external_user_logged_in? ? 'col-md-12' : 'col-md-9'}'>
                     <div class='row'>
                         <div class='col-md-5'>
                             <div class="form-group">
@@ -20,36 +20,36 @@
                                 <input type="text" class="form-control" value='#{((@session_user[:titel] || '') + ' ' + @session_user[:last_name]).strip}' readonly />
                             </div>
                         </div>
-                        <div class='col-md-5' style='display: #{(@session_user[:teacher] == true) ? 'block' : 'none'};'>
+                        <div class='col-md-5' style='display: #{teacher_logged_in?? 'block' : 'none'};'>
                             <div class="form-group">
                                 <label>Anzeigename (für Kollegen)</label>
                                 <input type="text" class="form-control" value='#{@session_user[:display_name]}' readonly />
                             </div>
                         </div>
-                        <div class='col-md-5' style='display: #{(@session_user[:teacher] == true) ? 'block' : 'none'};'>
+                        <div class='col-md-5' style='display: #{teacher_logged_in? ? 'block' : 'none'};'>
                             <div class="form-group">
                                 <label>Anzeigename (für SuS)</label>
                                 <input type="text" class="form-control" value='#{@session_user[:display_last_name]}' readonly />
                             </div>
                         </div>
-                        <div class='#{(@session_user[:teacher] == true) ? 'col-md-10' : 'col-md-8'}' style='display: #{(@session_user[:teacher] == true) ? 'none' : 'block'};'>
+                        <div class='#{external_user_logged_in? ? 'col-md-12' : 'col-md-8'}' style='display: #{teacher_logged_in? ? 'none' : 'block'};'>
                             <div class="form-group">
                                 <label>Anzeigename</label>
                                 <input type="text" class="form-control" value='#{@session_user[:display_name]}' readonly />
                             </div>
                         </div>
                         <div class='col-md-2'>
-                            <div class="form-group" style='display: #{(@session_user[:teacher] == true) ? 'block' : 'none'};'>
+                            <div class="form-group" style='display: #{teacher_logged_in? ? 'block' : 'none'};'>
                                 <label>Kürzel</label>
                                 <input type="text" class="form-control" value='#{@session_user[:shorthand]}' readonly />
                             </div>
-                            <div class="form-group" style='display: #{(@session_user[:teacher] == true) ? 'none' : 'block'};'>
+                            <div class="form-group" style='display: #{schueler_logged_in? ? 'block' : 'none'};'>
                                 <label>Klasse</label>
                                 <input type="text" class="form-control" value='#{tr_klasse(@session_user[:klasse])}' readonly />
                             </div>
                         </div>
                         <div class='col-md-2'>
-                            <div class="form-group" style='display: #{(@session_user[:teacher] == true) ? 'none' : 'block'};'>
+                            <div class="form-group" style='display: #{schueler_logged_in? ? 'block' : 'none'};'>
                                 <label>Gruppe</label>
                                 <input type="text" class="form-control" value='#{@session_user[:group2]}' readonly />
                             </div>
@@ -63,7 +63,7 @@
                         </div>
                     </div>
                 </div>
-                <div class='col-md-3'>
+                <div class='col-md-3' style="#{external_user_logged_in? ? 'display: none;' : ''}">
                     <div class='row'>
                         <div class='col-md-12'>
                             <div class="form-group">
@@ -81,7 +81,7 @@
                 </div>
             </div>
 
-            <div class="row" style="#{teacher_logged_in? ? 'display: none;' : ''}">
+            <div class="row" style="#{schueler_logged_in? ? '' : 'display: none;'}">
                 <div class="col-md-12">
                     <h2 style='margin-bottom: 30px; margin-top: 30px;'>Meine AGs und Angebote</h2>
                     <p style="#{angebote_for_session_user.empty? ? 'display: block;' : 'display: none;'}">
@@ -201,31 +201,33 @@
 
             <hr />
             
-            <h2 style='margin-bottom: 30px; margin-top: 30px;'>iCal-Export</h2>
-            <p>Wenn du deinen Stundenplan in einen externen Kalender einbinden möchtest, kannst du hier einen iCal-Link generieren.</p>
-            <div class="input-group">
-                <input type="text" id='ti_ical_link' class="form-control" placeholder='(kein iCal-Link vorhanden)' readonly />
-                <div class="input-group-append">
-                    <button class='btn bu-clipboard-ical btn-secondary btn-clipboard' data-clipboard-action='copy' data-clipboard-target="#ti_ical_link"><i class='fa fa-clipboard'></i>&nbsp;&nbsp;Kopieren</button>
+            <div style="#{external_user_logged_in? ? 'display: none;' : ''}">
+                <h2 style='margin-bottom: 30px; margin-top: 30px;'>iCal-Export</h2>
+                <p>Wenn du deinen Stundenplan in einen externen Kalender einbinden möchtest, kannst du hier einen iCal-Link generieren.</p>
+                <div class="input-group">
+                    <input type="text" id='ti_ical_link' class="form-control" placeholder='(kein iCal-Link vorhanden)' readonly />
+                    <div class="input-group-append">
+                        <button class='btn bu-clipboard-ical btn-secondary btn-clipboard' data-clipboard-action='copy' data-clipboard-target="#ti_ical_link"><i class='fa fa-clipboard'></i>&nbsp;&nbsp;Kopieren</button>
+                    </div>
                 </div>
-            </div>
-            <div class='float-right' style='margin-top: 5px;'>
-                <button class='btn bu-regenerate-ical btn-primary'><i class='fa fa-refresh'></i>&nbsp;&nbsp;Neu generieren</button>
-                <button class='btn bu-delete-ical btn-danger'><i class='fa fa-trash'></i>&nbsp;&nbsp;Löschen</button>
-            </div>
-            <div style='clear: both;'></div>
-            <div id='ical_options' style="margin-top: 20px; margin-bottom: 10px;">
-                <p>Hier kannst du auswählen, welche Informationen im iCal-Kalender auftauchen sollen:</p>
-                <div>
-                    <button class="btn btn-success bu-toggle-omit-ical mb-1 mr-1" data-omit-type='website_event'><i class='w-3 fa fa-check'></i>&nbsp;&nbsp;Schulweite Termine</button>
-                    <button class="btn btn-success bu-toggle-omit-ical mb-1 mr-1" data-omit-type='event'><i class='w-3 fa fa-check'></i>&nbsp;&nbsp;Meine Termine</button>
-                    <button class="btn btn-success bu-toggle-omit-ical mb-1 mr-1" data-omit-type='lesson'><i class='w-3 fa fa-check'></i>&nbsp;&nbsp;Unterricht</button>
-                    <button class="btn btn-success bu-toggle-omit-ical mb-1 mr-1" data-omit-type='holiday'><i class='w-3 fa fa-check'></i>&nbsp;&nbsp;Ferien und Feiertage</button>
-                    <button class="btn btn-success bu-toggle-omit-ical mb-1 mr-1" data-omit-type='birthday'><i class='w-3 fa fa-check'></i>&nbsp;&nbsp;Geburtstage</button>
+                <div class='float-right' style='margin-top: 5px;'>
+                    <button class='btn bu-regenerate-ical btn-primary'><i class='fa fa-refresh'></i>&nbsp;&nbsp;Neu generieren</button>
+                    <button class='btn bu-delete-ical btn-danger'><i class='fa fa-trash'></i>&nbsp;&nbsp;Löschen</button>
                 </div>
-            </div>
+                <div style='clear: both;'></div>
+                <div id='ical_options' style="margin-top: 20px; margin-bottom: 10px;">
+                    <p>Hier kannst du auswählen, welche Informationen im iCal-Kalender auftauchen sollen:</p>
+                    <div>
+                        <button class="btn btn-success bu-toggle-omit-ical mb-1 mr-1" data-omit-type='website_event'><i class='w-3 fa fa-check'></i>&nbsp;&nbsp;Schulweite Termine</button>
+                        <button class="btn btn-success bu-toggle-omit-ical mb-1 mr-1" data-omit-type='event'><i class='w-3 fa fa-check'></i>&nbsp;&nbsp;Meine Termine</button>
+                        <button class="btn btn-success bu-toggle-omit-ical mb-1 mr-1" data-omit-type='lesson'><i class='w-3 fa fa-check'></i>&nbsp;&nbsp;Unterricht</button>
+                        <button class="btn btn-success bu-toggle-omit-ical mb-1 mr-1" data-omit-type='holiday'><i class='w-3 fa fa-check'></i>&nbsp;&nbsp;Ferien und Feiertage</button>
+                        <button class="btn btn-success bu-toggle-omit-ical mb-1 mr-1" data-omit-type='birthday'><i class='w-3 fa fa-check'></i>&nbsp;&nbsp;Geburtstage</button>
+                    </div>
+                </div>
 
-            <hr />
+                <hr />
+            </div>
 
             <h2 id='anmeldung' style='margin-bottom: 30px; margin-top: 30px;'>Anmeldung</h2>
             <p>

@@ -293,7 +293,7 @@ var sus_for_my_lessons = #{Hash[(@@lessons_for_shorthand[@session_user[:shorthan
 var tablet_logged_in = ('#{tablet_logged_in?}' === 'true');
 var teacher_tablet_logged_in = ('#{teacher_tablet_logged_in?}' === 'true');
 var klassenraum_logged_in = ('#{klassenraum_logged_in?}' === 'true');
-var sus_logged_in = ('#{sus_logged_in?}' === 'true');
+var sus_logged_in = ('#{schueler_logged_in?}' === 'true');
 var teacher_logged_in = ('#{teacher_logged_in?}' === 'true');
 var fixed_timetable_data = #{fixed_timetable_data.to_json};
 var homework_feedback = {};
@@ -350,7 +350,7 @@ function refresh_jitsi_presence() {
 function render_timetable(result, successCallback) {
     events = result.events;
     $('.switch_week_panel').empty();
-    if ((!tablet_logged_in) && (teacher_logged_in || '#{(sus_logged_in? && WECHSELUNTERRICHT_KLASSENSTUFEN.include?(@session_user[:klasse].to_i))}' === 'true')) {
+    if ((!tablet_logged_in) && (teacher_logged_in || '#{(schueler_logged_in? && WECHSELUNTERRICHT_KLASSENSTUFEN.include?(@session_user[:klasse].to_i))}' === 'true')) {
         if (typeof(result.switch_week) !== 'undefined' && result.switch_week !== null) {
             let user_group2 = '#{@session_user[:group2]}';
             let s = `Diese Woche ist eine <strong>${result.switch_week}-Woche</strong>. `;
@@ -565,7 +565,7 @@ function install_physics_handler(e) {
 }
 
 function reload_print_button() {
-    if (timetable_id == '#{@session_user[:id]}' && #{sus_logged_in?}) {
+    if (timetable_id == '#{@session_user[:id]}' && #{schueler_logged_in?}) {
         $('.fc-print-button').html('<i class="fa fa-print"></i>');
         $('.fc-print-button').show();
     } else {
@@ -1095,7 +1095,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     let names_div = $('<div>');
                     body.append(names_div);
                     jitsi_refresh_config.jitsi_names_div = names_div;
-                    if ('#{sus_logged_in?}' === 'true' && event_data.breakout_rooms && event_data.breakout_room_participants) {
+                    if ('#{schueler_logged_in?}' === 'true' && event_data.breakout_rooms && event_data.breakout_room_participants) {
                         if (event_data.breakout_rooms_roaming) {
                             body.append($('<hr />'));
                             body.append($('<p>').text(`Für diese Unterrichtsstunde stehen außerdem die folgenden Gruppenräume zur Verfügung. Bitte geh zuerst in den normalen Jitsi-Raum.`));
@@ -1337,7 +1337,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 $('.future_homework').append(div);
                 if ((entry.est_time || 0) > 0)
                     $('.future_homework').append($('<p>').html(`Geplanter Zeitaufwand: ${entry.est_time} Minuten`));
-                if ('#{!!sus_logged_in?}' === 'true') {
+                if ('#{!!schueler_logged_in?}' === 'true') {
                     let bu_done = $('<div>').addClass('dropdown');
                     bu_done.data('lesson_key', entry.lesson_key);
                     bu_done.data('offset', entry.offset);
@@ -1448,7 +1448,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     let request_items = [];
                     for (let entry of homework)
                         request_items.push(`${entry.lesson_key}/${entry.offset}`);
-                    if ('#{!!sus_logged_in?}' === 'true') {
+                    if ('#{!!schueler_logged_in?}' === 'true') {
                         api_call('/api/get_homework_feedback', {entries: request_items}, function(data) {
                             if (data.success) {
                                 homework_feedback = data.homework_feedback;

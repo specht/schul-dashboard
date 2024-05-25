@@ -41,6 +41,7 @@ class Main < Sinatra::Base
             io.puts "<span style='float: right;'>SMS Gateway: #{Main.sms_gateway_ready? ? 'online' : 'offline'} / Aktive Bolt-Verbindungen: #{bolt_connections} / <a href='/schema'>Schema</a></span>"
             io.puts "<a class='btn btn-secondary mb-1' href='#teachers'>Lehrerinnen und Lehrer</a>"
             io.puts "<a class='btn btn-secondary mb-1' href='#sus'>Schülerinnen und Schüler</a>"
+            io.puts "<a class='btn btn-secondary mb-1' href='#external_users'>Externe Nutzer</a>"
             io.puts "<a class='btn btn-secondary mb-1' href='#website'>Website</a>"
             io.puts "<a class='btn btn-secondary mb-1' href='#tablets'>Tablets</a>"
             io.puts "<a class='btn btn-secondary mb-1' href='#monitor'>Monitor</a>"
@@ -170,6 +171,60 @@ class Main < Sinatra::Base
             io.puts "</table>"
             io.puts "</div>"
             io.puts "<hr />"
+            io.puts "<h3 id='external_users'>Externe Nutzer</h3>"
+            io.puts "<div style='max-width: 100%; overflow-x: auto;'>"
+            io.puts "<table class='table table-condensed table-striped narrow' style='width: unset; min-width: 100%;'>"
+            io.puts "<thead>"
+            io.puts "<tr>"
+            # io.puts "<th></th>"
+            io.puts "<th>Name</th>"
+            io.puts "<th>Vorname</th>"
+            io.puts "<th>E-Mail-Adresse</th>"
+            io.puts "<th>Anmelden</th>"
+            io.puts "<th>2FA</th>"
+            io.puts "<th>Sessions</th>"
+            io.puts "</tr>"
+            io.puts "</thead>"
+            io.puts "<tbody>"
+            @@user_info.keys.sort.each do |email|
+                user = @@user_info[email]
+                next if user[:roles].include?(:teacher) || user[:roles].include?(:schueler)
+                io.puts "<tr class='user_row'>"
+                # io.puts "<td>#{user_icon(email, 'avatar-md')}</td>"
+                io.puts "<td>#{user[:last_name]}</td>"
+                io.puts "<td>#{user[:first_name]}</td>"
+                if USE_MOCK_NAMES
+                    io.puts "<td>#{user[:first_name].downcase}.#{user[:last_name].downcase}@#{SCHUL_MAIL_DOMAIN}</td>"
+                else
+                    io.print "<td>"
+                    print_email_field(io, user[:email])
+                    io.puts "</td>"
+                end
+                io.puts "<td><button class='btn btn-warning btn-xs btn-impersonate' data-impersonate-email='#{user[:email]}'><i class='fa fa-id-badge'></i>&nbsp;&nbsp;Anmelden</button></td>"
+                io.puts "<td>#{twofa_status[email]}</td>"
+                if all_sessions.include?(email)
+                    io.puts "<td><button class='btn-sessions btn btn-xs btn-secondary' data-sessions-id='#{@@user_info[email][:id]}'>#{all_sessions[email].size} Session#{all_sessions[email].size == 1 ? '' : 's'}</button></td>"
+                else
+                    io.puts "<td></td>"
+                end
+                io.puts "</tr>"
+                (all_sessions[email] || []).each do |s|
+                    scrambled_sid = Digest::SHA2.hexdigest(SESSION_SCRAMBLER + s[:sid]).to_i(16).to_s(36)[0, 16]
+                    io.puts "<tr class='session-row sessions-#{@@user_info[email][:id]}' style='display: none;'>"
+                    io.puts "<td colspan='4'></td>"
+                    io.puts "<td colspan='2'>"
+                    io.puts "#{s[:user_agent] || '(unbekanntes Gerät)'}"
+                    io.puts "</td>"
+                    io.puts "<td>"
+                    io.puts "<button class='btn btn-xs btn-danger btn-purge-session' data-email='#{email}' data-scrambled-sid='#{scrambled_sid}'>Abmelden</button>"
+                    io.puts "</td>"
+                    io.puts "</tr>"
+                end
+            end
+            io.puts "</tbody>"
+            io.puts "</table>"
+            io.puts "</div>"
+            io.puts "<hr>"
             io.puts "<h3 id='website'>Website</h3>"
             io.puts "<button class='btn btn-secondary bu-refresh-staging'><i id='refresh-icon-staging' class='fa fa-refresh'></i>&nbsp;&nbsp;Vorschau-Seite aktualisieren</button>"
             io.puts "<button class='btn btn-success bu-refresh-live'><i id='refresh-icon-live' class='fa fa-refresh'></i>&nbsp;&nbsp;Live-Seite aktualisieren</button>"

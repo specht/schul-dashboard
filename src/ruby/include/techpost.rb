@@ -1,13 +1,14 @@
 class Main < Sinatra::Base
 
     def check_has_technikamt(email)
-        results = neo4j_query(<<~END_OF_QUERY, :email => email)
+        rows = neo4j_query(<<~END_OF_QUERY, :email => email)
             MATCH (u:User {email: $email})-[:HAS_AMT {amt: 'technikamt'}]->(v:Techpost)
             RETURN CASE WHEN EXISTS((u)-[:HAS_AMT {amt: 'technikamt'}]->(v)) THEN true ELSE false END AS hasRelation;
         END_OF_QUERY
-        return results
+        return false if rows.empty?
+        return rows.first['hasRelation']
     end
-    
+
     def get_technikamt
         results = neo4j_query(<<~END_OF_QUERY)
             MATCH (u:User)-[:HAS_AMT {amt: 'technikamt'}]->(v:Techpost)
@@ -15,7 +16,7 @@ class Main < Sinatra::Base
         END_OF_QUERY
         return results.map { |result| result["u.email"] } || []
     end
-    
+
     def send_welcome_mail(recipients)
         for mail_adress in recipients do
             deliver_mail do
@@ -55,7 +56,7 @@ class Main < Sinatra::Base
                 io.puts "<p>Hallo!</p>"
                 io.puts "<p>#{display_name} hat soeben eine Willkommens-E-Mail an alle Technikämter versendet. Du musst/kannst nichts weiter tun, diese E-Mail dient nur als Info.</p>"
                 io.string
-            
+
             end
         end
     end
@@ -75,7 +76,7 @@ class Main < Sinatra::Base
         neo4j_entry = neo4j_query_expect_one(<<~END_OF_QUERY, :token => token, :email => @session_user[:email], :device => data[:device], :date => data[:date], :problem => data[:problem])
             MATCH (u:User {email: $email})
             CREATE (v:TechProblem {token: $token})-[:BELONGS_TO]->(u)
-            SET v.device = $device 
+            SET v.device = $device
             SET v.date = $date
             SET v.problem = $problem
             SET v.fixed = false
@@ -102,7 +103,7 @@ class Main < Sinatra::Base
                 io.puts "<p>Diese E-Mail dient nur als Bestätigung, du musst also nichts weiter tun.</p>"
                 io.puts "<p>Viele Grüße<br>Dashboard #{SCHUL_NAME_AN_DATIV} #{SCHUL_NAME}</p>"
                 io.string
-            
+
             end
         end
         for mail_adress in TECHNIKTEAM do
@@ -119,7 +120,7 @@ class Main < Sinatra::Base
                     # io.puts "<a href='#{WEBSITE_HOST}/techpostadmin'>Probleme ansehen</a>"
                     io.puts "<p>Viele Grüße<br>Dashboard #{SCHUL_NAME_AN_DATIV} #{SCHUL_NAME}</p>"
                     io.string
-                
+
                 end
             end
         end
@@ -133,7 +134,7 @@ class Main < Sinatra::Base
             StringIO.open do |io|
                 io.puts "<p>#{neo4j_entry}</p>"
                 io.string
-            
+
             end
         end
         respond(:ok => true)
@@ -146,7 +147,7 @@ class Main < Sinatra::Base
         neo4j_entry = neo4j_query_expect_one(<<~END_OF_QUERY, :token => token, :email => @session_user[:email], :device => data[:device], :date => data[:date], :problem => data[:problem])
             MATCH (u:User {email: $email})
             CREATE (v:TechProblem {token: $token})-[:BELONGS_TO]->(u)
-            SET v.device = $device 
+            SET v.device = $device
             SET v.date = $date
             SET v.problem = $problem
             SET v.fixed = false
@@ -168,7 +169,7 @@ class Main < Sinatra::Base
             StringIO.open do |io|
                 io.puts "<p>#{neo4j_entry}</p>"
                 io.string
-            
+
             end
         end
     end
@@ -202,7 +203,7 @@ class Main < Sinatra::Base
         END_OF_QUERY
         respond(:tech_problems => problems)
     end
-    
+
     post '/api/get_tech_problems_admin' do
         require_user_who_can_manage_tablets!
         problems = neo4j_query(<<~END_OF_QUERY, :email => @session_user[:email]).map { |x| {:problem => x['v'], :email => x['u.email'], :femail => x['f.email']} }
@@ -305,8 +306,8 @@ class Main < Sinatra::Base
         elsif problem[:not_fixed]
             state = "„Nicht behoben“"
         elsif problem[:comment]
-            state = "„Siehe Kommentar“" 
-        else 
+            state = "„Siehe Kommentar“"
+        else
             state = "„In Bearbeitung“"
         end
 
@@ -333,7 +334,7 @@ class Main < Sinatra::Base
                     # io.puts "<a href='#{WEBSITE_HOST}/techpost'>Probleme ansehen</a>"
                 io.puts "<p>Viele Grüße<br>Dashboard #{SCHUL_NAME_AN_DATIV} #{SCHUL_NAME}</p>"
                 io.string
-            
+
             end
         end
         admin_mail_adress = @session_user[:email]
@@ -356,7 +357,7 @@ class Main < Sinatra::Base
                     # io.puts "<a href='#{WEBSITE_HOST}/techpost'>Probleme ansehen</a>"
                 io.puts "<p>Viele Grüße<br>Dashboard #{SCHUL_NAME_AN_DATIV} #{SCHUL_NAME}</p>"
                 io.string
-            
+
             end
         end
         respond(:ok => true)
@@ -443,7 +444,7 @@ class Main < Sinatra::Base
                 io.puts "<p>Hallo!</p>"
                 io.puts "<p>#{display_name} hat soeben alle Technikprobleme gelöscht. Du musst/kannst nichts weiter tun, diese E-Mail dient nur als Info.</p>"
                 io.string
-            
+
             end
         end
     end
@@ -467,7 +468,7 @@ class Main < Sinatra::Base
                 io.puts "<p>Hallo!</p>"
                 io.puts "<p>#{display_name} hat soeben alle Technikämter entfernt. Diese können deshalb keine Probleme mehr melden. Du musst/kannst nichts weiter tun, diese E-Mail dient nur als Info.</p>"
                 io.string
-            
+
             end
         end
     end

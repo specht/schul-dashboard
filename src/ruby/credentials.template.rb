@@ -171,13 +171,11 @@ LOGIN_CODE_SALT = 'bitte_jeden_salt_nur_einmal_verwenden'
 WEBSITE_READ_INFO_SECRET = 'bitte_ein_zufälliges_secret_generieren'
 SMS_GATEWAY_SECRET = 'bitte_ein_zufälliges_secret_generieren'
 SMS_PHONE_NUMBER_PASSPHRASE = 'bitte_ein_zufälliges_secret_generieren'
-SMS_AUTH_UNLOCKED_FOR = nil
 DATENTRESOR_UNLOCKED_FOR = nil
 DATENTRESOR_HOST = ''
 DATENTRESOR_JWT_APPKEY = ''
 DATENTRESOR_HOTLINE = ''
 DATENTRESOR_HOTLINE_MIT_NUMMERN = ''
-DATENTRESOR_HOTLINE_USERS = []
 
 MESSAGE_DELAY = DEVELOPMENT ? 1 : 1
 LOGIN_STATS_D = [0, 7, 28, 1000]
@@ -217,52 +215,9 @@ GROUP_FT_ICON_KEYS = GROUP_FT_ICONS.keys.sort
 STREAMING_TABLET_BOOKING_TIME_PRE = 5
 STREAMING_TABLET_BOOKING_TIME_POST = 15
 
-# Liste aller E-Mail-Adressen von Nutzer*innen,
-# die Administratorenrechte haben sollen
-ADMIN_USERS = ['clarke@beispielschule.de']
-SEKRETARIAT_USERS = []
-ZEUGNIS_ADMIN_USERS = []
 ZEUGNIS_USE_MOCK_NAMES = false
-DEVELOPERS = []
 
-# Liste aller E-Mail-Adressen von Nutzer*innen,
-# die Tablet-Buchungen anderer einsehen und aufheben können,
-# Technikprobleme melden und verwalten können und die
-# Aula Tools nutzen können.
-TECHNIKTEAM = []
-
-# Liste aller E-Mail-Adressen von Nutzer*innen,
-# die eine Debug-Mail erhalten möchten, wenn 
-# ein Nutzer ein Technikproblem meldet.
-WANTS_TO_RECEIVE_TECHPOST_DEBUG_MAIL = []
-
-# Liste aller E-Mail-Adressen von Nutzer*innen,
-# die alle Stundenpläne sehen können sollen
-CAN_SEE_ALL_TIMETABLES_USERS = []
-CAN_MANAGE_SALZH_USERS = []
-CAN_UPLOAD_VPLAN_USERS = []
-CAN_UPLOAD_FILES_USERS = []
-CAN_MANAGE_NEWS_USERS = []
-CAN_MANAGE_AGS_USERS = []
-CAN_MANAGE_MONITORS_USERS = []
-CAN_MANAGE_ANTIKENFAHRT_USERS = []
-CAN_MANAGE_AGR_APP = []
-CAN_MANAGE_BIB = []
-CAN_MANAGE_BIB_SPECIAL_ACCESS = []
-CAN_MANAGE_BIB_MEMBERS = []
-CAN_MANAGE_BIB_PAYMENT = []
-CAN_USE_AULA_USERS = []
-CAN_MANAGE_TABLETS_USERS = []
-CAN_REPORT_TECH_PROBLEMS_USERS = []
-EXTERNAL_USERS = []
-GEV_USERS = []
 LEHRBUCHVEREIN_JAHR = 2023
-
-# SV (Schülervertretung) kann:
-# - Nachrichten an SuS schreiben
-# - Umfragen unter SuS starten
-# - Abstimmungen starten
-SV_USERS = []
 
 TABLET_DEFAULT_COLOR = '#d3d7cf'
 TABLET_COLORS = {}

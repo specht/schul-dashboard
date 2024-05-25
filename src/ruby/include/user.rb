@@ -1,158 +1,130 @@
 class Main < Sinatra::Base
-    # Returns true if a user is logged in.
     def user_logged_in?
         !@session_user.nil?
     end
 
-    # Returns true if a user who can upload vplan is logged in.
+    def user_with_role_logged_in?(role)
+        assert(AVAILABLE_ROLES.include?(role), "Unknown role: #{role}")
+        user_logged_in? && (@session_user[:roles].include?(role))
+    end
+
     def user_who_can_upload_vplan_logged_in?
-        user_logged_in? && @session_user[:can_upload_vplan]
+        user_with_role_logged_in?(:can_upload_vplan)
     end
 
-    # Returns true if a user who can upload files is logged in.
     def user_who_can_upload_files_logged_in?
-        user_logged_in? && @session_user[:can_upload_files]
+        user_with_role_logged_in?(:can_upload_files)
     end
 
-    # Returns true if a user who can manage news is logged in.
     def user_who_can_manage_news_logged_in?
-        user_logged_in? && @session_user[:can_manage_news]
+        user_with_role_logged_in?(:can_manage_news)
     end
 
-    # Returns true if a user who can manage AGs is logged in.
-    def user_who_can_manage_ags_logged_in?
-        user_logged_in? && @session_user[:can_manage_ags]
-    end
-
-    # Returns true if a user who can manage monitors is logged in.
     def user_who_can_manage_monitors_logged_in?
-        user_logged_in? && @session_user[:can_manage_monitors]
+        user_with_role_logged_in?(:can_manage_monitors)
     end
 
-    # Returns true if a developer is logged in.
     def developer_logged_in?
-        user_logged_in? && @session_user[:developer]
+        user_with_role_logged_in?(:developer)
     end
 
-    # Returns true if a TechnikTeam is logged in.
+    def external_user_logged_in?
+        return !(teacher_logged_in? || schueler_logged_in?)
+    end
+
     def technikteam_logged_in?
-        user_logged_in? && @session_user[:technikteam]
+        user_with_role_logged_in?(:technikteam)
     end
 
-    # # Returns true if a techpost user is logged in.
-    # def user_who_can_report_tech_problems_logged_in?
-    #     user_logged_in? && @session_user[:can_report_tech_problems]
-    # end
-
-    # Returns true if a user who can use aula is logged in.
     def user_who_can_use_aula_logged_in?
-        user_logged_in? && @session_user[:can_use_aula]
+        user_with_role_logged_in?(:can_use_aula)
     end
 
-    # Returns true if a user who can manage tablets is logged in.
     def user_who_can_manage_tablets_logged_in?
-        user_logged_in? && @session_user[:can_manage_tablets]
+        user_with_role_logged_in?(:can_manage_tablets)
     end
 
-    # Returns true if a user who can manage tablets or teacher is logged in.
     def user_who_can_manage_tablets_or_teacher_logged_in?
         user_who_can_manage_tablets_logged_in? || teacher_logged_in?
     end
 
     def user_who_can_manage_tablets_or_sv_or_teacher_logged_in?
-        return teacher_or_sv_logged_in? || user_who_can_manage_tablets_logged_in?
+        teacher_or_sv_logged_in? || user_who_can_manage_tablets_logged_in?
     end
 
-
-    # Returns true if a user who can manage Antikenfahrt is logged in.
     def user_who_can_manage_antikenfahrt_logged_in?
-        user_logged_in? && @session_user[:can_manage_antikenfahrt]
+        user_with_role_logged_in?(:can_manage_antikenfahrt)
     end
 
-    # Returns true if a teacher or SV is logged in.
     def teacher_or_sv_logged_in?
-        user_logged_in? && (teacher_logged_in? || @session_user[:sv])
+        teacher_logged_in? || user_with_role_logged_in?(:sv)
     end
 
-    # Returns true if an admin is logged in.
     def admin_logged_in?
-        user_logged_in? && ADMIN_USERS.include?(@session_user[:email])
+        user_with_role_logged_in?(:admin)
     end
 
     def sekretariat_logged_in?
-        user_logged_in? && SEKRETARIAT_USERS.include?(@session_user[:email])
+        user_with_role_logged_in?(:sekretariat)
     end
 
     def zeugnis_admin_logged_in?
-        user_logged_in? && ZEUGNIS_ADMIN_USERS.include?(@session_user[:email])
+        user_with_role_logged_in?(:zeugnis_admin)
     end
 
     def admin_2fa_hotline_logged_in?
-        admin_logged_in? && DATENTRESOR_HOTLINE_USERS.include?(@session_user[:email])
+        admin_logged_in? && user_with_role_logged_in?(:datentresor_hotline)
     end
 
-    # Returns true if a user who can see all timetables is logged in.
     def can_see_all_timetables_logged_in?
-        user_logged_in? && (admin_logged_in? || @session_user[:can_see_all_timetables])
+        user_with_role_logged_in?(:can_see_all_timetables)
     end
 
-    # Returns true if a user who can see all timetables is logged in.
     def can_manage_salzh_logged_in?
-        user_logged_in? && (admin_logged_in? || @session_user[:can_manage_salzh])
+        user_with_role_logged_in?(:can_manage_salzh)
     end
 
-    # Returns true if a teacher is logged in.
     def teacher_logged_in?
-        user_logged_in? && (@session_user[:teacher] == true)
+        user_with_role_logged_in?(:teacher)
     end
 
-    # Returns true if GEV is logged in.
+    def schueler_logged_in?
+        user_with_role_logged_in?(:schueler)
+    end
+
     def gev_logged_in?
-        user_logged_in? && (GEV_USERS.include?(@session_user[:email]) || admin_logged_in?)
+        user_with_role_logged_in?(:admin)
     end
 
-    # Returns true if a device is logged in.
     def device_logged_in?
         !@session_device.nil?
     end
 
-    # Returns true if a SuS is logged in.
-    def sus_logged_in?
-        user_logged_in? && (!(@session_user[:teacher] == true))
-    end
-
-    # Returns true if a teacher tablet is logged in.
-    def teacher_tablet_logged_in?
-        user_logged_in? && @session_user[:is_tablet] && @session_user[:tablet_type] == :teacher
-    end
-
-    # Returns true if a kurs tablet is logged in.
-    def kurs_tablet_logged_in?
-        user_logged_in? && @session_user[:is_tablet] && @session_user[:tablet_type] == :kurs
-    end
-
-    # Returns true if a kurs tablet is logged in.
-    def klassenraum_logged_in?
-        user_logged_in? && @session_user[:is_tablet] && @session_user[:tablet_type] == :klassenraum
-    end
-
-    # Returns true if a kurs tablet is logged in.
     def monitor_logged_in?
         user_logged_in? && @session_user[:is_monitor]
     end
 
-    # Returns true if a tablet is logged in.
     def tablet_logged_in?
         user_logged_in? && @session_user[:is_tablet]
     end
 
-    # Returns true if a klassenleiter for a given klasse is logged in.
+    def teacher_tablet_logged_in?
+        user_logged_in? && @session_user[:is_tablet] && @session_user[:tablet_type] == :teacher
+    end
+
+    def kurs_tablet_logged_in?
+        user_logged_in? && @session_user[:is_tablet] && @session_user[:tablet_type] == :kurs
+    end
+
+    def klassenraum_logged_in?
+        user_logged_in? && @session_user[:is_tablet] && @session_user[:tablet_type] == :klassenraum
+    end
+
     def klassenleiter_for_klasse_logged_in?(klasse)
         return false unless @@klassenleiter[klasse]
         teacher_logged_in? && @@klassenleiter[klasse].include?(@session_user[:shorthand])
     end
 
-    # Returns true if a klassenleiter for a given klasse is logged in.
     def klassenleiter_for_klasse_or_admin_logged_in?(klasse)
         return false unless @@klassenleiter[klasse]
         admin_logged_in? || (teacher_logged_in? && @@klassenleiter[klasse].include?(@session_user[:shorthand]))
@@ -166,22 +138,20 @@ class Main < Sinatra::Base
         end
     end
 
-    # Returns true if a techpost user is logged in.
     def user_who_can_report_tech_problems_logged_in?
-        user_logged_in? && check_has_technikamt(@session_user[:email]) == [{"hasRelation"=>true}]
+        user_logged_in? && check_has_technikamt(@session_user[:email])
     end
 
-    # Returns true if a techpost or better user is logged in.
     def user_who_can_report_tech_problems_or_better_logged_in?
-        user_logged_in? && (check_has_technikamt(@session_user[:email]) == [{"hasRelation"=>true}] || @session_user[:can_manage_tablets])
+        user_logged_in? && (@session_user[:can_manage_tablets] || check_has_technikamt(@session_user[:email]))
     end
 
     def can_manage_agr_app_logged_in?
-        user_logged_in? && CAN_MANAGE_AGR_APP.include?(@session_user[:email])
+        user_with_role_logged_in?(:can_manage_agr_app)
     end
 
     def can_manage_bib_logged_in?
-        flag = user_logged_in? && CAN_MANAGE_BIB.include?(@session_user[:email])
+        flag = user_with_role_logged_in?(:can_manage_bib)
         if flag
             unless teacher_logged_in?
                 unless device_logged_in?
@@ -193,7 +163,7 @@ class Main < Sinatra::Base
     end
 
     def can_manage_bib_special_access_logged_in?
-        user_logged_in? && CAN_MANAGE_BIB_SPECIAL_ACCESS.include?(@session_user[:email])
+        user_with_role_logged_in?(:can_manage_bib_special_access)
     end
 
     def teacher_or_can_manage_bib_logged_in?
@@ -201,15 +171,11 @@ class Main < Sinatra::Base
     end
 
     def can_manage_bib_members_logged_in?
-        user_logged_in? && (CAN_MANAGE_BIB_MEMBERS.include?(@session_user[:email]))
+        user_with_role_logged_in?(:can_manage_bib_members)
     end
 
     def can_manage_bib_payment_logged_in?
-        user_logged_in? && (CAN_MANAGE_BIB_PAYMENT.include?(@session_user[:email]))
-    end
-
-    def external_user_logged_in?
-        user_logged_in? && (EXTERNAL_USERS.include?(@session_user[:email]))
+        user_with_role_logged_in?(:can_manage_bib_payment)
     end
 
     def running_pishing_training?
@@ -221,24 +187,25 @@ class Main < Sinatra::Base
     def running_pishing_training_hint?
         start = PHISHING_HINT_START
         ende = PHISHING_HINT_END
-        user_logged_in? && (schueler_logged_in? || teacher_logged_in?) && Time.now.strftime('%Y-%m-%dT%H:%M:%S') >= start && Time.now.strftime('%Y-%m-%dT%H:%M:%S') <= ende
+        (schueler_logged_in? || teacher_logged_in?) && Time.now.strftime('%Y-%m-%dT%H:%M:%S') >= start && Time.now.strftime('%Y-%m-%dT%H:%M:%S') <= ende
     end
 
     def require_device!
         assert(!@session_device.nil?)
     end
 
-    # Assert that a user is logged in
     def require_user!
         assert(user_logged_in?, 'User is logged in', true)
     end
 
-    # Assert that an admin is logged in
     def require_admin!
         assert(admin_logged_in?)
     end
 
-    # Assert that an admin is logged in
+    def require_user_with_role(role)!
+        assert(user_with_role_logged_in?(role))
+    end
+
     def require_admin_or_sekretariat!
         assert(admin_logged_in? || sekretariat_logged_in?)
     end
@@ -251,62 +218,50 @@ class Main < Sinatra::Base
         assert(admin_2fa_hotline_logged_in?)
     end
 
-    # Assert that a teacher is logged in
     def require_teacher!
         assert(teacher_logged_in?)
     end
 
-    # Assert that a teacher tablet is logged in
     def require_teacher_tablet!
         assert(teacher_tablet_logged_in?)
     end
 
-    # Assert that a user who can upload vplan is logged in
     def require_user_who_can_upload_vplan!
         assert(user_who_can_upload_vplan_logged_in?)
     end
 
-    # Assert that a user who can upload files is logged in
     def require_user_who_can_upload_files!
         assert(user_who_can_upload_files_logged_in?)
     end
 
-    # Assert that a user who can manage news is logged in
     def require_user_who_can_manage_news!
         assert(user_who_can_manage_news_logged_in?)
     end
 
-    # Assert that a user who can manage monitors is logged in
     def require_user_who_can_manage_monitors!
         assert(user_who_can_manage_monitors_logged_in?)
     end
 
-    # Assert that a developer is logged in
     def require_developer!
         assert(developer_logged_in?)
     end
 
-    # Assert that a TechnikTeam user is logged in
     def require_technikteam!
         assert(technikteam_logged_in?)
     end
 
-    # Assert that a techpost user is logged in
     def require_user_who_can_report_tech_problems!
         assert(user_who_can_report_tech_problems_logged_in?)
     end
 
-    # Assert that a techpost user is logged in
     def require_user_who_can_report_tech_problems_or_better!
         assert(user_who_can_report_tech_problems_or_better_logged_in?)
     end
 
-    # Assert that a user who can use aula is logged in
     def require_user_who_can_use_aula!
         assert(user_who_can_use_aula_logged_in?)
     end
 
-    # Assert that a user who can manage tablets is logged in
     def require_user_who_can_manage_tablets!
         assert(user_who_can_manage_tablets_logged_in?)
     end
@@ -315,12 +270,10 @@ class Main < Sinatra::Base
         assert(user_who_can_manage_tablets_or_teacher_logged_in?)
     end
 
-    # Assert that a user who can manage Antikenfahrt is logged in
     def require_user_who_can_manage_antikenfahrt!
         assert(user_who_can_manage_antikenfahrt_logged_in?)
     end
 
-    # Assert that a user who can manage agrapp is logged in
     def require_user_who_can_manage_agr_app!
         assert(can_manage_agr_app_logged_in?)
     end
@@ -333,12 +286,10 @@ class Main < Sinatra::Base
         assert(teacher_or_can_manage_bib_logged_in?)
     end
 
-    # Assert that a teacher or SV is logged in
     def require_teacher_or_sv!
         assert(teacher_or_sv_logged_in?)
     end
 
-    # Assert that an admin is logged in
     def require_monitor_or_user_who_can_manage_monitors!
         assert(monitor_logged_in? || user_who_can_manage_monitors_logged_in?)
     end
@@ -358,8 +309,7 @@ class Main < Sinatra::Base
     def require_running_phishing_training_hint!
         assert(running_pishing_training_hint?)
     end
-
-    # Put this on top of a webpage to assert that this page can be opened by logged in users only
+    
     def this_is_a_page_for_logged_in_users
         unless user_logged_in?
             redirect "#{WEB_ROOT}/", 303
@@ -384,35 +334,36 @@ class Main < Sinatra::Base
         end
     end
 
-    # Put this on top of a webpage to assert that this page can be opened by admins only
+    def this_is_a_page_for_user_with_role(role)
+        unless user_with_role_logged_in?(role)
+            redirect "#{WEB_ROOT}/", 303
+        end
+    end
+
     def this_is_a_page_for_logged_in_admins
         unless admin_logged_in?
             redirect "#{WEB_ROOT}/", 303
         end
     end
 
-    # Put this on top of a webpage to assert that this page can be opened by zeugnis admins only
     def this_is_a_page_for_logged_in_zeugnis_admins
         unless zeugnis_admin_logged_in?
             redirect "#{WEB_ROOT}/", 303
         end
     end
 
-    # Put this on top of a webpage to assert that this page can be opened by teachers only
     def this_is_a_page_for_logged_in_teachers
         unless teacher_logged_in?
             redirect "#{WEB_ROOT}/", 303
         end
     end
 
-    # Put this on top of a webpage to assert that this page can be opened by teachers only or users who can manage the library
     def this_is_a_page_for_logged_in_teachers_or_can_manage_bib
         unless teacher_or_can_manage_bib_logged_in?
             redirect "#{WEB_ROOT}/", 303
         end
     end
 
-    # Put this on top of a webpage to assert that this page can be opened by teachers or SV only
     def this_is_a_page_for_logged_in_teachers_or_sv
         unless teacher_or_sv_logged_in?
             redirect "#{WEB_ROOT}/", 303
@@ -425,35 +376,30 @@ class Main < Sinatra::Base
         end
     end
 
-    # Put this on top of a webpage to assert that this page can be opened by users who can upload vplan only
     def this_is_a_page_for_people_who_can_upload_vplan
         unless user_who_can_upload_vplan_logged_in?
             redirect "#{WEB_ROOT}/", 303
         end
     end
 
-    # Put this on top of a webpage to assert that this page can be opened by users who can upload files only
     def this_is_a_page_for_people_who_can_upload_files
         unless user_who_can_upload_files_logged_in?
             redirect "#{WEB_ROOT}/", 303
         end
     end
 
-    # Put this on top of a webpage to assert that this page can be opened by users who can manage news only
     def this_is_a_page_for_people_who_can_manage_news
         unless user_who_can_manage_news_logged_in?
             redirect "#{WEB_ROOT}/", 303
         end
     end
 
-    # Put this on top of a webpage to assert that this page can be opened by users who can manage monitors only
     def this_is_a_page_for_people_who_can_manage_monitors
         unless user_who_can_manage_monitors_logged_in?
             redirect "#{WEB_ROOT}/", 303
         end
     end
 
-    # Put this on top of a webpage to assert that this page can be opened by developers only
     def this_is_a_page_for_logged_in_developers
         unless developer_logged_in?
             redirect "#{WEB_ROOT}/", 303

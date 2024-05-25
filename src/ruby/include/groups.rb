@@ -1,6 +1,6 @@
 class Main < Sinatra::Base
     post '/api/save_group' do
-        require_teacher_or_sv!
+        require_user_with_role!(:can_write_messages)
         data = parse_request_data(:required_keys => [:name, :recipients],
                                   :types => {:recipients => Array},
                                   :max_body_length => 1024 * 1024,
@@ -51,7 +51,7 @@ class Main < Sinatra::Base
     end
     
     post '/api/update_group' do
-        require_teacher_or_sv!
+        require_user_with_role!(:can_write_messages)
         data = parse_request_data(:required_keys => [:gid, :name, :recipients],
                                 :types => {:recipients => Array},
                                 :max_body_length => 1024 * 1024,
@@ -108,7 +108,7 @@ class Main < Sinatra::Base
     end
     
     post '/api/delete_group' do
-        require_teacher_or_sv!
+        require_user_with_role!(:can_write_messages)
         data = parse_request_data(:required_keys => [:gid])
         id = data[:gid]
         transaction do 

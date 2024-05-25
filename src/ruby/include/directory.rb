@@ -885,17 +885,4 @@ class Main < Sinatra::Base
             io.string
         end
     end
-
-    def print_mailing_lists_allowed_senders()
-        StringIO.open do |io|
-            io.puts "<table class='table table-condensed narrow' style='width: unset; min-width: 100%;'>"
-            io.puts "<tr>"
-            io.puts "<th>Name</th>"
-            io.puts "<th>E-Mail-Adresse</th>"
-            io.puts "<th>Berechtigung</th>"
-            io.puts "</tr>"
-            io.puts "</table>"
-            io.string
-        end
-    end
 end

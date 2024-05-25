@@ -198,7 +198,7 @@ class Main < Sinatra::Base
         assert(admin_logged_in?)
     end
 
-    def require_user_with_role(role)!
+    def require_user_with_role!(role)
         assert(user_with_role_logged_in?(role))
     end
 

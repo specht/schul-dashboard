@@ -62,8 +62,7 @@ class Script
 
     def allowed_senders()
         results = Set.new()
-        results |= Set.new(@@user_info.keys.select { |email| @@user_info[email][:teacher] })
-        results |= Set.new(SV_USERS)
+        results |= Set.new(@@users_for_role[:can_use_mailing_lists])
         temp = $neo4j.neo4j_query(<<~END_OF_QUERY).map { |x| { :email => x['u.email'] } }
             MATCH (u:User {ev: true})
             RETURN u.email;

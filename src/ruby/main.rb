@@ -1972,7 +1972,7 @@ class Main < Sinatra::Base
                             io.puts "<a class='dropdown-item nav-icon' href='/directory/#{@session_user[:klasse]}'><div class='icon'><i class='fa fa-users'></i></div><span class='label'>Meine Klasse</span></a>"
                         end
                     end
-                    if teacher_or_sv_logged_in?
+                    if teacher_logged_in? || user_with_role_logged_in?(:can_create_events) || user_with_role_logged_in?(:can_create_polls) || user_with_role_logged_in?(:can_use_mailing_lists)
                         io.puts "<div class='dropdown-divider'></div>"
                         if teacher_logged_in?
                             # if can_manage_salzh_logged_in?
@@ -1981,10 +1981,16 @@ class Main < Sinatra::Base
                             io.puts "<a class='dropdown-item nav-icon' href='/klassenmemory_assign'><div class='icon'><i class='fa fa-user'></i></div><span class='label'>Klassenmemory</span></a>"
                             io.puts "<a class='dropdown-item nav-icon' href='/tests'><div class='icon'><i class='fa fa-file-text-o'></i></div><span class='label'>Klassenarbeiten</span></a>"
                         end
-                        io.puts "<a class='dropdown-item nav-icon' href='/events'><div class='icon'><i class='fa fa-calendar-check-o'></i></div><span class='label'>Termine</span></a>"
-                        io.puts "<a class='dropdown-item nav-icon' href='/polls'><div class='icon'><i class='fa fa-bar-chart'></i></div><span class='label'>Umfragen</span></a>"
+                        if user_with_role_logged_in?(:can_create_events)
+                            io.puts "<a class='dropdown-item nav-icon' href='/events'><div class='icon'><i class='fa fa-calendar-check-o'></i></div><span class='label'>Termine</span></a>"
+                        end
+                        if user_with_role_logged_in?(:can_create_polls)
+                            io.puts "<a class='dropdown-item nav-icon' href='/polls'><div class='icon'><i class='fa fa-bar-chart'></i></div><span class='label'>Umfragen</span></a>"
+                        end
                         # io.puts "<a class='dropdown-item nav-icon' href='/prepare_vote'><div class='icon'><i class='fa fa-hand-paper-o'></i></div><span class='label'>Abstimmungen</span></a>"
-                        io.puts "<a class='dropdown-item nav-icon' href='/mailing_lists'><div class='icon'><i class='fa fa-envelope'></i></div><span class='label'>E-Mail-Verteiler</span></a>"
+                        if user_with_role_logged_in?(:can_use_mailing_lists)
+                            io.puts "<a class='dropdown-item nav-icon' href='/mailing_lists'><div class='icon'><i class='fa fa-envelope'></i></div><span class='label'>E-Mail-Verteiler</span></a>"
+                        end
                         if teacher_logged_in?
                             io.puts "<a class='dropdown-item nav-icon' href='/angebote'><div class='icon'><i class='fa fa-group'></i></div><span class='label'>AGs und Angebote</span></a>"
                         end

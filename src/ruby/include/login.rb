@@ -612,18 +612,21 @@ class Main < Sinatra::Base
                 io.puts "<tr>"
                 io.puts "<td>#{description}</td>"
                 if @session_user[:roles].include?(role)
-                    io.puts "<td><i class='fa fa-check text-success'></i>&nbsp;&nbsp;ja</td>"
+                    io.puts "<td><i class='fa fa-check text-success'></i></td>"
                     if @session_user[:role_transitive_origin][role]
                         io.puts "<td>#{AVAILABLE_ROLES[@session_user[:role_transitive_origin][role]]}</td>"
                     else
                         io.puts "<td>direkt gesetzt</td>"
                     end
                 else
-                    io.puts "<td><i class='fa fa-times text-danger'></i>&nbsp;&nbsp; nein</td>"
+                    io.puts "<td><i class='fa fa-times text-danger'></i></td>"
                     io.puts "<td></td>"
                 end
                 if admin_logged_in?
-                    io.puts "<td><button class='btn btn-xs btn-warning' style='width: 8em;'>#{(@@users_for_role[role] || []).size} Nutzer&nbsp;&nbsp;<i class='fa fa-chevron-down'></i></button></td>"
+                    io.puts "<td><button class='btn-toggle-tr-below btn btn-xs btn-warning' style='width: 8em;'>#{(@@users_for_role[role] || []).size} Nutzer&nbsp;&nbsp;<i class='fa fa-chevron-down'></i></button></td>"
+                    io.puts "</tr>"
+                    io.puts "<tr style='display: none;'>"
+                    io.puts "<td colspan='4' style='font-style: italic; font-size: 90%;'>#{(@@users_for_role[role] || []).map { |x| @@user_info[x][:display_name] }.join(', ')}</td>"
                 end
                 io.puts "</tr>"
             end

@@ -897,5 +897,15 @@ window.addEventListener('load', function () {
     $('#ti_confirm_telephone_number').keydown(function(e) {
         if (e.key === 'Enter') $('.bu-confirm-sms').click();
     });
+    $('.btn-toggle-tr-below').on('click', function(e) {
+        let row = $(e.target).closest('tr').next('tr');
+        if (row.is(':visible')) {
+            row.hide();
+            $(e.target).find('i').removeClass('fa-chevron-up').addClass('fa-chevron-down');
+        } else {
+            row.show();
+            $(e.target).find('i').removeClass('fa-chevron-down').addClass('fa-chevron-up'); 
+        };
+    });
 });
 </script>

@@ -11,7 +11,7 @@
             <h2 style="margin-bottom: 30px;">Technikamt (Admin)</h2>
             <hr>
             <p>
-                Du bist #{(admin_logged_in?) ? 'Admin im Dashboard' : 'Teil des TechnikTeams'} und kannst deshalb hier Probleme mit Geräten aufnehmen und auch <b>schließen</b>. Auch kannst du dich als Tablet anmelden.  
+                Du bist #{(admin_logged_in?) ? 'Admin im Dashboard' : 'Teil des TechnikTeams'} und kannst deshalb hier Probleme mit Geräten aufnehmen und auch <b>schließen</b>. Auch kannst du dich als Tablet anmelden.
             </p>
             <hr>
             <div class='row'>
@@ -42,7 +42,7 @@
                     </div>
                 </div>
             </div>
-            <div class='row'>                
+            <div class='row'>
                 <div class='col-md-12 techproblems-container' style='max-width: 100%; overflow-x: auto;'>
                     <table class='table narrow table-striped' style='width: unset; min-width: 100%;'>
                     <thead><tr>
@@ -156,7 +156,7 @@
     }
 
     function compose_clear_all() {
-        showTemplateModal('Alle Probleme löschen', 
+        showTemplateModal('Alle Probleme löschen',
             'Bist Du sicher? Dabei werden alle Probleme gelöscht.<br>Tu dies nur nach Absprache mit dem TechnikTeam und allen Usern die Zugriff auf diese Funktion haben.<br>Das TechnikTeam wird per E-Mail darüber informiert.',
             "<i class='fa fa-trash'></i>&nbsp;&nbsp;Ich bin mir sicher (Alles löschen)", 'btn-danger',
             'Abbrechen', 'btn-secondary', function() {
@@ -170,7 +170,7 @@
     }
 
     function compose_clear_aula_lights() {
-        showTemplateModal('Den Plan Aula-Scheinwerfer löschen', 
+        showTemplateModal('Den Plan Aula-Scheinwerfer löschen',
             'Bist Du sicher? Dabei wird der gesamte Plan der Scheinwerfer in der Aula gelöscht. Dies ist notwendig, wenn Fehler im hochgeladenen HTML vorliegen, die die Seite vorübergehend unbenutzbar machen.<br>Tu dies nur nach Absprache mit dem TechnikTeam und allen Usern die Zugriff auf diese Funktion haben.',
             "<i class='fa fa-trash'></i>&nbsp;&nbsp;Ich bin mir sicher (Alles löschen)", 'btn-danger',
             'Abbrechen', 'btn-secondary', function() {
@@ -184,7 +184,7 @@
     }
 
     function compose_kick_all() {
-        showTemplateModal('Alle Technikamt-User entfernen', 
+        showTemplateModal('Alle Technikamt-User entfernen',
             'Bist Du sicher? Dabei werden alle Technikamt-User entfernt.<br>Tu dies nur nach Absprache mit dem TechnikTeam und allen Usern die Zugriff auf diese Funktion haben.<br>Das TechnikTeam wird per E-Mail darüber informiert.',
             "<i class='fa fa-user-times'></i>&nbsp;&nbsp;Ich bin mir sicher (Alle entfernen)", 'btn-danger',
             'Abbrechen', 'btn-secondary', function() {
@@ -198,7 +198,7 @@
     }
 
     function send_welcome_mail() {
-        showTemplateModal('Willkommens-E-Mail versenden', 
+        showTemplateModal('Willkommens-E-Mail versenden',
             'Bist Du sicher? Dabei erhalten alle Technikamt-Schüler diese E-Mail.<br>Das TechnikTeam wird per E-Mail darüber informiert und erhält eine Kopie.',
             "<i class='fa fa-send'></i>&nbsp;&nbsp;Ich bin mir sicher (E-Mails versenden)", 'btn-warning',
             'Abbrechen', 'btn-secondary', function() {
@@ -298,7 +298,7 @@
                             let bu_cancel = $('<button>').addClass('btn btn-secondary').html('Schließen').attr('data-dismiss', 'modal');
                             $('#__template_modal .modal-footer').append(tp_print).append(bu_cancel);
                             $('#__template_modal').modal('show');
-                            
+
                             $('.tp-fixed').click(function() {
                                 api_call('/api/fix_tech_problem_admin', {token: entry.problem.token}, function(data) {
                                     if (data.success) {
@@ -339,7 +339,7 @@
                                 }
                             });
                             $('.tp-fixer').click(function() {
-                                if (entry.fnc_login) {    
+                                if (entry.fnc_login) {
                                     api_call('/api/i_will_not_fix_tech_problem', {token: token}, function(data) {
                                         if (data.success)
                                             refresh_tech_problems();
@@ -353,7 +353,7 @@
                                             $('#__template_modal').modal('hide');
 
                                     });
-                                
+
                                 }
                             });
                             $('.tp-hide-admin').click(function() {
@@ -376,7 +376,7 @@
                                 window.open(`/api/get_tech_problem_pdf/${token}`, '_blank');
                             });
                             $('.tp-delete').click(function() {
-                                showTemplateModal('Problem löschen', 
+                                showTemplateModal('Problem löschen',
                                 'Bist Du sicher? Das Problem wird dabei unwiderrufbar gelöscht.',
                                 "<i class='fa fa-trash'></i>&nbsp;&nbsp;Problem löschen", 'btn-danger',
                                 'Abbrechen', 'btn-secondary', function() {
@@ -389,7 +389,7 @@
                                 })
                             });
                             $('.tp-comment').click(function() {
-                                showTemplateModal('Kommentar hinzufügen', 
+                                showTemplateModal('Kommentar hinzufügen',
                                 '<textarea type="text" id="tp_comment_input" class="form-control" placeholder="z.B. Danke für deinen Beitrag"></textarea>',
                                 "<i class='fa fa-check'></i>&nbsp;&nbsp;Speichern", 'btn-success',
                                 'Abbrechen', 'btn-secondary', function() {
@@ -403,7 +403,7 @@
                             })
                             $('.tp-update-comment').click(function() {
                                 let old_comment = entry.problem.comment
-                                showTemplateModal('Kommentar aktualisieren', 
+                                showTemplateModal('Kommentar aktualisieren',
                                 '<textarea type="text" id="tp_comment_input" class="form-control" placeholder="z.B. Danke für deinen Beitrag (leer lassen, um den Kommentar zu löschen)">' + old_comment + '</textarea>',
                                 "<i class='fa fa-check'></i>&nbsp;&nbsp;Speichern", 'btn-success',
                                 'Abbrechen', 'btn-secondary', function() {
@@ -412,7 +412,7 @@
                                         if (data.success)
                                             refresh_tech_problems();
                                     });
-                                }); 
+                                });
                             })
                         };
                         row.click(function(e) {
@@ -431,10 +431,10 @@
                         $('#problems_here').append(row);
                     }
                 }
-            }       
+            }
         });
     };
-    
+
 
     function refresh_fixed_tech_problems() {
         api_call('/api/get_tech_problems_admin', {}, function(data) {
@@ -442,7 +442,7 @@
                 refresh_tech_problems();
                 $('#fixed_problems_here').empty();
                 for (let entry of data.tech_problems) {
-                    if (entry.problem.fixed == true  || entry.problem.not_fixed == true || entry.problem.hidden_admin == true) { 
+                    if (entry.problem.fixed == true  || entry.problem.not_fixed == true || entry.problem.hidden_admin == true) {
                         let row = $('<tr>');
                         let token = entry.problem.token;
                         let fixed = "<i class='text-success fa fa-check' title='Behoben'></i>";
@@ -505,7 +505,7 @@
                             let bu_cancel = $('<button>').addClass('btn btn-secondary').html('Schließen').attr('data-dismiss', 'modal');
                             $('#__template_modal .modal-footer').append(tp_print).append(bu_cancel);
                             $('#__template_modal').modal('show');
-                            
+
                             $('.tp-fixed').click(function() {
                                 api_call('/api/fix_tech_problem_admin', {token: entry.problem.token}, function(data) {
                                     if (data.success) {
@@ -551,7 +551,7 @@
                                 }
                             });
                             $('.tp-fixer').click(function() {
-                                if (entry.fnc_login) {    
+                                if (entry.fnc_login) {
                                     api_call('/api/i_will_not_fix_tech_problem', {token: token}, function(data) {
                                         if (data.success)
                                             refresh_fixed_tech_problems();
@@ -567,7 +567,7 @@
                                             $('#__template_modal').modal('hide');
 
                                     });
-                                
+
                                 }
                             });
                             $('.tp-unhide-admin').click(function() {
@@ -582,7 +582,7 @@
                                 window.open(`/api/get_tech_problem_pdf/${token}`, '_blank');
                             });
                             $('.tp-delete').click(function() {
-                                showTemplateModal('Problem löschen', 
+                                showTemplateModal('Problem löschen',
                                 'Bist Du sicher? Das Problem wird dabei unwiderrufbar gelöscht.',
                                 "<i class='fa fa-trash'></i>&nbsp;&nbsp;Problem löschen", 'btn-danger',
                                 'Abbrechen', 'btn-secondary', function() {
@@ -595,7 +595,7 @@
                                 })
                             });
                             $('.tp-comment').click(function() {
-                                showTemplateModal('Kommentar hinzufügen', 
+                                showTemplateModal('Kommentar hinzufügen',
                                 '<textarea type="text" id="tp_comment_input" class="form-control" placeholder="z.B. Danke für deinen Beitrag"></textarea>',
                                 "<i class='fa fa-check'></i>&nbsp;&nbsp;Speichern", 'btn-success',
                                 'Abbrechen', 'btn-secondary', function() {
@@ -610,7 +610,7 @@
                             })
                             $('.tp-update-comment').click(function() {
                                 let old_comment = entry.problem.comment
-                                showTemplateModal('Kommentar aktualisieren', 
+                                showTemplateModal('Kommentar aktualisieren',
                                     '<div class="alert alert-warning">Falls das Problem nicht als „behoben“ oder „nicht behoben“ markiert ist, kannst du den Kommentar erst, nachdem du das Problem für das TechnikTeam wieder eingeblendet hast löschen.</div><textarea type="text" id="tp_comment_input" class="form-control" placeholder="z.B. Danke für deinen Beitrag (leer lassen, um den Kommentar zu löschen)">' + old_comment + '</textarea>',
                                     "<i class='fa fa-check'></i>&nbsp;&nbsp;Speichern", 'btn-success',
                                     'Abbrechen', 'btn-secondary', function() {
@@ -791,7 +791,7 @@ document.addEventListener('DOMContentLoaded', function() {
         let email = $('#ti_email').data('email');
         return email != null ;
     }
-    
+
     function send_message() {
         let email = $('#ti_email').data('email');
         api_call('/api/add_techpost', { email: email}, function (data) {

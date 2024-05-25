@@ -709,6 +709,11 @@ class Main < Sinatra::Base
             end
         end
 
+        # Add roles from database
+        self.get_technikamt_users.each do |email|
+            @@user_info[email][:roles] << :technikamt
+        end
+
         @@user_info.keys.each do |email|
             @@user_info[email][:role_transitive_origin] = {}
         end
@@ -743,7 +748,7 @@ class Main < Sinatra::Base
         @@users_for_role = {}
         @@user_info.each_pair do |email, info|
             info[:roles].each do |role|
-                @@users_for_role[role] ||= []
+                @@users_for_role[role] ||= Set.new()
                 @@users_for_role[role] << email
             end
         end

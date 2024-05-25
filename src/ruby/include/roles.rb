@@ -21,6 +21,7 @@ AVAILABLE_ROLES = {
     :gev => 'GEV',
     :sv => 'Schülervertretung',
     :technikteam => 'Technikteam',
+    :technikamt => 'Technikamt',
     :wants_to_receive_techpost_debug_mail => 'möchte E-Mails zu Technikproblemen erhalten',
     :datentresor_hotline => 'kann Lehrkräfte für den Datentresor freischalten',
     :schulbuchverein => 'Schulbuchverein',

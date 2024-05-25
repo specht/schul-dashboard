@@ -9,12 +9,16 @@ class Main < Sinatra::Base
         return rows.first['hasRelation']
     end
 
-    def get_technikamt
-        results = neo4j_query(<<~END_OF_QUERY)
+    def self.get_technikamt_users
+        results = $neo4j.neo4j_query(<<~END_OF_QUERY)
             MATCH (u:User)-[:HAS_AMT {amt: 'technikamt'}]->(v:Techpost)
             RETURN u.email;
         END_OF_QUERY
         return results.map { |result| result["u.email"] } || []
+    end
+
+    def get_technikamt_users
+        Main.get_technikamt_users()
     end
 
     def send_welcome_mail(recipients)
@@ -42,7 +46,7 @@ class Main < Sinatra::Base
 
     post '/api/send_all_techpost_welcome_mail' do
         require_user_who_can_manage_tablets!
-        recipients = get_technikamt()
+        recipients = get_technikamt_users()
         send_welcome_mail recipients
         display_name = @session_user[:display_name]
         deliver_mail do
@@ -455,6 +459,10 @@ class Main < Sinatra::Base
             MATCH (u:User)-[r:HAS_AMT {amt: 'technikamt'}]->(v:Techpost)
             DELETE r;
         END_OF_QUERY
+        (@@users_for_role[:technikamt] || []).each do |email|
+            @@user_info[email][:roles].delete(:technikamt)
+        end
+        @@users_for_role[:technikamt] = Set.new()
         display_name = @session_user[:display_name]
         respond(:ok => true)
         deliver_mail do
@@ -477,6 +485,8 @@ class Main < Sinatra::Base
         require_technikteam!
         data = parse_request_data(:required_keys => [:email])
         email = data[:email]
+        @@user_info[email][:roles] << :technikamt
+        @@users_for_role[:technikamt] << email
         neo4j_query(<<~END_OF_QUERY, :email => email)
             MATCH (u:User {email: $email})
             MERGE (v:Techpost)
@@ -489,6 +499,8 @@ class Main < Sinatra::Base
         require_technikteam!
         data = parse_request_data(:required_keys => [:email])
         email = data[:email]
+        @@user_info[email][:roles].delete(:technikamt)
+        @@users_for_role[:technikamt].delete(email)
         neo4j_query(<<~END_OF_QUERY, :email => email)
             MATCH (u:User {email: $email})-[r:HAS_AMT {amt: 'technikamt'}]->(v:Techpost)
             DELETE r;
@@ -616,7 +628,7 @@ class Main < Sinatra::Base
             io.puts "<thead>"
             io.puts "<tr><td>User</td><td>Bearbeiten</td></tr>"
             io.puts "</thead><tbody>"
-            for technikamt in get_technikamt do
+            get_technikamt_users.each do |technikamt|
                 display_name = @@user_info[technikamt][:display_name]
                 nc_login = @@user_info[technikamt][:nc_login]
                 klasse = tr_klasse(@@user_info[technikamt][:klasse])
@@ -624,9 +636,9 @@ class Main < Sinatra::Base
             end
             io.puts "</tbody></table>"
             io.puts "</div></div>"
-            io.puts "<div class='row' style='margin-bottom: 15px;'><div class='col-md-12'><div class='alert alert-info'><code>#{get_technikamt}</code></div></div></div>"
+            io.puts "<div class='row' style='margin-bottom: 15px;'><div class='col-md-12'><div class='alert alert-info'><code>#{get_technikamt_users()}</code></div></div></div>"
             unless problems == []
-                io.puts "<br><h3>Aktuelle Probleme im json-Format</h3>"
+                io.puts "<br><h3>Aktuelle Probleme im JSON-Format</h3>"
                 io.puts "<div class='row' style='margin-bottom: 15px;'><div class='col-md-12'>"
                 for problem in problems do
                     io.puts "<div class='alert alert-info'><code>#{problem.to_json}</code></div>"

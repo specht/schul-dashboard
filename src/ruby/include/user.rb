@@ -213,6 +213,12 @@ class Main < Sinatra::Base
     end
 
     def running_pishing_training?
+        start = PHISHING_START
+        ende = PHISHING_END
+        user_logged_in? && (@session_user[:klassenstufe] || @session_user[:teacher]) && Time.now.strftime('%Y-%m-%dT%H:%M:%S') >= start && Time.now.strftime('%Y-%m-%dT%H:%M:%S') <= ende
+    end
+
+    def running_pishing_training_hint?
         start = PHISHING_HINT_START
         ende = PHISHING_HINT_END
         user_logged_in? && (@session_user[:klassenstufe] || @session_user[:teacher]) && Time.now.strftime('%Y-%m-%dT%H:%M:%S') >= start && Time.now.strftime('%Y-%m-%dT%H:%M:%S') <= ende
@@ -349,6 +355,10 @@ class Main < Sinatra::Base
         assert(running_pishing_training?)
     end
 
+    def require_running_phishing_training_hint!
+        assert(running_pishing_training_hint?)
+    end
+
     # Put this on top of a webpage to assert that this page can be opened by logged in users only
     def this_is_a_page_for_logged_in_users
         unless user_logged_in?
@@ -446,6 +456,13 @@ class Main < Sinatra::Base
     # Put this on top of a webpage to assert that this page can be opened by developers only
     def this_is_a_page_for_logged_in_developers
         unless developer_logged_in?
+            redirect "#{WEB_ROOT}/", 303
+        end
+    end
+
+    # Put this on top of a webpage to assert that this page can be opened during a phishing training only
+    def this_is_a_page_for_phishing_training
+        unless running_pishing_training?
             redirect "#{WEB_ROOT}/", 303
         end
     end
@@ -763,9 +780,7 @@ class Main < Sinatra::Base
     end
 
     def print_phishing_panel()
-        start = PHISHING_HINT_START
-        ende = PHISHING_HINT_END
-        if running_pishing_training?
+        if running_pishing_training_hint?
             return StringIO.open do |io|
                 io.puts "<div class='col-lg-12 col-md-4 col-sm-6'>"
                 io.puts "<div class='hint'>"

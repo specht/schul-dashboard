@@ -140,4 +140,89 @@ class Main < Sinatra::Base
         end
         return ''
     end
+
+    def print_phishing_groups_table
+        nutzerzahlen = {
+          maennlich: {
+            "5/6" => 0,
+            "7/8" => 0,
+            "9/10" => 0,
+            "11/12" => 0,
+            "Lehrkraft" => 0
+          },
+          weiblich: {
+            "5/6" => 0,
+            "7/8" => 0,
+            "9/10" => 0,
+            "11/12" => 0,
+            "Lehrkraft" => 0
+          }
+        }
+      
+        @@user_info.each_value do |user|
+          if user[:teacher]
+            if user[:geschlecht] == 'm'
+              nutzerzahlen[:maennlich]["Lehrkraft"] += 1
+            elsif user[:geschlecht] == 'w'
+              nutzerzahlen[:weiblich]["Lehrkraft"] += 1
+            end
+          else
+            gruppe = "#{user[:klassenstufe] <= 6 ? '5/6' : user[:klassenstufe] <= 8 ? '7/8' : user[:klassenstufe] <= 10 ? '9/10' : '11/12'}"
+            if user[:geschlecht] == 'm'
+              nutzerzahlen[:maennlich][gruppe] += 1
+            elsif user[:geschlecht] == 'w'
+              nutzerzahlen[:weiblich][gruppe] += 1
+            end
+          end
+        end
+      
+        current_group = if @session_user[:teacher]
+                          "Lehrkraft"
+                        else
+                          "#{@session_user[:klassenstufe] <= 6 ? '5/6' : @session_user[:klassenstufe] <= 8 ? '7/8' : @session_user[:klassenstufe] <= 10 ? '9/10' : '11/12'}"
+                        end
+        current_gender = @session_user[:geschlecht] == 'm' ? :maennlich : :weiblich
+      
+        return StringIO.open do |io|
+            io.puts "<p>
+            Du warst für die Statistik in folgender der zehn Gruppen: <b>#{current_group}, #{current_gender == :maennlich ? 'männlich' : current_gender}</b>
+            <div class='row'>                
+                <div class='col-md-12'>
+                    <table class='table narrow'>
+                    <thead>
+                        <tr>
+                            <th>Geschlecht</th>
+                            <th>Klassenstufe</th>
+                            <th></th>
+                            <th></th>
+                            <th></th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>männlich (#{nutzerzahlen[:maennlich]["Lehrkraft"]})</td>
+                            <td class='#{'marked' if current_gender == :maennlich && current_group == '5/6'}'>5/6 (#{nutzerzahlen[:maennlich]["5/6"]})</td>
+                            <td class='#{'marked' if current_gender == :maennlich && current_group == '7/8'}'>7/8 (#{nutzerzahlen[:maennlich]["7/8"]})</td>
+                            <td class='#{'marked' if current_gender == :maennlich && current_group == '9/10'}'>9/10 (#{nutzerzahlen[:maennlich]["9/10"]})</td>
+                            <td class='#{'marked' if current_gender == :maennlich && current_group == '11/12'}'>11/12 (#{nutzerzahlen[:maennlich]["11/12"]})</td>
+                            <td class='#{'marked' if current_gender == :maennlich && current_group == 'Lehrkraft'}'>Lehrkraft (#{nutzerzahlen[:maennlich]["Lehrkraft"]})</td>
+                        </tr>
+                        <tr>
+                            <td>weiblich (#{nutzerzahlen[:weiblich]["Lehrkraft"]})</td>
+                            <td class='#{'marked' if current_gender == :weiblich && current_group == '5/6'}'>5/6 (#{nutzerzahlen[:weiblich]["5/6"]})</td>
+                            <td class='#{'marked' if current_gender == :weiblich && current_group == '7/8'}'>7/8 (#{nutzerzahlen[:weiblich]["7/8"]})</td>
+                            <td class='#{'marked' if current_gender == :weiblich && current_group == '9/10'}'>9/10 (#{nutzerzahlen[:weiblich]["9/10"]})</td>
+                            <td class='#{'marked' if current_gender == :weiblich && current_group == '11/12'}'>11/12 (#{nutzerzahlen[:weiblich]["11/12"]})</td>
+                            <td class='#{'marked' if current_gender == :weiblich && current_group == 'Lehrkraft'}'>Lehrkraft (#{nutzerzahlen[:weiblich]["Lehrkraft"]})</td>
+                        </tr>
+                    </tbody>
+                    </table>
+                </div>
+            </div>
+            </p>"
+            io.string
+            end
+      end
+          
 end

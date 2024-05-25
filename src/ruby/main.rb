@@ -1881,9 +1881,7 @@ class Main < Sinatra::Base
                     nav_items << :admin
                 end
                 if user_who_can_use_aula_logged_in?
-                    unless admin_logged_in?
-                        nav_items << :aula
-                    end
+                    nav_items << :aula
                 end
                 if user_who_can_report_tech_problems_logged_in?
                     unless admin_logged_in?

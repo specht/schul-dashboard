@@ -38,5 +38,6 @@ ROLE_TRANSITIONS = <<~END_OF_STRING
     teacher => can_receive_messages can_write_messages can_create_polls can_use_mailing_lists can_use_nextcloud can_use_sms_gateway
     schueler => can_receive_messages can_use_nextcloud
     sv => can_write_messages can_create_polls can_use_mailing_lists can_create_events
-    admin => can_upload_files can_manage_news can_manage_monitors
+    admin => can_upload_files can_manage_news can_manage_monitors technikteam
+    technikteam => can_use_aula
 END_OF_STRING

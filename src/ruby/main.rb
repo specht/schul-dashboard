@@ -709,6 +709,9 @@ class Main < Sinatra::Base
             end
         end
 
+        @@user_info.keys.each do |email|
+            @@user_info[email][:role_transitive_origin] = {}
+        end
         # now apply transitive roles
         loop do
             upgraded_someone = false
@@ -726,6 +729,7 @@ class Main < Sinatra::Base
                     if @@user_info[email][:roles].include?(role_from)
                         roles_to.each do |role|
                             unless @@user_info[email][:roles].include?(role)
+                                @@user_info[email][:role_transitive_origin][role] = role_from
                                 @@user_info[email][:roles] << role
                                 upgraded_someone = true
                             end
@@ -794,67 +798,6 @@ class Main < Sinatra::Base
         end
 
         @@tablet_sets = parser.parse_tablet_sets || {}
-
-        # ADMIN_USERS.each do |email|
-        #     next unless @@user_info[email]
-        #     @@user_info[email][:admin] = true
-        # end
-        # ZEUGNIS_ADMIN_USERS.each do |email|
-        #     next unless @@user_info[email]
-        #     @@user_info[email][:zeugnis_admin] = true
-        # end
-        # (CAN_SEE_ALL_TIMETABLES_USERS + ADMIN_USERS).each do |email|
-        #     next unless @@user_info[email]
-        #     @@user_info[email][:can_see_all_timetables] = true
-        # end
-        # (CAN_MANAGE_SALZH_USERS + ADMIN_USERS).each do |email|
-        #     next unless @@user_info[email]
-        #     @@user_info[email][:can_manage_salzh] = true
-        # end
-        # (CAN_UPLOAD_VPLAN_USERS + ADMIN_USERS).each do |email|
-        #     next unless @@user_info[email]
-        #     @@user_info[email][:can_upload_vplan] = true
-        # end
-        # (CAN_UPLOAD_FILES_USERS + ADMIN_USERS).each do |email|
-        #     next unless @@user_info[email]
-        #     @@user_info[email][:can_upload_files] = true
-        # end
-        # (CAN_MANAGE_NEWS_USERS + ADMIN_USERS).each do |email|
-        #     next unless @@user_info[email]
-        #     @@user_info[email][:can_manage_news] = true
-        # end
-        # (CAN_MANAGE_MONITORS_USERS + ADMIN_USERS).each do |email|
-        #     next unless @@user_info[email]
-        #     @@user_info[email][:can_manage_monitors] = true
-        # end
-        # (CAN_USE_AULA_USERS + CAN_MANAGE_TABLETS_USERS + TECHNIKTEAM + ADMIN_USERS).each do |email|
-        #     next unless @@user_info[email]
-        #     @@user_info[email][:can_use_aula] = true
-        # end
-        # (CAN_MANAGE_TABLETS_USERS + TECHNIKTEAM + ADMIN_USERS).each do |email|
-        #     next unless @@user_info[email]
-        #     @@user_info[email][:can_manage_tablets] = true
-        # end
-        # (CAN_REPORT_TECH_PROBLEMS_USERS + TECHNIKTEAM + ADMIN_USERS).each do |email|
-        #     next unless @@user_info[email]
-        #     @@user_info[email][:can_report_tech_problems] = true
-        # end
-        # (TECHNIKTEAM + ADMIN_USERS).each do |email|
-        #     next unless @@user_info[email]
-        #     @@user_info[email][:technikteam] = true
-        # end
-        # (DEVELOPERS).each do |email|
-        #     next unless @@user_info[email]
-        #     @@user_info[email][:developer] = true
-        # end
-        # (CAN_MANAGE_ANTIKENFAHRT_USERS + ADMIN_USERS).each do |email|
-        #     next unless @@user_info[email]
-        #     @@user_info[email][:can_manage_antikenfahrt] = true
-        # end
-        # (SV_USERS + TECHNIKTEAM).each do |email|
-        #     next unless @@user_info[email]
-        #     @@user_info[email][:sv] = true
-        # end
 
         # add Eltern
         @@predefined_external_users = {:groups => [], :recipients => {}}
@@ -1666,25 +1609,25 @@ class Main < Sinatra::Base
                                         :tablet_type => :klassenraum,
                                         :color_scheme => 'l7146749f6976cc8b79',
                                         :can_see_all_timetables => false,
-                                        :teacher => false
+                                        :teacher => false,
                                     }
                                 elsif email == "monitor@#{SCHUL_MAIL_DOMAIN}"
                                     @session_user = {
                                         :email => email,
                                         :is_monitor => true,
-                                        :teacher => false
+                                        :teacher => false,
                                     }
                                 elsif email == "monitor-sek@#{SCHUL_MAIL_DOMAIN}"
                                     @session_user = {
                                         :email => email,
                                         :is_monitor => true,
-                                        :teacher => false
+                                        :teacher => false,
                                     }
                                 elsif email == "monitor-lz@#{SCHUL_MAIL_DOMAIN}"
                                     @session_user = {
                                         :email => email,
                                         :is_monitor => true,
-                                        :teacher => false
+                                        :teacher => false,
                                     }
                                 elsif email != "tablet@#{SCHUL_MAIL_DOMAIN}"
                                     @session_user = @@user_info[email].dup
@@ -1718,6 +1661,7 @@ class Main < Sinatra::Base
                                         @session_user[:ip] = request.ip
                                     end
                                 end
+                                @session_user[:roles] ||= Set.new()
                             end
                         rescue
                             # something went wrong, delete the session
@@ -1858,20 +1802,14 @@ class Main < Sinatra::Base
             new_messages_count_s = nil
             nav_items = []
             if user_logged_in?
-                if teacher_logged_in? || schueler_logged_in?
+                unless external_user_logged_in?
                     nav_items << ['/', 'Stundenplan', 'fa fa-calendar']
                 end
                 if teacher_logged_in?
                     nav_items << :kurse
                     nav_items << :directory
                 end
-                # if user_who_can_upload_files_logged_in? || user_who_can_manage_news_logged_in?
-                #     nav_items << :website
-                # end
-                # if user_who_can_manage_monitors_logged_in?
-                #     nav_items << :monitor
-                # end
-                if teacher_logged_in? || schueler_logged_in?
+                if user_with_role_logged_in?(:can_receive_messages)
                     nav_items << :messages
                 end
                 if user_is_eligible_for_tresor?
@@ -1919,7 +1857,6 @@ class Main < Sinatra::Base
                     if user_who_can_manage_news_logged_in?
                         io.puts "<a class='dropdown-item nav-icon' href='/manage_news'><div class='icon'><i class='fa fa-newspaper-o'></i></div><span class='label'>News verwalten</span></a>"
                         io.puts "<a class='dropdown-item nav-icon' href='/manage_calendar'><div class='icon'><i class='fa fa-calendar'></i></div><span class='label'>Termine verwalten</span></a>"
-                        # io.puts "<a class='dropdown-item nav-icon' href='/anmeldungen'><div class='icon'><i class='fa fa-group'></i></div><span class='label'>Anmeldungen einsehen</span></a>"
                         printed_something = true
                     end
                     if user_who_can_upload_files_logged_in?
@@ -1950,10 +1887,9 @@ class Main < Sinatra::Base
                         io.puts "<a class='dropdown-item nav-icon' href='/show_all_login_codes'><div class='icon'><i class='fa fa-key-modern'></i></div><span class='label'>Live-Anmeldungen</span></a>"
                         io.puts "<a class='dropdown-item nav-icon' href='/email_accounts'><div class='icon'><i class='fa fa-envelope'></i></div><span class='label'>E-Mail-Postfächer</span></a>"
                         io.puts "<a class='dropdown-item nav-icon' href='/stats'><div class='icon'><i class='fa fa-bar-chart'></i></div><span class='label'>Statistiken</span></a>"
-                        io.puts "<a class='dropdown-item nav-icon' href='/aula'><div class='icon'><i class='fa fa-music'></i></div><span class='label'>Aula</span></a>"
                         printed_something = true
                     end
-                    if teacher_logged_in? && (admin_logged_in? || sekretariat_logged_in?)
+                    if admin_logged_in? || sekretariat_logged_in?
                         io.puts "<a class='dropdown-item nav-icon' href='/anmeldungen'><div class='icon'><i class='fa fa-calendar-o'></i></div><span class='label'>Anmeldungen</span></a>"
                         printed_something = true
                     end
@@ -2054,10 +1990,6 @@ class Main < Sinatra::Base
                         end
                         io.puts "<a class='dropdown-item nav-icon' href='/groups'><div class='icon'><i class='fa fa-group'></i></div><span class='label'>Meine Gruppen</span></a>"
                     end
-                    # if @session_user[:can_upload_vplan]
-                    #     io.puts "<div class='dropdown-divider'></div>"
-                    #     io.puts "<a class='dropdown-item nav-icon' href='/upload_vplan_html'><div class='icon'><i class='fa fa-upload'></i></div><span class='label'>Vertretungsplan hochladen</span></a>"
-                    # end
                     io.puts "<div class='dropdown-divider'></div>"
                     # if true
                     #     io.puts "<a class='dropdown-item nav-icon' href='/h4ck'><div class='icon'><i class='fa fa-rocket'></i></div><span class='label'>Dashboard Hackers</span></a>"
@@ -2995,14 +2927,9 @@ class Main < Sinatra::Base
            initial_date += 1
         end
         initial_date = initial_date.strftime('%Y-%m-%d')
-        latest_vplan_timestamp = ''
         os_family = 'unknown'
         jitsi_data = nil
         poll_data = nil
-
-        if (@session_user || {})[:can_upload_vplan]
-            latest_vplan_timestamp = File.basename(Dir['/vplan/*.txt'].sort.last || '').sub('.txt', '')
-        end
 
         now = Time.now.to_i - MESSAGE_DELAY
         sent_messages = []

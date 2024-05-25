@@ -8,10 +8,6 @@ class Main < Sinatra::Base
         user_logged_in? && (@session_user[:roles].include?(role))
     end
 
-    def user_who_can_upload_vplan_logged_in?
-        user_with_role_logged_in?(:can_upload_vplan)
-    end
-
     def user_who_can_upload_files_logged_in?
         user_with_role_logged_in?(:can_upload_files)
     end
@@ -226,10 +222,6 @@ class Main < Sinatra::Base
         assert(teacher_tablet_logged_in?)
     end
 
-    def require_user_who_can_upload_vplan!
-        assert(user_who_can_upload_vplan_logged_in?)
-    end
-
     def require_user_who_can_upload_files!
         assert(user_who_can_upload_files_logged_in?)
     end
@@ -372,12 +364,6 @@ class Main < Sinatra::Base
 
     def this_is_a_page_for_logged_in_teachers_or_sv_or_users_who_can_manage_tablets
         unless teacher_or_sv_logged_in? || user_who_can_manage_tablets_logged_in?
-            redirect "#{WEB_ROOT}/", 303
-        end
-    end
-
-    def this_is_a_page_for_people_who_can_upload_vplan
-        unless user_who_can_upload_vplan_logged_in?
             redirect "#{WEB_ROOT}/", 303
         end
     end

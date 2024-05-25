@@ -588,6 +588,51 @@ class Main < Sinatra::Base
         end
         respond(:ok => true)
     end
+
+    def print_roles()
+        require_user!
+        StringIO.open do |io|
+            io.puts "<div class='table-responsive' style='max-width: 100%; overflow-x: auto;'>"
+            io.puts "<table class='table table-condensed table-striped table-narrow'>"
+            io.puts "<thead>"
+            io.puts "<tr>"
+            io.puts "<th>Beschreibung</th>"
+            io.puts "<th>Aktiv</th>"
+            io.puts "<th>Ursprung</th>"
+            if admin_logged_in?
+                io.puts "<th>Nutzer</th>"
+            end
+            io.puts "</tr>"
+            io.puts "</thead>"
+            io.puts "<tbody>"
+            AVAILABLE_ROLES.each_pair do |role, description|
+                unless admin_logged_in?
+                    next unless @session_user[:roles].include?(role)
+                end
+                io.puts "<tr>"
+                io.puts "<td>#{description}</td>"
+                if @session_user[:roles].include?(role)
+                    io.puts "<td><i class='fa fa-check text-success'></i>&nbsp;&nbsp;ja</td>"
+                    if @session_user[:role_transitive_origin][role]
+                        io.puts "<td>#{AVAILABLE_ROLES[@session_user[:role_transitive_origin][role]]}</td>"
+                    else
+                        io.puts "<td>direkt gesetzt</td>"
+                    end
+                else
+                    io.puts "<td><i class='fa fa-times text-danger'></i>&nbsp;&nbsp; nein</td>"
+                    io.puts "<td></td>"
+                end
+                if admin_logged_in?
+                    io.puts "<td><button class='btn btn-xs btn-warning' style='width: 8em;'>#{(@@users_for_role[role] || []).size} Nutzer&nbsp;&nbsp;<i class='fa fa-chevron-down'></i></button></td>"
+                end
+                io.puts "</tr>"
+            end
+            io.puts "</tbody>"
+            io.puts "</table>"
+            io.puts "</div>"
+            io.string
+        end
+    end    
     
     post '/api/get_login_codes_for_klasse' do
         require_teacher!

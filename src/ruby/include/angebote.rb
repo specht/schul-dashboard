@@ -20,7 +20,9 @@ class Main < Sinatra::Base
                 }
                 temp_order << x[:info][:id]
             end
-            temp[x[:info][:id]][:recipients] << x[:recipient]
+            if @@user_info.include?(x[:recipient])
+                temp[x[:info][:id]][:recipients] << x[:recipient]
+            end
         end
         angebote = temp_order.map do |x|
             temp[x]

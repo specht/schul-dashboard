@@ -232,6 +232,53 @@ class Parser
         end
     end
 
+    def parse_extra_accounts(&block)
+        path = '/data/extra-dashboard-accounts.csv'
+        unless File.exist?(path)
+            debug "...skipping because #{path} does not exist"
+            return
+        end
+        srand(12)
+        CSV.foreach(path, :headers => true) do |line|
+            line = Hash[line]
+            email = line['E-Mail-Adresse'].strip
+            first_name = (line['Vorname'] || '').strip
+            last_name = (line['Nachname'] || '').strip
+            geschlecht = line['Geschlecht']
+
+            titel = (line['Titel'] || '').strip
+            display_name = last_name.dup
+            if display_name.include?(',')
+                display_name = display_name.split(',').map { |x| x.strip }
+                display_name = "#{display_name[1]} #{display_name[0]}"
+            end
+            display_last_name = display_name.dup
+            display_last_name = "#{titel} #{display_last_name}".strip
+            if geschlecht == 'm'
+                display_last_name = "Herr #{display_last_name}".strip
+            elsif geschlecht == 'w'
+                display_last_name = "Frau #{display_last_name}".strip
+            end
+            display_last_name = 'NN' if display_last_name.empty?
+            display_name = "#{first_name} #{display_name}".strip
+            display_name = "#{titel} #{display_name}".strip
+            display_name = 'NN' if display_name.empty?
+
+            record = {:email => email,
+                      :first_name => first_name,
+                      :last_name => last_name,
+                      :titel => titel,
+                      :display_name => display_name,
+                      :display_last_name => display_last_name,
+                      :display_name_official => display_last_name,
+                      :display_last_name_dativ => display_last_name.sub('Herr ', 'Herrn '),
+                      :geschlecht => geschlecht,
+                      :can_log_in => true,
+                     }
+            yield record
+        end
+    end
+
     def name_to_email(vorname, nachname)
         if nachname.include?(',')
             _ = nachname.split(',').map { |x| x.strip }

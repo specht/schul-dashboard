@@ -533,10 +533,10 @@ function show_poll_run_results(prid) {
             </div>
             <div class="modal-body">
                 <div class='alert alert-success poll-run-anonymous' style='padding-left: 50px; position: relative;'>
-                <i style='font-size:200%; position: absolute; left: 12px; top: 18px;' class='fa fa-user-secret'></i>Diese Umfrage ist anonym. <span class='poll-run-organizer'></span> wird #{sus_logged_in? ? 'deine' : 'Ihre'} Antworten sehen können, aber nicht wissen, wer welche Antworten gegeben hat.<br />Insgesamt nehmen <span class='poll-run-total-participants'></span> Teilnehmerinnen und Teilnehmer an dieser Umfrage teil.
+                <i style='font-size:200%; position: absolute; left: 12px; top: 18px;' class='fa fa-user-secret'></i>Diese Umfrage ist anonym. <span class='poll-run-organizer'></span> wird #{schueler_logged_in? ? 'deine' : 'Ihre'} Antworten sehen können, aber nicht wissen, wer welche Antworten gegeben hat.<br />Insgesamt nehmen <span class='poll-run-total-participants'></span> Teilnehmerinnen und Teilnehmer an dieser Umfrage teil.
                 </div>
                 <div class='alert alert-warning poll-run-non-anonymous' style='padding-left: 55px; position: relative;'>
-                <i style='font-size:200%; position: absolute; left: 10px; top: 18px;' class='fa fa-address-card-o'></i><strong>Hinweis:</strong> Diese Umfrage ist nicht anonym.<br /> <span class='poll-run-organizer'></span> wird #{sus_logged_in? ? 'deine' : 'Ihre'} Antworten sehen können und auch die Tatsache, dass die Antworten von #{sus_logged_in? ? 'dir' : 'Ihnen'} stammen.
+                <i style='font-size:200%; position: absolute; left: 10px; top: 18px;' class='fa fa-address-card-o'></i><strong>Hinweis:</strong> Diese Umfrage ist nicht anonym.<br /> <span class='poll-run-organizer'></span> wird #{schueler_logged_in? ? 'deine' : 'Ihre'} Antworten sehen können und auch die Tatsache, dass die Antworten von #{schueler_logged_in? ? 'dir' : 'Ihnen'} stammen.
                 </div>
                 <div class='row'>
                     <div class='col-md-12 poll-items'></div>
@@ -548,9 +548,9 @@ function show_poll_run_results(prid) {
                 </div>
             </div>
             <div class="modal-footer">
-                <div class='poll_submit_success mr-auto'><i class='fa fa-check-circle text-success'></i>&nbsp;&nbsp;#{sus_logged_in? ? 'Deine' : 'Ihre'} Antworten wurden gespeichert.</div>
-                <div class='poll_submit_update_message mr-auto'><i class='fa fa-info-circle text-info'></i>&nbsp;&nbsp;#{sus_logged_in? ? 'Du hast' : 'Sie haben'} bereits abgestimmt, #{sus_logged_in? ? 'kannst deine' : 'können Ihre'} Einträge aber aktualisieren.</div>
-                <div class='poll_submit_error mr-auto'><i class='fa fa-exclamation-circle text-danger'></i>&nbsp;&nbsp;#{sus_logged_in? ? 'Deine' : 'Ihre'} Antworten konnten nicht gespeichert werden<span class='poll_submit_error_message'></span></div>
+                <div class='poll_submit_success mr-auto'><i class='fa fa-check-circle text-success'></i>&nbsp;&nbsp;#{schueler_logged_in? ? 'Deine' : 'Ihre'} Antworten wurden gespeichert.</div>
+                <div class='poll_submit_update_message mr-auto'><i class='fa fa-info-circle text-info'></i>&nbsp;&nbsp;#{schueler_logged_in? ? 'Du hast' : 'Sie haben'} bereits abgestimmt, #{schueler_logged_in? ? 'kannst deine' : 'können Ihre'} Einträge aber aktualisieren.</div>
+                <div class='poll_submit_error mr-auto'><i class='fa fa-exclamation-circle text-danger'></i>&nbsp;&nbsp;#{schueler_logged_in? ? 'Deine' : 'Ihre'} Antworten konnten nicht gespeichert werden<span class='poll_submit_error_message'></span></div>
                 <div id='save_poll_response_btn_container' style='display: inline-block;'>
                     <button id='bu_discard_poll_results' type="button" class="btn btn-outline-secondary" disabled><i class='fa fa-times'></i>&nbsp;&nbsp;Änderungen verwerfen</button>
                     <button id='bu_submit_poll_results' type="button" class="btn btn-outline-success" disabled><i class='fa fa-send'></i>&nbsp;&nbsp;Senden</button>

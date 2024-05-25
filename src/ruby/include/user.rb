@@ -3,6 +3,11 @@ class Main < Sinatra::Base
         !@session_user.nil?
     end
 
+    def user_has_role(email, role)
+        assert(AVAILABLE_ROLES.include?(role), "Unknown role: #{role}")
+        @@user_info[email] && @@user_info[email][:roles].include?(role)
+    end
+
     def user_with_role_logged_in?(role)
         assert(AVAILABLE_ROLES.include?(role), "Unknown role: #{role}")
         user_logged_in? && (@session_user[:roles].include?(role))

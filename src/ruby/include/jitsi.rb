@@ -5,11 +5,11 @@ class Main < Sinatra::Base
     get '/api/jitsi_terms' do
         respond_raw_with_mimetype_and_filename(File.read('/data/legal/Nutzungshinweise-Meet.pdf'), 'application/pdf', "Nutzungshinweise-Meet.pdf")
     end
-        
+
     get '/api/jitsi_dse' do
         respond_raw_with_mimetype_and_filename(File.read('/data/legal/Datenschutzerklärung-Meet.pdf'), 'application/pdf', "Datenschutzerklärung-Meet.pdf")
     end
-    
+
     def gen_jwt_for_room(room = '', eid = nil, user = nil, email = nil)
         payload = {
             :context => { :user => {}},
@@ -57,13 +57,13 @@ class Main < Sinatra::Base
         assert(!(payload[:context][:user][:name].nil?))
         assert(payload[:context][:user][:name].strip.size > 0)
         assert(room.strip.size > 0)
-        
+
         debug "Generated Jitsi token for #{payload[:context][:user][:name]} for #{payload[:room]}" if DEVELOPMENT || true
-        
+
         token = JWT.encode payload, JWT_APPKEY, algorithm = 'HS256', header_fields = {:typ => 'JWT'}
         token
     end
-    
+
     def gen_jwt_for_stream(name)
         payload = {
             :context => { :user => { :name => name }},
@@ -78,15 +78,15 @@ class Main < Sinatra::Base
         token = JWT.encode payload, JWT_APPKEY_STREAM, algorithm = 'HS256', header_fields = {:typ => 'JWT'}
         token
     end
-    
+
     def room_name_for_event(title, eid)
         "#{title} (#{eid[0, 8]})"
     end
-    
+
     def self.stream_allowed_for_date_lesson_key_and_email(datum, lesson_key, email, restrictions = nil, is_homeschooling_user = nil, group2_for_email = nil)
         # temporarily disable all stream restrictions
         return true
-        
+
         restrictions ||= Main.get_stream_restriction_for_lesson_key(lesson_key)
         weekday = (Date.parse(datum).wday + 6) % 7
         return true if restrictions[weekday] == 0
@@ -107,7 +107,7 @@ class Main < Sinatra::Base
             true
         end
     end
-    
+
     def gen_jitsi_data(path)
         ua = USER_AGENT_PARSER.parse(request.env['HTTP_USER_AGENT'])
         browser_icon = 'fa-microphone'
@@ -151,7 +151,7 @@ class Main < Sinatra::Base
                 organizer_email = data['ou.email']
                 event = data['e']
                 room_name = room_name_for_event(event[:title], eid)
-                
+
                 if code
                     # EVENT - EXTERNAL USER WITH CODE
                     rows = neo4j_query(<<~END_OF_QUERY, :eid => eid)
@@ -284,9 +284,9 @@ class Main < Sinatra::Base
                     end
                     assert(!(timetable.nil?))
                     timetable = timetable['events'].select do |entry|
-                        entry['lesson'] && 
-                                entry['lesson_key'] == lesson_key && 
-                                ((entry['datum'] == p_ymd) || DEVELOPMENT || admin_logged_in?) && 
+                        entry['lesson'] &&
+                                entry['lesson_key'] == lesson_key &&
+                                ((entry['datum'] == p_ymd) || DEVELOPMENT || admin_logged_in?) &&
                                 (entry['data'] || {})['lesson_jitsi']
                     end.sort { |a, b| a['start'] <=> b['start'] }
                     now_time = Time.now
@@ -312,7 +312,7 @@ class Main < Sinatra::Base
                         lesson_info = timetable.first
 
                         # debug lesson_info.to_yaml
-                        
+
                         unless self.class.stream_allowed_for_date_lesson_key_and_email(Date.today.strftime('%Y-%m-%d'), lesson_info['lesson_key'], @session_user[:email])
                             result[:html] += "<div class='alert alert-info'>Du bist für diesen Jitsi-Raum leider nicht freigeschaltet.</div>"
                             can_enter_room = false
@@ -330,10 +330,10 @@ class Main < Sinatra::Base
                                 end
                                 if presence_token
                                     query_data = {
-                                        :token => presence_token, 
-                                        :lesson_key => lesson_info['lesson_key'], 
-                                        :offset => lesson_info['lesson_offset'], 
-                                        :email => @session_user[:email], 
+                                        :token => presence_token,
+                                        :lesson_key => lesson_info['lesson_key'],
+                                        :offset => lesson_info['lesson_offset'],
+                                        :email => @session_user[:email],
                                         :timestamp => (Time.now + PRESENCE_TOKEN_EXPIRY_TIME).to_i
                                     }
                                     if DEVELOPMENT
@@ -424,7 +424,7 @@ class Main < Sinatra::Base
         end
         result
     end
-    
+
     def current_jitsi_rooms()
         @@current_jitsi_rooms ||= nil
         @@current_jitsi_rooms_timestamp ||= Time.now
@@ -445,7 +445,7 @@ class Main < Sinatra::Base
         end
         return @@current_jitsi_rooms
     end
-    
+
     def get_jitsi_room_name_for_lesson_key(lesson_key, user = nil)
         p_ymd = Date.today.strftime('%Y-%m-%d')
         p_yw = Date.today.strftime('%Y-%V')
@@ -457,14 +457,14 @@ class Main < Sinatra::Base
         end
         assert(!(timetable.nil?))
         timetable = timetable['events'].select do |entry|
-            entry['lesson'] && 
-                    (entry['lesson_key'] == lesson_key) && 
-                    ((entry['datum'] == p_ymd) || DEVELOPMENT || (user && ADMIN_USERS.include?(user))) && 
+            entry['lesson'] &&
+                    (entry['lesson_key'] == lesson_key) &&
+                    ((entry['datum'] == p_ymd) || DEVELOPMENT || (user && user_has_role(user, :admin))) &&
                     (entry['data'] || {})['lesson_jitsi']
         end.sort { |a, b| a['start'] <=> b['start'] }
         now_time = Time.now
         old_timetable_size = timetable.size
-        unless (user && ADMIN_USERS.include?(user))
+        unless (user && user_has_role(user, :admin))
             timetable = timetable.reject do |entry|
                 t = Time.parse("#{entry['end']}:00") + JITSI_LESSON_POST_ENTRY_TOLERANCE * 60
                 now_time > t
@@ -477,7 +477,7 @@ class Main < Sinatra::Base
             return room_name
         end
     end
-    
+
     def get_current_jitsi_users_for_lesson(lesson_key, offset, user = nil)
         lesson_info = neo4j_query_expect_one(<<~END_OF_QUERY, {:lesson_key => lesson_key, :offset => offset})['i']
             MATCH (i:LessonInfo {offset: $offset})-[:BELONGS_TO]->(l:Lesson {key: $lesson_key})
@@ -527,15 +527,15 @@ class Main < Sinatra::Base
         missing_sus = (Set.new((@@schueler_for_lesson[lesson_key] || [])) - present_sus).map do |email|
             @@user_info[email][:display_name]
         end.sort
-        {:lesson_room => lesson_room_participants, 
-         :breakout_rooms => room_participants, 
+        {:lesson_room => lesson_room_participants,
+         :breakout_rooms => room_participants,
          :missing_sus => (@@user_info[user] || {})[:teacher] ? missing_sus : nil,
          :breakout_room_names => lesson_info[:breakout_rooms],
          :lesson_room_name => lesson_room_name,
          :breakout_room_index => breakout_room_index,
          :breakout_room_urls => breakout_room_urls}
     end
-    
+
     post '/api/get_current_jitsi_users_for_lesson' do
         require_teacher!
         data = parse_request_data(:required_keys => [:lesson_key, :offset],
@@ -543,12 +543,12 @@ class Main < Sinatra::Base
         assert((@@lessons_for_shorthand[@session_user[:shorthand]] || []).include?(data[:lesson_key]), 'get_current_jitsi_users_for_lesson', true)
         respond(get_current_jitsi_users_for_lesson(data[:lesson_key], data[:offset]))
     end
-    
+
     options '/api/get_current_jitsi_users_for_presence_token' do
         response.headers['Access-Control-Allow-Origin'] = "https://#{JITSI_HOST}"
         response.headers['Access-Control-Allow-Headers'] = "Content-Type, Access-Control-Allow-Origin"
     end
-    
+
     post '/api/get_current_jitsi_users_for_presence_token' do
         response.headers['Access-Control-Allow-Origin'] = "https://#{JITSI_HOST}"
         data = parse_request_data(:required_keys => [:presence_token])

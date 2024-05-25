@@ -14,20 +14,18 @@ class Main < Sinatra::Base
         end
         gev.each do |email|
             if @@user_info[email].nil?
-                GEV_USERS.each do |gev_email|
-                    deliver_mail do
-                        to gev_email
-                        bcc SMTP_FROM
-                        from SMTP_FROM
+                deliver_mail do
+                    to @@users_for_role[:gev]
+                    bcc SMTP_FROM
+                    from SMTP_FROM
 
-                        subject "Elternsprecher entfernt"
+                    subject "Elternsprecher entfernt"
 
-                        StringIO.open do |io|
-                            io.puts "<p>Hallo!</p>"
-                            io.puts "<p>Die Eltern von #{email} (#{name_for_email[email]}) wurden als Elternsprecher entfernt, da die Schülerin / der Schüler nicht mehr an der Schule ist.</p>"
-                            io.puts "<p>Viele Grüße,<br />#{WEBSITE_MAINTAINER_NAME}</p>"
-                            io.string
-                        end
+                    StringIO.open do |io|
+                        io.puts "<p>Hallo!</p>"
+                        io.puts "<p>Die Eltern von #{email} (#{name_for_email[email]}) wurden als Elternsprecher entfernt, da die Schülerin / der Schüler nicht mehr an der Schule ist.</p>"
+                        io.puts "<p>Viele Grüße,<br />#{WEBSITE_MAINTAINER_NAME}</p>"
+                        io.string
                     end
                 end
                 temp = neo4j_query(<<~END_OF_QUERY, {:email => email})

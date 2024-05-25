@@ -602,26 +602,6 @@ class Main < Sinatra::Base
             RETURN v, u.email, f.email;
         END_OF_QUERY
         StringIO.open do |io|
-            io.puts "<h3>User, die Zugriff auf diese Seite haben</h3>"
-            io.puts "<div class='row' style='margin-bottom: 15px;'><div class='col-md-12'>"
-            # for tech_admin in TECHNIKTEAM + CAN_MANAGE_TABLETS_USERS + ADMIN_USERS do
-            #     display_name = @@user_info[tech_admin][:display_name]
-            #     nc_login = @@user_info[tech_admin][:nc_login]
-            #     io.puts "<img src='#{NEXTCLOUD_URL}/index.php/avatar/#{nc_login}/256' class='icon avatar-md'>&nbsp;#{display_name}"
-            # end
-            io.puts "<table class='table narrow table-striped' style='width: unset; min-width: 100%;'>"
-            io.puts "<thead>"
-            io.puts "<tr><td>User</td></tr>"
-            io.puts "</thead><tbody>"
-            for tech_admin in (TECHNIKTEAM + CAN_MANAGE_TABLETS_USERS + ADMIN_USERS).uniq.sort do
-                next unless @@user_info[tech_admin]
-                display_name = @@user_info[tech_admin][:display_name]
-                nc_login = @@user_info[tech_admin][:nc_login]
-                io.puts "<tr><td><code><img src='#{NEXTCLOUD_URL}/index.php/avatar/#{nc_login}/256' class='icon avatar-md'>&nbsp;#{display_name}</code></td></tr>"
-            end
-            io.puts "</tbody></table>"
-            io.puts "</div></div>"
-            io.puts "<div class='row' style='margin-bottom: 15px;'><div class='col-md-12'><div class='alert alert-info'><code>#{(TECHNIKTEAM + CAN_MANAGE_TABLETS_USERS + ADMIN_USERS).uniq.sort}</code></div></div></div>"
             io.puts "<br><h3>User, die Probleme melden können (Alle oben genannten plus:)</h3>"
             io.puts "<div class='row' style='margin-bottom: 15px;'><div class='col-md-12'>"
             io.puts "<table class='table narrow table-striped' style='width: unset; min-width: 100%;'>"

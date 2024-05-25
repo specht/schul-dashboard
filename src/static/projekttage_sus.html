@@ -4,13 +4,19 @@
         <div class='col-md-12'>
             <h2 style='margin-bottom: 30px;'>Projekttage #{Date.today.year}</h2>
             <div class="alert mono-alert" style="#{user_eligible_for_projektwahl? ? '' : 'display: none;'}">
-                <h3>Wähle deine Lieblingsprojekte!</h3>
+                <!-- <h3>Wähle deine Lieblingsprojekte!</h3>
+                <p>
                 Wähle mindestens drei Projekte, die dich interessieren.
                 Du kannst sie später noch ändern. Falls du weniger als
                 drei Projekte wählst, werden wir weitere zufällige Projekte
                 für dich wählen, damit es insgesamt mindestens drei Projekte
                 sind, mit denen du in die Auslosung gehst. Du kannst dich
-                natürlich auch für mehr als drei Projekte anmelden.
+                natürlich auch für mehr als drei Projekte anmelden. 
+                </p>-->
+                <p>
+                    Vom 11. bis 15. Juli finden wieder die Projekttage statt.
+                    Hier siehst du, welche Projekte angeboten werden.
+                </p>
             </div>
         </div>
     </div>
@@ -106,6 +112,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 card.append($(`<p style='font-style: italic;'>`).text(`${projekt.organized_by.map(function(x) { return display_name_for_email[x]; }).join(', ')}`));
                 card.append($(`<p>`).text(projekt.description ?? '(noch keine Beschreibung vorhanden)'));
                 if ('#{user_eligible_for_projektwahl?}' === 'true') {
+                    /*
                     $(`<hr class='dashed'>`).appendTo(card);
                     if (#{@session_user[:klassenstufe] || 0} >= projekt.min_klasse && #{@session_user[:klassenstufe] || 0} <= projekt.max_klasse) {
                         $(`<p>`).text(`Teile uns hier mit, wie sehr du dich für dieses Projekt interessierst:`).appendTo(card);
@@ -133,6 +140,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     } else {
                         card.append($(`<p style='font-style: italic;'>`).text(`Du kannst dieses Projekt leider nicht wählen, da es nicht für deine Klassenstufe vorgesehen ist.`));
                     }
+                    */
                 }
                 if ('#{teacher_logged_in?}' === 'true') {
                     $(`<hr style='border-top: 1px dashed rgba(0,0,0,0.3);'>`).appendTo(card);

@@ -1,6 +1,19 @@
 class Main < Sinatra::Base
 
     def get_angebote
+        # first, purge all connections to users which no longer exist
+        neo4j_query(<<~END_OF_QUERY).each do |row|
+            MATCH (a:Angebot)<-[r:IS_PART_OF]->(u:User)
+            RETURN DISTINCT u.email;
+        END_OF_QUERY
+            email = row['u.email']
+            unless @@user_info[email]
+                neo4j_query(<<~END_OF_QUERY, :email => email)
+                    MATCH (u:User {email: $email})-[r:IS_PART_OF]->(a:Angebot)
+                    DELETE r;
+                END_OF_QUERY
+            end
+        end
         angebote = neo4j_query(<<~END_OF_QUERY).map { |x| {:info => x['a'], :recipient => x['u.email'], :owner => x['ou.email'] } }
             MATCH (a:Angebot)-[:DEFINED_BY]->(ou:User)
             WITH a, ou
@@ -20,9 +33,7 @@ class Main < Sinatra::Base
                 }
                 temp_order << x[:info][:id]
             end
-            if @@user_info.include?(x[:recipient])
-                temp[x[:info][:id]][:recipients] << x[:recipient]
-            end
+            temp[x[:info][:id]][:recipients] << x[:recipient]
         end
         angebote = temp_order.map do |x|
             temp[x]

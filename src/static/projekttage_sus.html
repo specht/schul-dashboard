@@ -3,7 +3,7 @@
     <div class='row'>
         <div class='col-md-12'>
             <h2 style='margin-bottom: 30px;'>Projekttage #{Date.today.year}</h2>
-            <div class="alert mono-alert" style="#{(@session_user[:klassenstufe] || 0) >= 5 && (@session_user[:klassenstufe] || 0) <= 9 && projekttage_phase() < 3 ? '' : 'display: none;'}">
+            <div class="alert mono-alert" style="#{(@session_user[:klassenstufe] || 7) >= 5 && (@session_user[:klassenstufe] || 7) <= 9 && projekttage_phase() < 3 ? '' : 'display: none;'}">
                 Zum Ende des Schuljahres, vom <b>11. bis 15. Juli</b>, finden wieder die Projekttage statt.
                 Hier siehst du, welche Projekte angeboten werden.
                 Am <b>Montag, den 3. Juni</b> gibt es eine Vorstellung der Projekte in der 7. Stunde. Du kannst dir dann drei
@@ -89,7 +89,7 @@ var choice_level_label = [
     'Ich würde wirklich sehr gern an diesem Projekt teilnehmen.',
 ];
 var display_name_for_email = #{Hash[@@user_info.map { |email, info| [email, info[:teacher] ? info[:display_name_official] : info[:display_name]] }].to_json};
-var this_klasse = #{@session_user[:klassenstufe] || 'null'};
+var this_klasse = #{@session_user[:klassenstufe] || 7};
 var projekte = {};
 var vote_for_project = {};
 var codepoints = [0x1fae5, 0x1f914, 0x1f60d, 0x1f525];
@@ -108,22 +108,33 @@ function update_vote_summary() {
             items.push([i, buckets[i]]);
         }
     }
+    $('#text_vote_summary').empty();
     if (items.length === 0)
-        $('#text_vote_summary').html(`<em>Du hast bisher keine Projekte gewählt.</em>`);
+        $('#text_vote_summary').append($(`<p>`).html(`<em>Du hast bisher keine Projekte gewählt.</em>`));
     else {
-        $('#text_vote_summary').empty();
         $('#text_vote_summary').append($(`<p>`).html(`<em>Du hast bisher folgende Projekte gewählt:</em>`));
         for (let item of items) {
             let vote = item[0];
             let projects = item[1];
             for (let project of projects) {
                 let polaroid = $(`<div class="polaroid" style="position: relative; display: inline-block; float: none; width: 150px; height: 180px; margin-right: 10px; transform: none;"></div>`).css('background-image', `url(/api/get_sus_photo/${projekte[project].photo}-512.jpg)`).appendTo($('#text_vote_summary'));
-                polaroid.append($(`<p style="font-size: 0.8em; margin-top: 120px; margin-left: -10px; margin-right: -10px; white-space: nowrap; overflow-x: clip; text-overflow: ellipsis;">`).text(projekte[project].title));
+                polaroid.append($(`<p style="font-size: 0.8em; margin-top: 120px; text-align: center; margin-left: -10px; margin-right: -10px; white-space: nowrap; overflow-x: clip; text-overflow: ellipsis;">`).text(projekte[project].title));
                 polaroid.append($(`<p style="box-shadow: 0 0 10px rgba(0, 0, 0, 0.5); background-color: #fff; border-radius: 50%; width: 1.5em; height: 1.5em; text-align: center; padding-top: 0.05em; font-size: 1.5em; transform: rotate(5deg); position: absolute; top: -15px; right: -15px;">`).text(String.fromCodePoint(codepoints[vote])));
             }
         }
-        $('#text_vote_summary').append($(`<p class='mt-3'>`).html(`Wenn alle ihre Projekte gewählt haben, entscheidet das Los, welches Projekt du bekommst.`));
         // $('#text_vote_summary').html(`<p>Du hast bisher folgende Projekte gewählt:</p><ul>${items.map(function(x) {return '<li>' + x + '</li>';}).join('')}</ul>`);
+    }
+    let i = items.length;
+    while (i < 3) {
+        i += 1;
+        let polaroid = $(`<div class="polaroid" style="position: relative; display: inline-block; float: none; width: 150px; height: 180px; margin-right: 10px; transform: none;"></div>`).css('background-image', `url(/api/get_sus_photo/-512.jpg)`).appendTo($('#text_vote_summary'));
+        polaroid.append($(`<p style="font-size: 0.8em; margin-top: 120px; text-align: center; margin-left: -10px; margin-right: -10px; white-space: nowrap; overflow-x: clip; text-overflow: ellipsis;">`).text('Überraschungs-Projekt'));
+        polaroid.append($(`<p style="text-align: center; font-size: 2em; transform: rotate(-8deg); position: absolute; top: 40px; left: 40px; opacity: 0.6;">`).text('?'));
+        polaroid.append($(`<p style="text-align: center; font-size: 3em; transform: rotate(2deg); position: absolute; top: 20px; left: 55px; opacity: 0.6;">`).text('?'));
+        polaroid.append($(`<p style="text-align: center; font-size: 2em; transform: rotate(12deg); position: absolute; top: 40px; left: 80px; opacity: 0.6;">`).text('?'));
+    }
+    if (items.length > 0) {
+        $('#text_vote_summary').append($(`<p class='mt-3'>`).html(`Wenn alle ihre Projekte gewählt haben, entscheidet das Los, welches Projekt du bekommst.`));
     }
 }
 
@@ -154,7 +165,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 card.append($(`<p>`).text(projekt.description ?? '(noch keine Beschreibung vorhanden)'));
                 if ('#{user_eligible_for_projektwahl?}' === 'true') {
                     $(`<hr class='dashed'>`).appendTo(card);
-                    if (#{@session_user[:klassenstufe] || 0} >= projekt.min_klasse && #{@session_user[:klassenstufe] || 0} <= projekt.max_klasse) {
+                    if (this_klasse >= projekt.min_klasse && this_klasse <= projekt.max_klasse) {
                         vote_for_project[projekt.nr] = projekt.session_user_vote;
                         $(`<p>`).text(`Teile uns hier mit, wie sehr du dich für dieses Projekt interessierst:`).appendTo(card);
                         div = $(`<div class='emojis'>`).appendTo(card);

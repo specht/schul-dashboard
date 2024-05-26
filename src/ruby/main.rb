@@ -647,7 +647,7 @@ class Main < Sinatra::Base
                 :email => record[:email],
                 :id => record[:id],
                 :klasse => record[:klasse],
-                :klassenstufe => record[:klasse].to_i,
+                :klassenstufe => record[:klasse] =~ /^\d/ ? record[:klasse].to_i : nil,
                 :geschlecht => record[:geschlecht],
                 :nc_login => record[:email].split('@').first.sub(/\.\d+$/, ''),
                 :matrix_login => matrix_login,

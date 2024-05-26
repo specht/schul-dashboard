@@ -2,14 +2,14 @@ class Main < Sinatra::Base
 
     def user_eligible_for_projekt_katalog?
         return true if teacher_logged_in?
-        return false unless schueler_logged_in?
-        return @session_user[:klassenstufe] && @session_user[:klassenstufe] >= 5
+        return schueler_logged_in?
     end
 
     def user_eligible_for_projektwahl?
         return false unless schueler_logged_in?
         return false unless projekttage_phase() == 3
-        return @session_user[:klassenstufe] && @session_user[:klassenstufe] >= 5 && @session_user[:klassenstufe] <= 9
+        klassenstufe = @session_user[:klassenstufe] || 7
+        return klassenstufe >= 5 && klassenstufe <= 9
     end
 
     def parse_projekt_node(p)

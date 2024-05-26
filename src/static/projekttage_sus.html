@@ -3,17 +3,23 @@
     <div class='row'>
         <div class='col-md-12'>
             <h2 style='margin-bottom: 30px;'>Projekttage #{Date.today.year}</h2>
+            <div class="alert mono-alert" style="#{(@session_user[:klassenstufe] || 0) >= 5 && (@session_user[:klassenstufe] || 0) <= 9 && projekttage_phase() < 3 ? '' : 'display: none;'}">
+                Zum Ende des Schuljahres, vom <b>11. bis 15. Juli</b>, finden wieder die Projekttage statt.
+                Hier siehst du, welche Projekte angeboten werden.
+                Am <b>Montag, den 3. Juni</b> gibt es eine Vorstellung der Projekte in der 7. Stunde. Du kannst dir dann drei
+                Projektvorstellungen anschauen und anschließend hier deine Lieblingsprojekte wählen.
+            </div>
             <div class="alert mono-alert" style="#{user_eligible_for_projektwahl? ? '' : 'display: none;'}">
-                <!-- <h3>Wähle deine Lieblingsprojekte!</h3>
-                Wähle mindestens drei Projekte, die dich interessieren.
-                Du kannst sie später noch ändern. Falls du weniger als
-                drei Projekte wählst, werden wir weitere zufällige Projekte
-                für dich wählen, damit es insgesamt mindestens drei Projekte
-                sind, mit denen du in die Auslosung gehst. Du kannst dich
-                natürlich auch für mehr als drei Projekte anmelden. 
-                -->
-                Vom 11. bis 15. Juli finden wieder die Projekttage statt.
-                Hier siehst du, welche Projekte angeboten werden. Schau sie dir schon mal an, später kannst du dann Projekte wählen.
+                <h3>Wähle deine Lieblingsprojekte!</h3>
+                <p>
+                    Wähle mindestens drei Projekte, die dich interessieren.
+                    Du kannst sie später noch ändern. Falls du weniger als
+                    drei Projekte wählst, werden wir weitere zufällige Projekte
+                    für dich wählen, damit es insgesamt mindestens drei Projekte
+                    sind, mit denen du in die Auslosung gehst. Du kannst dich
+                    natürlich auch für mehr als drei Projekte anmelden.
+                </p>
+                <p id="text_vote_summary"></p>
             </div>
         </div>
     </div>
@@ -84,10 +90,48 @@ var choice_level_label = [
 ];
 var display_name_for_email = #{Hash[@@user_info.map { |email, info| [email, info[:teacher] ? info[:display_name_official] : info[:display_name]] }].to_json};
 var this_klasse = #{@session_user[:klassenstufe] || 'null'};
+var projekte = {};
+var vote_for_project = {};
+var codepoints = [0x1fae5, 0x1f914, 0x1f60d, 0x1f525];
+
+function update_vote_summary() {
+    console.log('updating summary');
+    let buckets = {1: [], 2: [], 3: []};
+    for (let nr in vote_for_project) {
+        let vote = vote_for_project[nr];
+        if (vote > 0)
+            buckets[vote].push(nr);
+    }
+    let items = [];
+    for (let i = 3; i >= 1; i--) {
+        if (buckets[i].length > 0) {
+            items.push([i, buckets[i]]);
+        }
+    }
+    if (items.length === 0)
+        $('#text_vote_summary').html(`<em>Du hast bisher keine Projekte gewählt.</em>`);
+    else {
+        $('#text_vote_summary').empty();
+        $('#text_vote_summary').append($(`<p>`).html(`<em>Du hast bisher folgende Projekte gewählt:</em>`));
+        for (let item of items) {
+            let vote = item[0];
+            let projects = item[1];
+            for (let project of projects) {
+                let polaroid = $(`<div class="polaroid" style="position: relative; display: inline-block; float: none; width: 150px; height: 180px; margin-right: 10px; transform: none;"></div>`).css('background-image', `url(/api/get_sus_photo/${projekte[project].photo}-512.jpg)`).appendTo($('#text_vote_summary'));
+                polaroid.append($(`<p style="font-size: 0.8em; margin-top: 120px; margin-left: -10px; margin-right: -10px; white-space: nowrap; overflow-x: clip; text-overflow: ellipsis;">`).text(projekte[project].title));
+                polaroid.append($(`<p style="box-shadow: 0 0 10px rgba(0, 0, 0, 0.5); background-color: #fff; border-radius: 50%; width: 1.5em; height: 1.5em; text-align: center; padding-top: 0.05em; font-size: 1.5em; transform: rotate(5deg); position: absolute; top: -15px; right: -15px;">`).text(String.fromCodePoint(codepoints[vote])));
+            }
+        }
+        $('#text_vote_summary').append($(`<p class='mt-3'>`).html(`Wenn alle ihre Projekte gewählt haben, entscheidet das Los, welches Projekt du bekommst.`));
+        // $('#text_vote_summary').html(`<p>Du hast bisher folgende Projekte gewählt:</p><ul>${items.map(function(x) {return '<li>' + x + '</li>';}).join('')}</ul>`);
+    }
+}
+
 document.addEventListener('DOMContentLoaded', function() {
     api_call('/api/get_projekte', {}, function(data) {
         if (data.success) {
             for (let projekt of data.projekte) {
+                projekte[projekt.nr] = projekt;
                 console.log(projekt);
                 if (projekt.min_klasse === null)
                     continue;
@@ -109,12 +153,11 @@ document.addEventListener('DOMContentLoaded', function() {
                 card.append($(`<p style='font-style: italic;'>`).text(`${projekt.organized_by.map(function(x) { return display_name_for_email[x]; }).join(', ')}`));
                 card.append($(`<p>`).text(projekt.description ?? '(noch keine Beschreibung vorhanden)'));
                 if ('#{user_eligible_for_projektwahl?}' === 'true') {
-                    /*
                     $(`<hr class='dashed'>`).appendTo(card);
                     if (#{@session_user[:klassenstufe] || 0} >= projekt.min_klasse && #{@session_user[:klassenstufe] || 0} <= projekt.max_klasse) {
+                        vote_for_project[projekt.nr] = projekt.session_user_vote;
                         $(`<p>`).text(`Teile uns hier mit, wie sehr du dich für dieses Projekt interessierst:`).appendTo(card);
                         div = $(`<div class='emojis'>`).appendTo(card);
-                        let codepoints = [0x1fae5, 0x1f914, 0x1f60d, 0x1f525];
                         for (let i = 0; i < codepoints.length; i++) {
                             let codepoint = codepoints[i];
                             let img = $(`<img src='/images/emoji_u${codepoint.toString(16)}.png'>`).data('index', i);
@@ -128,6 +171,8 @@ document.addEventListener('DOMContentLoaded', function() {
                                         $(self).parent().find('img').removeClass('active');
                                         $(self).addClass('active');
                                         $(self).closest('.card').find('._verdict').text(`»${choice_level_label[index]}«`);
+                                        vote_for_project[projekt.nr] = index;
+                                        update_vote_summary();
                                     }
                                 });
                             });
@@ -137,7 +182,6 @@ document.addEventListener('DOMContentLoaded', function() {
                     } else {
                         card.append($(`<p style='font-style: italic;'>`).text(`Du kannst dieses Projekt leider nicht wählen, da es nicht für deine Klassenstufe vorgesehen ist.`));
                     }
-                    */
                 }
                 if ('#{teacher_logged_in?}' === 'true') {
                     $(`<hr style='border-top: 1px dashed rgba(0,0,0,0.3);'>`).appendTo(card);
@@ -156,6 +200,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 scaffold.append(card);
                 $('.projekte-here').append(scaffold);
             }
+            update_vote_summary();
         }
     });
 });

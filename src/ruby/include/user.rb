@@ -659,7 +659,7 @@ class Main < Sinatra::Base
 
     def print_projektwahl_countdown_panel()
         if user_eligible_for_projektwahl?
-            deadline = DEADLINE_PROJEKTWAHL
+            deadline = PROJEKTWAHL_VOTE_END
             if Time.now.strftime('%Y-%m-%dT%H:%M:%S') <= deadline && (DateTime.parse(deadline) - DateTime.now).to_f < 7.0
                 return StringIO.open do |io|
                     io.puts "<div class='col-lg-12 col-md-4 col-sm-6'>"
@@ -675,42 +675,44 @@ class Main < Sinatra::Base
                 end
             end
         elsif (@session_user[:klassenstufe] || 0) == 11
-            return StringIO.open do |io|
-                rows = neo4j_query(<<~END_OF_QUERY, :email => @session_user[:email])
-                    MATCH (p:Projekt)-[:ORGANIZED_BY]->(u:User {email: $email})
-                    RETURN p;
-                END_OF_QUERY
-                unless rows.empty?
-                    projekt = rows.first['p']
-                    count = 0
-                    count += 1 unless (projekt[:description] || '').strip.empty?
-                    count += 1 unless (projekt[:photo] || '').strip.empty?
-                    emoji = %w(😭 🥲 😄)[count]
-                    unless count == 2 && (Time.now.to_i - (projekt[:ts_updated] || 0) > 3600)
-                        io.puts "<div class='col-lg-12 col-md-4 col-sm-6'>"
-                        io.puts "<div class='hint'>"
-                        io.puts "<p><b>Dein Angebot für die Projekttage</b></p>"
-                        io.puts "<hr />"
-                        io.puts "<span style='font-size: 300%; float: right; margin-left: 10px; margin-bottom: 10px;'>#{emoji}</span>"
-                        if count == 0
-                            io.puts "<p>Du hast noch keinen Werbetext für dein Projekt eingegeben und auch kein Bild hochgeladen. Bitte trage diese Informationen unter »Projekttage« nach und hilf mit, dass dieser arme Smiley wieder glücklich wird.</p>"
-                        elsif count == 1
-                            if (projekt[:description] || '').strip.empty?
-                                io.puts "<p>Du hast zwar schon ein Bild hochgeladen, aber noch keinen Werbetext geschrieben. You can do it!</p>"
-                            else
-                                io.puts "<p>Du hast zwar schon einen Werbetext geschrieben, aber noch kein Bild hochgeladen. You can do it!</p>"
+            if projekttage_phase() > 0
+                return StringIO.open do |io|
+                    rows = neo4j_query(<<~END_OF_QUERY, :email => @session_user[:email])
+                        MATCH (p:Projekt)-[:ORGANIZED_BY]->(u:User {email: $email})
+                        RETURN p;
+                    END_OF_QUERY
+                    unless rows.empty?
+                        projekt = rows.first['p']
+                        count = 0
+                        count += 1 unless (projekt[:description] || '').strip.empty?
+                        count += 1 unless (projekt[:photo] || '').strip.empty?
+                        emoji = %w(😭 🥲 😄)[count]
+                        unless count == 2 && (Time.now.to_i - (projekt[:ts_updated] || 0) > 3600)
+                            io.puts "<div class='col-lg-12 col-md-4 col-sm-6'>"
+                            io.puts "<div class='hint'>"
+                            io.puts "<p><b>Dein Angebot für die Projekttage</b></p>"
+                            io.puts "<hr />"
+                            io.puts "<span style='font-size: 300%; float: right; margin-left: 10px; margin-bottom: 10px;'>#{emoji}</span>"
+                            if count == 0
+                                io.puts "<p>Du hast noch keinen Werbetext für dein Projekt eingegeben und auch kein Bild hochgeladen. Bitte trage diese Informationen unter »Projekttage« nach und hilf mit, dass dieser arme Smiley wieder glücklich wird.</p>"
+                            elsif count == 1
+                                if (projekt[:description] || '').strip.empty?
+                                    io.puts "<p>Du hast zwar schon ein Bild hochgeladen, aber noch keinen Werbetext geschrieben. You can do it!</p>"
+                                else
+                                    io.puts "<p>Du hast zwar schon einen Werbetext geschrieben, aber noch kein Bild hochgeladen. You can do it!</p>"
+                                end
+                            elsif count == 2
+                                io.puts "<p>Danke, dass du alle Informationen eingetragen hast!</p>"
                             end
-                        elsif count == 2
-                            io.puts "<p>Danke, dass du alle Informationen eingetragen hast!</p>"
+                            if count < 2
+                                io.puts "<p><a href='/projekttage_orga' class='btn btn-success' style='white-space: normal;'>Lass uns diesen Smiley wieder glücklich machen!</a></p>"
+                            end
+                            io.puts "</div>"
+                            io.puts "</div>"
                         end
-                        if count < 2
-                            io.puts "<p><a href='/projekttage_orga' class='btn btn-success' style='white-space: normal;'>Lass uns diesen Smiley wieder glücklich machen!</a></p>"
-                        end
-                        io.puts "</div>"
-                        io.puts "</div>"
                     end
+                    io.string
                 end
-                io.string
             end
         end
         return ''

@@ -1966,10 +1966,16 @@ class Main < Sinatra::Base
                     if user_logged_in?
                         if teacher_logged_in?
                             io.puts "<a class='dropdown-item nav-icon' href='/projekttage_sus'><div class='icon'><i class='fa fa-rocket'></i></div><span class='label'>Projekttage</span></a>"
-                        elsif @session_user[:klasse] == '11'
-                            io.puts "<a class='dropdown-item nav-icon' href='/projekttage_orga'><div class='icon'><i class='fa fa-rocket'></i></div><span class='label'>Projekttage</span></a>"
-                        elsif user_eligible_for_projekt_katalog? && DEVELOPMENT
-                            io.puts "<a class='dropdown-item nav-icon' href='/projekttage_sus'><div class='icon'><i class='fa fa-rocket'></i></div><span class='label'>Projekttage</span></a>"
+                        elsif schueler_logged_in?
+                            if @session_user[:klasse] == '11'
+                                if projekttage_phase() >= 1
+                                    io.puts "<a class='dropdown-item nav-icon' href='/projekttage_orga'><div class='icon'><i class='fa fa-rocket'></i></div><span class='label'>Projekttage</span></a>"
+                                end
+                            elsif user_eligible_for_projekt_katalog?
+                                if projekttage_phase() >= 2
+                                    io.puts "<a class='dropdown-item nav-icon' href='/projekttage_sus'><div class='icon'><i class='fa fa-rocket'></i></div><span class='label'>Projekttage</span></a>"
+                                end
+                            end
                         end
                     end
                     if schueler_logged_in?

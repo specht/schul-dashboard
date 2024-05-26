@@ -3,7 +3,7 @@
     <div class='row'>
         <div class='col-md-12'>
             <h2 style='margin-bottom: 30px;'>Projekttage #{Date.today.year}</h2>
-            <div class="alert mono-alert" style="#{(@session_user[:klassenstufe] || 7) >= 5 && (@session_user[:klassenstufe] || 7) <= 9 && projekttage_phase() < 3 ? '' : 'display: none;'}">
+            <div class="alert mono-alert" style="#{schueler_logged_in? && (@session_user[:klassenstufe] || 7) >= 5 && (@session_user[:klassenstufe] || 7) <= 9 && projekttage_phase() < 3 ? '' : 'display: none;'}">
                 Zum Ende des Schuljahres, vom <b>11. bis 15. Juli</b>, finden wieder die Projekttage statt.
                 Hier siehst du, welche Projekte angeboten werden.
                 Am <b>Montag, den 3. Juni</b> gibt es eine Vorstellung der Projekte in der 7. Stunde. Du kannst dir dann drei

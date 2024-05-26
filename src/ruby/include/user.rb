@@ -809,6 +809,7 @@ class Main < Sinatra::Base
     end
 
     get '/api/get_music/:key' do
+        require_user!
         respond_raw_with_mimetype(File.read("/data/sitzplan/#{params[:key]}.mp3"), 'audio/mpeg')
     end
 end

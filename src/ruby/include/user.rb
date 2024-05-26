@@ -790,4 +790,25 @@ class Main < Sinatra::Base
         respond(:success => true)
     end
 
+    def get_sitzplan_music_choice
+        neo4j_query_expect_one(<<~END_OF_QUERY, :email => @session_user[:email])['u.music_choice'] || '01-preis'
+            MATCH (u:User {email: $email})
+            RETURN u.music_choice;
+        END_OF_QUERY
+    end
+
+    post '/api/set_sitzplan_music_choice' do
+        require_teacher!
+        data = parse_request_data(:required_keys => [:music_choice])
+        neo4j_query_expect_one(<<~END_OF_QUERY, :email => @session_user[:email], :music_choice => data[:music_choice])
+            MATCH (u:User {email: $email})
+            SET u.music_choice = $music_choice
+            RETURN u;
+        END_OF_QUERY
+        respond(:success => true)
+    end
+
+    get '/api/get_music/:key' do
+        respond_raw_with_mimetype(File.read("/data/sitzplan/#{params[:key]}.mp3"), 'audio/mpeg')
+    end
 end

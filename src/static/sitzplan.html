@@ -142,6 +142,9 @@ p {
 .navbar {
     display: none;
 }
+.dropdown-item {
+    cursor: pointer;
+}
 </style>
 <script>
 
@@ -384,7 +387,22 @@ function fix_scale() {
     place_sus(true);
 }
 
+var music_choice = "#{get_sitzplan_music_choice()}";
+
 document.addEventListener('DOMContentLoaded', function() {
+    $(`#dd_music .dropdown-item[data-value=${music_choice}]`).addClass('active');
+    $('#audio').attr('src', `/api/get_music/${music_choice}`);
+    $('#dd_music .dropdown-item').click(function() {
+        let value = $(this).data('value');
+        api_call('/api/set_sitzplan_music_choice', {music_choice: value}, function(data) {
+            if (data.success) {
+                music_choice = value;
+                $('#audio').attr('src', `/api/get_music/${value}`);
+                $('#dd_music .dropdown-item').removeClass('active');
+                $(`#dd_music .dropdown-item[data-value=${music_choice}]`).addClass('active');
+            }
+        });
+    });
     let path = window.location.pathname.replace("/sitzplan/", '').split('/');
     klasse = path[0];
     raum = path[1];
@@ -463,9 +481,22 @@ document.addEventListener('DOMContentLoaded', function() {
     <div class='teacher'>Tafel</div>
 </div>
 <div class="keys">
+    <div id='dd_music' class="dropleft" style="display: inline-block;">
+        <button class="btn btn-sm btn-secondary dropdown-toggle" type="button" id="dropdownMenuButton" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+            <i class='fa fa-music'></i>
+        </button>
+        <div class="dropdown-menu" aria-labelledby="dropdownMenuButton">
+          <a class="dropdown-item" data-value="01-preis">Der Preis ist heiß (1:04)</a>
+          <a class="dropdown-item" data-value="02-jetset">Jetset (0:58)</a>
+          <a class="dropdown-item" data-value="03-lux">Lux International (1:07)</a>
+          <a class="dropdown-item" data-value="04-polycolor">Polycolor (0:46)</a>
+          <a class="dropdown-item" data-value="05-san-fernando1">San Fernando (0:49)</a>
+          <a class="dropdown-item" data-value="06-san-fernando2">Teletype (0:59)</a>
+        </div>
+    </div>
     <span>Leer</span>
     <span>A</span>
     <span>C</span>
     <span>R</span>
 </div>
-<audio id='audio' src="/preis.mp3"></audio>
+<audio id='audio'></audio>

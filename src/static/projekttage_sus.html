@@ -82,17 +82,13 @@
 </style>
 
 <script>
-var choice_level_label = [
-    'Ich habe kein Interesse an diesem Projekt.',
-    'Ich könnte mir vorstellen, an diesem Projekt teilzunehmen.',
-    'Ich würde mich freuen, an diesem Projekt teilzunehmen.',
-    'Ich würde wirklich sehr gern an diesem Projekt teilnehmen.',
-];
 var display_name_for_email = #{Hash[@@user_info.map { |email, info| [email, info[:teacher] ? info[:display_name_official] : info[:display_name]] }].to_json};
 var this_klasse = #{@session_user[:klassenstufe] || 7};
 var projekte = {};
 var vote_for_project = {};
-var codepoints = [0x1fae5, 0x1f914, 0x1f60d, 0x1f525];
+var codepoints = #{PROJEKT_VOTE_CODEPOINTS.to_json};
+var choice_level_label = #{PROJEKT_VOTE_LABELS.to_json};
+
 
 function update_vote_summary() {
     console.log('updating summary');

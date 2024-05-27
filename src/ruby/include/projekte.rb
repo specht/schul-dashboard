@@ -1,3 +1,11 @@
+PROJEKT_VOTE_CODEPOINTS = [0x1fae5, 0x1f914, 0x1f60d, 0x1f525]
+PROJEKT_VOTE_LABELS = [
+    'Ich habe kein Interesse an diesem Projekt.',
+    'Ich könnte mir vorstellen, an diesem Projekt teilzunehmen.',
+    'Ich würde mich freuen, an diesem Projekt teilzunehmen.',
+    'Ich würde wirklich sehr gern an diesem Projekt teilnehmen.',
+]
+
 class Main < Sinatra::Base
 
     def user_eligible_for_projekt_katalog?
@@ -154,6 +162,53 @@ class Main < Sinatra::Base
                 SET v.vote = $vote
                 RETURN p;
             END_OF_QUERY
+        end
+    end
+
+    def print_projekt_interesse
+        projekt = nil
+        neo4j_query(<<~END_OF_QUERY, {:email => @session_user[:email]}).each do |row|
+            MATCH (p:Projekt)-[:ORGANIZED_BY]->(u:User {email: $email})
+            RETURN p;
+        END_OF_QUERY
+            projekt = row['p']
+        end
+        return '' if projekt.nil?
+
+        votes = {}
+        neo4j_query(<<~END_OF_QUERY, {:nr => projekt[:nr]}).each do |row|
+            MATCH (u:User)-[r:VOTED_FOR]->(p:Projekt {nr: $nr})
+            RETURN u.email, r;
+        END_OF_QUERY
+            email = row['u.email']
+            next unless @@user_info[email]
+            next unless @@user_info[email][:roles].include?(:schueler)
+            klassenstufe = @@user_info[email][:klassenstufe] || 7
+            vote = row['r'][:vote]
+            key = "#{klassenstufe}/#{vote}"
+            votes[key] ||= 0
+            votes[key] += 1
+        end
+
+        StringIO.open do |io|
+            io.puts "<table class='table' style='width: unset;'>"
+            io.puts "<tr>"
+            io.puts "<th>Klassenstufe</th>"
+            (projekt[:min_klasse]..projekt[:max_klasse]).each do |klasse|
+                io.puts "<th>#{klasse}.</th>"
+            end
+            io.puts "</tr>"
+            [3, 2, 1].each do |vote|
+                io.puts "<tr>"
+                io.puts "<td>#{PROJEKT_VOTE_CODEPOINTS[vote].chr(Encoding::UTF_8)} #{PROJEKT_VOTE_LABELS[vote]}</td>"
+                (projekt[:min_klasse]..projekt[:max_klasse]).each do |klasse|
+                    count = votes["#{klasse}/#{vote}"] || '&ndash;'
+                    io.puts "<td style='text-align: center;'>#{count}</td>"
+                end
+                io.puts "</tr>"
+            end
+            io.puts "</table>"
+            io.string
         end
     end
 end

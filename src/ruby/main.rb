@@ -2801,7 +2801,8 @@ class Main < Sinatra::Base
             @session_user = {
                 :email => "monitor@#{SCHUL_MAIL_DOMAIN}",
                 :is_monitor => true,
-                :teacher => false
+                :teacher => false,
+                :roles => Set.new(),
             }
         end
     end
@@ -2811,7 +2812,8 @@ class Main < Sinatra::Base
             @session_user = {
                 :email => "monitor-lz@#{SCHUL_MAIL_DOMAIN}",
                 :is_monitor => true,
-                :teacher => false
+                :teacher => false,
+                :roles => Set.new(),
             }
         end
     end

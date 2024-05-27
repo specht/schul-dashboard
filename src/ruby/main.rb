@@ -120,13 +120,12 @@ def debug(message, index = 0)
     rescue
         index = 0
     end
-    # STDERR.puts caller_locations.to_yaml
     l = caller_locations[index]
     ls = ''
     begin
-        ls = "#{l.path.sub('/app/', '')}:#{l.lineno} @ #{l.base_label}"
+        ls = "#{l.path.sub('/app/', '').sub('.rb', '')}:#{l.lineno}"
     rescue
-        ls = "#{l[0].sub('/app/', '')}:#{l[1]}"
+        ls = "#{l[0].sub('/app/', '').sub('.rb', '')}:#{l[1]}"
     end
     STDERR.puts "#{DateTime.now.strftime('%H:%M:%S')} [#{ls}] #{message}"
 end
@@ -135,9 +134,9 @@ def debug_error(message)
     l = caller_locations.first
     ls = ''
     begin
-        ls = "#{l.path.sub('/app/', '')}:#{l.lineno} @ #{l.base_label}"
+        ls = "#{l.path.sub('/app/', '').sub('.rb', '')}:#{l.lineno} @ #{l.base_label}"
     rescue
-        ls = "#{l[0].sub('/app/', '')}:#{l[1]}"
+        ls = "#{l[0].sub('/app/', '').sub('.rb', '')}:#{l[1]}"
     end
     STDERR.puts "#{DateTime.now.strftime('%H:%M:%S')} [ERROR] [#{ls}] #{message}"
 end

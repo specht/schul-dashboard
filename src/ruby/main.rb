@@ -1681,6 +1681,7 @@ class Main < Sinatra::Base
         if @session_user
             @session_user[:roles] ||= Set.new()
         end
+        debug @session_user.to_json
     end
 
     after '*' do

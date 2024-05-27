@@ -1456,15 +1456,15 @@ class Main < Sinatra::Base
         options[:optional_keys] ||= []
         options[:max_value_lengths] ||= {}
         data_str = request.body.read(options[:max_body_length]).to_s
-        if @session_user
-            unless ['/api/send_message', '/api/update_message', '/api/submit_poll_run'].include?(request.path)
-                begin
-                    ip_short = request.ip.to_s.split('.').map { |x| sprintf('%02x', x.to_i) }.join('')
-                    STDERR.puts sprintf("%s [%s] [%s] %s %s", DateTime.now.strftime('%Y-%m-%d %H:%M:%S'), ip_short, @session_user[:nc_login], request.path, data_str)
-                rescue
-                end
-            end
-        end
+        # if @session_user
+        #     unless ['/api/send_message', '/api/update_message', '/api/submit_poll_run'].include?(request.path)
+        #         begin
+        #             ip_short = request.ip.to_s.split('.').map { |x| sprintf('%02x', x.to_i) }.join('')
+        #             STDERR.puts sprintf("%s [%s] [%s] %s %s", DateTime.now.strftime('%Y-%m-%d %H:%M:%S'), ip_short, @session_user[:nc_login], request.path, data_str)
+        #         rescue
+        #         end
+        #     end
+        # end
 #         debug data_str
         @latest_request_body = data_str.dup
         begin

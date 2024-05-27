@@ -1681,7 +1681,7 @@ class Main < Sinatra::Base
         if @session_user
             @session_user[:roles] ||= Set.new()
         end
-        debug @session_user.to_json
+        debug "[#{(@session_user || {})[:nc_login] || 'anon'}] #{request.request_method} #{request.path}"
     end
 
     after '*' do

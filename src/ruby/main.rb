@@ -1666,7 +1666,6 @@ class Main < Sinatra::Base
                                         @session_user[:ip] = request.ip
                                     end
                                 end
-                                @session_user[:roles] ||= Set.new()
                             end
                         rescue
                             # something went wrong, delete the session
@@ -1678,6 +1677,9 @@ class Main < Sinatra::Base
                     end
                 end
             end
+        end
+        if @session_user
+            @session_user[:roles] ||= Set.new()
         end
     end
 

@@ -90,7 +90,7 @@ class Main < Sinatra::Base
                     break
                 end
             end
-        rescue
+        # rescue
         end
         # respond(:alright => 'yeah')
         redirect "#{WEB_ROOT}/", 302

@@ -2881,6 +2881,7 @@ class Main < Sinatra::Base
         color_palette = color_palette_for_color_scheme(color_scheme)
 
         s = (@session_user || {})[:new_design] ? File.read('/static/new_design.css') : ""
+        s = '' if @session_device
         while true
             index = s.index('#{')
             break if index.nil?

@@ -1510,6 +1510,15 @@ class Main < Sinatra::Base
         end
     end
 
+    def redirect_on_error(&block)
+        begin
+            yield
+        rescue
+            redirect "#{WEB_ROOT}/", 302
+            raise 'redirected'
+        end
+    end
+
     before '*' do
         if DEVELOPMENT
             debug "Re-including fragments.rb!"

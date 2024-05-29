@@ -534,15 +534,12 @@ input[type=number] {
     top: 8px;
 }
 
-@media (max-width: 1280px) and (min-width: 768px) {
-    .nav-link.nav-icon .icon {
-        display: none;
-    }
-    .nav-link.nav-icon {
-        padding: .5rem 8px!important;
-    }
+.navbar.hide_icons .nav-link.nav-icon .icon {
+    display: none;
 }
-
+.navbar.hide_icons  .nav-link.nav-icon {
+    padding: .5rem 8px!important;
+}
 
 img.menu-avatar {
     width: 24px;

@@ -7,6 +7,7 @@ require 'fileutils'
 
 class Timetable
     include Neo4jBolt
+    include UserRoleHelper
 
     def initialize
         @lesson_cache = []
@@ -332,6 +333,7 @@ class Timetable
         @@tage_infos = Main.class_variable_get(:@@tage_infos)
         @@config = Main.class_variable_get(:@@config)
         @@user_info = Main.class_variable_get(:@@user_info)
+        @@users_for_role = Main.class_variable_get(:@@users_for_role)
         @@birthday_entries = Main.class_variable_get(:@@birthday_entries)
         @@schueler_for_teacher = Main.class_variable_get(:@@schueler_for_teacher)
         @@lessons = Main.class_variable_get(:@@lessons)
@@ -1261,9 +1263,9 @@ class Timetable
                         lesson_keys = Set.new(@@lessons_for_klasse[user[:klasse]])
                     end
                     lesson_keys ||= Set.new()
-                    lesson_keys << "_#{user[:klasse]}" unless user[:teacher]
+                    lesson_keys << "_#{user[:klasse]}" if user_has_role(email, :schueler)
                     lesson_keys << "_@#{user[:room]}" if user[:is_room]
-                    if user[:teacher]
+                    if user_has_role(email, :teacher)
                         lesson_keys << "_#{user[:shorthand]}"
                         (@@lessons_for_shorthand[user[:shorthand]] || []).each do |lesson_key|
                             lesson_keys << lesson_key
@@ -1372,28 +1374,28 @@ class Timetable
                             e = e_old.dup
                             if e[:lesson]
                                 e[:event_type] = :lesson
-                                e[:label] = user[:teacher] ? e[:label_klasse].dup : e[:label_lehrer].dup
-                                e[:label_lang] = user[:teacher] ? e[:label_klasse_lang].dup : e[:label_lehrer_lang].dup
-                                # if user[:teacher]
+                                e[:label] = user_has_role(email, :teacher) ? e[:label_klasse].dup : e[:label_lehrer].dup
+                                e[:label_lang] = user_has_role(email, :teacher) ? e[:label_klasse_lang].dup : e[:label_lehrer_lang].dup
+                                # if user_has_role(email, :teacher)
                                     # if e[:lesson_key] && @@lessons[:lesson_keys][e[:lesson_key]]
                                         # e[:label] = "<b>#{@@lessons[:lesson_keys][e[:lesson_key]][:pretty_folder_name].gsub(/\([^\)]+\)/, '').strip}</b> #{e[:label_klasse].scan(/\([^\)]+\)/)[0]}"
                                         # e[:label_lang] = "<b>#{@@lessons[:lesson_keys][e[:lesson_key]][:pretty_folder_name].gsub(/\([^\)]+\)/, '').strip}</b> #{e[:label_klasse].scan(/\([^\)]+\)/)[0]}"
                                     # end
                                 # end
-                                e[:label_short] = user[:teacher] ? e[:label_klasse_short].dup : e[:label_lehrer_short].dup
+                                e[:label_short] = user_has_role(email, :teacher) ? e[:label_klasse_short].dup : e[:label_lehrer_short].dup
                                 if user[:is_room]
                                     e[:label] = e[:label_room].dup
                                     e[:label_lang] = e[:label_room_lang].dup
                                     e[:label_short] = e[:label_room_short].dup
                                 end
                                 if e[:nc_folder]
-                                    e[:nc_folder] = user[:teacher] ? e[:nc_folder][:teacher].dup : e[:nc_folder][:sus].dup
+                                    e[:nc_folder] = user_has_role(email, :teacher) ? e[:nc_folder][:teacher].dup : e[:nc_folder][:sus].dup
                                 end
                                 if e[:nc_collect_folder]
-                                    e[:nc_collect_folder] = user[:teacher] ? e[:nc_collect_folder][:teacher].dup : e[:nc_collect_folder][:sus].dup
+                                    e[:nc_collect_folder] = user_has_role(email, :teacher) ? e[:nc_collect_folder][:teacher].dup : e[:nc_collect_folder][:sus].dup
                                 end
                                 if e[:nc_return_folder]
-                                    e[:nc_return_folder] = user[:teacher] ? e[:nc_return_folder][:teacher].dup : e[:nc_return_folder][:sus].dup
+                                    e[:nc_return_folder] = user_has_role(email, :teacher) ? e[:nc_return_folder][:teacher].dup : e[:nc_return_folder][:sus].dup
                                 end
                                 lesson_key = e[:lesson_key]
                                 if e[:lesson] && (lesson_key != 0) && e[:lesson_offset]
@@ -1507,7 +1509,7 @@ class Timetable
                                             end
                                         end
                                         # add homework feedback
-                                        if user[:teacher]
+                                        if user_has_role(email, :teacher)
                                             lesson_homework_feedback[e[:lesson_key]] ||= Main.get_homework_feedback_for_lesson_key(e[:lesson_key])
                                             if lesson_homework_feedback[e[:lesson_key]] && lesson_homework_feedback[e[:lesson_key]][e[:lesson_offset]]
                                                 user_data[:homework_feedback] = lesson_homework_feedback[e[:lesson_key]][e[:lesson_offset]]
@@ -1518,7 +1520,7 @@ class Timetable
                                         if @@lesson_keys_with_sus_feedback[e[:lesson_key]]
                                             if @@lesson_keys_with_sus_feedback[e[:lesson_key]].include?(Date.parse(e[:datum]).wday)
                                                 user_data[:can_have_sus_feedback] = true
-                                                if user[:teacher]
+                                                if user_has_role(email, :teacher)
                                                     # teacher
                                                     user_data[:lesson_notes] = ((@lesson_notes_for_lesson_key[e[:lesson_key]] || {})[e[:lesson_offset]] || {}).reject do |email, text|
                                                         text.empty?
@@ -1541,7 +1543,7 @@ class Timetable
                             end
                             e
                         end
-                        if user[:teacher]
+                        if user_has_role(email, :teacher)
                             fixed_events.map! do |event|
                                 if event[:lesson] && event[:lesson_key]
                                     event[:schueler_for_lesson] = (@@schueler_for_lesson[event[:lesson_key]] || []).map do |email|
@@ -1638,7 +1640,7 @@ class Timetable
                                 event
                             end
                         end
-                        if (!user[:is_room]) && (!user[:teacher])
+                        if user_has_role(email, :schueler)
                             # if it's a schüler, remove pausenaufsichten
                             fixed_events.reject! do |event|
                                 event[:pausenaufsicht]
@@ -1981,10 +1983,11 @@ class Timetable
         end
         # write messages for each user
         @@user_info.each_pair do |email, user|
+            next unless user_has_role(email, :can_receive_messages)
             lesson_keys = @@lessons_for_user[email].dup
             lesson_keys ||= Set.new()
-            lesson_keys << "_#{user[:klasse]}" unless user[:teacher]
-            lesson_keys << "_#{user[:shorthand]}" if user[:teacher]
+            lesson_keys << "_#{user[:klasse]}" if user_has_role(email, :schueler)
+            lesson_keys << "_#{user[:shorthand]}" if user_has_role(email, :teacher)
             if only_these_lesson_keys && (lesson_keys & only_these_lesson_keys).empty?
                 unless only_these_lesson_keys.include?(:all_messages) || only_these_lesson_keys.include?(:event)
                     next
@@ -2038,8 +2041,8 @@ class Timetable
                 lesson_keys = Set.new(@@lessons_for_klasse[user[:klasse]])
             end
             lesson_keys ||= Set.new()
-            lesson_keys << "_#{user[:klasse]}" unless user[:teacher]
-            lesson_keys << "_#{user[:shorthand]}" if user[:teacher]
+            lesson_keys << "_#{user[:klasse]}" if user_has_role(email, :schueler)
+            lesson_keys << "_#{user[:shorthand]}" if user_has_role(email, :teacher)
             if only_these_lesson_keys && (lesson_keys & only_these_lesson_keys).empty?
                 unless only_these_lesson_keys.include?(:all_messages) || only_these_lesson_keys.include?(:event)
                     next
@@ -2061,7 +2064,7 @@ class Timetable
                     homework[datum].each do |entry|
                         fach = @@lessons[:lesson_keys][entry[:lesson_key]][:fach]
                         fach = @@faecher[fach] if @@faecher[fach]
-                        if user[:teacher]
+                        if user_has_role(email, :teacher)
                             klassen = @@lessons[:lesson_keys][entry[:lesson_key]][:klassen]
                             fach = "#{fach} (#{klassen.sort.map { |x| Main.tr_klasse(x) }.join(', ')})"
                         end
@@ -2146,7 +2149,7 @@ class Timetable
 
         @@user_info.each_pair do |email, user|
             next if only_this_email && only_this_email != email
-            next unless user[:teacher] || user[:sv] || user[:can_manage_tablets]
+            next unless user_has_role(email, :can_write_messages)
             path = "/gen/w/#{user[:id]}/recipients.json.gz"
             FileUtils.mkpath(File.dirname(path))
             Zlib::GzipWriter.open(path) do |f|
@@ -2156,20 +2159,21 @@ class Timetable
                     recipients["/klasse/#{klasse}"] = {:label => "Klasse #{klasse}",
                                                        :entries => @@schueler_for_klasse[klasse]
                                                        }
-                    groups_for_klasse = Set.new()
-                    (@@schueler_for_klasse[klasse] || []).each do |email|
-                        if group_for_sus[email]
-                            groups_for_klasse << group_for_sus[email]
-                        end
-                    end
-                    if groups_for_klasse.size > 1
-                        groups_for_klasse.each do |group|
-                            recipients["/klasse/#{klasse}/#{group}"] =
-                                    {:label => "Klasse #{klasse} (Gruppe #{group})",
-                                     :entries => @@schueler_for_klasse[klasse].select { |email| group_for_sus[email] == group }
-                                    }
-                        end
-                    end
+                    # we don't need A/B groups anymore
+                    # groups_for_klasse = Set.new()
+                    # (@@schueler_for_klasse[klasse] || []).each do |email|
+                    #     if group_for_sus[email]
+                    #         groups_for_klasse << group_for_sus[email]
+                    #     end
+                    # end
+                    # if groups_for_klasse.size > 1
+                    #     groups_for_klasse.each do |group|
+                    #         recipients["/klasse/#{klasse}/#{group}"] =
+                    #                 {:label => "Klasse #{klasse} (Gruppe #{group})",
+                    #                  :entries => @@schueler_for_klasse[klasse].select { |email| group_for_sus[email] == group }
+                    #                 }
+                    #     end
+                    # end
                     teacher_emails = []
                     (@@teachers_for_klasse[klasse] || {}).keys.each do |shorthand|
                         next unless @@shorthands[shorthand]
@@ -2185,28 +2189,24 @@ class Timetable
                         recipients[email] = {:label => @@user_info[email][:display_name]}
                     end
                 end
-                if user[:teacher] || user[:technikteam]
+                if user_has_role(email, :teacher) || user_has_role(email, :technikteam)
                     @@user_info.each_pair do |email, user|
-                        next unless user[:teacher]
+                        next unless user_has_role(email, :teacher)
                         recipients[email] = {:label => @@user_info[email][:display_name],
                                              :teacher => true}
                     end
                 end
-                if user[:teacher] || user[:sv]
-                    recipients['/schueler/*'] = {:label => 'Gesamte Schülerschaft',
-                                                 :entries => @@user_info.select { |k, v| !v[:teacher]}.map { |k, v| k }}
-                end
-                if user[:can_see_all_timetables]
+                recipients['/schueler/*'] = {:label => 'Gesamte Schülerschaft',
+                                             :entries => @@user_info.select { |k, v| !v[:teacher]}.map { |k, v| k }}
+                if user_has_role(email, :teacher) || user_has_role(email, :gev)
                     recipients['/eltern/*'] = {:label => 'Gesamte Elternschaft',
                                                :entries => @@user_info.select { |k, v| !v[:teacher]}.map { |k, v| 'eltern.' + k }}
                     recipients['/ev/*'] = {:label => 'Gesamte Elternvertreter:innenschaft',
                                                :entries => ev_users.to_a.sort}
                 end
-                if user[:teacher]
-                    recipients['/lehrer/*'] = {:label => 'Gesamtes Kollegium',
-                                               :teacher => true,
-                                               :entries => @@user_info.select { |k, v| v[:teacher]}.map { |k, v| k }}
-                end
+                recipients['/lehrer/*'] = {:label => 'Gesamtes Kollegium',
+                                            :teacher => true,
+                                            :entries => @@user_info.select { |k, v| v[:teacher]}.map { |k, v| k }}
                 (groups_for_user[email] || {}).each_pair do |gid, g|
                     recipients["/custom/#{gid}"] = {:label => g[:name], :entries => g[:recipients]}
                 end

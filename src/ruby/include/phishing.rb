@@ -1,7 +1,7 @@
 class Main < Sinatra::Base
     def print_phishing_mail
         require_user!
-        us = 
+        us =
         "<div class='text-comment'>
         <div class='from'>
             <h4><mark title='Rechtschreibfehler'>Dein</mark> E-Mail-Adresse wurde für eine Löschung markiert</h4>
@@ -25,7 +25,7 @@ class Main < Sinatra::Base
             <p>Wenn du alle Schritte richtig gemacht hast leuchtet dieser <mark title='Rechtschreibfehler'>Hacken</mark> grün auf: ☑️</p>
         </div>
         </div>"
-        ms1 = 
+        ms1 =
         "<div class='text-comment'>
                     <div class='from'>
                         <h4>Deine E-Mail-Adresse wurde für eine Löschung markiert</h4>
@@ -49,7 +49,7 @@ class Main < Sinatra::Base
                         <p>Viele Grüße,<br>Dashboard Gymnasium Steglitz</p>
                     </div>
                     </div>"
-        ms2 = 
+        ms2 =
         "<div class='text-comment'>
                     <div class='from'>
                         <h4>Deine E-Mail-Adresse wurde für eine Löschung markiert</h4>
@@ -73,7 +73,7 @@ class Main < Sinatra::Base
                         <p>Viele Grüße,<br>Dashboard Gymnasium Steglitz</p>
                     </div>
                     </div>"
-        os = 
+        os =
         "<div class='text-comment'>
                     <div class='from'>
                         <h4>Deine E-Mail-Adresse wurde für eine Löschung markiert</h4>
@@ -97,7 +97,7 @@ class Main < Sinatra::Base
                         <p>Viele Grüße,<br>Dashboard Gymnasium Steglitz</p>
                     </div>
                     </div>"
-        teacher = 
+        teacher =
         "<div class='text-comment'>
         <div class='from'>
             <h4>Ihre E-Mail-Adresse wurde für eine Löschung markiert</h4>
@@ -158,35 +158,35 @@ class Main < Sinatra::Base
             "Lehrkraft" => 0
           }
         }
-      
+
         @@user_info.each_value do |user|
-          if user[:teacher]
-            if user[:geschlecht] == 'm'
-              nutzerzahlen[:maennlich]["Lehrkraft"] += 1
-            elsif user[:geschlecht] == 'w'
-              nutzerzahlen[:weiblich]["Lehrkraft"] += 1
+            if user_has_role(user[:email], :teacher)
+                if user[:geschlecht] == 'm'
+                    nutzerzahlen[:maennlich]["Lehrkraft"] += 1
+                elsif user[:geschlecht] == 'w'
+                    nutzerzahlen[:weiblich]["Lehrkraft"] += 1
+                end
+            elsif user_has_role(user[:email], :schueler)
+                gruppe = "#{user[:klassenstufe] <= 6 ? '5/6' : user[:klassenstufe] <= 8 ? '7/8' : user[:klassenstufe] <= 10 ? '9/10' : '11/12'}"
+                if user[:geschlecht] == 'm'
+                    nutzerzahlen[:maennlich][gruppe] += 1
+                elsif user[:geschlecht] == 'w'
+                    nutzerzahlen[:weiblich][gruppe] += 1
+                end
             end
-          else
-            gruppe = "#{user[:klassenstufe] <= 6 ? '5/6' : user[:klassenstufe] <= 8 ? '7/8' : user[:klassenstufe] <= 10 ? '9/10' : '11/12'}"
-            if user[:geschlecht] == 'm'
-              nutzerzahlen[:maennlich][gruppe] += 1
-            elsif user[:geschlecht] == 'w'
-              nutzerzahlen[:weiblich][gruppe] += 1
-            end
-          end
         end
-      
-        current_group = if @session_user[:teacher]
+
+        current_group = if teacher_logged_in?
                           "Lehrkraft"
                         else
                           "#{@session_user[:klassenstufe] <= 6 ? '5/6' : @session_user[:klassenstufe] <= 8 ? '7/8' : @session_user[:klassenstufe] <= 10 ? '9/10' : '11/12'}"
                         end
         current_gender = @session_user[:geschlecht] == 'm' ? :maennlich : :weiblich
-      
+
         return StringIO.open do |io|
             io.puts "<p>
             Du warst für die Statistik in folgender der zehn Gruppen: <b>#{current_group}, #{current_gender == :maennlich ? 'männlich' : current_gender}</b>
-            <div class='row'>                
+            <div class='row'>
                 <div class='col-md-12'>
                     <table class='table narrow'>
                     <thead>
@@ -224,5 +224,5 @@ class Main < Sinatra::Base
             io.string
             end
       end
-          
+
 end

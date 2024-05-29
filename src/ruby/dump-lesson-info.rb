@@ -16,6 +16,7 @@ class Script
 
     def run
         @@user_info = Main.class_variable_get(:@@user_info)
+        @@users_for_role = Main.class_variable_get(:@@users_for_role)
         @@klassen_order = Main.class_variable_get(:@@klassen_order)
         @@lessons_for_klasse = Main.class_variable_get(:@@lessons_for_klasse)
         @@lessons = Main.class_variable_get(:@@lessons)

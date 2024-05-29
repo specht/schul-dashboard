@@ -1,0 +1,93 @@
+#{redirect_on_error { require_user_with_role!(:schulbuchverein) }}
+
+<style>
+.summary > div {
+    padding: 0.2em 0;
+}
+
+.summary > div > .fa {
+    width: 1.2em;
+    font-size: 150%;
+    position: relative;
+    top: 4px;
+    left: 2px;
+    text-align: center;
+}
+</style>
+
+<div class='container'>
+    <div class='row'>
+        <div class='col-md-12'>
+            <h2>Kontoauszug hochladen</h2>
+            <div class="alert alert-white">
+                Die Kontoauszüge, die Sie hier hochladen, werden in keiner Form auf dem Server gespeichert. Sie werden lediglich eingelesen und verarbeitet, wobei Auszahlungen übersprungen werden und nur die Einzahlungen betrachtet werden. Es wird nur bei den als erfolgreich markierten Geldeingängen vermerkt, dass der Beitrag für das jeweilige Schuljahr bezahlt worden ist.
+            </div>
+            <form class='dropzone' id='my-awesome-dropzone'></form>
+            <div class='preview' style='display: none;'></div>
+            <div class="api_messages mt-3" style="display: none;"></div>
+            <div id="result"></div>
+        </div>
+    </div>
+</div>
+
+<script>
+
+function append_details(div, heading, result, key, status) {
+    $(`<div>`).appendTo(div).append(`<hr><h4>${heading}</h4>`);
+    let table = $(`<table class='table'>`).appendTo(div);
+    let row = $(`<tr>`).appendTo(table);
+    $(`<th>`).text('Status').appendTo(row);
+    $(`<th>`).text('Datum').appendTo(row);
+    $(`<th>`).text('Auftraggeber').appendTo(row);
+    $(`<th>`).text('Verwendungszweck').appendTo(row);
+    $(`<th>`).text('Betrag').appendTo(row);
+    for (let sha1 of result[key]) {
+        let entry = result.entries[sha1];
+        let row = $(`<tr>`).appendTo(table);
+        $(`<td>`).html(status).appendTo(row);
+        $(`<td>`).text(entry.datum).appendTo(row);
+        $(`<td>`).text(entry.from).appendTo(row);
+        $(`<td>`).text(entry.subject).appendTo(row);
+        $(`<td>`).html(`${(entry.amount / 100).toFixed(2).replace('.', ',')}&nbsp;&euro;`).appendTo(row);
+    }
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    install_clipboard_handler('.btn-clipboard');
+    moment.locale('de');
+    Dropzone.autoDiscover = false;
+    window.dropzone = new Dropzone('#my-awesome-dropzone', {
+        dictDefaultMessage: 'Bitte hier klicken, um Kontoauszüge hochzuladen. Alternativ können Sie auch Dateien aus dem Datei-Browser hier hineinziehen.',
+        url: '/api/upload_schulbuchverein_bank_statement',
+        acceptedFiles: 'text/csv',
+        autoProcessQueue: true,
+        previewsContainer: '.preview',
+        uploadMultiple: false,
+        error: function(file, message) {
+            show_error_message('Bei der Verarbeitung der Datei ist es zu einem Fehler gekommen.')
+        },
+        success: function(file, message) {
+            let data = JSON.parse(message);
+            console.log(data);
+            let div = $('#result');
+            div.empty();
+            let handled_size = data.result.handled.length;
+            let previously_handled_size = data.result.previously_handled.length;
+            let skipped_size = data.result.skipped.length;
+            let summary = $(`<div class='summary'>`).appendTo(div);
+            if (handled_size > 0) {
+                summary.append($(`<div>`).html(`<i class='fa fa-check text-success'></i>&nbsp;&nbsp;${handled_size} Geldein${handled_size === 1 ? 'gang' : 'gänge'} neu verarbeitet`));
+                append_details(div, 'Neu verarbeitete Geldeingänge', data.result, 'handled', "<i class='fa fa-check text-success'>");
+            }
+            if (skipped_size > 0) {
+                summary.append($(`<div>`).html(`<i class='fa fa-times text-danger'></i>&nbsp;&nbsp;${skipped_size} Geldein${skipped_size === 1 ? 'gang konnte' : 'gänge konnten'} nicht verarbeitet werden`));
+                append_details(div, 'Nicht verarbeitete Geldeingänge', data.result, 'skipped', "<i class='fa fa-times text-danger'>");
+            }
+            if (previously_handled_size > 0) {
+                summary.append($(`<div>`).html(`<i class='fa fa-check text-warning'></i>&nbsp;&nbsp;${previously_handled_size} Geldein${previously_handled_size === 1 ? 'gang war' : 'gänge waren'} bereits verarbeitet`));
+                append_details(div, 'Bereits verarbeitete Geldeingänge', data.result, 'previously_handled', "<i class='fa fa-check text-warning'>");
+            }
+        },
+    });
+});
+</script>

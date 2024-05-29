@@ -42,7 +42,7 @@ class Main < Sinatra::Base
                     use_user = {:display_name => 'Tablet'}
                 end
             end
-            payload[:context][:user][:name] = use_user[:teacher] ? use_user[:display_last_name] : use_user[:display_name]
+            payload[:context][:user][:name] = user_has_role(use_user[:email], :teacher) ? use_user[:display_last_name] : use_user[:display_name]
             payload[:context][:user][:email] = use_user[:email]
             payload[:context][:user][:avatar] = "#{NEXTCLOUD_URL}/index.php/avatar/#{use_user[:nc_login]}/128"
             if eid
@@ -92,7 +92,7 @@ class Main < Sinatra::Base
         return true if restrictions[weekday] == 0
         user = @@user_info[email]
         return true if user.nil?
-        return true if user[:teacher]
+        return true if user_has_role(email, :teacher)
         klassenstufe = user[:klasse].to_i
         return true unless WECHSELUNTERRICHT_KLASSENSTUFEN.include?(klassenstufe)
         if restrictions[weekday] == 1
@@ -213,7 +213,7 @@ class Main < Sinatra::Base
                 can_enter_room = true
                 room_name = path
                 if room_name.index('Klassenstream') == 0
-                    if (!@session_user[:teacher]) && (!Main.get_homeschooling_for_user(@session_user[:email])) && room_name.index('Klassenstream') == 0
+                    if (schueler_logged_in?) && (!Main.get_homeschooling_for_user(@session_user[:email])) && room_name.index('Klassenstream') == 0
                         result[:html] += "<div class='alert alert-danger'>Du bist momentan nicht für den Klassenstream freigeschaltet, da du in Gruppe #{@session_user[:group2]} eingeteilt bist und auch nicht als »zu Hause« markiert bist. Deine Klassenleiterin oder dein Klassenleiter kann dich freischalten.</div>"
                         can_enter_room = false
                     end

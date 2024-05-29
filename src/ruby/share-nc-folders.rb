@@ -88,6 +88,7 @@ class Script
 
         if SHARE_ARCHIVED_FILES
             @@user_info = @@debug_archive[:@@user_info]
+            @@users_for_role = @@debug_archive[:@@users_for_role]
             @@klassen_order = @@debug_archive[:@@klassen_order]
             @@lessons_for_klasse = @@debug_archive[:@@lessons_for_klasse]
             @@lessons = @@debug_archive[:@@lessons]
@@ -98,6 +99,7 @@ class Script
             @@materialamt_for_lesson = @@debug_archive[:@@materialamt_for_lesson]
         else
             @@user_info = Main.class_variable_get(:@@user_info)
+            @@users_for_role = Main.class_variable_get(:@@users_for_role)
             @@klassen_order = Main.class_variable_get(:@@klassen_order)
             @@lessons_for_klasse = Main.class_variable_get(:@@lessons_for_klasse)
             @@lessons = Main.class_variable_get(:@@lessons)

@@ -16,6 +16,7 @@ class Script
     include Neo4jBolt
     def run
         @@user_info = Main.class_variable_get(:@@user_info)
+        @@users_for_role = Main.class_variable_get(:@@users_for_role)
         @@lesson_key_back_tr = Main.class_variable_get(:@@lesson_key_back_tr)
         rev = {}
         @@lesson_key_back_tr.each_pair do |a, b|

@@ -34,6 +34,20 @@ require 'write_xlsx'
 require 'yaml'
 require 'zip'
 
+def assert(condition, message = 'assertion failed', suppress_backtrace = false, delay = nil)
+    unless condition
+        debug_error message
+        e = StandardError.new(message)
+        e.set_backtrace([]) if suppress_backtrace
+        sleep delay unless delay.nil?
+        raise e
+    end
+end
+
+def assert_with_delay(condition, message = 'assertion failed', suppress_backtrace = false)
+    assert(condition, message, suppress_backtrace, DEVELOPMENT ? 0.0 : 3.0)
+end
+
 require './credentials.template.rb'
 warn_level = $VERBOSE
 $VERBOSE = nil
@@ -227,6 +241,12 @@ end
 
 def join_with_sep(list, a, b)
     list.size == 1 ? list.first : [list[0, list.size - 1].join(a), list.last].join(b)
+end
+
+module UserRoleHelper
+    def user_has_role(email, role)
+        Main.user_has_role(email, role)
+    end
 end
 
 class SetupDatabase
@@ -1029,14 +1049,19 @@ class Main < Sinatra::Base
             (@@user_info[a][:last_name].downcase <=> @@user_info[b][:last_name].downcase)
         end.each do |email|
             user = @@user_info[email]
-            lessons = (user[:teacher] ? @@lessons_for_shorthand[user[:shorthand]] : @@lessons_for_klasse[user[:klasse]]).dup
-            unless user[:teacher]
+            lessons = nil
+            if user_has_role(email, :teacher)
+                lessons = @@lessons_for_shorthand[user[:shorthand]].dup
+            elsif user_has_role(email, :schueler)
+                lessons = @@lessons_for_klasse[user[:klasse]].dup
+            end
+            if user_has_role(email, :schueler)
                 if ['11', '12'].include?(user[:klasse])
                     lessons = (kurse_for_schueler[email] || Set.new()).to_a
                 end
             end
             lessons ||= []
-            unless user[:teacher]
+            if user_has_role(email, :schueler)
                 lessons.reject! do |lesson_key|
                     lesson = @@lessons[:lesson_keys][lesson_key]
                     (lesson[:fach] == 'SpoM' && user[:geschlecht] != 'w') ||
@@ -1045,7 +1070,7 @@ class Main < Sinatra::Base
             end
             lessons += wahlpflicht_sus_for_lesson_key.keys
             lessons.uniq!
-            unless user[:teacher]
+            if user_has_role(email, :schueler)
                 lessons.each do |lesson_key|
                     if wahlpflicht_sus_for_lesson_key.include?(lesson_key)
                         next unless wahlpflicht_sus_for_lesson_key[lesson_key].include?(email)
@@ -1427,20 +1452,6 @@ class Main < Sinatra::Base
         end
     end
 
-    def assert(condition, message = 'assertion failed', suppress_backtrace = false, delay = nil)
-        unless condition
-            debug_error message
-            e = StandardError.new(message)
-            e.set_backtrace([]) if suppress_backtrace
-            sleep delay unless delay.nil?
-            raise e
-        end
-    end
-
-    def assert_with_delay(condition, message = 'assertion failed', suppress_backtrace = false)
-        assert(condition, message, suppress_backtrace, DEVELOPMENT ? 0.0 : 3.0)
-    end
-
     def test_request_parameter(data, key, options)
         type = ((options[:types] || {})[key]) || String
         assert(data[key.to_s].is_a?(type), "#{key.to_s} is a #{type}")
@@ -1495,7 +1506,7 @@ class Main < Sinatra::Base
     def session_user_has_streaming_button?
         return false unless PROVIDE_CLASS_STREAM
         return false unless user_logged_in?
-        return false if @session_user[:teacher]
+        return false if teacher_logged_in?
         return false if class_stream_link_for_session_user.nil?
         return false unless @session_user[:homeschooling]
         return true
@@ -1503,7 +1514,7 @@ class Main < Sinatra::Base
 
     def class_stream_link_for_session_user
         require_user!
-        if PROVIDE_CLASS_STREAM && (!@session_user[:teacher]) && (!['11', '12'].include?(@session_user[:klasse]))
+        if PROVIDE_CLASS_STREAM && schueler_logged_in? && (!['11', '12'].include?(@session_user[:klasse]))
             "/jitsi/Klassenstreaming#{@session_user[:klasse]}"
         else
             nil
@@ -1689,7 +1700,7 @@ class Main < Sinatra::Base
         if @session_user
             @session_user[:roles] ||= Set.new()
         end
-        debug "[#{(@session_user || {})[:nc_login] || 'anon'}] #{request.request_method} #{request.path}"
+        debug "[#{(@session_user || {})[:nc_login] || (@session_user || {})[:email] || 'anon'}] #{request.request_method} #{request.path}"
     end
 
     after '*' do
@@ -1842,9 +1853,9 @@ class Main < Sinatra::Base
                         nav_items << :techteam
                     end
                 end
-                if running_pishing_training? || developer_logged_in?
-                    nav_items << :phishing
-                end
+                # if running_pishing_training? || developer_logged_in?
+                #     nav_items << :phishing
+                # end
                 # nav_items << :advent_calendar #if advents_calendar_date_today > 0
                 nav_items << :profile
                 new_messages_count_s = new_messages_count.to_s
@@ -2950,6 +2961,8 @@ class Main < Sinatra::Base
                     end
                     redirect "#{WEB_ROOT}/bib_browse", 302
                     return
+                elsif user_with_role_logged_in?(:schulbuchverein)
+                    path = 'upload_schulbuchverein_bank_statement'
                 else
                     path = 'timetable'
                 end

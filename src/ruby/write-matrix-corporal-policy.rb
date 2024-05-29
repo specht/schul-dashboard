@@ -10,6 +10,7 @@ class Script
     include Neo4jBolt
     def run
         @@user_info = Main.class_variable_get(:@@user_info)
+        @@users_for_role = Main.class_variable_get(:@@users_for_role)
         policy_json = generate_matrix_corporal_policy().to_json
         File::open('/internal/policy.json', 'w') do |f|
             f.write policy_json

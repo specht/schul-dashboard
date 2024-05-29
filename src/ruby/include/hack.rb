@@ -253,11 +253,11 @@ class Main < Sinatra::Base
                 # io.puts "<hr />"
                 possible_names = []
                 possible_names << @session_user[:first_name]
-                unless @session_user[:teacher]
+                if schueler_logged_in?
                     possible_names << "#{@session_user[:first_name]} (#{@session_user[:klasse]})"
                 end
                 possible_names << @session_user[:display_name]
-                unless @session_user[:teacher]
+                if schueler_logged_in?
                     possible_names << "#{@session_user[:display_name]} (#{@session_user[:klasse]})"
                 else
                     possible_names << "#{@session_user[:display_last_name]}"

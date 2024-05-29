@@ -116,7 +116,7 @@
             </div>
             <hr />
             
-            <!-- <div style='display: #{(@session_user[:teacher] == true) ? 'block' : 'none'};'>
+            <!-- <div style='display: #{teacher_logged_in? ? 'block' : 'none'};'>
                 <h2 style='margin-bottom: 30px; margin-top: 30px;'>HeeseChat</h2>
                 <div class='row'>
                     <div class='col-md-12'>
@@ -383,7 +383,7 @@ var preferred_login_method = '#{session_user_preferred_login_method()}';
 var color_scheme = '#{color_scheme}';
 var style_swatches = [];
 var omit_ical_types = #{get_omit_ical_types().to_json};
-var teacher_logged_in = #{@session_user[:teacher] == true};
+var teacher_logged_in = #{teacher_logged_in?};
 var confirm_sms_tag = null;
 var angebote_for_session_user = #{angebote_for_session_user.to_json};
 

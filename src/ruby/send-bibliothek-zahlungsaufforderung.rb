@@ -10,19 +10,22 @@ LETTERS = 'BCDFHJLMNPQRSTVWYZ'
 DIGITS = '23456789'
 
 # Please change these values in /data/bibliothek/config.rb
-LBV_EMPFAENGER = nil
-LBV_IBAN = nil
-LBV_BIC = nil
-LBV_BANK = nil
-LBV_NEXT_SCHULJAHR = nil
-LBV_ZAHLUNGSFRIST = nil
+verbose = $VERBOSE
+$VERBOSE = nil
+LBV_EMPFAENGER ||= nil
+LBV_IBAN ||= nil
+LBV_BIC ||= nil
+LBV_BANK ||= nil
+LBV_NEXT_SCHULJAHR ||= nil
+LBV_ZAHLUNGSFRIST ||= nil
 
-LBV_BEITRAG_AS_1 = nil
-LBV_BEITRAG_AS_2 = nil
-LBV_BEITRAG_AS_3 = nil
-LBV_BEITRAG_SESB_1 = nil
-LBV_BEITRAG_SESB_2 = nil
-LBV_BEITRAG_SESB_3 = nil
+LBV_BEITRAG_AS_1 ||= nil
+LBV_BEITRAG_AS_2 ||= nil
+LBV_BEITRAG_AS_3 ||= nil
+LBV_BEITRAG_SESB_1 ||= nil
+LBV_BEITRAG_SESB_2 ||= nil
+LBV_BEITRAG_SESB_3 ||= nil
+$VERBOSE = verbose
 
 if File.exist?('/data/bibliothek/config.rb')
     verbose = $VERBOSE
@@ -64,7 +67,7 @@ class Script
 
         parser = Parser.new()
         entries = []
-        email_for_subject = {}
+        token_catalogue = {}
 
         parser.parse_schueler do |record|
             entries << {:email => record[:email],
@@ -77,6 +80,7 @@ class Script
         end
         @@klassen_order = Main.class_variable_get(:@@klassen_order)
         @@user_info = Main.class_variable_get(:@@user_info)
+        @@users_for_role = Main.class_variable_get(:@@users_for_role)
         @@schueler_for_klasse = Main.class_variable_get(:@@schueler_for_klasse)
         sesb_sus = Set.new(parser.parse_sesb(@@user_info.reject { |x, y| y[:teacher] }, @@schueler_for_klasse))
 
@@ -105,7 +109,6 @@ class Script
             end
             subject += ' '
             subject += email.split('@')[0].split('.').join(' ').upcase
-            email_for_subject[subject.split(' ').first] = email
             sesb = sesb_sus.include?(email)
             klassenstufe = record[:klasse].to_i
             klassenstufe_next = klassenstufe + 1
@@ -116,6 +119,18 @@ class Script
 
             out_path_docx = File.join("/internal/bibliothek/out/#{brief_sha1}.docx")
             out_path_pdf = File.join("/internal/bibliothek/out/#{brief_sha1}.pdf")
+
+            amount = 0
+            sibling_index_next_year = @@user_info[email][:sibling_index_next_year] || 0
+            if sibling_index_next_year == 0
+                amount = sesb ? LBV_BEITRAG_SESB_1 : LBV_BEITRAG_AS_1
+            elsif sibling_index_next_year == 1
+                amount = sesb ? LBV_BEITRAG_SESB_2 : LBV_BEITRAG_AS_2
+            elsif sibling_index_next_year >= 2
+                amount = sesb ? LBV_BEITRAG_SESB_3 : LBV_BEITRAG_AS_3
+            end
+            raise 'oops' if amount == 0
+            token_catalogue[subject.split(' ').first] = {:email => email, :amount => amount * 100}
 
             unless File.exist?(out_path_pdf)
                 out_path_dir = File.join("/internal/bibliothek/out/#{brief_sha1}")
@@ -147,19 +162,14 @@ class Script
                 doc.gsub!('#SUS_ZUG_DATIV.', sesb ? 'SESB-Zug' : 'altsprachlichen Zug')
                 doc.gsub!('#VERWENDUNGSZWECK.', subject)
 
-                amount = 0
-
                 sibling_index_next_year = @@user_info[email][:sibling_index_next_year] || 0
                 satz = StringIO.open do |io|
                     if sibling_index_next_year == 0
-                        amount = sesb ? LBV_BEITRAG_SESB_1 : LBV_BEITRAG_AS_1
                         io.puts "Da uns keine weiteren, älteren Geschwisterkinder bekannt sind, beträgt der Beitrag für Ihr Kind im nächsten Schuljahr #{sprintf('%d', amount).sub('.', ',')} €."
                     elsif sibling_index_next_year == 1
-                        amount = sesb ? LBV_BEITRAG_SESB_2 : LBV_BEITRAG_AS_2
                         older_siblings = join_with_sep(@@user_info[email][:older_siblings].reverse.map { |x| @@user_info[x][:display_first_name] }, ', ', ' und ')
                         io.puts "Da uns ein weiteres, älteres Geschwisterkind bekannt ist (#{older_siblings}), beträgt der Beitrag für Ihr Kind im nächsten Schuljahr #{sprintf('%d', amount).sub('.', ',')} €."
                     elsif sibling_index_next_year >= 2
-                        amount = sesb ? LBV_BEITRAG_SESB_3 : LBV_BEITRAG_AS_3
                         older_siblings = join_with_sep(@@user_info[email][:older_siblings].reverse.map { |x| @@user_info[x][:display_first_name] }, ', ', ' und ')
                         io.puts "Da uns #{sibling_index_next_year > 2 ? 'mindestens ' : ''}zwei weitere, ältere Geschwisterkinder bekannt sind (#{older_siblings}), beträgt der Beitrag für Ihr Kind im nächsten Schuljahr #{sprintf('%d', amount).sub('.', ',')} €."
                     end
@@ -212,10 +222,10 @@ class Script
                         bcc [SMTP_FROM, act_as_sender]
                         from act_as_sender
                         reply_to act_as_sender
-    
+
                         subject "Informationen zum Schulbuchverein / Ende der Lernmittelfreiheit ab Klasse 7"
                         content_type 'multipart/mixed'
-    
+
                         message = StringIO.open do |io|
                             io.puts <<~END_OF_MAIL
                                 <p>Sehr geehrte Eltern von #{record[:display_name]},</p>
@@ -323,8 +333,8 @@ class Script
                 end
             end
         end
-        File.open('/internal/bibliothek/out/email_for_subject.yaml', 'w') do |f|
-            f.write email_for_subject.to_yaml
+        File.open("/internal/bibliothek/out/token_catalogue-#{LBV_NEXT_SCHULJAHR.gsub('/', '-')}.yaml", 'w') do |f|
+            f.write token_catalogue.to_yaml
         end
     end
 end

@@ -18,10 +18,10 @@ class Main < Sinatra::Base
         teacher_count = 0
         sus_count = 0
         @@user_info.each_pair do |email, user|
-            if user[:teacher]
-                teacher_count += 1 
-            else
-                sus_count += 1 
+            if user_has_role(email, :teacher)
+                teacher_count += 1
+            elsif user_has_role(email, :schueler)
+                sus_count += 1
             end
         end
         login_stats[:lehrer] = {:total => teacher_count, :count => {}}
@@ -30,10 +30,10 @@ class Main < Sinatra::Base
             user = @@user_info[email]
             next if user.nil?
             seen.keys.each do |d|
-                if user[:teacher]
+                if user_has_role(email, :teacher)
                     login_stats[:lehrer][:count][d] ||= 0
                     login_stats[:lehrer][:count][d] += 1
-                else
+                elsif user_has_role(email, :schueler)
                     login_stats[:sus][:count][d] ||= 0
                     login_stats[:sus][:count][d] += 1
                     if login_stats[user[:klasse]]
@@ -45,7 +45,7 @@ class Main < Sinatra::Base
         end
         login_stats
     end
-    
+
     def print_stats()
         require_admin!
         login_stats = get_login_stats()
@@ -68,7 +68,7 @@ class Main < Sinatra::Base
                 elsif key == :lehrer
                     label = 'Lehrerinnen und Lehrer'
                 else
-                    label = "Klasse #{tr_klasse(key)}" 
+                    label = "Klasse #{tr_klasse(key)}"
                 end
                 io.puts "<tr>"
                 io.puts "<td>#{label}</td>"
@@ -87,7 +87,7 @@ class Main < Sinatra::Base
             io.string
         end
     end
-    
+
     def print_login_ranking()
         stats = get_login_stats()
         klassen_stats = {}

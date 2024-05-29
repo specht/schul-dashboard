@@ -5,12 +5,14 @@ require 'nextcloud'
 require 'set'
 
 class Script
+    include UserRoleHelper
+
     def initialize
         @ocs = Nextcloud.ocs(url: NEXTCLOUD_URL_FROM_RUBY_CONTAINER,
                              username: NEXTCLOUD_USER,
                              password: NEXTCLOUD_PASSWORD)
     end
-    
+
     def run
         srsly = false
         if ARGV.include?('--srsly')
@@ -22,6 +24,7 @@ class Script
         # docker-compose exec -u www-data app /bin/bash
         # ./occ files:scan [user_id]
         @@user_info = Main.class_variable_get(:@@user_info)
+        @@users_for_role = Main.class_variable_get(:@@users_for_role)
         @@klassen_for_shorthand = Main.class_variable_get(:@@klassen_for_shorthand)
         STDERR.print "Getting groups: "
         all_groups = @ocs.group.all
@@ -50,7 +53,7 @@ class Script
             ['a', 'b', 'c', 'd', 'e', 'o'].each { |x| all_possible_klassen_order << "#{klasse}#{x}" }
         end
         @@user_info.each_pair do |email, user|
-            next unless user[:teacher]
+            next unless user_has_role(email, :teacher)
             next unless user[:can_log_in]
             STDERR.print '.'
             klassen = @@klassen_for_shorthand[user[:shorthand]] || []
@@ -107,7 +110,7 @@ class Script
 #             end
         end
         @@user_info.each_pair do |email, user|
-            next if user[:teacher]
+            next unless user_has_role(email, :schueler)
             STDERR.print '.'
             display_name = user[:display_name]
             klasse = user[:klasse]

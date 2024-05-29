@@ -157,6 +157,7 @@ class Main
         @@zeugnisliste_for_klasse = YAML::load(File.read('/internal/debug/@@zeugnisliste_for_klasse.yaml'))
         @@shorthands = YAML::load(File.read('/internal/debug/@@shorthands.yaml'))
         @@user_info = YAML::load(File.read('/internal/debug/@@user_info.yaml'))
+        @@users_for_role = YAML::load(File.read('/internal/debug/@@users_for_role.yaml'))
         @@klassenleiter = YAML::load(File.read('/internal/debug/@@klassenleiter.yaml'))
         @@faecher = YAML::unsafe_load(File.read('/internal/debug/@@faecher.yaml'))
         @@lessons = YAML::unsafe_load(File.read('/internal/debug/@@lessons.yaml'))

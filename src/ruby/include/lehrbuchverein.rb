@@ -221,6 +221,7 @@ class Main < Sinatra::Base
             :skipped => [],
             :handled => [],
             :previously_handled => [],
+            :extra_info => {},
         }
         token_catalogue = YAML.load(File.read("/internal/bibliothek/out/token_catalogue-#{LBV_NEXT_SCHULJAHR.gsub('/', '-')}.yaml"))
         blob.split("\n").each do |line|
@@ -246,18 +247,28 @@ class Main < Sinatra::Base
                     key = "#{datum}/#{from}/#{amount_cents}/#{subject}"
                     sha1 = Digest::SHA1.hexdigest(key)
                     result[:entries][sha1] = {:datum => datum, :amount => amount_cents, :subject => subject, :from => from}
-                    m = subject.match(/([A-Z]{2}\-[A-Z]{2}\-\d{3})/)
+                    m = subject.upcase.strip.gsub('  ', ' ').match(/([A-Z]{2})[^A-Z]?([A-Z]{2})[^A-Z]?(\d{3})/)
                     state = :skipped
                     if m
-                        token = m[1]
+                        token = "#{m[1]}-#{m[2]}-#{m[3]}"
                         STDERR.puts "GOT TOKEN! [#{token}]"
                         if token_catalogue[token]
                             STDERR.puts "ALSO FOUND EMAIL FOR TOKEN: #{token_catalogue[token].to_json}"
                             if amount_cents == token_catalogue[token][:amount]
                                 # TODO: mark user as paid for next schuljahr
                                 state = :handled
+                                result[:extra_info][sha1] = {
+                                    :display_name => @@user_info[token_catalogue[token][:email]][:display_name],
+                                    :klasse => @@user_info[token_catalogue[token][:email]][:klasse],
+                                }
+                            else
+                                result[:extra_info][sha1] = {:reason => :unexpected_amount, :expected_amount => token_catalogue[token][:amount]}
                             end
+                        else
+                            result[:extra_info][sha1] = {:reason => :unknown_token}
                         end
+                    else
+                        result[:extra_info][sha1] = {:reason => :no_token_found}
                     end
                     result[state] << sha1
                 end

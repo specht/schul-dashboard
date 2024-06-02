@@ -1,4 +1,5 @@
 #{this_is_a_page_for_logged_in_users}
+<!-- PHASE: #{projekttage_phase()} -->
 <div class='container'>
     <div class='row'>
         <div class='col-md-12'>
@@ -13,15 +14,21 @@
                 <h3>Wähle deine Lieblingsprojekte!</h3>
                 <p>
                     Wähle mindestens drei Projekte, die dich interessieren.
-                    Du kannst sie später noch ändern. Falls du weniger als
-                    drei Projekte wählst, werden wir weitere zufällige Projekte
-                    für dich wählen, damit es insgesamt mindestens drei Projekte
-                    sind, mit denen du in die Auslosung gehst. Du kannst dich
-                    natürlich auch für mehr als drei Projekte anmelden.
+                    Falls du weniger als drei Projekte wählst, werden wir weitere zufällige Projekte für dich wählen, damit es insgesamt mindestens drei Projekte sind, mit denen jeder in die Auslosung geht.
+                    Du kannst dich natürlich auch für mehr als drei Projekte anmelden.
+                    Du kannst deine Wahl bis <strong>#{WEEKDAYS_LONG[(Date.parse(PROJEKTWAHL_VOTE_END).strftime('%u').to_i) % 7]}, den #{Date.parse(PROJEKTWAHL_VOTE_END).strftime('%d.%m.%Y')} um #{DateTime.parse(PROJEKTWAHL_VOTE_END).strftime('%H:%M')} </strong> noch ändern.
                 </p>
                 <p id="text_vote_summary"></p>
             </div>
         </div>
+    </div>
+    <div style="#{(teacher_logged_in? && projekttage_phase() == 3) ? '' : 'display: none;'}">
+        <h3 style='margin-bottom: 20px;'>Wahlverhalten</h3>
+        <p>
+            Die Projektwahl läuft noch bis <strong>#{WEEKDAYS_LONG[(Date.parse(PROJEKTWAHL_VOTE_END).strftime('%u').to_i) % 7]}, den #{Date.parse(PROJEKTWAHL_VOTE_END).strftime('%d.%m.%Y')} um #{DateTime.parse(PROJEKTWAHL_VOTE_END).strftime('%H:%M')}</strong>.
+        </p>
+        #{print_projekttage_vote_summary()}
+        <h3 style='margin-bottom: 20px;'>Projektkatalog</h3>
     </div>
     <div class='row projekte-here'>
     </div>
@@ -78,6 +85,12 @@
     }
     body.dark hr.dashed {
         border-top: 1px dashed rgba(255, 255, 255, 0.3);
+    }
+    td, th {
+        min-width: 3em;
+    }
+    .cbl {
+        border-left: 1px solid rgba(0, 0, 0, 0.15);
     }
 </style>
 

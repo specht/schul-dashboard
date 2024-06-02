@@ -663,19 +663,18 @@ class Main < Sinatra::Base
 
     def print_projektwahl_countdown_panel()
         if user_eligible_for_projektwahl?
-            deadline = PROJEKTWAHL_VOTE_END
-            if Time.now.strftime('%Y-%m-%dT%H:%M:%S') <= deadline && (DateTime.parse(deadline) - DateTime.now).to_f < 7.0
-                return StringIO.open do |io|
-                    io.puts "<div class='col-lg-12 col-md-4 col-sm-6'>"
-                    io.puts "<div class='hint'>"
-                    io.puts "<p><b>Wähle dein Projekt</b></p>"
-                    io.puts "<hr />"
-                    io.puts "<p>Die Möglichkeit zur Wahl eines Projektes für die Projekttage endet am Sonntag!</p>"
-                    io.puts "<div id='projektwahl_countdown_here' style='display: none;' data-deadline='#{Time.parse(deadline).to_i}'>"
-                    io.puts "</div>"
-                    io.puts "</div>"
-                    io.puts "</div>"
-                    io.string
+            vote_count = neo4j_query_expect_one("MATCH (u:User {email: $email})-[:VOTED_FOR]->(p:Projekt) RETURN COUNT(p) AS count;", {:email => @session_user[:email]})['count']
+            if vote_count == 0
+                if projekttage_phase() == 3
+                    return StringIO.open do |io|
+                        io.puts "<div class='col-lg-12 col-md-4 col-sm-6'>"
+                        io.puts "<div class='hint'>"
+                        io.puts "<p><b>Wähle deine Lieblingsprojekte!</b></p>"
+                        io.puts "<p>Du findest den Projektkatalog im Menü unter »Projekttage«."
+                        io.puts "</div>"
+                        io.puts "</div>"
+                        io.string
+                    end
                 end
             end
         elsif (@session_user[:klassenstufe] || 0) == 11

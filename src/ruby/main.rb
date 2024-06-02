@@ -166,6 +166,7 @@ end
 
 USER_AGENT_PARSER = UserAgentParser::Parser.new
 WEEKDAYS = ['So', 'Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa']
+WEEKDAYS_LONG = ['Sonntag', 'Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag', 'Samstag']
 HOMEWORK_FEEDBACK_STATES = ['good', 'hmmm', 'lost']
 HOMEWORK_FEEDBACK_EMOJIS = {'good' => '🙂',
                             'hmmm' => '🤔',

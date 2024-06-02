@@ -211,4 +211,84 @@ class Main < Sinatra::Base
             io.string
         end
     end
+
+    def print_projekttage_vote_summary
+        return '' unless teacher_logged_in?
+        StringIO.open do |io|
+            votes = {}
+            votes_for_projekt = {}
+            neo4j_query(<<~END_OF_QUERY).each do |row|
+                MATCH (u:User)-[r:VOTED_FOR]->(p:Projekt)
+                RETURN u.email, r, p.nr;
+            END_OF_QUERY
+                email = row['u.email']
+                next unless @@user_info[email]
+                next unless @@user_info[email][:roles].include?(:schueler)
+                klassenstufe = @@user_info[email][:klassenstufe] || 7
+                klassenstufe = 'WK' if @@user_info[email][:klasse][0, 2] == 'WK'
+                vote = row['r'][:vote]
+                key = "#{klassenstufe}/#{vote}"
+                votes[key] ||= 0
+                votes[key] += 1
+                key = "#{row['p.nr']}/#{klassenstufe}"
+                votes_for_projekt[key] ||= 0
+                votes_for_projekt[key] += 1
+                key = "#{row['p.nr']}/#{vote}"
+                votes_for_projekt[key] ||= 0
+                votes_for_projekt[key] += 1
+                key = "#{row['p.nr']}"
+                votes_for_projekt[key] ||= 0
+                votes_for_projekt[key] += 1
+            end
+
+            io.puts "<table class='table table-sm' style='width: unset;'>"
+            io.puts "<tr>"
+            io.puts "<th>Projekt</th>"
+            [5, 6, 7, 8, 9, 'WK', 1, 2, 3, 'Σ'].each do |klasse|
+                if [1, 2, 3].include?(klasse)
+                    io.puts "<th class='#{[5, 1, 'Σ'].include?(klasse) ? 'cbl' : ''}' style='text-align: center;'>#{PROJEKT_VOTE_CODEPOINTS[klasse].chr(Encoding::UTF_8)}</th>"
+                else
+                    io.puts "<th class='#{[5, 1, 'Σ'].include?(klasse) ? 'cbl' : ''}' style='text-align: center;'>#{klasse}#{['WK', 'Σ'].include?(klasse) ? '' : '.'}</th>"
+                end
+            end
+            io.puts "</tr>"
+            get_projekte.each do |projekt|
+                io.puts "<tr>"
+                io.puts "<td>#{projekt[:title]}</td>"
+                [5, 6, 7, 8, 9, 'WK'].each do |klasse|
+                    io.puts "<td class='#{[5, 1, 'Σ'].include?(klasse) ? 'cbl' : ''}' style='text-align: center;'>#{votes_for_projekt["#{projekt[:nr]}/#{klasse}"] || '&ndash;' }</td>"
+                end
+                [1, 2, 3].each do |vote|
+                    io.puts "<td class='#{[5, 1, 'Σ'].include?(vote) ? 'cbl' : ''}' style='text-align: center;'>#{votes_for_projekt["#{projekt[:nr]}/#{vote}"] || '&ndash;' }</td>"
+                end
+                io.puts "<td class='cbl' style='text-align: center;'>#{votes_for_projekt["#{projekt[:nr]}"] || '&ndash;' }</td>"
+                io.puts "</tr>"
+            end
+            io.puts "</table>"
+
+            io.puts "<table class='table table-sm' style='width: unset;'>"
+            io.puts "<tr>"
+            io.puts "<th>Klassenstufe</th>"
+            [5, 6, 7, 8, 9, 'WK', 'Σ'].each do |klasse|
+                io.puts "<th style='text-align: center;' class='#{[5, 'Σ'].include?(klasse) ? 'cbl' : ''}'>#{['WK', 'Σ'].include?(klasse) ? '' : 'Klassenstufe'} #{klasse}</th>"
+            end
+            io.puts "</tr>"
+            [3, 2, 1].each do |vote|
+                io.puts "<tr>"
+                io.puts "<td>#{PROJEKT_VOTE_CODEPOINTS[vote].chr(Encoding::UTF_8)} #{PROJEKT_VOTE_LABELS[vote]}</td>"
+                sum = 0
+                [5, 6, 7, 8, 9, 'WK', 'Σ'].each do |klasse|
+                    count = votes["#{klasse}/#{vote}"] || '&ndash;'
+                    sum += votes["#{klasse}/#{vote}"] || 0
+                    count = sum if klasse == 'Σ'
+                    io.puts "<td class='#{[5, 'Σ'].include?(klasse) ? 'cbl' : ''}' style='text-align: center;'>#{count}</td>"
+                end
+                io.puts "</tr>"
+            end
+            io.puts "</table>"
+
+            io.string
+        end
+
+    end
 end

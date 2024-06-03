@@ -191,6 +191,7 @@ class Main < Sinatra::Base
         end
 
         StringIO.open do |io|
+            io.puts "<div class='table-responsive' style='max-width: 100%; overflow-x: auto;'>"
             io.puts "<table class='table' style='width: unset;'>"
             io.puts "<tr>"
             io.puts "<th>Klassenstufe</th>"
@@ -202,12 +203,13 @@ class Main < Sinatra::Base
                 io.puts "<tr>"
                 io.puts "<td>#{PROJEKT_VOTE_CODEPOINTS[vote].chr(Encoding::UTF_8)} #{PROJEKT_VOTE_LABELS[vote]}</td>"
                 (projekt[:min_klasse]..projekt[:max_klasse]).each do |klasse|
-                    count = votes["#{klasse}/#{vote}"] || '&ndash;'
-                    io.puts "<td style='text-align: center;'>#{count}</td>"
+                    count = votes["#{klasse}/#{vote}"] || "<span class='text-muted'>&ndash;</span>"
+                    io.puts "<td class='cbl' style='text-align: center;'>#{count}</td>"
                 end
                 io.puts "</tr>"
             end
             io.puts "</table>"
+            io.puts "</div>"
             io.string
         end
     end
@@ -241,6 +243,7 @@ class Main < Sinatra::Base
                 votes_for_projekt[key] += 1
             end
 
+            io.puts "<div class='table-responsive' style='max-width: 100%; overflow-x: auto;'>"
             io.puts "<table class='table table-sm' style='width: unset;'>"
             io.puts "<tr>"
             io.puts "<th>Projekt</th>"
@@ -252,20 +255,23 @@ class Main < Sinatra::Base
                 end
             end
             io.puts "</tr>"
+            ndash = "<span class='text-muted'>&ndash;</span>"
             get_projekte.each do |projekt|
                 io.puts "<tr>"
                 io.puts "<td>#{projekt[:title]}</td>"
                 [5, 6, 7, 8, 9, 'WK'].each do |klasse|
-                    io.puts "<td class='#{[5, 1, 'Σ'].include?(klasse) ? 'cbl' : ''}' style='text-align: center;'>#{votes_for_projekt["#{projekt[:nr]}/#{klasse}"] || '&ndash;' }</td>"
+                    io.puts "<td class='#{[5, 1, 'Σ'].include?(klasse) ? 'cbl' : ''}' style='text-align: center;'>#{votes_for_projekt["#{projekt[:nr]}/#{klasse}"] || ndash }</td>"
                 end
                 [1, 2, 3].each do |vote|
-                    io.puts "<td class='#{[5, 1, 'Σ'].include?(vote) ? 'cbl' : ''}' style='text-align: center;'>#{votes_for_projekt["#{projekt[:nr]}/#{vote}"] || '&ndash;' }</td>"
+                    io.puts "<td class='#{[5, 1, 'Σ'].include?(vote) ? 'cbl' : ''}' style='text-align: center;'>#{votes_for_projekt["#{projekt[:nr]}/#{vote}"] || ndash }</td>"
                 end
-                io.puts "<td class='cbl' style='text-align: center;'>#{votes_for_projekt["#{projekt[:nr]}"] || '&ndash;' }</td>"
+                io.puts "<td class='cbl' style='text-align: center;'>#{votes_for_projekt["#{projekt[:nr]}"] || ndash }</td>"
                 io.puts "</tr>"
             end
             io.puts "</table>"
+            io.puts "</div>"
 
+            io.puts "<div class='table-responsive' style='max-width: 100%; overflow-x: auto;'>"
             io.puts "<table class='table table-sm' style='width: unset;'>"
             io.puts "<tr>"
             io.puts "<th>Klassenstufe</th>"
@@ -278,7 +284,7 @@ class Main < Sinatra::Base
                 io.puts "<td>#{PROJEKT_VOTE_CODEPOINTS[vote].chr(Encoding::UTF_8)} #{PROJEKT_VOTE_LABELS[vote]}</td>"
                 sum = 0
                 [5, 6, 7, 8, 9, 'WK', 'Σ'].each do |klasse|
-                    count = votes["#{klasse}/#{vote}"] || '&ndash;'
+                    count = votes["#{klasse}/#{vote}"] || ndash
                     sum += votes["#{klasse}/#{vote}"] || 0
                     count = sum if klasse == 'Σ'
                     io.puts "<td class='#{[5, 'Σ'].include?(klasse) ? 'cbl' : ''}' style='text-align: center;'>#{count}</td>"
@@ -286,6 +292,7 @@ class Main < Sinatra::Base
                 io.puts "</tr>"
             end
             io.puts "</table>"
+            io.puts "</div>"
 
             io.string
         end

@@ -322,6 +322,7 @@ class Main < Sinatra::Base
             end
             io.puts "</tr>"
             KLASSEN_ORDER.each do |klasse|
+                next unless klasse.to_i <= 9 || klasse[0, 2] == 'WK'
                 io.puts "<tr>"
                 io.puts "<td>Klasse #{tr_klasse(klasse)}</td>"
                 (0..10).each do |count|

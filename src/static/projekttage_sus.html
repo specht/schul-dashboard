@@ -128,11 +128,9 @@ function update_vote_summary() {
         for (let item of items) {
             let vote = item[0];
             let project = item[1];
-            for (let project of projects) {
-                let polaroid = $(`<div class="polaroid" style="position: relative; display: inline-block; float: none; width: 150px; height: 180px; margin-right: 10px; transform: none;"></div>`).css('background-image', `url(/api/get_sus_photo/${projekte[project].photo}-512.jpg)`).appendTo($('#text_vote_summary'));
-                polaroid.append($(`<p style="font-size: 0.8em; margin-top: 120px; text-align: center; margin-left: -10px; margin-right: -10px; white-space: nowrap; overflow-x: clip; text-overflow: ellipsis;">`).text(projekte[project].title));
-                polaroid.append($(`<p style="box-shadow: 0 0 10px rgba(0, 0, 0, 0.5); background-color: #fff; border-radius: 50%; width: 1.5em; height: 1.5em; text-align: center; padding-top: 0.05em; font-size: 1.5em; transform: rotate(5deg); position: absolute; top: -15px; right: -15px;">`).text(String.fromCodePoint(codepoints[vote])));
-            }
+            let polaroid = $(`<div class="polaroid" style="position: relative; display: inline-block; float: none; width: 150px; height: 180px; margin-right: 10px; transform: none;"></div>`).css('background-image', `url(/api/get_sus_photo/${projekte[project].photo}-512.jpg)`).appendTo($('#text_vote_summary'));
+            polaroid.append($(`<p style="font-size: 0.8em; margin-top: 120px; text-align: center; margin-left: -10px; margin-right: -10px; white-space: nowrap; overflow-x: clip; text-overflow: ellipsis;">`).text(projekte[project].title));
+            polaroid.append($(`<p style="box-shadow: 0 0 10px rgba(0, 0, 0, 0.5); background-color: #fff; border-radius: 50%; width: 1.5em; height: 1.5em; text-align: center; padding-top: 0.05em; font-size: 1.5em; transform: rotate(5deg); position: absolute; top: -15px; right: -15px;">`).text(String.fromCodePoint(codepoints[vote])));
         }
         // $('#text_vote_summary').html(`<p>Du hast bisher folgende Projekte gewählt:</p><ul>${items.map(function(x) {return '<li>' + x + '</li>';}).join('')}</ul>`);
     }

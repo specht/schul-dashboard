@@ -188,26 +188,48 @@ class Main < Sinatra::Base
             key = "#{klassenstufe}/#{vote}"
             votes[key] ||= 0
             votes[key] += 1
+            key = "klassenstufe/#{klassenstufe}"
+            votes[key] ||= 0
+            votes[key] += 1
+            key = "vote/#{vote}"
+            votes[key] ||= 0
+            votes[key] += 1
+            key = "total"
+            votes[key] ||= 0
+            votes[key] += 1
         end
 
         StringIO.open do |io|
             io.puts "<div class='table-responsive' style='max-width: 100%; overflow-x: auto;'>"
-            io.puts "<table class='table' style='width: unset;'>"
+            io.puts "<table class='table table-sm' style='width: unset;'>"
             io.puts "<tr>"
             io.puts "<th>Klassenstufe</th>"
             (projekt[:min_klasse]..projekt[:max_klasse]).each do |klasse|
-                io.puts "<th>#{klasse}.</th>"
+                io.puts "<th class='#{klasse == projekt[:min_klasse] ? 'cbl' : ''}' style='text-align: center;'>#{klasse}.</th>"
             end
+            io.puts "<th class='cbl' style='text-align: center;'>Σ</th>"
             io.puts "</tr>"
+            ndash = "<span class='text-muted'>&ndash;</span>"
             [3, 2, 1].each do |vote|
                 io.puts "<tr>"
                 io.puts "<td>#{PROJEKT_VOTE_CODEPOINTS[vote].chr(Encoding::UTF_8)} #{PROJEKT_VOTE_LABELS[vote]}</td>"
                 (projekt[:min_klasse]..projekt[:max_klasse]).each do |klasse|
-                    count = votes["#{klasse}/#{vote}"] || "<span class='text-muted'>&ndash;</span>"
-                    io.puts "<td class='cbl' style='text-align: center;'>#{count}</td>"
+                    count = votes["#{klasse}/#{vote}"] || ndash
+                    io.puts "<td class='#{klasse == projekt[:min_klasse] ? 'cbl' : ''}' style='text-align: center;'>#{count}</td>"
                 end
+                count = votes["vote/#{vote}"] || ndash
+                io.puts "<td class='cbl' style='text-align: center;'>#{count}</td>"
                 io.puts "</tr>"
             end
+            io.puts "<tr>"
+            io.puts "<th>Σ</th>"
+            (projekt[:min_klasse]..projekt[:max_klasse]).each do |klasse|
+                count = votes["klassenstufe/#{klasse}"] || ndash
+                io.puts "<td class='#{klasse == projekt[:min_klasse] ? 'cbl' : ''}' style='text-align: center;'>#{count}</td>"
+            end
+            count = votes["total"] || ndash
+            io.puts "<td class='cbl' style='text-align: center;'>#{count}</td>"
+            io.puts "</tr>"
             io.puts "</table>"
             io.puts "</div>"
             io.string

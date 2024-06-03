@@ -219,11 +219,13 @@ class Main < Sinatra::Base
         StringIO.open do |io|
             votes = {}
             votes_for_projekt = {}
+            emails = Set.new()
             neo4j_query(<<~END_OF_QUERY).each do |row|
                 MATCH (u:User)-[r:VOTED_FOR]->(p:Projekt)
                 RETURN u.email, r, p.nr;
             END_OF_QUERY
                 email = row['u.email']
+                emails << email
                 next unless @@user_info[email]
                 next unless @@user_info[email][:roles].include?(:schueler)
                 klassenstufe = @@user_info[email][:klassenstufe] || 7
@@ -241,13 +243,25 @@ class Main < Sinatra::Base
                 key = "#{row['p.nr']}"
                 votes_for_projekt[key] ||= 0
                 votes_for_projekt[key] += 1
+                key = "votes_by_email/#{email}"
+                votes_for_projekt[key] ||= 0
+                votes_for_projekt[key] += 1
+            end
+
+            emails.each do |email|
+                key = "votes_by_email/#{email}"
+                count = votes_for_projekt[key] || 0
+                count = 10 if count > 10
+                key = "votes_by_klasse/#{@@user_info[email][:klasse]}/#{count}"
+                votes_for_projekt[key] ||= 0
+                votes_for_projekt[key] += 1
             end
 
             io.puts "<div class='table-responsive' style='max-width: 100%; overflow-x: auto;'>"
             io.puts "<table class='table table-sm' style='width: unset;'>"
             io.puts "<tr>"
             io.puts "<th>Projekt</th>"
-            [5, 6, 7, 8, 9, 'WK', 1, 2, 3, 'Σ'].each do |klasse|
+            [5, 6, 7, 8, 9, 'WK', 3, 2, 1, 'Σ'].each do |klasse|
                 if [1, 2, 3].include?(klasse)
                     io.puts "<th class='#{[5, 1, 'Σ'].include?(klasse) ? 'cbl' : ''}' style='text-align: center;'>#{PROJEKT_VOTE_CODEPOINTS[klasse].chr(Encoding::UTF_8)}</th>"
                 else
@@ -256,13 +270,15 @@ class Main < Sinatra::Base
             end
             io.puts "</tr>"
             ndash = "<span class='text-muted'>&ndash;</span>"
-            get_projekte.each do |projekt|
+            get_projekte.sort do |a, b|
+                (votes_for_projekt["#{b[:nr]}"] || 0) <=> (votes_for_projekt["#{a[:nr]}"] || 0)
+            end.each do |projekt|
                 io.puts "<tr>"
                 io.puts "<td>#{projekt[:title]}</td>"
                 [5, 6, 7, 8, 9, 'WK'].each do |klasse|
                     io.puts "<td class='#{[5, 1, 'Σ'].include?(klasse) ? 'cbl' : ''}' style='text-align: center;'>#{votes_for_projekt["#{projekt[:nr]}/#{klasse}"] || ndash }</td>"
                 end
-                [1, 2, 3].each do |vote|
+                [3, 2, 1].each do |vote|
                     io.puts "<td class='#{[5, 1, 'Σ'].include?(vote) ? 'cbl' : ''}' style='text-align: center;'>#{votes_for_projekt["#{projekt[:nr]}/#{vote}"] || ndash }</td>"
                 end
                 io.puts "<td class='cbl' style='text-align: center;'>#{votes_for_projekt["#{projekt[:nr]}"] || ndash }</td>"
@@ -288,6 +304,28 @@ class Main < Sinatra::Base
                     sum += votes["#{klasse}/#{vote}"] || 0
                     count = sum if klasse == 'Σ'
                     io.puts "<td class='#{[5, 'Σ'].include?(klasse) ? 'cbl' : ''}' style='text-align: center;'>#{count}</td>"
+                end
+                io.puts "</tr>"
+            end
+            io.puts "</table>"
+            io.puts "</div>"
+
+            io.puts "<div class='table-responsive' style='max-width: 100%; overflow-x: auto;'>"
+            io.puts "<table class='table table-sm' style='width: unset;'>"
+            io.puts "<tr>"
+            io.puts "<th>Ausgewählte Projekte</th>"
+            io.puts "<th>keins</th>"
+            (1..10).each do |count|
+                io.puts "<th style='text-align: center;'>#{count}#{count == 10 ? '+' : ''}</th>"
+            end
+            io.puts "</tr>"
+            KLASSEN_ORDER.each do |klasse|
+                io.puts "<tr>"
+                io.puts "<td>Klasse #{tr_klasse(klasse)}</td>"
+                (0..10).each do |count|
+                    key = "votes_by_klasse/#{klasse}/#{count}"
+                    count = votes_for_projekt[key] || ndash
+                    io.puts "<td class='cbl' style='text-align: center;'>#{count}</td>"
                 end
                 io.puts "</tr>"
             end

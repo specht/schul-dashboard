@@ -248,13 +248,15 @@ class Main < Sinatra::Base
                 votes_for_projekt[key] += 1
             end
 
-            emails.each do |email|
-                key = "votes_by_email/#{email}"
-                count = votes_for_projekt[key] || 0
-                count = 10 if count > 10
-                key = "votes_by_klasse/#{@@user_info[email][:klasse]}/#{count}"
-                votes_for_projekt[key] ||= 0
-                votes_for_projekt[key] += 1
+            KLASSEN_ORDER.each do |klasse|
+                @@schueler_for_klasse[klasse].each do |email|
+                    key = "votes_by_email/#{email}"
+                    count = votes_for_projekt[key] || 0
+                    count = 10 if count > 10
+                    key = "votes_by_klasse/#{@@user_info[email][:klasse]}/#{count}"
+                    votes_for_projekt[key] ||= 0
+                    votes_for_projekt[key] += 1
+                end
             end
 
             io.puts "<div class='table-responsive' style='max-width: 100%; overflow-x: auto;'>"

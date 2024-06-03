@@ -1711,10 +1711,6 @@ Ensure the default browser behavior of the `hidden` attribute.
   transition-timing-function: cubic-bezier(0, 0, 0.2, 1);
 }
 
-.ease-in-out {
-  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
-}
-
 .hover\:bg-slate-200:hover {
   --tw-bg-opacity: 1;
   background-color: rgb(226 232 240 / var(--tw-bg-opacity));

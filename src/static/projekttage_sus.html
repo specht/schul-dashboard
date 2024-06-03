@@ -111,12 +111,15 @@ function update_vote_summary() {
         if (vote > 0)
             buckets[vote].push(nr);
     }
+    console.log('buckets', buckets);
     let items = [];
     for (let i = 3; i >= 1; i--) {
         if (buckets[i].length > 0) {
-            items.push([i, buckets[i]]);
+            for (let x of buckets[i])
+                items.push([i, x]);
         }
     }
+    console.log('items', items);
     $('#text_vote_summary').empty();
     if (items.length === 0)
         $('#text_vote_summary').append($(`<p>`).html(`<em>Du hast bisher keine Projekte gewählt.</em>`));

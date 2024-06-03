@@ -265,9 +265,9 @@ class Main < Sinatra::Base
             io.puts "<th>Projekt</th>"
             [5, 6, 7, 8, 9, 'WK', 3, 2, 1, 'Σ'].each do |klasse|
                 if [1, 2, 3].include?(klasse)
-                    io.puts "<th class='#{[5, 1, 'Σ'].include?(klasse) ? 'cbl' : ''}' style='text-align: center;'>#{PROJEKT_VOTE_CODEPOINTS[klasse].chr(Encoding::UTF_8)}</th>"
+                    io.puts "<th class='#{[5, 3, 'Σ'].include?(klasse) ? 'cbl' : ''}' style='text-align: center;'>#{PROJEKT_VOTE_CODEPOINTS[klasse].chr(Encoding::UTF_8)}</th>"
                 else
-                    io.puts "<th class='#{[5, 1, 'Σ'].include?(klasse) ? 'cbl' : ''}' style='text-align: center;'>#{klasse}#{['WK', 'Σ'].include?(klasse) ? '' : '.'}</th>"
+                    io.puts "<th class='#{[5, 3, 'Σ'].include?(klasse) ? 'cbl' : ''}' style='text-align: center;'>#{klasse}#{['WK', 'Σ'].include?(klasse) ? '' : '.'}</th>"
                 end
             end
             io.puts "</tr>"
@@ -278,10 +278,10 @@ class Main < Sinatra::Base
                 io.puts "<tr>"
                 io.puts "<td>#{projekt[:title]}</td>"
                 [5, 6, 7, 8, 9, 'WK'].each do |klasse|
-                    io.puts "<td class='#{[5, 1, 'Σ'].include?(klasse) ? 'cbl' : ''}' style='text-align: center;'>#{votes_for_projekt["#{projekt[:nr]}/#{klasse}"] || ndash }</td>"
+                    io.puts "<td class='#{[5, 3, 'Σ'].include?(klasse) ? 'cbl' : ''}' style='text-align: center;'>#{votes_for_projekt["#{projekt[:nr]}/#{klasse}"] || ndash }</td>"
                 end
                 [3, 2, 1].each do |vote|
-                    io.puts "<td class='#{[5, 1, 'Σ'].include?(vote) ? 'cbl' : ''}' style='text-align: center;'>#{votes_for_projekt["#{projekt[:nr]}/#{vote}"] || ndash }</td>"
+                    io.puts "<td class='#{[5, 3, 'Σ'].include?(vote) ? 'cbl' : ''}' style='text-align: center;'>#{votes_for_projekt["#{projekt[:nr]}/#{vote}"] || ndash }</td>"
                 end
                 io.puts "<td class='cbl' style='text-align: center;'>#{votes_for_projekt["#{projekt[:nr]}"] || ndash }</td>"
                 io.puts "</tr>"

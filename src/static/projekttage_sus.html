@@ -156,7 +156,7 @@ function update_vote_summary() {
         for (let item of items) {
             let vote = item[0];
             let project = item[1];
-            let polaroid = $(`<div class="polaroid" style="position: relative; display: inline-block; float: none; width: 150px; height: 180px; margin-right: 10px; transform: none;"></div>`).css('background-image', `url(/api/get_sus_photo/${projekte[project].photo}-512.jpg)`).appendTo($('#text_vote_summary'));
+            let polaroid = $(`<div class="polaroid" style="position: relative; display: inline-block; float: none; width: 150px; height: 188px; margin-right: 10px; transform: none;"></div>`).css('background-image', `url(/api/get_sus_photo/${projekte[project].photo}-512.jpg)`).appendTo($('#text_vote_summary'));
             polaroid.append($(`<p style="font-size: 0.8em; margin-top: 120px; text-align: center; margin-left: -10px; margin-right: -10px; white-space: nowrap; overflow-x: clip; text-overflow: ellipsis; font-weight: bold;">`).text(projekte[project].title));
             if (project_data[project]) {
                 polaroid.append($(`<p style="font-size: 0.8em; margin-top: -20px; text-align: center; margin-left: -10px; margin-right: -10px; white-space: nowrap; overflow-x: clip; text-overflow: ellipsis; font-style: italic;">`).text(`(${project_data[project].vote_count} Interessenten)`));
@@ -172,7 +172,7 @@ function update_vote_summary() {
     let i = items.length;
     while (i < 3) {
         i += 1;
-        let polaroid = $(`<div class="polaroid" style="position: relative; display: inline-block; float: none; width: 150px; height: 180px; margin-right: 10px; transform: none;"></div>`).appendTo($('#text_vote_summary'));
+        let polaroid = $(`<div class="polaroid" style="position: relative; display: inline-block; float: none; width: 150px; height: 188px; margin-right: 10px; transform: none;"></div>`).appendTo($('#text_vote_summary'));
         polaroid.append($(`<p style="font-size: 0.8em; margin-top: 120px; text-align: center; margin-left: -10px; margin-right: -10px; white-space: nowrap; overflow-x: clip; text-overflow: ellipsis;">`).text('Überraschungs-Projekt'));
         polaroid.append($(`<p style="text-align: center; font-size: 2em; transform: rotate(-8deg); position: absolute; top: 40px; left: 40px; opacity: 0.6;">`).text('?'));
         polaroid.append($(`<p style="text-align: center; font-size: 3em; transform: rotate(2deg); position: absolute; top: 20px; left: 55px; opacity: 0.6;">`).text('?'));

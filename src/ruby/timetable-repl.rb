@@ -107,6 +107,7 @@ class TimetableRepl < Sinatra::Base
     end
     
     def self.update_projektwahl()
+        now = Time.now.to_i
         @@user_info = YAML.load_file(
             "/internal/debug/@@user_info.yaml",
             permitted_classes: [Set, Symbol]
@@ -236,7 +237,6 @@ class TimetableRepl < Sinatra::Base
             end
         end
         FileUtils::mkpath('/internal/projekttage/votes')
-        now = Time.now.to_i
         probabilities.each_pair do |email, probs|
             File.open("/internal/projekttage/votes/#{email}.json", 'w') do |f|
                 f.write probs.to_json

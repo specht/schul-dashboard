@@ -202,7 +202,7 @@ document.addEventListener('DOMContentLoaded', function() {
                                 });
                             });
                         }
-                        let verdict = $(`<p class='_verdict' style='font-style: italic;'>`).text(`»${choice_level_label[0]}«`);
+                        let verdict = $(`<p class='_verdict' style='font-style: italic;'>`).text(`»${choice_level_label[projekt.session_user_vote]}«`);
                         verdict.appendTo(card);
                     } else {
                         card.append($(`<p style='font-style: italic;'>`).text(`Du kannst dieses Projekt leider nicht wählen, da es nicht für deine Klassenstufe vorgesehen ist.`));

@@ -308,7 +308,7 @@ class Main < Sinatra::Base
                 io.puts "<p>Hinweis: Du kannst die Motivation deiner Teilnehmer:innen erhöhen, indem du ggfs. deinen Titel, deinen Werbetext und / oder dein Projektbild aktualisierst.</p>"
             end
             io.puts "<p>Bitte beachte, dass sich die Zusammensetzung deiner Gruppe noch ändern wird, abhängig vom weiteren Wahlverhalten, Umwahlen oder Anpassungen in eurem Projekt.</p>"
-            io.puts "<p>Bisher haben #{ts_data['email_count_voted']} von #{ts_data['email_count_total']} Schülerinnen und Schüler ihre Projekte gewählt:"
+            io.puts "<p>Bisher haben #{ts_data['email_count_voted']} von #{ts_data['email_count_total']} Schülerinnen und Schülern ihre Projekte gewählt:"
             io.puts "<div class='progress'>"
             p = ts_data['email_count_voted'] * 100 / ts_data['email_count_total']
             io.puts "<div class='bg-success progress-bar progress-bar-striped progress-bar-animated' role='progressbar' style='width: #{p}%;'>#{p.round}%</div>"

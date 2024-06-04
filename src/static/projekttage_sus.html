@@ -152,7 +152,7 @@ function update_vote_summary() {
     if (items.length === 0)
         $('#text_vote_summary').append($(`<p>`).html(`<em>Du hast bisher keine Projekte gewählt.</em>`));
     else {
-        $('#text_vote_summary').append($(`<p>`).html(`<em>Du hast bisher ${items.length} Projekte gewählt. Die Prozentzahlen geben an, wie wahrscheinlich es ist, dass du dieses Projekt bekommen wirst. <strong>Achtung:</strong> diese Zahlen werden sich ändern, je nachdem wie du und alle anderen wählen.</em>`));
+        $('#text_vote_summary').append($(`<p>`).html(`<em>Du hast bisher ${items.length} Projekte gewählt. Die Prozentzahlen geben an, wie wahrscheinlich ungefähr es ist, dass du dieses Projekt bekommen wirst. <strong>Achtung:</strong> diese Zahlen werden sich ändern, je nachdem wie du und alle anderen wählen.</em>`));
         for (let item of items) {
             let vote = item[0];
             let project = item[1];

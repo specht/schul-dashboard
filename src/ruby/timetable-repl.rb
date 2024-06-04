@@ -107,7 +107,6 @@ class TimetableRepl < Sinatra::Base
     end
     
     def self.update_projektwahl()
-        now = Time.now.to_i
         @@user_info = YAML.load_file(
             "/internal/debug/@@user_info.yaml",
             permitted_classes: [Set, Symbol]
@@ -243,7 +242,7 @@ class TimetableRepl < Sinatra::Base
             end
         end
         File.open("/internal/projekttage/votes/ts.json", 'w') do |f|
-            f.write({:ts => now}.to_json)
+            f.write({:ts => latest_vote_ts, :email_count_voted => votes_by_email.size, :email_count_total => emails.size}.to_json)
         end
     end
 

@@ -163,6 +163,7 @@ class Main < Sinatra::Base
                 RETURN p;
             END_OF_QUERY
         end
+        trigger_update('projektwahl')
     end
 
     def print_projekt_interesse

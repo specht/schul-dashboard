@@ -185,7 +185,7 @@ class Main < Sinatra::Base
                 RETURN p;
             END_OF_QUERY
         end
-        trigger_update('projektwahl')
+        trigger_update_images()
         respond(:ts => ts)
     end
 
@@ -256,6 +256,52 @@ class Main < Sinatra::Base
             io.puts "</tr>"
             io.puts "</table>"
             io.puts "</div>"
+            io.string
+        end
+    end
+
+    def print_projekt_interesse_stats
+        projekt = nil
+        neo4j_query(<<~END_OF_QUERY, {:email => @session_user[:email]}).each do |row|
+            MATCH (p:Projekt)-[:ORGANIZED_BY]->(u:User {email: $email})
+            RETURN p;
+        END_OF_QUERY
+            projekt = row['p']
+        end
+        return '' if projekt.nil?
+
+        data = nil
+        begin
+            data = JSON.parse(File.read("/internal/projekttage/votes/project-#{projekt[:nr]}.json"))
+        rescue
+        end
+        return '' if data.nil?
+
+        StringIO.open do |io|
+            io.puts "<h4>Vorschau deiner Projektgruppe</h4>"
+            io.puts "<p>Aktuell würde deine Projektgruppe ungefähr wie folgt aussehen:</p>"
+            io.puts "<ul style='list-style: disc; margin-left: 1.5em;'>"
+            io.puts "<li>#{data['geschlecht_m'] + data['geschlecht_w']} Teilnehmer:innen, davon #{data['geschlecht_m']} Jungen und #{data['geschlecht_w']} Mädchen</li>"
+            io.puts "<li>Klassenstufen:<ul style='list-style: disc; margin-left: 1.5em;'>"
+            x = ((projekt[:min_klasse] || 5)..(projekt[:max_klasse] || 9)).select do |klasse|
+                (data['klasse'][klasse.to_s] || 0) > 0
+            end.map do |klasse|
+                "<li>#{data['klasse'][klasse.to_s]} Kind#{data['klasse'][klasse.to_s] > 1 ? 'er' : ''} aus der #{klasse}. Klasse</li>"
+            end
+            io.puts x.join('')
+            io.puts "</ul></li>"
+            io.puts "<li>Motivation:<ul style='list-style: disc; margin-left: 1.5em;'>"
+            x = [3, 2, 1, 0].select do |vote|
+                (data['vote'][vote.to_s] || 0) > 0
+            end.map do |vote|
+                "<li>#{data['vote'][vote.to_s]} Kind#{data['vote'][vote.to_s] > 1 ? 'er' : ''} mit der Wahl: #{PROJEKT_VOTE_CODEPOINTS[vote].chr(Encoding::UTF_8)} »#{PROJEKT_VOTE_LABELS[vote]}«</li>"
+            end
+            io.puts x.join('')
+            io.puts "</ul></li>"
+            io.puts "</ul>"
+            if data['vote']['0'] * 100 / (data['geschlecht_m'] + data['geschlecht_w']) > 10
+                io.puts "<p>Hinweis: Du kannst die Motivation deiner Teilnehmer:innen erhöhen, indem du ggfs. deinen Titel, deinen Werbetext und / oder dein Projektbild aktualisierst.</p>"
+            end
             io.string
         end
     end

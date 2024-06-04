@@ -70,7 +70,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 col = $(`<div class='col-md-2'>`).appendTo(row);
                 form_group = $(`<div class='form-group'>`).appendTo(col);
                 form_group.append($(`<label>`).text('Kapazität'));
-                form_group.append($(`<input type='text' class='form-control' readonly>`).val(`max. ${projekt.capacity}`));
+                form_group.append($(`<input type='text' class='form-control' readonly>`).val((projekt.capacity === null) ? '–' : `max. ${projekt.capacity}`));
                 row = $(`<div class='row'>`).appendTo($('.projekte-container'));
                 col = $(`<div class='col-md-9'>`).appendTo(row);
                 form_group = $(`<div class='form-group'>`).appendTo(col);

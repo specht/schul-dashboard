@@ -197,7 +197,7 @@ class Main < Sinatra::Base
         END_OF_QUERY
             projekt = row['p']
         end
-        return '' if projekt.nil?
+        return '' if projekt.nil? || projekt[:min_klasse].nil? || projekt[:max_klasse].nil? || projekt[:capacity].nil?
 
         votes = {}
         neo4j_query(<<~END_OF_QUERY, {:nr => projekt[:nr]}).each do |row|
@@ -268,7 +268,7 @@ class Main < Sinatra::Base
         END_OF_QUERY
             projekt = row['p']
         end
-        return '' if projekt.nil?
+        return '' if projekt.nil? || projekt[:min_klasse].nil? || projekt[:max_klasse].nil? || projekt[:capacity].nil?
 
         data = nil
         begin

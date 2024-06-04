@@ -690,28 +690,30 @@ class Main < Sinatra::Base
                         count += 1 unless (projekt[:description] || '').strip.empty?
                         count += 1 unless (projekt[:photo] || '').strip.empty?
                         emoji = %w(😭 🥲 😄)[count]
-                        unless count == 2 && (Time.now.to_i - (projekt[:ts_updated] || 0) > 3600)
-                            io.puts "<div class='col-lg-12 col-md-4 col-sm-6'>"
-                            io.puts "<div class='hint'>"
-                            io.puts "<p><b>Dein Angebot für die Projekttage</b></p>"
-                            io.puts "<hr />"
-                            io.puts "<span style='font-size: 300%; float: right; margin-left: 10px; margin-bottom: 10px;'>#{emoji}</span>"
-                            if count == 0
-                                io.puts "<p>Du hast noch keinen Werbetext für dein Projekt eingegeben und auch kein Bild hochgeladen. Bitte trage diese Informationen unter »Projekttage« nach und hilf mit, dass dieser arme Smiley wieder glücklich wird.</p>"
-                            elsif count == 1
-                                if (projekt[:description] || '').strip.empty?
-                                    io.puts "<p>Du hast zwar schon ein Bild hochgeladen, aber noch keinen Werbetext geschrieben. You can do it!</p>"
-                                else
-                                    io.puts "<p>Du hast zwar schon einen Werbetext geschrieben, aber noch kein Bild hochgeladen. You can do it!</p>"
+                        if (projekt[:capacity] || 0) > 0
+                            unless count == 2 && (Time.now.to_i - (projekt[:ts_updated] || 0) > 3600)
+                                io.puts "<div class='col-lg-12 col-md-4 col-sm-6'>"
+                                io.puts "<div class='hint'>"
+                                io.puts "<p><b>Dein Angebot für die Projekttage</b></p>"
+                                io.puts "<hr />"
+                                io.puts "<span style='font-size: 300%; float: right; margin-left: 10px; margin-bottom: 10px;'>#{emoji}</span>"
+                                if count == 0
+                                    io.puts "<p>Du hast noch keinen Werbetext für dein Projekt eingegeben und auch kein Bild hochgeladen. Bitte trage diese Informationen unter »Projekttage« nach und hilf mit, dass dieser arme Smiley wieder glücklich wird.</p>"
+                                elsif count == 1
+                                    if (projekt[:description] || '').strip.empty?
+                                        io.puts "<p>Du hast zwar schon ein Bild hochgeladen, aber noch keinen Werbetext geschrieben. You can do it!</p>"
+                                    else
+                                        io.puts "<p>Du hast zwar schon einen Werbetext geschrieben, aber noch kein Bild hochgeladen. You can do it!</p>"
+                                    end
+                                elsif count == 2
+                                    io.puts "<p>Danke, dass du alle Informationen eingetragen hast!</p>"
                                 end
-                            elsif count == 2
-                                io.puts "<p>Danke, dass du alle Informationen eingetragen hast!</p>"
+                                if count < 2
+                                    io.puts "<p><a href='/projekttage_orga' class='btn btn-success' style='white-space: normal;'>Lass uns diesen Smiley wieder glücklich machen!</a></p>"
+                                end
+                                io.puts "</div>"
+                                io.puts "</div>"
                             end
-                            if count < 2
-                                io.puts "<p><a href='/projekttage_orga' class='btn btn-success' style='white-space: normal;'>Lass uns diesen Smiley wieder glücklich machen!</a></p>"
-                            end
-                            io.puts "</div>"
-                            io.puts "</div>"
                         end
                     end
                     io.string

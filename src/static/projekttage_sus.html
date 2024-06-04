@@ -163,7 +163,7 @@ function update_vote_summary() {
             }
             polaroid.append($(`<p class='bg_white_dark_aware' style="box-shadow: 0 0 10px rgba(0, 0, 0, 0.5); border-radius: 50%; width: 1.5em; height: 1.5em; text-align: center; padding-top: 0.05em; font-size: 1.5em; transform: rotate(5deg); position: absolute; top: -15px; right: -15px;">`).text(String.fromCodePoint(codepoints[vote])));
             console.log(project, my_vote_data[project]);
-            html = (my_vote_data[project] ?? '1%');
+            html = (my_vote_data[project] ?? '0%');
                 // html = `<i class='fa fa-cog fa-spin'></i>`;
             polaroid.append($(`<p class='${diff > 0 ? 'spin' : ''} bg_white_dark_aware' style="width: 3.2em; text-align: center; box-shadow: 0 0 3px rgba(0, 0, 0, 0.5); border-radius: 4px; padding: 0.1em 0.3em; font-size: 1em; transform: rotate(5deg); position: absolute; top: -15px; left: 40px;">`).html(html));
         }

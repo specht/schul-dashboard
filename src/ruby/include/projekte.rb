@@ -85,16 +85,37 @@ class Main < Sinatra::Base
         result = {:projekte => get_projekte()}
         if user_eligible_for_projektwahl?
             vote_for_project_nr = {}
+            latest_ts = 0
             neo4j_query(<<~END_OF_QUERY, {:email => @session_user[:email]}).each do |row|
                 MATCH (u:User {email: $email})-[v:VOTED_FOR]->(p:Projekt)
-                RETURN p.nr, v.vote;
+                RETURN p.nr, v.vote, v.ts_updated;
             END_OF_QUERY
                 vote_for_project_nr[row['p.nr']] = row['v.vote']
+                latest_ts = row['v.ts_updated'] if row['v.ts_updated'] > latest_ts
             end
+            result[:latest_ts] = latest_ts
             result[:projekte].map! do |p|
                 p[:session_user_vote] = vote_for_project_nr[p[:nr]] || 0
                 p
             end
+            begin
+                result[:ts] = JSON.parse(File.read('/internal/projekttage/votes/ts.json'))
+                result[:my_vote_data] = JSON.parse(File.read("/internal/projekttage/votes/#{@session_user[:email]}.json"))
+                result[:project_data] = JSON.parse(File.read("/internal/projekttage/votes/projects.json"))
+            rescue
+            end
+        end
+        respond(result)
+    end
+
+    post '/api/get_project_data' do
+        require_user!
+        result = {}
+        begin
+            result[:ts] = JSON.parse(File.read('/internal/projekttage/votes/ts.json'))
+            result[:project_data] = JSON.parse(File.read("/internal/projekttage/votes/projects.json"))
+            result[:my_vote_data] = JSON.parse(File.read("/internal/projekttage/votes/#{@session_user[:email]}.json"))
+        rescue
         end
         respond(result)
     end
@@ -148,13 +169,14 @@ class Main < Sinatra::Base
         require_user!
         assert(user_eligible_for_projektwahl?)
         data = parse_request_data(:required_keys => [:nr, :vote], :types => {:vote => Integer})
+        ts = Time.now.to_i
         if data[:vote] == 0
-            neo4j_query(<<~END_OF_QUERY, {:nr => data[:nr], :email => @session_user[:email], :ts => Time.now.to_i, :vote => data[:vote]})
+            neo4j_query(<<~END_OF_QUERY, {:nr => data[:nr], :email => @session_user[:email]})
                 MATCH (u:User {email: $email})-[v:VOTED_FOR]->(p:Projekt {nr: $nr})
                 DELETE v;
             END_OF_QUERY
         else
-            neo4j_query_expect_one(<<~END_OF_QUERY, {:nr => data[:nr], :email => @session_user[:email], :ts => Time.now.to_i, :vote => data[:vote]})
+            neo4j_query_expect_one(<<~END_OF_QUERY, {:nr => data[:nr], :email => @session_user[:email], :ts => ts, :vote => data[:vote]})
                 MATCH (u:User {email: $email})
                 MATCH (p:Projekt {nr: $nr})
                 MERGE (u)-[v:VOTED_FOR]->(p)
@@ -164,6 +186,7 @@ class Main < Sinatra::Base
             END_OF_QUERY
         end
         trigger_update('projektwahl')
+        respond(:ts => ts)
     end
 
     def print_projekt_interesse

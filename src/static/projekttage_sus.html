@@ -18,15 +18,14 @@
                     Du kannst dich natürlich auch für mehr als drei Projekte anmelden.
                     Du kannst deine Wahl bis <strong>#{WEEKDAYS_LONG[(Date.parse(PROJEKTWAHL_VOTE_END).strftime('%u').to_i) % 7]}, den #{Date.parse(PROJEKTWAHL_VOTE_END).strftime('%d.%m.%Y')} um #{DateTime.parse(PROJEKTWAHL_VOTE_END).strftime('%H:%M')} </strong> noch ändern.
                 </p>
-                <p>
-                    Du bekommst für jeden Projekt angezeigt, mit
-                    welcher Wahrscheinlichkeit du es bekommen wirst.
-                    <strong>Achtung:</strong> Bitte beachte, dass diese
-                    Zahlen nur ungefähre Wahrscheinlichkeiten sind und
-                    dass sich diese Zahlen ändern, wenn mehr Schülerinnen
-                    und Schüler ihre Projekte wählen oder ihre Auswahl
-                    ändern.
-                </p>
+                <div id="div_ts_details" style="display: none;">
+                    <p>
+                        Bisher haben <span id="email_count_voted"></span> von <span id="email_count_total"></span> Schülerinnen und Schüler ihre Projekte gewählt:
+                    <div class="progress">
+                        <div class="bg-success progress-bar progress-bar-striped progress-bar-animated" role="progressbar" style="width: 25%;" aria-valuenow="25" aria-valuemin="0" aria-valuemax="100">25%</div>
+                    </div>
+                    </p>
+                </div>
                 <p id="text_vote_summary"></p>
             </div>
         </div>
@@ -105,6 +104,21 @@
         margin-bottom: 10px;
         border-radius: 2px;
     }
+    @keyframes spin {
+        from {transform:rotate(0deg);}
+        to {transform:rotate(360deg);}
+    }
+    .spin {
+        animation: spin 4s infinite linear;
+    }
+    .bg_white_dark_aware {
+        background-color: #fff;
+        color: #000;
+    }
+    body.dark .bg_white_dark_aware {
+        background-color: #222;
+        color: #fff;
+    }
 </style>
 
 <script>
@@ -114,17 +128,19 @@ var projekte = {};
 var vote_for_project = {};
 var codepoints = #{PROJEKT_VOTE_CODEPOINTS.to_json};
 var choice_level_label = #{PROJEKT_VOTE_LABELS.to_json};
-
+var project_data = {};
+var my_vote_data = {};
+var ts_data = {};
+var last_vote_ts = 0;
 
 function update_vote_summary() {
-    console.log('updating summary');
+    let diff = last_vote_ts - (ts_data.ts ?? 0);
     let buckets = {1: [], 2: [], 3: []};
     for (let nr in vote_for_project) {
         let vote = vote_for_project[nr];
         if (vote > 0)
             buckets[vote].push(nr);
     }
-    console.log('buckets', buckets);
     let items = [];
     for (let i = 3; i >= 1; i--) {
         if (buckets[i].length > 0) {
@@ -132,41 +148,84 @@ function update_vote_summary() {
                 items.push([i, x]);
         }
     }
-    console.log('items', items);
     $('#text_vote_summary').empty();
     if (items.length === 0)
         $('#text_vote_summary').append($(`<p>`).html(`<em>Du hast bisher keine Projekte gewählt.</em>`));
     else {
-        $('#text_vote_summary').append($(`<p>`).html(`<em>Du hast bisher folgende Projekte gewählt:</em>`));
+        $('#text_vote_summary').append($(`<p>`).html(`<em>Du hast bisher ${items.length} Projekte gewählt. Die Prozentzahlen geben an, wie wahrscheinlich es ist, dass du dieses Projekt bekommen wirst. <strong>Achtung:</strong> diese Zahlen werden sich ändern, je nachdem wie du und alle anderen wählen:</em>`));
         for (let item of items) {
             let vote = item[0];
             let project = item[1];
             let polaroid = $(`<div class="polaroid" style="position: relative; display: inline-block; float: none; width: 150px; height: 180px; margin-right: 10px; transform: none;"></div>`).css('background-image', `url(/api/get_sus_photo/${projekte[project].photo}-512.jpg)`).appendTo($('#text_vote_summary'));
-            polaroid.append($(`<p style="font-size: 0.8em; margin-top: 120px; text-align: center; margin-left: -10px; margin-right: -10px; white-space: nowrap; overflow-x: clip; text-overflow: ellipsis;">`).text(projekte[project].title));
-            polaroid.append($(`<p style="box-shadow: 0 0 10px rgba(0, 0, 0, 0.5); background-color: #fff; border-radius: 50%; width: 1.5em; height: 1.5em; text-align: center; padding-top: 0.05em; font-size: 1.5em; transform: rotate(5deg); position: absolute; top: -15px; right: -15px;">`).text(String.fromCodePoint(codepoints[vote])));
+            polaroid.append($(`<p style="font-size: 0.8em; margin-top: 120px; text-align: center; margin-left: -10px; margin-right: -10px; white-space: nowrap; overflow-x: clip; text-overflow: ellipsis; font-weight: bold;">`).text(projekte[project].title));
+            if (project_data[project]) {
+                polaroid.append($(`<p style="font-size: 0.8em; margin-top: -20px; text-align: center; margin-left: -10px; margin-right: -10px; white-space: nowrap; overflow-x: clip; text-overflow: ellipsis; font-style: italic;">`).text(`(${project_data[project].vote_count} Interessenten)`));
+            }
+            polaroid.append($(`<p class='bg_white_dark_aware' style="box-shadow: 0 0 10px rgba(0, 0, 0, 0.5); border-radius: 50%; width: 1.5em; height: 1.5em; text-align: center; padding-top: 0.05em; font-size: 1.5em; transform: rotate(5deg); position: absolute; top: -15px; right: -15px;">`).text(String.fromCodePoint(codepoints[vote])));
+            console.log(project, my_vote_data[project]);
+            html = (my_vote_data[project] ?? '0%');
+                // html = `<i class='fa fa-cog fa-spin'></i>`;
+            polaroid.append($(`<p class='${diff > 0 ? 'spin' : ''} bg_white_dark_aware' style="width: 3.2em; text-align: center; box-shadow: 0 0 3px rgba(0, 0, 0, 0.5); border-radius: 4px; padding: 0.1em 0.3em; font-size: 1em; transform: rotate(5deg); position: absolute; top: -15px; left: 40px;">`).html(html));
         }
         // $('#text_vote_summary').html(`<p>Du hast bisher folgende Projekte gewählt:</p><ul>${items.map(function(x) {return '<li>' + x + '</li>';}).join('')}</ul>`);
     }
     let i = items.length;
     while (i < 3) {
         i += 1;
-        let polaroid = $(`<div class="polaroid" style="position: relative; display: inline-block; float: none; width: 150px; height: 180px; margin-right: 10px; transform: none;"></div>`).css('background-image', `url(/api/get_sus_photo/-512.jpg)`).appendTo($('#text_vote_summary'));
+        let polaroid = $(`<div class="polaroid" style="position: relative; display: inline-block; float: none; width: 150px; height: 180px; margin-right: 10px; transform: none;"></div>`).appendTo($('#text_vote_summary'));
         polaroid.append($(`<p style="font-size: 0.8em; margin-top: 120px; text-align: center; margin-left: -10px; margin-right: -10px; white-space: nowrap; overflow-x: clip; text-overflow: ellipsis;">`).text('Überraschungs-Projekt'));
         polaroid.append($(`<p style="text-align: center; font-size: 2em; transform: rotate(-8deg); position: absolute; top: 40px; left: 40px; opacity: 0.6;">`).text('?'));
         polaroid.append($(`<p style="text-align: center; font-size: 3em; transform: rotate(2deg); position: absolute; top: 20px; left: 55px; opacity: 0.6;">`).text('?'));
         polaroid.append($(`<p style="text-align: center; font-size: 2em; transform: rotate(12deg); position: absolute; top: 40px; left: 80px; opacity: 0.6;">`).text('?'));
+        vote = 1;
     }
     if (items.length > 0) {
         $('#text_vote_summary').append($(`<p class='mt-3'>`).html(`Wenn alle ihre Projekte gewählt haben, entscheidet das Los, welches Projekt du bekommst.`));
+    }
+    if (diff > 0) {
+        setTimeout(function() {
+            api_call('/api/get_project_data', {}, function(data) {
+                if ('project_data' in data) {
+                    project_data = data.project_data;
+                }
+                if ('my_vote_data' in data) {
+                    my_vote_data = data.my_vote_data;
+                }
+                if ('ts' in data) {
+                    ts_data = data.ts;
+                    $('#email_count_voted').text(data.ts.email_count_voted);
+                    $('#email_count_total').text(data.ts.email_count_total);
+                    percent = data.ts.email_count_voted * 100.0 / data.ts.email_count_total;
+                    $('#div_ts_details .progress-bar').css('width', `${percent}%`).text(`${Math.round(percent)}%`);
+                    $('#div_ts_details').show();
+                }
+                update_vote_summary();
+            });
+        }, 4000);
     }
 }
 
 document.addEventListener('DOMContentLoaded', function() {
     api_call('/api/get_projekte', {}, function(data) {
         if (data.success) {
+            console.log(data);
+            last_vote_ts = data.latest_ts;
+            if ('project_data' in data) {
+                project_data = data.project_data;
+            }
+            if ('my_vote_data' in data) {
+                my_vote_data = data.my_vote_data;
+            }
+            if ('ts' in data) {
+                ts_data = data.ts;
+                $('#email_count_voted').text(data.ts.email_count_voted);
+                $('#email_count_total').text(data.ts.email_count_total);
+                percent = data.ts.email_count_voted * 100.0 / data.ts.email_count_total;
+                $('#div_ts_details .progress-bar').css('width', `${percent}%`).text(`${Math.round(percent)}%`);
+                $('#div_ts_details').show();
+            }
             for (let projekt of data.projekte) {
                 projekte[projekt.nr] = projekt;
-                console.log(projekt);
                 if (projekt.min_klasse === null)
                     continue;
                 let scaffold = $(`<div class='col-md-12'>`);
@@ -202,6 +261,7 @@ document.addEventListener('DOMContentLoaded', function() {
                                 let index = $(this).data('index');
                                 api_call('/api/vote_for_project', {nr: projekt.nr, vote: index}, function(data) {
                                     if (data.success) {
+                                        last_vote_ts = data.ts;
                                         $(self).parent().find('img').removeClass('active');
                                         $(self).addClass('active');
                                         $(self).closest('.card').find('._verdict').text(`»${choice_level_label[index]}«`);

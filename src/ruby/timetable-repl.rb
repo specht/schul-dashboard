@@ -165,7 +165,7 @@ class TimetableRepl < Sinatra::Base
 
         STDERR.puts "stored_vote_ts: #{stored_vote_ts}, latest_vote_ts: #{latest_vote_ts}"
         if stored_vote_ts
-            if stored_vote_ts >= latest_vote_ts
+            if (stored_vote_ts >= latest_vote_ts) && (Time.now.to_i - stored_vote_ts < 10)
                 STDERR.puts "Doing nothing, already up-to-date."
                 return
             end
@@ -231,7 +231,16 @@ class TimetableRepl < Sinatra::Base
         projects_for_email.each_pair do |email, probs|
             projects_for_email[email].keys.each do |nr|
                 if users[email][:vote_hash].include?(nr)
-                    probabilities[email][nr] = sprintf('%d%%', (projects_for_email[email][nr].to_f * 100.0 / sum).round)
+                    p = projects_for_email[email][nr].to_f * 100.0 / sum
+                    if users[email][:vote_hash].size == 1
+                        p *= 0.33
+                    elsif users[email][:vote_hash] == 2
+                        p *= 0.66
+                    end
+                    p = p.round
+                    p = 1 if p < 1
+                    p = 99 if p > 99
+                    probabilities[email][nr] = sprintf('%d%%', p)
                 end
             end
         end
@@ -243,6 +252,15 @@ class TimetableRepl < Sinatra::Base
         end
         File.open("/internal/projekttage/votes/ts.json", 'w') do |f|
             f.write({:ts => latest_vote_ts, :email_count_voted => votes_by_email.size, :email_count_total => emails.size}.to_json)
+        end
+        File.open("/internal/projekttage/votes/projects.json", 'w') do |f|
+            info = {}
+            votes_by_project.each_pair do |nr, votes|
+                info[nr] = {
+                    :vote_count => votes.size,
+                }
+            end
+            f.write info.to_json
         end
     end
 

@@ -306,6 +306,12 @@ class Main < Sinatra::Base
         end
     end
 
+    def score_for_project(nr, project_data)
+        vote = project_data['vote'] || {}
+        x = [vote['0'] || 0, vote['1'] || 0, vote['2'] || 0, vote['3'] || 0]
+        return -(x[0] * 3 + x[1] - x[2] - 3 * x[3]).to_f / (x.sum + 1)
+    end
+
     def print_projekttage_vote_summary
         return '' unless teacher_logged_in?
         StringIO.open do |io|
@@ -351,6 +357,51 @@ class Main < Sinatra::Base
                 end
             end
 
+            io.puts "<h4>Projizierte Zusammensetzung der Projektgruppen</h4>"
+            io.puts "<p>Aus dieser Tabelle lässt sich ganz gut ablesen, welche Projekte gut ankommen und welche eher weniger.</p>"
+            io.puts "<div class='table-responsive' style='max-width: 100%; overflow-x: auto;'>"
+            io.puts "<table class='table table-sm' style='width: unset;'>"
+            io.puts "<tr>"
+            io.puts "<th>Projekt</th>"
+            [5, 6, 7, 8, 9, 3, 2, 1, 0, 'm', 'w', 'Σ'].each do |klasse|
+                if [0, 1, 2, 3].include?(klasse)
+                    io.puts "<th class='#{[5, 3, 'Σ'].include?(klasse) ? 'cbl' : ''}' style='text-align: center;'>#{PROJEKT_VOTE_CODEPOINTS[klasse].chr(Encoding::UTF_8)}</th>"
+                else
+                    io.puts "<th class='#{[5, 3, 'm', 'Σ'].include?(klasse) ? 'cbl' : ''}' style='text-align: center;'>#{klasse}#{['WK', 'Σ'].include?(klasse) ? '' : '.'}</th>"
+                end
+            end
+            io.puts "</tr>"
+            ndash = "<span class='text-muted'>&ndash;</span>"
+            all_project_data = {}
+            get_projekte.each do |p|
+                all_project_data[p[:nr]] = {}
+                begin
+                    all_project_data[p[:nr]] = JSON.parse(File.read("/internal/projekttage/votes/project-#{p[:nr]}.json"))
+                rescue
+                end
+            end
+            get_projekte.sort do |a, b|
+                score_for_project(b, all_project_data[b[:nr]]) <=> score_for_project(a, all_project_data[a[:nr]])
+            end.each do |projekt|
+                next if projekt[:capacity] == 0
+                project_data = all_project_data[projekt[:nr]]
+                io.puts "<tr>"
+                io.puts "<td>#{projekt[:title]}</td>"
+                [5, 6, 7, 8, 9].each do |klasse|
+                    io.puts "<td class='#{[5, 3, 'Σ'].include?(klasse) ? 'cbl' : ''}' style='text-align: center;'>#{(project_data['klasse'] || {})[klasse.to_s] || ndash }</td>"
+                end
+                [3, 2, 1, 0].each do |vote|
+                    io.puts "<td class='#{[5, 3, 'Σ'].include?(vote) ? 'cbl' : ''}' style='text-align: center;'>#{(project_data['vote'] || {})[vote.to_s] || ndash }</td>"
+                end
+                io.puts "<td class='cbl' style='text-align: center;'>#{project_data['geschlecht_m'] || ndash}</td>"
+                io.puts "<td style='text-align: center;'>#{project_data['geschlecht_w'] || ndash}</td>"
+                io.puts "<td class='cbl' style='text-align: center;'>#{(project_data['geschlecht_m'] || 0) + (project_data['geschlecht_w'] || 0)}</td>"
+                io.puts "</tr>"
+            end
+            io.puts "</table>"
+            io.puts "</div>"
+
+            io.puts "<h4>Projektinteresse</h4>"
             io.puts "<div class='table-responsive' style='max-width: 100%; overflow-x: auto;'>"
             io.puts "<table class='table table-sm' style='width: unset;'>"
             io.puts "<tr>"
@@ -367,6 +418,7 @@ class Main < Sinatra::Base
             get_projekte.sort do |a, b|
                 (votes_for_projekt["#{b[:nr]}"] || 0) <=> (votes_for_projekt["#{a[:nr]}"] || 0)
             end.each do |projekt|
+                next if projekt[:capacity] == 0
                 io.puts "<tr>"
                 io.puts "<td>#{projekt[:title]}</td>"
                 [5, 6, 7, 8, 9, 'WK'].each do |klasse|
@@ -381,6 +433,7 @@ class Main < Sinatra::Base
             io.puts "</table>"
             io.puts "</div>"
 
+            io.puts "<h4>Interesse pro Klassenstufe</h4>"
             io.puts "<div class='table-responsive' style='max-width: 100%; overflow-x: auto;'>"
             io.puts "<table class='table table-sm' style='width: unset;'>"
             io.puts "<tr>"
@@ -404,6 +457,7 @@ class Main < Sinatra::Base
             io.puts "</table>"
             io.puts "</div>"
 
+            io.puts "<h4>Anzahl der gewählten Projekte pro Klasse</h4>"
             io.puts "<div class='table-responsive' style='max-width: 100%; overflow-x: auto;'>"
             io.puts "<table class='table table-sm' style='width: unset;'>"
             io.puts "<tr>"

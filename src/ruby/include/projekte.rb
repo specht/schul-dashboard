@@ -185,7 +185,7 @@ class Main < Sinatra::Base
                 RETURN p;
             END_OF_QUERY
         end
-        trigger_update_images()
+        trigger_stats_update('projektwahl')
         respond(:ts => ts)
     end
 
@@ -384,6 +384,12 @@ class Main < Sinatra::Base
             end
             io.puts "</tr>"
             ndash = "<span class='text-muted'>&ndash;</span>"
+            ts_data = nil
+            begin
+                ts_data = JSON.parse(File.read("/internal/projekttage/votes/ts.json"))
+            rescue
+                return ''
+            end
             all_project_data = {}
             get_projekte.each do |p|
                 all_project_data[p[:nr]] = {}
@@ -410,6 +416,31 @@ class Main < Sinatra::Base
                 io.puts "<td class='cbl' style='text-align: center;'>#{(project_data['geschlecht_m'] || 0) + (project_data['geschlecht_w'] || 0)}</td>"
                 io.puts "</tr>"
             end
+            io.puts "</table>"
+            io.puts "</div>"
+            io.puts "<h4>Projizierte Fehlerverteilung</h4>"
+            io.puts "<p>Aus den projizierten Gruppen ergibt sich eine Fehlerverteilung. Der Fehler bei einer Projektzuordnung berechnet sich aus der Differenz zwischen dem höchsten Level, welches von einem SuS gewählt wurde und dem gewählten Level des zugeordneten Projekts. Wenn also jemand Projekt A mit drei Sternen gewählt hat und Projekt B bekommt, dass er gar nicht gewählt hat (0 Sterne), dann ist dieser Fehler 3 – kleinere Fehler sind also besser. Die Fehlerverteilung wird mit der Zeit schlechter, weil mehr SuS ihre Wahl getroffen haben.</p>"
+
+            io.puts "<p>Bisher haben #{ts_data['email_count_voted']} von #{ts_data['email_count_total']} Schülerinnen und Schülern ihre Projekte gewählt:"
+            io.puts "<div class='progress mb-3'>"
+            p = ts_data['email_count_voted'] * 100 / ts_data['email_count_total']
+            io.puts "<div class='bg-success progress-bar progress-bar-striped progress-bar-animated' role='progressbar' style='width: #{p}%;'>#{p.round}%</div>"
+            io.puts "</div>"
+
+            io.puts "<div class='table-responsive' style='max-width: 100%; overflow-x: auto;'>"
+            io.puts "<table class='table table-sm' style='width: unset;'>"
+            io.puts "<tr>"
+            io.puts "<th>Fehler</th>"
+            (0..3).each do |error|
+                io.puts "<td style='min-width: 3.5em; text-align: center;'>#{error}</td>"
+            end
+            io.puts "</tr>"
+            io.puts "<tr>"
+            io.puts "<th>Anteil</th>"
+            (0..3).each do |error|
+                io.puts "<td>#{sprintf('%1.2f%%', ts_data['errors'][error] * 100.0)}</td>"
+            end
+            io.puts "</tr>"
             io.puts "</table>"
             io.puts "</div>"
 

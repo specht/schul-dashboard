@@ -182,6 +182,11 @@ if ENABLE_IMAGE_BOT
                 'rackup --port 8080 --host 0.0.0.0 image-bot-repl.ru'
 end
 
+docker_compose[:services][:stats_bot] = YAML.load(docker_compose[:services][:ruby].to_yaml)
+docker_compose[:services][:stats_bot]['entrypoint'] = DEVELOPMENT ?
+            'rerun -b --dir /app --ignore "*fragments.rb" -s SIGKILL \'rackup --port 8080 --host 0.0.0.0 stats-bot-repl.ru\'' :
+            'rackup --port 8080 --host 0.0.0.0 stats-bot-repl.ru'
+
 docker_compose[:services][:vplan_watcher] = YAML.load(docker_compose[:services][:ruby].to_yaml)
 docker_compose[:services][:vplan_watcher]['entrypoint'] = DEVELOPMENT ?
             'rerun -b --dir /app --ignore "*fragments.rb" -s SIGKILL \'ruby vplan-watcher.rb\'' :

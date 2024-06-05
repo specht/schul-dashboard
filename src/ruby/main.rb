@@ -1767,6 +1767,15 @@ class Main < Sinatra::Base
         end
     end
 
+    def trigger_stats_update(which)
+        begin
+            http = Net::HTTP.new('stats_bot', 8080)
+            response = http.request(Net::HTTP::Get.new("/api/update/#{which}"))
+        rescue StandardError => e
+            STDERR.puts e
+        end
+    end
+
     def trigger_update_images()
         begin
             http = Net::HTTP.new('image_bot', 8080)

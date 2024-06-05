@@ -246,7 +246,7 @@ class Main < Sinatra::Base
                 io.puts "</tr>"
             end
             io.puts "<tr>"
-            io.puts "<th>Σ</th>"
+            io.puts "<td>Σ</td>"
             (projekt[:min_klasse]..projekt[:max_klasse]).each do |klasse|
                 count = votes["klassenstufe/#{klasse}"] || ndash
                 io.puts "<td class='#{klasse == projekt[:min_klasse] ? 'cbl' : ''}' style='text-align: center;'>#{count}</td>"

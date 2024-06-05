@@ -157,23 +157,20 @@ function update_vote_summary() {
             let vote = item[0];
             let project = item[1];
             let polaroid = $(`<div class="polaroid" style="position: relative; display: inline-block; float: none; width: 150px; height: 188px; margin-right: 10px; transform: none;"></div>`).css('background-image', `url(/api/get_sus_photo/${projekte[project].photo}-512.jpg)`).appendTo($('#text_vote_summary'));
-            polaroid.append($(`<p style="font-size: 0.8em; margin-top: 120px; text-align: center; margin-left: -10px; margin-right: -10px; white-space: nowrap; overflow-x: clip; text-overflow: ellipsis; font-weight: bold;">`).text(projekte[project].title));
+            polaroid.append($(`<div style='position: absolute; left: 0; right: 0; text-align: center; top: 135px; font-size: 80%; font-weight: bold; white-space: nowrap; overflow-x: clip; '>`).text(projekte[project].title));
             if (project_data[project]) {
-                polaroid.append($(`<p style="font-size: 0.8em; margin-top: -20px; text-align: center; margin-left: -10px; margin-right: -10px; white-space: nowrap; overflow-x: clip; text-overflow: ellipsis; font-style: italic;">`).text(`(${project_data[project].vote_count} Interessenten)`));
+                polaroid.append($(`<div style='position: absolute; left: 0; right: 0; text-align: center; top: 150px; font-size: 80%; white-space: nowrap; overflow-x: clip; font-style: italic;'>`).text(`(${project_data[project].vote_count} Interessenten)`));
             }
             polaroid.append($(`<p class='bg_white_dark_aware' style="box-shadow: 0 0 10px rgba(0, 0, 0, 0.5); border-radius: 50%; width: 1.5em; height: 1.5em; text-align: center; padding-top: 0.05em; font-size: 1.5em; transform: rotate(5deg); position: absolute; top: -15px; right: -15px;">`).text(String.fromCodePoint(codepoints[vote])));
-            console.log(project, my_vote_data[project]);
             html = (my_vote_data[project] ?? '0%');
-                // html = `<i class='fa fa-cog fa-spin'></i>`;
             polaroid.append($(`<p class='${diff > 0 ? 'spin' : ''} bg_white_dark_aware' style="width: 3.2em; text-align: center; box-shadow: 0 0 3px rgba(0, 0, 0, 0.5); border-radius: 4px; padding: 0.1em 0.3em; font-size: 1em; transform: rotate(5deg); position: absolute; top: -15px; left: 40px;">`).html(html));
         }
-        // $('#text_vote_summary').html(`<p>Du hast bisher folgende Projekte gewählt:</p><ul>${items.map(function(x) {return '<li>' + x + '</li>';}).join('')}</ul>`);
     }
     let i = items.length;
     while (i < 3) {
         i += 1;
         let polaroid = $(`<div class="polaroid" style="position: relative; display: inline-block; float: none; width: 150px; height: 188px; margin-right: 10px; transform: none;"></div>`).appendTo($('#text_vote_summary'));
-        polaroid.append($(`<p style="font-size: 0.8em; margin-top: 120px; text-align: center; margin-left: -10px; margin-right: -10px; white-space: nowrap; overflow-x: clip; text-overflow: ellipsis;">`).text('Überraschungs-Projekt'));
+        polaroid.append($(`<div style='position: absolute; left: 0; right: 0; text-align: center; top: 135px; font-size: 80%; font-weight: bold; white-space: nowrap; overflow-x: clip; line-height: 1.3em;'>`).html("Überraschungs-<br>projekt"));
         polaroid.append($(`<p style="text-align: center; font-size: 2em; transform: rotate(-8deg); position: absolute; top: 40px; left: 40px; opacity: 0.6;">`).text('?'));
         polaroid.append($(`<p style="text-align: center; font-size: 3em; transform: rotate(2deg); position: absolute; top: 20px; left: 55px; opacity: 0.6;">`).text('?'));
         polaroid.append($(`<p style="text-align: center; font-size: 2em; transform: rotate(12deg); position: absolute; top: 40px; left: 80px; opacity: 0.6;">`).text('?'));

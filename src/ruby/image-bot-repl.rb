@@ -279,7 +279,12 @@ class ImageBotRepl < Sinatra::Base
             end
         end
         File.open("/internal/projekttage/votes/ts.json", 'w') do |f|
-            f.write({:ts => latest_vote_ts, :email_count_voted => votes_by_email.size, :email_count_total => emails.size}.to_json)
+            f.write({
+                :ts => latest_vote_ts,
+                :email_count_voted => votes_by_email.size,
+                :email_count_total => emails.size,
+                :total_capacity => total_capacity,
+            }.to_json)
         end
         projects.keys.each do |nr|
             File.open("/internal/projekttage/votes/project-#{nr}.json", 'w') do |f|

@@ -11,8 +11,8 @@ class Main < Sinatra::Base
             f.write(blob)
         end
         respond(:uploaded => 'yeah')
-    end    
-    
+    end
+
     post '/api/delete_file' do
         require_user_who_can_upload_files!
         data = parse_request_data(:required_keys => [:filename])
@@ -21,8 +21,8 @@ class Main < Sinatra::Base
         assert(filename.size > 0)
         FileUtils::rm_f("/raw/uploads/files/#{filename}")
         respond(:deleted => 'yeah')
-    end    
-    
+    end
+
     post '/api/get_all_files' do
         require_user_who_can_upload_files!
         files = []
@@ -36,7 +36,7 @@ class Main < Sinatra::Base
         files.sort! { |a, b| a[:name].downcase <=> b[:name].downcase }
         respond(:files => files)
     end
-    
+
     post '/api/upload_file_via_uri' do
         require_user_who_can_upload_files!
         data = parse_request_data(:required_keys => [:uri])

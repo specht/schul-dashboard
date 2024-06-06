@@ -92,6 +92,7 @@ function api_call(url, data, callback, options) {
     jqxhr.fail(function (http) {
         clearTimeout(window.please_wait_timeout);
         $('.api_messages').empty();
+        console.log(http.responseText);
         show_error_message('Bei der Bearbeitung der Anfrage ist ein Fehler aufgetreten.');
         if (typeof (callback) !== 'undefined') {
             var error_message = 'unknown_error';

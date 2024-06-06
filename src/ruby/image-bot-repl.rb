@@ -13,7 +13,7 @@ class ImageBotRepl < Sinatra::Base
     configure do
         set :show_exceptions, false
     end
-    
+
     def self.perform_update()
         STDERR.puts ">>> Refreshing uploaded images!"
         file_count = 0
@@ -77,7 +77,7 @@ class ImageBotRepl < Sinatra::Base
         STDERR.puts sprintf("<<< Finished refreshing background images in %1.2f seconds, wrote #{file_count} files.", (end_time - start_time).to_f)
         STDERR.puts '-' * 59
     end
-    
+
     configure do
         begin
             if @@worker_thread
@@ -113,7 +113,7 @@ class ImageBotRepl < Sinatra::Base
         end
         STDERR.puts "REPL is ready."
     end
-    
+
     get '/api/update_all' do
         @@queue << {:which => :all}
     end

@@ -32,6 +32,7 @@ class Script
         end
 
         @@user_info = Main.class_variable_get(:@@user_info)
+        @@users_for_role = Main.class_variable_get(:@@users_for_role)
         wanted_nc_ids = nil
         unless args.empty?
             wanted_nc_ids = Set.new(args.map { |email| (@@user_info[email] || {})[:nc_login] })

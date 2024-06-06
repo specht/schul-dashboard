@@ -33,6 +33,7 @@ class Script
         @@teachers_for_klasse = Main.class_variable_get(:@@teachers_for_klasse)
         @@shorthands = Main.class_variable_get(:@@shorthands)
         @@user_info = Main.class_variable_get(:@@user_info)
+        @@users_for_role = Main.class_variable_get(:@@users_for_role)
         @@mailing_lists = nil
         @@mailing_list_mtime = 0
         begin

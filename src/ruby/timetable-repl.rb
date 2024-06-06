@@ -16,7 +16,7 @@ class TimetableRepl < Sinatra::Base
     configure do
         set :show_exceptions, false
     end
-    
+
     def self.perform_update(which)
         begin
             debug ">>> Updating #{which}!"
@@ -34,7 +34,7 @@ class TimetableRepl < Sinatra::Base
             STDERR.puts e.backtrace
         end
     end
-    
+
     configure do
         @@timetable = Timetable.new
         begin

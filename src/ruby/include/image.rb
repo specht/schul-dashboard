@@ -52,6 +52,7 @@ class Main < Sinatra::Base
         require_user!
         slug = params[:slug]
         path = "/internal/sus_uploads/images/#{slug}"
+        response.headers['Cache-Control'] = "max-age=#{3600 * 24 * 365}"
         respond_raw_with_mimetype(File.read(path), 'image/jpeg')
     end
 

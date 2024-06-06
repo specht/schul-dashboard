@@ -3,9 +3,13 @@ class Main < Sinatra::Base
         !@session_user.nil?
     end
 
-    def user_has_role(email, role)
+    def self.user_has_role(email, role)
         assert(AVAILABLE_ROLES.include?(role), "Unknown role: #{role}")
         @@user_info[email] && @@user_info[email][:roles].include?(role)
+    end
+
+    def user_has_role(email, role)
+        Main.user_has_role(email, role)
     end
 
     def user_with_role_logged_in?(role)
@@ -659,58 +663,61 @@ class Main < Sinatra::Base
 
     def print_projektwahl_countdown_panel()
         if user_eligible_for_projektwahl?
-            deadline = DEADLINE_PROJEKTWAHL
-            if Time.now.strftime('%Y-%m-%dT%H:%M:%S') <= deadline && (DateTime.parse(deadline) - DateTime.now).to_f < 7.0
-                return StringIO.open do |io|
-                    io.puts "<div class='col-lg-12 col-md-4 col-sm-6'>"
-                    io.puts "<div class='hint'>"
-                    io.puts "<p><b>Wähle dein Projekt</b></p>"
-                    io.puts "<hr />"
-                    io.puts "<p>Die Möglichkeit zur Wahl eines Projektes für die Projekttage endet am Sonntag!</p>"
-                    io.puts "<div id='projektwahl_countdown_here' style='display: none;' data-deadline='#{Time.parse(deadline).to_i}'>"
-                    io.puts "</div>"
-                    io.puts "</div>"
-                    io.puts "</div>"
-                    io.string
+            vote_count = neo4j_query_expect_one("MATCH (u:User {email: $email})-[:VOTED_FOR]->(p:Projekt) RETURN COUNT(p) AS count;", {:email => @session_user[:email]})['count']
+            if vote_count == 0
+                if projekttage_phase() == 3
+                    return StringIO.open do |io|
+                        io.puts "<div class='col-lg-12 col-md-4 col-sm-6'>"
+                        io.puts "<div class='hint'>"
+                        io.puts "<p><b>Wähle deine Lieblingsprojekte!</b></p>"
+                        io.puts "<p>Du findest den Projektkatalog im Menü unter »Projekttage«."
+                        io.puts "</div>"
+                        io.puts "</div>"
+                        io.string
+                    end
                 end
             end
         elsif (@session_user[:klassenstufe] || 0) == 11
-            return StringIO.open do |io|
-                rows = neo4j_query(<<~END_OF_QUERY, :email => @session_user[:email])
-                    MATCH (p:Projekt)-[:ORGANIZED_BY]->(u:User {email: $email})
-                    RETURN p;
-                END_OF_QUERY
-                unless rows.empty?
-                    projekt = rows.first['p']
-                    count = 0
-                    count += 1 unless (projekt[:description] || '').strip.empty?
-                    count += 1 unless (projekt[:photo] || '').strip.empty?
-                    emoji = %w(😭 🥲 😄)[count]
-                    unless count == 2 && (Time.now.to_i - (projekt[:ts_updated] || 0) > 3600)
-                        io.puts "<div class='col-lg-12 col-md-4 col-sm-6'>"
-                        io.puts "<div class='hint'>"
-                        io.puts "<p><b>Dein Angebot für die Projekttage</b></p>"
-                        io.puts "<hr />"
-                        io.puts "<span style='font-size: 300%; float: right; margin-left: 10px; margin-bottom: 10px;'>#{emoji}</span>"
-                        if count == 0
-                            io.puts "<p>Du hast noch keinen Werbetext für dein Projekt eingegeben und auch kein Bild hochgeladen. Bitte trage diese Informationen unter »Projekttage« nach und hilf mit, dass dieser arme Smiley wieder glücklich wird.</p>"
-                        elsif count == 1
-                            if (projekt[:description] || '').strip.empty?
-                                io.puts "<p>Du hast zwar schon ein Bild hochgeladen, aber noch keinen Werbetext geschrieben. You can do it!</p>"
-                            else
-                                io.puts "<p>Du hast zwar schon einen Werbetext geschrieben, aber noch kein Bild hochgeladen. You can do it!</p>"
+            if projekttage_phase() > 0
+                return StringIO.open do |io|
+                    rows = neo4j_query(<<~END_OF_QUERY, :email => @session_user[:email])
+                        MATCH (p:Projekt)-[:ORGANIZED_BY]->(u:User {email: $email})
+                        RETURN p;
+                    END_OF_QUERY
+                    unless rows.empty?
+                        projekt = rows.first['p']
+                        count = 0
+                        count += 1 unless (projekt[:description] || '').strip.empty?
+                        count += 1 unless (projekt[:photo] || '').strip.empty?
+                        emoji = %w(😭 🥲 😄)[count]
+                        if (projekt[:capacity] || 0) > 0
+                            unless count == 2 && (Time.now.to_i - (projekt[:ts_updated] || 0) > 3600)
+                                io.puts "<div class='col-lg-12 col-md-4 col-sm-6'>"
+                                io.puts "<div class='hint'>"
+                                io.puts "<p><b>Dein Angebot für die Projekttage</b></p>"
+                                io.puts "<hr />"
+                                io.puts "<span style='font-size: 300%; float: right; margin-left: 10px; margin-bottom: 10px;'>#{emoji}</span>"
+                                if count == 0
+                                    io.puts "<p>Du hast noch keinen Werbetext für dein Projekt eingegeben und auch kein Bild hochgeladen. Bitte trage diese Informationen unter »Projekttage« nach und hilf mit, dass dieser arme Smiley wieder glücklich wird.</p>"
+                                elsif count == 1
+                                    if (projekt[:description] || '').strip.empty?
+                                        io.puts "<p>Du hast zwar schon ein Bild hochgeladen, aber noch keinen Werbetext geschrieben. You can do it!</p>"
+                                    else
+                                        io.puts "<p>Du hast zwar schon einen Werbetext geschrieben, aber noch kein Bild hochgeladen. You can do it!</p>"
+                                    end
+                                elsif count == 2
+                                    io.puts "<p>Danke, dass du alle Informationen eingetragen hast!</p>"
+                                end
+                                if count < 2
+                                    io.puts "<p><a href='/projekttage_orga' class='btn btn-success' style='white-space: normal;'>Lass uns diesen Smiley wieder glücklich machen!</a></p>"
+                                end
+                                io.puts "</div>"
+                                io.puts "</div>"
                             end
-                        elsif count == 2
-                            io.puts "<p>Danke, dass du alle Informationen eingetragen hast!</p>"
                         end
-                        if count < 2
-                            io.puts "<p><a href='/projekttage_orga' class='btn btn-success' style='white-space: normal;'>Lass uns diesen Smiley wieder glücklich machen!</a></p>"
-                        end
-                        io.puts "</div>"
-                        io.puts "</div>"
                     end
+                    io.string
                 end
-                io.string
             end
         end
         return ''
@@ -788,4 +795,26 @@ class Main < Sinatra::Base
         respond(:success => true)
     end
 
+    def get_sitzplan_music_choice
+        neo4j_query_expect_one(<<~END_OF_QUERY, :email => @session_user[:email])['u.music_choice'] || '01-preis'
+            MATCH (u:User {email: $email})
+            RETURN u.music_choice;
+        END_OF_QUERY
+    end
+
+    post '/api/set_sitzplan_music_choice' do
+        require_teacher!
+        data = parse_request_data(:required_keys => [:music_choice])
+        neo4j_query_expect_one(<<~END_OF_QUERY, :email => @session_user[:email], :music_choice => data[:music_choice])
+            MATCH (u:User {email: $email})
+            SET u.music_choice = $music_choice
+            RETURN u;
+        END_OF_QUERY
+        respond(:success => true)
+    end
+
+    get '/api/get_music/:key' do
+        require_user!
+        respond_raw_with_mimetype(File.read("/data/sitzplan/#{params[:key]}.mp3"), 'audio/mpeg')
+    end
 end

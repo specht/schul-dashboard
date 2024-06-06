@@ -12,7 +12,7 @@
         font-family: unset;
         font-weight: bold;
     }
-    #tresor_countdown_here, #projektwahl_countdown_here {
+    #tresor_countdown_here {
         font-size: 200%;
         text-align: center;
     }
@@ -105,7 +105,7 @@
             </div>
             <div class='hint' style='height: 60px; position: relative; top: 23px; #{tablet_logged_in? ? '' : 'display: none;'}'>
                 <div style='position: relative; top: 8px;'>
-                <span class='bullet'><i class='fa fa-check'></i></span><b>Schritt #{(kurs_tablet_logged_in? || teacher_tablet_logged_in? || klassenraum_logged_in?) ? '3' : '2'}:</b> Stunde auswählen
+                    <span class='bullet'><i class='fa fa-check'></i></span><b>Schritt #{(kurs_tablet_logged_in? || teacher_tablet_logged_in? || klassenraum_logged_in?) ? '3' : '2'}:</b> Stunde auswählen
                 </div>
             </div>
             <div id='calendar' style='margin-bottom: 30px;'>
@@ -581,12 +581,12 @@ document.addEventListener('DOMContentLoaded', function() {
         dayHeaderFormat: { weekday: 'short', month: 'numeric', day: 'numeric', omitCommas: true },
         headerToolbar: {start: '', center: '', end: tablet_logged_in ? '' : 'print today prev,next'},
         allDaySlot: true,
-        slotMinTime: '#{@session_user[:teacher] ? '07:00' : '07:00'}',
+        slotMinTime: '07:00',
         slotMaxTime: '22:00',
         nowIndicator: true,
         expandRows: true,
         locale: 'de',
-        height: (!!window.chrome) ? #{@session_user[:teacher] ? 1330 : 1330} : #{@session_user[:teacher] ? 1350 : 1350},
+        height: (!!window.chrome) ? 1330 : 1350,
         initialDate: initial_date,
         events: function(info, successCallback, failureCallback) {
             let start_date = new Date(info.startStr);
@@ -606,7 +606,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 render_timetable(fixed_timetable_data, successCallback);
             } else {
                 let uri = '/gen/w/' + timetable_id + '/' + yw_date + '.json.gz';
-                if (#{@session_user[:teacher] ? true: false})
+                if (#{teacher_logged_in? ? true: false})
                     uri += '?' + Date.now();
                 let oReq = new XMLHttpRequest();
                 oReq.open('GET', uri, true);
@@ -1286,7 +1286,7 @@ document.addEventListener('DOMContentLoaded', function() {
             $('#lessonModal').modal('show');
         }
     };
-    if ('#{!!@session_user[:teacher]}' === 'false') {
+    if ('#{!!teacher_logged_in?}' === 'false') {
         let d0 = moment(initial_date).day(1).subtract(28, 'days').format('YYYY-MM-DD');
         options.validRange = {
             start: d0
@@ -1304,10 +1304,10 @@ document.addEventListener('DOMContentLoaded', function() {
         }
         clear_polling_handler();
     });
-    
+
     if (!tablet_logged_in) {
         let uri = '/gen/w/' + timetable_id + '/homework.json.gz';
-        if (#{@session_user[:teacher] ? true: false})
+        if (#{teacher_logged_in? ? true: false})
             uri += '?' + Date.now();
         let oReq = new XMLHttpRequest();
         oReq.open('GET', uri, true);
@@ -1655,27 +1655,6 @@ document.addEventListener('DOMContentLoaded', function() {
                     $('#tresor_countdown_here').slideDown();
                 } else {
                     $('#tresor_countdown_here').slideUp();
-                }
-            }, 1000);
-        }
-        if ($('#projektwahl_countdown_here').length > 0) {
-            setInterval(function() {
-                let ts0 = moment();
-                let deadline = $('#projektwahl_countdown_here').data('deadline');
-                let ts1 = moment.unix(deadline);
-                if (ts0.isBefore(ts1)) {
-                    let d = moment.duration(ts1.diff(ts0));
-                    let h = Math.floor(d.asHours());
-                    let m = Math.floor(d.asMinutes()) - h * 60;
-                    let s = Math.floor(d.asSeconds()) - h * 60 * 60 - m * 60;
-                    h = `${h}`; m = `${m}`; s = `${s}`;
-                    if (h.length < 2) h = '0' + h;
-                    if (m.length < 2) m = '0' + m;
-                    if (s.length < 2) s = '0' + s;
-                    $('#projektwahl_countdown_here').text(`${h} : ${m} : ${s}`);
-                    $('#projektwahl_countdown_here').slideDown();
-                } else {
-                    $('#projektwahl_countdown_here').slideUp();
                 }
             }, 1000);
         }

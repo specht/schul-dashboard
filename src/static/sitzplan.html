@@ -1,4 +1,4 @@
-#{require_teacher!}
+#{redirect_on_error { require_teacher! }}
 <style>
 body {
     margin: 0;
@@ -42,11 +42,11 @@ p {
 }
 
 .place {
-    transition: top 1s ease-out 0s, 
-        left 1s ease-out 0s, 
-        width 1s ease-out 0s, 
-        height 1s ease-out 0s, 
-        opacity 1s ease-out 0s, 
+    transition: top 1s ease-out 0s,
+        left 1s ease-out 0s,
+        width 1s ease-out 0s,
+        height 1s ease-out 0s,
+        opacity 1s ease-out 0s,
         transform 1s ease-out 0s;
     width: 5vh;
     height: 5vh;
@@ -142,6 +142,9 @@ p {
 .navbar {
     display: none;
 }
+.dropdown-item {
+    cursor: pointer;
+}
 </style>
 <script>
 
@@ -220,13 +223,18 @@ var seats_dict = {
         [0, 4], [1, 4], [3, 4], [4, 4], [6, 4], [7, 4],
     ],
     '207': [
-                        [3, 0], [4, 0],
-        [0, 1], [1, 1], [3, 1], [4, 1], [6, 1], [7, 1],
-        [0, 2], [1, 2], [3, 2], [4, 2], [6, 2], [7, 2],
-        [0, 3], [1, 3], [3, 3], [4, 3], [6, 3], [7, 3],
-        [0, 4], [1, 4], [3, 4], [4, 4], [6, 4], [7, 4],
-        [0, 5], [1, 5], [3, 5], [4, 5], [6, 5], [7, 5],
-    ],
+                [0.08, 1.66, -30], [0.95, 1.16, -30], [1.81, 0.66, -30],
+                [0.58, 2.53, -30], [1.45, 2.03, -30], [2.31, 1.52, -30],
+                [8-0.08, 1.66, 30], [8-0.95, 1.16, 30], [8-1.81, 0.66, 30],
+                [8-0.58, 2.53, 30], [8-1.45, 2.03, 30], [8-2.31, 1.52, 30],
+                [3.5, 2], [4.5, 2],
+                [3.5, 3], [4.5, 3],
+                [3.5, 4], [4.5, 4],
+                [0.08, 4.66, -30], [0.95, 4.16, -30], [1.81, 3.66, -30],
+                [0.58, 5.53, -30], [1.45, 5.03, -30], [2.31, 4.52, -30],
+                [8-0.08, 4.66, 30], [8-0.95, 4.16, 30], [8-1.81, 3.66, 30],
+                [8-0.58, 5.53, 30], [8-1.45, 5.03, 30], [8-2.31, 4.52, 30],
+    ].map(function(seat) { seat[1] -= 1; return seat; }),
     '213': [
         [0, 0], [1, 0], [2, 0], [3, 0], [5, 0], [6, 0], [7, 0], [8, 0],
         [0, 1], [1, 1], [2, 1], [3, 1], [5, 1], [6, 1], [7, 1], [8, 1],
@@ -274,6 +282,7 @@ var rules = [
     ['zoey.wandelt', [0, 7], [0, 1]],
     ['amalia.theben', [0, 7], [0, 1]],
     ['tim.ibrahim', [0, 7], [1, 5]],
+    ['justus.jochimsen', [0, 7], [0, 1]],
 ];
 
 function place_sus(silent) {
@@ -295,7 +304,7 @@ function place_sus(silent) {
         place.css('left', `${seat[0] * scale}px`);
         place.css('top', `${seat[1] * scale}px`);
         if (!silent) {
-            place.css('transform', `rotate(${phi}deg)`);
+            place.css('transform', `rotate(${phi + (seat[2] ?? 0)}deg)`);
         }
         i += 1;
     }
@@ -378,13 +387,32 @@ function shuffle_plan() {
 function fix_scale() {
     let width = document.documentElement.clientWidth;
     let height = document.documentElement.clientHeight;
-    $('#seats').css('height', `${height * 0.88 - 10}px`);
-    scale = (height * 0.88 - 10) / HEIGHT;
-    $('#seats').css('width', `${(height * 0.88 - 10) * WIDTH / HEIGHT}px`);
+    if (width * HEIGHT < height * WIDTH)
+        height = width * HEIGHT / WIDTH;
+    $('#seats').css('height', `${height * 0.85 - 10}px`);
+    scale = (height * 0.85 - 10) / HEIGHT;
+    $('#seats').css('width', `${(height * 0.85 - 10) * WIDTH / HEIGHT}px`);
+    $('#seats').css('top', `${(document.documentElement.clientHeight - (height * 0.85 - 10)) / 3}px`);
+    console.log(height - (height * 0.85 - 10));
     place_sus(true);
 }
 
+var music_choice = "#{get_sitzplan_music_choice()}";
+
 document.addEventListener('DOMContentLoaded', function() {
+    $(`#dd_music .dropdown-item[data-value=${music_choice}]`).addClass('active');
+    $('#audio').attr('src', `/api/get_music/${music_choice}`);
+    $('#dd_music .dropdown-item').click(function() {
+        let value = $(this).data('value');
+        api_call('/api/set_sitzplan_music_choice', {music_choice: value}, function(data) {
+            if (data.success) {
+                music_choice = value;
+                $('#audio').attr('src', `/api/get_music/${value}`);
+                $('#dd_music .dropdown-item').removeClass('active');
+                $(`#dd_music .dropdown-item[data-value=${music_choice}]`).addClass('active');
+            }
+        });
+    });
     let path = window.location.pathname.replace("/sitzplan/", '').split('/');
     klasse = path[0];
     raum = path[1];
@@ -463,9 +491,23 @@ document.addEventListener('DOMContentLoaded', function() {
     <div class='teacher'>Tafel</div>
 </div>
 <div class="keys">
+    <div id='dd_music' class="dropleft" style="display: inline-block;">
+        <button class="btn btn-sm btn-secondary dropdown-toggle" type="button" id="dropdownMenuButton" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+            <i class='fa fa-music'></i>
+        </button>
+        <div class="dropdown-menu" aria-labelledby="dropdownMenuButton">
+            <a class="dropdown-item" data-value="07-clownpierces-casino">ClownPierce's Casino (0:59)</a>
+            <a class="dropdown-item" data-value="01-preis">Der Preis ist heiß (1:04)</a>
+            <a class="dropdown-item" data-value="02-jetset">Jetset (0:58)</a>
+            <a class="dropdown-item" data-value="03-lux">Lux International (1:07)</a>
+            <a class="dropdown-item" data-value="04-polycolor">Polycolor (0:46)</a>
+            <a class="dropdown-item" data-value="05-san-fernando1">San Fernando (0:49)</a>
+            <a class="dropdown-item" data-value="06-san-fernando2">Teletype (0:59)</a>
+        </div>
+    </div>
     <span>Leer</span>
     <span>A</span>
     <span>C</span>
     <span>R</span>
 </div>
-<audio id='audio' src="/preis.mp3"></audio>
+<audio id='audio'></audio>

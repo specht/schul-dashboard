@@ -34,6 +34,20 @@ require 'write_xlsx'
 require 'yaml'
 require 'zip'
 
+def assert(condition, message = 'assertion failed', suppress_backtrace = false, delay = nil)
+    unless condition
+        debug_error message
+        e = StandardError.new(message)
+        e.set_backtrace([]) if suppress_backtrace
+        sleep delay unless delay.nil?
+        raise e
+    end
+end
+
+def assert_with_delay(condition, message = 'assertion failed', suppress_backtrace = false)
+    assert(condition, message, suppress_backtrace, DEVELOPMENT ? 0.0 : 3.0)
+end
+
 require './credentials.template.rb'
 warn_level = $VERBOSE
 $VERBOSE = nil
@@ -120,13 +134,12 @@ def debug(message, index = 0)
     rescue
         index = 0
     end
-    # STDERR.puts caller_locations.to_yaml
     l = caller_locations[index]
     ls = ''
     begin
-        ls = "#{l.path.sub('/app/', '')}:#{l.lineno} @ #{l.base_label}"
+        ls = "#{l.path.sub('/app/', '').sub('.rb', '')}:#{l.lineno}"
     rescue
-        ls = "#{l[0].sub('/app/', '')}:#{l[1]}"
+        ls = "#{l[0].sub('/app/', '').sub('.rb', '')}:#{l[1]}"
     end
     STDERR.puts "#{DateTime.now.strftime('%H:%M:%S')} [#{ls}] #{message}"
 end
@@ -135,9 +148,9 @@ def debug_error(message)
     l = caller_locations.first
     ls = ''
     begin
-        ls = "#{l.path.sub('/app/', '')}:#{l.lineno} @ #{l.base_label}"
+        ls = "#{l.path.sub('/app/', '').sub('.rb', '')}:#{l.lineno} @ #{l.base_label}"
     rescue
-        ls = "#{l[0].sub('/app/', '')}:#{l[1]}"
+        ls = "#{l[0].sub('/app/', '').sub('.rb', '')}:#{l[1]}"
     end
     STDERR.puts "#{DateTime.now.strftime('%H:%M:%S')} [ERROR] [#{ls}] #{message}"
 end
@@ -153,6 +166,7 @@ end
 
 USER_AGENT_PARSER = UserAgentParser::Parser.new
 WEEKDAYS = ['So', 'Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa']
+WEEKDAYS_LONG = ['Sonntag', 'Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag', 'Samstag']
 HOMEWORK_FEEDBACK_STATES = ['good', 'hmmm', 'lost']
 HOMEWORK_FEEDBACK_EMOJIS = {'good' => '🙂',
                             'hmmm' => '🤔',
@@ -228,6 +242,12 @@ end
 
 def join_with_sep(list, a, b)
     list.size == 1 ? list.first : [list[0, list.size - 1].join(a), list.last].join(b)
+end
+
+module UserRoleHelper
+    def user_has_role(email, role)
+        Main.user_has_role(email, role)
+    end
 end
 
 class SetupDatabase
@@ -647,7 +667,7 @@ class Main < Sinatra::Base
                 :email => record[:email],
                 :id => record[:id],
                 :klasse => record[:klasse],
-                :klassenstufe => record[:klasse].to_i,
+                :klassenstufe => record[:klasse] =~ /^\d/ ? record[:klasse].to_i : nil,
                 :geschlecht => record[:geschlecht],
                 :nc_login => record[:email].split('@').first.sub(/\.\d+$/, ''),
                 :matrix_login => matrix_login,
@@ -685,7 +705,9 @@ class Main < Sinatra::Base
                 :geschlecht => record[:geschlecht],
                 :email => record[:email],
                 :can_log_in => true,
-                :roles => Set.new()
+                :nc_login => record[:nc_login],
+                :initial_nc_password => record[:initial_nc_password],
+                :roles => Set.new(),
             }
         end
 
@@ -1030,14 +1052,19 @@ class Main < Sinatra::Base
             (@@user_info[a][:last_name].downcase <=> @@user_info[b][:last_name].downcase)
         end.each do |email|
             user = @@user_info[email]
-            lessons = (user[:teacher] ? @@lessons_for_shorthand[user[:shorthand]] : @@lessons_for_klasse[user[:klasse]]).dup
-            unless user[:teacher]
+            lessons = nil
+            if user_has_role(email, :teacher)
+                lessons = @@lessons_for_shorthand[user[:shorthand]].dup
+            elsif user_has_role(email, :schueler)
+                lessons = @@lessons_for_klasse[user[:klasse]].dup
+            end
+            if user_has_role(email, :schueler)
                 if ['11', '12'].include?(user[:klasse])
                     lessons = (kurse_for_schueler[email] || Set.new()).to_a
                 end
             end
             lessons ||= []
-            unless user[:teacher]
+            if user_has_role(email, :schueler)
                 lessons.reject! do |lesson_key|
                     lesson = @@lessons[:lesson_keys][lesson_key]
                     (lesson[:fach] == 'SpoM' && user[:geschlecht] != 'w') ||
@@ -1046,7 +1073,7 @@ class Main < Sinatra::Base
             end
             lessons += wahlpflicht_sus_for_lesson_key.keys
             lessons.uniq!
-            unless user[:teacher]
+            if user_has_role(email, :schueler)
                 lessons.each do |lesson_key|
                     if wahlpflicht_sus_for_lesson_key.include?(lesson_key)
                         next unless wahlpflicht_sus_for_lesson_key[lesson_key].include?(email)
@@ -1428,20 +1455,6 @@ class Main < Sinatra::Base
         end
     end
 
-    def assert(condition, message = 'assertion failed', suppress_backtrace = false, delay = nil)
-        unless condition
-            debug_error message
-            e = StandardError.new(message)
-            e.set_backtrace([]) if suppress_backtrace
-            sleep delay unless delay.nil?
-            raise e
-        end
-    end
-
-    def assert_with_delay(condition, message = 'assertion failed', suppress_backtrace = false)
-        assert(condition, message, suppress_backtrace, DEVELOPMENT ? 0.0 : 3.0)
-    end
-
     def test_request_parameter(data, key, options)
         type = ((options[:types] || {})[key]) || String
         assert(data[key.to_s].is_a?(type), "#{key.to_s} is a #{type}")
@@ -1457,15 +1470,15 @@ class Main < Sinatra::Base
         options[:optional_keys] ||= []
         options[:max_value_lengths] ||= {}
         data_str = request.body.read(options[:max_body_length]).to_s
-        if @session_user
-            unless ['/api/send_message', '/api/update_message', '/api/submit_poll_run'].include?(request.path)
-                begin
-                    ip_short = request.ip.to_s.split('.').map { |x| sprintf('%02x', x.to_i) }.join('')
-                    STDERR.puts sprintf("%s [%s] [%s] %s %s", DateTime.now.strftime('%Y-%m-%d %H:%M:%S'), ip_short, @session_user[:nc_login], request.path, data_str)
-                rescue
-                end
-            end
-        end
+        # if @session_user
+        #     unless ['/api/send_message', '/api/update_message', '/api/submit_poll_run'].include?(request.path)
+        #         begin
+        #             ip_short = request.ip.to_s.split('.').map { |x| sprintf('%02x', x.to_i) }.join('')
+        #             STDERR.puts sprintf("%s [%s] [%s] %s %s", DateTime.now.strftime('%Y-%m-%d %H:%M:%S'), ip_short, @session_user[:nc_login], request.path, data_str)
+        #         rescue
+        #         end
+        #     end
+        # end
 #         debug data_str
         @latest_request_body = data_str.dup
         begin
@@ -1496,7 +1509,7 @@ class Main < Sinatra::Base
     def session_user_has_streaming_button?
         return false unless PROVIDE_CLASS_STREAM
         return false unless user_logged_in?
-        return false if @session_user[:teacher]
+        return false if teacher_logged_in?
         return false if class_stream_link_for_session_user.nil?
         return false unless @session_user[:homeschooling]
         return true
@@ -1504,10 +1517,19 @@ class Main < Sinatra::Base
 
     def class_stream_link_for_session_user
         require_user!
-        if PROVIDE_CLASS_STREAM && (!@session_user[:teacher]) && (!['11', '12'].include?(@session_user[:klasse]))
+        if PROVIDE_CLASS_STREAM && schueler_logged_in? && (!['11', '12'].include?(@session_user[:klasse]))
             "/jitsi/Klassenstreaming#{@session_user[:klasse]}"
         else
             nil
+        end
+    end
+
+    def redirect_on_error(&block)
+        begin
+            yield
+        rescue
+            redirect "#{WEB_ROOT}/", 302
+            raise 'redirected'
         end
     end
 
@@ -1666,7 +1688,6 @@ class Main < Sinatra::Base
                                         @session_user[:ip] = request.ip
                                     end
                                 end
-                                @session_user[:roles] ||= Set.new()
                             end
                         rescue
                             # something went wrong, delete the session
@@ -1679,6 +1700,10 @@ class Main < Sinatra::Base
                 end
             end
         end
+        if @session_user
+            @session_user[:roles] ||= Set.new()
+        end
+        debug "[#{(@session_user || {})[:nc_login] || (@session_user || {})[:email] || 'anon'}] #{request.request_method} #{request.path}"
     end
 
     after '*' do
@@ -1738,6 +1763,15 @@ class Main < Sinatra::Base
     def trigger_update(which)
         begin
             http = Net::HTTP.new('timetable', 8080)
+            response = http.request(Net::HTTP::Get.new("/api/update/#{which}"))
+        rescue StandardError => e
+            STDERR.puts e
+        end
+    end
+
+    def trigger_stats_update(which)
+        begin
+            http = Net::HTTP.new('stats_bot', 8080)
             response = http.request(Net::HTTP::Get.new("/api/update/#{which}"))
         rescue StandardError => e
             STDERR.puts e
@@ -1831,9 +1865,9 @@ class Main < Sinatra::Base
                         nav_items << :techteam
                     end
                 end
-                if running_pishing_training? || developer_logged_in?
-                    nav_items << :phishing
-                end
+                # if running_pishing_training? || developer_logged_in?
+                #     nav_items << :phishing
+                # end
                 # nav_items << :advent_calendar #if advents_calendar_date_today > 0
                 nav_items << :profile
                 new_messages_count_s = new_messages_count.to_s
@@ -1966,10 +2000,16 @@ class Main < Sinatra::Base
                     if user_logged_in?
                         if teacher_logged_in?
                             io.puts "<a class='dropdown-item nav-icon' href='/projekttage_sus'><div class='icon'><i class='fa fa-rocket'></i></div><span class='label'>Projekttage</span></a>"
-                        elsif @session_user[:klasse] == '11'
-                            io.puts "<a class='dropdown-item nav-icon' href='/projekttage_orga'><div class='icon'><i class='fa fa-rocket'></i></div><span class='label'>Projekttage</span></a>"
-                        elsif user_eligible_for_projekt_katalog? && DEVELOPMENT
-                            io.puts "<a class='dropdown-item nav-icon' href='/projekttage_sus'><div class='icon'><i class='fa fa-rocket'></i></div><span class='label'>Projekttage</span></a>"
+                        elsif schueler_logged_in?
+                            if @session_user[:klasse] == '11'
+                                if projekttage_phase() >= 1
+                                    io.puts "<a class='dropdown-item nav-icon' href='/projekttage_orga'><div class='icon'><i class='fa fa-rocket'></i></div><span class='label'>Projekttage</span></a>"
+                                end
+                            elsif user_eligible_for_projekt_katalog?
+                                if projekttage_phase() >= 2
+                                    io.puts "<a class='dropdown-item nav-icon' href='/projekttage_sus'><div class='icon'><i class='fa fa-rocket'></i></div><span class='label'>Projekttage</span></a>"
+                                end
+                            end
                         end
                     end
                     if schueler_logged_in?
@@ -2792,7 +2832,8 @@ class Main < Sinatra::Base
             @session_user = {
                 :email => "monitor@#{SCHUL_MAIL_DOMAIN}",
                 :is_monitor => true,
-                :teacher => false
+                :teacher => false,
+                :roles => Set.new(),
             }
         end
     end
@@ -2802,7 +2843,8 @@ class Main < Sinatra::Base
             @session_user = {
                 :email => "monitor-lz@#{SCHUL_MAIL_DOMAIN}",
                 :is_monitor => true,
-                :teacher => false
+                :teacher => false,
+                :roles => Set.new(),
             }
         end
     end
@@ -2814,84 +2856,6 @@ class Main < Sinatra::Base
     get '/api/get_room_timetable_pdf' do
         require_teacher!
         respond_raw_with_mimetype(get_room_timetable_pdf(), 'application/pdf')
-    end
-
-    get '/api/dark.css' do
-        color_scheme = (@session_user || {})[:color_scheme]
-        unless color_scheme =~ /^[ld][0-9a-f]{18}[0-9]?$/
-            unless user_logged_in?
-                color_scheme = pick_random_color_scheme()
-            else
-                color_scheme = @@standard_color_scheme
-            end
-        end
-        if color_scheme.size < 20
-            color_scheme += '0'
-        end
-        color_palette = color_palette_for_color_scheme(color_scheme)
-
-        s = (@session_user || {})[:dark] ? File.read('/static/dark.css') : ""
-        while true
-            index = s.index('#{')
-            break if index.nil?
-            length = 2
-            balance = 1
-            while index + length < s.size && balance > 0
-                c = s[index + length]
-                balance -= 1 if c == '}'
-                balance += 1 if c == '{'
-                length += 1
-            end
-            code = s[index + 2, length - 3]
-            begin
-#                             STDERR.puts code
-                s[index, length] = eval(code).to_s || ''
-            rescue
-                debug "Error while evaluating for #{(@session_user || {})[:email]}:"
-                debug code
-                raise
-            end
-        end
-        respond_raw_with_mimetype(s, 'text/css')
-    end
-
-    get '/api/new_design.css' do
-        color_scheme = (@session_user || {})[:color_scheme]
-        unless color_scheme =~ /^[ld][0-9a-f]{18}[0-9]?$/
-            unless user_logged_in?
-                color_scheme = pick_random_color_scheme()
-            else
-                color_scheme = @@standard_color_scheme
-            end
-        end
-        if color_scheme.size < 20
-            color_scheme += '0'
-        end
-        color_palette = color_palette_for_color_scheme(color_scheme)
-
-        s = (@session_user || {})[:new_design] ? File.read('/static/new_design.css') : ""
-        while true
-            index = s.index('#{')
-            break if index.nil?
-            length = 2
-            balance = 1
-            while index + length < s.size && balance > 0
-                c = s[index + length]
-                balance -= 1 if c == '}'
-                balance += 1 if c == '{'
-                length += 1
-            end
-            code = s[index + 2, length - 3]
-            begin
-#                             STDERR.puts code
-                s[index, length] = eval(code).to_s || ''
-            rescue
-                debug "Error while evaluating for #{(@session_user || {})[:email]}:"
-                debug code
-                raise
-            end
-        end
-        respond_raw_with_mimetype(s, 'text/css')
     end
 
     get '/room/:room' do
@@ -3009,6 +2973,8 @@ class Main < Sinatra::Base
                     end
                     redirect "#{WEB_ROOT}/bib_browse", 302
                     return
+                elsif user_with_role_logged_in?(:schulbuchverein)
+                    path = 'upload_schulbuchverein_bank_statement'
                 else
                     path = 'timetable'
                 end

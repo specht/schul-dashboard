@@ -5,12 +5,14 @@ require 'nextcloud'
 require 'set'
 
 class Script
+    include UserRoleHelper
+
     def initialize
         @ocs = Nextcloud.ocs(url: NEXTCLOUD_URL_FROM_RUBY_CONTAINER,
                              username: NEXTCLOUD_USER,
                              password: NEXTCLOUD_PASSWORD)
     end
-    
+
     def run
         srsly = false
         if ARGV.include?('--srsly')
@@ -22,11 +24,13 @@ class Script
         # docker-compose exec -u www-data app /bin/bash
         # ./occ files:scan [user_id]
         @@user_info = Main.class_variable_get(:@@user_info)
+        @@users_for_role = Main.class_variable_get(:@@users_for_role)
         @@klassen_for_shorthand = Main.class_variable_get(:@@klassen_for_shorthand)
         STDERR.print "Getting groups: "
         all_groups = @ocs.group.all
         STDERR.puts "found #{all_groups.size}"
         if srsly
+            @ocs.group.create('Lehrbuchverein') unless all_groups.include?('Lehrbuchverein')
             @ocs.group.create('Lehrer') unless all_groups.include?('Lehrer')
             @ocs.group.create('SuS') unless all_groups.include?('SuS')
         end
@@ -50,7 +54,7 @@ class Script
             ['a', 'b', 'c', 'd', 'e', 'o'].each { |x| all_possible_klassen_order << "#{klasse}#{x}" }
         end
         @@user_info.each_pair do |email, user|
-            next unless user[:teacher]
+            next unless user_has_role(email, :teacher)
             next unless user[:can_log_in]
             STDERR.print '.'
             klassen = @@klassen_for_shorthand[user[:shorthand]] || []
@@ -107,7 +111,7 @@ class Script
 #             end
         end
         @@user_info.each_pair do |email, user|
-            next if user[:teacher]
+            next unless user_has_role(email, :schueler)
             STDERR.print '.'
             display_name = user[:display_name]
             klasse = user[:klasse]
@@ -153,6 +157,39 @@ class Script
                             @ocs.user(user_id).group.destroy("Klasse #{k}")
                         end
                     end
+                end
+            end
+        end
+        @@user_info.each_pair do |email, user|
+            next unless user_has_role(email, :schulbuchverein)
+            next unless user[:can_log_in]
+            STDERR.print '.'
+            user_id = user[:nc_login]
+            unless all_users.include?(user_id)
+                STDERR.puts "@ocs.user.create(#{user_id}, #{user[:initial_nc_password]})"
+                if srsly
+                    @ocs.user.create(user_id, user[:initial_nc_password])
+                end
+            end
+            user_info = @ocs.user.find(user_id)
+# #             @ocs.user.destroy(user_id)
+# #             next
+            if user_info.displayname != user[:display_last_name]
+                STDERR.puts "@ocs.user.update(#{user_id}, 'displayname', #{user[:display_last_name]})"
+                if srsly
+                    @ocs.user.update(user_id, 'displayname', user[:display_last_name])
+                end
+            end
+            if user_info.email != email
+                STDERR.puts "@ocs.user.update(#{user_id}, 'email', #{email})"
+                if srsly
+                    @ocs.user.update(user_id, 'email', email)
+                end
+            end
+            unless user_info.groups.include?('Lehrbuchverein')
+                STDERR.puts "@ocs.user(#{user_id}).group.create('Lehrbuchverein')"
+                if srsly
+                    @ocs.user(user_id).group.create('Lehrbuchverein')
                 end
             end
         end

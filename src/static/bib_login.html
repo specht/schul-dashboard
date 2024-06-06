@@ -99,7 +99,7 @@
                     console.log(data);
                     $('#qrcode').append(data.qrcode);
                     $('#qrcode').addClass('showing');
-                    if ('#{DEVELOPMENT}' === '1')
+                    if ('#{DEVELOPMENT ? true : false}' === 'true')
                         $('#qrcode').append($('<a>').attr('href', data.url).text('LINK'));
                 }
             });
@@ -118,7 +118,7 @@
 
         ws.onmessage = function(msg) {
             data = JSON.parse(msg.data);
-            console.log(data.command);
+            console.log(`>>> ${data.command} <<<`);
             if (data.command === 'do_login') {
                 api_call('/api/login_for_device_do_login', {}, function(data) {
                     if (data.success) window.location.href = '/';

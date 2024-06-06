@@ -67,7 +67,7 @@ class Main < Sinatra::Base
 
     def get_ha_amt_lesson_keys()
         return [] unless user_logged_in?
-        return [] if @session_user[:teacher]
+        return [] if teacher_logged_in?
         results = neo4j_query(<<~END_OF_QUERY, :email => @session_user[:email])
             MATCH (u:User {email: $email})-[r:HAS_AMT {amt: 'hausaufgaben'}]->(l:Lesson)
             RETURN l.key;

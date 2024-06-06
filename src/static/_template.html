@@ -279,8 +279,12 @@
     }
 
     </style>
-    <link href="/api/dark.css" rel="stylesheet" />
-    <link href="/api/new_design.css" rel="stylesheet" />
+    #{(@session_user || {})[:dark] ? '' : '<!--'}
+    <link href="/dark.css" rel="stylesheet" />
+    #{(@session_user || {})[:dark] ? '' : '-->'}
+    #{(@session_user || {})[:new_design] ? '' : '<!--'}
+    <link href="/new_design.css" rel="stylesheet" />
+    #{(@session_user || {})[:new_design] ? '' : '-->'}
     <script defer src="/gen/js/compiled-#{compiled_js_sha1}.js"></script>
 
     #{PAGE_CSS_HERE}

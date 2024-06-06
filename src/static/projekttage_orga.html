@@ -1,4 +1,16 @@
 #{assert(user_logged_in? && @session_user[:klasse] == '11')}
+<style>
+.cbl {
+    border-left: 1px solid rgba(0, 0, 0, 0.15);
+}
+td, th {
+    min-width: 3em;
+}
+.table {
+    border: 1px solid rgba(0, 0, 0, 0.15);
+}
+
+</style>
 <div class='container'>
     <div class='row'>
         <div class='col-md-12'>
@@ -9,8 +21,20 @@
             <div class="api_messages mt-2"></div>
             <hr>
             <h3>Anmeldungen und E-Mail-Verteiler</h3>
-            <div class="alert alert-warning">
+            <div style='#{projekttage_phase() < 4 ? '' : 'display: none;'}' class="alert alert-warning">
                 Hier wirst du später sehen, welche Schülerinnen und Schüler sich für dein Projekt angemeldet haben und es wird dann auch E-Mail-Verteiler geben, damit du alle Teilnehmer:innen und/oder deren Eltern per E-Mail kontaktieren kannst.
+            </div>
+            <div style='#{projekttage_phase() == 3 ? '' : 'display: none;'}'>
+                <p>
+                    Hier ist eine Übersicht für dich, aus der du sehen kannst, welche Schülerinnen und Schüler sich für dein Projekt interessieren:
+                </p>
+                #{print_projekt_interesse()}
+                <p>
+                    Bitte beachte, dass jeder mindestens drei Projekte wählen muss und die Zuordnung automatisiert geschieht, so dass alle ein möglichst gut passendes Projekt bekommen.
+                    Diese Zahlen werden also nicht deine tatsächliche Gruppenzusammensetzung reflektieren, können dir aber einen Anhaltspunkt dafür geben, wie gut dein
+                    Projekt in welchen Altersgruppen aufgenommen wird.
+                </p>
+                #{print_projekt_interesse_stats()}
             </div>
             <hr>
             <h3>Projektkatalog</h3>
@@ -46,7 +70,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 col = $(`<div class='col-md-2'>`).appendTo(row);
                 form_group = $(`<div class='form-group'>`).appendTo(col);
                 form_group.append($(`<label>`).text('Kapazität'));
-                form_group.append($(`<input type='text' class='form-control' readonly>`).val(`max. ${projekt.capacity}`));
+                form_group.append($(`<input type='text' class='form-control' readonly>`).val((projekt.capacity === null) ? '–' : `max. ${projekt.capacity}`));
                 row = $(`<div class='row'>`).appendTo($('.projekte-container'));
                 col = $(`<div class='col-md-9'>`).appendTo(row);
                 form_group = $(`<div class='form-group'>`).appendTo(col);

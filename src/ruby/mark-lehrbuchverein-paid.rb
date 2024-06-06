@@ -14,6 +14,7 @@ class Script
             STDERR.puts "Notice: Not making any modifications unless you specify --srsly"
         end
         @@user_info = Main.class_variable_get(:@@user_info)
+        @@users_for_role = Main.class_variable_get(:@@users_for_role)
         @@schueler_for_klasse = Main.class_variable_get(:@@schueler_for_klasse)
         KLASSEN_ORDER.each do |klasse|
             next if klasse.to_i < 7

@@ -1,3 +1,7 @@
+if File.exist?('/data/bibliothek/config.rb')
+    require '/data/bibliothek/config.rb'
+end
+
 class Main < Sinatra::Base
     def self.determine_lehrmittelverein_state_for_all()
         @@lehrmittelverein_state_cache = {}
@@ -200,4 +204,77 @@ class Main < Sinatra::Base
         respond(:users => users, :year => LEHRBUCHVEREIN_JAHR)
     end
 
+    post '/api/upload_schulbuchverein_bank_statement' do
+        require_user_with_role!(:schulbuchverein)
+        file = params['file']
+        filename = file['filename']
+        assert(!filename.include?('/'))
+        assert(filename.size > 0)
+        blob = file['tempfile'].read
+        blob.force_encoding('UTF-8')
+        headers = nil
+        # Einnahmen, die nicht verarbeitet werden konnten
+        # Einnahmen, die verarbeitet wurden
+        # Einnahmen, die schon verarbeitet waren
+        result = {
+            :entries => {},
+            :skipped => [],
+            :handled => [],
+            :previously_handled => [],
+            :extra_info => {},
+        }
+        token_catalogue = YAML.load(File.read("/internal/bibliothek/out/token_catalogue-#{LBV_NEXT_SCHULJAHR.gsub('/', '-')}.yaml"))
+        blob.split("\n").each do |line|
+            line.strip!
+            parts = line.split(';').map { |x| x.strip }
+            STDERR.puts "[#{parts.size}] #{parts.join(' / ')}"
+            if parts.size == 18
+                if headers.nil?
+                    headers = parts.each_with_index.to_h
+                    assert(headers['Buchungstag'])
+                    assert(headers['Begünstigter / Auftraggeber'])
+                    assert(headers['Verwendungszweck'])
+                    assert(headers['Betrag'])
+                else
+                    subject = parts[headers['Verwendungszweck']]
+                    amount = parts[headers['Betrag']].strip
+                    # Ausgaben überspringen, uns interessieren nur die Einnahmen
+                    next if amount[0] == '-'
+                    datum = parts[headers['Buchungstag']]
+                    from = parts[headers['Begünstigter / Auftraggeber']]
+                    amount_cents = (amount.sub(',', '.').to_f * 100).to_i
+                    STDERR.puts "[#{datum}] #{amount_cents} ==> #{subject} (#{from})"
+                    key = "#{datum}/#{from}/#{amount_cents}/#{subject}"
+                    sha1 = Digest::SHA1.hexdigest(key)
+                    result[:entries][sha1] = {:datum => datum, :amount => amount_cents, :subject => subject, :from => from}
+                    m = subject.upcase.strip.gsub('  ', ' ').match(/([A-Z]{2})[^A-Z]?([A-Z]{2})[^A-Z]?(\d{3})/)
+                    state = :skipped
+                    if m
+                        token = "#{m[1]}-#{m[2]}-#{m[3]}"
+                        STDERR.puts "GOT TOKEN! [#{token}]"
+                        if token_catalogue[token]
+                            STDERR.puts "ALSO FOUND EMAIL FOR TOKEN: #{token_catalogue[token].to_json}"
+                            if amount_cents == token_catalogue[token][:amount]
+                                # TODO: mark user as paid for next schuljahr
+                                state = :handled
+                                result[:extra_info][sha1] = {
+                                    :display_name => @@user_info[token_catalogue[token][:email]][:display_name],
+                                    :klasse => @@user_info[token_catalogue[token][:email]][:klasse],
+                                }
+                            else
+                                result[:extra_info][sha1] = {:reason => :unexpected_amount, :expected_amount => token_catalogue[token][:amount]}
+                            end
+                        else
+                            result[:extra_info][sha1] = {:reason => :unknown_token}
+                        end
+                    else
+                        result[:extra_info][sha1] = {:reason => :no_token_found}
+                    end
+                    result[state] << sha1
+                end
+            end
+        end
+        assert(!headers.nil?)
+        respond(:uploaded => 'yeah', :result => result)
+    end
 end

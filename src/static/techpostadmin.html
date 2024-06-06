@@ -141,6 +141,7 @@
 </div>
 
 <script>
+    let users_which_can_fix_tech_problems = `#{print_users_which_can_fix_tech_problems}`
 
     function compose_fixed_problems() {
         $('#composeFixed').modal('show');
@@ -257,7 +258,7 @@
                             let tp_print = "<button class='btn btn-primary tp-print'><i class='fa fa-print'></i></button>"
                             let tp_delete = "<button class='btn btn-danger tp-delete';><i class='fa fa-trash '></i></button>"
                             let tp_hide_admin = "<button class='btn btn-info tp-hide-admin'><i class='fa fa-eye'></i></button>"
-                            let fixer = entry.fnc_login ? `<button title='${entry.fdisplay_name} kümmert sich um das Problem.' class='tp-fixer'><img src='#{NEXTCLOUD_URL}/index.php/avatar/${entry.fnc_login}/256' class='icon avatar-md'/></button>` : "<button title='Ich kümmere mich darum' class='btn btn-warning tp-fixer'><i class='fa fa-user-plus'></i></button>";
+                            let fixer = entry.fnc_login ? `<button title='${entry.fdisplay_name} kümmert sich um das Problem.' class='tp-fixer'><img src='#{NEXTCLOUD_URL}/index.php/avatar/${entry.fnc_login}/256' class='icon avatar-md'/></button>` : "<button class='btn btn-warning tp-fixer'><i class='fa fa-user-plus'></i></button>";
                             let tp_fixed = "<button class='btn btn-success tp-fixed'><i class='fa fa-check'></i>&nbsp;&nbsp;Behoben</button>"
                             let tp_not_fixed = "<button class='btn btn-warning tp-not-fixed'><i class='fa fa-times'></i>&nbsp;&nbsp;Nicht Behoben</button>"
                             let mail_count = entry.problem.mail_count
@@ -347,13 +348,22 @@
 
                                     });
                                 } else {
-                                    api_call('/api/i_will_fix_tech_problem', {token: token}, function(data) {
-                                        if (data.success)
-                                            refresh_tech_problems();
-                                            $('#__template_modal').modal('hide');
-
-                                    });
-
+                                    showTemplateModal('Person zum Beheben des Problems zuweisen',
+                                    users_which_can_fix_tech_problems,
+                                    '', '',
+                                    'Schließen', 'btn-secondary'
+                                    );
+                                    
+                                    $('.bu-select-user-to-fix-problem').click(function(e) {
+                                        let email = $(this).data('email');
+                                        console.log(email)
+                                        api_call('/api/i_will_fix_tech_problem', {token: token, email: email}, function(data) {
+                                            if (data.success)
+                                                refresh_fixed_tech_problems();
+                                                refresh_tech_problems
+                                                $('#__template_modal').modal('hide');
+                                        });
+                                    })
                                 }
                             });
                             $('.tp-hide-admin').click(function() {
@@ -464,7 +474,7 @@
                             let tp_print = "<button class='btn btn-primary tp-print';><i class='fa fa-print'></i></button>"
                             let tp_delete = "<button class='btn btn-danger tp-delete';><i class='fa fa-trash '></i></button>"
                             let tp_unhide_admin = "<button class='btn btn-secondary tp-unhide-admin'><i class='fa fa-eye-slash'></i></button>"
-                            let fixer = entry.fnc_login ? `<button title='${entry.fdisplay_name} kümmert sich um das Problem.' class='tp-fixer'><img src='#{NEXTCLOUD_URL}/index.php/avatar/${entry.fnc_login}/256' class='icon avatar-md'/></button>` : "<button title='Ich kümmere mich darum' class='btn btn-warning tp-fixer'><i class='fa fa-user-plus'></i></button>";
+                            let fixer = entry.fnc_login ? `<button title='${entry.fdisplay_name} kümmert sich um das Problem.' class='tp-fixer'><img src='#{NEXTCLOUD_URL}/index.php/avatar/${entry.fnc_login}/256' class='icon avatar-md'/></button>` : "<button class='btn btn-warning tp-fixer'><i class='fa fa-user-plus'></i></button>";
                             let tp_fixed = "<button class='btn btn-success tp-fixed'><i class='fa fa-check'></i>&nbsp;&nbsp;Behoben</button>"
                             let tp_not_fixed = "<button class='btn btn-warning tp-not-fixed'><i class='fa fa-times'></i>&nbsp;&nbsp;Nicht Behoben</button>"
                             let mail_count = entry.problem.mail_count
@@ -560,14 +570,22 @@
 
                                     });
                                 } else {
-                                    api_call('/api/i_will_fix_tech_problem', {token: token}, function(data) {
-                                        if (data.success)
-                                            refresh_fixed_tech_problems();
-                                            refresh_tech_problems
-                                            $('#__template_modal').modal('hide');
-
-                                    });
-
+                                    showTemplateModal('Person zum Beheben des Problems zuweisen',
+                                    users_which_can_fix_tech_problems,
+                                    '', '',
+                                    'Schließen', 'btn-secondary'
+                                    );
+                                    
+                                    $('.bu-select-user-to-fix-problem').click(function(e) {
+                                        let email = $(this).data('email');
+                                        console.log(email)
+                                        api_call('/api/i_will_fix_tech_problem', {token: token, email: email}, function(data) {
+                                            if (data.success)
+                                                refresh_fixed_tech_problems();
+                                                refresh_tech_problems
+                                                $('#__template_modal').modal('hide');
+                                        });
+                                    })
                                 }
                             });
                             $('.tp-unhide-admin').click(function() {

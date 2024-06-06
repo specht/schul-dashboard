@@ -45,7 +45,7 @@ class Main < Sinatra::Base
 
 
     post '/api/send_all_techpost_welcome_mail' do
-        require_user_who_can_manage_tablets!
+        require_user_with_role!(:can_manage_tech_problems)
         recipients = get_technikamt_users()
         send_welcome_mail recipients
         display_name = @session_user[:display_name]
@@ -66,7 +66,7 @@ class Main < Sinatra::Base
     end
 
     post '/api/send_single_techpost_welcome_mail' do
-        require_user_who_can_manage_tablets!
+        require_user_with_role!(:can_manage_tech_problems)
         data = parse_request_data(:required_keys => [:email],)
         recipients = []
         recipients.append(data[:email])
@@ -145,7 +145,7 @@ class Main < Sinatra::Base
     end
 
     post '/api/report_tech_problem_quiet' do
-        require_user_who_can_manage_tablets!
+        require_user_with_role!(:can_manage_tech_problems)
         data = parse_request_data(:required_keys => [:problem, :date, :device],)
         token = RandomTag.generate(24)
         neo4j_entry = neo4j_query_expect_one(<<~END_OF_QUERY, :token => token, :email => @session_user[:email], :device => data[:device], :date => data[:date], :problem => data[:problem])
@@ -179,7 +179,7 @@ class Main < Sinatra::Base
     end
 
     post '/api/comment_tech_problem_admin' do
-        require_user_who_can_manage_tablets!
+        require_user_with_role!(:can_manage_tech_problems)
         data = parse_request_data(:required_keys => [:token, :comment],)
         token = data[:token]
         comment = data[:comment]
@@ -209,7 +209,7 @@ class Main < Sinatra::Base
     end
 
     post '/api/get_tech_problems_admin' do
-        require_user_who_can_manage_tablets!
+        require_user_with_role!(:can_manage_tech_problems)
         problems = neo4j_query(<<~END_OF_QUERY, :email => @session_user[:email]).map { |x| {:problem => x['v'], :email => x['u.email'], :femail => x['f.email']} }
             MATCH (v:TechProblem)-[:BELONGS_TO]->(u:User)
             OPTIONAL MATCH (v:TechProblem)-[:WILL_BE_FIXED_BY]->(f:User)
@@ -229,7 +229,7 @@ class Main < Sinatra::Base
     end
 
     post '/api/fix_tech_problem_admin' do
-        require_user_who_can_manage_tablets!
+        require_user_with_role!(:can_manage_tech_problems)
         data = parse_request_data(:required_keys => [:token])
         token = data[:token]
         problems = neo4j_query_expect_one(<<~END_OF_QUERY, :token => token)
@@ -242,7 +242,7 @@ class Main < Sinatra::Base
     end
 
     # post '/api/unfix_tech_problem_admin' do
-    #     require_user_who_can_manage_tablets!
+    #     require_user_with_role!(:can_manage_tech_problems)
     #     data = parse_request_data(:required_keys => [:token])
     #     token = data[:token]
     #     problems = neo4j_query_expect_one(<<~END_OF_QUERY, :token => token)
@@ -255,7 +255,7 @@ class Main < Sinatra::Base
     # end
 
     post '/api/not_fix_tech_problem_admin' do
-        require_user_who_can_manage_tablets!
+        require_user_with_role!(:can_manage_tech_problems)
         data = parse_request_data(:required_keys => [:token])
         token = data[:token]
         problems = neo4j_query_expect_one(<<~END_OF_QUERY, :token => token)
@@ -292,7 +292,7 @@ class Main < Sinatra::Base
     end
 
     post '/api/mail_tech_problem' do
-        require_user_who_can_manage_tablets!
+        require_user_with_role!(:can_manage_tech_problems)
         data = parse_request_data(:required_keys => [:token])
         token = data[:token]
         data = neo4j_query(<<~END_OF_QUERY, :token => token)
@@ -368,7 +368,7 @@ class Main < Sinatra::Base
     end
 
     post '/api/hide_tech_problem_admin' do
-        require_user_who_can_manage_tablets!
+        require_user_with_role!(:can_manage_tech_problems)
         data = parse_request_data(:required_keys => [:token])
         token = data[:token]
         neo4j_query_expect_one(<<~END_OF_QUERY, :token => token)
@@ -380,7 +380,7 @@ class Main < Sinatra::Base
     end
 
     post '/api/unhide_tech_problem_admin' do
-        require_user_who_can_manage_tablets!
+        require_user_with_role!(:can_manage_tech_problems)
         data = parse_request_data(:required_keys => [:token])
         token = data[:token]
         neo4j_query_expect_one(<<~END_OF_QUERY, :token => token)
@@ -394,10 +394,11 @@ class Main < Sinatra::Base
     end
 
     post '/api/i_will_fix_tech_problem' do
-        require_user_who_can_manage_tablets!
-        data = parse_request_data(:required_keys => [:token])
+        require_user_with_role!(:can_manage_tech_problems)
+        data = parse_request_data(:required_keys => [:token, :email])
         token = data[:token]
-        neo4j_query_expect_one(<<~END_OF_QUERY, :token => token, :email => @session_user[:email])
+        email = data[:email]
+        neo4j_query_expect_one(<<~END_OF_QUERY, :token => token, :email => email)
             MATCH (v:TechProblem {token: $token})
             MATCH (u:User {email: $email})
             MERGE (v)-[:WILL_BE_FIXED_BY]->(u)
@@ -407,18 +408,18 @@ class Main < Sinatra::Base
     end
 
     post '/api/i_will_not_fix_tech_problem' do
-        require_user_who_can_manage_tablets!
+        require_user_with_role!(:can_manage_tech_problems)
         data = parse_request_data(:required_keys => [:token])
         token = data[:token]
-        neo4j_query(<<~END_OF_QUERY, :token => token, :email => @session_user[:email])
-            MATCH (v:TechProblem {token: $token})-[r:WILL_BE_FIXED_BY]->(u:User {email: $email})
+        neo4j_query(<<~END_OF_QUERY, :token => token)
+            MATCH (v:TechProblem {token: $token})-[r:WILL_BE_FIXED_BY]->(u:User)
             DELETE r;
         END_OF_QUERY
         respond(:ok => true)
     end
 
     post '/api/delete_tech_problem_admin' do
-        require_user_who_can_manage_tablets!
+        require_user_with_role!(:can_manage_tech_problems)
         data = parse_request_data(:required_keys => [:token])
         token = data[:token]
         problems = neo4j_query_expect_one(<<~END_OF_QUERY, :token => token)
@@ -509,7 +510,7 @@ class Main < Sinatra::Base
     end
 
     get '/api/get_tech_problem_pdf/*' do
-        require_user_who_can_manage_tablets!
+        require_user_with_role!(:can_manage_tech_problems)
         token = request.path.sub('/api/get_tech_problem_pdf/', '')
         problems = neo4j_query(<<~END_OF_QUERY, :token => token)
             MATCH (v:TechProblem {token: $token})-[:BELONGS_TO]->(u:User)
@@ -594,8 +595,28 @@ class Main < Sinatra::Base
         respond_raw_with_mimetype(pdf, 'application/pdf')
     end
 
+    def print_users_which_can_fix_tech_problems
+        require_user_with_role!(:can_manage_tech_problems)
+        StringIO.open do |io|
+            io.puts "<div class='row' style='margin-bottom: 15px;'><div class='col-md-12'>"
+            io.puts "<table class='table narrow table-striped' style='width: unset; min-width: 100%;'>"
+            io.puts "<thead>"
+            io.puts "<tr><td>User</td><td>Auswählen</td></tr>"
+            io.puts "</thead><tbody>"
+            @@users_for_role[:can_manage_tech_problems].each do |user|
+                display_name = @@user_info[user][:display_name]
+                nc_login = @@user_info[user][:nc_login]
+                klasse = tr_klasse(@@user_info[user][:klasse])
+                io.puts "<tr><td><img src='#{NEXTCLOUD_URL}/index.php/avatar/#{nc_login}/256' class='icon avatar-md'>&nbsp;#{display_name}</td><td><button class='btn btn-xs btn-success bu-select-user-to-fix-problem' data-email='#{user}'><i class='fa fa-check'></i></button></td></tr>"
+            end
+            io.puts "</tbody></table>"
+            io.puts "</div></div>"
+            io.string
+        end
+    end
+
     def print_techpost_superuser()
-        require_user_who_can_manage_tablets!
+        require_user_with_role!(:can_manage_tech_problems)
         problems = neo4j_query(<<~END_OF_QUERY, :email => @session_user[:email]).map { |x| {:problem => x['v'], :email => x['u.email'], :femail => x['f.email']} }
             MATCH (v:TechProblem)-[:BELONGS_TO]->(u:User)
             OPTIONAL MATCH (v:TechProblem)-[:WILL_BE_FIXED_BY]->(f:User)
@@ -638,7 +659,7 @@ class Main < Sinatra::Base
     end
 
     def print_tablet_login()
-        require_user_who_can_manage_tablets!
+        require_user_with_role!(:can_manage_tech_problems)
         StringIO.open do |io|
             io.puts "<p>Mit einem Klick auf diesen Button kannst du dieses Gerät dauerhaft als Lehrer-Tablet anmelden.</p>"
             io.puts "<button class='btn btn-primary bu_login_teacher_tablet'><i class='fa fa-sign-in'></i>&nbsp;&nbsp;Lehrer-Tablet-Modus aktivieren</button>"

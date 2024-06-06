@@ -18,6 +18,7 @@ AVAILABLE_ROLES = {
     :can_manage_bib_members => 'kann Bibliotheksnutzer verwalten',
     :can_manage_bib_payment => 'kann Bibliothekszahlungen verwalten',
     :can_manage_bib_special_access => 'Bibliothek Spezialzugriff',
+    :can_manage_tech_problems => 'kann gemeldete Technikprobleme bearbeiten',
     :gev => 'GEV',
     :sv => 'Schülervertretung',
     :technikteam => 'Technikteam',
@@ -38,6 +39,6 @@ ROLE_TRANSITIONS = <<~END_OF_STRING
     teacher => can_receive_messages can_write_messages can_create_polls can_create_events can_use_mailing_lists can_use_nextcloud can_use_sms_gateway
     schueler => can_receive_messages can_use_nextcloud
     sv => can_write_messages can_create_polls can_use_mailing_lists can_create_events
-    technikteam => can_write_messages can_create_polls can_use_mailing_lists can_create_events
-    admin => can_upload_files can_manage_news can_manage_monitors can_manage_tablets
+    technikteam => can_write_messages can_create_polls can_use_mailing_lists can_create_events can_manage_tablets can_manage_tech_problems
+    admin => can_upload_files can_manage_news can_manage_monitors can_manage_tablets can_manage_tech_problems
 END_OF_STRING

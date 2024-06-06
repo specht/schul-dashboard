@@ -705,7 +705,9 @@ class Main < Sinatra::Base
                 :geschlecht => record[:geschlecht],
                 :email => record[:email],
                 :can_log_in => true,
-                :roles => Set.new()
+                :nc_login => record[:nc_login],
+                :initial_nc_password => record[:initial_nc_password],
+                :roles => Set.new(),
             }
         end
 

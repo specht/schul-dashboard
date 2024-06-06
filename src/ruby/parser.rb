@@ -274,6 +274,8 @@ class Parser
                       :display_last_name_dativ => display_last_name.sub('Herr ', 'Herrn '),
                       :geschlecht => geschlecht,
                       :can_log_in => true,
+                      :nc_login => email.split('@').first,
+                      :initial_nc_password => gen_password_for_nc(email),
                      }
             yield record
         end

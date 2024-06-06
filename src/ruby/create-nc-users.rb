@@ -30,6 +30,7 @@ class Script
         all_groups = @ocs.group.all
         STDERR.puts "found #{all_groups.size}"
         if srsly
+            @ocs.group.create('Lehrbuchverein') unless all_groups.include?('Lehrbuchverein')
             @ocs.group.create('Lehrer') unless all_groups.include?('Lehrer')
             @ocs.group.create('SuS') unless all_groups.include?('SuS')
         end
@@ -156,6 +157,39 @@ class Script
                             @ocs.user(user_id).group.destroy("Klasse #{k}")
                         end
                     end
+                end
+            end
+        end
+        @@user_info.each_pair do |email, user|
+            next unless user_has_role(email, :schulbuchverein)
+            next unless user[:can_log_in]
+            STDERR.print '.'
+            user_id = user[:nc_login]
+            unless all_users.include?(user_id)
+                STDERR.puts "@ocs.user.create(#{user_id}, #{user[:initial_nc_password]})"
+                if srsly
+                    @ocs.user.create(user_id, user[:initial_nc_password])
+                end
+            end
+            user_info = @ocs.user.find(user_id)
+# #             @ocs.user.destroy(user_id)
+# #             next
+            if user_info.displayname != user[:display_last_name]
+                STDERR.puts "@ocs.user.update(#{user_id}, 'displayname', #{user[:display_last_name]})"
+                if srsly
+                    @ocs.user.update(user_id, 'displayname', user[:display_last_name])
+                end
+            end
+            if user_info.email != email
+                STDERR.puts "@ocs.user.update(#{user_id}, 'email', #{email})"
+                if srsly
+                    @ocs.user.update(user_id, 'email', email)
+                end
+            end
+            unless user_info.groups.include?('Lehrbuchverein')
+                STDERR.puts "@ocs.user(#{user_id}).group.create('Lehrbuchverein')"
+                if srsly
+                    @ocs.user(user_id).group.create('Lehrbuchverein')
                 end
             end
         end

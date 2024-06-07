@@ -599,7 +599,7 @@ class Main < Sinatra::Base
             io.puts "<th>Beschreibung</th>"
             io.puts "<th>Aktiv</th>"
             io.puts "<th>Ursprung</th>"
-            if admin_logged_in? || developer_logged_in?
+            if admin_logged_in? || user_with_role_logged_in?(:developer)
                 io.puts "<th>Nutzer</th>"
             end
             io.puts "</tr>"
@@ -622,7 +622,7 @@ class Main < Sinatra::Base
                     io.puts "<td><i class='fa fa-times text-danger'></i></td>"
                     io.puts "<td></td>"
                 end
-                if admin_logged_in? || developer_logged_in?
+                if admin_logged_in? || user_with_role_logged_in?(:developer)
                     io.puts "<td><button class='btn-toggle-tr-below btn btn-xs btn-warning' style='width: 8em;'>#{(@@users_for_role[role] || []).size} Nutzer&nbsp;&nbsp;<i class='fa fa-chevron-down'></i></button></td>"
                     io.puts "</tr>"
                     io.puts "<tr style='display: none;'>"

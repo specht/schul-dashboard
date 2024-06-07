@@ -639,7 +639,7 @@ class Main < Sinatra::Base
                                                      :end_date, :end_time, :visible, :recipients],
                                   :types => {:recipients => Array},
                                   :max_body_length => 1024 * 1024)
-        unless data[:visible] == "no" && !developer_logged_in?
+        unless data[:visible] == "no" && !user_with_role_logged_in?(:developer)
             id = RandomTag.generate(12)
             timestamp = Time.now.to_i
             assert(['true', 'false'].include?(data[:anonymous]))

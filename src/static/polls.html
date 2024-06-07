@@ -68,13 +68,13 @@
             </div>
             <div class="modal-body" style='min-height: 300px;'>
                 <div class='row'>
-                    <div class='#{developer_logged_in? ? "col-md-10" : "col-md-12"}'>
+                    <div class='#{user_with_role_logged_in?(:developer) ? "col-md-10" : "col-md-12"}'>
                         <div class="form-group">
                             <label>Titel</label>
                             <input id='ti_poll_run_poll_title' disabled readonly class='form-control' type='text' placeholder='Bitte geben Sie den Titel des Termins ein'></input>
                         </div>
                     </div>
-                    <div class='col-md-2' style="display: #{developer_logged_in? ? 'block' : 'none'}">
+                    <div class='col-md-2' style="display: #{user_with_role_logged_in?(:developer) ? 'block' : 'none'}">
                         <div class="form-group">
                             <label>Sichbarkeit (Dev)</label>
                             <div class='button-with-label'>

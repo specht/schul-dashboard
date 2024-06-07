@@ -74,7 +74,7 @@ class Main < Sinatra::Base
     end
 
     post '/api/report_tech_problem' do
-        require_user_who_can_report_tech_problems_or_better!
+        require_user_with_role!(:can_report_tech_problems)
         data = parse_request_data(:required_keys => [:problem, :date, :device],)
         token = RandomTag.generate(24)
         neo4j_entry = neo4j_query_expect_one(<<~END_OF_QUERY, :token => token, :email => @session_user[:email], :device => data[:device], :date => data[:date], :problem => data[:problem])
@@ -268,7 +268,7 @@ class Main < Sinatra::Base
     end
 
     post '/api/hide_tech_problem' do
-        require_user_who_can_report_tech_problems!
+        require_user_with_role!(:can_report_tech_problems)
         data = parse_request_data(:required_keys => [:token])
         token = data[:token]
         neo4j_query_expect_one(<<~END_OF_QUERY, :token => token)
@@ -280,7 +280,7 @@ class Main < Sinatra::Base
     end
 
     post '/api/unhide_tech_problem' do
-        require_user_who_can_report_tech_problems!
+        require_user_with_role!(:can_report_tech_problems)
         data = parse_request_data(:required_keys => [:token])
         token = data[:token]
         neo4j_query_expect_one(<<~END_OF_QUERY, :token => token)

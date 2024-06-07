@@ -29,9 +29,9 @@ class Main < Sinatra::Base
         user_with_role_logged_in?(:can_manage_monitors)
     end
 
-    def developer_logged_in?
-        user_with_role_logged_in?(:developer)
-    end
+    # def developer_logged_in?
+    #     user_with_role_logged_in?(:developer)
+    # end
 
     def external_user_logged_in?
         return !(teacher_logged_in? || schueler_logged_in?)
@@ -147,9 +147,9 @@ class Main < Sinatra::Base
         user_logged_in? && check_has_technikamt(@session_user[:email])
     end
 
-    def user_who_can_report_tech_problems_or_better_logged_in?
-        user_logged_in? && (@session_user[:can_manage_tablets] || check_has_technikamt(@session_user[:email]))
-    end
+    # def user_who_can_report_tech_problems_or_better_logged_in?
+    #     user_logged_in? && (@session_user[:can_manage_tablets] || check_has_technikamt(@session_user[:email]))
+    # end
 
     def can_manage_agr_app_logged_in?
         user_with_role_logged_in?(:can_manage_agr_app)
@@ -243,9 +243,9 @@ class Main < Sinatra::Base
         assert(user_who_can_manage_monitors_logged_in?)
     end
 
-    def require_developer!
-        assert(developer_logged_in?)
-    end
+    # def require_developer!
+    #     assert(developer_logged_in?)
+    # end
 
     def require_technikteam!
         assert(technikteam_logged_in?)
@@ -255,9 +255,9 @@ class Main < Sinatra::Base
         assert(user_who_can_report_tech_problems_logged_in?)
     end
 
-    def require_user_who_can_report_tech_problems_or_better!
-        assert(user_who_can_report_tech_problems_or_better_logged_in?)
-    end
+    # def require_user_who_can_report_tech_problems_or_better!
+    #     assert(user_who_can_report_tech_problems_or_better_logged_in?)
+    # end
 
     def require_user_who_can_use_aula!
         assert(user_who_can_use_aula_logged_in?)
@@ -395,11 +395,11 @@ class Main < Sinatra::Base
         end
     end
 
-    def this_is_a_page_for_logged_in_developers
-        unless developer_logged_in?
-            redirect "#{WEB_ROOT}/", 303
-        end
-    end
+    # def this_is_a_page_for_logged_in_developers
+    #     unless developer_logged_in?
+    #         redirect "#{WEB_ROOT}/", 303
+    #     end
+    # end
 
     # Put this on top of a webpage to assert that this page can be opened during a phishing training only
     def this_is_a_page_for_phishing_training

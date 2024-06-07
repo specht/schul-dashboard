@@ -122,7 +122,7 @@ class Main < Sinatra::Base
         </div>
         </div>"
 
-        if running_pishing_training? || developer_logged_in?
+        if running_pishing_training? || user_with_role_logged_in?(:developer)
             return StringIO.open do |io|
                 if [5, 6].include?(@session_user[:klassenstufe])
                     io.puts us

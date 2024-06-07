@@ -1854,7 +1854,7 @@ class Main < Sinatra::Base
                 if user_is_eligible_for_tresor?
                     nav_items << :tresor
                 end
-                if admin_logged_in? || user_who_can_upload_files_logged_in? || user_who_can_manage_news_logged_in? || user_who_can_manage_monitors_logged_in? || user_who_can_manage_tablets_logged_in? || developer_logged_in?
+                if admin_logged_in? || user_who_can_upload_files_logged_in? || user_who_can_manage_news_logged_in? || user_who_can_manage_monitors_logged_in? || user_who_can_manage_tablets_logged_in? || user_with_role_logged_in?(:developer)
                     nav_items << :admin
                 end
                 if user_who_can_use_aula_logged_in?
@@ -1865,7 +1865,7 @@ class Main < Sinatra::Base
                         nav_items << :techteam
                     end
                 end
-                # if running_pishing_training? || developer_logged_in?
+                # if running_pishing_training? || user_with_role_logged_in?(:developer)
                 #     nav_items << :phishing
                 # end
                 # nav_items << :advent_calendar #if advents_calendar_date_today > 0
@@ -1918,7 +1918,7 @@ class Main < Sinatra::Base
                         io.puts "<a class='dropdown-item nav-icon' href='/bookings'><div class='icon'><i class='fa fa-bookmark'></i></div><span class='label'>Buchungen</span></a>"
                         io.puts "<a class='dropdown-item nav-icon' href='/techpostadmin'><div class='icon'><i class='fa fa-laptop'></i></div><span class='label'>Technikamt (Admin)</span></a>"
                     end
-                    if developer_logged_in?
+                    if user_with_role_logged_in?(:developer)
                         io.puts "<a class='dropdown-item nav-icon' href='/development'><div class='icon'><i class='fa fa-code'></i></div><span class='label'>Development</span></a>"
                     end
                     if admin_logged_in?

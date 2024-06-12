@@ -272,7 +272,7 @@ class Main < Sinatra::Base
         if data[:method] == 'sms'
             telephone_number = user[:telephone_number]
             if telephone_number.size > 0
-                send_sms(telephone_number.deobfuscate(SMS_PHONE_NUMBER_PASSPHRASE), "Dein Anmeldecode lautet #{l[:code2]}")
+                send_sms(telephone_number.deobfuscate(SMS_PHONE_NUMBER_PASSPHRASE), "Dein Anmeldecode lautet #{login_code[:code2]}")
             end
         elsif data[:method] == 'email'
             deliver_mail do

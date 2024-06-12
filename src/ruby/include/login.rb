@@ -126,6 +126,121 @@ class Main < Sinatra::Base
             respond({:error => 'code_expired'})
         end
         assert(Time.at(login_code[:valid_to]) >= Time.now, 'code expired', true)
+        if user_has_role(user[:email], :teacher)
+            first_method = login_code[:method]
+            available_second_methods = []
+            telephone_number = user[:telephone_number]
+            if first_method != 'sms' && telephone_number && telephone_number.size > 0 && Main.sms_gateway_ready?
+                available_second_methods << 'sms'
+            end
+            if first_method != 'otp' && user[:otp_token] && user[:otp_token]
+                available_second_methods << 'otp'
+            end
+            if first_method != 'email'
+                available_second_methods << 'email'
+            end
+            srand(Digest::SHA2.hexdigest(LOGIN_CODE_SALT).to_i + (Time.now.to_f * 1000000).to_i)
+            random_code = (0..5).map { |x| rand(10).to_s }.join('')
+            random_code = '654321' if DEVELOPMENT
+            result = neo4j_query_expect_one(<<~END_OF_QUERY, :tag => data[:tag], :code2 => random_code)
+                MATCH (l:LoginCode {tag: $tag})-[:BELONGS_TO]->(u:User)
+                SET l.code2 = $code2
+                RETURN l;
+            END_OF_QUERY
+            response = {
+                :force_2fa => true,
+                :first_method => first_method,
+                :available_second_methods => available_second_methods,
+            }
+
+            if available_second_methods == ['sms']
+                send_sms(telephone_number.deobfuscate(SMS_PHONE_NUMBER_PASSPHRASE), "Dein Anmeldecode lautet #{random_code}")
+                response[:sent] = :sms
+            elsif available_second_methods == ['email']
+                deliver_mail do
+                    to user[:email]
+                    bcc SMTP_FROM
+                    from SMTP_FROM
+
+                    subject "Dein Anmeldecode lautet #{random_code}"
+
+                    StringIO.open do |io|
+                        io.puts "<p>Hallo!</p>"
+                        io.puts "<p>Dein Anmeldecode lautet:</p>"
+                        io.puts "<p style='font-size: 200%;'>#{random_code}</p>"
+                        io.puts "<p>Der Code ist für zehn Minuten gültig. Nachdem du eingeloggt bist, bleibst du für ein ganzes Jahr eingeloggt.</p>"
+        #                 link = "#{WEB_ROOT}/c/#{tag}/#{random_code}"
+        #                 io.puts "<p><a href='#{link}'>#{link}</a></p>"
+                        io.puts "<p>Falls du diese E-Mail nicht angefordert hast, hat jemand versucht, sich mit deiner E-Mail-Adresse anzumelden. In diesem Fall musst du nichts weiter tun (es sei denn, du befürchtest, dass jemand anderes Zugriff auf dein E-Mail-Konto hat – dann solltest du dein E-Mail-Passwort ändern).</p>"
+                        io.puts "<p>Viele Grüße,<br />#{WEBSITE_MAINTAINER_NAME}</p>"
+                        io.string
+                    end
+                end
+                response[:sent] = :email
+            end
+
+            respond(response)
+        else
+            session_id = create_session(user[:email], login_code[:tainted] ? 2 : 365 * 24)
+            neo4j_query(<<~END_OF_QUERY, :session_id => session_id, :method => login_code[:method])
+                MATCH (s:Session {sid: $session_id})
+                SET s.method = $method;
+            END_OF_QUERY
+            neo4j_query(<<~END_OF_QUERY, :tag => data[:tag])
+                MATCH (l:LoginCode {tag: $tag})
+                DETACH DELETE l;
+            END_OF_QUERY
+            purge_missing_sessions(session_id)
+            respond(:ok => 'yeah')
+        end
+    end
+
+    post '/api/confirm_forced_2fa_login' do
+        data = parse_request_data(:required_keys => [:tag, :code, :code2])
+        data[:code] = data[:code].gsub(/[^0-9]/, '')
+        data[:code2] = data[:code2].gsub(/[^0-9]/, '')
+        begin
+            result = neo4j_query_expect_one(<<~END_OF_QUERY, :tag => data[:tag])
+                MATCH (l:LoginCode {tag: $tag})-[:BELONGS_TO]->(u:User)
+                SET l.tries = COALESCE(l.tries, 0) + 1
+                RETURN l, u;
+            END_OF_QUERY
+        rescue
+            respond({:error => 'code_expired'})
+            assert_with_delay(false, "Code expired", true)
+        end
+        user = result['u']
+        login_code = result['l']
+        if login_code[:tries] > MAX_LOGIN_TRIES + 1
+            neo4j_query(<<~END_OF_QUERY, :tag => data[:tag])
+                MATCH (l:LoginCode {tag: $tag})
+                DETACH DELETE l;
+            END_OF_QUERY
+            respond({:error => 'code_expired'})
+            assert_with_delay(false, "Code expired", true)
+        end
+        if login_code[:tries] == MAX_LOGIN_TRIES + 1
+            respond({:error => 'code_expired'})
+        end
+
+        assert(login_code[:tries] <= MAX_LOGIN_TRIES + 1)
+        found_match = false
+        otp_token = user[:otp_token]
+        if otp_token
+            totp = ROTP::TOTP.new(otp_token, issuer: "Dashboard")
+            if totp.verify(data[:code2], drift_behind: 15, drift_ahead: 15)
+                found_match = true
+            end
+        end
+        if data[:code2] == login_code[:code2]
+            found_match = true
+        end
+        if Time.at(login_code[:valid_to]) < Time.now
+            respond({:error => 'code_expired'})
+        end
+        assert(Time.at(login_code[:valid_to]) >= Time.now, 'code expired', true)
+        assert(found_match)
+
         session_id = create_session(user[:email], login_code[:tainted] ? 2 : 365 * 24)
         neo4j_query(<<~END_OF_QUERY, :session_id => session_id, :method => login_code[:method])
             MATCH (s:Session {sid: $session_id})
@@ -137,6 +252,47 @@ class Main < Sinatra::Base
         END_OF_QUERY
         purge_missing_sessions(session_id)
         respond(:ok => 'yeah')
+    end
+
+    post '/api/send_forced_code2' do
+        data = parse_request_data(:required_keys => [:tag, :method])
+        assert(['sms', 'email'].include?(data[:method]))
+        begin
+            result = neo4j_query_expect_one(<<~END_OF_QUERY, :tag => data[:tag])
+                MATCH (l:LoginCode {tag: $tag})-[:BELONGS_TO]->(u:User)
+                RETURN l, u;
+            END_OF_QUERY
+        rescue
+            respond({:error => 'code_expired'})
+            assert_with_delay(false, "Code expired", true)
+        end
+        login_code = result['l']
+        assert(data[:method] != login_code[:method])
+        user = result['u']
+        if data[:method] == 'sms'
+            telephone_number = user[:telephone_number]
+            if telephone_number.size > 0
+                send_sms(telephone_number.deobfuscate(SMS_PHONE_NUMBER_PASSPHRASE), "Dein Anmeldecode lautet #{l[:code2]}")
+            end
+        elsif data[:method] == 'email'
+            deliver_mail do
+                to user[:email]
+                bcc SMTP_FROM
+                from SMTP_FROM
+
+                subject "Dein Anmeldecode lautet #{l[:code2]}"
+
+                StringIO.open do |io|
+                    io.puts "<p>Hallo!</p>"
+                    io.puts "<p>Dein Anmeldecode lautet:</p>"
+                    io.puts "<p style='font-size: 200%;'>#{l[:code2]}</p>"
+                    io.puts "<p>Der Code ist für zehn Minuten gültig. Nachdem du eingeloggt bist, bleibst du für ein ganzes Jahr eingeloggt.</p>"
+                    io.puts "<p>Falls du diese E-Mail nicht angefordert hast, hat jemand versucht, sich mit deiner E-Mail-Adresse anzumelden. In diesem Fall musst du nichts weiter tun (es sei denn, du befürchtest, dass jemand anderes Zugriff auf dein E-Mail-Konto hat – dann solltest du dein E-Mail-Passwort ändern).</p>"
+                    io.puts "<p>Viele Grüße,<br />#{WEBSITE_MAINTAINER_NAME}</p>"
+                    io.string
+                end
+            end
+        end
     end
 
     post '/api/confirm_chat_login' do
@@ -446,39 +602,20 @@ class Main < Sinatra::Base
             elsif preferred_login_method == 'otp'
             else
                 deliver_mail do
-                    # FOR NOW, DON'T SEND E-MAIL CODES FOR CHAT LOGINS
                     to email_recipient
                     bcc SMTP_FROM
                     from SMTP_FROM
 
-                    if login_for_chat
-                        subject "Dein Chat-Anmeldecode lautet #{random_code}"
+                    subject "Dein Anmeldecode lautet #{random_code}"
 
-                        StringIO.open do |io|
-                            io.puts "<p>Hallo!</p>"
-                            io.puts "<p>Dein Chat-Anmeldecode lautet:</p>"
-                            io.puts "<p style='font-size: 200%;'>#{random_code}</p>"
-                            io.puts "<p>Der Code ist für zehn Minuten gültig.</p>"
-            #                 link = "#{WEB_ROOT}/c/#{tag}/#{random_code}"
-            #                 io.puts "<p><a href='#{link}'>#{link}</a></p>"
-                            io.puts "<p>Falls du diese E-Mail nicht angefordert hast, hat jemand versucht, sich mit deiner E-Mail-Adresse im HeeseChat anzumelden. In diesem Fall musst du nichts weiter tun (es sei denn, du befürchtest, dass jemand anderes Zugriff auf dein E-Mail-Konto hat – dann solltest du dein E-Mail-Passwort ändern).</p>"
-                            io.puts "<p>Viele Grüße,<br />#{WEBSITE_MAINTAINER_NAME}</p>"
-                            io.string
-                        end
-                    else
-                        subject "Dein Anmeldecode lautet #{random_code}"
-
-                        StringIO.open do |io|
-                            io.puts "<p>Hallo!</p>"
-                            io.puts "<p>Dein Anmeldecode lautet:</p>"
-                            io.puts "<p style='font-size: 200%;'>#{random_code}</p>"
-                            io.puts "<p>Der Code ist für zehn Minuten gültig. Nachdem du eingeloggt bist, bleibst du für ein ganzes Jahr eingeloggt.</p>"
-            #                 link = "#{WEB_ROOT}/c/#{tag}/#{random_code}"
-            #                 io.puts "<p><a href='#{link}'>#{link}</a></p>"
-                            io.puts "<p>Falls du diese E-Mail nicht angefordert hast, hat jemand versucht, sich mit deiner E-Mail-Adresse anzumelden. In diesem Fall musst du nichts weiter tun (es sei denn, du befürchtest, dass jemand anderes Zugriff auf dein E-Mail-Konto hat – dann solltest du dein E-Mail-Passwort ändern).</p>"
-                            io.puts "<p>Viele Grüße,<br />#{WEBSITE_MAINTAINER_NAME}</p>"
-                            io.string
-                        end
+                    StringIO.open do |io|
+                        io.puts "<p>Hallo!</p>"
+                        io.puts "<p>Dein Anmeldecode lautet:</p>"
+                        io.puts "<p style='font-size: 200%;'>#{random_code}</p>"
+                        io.puts "<p>Der Code ist für zehn Minuten gültig. Nachdem du eingeloggt bist, bleibst du für ein ganzes Jahr eingeloggt.</p>"
+                        io.puts "<p>Falls du diese E-Mail nicht angefordert hast, hat jemand versucht, sich mit deiner E-Mail-Adresse anzumelden. In diesem Fall musst du nichts weiter tun (es sei denn, du befürchtest, dass jemand anderes Zugriff auf dein E-Mail-Konto hat – dann solltest du dein E-Mail-Passwort ändern).</p>"
+                        io.puts "<p>Viele Grüße,<br />#{WEBSITE_MAINTAINER_NAME}</p>"
+                        io.string
                     end
                 end
             end

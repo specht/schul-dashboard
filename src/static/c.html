@@ -10,13 +10,28 @@
                 </div>
             </div>
             </form>
+            <div style="display: none;" id="div_forced_2fa">
+                <p>Als Lehrkraft benötigst du einen 2. Faktor für die Anmeldung. <span id="span_sent"></span></p>
+                <form id='form2'>
+                    <div class="input-group mb-3">
+                        <input type="number" id='code2' class="form-control" placeholder="Bitte gib deinen 2. Faktor ein" style='text-align: center;'>
+                        <div class="input-group-append">
+                            <button id='submit2' class="btn btn-primary" type="submit">Anmelden</button>
+                        </div>
+                    </div>
+                </form>
+                <div style="text-align: center;" class="mt-2 mb-2">
+                    <button style='display: none;' id='bu_force_2fa_sms' class="btn btn-outline-secondary btn-sm">Code per SMS senden</button>
+                    <button style='display: none;' id='bu_force_2fa_email' class="btn btn-outline-secondary btn-sm">Code per E-Mail senden</button>
+                </div>
+            </div>
             <div style="text-align: center; display: #{login_method == 'email' ? 'none' : 'block'};">
                 <button class="bu-send-code-via-email btn btn-sm btn-outline-secondary">Code per E-Mail senden</button>
                 <div class='alert send-code-via-email-confirmation' style="display: none;">
                     Der Code wurde dir per E-Mail zugesendet.
                 </div>
             </div>
-            <div class='api_messages' style='display: none;'></div>
+            <div class='api_messages mt-3' style='display: none;'></div>
         </div>
     </div>
 </div>
@@ -24,19 +39,72 @@
 <script type='text/javascript'>
 window.addEventListener('load', function () {
     $('#form').submit(function(e) { e.preventDefault(); });
+    $('#form2').submit(function(e) { e.preventDefault(); });
     $('#submit').click(function(e) {
         api_call('/api/confirm_login', {tag: '#{login_tag}', code: $('#code').val()}, function(data) {
+            console.log(data);
+            if (data.success === true) {
+                if (data.force_2fa) {
+                    $('send-code-via-email-confirmation').hide();
+                    $('.bu-send-code-via-email').hide();
+                    $('#code').prop('readonly', true);
+                    $('#submit').prop('disabled', true);
+                    $('#div_forced_2fa').slideDown();
+                    $('#code2').focus();
+                    console.log('2FA');
+                    if (data.sent === 'email')
+                        $('#span_sent').text('Schau bitte in deinen E-Mails nach.')
+                    else if (data.sent === 'sms')
+                        $('#span_sent').text('Schau bitte in deinen SMS nach.')
+                    else if (data.available_second_methods.indexOf('otp') >= 0)
+                        $('#span_sent').text('Du kannst einfach deinen OTP-Code verwenden.')
+                    if (data.available_second_methods.indexOf('sms') >= 0 && data.send !== 'sms')
+                        $('#bu_force_2fa_sms').show();
+                    if (data.available_second_methods.indexOf('email') >= 0 && data.send !== 'email')
+                        $('#bu_force_2fa_email').show();
+                } else {
+                    window.location.href = '/';
+                }
+            } else {
+                if (data.error === 'code_expired') {
+                    $('#form').hide();
+                    $('#form2').hide();
+                    show_error_message('Dein Anmeldecode ist abgelaufen.');
+                }
+                else
+                    show_error_message('Bei der Anmeldung ist ein Fehler aufgetreten.');
+                $('#code').val('').focus();
+            }
+        });
+    });
+    $('#submit2').click(function(e) {
+        api_call('/api/confirm_forced_2fa_login', {tag: '#{login_tag}', code: $('#code').val(), code2: $('#code2').val()}, function(data) {
             console.log(data);
             if (data.success === true) {
                 window.location.href = '/';
             } else {
                 if (data.error === 'code_expired') {
                     $('#form').hide();
+                    $('#form2').hide();
                     show_error_message('Dein Anmeldecode ist abgelaufen.');
                 }
                 else
                     show_error_message('Bei der Anmeldung ist ein Fehler aufgetreten.');
                 $('#code').val('').focus();
+            }
+        });
+    });
+    $('#bu_force_2fa_sms').on('click', function(e) {
+        api_call('/api/send_forced_code2', {tag: '#{login_tag}', method: 'sms'}, function(data) {
+            if (data.success) {
+                $('#bu_force_2fa_sms').prop('disabled', true);
+            }
+        });
+    });
+    $('#bu_force_2fa_email').on('click', function(e) {
+        api_call('/api/send_forced_code2', {tag: '#{login_tag}', method: 'email'}, function(data) {
+            if (data.success) {
+                $('#bu_force_2fa_email').prop('disabled', true);
             }
         });
     });

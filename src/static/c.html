@@ -53,11 +53,13 @@ window.addEventListener('load', function () {
                     $('#code2').focus();
                     console.log('2FA');
                     if (data.sent === 'email')
-                        $('#span_sent').text('Schau bitte in deinen E-Mails nach.')
+                        $('#span_sent').text('Schau bitte in deinen E-Mails nach.');
                     else if (data.sent === 'sms')
-                        $('#span_sent').text('Schau bitte in deinen SMS nach.')
+                        $('#span_sent').text('Schau bitte in deinen SMS nach.');
+                    else if (data.sent === 'no_methods_available')
+                        $('#span_sent').text('Du hast keinen zweiten Faktor hinterlegt, bitte melde dich bei #{DATENTRESOR_HOTLINE}.');
                     else if (data.available_second_methods.indexOf('otp') >= 0)
-                        $('#span_sent').text('Du kannst einfach deinen OTP-Code verwenden.')
+                        $('#span_sent').text('Du kannst einfach deinen OTP-Code verwenden.');
                     if (data.available_second_methods.indexOf('sms') >= 0 && data.send !== 'sms')
                         $('#bu_force_2fa_sms').show();
                     if (data.available_second_methods.indexOf('email') >= 0 && data.send !== 'email')

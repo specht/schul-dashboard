@@ -177,6 +177,8 @@ class Main < Sinatra::Base
                     end
                 end
                 response[:sent] = :email
+            elsif available_second_methods.empty?
+                response[:sent] = :no_methods_available
             end
 
             respond(response)

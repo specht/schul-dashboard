@@ -138,7 +138,7 @@ class Main < Sinatra::Base
         purge_missing_sessions(session_id)
         respond(:ok => 'yeah')
     end
-    
+
     post '/api/confirm_chat_login' do
         data = parse_request_data(:required_keys => [:user], :types => {:user => Hash})
         chat_handle = data[:user]['id'].split(':').first.sub('@', '')
@@ -178,7 +178,7 @@ class Main < Sinatra::Base
         end
         respond(:auth => {:success => true})
     end
-    
+
     post '/api/login_as_teacher_tablet' do
         require_user_who_can_manage_tablets!
         logout()
@@ -186,7 +186,7 @@ class Main < Sinatra::Base
         purge_missing_sessions(session_id, true)
         respond(:ok => 'yay')
     end
-    
+
     if KLASSENRAUM_ACCOUNT_DEEP_LINK_CODE
         get "/api/klassenraum_account/#{KLASSENRAUM_ACCOUNT_DEEP_LINK_CODE}" do
             logout()
@@ -195,7 +195,7 @@ class Main < Sinatra::Base
             redirect "#{WEB_ROOT}/", 302
         end
     end
-    
+
     post '/api/login_as_kurs_tablet' do
         require_user_who_can_manage_tablets!
         data = parse_request_data(:required_keys => [:shorthands],
@@ -297,7 +297,7 @@ class Main < Sinatra::Base
         end
         users
     end
-    
+
     def purge_missing_sessions(current_sid = nil, remove_other = false)
         sid = request.cookies['sid']
         existing_sids = []
@@ -357,7 +357,7 @@ class Main < Sinatra::Base
         logout()
         respond(:ok => 'yeah')
     end
-    
+
     post '/api/switch_current_session' do
         data = parse_request_data(:required_keys => [:sid_index],
                                   :types => {:sid_index => Integer})
@@ -370,12 +370,12 @@ class Main < Sinatra::Base
         end
         respond(:ok => 'yeah')
     end
-                                    
+
     options '/api/login' do
         response.headers['Access-Control-Allow-Origin'] = "https://chat.gymnasiumsteglitz.de"
         response.headers['Access-Control-Allow-Headers'] = "Content-Type, Access-Control-Allow-Origin"
     end
-    
+
     post '/api/login' do
         response.headers['Access-Control-Allow-Origin'] = "https://chat.gymnasiumsteglitz.de"
         data = parse_request_data(:required_keys => [:email], :optional_keys => [:purpose])
@@ -450,7 +450,7 @@ class Main < Sinatra::Base
                     to email_recipient
                     bcc SMTP_FROM
                     from SMTP_FROM
-                    
+
                     if login_for_chat
                         subject "Dein Chat-Anmeldecode lautet #{random_code}"
 
@@ -496,7 +496,7 @@ class Main < Sinatra::Base
         end
         respond(response_hash)
     end
-    
+
     def get_sessions_for_user(email)
         require_user!
         sessions = neo4j_query(<<~END_OF_QUERY, :email => email).map { |x| x['s'] }
@@ -510,7 +510,7 @@ class Main < Sinatra::Base
             s
         end
     end
-    
+
     def get_current_user_sessions()
         require_user!
         get_sessions_for_user(@session_user[:email])
@@ -546,7 +546,7 @@ class Main < Sinatra::Base
             end
             if sessions.size > 1
                 io.puts "<tr>"
-                io.puts "<td colspan='5'><button class='float-right btn btn-danger btn-xs btn-purge-session' data-purge-session='_all'><i class='fa fa-sign-out'></i>&nbsp;&nbsp;Alle Geräte abmelden</button></td>"            
+                io.puts "<td colspan='5'><button class='float-right btn btn-danger btn-xs btn-purge-session' data-purge-session='_all'><i class='fa fa-sign-out'></i>&nbsp;&nbsp;Alle Geräte abmelden</button></td>"
                 io.puts "</tr>"
             end
             io.puts "</tbody>"
@@ -555,7 +555,7 @@ class Main < Sinatra::Base
             io.string
         end
     end
-    
+
     post '/api/purge_session' do
         require_user!
         data = parse_request_data(:required_keys => [:scrambled_sid])
@@ -575,7 +575,7 @@ class Main < Sinatra::Base
         end
         respond(:ok => true)
     end
-    
+
     post '/api/purge_session_for_user' do
         require_user_who_can_manage_tablets!
         data = parse_request_data(:required_keys => [:scrambled_sid, :email])
@@ -635,8 +635,8 @@ class Main < Sinatra::Base
             io.puts "</div>"
             io.string
         end
-    end    
-    
+    end
+
     post '/api/get_login_codes_for_klasse' do
         require_teacher!
         data = parse_request_data(:required_keys => [:klasse])
@@ -666,7 +666,7 @@ class Main < Sinatra::Base
         end
         respond(:codes => sus)
     end
-    
+
     post '/api/get_all_pending_login_codes' do
         require_admin!
         neo4j_query(<<~END_OF_QUERY, {:timestamp => Time.now.to_i})
@@ -717,7 +717,7 @@ class Main < Sinatra::Base
                     to email_recipient
                     bcc SMTP_FROM
                     from SMTP_FROM
-                    
+
                     subject "Dein Anmeldecode lautet #{random_code}"
 
                     StringIO.open do |io|

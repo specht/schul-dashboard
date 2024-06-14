@@ -126,7 +126,7 @@ class Main < Sinatra::Base
             respond({:error => 'code_expired'})
         end
         assert(Time.at(login_code[:valid_to]) >= Time.now, 'code expired', true)
-        if user_has_role(user[:email], :teacher)
+        if (!DEVELOPMENT) && user_has_role(user[:email], :teacher)
             first_method = login_code[:method]
             available_second_methods = []
             telephone_number = user[:telephone_number]

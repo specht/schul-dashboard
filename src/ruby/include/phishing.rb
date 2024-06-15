@@ -189,34 +189,34 @@ class Main < Sinatra::Base
             <div class='row'>
                 <div class='col-md-12'>
                     <table class='table narrow'>
-                    <thead>
-                        <tr>
-                            <th>Geschlecht</th>
-                            <th>Klassenstufe</th>
-                            <th></th>
-                            <th></th>
-                            <th></th>
-                            <th></th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr>
-                            <td>männlich (#{nutzerzahlen[:maennlich]["Lehrkraft"]})</td>
-                            <td class='#{'marked' if current_gender == :maennlich && current_group == '5/6'}'>5/6 (#{nutzerzahlen[:maennlich]["5/6"]})</td>
-                            <td class='#{'marked' if current_gender == :maennlich && current_group == '7/8'}'>7/8 (#{nutzerzahlen[:maennlich]["7/8"]})</td>
-                            <td class='#{'marked' if current_gender == :maennlich && current_group == '9/10'}'>9/10 (#{nutzerzahlen[:maennlich]["9/10"]})</td>
-                            <td class='#{'marked' if current_gender == :maennlich && current_group == '11/12'}'>11/12 (#{nutzerzahlen[:maennlich]["11/12"]})</td>
-                            <td class='#{'marked' if current_gender == :maennlich && current_group == 'Lehrkraft'}'>Lehrkraft (#{nutzerzahlen[:maennlich]["Lehrkraft"]})</td>
-                        </tr>
-                        <tr>
-                            <td>weiblich (#{nutzerzahlen[:weiblich]["Lehrkraft"]})</td>
-                            <td class='#{'marked' if current_gender == :weiblich && current_group == '5/6'}'>5/6 (#{nutzerzahlen[:weiblich]["5/6"]})</td>
-                            <td class='#{'marked' if current_gender == :weiblich && current_group == '7/8'}'>7/8 (#{nutzerzahlen[:weiblich]["7/8"]})</td>
-                            <td class='#{'marked' if current_gender == :weiblich && current_group == '9/10'}'>9/10 (#{nutzerzahlen[:weiblich]["9/10"]})</td>
-                            <td class='#{'marked' if current_gender == :weiblich && current_group == '11/12'}'>11/12 (#{nutzerzahlen[:weiblich]["11/12"]})</td>
-                            <td class='#{'marked' if current_gender == :weiblich && current_group == 'Lehrkraft'}'>Lehrkraft (#{nutzerzahlen[:weiblich]["Lehrkraft"]})</td>
-                        </tr>
-                    </tbody>
+                        <thead>
+                            <tr>
+                                <th>Geschlecht</th>
+                                <th>Klassenstufe</th>
+                                <th></th>
+                                <th></th>
+                                <th></th>
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>männlich (#{nutzerzahlen[:maennlich]["Lehrkraft"]})</td>
+                                <td class='#{'marked' if current_gender == :maennlich && current_group == '5/6'}'>5/6 (#{nutzerzahlen[:maennlich]["5/6"]})</td>
+                                <td class='#{'marked' if current_gender == :maennlich && current_group == '7/8'}'>7/8 (#{nutzerzahlen[:maennlich]["7/8"]})</td>
+                                <td class='#{'marked' if current_gender == :maennlich && current_group == '9/10'}'>9/10 (#{nutzerzahlen[:maennlich]["9/10"]})</td>
+                                <td class='#{'marked' if current_gender == :maennlich && current_group == '11/12'}'>11/12 (#{nutzerzahlen[:maennlich]["11/12"]})</td>
+                                <td class='#{'marked' if current_gender == :maennlich && current_group == 'Lehrkraft'}'>Lehrkraft (#{nutzerzahlen[:maennlich]["Lehrkraft"]})</td>
+                            </tr>
+                            <tr>
+                                <td>weiblich (#{nutzerzahlen[:weiblich]["Lehrkraft"]})</td>
+                                <td class='#{'marked' if current_gender == :weiblich && current_group == '5/6'}'>5/6 (#{nutzerzahlen[:weiblich]["5/6"]})</td>
+                                <td class='#{'marked' if current_gender == :weiblich && current_group == '7/8'}'>7/8 (#{nutzerzahlen[:weiblich]["7/8"]})</td>
+                                <td class='#{'marked' if current_gender == :weiblich && current_group == '9/10'}'>9/10 (#{nutzerzahlen[:weiblich]["9/10"]})</td>
+                                <td class='#{'marked' if current_gender == :weiblich && current_group == '11/12'}'>11/12 (#{nutzerzahlen[:weiblich]["11/12"]})</td>
+                                <td class='#{'marked' if current_gender == :weiblich && current_group == 'Lehrkraft'}'>Lehrkraft (#{nutzerzahlen[:weiblich]["Lehrkraft"]})</td>
+                            </tr>
+                        </tbody>
                     </table>
                 </div>
             </div>

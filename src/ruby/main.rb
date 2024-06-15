@@ -1182,6 +1182,7 @@ class Main < Sinatra::Base
         self.update_antikenfahrt_groups()
         self.update_forschertage_groups()
         self.update_angebote_groups()
+        self.update_projekttage_groups()
         @@mailing_lists = {}
         @@angebote_mailing_lists.each_pair do |k, v|
             @@mailing_lists[k] = v
@@ -1266,6 +1267,9 @@ class Main < Sinatra::Base
             @@mailing_lists[k] = v
         end
         @@forschertage_mailing_lists.each_pair do |k, v|
+            @@mailing_lists[k] = v
+        end
+        @@projekttage_mailing_lists.each_pair do |k, v|
             @@mailing_lists[k] = v
         end
         VERTEILER_TEST_EMAILS.each do |m|

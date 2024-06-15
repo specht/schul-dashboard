@@ -186,6 +186,8 @@ class Main < Sinatra::Base
             END_OF_QUERY
         end
         trigger_stats_update('projektwahl')
+        Main.update_projekttage_groups()
+        Main.update_mailing_lists()
         respond(:ts => ts)
     end
 

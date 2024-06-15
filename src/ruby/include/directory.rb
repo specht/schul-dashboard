@@ -457,22 +457,22 @@ class Main < Sinatra::Base
         ['5', '6'].each do |klasse|
             ['nawi', 'gewi', 'musik', 'medien'].each do |group_ft|
                 next if ((groups[klasse] || {})[group_ft] || []).empty?
-                @@antikenfahrt_recipients[:groups] << "/ft/#{klasse}/#{group_ft}/sus"
-                @@antikenfahrt_recipients[:recipients]["/ft/#{klasse}/#{group_ft}/sus"] = {
+                @@forschertage_recipients[:groups] << "/ft/#{klasse}/#{group_ft}/sus"
+                @@forschertage_recipients[:recipients]["/ft/#{klasse}/#{group_ft}/sus"] = {
                     :label => "Forschertage #{GROUP_FT_ICONS[group_ft]} – SuS #{klasse}",
                     :entries => groups[klasse][group_ft]
                 }
-                @@antikenfahrt_recipients[:groups] << "/af/#{klasse}/#{group_ft}/eltern"
-                @@antikenfahrt_recipients[:recipients]["/af/#{klasse}/#{group_ft}/eltern"] = {
+                @@forschertage_recipients[:groups] << "/af/#{klasse}/#{group_ft}/eltern"
+                @@forschertage_recipients[:recipients]["/af/#{klasse}/#{group_ft}/eltern"] = {
                     :label => "Forschertage #{GROUP_FT_ICONS[group_ft]} – Eltern #{klasse} (extern)",
                     :external => true,
                     :entries => groups[klasse][group_ft].map { |x| 'eltern.' + x }
                 }
-                @@antikenfahrt_mailing_lists["forschertage.#{group_ft}.#{klasse}@#{MAILING_LIST_DOMAIN}"] = {
+                @@forschertage_mailing_lists["forschertage.#{group_ft}.#{klasse}@#{MAILING_LIST_DOMAIN}"] = {
                     :label => "Forschertage #{GROUP_FT_ICONS[group_ft]} – SuS Klassenstufe #{klasse}",
                     :recipients => groups[klasse][group_ft]
                 }
-                @@antikenfahrt_mailing_lists["forschertage.#{group_ft}.eltern.#{klasse}@#{MAILING_LIST_DOMAIN}"] = {
+                @@forschertage_mailing_lists["forschertage.#{group_ft}.eltern.#{klasse}@#{MAILING_LIST_DOMAIN}"] = {
                     :label => "Forschertage #{GROUP_FT_ICONS[group_ft]} – Eltern Klassenstufe #{klasse}",
                     :recipients => groups[klasse][group_ft].map { |x| 'eltern.' + x }
                 }
@@ -496,6 +496,26 @@ class Main < Sinatra::Base
                     :recipients => [],
                 }
                 @@angebote_mailing_lists[list_email][:recipients] << who + row[:recipient]
+            end
+        end
+    end
+
+    def self.update_projekttage_groups()
+        @@projekttage_mailing_lists = {}
+        $neo4j.neo4j_query(<<~END_OF_QUERY).map { |x| {:recipient => x['u.email'] } }.each do |row|
+            MATCH (u:User)
+            WHERE NOT (u)-[:VOTED_FOR]->(:Projekt)
+            RETURN u.email;
+        END_OF_QUERY
+            ['', 'eltern.'].each do |who|
+                email = row[:recipient]
+                next unless user_has_role(email, :schueler)
+                list_email = who + 'kein.projekt.gewaehlt.' + '@' + MAILING_LIST_DOMAIN
+                @@projekttage_mailing_lists[list_email] ||= {
+                    :label => 'Kein Projekt gewählt' + (who.empty? ? '' : ' (Eltern)'),
+                    :recipients => [],
+                }
+                @@projekttage_mailing_lists[list_email][:recipients] << who + email
             end
         end
     end

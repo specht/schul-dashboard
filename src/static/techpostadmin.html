@@ -999,7 +999,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             }
         });
-        if ('#{teacher_or_sv_logged_in?}' === 'true') {
+        if ('#{user_with_role_logged_in?(:can_write_messages)}' === 'true') {
             load_recipients('#{@session_user[:id]}', function () {
                 // console.log(recipients);
             }, null);

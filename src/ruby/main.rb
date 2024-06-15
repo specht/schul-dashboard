@@ -3125,7 +3125,7 @@ class Main < Sinatra::Base
                 sent_messages = temp_order.map { |x| temp[x] }
             end
         elsif path == 'events'
-            unless user_who_can_manage_tablets_or_sv_or_teacher_logged_in?
+            unless user_with_role_logged_in?(:can_create_events)
                 redirect "#{WEB_ROOT}/", 302
             else
                 stored_events = neo4j_query(<<~END_OF_QUERY, :email => @session_user[:email]).map { |x| {:info => x['e'], :recipient => x['u.email']} }
@@ -3161,7 +3161,7 @@ class Main < Sinatra::Base
                 end
             end
         elsif path == 'groups'
-            unless teacher_or_sv_logged_in? || user_who_can_manage_tablets_or_teacher_logged_in?
+            unless user_with_role_logged_in?(:can_write_messages)
                 redirect "#{WEB_ROOT}/", 302
             else
                 stored_groups = neo4j_query(<<~END_OF_QUERY, :email => @session_user[:email]).map { |x| {:info => x['g'], :recipient => x['u.email']} }
@@ -3205,7 +3205,7 @@ class Main < Sinatra::Base
                 angebote_for_session_user = get_angebote_for_session_user()
             end
         elsif path == 'polls'
-            unless teacher_or_sv_logged_in? || user_who_can_manage_tablets_or_teacher_logged_in?
+            unless user_with_role_logged_in?(:can_create_polls)
                 redirect "#{WEB_ROOT}/", 302
             else
                 stored_polls = neo4j_query(<<~END_OF_QUERY, :email => @session_user[:email]).map { |x| {:info => x['p'], :recipient => x['u.email']} }

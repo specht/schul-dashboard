@@ -3,7 +3,7 @@
     <div class='row'>
         <div class='col-md-8 offset-md-2'>
             <h2 style='margin-bottom: 30px;'>Nachrichten</h2>
-            <div style='display: #{teacher_or_sv_logged_in? ? 'block': 'none'}; position: relative;'>
+            <div style='display: #{user_with_role_logged_in?(:can_write_messages) ? 'block': 'none'}; position: relative;'>
                 <div class='btn-group'>
                     <button id='bu-inbox' class='btn btn-primary'><i class='fa fa-inbox'></i>&nbsp;&nbsp;Posteingang</button>
                     <button id='bu-outbox' class='btn btn-outline-secondary'><i class='fa fa-inbox'></i>&nbsp;&nbsp;Postausgang</button>
@@ -548,7 +548,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     };
     oReq.send();
-    if ('#{teacher_or_sv_logged_in?}' === 'true') {
+    if ('#{user_with_role_logged_in?(:can_write_messages)}' === 'true') {
         load_recipients('#{@session_user[:id]}', function() {
             update_sent_messages();
         });

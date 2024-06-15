@@ -11,6 +11,7 @@ AVAILABLE_ROLES = {
     :can_manage_news => 'kann News verwalten',
     :can_manage_monitors => 'kann Monitore verwalten',
     :can_manage_tablets => 'kann Tabletbuchungen verwalten',
+    :can_book_tablets => 'kann Tablets buchen',
     :can_use_aula => 'Aulatechnik',
     :can_manage_antikenfahrt => 'kann Antikenfahrt verwalten',
     :can_manage_agr_app => 'kann die Altgriechisch-App verwalten',
@@ -37,11 +38,11 @@ AVAILABLE_ROLES = {
 }
 
 ROLE_TRANSITIONS = <<~END_OF_STRING
-    teacher => can_receive_messages can_write_messages can_create_polls can_create_events can_use_mailing_lists can_use_nextcloud can_use_sms_gateway
+    teacher => can_receive_messages can_write_messages can_book_tablets can_create_polls can_create_events can_use_mailing_lists can_use_nextcloud can_use_sms_gateway
     schueler => can_receive_messages can_use_nextcloud
     sv => can_write_messages can_create_polls can_use_mailing_lists can_create_events
-    technikteam => can_write_messages can_create_polls can_use_mailing_lists can_create_events can_manage_tablets can_manage_tech_problems can_report_tech_problems
-    admin => can_upload_files can_manage_news can_manage_monitors can_manage_tablets can_manage_tech_problems can_report_tech_problems
+    technikteam => can_write_messages can_book_tablets can_create_polls can_use_mailing_lists can_create_events can_manage_tablets can_manage_tech_problems can_report_tech_problems
+    admin => can_upload_files can_book_tablets can_manage_news can_manage_monitors can_manage_tablets can_manage_tech_problems can_report_tech_problems
     schulbuchverein => can_use_nextcloud
     technikamt => can_report_tech_problems
 END_OF_STRING

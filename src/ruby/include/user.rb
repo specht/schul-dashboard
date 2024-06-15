@@ -49,20 +49,8 @@ class Main < Sinatra::Base
         user_with_role_logged_in?(:can_manage_tablets)
     end
 
-    def user_who_can_manage_tablets_or_teacher_logged_in?
-        user_who_can_manage_tablets_logged_in? || teacher_logged_in?
-    end
-
-    def user_who_can_manage_tablets_or_sv_or_teacher_logged_in?
-        teacher_or_sv_logged_in? || user_who_can_manage_tablets_logged_in?
-    end
-
     def user_who_can_manage_antikenfahrt_logged_in?
         user_with_role_logged_in?(:can_manage_antikenfahrt)
-    end
-
-    def teacher_or_sv_logged_in?
-        teacher_logged_in? || user_with_role_logged_in?(:sv)
     end
 
     def admin_logged_in?
@@ -171,10 +159,6 @@ class Main < Sinatra::Base
         user_with_role_logged_in?(:can_manage_bib_special_access)
     end
 
-    def teacher_or_can_manage_bib_logged_in?
-        teacher_logged_in? || can_manage_bib_logged_in?
-    end
-
     def can_manage_bib_members_logged_in?
         user_with_role_logged_in?(:can_manage_bib_members)
     end
@@ -267,10 +251,6 @@ class Main < Sinatra::Base
         assert(user_who_can_manage_tablets_logged_in?)
     end
 
-    def require_user_who_can_manage_tablets_or_teacher!
-        assert(user_who_can_manage_tablets_or_teacher_logged_in?)
-    end
-
     def require_user_who_can_manage_antikenfahrt!
         assert(user_who_can_manage_antikenfahrt_logged_in?)
     end
@@ -281,14 +261,6 @@ class Main < Sinatra::Base
 
     def require_user_who_can_manage_bib!
         assert(can_manage_bib_logged_in?)
-    end
-
-    def require_teacher_or_user_who_can_manage_bib!
-        assert(teacher_or_can_manage_bib_logged_in?)
-    end
-
-    def require_teacher_or_sv!
-        assert(teacher_or_sv_logged_in?)
     end
 
     def require_monitor_or_user_who_can_manage_monitors!
@@ -355,24 +327,6 @@ class Main < Sinatra::Base
 
     def this_is_a_page_for_logged_in_teachers
         unless teacher_logged_in?
-            redirect "#{WEB_ROOT}/", 303
-        end
-    end
-
-    def this_is_a_page_for_logged_in_teachers_or_can_manage_bib
-        unless teacher_or_can_manage_bib_logged_in?
-            redirect "#{WEB_ROOT}/", 303
-        end
-    end
-
-    def this_is_a_page_for_logged_in_teachers_or_sv
-        unless teacher_or_sv_logged_in?
-            redirect "#{WEB_ROOT}/", 303
-        end
-    end
-
-    def this_is_a_page_for_logged_in_teachers_or_sv_or_users_who_can_manage_tablets
-        unless teacher_or_sv_logged_in? || user_who_can_manage_tablets_logged_in?
             redirect "#{WEB_ROOT}/", 303
         end
     end
@@ -461,7 +415,7 @@ class Main < Sinatra::Base
     end
 
     def klasse_for_sus
-        require_user_who_can_manage_tablets_or_teacher!
+        assert(user_with_role_logged_in?(:can_manage_tablets) || user_with_role_logged_in?(:teacher))
         result = {}
         @@user_info.each_pair do |email, info|
             next if info[:teacher]

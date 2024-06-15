@@ -1,7 +1,7 @@
 class Main < Sinatra::Base
     def external_users_for_session_user
         result = {:groups => [], :recipients => {}, :order => []}
-        return result unless user_who_can_manage_tablets_or_teacher_logged_in?
+        return result unless user_with_role_logged_in?(:can_create_events)
         # add pre-defined external users
         @@predefined_external_users[:groups].each do |x|
             result[:groups] << x
@@ -9,7 +9,7 @@ class Main < Sinatra::Base
         @@predefined_external_users[:recipients].each_pair do |k, v|
             result[:recipients][k] = v
         end
-        
+
         # add external users from user's address book
         ext_users = neo4j_query(<<~END_OF_QUERY, :session_email => @session_user[:email]).map { |x| x['e'] }
             MATCH (u:User {email: $session_email})-[:ENTERED_EXT_USER]->(e:ExternalUser)
@@ -23,15 +23,15 @@ class Main < Sinatra::Base
 
         result
     end
-    
+
     post '/api/add_external_users' do
-        require_user_who_can_manage_tablets_or_teacher!
+        assert(user_with_role_logged_in?(:can_create_events))
         data = parse_request_data(:required_keys => [:text],
                                   :max_body_length => 1024 * 4,
                                   :max_string_length => 1024 * 4,
                                   :max_value_lengths => {:text => 1024 * 4})
         raw_addresses = Mail::AddressList.new(data[:text].gsub("\n", ','))
-        raw_addresses.addresses.each do |a|  
+        raw_addresses.addresses.each do |a|
             email = (a.address || '').strip
             display_name = (a.display_name || '').strip
             if email.size > 0 && display_name.size > 0
@@ -44,9 +44,9 @@ class Main < Sinatra::Base
         end
         respond(:ext_users => external_users_for_session_user)
     end
-    
+
     post '/api/delete_external_user' do
-        require_user_who_can_manage_tablets_or_teacher!
+        assert(user_with_role_logged_in?(:can_create_events))
         data = parse_request_data(:required_keys => [:email])
         neo4j_query(<<~END_OF_QUERY, :session_email => @session_user[:email], :email => data[:email])
             MATCH (u:User {email: $session_email})-[:ENTERED_EXT_USER]->(e:ExternalUser {email: $email})

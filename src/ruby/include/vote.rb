@@ -1,6 +1,7 @@
 class Main < Sinatra::Base
     post '/api/create_vote' do
-        require_teacher_or_sv!
+        raise 'not used anymore'
+        # require_teacher_or_sv!
         data = parse_request_data(:required_keys => [:title, :date, :count],
                                   :types => {:count => Integer})
         possible_codes = (0..9999).to_a
@@ -27,9 +28,10 @@ class Main < Sinatra::Base
         END_OF_QUERY
         respond(:ok => true)
     end
-    
+
     post '/api/get_votes' do
-        require_teacher_or_sv!
+        raise 'not used anymore'
+        # require_teacher_or_sv!
         codes = neo4j_query(<<~END_OF_QUERY, :email => @session_user[:email]).map { |x| x['v.code'] }
             MATCH (v:Vote)-[:BELONGS_TO]->(:User {email: $email})
             RETURN v.code;
@@ -43,7 +45,7 @@ class Main < Sinatra::Base
                 end
                 vote_data[:code] = code
                 vote_data
-            rescue 
+            rescue
                 STDERR.puts "Unable to read #{sprintf('/internal/vote/%04d.json', code)}"
                 nil
             end
@@ -53,9 +55,10 @@ class Main < Sinatra::Base
         end
         respond(:votes => results)
     end
-    
+
     post '/api/delete_vote' do
-        require_teacher_or_sv!
+        raise 'not used anymore'
+        # require_teacher_or_sv!
         data = parse_request_data(:required_keys => [:code],
                                   :types => {:code => Integer})
         code = data[:code]
@@ -69,8 +72,9 @@ class Main < Sinatra::Base
         FileUtils::rm_f(sprintf('/internal/vote/%04d.pdf', code));
         respond(:ok => true)
     end
-    
+
     def vote_codes_from_token(vote_code, token, _count)
+        raise 'not used anymore'
         count = ((_count + 20) / 4).to_i * 4
         vote_code = sprintf('%04d', vote_code)
         codes = []
@@ -89,7 +93,8 @@ class Main < Sinatra::Base
     end
 
     get '/api/get_vote_pdf/*' do
-        require_teacher_or_sv!
+        raise 'not used anymore'
+        # require_teacher_or_sv!
         code = request.path.sub('/api/get_vote_pdf/', '').to_i
         neo4j_query_expect_one(<<~END_OF_QUERY, :code => code, :email => @session_user[:email])
             MATCH (v:Vote {code: $code})-[:BELONGS_TO]->(u:User {email: $email})
@@ -107,13 +112,13 @@ class Main < Sinatra::Base
             Prawn::Document::new(:page_size => 'A4', :page_layout => :landscape, :margin => [0, 0, 0, 0]) do
                 y = 0
                 x = 0
-                
+
                 codes.each.with_index do |code, _|
                     bounding_box([x * 14.85.cm + 1.cm, 180.mm - y * 10.5.cm + 10.5.cm], width: 12.85.cm, height: 8.5.cm) do
                         stroke { rectangle [0, 0], 12.85.cm, 8.5.cm }
                         bounding_box([5.mm, -5.mm], width: 11.85.cm) do
                             font_size 10
-                            
+
                             text "<b>Code für Online-Abstimmung #{SCHUL_NAME_AN_DATIV} #{SCHUL_NAME}</b>", inline_format: true
                             move_down 2.mm
                             text "<em>#{vote['title']} (#{vote['date'][8, 2].to_i}.#{vote['date'][5, 2].to_i}.#{vote['date'][0, 4]})</em>", inline_format: true
@@ -137,7 +142,7 @@ class Main < Sinatra::Base
                         bounding_box([98.mm, -2.mm], width: 2.cm) do
                             print_qr_code("#{VOTING_WEBSITE_URL}/?#{code}", :dot => 2, :stroke => false)
                         end
-                        
+
                     end
                     x += 1
                     if x >= 2

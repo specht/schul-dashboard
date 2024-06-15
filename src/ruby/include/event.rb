@@ -1,6 +1,6 @@
 class Main < Sinatra::Base
     post '/api/save_event' do
-        assert(teacher_or_sv_logged_in? || user_who_can_manage_tablets_logged_in?)
+        assert(user_with_role_logged_in?(:can_create_events))
         data = parse_request_data(:required_keys => [:title, :jitsi, :date, :start_time,
                                                      :end_time, :recipients, :description],
                                   :types => {:recipients => Array},
@@ -56,7 +56,7 @@ class Main < Sinatra::Base
     end
     
     post '/api/update_event' do
-        assert(teacher_or_sv_logged_in? || user_who_can_manage_tablets_logged_in?)
+        assert(user_with_role_logged_in?(:can_create_events))
         data = parse_request_data(:required_keys => [:eid, :title, :jitsi, :date, :start_time,
                                                     :end_time, :recipients, :description],
                                 :types => {:recipients => Array},
@@ -122,7 +122,7 @@ class Main < Sinatra::Base
     end
     
     post '/api/delete_event' do
-        assert(teacher_or_sv_logged_in? || user_who_can_manage_tablets_logged_in?)
+        assert(user_with_role_logged_in?(:can_create_events))
         data = parse_request_data(:required_keys => [:eid])
         id = data[:eid]
         transaction do 
@@ -143,7 +143,7 @@ class Main < Sinatra::Base
     end
     
     post '/api/get_external_invitations_for_event' do
-        assert(teacher_or_sv_logged_in? || user_who_can_manage_tablets_logged_in?)
+        assert(user_with_role_logged_in?(:can_create_events))
         data = parse_request_data(:optional_keys => [:eid])
         id = data[:eid]
         invitations = {}
@@ -244,7 +244,7 @@ class Main < Sinatra::Base
     end
     
     post '/api/invite_external_user_for_event' do
-        assert(teacher_or_sv_logged_in? || user_who_can_manage_tablets_logged_in?)
+        assert(user_with_role_logged_in?(:can_create_events))
         data = parse_request_data(:required_keys => [:eid, :email])
         self.class.invite_external_user_for_event(data[:eid], data[:email], @session_user[:email])
         respond({})
@@ -257,7 +257,7 @@ class Main < Sinatra::Base
     end
     
     post '/api/send_missing_event_invitations' do
-        assert(teacher_or_sv_logged_in? || user_who_can_manage_tablets_logged_in?)
+        assert(user_with_role_logged_in?(:can_create_events))
         data = parse_request_data(:required_keys => [:eid])
         id = data[:eid]
         STDERR.puts "Sending missing invitations for event #{id}"

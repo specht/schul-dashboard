@@ -60,7 +60,7 @@
                     <li><b>Betriebssystem und Browser mit Version</b></li>
                 </ul>
                 Zum Zweck der anonymisierten Datenerhebung darüber, wie geübt die Schülerschaft und das Kollegium im Erkennen von sogenannten Phishing E-Mails 
-                sind, hat dieser Test stattgefunden. Die erhobenen Daten werden nach der Verarbeitung und Auswertung hier dargestellt. Personengebunde Daten die für das
+                sind, hat dieser Test stattgefunden. Die erhobenen Daten werden nach der Verarbeitung und Auswertung hier dargestellt. Personengebunde Daten, die für das
                 Versenden der E-Mails notwendig waren, sind bereits fachgerecht gelöscht.
             </p>
             #{print_phishing_groups_table}
@@ -72,10 +72,9 @@
             <h3>Woran erkennt man, dass diese Seite echt ist?</h3>
             <p>
                 Sofort zu erkennen ist hier die Adressleiste in deinem Browser, diese sollte ungefähr so aussehen. Der Inhalt muss aber exakt gleich sein:
-                <div class="row">
-                    <i class="fa fa-arrow-left"></i>&nbsp;&nbsp;<i class="fa fa-arrow-right"></i>&nbsp;&nbsp;<i class="fa fa-refresh"></i>&nbsp;&nbsp;<i class="fa fa-lock"></i>
+                <div class="col-md-12">
                     <input type="url" class="form-control" value="https://#{WEBSITE_HOST}/phishing" readonly="">
-                </div>
+                </div><br>
                 Ein anderes Indiz ist es, wenn du nicht deinen selbst ausgewählten Hintergrund siehst, das Profilbild fehlt, oder deine Daten nicht richtig angezeigt werden.
             </p>
         </div>

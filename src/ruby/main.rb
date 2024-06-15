@@ -1865,9 +1865,9 @@ class Main < Sinatra::Base
                         nav_items << :techteam
                     end
                 end
-                # if running_pishing_training? || user_with_role_logged_in?(:developer)
-                #     nav_items << :phishing
-                # end
+                if running_pishing_training? || user_with_role_logged_in?(:developer)
+                    nav_items << :phishing
+                end
                 # nav_items << :advent_calendar #if advents_calendar_date_today > 0
                 nav_items << :profile
                 new_messages_count_s = new_messages_count.to_s

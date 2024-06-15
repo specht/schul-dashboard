@@ -509,7 +509,7 @@ class Main < Sinatra::Base
         END_OF_QUERY
             ['', 'eltern.'].each do |who|
                 email = row[:recipient]
-                next unless user_has_role(email, :schueler)
+                next unless user_has_role(email, :schueler) && @@user_data[email][:klassenstufe] < 10
                 list_email = who + 'kein.projekt.gewaehlt.' + '@' + MAILING_LIST_DOMAIN
                 @@projekttage_mailing_lists[list_email] ||= {
                     :label => 'Kein Projekt gewählt' + (who.empty? ? '' : ' (Eltern)'),

@@ -2662,9 +2662,6 @@ class Main < Sinatra::Base
 
     get '/api/get_hackschule_users' do
         require_admin!
-        # > Klasse 7a
-        # + specht@gymnasiumsteglitz.de
-        # w Alessandria Klonaris <alessandria.klonaris@mail.gymnasiumsteglitz.de>
         response = StringIO.open do |io|
             @@lessons[:lesson_keys].keys.sort.each do |lesson_key|
                 lesson_info = @@lessons[:lesson_keys][lesson_key]
@@ -2680,6 +2677,49 @@ class Main < Sinatra::Base
                     io.puts
                 end
             end
+            io.string
+        end
+        respond_raw_with_mimetype(response, 'text/plain')
+    end
+
+    get '/api/get_workspace_users' do
+        require_admin!
+        # > Klasse 7a
+        # + specht@gymnasiumsteglitz.de
+        response = StringIO.open do |io|
+            io.puts "> Lehrkräfte"
+            io.puts
+            @@shorthand_order.each do |shorthand|
+                email = @@shorthands[shorthand]
+                io.puts "#{@@user_info[email][:display_name]} <#{email}>"
+            end
+            @@klassen_order.each do |klasse|
+                io.puts
+                io.puts "> Klasse #{tr_klasse(klasse)}"
+                io.puts
+                @@teachers_for_klasse[klasse].keys.each do |shorthand|
+                    email = @@shorthands[shorthand]
+                    io.puts "+ #{email}"
+                end
+                io.puts
+                @@schueler_for_klasse[klasse].each do |email|
+                    io.puts "#{@@user_info[email][:display_name]} <#{email}>"
+                end
+            end
+            # @@lessons[:lesson_keys].keys.sort.each do |lesson_key|
+            #     lesson_info = @@lessons[:lesson_keys][lesson_key]
+            #     if (lesson_key.downcase[0, 2] == 'in' || lesson_key.downcase[0, 3] == 'itg') && @@schueler_for_lesson[lesson_key]
+            #         io.puts "> #{lesson_info[:pretty_folder_name]}"
+            #         lesson_info[:lehrer].each do |shorthand|
+            #             io.puts "+ #{@@shorthands[shorthand]}"
+            #         end
+            #         @@schueler_for_lesson[lesson_key].each do |email|
+            #             user = @@user_info[email]
+            #             io.puts "#{user[:geschlecht]} #{user[:first_name]} <#{email}>"
+            #         end
+            #         io.puts
+            #     end
+            # end
             io.string
         end
         respond_raw_with_mimetype(response, 'text/plain')

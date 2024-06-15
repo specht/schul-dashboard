@@ -257,7 +257,7 @@ class Main < Sinatra::Base
 
                 a_kli = (@@klassenleiter[klasse] || []).index(a)
                 b_kli = (@@klassenleiter[klasse] || []).index(b)
-                
+
                 if a_kli.nil?
                     if b_kli.nil?
                         name_comp
@@ -275,7 +275,7 @@ class Main < Sinatra::Base
                 lehrer = @@user_info[@@shorthands[shorthand]]
                 next if lehrer.nil?
                 is_klassenleiter = (@@klassenleiter[klasse] || []).include?(shorthand)
-                
+
                 if old_is_klassenleiter && !is_klassenleiter
                     io.puts "<tr class='sep user_row'>"
                 else
@@ -321,7 +321,7 @@ class Main < Sinatra::Base
             io.string
         end
     end
-    
+
     def self.get_all_homeschooling_users()
         temp = $neo4j.neo4j_query(<<~END_OF_QUERY)
             MATCH (u:User {homeschooling: true})
@@ -333,7 +333,7 @@ class Main < Sinatra::Base
         end
         all_homeschooling_users
     end
-    
+
     def self.get_switch_week_for_date(d)
         ds = d.strftime('%Y-%m-%d')
         d_info = SWITCH_WEEKS.keys.sort.select do |d|
@@ -349,7 +349,7 @@ class Main < Sinatra::Base
     def self.get_current_ab_week()
         get_switch_week_for_date(Date.today)
     end
-    
+
     def self.get_homeschooling_for_user_by_dauer_salzh(email)
         info = $neo4j.neo4j_query_expect_one(<<~END_OF_QUERY, {:email => email})
             MATCH (u:User {email: $email})
@@ -358,7 +358,7 @@ class Main < Sinatra::Base
         marked_as_homeschooling = info['homeschooling']
         marked_as_homeschooling
     end
-    
+
     def self.get_homeschooling_for_user_by_switch_week(email, datum, group2_for_email)
         group2 = nil
         if group2_for_email.nil?
@@ -374,7 +374,7 @@ class Main < Sinatra::Base
         marked_as_homeschooling_by_week = (current_week != group2)
         marked_as_homeschooling_by_week
     end
-    
+
     def self.get_homeschooling_for_user(email, datum = nil, is_homeschooling_user = nil, group2_for_email = nil)
         datum ||= Date.today.strftime('%Y-%m-%d')
         if is_homeschooling_user.nil?
@@ -383,7 +383,7 @@ class Main < Sinatra::Base
             self.get_homeschooling_for_user_by_switch_week(email, datum, group2_for_email)
         end
     end
-    
+
     def self.update_antikenfahrt_groups()
         results = $neo4j.neo4j_query(<<~END_OF_QUERY).map { |x| {:email => x['email'], :group_af => x['group_af'] }}
             MATCH (u:User)
@@ -431,7 +431,7 @@ class Main < Sinatra::Base
             end
         end
     end
-    
+
     def self.update_forschertage_groups()
         results = $neo4j.neo4j_query(<<~END_OF_QUERY).map { |x| {:email => x['email'], :group_ft => x['group_ft'] }}
             MATCH (u:User)
@@ -499,7 +499,7 @@ class Main < Sinatra::Base
             end
         end
     end
-    
+
     post '/api/toggle_homeschooling' do
         data = parse_request_data(:required_keys => [:email])
         email = data[:email]
@@ -531,12 +531,12 @@ class Main < Sinatra::Base
             yield email, i
         end
     end
-    
+
     get '/api/directory_timetex_pdf/by_last_name/*' do
         require_teacher!
         klasse = request.path.sub('/api/directory_timetex_pdf/by_last_name/', '')
         main = self
-        doc = Prawn::Document.new(:page_size => 'A4', :page_layout => :portrait, 
+        doc = Prawn::Document.new(:page_size => 'A4', :page_layout => :portrait,
                                 :margin => 0) do
             font('/app/fonts/RobotoCondensed-Regular.ttf') do
                 font_size 12
@@ -558,7 +558,7 @@ class Main < Sinatra::Base
         require_teacher!
         klasse = request.path.sub('/api/directory_timetex_pdf/by_first_name/', '')
         main = self
-        doc = Prawn::Document.new(:page_size => 'A4', :page_layout => :portrait, 
+        doc = Prawn::Document.new(:page_size => 'A4', :page_layout => :portrait,
                                 :margin => 0) do
             font('/app/fonts/RobotoCondensed-Regular.ttf') do
                 font_size 12
@@ -588,9 +588,9 @@ class Main < Sinatra::Base
             RETURN u.email;
         END_OF_QUERY
         seen_users = Set.new(emails)
-        
+
         main = self
-        doc = Prawn::Document.new(:page_size => 'A4', :page_layout => :portrait, 
+        doc = Prawn::Document.new(:page_size => 'A4', :page_layout => :portrait,
                                   :margin => 2.cm) do
             @@klassen_order.each_with_index do |klasse, i|
                 font_size 12
@@ -665,7 +665,7 @@ class Main < Sinatra::Base
         end
         respond_raw_with_mimetype_and_filename(result, 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', "Klasse #{klasse}.xlsx")
     end
-    
+
     get '/api/directory_json/*' do
         require_teacher!
         klasse = request.path.sub('/api/directory_json/', '')
@@ -725,7 +725,7 @@ class Main < Sinatra::Base
 
         respond(:group_af => group_af)
     end
-    
+
     post '/api/toggle_group_ft_for_user' do
         require_admin!
         data = parse_request_data(:required_keys => [:email])
@@ -746,11 +746,11 @@ class Main < Sinatra::Base
 
         respond(:group_ft => group_ft)
     end
-    
+
     def schueler_for_lesson(lesson_key)
-        results = (@@schueler_for_lesson[lesson_key] || []).map do |email| 
+        results = (@@schueler_for_lesson[lesson_key] || []).map do |email|
             i = {}
-            [:email, :first_name, :last_name, :display_name, :nc_login, :group2].each do |k| 
+            [:email, :first_name, :last_name, :display_name, :nc_login, :group2].each do |k|
                 i[k] = @@user_info[email][k]
             end
             i
@@ -767,7 +767,7 @@ class Main < Sinatra::Base
         end
         results
     end
-    
+
     def print_mailing_list(io, list_email)
         return unless @@mailing_lists.include?(list_email)
         io.puts "<tr class='user_row'>"
@@ -806,7 +806,7 @@ class Main < Sinatra::Base
         io.puts "</tr>"
     io.puts "</tbody>"
     end
-    
+
     def print_mailing_lists()
         StringIO.open do |io|
             io.puts "<table class='table table-condensed narrow' style='width: unset; min-width: 100%;'>"

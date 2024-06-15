@@ -1,8 +1,8 @@
 #{this_is_a_page_for_phishing_training}
 <style>
     mark {
-        background-color:orange;
-        border-radius:5px;
+        background-color: orange;
+        border-radius: 5px;
     }
     .threat {
         background-color: orangered;
@@ -14,38 +14,38 @@
             <h2>Phishing Prävention</h2>
             <p>
                 Du hast wahrscheinlich am #{PHISHING_RECEIVING_DATE} eine E-Mail bekommen, in der du dazu aufgefordert worden bist, eine E-Mail-Adresse und ein Passwort einzugeben.
-                Zuerst einmal möchten wir dich entwarnen; Deine E-Mail-Adresse wird nicht gelöscht, das sollte auch nie passieren.
+                Zuerst einmal möchten wir dich entwarnen: Deine E-Mail-Adresse wird nicht gelöscht, das sollte auch nie passieren.
                 Vielleicht ist dir aber in der Mail etwas Verdächtiges aufgefallen...
             </p>
             <p>
                 Die Mail sollte ungefähr so ausgesehen haben:
             </p>
             <div class='alert alert-success'>
-                Wenn du mit der Maus über die Markierungen fährtst, erhälst du die passenden Erklärungen.
+                Wenn du mit der Maus über die Markierungen fährst, erhältst du die passenden Erklärungen.
             </div>
             #{print_phishing_mail}
             <hr>
             <h3>Woran kann man es erkennen?</h3>
             <p>
                 Generell sollte man bei offensichtlichen Rechtschreibfehlern genauer hinsehen, diese sind ein erster Indiz für eine bösartige E-Mail. 
-                Hier ist zusätzlich die Absenderadresse interessant. Über eine kurze Suche lässt sich die echteit der Domain verifizieren, die hier nicht gegeben ist. 
-                Am auffälligsten ist aber vielleicht die Drohung (manchmal auch durch eine ablaufende Zeit verstäkt, z.B. drei Tage), die einen hohen Druck auf den Empfänger 
+                Hier ist zusätzlich die Absenderadresse interessant. Über eine kurze Suche lässt sich die Echtheit der Domain verifizieren, die hier nicht gegeben ist. 
+                Am auffälligsten ist aber vielleicht die Drohung (manchmal auch durch eine ablaufende Zeit verstärkt, z.B. drei Tage), die einen hohen Druck auf den Empfänger 
                 aufbauen möchte.
             </p>
             <h3>Wie sollte ich handeln, wenn ich eine Mail wie diese bekomme?</h3>
             <p>
                 Klicke auf keinen Fall auf Links und lass keine externen Inhalte laden. Ebenfalls solltest du Anhänge weder herunterladen noch ausführen. Solltest du dir
-                unsicher sein, solltest du deine Eltern informieren. Gerne kannst du auch eine E-Mail and 
+                unsicher sein, informiere deine Eltern oder deine Lehrkraft. Gerne kannst du auch eine E-Mail an <a href="mailto:#{WEBSITE_MAINTAINER_EMAIL}">#{WEBSITE_MAINTAINER_NAME_AKKUSATIV}</a> schreiben.
             </p>
             <h3>Individuelle Rückmeldung</h3>
             <p>
-                Je nachdem welche Schritte du gegangen bist, kannst du dir hier ansehen, woran man hier die Phishing E-Mail erkennen und als solche identifizieren
-                konnte. Da wir nicht wissen, was du in der Mail anglickt hast, können wir dir leider keine individuelle Rückmeldung geben.
+                Je nachdem, welche Schritte du gegangen bist, kannst du dir hier ansehen, woran man die Phishing-E-Mail erkennen und als solche identifizieren
+                konnte. Da wir nicht wissen, was du in der Mail angeklickt hast, können wir dir leider keine individuelle Rückmeldung geben.
             </p>
             <h3>Datenschutz</h3>
             <p>
-                Nach dem Klick auf den Link kamst du zu einer Seite, auf der du zuerst aufgefordert wurdest, deine E-Mail-Adresse und dein Passwort anzugeben. 
-                Solltst du dort Daten eingeben haben, brauchst du dir keine Sorgen machen; Deine Eingaben wurden nicht gespeichert und ebenfalls nicht an den Server gesendet.
+                Nach dem Klick auf den Link kamst du zu einer Seite, auf der du zuerst aufgefordert wurdest, deine E-Mail-Adresse und dein Passwort einzugeben. 
+                Solltest du dort Daten eingegeben haben, brauchst du dir keine Sorgen machen: Deine Eingaben wurden nicht gespeichert und ebenfalls nicht an den Server gesendet.
                 Das Verfahren wurde so datensparend wie möglich gestaltet: Wir haben nur die allerwichtigsten Daten erhoben.
                 Das sind folgende:
                 <ul>
@@ -54,13 +54,13 @@
                     <li><b>Geschlecht</b></li>
                 </ul>
                 <ul>
-                    <li><b>Tracking in der E-Mail</b> Wurde die E-Mail angezeigt?</li>
-                    <li><b>Link</b> Wurde auf den Link geklickt?</li>
-                    <li><b>Eingaben</b> Wurden E-Mail und auch das Passwort eingegeben?</li>
-                    <li><b>Betriebssystem und Browser mit Version</b></li>
+                    <li><b>Tracking in der E-Mail:</b> Wurde die E-Mail angezeigt?</li>
+                    <li><b>Link:</b> Wurde auf den Link geklickt?</li>
+                    <li><b>Eingaben:</b> Wurden E-Mail und Passwort eingegeben?</li>
+                    <li><b>Betriebssystem und Browser mit Version:</b></li>
                 </ul>
-                Zum Zweck der anonymisierten Datenerhebung darüber, wie geübt die Schülerschaft und das Kollegium im Erkennen von sogenannten Phishing E-Mails 
-                sind, hat dieser Test stattgefunden. Die erhobenen Daten werden nach der Verarbeitung und Auswertung hier dargestellt. Personengebunde Daten, die für das
+                Zum Zweck der anonymisierten Datenerhebung darüber, wie geübt die Schülerschaft und das Kollegium im Erkennen von sogenannten Phishing-E-Mails 
+                sind, hat dieser Test stattgefunden. Die erhobenen Daten werden nach der Verarbeitung und Auswertung hier dargestellt. Personenbezogene Daten, die für das
                 Versenden der E-Mails notwendig waren, sind bereits fachgerecht gelöscht.
             </p>
             #{print_phishing_groups_table}
@@ -75,7 +75,7 @@
                 <div class="col-md-12">
                     <input type="url" class="form-control" value="https://#{WEBSITE_HOST}/phishing" readonly="">
                 </div><br>
-                Ein anderes Indiz ist es, wenn du nicht deinen selbst ausgewählten Hintergrund siehst, das Profilbild fehlt, oder deine Daten nicht richtig angezeigt werden.
+                Ein anderes Indiz ist es, wenn du nicht deinen selbst ausgewählten Hintergrund siehst, das Profilbild fehlt oder deine Daten nicht richtig angezeigt werden.
             </p>
         </div>
     </div>

@@ -36,6 +36,9 @@ td, th {
                 </p>
                 #{print_projekt_interesse_stats()}
             </div>
+            <div style='#{projekttage_phase() == 4 ? '' : 'display: none;'}'>
+                #{print_projekt_assigned_sus()}
+            </div>
             <hr>
             <h3>Projektkatalog</h3>
             <p>Hier findest du eine Übersicht der anderen Projekte:</p>

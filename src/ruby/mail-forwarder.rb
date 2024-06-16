@@ -84,6 +84,9 @@ class Script
         @@klassen_order.each do |klasse|
             results << "ev.#{klasse}@mail.gymnasiumsteglitz.de"
         end
+        @@schueler_for_klasse['11'].each do |email|
+            results << email
+        end
         results.map { |x| x.downcase }
     end
 

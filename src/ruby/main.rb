@@ -1278,6 +1278,38 @@ class Main < Sinatra::Base
                 :recipients => VERTEILER_DEVELOPMENT_EMAILS
             }
         end
+        projekte = {}
+        $neo4j.neo4j_query(<<~END_OF_QUERY).each do |row|
+            MATCH (u:User)-[:ASSIGNED_TO]->(p:Projekt)
+            RETURN u.email, p.nr, p.title;
+        END_OF_QUERY
+            nr = row['p.nr']
+            projekte[nr] ||= {
+                :title => row['p.title'],
+                :participants => [],
+                :organized_by => [],
+            }
+            projekte[nr][:participants] << row['u.email']
+        end
+        $neo4j.neo4j_query(<<~END_OF_QUERY).each do |row|
+            MATCH (p:Projekt)-[:ORGANIZED_BY]->(u:User)
+            RETURN u.email, p.nr;
+        END_OF_QUERY
+            nr = row['p.nr']
+            next unless projekte[nr]
+            projekte[nr][:organized_by] << row['u.email']
+        end
+        projekte.each_pair do |nr, info|
+            ['', 'eltern.'].each do |prefix|
+                email = "#{prefix}projekt-#{nr}@#{MAILING_LIST_DOMAIN}"
+                @@mailing_lists[email] = {
+                    :label => "Alle Teilnehmer:innen im Projekt »#{info[:title]}#{prefix == '' ? '' : ' (Eltern)'}«",
+                    :recipients => info[:participants].map { |x|  prefix + x },
+                    :extra_allowed_users => info[:organized_by],
+                }
+            end
+        end
+
         if DASHBOARD_SERVICE == 'ruby'
             File.open('/internal/mailing_lists.yaml.tmp', 'w') do |f|
                 f.puts @@mailing_lists.to_yaml

@@ -20,6 +20,13 @@ class Main < Sinatra::Base
         return klassenstufe >= 5 && klassenstufe <= 9
     end
 
+    def user_was_eligible_for_projektwahl?
+        return false unless schueler_logged_in?
+        return false unless projekttage_phase() == 4
+        klassenstufe = @session_user[:klassenstufe] || 7
+        return klassenstufe >= 5 && klassenstufe <= 9
+    end
+
     def parse_projekt_node(p)
         {
             :nr => p[:nr],
@@ -83,7 +90,7 @@ class Main < Sinatra::Base
     post '/api/get_projekte' do
         require_user!
         result = {:projekte => get_projekte()}
-        if user_eligible_for_projektwahl?
+        if user_eligible_for_projektwahl? || user_was_eligible_for_projektwahl?
             vote_for_project_nr = {}
             latest_ts = 0
             neo4j_query(<<~END_OF_QUERY, {:email => @session_user[:email]}).each do |row|
@@ -103,6 +110,17 @@ class Main < Sinatra::Base
                 result[:my_vote_data] = JSON.parse(File.read("/internal/projekttage/votes/#{@session_user[:email]}.json"))
                 result[:project_data] = JSON.parse(File.read("/internal/projekttage/votes/projects.json"))
             rescue
+            end
+        end
+        if user_was_eligible_for_projektwahl?
+            path = '/internal/projekttage/votes/verdicts.json'
+            if File.exist?(path)
+                verdict_for_email = JSON.parse(File.read(path))
+                result[:verdict] = verdict_for_email[@session_user[:email]]
+                result[:assigned_projekt] = neo4j_query_expect_one(<<~END_OF_QUERY, {:email => @session_user[:email]})['p.nr']
+                    MATCH (u:User {email: $email})-[:ASSIGNED_TO]->(p:Projekt)
+                    RETURN p.nr;
+                END_OF_QUERY
             end
         end
         respond(result)
@@ -320,6 +338,73 @@ class Main < Sinatra::Base
         end
     end
 
+    def print_projekt_assigned_sus
+        projekt = nil
+        neo4j_query(<<~END_OF_QUERY, {:email => @session_user[:email]}).each do |row|
+            MATCH (p:Projekt)-[:ORGANIZED_BY]->(u:User {email: $email})
+            RETURN p;
+        END_OF_QUERY
+            projekt = row['p']
+        end
+        return '' if projekt.nil? || projekt[:min_klasse].nil? || projekt[:max_klasse].nil? || projekt[:capacity].nil?
+
+        sus = []
+        neo4j_query(<<~END_OF_QUERY, {:nr => projekt[:nr]}).each do |row|
+            MATCH (u:User)-[r:ASSIGNED_TO]->(p:Projekt {nr: $nr})
+            RETURN u.email, r;
+        END_OF_QUERY
+            email = row['u.email']
+            next unless @@user_info[email]
+            next unless @@user_info[email][:roles].include?(:schueler)
+            sus << email
+        end
+        sus.sort! do |a, b|
+            ia = @@user_info[a]
+            ib = @@user_info[b]
+            ia[:klassenstufe] ||= 7
+            ib[:klassenstufe] ||= 7
+            (ia[:klassenstufe] == ib[:klassenstufe]) ?
+            (ia[:klasse] <=> ib[:klasse]) :
+            (ia[:klassenstufe] <=> ib[:klassenstufe])
+        end
+
+        StringIO.open do |io|
+            io.puts "<p>Die folgenden Schülerinnen und Schüler nehmen an deinem Projekt teil. Unten in der Tabelle findest du E-Mail-Verteiler, die du nutzen kannst, um alle Teilnehmer:innen und / oder deren Eltern zu erreichen. Nutze deine schulische E-Mail-Adresse, um die Verteiler zu verwenden.</p>"
+            io.puts "<div class='table-responsive' style='max-width: 100%; overflow-x: auto;'>"
+            io.puts "<table class='table table-sm' style='width: unset;'>"
+            io.puts "<tr>"
+            io.puts "<th>Nr.</th>"
+            io.puts "<th></th>"
+            io.puts "<th>Name</th>"
+            io.puts "<th>Klasse</th>"
+            io.puts "<th style='width: 30em;'>E-Mail</th>"
+            io.puts "</tr>"
+            sus.each.with_index do |email, i|
+                io.puts "<tr class='user_row'>"
+                io.puts "<td>#{i + 1}.</td>"
+                io.puts "<td><div class='icon nav_avatar'>#{user_icon(email, 'avatar-md')}</div></td>"
+                io.puts "<td>#{@@user_info[email][:display_name]}</td>"
+                io.puts "<td>#{tr_klasse(@@user_info[email][:klasse])}</td>"
+                io.write "<td>"
+                print_email_field(io, email)
+                io.write "</td>"
+                io.puts "</tr>"
+            end
+            ['', 'eltern.'].each do |prefix|
+                io.puts "<tr class='user_row'>"
+                io.puts "<td colspan='4'><em>E-Mail-Verteiler: #{prefix == 'eltern.' ? 'Alle Eltern eurer Teilnehmer:innen' : 'Alle Teilnehmer:innen'}</em></td>"
+                io.write "<td>"
+                print_email_field(io, "#{prefix}projekt-#{projekt[:nr]}@#{MAILING_LIST_DOMAIN}")
+                io.write "</td>"
+                io.puts "</tr>"
+            end
+            io.puts "</table>"
+            io.puts "</div>"
+
+            io.string
+        end
+    end
+
     def score_for_project(nr, project_data)
         vote = project_data['vote'] || {}
         x = [vote['0'] || 0, vote['1'] || 0, vote['2'] || 0, vote['3'] || 0]
@@ -528,6 +613,88 @@ class Main < Sinatra::Base
 
             io.string
         end
+    end
 
+    def self.assign_projects(emails, users, projects,
+        projects_for_klassenstufe, total_capacity,
+        votes, _votes_by_email,
+        _votes_by_vote, _votes_by_project, user_info)
+        votes_by_email = Hash[_votes_by_email.map { |a, b| [a, b.dup ] } ]
+        votes_by_vote = Hash[_votes_by_vote.map { |a, b| [a, b.dup ] } ]
+        votes_by_project = Hash[_votes_by_project.map { |a, b| [a, b.dup ] } ]
+        # STDERR.puts "Got #{emails.size} emails"
+        # STDERR.puts "Got #{projects.size} projects with a total capacity of #{total_capacity}"
+        # STDERR.puts "Total capacity: #{total_capacity}"
+        # STDERR.puts "Schueler: #{emails.size}"
+        result = {
+            :project_for_email => {},
+            :error_for_email => {},
+            :emails_for_project => Hash[projects.map { |k, v| [k, []] } ],
+        }
+        # STDERR.puts result.to_yaml
+        current_vote = 3
+        remaining_emails = Set.new(emails)
+        # STEP 1: Assign projects by priority
+        loop do
+            votes_by_vote[current_vote] ||= Set.new()
+            while votes_by_vote[current_vote].empty?
+                current_vote -= 1
+                if current_vote == 0
+                    break
+                end
+            end
+            if current_vote == 0
+                break
+            end
+            sha1 = votes_by_vote[current_vote].to_a.sample
+            vote = votes[sha1]
+            nr = vote[:nr]
+            email = vote[:email]
+            # STDERR.puts "[#{current_vote} / #{votes_by_vote[current_vote].size} left] #{sha1} => #{vote.to_json}"
+            if result[:emails_for_project][nr].size < projects[nr][:capacity]
+                # user can be assigned to project
+                result[:emails_for_project][nr] << email
+                if result[:project_for_email][email]
+                    raise 'argh'
+                end
+                remaining_emails.delete(email)
+                result[:project_for_email][email] = nr
+                result[:error_for_email][email] = users[email][:highest_vote] - current_vote
+                # clear all entries of user
+                votes_by_email[email].each do |x|
+                    votes_by_vote[votes[x][:vote]].delete(x)
+                end
+            end
+            votes_by_vote[current_vote].delete(sha1)
+        end
+        # STDERR.puts "Assigned #{result[:project_for_email].size} of #{emails.size} users."
+        # STEP 2: Randomly assign the rest
+        remaining_projects = Set.new()
+        projects.each_pair do |nr, p|
+            if p[:capacity] - result[:emails_for_project][nr].size > 0
+                remaining_projects << nr
+            end
+        end
+        while !remaining_emails.empty?
+            email = remaining_emails.to_a.sample
+            klassenstufe = user_info[email][:klassenstufe] || 7
+            pool = projects_for_klassenstufe[klassenstufe] & remaining_projects
+            if pool.empty?
+                raise 'oops'
+            end
+            nr = pool.to_a.sample
+            remaining_emails.delete(email)
+            if result[:project_for_email][email]
+                raise 'argh'
+            end
+            result[:project_for_email][email] = nr
+            result[:emails_for_project][nr] << email
+            result[:error_for_email][email] = users[email][:highest_vote] || 0
+            if result[:emails_for_project][nr].size >= projects[nr][:capacity]
+                remaining_projects.delete(nr)
+            end
+        end
+        # STDERR.puts "Assigned #{result[:project_for_email].size} of #{emails.size} users."
+        result
     end
 end

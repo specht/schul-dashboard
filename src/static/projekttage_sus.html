@@ -127,7 +127,7 @@
 </style>
 
 <script>
-var display_name_for_email = #{Hash[@@user_info.select { |email, info| user_has_role?(email, :teacher) || info[:klassenstufe] == 11 }.map { |email, info| [email, info[:teacher] ? info[:display_name_official] : info[:display_name]] }].to_json};
+var display_name_for_email = #{Hash[@@user_info.map { |email, info| [email, info[:teacher] ? info[:display_name_official] : info[:display_name]] }].to_json};
 var this_klasse = #{@session_user[:klassenstufe] || 7};
 var projekte = {};
 var vote_for_project = {};

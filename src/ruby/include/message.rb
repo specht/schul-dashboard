@@ -1,6 +1,6 @@
 class Main < Sinatra::Base
     post '/api/send_message' do
-        require_user_with_role!(:can_send_messages)
+        require_user_with_role!(:can_write_messages)
         data = parse_request_data(:required_keys => [:recipients, :message],
                                   :types => {:recipients => Array},
                                   :max_body_length => 1024 * 1024,
@@ -38,7 +38,7 @@ class Main < Sinatra::Base
     end
     
     post '/api/update_message' do
-        require_user_with_role!(:can_send_messages)
+        require_user_with_role!(:can_write_messages)
         data = parse_request_data(:required_keys => [:mid, :recipients, :message],
                                   :types => {:recipients => Array},
                                   :max_body_length => 1024 * 1024,
@@ -76,7 +76,7 @@ class Main < Sinatra::Base
     end
     
     post '/api/delete_message' do
-        require_user_with_role!(:can_send_messages)
+        require_user_with_role!(:can_write_messages)
         data = parse_request_data(:required_keys => [:mid])
         id = data[:mid]
         path = "/gen/m/#{id[0, 2]}/#{id[2, id.length - 2]}.html.gz"

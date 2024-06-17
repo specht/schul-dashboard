@@ -615,6 +615,53 @@ class Main < Sinatra::Base
         end
     end
 
+    def print_projekttage_assignment_summary
+        return '' unless teacher_logged_in?
+        color_for_error = ['#4aa03f', '#fad31c', '#f4951b', '#bc2326']
+        StringIO.open do |io|
+            projekt_for_email = {}
+            projekte = {}
+            assign_results = JSON.parse(File.read('/internal/projekttage/votes/assign-result.json'))
+
+            neo4j_query(<<~END_OF_QUERY).each do |row|
+                MATCH (u:User)-[:ASSIGNED_TO]->(p:Projekt)
+                RETURN u.email, p.nr, p;
+            END_OF_QUERY
+                email = row['u.email']
+                projekt_for_email[row['u.email']] = row['p.nr']
+                projekte[row['p.nr']] ||= row['p']
+            end
+
+            KLASSEN_ORDER.each do |klasse|
+                klassenstufe = klasse.to_i
+                klassenstufe = 7 if klassenstufe == 0
+                next unless klassenstufe < 10
+                io.puts "<h4>Klasse #{tr_klasse(klasse)}</h4>"
+                io.puts "<div class='table-responsive' style='max-width: 100%; overflow-x: auto;'>"
+                io.puts "<table class='table table-sm table-striped' style='width: unset;'>"
+                io.puts "<tr>"
+                io.puts "<th style='text-align: right;'>Nr.</th>"
+                io.puts "<th></th>"
+                io.puts "<th>Name</th>"
+                io.puts "<th>Projekt</th>"
+                io.puts "</tr>"
+                @@schueler_for_klasse[klasse].each.with_index do |email, index|
+                    error = assign_results['error_for_email'][email]
+                    io.puts "<tr>"
+                    io.puts "<td style='text-align: right;'>#{index + 1}.</td>"
+                    io.puts "<td style='text-align: center;'><span style='color: #{color_for_error[error]};'>⬤</span></td>"
+                    io.puts "<td>#{@@user_info[email][:display_name]}</td>"
+                    io.puts "<td>#{projekte[projekt_for_email[email]][:title]}</td>"
+                    io.puts "</tr>"
+                end
+                io.puts "</table>"
+                io.puts "</div>"
+            end
+
+            io.string
+        end
+    end
+
     def self.assign_projects(emails, users, projects,
         projects_for_klassenstufe, total_capacity,
         votes, _votes_by_email,

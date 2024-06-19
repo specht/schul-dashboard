@@ -85,6 +85,16 @@ class Main < Sinatra::Base
                         else
                             io.puts "<div class='history_entry'>#{PK5_KEY_LABELS[key]} geändert auf <strong>»#{value}«</strong> durch #{@@user_info[entry['eu.email']][:display_name_official]}</div>"
                         end
+                    elsif pc[:type] == 'invite_sus'
+                        io.puts "<div class='history_entry'><strong>#{@@user_info[pc[:other_email]][:display_name]}</strong> zur Gruppenprüfung eingeladen durch #{@@user_info[entry['eu.email']][:display_name_official]}</div>"
+                    elsif pc[:type] == 'uninvite_sus'
+                        io.puts "<div class='history_entry'><strong>#{@@user_info[pc[:other_email]][:display_name]}</strong> von der Gruppenprüfung ausgeladen durch #{@@user_info[entry['eu.email']][:display_name_official]}</div>"
+                    elsif pc[:type] == 'accept_invitation'
+                        io.puts "<div class='history_entry'><strong>#{@@user_info[pc[:email]][:display_name]}</strong> hat die Einladung zur Gruppenprüfung angenommen</div>"
+                    elsif pc[:type] == 'reject_invitation'
+                        io.puts "<div class='history_entry'><strong>#{@@user_info[pc[:email]][:display_name]}</strong> hat die Einladung zur Gruppenprüfung abgelehnt</div>"
+                    else
+                        io.puts pc.to_json
                     end
                 end
             end
@@ -240,4 +250,202 @@ class Main < Sinatra::Base
             io.string
         end
     end
+
+    post '/api/send_invitation_for_pk5' do
+        data = parse_request_data(:required_keys => [:sus_email, :name])
+        sus_email = data[:sus_email]
+        if user_with_role_logged_in?(:oko)
+        elsif user_with_role_logged_in?(:schueler)
+            assert(sus_email == @session_user[:email])
+        else
+            raise 'nope'
+        end
+        other_email = @@user_info.keys.select do |email|
+            @@user_info[email][:display_name] == data[:name]
+        end.first
+        assert(other_email != nil)
+        ts = Time.now.to_i
+        transaction do
+            p = neo4j_query_expect_one(<<~END_OF_QUERY, {:sus_email => sus_email})['p']
+                MATCH (u:User {email: $sus_email})
+                MERGE (p:Pk5)-[:BELONGS_TO]->(u)
+                RETURN p;
+            END_OF_QUERY
+            rows = neo4j_query(<<~END_OF_QUERY, {:sus_email => sus_email, :other_email => other_email})
+                MATCH (p:Pk5)-[:BELONGS_TO]->(u:User {email: $sus_email})
+                MATCH (p)-[r:INVITATION_FOR]->(ou:User {email: $other_email})
+                RETURN r;
+            END_OF_QUERY
+            assert(rows.size == 0)
+            neo4j_query(<<~END_OF_QUERY, {:sus_email => sus_email, :other_email => other_email})
+                MATCH (p:Pk5)-[:BELONGS_TO]->(u:User {email: $sus_email})
+                MATCH (ou:User {email: $other_email})
+                CREATE (p)-[:INVITATION_FOR]->(ou)
+            END_OF_QUERY
+            neo4j_query_expect_one(<<~END_OF_QUERY, {:sus_email => sus_email, :ts => ts, :other_email => other_email, :editor_email => @session_user[:email]})
+                MATCH (eu:User {email: $editor_email})
+                MATCH (p:Pk5)-[:BELONGS_TO]->(:User {email: $sus_email})
+                CREATE (eu)<-[:BY]-(c:Pk5Change)-[:TO]->(p)
+                SET c.type = 'invite_sus'
+                SET c.other_email = $other_email
+                SET c.ts = $ts
+                RETURN p;
+            END_OF_QUERY
+        end
+    end
+
+    post '/api/delete_invitation_for_pk5' do
+        data = parse_request_data(:required_keys => [:sus_email, :other_email])
+        sus_email = data[:sus_email]
+        if user_with_role_logged_in?(:oko)
+        elsif user_with_role_logged_in?(:schueler)
+            assert(sus_email == @session_user[:email])
+        else
+            raise 'nope'
+        end
+        other_email = data[:other_email]
+        assert(@@user_info.include?(other_email))
+        ts = Time.now.to_i
+        transaction do
+            rows = neo4j_query(<<~END_OF_QUERY, {:sus_email => sus_email, :other_email => other_email})
+                MATCH (p:Pk5)-[:BELONGS_TO]->(u:User {email: $sus_email})
+                MATCH (p)-[r:INVITATION_FOR]->(ou:User {email: $other_email})
+                RETURN r;
+            END_OF_QUERY
+            assert(rows.size > 0)
+            neo4j_query(<<~END_OF_QUERY, {:sus_email => sus_email, :other_email => other_email})
+                MATCH (p:Pk5)-[:BELONGS_TO]->(u:User {email: $sus_email})
+                MATCH (p)-[r:INVITATION_FOR]->(ou:User {email: $other_email})
+                DELETE r;
+            END_OF_QUERY
+            neo4j_query_expect_one(<<~END_OF_QUERY, {:sus_email => sus_email, :ts => ts, :other_email => other_email, :editor_email => @session_user[:email]})
+                MATCH (eu:User {email: $editor_email})
+                MATCH (p:Pk5)-[:BELONGS_TO]->(:User {email: $sus_email})
+                CREATE (eu)<-[:BY]-(c:Pk5Change)-[:TO]->(p)
+                SET c.type = 'uninvite_sus'
+                SET c.other_email = $other_email
+                SET c.ts = $ts
+                RETURN p;
+            END_OF_QUERY
+        end
+        respond(:yay => 'sure')
+    end
+
+    def print_pending_pk5_invitations_incoming(user_email)
+        pending_invitations = neo4j_query(<<~END_OF_QUERY, {:email => user_email}).to_a
+            MATCH (ou:User)<-[:BELONGS_TO]-(p:Pk5)-[r:INVITATION_FOR]->(u:User {email: $email})
+            RETURN ou.email, ID(p) AS id;
+        END_OF_QUERY
+        return '' if pending_invitations.empty?
+        StringIO.open do |io|
+            io.puts "<hr>"
+            invitations = {}
+            pending_invitations.each do |row|
+                invitations[row['id']] ||= []
+                invitations[row['id']] << row['ou.email']
+            end
+            invitations.values.each do |emails|
+                io.puts "<p>Du hast eine Einladung von <strong>#{join_with_sep(emails.map { |x| @@user_info[x][:display_name]}, ', ', ' und ')}</strong> für eine Gruppenprüfung erhalten.</p>"
+                io.puts "<p>"
+                io.puts "<button class='btn btn-success bu-accept-invitation' data-email='#{emails.first}'><i class='fa fa-check'></i>&nbsp;&nbsp;Einladung annehmen</button>"
+                io.puts "<button class='btn btn-danger bu-reject-invitation' data-email='#{emails.first}'><i class='fa fa-times'></i>&nbsp;&nbsp;Einladung ablehnen</button>"
+                io.puts "</p>"
+            end
+            io.puts "<hr>"
+            io.string
+        end
+    end
+
+    def pending_pk5_invitations_outgoing(user_email)
+        pending_invitations = neo4j_query(<<~END_OF_QUERY, {:email => user_email}).to_a
+            MATCH (ou:User {email: $email})<-[:BELONGS_TO]-(p:Pk5)-[r:INVITATION_FOR]->(u:User)
+            RETURN u.email;
+        END_OF_QUERY
+        return '' if pending_invitations.empty?
+        StringIO.open do |io|
+            io.puts "<hr>"
+            pending_invitations.each do |row|
+                io.puts "<p>Du hast <strong>#{@@user_info[row['u.email']][:display_name]}</strong> für eine Gruppenprüfung eingeladen.</p>"
+                io.puts "<p>"
+                io.puts "<button class='btn btn-danger bu-delete-invitation' data-email='#{row['u.email']}'><i class='fa fa-times'></i>&nbsp;&nbsp;Einladung zurücknehmen</button>"
+                io.puts "</p>"
+            end
+            io.puts "<hr>"
+            io.string
+        end
+    end
+
+    post '/api/pending_pk5_invitations_outgoing' do
+        data = parse_request_data(:required_keys => [:sus_email])
+        sus_email = data[:sus_email]
+        if user_with_role_logged_in?(:oko)
+        elsif user_with_role_logged_in?(:schueler)
+            assert(sus_email == @session_user[:email])
+        else
+            raise 'nope'
+        end
+        respond(:html => pending_pk5_invitations_outgoing(sus_email))
+    end
+
+    post '/api/accept_5pk_invitation' do
+        data = parse_request_data(:required_keys => [:sus_email, :other_email])
+        sus_email = data[:sus_email]
+        if user_with_role_logged_in?(:oko)
+        elsif user_with_role_logged_in?(:schueler)
+            assert(sus_email == @session_user[:email])
+        else
+            raise 'nope'
+        end
+        other_email = data[:other_email]
+        assert(@@user_info.include?(other_email))
+        ts = Time.now.to_i
+        transaction do
+            neo4j_query(<<~END_OF_QUERY, {:sus_email => sus_email, :other_email => other_email})
+                MATCH (ou:User {email: $other_email})<-[:BELONGS_TO]-(p:Pk5)-[r:INVITATION_FOR]->(u:User {email: $sus_email})
+                DELETE r
+                CREATE (p)-[:BELONGS_TO]->(u);
+            END_OF_QUERY
+            neo4j_query_expect_one(<<~END_OF_QUERY, {:sus_email => sus_email, :other_email => other_email, :ts => ts, :editor_email => @session_user[:email]})
+                MATCH (eu:User {email: $editor_email})
+                MATCH (p:Pk5)-[:BELONGS_TO]->(:User {email: $other_email})
+                CREATE (eu)<-[:BY]-(c:Pk5Change)-[:TO]->(p)
+                SET c.type = 'accept_invitation'
+                SET c.email = $sus_email
+                SET c.ts = $ts
+                RETURN p;
+            END_OF_QUERY
+        end
+        respond(:yay => 'sure')
+    end
+
+    post '/api/reject_5pk_invitation' do
+        data = parse_request_data(:required_keys => [:sus_email, :other_email])
+        sus_email = data[:sus_email]
+        if user_with_role_logged_in?(:oko)
+        elsif user_with_role_logged_in?(:schueler)
+            assert(sus_email == @session_user[:email])
+        else
+            raise 'nope'
+        end
+        other_email = data[:other_email]
+        assert(@@user_info.include?(other_email))
+        ts = Time.now.to_i
+        transaction do
+            neo4j_query(<<~END_OF_QUERY, {:sus_email => sus_email, :other_email => other_email})
+                MATCH (ou:User {email: $other_email})<-[:BELONGS_TO]-(p:Pk5)-[r:INVITATION_FOR]->(u:User {email: $sus_email})
+                DELETE r;
+            END_OF_QUERY
+            neo4j_query_expect_one(<<~END_OF_QUERY, {:sus_email => sus_email, :other_email => other_email, :ts => ts, :editor_email => @session_user[:email]})
+                MATCH (eu:User {email: $editor_email})
+                MATCH (p:Pk5)-[:BELONGS_TO]->(:User {email: $other_email})
+                CREATE (eu)<-[:BY]-(c:Pk5Change)-[:TO]->(p)
+                SET c.type = 'reject_invitation'
+                SET c.email = $sus_email
+                SET c.ts = $ts
+                RETURN p;
+            END_OF_QUERY
+        end
+        respond(:yay => 'sure')
+    end
 end
+

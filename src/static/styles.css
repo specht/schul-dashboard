@@ -2795,3 +2795,7 @@ body.dark .history_date {
     margin-left: 1.5em;
     font-size: 85%;
 }
+
+body.dark hr {
+    border-top: 1px solid rgb(255, 255, 255, 0.2);
+}

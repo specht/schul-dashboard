@@ -5,6 +5,8 @@ class SortableTable {
         this.element = options.element;
         this.headers = options.headers;
         this.rows = options.rows;
+        this.extra_rows_above_for_key = options.extra_rows_above_for_key ?? null;
+        this.extra_rows_below_for_key = options.extra_rows_below_for_key ?? null;
         this.row_classes = options.row_classes;
         this.clickable_row_callback = options.clickable_row_callback;
         this.filter_callback = options.filter_callback;
@@ -41,7 +43,13 @@ class SortableTable {
         let row_classes = options.row_classes ?? [];
         for (let i = 0; i < options.rows.length; i++) {
             let row = options.rows[i];
+            let extra_row_above = this.extra_rows_above_for_key ? this.extra_rows_above_for_key[i] : null;
+            if (extra_row_above !== null)
+                this.add_row(extra_row_above, false, false, row_classes[i] ?? []);
             this.add_row(row, false, false, row_classes[i] ?? []);
+            let extra_row_below = this.extra_rows_below_for_key ? this.extra_rows_below_for_key[i] : null;
+            if (extra_row_below !== null)
+                this.add_row(extra_row_below, false, false, row_classes[i] ?? []);
         }
         this.element.append(table_div);
         table.css('display', 'table');

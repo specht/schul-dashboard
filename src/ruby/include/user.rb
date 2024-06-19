@@ -572,7 +572,8 @@ class Main < Sinatra::Base
                 io.puts "<div class='hint'>"
                 io.puts "<p><b>Noteneingabe im Datentresor</b></p>"
                 io.puts "<hr />"
-                io.puts "<p>Die Noteneingabe im Datentresor schließt am Montag um 9:00 Uhr.</p>"
+                d = DateTime.parse(deadline)
+                io.puts "<p>Die Noteneingabe im Datentresor schließt am #{WEEKDAYS_LONG[d.wday]} um #{d.strftime('%H:%M')} Uhr.</p>"
                 io.puts "<div id='tresor_countdown_here' style='display: none;' data-deadline='#{Time.parse(deadline).to_i}'>"
                 io.puts "</div>"
                 io.puts "</div>"
@@ -587,7 +588,8 @@ class Main < Sinatra::Base
                 io.puts "<div class='hint'>"
                 io.puts "<p><b>Markierung von SuS in den Listen für die Zeugniskonferenzen</b></p>"
                 io.puts "<hr />"
-                io.puts "<p>Klassenleitungen: Bitte markieren Sie SuS, die Sie in den Zeug&shy;nis&shy;kon&shy;feren&shy;zen besprechen möchten, bis Mittwoch um 9:00 Uhr. Hinweis: Alle SuS mit einer Note ab 4– sind schon auto&shy;matisch markiert.</p>"
+                d = DateTime.parse(deadline)
+                io.puts "<p>Klassenleitungen: Bitte markieren Sie SuS, die Sie in den Zeug&shy;nis&shy;kon&shy;feren&shy;zen besprechen möchten, bis #{WEEKDAYS_LONG[d.wday]} um #{d.strftime('%H:%M')} Uhr. Hinweis: Alle SuS mit einer Note ab 4– sind schon auto&shy;matisch markiert.</p>"
                 io.puts "<div id='tresor_countdown_here' style='display: none;' data-deadline='#{Time.parse(deadline).to_i}'>"
                 io.puts "</div>"
                 io.puts "</div>"
@@ -603,7 +605,8 @@ class Main < Sinatra::Base
                     io.puts "<div class='hint'>"
                     io.puts "<p><b>Eintragung der Noten für das Arbeits- und Sozialverhalten</b></p>"
                     io.puts "<hr />"
-                    io.puts "<p>Die Möglichkeit für Eintragungen der Noten für das Arbeits- und Sozialverhalten endet am Mittwoch um 12:00 Uhr. Bitte tragen Sie bis dahin fehlende Noten ein, damit die Klassenleitungen rechtzeitig vor der Zeugnisausgabe die Sozialzeugnisse drucken können.</p>"
+                    d = DateTime.parse(deadline)
+                    io.puts "<p>Die Möglichkeit für Eintragungen der Noten für das Arbeits- und Sozialverhalten endet am #{WEEKDAYS_LONG[d.wday]} um #{d.strftime('%H:%M')} Uhr. Bitte tragen Sie bis dahin fehlende Noten ein, damit die Klassenleitungen rechtzeitig vor der Zeugnisausgabe die Sozialzeugnisse drucken können.</p>"
                     io.puts "<div id='tresor_countdown_here' style='display: none;' data-deadline='#{Time.parse(deadline).to_i}'>"
                     io.puts "</div>"
                     io.puts "</div>"

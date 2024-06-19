@@ -171,4 +171,23 @@ class Main < Sinatra::Base
         end
         angebote
     end
+
+    def get_angebote_for_email
+        require_teacher!
+        angebote = {}
+        neo4j_query(<<~END_OF_QUERY).each do |row|
+            MATCH (u:User)-[:IS_PART_OF]->(a:Angebot)-[:DEFINED_BY]->(ou:User)
+            RETURN u.email, a.name, ou.email;
+        END_OF_QUERY
+            owner = row['ou.email']
+            name = row['a.name']
+            email = row['u.email']
+            angebote[email] ||= []
+            angebote[email] << {
+                :owner => @@user_info[owner][:display_name],
+                :name => name,
+            }
+        end
+        angebote
+    end
 end

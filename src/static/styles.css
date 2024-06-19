@@ -2772,3 +2772,26 @@ body.dark .polaroid {
 .table tr.no-border-top td, .table tr.no-border-top th {
     border-top: none;
 }
+
+.history_date {
+    font-size: 85%;
+    font-style: italic;
+    text-align: center;
+    border-top: 1px solid rgba(0, 0, 0, 0.2);
+    border-bottom: 1px solid rgba(0, 0, 0, 0.2);
+    background-color: rgba(255, 255, 255, 0.5);
+    margin: 1em 0;
+    padding: 0.2em 0;
+}
+
+body.dark .history_date {
+    border-top: 1px solid rgba(255, 255, 255, 0.2);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+    background-color: rgba(0, 0, 0, 0.5);
+}
+
+.history_entry {
+    display: list-item;
+    margin-left: 1.5em;
+    font-size: 85%;
+}

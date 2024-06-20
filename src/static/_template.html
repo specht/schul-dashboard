@@ -870,8 +870,9 @@ function render_timespans() {
             $('<div>').appendTo(div);
         }
         let canvas = div.find('canvas')[0];
-        canvas.width = div.width();
-        canvas.height = div.height();
+        let scale = 2.0;
+        canvas.width = div.width() * scale;
+        canvas.height = div.height() * scale;
         let div2 = div.find('div')[0];
         $(div2).empty();
         let now = moment().unix();
@@ -885,7 +886,7 @@ function render_timespans() {
         t1 = t0 + show_days * 24 * 3600;
         let t = moment().startOf('day').subtract(3, 'd').unix();
         // t = Math.floor(t / (24 * 3600)) * 24 * 3600;
-        let tb = 15;
+        let tb = 15 * scale;
         while (t < t1) {
             let d = new Date(t * 1000);
             let x = Math.round((t - t0) * div.width() / (show_days * 24 * 3600)) + 0.5;
@@ -893,18 +894,18 @@ function render_timespans() {
 
             if ((d.getDay() + 1) % 7 < 2) {
                 context.fillStyle = dark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.08)';
-                context.fillRect(x, tb, x1 - x, canvas.height);
+                context.fillRect(x * scale, tb, (x1 - x) * scale, canvas.height);
             } else {
                 context.fillStyle = dark ? 'rgba(0, 0, 0, 0.4)' : 'rgba(255, 255, 255, 0.4)';
-                context.fillRect(x, tb, x1 - x, canvas.height);
+                context.fillRect(x * scale, tb, (x1 - x) * scale, canvas.height);
             }
             context.beginPath();
             context.strokeStyle = dark ? 'rgba(255, 255, 255, 0.3)' : 'rgba(0, 0, 0, 0.5)';
-            context.lineWidth = 0.5;
-            context.moveTo(x, tb);
-            context.lineTo(x, canvas.height);
+            context.lineWidth = 0.5 * scale;
+            context.moveTo(x * scale, tb);
+            context.lineTo(x * scale, canvas.height);
             context.stroke();
-            context.font = '12px sans-serif';
+            context.font = `${12 * scale}px sans-serif`;
             let s = `${d.getDate()}.${d.getMonth() + 1}.`;
             if (div.width() > 900) {
                 s = `${WEEKDAYS[d.getDay()]}, ${d.getDate()}.${d.getMonth() + 1}.`;
@@ -912,50 +913,50 @@ function render_timespans() {
 
             context.fillStyle = dark ? 'rgba(255, 255, 255, 0.8)' : 'rgba(0, 0, 0, 0.8)';
             context.textAlign = 'center';
-            context.fillText(s, Math.round((x + x1) * 0.5) + 0.5, 14.5 + tb);
+            context.fillText(s, Math.round((x + x1) * 0.5) * scale + 0.5, 14.5 * scale + tb);
 
             t += 24 * 3600;
         }
         context.beginPath();
         context.strokeStyle = dark ? 'rgba(255, 255, 255, 0.3)' : 'rgba(0, 0, 0, 0.5)';
-        context.lineWidth = 0.5;
+        context.lineWidth = 0.5 * scale;
         context.moveTo(0, tb + 0.5);
         context.lineTo(canvas.width, tb + 0.5);
         context.moveTo(0, canvas.height);
         context.lineTo(canvas.width, canvas.height);
         context.stroke();
-        let x = Math.round((now - t0) * div.width() / (show_days * 24 * 3600)) + 0.5;
+        let x = Math.round((now - t0) * div.width() / (show_days * 24 * 3600)) * scale + 0.5;
         context.beginPath();
         context.fillStyle = '#{color_palette[:primary]}';
-        context.moveTo(x - 10, 4);
-        context.lineTo(x, 8);
+        context.moveTo(x - 10 * scale, 4 * scale);
+        context.lineTo(x, 8 * scale);
         context.lineTo(x, 0);
-        context.lineTo(x - 10, 4);
+        context.lineTo(x - 10 * scale, 4 * scale);
         context.textAlign = 'left';
         context.fill();
         context.beginPath();
         context.strokeStyle = '#{color_palette[:primary]}';
-        context.lineWidth = 1;
+        context.lineWidth = 1 * scale;
         context.moveTo(x, 0);
         context.lineTo(x, canvas.height);
         context.stroke();
         context.fillStyle = dark ? 'rgba(255, 255, 255, 0.9)' : 'rgba(0, 0, 0, 0.8)';
-        context.fillText("jetzt", x + 4, 10);
+        context.fillText("jetzt", x + 4 * scale, 10 * scale);
         for (let span of div.find('span')) {
             let d0 = moment($(span).data('t0')).unix();
             let d1 = moment($(span).data('t1')).unix();
             let label = $(span).text();
-            let x0 = Math.round((d0 - t0) * div.width() / (show_days * 24 * 3600)) + 0.5;
-            let x1 = Math.round((d1 - t0) * div.width() / (show_days * 24 * 3600)) + 0.5;
+            let x0 = Math.round((d0 - t0) * div.width() / (show_days * 24 * 3600)) * scale + 0.5;
+            let x1 = Math.round((d1 - t0) * div.width() / (show_days * 24 * 3600)) * scale + 0.5;
             if (x1 < 0 || x0 > canvas.width)
                 continue;
             context.beginPath();
             context.fillStyle = '#{color_palette[:primary]}';
-            context.roundRect(x0 + 2, 21 + tb, x1 - x0 - 4, 5, 3);
+            context.roundRect(x0 + 2, 21 * scale + tb, x1 - x0 - 4 * scale, 5 * scale, 3 * scale);
             context.fill();
             context.beginPath();
             context.fillStyle = dark ? 'rgba(0, 0, 0, 0.9)' : 'rgba(255, 255, 255, 1.0)';
-            context.roundRect(x0 + 2, 30 + tb, x1 - x0 - 4, 20, 3);
+            context.roundRect(x0 + 2, 30 * scale + tb, x1 - x0 - 4 * scale, 20 * scale, 3 * scale);
             context.fill();
             context.lineWidth = 0.5;
             context.strokeStyle = 'rgba(0, 0, 0, 0.3)';
@@ -966,10 +967,10 @@ function render_timespans() {
                 x1 = canvas.width + 2;
             context.fillStyle = dark ? 'rgba(255, 255, 255, 0.9)' : 'rgba(0, 0, 0, 0.8)';
             context.textAlign = 'left';
-            while (context.measureText(label).width > x1 - x0 - 4) {
+            while (context.measureText(label).width > x1 - x0 - 4 * scale) {
                 label = label.slice(0, -1);
             }
-            context.fillText(label, x0 + 6, 43.5 + tb);
+            context.fillText(label, x0 + 6 * scale, 43.5 * scale + tb);
         }
     }
 }

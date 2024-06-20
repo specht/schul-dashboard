@@ -686,6 +686,8 @@ class Main < Sinatra::Base
                 io.puts "<hr />"
                 io.puts "<p>Sieh dir an, was es mit der E-Mail vom #{PHISHING_RECEIVING_DATE} auf sich hatte.</p>"
                 io.puts "<p><a href='/phishing' class='btn btn-primary'>Phishing Prävention&nbsp;<i class='fa fa-angle-double-right'></i></a></p>"
+                io.puts "<p>Du kannst auch an unserer Umfrage teilnehmen</p>"
+                io.puts "<p><button class='btn btn-success bu-launch-poll' data-poll-run-id='#{PHISHING_POLL_RUN_ID}'>Zur Umfrage&nbsp;<i class='fa fa-angle-double-right'></i></button></p>"
                 io.puts "</div>"
                 io.puts "</div>"
                 io.string

@@ -126,7 +126,7 @@
                         </div>
                     </div>
 
-                    <div class='col-md-12' style="text-align: right;">
+                    <div class='col-md-12' style="text-align: right; #{(user_with_role_logged_in?(:oko) || @session_user[:klasse] == PK5_CURRENT_KLASSE) ? '' : 'display: none;'}">
                         <button id='bu_edit' class='btn btn-success'><i class='fa fa-edit'></i>&nbsp;&nbsp;Bearbeiten</button>
                         <button id='bu_discard_changes' style='display: none;' class='btn btn-outline-secondary'><i class='fa fa-times'></i>&nbsp;&nbsp;Änderungen verwerfen</button>
                         <button id='bu_save_changes' style='display: none;' class='btn btn-success'><i class='fa fa-check'></i>&nbsp;&nbsp;Änderungen speichern</button>

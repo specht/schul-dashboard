@@ -134,6 +134,7 @@ class Main < Sinatra::Base
         if user_with_role_logged_in?(:oko)
             sus_email = data[:sus_email] if data[:sus_email]
         end
+        assert(@@user_info[sus_email][:klasse] == PK5_CURRENT_KLASSE)
         ts = Time.now.to_i
         transaction do
             p = neo4j_query_expect_one(<<~END_OF_QUERY, {:sus_email => sus_email})['p']
@@ -264,6 +265,7 @@ class Main < Sinatra::Base
             @@user_info[email][:display_name] == data[:name]
         end.first
         assert(other_email != nil)
+        assert(@@user_info[sus_email][:klasse] == PK5_CURRENT_KLASSE)
         ts = Time.now.to_i
         transaction do
             p = neo4j_query_expect_one(<<~END_OF_QUERY, {:sus_email => sus_email})['p']
@@ -305,6 +307,7 @@ class Main < Sinatra::Base
         end
         other_email = data[:other_email]
         assert(@@user_info.include?(other_email))
+        assert(@@user_info[sus_email][:klasse] == PK5_CURRENT_KLASSE)
         ts = Time.now.to_i
         transaction do
             rows = neo4j_query(<<~END_OF_QUERY, {:sus_email => sus_email, :other_email => other_email})
@@ -398,6 +401,7 @@ class Main < Sinatra::Base
         end
         other_email = data[:other_email]
         assert(@@user_info.include?(other_email))
+        assert(@@user_info[sus_email][:klasse] == PK5_CURRENT_KLASSE)
         ts = Time.now.to_i
         transaction do
             neo4j_query(<<~END_OF_QUERY, {:sus_email => sus_email, :other_email => other_email})
@@ -429,6 +433,7 @@ class Main < Sinatra::Base
         end
         other_email = data[:other_email]
         assert(@@user_info.include?(other_email))
+        assert(@@user_info[sus_email][:klasse] == PK5_CURRENT_KLASSE)
         ts = Time.now.to_i
         transaction do
             neo4j_query(<<~END_OF_QUERY, {:sus_email => sus_email, :other_email => other_email})

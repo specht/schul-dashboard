@@ -3054,7 +3054,7 @@ class Main < Sinatra::Base
             salzh_protocol_delta = (parts[2] || '').strip
         elsif path == 'pk5'
             user_email = @session_user[:email]
-            if user_with_role_logged_in?(:oko)
+            if user_with_role_logged_in?(:teacher)
                 parts = request.env['REQUEST_PATH'].split('/')
                 user_email = parts[2]
             end

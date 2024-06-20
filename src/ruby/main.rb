@@ -1576,8 +1576,16 @@ class Main < Sinatra::Base
 
     before '*' do
         if DEVELOPMENT
-            debug "Re-including fragments.rb!"
+            debug "Re-including fragments.rb and data configs!"
             Kernel.send(:load, '/app/fragments/fragments.rb')
+            warn_level = $VERBOSE
+            $VERBOSE = nil
+            Kernel.send(:load, '/data/config.rb')
+            Kernel.send(:load, '/data/zeugnisse/config.rb')
+            Kernel.send(:load, '/data/phishing/config.rb')
+            Kernel.send(:load, '/data/projekte/config.rb')
+            Kernel.send(:load, '/data/pk5/config.rb')
+            $VERBOSE = warn_level
         end
         if DEVELOPMENT && request.path[0, 5] != '/api/'
             self.class.compile_js()
@@ -1898,6 +1906,9 @@ class Main < Sinatra::Base
                 if admin_logged_in? || user_who_can_upload_files_logged_in? || user_who_can_manage_news_logged_in? || user_who_can_manage_monitors_logged_in? || user_who_can_manage_tablets_logged_in? || user_with_role_logged_in?(:developer)
                     nav_items << :admin
                 end
+                if (schueler_logged_in? && @session_user[:klasse] == PK5_CURRENT_KLASSE)
+                    nav_items << :pk5
+                end
                 if user_who_can_use_aula_logged_in?
                     nav_items << :aula
                 end
@@ -1974,6 +1985,10 @@ class Main < Sinatra::Base
                         printed_something = true
                     end
                     io.puts "</div>"
+                    io.puts "</li>"
+                elsif x == :pk5
+                    io.puts "<li class='nav-item text-nowrap'>"
+                    io.puts "<a href='/pk5' class='nav-link nav-icon'><div class='icon'><i class='fa fa-file-text-o'></i></div>5. PK</a>"
                     io.puts "</li>"
                 elsif x == :advent_calendar
                     unless admin_logged_in?
@@ -2053,12 +2068,8 @@ class Main < Sinatra::Base
                             end
                         end
                     end
-                    if DEVELOPMENT
-                        if teacher_logged_in?
-                            io.puts "<a class='dropdown-item nav-icon' href='/pk5_overview'><div class='icon'><i class='fa fa-paperclip'></i></div><span class='label'>5. PK</span></a>"
-                        elsif (schueler_logged_in? && @session_user[:klasse] == PK5_CURRENT_KLASSE)
-                            io.puts "<a class='dropdown-item nav-icon' href='/pk5'><div class='icon'><i class='fa fa-paperclip'></i></div><span class='label'>5. PK</span></a>"
-                        end
+                    if teacher_logged_in?
+                        io.puts "<a class='dropdown-item nav-icon' href='/pk5_overview'><div class='icon'><i class='fa fa-file-text-o'></i></div><span class='label'>5. PK</span></a>"
                     end
                     if schueler_logged_in?
                         if @session_user[:klasse].to_i < 11

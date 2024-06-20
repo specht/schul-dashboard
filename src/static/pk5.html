@@ -17,6 +17,10 @@
     .form-control[readonly] {
         background: none;
     }
+    ul {
+        list-style-type: disc;
+        margin-left: 1em;
+    }
 </style>
 
 <div class="modal" id="modal_add_sus" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true" style='z-index: 200000;'>
@@ -55,8 +59,11 @@
             <h2 style='margin-bottom: 30px;'>5. Prüfungskomponente im Abitur</h2>
             <p>
                 Diese Karteikarte fasst deine Informationen zur 5. Prüfungskomponente im Abitur zusammen.
-                Die Angaben werden sich im Laufe der Zeit bis zu deiner Prüfung verändern.
+                Die Angaben werden sich im Laufe der Zeit bis zu deiner Prüfung verändern. Beachte den Zeitplan weiter unten auf dieser Seite.
             </p>
+            <div class="alert alert-white" style="#{$pk5.phases[$pk5.get_current_phase][:flags].include?(:no_sus_edit) ? '' : 'display: none;'}">
+                <em><strong>Hinweis:</strong> Du kannst die folgenden Angaben in der aktuellen Phase nicht bearbeiten.</em>
+            </div>
             #{print_pending_pk5_invitations_incoming(user_email)}
             <div class='karteikarte'>
                 <div class='row'>
@@ -80,7 +87,7 @@
                             <label>Prüfungskandidat#{(get_my_pk5(user_email)[:sus] || []).size > 1 ? 'en' : (@@user_info[user_email][:geschlecht] == 'w' ? 'in': '')}</label>
                             <div class="input-group mb-3">
                                 <input type='text' value='#{CGI.escapeHTML(join_with_sep(get_my_pk5(user_email)[:sus] || [], ', ', ' und '))}' class='form-control' readonly disabled>
-                                <div class="input-group-append">
+                                <div class="input-group-append" style="#{(user_with_role_logged_in?(:oko) || (@session_user[:klasse] == PK5_CURRENT_KLASSE && !($pk5.phases[$pk5.get_current_phase][:flags].include?(:no_sus_edit)))) ? '' : 'display: none;'}">
                                   <button class="btn btn-outline-secondary" type="button" id="bu_add_sus"><i class='fa fa-user-plus'></i></button>
                                 </div>
                             </div>
@@ -126,7 +133,7 @@
                         </div>
                     </div>
 
-                    <div class='col-md-12' style="text-align: right; #{(user_with_role_logged_in?(:oko) || @session_user[:klasse] == PK5_CURRENT_KLASSE) ? '' : 'display: none;'}">
+                    <div class='col-md-12' style="text-align: right; #{(user_with_role_logged_in?(:oko) || (@session_user[:klasse] == PK5_CURRENT_KLASSE && (!$pk5.phases[$pk5.get_current_phase][:flags].include?(:no_sus_edit)))) ? '' : 'display: none;'}">
                         <button id='bu_edit' class='btn btn-success'><i class='fa fa-edit'></i>&nbsp;&nbsp;Bearbeiten</button>
                         <button id='bu_discard_changes' style='display: none;' class='btn btn-outline-secondary'><i class='fa fa-times'></i>&nbsp;&nbsp;Änderungen verwerfen</button>
                         <button id='bu_save_changes' style='display: none;' class='btn btn-success'><i class='fa fa-check'></i>&nbsp;&nbsp;Änderungen speichern</button>
@@ -136,6 +143,10 @@
                     </div>
                 </div>
             </div>
+            <hr>
+            <h4>Zeitplan</h4>
+            #{$pk5.print_schedule()}
+            <hr>
             <h4>Bearbeitungshistorie</h4>
             <div id='div_history'>#{my_pk5_history(user_email)}</div>
         </div>

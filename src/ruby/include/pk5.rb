@@ -135,6 +135,7 @@ class Main < Sinatra::Base
             sus_email = data[:sus_email] if data[:sus_email]
         end
         assert(@@user_info[sus_email][:klasse] == PK5_CURRENT_KLASSE)
+        assert(!$pk5.phases[$pk5.get_current_phase][:flags].include?(:no_sus_edit))
         ts = Time.now.to_i
         transaction do
             p = neo4j_query_expect_one(<<~END_OF_QUERY, {:sus_email => sus_email})['p']
@@ -266,6 +267,7 @@ class Main < Sinatra::Base
         end.first
         assert(other_email != nil)
         assert(@@user_info[sus_email][:klasse] == PK5_CURRENT_KLASSE)
+        assert(!$pk5.phases[$pk5.get_current_phase][:flags].include?(:no_sus_edit))
         ts = Time.now.to_i
         transaction do
             p = neo4j_query_expect_one(<<~END_OF_QUERY, {:sus_email => sus_email})['p']
@@ -308,6 +310,7 @@ class Main < Sinatra::Base
         other_email = data[:other_email]
         assert(@@user_info.include?(other_email))
         assert(@@user_info[sus_email][:klasse] == PK5_CURRENT_KLASSE)
+        assert(!$pk5.phases[$pk5.get_current_phase][:flags].include?(:no_sus_edit))
         ts = Time.now.to_i
         transaction do
             rows = neo4j_query(<<~END_OF_QUERY, {:sus_email => sus_email, :other_email => other_email})
@@ -402,6 +405,7 @@ class Main < Sinatra::Base
         other_email = data[:other_email]
         assert(@@user_info.include?(other_email))
         assert(@@user_info[sus_email][:klasse] == PK5_CURRENT_KLASSE)
+        assert(!$pk5.phases[$pk5.get_current_phase][:flags].include?(:no_sus_edit))
         ts = Time.now.to_i
         transaction do
             neo4j_query(<<~END_OF_QUERY, {:sus_email => sus_email, :other_email => other_email})
@@ -434,6 +438,7 @@ class Main < Sinatra::Base
         other_email = data[:other_email]
         assert(@@user_info.include?(other_email))
         assert(@@user_info[sus_email][:klasse] == PK5_CURRENT_KLASSE)
+        assert(!$pk5.phases[$pk5.get_current_phase][:flags].include?(:no_sus_edit))
         ts = Time.now.to_i
         transaction do
             neo4j_query(<<~END_OF_QUERY, {:sus_email => sus_email, :other_email => other_email})

@@ -652,18 +652,25 @@ document.addEventListener('DOMContentLoaded', function() {
                 for (let pause of (arg.event.extendedProps.pausen || []))
                 {
                     let bgdiv = $('<div>');
+                    bgdiv.addClass('bgdiv');
                     bgdiv.css({position: 'absolute', left: 0, top: (pause[0] * 75.0 / 60.0) + 'px', right: 0});
                     bgdiv.css('height', (((pause[1] - pause[0]) * 75.0 / 60.0)) + 'px');
                     bgdiv.css('z-index', '-1');
-                    // bgdiv.css('border-top', '1px dashed rgba(255, 255, 255, 0.2)');
                     bgdiv.css('border-top', '1px dashed rgba(#{hex_to_rgb(color_palette[:main_text]).map { |x| x.to_s }.join(', ')}, 0.2)');
-                    // bgdiv.css('border-bottom', '1px dashed rgba(255, 255, 255, 0.2)');
                     bgdiv.css('border-bottom', '1px dashed rgba(#{hex_to_rgb(color_palette[:main_text]).map { |x| x.to_s }.join(', ')}, 0.2)');
-                    if (event_data.stundenthema_text || event_data.hausaufgaben_text)
-                        bgdiv.css('background-color', 'rgba(255, 255, 255, 0.05)');
-                    else
-                        bgdiv.css('background-color', 'rgba(255, 255, 255, 0.15)');
-    //                 bgdiv.css('background', 'url(/images/border-top.png) left top repeat-x , url(/images/border-bottom.png) left bottom repeat-x, #529ccc');
+                    if (event_data.stundenthema_text || event_data.hausaufgaben_text) {
+                        if ($('body').hasClass('dark') {
+                            bgdiv.css('background-color', 'rgba(0, 0, 0, 0.1)');
+                        } else {
+                            bgdiv.css('background-color', 'rgba(255, 255, 255, 0.05)');
+                        }
+                    } else {
+                        if ($('body').hasClass('dark') {
+                            bgdiv.css('background-color', 'rgba(0, 0, 0, 0.3)');
+                        } else {
+                            bgdiv.css('background-color', 'rgba(255, 255, 255, 0.15)');
+                        }
+                    }
                     bgdiv.css('min-height', '7px');
                     divs.push(bgdiv[0]);
                 }

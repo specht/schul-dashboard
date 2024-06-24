@@ -659,13 +659,13 @@ document.addEventListener('DOMContentLoaded', function() {
                     bgdiv.css('border-top', '1px dashed rgba(#{hex_to_rgb(color_palette[:main_text]).map { |x| x.to_s }.join(', ')}, 0.2)');
                     bgdiv.css('border-bottom', '1px dashed rgba(#{hex_to_rgb(color_palette[:main_text]).map { |x| x.to_s }.join(', ')}, 0.2)');
                     if (event_data.stundenthema_text || event_data.hausaufgaben_text) {
-                        if ($('body').hasClass('dark') {
+                        if ($('body').hasClass('dark')) {
                             bgdiv.css('background-color', 'rgba(0, 0, 0, 0.1)');
                         } else {
                             bgdiv.css('background-color', 'rgba(255, 255, 255, 0.05)');
                         }
                     } else {
-                        if ($('body').hasClass('dark') {
+                        if ($('body').hasClass('dark')) {
                             bgdiv.css('background-color', 'rgba(0, 0, 0, 0.3)');
                         } else {
                             bgdiv.css('background-color', 'rgba(255, 255, 255, 0.15)');

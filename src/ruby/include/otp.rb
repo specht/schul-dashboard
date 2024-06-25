@@ -53,7 +53,7 @@ class Main < Sinatra::Base
         otp_token = @session_user[:otp_token]
         return nil if otp_token.nil?
         return '(redacted)' unless reveal
-        totp = ROTP::TOTP.new(otp_token, issuer: "Dashboard")
+        totp = ROTP::TOTP.new(otp_token, issuer: "Dashboard#{DEVELOPMENT ? ' (dev)' : ''}")
         uri = totp.provisioning_uri(@session_user[:email])
         qrcode = RQRCode::QRCode.new(uri, 7)
         svg = qrcode.as_svg(offset: 0, color: '000', shape_rendering: 'crispEdges',

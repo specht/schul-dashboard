@@ -1769,6 +1769,9 @@ class Main < Sinatra::Base
         else
             @respond_hash ||= {}
             response.body = @respond_hash.to_json
+            if DEVELOPMENT
+                STDERR.puts "#{request.path} => #{@respond_hash.to_json}"
+            end
         end
     end
 

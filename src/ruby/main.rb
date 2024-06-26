@@ -1920,7 +1920,7 @@ class Main < Sinatra::Base
                         nav_items << :techteam
                     end
                 end
-                if running_pishing_training?
+                if running_phishing_training?
                     nav_items << :phishing
                 end
                 # nav_items << :advent_calendar #if advents_calendar_date_today > 0

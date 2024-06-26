@@ -122,7 +122,7 @@ class Main < Sinatra::Base
         </div>
         </div>"
 
-        if running_pishing_training? || user_with_role_logged_in?(:developer)
+        if running_phishing_training? || user_with_role_logged_in?(:developer)
             return StringIO.open do |io|
                 if [5, 6].include?(@session_user[:klassenstufe])
                     io.puts us
@@ -167,7 +167,8 @@ class Main < Sinatra::Base
                     nutzerzahlen[:weiblich]["Lehrkraft"] += 1
                 end
             elsif user_has_role(user[:email], :schueler)
-                gruppe = "#{user[:klassenstufe] <= 6 ? '5/6' : user[:klassenstufe] <= 8 ? '7/8' : user[:klassenstufe] <= 10 ? '9/10' : '11/12'}"
+                klassenstufe = user[:klassenstufe] || 7
+                gruppe = "#{klassenstufe <= 6 ? '5/6' : klassenstufe <= 8 ? '7/8' : klassenstufe <= 10 ? '9/10' : '11/12'}"
                 if user[:geschlecht] == 'm'
                     nutzerzahlen[:maennlich][gruppe] += 1
                 elsif user[:geschlecht] == 'w'

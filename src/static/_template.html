@@ -967,7 +967,7 @@ function render_timespans() {
                 x1 = canvas.width + 2;
             context.fillStyle = dark ? 'rgba(255, 255, 255, 0.9)' : 'rgba(0, 0, 0, 0.8)';
             context.textAlign = 'left';
-            while (context.measureText(label).width > x1 - x0 - 4 * scale) {
+            while (context.measureText(label).width > x1 - x0 - 4 * scale && label.length > 0) {
                 label = label.slice(0, -1);
             }
             context.fillText(label, x0 + 6 * scale, 43.5 * scale + tb);

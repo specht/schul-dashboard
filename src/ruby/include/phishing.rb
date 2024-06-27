@@ -177,11 +177,7 @@ class Main < Sinatra::Base
             end
         end
 
-        current_group = if teacher_logged_in?
-                          "Lehrkraft"
-                        else
-                          "#{@session_user[:klassenstufe] <= 6 ? '5/6' : @session_user[:klassenstufe] <= 8 ? '7/8' : @session_user[:klassenstufe] <= 10 ? '9/10' : '11/12'}"
-                        end
+        current_group = teacher_logged_in? ? "Lehrkraft" : "#{@session_user[:klassenstufe] <= 6 ? '5/6' : @session_user[:klassenstufe] <= 8 ? '7/8' : @session_user[:klassenstufe] <= 10 ? '9/10' : '11/12'}"
         current_gender = @session_user[:geschlecht] == 'm' ? :maennlich : :weiblich
 
         return StringIO.open do |io|
@@ -189,6 +185,7 @@ class Main < Sinatra::Base
             Du warst für die Statistik in folgender der zehn Gruppen: <b>#{current_group}, #{current_gender == :maennlich ? 'männlich' : current_gender}</b>
             <div class='row'>
                 <div class='col-md-12'>
+                    <div style='max-width: 100%; overflow-x: auto;'>
                     <table class='table narrow'>
                         <thead>
                             <tr>
@@ -219,6 +216,7 @@ class Main < Sinatra::Base
                             </tr>
                         </tbody>
                     </table>
+                    </div>
                 </div>
             </div>
             </p>"

@@ -292,14 +292,16 @@ class Main < Sinatra::Base
         required_tags << '#VS'
         required_tags << '#VS_UE'
         required_tags << '#VSP'
-        required_tags << '#Angebote'
-        required_tags << '#Bemerkungen'
         required_tags << '#WeitereBemerkungen' if key.include?('sesb')
         optional_tags = []
 
         optional_tags << '#Vorname'
+        optional_tags << '#Angebote'
+        optional_tags << '#Bemerkungen'
+        optional_tags << '#BemerkungenAngebote'
 
-        missing_tags = Set.new(required_tags) - Set.new(@@zeugnisse[:formulare][key][:tags])
+        present_tags = Set.new(@@zeugnisse[:formulare][key][:tags])
+        missing_tags = Set.new(required_tags) - present_tags
         superfluous_tags = Set.new(@@zeugnisse[:formulare][key][:tags]) - Set.new(required_tags)
         superfluous_tags -= Set.new(optional_tags)
         errors = []
@@ -310,6 +312,11 @@ class Main < Sinatra::Base
             errors << "unbekannte Markierungen: #{superfluous_tags.join(', ')}"
         end
         return nil if errors.empty?
+        if present_tags.include?('#Bemerkungen') && present_tags.include?('#Angebote') && !present_tags.include?('#BemerkungenAngebote')
+        elsif !present_tags.include?('#Bemerkungen') && !present_tags.include?('#Angebote') && present_tags.include?('#BemerkungenAngebote')
+        else
+            errors << "Es muss entweder #Angebote und #Bemerkungen geben oder #BemerkungenAngebote."
+        end
         return errors
     end
 

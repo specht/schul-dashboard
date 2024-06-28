@@ -199,7 +199,7 @@ class Main < Sinatra::Base
                         </thead>
                         <tbody>
                             <tr>
-                                <td>männlich (#{nutzerzahlen[:maennlich]["Lehrkraft"]})</td>
+                                <td>männlich (#{nutzerzahlen[:maennlich].values.sum})</td>
                                 <td class='#{'marked' if current_gender == :maennlich && current_group == '5/6'}'>5/6 (#{nutzerzahlen[:maennlich]["5/6"]})</td>
                                 <td class='#{'marked' if current_gender == :maennlich && current_group == '7/8'}'>7/8 (#{nutzerzahlen[:maennlich]["7/8"]})</td>
                                 <td class='#{'marked' if current_gender == :maennlich && current_group == '9/10'}'>9/10 (#{nutzerzahlen[:maennlich]["9/10"]})</td>
@@ -207,7 +207,7 @@ class Main < Sinatra::Base
                                 <td class='#{'marked' if current_gender == :maennlich && current_group == 'Lehrkraft'}'>Lehrkraft (#{nutzerzahlen[:maennlich]["Lehrkraft"]})</td>
                             </tr>
                             <tr>
-                                <td>weiblich (#{nutzerzahlen[:weiblich]["Lehrkraft"]})</td>
+                                <td>weiblich (#{nutzerzahlen[:weiblich].values.sum})</td>
                                 <td class='#{'marked' if current_gender == :weiblich && current_group == '5/6'}'>5/6 (#{nutzerzahlen[:weiblich]["5/6"]})</td>
                                 <td class='#{'marked' if current_gender == :weiblich && current_group == '7/8'}'>7/8 (#{nutzerzahlen[:weiblich]["7/8"]})</td>
                                 <td class='#{'marked' if current_gender == :weiblich && current_group == '9/10'}'>9/10 (#{nutzerzahlen[:weiblich]["9/10"]})</td>

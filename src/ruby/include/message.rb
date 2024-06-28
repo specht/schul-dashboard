@@ -1,6 +1,6 @@
 class Main < Sinatra::Base
     post '/api/send_message' do
-        require_user_with_role!(:can_send_messages)
+        require_user_with_role!(:can_write_messages)
         data = parse_request_data(:required_keys => [:recipients, :message],
                                   :types => {:recipients => Array},
                                   :max_body_length => 1024 * 1024,
@@ -36,9 +36,9 @@ class Main < Sinatra::Base
         trigger_update("all_messages")
         respond(:ok => true, :message => message)
     end
-    
+
     post '/api/update_message' do
-        require_user_with_role!(:can_send_messages)
+        require_user_with_role!(:can_write_messages)
         data = parse_request_data(:required_keys => [:mid, :recipients, :message],
                                   :types => {:recipients => Array},
                                   :max_body_length => 1024 * 1024,
@@ -74,15 +74,15 @@ class Main < Sinatra::Base
         trigger_update("all_messages")
         respond(:ok => true, :message => message, :mid => data[:mid])
     end
-    
+
     post '/api/delete_message' do
-        require_user_with_role!(:can_send_messages)
+        require_user_with_role!(:can_write_messages)
         data = parse_request_data(:required_keys => [:mid])
         id = data[:mid]
         path = "/gen/m/#{id[0, 2]}/#{id[2, id.length - 2]}.html.gz"
         # also delete message on file system
         FileUtils::rm_f(path)
-        transaction do 
+        transaction do
             timestamp = Time.now.to_i
             neo4j_query(<<~END_OF_QUERY, :session_email => @session_user[:email], :timestamp => timestamp, :id => id)
                 MATCH (a:User {email: $session_email})<-[:FROM]-(m:Message {id: $id})
@@ -98,12 +98,12 @@ class Main < Sinatra::Base
         trigger_update("all_messages")
         respond(:ok => true, :mid => data[:mid])
     end
-    
+
     post '/api/mark_as_read' do
         require_user!
         data = parse_request_data(:required_keys => [:ids],
                                   :types => {:ids => Array})
-        transaction do 
+        transaction do
             results = neo4j_query(<<~END_OF_QUERY, :ids => data[:ids], :email => @session_user[:email])
                 MATCH (c)-[ruc:TO]->(:User {email: $email})
                 WHERE (c:TextComment OR c:AudioComment OR c:Message) AND c.id IN $ids
@@ -117,8 +117,8 @@ class Main < Sinatra::Base
         require_user!
         # don't show messages which are not at least 5 minutes old
         rows = neo4j_query(<<~END_OF_QUERY, :email => @session_user[:email], :now => now).map { |x| x['c.id'] }
-            MATCH (c)-[ruc:TO]->(u:User {email: $email}) 
-            WHERE ((c:TextComment AND EXISTS(c.comment)) OR 
+            MATCH (c)-[ruc:TO]->(u:User {email: $email})
+            WHERE ((c:TextComment AND EXISTS(c.comment)) OR
                     (c:AudioComment AND EXISTS(c.tag)) OR
                     (c:Message AND EXISTS(c.id))) AND
                     c.updated < $now AND COALESCE(ruc.seen, false) = false

@@ -1175,6 +1175,19 @@ function load_angebote_bemerkungen_table(container, klasse, edit_noten) {
                     if (x === 'Bemerkungen') th.append($(`<p style='margin-bottom: 0; font-weight: normal; font-style: italic;'>(Hier wird <u>alles andere</u> eingetragen)</p>`));
                     return th;
                 }),
+                extra_rows_below_for_key: emails.map(function (email, index) {
+                    let angebote = null;
+                    if (angebote_for_email[email]) {
+                        angebote = angebote_for_email[email].map(function(x) {
+                            return `<span style='background-color: #fce94f; padding: 0.2em 0.5em; border-radius: 0.25em;'>${x.name}</span> <span style='opacity: 0.7'>(${x.owner})</span>`;
+                        }).join(', ');
+                    }
+                    if (angebote === null) {
+                        return null;
+                    } else {
+                        return `<tr class='no-border-top'><td></td><td colspan='6'>Angebote und AGs für ${liste.schueler[index].official_first_name} ${liste.schueler[index].last_name}: ${angebote}</td></tr>`
+                    }
+                }),
                 rows: emails.map(function (email, index) {
                     let cells = [
                         email,

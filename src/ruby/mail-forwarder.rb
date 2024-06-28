@@ -84,6 +84,9 @@ class Script
         @@klassen_order.each do |klasse|
             results << "ev.#{klasse}@mail.gymnasiumsteglitz.de"
         end
+        @@schueler_for_klasse['11'].each do |email|
+            results << email
+        end
         results.map { |x| x.downcase }
     end
 
@@ -249,6 +252,8 @@ class Script
                         rescue StandardError => e
                             # sending failed!
                             STDERR.puts "Forwarding mail failed, notifying admin..."
+                            STDERR.puts "Error: #{e}"
+                            STDERR.puts e.backtrace
                             # 1. notify WEBSITE_MAINTAINER_EMAIL
                             _sender = mail[:from].formatted.first
                             _subject = "E-Mail-Weiterleitung fehlgeschlagen: #{mail.subject}"

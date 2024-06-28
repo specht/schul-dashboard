@@ -35,6 +35,7 @@ AVAILABLE_ROLES = {
     :can_use_nextcloud => 'kann die Nextcloud verwenden',
     :can_use_sms_gateway => 'kann die SMS-Anmeldung benutzen',
     :can_report_tech_problems => 'kann Technikprobleme melden',
+    :oko => 'Oberstufenkoordination',
 }
 
 ROLE_TRANSITIONS = <<~END_OF_STRING

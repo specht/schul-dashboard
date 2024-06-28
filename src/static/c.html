@@ -2,13 +2,20 @@
     <div class='row'>
         <div class='col-md-8 offset-md-2'>
             <h2 style='margin-bottom: 30px;'>Bestätige deine Anmeldung</h2>
+            <p>
+                #{{
+                    'sms' => 'Wir haben dir einen <strong>Code per SMS</strong> gesendet.',
+                    'email' => 'Wir haben dir einen <strong>Code per E-Mail</strong> gesendet.',
+                    'otp' => 'Bitte gib einen <strong>OTP-Code</strong> ein.',
+                }[login_method]}
+            </p>
             <form id='form'>
-            <div class="input-group mb-3">
-                <input type="number" id='code' class="form-control" placeholder="Bitte gib deinen Code ein" style='text-align: center;'>
-                <div class="input-group-append">
-                    <button id='submit' class="btn btn-primary" type="submit">Anmelden</button>
+                <div class="input-group mb-3">
+                    <input type="number" id='code' class="form-control" placeholder="Bitte gib deinen Code ein" style='text-align: center;'>
+                    <div class="input-group-append">
+                        <button id='submit' class="btn btn-primary" type="submit">Anmelden</button>
+                    </div>
                 </div>
-            </div>
             </form>
             <div style="display: none;" id="div_forced_2fa">
                 <p>Als Lehrkraft benötigst du einen 2. Faktor für die Anmeldung. <span id="span_sent"></span></p>
@@ -53,16 +60,23 @@ window.addEventListener('load', function () {
                     $('#code2').focus();
                     console.log('2FA');
                     if (data.sent === 'email')
-                        $('#span_sent').text('Schau bitte in deinen E-Mails nach.');
+                        $('#span_sent').html('Wir haben dir einen 2. Code per <strong>E-Mail</strong> gesendet.');
                     else if (data.sent === 'sms')
-                        $('#span_sent').text('Schau bitte in deinen SMS nach.');
+                        $('#span_sent').html('Wir haben dir einen 2. Code per <strong>SMS</strong> gesendet.');
                     else if (data.sent === 'no_methods_available')
                         $('#span_sent').text('Du hast keinen zweiten Faktor hinterlegt, bitte melde dich bei #{DATENTRESOR_HOTLINE}.');
-                    else if (data.available_second_methods.indexOf('otp') >= 0)
-                        $('#span_sent').text('Du kannst einfach deinen OTP-Code verwenden.');
-                    if (data.available_second_methods.indexOf('sms') >= 0 && data.send !== 'sms')
+                    else if (data.available_second_methods.indexOf('otp') >= 0) {
+                        if (data.available_second_methods.indexOf('sms') >= 0 && data.sent !== 'sms') {
+                            $('#span_sent').html('Verwende einfach einen <strong>OTP-Code</strong> oder lass dir eine <strong>SMS</strong> senden.');
+                        } else if (data.available_second_methods.indexOf('email') >= 0 && data.sent !== 'email') {
+                            $('#span_sent').html('Verwende einfach einen <strong>OTP-Code</strong> oder lass dir eine <strong>E-Mail</strong> senden.');
+                        } else {
+                            $('#span_sent').html('Verwende einfach einen <strong>OTP-Code</strong>.');
+                        }
+                    }
+                    if (data.available_second_methods.indexOf('sms') >= 0 && data.sent !== 'sms')
                         $('#bu_force_2fa_sms').show();
-                    if (data.available_second_methods.indexOf('email') >= 0 && data.send !== 'email')
+                    if (data.available_second_methods.indexOf('email') >= 0 && data.sent !== 'email')
                         $('#bu_force_2fa_email').show();
                 } else {
                     window.location.href = '/';
@@ -100,6 +114,7 @@ window.addEventListener('load', function () {
         api_call('/api/send_forced_code2', {tag: '#{login_tag}', method: 'sms'}, function(data) {
             if (data.success) {
                 $('#bu_force_2fa_sms').prop('disabled', true);
+                $('#code2').focus();
             }
         });
     });
@@ -107,12 +122,12 @@ window.addEventListener('load', function () {
         api_call('/api/send_forced_code2', {tag: '#{login_tag}', method: 'email'}, function(data) {
             if (data.success) {
                 $('#bu_force_2fa_email').prop('disabled', true);
+                $('#code2').focus();
             }
         });
     });
     if ('#{login_code}' !== '')
     {
-//         history.replaceState({}, null, '/c/#{login_tag}'); 
         $('#code').val('#{login_code}');
         $('#submit').click();
     }
@@ -121,8 +136,9 @@ window.addEventListener('load', function () {
         $('.bu-send-code-via-email').hide();
         api_call('/api/revert_login_to_email', {tag: '#{login_tag}'}, function(data) {
             if (data.success) {
-                $('.send-code-via-email-confirmation').slideDown();
-
+                window.location.reload();
+                // $('.send-code-via-email-confirmation').slideDown();
+                // $('#code').focus();
             }
         });
     });

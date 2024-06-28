@@ -1731,4 +1731,126 @@ class Main
         return doc.render
     end
 
+    def self.print_project_assignment_summary_and_assign(result, user_info,
+        votes, votes_by_email, votes_by_vote, votes_by_project)
+        # Get projects
+        projekte = {}
+        $neo4j.neo4j_query(<<~END_OF_QUERY).each do |row|
+            MATCH (p:Projekt)
+            RETURN p;
+        END_OF_QUERY
+            p = row['p']
+            projekte[p[:nr]] ||= {
+                :nr => p[:nr],
+                :title => p[:title],
+                :min_klasse => p[:min_klasse],
+                :max_klasse => p[:max_klasse],
+                :capacity => p[:capacity],
+            }
+        end
+
+        projekte_list = []
+        projekte.each_pair do |nr, p|
+            projekte_list << p
+        end
+
+        projekte_list.sort! do |a, b|
+            (a[:nr].to_i == b[:nr].to_i) ?
+            (a[:nr] <=> b[:nr]) :
+            (a[:nr].to_i <=> b[:nr].to_i)
+        end
+
+        wanted_emails = Set.new()
+        user_info.each_pair do |email, info|
+            next unless info[:klasse]
+            if (info[:klassenstufe] || 7) < 10
+                wanted_emails << email
+            end
+        end
+        seen_emails = Set.new()
+        verdict_for_email = {}
+        error_count = {}
+        result[:error_for_email].each_pair do |email, error|
+            error_count[error] ||= 0
+            error_count[error] += 1
+        end
+        projekte_list.each do |projekt|
+            nr = projekt[:nr]
+            capacity = projekt[:capacity] || 0
+            s = "[#{projekt[:nr]}] #{projekt[:title]} (#{projekt[:min_klasse]}–#{projekt[:max_klasse]}, max. #{capacity} SuS)"
+            STDERR.puts '-' * s.size
+            STDERR.puts s
+            STDERR.puts '-' * s.size
+            (result[:emails_for_project][nr] || []).sort do |a, b|
+                klasse_a = user_info[a][:klassenstufe] || 7
+                klasse_b = user_info[b][:klassenstufe] || 7
+                klasse_a <=> klasse_b
+            end.each.with_index do |email, i|
+                seen_emails << email
+                name = user_info[email][:display_name]
+                klasse = user_info[email][:klasse]
+                STDERR.puts sprintf('%2d. {%d} %s (%s)', i + 1, result[:error_for_email][email], name, klasse)
+                verdict = nil
+                if result[:error_for_email][email] == 0
+                    if (votes_by_email[email] || []).empty?
+                        verdict = "Da du innerhalb des Wahlzeitraums von zwei Wochen kein Projekt gewählt hast, haben wir dir ein zufälliges Projekt zugewiesen."
+                    else
+                        verdict = "Du hast genau dein Wunschprojekt bekommen, herzlichen Glückwunsch!"
+                    end
+                else
+                    user_voted_for_project = false
+                    (votes_by_email[email] || []).each do |sha1|
+                        vote = votes[sha1]
+                        if vote[:nr] == nr
+                            user_voted_for_project = true
+                        end
+                    end
+                    if user_voted_for_project
+                        verdict = "Du hast diesmal zwar nicht dein Lieblingsprojekt bekommen, aber immerhin eines, das dich trotzdem interessiert. Wir werden deine Wünsche im nächsten Schuljahr entsprechend deiner Abweichung zwischen Wunsch und Zuordnung bevorzugt berücksichtigen und wünschen dir viel Spaß in deinem Projekt!"
+                    else
+                        if result[:error_for_email][email] == 3
+                            verdict = "Du hast leider in diesem Jahr keines der Projekte bekommen, das du dir gewünscht hast. Das liegt daran, dass du bei dem Lieblingsprojekt in der Auslosung Pech hattest und sich sehr viele andere Kinder deine anderen Projekte noch viel mehr gewünscht haben als du. So wie dir geht es insgesamt #{error_count[3]} von #{result[:error_for_email].size} Schülerinnen und Schülern. Wir werden deine Wünsche im nächsten Schuljahr entsprechend deiner Abweichung zwischen Wunsch und Zuordnung bevorzugt berücksichtigen und hoffen, dass du trotzdem Spaß in deinem Projekt haben wirst!"
+                        else
+                            verdict = "Du hast leider in diesem Jahr keines der Projekte bekommen, das du dir gewünscht hast. Das liegt daran, dass du bei dem Lieblingsprojekt in der Auslosung Pech hattest und sich sehr viele andere Kinder deine anderen Projekte noch viel mehr gewünscht haben als du. Wir werden deine Wünsche im nächsten Schuljahr entsprechend deiner Abweichung zwischen Wunsch und Zuordnung bevorzugt berücksichtigen und hoffen, dass du trotzdem Spaß in deinem Projekt haben wirst!"
+                        end
+                    end
+                end
+                verdict_for_email[email] = verdict
+                STDERR.puts "        #{verdict}"
+                # (votes_by_email[email] || []).sort do |a, b|
+                #     votes[b][:vote] <=> votes[a][:vote]
+                # end.each do |sha1|
+                #     vote = votes[sha1]
+                #     STDERR.puts "  #{nr == vote[:nr] ? '==> ' : ''}[#{vote[:vote]}] #{projekte[vote[:nr]][:title]}"
+                # end
+            end
+            STDERR.puts
+        end
+        STDERR.puts "Wanted emails: #{wanted_emails.size}"
+        STDERR.puts "Seen emails: #{seen_emails.size}"
+        STDERR.puts "Difference: #{(wanted_emails - seen_emails).to_a.join(', ')}"
+        STDERR.puts "Clearing all existing assignments..."
+        $neo4j.transaction do
+            # delete all assignments
+            $neo4j.neo4j_query(<<~END_OF_QUERY)
+                MATCH (:User)-[r:ASSIGNED_TO]->(:Projekt)
+                DELETE r;
+            END_OF_QUERY
+            # create all assignments
+            result[:project_for_email].each_pair do |email, nr|
+                $neo4j.neo4j_query(<<~END_OF_QUERY, {:email => email, :nr => nr})
+                    MATCH (u:User {email: $email})
+                    MATCH (p:Projekt {nr: $nr})
+                    CREATE (u)-[:ASSIGNED_TO]->(p);
+                END_OF_QUERY
+            end
+            File.open("/internal/projekttage/votes/verdicts.json", 'w') do |f|
+                f.write verdict_for_email.to_json
+            end
+            File.open("/internal/projekttage/votes/assign-result.json", 'w') do |f|
+                f.write result.to_json
+            end
+        end
+    end
+
 end

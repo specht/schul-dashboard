@@ -36,6 +36,9 @@ td, th {
                 </p>
                 #{print_projekt_interesse_stats()}
             </div>
+            <div style='#{projekttage_phase() == 4 ? '' : 'display: none;'}'>
+                #{print_projekt_assigned_sus()}
+            </div>
             <hr>
             <h3>Projektkatalog</h3>
             <p>Hier findest du eine Übersicht der anderen Projekte:</p>
@@ -45,7 +48,7 @@ td, th {
 </div>
 
 <script>
-var display_name_for_email = #{Hash[@@user_info.map { |email, info| [email, info[:teacher] ? info[:display_name_official] : info[:display_name]] }].to_json};
+var display_name_for_email = #{Hash[@@user_info.select { |email, info| user_has_role(email, :teacher) || info[:klassenstufe] == 11 }.map { |email, info| [email, info[:teacher] ? info[:display_name_official] : info[:display_name]] }].to_json};
 document.addEventListener('DOMContentLoaded', function() {
     Dropzone.autoDiscover = false;
     api_call('/api/get_projekte_for_orga_sus', {}, function(data) {

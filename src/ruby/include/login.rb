@@ -133,7 +133,7 @@ class Main < Sinatra::Base
             if first_method != 'sms' && telephone_number && telephone_number.size > 0 && Main.sms_gateway_ready?
                 available_second_methods << 'sms'
             end
-            if first_method != 'otp' && user[:otp_token] && user[:otp_token]
+            if first_method != 'otp' && user[:otp_token]
                 available_second_methods << 'otp'
             end
             if first_method != 'email'
@@ -282,12 +282,12 @@ class Main < Sinatra::Base
                 bcc SMTP_FROM
                 from SMTP_FROM
 
-                subject "Dein Anmeldecode lautet #{l[:code2]}"
+                subject "Dein Anmeldecode lautet #{login_code[:code2]}"
 
                 StringIO.open do |io|
                     io.puts "<p>Hallo!</p>"
                     io.puts "<p>Dein Anmeldecode lautet:</p>"
-                    io.puts "<p style='font-size: 200%;'>#{l[:code2]}</p>"
+                    io.puts "<p style='font-size: 200%;'>#{login_code[:code2]}</p>"
                     io.puts "<p>Der Code ist für zehn Minuten gültig. Nachdem du eingeloggt bist, bleibst du für ein ganzes Jahr eingeloggt.</p>"
                     io.puts "<p>Falls du diese E-Mail nicht angefordert hast, hat jemand versucht, sich mit deiner E-Mail-Adresse anzumelden. In diesem Fall musst du nichts weiter tun (es sei denn, du befürchtest, dass jemand anderes Zugriff auf dein E-Mail-Konto hat – dann solltest du dein E-Mail-Passwort ändern).</p>"
                     io.puts "<p>Viele Grüße,<br />#{WEBSITE_MAINTAINER_NAME}</p>"

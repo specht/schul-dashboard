@@ -10,7 +10,7 @@
                 Am <b>Montag, den 3. Juni</b> gibt es eine Vorstellung der Projekte in der 7. Stunde. Du kannst dir dann drei
                 Projektvorstellungen anschauen und anschließend hier deine Lieblingsprojekte wählen.
             </div>
-            <div class="alert mono-alert" style="#{user_eligible_for_projektwahl? ? '' : 'display: none;'}">
+            <div class="alert mono-alert" style="#{(user_eligible_for_projektwahl?) ? '' : 'display: none;'}">
                 <h3>Wähle deine Lieblingsprojekte!</h3>
                 <p>
                     Wähle mindestens drei Projekte, die dich interessieren.
@@ -28,6 +28,11 @@
                 </div>
                 <p id="text_vote_summary"></p>
             </div>
+            <div class="alert mono-alert" style="#{(user_was_eligible_for_projektwahl?) ? '' : 'display: none;'}">
+                <h3>Die Wahl der Projekte ist beendet</h3>
+                <p id="text_assign_summary"></p>
+                <p id="text_vote_summary_phase_4"></p>
+            </div>
         </div>
     </div>
     <div style="#{(teacher_logged_in? && projekttage_phase() == 3) ? '' : 'display: none;'}">
@@ -38,7 +43,10 @@
         #{print_projekttage_vote_summary()}
         <h3 style='margin-bottom: 20px;'>Projektkatalog</h3>
     </div>
-    <div class='row projekte-here'>
+    <div class='row projekte-here' style="#{(projekttage_phase() == 4 && user_was_eligible_for_projektwahl?) ? 'display: none;' : ''}">
+        <div id="text_vote_summary_phase_4_overview" class="col-md-12" style="#{teacher_logged_in? ? '' : 'display: none;'}">
+            #{print_projekttage_assignment_summary()}
+        </div>
     </div>
 </div>
 
@@ -122,7 +130,7 @@
 </style>
 
 <script>
-var display_name_for_email = #{Hash[@@user_info.map { |email, info| [email, info[:teacher] ? info[:display_name_official] : info[:display_name]] }].to_json};
+var display_name_for_email = #{Hash[@@user_info.select { |email, info| user_has_role(email, :teacher) || info[:klassenstufe] == 11 }.map { |email, info| [email, info[:teacher] ? info[:display_name_official] : info[:display_name]] }].to_json};
 var this_klasse = #{@session_user[:klassenstufe] || 7};
 var projekte = {};
 var vote_for_project = {};
@@ -133,13 +141,14 @@ var my_vote_data = {};
 var ts_data = {};
 var last_vote_ts = 0;
 
-function update_vote_summary() {
+function update_vote_summary(id) {
     let diff = last_vote_ts - (ts_data.ts ?? 0);
     let buckets = {1: [], 2: [], 3: []};
-    for (let nr in vote_for_project) {
+    for (let nr of Object.keys(vote_for_project)) {
         let vote = vote_for_project[nr];
-        if (vote > 0)
+        if (vote > 0) {
             buckets[vote].push(nr);
+        }
     }
     let items = [];
     for (let i = 3; i >= 1; i--) {
@@ -148,15 +157,25 @@ function update_vote_summary() {
                 items.push([i, x]);
         }
     }
-    $('#text_vote_summary').empty();
-    if (items.length === 0)
-        $('#text_vote_summary').append($(`<p>`).html(`<em>Du hast bisher keine Projekte gewählt.</em>`));
-    else {
-        $('#text_vote_summary').append($(`<p>`).html(`<em>Du hast bisher ${items.length} Projekte gewählt. Die Prozentzahlen geben an, wie wahrscheinlich ungefähr es ist, dass du dieses Projekt bekommen wirst. <strong>Achtung:</strong> diese Zahlen werden sich ändern, je nachdem wie du und alle anderen wählen.</em>`));
+    $(id).empty();
+    if (items.length === 0) {
+        if (id === '#text_vote_summary') {
+            $(id).append($(`<p>`).html(`<em>Du hast bisher keine Projekte gewählt.</em>`));
+        } else {
+            // $(id).append($(`<p>`).html(`<em>Du hast im Wahlzeitraum keine Projekte gewählt.</em>`));
+        }
+    } else {
+        if (id === '#text_vote_summary') {
+            $(id).append($(`<p>`).html(`<em>Du hast bisher ${items.length} Projekte gewählt. Die Prozentzahlen geben an, wie wahrscheinlich ungefähr es ist, dass du dieses Projekt bekommen wirst. <strong>Achtung:</strong> diese Zahlen werden sich ändern, je nachdem wie du und alle anderen wählen.</em>`));
+        } else {
+            $(id).append($(`<p>`).html(`<em>Du hast im Wahlzeitraum ${items.length} Projekte gewählt. Falls du kein Projekt bekommen haben solltest, das du dir gewünscht hast, beachte bitte die vorher bereits veröffentlichten Wahrscheinlichkeiten.</em>`));
+        }
+        console.log('A', items);
         for (let item of items) {
             let vote = item[0];
             let project = item[1];
-            let polaroid = $(`<div class="polaroid" style="position: relative; display: inline-block; float: none; width: 150px; height: 188px; margin-right: 10px; transform: none;"></div>`).css('background-image', `url(/api/get_sus_photo/${projekte[project].photo}-512.jpg)`).appendTo($('#text_vote_summary'));
+            console.log(project);
+            let polaroid = $(`<div class="polaroid" style="position: relative; display: inline-block; float: none; width: 150px; height: 188px; margin-right: 10px; transform: none;"></div>`).css('background-image', `url(/api/get_sus_photo/${projekte[project].photo}-512.jpg)`).appendTo($(id));
             polaroid.append($(`<div style='position: absolute; left: 0; right: 0; text-align: center; top: 135px; font-size: 80%; font-weight: bold; white-space: nowrap; overflow-x: clip; '>`).text(projekte[project].title));
             if (project_data[project]) {
                 polaroid.append($(`<div style='position: absolute; left: 0; right: 0; text-align: center; top: 150px; font-size: 80%; white-space: nowrap; overflow-x: clip; font-style: italic;'>`).text(`(${project_data[project].vote_count} Interessenten)`));
@@ -165,41 +184,68 @@ function update_vote_summary() {
             html = (my_vote_data[project] ?? '0%');
             polaroid.append($(`<p class='${diff > 0 ? 'spin' : ''} bg_white_dark_aware' style="width: 3.2em; text-align: center; box-shadow: 0 0 3px rgba(0, 0, 0, 0.5); border-radius: 4px; padding: 0.1em 0.3em; font-size: 1em; transform: rotate(5deg); position: absolute; top: -15px; left: 40px;">`).html(html));
         }
+        console.log('B');
     }
     let i = items.length;
-    while (i < 3) {
-        i += 1;
-        let polaroid = $(`<div class="polaroid" style="position: relative; display: inline-block; float: none; width: 150px; height: 188px; margin-right: 10px; transform: none;"></div>`).appendTo($('#text_vote_summary'));
-        polaroid.append($(`<div style='position: absolute; left: 0; right: 0; text-align: center; top: 135px; font-size: 80%; font-weight: bold; white-space: nowrap; overflow-x: clip; line-height: 1.3em;'>`).html("Überraschungs-<br>projekt"));
-        polaroid.append($(`<p style="text-align: center; font-size: 2em; transform: rotate(-8deg); position: absolute; top: 40px; left: 40px; opacity: 0.6;">`).text('?'));
-        polaroid.append($(`<p style="text-align: center; font-size: 3em; transform: rotate(2deg); position: absolute; top: 20px; left: 55px; opacity: 0.6;">`).text('?'));
-        polaroid.append($(`<p style="text-align: center; font-size: 2em; transform: rotate(12deg); position: absolute; top: 40px; left: 80px; opacity: 0.6;">`).text('?'));
-        vote = 1;
+    if (id === '#text_vote_summary') {
+        while (i < 3) {
+            i += 1;
+            let polaroid = $(`<div class="polaroid" style="position: relative; display: inline-block; float: none; width: 150px; height: 188px; margin-right: 10px; transform: none;"></div>`).appendTo($(id));
+            polaroid.append($(`<div style='position: absolute; left: 0; right: 0; text-align: center; top: 135px; font-size: 80%; font-weight: bold; white-space: nowrap; overflow-x: clip; line-height: 1.3em;'>`).html("Überraschungs-<br>projekt"));
+            polaroid.append($(`<p style="text-align: center; font-size: 2em; transform: rotate(-8deg); position: absolute; top: 40px; left: 40px; opacity: 0.6;">`).text('?'));
+            polaroid.append($(`<p style="text-align: center; font-size: 3em; transform: rotate(2deg); position: absolute; top: 20px; left: 55px; opacity: 0.6;">`).text('?'));
+            polaroid.append($(`<p style="text-align: center; font-size: 2em; transform: rotate(12deg); position: absolute; top: 40px; left: 80px; opacity: 0.6;">`).text('?'));
+            vote = 1;
+        }
     }
     if (items.length > 0) {
-        $('#text_vote_summary').append($(`<p class='mt-3'>`).html(`Wenn alle ihre Projekte gewählt haben, entscheidet das Los, welches Projekt du bekommst.`));
+        if (id === '#text_vote_summary') {
+            $(id).append($(`<p class='mt-3'>`).html(`Wenn alle ihre Projekte gewählt haben, entscheidet das Los, welches Projekt du bekommst.`));
+        }
     }
-    if (diff > 0) {
-        setTimeout(function() {
-            api_call('/api/get_project_data', {}, function(data) {
-                if ('project_data' in data) {
-                    project_data = data.project_data;
-                }
-                if ('my_vote_data' in data) {
-                    my_vote_data = data.my_vote_data;
-                }
-                if ('ts' in data) {
-                    ts_data = data.ts;
-                    $('#email_count_voted').text(data.ts.email_count_voted);
-                    $('#email_count_total').text(data.ts.email_count_total);
-                    percent = data.ts.email_count_voted * 100.0 / data.ts.email_count_total;
-                    $('#div_ts_details .progress-bar').css('width', `${percent}%`).text(`${Math.round(percent)}%`);
-                    $('#div_ts_details').show();
-                }
-                update_vote_summary();
-            });
-        }, 4000);
+    if (id === '#text_vote_summary') {
+        if (diff > 0) {
+            setTimeout(function() {
+                api_call('/api/get_project_data', {}, function(data) {
+                    if ('project_data' in data) {
+                        project_data = data.project_data;
+                    }
+                    if ('my_vote_data' in data) {
+                        my_vote_data = data.my_vote_data;
+                    }
+                    if ('ts' in data) {
+                        ts_data = data.ts;
+                        $('#email_count_voted').text(data.ts.email_count_voted);
+                        $('#email_count_total').text(data.ts.email_count_total);
+                        percent = data.ts.email_count_voted * 100.0 / data.ts.email_count_total;
+                        $('#div_ts_details .progress-bar').css('width', `${percent}%`).text(`${Math.round(percent)}%`);
+                        $('#div_ts_details').show();
+                    }
+                    update_vote_summary(id);
+                });
+            }, 4000);
+        }
     }
+}
+
+function generate_projekt_card(projekt) {
+    let photo = $(`<div class='polaroid' style='width: 200px; height: 240px; margin-left: 10px;'>`);
+    if (projekt.photo)
+        photo.css('background-image', `url(/api/get_sus_photo/${projekt.photo}-512.jpg)`);
+    let card = $(`<div class='card'>`);
+    card.append(photo);
+    card.append($(`<h4>`).text(projekt.title));
+    let div = $(`<div style='position: relative; top: -5px;'>`).appendTo(card);
+    for (let cat of projekt.categories)
+        div.append($(`<span class='badge badge-success' style='margin-right: 5px;'>`).text(cat));
+    if (projekt.min_klasse === projekt.max_klasse) {
+        div.append($(`<span class='badge badge-warning' style='margin-right: 5px;'>`).text(`nur Klasse ${projekt.min_klasse}`));
+    } else {
+        div.append($(`<span class='badge badge-warning' style='margin-right: 5px;'>`).text(`Klasse ${projekt.min_klasse} – ${projekt.max_klasse}`));
+    }
+    card.append($(`<p style='font-style: italic;'>`).text(`${projekt.organized_by.map(function(x) { return display_name_for_email[x]; }).join(', ')}`));
+    card.append($(`<p>`).text(projekt.description ?? '(noch keine Beschreibung vorhanden)'));
+    return card;
 }
 
 document.addEventListener('DOMContentLoaded', function() {
@@ -226,22 +272,25 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (projekt.min_klasse === null)
                     continue;
                 let scaffold = $(`<div class='col-md-12'>`);
-                let photo = $(`<div class='polaroid' style='width: 200px; height: 240px; margin-left: 10px;'>`);
-                if (projekt.photo)
-                    photo.css('background-image', `url(/api/get_sus_photo/${projekt.photo}-512.jpg)`);
-                let card = $(`<div class='card'>`);
-                card.append(photo);
-                card.append($(`<h4>`).text(projekt.title));
-                let div = $(`<div style='position: relative; top: -5px;'>`).appendTo(card);
-                for (let cat of projekt.categories)
-                    div.append($(`<span class='badge badge-success' style='margin-right: 5px;'>`).text(cat));
-                if (projekt.min_klasse === projekt.max_klasse) {
-                    div.append($(`<span class='badge badge-warning' style='margin-right: 5px;'>`).text(`nur Klasse ${projekt.min_klasse}`));
-                } else {
-                    div.append($(`<span class='badge badge-warning' style='margin-right: 5px;'>`).text(`Klasse ${projekt.min_klasse} – ${projekt.max_klasse}`));
+                let card = generate_projekt_card(projekt);
+                if ('#{user_was_eligible_for_projektwahl?}' === 'true') {
+                    if (this_klasse >= projekt.min_klasse && this_klasse <= projekt.max_klasse) {
+                        vote_for_project[projekt.nr] = projekt.session_user_vote;
+                    }
                 }
-                card.append($(`<p style='font-style: italic;'>`).text(`${projekt.organized_by.map(function(x) { return display_name_for_email[x]; }).join(', ')}`));
-                card.append($(`<p>`).text(projekt.description ?? '(noch keine Beschreibung vorhanden)'));
+                if ('#{user_was_eligible_for_projektwahl?}' === 'true') {
+                    if (typeof(data.assigned_projekt) !== 'undefined') {
+                        if (data.assigned_projekt == projekt.nr) {
+                            $('#text_assign_summary').append($('<p>').text("Du bist folgendem Projekt zugeordnet:"));
+                            let card = generate_projekt_card(projekt);
+                            $('#text_assign_summary').append(card);
+                            $('#text_assign_summary').append($('<p>').text(data.verdict));
+                        }
+                    } else {
+                        $('#text_assign_summary').append($('<p>').text('In Kürze wirst du hier erfahren, welchem Projekt du zugeordnet wurdest.'));
+                    }
+                    // return;
+                }
                 if ('#{user_eligible_for_projektwahl?}' === 'true') {
                     $(`<hr class='dashed'>`).appendTo(card);
                     if (this_klasse >= projekt.min_klasse && this_klasse <= projekt.max_klasse) {
@@ -263,7 +312,7 @@ document.addEventListener('DOMContentLoaded', function() {
                                         $(self).addClass('active');
                                         $(self).closest('.card').find('._verdict').text(`»${choice_level_label[index]}«`);
                                         vote_for_project[projekt.nr] = index;
-                                        update_vote_summary();
+                                        update_vote_summary('#text_vote_summary');
                                     }
                                 });
                             });
@@ -291,7 +340,12 @@ document.addEventListener('DOMContentLoaded', function() {
                 scaffold.append(card);
                 $('.projekte-here').append(scaffold);
             }
-            update_vote_summary();
+            if ('#{user_eligible_for_projektwahl?}' === 'true') {
+                update_vote_summary('#text_vote_summary');
+            }
+            if ('#{user_was_eligible_for_projektwahl?}' === 'true') {
+                update_vote_summary('#text_vote_summary_phase_4');
+            }
         }
     });
 });

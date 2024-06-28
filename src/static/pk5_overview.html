@@ -1,0 +1,33 @@
+#{assert(teacher_logged_in?)}
+<div class='container-fluid white'>
+    <div class='row'>
+        <div class='col-md-12'>
+            <h2 style='margin-bottom: 30px;'>5. Prüfungskomponente im Abitur</h2>
+            #{print_pk5_overview}
+        </div>
+    </div>
+</div>
+
+<style>
+    tbody tr {
+        cursor: pointer;
+    }
+    tbody tr:hover {
+        box-shadow: 0 0 0.5em rgba(0, 0, 0, 0.3);
+    }
+    body.dark tbody tr:hover {
+        box-shadow: 0 0 0.5em rgba(255, 255, 255, 0.3);
+    }
+</style>
+
+<script>
+window.addEventListener('load', function() {
+    $('tbody tr').on('click', function(e) {
+        let row = $(e.target).closest('tr')[0];
+        console.log(row);
+        let email = $(row).data('email');
+        console.log(email);
+        window.location.href = `/pk5/${email}`;
+    });
+});
+</script>

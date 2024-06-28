@@ -167,13 +167,13 @@ class Main < Sinatra::Base
         user_with_role_logged_in?(:can_manage_bib_payment)
     end
 
-    def running_pishing_training?
+    def running_phishing_training?
         start = PHISHING_START
         ende = PHISHING_END
         user_logged_in? && (schueler_logged_in? || teacher_logged_in?) && Time.now.strftime('%Y-%m-%dT%H:%M:%S') >= start && Time.now.strftime('%Y-%m-%dT%H:%M:%S') <= ende
     end
 
-    def running_pishing_training_hint?
+    def running_phishing_training_hint?
         start = PHISHING_HINT_START
         ende = PHISHING_HINT_END
         (schueler_logged_in? || teacher_logged_in?) && Time.now.strftime('%Y-%m-%dT%H:%M:%S') >= start && Time.now.strftime('%Y-%m-%dT%H:%M:%S') <= ende
@@ -276,11 +276,11 @@ class Main < Sinatra::Base
     end
 
     def require_running_phishing_training!
-        assert(running_pishing_training?)
+        assert(running_phishing_training?)
     end
 
     def require_running_phishing_training_hint!
-        assert(running_pishing_training_hint?)
+        assert(running_phishing_training_hint?)
     end
     
     def this_is_a_page_for_logged_in_users
@@ -357,7 +357,7 @@ class Main < Sinatra::Base
 
     # Put this on top of a webpage to assert that this page can be opened during a phishing training only
     def this_is_a_page_for_phishing_training
-        unless running_pishing_training?
+        unless running_phishing_training?
             redirect "#{WEB_ROOT}/", 303
         end
     end
@@ -572,7 +572,8 @@ class Main < Sinatra::Base
                 io.puts "<div class='hint'>"
                 io.puts "<p><b>Noteneingabe im Datentresor</b></p>"
                 io.puts "<hr />"
-                io.puts "<p>Die Noteneingabe im Datentresor schließt am Montag um 9:00 Uhr.</p>"
+                d = DateTime.parse(deadline)
+                io.puts "<p>Die Noteneingabe im Datentresor schließt am #{WEEKDAYS_LONG[d.wday]} um #{d.strftime('%H:%M')} Uhr.</p>"
                 io.puts "<div id='tresor_countdown_here' style='display: none;' data-deadline='#{Time.parse(deadline).to_i}'>"
                 io.puts "</div>"
                 io.puts "</div>"
@@ -587,7 +588,8 @@ class Main < Sinatra::Base
                 io.puts "<div class='hint'>"
                 io.puts "<p><b>Markierung von SuS in den Listen für die Zeugniskonferenzen</b></p>"
                 io.puts "<hr />"
-                io.puts "<p>Klassenleitungen: Bitte markieren Sie SuS, die Sie in den Zeug&shy;nis&shy;kon&shy;feren&shy;zen besprechen möchten, bis Mittwoch um 9:00 Uhr. Hinweis: Alle SuS mit einer Note ab 4– sind schon auto&shy;matisch markiert.</p>"
+                d = DateTime.parse(deadline)
+                io.puts "<p>Klassenleitungen: Bitte markieren Sie SuS, die Sie in den Zeug&shy;nis&shy;kon&shy;feren&shy;zen besprechen möchten, bis #{WEEKDAYS_LONG[d.wday]} um #{d.strftime('%H:%M')} Uhr. Hinweis: Alle SuS mit einer Note ab 4– sind schon auto&shy;matisch markiert.</p>"
                 io.puts "<div id='tresor_countdown_here' style='display: none;' data-deadline='#{Time.parse(deadline).to_i}'>"
                 io.puts "</div>"
                 io.puts "</div>"
@@ -603,7 +605,8 @@ class Main < Sinatra::Base
                     io.puts "<div class='hint'>"
                     io.puts "<p><b>Eintragung der Noten für das Arbeits- und Sozialverhalten</b></p>"
                     io.puts "<hr />"
-                    io.puts "<p>Die Möglichkeit für Eintragungen der Noten für das Arbeits- und Sozialverhalten endet am Mittwoch um 12:00 Uhr. Bitte tragen Sie bis dahin fehlende Noten ein, damit die Klassenleitungen rechtzeitig vor der Zeugnisausgabe die Sozialzeugnisse drucken können.</p>"
+                    d = DateTime.parse(deadline)
+                    io.puts "<p>Die Möglichkeit für Eintragungen der Noten für das Arbeits- und Sozialverhalten endet am #{WEEKDAYS_LONG[d.wday]} um #{d.strftime('%H:%M')} Uhr. Bitte tragen Sie bis dahin fehlende Noten ein, damit die Klassenleitungen rechtzeitig vor der Zeugnisausgabe die Sozialzeugnisse drucken können.</p>"
                     io.puts "<div id='tresor_countdown_here' style='display: none;' data-deadline='#{Time.parse(deadline).to_i}'>"
                     io.puts "</div>"
                     io.puts "</div>"
@@ -678,7 +681,7 @@ class Main < Sinatra::Base
     end
 
     def print_phishing_panel()
-        if running_pishing_training_hint?
+        if running_phishing_training_hint?
             return StringIO.open do |io|
                 io.puts "<div class='col-lg-12 col-md-4 col-sm-6'>"
                 io.puts "<div class='hint'>"

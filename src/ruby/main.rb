@@ -56,6 +56,7 @@ require '/data/config.rb'
 require '/data/zeugnisse/config.rb'
 require '/data/phishing/config.rb'
 require '/data/projekte/config.rb'
+require '/data/pk5/config.rb'
 $VERBOSE = warn_level
 DASHBOARD_SERVICE = ENV['DASHBOARD_SERVICE']
 
@@ -99,6 +100,7 @@ require './include/monitor.rb'
 require './include/otp.rb'
 require './include/phishing.rb'
 require './include/poll.rb'
+require './include/pk5.rb'
 require './include/projekte.rb'
 require './include/public_event.rb'
 require './include/roles.rb'
@@ -167,6 +169,7 @@ end
 USER_AGENT_PARSER = UserAgentParser::Parser.new
 WEEKDAYS = ['So', 'Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa']
 WEEKDAYS_LONG = ['Sonntag', 'Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag', 'Samstag']
+MONTHS = ['Januar', 'Februar', 'März', 'April', 'Mai', 'Juni', 'Juli', 'August', 'September', 'Oktober', 'November', 'Dezember']
 HOMEWORK_FEEDBACK_STATES = ['good', 'hmmm', 'lost']
 HOMEWORK_FEEDBACK_EMOJIS = {'good' => '🙂',
                             'hmmm' => '🤔',
@@ -300,6 +303,7 @@ class SetupDatabase
         'SecondLoginCode/code',
         'News/date',
         'NextcloudLoginCode/code',
+        'PkChange/ts',
         'PollRun/end_date',
         'PollRun/start_date',
         'PredefinedExternalUser/email',
@@ -1028,7 +1032,7 @@ class Main < Sinatra::Base
         sesb_sus.each do |email|
             @@user_info[email][:sesb] = true
         end
-        
+
         kurse_for_schueler, schueler_for_kurs = parser.parse_kurswahl(@@user_info.reject { |x, y| y[:teacher] }, @@lessons, lesson_key_tr, @@original_lesson_key_for_lesson_key, @@shorthands)
         @@kurse_for_schueler = kurse_for_schueler
         wahlpflicht_sus_for_lesson_key = parser.parse_wahlpflichtkurswahl(@@user_info.reject { |x, y| y[:teacher] }, @@lessons, lesson_key_tr, @@schueler_for_klasse)
@@ -1278,6 +1282,38 @@ class Main < Sinatra::Base
                 :recipients => VERTEILER_DEVELOPMENT_EMAILS
             }
         end
+        projekte = {}
+        $neo4j.neo4j_query(<<~END_OF_QUERY).each do |row|
+            MATCH (u:User)-[:ASSIGNED_TO]->(p:Projekt)
+            RETURN u.email, p.nr, p.title;
+        END_OF_QUERY
+            nr = row['p.nr']
+            projekte[nr] ||= {
+                :title => row['p.title'],
+                :participants => [],
+                :organized_by => [],
+            }
+            projekte[nr][:participants] << row['u.email']
+        end
+        $neo4j.neo4j_query(<<~END_OF_QUERY).each do |row|
+            MATCH (p:Projekt)-[:ORGANIZED_BY]->(u:User)
+            RETURN u.email, p.nr;
+        END_OF_QUERY
+            nr = row['p.nr']
+            next unless projekte[nr]
+            projekte[nr][:organized_by] << row['u.email']
+        end
+        projekte.each_pair do |nr, info|
+            ['', 'eltern.'].each do |prefix|
+                email = "#{prefix}projekt-#{nr}@#{MAILING_LIST_DOMAIN}"
+                @@mailing_lists[email] = {
+                    :label => "Alle Teilnehmer:innen im Projekt »#{info[:title]}#{prefix == '' ? '' : ' (Eltern)'}«",
+                    :recipients => info[:participants].map { |x|  prefix + x },
+                    :extra_allowed_users => info[:organized_by],
+                }
+            end
+        end
+
         if DASHBOARD_SERVICE == 'ruby'
             File.open('/internal/mailing_lists.yaml.tmp', 'w') do |f|
                 f.puts @@mailing_lists.to_yaml
@@ -1365,6 +1401,7 @@ class Main < Sinatra::Base
             '/include/scissor.min.js',
             '/include/hash.js',
             '/include/typewriter.js',
+            '/include/bootstrap-autocomplete.min.js',
         ]
 
         self.compile_files(:js, 'application/javascript', files)
@@ -1539,8 +1576,16 @@ class Main < Sinatra::Base
 
     before '*' do
         if DEVELOPMENT
-            debug "Re-including fragments.rb!"
+            debug "Re-including fragments.rb and data configs!"
             Kernel.send(:load, '/app/fragments/fragments.rb')
+            warn_level = $VERBOSE
+            $VERBOSE = nil
+            Kernel.send(:load, '/data/config.rb')
+            Kernel.send(:load, '/data/zeugnisse/config.rb')
+            Kernel.send(:load, '/data/phishing/config.rb')
+            Kernel.send(:load, '/data/projekte/config.rb')
+            Kernel.send(:load, '/data/pk5/config.rb')
+            $VERBOSE = warn_level
         end
         if DEVELOPMENT && request.path[0, 5] != '/api/'
             self.class.compile_js()
@@ -1724,6 +1769,9 @@ class Main < Sinatra::Base
         else
             @respond_hash ||= {}
             response.body = @respond_hash.to_json
+            if DEVELOPMENT
+                STDERR.puts "#{request.path} => #{@respond_hash.to_json}"
+            end
         end
     end
 
@@ -1861,6 +1909,9 @@ class Main < Sinatra::Base
                 if admin_logged_in? || user_who_can_upload_files_logged_in? || user_who_can_manage_news_logged_in? || user_who_can_manage_monitors_logged_in? || user_who_can_manage_tablets_logged_in? || user_with_role_logged_in?(:developer)
                     nav_items << :admin
                 end
+                if (schueler_logged_in? && @session_user[:klasse] == PK5_CURRENT_KLASSE)
+                    nav_items << :pk5
+                end
                 if user_who_can_use_aula_logged_in?
                     nav_items << :aula
                 end
@@ -1869,7 +1920,7 @@ class Main < Sinatra::Base
                         nav_items << :techteam
                     end
                 end
-                if running_pishing_training?
+                if running_phishing_training?
                     nav_items << :phishing
                 end
                 # nav_items << :advent_calendar #if advents_calendar_date_today > 0
@@ -1937,6 +1988,10 @@ class Main < Sinatra::Base
                         printed_something = true
                     end
                     io.puts "</div>"
+                    io.puts "</li>"
+                elsif x == :pk5
+                    io.puts "<li class='nav-item text-nowrap'>"
+                    io.puts "<a href='/pk5' class='nav-link nav-icon'><div class='icon'><i class='fa fa-file-text-o'></i></div>5. PK</a>"
                     io.puts "</li>"
                 elsif x == :advent_calendar
                     unless admin_logged_in?
@@ -2015,6 +2070,9 @@ class Main < Sinatra::Base
                                 end
                             end
                         end
+                    end
+                    if teacher_logged_in?
+                        io.puts "<a class='dropdown-item nav-icon' href='/pk5_overview'><div class='icon'><i class='fa fa-file-text-o'></i></div><span class='label'>5. PK</span></a>"
                     end
                     if schueler_logged_in?
                         if @session_user[:klasse].to_i < 11
@@ -2454,12 +2512,12 @@ class Main < Sinatra::Base
         require_user!
         data = parse_request_data(:required_keys => [:mode])
         dark = data[:mode] == "dark" ? true : false
-        
+
         results = neo4j_query(<<~END_OF_QUERY, :email => @session_user[:email], :dark => dark)
             MATCH (u:User {email: $email})
             SET u.dark = $dark;
         END_OF_QUERY
-        
+
         respond(:ok => true)
     end
 
@@ -2467,12 +2525,12 @@ class Main < Sinatra::Base
         require_user!
         data = parse_request_data(:required_keys => [:mode])
         new_design = data[:mode] == "neu" ? true : false
-        
+
         results = neo4j_query(<<~END_OF_QUERY, :email => @session_user[:email], :new_design => new_design)
             MATCH (u:User {email: $email})
             SET u.new_design = $new_design;
         END_OF_QUERY
-        
+
         respond(:ok => true)
     end
 
@@ -3008,6 +3066,12 @@ class Main < Sinatra::Base
         elsif path == 'salzh_protokoll' || path == 'self_tests'
             parts = request.env['REQUEST_PATH'].split('/')
             salzh_protocol_delta = (parts[2] || '').strip
+        elsif path == 'pk5'
+            user_email = @session_user[:email]
+            if user_with_role_logged_in?(:teacher)
+                parts = request.env['REQUEST_PATH'].split('/')
+                user_email = parts[2]
+            end
         elsif path == 'index'
             if @session_user
                 if @session_device

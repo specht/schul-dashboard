@@ -30,8 +30,6 @@ class Main < Sinatra::Base
             io.puts "<p>Anzahl der Nutzer, die das neue Design nutzen: #{new_design[0]["userCount"]}</p>"
             io.puts "<p>Anzahl der Nutzer, die den Dark-Mode nutzen: #{dark[0]["userCount"]}</p>"
             io.puts "<h3>Phishing Status</h3>"
-            io.puts "<p>Hint</p>"
-            io.puts "<p>Seite</p>"
             io.puts "<code>"
             io.puts "<p>PHISHING_HINT_START = '#{PHISHING_HINT_START}'<br>PHISHING_HINT_END = '#{PHISHING_HINT_END}'</p>"
             io.puts "<p>PHISHING_START = '#{PHISHING_START}'<br>PHISHING_END = '#{PHISHING_END}'</p>"

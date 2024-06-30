@@ -2824,3 +2824,13 @@ body.dark hr {
 .render_timespan > span {
     display: none;
 }
+
+.hl {
+    background-color: #fce94f;
+    border-radius: 0.2em;
+    padding: 0.2em 0.3em;
+}
+
+body.dark .hl {
+    background-color: #004a63;
+}

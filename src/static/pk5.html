@@ -57,6 +57,14 @@
     <div class='row'>
         <div class='col-md-12'>
             <h2 style='margin-bottom: 30px;'>5. Prüfungskomponente im Abitur</h2>
+            <div class="alert alert-white" style="#{teacher_logged_in? && $pk5.get_current_phase >= 2 && get_my_pk5(user_email)[:betreuende_lehrkraft] == @session_user[:email] && !get_my_pk5(user_email)[:betreuende_lehrkraft_is_confirmed] ? '': 'display: none;'}">
+                <h3>Anfrage zur Betreuung</h3>
+                <p>Sie haben eine Anfrage zur Betreuung der 5. PK im Referenzfach von #{CGI.escapeHTML(join_with_sep(get_my_pk5(user_email)[:sus] || [], ', ', ' und '))} bekommen. Bitte prüfen Sie die angegebenen Daten und sagen Sie anschließend die Betreuung zu oder ab. #{(get_my_pk5(user_email)[:sus] || []).size > 1 ? 'Die' : (@@user_info[user_email][:geschlecht] == 'w' ? 'Die': ' Der')} Prüfungskandidat#{(get_my_pk5(user_email)[:sus] || []).size > 1 ? 'en werden' : (@@user_info[user_email][:geschlecht] == 'w' ? 'in wird': ' wird')} automatisch per E-Mail über Ihre Entscheidung benachrichtigt.</p>
+                <div style="text-align: center;">
+                    <button id='bu_accept_betreuung' class="btn btn-success"><i class='fa fa-check'></i>&nbsp;&nbsp;Betreuung annehmen</button>
+                    <button id='bu_reject_betreuung' class="btn btn-danger"><i class='fa fa-times'></i>&nbsp;&nbsp;Betreuung ablehnen</button>
+                </div>
+            </div>
             <p>
                 Diese Karteikarte fasst deine Informationen zur 5. Prüfungskomponente im Abitur zusammen.
                 Die Angaben werden sich im Laufe der Zeit bis zu deiner Prüfung verändern. Beachte den Zeitplan weiter unten auf dieser Seite.
@@ -103,10 +111,14 @@
                         <div class='form-group'>
                             <label>#{PK5_KEY_LABELS[:betreuende_lehrkraft]}</label>
                             <div class="input-group mb-3">
-                                <input id='ti_betreuende_lehrkraft' type='text' value='#{CGI.escapeHTML(get_my_pk5(user_email)[:betreuende_lehrkraft] || '')}' placeholder='keine Lehrkraft gewählt' class='form-control' list='li_lehrkraft' readonly>
+                                <input id='ti_betreuende_lehrkraft' type='text' value='#{CGI.escapeHTML(get_my_pk5(user_email)[:betreuende_lehrkraft_display_name] || '')}' placeholder='keine Lehrkraft gewählt' class='form-control' list='li_lehrkraft' readonly>
                                 <div class="input-group-append">
+                                    #{get_my_pk5(user_email)[:betreuende_lehrkraft_is_confirmed] ? '<!--' : ''}
                                     <span class="input-group-text text-secondary" title="Die Lehrkraft hat die Übernahme der Betreuung noch nicht bestätigt"><i class='fa fa-clock-o'></i></span>
-                                    <!-- <span class="input-group-text text-success" title="Die Lehrkraft hat die Übernahme der Betreuung bestätigt"><i class='fa fa-check'></i></span> -->
+                                    #{get_my_pk5(user_email)[:betreuende_lehrkraft_is_confirmed] ? '-->' : ''}
+                                    #{get_my_pk5(user_email)[:betreuende_lehrkraft_is_confirmed] ? '' : '<!--'}
+                                    <span class="input-group-text text-success" title="Die Lehrkraft hat die Übernahme der Betreuung bestätigt"><i class='fa fa-check'></i></span>
+                                    #{get_my_pk5(user_email)[:betreuende_lehrkraft_is_confirmed] ? '' : '-->'}
                                 </div>
                             </div>
 
@@ -159,7 +171,7 @@ var my_pk5 = #{get_my_pk5(user_email).to_json};
 window.addEventListener('load', function() {
     $('#ti_themengebiet').val(my_pk5.themengebiet);
     $('#ti_referenzfach').val(my_pk5.referenzfach);
-    $('#ti_betreuende_lehrkraft').val(my_pk5.betreuende_lehrkraft);
+    $('#ti_betreuende_lehrkraft').val(my_pk5.betreuende_lehrkraft_display_name);
     $('#bu_edit').on('click', function(e) {
         $('.api_messages').hide();
         for (let input of $(e.target).closest('.karteikarte').find('input')) {
@@ -197,7 +209,10 @@ window.addEventListener('load', function() {
             if (response.success) {
                 for (let key of #{PK5_KEYS.to_json}) {
                     let input = $(`#ti_${key}`);
-                    $(input).val(response.result[key]);
+                    let value = response.result[key];
+                    if (key === 'betreuende_lehrkraft')
+                        value = response.result.betreuende_lehrkraft_display_name;
+                    $(input).val(value);
                 }
 
                 $('#bu_edit').show();
@@ -273,6 +288,28 @@ window.addEventListener('load', function() {
                 window.location.reload();
             }
         });
+    });
+    $('#bu_accept_betreuung').on('click', function(e) {
+        showTemplateModal('Betreuung annehmen',
+            'Sind Sie sicher, dass Sie die Betreuung der Prüfung annehmen möchten? Es wird automatisch eine E-Mail mit Ihrer Entscheidung versendet.',
+            "<i class='fa fa-check'></i>&nbsp;&nbsp;Betreuung annehmen", 'btn-success',
+            'Abbrechen', 'btn-secondary', function () {
+                api_call('/api/accept_or_reject_pk5_betreuung', {email: '#{user_email}', accept: 'true'}, function(data) {
+                    if (data.success) window.location.reload();
+                });
+            }
+        );
+    });
+    $('#bu_reject_betreuung').on('click', function(e) {
+        showTemplateModal('Betreuung ablehnen',
+            'Sind Sie sicher, dass Sie die Betreuung der Prüfung ablehnen möchten? Es wird automatisch eine E-Mail mit Ihrer Entscheidung versendet.',
+            "<i class='fa fa-check'></i>&nbsp;&nbsp;Betreuung ablehnen", 'btn-danger',
+            'Abbrechen', 'btn-secondary', function () {
+                api_call('/api/accept_or_reject_pk5_betreuung', {email: '#{user_email}', accept: 'false'}, function(data) {
+                    if (data.success) window.location.reload();
+                });
+            }
+        );
     });
 });
 </script>

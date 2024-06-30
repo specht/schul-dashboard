@@ -315,7 +315,7 @@ class Main < Sinatra::Base
         if present_tags.include?('#Bemerkungen') && present_tags.include?('#Angebote') && !present_tags.include?('#BemerkungenAngebote')
         elsif !present_tags.include?('#Bemerkungen') && !present_tags.include?('#Angebote') && present_tags.include?('#BemerkungenAngebote')
         else
-            errors << "Es muss entweder #Angebote und #Bemerkungen geben oder #BemerkungenAngebote."
+            errors << "Es muss entweder nur #Angebote und #Bemerkungen geben oder nur #BemerkungenAngebote."
         end
         return errors
     end
@@ -523,6 +523,12 @@ class Main < Sinatra::Base
                     v = cache["Schuljahr:#{ZEUGNIS_SCHULJAHR}/Halbjahr:#{ZEUGNIS_HALBJAHR}/AB:#{item}/Email:#{email}"] || '--'
                     info["##{item}"] = v
                 end
+                # handle BemerkungenAngebote
+                vl = []
+                vl << cache["Schuljahr:#{ZEUGNIS_SCHULJAHR}/Halbjahr:#{ZEUGNIS_HALBJAHR}/AB:Bemerkungen/Email:#{email}"]
+                vl << cache["Schuljahr:#{ZEUGNIS_SCHULJAHR}/Halbjahr:#{ZEUGNIS_HALBJAHR}/AB:Angebote/Email:#{email}"]
+                vl.reject! { |x| x.nil? }
+                info["#BemerkungenAngebote"] = vl.size > 0 ? vl.join(" / ") : '--'
                 if DEVELOPMENT
                     STDERR.puts faecher_info.to_yaml
                     STDERR.puts cache.to_yaml

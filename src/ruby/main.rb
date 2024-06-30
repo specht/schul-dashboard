@@ -303,6 +303,8 @@ class SetupDatabase
         'SecondLoginCode/code',
         'News/date',
         'NextcloudLoginCode/code',
+        'Pk5/betreuende_lehrkraft',
+        'Pk5/betreuende_lehrkraft_fas',
         'PkChange/ts',
         'PollRun/end_date',
         'PollRun/start_date',

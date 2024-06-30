@@ -45,7 +45,9 @@ class Main < Sinatra::Base
                 result[:sus].map! { |email| @@user_info[email][:display_name_official] }
             end
             if result[:betreuende_lehrkraft]
-                result[:betreuende_lehrkraft] = @@user_info[result[:betreuende_lehrkraft]][:display_name_official]
+                result[:betreuende_lehrkraft] = result[:betreuende_lehrkraft]
+                result[:betreuende_lehrkraft_display_name] = @@user_info[result[:betreuende_lehrkraft]][:display_name_official]
+                result[:betreuende_lehrkraft_is_confirmed] = result[:betreuende_lehrkraft] == result[:betreuende_lehrkraft_confirmed_by]
             end
             result
         end
@@ -93,6 +95,10 @@ class Main < Sinatra::Base
                         io.puts "<div class='history_entry'><strong>#{@@user_info[pc[:email]][:display_name]}</strong> hat die Einladung zur Gruppenprüfung angenommen</div>"
                     elsif pc[:type] == 'reject_invitation'
                         io.puts "<div class='history_entry'><strong>#{@@user_info[pc[:email]][:display_name]}</strong> hat die Einladung zur Gruppenprüfung abgelehnt</div>"
+                    elsif pc[:type] == 'accept_betreuung'
+                        io.puts "<div class='history_entry'><strong>#{@@user_info[entry['eu.email']][:display_name_official]}</strong> hat die Betreuung der Prüfung angenommen</div>"
+                    elsif pc[:type] == 'reject_betreuung'
+                        io.puts "<div class='history_entry'><strong>#{@@user_info[entry['eu.email']][:display_name_official]}</strong> hat die Betreuung der Prüfung abgelehnt</div>"
                     else
                         io.puts pc.to_json
                     end
@@ -199,6 +205,7 @@ class Main < Sinatra::Base
             seen_sus = Set.new()
             pk5_hash = {}
             pk5_by_email = {}
+            rows = []
             neo4j_query(<<~END_OF_QUERY).each do |row|
                 MATCH (p:Pk5)-[:BELONGS_TO]->(u:User)
                 RETURN ID(p) AS id, p, u.email;
@@ -212,7 +219,7 @@ class Main < Sinatra::Base
                 pk5_by_email[row['u.email']] = id
             end
 
-            @@schueler_for_klasse[PK5_CURRENT_KLASSE].each do |email|
+            @@schueler_for_klasse[PK5_CURRENT_KLASSE].each.with_index do |email, sus_index|
                 next if seen_sus.include?(email)
                 seen_sus << email
                 pk5 = nil
@@ -224,27 +231,48 @@ class Main < Sinatra::Base
                         seen_sus << x
                     end
                 end
-                if pk5
-                    io.puts "<tr data-email='#{email}'>"
-                    io.puts "<td>#{pk5[:sus].map { |x| @@user_info[x][:display_name]}.join(', ')}</td>"
-                    io.puts "<td>#{CGI.escapeHTML(pk5[:themengebiet] || '–')}</td>"
-                    io.puts "<td>#{CGI.escapeHTML(pk5[:referenzfach] || '–')}</td>"
-                    io.puts "<td>#{CGI.escapeHTML(((@@user_info[pk5[:betreuende_lehrkraft]] || {})[:display_name_official]) || '–')}</td>"
-                    io.puts "<td>#{CGI.escapeHTML(pk5[:fas] || '–')}</td>"
-                    io.puts "<td>#{CGI.escapeHTML(((@@user_info[pk5[:betreuende_lehrkraft_fas]] || {})[:display_name_official]) || '–')}</td>"
-                    # io.puts "<td>#{CGI.escapeHTML(pk5[:fragestellung] || '–')}</td>"
-                    io.puts "</tr>"
-                else
-                    io.puts "<tr data-email='#{email}'>"
-                    io.puts "<td>#{@@user_info[email][:display_name]}</td>"
-                    io.puts "<td>–</td>"
-                    io.puts "<td>–</td>"
-                    io.puts "<td>–</td>"
-                    io.puts "<td>–</td>"
-                    io.puts "<td>–</td>"
-                    # io.puts "<td>–</td>"
-                    io.puts "</tr>"
+                pk5 ||= {}
+                row_s = StringIO.open do |io2|
+                    io2.puts "<tr data-email='#{email}'>"
+                    io2.puts "<td>#{(pk5[:sus] || [email]).map { |x| @@user_info[x][:display_name]}.join(', ')}</td>"
+                    io2.puts "<td>#{CGI.escapeHTML(pk5[:themengebiet] || '–')}</td>"
+                    io2.puts "<td>#{CGI.escapeHTML(pk5[:referenzfach] || '–')}</td>"
+                    if pk5[:betreuende_lehrkraft] == @session_user[:email]
+                        if pk5[:betreuende_lehrkraft_confirmed_by] != @session_user[:email]
+                            if $pk5.get_current_phase >= 2
+                                io2.puts "<td><i class='fa fa-clock-o'></i>&nbsp;&nbsp;<span class='hl'>#{CGI.escapeHTML(((@@user_info[pk5[:betreuende_lehrkraft]] || {})[:display_name_official]) || '–')}</span> <em>Anfrage erhalten &ndash; bitte bestätigen oder ablehnen</em></td>"
+                            else
+                                io2.puts "<td><i class='fa fa-clock-o'></i>&nbsp;&nbsp;#{CGI.escapeHTML(((@@user_info[pk5[:betreuende_lehrkraft]] || {})[:display_name_official]) || '–')}</td>"
+                            end
+                        else
+                            io2.puts "<td>#{CGI.escapeHTML(((@@user_info[pk5[:betreuende_lehrkraft]] || {})[:display_name_official]) || '–')}</td>"
+                        end
+                    else
+                        if pk5[:betreuende_lehrkraft_confirmed_by] != pk5[:betreuende_lehrkraft]
+                            io2.puts "<td><i class='fa fa-clock-o'></i>&nbsp;&nbsp;#{CGI.escapeHTML(((@@user_info[pk5[:betreuende_lehrkraft]] || {})[:display_name_official]) || '–')}</td>"
+                        else
+                            io2.puts "<td>#{CGI.escapeHTML(((@@user_info[pk5[:betreuende_lehrkraft]] || {})[:display_name_official]) || '–')}</td>"
+                        end
+                    end
+                    io2.puts "<td>#{CGI.escapeHTML(pk5[:fas] || '–')}</td>"
+                    io2.puts "<td>#{CGI.escapeHTML(((@@user_info[pk5[:betreuende_lehrkraft_fas]] || {})[:display_name_official]) || '–')}</td>"
+                    # io2.puts "<td>#{CGI.escapeHTML(pk5[:fragestellung] || '–')}</td>"
+                    io2.puts "</tr>"
+                    io2.string
                 end
+                rows << {:html => row_s, :email => email, :pk5 => pk5, :sus_index => sus_index}
+            end
+            rows.sort! do |a, b|
+                a_primary = a[:pk5][:betreuende_lehrkraft] == @session_user[:email]
+                b_primary = b[:pk5][:betreuende_lehrkraft] == @session_user[:email]
+                a_secondary = a[:pk5][:betreuende_lehrkraft_fas] == @session_user[:email]
+                b_secondary = b[:pk5][:betreuende_lehrkraft_fas] == @session_user[:email]
+                a_sus_index = a[:sus_index]
+                b_sus_index = b[:sus_index]
+                (a_primary == b_primary) ? (a_secondary == b_secondary ? (a_sus_index <=> b_sus_index) : (a_secondary ? -1 : 1)) : (a_primary ? -1 : 1)
+            end
+            rows.each do |row|
+                io.puts row[:html]
             end
             io.puts "</tbody>"
             io.puts "</table>"
@@ -455,6 +483,81 @@ class Main < Sinatra::Base
                 RETURN p;
             END_OF_QUERY
         end
+        respond(:yay => 'sure')
+    end
+
+    post '/api/accept_or_reject_pk5_betreuung' do
+        data = parse_request_data(:required_keys => [:email, :accept])
+        sus_email = data[:email]
+        accept = (data[:accept] == 'true')
+
+        pk5 = neo4j_query_expect_one(<<~END_OF_QUERY, {:sus_email => sus_email})['pk5']
+            MATCH (pk5:Pk5)-[:BELONGS_TO]->(u:User {email: $sus_email})
+            RETURN pk5;
+        END_OF_QUERY
+
+        assert(pk5[:betreuende_lehrkraft] == @session_user[:email])
+        assert(pk5[:betreuende_lehrkraft_confirmed_by] != @session_user[:email])
+
+        if accept
+            neo4j_query_expect_one(<<~END_OF_QUERY, {:sus_email => sus_email, :lehrer_email => @session_user[:email]})
+                MATCH (pk5:Pk5)-[:BELONGS_TO]->(u:User {email: $sus_email})
+                SET pk5.betreuende_lehrkraft_confirmed_by = $lehrer_email
+                RETURN pk5;
+            END_OF_QUERY
+        else
+            neo4j_query_expect_one(<<~END_OF_QUERY, {:sus_email => sus_email})
+                MATCH (pk5:Pk5)-[:BELONGS_TO]->(u:User {email: $sus_email})
+                REMOVE pk5.betreuende_lehrkraft
+                RETURN pk5;
+            END_OF_QUERY
+        end
+
+        all_emails = []
+        neo4j_query(<<~END_OF_QUERY, {:sus_email => sus_email}).each do |row|
+            MATCH (pk5:Pk5)-[:BELONGS_TO]->(u:User {email: $sus_email})
+            WITH pk5
+            MATCH (pk5)-[:BELONGS_TO]->(ou:User)
+            RETURN ou.email AS email;
+        END_OF_QUERY
+            all_emails << row['email']
+        end
+        all_emails.uniq!
+        STDERR.puts all_emails.to_yaml
+        lehrer_email = @session_user[:email]
+        lehrer_display_name = @session_user[:display_name_official]
+
+        deliver_mail do
+            to all_emails
+            cc lehrer_email
+            bcc SMTP_FROM
+            from SMTP_FROM
+
+            subject "Betreuung im Referenzfach #{accept ? 'angenommen' : 'abgelehnt'}"
+
+            StringIO.open do |io|
+                io.puts "<p>Hallo!</p>"
+                if accept
+                    io.puts "<p>Dies ist eine automatische Benachrichtung darüber, dass #{lehrer_display_name} die Anfrage zur Betreuung #{all_emails.size == 1 ? 'deiner' : 'eurer'} 5. PK <b>angenommen</b> hat.</p>"
+                else
+                    io.puts "<p>Dies ist eine automatische Benachrichtung darüber, dass #{lehrer_display_name} die Anfrage zur Betreuung #{all_emails.size == 1 ? 'deiner' : 'eurer'} 5. PK <b>abgelehnt</b> hat.</p>"
+                end
+                io.puts "<p>Um den aktuellen Stand deiner 5. PK-Planung zu erfahren, schau einfach im Dashboard nach.</p>"
+                io.puts "<p>Viele Grüße,<br />#{WEBSITE_MAINTAINER_NAME}</p>"
+                io.string
+            end
+        end
+
+        ts = Time.now.to_i
+        neo4j_query_expect_one(<<~END_OF_QUERY, {:sus_email => sus_email, :ts => ts, :editor_email => @session_user[:email], :type => accept ? 'accept_betreuung' : 'reject_betreuung'})
+            MATCH (eu:User {email: $editor_email})
+            MATCH (p:Pk5)-[:BELONGS_TO]->(:User {email: $sus_email})
+            CREATE (eu)<-[:BY]-(c:Pk5Change)-[:TO]->(p)
+            SET c.type = $type
+            SET c.ts = $ts
+            RETURN p;
+        END_OF_QUERY
+
         respond(:yay => 'sure')
     end
 end

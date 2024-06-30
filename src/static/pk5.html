@@ -62,7 +62,7 @@
                 <p>Sie haben eine Anfrage zur Betreuung der 5. PK im Referenzfach von #{CGI.escapeHTML(join_with_sep(get_my_pk5(user_email)[:sus] || [], ', ', ' und '))} bekommen. Bitte prüfen Sie die angegebenen Daten und sagen Sie anschließend die Betreuung zu oder ab. #{(get_my_pk5(user_email)[:sus] || []).size > 1 ? 'Die' : (@@user_info[user_email][:geschlecht] == 'w' ? 'Die': ' Der')} Prüfungskandidat#{(get_my_pk5(user_email)[:sus] || []).size > 1 ? 'en werden' : (@@user_info[user_email][:geschlecht] == 'w' ? 'in wird': ' wird')} automatisch per E-Mail über Ihre Entscheidung benachrichtigt.</p>
                 <p>#{get_invited_and_accepted_pk5_for_teacher()}</p>
                 <div style="text-align: center;">
-                    <button id='bu_accept_betreuung' class="btn btn-success" #{get_remaining_pk5_projects_for_teacher()[:left] > 0 ? '' : 'disabled'}><i class='fa fa-check'></i>&nbsp;&nbsp;Betreuung annehmen</button>
+                    <button id='bu_accept_betreuung' class="btn btn-success" #{(get_remaining_pk5_projects_for_teacher()[:left] || 0) > 0 ? '' : 'disabled'}><i class='fa fa-check'></i>&nbsp;&nbsp;Betreuung annehmen</button>
                     <button id='bu_reject_betreuung' class="btn btn-danger"><i class='fa fa-times'></i>&nbsp;&nbsp;Betreuung ablehnen</button>
                 </div>
             </div>

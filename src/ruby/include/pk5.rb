@@ -572,7 +572,7 @@ class Main < Sinatra::Base
     end
 
     def get_remaining_pk5_projects_for_teacher
-        return 0 unless teacher_logged_in?
+        return {} unless teacher_logged_in?
         invited = 0
         accepted = 0
         neo4j_query(<<~END_OF_QUERY).each do |row|

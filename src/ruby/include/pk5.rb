@@ -163,6 +163,14 @@ class Main < Sinatra::Base
                     end
                     debug "#{key} => #{value}"
                     if (value || '') != (p[key] || '')
+                        if key == :betreuende_lehrkraft
+                            # reset confirmation if value has changed
+                            neo4j_query_expect_one(<<~END_OF_QUERY, {:sus_email => sus_email})
+                                MATCH (p:Pk5)-[:BELONGS_TO]->(u:User {email: $sus_email})
+                                REMOVE p.#{key.to_s}_confirmed_by
+                                RETURN p;
+                            END_OF_QUERY
+                        end
                         neo4j_query_expect_one(<<~END_OF_QUERY, {:sus_email => sus_email, key => value})
                             MATCH (p:Pk5)-[:BELONGS_TO]->(u:User {email: $sus_email})
                             SET p.#{key.to_s} = $#{key.to_s}
@@ -498,6 +506,8 @@ class Main < Sinatra::Base
 
         assert(pk5[:betreuende_lehrkraft] == @session_user[:email])
         assert(pk5[:betreuende_lehrkraft_confirmed_by] != @session_user[:email])
+        result = get_remaining_pk5_projects_for_teacher()
+        assert(result[:left] > 0)
 
         if accept
             neo4j_query_expect_one(<<~END_OF_QUERY, {:sus_email => sus_email, :lehrer_email => @session_user[:email]})
@@ -559,6 +569,36 @@ class Main < Sinatra::Base
         END_OF_QUERY
 
         respond(:yay => 'sure')
+    end
+
+    def get_remaining_pk5_projects_for_teacher
+        return 0 unless teacher_logged_in?
+        invited = 0
+        accepted = 0
+        neo4j_query(<<~END_OF_QUERY).each do |row|
+            MATCH (p:Pk5)-[:BELONGS_TO]->(u:User)
+            WITH DISTINCT p
+            RETURN p;
+        END_OF_QUERY
+            p = row['p']
+            if p[:betreuende_lehrkraft] == @session_user[:email]
+                invited += 1
+                if p[:betreuende_lehrkraft] == p[:betreuende_lehrkraft_confirmed_by]
+                    accepted += 1
+                end
+            end
+        end
+        left = 5 - accepted
+        {:invited => invited, :accepted => accepted, :left => left}
+    end
+
+    def get_invited_and_accepted_pk5_for_teacher
+        return '' unless teacher_logged_in?
+        result = get_remaining_pk5_projects_for_teacher()
+        invited = result[:invited]
+        accepted = result[:accepted]
+        left = result[:left]
+        "Sie haben bisher #{accepted == 0 ? 'keine' : accepted} Prüfung#{accepted == 1 ? '' : 'en'} angenommen und #{(invited - accepted) == 0 ? 'keine' : (invited - accepted)} ausstehende Anfrage#{(invited - accepted) == 1 ? '' : 'n'}. Sie können insgesamt höchstens fünf Prüfungen annehmen, also nach aktuellem Stand noch #{left} Prüfung#{left == 1 ? '' : 'en'}."
     end
 end
 

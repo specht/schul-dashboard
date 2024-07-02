@@ -44,7 +44,8 @@ def parse_html_datum(s)
             return ds
         end
     end
-    raise 'nope'
+    return nil
+    # raise 'nope'
 end
 
 def strip_past_tables(dom)
@@ -182,6 +183,7 @@ def handle_vplan_html_file(contents, removed_days)
             child.css('b').each { |c2| b = c2.text }
             if b
                 datum = parse_html_datum(b)
+                next if datum.nil?
                 datum_list << datum
                 unless removed_days.include?(datum)
                     Dir["/vplan/#{datum}/*.json"].each do |path|

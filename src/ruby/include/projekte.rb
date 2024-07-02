@@ -632,6 +632,36 @@ class Main < Sinatra::Base
                 projekte[row['p.nr']] ||= row['p']
             end
 
+            sus_for_projekt = {}
+            projekt_for_email.each_pair do |email, nr|
+                sus_for_projekt[nr] ||= []
+                sus_for_projekt[nr] << email
+            end
+
+            io.puts "<h4>Freie Plätze</h4>"
+            io.puts "<div class='table-responsive' style='max-width: 100%; overflow-x: auto;'>"
+            io.puts "<table class='table table-sm table-striped' style='width: unset;'>"
+            io.puts "<tr>"
+            io.puts "<th>Projekt</th>"
+            io.puts "<th>Klasse</th>"
+            io.puts "<th>Freie Plätze</th>"
+            io.puts "</tr>"
+            projekte.each_pair do |nr, projekt|
+                if sus_for_projekt[nr].size < projekt[:capacity]
+                    io.puts "<tr>"
+                    io.puts "<td>#{projekt[:title]}</td>"
+                    if projekt[:min_klasse] == projekt[:max_klasse]
+                        io.puts "<td>nur #{tr_klasse(projekt[:min_klasse])}. Klasse</td>"
+                    else
+                        io.puts "<td>#{tr_klasse(projekt[:min_klasse])}. – #{tr_klasse(projekt[:max_klasse])}. Klasse</td>"
+                    end
+                    io.puts "<td>#{projekt[:capacity] - sus_for_projekt[nr].size} von #{projekt[:capacity]} frei</td>"
+                    io.puts "</tr>"
+                end
+            end
+            io.puts "</table>"
+            io.puts "</div>"
+
             KLASSEN_ORDER.each do |klasse|
                 klassenstufe = klasse.to_i
                 klassenstufe = 7 if klassenstufe == 0

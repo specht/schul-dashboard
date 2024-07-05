@@ -243,7 +243,7 @@ class Main < Sinatra::Base
                 row_s = StringIO.open do |io2|
                     io2.puts "<tr data-email='#{email}'>"
                     io2.puts "<td>#{(pk5[:sus] || [email]).map { |x| @@user_info[x][:display_name]}.join(', ')}</td>"
-                    io2.puts "<td>#{CGI.escapeHTML(pk5[:themengebiet] || '–')}</td>"
+                    io2.puts "<td style='max-width: 20em;'>#{CGI.escapeHTML(pk5[:themengebiet] || '–')}</td>"
                     io2.puts "<td>#{CGI.escapeHTML(pk5[:referenzfach] || '–')}</td>"
                     if pk5[:betreuende_lehrkraft] == @session_user[:email]
                         if pk5[:betreuende_lehrkraft_confirmed_by] != @session_user[:email]
@@ -262,7 +262,7 @@ class Main < Sinatra::Base
                             io2.puts "<td>#{CGI.escapeHTML(((@@user_info[pk5[:betreuende_lehrkraft]] || {})[:display_name_official]) || '–')}</td>"
                         end
                     end
-                    io2.puts "<td>#{CGI.escapeHTML(pk5[:fas] || '–')}</td>"
+                    io2.puts "<td style='max-width: 20em;'>#{CGI.escapeHTML(pk5[:fas] || '–')}</td>"
                     io2.puts "<td>#{CGI.escapeHTML(((@@user_info[pk5[:betreuende_lehrkraft_fas]] || {})[:display_name_official]) || '–')}</td>"
                     # io2.puts "<td>#{CGI.escapeHTML(pk5[:fragestellung] || '–')}</td>"
                     io2.puts "</tr>"

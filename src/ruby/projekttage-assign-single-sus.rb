@@ -21,7 +21,7 @@ class Script
     def run()
         STDERR.print "Searching for user #{@user}: "
         rows = @@user_info.keys.select do |email|
-            email.include?(@user)
+            email.index(@user) == 0
         end
         assert(rows.length == 1, "User not found")
         user = rows[0]

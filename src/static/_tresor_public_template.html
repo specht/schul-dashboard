@@ -1445,10 +1445,10 @@ function admin_only_copy_noten_from_halbjahr(klasse, fach) {
         console.log("Aborting because there's no zeugnisliste for this klasse");
         return;
     }
-    if (zeugnisliste_for_klasse[klasse].lehrer_for_fach[fach].length > 0) {
-        console.log("Aborting because a teacher assigned for this fach.");
-        return;
-    }
+    // if (zeugnisliste_for_klasse[klasse].lehrer_for_fach[fach].length > 0) {
+    //     console.log("Aborting because a teacher assigned for this fach.");
+    //     return;
+    // }
 
     let path_arrays = [];
     let prev_entry = show_previous_noten[show_previous_noten.length - 1];

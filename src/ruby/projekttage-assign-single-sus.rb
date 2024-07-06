@@ -43,6 +43,7 @@ class Script
         neo4j_query("MATCH (u:User {email: $email})-[r:ASSIGNED_TO]->(p) DELETE r;", {email: user})
         STDERR.puts "Assigning #{user} to #{projekt[:title]}"
         neo4j_query("MATCH (u:User {email: $email}) MATCH (p:Projekt {nr: $nr}) CREATE (u)-[r:ASSIGNED_TO]->(p);", {email: user, nr: projekt[:nr]})
+        Main.update_mailing_lists()
     end
 end
 

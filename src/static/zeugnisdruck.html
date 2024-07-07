@@ -100,7 +100,7 @@ function get_zeugnis(klasse, emails, format) {
     let path_array_ab = [];
     path_array_ab.push(['Schuljahr', ZEUGNIS_SCHULJAHR]);
     path_array_ab.push(['Halbjahr', ZEUGNIS_HALBJAHR]);
-    path_array_ab.push(['AB', ['Angebote', 'Bemerkungen', 'WeitereBemerkungen', 'Versetzt']]);
+    path_array_ab.push(['AB', ['Angebote', 'Bemerkungen', 'WeitereBemerkungen', 'Versetzt', 'Probejahr bestanden', 'BBR', 'MSA']]);
     path_array_ab.push(['Email', emails]);
 
     tresor_api_call('/jwt/get_many', {path_arrays: [path_array_fach, path_array_fehltage, path_array_ab], key: 'Wert'}, function(data) {

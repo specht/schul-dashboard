@@ -293,6 +293,11 @@ class Main < Sinatra::Base
         required_tags << '#VS_UE'
         required_tags << '#VSP'
         required_tags << '#WeitereBemerkungen' if key.include?('sesb')
+        if ZEUGNIS_HALBJAHR == '2'
+            required_tags << '#Probejahr' if key == '5' || key == '7_sesb'
+            required_tags << '#BBR' if key == '9' || key == '9_sesb'
+            required_tags << '#MSA' if key == '10' || key == '10_sesb'
+        end
         optional_tags = []
 
         optional_tags << '#Vorname'
@@ -493,7 +498,7 @@ class Main < Sinatra::Base
                 wf_count = 0
                 faecher_info.each do |fach|
                     if wahlfach_info[fach]
-                        if cache["Schuljahr:#{ZEUGNIS_SCHULJAHR}/Halbjahr:#{ZEUGNIS_HALBJAHR}/Fach:#{fach}/Email:#{email}"]
+                        if (cache["Schuljahr:#{ZEUGNIS_SCHULJAHR}/Halbjahr:#{ZEUGNIS_HALBJAHR}/Fach:#{fach}/Email:#{email}"] || '×') != '×'
                             wf_count += 1
                             wf_tr[fach] = "WF#{wf_count}"
                             info["#WF#{wf_count}_Name"] = "Wahlfach #{@@faecher[fach] || fach}"
@@ -529,6 +534,33 @@ class Main < Sinatra::Base
                 vl << cache["Schuljahr:#{ZEUGNIS_SCHULJAHR}/Halbjahr:#{ZEUGNIS_HALBJAHR}/AB:Angebote/Email:#{email}"]
                 vl.reject! { |x| x.nil? }
                 info["#BemerkungenAngebote"] = vl.size > 0 ? vl.join(" / ") : '--'
+
+                if ZEUGNIS_HALBJAHR == '2'
+                    if zeugnis_key == '5' || zeugnis_key == '7_sesb'
+                        if cache["Schuljahr:#{ZEUGNIS_SCHULJAHR}/Halbjahr:#{ZEUGNIS_HALBJAHR}/AB:Probejahr bestanden/Email:#{email}"] == 'nein'
+                            if zeugnis_key == '5'
+                                info['#Probejahr'] = "#{info['#Vorname']} hat die Probezeit nicht bestanden und besucht im kommenden Schuljahr die Jahrgangsstufe 6 der Primarstufe."
+                            else
+                                info['#Probejahr'] = "#{info['#Vorname']} hat die Probezeit nicht bestanden und besucht im kommenden Schuljahr die Jahrgangsstufe 8 der Integrierten Sekundarschule/Gemeinschaftsschule."
+                            end
+                        else
+                            info['#Probejahr'] = "#{info['#Vorname']} hat die Probezeit bestanden."
+                        end
+                    elsif zeugnis_key == '9' || zeugnis_key == '9_sesb'
+                        if cache["Schuljahr:#{ZEUGNIS_SCHULJAHR}/Halbjahr:#{ZEUGNIS_HALBJAHR}/AB:BBR/Email:#{email}"] == 'nein'
+                            info['#BBR'] = ''
+                        else
+                            info['#BBR'] = "#{info['#Vorname']} hat mit diesem Zeugnis die Berufsbildungsreife erworben."
+                        end
+                    elsif zeugnis_key == '10' || zeugnis_key == '10_sesb'
+                        if cache["Schuljahr:#{ZEUGNIS_SCHULJAHR}/Halbjahr:#{ZEUGNIS_HALBJAHR}/AB:MSA/Email:#{email}"] == 'nein'
+                            info['#MSA'] = ''
+                        else
+                            info['#MSA'] = "#{info['#Vorname']} hat mit diesem Zeugnis den mittleren Schulabschluss erworben. Das Zeugnis berechtigt gemäß § 48 Abs. 3 Sek I-VO zum Übergang in die Qualifikationsphase der gymnasialen Oberstufe."
+                        end
+                    end
+                end
+
                 if DEVELOPMENT
                     STDERR.puts faecher_info.to_yaml
                     STDERR.puts cache.to_yaml
@@ -551,7 +583,7 @@ class Main < Sinatra::Base
                     end
                     doc.gsub!("#{tag}.", value)
                 end
-                # TODO: Fix this
+
                 if ZEUGNIS_HALBJAHR == '2'
                     if cache["Schuljahr:#{ZEUGNIS_SCHULJAHR}/Halbjahr:#{ZEUGNIS_HALBJAHR}/AB:Versetzt/Email:#{email}"] == 'nein'
                         doc.gsub!('<w:strike/></w:rPr><w:t>nicht</w:t>', '</w:rPr><w:t>nicht</w:t>')

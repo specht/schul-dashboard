@@ -1149,7 +1149,21 @@ function load_angebote_bemerkungen_table(container, klasse, edit_noten) {
             break;
         }
     }
-    let items = ['Versetzt', 'Angebote', 'Bemerkungen'];
+    let items = [];
+    if (ZEUGNIS_HALBJAHR === '2') {
+        items.push('Versetzt');
+    }
+    if ((parseInt(klasse) === 5 && !have_sesb) || (parseInt(klasse) === 7 && have_sesb)) {
+        items.push('Probejahr bestanden');
+    }
+    if (parseInt(klasse) === 9) {
+        items.push('BBR');
+    }
+    if (parseInt(klasse) === 10) {
+        items.push('MSA');
+    }
+    items.push('Angebote');
+    items.push('Bemerkungen');
     if (have_sesb)
         items.push('WeitereBemerkungen');
     let emails = liste.schueler.map(function(x) { return x.email; });
@@ -1200,7 +1214,7 @@ function load_angebote_bemerkungen_table(container, klasse, edit_noten) {
                     for (let fi = 0; fi < items.length; fi++) {
                         let item = items[fi];
                         let input = null;
-                        if (item === 'Versetzt') {
+                        if (item === 'Versetzt' || item === 'Probejahr bestanden' || item === 'BBR' || item === 'MSA') {
                             let fach = item;
                             input = $(`<input placeholder='--' class='form-control' style='width: 4em; text-align: center; height: calc(1.5em + 2px);'>`)
                             input.on('dragstart', function(e) { e.preventDefault(); e.stopPropagation(); });
@@ -1323,13 +1337,13 @@ function open_pdf_with_filename(data, filename) {
     }
     let blob = new Blob([bytes], {type: "application/pdf"})
     console.log(blob);
-    // var url = window.URL.createObjectURL(blob);
-    // console.log(url);
-    // window.open(url, '_blank');
-    let a = document.createElement('a');
-    a.href = window.URL.createObjectURL(blob);
-    a.download = filename;
-    a.click();
+    var url = window.URL.createObjectURL(blob);
+    console.log(url);
+    window.open(url, '_blank');
+    // let a = document.createElement('a');
+    // a.href = window.URL.createObjectURL(blob);
+    // a.download = filename;
+    // a.click();
 }
 
 function open_docx(data, name) {

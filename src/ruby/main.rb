@@ -1315,6 +1315,23 @@ class Main < Sinatra::Base
                 }
             end
         end
+        if File.exist?('/internal/projekttage/votes/assign-result.json')
+            assign_results = JSON.parse(File.read('/internal/projekttage/votes/assign-result.json'))
+            users_for_error = {}
+            assign_results['error_for_email'].each_pair do |email, error|
+                users_for_error[error] ||= []
+                users_for_error[error] << email
+            end
+            users_for_error.each_pair do |error, emails|
+                ['', 'eltern.'].each do |prefix|
+                    email = "#{prefix}projekt-abweichung-#{error}@#{MAILING_LIST_DOMAIN}"
+                    @@mailing_lists[email] = {
+                        :label => "Alle Projektteilnehmer:innen mit Abweichung #{error}#{prefix == '' ? '' : ' (Eltern)'}",
+                        :recipients => emails.map { |x|  prefix + x },
+                    }
+                end
+            end
+        end
 
         if DASHBOARD_SERVICE == 'ruby'
             File.open('/internal/mailing_lists.yaml.tmp', 'w') do |f|

@@ -35,6 +35,11 @@ class Script
                 candidates << projekt
             end
         end
+        if candidates.length > 1
+            candidates.select! do |projekt|
+                projekt[:title].downcase == @projekt
+            end
+        end
         assert(candidates.length == 1, "Project not found")
         projekt = candidates[0]
         STDERR.puts "found project #{projekt[:title]}"

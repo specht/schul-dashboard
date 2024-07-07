@@ -1323,11 +1323,16 @@ class Main < Sinatra::Base
                 users_for_error[error] << email
             end
             users_for_error.each_pair do |error, emails|
+                emails_sorted = emails.sort do |a, b|
+                    (@@user_info[a][:last_name] == @@user_info[b][:last_name]) ?
+                    (@@user_info[a][:first_name] <=> @@user_info[b][:first_name]) :
+                    (@@user_info[a][:last_name] <=> @@user_info[b][:last_name])
+                end
                 ['', 'eltern.'].each do |prefix|
                     email = "#{prefix}projekt-abweichung-#{error}@#{MAILING_LIST_DOMAIN}"
                     @@mailing_lists[email] = {
                         :label => "Alle Projektteilnehmer:innen mit Abweichung #{error}#{prefix == '' ? '' : ' (Eltern)'}",
-                        :recipients => emails.map { |x|  prefix + x },
+                        :recipients => emails_sorted.map { |x|  prefix + x },
                     }
                 end
             end

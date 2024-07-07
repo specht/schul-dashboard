@@ -615,6 +615,55 @@ class Main < Sinatra::Base
         end
     end
 
+    def print_free_projekt_spots
+        require_user!
+        StringIO.open do |io|
+            projekt_for_email = {}
+            projekte = {}
+
+            neo4j_query(<<~END_OF_QUERY).each do |row|
+                MATCH (u:User)-[:ASSIGNED_TO]->(p:Projekt)
+                RETURN u.email, p.nr, p;
+            END_OF_QUERY
+                email = row['u.email']
+                projekt_for_email[row['u.email']] = row['p.nr']
+                projekte[row['p.nr']] ||= row['p']
+            end
+
+            sus_for_projekt = {}
+            projekt_for_email.each_pair do |email, nr|
+                sus_for_projekt[nr] ||= []
+                sus_for_projekt[nr] << email
+            end
+
+            io.puts "<h4>Freie Plätze in anderen Projekten</h4>"
+            io.puts "<p>Wenn du lieber in ein anderes Projekt wechseln möchtest, schreib einfach eine E-Mail an <a href='mailto:#{WEBSITE_MAINTAINER_EMAIL}'>#{WEBSITE_MAINTAINER_EMAIL}</a>. Momentan sind noch folgende Plätze frei:</p>"
+            io.puts "<div class='table-responsive' style='max-width: 100%; overflow-x: auto;'>"
+            io.puts "<table class='table table-sm table-striped' style='width: unset;'>"
+            io.puts "<tr>"
+            io.puts "<th>Projekt</th>"
+            io.puts "<th>Klasse</th>"
+            io.puts "<th>Freie Plätze</th>"
+            io.puts "</tr>"
+            projekte.each_pair do |nr, projekt|
+                if sus_for_projekt[nr].size < projekt[:capacity]
+                    io.puts "<tr>"
+                    io.puts "<td>#{projekt[:title]}</td>"
+                    if projekt[:min_klasse] == projekt[:max_klasse]
+                        io.puts "<td>nur #{tr_klasse(projekt[:min_klasse])}. Klasse</td>"
+                    else
+                        io.puts "<td>#{tr_klasse(projekt[:min_klasse])}. – #{tr_klasse(projekt[:max_klasse])}. Klasse</td>"
+                    end
+                    io.puts "<td>#{projekt[:capacity] - sus_for_projekt[nr].size} von #{projekt[:capacity]} frei</td>"
+                    io.puts "</tr>"
+                end
+            end
+            io.puts "</table>"
+            io.puts "</div>"
+            io.string
+        end
+    end
+
     def print_projekttage_assignment_summary
         return '' unless teacher_logged_in?
         color_for_error = ['#4aa03f', '#fad31c', '#f4951b', '#bc2326']

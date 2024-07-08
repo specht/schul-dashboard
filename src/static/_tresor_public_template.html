@@ -1337,13 +1337,13 @@ function open_pdf_with_filename(data, filename) {
     }
     let blob = new Blob([bytes], {type: "application/pdf"})
     console.log(blob);
-    var url = window.URL.createObjectURL(blob);
-    console.log(url);
-    window.open(url, '_blank');
-    // let a = document.createElement('a');
-    // a.href = window.URL.createObjectURL(blob);
-    // a.download = filename;
-    // a.click();
+    // var url = window.URL.createObjectURL(blob);
+    // console.log(url);
+    // window.open(url, '_blank');
+    let a = document.createElement('a');
+    a.href = window.URL.createObjectURL(blob);
+    a.download = filename;
+    a.click();
 }
 
 function open_docx(data, name) {

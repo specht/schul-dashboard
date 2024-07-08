@@ -826,11 +826,14 @@ class Main
                                     if y >= 0
                                         bounding_box([mark_width + x * w, h * (y + 1)], :width => w, :height => h) do
                                             # stroke_bounds
-                                            move_up 0.3.mm
+                                            # move_up 0.3.mm
                                             # Multiplication sign U+00D7
-                                            font('Roboto') do
-                                                text "\u00d7", :size => 10, :valign => :center, :align => :center, :inline_format => true
-                                            end
+                                            # font('Roboto') do
+                                            #     text "\u00d7", :size => 10, :valign => :center, :align => :center, :inline_format => true
+                                            # end
+                                            line_width 0.3.mm
+                                            line [w * 0.5 - 0.8.mm, h * 0.5 - 0.8.mm], [w * 0.5 + 0.8.mm, h * 0.5 + 0.8.mm]
+                                            line [w * 0.5 + 0.8.mm, h * 0.5 - 0.8.mm], [w * 0.5 - 0.8.mm, h * 0.5 + 0.8.mm]
                                         end
                                     end
                                 end

@@ -207,7 +207,6 @@ class Main < Sinatra::Base
         END_OF_QUERY
         if found_entry
             sha1 = Digest::SHA1.hexdigest([today, found_entry].to_json)[0, 16]
-            STDERR.puts sha1
             result = neo4j_query_expect_one(<<~END_OF_QUERY, {:sha1 => sha1, :t0 => Time.now.to_i})
                 MERGE (m:MonitorZeugniskonferenzState {sha1: $sha1})
                 SET m.t0 = $t0
@@ -215,6 +214,33 @@ class Main < Sinatra::Base
                 RETURN m;
             END_OF_QUERY
             self.class.force_reload_monitors()
+            klasse = found_entry[1]
+            if @@zeugnisliste_for_klasse[klasse]
+                lehrer_for_fach = @@zeugnisliste_for_klasse[klasse][:lehrer_for_fach]
+                lehrer_set = Set.new()
+                if lehrer_for_fach
+                    lehrer_for_fach.each_pair do |fach, lehrer_list|
+                        lehrer_list.each do |shorthand|
+                            lehrer_set << @@shorthands[shorthand]
+                        end
+                    end
+                end
+                lehrer_set.each do |email|
+                    telephone_number = neo4j_query_expect_one(<<~END_OF_QUERY, {:email => email})['telephone_number']
+                        MATCH (u:User {email: $email})
+                        RETURN u.telephone_number AS telephone_number;
+                    END_OF_QUERY
+                    if telephone_number
+                        STDERR.puts "telephone_number: #{telephone_number}"
+                        STDERR.puts "deobfuscated: #{telephone_number.deobfuscate(SMS_PHONE_NUMBER_PASSPHRASE)}"
+                        begin
+                            send_sms(telephone_number.deobfuscate(SMS_PHONE_NUMBER_PASSPHRASE), "Die Zensurenkonferenz der Klasse #{klasse} beginnt jetzt.")
+                        rescue
+                            STDERR.puts "Failed to send SMS to #{telephone_number}"
+                        end
+                    end
+                end
+            end
         end
         respond()
     end

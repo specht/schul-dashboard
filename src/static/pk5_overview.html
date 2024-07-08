@@ -3,7 +3,7 @@
     <div class='row'>
         <div class='col-md-12'>
             <h2 style='margin-bottom: 30px;'>5. Prüfungskomponente im Abitur</h2>
-            #{print_pk5_overview}
+            <div id="table_here"></div>
         </div>
     </div>
 </div>
@@ -22,12 +22,43 @@
 
 <script>
 window.addEventListener('load', function() {
-    $('tbody tr').on('click', function(e) {
-        let row = $(e.target).closest('tr')[0];
-        console.log(row);
-        let email = $(row).data('email');
-        console.log(email);
-        window.location.href = `/pk5/${email}`;
+    api_call('/api/pk5_overview', {}, function(data) {
+        if (data.success) {
+            let table = new SortableTable({
+                element: $('#table_here'),
+                xs: true,
+                headers: ['Prüfungskandidat:innen', 'Themengebiet', 'Referenzfach', 'Lehrkraft', 'fächerübergreifender Aspekt', 'Lehrkraft (FA)'].map(function (x) {
+                        let th = $('<th>').html(x.replace(' (FA)', ''));
+                        return th;
+                }),
+                rows: data.rows.map(function (entry, index) {
+                    console.log(entry.pk5.sus);
+                    let cells = [
+                        entry.email,
+                        `<td>${entry.sus}</td>`,
+                        `<td style='max-width: 20em;'>${entry.pk5.themengebiet ?? '&ndash;'}</td>`,
+                        `<td>${entry.pk5.referenzfach ?? '&ndash;'}</td>`,
+                        `<td data-sort_value='${entry.pk5.betreuende_lehrkraft ?? ''}'>${entry.betreuende_lehrkraft ?? '&ndash;'}</td>`,
+                        `<td>&ndash;</td>`,
+                        `<td>&ndash;</td>`,
+                    ];
+                    return cells;
+                }),
+                sortable: true,
+                clickable_rows: true,
+                clickable_row_callback: function(email) {
+                    window.location.href = `/pk5/${email}`;
+                }
+            });
+        }
     });
+
+    // $('tbody tr').on('click', function(e) {
+    //     let row = $(e.target).closest('tr')[0];
+    //     console.log(row);
+    //     let email = $(row).data('email');
+    //     console.log(email);
+    //     window.location.href = `/pk5/${email}`;
+    // });
 });
 </script>

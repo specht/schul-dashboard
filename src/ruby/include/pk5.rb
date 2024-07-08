@@ -193,23 +193,23 @@ class Main < Sinatra::Base
         respond(:yay => 'sure', :result => get_my_pk5(sus_email))
     end
 
-    def print_pk5_overview
+    post '/api/pk5_overview' do
         require_teacher!
-        StringIO.open do |io|
-            io.puts "<div style='max-width: 100%; overflow-x: auto;'>"
-            io.puts "<table class='table table-condensed table-striped narrow' style='width: unset; min-width: 100%;'>"
-            io.puts "<thead>"
-            io.puts "<tr>"
-            io.puts "<th>Prüfungskandidat:innen</th>"
-            io.puts "<th>Themengebiet</th>"
-            io.puts "<th>Referenzfach</th>"
-            io.puts "<th>Lehrkraft</th>"
-            io.puts "<th>fächerübergreifender Aspekt</th>"
-            io.puts "<th>Lehrkraft</th>"
-            # io.puts "<th>Fragestellung</th>"
-            io.puts "</tr>"
-            io.puts "</thead>"
-            io.puts "<tbody>"
+        # StringIO.open do |io|
+        #     io.puts "<div style='max-width: 100%; overflow-x: auto;'>"
+        #     io.puts "<table class='table table-condensed table-striped narrow' style='width: unset; min-width: 100%;'>"
+        #     io.puts "<thead>"
+        #     io.puts "<tr>"
+        #     io.puts "<th>Prüfungskandidat:innen</th>"
+        #     io.puts "<th>Themengebiet</th>"
+        #     io.puts "<th>Referenzfach</th>"
+        #     io.puts "<th>Lehrkraft</th>"
+        #     io.puts "<th>fächerübergreifender Aspekt</th>"
+        #     io.puts "<th>Lehrkraft</th>"
+        #     # io.puts "<th>Fragestellung</th>"
+        #     io.puts "</tr>"
+        #     io.puts "</thead>"
+        #     io.puts "<tbody>"
             seen_sus = Set.new()
             pk5_hash = {}
             pk5_by_email = {}
@@ -240,35 +240,57 @@ class Main < Sinatra::Base
                     end
                 end
                 pk5 ||= {}
-                row_s = StringIO.open do |io2|
-                    io2.puts "<tr data-email='#{email}'>"
-                    io2.puts "<td>#{(pk5[:sus] || [email]).map { |x| @@user_info[x][:display_name]}.join(', ')}</td>"
-                    io2.puts "<td style='max-width: 20em;'>#{CGI.escapeHTML(pk5[:themengebiet] || '–')}</td>"
-                    io2.puts "<td>#{CGI.escapeHTML(pk5[:referenzfach] || '–')}</td>"
-                    if pk5[:betreuende_lehrkraft] == @session_user[:email]
-                        if pk5[:betreuende_lehrkraft_confirmed_by] != @session_user[:email]
-                            if $pk5.get_current_phase >= 2
-                                io2.puts "<td><i class='fa fa-clock-o'></i>&nbsp;&nbsp;<span class='hl'>#{CGI.escapeHTML(((@@user_info[pk5[:betreuende_lehrkraft]] || {})[:display_name_official]) || '–')}</span> <em>Anfrage erhalten &ndash; bitte bestätigen oder ablehnen</em></td>"
+                # row_s = StringIO.open do |io2|
+                #     io2.puts "<tr data-email='#{email}'>"
+                #     io2.puts "<td>#{(pk5[:sus] || [email]).map { |x| @@user_info[x][:display_name]}.join(', ')}</td>"
+                #     io2.puts "<td style='max-width: 20em;'>#{CGI.escapeHTML(pk5[:themengebiet] || '–')}</td>"
+                #     io2.puts "<td>#{CGI.escapeHTML(pk5[:referenzfach] || '–')}</td>"
+                #     if pk5[:betreuende_lehrkraft] == @session_user[:email]
+                #         if pk5[:betreuende_lehrkraft_confirmed_by] != @session_user[:email]
+                #             if $pk5.get_current_phase >= 2
+                #                 io2.puts "<td><i class='fa fa-clock-o'></i>&nbsp;&nbsp;<span class='hl'>#{CGI.escapeHTML(((@@user_info[pk5[:betreuende_lehrkraft]] || {})[:display_name_official]) || '–')}</span> <em>Anfrage erhalten &ndash; bitte bestätigen oder ablehnen</em></td>"
+                #             else
+                #                 io2.puts "<td><i class='fa fa-clock-o'></i>&nbsp;&nbsp;#{CGI.escapeHTML(((@@user_info[pk5[:betreuende_lehrkraft]] || {})[:display_name_official]) || '–')}</td>"
+                #             end
+                #         else
+                #             io2.puts "<td>#{CGI.escapeHTML(((@@user_info[pk5[:betreuende_lehrkraft]] || {})[:display_name_official]) || '–')}</td>"
+                #         end
+                #     else
+                #         if pk5[:betreuende_lehrkraft_confirmed_by] != pk5[:betreuende_lehrkraft]
+                #             io2.puts "<td><i class='fa fa-clock-o'></i>&nbsp;&nbsp;#{CGI.escapeHTML(((@@user_info[pk5[:betreuende_lehrkraft]] || {})[:display_name_official]) || '–')}</td>"
+                #         else
+                #             io2.puts "<td>#{CGI.escapeHTML(((@@user_info[pk5[:betreuende_lehrkraft]] || {})[:display_name_official]) || '–')}</td>"
+                #         end
+                #     end
+                #     io2.puts "<td style='max-width: 20em;'>#{CGI.escapeHTML(pk5[:fas] || '–')}</td>"
+                #     io2.puts "<td>#{CGI.escapeHTML(((@@user_info[pk5[:betreuende_lehrkraft_fas]] || {})[:display_name_official]) || '–')}</td>"
+                #     # io2.puts "<td>#{CGI.escapeHTML(pk5[:fragestellung] || '–')}</td>"
+                #     io2.puts "</tr>"
+                #     io2.string
+                # end
+                rows << {
+                    :email => email,
+                    :pk5 => pk5,
+                    :sus_index => sus_index,
+                    :sus => (pk5[:sus] || [email]).map { |x| @@user_info[x][:last_name] + ', ' + @@user_info[x][:first_name]}.join(' / '),
+                    :betreuende_lehrkraft => if pk5[:betreuende_lehrkraft] == @session_user[:email]
+                            if pk5[:betreuende_lehrkraft_confirmed_by] != @session_user[:email]
+                                if $pk5.get_current_phase >= 2
+                                    "<i class='fa fa-clock-o'></i>&nbsp;&nbsp;<span class='hl'>#{CGI.escapeHTML(((@@user_info[pk5[:betreuende_lehrkraft]] || {})[:display_name_official]) || '–')}</span> <em>Anfrage erhalten &ndash; bitte bestätigen oder ablehnen</em>"
+                                else
+                                    "<i class='fa fa-clock-o'></i>&nbsp;&nbsp;#{CGI.escapeHTML(((@@user_info[pk5[:betreuende_lehrkraft]] || {})[:display_name_official]) || '–')}"
+                                end
                             else
-                                io2.puts "<td><i class='fa fa-clock-o'></i>&nbsp;&nbsp;#{CGI.escapeHTML(((@@user_info[pk5[:betreuende_lehrkraft]] || {})[:display_name_official]) || '–')}</td>"
+                                "#{CGI.escapeHTML(((@@user_info[pk5[:betreuende_lehrkraft]] || {})[:display_name_official]) || '–')}"
                             end
                         else
-                            io2.puts "<td>#{CGI.escapeHTML(((@@user_info[pk5[:betreuende_lehrkraft]] || {})[:display_name_official]) || '–')}</td>"
+                            if pk5[:betreuende_lehrkraft_confirmed_by] != pk5[:betreuende_lehrkraft]
+                                "<i class='fa fa-clock-o'></i>&nbsp;&nbsp;#{CGI.escapeHTML(((@@user_info[pk5[:betreuende_lehrkraft]] || {})[:display_name_official]) || '–')}"
+                            else
+                                "#{CGI.escapeHTML(((@@user_info[pk5[:betreuende_lehrkraft]] || {})[:display_name_official]) || '–')}"
+                            end
                         end
-                    else
-                        if pk5[:betreuende_lehrkraft_confirmed_by] != pk5[:betreuende_lehrkraft]
-                            io2.puts "<td><i class='fa fa-clock-o'></i>&nbsp;&nbsp;#{CGI.escapeHTML(((@@user_info[pk5[:betreuende_lehrkraft]] || {})[:display_name_official]) || '–')}</td>"
-                        else
-                            io2.puts "<td>#{CGI.escapeHTML(((@@user_info[pk5[:betreuende_lehrkraft]] || {})[:display_name_official]) || '–')}</td>"
-                        end
-                    end
-                    io2.puts "<td style='max-width: 20em;'>#{CGI.escapeHTML(pk5[:fas] || '–')}</td>"
-                    io2.puts "<td>#{CGI.escapeHTML(((@@user_info[pk5[:betreuende_lehrkraft_fas]] || {})[:display_name_official]) || '–')}</td>"
-                    # io2.puts "<td>#{CGI.escapeHTML(pk5[:fragestellung] || '–')}</td>"
-                    io2.puts "</tr>"
-                    io2.string
-                end
-                rows << {:html => row_s, :email => email, :pk5 => pk5, :sus_index => sus_index}
+                }
             end
             rows.sort! do |a, b|
                 a_primary = a[:pk5][:betreuende_lehrkraft] == @session_user[:email]
@@ -279,14 +301,15 @@ class Main < Sinatra::Base
                 b_sus_index = b[:sus_index]
                 (a_primary == b_primary) ? (a_secondary == b_secondary ? (a_sus_index <=> b_sus_index) : (a_secondary ? -1 : 1)) : (a_primary ? -1 : 1)
             end
-            rows.each do |row|
-                io.puts row[:html]
-            end
-            io.puts "</tbody>"
-            io.puts "</table>"
-            io.puts "</div>"
-            io.string
-        end
+            # rows.each do |row|
+            #     io.puts row[:html]
+            # end
+            # io.puts "</tbody>"
+            # io.puts "</table>"
+            # io.puts "</div>"
+            # io.string
+        # end
+        respond(:rows => rows)
     end
 
     post '/api/send_invitation_for_pk5' do

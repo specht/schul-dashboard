@@ -637,7 +637,7 @@ class Main < Sinatra::Base
             end
 
             io.puts "<h4>Freie Plätze in anderen Projekten</h4>"
-            io.puts "<p>Wenn du lieber in ein anderes Projekt wechseln möchtest, schreib einfach eine E-Mail an <a href='mailto:#{WEBSITE_MAINTAINER_EMAIL}'>#{WEBSITE_MAINTAINER_EMAIL}</a>. Momentan sind noch folgende Plätze frei:</p>"
+            io.puts "<p>Wenn du lieber in ein anderes Projekt wechseln möchtest, schreib einfach eine E-Mail bis <strong>Mittwoch, den 10. Juli um 16:00 Uhr</strong> an <a href='mailto:#{WEBSITE_MAINTAINER_EMAIL}'>#{WEBSITE_MAINTAINER_EMAIL}</a>. Momentan sind noch folgende Plätze frei:</p>"
             io.puts "<div class='table-responsive' style='max-width: 100%; overflow-x: auto;'>"
             io.puts "<table class='table table-sm table-striped' style='width: unset;'>"
             io.puts "<tr>"

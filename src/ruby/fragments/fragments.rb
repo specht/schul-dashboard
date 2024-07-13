@@ -1924,7 +1924,7 @@ class Main
                             move_down 2.cm
                             text "<b>#{@@user_info[email][:display_name]}</b>", :align => :center, :size => 18, :inline_format => true
                             move_down 1.cm
-                            text <<~END_OF_STRING.gsub("\n", ' ').gsub(/\s+/, ' '), :size => 18, :inline_format => true, :align => :justify
+                            text <<~END_OF_STRING.gsub("\n", ' ').gsub(/\s+/, ' '), :size => 18, :inline_format => true, :align => :center
                                 engagierte sich im Schuljahr #{ZEUGNIS_SCHULJAHR.sub('_', '/')} im besonderen Maße
                                 für die Schulgemeinschaft. Mit der selbstständigen Entwicklung, Planung und
                                 Durchführung des Projekts
@@ -1933,13 +1933,13 @@ class Main
                             move_down 1.cm
                             text "<b>#{projekt[:title]}</b>", :align => :center, :size => 18, :inline_format => true
                             move_down 1.cm
-                            text <<~END_OF_STRING.gsub("\n", ' ').gsub(/\s+/, ' '), :size => 18, :inline_format => true, :align => :justify
-                                für Schüler:innen der Mittelstufe, bereicherte #{@@user_info[email][:geschlecht] == 'm' ? 'er' : 'sie'}
+                            text <<~END_OF_STRING.gsub("\n", ' ').gsub(/\s+/, ' '), :size => 18, :inline_format => true, :align => :center
+                                für Schüler:innen der Mittelstufe bereicherte #{@@user_info[email][:geschlecht] == 'm' ? 'er' : 'sie'}
                                 das Schulleben und förderte die persönliche Entwicklung #{@@user_info[email][:geschlecht] == 'm' ? 'seiner' : 'ihrer'} Mitschüler:innen.
                             END_OF_STRING
                             move_down 3.mm
-                            text <<~END_OF_STRING.gsub("\n", ' ').gsub(/\s+/, ' '), :size => 18, :inline_format => true, :align => :left
-                                Wir bedanken uns herzlich für die wertvolle Zusammenarbeit!
+                            text <<~END_OF_STRING.gsub("\n", ' ').gsub(/\s+/, ' '), :size => 18, :inline_format => true, :align => :center
+                                Wir bedanken uns herzlich für die wertvolle Zusammenarbeit.
                             END_OF_STRING
 
                             stroke_color "000000"

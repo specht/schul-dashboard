@@ -1949,11 +1949,11 @@ class Main
                             stroke
                             bounding_box([10.mm, 20.mm], :width => 60.mm, :height => 10.mm) do
                                 move_down 2.mm
-                                text "Schulleitung", :size => 12, :align => :center
+                                text "Schulleitung", :size => 12, :align => :left
                             end
                             bounding_box([100.mm, 20.mm], :width => 60.mm, :height => 10.mm) do
                                 move_down 2.mm
-                                text "betreuende Lehrkraft", :size => 12, :align => :center
+                                text "betreuende Lehrkraft", :size => 12, :align => :left
                             end
                         end
                     end

@@ -823,4 +823,9 @@ class Main < Sinatra::Base
         # STDERR.puts "Assigned #{result[:project_for_email].size} of #{emails.size} users."
         result
     end
+
+    get '/api/print_project_urkunden' do
+        require_user_with_role!(:admin)
+        respond_raw_with_mimetype(Main.print_project_urkunden(), 'application/pdf')
+    end
 end

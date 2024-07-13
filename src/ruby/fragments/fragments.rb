@@ -1859,4 +1859,107 @@ class Main
         end
     end
 
+    def self.print_project_urkunden()
+        # Get projects
+        projekte = {}
+        emails_for_project = {}
+        $neo4j.neo4j_query(<<~END_OF_QUERY).each do |row|
+            MATCH (p:Projekt)-[:ORGANIZED_BY]->(u:User)
+            RETURN p, u;
+        END_OF_QUERY
+            p = row['p']
+            u = row['u']
+            projekte[p[:nr]] ||= {
+                :nr => p[:nr],
+                :title => p[:title],
+                :min_klasse => p[:min_klasse],
+                :max_klasse => p[:max_klasse],
+                :capacity => p[:capacity],
+            }
+            emails_for_project[p[:nr]] ||= []
+            emails_for_project[p[:nr]] << u[:email]
+        end
+
+        projekte_list = []
+        projekte.each_pair do |nr, p|
+            projekte_list << p
+        end
+
+        projekte_list.sort! do |a, b|
+            (a[:nr].to_i == b[:nr].to_i) ?
+            (a[:nr] <=> b[:nr]) :
+            (a[:nr].to_i <=> b[:nr].to_i)
+        end
+        doc = Prawn::Document.new(:page_size => 'A4', :page_layout => :portrait, :margin => 0) do
+            font_families.update("RobotoCondensed" => {
+                :normal => "/app/fonts/RobotoCondensed-Regular.ttf",
+                :italic => "/app/fonts/RobotoCondensed-Italic.ttf",
+                :bold => "/app/fonts/RobotoCondensed-Bold.ttf",
+                :bold_italic => "/app/fonts/RobotoCondensed-BoldItalic.ttf"
+            })
+            font_families.update("Roboto" => {
+                :normal => "/app/fonts/Roboto-Regular.ttf",
+                :italic => "/app/fonts/Roboto-Italic.ttf",
+                :bold => "/app/fonts/Roboto-Bold.ttf",
+                :bold_italic => "/app/fonts/Roboto-BoldItalic.ttf"
+            })
+            font_families.update("AlegreyaSans" => {
+                :normal => "/app/fonts/AlegreyaSans-Regular.ttf",
+                :italic => "/app/fonts/AlegreyaSans-Italic.ttf",
+                :bold => "/app/fonts/AlegreyaSans-Bold.ttf",
+                :bold_italic => "/app/fonts/AlegreyaSans-BoldItalic.ttf"
+            })
+            first_page = true
+            projekte_list.each do |projekt|
+                next if (projekt[:capacity] || 0) <= 0
+                emails_for_project[projekt[:nr]].each do |email|
+                    start_new_page unless first_page
+                    first_page = false
+                    image "/app/images/gyst.png", :at => [20.mm, 277.mm], :height => 3.cm
+                    image "/app/images/sesb.png", :at => [165.mm, 277.mm], :height => 3.cm
+                    move_down 6.cm
+                    bounding_box([20.mm, 227.mm], :width => 170.mm, :height => 207.mm) do
+                        font('AlegreyaSans') do
+                            text "<b>Auszeichnung für besonderes soziales Engagement am Gymnasium Steglitz</b>", :align => :center, :size => 28, :inline_format => true
+                            move_down 2.cm
+                            text "<b>#{@@user_info[email][:display_name]}</b>", :align => :center, :size => 18, :inline_format => true
+                            move_down 1.cm
+                            text <<~END_OF_STRING.gsub("\n", ' ').gsub(/\s+/, ' '), :size => 18, :inline_format => true
+                                engagierte sich im Schuljahr #{ZEUGNIS_SCHULJAHR.sub('_', '/')} im besonderen Maße
+                                für die Schulgemeinschaft. Mit der selbstständigen Entwicklung, Planung und
+                                Durchführung des Projekts
+                            END_OF_STRING
+
+                            move_down 1.cm
+                            text "<b>#{projekt[:title]}</b>", :align => :center, :size => 18, :inline_format => true
+                            move_down 1.cm
+                            text <<~END_OF_STRING.gsub("\n", ' ').gsub(/\s+/, ' '), :size => 18, :inline_format => true
+                                für Schüler:innen der Mittelstufe, bereicherte #{@@user_info[email][:geschlecht] == 'm' ? 'er' : 'sie'}
+                                das Schulleben und förderte die persönliche Entwicklung #{@@user_info[email][:geschlecht] == 'm' ? 'seiner' : 'ihrer'} Mitschüler:innen.
+                            END_OF_STRING
+                            move_down 3.mm
+                            text <<~END_OF_STRING.gsub("\n", ' ').gsub(/\s+/, ' '), :size => 18, :inline_format => true
+                                Wir bedanken uns herzlich für die wertvolle Zusammenarbeit!
+                            END_OF_STRING
+
+                            stroke_color "000000"
+                            line_width 0.1.mm
+                            line [10.mm, 20.mm], [70.mm, 20.mm]
+                            line [100.mm, 20.mm], [160.mm, 20.mm]
+                            stroke
+                            bounding_box([10.mm, 20.mm], :width => 60.mm, :height => 10.mm) do
+                                move_down 2.mm
+                                text "Schulleitung", :size => 12, :align => :center
+                            end
+                            bounding_box([100.mm, 20.mm], :width => 60.mm, :height => 10.mm) do
+                                move_down 2.mm
+                                text "betreuende Lehrkraft", :size => 12, :align => :center
+                            end
+                        end
+                    end
+                end
+            end
+        end
+        return doc.render
+    end
 end

@@ -1924,7 +1924,7 @@ class Main
                             move_down 2.cm
                             text "<b>#{@@user_info[email][:display_name]}</b>", :align => :center, :size => 18, :inline_format => true
                             move_down 1.cm
-                            text <<~END_OF_STRING.gsub("\n", ' ').gsub(/\s+/, ' '), :size => 18, :inline_format => true
+                            text <<~END_OF_STRING.gsub("\n", ' ').gsub(/\s+/, ' '), :size => 18, :inline_format => true, :align => :justify
                                 engagierte sich im Schuljahr #{ZEUGNIS_SCHULJAHR.sub('_', '/')} im besonderen Maße
                                 für die Schulgemeinschaft. Mit der selbstständigen Entwicklung, Planung und
                                 Durchführung des Projekts
@@ -1933,12 +1933,12 @@ class Main
                             move_down 1.cm
                             text "<b>#{projekt[:title]}</b>", :align => :center, :size => 18, :inline_format => true
                             move_down 1.cm
-                            text <<~END_OF_STRING.gsub("\n", ' ').gsub(/\s+/, ' '), :size => 18, :inline_format => true
+                            text <<~END_OF_STRING.gsub("\n", ' ').gsub(/\s+/, ' '), :size => 18, :inline_format => true, :align => :justify
                                 für Schüler:innen der Mittelstufe, bereicherte #{@@user_info[email][:geschlecht] == 'm' ? 'er' : 'sie'}
                                 das Schulleben und förderte die persönliche Entwicklung #{@@user_info[email][:geschlecht] == 'm' ? 'seiner' : 'ihrer'} Mitschüler:innen.
                             END_OF_STRING
                             move_down 3.mm
-                            text <<~END_OF_STRING.gsub("\n", ' ').gsub(/\s+/, ' '), :size => 18, :inline_format => true
+                            text <<~END_OF_STRING.gsub("\n", ' ').gsub(/\s+/, ' '), :size => 18, :inline_format => true, :align => :left
                                 Wir bedanken uns herzlich für die wertvolle Zusammenarbeit!
                             END_OF_STRING
 
@@ -1949,11 +1949,11 @@ class Main
                             stroke
                             bounding_box([10.mm, 20.mm], :width => 60.mm, :height => 10.mm) do
                                 move_down 2.mm
-                                text "Schulleitung", :size => 12, :align => :center
+                                text "Schulleitung", :size => 12, :align => :right
                             end
                             bounding_box([100.mm, 20.mm], :width => 60.mm, :height => 10.mm) do
                                 move_down 2.mm
-                                text "betreuende Lehrkraft", :size => 12, :align => :center
+                                text "betreuende Lehrkraft", :size => 12, :align => :right
                             end
                         end
                     end

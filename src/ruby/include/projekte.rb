@@ -825,7 +825,7 @@ class Main < Sinatra::Base
     end
 
     get '/api/print_project_urkunden' do
-        require_user_with_role!(:admin)
+        require_teacher!
         respond_raw_with_mimetype(Main.print_project_urkunden(), 'application/pdf')
     end
 end

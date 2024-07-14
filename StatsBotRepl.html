@@ -1,0 +1,687 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>
+  Class: StatsBotRepl
+  
+    &mdash; Documentation by YARD 0.9.26
+  
+</title>
+
+  <link rel="stylesheet" href="css/style.css" type="text/css" />
+
+  <link rel="stylesheet" href="css/common.css" type="text/css" />
+
+<script type="text/javascript">
+  pathId = "StatsBotRepl";
+  relpath = '';
+</script>
+
+
+  <script type="text/javascript" charset="utf-8" src="js/jquery.js"></script>
+
+  <script type="text/javascript" charset="utf-8" src="js/app.js"></script>
+
+
+  </head>
+  <body>
+    <div class="nav_wrap">
+      <iframe id="nav" src="class_list.html?1"></iframe>
+      <div id="resizer"></div>
+    </div>
+
+    <div id="main" tabindex="-1">
+      <div id="header">
+        <div id="menu">
+  
+    <a href="_index.html">Index (S)</a> &raquo;
+    
+    
+    <span class="title">StatsBotRepl</span>
+  
+</div>
+
+        <div id="search">
+  
+    <a class="full_list_link" id="class_list_link"
+        href="class_list.html">
+
+        <svg width="24" height="24">
+          <rect x="0" y="4" width="24" height="4" rx="1" ry="1"></rect>
+          <rect x="0" y="12" width="24" height="4" rx="1" ry="1"></rect>
+          <rect x="0" y="20" width="24" height="4" rx="1" ry="1"></rect>
+        </svg>
+    </a>
+  
+</div>
+        <div class="clear"></div>
+      </div>
+
+      <div id="content"><h1>Class: StatsBotRepl
+  
+  
+  
+</h1>
+<div class="box_info">
+  
+  <dl>
+    <dt>Inherits:</dt>
+    <dd>
+      <span class="inheritName">Sinatra::Base</span>
+      
+        <ul class="fullTree">
+          <li>Object</li>
+          
+            <li class="next">Sinatra::Base</li>
+          
+            <li class="next">StatsBotRepl</li>
+          
+        </ul>
+        <a href="#" class="inheritanceTree">show all</a>
+      
+    </dd>
+  </dl>
+  
+
+  
+  
+  
+  
+  
+
+  
+
+  
+  <dl>
+    <dt>Defined in:</dt>
+    <dd>src/ruby/stats-bot-repl.rb</dd>
+  </dl>
+  
+</div>
+
+
+
+
+
+
+
+
+  
+    <h2>
+      Class Method Summary
+      <small><a href="#" class="summary_toggle">collapse</a></small>
+    </h2>
+
+    <ul class="summary">
+      
+        <li class="public ">
+  <span class="summary_signature">
+    
+      <a href="#perform_update-class_method" title="perform_update (class method)">.<strong>perform_update</strong>(which)  &#x21d2; Object </a>
+    
+
+    
+  </span>
+  
+  
+  
+  
+  
+  
+  
+
+  
+    <span class="summary_desc"><div class='inline'></div></span>
+  
+</li>
+
+      
+        <li class="public ">
+  <span class="summary_signature">
+    
+      <a href="#update_projektwahl-class_method" title="update_projektwahl (class method)">.<strong>update_projektwahl</strong>  &#x21d2; Object </a>
+    
+
+    
+  </span>
+  
+  
+  
+  
+  
+  
+  
+
+  
+    <span class="summary_desc"><div class='inline'></div></span>
+  
+</li>
+
+      
+    </ul>
+  
+
+
+  
+
+  <div id="class_method_details" class="method_details_list">
+    <h2>Class Method Details</h2>
+
+    
+      <div class="method_details first">
+  <h3 class="signature first" id="perform_update-class_method">
+  
+    .<strong>perform_update</strong>(which)  &#x21d2; <tt>Object</tt> 
+  
+
+  
+
+  
+</h3><table class="source_code">
+  <tr>
+    <td>
+      <pre class="lines">
+
+
+239
+240
+241
+242
+243
+244
+245
+246
+247
+248</pre>
+    </td>
+    <td>
+      <pre class="code"><span class="info file"># File 'src/ruby/stats-bot-repl.rb', line 239</span>
+
+<span class='kw'>def</span> <span class='kw'>self</span><span class='period'>.</span><span class='id identifier rubyid_perform_update'>perform_update</span><span class='lparen'>(</span><span class='id identifier rubyid_which'>which</span><span class='rparen'>)</span>
+    <span class='id identifier rubyid_start_time'>start_time</span> <span class='op'>=</span> <span class='const'>Time</span><span class='period'>.</span><span class='id identifier rubyid_now'>now</span>
+    <span class='const'>STDERR</span><span class='period'>.</span><span class='id identifier rubyid_puts'>puts</span> <span class='tstring'><span class='tstring_beg'>&quot;</span><span class='tstring_content'>&gt;&gt;&gt; Refreshing stats!</span><span class='tstring_end'>&quot;</span></span>
+    <span class='kw'>if</span> <span class='id identifier rubyid_which'>which</span> <span class='op'>==</span> <span class='symbol'>:projektwahl</span> <span class='op'>||</span> <span class='id identifier rubyid_which'>which</span> <span class='op'>==</span> <span class='symbol'>:all</span>
+        <span class='id identifier rubyid_update_projektwahl'>update_projektwahl</span><span class='lparen'>(</span><span class='rparen'>)</span>
+    <span class='kw'>end</span>
+    <span class='id identifier rubyid_end_time'>end_time</span> <span class='op'>=</span> <span class='const'>Time</span><span class='period'>.</span><span class='id identifier rubyid_now'>now</span>
+    <span class='const'>STDERR</span><span class='period'>.</span><span class='id identifier rubyid_puts'>puts</span> <span class='id identifier rubyid_sprintf'>sprintf</span><span class='lparen'>(</span><span class='tstring'><span class='tstring_beg'>&quot;</span><span class='tstring_content'>&lt;&lt;&lt; Finished refreshing stats in %1.2f seconds.</span><span class='tstring_end'>&quot;</span></span><span class='comma'>,</span> <span class='lparen'>(</span><span class='id identifier rubyid_end_time'>end_time</span> <span class='op'>-</span> <span class='id identifier rubyid_start_time'>start_time</span><span class='rparen'>)</span><span class='period'>.</span><span class='id identifier rubyid_to_f'>to_f</span><span class='rparen'>)</span>
+    <span class='const'>STDERR</span><span class='period'>.</span><span class='id identifier rubyid_puts'>puts</span> <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>-</span><span class='tstring_end'>&#39;</span></span> <span class='op'>*</span> <span class='int'>59</span>
+<span class='kw'>end</span></pre>
+    </td>
+  </tr>
+</table>
+</div>
+    
+      <div class="method_details ">
+  <h3 class="signature " id="update_projektwahl-class_method">
+  
+    .<strong>update_projektwahl</strong>  &#x21d2; <tt>Object</tt> 
+  
+
+  
+
+  
+</h3><table class="source_code">
+  <tr>
+    <td>
+      <pre class="lines">
+
+
+21
+22
+23
+24
+25
+26
+27
+28
+29
+30
+31
+32
+33
+34
+35
+36
+37
+38
+39
+40
+41
+42
+43
+44
+45
+46
+47
+48
+49
+50
+51
+52
+53
+54
+55
+56
+57
+58
+59
+60
+61
+62
+63
+64
+65
+66
+67
+68
+69
+70
+71
+72
+73
+74
+75
+76
+77
+78
+79
+80
+81
+82
+83
+84
+85
+86
+87
+88
+89
+90
+91
+92
+93
+94
+95
+96
+97
+98
+99
+100
+101
+102
+103
+104
+105
+106
+107
+108
+109
+110
+111
+112
+113
+114
+115
+116
+117
+118
+119
+120
+121
+122
+123
+124
+125
+126
+127
+128
+129
+130
+131
+132
+133
+134
+135
+136
+137
+138
+139
+140
+141
+142
+143
+144
+145
+146
+147
+148
+149
+150
+151
+152
+153
+154
+155
+156
+157
+158
+159
+160
+161
+162
+163
+164
+165
+166
+167
+168
+169
+170
+171
+172
+173
+174
+175
+176
+177
+178
+179
+180
+181
+182
+183
+184
+185
+186
+187
+188
+189
+190
+191
+192
+193
+194
+195
+196
+197
+198
+199
+200
+201
+202
+203
+204
+205
+206
+207
+208
+209
+210
+211
+212
+213
+214
+215
+216
+217
+218
+219
+220
+221
+222
+223
+224
+225
+226
+227
+228
+229
+230
+231
+232
+233
+234
+235
+236
+237</pre>
+    </td>
+    <td>
+      <pre class="code"><span class="info file"># File 'src/ruby/stats-bot-repl.rb', line 21</span>
+
+<span class='kw'>def</span> <span class='kw'>self</span><span class='period'>.</span><span class='id identifier rubyid_update_projektwahl'>update_projektwahl</span><span class='lparen'>(</span><span class='rparen'>)</span>
+    <span class='id identifier rubyid_emails'>emails</span> <span class='op'>=</span> <span class='cvar'>@@user_info</span><span class='period'>.</span><span class='id identifier rubyid_keys'>keys</span><span class='period'>.</span><span class='id identifier rubyid_select'>select</span> <span class='kw'>do</span> <span class='op'>|</span><span class='id identifier rubyid_email'>email</span><span class='op'>|</span>
+        <span class='kw'>if</span> <span class='cvar'>@@user_info</span><span class='lbracket'>[</span><span class='id identifier rubyid_email'>email</span><span class='rbracket'>]</span><span class='lbracket'>[</span><span class='symbol'>:roles</span><span class='rbracket'>]</span><span class='period'>.</span><span class='id identifier rubyid_include?'>include?</span><span class='lparen'>(</span><span class='symbol'>:schueler</span><span class='rparen'>)</span>
+            <span class='id identifier rubyid_klassenstufe'>klassenstufe</span> <span class='op'>=</span> <span class='cvar'>@@user_info</span><span class='lbracket'>[</span><span class='id identifier rubyid_email'>email</span><span class='rbracket'>]</span><span class='lbracket'>[</span><span class='symbol'>:klassenstufe</span><span class='rbracket'>]</span> <span class='op'>||</span> <span class='int'>7</span>
+            <span class='id identifier rubyid_klassenstufe'>klassenstufe</span> <span class='op'>&gt;=</span> <span class='int'>5</span> <span class='op'>&amp;&amp;</span> <span class='id identifier rubyid_klassenstufe'>klassenstufe</span> <span class='op'>&lt;=</span> <span class='int'>9</span>
+        <span class='kw'>else</span>
+            <span class='kw'>false</span>
+        <span class='kw'>end</span>
+    <span class='kw'>end</span>
+    <span class='id identifier rubyid_users'>users</span> <span class='op'>=</span> <span class='lbrace'>{</span><span class='rbrace'>}</span>
+    <span class='id identifier rubyid_emails'>emails</span><span class='period'>.</span><span class='id identifier rubyid_each'>each</span> <span class='kw'>do</span> <span class='op'>|</span><span class='id identifier rubyid_email'>email</span><span class='op'>|</span>
+        <span class='id identifier rubyid_users'>users</span><span class='lbracket'>[</span><span class='id identifier rubyid_email'>email</span><span class='rbracket'>]</span> <span class='op'>||=</span> <span class='lbrace'>{</span>
+            <span class='symbol'>:votes</span> <span class='op'>=&gt;</span> <span class='lbracket'>[</span><span class='rbracket'>]</span><span class='comma'>,</span>
+            <span class='symbol'>:vote_hash</span> <span class='op'>=&gt;</span> <span class='lbrace'>{</span><span class='rbrace'>}</span><span class='comma'>,</span>
+            <span class='symbol'>:highest_vote</span> <span class='op'>=&gt;</span> <span class='int'>0</span><span class='comma'>,</span>
+        <span class='rbrace'>}</span>
+    <span class='kw'>end</span>
+    <span class='id identifier rubyid_votes'>votes</span> <span class='op'>=</span> <span class='lbrace'>{</span><span class='rbrace'>}</span>
+    <span class='id identifier rubyid_votes_by_vote'>votes_by_vote</span> <span class='op'>=</span> <span class='lbrace'>{</span><span class='rbrace'>}</span>
+    <span class='id identifier rubyid_votes_by_email'>votes_by_email</span> <span class='op'>=</span> <span class='lbrace'>{</span><span class='rbrace'>}</span>
+    <span class='id identifier rubyid_votes_by_project'>votes_by_project</span> <span class='op'>=</span> <span class='lbrace'>{</span><span class='rbrace'>}</span>
+    <span class='id identifier rubyid_latest_vote_ts'>latest_vote_ts</span> <span class='op'>=</span> <span class='int'>0</span>
+    <span class='gvar'>$neo4j</span><span class='period'>.</span><span class='id identifier rubyid_neo4j_query'>neo4j_query</span><span class='lparen'>(</span><span class='heredoc_beg'>&lt;&lt;~END_OF_QUERY</span><span class='rparen'>)</span><span class='period'>.</span><span class='id identifier rubyid_each'>each</span> <span class='kw'>do</span> <span class='op'>|</span><span class='id identifier rubyid_row'>row</span><span class='op'>|</span>
+<span class='tstring_content'>        MATCH (u:User)-[r:VOTED_FOR]-&gt;(p:Projekt)
+</span><span class='tstring_content'>        RETURN u.email, r.vote, r.ts_updated, p.nr;
+</span><span class='heredoc_end'>    END_OF_QUERY
+</span>        <span class='id identifier rubyid_email'>email</span> <span class='op'>=</span> <span class='id identifier rubyid_row'>row</span><span class='lbracket'>[</span><span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>u.email</span><span class='tstring_end'>&#39;</span></span><span class='rbracket'>]</span>
+        <span class='id identifier rubyid_vote'>vote</span> <span class='op'>=</span> <span class='id identifier rubyid_row'>row</span><span class='lbracket'>[</span><span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>r.vote</span><span class='tstring_end'>&#39;</span></span><span class='rbracket'>]</span>
+        <span class='id identifier rubyid_nr'>nr</span> <span class='op'>=</span> <span class='id identifier rubyid_row'>row</span><span class='lbracket'>[</span><span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>p.nr</span><span class='tstring_end'>&#39;</span></span><span class='rbracket'>]</span>
+        <span class='id identifier rubyid_latest_vote_ts'>latest_vote_ts</span> <span class='op'>=</span> <span class='id identifier rubyid_row'>row</span><span class='lbracket'>[</span><span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>r.ts_updated</span><span class='tstring_end'>&#39;</span></span><span class='rbracket'>]</span> <span class='kw'>if</span> <span class='id identifier rubyid_row'>row</span><span class='lbracket'>[</span><span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>r.ts_updated</span><span class='tstring_end'>&#39;</span></span><span class='rbracket'>]</span> <span class='op'>&gt;</span> <span class='id identifier rubyid_latest_vote_ts'>latest_vote_ts</span>
+        <span class='id identifier rubyid_users'>users</span><span class='lbracket'>[</span><span class='id identifier rubyid_email'>email</span><span class='rbracket'>]</span><span class='lbracket'>[</span><span class='symbol'>:votes</span><span class='rbracket'>]</span> <span class='op'>&lt;&lt;</span> <span class='lbracket'>[</span><span class='id identifier rubyid_nr'>nr</span><span class='comma'>,</span> <span class='id identifier rubyid_vote'>vote</span><span class='rbracket'>]</span>
+        <span class='id identifier rubyid_users'>users</span><span class='lbracket'>[</span><span class='id identifier rubyid_email'>email</span><span class='rbracket'>]</span><span class='lbracket'>[</span><span class='symbol'>:vote_hash</span><span class='rbracket'>]</span><span class='lbracket'>[</span><span class='id identifier rubyid_nr'>nr</span><span class='rbracket'>]</span> <span class='op'>=</span> <span class='id identifier rubyid_vote'>vote</span>
+        <span class='id identifier rubyid_users'>users</span><span class='lbracket'>[</span><span class='id identifier rubyid_email'>email</span><span class='rbracket'>]</span><span class='lbracket'>[</span><span class='symbol'>:highest_vote</span><span class='rbracket'>]</span> <span class='op'>=</span> <span class='id identifier rubyid_vote'>vote</span> <span class='kw'>if</span> <span class='id identifier rubyid_vote'>vote</span> <span class='op'>&gt;</span> <span class='id identifier rubyid_users'>users</span><span class='lbracket'>[</span><span class='id identifier rubyid_email'>email</span><span class='rbracket'>]</span><span class='lbracket'>[</span><span class='symbol'>:highest_vote</span><span class='rbracket'>]</span>
+        <span class='id identifier rubyid_sha1'>sha1</span> <span class='op'>=</span> <span class='const'>Digest</span><span class='op'>::</span><span class='const'>SHA1</span><span class='period'>.</span><span class='id identifier rubyid_hexdigest'>hexdigest</span><span class='lparen'>(</span><span class='tstring'><span class='tstring_beg'>&quot;</span><span class='embexpr_beg'>#{</span><span class='id identifier rubyid_email'>email</span><span class='embexpr_end'>}</span><span class='tstring_content'>/</span><span class='embexpr_beg'>#{</span><span class='id identifier rubyid_vote'>vote</span><span class='embexpr_end'>}</span><span class='tstring_content'>/</span><span class='embexpr_beg'>#{</span><span class='id identifier rubyid_nr'>nr</span><span class='embexpr_end'>}</span><span class='tstring_end'>&quot;</span></span><span class='rparen'>)</span><span class='lbracket'>[</span><span class='int'>0</span><span class='comma'>,</span> <span class='int'>12</span><span class='rbracket'>]</span>
+        <span class='id identifier rubyid_votes'>votes</span><span class='lbracket'>[</span><span class='id identifier rubyid_sha1'>sha1</span><span class='rbracket'>]</span> <span class='op'>=</span> <span class='lbrace'>{</span>
+            <span class='symbol'>:email</span> <span class='op'>=&gt;</span> <span class='id identifier rubyid_email'>email</span><span class='comma'>,</span>
+            <span class='symbol'>:vote</span> <span class='op'>=&gt;</span> <span class='id identifier rubyid_vote'>vote</span><span class='comma'>,</span>
+            <span class='symbol'>:nr</span> <span class='op'>=&gt;</span> <span class='id identifier rubyid_nr'>nr</span><span class='comma'>,</span>
+        <span class='rbrace'>}</span>
+        <span class='id identifier rubyid_votes_by_vote'>votes_by_vote</span><span class='lbracket'>[</span><span class='id identifier rubyid_vote'>vote</span><span class='rbracket'>]</span> <span class='op'>||=</span> <span class='const'>Set</span><span class='period'>.</span><span class='id identifier rubyid_new'>new</span><span class='lparen'>(</span><span class='rparen'>)</span>
+        <span class='id identifier rubyid_votes_by_vote'>votes_by_vote</span><span class='lbracket'>[</span><span class='id identifier rubyid_vote'>vote</span><span class='rbracket'>]</span> <span class='op'>&lt;&lt;</span> <span class='id identifier rubyid_sha1'>sha1</span>
+        <span class='id identifier rubyid_votes_by_email'>votes_by_email</span><span class='lbracket'>[</span><span class='id identifier rubyid_email'>email</span><span class='rbracket'>]</span> <span class='op'>||=</span> <span class='const'>Set</span><span class='period'>.</span><span class='id identifier rubyid_new'>new</span><span class='lparen'>(</span><span class='rparen'>)</span>
+        <span class='id identifier rubyid_votes_by_email'>votes_by_email</span><span class='lbracket'>[</span><span class='id identifier rubyid_email'>email</span><span class='rbracket'>]</span> <span class='op'>&lt;&lt;</span> <span class='id identifier rubyid_sha1'>sha1</span>
+        <span class='id identifier rubyid_votes_by_project'>votes_by_project</span><span class='lbracket'>[</span><span class='id identifier rubyid_nr'>nr</span><span class='rbracket'>]</span> <span class='op'>||=</span> <span class='const'>Set</span><span class='period'>.</span><span class='id identifier rubyid_new'>new</span><span class='lparen'>(</span><span class='rparen'>)</span>
+        <span class='id identifier rubyid_votes_by_project'>votes_by_project</span><span class='lbracket'>[</span><span class='id identifier rubyid_nr'>nr</span><span class='rbracket'>]</span> <span class='op'>&lt;&lt;</span> <span class='id identifier rubyid_sha1'>sha1</span>
+    <span class='kw'>end</span>
+
+    <span class='id identifier rubyid_stored_vote_ts'>stored_vote_ts</span> <span class='op'>=</span> <span class='kw'>nil</span>
+    <span class='kw'>begin</span>
+        <span class='id identifier rubyid_stored_vote_ts'>stored_vote_ts</span> <span class='op'>=</span> <span class='const'>JSON</span><span class='period'>.</span><span class='id identifier rubyid_parse'>parse</span><span class='lparen'>(</span><span class='const'>File</span><span class='period'>.</span><span class='id identifier rubyid_read'>read</span><span class='lparen'>(</span><span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>/internal/projekttage/votes/ts.json</span><span class='tstring_end'>&#39;</span></span><span class='rparen'>)</span><span class='rparen'>)</span><span class='lbracket'>[</span><span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>ts</span><span class='tstring_end'>&#39;</span></span><span class='rbracket'>]</span>
+    <span class='kw'>rescue</span>
+    <span class='kw'>end</span>
+
+    <span class='const'>STDERR</span><span class='period'>.</span><span class='id identifier rubyid_puts'>puts</span> <span class='tstring'><span class='tstring_beg'>&quot;</span><span class='tstring_content'>stored_vote_ts: </span><span class='embexpr_beg'>#{</span><span class='id identifier rubyid_stored_vote_ts'>stored_vote_ts</span><span class='embexpr_end'>}</span><span class='tstring_content'>, latest_vote_ts: </span><span class='embexpr_beg'>#{</span><span class='id identifier rubyid_latest_vote_ts'>latest_vote_ts</span><span class='embexpr_end'>}</span><span class='tstring_end'>&quot;</span></span>
+    <span class='kw'>if</span> <span class='id identifier rubyid_stored_vote_ts'>stored_vote_ts</span>
+        <span class='kw'>if</span> <span class='lparen'>(</span><span class='id identifier rubyid_stored_vote_ts'>stored_vote_ts</span> <span class='op'>&gt;=</span> <span class='id identifier rubyid_latest_vote_ts'>latest_vote_ts</span><span class='rparen'>)</span> <span class='op'>&amp;&amp;</span> <span class='lparen'>(</span><span class='const'>Time</span><span class='period'>.</span><span class='id identifier rubyid_now'>now</span><span class='period'>.</span><span class='id identifier rubyid_to_i'>to_i</span> <span class='op'>-</span> <span class='id identifier rubyid_stored_vote_ts'>stored_vote_ts</span> <span class='op'>&lt;</span> <span class='int'>10</span><span class='rparen'>)</span>
+            <span class='const'>STDERR</span><span class='period'>.</span><span class='id identifier rubyid_puts'>puts</span> <span class='tstring'><span class='tstring_beg'>&quot;</span><span class='tstring_content'>Doing nothing, already up-to-date.</span><span class='tstring_end'>&quot;</span></span>
+            <span class='kw'>return</span>
+        <span class='kw'>end</span>
+    <span class='kw'>end</span>
+
+    <span class='id identifier rubyid_users'>users</span><span class='period'>.</span><span class='id identifier rubyid_keys'>keys</span><span class='period'>.</span><span class='id identifier rubyid_each'>each</span> <span class='kw'>do</span> <span class='op'>|</span><span class='id identifier rubyid_email'>email</span><span class='op'>|</span>
+        <span class='id identifier rubyid_users'>users</span><span class='lbracket'>[</span><span class='id identifier rubyid_email'>email</span><span class='rbracket'>]</span><span class='lbracket'>[</span><span class='symbol'>:votes</span><span class='rbracket'>]</span> <span class='op'>=</span> <span class='id identifier rubyid_users'>users</span><span class='lbracket'>[</span><span class='id identifier rubyid_email'>email</span><span class='rbracket'>]</span><span class='lbracket'>[</span><span class='symbol'>:votes</span><span class='rbracket'>]</span><span class='period'>.</span><span class='id identifier rubyid_sort'>sort</span> <span class='kw'>do</span> <span class='op'>|</span><span class='id identifier rubyid_a'>a</span><span class='comma'>,</span> <span class='id identifier rubyid_b'>b</span><span class='op'>|</span>
+            <span class='id identifier rubyid_b'>b</span><span class='lbracket'>[</span><span class='int'>1</span><span class='rbracket'>]</span> <span class='op'>&lt;=&gt;</span> <span class='id identifier rubyid_a'>a</span><span class='lbracket'>[</span><span class='int'>1</span><span class='rbracket'>]</span>
+        <span class='kw'>end</span>
+    <span class='kw'>end</span>
+    <span class='id identifier rubyid_projects'>projects</span> <span class='op'>=</span> <span class='lbrace'>{</span><span class='rbrace'>}</span>
+    <span class='gvar'>$neo4j</span><span class='period'>.</span><span class='id identifier rubyid_neo4j_query'>neo4j_query</span><span class='lparen'>(</span><span class='heredoc_beg'>&lt;&lt;~END_OF_QUERY</span><span class='rparen'>)</span><span class='period'>.</span><span class='id identifier rubyid_each'>each</span> <span class='kw'>do</span> <span class='op'>|</span><span class='id identifier rubyid_row'>row</span><span class='op'>|</span>
+<span class='tstring_content'>        MATCH (p:Projekt) RETURN p;
+</span><span class='heredoc_end'>    END_OF_QUERY
+</span>        <span class='id identifier rubyid_p'>p</span> <span class='op'>=</span> <span class='id identifier rubyid_row'>row</span><span class='lbracket'>[</span><span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>p</span><span class='tstring_end'>&#39;</span></span><span class='rbracket'>]</span>
+        <span class='kw'>next</span> <span class='kw'>if</span> <span class='lparen'>(</span><span class='id identifier rubyid_p'>p</span><span class='lbracket'>[</span><span class='symbol'>:capacity</span><span class='rbracket'>]</span> <span class='op'>||</span> <span class='int'>0</span><span class='rparen'>)</span> <span class='op'>==</span> <span class='int'>0</span>
+        <span class='id identifier rubyid_projects'>projects</span><span class='lbracket'>[</span><span class='id identifier rubyid_p'>p</span><span class='lbracket'>[</span><span class='symbol'>:nr</span><span class='rbracket'>]</span><span class='rbracket'>]</span> <span class='op'>=</span> <span class='lbrace'>{</span>
+            <span class='symbol'>:nr</span> <span class='op'>=&gt;</span> <span class='id identifier rubyid_p'>p</span><span class='lbracket'>[</span><span class='symbol'>:nr</span><span class='rbracket'>]</span><span class='comma'>,</span>
+            <span class='symbol'>:title</span> <span class='op'>=&gt;</span> <span class='id identifier rubyid_p'>p</span><span class='lbracket'>[</span><span class='symbol'>:title</span><span class='rbracket'>]</span><span class='comma'>,</span>
+            <span class='symbol'>:capacity</span> <span class='op'>=&gt;</span> <span class='id identifier rubyid_p'>p</span><span class='lbracket'>[</span><span class='symbol'>:capacity</span><span class='rbracket'>]</span><span class='comma'>,</span>
+            <span class='symbol'>:min_klasse</span> <span class='op'>=&gt;</span> <span class='id identifier rubyid_p'>p</span><span class='lbracket'>[</span><span class='symbol'>:min_klasse</span><span class='rbracket'>]</span><span class='comma'>,</span>
+            <span class='symbol'>:max_klasse</span> <span class='op'>=&gt;</span> <span class='id identifier rubyid_p'>p</span><span class='lbracket'>[</span><span class='symbol'>:max_klasse</span><span class='rbracket'>]</span><span class='comma'>,</span>
+            <span class='symbol'>:participants</span> <span class='op'>=&gt;</span> <span class='lbracket'>[</span><span class='rbracket'>]</span><span class='comma'>,</span>
+        <span class='rbrace'>}</span>
+    <span class='kw'>end</span>
+    <span class='id identifier rubyid_total_capacity'>total_capacity</span> <span class='op'>=</span> <span class='int'>0</span>
+    <span class='id identifier rubyid_projects'>projects</span><span class='period'>.</span><span class='id identifier rubyid_each'>each</span> <span class='kw'>do</span> <span class='op'>|</span><span class='id identifier rubyid_nr'>nr</span><span class='comma'>,</span> <span class='id identifier rubyid_p'>p</span><span class='op'>|</span>
+        <span class='id identifier rubyid_total_capacity'>total_capacity</span> <span class='op'>+=</span> <span class='id identifier rubyid_p'>p</span><span class='lbracket'>[</span><span class='symbol'>:capacity</span><span class='rbracket'>]</span>
+    <span class='kw'>end</span>
+    <span class='id identifier rubyid_projects_for_klassenstufe'>projects_for_klassenstufe</span> <span class='op'>=</span> <span class='lbrace'>{</span><span class='rbrace'>}</span>
+    <span class='id identifier rubyid_project_stats'>project_stats</span> <span class='op'>=</span> <span class='lbrace'>{</span><span class='rbrace'>}</span>
+    <span class='id identifier rubyid_projects'>projects</span><span class='period'>.</span><span class='id identifier rubyid_each'>each</span> <span class='kw'>do</span> <span class='op'>|</span><span class='id identifier rubyid_nr'>nr</span><span class='comma'>,</span> <span class='id identifier rubyid_p'>p</span><span class='op'>|</span>
+        <span class='id identifier rubyid_project_stats'>project_stats</span><span class='lbracket'>[</span><span class='id identifier rubyid_nr'>nr</span><span class='rbracket'>]</span> <span class='op'>=</span> <span class='lbrace'>{</span>
+            <span class='symbol'>:geschlecht_m</span> <span class='op'>=&gt;</span> <span class='int'>0</span><span class='comma'>,</span>
+            <span class='symbol'>:geschlecht_w</span> <span class='op'>=&gt;</span> <span class='int'>0</span><span class='comma'>,</span>
+            <span class='symbol'>:klasse</span> <span class='op'>=&gt;</span> <span class='lbrace'>{</span>
+                <span class='int'>5</span> <span class='op'>=&gt;</span> <span class='int'>0</span><span class='comma'>,</span>
+                <span class='int'>6</span> <span class='op'>=&gt;</span> <span class='int'>0</span><span class='comma'>,</span>
+                <span class='int'>7</span> <span class='op'>=&gt;</span> <span class='int'>0</span><span class='comma'>,</span>
+                <span class='int'>8</span> <span class='op'>=&gt;</span> <span class='int'>0</span><span class='comma'>,</span>
+                <span class='int'>9</span> <span class='op'>=&gt;</span> <span class='int'>0</span><span class='comma'>,</span>
+            <span class='rbrace'>}</span><span class='comma'>,</span>
+            <span class='symbol'>:vote</span> <span class='op'>=&gt;</span> <span class='lbrace'>{</span>
+                <span class='int'>0</span> <span class='op'>=&gt;</span> <span class='int'>0</span><span class='comma'>,</span>
+                <span class='int'>1</span> <span class='op'>=&gt;</span> <span class='int'>0</span><span class='comma'>,</span>
+                <span class='int'>2</span> <span class='op'>=&gt;</span> <span class='int'>0</span><span class='comma'>,</span>
+                <span class='int'>3</span> <span class='op'>=&gt;</span> <span class='int'>0</span>
+            <span class='rbrace'>}</span><span class='comma'>,</span>
+        <span class='rbrace'>}</span>
+        <span class='lparen'>(</span><span class='id identifier rubyid_p'>p</span><span class='lbracket'>[</span><span class='symbol'>:min_klasse</span><span class='rbracket'>]</span><span class='op'>..</span><span class='id identifier rubyid_p'>p</span><span class='lbracket'>[</span><span class='symbol'>:max_klasse</span><span class='rbracket'>]</span><span class='rparen'>)</span><span class='period'>.</span><span class='id identifier rubyid_each'>each</span> <span class='kw'>do</span> <span class='op'>|</span><span class='id identifier rubyid_klassenstufe'>klassenstufe</span><span class='op'>|</span>
+            <span class='id identifier rubyid_projects_for_klassenstufe'>projects_for_klassenstufe</span><span class='lbracket'>[</span><span class='id identifier rubyid_klassenstufe'>klassenstufe</span><span class='rbracket'>]</span> <span class='op'>||=</span> <span class='const'>Set</span><span class='period'>.</span><span class='id identifier rubyid_new'>new</span><span class='lparen'>(</span><span class='rparen'>)</span>
+            <span class='id identifier rubyid_projects_for_klassenstufe'>projects_for_klassenstufe</span><span class='lbracket'>[</span><span class='id identifier rubyid_klassenstufe'>klassenstufe</span><span class='rbracket'>]</span> <span class='op'>&lt;&lt;</span> <span class='id identifier rubyid_nr'>nr</span>
+        <span class='kw'>end</span>
+    <span class='kw'>end</span>
+    <span class='id identifier rubyid_projects_for_email'>projects_for_email</span> <span class='op'>=</span> <span class='lbrace'>{</span><span class='rbrace'>}</span>
+    <span class='id identifier rubyid_count'>count</span> <span class='op'>=</span> <span class='int'>0</span>
+    <span class='id identifier rubyid_errors'>errors</span> <span class='op'>=</span> <span class='lbracket'>[</span><span class='int'>0</span><span class='comma'>,</span> <span class='int'>0</span><span class='comma'>,</span> <span class='int'>0</span><span class='comma'>,</span> <span class='int'>0</span><span class='rbracket'>]</span>
+    <span class='int'>1000</span><span class='period'>.</span><span class='id identifier rubyid_times'>times</span> <span class='kw'>do</span>
+        <span class='kw'>begin</span>
+            <span class='id identifier rubyid_result'>result</span> <span class='op'>=</span> <span class='const'><span class='object_link'><a href="Main.html" title="Main (class)">Main</a></span></span><span class='period'>.</span><span class='id identifier rubyid_assign_projects'><span class='object_link'><a href="Main.html#assign_projects-class_method" title="Main.assign_projects (method)">assign_projects</a></span></span><span class='lparen'>(</span><span class='id identifier rubyid_emails'>emails</span><span class='comma'>,</span> <span class='id identifier rubyid_users'>users</span><span class='comma'>,</span> <span class='id identifier rubyid_projects'>projects</span><span class='comma'>,</span>
+                <span class='id identifier rubyid_projects_for_klassenstufe'>projects_for_klassenstufe</span><span class='comma'>,</span> <span class='id identifier rubyid_total_capacity'>total_capacity</span><span class='comma'>,</span>
+                <span class='id identifier rubyid_votes'>votes</span><span class='comma'>,</span> <span class='id identifier rubyid_votes_by_email'>votes_by_email</span><span class='comma'>,</span>
+                <span class='id identifier rubyid_votes_by_vote'>votes_by_vote</span><span class='comma'>,</span> <span class='id identifier rubyid_votes_by_project'>votes_by_project</span><span class='comma'>,</span> <span class='cvar'>@@user_info</span><span class='rparen'>)</span>
+            <span class='id identifier rubyid_error_sum'>error_sum</span> <span class='op'>=</span> <span class='id identifier rubyid_result'>result</span><span class='lbracket'>[</span><span class='symbol'>:error_for_email</span><span class='rbracket'>]</span><span class='period'>.</span><span class='id identifier rubyid_values'>values</span><span class='period'>.</span><span class='id identifier rubyid_sum'>sum</span>
+            <span class='id identifier rubyid_result'>result</span><span class='lbracket'>[</span><span class='symbol'>:error_for_email</span><span class='rbracket'>]</span><span class='period'>.</span><span class='id identifier rubyid_values'>values</span><span class='period'>.</span><span class='id identifier rubyid_each'>each</span> <span class='kw'>do</span> <span class='op'>|</span><span class='id identifier rubyid_e'>e</span><span class='op'>|</span>
+                <span class='id identifier rubyid_errors'>errors</span><span class='lbracket'>[</span><span class='id identifier rubyid_e'>e</span><span class='rbracket'>]</span> <span class='op'>+=</span> <span class='int'>1</span>
+            <span class='kw'>end</span>
+            <span class='id identifier rubyid_count'>count</span> <span class='op'>+=</span> <span class='int'>1</span>
+            <span class='comment'># STDERR.puts &quot;Error: #{error_sum}&quot;
+</span>            <span class='id identifier rubyid_result'>result</span><span class='lbracket'>[</span><span class='symbol'>:project_for_email</span><span class='rbracket'>]</span><span class='period'>.</span><span class='id identifier rubyid_each_pair'>each_pair</span> <span class='kw'>do</span> <span class='op'>|</span><span class='id identifier rubyid_email'>email</span><span class='comma'>,</span> <span class='id identifier rubyid_project'>project</span><span class='op'>|</span>
+                <span class='id identifier rubyid_projects_for_email'>projects_for_email</span><span class='lbracket'>[</span><span class='id identifier rubyid_email'>email</span><span class='rbracket'>]</span> <span class='op'>||=</span> <span class='lbrace'>{</span><span class='rbrace'>}</span>
+                <span class='id identifier rubyid_projects_for_email'>projects_for_email</span><span class='lbracket'>[</span><span class='id identifier rubyid_email'>email</span><span class='rbracket'>]</span><span class='lbracket'>[</span><span class='id identifier rubyid_project'>project</span><span class='rbracket'>]</span> <span class='op'>||=</span> <span class='int'>0</span>
+                <span class='id identifier rubyid_projects_for_email'>projects_for_email</span><span class='lbracket'>[</span><span class='id identifier rubyid_email'>email</span><span class='rbracket'>]</span><span class='lbracket'>[</span><span class='id identifier rubyid_project'>project</span><span class='rbracket'>]</span> <span class='op'>+=</span> <span class='int'>1</span>
+            <span class='kw'>end</span>
+
+            <span class='id identifier rubyid_result'>result</span><span class='lbracket'>[</span><span class='symbol'>:emails_for_project</span><span class='rbracket'>]</span><span class='period'>.</span><span class='id identifier rubyid_each_pair'>each_pair</span> <span class='kw'>do</span> <span class='op'>|</span><span class='id identifier rubyid_nr'>nr</span><span class='comma'>,</span> <span class='id identifier rubyid_emails'>emails</span><span class='op'>|</span>
+                <span class='id identifier rubyid_emails'>emails</span><span class='period'>.</span><span class='id identifier rubyid_each'>each</span> <span class='kw'>do</span> <span class='op'>|</span><span class='id identifier rubyid_email'>email</span><span class='op'>|</span>
+                    <span class='kw'>if</span> <span class='cvar'>@@user_info</span><span class='lbracket'>[</span><span class='id identifier rubyid_email'>email</span><span class='rbracket'>]</span><span class='lbracket'>[</span><span class='symbol'>:geschlecht</span><span class='rbracket'>]</span> <span class='op'>==</span> <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>m</span><span class='tstring_end'>&#39;</span></span>
+                        <span class='id identifier rubyid_project_stats'>project_stats</span><span class='lbracket'>[</span><span class='id identifier rubyid_nr'>nr</span><span class='rbracket'>]</span><span class='lbracket'>[</span><span class='symbol'>:geschlecht_m</span><span class='rbracket'>]</span> <span class='op'>+=</span> <span class='int'>1</span>
+                    <span class='kw'>else</span>
+                        <span class='id identifier rubyid_project_stats'>project_stats</span><span class='lbracket'>[</span><span class='id identifier rubyid_nr'>nr</span><span class='rbracket'>]</span><span class='lbracket'>[</span><span class='symbol'>:geschlecht_w</span><span class='rbracket'>]</span> <span class='op'>+=</span> <span class='int'>1</span>
+                    <span class='kw'>end</span>
+                    <span class='id identifier rubyid_project_stats'>project_stats</span><span class='lbracket'>[</span><span class='id identifier rubyid_nr'>nr</span><span class='rbracket'>]</span><span class='lbracket'>[</span><span class='symbol'>:klasse</span><span class='rbracket'>]</span><span class='lbracket'>[</span><span class='cvar'>@@user_info</span><span class='lbracket'>[</span><span class='id identifier rubyid_email'>email</span><span class='rbracket'>]</span><span class='lbracket'>[</span><span class='symbol'>:klassenstufe</span><span class='rbracket'>]</span> <span class='op'>||</span> <span class='int'>7</span><span class='rbracket'>]</span> <span class='op'>+=</span> <span class='int'>1</span>
+                    <span class='id identifier rubyid_project_stats'>project_stats</span><span class='lbracket'>[</span><span class='id identifier rubyid_nr'>nr</span><span class='rbracket'>]</span><span class='lbracket'>[</span><span class='symbol'>:vote</span><span class='rbracket'>]</span><span class='lbracket'>[</span><span class='id identifier rubyid_users'>users</span><span class='lbracket'>[</span><span class='id identifier rubyid_email'>email</span><span class='rbracket'>]</span><span class='lbracket'>[</span><span class='symbol'>:vote_hash</span><span class='rbracket'>]</span><span class='lbracket'>[</span><span class='id identifier rubyid_nr'>nr</span><span class='rbracket'>]</span> <span class='op'>||</span> <span class='int'>0</span><span class='rbracket'>]</span> <span class='op'>+=</span> <span class='int'>1</span>
+                <span class='kw'>end</span>
+            <span class='kw'>end</span>
+        <span class='kw'>rescue</span> <span class='const'>StandardError</span> <span class='op'>=&gt;</span> <span class='id identifier rubyid_e'>e</span>
+            <span class='comment'># raise
+</span>        <span class='kw'>end</span>
+    <span class='kw'>end</span>
+    <span class='id identifier rubyid_errors'>errors</span><span class='period'>.</span><span class='id identifier rubyid_map!'>map!</span> <span class='lbrace'>{</span> <span class='op'>|</span><span class='id identifier rubyid_x'>x</span><span class='op'>|</span> <span class='id identifier rubyid_x'>x</span><span class='period'>.</span><span class='id identifier rubyid_to_f'>to_f</span> <span class='op'>/</span> <span class='id identifier rubyid_count'>count</span> <span class='op'>/</span> <span class='id identifier rubyid_emails'>emails</span><span class='period'>.</span><span class='id identifier rubyid_size'>size</span> <span class='rbrace'>}</span>
+    <span class='id identifier rubyid_probabilities'>probabilities</span> <span class='op'>=</span> <span class='lbrace'>{</span><span class='rbrace'>}</span>
+    <span class='id identifier rubyid_emails'>emails</span><span class='period'>.</span><span class='id identifier rubyid_each'>each</span> <span class='kw'>do</span> <span class='op'>|</span><span class='id identifier rubyid_email'>email</span><span class='op'>|</span>
+        <span class='id identifier rubyid_probabilities'>probabilities</span><span class='lbracket'>[</span><span class='id identifier rubyid_email'>email</span><span class='rbracket'>]</span> <span class='op'>=</span> <span class='lbrace'>{</span><span class='rbrace'>}</span>
+        <span class='id identifier rubyid_users'>users</span><span class='lbracket'>[</span><span class='id identifier rubyid_email'>email</span><span class='rbracket'>]</span><span class='lbracket'>[</span><span class='symbol'>:vote_hash</span><span class='rbracket'>]</span><span class='period'>.</span><span class='id identifier rubyid_keys'>keys</span><span class='period'>.</span><span class='id identifier rubyid_each'>each</span> <span class='kw'>do</span> <span class='op'>|</span><span class='id identifier rubyid_x'>x</span><span class='op'>|</span>
+            <span class='id identifier rubyid_probabilities'>probabilities</span><span class='lbracket'>[</span><span class='id identifier rubyid_email'>email</span><span class='rbracket'>]</span><span class='lbracket'>[</span><span class='id identifier rubyid_x'>x</span><span class='lbracket'>[</span><span class='int'>0</span><span class='rbracket'>]</span><span class='rbracket'>]</span> <span class='op'>=</span> <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>0%</span><span class='tstring_end'>&#39;</span></span>
+        <span class='kw'>end</span>
+    <span class='kw'>end</span>
+    <span class='id identifier rubyid_projects_for_email'>projects_for_email</span><span class='period'>.</span><span class='id identifier rubyid_each_pair'>each_pair</span> <span class='kw'>do</span> <span class='op'>|</span><span class='id identifier rubyid_email'>email</span><span class='comma'>,</span> <span class='id identifier rubyid_probs'>probs</span><span class='op'>|</span>
+        <span class='id identifier rubyid_projects_for_email'>projects_for_email</span><span class='lbracket'>[</span><span class='id identifier rubyid_email'>email</span><span class='rbracket'>]</span><span class='period'>.</span><span class='id identifier rubyid_keys'>keys</span><span class='period'>.</span><span class='id identifier rubyid_each'>each</span> <span class='kw'>do</span> <span class='op'>|</span><span class='id identifier rubyid_nr'>nr</span><span class='op'>|</span>
+            <span class='kw'>if</span> <span class='id identifier rubyid_users'>users</span><span class='lbracket'>[</span><span class='id identifier rubyid_email'>email</span><span class='rbracket'>]</span><span class='lbracket'>[</span><span class='symbol'>:vote_hash</span><span class='rbracket'>]</span><span class='period'>.</span><span class='id identifier rubyid_include?'>include?</span><span class='lparen'>(</span><span class='id identifier rubyid_nr'>nr</span><span class='rparen'>)</span>
+                <span class='id identifier rubyid_p'>p</span> <span class='op'>=</span> <span class='id identifier rubyid_projects_for_email'>projects_for_email</span><span class='lbracket'>[</span><span class='id identifier rubyid_email'>email</span><span class='rbracket'>]</span><span class='lbracket'>[</span><span class='id identifier rubyid_nr'>nr</span><span class='rbracket'>]</span><span class='period'>.</span><span class='id identifier rubyid_to_f'>to_f</span> <span class='op'>*</span> <span class='float'>100.0</span> <span class='op'>/</span> <span class='id identifier rubyid_count'>count</span>
+                <span class='kw'>if</span> <span class='id identifier rubyid_users'>users</span><span class='lbracket'>[</span><span class='id identifier rubyid_email'>email</span><span class='rbracket'>]</span><span class='lbracket'>[</span><span class='symbol'>:vote_hash</span><span class='rbracket'>]</span><span class='period'>.</span><span class='id identifier rubyid_size'>size</span> <span class='op'>==</span> <span class='int'>1</span>
+                    <span class='id identifier rubyid_p'>p</span> <span class='op'>*=</span> <span class='float'>0.33</span>
+                <span class='kw'>elsif</span> <span class='id identifier rubyid_users'>users</span><span class='lbracket'>[</span><span class='id identifier rubyid_email'>email</span><span class='rbracket'>]</span><span class='lbracket'>[</span><span class='symbol'>:vote_hash</span><span class='rbracket'>]</span><span class='period'>.</span><span class='id identifier rubyid_size'>size</span> <span class='op'>==</span> <span class='int'>2</span>
+                    <span class='id identifier rubyid_p'>p</span> <span class='op'>*=</span> <span class='float'>0.66</span>
+                <span class='kw'>end</span>
+                <span class='id identifier rubyid_p'>p</span> <span class='op'>=</span> <span class='id identifier rubyid_p'>p</span><span class='period'>.</span><span class='id identifier rubyid_round'>round</span>
+                <span class='id identifier rubyid_p'>p</span> <span class='op'>=</span> <span class='int'>1</span> <span class='kw'>if</span> <span class='id identifier rubyid_p'>p</span> <span class='op'>&lt;</span> <span class='int'>1</span>
+                <span class='id identifier rubyid_p'>p</span> <span class='op'>=</span> <span class='int'>99</span> <span class='kw'>if</span> <span class='id identifier rubyid_p'>p</span> <span class='op'>&gt;</span> <span class='int'>99</span>
+                <span class='id identifier rubyid_probabilities'>probabilities</span><span class='lbracket'>[</span><span class='id identifier rubyid_email'>email</span><span class='rbracket'>]</span><span class='lbracket'>[</span><span class='id identifier rubyid_nr'>nr</span><span class='rbracket'>]</span> <span class='op'>=</span> <span class='id identifier rubyid_sprintf'>sprintf</span><span class='lparen'>(</span><span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>%d%%</span><span class='tstring_end'>&#39;</span></span><span class='comma'>,</span> <span class='id identifier rubyid_p'>p</span><span class='rparen'>)</span>
+            <span class='kw'>end</span>
+        <span class='kw'>end</span>
+    <span class='kw'>end</span>
+    <span class='const'>FileUtils</span><span class='op'>::</span><span class='id identifier rubyid_mkpath'>mkpath</span><span class='lparen'>(</span><span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>/internal/projekttage/votes</span><span class='tstring_end'>&#39;</span></span><span class='rparen'>)</span>
+    <span class='id identifier rubyid_probabilities'>probabilities</span><span class='period'>.</span><span class='id identifier rubyid_each_pair'>each_pair</span> <span class='kw'>do</span> <span class='op'>|</span><span class='id identifier rubyid_email'>email</span><span class='comma'>,</span> <span class='id identifier rubyid_probs'>probs</span><span class='op'>|</span>
+        <span class='const'>File</span><span class='period'>.</span><span class='id identifier rubyid_open'>open</span><span class='lparen'>(</span><span class='tstring'><span class='tstring_beg'>&quot;</span><span class='tstring_content'>/internal/projekttage/votes/</span><span class='embexpr_beg'>#{</span><span class='id identifier rubyid_email'>email</span><span class='embexpr_end'>}</span><span class='tstring_content'>.json</span><span class='tstring_end'>&quot;</span></span><span class='comma'>,</span> <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>w</span><span class='tstring_end'>&#39;</span></span><span class='rparen'>)</span> <span class='kw'>do</span> <span class='op'>|</span><span class='id identifier rubyid_f'>f</span><span class='op'>|</span>
+            <span class='id identifier rubyid_f'>f</span><span class='period'>.</span><span class='id identifier rubyid_write'>write</span> <span class='id identifier rubyid_probs'>probs</span><span class='period'>.</span><span class='id identifier rubyid_to_json'>to_json</span>
+        <span class='kw'>end</span>
+    <span class='kw'>end</span>
+    <span class='const'>File</span><span class='period'>.</span><span class='id identifier rubyid_open'>open</span><span class='lparen'>(</span><span class='tstring'><span class='tstring_beg'>&quot;</span><span class='tstring_content'>/internal/projekttage/votes/ts.json</span><span class='tstring_end'>&quot;</span></span><span class='comma'>,</span> <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>w</span><span class='tstring_end'>&#39;</span></span><span class='rparen'>)</span> <span class='kw'>do</span> <span class='op'>|</span><span class='id identifier rubyid_f'>f</span><span class='op'>|</span>
+        <span class='id identifier rubyid_f'>f</span><span class='period'>.</span><span class='id identifier rubyid_write'>write</span><span class='lparen'>(</span><span class='lbrace'>{</span>
+            <span class='symbol'>:ts</span> <span class='op'>=&gt;</span> <span class='id identifier rubyid_latest_vote_ts'>latest_vote_ts</span><span class='comma'>,</span>
+            <span class='symbol'>:email_count_voted</span> <span class='op'>=&gt;</span> <span class='id identifier rubyid_votes_by_email'>votes_by_email</span><span class='period'>.</span><span class='id identifier rubyid_size'>size</span><span class='comma'>,</span>
+            <span class='symbol'>:email_count_total</span> <span class='op'>=&gt;</span> <span class='id identifier rubyid_emails'>emails</span><span class='period'>.</span><span class='id identifier rubyid_size'>size</span><span class='comma'>,</span>
+            <span class='symbol'>:total_capacity</span> <span class='op'>=&gt;</span> <span class='id identifier rubyid_total_capacity'>total_capacity</span><span class='comma'>,</span>
+            <span class='symbol'>:errors</span> <span class='op'>=&gt;</span> <span class='id identifier rubyid_errors'>errors</span><span class='comma'>,</span>
+        <span class='rbrace'>}</span><span class='period'>.</span><span class='id identifier rubyid_to_json'>to_json</span><span class='rparen'>)</span>
+    <span class='kw'>end</span>
+    <span class='id identifier rubyid_projects'>projects</span><span class='period'>.</span><span class='id identifier rubyid_keys'>keys</span><span class='period'>.</span><span class='id identifier rubyid_each'>each</span> <span class='kw'>do</span> <span class='op'>|</span><span class='id identifier rubyid_nr'>nr</span><span class='op'>|</span>
+        <span class='const'>File</span><span class='period'>.</span><span class='id identifier rubyid_open'>open</span><span class='lparen'>(</span><span class='tstring'><span class='tstring_beg'>&quot;</span><span class='tstring_content'>/internal/projekttage/votes/project-</span><span class='embexpr_beg'>#{</span><span class='id identifier rubyid_nr'>nr</span><span class='embexpr_end'>}</span><span class='tstring_content'>.json</span><span class='tstring_end'>&quot;</span></span><span class='comma'>,</span> <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>w</span><span class='tstring_end'>&#39;</span></span><span class='rparen'>)</span> <span class='kw'>do</span> <span class='op'>|</span><span class='id identifier rubyid_f'>f</span><span class='op'>|</span>
+            <span class='id identifier rubyid_stats'>stats</span> <span class='op'>=</span> <span class='lbrace'>{</span>
+                <span class='symbol'>:geschlecht_m</span> <span class='op'>=&gt;</span> <span class='lparen'>(</span><span class='id identifier rubyid_project_stats'>project_stats</span><span class='lbracket'>[</span><span class='id identifier rubyid_nr'>nr</span><span class='rbracket'>]</span><span class='lbracket'>[</span><span class='symbol'>:geschlecht_m</span><span class='rbracket'>]</span><span class='period'>.</span><span class='id identifier rubyid_to_f'>to_f</span> <span class='op'>/</span> <span class='id identifier rubyid_count'>count</span><span class='rparen'>)</span><span class='period'>.</span><span class='id identifier rubyid_round'>round</span><span class='comma'>,</span>
+                <span class='symbol'>:geschlecht_w</span> <span class='op'>=&gt;</span> <span class='lparen'>(</span><span class='id identifier rubyid_project_stats'>project_stats</span><span class='lbracket'>[</span><span class='id identifier rubyid_nr'>nr</span><span class='rbracket'>]</span><span class='lbracket'>[</span><span class='symbol'>:geschlecht_w</span><span class='rbracket'>]</span><span class='period'>.</span><span class='id identifier rubyid_to_f'>to_f</span> <span class='op'>/</span> <span class='id identifier rubyid_count'>count</span><span class='rparen'>)</span><span class='period'>.</span><span class='id identifier rubyid_round'>round</span><span class='comma'>,</span>
+                <span class='symbol'>:klasse</span> <span class='op'>=&gt;</span> <span class='lbrace'>{</span>
+                    <span class='int'>5</span> <span class='op'>=&gt;</span> <span class='lparen'>(</span><span class='id identifier rubyid_project_stats'>project_stats</span><span class='lbracket'>[</span><span class='id identifier rubyid_nr'>nr</span><span class='rbracket'>]</span><span class='lbracket'>[</span><span class='symbol'>:klasse</span><span class='rbracket'>]</span><span class='lbracket'>[</span><span class='int'>5</span><span class='rbracket'>]</span><span class='period'>.</span><span class='id identifier rubyid_to_f'>to_f</span> <span class='op'>/</span> <span class='id identifier rubyid_count'>count</span><span class='rparen'>)</span><span class='period'>.</span><span class='id identifier rubyid_round'>round</span><span class='comma'>,</span>
+                    <span class='int'>6</span> <span class='op'>=&gt;</span> <span class='lparen'>(</span><span class='id identifier rubyid_project_stats'>project_stats</span><span class='lbracket'>[</span><span class='id identifier rubyid_nr'>nr</span><span class='rbracket'>]</span><span class='lbracket'>[</span><span class='symbol'>:klasse</span><span class='rbracket'>]</span><span class='lbracket'>[</span><span class='int'>6</span><span class='rbracket'>]</span><span class='period'>.</span><span class='id identifier rubyid_to_f'>to_f</span> <span class='op'>/</span> <span class='id identifier rubyid_count'>count</span><span class='rparen'>)</span><span class='period'>.</span><span class='id identifier rubyid_round'>round</span><span class='comma'>,</span>
+                    <span class='int'>7</span> <span class='op'>=&gt;</span> <span class='lparen'>(</span><span class='id identifier rubyid_project_stats'>project_stats</span><span class='lbracket'>[</span><span class='id identifier rubyid_nr'>nr</span><span class='rbracket'>]</span><span class='lbracket'>[</span><span class='symbol'>:klasse</span><span class='rbracket'>]</span><span class='lbracket'>[</span><span class='int'>7</span><span class='rbracket'>]</span><span class='period'>.</span><span class='id identifier rubyid_to_f'>to_f</span> <span class='op'>/</span> <span class='id identifier rubyid_count'>count</span><span class='rparen'>)</span><span class='period'>.</span><span class='id identifier rubyid_round'>round</span><span class='comma'>,</span>
+                    <span class='int'>8</span> <span class='op'>=&gt;</span> <span class='lparen'>(</span><span class='id identifier rubyid_project_stats'>project_stats</span><span class='lbracket'>[</span><span class='id identifier rubyid_nr'>nr</span><span class='rbracket'>]</span><span class='lbracket'>[</span><span class='symbol'>:klasse</span><span class='rbracket'>]</span><span class='lbracket'>[</span><span class='int'>8</span><span class='rbracket'>]</span><span class='period'>.</span><span class='id identifier rubyid_to_f'>to_f</span> <span class='op'>/</span> <span class='id identifier rubyid_count'>count</span><span class='rparen'>)</span><span class='period'>.</span><span class='id identifier rubyid_round'>round</span><span class='comma'>,</span>
+                    <span class='int'>9</span> <span class='op'>=&gt;</span> <span class='lparen'>(</span><span class='id identifier rubyid_project_stats'>project_stats</span><span class='lbracket'>[</span><span class='id identifier rubyid_nr'>nr</span><span class='rbracket'>]</span><span class='lbracket'>[</span><span class='symbol'>:klasse</span><span class='rbracket'>]</span><span class='lbracket'>[</span><span class='int'>9</span><span class='rbracket'>]</span><span class='period'>.</span><span class='id identifier rubyid_to_f'>to_f</span> <span class='op'>/</span> <span class='id identifier rubyid_count'>count</span><span class='rparen'>)</span><span class='period'>.</span><span class='id identifier rubyid_round'>round</span><span class='comma'>,</span>
+                <span class='rbrace'>}</span><span class='comma'>,</span>
+                <span class='symbol'>:vote</span> <span class='op'>=&gt;</span> <span class='lbrace'>{</span>
+                    <span class='int'>0</span> <span class='op'>=&gt;</span> <span class='lparen'>(</span><span class='id identifier rubyid_project_stats'>project_stats</span><span class='lbracket'>[</span><span class='id identifier rubyid_nr'>nr</span><span class='rbracket'>]</span><span class='lbracket'>[</span><span class='symbol'>:vote</span><span class='rbracket'>]</span><span class='lbracket'>[</span><span class='int'>0</span><span class='rbracket'>]</span><span class='period'>.</span><span class='id identifier rubyid_to_f'>to_f</span> <span class='op'>/</span> <span class='id identifier rubyid_count'>count</span><span class='rparen'>)</span><span class='period'>.</span><span class='id identifier rubyid_round'>round</span><span class='comma'>,</span>
+                    <span class='int'>1</span> <span class='op'>=&gt;</span> <span class='lparen'>(</span><span class='id identifier rubyid_project_stats'>project_stats</span><span class='lbracket'>[</span><span class='id identifier rubyid_nr'>nr</span><span class='rbracket'>]</span><span class='lbracket'>[</span><span class='symbol'>:vote</span><span class='rbracket'>]</span><span class='lbracket'>[</span><span class='int'>1</span><span class='rbracket'>]</span><span class='period'>.</span><span class='id identifier rubyid_to_f'>to_f</span> <span class='op'>/</span> <span class='id identifier rubyid_count'>count</span><span class='rparen'>)</span><span class='period'>.</span><span class='id identifier rubyid_round'>round</span><span class='comma'>,</span>
+                    <span class='int'>2</span> <span class='op'>=&gt;</span> <span class='lparen'>(</span><span class='id identifier rubyid_project_stats'>project_stats</span><span class='lbracket'>[</span><span class='id identifier rubyid_nr'>nr</span><span class='rbracket'>]</span><span class='lbracket'>[</span><span class='symbol'>:vote</span><span class='rbracket'>]</span><span class='lbracket'>[</span><span class='int'>2</span><span class='rbracket'>]</span><span class='period'>.</span><span class='id identifier rubyid_to_f'>to_f</span> <span class='op'>/</span> <span class='id identifier rubyid_count'>count</span><span class='rparen'>)</span><span class='period'>.</span><span class='id identifier rubyid_round'>round</span><span class='comma'>,</span>
+                    <span class='int'>3</span> <span class='op'>=&gt;</span> <span class='lparen'>(</span><span class='id identifier rubyid_project_stats'>project_stats</span><span class='lbracket'>[</span><span class='id identifier rubyid_nr'>nr</span><span class='rbracket'>]</span><span class='lbracket'>[</span><span class='symbol'>:vote</span><span class='rbracket'>]</span><span class='lbracket'>[</span><span class='int'>3</span><span class='rbracket'>]</span><span class='period'>.</span><span class='id identifier rubyid_to_f'>to_f</span> <span class='op'>/</span> <span class='id identifier rubyid_count'>count</span><span class='rparen'>)</span><span class='period'>.</span><span class='id identifier rubyid_round'>round</span><span class='comma'>,</span>
+                <span class='rbrace'>}</span>
+            <span class='rbrace'>}</span>
+            <span class='id identifier rubyid_f'>f</span><span class='period'>.</span><span class='id identifier rubyid_write'>write</span><span class='lparen'>(</span><span class='id identifier rubyid_stats'>stats</span><span class='period'>.</span><span class='id identifier rubyid_to_json'>to_json</span><span class='rparen'>)</span>
+        <span class='kw'>end</span>
+    <span class='kw'>end</span>
+    <span class='const'>File</span><span class='period'>.</span><span class='id identifier rubyid_open'>open</span><span class='lparen'>(</span><span class='tstring'><span class='tstring_beg'>&quot;</span><span class='tstring_content'>/internal/projekttage/votes/projects.json</span><span class='tstring_end'>&quot;</span></span><span class='comma'>,</span> <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>w</span><span class='tstring_end'>&#39;</span></span><span class='rparen'>)</span> <span class='kw'>do</span> <span class='op'>|</span><span class='id identifier rubyid_f'>f</span><span class='op'>|</span>
+        <span class='id identifier rubyid_info'>info</span> <span class='op'>=</span> <span class='lbrace'>{</span><span class='rbrace'>}</span>
+        <span class='id identifier rubyid_votes_by_project'>votes_by_project</span><span class='period'>.</span><span class='id identifier rubyid_each_pair'>each_pair</span> <span class='kw'>do</span> <span class='op'>|</span><span class='id identifier rubyid_nr'>nr</span><span class='comma'>,</span> <span class='id identifier rubyid_votes'>votes</span><span class='op'>|</span>
+            <span class='id identifier rubyid_info'>info</span><span class='lbracket'>[</span><span class='id identifier rubyid_nr'>nr</span><span class='rbracket'>]</span> <span class='op'>=</span> <span class='lbrace'>{</span>
+                <span class='symbol'>:vote_count</span> <span class='op'>=&gt;</span> <span class='id identifier rubyid_votes'>votes</span><span class='period'>.</span><span class='id identifier rubyid_size'>size</span><span class='comma'>,</span>
+            <span class='rbrace'>}</span>
+        <span class='kw'>end</span>
+        <span class='id identifier rubyid_f'>f</span><span class='period'>.</span><span class='id identifier rubyid_write'>write</span> <span class='id identifier rubyid_info'>info</span><span class='period'>.</span><span class='id identifier rubyid_to_json'>to_json</span>
+    <span class='kw'>end</span>
+<span class='kw'>end</span></pre>
+    </td>
+  </tr>
+</table>
+</div>
+    
+  </div>
+
+</div>
+
+      <div id="footer">
+  Generated by
+  <a href="http://yardoc.org" title="Yay! A Ruby Documentation Tool" target="_parent">yard</a>
+  0.9.26 (ruby-3.0.2).
+</div>
+
+    </div>
+  </body>
+</html>

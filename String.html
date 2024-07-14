@@ -114,7 +114,7 @@
           <div class="docstring">
   <div class="discussion">
     
-<p>The extended characters map used by removeaccents. The accented characters  are coded here using their numerical equivalent to sidestep encoding issues. These correspond to ISO-8859-1 encoding.</p>
+<p>The extended characters map used by removeaccents. The accented characters are coded here using their numerical equivalent to sidestep encoding issues. These correspond to ISO-8859-1 encoding.</p>
 
 
   </div>
@@ -333,7 +333,7 @@
     <span class='id identifier rubyid_options'>options</span><span class='lbracket'>[</span><span class='symbol'>:downcase</span><span class='rbracket'>]</span> <span class='op'>||=</span> <span class='kw'>true</span>
     <span class='id identifier rubyid_options'>options</span><span class='lbracket'>[</span><span class='symbol'>:convert_spaces</span><span class='rbracket'>]</span> <span class='op'>||=</span> <span class='kw'>false</span>
     <span class='id identifier rubyid_options'>options</span><span class='lbracket'>[</span><span class='symbol'>:regexp</span><span class='rbracket'>]</span> <span class='op'>||=</span> <span class='tstring'><span class='regexp_beg'>/</span><span class='tstring_content'>[^-_A-Za-z0-9]</span><span class='regexp_end'>/</span></span>
-    
+
     <span class='id identifier rubyid_str'>str</span> <span class='op'>=</span> <span class='kw'>self</span><span class='period'>.</span><span class='id identifier rubyid_strip'>strip</span><span class='period'>.</span><span class='id identifier rubyid_removeaccents'>removeaccents</span>
     <span class='id identifier rubyid_str'>str</span><span class='period'>.</span><span class='id identifier rubyid_downcase!'>downcase!</span> <span class='kw'>if</span> <span class='id identifier rubyid_options'>options</span><span class='lbracket'>[</span><span class='symbol'>:downcase</span><span class='rbracket'>]</span>
     <span class='id identifier rubyid_str'>str</span><span class='period'>.</span><span class='id identifier rubyid_gsub!'>gsub!</span><span class='lparen'>(</span><span class='tstring'><span class='regexp_beg'>/</span><span class='tstring_content'>\ </span><span class='regexp_end'>/</span></span><span class='comma'>,</span><span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>_</span><span class='tstring_end'>&#39;</span></span><span class='rparen'>)</span> <span class='kw'>if</span> <span class='id identifier rubyid_options'>options</span><span class='lbracket'>[</span><span class='symbol'>:convert_spaces</span><span class='rbracket'>]</span>
@@ -456,14 +456,14 @@
     <td>
       <pre class="code"><span class="info file"># File 'src/ruby/parser.rb', line 39</span>
 
-<span class='kw'>def</span> <span class='id identifier rubyid_removeaccents'>removeaccents</span>    
+<span class='kw'>def</span> <span class='id identifier rubyid_removeaccents'>removeaccents</span>
     <span class='id identifier rubyid_str'>str</span> <span class='op'>=</span> <span class='const'><span class='object_link'><a href="" title="String (class)">String</a></span></span><span class='period'>.</span><span class='id identifier rubyid_new'>new</span><span class='lparen'>(</span><span class='kw'>self</span><span class='rparen'>)</span>
     <span class='const'><span class='object_link'><a href="" title="String (class)">String</a></span></span><span class='op'>::</span><span class='const'><span class='object_link'><a href="#ACCENTS_MAPPING-constant" title="String::ACCENTS_MAPPING (constant)">ACCENTS_MAPPING</a></span></span><span class='period'>.</span><span class='id identifier rubyid_each'>each</span> <span class='lbrace'>{</span><span class='op'>|</span><span class='id identifier rubyid_letter'>letter</span><span class='comma'>,</span><span class='id identifier rubyid_accents'>accents</span><span class='op'>|</span>
     <span class='id identifier rubyid_packed'>packed</span> <span class='op'>=</span> <span class='id identifier rubyid_accents'>accents</span><span class='period'>.</span><span class='id identifier rubyid_pack'>pack</span><span class='lparen'>(</span><span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>U*</span><span class='tstring_end'>&#39;</span></span><span class='rparen'>)</span>
     <span class='id identifier rubyid_rxp'>rxp</span> <span class='op'>=</span> <span class='const'>Regexp</span><span class='period'>.</span><span class='id identifier rubyid_new'>new</span><span class='lparen'>(</span><span class='tstring'><span class='tstring_beg'>&quot;</span><span class='tstring_content'>[</span><span class='embexpr_beg'>#{</span><span class='id identifier rubyid_packed'>packed</span><span class='embexpr_end'>}</span><span class='tstring_content'>]</span><span class='tstring_end'>&quot;</span></span><span class='comma'>,</span> <span class='kw'>nil</span><span class='rparen'>)</span>
     <span class='id identifier rubyid_str'>str</span><span class='period'>.</span><span class='id identifier rubyid_gsub!'>gsub!</span><span class='lparen'>(</span><span class='id identifier rubyid_rxp'>rxp</span><span class='comma'>,</span> <span class='id identifier rubyid_letter'>letter</span><span class='rparen'>)</span>
     <span class='rbrace'>}</span>
-    
+
     <span class='id identifier rubyid_str'>str</span>
 <span class='kw'>end</span></pre>
     </td>
@@ -524,7 +524,7 @@
     <span class='id identifier rubyid_options'>options</span><span class='lbracket'>[</span><span class='symbol'>:downcase</span><span class='rbracket'>]</span> <span class='op'>||=</span> <span class='kw'>true</span>
     <span class='id identifier rubyid_options'>options</span><span class='lbracket'>[</span><span class='symbol'>:convert_spaces</span><span class='rbracket'>]</span> <span class='op'>||=</span> <span class='kw'>false</span>
     <span class='id identifier rubyid_options'>options</span><span class='lbracket'>[</span><span class='symbol'>:regexp</span><span class='rbracket'>]</span> <span class='op'>||=</span> <span class='tstring'><span class='regexp_beg'>/</span><span class='tstring_content'>[^-_A-Za-z0-9]</span><span class='regexp_end'>/</span></span>
-    
+
     <span class='id identifier rubyid_str'>str</span> <span class='op'>=</span> <span class='kw'>self</span><span class='period'>.</span><span class='id identifier rubyid_strip'>strip</span><span class='period'>.</span><span class='id identifier rubyid_removeaccents'>removeaccents</span>
     <span class='id identifier rubyid_str'>str</span><span class='period'>.</span><span class='id identifier rubyid_downcase!'>downcase!</span> <span class='kw'>if</span> <span class='id identifier rubyid_options'>options</span><span class='lbracket'>[</span><span class='symbol'>:downcase</span><span class='rbracket'>]</span>
     <span class='id identifier rubyid_str'>str</span><span class='period'>.</span><span class='id identifier rubyid_gsub!'>gsub!</span><span class='lparen'>(</span><span class='tstring'><span class='regexp_beg'>/</span><span class='tstring_content'>\ </span><span class='regexp_end'>/</span></span><span class='comma'>,</span><span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>-</span><span class='tstring_end'>&#39;</span></span><span class='rparen'>)</span> <span class='kw'>if</span> <span class='id identifier rubyid_options'>options</span><span class='lbracket'>[</span><span class='symbol'>:convert_spaces</span><span class='rbracket'>]</span>

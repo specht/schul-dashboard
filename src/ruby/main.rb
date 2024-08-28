@@ -1759,6 +1759,7 @@ class Main < Sinatra::Base
                                         @session_user[:sus_may_contact_me] = results.first['u'][:sus_may_contact_me] || false
                                         @session_user[:user_agent] = results.first['s'][:user_agent]
                                         @session_user[:ip] = request.ip
+                                        @session_user[:force_2fa_exception_deadline] = results.first['u'][:force_2fa_exception_deadline] || 0
                                     end
                                 end
                             end

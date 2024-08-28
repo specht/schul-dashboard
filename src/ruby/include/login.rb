@@ -126,7 +126,20 @@ class Main < Sinatra::Base
             respond({:error => 'code_expired'})
         end
         assert(Time.at(login_code[:valid_to]) >= Time.now, 'code expired', true)
-        if (!DEVELOPMENT) && user_has_role(user[:email], :teacher)
+        exception_for_first_teacher_login = false
+        if user[:last_access].nil?
+            deadline = Time.now.to_i + 60 * 60 * 24 * 3
+            user[:force_2fa_exception_deadline] = deadline
+            neo4j_query_expect_one(<<~END_OF_QUERY, :email => user[:email], :deadline => deadline)
+                MATCH (u:User {email: $email})
+                SET u.force_2fa_exception_deadline = $deadline
+                RETURN u;
+            END_OF_QUERY
+        end
+        if Time.now.to_i < (user[:force_2fa_exception_deadline] || 0)
+            exception_for_first_teacher_login = true
+        end
+        if (!DEVELOPMENT) && user_has_role(user[:email], :teacher) && (!exception_for_first_teacher_login)
             first_method = login_code[:method]
             available_second_methods = []
             telephone_number = user[:telephone_number]

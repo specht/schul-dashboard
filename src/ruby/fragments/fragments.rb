@@ -463,7 +463,7 @@ class Main
                             move_down 1.5.cm
                             klassenleitung = @@klassenleiter[klasse].map do |shorthand|
                                 email = @@shorthands[shorthand]
-                                @@user_info[email][:display_name_official]
+                                (@@user_info[email] || {})[:display_name_official] || email
                             end
                             text "Klassenleitung: #{klassenleitung.join(', ')}", :align => :center, :inline_format => true
                             move_down 7.cm

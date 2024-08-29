@@ -234,9 +234,9 @@
                 <hr />
             </div>
 
-            <h2 id='anmeldung' style='margin-bottom: 30px; margin-top: 30px;'>Anmeldung</h2>
+            <h2 id='anmeldung' style='margin-bottom: 30px; margin-top: 30px;'>Anmeldung und Zwei-Faktor-Authentifizierung</h2>
             <p>
-                Hier kannst du dein Standard-Anmeldeverfahren wählen:
+                Hier kannst du deinen zweiten Faktor verwalten und dein Standard-Anmeldeverfahren wählen:
             </p>
             <hr />
             <div style="display: flex; align-items: start; gap: 10px; justify-content: center;">
@@ -256,11 +256,6 @@
                     </div>
                 </div>
             </div>
-            
-            <hr />
-            <p>
-                Hinweis: Falls du dein Telefon nicht dabei hast, kannst du jederzeit wieder auf die Anmeldung per E-Mail-Code ausweichen.
-            </p>
         </div>
     </div>
 </div>
@@ -278,9 +273,6 @@
                     <p>
                         Wenn du deinen Anmeldecode per SMS erhalten möchtest, kannst du hier deine Telefonnummer eingeben.
                         Diese Nummer wird nur für diesen Zweck verwendet und niemals an dritte Personen weitergegeben.
-                    </p>
-                    <p>
-                        Unabhängig davon, ob du die Anmeldung per SMS aktiviert hast oder nicht, kannst du dich jederzeit mit dem normalen Code per E-Mail anmelden.
                     </p>
                     <div class="input-group">
                         <input style='text-align: center;' id='ti_telephone_number' type="text" class="form-control" placeholder="Bitte gib deine Telefonnummer ein" value="#{session_user_telephone_number}">
@@ -337,9 +329,6 @@
                 oder für iOS
                 (<a href='https://apps.apple.com/us/app/google-authenticator/id388497605' target='_blank'>Google Authenticator</a>,
                 <a href='https://apps.apple.com/us/app/freeotp-authenticator/id872559395' target='_blank'>FreeOTP Authenticator</a>).
-                </p>
-                <p>
-                Unabhängig davon, ob du OTP aktiviert hast oder nicht, kannst du dich jederzeit mit dem normalen Code per E-Mail anmelden.
                 </p>
                 <div style="text-align: center;">
                     <button class="bu-generate-otp-code btn btn-success"><i class='fa fa-qrcode'></i>&nbsp;&nbsp;OTP aktivieren und QR-Code anzeigen</button>

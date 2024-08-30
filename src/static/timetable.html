@@ -720,11 +720,11 @@ document.addEventListener('DOMContentLoaded', function() {
 //                 if (arg.event.extendedProps.vnr)
 //                     fach.html('#' + arg.event.extendedProps.vnr + ' ' + fach.html());
                 div1.append(fach);
-                if (`#{DEVELOPMENT}` === 'true') {
-                    if (arg.event.extendedProps.lesson_key !== 0) {
-                        div1.append($(`<div>`).text(`[${arg.event.extendedProps.lesson_key}]`));
-                    }
-                }
+                // if (`#{DEVELOPMENT}` === 'true') {
+                //     if (arg.event.extendedProps.lesson_key !== 0) {
+                //         div1.append($(`<div>`).text(`[${arg.event.extendedProps.lesson_key}]`));
+                //     }
+                // }
 
                 let div1b = $('<div>').addClass('line2');
                 if (arg.event.extendedProps.vertretungs_text)

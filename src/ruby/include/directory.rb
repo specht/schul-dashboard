@@ -97,7 +97,11 @@ class Main < Sinatra::Base
                 io.puts "<td><div class='#{salzh_class}' style='#{salzh_style}'>#{record[:last_name]}</div></td>"
                 io.puts "<td><div class='#{salzh_class}' style='#{salzh_style}'>#{record[:first_name]}</div></td>"
                 if teacher_logged_in?
-                    io.puts "<td>#{Date.parse(record[:geburtstag]).strftime('%d.%m.%Y')}</td>"
+                    if record[:geburtstag]
+                        io.puts "<td>#{Date.parse(record[:geburtstag]).strftime('%d.%m.%Y')}</td>"
+                    else
+                        io.puts "<td>&ndash;</td>"
+                    end
                 end
                 # salzh_label = ''
                 # if salzh_status[email][:status]
@@ -502,22 +506,22 @@ class Main < Sinatra::Base
 
     def self.update_projekttage_groups()
         @@projekttage_mailing_lists = {}
-        $neo4j.neo4j_query(<<~END_OF_QUERY).map { |x| {:recipient => x['u.email'] } }.each do |row|
-            MATCH (u:User)
-            WHERE NOT (u)-[:VOTED_FOR]->(:Projekt)
-            RETURN u.email;
-        END_OF_QUERY
-            email = row[:recipient]
-            next unless user_has_role(email, :schueler) && ((@@user_info[email][:klassenstufe] || 7) < 10)
-            ['', 'eltern.'].each do |who|
-                list_email = who + 'kein.projekt.gewaehlt' + '@' + MAILING_LIST_DOMAIN
-                @@projekttage_mailing_lists[list_email] ||= {
-                    :label => 'Kein Projekt gewählt' + (who.empty? ? '' : ' (Eltern)'),
-                    :recipients => [],
-                }
-                @@projekttage_mailing_lists[list_email][:recipients] << who + email
-            end
-        end
+        # $neo4j.neo4j_query(<<~END_OF_QUERY).map { |x| {:recipient => x['u.email'] } }.each do |row|
+        #     MATCH (u:User)
+        #     WHERE NOT (u)-[:VOTED_FOR]->(:Projekt)
+        #     RETURN u.email;
+        # END_OF_QUERY
+        #     email = row[:recipient]
+        #     next unless user_has_role(email, :schueler) && ((@@user_info[email][:klassenstufe] || 7) < 10)
+        #     ['', 'eltern.'].each do |who|
+        #         list_email = who + 'kein.projekt.gewaehlt' + '@' + MAILING_LIST_DOMAIN
+        #         @@projekttage_mailing_lists[list_email] ||= {
+        #             :label => 'Kein Projekt gewählt' + (who.empty? ? '' : ' (Eltern)'),
+        #             :recipients => [],
+        #         }
+        #         @@projekttage_mailing_lists[list_email][:recipients] << who + email
+        #     end
+        # end
     end
 
     post '/api/toggle_homeschooling' do
@@ -800,6 +804,8 @@ class Main < Sinatra::Base
         io.puts "</tr>"
         io.puts "<tbody style='display: none;' class='list_email_emails' data-list-email='#{list_email}'>"
         emails = []
+        # STDERR.puts list_email
+        # STDERR.puts info[:recipients].to_yaml
         info[:recipients].sort do |a, b|
             an = ((@@user_info[a.sub(/^eltern\./, '')] || {})[:display_name] || '').downcase
             bn = ((@@user_info[b.sub(/^eltern\./, '')] || {})[:display_name] || '').downcase

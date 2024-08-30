@@ -1065,7 +1065,7 @@ class Timetable
         elsif now.strftime('%Y-%m-%d') == @@config[:first_school_day]
             hide_from_sus = now.strftime('%H:%M:%S') < '08:10:00'
         end
-        hide_from_sus = false if DEVELOPMENT
+        # hide_from_sus = false if DEVELOPMENT
         debug "Updating weeks: #{only_these_lesson_keys.to_a.join(', ')} (hide_from_sus: #{hide_from_sus})"
 
         ical_info = {}
@@ -1772,14 +1772,22 @@ class Timetable
                                     e.delete(:vertretungs_text)
                                     e.delete(:data)
                                     subject = [
-                                        ['Zauberkunst', 'Flitwick'],
-                                        ['Wahrsagen', 'Trelawney'],
-                                        ['Kräuterkunde', 'Sprout'],
-                                        ['Muggelkunde', 'Burbage'],
-                                        ['Pflege magischer Geschöpfe', 'Hagrid'],
-                                        ['Zaubertränke', 'Snape'],
-                                        ['Besenflug', 'Hooch'],
-                                        ['Verteidigung gegen die dunklen Künste', 'Lupin']
+                                        # ['Zauberkunst', 'Flitwick'],
+                                        # ['Wahrsagen', 'Trelawney'],
+                                        # ['Kräuterkunde', 'Sprout'],
+                                        # ['Muggelkunde', 'Burbage'],
+                                        # ['Pflege magischer Geschöpfe', 'Hagrid'],
+                                        # ['Zaubertränke', 'Snape'],
+                                        # ['Besenflug', 'Hooch'],
+                                        # ['Verteidigung gegen die dunklen Künste', 'Lupin']
+                                        ['Kreatives Chaos', 'Herr Dr. Wirrwarr'],
+                                        ['Schlafen für Fortgeschrittene', 'Frau Schlummer'],
+                                        ['Haustierpflege', 'Herr Tierlieb'],
+                                        ['Nonsenskunde', 'Frau Dr. Quatsch'],
+                                        ['Schokoladenwissenschaft', 'Herr Zuckerschnute'],
+                                        ['Zeitreisen', 'Frau Dr. Chronos'],
+                                        ['Unsichtbarkeitstraining für Anfänger', 'Frau Nebel-Schleierhaft'],
+                                        ['Pflanzenflüstern und Kräuterschnack', 'Frau Grünkraut'],
                                     ].sample
                                     e[:label_lehrer_lang] = "#{subject[1]}"
                                     e[:label_lehrer_short] = "#{subject[1]}"

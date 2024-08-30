@@ -75,13 +75,13 @@ class Main < Sinatra::Base
     end
 
     def self.determine_zeugnislisten()
-        # STDERR.puts "ATTENTION determine_zeugnislisten() IS DOING NOTHING RIGHT NOW"
-        # return
-
         @@zeugnisliste_for_klasse = {}
         @@zeugnisliste_for_lehrer = {}
         # @@need_sozialverhalten is a hash of teacher shorthands and klassen
         @@need_sozialverhalten = {}
+
+        STDERR.puts "ATTENTION determine_zeugnislisten() IS DOING NOTHING RIGHT NOW"
+        return
 
         kurse_for_klasse = Hash[ZEUGNIS_KLASSEN_ORDER.map do |klasse|
             [klasse, (@@lessons_for_klasse[klasse] || []).map { |x| @@lessons[:lesson_keys][x].merge({:lesson_key => x})}]

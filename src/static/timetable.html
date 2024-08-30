@@ -578,13 +578,12 @@ function install_physics_handler(e) {
 
 function reload_print_button() {
     if (timetable_id == '#{@session_user[:id]}' && #{schueler_logged_in?}) {
-        // $('.fc-print-button').html('<i class="fa fa-print"></i>');
-        // $('.fc-print-button').show();
+        $('.fc-print-button').html('<i class="fa fa-print"></i>');
+        $('.fc-print-button').show();
     } else {
         console.log("hide")
-        // $('.fc-print-button').hide();
+        $('.fc-print-button').hide();
     };
-    $('.fc-print-button').hide();
 }
 
 var lesson_notes = #{lesson_notes_for_session_user.to_json};

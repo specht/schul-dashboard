@@ -778,7 +778,7 @@ class Main
                             move_up 3.mm
                             last_name_parts = schueler[:last_name].split(',').map { |x| x.strip }.reverse
                             name = "#{schueler[:official_first_name]} #{last_name_parts.join(' ')}"
-            
+
                             text "für <b>#{name}</b><br />Klasse #{Main.tr_klasse(klasse)}", :size => 13, :inline_format => true, :align => :center
                         end
                         float do
@@ -1157,17 +1157,20 @@ class Main
         d = @@lessons[:start_date_for_date][today]
         timetable = {}
         max_stunden = 1
-        @@lessons[:timetables][d].each_pair do |lesson_key, lesson_info|
-            lesson_info[:stunden].each_pair do |day, stunden|
-                stunden.each_pair do |stunde, info|
-                    if info[:klassen].include?(klasse)
-                        if @@lessons_for_user[email].include?(lesson_key)
-                            timetable[day] ||= {}
-                            x = info.clone
-                            x[:lesson_key] = lesson_key
-                            timetable[day][stunde] ||= []
-                            timetable[day][stunde] << x
-                            max_stunden = stunde if stunde > max_stunden
+        hide_from_sus = Main.determine_hide_from_sus()
+        unless hide_from_sus
+            @@lessons[:timetables][d].each_pair do |lesson_key, lesson_info|
+                lesson_info[:stunden].each_pair do |day, stunden|
+                    stunden.each_pair do |stunde, info|
+                        if info[:klassen].include?(klasse)
+                            if @@lessons_for_user[email].include?(lesson_key)
+                                timetable[day] ||= {}
+                                x = info.clone
+                                x[:lesson_key] = lesson_key
+                                timetable[day][stunde] ||= []
+                                timetable[day][stunde] << x
+                                max_stunden = stunde if stunde > max_stunden
+                            end
                         end
                     end
                 end
@@ -1214,7 +1217,7 @@ class Main
             col1 = palette[:primary]
             col2 = palette[:primary_color_darker]
             textcol = palette[:main_text]
-            
+
             font('myfont') do
                 move_down 10.mm
                 float do
@@ -1430,7 +1433,7 @@ class Main
                 col1 = palette[:primary]
                 col2 = palette[:primary_color_darker]
                 textcol = palette[:main_text]
-                
+
                 fill_color color_scheme[0] == 'l' ? '222222' : 'eeeeee'
                 font('myfont') do
                     move_down 10.mm

@@ -463,7 +463,7 @@ class Main
                             move_down 1.5.cm
                             klassenleitung = @@klassenleiter[klasse].map do |shorthand|
                                 email = @@shorthands[shorthand]
-                                (@@user_info[email] || {})[:display_name_official] || email
+                                @@user_info[email][:display_name_official]
                             end
                             text "Klassenleitung: #{klassenleitung.join(', ')}", :align => :center, :inline_format => true
                             move_down 7.cm
@@ -474,6 +474,7 @@ class Main
                                 translate 10.cm, 0 do
                                     @@klassenleiter[klasse].each do |shorthand|
                                         email = @@shorthands[shorthand]
+                                        STDERR.puts email
                                         text "Klassenleitung #{@@user_info[email][:display_name_official]}", :align => :left, :size => 7
                                         move_down 7.mm
                                     end

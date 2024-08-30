@@ -1057,18 +1057,6 @@ class Timetable
         end
     end
 
-    def self.determine_hide_from_sus
-        hide_from_sus = false
-        now = Time.now
-        if now.strftime('%Y-%m-%d') < @@config[:first_school_day]
-            hide_from_sus = true
-        elsif now.strftime('%Y-%m-%d') == @@config[:first_school_day]
-            hide_from_sus = now.strftime('%H:%M:%S') < '08:10:00'
-        end
-        # hide_from_sus = false if DEVELOPMENT
-        hide_from_sus
-    end
-
     def update_weeks(only_these_lesson_keys)
         hide_from_sus = Main.determine_hide_from_sus()
         debug "Updating weeks: #{only_these_lesson_keys.to_a.join(', ')} (hide_from_sus: #{hide_from_sus})"

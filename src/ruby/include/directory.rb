@@ -1,4 +1,16 @@
 class Main < Sinatra::Base
+    def self.determine_hide_from_sus
+        hide_from_sus = false
+        now = Time.now
+        if now.strftime('%Y-%m-%d') < @@config[:first_school_day]
+            hide_from_sus = true
+        elsif now.strftime('%Y-%m-%d') == @@config[:first_school_day]
+            hide_from_sus = now.strftime('%H:%M:%S') < '08:10:00'
+        end
+        # hide_from_sus = false if DEVELOPMENT
+        hide_from_sus
+    end
+    
     def mail_addresses_table(klasse)
         assert((teacher_logged_in?) || (@session_user[:klasse] == klasse))
         klassenleiter_logged_in = (@@klassenleiter[klasse] || []).include?(@session_user[:shorthand]) || admin_logged_in?

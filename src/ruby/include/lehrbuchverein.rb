@@ -254,13 +254,23 @@ class Main < Sinatra::Base
                         STDERR.puts "GOT TOKEN! [#{token}]"
                         if token_catalogue[token]
                             STDERR.puts "ALSO FOUND EMAIL FOR TOKEN: #{token_catalogue[token].to_json}"
+                            email = token_catalogue[token][:email]
                             if amount_cents == token_catalogue[token][:amount]
-                                # TODO: mark user as paid for next schuljahr
-                                state = :handled
-                                result[:extra_info][sha1] = {
-                                    :display_name => @@user_info[token_catalogue[token][:email]][:display_name],
-                                    :klasse => @@user_info[token_catalogue[token][:email]][:klasse],
-                                }
+                                if @@user_info[email]
+                                    $neo4j.neo4j_query(<<~END_OF_QUERY, {:email => email, :jahr => LEHRBUCHVEREIN_JAHR})
+                                        MATCH (u:User {email: $email})
+                                        MERGE (j:Lehrbuchvereinsjahr {jahr: $jahr})
+                                        CREATE (u)-[:PAID_FOR]->(j)
+                                        RETURN u.lehrbuchverein_mitglied;
+                                    END_OF_QUERY
+                                    state = :handled
+                                    result[:extra_info][sha1] = {
+                                        :display_name => @@user_info[email][:display_name],
+                                        :klasse => @@user_info[email][:klasse],
+                                    }
+                                else
+                                    result[:extra_info][sha1] = {:reason => :unknown_sus, :email => email}
+                                end
                             else
                                 result[:extra_info][sha1] = {:reason => :unexpected_amount, :expected_amount => token_catalogue[token][:amount]}
                             end

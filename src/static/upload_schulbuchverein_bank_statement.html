@@ -25,7 +25,12 @@
         <div class='col-md-12'>
             <h2>Kontoauszug hochladen</h2>
             <div class="alert alert-white">
-                Die Kontoauszüge, die Sie hier hochladen, werden in keiner Form auf dem Server gespeichert. Sie werden lediglich eingelesen und verarbeitet, wobei Auszahlungen übersprungen werden und nur die Einzahlungen betrachtet werden. Es wird nur bei den als erfolgreich markierten Geldeingängen vermerkt, dass der Beitrag für das jeweilige Schuljahr bezahlt worden ist.
+                <p>
+                    Die Kontoauszüge, die Sie hier hochladen, werden in keiner Form auf dem Server gespeichert. Sie werden lediglich eingelesen und verarbeitet, wobei Auszahlungen übersprungen werden und nur die Einzahlungen betrachtet werden. Es wird nur bei den als erfolgreich markierten Geldeingängen vermerkt, dass der Beitrag für das jeweilige Schuljahr bezahlt worden ist.
+                </p>
+                <p>
+                    Aktuelles Schuljahr: <strong>#{LEHRBUCHVEREIN_JAHR}/#{(LEHRBUCHVEREIN_JAHR + 1) % 100}</strong>
+                </p>
             </div>
             <form class='dropzone' id='my-awesome-dropzone'></form>
             <div class='preview' style='display: none;'></div>
@@ -71,6 +76,8 @@ function append_details(div, heading, result, key, status) {
                 text = 'unbekannter Code';
             } else if (result.extra_info[sha1].reason === 'unexpected_amount') {
                 text = `unerwarteter Betrag (${(result.extra_info[sha1].expected_amount / 100).toFixed(2).replace('.', ',')}&nbsp;&euro; erwartet)`;
+            } else if (result.extra_info[sha1].reason === 'unknown_sus') {
+                text = `Schüler nicht mehr in der Schule (${result.extra_info[sha1].email})`;
             }
             $(`<td>`).html(text).appendTo(row);
         }

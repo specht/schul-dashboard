@@ -143,5 +143,26 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     });
+    if ('#{teacher_logged_in?}' === 'true') {
+        if (Object.keys(seats_dict).length > 0) {
+            let first_room = true;
+            let n = #{@@schueler_for_klasse[klasse].size};
+            console.log(n);
+            let rooms_for_klasse = #{@@rooms_for_klasse[klasse].to_a.to_json};
+            console.log(rooms_for_klasse);
+            for (let raum of Object.keys(seats_dict)) {
+                if (rooms_for_klasse.indexOf(raum) >= 0) {
+                    if (n <= seats_dict[raum].length) {
+                        if (first_room) {
+                            $(`<hr>`).appendTo('#additional_teacher_content');
+                            $(`<h3>`).text('Sitzplan-Shuffler').appendTo('#additional_teacher_content');
+                            first_room = false;
+                        }
+                        $(`<a>`).text(`Raum ${raum}`).attr('href', `/sitzplan/#{klasse}/${raum}`).addClass('btn btn-primary').css('margin', '0 0.1em').appendTo('#additional_teacher_content');
+                    }
+                }
+            }
+        }
+    }
 });
 </script>

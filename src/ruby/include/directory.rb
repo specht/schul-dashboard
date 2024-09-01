@@ -229,7 +229,7 @@ class Main < Sinatra::Base
             end
             # io.puts print_stream_restriction_table(klasse)
             if teacher_logged_in?
-                io.puts "<hr style='margin: 3em 0;'/>"
+                io.puts "<hr>"
                 io.puts "<h3>Schülerlisten Klasse #{tr_klasse(klasse)}</h3>"
     #             io.puts "<div style='text-align: center;'>"
                 io.puts "<a href='/api/directory_xlsx/#{klasse}' class='btn btn-primary'><i class='fa fa-file-excel-o'></i>&nbsp;&nbsp;Excel-Tabelle herunterladen</a>"
@@ -237,7 +237,7 @@ class Main < Sinatra::Base
                 io.puts "<a href='/api/directory_timetex_pdf/by_first_name/#{klasse}' class='btn btn-primary'><i class='fa fa-file-pdf-o'></i>&nbsp;&nbsp;Timetex-PDF herunterladen (nach Vornamen sortiert)</a>"
                 io.puts "<a href='/api/directory_json/#{klasse}' class='btn btn-primary'><i class='fa fa-file-code-o'></i>&nbsp;&nbsp;JSON herunterladen</a>"
             end
-            io.puts "<hr style='margin: 3em 0;'/>"
+            io.puts "<hr>"
             hide_from_sus = Main.determine_hide_from_sus()
             if teacher_logged_in?
                 io.puts "<h3>Stundenpläne der Klasse #{tr_klasse(klasse)} zum Ausdrucken</h3>"
@@ -260,7 +260,7 @@ class Main < Sinatra::Base
                 end
             end
             unless schueler_logged_in? && hide_from_sus
-                io.puts "<hr style='margin: 3em 0;'/>"
+                io.puts "<hr>"
                 io.puts "<h3>Lehrkräfte der Klasse #{tr_klasse(klasse)}</h3>"
                 io.puts "<div class='table-responsive'>"
                 io.puts "<table class='table table-condensed table-striped narrow'>"

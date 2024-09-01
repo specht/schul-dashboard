@@ -1144,6 +1144,7 @@ class Main < Sinatra::Base
             @@room_ids[room] = Digest::SHA2.hexdigest(KLASSEN_ID_SALT + room).to_i(16).to_s(36)[0, 16]
         end
         @@rooms_for_shorthand = {}
+        @@rooms_for_klasse = {}
         room_order_set = Set.new(ROOM_ORDER)
         undeclared_rooms = Set.new()
         unless timetable_today.nil?
@@ -1156,6 +1157,18 @@ class Main < Sinatra::Base
                                     if room_order_set.include?(room)
                                         @@rooms_for_shorthand[shorthand] ||= Set.new()
                                         @@rooms_for_shorthand[shorthand] << room
+                                    else
+                                        undeclared_rooms << room
+                                    end
+                                end
+                            end
+                        end
+                        lesson_info[:klassen].each do |klasse|
+                            (lesson_info[:raum] || '').split('/').each do |room|
+                                unless (room || '').strip.empty?
+                                    if room_order_set.include?(room)
+                                        @@rooms_for_klasse[klasse] ||= Set.new()
+                                        @@rooms_for_klasse[klasse] << room
                                     else
                                         undeclared_rooms << room
                                     end

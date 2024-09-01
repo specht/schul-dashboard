@@ -202,13 +202,14 @@ function place_sus(silent) {
 }
 
 function seat_suitable_for_kid(seat_index, kid_index) {
-    // if (['6a', '9a'].indexOf(klasse) >= 0) {
-    //     if (sus[kid_index].geschlecht === 'm')
-    //         return seat_index % 2 === 0;
-    //     else
-    //         return seat_index % 2 === 1;
-    // }
-    return true;
+    if (mw_abwechselnd_choice === 'yes') {
+        if (sus[kid_index].geschlecht === 'm')
+            return seat_index % 2 === 0;
+        else
+            return seat_index % 2 === 1;
+    } else {
+        return true;
+    }
 }
 
 function shuffle_plan() {
@@ -292,6 +293,7 @@ function fix_scale() {
 }
 
 var music_choice = "#{get_sitzplan_music_choice()}";
+var mw_abwechselnd_choice = "#{get_sitzplan_mw_abwechselnd_choice()}";
 
 document.addEventListener('DOMContentLoaded', function() {
     $(`#dd_music .dropdown-item[data-value=${music_choice}]`).addClass('active');
@@ -307,6 +309,7 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     });
+    $('#maleFemaleButtonLabel').text(mw_abwechselnd_choice === 'yes' ? 'abwechselnd' : 'zufällig');
     let path = window.location.pathname.replace("/sitzplan/", '').split('/');
     klasse = path[0];
     raum = path[1];
@@ -336,6 +339,7 @@ document.addEventListener('DOMContentLoaded', function() {
             let seat = seats[i];
             let kid = sus[i];
             let place = $(`<div class='place'>`).data('phi', 0.0).css('opacity', 0);
+            // place.css('outline', kid.geschlecht === 'w' ? '1px solid red' : '1px solid blue');
             let image = $(`<img style="background-image: url(https://nextcloud.gymnasiumsteglitz.de/index.php/avatar/${sus[i].nc_login}/128), url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mO88h8AAq0B1REmZuEAAAAASUVORK5CYII=);">`);
             place.append(image);
             let label = $(`<div class='label'>`).html(kid.first_name);
@@ -376,6 +380,15 @@ document.addEventListener('DOMContentLoaded', function() {
                 place_sus();
             }
         });
+        $('#maleFemaleButton').click(function(e) {
+            $('#maleFemaleButton').blur();
+            mw_abwechselnd_choice = mw_abwechselnd_choice === 'yes' ? 'no' : 'yes';
+            api_call('/api/set_sitzplan_mw_abwechselnd_choice', {mw_abwechselnd_choice: mw_abwechselnd_choice}, function(data) {
+                if (data.success) {
+                    $('#maleFemaleButtonLabel').text(mw_abwechselnd_choice === 'yes' ? 'abwechselnd' : 'zufällig');
+                }
+            });
+        });
     })
 });
 </script>
@@ -399,6 +412,9 @@ document.addEventListener('DOMContentLoaded', function() {
             <a class="dropdown-item" data-value="06-san-fernando2">Teletype (0:59)</a>
         </div>
     </div>
+    <button class="btn btn-sm btn-secondary" type="button" id="maleFemaleButton">
+        <i class='fa fa-female'></i><i class='fa fa-male'></i> <span id='maleFemaleButtonLabel'></span>
+    </button>
     <span>Leer</span>
     <span>A</span>
     <span>C</span>

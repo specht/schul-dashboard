@@ -414,14 +414,14 @@ class SetupDatabase
                     wanted_users << "bib-station-with-printer@#{SCHUL_MAIL_DOMAIN}"
                     users_to_be_deleted = Set.new(present_users) - wanted_users
                     unless users_to_be_deleted.empty?
-                        debug "Deleting #{users_to_be_deleted.size} users (yes really)"
-                        users_to_be_deleted.each do |email|
-                            debug "Deleting #{email}"
-                            neo4j_query(<<~END_OF_QUERY, :email => email)
-                                MATCH (u:User {email: $email})
-                                DETACH DELETE u;
-                            END_OF_QUERY
-                        end
+                        debug "Deleting #{users_to_be_deleted.size} users (not really)"
+                        # users_to_be_deleted.each do |email|
+                        #     debug "Deleting #{email}"
+                        #     neo4j_query(<<~END_OF_QUERY, :email => email)
+                        #         MATCH (u:User {email: $email})
+                        #         DETACH DELETE u;
+                        #     END_OF_QUERY
+                        # end
                     end
                 end
                 transaction do

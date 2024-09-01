@@ -776,4 +776,22 @@ class Main < Sinatra::Base
         require_user!
         respond_raw_with_mimetype(File.read("/data/sitzplan/#{params[:key]}.mp3"), 'audio/mpeg')
     end
+
+    def get_sitzplan_mw_abwechselnd_choice
+        neo4j_query_expect_one(<<~END_OF_QUERY, :email => @session_user[:email])['u.mw_abwechselnd_choice'] || 'no'
+            MATCH (u:User {email: $email})
+            RETURN u.mw_abwechselnd_choice;
+        END_OF_QUERY
+    end
+
+    post '/api/set_sitzplan_mw_abwechselnd_choice' do
+        require_teacher!
+        data = parse_request_data(:required_keys => [:mw_abwechselnd_choice])
+        neo4j_query_expect_one(<<~END_OF_QUERY, :email => @session_user[:email], :mw_abwechselnd_choice => data[:mw_abwechselnd_choice])
+            MATCH (u:User {email: $email})
+            SET u.mw_abwechselnd_choice = $mw_abwechselnd_choice
+            RETURN u;
+        END_OF_QUERY
+        respond(:success => true)
+    end
 end

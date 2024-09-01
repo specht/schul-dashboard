@@ -311,6 +311,13 @@
                 $('#book_title').text(book.title);
                 $('#book_subtitle').text(book.subtitle);
                 $('#book_author').text(book.author);
+                if (book.ts_discarded !== null) {
+                    $('#book_details').prepend($(`<div class='text-danger' style='font-weight: bold;'>`).text(`Dieses Buch wurde am ${moment.unix(book.ts_discarded).format('L')} ausgemustert.`));
+                    $('#bu_order_overview').hide();
+                    $('#order_div').hide();
+                    $('#bu_order_impersonate_overview').hide();
+                    $('#order_impersonate_div').hide();
+                }
                 let parts = [];
                 if (book.verlag) parts.push(book.verlag)
                 if (book.published) parts.push(`${book.published}`)

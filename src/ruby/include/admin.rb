@@ -51,7 +51,6 @@ class Main < Sinatra::Base
             io.puts "<a class='btn btn-secondary mb-1' href='/api/all_lul_logo_didact'>LDC: Alle Lehrkräfte</a>"
             io.puts "<a class='btn btn-secondary mb-1' href='/api/all_sus_untis'>Untis: Alle SuS</a>"
             io.puts "<a class='btn btn-secondary mb-1' href='/api/all_kurse_untis'>Untis: Alle Kurse</a>"
-            io.puts "<a class='btn btn-secondary mb-1' href='/api/get_room_timetable_pdf'>Alle Raumpläne (PDF)</a>"
             io.puts "<hr />"
             io.puts "<h3 id='teachers'>Lehrerinnen und Lehrer</h3>"
             io.puts "<div style='max-width: 100%; overflow-x: auto;'>"

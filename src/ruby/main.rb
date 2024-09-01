@@ -2990,9 +2990,10 @@ class Main < Sinatra::Base
         redirect "#{WEB_ROOT}/bib_postpone/#{params[:tag]}", 302
     end
 
-    get '/api/get_room_timetable_pdf' do
+    get '/api/get_room_timetable_pdf/:klasse' do
         require_teacher!
-        respond_raw_with_mimetype(get_room_timetable_pdf(), 'application/pdf')
+        klasse = params[:klasse]
+        respond_raw_with_mimetype(get_room_timetable_pdf_for_klasse(klasse), 'application/pdf')
     end
 
     get '/room/:room' do

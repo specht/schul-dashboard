@@ -248,7 +248,10 @@ class Main < Sinatra::Base
                 end
             end
             if teacher_logged_in?
-                io.puts "<a href='/api/get_timetable_pdf_for_klasse/#{klasse}' target='_blank' class='btn btn-primary'><i class='fa fa-file-pdf-o'></i>&nbsp;&nbsp;PDF herunterladen (#{@@schueler_for_klasse[klasse].size} Seiten)</a>"
+                io.puts "<a href='/api/get_timetable_pdf_for_klasse/#{klasse}' target='_blank' class='btn btn-primary'><i class='fa fa-file-pdf-o'></i>&nbsp;&nbsp;Klassensatz Stundenpläne (#{@@schueler_for_klasse[klasse].size} Seiten)</a>"
+                unless ['11', '12'].include?(klasse)
+                    io.puts "<a href='/api/get_room_timetable_pdf/#{klasse}' target='_blank' class='btn btn-primary'><i class='fa fa-file-pdf-o'></i>&nbsp;&nbsp;Raumplan für die Klassenzimmertür</a>"
+                end
             elsif schueler_logged_in?
                 unless hide_from_sus
                     io.puts "<a href='/api/get_single_timetable_pdf' target='_blank' class='btn btn-primary'><i class='fa fa-file-pdf-o'></i>&nbsp;&nbsp;PDF herunterladen</a>"
@@ -586,7 +589,7 @@ class Main < Sinatra::Base
                 main.iterate_directory(klasse) do |email, i|
                     user = @@user_info[email]
                     y = 297.mm - 20.mm - 20.7.pt * i
-                    draw_text "#{user[:last_name]}, #{user[:first_name]}", :at => [30.mm, y + 6.pt]
+                    draw_text "#{user[:last_name].unicode_normalize(:nfc)}, #{user[:first_name].unicode_normalize(:nfc)}", :at => [30.mm, y + 6.pt]
                     line_width 0.2.mm
                     stroke { line [30.mm, y + 20.7.pt], [77.mm, y + 20.7.pt] } if i == 0
                     stroke { line [30.mm, y], [77.mm, y] }
@@ -608,7 +611,7 @@ class Main < Sinatra::Base
                 main.iterate_directory(klasse, :display_name, nil) do |email, i|
                     user = @@user_info[email]
                     y = 297.mm - 20.mm - 20.7.pt * i
-                    draw_text "#{user[:display_name]}", :at => [30.mm, y + 6.pt]
+                    draw_text "#{user[:display_name].unicode_normalize(:nfc)}", :at => [30.mm, y + 6.pt]
                     line_width 0.2.mm
                     stroke { line [30.mm, y + 20.7.pt], [77.mm, y + 20.7.pt] } if i == 0
                     stroke { line [30.mm, y], [77.mm, y] }
@@ -651,7 +654,7 @@ class Main < Sinatra::Base
                 @@schueler_for_klasse[klasse].each do |email|
                     next unless never_seen_users.include?(email)
                     user = @@user_info[email]
-                    text "#{user[:display_name]}\n"
+                    text "#{user[:display_name].unicode_normalize(:nfc)}\n"
                 end
                 text "\n\nBitte erinnern Sie die SuS daran, schnellstmöglich ihr E-Mail-Postfach einzurichten, sich am Dashboard anzumelden und sich bei der NextCloud anzumelden. ", inline_format: true
                 text "Wer seinen E-Mail-Zettel verloren hat, schreibt bitte eine E-Mail an #{WEBSITE_MAINTAINER_NAME_AKKUSATIV} – <b>#{WEBSITE_MAINTAINER_EMAIL}</b> – dort bekommt jeder die Zugangsdaten zur Not noch einmal als PDF.\n\n", inline_format: true

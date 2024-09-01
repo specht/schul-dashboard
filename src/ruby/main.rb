@@ -124,7 +124,7 @@ Faye::WebSocket.load_adapter('thin')
 # Faye::WebSocket.load_adapter('puma')
 
 def remove_accents(s)
-    I18n.transliterate(s.gsub('ä', 'ae').gsub('ö', 'oe').gsub('ü', 'ue').gsub('Ä', 'Ae').gsub('Ö', 'Oe').gsub('Ü', 'Ue').gsub('ß', 'ss').gsub('ė', 'e').gsub('š', 's'))
+    I18n.transliterate(s.unicode_normalize(:nfc).gsub('ä', 'ae').gsub('ö', 'oe').gsub('ü', 'ue').gsub('Ä', 'Ae').gsub('Ö', 'Oe').gsub('Ü', 'Ue').gsub('ß', 'ss').gsub('ė', 'e').gsub('š', 's').gsub('é', 'e'))
 end
 
 def debug(message, index = 0)

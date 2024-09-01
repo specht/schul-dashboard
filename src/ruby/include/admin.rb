@@ -627,7 +627,7 @@ class Main < Sinatra::Base
                 if data_for_required_email_address[email]
                     io.puts data_for_required_email_address[email].to_json + ','
                 else
-                    io.puts "// no data for #{email}"
+                    # io.puts "// no data for #{email}"
                 end
             end
             io.puts "</pre>"

@@ -39,11 +39,10 @@ class String
     def removeaccents
         str = String.new(self)
         String::ACCENTS_MAPPING.each {|letter,accents|
-        packed = accents.pack('U*')
-        rxp = Regexp.new("[#{packed}]", nil)
-        str.gsub!(rxp, letter)
+            packed = accents.pack('U*')
+            rxp = Regexp.new("[#{packed}]", nil)
+            str.gsub!(rxp, letter)
         }
-
         str
     end
 
@@ -155,8 +154,8 @@ class Parser
             email = line['E-Mail-Adresse'].strip
             shorthand = (line['Kürzel'] || '').strip
             next if shorthand.empty?
-            first_name = (line['Vorname'] || '').strip
-            last_name = (line['Nachname'] || '').strip
+            first_name = (line['Vorname'] || '').strip.unicode_normalize(:nfd)
+            last_name = (line['Nachname'] || '').strip.unicode_normalize(:nfd)
             geschlecht = line['Geschlecht']
             force_display_name = line['Anzeigename']
 
@@ -173,7 +172,7 @@ class Parser
                 end
             end
 
-            titel = (line['Titel'] || '').strip
+            titel = (line['Titel'] || '').strip.unicode_normalize(:nfd)
             display_name = last_name.dup
             if display_name.include?(',')
                 display_name = display_name.split(',').map { |x| x.strip }
@@ -242,11 +241,11 @@ class Parser
         CSV.foreach(path, :headers => true) do |line|
             line = Hash[line]
             email = line['E-Mail-Adresse'].strip
-            first_name = (line['Vorname'] || '').strip
-            last_name = (line['Nachname'] || '').strip
+            first_name = (line['Vorname'] || '').strip.unicode_normalize(:nfd)
+            last_name = (line['Nachname'] || '').strip.unicode_normalize(:nfd)
             geschlecht = line['Geschlecht']
 
-            titel = (line['Titel'] || '').strip
+            titel = (line['Titel'] || '').strip.unicode_normalize(:nfd)
             display_name = last_name.dup
             if display_name.include?(',')
                 display_name = display_name.split(',').map { |x| x.strip }
@@ -291,6 +290,8 @@ class Parser
         email.gsub!(' ', '.')
         email = remove_accents(email)
         email = email.removeaccents
+        email.downcase!
+        email.gsub!('?', '')
         @email_sub[email] || email
     end
 
@@ -342,8 +343,8 @@ class Parser
     def handle_schueler_line(line)
         line = line.encode('utf-8')
         parts = line.split("\t")
-        nachname = parts[0].strip.gsub(/\s+/, ' ')
-        vorname = parts[1].strip.gsub(/\s+/, ' ')
+        nachname = parts[0].strip.gsub(/\s+/, ' ').unicode_normalize(:nfd)
+        vorname = parts[1].strip.gsub(/\s+/, ' ').unicode_normalize(:nfd)
         if @use_mock_names
             while true do
                 vorname = @mock[:vornamen].sample
@@ -359,7 +360,7 @@ class Parser
         klasse = Main::fix_parsed_klasse(klasse)
         klasse = PARSE_KLASSE_TR[klasse] || klasse
         geschlecht = parts[3].strip
-        rufname = vorname.split(' ').first
+        rufname = vorname.split(' ').first.unicode_normalize(:nfd)
         if rufname == 'Ka'
             rufname = vorname
         end

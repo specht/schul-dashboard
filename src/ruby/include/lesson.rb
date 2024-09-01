@@ -692,7 +692,7 @@ class Main < Sinatra::Base
                         bounding_box([x, height], width: width, height: height) do
                             stroke_bounds
                             begin
-                                text_box stundenthema_text.to_a.join("\n"), at: [px, height - py], width: width - px * 2, height: height - py * 2
+                                text_box stundenthema_text.to_a.join("\n").unicode_normalize(:nfc), at: [px, height - py], width: width - px * 2, height: height - py * 2
                             rescue
                             end
                         end
@@ -701,7 +701,7 @@ class Main < Sinatra::Base
                         bounding_box([x, height], width: width, height: height) do
                             stroke_bounds
                             begin
-                                text_box hausaufgaben_text.to_a.join("\n"), at: [px, height - py], width: width - px * 2, height: height - py * 2
+                                text_box hausaufgaben_text.to_a.join("\n").unicode_normalize(:nfc), at: [px, height - py], width: width - px * 2, height: height - py * 2
                             rescue
                             end
                         end

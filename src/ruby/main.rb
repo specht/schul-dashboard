@@ -124,7 +124,7 @@ Faye::WebSocket.load_adapter('thin')
 # Faye::WebSocket.load_adapter('puma')
 
 def remove_accents(s)
-    I18n.transliterate(s.gsub('ä', 'ae').gsub('ö', 'oe').gsub('ü', 'ue').gsub('Ä', 'Ae').gsub('Ö', 'Oe').gsub('Ü', 'Ue').gsub('ß', 'ss').gsub('ė', 'e').gsub('š', 's'))
+    I18n.transliterate(s.unicode_normalize(:nfc).gsub('ä', 'ae').gsub('ö', 'oe').gsub('ü', 'ue').gsub('Ä', 'Ae').gsub('Ö', 'Oe').gsub('Ü', 'Ue').gsub('ß', 'ss').gsub('ė', 'e').gsub('š', 's').gsub('é', 'e'))
 end
 
 def debug(message, index = 0)
@@ -2990,9 +2990,10 @@ class Main < Sinatra::Base
         redirect "#{WEB_ROOT}/bib_postpone/#{params[:tag]}", 302
     end
 
-    get '/api/get_room_timetable_pdf' do
+    get '/api/get_room_timetable_pdf/:klasse' do
         require_teacher!
-        respond_raw_with_mimetype(get_room_timetable_pdf(), 'application/pdf')
+        klasse = params[:klasse]
+        respond_raw_with_mimetype(get_room_timetable_pdf_for_klasse(klasse), 'application/pdf')
     end
 
     get '/room/:room' do

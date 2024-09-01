@@ -250,11 +250,11 @@ class Main
                                         bounding_box([nr_width + 2.mm, row_height * (n_per_page - i)], width: name_width - 2.mm, height: row_height) do
                                             move_down row_height * 0.5 - 12
                                             s = "#{@@user_info[email][:last_name]}"
-                                            text elide_string(s, name_width - 2.mm, {:size => 11}), :align => :left, :inline_format => true, :size => 11
+                                            text elide_string(s.unicode_normalize(:nfc), name_width - 2.mm, {:size => 11}), :align => :left, :inline_format => true, :size => 11
                                             save_graphics_state do
                                                 translate 2.mm, 0.mm
                                                 s = "#{@@user_info[email][:official_first_name]}"
-                                                text elide_string(s, name_width - 2.mm - 2.mm, {:size => 11}), :align => :left, :inline_format => true, :size => 11
+                                                text elide_string(s.unicode_normalize(:nfc), name_width - 2.mm - 2.mm, {:size => 11}), :align => :left, :inline_format => true, :size => 11
                                             end
                                             # stroke_bounds
                                         end
@@ -463,7 +463,7 @@ class Main
                             move_down 1.5.cm
                             klassenleitung = @@klassenleiter[klasse].map do |shorthand|
                                 email = @@shorthands[shorthand]
-                                @@user_info[email][:display_name_official]
+                                @@user_info[email][:display_name_official].unicode_normalize(:nfc)
                             end
                             text "Klassenleitung: #{klassenleitung.join(', ')}", :align => :center, :inline_format => true
                             move_down 7.cm
@@ -475,7 +475,7 @@ class Main
                                     @@klassenleiter[klasse].each do |shorthand|
                                         email = @@shorthands[shorthand]
                                         STDERR.puts email
-                                        text "Klassenleitung #{@@user_info[email][:display_name_official]}", :align => :left, :size => 7
+                                        text "Klassenleitung #{@@user_info[email][:display_name_official].unicode_normalize(:nfc)}", :align => :left, :size => 7
                                         move_down 7.mm
                                     end
                                 end
@@ -640,10 +640,10 @@ class Main
                                                 text "#{y2 + offset + 1}.", :align => :right, :valign => :center, :size => 11
                                             end
                                             bounding_box([nr_width + 2.mm, h * y], width: name_width - 2.mm, height: h / 4.0) do
-                                                text "#{elide_string(schueler[:last_name], name_width - 2.mm)}", :valign => :center, :size => 11
+                                                text "#{elide_string(schueler[:last_name].unicode_normalize(:nfc), name_width - 2.mm)}", :valign => :center, :size => 11
                                             end
                                             bounding_box([nr_width + 7.mm, h * (y - 0.25)], width: name_width - 7.mm, height: h / 4.0) do
-                                                text "#{elide_string(schueler[:official_first_name], name_width - 7.mm)}", :valign => :center, :size => 11
+                                                text "#{elide_string(schueler[:official_first_name].unicode_normalize(:nfc), name_width - 7.mm)}", :valign => :center, :size => 11
                                             end
                                             bounding_box([nr_width + 2.mm, h * (y - 0.5)], width: name_width - 4.mm, height: h / 4.0) do
                                                 text "#{elide_string(Date.parse(schueler[:geburtstag]).strftime('%d.%m.%Y'), name_width - 6.mm)}", :valign => :center, :align => :right, :size => 11
@@ -694,7 +694,7 @@ class Main
                                                 end
                                                 font('RobotoCondensed') do
                                                     bounding_box([cols_right_template.size * rboxwidth + 1.mm, h * y], width: bem_width - 2.mm, height: h / 4.0) do
-                                                        text "#{elide_string(schueler[:last_name] + ', ' + schueler[:official_first_name], bem_width - 2.mm)}", :valign => :center, :size => 11
+                                                        text "#{elide_string(schueler[:last_name].unicode_normalize(:nfc) + ', ' + schueler[:official_first_name].unicode_normalize(:nfc), bem_width - 2.mm)}", :valign => :center, :size => 11
                                                     end
                                                 end
                                             end
@@ -779,7 +779,7 @@ class Main
                             last_name_parts = schueler[:last_name].split(',').map { |x| x.strip }.reverse
                             name = "#{schueler[:official_first_name]} #{last_name_parts.join(' ')}"
 
-                            text "für <b>#{name}</b><br />Klasse #{Main.tr_klasse(klasse)}", :size => 13, :inline_format => true, :align => :center
+                            text "für <b>#{name.unicode_normalize(:nfc)}</b><br />Klasse #{Main.tr_klasse(klasse).unicode_normalize(:nfc)}", :size => 13, :inline_format => true, :align => :center
                         end
                         float do
                             move_down 2.5.mm
@@ -869,7 +869,7 @@ class Main
         return doc.render
     end
 
-    def get_room_timetable_pdf()
+    def get_room_timetable_pdf_for_klasse(wanted_klasse)
         today = Time.now.strftime('%Y-%m-%d')
         if today < @@config[:first_school_day]
             today = @@config[:first_school_day]
@@ -948,6 +948,8 @@ class Main
                         klassenraum_for_klasse[klasse] << room
                     end
                 end
+
+                next unless klasse_for_room == wanted_klasse
 
                 if klasse_for_room
                     max_klassen_stunden = max_stunden[klasse_for_room]

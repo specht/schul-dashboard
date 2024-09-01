@@ -311,7 +311,7 @@
                 $('#book_title').text(book.title);
                 $('#book_subtitle').text(book.subtitle);
                 $('#book_author').text(book.author);
-                if (book.ts_discarded !== null) {
+                if (typeof(book.ts_discarded) !== 'undefined') {
                     $('#book_details').prepend($(`<div class='text-danger' style='font-weight: bold;'>`).text(`Dieses Buch wurde am ${moment.unix(book.ts_discarded).format('L')} ausgemustert.`));
                     $('#bu_order_overview').hide();
                     $('#order_div').hide();

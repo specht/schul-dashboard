@@ -202,12 +202,12 @@ function place_sus(silent) {
 }
 
 function seat_suitable_for_kid(seat_index, kid_index) {
-    if (['6a', '9a'].indexOf(klasse) >= 0) {
-        if (sus[kid_index].geschlecht === 'm')
-            return seat_index % 2 === 0;
-        else
-            return seat_index % 2 === 1;
-    }
+    // if (['6a', '9a'].indexOf(klasse) >= 0) {
+    //     if (sus[kid_index].geschlecht === 'm')
+    //         return seat_index % 2 === 0;
+    //     else
+    //         return seat_index % 2 === 1;
+    // }
     return true;
 }
 
@@ -246,6 +246,7 @@ function shuffle_plan() {
         }
         console.log(rule[0], place_for_sus[sus_index]);
     }
+    let n = 0;
     while (Object.keys(available_sus).length > 0) {
         let sus_index = Object.keys(available_sus)[0];
         for (let i = 0; i < 1000; i++) {
@@ -260,6 +261,7 @@ function shuffle_plan() {
             }
         }
         if (sus_index in available_sus) {
+            n += 1;
             console.log(`Couldn't place ${sus_index}!`);
             for (let i = 0; i < 1000; i++) {
                 let key = Object.keys(available_places).sample();
@@ -271,6 +273,7 @@ function shuffle_plan() {
                 }
             }
         }
+        if (n > 1000) return;
     }
     place_sus();
 }

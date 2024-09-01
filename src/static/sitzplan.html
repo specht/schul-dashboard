@@ -32,7 +32,7 @@ p {
     right: 1em;
 }
 
-.keys > span {
+.keys > div> span {
     background-color: #444;
     color: #ddd;
     font-family: monospace;
@@ -380,6 +380,11 @@ document.addEventListener('DOMContentLoaded', function() {
                 place_sus();
             }
         });
+        $('.key').on('click', function(e) {
+            let key = $(e.target).data('key');
+            console.log(key);
+            document.dispatchEvent(new KeyboardEvent('keydown', { code: key }));
+        });
         $('#maleFemaleButton').click(function(e) {
             $('#maleFemaleButton').blur();
             mw_abwechselnd_choice = mw_abwechselnd_choice === 'yes' ? 'no' : 'yes';
@@ -415,9 +420,11 @@ document.addEventListener('DOMContentLoaded', function() {
     <button class="btn btn-sm btn-secondary" type="button" id="maleFemaleButton">
         <i class='fa fa-female'></i><i class='fa fa-male'></i> <span id='maleFemaleButtonLabel'></span>
     </button>
-    <span>Leer</span>
-    <span>A</span>
-    <span>C</span>
-    <span>R</span>
+    <div style="display: inline-block; position: relative; top: 0.15em;">
+        <span class="key" data-key="Space">Leer</span>
+        <span class="key" data-key="KeyA">A</span>
+        <span class="key" data-key="KeyC">C</span>
+        <span class="key" data-key="KeyR">R</span>
+    </div>
 </div>
 <audio id='audio'></audio>

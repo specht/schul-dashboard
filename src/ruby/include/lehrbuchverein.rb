@@ -285,6 +285,7 @@ class Main < Sinatra::Base
             end
         end
         assert(!headers.nil?)
+        Main.determine_lehrmittelverein_state_for_all()
         respond(:uploaded => 'yeah', :result => result)
     end
 end

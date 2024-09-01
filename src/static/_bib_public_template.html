@@ -225,6 +225,8 @@
     }
 
     function calculate_kurs_order_list(lesson_key, stem, plus_teacher, use_this_book_response) {
+        console.log(`calculate_kurs_order_list(${lesson_key}, ${stem}, ${plus_teacher}, ${use_this_book_response})`);
+        console.log(use_this_book_response);
         if (typeof(use_this_book_response) === 'undefined')
             use_this_book_response = book_response;
         let already_have_book_sus = [];

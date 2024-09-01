@@ -3133,6 +3133,10 @@ class Main < Sinatra::Base
                 command = "neo4j_bolt -h neo4j:7687 visualize | dot -Tsvg > /gen/schema-i6wbb4YtA5l2BzdNjedMtd.svg"
                 system(command)
             end
+        elsif path == 'site.webmanifest'
+            manifest = "{\"name\":\"Dashboard #{SCHUL_NAME_AN_DATIV} #{SCHUL_NAME}\",\"short_name\":\"Dashboard #{SCHUL_NAME}\",\"description\":\"Das Dashboard #{SCHUL_NAME_AN_DATIV} #{SCHUL_NAME} vereint deinen Stunden- und Vertretungsplan, Nextcloud und Jitsi.\",\"icons\":[{\"src\":\"/android-chrome-192x192.png\",\"sizes\":\"192x192\",\"type\":\"image/png\"},{\"src\":\"/android-chrome-512x512.png\",\"sizes\":\"512x512\",\"type\":\"image/png\"}],\"theme_color\":\"#ffffff\",\"background_color\":\"#ffffff\",\"display\":\"standalone\",\"start_url\":\"/\"}"
+            response['Content-Type'] = 'application/manifest+json'
+            response.write(manifest)
         end
         if user_logged_in? && @session_user[:is_monitor]
             path = 'monitor'

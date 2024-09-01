@@ -252,6 +252,7 @@ class Main < Sinatra::Base
                 unless ['11', '12'].include?(klasse)
                     io.puts "<a href='/api/get_room_timetable_pdf/#{klasse}' target='_blank' class='btn btn-primary'><i class='fa fa-file-pdf-o'></i>&nbsp;&nbsp;Raumplan für die Klassenzimmertür</a>"
                 end
+                io.puts "<div id='additional_teacher_content'></div>"
             elsif schueler_logged_in?
                 unless hide_from_sus
                     io.puts "<a href='/api/get_single_timetable_pdf' target='_blank' class='btn btn-primary'><i class='fa fa-file-pdf-o'></i>&nbsp;&nbsp;PDF herunterladen</a>"

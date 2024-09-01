@@ -22,6 +22,9 @@
 </style>
 
 <script>
+
+#{(teacher_logged_in? && File.exist?('/data/sitzplan/seats.js')) ? File.read('/data/sitzplan/seats.js') : 'var seats_dict = {};'}
+
 document.addEventListener('DOMContentLoaded', function() {
     install_clipboard_handler('.btn-clipboard');
     if ('#{klassenleiter_for_klasse_or_admin_logged_in?(klasse)}' === 'true') {

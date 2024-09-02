@@ -1,0 +1,78 @@
+#{require_user!}
+#{assert(@session_user[:klassenstufe] <= 6)}
+<div class='container'>
+    <h2>Mittagessen-Bestellung</h2>
+    <p>
+        Hier kannst du dein Mittagessen bestellen. Bitte schau dir die Speisepläne an und gib an, an welchen Tagen du welches Mittagessen essen möchtest.
+    </p>
+    <div style="text-align: center;">
+        <a class="btn btn-success" href="https://dashboard.gymnasiumsteglitz.de/f/2024_09%20Speisepl%C3%A4ne%20September.pdf" target="_blank"><i class='fa fa-table'></i>&nbsp;&nbsp;Speisepläne für September 2024</a>
+    </div>
+    <div id="div_tables"></div>
+</div>
+
+<script>
+var mittagessen = #{YAML.load(File.read('/data/mittagessen/mittagessen.yaml')).map do |x|
+  x['order'].map! do |y|
+    Time.parse(y).to_i
+  end
+  x
+end.to_json};
+var ts_now = #{Time.now.to_i};
+var choices = #{mittagessen_choices.to_json};
+</script>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    let div = $('#div_tables');
+    for (let entry of mittagessen) {
+        if (ts_now >= entry.order[0] && ts_now <= entry.order[1]) {
+            let kw = moment(entry.d0).isoWeek();
+            console.log(entry, kw);
+            $('<hr>').appendTo(div);
+            $(`<h4>Kalenderwoche ${kw}</h4>`).appendTo(div);
+            $(`<p>`).html(`Du kannst noch bis <strong>${weekdays_long[moment.unix(entry.order[1]).isoWeekday()]}, den ${moment.unix(entry.order[1]).format('DD.MM.YYYY')} um ${moment.unix(entry.order[1]).format('HH:mm')} Uhr</strong> deine Bestellung für die Kalenderwoche ${kw} ändern.`).appendTo(div);
+            let table_div = $(`<div style='max-width: 100%; overflow-x: auto;'>`).appendTo(div);
+            let table = $('<table class="table table-striped"></table>').appendTo(table_div);
+            let thead = $('<thead></thead>').appendTo(table);
+            let tr = $('<tr>').appendTo(thead);
+            $(`<th colspan='2'>Datum</th>`).appendTo(tr);
+            $('<th>kein Mittagessen</th>').appendTo(tr);
+            $('<th>Menü 1</th>').appendTo(tr);
+            $('<th>Menü 2</th>').appendTo(tr);
+            let tbody = $('<tbody></tbody>').appendTo(table);
+            let p = moment(entry.d0);
+            let p1 = moment(entry.d1);
+            while (p <= p1) {
+                let pdatum = p.format('YYYY-MM-DD');
+                let row = $('<tr>').data('datum', pdatum).appendTo(tbody);
+                $('<td>' + weekdays_long[p.isoWeekday()] + '</td>').appendTo(row);
+                $('<td>' + p.format('DD.MM.YYYY') + '</td>').appendTo(row);
+                let choice = choices[pdatum] || 0;
+                for (let i = 0; i < 3; i++) {
+                    label = ['kein Mittagessen', 'Menü 1', 'Menü 2'][i];
+                    let button = $(`<button class="btn btn-sm ${choice === i ? (choice === 0 ? 'btn-secondary' : 'btn-success') : 'btn-outline-secondary'}">${choice === i ? "<i class='fa fa-check'></i>&nbsp;&nbsp;": ''}${label}</button>`).data('choice', i).css('width', i === 0 ? '11em' : '7em').appendTo($('<td>').appendTo(row));
+                    button.on('click', function(e) {
+                        let row = $(this).closest('tr');
+                        let datum = row.data('datum');
+                        let choice = $(this).closest('button').data('choice');
+                        api_call('/api/choose_mittagessen', {datum: datum, choice: choice}, function(data) {
+                            if (data.success) {
+                                let buttons = row.find('button');
+                                buttons.removeClass('btn-success btn-secondary btn-outline-secondary');
+                                buttons.find('i').remove();
+                                buttons.addClass('btn-outline-secondary');
+                                buttons.eq(choice).removeClass('btn-outline-secondary').addClass(choice === 0 ? 'btn-secondary' : 'btn-success');
+                                buttons.eq(choice).prepend("<i class='fa fa-check'></i>&nbsp;&nbsp;");
+                            }
+                        });
+                    });
+                }
+                p = p.add(1, 'days');
+            }
+
+        }
+    }
+});
+</script>
+

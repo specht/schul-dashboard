@@ -96,6 +96,7 @@ require './include/lesson.rb'
 require './include/login.rb'
 require './include/matrix.rb'
 require './include/message.rb'
+require './include/mittagessen.rb'
 require './include/monitor.rb'
 require './include/otp.rb'
 require './include/phishing.rb'
@@ -314,7 +315,8 @@ class SetupDatabase
         'Test/klasse',
         'TextComment/offset',
         'User/ev',
-        'User/foto_path'
+        'User/foto_path',
+        'MittagessenTag/datum',
     ]
 
     def setup(main)
@@ -1954,6 +1956,9 @@ class Main < Sinatra::Base
                 # if user_is_eligible_for_tresor?
                 #     nav_items << :tresor
                 # end
+                if schueler_logged_in? && @session_user[:klassenstufe] <= 6
+                    nav_items << ['/mittagessen', 'Mittagessen', 'fa fa-cutlery']
+                end
                 if admin_logged_in? || user_who_can_upload_files_logged_in? || user_who_can_manage_news_logged_in? || user_who_can_manage_monitors_logged_in? || user_who_can_manage_tablets_logged_in? || user_with_role_logged_in?(:developer)
                     nav_items << :admin
                 end

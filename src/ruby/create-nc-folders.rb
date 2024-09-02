@@ -7,7 +7,7 @@ class Script
     def emit(s)
         puts "__RUN__ #{s}"
     end
-    
+
     def exit_if_not_exists(path)
         emit "if [ ! -d \"#{path}\" ]"
         emit "then"
@@ -15,7 +15,7 @@ class Script
         emit "    exit 1"
         emit "fi"
     end
-    
+
     def run
         emit "#!/bin/bash"
         base_path = File.join(NEXTCLOUD_DASHBOARD_DATA_DIRECTORY, 'files')
@@ -43,7 +43,7 @@ class Script
                 emit "mkdir -pv \"#{File.join(base_path, 'Unterricht', folder_name, x)}\""
             end
             (@@schueler_for_lesson[lesson_key] || []).each do |email|
-                name = @@user_info[email][:display_name]
+                name = @@user_info[email][:display_name].unicode_normalize(:nfc)
                 ['Einsammelordner', 'Einsammelordner/Eingesammelt', 'Rückgabeordner'].each do |x|
                     emit "mkdir -pv \"#{File.join(base_path, 'Unterricht', folder_name, 'SuS', name, x)}\""
                 end

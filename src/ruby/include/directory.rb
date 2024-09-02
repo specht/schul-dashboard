@@ -698,7 +698,7 @@ class Main < Sinatra::Base
                 END_OF_QUERY
                 sheet.write(i + 1, 0, user[:last_name])
                 sheet.write(i + 1, 1, user[:first_name])
-                sheet.write(i + 1, 2, Date.parse(user[:geburtstag]).strftime('%d.%m.%Y'))
+                sheet.write(i + 1, 2, Date.parse(user[:geburtstag]).strftime('%d.%m.%Y')) if user[:geburtstag]
                 sheet.write(i + 1, 3, user[:klasse])
                 sheet.write(i + 1, 4, group2)
                 sheet.write(i + 1, 5, user[:email])

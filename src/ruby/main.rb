@@ -921,7 +921,7 @@ class Main < Sinatra::Base
             fach = lesson_info[:fach]
             fach = @@faecher[fach] || fach
             pretty_fach = "#{fach.gsub('/', '-')}"
-            pretty_folder_name = "#{fach.gsub('/', '-')} (#{lesson_info[:klassen].sort.map { |x| tr_klasse(x) }.join(', ')})"
+            pretty_folder_name = "#{fach} (#{lesson_info[:klassen].sort.map { |x| tr_klasse(x) }.join(', ')})".gsub('/', '-')
             lesson_info[:lehrer].each do |shorthand|
                 pretty_folder_names_for_teacher[shorthand] ||= {}
                 pretty_folder_names_for_teacher[shorthand][pretty_folder_name] ||= Set.new()

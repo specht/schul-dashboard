@@ -19,8 +19,12 @@ CONFIG = YAML::load_file('/data/config.yaml')
 
 TIMETABLE_JSON_KEYS = {
     # 6 => [:klasse, :stunde, :fach, :raum, :lehrer, :text],
-    6 => [:stunde, :klasse, :lehrer, :raum, :fach, :text],
-    7 => [:vnr, :stunde, :klasse, :lehrer, :raum, :fach, :text],
+    # 6 => [:stunde, :klasse, :lehrer, :raum, :fach, :text],
+    # 7 => [:vnr, :stunde, :klasse, :lehrer, :raum, :fach, :text],
+    # assert(headings == 'Klasse(n) / Stunde / Fach / Raum / (Lehrer) / Art / Text / Unterschrift / Statistik / Schülergruppe / (Lehrv.) / Lehrv.')
+    12 => [:klasse, :stunde, :fach, :raum, :lehrer, :art, :text, :unterschrift, :statistik, :schuelergruppe, :lehrv, :lehrv2],
+    # assert(headings == 'Vtr-Nr. / Stunde / Fach / Klasse(n) / Raum / (Lehrer) / Art / Text / Unterschrift / Statistik / Schülergruppe / (Lehrv.) / Lehrv.')
+    13 => [:vnr, :stunde, :fach, :klasse, :raum, :lehrer, :art, :text, :unterschrift, :statistik, :schuelergruppe, :lehrv, :lehrv2]
 }
 
 def assert(condition, message = 'assertion failed', suppress_backtrace = false, delay = nil)
@@ -78,6 +82,7 @@ def handle_vplan_html_file(contents, removed_days)
     heading = dom.at_css('h2').text
     heading.gsub!('8?', '8o')
     heading.gsub!('9?', '9o')
+    heading.gsub!('10?', '10o')
     heading.gsub!('J11', '11')
     heading.gsub!('J12', '12')
     klasse = heading.split(' ').first
@@ -119,15 +124,17 @@ def handle_vplan_html_file(contents, removed_days)
                 end
 
                 tr = row.css('th')
-                if tr.size == 6
+                if tr.size == 12
                     # Klassenvertretungsplan:
                     headings = tr.map { |x| x.text }.join(' / ')
                     # assert(headings == 'Klasse(n) / Stunde / Fach / Raum / (Lehrer) / Text')
-                    assert(headings == 'Stunde / Klasse(n) / (Lehrer) / (Raum) / (Fach) / Text')
-                elsif tr.size == 7
+                    # assert(headings == 'Stunde / Klasse(n) / (Lehrer) / (Raum) / (Fach) / Text')
+                    assert(headings == 'Klasse(n) / Stunde / Fach / Raum / (Lehrer) / Art / Text / Unterschrift / Statistik / Schülergruppe / (Lehrv.) / Lehrv.')
+                elsif tr.size == 13
                     # Lehrervertretungsplan: Vtr-Nr.	Stunde	Klasse(n)	(Lehrer)	(Raum)	(Fach)	Text
                     headings = tr.map { |x| x.text }.join(' / ')
-                    assert(headings == 'Vtr-Nr. / Stunde / Klasse(n) / (Lehrer) / (Raum) / (Fach) / Text')
+                    # assert(headings == 'Vtr-Nr. / Stunde / Klasse(n) / (Lehrer) / (Raum) / (Fach) / Text')
+                    assert(headings == 'Vtr-Nr. / Stunde / Fach / Klasse(n) / Raum / (Lehrer) / Art / Text / Unterschrift / Statistik / Schülergruppe / (Lehrv.) / Lehrv.')
                 end
                 cells = row.css('td')
                 if cells.size == 1 && table_mode == :day_message
@@ -139,7 +146,7 @@ def handle_vplan_html_file(contents, removed_days)
                     File.open(path, 'w') { |f| f.write(day_message.to_json) }
                     result[datum][:day_messages] ||= []
                     result[datum][:day_messages] << sha1
-                elsif (cells.size == 6 || cells.size == 7) && table_mode == :vplan
+                elsif (cells.size == 12 || cells.size == 13) && table_mode == :vplan
                     # Klassenvertretungsplan: Klasse(n)	Stunde	Fach	Raum	(Lehrer)	Text
                     # Lehrervertretungsplan: Vtr-Nr.	Stunde	Klasse(n)	(Lehrer)	(Raum)	(Fach)	Text
                     result[datum] ||= {}
@@ -205,6 +212,7 @@ end
 def handle_html_batch(bodies)
     datum_list = Set.new()
     removed_days = Set.new()
+    STDERR.puts "Handling #{bodies.size} HTML files..."
     bodies.each do |body|
         temp = handle_vplan_html_file(body, removed_days)
         if temp
@@ -268,7 +276,7 @@ def head_file_from_url(url, &block)
     if UNTIS_VERTRETUNGSPLAN_USERNAME && UNTIS_VERTRETUNGSPLAN_PASSWORD
         req.basic_auth UNTIS_VERTRETUNGSPLAN_USERNAME, UNTIS_VERTRETUNGSPLAN_PASSWORD
     end
-    
+
     res = Net::HTTP.start(uri.hostname, uri.port, :use_ssl => uri.scheme == 'https') do |http|
         response = http.request(req)
         if response.code.to_i == 200
@@ -307,16 +315,21 @@ def perform_refresh
         end
         classes = JSON.parse(body.match(/var classes\s*=\s*([^;]+);/)[1])
         teachers = JSON.parse(body.match(/var teachers\s*=\s*([^;]+);/)[1])
+        STDERR.puts "Got #{weeks.size} weeks, #{classes.size} classes, #{teachers.size} teachers"
         weeks.each do |week|
             (0...teachers.size).each do |index|
                 file_count += 1
-                get_file_from_url("#{UNTIS_VERTRETUNGSPLAN_BASE_URL}/#{sprintf('%02d', week)}/v/#{sprintf('v%05d', index + 1)}.htm") do |header, body|
+                url = "#{UNTIS_VERTRETUNGSPLAN_BASE_URL}/#{sprintf('%02d', week)}/v/#{sprintf('v%05d', index + 1)}.htm"
+                STDERR.puts "Fetching #{url}..."
+                get_file_from_url(url) do |header, body|
                     bodies << body
                 end
             end
             (0...classes.size).each do |index|
                 file_count += 1
-                get_file_from_url("#{UNTIS_VERTRETUNGSPLAN_BASE_URL}/#{sprintf('%02d', week)}/w/#{sprintf('w%05d', index + 1)}.htm") do |header, body|
+                url = "#{UNTIS_VERTRETUNGSPLAN_BASE_URL}/#{sprintf('%02d', week)}/w/#{sprintf('w%05d', index + 1)}.htm"
+                STDERR.puts "Fetching #{url}..."
+                get_file_from_url(url) do |header, body|
                     bodies << body
                 end
             end

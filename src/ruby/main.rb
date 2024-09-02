@@ -2109,6 +2109,11 @@ class Main < Sinatra::Base
                         printed_divider = true
                         io.puts "<a class='dropdown-item nav-icon' href='/bibliothek'><div class='icon'><i class='fa fa-book'></i></div><span class='label'>Bibliothek</span></a>"
                     end
+                    if user_with_role_logged_in?(:mittagessen)
+                        io.puts "<div class='dropdown-divider'></div>" unless printed_divider
+                        printed_divider = true
+                        io.puts "<a class='dropdown-item nav-icon' href='/mittagessen_overview'><div class='icon'><i class='fa fa-cutlery'></i></div><span class='label'>Mittagessen</span></a>"
+                    end
                     # if user_logged_in?
                     #     if teacher_logged_in?
                     #         io.puts "<a class='dropdown-item nav-icon' href='/projekttage_sus'><div class='icon'><i class='fa fa-rocket'></i></div><span class='label'>Projekttage</span></a>"

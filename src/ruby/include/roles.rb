@@ -36,6 +36,7 @@ AVAILABLE_ROLES = {
     :can_use_sms_gateway => 'kann die SMS-Anmeldung benutzen',
     :can_report_tech_problems => 'kann Technikprobleme melden',
     :oko => 'Oberstufenkoordination',
+    :mittagessen => 'kann Bestellungen für Mittagessen einsehen',
 }
 
 ROLE_TRANSITIONS = <<~END_OF_STRING

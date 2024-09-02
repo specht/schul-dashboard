@@ -17,6 +17,20 @@ class Main < Sinatra::Base
         choices
     end
 
+    def mittagessen_overview
+        require_user_with_role!(:mittagessen)
+        choices = {}
+        neo4j_query(<<~END_OF_QUERY,).each do |row|
+            MATCH (u:User)-[r:CHOSE]->(m:MittagessenTag)
+            RETURN m.datum, r.choice;
+        END_OF_QUERY
+            choices[row['m.datum']] ||= {}
+            choices[row['m.datum']][row['r.choice'].to_s] ||= 0
+            choices[row['m.datum']][row['r.choice'].to_s] += 1
+        end
+        choices
+    end
+
     def self.update_mittagessen
         path = '/data/mittagessen/mittagessen.yaml'
         @@mittagessen_mtime ||= 0

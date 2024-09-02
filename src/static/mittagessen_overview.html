@@ -1,0 +1,53 @@
+#{require_user_with_role!(:mittagessen)}
+<div class='container'>
+    <h2>Mittagessen-Bestellungen</h2>
+    <div id="div_tables"></div>
+</div>
+
+<script>
+var overview = #{mittagessen_overview.to_json};
+var ts_now = #{Time.now.to_i};
+var mittagessen = #{YAML.load(File.read('/data/mittagessen/mittagessen.yaml')).map do |x|
+  x['order'].map! do |y|
+    Time.parse(y).to_i
+  end
+  x
+end.to_json};
+
+document.addEventListener('DOMContentLoaded', function() {
+    let div = $('#div_tables');
+    for (let entry of mittagessen) {
+        if (moment.unix(ts_now) < moment(entry.d0)) {
+            let kw = moment(entry.d0).isoWeek();
+            $('<hr>').appendTo(div);
+            $(`<h4>Kalenderwoche ${kw}</h4>`).appendTo(div);
+            // $(`<p>`).html(`Du kannst noch bis <strong>${weekdays_long[moment.unix(entry.order[1]).isoWeekday()]}, den ${moment.unix(entry.order[1]).format('DD.MM.YYYY')} um ${moment.unix(entry.order[1]).format('HH:mm')} Uhr</strong> deine Bestellung für die Kalenderwoche ${kw} ändern.`).appendTo(div);
+            let table_div = $(`<div style='max-width: 100%; overflow-x: auto;'>`).appendTo(div);
+            let table = $('<table class="table table-striped"></table>').appendTo(table_div);
+            let thead = $('<thead></thead>').appendTo(table);
+            let tr = $('<tr>').appendTo(thead);
+            $(`<th colspan='2'>Datum</th>`).appendTo(tr);
+            $('<th>Menü 1</th>').appendTo(tr);
+            $('<th>Menü 2</th>').appendTo(tr);
+            let tbody = $('<tbody></tbody>').appendTo(table);
+            let p = moment(entry.d0);
+            let p1 = moment(entry.d1);
+            while (p <= p1) {
+                let pdatum = p.format('YYYY-MM-DD');
+                let row = $('<tr>').data('datum', pdatum).appendTo(tbody);
+                $('<td>' + weekdays_long[p.isoWeekday()] + '</td>').appendTo(row);
+                $('<td>' + p.format('DD.MM.YYYY') + '</td>').appendTo(row);
+                let counts = overview[pdatum] ?? {};
+                for (let i = 1; i <= 2; i++) {
+                    label = ['Menü 1', 'Menü 2'][i];
+                    let count = `${counts[i] ?? '&ndash;'}`;
+                    $('<td>' + count + '</td>').appendTo(row);
+                }
+                p = p.add(1, 'days');
+            }
+
+        }
+    }
+});
+</script>
+

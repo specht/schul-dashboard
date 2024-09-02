@@ -21,7 +21,11 @@ document.addEventListener('DOMContentLoaded', function() {
             let kw = moment(entry.d0).isoWeek();
             $('<hr>').appendTo(div);
             $(`<h4>Kalenderwoche ${kw}</h4>`).appendTo(div);
-            // $(`<p>`).html(`Du kannst noch bis <strong>${weekdays_long[moment.unix(entry.order[1]).isoWeekday()]}, den ${moment.unix(entry.order[1]).format('DD.MM.YYYY')} um ${moment.unix(entry.order[1]).format('HH:mm')} Uhr</strong> deine Bestellung für die Kalenderwoche ${kw} ändern.`).appendTo(div);
+            if (ts_now >= entry.order[0] && ts_now <= entry.order[1]) {
+                $(`<p>`).html(`Für diese Woche können SuS noch bis <strong>${weekdays_long[moment.unix(entry.order[1]).isoWeekday()]}, den ${moment.unix(entry.order[1]).format('DD.MM.YYYY')} um ${moment.unix(entry.order[1]).format('HH:mm')} Uhr</strong> gewählt werden.`).appendTo(div);
+            } else if (ts_now > entry.order[1]) {
+                $(`<p>`).html(`Für diese Woche ist die Wahlfrist für die SuS vorbei.`).appendTo(div);
+            }
             let table_div = $(`<div style='max-width: 100%; overflow-x: auto;'>`).appendTo(div);
             let table = $('<table class="table table-striped"></table>').appendTo(table_div);
             let thead = $('<thead></thead>').appendTo(table);

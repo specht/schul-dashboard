@@ -68,10 +68,10 @@ class Script
             user_info = @ocs.user.find(user_id)
 # #             @ocs.user.destroy(user_id)
 # #             next
-            if user_info.displayname != user[:display_last_name]
-                STDERR.puts "@ocs.user.update(#{user_id}, 'displayname', #{user[:display_last_name]})"
+            if user_info.displayname != user[:display_last_name].unicode_normalize(:nfc)
+                STDERR.puts "@ocs.user.update(#{user_id}, 'displayname', #{user[:display_last_name].unicode_normalize(:nfc)})"
                 if srsly
-                    @ocs.user.update(user_id, 'displayname', user[:display_last_name])
+                    @ocs.user.update(user_id, 'displayname', user[:display_last_name].unicode_normalize(:nfc))
                 end
             end
             if user_info.email != email
@@ -124,10 +124,10 @@ class Script
                 end
             end
             user_info = @ocs.user.find(user_id)
-            if user_info.displayname != user[:display_name]
-                STDERR.puts "@ocs.user.update(#{user_id}, 'displayname', #{user[:display_name]})"
+            if user_info.displayname != user[:display_name].unicode_normalize(:nfc)
+                STDERR.puts "@ocs.user.update(#{user_id}, 'displayname', #{user[:display_name].unicode_normalize(:nfc)})"
                 if srsly
-                    @ocs.user.update(user_id, 'displayname', user[:display_name])
+                    @ocs.user.update(user_id, 'displayname', user[:display_name].unicode_normalize(:nfc))
                 end
             end
             if user_info.email != email
@@ -174,10 +174,10 @@ class Script
             user_info = @ocs.user.find(user_id)
 # #             @ocs.user.destroy(user_id)
 # #             next
-            if user_info.displayname != user[:display_last_name]
-                STDERR.puts "@ocs.user.update(#{user_id}, 'displayname', #{user[:display_last_name]})"
+            if user_info.displayname != user[:display_last_name].unicode_normalize(:nfc)
+                STDERR.puts "@ocs.user.update(#{user_id}, 'displayname', #{user[:display_last_name].unicode_normalize(:nfc)})"
                 if srsly
-                    @ocs.user.update(user_id, 'displayname', user[:display_last_name])
+                    @ocs.user.update(user_id, 'displayname', user[:display_last_name].unicode_normalize(:nfc))
                 end
             end
             if user_info.email != email

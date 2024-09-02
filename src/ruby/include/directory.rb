@@ -447,11 +447,11 @@ class Main < Sinatra::Base
                     :external => true,
                     :entries => groups[klasse][group_af].map { |x| 'eltern.' + x }
                 }
-                @@antikenfahrt_mailing_lists["antikenfahrt.#{group_af}.#{klasse}@#{SCHUL_MAIL_DOMAIN}"] = {
+                @@antikenfahrt_mailing_lists["antikenfahrt.#{group_af}.#{klasse}@#{MAILING_LIST_DOMAIN}"] = {
                     :label => "Antikenfahrt #{GROUP_AF_ICONS[group_af]} – SuS Klassenstufe #{klasse}",
                     :recipients => groups[klasse][group_af]
                 }
-                @@antikenfahrt_mailing_lists["antikenfahrt.#{group_af}.eltern.#{klasse}@#{SCHUL_MAIL_DOMAIN}"] = {
+                @@antikenfahrt_mailing_lists["antikenfahrt.#{group_af}.eltern.#{klasse}@#{MAILING_LIST_DOMAIN}"] = {
                     :label => "Antikenfahrt #{GROUP_AF_ICONS[group_af]} – Eltern Klassenstufe #{klasse}",
                     :recipients => groups[klasse][group_af].map { |x| 'eltern.' + x }
                 }

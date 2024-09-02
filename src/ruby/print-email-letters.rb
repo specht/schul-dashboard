@@ -85,12 +85,12 @@ class Script
                 
                 entry.gsub!('#{EMAIL}', record[:email])
                 entry.gsub!('#{EMAIL_PARENTS}', 'eltern.' + record[:email])
-                entry.gsub!('#{FIRST_NAME}', record[:display_first_name])
-                entry.gsub!('#{LAST_NAME}', record[:last_name])
-                entry.gsub!('#{DISPLAY_NAME}', record[:display_name])
-                entry.gsub!('#{DISPLAY_LAST_NAME}', record[:display_last_name])
+                entry.gsub!('#{FIRST_NAME}', record[:display_first_name].unicode_normalize(:nfc))
+                entry.gsub!('#{LAST_NAME}', record[:last_name].unicode_normalize(:nfc))
+                entry.gsub!('#{DISPLAY_NAME}', record[:display_name].unicode_normalize(:nfc))
+                entry.gsub!('#{DISPLAY_LAST_NAME}', record[:display_last_name].unicode_normalize(:nfc))
                 klasse = record[:klasse]
-                entry.gsub!('#{KLASSE}', (KLASSEN_TR[klasse] || klasse).gsub('ω', '\\textomega'))
+                entry.gsub!('#{KLASSE}', (KLASSEN_TR[klasse] || klasse).gsub('ω', '\\textomega').unicode_normalize(:nfc))
                 entry.gsub!('#{PASSWORD}', password)
                 entry.gsub!('#{PASSWORD_PARENTS}', password_parents)
                 entry.gsub!('#{INITIALS}', "#{(record[:display_first_name][0] || '').upcase}#{record[:last_name][0].upcase}")

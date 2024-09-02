@@ -378,7 +378,7 @@ class Script
                             if result[:status] != 'ok'
                                 STDERR.puts "Error!"
                                 STDERR.puts result.to_yaml
-                                exit(1)
+                                # exit(1)
                             end
                         else
                             STDERR.puts "Not moving [#{user_id}]#{share['file_target']} to #{info[:target_path]} because they're identical"

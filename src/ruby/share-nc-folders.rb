@@ -177,12 +177,12 @@ class Script
                 wanted_shares[user_id]["/#{SHARE_SOURCE_FOLDER}/#{folder_name}"] = {
                     :permissions => SHARE_READ | SHARE_UPDATE | SHARE_CREATE | SHARE_DELETE,
                     :target_path => "/#{SHARE_TARGET_FOLDER}/#{pretty_folder_name}",
-                    :share_with => user[:display_name]
+                    :share_with => user[:display_name].unicode_normalize(:nfc)
                 }
             end
             (@@schueler_for_lesson[lesson_key] || []).each do |email|
                 user = @@user_info[email]
-                name = user[:display_name]
+                name = user[:display_name].unicode_normalize(:nfc)
                 user_id = user[:nc_login]
                 email_for_user_id[user_id] = email
                 wanted_shares[user_id] ||= {}
@@ -198,23 +198,23 @@ class Script
                     wanted_shares[user_id]["/#{SHARE_SOURCE_FOLDER}/#{folder_name}/Ausgabeordner-Materialamt"] = {
                         :permissions => permissions,
                         :target_path => "/#{SHARE_TARGET_FOLDER}/#{pretty_folder_name.gsub(' ', '%20')}/Ausgabeordner (Materialamt)",
-                        :share_with => user[:display_name]
+                        :share_with => user[:display_name].unicode_normalize(:nfc)
                     }
                 end
                 wanted_shares[user_id]["/#{SHARE_SOURCE_FOLDER}/#{folder_name}/Ausgabeordner"] = {
                     :permissions => SHARE_READ,
                     :target_path => "/#{SHARE_TARGET_FOLDER}/#{pretty_folder_name.gsub(' ', '%20')}/Ausgabeordner",
-                    :share_with => user[:display_name]
+                    :share_with => user[:display_name].unicode_normalize(:nfc)
                 }
                 wanted_shares[user_id]["/#{SHARE_SOURCE_FOLDER}/#{folder_name}/SuS/#{name}/Einsammelordner"] = {
                     :permissions => SHARE_READ | SHARE_UPDATE | SHARE_CREATE | SHARE_DELETE,
                     :target_path => "/#{SHARE_TARGET_FOLDER}/#{pretty_folder_name.gsub(' ', '%20')}/Einsammelordner",
-                    :share_with => user[:display_name]
+                    :share_with => user[:display_name].unicode_normalize(:nfc)
                 }
                 wanted_shares[user_id]["/#{SHARE_SOURCE_FOLDER}/#{folder_name}/SuS/#{name}/Rückgabeordner"] = {
                     :permissions => SHARE_READ | SHARE_UPDATE | SHARE_CREATE | SHARE_DELETE,
                     :target_path => "/#{SHARE_TARGET_FOLDER}/#{pretty_folder_name.gsub(' ', '%20')}/Rückgabeordner",
-                    :share_with => user[:display_name]
+                    :share_with => user[:display_name].unicode_normalize(:nfc)
                 }
             end
             next

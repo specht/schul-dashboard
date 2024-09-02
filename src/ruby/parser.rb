@@ -241,6 +241,7 @@ class Parser
         CSV.foreach(path, :headers => true) do |line|
             line = Hash[line]
             email = line['E-Mail-Adresse'].strip
+            next if email[0] == '#'
             first_name = (line['Vorname'] || '').strip#.unicode_normalize(:nfd)
             last_name = (line['Nachname'] || '').strip#.unicode_normalize(:nfd)
             geschlecht = line['Geschlecht']

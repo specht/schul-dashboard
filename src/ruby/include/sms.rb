@@ -18,7 +18,7 @@ class Main < Sinatra::Base
 
     def user_is_eligible_for_sms?
         return false unless user_logged_in?
-        return teacher_logged_in?
+        return teacher_logged_in? || user_with_role_logged_in?(:praktikum)
     end
 
     def self.sms_gateway_ready?

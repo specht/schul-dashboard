@@ -1258,6 +1258,9 @@ class Timetable
                     lesson_keys ||= Set.new()
                     lesson_keys << "_#{user[:klasse]}" if user_has_role(email, :schueler)
                     lesson_keys << "_@#{user[:room]}" if user[:is_room]
+                    if user_has_role(email, :praktikum)
+                        lesson_keys |= Set.new(@@lessons[:lesson_keys].keys)
+                    end
                     if user_has_role(email, :teacher)
                         lesson_keys << "_#{user[:shorthand]}"
                         (@@lessons_for_shorthand[user[:shorthand]] || []).each do |lesson_key|
@@ -1735,7 +1738,7 @@ class Timetable
                             end
                         end
                         write_events = fixed_events.reject { |x| x[:deleted] || x['deleted']}
-                        if mode == :public
+                        if mode == :public || user_has_role(email, :praktikum)
                             write_events.map! do |e|
                                 e.delete(:data)
                                 e.delete(:per_user)

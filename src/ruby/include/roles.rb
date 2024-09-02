@@ -37,6 +37,7 @@ AVAILABLE_ROLES = {
     :can_report_tech_problems => 'kann Technikprobleme melden',
     :oko => 'Oberstufenkoordination',
     :mittagessen => 'kann Bestellungen für Mittagessen einsehen',
+    :praktikum => 'Praktikum (kann Stundenpläne ohne Details einsehen)',
 }
 
 ROLE_TRANSITIONS = <<~END_OF_STRING

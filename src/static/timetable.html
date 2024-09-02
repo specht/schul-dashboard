@@ -69,7 +69,7 @@
                 </div>
             </div>
         </div>
-        <div class='#{tablet_logged_in? ? '' : 'col-lg-2 col-md-12 side-panel'}'>
+        <div class='#{tablet_logged_in? ? '' : 'col-lg-2 col-md-12 side-panel'}' style="#{user_with_role_logged_in?(:praktikum) ? 'display: none;' : ''}">
             <!--
             <div class='hint' style='display: #{(@session_user[:user_agent] || '').include?('WebView') ? 'block' : 'none'};'>
                 <p>
@@ -115,7 +115,7 @@
                 #{#print_salzh_panel()}
             </div>
         </div>
-        <div class='#{tablet_logged_in? ? 'col-md-4' : 'col-lg-8 col-md-12'}'>
+        <div class='#{user_with_role_logged_in?(:praktikum) ? 'col-lg-12' : (tablet_logged_in? ? 'col-md-4' : 'col-lg-8 col-md-12')}'>
             <div class='card' style='margin-bottom: 20px; display: #{session_user_has_streaming_button? ? 'block' : 'none'};'>
                 <div class='card-body' style='padding: 5px 15px;'>
                     <i class='fa fa-lightbulb-o' style='font-size: 200%;'></i>&nbsp;&nbsp;<span style='position: relative; top: -4px;'>Hier kommst du zu deinem ggf. aktivierten Klassenstream:</span>&nbsp;&nbsp;<a class='float-right btn btn fc-button-primary streaming-button' href='#{class_stream_link_for_session_user}' target='_blank'><i class='fa fa-microphone'></i>&nbsp;&nbsp;Zum Klassenstream&nbsp;&nbsp;<i class='fa fa-angle-double-right'></i></a>
@@ -310,6 +310,7 @@
 var my_lessons = #{(@@lessons[:historic_lessons_for_shorthand][@session_user[:shorthand]] || []).to_json};
 var sus_for_my_lessons = #{Hash[(@@lessons_for_shorthand[@session_user[:shorthand]] || []).map { |x| [x, (@@schueler_for_lesson[x] || []).map { |y| {:email => y, :display_name => @@user_info[y][:display_name]}}]}].to_json};
 var tablet_logged_in = ('#{tablet_logged_in?}' === 'true');
+var praktikum_logged_in = ('#{user_with_role_logged_in?(:praktikum)}' === 'true');
 var teacher_tablet_logged_in = ('#{teacher_tablet_logged_in?}' === 'true');
 var klassenraum_logged_in = ('#{klassenraum_logged_in?}' === 'true');
 var sus_logged_in = ('#{schueler_logged_in?}' === 'true');
@@ -377,7 +378,7 @@ function render_timetable(result, successCallback) {
                 if ('#{@session_user[:homeschooling]}' === 'true') {
                     s += `Du bist momentan als »zu Hause« markiert und nimmst deshalb von <strong>zu Hause</strong> am Unterricht teil. `;
                 } else {
-                    s += `Für Dich heißt das, dass Du in dieser Woche ${user_group2 === result.switch_week ? 'in der Schule' : 'zu Hause'} unterrichtet wirst. `; 
+                    s += `Für Dich heißt das, dass Du in dieser Woche ${user_group2 === result.switch_week ? 'in der Schule' : 'zu Hause'} unterrichtet wirst. `;
                     if (user_group2 === result.switch_week)
                         s += `Wenn Deine Eltern entscheiden sollten, dass Du erst einmal noch weiter zu Hause bleiben sollst, müssen Sie dies Deiner Klassenleitung und dem Sekretariat mitteilen. Dann werden wir Dich als »zu Hause« markieren, so dass alle wissen, dass Du nicht in die Schule kommst und ggfs. von zu Hause am Jitsi-Unterricht teilnehmen kannst.`;
                 }
@@ -435,7 +436,7 @@ function render_timetable(result, successCallback) {
         which = '7-9';
         if (this_klasse <= 6)
             which = '4-6';
-        
+
         for (let i = 1; i <= 24; i++)
         {
             let title = '🎅 Mathe im Advent';
@@ -596,7 +597,8 @@ document.addEventListener('DOMContentLoaded', function() {
         window.location.hash = '';
     $('.ttc[data-id="' + timetable_id + '"]').addClass('active');
     let options = {
-        initialView: (narrow_window || tablet_logged_in) ? 'timeGridDay' : 'timeGridWeek',
+        initialView: (narrow_window || tablet_logged_in || praktikum_logged_in) ? 'timeGridDay' : 'timeGridWeek',
+        // initialView: 'timeGridDay',
         dayHeaderFormat: { weekday: 'short', month: 'numeric', day: 'numeric', omitCommas: true },
         headerToolbar: {start: '', center: '', end: tablet_logged_in ? '' : 'print today prev,next'},
         allDaySlot: true,
@@ -620,7 +622,7 @@ document.addEventListener('DOMContentLoaded', function() {
             let day = '' + start_date.getDate();
             if (month.length < 2) month = '0' + month;
             if (day.length < 2) day = '0' + day;
-            
+
             if (fixed_timetable_data !== null) {
                 render_timetable(fixed_timetable_data, successCallback);
             } else {
@@ -636,7 +638,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     if (e.target.status === 200) {
                         $('.ttc').removeClass('active');
                         $('.ttc[data-id="' + timetable_id + '"]').addClass('active');
-                        
+
                         let data = pako.ungzip(oReq.response);
                         let bb = new Blob([new Uint8Array(data)]);
                         let f = new FileReader();
@@ -705,16 +707,16 @@ document.addEventListener('DOMContentLoaded', function() {
                 raum.css('position', 'absolute').css('right', '-1px');
                 raum.css('background-color', #{@session_user[:dark] ? '"rgba(0, 0, 0, 0.0)"' : 'color_palette.primary'});
                 raum.css('padding-right', '2px');
-                
+
                 raum.css('padding-left', '4px');
                 if (arg.event.extendedProps.entfall)
                     raum.css('background-color', #{@session_user[:dark] ? '"rgba(0, 0, 0, 0.0)"' : 'color_palette.disabled'});
                 div0.append(t).append(raum);
-                
+
                 let div1 = $('<div>');
                 if (arg.event.extendedProps.count === 1)
                     div1.css('white-space', 'nowrap');
-                let fach = $('<div>').html(arg.event.extendedProps.label);
+                let fach = $('<div>').html(praktikum_logged_in ? arg.event.extendedProps.label_short : arg.event.extendedProps.label);
                 // if ('#{!!DEVELOPMENT}' === 'true')
                 //     fach.html('<b style="background-color: rgba(255,255,255,0.2);">[' + arg.event.extendedProps.lesson_key + '#' + arg.event.extendedProps.lesson_offset + ']</b><br />' + fach.html());
 //                 if (arg.event.extendedProps.vnr)
@@ -738,7 +740,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     per_user.text_comments = filter_events_by_timestamp(per_user.text_comments, show_messages_from);
                 if (per_user.audio_comments)
                     per_user.audio_comments = filter_events_by_timestamp(per_user.audio_comments, show_messages_from);
-                
+
                 let markers = $('<span>').addClass('cem');
                 if (event_data.stundenthema_text)
                     markers.append($('<span>').html("<i class='fa fa-info-circle'></i>"));
@@ -807,7 +809,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     div3.css('padding-left', '1px');
                     div3.css('padding-top', '4px');
                 }
-                
+
                 if ((arg.event.extendedProps.data || {}).stundenthema_text)
                 {
 //                     div3.append($('<div>').html('Stundenthema'));
@@ -820,7 +822,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         div3.append(description);
                     }
                 }
-                
+
                 if ((arg.event.extendedProps.data || {}).hausaufgaben_text)
                 {
                     div3.append($('<div>').html('Hausaufgaben (zu heute)'));
@@ -831,11 +833,11 @@ document.addEventListener('DOMContentLoaded', function() {
                         description.css('white-space', 'normal');
                         // description.css('border-top', '1px solid rgba(255, 255, 255, 0.5)');
                         description.css('border-top', '1px solid rgba(#{hex_to_rgb(color_palette[:main_text]).map { |x| x.to_s }.join(', ')}, 0.5)');
-                        
+
                         div3.append(description);
                     }
                 }
-                
+
                 if (arg.event.extendedProps.info)
                 {
                     div4.css('white-space', 'nowrap');
@@ -859,7 +861,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         div4.append(description);
                     }
                 }
-                
+
                 div2.append(div3).append(div4);
                 divs.push(div0[0]);
                 divs.push(div1[0]);
@@ -883,7 +885,7 @@ document.addEventListener('DOMContentLoaded', function() {
 //                 div0.html('<b>' + event_data.event_title + '</b>');
                 let t = $('<span>').text(arg.timeText);
                 div0.append(t);
-                
+
                 let div1 = $('<div>');
                 div1.css('white-space', 'nowrap');
                 let fach = $('<div>').html('<b>' + event_data.event_title + '</b>');
@@ -896,7 +898,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 span.css('opacity', 0.7);
                 div1b.append(span);
                 div1b.append('&nbsp;');
-                
+
                 let markers = $('<span>').addClass('cem');
                 if (event_data.jitsi)
                     markers.append($('<span>').addClass('mute').html('Jitsi'));
@@ -920,14 +922,14 @@ document.addEventListener('DOMContentLoaded', function() {
                 div3.css('height', '100%');
                 div3.css('padding-left', '1px');
                 div3.css('padding-top', '4px');
-                
+
                 let description = fix_bad_html($('<div>').html(event_data.description));
                 description.css('opacity', 0.7);
                 description.css('white-space', 'normal');
                 // description.css('border-top', '1px solid rgba(255, 255, 255, 0.5)');
                 description.css('border-top', '1px solid rgba(#{hex_to_rgb(color_palette[:main_text]).map { |x| x.to_s }.join(', ')}, 0.5)');
                 div3.append(description);
-                
+
                 div2.append(div3).append(div4);
                 divs.push(div0[0]);
                 divs.push(div1[0]);
@@ -985,25 +987,25 @@ document.addEventListener('DOMContentLoaded', function() {
                 $('#lessonModal .vertretungs-text').html(event.vertretungs_text).show();
             else
                 $('#lessonModal .vertretungs-text').hide();
-                
+
             if (event.is_event) {
                 $('#lessonModal .lesson-label').html('<b>' + event.event_title + '</b>');
             }
-            
+
             let d = new Date(event.datum);
             if (event.omit_time) {
-                $('#lessonModal .zeitpunkt').html(weekdays_long[d.getDay()] + 
-                    ', den ' + event.datum.substr(8, 2) + 
-                    '.' + event.datum.substr(5, 2) + 
+                $('#lessonModal .zeitpunkt').html(weekdays_long[d.getDay()] +
+                    ', den ' + event.datum.substr(8, 2) +
+                    '.' + event.datum.substr(5, 2) +
                     '.' + event.datum.substr(0, 4)
                 );
             } else {
-                $('#lessonModal .zeitpunkt').html(weekdays_long[d.getDay()] + 
-                    ', den ' + event.datum.substr(8, 2) + 
-                    '.' + event.datum.substr(5, 2) + 
+                $('#lessonModal .zeitpunkt').html(weekdays_long[d.getDay()] +
+                    ', den ' + event.datum.substr(8, 2) +
+                    '.' + event.datum.substr(5, 2) +
                     '.' + event.datum.substr(0, 4) +
-                    ' (' + parseInt(info.event.startStr.substr(11, 2)) + 
-                    ':' + info.event.startStr.substr(14, 2) + 
+                    ' (' + parseInt(info.event.startStr.substr(11, 2)) +
+                    ':' + info.event.startStr.substr(14, 2) +
                     ' &dash; ' + parseInt(info.event.endStr.substr(11, 2)) +
                     ':' + info.event.endStr.substr(14, 2) + ')'
                 );
@@ -1021,7 +1023,7 @@ document.addEventListener('DOMContentLoaded', function() {
             let body = $('#lessonModal .lesson-infos-here');
             body.empty();
             let wrote_something = (event.vertretungs_text || '').length > 0;
-            
+
             if (event.is_event) {
                 body.append('<div>Einladung erhalten von: ' + event.organized_by + '</div>');
                 body.append('<hr />');
@@ -1158,7 +1160,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         }, 10000);
                     }
                 }
-                    
+
                 let parts = [];
                 if (event_data.lesson_nc)
                     parts.push('in der Nextcloud');
@@ -1338,7 +1340,7 @@ document.addEventListener('DOMContentLoaded', function() {
         let oReq = new XMLHttpRequest();
         oReq.open('GET', uri, true);
         oReq.responseType = 'arraybuffer';
-        
+
         function handle_homework(homework) {
             let last_date = null;
             if (homework.length > 0)
@@ -1437,7 +1439,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         let current_feedback = homework_feedback[`${lesson_key}/${offset}`] || {};
                         $(`#homeworkFeedbackModal .hf-emoji[data-feedback=${current_feedback.state}]`).addClass('selected');
                         $('#homeworkFeedbackModal #ti_hw_spent_minutes').val(current_feedback.time_spent || '');
-//                         
+//
                         $('#bu_send_homework_feedback').prop('disabled', true);
                         $('#homeworkFeedbackModal').modal('show');
                     });
@@ -1508,7 +1510,7 @@ document.addEventListener('DOMContentLoaded', function() {
     $('#ti_hw_spent_minutes').keyup(function() {
         $('#bu_send_homework_feedback').prop('disabled', false);
     });
-    
+
     $('#bu_send_homework_feedback').click(function() {
         let submit_data = {};
         submit_data.lesson_key = $('#homeworkFeedbackModal').data('lesson_key');
@@ -1565,7 +1567,7 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
     $('.bu-save-ha-amt-text-changes').click(function(e) {
-        api_call('/api/set_ha_amt_text_for_lesson', {lesson_key: $('#lessonModal').data('lesson-key'), 
+        api_call('/api/set_ha_amt_text_for_lesson', {lesson_key: $('#lessonModal').data('lesson-key'),
             lesson_offset: $('#lessonModal').data('lesson-offset'),
             ha_amt_text: $('#ta_ha_amt_text').val().trim()}, function(data) {
             if (data.success) {

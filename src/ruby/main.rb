@@ -2860,7 +2860,15 @@ class Main < Sinatra::Base
     post '/api/get_fotos/:klasse' do
         require_teacher!
         klasse = params[:klasse]
-        respond(:paths => Dir["/data/schueler/fotos/2023-#{klasse}-*.json"].shuffle.map { |x| File.basename(x) })
+        paths = []
+        iterate_directory(klasse) do |email|
+            path = neo4j_query_expect_one(<<~END_OF_QUERY, {:email => email})['foto_path']
+                MATCH (u:User {email: $email})
+                RETURN COALESCE(u.foto_path, NULL) AS foto_path;
+            END_OF_QUERY
+            paths << path unless path.nil?
+        end
+        respond(:paths => paths)
     end
 
     post '/api/assign_name_to_foto' do

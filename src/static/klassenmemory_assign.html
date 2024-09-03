@@ -574,8 +574,8 @@ window.addEventListener('load', function() {
     schueler_for_klasse['OS'] = schueler_for_klasse['OS'].concat(schueler_for_klasse['12']);
     for (let klasse of KLASSEN_ORDER) {
         let original_klasse = `${klasse}`;
-        if (klasse === '11') klasse = 'OS';
-        if (klasse === '12') klasse = 'OS';
+        // if (klasse === '11') klasse = 'OS';
+        // if (klasse === '12') klasse = 'OS';
         let stufe = null;
         if (klasse.substring(0, 2) === 'WK')
             stufe = 'WK';
@@ -590,7 +590,7 @@ window.addEventListener('load', function() {
             schueler_for_klassenstufe[stufe].push(email);
         klassenstufe_for_klasse[original_klasse] = stufe;
 
-        if (original_klasse === '12') continue;
+        // if (original_klasse === '12') continue;
 
         let bu_klasse = $(`<button class='btn btn-sm ttc' style='margin: 0.2em;'>`).text(KLASSEN_TR[klasse] ?? klasse).data('klasse', klasse);
         bu_klasse.on('click', function(e) {
@@ -701,8 +701,6 @@ window.addEventListener('load', function() {
         }
     }
     function refresh() {
-        let url = `/api/fotos/2023-${current_klasse}-0.json`;
-        console.log(url);
         $('#sus_here').empty();
         refresh_autocomplete();
         api_call(`/api/get_fotos/${current_klasse}`, {}, function(data) {

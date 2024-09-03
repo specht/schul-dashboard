@@ -90,9 +90,9 @@ class Main < Sinatra::Base
             end
 
             (@@schueler_for_klasse[klasse] || []).sort do |a, b|
-                (@@user_info[a][:last_name] == @@user_info[b][:last_name]) ?
-                (@@user_info[a][:first_name] <=> @@user_info[b][:first_name]) :
-                (@@user_info[a][:last_name] <=> @@user_info[b][:last_name])
+                (@@user_info[a][:last_name].unicode_normalize(:nfd) == @@user_info[b][:last_name].unicode_normalize(:nfd)) ?
+                (@@user_info[a][:first_name].unicode_normalize(:nfd) <=> @@user_info[b][:first_name].unicode_normalize(:nfd)) :
+                (@@user_info[a][:last_name].unicode_normalize(:nfd) <=> @@user_info[b][:last_name].unicode_normalize(:nfd))
             end.each.with_index do |email, _|
                 record = @@user_info[email]
                 io.puts "<tr class='user_row' data-email='#{email}'>"
@@ -276,7 +276,7 @@ class Main < Sinatra::Base
                 old_is_klassenleiter = true
                 (@@teachers_for_klasse[klasse] || {}).keys.sort do |a, b|
                     name_comp = begin
-                        @@user_info[@@shorthands[a]][:last_name] <=> @@user_info[@@shorthands[b]][:last_name]
+                        @@user_info[@@shorthands[a]][:last_name].unicode_normalize(:nfd) <=> @@user_info[@@shorthands[b]][:last_name].unicode_normalize(:nfd)
                     rescue
                         a <=> b
                     end
@@ -571,9 +571,9 @@ class Main < Sinatra::Base
         end
         email_list ||= []
         (email_list).sort do |a, b|
-            (@@user_info[a][first_key] == @@user_info[b][first_key]) ?
-            (@@user_info[a][second_key] <=> @@user_info[b][second_key]) :
-            (@@user_info[a][first_key] <=> @@user_info[b][first_key])
+            (@@user_info[a][first_key].unicode_normalize(:nfd) == @@user_info[b][first_key].unicode_normalize(:nfd)) ?
+            (@@user_info[a][second_key].unicode_normalize(:nfd) <=> @@user_info[b][second_key].unicode_normalize(:nfd)) :
+            (@@user_info[a][first_key].unicode_normalize(:nfd) <=> @@user_info[b][first_key].unicode_normalize(:nfd))
         end.each.with_index do |email, i|
             yield email, i
         end
@@ -830,8 +830,8 @@ class Main < Sinatra::Base
         # STDERR.puts list_email
         # STDERR.puts info[:recipients].to_yaml
         info[:recipients].sort do |a, b|
-            an = ((@@user_info[a.sub(/^eltern\./, '')] || {})[:display_name] || '').downcase
-            bn = ((@@user_info[b.sub(/^eltern\./, '')] || {})[:display_name] || '').downcase
+            an = ((@@user_info[a.sub(/^eltern\./, '')] || {})[:display_name] || '').downcase.unicode_normalize(:nfd)
+            bn = ((@@user_info[b.sub(/^eltern\./, '')] || {})[:display_name] || '').downcase.unicode_normalize(:nfd)
             an <=> bn
         end.each do |email|
             emails << email
@@ -925,7 +925,7 @@ class Main < Sinatra::Base
                 remaining_mailing_lists.to_a.sort do |a, b|
                     ia = @@mailing_lists[a]
                     ib = @@mailing_lists[b]
-                    ia[:label].downcase <=> ib[:label].downcase
+                    ia[:label].downcase.unicode_normalize(:nfd) <=> ib[:label].downcase.unicode_normalize(:nfd)
                 end.each do |list_email|
                     print_mailing_list(io, list_email)
                 end

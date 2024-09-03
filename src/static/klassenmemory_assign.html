@@ -141,15 +141,15 @@
 <div class='container container-fluid' style='background: none; backdrop-filter: none; box-shadow: none; max-width: unset;'>
     <div class='row'>
         <div class="col-md-6 offset-md-3">
-            <!-- <form id='form' autocomplete='off'>
+            <form id='form' autocomplete='off' style="display: #{admin_logged_in? ? 'block' : 'none'}">
                 <div class="input-group mb-3">
                     <input type="text" autocomplete="off" id='password' class="form-control" placeholder="Bitte gib das Passwort ein, um das Klassenmemory zu starten" style="text-align: center;">
                     <div class="input-group-append">
                         <button id='submit_password' class="btn btn-primary" type="submit">Passwort absenden</button>
                     </div>
                 </div>
-            </form> -->
-            <div class="alert alert-warning" role="alert">
+            </form>
+            <div class="alert alert-warning" role="alert" style="display: #{admin_logged_in? ? 'none' : 'block'}">
             Das Klassenmemory ist vorübergehend deaktiviert. Es wird in den kommenden Tagen wieder aktiviert.
             </div>
         </div>

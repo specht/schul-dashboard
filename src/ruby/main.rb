@@ -147,6 +147,12 @@ def debug(message, index = 0)
     STDERR.puts "#{DateTime.now.strftime('%H:%M:%S')} [#{ls}] #{message}"
 end
 
+def debug_ruby(message, index = 0)
+    if ENV['DASHBOARD_SERVICE'] == 'ruby'
+        debug(message, index)
+    end
+end
+
 def debug_error(message)
     l = caller_locations.first
     ls = ''

@@ -1030,7 +1030,7 @@ class Parser
         lesson_keys_for_tag = {}
         lessons[:lesson_keys].keys.each do |lesson_key|
             unless (Set.new(lessons[:lesson_keys][lesson_key][:klassen]) & Set.new(['11', '12'])).empty?
-                tag = "#{lessons[:lesson_keys][lesson_key][:lehrer].join(',')}/#{lesson_key.split('_').first}"
+                tag = "#{lesson_key.split('_').first}/#{lessons[:lesson_keys][lesson_key][:lehrer].join(',')}"
                 lesson_keys_for_tag[tag] ||= []
                 lesson_keys_for_tag[tag] << lesson_key
             end
@@ -1040,6 +1040,16 @@ class Parser
         kurs_id_tr = {}
         if File.exist?('/data/kurswahl/kurs_id_tr.yaml')
             kurs_id_tr = YAML.load(File.read('/data/kurswahl/kurs_id_tr.yaml'))
+        end
+        kurs_pre_tr = []
+        File.open('/data/kurswahl/kurs_tr.txt') do |f|
+            f.each_line do |line|
+                line.strip!
+                space_index = line.index(' ')
+                first = line[0, space_index]
+                rest = line[space_index + 1, line.size - space_index - 1]
+                kurs_pre_tr << [first, rest]
+            end
         end
         Dir['/data/kurswahl/csv/2025-01/**/*.csv'].sort.each do |path|
             begin
@@ -1051,9 +1061,17 @@ class Parser
                         next if line.empty?
                         parts = line.split(';')
                         sus_name = parts[0]
-                        shorthand = parts[2]
-                        fach = parts[4].split('-').first
-                        tag = "#{shorthand}/#{fach}"
+                        shorthand = parts[3]
+                        fach = parts[5].split('-').first
+                        fach.sub!(/\d+$/, '')
+                        kurs_pre_tr.each do |tr|
+                            if fach == tr[0]
+                                fach = tr[1]
+                                break
+                            end
+                        end
+                        tag = "#{fach}/#{shorthand}"
+
                         kurs_id = File.basename(path).split('.').first
                         kurs_ids_for_tag[tag] ||= Set.new()
                         kurs_ids_for_tag[tag] << kurs_id
@@ -1063,11 +1081,11 @@ class Parser
                             sus_name = name_parts[0, name_parts.size - 1].join(' ')
                         end
                         unless shorthands.include?(shorthand)
-                            STDERR.puts "Warning: Unknown shorthand »#{shorthand}«"
+                            debug_ruby("Warning: Unknown shorthand »#{shorthand}« in #{File.basename(path)}\n#{line}")
                             next
                         end
                         unless email_for_name.include?(sus_name)
-                            STDERR.puts "Warning: Unknown SuS name »#{sus_name}« in #{File.basename(path)}\n#{line}"
+                            debug_ruby("Warning: Unknown SuS name »#{sus_name}« in #{File.basename(path)}\n#{line}")
                             next
                         end
                         emails_for_kurs_id[kurs_id] ||= []
@@ -1075,18 +1093,26 @@ class Parser
                     end
                 end
             rescue StandardError => e
-                if DASHBOARD_SERVICE == 'ruby'
-                    STDERR.puts "Error parsing #{path}: #{e}"
-                end
+                debug_ruby("Error parsing #{path}: #{e}")
             end
         end
         debug_logs = StringIO.open do |io|
             kurs_ids_for_tag.each_pair { |tag, ids| kurs_ids_for_tag[tag] = ids.to_a }
-            (Set.new(kurs_ids_for_tag.keys) | Set.new(lesson_keys_for_tag.keys)).to_a.sort.each do |tag|
+            File.open('/internal/debug/kurs_ids_for_tag.yaml', 'w') do |f|
+                f.puts kurs_ids_for_tag.to_yaml
+            end
+            File.open('/internal/debug/lesson_keys_for_tag.yaml', 'w') do |f|
+                f.puts lesson_keys_for_tag.to_yaml
+            end
+            match_count = 0
+            no_match_count = 0
+            (Set.new(kurs_ids_for_tag.keys) | Set.new(lesson_keys_for_tag.keys)).to_a.sort { |a, b| a.downcase <=> b.downcase }.each do |tag|
                 if kurs_ids_for_tag[tag] && lesson_keys_for_tag[tag]
                     if kurs_ids_for_tag[tag].size == 1 && lesson_keys_for_tag[tag].size == 1
                         # normal one on one mapping
                         kurs_id_tr[kurs_ids_for_tag[tag].first] = lesson_keys_for_tag[tag].first
+                        # debug_ruby "[#{tag}] found match (1:1)"
+                        match_count += 1
                         next
                     end
                     if kurs_ids_for_tag[tag].size == 2 && lesson_keys_for_tag[tag].size == 1
@@ -1096,13 +1122,40 @@ class Parser
                                 # ["Gk04_mu","Gk105_mu"] ["mu_11~12"] (jahrgangsuebergreifend)
                                 kurs_id_tr[kurs_ids_for_tag[tag].first] = lesson_keys_for_tag[tag].first
                                 kurs_id_tr[kurs_ids_for_tag[tag].last] = lesson_keys_for_tag[tag].first
+                                # debug_ruby "[#{tag}] found match (11~12)"
+                                match_count += 1
                                 next
                             end
                         end
                     end
+                    if kurs_ids_for_tag[tag].size == 2 && lesson_keys_for_tag[tag].size == 2
+                        kursnummern = kurs_ids_for_tag[tag].map { |x| x.match(/(\d+)_/)[1].to_i }.sort
+                        # ["Gk34_ch","Gk121_ch"] ["ch_13_11","ch_21_12"]
+                        if kursnummern[0] < 100 && kursnummern[1] >= 100
+                            lesson_keys = lesson_keys_for_tag[tag].sort { |a, b| a.split('_').last.to_i <=> b.split('_').last.to_i }
+                            if lesson_keys.first.split('_').last.to_i == 11 && lesson_keys.last.split('_').last.to_i == 12
+                                kurs_id_tr[kurs_ids_for_tag[tag].first] = lesson_keys.first
+                                kurs_id_tr[kurs_ids_for_tag[tag].last] = lesson_keys.last
+                                # debug_ruby "[#{tag}] found match (2 vs 2: 11 and 12)"
+                                match_count += 1
+                                next
+                            end
+                        end
+                    end
+                    if kurs_ids_for_tag[tag].size == 2 && lesson_keys_for_tag[tag].size == 1
+                        # ["Lk09_A3","Lk10_A4"] vs ["AGR_11_11"]
+                        kurs_id_tr[kurs_ids_for_tag[tag].first] = lesson_keys_for_tag[tag].first
+                        kurs_id_tr[kurs_ids_for_tag[tag].last] = lesson_keys_for_tag[tag].first
+                        debug_ruby "[#{tag}] found shady match (2 vs 1: #{kurs_ids_for_tag[tag].to_json} vs #{lesson_keys_for_tag[tag].to_json})"
+                        match_count += 1
+                        next
+                    end
                 end
+                debug_ruby "[#{tag}] no match (#{kurs_ids_for_tag[tag].to_json} vs #{lesson_keys_for_tag[tag].to_json})"
+                no_match_count += 1
                 io.puts "#{tag}: #{kurs_ids_for_tag[tag].to_json} #{lesson_keys_for_tag[tag].to_json}"
             end
+            debug_ruby "Matched #{match_count} of #{match_count + no_match_count} kurs IDs."
             io.string
         end
 
@@ -1132,16 +1185,16 @@ class Parser
             end
         end
 
-        if DASHBOARD_SERVICE == 'ruby'
-            unless unassigned_kurs_ids.empty?
-                STDERR.puts ">>> Warning: Could not assign #{unassigned_kurs_ids.size} of #{emails_for_kurs_id.size} kurs IDs:"
-                unassigned_kurs_ids.each do |kurs_id|
-                    STDERR.puts "#{kurs_id}"
-                end
-                STDERR.puts ">>> See here for details:"
-                STDERR.puts debug_logs
-            end
-        end
+        # if DASHBOARD_SERVICE == 'ruby'
+        #     unless unassigned_kurs_ids.empty?
+        #         STDERR.puts ">>> Warning: Could not assign #{unassigned_kurs_ids.size} of #{emails_for_kurs_id.size} kurs IDs:"
+        #         unassigned_kurs_ids.each do |kurs_id|
+        #             STDERR.puts "#{kurs_id}"
+        #         end
+        #         STDERR.puts ">>> See here for details:"
+        #         STDERR.puts debug_logs
+        #     end
+        # end
 
         return kurse_for_schueler, schueler_for_kurs
     end

@@ -22,7 +22,7 @@ document.addEventListener('DOMContentLoaded', function() {
             $('<hr>').appendTo(div);
             $(`<h4>Kalenderwoche ${kw}</h4>`).appendTo(div);
             if (ts_now >= entry.order[0] && ts_now <= entry.order[1]) {
-                $(`<p>`).html(`Für diese Woche können SuS noch bis <strong>${weekdays_long[moment.unix(entry.order[1]).isoWeekday()]}, den ${moment.unix(entry.order[1]).format('DD.MM.YYYY')} um ${moment.unix(entry.order[1]).format('HH:mm')} Uhr</strong> gewählt werden.`).appendTo(div);
+                $(`<p>`).html(`Für diese Woche können SuS noch bis <strong>${weekdays_long[moment.unix(entry.order[1]).isoWeekday()]}, den ${moment.unix(entry.order[1]).format('DD.MM.YYYY')} um ${moment.unix(entry.order[1]).format('HH:mm')} Uhr</strong> wählen.`).appendTo(div);
             } else if (ts_now > entry.order[1]) {
                 $(`<p>`).html(`Für diese Woche ist die Wahlfrist für die SuS vorbei.`).appendTo(div);
             }

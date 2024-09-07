@@ -380,7 +380,7 @@ class Script
                                 STDERR.puts "Error!"
                                 STDERR.puts result.to_yaml
                                 if result[:exception] == 'OCP\\Files\\NotFoundException'
-                                    failed_share_ids << share['message']
+                                    failed_share_ids << share[:message]
                                 end
                                 # exit(1)
                             end

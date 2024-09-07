@@ -275,6 +275,7 @@ class Script
         File.open('/internal/debug/wanted-shares.yaml', 'w') do |f|
             f.write wanted_shares.to_yaml
         end
+        failed_share_ids = Set.new()
         wanted_shares.keys.sort.each do |user_id|
             unless wanted_nc_ids.nil?
                 next unless wanted_nc_ids.include?(user_id)
@@ -378,6 +379,9 @@ class Script
                             if result[:status] != 'ok'
                                 STDERR.puts "Error!"
                                 STDERR.puts result.to_yaml
+                                if result[:exception] == 'OCP\\Files\\NotFoundException'
+                                    failed_share_ids << share['message']
+                                end
                                 # exit(1)
                             end
                         else
@@ -400,8 +404,10 @@ class Script
                 end
             end
         end
-
-
+        unless failed_share_ids.empty?
+            STDERR.puts "Failed share IDs:"
+            STDERR.puts failed_share_ids.to_a.sort.join("\n")
+        end
     end
 end
 

@@ -54,7 +54,7 @@ class Main < Sinatra::Base
             bcc SMTP_FROM
             from SMTP_FROM
 
-            subject "Willkommens-E-Mail versendet"
+            subject "Willkommens-E-Mail versandt!"
 
             StringIO.open do |io|
                 io.puts "<p>Hallo!</p>"
@@ -486,13 +486,15 @@ class Main < Sinatra::Base
         require_technikteam!
         data = parse_request_data(:required_keys => [:email])
         email = data[:email]
-        @@user_info[email][:roles] << :technikamt
-        @@users_for_role[:technikamt] << email
+        @@user_info[email][:roles] << :can_report_tech_problems
+        @@users_for_role[:can_report_tech_problems] << email
         neo4j_query(<<~END_OF_QUERY, :email => email)
             MATCH (u:User {email: $email})
             MERGE (v:Techpost)
             MERGE (u)-[:HAS_AMT {amt: 'technikamt'}]->(v)
         END_OF_QUERY
+        Main.update_techpost_groups()
+        Main.update_mailing_lists()
         respond(:ok => true)
     end
 
@@ -500,12 +502,14 @@ class Main < Sinatra::Base
         require_technikteam!
         data = parse_request_data(:required_keys => [:email])
         email = data[:email]
-        @@user_info[email][:roles].delete(:technikamt)
-        @@users_for_role[:technikamt].delete(email)
+        @@user_info[email][:roles].delete(:can_report_tech_problems)
+        @@users_for_role[:can_report_tech_problems].delete(email)
         neo4j_query(<<~END_OF_QUERY, :email => email)
             MATCH (u:User {email: $email})-[r:HAS_AMT {amt: 'technikamt'}]->(v:Techpost)
             DELETE r;
         END_OF_QUERY
+        Main.update_techpost_groups()
+        Main.update_mailing_lists()
         respond(:ok => true)
     end
 
@@ -623,7 +627,7 @@ class Main < Sinatra::Base
             RETURN v, u.email, f.email;
         END_OF_QUERY
         StringIO.open do |io|
-            io.puts "<br><h3>User, die Probleme melden können (Alle oben genannten plus:)</h3>"
+            io.puts "<h3>Nutzer, die Probleme melden können</h3>"
             io.puts "<div class='row' style='margin-bottom: 15px;'><div class='col-md-12'>"
             io.puts "<table class='table narrow table-striped' style='width: unset; min-width: 100%;'>"
             io.puts "<thead>"
@@ -633,10 +637,18 @@ class Main < Sinatra::Base
                 display_name = @@user_info[technikamt][:display_name]
                 nc_login = @@user_info[technikamt][:nc_login]
                 klasse = tr_klasse(@@user_info[technikamt][:klasse])
-                io.puts "<tr><td><code><img src='#{NEXTCLOUD_URL}/index.php/avatar/#{nc_login}/256' class='icon avatar-md'>&nbsp;#{display_name} (#{klasse})</code></td><td><button class='btn btn-xs btn-danger bu-edit-techpost' data-email='#{technikamt}'><i class='fa fa-trash'></i>&nbsp;&nbsp;Rechte entziehen</button>&nbsp;<button class='btn btn-xs btn-success bu-send-single-welcome-mail' data-email='#{technikamt}'><i class='fa fa-envelope'></i>&nbsp;&nbsp;Willkommens-E-Mail versenden</button></td></tr>"
+                id = @@user_info[technikamt][:id]
+                io.puts "<tr><td><img src='#{NEXTCLOUD_URL}/index.php/avatar/#{nc_login}/256' class='icon avatar-md'>&nbsp;#{display_name} #{@@user_info[technikamt][:klasse] ? "(#{klasse})" : ""}</td>
+                <td><a class='btn btn-xs btn-primary' href='mailto:#{technikamt}'><i class='fa fa-envelope'></i>&nbsp;&nbsp;E-Mail schreiben</a>&nbsp;
+                <button class='btn btn-xs btn-success bu-send-single-welcome-mail' data-email='#{technikamt}'><i class='fa fa-envelope'></i>&nbsp;&nbsp;Willkommens-E-Mail versenden</button>&nbsp;
+                <a class='btn btn-xs btn-secondary' href='/timetable/#{id}'><i class='fa fa-calendar'></i>&nbsp;&nbsp;Stundenplan</a>&nbsp;
+                <button class='btn btn-xs btn-danger bu-edit-techpost' data-email='#{technikamt}'><i class='fa fa-trash'></i>&nbsp;&nbsp;Rechte entziehen</button>
+                </td></tr>"
+                
             end
             io.puts "</tbody></table>"
             io.puts "</div></div>"
+            io.puts "<div class='json-data' style='display: none;'>"
             io.puts "<div class='row' style='margin-bottom: 15px;'><div class='col-md-12'><div class='alert alert-info'><code>#{get_technikamt_users()}</code></div></div></div>"
             unless problems == []
                 io.puts "<br><h3>Aktuelle Probleme im JSON-Format</h3>"
@@ -646,6 +658,7 @@ class Main < Sinatra::Base
                 end
                 io.puts "</div></div>"
             end
+            io.puts "</div>"
             io.puts "<br><h3>Super Funktionen</h3>"
             io.puts "<div class='row' style='margin-bottom: 15px;'><div class='col-md-12'>"
             io.puts "<button class='bu-clear-all btn btn-danger'><i class='fa fa-trash'></i>&nbsp;&nbsp;Alle Probleme löschen</button>&nbsp<button class='bu-kick-all btn btn-danger'><i class='fa fa-user-times'></i>&nbsp;&nbsp;Alle Technikamt-User entfernen</button>&nbsp<button class='bu-send-welcome-mail btn btn-warning'><i class='fa fa-envelope'></i>&nbsp;&nbsp;Willkommens-E-Mails versenden</button>&nbsp;<button class='bu-clear-aula-lights btn btn-danger'><i class='fa fa-lightbulb-o'></i>&nbsp;&nbsp;Plan der Aula-Scheinwerfer zurücksetzen</button>"

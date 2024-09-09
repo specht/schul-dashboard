@@ -125,6 +125,7 @@
       <div class="modal-content">
        <div class="modal-header">
           <h5 class="modal-title">Super User</h5>
+          <button class='btn-pull-right btn-json-data btn btn-secondary'>JSON anzeigen</button>
         </div>
         <div class="modal-body">
             <div class='row'>
@@ -256,16 +257,16 @@
                         function get_modal() {
                             let klasse = entry.klasse ? ` (${entry.klasse})` : ""
                             let tp_print = "<button class='btn btn-primary tp-print'><i class='fa fa-print'></i></button>"
-                            let tp_delete = "<button class='btn btn-danger tp-delete';><i class='fa fa-trash '></i></button>"
-                            let tp_hide_admin = "<button class='btn btn-info tp-hide-admin'><i class='fa fa-eye'></i></button>"
-                            let fixer = entry.fnc_login ? `<button title='${entry.fdisplay_name} kümmert sich um das Problem.' class='tp-fixer'><img src='#{NEXTCLOUD_URL}/index.php/avatar/${entry.fnc_login}/256' class='icon avatar-md'/></button>` : "<button class='btn btn-warning tp-fixer'><i class='fa fa-user-plus'></i></button>";
+                            let tp_delete = "<button class='btn btn-danger tp-delete';><i class='fa fa-trash'></i>&nbsp;&nbsp;Löschen</button>"
+                            let tp_hide_admin = "<button class='btn btn-info tp-hide-admin'><i class='fa fa-eye'></i>&nbsp;&nbsp;Ausblenden</button>"
+                            let fixer = entry.fnc_login ? `<button title='${entry.fdisplay_name} kümmert sich um das Problem.' class='tp-fixer'><img src='#{NEXTCLOUD_URL}/index.php/avatar/${entry.fnc_login}/256' class='icon avatar-md'/></button>` : "<button class='btn btn-warning tp-fixer'><i class='fa fa-user-plus'></i>&nbsp;&nbsp;Nutzer zuweisen</button>";
                             let tp_fixed = "<button class='btn btn-success tp-fixed'><i class='fa fa-check'></i>&nbsp;&nbsp;Behoben</button>"
                             let tp_not_fixed = "<button class='btn btn-warning tp-not-fixed'><i class='fa fa-times'></i>&nbsp;&nbsp;Nicht Behoben</button>"
                             let mail_count = entry.problem.mail_count
-                            let tp_mail = `<button class='btn btn-success tp-mail'><i class='fa fa-envelope'></i>&nbsp;&nbsp;(${mail_count})</button>`
-                            let tp_hide = "<button class='btn btn-info tp-hide'><i class='fa fa-eye'></i></button>"
+                            let tp_mail = `<button class='btn btn-xs btn-success tp-mail'><i class='fa fa-envelope'></i>&nbsp;&nbsp;Update per Mail senden (${mail_count})</button>`
+                            let tp_hide = "<button class='btn btn-xs btn-info tp-hide'><i class='fa fa-eye'></i>&nbsp;&nbsp;Für Absender ausblenden</button>"
                             if (entry.problem.hidden) {
-                                tp_hide = "<button class='btn btn-secondary tp-hide'><i class='fa fa-eye-slash'></i></button>"
+                                tp_hide = "<button class='btn btn-xs btn-secondary tp-hide'><i class='fa fa-eye-slash'></i>&nbsp;&nbsp;Für Absender ausgeblendet</button>"
                             }
 
                             let tp_comment = "<button class='btn btn-xs btn-primary tp-comment'><i class='fa fa-plus'></i>&nbsp;&nbsp;Kommentar</button>"
@@ -279,18 +280,14 @@
                             let modalContent = `<p>Problem: <b>${entry.problem.problem}</b><br>
                                 Gerät: <b>${entry.problem.device}</b><br>
                                 Datum: <b>${moment(entry.problem.date).format('dddd, D.M.Y')}</b><br>
-                                Absender: <b>${entry.display_name}${klasse}</b><br>
+                                Absender: <b>${entry.display_name}${klasse}</b> ${tp_hide} ${tp_mail}<br>
                                 Status: <b>${current_state}</b><br>
                                 Kommentar: <b>${comment}</b></p>
-                                <div class='pull-left'>
+                                <div>
                                     ${tp_fixed}
                                     ${tp_not_fixed}
-                                    ${tp_mail}
-                                    ${tp_hide}
-                                </div>
-                                <div class='pull-right'>
-                                    ${fixer}
                                     ${tp_hide_admin}
+                                    ${fixer}
                                     ${tp_delete}
                                 </div>`;
                             $('#__template_modal .modal-title').html(entry.problem.problem);
@@ -472,16 +469,16 @@
                         function get_modal() {
                             let klasse = entry.klasse ? ` (${entry.klasse})` : ""
                             let tp_print = "<button class='btn btn-primary tp-print';><i class='fa fa-print'></i></button>"
-                            let tp_delete = "<button class='btn btn-danger tp-delete';><i class='fa fa-trash '></i></button>"
-                            let tp_unhide_admin = "<button class='btn btn-secondary tp-unhide-admin'><i class='fa fa-eye-slash'></i></button>"
-                            let fixer = entry.fnc_login ? `<button title='${entry.fdisplay_name} kümmert sich um das Problem.' class='tp-fixer'><img src='#{NEXTCLOUD_URL}/index.php/avatar/${entry.fnc_login}/256' class='icon avatar-md'/></button>` : "<button class='btn btn-warning tp-fixer'><i class='fa fa-user-plus'></i></button>";
+                            let tp_delete = "<button class='btn btn-danger tp-delete';><i class='fa fa-trash'></i>&nbsp;&nbsp;Löschen</button>"
+                            let tp_unhide_admin = "<button class='btn btn-secondary tp-unhide-admin'><i class='fa fa-eye'></i>&nbsp;&nbsp;Einblenden</button>"
+                            let fixer = entry.fnc_login ? `<button title='${entry.fdisplay_name} kümmert sich um das Problem.' class='tp-fixer'><img src='#{NEXTCLOUD_URL}/index.php/avatar/${entry.fnc_login}/256' class='icon avatar-md'/></button>` : "<button class='btn btn-warning tp-fixer'><i class='fa fa-user-plus'></i>&nbsp;&nbsp;Nutzer zuweisen</button>";
                             let tp_fixed = "<button class='btn btn-success tp-fixed'><i class='fa fa-check'></i>&nbsp;&nbsp;Behoben</button>"
                             let tp_not_fixed = "<button class='btn btn-warning tp-not-fixed'><i class='fa fa-times'></i>&nbsp;&nbsp;Nicht Behoben</button>"
                             let mail_count = entry.problem.mail_count
-                            let tp_mail = `<button class='btn btn-success tp-mail'><i class='fa fa-envelope'></i>&nbsp;&nbsp;(${mail_count})</button>`
-                            let tp_hide = "<button class='btn btn-info tp-hide'><i class='fa fa-eye'></i></button>"
+                            let tp_mail = `<button class='btn btn-xs btn-success tp-mail'><i class='fa fa-envelope'></i>&nbsp;&nbsp;Update per Mail senden (${mail_count})</button>`
+                            let tp_hide = "<button class='btn btn-xs btn-info tp-hide'><i class='fa fa-eye'></i>&nbsp;&nbsp;Für Absender ausblenden</button>"
                             if (entry.problem.hidden) {
-                                tp_hide = "<button class='btn btn-secondary tp-hide'><i class='fa fa-eye-slash'></i></button>"
+                                tp_hide = "<button class='btn btn-xs btn-secondary tp-hide'><i class='fa fa-eye-slash'></i>&nbsp;&nbsp;Für Absender ausgeblendet</button>"
                             }
 
                             let tp_comment = "<button class='btn btn-xs btn-primary tp-comment'><i class='fa fa-plus'></i>&nbsp;&nbsp;Kommentar</button>"
@@ -495,18 +492,14 @@
                             let modalContent = `<p>Problem: <b>${entry.problem.problem}</b><br>
                                 Gerät: <b>${entry.problem.device}</b><br>
                                 Datum: <b>${moment(entry.problem.date).format('dddd, D.M.Y')}</b><br>
-                                Absender: <b>${entry.display_name}${klasse}</b><br>
+                                Absender: <b>${entry.display_name}${klasse}</b> ${tp_hide} ${tp_mail}<br>
                                 Status: <b>${current_state}</b><br>
                                 Kommentar: <b>${comment}</b></p>
-                                <div class='pull-left'>
+                                <div>
                                     ${tp_fixed}
                                     ${tp_not_fixed}
-                                    ${tp_mail}
-                                    ${tp_hide}
-                                </div>
-                                <div class='pull-right'>
-                                    ${fixer}
                                     ${tp_unhide_admin}
+                                    ${fixer}
                                     ${tp_delete}
                                 </div>`;
                             $('#__template_modal .modal-title').html(entry.problem.problem);
@@ -777,6 +770,14 @@ document.addEventListener('DOMContentLoaded', function() {
             api_call('/api/send_single_techpost_welcome_mail', { email: email}, function (data) {
                 window.location.reload;
             });
+    });
+
+    $('.btn-json-data').click(function (e) {
+        let json_data = $('.json-data');
+        if (json_data.is(':visible'))
+            json_data.hide();
+        else
+            json_data.show();
     });
 
     })

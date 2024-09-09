@@ -506,6 +506,43 @@ class Main < Sinatra::Base
             end
         end
     end
+    
+    def self.update_techpost_groups()
+        results = $neo4j.neo4j_query(<<~END_OF_QUERY)
+            MATCH (u:User)-[:HAS_AMT {amt: 'technikamt'}]->(v:Techpost)
+            RETURN u.email
+        END_OF_QUERY
+        techpost_users = results.map { |row| row['u.email'] }
+
+        @@techpost_recipients = {
+            :recipients => {},
+            :groups => []
+        }
+        @@techpost_mailing_lists = {}
+
+        @@techpost_recipients[:groups] << "/techpost/sus"
+        @@techpost_recipients[:recipients]["/techpost/sus"] = {
+            :label => "Technikamt",
+            :entries => techpost_users
+        }
+
+        @@techpost_recipients[:groups] << "/techpost/eltern"
+        @@techpost_recipients[:recipients]["/techpost/eltern"] = {
+            :label => "Technikamt - Eltern (extern)",
+            :external => true,
+            :entries => techpost_users.map { |email| 'eltern.' + email }
+        }
+
+        @@techpost_mailing_lists["technikamt@#{MAILING_LIST_DOMAIN}"] = {
+            :label => "Technikamt",
+            :recipients => techpost_users
+        }
+
+        @@techpost_mailing_lists["eltern.technikamt@#{MAILING_LIST_DOMAIN}"] = {
+            :label => "Techpost (Eltern)",
+            :recipients => techpost_users.map { |email| 'eltern.' + email }
+        }
+    end
 
     def self.update_angebote_groups()
         @@angebote_mailing_lists = {}

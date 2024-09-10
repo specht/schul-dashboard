@@ -132,6 +132,7 @@ class Main < Sinatra::Base
                 :themengebiet,
                 :referenzfach,
                 :betreuende_lehrkraft,
+                :fas,
             ],
             :max_body_length => 16384,
             :max_string_length => 8192
@@ -149,10 +150,10 @@ class Main < Sinatra::Base
                 MERGE (p:Pk5)-[:BELONGS_TO]->(u)
                 RETURN p;
             END_OF_QUERY
-            [:themengebiet, :referenzfach, :betreuende_lehrkraft].each do |key|
+            [:themengebiet, :referenzfach, :betreuende_lehrkraft, :fas].each do |key|
                 if data.include?(key)
                     value = data[key]
-                    if key == :referenzfach
+                    if key == :referenzfach || key == :fas
                         all_faecher = File.read('/data/pk5/faecher.txt').split("\n").map { |x| x.strip }.reject { |x| x.empty? }
                         value = nil unless all_faecher.include?(value)
                     end

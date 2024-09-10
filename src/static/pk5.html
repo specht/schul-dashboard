@@ -125,24 +125,22 @@
 
                         </div>
                     </div>
-                    <div style="display: none;">
-                        <div class='col-md-6'>
-                            <div class='form-group'>
-                                <label>Fächerübergreifender Aspekt</label>
-                                <input id='ti_fas' type='text' value='#{CGI.escapeHTML(get_my_pk5(user_email)[:fas] || '')}' placeholder='kein fächerübergreifender Aspekt gewählt' class='form-control' list='li_fach' readonly>
-                            </div>
+                    <div class='col-md-6' style="display: #{$pk5.get_current_phase >= 5 ? 'block' : 'none'}">
+                        <div class='form-group'>
+                            <label>Fächerübergreifender Aspekt</label>
+                            <input id='ti_fas' type='text' value='#{CGI.escapeHTML(get_my_pk5(user_email)[:fas] || '')}' placeholder='kein fächerübergreifender Aspekt gewählt' class='form-control' list='li_fach' readonly>
                         </div>
-                        <div class='col-md-6'>
-                            <div class='form-group'>
-                                <label>Betreuende Lehrkraft im fächerübergreifenden Aspekt</label>
-                                <input id='ti_betreuende_lehrkraft_fas' type='text' value='#{CGI.escapeHTML(get_my_pk5(user_email)[:betreuende_lehrkraft_fas] || '')}' placeholder='keine Lehrkraft gewählt' class='form-control' list='li_lehrkraft' readonly>
-                            </div>
+                    </div>
+                    <div class='col-md-6' style="display: #{$pk5.get_current_phase >= 5 ? 'block' : 'none'}">
+                        <div class='form-group'>
+                            <label>Betreuende Lehrkraft im fächerübergreifenden Aspekt</label>
+                            <input id='ti_betreuende_lehrkraft_fas' disabled type='text' value='#{CGI.escapeHTML(get_my_pk5(user_email)[:betreuende_lehrkraft_fas] || '')}' placeholder='keine Lehrkraft gewählt' class='form-control' list='li_lehrkraft' readonly>
                         </div>
-                        <div class='col-md-12'>
-                            <div class='form-group'>
-                                <label>Fragestellung</label>
-                                <input id='ti_fragestellung' type='text' value='#{CGI.escapeHTML(get_my_pk5(user_email)[:fragestellung] || '')}' placeholder='keine Fragestellung gewählt' class='form-control' readonly>
-                            </div>
+                    </div>
+                    <div class='col-md-12' style="display: none;">
+                        <div class='form-group'>
+                            <label>Fragestellung</label>
+                            <input id='ti_fragestellung' type='text' value='#{CGI.escapeHTML(get_my_pk5(user_email)[:fragestellung] || '')}' placeholder='keine Fragestellung gewählt' class='form-control' readonly>
                         </div>
                     </div>
 
@@ -173,6 +171,7 @@ window.addEventListener('load', function() {
     $('#ti_themengebiet').val(my_pk5.themengebiet);
     $('#ti_referenzfach').val(my_pk5.referenzfach);
     $('#ti_betreuende_lehrkraft').val(my_pk5.betreuende_lehrkraft_display_name);
+    $('#ti_fas').val(my_pk5.fas);
     $('#bu_edit').on('click', function(e) {
         $('.api_messages').hide();
         for (let input of $(e.target).closest('.karteikarte').find('input')) {

@@ -191,14 +191,14 @@
         </div>
         <div class="modal-body">
             <div style="padding: 0.5em 0;">Bitte wählen Sie einen Grund für die E-Mail:</div>
-            <select class='form-control'>
-                <option>Grund auswählen</option>
-                <option>Material fehlt</option>
-                <option>Hausaufgaben fehlen</option>
-                <option>Unterschrift fehlt</option>
+            <select id='ti_mail_reason' class='form-control'>
+                <option value="">Grund auswählen</option>
+                <option value="material">Material fehlt</option>
+                <option value="homework">Hausaufgaben fehlen</option>
+                <option value="signature">Unterschrift fehlt</option>
             </select>
             <div style="padding: 0.5em 0;">Sie können eine Notiz hinzufügen, um das Problem zu konkretisieren:</div>
-            <textarea class="form-control" placeholder="Notiz (optional)"></textarea>
+            <textarea id='ti_mail_details' class="form-control" placeholder="Notiz (z. B. »Zirkel fehlt«)"></textarea>
             <div style="padding: 0.5em 0;">Wenn Sie auf den jeweiligen Button drücken, wird eine E-Mail an die Eltern, das Kind in CC und Sie selbst in BCC gesendet. Der Versand erfolgt zeitverzögert. Sie haben im Falle eines Irrtums 10 Minuten lang Zeit, um den Versand abzubrechen.</div>
             <div style='max-width: 100%; overflow-x: auto;'>
                 <table class='table table-sm table-striped' id='div_email_sus_table'>
@@ -622,6 +622,19 @@ function reload_print_button() {
 
 var lesson_notes = #{lesson_notes_for_session_user.to_json};
 
+function mail_reason_changed() {
+    let reason = $('#ti_mail_reason').val();
+    if (reason === 'material') {
+
+    } else if (reason === 'homework') {
+
+    } else if (reason === 'signature') {
+
+    } else {
+        $('#ti_mail_detals').prop('disabled', true);
+    }
+}
+
 document.addEventListener('DOMContentLoaded', function() {
     moment.locale('de');
     let narrow_window = ($(window).width() <= 640);
@@ -1017,7 +1030,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     let row = $(`<tr>`).data('email', sus_info.email);
                     row.append($(`<td>`).text(sus_info.display_name));
                     // row.append($(`<td>`).append($(`<span class='badge bg-danger'>H</span>`)));
-                    let button = $(`<button class='btn btn-sm btn-warning'>`).html(`<i class='fa fa-send'></i>&nbsp;&nbsp;E-Mail`);
+                    let button = $(`<button class='btn btn-sm btn-warning'>`).html(`<i class='fa fa-send'></i>&nbsp;&nbsp;E-Mail senden`);
                     button.on('click', function(e) {
                         let email = $(e.target).closest('tr').data('email');
                         console.log(email);
@@ -1720,6 +1733,10 @@ document.addEventListener('DOMContentLoaded', function() {
     $('.bu-mail').on('click', function(e) {
         $('#mailModal').modal('show');
     });
+    $('#ti_mail_reason').on('change', function(e) {
+        mail_reason_changed();
+    });
+    mail_reason_changed();
     window.addEventListener('load', function() {
         if ($('#tresor_countdown_here').length > 0) {
             setInterval(function() {

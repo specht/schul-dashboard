@@ -169,6 +169,7 @@
         <div class="ha-amt-container" style='display: none; width: 100%;'>
             <textarea class='form-control' id='ta_ha_amt_text' placeholder='Hier kannst du die Hausaufgaben zu dieser Stunde eintragen'></textarea>
         </div>
+        <a style='#{(@session_user || {})[:email] == 'specht@gymnasiumsteglitz.de' ? '' : 'display: none;'}' class="btn btn-warning bu-mail"><i class='fa fa-envelope-o'></i>&nbsp;&nbsp;E-Mail</a>
         <a class="btn btn-success bu-edit-lesson"><i class='fa fa-edit'></i>&nbsp;&nbsp;Bearbeiten</a>
         <button class="show-ha-amt-only btn btn-secondary bu-discard-ha-amt-text-changes"><i class='fa fa-trash'></i>&nbsp;&nbsp;Änderungen verwerfen</button>
         <button class="show-ha-amt-only btn btn-success bu-save-ha-amt-text-changes"><i class='fa fa-check'></i>&nbsp;&nbsp;Änderungen speichern</button>
@@ -180,7 +181,39 @@
   </div>
 </div>
 
-<div class="modal" id="homeworkFeedbackModal" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
+<div class="modal" id="mailModal" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-scrollable modal-lg modal-dialog-centered" role="document">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" >
+            E-Mail an Eltern senden
+          </h5>
+        </div>
+        <div class="modal-body">
+            <div style="padding: 0.5em 0;">Bitte wählen Sie einen Grund für die E-Mail:</div>
+            <select class='form-control'>
+                <option>Grund auswählen</option>
+                <option>Material fehlt</option>
+                <option>Hausaufgaben fehlen</option>
+                <option>Unterschrift fehlt</option>
+            </select>
+            <div style="padding: 0.5em 0;">Sie können eine Notiz hinzufügen, um das Problem zu konkretisieren:</div>
+            <textarea class="form-control" placeholder="Notiz (optional)"></textarea>
+            <div style="padding: 0.5em 0;">Wenn Sie auf den jeweiligen Button drücken, wird eine E-Mail an die Eltern, das Kind in CC und Sie selbst in BCC gesendet. Der Versand erfolgt zeitverzögert. Sie haben im Falle eines Irrtums 10 Minuten lang Zeit, um den Versand abzubrechen.</div>
+            <div style='max-width: 100%; overflow-x: auto;'>
+                <table class='table table-sm table-striped' id='div_email_sus_table'>
+                </table>
+            </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-dismiss="modal"><i class='fa fa-times'></i>&nbsp;&nbsp;Schließen</button>
+        </div>
+      </div>
+    </div>
+    </div>
+  </div>
+  
+  <div class="modal" id="homeworkFeedbackModal" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
   <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
     <div class="modal-content">
       <div class="modal-header">
@@ -978,6 +1011,26 @@ document.addEventListener('DOMContentLoaded', function() {
                 $('.bu-enter-ha-amt-text').show();
             }
 
+            $('#div_email_sus_table').empty();
+            if (typeof(event.lesson_key) !== 'undefined' && (event.schueler_for_lesson ?? []).length > 0) {
+                for (let sus_info of event.schueler_for_lesson) {
+                    let row = $(`<tr>`).data('email', sus_info.email);
+                    row.append($(`<td>`).text(sus_info.display_name));
+                    // row.append($(`<td>`).append($(`<span class='badge bg-danger'>H</span>`)));
+                    let button = $(`<button class='btn btn-sm btn-warning'>`).html(`<i class='fa fa-send'></i>&nbsp;&nbsp;E-Mail`);
+                    button.on('click', function(e) {
+                        let email = $(e.target).closest('tr').data('email');
+                        console.log(email);
+
+                    });
+                    row.append($(`<td>`).append(button));
+                    $('#div_email_sus_table').append(row);
+                }
+                $('.bu-mail').show();
+            } else {
+                $('.bu-mail').hide();
+            }
+
             $('.bu-discard-ha-amt-text-changes').hide();
             $('.bu-save-ha-amt-text-changes').hide();
 
@@ -1663,6 +1716,9 @@ document.addEventListener('DOMContentLoaded', function() {
         api_call('/api/unlock_2fa_otp_now', {email: $('#ad_hoc_login_email_here').text()}, function(data) {
             $('.div_ad_hoc_fresh_otp').hide();
         });
+    });
+    $('.bu-mail').on('click', function(e) {
+        $('#mailModal').modal('show');
     });
     window.addEventListener('load', function() {
         if ($('#tresor_countdown_here').length > 0) {

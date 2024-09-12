@@ -1974,7 +1974,7 @@ class Main
         assert(teacher_logged_in?)
         StringIO.open do |io|
             @@lessons[:lesson_keys].keys.sort do |a, b|
-                a.downcase <=> b.downcase
+                @@lessons[:lesson_keys][a][:pretty_folder_name].downcase <=> @@lessons[:lesson_keys][b][:pretty_folder_name].downcase
             end.each do |lesson_key|
                 info = @@lessons[:lesson_keys][lesson_key]
                 klassen = info[:klassen] || Set.new()

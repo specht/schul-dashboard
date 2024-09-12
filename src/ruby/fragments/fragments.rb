@@ -1969,4 +1969,29 @@ class Main
         end
         return doc.render
     end
+
+    def print_kurslisten
+        assert(teacher_logged_in?)
+        StringIO.open do |io|
+            @@lessons[:lesson_keys].keys.sort do |a, b|
+                a.downcase <=> b.downcase
+            end.each do |lesson_key|
+                info = @@lessons[:lesson_keys][lesson_key]
+                klassen = info[:klassen] || Set.new()
+                next unless klassen.include?('11') || klassen.include?('12')
+                io.puts "<h4>#{info[:pretty_folder_name]} &ndash; #{info[:lehrer].join(', ')}</h4>"
+                io.puts "<table class='table table-sm table-striped'>"
+                # io.puts "<h3>#{lesson_key}</h3>"
+                # io.puts "<pre>"
+                # io.puts info.to_yaml
+                # io.puts "</pre>"
+                (@@schueler_for_lesson[lesson_key] || []).each.with_index do |email, index|
+                    io.puts "<tr><td style='width: 2em; text-align: right;'>#{index + 1}.</td><td>#{@@user_info[email][:display_name]}</td></tr>"
+                end
+                io.puts "</table>"
+            end
+            
+            io.string
+        end
+    end
 end

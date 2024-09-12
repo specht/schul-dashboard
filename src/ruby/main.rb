@@ -2136,6 +2136,9 @@ class Main < Sinatra::Base
                     #     end
                     # end
                     if teacher_logged_in?
+                        if user_with_role_logged_in?(:can_see_kurslisten)
+                            io.puts "<a class='dropdown-item nav-icon' href='/kurslisten'><div class='icon'><i class='fa fa-file-text-o'></i></div><span class='label'>Kurslisten</span></a>"
+                        end
                         io.puts "<a class='dropdown-item nav-icon' href='/pk5_overview'><div class='icon'><i class='fa fa-file-text-o'></i></div><span class='label'>5. PK</span></a>"
                     end
                     if schueler_logged_in?

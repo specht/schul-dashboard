@@ -1971,7 +1971,7 @@ class Main
     end
 
     def print_kurslisten
-        assert(teacher_logged_in?)
+        assert(user_with_role_logged_in?(:can_see_kurslisten))
         StringIO.open do |io|
             @@lessons[:lesson_keys].keys.sort do |a, b|
                 @@lessons[:lesson_keys][a][:pretty_folder_name].downcase <=> @@lessons[:lesson_keys][b][:pretty_folder_name].downcase
@@ -1990,7 +1990,6 @@ class Main
                 end
                 io.puts "</table>"
             end
-            
             io.string
         end
     end

@@ -23,7 +23,6 @@ class MailBotRepl < Sinatra::Base
     def self.perform_update()
         @@lessons = Main.class_variable_get(:@@lessons)
         @@user_info = Main.class_variable_get(:@@user_info)
-        STDERR.puts "Sending pending emails!"
         ts = Time.now.to_i
         ts += 20 * 60 if DEVELOPMENT
         $neo4j.neo4j_query(<<~END_OF_QUERY, {:ts => ts}).each do |row|

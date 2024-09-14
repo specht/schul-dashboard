@@ -2835,3 +2835,7 @@ body.dark hr {
 body.dark .hl {
     background-color: #004a63;
 }
+
+.modal {
+    padding-bottom: 1.5em;
+}

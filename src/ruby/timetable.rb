@@ -1545,6 +1545,8 @@ class Timetable
                                     event[:schueler_for_lesson] = (@@schueler_for_lesson[event[:lesson_key]] || []).map do |email|
                                         {:email => email,
                                          :display_name => @@user_info[email][:display_name],
+                                         :display_last_name => @@user_info[email][:display_last_name],
+                                         :display_first_name => @@user_info[email][:display_first_name],
                                          :nc_login => @@user_info[email][:nc_login]
                                         }
                                     end

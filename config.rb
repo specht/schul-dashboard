@@ -181,6 +181,10 @@ if ENABLE_IMAGE_BOT
                 'rerun -b --dir /app --ignore "fragments/*" -s SIGKILL \'rackup --port 8080 --host 0.0.0.0 image-bot-repl.ru\'' :
                 'rackup --port 8080 --host 0.0.0.0 image-bot-repl.ru'
 end
+docker_compose[:services][:mail_bot] = YAML.load(docker_compose[:services][:ruby].to_yaml)
+docker_compose[:services][:mail_bot]['entrypoint'] = DEVELOPMENT ?
+            'rerun -b --dir /app --ignore "fragments/*" -s SIGKILL \'rackup --port 8080 --host 0.0.0.0 mail-bot-repl.ru\'' :
+            'rackup --port 8080 --host 0.0.0.0 mail-bot-repl.ru'
 
 docker_compose[:services][:stats_bot] = YAML.load(docker_compose[:services][:ruby].to_yaml)
 docker_compose[:services][:stats_bot]['entrypoint'] = DEVELOPMENT ?

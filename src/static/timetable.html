@@ -16,6 +16,9 @@
         font-size: 200%;
         text-align: center;
     }
+    #div_email_sus_table tr:hover {
+        background-color: rgba(0, 0, 0, 0.05);
+    }
 </style>
 <div class='container-fluid'>
     <div class="row" style="#{(((@session_user || {})[:otp_token]) || ((@session_user || {})[:telephone_number]) || (!user_with_role_logged_in?(:teacher))) ? 'display: none;' : 'display: block;'}">
@@ -169,7 +172,9 @@
         <div class="ha-amt-container" style='display: none; width: 100%;'>
             <textarea class='form-control' id='ta_ha_amt_text' placeholder='Hier kannst du die Hausaufgaben zu dieser Stunde eintragen'></textarea>
         </div>
-        <!-- <a style='#{(@session_user || {})[:email] == 'specht@gymnasiumsteglitz.de' ? '' : 'display: none;'}' class="btn btn-warning bu-mail"><i class='fa fa-envelope-o'></i>&nbsp;&nbsp;E-Mail</a> -->
+        <div style="#{teacher_logged_in? ? '' : 'display: none;'}">
+            <a style='#{(@session_user || {})[:email] == 'specht@gymnasiumsteglitz.de' ? '' : 'display: none;'}' class="btn btn-warning bu-mail"><i class='fa fa-envelope-o'></i>&nbsp;&nbsp;E-Mail</a>
+        </div>
         <a class="btn btn-success bu-edit-lesson"><i class='fa fa-edit'></i>&nbsp;&nbsp;Bearbeiten</a>
         <button class="show-ha-amt-only btn btn-secondary bu-discard-ha-amt-text-changes"><i class='fa fa-trash'></i>&nbsp;&nbsp;Änderungen verwerfen</button>
         <button class="show-ha-amt-only btn btn-success bu-save-ha-amt-text-changes"><i class='fa fa-check'></i>&nbsp;&nbsp;Änderungen speichern</button>
@@ -198,7 +203,7 @@
                 <option value="signature">Unterschrift fehlt</option>
             </select>
             <div style="padding: 0.5em 0;">Sie können eine Notiz hinzufügen, um das Problem zu konkretisieren:</div>
-            <textarea id='ti_mail_details' class="form-control" placeholder="Notiz (z. B. »Zirkel fehlt«)"></textarea>
+            <textarea id='ti_mail_details' class="form-control"></textarea>
             <div style="padding: 0.5em 0;">Wenn Sie auf den jeweiligen Button drücken, wird eine E-Mail an die Eltern, das Kind in CC und Sie selbst in BCC gesendet. Der Versand erfolgt zeitverzögert. Sie haben im Falle eines Irrtums 10 Minuten lang Zeit, um den Versand abzubrechen.</div>
             <div style='max-width: 100%; overflow-x: auto;'>
                 <table class='table table-sm table-striped' id='div_email_sus_table'>
@@ -212,7 +217,6 @@
     </div>
     </div>
   </div>
-  
   <div class="modal" id="homeworkFeedbackModal" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
   <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
     <div class="modal-content">
@@ -624,15 +628,60 @@ var lesson_notes = #{lesson_notes_for_session_user.to_json};
 
 function mail_reason_changed() {
     let reason = $('#ti_mail_reason').val();
+    let got_reason = false;
+    $('#ti_mail_details').val('');
     if (reason === 'material') {
-
+        got_reason = true;
+        $('#ti_mail_details').attr('placeholder', 'Notiz (z. B. »Zirkel fehlt«)');
     } else if (reason === 'homework') {
-
+        got_reason = true;
+        $('#ti_mail_details').attr('placeholder', 'Notiz (z. B. »S. 23, Nr. 4«)');
     } else if (reason === 'signature') {
-
+        got_reason = true;
+        $('#ti_mail_details').attr('placeholder', 'Notiz (z. B. »Anmeldung Klassenfahrt«)');
     } else {
-        $('#ti_mail_detals').prop('disabled', true);
+        $('#ti_mail_details').attr('placeholder', 'Notiz');
     }
+    if (got_reason) {
+        $('#ti_mail_details').prop('disabled', false);
+        for (let email of Object.keys(email_div_rows)) {
+            email_div_rows[email].bu_send.prop('disabled', (pending_mail_data[email] ?? []).some((x) => x.reason == reason));
+        }
+    } else {
+        $('#ti_mail_details').prop('disabled', true);
+        for (let email of Object.keys(email_div_rows)) {
+            email_div_rows[email].bu_send.prop('disabled', true);
+        }
+    }
+}
+
+var email_div_rows = {};
+var pending_mail_data = {};
+var REASON_LABEL = {
+    material: 'Material fehlt',
+    homework: 'Hausaufgaben fehlen',
+    signature: 'Unterschrift fehlt',
+}
+
+function generate_mail_pending_row(entry, sus_info) {
+    let row = $(`<tr>`).data('email', sus_info.email).data('type', 'pending');
+    if (typeof(entry.ts_sent_h) !== 'undefined' && entry.ts_sent_h !== null) {
+        row.append($(`<td colspan='2'>`).html(`<i class='fa fa-check text-success'></i>&nbsp;&nbsp;<em>»${REASON_LABEL[entry.reason] ?? entry.reason}« (${sus_info.display_first_name}) wurde um ${entry.ts_sent_h} Uhr gesendet</em>`));
+    } else {
+        row.append($(`<td>`).html(`<i class='fa fa-clock-o'></i>&nbsp;&nbsp;<em>»${REASON_LABEL[entry.reason] ?? entry.reason}« (${sus_info.display_first_name}) wird um ${entry.ts_h} Uhr gesendet</em>`));
+        let button = $(`<button class='btn btn-sm btn-secondary'>`).html(`<i class='fa fa-times'></i>&nbsp;&nbsp;Abbrechen`);
+        button.on('click', function(e) {
+            api_call('/api/cancel_email', {tag: entry.tag}, function(data) {
+                if (data.success) {
+                    row.remove();
+                    pending_mail_data[sus_info.email] = pending_mail_data[sus_info.email].filter((x) => x.tag !== entry.tag);
+                    mail_reason_changed();
+                }
+            });
+        });
+        row.append($(`<td style='text-align: right;'>`).append(button));
+    }
+    return row;
 }
 
 document.addEventListener('DOMContentLoaded', function() {
@@ -1025,21 +1074,47 @@ document.addEventListener('DOMContentLoaded', function() {
             }
 
             $('#div_email_sus_table').empty();
-            if (typeof(event.lesson_key) !== 'undefined' && (event.schueler_for_lesson ?? []).length > 0) {
-                for (let sus_info of event.schueler_for_lesson) {
-                    let row = $(`<tr>`).data('email', sus_info.email);
-                    row.append($(`<td>`).text(sus_info.display_name));
-                    // row.append($(`<td>`).append($(`<span class='badge bg-danger'>H</span>`)));
-                    let button = $(`<button class='btn btn-sm btn-warning'>`).html(`<i class='fa fa-send'></i>&nbsp;&nbsp;E-Mail senden`);
-                    button.on('click', function(e) {
-                        let email = $(e.target).closest('tr').data('email');
-                        console.log(email);
-
-                    });
-                    row.append($(`<td>`).append(button));
-                    $('#div_email_sus_table').append(row);
-                }
-                $('.bu-mail').show();
+            email_div_rows = {};
+            pending_mail_data = {};
+            console.log(event);
+            if ('#{teacher_logged_in? ? 'true' : 'false'}' == 'true' && typeof(event.lesson_key) !== 'undefined' && (event.schueler_for_lesson ?? []).length > 0 && (my_lessons.indexOf(event.lesson_key) >= 0 && event.lesson_offset !== null && event.lesson_offset >= 0) && (#{DEVELOPMENT ? 'true' : 'false'} || ('#{Date.today.strftime('%Y-%m-%d')}' === event.datum))) {
+                api_call('/api/get_pending_mails', {lesson_key: event.lesson_key, lesson_offset: event.lesson_offset}, function(pending_data) {
+                    pending_mail_data = pending_data.results;
+                    console.log(pending_data);
+                    for (let sus_info of event.schueler_for_lesson) {
+                        email_div_rows[sus_info.email] = {};
+                        let row = $(`<tr>`).data('email', sus_info.email).data('type', 'sus');
+                        row.append($(`<td>`).text(`${sus_info.display_last_name}, ${sus_info.display_first_name}`));
+                        // row.append($(`<td>`).append($(`<span class='badge bg-danger'>H</span>`)));
+                        let button = $(`<button class='btn btn-sm btn-warning' style='white-space: nowrap;'>`).html(`<i class='fa fa-send'></i>&nbsp;&nbsp;E-Mail senden`);
+                        button.on('click', function(e) {
+                            let email = $(e.target).closest('tr').data('email');
+                            email_div_rows[email].bu_send.prop('disabled', true);
+                            let reason = $('#ti_mail_reason').val().trim();
+                            let details = $('#ti_mail_details').val().trim();
+                            api_call('/api/send_email', {email: email, reason: reason, details: details, lesson_key: event.lesson_key, lesson_offset: event.lesson_offset, datum: event.datum}, function(data) {
+                                console.log(data);
+                                if (data.success) {
+                                    pending_mail_data[sus_info.email] ??= [];
+                                    pending_mail_data[sus_info.email].push(data.entry);
+                                    let row = generate_mail_pending_row(data.entry, sus_info);
+                                    let p = $(e.target).closest('tr');
+                                    while (p.next().data('type') === 'pending') p = p.next();
+                                    row.insertAfter(p);
+                                }
+                            });
+                        });
+                        email_div_rows[sus_info.email].bu_send = button;
+                        row.append($(`<td style='text-align: right;'>`).append(button));
+                        $('#div_email_sus_table').append(row);
+                        for (let entry of (pending_mail_data[sus_info.email] ?? [])) {
+                            let row = generate_mail_pending_row(entry, sus_info);
+                            $('#div_email_sus_table').append(row);
+                        }
+                    }
+                    $('.bu-mail').show();
+                    mail_reason_changed();
+                });
             } else {
                 $('.bu-mail').hide();
             }

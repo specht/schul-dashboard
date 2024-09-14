@@ -81,6 +81,7 @@ require './include/comment.rb'
 require './include/cypher.rb'
 require './include/development.rb'
 require './include/directory.rb'
+require './include/email.rb'
 require './include/event.rb'
 require './include/ext_user.rb'
 require './include/file.rb'
@@ -273,6 +274,7 @@ class SetupDatabase
         'KnownEmailAddress/email',
         'Lesson/key',
         'LoginCode/tag',
+        'Mail/tag',
         'MatrixAccessToken/access_token',
         'Message/key',
         'NewsEntry/timestamp',
@@ -308,6 +310,7 @@ class SetupDatabase
         'LoginCode/code',
         'SecondFactor/ts_expire',
         'SecondLoginCode/code',
+        'Mail/ts_sent',
         'News/date',
         'NextcloudLoginCode/code',
         'Pk5/betreuende_lehrkraft',

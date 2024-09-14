@@ -43,10 +43,10 @@ class MailBotRepl < Sinatra::Base
             STDERR.puts "#{tag} / #{lesson_key} / #{lesson_offset} / #{lehrer_email} / #{sus_email} / #{reason} / #{details}"
             $neo4j.transaction do
                 deliver_mail do
-                    to sus_email
                     from SMTP_FROM
                     reply_to lehrer_email
-                    cc "eltern." + sus_email
+                    cc sus_email
+                    to "eltern." + sus_email
                     bcc lehrer_email
                     if reason == 'material'
                         subject "Fehlendes Arbeitsmaterial im Fach #{@@lessons[:lesson_keys][lesson_key][:pretty_fach]}"

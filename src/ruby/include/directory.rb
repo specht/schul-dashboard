@@ -817,43 +817,48 @@ class Main < Sinatra::Base
 
     def print_mailing_list(io, list_email)
         return unless @@mailing_lists.include?(list_email)
+        assert(user_with_role_logged_in?(:can_use_mailing_lists))
         io.puts "<tr class='user_row'>"
         info = @@mailing_lists[list_email]
         io.puts "<td class='list_email_label'>#{info[:label]}</td>"
         io.puts "<td>"
         print_email_field(io, list_email)
         io.puts "</td>"
-        io.puts "<td style='text-align: right;'><button data-list-email='#{list_email}' class='btn btn-warning btn-sm bu-toggle-adresses'>#{info[:recipients].size} Adressen&nbsp;&nbsp;<i class='fa fa-chevron-down'></i></button></td>"
-        io.puts "</tr>"
-        io.puts "<tbody style='display: none;' class='list_email_emails' data-list-email='#{list_email}'>"
-        emails = []
-        # STDERR.puts list_email
-        # STDERR.puts info[:recipients].to_yaml
-        info[:recipients].sort do |a, b|
-            an = ((@@user_info[a.sub(/^eltern\./, '')] || {})[:display_name] || '').downcase.unicode_normalize(:nfd)
-            bn = ((@@user_info[b.sub(/^eltern\./, '')] || {})[:display_name] || '').downcase.unicode_normalize(:nfd)
-            an <=> bn
-        end.each do |email|
-            emails << email
-            name = (@@user_info[email] || {})[:display_name] || ''
-            if email[0, 7] == 'eltern.'
-                name = (@@user_info[email.sub('eltern.', '')] || {})[:display_name] || ''
-                name = "Eltern von #{name}"
+        if teacher_logged_in?
+            io.puts "<td style='text-align: right;'><button data-list-email='#{list_email}' class='btn btn-warning btn-sm bu-toggle-adresses'>#{info[:recipients].size} Adressen&nbsp;&nbsp;<i class='fa fa-chevron-down'></i></button></td>"
+            io.puts "</tr>"
+            io.puts "<tbody style='display: none;' class='list_email_emails' data-list-email='#{list_email}'>"
+            emails = []
+            # STDERR.puts list_email
+            # STDERR.puts info[:recipients].to_yaml
+            info[:recipients].sort do |a, b|
+                an = ((@@user_info[a.sub(/^eltern\./, '')] || {})[:display_name] || '').downcase.unicode_normalize(:nfd)
+                bn = ((@@user_info[b.sub(/^eltern\./, '')] || {})[:display_name] || '').downcase.unicode_normalize(:nfd)
+                an <=> bn
+            end.each do |email|
+                emails << email
+                name = (@@user_info[email] || {})[:display_name] || ''
+                if email[0, 7] == 'eltern.'
+                    name = (@@user_info[email.sub('eltern.', '')] || {})[:display_name] || ''
+                    name = "Eltern von #{name}"
+                end
+                io.puts "<tr class='user_row'>"
+                io.puts "<td>#{name}</td>"
+                io.puts "<td colspan='2'>"
+                print_email_field(io, email)
+                io.puts "</td>"
+                io.puts "</tr>"
             end
             io.puts "<tr class='user_row'>"
-            io.puts "<td>#{name}</td>"
+            io.puts "<td>Bei Verteiler-Ausfall (bitte in BCC)</td>"
             io.puts "<td colspan='2'>"
-            print_email_field(io, email)
+            print_email_field(io, emails.join('; '))
             io.puts "</td>"
             io.puts "</tr>"
+        else
+            io.puts "<td style='text-align: right;'>#{info[:recipients].size} Adressen</td>"
         end
-        io.puts "<tr class='user_row'>"
-        io.puts "<td>Bei Verteiler-Ausfall (bitte in BCC)</td>"
-        io.puts "<td colspan='2'>"
-        print_email_field(io, emails.join('; '))
-        io.puts "</td>"
-        io.puts "</tr>"
-    io.puts "</tbody>"
+        io.puts "</tbody>"
     end
 
     def print_mailing_lists()

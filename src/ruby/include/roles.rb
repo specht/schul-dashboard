@@ -48,6 +48,7 @@ ROLE_TRANSITIONS = <<~END_OF_STRING
     sv => can_write_messages can_create_polls can_use_mailing_lists can_create_events
     technikteam => can_write_messages can_book_tablets can_create_polls can_use_mailing_lists can_create_events can_manage_tablets can_manage_tech_problems can_report_tech_problems
     admin => can_upload_files can_book_tablets can_manage_news can_manage_monitors can_manage_tablets can_manage_tech_problems can_report_tech_problems
-    schulbuchverein => can_use_nextcloud
+    schulbuchverein => can_use_mailing_lists can_use_nextcloud can_use_sms_gateway
     technikamt => can_report_tech_problems
+    gev => can_create_polls can_create_events can_use_mailing_lists can_use_nextcloud can_use_sms_gateway
 END_OF_STRING

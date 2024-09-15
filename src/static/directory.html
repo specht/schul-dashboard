@@ -146,9 +146,9 @@ document.addEventListener('DOMContentLoaded', function() {
     if ('#{teacher_logged_in?}' === 'true') {
         if (Object.keys(seats_dict).length > 0) {
             let first_room = true;
-            let n = #{@@schueler_for_klasse[klasse].size};
+            let n = #{(@@schueler_for_klasse[klasse] || []).size};
             console.log(n);
-            let rooms_for_klasse = #{@@rooms_for_klasse[klasse].to_a.to_json};
+            let rooms_for_klasse = #{(@@rooms_for_klasse[klasse] || []).to_a.to_json};
             console.log(rooms_for_klasse);
             for (let raum of Object.keys(seats_dict)) {
                 if (rooms_for_klasse.indexOf(raum) >= 0) {

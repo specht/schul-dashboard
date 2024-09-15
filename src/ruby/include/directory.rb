@@ -1,4 +1,31 @@
 class Main < Sinatra::Base
+    def self.iterate_kurse(&block)
+        @@lessons[:lesson_keys].keys.sort do |a, b|
+            @@lessons[:lesson_keys][a][:pretty_folder_name].downcase <=> @@lessons[:lesson_keys][b][:pretty_folder_name].downcase
+        end.each do |lesson_key|
+            info = @@lessons[:lesson_keys][lesson_key]
+            klassen = info[:klassen] || Set.new()
+            next unless klassen.include?('11') || klassen.include?('12')
+            yield lesson_key
+        end
+    end
+
+    def print_kurslisten
+        assert(user_with_role_logged_in?(:can_see_kurslisten))
+        StringIO.open do |io|
+            Main.iterate_kurse do |lesson_key|
+                info = @@lessons[:lesson_keys][lesson_key]
+                io.puts "<h4>#{info[:pretty_folder_name]} &ndash; #{info[:lehrer].join(', ')} <span style='font-size: 80%;'>[#{lesson_key}]</span></h4>"
+                io.puts "<table class='table table-sm table-striped'>"
+                (@@schueler_for_lesson[lesson_key] || []).each.with_index do |email, index|
+                    io.puts "<tr><td style='width: 2em; text-align: right;'>#{index + 1}.</td><td>#{@@user_info[email][:display_name]}</td></tr>"
+                end
+                io.puts "</table>"
+            end
+            io.string
+        end
+    end
+
     def self.determine_hide_from_sus
         hide_from_sus = false
         now = Time.now
@@ -16,6 +43,7 @@ class Main < Sinatra::Base
         klassenleiter_logged_in = (@@klassenleiter[klasse] || []).include?(@session_user[:shorthand]) || admin_logged_in?
         all_homeschooling_users = Main.get_all_homeschooling_users()
         salzh_status = Main.get_salzh_status_for_emails(Main.class_variable_get(:@@schueler_for_klasse)[klasse] || [])
+        is_klasse = KLASSEN_ORDER.include?(klasse)
         StringIO.open do |io|
             io.puts "<div class='row'>"
             io.puts "<div class='col-md-12'>"
@@ -31,8 +59,11 @@ class Main < Sinatra::Base
             #     end
             #     io.puts "</div>"
             # end
-            io.puts "<h3>Klasse #{tr_klasse(klasse)}"
-            io.puts "</h3>"
+            if is_klasse
+                io.puts "<h3>Klasse #{tr_klasse(klasse)}</h3>"
+            else
+                io.puts "<h3>#{@@lessons[:lesson_keys][klasse][:pretty_folder_name]}</h3>"
+            end
             io.puts "<p>"
             io.puts "</p>"
             # <div style='max-width: 100%; overflow-x: auto;'>
@@ -73,7 +104,8 @@ class Main < Sinatra::Base
             io.puts "</tr>"
             io.puts "</thead>"
             io.puts "<tbody>"
-            results = neo4j_query(<<~END_OF_QUERY, :email_addresses => @@schueler_for_klasse[klasse])
+            schueler_liste = @@schueler_for_klasse[klasse] || @@schueler_for_lesson[klasse] || []
+            results = neo4j_query(<<~END_OF_QUERY, :email_addresses => schueler_liste)
                 MATCH (u:User)
                 WHERE u.email IN $email_addresses
                 RETURN u.email, u.last_access, COALESCE(u.group2, 'A') AS group2, COALESCE(u.group_af, '') AS group_af, COALESCE(u.group_ft, '') AS group_ft;
@@ -89,7 +121,7 @@ class Main < Sinatra::Base
                 group_ft_for_email[x['u.email']] = x['group_ft']
             end
 
-            (@@schueler_for_klasse[klasse] || []).sort do |a, b|
+            (schueler_liste || []).sort do |a, b|
                 (@@user_info[a][:last_name].unicode_normalize(:nfd) == @@user_info[b][:last_name].unicode_normalize(:nfd)) ?
                 (@@user_info[a][:first_name].unicode_normalize(:nfd) <=> @@user_info[b][:first_name].unicode_normalize(:nfd)) :
                 (@@user_info[a][:last_name].unicode_normalize(:nfd) <=> @@user_info[b][:last_name].unicode_normalize(:nfd))
@@ -204,145 +236,172 @@ class Main < Sinatra::Base
                 io.puts "</tr>"
             end
             if teacher_logged_in?
-                io.puts "<tr>"
-                io.puts "<td colspan='4'></td>"
-                io.puts "<td colspan='2'><b>E-Mail an die Klasse #{tr_klasse(klasse)}</b></td>"
-                io.puts "<td></td>"
-                io.puts "<td colspan='3'><b>E-Mail an alle Eltern der Klasse #{tr_klasse(klasse)}</b></td>"
-                io.puts "</tr>"
-                io.puts "<tr class='user_row'>"
-                io.puts "<td colspan='4'></td>"
-                io.puts "<td colspan='2'>"
-                print_email_field(io, "klasse.#{klasse}@#{MAILING_LIST_DOMAIN}")
-                io.puts "</td>"
-                io.puts "<td></td>"
-                io.puts "<td colspan='3'>"
-                print_email_field(io, "eltern.#{klasse}@#{MAILING_LIST_DOMAIN}")
-                io.puts "</td>"
-                io.puts "</tr>"
+                if is_klasse
+                    io.puts "<tr>"
+                    io.puts "<td colspan='4'></td>"
+                    io.puts "<td colspan='2'><b>E-Mail an die Klasse #{tr_klasse(klasse)}</b></td>"
+                    io.puts "<td></td>"
+                    io.puts "<td colspan='3'><b>E-Mail an alle Eltern der Klasse #{tr_klasse(klasse)}</b></td>"
+                    io.puts "</tr>"
+                    io.puts "<tr class='user_row'>"
+                    io.puts "<td colspan='4'></td>"
+                    io.puts "<td colspan='2'>"
+                    print_email_field(io, "klasse.#{klasse}@#{MAILING_LIST_DOMAIN}".downcase)
+                    io.puts "</td>"
+                    io.puts "<td></td>"
+                    io.puts "<td colspan='3'>"
+                    print_email_field(io, "eltern.#{klasse}@#{MAILING_LIST_DOMAIN}".downcase)
+                    io.puts "</td>"
+                    io.puts "</tr>"
+                else
+                    io.puts "<tr>"
+                    io.puts "<td colspan='4'></td>"
+                    io.puts "<td colspan='2'><b>E-Mail an alle SuS des #{@@lessons[:lesson_keys][klasse][:pretty_folder_name]}</b></td>"
+                    io.puts "<td></td>"
+                    io.puts "<td colspan='3'><b>E-Mail an alle Eltern des #{@@lessons[:lesson_keys][klasse][:pretty_folder_name]}</b></td>"
+                    io.puts "</tr>"
+                    io.puts "<tr class='user_row'>"
+                    io.puts "<td colspan='4'></td>"
+                    io.puts "<td colspan='2'>"
+                    print_email_field(io, "#{@@lessons[:lesson_keys][klasse][:list_email]}@#{MAILING_LIST_DOMAIN}".downcase)
+                    io.puts "</td>"
+                    io.puts "<td></td>"
+                    io.puts "<td colspan='3'>"
+                    print_email_field(io, "eltern.#{@@lessons[:lesson_keys][klasse][:list_email]}@#{MAILING_LIST_DOMAIN}".downcase)
+                    io.puts "</td>"
+                    io.puts "</tr>"
+                end
             end
             io.puts "</tbody>"
             io.puts "</table>"
             io.puts "</div>"
-            if teacher_logged_in?
-                io.puts "<a class='btn btn-primary' href='/show_login_codes/#{klasse}'><i class='fa fa-sign-in'></i>&nbsp;&nbsp;Live-Anmeldungen der Klasse zeigen</a>"
+            if is_klasse
+                if teacher_logged_in?
+                    io.puts "<a class='btn btn-primary' href='/show_login_codes/#{klasse}'><i class='fa fa-sign-in'></i>&nbsp;&nbsp;Live-Anmeldungen der Klasse zeigen</a>"
+                end
             end
             # io.puts print_stream_restriction_table(klasse)
             if teacher_logged_in?
                 io.puts "<hr>"
-                io.puts "<h3>Schülerlisten Klasse #{tr_klasse(klasse)}</h3>"
+                if is_klasse
+                    io.puts "<h3>Schülerlisten Klasse #{tr_klasse(klasse)}</h3>"
+                else
+                    io.puts "<h3>Schülerlisten #{@@lessons[:lesson_keys][klasse][:pretty_folder_name]}</h3>"
+                end
     #             io.puts "<div style='text-align: center;'>"
                 io.puts "<a href='/api/directory_xlsx/#{klasse}' class='btn btn-primary'><i class='fa fa-file-excel-o'></i>&nbsp;&nbsp;Excel-Tabelle herunterladen</a>"
                 io.puts "<a href='/api/directory_timetex_pdf/by_last_name/#{klasse}' class='btn btn-primary'><i class='fa fa-file-pdf-o'></i>&nbsp;&nbsp;Timetex-PDF herunterladen</a>"
                 io.puts "<a href='/api/directory_timetex_pdf/by_first_name/#{klasse}' class='btn btn-primary'><i class='fa fa-file-pdf-o'></i>&nbsp;&nbsp;Timetex-PDF herunterladen (nach Vornamen sortiert)</a>"
                 io.puts "<a href='/api/directory_json/#{klasse}' class='btn btn-primary'><i class='fa fa-file-code-o'></i>&nbsp;&nbsp;JSON herunterladen</a>"
             end
-            io.puts "<hr>"
-            hide_from_sus = Main.determine_hide_from_sus()
-            if teacher_logged_in?
-                io.puts "<h3>Stundenpläne der Klasse #{tr_klasse(klasse)} zum Ausdrucken</h3>"
-            elsif schueler_logged_in?
-                unless hide_from_sus
-                    io.puts "<h3>Stundenpläne zum Ausdrucken</h3>"
-                    io.puts "<p>Den Hintergrund der Stundenpläne kannst über dein Profil verändern, da immer der Hintergrund aus deinem Dashboard genommen wird.</p>"
-                end
-            end
-            if teacher_logged_in?
-                io.puts "<a href='/api/get_timetable_pdf_for_klasse/#{klasse}' target='_blank' class='btn btn-primary'><i class='fa fa-file-pdf-o'></i>&nbsp;&nbsp;Klassensatz Stundenpläne (#{@@schueler_for_klasse[klasse].size} Seiten)</a>"
-                unless ['11', '12'].include?(klasse)
-                    io.puts "<a href='/api/get_room_timetable_pdf/#{klasse}' target='_blank' class='btn btn-primary'><i class='fa fa-file-pdf-o'></i>&nbsp;&nbsp;Raumplan für die Klassenzimmertür</a>"
-                end
-                io.puts "<div id='additional_teacher_content'></div>"
-            elsif schueler_logged_in?
-                unless hide_from_sus
-                    io.puts "<a href='/api/get_single_timetable_pdf' target='_blank' class='btn btn-primary'><i class='fa fa-file-pdf-o'></i>&nbsp;&nbsp;PDF herunterladen</a>"
-                    io.puts "<a href='/api/get_single_timetable_with_png_addition_pdf' target='_blank' class='btn btn-success'><i class='fa fa-file-pdf-o'></i>&nbsp;&nbsp;PDF herunterladen (mit Symbolen)</a>"
-                end
-            end
-            unless schueler_logged_in? && hide_from_sus
+            if is_klasse
                 io.puts "<hr>"
-                io.puts "<h3>Lehrkräfte der Klasse #{tr_klasse(klasse)}</h3>"
-                io.puts "<div class='table-responsive'>"
-                io.puts "<table class='table table-condensed table-striped narrow'>"
-                io.puts "<thead>"
-                io.puts "<tr>"
-                io.puts "<th>Kürzel</th>"
-                io.puts "<th>Name</th>"
-                io.puts "<th>Fächer (Wochenstunden)</th>"
-                io.puts "<th>E-Mail-Adresse</th>"
-                io.puts "</tr>"
-                io.puts "</thead>"
-                io.puts "<tbody>"
-                old_is_klassenleiter = true
-                (@@teachers_for_klasse[klasse] || {}).keys.sort do |a, b|
-                    name_comp = begin
-                        @@user_info[@@shorthands[a]][:last_name].unicode_normalize(:nfd) <=> @@user_info[@@shorthands[b]][:last_name].unicode_normalize(:nfd)
-                    rescue
-                        a <=> b
+                hide_from_sus = Main.determine_hide_from_sus()
+                if teacher_logged_in?
+                    io.puts "<h3>Stundenpläne der Klasse #{tr_klasse(klasse)} zum Ausdrucken</h3>"
+                elsif schueler_logged_in?
+                    unless hide_from_sus
+                        io.puts "<h3>Stundenpläne zum Ausdrucken</h3>"
+                        io.puts "<p>Den Hintergrund der Stundenpläne kannst über dein Profil verändern, da immer der Hintergrund aus deinem Dashboard genommen wird.</p>"
                     end
-
-                    a_kli = (@@klassenleiter[klasse] || []).index(a)
-                    b_kli = (@@klassenleiter[klasse] || []).index(b)
-
-                    if a_kli.nil?
-                        if b_kli.nil?
-                            name_comp
-                        else
-                            1
-                        end
-                    else
-                        if b_kli.nil?
-                            -1
-                        else
-                            a_kli <=> b_kli
-                        end
-                    end
-                end.each do |shorthand|
-                    lehrer = @@user_info[@@shorthands[shorthand]]
-                    next if lehrer.nil?
-                    is_klassenleiter = (@@klassenleiter[klasse] || []).include?(shorthand)
-
-                    if old_is_klassenleiter && !is_klassenleiter
-                        io.puts "<tr class='sep user_row'>"
-                    else
-                        io.puts "<tr class='user_row'>"
-                    end
-                    old_is_klassenleiter = is_klassenleiter
-                    io.puts "<td>#{shorthand}#{is_klassenleiter ? ' (KL)' : ''}</td>"
-    #                 io.puts "<td>#{((lehrer[:titel] || '') + ' ' + (lehrer[:last_name] || shorthand)).strip}</td>"
-                    io.puts "<td>#{lehrer[teacher_logged_in? ? :display_name : :display_name_official] || ''}</td>"
-                    hours = @@teachers_for_klasse[klasse][shorthand].keys.sort do |a, b|
-                        @@teachers_for_klasse[klasse][shorthand][b] <=> @@teachers_for_klasse[klasse][shorthand][a]
-                    end.map do |x|
-                        fach = x.gsub('.', '')
-                        fach = @@faecher[fach] if @@faecher[fach]
-                        "#{fach} (#{@@teachers_for_klasse[klasse][shorthand][x]})"
-                    end.join(', ')
-                    io.puts "<td>#{hours}</td>"
-                    if lehrer.empty?
-                        io.puts "<td></td>"
-                    else
-                        io.puts "<td>"
-                        print_email_field(io, lehrer[:email])
-                        io.puts "</td>"
-                    end
-                    io.puts "</tr>"
                 end
                 if teacher_logged_in?
-                    io.puts "<tr>"
-                    io.puts "<td colspan='3'></td>"
-                    io.puts "<td><b>E-Mail an alle Lehrer/innen der Klasse #{tr_klasse(klasse)}</b></td>"
-                    io.puts "</tr>"
-                    io.puts "<tr class='user_row'>"
-                    io.puts "<td colspan='3'></td>"
-                    io.puts "<td>"
-                    print_email_field(io, "lehrer.#{klasse}@#{MAILING_LIST_DOMAIN}")
-                    io.puts "</td>"
-                    io.puts "</tr>"
+                    io.puts "<a href='/api/get_timetable_pdf_for_klasse/#{klasse}' target='_blank' class='btn btn-primary'><i class='fa fa-file-pdf-o'></i>&nbsp;&nbsp;Klassensatz Stundenpläne (#{@@schueler_for_klasse[klasse].size} Seiten)</a>"
+                    unless ['11', '12'].include?(klasse)
+                        io.puts "<a href='/api/get_room_timetable_pdf/#{klasse}' target='_blank' class='btn btn-primary'><i class='fa fa-file-pdf-o'></i>&nbsp;&nbsp;Raumplan für die Klassenzimmertür</a>"
+                    end
+                    io.puts "<div id='additional_teacher_content'></div>"
+                elsif schueler_logged_in?
+                    unless hide_from_sus
+                        io.puts "<a href='/api/get_single_timetable_pdf' target='_blank' class='btn btn-primary'><i class='fa fa-file-pdf-o'></i>&nbsp;&nbsp;PDF herunterladen</a>"
+                        io.puts "<a href='/api/get_single_timetable_with_png_addition_pdf' target='_blank' class='btn btn-success'><i class='fa fa-file-pdf-o'></i>&nbsp;&nbsp;PDF herunterladen (mit Symbolen)</a>"
+                    end
                 end
-                io.puts "</tbody>"
-                io.puts "</table>"
-                io.puts "</div>"
+                unless schueler_logged_in? && hide_from_sus
+                    io.puts "<hr>"
+                    io.puts "<h3>Lehrkräfte der Klasse #{tr_klasse(klasse)}</h3>"
+                    io.puts "<div class='table-responsive'>"
+                    io.puts "<table class='table table-condensed table-striped narrow'>"
+                    io.puts "<thead>"
+                    io.puts "<tr>"
+                    io.puts "<th>Kürzel</th>"
+                    io.puts "<th>Name</th>"
+                    io.puts "<th>Fächer (Wochenstunden)</th>"
+                    io.puts "<th>E-Mail-Adresse</th>"
+                    io.puts "</tr>"
+                    io.puts "</thead>"
+                    io.puts "<tbody>"
+                    old_is_klassenleiter = true
+                    (@@teachers_for_klasse[klasse] || {}).keys.sort do |a, b|
+                        name_comp = begin
+                            @@user_info[@@shorthands[a]][:last_name].unicode_normalize(:nfd) <=> @@user_info[@@shorthands[b]][:last_name].unicode_normalize(:nfd)
+                        rescue
+                            a <=> b
+                        end
+
+                        a_kli = (@@klassenleiter[klasse] || []).index(a)
+                        b_kli = (@@klassenleiter[klasse] || []).index(b)
+
+                        if a_kli.nil?
+                            if b_kli.nil?
+                                name_comp
+                            else
+                                1
+                            end
+                        else
+                            if b_kli.nil?
+                                -1
+                            else
+                                a_kli <=> b_kli
+                            end
+                        end
+                    end.each do |shorthand|
+                        lehrer = @@user_info[@@shorthands[shorthand]]
+                        next if lehrer.nil?
+                        is_klassenleiter = (@@klassenleiter[klasse] || []).include?(shorthand)
+
+                        if old_is_klassenleiter && !is_klassenleiter
+                            io.puts "<tr class='sep user_row'>"
+                        else
+                            io.puts "<tr class='user_row'>"
+                        end
+                        old_is_klassenleiter = is_klassenleiter
+                        io.puts "<td>#{shorthand}#{is_klassenleiter ? ' (KL)' : ''}</td>"
+        #                 io.puts "<td>#{((lehrer[:titel] || '') + ' ' + (lehrer[:last_name] || shorthand)).strip}</td>"
+                        io.puts "<td>#{lehrer[teacher_logged_in? ? :display_name : :display_name_official] || ''}</td>"
+                        hours = @@teachers_for_klasse[klasse][shorthand].keys.sort do |a, b|
+                            @@teachers_for_klasse[klasse][shorthand][b] <=> @@teachers_for_klasse[klasse][shorthand][a]
+                        end.map do |x|
+                            fach = x.gsub('.', '')
+                            fach = @@faecher[fach] if @@faecher[fach]
+                            "#{fach} (#{@@teachers_for_klasse[klasse][shorthand][x]})"
+                        end.join(', ')
+                        io.puts "<td>#{hours}</td>"
+                        if lehrer.empty?
+                            io.puts "<td></td>"
+                        else
+                            io.puts "<td>"
+                            print_email_field(io, lehrer[:email])
+                            io.puts "</td>"
+                        end
+                        io.puts "</tr>"
+                    end
+                    if teacher_logged_in?
+                        io.puts "<tr>"
+                        io.puts "<td colspan='3'></td>"
+                        io.puts "<td><b>E-Mail an alle Lehrer/innen der Klasse #{tr_klasse(klasse)}</b></td>"
+                        io.puts "</tr>"
+                        io.puts "<tr class='user_row'>"
+                        io.puts "<td colspan='3'></td>"
+                        io.puts "<td>"
+                        print_email_field(io, "lehrer.#{klasse}@#{MAILING_LIST_DOMAIN}".downcase)
+                        io.puts "</td>"
+                        io.puts "</tr>"
+                    end
+                    io.puts "</tbody>"
+                    io.puts "</table>"
+                    io.puts "</div>"
+                end
             end
             io.puts "</div>"
             io.string
@@ -545,6 +604,24 @@ class Main < Sinatra::Base
         #         @@projekttage_mailing_lists[list_email][:recipients] << who + email
         #     end
         # end
+    end
+
+    def self.update_lehrbuchverein_groups()
+        @@lehrbuchverein_mailing_lists = {}
+        KLASSEN_ORDER.each do |klasse|
+            @@schueler_for_klasse[klasse].each do |email|
+                target = @@lehrmittelverein_state_cache[email] ? :empfaenger : :selbstzahler
+                next if target == :selbstzahler && klasse.to_i < 7
+                ['', 'eltern.'].each do |who|
+                    list_email = "#{who}lmv-#{target}@#{MAILING_LIST_DOMAIN}"
+                    @@lehrbuchverein_mailing_lists[list_email] ||= {
+                        :label => "Lehrmittelverein #{target == :empfaenger ? 'Empfänger' : 'Selbstzahler ab Klassenstufe 7'}#{who.empty? ? '' : ' (Eltern)'}",
+                        :recipients => [],
+                    }
+                    @@lehrbuchverein_mailing_lists[list_email][:recipients] << who + email
+                end
+            end
+        end
     end
 
     post '/api/toggle_homeschooling' do
@@ -867,9 +944,9 @@ class Main < Sinatra::Base
             remaining_mailing_lists = Set.new(@@mailing_lists.keys)
             @@klassen_order.each do |klasse|
                 io.puts "<tr><th colspan='3'>Klasse #{tr_klasse(klasse)}</th></tr>"
-                ["klasse.#{klasse}@#{MAILING_LIST_DOMAIN}",
-                 "eltern.#{klasse}@#{MAILING_LIST_DOMAIN}",
-                 "lehrer.#{klasse}@#{MAILING_LIST_DOMAIN}"].each do |list_email|
+                ["klasse.#{klasse}@#{MAILING_LIST_DOMAIN}".downcase,
+                 "eltern.#{klasse}@#{MAILING_LIST_DOMAIN}".downcase,
+                 "lehrer.#{klasse}@#{MAILING_LIST_DOMAIN}".downcase].each do |list_email|
                     print_mailing_list(io, list_email)
                     remaining_mailing_lists.delete(list_email)
                 end
@@ -913,9 +990,29 @@ class Main < Sinatra::Base
                 print_mailing_list(io, list_email)
                 remaining_mailing_lists.delete(list_email)
             end
+            @@shorthands_for_fach.keys.sort do |a, b|
+                a.downcase <=> b.downcase
+            end.each do |fach|
+                list_email = "lehrer.#{fach.downcase}@#{MAILING_LIST_DOMAIN}"
+                if @@mailing_lists[list_email]
+                    print_mailing_list(io, list_email)
+                    remaining_mailing_lists.delete(list_email)
+                end
+            end
+            # io.puts "<tr><th colspan='3'>Oberstufen-Kurse</th></tr>"
+            Main.iterate_kurse do |lesson_key|
+                info = @@lessons[:lesson_keys][lesson_key]
+                ['', 'eltern.'].each do |extra|
+                    list_email = "#{extra}#{info[:list_email]}@#{MAILING_LIST_DOMAIN}"
+                    if @@mailing_lists[list_email]
+                        # print_mailing_list(io, list_email)
+                        remaining_mailing_lists.delete(list_email)
+                    end
+                end
+            end
             io.puts "<tr><th colspan='3'>Forschertage</th></tr>"
-            [5, 6].each do |klasse|
-                ['gewi', 'medien', 'musik', 'nawi'].each do |group_ft|
+            ['gewi', 'medien', 'musik', 'nawi'].each do |group_ft|
+                [5, 6].each do |klasse|
                     ['', '.eltern'].each do |extra|
                         list_email = "forschertage.#{group_ft}#{extra}.#{klasse}@#{MAILING_LIST_DOMAIN}"
                         if @@mailing_lists[list_email]
@@ -923,6 +1020,29 @@ class Main < Sinatra::Base
                             remaining_mailing_lists.delete(list_email)
                         end
                     end
+                end
+            end
+            io.puts "<tr><th colspan='3'>AGs und Angebote</th></tr>"
+            @@angebote_mailing_lists.keys.reject { |x| x[0, 7] == 'eltern.'}.sort do |a, b|
+                a.downcase <=> b.downcase
+            end.each do |email|
+                ['', 'eltern.'].each do |extra|
+                    list_email = "#{extra}#{email}"
+                    if @@mailing_lists[list_email]
+                        print_mailing_list(io, list_email)
+                        remaining_mailing_lists.delete(list_email)
+                    end
+                end
+            end
+            if user_with_role_logged_in?(:schulbuchverein) || user_with_role_logged_in?(:can_manage_bib_payment)
+                io.puts "<tr><th colspan='3'>Lehrmittelverein</th></tr>"
+            end
+            @@lehrbuchverein_mailing_lists.each_pair do |list_email, v|
+                if @@mailing_lists[list_email]
+                    if user_with_role_logged_in?(:schulbuchverein) || user_with_role_logged_in?(:can_manage_bib_payment)
+                        print_mailing_list(io, list_email)
+                    end
+                    remaining_mailing_lists.delete(list_email)
                 end
             end
             unless remaining_mailing_lists.empty?

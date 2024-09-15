@@ -19,6 +19,7 @@ AVAILABLE_ROLES = {
     :can_manage_bib_members => 'kann Bibliotheksnutzer verwalten',
     :can_manage_bib_payment => 'kann Bibliothekszahlungen verwalten',
     :can_manage_bib_special_access => 'Bibliothek Spezialzugriff',
+    :can_manage_forschertage => 'kann Forschertage verwalten',
     :can_manage_tech_problems => 'kann gemeldete Technikprobleme bearbeiten',
     :gev => 'GEV',
     :sv => 'Schülervertretung',

@@ -774,7 +774,7 @@ class Main < Sinatra::Base
     end
 
     post '/api/toggle_group_ft_for_user' do
-        require_admin!
+        assert(user_with_role_logged_in?(:can_manage_forschertage))
         data = parse_request_data(:required_keys => [:email])
         email = data[:email]
         group_ft = neo4j_query_expect_one(<<~END_OF_QUERY, :email => email)['group_ft']

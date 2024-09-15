@@ -22,13 +22,13 @@ class Script
                 break
             end
             password = ''
-            8.times do 
+            8.times do
                 c = CHARS.sample.dup
                 c.downcase! if [0, 1].sample == 1
                 password += c
             end
             password += '-'
-            4.times do 
+            4.times do
                 c = CHARS.sample.dup
                 c.downcase! if [0, 1].sample == 1
                 password += c
@@ -82,7 +82,7 @@ class Script
                 entry.gsub!('#{SCHUL_MAIL_LOGIN_SMTP_HOST}', SCHUL_MAIL_LOGIN_SMTP_HOST)
                 entry.gsub!('#{SCHUL_MAIL_LOGIN_IMAP_HOST}', SCHUL_MAIL_LOGIN_IMAP_HOST)
                 entry.gsub!('#{WEBSITE_HOST}', WEBSITE_HOST)
-                
+
                 entry.gsub!('#{EMAIL}', record[:email])
                 entry.gsub!('#{EMAIL_PARENTS}', 'eltern.' + record[:email])
                 entry.gsub!('#{FIRST_NAME}', record[:display_first_name].unicode_normalize(:nfc))

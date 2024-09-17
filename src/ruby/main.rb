@@ -1291,7 +1291,7 @@ class Main < Sinatra::Base
         @@mailing_lists["lehrer@#{MAILING_LIST_DOMAIN}"] = {
             :label => "Gesamtes Kollegium",
             :recipients => @@user_info.keys.select do |email|
-                @@user_info[email][:teacher] && @@user_info[email][:can_log_in] && email != 'vorstand.gev@gymnasiumsteglitz.de'
+                @@user_info[email][:teacher] && @@user_info[email][:can_log_in]
             end
         }
         @@mailing_lists["sus@#{MAILING_LIST_DOMAIN}"] = {

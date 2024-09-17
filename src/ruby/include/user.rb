@@ -86,7 +86,7 @@ class Main < Sinatra::Base
     end
 
     def gev_logged_in?
-        user_with_role_logged_in?(:admin)
+        user_with_role_logged_in?(:gev)
     end
 
     def device_logged_in?

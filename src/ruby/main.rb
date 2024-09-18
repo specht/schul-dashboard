@@ -553,6 +553,8 @@ class Main < Sinatra::Base
         @@antikenfahrt_mailing_lists = {}
         @@forschertage_recipients = {}
         @@forschertage_mailing_lists = {}
+        @@techpost_recipients = {}
+        @@techpost_mailing_lists = {}
         @@birthday_entries = {}
         @@server_etag = RandomTag.generate(24)
 
@@ -1156,6 +1158,7 @@ class Main < Sinatra::Base
         @@mailing_lists = {}
         self.update_antikenfahrt_groups()
         self.update_forschertage_groups()
+        self.update_techpost_groups()
         self.update_mailing_lists()
         @@current_email_addresses = parser.parse_current_email_addresses()
 
@@ -1330,6 +1333,9 @@ class Main < Sinatra::Base
             @@mailing_lists[k] = v
         end
         @@forschertage_mailing_lists.each_pair do |k, v|
+            @@mailing_lists[k] = v
+        end
+        @@techpost_mailing_lists.each_pair do |k, v|
             @@mailing_lists[k] = v
         end
         @@projekttage_mailing_lists.each_pair do |k, v|

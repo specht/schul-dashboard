@@ -2027,14 +2027,14 @@ class Main
 
                         move_down 1.8.cm
 
-                        text "Dieses Blatt dokumentiert den aktuellen Stand der Planung für die 5. Prüfungskomponente im Abitur."
+                        text "Dieses Blatt dokumentiert den aktuellen Stand der Planung für die 5. Prüfungskomponente im Abitur #{(Date.today + 365).strftime('%Y')}."
 
                         print_date = Date.parse($pk5.phases.select { |x| x[:index] == 6 }.first[:t1][0, 10])
                         deadline = DateTime.parse($pk5.phases.select { |x| x[:index] == 7 }.first[:t1])
 
                         move_down 3.mm
 
-                        text "Abgabe mit allen Unterschriften bis spätestens <b>#{WEEKDAYS_LONG[deadline.wday]}</b>, den <b>#{deadline.strftime('%d.')} #{MONTHS[deadline.strftime('%m').to_i - 1]} #{deadline.strftime('%Y')}</b> um <b>#{deadline.strftime('%H:%M')} Uhr</b>.", :inline_format => true
+                        text "Abgabe mit allen Unterschriften bis spätestens <b>#{WEEKDAYS_LONG[deadline.wday]}</b>, den <b>#{deadline.strftime('%d.')} #{MONTHS[deadline.strftime('%m').to_i - 1]} #{deadline.strftime('%Y')}</b>, um <b>#{deadline.strftime('%H:%M')} Uhr</b>.", :inline_format => true
                         
                         move_down 1.cm
 

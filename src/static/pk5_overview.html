@@ -3,6 +3,9 @@
     <div class='row'>
         <div class='col-md-12'>
             <h2 style='margin-bottom: 30px;'>5. Prüfungskomponente im Abitur</h2>
+            <div style="#{user_with_role_logged_in?(:oko) ? 'margin-bottom: 1em;' : 'display: none;'}">
+                <a href="/api/print_voucher_1" class="btn btn-success"><i class='fa fa-file-pdf-o'></i>&nbsp;&nbsp;Voucher 1 generieren</a>
+            </div>
             <div id="table_here"></div>
         </div>
     </div>

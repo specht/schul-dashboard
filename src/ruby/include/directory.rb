@@ -677,7 +677,7 @@ class Main < Sinatra::Base
         respond(:ok => true, :homeschooling => result['u.homeschooling'])
     end
 
-    def iterate_directory(which, first_key = :last_name, second_key = :first_name, &block)
+    def self.iterate_directory(which, first_key = :last_name, second_key = :first_name, &block)
         email_list = @@schueler_for_klasse[which]
         if email_list.nil?
             # try lesson key
@@ -691,6 +691,10 @@ class Main < Sinatra::Base
         end.each.with_index do |email, i|
             yield email, i
         end
+    end
+
+    def iterate_directory(which, first_key = :last_name, second_key = :first_name, &block)
+        Main.iterate_directory(which, first_key, second_key, block)
     end
 
     get '/api/directory_timetex_pdf/by_last_name/*' do

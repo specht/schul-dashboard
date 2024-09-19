@@ -2021,7 +2021,7 @@ class Main
                         move_down 2.mm
                         text "Gymnasium Steglitz", :size => 24, :align => :center
                         move_down 1.mm
-                        text "5. Prüfungskomponente im Abitur", :align => :center, :size => 14
+                        text "5. Prüfungskomponente im Abitur #{(Date.today + 365).strftime('%Y')}", :align => :center, :size => 14
                         move_down 2.mm
                         text "<b>Voucher I</b>", :align => :center, :inline_format => true, :size => 14
 

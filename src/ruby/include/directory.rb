@@ -694,7 +694,7 @@ class Main < Sinatra::Base
     end
 
     def iterate_directory(which, first_key = :last_name, second_key = :first_name, &block)
-        Main.iterate_directory(which, first_key, second_key, block)
+        Main.iterate_directory(which, first_key, second_key, &block)
     end
 
     get '/api/directory_timetex_pdf/by_last_name/*' do

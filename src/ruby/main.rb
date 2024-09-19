@@ -2294,7 +2294,7 @@ class Main < Sinatra::Base
                     end.each do |lesson_key|
                         io.puts "<div class='dropdown-divider'></div>" if _first
                         _first = false
-                        io.puts "<a class='dropdown-item nav-icon' href='/directory/#{lesson_key}'><div class='icon'><i class='fa fa-address-book'></i></div><span class='label'>#{@@lessons[:lesson_keys][lesson_key][:pretty_folder_name]}</span></a>"
+                        io.puts "<a class='dropdown-item nav-icon' href='/directory/#{CGI.escape(lesson_key)}'><div class='icon'><i class='fa fa-address-book'></i></div><span class='label'>#{@@lessons[:lesson_keys][lesson_key][:pretty_folder_name]}</span></a>"
                     end
                     unless remaining_klassen.empty?
                         io.puts "<div class='dropdown-divider'></div>"
@@ -3152,7 +3152,7 @@ class Main < Sinatra::Base
         if path == 'directory'
             redirect "#{WEB_ROOT}/", 302 unless @session_user
             parts = request.env['REQUEST_PATH'].split('/')
-            klasse = parts[2]
+            klasse = CGI::unescape(parts[2])
 #             STDERR.puts @@teachers_for_klasse[klasse].to_yaml
             unless (teacher_logged_in?) || (@session_user[:klasse] == klasse)
                 redirect "#{WEB_ROOT}/", 302
@@ -3160,7 +3160,7 @@ class Main < Sinatra::Base
         elsif path == 'show_login_codes'
             redirect "#{WEB_ROOT}/", 302 unless @session_user
             parts = request.env['REQUEST_PATH'].split('/')
-            klasse = parts[2]
+            klasse = CGI::unescape(parts[2])
 #             STDERR.puts @@teachers_for_klasse[klasse].to_yaml
             unless can_see_all_timetables_logged_in? || (@@teachers_for_klasse[klasse] || {}).include?(@session_user[:shorthand])
                 redirect "#{WEB_ROOT}/", 302

@@ -2034,7 +2034,7 @@ class Main
 
                         move_down 3.mm
 
-                        text "Abgabe mit allen Unterschriften bis spätestens <b>#{WEEKDAYS_LONG[deadline.wday]}</b>, den <b>#{deadline.strftime('%d.')} #{MONTHS[deadline.strftime('%m').to_i - 1]} #{deadline.strftime('%Y')}</b>, um <b>#{deadline.strftime('%H:%M')} Uhr</b>.", :inline_format => true
+                        text "Abgabe bis spätestens <b>#{WEEKDAYS_LONG[deadline.wday]}</b>, den <b>#{deadline.strftime('%d.')} #{MONTHS[deadline.strftime('%m').to_i - 1]} #{deadline.strftime('%Y')}</b>, um <b>#{deadline.strftime('%H:%M')} Uhr</b> im Sekretariat.", :inline_format => true
                         
                         move_down 1.cm
 

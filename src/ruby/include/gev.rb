@@ -96,7 +96,7 @@ class Main < Sinatra::Base
                 io.puts "<p>Sie sind nun als Elternvertreter:in der Klasse #{klasse_s} im Dashboard registriert. Sie können somit folgende E-Mail-Verteiler nutzen, wenn Sie von Ihrer schulischen Eltern-E-Mail-Adresse aus schreiben:</p>"
                 io.puts "<ul>"
                 %w(eltern lehrer klasse).each do |key|
-                    io.puts "<li><a href='mailto:#{key}.#{@@user_info[email][:klasse]}@mail.gymnasiumsteglitz.de'>#{key}.#{@@user_info[email][:klasse]}@mail.gymnasiumsteglitz.de</a> (#{key == 'klasse' ? 'alle Schülerinnen und Schüler' : "alle #{key.capitalize}"})</li>"
+                    io.puts "<li><a href='mailto:#{key}.#{@@user_info[email][:klasse]}@verteiler.gymnasiumsteglitz.de'>#{key}.#{@@user_info[email][:klasse]}@verteiler.gymnasiumsteglitz.de</a> (#{key == 'klasse' ? 'alle Schülerinnen und Schüler' : "alle #{key.capitalize}"})</li>"
                 end
                 io.puts "</ul>"
                 io.puts "<p>Viele Grüße,<br />#{session_user_name}</p>"

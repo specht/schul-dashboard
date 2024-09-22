@@ -81,6 +81,7 @@ require './include/comment.rb'
 require './include/cypher.rb'
 require './include/development.rb'
 require './include/directory.rb'
+require './include/email.rb'
 require './include/event.rb'
 require './include/ext_user.rb'
 require './include/file.rb'
@@ -274,6 +275,7 @@ class SetupDatabase
         'KnownEmailAddress/email',
         'Lesson/key',
         'LoginCode/tag',
+        'Mail/tag',
         'MatrixAccessToken/access_token',
         'Message/key',
         'NewsEntry/timestamp',
@@ -309,6 +311,7 @@ class SetupDatabase
         'LoginCode/code',
         'SecondFactor/ts_expire',
         'SecondLoginCode/code',
+        'Mail/ts_sent',
         'News/date',
         'NextcloudLoginCode/code',
         'Pk5/betreuende_lehrkraft',
@@ -1060,6 +1063,16 @@ class Main < Sinatra::Base
         @@kurse_for_schueler = kurse_for_schueler
         wahlpflicht_sus_for_lesson_key = parser.parse_wahlpflichtkurswahl(@@user_info.reject { |x, y| y[:teacher] }, @@lessons, lesson_key_tr, @@schueler_for_klasse)
 
+        @@kurse_for_lehrer = {}
+        @@lessons[:lesson_keys].keys.each do |lesson_key|
+            info = @@lessons[:lesson_keys][lesson_key]
+            next unless info[:klassen].include?('11') || info[:klassen].include?('12')
+            info[:lehrer].each do |shorthand|
+                @@kurse_for_lehrer[@@shorthands[shorthand]] ||= []
+                @@kurse_for_lehrer[@@shorthands[shorthand]] << lesson_key
+            end
+        end
+
         @@materialamt_for_lesson = {}
         rows = $neo4j.neo4j_query(<<~END_OF_QUERY)
             MATCH (u:User)-[r:HAS_AMT {amt: 'material'}]->(l:Lesson)
@@ -1133,6 +1146,15 @@ class Main < Sinatra::Base
         end
 
         @@pausenaufsichten = parser.parse_pausenaufsichten(@@config)
+
+        kurs_list_prefix_count = {}
+        Main.iterate_kurse do |lesson_key|
+            list_email = 'kurs-' + lesson_key.downcase.split('_').first.gsub('~', '-').gsub('_', '-').gsub(' ', '-')
+            kurs_list_prefix_count[list_email] ||= 0
+            kurs_list_prefix_count[list_email] += 1
+            list_email += "-#{kurs_list_prefix_count[list_email]}"
+            @@lessons[:lesson_keys][lesson_key][:list_email] = list_email
+        end
 
         @@mailing_lists = {}
         self.update_antikenfahrt_groups()
@@ -1223,26 +1245,30 @@ class Main < Sinatra::Base
         self.update_antikenfahrt_groups()
         self.update_forschertage_groups()
         self.update_angebote_groups()
+        self.determine_lehrmittelverein_state_for_all()
+        self.update_lehrbuchverein_groups()
         self.update_projekttage_groups()
         @@mailing_lists = {}
         @@angebote_mailing_lists.each_pair do |k, v|
             @@mailing_lists[k] = v
         end
+        @@lehrbuchverein_mailing_lists.each_pair do |k, v|
+            @@mailing_lists[k] = v
+        end
         all_kl = Set.new()
         @@klassen_order.each do |klasse|
-            klasse = klasse.downcase
             next unless @@schueler_for_klasse.include?(klasse)
-            @@mailing_lists["klasse.#{klasse}@#{MAILING_LIST_DOMAIN}"] = {
+            @@mailing_lists["klasse.#{klasse}@#{MAILING_LIST_DOMAIN}".downcase] = {
                 :label => "SuS der Klasse #{tr_klasse(klasse)}",
                 :recipients => @@schueler_for_klasse[klasse]
             }
-            @@mailing_lists["eltern.#{klasse}@#{MAILING_LIST_DOMAIN}"] = {
+            @@mailing_lists["eltern.#{klasse}@#{MAILING_LIST_DOMAIN}".downcase] = {
                 :label => "Eltern der Klasse #{tr_klasse(klasse)}",
                 :recipients => @@schueler_for_klasse[klasse].map do |email|
                     "eltern.#{email}"
                 end
             }
-            @@mailing_lists["lehrer.#{klasse}@#{MAILING_LIST_DOMAIN}"] = {
+            @@mailing_lists["lehrer.#{klasse}@#{MAILING_LIST_DOMAIN}".downcase] = {
                 :label => "Lehrer der Klasse #{tr_klasse(klasse)}",
                 :recipients => ((@@teachers_for_klasse[klasse] || {}).keys.sort).map do |shorthand|
                     email = @@shorthands[shorthand]
@@ -1252,13 +1278,13 @@ class Main < Sinatra::Base
             }
             if klasse.to_i > 0
                 if @@klassenleiter[klasse]
-                    @@mailing_lists["team.#{klasse.to_i}@#{MAILING_LIST_DOMAIN}"] ||= {
+                    @@mailing_lists["team.#{klasse.to_i}@#{MAILING_LIST_DOMAIN}".downcase] ||= {
                         :label => "Klassenleiterteam der Klassenstufe #{klasse.to_i}",
                         :recipients => []
                     }
                     @@klassenleiter[klasse].each do |shorthand|
                         if @@shorthands[shorthand]
-                            @@mailing_lists["team.#{klasse.to_i}@#{MAILING_LIST_DOMAIN}"][:recipients] << @@shorthands[shorthand]
+                            @@mailing_lists["team.#{klasse.to_i}@#{MAILING_LIST_DOMAIN}".downcase][:recipients] << @@shorthands[shorthand]
                             all_kl << @@shorthands[shorthand]
                         end
                     end
@@ -1269,7 +1295,7 @@ class Main < Sinatra::Base
         @@mailing_lists["lehrer@#{MAILING_LIST_DOMAIN}"] = {
             :label => "Gesamtes Kollegium",
             :recipients => @@user_info.keys.select do |email|
-                @@user_info[email][:teacher] && @@user_info[email][:can_log_in] && email != 'vorstand.gev@gymnasiumsteglitz.de'
+                @@user_info[email][:teacher] && @@user_info[email][:can_log_in]
             end
         }
         @@mailing_lists["sus@#{MAILING_LIST_DOMAIN}"] = {
@@ -1322,6 +1348,20 @@ class Main < Sinatra::Base
                 :recipients => VERTEILER_DEVELOPMENT_EMAILS
             }
         end
+
+        Main.iterate_kurse do |lesson_key|
+            next if @@schueler_for_lesson[lesson_key].nil?
+            info = @@lessons[:lesson_keys][lesson_key]
+            list_email = info[:list_email]
+            ['', 'eltern.'].each do |extra|
+                email = "#{extra}#{list_email}@#{MAILING_LIST_DOMAIN}"
+                @@mailing_lists[email] = {
+                    :label => "#{info[:pretty_fach]} (#{info[:klassen].map { |x| tr_klasse(x) }.join(', ')}) [#{info[:lehrer].join(', ')}]#{extra.empty? ? '' : ' (Eltern)'}",
+                    :recipients => @@schueler_for_lesson[lesson_key].map { |x| extra + x },
+                }
+            end
+        end
+
         # projekte = {}
         # $neo4j.neo4j_query(<<~END_OF_QUERY).each do |row|
         #     MATCH (u:User)-[:ASSIGNED_TO]->(p:Projekt)
@@ -2143,6 +2183,9 @@ class Main < Sinatra::Base
                     #     end
                     # end
                     if teacher_logged_in?
+                        if user_with_role_logged_in?(:can_see_kurslisten)
+                            io.puts "<a class='dropdown-item nav-icon' href='/kurslisten'><div class='icon'><i class='fa fa-file-text-o'></i></div><span class='label'>Kurslisten</span></a>"
+                        end
                         io.puts "<a class='dropdown-item nav-icon' href='/pk5_overview'><div class='icon'><i class='fa fa-file-text-o'></i></div><span class='label'>5. PK</span></a>"
                     end
                     if schueler_logged_in?
@@ -2193,7 +2236,7 @@ class Main < Sinatra::Base
                     unless (@@lessons_for_shorthand[@session_user[:shorthand]] || []).empty? && (@@lessons[:historic_lessons_for_shorthand][@session_user[:shorthand]] || []).empty?
                         io.puts "<li class='nav-item dropdown'>"
                         io.puts "<a class='nav-link nav-icon dropdown-toggle' href='#' id='navbarDropdownKurse' role='button' data-toggle='dropdown' aria-haspopup='true' aria-expanded='false'>"
-                        io.puts "<div class='icon'><i class='fa fa-address-book'></i></div>Kurse"
+                        io.puts "<div class='icon'><i class='fa fa-address-book'></i></div>Planung"
                         io.puts "</a>"
                         io.puts "<div class='dropdown-menu' aria-labelledby='navbarDropdownKurse'>"
                         taken_lesson_keys = Set.new()
@@ -2239,7 +2282,7 @@ class Main < Sinatra::Base
                     end
                     io.puts "<li class='nav-item dropdown'>"
                     io.puts "<a class='nav-link nav-icon dropdown-toggle' href='#' id='navbarDropdownKlassen' role='button' data-toggle='dropdown' aria-haspopup='true' aria-expanded='false'>"
-                    io.puts "<div class='icon'><i class='fa fa-address-book'></i></div>Klassen"
+                    io.puts "<div class='icon'><i class='fa fa-address-book'></i></div>Lerngruppen"
                     io.puts "</a>"
                     io.puts "<div class='dropdown-menu' aria-labelledby='navbarDropdownKlassen'>"
                     if can_see_all_timetables_logged_in?
@@ -2248,6 +2291,14 @@ class Main < Sinatra::Base
                     klassen.each do |klasse|
                         io.puts "<a class='dropdown-item nav-icon' href='/directory/#{klasse}'><div class='icon'><i class='fa fa-address-book'></i></div><span class='label'>Klasse #{tr_klasse(klasse)}</span></a>"
                         remaining_klassen.delete(klasse)
+                    end
+                    _first = true
+                    (@@kurse_for_lehrer[@session_user[:email]] || []).sort do |a, b|
+                        @@lessons[:lesson_keys][a][:pretty_folder_name] <=> @@lessons[:lesson_keys][b][:pretty_folder_name]
+                    end.each do |lesson_key|
+                        io.puts "<div class='dropdown-divider'></div>" if _first
+                        _first = false
+                        io.puts "<a class='dropdown-item nav-icon' href='/directory/#{CGI.escape(lesson_key)}'><div class='icon'><i class='fa fa-address-book'></i></div><span class='label'>#{@@lessons[:lesson_keys][lesson_key][:pretty_folder_name]}</span></a>"
                     end
                     unless remaining_klassen.empty?
                         io.puts "<div class='dropdown-divider'></div>"
@@ -3105,7 +3156,7 @@ class Main < Sinatra::Base
         if path == 'directory'
             redirect "#{WEB_ROOT}/", 302 unless @session_user
             parts = request.env['REQUEST_PATH'].split('/')
-            klasse = parts[2]
+            klasse = CGI::unescape(parts[2])
 #             STDERR.puts @@teachers_for_klasse[klasse].to_yaml
             unless (teacher_logged_in?) || (@session_user[:klasse] == klasse)
                 redirect "#{WEB_ROOT}/", 302
@@ -3113,7 +3164,7 @@ class Main < Sinatra::Base
         elsif path == 'show_login_codes'
             redirect "#{WEB_ROOT}/", 302 unless @session_user
             parts = request.env['REQUEST_PATH'].split('/')
-            klasse = parts[2]
+            klasse = CGI::unescape(parts[2])
 #             STDERR.puts @@teachers_for_klasse[klasse].to_yaml
             unless can_see_all_timetables_logged_in? || (@@teachers_for_klasse[klasse] || {}).include?(@session_user[:shorthand])
                 redirect "#{WEB_ROOT}/", 302

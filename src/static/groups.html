@@ -1,4 +1,4 @@
-#{this_is_a_page_for_user_with_role(:can_write_messages)}
+#{assert(teacher_logged_in? || user_with_role_logged_in?(:can_create_events) || user_with_role_logged_in?(:can_create_polls) || user_with_role_logged_in?(:can_use_mailing_lists))}
 <div class='container'>
     <div class='row'>
         <div class='col-md-12'>

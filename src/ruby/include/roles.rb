@@ -19,6 +19,7 @@ AVAILABLE_ROLES = {
     :can_manage_bib_members => 'kann Bibliotheksnutzer verwalten',
     :can_manage_bib_payment => 'kann Bibliothekszahlungen verwalten',
     :can_manage_bib_special_access => 'Bibliothek Spezialzugriff',
+    :can_manage_forschertage => 'kann Forschertage verwalten',
     :can_manage_tech_problems => 'kann gemeldete Technikprobleme bearbeiten',
     :can_manage_project_wifi_access => 'kann Zugriff auf das Projekt-WLAN verwalten',
     :can_open_project_wifi => 'kann das Projekt-WLAN öffnen',
@@ -38,6 +39,7 @@ AVAILABLE_ROLES = {
     :can_use_sms_gateway => 'kann die SMS-Anmeldung benutzen',
     :can_report_tech_problems => 'kann Technikprobleme melden',
     :oko => 'Oberstufenkoordination',
+    :can_see_kurslisten => 'kann Kurslisten einsehen',
     :mittagessen => 'kann Bestellungen für Mittagessen einsehen',
     :praktikum => 'Praktikum (kann Stundenpläne ohne Details einsehen)',
 }
@@ -48,7 +50,8 @@ ROLE_TRANSITIONS = <<~END_OF_STRING
     sv => can_write_messages can_create_polls can_use_mailing_lists can_create_events
     technikteam => can_write_messages can_book_tablets can_create_polls can_use_mailing_lists can_create_events can_manage_tablets can_manage_tech_problems can_report_tech_problems can_see_all_timetables
     admin => can_upload_files can_book_tablets can_manage_news can_manage_monitors can_manage_tablets can_manage_tech_problems can_report_tech_problems
-    schulbuchverein => can_use_nextcloud
+    schulbuchverein => can_use_mailing_lists can_use_nextcloud can_use_sms_gateway
     technikamt => can_report_tech_problems
     developer => can_manage_project_wifi_access can_open_project_wifi
+    gev => can_create_polls can_create_events can_use_mailing_lists can_use_nextcloud can_use_sms_gateway
 END_OF_STRING

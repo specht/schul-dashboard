@@ -135,6 +135,8 @@ class Main < Sinatra::Base
             RETURN u.lmv_no_pay;
         END_OF_QUERY
         @@lehrmittelverein_state_cache[email] = determine_lehrmittelverein_state_for_email(email)
+        Main.update_lehrbuchverein_groups()
+        Main.update_mailing_lists()
         respond(:ok => true, :state => determine_lehrmittelverein_state_for_email(email))
     end
 
@@ -152,6 +154,8 @@ class Main < Sinatra::Base
                 DELETE r;
             END_OF_QUERY
             @@lehrmittelverein_state_cache[email] = determine_lehrmittelverein_state_for_email(email)
+            Main.update_lehrbuchverein_groups()
+            Main.update_mailing_lists()
             respond(:ok => true, :state => determine_lehrmittelverein_state_for_email(email))
         else
             result = neo4j_query_expect_one(<<~END_OF_QUERY, :jahr => LEHRBUCHVEREIN_JAHR, :email => data[:email])
@@ -161,6 +165,8 @@ class Main < Sinatra::Base
                 RETURN u.lehrbuchverein_mitglied;
             END_OF_QUERY
             @@lehrmittelverein_state_cache[email] = determine_lehrmittelverein_state_for_email(email)
+            Main.update_lehrbuchverein_groups()
+            Main.update_mailing_lists()
             respond(:ok => true, :state => determine_lehrmittelverein_state_for_email(email))
         end
     end
@@ -286,6 +292,8 @@ class Main < Sinatra::Base
         end
         assert(!headers.nil?)
         Main.determine_lehrmittelverein_state_for_all()
+        Main.update_lehrbuchverein_groups()
+        Main.update_mailing_lists()
         respond(:uploaded => 'yeah', :result => result)
     end
 end

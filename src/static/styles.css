@@ -2711,6 +2711,7 @@ th.thsticky {
     position: absolute;
     border: 2px dashed red;
     box-shadow: 0 0 0.5em rgba(0, 0, 0, 0.5);
+    background: none;
 }
 
 .ha_text {
@@ -2833,4 +2834,8 @@ body.dark hr {
 
 body.dark .hl {
     background-color: #004a63;
+}
+
+.modal {
+    padding-bottom: 1.5em;
 }

@@ -132,6 +132,7 @@ class Main < Sinatra::Base
                 :themengebiet,
                 :referenzfach,
                 :betreuende_lehrkraft,
+                :fas,
             ],
             :max_body_length => 16384,
             :max_string_length => 8192
@@ -141,7 +142,9 @@ class Main < Sinatra::Base
             sus_email = data[:sus_email] if data[:sus_email]
         end
         assert(@@user_info[sus_email][:klasse] == PK5_CURRENT_KLASSE)
-        assert(!$pk5.phases[$pk5.get_current_phase][:flags].include?(:no_sus_edit))
+        unless user_with_role_logged_in?(:oko)
+            assert(!$pk5.phases[$pk5.get_current_phase][:flags].include?(:no_sus_edit))
+        end
         ts = Time.now.to_i
         transaction do
             p = neo4j_query_expect_one(<<~END_OF_QUERY, {:sus_email => sus_email})['p']
@@ -149,10 +152,10 @@ class Main < Sinatra::Base
                 MERGE (p:Pk5)-[:BELONGS_TO]->(u)
                 RETURN p;
             END_OF_QUERY
-            [:themengebiet, :referenzfach, :betreuende_lehrkraft].each do |key|
+            [:themengebiet, :referenzfach, :betreuende_lehrkraft, :fas].each do |key|
                 if data.include?(key)
                     value = data[key]
-                    if key == :referenzfach
+                    if key == :referenzfach || key == :fas
                         all_faecher = File.read('/data/pk5/faecher.txt').split("\n").map { |x| x.strip }.reject { |x| x.empty? }
                         value = nil unless all_faecher.include?(value)
                     end
@@ -193,122 +196,81 @@ class Main < Sinatra::Base
         respond(:yay => 'sure', :result => get_my_pk5(sus_email))
     end
 
-    post '/api/pk5_overview' do
+    def pk5_overview_rows
         require_teacher!
-        # StringIO.open do |io|
-        #     io.puts "<div style='max-width: 100%; overflow-x: auto;'>"
-        #     io.puts "<table class='table table-condensed table-striped narrow' style='width: unset; min-width: 100%;'>"
-        #     io.puts "<thead>"
-        #     io.puts "<tr>"
-        #     io.puts "<th>Prüfungskandidat:innen</th>"
-        #     io.puts "<th>Themengebiet</th>"
-        #     io.puts "<th>Referenzfach</th>"
-        #     io.puts "<th>Lehrkraft</th>"
-        #     io.puts "<th>fächerübergreifender Aspekt</th>"
-        #     io.puts "<th>Lehrkraft</th>"
-        #     # io.puts "<th>Fragestellung</th>"
-        #     io.puts "</tr>"
-        #     io.puts "</thead>"
-        #     io.puts "<tbody>"
-            seen_sus = Set.new()
-            pk5_hash = {}
-            pk5_by_email = {}
-            rows = []
-            neo4j_query(<<~END_OF_QUERY).each do |row|
-                MATCH (p:Pk5)-[:BELONGS_TO]->(u:User)
-                RETURN ID(p) AS id, p, u.email;
-            END_OF_QUERY
-                id = row['id']
-                unless pk5_hash.include?(id)
-                    pk5_hash[id] = row['p']
-                    pk5_hash[id][:sus] = []
-                end
-                pk5_hash[id][:sus] << row['u.email']
-                pk5_by_email[row['u.email']] = id
-            end
 
-            @@schueler_for_klasse[PK5_CURRENT_KLASSE].each.with_index do |email, sus_index|
-                next if seen_sus.include?(email)
-                seen_sus << email
-                pk5 = nil
-                if pk5_by_email[email]
-                    pk5 = pk5_hash[pk5_by_email[email]]
+        seen_sus = Set.new()
+        pk5_hash = {}
+        pk5_by_email = {}
+        rows = []
+        neo4j_query(<<~END_OF_QUERY).each do |row|
+            MATCH (p:Pk5)-[:BELONGS_TO]->(u:User)
+            RETURN ID(p) AS id, p, u.email;
+        END_OF_QUERY
+            id = row['id']
+            unless pk5_hash.include?(id)
+                pk5_hash[id] = row['p']
+                pk5_hash[id][:sus] = []
+            end
+            pk5_hash[id][:sus] << row['u.email']
+            pk5_by_email[row['u.email']] = id
+        end
+
+        @@schueler_for_klasse[PK5_CURRENT_KLASSE].each.with_index do |email, sus_index|
+            next if seen_sus.include?(email)
+            seen_sus << email
+            pk5 = nil
+            if pk5_by_email[email]
+                pk5 = pk5_hash[pk5_by_email[email]]
+            end
+            if pk5
+                pk5[:sus].each do |x|
+                    seen_sus << x
                 end
-                if pk5
-                    pk5[:sus].each do |x|
-                        seen_sus << x
+            end
+            pk5 ||= {}
+
+            rows << {
+                :email => email,
+                :pk5 => pk5,
+                :sus_index => sus_index,
+                :sus => (pk5[:sus] || [email]).map { |x| @@user_info[x][:last_name] + ', ' + @@user_info[x][:first_name]}.join(' / '),
+                :betreuende_lehrkraft => if pk5[:betreuende_lehrkraft] == @session_user[:email]
+                    if pk5[:betreuende_lehrkraft_confirmed_by] != @session_user[:email]
+                        if $pk5.get_current_phase >= 2
+                            "<i class='fa fa-clock-o'></i>&nbsp;&nbsp;<span class='hl'>#{CGI.escapeHTML(((@@user_info[pk5[:betreuende_lehrkraft]] || {})[:display_name_official]) || '–')}</span> <em>Anfrage erhalten &ndash; bitte bestätigen oder ablehnen</em>"
+                        else
+                            "<i class='fa fa-clock-o'></i>&nbsp;&nbsp;#{CGI.escapeHTML(((@@user_info[pk5[:betreuende_lehrkraft]] || {})[:display_name_official]) || '–')}"
+                        end
+                    else
+                        "#{CGI.escapeHTML(((@@user_info[pk5[:betreuende_lehrkraft]] || {})[:display_name_official]) || '–')}"
+                    end
+                else
+                    if pk5[:betreuende_lehrkraft_confirmed_by] != pk5[:betreuende_lehrkraft]
+                        "<i class='fa fa-clock-o'></i>&nbsp;&nbsp;#{CGI.escapeHTML(((@@user_info[pk5[:betreuende_lehrkraft]] || {})[:display_name_official]) || '–')}"
+                    else
+                        "#{CGI.escapeHTML(((@@user_info[pk5[:betreuende_lehrkraft]] || {})[:display_name_official]) || '–')}"
                     end
                 end
-                pk5 ||= {}
-                # row_s = StringIO.open do |io2|
-                #     io2.puts "<tr data-email='#{email}'>"
-                #     io2.puts "<td>#{(pk5[:sus] || [email]).map { |x| @@user_info[x][:display_name]}.join(', ')}</td>"
-                #     io2.puts "<td style='max-width: 20em;'>#{CGI.escapeHTML(pk5[:themengebiet] || '–')}</td>"
-                #     io2.puts "<td>#{CGI.escapeHTML(pk5[:referenzfach] || '–')}</td>"
-                #     if pk5[:betreuende_lehrkraft] == @session_user[:email]
-                #         if pk5[:betreuende_lehrkraft_confirmed_by] != @session_user[:email]
-                #             if $pk5.get_current_phase >= 2
-                #                 io2.puts "<td><i class='fa fa-clock-o'></i>&nbsp;&nbsp;<span class='hl'>#{CGI.escapeHTML(((@@user_info[pk5[:betreuende_lehrkraft]] || {})[:display_name_official]) || '–')}</span> <em>Anfrage erhalten &ndash; bitte bestätigen oder ablehnen</em></td>"
-                #             else
-                #                 io2.puts "<td><i class='fa fa-clock-o'></i>&nbsp;&nbsp;#{CGI.escapeHTML(((@@user_info[pk5[:betreuende_lehrkraft]] || {})[:display_name_official]) || '–')}</td>"
-                #             end
-                #         else
-                #             io2.puts "<td>#{CGI.escapeHTML(((@@user_info[pk5[:betreuende_lehrkraft]] || {})[:display_name_official]) || '–')}</td>"
-                #         end
-                #     else
-                #         if pk5[:betreuende_lehrkraft_confirmed_by] != pk5[:betreuende_lehrkraft]
-                #             io2.puts "<td><i class='fa fa-clock-o'></i>&nbsp;&nbsp;#{CGI.escapeHTML(((@@user_info[pk5[:betreuende_lehrkraft]] || {})[:display_name_official]) || '–')}</td>"
-                #         else
-                #             io2.puts "<td>#{CGI.escapeHTML(((@@user_info[pk5[:betreuende_lehrkraft]] || {})[:display_name_official]) || '–')}</td>"
-                #         end
-                #     end
-                #     io2.puts "<td style='max-width: 20em;'>#{CGI.escapeHTML(pk5[:fas] || '–')}</td>"
-                #     io2.puts "<td>#{CGI.escapeHTML(((@@user_info[pk5[:betreuende_lehrkraft_fas]] || {})[:display_name_official]) || '–')}</td>"
-                #     # io2.puts "<td>#{CGI.escapeHTML(pk5[:fragestellung] || '–')}</td>"
-                #     io2.puts "</tr>"
-                #     io2.string
-                # end
-                rows << {
-                    :email => email,
-                    :pk5 => pk5,
-                    :sus_index => sus_index,
-                    :sus => (pk5[:sus] || [email]).map { |x| @@user_info[x][:last_name] + ', ' + @@user_info[x][:first_name]}.join(' / '),
-                    :betreuende_lehrkraft => if pk5[:betreuende_lehrkraft] == @session_user[:email]
-                            if pk5[:betreuende_lehrkraft_confirmed_by] != @session_user[:email]
-                                if $pk5.get_current_phase >= 2
-                                    "<i class='fa fa-clock-o'></i>&nbsp;&nbsp;<span class='hl'>#{CGI.escapeHTML(((@@user_info[pk5[:betreuende_lehrkraft]] || {})[:display_name_official]) || '–')}</span> <em>Anfrage erhalten &ndash; bitte bestätigen oder ablehnen</em>"
-                                else
-                                    "<i class='fa fa-clock-o'></i>&nbsp;&nbsp;#{CGI.escapeHTML(((@@user_info[pk5[:betreuende_lehrkraft]] || {})[:display_name_official]) || '–')}"
-                                end
-                            else
-                                "#{CGI.escapeHTML(((@@user_info[pk5[:betreuende_lehrkraft]] || {})[:display_name_official]) || '–')}"
-                            end
-                        else
-                            if pk5[:betreuende_lehrkraft_confirmed_by] != pk5[:betreuende_lehrkraft]
-                                "<i class='fa fa-clock-o'></i>&nbsp;&nbsp;#{CGI.escapeHTML(((@@user_info[pk5[:betreuende_lehrkraft]] || {})[:display_name_official]) || '–')}"
-                            else
-                                "#{CGI.escapeHTML(((@@user_info[pk5[:betreuende_lehrkraft]] || {})[:display_name_official]) || '–')}"
-                            end
-                        end
-                }
-            end
-            rows.sort! do |a, b|
-                a_primary = a[:pk5][:betreuende_lehrkraft] == @session_user[:email]
-                b_primary = b[:pk5][:betreuende_lehrkraft] == @session_user[:email]
-                a_secondary = a[:pk5][:betreuende_lehrkraft_fas] == @session_user[:email]
-                b_secondary = b[:pk5][:betreuende_lehrkraft_fas] == @session_user[:email]
-                a_sus_index = a[:sus_index]
-                b_sus_index = b[:sus_index]
-                (a_primary == b_primary) ? (a_secondary == b_secondary ? (a_sus_index <=> b_sus_index) : (a_secondary ? -1 : 1)) : (a_primary ? -1 : 1)
-            end
-            # rows.each do |row|
-            #     io.puts row[:html]
-            # end
-            # io.puts "</tbody>"
-            # io.puts "</table>"
-            # io.puts "</div>"
-            # io.string
-        # end
+            }
+        end
+        rows
+    end
+
+    post '/api/pk5_overview' do
+        require_teacher!
+
+        rows = pk5_overview_rows()
+        rows.sort! do |a, b|
+            a_primary = a[:pk5][:betreuende_lehrkraft] == @session_user[:email]
+            b_primary = b[:pk5][:betreuende_lehrkraft] == @session_user[:email]
+            a_secondary = a[:pk5][:betreuende_lehrkraft_fas] == @session_user[:email]
+            b_secondary = b[:pk5][:betreuende_lehrkraft_fas] == @session_user[:email]
+            a_sus_index = a[:sus_index]
+            b_sus_index = b[:sus_index]
+            (a_primary == b_primary) ? (a_secondary == b_secondary ? (a_sus_index <=> b_sus_index) : (a_secondary ? -1 : 1)) : (a_primary ? -1 : 1)
+        end
+
         respond(:rows => rows)
     end
 
@@ -622,6 +584,17 @@ class Main < Sinatra::Base
         accepted = result[:accepted]
         left = result[:left]
         "Sie haben bisher #{accepted == 0 ? 'keine' : accepted} Prüfung#{accepted == 1 ? '' : 'en'} angenommen und #{(invited - accepted) == 0 ? 'keine' : (invited - accepted)} ausstehende Anfrage#{(invited - accepted) == 1 ? '' : 'n'}. Sie können insgesamt höchstens fünf Prüfungen annehmen, also nach aktuellem Stand noch #{left} Prüfung#{left == 1 ? '' : 'en'}."
+    end
+
+    get '/api/print_voucher_1' do
+        assert(user_with_role_logged_in?(:oko))
+        require_teacher!
+
+        rows = pk5_overview_rows()
+        rows.sort! do |a, b|
+            a[:sus_index] <=> b[:sus_index]
+        end
+        respond_raw_with_mimetype(Main.print_voucher_1(rows), 'application/pdf')
     end
 end
 

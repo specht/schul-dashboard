@@ -557,14 +557,14 @@ class Main < Sinatra::Base
             @@user_info.each_pair do |email, info|
                 next unless email.include?(SMTP_DOMAIN)
                 required_email_addresses << email
-                if info[:teacher]
+                if user_has_role(email, :teacher)
                     data_for_required_email_address[email] = {
                         :first_name => info[:first_name],
                         :last_name => info[:last_name],
                         :email => email,
                         :password => Main.gen_password_for_email(email)
                     }
-                else
+                elsif user_has_role(email, :schueler)
                     data_for_required_email_address[email] = {
                         :first_name => info[:first_name],
                         :last_name => info[:last_name],
@@ -592,15 +592,15 @@ class Main < Sinatra::Base
             end
             @@mailing_lists.keys.each { |email| required_email_addresses << email }
             @@klassen_order.each do |klasse|
-                required_email_addresses << "ev.#{klasse}@#{SCHUL_MAIL_DOMAIN}"
+                required_email_addresses << "ev.#{klasse.downcase}@#{SCHUL_MAIL_DOMAIN}"
             end
 
             known_email_association = {}
             email_addresses.each do |email|
                 if @@user_info.include?(email)
-                    if @@user_info[email][:teacher]
+                    if user_has_role(email, :teacher)
                         known_email_association[email] = :teacher
-                    else
+                    elsif user_has_role(email, :schueler)
                         known_email_association[email] = :sus
                     end
                 elsif email[0, 7] == 'eltern.' && @@user_info.include?(email.sub('eltern.', ''))
@@ -645,6 +645,7 @@ class Main < Sinatra::Base
                 io.puts "<table class='table'>"
                 io.puts "<tr><th>E-Mail-Adresse</th><th></th></tr>"
                 unknown_addresses.sort.each do |email|
+                    next if email[0] == '*'
                     next unless all_marked_known.include?(email) == known
                     io.puts "<tr>"
                     classes = ''

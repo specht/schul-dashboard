@@ -59,13 +59,13 @@ document.addEventListener('DOMContentLoaded', function() {
     } else {
         $('.group-af-button').addClass('disabled');
     }
-    if ('#{admin_logged_in?}' === 'true') {
+    if ('#{user_with_role_logged_in?(:can_manage_forschertage)}' === 'true') {
         $('.group-ft-button').click(function(e) {
             let button = $(e.target).closest('.group-ft-button');
             let email = button.data('email');
             api_call('/api/toggle_group_ft_for_user', {email: email}, function(data) {
                 if (data.success) {
-                    button.text(#{GROUP_FT_ICONS.to_json}[data.group_ft]);
+                    button.html(#{GROUP_FT_ICONS.to_json}[data.group_ft]);
                 }
             });
         });
@@ -146,9 +146,9 @@ document.addEventListener('DOMContentLoaded', function() {
     if ('#{teacher_logged_in?}' === 'true') {
         if (Object.keys(seats_dict).length > 0) {
             let first_room = true;
-            let n = #{@@schueler_for_klasse[klasse].size};
+            let n = #{(@@schueler_for_klasse[klasse] || []).size};
             console.log(n);
-            let rooms_for_klasse = #{@@rooms_for_klasse[klasse].to_a.to_json};
+            let rooms_for_klasse = #{(@@rooms_for_klasse[klasse] || []).to_a.to_json};
             console.log(rooms_for_klasse);
             for (let raum of Object.keys(seats_dict)) {
                 if (rooms_for_klasse.indexOf(raum) >= 0) {

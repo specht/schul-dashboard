@@ -43,6 +43,12 @@ class Main < Sinatra::Base
         klassenleiter_logged_in = (@@klassenleiter[klasse] || []).include?(@session_user[:shorthand]) || admin_logged_in?
         all_homeschooling_users = Main.get_all_homeschooling_users()
         salzh_status = Main.get_salzh_status_for_emails(Main.class_variable_get(:@@schueler_for_klasse)[klasse] || [])
+        dashboard_amt = neo4j_query(<<~END_OF_QUERY).map { |x| x['u.email'] }
+            MATCH (u:User {has_dashboard_amt: TRUE})
+            RETURN u.email;
+        END_OF_QUERY
+        dashboard_amt = Set.new(dashboard_amt)
+        dashboard_amt_names = []
         is_klasse = KLASSEN_ORDER.include?(klasse)
         StringIO.open do |io|
             io.puts "<div class='row'>"
@@ -97,6 +103,9 @@ class Main < Sinatra::Base
                 end
             end
             if teacher_logged_in?
+                if klassenleiter_for_klasse_logged_in?(klasse)
+                    io.puts "<th>Dashboard-Amt</th>"
+                end
                 io.puts "<th>A/B</th>"
                 io.puts "<th>Letzter Zugriff</th>"
                 io.puts "<th>Eltern-E-Mail-Adresse</th>"
@@ -127,7 +136,8 @@ class Main < Sinatra::Base
                 (@@user_info[a][:last_name].unicode_normalize(:nfd) <=> @@user_info[b][:last_name].unicode_normalize(:nfd))
             end.each.with_index do |email, _|
                 record = @@user_info[email]
-                io.puts "<tr class='user_row' data-email='#{email}'>"
+                dashboard_amt_names << record[:display_name] if dashboard_amt.include?(email)
+                io.puts "<tr class='user_row' data-email='#{email}' data-display-name='#{record[:display_name]}' data-first-name='#{record[:first_name]}' data-pronoun='#{record[:geschlecht] == 'm' ? 'er' : 'sie'}'>"
                 io.puts "<td>#{_ + 1}.</td>"
                 io.puts "<td>#{user_icon(email, 'avatar-md')}</td>"
                 salzh_style = ''
@@ -197,6 +207,13 @@ class Main < Sinatra::Base
                     end
                 end
                 if teacher_logged_in?
+                    if klassenleiter_for_klasse_logged_in?(klasse)
+                        if dashboard_amt.include?(email)
+                            io.puts "<td><button class='bu-toggle-dashboard-amt btn btn-sm btn-success' data-state='true'><i class='fa fa-check'></i>&nbsp;&nbsp;Dashboard-Amt</button></td>"
+                        else
+                            io.puts "<td><button class='bu-toggle-dashboard-amt btn btn-sm btn-outline-secondary' data-state='false'><i class='fa fa-times'></i>&nbsp;&nbsp;Dashboard-Amt</button></td>"
+                        end
+                    end
                     io.puts "<td><div class='group2-button group2-#{group2_for_email[email]}' data-email='#{email}'>#{group2_for_email[email]}</div></td>"
                     la_label = 'noch nie angemeldet'
                     today = Date.today.to_s
@@ -276,6 +293,11 @@ class Main < Sinatra::Base
             io.puts "</table>"
             io.puts "</div>"
             if is_klasse
+                unless klassenleiter_for_klasse_logged_in?(klasse)
+                    unless dashboard_amt_names.empty?
+                        io.puts "<p>Das Dashboard-Amt wird ausgeübt von #{join_with_sep(dashboard_amt_names, ', ', ' und ')}.</p>"
+                    end
+                end
                 if teacher_logged_in?
                     io.puts "<a class='btn btn-primary' href='/show_login_codes/#{klasse}'><i class='fa fa-sign-in'></i>&nbsp;&nbsp;Live-Anmeldungen der Klasse zeigen</a>"
                 end

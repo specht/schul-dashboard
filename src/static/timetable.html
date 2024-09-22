@@ -167,13 +167,13 @@
       </div>
       <div class="modal-footer">
         <div class='small show-ha-amt-only' style='width: 100%;'>
-            Du vertrittst in diesem Fach das Hausaufgabenamt und kannst deshalb Hausaufgaben für deine Klasse / deinen Kurs eintragen.
+            Du vertrittst in diesem Fach das Dashboard-Amt und kannst deshalb Hausaufgaben für deine Klasse eintragen.
         </div>
         <div class="ha-amt-container" style='display: none; width: 100%;'>
             <textarea class='form-control' id='ta_ha_amt_text' placeholder='Hier kannst du die Hausaufgaben zu dieser Stunde eintragen'></textarea>
         </div>
         <div style="#{teacher_logged_in? ? '' : 'display: none;'}">
-            <a style='#{(@session_user || {})[:email] == 'specht@gymnasiumsteglitz.de' ? '' : 'display: none;'}' class="btn btn-warning bu-mail"><i class='fa fa-envelope-o'></i>&nbsp;&nbsp;E-Mail</a>
+            <a class="btn btn-warning bu-mail"><i class='fa fa-envelope-o'></i>&nbsp;&nbsp;E-Mail</a>
         </div>
         <a class="btn btn-success bu-edit-lesson"><i class='fa fa-edit'></i>&nbsp;&nbsp;Bearbeiten</a>
         <button class="show-ha-amt-only btn btn-secondary bu-discard-ha-amt-text-changes"><i class='fa fa-trash'></i>&nbsp;&nbsp;Änderungen verwerfen</button>

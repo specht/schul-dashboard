@@ -794,4 +794,23 @@ class Main < Sinatra::Base
         END_OF_QUERY
         respond(:success => true)
     end
+
+    post '/api/set_sus_dashboard_amt' do
+        assert(teacher_logged_in?)
+        data = parse_request_data(:required_keys => [:email, :flag])
+        flag = data[:flag] == 'true'
+        # make sure target is a schueler
+        assert(user_has_role(data[:email], :schueler))
+        # make sure it's the correct teacher
+        assert((@@klassenleiter[@@user_info[data[:email]][:klasse]] || []).include?(@session_user[:shorthand]))
+
+        neo4j_query_expect_one(<<~END_OF_QUERY, {:email => data[:email], :from => !flag, :to => flag})
+            MATCH (u:User {email: $email})
+            WHERE COALESCE(u.has_dashboard_amt, FALSE) = $from
+            SET u.has_dashboard_amt = $to
+            RETURN u;
+        END_OF_QUERY
+        # TODO: Send e-mail to SuS
+        respond(:ok => true)
+    end
 end

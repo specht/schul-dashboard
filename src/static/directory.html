@@ -163,6 +163,42 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             }
         }
+        $('.bu-toggle-dashboard-amt').on('click', function(e) {
+            let button = $(e.target).closest('button');
+            let row = button.closest('tr');
+            let email = row.data('email');
+            let display_name = row.data('display-name');
+            let first_name = row.data('first-name');
+            let pronoun = row.data('pronoun');
+            let state = button.data('state') === true;
+            if (state === false) {
+                showTemplateModal(`Dashboard-Amt vergeben`,
+                    `Sind Sie sicher, dass Sie das Dashboard-Amt an <strong>${display_name}</strong> vergeben möchten? ${first_name} wird eine E-Mail bekommen und darüber informiert, dass ${pronoun} ab sofort die Hausaufgaben im Dashboard eintragen kann und ab morgen Dateien in die Nextcloud hochladen kann.`,
+                    `<i class='fa fa-check'></i>&nbsp;&nbsp;Dashboard-Amt vergeben`, 'btn-success',
+                    `<i class='fa fa-times'></i>&nbsp;&nbsp;Abbrechen`, 'btn-secondary', function () {
+                        api_call('/api/set_sus_dashboard_amt', {email: email, flag: 'true'}, function(data) {
+                            if (data.success) {
+                                button.removeClass('btn-outline-secondary').addClass('btn-success').html("<i class='fa fa-check'></i>&nbsp;&nbsp;Dashboard-Amt");
+                            }
+                        });
+                    }
+                );
+            } else {
+                showTemplateModal(`Dashboard-Amt aufheben`,
+                    `Sind Sie sicher, dass Sie <strong>${display_name}</strong> das Dashboard-Amt entziehen möchten? ${first_name} wird eine E-Mail bekommen und darüber informiert, dass ${pronoun} die Hausaufgaben nicht mehr im Dashboard eintragen kann und keine Dateien mehr in die Nextcloud hochladen kann.`,
+                    `<i class='fa fa-check'></i>&nbsp;&nbsp;Dashboard-Amt entziehen`, 'btn-danger',
+                    `<i class='fa fa-times'></i>&nbsp;&nbsp;Abbrechen`, 'btn-secondary', function () {
+                        api_call('/api/set_sus_dashboard_amt', {email: email, flag: 'false'}, function(data) {
+                            if (data.success) {
+                                button.removeClass('btn-success').addClass('btn-outline-secondary').html("<i class='fa fa-times'></i>&nbsp;&nbsp;Dashboard-Amt");
+                            }
+                        });
+                        console.log('ok lets go');
+                    }
+                );
+
+            }
+        });
     }
 });
 </script>

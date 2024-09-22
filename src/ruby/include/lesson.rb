@@ -589,47 +589,47 @@ class Main < Sinatra::Base
         respond_raw_with_mimetype_and_filename(zip, 'application/zip', "lesson_info_archive.zip")
     end
 
-    post '/api/add_sus_to_amt' do
-        assert(teacher_logged_in?)
-        data = parse_request_data(:required_keys => [:lesson_key, :amt, :email])
+    # post '/api/add_sus_to_amt' do
+    #     assert(teacher_logged_in?)
+    #     data = parse_request_data(:required_keys => [:lesson_key, :amt, :email])
 
-        neo4j_query(<<~END_OF_QUERY, :key => data[:lesson_key], :amt => data[:amt], :email => data[:email])
-            MATCH (u:User {email: $email})
-            MERGE (l:Lesson {key: $key})
-            WITH u, l
-            MERGE (u)-[r:HAS_AMT {amt: $amt}]->(l);
-        END_OF_QUERY
-        respond(:ok => true)
-    end
+    #     neo4j_query(<<~END_OF_QUERY, :key => data[:lesson_key], :amt => data[:amt], :email => data[:email])
+    #         MATCH (u:User {email: $email})
+    #         MERGE (l:Lesson {key: $key})
+    #         WITH u, l
+    #         MERGE (u)-[r:HAS_AMT {amt: $amt}]->(l);
+    #     END_OF_QUERY
+    #     respond(:ok => true)
+    # end
 
-    post '/api/remove_sus_from_amt' do
-        assert(teacher_logged_in?)
-        data = parse_request_data(:required_keys => [:lesson_key, :amt, :email])
+    # post '/api/remove_sus_from_amt' do
+    #     assert(teacher_logged_in?)
+    #     data = parse_request_data(:required_keys => [:lesson_key, :amt, :email])
 
-        neo4j_query(<<~END_OF_QUERY, :key => data[:lesson_key], :amt => data[:amt], :email => data[:email])
-            MATCH (u:User {email: $email})-[r:HAS_AMT {amt: $amt}]->(l:Lesson {key: $key})
-            DELETE r;
-        END_OF_QUERY
-        respond(:ok => true)
-    end
+    #     neo4j_query(<<~END_OF_QUERY, :key => data[:lesson_key], :amt => data[:amt], :email => data[:email])
+    #         MATCH (u:User {email: $email})-[r:HAS_AMT {amt: $amt}]->(l:Lesson {key: $key})
+    #         DELETE r;
+    #     END_OF_QUERY
+    #     respond(:ok => true)
+    # end
 
-    post '/api/get_amt_sus' do
-        assert(teacher_logged_in?)
-        data = parse_request_data(:required_keys => [:lesson_key])
+    # post '/api/get_amt_sus' do
+    #     assert(teacher_logged_in?)
+    #     data = parse_request_data(:required_keys => [:lesson_key])
 
-        rows = neo4j_query(<<~END_OF_QUERY, :key => data[:lesson_key])
-            MATCH (u:User)-[r:HAS_AMT]->(l:Lesson {key: $key})
-            RETURN u.email, r.amt;
-        END_OF_QUERY
-        results = {}
-        rows.each do |row|
-            email = row['u.email']
-            amt = row['r.amt']
-            results[email] ||= []
-            results[email] << amt
-        end
-        respond(:results => results)
-    end
+    #     rows = neo4j_query(<<~END_OF_QUERY, :key => data[:lesson_key])
+    #         MATCH (u:User)-[r:HAS_AMT]->(l:Lesson {key: $key})
+    #         RETURN u.email, r.amt;
+    #     END_OF_QUERY
+    #     results = {}
+    #     rows.each do |row|
+    #         email = row['u.email']
+    #         amt = row['r.amt']
+    #         results[email] ||= []
+    #         results[email] << amt
+    #     end
+    #     respond(:results => results)
+    # end
 
     get '/api/kursbuch_pdf/*' do
         require_teacher!

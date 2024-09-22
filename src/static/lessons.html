@@ -425,6 +425,7 @@ var tablet_set_info = #{@@tablet_sets.to_json};
                     </div>
                     <hr />
                 </div>
+                <!--
                 <label><b>Hausaufgaben- und Materialamt</b></label>
                 <br />
                 <div class='explanation' style='margin-top: 5px; white-space: normal;'>
@@ -450,14 +451,17 @@ var tablet_set_info = #{@@tablet_sets.to_json};
                         </tbody>
                     </table>
                 </div>
-                <!-- <hr />
+                -->
+                <!--
+                <hr />
                 <label><b>Schülerlisten</b> <span class='text-muted'>(für diesen Kurs)</span></label>
                 <br />
                 <a href='/api/directory_xlsx/#{show_lesson_key}' class='btn btn-sm btn-primary' style='margin: 0 8px 8px 0;'><i class='fa fa-file-excel-o'></i>&nbsp;&nbsp;Excel-Tabelle herunterladen</a>
                 <a href='/api/directory_timetex_pdf/by_last_name/#{show_lesson_key}' class='btn btn-sm btn-primary' style='margin: 0 8px 8px 0;'><i class='fa fa-file-pdf-o'></i>&nbsp;&nbsp;Timetex-PDF herunterladen</a>
                 <a href='/api/directory_timetex_pdf/by_first_name/#{show_lesson_key}' class='btn btn-sm btn-primary' style='margin: 0 8px 8px 0;'><i class='fa fa-file-pdf-o'></i>&nbsp;&nbsp;Timetex-PDF herunterladen (nach Vornamen sortiert)</a>
-                <a id='bu_email_list' href='' style='margin: 0 8px 8px 0;' class='btn btn-sm btn-primary'><i class='fa fa-envelope-o'></i>&nbsp;&nbsp;Liste aller E-Mail-Adressen</a> -->
+                <a id='bu_email_list' href='' style='margin: 0 8px 8px 0;' class='btn btn-sm btn-primary'><i class='fa fa-envelope-o'></i>&nbsp;&nbsp;Liste aller E-Mail-Adressen</a>
                 <hr />
+                -->
                 <label><b>Kursbuch</b></label>
                 <br />
                 <a href='/api/kursbuch_pdf/#{show_lesson_key}' class='btn btn-sm btn-primary' style='margin: 0 8px 8px 0;'><i class='fa fa-file-pdf-o'></i>&nbsp;&nbsp;Kursbuch-PDF herunterladen</a>
@@ -1282,7 +1286,7 @@ function pending_feedback_changes() {
     return pending_feedback_audio_comment_changes() || pending_feedback_text_comment_changes();
 }
 
-function update_present_amt_rows() {
+/* function update_present_amt_rows() {
     api_call('/api/get_amt_sus', {lesson_key: lesson_key}, function(data) {
         if (data.success) {
             let added_rows = false;
@@ -1332,7 +1336,7 @@ function update_present_amt_rows() {
                 $('#present_amt_table').hide();
         }
     });
-}
+} */
 
 document.addEventListener('DOMContentLoaded', function() {
     $('body').keydown(function(e) {
@@ -2306,7 +2310,7 @@ document.addEventListener('DOMContentLoaded', function() {
         e.preventDefault();
         $('#emailListModal').modal('show');
     });
-    for (let user of schueler_for_lesson) {
+    /* for (let user of schueler_for_lesson) {
         let row = $('<tr>');
         let icon = $('<div>').addClass('icon');
         icon.append('<div>').addClass('avatar-md').css('background-image', `url(#{NEXTCLOUD_URL}/index.php/avatar/${user.nc_login}/128), url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mO88h8AAq0B1REmZuEAAAAASUVORK5CYII=)`);
@@ -2334,6 +2338,6 @@ document.addEventListener('DOMContentLoaded', function() {
         $('#amtModal').data('amt', amt);
         $('#amtModal').modal('show');
     });
-    update_present_amt_rows();
+    update_present_amt_rows(); */
 });
 </script>

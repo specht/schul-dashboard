@@ -1,0 +1,182 @@
+#{this_is_a_page_for_user_with_role(:can_open_project_wifi)}
+<div class='container'>
+    <div class='row'>
+        <div class='col-md-12'>
+            <h2>WIFI!</h2>
+            <hr>
+            Hier kannst du Zugänge außerhalb von Unterrichtsstunden öffnen.
+            <hr>
+            <div class='row'>
+                <div class='col-md-6'>
+                    <div class="form-group">
+                        <label for="wifi-name">WIFI Name:</label>
+                        <input type="text" id="wifi-name" name="wifi-name" class="form-control" required>
+                    </div>
+                </div>
+                <div class='col-md-6'>
+                    <div class="form-group">
+                        <label for="start-date">Start Datum und Uhrzeit:</label>
+                        <input type="datetime-local" id="start-date" name="start-date" class="form-control" required>
+                    </div>
+                </div>
+            </div>
+            <div class='row'>
+                <div class='col-md-6'>
+                    <div class="form-group">
+                        <label for="number-of-days">Tage:</label>
+                        <input type="number" id="number-of-days" name="number-of-days" class="form-control" required>
+                    </div>
+                </div>
+                <div class='col-md-6'>
+                    <div class="form-group">
+                        <label for="number-of-devices">Anzahl an Geräten:</label>
+                        <input type="number" id="number-of-devices" name="number-of-devices" class="form-control" required>
+                    </div>
+                </div>
+            </div>
+            <div class='row'>
+                <div class='col-md-12'>
+                    <button id='wifi-access-submit' class='btn btn-outline-success'>Absenden</button>
+                </div>
+            </div>
+            <hr>
+            <h2>#{user_with_role_logged_in?(:can_manage_project_wifi_access) ? "" : "Deine"} Verbindungen</h2>
+            <table class="table">
+                <thead>
+                    <tr id="admin-row">
+                        <th>Display Name</th>
+                        <th>Company</th>
+                        <th>Start date</th>
+                        <th>number of days</th>
+                        <th>number of Devices</th>
+                        <th>Aktionen</th>
+                        <th>Status</th>
+                    </tr>
+                    <tr id="user-row">
+                        <th>Name/Passwort</th>
+                        <th>Startdatum</th>
+                        <th>Enddatum</th>
+                        <th>Maximale Geräte</th>
+                        <th>Status</th>
+                </thead>
+                <tbody id="active-connections">
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+<script>
+    function update_submit_button() {
+        if (can_send_request())
+            $('#wifi-access-submit').removeClass('btn-outline-success').addClass('btn-success').prop('disabled', false);
+        else
+            $('#wifi-access-submit').removeClass('btn-success').addClass('btn-outline-success').prop('disabled', true);
+    }
+
+    function can_send_request() {
+        let wifiName = $('#wifi-name').val().trim();
+        let startDate = $('#start-date').val();
+        let numberOfDays = $('#number-of-days').val();
+        let numberOfDevices = $('#number-of-devices').val();
+        return wifiName.length > 0 && startDate.length > 0 && numberOfDays > 0 && numberOfDevices > 0;
+    }
+
+    function fetchActiveConnections() {
+        api_call('/api/get_wifis', {}, function(data) {
+            console.log("data.requests");
+            console.log(data.requests);
+            if (data.success) {
+                $('#active-connections').empty();
+                for (let request of data.requests) {
+                    let row = $('<tr>');
+                    let now = new Date();
+                    let startDateTime = new Date(request.request.start_datetime);
+                    let endDateTime = new Date(startDateTime);
+                    if (#{user_with_role_logged_in?(:can_manage_project_wifi_access)}) {
+                        row.append($('<td>').text(request.display_name));
+                        row.append($('<td>').text(request.request.name));
+                        row.append($('<td>').text(request.request.start_datetime));
+                        row.append($('<td>').text(request.request.num_days));
+                        row.append($('<td>').text(request.request.num_devices));
+                        let editButton = $('<button>').addClass('btn btn-outline-primary').html('<i class="fa fa-pencil"></i>');
+                        editButton.click(function(e) {
+                            $('#wifi-name').val(request.request.name);
+                            $('#start-date').val(request.request.start_datetime);
+                            $('#number-of-days').val(request.request.num_days);
+                            $('#number-of-devices').val(request.request.num_devices);
+                            update_submit_button();
+                        });
+
+                        let acceptButton = $('<button>').addClass('btn btn-outline-success').html('<i class="fa fa-check"></i>');
+                        acceptButton.click(function(e) {
+                            api_call('/api/accept_wifi_request', {token: request.request.token}, function(data) {
+                                if (data.success) 
+                                    fetchActiveConnections();
+                            });
+                        });
+
+                        let declineButton = $('<button>').addClass('btn btn-outline-danger').html('<i class="fa fa-times"></i>');
+                        declineButton.click(function(e) {
+                            api_call('/api/decline_wifi_request', {token: request.request.token}, function(data) {
+                                if (data.success) 
+                                    fetchActiveConnections();
+                            });
+                        });
+                        row.append($('<td>').addClass('btn-group').append(editButton, acceptButton, declineButton));
+                    } else {
+                        row.append($('<td>').text(request.request.name));
+                        row.append($('<td>').text(request.request.start_datetime));
+                        row.append($('<td>').text(endDateTime));
+                        row.append($('<td>').text(request.request.num_devices));
+                    }
+                    
+                    let statusIcon;
+                    endDateTime.setDate(startDateTime.getDate() + parseInt(request.request.num_days));
+                    console.log("startDateTime: " + startDateTime);
+                    console.log("endDateTime: " + endDateTime);
+
+                    if (request.request.status === 'accepted' && endDateTime >= now && startDateTime <= now) {
+                        statusIcon = $('<td>').html("<i class='text-success fa fa-check' title='Aktiv'></i> Aktiv");
+                    } else if (request.request.status === 'waiting') {
+                        statusIcon = $('<td>').html("<i class='text-secondary fa fa-clock-o' title='In Bearbeitung'></i> In Bearbeitung");
+                    } else if (request.request.status === 'declined') {
+                        statusIcon = $('<td>').html("<i class='text-danger fa fa-times' title='Inaktiv'></i> Inaktiv");
+                    } else {
+                        statusIcon = $('<td>').html("<i class='text-danger fa fa-clock-o' title='noch Inaktiv'></i> noch Inaktiv");
+                    }
+                    row.append(statusIcon);
+                    $('#active-connections').append(row);
+                }
+            }
+        });
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+        if (#{user_with_role_logged_in?(:can_manage_project_wifi_access)}) {
+            document.getElementById('admin-row').style.display = 'table-row';
+            document.getElementById('user-row').style.display = 'none';
+        } else {
+            document.getElementById('admin-row').style.display = 'none';
+            document.getElementById('user-row').style.display = 'table-row';
+        }
+        update_submit_button();
+        $('#wifi-name').keyup(update_submit_button);
+        $('#wifi-name').change(update_submit_button);
+        $('#start-date').change(update_submit_button);
+        $('#number-of-days').keyup(update_submit_button);
+        $('#number-of-days').change(update_submit_button);
+        $('#number-of-devices').keyup(update_submit_button);
+        $('#number-of-devices').change(update_submit_button);
+        $('#wifi-access-submit').click(function(e) {
+            let wifiName = $('#wifi-name').val().trim();
+            let startDate = $('#start-date').val().trim();
+            let numberOfDays = $('#number-of-days').val();
+            let numberOfDevices = $('#number-of-devices').val();
+            api_call('/api/request_wifi_access', {name: wifiName, start_datetime: startDate, num_days: numberOfDays, num_devices: numberOfDevices}, function(data) {
+                if (data.success) 
+                    fetchActiveConnections();
+            });
+        });
+        fetchActiveConnections();
+    });
+</script>

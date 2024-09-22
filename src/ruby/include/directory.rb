@@ -539,7 +539,7 @@ class Main < Sinatra::Base
         }
 
         @@techpost_mailing_lists["eltern.technikamt@#{MAILING_LIST_DOMAIN}"] = {
-            :label => "Techpost (Eltern)",
+            :label => "Technikamt (Eltern)",
             :recipients => techpost_users.map { |email| 'eltern.' + email }
         }
     end

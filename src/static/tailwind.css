@@ -637,6 +637,10 @@ Ensure the default browser behavior of the `hidden` attribute.
   display: table;
 }
 
+.table-row {
+  display: table-row;
+}
+
 .grid {
   display: grid;
 }

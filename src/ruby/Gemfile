@@ -8,6 +8,9 @@ gem 'htmlentities'
 gem 'http'
 gem 'i18n'
 gem 'mail'
+# TODO: Keeping mustermann at 3.0.0 because 3.0.2 would lead to
+# startup times of several seconds while parsing the HTTP routes
+gem 'mustermann', '>=3.0.3'
 gem 'nokogiri'
 gem 'nextcloud'
 gem 'neo4j_bolt', '>=0.1.11'

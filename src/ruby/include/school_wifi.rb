@@ -1,21 +1,21 @@
 class Main < Sinatra::Base
     def send_wifi_request_mail(request_details)
         deliver_mail do
-            to Array(@@users_for_role[:can_manage_project_wifi_access]).flatten
+            to Array(@@users_for_role[:wants_to_receive_school_wifi_request_mail]).flatten
             bcc SMTP_FROM
             from SMTP_FROM
 
-            subject "New WIFI Access Request"
+            subject "WIFI Access Request"
 
             StringIO.open do |io|
-                io.puts "<p>Hallp!</p>"
+                io.puts "<p>Hallo!</p>"
                 io.puts "<p>Eine neue Projekt-WLAN Anfrage wurde eingereicht:</p>"
                 io.puts "<p>Name: #{request_details[:name]}</p>"
                 io.puts "<p>Number of Devices: #{request_details[:num_devices]}</p>"
                 io.puts "<p>Number of Days: #{request_details[:num_days]}</p>"
                 io.puts "<p>Start Date/Time: #{request_details[:start_datetime]}</p>"
                 io.puts "<p><a href='#{WEBSITE_HOST}/school_wifi'>Request genehmigen</a></p>"
-                io.puts "<p>Viel Spaß beim Singen!<br>Peter-J. Germelmann</p>"
+                io.puts "<p>Viele Grüße<br>Peter-J. Germelmann</p>"
                 io.string
             end
         end

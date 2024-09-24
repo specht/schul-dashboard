@@ -9,7 +9,7 @@
             <div class='row'>
                 <div class='col-md-6'>
                     <div class="form-group">
-                        <label for="wifi-name">WIFI Name:</label>
+                        <label for="wifi-name">WIFI Name: (sollte leicht zu tippen sein)</label>
                         <input type="text" id="wifi-name" name="wifi-name" class="form-control" required>
                     </div>
                 </div>
@@ -36,11 +36,11 @@
             </div>
             <div class='row'>
                 <div class='col-md-12'>
-                    <button id='wifi-access-submit' class='btn btn-outline-success'>Absenden</button>
+                    <button id='wifi-access-submit' class='btn btn-outline-success'><i class='fa fa-send'></i>&nbsp;&nbsp;Absenden</button>
                 </div>
             </div>
             <hr>
-            <h2>#{user_with_role_logged_in?(:can_manage_project_wifi_access) ? "" : "Deine"} Verbindungen</h2>
+            <h2>#{user_with_role_logged_in?(:can_manage_project_wifi_access) ? "" : "Deine "}Verbindungen</h2>
             <table class="table">
                 <thead>
                     <tr id="admin-row">
@@ -122,7 +122,7 @@
                                     fetchActiveConnections();
                             });
                         });
-                        row.append($('<td>').addClass('btn-group').append(editButton, acceptButton, declineButton));
+                        row.append($('<td>').addClass('btn-group').append(acceptButton, declineButton));
                     } else {
                         row.append($('<td>').text(request.request.name));
                         row.append($('<td>').text(request.request.start_datetime));
@@ -140,7 +140,9 @@
                     } else if (request.request.status === 'waiting') {
                         statusIcon = $('<td>').html("<i class='text-secondary fa fa-clock-o' title='In Bearbeitung'></i> In Bearbeitung");
                     } else if (request.request.status === 'declined') {
-                        statusIcon = $('<td>').html("<i class='text-danger fa fa-times' title='Inaktiv'></i> Inaktiv");
+                        statusIcon = $('<td>').html("<i class='text-danger fa fa-times' title='Abgelehnt'></i> Abgelehnt");
+                    } else if (endDateTime < now) {
+                        statusIcon = $('<td>').html("<i class='text-danger fa fa-lock' title='Beendet'></i> Beendet");
                     } else {
                         statusIcon = $('<td>').html("<i class='text-danger fa fa-clock-o' title='noch Inaktiv'></i> noch Inaktiv");
                     }

@@ -131,6 +131,24 @@
             <div class='row'>
                 <div class='col-md-12' style='max-width: 100%; overflow-x: auto;'>
                     #{print_techpost_superuser()}
+                    <br><h3>Super Funktionen</h3>
+                    <div class='row' style='margin-bottom: 15px;'>
+                        <div class='col-md-12'>
+                            <button class='bu-clear-all btn btn-danger'><i class='fa fa-trash'></i>&nbsp;&nbsp;Alle Probleme löschen</button>
+                            <button class='bu-kick-all btn btn-danger'><i class='fa fa-user-times'></i>&nbsp;&nbsp;Alle Technikamt-User entfernen</button>
+                            <button class='bu-send-welcome-mail btn btn-warning'><i class='fa fa-envelope'></i>&nbsp;&nbsp;Willkommens-E-Mails versenden</button>
+                            <button class='bu-clear-aula-lights btn btn-danger'><i class='fa fa-lightbulb-o'></i>&nbsp;&nbsp;Plan der Aula-Scheinwerfer zurücksetzen</button>
+                        </div>
+                    </div>
+                    <div class='row' style='margin-bottom: 15px;'>
+                        <div class='col-md-12'>
+                            <div class='form-group'>
+                                <input id='ti_recipients' class='form-control' placeholder='User suchen…' />
+                                <div class='recipient-input-dropdown' style='display: none;'></div>
+                            </div>
+                            <small class="form-text text-muted">Hinweis: Die Änderungen werden erst nach dem Neuladen der Seite sichtbar.</small>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -799,22 +817,8 @@ document.addEventListener('DOMContentLoaded', function() {
     var voluntary_testing_entries = #{ get_voluntary_testing_sus.to_json };
     var klassen_tr = #{ KLASSEN_TR.to_json };
 
-    function update_buttons() {
-        if (can_send())
-            $('#bu_send_message').removeClass('btn-outline-secondary').addClass('btn-success').prop('disabled', false);
-        else
-            $('#bu_send_message').removeClass('btn-success').addClass('btn-outline-secondary').prop('disabled', true);
-    }
-
-    function can_send() {
-        let email = $('#ti_email').data('email');
-        return email != null ;
-    }
-
-    function send_message() {
-        let email = $('#ti_email').data('email');
-        api_call('/api/add_techpost', { email: email}, function (data) {
-        });
+    function send_message(email) {
+        api_call('/api/add_techpost', { email: email.trim() }, function (data) {});
     }
 
     function delete_message() {
@@ -845,7 +849,7 @@ document.addEventListener('DOMContentLoaded', function() {
         $('.recipient-input-dropdown').hide();
         $('#ti_recipients').val('');
         $('#ti_recipients').focus();
-        update_buttons();
+        send_message(key);
     }
 
     function observer_callback(entries, observer) {
@@ -912,17 +916,10 @@ document.addEventListener('DOMContentLoaded', function() {
             rootMargin: '100px',
             threshold: 1.0
         });
-        $('#ti_recipients').keyup(function(e) { update_buttons(); });
-        $('#ti_recipients').change(function(e) { update_buttons(); });
-
-        $('#bu_send_message').click(function (e) {
-            send_message();
-        });
 
         $('#bu_delete_message').click(function (e) {
             delete_message();
         });
-
 
         $('#ti_recipients').keydown(function (e) {
             if ((e.keyCode === 9 || e.keyCode === 13) && ($(e.target).val().length > 0)) {
@@ -935,6 +932,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 return;
             }
         });
+
         $('#ti_recipients').keyup(function (e) {
             if ($('#ti_recipients')[0].selectionStart == $(e.target).val().length) {
                 let value = $(e.target).val();
@@ -963,8 +961,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
                 autocomplete_results = results;
                 result_keys = Object.keys(results).map(function (x) { return parseInt(x); });
-                if (result_keys.length === 0)
-                    $('.recipient-input-dropdown').hide();
+                if (result_keys.length === 0) $('.recipient-input-dropdown').hide();
                 else {
                     if (result_keys.length === 1) {
                         if (!backspace_pressed) {
@@ -1000,10 +997,11 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             }
         });
+
         if ('#{user_with_role_logged_in?(:can_write_messages)}' === 'true') {
             load_recipients('#{@session_user[:id]}', function () {
                 // console.log(recipients);
             }, null);
         }
-        });
+    });
 </script>

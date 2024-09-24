@@ -8,7 +8,7 @@ class Main < Sinatra::Base
         END_OF_QUERY
         results
     end
-    
+
     post '/api/get_aula_events' do
         require_user_who_can_use_aula!
         respond(:events => self.class.get_aula_events())
@@ -23,7 +23,7 @@ class Main < Sinatra::Base
             SET e.desk_array = $desk_array;
         END_OF_QUERY
     end
-    
+
     post '/api/delete_aula_event' do
         require_user_who_can_use_aula!
         data = parse_request_data(:required_keys => [:id])
@@ -52,7 +52,7 @@ class Main < Sinatra::Base
         END_OF_QUERY
         respond(:result => 'lefromage')
     end
-    
+
     post '/api/unfinish_aula_event' do
         require_user_who_can_use_aula!
         data = parse_request_data(:required_keys => [:id])
@@ -72,7 +72,7 @@ class Main < Sinatra::Base
         END_OF_QUERY
         respond(:result => 'lefromage')
     end
-    
+
     post '/api/change_aula_event_time' do
         require_user_who_can_use_aula!
         data = parse_request_data(:required_keys => [:id, :time])
@@ -82,7 +82,7 @@ class Main < Sinatra::Base
         END_OF_QUERY
         respond(:result => 'lefromage')
     end
-    
+
     post '/api/change_aula_event_title' do
         require_user_who_can_use_aula!
         data = parse_request_data(:required_keys => [:id, :title])
@@ -108,15 +108,15 @@ class Main < Sinatra::Base
 
     # get '/api/aula_event_pdf' do
     #     require_user_who_can_use_aula!
-    #     # number = 
-    #     # time = 
+    #     # number =
+    #     # time =
     #     # title =
     #     events = $neo4j.neo4j_query(<<~END_OF_QUERY).map { |x| x['e'] }
     #         MATCH (e:AulaEvent)
     #         RETURN e
     #         ORDER BY e.number, e.title;
     #     END_OF_QUERY
-    #     doc = Prawn::Document.new(:page_size => 'A4', :page_layout => :portrait, 
+    #     doc = Prawn::Document.new(:page_size => 'A4', :page_layout => :portrait,
     #                             :margin => 0) do
     #         font('/app/fonts/RobotoCondensed-Regular.ttf') do
     #             font_size 12
@@ -244,7 +244,7 @@ class Main < Sinatra::Base
         else
             current_config = ""
         end
-        
+
         StringIO.open do |io|
             io.puts "#{current_config}"
             io.string
@@ -264,7 +264,7 @@ class Main < Sinatra::Base
         if data[:desk] == ""
             neo4j_query(<<~END_OF_QUERY, :dmx => data[:dmx], :desk => data[:desk])
                 MATCH (e:AulaLight {dmx: $dmx})
-                DELETE e   
+                DELETE e
             END_OF_QUERY
         else
             neo4j_query(<<~END_OF_QUERY, :dmx => data[:dmx], :desk => data[:desk])

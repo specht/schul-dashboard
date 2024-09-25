@@ -107,6 +107,7 @@ require './include/projekte.rb'
 require './include/public_event.rb'
 require './include/roles.rb'
 require './include/salzh.rb'
+require './include/school_wifi.rb'
 require './include/sms.rb'
 require './include/techpost.rb'
 require './include/stats.rb'
@@ -2213,6 +2214,9 @@ class Main < Sinatra::Base
                         end
                         if teacher_logged_in?
                             io.puts "<a class='dropdown-item nav-icon' href='/angebote'><div class='icon'><i class='fa fa-group'></i></div><span class='label'>AGs und Angebote</span></a>"
+                        end
+                        if user_with_role_logged_in?(:can_open_project_wifi)
+                            io.puts "<a class='dropdown-item nav-icon' href='/school_wifi'><div class='icon'><i class='fa fa-wifi'></i></div><span class='label'>Schüler-WLAN</span></a>"
                         end
                         io.puts "<a class='dropdown-item nav-icon' href='/groups'><div class='icon'><i class='fa fa-group'></i></div><span class='label'>Meine Gruppen</span></a>"
                     end

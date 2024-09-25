@@ -659,14 +659,6 @@ class Main < Sinatra::Base
                 io.puts "</div></div>"
             end
             io.puts "</div>"
-            io.puts "<br><h3>Super Funktionen</h3>"
-            io.puts "<div class='row' style='margin-bottom: 15px;'><div class='col-md-12'>"
-            io.puts "<button class='bu-clear-all btn btn-danger'><i class='fa fa-trash'></i>&nbsp;&nbsp;Alle Probleme löschen</button>&nbsp<button class='bu-kick-all btn btn-danger'><i class='fa fa-user-times'></i>&nbsp;&nbsp;Alle Technikamt-User entfernen</button>&nbsp<button class='bu-send-welcome-mail btn btn-warning'><i class='fa fa-envelope'></i>&nbsp;&nbsp;Willkommens-E-Mails versenden</button>&nbsp;<button class='bu-clear-aula-lights btn btn-danger'><i class='fa fa-lightbulb-o'></i>&nbsp;&nbsp;Plan der Aula-Scheinwerfer zurücksetzen</button>"
-            io.puts "</div></div>"
-            io.puts "<div class='row' style='margin-bottom: 15px;'><div class='col-md-12'>"
-            io.puts "<div class='form-group'><input id='ti_recipients' class='form-control' placeholder='User suchen…' /><div class='recipient-input-dropdown' style='display: none;'></div></input></div>"
-            io.puts "<div class='form-group row'><label for='ti_email' class='col-sm-1 col-form-label'>Name:</label><div class='col-sm-3'><input type='text' readonly class='form-control' id='ti_email' placeholder=''></div><div id='publish_message_btn_container'><button disabled id='bu_send_message' class='btn btn-outline-secondary'><i class='fa fa-plus'></i>&nbsp;&nbsp;<span>Hinzufügen</span></button></div></div>"
-            io.puts "Hinweis: Die Änderungen werden erst nach dem Neuladen der Seite sichtbar.</div></div>"
             io.string
         end
     end

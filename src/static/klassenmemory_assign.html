@@ -703,6 +703,7 @@ window.addEventListener('load', function() {
         api_call(`/api/get_fotos/${current_klasse}`, {}, function(data) {
             if (data.success) {
                 for (let path of data.paths) {
+                    console.log(path);
                     fetch_cached_photo(path, function(decrypted) {
                         let frame = $(`<div class='sus-frame'>`);
                         let photo = $('<div class="sus-foto-sm">').css('background-image', `url(data:image/jpeg;base64,${decrypted})`);

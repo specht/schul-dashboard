@@ -83,10 +83,10 @@
                         #{@@user_info.keys.select { |email| user_has_role(email, :schueler) && @@user_info[email][:klasse] == PK5_CURRENT_KLASSE && email != @session_user[:email] }.sort { |a, b| @@user_info[a][:last_name] <=> @@user_info[b][:last_name] }.map { |email| "<option value='#{@@user_info[email][:display_name_official]}'></option>" }. join('\n')}
                     </datalist>
                     <datalist id='li_lehrkraft'>
-                        #{@@user_info.keys.select { |email| user_has_role(email, :teacher)}.sort { |a, b| @@user_info[a][:last_name] <=> @@user_info[b][:last_name]}.map { |email| "<option value='#{@@user_info[email][:display_name_official]}'></option>" }. join('\n')}
+                        #{@@user_info.keys.select { |email| user_has_role(email, :teacher)}.select { |email| @@user_info[email][:shorthand][0] != '_' }.sort { |a, b| @@user_info[a][:last_name] <=> @@user_info[b][:last_name]}.map { |email| "<option value='#{@@user_info[email][:display_name_official]}'></option>" }. join('\n')}
                     </datalist>
                     <datalist id='li_fach'>
-                        #{File.read('/data/pk5/faecher.txt').split("\n").map { |x| x.strip }.reject { |x| x.empty? }.map { |x| "<option value='#{x}'></option>" }. join('\n')}
+                        #{@@pk5_faecher.keys.map { |x| "<option value='#{x}'></option>" }. join('\n')}
                     </datalist>
                     <div class='col-md-8'>
                         <div class='form-group'>
@@ -137,7 +137,7 @@
                     <div class='col-md-6' style="display: #{$pk5.get_current_phase >= 5 ? 'block' : 'none'}">
                         <div class='form-group'>
                             <label>Betreuende Lehrkraft im fächerübergreifenden Aspekt</label>
-                            <input id='ti_betreuende_lehrkraft_fas' disabled type='text' value='#{CGI.escapeHTML(get_my_pk5(user_email)[:betreuende_lehrkraft_fas] || '')}' placeholder='keine Lehrkraft gewählt' class='form-control' list='li_lehrkraft' readonly>
+                            <input id='ti_betreuende_lehrkraft_fas' type='text' value='#{CGI.escapeHTML(get_my_pk5(user_email)[:betreuende_lehrkraft_fas_display_name] || '')}' placeholder='keine Lehrkraft gewählt' class='form-control' list='li_lehrkraft' readonly>
                         </div>
                     </div>
                     <div class='col-md-12' style="display: none;">
@@ -147,7 +147,7 @@
                         </div>
                     </div>
 
-                    <div class='col-md-12' style="text-align: right; #{(user_with_role_logged_in?(:oko) || (@session_user[:klasse] == PK5_CURRENT_KLASSE && (!$pk5.phases[$pk5.get_current_phase][:flags].include?(:no_sus_edit)))) ? '' : 'display: none;'}">
+                    <div class='col-md-12' style="text-align: right; #{(user_with_role_logged_in?(:oko) || (teacher_logged_in? && (@@pk5_faecher_for_email[@session_user[:email]] || Set.new()).include?(get_my_pk5(user_email)[:fas])) || (@session_user[:klasse] == PK5_CURRENT_KLASSE && (!$pk5.phases[$pk5.get_current_phase][:flags].include?(:no_sus_edit)))) ? '' : 'display: none;'}">
                         <button id='bu_edit' class='btn btn-success'><i class='fa fa-edit'></i>&nbsp;&nbsp;Bearbeiten</button>
                         <button id='bu_discard_changes' style='display: none;' class='btn btn-outline-secondary'><i class='fa fa-times'></i>&nbsp;&nbsp;Änderungen verwerfen</button>
                         <button id='bu_save_changes' style='display: none;' class='btn btn-success'><i class='fa fa-check'></i>&nbsp;&nbsp;Änderungen speichern</button>
@@ -178,8 +178,21 @@ window.addEventListener('load', function() {
     $('#bu_edit').on('click', function(e) {
         $('.api_messages').hide();
         for (let input of $(e.target).closest('.karteikarte').find('input')) {
+            let key = ($(input).attr('id') ?? '').replace("ti_", '');
             $(input).data('old_value', $(input).val());
-            $(input).prop('readonly', false);
+            let open_this_field = false;
+            if (['themengebiet', 'referenzfach', 'betreuende_lehrkraft', 'fas'].indexOf(key) >= 0) {
+                if ('true' === '#{user_with_role_logged_in?(:oko) || (@session_user[:klasse] == PK5_CURRENT_KLASSE && (!$pk5.phases[$pk5.get_current_phase][:flags].include?(:no_sus_edit)))}') {
+                    open_this_field = true;
+                }
+            }
+            if (['betreuende_lehrkraft_fas'].indexOf(key) >= 0) {
+                if ('true' === '#{user_with_role_logged_in?(:oko) || (teacher_logged_in? && (@@pk5_faecher_for_email[@session_user[:email]] || Set.new()).include?(get_my_pk5(user_email)[:fas]))}') {
+                    open_this_field = true;
+                }
+            }
+            if (open_this_field)
+                $(input).prop('readonly', false);
         }
         $('#bu_edit').hide();
         $('#bu_discard_changes').show();
@@ -205,9 +218,10 @@ window.addEventListener('load', function() {
             data[$(input).attr('id').replace('ti_', '')] = $(input).val().trim();
             $(input).prop('readonly', true);
         }
-        if ('#{user_with_role_logged_in?(:oko)}' === 'true') {
+        if ('#{user_with_role_logged_in?(:oko) || (teacher_logged_in? && (@@pk5_faecher_for_email[@session_user[:email]] || Set.new()).include?(get_my_pk5(user_email)[:fas]))}' === 'true') {
             data.sus_email = '#{user_email}';
         }
+        console.log(data);
         api_call('/api/update_pk5', data, function(response) {
             if (response.success) {
                 for (let key of #{PK5_KEYS.to_json}) {
@@ -215,6 +229,8 @@ window.addEventListener('load', function() {
                     let value = response.result[key];
                     if (key === 'betreuende_lehrkraft')
                         value = response.result.betreuende_lehrkraft_display_name;
+                    if (key === 'betreuende_lehrkraft_fas')
+                        value = response.result.betreuende_lehrkraft_fas_display_name;
                     $(input).val(value);
                 }
 

@@ -1221,6 +1221,25 @@ class Main < Sinatra::Base
             @@lesson_keys_with_sus_feedback = YAML::load_file('/data/kurswahl/sus_feedback.yaml')
         end
 
+        @@pk5_faecher = {}
+        @@pk5_faecher_for_email = {}
+        File.open('/data/pk5/faecher.csv', 'r') do |f|
+            f.each_line do |line|
+                line.strip!
+                next if line.empty?
+                parts = line.split(';')
+                fach = parts[0].strip
+                @@pk5_faecher[fach] ||= []
+                (1...parts.size).each do |i|
+                    email = @@shorthands[parts[i]]
+                    assert(!(email.nil?))
+                    @@pk5_faecher[fach] << email
+                    @@pk5_faecher_for_email[email] ||= Set.new()
+                    @@pk5_faecher_for_email[email] << fach
+                end
+            end
+        end
+
         if ENV['DASHBOARD_SERVICE'] == 'ruby'
             self.parse_zeugnisformulare()
         end

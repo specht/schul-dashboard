@@ -620,7 +620,7 @@ class Main < Sinatra::Base
         }
 
         @@techpost_mailing_lists["eltern.technikamt@#{MAILING_LIST_DOMAIN}"] = {
-            :label => "Techpost (Eltern)",
+            :label => "Technikamt (Eltern)",
             :recipients => techpost_users.map { |email| 'eltern.' + email }
         }
     end
@@ -668,7 +668,7 @@ class Main < Sinatra::Base
     def self.update_lehrbuchverein_groups()
         @@lehrbuchverein_mailing_lists = {}
         KLASSEN_ORDER.each do |klasse|
-            @@schueler_for_klasse[klasse].each do |email|
+            (@@schueler_for_klasse[klasse] || []).each do |email|
                 target = @@lehrmittelverein_state_cache[email] ? :empfaenger : :selbstzahler
                 next if target == :selbstzahler && klasse.to_i < 7
                 ['', 'eltern.'].each do |who|
@@ -964,7 +964,7 @@ class Main < Sinatra::Base
         io.puts "<td>"
         print_email_field(io, list_email)
         io.puts "</td>"
-        if teacher_logged_in?
+        if teacher_logged_in? || technikteam_logged_in?
             io.puts "<td style='text-align: right;'><button data-list-email='#{list_email}' class='btn btn-warning btn-sm bu-toggle-adresses'>#{info[:recipients].size} Adressen&nbsp;&nbsp;<i class='fa fa-chevron-down'></i></button></td>"
             io.puts "</tr>"
             io.puts "<tbody style='display: none;' class='list_email_emails' data-list-email='#{list_email}'>"

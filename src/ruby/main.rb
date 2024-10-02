@@ -107,6 +107,7 @@ require './include/projekte.rb'
 require './include/public_event.rb'
 require './include/roles.rb'
 require './include/salzh.rb'
+require './include/school_wifi.rb'
 require './include/sms.rb'
 require './include/techpost.rb'
 require './include/stats.rb'
@@ -1220,6 +1221,25 @@ class Main < Sinatra::Base
             @@lesson_keys_with_sus_feedback = YAML::load_file('/data/kurswahl/sus_feedback.yaml')
         end
 
+        @@pk5_faecher = {}
+        @@pk5_faecher_for_email = {}
+        File.open('/data/pk5/faecher.csv', 'r') do |f|
+            f.each_line do |line|
+                line.strip!
+                next if line.empty?
+                parts = line.split(';')
+                fach = parts[0].strip
+                @@pk5_faecher[fach] ||= []
+                (1...parts.size).each do |i|
+                    email = @@shorthands[parts[i]]
+                    assert(!(email.nil?))
+                    @@pk5_faecher[fach] << email
+                    @@pk5_faecher_for_email[email] ||= Set.new()
+                    @@pk5_faecher_for_email[email] << fach
+                end
+            end
+        end
+
         if ENV['DASHBOARD_SERVICE'] == 'ruby'
             self.parse_zeugnisformulare()
         end
@@ -2214,6 +2234,9 @@ class Main < Sinatra::Base
                         if teacher_logged_in?
                             io.puts "<a class='dropdown-item nav-icon' href='/angebote'><div class='icon'><i class='fa fa-group'></i></div><span class='label'>AGs und Angebote</span></a>"
                         end
+                        if user_with_role_logged_in?(:can_open_project_wifi)
+                            io.puts "<a class='dropdown-item nav-icon' href='/school_wifi'><div class='icon'><i class='fa fa-wifi'></i></div><span class='label'>Schüler-WLAN</span></a>"
+                        end
                         io.puts "<a class='dropdown-item nav-icon' href='/groups'><div class='icon'><i class='fa fa-group'></i></div><span class='label'>Meine Gruppen</span></a>"
                     end
                     io.puts "<div class='dropdown-divider'></div>"
@@ -2925,6 +2948,8 @@ class Main < Sinatra::Base
             END_OF_QUERY
             paths << path unless path.nil?
         end
+        paths += Dir["/data/schueler/fotos/2024-#{klasse}-*"].map { |x| File.basename(x) }
+        paths.uniq!
         respond(:paths => paths)
     end
 

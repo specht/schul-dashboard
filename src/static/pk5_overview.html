@@ -43,7 +43,7 @@ window.addEventListener('load', function() {
                         `<td>${entry.pk5.referenzfach ?? '&ndash;'}</td>`,
                         `<td data-sort_value='${entry.pk5.betreuende_lehrkraft ?? ''}'>${entry.betreuende_lehrkraft ?? '&ndash;'}</td>`,
                         `<td>${entry.pk5.fas ?? '&ndash;'}</td>`,
-                        `<td>&ndash;</td>`,
+                        `<td data-sort_value='${entry.pk5.betreuende_lehrkraft_fas ?? ''}'>${entry.betreuende_lehrkraft_fas ?? '&ndash;'}</td>`,
                     ];
                     return cells;
                 }),

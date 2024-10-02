@@ -17,7 +17,6 @@ PK5_KEY_LABELS = {
 }
 
 class Main < Sinatra::Base
-
     def get_my_pk5(email)
         require_user!
         result = nil
@@ -45,9 +44,11 @@ class Main < Sinatra::Base
                 result[:sus].map! { |email| @@user_info[email][:display_name_official] }
             end
             if result[:betreuende_lehrkraft]
-                result[:betreuende_lehrkraft] = result[:betreuende_lehrkraft]
                 result[:betreuende_lehrkraft_display_name] = @@user_info[result[:betreuende_lehrkraft]][:display_name_official]
                 result[:betreuende_lehrkraft_is_confirmed] = result[:betreuende_lehrkraft] == result[:betreuende_lehrkraft_confirmed_by]
+            end
+            if result[:betreuende_lehrkraft_fas]
+                result[:betreuende_lehrkraft_fas_display_name] = @@user_info[result[:betreuende_lehrkraft_fas]][:display_name_official]
             end
             result
         end
@@ -79,7 +80,7 @@ class Main < Sinatra::Base
                     if pc[:type] == 'update_value'
                         key = pc[:key].to_sym
                         value = pc[:value]
-                        if key == :betreuende_lehrkraft
+                        if key == :betreuende_lehrkraft || key == :betreuende_lehrkraft_fas
                             value = (@@user_info[value] || {})[:display_name_official] || value
                         end
                         if value.nil?
@@ -118,7 +119,7 @@ class Main < Sinatra::Base
             :max_string_length => 8192
         )
         sus_email = @session_user[:email]
-        if user_with_role_logged_in?(:oko)
+        if teacher_logged_in?
             sus_email = data[:sus_email] if data[:sus_email]
         end
         respond(:html => my_pk5_history(sus_email))
@@ -133,12 +134,13 @@ class Main < Sinatra::Base
                 :referenzfach,
                 :betreuende_lehrkraft,
                 :fas,
+                :betreuende_lehrkraft_fas,
             ],
             :max_body_length => 16384,
             :max_string_length => 8192
         )
         sus_email = @session_user[:email]
-        if user_with_role_logged_in?(:oko)
+        if teacher_logged_in?
             sus_email = data[:sus_email] if data[:sus_email]
         end
         assert(@@user_info[sus_email][:klasse] == PK5_CURRENT_KLASSE)
@@ -152,14 +154,13 @@ class Main < Sinatra::Base
                 MERGE (p:Pk5)-[:BELONGS_TO]->(u)
                 RETURN p;
             END_OF_QUERY
-            [:themengebiet, :referenzfach, :betreuende_lehrkraft, :fas].each do |key|
+            [:themengebiet, :referenzfach, :betreuende_lehrkraft, :fas, :betreuende_lehrkraft_fas].each do |key|
                 if data.include?(key)
                     value = data[key]
                     if key == :referenzfach || key == :fas
-                        all_faecher = File.read('/data/pk5/faecher.txt').split("\n").map { |x| x.strip }.reject { |x| x.empty? }
-                        value = nil unless all_faecher.include?(value)
+                        value = nil unless @@pk5_faecher.include?(value)
                     end
-                    if key == :betreuende_lehrkraft
+                    if key == :betreuende_lehrkraft || key == :betreuende_lehrkraft_fas
                         value = @@users_for_role[:teacher].select do |email|
                             @@user_info[email][:display_name_official] == value
                         end.first
@@ -216,6 +217,9 @@ class Main < Sinatra::Base
             pk5_by_email[row['u.email']] = id
         end
 
+        fachleiter_for_faecher = @@pk5_faecher_for_email[@session_user[:email]]
+        fachleiter_for_faecher ||= Set.new()
+
         @@schueler_for_klasse[PK5_CURRENT_KLASSE].each.with_index do |email, sus_index|
             next if seen_sus.include?(email)
             seen_sus << email
@@ -251,6 +255,11 @@ class Main < Sinatra::Base
                     else
                         "#{CGI.escapeHTML(((@@user_info[pk5[:betreuende_lehrkraft]] || {})[:display_name_official]) || '–')}"
                     end
+                end,
+                :betreuende_lehrkraft_fas => if fachleiter_for_faecher.include?(pk5[:fas]) && pk5[:betreuende_lehrkraft_fas].nil?
+                    "<i class='fa fa-clock-o'></i>&nbsp;&nbsp;bitte Lehrkraft zuweisen"
+                else
+                    "#{CGI.escapeHTML(((@@user_info[pk5[:betreuende_lehrkraft_fas]] || {})[:display_name_official]) || '–')}"
                 end
             }
         end

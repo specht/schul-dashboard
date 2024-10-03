@@ -317,7 +317,7 @@ class Script
                     (dir2.contents || []).each do |x|
                         href = x.href
                         unless ['/Ausgabeordner/', '/Einsammelordner/', '/R%c3%bcckgabeordner/',
-                                '/Ausgabeordner-Materialamt/',
+                                '/Ausgabeordner%20(Dashboard-Amt)/',
                                 '/Auto-Einsammelordner%20(von%20SuS%20an%20mich)/',
                                 'Auto-R%c3%bcckgabeordner%20(von%20mir%20an%20SuS)/',
                                 '/SuS/'].any? { |y| href[href.size - y.size, y.size] == y }

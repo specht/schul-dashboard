@@ -197,7 +197,7 @@ class Script
                     end
                     wanted_shares[user_id]["/#{SHARE_SOURCE_FOLDER}/#{folder_name}/Ausgabeordner-Materialamt"] = {
                         :permissions => permissions,
-                        :target_path => "/#{SHARE_TARGET_FOLDER}/#{pretty_folder_name.gsub(' ', '%20')}/Ausgabeordner (Materialamt)",
+                        :target_path => "/#{SHARE_TARGET_FOLDER}/#{pretty_folder_name.gsub(' ', '%20')}/Ausgabeordner (Dashboard-Amt)",
                         :share_with => user[:display_name].unicode_normalize(:nfc)
                     }
                 end

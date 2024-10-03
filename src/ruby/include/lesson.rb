@@ -68,11 +68,11 @@ class Main < Sinatra::Base
     def get_ha_amt_lesson_keys()
         return [] unless user_logged_in?
         return [] if teacher_logged_in?
-        results = neo4j_query(<<~END_OF_QUERY, :email => @session_user[:email])
-            MATCH (u:User {email: $email})-[r:HAS_AMT {amt: 'hausaufgaben'}]->(l:Lesson)
-            RETURN l.key;
+        flag = neo4j_query_expect_one(<<~END_OF_QUERY, :email => @session_user[:email])['flag']
+            MATCH (u:User {email: $email})
+            RETURN u.has_dashboard_amt AS flag;
         END_OF_QUERY
-        return results.map { |x| x['l.key'] }
+        return flag ? @@lessons_for_klasse[@session_user[:klasse]] : []
     end
 
     post '/api/set_ha_amt_text_for_lesson' do

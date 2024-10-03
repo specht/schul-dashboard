@@ -1074,13 +1074,14 @@ class Main < Sinatra::Base
         end
 
         @@materialamt_for_lesson = {}
-        rows = $neo4j.neo4j_query(<<~END_OF_QUERY)
-            MATCH (u:User)-[r:HAS_AMT {amt: 'material'}]->(l:Lesson)
-            RETURN u.email, l.key;
+        $neo4j.neo4j_query(<<~END_OF_QUERY).each do |row|
+            MATCH (u:User {has_dashboard_amt: TRUE}) RETURN u.email;
         END_OF_QUERY
-        rows.each do |row|
-            @@materialamt_for_lesson[row['l.key']] ||= Set.new()
-            @@materialamt_for_lesson[row['l.key']] << row['u.email']
+            email = row['u.email']
+            (@@lessons_for_klasse[@@user_info[email][:klasse]] || []).each do |lesson_key|
+                @@materialamt_for_lesson[lesson_key] ||= Set.new()
+                @@materialamt_for_lesson[lesson_key] << row['u.email']
+            end
         end
 
         @@lessons_for_user = {}

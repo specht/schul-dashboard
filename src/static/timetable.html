@@ -167,7 +167,7 @@
       </div>
       <div class="modal-footer">
         <div class='small show-ha-amt-only' style='width: 100%;'>
-            Du vertrittst in diesem Fach das Dashboard-Amt und kannst deshalb Hausaufgaben für deine Klasse eintragen.
+            Du wurdest in deiner Klasse für das Dashboard-Amt freigeschaltet und kannst deshalb Hausaufgaben eintragen.
         </div>
         <div class="ha-amt-container" style='display: none; width: 100%;'>
             <textarea class='form-control' id='ta_ha_amt_text' placeholder='Hier kannst du die Hausaufgaben zu dieser Stunde eintragen'></textarea>
@@ -1708,6 +1708,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 $('.bu-discard-ha-amt-text-changes').show();
                 $('.bu-save-ha-amt-text-changes').show();
                 $('.ha-amt-container').slideDown();
+                $('#ta_ha_amt_text').focus();
             }
         });
     });

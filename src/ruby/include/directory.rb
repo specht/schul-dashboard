@@ -37,7 +37,7 @@ class Main < Sinatra::Base
         # hide_from_sus = false if DEVELOPMENT
         hide_from_sus
     end
-    
+
     def mail_addresses_table(klasse)
         assert((teacher_logged_in?) || (@session_user[:klasse] == klasse))
         klassenleiter_logged_in = (@@klassenleiter[klasse] || []).include?(@session_user[:shorthand]) || admin_logged_in?
@@ -587,7 +587,7 @@ class Main < Sinatra::Base
             end
         end
     end
-    
+
     def self.update_techpost_groups()
         results = $neo4j.neo4j_query(<<~END_OF_QUERY)
             MATCH (u:User)-[:HAS_AMT {amt: 'technikamt'}]->(v:Techpost)

@@ -797,6 +797,7 @@ class Main < Sinatra::Base
 
     post '/api/set_sus_dashboard_amt' do
         assert(teacher_logged_in?)
+        session_user_email = @session_user[:email]
         data = parse_request_data(:required_keys => [:email, :flag])
         flag = data[:flag] == 'true'
         # make sure target is a schueler
@@ -810,7 +811,25 @@ class Main < Sinatra::Base
             SET u.has_dashboard_amt = $to
             RETURN u;
         END_OF_QUERY
-        # TODO: Send e-mail to SuS
+        deliver_mail do
+            to data[:email]
+            cc (@@teachers_for_klasse[@@user_info[data[:email]][:klasse]] || {}).keys.map { |x| @@shorthands[x] }
+            bcc SMTP_FROM
+            from SMTP_FROM
+
+            subject "Dashboard-Amt #{flag ? 'freigeschaltet' : 'aufgehoben'}: #{@@user_info[data[:email]][:first_name]} (#{Main.tr_klasse(@@user_info[data[:email]][:klasse])})"
+
+            StringIO.open do |io|
+                io.puts "<p>Hallo #{@@user_info[data[:email]][:first_name]},</p>"
+                if flag
+                    io.puts "<p>Du wurdest soeben von #{@@user_info[session_user_email][:display_last_name_dativ]} für das Dashboard-Amt freigeschaltet. Du kannst nun im Dashboard in allen Fächern Hausaufgaben eintragen und ab morgen in der Nextcloud Material für deine Klasse hochladen. Vielen Dank für dein Engagement!</p>"
+                else
+                    io.puts "<p>Du bist nun nicht mehr für das Dashboard-Amt freigeschaltet. Vielen Dank für dein Engagement.</p>"
+                end
+                io.puts "<p>Viele Grüße,<br />#{WEBSITE_MAINTAINER_NAME}</p>"
+                io.string
+            end
+        end
         respond(:ok => true)
     end
 end

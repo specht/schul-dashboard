@@ -98,6 +98,7 @@ class Script
             @@lessons_for_shorthand = @@debug_archive[:@@lessons_for_shorthand]
             @@materialamt_for_lesson = @@debug_archive[:@@materialamt_for_lesson]
             @@teachers_for_klasse = @@debug_archive[:@@teachers_for_klasse]
+            @@schueler_for_klasse = @@debug_archive[:@@schueler_for_klasse]
         else
             @@user_info = Main.class_variable_get(:@@user_info)
             @@users_for_role = Main.class_variable_get(:@@users_for_role)
@@ -110,11 +111,21 @@ class Script
             @@lessons_for_shorthand = Main.class_variable_get(:@@lessons_for_shorthand)
             @@materialamt_for_lesson = Main.class_variable_get(:@@materialamt_for_lesson)
             @@teachers_for_klasse = Main.class_variable_get(:@@teachers_for_klasse)
+            @@schueler_for_klasse = Main.class_variable_get(:@@schueler_for_klasse)
         end
 
         unless SRSLY
             STDERR.puts "Attention: Doing nothing unless you specify --srsly!"
         end
+
+        schueler_with_dashboard_amt = Set.new()
+        $neo4j.neo4j_query(<<~END_OF_QUERY).each do |row|
+            MATCH (u:User {has_dashboard_amt: TRUE}) RETURN u.email;
+        END_OF_QUERY
+            email = row['u.email']
+            schueler_with_dashboard_amt << email
+        end
+
 
 #         @ocs.file_sharing.all.each do |share|
 #             STDERR.puts sprintf('[%5s] %s => [%s]%s', share['id'], share['path'], share['share_with'], share['file_target'])
@@ -237,7 +248,17 @@ class Script
                     :share_with => user[:display_name].unicode_normalize(:nfc)
                 }
             end
-            # TODO: Also share to SuS
+            @@schueler_for_klasse[klasse].each do |email|
+                user = @@user_info[email]
+                user_id = user[:nc_login]
+                email_for_user_id[user_id] = email
+                wanted_shares[user_id] ||= {}
+                wanted_shares[user_id]["/#{SHARE_SOURCE_FOLDER}/Protokolle/#{klasse}"] = {
+                    :permissions => schueler_with_dashboard_amt.include?(email) ? SHARE_READ | SHARE_UPDATE | SHARE_CREATE | SHARE_DELETE : SHARE_READ,
+                    :target_path => "/#{SHARE_TARGET_FOLDER}/Protokolle #{Main.tr_klasse(klasse)}",
+                    :share_with => user[:display_name].unicode_normalize(:nfc)
+                }
+            end
         end
         wanted_shares.keys.each do |user_id|
             src_for_target_path = {}

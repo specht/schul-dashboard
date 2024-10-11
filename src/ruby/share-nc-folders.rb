@@ -233,7 +233,7 @@ class Script
                 wanted_shares[user_id] ||= {}
                 wanted_shares[user_id]["/#{SHARE_SOURCE_FOLDER}/Protokolle/#{klasse}"] = {
                     :permissions => SHARE_READ | SHARE_UPDATE | SHARE_CREATE | SHARE_DELETE,
-                    :target_path => "/#{SHARE_TARGET_FOLDER}/Protokolle/#{tr_klasse(klasse)}",
+                    :target_path => "/#{SHARE_TARGET_FOLDER}/Protokolle/#{Main.tr_klasse(klasse)}",
                     :share_with => user[:display_name].unicode_normalize(:nfc)
                 }
             end

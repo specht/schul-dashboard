@@ -233,7 +233,6 @@ class Script
             next
         end
         @@klassen_order.each do |klasse|
-            next unless klasse == '5c'
             next if klasse.to_i > 10
             @@teachers_for_klasse[klasse].keys.each do |shorthand|
                 email = @@shorthands[shorthand]

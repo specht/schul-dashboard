@@ -50,7 +50,7 @@ class Script
             end
         end
         @@klassen_order.each do |klasse|
-            next unless klasse == '5c'
+            next if klasse.to_i > 10
             emit "mkdir -pv \"#{File.join(base_path, 'Unterricht', 'Protokolle', klasse)}\""
         end
         emit "php occ files:scan #{File::basename(NEXTCLOUD_DASHBOARD_DATA_DIRECTORY)}"

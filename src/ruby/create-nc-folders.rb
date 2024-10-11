@@ -49,6 +49,10 @@ class Script
                 end
             end
         end
+        @@klassen_order.each do |klasse|
+            next unless klasse == '5c'
+            emit "mkdir -pv \"#{File.join(base_path, 'Unterricht', 'Protokolle', klasse)}\""
+        end
         emit "php occ files:scan #{File::basename(NEXTCLOUD_DASHBOARD_DATA_DIRECTORY)}"
         emit "# Hinweis: Die oben stehenden Befehle wurden noch nicht ausgeführt."
         emit "# Falls die Nextcloud z. B. in einem Docker-Container läuft, können sie"

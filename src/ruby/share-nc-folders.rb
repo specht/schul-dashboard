@@ -97,6 +97,7 @@ class Script
             @@schueler_for_lesson = @@debug_archive[:@@schueler_for_lesson]
             @@lessons_for_shorthand = @@debug_archive[:@@lessons_for_shorthand]
             @@materialamt_for_lesson = @@debug_archive[:@@materialamt_for_lesson]
+            @@teachers_for_klasse = @@debug_archive[:@@teachers_for_klasse]
         else
             @@user_info = Main.class_variable_get(:@@user_info)
             @@users_for_role = Main.class_variable_get(:@@users_for_role)
@@ -108,6 +109,7 @@ class Script
             @@schueler_for_lesson = Main.class_variable_get(:@@schueler_for_lesson)
             @@lessons_for_shorthand = Main.class_variable_get(:@@lessons_for_shorthand)
             @@materialamt_for_lesson = Main.class_variable_get(:@@materialamt_for_lesson)
+            @@teachers_for_klasse = Main.class_variable_get(:@@teachers_for_klasse)
         end
 
         unless SRSLY
@@ -218,6 +220,24 @@ class Script
                 }
             end
             next
+        end
+        @@klassen_order.each do |klasse|
+            next unless klasse == '5c'
+            next if klasse.to_i > 10
+            @@teachers_for_klasse[klasse].keys.each do |shorthand|
+                email = @@shorthands[shorthand]
+                next if email.nil?
+                user = @@user_info[email]
+                user_id = user[:nc_login]
+                email_for_user_id[user_id] = email
+                wanted_shares[user_id] ||= {}
+                wanted_shares[user_id]["/#{SHARE_SOURCE_FOLDER}/Protokolle/#{klasse}"] = {
+                    :permissions => SHARE_READ | SHARE_UPDATE | SHARE_CREATE | SHARE_DELETE,
+                    :target_path => "/#{SHARE_TARGET_FOLDER}/Protokolle/#{tr_klasse(klasse)}",
+                    :share_with => user[:display_name].unicode_normalize(:nfc)
+                }
+            end
+            # TODO: Also share to SuS
         end
         wanted_shares.keys.each do |user_id|
             src_for_target_path = {}

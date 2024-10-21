@@ -1119,18 +1119,18 @@
                 if (this_animated) seen_first_animated = true;
                 div.append($('<br>'));
                 if (entry[0] in running_zeugniskonferenzen) {
-                    div.append($(`<i class='fa fa-clock-o'></i>`));
+                    div.append($(`<i class='bi bi-clock-o'></i>`));
                     div.append('&nbsp;&nbsp;');
                     let span = $(`<span class='ticking_time' data-ts='${running_zeugniskonferenzen[entry[0]]}'>`);
                     div.append(`läuft seit `);
                     div.append(span);
                 } else if (finished_zeugniskonferenzen.indexOf(entry[0]) >= 0) {
-                    div.append($(`<i class='fa fa-check'></i>`));
+                    div.append($(`<i class='bi bi-check'></i>`));
                     div.append('&nbsp;&nbsp;');
                     div.append(`beendet`);
                 } else {
                     if (this_animated) {
-                        div.append($(`<i class='fa fa-clock-o'></i>`));
+                        div.append($(`<i class='bi bi-clock-o'></i>`));
                         div.append('&nbsp;&nbsp;');
                         div.append(`warte auf Beginn`);
                     }

@@ -46,7 +46,7 @@
         <div style="padding-top: 10px;">Dieses Buch hat noch keine ISBN. Hilf uns, die Bibliothek zu verbessern, indem
             du die ISBN scannst.</div>
         <div style="text-align: center; margin-top: 10px;">
-            <a id='hint_scan_isbn_link' class="btn btn-success" href="#"><i class='fa fa-barcode'></i>&nbsp;&nbsp;ISBN
+            <a id='hint_scan_isbn_link' class="btn btn-success" href="#"><i class='bi bi-barcode'></i>&nbsp;&nbsp;ISBN
                 erfassen</a>
         </div>
     </div>
@@ -62,13 +62,13 @@
             Du hast dieses Buch <span id='orders_placed_count'></span> <a href='/bib_orders'>bestellt</a>.
         </div>
         <p>Wenn du dieses Buch im Unterricht verwenden möchtest, kannst du es hier bestellen.</p>
-        <button id='bu_order_overview' class="btn btn-success"><i class='fa fa-shopping-basket'></i>&nbsp;&nbsp;Buch bestellen</button>
+        <button id='bu_order_overview' class="btn btn-success"><i class='bi bi-shopping-basket'></i>&nbsp;&nbsp;Buch bestellen</button>
         <div id="order_div" style='display: none; margin-top: 15px;'>
             <button id='bu_order_kurs' class='btn btn-outline-secondary mr-1'>
-                <i class='fa fa-group'></i>&nbsp;&nbsp;Ich möchte das Buch für eine Klasse oder einen Kurs bestellen.
+                <i class='bi bi-group'></i>&nbsp;&nbsp;Ich möchte das Buch für eine Klasse oder einen Kurs bestellen.
             </button>
             <button id='bu_order_private' class='btn btn-outline-secondary mr-1' style="display: none;" disabled>
-                <i class='fa fa-user'></i>&nbsp;&nbsp;Ich möchte das Buch für mich bestellen.
+                <i class='bi bi-user'></i>&nbsp;&nbsp;Ich möchte das Buch für mich bestellen.
             </button>
             <div id="order_kurs_div" style='display: none; margin-top: 15px;'>
                 <div class='row'>
@@ -80,12 +80,12 @@
                             <table id='order_kurs_div_table' class='xs table table-sm table-condensed narrow'></table>
                         </div>
                         <div>
-                            <button id="bu_plus_teacher" class="btn btn-sm btn-outline-secondary mb-3"><i class='fa fa-times'></i>&nbsp;&nbsp;Ich benötige ein Lehrerexemplar</button>
+                            <button id="bu_plus_teacher" class="btn btn-sm btn-outline-secondary mb-3"><i class='bi bi-times'></i>&nbsp;&nbsp;Ich benötige ein Lehrerexemplar</button>
                         </div>
                         <div class='alert alert-warning text-sm'>Hinweis: Falls die Gesamtzahl nicht stimmt, weil z. B. SuS der 7. Klassen noch nicht im Lehrmittelverein sind oder weil für Oberstufenkurse noch keine Teilnehmerlisten im Dashboard hinterlegt sind, können Sie trotzdem die Bestellung jetzt schon vornehmen. Wir werden die Bestellung bearbeiten, sobald die fehlenden Informationen vorliegen und dann werden auch die Zahlen automatisch korrigiert.</div>
                         Ich möchte <span class='font-bold' id="label_order_kurs_count"></span> für meinen Kurs <span class='font-bold' id="label_kurs_name"></span> bestellen.
                         <div class='mt-3' style='text-align: right;'>
-                            <button id='bu_place_order_kurs' class='btn btn-success' style="display: none;"><i class='fa fa-send'></i>&nbsp;&nbsp;Bestellung aufgeben</button>
+                            <button id='bu_place_order_kurs' class='btn btn-success' style="display: none;"><i class='bi bi-send'></i>&nbsp;&nbsp;Bestellung aufgeben</button>
                         </div>
                         <div id='bu_place_order_kurs_success' class='alert alert-success' style='display: none; margin-top: 15px;'>Deine Bestellung wurde aufgenommen. Du kannst den Status deiner Bestellung unter <a href='/bib_orders'>»Bestellungen«</a> einsehen.</div>
                     </div>
@@ -94,7 +94,7 @@
             <div id="order_private_div" style='display: none; margin-top: 15px;'>
                 Ich möchte ein Exemplar für mich bestellen.
                 <div class='mt-3'>
-                    <button id='bu_place_order_private' class='btn btn-success'><i class='fa fa-send'></i>&nbsp;&nbsp;Bestellung aufgeben</button>
+                    <button id='bu_place_order_private' class='btn btn-success'><i class='bi bi-send'></i>&nbsp;&nbsp;Bestellung aufgeben</button>
                     <div id='bu_place_order_private_success' class='alert alert-success' style='display: none; margin-top: 15px;'>Deine Bestellung wurde aufgenommen. Du kannst den Status deiner Bestellung unter <a href='/bib_orders'>»Bestellungen«</a> einsehen.</div>
                 </div>
             </div>
@@ -105,7 +105,7 @@
         <h3>Interne Informationen und Funktionen</h3>
         <!-- <hr /> -->
         <p>Wenn du dieses Buch im Namen einer Lehrkraft für einen Kurs bestellen möchtest, kannst du es hier bestellen.</p>
-        <button id='bu_order_impersonate_overview' class="btn btn-success"><i class='fa fa-shopping-basket'></i>&nbsp;&nbsp;Buch für einen Kurs bestellen</button>
+        <button id='bu_order_impersonate_overview' class="btn btn-success"><i class='bi bi-shopping-basket'></i>&nbsp;&nbsp;Buch für einen Kurs bestellen</button>
         <div id="order_impersonate_div" style='display: none; margin-top: 15px;'>
             <div class='row'>
                 <div class='col-md-12'>
@@ -120,9 +120,9 @@
                 <div class='col-md-12' id="order_kurs_impersonate_div_confirm" style="display: none;">
                     Ich möchte das Buch für den Kurs <span class='font-bold' id="label_kurs_impersonate_name"></span> im Namen von <span class='font-bold' id="label_kurs_impersonate_teacher"></span> bestellen.
                     <div class='mt-3' style='text-align: right;'>
-                        <button id="bu_plus_teacher_impersonate" class="btn btn-outline-secondary"><i class='fa fa-times'></i>&nbsp;&nbsp;Lehrerexemplar wird benötigt (+1)</button>
+                        <button id="bu_plus_teacher_impersonate" class="btn btn-outline-secondary"><i class='bi bi-times'></i>&nbsp;&nbsp;Lehrerexemplar wird benötigt (+1)</button>
                         &nbsp;&nbsp;
-                        <button id='bu_place_order_kurs_impersonate' class='btn btn-success' style="display: none;"><i class='fa fa-send'></i>&nbsp;&nbsp;Bestellung aufgeben</button>
+                        <button id='bu_place_order_kurs_impersonate' class='btn btn-success' style="display: none;"><i class='bi bi-send'></i>&nbsp;&nbsp;Bestellung aufgeben</button>
                     </div>
                     <div id='bu_place_order_kurs_impersonate_success' class='alert alert-success' style='display: none; margin-top: 15px;'>Die Bestellung wurde aufgenommen.</div>
                 </div>
@@ -273,30 +273,30 @@
         });
         $('#bu_plus_teacher').click(function(e) {
             if ($('#bu_plus_teacher').hasClass('btn-outline-secondary')) {
-                $('#bu_plus_teacher').removeClass('btn-outline-secondary').addClass('btn-success').html(`<i class='fa fa-check'></i>&nbsp;&nbsp;Ich benötige ein Lehrerexemplar`);
+                $('#bu_plus_teacher').removeClass('btn-outline-secondary').addClass('btn-success').html(`<i class='bi bi-check'></i>&nbsp;&nbsp;Ich benötige ein Lehrerexemplar`);
                 kurs_row_clicked(clicked_lesson_key);
             } else {
-                $('#bu_plus_teacher').addClass('btn-outline-secondary').removeClass('btn-success').html(`<i class='fa fa-times'></i>&nbsp;&nbsp;Ich benötige ein Lehrerexemplar`);
+                $('#bu_plus_teacher').addClass('btn-outline-secondary').removeClass('btn-success').html(`<i class='bi bi-times'></i>&nbsp;&nbsp;Ich benötige ein Lehrerexemplar`);
                 kurs_row_clicked(clicked_lesson_key);
             }
         });
         $('#bu_plus_teacher_impersonate').click(function(e) {
             if ($('#bu_plus_teacher_impersonate').hasClass('btn-outline-secondary')) {
-                $('#bu_plus_teacher_impersonate').removeClass('btn-outline-secondary').addClass('btn-success').html(`<i class='fa fa-check'></i>&nbsp;&nbsp;Lehrerexemplar wird benötigt (+1)`);
+                $('#bu_plus_teacher_impersonate').removeClass('btn-outline-secondary').addClass('btn-success').html(`<i class='bi bi-check'></i>&nbsp;&nbsp;Lehrerexemplar wird benötigt (+1)`);
             } else {
-                $('#bu_plus_teacher_impersonate').addClass('btn-outline-secondary').removeClass('btn-success').html(`<i class='fa fa-times'></i>&nbsp;&nbsp;Lehrerexemplar wird benötigt (+1)`);
+                $('#bu_plus_teacher_impersonate').addClass('btn-outline-secondary').removeClass('btn-success').html(`<i class='bi bi-times'></i>&nbsp;&nbsp;Lehrerexemplar wird benötigt (+1)`);
             }
         });
         let stem_s = window.location.pathname.replace('/bib_book/', '');
         stem = parseInt(stem_s);
         if ('#{can_manage_bib_logged_in?}' === 'true') {
-            $(`<li class='mx-1 py-1 px-1.5' style='white-space: nowrap;'><i class='fa fa-barcode'></i>&nbsp;&nbsp;${stem}</li>`).insertBefore($('#sub_menu_extra'));
-            $(`<li class='mx-1'><a class='inline-block bg-slate-900 border border-blue-500 hover:bg-slate-200 rounded py-1 px-3' href='/bib_book_edit/${stem}'><i class='fa fa-pencil'></i>&nbsp;&nbsp;Metadaten bearbeiten</a></li>`).insertAfter($('#sub_menu_extra'));
+            $(`<li class='mx-1 py-1 px-1.5' style='white-space: nowrap;'><i class='bi bi-barcode'></i>&nbsp;&nbsp;${stem}</li>`).insertBefore($('#sub_menu_extra'));
+            $(`<li class='mx-1'><a class='inline-block bg-slate-900 border border-blue-500 hover:bg-slate-200 rounded py-1 px-3' href='/bib_book_edit/${stem}'><i class='bi bi-pencil'></i>&nbsp;&nbsp;Metadaten bearbeiten</a></li>`).insertAfter($('#sub_menu_extra'));
             if ("#{@session_device}" === 'bib-station-with-printer') {
-                $(`<li class='mx-1'><a class='inline-block bg-slate-900 border border-blue-500 hover:bg-slate-200 rounded py-1 px-3' href='/bib_add_exemplare/${stem}'><i class='fa fa-plus'></i>&nbsp;&nbsp;Neue Exemplare aufnehmen</a></li>`).insertAfter($('#sub_menu_extra'));
-                $(`<li class='mx-1'><a class='inline-block bg-slate-900 border border-blue-500 hover:bg-slate-200 rounded py-1 px-3' href='/bib_print_label/${stem}'><i class='fa fa-print'></i>&nbsp;&nbsp;Label drucken</a></li>`).insertAfter($('#sub_menu_extra'));
+                $(`<li class='mx-1'><a class='inline-block bg-slate-900 border border-blue-500 hover:bg-slate-200 rounded py-1 px-3' href='/bib_add_exemplare/${stem}'><i class='bi bi-plus'></i>&nbsp;&nbsp;Neue Exemplare aufnehmen</a></li>`).insertAfter($('#sub_menu_extra'));
+                $(`<li class='mx-1'><a class='inline-block bg-slate-900 border border-blue-500 hover:bg-slate-200 rounded py-1 px-3' href='/bib_print_label/${stem}'><i class='bi bi-print'></i>&nbsp;&nbsp;Label drucken</a></li>`).insertAfter($('#sub_menu_extra'));
             }
-            $(`<li class='mx-1'><a class='inline-block bg-slate-900 border border-blue-500 hover:bg-slate-200 rounded py-1 px-3' href='/bib_book/${stem}'><i class='fa fa-book'></i>&nbsp;&nbsp;Buch</a></li>`).insertAfter($('#sub_menu_extra'));
+            $(`<li class='mx-1'><a class='inline-block bg-slate-900 border border-blue-500 hover:bg-slate-200 rounded py-1 px-3' href='/bib_book/${stem}'><i class='bi bi-book'></i>&nbsp;&nbsp;Buch</a></li>`).insertAfter($('#sub_menu_extra'));
             $('#subsubmenu').show();
             fix_subsubmenu();
         }
@@ -514,7 +514,7 @@
                                     `${book.stem}-${entry['e.bnr']}`,
                                     $('<td>').text(`${stem}-${entry['e.bnr']}`).data('sort_value', entry['e.bnr']),
                                     entry['e.ts_discarded']
-                                        ? $('<td>').html(`<i class='text-stone-400 fa fa-trash'></i>&nbsp;&nbsp;${moment.unix(entry['e.ts_discarded']).format('L')}`).data('sort_value', entry['e.ts_discarded'])
+                                        ? $('<td>').html(`<i class='text-stone-400 bi bi-trash'></i>&nbsp;&nbsp;${moment.unix(entry['e.ts_discarded']).format('L')}`).data('sort_value', entry['e.ts_discarded'])
                                         : $('<td>').html("&ndash;").data('sort_value', NaN)
                                 ];
                             }),

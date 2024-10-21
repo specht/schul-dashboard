@@ -24,7 +24,7 @@ jQuery.extend({
 function show_error_message(message) {
     var div = $('<div>').css('text-align', 'center').css('padding', '15px').addClass('bg-light text-danger').html(message);
     $('.api_messages').empty();
-    let button = $("<button class='text-stone-400 btn pull-right form-control' style='width: unset; margin: 8px;' ><i class='fa fa-times'></i></button>");
+    let button = $("<button class='text-stone-400 btn pull-right form-control' style='width: unset; margin: 8px;' ><i class='bi bi-times'></i></button>");
     $('.api_messages').append(button).append(div).show();
     button.click(function(e) { $('.api_messages').hide(); });
 }
@@ -46,7 +46,7 @@ function api_call(url, data, callback, options) {
         // show 'please wait' message after 500 ms
         (function () {
             window.please_wait_timeout = setTimeout(function () {
-                var div = $('<div>').css('text-align', 'center').css('padding', '15px').addClass('text-muted').html("<i class='fa fa-cog fa-spin'></i>&nbsp;&nbsp;Einen Moment bitte...");
+                var div = $('<div>').css('text-align', 'center').css('padding', '15px').addClass('text-muted').html("<i class='bi bi-cog fa-spin'></i>&nbsp;&nbsp;Einen Moment bitte...");
                 $('.api_messages').empty().show();
                 $('.api_messages').append(div);
             }, 500);
@@ -299,7 +299,7 @@ function create_audio_player(from, tag, duration) {
     let seek = $('<div>').addClass('player-seek').appendTo(player);
     let progress = $('<div>').addClass('player-progress').appendTo(seek);
     top.append(' ');
-    top.append($('<a>').attr('href', url).attr('target', '_blank').addClass('btn btn-secondary btn-xs').html("<i class='fa fa-download'></i>&nbsp;&nbsp;mp3"));
+    top.append($('<a>').attr('href', url).attr('target', '_blank').addClass('btn btn-secondary btn-xs').html("<i class='bi bi-download'></i>&nbsp;&nbsp;mp3"));
     top.append(play_button);
     let indicator_container = $('<div>').addClass('player-indicator-container').appendTo(progress);
     let indicator = $('<div>').addClass('player-indicator').appendTo(indicator_container);
@@ -504,7 +504,7 @@ function fix_bad_html(e) {
 }
 
 function email_field(email) {
-    return `<div class='input-group'><input type='text' class='form-control' readonly value='${email}' style='min-width: 100px;' /><div class='input-group-append'><button class='btn btn-secondary btn-clipboard' data-clipboard-action='copy' title='Eintrag in die Zwischenablage kopieren' data-clipboard-text='${email}'><i class='fa fa-clipboard'></i></button></div></div>`;
+    return `<div class='input-group'><input type='text' class='form-control' readonly value='${email}' style='min-width: 100px;' /><div class='input-group-append'><button class='btn btn-secondary btn-clipboard' data-clipboard-action='copy' title='Eintrag in die Zwischenablage kopieren' data-clipboard-text='${email}'><i class='bi bi-clipboard'></i></button></div></div>`;
 }
 
 // receives a string and returns a hash of stem, bnr and optional checksum if valid, null otherwise
@@ -534,7 +534,7 @@ function create_book_div(book, shelf, options = {}) {
         if (options.r && options.r.ts_summoned) {
             stem.html($(`<div class='bg-persimmon-500 text-white px-2'>`).text('Bitte bringe dieses Buch in die Bibliothek zurück.'));
         } else
-            stem.html(`<i class='fa fa-barcode'></i>&nbsp;&nbsp;${book.stem}-${options.exemplar.bnr}`);
+            stem.html(`<i class='bi bi-barcode'></i>&nbsp;&nbsp;${book.stem}-${options.exemplar.bnr}`);
     }
     let cover_path = `${BIB_HOST}/gen/covers/${book.stem}-400.jpg`;
     let hover_classes = '';

@@ -7,11 +7,11 @@
             <hr />
             <div class='pull-right'>
                 <button class='btn btn-secondary bu-refresh-staging'><i id='refresh-icon-staging'
-                        class='fa fa-refresh'></i>&nbsp;&nbsp;Vorschau-Seite aktualisieren</button>
+                        class='bi bi-refresh'></i>&nbsp;&nbsp;Vorschau-Seite aktualisieren</button>
                 <button class='btn btn-success bu-refresh-live'><i id='refresh-icon-live'
-                        class='fa fa-refresh'></i>&nbsp;&nbsp;Live-Seite aktualisieren</button>
+                        class='bi bi-refresh'></i>&nbsp;&nbsp;Live-Seite aktualisieren</button>
             </div>
-            <button class='bu-compose btn btn-success'><i class='fa fa-pencil'></i>&nbsp;&nbsp;Artikel
+            <button class='bu-compose btn btn-success'><i class='bi bi-pencil'></i>&nbsp;&nbsp;Artikel
                 schreiben</button>
             <hr />
             <div style='max-width: 100%; overflow-x: auto;'>
@@ -25,7 +25,7 @@
                     </thead>
                     <tbody id='news_here'>
                         <tr>
-                            <td><i class='fa fa-cog fa-spin'></i></td>
+                            <td><i class='bi bi-cog fa-spin'></i></td>
                         </tr>
                     </tbody>
                 </table>
@@ -57,12 +57,12 @@
                     <em>Strg+Enter: Vorschau aktualisieren</em>
                 </div>
                 <button id='bu_render_preview' type="button" class="btn btn-outline-secondary"><i
-                        class='fa fa-eye'></i>&nbsp;&nbsp;Vorschau</button>
+                        class='bi bi-eye'></i>&nbsp;&nbsp;Vorschau</button>
                 <div id='save_news_btn_container'>
                     <button id='bu_discard' type="button" class="btn btn-outline-secondary"><i
-                            class='fa fa-times'></i>&nbsp;&nbsp;<span>Verwerfen</span></button>
+                            class='bi bi-times'></i>&nbsp;&nbsp;<span>Verwerfen</span></button>
                     <button id='bu_save' type="button" class="btn btn-outline-secondary"><i
-                            class='fa fa-check'></i>&nbsp;&nbsp;<span>Speichern</span></button>
+                            class='bi bi-check'></i>&nbsp;&nbsp;<span>Speichern</span></button>
                 </div>
                 <button id='bu_close_edit_modal' type="button" class="btn btn-secondary"
                     data-dismiss="modal">Schließen</button>
@@ -172,9 +172,9 @@
 
                 let bu_sticky = $('<button>').addClass('btn').addClass('btn-sm').
                     addClass(entry.sticky ? 'btn-info' : 'btn-outline-info').
-                    html("<i class='fa fa-map-pin'></i>");
+                    html("<i class='bi bi-map-pin'></i>");
 
-                let bu_delete = $('<button>').addClass('btn').addClass('btn-sm').addClass('btn-danger').html("<i class='fa fa-times'></i>");
+                let bu_delete = $('<button>').addClass('btn').addClass('btn-sm').addClass('btn-danger').html("<i class='bi bi-times'></i>");
 
                 row.append($('<td>').append(bu_published).append(bu_sticky).append(bu_delete));
 
@@ -208,7 +208,7 @@
                     let data = $(e.target).closest('tr').data();
                     showTemplateModal('Eintrag löschen',
                         'Sind Sie sicher, dass Sie diesen News-Eintrag löschen möchten?',
-                        "<i class='fa fa-trash'></i>&nbsp;&nbsp;Löschen", 'btn-danger',
+                        "<i class='bi bi-trash'></i>&nbsp;&nbsp;Löschen", 'btn-danger',
                         'Abbrechen', 'btn-secondary', function () {
                             api_call('/api/delete_news_entry', { timestamp: data.timestamp }, function (data) {
                                 if (data.success) {
@@ -294,7 +294,7 @@
         $('.bu-refresh-live').click(function (e) {
             showTemplateModal('Website aktualisieren',
                 'Sind Sie sicher, dass Sie die Website aktualisieren möchten?',
-                "<i class='fa fa-check'></i>&nbsp;&nbsp;Website aktualisieren", 'btn-success',
+                "<i class='bi bi-check'></i>&nbsp;&nbsp;Website aktualisieren", 'btn-success',
                 'Abbrechen', 'btn-secondary', function () {
                     $('#refresh-icon-live').addClass('fa-spin');
                     api_call('/api/refresh_news_on_website', { staging: 'no' }, function (data) {

@@ -5,10 +5,10 @@
             <h2 style='margin-bottom: 30px;'>Nachrichten</h2>
             <div style='display: #{user_with_role_logged_in?(:can_write_messages) ? 'block': 'none'}; position: relative;'>
                 <div class='btn-group'>
-                    <button id='bu-inbox' class='btn btn-primary'><i class='fa fa-inbox'></i>&nbsp;&nbsp;Posteingang</button>
-                    <button id='bu-outbox' class='btn btn-outline-secondary'><i class='fa fa-inbox'></i>&nbsp;&nbsp;Postausgang</button>
+                    <button id='bu-inbox' class='btn btn-primary'><i class='bi bi-inbox'></i>&nbsp;&nbsp;Posteingang</button>
+                    <button id='bu-outbox' class='btn btn-outline-secondary'><i class='bi bi-inbox'></i>&nbsp;&nbsp;Postausgang</button>
                 </div>
-                <button class='bu-compose btn btn-success bu-compose-message'><i class='fa fa-pencil'></i>&nbsp;&nbsp;Neue Nachricht</button>
+                <button class='bu-compose btn btn-success bu-compose-message'><i class='bi bi-pencil'></i>&nbsp;&nbsp;Neue Nachricht</button>
                 <hr />
             </div>
             <div class='messages-container-inbox'></div>
@@ -50,10 +50,10 @@
       </div>
       <div class="modal-footer">
         <div id='publish_message_btn_container'>
-            <button id='bu_discard_message' class='btn btn-outline-secondary' disabled><i class='fa fa-times'></i>&nbsp;&nbsp;<span>Verwerfen</span></button>
-            <button id='bu_send_message' class='btn btn-outline-secondary' disabled><i class='fa fa-send'></i>&nbsp;&nbsp;<span>Senden</span></button>
+            <button id='bu_discard_message' class='btn btn-outline-secondary' disabled><i class='bi bi-times'></i>&nbsp;&nbsp;<span>Verwerfen</span></button>
+            <button id='bu_send_message' class='btn btn-outline-secondary' disabled><i class='bi bi-send'></i>&nbsp;&nbsp;<span>Senden</span></button>
         </div>
-        <button id='bu_delete_message' type="button" class="btn btn-outline-secondary" disabled style='display: none;'><i class='fa fa-trash'></i>&nbsp;&nbsp;Nachricht löschen</button>
+        <button id='bu_delete_message' type="button" class="btn btn-outline-secondary" disabled style='display: none;'><i class='bi bi-trash'></i>&nbsp;&nbsp;Nachricht löschen</button>
         <button id='bu_close_message_modal' type="button" class="btn btn-secondary" data-dismiss="modal">Schließen</button>
       </div>
     </div>
@@ -282,7 +282,7 @@ function update_sent_messages() {
         for (email of recipients)
             cell.append(gen_recipient_span(email), false);
         row.append(cell);
-        let msg_div = $('<td>').html("<i class='fa fa-spinner fa-spin'></i>");
+        let msg_div = $('<td>').html("<i class='bi bi-spinner fa-spin'></i>");
         row.append(msg_div);
         if (message.mid in message_cache) {
             msg_div.html(message_cache[message.mid]);
@@ -390,7 +390,7 @@ document.addEventListener('DOMContentLoaded', function() {
     $('#bu_delete_message').click(function(e) {
         showTemplateModal('Nachricht löschen',
             'Sind Sie sicher, dass Sie diese Nachricht löschen möchten?',
-            "<i class='fa fa-trash'></i>&nbsp;&nbsp;Nachricht löschen", 'btn-danger',
+            "<i class='bi bi-trash'></i>&nbsp;&nbsp;Nachricht löschen", 'btn-danger',
             'Abbrechen', 'btn-secondary', function() {
                 delete_message();
             }
@@ -522,8 +522,8 @@ document.addEventListener('DOMContentLoaded', function() {
                     } else if (message.mid) {
                         let msg_header = $('<div>').addClass('from');
                         let msg_buttons = $('<div>').addClass('buttons');
-                        let reply_button = $('<button>').addClass('btn').addClass('btn-sm').addClass('btn-outline-secondary').html("<i class='fa fa-reply'></i>&nbsp;&nbsp;Antworten");
-                        let toggle_mark_read_button = $('<button>').addClass('btn').addClass('btn-sm').addClass('btn-outline-secondary').html("<i class='fa fa-check'></i>&nbsp;&nbsp;Als gelesen markieren");
+                        let reply_button = $('<button>').addClass('btn').addClass('btn-sm').addClass('btn-outline-secondary').html("<i class='bi bi-reply'></i>&nbsp;&nbsp;Antworten");
+                        let toggle_mark_read_button = $('<button>').addClass('btn').addClass('btn-sm').addClass('btn-outline-secondary').html("<i class='bi bi-check'></i>&nbsp;&nbsp;Als gelesen markieren");
                         (function(to) {
                             reply_button.click(function(e) {
                                 compose_message(to);
@@ -535,7 +535,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         }
                         msg_header.append(msg_buttons);
                         msg_header.append($('<span>').html(message.from));
-                        let msg_div = $('<div>').addClass('message').html("<i class='fa fa-spinner fa-spin'></i>");
+                        let msg_div = $('<div>').addClass('message').html("<i class='bi bi-spinner fa-spin'></i>");
                         div = $('<div>').addClass('text-comment').append(msg_header).append(msg_div);
                         div.data('mid', message.mid);
                         div.data('msg_div', msg_div[0]);

@@ -6,8 +6,8 @@
             <div style='float: right'>
                 <a href='/self_tests' class='btn btn-secondary' style='margin-right: 15px;'>Lehrkräfte-Testung</a>
                 <a href='/salzh_protokoll' class='btn btn-secondary' style='margin-right: 15px;'>saLzH-Protokoll</a>
-                <a href='/api/test_list' class='btn btn-secondary' style='margin-right: 15px;'><i class='fa fa-file-pdf-o'></i>&nbsp;&nbsp;Aktuelle Testliste</a>
-                <button class='btn btn-success bu-add-salzh'><i class='fa fa-pencil'></i>&nbsp;&nbsp;Eintragen</button>
+                <a href='/api/test_list' class='btn btn-secondary' style='margin-right: 15px;'><i class='bi bi-file-pdf-o'></i>&nbsp;&nbsp;Aktuelle Testliste</a>
+                <button class='btn btn-success bu-add-salzh'><i class='bi bi-pencil'></i>&nbsp;&nbsp;Eintragen</button>
             </div>
             <h2 style='margin-bottom: 30px;'>Kontaktpersonen / saLzH</h2>
             <!-- <hr /> -->
@@ -153,12 +153,12 @@
             <div class="modal-footer">
                 <div id='publish_message_btn_container'>
                     <button id='bu_discard_message' class='btn btn-outline-secondary' disabled><i
-                            class='fa fa-times'></i>&nbsp;&nbsp;<span>Verwerfen</span></button>
+                            class='bi bi-times'></i>&nbsp;&nbsp;<span>Verwerfen</span></button>
                     <button id='bu_send_message' class='btn btn-outline-secondary' disabled><i
-                            class='fa fa-check'></i>&nbsp;&nbsp;<span>Speichern</span></button>
+                            class='bi bi-check'></i>&nbsp;&nbsp;<span>Speichern</span></button>
                 </div>
                 <button id='bu_delete_message' type="button" class="btn btn-outline-secondary" disabled
-                    style='display: none;'><i class='fa fa-trash'></i>&nbsp;&nbsp;Nachricht löschen</button>
+                    style='display: none;'><i class='bi bi-trash'></i>&nbsp;&nbsp;Nachricht löschen</button>
                 <button id='bu_close_message_modal' type="button" class="btn btn-secondary"
                     data-dismiss="modal">Schließen</button>
             </div>
@@ -406,7 +406,7 @@
         $('#bu_delete_message').click(function (e) {
             showTemplateModal('Nachricht löschen',
                 'Sind Sie sicher, dass Sie diese Nachricht löschen möchten?',
-                "<i class='fa fa-trash'></i>&nbsp;&nbsp;Nachricht löschen", 'btn-danger',
+                "<i class='bi bi-trash'></i>&nbsp;&nbsp;Nachricht löschen", 'btn-danger',
                 'Abbrechen', 'btn-secondary', function () {
                     delete_message();
                 }
@@ -562,7 +562,7 @@
             }
             row.append($('<td>').text(moment(entry.salzh_end_date).format('ddd, DD.MM.YYYY')));
 
-            let button = $('<button>').addClass('btn').addClass('btn-sm').addClass('btn-secondary').html("<i class='fa fa-pencil'></i>");
+            let button = $('<button>').addClass('btn').addClass('btn-sm').addClass('btn-secondary').html("<i class='bi bi-pencil'></i>");
             row.append($('<td>').append(button));
             button.click(function (e) {
                 let email = row.data('email');
@@ -590,14 +590,14 @@
                 update_buttons();
             });
 
-            button = $('<button>').addClass('btn').addClass('btn-sm').addClass('btn-danger').html("<i class='fa fa-trash'></i>");
+            button = $('<button>').addClass('btn').addClass('btn-sm').addClass('btn-danger').html("<i class='bi bi-trash'></i>");
             row.append($('<td>').append(button));
             button.click(function (e) {
                 let name = row.data('name');
                 let email = row.data('email');
                 showTemplateModal('Eintrag löschen',
                     `Sind Sie sicher, dass Sie den Eintrag für ${name} löschen möchten?`,
-                    "<i class='fa fa-trash'></i>&nbsp;&nbsp;Eintrag löschen", 'btn-danger',
+                    "<i class='bi bi-trash'></i>&nbsp;&nbsp;Eintrag löschen", 'btn-danger',
                     'Abbrechen', 'btn-secondary', function () {
                         api_call('/api/delete_salzh_entry', { email: email }, function (data) {
                             if (data.success)
@@ -628,7 +628,7 @@
                 let display_name = row.data('display_name');
                 showTemplateModal('Eltern benachrichtigen',
                 `Sind Sie sicher, dass Sie die Eltern von ${display_name} wegen einer nicht erfolgten Testung benachrichtigen möchten?`,
-                "<i class='fa fa-check'></i>&nbsp;&nbsp;E-Mail senden", 'btn-success',
+                "<i class='bi bi-check'></i>&nbsp;&nbsp;E-Mail senden", 'btn-success',
                 'Abbrechen', 'btn-secondary', function () {
                     api_call('/api/notify_parents_of_skipped_voluntary_testing', {email: email}, function(data) {
                         if (data.success) {

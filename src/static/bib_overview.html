@@ -89,11 +89,11 @@
             handle_hash_change(hash);
         });
         if ('#{can_manage_bib_logged_in?}' === 'true') {
-            $(`<li class='mx-1'><a class='tab-item tab-item-shelves inline-block bg-slate-900 border border-blue-500 hover:bg-slate-200 rounded py-1 px-3' href='#shelves'><i class='fa fa-map-marker'></i>&nbsp;&nbsp;Regale</a></li>`).insertAfter($('#sub_menu_extra'));
-            $(`<li class='mx-1'><a class='tab-item tab-item-activity inline-block bg-slate-900 border border-blue-500 hover:bg-slate-200 rounded py-1 px-3' href='#activity'><i class='fa fa-clock-o'></i>&nbsp;&nbsp;Aktivität</a></li>`).insertAfter($('#sub_menu_extra'));
-            $(`<li class='mx-1'><a class='tab-item tab-item-zurueckgeforderte-buecher inline-block bg-slate-900 border border-blue-500 hover:bg-slate-200 rounded py-1 px-3' href='#zurueckgeforderte-buecher'><i class='fa fa-book'></i>&nbsp;&nbsp;Zurückgeforderte Bücher</a></li>`).insertAfter($('#sub_menu_extra'));
-            $(`<li class='mx-1'><a class='tab-item tab-item-ausgeliehene-buecher inline-block bg-slate-900 border border-blue-500 hover:bg-slate-200 rounded py-1 px-3' href='#ausgeliehene-buecher'><i class='fa fa-book'></i>&nbsp;&nbsp;Geliehene Bücher</a></li>`).insertAfter($('#sub_menu_extra'));
-            $(`<li class='mx-1'><a class='tab-item tab-item-bestaetigte-buecher inline-block bg-slate-900 border border-blue-500 hover:bg-slate-200 rounded py-1 px-3' href='#bestaetigte-buecher'><i class='fa fa-book'></i>&nbsp;&nbsp;Bestätigte Bücher</a></li>`).insertAfter($('#sub_menu_extra'));
+            $(`<li class='mx-1'><a class='tab-item tab-item-shelves inline-block bg-slate-900 border border-blue-500 hover:bg-slate-200 rounded py-1 px-3' href='#shelves'><i class='bi bi-map-marker'></i>&nbsp;&nbsp;Regale</a></li>`).insertAfter($('#sub_menu_extra'));
+            $(`<li class='mx-1'><a class='tab-item tab-item-activity inline-block bg-slate-900 border border-blue-500 hover:bg-slate-200 rounded py-1 px-3' href='#activity'><i class='bi bi-clock-o'></i>&nbsp;&nbsp;Aktivität</a></li>`).insertAfter($('#sub_menu_extra'));
+            $(`<li class='mx-1'><a class='tab-item tab-item-zurueckgeforderte-buecher inline-block bg-slate-900 border border-blue-500 hover:bg-slate-200 rounded py-1 px-3' href='#zurueckgeforderte-buecher'><i class='bi bi-book'></i>&nbsp;&nbsp;Zurückgeforderte Bücher</a></li>`).insertAfter($('#sub_menu_extra'));
+            $(`<li class='mx-1'><a class='tab-item tab-item-ausgeliehene-buecher inline-block bg-slate-900 border border-blue-500 hover:bg-slate-200 rounded py-1 px-3' href='#ausgeliehene-buecher'><i class='bi bi-book'></i>&nbsp;&nbsp;Geliehene Bücher</a></li>`).insertAfter($('#sub_menu_extra'));
+            $(`<li class='mx-1'><a class='tab-item tab-item-bestaetigte-buecher inline-block bg-slate-900 border border-blue-500 hover:bg-slate-200 rounded py-1 px-3' href='#bestaetigte-buecher'><i class='bi bi-book'></i>&nbsp;&nbsp;Bestätigte Bücher</a></li>`).insertAfter($('#sub_menu_extra'));
 
             $('#subsubmenu').show();
             fix_subsubmenu();
@@ -311,7 +311,7 @@
                 let div = $(`<div class='col-span-12 md:col-span-6 xl:col-span-8 p-2'>`);
                 if (summoned_books_state_by_stem[stem].present > 0) {
                     let p = $('<p>');
-                    p.append(`<i class='text-circus-zest-500 fa fa-clock-o'></i>&nbsp;&nbsp;<b>Zurückgefordert und noch ausstehend: ${summoned_books_state_by_stem[stem].present} Exemplar${summoned_books_state_by_stem[stem].present == 1 ? '' : 'e'}</b>`);
+                    p.append(`<i class='text-circus-zest-500 bi bi-clock-o'></i>&nbsp;&nbsp;<b>Zurückgefordert und noch ausstehend: ${summoned_books_state_by_stem[stem].present} Exemplar${summoned_books_state_by_stem[stem].present == 1 ? '' : 'e'}</b>`);
                     p.append($('<br />'));
                     p.append($('<div>').html(summoned_books_by_stem[stem].filter(function(x) {
                         return (x['r.ts_returned'] == null);
@@ -327,7 +327,7 @@
                 }
                 if (summoned_books_state_by_stem[stem].past > 0) {
                     let p = $('<p>');
-                    p.append(`<i class='text-bamboo-500 fa fa-check'></i>&nbsp;&nbsp;<b>Zurückgefordert und bereits zurückgegeben: ${summoned_books_state_by_stem[stem].past} Exemplar${summoned_books_state_by_stem[stem].past == 1 ? '' : 'e'}</b>`);
+                    p.append(`<i class='text-bamboo-500 bi bi-check'></i>&nbsp;&nbsp;<b>Zurückgefordert und bereits zurückgegeben: ${summoned_books_state_by_stem[stem].past} Exemplar${summoned_books_state_by_stem[stem].past == 1 ? '' : 'e'}</b>`);
                     let durations = summoned_books_by_stem[stem].filter(function(x) {
                         return (x['r.ts_returned'] != null);
                     }).map(function(x) {

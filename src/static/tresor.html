@@ -14,9 +14,9 @@
                         Sie sind bereits per <strong>#{LOGIN_METHODS_SHORT[@used_session[:method].to_sym]}</strong> am Dashboard angemeldet. Um auf den Datentresor zugreifen zu können, müssen Sie sich mit einem weiteren Faktor ausweisen. Bitte wählen Sie aus den folgenden Möglichkeiten:
                     </p>
                     <div style="display: flex; align-items: start; gap: 10px; justify-content: center; margin-bottom: 1em;">
-                        <button style='display: #{@used_session[:method] == 'email' ? 'none' : 'block'}' id='bu_sf_email' type="button" class="btn btn-outline-secondary bu_second_login" data-method="email" disabled><i class='fa fa-envelope'></i>&nbsp;&nbsp;Code per E-Mail erhalten</button>
-                        <button style='display: #{((@used_session[:method] == 'sms') || !Main.sms_gateway_ready?) ? 'none' : 'block'}' id='bu_sf_sms' type="button" class="btn btn-outline-secondary bu_second_login" data-method="sms" disabled><i class='fa fa-mobile'></i>&nbsp;&nbsp;Code per SMS erhalten</button>
-                        <button style='display: #{@used_session[:method] == 'otp' ? 'none' : 'block'}' id='bu_sf_otp' type="button" class="btn btn-outline-secondary bu_second_login" data-method="otp" disabled><i class='fa fa-qrcode'></i>&nbsp;&nbsp;OTP-Code eingeben</button>
+                        <button style='display: #{@used_session[:method] == 'email' ? 'none' : 'block'}' id='bu_sf_email' type="button" class="btn btn-outline-secondary bu_second_login" data-method="email" disabled><i class='bi bi-envelope'></i>&nbsp;&nbsp;Code per E-Mail erhalten</button>
+                        <button style='display: #{((@used_session[:method] == 'sms') || !Main.sms_gateway_ready?) ? 'none' : 'block'}' id='bu_sf_sms' type="button" class="btn btn-outline-secondary bu_second_login" data-method="sms" disabled><i class='bi bi-mobile'></i>&nbsp;&nbsp;Code per SMS erhalten</button>
+                        <button style='display: #{@used_session[:method] == 'otp' ? 'none' : 'block'}' id='bu_sf_otp' type="button" class="btn btn-outline-secondary bu_second_login" data-method="otp" disabled><i class='bi bi-qrcode'></i>&nbsp;&nbsp;OTP-Code eingeben</button>
                     </div>
                     <div style='color: #888; margin-top: 1em;text-align: center; display: #{((@used_session[:method] != 'sms') && !Main.sms_gateway_ready?) ? 'block' : 'none'}'>
                         <em>
@@ -72,9 +72,9 @@
             <img src="/hotline.jpg" style="float: right; margin-left: 10px; margin-bottom: 10px; max-height: 210px; border-radius: 15px;"/>
             <p><b>Schritt 1</b> &ndash; Bitte rufen Sie #{DATENTRESOR_HOTLINE_MIT_NUMMERN} an.</p>
             <p><b>Schritt 2</b> &ndash; Klicken Sie auf »Anmeldung anfordern«, sobald das Gespräch hergestellt ist.</p>
-            <p><button id='bu_request_signin_ad_hoc' class="btn btn-success"><i class='fa fa-send'></i>&nbsp;&nbsp;Anmeldung anfordern</button></p>
+            <p><button id='bu_request_signin_ad_hoc' class="btn btn-success"><i class='bi bi-send'></i>&nbsp;&nbsp;Anmeldung anfordern</button></p>
             <p><b>Schritt 3</b> &ndash; Klicken Sie auf »Anmelden«, sobald Sie die Freigabe erhalten haben.</p>
-            <p></p><button id='bu_perform_signin_ad_hoc' class="btn btn-success"><i class='fa fa-sign-in'></i>&nbsp;&nbsp;Anmelden</button></p>
+            <p></p><button id='bu_perform_signin_ad_hoc' class="btn btn-success"><i class='bi bi-sign-in'></i>&nbsp;&nbsp;Anmelden</button></p>
         </div>
         <div class="modal-footer">
             <button id='bu_close_poll_response_modal' type="button" class="btn btn-secondary" data-dismiss="modal">Schließen</button>

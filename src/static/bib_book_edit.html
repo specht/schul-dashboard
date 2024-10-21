@@ -39,8 +39,8 @@
                         <div class='text-slate-400 pt-3 pb-2'>(kein Cover)</div>
                     </div>
                 </div>
-                <button id='bu_set_cover_from_link' class='btn btn-outline-secondary btn-sm mr-1 mb-1' style="width: 100%;"><i class='fa fa-link'></i>&nbsp;&nbsp;Cover von Link setzen…</button>
-                <button id='bu_remove_cover' class='btn btn-outline-secondary btn-sm mr-1 mb-1' style="width: 100%;"><i class='fa fa-trash'></i>&nbsp;&nbsp;Cover entfernen</button>
+                <button id='bu_set_cover_from_link' class='btn btn-outline-secondary btn-sm mr-1 mb-1' style="width: 100%;"><i class='bi bi-link'></i>&nbsp;&nbsp;Cover von Link setzen…</button>
+                <button id='bu_remove_cover' class='btn btn-outline-secondary btn-sm mr-1 mb-1' style="width: 100%;"><i class='bi bi-trash'></i>&nbsp;&nbsp;Cover entfernen</button>
                 <div id="other_covers">
                 </div>
             </div>
@@ -116,7 +116,7 @@
                     Autor und Titel im vorherigen Bibliothekssystem: <span id='old_description'></span>
                 </div>
                 <!-- <hr /> -->
-                <!-- <button id='bu_save_changes' disabled class='btn btn-success pull-right'><i class='fa fa-check'></i>&nbsp;&nbsp;Änderungen speichern</button> -->
+                <!-- <button id='bu_save_changes' disabled class='btn btn-success pull-right'><i class='bi bi-check'></i>&nbsp;&nbsp;Änderungen speichern</button> -->
             </div>
         </div>
     </div>
@@ -234,15 +234,15 @@
         let stem_s = window.location.pathname.replace('/bib_book_edit/', '');
         stem = (stem_s === '_new') ? null : parseInt(stem_s);
         if ('#{can_manage_bib_logged_in?}' === 'true') {
-            $(`<li class='mx-1 py-1 px-1.5' style='white-space: nowrap;'><i class='fa fa-barcode'></i>&nbsp;&nbsp;${stem || '(neuer Signaturstamm)'}</li>`).insertBefore($('#sub_menu_extra'));
-            $(`<li class='mx-1'><button id='bu_save_changes' disabled class='btn btn-success'><i class='fa fa-check'></i>&nbsp;&nbsp;Änderungen speichern</a>`).insertAfter($('#sub_menu_extra'));
+            $(`<li class='mx-1 py-1 px-1.5' style='white-space: nowrap;'><i class='bi bi-barcode'></i>&nbsp;&nbsp;${stem || '(neuer Signaturstamm)'}</li>`).insertBefore($('#sub_menu_extra'));
+            $(`<li class='mx-1'><button id='bu_save_changes' disabled class='btn btn-success'><i class='bi bi-check'></i>&nbsp;&nbsp;Änderungen speichern</a>`).insertAfter($('#sub_menu_extra'));
             if (stem !== null) {
-                $(`<li class='mx-1'><a class='inline-block bg-slate-900 border border-blue-500 hover:bg-slate-200 rounded py-1 px-3' href='/bib_book_edit/${stem}'><i class='fa fa-pencil'></i>&nbsp;&nbsp;Metadaten bearbeiten</a></li>`).insertAfter($('#sub_menu_extra'));
+                $(`<li class='mx-1'><a class='inline-block bg-slate-900 border border-blue-500 hover:bg-slate-200 rounded py-1 px-3' href='/bib_book_edit/${stem}'><i class='bi bi-pencil'></i>&nbsp;&nbsp;Metadaten bearbeiten</a></li>`).insertAfter($('#sub_menu_extra'));
                 if ("#{@session_device}" === 'bib-station-with-printer') {
-                    $(`<li class='mx-1'><a class='inline-block bg-slate-900 border border-blue-500 hover:bg-slate-200 rounded py-1 px-3' href='/bib_add_exemplare/${stem}'><i class='fa fa-plus'></i>&nbsp;&nbsp;Neue Exemplare aufnehmen</a></li>`).insertAfter($('#sub_menu_extra'));
-                    $(`<li class='mx-1'><a class='inline-block bg-slate-900 border border-blue-500 hover:bg-slate-200 rounded py-1 px-3' href='/bib_print_label/${stem}'><i class='fa fa-print'></i>&nbsp;&nbsp;Label drucken</a></li>`).insertAfter($('#sub_menu_extra'));
+                    $(`<li class='mx-1'><a class='inline-block bg-slate-900 border border-blue-500 hover:bg-slate-200 rounded py-1 px-3' href='/bib_add_exemplare/${stem}'><i class='bi bi-plus'></i>&nbsp;&nbsp;Neue Exemplare aufnehmen</a></li>`).insertAfter($('#sub_menu_extra'));
+                    $(`<li class='mx-1'><a class='inline-block bg-slate-900 border border-blue-500 hover:bg-slate-200 rounded py-1 px-3' href='/bib_print_label/${stem}'><i class='bi bi-print'></i>&nbsp;&nbsp;Label drucken</a></li>`).insertAfter($('#sub_menu_extra'));
                 }
-                $(`<li class='mx-1'><a class='inline-block bg-slate-900 border border-blue-500 hover:bg-slate-200 rounded py-1 px-3' href='/bib_book/${stem}'><i class='fa fa-book'></i>&nbsp;&nbsp;Buch</a></li>`).insertAfter($('#sub_menu_extra'));
+                $(`<li class='mx-1'><a class='inline-block bg-slate-900 border border-blue-500 hover:bg-slate-200 rounded py-1 px-3' href='/bib_book/${stem}'><i class='bi bi-book'></i>&nbsp;&nbsp;Buch</a></li>`).insertAfter($('#sub_menu_extra'));
             }
             $('#subsubmenu').show();
             fix_subsubmenu();
@@ -332,7 +332,7 @@
         $('#bu_set_cover_from_link').click(function(e) {
             showTemplateModalWithInput('Cover von Link setzen',
                 'Bitte gib den Link ein, von dem du das Cover laden möchtest.',
-                "<i class='fa fa-check'></i>&nbsp;&nbsp;Cover laden", 'btn-success',
+                "<i class='bi bi-check'></i>&nbsp;&nbsp;Cover laden", 'btn-success',
                 'Abbrechen', 'btn-secondary', 'URL:', 'Bitte gib eine URL ein', function (url) {
                     bib_api_call('/jwt/set_cover_from_link', {stem: stem, url: url}, function(data) {
                         if (data.success) {

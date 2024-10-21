@@ -168,24 +168,24 @@ class Main < Sinatra::Base
                 #     io.puts "<td>"
                 #     testing_required = salzh_status[email][:testing_required]
                 #     if testing_required
-                #         io.puts "<button class='btn btn-sm btn-success bu_toggle_testing_required'><i class='fa fa-check'></i>&nbsp;&nbsp;notwendig</button>"
+                #         io.puts "<button class='btn btn-sm btn-success bu_toggle_testing_required'><i class='bi bi-check'></i>&nbsp;&nbsp;notwendig</button>"
                 #     else
-                #         io.puts "<button class='btn btn-sm btn-outline-secondary bu_toggle_testing_required'><i class='fa fa-times'></i>&nbsp;&nbsp;nicht notwendig</button>"
+                #         io.puts "<button class='btn btn-sm btn-outline-secondary bu_toggle_testing_required'><i class='bi bi-times'></i>&nbsp;&nbsp;nicht notwendig</button>"
                 #     end
                 #     io.puts "</td>"
 
                 #     io.puts "<td>"
                 #     freiwillig_salzh = salzh_status[email][:freiwillig_salzh]
-                #     io.puts "<div class='input-group'><input type='date' class='form-control ti_freiwillig_salzh' value='#{freiwillig_salzh}' /><div class='input-group-append'><button #{freiwillig_salzh.nil? ? 'disabled' : ''} class='btn #{freiwillig_salzh.nil? ? 'btn-outline-secondary' : 'btn-danger'} bu_delete_freiwillig_salzh'><i class='fa fa-trash'></i></button></div></div>"
+                #     io.puts "<div class='input-group'><input type='date' class='form-control ti_freiwillig_salzh' value='#{freiwillig_salzh}' /><div class='input-group-append'><button #{freiwillig_salzh.nil? ? 'disabled' : ''} class='btn #{freiwillig_salzh.nil? ? 'btn-outline-secondary' : 'btn-danger'} bu_delete_freiwillig_salzh'><i class='bi bi-trash'></i></button></div></div>"
                 #     io.puts "</td>"
                 # end
                 # if klassenleiter_logged_in
                 #     io.puts "<td>"
                 #     voluntary_testing = salzh_status[email][:voluntary_testing]
                 #     if voluntary_testing
-                #         io.puts "<button class='btn btn-sm btn-success bu_toggle_voluntary_testing'><i class='fa fa-check'></i>&nbsp;&nbsp;nimmt teil</button>"
+                #         io.puts "<button class='btn btn-sm btn-success bu_toggle_voluntary_testing'><i class='bi bi-check'></i>&nbsp;&nbsp;nimmt teil</button>"
                 #     else
-                #         io.puts "<button class='btn btn-sm btn-outline-secondary bu_toggle_voluntary_testing'><i class='fa fa-times'></i>&nbsp;&nbsp;nimmt nicht teil</button>"
+                #         io.puts "<button class='btn btn-sm btn-outline-secondary bu_toggle_voluntary_testing'><i class='bi bi-times'></i>&nbsp;&nbsp;nimmt nicht teil</button>"
                 #     end
                 #     io.puts "</td>"
                 # end
@@ -194,9 +194,9 @@ class Main < Sinatra::Base
                 io.puts "</td>"
                 # homeschooling_button_disabled = klassenleiter_logged_in ? '' : 'disabled'
                 # if all_homeschooling_users.include?(email)
-                #     io.puts "<td><button #{homeschooling_button_disabled} class='btn btn-info btn-xs btn-toggle-homeschooling' data-email='#{email}'><i class='fa fa-home'></i>&nbsp;&nbsp;zu Hause</button></td>"
+                #     io.puts "<td><button #{homeschooling_button_disabled} class='btn btn-info btn-xs btn-toggle-homeschooling' data-email='#{email}'><i class='bi bi-home'></i>&nbsp;&nbsp;zu Hause</button></td>"
                 # else
-                #     io.puts "<td><button #{homeschooling_button_disabled} class='btn btn-secondary btn-xs btn-toggle-homeschooling' data-email='#{email}'><i class='fa fa-building'></i>&nbsp;&nbsp;Präsenz</button></td>"
+                #     io.puts "<td><button #{homeschooling_button_disabled} class='btn btn-secondary btn-xs btn-toggle-homeschooling' data-email='#{email}'><i class='bi bi-building'></i>&nbsp;&nbsp;Präsenz</button></td>"
                 # end
                 if teacher_logged_in?
                     if ['11', '12'].include?(klasse)
@@ -209,9 +209,9 @@ class Main < Sinatra::Base
                 if teacher_logged_in?
                     if klassenleiter_for_klasse_logged_in?(klasse)
                         if dashboard_amt.include?(email)
-                            io.puts "<td><button class='bu-toggle-dashboard-amt btn btn-sm btn-success' data-state='true'><i class='fa fa-check'></i>&nbsp;&nbsp;Dashboard-Amt</button></td>"
+                            io.puts "<td><button class='bu-toggle-dashboard-amt btn btn-sm btn-success' data-state='true'><i class='bi bi-check'></i>&nbsp;&nbsp;Dashboard-Amt</button></td>"
                         else
-                            io.puts "<td><button class='bu-toggle-dashboard-amt btn btn-sm btn-outline-secondary' data-state='false'><i class='fa fa-times'></i>&nbsp;&nbsp;Dashboard-Amt</button></td>"
+                            io.puts "<td><button class='bu-toggle-dashboard-amt btn btn-sm btn-outline-secondary' data-state='false'><i class='bi bi-times'></i>&nbsp;&nbsp;Dashboard-Amt</button></td>"
                         end
                     end
                     io.puts "<td><div class='group2-button group2-#{group2_for_email[email]}' data-email='#{email}'>#{group2_for_email[email]}</div></td>"
@@ -299,7 +299,7 @@ class Main < Sinatra::Base
                     end
                 end
                 if teacher_logged_in?
-                    io.puts "<a class='btn btn-primary' href='/show_login_codes/#{klasse}'><i class='fa fa-sign-in'></i>&nbsp;&nbsp;Live-Anmeldungen der Klasse zeigen</a>"
+                    io.puts "<a class='btn btn-primary' href='/show_login_codes/#{klasse}'><i class='bi bi-sign-in'></i>&nbsp;&nbsp;Live-Anmeldungen der Klasse zeigen</a>"
                 end
             end
             # io.puts print_stream_restriction_table(klasse)
@@ -311,10 +311,10 @@ class Main < Sinatra::Base
                     io.puts "<h3>Schülerlisten #{@@lessons[:lesson_keys][klasse][:pretty_folder_name]}</h3>"
                 end
     #             io.puts "<div style='text-align: center;'>"
-                io.puts "<a href='/api/directory_xlsx/#{klasse}' class='btn btn-primary'><i class='fa fa-file-excel-o'></i>&nbsp;&nbsp;Excel-Tabelle herunterladen</a>"
-                io.puts "<a href='/api/directory_timetex_pdf/by_last_name/#{klasse}' class='btn btn-primary'><i class='fa fa-file-pdf-o'></i>&nbsp;&nbsp;Timetex-PDF herunterladen</a>"
-                io.puts "<a href='/api/directory_timetex_pdf/by_first_name/#{klasse}' class='btn btn-primary'><i class='fa fa-file-pdf-o'></i>&nbsp;&nbsp;Timetex-PDF herunterladen (nach Vornamen sortiert)</a>"
-                io.puts "<a href='/api/directory_json/#{klasse}' class='btn btn-primary'><i class='fa fa-file-code-o'></i>&nbsp;&nbsp;JSON herunterladen</a>"
+                io.puts "<a href='/api/directory_xlsx/#{klasse}' class='btn btn-primary'><i class='bi bi-file-excel-o'></i>&nbsp;&nbsp;Excel-Tabelle herunterladen</a>"
+                io.puts "<a href='/api/directory_timetex_pdf/by_last_name/#{klasse}' class='btn btn-primary'><i class='bi bi-file-pdf-o'></i>&nbsp;&nbsp;Timetex-PDF herunterladen</a>"
+                io.puts "<a href='/api/directory_timetex_pdf/by_first_name/#{klasse}' class='btn btn-primary'><i class='bi bi-file-pdf-o'></i>&nbsp;&nbsp;Timetex-PDF herunterladen (nach Vornamen sortiert)</a>"
+                io.puts "<a href='/api/directory_json/#{klasse}' class='btn btn-primary'><i class='bi bi-file-code-o'></i>&nbsp;&nbsp;JSON herunterladen</a>"
             end
             if is_klasse
                 io.puts "<hr>"
@@ -328,15 +328,15 @@ class Main < Sinatra::Base
                     end
                 end
                 if teacher_logged_in?
-                    io.puts "<a href='/api/get_timetable_pdf_for_klasse/#{klasse}' target='_blank' class='btn btn-primary'><i class='fa fa-file-pdf-o'></i>&nbsp;&nbsp;Klassensatz Stundenpläne (#{@@schueler_for_klasse[klasse].size} Seiten)</a>"
+                    io.puts "<a href='/api/get_timetable_pdf_for_klasse/#{klasse}' target='_blank' class='btn btn-primary'><i class='bi bi-file-pdf-o'></i>&nbsp;&nbsp;Klassensatz Stundenpläne (#{@@schueler_for_klasse[klasse].size} Seiten)</a>"
                     unless ['11', '12'].include?(klasse)
-                        io.puts "<a href='/api/get_room_timetable_pdf/#{klasse}' target='_blank' class='btn btn-primary'><i class='fa fa-file-pdf-o'></i>&nbsp;&nbsp;Raumplan für die Klassenzimmertür</a>"
+                        io.puts "<a href='/api/get_room_timetable_pdf/#{klasse}' target='_blank' class='btn btn-primary'><i class='bi bi-file-pdf-o'></i>&nbsp;&nbsp;Raumplan für die Klassenzimmertür</a>"
                     end
                     io.puts "<div id='additional_teacher_content'></div>"
                 elsif schueler_logged_in?
                     unless hide_from_sus
-                        io.puts "<a href='/api/get_single_timetable_pdf' target='_blank' class='btn btn-primary'><i class='fa fa-file-pdf-o'></i>&nbsp;&nbsp;PDF herunterladen</a>"
-                        io.puts "<a href='/api/get_single_timetable_with_png_addition_pdf' target='_blank' class='btn btn-success'><i class='fa fa-file-pdf-o'></i>&nbsp;&nbsp;PDF herunterladen (mit Symbolen)</a>"
+                        io.puts "<a href='/api/get_single_timetable_pdf' target='_blank' class='btn btn-primary'><i class='bi bi-file-pdf-o'></i>&nbsp;&nbsp;PDF herunterladen</a>"
+                        io.puts "<a href='/api/get_single_timetable_with_png_addition_pdf' target='_blank' class='btn btn-success'><i class='bi bi-file-pdf-o'></i>&nbsp;&nbsp;PDF herunterladen (mit Symbolen)</a>"
                     end
                 end
                 unless schueler_logged_in? && hide_from_sus
@@ -965,7 +965,7 @@ class Main < Sinatra::Base
         print_email_field(io, list_email)
         io.puts "</td>"
         if teacher_logged_in? || technikteam_logged_in?
-            io.puts "<td style='text-align: right;'><button data-list-email='#{list_email}' class='btn btn-warning btn-sm bu-toggle-adresses'>#{info[:recipients].size} Adressen&nbsp;&nbsp;<i class='fa fa-chevron-down'></i></button></td>"
+            io.puts "<td style='text-align: right;'><button data-list-email='#{list_email}' class='btn btn-warning btn-sm bu-toggle-adresses'>#{info[:recipients].size} Adressen&nbsp;&nbsp;<i class='bi bi-chevron-down'></i></button></td>"
             io.puts "</tr>"
             io.puts "<tbody style='display: none;' class='list_email_emails' data-list-email='#{list_email}'>"
             emails = []

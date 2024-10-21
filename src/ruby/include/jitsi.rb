@@ -392,25 +392,25 @@ class Main < Sinatra::Base
                 result[:html] += "<div class='go_div'>\n"
                 # edge firefox chrome safari opera internet-explorer
                 if os_family == 'ios' || os_family == 'macosx'
-                    result[:html] += "<a class='btn btn-success' href='org.jitsi.meet://#{JITSI_HOST}/#{room_name}?jwt=#{jwt}'><i class='fa fa-apple'></i>&nbsp;&nbsp;Jitsi-Raum mit Jitsi Meet betreten (iPhone und iPad)</a>"
+                    result[:html] += "<a class='btn btn-success' href='org.jitsi.meet://#{JITSI_HOST}/#{room_name}?jwt=#{jwt}'><i class='bi bi-apple'></i>&nbsp;&nbsp;Jitsi-Raum mit Jitsi Meet betreten (iPhone und iPad)</a>"
                     result[:html] += "<p style='font-size: 90%;'><em>Installieren Sie bitte die Jitsi Meet-App aus dem <a href='https://apps.apple.com/de/app/jitsi-meet/id1165103905' target='_blank'>App Store</a>.</em></p>"
                     unless browser_icon == 'safari'
-                        result[:html] += "<a class='btn btn-outline-secondary' href='https://#{JITSI_HOST}/#{room_name}?#{presence_token ? "presence_token=#{presence_token}&" : ''}jwt=#{jwt}'><i class='fa fa-#{browser_icon}'></i>&nbsp;&nbsp;Jitsi-Raum mit #{browser_name} betreten</a>"
+                        result[:html] += "<a class='btn btn-outline-secondary' href='https://#{JITSI_HOST}/#{room_name}?#{presence_token ? "presence_token=#{presence_token}&" : ''}jwt=#{jwt}'><i class='bi bi-#{browser_icon}'></i>&nbsp;&nbsp;Jitsi-Raum mit #{browser_name} betreten</a>"
                     end
                     if browser_icon == 'safari'
                         result[:html] += "<p style='font-size: 90%;'><em>Falls Sie einen Mac verwenden: Leider funktioniert Jitsi Meet nicht mit Safari. Verwenden Sie bitte einen anderen Web-Browser wie <a href='https://www.google.com/intl/de_de/chrome/' target='_blank'>Google Chrome</a> oder <a href='https://www.mozilla.org/de/firefox/new/' target='_blank'>Firefox</a>.</em></p>"
                     end
                 elsif os_family == 'android'
-                    result[:html] += "<a class='btn btn-success' href='intent://#{JITSI_HOST}/#{room_name}?jwt=#{jwt}#Intent;scheme=org.jitsi.meet;package=org.jitsi.meet;end'><i class='fa fa-microphone'></i>&nbsp;&nbsp;Jitsi-Raum mit Jitsi Meet für Android betreten</a>"
+                    result[:html] += "<a class='btn btn-success' href='intent://#{JITSI_HOST}/#{room_name}?jwt=#{jwt}#Intent;scheme=org.jitsi.meet;package=org.jitsi.meet;end'><i class='bi bi-microphone'></i>&nbsp;&nbsp;Jitsi-Raum mit Jitsi Meet für Android betreten</a>"
                     result[:html] += "<p style='font-size: 90%;'><em>Installieren Sie bitte die Jitsi Meet-App aus dem <a href='https://play.google.com/store/apps/details?id=org.jitsi.meet' target='_blank'>Google Play Store</a> oder via <a href='https://f-droid.org/en/packages/org.jitsi.meet/' target='_blank' style=''>F&#8209;Droid</a>.</em></p>"
-                    result[:html] += "<a class='btn btn-outline-secondary' href='https://#{JITSI_HOST}/#{room_name}?#{presence_token ? "presence_token=#{presence_token}&" : ''}jwt=#{jwt}'><i class='fa fa-#{browser_icon}'></i>&nbsp;&nbsp;Jitsi-Raum mit #{browser_name} betreten</a>"
+                    result[:html] += "<a class='btn btn-outline-secondary' href='https://#{JITSI_HOST}/#{room_name}?#{presence_token ? "presence_token=#{presence_token}&" : ''}jwt=#{jwt}'><i class='bi bi-#{browser_icon}'></i>&nbsp;&nbsp;Jitsi-Raum mit #{browser_name} betreten</a>"
                 else
-                    result[:html] += "<a class='btn btn-success' href='https://#{JITSI_HOST}/#{room_name}?#{presence_token ? "presence_token=#{presence_token}&" : ''}jwt=#{jwt}'><i class='fa fa-#{browser_icon}'></i>&nbsp;&nbsp;Jitsi-Raum mit #{browser_name} betreten</a>"
+                    result[:html] += "<a class='btn btn-success' href='https://#{JITSI_HOST}/#{room_name}?#{presence_token ? "presence_token=#{presence_token}&" : ''}jwt=#{jwt}'><i class='bi bi-#{browser_icon}'></i>&nbsp;&nbsp;Jitsi-Raum mit #{browser_name} betreten</a>"
                 end
                 if event_stream_jwt
                     result[:html] += "<div class='alert alert-warning'>"
                     result[:html] += "<p>Falls Sie im Jitsi-Raum <strong>Verbindungsprobleme</strong> oder <strong>Zeitverzögerungen</strong> erleben sollten, probieren Sie bitte den Livestream, der für diesen Termin bereitgestellt wird. Sie finden dort einen Chat, über den Sie Wortmeldungen und Fragen senden können.</p>"
-                    result[:html] += "<a class='btn btn-warning' href='/livestream?jwt=#{event_stream_jwt}'><i class='fa fa-video-camera'></i>&nbsp;&nbsp;Zum Livestream…</a>"
+                    result[:html] += "<a class='btn btn-warning' href='/livestream?jwt=#{event_stream_jwt}'><i class='bi bi-video-camera'></i>&nbsp;&nbsp;Zum Livestream…</a>"
                     result[:html] += "</div>"
                 end
                 result[:html] += "</div>\n"

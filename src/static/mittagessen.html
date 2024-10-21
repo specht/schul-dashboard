@@ -6,7 +6,7 @@
         Hier kannst du dein Mittagessen bestellen. Bitte schau dir die Speisepläne an und gib an, an welchen Tagen du welches Mittagessen essen möchtest.
     </p>
     <div style="text-align: center;">
-        <a class="btn btn-success" href="https://dashboard.gymnasiumsteglitz.de/f/Speisepl%C3%A4ne%20Oktober.pdf" target="_blank"><i class='fa fa-table'></i>&nbsp;&nbsp;Speisepläne für Oktober 2024</a>
+        <a class="btn btn-success" href="https://dashboard.gymnasiumsteglitz.de/f/Speisepl%C3%A4ne%20Oktober.pdf" target="_blank"><i class='bi bi-table'></i>&nbsp;&nbsp;Speisepläne für Oktober 2024</a>
     </div>
     <div id="div_tables"></div>
 </div>
@@ -51,7 +51,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 let choice = choices[pdatum] || 0;
                 for (let i = 0; i < 3; i++) {
                     label = ['kein Mittagessen', 'Menü 1', 'Menü 2'][i];
-                    let button = $(`<button class="btn btn-sm ${choice === i ? (choice === 0 ? 'btn-secondary' : 'btn-success') : 'btn-outline-secondary'}">${choice === i ? "<i class='fa fa-check' style='margin-right: 0.5em;'></i>": ''}${label}</button>`).data('choice', i).css('width', i === 0 ? '11em' : '7em').appendTo($('<td>').appendTo(row));
+                    let button = $(`<button class="btn btn-sm ${choice === i ? (choice === 0 ? 'btn-secondary' : 'btn-success') : 'btn-outline-secondary'}">${choice === i ? "<i class='bi bi-check' style='margin-right: 0.5em;'></i>": ''}${label}</button>`).data('choice', i).css('width', i === 0 ? '11em' : '7em').appendTo($('<td>').appendTo(row));
                     button.on('click', function(e) {
                         let row = $(this).closest('tr');
                         let datum = row.data('datum');
@@ -63,7 +63,7 @@ document.addEventListener('DOMContentLoaded', function() {
                                 buttons.find('i').remove();
                                 buttons.addClass('btn-outline-secondary');
                                 buttons.eq(choice).removeClass('btn-outline-secondary').addClass(choice === 0 ? 'btn-secondary' : 'btn-success');
-                                buttons.eq(choice).prepend("<i class='fa fa-check' style='margin-right: 0.5em;'></i>");
+                                buttons.eq(choice).prepend("<i class='bi bi-check' style='margin-right: 0.5em;'></i>");
                             }
                         });
                     });

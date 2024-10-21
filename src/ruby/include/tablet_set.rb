@@ -23,7 +23,7 @@ class Main < Sinatra::Base
             entry = {
                 :booking => booking,
                 :last_name => (@@user_info[email] || {})[:shorthand] ? (@@user_info[email] || {})[:display_last_name] || 'NN' : (@@user_info[email] || {})[:display_name] || 'NN',
-                :shorthand => (@@user_info[email] || {})[:shorthand] || '<i class="fa fa-user"></i>',
+                :shorthand => (@@user_info[email] || {})[:shorthand] || '<i class="bi bi-user"></i>',
                 :tablet_set => tablet_set[:id]
             }
             if row['l']
@@ -284,15 +284,15 @@ class Main < Sinatra::Base
                     if entry[:lesson_key]
                         pretty_fach = fach_for_lesson_key(entry[:lesson_key])
                         if @@tablet_sets[x][:is_tablet_set] == true
-                            hints << "<span class='text-danger'><i class='fa fa-warning'></i></span>&nbsp;&nbsp;Dieser Tabletsatz wurde bereits von <b>#{entry[:display_name]}</b> gebucht#{entry[:lesson_key] ? ': ' + pretty_fach : ''}."
+                            hints << "<span class='text-danger'><i class='bi bi-warning'></i></span>&nbsp;&nbsp;Dieser Tabletsatz wurde bereits von <b>#{entry[:display_name]}</b> gebucht#{entry[:lesson_key] ? ': ' + pretty_fach : ''}."
                         else
-                            hints << "<span class='text-danger'><i class='fa fa-warning'></i></span>&nbsp;&nbsp;Dieses Gerät wurde bereits von <b>#{entry[:display_name]}</b> gebucht#{entry[:lesson_key] ? ': ' + pretty_fach : ''}."
+                            hints << "<span class='text-danger'><i class='bi bi-warning'></i></span>&nbsp;&nbsp;Dieses Gerät wurde bereits von <b>#{entry[:display_name]}</b> gebucht#{entry[:lesson_key] ? ': ' + pretty_fach : ''}."
                         end
                     else
                         if @@tablet_sets[x][:is_tablet_set] == true
-                            hints << "<span class='text-danger'><i class='fa fa-warning'></i></span>&nbsp;&nbsp;Dieser Tabletsatz wurde bereits von <b>#{entry[:display_name]}</b> gebucht#{entry[:reason] != "" ? ': ' : ''} #{entry[:reason]}."
+                            hints << "<span class='text-danger'><i class='bi bi-warning'></i></span>&nbsp;&nbsp;Dieser Tabletsatz wurde bereits von <b>#{entry[:display_name]}</b> gebucht#{entry[:reason] != "" ? ': ' : ''} #{entry[:reason]}."
                         else
-                            hints << "<span class='text-danger'><i class='fa fa-warning'></i></span>&nbsp;&nbsp;Dieses Gerät wurde bereits von <b>#{entry[:display_name]}</b> gebucht#{entry[:reason] != "" ? ': ' : ''} #{entry[:reason]}."
+                            hints << "<span class='text-danger'><i class='bi bi-warning'></i></span>&nbsp;&nbsp;Dieses Gerät wurde bereits von <b>#{entry[:display_name]}</b> gebucht#{entry[:reason] != "" ? ': ' : ''} #{entry[:reason]}."
                         end
                     end
                 end
@@ -312,9 +312,9 @@ class Main < Sinatra::Base
                     if t <= TABLET_SET_WARNING_BEFORE_MINUTES
                         pretty_fach = fach_for_lesson_key(booking[:lesson_key])
                         if @@tablet_sets[x][:is_tablet_set] == true
-                            hints << "<span class='text-danger'><i class='fa fa-clock-o'></i></span>&nbsp;&nbsp;Dieser Tabletsatz wird bis #{t} Minuten vor Stundenbeginn noch von <b>#{booking[:display_name]}</b> benötigt#{booking[:lesson_key] ? ': ' + pretty_fach : ''}."
+                            hints << "<span class='text-danger'><i class='bi bi-clock-o'></i></span>&nbsp;&nbsp;Dieser Tabletsatz wird bis #{t} Minuten vor Stundenbeginn noch von <b>#{booking[:display_name]}</b> benötigt#{booking[:lesson_key] ? ': ' + pretty_fach : ''}."
                         else
-                            hints << "<span class='text-danger'><i class='fa fa-clock-o'></i></span>&nbsp;&nbsp;Dieses Gerät wird bis #{t} Minuten vor Stundenbeginn noch von <b>#{booking[:display_name]}</b> benötigt#{booking[:lesson_key] ? ': ' + pretty_fach : ''}."
+                            hints << "<span class='text-danger'><i class='bi bi-clock-o'></i></span>&nbsp;&nbsp;Dieses Gerät wird bis #{t} Minuten vor Stundenbeginn noch von <b>#{booking[:display_name]}</b> benötigt#{booking[:lesson_key] ? ': ' + pretty_fach : ''}."
                         end
                     end
                 end
@@ -324,9 +324,9 @@ class Main < Sinatra::Base
                     if t <= TABLET_SET_WARNING_AFTER_MINUTES
                         pretty_fach = fach_for_lesson_key(booking[:lesson_key])
                         if @@tablet_sets[x][:is_tablet_set] == true
-                            hints << "<span class='text-danger'><i class='fa fa-clock-o'></i></span>&nbsp;&nbsp;Dieser Tabletsatz wird bereits #{t} Minuten nach Stundenende von <b>#{booking[:display_name]}</b> benötigt#{booking[:lesson_key] ? ': ' + pretty_fach : ''}."
+                            hints << "<span class='text-danger'><i class='bi bi-clock-o'></i></span>&nbsp;&nbsp;Dieser Tabletsatz wird bereits #{t} Minuten nach Stundenende von <b>#{booking[:display_name]}</b> benötigt#{booking[:lesson_key] ? ': ' + pretty_fach : ''}."
                         else
-                            hints << "<span class='text-danger'><i class='fa fa-clock-o'></i></span>&nbsp;&nbsp;Dieses Gerät wird bereits #{t} Minuten nach Stundenende von <b>#{booking[:display_name]}</b> benötigt#{booking[:lesson_key] ? ': ' + pretty_fach : ''}."
+                            hints << "<span class='text-danger'><i class='bi bi-clock-o'></i></span>&nbsp;&nbsp;Dieses Gerät wird bereits #{t} Minuten nach Stundenende von <b>#{booking[:display_name]}</b> benötigt#{booking[:lesson_key] ? ': ' + pretty_fach : ''}."
                         end
                     end
                 end
@@ -342,7 +342,7 @@ class Main < Sinatra::Base
                     end
                     if raum
                         unless @@tablet_sets[x][:only_these_rooms].include?(raum)
-                            hints << "<span class='text-danger'><i class='fa fa-warning'></i></span>&nbsp;&nbsp;Dieser Tabletsatz ist weit vom Raum #{raum} entfernt. Bitte wählen Sie deshalb – falls möglich – einen anderen Tabletsatz."
+                            hints << "<span class='text-danger'><i class='bi bi-warning'></i></span>&nbsp;&nbsp;Dieser Tabletsatz ist weit vom Raum #{raum} entfernt. Bitte wählen Sie deshalb – falls möglich – einen anderen Tabletsatz."
                         end
                     end
                 end
@@ -350,19 +350,19 @@ class Main < Sinatra::Base
             unless !@@tablet_sets[x][:is_tablet_set]
                 unless klasse5or6.nil?
                     if klasse5or6 && !@@tablet_sets[x][:prio_unterstufe]
-                        hints << "<span class='text-danger'><i class='fa fa-warning'></i></span>&nbsp;&nbsp;Sie buchen einen Tabletsatz für eine Unterstufenklasse, dieser Tabletsatz ist allerdings für die Unterstufe nicht so leicht zu transportieren. Bitte wählen Sie deshalb – falls möglich – einen anderen Tabletsatz."
+                        hints << "<span class='text-danger'><i class='bi bi-warning'></i></span>&nbsp;&nbsp;Sie buchen einen Tabletsatz für eine Unterstufenklasse, dieser Tabletsatz ist allerdings für die Unterstufe nicht so leicht zu transportieren. Bitte wählen Sie deshalb – falls möglich – einen anderen Tabletsatz."
                     elsif !klasse5or6 && @@tablet_sets[x][:prio_unterstufe]
-                        hints << "<span class='text-danger'><i class='fa fa-warning'></i></span>&nbsp;&nbsp;Sie buchen einen Tabletsatz für die Mittel- oder Oberstufe, dieser Tabletsatz ist allerdings für die Unterstufe besonders leicht zu transportieren. Bitte wählen Sie deshalb – falls möglich – einen anderen Tabletsatz."
+                        hints << "<span class='text-danger'><i class='bi bi-warning'></i></span>&nbsp;&nbsp;Sie buchen einen Tabletsatz für die Mittel- oder Oberstufe, dieser Tabletsatz ist allerdings für die Unterstufe besonders leicht zu transportieren. Bitte wählen Sie deshalb – falls möglich – einen anderen Tabletsatz."
                     end
                 end
             end
             if hints.empty?
                 if @@tablet_sets[x][:is_tablet_set] == true
-                    hints << "<span class='text-success'><i class='fa fa-check'></i></span>&nbsp;&nbsp;Dieser Tabletsatz ist eine gute Wahl für Ihre Unterrichtsstunde."
+                    hints << "<span class='text-success'><i class='bi bi-check'></i></span>&nbsp;&nbsp;Dieser Tabletsatz ist eine gute Wahl für Ihre Unterrichtsstunde."
                 end
             end
             if @@tablet_sets[x][:hint]
-                hints << "<span class='text-info'><i class='fa fa-info-circle'></i></span>&nbsp;&nbsp;#{@@tablet_sets[x][:hint]}"
+                hints << "<span class='text-info'><i class='bi bi-info-circle'></i></span>&nbsp;&nbsp;#{@@tablet_sets[x][:hint]}"
             end
             unless hints.empty?
                 tablet_sets[x][:hint] = hints.join('<br />')

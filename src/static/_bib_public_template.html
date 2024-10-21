@@ -211,12 +211,12 @@
             return $('<td>').text(moment.unix(r.ts_confirmed).format('L')).data('sort_value', r.ts_confirmed);
         } else {
             if (r.force_hide) {
-                return $('<td>').html("<i class='text-stone-400 fa fa-clock-o'></i>&nbsp;&nbsp;(versteckt bis Bestellung komplett)").data('sort_value', NaN);
+                return $('<td>').html("<i class='text-stone-400 bi bi-clock-o'></i>&nbsp;&nbsp;(versteckt bis Bestellung komplett)").data('sort_value', NaN);
             }
             else if (r.ts_hide_before && server_ts < r.ts_hide_before) {
-                return $('<td>').html(`<i class='text-stone-400 fa fa-clock-o'></i>&nbsp;&nbsp;(versteckt bis ${moment.unix(r.ts_hide_before).format('L')})`).data('sort_value', NaN);
+                return $('<td>').html(`<i class='text-stone-400 bi bi-clock-o'></i>&nbsp;&nbsp;(versteckt bis ${moment.unix(r.ts_hide_before).format('L')})`).data('sort_value', NaN);
             } else {
-                let s = "<i class='text-stone-400 fa fa-exclamation-triangle'></i>&nbsp;&nbsp;(noch nicht bestätigt)";
+                let s = "<i class='text-stone-400 bi bi-exclamation-triangle'></i>&nbsp;&nbsp;(noch nicht bestätigt)";
                 if (add_link_button)
                     s += "<a class='btn btn-success btn-xs ml-3' href='/bib_confirm'>Jetzt bestätigen</a>";
                 return $('<td>').html(s).data('sort_value', NaN);
@@ -306,7 +306,7 @@
 <div id="device_navbar" class="container">
     <img src='#{NEXTCLOUD_URL}/index.php/avatar/#{@session_user[:nc_login]}/256}' class='avatar-md'/>
     <span style="display: inline-block; margin-left: 5px; position: relative; top: 2px;">#{@session_user[:display_name]}</span>
-    <button id='bu_logout' class="pull-right btn btn-sm btn-danger"><i class='fa fa-sign-out'></i>&nbsp;&nbsp;Abmelden</button>
+    <button id='bu_logout' class="pull-right btn btn-sm btn-danger"><i class='bi bi-sign-out'></i>&nbsp;&nbsp;Abmelden</button>
 </div>
 <div class='container text-sm text-stone-200 sandbox-hint' style="display: none;">
     <b>Sommerferien-Sandbox:</b> Dieser Teil des Dashboards befindet sich gerade in Entwicklung. Du darfst alles
@@ -320,45 +320,45 @@
             style="border-bottom: 1px solid #eee; left: 0px; right: 0px; z-index: 100;">
             <li class="mx-1" style="display: #{(teacher_logged_in? && (!device_logged_in?)) ? 'unset' : 'none'};">
                 <a class="inline-block bg-slate-900 border border-blue-500 hover:bg-slate-200 rounded py-1 px-3"
-                    href="/bibliothek"><i class='fa fa-book'></i>&nbsp;&nbsp;Meine Bücher</a>
+                    href="/bibliothek"><i class='bi bi-book'></i>&nbsp;&nbsp;Meine Bücher</a>
             </li>
             <li class="mx-1" style="display: #{((teacher_logged_in? || can_manage_bib_logged_in?) && @session_device != 'bib-mobile') ? 'unset' : 'none'};">
                 <a class="inline-block bg-slate-900 border border-blue-500 hover:bg-slate-200 rounded py-1 px-3"
-                    href="/bib_browse"><i class='fa fa-search'></i>&nbsp;&nbsp;Katalog</a>
+                    href="/bib_browse"><i class='bi bi-search'></i>&nbsp;&nbsp;Katalog</a>
             </li>
             <li class="mx-1" style="display: #{(teacher_logged_in? && @session_device.nil?) ? 'unset' : 'none'}; margin-right: 15px!important">
                 <a class="inline-block bg-slate-900 border border-blue-500 hover:bg-slate-200 rounded py-1 px-3"
-                    href="/bib_orders"><i class='fa fa-shopping-cart'></i>&nbsp;&nbsp;Bestellungen</a>
+                    href="/bib_orders"><i class='bi bi-shopping-cart'></i>&nbsp;&nbsp;Bestellungen</a>
             </li>
             <li style="display: #{can_manage_bib_logged_in? ? 'unset' : 'none'}; #{@session_device == 'bib-mobile' ? 'display: none;' : ''} border-left: 1px solid #ccc; height: 52px; margin: -10px 10px -10px 10px; margin-left: auto;">
             </li>
             <li class="mx-1" style="display: #{can_manage_bib_logged_in? ? 'unset' : 'none'};">
                 <a class="inline-block bg-slate-900 border border-blue-500 hover:bg-slate-200 rounded py-1 px-3"
-                    href="/bib_overview"><i class='fa fa-compass'></i>&nbsp;&nbsp;Übersicht</a>
+                    href="/bib_overview"><i class='bi bi-compass'></i>&nbsp;&nbsp;Übersicht</a>
             </li>
             <li class="mx-1" style="display: #{(can_manage_bib_logged_in? && @session_device != 'bib-mobile') ? 'unset' : 'none'};">
                 <a class="inline-block bg-slate-900 border border-blue-500 hover:bg-slate-200 rounded py-1 px-3"
-                    href="/bib_books"><i class='fa fa-book'></i>&nbsp;&nbsp;Medien</a>
+                    href="/bib_books"><i class='bi bi-book'></i>&nbsp;&nbsp;Medien</a>
             </li>
             <li class="mx-1" style="display: #{can_manage_bib_logged_in? ? 'unset' : 'none'};">
                 <a class="inline-block bg-slate-900 border border-blue-500 hover:bg-slate-200 rounded py-1 px-3"
-                    href="/bib_users"><i class='fa fa-user'></i>&nbsp;&nbsp;Nutzer</a>
+                    href="/bib_users"><i class='bi bi-user'></i>&nbsp;&nbsp;Nutzer</a>
             </li>
             <li class="mx-1" style="display: #{(can_manage_bib_logged_in? && @session_device != 'bib-mobile') ? 'unset' : 'none'};">
                 <a class="inline-block bg-slate-900 border border-blue-500 hover:bg-slate-200 rounded py-1 px-3"
-                    href="/bib_all_orders"><i class='fa fa-shopping-cart'></i>&nbsp;&nbsp;Bestellungen</a>
+                    href="/bib_all_orders"><i class='bi bi-shopping-cart'></i>&nbsp;&nbsp;Bestellungen</a>
             </li>
             <li class="mx-1" style="display: #{can_manage_bib_logged_in? ? 'unset' : 'none'};">
                 <a class="inline-block bg-slate-900 border border-blue-500 hover:bg-slate-200 rounded py-1 px-3"
-                    href="/bib_scan"><i class='fa fa-barcode'></i>&nbsp;&nbsp;Bücher scannen</a>
+                    href="/bib_scan"><i class='bi bi-barcode'></i>&nbsp;&nbsp;Bücher scannen</a>
             </li>
             <li class="mx-1" style="display: #{can_manage_bib_logged_in? ? 'unset' : 'none'};">
                 <a class="inline-block bg-slate-900 border border-blue-500 hover:bg-slate-200 rounded py-1 px-3"
-                    href="/bib_return"><i class='fa fa-arrow-circle-down'></i>&nbsp;&nbsp;Rückgabe</a>
+                    href="/bib_return"><i class='bi bi-arrow-circle-down'></i>&nbsp;&nbsp;Rückgabe</a>
             </li>
             <li class="mx-1" style="display: #{can_manage_bib_logged_in? ? 'unset' : 'none'};">
                 <a class="inline-block bg-slate-900 border border-blue-500 hover:bg-slate-200 rounded py-1 px-3"
-                    href="/bib_discard"><i class='fa fa-trash'></i>&nbsp;&nbsp;Ausmustern</a>
+                    href="/bib_discard"><i class='bi bi-trash'></i>&nbsp;&nbsp;Ausmustern</a>
             </li>
         </ul>
     </section>

@@ -260,7 +260,7 @@
 <div id="device_navbar" class="container">
     <img src='#{NEXTCLOUD_URL}/index.php/avatar/#{@session_user[:nc_login]}/256}' class='avatar-md'/>
     <span style="display: inline-block; margin-left: 5px; position: relative; top: 2px;">#{@session_user[:display_name]}</span>
-    <button id='bu_logout' class="pull-right btn btn-sm btn-danger"><i class='fa fa-sign-out'></i>&nbsp;&nbsp;Abmelden</button>
+    <button id='bu_logout' class="pull-right btn btn-sm btn-danger"><i class='bi bi-sign-out'></i>&nbsp;&nbsp;Abmelden</button>
 </div>
 <div id='submenu_container'>
 <div id='submenu' class='container' style='padding: 0; display: flex; background: white; border-radius: 0; display: #{second_factor_time_left.nil? ? 'none' : 'block'};'>
@@ -269,39 +269,39 @@
             style="border-bottom: 1px solid #eee; left: 0px; right: 0px; z-index: 100;">
             <li class="mx-1">
                 <a class="inline-block bg-slate-900 border border-blue-500 hover:bg-slate-200 rounded py-1 px-3"
-                    href="/zeugnisuebersicht"><i class='fa fa-dashboard'></i>&nbsp;&nbsp;Übersicht</a>
+                    href="/zeugnisuebersicht"><i class='bi bi-dashboard'></i>&nbsp;&nbsp;Übersicht</a>
             </li>
             <li class="mx-1" style="display: #{zeugnis_admin_logged_in? ? 'unset' : 'none'};">
                 <a class="inline-block bg-slate-900 border border-blue-500 hover:bg-slate-200 rounded py-1 px-3"
-                    href="/zeugnisformulare"><i class='fa fa-file-word-o'></i>&nbsp;&nbsp;Zeugnisformulare</a>
+                    href="/zeugnisformulare"><i class='bi bi-file-word-o'></i>&nbsp;&nbsp;Zeugnisformulare</a>
             </li>
             <li class="mx-1">
                 <a class="inline-block bg-slate-900 border border-blue-500 hover:bg-slate-200 rounded py-1 px-3"
-                    href="/zeugnislisten"><i class='fa fa-table'></i>&nbsp;&nbsp;Zeugnislisten</a>
+                    href="/zeugnislisten"><i class='bi bi-table'></i>&nbsp;&nbsp;Zeugnislisten</a>
             </li>
             <li class="mx-1" style="display: #{((!@session_user[:klassenleitung].nil?) || zeugnis_admin_logged_in?) ? 'unset' : 'none'};">
                 <a class="inline-block bg-slate-900 border border-blue-500 hover:bg-slate-200 rounded py-1 px-3"
-                    href="/zeugnis_angebote_bemerkungen"><i class='fa fa-table'></i>&nbsp;&nbsp;Angebote und Bemerkungen</a>
+                    href="/zeugnis_angebote_bemerkungen"><i class='bi bi-table'></i>&nbsp;&nbsp;Angebote und Bemerkungen</a>
             </li>
             <li class="mx-1" style="display: #{((!@session_user[:klassenleitung].nil?) || zeugnis_admin_logged_in?) ? 'unset' : 'none'};">
                 <a class="inline-block bg-slate-900 border border-blue-500 hover:bg-slate-200 rounded py-1 px-3"
-                    href="/zeugnis_fehltage"><i class='fa fa-clock-o'></i>&nbsp;&nbsp;Fehltage</a>
+                    href="/zeugnis_fehltage"><i class='bi bi-clock-o'></i>&nbsp;&nbsp;Fehltage</a>
             </li>
             <li class="mx-1" style="display: #{((!@session_user[:klassenleitung].nil?) || zeugnis_admin_logged_in?) ? 'unset' : 'none'};">
                 <a class="inline-block bg-slate-900 border border-blue-500 hover:bg-slate-200 rounded py-1 px-3"
-                    href="/zeugnisdruck"><i class='fa fa-print'></i>&nbsp;&nbsp;Zeugnisdruck</a>
+                    href="/zeugnisdruck"><i class='bi bi-print'></i>&nbsp;&nbsp;Zeugnisdruck</a>
             </li>
             <li class="mx-1" style='#{need_sozialverhalten() ? '' : 'display: none;'}'>
                 <a class="inline-block bg-slate-900 border border-blue-500 hover:bg-slate-200 rounded py-1 px-3"
-                    href="/anlage_sozialverhalten"><i class='fa fa-table'></i>&nbsp;&nbsp;Anlage Sozialverhalten</a>
+                    href="/anlage_sozialverhalten"><i class='bi bi-table'></i>&nbsp;&nbsp;Anlage Sozialverhalten</a>
             </li>
             <li style="border-left: 1px solid #ccc; height: 52px; margin: -10px 10px -10px 10px; margin-left: auto;">
             </li>
             <li class="mx-1">
-                <button id='bu-refresh-second-factor' style='white-space: nowrap;' class="inline-block bg-slate-900 border border-blue-500 rounded py-1 px-3"><i class='text-slate-600 fa fa-clock-o'></i>&nbsp;&nbsp;<span style='display: inline-block; width: 3em;' id="sf-time-left"></span></button>
+                <button id='bu-refresh-second-factor' style='white-space: nowrap;' class="inline-block bg-slate-900 border border-blue-500 rounded py-1 px-3"><i class='text-slate-600 bi bi-clock-o'></i>&nbsp;&nbsp;<span style='display: inline-block; width: 3em;' id="sf-time-left"></span></button>
             </li>
             <li class="mx-1">
-                <button id='bu-delete-second-factor' style='white-space: nowrap;' class="inline-block bg-slate-900 border border-blue-500 hover:bg-slate-200 rounded py-1 px-3"><i class='text-slate-600 fa fa-sign-out'></i>&nbsp;&nbsp;Abmelden</button>
+                <button id='bu-delete-second-factor' style='white-space: nowrap;' class="inline-block bg-slate-900 border border-blue-500 hover:bg-slate-200 rounded py-1 px-3"><i class='text-slate-600 bi bi-sign-out'></i>&nbsp;&nbsp;Abmelden</button>
             </li>
         </ul>
     </section>
@@ -338,10 +338,10 @@ var finished_zeugniskonferenzen = #{finished_zeugniskonferenzen.to_json};
 function update_edit_button() {
     let button = $('#bu_toggle_edit');
     if (edit_enabled) {
-        button.html(`<i class='fa fa-unlock'></i>&nbsp;&nbsp;Tabelle für Bearbeitung schließen`);
+        button.html(`<i class='bi bi-unlock'></i>&nbsp;&nbsp;Tabelle für Bearbeitung schließen`);
         button.removeClass('btn-secondary').addClass('btn-success');
     } else {
-        button.html(`<i class='fa fa-lock'></i>&nbsp;&nbsp;Tabelle für Bearbeitung öffnen`);
+        button.html(`<i class='bi bi-lock'></i>&nbsp;&nbsp;Tabelle für Bearbeitung öffnen`);
         button.removeClass('btn-success').addClass('btn-secondary');
     }
 }
@@ -608,7 +608,7 @@ function input_tendenz_apply_style_and_fix(input, callback) {
 
 function style_consider_button(button, flag) {
     if (flag) {
-        button.removeClass('btn-outline-secondary').addClass('btn-danger').html(`<i class='fa fa-check'></i>&nbsp;&nbsp;besprechen`);
+        button.removeClass('btn-outline-secondary').addClass('btn-danger').html(`<i class='bi bi-check'></i>&nbsp;&nbsp;besprechen`);
     } else {
         button.removeClass('btn-danger').addClass('btn-outline-secondary').html(`nicht besprechen`);
     }
@@ -792,7 +792,7 @@ function load_noten_table(container, klasse, edit_noten) {
                                         } else {
                                             $(e.target).val($(e.target).data('old_value'));
                                             input_note_apply_style_and_fix($(e.target), function(value) {
-                                                let icon = $(`<i class='fa fa-times tresor_icon text-danger'>`);
+                                                let icon = $(`<i class='bi bi-times tresor_icon text-danger'>`);
                                                 icon.appendTo(input.closest('td'));
                                             });
                                         }
@@ -926,7 +926,7 @@ function load_fehltage_table(container, klasse, edit_noten) {
                                         } else {
                                             $(e.target).val($(e.target).data('old_value'));
                                             input_anzahl_apply_style_and_fix($(e.target), function(value) {
-                                                let icon = $(`<i class='fa fa-times tresor_icon text-danger'>`);
+                                                let icon = $(`<i class='bi bi-times tresor_icon text-danger'>`);
                                                 icon.appendTo(input.closest('td'));
                                             });
                                         }
@@ -1046,7 +1046,7 @@ function load_sozialverhalten_table(container, klasse, edit_noten) {
                                         } else {
                                             $(e.target).val($(e.target).data('old_value'));
                                             input_tendenz_apply_style_and_fix($(e.target), function(value) {
-                                                let icon = $(`<i class='fa fa-times tresor_icon text-danger'>`);
+                                                let icon = $(`<i class='bi bi-times tresor_icon text-danger'>`);
                                                     icon.appendTo(input.closest('td'));
                                                 });
                                             }
@@ -1245,7 +1245,7 @@ function load_angebote_bemerkungen_table(container, klasse, edit_noten) {
                                             } else {
                                                 $(e.target).val($(e.target).data('old_value'));
                                                 input_versetzt_apply_style_and_fix($(e.target), function(value) {
-                                                    let icon = $(`<i class='fa fa-times tresor_icon text-danger'>`);
+                                                    let icon = $(`<i class='bi bi-times tresor_icon text-danger'>`);
                                                     icon.appendTo(input.closest('td'));
                                                 });
                                             }
@@ -1301,7 +1301,7 @@ function load_angebote_bemerkungen_table(container, klasse, edit_noten) {
                                             $(e.target).data('old_value', value);
                                         } else {
                                             $(e.target).val($(e.target).data('old_value'));
-                                            let icon = $(`<i class='fa fa-times tresor_icon text-danger'>`);
+                                            let icon = $(`<i class='bi bi-times tresor_icon text-danger'>`);
                                             icon.appendTo(input.closest('td'));
                                         }
                                     });

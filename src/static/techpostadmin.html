@@ -37,8 +37,8 @@
             <div class='row' style='margin-bottom: 15px;'>
                 <div class='col-md-12'>
                     <div class="pull-right">
-                        <button id='tp_report_problem_quiet' class='btn btn-outline-secondary' disabled><i class='fa fa-bell-slash '></i>&nbsp;&nbsp;Stumm Absenden (Für Testzwecke)</button>
-                        <button id='tp_report_problem' class='btn btn-outline-secondary' disabled><i class='fa fa-send'></i>&nbsp;&nbsp;Absenden</button>
+                        <button id='tp_report_problem_quiet' class='btn btn-outline-secondary' disabled><i class='bi bi-bell-slash '></i>&nbsp;&nbsp;Stumm Absenden (Für Testzwecke)</button>
+                        <button id='tp_report_problem' class='btn btn-outline-secondary' disabled><i class='bi bi-send'></i>&nbsp;&nbsp;Absenden</button>
                     </div>
                 </div>
             </div>
@@ -60,9 +60,9 @@
             </div>
             <div class='row' style='margin-bottom: 15px;'>
                 <div class='col-md-12'>
-                    <button class='bu-fixed-problems btn btn-primary'><i class='fa fa-eye'></i>&nbsp;&nbsp;Ausgeblendete Probleme</button>
-                    <button class='bu-tablets btn btn-warning'><i class='fa fa-tablet'></i>&nbsp;&nbsp;Tablets</button>
-                    <button class='bu-safe btn btn-secondary'><i class='fa fa-wrench'></i>&nbsp;&nbsp;Super User</button>
+                    <button class='bu-fixed-problems btn btn-primary'><i class='bi bi-eye'></i>&nbsp;&nbsp;Ausgeblendete Probleme</button>
+                    <button class='bu-tablets btn btn-warning'><i class='bi bi-tablet'></i>&nbsp;&nbsp;Tablets</button>
+                    <button class='bu-safe btn btn-secondary'><i class='bi bi-wrench'></i>&nbsp;&nbsp;Super User</button>
                 </div>
             </div>
         </div>
@@ -134,10 +134,10 @@
                     <br><h3>Super Funktionen</h3>
                     <div class='row' style='margin-bottom: 15px;'>
                         <div class='col-md-12'>
-                            <button class='bu-clear-all btn btn-danger'><i class='fa fa-trash'></i>&nbsp;&nbsp;Alle Probleme löschen</button>
-                            <button class='bu-kick-all btn btn-danger'><i class='fa fa-user-times'></i>&nbsp;&nbsp;Alle Technikamt-User entfernen</button>
-                            <button class='bu-send-welcome-mail btn btn-warning'><i class='fa fa-envelope'></i>&nbsp;&nbsp;Willkommens-E-Mails versenden</button>
-                            <button class='bu-clear-aula-lights btn btn-danger'><i class='fa fa-lightbulb-o'></i>&nbsp;&nbsp;Plan der Aula-Scheinwerfer zurücksetzen</button>
+                            <button class='bu-clear-all btn btn-danger'><i class='bi bi-trash'></i>&nbsp;&nbsp;Alle Probleme löschen</button>
+                            <button class='bu-kick-all btn btn-danger'><i class='bi bi-user-times'></i>&nbsp;&nbsp;Alle Technikamt-User entfernen</button>
+                            <button class='bu-send-welcome-mail btn btn-warning'><i class='bi bi-envelope'></i>&nbsp;&nbsp;Willkommens-E-Mails versenden</button>
+                            <button class='bu-clear-aula-lights btn btn-danger'><i class='bi bi-lightbulb-o'></i>&nbsp;&nbsp;Plan der Aula-Scheinwerfer zurücksetzen</button>
                         </div>
                     </div>
                     <div class='row' style='margin-bottom: 15px;'>
@@ -178,7 +178,7 @@
     function compose_clear_all() {
         showTemplateModal('Alle Probleme löschen',
             'Bist Du sicher? Dabei werden alle Probleme gelöscht.<br>Tu dies nur nach Absprache mit dem TechnikTeam und allen Usern die Zugriff auf diese Funktion haben.<br>Das TechnikTeam wird per E-Mail darüber informiert.',
-            "<i class='fa fa-trash'></i>&nbsp;&nbsp;Ich bin mir sicher (Alles löschen)", 'btn-danger',
+            "<i class='bi bi-trash'></i>&nbsp;&nbsp;Ich bin mir sicher (Alles löschen)", 'btn-danger',
             'Abbrechen', 'btn-secondary', function() {
                 api_call('/api/clear_all_tech_problems_admin', {}, function(data) {
                     if (data.success)
@@ -192,7 +192,7 @@
     function compose_clear_aula_lights() {
         showTemplateModal('Den Plan Aula-Scheinwerfer löschen',
             'Bist Du sicher? Dabei wird der gesamte Plan der Scheinwerfer in der Aula gelöscht. Dies ist notwendig, wenn Fehler im hochgeladenen HTML vorliegen, die die Seite vorübergehend unbenutzbar machen.<br>Tu dies nur nach Absprache mit dem TechnikTeam und allen Usern die Zugriff auf diese Funktion haben.',
-            "<i class='fa fa-trash'></i>&nbsp;&nbsp;Ich bin mir sicher (Alles löschen)", 'btn-danger',
+            "<i class='bi bi-trash'></i>&nbsp;&nbsp;Ich bin mir sicher (Alles löschen)", 'btn-danger',
             'Abbrechen', 'btn-secondary', function() {
                 api_call('/api/set_light_structure', {structure_input: ""}, function(data) {
                     if (data.success)
@@ -206,7 +206,7 @@
     function compose_kick_all() {
         showTemplateModal('Alle Technikamt-User entfernen',
             'Bist Du sicher? Dabei werden alle Technikamt-User entfernt.<br>Tu dies nur nach Absprache mit dem TechnikTeam und allen Usern die Zugriff auf diese Funktion haben.<br>Das TechnikTeam wird per E-Mail darüber informiert.',
-            "<i class='fa fa-user-times'></i>&nbsp;&nbsp;Ich bin mir sicher (Alle entfernen)", 'btn-danger',
+            "<i class='bi bi-user-times'></i>&nbsp;&nbsp;Ich bin mir sicher (Alle entfernen)", 'btn-danger',
             'Abbrechen', 'btn-secondary', function() {
                 api_call('/api/kick_all_techposts_admin', {}, function(data) {
                     if (data.success)
@@ -220,7 +220,7 @@
     function send_welcome_mail() {
         showTemplateModal('Willkommens-E-Mail versenden',
             'Bist Du sicher? Dabei erhalten alle Technikamt-Schüler diese E-Mail.<br>Das TechnikTeam wird per E-Mail darüber informiert und erhält eine Kopie.',
-            "<i class='fa fa-send'></i>&nbsp;&nbsp;Ich bin mir sicher (E-Mails versenden)", 'btn-warning',
+            "<i class='bi bi-send'></i>&nbsp;&nbsp;Ich bin mir sicher (E-Mails versenden)", 'btn-warning',
             'Abbrechen', 'btn-secondary', function() {
                 api_call('/api/send_all_techpost_welcome_mail', {}, function(data) {
                     if (data.success)
@@ -258,10 +258,10 @@
                     if (entry.problem.fixed == false && entry.problem.not_fixed == false && entry.problem.hidden_admin == false) {
                         let row = $('<tr>');
                         let token = entry.problem.token;
-                        let fixed = "<i class='text-success fa fa-check' title='Behoben'></i>";
-                        let progress = "<i class='text-secondary fa fa-clock-o' title='In Bearbeitung'></i>";
-                        let not_fixed = "<i class='text-danger fa fa-times' title='Nicht behoben'></i>";
-                        let see_comment = "<i class='text-primary fa fa-commenting' title='Siehe Kommentar'></i>";
+                        let fixed = "<i class='text-success bi bi-check' title='Behoben'></i>";
+                        let progress = "<i class='text-secondary bi bi-clock-o' title='In Bearbeitung'></i>";
+                        let not_fixed = "<i class='text-danger bi bi-times' title='Nicht behoben'></i>";
+                        let see_comment = "<i class='text-primary bi bi-commenting' title='Siehe Kommentar'></i>";
                         let current_state = "Unbekannt"
                         if (entry.problem.fixed == true) {
                             current_state = fixed
@@ -274,21 +274,21 @@
                         }
                         function get_modal() {
                             let klasse = entry.klasse ? ` (${entry.klasse})` : ""
-                            let tp_print = "<button class='btn btn-primary tp-print'><i class='fa fa-print'></i></button>"
-                            let tp_delete = "<button class='btn btn-danger tp-delete';><i class='fa fa-trash'></i>&nbsp;&nbsp;Löschen</button>"
-                            let tp_hide_admin = "<button class='btn btn-info tp-hide-admin'><i class='fa fa-eye'></i>&nbsp;&nbsp;Ausblenden</button>"
-                            let fixer = entry.fnc_login ? `<button title='${entry.fdisplay_name} kümmert sich um das Problem.' class='tp-fixer'><img src='#{NEXTCLOUD_URL}/index.php/avatar/${entry.fnc_login}/256' class='icon avatar-md'/></button>` : "<button class='btn btn-warning tp-fixer'><i class='fa fa-user-plus'></i>&nbsp;&nbsp;Nutzer zuweisen</button>";
-                            let tp_fixed = "<button class='btn btn-success tp-fixed'><i class='fa fa-check'></i>&nbsp;&nbsp;Behoben</button>"
-                            let tp_not_fixed = "<button class='btn btn-warning tp-not-fixed'><i class='fa fa-times'></i>&nbsp;&nbsp;Nicht Behoben</button>"
+                            let tp_print = "<button class='btn btn-primary tp-print'><i class='bi bi-print'></i></button>"
+                            let tp_delete = "<button class='btn btn-danger tp-delete';><i class='bi bi-trash'></i>&nbsp;&nbsp;Löschen</button>"
+                            let tp_hide_admin = "<button class='btn btn-info tp-hide-admin'><i class='bi bi-eye'></i>&nbsp;&nbsp;Ausblenden</button>"
+                            let fixer = entry.fnc_login ? `<button title='${entry.fdisplay_name} kümmert sich um das Problem.' class='tp-fixer'><img src='#{NEXTCLOUD_URL}/index.php/avatar/${entry.fnc_login}/256' class='icon avatar-md'/></button>` : "<button class='btn btn-warning tp-fixer'><i class='bi bi-user-plus'></i>&nbsp;&nbsp;Nutzer zuweisen</button>";
+                            let tp_fixed = "<button class='btn btn-success tp-fixed'><i class='bi bi-check'></i>&nbsp;&nbsp;Behoben</button>"
+                            let tp_not_fixed = "<button class='btn btn-warning tp-not-fixed'><i class='bi bi-times'></i>&nbsp;&nbsp;Nicht Behoben</button>"
                             let mail_count = entry.problem.mail_count
-                            let tp_mail = `<button class='btn btn-xs btn-success tp-mail'><i class='fa fa-envelope'></i>&nbsp;&nbsp;Update per Mail senden (${mail_count})</button>`
-                            let tp_hide = "<button class='btn btn-xs btn-info tp-hide'><i class='fa fa-eye'></i>&nbsp;&nbsp;Für Absender ausblenden</button>"
+                            let tp_mail = `<button class='btn btn-xs btn-success tp-mail'><i class='bi bi-envelope'></i>&nbsp;&nbsp;Update per Mail senden (${mail_count})</button>`
+                            let tp_hide = "<button class='btn btn-xs btn-info tp-hide'><i class='bi bi-eye'></i>&nbsp;&nbsp;Für Absender ausblenden</button>"
                             if (entry.problem.hidden) {
-                                tp_hide = "<button class='btn btn-xs btn-secondary tp-hide'><i class='fa fa-eye-slash'></i>&nbsp;&nbsp;Für Absender ausgeblendet</button>"
+                                tp_hide = "<button class='btn btn-xs btn-secondary tp-hide'><i class='bi bi-eye-slash'></i>&nbsp;&nbsp;Für Absender ausgeblendet</button>"
                             }
 
-                            let tp_comment = "<button class='btn btn-xs btn-primary tp-comment'><i class='fa fa-plus'></i>&nbsp;&nbsp;Kommentar</button>"
-                            let tp_update_comment = "<button class='btn btn-xs btn-primary tp-update-comment'><i class='fa fa-pencil'></i></button>"
+                            let tp_comment = "<button class='btn btn-xs btn-primary tp-comment'><i class='bi bi-plus'></i>&nbsp;&nbsp;Kommentar</button>"
+                            let tp_update_comment = "<button class='btn btn-xs btn-primary tp-update-comment'><i class='bi bi-pencil'></i></button>"
                             let comment = tp_comment
 
                             if (entry.problem.comment) {
@@ -403,7 +403,7 @@
                             $('.tp-delete').click(function() {
                                 showTemplateModal('Problem löschen',
                                 'Bist Du sicher? Das Problem wird dabei unwiderrufbar gelöscht.',
-                                "<i class='fa fa-trash'></i>&nbsp;&nbsp;Problem löschen", 'btn-danger',
+                                "<i class='bi bi-trash'></i>&nbsp;&nbsp;Problem löschen", 'btn-danger',
                                 'Abbrechen', 'btn-secondary', function() {
                                     api_call('/api/delete_tech_problem_admin', {token: token}, function(data) {
                                         if (data.success)
@@ -416,7 +416,7 @@
                             $('.tp-comment').click(function() {
                                 showTemplateModal('Kommentar hinzufügen',
                                 '<textarea type="text" id="tp_comment_input" class="form-control" placeholder="z.B. Danke für deinen Beitrag"></textarea>',
-                                "<i class='fa fa-check'></i>&nbsp;&nbsp;Speichern", 'btn-success',
+                                "<i class='bi bi-check'></i>&nbsp;&nbsp;Speichern", 'btn-success',
                                 'Abbrechen', 'btn-secondary', function() {
                                     let comment = $('#tp_comment_input').val();
                                     api_call('/api/comment_tech_problem_admin', {token: token, comment: comment}, function(data) {
@@ -430,7 +430,7 @@
                                 let old_comment = entry.problem.comment
                                 showTemplateModal('Kommentar aktualisieren',
                                 '<textarea type="text" id="tp_comment_input" class="form-control" placeholder="z.B. Danke für deinen Beitrag (leer lassen, um den Kommentar zu löschen)">' + old_comment + '</textarea>',
-                                "<i class='fa fa-check'></i>&nbsp;&nbsp;Speichern", 'btn-success',
+                                "<i class='bi bi-check'></i>&nbsp;&nbsp;Speichern", 'btn-success',
                                 'Abbrechen', 'btn-secondary', function() {
                                     let comment = $('#tp_comment_input').val();
                                     api_call('/api/comment_tech_problem_admin', {token: token, comment: comment}, function(data) {
@@ -447,7 +447,7 @@
                         if (entry.klasse) {
                             row.append($('<td title="Schüler">').text(entry.klasse));
                         } else {
-                            row.append($('<td title="Lehrer">').html('<i class="fa fa-users"></i>'));
+                            row.append($('<td title="Lehrer">').html('<i class="bi bi-users"></i>'));
                         }
                         row.append($('<td>').text(entry.problem.problem));
                         row.append($('<td>').text('' + entry.problem.device));
@@ -470,10 +470,10 @@
                     if (entry.problem.fixed == true  || entry.problem.not_fixed == true || entry.problem.hidden_admin == true) {
                         let row = $('<tr>');
                         let token = entry.problem.token;
-                        let fixed = "<i class='text-success fa fa-check' title='Behoben'></i>";
-                        let progress = "<i class='text-secondary fa fa-clock-o' title='In Bearbeitung'></i>";
-                        let not_fixed = "<i class='text-danger fa fa-times' title='Nicht behoben'></i>";
-                        let see_comment = "<i class='text-primary fa fa-commenting' title='Siehe Kommentar'></i>";
+                        let fixed = "<i class='text-success bi bi-check' title='Behoben'></i>";
+                        let progress = "<i class='text-secondary bi bi-clock-o' title='In Bearbeitung'></i>";
+                        let not_fixed = "<i class='text-danger bi bi-times' title='Nicht behoben'></i>";
+                        let see_comment = "<i class='text-primary bi bi-commenting' title='Siehe Kommentar'></i>";
                         let current_state = "Unbekannt"
                         if (entry.problem.fixed == true) {
                             current_state = fixed
@@ -486,21 +486,21 @@
                         }
                         function get_modal() {
                             let klasse = entry.klasse ? ` (${entry.klasse})` : ""
-                            let tp_print = "<button class='btn btn-primary tp-print';><i class='fa fa-print'></i></button>"
-                            let tp_delete = "<button class='btn btn-danger tp-delete';><i class='fa fa-trash'></i>&nbsp;&nbsp;Löschen</button>"
-                            let tp_unhide_admin = "<button class='btn btn-secondary tp-unhide-admin'><i class='fa fa-eye'></i>&nbsp;&nbsp;Einblenden</button>"
-                            let fixer = entry.fnc_login ? `<button title='${entry.fdisplay_name} kümmert sich um das Problem.' class='tp-fixer'><img src='#{NEXTCLOUD_URL}/index.php/avatar/${entry.fnc_login}/256' class='icon avatar-md'/></button>` : "<button class='btn btn-warning tp-fixer'><i class='fa fa-user-plus'></i>&nbsp;&nbsp;Nutzer zuweisen</button>";
-                            let tp_fixed = "<button class='btn btn-success tp-fixed'><i class='fa fa-check'></i>&nbsp;&nbsp;Behoben</button>"
-                            let tp_not_fixed = "<button class='btn btn-warning tp-not-fixed'><i class='fa fa-times'></i>&nbsp;&nbsp;Nicht Behoben</button>"
+                            let tp_print = "<button class='btn btn-primary tp-print';><i class='bi bi-print'></i></button>"
+                            let tp_delete = "<button class='btn btn-danger tp-delete';><i class='bi bi-trash'></i>&nbsp;&nbsp;Löschen</button>"
+                            let tp_unhide_admin = "<button class='btn btn-secondary tp-unhide-admin'><i class='bi bi-eye'></i>&nbsp;&nbsp;Einblenden</button>"
+                            let fixer = entry.fnc_login ? `<button title='${entry.fdisplay_name} kümmert sich um das Problem.' class='tp-fixer'><img src='#{NEXTCLOUD_URL}/index.php/avatar/${entry.fnc_login}/256' class='icon avatar-md'/></button>` : "<button class='btn btn-warning tp-fixer'><i class='bi bi-user-plus'></i>&nbsp;&nbsp;Nutzer zuweisen</button>";
+                            let tp_fixed = "<button class='btn btn-success tp-fixed'><i class='bi bi-check'></i>&nbsp;&nbsp;Behoben</button>"
+                            let tp_not_fixed = "<button class='btn btn-warning tp-not-fixed'><i class='bi bi-times'></i>&nbsp;&nbsp;Nicht Behoben</button>"
                             let mail_count = entry.problem.mail_count
-                            let tp_mail = `<button class='btn btn-xs btn-success tp-mail'><i class='fa fa-envelope'></i>&nbsp;&nbsp;Update per Mail senden (${mail_count})</button>`
-                            let tp_hide = "<button class='btn btn-xs btn-info tp-hide'><i class='fa fa-eye'></i>&nbsp;&nbsp;Für Absender ausblenden</button>"
+                            let tp_mail = `<button class='btn btn-xs btn-success tp-mail'><i class='bi bi-envelope'></i>&nbsp;&nbsp;Update per Mail senden (${mail_count})</button>`
+                            let tp_hide = "<button class='btn btn-xs btn-info tp-hide'><i class='bi bi-eye'></i>&nbsp;&nbsp;Für Absender ausblenden</button>"
                             if (entry.problem.hidden) {
-                                tp_hide = "<button class='btn btn-xs btn-secondary tp-hide'><i class='fa fa-eye-slash'></i>&nbsp;&nbsp;Für Absender ausgeblendet</button>"
+                                tp_hide = "<button class='btn btn-xs btn-secondary tp-hide'><i class='bi bi-eye-slash'></i>&nbsp;&nbsp;Für Absender ausgeblendet</button>"
                             }
 
-                            let tp_comment = "<button class='btn btn-xs btn-primary tp-comment'><i class='fa fa-plus'></i>&nbsp;&nbsp;Kommentar</button>"
-                            let tp_update_comment = "<button class='btn btn-xs btn-primary tp-update-comment'><i class='fa fa-pencil'></i></button>"
+                            let tp_comment = "<button class='btn btn-xs btn-primary tp-comment'><i class='bi bi-plus'></i>&nbsp;&nbsp;Kommentar</button>"
+                            let tp_update_comment = "<button class='btn btn-xs btn-primary tp-update-comment'><i class='bi bi-pencil'></i></button>"
                             let comment = tp_comment
 
                             if (entry.problem.comment) {
@@ -613,7 +613,7 @@
                             $('.tp-delete').click(function() {
                                 showTemplateModal('Problem löschen',
                                 'Bist Du sicher? Das Problem wird dabei unwiderrufbar gelöscht.',
-                                "<i class='fa fa-trash'></i>&nbsp;&nbsp;Problem löschen", 'btn-danger',
+                                "<i class='bi bi-trash'></i>&nbsp;&nbsp;Problem löschen", 'btn-danger',
                                 'Abbrechen', 'btn-secondary', function() {
                                     api_call('/api/delete_tech_problem_admin', {token: token}, function(data) {
                                         if (data.success)
@@ -626,7 +626,7 @@
                             $('.tp-comment').click(function() {
                                 showTemplateModal('Kommentar hinzufügen',
                                 '<textarea type="text" id="tp_comment_input" class="form-control" placeholder="z.B. Danke für deinen Beitrag"></textarea>',
-                                "<i class='fa fa-check'></i>&nbsp;&nbsp;Speichern", 'btn-success',
+                                "<i class='bi bi-check'></i>&nbsp;&nbsp;Speichern", 'btn-success',
                                 'Abbrechen', 'btn-secondary', function() {
                                     let comment = $('#tp_comment_input').val();
                                     api_call('/api/comment_tech_problem_admin', {token: token, comment: comment}, function(data) {
@@ -641,7 +641,7 @@
                                 let old_comment = entry.problem.comment
                                 showTemplateModal('Kommentar aktualisieren',
                                     '<div class="alert alert-warning">Falls das Problem nicht als „behoben“ oder „nicht behoben“ markiert ist, kannst du den Kommentar erst, nachdem du das Problem für das TechnikTeam wieder eingeblendet hast löschen.</div><textarea type="text" id="tp_comment_input" class="form-control" placeholder="z.B. Danke für deinen Beitrag (leer lassen, um den Kommentar zu löschen)">' + old_comment + '</textarea>',
-                                    "<i class='fa fa-check'></i>&nbsp;&nbsp;Speichern", 'btn-success',
+                                    "<i class='bi bi-check'></i>&nbsp;&nbsp;Speichern", 'btn-success',
                                     'Abbrechen', 'btn-secondary', function() {
                                         let comment = $('#tp_comment_input').val();
                                         if (comment != "" || entry.problem.fixed || entry.problem.not_fixed) {
@@ -661,7 +661,7 @@
                         if (entry.klasse) {
                             row.append($('<td title="Schüler">').text(entry.klasse));
                         } else {
-                            row.append($('<td title="Lehrer">').html('<i class="fa fa-users"></i>'));
+                            row.append($('<td title="Lehrer">').html('<i class="bi bi-users"></i>'));
                         }
                         row.append($('<td>').text(entry.problem.problem));
                         row.append($('<td>').text('' + entry.problem.device));

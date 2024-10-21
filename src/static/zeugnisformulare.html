@@ -14,9 +14,9 @@
         Als Zeugnis-Admin kannst du Noten aus dem Vorjahr übertragen, indem du die Funktion <code>admin_only_copy_noten_from_halbjahr</code> nutzt.
         </div>
         <h3>Listen zum Ausdrucken</h3>
-        <button id='bu_print_zeugniskonferenz_sheets' class="btn btn-success"><i class='fa fa-file-pdf-o'></i>&nbsp;&nbsp;Listen für die Zeugniskonferenzen</button>
-        <button id='bu_print_zeugnislisten_sheets' class="btn btn-success"><i class='fa fa-file-pdf-o'></i>&nbsp;&nbsp;Zeugnislisten</button>
-        <button id='bu_print_fehlzeiten_sheets' class="btn btn-success"><i class='fa fa-file-pdf-o'></i>&nbsp;&nbsp;Fehlzeitenstatistik</button>
+        <button id='bu_print_zeugniskonferenz_sheets' class="btn btn-success"><i class='bi bi-file-pdf-o'></i>&nbsp;&nbsp;Listen für die Zeugniskonferenzen</button>
+        <button id='bu_print_zeugnislisten_sheets' class="btn btn-success"><i class='bi bi-file-pdf-o'></i>&nbsp;&nbsp;Zeugnislisten</button>
+        <button id='bu_print_fehlzeiten_sheets' class="btn btn-success"><i class='bi bi-file-pdf-o'></i>&nbsp;&nbsp;Fehlzeitenstatistik</button>
     </div>
 </div>
 
@@ -58,7 +58,7 @@ function render_zeugnisformulare() {
         let label = `Klassenstufe ${key.split('_')[0]}`;
         if (key.indexOf('_sesb') >= 0) label += ' (SESB)';
         tr.append($(`<td>`).html(label));
-        tr.append($(`<td>`).html((zeugnis_formular_fehler[key] === null) ? "<i class='fa fa-check text-green-500'></i>" : "<i class='fa fa-exclamation-circle text-red-600'></i>"));
+        tr.append($(`<td>`).html((zeugnis_formular_fehler[key] === null) ? "<i class='bi bi-check text-green-500'></i>" : "<i class='bi bi-exclamation-circle text-red-600'></i>"));
         tr.append($(`<td style='white-space: unset;'>`).html((zeugnis_formular_fehler[key] ?? ['Formular vollständig']).join(', ')));
         // tr = $(`<tr style='line-height: 1em;'>`).appendTo(table);
         // tr.append($(`<td colspan='3' style='white-space: unset;'>`).html((zeugnis_formular_tags[key]).join(', ')));

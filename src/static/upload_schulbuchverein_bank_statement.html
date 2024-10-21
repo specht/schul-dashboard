@@ -108,16 +108,16 @@ document.addEventListener('DOMContentLoaded', function() {
             let skipped_size = data.result.skipped.length;
             let summary = $(`<div class='summary'>`).appendTo(div);
             if (handled_size > 0) {
-                summary.append($(`<div>`).html(`<i class='fa fa-check text-success'></i>&nbsp;&nbsp;${handled_size} Geldein${handled_size === 1 ? 'gang' : 'gänge'} neu verarbeitet`));
-                append_details(div, 'Neu verarbeitete Geldeingänge', data.result, 'handled', "<i class='fa fa-check text-success'>");
+                summary.append($(`<div>`).html(`<i class='bi bi-check text-success'></i>&nbsp;&nbsp;${handled_size} Geldein${handled_size === 1 ? 'gang' : 'gänge'} neu verarbeitet`));
+                append_details(div, 'Neu verarbeitete Geldeingänge', data.result, 'handled', "<i class='bi bi-check text-success'>");
             }
             if (skipped_size > 0) {
-                summary.append($(`<div>`).html(`<i class='fa fa-times text-danger'></i>&nbsp;&nbsp;${skipped_size} Geldein${skipped_size === 1 ? 'gang konnte' : 'gänge konnten'} nicht verarbeitet werden`));
-                append_details(div, 'Nicht verarbeitete Geldeingänge', data.result, 'skipped', "<i class='fa fa-times text-danger'>");
+                summary.append($(`<div>`).html(`<i class='bi bi-times text-danger'></i>&nbsp;&nbsp;${skipped_size} Geldein${skipped_size === 1 ? 'gang konnte' : 'gänge konnten'} nicht verarbeitet werden`));
+                append_details(div, 'Nicht verarbeitete Geldeingänge', data.result, 'skipped', "<i class='bi bi-times text-danger'>");
             }
             if (previously_handled_size > 0) {
-                summary.append($(`<div>`).html(`<i class='fa fa-check text-warning'></i>&nbsp;&nbsp;${previously_handled_size} Geldein${previously_handled_size === 1 ? 'gang war' : 'gänge waren'} bereits verarbeitet`));
-                append_details(div, 'Bereits verarbeitete Geldeingänge', data.result, 'previously_handled', "<i class='fa fa-check text-warning'>");
+                summary.append($(`<div>`).html(`<i class='bi bi-check text-warning'></i>&nbsp;&nbsp;${previously_handled_size} Geldein${previously_handled_size === 1 ? 'gang war' : 'gänge waren'} bereits verarbeitet`));
+                append_details(div, 'Bereits verarbeitete Geldeingänge', data.result, 'previously_handled', "<i class='bi bi-check text-warning'>");
             }
         },
     });

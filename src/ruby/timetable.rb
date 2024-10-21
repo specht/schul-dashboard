@@ -279,7 +279,7 @@ class Timetable
                     #         klassen_sorted = klassen.keys.sort do |a, b|
                     #             KLASSEN_ORDER.index(a) <=> KLASSEN_ORDER.index(b)
                     #         end
-                    #         label = "<i class='fa fa-home'></i>&nbsp;&nbsp;Sie haben momentan <strong>#{filtered.size} SuS</strong> in <strong>#{klassen.size} Klasse#{klassen.size == 1 ? '' : 'n'} (#{klassen_sorted.map { |x| Main.tr_klasse(x) }.join(', ')})</strong> im saLzH."
+                    #         label = "<i class='bi bi-home'></i>&nbsp;&nbsp;Sie haben momentan <strong>#{filtered.size} SuS</strong> in <strong>#{klassen.size} Klasse#{klassen.size == 1 ? '' : 'n'} (#{klassen_sorted.map { |x| Main.tr_klasse(x) }.join(', ')})</strong> im saLzH."
                     #         monitor_data[which][key] << {:type => 'extra', :salzh_sus => filtered, :salzh_sus_label => label}
                     #     end
                     # end

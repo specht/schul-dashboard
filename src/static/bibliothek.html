@@ -2,10 +2,10 @@
 <div class='container bg-white'>
     <div id='unconfirmed_div' style='display: none;'>
         <div class="mb-3 p-3 rounded shadow shadow-sm border-red-500" style="border-width: 1px; min-height: 70px;">
-            <i class="fa fa-exclamation-triangle pull-left text-stone-400"
+            <i class="bi bi-exclamation-triangle pull-left text-stone-400"
                 style="font-size: 200%; position: relative; padding-right: 10px;"></i>
             <a class="pull-right btn btn-success" style='position: relative; margin-left: 10px;'
-                href="/bib_confirm"><i class='fa fa-angle-double-right'></i>&nbsp;&nbsp;Bücher bestätigen</a>
+                href="/bib_confirm"><i class='bi bi-angle-double-right'></i>&nbsp;&nbsp;Bücher bestätigen</a>
             #{teacher_logged_in? ?
                 'Einige Ihrer geliehenen Bücher sind noch nicht bestätigt. Bitte scannen Sie die Barcodes Ihrer geliehenen Bücher, um zu bestätigen, dass Sie die richtigen Bücher bekommen haben.' :
                 'Einige deiner geliehenen Bücher sind noch nicht bestätigt. Bitte scanne die Barcodes deiner geliehenen Bücher, um zu bestätigen, dass du die richtigen Bücher bekommen hast.'}

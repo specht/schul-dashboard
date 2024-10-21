@@ -510,7 +510,7 @@ class Main < Sinatra::Base
                 io.puts "<div class='hint'>"
                 io.puts "<div><span style='font-size: 200%; float: left; margin-right: 8px;'>📚</span>#{n_to_s[@@bib_summoned_books[email].size] || 'Mehrere'} Bücher, die du ausgeliehen hast, #{@@bib_summoned_books[email].size == 1 ? 'wird' : 'werden'} dringend in der Bibliothek benötigt. Bitte bring #{@@bib_summoned_books[email].size == 1 ? 'es' : 'sie'} zurück und lege #{@@bib_summoned_books[email].size == 1 ? 'es' : 'sie'} ins <a target='_blank' href='https://rundgang.gymnasiumsteglitz.de/#g114'>Rückgaberegal</a> vor der Bibliothek.</div>"
                 io.puts "<hr />"
-                io.puts "<a href='/bibliothek' style='white-space: nowrap;' class='float-right btn btn-sm btn-success'>Zu deinen Büchern&nbsp;<i class='fa fa-angle-double-right'></i></a>"
+                io.puts "<a href='/bibliothek' style='white-space: nowrap;' class='float-right btn btn-sm btn-success'>Zu deinen Büchern&nbsp;<i class='bi bi-angle-double-right'></i></a>"
                 io.puts "<div style='clear: both;'></div>"
                 io.puts "</div>"
                 io.puts "</div>"
@@ -524,7 +524,7 @@ class Main < Sinatra::Base
         #         io.puts "<div class='hint'>"
         #         io.puts "<div><span style='font-size: 200%; float: left; margin-right: 8px;'>🙁</span>#{n_to_s[@@bib_unconfirmed_books[email].size] || 'Mehrere'} deiner ent&shy;lieh&shy;enen Bücher #{@@bib_unconfirmed_books[email].size == 1 ? 'wurde' : 'wurden'} von dir noch nicht bestätigt. <strong>Bitte scanne #{@@bib_unconfirmed_books[email].size == 1 ? 'das Buch' : 'die Bücher'} jetzt ein.</strong></div>"
         #         io.puts "<hr />"
-        #         io.puts "<a href='/bib_confirm' style='white-space: nowrap;' class='float-right btn btn-sm btn-success'><i class='fa fa-barcode'></i>&nbsp;&nbsp;Bücher bestätigen</a>"
+        #         io.puts "<a href='/bib_confirm' style='white-space: nowrap;' class='float-right btn btn-sm btn-success'><i class='bi bi-barcode'></i>&nbsp;&nbsp;Bücher bestätigen</a>"
         #         io.puts "<div style='clear: both;'></div>"
         #         io.puts "</div>"
         #         io.puts "</div>"
@@ -554,9 +554,9 @@ class Main < Sinatra::Base
             io.puts "<p><b>Datentresor-Hotline</b></p>"
             io.puts "<hr />"
             users.each do |user|
-                io.puts "<button class='bu_open_ad_hoc_2fa_request button btn btn-success' data-email='#{user[:email]}' data-name='#{@@user_info[user[:email]][:display_name]}'><i class='fa fa-phone'></i>&nbsp;&nbsp;#{@@user_info[user[:email]][:display_name_official]}&nbsp;&nbsp;<i class='fa fa-angle-double-right'></i></button>"
+                io.puts "<button class='bu_open_ad_hoc_2fa_request button btn btn-success' data-email='#{user[:email]}' data-name='#{@@user_info[user[:email]][:display_name]}'><i class='bi bi-phone'></i>&nbsp;&nbsp;#{@@user_info[user[:email]][:display_name_official]}&nbsp;&nbsp;<i class='bi bi-angle-double-right'></i></button>"
             end
-            # io.puts "<div><span style='font-size: 200%; opacity: 0.7; float: left; margin-right: 8px;'><i class='fa fa-book'></i></span>#{n_to_s[@@bib_summoned_books[email].size] || 'Mehrere'} Bücher, die du ausgeliehen hast, #{@@bib_summoned_books[email].size == 1 ? 'wird' : 'werden'} dringend in der Bibliothek benötigt. Bitte bring #{@@bib_summoned_books[email].size == 1 ? 'es' : 'sie'} zurück und lege #{@@bib_summoned_books[email].size == 1 ? 'es' : 'sie'} ins <a target='_blank' href='https://rundgang.gymnasiumsteglitz.de/#g114'>Rückgaberegal</a> vor der Bibliothek.</div>"
+            # io.puts "<div><span style='font-size: 200%; opacity: 0.7; float: left; margin-right: 8px;'><i class='bi bi-book'></i></span>#{n_to_s[@@bib_summoned_books[email].size] || 'Mehrere'} Bücher, die du ausgeliehen hast, #{@@bib_summoned_books[email].size == 1 ? 'wird' : 'werden'} dringend in der Bibliothek benötigt. Bitte bring #{@@bib_summoned_books[email].size == 1 ? 'es' : 'sie'} zurück und lege #{@@bib_summoned_books[email].size == 1 ? 'es' : 'sie'} ins <a target='_blank' href='https://rundgang.gymnasiumsteglitz.de/#g114'>Rückgaberegal</a> vor der Bibliothek.</div>"
             io.puts "</div>"
             io.puts "</div>"
             io.string
@@ -688,9 +688,9 @@ class Main < Sinatra::Base
                 io.puts "<p><b>Phishing Prävention</b></p>"
                 io.puts "<hr />"
                 io.puts "<p>Die Statistiken zu der E-Mail vom #{PHISHING_RECEIVING_DATE} sind nun online.</p>"
-                io.puts "<p><a href='/phishing' class='btn btn-primary'>Phishing Prävention&nbsp;<i class='fa fa-angle-double-right'></i></a></p>"
+                io.puts "<p><a href='/phishing' class='btn btn-primary'>Phishing Prävention&nbsp;<i class='bi bi-angle-double-right'></i></a></p>"
                 io.puts "<p>Du kannst auch an unserer Umfrage teilnehmen.</p>"
-                io.puts "<p><button class='btn btn-success bu-launch-poll' data-poll-run-id='#{PHISHING_POLL_RUN_ID}'>Zur Umfrage&nbsp;<i class='fa fa-angle-double-right'></i></button></p>"
+                io.puts "<p><button class='btn btn-success bu-launch-poll' data-poll-run-id='#{PHISHING_POLL_RUN_ID}'>Zur Umfrage&nbsp;<i class='bi bi-angle-double-right'></i></button></p>"
                 io.puts "</div>"
                 io.puts "</div>"
                 io.string

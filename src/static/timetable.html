@@ -36,7 +36,7 @@
             </p>
             <hr />
             <div style="text-align: center;">
-                <a class="btn btn-success" href="/profil#anmeldung"><i class='fa fa-plus'></i>&nbsp;&nbsp;Zweiten Faktor hinterlegen…</a>
+                <a class="btn btn-success" href="/profil#anmeldung"><i class='bi bi-plus'></i>&nbsp;&nbsp;Zweiten Faktor hinterlegen…</a>
             </div>
         </div>
     </div>
@@ -44,20 +44,20 @@
         <div class='#{tablet_logged_in? ? 'col-md-6 offset-md-1' : 'col-md-2'} timetable_chooser' style='#{tablet_logged_in? ? 'margin-top: 23px;' : 'display: none;'}'>
             <div class='hint'>
                 <div style='position: relative; top: 8px;'>
-                <span class='bullet'><i class='fa fa-check'></i></span><b>Schritt 1:</b> Seite aktualisieren
-                <a style='position: relative; top: -8px;' class='btn btn-success float-right' href='/'><i class='fa fa-refresh'></i>&nbsp;&nbsp;Jetzt aktualisieren</a>
+                <span class='bullet'><i class='bi bi-check'></i></span><b>Schritt 1:</b> Seite aktualisieren
+                <a style='position: relative; top: -8px;' class='btn btn-success float-right' href='/'><i class='bi bi-refresh'></i>&nbsp;&nbsp;Jetzt aktualisieren</a>
                 </div>
                 <div style='clear: both;'></div>
             </div>
             <div class='hint' style='#{(kurs_tablet_logged_in? || teacher_tablet_logged_in?) ? '' : 'display: none;'}'>
                 <div style='position: relative; top: 8px;'>
-                <span class='bullet'><i class='fa fa-check'></i></span><b>Schritt 2:</b> Kürzel auswählen<br /><br />
+                <span class='bullet'><i class='bi bi-check'></i></span><b>Schritt 2:</b> Kürzel auswählen<br /><br />
                     #{print_timetable_chooser()}
                 </div>
             </div>
             <div class='hint' style='#{(klassenraum_logged_in?) ? '' : 'display: none;'}'>
                 <div style='position: relative; top: 8px;'>
-                <span class='bullet'><i class='fa fa-check'></i></span><b>Schritt 2:</b> Klasse auswählen<br /><br />
+                <span class='bullet'><i class='bi bi-check'></i></span><b>Schritt 2:</b> Klasse auswählen<br /><br />
                     #{print_timetable_chooser()}
                 </div>
             </div>
@@ -76,7 +76,7 @@
             <!--
             <div class='hint' style='display: #{(@session_user[:user_agent] || '').include?('WebView') ? 'block' : 'none'};'>
                 <p>
-                    <i class="fa fa-exclamation-triangle" style="font-size: 200%; color: #888; float: left; margin-right: 15px; margin-top: 5px; position: relative; top: 3px;"></i>
+                    <i class="bi bi-exclamation-triangle" style="font-size: 200%; color: #888; float: left; margin-right: 15px; margin-top: 5px; position: relative; top: 3px;"></i>
                     <strong>Hinweis:</strong> Du benutzt die Dashboard-App für Android, die nicht mehr unterstützt wird.
                     Bitte lösche die App und richte dir ggfs. einen Shortcut zur Dashboard-Website ein:
                 </p>
@@ -121,13 +121,13 @@
         <div class='#{user_with_role_logged_in?(:praktikum) ? 'col-lg-12' : (tablet_logged_in? ? 'col-md-4' : 'col-lg-8 col-md-12')}'>
             <div class='card' style='margin-bottom: 20px; display: #{session_user_has_streaming_button? ? 'block' : 'none'};'>
                 <div class='card-body' style='padding: 5px 15px;'>
-                    <i class='fa fa-lightbulb-o' style='font-size: 200%;'></i>&nbsp;&nbsp;<span style='position: relative; top: -4px;'>Hier kommst du zu deinem ggf. aktivierten Klassenstream:</span>&nbsp;&nbsp;<a class='float-right btn btn fc-button-primary streaming-button' href='#{class_stream_link_for_session_user}' target='_blank'><i class='fa fa-microphone'></i>&nbsp;&nbsp;Zum Klassenstream&nbsp;&nbsp;<i class='fa fa-angle-double-right'></i></a>
+                    <i class='bi bi-lightbulb-o' style='font-size: 200%;'></i>&nbsp;&nbsp;<span style='position: relative; top: -4px;'>Hier kommst du zu deinem ggf. aktivierten Klassenstream:</span>&nbsp;&nbsp;<a class='float-right btn btn fc-button-primary streaming-button' href='#{class_stream_link_for_session_user}' target='_blank'><i class='bi bi-microphone'></i>&nbsp;&nbsp;Zum Klassenstream&nbsp;&nbsp;<i class='bi bi-angle-double-right'></i></a>
                     <div style='clear: both;'></div>
                 </div>
             </div>
             <div class='hint' style='height: 60px; position: relative; top: 23px; #{tablet_logged_in? ? '' : 'display: none;'}'>
                 <div style='position: relative; top: 8px;'>
-                    <span class='bullet'><i class='fa fa-check'></i></span><b>Schritt #{(kurs_tablet_logged_in? || teacher_tablet_logged_in? || klassenraum_logged_in?) ? '3' : '2'}:</b> Stunde auswählen
+                    <span class='bullet'><i class='bi bi-check'></i></span><b>Schritt #{(kurs_tablet_logged_in? || teacher_tablet_logged_in? || klassenraum_logged_in?) ? '3' : '2'}:</b> Stunde auswählen
                 </div>
             </div>
             <div id='calendar' style='margin-bottom: 30px;'>
@@ -173,13 +173,13 @@
             <textarea class='form-control' id='ta_ha_amt_text' placeholder='Hier kannst du die Hausaufgaben zu dieser Stunde eintragen'></textarea>
         </div>
         <div style="#{teacher_logged_in? ? '' : 'display: none;'}">
-            <a class="btn btn-warning bu-mail"><i class='fa fa-envelope-o'></i>&nbsp;&nbsp;E-Mail</a>
+            <a class="btn btn-warning bu-mail"><i class='bi bi-envelope-o'></i>&nbsp;&nbsp;E-Mail</a>
         </div>
-        <a class="btn btn-success bu-edit-lesson"><i class='fa fa-edit'></i>&nbsp;&nbsp;Bearbeiten</a>
-        <button class="show-ha-amt-only btn btn-secondary bu-discard-ha-amt-text-changes"><i class='fa fa-trash'></i>&nbsp;&nbsp;Änderungen verwerfen</button>
-        <button class="show-ha-amt-only btn btn-success bu-save-ha-amt-text-changes"><i class='fa fa-check'></i>&nbsp;&nbsp;Änderungen speichern</button>
-        <button class="show-ha-amt-only btn btn-success bu-enter-ha-amt-text"><i class='fa fa-pencil'></i>&nbsp;&nbsp;Hausaufgaben eintragen</button>
-        <button type="button" class="btn btn-secondary" data-dismiss="modal"><i class='fa fa-times'></i>&nbsp;&nbsp;Schließen</button>
+        <a class="btn btn-success bu-edit-lesson"><i class='bi bi-edit'></i>&nbsp;&nbsp;Bearbeiten</a>
+        <button class="show-ha-amt-only btn btn-secondary bu-discard-ha-amt-text-changes"><i class='bi bi-trash'></i>&nbsp;&nbsp;Änderungen verwerfen</button>
+        <button class="show-ha-amt-only btn btn-success bu-save-ha-amt-text-changes"><i class='bi bi-check'></i>&nbsp;&nbsp;Änderungen speichern</button>
+        <button class="show-ha-amt-only btn btn-success bu-enter-ha-amt-text"><i class='bi bi-pencil'></i>&nbsp;&nbsp;Hausaufgaben eintragen</button>
+        <button type="button" class="btn btn-secondary" data-dismiss="modal"><i class='bi bi-times'></i>&nbsp;&nbsp;Schließen</button>
       </div>
     </div>
   </div>
@@ -211,7 +211,7 @@
             </div>
         </div>
         <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" data-dismiss="modal"><i class='fa fa-times'></i>&nbsp;&nbsp;Schließen</button>
+          <button type="button" class="btn btn-secondary" data-dismiss="modal"><i class='bi bi-times'></i>&nbsp;&nbsp;Schließen</button>
         </div>
       </div>
     </div>
@@ -267,10 +267,10 @@
         </div>
       </div>
       <div class="modal-footer">
-        <div class='feedback_submit_success mr-auto'><i class='fa fa-check-circle text-success'></i>&nbsp;&nbsp;Dein Feedback wurde gespeichert.</div>
-        <div class='feedback_submit_error mr-auto'><i class='fa fa-exclamation-circle text-danger'></i>&nbsp;&nbsp;Dein Feedback konnte nicht gespeichert werden<span class='poll_submit_error_message'></span></div>
-        <button id='bu_send_homework_feedback' type='button' class="btn btn-success"><i class='fa fa-send'></i>&nbsp;&nbsp;Feedback speichern</button>
-        <button type="button" class="btn btn-secondary" data-dismiss="modal"><i class='fa fa-times'></i>&nbsp;&nbsp;Schließen</button>
+        <div class='feedback_submit_success mr-auto'><i class='bi bi-check-circle text-success'></i>&nbsp;&nbsp;Dein Feedback wurde gespeichert.</div>
+        <div class='feedback_submit_error mr-auto'><i class='bi bi-exclamation-circle text-danger'></i>&nbsp;&nbsp;Dein Feedback konnte nicht gespeichert werden<span class='poll_submit_error_message'></span></div>
+        <button id='bu_send_homework_feedback' type='button' class="btn btn-success"><i class='bi bi-send'></i>&nbsp;&nbsp;Feedback speichern</button>
+        <button type="button" class="btn btn-secondary" data-dismiss="modal"><i class='bi bi-times'></i>&nbsp;&nbsp;Schließen</button>
       </div>
     </div>
   </div>
@@ -290,7 +290,7 @@
                     Sie können nun den Zugang zum Datentresor für <strong><span class="ad_hoc_login_name_here"></span></strong> (<span id="ad_hoc_login_email_here"></span>) freischalten.
                     </p>
                     <div class='alert alert-warning'>
-                          <i class='fa fa-exclamation-circle'></i>&nbsp;&nbsp;<b>Achtung!</b> Bitte vergewissern Sie sich, dass Sie die richtige Person am Telefon haben.
+                          <i class='bi bi-exclamation-circle'></i>&nbsp;&nbsp;<b>Achtung!</b> Bitte vergewissern Sie sich, dass Sie die richtige Person am Telefon haben.
                     </div>
                     <div class='alert alert-secondary div_ad_hoc_fresh_sms'>
                         Für <span class="ad_hoc_login_name_here"></span> wurde heute eine neue Telefonnummer hinterlegt, die erst ab morgen zur Anmeldung am Datentresor verwendet werden kann.
@@ -304,10 +304,10 @@
           </div>
         </div>
         <div class="modal-footer">
-        <button class="btn btn-secondary div_ad_hoc_fresh_sms bu_unlock_2fa_sms"><i class='fa fa-mobile'></i>&nbsp;&nbsp;SMS jetzt freigeben</button>
-        <button class="btn btn-secondary div_ad_hoc_fresh_otp bu_unlock_2fa_otp"><i class='fa fa-qrcode'></i>&nbsp;&nbsp;OTP jetzt freigeben</button>
-        <button id='bu_perform_ad_hoc_signin' type='button' class="btn btn-success"><i class='fa fa-sign-in'></i>&nbsp;&nbsp;Anmeldung erlauben</button>
-          <button type="button" class="btn btn-danger" data-dismiss="modal"><i class='fa fa-times'></i>&nbsp;&nbsp;Anmeldung ablehnen</button>
+        <button class="btn btn-secondary div_ad_hoc_fresh_sms bu_unlock_2fa_sms"><i class='bi bi-mobile'></i>&nbsp;&nbsp;SMS jetzt freigeben</button>
+        <button class="btn btn-secondary div_ad_hoc_fresh_otp bu_unlock_2fa_otp"><i class='bi bi-qrcode'></i>&nbsp;&nbsp;OTP jetzt freigeben</button>
+        <button id='bu_perform_ad_hoc_signin' type='button' class="btn btn-success"><i class='bi bi-sign-in'></i>&nbsp;&nbsp;Anmeldung erlauben</button>
+          <button type="button" class="btn btn-danger" data-dismiss="modal"><i class='bi bi-times'></i>&nbsp;&nbsp;Anmeldung ablehnen</button>
         </div>
       </div>
     </div>
@@ -447,7 +447,7 @@ function render_timetable(result, successCallback) {
             $('.weekend_events').append($('<p>' + time_str + '<br /><b>' + event.event_title + '</b><br />' + event.organized_by));
             $('.weekend_events').append(fix_bad_html($('<div>').html(event.description)));
             if (event.jitsi == true) {
-                $('.weekend_events').append($('<a href="/jitsi/event/' + event.eid + '" target="_blank" class="btn btn-sm btn-primary"><i class="fa fa-microphone"></i>&nbsp;&nbsp;Zum Jitsi-Raum&nbsp;&nbsp;<i class="fa fa-angle-double-right"></i></a></p>'));
+                $('.weekend_events').append($('<a href="/jitsi/event/' + event.eid + '" target="_blank" class="btn btn-sm btn-primary"><i class="bi bi-microphone"></i>&nbsp;&nbsp;Zum Jitsi-Raum&nbsp;&nbsp;<i class="bi bi-angle-double-right"></i></a></p>'));
             }
             wrote_weekend_event_header = true;
         }
@@ -617,7 +617,7 @@ function install_physics_handler(e) {
 
 function reload_print_button() {
     if (timetable_id == '#{@session_user[:id]}' && #{schueler_logged_in?}) {
-        $('.fc-print-button').html('<i class="fa fa-print"></i>');
+        $('.fc-print-button').html('<i class="bi bi-print"></i>');
         $('.fc-print-button').show();
     } else {
         console.log("hide")
@@ -667,10 +667,10 @@ var REASON_LABEL = {
 function generate_mail_pending_row(entry, sus_info) {
     let row = $(`<tr>`).data('email', sus_info.email).data('type', 'pending');
     if (typeof(entry.ts_sent_h) !== 'undefined' && entry.ts_sent_h !== null) {
-        row.append($(`<td colspan='2'>`).html(`<i class='fa fa-check text-success'></i>&nbsp;&nbsp;<em>»${REASON_LABEL[entry.reason] ?? entry.reason}« (${sus_info.display_first_name}) wurde um ${entry.ts_sent_h} Uhr gesendet</em>`));
+        row.append($(`<td colspan='2'>`).html(`<i class='bi bi-check text-success'></i>&nbsp;&nbsp;<em>»${REASON_LABEL[entry.reason] ?? entry.reason}« (${sus_info.display_first_name}) wurde um ${entry.ts_sent_h} Uhr gesendet</em>`));
     } else {
-        row.append($(`<td>`).html(`<i class='fa fa-clock-o'></i>&nbsp;&nbsp;<em>»${REASON_LABEL[entry.reason] ?? entry.reason}« (${sus_info.display_first_name}) wird um ${entry.ts_h} Uhr gesendet</em>`));
-        let button = $(`<button class='btn btn-sm btn-secondary'>`).html(`<i class='fa fa-times'></i>&nbsp;&nbsp;Abbrechen`);
+        row.append($(`<td>`).html(`<i class='bi bi-clock-o'></i>&nbsp;&nbsp;<em>»${REASON_LABEL[entry.reason] ?? entry.reason}« (${sus_info.display_first_name}) wird um ${entry.ts_h} Uhr gesendet</em>`));
+        let button = $(`<button class='btn btn-sm btn-secondary'>`).html(`<i class='bi bi-times'></i>&nbsp;&nbsp;Abbrechen`);
         button.on('click', function(e) {
             api_call('/api/cancel_email', {tag: entry.tag}, function(data) {
                 if (data.success) {
@@ -839,7 +839,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
                 let markers = $('<span>').addClass('cem');
                 if (event_data.stundenthema_text)
-                    markers.append($('<span>').html("<i class='fa fa-info-circle'></i>"));
+                    markers.append($('<span>').html("<i class='bi bi-info-circle'></i>"));
                 if (event_data.lesson_jitsi) {
                     if (event_data.breakout_rooms)
                         markers.append($('<span>').addClass('mute').html('Jitsi / GR'));
@@ -849,15 +849,15 @@ document.addEventListener('DOMContentLoaded', function() {
                         markers.append($(event_data.booked_tablet_label_short));
                 }
                 if (event_data.booked_tablet_sets) {
-                    markers.append($('<span>').css('font-weight', 'normal').html(`<i class='fa fa-laptop'></i> <i class='fa fa-tablet'></i> &times;${event_data.booked_tablet_sets_total_count}`));
+                    markers.append($('<span>').css('font-weight', 'normal').html(`<i class='bi bi-laptop'></i> <i class='bi bi-tablet'></i> &times;${event_data.booked_tablet_sets_total_count}`));
                 }
                 let contact_person_sus = arg.event.extendedProps.contact_person_sus || [];
                 if (contact_person_sus.length > 0) {
-                    markers.append($('<span>').css('font-weight', 'normal').html(`<i class='fa fa-exclamation-circle'></i> &times;${contact_person_sus.length}`));
+                    markers.append($('<span>').css('font-weight', 'normal').html(`<i class='bi bi-exclamation-circle'></i> &times;${contact_person_sus.length}`));
                 }
                 let salzh_sus = arg.event.extendedProps.salzh_sus || [];
                 if (salzh_sus.length > 0) {
-                    markers.append($('<span>').css('font-weight', 'normal').html(`<i class='fa fa-home'></i> &times;${salzh_sus.length}`));
+                    markers.append($('<span>').css('font-weight', 'normal').html(`<i class='bi bi-home'></i> &times;${salzh_sus.length}`));
                 }
                 if (event_data.lesson_nc || event_data.homework_nc)
                     markers.append($('<span>').addClass('mute').html('NC'));
@@ -870,11 +870,11 @@ document.addEventListener('DOMContentLoaded', function() {
                         markers.append($('<span>').html('HA'));
                 }
                 if (per_user.text_comments || per_user.audio_comments)
-                    markers.append($('<span>').html("<i class='fa fa-comment'></i>"));
+                    markers.append($('<span>').html("<i class='bi bi-comment'></i>"));
                 if (per_user.can_have_sus_feedback) {
                     if (teacher_logged_in) {
                         if ((Object.keys(per_user.lesson_notes || {})).length > 0) {
-                            markers.append($('<span>').html(`${Object.keys(per_user.lesson_notes).length}x <i class='fa fa-file-text-o'></i>`));
+                            markers.append($('<span>').html(`${Object.keys(per_user.lesson_notes).length}x <i class='bi bi-file-text-o'></i>`));
                         }
                     } else {
                         markers.append($('<span>').html(`<i id='icon_hybrid_notes_${arg.event.extendedProps.lesson_key}_${arg.event.extendedProps.lesson_offset}' class='fa ${(((lesson_notes[arg.event.extendedProps.lesson_key] || {})[arg.event.extendedProps.lesson_offset] || '').length > 0) ? 'fa-file-text-o': 'fa-file-o'}'></i>`));
@@ -1087,7 +1087,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         let row = $(`<tr>`).data('email', sus_info.email).data('type', 'sus');
                         row.append($(`<td>`).text(`${sus_info.display_last_name}, ${sus_info.display_first_name}`));
                         // row.append($(`<td>`).append($(`<span class='badge bg-danger'>H</span>`)));
-                        let button = $(`<button class='btn btn-sm btn-warning' style='white-space: nowrap;'>`).html(`<i class='fa fa-send'></i>&nbsp;&nbsp;E-Mail senden`);
+                        let button = $(`<button class='btn btn-sm btn-warning' style='white-space: nowrap;'>`).html(`<i class='bi bi-send'></i>&nbsp;&nbsp;E-Mail senden`);
                         button.on('click', function(e) {
                             let email = $(e.target).closest('tr').data('email');
                             email_div_rows[email].bu_send.prop('disabled', true);
@@ -1171,7 +1171,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 body.append('<hr />');
                 if (event.jitsi) {
                     let jitsi_link = '/jitsi/event/' + event.eid;
-                    body.append($('<a>').attr('href', jitsi_link).attr('target', '_blank').addClass('float-right').addClass('btn').addClass('btn-primary').css('margin-right', '5px').css('margin-bottom', '5px').html("<i class='fa fa-microphone'></i>&nbsp;&nbsp;Zum Jitsi-Raum&nbsp;&nbsp;<i class='fa fa-angle-double-right'></i>"));
+                    body.append($('<a>').attr('href', jitsi_link).attr('target', '_blank').addClass('float-right').addClass('btn').addClass('btn-primary').css('margin-right', '5px').css('margin-bottom', '5px').html("<i class='bi bi-microphone'></i>&nbsp;&nbsp;Zum Jitsi-Raum&nbsp;&nbsp;<i class='bi bi-angle-double-right'></i>"));
                     body.append($('<div>').html('Die Veranstaltung findet per Jitsi Meet statt.'));
                     body.append("<hr style='margin-top: 30px;'/>");
                 }
@@ -1182,7 +1182,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     $('#lessonModal .bu-edit-lesson').attr('href', '/events#' + event.eid).show();
                 else
                     $('#lessonModal .bu-edit-lesson').hide();
-//                 body.append($('<a>').attr('href', jitsi_link).attr('target', '_blank').addClass('btn').addClass('btn-primary').css('margin-right', '5px').css('margin-bottom', '5px').html("<i class='fa fa-microphone'></i>&nbsp;&nbsp;Zum Jitsi-Raum&nbsp;&nbsp;<i class='fa fa-angle-double-right'></i>"));
+//                 body.append($('<a>').attr('href', jitsi_link).attr('target', '_blank').addClass('btn').addClass('btn-primary').css('margin-right', '5px').css('margin-bottom', '5px').html("<i class='bi bi-microphone'></i>&nbsp;&nbsp;Zum Jitsi-Raum&nbsp;&nbsp;<i class='bi bi-angle-double-right'></i>"));
             }
             let event_data = event.data || {};
             let per_user = event.per_user || {};
@@ -1254,7 +1254,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     body.append(p);
                 }
                 if (event_data.lesson_jitsi) {
-                    body.append($('<a>').attr('href', jitsi_link).attr('target', '_blank').addClass('btn').addClass('btn-primary').css('margin-right', '5px').css('margin-bottom', '5px').html("<i class='fa fa-microphone'></i>&nbsp;&nbsp;Zum Jitsi-Raum&nbsp;&nbsp;<i class='fa fa-angle-double-right'></i>"));
+                    body.append($('<a>').attr('href', jitsi_link).attr('target', '_blank').addClass('btn').addClass('btn-primary').css('margin-right', '5px').css('margin-bottom', '5px').html("<i class='bi bi-microphone'></i>&nbsp;&nbsp;Zum Jitsi-Raum&nbsp;&nbsp;<i class='bi bi-angle-double-right'></i>"));
                     let names_div = $('<div>');
                     body.append(names_div);
                     jitsi_refresh_config.jitsi_names_div = names_div;
@@ -1264,7 +1264,7 @@ document.addEventListener('DOMContentLoaded', function() {
                             body.append($('<p>').text(`Für diese Unterrichtsstunde stehen außerdem die folgenden Gruppenräume zur Verfügung. Bitte geh zuerst in den normalen Jitsi-Raum.`));
                             for (let group_room_name of event_data.breakout_rooms) {
                                 let breakout_room_link = `/jitsi/lesson/${event.lesson_key}/${group_room_name}`;
-                                body.append($('<a>').attr('href', breakout_room_link).attr('target', '_blank').addClass('btn').addClass('btn-sm').addClass('btn-primary').css('margin-right', '5px').css('margin-bottom', '5px').html(`<i class='fa fa-microphone'></i>&nbsp;&nbsp;${group_room_name}&nbsp;&nbsp;<i class='fa fa-angle-double-right'></i>`));
+                                body.append($('<a>').attr('href', breakout_room_link).attr('target', '_blank').addClass('btn').addClass('btn-sm').addClass('btn-primary').css('margin-right', '5px').css('margin-bottom', '5px').html(`<i class='bi bi-microphone'></i>&nbsp;&nbsp;${group_room_name}&nbsp;&nbsp;<i class='bi bi-angle-double-right'></i>`));
                             }
                             body.append($('<hr />'));
                         } else {
@@ -1273,7 +1273,7 @@ document.addEventListener('DOMContentLoaded', function() {
                             let breakout_room_link = `/jitsi/lesson/${event.lesson_key}/${group_room_name}`;
                             body.append($('<hr />'));
                             body.append($('<p>').text(`Du bist außerdem in den Gruppenraum »${group_room_name}« eingeteilt. Bitte geh zuerst in den normalen Jitsi-Raum.`));
-                            body.append($('<a>').attr('href', breakout_room_link).attr('target', '_blank').addClass('btn').addClass('btn-sm').addClass('btn-primary').css('margin-right', '5px').css('margin-bottom', '5px').html(`<i class='fa fa-microphone'></i>&nbsp;&nbsp;Zum Gruppenraum »${group_room_name}«&nbsp;&nbsp;<i class='fa fa-angle-double-right'></i>`));
+                            body.append($('<a>').attr('href', breakout_room_link).attr('target', '_blank').addClass('btn').addClass('btn-sm').addClass('btn-primary').css('margin-right', '5px').css('margin-bottom', '5px').html(`<i class='bi bi-microphone'></i>&nbsp;&nbsp;Zum Gruppenraum »${group_room_name}«&nbsp;&nbsp;<i class='bi bi-angle-double-right'></i>`));
                             body.append($('<hr />'));
                         }
                     }
@@ -1284,7 +1284,7 @@ document.addEventListener('DOMContentLoaded', function() {
                             for (let group_room_name of event_data.breakout_rooms) {
                                 body.append($('<hr />'));
                                 let breakout_room_link = `/jitsi/lesson/${event.lesson_key}/${group_room_name}`;
-                                body.append($('<a>').attr('href', breakout_room_link).attr('target', '_blank').addClass('btn').addClass('btn-sm').addClass('btn-primary').css('margin-right', '5px').css('margin-bottom', '5px').html(`<i class='fa fa-microphone'></i>&nbsp;&nbsp;${group_room_name}&nbsp;&nbsp;<i class='fa fa-angle-double-right'></i>`));
+                                body.append($('<a>').attr('href', breakout_room_link).attr('target', '_blank').addClass('btn').addClass('btn-sm').addClass('btn-primary').css('margin-right', '5px').css('margin-bottom', '5px').html(`<i class='bi bi-microphone'></i>&nbsp;&nbsp;${group_room_name}&nbsp;&nbsp;<i class='bi bi-angle-double-right'></i>`));
                                 let names_div = $('<div>');
                                 body.append(names_div);
                                 jitsi_refresh_config.jitsi_breakout_rooms_names_divs.push(names_div);
@@ -1317,11 +1317,11 @@ document.addEventListener('DOMContentLoaded', function() {
                     body.append('<p>Es befindet sich Unterrichtsmaterial ' + label + '.</p>');
                 }
                 if (event_data.lesson_nc) {
-                    body.append($('<a>').attr('href', nc_ausgabe_link).attr('target', '_blank').addClass('btn').addClass('btn-primary').css('margin-right', '5px').css('margin-bottom', '5px').html("<i class='fa fa-nextcloud'></i>&nbsp;&nbsp;Zum Ausgabe-Ordner&nbsp;&nbsp;<i class='fa fa-angle-double-right'></i>"));
-                    body.append($('<a>').attr('href', nc_einsammel_link).attr('target', '_blank').addClass('btn').addClass('btn-primary').css('margin-right', '5px').css('margin-bottom', '5px').html("<i class='fa fa-nextcloud'></i>&nbsp;&nbsp;Zum Einsammel-Ordner&nbsp;&nbsp;<i class='fa fa-angle-double-right'></i>"));
+                    body.append($('<a>').attr('href', nc_ausgabe_link).attr('target', '_blank').addClass('btn').addClass('btn-primary').css('margin-right', '5px').css('margin-bottom', '5px').html("<i class='bi bi-nextcloud'></i>&nbsp;&nbsp;Zum Ausgabe-Ordner&nbsp;&nbsp;<i class='bi bi-angle-double-right'></i>"));
+                    body.append($('<a>').attr('href', nc_einsammel_link).attr('target', '_blank').addClass('btn').addClass('btn-primary').css('margin-right', '5px').css('margin-bottom', '5px').html("<i class='bi bi-nextcloud'></i>&nbsp;&nbsp;Zum Einsammel-Ordner&nbsp;&nbsp;<i class='bi bi-angle-double-right'></i>"));
                 }
                 if (event_data.lesson_lr)
-                    body.append($('<a>').attr('href', 'https://www.lernraum-berlin.de/').attr('target', '_blank').addClass('btn').addClass('btn-primary').css('margin-right', '5px').css('margin-bottom', '5px').html("<i class='fa fa-external-link'></i>&nbsp;&nbsp;Zum Lernraum&nbsp;&nbsp;<i class='fa fa-angle-double-right'></i>"));
+                    body.append($('<a>').attr('href', 'https://www.lernraum-berlin.de/').attr('target', '_blank').addClass('btn').addClass('btn-primary').css('margin-right', '5px').css('margin-bottom', '5px').html("<i class='bi bi-external-link'></i>&nbsp;&nbsp;Zum Lernraum&nbsp;&nbsp;<i class='bi bi-angle-double-right'></i>"));
                 wrote_something = true;
             }
             if (teacher_tablet_logged_in || klassenraum_logged_in) {
@@ -1329,7 +1329,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     if (event.lesson_key !== 0) {
                         console.log(event);
                         body.append($('<div>').addClass('alert').addClass('alert-warning').html("Diese Stunde ist bisher nicht als Jitsi-Stunde markiert. Sie können dies nun nachholen und den Raum betreten. Beachten Sie bitte, dass es eine Minute dauern kann, bis diese Änderung bei Ihren Schülerinnen und Schülern zu sehen ist (diese müssen dafür auch ihren Stundenplan neu laden). Bitte markieren Sie die Stunden &ndash; wenn möglich &ndash; mit etwas Vorlauf, damit die Information rechtzeitig bei Ihren Schülerinnen und Schülern angezeigt wird."));
-                        let button = $('<button>').addClass('btn').addClass('btn-primary').css('margin-right', '5px').css('margin-bottom', '5px').html("<i class='fa fa-microphone'></i>&nbsp;&nbsp;Jitsi für diese Stunde aktivieren und per Jitsi Meet beitreten&nbsp;&nbsp;<i class='fa fa-angle-double-right'></i>");
+                        let button = $('<button>').addClass('btn').addClass('btn-primary').css('margin-right', '5px').css('margin-bottom', '5px').html("<i class='bi bi-microphone'></i>&nbsp;&nbsp;Jitsi für diese Stunde aktivieren und per Jitsi Meet beitreten&nbsp;&nbsp;<i class='bi bi-angle-double-right'></i>");
                         button.data('jitsi_link', jitsi_link);
                         button.data('lesson_key', event.lesson_key);
                         button.data('lesson_offset', event.lesson_offset);
@@ -1355,11 +1355,11 @@ document.addEventListener('DOMContentLoaded', function() {
                     body.append("<p style='white-space: pre-line;'>" + event_data.hausaufgaben_text + '</p>');
                 if (event_data.homework_nc) {
                     body.append('<p><b>Nextcloud</b></p>');
-                    body.append($('<a>').attr('href', nc_ausgabe_link).attr('target', '_blank').addClass('btn').addClass('btn-primary').css('margin-right', '5px').css('margin-bottom', '5px').html("<i class='fa fa-nextcloud'></i>&nbsp;&nbsp;Zum Ausgabe-Ordner&nbsp;&nbsp;<i class='fa fa-angle-double-right'></i>"));
-                    body.append($('<a>').attr('href', nc_einsammel_link).attr('target', '_blank').addClass('btn').addClass('btn-primary').css('margin-right', '5px').css('margin-bottom', '5px').html("<i class='fa fa-nextcloud'></i>&nbsp;&nbsp;Zum Einsammel-Ordner&nbsp;&nbsp;<i class='fa fa-angle-double-right'></i>"));
+                    body.append($('<a>').attr('href', nc_ausgabe_link).attr('target', '_blank').addClass('btn').addClass('btn-primary').css('margin-right', '5px').css('margin-bottom', '5px').html("<i class='bi bi-nextcloud'></i>&nbsp;&nbsp;Zum Ausgabe-Ordner&nbsp;&nbsp;<i class='bi bi-angle-double-right'></i>"));
+                    body.append($('<a>').attr('href', nc_einsammel_link).attr('target', '_blank').addClass('btn').addClass('btn-primary').css('margin-right', '5px').css('margin-bottom', '5px').html("<i class='bi bi-nextcloud'></i>&nbsp;&nbsp;Zum Einsammel-Ordner&nbsp;&nbsp;<i class='bi bi-angle-double-right'></i>"));
                 }
                 if (event_data.homework_lr)
-                    body.append($('<a>').attr('href', 'https://www.lernraum-berlin.de/').attr('target', '_blank').addClass('btn').addClass('btn-primary').css('margin-right', '5px').css('margin-bottom', '5px').html("<i class='fa fa-external-link'></i>&nbsp;&nbsp;Zum Lernraum&nbsp;&nbsp;<i class='fa fa-angle-double-right'></i>"));
+                    body.append($('<a>').attr('href', 'https://www.lernraum-berlin.de/').attr('target', '_blank').addClass('btn').addClass('btn-primary').css('margin-right', '5px').css('margin-bottom', '5px').html("<i class='bi bi-external-link'></i>&nbsp;&nbsp;Zum Lernraum&nbsp;&nbsp;<i class='bi bi-angle-double-right'></i>"));
                 if (per_user.homework_feedback)
                 {
                     let parts = [];
@@ -1510,14 +1510,14 @@ document.addEventListener('DOMContentLoaded', function() {
                     bu_done.data('homework', entry);
                     let mi_button = $('<button>').addClass('btn').addClass('btn-sm').addClass('dropdown-toggle').attr('data-toggle', 'dropdown').css('margin-bottom', '5px');
                     let dropdown_menu = $('<div>').addClass('dropdown-menu');
-                    let mi_set_undone = $('<button>').addClass('dropdown-item').addClass('bu-set-undone').html("<i class='fa fa-clock-o'></i>noch nicht erledigt");
-                    let mi_set_done = $('<button>').addClass('dropdown-item').addClass('bu-set-done').html("<i class='fa fa-check'></i>erledigt");
-                    let mi_feedback = $('<button>').addClass('dropdown-item').html("<i class='fa fa-comment-o'></i>Feedback geben…");
+                    let mi_set_undone = $('<button>').addClass('dropdown-item').addClass('bu-set-undone').html("<i class='bi bi-clock-o'></i>noch nicht erledigt");
+                    let mi_set_done = $('<button>').addClass('dropdown-item').addClass('bu-set-done').html("<i class='bi bi-check'></i>erledigt");
+                    let mi_feedback = $('<button>').addClass('dropdown-item').html("<i class='bi bi-comment-o'></i>Feedback geben…");
                     if (homework_feedback[`${entry.lesson_key}/${entry.offset}`].done) {
-                        mi_button.addClass('btn-success').html("<i class='fa fa-check'></i>&nbsp;&nbsp;erledigt");
+                        mi_button.addClass('btn-success').html("<i class='bi bi-check'></i>&nbsp;&nbsp;erledigt");
                         mi_set_done.hide();
                     } else {
-                        mi_button.addClass('btn-outline-secondary').html("<i class='fa fa-clock-o'></i>&nbsp;&nbsp;noch nicht erledigt");
+                        mi_button.addClass('btn-outline-secondary').html("<i class='bi bi-clock-o'></i>&nbsp;&nbsp;noch nicht erledigt");
                         mi_set_undone.hide();
                     }
                     bu_done.append(mi_button);
@@ -1535,7 +1535,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         api_call('/api/mark_homework_done', {lesson_key: lesson_key, offset: offset}, function(data) {
                             if (data.success) {
                                 homework_feedback[`${lesson_key}/${offset}`].done = true;
-                                button.removeClass('btn-outline-secondary').addClass('btn-success').html("<i class='fa fa-check'></i>&nbsp;&nbsp;erledigt");
+                                button.removeClass('btn-outline-secondary').addClass('btn-success').html("<i class='bi bi-check'></i>&nbsp;&nbsp;erledigt");
                                 parent.find('.bu-set-done').hide();
                                 parent.find('.bu-set-undone').show();
                             }
@@ -1546,13 +1546,13 @@ document.addEventListener('DOMContentLoaded', function() {
                         let lesson_key = parent.data('lesson_key');
                         let offset = parent.data('offset');
                         let button = parent.find('.dropdown-toggle');
-                        button.removeClass('btn-success').addClass('btn-outline-secondary').html("<i class='fa fa-clock-o'></i>&nbsp;&nbsp;noch nicht erledigt");
+                        button.removeClass('btn-success').addClass('btn-outline-secondary').html("<i class='bi bi-clock-o'></i>&nbsp;&nbsp;noch nicht erledigt");
                         parent.find('.bu-set-undone').hide();
                         parent.find('.bu-set-done').show();
                         api_call('/api/mark_homework_undone', {lesson_key: lesson_key, offset: offset}, function(data) {
                             if (data.success) {
                                 homework_feedback[`${lesson_key}/${offset}`].done = false;
-                                button.removeClass('btn-success').addClass('btn-outline-secondary').html("<i class='fa fa-clock-o'></i>&nbsp;&nbsp;noch nicht erledigt");
+                                button.removeClass('btn-success').addClass('btn-outline-secondary').html("<i class='bi bi-clock-o'></i>&nbsp;&nbsp;noch nicht erledigt");
                                 parent.find('.bu-set-done').show();
                                 parent.find('.bu-set-undone').hide();
                             }
@@ -1749,7 +1749,7 @@ document.addEventListener('DOMContentLoaded', function() {
     $('.bu-add-self-test').click(function(e) {
         showTemplateModal('Testung protokollieren',
                 'Falls Sie sich <strong>heute</strong> getestet haben oder getestet worden sind <strong>und der Test negativ war</strong>, protokollieren Sie dieses Ergebnis nun bitte.',
-                "<i class='fa fa-check'></i>&nbsp;&nbsp;Negativen Test protokollieren", 'btn-success',
+                "<i class='bi bi-check'></i>&nbsp;&nbsp;Negativen Test protokollieren", 'btn-success',
                 'Abbrechen', 'btn-secondary', function () {
                     api_call('/api/add_self_test_for_today', {}, function (data) {
                         if (data.success) {

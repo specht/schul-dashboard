@@ -3,7 +3,7 @@
     <div class='row'>
         <div class='col-md-12'>
             <h2 style='margin-bottom: 30px;'>Umfragen</h2>
-            <button class='btn btn-success bu-new-poll'><i class='fa fa-plus-circle'></i>&nbsp;&nbsp;Neue Umfrage</button>
+            <button class='btn btn-success bu-new-poll'><i class='bi bi-plus-circle'></i>&nbsp;&nbsp;Neue Umfrage</button>
             <hr />
             <div class='polls-here'>
             </div>
@@ -35,15 +35,15 @@
                     <div class='col-md-12'>
                         <div class="btn-group">
                             <button type="button" class="btn btn-success dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                                <i class='fa fa-plus-circle'></i>&nbsp;&nbsp;Eintrag hinzufügen
+                                <i class='bi bi-plus-circle'></i>&nbsp;&nbsp;Eintrag hinzufügen
                             </button>
                             <div class="dropdown-menu">
-                                <a class='dropdown-item bu-poll-add-paragraph btn btn-success'><i class='fa fa-align-left'></i>&nbsp;&nbsp;Text hinzufügen</a>
-<!--                                 <a class='dropdown-item bu-poll-add-image btn btn-success'><i class='fa fa-photo'></i>&nbsp;&nbsp;Bild hinzufügen</a> -->
-                                <a class='dropdown-item bu-poll-add-radio btn btn-success'><i class='fa fa-list'></i>&nbsp;&nbsp;Auswahl hinzufügen</a>
-                                <a class='dropdown-item bu-poll-add-checkbox btn btn-success'><i class='fa fa-list'></i>&nbsp;&nbsp;Mehrfachauswahl hinzufügen</a>
-                                <a class='dropdown-item bu-poll-add-textarea btn btn-success'><i class='fa fa-i-cursor'></i>&nbsp;&nbsp;Freitextfeld hinzufügen</a>
-<!--                                 <a class='dropdown-item bu-poll-add-likert btn btn-success'><i class='fa fa-list'></i>&nbsp;&nbsp;Likert-Skala hinzufügen</a> -->
+                                <a class='dropdown-item bu-poll-add-paragraph btn btn-success'><i class='bi bi-align-left'></i>&nbsp;&nbsp;Text hinzufügen</a>
+<!--                                 <a class='dropdown-item bu-poll-add-image btn btn-success'><i class='bi bi-photo'></i>&nbsp;&nbsp;Bild hinzufügen</a> -->
+                                <a class='dropdown-item bu-poll-add-radio btn btn-success'><i class='bi bi-list'></i>&nbsp;&nbsp;Auswahl hinzufügen</a>
+                                <a class='dropdown-item bu-poll-add-checkbox btn btn-success'><i class='bi bi-list'></i>&nbsp;&nbsp;Mehrfachauswahl hinzufügen</a>
+                                <a class='dropdown-item bu-poll-add-textarea btn btn-success'><i class='bi bi-i-cursor'></i>&nbsp;&nbsp;Freitextfeld hinzufügen</a>
+<!--                                 <a class='dropdown-item bu-poll-add-likert btn btn-success'><i class='bi bi-list'></i>&nbsp;&nbsp;Likert-Skala hinzufügen</a> -->
                             </div>
                         </div>
                     </div>
@@ -51,8 +51,8 @@
             </div>
             <div class="modal-footer">
                 <div id='save_poll_btn_container'>
-                    <button id='bu_discard_poll' class='btn btn-outline-secondary' disabled><i class='fa fa-times'></i>&nbsp;&nbsp;<span>Verwerfen</span></button>
-                    <button id='bu_save_poll' class='btn btn-outline-secondary' disabled><i class='fa fa-check'></i>&nbsp;&nbsp;<span>Speichern</span></button>
+                    <button id='bu_discard_poll' class='btn btn-outline-secondary' disabled><i class='bi bi-times'></i>&nbsp;&nbsp;<span>Verwerfen</span></button>
+                    <button id='bu_save_poll' class='btn btn-outline-secondary' disabled><i class='bi bi-check'></i>&nbsp;&nbsp;<span>Speichern</span></button>
                 </div>
                 <button id='bu_close_poll_modal' type="button" class="btn btn-secondary" data-dismiss="modal">Schließen</button>
             </div>
@@ -78,7 +78,7 @@
                         <div class="form-group">
                             <label>Sichbarkeit (Dev)</label>
                             <div class='button-with-label'>
-                                <button id='visible' data-state='yes' class='btn_visible btn btn-info'><i class='fa fa-check'></i>&nbsp;&nbsp;Sichtbar</button>
+                                <button id='visible' data-state='yes' class='btn_visible btn btn-info'><i class='bi bi-check'></i>&nbsp;&nbsp;Sichtbar</button>
                             </div>
                         </div>
                     </div>
@@ -91,12 +91,12 @@
                     </div>
                     <div class='col-md-6'>
                         <div class="form-group">
-                        <button id='bu_poll_run_anonymous' class='form-control' style='overflow: hidden;'><i class='fa fa-user-secret'></i>&nbsp;&nbsp;Anonyme Erfassung der Umfrageergebnisse</button>
+                        <button id='bu_poll_run_anonymous' class='form-control' style='overflow: hidden;'><i class='bi bi-user-secret'></i>&nbsp;&nbsp;Anonyme Erfassung der Umfrageergebnisse</button>
                         </div>
                     </div>
                     <div class='col-md-6'>
                         <div class="form-group">
-                        <button id='bu_poll_run_non_anonymous' class='form-control' style='overflow: hidden;'><i class='fa fa-user'></i>&nbsp;&nbsp;Personengebundene Erfassung der Umfrageergebnisse</button>
+                        <button id='bu_poll_run_non_anonymous' class='form-control' style='overflow: hidden;'><i class='bi bi-user'></i>&nbsp;&nbsp;Personengebundene Erfassung der Umfrageergebnisse</button>
                         </div>
                     </div>
                 </div>
@@ -169,7 +169,7 @@
                         <li>Klicken Sie hier, um die fehlenden Einladungen per E-Mail zu versenden:</li>
                         </ol>
                         <div style='text-align: center;'>
-                            <button class='btn btn-success' id='bu_send_missing_invitations' disabled><i class='fa fa-send'></i>&nbsp;&nbsp;Fehlende Einladungen versenden</button>
+                            <button class='btn btn-success' id='bu_send_missing_invitations' disabled><i class='bi bi-send'></i>&nbsp;&nbsp;Fehlende Einladungen versenden</button>
                         </div>
                     </div>
                     <div class='alert alert-warning div_invites_requested' style='display: none;'>
@@ -194,8 +194,8 @@
             </div>
             <div class="modal-footer">
                 <div id='save_poll_run_btn_container'>
-                    <button id='bu_discard_poll_run' class='btn btn-outline-secondary' disabled><i class='fa fa-times'></i>&nbsp;&nbsp;<span>Verwerfen</span></button>
-                    <button id='bu_save_poll_run' class='btn btn-outline-secondary' disabled><i class='fa fa-check'></i>&nbsp;&nbsp;<span>Speichern</span></button>
+                    <button id='bu_discard_poll_run' class='btn btn-outline-secondary' disabled><i class='bi bi-times'></i>&nbsp;&nbsp;<span>Verwerfen</span></button>
+                    <button id='bu_save_poll_run' class='btn btn-outline-secondary' disabled><i class='bi bi-check'></i>&nbsp;&nbsp;<span>Speichern</span></button>
                 </div>
                 <button id='bu_close_poll_run_modal' type="button" class="btn btn-secondary" data-dismiss="modal">Schließen</button>
             </div>
@@ -519,7 +519,7 @@ function update_net_recipients_list() {
                 }
                 if (this_invitation_requested)
                     requested_invites = true;
-                let bu_invite = $('<button>').data('email', email).data('prid', old_prid).addClass('btn').addClass('btn-xs').addClass('btn-success').addClass('bu-send-invitation').html("<i class='fa fa-send'></i>&nbsp;&nbsp;Einladung senden");
+                let bu_invite = $('<button>').data('email', email).data('prid', old_prid).addClass('btn').addClass('btn-xs').addClass('btn-success').addClass('bu-send-invitation').html("<i class='bi bi-send'></i>&nbsp;&nbsp;Einladung senden");
                 if ((old_prid || '').length === 0)
                     bu_invite.removeClass('btn-success').addClass('btn-outline-secondary').prop('disabled', true);
                 row.append($('<td>').append(bu_invite));
@@ -654,9 +654,9 @@ function update_stored_polls() {
         let div = $('<div>').addClass('poll-div').data('pid', poll.pid);
         $('.polls-here').append(div);
         let bu_container = $('<div>').addClass('float-right').addClass('button-container');
-        let bu_run_poll = $('<button>').addClass('btn').addClass('btn-sm').addClass('btn-success').html("<i class='fa fa-play'></i>&nbsp;&nbsp;Neue Durchführung");
-        let bu_delete_poll = $('<button>').addClass('btn').addClass('btn-sm').addClass('btn-danger').html("<i class='fa fa-trash'></i>&nbsp;&nbsp;Löschen");
-        let bu_edit_poll = $('<button>').addClass('btn').addClass('btn-sm').addClass('btn-secondary').html("<i class='fa fa-edit'></i>&nbsp;&nbsp;Bearbeiten");
+        let bu_run_poll = $('<button>').addClass('btn').addClass('btn-sm').addClass('btn-success').html("<i class='bi bi-play'></i>&nbsp;&nbsp;Neue Durchführung");
+        let bu_delete_poll = $('<button>').addClass('btn').addClass('btn-sm').addClass('btn-danger').html("<i class='bi bi-trash'></i>&nbsp;&nbsp;Löschen");
+        let bu_edit_poll = $('<button>').addClass('btn').addClass('btn-sm').addClass('btn-secondary').html("<i class='bi bi-edit'></i>&nbsp;&nbsp;Bearbeiten");
         div.append(bu_container);
         bu_container.append(bu_edit_poll);
         bu_container.append(bu_delete_poll);
@@ -674,7 +674,7 @@ function update_stored_polls() {
             (function(pid) {
                 showTemplateModal('Umfrage löschen',
                     'Sind Sie sicher, dass Sie diese Umfrage löschen möchten?',
-                    "<i class='fa fa-trash'></i>&nbsp;&nbsp;Umfrage löschen", 'btn-danger',
+                    "<i class='bi bi-trash'></i>&nbsp;&nbsp;Umfrage löschen", 'btn-danger',
                     'Abbrechen', 'btn-secondary', function() {
                         delete_poll(pid);
                     }
@@ -733,10 +733,10 @@ function update_stored_polls() {
                 if (isNaN(percent))
                     percent = 0;
                 let bu_container = $('<div>').addClass('float-right').addClass('button-container-vertical');
-                let bu_poll_run_show_results = $('<button>').css('margin-left', '4px').addClass('btn').addClass('btn-primary').addClass('btn-sm').html(`<i class='fa fa-bar-chart'></i>&nbsp;&nbsp;Ergebnisse (${percent}% beantwortet)`);
-                let bu_poll_run_edit = $('<button>').css('margin-left', '4px').addClass('btn').addClass('btn-secondary').addClass('btn-sm').html("<i class='fa fa-edit'></i>&nbsp;&nbsp;Durchführung bearbeiten");
-                let bu_poll_run_stop = $('<button>').css('margin-left', '4px').addClass('btn').addClass('btn-danger').addClass('btn-sm').html(`<i class='fa fa-times'></i>&nbsp;&nbsp;Umfrage stoppen`);
-                let bu_poll_run_delete = $('<button>').css('margin-left', '4px').addClass('btn').addClass('btn-danger').addClass('btn-sm').html(`<i class='fa fa-trash'></i>&nbsp;&nbsp;Durchführung löschen`);
+                let bu_poll_run_show_results = $('<button>').css('margin-left', '4px').addClass('btn').addClass('btn-primary').addClass('btn-sm').html(`<i class='bi bi-bar-chart'></i>&nbsp;&nbsp;Ergebnisse (${percent}% beantwortet)`);
+                let bu_poll_run_edit = $('<button>').css('margin-left', '4px').addClass('btn').addClass('btn-secondary').addClass('btn-sm').html("<i class='bi bi-edit'></i>&nbsp;&nbsp;Durchführung bearbeiten");
+                let bu_poll_run_stop = $('<button>').css('margin-left', '4px').addClass('btn').addClass('btn-danger').addClass('btn-sm').html(`<i class='bi bi-times'></i>&nbsp;&nbsp;Umfrage stoppen`);
+                let bu_poll_run_delete = $('<button>').css('margin-left', '4px').addClass('btn').addClass('btn-danger').addClass('btn-sm').html(`<i class='bi bi-trash'></i>&nbsp;&nbsp;Durchführung löschen`);
                 let cell = $('<td>').css('text-align', 'right').css('overflow', 'visible');
                 if (state === 'running')
                     bu_container.append(bu_poll_run_stop);
@@ -748,7 +748,7 @@ function update_stored_polls() {
                     bu_container.append(bu_poll_run_delete);
                 run_div.append(bu_container);
                 run_div.append($('<p>').text(`Durchführung mit ${poll_run.recipients.length} Teilnehmern am ${m_start.format('ddd, D.M.Y')}`));
-                run_div.append($('<div>').html(`Status:&nbsp;&nbsp;<i class='fa fa-${icon} text-${color}'></i>&nbsp;&nbsp;${label}`));
+                run_div.append($('<div>').html(`Status:&nbsp;&nbsp;<i class='bi bi-${icon} text-${color}'></i>&nbsp;&nbsp;${label}`));
                 run_div.append($('<div>').html(`${m_start.format('ddd, D.M.Y, HH:mm')} Uhr (${duration_parts.join(', ')})`));
                 run_div.append($('<div>').html(`${poll_run.recipients.length} Teilnehmer (${poll_run.info.anonymous ? 'anonym' : 'personengebunden'})`));
                 bu_poll_run_show_results.click(function(e) {
@@ -769,7 +769,7 @@ function update_stored_polls() {
                     let prid = $(e.target).closest('.poll-run-div').data('prid');
                     showTemplateModal('Umfrage stoppen',
                         'Sind Sie sicher, dass Sie diese Umfrage stoppen möchten?',
-                        "<i class='fa fa-times'></i>&nbsp;&nbsp;Umfrage stoppen", 'btn-danger',
+                        "<i class='bi bi-times'></i>&nbsp;&nbsp;Umfrage stoppen", 'btn-danger',
                         'Abbrechen', 'btn-secondary', function() {
                             stop_poll_run(prid);
                         }
@@ -781,7 +781,7 @@ function update_stored_polls() {
                     let prid = $(e.target).closest('.poll-run-div').data('prid');
                     showTemplateModal('Durchführung löschen',
                         'Sind Sie sicher, dass Sie diese Durchführung löschen möchten?',
-                        "<i class='fa fa-trash'></i>&nbsp;&nbsp;Durchführung löschen", 'btn-danger',
+                        "<i class='bi bi-trash'></i>&nbsp;&nbsp;Durchführung löschen", 'btn-danger',
                         'Abbrechen', 'btn-secondary', function() {
                             delete_poll_run(prid);
                         }
@@ -798,14 +798,14 @@ function update_external_users_for_session_user() {
         let row = $('<tr>');
         row.append($('<td>').html(external_users_for_session_user.recipients[email].label));
         row.append($('<td>').html(email));
-//         let bu_toggle = $('<button>').data('email', email).addClass('btn').addClass('btn-xs').addClass('btn-secondary').html("<i class='fa fa-times'></i>&nbsp;&nbsp;nicht eingeladen");
+//         let bu_toggle = $('<button>').data('email', email).addClass('btn').addClass('btn-xs').addClass('btn-secondary').html("<i class='bi bi-times'></i>&nbsp;&nbsp;nicht eingeladen");
 //         row.append($('<td>').append(bu_toggle));
-        let bu_delete = $('<button>').data('email', email).addClass('btn').addClass('btn-xs').addClass('btn-danger').html("<i class='fa fa-trash'></i>");
+        let bu_delete = $('<button>').data('email', email).addClass('btn').addClass('btn-xs').addClass('btn-danger').html("<i class='bi bi-trash'></i>");
         row.append($('<td>').append(bu_delete));
         bu_delete.click(function(e) {
             showTemplateModal('Externen Teilnehmer löschen',
                 'Sind Sie sicher, dass Sie diesen externen Teilnehmer aus Ihrem Adressbuch löschen möchten?',
-                "<i class='fa fa-trash'></i>&nbsp;&nbsp;Externen Teilnehmer löschen", 'btn-danger',
+                "<i class='bi bi-trash'></i>&nbsp;&nbsp;Externen Teilnehmer löschen", 'btn-danger',
                 'Abbrechen', 'btn-secondary', function() {
                     let email = $(e.target).closest('.btn').data('email');
                     api_call('/api/delete_external_user', {email: email}, function(data) {
@@ -839,9 +839,9 @@ function update_current_poll() {
         let item = current_poll.items[item_index];
 
         let button_div = $('<div>').addClass('float-right');//.css('margin', '10px 0');
-        let bu_rm = $('<button>').attr('title', 'Eintrag löschen').addClass('ml-1').addClass('btn').addClass('btn-sm').addClass('btn-danger').html("<i class='fa fa-trash'></i>").data('item-index', item_index);
-        let bu_up = $('<button>').attr('title', 'Eintrag nach oben verschieben').addClass('ml-1').addClass('btn').addClass('btn-sm').addClass('btn-primary').html("<i class='fa fa-arrow-up'></i>").data('item-index', item_index);
-        let bu_down = $('<button>').attr('title', 'Eintrag nach untern verschieben').addClass('ml-1').addClass('btn').addClass('btn-sm').addClass('btn-primary').html("<i class='fa fa-arrow-down'></i>").data('item-index', item_index);
+        let bu_rm = $('<button>').attr('title', 'Eintrag löschen').addClass('ml-1').addClass('btn').addClass('btn-sm').addClass('btn-danger').html("<i class='bi bi-trash'></i>").data('item-index', item_index);
+        let bu_up = $('<button>').attr('title', 'Eintrag nach oben verschieben').addClass('ml-1').addClass('btn').addClass('btn-sm').addClass('btn-primary').html("<i class='bi bi-arrow-up'></i>").data('item-index', item_index);
+        let bu_down = $('<button>').attr('title', 'Eintrag nach untern verschieben').addClass('ml-1').addClass('btn').addClass('btn-sm').addClass('btn-primary').html("<i class='bi bi-arrow-down'></i>").data('item-index', item_index);
         if (item_index === 0)
             bu_up.prop('disabled', true);
         if (item_index === current_poll.items.length - 1)
@@ -908,9 +908,9 @@ function update_current_poll() {
                 let input_group = $('<div>').addClass('input-group');
                 let ti = $('<input>').attr('placeholder', 'Bitte geben Sie eine Antwortmöglichkeit ein').addClass('form-control').val(answer).attr('data-item-index', item_index).attr('data-answer-index', answer_index);
                 let button_div = $('<div>').addClass('input-group-append');
-                let bu_rm = $('<button>').attr('title', 'Antwortmöglichkeit löschen').addClass('btn').addClass('btn-outline-secondary').html("<i class='fa fa-trash'></i>").data('item-index', item_index).data('answer-index', answer_index);
-                let bu_up = $('<button>').attr('title', 'Antwortmöglichkeit nach oben verschieben').addClass('btn').addClass('btn-outline-secondary').html("<i class='fa fa-arrow-up'></i>").data('item-index', item_index).data('answer-index', answer_index);
-                let bu_down = $('<button>').attr('title', 'Antwortmöglichkeit nach unten verschieben').addClass('btn').addClass('btn-outline-secondary').html("<i class='fa fa-arrow-down'></i>").data('item-index', item_index).data('answer-index', answer_index);
+                let bu_rm = $('<button>').attr('title', 'Antwortmöglichkeit löschen').addClass('btn').addClass('btn-outline-secondary').html("<i class='bi bi-trash'></i>").data('item-index', item_index).data('answer-index', answer_index);
+                let bu_up = $('<button>').attr('title', 'Antwortmöglichkeit nach oben verschieben').addClass('btn').addClass('btn-outline-secondary').html("<i class='bi bi-arrow-up'></i>").data('item-index', item_index).data('answer-index', answer_index);
+                let bu_down = $('<button>').attr('title', 'Antwortmöglichkeit nach unten verschieben').addClass('btn').addClass('btn-outline-secondary').html("<i class='bi bi-arrow-down'></i>").data('item-index', item_index).data('answer-index', answer_index);
                 ti.change(function(e) {
                     let item_index = $(e.target).data('item-index');
                     let answer_index = $(e.target).data('answer-index');
@@ -957,7 +957,7 @@ function update_current_poll() {
             }
             div.append(bc);
             let bu_add_answer_div = $('<div>').addClass('button-with-label-relaxed');
-            let bu_add_answer = $('<button>').addClass('btn').addClass('btn-sm').addClass('btn-success').html("<i class='fa fa-plus'></i>&nbsp;&nbsp;Antwortmöglichkeit hinzufügen").data('item-index', item_index);
+            let bu_add_answer = $('<button>').addClass('btn').addClass('btn-sm').addClass('btn-success').html("<i class='bi bi-plus'></i>&nbsp;&nbsp;Antwortmöglichkeit hinzufügen").data('item-index', item_index);
             bu_add_answer.click(function(e) {
                 let item_index = $(e.target).data('item-index');
                 current_poll.items[item_index].answers.push('');

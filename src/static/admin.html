@@ -49,9 +49,9 @@
                 console.log('yay', data);
                 if (data.success) {
                     if (data.homeschooling) {
-                        $(e.target).removeClass('btn-secondary').addClass('btn-info').html("<i class='fa fa-home'></i>&nbsp;&nbsp;zu Hause");
+                        $(e.target).removeClass('btn-secondary').addClass('btn-info').html("<i class='bi bi-home'></i>&nbsp;&nbsp;zu Hause");
                     } else {
-                        $(e.target).removeClass('btn-info').addClass('btn-secondary').html("<i class='fa fa-building'></i>&nbsp;&nbsp;Präsenz");;
+                        $(e.target).removeClass('btn-info').addClass('btn-secondary').html("<i class='bi bi-building'></i>&nbsp;&nbsp;Präsenz");;
                     }
                 }
             });
@@ -142,7 +142,7 @@
         $('.bu-refresh-live').click(function (e) {
             showTemplateModal('Website aktualisieren',
                 'Sind Sie sicher, dass Sie die Website aktualisieren möchten?',
-                "<i class='fa fa-check'></i>&nbsp;&nbsp;Website aktualisieren", 'btn-success',
+                "<i class='bi bi-check'></i>&nbsp;&nbsp;Website aktualisieren", 'btn-success',
                 'Abbrechen', 'btn-secondary', function () {
                     $('#refresh-icon-live').addClass('fa-spin');
                     api_call('/api/refresh_entire_website', { staging: 'no' }, function (data) {

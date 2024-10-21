@@ -26,8 +26,8 @@
         <div class="col-md-12">
             <h2 style='margin-bottom: 30px;'>Aula Ablauf</h2>
             <hr>
-            <button class='btn btn-success bu-new-event'><i class='fa fa-list'></i>&nbsp;&nbsp;Neuer Eintrag</button>
-            <button class='btn btn-danger bu-clear-list pull-right'><i class='fa fa-trash'></i>&nbsp;&nbsp;Liste leeren</button>
+            <button class='btn btn-success bu-new-event'><i class='bi bi-list'></i>&nbsp;&nbsp;Neuer Eintrag</button>
+            <button class='btn btn-danger bu-clear-list pull-right'><i class='bi bi-trash'></i>&nbsp;&nbsp;Liste leeren</button>
             <hr>
             <div class='aula-events-container' style='max-width: 100%; overflow-x: auto;'>
                 <table class='table table-striped narrow' style='width: unset; min-width: 100%; color: #fff;'>
@@ -47,7 +47,7 @@
                 </table>
             </div>
             <br>
-            <a href='/api/aula_event_pdf' target='_blank' class='btn btn-primary'><i class='fa fa-file-pdf-o'></i>&nbsp;&nbsp;Download</a>
+            <a href='/api/aula_event_pdf' target='_blank' class='btn btn-primary'><i class='bi bi-file-pdf-o'></i>&nbsp;&nbsp;Download</a>
         </div>
     </div>
 </div>
@@ -62,7 +62,7 @@
                 <div class="table-responsive" style="max-width: 100%; overflow-x: auto;"><table class='table-narrow narrow table-sm table-striped'>#{print_light_structure()}</table></div>
             </div>
             <div class="modal-footer">
-                <button id='save_light_config' class='btn btn-success'><i class='fa fa-save'></i>&nbsp;&nbsp;Speichern</button>
+                <button id='save_light_config' class='btn btn-success'><i class='bi bi-save'></i>&nbsp;&nbsp;Speichern</button>
                 <button type="button" class="btn btn-secondary btn-outline" data-dismiss="modal">Schließen</button>
             </div>
         </div>
@@ -90,17 +90,17 @@
                     cell = $('<td>').append(ti_title);
                     row.append(cell);
                     let ti_light = $("<code>").text(entry.desk_array);
-                    let bu_light = $('<button>').addClass('btn').addClass('btn-warning').html("<i class='fa fa-lightbulb-o'></i>&nbsp;&nbsp;Licht");
+                    let bu_light = $('<button>').addClass('btn').addClass('btn-warning').html("<i class='bi bi-lightbulb-o'></i>&nbsp;&nbsp;Licht");
                     // row.append($('<td>').append(ti_light));
                     // row.append($('<td>').append(bu_light));
-                    let bu_finished = $('<button>').addClass('btn').addClass('btn').addClass('btn-success').html("<i class='fa fa-check'></i>&nbsp;&nbsp;Fertig");
-                    let bu_unfinished = $('<button>').addClass('btn').addClass('btn').addClass('btn-outline-secondary').html("<i class='fa fa-times'></i>&nbsp;&nbsp;Fertig");
+                    let bu_finished = $('<button>').addClass('btn').addClass('btn').addClass('btn-success').html("<i class='bi bi-check'></i>&nbsp;&nbsp;Fertig");
+                    let bu_unfinished = $('<button>').addClass('btn').addClass('btn').addClass('btn-outline-secondary').html("<i class='bi bi-times'></i>&nbsp;&nbsp;Fertig");
                     if (entry.finished == false) {
                         row.append($('<td>').append(bu_unfinished));
                     } else {
                         row.append($('<td>').append(bu_finished));
                     }
-                    let bu_delete = $('<button>').addClass('btn').addClass('btn').addClass('btn-danger').html("<i class='fa fa-trash'></i>&nbsp;&nbsp;Löschen");
+                    let bu_delete = $('<button>').addClass('btn').addClass('btn').addClass('btn-danger').html("<i class='bi bi-trash'></i>&nbsp;&nbsp;Löschen");
                     row.append($('<td>').append(bu_delete));
                     $('.events-here').append(row);
                     bu_light.click(function (e) {
@@ -179,7 +179,7 @@
         $('.bu-clear-list').click(function (e) {
             showTemplateModal('Liste leeren',
                 'Möchtest du die Liste wirklich unwiderruflich leeren?',
-                "<i class='fa fa-trash'></i>&nbsp;&nbsp;Liste leeren", 'btn-danger',
+                "<i class='bi bi-trash'></i>&nbsp;&nbsp;Liste leeren", 'btn-danger',
                 'Abbrechen', 'btn-secondary', function () {
                     api_call('/api/clear_aula_events', {}, function (data) {
                         refresh_events();

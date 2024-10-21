@@ -145,7 +145,7 @@
                             $('<td>').text(entry.r.fach || '–')
                         ];
                         if (#{can_manage_bib_special_access_logged_in?} === true) {
-                            let button = $(`<button class='btn btn-danger btn-xs'><i class='fa fa-trash'></i>&nbsp;&nbsp;Ausleihe aufheben</button>`).data('stem', entry.book.stem).data('bnr', entry.exemplar.bnr);
+                            let button = $(`<button class='btn btn-danger btn-xs'><i class='bi bi-trash'></i>&nbsp;&nbsp;Ausleihe aufheben</button>`).data('stem', entry.book.stem).data('bnr', entry.exemplar.bnr);
                             button.click(function(e) {
                                 e.preventDefault();
                                 e.stopPropagation();
@@ -153,7 +153,7 @@
                                 let bnr = $(e.target).data('bnr');
                                 showTemplateModal('Ausleihe aufheben',
                                     `Sind Sie sicher, dass Sie die Ausleihe aufheben möchten? <b>Achtung:</b> Das Exemplar wird dadurch in den <b>»in limbo«-Status</b> versetzt.<br />Signatur: <b>${entry.book.stem}-${entry.exemplar.bnr}</b><br/>Autor: <b>${entry.book.author}</b></br>Titel:<b> ${entry.book.title}</b>`,
-                                    "<i class='fa fa-trash'></i>&nbsp;&nbsp;Ausleihe aufheben", 'btn-danger',
+                                    "<i class='bi bi-trash'></i>&nbsp;&nbsp;Ausleihe aufheben", 'btn-danger',
                                     'Abbrechen', 'btn-secondary', function () {
                                         bib_api_call('/jwt/remove_ausleihe', {stem: entry.book.stem, bnr: entry.exemplar.bnr}, function(data) {
                                             if (data.success) window.location.reload();

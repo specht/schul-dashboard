@@ -316,9 +316,9 @@
                     row.append($(`<th style='width: 50px;'>`));
                     for (let item of TABLE_COLUMNS) {
                         let header = $(`<th>`).text(item[1]);
-                        let bu_sort_asc = $(`<span class='cursor-pointer inline-block bg-slate-900 hover:text-black rounded-full text-slate-500 font-sm ml-2 w-6 h-6 text-center'><i class='fa fa-angle-down'></i></span>`);
+                        let bu_sort_asc = $(`<span class='cursor-pointer inline-block bg-slate-900 hover:text-black rounded-full text-slate-500 font-sm ml-2 w-6 h-6 text-center'><i class='bi bi-angle-down'></i></span>`);
                         header.append(bu_sort_asc);
-                        let bu_sort_desc = $(`<span class='cursor-pointer inline-block bg-slate-900 hover:text-black rounded-full text-slate-500 font-sm ml-1 w-6 h-6 text-center'><i class='fa fa-angle-up'></i></span>`);
+                        let bu_sort_desc = $(`<span class='cursor-pointer inline-block bg-slate-900 hover:text-black rounded-full text-slate-500 font-sm ml-1 w-6 h-6 text-center'><i class='bi bi-angle-up'></i></span>`);
                         header.append(bu_sort_desc);
                         bu_sort_asc.click(function() {
                             sort_table_by_column(item[0], true);
@@ -328,7 +328,7 @@
                             sort_table_by_column(item[0], false);
                             refresh_table();
                         });
-                        // let bu_sort_chart = $(`<span class='cursor-pointer inline-block bg-slate-900 hover:text-black rounded-full text-slate-500 font-sm ml-1 w-6 h-6 text-center'><i class='fa fa-pie-chart'></i></span>`);
+                        // let bu_sort_chart = $(`<span class='cursor-pointer inline-block bg-slate-900 hover:text-black rounded-full text-slate-500 font-sm ml-1 w-6 h-6 text-center'><i class='bi bi-pie-chart'></i></span>`);
                         // header.append(bu_sort_chart);
                         row.append(header);
                     }
@@ -358,7 +358,7 @@
                         }
                         row.append($('<td>').text(`${moment.unix(entry.last_activity / 1000).format('ddd, D.M.Y')}`));
                         row.append($('<td>').text(`${data.result.user_info[entry.email].version || '–'}`));
-                        let bu_details = $(`<button class='btn btn-sm btn-success'>Details<i class='fa fa-angle-double-right ml-1'></i></button>`);
+                        let bu_details = $(`<button class='btn btn-sm btn-success'>Details<i class='bi bi-angle-double-right ml-1'></i></button>`);
                         bu_details.click(function(e) {
                             launch_user_modal(entry.email);
                         })
@@ -396,7 +396,7 @@
                         }
                         row.append($('<td>').text(`–`));
                         row.append($('<td>').text(`–`));
-                        let bu_details = $(`<button class='btn btn-sm btn-success'>Details<i class='fa fa-angle-double-right ml-1'></i></button>`);
+                        let bu_details = $(`<button class='btn btn-sm btn-success'>Details<i class='bi bi-angle-double-right ml-1'></i></button>`);
                         bu_details.click(function(e) {
                             launch_user_modal(email);
                         })

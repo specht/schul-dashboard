@@ -2,9 +2,9 @@
 #{File.read('/static/_bib_public_template.html')}
 <div class='container bg-white' style="padding-top: 15px;">
     <div class='mb-3' id="button_div">
-        <button id='bu_scan_exemplare' class='btn btn-outline-secondary mr-1' disabled><i class='fa fa-barcode'></i>&nbsp;&nbsp;Exemplare scannen</button>
-        <button id='bu_confirm_checkout' class='btn btn-outline-secondary mr-1' disabled><i class='fa fa-check'></i>&nbsp;&nbsp;Ausleihe durchführen</button>
-        <button id='bu_print_receipt' class='btn btn-outline-secondary mr-1' disabled><i class='fa fa-print'></i>&nbsp;&nbsp;Beleg drucken</button>
+        <button id='bu_scan_exemplare' class='btn btn-outline-secondary mr-1' disabled><i class='bi bi-barcode'></i>&nbsp;&nbsp;Exemplare scannen</button>
+        <button id='bu_confirm_checkout' class='btn btn-outline-secondary mr-1' disabled><i class='bi bi-check'></i>&nbsp;&nbsp;Ausleihe durchführen</button>
+        <button id='bu_print_receipt' class='btn btn-outline-secondary mr-1' disabled><i class='bi bi-print'></i>&nbsp;&nbsp;Beleg drucken</button>
     </div>
     <div id="order_complete_hint" class="mb-3 alert alert-warning" style='display: none;'>
         Diese Bestellung ist bereits abgeschlossen, da in der Vergangenheit alle Nutzer, die dieses Buch bekommen sollten, versorgt waren.
@@ -15,7 +15,7 @@
             <!-- <h3>Bestellung bearbeiten</h3> -->
             <div>
                 <div>
-                    <button id='bu_change_stem' disabled style='display: none; position: relative; top: -8px;' class='btn btn-xs btn-outline-secondary mr-1 mb-2'><i class='fa fa-exchange'></i>&nbsp;&nbsp;Andere Stammsignatur ausleihen</button>
+                    <button id='bu_change_stem' disabled style='display: none; position: relative; top: -8px;' class='btn btn-xs btn-outline-secondary mr-1 mb-2'><i class='bi bi-exchange'></i>&nbsp;&nbsp;Andere Stammsignatur ausleihen</button>
                     <div id='scan_container'></div>
                     <div id='scan_hint' style='display: none;'>
                         <div class='alert alert-warning text-sm'>
@@ -103,7 +103,7 @@
             already_scanned_barcodes[barcode] = true;
 
             tr = scan_table.element.find('tr').eq(Object.keys(already_scanned_barcodes).length);
-            tr.find('td').eq(3).html(`<i class='text-slate-500 fa fa-circle-o-notch fa-spin'></i>`);
+            tr.find('td').eq(3).html(`<i class='text-slate-500 bi bi-circle-o-notch fa-spin'></i>`);
             append_skip_button(tr.find('td').eq(3));
 
             if (scan_table.element.find('tr').length > 1)
@@ -162,7 +162,7 @@
 
     window.addEventListener('load', function () {
         // if ('#{can_manage_bib_logged_in?}' === 'true') {
-        //     $(`<li class='mx-1'><a class='inline-block bg-slate-900 border border-blue-500 hover:bg-slate-200 rounded py-1 px-3' href='#'><i class='fa fa-trash'></i>&nbsp;&nbsp;Bestellung löschen</a></li>`).insertAfter($('#sub_menu_extra'));
+        //     $(`<li class='mx-1'><a class='inline-block bg-slate-900 border border-blue-500 hover:bg-slate-200 rounded py-1 px-3' href='#'><i class='bi bi-trash'></i>&nbsp;&nbsp;Bestellung löschen</a></li>`).insertAfter($('#sub_menu_extra'));
         //     $('#subsubmenu').show();
         // }
         bib_api_call('/jwt/get_order', {oid: oid}, function (data) {
@@ -305,7 +305,7 @@
                         return th;
                     }),
                     rows: data.fulfillments.map(function(fulfillment) {
-                        let button = $(`<button class='btn btn-success btn-xs'>`).html(`<i class='fa fa-print'></i>&nbsp;&nbsp;Beleg`);
+                        let button = $(`<button class='btn btn-success btn-xs'>`).html(`<i class='bi bi-print'></i>&nbsp;&nbsp;Beleg`);
                         button.click(function(e) {
                             printJS(`${BIB_HOST}/jwt/receipt_pdf/${fulfillment.id}`);
                         });
@@ -332,7 +332,7 @@
             $('#bu_scan_exemplare').prop('disabled', true);
             $('#bu_change_stem').prop('disabled', false).show();
             let tr = scan_table.element.find('tr').eq(0);
-            tr.find('td').eq(3).html(`<i class='text-slate-500 fa fa-circle-o-notch fa-spin'></i>`);
+            tr.find('td').eq(3).html(`<i class='text-slate-500 bi bi-circle-o-notch fa-spin'></i>`);
             append_skip_button(tr.find('td').eq(3));
 
 
@@ -371,7 +371,7 @@
                     $('#bu_confirm_checkout').prop('disabled', true);
                     $('#bu_print_receipt').prop('disabled', false).removeClass('btn-outline-secondary').addClass('btn-success').data('fid', data.f.id);
                     $('#bu_mark_as_ready').prop('disabled', false).removeClass('btn-outline-secondary').addClass('btn-success');
-                    let button = $(`<button class='btn btn-success btn-xs'>`).html(`<i class='fa fa-print'></i>&nbsp;&nbsp;Beleg`);
+                    let button = $(`<button class='btn btn-success btn-xs'>`).html(`<i class='bi bi-print'></i>&nbsp;&nbsp;Beleg`);
                     button.click(function(e) {
                         printJS(`${BIB_HOST}/jwt/receipt_pdf/${data.f.id}`);
                     });

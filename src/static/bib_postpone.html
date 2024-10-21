@@ -13,7 +13,7 @@
             if (data.success) {
                 $('#response').append($('<p>').html(`Ihre Schülerinnen und Schüler werden <b>ab dem ${moment.unix(data.ts_hide_before).format('L')}</b> dazu aufgefordert, ihre Bücher zu bestätigen. Sie bekommen eine Woche vorher, <b>ab dem ${moment.unix(data.ts_postpone_reminder).format('L')}</b> die Gelegenheit, diesen Termin um zwei weitere Wochen in die Zukunft zu verschieben.`));
                 $('#response').append($('<hr>'));
-                let button = $(`<button class='btn btn-success'>`).html(`<i class='fa fa-clock-o'></i>&nbsp;&nbsp;Termin um eine Woche verschieben`);
+                let button = $(`<button class='btn btn-success'>`).html(`<i class='bi bi-clock-o'></i>&nbsp;&nbsp;Termin um eine Woche verschieben`);
                 $('#response').append(button);
                 button.click(function(e) {
                     bib_api_call_no_jwt('/public/postpone', {tag: tag}, function (data) {

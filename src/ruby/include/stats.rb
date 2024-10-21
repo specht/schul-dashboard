@@ -122,7 +122,7 @@ class Main < Sinatra::Base
                 star_span = ''
                 if stats[klasse][:count][LOGIN_STATS_D.last] == stats[klasse][:total]
                     c = 'complete'
-                    star_span = "<i class='fa fa-star'></i>"
+                    star_span = "<i class='bi bi-star'></i>"
                 else
                     place = ''
                 end

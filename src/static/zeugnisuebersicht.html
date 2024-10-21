@@ -177,9 +177,9 @@ window.addEventListener('load', function () {
                 let total_count = counts[`${klasse}/${fach}`][1];
                 if (have_or_admin_or_kl(`${klasse}/${fach}`)) {
                     if (total_count === 0)
-                        row.append($(`<td>`).append($(`<span>`).html(`<i class='fa fa-danger'></i>`).css('color', '#a40000')));
+                        row.append($(`<td>`).append($(`<span>`).html(`<i class='bi bi-danger'></i>`).css('color', '#a40000')));
                     else if (present_count === total_count)
-                        row.append($(`<td>`).append($(`<span>`).html(`<i class='fa fa-check-circle'></i>`).css('color', '#4aa03f')));
+                        row.append($(`<td>`).append($(`<span>`).html(`<i class='bi bi-check-circle'></i>`).css('color', '#4aa03f')));
                     else
                         row.append($(`<td>`).append($(`<span>`).text(`${present_count}/${total_count}`).css('background-color', red_green_ramp(present_count / total_count)).addClass('ramp')));
                     row.children().last().css('opacity', have_or_admin(`${klasse}/${fach}`) ? 1.0 : 0.5);
@@ -197,9 +197,9 @@ window.addEventListener('load', function () {
                     let present_count = counts[`${klasse}/${fach}/SV`][0];
                     let total_count = counts[`${klasse}/${fach}/SV`][1];
                     if (total_count === 0)
-                        row.append($(`<td>`).append($(`<span>`).html(`<i class='fa fa-danger'></i>`).css('color', '#a40000')));
+                        row.append($(`<td>`).append($(`<span>`).html(`<i class='bi bi-danger'></i>`).css('color', '#a40000')));
                     else if (present_count === total_count)
-                        row.append($(`<td>`).append($(`<span>`).html(`<i class='fa fa-check-circle'></i>`).css('color', '#4aa03f')));
+                        row.append($(`<td>`).append($(`<span>`).html(`<i class='bi bi-check-circle'></i>`).css('color', '#4aa03f')));
                     else
                         row.append($(`<td>`).append($(`<span>`).text(`${present_count}/${total_count}`).css('background-color', red_green_ramp(present_count / total_count)).addClass('ramp')));
                     row.children().last().css('opacity', have_or_admin(`${klasse}/SV/${fach}`) ? 1.0 : 0.5);

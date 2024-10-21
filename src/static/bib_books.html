@@ -61,8 +61,8 @@
 
     window.addEventListener('load', function () {
         if ('#{can_manage_bib_logged_in?}' === 'true') {
-            $(`<li class='mx-1'><a class='inline-block bg-slate-900 border border-blue-500 hover:bg-slate-200 rounded py-1 px-3' href='/bib_discard'><i class='fa fa-trash'></i>&nbsp;&nbsp;Exemplare ausmustern</a></li>`).insertAfter($('#sub_menu_extra'));
-            $(`<li class='mx-1'><a class='inline-block bg-slate-900 border border-blue-500 hover:bg-slate-200 rounded py-1 px-3' href='/bib_book_edit/_new'><i class='fa fa-plus'></i>&nbsp;&nbsp;Neues Buch aufnehmen</a></li>`).insertAfter($('#sub_menu_extra'));
+            $(`<li class='mx-1'><a class='inline-block bg-slate-900 border border-blue-500 hover:bg-slate-200 rounded py-1 px-3' href='/bib_discard'><i class='bi bi-trash'></i>&nbsp;&nbsp;Exemplare ausmustern</a></li>`).insertAfter($('#sub_menu_extra'));
+            $(`<li class='mx-1'><a class='inline-block bg-slate-900 border border-blue-500 hover:bg-slate-200 rounded py-1 px-3' href='/bib_book_edit/_new'><i class='bi bi-plus'></i>&nbsp;&nbsp;Neues Buch aufnehmen</a></li>`).insertAfter($('#sub_menu_extra'));
             $('#subsubmenu').show();
             fix_subsubmenu();
         }

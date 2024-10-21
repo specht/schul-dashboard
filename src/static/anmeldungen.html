@@ -11,7 +11,7 @@
             let tag = $($(e.target).closest('.bu-delete-signup')).data('tag');
             showTemplateModal('Anmeldung löschen',
                 'Sind Sie sicher, dass Sie diese Anmeldung löschen möchten? Bitte denken Sie daran, die Person zu benachrichtigen, dass die Anmeldung aufgehoben wurde, denn es wurde bereits eine Anmeldebestätigung versendet.',
-                "<i class='fa fa-trash'></i>&nbsp;&nbsp;Anmeldung löschen", 'btn-danger',
+                "<i class='bi bi-trash'></i>&nbsp;&nbsp;Anmeldung löschen", 'btn-danger',
                 'Abbrechen', 'btn-secondary', function () {
                     api_call('/api/delete_sign_up_for_event', {tag: tag}, function(data) {
                         if (data.success)

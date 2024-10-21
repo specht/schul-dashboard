@@ -611,7 +611,7 @@ class Main < Sinatra::Base
                 display_name = @@user_info[user][:display_name]
                 nc_login = @@user_info[user][:nc_login]
                 klasse = tr_klasse(@@user_info[user][:klasse])
-                io.puts "<tr><td><img src='#{NEXTCLOUD_URL}/index.php/avatar/#{nc_login}/256' class='icon avatar-md'>&nbsp;#{display_name}</td><td><button class='btn btn-xs btn-success bu-select-user-to-fix-problem' data-email='#{user}'><i class='fa fa-check'></i></button></td></tr>"
+                io.puts "<tr><td><img src='#{NEXTCLOUD_URL}/index.php/avatar/#{nc_login}/256' class='icon avatar-md'>&nbsp;#{display_name}</td><td><button class='btn btn-xs btn-success bu-select-user-to-fix-problem' data-email='#{user}'><i class='bi bi-check'></i></button></td></tr>"
             end
             io.puts "</tbody></table>"
             io.puts "</div></div>"
@@ -639,10 +639,10 @@ class Main < Sinatra::Base
                 klasse = tr_klasse(@@user_info[technikamt][:klasse])
                 id = @@user_info[technikamt][:id]
                 io.puts "<tr><td><img src='#{NEXTCLOUD_URL}/index.php/avatar/#{nc_login}/256' class='icon avatar-md'>&nbsp;#{display_name} #{@@user_info[technikamt][:klasse] ? "(#{klasse})" : ""}</td>
-                <td><a class='btn btn-xs btn-primary' href='mailto:#{technikamt}'><i class='fa fa-envelope'></i>&nbsp;&nbsp;E-Mail schreiben</a>&nbsp;
-                <button class='btn btn-xs btn-success bu-send-single-welcome-mail' data-email='#{technikamt}'><i class='fa fa-envelope'></i>&nbsp;&nbsp;Willkommens-E-Mail versenden</button>&nbsp;
-                <a class='btn btn-xs btn-secondary' href='/timetable/#{id}'><i class='fa fa-calendar'></i>&nbsp;&nbsp;Stundenplan</a>&nbsp;
-                <button class='btn btn-xs btn-danger bu-edit-techpost' data-email='#{technikamt}'><i class='fa fa-trash'></i>&nbsp;&nbsp;Rechte entziehen</button>
+                <td><a class='btn btn-xs btn-primary' href='mailto:#{technikamt}'><i class='bi bi-envelope'></i>&nbsp;&nbsp;E-Mail schreiben</a>&nbsp;
+                <button class='btn btn-xs btn-success bu-send-single-welcome-mail' data-email='#{technikamt}'><i class='bi bi-envelope'></i>&nbsp;&nbsp;Willkommens-E-Mail versenden</button>&nbsp;
+                <a class='btn btn-xs btn-secondary' href='/timetable/#{id}'><i class='bi bi-calendar'></i>&nbsp;&nbsp;Stundenplan</a>&nbsp;
+                <button class='btn btn-xs btn-danger bu-edit-techpost' data-email='#{technikamt}'><i class='bi bi-trash'></i>&nbsp;&nbsp;Rechte entziehen</button>
                 </td></tr>"
                 
             end
@@ -667,14 +667,14 @@ class Main < Sinatra::Base
         require_user_with_role!(:can_manage_tech_problems)
         StringIO.open do |io|
             io.puts "<p>Mit einem Klick auf diesen Button kannst du dieses Gerät dauerhaft als Lehrer-Tablet anmelden.</p>"
-            io.puts "<button class='btn btn-primary bu_login_teacher_tablet'><i class='fa fa-sign-in'></i>&nbsp;&nbsp;Lehrer-Tablet-Modus aktivieren</button>"
+            io.puts "<button class='btn btn-primary bu_login_teacher_tablet'><i class='bi bi-sign-in'></i>&nbsp;&nbsp;Lehrer-Tablet-Modus aktivieren</button>"
             io.puts "<hr />"
             io.puts "<p>Bitte wähle ein order mehrere Kürzel, um dieses Gerät dauerhaft als Kurs-Tablet anzumelden.</p>"
             @@shorthands.keys.sort.each do |shorthand|
                 io.puts "<button class='btn-teacher-for-kurs-tablet-login btn btn-xs btn-outline-secondary' data-shorthand='#{shorthand}'>#{shorthand}</button>"
             end
             io.puts "<br /><br >"
-            io.puts "<button class='btn btn-primary bu_login_kurs_tablet' disabled><i class='fa fa-sign-in'></i>&nbsp;&nbsp;Kurs-Tablet-Modus aktivieren</button>"
+            io.puts "<button class='btn btn-primary bu_login_kurs_tablet' disabled><i class='bi bi-sign-in'></i>&nbsp;&nbsp;Kurs-Tablet-Modus aktivieren</button>"
             io.puts "<hr />"
             io.puts "<p>Bitte wähle ein Tablet, um dieses Gerät dauerhaft als dieses Tablet anzumelden.</p>"
             @@tablets.keys.each do |id|

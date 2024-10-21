@@ -182,7 +182,7 @@
                         <input type="range" data-type='analog' class="form-control-range" id="ti_analog" min="0.0" max="0.25" value="#{(@session_user || {})[:analog] || 0.0}" step="0.025">
                     </div>
                     <div class="col-md-12 mt-2">
-                        <div class="pull-right"><button id='bu_reset_colors' class='btn btn-success'><i class='fa fa-undo'></i>&nbsp;&nbsp;Farbeinstellungen zurücksetzen</button></div>
+                        <div class="pull-right"><button id='bu_reset_colors' class='btn btn-success'><i class='bi bi-undo'></i>&nbsp;&nbsp;Farbeinstellungen zurücksetzen</button></div>
                     </div>
                 </div>
             </div>
@@ -212,22 +212,22 @@
                 <div class="input-group">
                     <input type="text" id='ti_ical_link' class="form-control" placeholder='(kein iCal-Link vorhanden)' readonly />
                     <div class="input-group-append">
-                        <button class='btn bu-clipboard-ical btn-secondary btn-clipboard' data-clipboard-action='copy' data-clipboard-target="#ti_ical_link"><i class='fa fa-clipboard'></i>&nbsp;&nbsp;Kopieren</button>
+                        <button class='btn bu-clipboard-ical btn-secondary btn-clipboard' data-clipboard-action='copy' data-clipboard-target="#ti_ical_link"><i class='bi bi-clipboard'></i>&nbsp;&nbsp;Kopieren</button>
                     </div>
                 </div>
                 <div class='float-right' style='margin-top: 5px;'>
-                    <button class='btn bu-regenerate-ical btn-primary'><i class='fa fa-refresh'></i>&nbsp;&nbsp;Neu generieren</button>
-                    <button class='btn bu-delete-ical btn-danger'><i class='fa fa-trash'></i>&nbsp;&nbsp;Löschen</button>
+                    <button class='btn bu-regenerate-ical btn-primary'><i class='bi bi-refresh'></i>&nbsp;&nbsp;Neu generieren</button>
+                    <button class='btn bu-delete-ical btn-danger'><i class='bi bi-trash'></i>&nbsp;&nbsp;Löschen</button>
                 </div>
                 <div style='clear: both;'></div>
                 <div id='ical_options' style="margin-top: 20px; margin-bottom: 10px;">
                     <p>Hier kannst du auswählen, welche Informationen im iCal-Kalender auftauchen sollen:</p>
                     <div>
-                        <button class="btn btn-success bu-toggle-omit-ical mb-1 mr-1" data-omit-type='website_event'><i class='w-3 fa fa-check'></i>&nbsp;&nbsp;Schulweite Termine</button>
-                        <button class="btn btn-success bu-toggle-omit-ical mb-1 mr-1" data-omit-type='event'><i class='w-3 fa fa-check'></i>&nbsp;&nbsp;Meine Termine</button>
-                        <button class="btn btn-success bu-toggle-omit-ical mb-1 mr-1" data-omit-type='lesson'><i class='w-3 fa fa-check'></i>&nbsp;&nbsp;Unterricht</button>
-                        <button class="btn btn-success bu-toggle-omit-ical mb-1 mr-1" data-omit-type='holiday'><i class='w-3 fa fa-check'></i>&nbsp;&nbsp;Ferien und Feiertage</button>
-                        <button class="btn btn-success bu-toggle-omit-ical mb-1 mr-1" data-omit-type='birthday'><i class='w-3 fa fa-check'></i>&nbsp;&nbsp;Geburtstage</button>
+                        <button class="btn btn-success bu-toggle-omit-ical mb-1 mr-1" data-omit-type='website_event'><i class='w-3 bi bi-check'></i>&nbsp;&nbsp;Schulweite Termine</button>
+                        <button class="btn btn-success bu-toggle-omit-ical mb-1 mr-1" data-omit-type='event'><i class='w-3 bi bi-check'></i>&nbsp;&nbsp;Meine Termine</button>
+                        <button class="btn btn-success bu-toggle-omit-ical mb-1 mr-1" data-omit-type='lesson'><i class='w-3 bi bi-check'></i>&nbsp;&nbsp;Unterricht</button>
+                        <button class="btn btn-success bu-toggle-omit-ical mb-1 mr-1" data-omit-type='holiday'><i class='w-3 bi bi-check'></i>&nbsp;&nbsp;Ferien und Feiertage</button>
+                        <button class="btn btn-success bu-toggle-omit-ical mb-1 mr-1" data-omit-type='birthday'><i class='w-3 bi bi-check'></i>&nbsp;&nbsp;Geburtstage</button>
                     </div>
                 </div>
 
@@ -240,19 +240,19 @@
             </p>
             <hr />
             <div style="display: flex; align-items: start; gap: 10px; justify-content: center;">
-                <button id='bu_prefer_email' class="btn btn-success bu_choose_login_preference" data-method="email"><i class='fa fa-envelope'></i>&nbsp;&nbsp;Code per E-Mail erhalten</button>
+                <button id='bu_prefer_email' class="btn btn-success bu_choose_login_preference" data-method="email"><i class='bi bi-envelope'></i>&nbsp;&nbsp;Code per E-Mail erhalten</button>
                 <div style="display: #{user_is_eligible_for_sms? ? 'block' : 'none'}; text-align: center;">
-                    <button id='bu_prefer_sms' type="button" class="btn btn-outline-secondary bu_choose_login_preference" data-method="sms"><i class='fa fa-mobile'></i>&nbsp;&nbsp;Code per SMS erhalten</button>
+                    <button id='bu_prefer_sms' type="button" class="btn btn-outline-secondary bu_choose_login_preference" data-method="sms"><i class='bi bi-mobile'></i>&nbsp;&nbsp;Code per SMS erhalten</button>
                     <div style="margin-top: 5px;">
-                        <button class="btn btn-xs btn-success mi-add-phone-number"><i class='fa fa-plus'></i>&nbsp;&nbsp;Nummer hinterlegen</button>
-                        <button class="btn btn-xs btn-outline-secondary mi-delete-phone-number"><i class='fa fa-trash'></i>&nbsp;&nbsp;Nummer löschen</button>
+                        <button class="btn btn-xs btn-success mi-add-phone-number"><i class='bi bi-plus'></i>&nbsp;&nbsp;Nummer hinterlegen</button>
+                        <button class="btn btn-xs btn-outline-secondary mi-delete-phone-number"><i class='bi bi-trash'></i>&nbsp;&nbsp;Nummer löschen</button>
                     </div>
                 </div>
                 <div style="text-align: center;">
-                    <button id='bu_prefer_otp' type="button" class="btn btn-outline-secondary bu_choose_login_preference" data-method="otp"><i class='fa fa-qrcode'></i>&nbsp;&nbsp;OTP-Code eingeben</button>
+                    <button id='bu_prefer_otp' type="button" class="btn btn-outline-secondary bu_choose_login_preference" data-method="otp"><i class='bi bi-qrcode'></i>&nbsp;&nbsp;OTP-Code eingeben</button>
                     <div style="margin-top: 5px;">
-                        <button class="btn btn-xs btn-success mi-add-otp-code"><i class='fa fa-plus'></i>&nbsp;&nbsp;OTP aktivieren</button>
-                        <button class="btn btn-xs btn-outline-secondary mi-delete-otp-code"><i class='fa fa-trash'></i>&nbsp;&nbsp;OTP deaktivieren</button>
+                        <button class="btn btn-xs btn-success mi-add-otp-code"><i class='bi bi-plus'></i>&nbsp;&nbsp;OTP aktivieren</button>
+                        <button class="btn btn-xs btn-outline-secondary mi-delete-otp-code"><i class='bi bi-trash'></i>&nbsp;&nbsp;OTP deaktivieren</button>
                     </div>
                 </div>
             </div>
@@ -277,7 +277,7 @@
                     <div class="input-group">
                         <input style='text-align: center;' id='ti_telephone_number' type="text" class="form-control" placeholder="Bitte gib deine Telefonnummer ein" value="#{session_user_telephone_number}">
                             <div class="input-group-append">
-                                <button class="btn bu-save-sms btn-success"><i class='fa fa-send'></i>&nbsp;&nbsp;Code anfordern</button>
+                                <button class="btn bu-save-sms btn-success"><i class='bi bi-send'></i>&nbsp;&nbsp;Code anfordern</button>
                             </div>
                         </input>
                     </div>
@@ -290,7 +290,7 @@
                     <div class="input-group">
                         <input style='text-align: center;' id='ti_confirm_telephone_number' type="text" class="form-control" placeholder="Bitte gib deinen Bestätigungscode ein">
                             <div class="input-group-append">
-                                <button class="btn bu-confirm-sms btn-success"><i class='fa fa-check'></i>&nbsp;&nbsp;Bestätigen</button>
+                                <button class="btn bu-confirm-sms btn-success"><i class='bi bi-check'></i>&nbsp;&nbsp;Bestätigen</button>
                             </div>
                         </input>
                     </div>
@@ -302,7 +302,7 @@
                 </div>
             </div>
             <div class="modal-footer">
-                <button class="btn btn-secondary" data-dismiss="modal"><i class='fa fa-times'></i>&nbsp&nbsp;Schließen</button>
+                <button class="btn btn-secondary" data-dismiss="modal"><i class='bi bi-times'></i>&nbsp&nbsp;Schließen</button>
             </div>
         </div>
     </div>
@@ -331,11 +331,11 @@
                 <a href='https://apps.apple.com/us/app/freeotp-authenticator/id872559395' target='_blank'>FreeOTP Authenticator</a>).
                 </p>
                 <div style="text-align: center;">
-                    <button class="bu-generate-otp-code btn btn-success"><i class='fa fa-qrcode'></i>&nbsp;&nbsp;OTP aktivieren und QR-Code anzeigen</button>
+                    <button class="bu-generate-otp-code btn btn-success"><i class='bi bi-qrcode'></i>&nbsp;&nbsp;OTP aktivieren und QR-Code anzeigen</button>
                 </div>
             </div>
             <div class="modal-footer">
-                <button class="btn btn-secondary" data-dismiss="modal"><i class='fa fa-times'></i>&nbsp&nbsp;Schließen</button>
+                <button class="btn btn-secondary" data-dismiss="modal"><i class='bi bi-times'></i>&nbsp&nbsp;Schließen</button>
             </div>
         </div>
     </div>
@@ -379,13 +379,13 @@ var angebote_for_session_user = #{angebote_for_session_user.to_json};
 function refresh_ical_widget() {
     if (ical_token.length == 0) {
         $('.bu-clipboard-ical').hide();
-        $('.bu-regenerate-ical').html("<i class='fa fa-refresh'></i>&nbsp;&nbsp;iCal-Link generieren");
+        $('.bu-regenerate-ical').html("<i class='bi bi-refresh'></i>&nbsp;&nbsp;iCal-Link generieren");
         $('.bu-delete-ical').hide();
         $('#ical_options').hide();
         $('#ti_ical_link').val('');
     } else {
         $('.bu-clipboard-ical').show();
-        $('.bu-regenerate-ical').html("<i class='fa fa-refresh'></i>&nbsp;&nbsp;Neuen iCal-Link generieren");
+        $('.bu-regenerate-ical').html("<i class='bi bi-refresh'></i>&nbsp;&nbsp;Neuen iCal-Link generieren");
         $('.bu-delete-ical').show();
         $('#ical_options').slideDown();
         let link = '#{WEB_ROOT}/ical/' + ical_token + '.ics';
@@ -395,18 +395,18 @@ function refresh_ical_widget() {
 
 function refresh_otp_widget(show_qr_code) {
     if (otp_qr_code.length == 0) {
-        $('.bu-regenerate-otp').html("<i class='fa fa-refresh'></i>&nbsp;&nbsp;QR-Code generieren");
+        $('.bu-regenerate-otp').html("<i class='bi bi-refresh'></i>&nbsp;&nbsp;QR-Code generieren");
         $('.bu-delete-otp').hide();
         $('.otp-qr-code').empty().hide();
         $('.otp-status').removeClass('alert-success').addClass('alert-secondary');
-        $('.otp-status').html(`<i class='fa fa-times text-secondary'></i>&nbsp;&nbsp;Die Anmeldung via OTP ist nicht aktiviert.`);
+        $('.otp-status').html(`<i class='bi bi-times text-secondary'></i>&nbsp;&nbsp;Die Anmeldung via OTP ist nicht aktiviert.`);
     } else {
-        $('.bu-regenerate-otp').html("<i class='fa fa-refresh'></i>&nbsp;&nbsp;Neuen QR-Code generieren");
+        $('.bu-regenerate-otp').html("<i class='bi bi-refresh'></i>&nbsp;&nbsp;Neuen QR-Code generieren");
         $('.bu-delete-otp').show();
         $('.otp-qr-code').empty().hide();
         if (show_qr_code) $('.otp-qr-code').append($(otp_qr_code)).show();
         $('.otp-status').addClass('alert-success').removeClass('alert-secondary');
-        $('.otp-status').html(`<i class='fa fa-check text-success'></i>&nbsp;&nbsp;Die Anmeldung via OTP ist aktiviert.`);
+        $('.otp-status').html(`<i class='bi bi-check text-success'></i>&nbsp;&nbsp;Die Anmeldung via OTP ist aktiviert.`);
     }
 }
 
@@ -416,7 +416,7 @@ function refresh_sms_widget() {
         $('.mi-add-phone-number').show();
         $('.mi-delete-phone-number').hide();
         $('.sms-status').removeClass('alert-success').addClass('alert-secondary');
-        $('.sms-status').html(`<i class='fa fa-times text-secondary'></i>&nbsp;&nbsp;Die Anmeldung via SMS ist nicht aktiviert.`);
+        $('.sms-status').html(`<i class='bi bi-times text-secondary'></i>&nbsp;&nbsp;Die Anmeldung via SMS ist nicht aktiviert.`);
         $('.bu-save-sms').show();
         $('.bu-delete-sms').hide();
         $('#ti_telephone_number').attr('readonly', false);
@@ -425,7 +425,7 @@ function refresh_sms_widget() {
         $('.mi-add-phone-number').hide();
         $('.mi-delete-phone-number').show();
         $('.sms-status').addClass('alert-success').removeClass('alert-secondary');
-        $('.sms-status').html(`<i class='fa fa-check text-success'></i>&nbsp;&nbsp;Die Anmeldung via SMS ist aktiviert.`);
+        $('.sms-status').html(`<i class='bi bi-check text-success'></i>&nbsp;&nbsp;Die Anmeldung via SMS ist aktiviert.`);
         $('.bu-save-sms').hide();
         $('.bu-delete-sms').show();
         $('#ti_telephone_number').attr('readonly', true);
@@ -438,7 +438,7 @@ function refresh_login_widget() {
         $('.mi-add-phone-number').show();
         $('.mi-delete-phone-number').hide();
         $('.sms-status').removeClass('alert-success').addClass('alert-secondary');
-        $('.sms-status').html(`<i class='fa fa-times text-secondary'></i>&nbsp;&nbsp;Die Anmeldung via SMS ist nicht aktiviert.`);
+        $('.sms-status').html(`<i class='bi bi-times text-secondary'></i>&nbsp;&nbsp;Die Anmeldung via SMS ist nicht aktiviert.`);
         $('.bu-save-sms').show();
         $('.bu-delete-sms').hide();
         $('#ti_telephone_number').attr('readonly', false);
@@ -447,7 +447,7 @@ function refresh_login_widget() {
         $('.mi-add-phone-number').hide();
         $('.mi-delete-phone-number').show();
         $('.sms-status').addClass('alert-success').removeClass('alert-secondary');
-        $('.sms-status').html(`<i class='fa fa-check text-success'></i>&nbsp;&nbsp;Die Anmeldung via SMS ist aktiviert.`);
+        $('.sms-status').html(`<i class='bi bi-check text-success'></i>&nbsp;&nbsp;Die Anmeldung via SMS ist aktiviert.`);
         $('.bu-save-sms').hide();
         $('.bu-delete-sms').show();
         $('#ti_telephone_number').attr('readonly', true);

@@ -42,7 +42,7 @@ td, th {
             <hr>
             <h3>Projektkatalog</h3>
             <p>Hier findest du eine Übersicht der anderen Projekte:</p>
-            <a href="/projekttage_sus" class="btn btn-primary"><i class="fa fa-book"></i>&nbsp;&nbsp;Zum Projektkatalog</a>
+            <a href="/projekttage_sus" class="btn btn-primary"><i class="bi bi-book"></i>&nbsp;&nbsp;Zum Projektkatalog</a>
         </div>
     </div>
 </div>
@@ -143,9 +143,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 form_group.append(ti_extra_hint);
                 row = $(`<div class='row'>`).appendTo($('.projekte-container'));
                 col = $(`<div class='col-md-12'>`).appendTo(row);
-                let bu_edit = $(`<button class='btn btn-success pull-right ml-2'>`).html(`<i class='fa fa-edit'></i>&nbsp;&nbsp;Bearbeiten`).appendTo(col);
-                let bu_save = $(`<button class='btn btn-success pull-right ml-2'>`).html(`<i class='fa fa-check'></i>&nbsp;&nbsp;Änderungen speichern`).hide().appendTo(col);
-                let bu_discard = $(`<button class='btn btn-outline-secondary pull-right ml-2'>`).html(`<i class='fa fa-times'></i>&nbsp;&nbsp;Änderungen verwerfen`).hide().appendTo(col);
+                let bu_edit = $(`<button class='btn btn-success pull-right ml-2'>`).html(`<i class='bi bi-edit'></i>&nbsp;&nbsp;Bearbeiten`).appendTo(col);
+                let bu_save = $(`<button class='btn btn-success pull-right ml-2'>`).html(`<i class='bi bi-check'></i>&nbsp;&nbsp;Änderungen speichern`).hide().appendTo(col);
+                let bu_discard = $(`<button class='btn btn-outline-secondary pull-right ml-2'>`).html(`<i class='bi bi-times'></i>&nbsp;&nbsp;Änderungen verwerfen`).hide().appendTo(col);
                 bu_edit.on('click', function(e) {
                     ti_title.prop('readonly', false).data('old_value', ti_title.val());
                     ti_description.prop('readonly', false).data('old_value', ti_description.val()).focus();

@@ -691,14 +691,14 @@ class Main < Sinatra::Base
                 io.puts "<td>#{d}</td>"
                 d = s[:last_access] ? Time.parse(s[:last_access]).strftime('%d.%m.%Y') : '&ndash;'
                 io.puts "<td>#{d}</td>"
-                io.puts "<td style='text-overflow: ellipsis;'>#{(s[:sid] == @used_session[:sid]) ? '<i class=\'text-success fa fa-check\'></i>&nbsp;&nbsp;' : ''}#{s[:user_agent] || 'unbekanntes Gerät'}#{(s[:sid] == @used_session[:sid]) ? '<div style=\'font-size: 85%; margin-top: -5px;\'>(dieses Gerät)</div>' : ''}</td>"
+                io.puts "<td style='text-overflow: ellipsis;'>#{(s[:sid] == @used_session[:sid]) ? '<i class=\'text-success bi bi-check\'></i>&nbsp;&nbsp;' : ''}#{s[:user_agent] || 'unbekanntes Gerät'}#{(s[:sid] == @used_session[:sid]) ? '<div style=\'font-size: 85%; margin-top: -5px;\'>(dieses Gerät)</div>' : ''}</td>"
                 io.puts "<td>#{LOGIN_METHODS[s[:method].to_sym] || '&ndash;'}</td>"
-                io.puts "<td><button class='btn btn-danger btn-xs btn-purge-session' data-purge-session='#{s[:scrambled_sid]}'><i class='fa fa-sign-out'></i>&nbsp;&nbsp;Gerät abmelden</button></td>"
+                io.puts "<td><button class='btn btn-danger btn-xs btn-purge-session' data-purge-session='#{s[:scrambled_sid]}'><i class='bi bi-sign-out'></i>&nbsp;&nbsp;Gerät abmelden</button></td>"
                 io.puts "</tr>"
             end
             if sessions.size > 1
                 io.puts "<tr>"
-                io.puts "<td colspan='5'><button class='float-right btn btn-danger btn-xs btn-purge-session' data-purge-session='_all'><i class='fa fa-sign-out'></i>&nbsp;&nbsp;Alle Geräte abmelden</button></td>"
+                io.puts "<td colspan='5'><button class='float-right btn btn-danger btn-xs btn-purge-session' data-purge-session='_all'><i class='bi bi-sign-out'></i>&nbsp;&nbsp;Alle Geräte abmelden</button></td>"
                 io.puts "</tr>"
             end
             io.puts "</tbody>"
@@ -764,18 +764,18 @@ class Main < Sinatra::Base
                 io.puts "<tr>"
                 io.puts "<td>#{description}</td>"
                 if @session_user[:roles].include?(role)
-                    io.puts "<td><i class='fa fa-check text-success'></i></td>"
+                    io.puts "<td><i class='bi bi-check text-success'></i></td>"
                     if @session_user[:role_transitive_origin][role]
                         io.puts "<td>#{AVAILABLE_ROLES[@session_user[:role_transitive_origin][role]]}</td>"
                     else
                         io.puts "<td>direkt gesetzt</td>"
                     end
                 else
-                    io.puts "<td><i class='fa fa-times text-danger'></i></td>"
+                    io.puts "<td><i class='bi bi-times text-danger'></i></td>"
                     io.puts "<td></td>"
                 end
                 if admin_logged_in? || user_with_role_logged_in?(:developer)
-                    io.puts "<td><button class='btn-toggle-tr-below btn btn-xs btn-warning' style='width: 8em;'>#{(@@users_for_role[role] || []).size} Nutzer&nbsp;&nbsp;<i class='fa fa-chevron-down'></i></button></td>"
+                    io.puts "<td><button class='btn-toggle-tr-below btn btn-xs btn-warning' style='width: 8em;'>#{(@@users_for_role[role] || []).size} Nutzer&nbsp;&nbsp;<i class='bi bi-chevron-down'></i></button></td>"
                     io.puts "</tr>"
                     io.puts "<tr style='display: none;'>"
                     io.puts "<td colspan='4' style='font-style: italic; font-size: 90%;'>#{(@@users_for_role[role] || []).map { |x| @@user_info[x][:display_name] }.join(', ')}</td>"

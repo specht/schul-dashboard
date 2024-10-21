@@ -244,7 +244,7 @@ class Main < Sinatra::Base
                 # io.puts "<td>#{@@schueler_for_klasse[klasse].size}</td>"
                 io.puts "<td>"
                 hotspot_end_date = hotspot_dates[klasse]
-                io.puts "<div class='input-group input-group-sm'><input type='date' class='form-control ti_hotspot_end_date' value='#{hotspot_end_date}' /><div class='input-group-append'><button #{hotspot_end_date.nil? ? 'disabled' : ''} class='btn #{hotspot_end_date.nil? ? 'btn-outline-secondary' : 'btn-danger'} bu_delete_hotspot_end_date'><i class='fa fa-trash'></i></button></div></div>"
+                io.puts "<div class='input-group input-group-sm'><input type='date' class='form-control ti_hotspot_end_date' value='#{hotspot_end_date}' /><div class='input-group-append'><button #{hotspot_end_date.nil? ? 'disabled' : ''} class='btn #{hotspot_end_date.nil? ? 'btn-outline-secondary' : 'btn-danger'} bu_delete_hotspot_end_date'><i class='bi bi-trash'></i></button></div></div>"
                 io.puts "</td>"
             io.puts "</tr>"
             end
@@ -970,7 +970,7 @@ class Main < Sinatra::Base
                         flag = data[email][(d0 + i).strftime('%Y-%m-%d')]
                         io.print "<td>"
                         if flag 
-                            io.puts "<i class='fa fa-home'></i>"
+                            io.puts "<i class='bi bi-home'></i>"
                         else
                             io.puts "&ndash;"
                         end
@@ -1080,7 +1080,7 @@ class Main < Sinatra::Base
             end
             io.puts "Sie haben sich in dieser Woche <strong>#{label}</strong> getestet#{days_label}."
             io.puts "<hr />"
-            io.puts "<button #{days.map { |x| x[:datum] }.include?(today) ? 'disabled' : ''} class='bu-add-self-test btn btn-success btn-sm float-right'><i class='fa fa-pencil'></i>&nbsp;&nbsp;Testung protokollieren…</button><div style='clear: both;'></div>"
+            io.puts "<button #{days.map { |x| x[:datum] }.include?(today) ? 'disabled' : ''} class='bu-add-self-test btn btn-success btn-sm float-right'><i class='bi bi-pencil'></i>&nbsp;&nbsp;Testung protokollieren…</button><div style='clear: both;'></div>"
             io.puts "</div>"
             io.puts "</div>"
             io.string

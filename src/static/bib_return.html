@@ -7,7 +7,7 @@
             <p>
                 Bitte scanne alle Bücher, die zurückgenommen werden sollen.
             </p>
-            <button id='bu_do_return' class="btn btn-success"><i class='fa fa-check'></i>&nbsp;&nbsp;Bücher zurückbuchen</button>
+            <button id='bu_do_return' class="btn btn-success"><i class='bi bi-check'></i>&nbsp;&nbsp;Bücher zurückbuchen</button>
         </div>
         <div id='barcode_widget' class='col-12 col-sm-8 col-md-6 col-lg-6'>
         </div>
@@ -89,9 +89,9 @@
         $('#bu_do_return').click(function(e) {
             let bu = $('#bu_do_return');
             if (bu.hasClass('btn-success')) {
-                bu.removeClass('btn-success').addClass('btn-secondary').html(`<i class='fa fa-times'></i>&nbsp;&nbsp;Bücher vorübergehend nicht zurückbuchen`);
+                bu.removeClass('btn-success').addClass('btn-secondary').html(`<i class='bi bi-times'></i>&nbsp;&nbsp;Bücher vorübergehend nicht zurückbuchen`);
             } else {
-                bu.removeClass('btn-secondary').addClass('btn-success').html(`<i class='fa fa-check'></i>&nbsp;&nbsp;Bücher zurückbuchen`);
+                bu.removeClass('btn-secondary').addClass('btn-success').html(`<i class='bi bi-check'></i>&nbsp;&nbsp;Bücher zurückbuchen`);
             }
         });
 

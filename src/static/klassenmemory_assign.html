@@ -166,7 +166,7 @@
 <div class="container div_quiz" style="display: none; overflow: hidden;" id="div_quiz_root">
     <div class="row">
         <div class="col-md-12">
-            <div class="right-top-button"><i class='fa fa-times'></i></div>
+            <div class="right-top-button"><i class='bi bi-times'></i></div>
             <h1>Klassen-Memory</h1>
             <p>
                 Nutze das Klassen-Memory, um Namen und Gesichter deiner Schülerinnen und Schüler zu lernen!
@@ -200,7 +200,7 @@
 <div class="container div_quiz" style="display: none;" id="div_quiz_play">
     <div class="row">
         <div class="col-md-12">
-            <div class="right-top-button"><i class='fa fa-arrow-left'></i></div>
+            <div class="right-top-button"><i class='bi bi-arrow-left'></i></div>
             <div id="quiz-foto" style="text-align: center; margin-bottom: 1em;"></div>
             <hr>
         </div>
@@ -452,7 +452,7 @@ function updatePrefix() {
                                 $(button).addClass('name-button-gone');
                         }
                         $('.bu-dont-know').remove();
-                        $(`<button class='btn btn-lg btn-secondary' style='margin: 5px; min-width: 3em;'>`).html(`<i class='fa fa-angle-double-right '></i>`).appendTo($('#name-buttons-here')).on('click', function(e) {
+                        $(`<button class='btn btn-lg btn-secondary' style='margin: 5px; min-width: 3em;'>`).html(`<i class='bi bi-angle-double-right '></i>`).appendTo($('#name-buttons-here')).on('click', function(e) {
                             pickNextTask();
                         });
                     }
@@ -477,7 +477,7 @@ function updatePrefix() {
                     $('.sus-quiz-label').addClass('shown');
                     $('#name-buttons-here .btn').prop('disabled', true);
                     $('.bu-dont-know').remove();
-                    $(`<button class='btn btn-lg btn-secondary' style='margin: 5px; min-width: 3em;'>`).html(`<i class='fa fa-angle-double-right '></i>`).appendTo($('#name-buttons-here')).on('click', function(e) {
+                    $(`<button class='btn btn-lg btn-secondary' style='margin: 5px; min-width: 3em;'>`).html(`<i class='bi bi-angle-double-right '></i>`).appendTo($('#name-buttons-here')).on('click', function(e) {
                         pickNextTask();
                     });
                 }
@@ -527,9 +527,9 @@ function pickNextTask() {
 
 function update_recognize_stats_button() {
     if (recognize_stats_public) {
-        $('#toggle_show_recognize_hall_of_fame').addClass('btn-outline-info').removeClass('btn-outline-secondary').html(`<i class='fa fa-check'></i>&nbsp;&nbsp;Ja, zeig meine Ergebnisse in der Hall of Fame an!`);
+        $('#toggle_show_recognize_hall_of_fame').addClass('btn-outline-info').removeClass('btn-outline-secondary').html(`<i class='bi bi-check'></i>&nbsp;&nbsp;Ja, zeig meine Ergebnisse in der Hall of Fame an!`);
     } else {
-        $('#toggle_show_recognize_hall_of_fame').removeClass('btn-outline-info').addClass('btn-outline-secondary').html(`<i class='fa fa-times'></i>&nbsp;&nbsp;Nein, ich möchte nicht in der Hall of Fame auftauchen.`);
+        $('#toggle_show_recognize_hall_of_fame').removeClass('btn-outline-info').addClass('btn-outline-secondary').html(`<i class='bi bi-times'></i>&nbsp;&nbsp;Nein, ich möchte nicht in der Hall of Fame auftauchen.`);
     }
 }
 
@@ -615,7 +615,7 @@ window.addEventListener('load', function() {
     }
     update_hall_of_fame();
     console.log(klassenstufen);
-    let bu_quiz = $(`<button class='btn btn-sm ttc' style='margin: 0.2em; width: 5em;'>`).html(`<i style='display: inline-block; margin: 0 0.2em 0 0.5em;' class='fa fa-play'></i>&nbsp;&nbsp;Quiz!`).data('quiz', 'yeah');
+    let bu_quiz = $(`<button class='btn btn-sm ttc' style='margin: 0.2em; width: 5em;'>`).html(`<i style='display: inline-block; margin: 0 0.2em 0 0.5em;' class='bi bi-play'></i>&nbsp;&nbsp;Quiz!`).data('quiz', 'yeah');
     bu_quiz.on('click', function(e) {
         resetQuiz();
         $('#quiz-curtain').fadeIn();

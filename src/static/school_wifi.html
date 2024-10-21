@@ -36,7 +36,7 @@
             </div>
             <div class='row'>
                 <div class='col-md-12'>
-                    <button id='wifi-access-submit' class='btn btn-outline-success'><i class='fa fa-send'></i>&nbsp;&nbsp;Absenden</button>
+                    <button id='wifi-access-submit' class='btn btn-outline-success'><i class='bi bi-send'></i>&nbsp;&nbsp;Absenden</button>
                 </div>
             </div>
             <hr>
@@ -98,7 +98,7 @@
                         row.append($('<td>').text(request.request.start_datetime));
                         row.append($('<td>').text(request.request.num_days));
                         row.append($('<td>').text(request.request.num_devices));
-                        let editButton = $('<button>').addClass('btn btn-outline-primary').html('<i class="fa fa-pencil"></i>');
+                        let editButton = $('<button>').addClass('btn btn-outline-primary').html('<i class="bi bi-pencil"></i>');
                         editButton.click(function(e) {
                             $('#wifi-name').val(request.request.name);
                             $('#start-date').val(request.request.start_datetime);
@@ -107,7 +107,7 @@
                             update_submit_button();
                         });
 
-                        let acceptButton = $('<button>').addClass('btn btn-outline-success').html('<i class="fa fa-check"></i>');
+                        let acceptButton = $('<button>').addClass('btn btn-outline-success').html('<i class="bi bi-check"></i>');
                         acceptButton.click(function(e) {
                             api_call('/api/accept_wifi_request', {token: request.request.token}, function(data) {
                                 if (data.success) 
@@ -115,7 +115,7 @@
                             });
                         });
 
-                        let declineButton = $('<button>').addClass('btn btn-outline-danger').html('<i class="fa fa-times"></i>');
+                        let declineButton = $('<button>').addClass('btn btn-outline-danger').html('<i class="bi bi-times"></i>');
                         declineButton.click(function(e) {
                             api_call('/api/decline_wifi_request', {token: request.request.token}, function(data) {
                                 if (data.success) 
@@ -136,15 +136,15 @@
                     console.log("endDateTime: " + endDateTime);
 
                     if (request.request.status === 'accepted' && endDateTime >= now && startDateTime <= now) {
-                        statusIcon = $('<td>').html("<i class='text-success fa fa-check' title='Aktiv'></i> Aktiv");
+                        statusIcon = $('<td>').html("<i class='text-success bi bi-check' title='Aktiv'></i> Aktiv");
                     } else if (request.request.status === 'waiting') {
-                        statusIcon = $('<td>').html("<i class='text-secondary fa fa-clock-o' title='In Bearbeitung'></i> In Bearbeitung");
+                        statusIcon = $('<td>').html("<i class='text-secondary bi bi-clock-o' title='In Bearbeitung'></i> In Bearbeitung");
                     } else if (request.request.status === 'declined') {
-                        statusIcon = $('<td>').html("<i class='text-danger fa fa-times' title='Abgelehnt'></i> Abgelehnt");
+                        statusIcon = $('<td>').html("<i class='text-danger bi bi-times' title='Abgelehnt'></i> Abgelehnt");
                     } else if (endDateTime < now) {
-                        statusIcon = $('<td>').html("<i class='text-danger fa fa-lock' title='Beendet'></i> Beendet");
+                        statusIcon = $('<td>').html("<i class='text-danger bi bi-lock' title='Beendet'></i> Beendet");
                     } else {
-                        statusIcon = $('<td>').html("<i class='text-danger fa fa-clock-o' title='noch Inaktiv'></i> noch Inaktiv");
+                        statusIcon = $('<td>').html("<i class='text-danger bi bi-clock-o' title='noch Inaktiv'></i> noch Inaktiv");
                     }
                     row.append(statusIcon);
                     $('#active-connections').append(row);

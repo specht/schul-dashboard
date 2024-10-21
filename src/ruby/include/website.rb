@@ -133,15 +133,15 @@ class Main < Sinatra::Base
     def _include_file(name, label)
         icon = ''
         if name[-4, 4] == '.pdf'
-            icon = "<i class='file-type fa fa-file-pdf-o'></i>"
+            icon = "<i class='file-type bi bi-file-pdf-o'></i>"
         elsif name[-4, 4] == '.doc' || name[-5, 5] == '.docx'
-            icon = "<i class='file-type fa fa-file-word-o'></i>"
+            icon = "<i class='file-type bi bi-file-word-o'></i>"
         elsif name[-4, 4] == '.xls' || name[-5, 5] == '.xlsx'
-            icon = "<i class='file-type fa fa-file-excel-o'></i>"
+            icon = "<i class='file-type bi bi-file-excel-o'></i>"
         elsif name[-4, 4] == '.ppt' || name[-5, 5] == '.pptx'
-            icon = "<i class='file-type fa fa-file-powerpoint-o'></i>"
+            icon = "<i class='file-type bi bi-file-powerpoint-o'></i>"
         elsif name[-4, 4] == '.zip'
-            icon = "<i class='file-type fa fa-file-zip-o'></i>"
+            icon = "<i class='file-type bi bi-file-zip-o'></i>"
         end
         "#{icon}<a href='https://#{WEBSITE_HOST}/f/#{name}' target='_blank'>#{label}</a>"
     end

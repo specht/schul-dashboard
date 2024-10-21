@@ -917,7 +917,7 @@ class Main < Sinatra::Base
                 io.puts "</div>"
                 io.puts "<div>#{@@user_info[organizer][:display_name_official]} hat #{teacher_logged_in? ? 'Sie' : 'dich'} zu einer Umfrage eingeladen: <strong>#{poll_title}</strong>. #{teacher_logged_in? ? 'Sie können' : 'Du kannst'} bis zum #{Date.parse(poll_run[:end_date]).strftime('%d.%m.%Y')} um #{poll_run[:end_time]} Uhr teilnehmen (die Umfrage <span class='moment-countdown' data-target-timestamp='#{poll_run[:end_date]}T#{poll_run[:end_time]}:00' data-before-label='läuft noch' data-after-label='ist vorbei'></span>).</div>"
                 io.puts "<hr />"
-                io.puts "<button style='white-space: nowrap;' class='float-right btn btn-success bu-launch-poll' data-poll-run-id='#{poll_run[:id]}'>Zur Umfrage&nbsp;<i class='fa fa-angle-double-right'></i></button>"
+                io.puts "<button style='white-space: nowrap;' class='float-right btn btn-success bu-launch-poll' data-poll-run-id='#{poll_run[:id]}'>Zur Umfrage&nbsp;<i class='bi bi-angle-double-right'></i></button>"
                 io.puts "<div style='clear: both;'></div>"
                 io.puts "</div>"
             end

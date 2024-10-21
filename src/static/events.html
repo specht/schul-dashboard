@@ -3,7 +3,7 @@
     <div class='row'>
         <div class='col-md-12'>
             <h2 style='margin-bottom: 30px;'>Termine</h2>
-            <button class='btn btn-success bu-new-event'><i class='fa fa-calendar-plus-o'></i>&nbsp;&nbsp;Neuer Termin</button>
+            <button class='btn btn-success bu-new-event'><i class='bi bi-calendar-plus-o'></i>&nbsp;&nbsp;Neuer Termin</button>
             <hr />
             <div class='events-container' style='max-width: 100%; overflow-x: auto;'>
                 <table class='table table-striped narrow' style='width: unset; min-width: 100%;'>
@@ -41,7 +41,7 @@
                         <div class="form-group">
                             <label>Videokonferenz</label>
                             <div class='button-with-label'>
-                                <button id='ti_event_jitsi' data-state='no' class='btn_lesson_data btn btn-outline-secondary'><i class='fa fa-times'></i>&nbsp;&nbsp;Jitsi Meet</button>
+                                <button id='ti_event_jitsi' data-state='no' class='btn_lesson_data btn btn-outline-secondary'><i class='bi bi-times'></i>&nbsp;&nbsp;Jitsi Meet</button>
                             </div>
                         </div>
                     </div>
@@ -91,7 +91,7 @@
                         <li>Klicken Sie hier, um die fehlenden Einladungen per E-Mail zu versenden:</li>
                         </ol>
                         <div style='text-align: center;'>
-                            <button class='btn btn-success' id='bu_send_missing_event_invitations' disabled><i class='fa fa-send'></i>&nbsp;&nbsp;Fehlende Einladungen versenden</button>
+                            <button class='btn btn-success' id='bu_send_missing_event_invitations' disabled><i class='bi bi-send'></i>&nbsp;&nbsp;Fehlende Einladungen versenden</button>
                         </div>
                     </div>
                     <div class='alert alert-warning div_invites_requested' style='display: none;'>
@@ -119,10 +119,10 @@
             </div>
             <div class="modal-footer">
                 <div id='save_event_btn_container'>
-                    <button id='bu_discard_event' class='btn btn-outline-secondary' disabled><i class='fa fa-times'></i>&nbsp;&nbsp;<span>Verwerfen</span></button>
-                    <button id='bu_save_event' class='btn btn-outline-secondary' disabled><i class='fa fa-check'></i>&nbsp;&nbsp;<span>Speichern</span></button>
+                    <button id='bu_discard_event' class='btn btn-outline-secondary' disabled><i class='bi bi-times'></i>&nbsp;&nbsp;<span>Verwerfen</span></button>
+                    <button id='bu_save_event' class='btn btn-outline-secondary' disabled><i class='bi bi-check'></i>&nbsp;&nbsp;<span>Speichern</span></button>
                 </div>
-                <button id='bu_delete_event' type="button" class="btn btn-outline-secondary" disabled style='display: none;'><i class='fa fa-trash'></i>&nbsp;&nbsp;Termin löschen</button>
+                <button id='bu_delete_event' type="button" class="btn btn-outline-secondary" disabled style='display: none;'><i class='bi bi-trash'></i>&nbsp;&nbsp;Termin löschen</button>
                 <button id='bu_close_event_modal' type="button" class="btn btn-secondary" data-dismiss="modal">Schließen</button>
             </div>
         </div>
@@ -330,7 +330,7 @@ function update_net_recipients_list() {
                 }
                 if (this_invitation_requested)
                     requested_invites = true;
-                let bu_invite = $('<button>').data('email', email).data('eid', old_eid).addClass('btn').addClass('btn-xs').addClass('btn-success').addClass('bu-send-invitation').html("<i class='fa fa-send'></i>&nbsp;&nbsp;Einladung senden");
+                let bu_invite = $('<button>').data('email', email).data('eid', old_eid).addClass('btn').addClass('btn-xs').addClass('btn-success').addClass('bu-send-invitation').html("<i class='bi bi-send'></i>&nbsp;&nbsp;Einladung senden");
                 if ((old_eid || '').length === 0)
                     bu_invite.removeClass('btn-success').addClass('btn-outline-secondary').prop('disabled', true);
                 row.append($('<td>').append(bu_invite));
@@ -491,14 +491,14 @@ function update_external_users_for_session_user() {
         let row = $('<tr>');
         row.append($('<td>').html(external_users_for_session_user.recipients[email].label));
         row.append($('<td>').html(email));
-//         let bu_toggle = $('<button>').data('email', email).addClass('btn').addClass('btn-xs').addClass('btn-secondary').html("<i class='fa fa-times'></i>&nbsp;&nbsp;nicht eingeladen");
+//         let bu_toggle = $('<button>').data('email', email).addClass('btn').addClass('btn-xs').addClass('btn-secondary').html("<i class='bi bi-times'></i>&nbsp;&nbsp;nicht eingeladen");
 //         row.append($('<td>').append(bu_toggle));
-        let bu_delete = $('<button>').data('email', email).addClass('btn').addClass('btn-xs').addClass('btn-danger').html("<i class='fa fa-trash'></i>");
+        let bu_delete = $('<button>').data('email', email).addClass('btn').addClass('btn-xs').addClass('btn-danger').html("<i class='bi bi-trash'></i>");
         row.append($('<td>').append(bu_delete));
         bu_delete.click(function(e) {
             showTemplateModal('Externen Teilnehmer löschen',
                 'Sind Sie sicher, dass Sie diesen externen Teilnehmer aus Ihrem Adressbuch löschen möchten?',
-                "<i class='fa fa-trash'></i>&nbsp;&nbsp;Externen Teilnehmer löschen", 'btn-danger',
+                "<i class='bi bi-trash'></i>&nbsp;&nbsp;Externen Teilnehmer löschen", 'btn-danger',
                 'Abbrechen', 'btn-secondary', function() {
                     let email = $(e.target).closest('.btn').data('email');
                     api_call('/api/delete_external_user', {email: email}, function(data) {
@@ -591,7 +591,7 @@ document.addEventListener('DOMContentLoaded', function() {
     $('#bu_delete_event').click(function(e) {
         showTemplateModal('Termin löschen',
             'Sind Sie sicher, dass Sie diesen Termin löschen möchten?',
-            "<i class='fa fa-trash'></i>&nbsp;&nbsp;Termin löschen", 'btn-danger',
+            "<i class='bi bi-trash'></i>&nbsp;&nbsp;Termin löschen", 'btn-danger',
             'Abbrechen', 'btn-secondary', function() {
                 delete_event();
             }

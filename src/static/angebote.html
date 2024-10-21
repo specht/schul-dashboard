@@ -20,7 +20,7 @@
             <p>
                 Bitte beachten Sie, dass diese Einträge für alle Lehrkräfte sichtbar sind, aber nur von der erstellenden Lehrkraft bearbeitet werden können.
             </p>
-            <button class='btn btn-success bu-new-angebot'><i class='fa fa-plus'></i>&nbsp;&nbsp;Neues Angebot</button>
+            <button class='btn btn-success bu-new-angebot'><i class='bi bi-plus'></i>&nbsp;&nbsp;Neues Angebot</button>
             <hr />
             <div class='angebote-container' style='max-width: 100%; overflow-x: auto;'>
                 <table class='table table-striped narrow' style='width: unset; min-width: 100%;'>
@@ -66,10 +66,10 @@
             </div>
             <div class="modal-footer">
                 <div id='save_angebot_btn_container'>
-                    <button id='bu_discard_angebot' class='btn btn-outline-secondary' disabled><i class='fa fa-times'></i>&nbsp;&nbsp;<span>Verwerfen</span></button>
-                    <button id='bu_save_angebot' class='btn btn-outline-secondary' disabled><i class='fa fa-check'></i>&nbsp;&nbsp;<span>Speichern</span></button>
+                    <button id='bu_discard_angebot' class='btn btn-outline-secondary' disabled><i class='bi bi-times'></i>&nbsp;&nbsp;<span>Verwerfen</span></button>
+                    <button id='bu_save_angebot' class='btn btn-outline-secondary' disabled><i class='bi bi-check'></i>&nbsp;&nbsp;<span>Speichern</span></button>
                 </div>
-                <button id='bu_delete_angebot' type="button" class="btn btn-outline-secondary" disabled style='display: none;'><i class='fa fa-trash'></i>&nbsp;&nbsp;Angebot löschen</button>
+                <button id='bu_delete_angebot' type="button" class="btn btn-outline-secondary" disabled style='display: none;'><i class='bi bi-trash'></i>&nbsp;&nbsp;Angebot löschen</button>
                 <button id='bu_close_angebot_modal' type="button" class="btn btn-secondary" data-dismiss="modal">Schließen</button>
             </div>
         </div>
@@ -355,7 +355,7 @@ document.addEventListener('DOMContentLoaded', function() {
     $('#bu_delete_angebot').click(function(e) {
         showTemplateModal('Angebot löschen',
             'Sind Sie sicher, dass Sie dieses Angebot löschen möchten?',
-            "<i class='fa fa-trash'></i>&nbsp;&nbsp;Angebot löschen", 'btn-danger',
+            "<i class='bi bi-trash'></i>&nbsp;&nbsp;Angebot löschen", 'btn-danger',
             'Abbrechen', 'btn-secondary', function() {
                 delete_angebot();
             }

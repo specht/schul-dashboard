@@ -178,7 +178,7 @@ class Main < Sinatra::Base
                         io.puts "<td>#{entry[:name]}</td>"
                         io.puts "<td>#{[(row_description_for_key_and_key[event[:key]] || {})[key], description_for_key_and_key[event[:key]][key]].reject { |x| x.nil? }.join(' / ')}</td>"
                         if admin_logged_in?
-                            io.puts "<td><button class='btn btn-xs btn-danger bu-delete-signup' data-tag='#{entry[:tag]}'><i class='fa fa-trash'></i>&nbsp;&nbsp;Löschen</button></td>"
+                            io.puts "<td><button class='btn btn-xs btn-danger bu-delete-signup' data-tag='#{entry[:tag]}'><i class='bi bi-trash'></i>&nbsp;&nbsp;Löschen</button></td>"
                         else
                             io.puts "<td></td>"
                         end

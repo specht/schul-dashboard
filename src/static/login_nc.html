@@ -11,14 +11,14 @@
         <div class='result-success' style='display: none;'>
             <hr />
             <div class='alert alert-success'>
-            <i class='fa fa-check' style='font-size: 150%; color: #28a745; position: relative; top: 2px; padding-right: 0.5em;'></i>
+            <i class='bi bi-check' style='font-size: 150%; color: #28a745; position: relative; top: 2px; padding-right: 0.5em;'></i>
             Dein Passwort wurde zurückgesetzt.
             </div>
         </div>
         <div class='result-error' style='display: none;'>
             <hr />
             <div class='alert alert-danger'>
-            <i class='fa fa-times' style='font-size: 150%; color: #dc3545; position: relative; top: 2px; padding-right: 0.5em;'></i>
+            <i class='bi bi-times' style='font-size: 150%; color: #dc3545; position: relative; top: 2px; padding-right: 0.5em;'></i>
             Dein Passwort konnte leider nicht zurückgesetzt werden.
             </div>
         </div>
@@ -44,7 +44,7 @@
                 <div class="input-group">
                     <input type='text' class='form-control' value='#{NEXTCLOUD_URL}' readonly></input>
                     <div class="input-group-append">
-                        <a class='btn btn-secondary' target='_blank' href='#{NEXTCLOUD_URL}/index.php/login?user=#{@session_user[:nc_login]}'><i class='fa fa-external-link'></i>&nbsp;&nbsp;Öffnen…</a>
+                        <a class='btn btn-secondary' target='_blank' href='#{NEXTCLOUD_URL}/index.php/login?user=#{@session_user[:nc_login]}'><i class='bi bi-external-link'></i>&nbsp;&nbsp;Öffnen…</a>
                     </div>
                 </div>
             </td></tr>
@@ -52,7 +52,7 @@
                 <div class="input-group">
                     <input id='ti_nc_login' type='text' class='form-control' value='#{@session_user[:nc_login]}' readonly></input>
                     <div class="input-group-append">
-                        <button class='btn btn-secondary btn-clipboard' data-clipboard-action='copy' data-clipboard-target="#ti_nc_login"><i class='fa fa-clipboard'></i>&nbsp;&nbsp;Kopieren</button>
+                        <button class='btn btn-secondary btn-clipboard' data-clipboard-action='copy' data-clipboard-target="#ti_nc_login"><i class='bi bi-clipboard'></i>&nbsp;&nbsp;Kopieren</button>
                     </div>
                 </div>
             </td></tr>
@@ -60,8 +60,8 @@
                 <div class="input-group">
                     <input id='ti_initial_nc_password' type='password' class='form-control' value='#{@session_user[:initial_nc_password]}' readonly></input>
                     <div class="input-group-append">
-                        <button class='btn bu-show-password btn-secondary' style='border-right: 2px solid #444;'><i class='fa fa-eye'></i>&nbsp;&nbsp;Anzeigen</button>
-                        <button class='btn btn-secondary btn-clipboard' data-clipboard-action='copy' data-clipboard-text="#{@session_user[:initial_nc_password]}"><i class='fa fa-clipboard'></i>&nbsp;&nbsp;Kopieren</button>
+                        <button class='btn bu-show-password btn-secondary' style='border-right: 2px solid #444;'><i class='bi bi-eye'></i>&nbsp;&nbsp;Anzeigen</button>
+                        <button class='btn btn-secondary btn-clipboard' data-clipboard-action='copy' data-clipboard-text="#{@session_user[:initial_nc_password]}"><i class='bi bi-clipboard'></i>&nbsp;&nbsp;Kopieren</button>
                     </div>
                 </div>
             </td></tr>
@@ -69,14 +69,14 @@
             </table>
             <hr />
             <div style='text-align: center;'>
-            <a href='#{NEXTCLOUD_URL}/index.php/login?user=#{@session_user[:nc_login]}' target='_blank' class='btn btn-success'><i class='fa fa-sign-in'></i>&nbsp;&nbsp;Zur Nextcloud-Anmeldung…</a>
+            <a href='#{NEXTCLOUD_URL}/index.php/login?user=#{@session_user[:nc_login]}' target='_blank' class='btn btn-success'><i class='bi bi-sign-in'></i>&nbsp;&nbsp;Zur Nextcloud-Anmeldung…</a>
             </div>
             <hr />
             <p>
             Du kannst dein Nextcloud-Passwort jederzeit in der Nextcloud ändern. Falls du dein geändertes Passwort vergessen haben solltest, kannst du es hier auf dein Initialpasswort zurücksetzen:
             </p>
             <div style='text-align: center;'>
-            <button class='btn btn-outline-secondary btn-sm bu-reset-nc-password'><i class='fa fa-key-modern'></i>&nbsp;&nbsp;Nextcloud-Passwort zurücksetzen</button>
+            <button class='btn btn-outline-secondary btn-sm bu-reset-nc-password'><i class='bi bi-key-modern'></i>&nbsp;&nbsp;Nextcloud-Passwort zurücksetzen</button>
             </div>
         </div>        
     </div>

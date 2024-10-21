@@ -59,7 +59,7 @@ class Main < Sinatra::Base
                 io.puts "<td>Eltern von #{user[:display_name]}</td>"
                 io.puts "<td>#{tr_klasse(user[:klasse])}</td>"
                 io.puts "<td><input type='text' class='form-control ti_name' value='#{name_for_email[email]}'/></td>"
-                io.puts "<td><button class='btn btn-xs btn-danger bu-remove-ev'><i class='fa fa-trash'></i>&nbsp;&nbsp;Löschen</button></td>"
+                io.puts "<td><button class='btn btn-xs btn-danger bu-remove-ev'><i class='bi bi-trash'></i>&nbsp;&nbsp;Löschen</button></td>"
             io.puts "</tr>"
             end
             io.puts "</tbody>"

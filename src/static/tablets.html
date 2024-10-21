@@ -3,7 +3,7 @@
     <div class='row'>
         <div class="col-md-12">
             <h2 style="margin-bottom: 30px;">Tablets
-                <button id="add_mobile_device" class='btn btn-success pull-right'><i class='fa fa-plus'></i>&nbsp;&nbsp;Geräte hinzufügen</button>
+                <button id="add_mobile_device" class='btn btn-success pull-right'><i class='bi bi-plus'></i>&nbsp;&nbsp;Geräte hinzufügen</button>
             </h2>
             <hr>
                 Hier kannst du Tablets im Schulgebäude verfolgen und diese verwalten.
@@ -20,7 +20,7 @@ document.addEventListener('DOMContentLoaded', function() {
     $('#add_mobile_device').click(function(e) {
         $('#__template_modal .modal-title').html('Gerät hinzufügen');
         $('#__template_modal .modal-body').html('<div class="col-sm-12"><div class="row"><div class="col-sm-4"><input id="set" placeholder="Satz (z.B. 1)" type="number" class="form-control"></input></div><div class="col-sm-4"><input id="tablet" placeholder="Nummer (z.B. 10)" type="number" class="form-control"></input></div><div class="col-sm-4"><input id="code" readonly placeholder="Code (vom Server)" type="number" class="form-control disabled"></input></div></div></div>');
-        let bu_confirm = $('<button>').addClass('btn ' + 'btn-success').html('<i class="fa fa-check"></i>&nbsp;&nbsp;Speichern');
+        let bu_confirm = $('<button>').addClass('btn ' + 'btn-success').html('<i class="bi bi-check"></i>&nbsp;&nbsp;Speichern');
         $('#__template_modal .modal-footer').empty().append(bu_confirm);
         let bu_cancel = $('<button>').addClass('btn ' + 'btn-secondary').html('Schließen').attr('data-dismiss', 'modal');
         $('#__template_modal .modal-footer').append(bu_cancel);
@@ -52,7 +52,7 @@ document.addEventListener('DOMContentLoaded', function() {
             code = JSON.stringify(code);
             showTemplateModal('Tablet löschen', 
                 'Bist Du sicher? Das Tablet wird aus dem Dashboard gelöscht und du musst einen neuen Code generieren.',
-                "<i class='fa fa-trash'></i>&nbsp;&nbsp;Tablet löschen", 'btn-danger',
+                "<i class='bi bi-trash'></i>&nbsp;&nbsp;Tablet löschen", 'btn-danger',
                 'Abbrechen', 'btn-secondary', function() {
                     api_call('/api/remove_mobile_device', {code: code}, function (data) {
                         if (data.success) {

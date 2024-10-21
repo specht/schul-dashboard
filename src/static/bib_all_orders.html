@@ -87,7 +87,7 @@
                                     e.stopPropagation();
                                     showTemplateModal('Bestellung löschen',
                                         'Sind Sie sicher, dass Sie die Bestellung löschen möchten?',
-                                        "<i class='fa fa-trash'></i>&nbsp;&nbsp;Bestellung löschen", 'btn-danger',
+                                        "<i class='bi bi-trash'></i>&nbsp;&nbsp;Bestellung löschen", 'btn-danger',
                                         'Abbrechen', 'btn-secondary', function () {
                                             console.log(order.o.id);
                                             bib_api_call('/jwt/cancel_order', {oid: order.o.id}, function(data) {

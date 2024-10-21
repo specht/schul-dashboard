@@ -7,7 +7,7 @@
             <b class='key'>Datum:</b> #{DateTime.parse(show_event[:info][:date]).strftime('%d.%m.%Y')} <br />
             <b class='key'>Uhrzeit:</b> #{show_event[:info][:start_time]} &ndash; #{show_event[:info][:end_time]}
             <hr />
-            <a class='btn btn-success' href='#{show_event[:jitsi_link]}'><i class='fa fa-microphone'></i>&nbsp;&nbsp;Zum Jitsi-Raum&nbsp;&nbsp;<i class='fa fa-angle-double-right'></i></a>
+            <a class='btn btn-success' href='#{show_event[:jitsi_link]}'><i class='bi bi-microphone'></i>&nbsp;&nbsp;Zum Jitsi-Raum&nbsp;&nbsp;<i class='bi bi-angle-double-right'></i></a>
             <hr />
             #{show_event[:info][:description]}
         </div>        

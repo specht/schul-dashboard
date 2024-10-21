@@ -4,7 +4,7 @@
         <div class='col-md-12'>
             <h2 style='margin-bottom: 30px;'>Termine im Klassenarbeitskalender verwalten</h2>
             <hr />
-            <button class='btn btn-success bu-new-event'><i class='fa fa-calendar-plus-o'></i>&nbsp;&nbsp;Neuer
+            <button class='btn btn-success bu-new-event'><i class='bi bi-calendar-plus-o'></i>&nbsp;&nbsp;Neuer
                 Termin</button>
             <hr />
             <div class='website-events-container' style='max-width: 100%; overflow-x: auto;'>
@@ -61,7 +61,7 @@
                     let ti_title = $("<input>").attr('type', 'text').addClass('form-control').val(entry.title);
                     cell = $('<td>').append(ti_title);
                     row.append(cell);
-                    let bu_delete = $('<button>').addClass('btn').addClass('btn').addClass('btn-danger').html("<i class='fa fa-trash'></i>&nbsp;&nbsp;Löschen");
+                    let bu_delete = $('<button>').addClass('btn').addClass('btn').addClass('btn-danger').html("<i class='bi bi-trash'></i>&nbsp;&nbsp;Löschen");
                     row.append($('<td>').append(bu_delete));
                     $('.events-here').append(row);
                     bu_delete.click(function (e) {

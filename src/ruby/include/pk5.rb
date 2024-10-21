@@ -242,22 +242,22 @@ class Main < Sinatra::Base
                 :betreuende_lehrkraft => if pk5[:betreuende_lehrkraft] == @session_user[:email]
                     if pk5[:betreuende_lehrkraft_confirmed_by] != @session_user[:email]
                         if $pk5.get_current_phase >= 2
-                            "<i class='fa fa-clock-o'></i>&nbsp;&nbsp;<span class='hl'>#{CGI.escapeHTML(((@@user_info[pk5[:betreuende_lehrkraft]] || {})[:display_name_official]) || '–')}</span> <em>Anfrage erhalten &ndash; bitte bestätigen oder ablehnen</em>"
+                            "<i class='bi bi-clock-o'></i>&nbsp;&nbsp;<span class='hl'>#{CGI.escapeHTML(((@@user_info[pk5[:betreuende_lehrkraft]] || {})[:display_name_official]) || '–')}</span> <em>Anfrage erhalten &ndash; bitte bestätigen oder ablehnen</em>"
                         else
-                            "<i class='fa fa-clock-o'></i>&nbsp;&nbsp;#{CGI.escapeHTML(((@@user_info[pk5[:betreuende_lehrkraft]] || {})[:display_name_official]) || '–')}"
+                            "<i class='bi bi-clock-o'></i>&nbsp;&nbsp;#{CGI.escapeHTML(((@@user_info[pk5[:betreuende_lehrkraft]] || {})[:display_name_official]) || '–')}"
                         end
                     else
                         "#{CGI.escapeHTML(((@@user_info[pk5[:betreuende_lehrkraft]] || {})[:display_name_official]) || '–')}"
                     end
                 else
                     if pk5[:betreuende_lehrkraft_confirmed_by] != pk5[:betreuende_lehrkraft]
-                        "<i class='fa fa-clock-o'></i>&nbsp;&nbsp;#{CGI.escapeHTML(((@@user_info[pk5[:betreuende_lehrkraft]] || {})[:display_name_official]) || '–')}"
+                        "<i class='bi bi-clock-o'></i>&nbsp;&nbsp;#{CGI.escapeHTML(((@@user_info[pk5[:betreuende_lehrkraft]] || {})[:display_name_official]) || '–')}"
                     else
                         "#{CGI.escapeHTML(((@@user_info[pk5[:betreuende_lehrkraft]] || {})[:display_name_official]) || '–')}"
                     end
                 end,
                 :betreuende_lehrkraft_fas => if fachleiter_for_faecher.include?(pk5[:fas]) && pk5[:betreuende_lehrkraft_fas].nil?
-                    "<i class='fa fa-clock-o'></i>&nbsp;&nbsp;bitte Lehrkraft zuweisen"
+                    "<i class='bi bi-clock-o'></i>&nbsp;&nbsp;bitte Lehrkraft zuweisen"
                 else
                     "#{CGI.escapeHTML(((@@user_info[pk5[:betreuende_lehrkraft_fas]] || {})[:display_name_official]) || '–')}"
                 end
@@ -383,8 +383,8 @@ class Main < Sinatra::Base
             invitations.values.each do |emails|
                 io.puts "<p>Du hast eine Einladung von <strong>#{join_with_sep(emails.map { |x| @@user_info[x][:display_name]}, ', ', ' und ')}</strong> für eine Gruppenprüfung erhalten.</p>"
                 io.puts "<p>"
-                io.puts "<button class='btn btn-success bu-accept-invitation' data-email='#{emails.first}'><i class='fa fa-check'></i>&nbsp;&nbsp;Einladung annehmen</button>"
-                io.puts "<button class='btn btn-danger bu-reject-invitation' data-email='#{emails.first}'><i class='fa fa-times'></i>&nbsp;&nbsp;Einladung ablehnen</button>"
+                io.puts "<button class='btn btn-success bu-accept-invitation' data-email='#{emails.first}'><i class='bi bi-check'></i>&nbsp;&nbsp;Einladung annehmen</button>"
+                io.puts "<button class='btn btn-danger bu-reject-invitation' data-email='#{emails.first}'><i class='bi bi-times'></i>&nbsp;&nbsp;Einladung ablehnen</button>"
                 io.puts "</p>"
             end
             io.puts "<hr>"
@@ -403,7 +403,7 @@ class Main < Sinatra::Base
             pending_invitations.each do |row|
                 io.puts "<p>Du hast <strong>#{@@user_info[row['u.email']][:display_name]}</strong> für eine Gruppenprüfung eingeladen.</p>"
                 io.puts "<p>"
-                io.puts "<button class='btn btn-danger bu-delete-invitation' data-email='#{row['u.email']}'><i class='fa fa-times'></i>&nbsp;&nbsp;Einladung zurücknehmen</button>"
+                io.puts "<button class='btn btn-danger bu-delete-invitation' data-email='#{row['u.email']}'><i class='bi bi-times'></i>&nbsp;&nbsp;Einladung zurücknehmen</button>"
                 io.puts "</p>"
             end
             io.puts "<hr>"

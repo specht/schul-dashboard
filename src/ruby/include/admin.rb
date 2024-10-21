@@ -9,9 +9,9 @@ class Main < Sinatra::Base
 
     def good_bad_icon(flag)
         if flag == true
-            "<i class='fa fa-check text-success'></i>"
+            "<i class='bi bi-check text-success'></i>"
         elsif flag == false
-            "<i class='fa fa-warning text-danger'></i>"
+            "<i class='bi bi-warning text-danger'></i>"
         end
     end
     
@@ -32,8 +32,8 @@ class Main < Sinatra::Base
         twofa_status = {}
         (users_with_telephone_number | users_with_otp).each do |email|
             methods = []
-            methods << "<i class='fa fa-mobile'></i>&nbsp;&nbsp;SMS" if users_with_telephone_number.include?(email)
-            methods << "<i class='fa fa-qrcode'></i>&nbsp;&nbsp;OTP" if users_with_otp.include?(email)
+            methods << "<i class='bi bi-mobile'></i>&nbsp;&nbsp;SMS" if users_with_telephone_number.include?(email)
+            methods << "<i class='bi bi-qrcode'></i>&nbsp;&nbsp;OTP" if users_with_otp.include?(email)
             twofa_status[email] = methods.join(' / ')
         end
         StringIO.open do |io|
@@ -83,8 +83,8 @@ class Main < Sinatra::Base
                     print_email_field(io, user[:email])
                     io.puts "</td>"
                 end
-                io.puts "<td><a class='btn btn-xs btn-secondary' style='padding-top: 0.4em;' href='/timetable/#{user[:id]}'><i class='fa fa-calendar'></i>&nbsp;&nbsp;Stundenplan</a></td>"
-                io.puts "<td><button class='btn btn-warning btn-xs btn-impersonate' data-impersonate-email='#{user[:email]}'><i class='fa fa-id-badge'></i>&nbsp;&nbsp;Anmelden</button></td>"
+                io.puts "<td><a class='btn btn-xs btn-secondary' style='padding-top: 0.4em;' href='/timetable/#{user[:id]}'><i class='bi bi-calendar'></i>&nbsp;&nbsp;Stundenplan</a></td>"
+                io.puts "<td><button class='btn btn-warning btn-xs btn-impersonate' data-impersonate-email='#{user[:email]}'><i class='bi bi-id-badge'></i>&nbsp;&nbsp;Anmelden</button></td>"
                 io.puts "<td>#{twofa_status[email]}</td>"
                 if all_sessions.include?(email)
                     io.puts "<td><button class='btn-sessions btn btn-xs btn-secondary' data-sessions-id='#{@@user_info[email][:id]}'>#{all_sessions[email].size} Session#{all_sessions[email].size == 1 ? '' : 's'}</button></td>"
@@ -138,12 +138,12 @@ class Main < Sinatra::Base
                     io.print "<td>"
                     print_email_field(io, user[:email])
                     io.puts "</td>"
-                    io.puts "<td><a class='btn btn-xs btn-secondary' href='/timetable/#{user[:id]}'><i class='fa fa-calendar'></i>&nbsp;&nbsp;Stundenplan</a></td>"
-                    io.puts "<td><button class='btn btn-warning btn-xs btn-impersonate' data-impersonate-email='#{user[:email]}'><i class='fa fa-id-badge'></i>&nbsp;&nbsp;Anmelden</button></td>"
+                    io.puts "<td><a class='btn btn-xs btn-secondary' href='/timetable/#{user[:id]}'><i class='bi bi-calendar'></i>&nbsp;&nbsp;Stundenplan</a></td>"
+                    io.puts "<td><button class='btn btn-warning btn-xs btn-impersonate' data-impersonate-email='#{user[:email]}'><i class='bi bi-id-badge'></i>&nbsp;&nbsp;Anmelden</button></td>"
                     # if all_homeschooling_users.include?(email)
-                    #     io.puts "<td><button class='btn btn-info btn-xs btn-toggle-homeschooling' data-email='#{user[:email]}'><i class='fa fa-home'></i>&nbsp;&nbsp;zu Hause</button></td>"
+                    #     io.puts "<td><button class='btn btn-info btn-xs btn-toggle-homeschooling' data-email='#{user[:email]}'><i class='bi bi-home'></i>&nbsp;&nbsp;zu Hause</button></td>"
                     # else
-                    #     io.puts "<td><button class='btn btn-secondary btn-xs btn-toggle-homeschooling' data-email='#{user[:email]}'><i class='fa fa-building'></i>&nbsp;&nbsp;Präsenz</button></td>"
+                    #     io.puts "<td><button class='btn btn-secondary btn-xs btn-toggle-homeschooling' data-email='#{user[:email]}'><i class='bi bi-building'></i>&nbsp;&nbsp;Präsenz</button></td>"
                     # end
                     io.puts "<td>#{twofa_status[email]}</td>"
                     if all_sessions.include?(email)
@@ -201,7 +201,7 @@ class Main < Sinatra::Base
                     io.puts "</td>"
                 end
                 io.puts "<td>#{user[:roles].to_a.sort.map { |x| AVAILABLE_ROLES[x] }.join(', ')}</td>"
-                io.puts "<td><button class='btn btn-warning btn-xs btn-impersonate' data-impersonate-email='#{user[:email]}'><i class='fa fa-id-badge'></i>&nbsp;&nbsp;Anmelden</button></td>"
+                io.puts "<td><button class='btn btn-warning btn-xs btn-impersonate' data-impersonate-email='#{user[:email]}'><i class='bi bi-id-badge'></i>&nbsp;&nbsp;Anmelden</button></td>"
                 io.puts "<td>#{twofa_status[email]}</td>"
                 if all_sessions.include?(email)
                     io.puts "<td><button class='btn-sessions btn btn-xs btn-secondary' data-sessions-id='#{@@user_info[email][:id]}'>#{all_sessions[email].size} Session#{all_sessions[email].size == 1 ? '' : 's'}</button></td>"
@@ -227,20 +227,20 @@ class Main < Sinatra::Base
             io.puts "</div>"
             io.puts "<hr>"
             io.puts "<h3 id='website'>Website</h3>"
-            io.puts "<button class='btn btn-secondary bu-refresh-staging'><i id='refresh-icon-staging' class='fa fa-refresh'></i>&nbsp;&nbsp;Vorschau-Seite aktualisieren</button>"
-            io.puts "<button class='btn btn-success bu-refresh-live'><i id='refresh-icon-live' class='fa fa-refresh'></i>&nbsp;&nbsp;Live-Seite aktualisieren</button>"
+            io.puts "<button class='btn btn-secondary bu-refresh-staging'><i id='refresh-icon-staging' class='bi bi-refresh'></i>&nbsp;&nbsp;Vorschau-Seite aktualisieren</button>"
+            io.puts "<button class='btn btn-success bu-refresh-live'><i id='refresh-icon-live' class='bi bi-refresh'></i>&nbsp;&nbsp;Live-Seite aktualisieren</button>"
             io.puts "<hr />"
             io.puts "<h3 id='tablets'>Tablets</h3>"
             io.puts "<hr />"
             io.puts "<p>Mit einem Klick auf diesen Button können Sie dieses Gerät dauerhaft als Lehrer-Tablet anmelden.</p>"
-            io.puts "<button class='btn btn-success bu_login_teacher_tablet'><i class='fa fa-sign-in'></i>&nbsp;&nbsp;Lehrer-Tablet-Modus aktivieren</button>"
+            io.puts "<button class='btn btn-success bu_login_teacher_tablet'><i class='bi bi-sign-in'></i>&nbsp;&nbsp;Lehrer-Tablet-Modus aktivieren</button>"
             io.puts "<hr />"
             io.puts "<p>Bitte wählen Sie ein order mehrere Kürzel, um dieses Gerät dauerhaft als Kurs-Tablet anzumelden.</p>"
             @@shorthands.keys.sort.each do |shorthand|
                 io.puts "<button class='btn-teacher-for-kurs-tablet-login btn btn-xs btn-outline-secondary' data-shorthand='#{shorthand}'>#{shorthand}</button>"
             end
             io.puts "<br /><br >"
-            io.puts "<button class='btn btn-success bu_login_kurs_tablet' disabled><i class='fa fa-sign-in'></i>&nbsp;&nbsp;Kurs-Tablet-Modus aktivieren</button>"
+            io.puts "<button class='btn btn-success bu_login_kurs_tablet' disabled><i class='bi bi-sign-in'></i>&nbsp;&nbsp;Kurs-Tablet-Modus aktivieren</button>"
             io.puts "<hr />"
             io.puts "<p>Bitte wählen Sie ein Tablet, um dieses Gerät dauerhaft als dieses Tablet anzumelden.</p>"
             @@tablets.keys.each do |id|
@@ -276,14 +276,14 @@ class Main < Sinatra::Base
             io.puts "</table>"
             io.puts "</div>"
             io.puts "<h3 id='monitor'>Monitor</h3>"
-            io.puts "<button class='btn btn-success bu-login-as-monitor'><i class='fa fa-sign-in'></i>&nbsp;&nbsp;Als Flur-Monitor anmelden</button>"
-            io.puts "<button class='btn btn-success bu-login-as-monitor-sek'><i class='fa fa-sign-in'></i>&nbsp;&nbsp;Als Sek-Monitor anmelden</button>"
-            io.puts "<button class='btn btn-success bu-login-as-monitor-lz'><i class='fa fa-sign-in'></i>&nbsp;&nbsp;Als LZ-Monitor anmelden</button>"
+            io.puts "<button class='btn btn-success bu-login-as-monitor'><i class='bi bi-sign-in'></i>&nbsp;&nbsp;Als Flur-Monitor anmelden</button>"
+            io.puts "<button class='btn btn-success bu-login-as-monitor-sek'><i class='bi bi-sign-in'></i>&nbsp;&nbsp;Als Sek-Monitor anmelden</button>"
+            io.puts "<button class='btn btn-success bu-login-as-monitor-lz'><i class='bi bi-sign-in'></i>&nbsp;&nbsp;Als LZ-Monitor anmelden</button>"
             io.puts "<hr />"
             io.puts "<h3 id='bibliothek'>Bibliothek</h3>"
-            io.puts "<button class='btn btn-success bu-login-as-bib-mobile'><i class='fa fa-sign-in'></i>&nbsp;&nbsp;Als Bibliotheks-Handy anmelden</button>"
-            io.puts "<button class='btn btn-success bu-login-as-bib-station'><i class='fa fa-sign-in'></i>&nbsp;&nbsp;Als Bibliotheks-Station anmelden</button>"
-            io.puts "<button class='btn btn-success bu-login-as-bib-station-with-printer'><i class='fa fa-sign-in'></i>&nbsp;&nbsp;Als Bibliotheks-Station mit Labeldrucker anmelden</button>"
+            io.puts "<button class='btn btn-success bu-login-as-bib-mobile'><i class='bi bi-sign-in'></i>&nbsp;&nbsp;Als Bibliotheks-Handy anmelden</button>"
+            io.puts "<button class='btn btn-success bu-login-as-bib-station'><i class='bi bi-sign-in'></i>&nbsp;&nbsp;Als Bibliotheks-Station anmelden</button>"
+            io.puts "<button class='btn btn-success bu-login-as-bib-station-with-printer'><i class='bi bi-sign-in'></i>&nbsp;&nbsp;Als Bibliotheks-Station mit Labeldrucker anmelden</button>"
             io.puts "<hr />"
             io.string
         end

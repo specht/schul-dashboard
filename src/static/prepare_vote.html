@@ -25,7 +25,7 @@
             </div>
             <div class='row' style='margin-bottom: 15px;'>
                 <div class='col-md-12'>
-                    <button id='bu_create' class='btn btn-primary float-right' disabled><i class='fa fa-file-pdf-o'></i>&nbsp;&nbsp;Abstimmung erstellen</button>
+                    <button id='bu_create' class='btn btn-primary float-right' disabled><i class='bi bi-file-pdf-o'></i>&nbsp;&nbsp;Abstimmung erstellen</button>
                 </div>
             </div>
             <hr />
@@ -65,15 +65,15 @@ function refresh_votes() {
                 row.append($('<td>').text(moment(entry.date).format('ddd, D.M.Y')));
                 row.append($('<td>').text(entry.title));
                 row.append($('<td>').text('' + entry.count));
-                let bu_download_codes = $('<a>').addClass('btn').addClass('btn-xs').addClass('btn-primary').html("<i class='fa fa-file-pdf-o'></i>&nbsp;&nbsp;Codes herunterladen");
+                let bu_download_codes = $('<a>').addClass('btn').addClass('btn-xs').addClass('btn-primary').html("<i class='bi bi-file-pdf-o'></i>&nbsp;&nbsp;Codes herunterladen");
                 bu_download_codes.attr('href', '/api/get_vote_pdf/' + entry.code);
                 row.append($('<td>').append(bu_download_codes));
-                let bu_delete = $('<button>').addClass('btn').addClass('btn-xs').addClass('btn-danger').html("<i class='fa fa-trash'></i>&nbsp;&nbsp;Löschen");
+                let bu_delete = $('<button>').addClass('btn').addClass('btn-xs').addClass('btn-danger').html("<i class='bi bi-trash'></i>&nbsp;&nbsp;Löschen");
                 bu_delete.data('code', entry.code);
                 bu_delete.click(function(e) {
                     showTemplateModal('Abstimmung löschen', 
                         'Sind Sie sicher, dass Sie diese Abstimmung löschen möchten?',
-                        "<i class='fa fa-trash'></i>&nbsp;&nbsp;Abstimmung löschen", 'btn-danger',
+                        "<i class='bi bi-trash'></i>&nbsp;&nbsp;Abstimmung löschen", 'btn-danger',
                         'Abbrechen', 'btn-secondary', function() {
                             api_call('/api/delete_vote', {code: $(e.target).data('code')}, function(data) {
                                 if (data.success)

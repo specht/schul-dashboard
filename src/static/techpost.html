@@ -3,12 +3,12 @@
     <div class='row'>
         <div class="col-md-12">
             <h2 style="margin-bottom: 30px;">Technikamt
-                <button id="frequent_problems" class='btn btn-info pull-right'><i class='fa fa-question-circle'></i>&nbsp;&nbsp;Häufige Fragen und Probleme</button>
+                <button id="frequent_problems" class='btn btn-info pull-right'><i class='bi bi-question-circle'></i>&nbsp;&nbsp;Häufige Fragen und Probleme</button>
             </h2>
             <hr>
                 Du bist in deiner Klasse Technikamt und kannst deshalb hier Probleme mit der Schultechnik melden.<br><br>
                 <div class="alert alert-warning">
-                    Du kannst gerne ein paar Probe-Meldungen abschicken. Bei Fragen oder Problemen, wende dich gerne an Peter-J. Germelmann.<br><br><a class="btn btn-dark" href="mailto:peter-julius.germelmann@mail.gymnasiumsteglitz.de"><i class='fa fa-envelope'></i>&nbsp;&nbsp;E-Mail</a>
+                    Du kannst gerne ein paar Probe-Meldungen abschicken. Bei Fragen oder Problemen, wende dich gerne an Peter-J. Germelmann.<br><br><a class="btn btn-dark" href="mailto:peter-julius.germelmann@mail.gymnasiumsteglitz.de"><i class='bi bi-envelope'></i>&nbsp;&nbsp;E-Mail</a>
                 </div>
             <hr>
             <div class='row'>
@@ -70,10 +70,10 @@
             </div>
             <div class='row' style='margin-bottom: 15px;'>
                 <div class='col-md-12'>
-                    <button class='bu-hidden-problems btn btn-secondary'><i class='fa fa-eye-slash'></i>&nbsp;&nbsp;Ausgeblendete Probleme</button>
+                    <button class='bu-hidden-problems btn btn-secondary'><i class='bi bi-eye-slash'></i>&nbsp;&nbsp;Ausgeblendete Probleme</button>
                     <div class="pull-right">
-                        <!-- <button id='tp_report_problem_quiet' class='btn btn-outline-secondary' disabled><i class='fa fa-bell-slash '></i>&nbsp;&nbsp;Stumm Absenden (Für Testzwecke)</button> -->
-                        <button id='tp_report_problem' class='btn btn-outline-secondary' disabled><i class='fa fa-send'></i>&nbsp;&nbsp;Absenden</button>
+                        <!-- <button id='tp_report_problem_quiet' class='btn btn-outline-secondary' disabled><i class='bi bi-bell-slash '></i>&nbsp;&nbsp;Stumm Absenden (Für Testzwecke)</button> -->
+                        <button id='tp_report_problem' class='btn btn-outline-secondary' disabled><i class='bi bi-send'></i>&nbsp;&nbsp;Absenden</button>
                     </div>
                 </div>
             </div>
@@ -215,10 +215,10 @@
                         row.append($('<td>').text(moment(entry.problem.date).format('ddd, D.M.Y')));
                         row.append($('<td>').text(entry.problem.problem));
                         row.append($('<td>').text('' + entry.problem.device));
-                        let tp_fixed = $('<td>').html("<i class='text-success fa fa-check' title='Behoben'></i>");
-                        let tp_progress = $('<td>').html("<i class='text-secondary fa fa-clock-o' title='In Bearbeitung'></i>");
-                        let tp_not_fixed = $('<td>').html("<i class='text-danger fa fa-times' title='Nicht behoben'></i>");
-                        let tp_see_comment = $('<td>').html("<i class='text-primary fa fa-commenting' title='Siehe Kommentar'></i>");
+                        let tp_fixed = $('<td>').html("<i class='text-success bi bi-check' title='Behoben'></i>");
+                        let tp_progress = $('<td>').html("<i class='text-secondary bi bi-clock-o' title='In Bearbeitung'></i>");
+                        let tp_not_fixed = $('<td>').html("<i class='text-danger bi bi-times' title='Nicht behoben'></i>");
+                        let tp_see_comment = $('<td>').html("<i class='text-primary bi bi-commenting' title='Siehe Kommentar'></i>");
 
                         if (entry.problem.fixed == true) {
                             row.append(tp_fixed);
@@ -236,7 +236,7 @@
                             row.append($('<td>').text('' + entry.problem.comment));
                         }
 
-                        let tp_hide = $('<button>').addClass('btn').addClass('btn-xs').addClass('btn-secondary').html("<i class='fa fa-eye-slash'></i>&nbsp;&nbsp;Ausblenden");
+                        let tp_hide = $('<button>').addClass('btn').addClass('btn-xs').addClass('btn-secondary').html("<i class='bi bi-eye-slash'></i>&nbsp;&nbsp;Ausblenden");
                             
                         tp_hide.data('token', entry.problem.token);
                         tp_hide.click(function(e) {
@@ -279,10 +279,10 @@
                         row.append($('<td>').text(moment(entry.problem.date).format('ddd, D.M.Y')));
                         row.append($('<td>').text(entry.problem.problem));
                         row.append($('<td>').text('' + entry.problem.device));
-                        let tp_fixed = $('<td>').html("<i class='text-success fa fa-check' title='Behoben'></i>");
-                        let tp_progress = $('<td>').html("<i class='text-secondary fa fa-clock-o' title='In Bearbeitung'></i>");
-                        let tp_not_fixed = $('<td>').html("<i class='text-danger fa fa-times' title='Nicht behoben'></i>");
-                        let tp_see_comment = $('<td>').html("<i class='text-primary fa fa-commenting' title='Siehe Kommentar'></i>");
+                        let tp_fixed = $('<td>').html("<i class='text-success bi bi-check' title='Behoben'></i>");
+                        let tp_progress = $('<td>').html("<i class='text-secondary bi bi-clock-o' title='In Bearbeitung'></i>");
+                        let tp_not_fixed = $('<td>').html("<i class='text-danger bi bi-times' title='Nicht behoben'></i>");
+                        let tp_see_comment = $('<td>').html("<i class='text-primary bi bi-commenting' title='Siehe Kommentar'></i>");
 
                         if (entry.problem.fixed == true) {
                             row.append(tp_fixed);
@@ -300,7 +300,7 @@
                             row.append($('<td>').text('' + entry.problem.comment));
                         }
 
-                        let tp_hide = $('<button>').addClass('btn').addClass('btn-xs').addClass('btn-success').html("<i class='fa fa-eye'></i>&nbsp;&nbsp;Einblenden");
+                        let tp_hide = $('<button>').addClass('btn').addClass('btn-xs').addClass('btn-success').html("<i class='bi bi-eye'></i>&nbsp;&nbsp;Einblenden");
                             
                         tp_hide.data('token', entry.problem.token);
                         tp_hide.click(function(e) {

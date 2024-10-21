@@ -58,7 +58,7 @@
                                 e.stopPropagation();
                                 showTemplateModal('Bestellung stornieren',
                                     'Sind Sie sicher, dass Sie diese Bestellung stornieren möchten?',
-                                    "<i class='fa fa-trash'></i>&nbsp;&nbsp;Bestellung stornieren", 'btn-danger',
+                                    "<i class='bi bi-trash'></i>&nbsp;&nbsp;Bestellung stornieren", 'btn-danger',
                                     'Abbrechen', 'btn-secondary', function () {
                                         bib_api_call('/jwt/cancel_order', {oid: order.o.id}, function (data) {
                                             if (data.success) {
@@ -81,9 +81,9 @@
                                 $('<td>').text(`${moment.unix(order.o.ts_order_placed).format('L')}`).data('sort_value', order.o.ts_order_placed),
                                 $('<td>').css('max-width', '180px').text(`${kurs}`),
                                 $('<td>').text(`${missing_count}`).data('sort_value', missing_count),
-                                (order.o.complete) ? $('<td>').html(`<i class='fa fa-check text-grass-500'></i>&nbsp;&nbsp;Bereit`) :
-                                    (order.f_count === 0 ? $('<td>').html(`<i class='fa fa-clock-o text-stone-400'></i>&nbsp;&nbsp;in Bearbeitung`) :
-                                    $('<td>').html(`<i class='fa fa-clock-o text-grass-500'></i>&nbsp;&nbsp;Teilweise bereit`)),
+                                (order.o.complete) ? $('<td>').html(`<i class='bi bi-check text-grass-500'></i>&nbsp;&nbsp;Bereit`) :
+                                    (order.f_count === 0 ? $('<td>').html(`<i class='bi bi-clock-o text-stone-400'></i>&nbsp;&nbsp;in Bearbeitung`) :
+                                    $('<td>').html(`<i class='bi bi-clock-o text-grass-500'></i>&nbsp;&nbsp;Teilweise bereit`)),
                                 
                                 $('<td>').append(bu_stornieren),
                             ];

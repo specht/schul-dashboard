@@ -28,10 +28,8 @@
             <form action='/api/upload_file' class='dropzone' id='my-awesome-dropzone'></form>
             <div class='preview' style='display: none;'></div>
             <div class='input-group mt-1'>
-                <input type='text' class='form-control ti_uri' placeholder='Datei per URL hochladen' />
-                <div class='input-group-append'>
-                    <button class='btn btn-success bu_upload_from_uri' disabled>Datei holen</button>
-                </div>
+                <input type='text' class='form-control ti_uri' placeholder='Datei per URL hochladen' aria-label='Datei per URL hochladen' aria-describedby='button-addon2' />
+                <button class='btn btn-success bu_upload_from_uri' type='button' id='button-addon2' disabled>Datei holen</button>
             </div>
             <hr />
             <div style='max-width: 100%; overflow-x: auto;'>

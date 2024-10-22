@@ -125,7 +125,7 @@
       <div class="modal-content">
        <div class="modal-header">
           <h5 class="modal-title">Super User</h5>
-          <button class='btn-float-right btn-json-data btn btn-secondary'>JSON anzeigen</button>
+          <button class='float-right btn-json-data btn btn-secondary'>JSON anzeigen</button>
         </div>
         <div class="modal-body">
             <div class='row'>
@@ -135,9 +135,9 @@
                     <div class='row' style='margin-bottom: 15px;'>
                         <div class='col-md-12'>
                             <button class='bu-clear-all btn btn-danger'><i class='bi bi-trash'></i>&nbsp;&nbsp;Alle Probleme löschen</button>
-                            <button class='bu-kick-all btn btn-danger'><i class='bi bi-user-times'></i>&nbsp;&nbsp;Alle Technikamt-User entfernen</button>
+                            <button class='bu-kick-all btn btn-danger'><i class='bi bi-person-dash'></i>&nbsp;&nbsp;Alle Technikamt-User entfernen</button>
                             <button class='bu-send-welcome-mail btn btn-warning'><i class='bi bi-envelope'></i>&nbsp;&nbsp;Willkommens-E-Mails versenden</button>
-                            <button class='bu-clear-aula-lights btn btn-danger'><i class='bi bi-lightbulb-o'></i>&nbsp;&nbsp;Plan der Aula-Scheinwerfer zurücksetzen</button>
+                            <button class='bu-clear-aula-lights btn btn-danger'><i class='bi bi-lightbulb-off'></i>&nbsp;&nbsp;Aula-Scheinwerfer zurücksetzen</button>
                         </div>
                     </div>
                     <div class='row' style='margin-bottom: 15px;'>
@@ -277,7 +277,7 @@
                             let tp_print = "<button class='btn btn-primary tp-print'><i class='bi bi-printer-fill'></i></button>"
                             let tp_delete = "<button class='btn btn-danger tp-delete';><i class='bi bi-trash'></i>&nbsp;&nbsp;Löschen</button>"
                             let tp_hide_admin = "<button class='btn btn-info tp-hide-admin'><i class='bi bi-eye'></i>&nbsp;&nbsp;Ausblenden</button>"
-                            let fixer = entry.fnc_login ? `<button title='${entry.fdisplay_name} kümmert sich um das Problem.' class='tp-fixer'><img src='#{NEXTCLOUD_URL}/index.php/avatar/${entry.fnc_login}/256' class='icon avatar-md'/></button>` : "<button class='btn btn-warning tp-fixer'><i class='bi bi-user-plus'></i>&nbsp;&nbsp;Nutzer zuweisen</button>";
+                            let fixer = entry.fnc_login ? `<button title='${entry.fdisplay_name} kümmert sich um das Problem.' class='tp-fixer'><img src='#{NEXTCLOUD_URL}/index.php/avatar/${entry.fnc_login}/256' class='icon avatar-md'/></button>` : "<button class='btn btn-warning tp-fixer'><i class='bi bi-person-add'></i>&nbsp;&nbsp;Nutzer zuweisen</button>";
                             let tp_fixed = "<button class='btn btn-success tp-fixed'><i class='bi bi-check'></i>&nbsp;&nbsp;Behoben</button>"
                             let tp_not_fixed = "<button class='btn btn-warning tp-not-fixed'><i class='bi bi-x'></i>&nbsp;&nbsp;Nicht Behoben</button>"
                             let mail_count = entry.problem.mail_count
@@ -489,7 +489,7 @@
                             let tp_print = "<button class='btn btn-primary tp-print';><i class='bi bi-printer-fill'></i></button>"
                             let tp_delete = "<button class='btn btn-danger tp-delete';><i class='bi bi-trash'></i>&nbsp;&nbsp;Löschen</button>"
                             let tp_unhide_admin = "<button class='btn btn-secondary tp-unhide-admin'><i class='bi bi-eye'></i>&nbsp;&nbsp;Einblenden</button>"
-                            let fixer = entry.fnc_login ? `<button title='${entry.fdisplay_name} kümmert sich um das Problem.' class='tp-fixer'><img src='#{NEXTCLOUD_URL}/index.php/avatar/${entry.fnc_login}/256' class='icon avatar-md'/></button>` : "<button class='btn btn-warning tp-fixer'><i class='bi bi-user-plus'></i>&nbsp;&nbsp;Nutzer zuweisen</button>";
+                            let fixer = entry.fnc_login ? `<button title='${entry.fdisplay_name} kümmert sich um das Problem.' class='tp-fixer'><img src='#{NEXTCLOUD_URL}/index.php/avatar/${entry.fnc_login}/256' class='icon avatar-md'/></button>` : "<button class='btn btn-warning tp-fixer'><i class='bi bi-person-add'></i>&nbsp;&nbsp;Nutzer zuweisen</button>";
                             let tp_fixed = "<button class='btn btn-success tp-fixed'><i class='bi bi-check'></i>&nbsp;&nbsp;Behoben</button>"
                             let tp_not_fixed = "<button class='btn btn-warning tp-not-fixed'><i class='bi bi-x'></i>&nbsp;&nbsp;Nicht Behoben</button>"
                             let mail_count = entry.problem.mail_count

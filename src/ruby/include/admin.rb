@@ -83,8 +83,8 @@ class Main < Sinatra::Base
                     print_email_field(io, user[:email])
                     io.puts "</td>"
                 end
-                io.puts "<td><a class='btn btn-xs btn-secondary' style='padding-top: 0.4em;' href='/timetable/#{user[:id]}'><i class='bi bi-calendar'></i>&nbsp;&nbsp;Stundenplan</a></td>"
-                io.puts "<td><button class='btn btn-warning btn-xs btn-impersonate' data-impersonate-email='#{user[:email]}'><i class='bi bi-id-badge'></i>&nbsp;&nbsp;Anmelden</button></td>"
+                io.puts "<td><a class='btn btn-xs btn-secondary' style='padding-top: 0.4em;' href='/timetable/#{user[:id]}'><i class='bi bi-calendar3'></i>&nbsp;&nbsp;Stundenplan</a></td>"
+                io.puts "<td><button class='btn btn-warning btn-xs btn-impersonate' data-impersonate-email='#{user[:email]}'><i class='bi bi-box-arrow-in-right'></i>&nbsp;&nbsp;Anmelden</button></td>"
                 io.puts "<td>#{twofa_status[email]}</td>"
                 if all_sessions.include?(email)
                     io.puts "<td><button class='btn-sessions btn btn-xs btn-secondary' data-sessions-id='#{@@user_info[email][:id]}'>#{all_sessions[email].size} Session#{all_sessions[email].size == 1 ? '' : 's'}</button></td>"
@@ -138,8 +138,8 @@ class Main < Sinatra::Base
                     io.print "<td>"
                     print_email_field(io, user[:email])
                     io.puts "</td>"
-                    io.puts "<td><a class='btn btn-xs btn-secondary' href='/timetable/#{user[:id]}'><i class='bi bi-calendar'></i>&nbsp;&nbsp;Stundenplan</a></td>"
-                    io.puts "<td><button class='btn btn-warning btn-xs btn-impersonate' data-impersonate-email='#{user[:email]}'><i class='bi bi-id-badge'></i>&nbsp;&nbsp;Anmelden</button></td>"
+                    io.puts "<td><a class='btn btn-xs btn-secondary' href='/timetable/#{user[:id]}'><i class='bi bi-calendar3'></i>&nbsp;&nbsp;Stundenplan</a></td>"
+                    io.puts "<td><button class='btn btn-warning btn-xs btn-impersonate' data-impersonate-email='#{user[:email]}'><i class='bi bi-box-arrow-in-right'></i>&nbsp;&nbsp;Anmelden</button></td>"
                     # if all_homeschooling_users.include?(email)
                     #     io.puts "<td><button class='btn btn-info btn-xs btn-toggle-homeschooling' data-email='#{user[:email]}'><i class='bi bi-home'></i>&nbsp;&nbsp;zu Hause</button></td>"
                     # else
@@ -201,7 +201,7 @@ class Main < Sinatra::Base
                     io.puts "</td>"
                 end
                 io.puts "<td>#{user[:roles].to_a.sort.map { |x| AVAILABLE_ROLES[x] }.join(', ')}</td>"
-                io.puts "<td><button class='btn btn-warning btn-xs btn-impersonate' data-impersonate-email='#{user[:email]}'><i class='bi bi-id-badge'></i>&nbsp;&nbsp;Anmelden</button></td>"
+                io.puts "<td><button class='btn btn-warning btn-xs btn-impersonate' data-impersonate-email='#{user[:email]}'><i class='bi bi-box-arrow-in-right'></i>&nbsp;&nbsp;Anmelden</button></td>"
                 io.puts "<td>#{twofa_status[email]}</td>"
                 if all_sessions.include?(email)
                     io.puts "<td><button class='btn-sessions btn btn-xs btn-secondary' data-sessions-id='#{@@user_info[email][:id]}'>#{all_sessions[email].size} Session#{all_sessions[email].size == 1 ? '' : 's'}</button></td>"

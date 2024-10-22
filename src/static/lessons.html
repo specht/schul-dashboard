@@ -45,7 +45,7 @@ var tablet_set_info = #{@@tablet_sets.to_json};
                         <div class="form-group">
                             <label>Gruppenräume bereitstellen</label>
                             <div class='button-with-label'>
-                                <button id='ti_event_jitsi_breakout_rooms' data-state='no' class='btn_lesson_data btn btn-outline-secondary'><i class='bi bi-times'></i>Gruppenräume</button>
+                                <button id='ti_event_jitsi_breakout_rooms' data-state='no' class='btn_lesson_data btn btn-outline-secondary'><i class='bi bi-x'></i>Gruppenräume</button>
                             </div>
                         </div>
                     </div>
@@ -83,7 +83,7 @@ var tablet_set_info = #{@@tablet_sets.to_json};
                         <div class="form-group">
                             <label>Freie Raumwahl</label>
                             <div class='button-with-label'>
-                                <button id='ti_breakout_rooms_roaming' data-state='no' class='btn_lesson_data btn btn-outline-secondary' title='SuS dürfen beliebig zwischen den Räumen wechseln'><i class='bi bi-times'></i>Freie Raumwahl</button>
+                                <button id='ti_breakout_rooms_roaming' data-state='no' class='btn_lesson_data btn btn-outline-secondary' title='SuS dürfen beliebig zwischen den Räumen wechseln'><i class='bi bi-x'></i>Freie Raumwahl</button>
                             </div>
                         </div>
                     </div>
@@ -311,7 +311,7 @@ var tablet_set_info = #{@@tablet_sets.to_json};
                         </div>
                         <textarea id='ti_stundenthema_text' style='height: 100px; margin-bottom: 15px;' class="form-control" disabled></textarea>
                         <div class='button-with-label'>
-                            <button id='ti_lesson_fixed' data-state='off' class='btn_lesson_data btn btn-sm btn-outline-secondary' disabled><i class='bi bi-times'></i>&nbsp;&nbsp;fester Termin</button>
+                            <button id='ti_lesson_fixed' data-state='off' class='btn_lesson_data btn btn-sm btn-outline-secondary' disabled><i class='bi bi-x'></i>&nbsp;&nbsp;fester Termin</button>
                             <span>Sie bekommen eine E-Mail, falls sich die Stunde verschiebt.</span>
                         </div>
                     </div>
@@ -319,32 +319,32 @@ var tablet_set_info = #{@@tablet_sets.to_json};
                     <div class="form-group">
                         <label><b>Durchführung</b> <span class='text-muted'>(für SuS sichtbar)</span></label>
                         <div class='button-with-label'>
-                            <button id='ti_lesson_jitsi' data-state='off' class='btn_lesson_data btn btn-sm btn-outline-secondary' disabled><i class='bi bi-times'></i>&nbsp;&nbsp;Jitsi Meet</button>
+                            <button id='ti_lesson_jitsi' data-state='off' class='btn_lesson_data btn btn-sm btn-outline-secondary' disabled><i class='bi bi-x'></i>&nbsp;&nbsp;Jitsi Meet</button>
                             <span>Für diese Stunde wird ein Jitsi Meet-Stream bereitgestellt.</span>
                         </div>
                         <div class='button-with-label'>
-                            <button id='ti_lesson_jitsi_breakout_rooms_popup' data-state='off' class='btn_lesson_data btn btn-sm btn-outline-secondary' disabled><i class='bi bi-times'></i>&nbsp;&nbsp;Gruppenräume</button>
+                            <button id='ti_lesson_jitsi_breakout_rooms_popup' data-state='off' class='btn_lesson_data btn btn-sm btn-outline-secondary' disabled><i class='bi bi-x'></i>&nbsp;&nbsp;Gruppenräume</button>
                             <span>Für diese Stunde werden Jitsi-Gruppenräume bereitgestellt.</span>
                         </div>
                         <!-- <div class='button-with-label'>
-                            <button id='ti_lesson_need_tablet' data-state='off' class='btn btn-sm btn-outline-secondary' disabled><i class='bi bi-times'></i>&nbsp;&nbsp;Tablet</button>
+                            <button id='ti_lesson_need_tablet' data-state='off' class='btn btn-sm btn-outline-secondary' disabled><i class='bi bi-x'></i>&nbsp;&nbsp;Tablet</button>
                             <span>Ich benötige ein Tablet, um für die komplette saLzH-Klasse aus der Schule zu streamen.</span>
                         </div>
                         <div class='explanation tablet-booking-status' style='margin-top: 5px; white-space: normal;'>
                         </div> -->
                         <div class='button-with-label'>
-                            <button id='ti_lesson_need_tablet_set' data-state='off' class='btn btn-sm btn-outline-secondary' disabled><i class='bi bi-times'></i>&nbsp;&nbsp;Geräte</button>
+                            <button id='ti_lesson_need_tablet_set' data-state='off' class='btn btn-sm btn-outline-secondary' disabled><i class='bi bi-x'></i>&nbsp;&nbsp;Geräte</button>
                             <span>Ich benötige einen Tabletsatz oder andere Geräte für meine Unterrichtsstunde.</span>
                         </div>
                         <div class='explanation tablet-set-booking-status' style='margin-top: 5px; white-space: normal;'>
                         </div>
                         <hr style='margin: 5px 0 10px 0;' />
                         <div class='button-with-label'>
-                            <button id='ti_lesson_nc' data-state='off' class='btn_lesson_data btn btn-sm btn-outline-secondary' disabled><i class='bi bi-times'></i>&nbsp;&nbsp;Nextcloud</button>
+                            <button id='ti_lesson_nc' data-state='off' class='btn_lesson_data btn btn-sm btn-outline-secondary' disabled><i class='bi bi-x'></i>&nbsp;&nbsp;Nextcloud</button>
                             <span>Es befinden sich Aufgaben im Nextcloud-Ordner. Der Link zum Ordner wird automatisch bereitgestellt.</span>
                         </div>
                         <div class='button-with-label'>
-                            <button id='ti_lesson_lr' data-state='off' class='btn_lesson_data btn btn-sm btn-outline-secondary' disabled><i class='bi bi-times'></i>&nbsp;&nbsp;Lernraum</button>
+                            <button id='ti_lesson_lr' data-state='off' class='btn_lesson_data btn btn-sm btn-outline-secondary' disabled><i class='bi bi-x'></i>&nbsp;&nbsp;Lernraum</button>
                             <span>Es befinden sich Aufgaben im Lernraum.</span>
                         </div>
                     </div>
@@ -373,11 +373,11 @@ var tablet_set_info = #{@@tablet_sets.to_json};
                             <span>Geplanter Zeitaufwand (in Minuten)</span>
                         </div>
                         <div class='button-with-label'>
-                            <button id='ti_homework_nc' data-state='off' class='btn_lesson_data btn btn-sm btn-outline-secondary' disabled><i class='bi bi-times'></i>&nbsp;&nbsp;Nextcloud</button>
+                            <button id='ti_homework_nc' data-state='off' class='btn_lesson_data btn btn-sm btn-outline-secondary' disabled><i class='bi bi-x'></i>&nbsp;&nbsp;Nextcloud</button>
                             <span>Es befinden sich Hausaufgaben im Nextcloud-Ordner.</span>
                         </div>
                         <div class='button-with-label'>
-                            <button id='ti_homework_lr' data-state='off' class='btn_lesson_data btn btn-sm btn-outline-secondary' disabled><i class='bi bi-times'></i>&nbsp;&nbsp;Lernraum</button>
+                            <button id='ti_homework_lr' data-state='off' class='btn_lesson_data btn btn-sm btn-outline-secondary' disabled><i class='bi bi-x'></i>&nbsp;&nbsp;Lernraum</button>
                             <span>Es befinden sich Hausaufgaben im Lernraum.</span>
                         </div>
                     </div>
@@ -1301,7 +1301,7 @@ function pending_feedback_changes() {
 
                     let has_ha_amt = (amt_list.indexOf('hausaufgaben') >= 0);
                     if (has_ha_amt) {
-                        let bu_remove_ha = $('<button>').addClass('btn').addClass('btn-xs').addClass('btn-danger').css('font-size', '0.7rem').html("<i class='bi bi-times'></i>");
+                        let bu_remove_ha = $('<button>').addClass('btn').addClass('btn-xs').addClass('btn-danger').css('font-size', '0.7rem').html("<i class='bi bi-x'></i>");
                         row.append($('<td>').append(bu_remove_ha));
                         bu_remove_ha.click(function() {
                             api_call('/api/remove_sus_from_amt', {lesson_key: lesson_key, email: email, amt: 'hausaufgaben'}, function(data) {
@@ -1315,7 +1315,7 @@ function pending_feedback_changes() {
 
                     let has_ma_amt = (amt_list.indexOf('material') >= 0);
                     if (has_ma_amt) {
-                        let bu_remove_ma = $('<button>').addClass('btn').addClass('btn-xs').addClass('btn-danger').css('font-size', '0.7rem').html("<i class='bi bi-times'></i>");
+                        let bu_remove_ma = $('<button>').addClass('btn').addClass('btn-xs').addClass('btn-danger').css('font-size', '0.7rem').html("<i class='bi bi-x'></i>");
                         row.append($('<td>').append(bu_remove_ma));
                         bu_remove_ma.click(function() {
                             api_call('/api/remove_sus_from_amt', {lesson_key: lesson_key, email: email, amt: 'material'}, function(data) {
@@ -1507,14 +1507,14 @@ document.addEventListener('DOMContentLoaded', function() {
                     bu_book_tablet_set.addClass('btn-info').html("<i class='bi bi-check'></i>&nbsp;&nbsp;Gebucht");
                 } else
                 {
-                    bu_book_tablet_set.addClass('btn-outline-secondary').html("<i class='bi bi-times'></i>&nbsp;&nbsp;Nicht gebucht");
+                    bu_book_tablet_set.addClass('btn-outline-secondary').html("<i class='bi bi-x'></i>&nbsp;&nbsp;Nicht gebucht");
                 }
                 bu_book_tablet_set.click(function(e) {
                     let button = $(e.target).closest('button');
                     let tablet_set_id = button.data('tablet_set_id');
                     if (booked_tablet_sets_config.indexOf(tablet_set_id) >= 0) {
                         button.removeClass('btn-info').addClass('btn-outline-secondary');
-                        button.html("<i class='bi bi-times'></i>&nbsp;&nbsp;Nicht gebucht");
+                        button.html("<i class='bi bi-x'></i>&nbsp;&nbsp;Nicht gebucht");
                         booked_tablet_sets_config = booked_tablet_sets_config.filter(item => item !== tablet_set_id);
                     } else {
                         button.removeClass('btn-outline-secondary').addClass('btn-info');

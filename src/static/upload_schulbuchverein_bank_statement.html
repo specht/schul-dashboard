@@ -112,8 +112,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 append_details(div, 'Neu verarbeitete Geldeingänge', data.result, 'handled', "<i class='bi bi-check text-success'>");
             }
             if (skipped_size > 0) {
-                summary.append($(`<div>`).html(`<i class='bi bi-times text-danger'></i>&nbsp;&nbsp;${skipped_size} Geldein${skipped_size === 1 ? 'gang konnte' : 'gänge konnten'} nicht verarbeitet werden`));
-                append_details(div, 'Nicht verarbeitete Geldeingänge', data.result, 'skipped', "<i class='bi bi-times text-danger'>");
+                summary.append($(`<div>`).html(`<i class='bi bi-x text-danger'></i>&nbsp;&nbsp;${skipped_size} Geldein${skipped_size === 1 ? 'gang konnte' : 'gänge konnten'} nicht verarbeitet werden`));
+                append_details(div, 'Nicht verarbeitete Geldeingänge', data.result, 'skipped', "<i class='bi bi-x text-danger'>");
             }
             if (previously_handled_size > 0) {
                 summary.append($(`<div>`).html(`<i class='bi bi-check text-warning'></i>&nbsp;&nbsp;${previously_handled_size} Geldein${previously_handled_size === 1 ? 'gang war' : 'gänge waren'} bereits verarbeitet`));

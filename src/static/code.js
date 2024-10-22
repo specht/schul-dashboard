@@ -24,7 +24,7 @@ jQuery.extend({
 function show_error_message(message) {
     var div = $('<div>').css('text-align', 'center').css('padding', '15px').addClass('bg-light text-danger').html(message);
     $('.api_messages').empty();
-    let button = $("<button class='text-stone-400 btn pull-right form-control' style='width: unset; margin: 8px;' ><i class='bi bi-times'></i></button>");
+    let button = $("<button class='text-stone-400 btn pull-right form-control' style='width: unset; margin: 8px;' ><i class='bi bi-xi></button>");
     $('.api_messages').append(button).append(div).show();
     button.click(function(e) { $('.api_messages').hide(); });
 }

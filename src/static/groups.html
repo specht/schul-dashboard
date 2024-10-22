@@ -55,7 +55,7 @@
             </div>
             <div class="modal-footer">
                 <div id='save_group_btn_container'>
-                    <button id='bu_discard_group' class='btn btn-outline-secondary' disabled><i class='bi bi-times'></i>&nbsp;&nbsp;<span>Verwerfen</span></button>
+                    <button id='bu_discard_group' class='btn btn-outline-secondary' disabled><i class='bi bi-x'></i>&nbsp;&nbsp;<span>Verwerfen</span></button>
                     <button id='bu_save_group' class='btn btn-outline-secondary' disabled><i class='bi bi-check'></i>&nbsp;&nbsp;<span>Speichern</span></button>
                 </div>
                 <button id='bu_delete_group' type="button" class="btn btn-outline-secondary" disabled style='display: none;'><i class='bi bi-trash'></i>&nbsp;&nbsp;Gruppe löschen</button>
@@ -332,7 +332,7 @@ function update_external_users_for_session_user() {
         let row = $('<tr>');
         row.append($('<td>').html(external_users_for_session_user.recipients[email].label));
         row.append($('<td>').html(email));
-//         let bu_toggle = $('<button>').data('email', email).addClass('btn').addClass('btn-xs').addClass('btn-secondary').html("<i class='bi bi-times'></i>&nbsp;&nbsp;nicht eingeladen");
+//         let bu_toggle = $('<button>').data('email', email).addClass('btn').addClass('btn-xs').addClass('btn-secondary').html("<i class='bi bi-x'></i>&nbsp;&nbsp;nicht eingeladen");
 //         row.append($('<td>').append(bu_toggle));
         let bu_delete = $('<button>').data('email', email).addClass('btn').addClass('btn-xs').addClass('btn-danger').html("<i class='bi bi-trash'></i>");
         row.append($('<td>').append(bu_delete));

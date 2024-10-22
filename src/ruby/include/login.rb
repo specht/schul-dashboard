@@ -771,7 +771,7 @@ class Main < Sinatra::Base
                         io.puts "<td>direkt gesetzt</td>"
                     end
                 else
-                    io.puts "<td><i class='bi bi-times text-danger'></i></td>"
+                    io.puts "<td><i class='bi bi-x text-danger'></i></td>"
                     io.puts "<td></td>"
                 end
                 if admin_logged_in? || user_with_role_logged_in?(:developer)

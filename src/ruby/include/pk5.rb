@@ -384,7 +384,7 @@ class Main < Sinatra::Base
                 io.puts "<p>Du hast eine Einladung von <strong>#{join_with_sep(emails.map { |x| @@user_info[x][:display_name]}, ', ', ' und ')}</strong> für eine Gruppenprüfung erhalten.</p>"
                 io.puts "<p>"
                 io.puts "<button class='btn btn-success bu-accept-invitation' data-email='#{emails.first}'><i class='bi bi-check'></i>&nbsp;&nbsp;Einladung annehmen</button>"
-                io.puts "<button class='btn btn-danger bu-reject-invitation' data-email='#{emails.first}'><i class='bi bi-times'></i>&nbsp;&nbsp;Einladung ablehnen</button>"
+                io.puts "<button class='btn btn-danger bu-reject-invitation' data-email='#{emails.first}'><i class='bi bi-x'></i>&nbsp;&nbsp;Einladung ablehnen</button>"
                 io.puts "</p>"
             end
             io.puts "<hr>"
@@ -403,7 +403,7 @@ class Main < Sinatra::Base
             pending_invitations.each do |row|
                 io.puts "<p>Du hast <strong>#{@@user_info[row['u.email']][:display_name]}</strong> für eine Gruppenprüfung eingeladen.</p>"
                 io.puts "<p>"
-                io.puts "<button class='btn btn-danger bu-delete-invitation' data-email='#{row['u.email']}'><i class='bi bi-times'></i>&nbsp;&nbsp;Einladung zurücknehmen</button>"
+                io.puts "<button class='btn btn-danger bu-delete-invitation' data-email='#{row['u.email']}'><i class='bi bi-x'></i>&nbsp;&nbsp;Einladung zurücknehmen</button>"
                 io.puts "</p>"
             end
             io.puts "<hr>"

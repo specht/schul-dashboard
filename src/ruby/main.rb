@@ -1496,12 +1496,12 @@ class Main < Sinatra::Base
         files = [
             '/include/jquery/jquery-3.6.1.min.js',
             '/include/jquery-ui/jquery-ui.min.js',
-            '/include/popper.js/popper.min.js',
-            '/include/bootstrap/bootstrap.min.js',
+            # '/include/popper.js/popper.min.js',
+            # '/include/bootstrap/bootstrap.min.js',
             '/include/fullcalendar/main.min.js',
             '/include/fullcalendar/de.js',
             '/include/pako/pako_inflate.min.js',
-            '/include/bootstrap4-toggle/bootstrap4-toggle.min.js',
+            # '/include/bootstrap4-toggle/bootstrap4-toggle.min.js',
             '/include/summernote/summernote-bs4.min.js',
             '/include/summernote/summernote-de-DE.min.js',
             '/include/clipboard/clipboard.min.js',
@@ -1537,11 +1537,11 @@ class Main < Sinatra::Base
     def self.compile_css()
         files = [
             '/include/flowbite/flowbite.min.css',
-            '/include/bootstrap/bootstrap.min.css',
+            # '/include/bootstrap/bootstrap.min.css',
             '/include/summernote/summernote-bs4.min.css',
-            '/include/fork-awesome/fork-awesome.min.css',
+            # '/include/fork-awesome/fork-awesome.min.css',
             '/include/fullcalendar/main.min.css',
-            '/include/bootstrap4-toggle/bootstrap4-toggle.min.css',
+            # '/include/bootstrap4-toggle/bootstrap4-toggle.min.css',
             '/include/dropzone/dropzone.min.css',
             '/include/chart.js/Chart.min.css',
             '/styles.css',
@@ -2061,7 +2061,7 @@ class Main < Sinatra::Base
                 nav_items << ['/', 'Anmelden', 'bi bi-sign-in']
             end
             return nil if nav_items.empty?
-            io.puts "<button class='navbar-toggler' type='button' data-toggle='collapse' data-target='#navbarTogglerDemo02' aria-controls='navbarTogglerDemo02' aria-expanded='false' aria-label='Toggle navigation'>"
+            io.puts "<button class='navbar-toggler' type='button' data-bs-toggle='collapse' data-bs-target='#navbarTogglerDemo02' aria-controls='navbarTogglerDemo02' aria-expanded='false' aria-label='Toggle navigation'>"
             io.puts "<span class='navbar-toggler-icon'></span>"
             io.puts "</button>"
             io.puts "<div class='collapse navbar-collapse my-0 flex-grow-0' id='navbarTogglerDemo02'>"
@@ -2069,10 +2069,10 @@ class Main < Sinatra::Base
             nav_items.each do |x|
                 if x == :admin
                     io.puts "<li class='nav-item dropdown'>"
-                    io.puts "<a class='nav-link nav-icon dropdown-toggle' href='#' id='navbarDropdownAdmin' role='button' data-toggle='dropdown' aria-haspopup='true' aria-expanded='false'>"
+                    io.puts "<a class='nav-link nav-icon dropdown-toggle' href='#' id='navbarDropdownAdmin' role='button' data-bs-toggle='dropdown' aria-expanded='false'>"
                     io.puts "<div class='icon'><i class='bi bi-wrench'></i></div>Administration"
                     io.puts "</a>"
-                    io.puts "<div class='dropdown-menu dropdown-menu-right' aria-labelledby='navbarDropdownAdmin'>"
+                    io.puts "<div class='dropdown-menu dropdown-menu-end' aria-labelledby='navbarDropdownAdmin'>"
                     printed_something = false
                     if user_who_can_manage_news_logged_in?
                         io.puts "<a class='dropdown-item nav-icon' href='/manage_news'><div class='icon'><i class='bi bi-newspaper-o'></i></div><span class='label'>News verwalten</span></a>"
@@ -2127,18 +2127,15 @@ class Main < Sinatra::Base
                     end
                 elsif x == :profile
                     io.puts "<li class='nav-item dropdown'>"
-                    io.puts "<a class='nav-link nav-icon dropdown-toggle' href='#' id='navbarDropdownProfile' role='button' data-toggle='dropdown' aria-haspopup='true' aria-expanded='false'>"
+                    io.puts "<a class='nav-link nav-icon dropdown-toggle' href='#' id='navbarDropdownProfile' role='button' data-bs-toggle='dropdown' aria-expanded='false'>"
                     display_name = htmlentities(@session_user[:display_name])
                     if @session_user[:klasse]
                         temp = [tr_klasse(@session_user[:klasse])]
-                        # if @session_user[:group2]
-                        #     temp << @session_user[:group2]
-                        # end
                         display_name += " (#{temp.join('/')})"
                     end
                     io.puts "<div class='icon nav_avatar'>#{user_icon(@session_user[:email], 'avatar-md')}</div><span class='menu-user-name'>#{display_name}</span>"
                     io.puts "</a>"
-                    io.puts "<div class='dropdown-menu dropdown-menu-right' aria-labelledby='navbarDropdownProfile'>"
+                    io.puts "<div class='dropdown-menu dropdown-menu-end' aria-labelledby='navbarDropdownProfile'>"
                     io.puts "<a class='dropdown-item nav-icon' href='/profil'><div class='icon'>#{user_icon(@session_user[:email], 'avatar-sm')}</div><span class='label'>Profil</span></a>"
                     sessions = all_sessions()
                     if sessions.size > 1
@@ -2156,11 +2153,11 @@ class Main < Sinatra::Base
                         io.puts "<a class='dropdown-item nav-icon' href='/login_nc'><div class='icon'><i class='bi bi-nextcloud'></i></div><span class='label'>In Nextcloud anmelden…</span></a>"
                     end
                     if @session_user[:dark]
-                        io.puts "<button class='dropdown-item nav-icon nav-light'><div class='icon'><i class='bi bi-sun-o'></i></div><span class='label'>Hell</span></button>"
+                        io.puts "<button class='dropdown-item nav-icon nav-light'><div class='icon'><i class='bi bi-sun'></i></div><span class='label'>Hell</span></button>"
                     else
                         io.puts "<button class='dropdown-item nav-icon nav-dark'><div class='icon'><i class='bi bi-moon'></i></div><span class='label'>Dunkel</span></button>"
                     end
-
+                
                     printed_divider = false
                     if gev_logged_in?
                         io.puts "<div class='dropdown-divider'></div>" unless printed_divider
@@ -2204,9 +2201,9 @@ class Main < Sinatra::Base
                     # end
                     if teacher_logged_in?
                         if user_with_role_logged_in?(:can_see_kurslisten)
-                            io.puts "<a class='dropdown-item nav-icon' href='/kurslisten'><div class='icon'><i class='bi bi-file-text-o'></i></div><span class='label'>Kurslisten</span></a>"
+                            io.puts "<a class='dropdown-item nav-icon' href='/kurslisten'><div class='icon'><i class='bi bi-file-text'></i></div><span class='label'>Kurslisten</span></a>"
                         end
-                        io.puts "<a class='dropdown-item nav-icon' href='/pk5_overview'><div class='icon'><i class='bi bi-file-text-o'></i></div><span class='label'>5. PK</span></a>"
+                        io.puts "<a class='dropdown-item nav-icon' href='/pk5_overview'><div class='icon'><i class='bi bi-file-text'></i></div><span class='label'>5. PK</span></a>"
                     end
                     if schueler_logged_in?
                         if @session_user[:klasse].to_i < 11
@@ -2223,7 +2220,7 @@ class Main < Sinatra::Base
                             io.puts "<a class='dropdown-item nav-icon' href='/tests'><div class='icon'><i class='bi bi-file-text-o'></i></div><span class='label'>Klassenarbeiten</span></a>"
                         end
                         if user_with_role_logged_in?(:can_create_events)
-                            io.puts "<a class='dropdown-item nav-icon' href='/events'><div class='icon'><i class='bi bi-calendar-check-o'></i></div><span class='label'>Termine</span></a>"
+                            io.puts "<a class='dropdown-item nav-icon' href='/events'><div class='icon'><i class='bi bi-calendar-check'></i></div><span class='label'>Termine</span></a>"
                         end
                         if user_with_role_logged_in?(:can_create_polls)
                             io.puts "<a class='dropdown-item nav-icon' href='/polls'><div class='icon'><i class='bi bi-bar-chart'></i></div><span class='label'>Umfragen</span></a>"
@@ -2233,25 +2230,59 @@ class Main < Sinatra::Base
                             io.puts "<a class='dropdown-item nav-icon' href='/mailing_lists'><div class='icon'><i class='bi bi-envelope'></i></div><span class='label'>E-Mail-Verteiler</span></a>"
                         end
                         if teacher_logged_in?
-                            io.puts "<a class='dropdown-item nav-icon' href='/angebote'><div class='icon'><i class='bi bi-group'></i></div><span class='label'>AGs und Angebote</span></a>"
+                            io.puts "<a class='dropdown-item nav-icon' href='/angebote'><div class='icon'><i class='bi bi-people'></i></div><span class='label'>AGs und Angebote</span></a>"
                         end
                         if user_with_role_logged_in?(:can_open_project_wifi)
                             io.puts "<a class='dropdown-item nav-icon' href='/school_wifi'><div class='icon'><i class='bi bi-wifi'></i></div><span class='label'>Schüler-WLAN</span></a>"
                         end
-                        io.puts "<a class='dropdown-item nav-icon' href='/groups'><div class='icon'><i class='bi bi-group'></i></div><span class='label'>Meine Gruppen</span></a>"
+                        io.puts "<a class='dropdown-item nav-icon' href='/groups'><div class='icon'><i class='bi bi-people'></i></div><span class='label'>Meine Gruppen</span></a>"
                     end
                     io.puts "<div class='dropdown-divider'></div>"
-                    # if true
-                    #     io.puts "<a class='dropdown-item nav-icon' href='/h4ck'><div class='icon'><i class='bi bi-rocket'></i></div><span class='label'>Dashboard Hackers</span></a>"
-                    # end
-                    # if admin_logged_in?
-                    #     io.puts "<a class='bu-launch-adventskalender dropdown-item nav-icon'><div class='icon'><i class='bi bi-snowflake-o'></i></div><span class='label'>Adventskalender</span></a>"
-                    # end
-                    io.puts "<a class='dropdown-item nav-icon' href='/hilfe'><div class='icon'><i class='bi bi-question-circle'></i></div><span class='label'>Hilfe</span></a>"
-                    io.puts "<div class='dropdown-divider'></div>"
-                    io.puts "<a class='dropdown-item nav-icon' href='#' onclick='perform_logout();'><div class='icon'><i class='bi bi-sign-out'></i></div><span class='label'>Abmelden</span></a>"
+                    io.puts "<a class='dropdown-item nav-icon' href='/logout'><div class='icon'><i class='bi bi-sign-out'></i></div><span class='label'>Abmelden</span></a>"
                     io.puts "</div>"
                     io.puts "</li>"
+                    io.puts "</li>"
+                elsif x == :kurse
+                    unless (@@lessons_for_shorthand[@session_user[:shorthand]] || []).empty? && (@@lessons[:historic_lessons_for_shorthand][@session_user[:shorthand]] || []).empty?
+                        io.puts "<li class='nav-item dropdown'>"
+                        io.puts "<a class='nav-link nav-icon dropdown-toggle' href='#' id='navbarDropdownKurse' role='button' data-toggle='dropdown' aria-haspopup='true' aria-expanded='false'>"
+                        io.puts "<div class='icon'><i class='bi bi-address-book'></i></div>Planung"
+                        io.puts "</a>"
+                        io.puts "<div class='dropdown-menu' aria-labelledby='navbarDropdownKurse'>"
+                        taken_lesson_keys = Set.new()
+                        (@@lessons_for_shorthand[@session_user[:shorthand]] || []).each do |lesson_key|
+                            lesson_info = @@lessons[:lesson_keys][lesson_key]
+                            if lesson_info
+                                fach = lesson_info[:fach]
+                                fach = @@faecher[fach] if @@faecher[fach]
+                                io.puts "<a class='dropdown-item nav-icon' href='/lessons/#{CGI.escape(lesson_key)}'><div class='icon'><i class='bi bi-address-book'></i></div><span class='label'>#{lesson_info[:pretty_folder_name]}</span></a>"
+                                taken_lesson_keys << lesson_key
+                            end
+                        end
+                        remaining_lesson_keys = ((@@lessons[:historic_lessons_for_shorthand][@session_user[:shorthand]] || Set.new()) - taken_lesson_keys)
+                        unless remaining_lesson_keys.empty?
+                            lesson_keys_with_data = neo4j_query(<<~END_OF_QUERY, {:lesson_keys => remaining_lesson_keys}).map { |x| x['l.key'] }
+                                MATCH (l:Lesson)
+                                WHERE l.key IN $lesson_keys
+                                RETURN l.key;
+                            END_OF_QUERY
+                            remaining_lesson_keys &= Set.new(lesson_keys_with_data)
+                            unless remaining_lesson_keys.empty?
+                                io.puts "<div class='dropdown-divider'></div>"
+                                remaining_lesson_keys.to_a.sort.each do |lesson_key|
+                                    lesson_info = @@lessons[:lesson_keys][lesson_key]
+                                    if lesson_info
+                                        fach = lesson_info[:fach]
+                                        fach = @@faecher[fach] if @@faecher[fach]
+                                        io.puts "<a class='dropdown-item nav-icon' href='/lessons/#{CGI.escape(lesson_key)}'><div class='icon'><i class='bi bi-address-book'></i></div><span class='label'>#{fach} (#{lesson_info[:klassen].map { |x| tr_klasse(x) }.join(', ')})</span></a>"
+                                    end
+                                end
+                            end
+                        end
+                        io.puts "</div>"
+                        io.puts "</li>"
+                    end
+                    io.puts "</li>"              
                 elsif x == :kurse
                     unless (@@lessons_for_shorthand[@session_user[:shorthand]] || []).empty? && (@@lessons[:historic_lessons_for_shorthand][@session_user[:shorthand]] || []).empty?
                         io.puts "<li class='nav-item dropdown'>"
@@ -2301,10 +2332,10 @@ class Main < Sinatra::Base
                         klassen.uniq!
                     end
                     io.puts "<li class='nav-item dropdown'>"
-                    io.puts "<a class='nav-link nav-icon dropdown-toggle' href='#' id='navbarDropdownKlassen' role='button' data-toggle='dropdown' aria-haspopup='true' aria-expanded='false'>"
+                    io.puts "<a class='nav-link nav-icon dropdown-toggle' href='#' id='navbarDropdownKlassen' role='button' data-bs-toggle='dropdown' aria-expanded='false'>"
                     io.puts "<div class='icon'><i class='bi bi-address-book'></i></div>Lerngruppen"
                     io.puts "</a>"
-                    io.puts "<div class='dropdown-menu' aria-labelledby='navbarDropdownKlassen'>"
+                    io.puts "<ul class='dropdown-menu' aria-labelledby='navbarDropdownKlassen'>"
                     if can_see_all_timetables_logged_in?
                         klassen = @@klassen_order
                     end
@@ -2326,22 +2357,20 @@ class Main < Sinatra::Base
                             io.puts "<a class='dropdown-item nav-icon' href='/directory/#{klasse}'><div class='icon'><i class='bi bi-address-book'></i></div><span class='label'>Klasse #{tr_klasse(klasse)}</span></a>"
                         end
                     end
-                    io.puts "</div>"
+                    io.puts "</ul>"
                     io.puts "</li>"
                 elsif x == :techteam
                     io.puts "<li class='nav-item text-nowrap'>"
                     io.puts "<a class='nav-link nav-icon' href='/techpost'><div class='icon'><i class='bi bi-laptop'></i></div>Technikamt</a>"
                 elsif x == :aula
                     io.puts "<li class='nav-item dropdown'>"
-                    io.puts "<a class='nav-link nav-icon dropdown-toggle' href='#' id='navbarDropdownAula' role='button' data-toggle='dropdown' aria-haspopup='true' aria-expanded='false'>"
-                    io.puts "<div class='icon'><i class='bi bi-music'></i></div>Aulatechnik"
-                    io.puts "</a>"
-                    io.puts "<div class='dropdown-menu dropdown-menu-right' aria-labelledby='navbarDropdownAula'>"
-                    io.puts "<a class='dropdown-item nav-icon' href='/aula_light'><div class='icon'><i class='bi bi-lightbulb-o'></i></div><span class='label'>Licht</span></a>"
-                    io.puts "<a class='dropdown-item nav-icon' style='display: none;' href='/aula_sound'><div class='icon'><i class='bi bi-music'></i></div><span class='label'>Ton</span></a>"
-                    io.puts "<a class='dropdown-item nav-icon' href='/aula_progress'><div class='icon'><i class='bi bi-bars'></i></div><span class='label'>Ablauf</span></a>"
-                    io.puts "</div>"
-                    io.puts "</li>"
+                    io.puts "<a class='nav-link dropdown-toggle' href='#' id='navbarDropdownAula' role='button' data-bs-toggle='dropdown' aria-expanded='false'>Aulatechnik</a>"
+                    io.puts "<ul class='dropdown-menu'>"
+                    io.puts "<li><a class='dropdown-item' href='/aula_light'><i class='bi bi-lightbulb'></i> Licht</a></li>"
+                    io.puts "<li><a class='dropdown-item nav-icon' style='display: none;' href='/aula_sound'><div class='icon'><i class='bi bi-music'></i></div><span class='label'>Ton</span></a></li>"
+                    io.puts "<li><a class='dropdown-item nav-icon' href='/aula_progress'><div class='icon'><i class='bi bi-bars'></i></div><span class='label'>Ablauf</span></a></li>"
+                    io.puts "</ul>"
+                    io.puts "</li>"                
                 elsif x == :messages
                     io.puts "<li class='nav-item text-nowrap'>"
                     if new_messages_count > 0

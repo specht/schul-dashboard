@@ -60,7 +60,7 @@
                         class='bi bi-eye'></i>&nbsp;&nbsp;Vorschau</button>
                 <div id='save_news_btn_container'>
                     <button id='bu_discard' type="button" class="btn btn-outline-secondary"><i
-                            class='bi bi-times'></i>&nbsp;&nbsp;<span>Verwerfen</span></button>
+                            class='bi bi-x'></i>&nbsp;&nbsp;<span>Verwerfen</span></button>
                     <button id='bu_save' type="button" class="btn btn-outline-secondary"><i
                             class='bi bi-check'></i>&nbsp;&nbsp;<span>Speichern</span></button>
                 </div>
@@ -174,7 +174,7 @@
                     addClass(entry.sticky ? 'btn-info' : 'btn-outline-info').
                     html("<i class='bi bi-map-pin'></i>");
 
-                let bu_delete = $('<button>').addClass('btn').addClass('btn-sm').addClass('btn-danger').html("<i class='bi bi-times'></i>");
+                let bu_delete = $('<button>').addClass('btn').addClass('btn-sm').addClass('btn-danger').html("<i class='bi bi-x'></i>");
 
                 row.append($('<td>').append(bu_published).append(bu_sticky).append(bu_delete));
 

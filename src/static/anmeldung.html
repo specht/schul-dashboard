@@ -48,7 +48,7 @@
         </div>
         <div class="modal-footer">
             <button id='bu_submit' type='button' class="btn btn-success"><i class='bi bi-send'></i>&nbsp;&nbsp;Anmeldung abschließen</button>
-            <button id='bu_close' type="button" class="btn btn-outline-secondary" data-dismiss="modal"><i class='bi bi-times'></i>&nbsp;&nbsp;Abbrechen</button>
+            <button id='bu_close' type="button" class="btn btn-outline-secondary" data-dismiss="modal"><i class='bi bi-x'></i>&nbsp;&nbsp;Abbrechen</button>
         </div>
       </div>
     </div>
@@ -99,7 +99,7 @@
             event_key = table_div.data('event-key');
             $('#bookingModal .modal-title').html(table_div.find('.event-title').html());
             $('#bu_submit').prop('disabled', false);
-            $('#bu_close').html("<i class='bi bi-times'></i>&nbsp;&nbsp;Abbrechen").addClass('btn-outline-secondary').removeClass('btn-secondary');
+            $('#bu_close').html("<i class='bi bi-x'></i>&nbsp;&nbsp;Abbrechen").addClass('btn-outline-secondary').removeClass('btn-secondary');
             $('#thankyou').hide();
             $('#error').hide();
             $('#bookingModal').modal('show');
@@ -118,7 +118,7 @@
         $('#bu_submit').click(function (e) {
             api_call('/api/sign_up_for_public_event', collect_data(), function (data) {
                 console.log(data);
-                $('#bu_close').html("<i class='bi bi-times'></i>&nbsp;&nbsp;Schließen").removeClass('btn-outline-secondary').addClass('btn-secondary');
+                $('#bu_close').html("<i class='bi bi-x'></i>&nbsp;&nbsp;Schließen").removeClass('btn-outline-secondary').addClass('btn-secondary');
                 if (data.success) {
                     $('#bu_submit').prop('disabled', true);
                     $('#thankyou').slideDown();

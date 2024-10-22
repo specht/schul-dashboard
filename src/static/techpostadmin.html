@@ -260,7 +260,7 @@
                         let token = entry.problem.token;
                         let fixed = "<i class='text-success bi bi-check' title='Behoben'></i>";
                         let progress = "<i class='text-secondary bi bi-clock-o' title='In Bearbeitung'></i>";
-                        let not_fixed = "<i class='text-danger bi bi-times' title='Nicht behoben'></i>";
+                        let not_fixed = "<i class='text-danger bi bi-x' title='Nicht behoben'></i>";
                         let see_comment = "<i class='text-primary bi bi-commenting' title='Siehe Kommentar'></i>";
                         let current_state = "Unbekannt"
                         if (entry.problem.fixed == true) {
@@ -279,7 +279,7 @@
                             let tp_hide_admin = "<button class='btn btn-info tp-hide-admin'><i class='bi bi-eye'></i>&nbsp;&nbsp;Ausblenden</button>"
                             let fixer = entry.fnc_login ? `<button title='${entry.fdisplay_name} kümmert sich um das Problem.' class='tp-fixer'><img src='#{NEXTCLOUD_URL}/index.php/avatar/${entry.fnc_login}/256' class='icon avatar-md'/></button>` : "<button class='btn btn-warning tp-fixer'><i class='bi bi-user-plus'></i>&nbsp;&nbsp;Nutzer zuweisen</button>";
                             let tp_fixed = "<button class='btn btn-success tp-fixed'><i class='bi bi-check'></i>&nbsp;&nbsp;Behoben</button>"
-                            let tp_not_fixed = "<button class='btn btn-warning tp-not-fixed'><i class='bi bi-times'></i>&nbsp;&nbsp;Nicht Behoben</button>"
+                            let tp_not_fixed = "<button class='btn btn-warning tp-not-fixed'><i class='bi bi-x'></i>&nbsp;&nbsp;Nicht Behoben</button>"
                             let mail_count = entry.problem.mail_count
                             let tp_mail = `<button class='btn btn-xs btn-success tp-mail'><i class='bi bi-envelope'></i>&nbsp;&nbsp;Update per Mail senden (${mail_count})</button>`
                             let tp_hide = "<button class='btn btn-xs btn-info tp-hide'><i class='bi bi-eye'></i>&nbsp;&nbsp;Für Absender ausblenden</button>"
@@ -472,7 +472,7 @@
                         let token = entry.problem.token;
                         let fixed = "<i class='text-success bi bi-check' title='Behoben'></i>";
                         let progress = "<i class='text-secondary bi bi-clock-o' title='In Bearbeitung'></i>";
-                        let not_fixed = "<i class='text-danger bi bi-times' title='Nicht behoben'></i>";
+                        let not_fixed = "<i class='text-danger bi bi-x' title='Nicht behoben'></i>";
                         let see_comment = "<i class='text-primary bi bi-commenting' title='Siehe Kommentar'></i>";
                         let current_state = "Unbekannt"
                         if (entry.problem.fixed == true) {
@@ -491,7 +491,7 @@
                             let tp_unhide_admin = "<button class='btn btn-secondary tp-unhide-admin'><i class='bi bi-eye'></i>&nbsp;&nbsp;Einblenden</button>"
                             let fixer = entry.fnc_login ? `<button title='${entry.fdisplay_name} kümmert sich um das Problem.' class='tp-fixer'><img src='#{NEXTCLOUD_URL}/index.php/avatar/${entry.fnc_login}/256' class='icon avatar-md'/></button>` : "<button class='btn btn-warning tp-fixer'><i class='bi bi-user-plus'></i>&nbsp;&nbsp;Nutzer zuweisen</button>";
                             let tp_fixed = "<button class='btn btn-success tp-fixed'><i class='bi bi-check'></i>&nbsp;&nbsp;Behoben</button>"
-                            let tp_not_fixed = "<button class='btn btn-warning tp-not-fixed'><i class='bi bi-times'></i>&nbsp;&nbsp;Nicht Behoben</button>"
+                            let tp_not_fixed = "<button class='btn btn-warning tp-not-fixed'><i class='bi bi-x'></i>&nbsp;&nbsp;Nicht Behoben</button>"
                             let mail_count = entry.problem.mail_count
                             let tp_mail = `<button class='btn btn-xs btn-success tp-mail'><i class='bi bi-envelope'></i>&nbsp;&nbsp;Update per Mail senden (${mail_count})</button>`
                             let tp_hide = "<button class='btn btn-xs btn-info tp-hide'><i class='bi bi-eye'></i>&nbsp;&nbsp;Für Absender ausblenden</button>"

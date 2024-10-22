@@ -49,7 +49,7 @@
             </div>
         </div>
         <div class="modal-footer">
-            <button type="button" class="btn btn-secondary" data-dismiss="modal"><i class='bi bi-times'></i>&nbsp;&nbsp;Schließen</button>
+            <button type="button" class="btn btn-secondary" data-dismiss="modal"><i class='bi bi-x'></i>&nbsp;&nbsp;Schließen</button>
 
         </div>
       </div>
@@ -66,7 +66,7 @@
                 <p>#{get_invited_and_accepted_pk5_for_teacher()}</p>
                 <div style="text-align: center;">
                     <button id='bu_accept_betreuung' class="btn btn-success" #{(get_remaining_pk5_projects_for_teacher()[:left] || 0) > 0 ? '' : 'disabled'}><i class='bi bi-check'></i>&nbsp;&nbsp;Betreuung annehmen</button>
-                    <button id='bu_reject_betreuung' class="btn btn-danger"><i class='bi bi-times'></i>&nbsp;&nbsp;Betreuung ablehnen</button>
+                    <button id='bu_reject_betreuung' class="btn btn-danger"><i class='bi bi-x'></i>&nbsp;&nbsp;Betreuung ablehnen</button>
                 </div>
             </div>
             <p>
@@ -149,7 +149,7 @@
 
                     <div class='col-md-12' style="text-align: right; #{(user_with_role_logged_in?(:oko) || (teacher_logged_in? && (@@pk5_faecher_for_email[@session_user[:email]] || Set.new()).include?(get_my_pk5(user_email)[:fas])) || (@session_user[:klasse] == PK5_CURRENT_KLASSE && (!$pk5.phases[$pk5.get_current_phase][:flags].include?(:no_sus_edit)))) ? '' : 'display: none;'}">
                         <button id='bu_edit' class='btn btn-success'><i class='bi bi-edit'></i>&nbsp;&nbsp;Bearbeiten</button>
-                        <button id='bu_discard_changes' style='display: none;' class='btn btn-outline-secondary'><i class='bi bi-times'></i>&nbsp;&nbsp;Änderungen verwerfen</button>
+                        <button id='bu_discard_changes' style='display: none;' class='btn btn-outline-secondary'><i class='bi bi-x'></i>&nbsp;&nbsp;Änderungen verwerfen</button>
                         <button id='bu_save_changes' style='display: none;' class='btn btn-success'><i class='bi bi-check'></i>&nbsp;&nbsp;Änderungen speichern</button>
                     </div>
                     <div class='col-md-12'>

@@ -179,7 +179,7 @@
         <button class="show-ha-amt-only btn btn-secondary bu-discard-ha-amt-text-changes"><i class='bi bi-trash'></i>&nbsp;&nbsp;Änderungen verwerfen</button>
         <button class="show-ha-amt-only btn btn-success bu-save-ha-amt-text-changes"><i class='bi bi-check'></i>&nbsp;&nbsp;Änderungen speichern</button>
         <button class="show-ha-amt-only btn btn-success bu-enter-ha-amt-text"><i class='bi bi-pencil'></i>&nbsp;&nbsp;Hausaufgaben eintragen</button>
-        <button type="button" class="btn btn-secondary" data-dismiss="modal"><i class='bi bi-times'></i>&nbsp;&nbsp;Schließen</button>
+        <button type="button" class="btn btn-secondary" data-dismiss="modal"><i class='bi bi-x'></i>&nbsp;&nbsp;Schließen</button>
       </div>
     </div>
   </div>
@@ -211,7 +211,7 @@
             </div>
         </div>
         <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" data-dismiss="modal"><i class='bi bi-times'></i>&nbsp;&nbsp;Schließen</button>
+          <button type="button" class="btn btn-secondary" data-dismiss="modal"><i class='bi bi-x'></i>&nbsp;&nbsp;Schließen</button>
         </div>
       </div>
     </div>
@@ -270,7 +270,7 @@
         <div class='feedback_submit_success mr-auto'><i class='bi bi-check-circle text-success'></i>&nbsp;&nbsp;Dein Feedback wurde gespeichert.</div>
         <div class='feedback_submit_error mr-auto'><i class='bi bi-exclamation-circle text-danger'></i>&nbsp;&nbsp;Dein Feedback konnte nicht gespeichert werden<span class='poll_submit_error_message'></span></div>
         <button id='bu_send_homework_feedback' type='button' class="btn btn-success"><i class='bi bi-send'></i>&nbsp;&nbsp;Feedback speichern</button>
-        <button type="button" class="btn btn-secondary" data-dismiss="modal"><i class='bi bi-times'></i>&nbsp;&nbsp;Schließen</button>
+        <button type="button" class="btn btn-secondary" data-dismiss="modal"><i class='bi bi-x'></i>&nbsp;&nbsp;Schließen</button>
       </div>
     </div>
   </div>
@@ -307,7 +307,7 @@
         <button class="btn btn-secondary div_ad_hoc_fresh_sms bu_unlock_2fa_sms"><i class='bi bi-mobile'></i>&nbsp;&nbsp;SMS jetzt freigeben</button>
         <button class="btn btn-secondary div_ad_hoc_fresh_otp bu_unlock_2fa_otp"><i class='bi bi-qrcode'></i>&nbsp;&nbsp;OTP jetzt freigeben</button>
         <button id='bu_perform_ad_hoc_signin' type='button' class="btn btn-success"><i class='bi bi-sign-in'></i>&nbsp;&nbsp;Anmeldung erlauben</button>
-          <button type="button" class="btn btn-danger" data-dismiss="modal"><i class='bi bi-times'></i>&nbsp;&nbsp;Anmeldung ablehnen</button>
+          <button type="button" class="btn btn-danger" data-dismiss="modal"><i class='bi bi-x'></i>&nbsp;&nbsp;Anmeldung ablehnen</button>
         </div>
       </div>
     </div>
@@ -670,7 +670,7 @@ function generate_mail_pending_row(entry, sus_info) {
         row.append($(`<td colspan='2'>`).html(`<i class='bi bi-check text-success'></i>&nbsp;&nbsp;<em>»${REASON_LABEL[entry.reason] ?? entry.reason}« (${sus_info.display_first_name}) wurde um ${entry.ts_sent_h} Uhr gesendet</em>`));
     } else {
         row.append($(`<td>`).html(`<i class='bi bi-clock-o'></i>&nbsp;&nbsp;<em>»${REASON_LABEL[entry.reason] ?? entry.reason}« (${sus_info.display_first_name}) wird um ${entry.ts_h} Uhr gesendet</em>`));
-        let button = $(`<button class='btn btn-sm btn-secondary'>`).html(`<i class='bi bi-times'></i>&nbsp;&nbsp;Abbrechen`);
+        let button = $(`<button class='btn btn-sm btn-secondary'>`).html(`<i class='bi bi-x'></i>&nbsp;&nbsp;Abbrechen`);
         button.on('click', function(e) {
             api_call('/api/cancel_email', {tag: entry.tag}, function(data) {
                 if (data.success) {

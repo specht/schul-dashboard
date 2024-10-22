@@ -61,7 +61,7 @@
             <div class="form-row">
                 <div class="form-group col-md-12">
                     <div class='button-with-label'>
-                        <button id='ti_publish_for_klasse' data-state='no' class='btn btn-outline-secondary'><i class='bi bi-times'></i>Diesen Eintrag im Stundenplan der <strong>Klasse #{klasse}</strong> anzeigen</button>
+                        <button id='ti_publish_for_klasse' data-state='no' class='btn btn-outline-secondary'><i class='bi bi-x'></i>Diesen Eintrag im Stundenplan der <strong>Klasse #{klasse}</strong> anzeigen</button>
                     </div>
                     <!-- <small class="form-text text-muted"></small> -->
                 </div>
@@ -70,9 +70,9 @@
       </div>
       <div class="modal-footer">
         <button id='bu_delete_test' type="button" class="btn btn-danger"><i class='bi bi-trash'></i>&nbsp;&nbsp;<span>Löschen</span></button>
-        <button id='bu_discard_test' type="button" class="btn btn-secondary" disabled><i class='bi bi-times'></i>&nbsp;&nbsp;<span>Verwerfen</span></button>
+        <button id='bu_discard_test' type="button" class="btn btn-secondary" disabled><i class='bi bi-x'></i>&nbsp;&nbsp;<span>Verwerfen</span></button>
         <button id='bu_save_test' type="button" class="btn btn-success" disabled><i class='bi bi-check'></i>&nbsp;&nbsp;<span>Speichern</span></button>
-        <button id='bu_close_test' type="button" class="btn btn-secondary" disabled data-dismiss='modal'><i class='bi bi-times'></i>&nbsp;&nbsp;<span>Schließen</span></button>
+        <button id='bu_close_test' type="button" class="btn btn-secondary" disabled data-dismiss='modal'><i class='bi bi-x'></i>&nbsp;&nbsp;<span>Schließen</span></button>
       </div>
     </div>
   </div>
@@ -87,7 +87,7 @@
       <div class="modal-body">
       </div>
       <div class="modal-footer">
-        <button type="button" class="btn btn-secondary" data-dismiss='modal'><i class='bi bi-times'></i>&nbsp;&nbsp;<span>Schließen</span></button>
+        <button type="button" class="btn btn-secondary" data-dismiss='modal'><i class='bi bi-x'></i>&nbsp;&nbsp;<span>Schließen</span></button>
       </div>
     </div>
   </div>
@@ -246,7 +246,7 @@ document.addEventListener('DOMContentLoaded', function() {
             } else {
                 showTemplateModal('Keine Berechtigung', 
                     `Sie können in der Klasse ${klasse} keine Arbeiten eintragen, da Sie in dieser Klasse nicht unterrichten.`,
-                    "<i class='bi bi-times'></i>&nbsp;&nbsp;Schließen", 'btn-secondary',
+                    "<i class='bi bi-x'></i>&nbsp;&nbsp;Schließen", 'btn-secondary',
                     null, null, function() {});
             }
         },

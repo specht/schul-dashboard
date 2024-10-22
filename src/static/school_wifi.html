@@ -115,7 +115,7 @@
                             });
                         });
 
-                        let declineButton = $('<button>').addClass('btn btn-outline-danger').html('<i class="bi bi-times"></i>');
+                        let declineButton = $('<button>').addClass('btn btn-outline-danger').html('<i class="bi bi-x"></i>');
                         declineButton.click(function(e) {
                             api_call('/api/decline_wifi_request', {token: request.request.token}, function(data) {
                                 if (data.success) 
@@ -140,7 +140,7 @@
                     } else if (request.request.status === 'waiting') {
                         statusIcon = $('<td>').html("<i class='text-secondary bi bi-clock-o' title='In Bearbeitung'></i> In Bearbeitung");
                     } else if (request.request.status === 'declined') {
-                        statusIcon = $('<td>').html("<i class='text-danger bi bi-times' title='Abgelehnt'></i> Abgelehnt");
+                        statusIcon = $('<td>').html("<i class='text-danger bi bi-x' title='Abgelehnt'></i> Abgelehnt");
                     } else if (endDateTime < now) {
                         statusIcon = $('<td>').html("<i class='text-danger bi bi-lock' title='Beendet'></i> Beendet");
                     } else {

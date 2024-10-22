@@ -33,21 +33,21 @@
             <div class="modal-body">
                 <div class='row'>
                     <div class='col-md-12'>
-                        <div class="form-group">
+                        <div class="mb-3">
                             <label>Name</label>
                             <input id='ti_name' class='form-control' type='text' placeholder='Bitte geben Sie den Namen der Gruppe ein'></input>
                         </div>
                     </div>
                 </div>
                 <hr />
-                <div class="form-group">
-                    <label style='width: 100%;'><a href='#' class='bu_open_ext_users_modal float-right btn btn-success'>Externe Teilnehmer…</a>Teilnehmer
+                <div class="mb-3">
+                    <label style='width: 100%;'><a href='#' class='bu_open_ext_users_modal float-end btn btn-success'>Externe Teilnehmer…</a>Teilnehmer
                     </label>
                     <input id='ti_recipients' class='form-control' placeholder='Teilnehmer suchen…' /><div class='recipient-input-dropdown' style='display: none;'></div></input>
 <!--                    <div style='font-size: 80%; margin-top: 10px;'>
                     </div>-->
                 </div>
-                <div class="form-group">
+                <div class="mb-3">
                     <div class='recipients_list'>
                     </div>
                     <p style='margin-top: 10px;' id='recipient_count'>keine Teilnehmer</p>
@@ -59,7 +59,7 @@
                     <button id='bu_save_group' class='btn btn-outline-secondary' disabled><i class='bi bi-check'></i>&nbsp;&nbsp;<span>Speichern</span></button>
                 </div>
                 <button id='bu_delete_group' type="button" class="btn btn-outline-secondary" disabled style='display: none;'><i class='bi bi-trash'></i>&nbsp;&nbsp;Gruppe löschen</button>
-                <button id='bu_close_group_modal' type="button" class="btn btn-secondary" data-dismiss="modal">Schließen</button>
+                <button id='bu_close_group_modal' type="button" class="btn btn-secondary" data-bs-dismiss="modal">Schließen</button>
             </div>
         </div>
     </div>
@@ -81,7 +81,7 @@
                 <!--<p><span style='padding: 0 5px; background-color: #f4c9c5; color: #d5291a'>Achtung:</span> Bitte beachten Sie, dass hierfür die Einwilligung zur Speicherung der E-Mail-Adresse für jeden Teilnehmer vorliegen muss.
                 </p>-->
                 <textarea id='ti_add_ext_users' class='form-control'></textarea>
-                <button id='bu_add_ext_users' class='btn btn-success float-right' style='margin: 10px 0;' disabled>Teilnehmer hinzufügen</button>
+                <button id='bu_add_ext_users' class='btn btn-success float-end' style='margin: 10px 0;' disabled>Teilnehmer hinzufügen</button>
                 <table class='table table-striped narrow'>
                 <thead>
                     <tr>
@@ -95,7 +95,7 @@
                 </table>
             </div>
             <div class="modal-footer">
-                <button id='bu_close_ext_user_modal' type="button" class="btn btn-secondary" data-dismiss="modal">Schließen</button>
+                <button id='bu_close_ext_user_modal' type="button" class="btn btn-secondary" data-bs-dismiss="modal">Schließen</button>
             </div>
         </div>
     </div>

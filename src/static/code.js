@@ -24,7 +24,7 @@ jQuery.extend({
 function show_error_message(message) {
     var div = $('<div>').css('text-align', 'center').css('padding', '15px').addClass('bg-light text-danger').html(message);
     $('.api_messages').empty();
-    let button = $("<button class='text-stone-400 btn pull-right form-control' style='width: unset; margin: 8px;' ><i class='bi bi-xi></button>");
+    let button = $("<button class='text-stone-400 btn pull-right form-control' style='width: unset; margin: 8px;' ><i class='bi bi-x'></i></button>");
     $('.api_messages').append(button).append(div).show();
     button.click(function(e) { $('.api_messages').hide(); });
 }
@@ -529,7 +529,7 @@ function fix_scanned_book_barcode(s) {
 }
 
 function create_book_div(book, shelf, options = {}) {
-    let stem = $(`<span class='text-slate-500 pl-2 pr-1 py-1 absolute text-sm' style='z-index: 100; '>`).css('right', '0.5em').text(book.stem);
+    let stem = $(`<span class='text-slate-500 ps-2 pe-1 py-1 absolute text-sm' style='z-index: 100; '>`).css('right', '0.5em').text(book.stem);
     if (options.exemplar && options.exemplar.bnr) {
         if (options.r && options.r.ts_summoned) {
             stem.html($(`<div class='bg-persimmon-500 text-white px-2'>`).text('Bitte bringe dieses Buch in die Bibliothek zurück.'));
@@ -582,7 +582,7 @@ function create_book_div(book, shelf, options = {}) {
                 title_div.append($(`<span class='text-lg'>`).text(` – ${book.subtitle}`));
             details.append(title_div);
             if (book.author)
-                details.append($(`<div class="font-italic truncate">`).text(book.author));
+                details.append($(`<div class="fst-italic truncate">`).text(book.author));
             let parts = [];
             if (book.verlag)
                 parts.push(book.verlag);
@@ -598,16 +598,16 @@ function create_book_div(book, shelf, options = {}) {
             let discarded_span = '';
             if (options.exemplar && options.exemplar.ts_discarded) {
                 let t = moment.unix(options.exemplar.ts_discarded);
-                discarded_span = $(`<span class='bg-red-300 text-red-900 px-2 py-1 rounded mr-2'>`).text(`ausgemustert am ${t.format('L')}`);
+                discarded_span = $(`<span class='bg-red-300 text-red-900 px-2 py-1 rounded me-2'>`).text(`ausgemustert am ${t.format('L')}`);
             }
             let shelf_span = '';
             if (typeof(shelf) !== 'undefined' && shelf !== null) {
                 console.log(shelf);
-                shelf_span = $(`<span class='bg-violet-700 px-2 py-1 rounded mr-2 font-bold'>`).text(shelf.location);
+                shelf_span = $(`<span class='bg-violet-700 px-2 py-1 rounded me-2 font-bold'>`).text(shelf.location);
             }
 
-            let available_count = $(`<span class='bg-sky-800 px-2 py-1 rounded mr-2 font-bold'>`).text(`${book.bib_available} / ${book.bib_count}`);
-            let ausleih_count = $(`<span class='bg-bamboo-800 px-2 py-1 rounded mr-2 font-bold'>`).text(book.ausleih_count);
+            let available_count = $(`<span class='bg-sky-800 px-2 py-1 rounded me-2 font-bold'>`).text(`${book.bib_available} / ${book.bib_count}`);
+            let ausleih_count = $(`<span class='bg-bamboo-800 px-2 py-1 rounded me-2 font-bold'>`).text(book.ausleih_count);
             let isbn = $(`<span>`).text(`ISBN: ${book.isbn}`);
             // let count_div = $('<span>').append(available_count).append(ausleih_count);
             // if (book.ausleih_count != book.bib_count - book.bib_available)
@@ -619,11 +619,11 @@ function create_book_div(book, shelf, options = {}) {
             }
             if (book.description) {
                 details.append($(`<hr class='my-2'>`));
-                details.append($(`<div class="font-italic" style='white-space: nowrap; overflow: hidden; text-overflow: ellipsis;'>`).text(book.description));
+                details.append($(`<div class="fst-italic" style='white-space: nowrap; overflow: hidden; text-overflow: ellipsis;'>`).text(book.description));
             }
             else if (book.text_snippet) {
                 details.append($(`<hr class='my-2'>`));
-                details.append($(`<div class="font-italic" style='white-space: nowrap; overflow: hidden; text-overflow: ellipsis;'>`).text(book.text_snippet));
+                details.append($(`<div class="fst-italic" style='white-space: nowrap; overflow: hidden; text-overflow: ellipsis;'>`).text(book.text_snippet));
             }
             div.append(details);
         }
@@ -656,7 +656,7 @@ function currency_string(preis, waehrung) {
 }
 
 function create_location_span(location) {
-    return `<span class='bg-lilac-600 text-lilac-200 text-sm mr-2 px-1.5 py-0.5 rounded'>${location}</span>`;
+    return `<span class='bg-lilac-600 text-lilac-200 text-sm me-2 px-1.5 py-0.5 rounded'>${location}</span>`;
 }
 
 function join_with_sep(list, a, b) {

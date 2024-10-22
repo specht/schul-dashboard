@@ -36,15 +36,15 @@
         <h5 class="modal-title">Neue Nachricht</h5>
       </div>
       <div class="modal-body">
-        <div class="form-group">
+        <div class="mb-3">
             <input id='ti_recipients' class='form-control' placeholder='Empfänger suchen…'><div class='recipient-input-dropdown' style='display: none;'></div></input>
         </div>
-        <div class="form-group">
+        <div class="mb-3">
             <div class='recipients_list'>
             </div>
             <p style='margin-top: 10px;' id='recipient_count'>keine Empfänger</p>
         </div>
-        <div class="form-group">
+        <div class="mb-3">
             <div id='summernote'></div>
         </div>
       </div>
@@ -54,7 +54,7 @@
             <button id='bu_send_message' class='btn btn-outline-secondary' disabled><i class='bi bi-send'></i>&nbsp;&nbsp;<span>Senden</span></button>
         </div>
         <button id='bu_delete_message' type="button" class="btn btn-outline-secondary" disabled style='display: none;'><i class='bi bi-trash'></i>&nbsp;&nbsp;Nachricht löschen</button>
-        <button id='bu_close_message_modal' type="button" class="btn btn-secondary" data-dismiss="modal">Schließen</button>
+        <button id='bu_close_message_modal' type="button" class="btn btn-secondary" data-bs-dismiss="modal">Schließen</button>
       </div>
     </div>
   </div>

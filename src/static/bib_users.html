@@ -59,7 +59,7 @@
 
     window.addEventListener('load', function () {
         for (let label of #{(KLASSEN_ORDER.map { |x| tr_klasse(x) } + ['Lehrkräfte']).to_json}) {
-            let button = $(`<button class='bu-label btn btn-xs btn-outline-secondary mr-1 mb-1' data-flag='false'>${label}</button>`);
+            let button = $(`<button class='bu-label btn btn-xs btn-outline-secondary me-1 mb-1' data-flag='false'>${label}</button>`);
             $('#labels_here').append(button);
             button.click(function (e) {
                 let button = $(e.target).closest('button');

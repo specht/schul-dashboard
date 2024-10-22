@@ -32,13 +32,13 @@
             <div class="modal-body">
                 <div class='row'>
                     <div class='col-xl-10 col-lg-9 col-md-8 col-sm-8'>
-                        <div class="form-group">
+                        <div class="mb-3">
                             <label>Titel</label>
                             <input id='ti_title' class='form-control' type='text' placeholder='Bitte geben Sie den Titel des Termins ein'></input>
                         </div>
                     </div>
                     <div class='col-xl-2 col-lg-3 col-md-4 col-sm-4'>
-                        <div class="form-group">
+                        <div class="mb-3">
                             <label>Videokonferenz</label>
                             <div class='button-with-label'>
                                 <button id='ti_event_jitsi' data-state='no' class='btn_lesson_data btn btn-outline-secondary'><i class='bi bi-x'></i>&nbsp;&nbsp;Jitsi Meet</button>
@@ -48,38 +48,38 @@
                 </div>
                 <div class='row'>
                     <div class='col-md-4'>
-                        <div class="form-group">
+                        <div class="mb-3">
                             <label>Datum</label>
                             <input type="date" class="form-control" id='ti_date' value='#{Date.today.to_s}' />
                         </div>
                     </div>
                     <div class='col-md-4'>
-                        <div class="form-group">
+                        <div class="mb-3">
                             <label>Beginn</label>
                             <input type="time" class="form-control" id='ti_start_time' value='08:00' />
                         </div>
                     </div>
                     <div class='col-md-4'>
-                        <div class="form-group">
+                        <div class="mb-3">
                             <label>Ende</label>
                             <input type="time" class="form-control" id='ti_end_time' value='10:00' />
                         </div>
                     </div>
                 </div>
                 <hr />
-                <div class="form-group">
-                    <label style='width: 100%;'><a href='#' class='bu_open_ext_users_modal float-right btn btn-success'>Externe Teilnehmer…</a>Teilnehmer <span class='text-muted'>(nur diesen Personen wird der Termin im Kalender angezeigt)</span>
+                <div class="mb-3">
+                    <label style='width: 100%;'><a href='#' class='bu_open_ext_users_modal float-end btn btn-success'>Externe Teilnehmer…</a>Teilnehmer <span class='text-muted'>(nur diesen Personen wird der Termin im Kalender angezeigt)</span>
                     </label>
                     <input id='ti_recipients' class='form-control' placeholder='Teilnehmer suchen…' /><div class='recipient-input-dropdown' style='display: none;'></div></input>
 <!--                    <div style='font-size: 80%; margin-top: 10px;'>
                     </div>-->
                 </div>
-                <div class="form-group">
+                <div class="mb-3">
                     <div class='recipients_list'>
                     </div>
                     <p style='margin-top: 10px;' id='recipient_count'>keine Teilnehmer</p>
                 </div>
-                <div class="form-group div_ext_users_for_event_present">
+                <div class="mb-3 div_ext_users_for_event_present">
                     <label style='width: 100%;'>Externe Teilnehmer</label>
                     <div class='alert alert-info'>
                         Sie möchten externe Teilnehmer einladen, die sich nicht im Dashboard anmelden können. Diese Teilnehmer benötigen deshalb einen Link per E-Mail, über den sie den Jitsi Meet-Raum öffnen können.
@@ -113,7 +113,7 @@
                     </tbody>
                     </table>
                 </div>
-                <div class="form-group">
+                <div class="mb-3">
                     <div id='summernote'></div>
                 </div>
             </div>
@@ -123,7 +123,7 @@
                     <button id='bu_save_event' class='btn btn-outline-secondary' disabled><i class='bi bi-check'></i>&nbsp;&nbsp;<span>Speichern</span></button>
                 </div>
                 <button id='bu_delete_event' type="button" class="btn btn-outline-secondary" disabled style='display: none;'><i class='bi bi-trash'></i>&nbsp;&nbsp;Termin löschen</button>
-                <button id='bu_close_event_modal' type="button" class="btn btn-secondary" data-dismiss="modal">Schließen</button>
+                <button id='bu_close_event_modal' type="button" class="btn btn-secondary" data-bs-dismiss="modal">Schließen</button>
             </div>
         </div>
     </div>
@@ -145,7 +145,7 @@
                 <!--<p><span style='padding: 0 5px; background-color: #f4c9c5; color: #d5291a'>Achtung:</span> Bitte beachten Sie, dass hierfür die Einwilligung zur Speicherung der E-Mail-Adresse für jeden Teilnehmer vorliegen muss.
                 </p>-->
                 <textarea id='ti_add_ext_users' class='form-control'></textarea>
-                <button id='bu_add_ext_users' class='btn btn-success float-right' style='margin: 10px 0;' disabled>Teilnehmer hinzufügen</button>
+                <button id='bu_add_ext_users' class='btn btn-success float-end' style='margin: 10px 0;' disabled>Teilnehmer hinzufügen</button>
                 <table class='table table-striped narrow'>
                 <thead>
                     <tr>
@@ -159,7 +159,7 @@
                 </table>
             </div>
             <div class="modal-footer">
-                <button id='bu_close_ext_user_modal' type="button" class="btn btn-secondary" data-dismiss="modal">Schließen</button>
+                <button id='bu_close_ext_user_modal' type="button" class="btn btn-secondary" data-bs-dismiss="modal">Schließen</button>
             </div>
         </div>
     </div>

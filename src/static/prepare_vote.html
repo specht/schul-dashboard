@@ -5,19 +5,19 @@
             <h2 style='margin-bottom: 30px;'>Abstimmungen</h2>
             <div class='row'>
                 <div class='col-md-7'>
-                    <div class="form-group">
+                    <div class="mb-3">
                         <label>Titel der Veranstaltung</label>
                         <input type="text" class="form-control" id='ti_title' />
                     </div>
                 </div>
                 <div class='col-md-3'>
-                    <div class="form-group">
+                    <div class="mb-3">
                         <label>Datum</label>
                         <input type="date" class="form-control" id='ti_date' value='#{Date.today.to_s}' />
                     </div>
                 </div>
                 <div class='col-md-2'>
-                    <div class="form-group">
+                    <div class="mb-3">
                         <label>Teilnehmer</label>
                         <input type="number" class="form-control" id='ti_count' min='1' max='10000' />
                     </div>
@@ -25,7 +25,7 @@
             </div>
             <div class='row' style='margin-bottom: 15px;'>
                 <div class='col-md-12'>
-                    <button id='bu_create' class='btn btn-primary float-right' disabled><i class='bi bi-file-pdf-o'></i>&nbsp;&nbsp;Abstimmung erstellen</button>
+                    <button id='bu_create' class='btn btn-primary float-end' disabled><i class='bi bi-file-pdf-o'></i>&nbsp;&nbsp;Abstimmung erstellen</button>
                 </div>
             </div>
             <hr />

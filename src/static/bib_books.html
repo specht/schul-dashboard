@@ -70,7 +70,7 @@
             if (data.success) {
                 // console.log(data);
                 for (let label of data.labels) {
-                    let button = $(`<button class='bu-label btn btn-xs btn-outline-secondary mr-1 mb-1' data-flag='false'>${label.value}</button>`);
+                    let button = $(`<button class='bu-label btn btn-xs btn-outline-secondary me-1 mb-1' data-flag='false'>${label.value}</button>`);
                     $('#labels_here').append(button);
                     button.click(function (e) {
                         let button = $(e.target).closest('button');
@@ -118,7 +118,7 @@
                                     $('<td>').text(`${entry.published || '–'}`),
                                     $('<td>').html(`${entry.isbn || `&ndash;`}`).data('sort_value', entry.ausleih_count || 0),
                                     $('<td>').html(`${entry.ausleih_count || `&ndash;`}`).data('sort_value', entry.ausleih_count || 0),
-                                    $('<td>').html(`${entry.stock_count || `&ndash;`}<span class='bg-stone-700 text-stone-300 text-sm ml-2 mr-2 px-1.5 py-0.5 rounded'>(${entry.bib_available}/${entry.bib_count})</span>`).data('sort_value', entry.stock_count || 0),
+                                    $('<td>').html(`${entry.stock_count || `&ndash;`}<span class='bg-stone-700 text-stone-300 text-sm ms-2 me-2 px-1.5 py-0.5 rounded'>(${entry.bib_available}/${entry.bib_count})</span>`).data('sort_value', entry.stock_count || 0),
                                     $('<td>').html(`${(entry.locations || []).map(function(x) {return create_location_span(x); }).join('')}`).data('sort_value', (entry.locations || ['0'])[0]),
                                 ];
                             }),

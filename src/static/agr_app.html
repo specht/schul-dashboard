@@ -40,7 +40,7 @@
             </table>
         </div>
         <div class="modal-footer">
-            <button type="button" class="btn btn-secondary" data-dismiss="modal">Schließen</button>
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Schließen</button>
         </div>
         </div>
     </div>
@@ -280,7 +280,7 @@
                     for (let x of ACTIVITY_DURATIONS) {
                         color = x[0];
                         let border_color = CLING_COLORS[`${color}-600`];
-                        let div = $(`<div class="col-span-4 md:col-span-2 xl:col-span-1 bg-gray-100 p-3 rounded-lg border-l-4" style="border-left-color: ${border_color}">`);
+                        let div = $(`<div class="col-span-4 md:col-span-2 xl:col-span-1 bg-gray-100 p-3 rounded-3 border-l-4" style="border-left-color: ${border_color}">`);
                         div.append($(`<h5 class="text-gray-500 italic">${x[2]}</h5>`));
                         div.append($('<hr>'));
                         div.append($(`<h4><span class="inline-block w-20 text-center"><span class="px-2 rounded-md bg-${color}-700 text-${color}-300 v-users-solved-1d font-bold">${data.result[`users_solved_${x[1]}`]}</span></span> Nutzer:innen</h4>`));
@@ -316,9 +316,9 @@
                     row.append($(`<th style='width: 50px;'>`));
                     for (let item of TABLE_COLUMNS) {
                         let header = $(`<th>`).text(item[1]);
-                        let bu_sort_asc = $(`<span class='cursor-pointer inline-block bg-slate-900 hover:text-black rounded-full text-slate-500 font-sm ml-2 w-6 h-6 text-center'><i class='bi bi-angle-down'></i></span>`);
+                        let bu_sort_asc = $(`<span class='cursor-pointer inline-block bg-slate-900 hover:text-black rounded-full text-slate-500 font-sm ms-2 w-6 h-6 text-center'><i class='bi bi-angle-down'></i></span>`);
                         header.append(bu_sort_asc);
-                        let bu_sort_desc = $(`<span class='cursor-pointer inline-block bg-slate-900 hover:text-black rounded-full text-slate-500 font-sm ml-1 w-6 h-6 text-center'><i class='bi bi-angle-up'></i></span>`);
+                        let bu_sort_desc = $(`<span class='cursor-pointer inline-block bg-slate-900 hover:text-black rounded-full text-slate-500 font-sm ms-1 w-6 h-6 text-center'><i class='bi bi-angle-up'></i></span>`);
                         header.append(bu_sort_desc);
                         bu_sort_asc.click(function() {
                             sort_table_by_column(item[0], true);
@@ -328,7 +328,7 @@
                             sort_table_by_column(item[0], false);
                             refresh_table();
                         });
-                        // let bu_sort_chart = $(`<span class='cursor-pointer inline-block bg-slate-900 hover:text-black rounded-full text-slate-500 font-sm ml-1 w-6 h-6 text-center'><i class='bi bi-pie-chart'></i></span>`);
+                        // let bu_sort_chart = $(`<span class='cursor-pointer inline-block bg-slate-900 hover:text-black rounded-full text-slate-500 font-sm ms-1 w-6 h-6 text-center'><i class='bi bi-pie-chart'></i></span>`);
                         // header.append(bu_sort_chart);
                         row.append(header);
                     }
@@ -354,11 +354,11 @@
                             if (count === 0)
                                 row.append($('<td>').html(`<span class='px-1 inline-block w-12 text-center'>–</span>`));
                             else
-                                row.append($('<td>').html(`<span class='px-1 inline-block w-12 text-center rounded-lg bg-${x[0]}-700 text-${x[0]}-300'>${count}</span>`));
+                                row.append($('<td>').html(`<span class='px-1 inline-block w-12 text-center rounded-3 bg-${x[0]}-700 text-${x[0]}-300'>${count}</span>`));
                         }
                         row.append($('<td>').text(`${moment.unix(entry.last_activity / 1000).format('ddd, D.M.Y')}`));
                         row.append($('<td>').text(`${data.result.user_info[entry.email].version || '–'}`));
-                        let bu_details = $(`<button class='btn btn-sm btn-success'>Details<i class='bi bi-angle-double-right ml-1'></i></button>`);
+                        let bu_details = $(`<button class='btn btn-sm btn-success'>Details<i class='bi bi-angle-double-right ms-1'></i></button>`);
                         bu_details.click(function(e) {
                             launch_user_modal(entry.email);
                         })
@@ -396,7 +396,7 @@
                         }
                         row.append($('<td>').text(`–`));
                         row.append($('<td>').text(`–`));
-                        let bu_details = $(`<button class='btn btn-sm btn-success'>Details<i class='bi bi-angle-double-right ml-1'></i></button>`);
+                        let bu_details = $(`<button class='btn btn-sm btn-success'>Details<i class='bi bi-angle-double-right ms-1'></i></button>`);
                         bu_details.click(function(e) {
                             launch_user_modal(email);
                         })

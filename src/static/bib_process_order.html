@@ -2,9 +2,9 @@
 #{File.read('/static/_bib_public_template.html')}
 <div class='container bg-white' style="padding-top: 15px;">
     <div class='mb-3' id="button_div">
-        <button id='bu_scan_exemplare' class='btn btn-outline-secondary mr-1' disabled><i class='bi bi-barcode'></i>&nbsp;&nbsp;Exemplare scannen</button>
-        <button id='bu_confirm_checkout' class='btn btn-outline-secondary mr-1' disabled><i class='bi bi-check'></i>&nbsp;&nbsp;Ausleihe durchführen</button>
-        <button id='bu_print_receipt' class='btn btn-outline-secondary mr-1' disabled><i class='bi bi-print'></i>&nbsp;&nbsp;Beleg drucken</button>
+        <button id='bu_scan_exemplare' class='btn btn-outline-secondary me-1' disabled><i class='bi bi-barcode'></i>&nbsp;&nbsp;Exemplare scannen</button>
+        <button id='bu_confirm_checkout' class='btn btn-outline-secondary me-1' disabled><i class='bi bi-check'></i>&nbsp;&nbsp;Ausleihe durchführen</button>
+        <button id='bu_print_receipt' class='btn btn-outline-secondary me-1' disabled><i class='bi bi-print'></i>&nbsp;&nbsp;Beleg drucken</button>
     </div>
     <div id="order_complete_hint" class="mb-3 alert alert-warning" style='display: none;'>
         Diese Bestellung ist bereits abgeschlossen, da in der Vergangenheit alle Nutzer, die dieses Buch bekommen sollten, versorgt waren.
@@ -15,7 +15,7 @@
             <!-- <h3>Bestellung bearbeiten</h3> -->
             <div>
                 <div>
-                    <button id='bu_change_stem' disabled style='display: none; position: relative; top: -8px;' class='btn btn-xs btn-outline-secondary mr-1 mb-2'><i class='bi bi-exchange'></i>&nbsp;&nbsp;Andere Stammsignatur ausleihen</button>
+                    <button id='bu_change_stem' disabled style='display: none; position: relative; top: -8px;' class='btn btn-xs btn-outline-secondary me-1 mb-2'><i class='bi bi-exchange'></i>&nbsp;&nbsp;Andere Stammsignatur ausleihen</button>
                     <div id='scan_container'></div>
                     <div id='scan_hint' style='display: none;'>
                         <div class='alert alert-warning text-sm'>

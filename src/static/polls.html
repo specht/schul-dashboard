@@ -20,7 +20,7 @@
             <div class="modal-body" style='min-height: 300px;'>
                 <div class='row'>
                     <div class='col-md-12'>
-                        <div class="form-group">
+                        <div class="mb-3">
 <!--                             <label>Titel</label> -->
                             <input id='ti_title' class='form-control' type='text' placeholder='Bitte geben Sie den Titel der Umfrage ein'></input>
                         </div>
@@ -34,7 +34,7 @@
                 <div class='row'>
                     <div class='col-md-12'>
                         <div class="btn-group">
-                            <button type="button" class="btn btn-success dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                            <button type="button" class="btn btn-success dropdown-toggle" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
                                 <i class='bi bi-plus-circle'></i>&nbsp;&nbsp;Eintrag hinzufügen
                             </button>
                             <div class="dropdown-menu">
@@ -54,7 +54,7 @@
                     <button id='bu_discard_poll' class='btn btn-outline-secondary' disabled><i class='bi bi-x'></i>&nbsp;&nbsp;<span>Verwerfen</span></button>
                     <button id='bu_save_poll' class='btn btn-outline-secondary' disabled><i class='bi bi-check'></i>&nbsp;&nbsp;<span>Speichern</span></button>
                 </div>
-                <button id='bu_close_poll_modal' type="button" class="btn btn-secondary" data-dismiss="modal">Schließen</button>
+                <button id='bu_close_poll_modal' type="button" class="btn btn-secondary" data-bs-dismiss="modal">Schließen</button>
             </div>
         </div>
     </div>
@@ -69,13 +69,13 @@
             <div class="modal-body" style='min-height: 300px;'>
                 <div class='row'>
                     <div class='#{user_with_role_logged_in?(:developer) ? "col-md-10" : "col-md-12"}'>
-                        <div class="form-group">
+                        <div class="mb-3">
                             <label>Titel</label>
                             <input id='ti_poll_run_poll_title' disabled readonly class='form-control' type='text' placeholder='Bitte geben Sie den Titel des Termins ein'></input>
                         </div>
                     </div>
                     <div class='col-md-2' style="display: #{user_with_role_logged_in?(:developer) ? 'block' : 'none'}">
-                        <div class="form-group">
+                        <div class="mb-3">
                             <label>Sichbarkeit (Dev)</label>
                             <div class='button-with-label'>
                                 <button id='visible' data-state='yes' class='btn_visible btn btn-info'><i class='bi bi-check'></i>&nbsp;&nbsp;Sichtbar</button>
@@ -85,51 +85,51 @@
                 </div>
                 <div class='row'>
                     <div class='col-md-12'>
-                        <div class="form-group" style='margin-bottom: 0;'>
-                            <label><span class='float-right anonymous_hint text-danger'>Bitte wählen Sie die Art der Erfassung. Sie kann später nicht mehr geändert werden.</span>Anonymität</label>
+                        <div class="mb-3" style='margin-bottom: 0;'>
+                            <label><span class='float-end anonymous_hint text-danger'>Bitte wählen Sie die Art der Erfassung. Sie kann später nicht mehr geändert werden.</span>Anonymität</label>
                         </div>
                     </div>
                     <div class='col-md-6'>
-                        <div class="form-group">
+                        <div class="mb-3">
                         <button id='bu_poll_run_anonymous' class='form-control' style='overflow: hidden;'><i class='bi bi-user-secret'></i>&nbsp;&nbsp;Anonyme Erfassung der Umfrageergebnisse</button>
                         </div>
                     </div>
                     <div class='col-md-6'>
-                        <div class="form-group">
+                        <div class="mb-3">
                         <button id='bu_poll_run_non_anonymous' class='form-control' style='overflow: hidden;'><i class='bi bi-user'></i>&nbsp;&nbsp;Personengebundene Erfassung der Umfrageergebnisse</button>
                         </div>
                     </div>
                 </div>
                 <div class='row'>
                     <div class='col-md-2'>
-                        <div class="form-group">
+                        <div class="mb-3">
                             <label>Beginn</label>
                             <input type="date" class="form-control" id='ti_run_start_date' value='#{Date.today.to_s}' />
                         </div>
                     </div>
                     <div class='col-md-2'>
-                        <div class="form-group">
+                        <div class="mb-3">
                             <label>&nbsp;</label>
                             <input type="time" class="form-control" id='ti_run_start_time' value='08:00' />
                         </div>
                     </div>
                     <div class='col-md-2'>
-                        <div class="form-group">
+                        <div class="mb-3">
                             <label>Ende</label>
                             <input type="date" class="form-control" id='ti_run_end_date' value='#{Date.today.to_s}' />
                         </div>
                     </div>
                     <div class='col-md-2'>
-                        <div class="form-group">
+                        <div class="mb-3">
                             <label>&nbsp;</label>
                             <input type="time" class="form-control" id='ti_run_end_time' value='10:00' />
                         </div>
                     </div>
                     <div class='col-md-4'>
-                        <div class="form-group">
+                        <div class="mb-3">
                             <label>Spontane Umfrage (ab jetzt)</label>
                             <div class="btn-group" style='width: 100%;'>
-                                <button type="button" class="bu-poll-run-spontaneous-dropdown btn btn-outline-secondary dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                                <button type="button" class="bu-poll-run-spontaneous-dropdown btn btn-outline-secondary dropdown-toggle" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
                                     Zeitdauer wählen
                                 </button>
                                 <div class="dropdown-menu">
@@ -145,19 +145,19 @@
                     </div>
                 </div>
                 <hr />
-                <div class="form-group">
-                    <label style='width: 100%;'><a href='#' style='display: #{teacher_logged_in? ? 'inline' : 'none'}' class='bu_open_ext_users_modal float-right btn btn-success'>Externe Teilnehmer…</a>Teilnehmer <span class='text-muted'>(nur diesen Personen wird die Umfrage angezeigt)</span>
+                <div class="mb-3">
+                    <label style='width: 100%;'><a href='#' style='display: #{teacher_logged_in? ? 'inline' : 'none'}' class='bu_open_ext_users_modal float-end btn btn-success'>Externe Teilnehmer…</a>Teilnehmer <span class='text-muted'>(nur diesen Personen wird die Umfrage angezeigt)</span>
                     </label>
                     <input id='ti_recipients' class='form-control' placeholder='Teilnehmer suchen…' /><div class='recipient-input-dropdown' style='display: none;'></div></input>
 <!--                    <div style='font-size: 80%; margin-top: 10px;'>
                     </div>-->
                 </div>
-                <div class="form-group">
+                <div class="mb-3">
                     <div class='recipients_list'>
                     </div>
                     <p style='margin-top: 10px;' id='recipient_count'>keine Teilnehmer</p>
                 </div>
-                <div class="form-group div_ext_users_for_poll_run_present">
+                <div class="mb-3 div_ext_users_for_poll_run_present">
                     <label style='width: 100%;'>Externe Teilnehmer</label>
                     <div class='alert alert-info'>
                         Sie möchten externe Teilnehmer einladen, die sich nicht im Dashboard anmelden können. Diese Teilnehmer benötigen deshalb einen Link per E-Mail, über den sie an der Umfrage teilnehmen können.
@@ -197,7 +197,7 @@
                     <button id='bu_discard_poll_run' class='btn btn-outline-secondary' disabled><i class='bi bi-x'></i>&nbsp;&nbsp;<span>Verwerfen</span></button>
                     <button id='bu_save_poll_run' class='btn btn-outline-secondary' disabled><i class='bi bi-check'></i>&nbsp;&nbsp;<span>Speichern</span></button>
                 </div>
-                <button id='bu_close_poll_run_modal' type="button" class="btn btn-secondary" data-dismiss="modal">Schließen</button>
+                <button id='bu_close_poll_run_modal' type="button" class="btn btn-secondary" data-bs-dismiss="modal">Schließen</button>
             </div>
         </div>
     </div>
@@ -219,7 +219,7 @@
                 <!--<p><span style='padding: 0 5px; background-color: #f4c9c5; color: #d5291a'>Achtung:</span> Bitte beachten Sie, dass hierfür die Einwilligung zur Speicherung der E-Mail-Adresse für jeden Teilnehmer vorliegen muss.
                 </p>-->
                 <textarea id='ti_add_ext_users' class='form-control'></textarea>
-                <button id='bu_add_ext_users' class='btn btn-success float-right' style='margin: 10px 0;' disabled>Teilnehmer hinzufügen</button>
+                <button id='bu_add_ext_users' class='btn btn-success float-end' style='margin: 10px 0;' disabled>Teilnehmer hinzufügen</button>
                 <table class='table table-striped narrow'>
                 <thead>
                     <tr>
@@ -233,7 +233,7 @@
                 </table>
             </div>
             <div class="modal-footer">
-                <button id='bu_close_ext_user_modal' type="button" class="btn btn-secondary" data-dismiss="modal">Schließen</button>
+                <button id='bu_close_ext_user_modal' type="button" class="btn btn-secondary" data-bs-dismiss="modal">Schließen</button>
             </div>
         </div>
     </div>

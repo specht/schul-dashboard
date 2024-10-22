@@ -32,47 +32,47 @@
     <div id='book_here'>
         <div class="row">
             <div class="col-md-3">
-                <div id='book_cover_container' class='pull-left mr-3 mb-3 bg-stone-800 shadow shadow-md text-center italic text-sm border'
+                <div id='book_cover_container' class='pull-left me-3 mb-3 bg-stone-800 shadow shadow-md text-center italic text-sm border'
                     style="width: 100%;">
                     <img id='book_cover' class='text-center italic text-sm' style='width: 100%; display: none;' />
                     <div id='book_cover_placeholder' style="padding-top: 60%; padding-bottom: 60%; display: none;">
                         <div class='text-slate-400 pt-3 pb-2'>(kein Cover)</div>
                     </div>
                 </div>
-                <button id='bu_set_cover_from_link' class='btn btn-outline-secondary btn-sm mr-1 mb-1' style="width: 100%;"><i class='bi bi-link'></i>&nbsp;&nbsp;Cover von Link setzen…</button>
-                <button id='bu_remove_cover' class='btn btn-outline-secondary btn-sm mr-1 mb-1' style="width: 100%;"><i class='bi bi-trash'></i>&nbsp;&nbsp;Cover entfernen</button>
+                <button id='bu_set_cover_from_link' class='btn btn-outline-secondary btn-sm me-1 mb-1' style="width: 100%;"><i class='bi bi-link'></i>&nbsp;&nbsp;Cover von Link setzen…</button>
+                <button id='bu_remove_cover' class='btn btn-outline-secondary btn-sm me-1 mb-1' style="width: 100%;"><i class='bi bi-trash'></i>&nbsp;&nbsp;Cover entfernen</button>
                 <div id="other_covers">
                 </div>
             </div>
             <div class="col-md-9">
-                <div class="form-row">
-                    <div class="form-group col-md-10">
+                <div class="row">
+                    <div class="mb-3 col-md-10">
                         <label>Titel</label>
                         <input type="text" class="form-control" id="ti_title">
                     </div>
-                    <div class="form-group col-md-2">
+                    <div class="mb-3 col-md-2">
                         <label>Signaturstamm</label>
                         <input type="text" class="form-control" id="ti_stem" disabled readonly>
                     </div>
                 </div>
-                <div class="form-row">
-                    <div class="form-group col-md-10">
+                <div class="row">
+                    <div class="mb-3 col-md-10">
                         <label>Untertitel</label>
                         <input type="text" class="form-control" id="ti_subtitle">
                     </div>
-                    <div class="form-group col-md-2">
+                    <div class="mb-3 col-md-2">
                         <label>ISBN</label>
                         <input type="text" pattern=".+" class="form-control" id="ti_isbn">
                     </div>
                 </div>
-                <div class="form-row">
-                    <div class="form-group col-md-10">
+                <div class="row">
+                    <div class="mb-3 col-md-10">
                         <label>Autor</label>
                         <input type="text" class="form-control" id="ti_author">
                     </div>
-                    <div class="form-group col-md-2">
+                    <div class="mb-3 col-md-2">
                         <label>Sprache</label>
-                        <select class='form-control' id="ti_language">
+                        <select class="form-select" id="ti_language">
                             <option value="de">deutsch</option>
                             <option value="en">englisch</option>
                             <option value="fr">französisch</option>
@@ -81,26 +81,26 @@
                         </select>
                     </div>
                 </div>
-                <div class="form-row">
-                    <div class="form-group col-md-5">
+                <div class="row">
+                    <div class="mb-3 col-md-5">
                         <label>Verlag</label>
                         <input type="text" class="form-control" id="ti_verlag">
                     </div>
-                    <div class="form-group col-md-2">
+                    <div class="mb-3 col-md-2">
                         <label>Jahr</label>
                         <input type="text" pattern="\d{4}" class="form-control" id="ti_published">
                     </div>
-                    <div class="form-group col-md-2">
+                    <div class="mb-3 col-md-2">
                         <label>Seiten</label>
                         <input type="text" pattern="\d*" class="form-control" id="ti_page_count">
                     </div>
-                    <div class="form-group col-md-3">
+                    <div class="mb-3 col-md-3">
                         <label>Preis</label>
                         <!-- <input type="text" pattern="\d+(,\d{1,2})?" class="form-control" id="ti_preis"> -->
                         <div class="input-group">
                             <input id='ti_preis' type="text" class="form-control">
                             <div class="input-group-append" style="width: 40%;">
-                                <select class='form-control' id="ti_waehrung">
+                                <select class="form-select" id="ti_waehrung">
                                     <option value="€">€</option>
                                     <option value="DM">DM</option>
                                 </select>
@@ -108,7 +108,7 @@
                         </div>
                     </div>
                 </div>
-                <div class="form-group">
+                <div class="mb-3">
                     <label>Beschreibung</label>
                     <textarea class='form-control' id="ti_description"></textarea>
                 </div>
@@ -151,7 +151,7 @@
                         }
                     }
                     for (let value of Object.keys(values)) {
-                        let button = $(`<button class='btn btn-outline-secondary btn-xs mr-1 mt-1'>`).text(value);
+                        let button = $(`<button class='btn btn-outline-secondary btn-xs me-1 mt-1'>`).text(value);
                         button.css('text-align', 'left');
                         $(`#ti_${key}`).closest('.form-group').append(button);
                         button.click(function(e) {
@@ -276,7 +276,7 @@
                     }
                     if ((data.proposed_isbn || []).length > 0) {
                         for (let isbn of data.proposed_isbn) {
-                            let button = $(`<button class='btn btn-success btn-xs mr-1 mt-1'>`).text(isbn);
+                            let button = $(`<button class='btn btn-success btn-xs me-1 mt-1'>`).text(isbn);
                             button.css('text-align', 'left');
                             $(`#ti_isbn`).closest('.form-group').append(button);
                             button.click(function(e) {

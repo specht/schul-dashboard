@@ -1,0 +1,747 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Bootstrap 5 Migrate Tool Test Page</title>
+    <meta name="description" content="Test HTML page for the Bootstrap 4 to Bootstrap 5 Migrate Tool Script" />
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2280%22>⚡</text></svg>" />
+    <meta property="og:image" content="https://christianoliff.com/img/header/2024/header-bootstrap-5-migrate-tool.jpg" />
+    <link rel="author" href="https://christianoliff.com/" />
+    <link rel="license" href="https://github.com/coliff/bootstrap-5-migrate-tool/blob/main/LICENSE" />
+  </head>
+
+  <body class="container" style="max-width: 992px !important">
+    <header class="mb-5 mt-3">
+      <h1 class="fw-normal h2 ms-1 me-1 text-center">Bootstrap 5 Migrate Tool</h1>
+      <div style="min-height: 60px">
+        <p class="lead text-center ps-sm-5 pe-sm-5 d-none" id="intro-bs4">
+          This HTML test page uses Bootstrap 4 class names and loads Bootstrap 4 CSS and JavaScript from a CDN.
+          <a href="../dest/src/index.html">View the migrated test page</a>.
+        </p>
+        <p class="lead text-center ps-sm-5 pe-sm-5 d-none" id="intro-bs5">
+          This is the migrated HTML test page which now uses Bootstrap 5 class names and loads the latest Bootstrap 5 CSS and JavaScript from a CDN.
+          <a href="../../src/index.html">View the original test page</a>.
+        </p>
+      </div>
+    </header>
+
+    <script>
+      window.addEventListener("load", function () {
+        if (window.location.href.includes("dest")) {
+          const introDiv = document.querySelector("#intro-bs5");
+          introDiv.classList.remove("d-none");
+        } else {
+          const introDiv = document.querySelector("#intro-bs4");
+          introDiv.classList.remove("d-none");
+        }
+      });
+    </script>
+
+    <div class="row">
+      <div class="col-12 col-md-3 col-xl-2 order-md-last">
+        <aside class="sticky-top text-body-secondary align-self-start mb-3 mb-xl-5">
+          <h2 class="small pb-3 mb-3 border-bottom">On this page</h2>
+          <nav class="small" id="toc">
+            <ul class="list-unstyled">
+              <li class="text-black">Components</li>
+              <li class="pt-xl-1"><a class="text-decoration-none m-2 text-muted" href="#alerts">Alerts</a></li>
+              <li class="pt-xl-1"><a class="text-decoration-none m-2 text-muted" href="#badges">Badges</a></li>
+              <li class="pt-xl-1"><a class="text-decoration-none m-2 text-muted" href="#carousel">Carousel</a></li>
+              <li class="pt-xl-1"><a class="text-decoration-none m-2 text-muted" href="#collapse">Collapse</a></li>
+              <li class="pt-xl-1"><a class="text-decoration-none m-2 text-muted" href="#dropdowns">Dropdowns</a></li>
+              <li class="pt-xl-1"><a class="text-decoration-none m-2 text-muted" href="#forms">Forms</a></li>
+              <li class="pt-xl-1"><a class="text-decoration-none m-2 text-muted" href="#modal">Modal</a></li>
+              <li class="pt-xl-1"><a class="text-decoration-none m-2 text-muted" href="#navbar">Navbar</a></li>
+              <li class="pt-xl-1"><a class="text-decoration-none m-2 text-muted" href="#popovers">Popovers</a></li>
+              <li class="pt-xl-1"><a class="text-decoration-none m-2 text-muted" href="#spinners">Spinners</a></li>
+              <li class="pt-xl-1"><a class="text-decoration-none m-2 text-muted" href="#toasts">Toasts</a></li>
+              <li class="pt-xl-1"><a class="text-decoration-none m-2 text-muted" href="#tooltips">Tooltips</a></li>
+              <li class="text-black mt-3 mt-xl-4">Utilities</li>
+              <li class="pt-xl-1"><a class="text-decoration-none m-2 text-muted" href="#border">Border</a></li>
+              <li class="pt-xl-1"><a class="text-decoration-none m-2 text-muted" href="#clearfix">Clearfix</a></li>
+              <li class="pt-xl-1"><a class="text-decoration-none m-2 text-muted" href="#close-button">Close Button</a></li>
+              <li class="pt-xl-1"><a class="text-decoration-none m-2 text-muted" href="#float">Float</a></li>
+              <li class="pt-xl-1"><a class="text-decoration-none m-2 text-muted" href="#screen-readers">Screen readers</a></li>
+              <li class="pt-xl-1"><a class="text-decoration-none m-2 text-muted" href="#spacing">Spacing</a></li>
+              <li class="pt-xl-1"><a class="text-decoration-none m-2 text-muted" href="#text">Text</a></li>
+              <li class="pt-xl-1"><a class="text-decoration-none m-2 text-muted" href="#visibility">Visibility</a></li>
+              <li class="pt-xl-1"><a class="text-decoration-none m-2 text-muted" href="#embed">Embed</a></li>
+              <li class="text-black mt-3 mt-xl-4">Deprecated</li>
+              <li class="pt-xl-1"><a class="text-decoration-none m-2 text-muted" href="#jumbotron">Jumbotron</a></li>
+              <li class="pt-xl-1"><a class="text-decoration-none m-2 text-muted" href="#media">Media</a></li>
+            </ul>
+          </nav>
+        </aside>
+      </div>
+
+      <div class="col-12 col-md-9 col-xl-10">
+        <main id="content" class="mb-5">
+          <h2 class="text-dark mb-3" id="components">Components</h2>
+
+          <h3 class="h4" id="alerts">Alerts</h3>
+
+          <div class="alert alert-warning alert-dismissible fade show" role="alert">
+            <strong>Holy guacamole!</strong> You should check in on some of those fields below.
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+          </div>
+
+          <h3 class="h4" id="badges">Badges</h3>
+
+          <span class="badge text-bg-primary">Primary</span>
+          <span class="badge text-bg-secondary">Secondary</span>
+          <span class="badge text-bg-success">Success</span>
+          <span class="badge text-bg-danger">Danger</span>
+          <span class="badge text-bg-warning">Warning</span>
+          <span class="badge text-bg-info">Info</span>
+          <span class="badge text-bg-light text-dark">Light</span>
+          <span class="badge text-bg-dark">Dark</span>
+
+          <br /><br />
+
+          <span class="badge rounded-pill text-bg-primary">Primary</span>
+          <span class="badge rounded-pill text-bg-secondary">Secondary</span>
+          <span class="badge rounded-pill text-bg-success">Success</span>
+          <span class="badge rounded-pill text-bg-danger">Danger</span>
+          <span class="badge rounded-pill text-bg-warning">Warning</span>
+          <span class="badge rounded-pill text-bg-info">Info</span>
+          <span class="badge rounded-pill text-bg-light text-dark">Light</span>
+          <span class="badge rounded-pill text-bg-dark">Dark</span>
+
+          <hr class="my-5" />
+
+          <h3 class="h4" id="carousel">Carousel</h3>
+
+          <div id="carouselExampleIndicators" class="carousel slide" data-bs-ride="carousel">
+            <div class="carousel-inner">
+              <div class="carousel-item active">
+                <div class="bg-dark d-block w-100 py-5 text-white text-center">First Slide</div>
+              </div>
+              <div class="carousel-item">
+                <div class="bg-secondary d-block w-100 py-5 text-white text-center">Second Slide</div>
+              </div>
+              <div class="carousel-item">
+                <div class="bg-primary d-block w-100 py-5 text-white text-center">Third Slide</div>
+              </div>
+            </div>
+            <button class="carousel-control-prev" type="button" data-bs-target="#carouselExampleIndicators" data-bs-slide="prev">
+              <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+              <span class="visually-hidden">Previous</span>
+            </button>
+            <button class="carousel-control-next" type="button" data-bs-target="#carouselExampleIndicators" data-bs-slide="next">
+              <span class="carousel-control-next-icon" aria-hidden="true"></span>
+              <span class="visually-hidden">Next</span>
+            </button>
+          </div>
+
+          <hr class="my-5" />
+
+          <h3 class="h4" id="collapse">Collapse</h3>
+
+          <p>
+            <a class="btn btn-primary" data-bs-toggle="collapse" href="#collapseExample" role="button" aria-expanded="false" aria-controls="collapseExample"> Link with href </a>
+            <button class="btn btn-primary" type="button" data-bs-toggle="collapse" data-bs-target="#collapseExample" aria-expanded="false" aria-controls="collapseExample">
+              Button with data-target
+            </button>
+          </p>
+          <div class="collapse" id="collapseExample">
+            <div class="card card-body">
+              Some placeholder content for the collapse component. This panel is hidden by default but revealed when the user activates the relevant trigger.
+            </div>
+          </div>
+          <p>
+            <button class="btn btn-primary" type="button" data-bs-toggle="collapse" data-bs-target="#collapseWidthExample" aria-expanded="false" aria-controls="collapseWidthExample">
+              Toggle width collapse
+            </button>
+          </p>
+          <div style="min-height: 120px;">
+            <div class="collapse collapse-horizontal" id="collapseWidthExample">
+              <div class="card card-body" style="width: 320px;">
+                This is some placeholder content for a horizontal collapse. It's hidden by default and shown when triggered.
+              </div>
+            </div>
+          </div>
+
+          <hr class="my-5" />
+
+          <h3 class="h4" id="dropdowns">Dropdowns</h3>
+
+          <!-- Default dropright button -->
+          <div class="mb-2" style="min-height: 30px">
+            <div class="btn-group dropend">
+              <button type="button" class="btn btn-sm btn-secondary dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">Dropright</button>
+              <div class="dropdown-menu">
+                <button class="dropdown-item" type="button">Action</button>
+                <button class="dropdown-item" type="button">Another action</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Split dropright button -->
+          <div class="mb-2" style="min-height: 30px">
+            <div class="btn-group dropend">
+              <button type="button" class="btn btn-sm btn-secondary">Split dropright</button>
+              <button type="button" class="btn btn-sm btn-secondary dropdown-toggle dropdown-toggle-split" data-bs-toggle="dropdown" aria-expanded="false">
+                <span class="visually-hidden">Toggle Dropright</span>
+              </button>
+              <div class="dropdown-menu">
+                <button class="dropdown-item" type="button">Action</button>
+                <button class="dropdown-item" type="button">Another action</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Default dropleft button -->
+          <div class="mb-2" style="min-height: 30px; margin-left: 0px">
+            <div class="btn-group dropstart">
+              <button type="button" class="btn btn-sm btn-secondary dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">Dropleft</button>
+              <div class="dropdown-menu">
+                <button class="dropdown-item" type="button">Action</button>
+                <button class="dropdown-item" type="button">Another action</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Split dropleft button -->
+          <div class="mb-2" style="min-height: 30px; margin-left: 0px">
+            <div class="btn-group">
+              <div class="btn-group dropstart">
+                <button type="button" class="btn btn-sm btn-secondary dropdown-toggle dropdown-toggle-split" data-bs-toggle="dropdown" aria-expanded="false">
+                  <span class="visually-hidden">Toggle Dropleft</span>
+                </button>
+                <div class="dropdown-menu">
+                  <button class="dropdown-item" type="button">Action</button>
+                  <button class="dropdown-item" type="button">Another action</button>
+                </div>
+              </div>
+              <button type="button" class="btn btn-sm btn-secondary">Split dropleft</button>
+            </div>
+          </div>
+
+          <div class="mb-2" style="min-height: 30px">
+            <div class="btn-group">
+              <button type="button" class="btn btn-sm btn-secondary dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">Right-aligned menu</button>
+              <div class="dropdown-menu dropdown-menu-end">
+                <button class="dropdown-item" type="button">Action</button>
+                <button class="dropdown-item" type="button">Another action</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="mb-2" style="min-height: 30px">
+            <div class="btn-group">
+              <button type="button" class="btn btn-sm btn-secondary dropdown-toggle" data-bs-toggle="dropdown" data-bs-display="static" aria-expanded="false">
+                Left-aligned but right aligned when large screen
+              </button>
+              <div class="dropdown-menu dropdown-menu-lg-end">
+                <button class="dropdown-item" type="button">Action</button>
+                <button class="dropdown-item" type="button">Another action</button>
+              </div>
+            </div>
+          </div>
+
+          <div style="min-height: 30px">
+            <div class="btn-group">
+              <button type="button" class="btn btn-sm btn-secondary dropdown-toggle" data-bs-toggle="dropdown" data-bs-display="static" aria-expanded="false">
+                Right-aligned but left aligned when large screen
+              </button>
+              <div class="dropdown-menu dropdown-menu-end dropdown-menu-lg-start">
+                <button class="dropdown-item" type="button">Action</button>
+                <button class="dropdown-item" type="button">Another action</button>
+              </div>
+            </div>
+          </div>
+
+          <hr class="my-5" />
+
+          <h3 class="h4" id="forms">Forms</h3>
+
+          <form class="mb-3">
+            <div class="row align-items-center">
+              <div class="col-sm-3 my-1">
+                <label class="visually-hidden" for="inlineFormInputName">Name</label>
+                <input type="text" class="form-control" id="inlineFormInputName" placeholder="Jane Doe" />
+              </div>
+              <div class="col-sm-3 my-1">
+                <label class="visually-hidden" for="inlineFormInputGroupUsername">Username</label>
+                <div class="input-group">
+                  <div class="input-group-prepend">
+                    <div class="input-group-text">@</div>
+                  </div>
+                  <input type="text" class="form-control" id="inlineFormInputGroupUsername" placeholder="Username" />
+                </div>
+              </div>
+              <div class="col-auto my-1">
+                <div class="form-check">
+                  <input class="form-check-input" type="checkbox" id="autoSizingCheck2" />
+                  <label class="form-check-label" for="autoSizingCheck2"> Remember me </label>
+                </div>
+              </div>
+              <div class="col-auto my-1">
+                <button type="button" class="btn btn-primary">Submit</button>
+              </div>
+            </div>
+          </form>
+
+          <div class="my-2">
+            <select class="form-select" aria-label="Default select example">
+              <option>Default select</option>
+            </select>
+          </div>
+          <div class="my-2">
+            <select class="form-select form-select-sm" aria-label="Small select example">
+              <option>Small select</option>
+            </select>
+          </div>
+          <div class="my-2">
+            <select class="form-select form-select-lg" aria-label="Large select example">
+              <option>Large select</option>
+            </select>
+          </div>
+
+          <div class="form-check">
+            <input class="form-check-input" type="checkbox" value="" id="defaultCheck1" />
+            <label class="form-check-label" for="defaultCheck1"> Default checkbox </label>
+          </div>
+          <div class="form-check">
+            <input class="form-check-input" type="checkbox" value="" id="defaultCheck2" disabled />
+            <label class="form-check-label" for="defaultCheck2"> Disabled checkbox </label>
+          </div>
+
+          <div class="form-check mt-3">
+            <input class="form-check-input" type="radio" name="exampleRadios" id="exampleRadios1" value="option1" checked />
+            <label class="form-check-label" for="exampleRadios1"> Default radio </label>
+          </div>
+          <div class="form-check">
+            <input class="form-check-input" type="radio" name="exampleRadios" id="exampleRadios2" value="option2" />
+            <label class="form-check-label" for="exampleRadios2"> Second default radio </label>
+          </div>
+          <div class="form-check">
+            <input class="form-check-input" type="radio" name="exampleRadios" id="exampleRadios3" value="option3" disabled />
+            <label class="form-check-label" for="exampleRadios3"> Disabled radio </label>
+          </div>
+
+          <form class="my-3">
+            <div class="mb-3">
+              <label for="exampleFormControlFile1">Example file input</label>
+              <input type="file" class="form-control" id="exampleFormControlFile1" />
+            </div>
+          </form>
+
+          <form class="my-3">
+            <div class="mb-3">
+              <label for="formControlRange">Example Range input</label>
+              <input type="range" class="form-range" id="formControlRange" />
+            </div>
+          </form>
+
+          <h4 class="h5 mt-4" id="custom-forms">Custom forms</h4>
+
+          <div class="form-check">
+            <input type="checkbox" class="form-check-input" id="customCheck1" />
+            <label class="form-check-label" for="customCheck1">Check this custom checkbox</label>
+          </div>
+
+          <div class="form-check">
+            <input type="radio" id="customRadio1" name="customRadio" class="form-check-input" />
+            <label class="form-check-label" for="customRadio1">Toggle this custom radio</label>
+          </div>
+          <div class="form-check">
+            <input type="radio" id="customRadio2" name="customRadio" class="form-check-input" />
+            <label class="form-check-label" for="customRadio2">Or toggle this other custom radio</label>
+          </div>
+
+          <div class="mt-3">
+            <div class="form-check form-switch">
+              <input type="checkbox" class="form-check-input" id="customSwitch1" checked />
+              <label class="form-check-label" for="customSwitch1">Toggle this switch element</label>
+            </div>
+            <div class="form-check form-switch">
+              <input type="checkbox" class="form-check-input" disabled id="customSwitch2" />
+              <label class="form-check-label" for="customSwitch2">Disabled switch element</label>
+            </div>
+          </div>
+
+          <div class="my-3">
+            <select class="form-select form-select-sm" aria-label="Small select example">
+              <option selected>Open this select menu (small)</option>
+              <option value="1">One</option>
+              <option value="2">Two</option>
+              <option value="3">Three</option>
+            </select>
+          </div>
+
+          <div class="my-3">
+            <select class="form-select" aria-label="Default select example">
+              <option selected>Open this select menu (Default)</option>
+              <option value="1">One</option>
+              <option value="2">Two</option>
+              <option value="3">Three</option>
+            </select>
+          </div>
+
+          <div class="my-3">
+            <select class="form-select form-select-lg" aria-label="Large select example">
+              <option selected>Open this select menu (Large)</option>
+              <option value="1">One</option>
+              <option value="2">Two</option>
+              <option value="3">Three</option>
+            </select>
+          </div>
+
+          <div class="my-3">
+            <label for="customRange1">Example Custom range</label>
+            <input type="range" class="form-range" id="customRange1" />
+          </div>
+
+          <div class="my-3">
+            <div class="custom-file">
+              <label class="form-label" for="customFile">Choose file</label>
+              <input type="file" class="form-control" id="customFile" />
+            </div>
+          </div>
+
+          <h4 class="h5 mt-4 mb-3" id="input-group">Input Group</h4>
+
+          <div class="input-group mb-3">
+            <div class="input-group-prepend">
+              <span class="input-group-text" id="basic-addon1">@</span>
+            </div>
+            <input type="text" class="form-control" placeholder="Username" aria-label="Username" aria-describedby="basic-addon1" />
+          </div>
+
+          <div class="input-group mb-3">
+            <input type="text" class="form-control" placeholder="Recipient's username" aria-label="Recipient's username" aria-describedby="basic-addon2" />
+            <div class="input-group-append">
+              <span class="input-group-text" id="basic-addon2">@example.com</span>
+            </div>
+          </div>
+
+          <hr class="my-5" />
+
+          <h3 class="h4" id="modal">Modal</h3>
+
+          <!-- Button trigger modal -->
+          <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#exampleModal">Launch demo modal</button>
+
+          <!-- Modal -->
+          <div class="modal fade" id="exampleModal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+            <div class="modal-dialog">
+              <div class="modal-content">
+                <div class="modal-header">
+                  <h5 class="modal-title" id="exampleModalLabel">Modal title</h5>
+                  <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close">
+                    
+                  </button>
+                </div>
+                <div class="modal-body">...</div>
+                <div class="modal-footer">
+                  <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                  <button type="button" class="btn btn-primary">Save changes</button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <hr class="my-5" />
+
+          <h3 class="h4" id="navbar">Navbar</h3>
+
+          <nav class="navbar navbar-expand-lg navbar-light bg-light">
+            <a class="navbar-brand" href="#">Navbar</a>
+            <button
+              class="navbar-toggler"
+              type="button"
+              data-bs-toggle="collapse"
+              data-bs-target="#navbarSupportedContent"
+              aria-controls="navbarSupportedContent"
+              aria-expanded="false"
+              aria-label="Toggle navigation">
+              <span class="navbar-toggler-icon"></span>
+            </button>
+
+            <div class="collapse navbar-collapse" id="navbarSupportedContent">
+              <ul class="navbar-nav me-auto">
+                <li class="nav-item active">
+                  <a class="nav-link" href="#">Home <span class="visually-hidden">(current)</span></a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="#">Link</a>
+                </li>
+                <li class="nav-item dropdown">
+                  <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false"> Dropdown </a>
+                  <div class="dropdown-menu">
+                    <a class="dropdown-item" href="#">Action</a>
+                    <a class="dropdown-item" href="#">Another action</a>
+                    <div class="dropdown-divider"></div>
+                    <a class="dropdown-item" href="#">Something else here</a>
+                  </div>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link disabled">Disabled</a>
+                </li>
+              </ul>
+              <form class="d-flex align-items-center my-2 my-lg-0">
+                <input class="form-control me-sm-2" type="search" placeholder="Search" aria-label="Search" />
+                <button class="btn btn-outline-success my-2 my-sm-0" type="submit">Search</button>
+              </form>
+            </div>
+          </nav>
+
+          <hr class="my-5" />
+
+          <h3 class="h4" id="popovers">Popovers</h3>
+
+          <button
+            type="button"
+            class="btn btn-lg btn-danger"
+            data-bs-toggle="popover"
+            title="Popover title"
+            data-bs-content="And here's some amazing content. It's very engaging. Right?">
+            Click to toggle popover
+          </button>
+
+          <hr class="my-5" />
+
+          <h3 class="h4" id="spinners">Spinners</h3>
+
+          <div class="spinner-border" role="status">
+            <span class="visually-hidden">Loading...</span>
+          </div>
+
+          <hr class="my-5" />
+
+          <h3 class="h4" id="toasts">Toasts</h3>
+
+          <div class="toast show" role="alert" aria-live="assertive" aria-atomic="true" data-bs-animation="false" data-bs-autohide="false">
+            <div class="toast-header">
+              <div class="rounded bg-primary me-2 p-2"></div>
+              <strong class="me-auto">Bootstrap</strong>
+              <small>11 mins ago</small>
+            </div>
+            <div class="toast-body">Hello, world! This is a toast message.</div>
+          </div>
+
+          <hr class="my-5" />
+
+          <h3 class="h4" id="tooltips">Tooltips</h3>
+
+          <button type="button" class="btn btn-secondary" data-bs-toggle="tooltip" data-bs-placement="top" title="Tooltip on top">Tooltip on top</button>
+          <button type="button" class="btn btn-secondary" data-bs-toggle="tooltip" data-bs-placement="right" title="Tooltip on right">Tooltip on right</button>
+          <button type="button" class="btn btn-secondary" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Tooltip on bottom">Tooltip on bottom</button>
+          <button type="button" class="btn btn-secondary" data-bs-toggle="tooltip" data-bs-placement="left" title="Tooltip on left">Tooltip on left</button>
+          <button type="button" class="btn btn-secondary" data-bs-toggle="tooltip" data-bs-html="true" title="<em>Tooltip</em> <u>with</u> <b>HTML</b>">Tooltip with HTML</button>
+
+          <hr class="my-5" />
+
+          <h2 class="text-dark" id="utilities">Utilities</h2>
+
+          <h3 class="h4" id="border">Border</h3>
+
+          <h4 class="h6 mt-4" id="border-additive">Additive</h4>
+
+          <div class="border-end border-secondary bg-light me-2 d-inline-block" style="height: 5rem; width: 5rem"></div>
+          <div class="border-start border-secondary bg-light me-2 d-inline-block" style="height: 5rem; width: 5rem"></div>
+
+          <h4 class="h6 mt-4" id="border-subtractive">Subtractive</h4>
+
+          <div class="border-end-0 border-secondary bg-light me-2 d-inline-block" style="height: 5rem; width: 5rem; border: 1px solid #dee2e6"></div>
+          <div class="border-start-0 border-secondary bg-light me-2 d-inline-block" style="height: 5rem; width: 5rem; border: 1px solid #dee2e6"></div>
+
+          <h4 class="h6 mt-4" id="border-radius">Border Radius</h4>
+
+          <img src="https://placehold.co/75x75" class="rounded-end" width="75" height="75" alt="rounded-right" title="rounded-right" />
+          <img src="https://placehold.co/75x75" class="rounded-start" width="75" height="75" alt="rounded-left" title="rounded-left" />
+          <img src="https://placehold.co/75x75" class="rounded-circle" width="75" height="75" alt="rounded-circle" title="rounded-circle" />
+          <img src="https://placehold.co/150x75" class="rounded-pill" width="150" height="75" alt="rounded-pill" title="rounded-pill" />
+
+          <br /><br />
+
+          <img src="https://placehold.co/75x75" class="rounded-1" width="75" height="75" alt="rounded-sm" title="rounded-sm" />
+          <img src="https://placehold.co/75x75" class="rounded-3" width="75" height="75" alt="rounded-lg" title="rounded-lg" />
+
+          <hr class="my-5" />
+
+          <h3 class="h4" id="clearfix">Clearfix</h3>
+
+          <div class="bg-info clearfix">
+            <button type="button" class="btn btn-secondary float-start">Example Button floated left</button>
+            <button type="button" class="btn btn-secondary float-end">Example Button floated right</button>
+          </div>
+
+          <hr class="my-5" />
+
+          <h3 class="h4" id="close-button">Close Button</h3>
+
+          <div class="ms-1 float-start mb-5">
+            <button type="button" class="btn-close" aria-label="Close">
+              
+            </button>
+          </div>
+
+          <hr class="my-5" />
+
+          <h3 class="h4" id="float">Float</h3>
+
+          <div class="float-sm-end">Float right</div>
+          <br />
+          <div class="float-sm-end">Float right on viewports sized SM (small) or wider</div>
+          <br />
+          <div class="float-md-end">Float right on viewports sized MD (medium) or wider</div>
+          <br />
+          <div class="float-lg-end">Float right on viewports sized LG (large) or wider</div>
+          <br />
+          <div class="float-xl-end">Float right on viewports sized XL (extra-large) or wider</div>
+          <br />
+
+          <hr class="my-5" />
+
+          <h3 class="h4" id="screen-readers">Screen readers</h3>
+
+          <a class="visually-hidden visually-hidden-focusable" href="#content">Skip to main content</a>
+
+          <hr class="my-5" />
+
+          <h3 class="h4" id="spacing">Spacing</h3>
+
+          <div class="my-2 ps-5">
+            <div class="ms-1 bg-light border" style="width: 100px">ml-1</div>
+            <div class="ms-2 bg-light border" style="width: 100px">ml-2</div>
+            <div class="ms-3 bg-light border" style="width: 100px">ml-3</div>
+            <div class="ms-4 bg-light border" style="width: 100px">ml-4</div>
+            <div class="ms-5 bg-light border" style="width: 100px">ml-5</div>
+          </div>
+
+          <div class="my-2 ps-5">
+            <div class="ms-n1 bg-light border" style="width: 100px">ml-n1</div>
+            <div class="ms-sm-n2 bg-light border" style="width: 100px">ml-sm-n2</div>
+            <div class="ms-md-n3 bg-light border" style="width: 100px">ml-md-n3</div>
+            <div class="ms-lg-n4 bg-light border" style="width: 100px">ml-lg-n4</div>
+            <div class="ms-xl-n5 bg-light border" style="width: 100px">ml-xl-n5</div>
+            <small class="opacity-75 text-muted"> Note: Negative margins are not included in the compiled Bootstrap 5.x CSS by default </small>
+          </div>
+
+          <div class="my-2 ps-5">
+            <div class="ps-1 bg-light border" style="width: 100px">pl-1</div>
+            <div class="ps-2 bg-light border" style="width: 100px">pl-2</div>
+            <div class="ps-3 bg-light border" style="width: 100px">pl-3</div>
+            <div class="ps-4 bg-light border" style="width: 100px">pl-4</div>
+            <div class="ps-5 bg-light border" style="width: 100px">pl-5</div>
+          </div>
+
+          <hr class="my-5" />
+
+          <h3 class="h4" id="text">Text</h3>
+
+          <p class="text-start">Left aligned text on all viewport sizes.</p>
+          <p class="text-end">Right aligned text on all viewport sizes.</p>
+
+          <p class="text-sm-start">Left aligned text on viewports sized SM (small) or wider.</p>
+          <p class="text-md-start">Left aligned text on viewports sized MD (medium) or wider.</p>
+          <p class="text-lg-start">Left aligned text on viewports sized LG (large) or wider.</p>
+          <p class="text-xl-start">Left aligned text on viewports sized XL (extra-large) or wider.</p>
+
+          <p class="text-sm-end">Right aligned text on viewports sized SM (small) or wider.</p>
+          <p class="text-md-end">Right aligned text on viewports sized MD (medium) or wider.</p>
+          <p class="text-lg-end">Right aligned text on viewports sized LG (large) or wider.</p>
+          <p class="text-xl-end">Right aligned text on viewports sized XL (extra-large) or wider.</p>
+
+          <p class="fw-bold">Bold text.</p>
+          <p class="fw-bolder">Bolder weight text (relative to the parent element).</p>
+          <p class="fw-normal">Normal weight text.</p>
+          <p class="fw-light">Light weight text.</p>
+          <p class="fw-lighter">Lighter weight text (relative to the parent element).</p>
+          <p class="fst-italic">Italic text.</p>
+
+          <p class="font-monospace">This is in monospace</p>
+
+          <hr class="my-5" />
+
+          <h3 class="h4" id="visibility">Visibility</h3>
+
+          <div class="visible">visible</div>
+          <div class="invisible">invisible</div>
+
+          <hr class="my-5" />
+
+          <h3 class="h4" id="embed">Embed</h3>
+
+          <div class="mb-5">
+            <!-- 16:9 aspect ratio -->
+            <div class="ratio ratio-16x9">
+              <iframe class="" src="https://example.com" aria-label="Example iframe"></iframe>
+            </div>
+          </div>
+
+          <h2 class="text-dark">Deprecated components / Utilities</h2>
+
+          <h3 class="h4" id="jumbotron">Jumbotron</h3>
+
+          <div class="bg-light mb-4 rounded-2 py-5 px-3">
+            <h1 class="display-4">Hello, world!</h1>
+            <p class="lead">This is a simple hero unit, a simple jumbotron-style component for calling extra attention to featured content or information.</p>
+            <hr class="my-4" />
+            <p>It uses utility classes for typography and spacing to space content out within the larger container.</p>
+            <a class="btn btn-primary btn-lg" href="#" role="button">Learn more</a>
+          </div>
+
+          <div class="bg-light mb-4 rounded-2 py-5 px-3 rounded-0 px-0">
+            <div class="container">
+              <h1 class="display-4">Fluid jumbotron</h1>
+              <p class="lead">This is a modified jumbotron that occupies the entire horizontal space of its parent.</p>
+            </div>
+          </div>
+
+          <hr class="my-5" />
+
+          <h3 class="h4" id="media">Media</h3>
+
+          <div class="d-flex">
+            <img src="https://placehold.co/64x64" class="me-3" alt="" />
+            <div class="flex-grow-1">
+              <h5 class="mt-0">Media heading</h5>
+              <p>
+                Will you do the same for me? It's time to face the music I'm no longer your muse. Heard it's beautiful, be the judge and my girls gonna take a vote. I can feel a
+                phoenix inside of me. Heaven is jealous of our love, angels are crying from up above. Yeah, you take me to utopia.
+              </p>
+            </div>
+          </div>
+        </main>
+      </div>
+    </div>
+    <footer class="text-center text-muted">
+      <hr class="my-5" />
+
+      <p class="my-3 small">
+        &copy; 2023-2024 <a href="https://christianoliff.com/" target="_blank" rel="noopener" class="text-dark">Christian Oliff</a> /
+        <a href="https://github.com/coliff/bootstrap-5-migrate-tool" target="_blank" rel="noopener" class="text-dark">GitHub</a>
+      </p>
+    </footer>
+
+    <script>
+      var links = document.querySelectorAll('a[href="#"]');
+      links.forEach(function (link) {
+        link.addEventListener("click", function (event) {
+          event.preventDefault();
+        });
+      });
+    </script>
+
+    <script
+      src="https://cdn.jsdelivr.net/npm/jquery@3.5.1/dist/jquery.slim.min.js"
+      integrity="sha384-DfXdz2htPH0lsSSs5nCTpuj/zy4C+OGpamoFVy38MVBnE+IbbVYUew+OrCXaRkfj"
+      crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+      $(function () {
+        $('[data-bs-toggle="popover"]').popover();
+      });
+    </script>
+    <script>
+      $(function () {
+        $('[data-bs-toggle="tooltip"]').tooltip();
+      });
+    </script>
+  </body>
+</html>

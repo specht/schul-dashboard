@@ -144,10 +144,10 @@
 /*         overflow-x: scroll; */
     }
     
-    .container-fluid {
+    /* .container-fluid {
         padding-top: 30px; 
         padding-bottom: 30px;
-    }
+    } */
     
     .container-fluid.solid {
         background-color: rgba(255, 255, 255, 0.75); 
@@ -521,7 +521,7 @@ function show_poll_run_results(prid) {
         </div>
         <div class="modal-body">
             <div class="modal-body-hint"></div>
-            <div class="form-group mt-2">
+            <div class="mb-3 mt-2">
                 <input type="text" id="ti_template_modal_input" class="form-control">
             </div>
         </div>
@@ -536,7 +536,7 @@ function show_poll_run_results(prid) {
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title poll-title"></h5>
-                <button id='bu_hide_poll_run' type="button" class="float-right btn btn-sm btn-outline-secondary"><i class='bi bi-eye-slash'></i>&nbsp;&nbsp;Diese Umfrage ausblenden</button>
+                <button id='bu_hide_poll_run' type="button" class="float-end btn btn-sm btn-outline-secondary"><i class='bi bi-eye-slash'></i>&nbsp;&nbsp;Diese Umfrage ausblenden</button>
             </div>
             <div class="modal-body">
                 <div class='alert alert-success poll-run-anonymous' style='padding-left: 50px; position: relative;'>
@@ -555,14 +555,14 @@ function show_poll_run_results(prid) {
                 </div>
             </div>
             <div class="modal-footer">
-                <div class='poll_submit_success mr-auto'><i class='bi bi-check-circle text-success'></i>&nbsp;&nbsp;#{schueler_logged_in? ? 'Deine' : 'Ihre'} Antworten wurden gespeichert.</div>
-                <div class='poll_submit_update_message mr-auto'><i class='bi bi-info-circle text-info'></i>&nbsp;&nbsp;#{schueler_logged_in? ? 'Du hast' : 'Sie haben'} bereits abgestimmt, #{schueler_logged_in? ? 'kannst deine' : 'können Ihre'} Einträge aber aktualisieren.</div>
-                <div class='poll_submit_error mr-auto'><i class='bi bi-exclamation-circle text-danger'></i>&nbsp;&nbsp;#{schueler_logged_in? ? 'Deine' : 'Ihre'} Antworten konnten nicht gespeichert werden<span class='poll_submit_error_message'></span></div>
+                <div class='poll_submit_success me-auto'><i class='bi bi-check-circle text-success'></i>&nbsp;&nbsp;#{schueler_logged_in? ? 'Deine' : 'Ihre'} Antworten wurden gespeichert.</div>
+                <div class='poll_submit_update_message me-auto'><i class='bi bi-info-circle text-info'></i>&nbsp;&nbsp;#{schueler_logged_in? ? 'Du hast' : 'Sie haben'} bereits abgestimmt, #{schueler_logged_in? ? 'kannst deine' : 'können Ihre'} Einträge aber aktualisieren.</div>
+                <div class='poll_submit_error me-auto'><i class='bi bi-exclamation-circle text-danger'></i>&nbsp;&nbsp;#{schueler_logged_in? ? 'Deine' : 'Ihre'} Antworten konnten nicht gespeichert werden<span class='poll_submit_error_message'></span></div>
                 <div id='save_poll_response_btn_container' style='display: inline-block;'>
                     <button id='bu_discard_poll_results' type="button" class="btn btn-outline-secondary" disabled><i class='bi bi-x'></i>&nbsp;&nbsp;Änderungen verwerfen</button>
                     <button id='bu_submit_poll_results' type="button" class="btn btn-outline-success" disabled><i class='bi bi-send'></i>&nbsp;&nbsp;Senden</button>
                 </div>
-                <button id='bu_close_poll_response_modal' type="button" class="btn btn-secondary" data-dismiss="modal">Schließen</button>
+                <button id='bu_close_poll_response_modal' type="button" class="btn btn-secondary" data-bs-dismiss="modal">Schließen</button>
             </div>
         </div>
     </div>
@@ -583,7 +583,7 @@ function show_poll_run_results(prid) {
                 <a id='bu_poll_run_results_download_pdf' target='_blank' href='#' class="btn btn-primary"><i class='bi bi-file-pdf-o'></i>&nbsp;&nbsp;Ergebnisse (PDF)</a>
                 <a id='bu_poll_run_results_download_zip' href='#' class="btn btn-primary"><i class='bi bi-file-zip-o'></i>&nbsp;&nbsp;Einzelergebnisse (ZIP)</a>
                 <a id='bu_poll_run_results_download_xlsx' href='#' class="btn btn-primary"><i class='bi bi-file-excel-o'></i>&nbsp;&nbsp;Einzelergebnisse (XLSX)</a>
-                <button id='bu_close_show_poll_run_results_modal' type="button" class="btn btn-secondary" data-dismiss="modal">Schließen</button>
+                <button id='bu_close_show_poll_run_results_modal' type="button" class="btn btn-secondary" data-bs-dismiss="modal">Schließen</button>
             </div>
         </div>
     </div>
@@ -653,19 +653,7 @@ function showTemplateModalWithInput(title, text, confirm_label, confirm_class,
 }
 </script>
 
-<!-- <nav class="navbar bg-#{(@session_user || {})[:dark] ? 'dark' : 'light'} border-bottom border-body">
-    <div class="container-fluid"></div>
-        <a class="navbar-brand" href="/"><img src='/#{(@session_user || {})[:dark] ? DARK_SCHUL_ICON : SCHUL_ICON}' style='width: 24px; height: 24px; top: -2px;' /><span class='brand-brand'>&nbsp;&nbsp;{BRAND}</span></a>
-        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNavDropdown" aria-controls="navbarNavDropdown" aria-expanded="false" aria-label="Toggle navigation">
-            <span class="navbar-toggler-icon"></span>
-        </button>
-        <div class="collapse navbar-collapse justify-content-end" id="navbarNavDropdown">
-            #{nav_items(color_palette[:primary_color], now, new_messages_count)}
-        </div>
-    </div>
-</nav> -->
-
-<nav class="navbar navbar-expand-sm bg-body-tertiary">
+<nav class="navbar navbar-expand-md fixed-top justify-content-end">
     <div class="container-fluid">
         <a class="navbar-brand" href="/"><img src='/#{(@session_user || {})[:dark] ? DARK_SCHUL_ICON : SCHUL_ICON}' style='width: 24px; height: 24px; top: -2px;' />&nbsp;&nbsp;{BRAND}</a>
         <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarText" aria-controls="navbarText" aria-expanded="false" aria-label="Toggle navigation">
@@ -676,20 +664,32 @@ function showTemplateModalWithInput(title, text, confirm_label, confirm_class,
         </div>
     </div>
 </nav>
+
+<!-- <nav class="navbar navbar-expand-sm bg-body-tertiary fixed-top">
+    <div class="container-fluid">
+        <a class="navbar-brand" href="/"><img src='/#{(@session_user || {})[:dark] ? DARK_SCHUL_ICON : SCHUL_ICON}' style='width: 24px; height: 24px; top: -2px;' />&nbsp;&nbsp;{BRAND}</a>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarText" aria-controls="navbarText" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse justify-content-end" id="navbarText">
+            #{nav_items(color_palette[:primary_color], now, new_messages_count)}
+        </div>
+    </div>
+</nav> -->
 <div class='container' style='text-align: center; display: #{MAINTENANCE_MODE ? 'block' : 'none'}'>
 <h2 style='margin-top: 15px; margin-bottom: 30px;'>Wartungsarbeiten</h2>
 <p>
 Es werden gerade Wartungsarbeiten durchgeführt und das Dashboard ist in wenigen Minuten wieder online.
 </p>
 </div>
-<div style='position: relative; display: #{MAINTENANCE_MODE ? 'none' : 'block'}' id="main_container">
+<div style='position: relative; display: #{MAINTENANCE_MODE ? 'none' : 'block'}; margin-top: 1.5em;' id="main_container">
 #{CONTENT}
     <div class="grain_overlay"></div>
 </div>
 <!-- <div class='snowman'></div> -->
 <div class='foot text-muted'>
-    <span class='float-left'>&copy; 2024 <a href='https://gymnasiumsteglitz.de' target='_blank'>Gymnasium Steglitz</a></span>
-    <span class='timetable_updated float-left'></span>
+    <span class='float-start'>&copy; 2024 <a href='https://gymnasiumsteglitz.de' target='_blank'>Gymnasium Steglitz</a></span>
+    <span class='timetable_updated float-start'></span>
     <span><a href='/impressum'>Impressum</a></span>
 </div>
 <a class='github' href='https://github.com/specht/schul-dashboard'><i class='bi bi-github'></i></a>

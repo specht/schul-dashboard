@@ -9,53 +9,53 @@
                 <div class='#{external_user_logged_in? ? 'col-md-12' : 'col-md-9'}'>
                     <div class='row'>
                         <div class='col-md-5'>
-                            <div class="form-group">
+                            <div class="mb-3">
                                 <label>Vorname</label>
                                 <input type="text" class="form-control" value='#{@session_user[:first_name]}' readonly />
                             </div>
                         </div>
                         <div class='col-md-7'>
-                            <div class="form-group">
+                            <div class="mb-3">
                                 <label>Nachname</label>
                                 <input type="text" class="form-control" value='#{((@session_user[:titel] || '') + ' ' + @session_user[:last_name]).strip}' readonly />
                             </div>
                         </div>
                         <div class='col-md-5' style='display: #{teacher_logged_in?? 'block' : 'none'};'>
-                            <div class="form-group">
+                            <div class="mb-3">
                                 <label>Anzeigename (für Kollegen)</label>
                                 <input type="text" class="form-control" value='#{@session_user[:display_name]}' readonly />
                             </div>
                         </div>
                         <div class='col-md-5' style='display: #{teacher_logged_in? ? 'block' : 'none'};'>
-                            <div class="form-group">
+                            <div class="mb-3">
                                 <label>Anzeigename (für SuS)</label>
                                 <input type="text" class="form-control" value='#{@session_user[:display_last_name]}' readonly />
                             </div>
                         </div>
                         <div class='#{external_user_logged_in? ? 'col-md-12' : 'col-md-8'}' style='display: #{teacher_logged_in? ? 'none' : 'block'};'>
-                            <div class="form-group">
+                            <div class="mb-3">
                                 <label>Anzeigename</label>
                                 <input type="text" class="form-control" value='#{@session_user[:display_name]}' readonly />
                             </div>
                         </div>
                         <div class='col-md-2'>
-                            <div class="form-group" style='display: #{teacher_logged_in? ? 'block' : 'none'};'>
+                            <div class="mb-3" style='display: #{teacher_logged_in? ? 'block' : 'none'};'>
                                 <label>Kürzel</label>
                                 <input type="text" class="form-control" value='#{@session_user[:shorthand]}' readonly />
                             </div>
-                            <div class="form-group" style='display: #{schueler_logged_in? ? 'block' : 'none'};'>
+                            <div class="mb-3" style='display: #{schueler_logged_in? ? 'block' : 'none'};'>
                                 <label>Klasse</label>
                                 <input type="text" class="form-control" value='#{tr_klasse(@session_user[:klasse])}' readonly />
                             </div>
                         </div>
                         <div class='col-md-2'>
-                            <div class="form-group" style='display: #{schueler_logged_in? ? 'block' : 'none'};'>
+                            <div class="mb-3" style='display: #{schueler_logged_in? ? 'block' : 'none'};'>
                                 <label>Gruppe</label>
                                 <input type="text" class="form-control" value='#{@session_user[:group2]}' readonly />
                             </div>
                         </div>
                         <div class='col-md-12'>
-                            <div class="form-group">
+                            <div class="mb-3">
                                 <label>E-Mail</label>
                                 <input type="email" class="form-control" value='#{@session_user[:email]}' readonly />
         <!--                         <small class="form-text text-muted">Deine E-Mail-Adresse ist für andere nicht sichtbar.</small> -->
@@ -66,7 +66,7 @@
                 <div class='col-md-3' style="#{external_user_logged_in? ? 'display: none;' : ''}">
                     <div class='row'>
                         <div class='col-md-12'>
-                            <div class="form-group">
+                            <div class="mb-3">
                                 <label>Profilbild</label>
                                 <a href='#{NEXTCLOUD_URL}/index.php/settings/user' target='_blank'><img src='#{NEXTCLOUD_URL}/index.php/avatar/#{@session_user[:nc_login]}/256}' class='avatar-lg'/></a>
                             </div>
@@ -121,7 +121,7 @@
                 <div class='row'>
                     <div class='col-md-12'>
                         <div style='float: right;'>
-                            <input #{@session_user[:sus_may_contact_me] ? 'checked' : ''} type="checkbox" data-toggle="toggle" data-on="ja" data-off="nein" data-onstyle="success" data-offstyle="secondary" id='sus_may_contact_me_switch' style='float: right;'>
+                            <input #{@session_user[:sus_may_contact_me] ? 'checked' : ''} type="checkbox" data-bs-toggle="toggle" data-on="ja" data-off="nein" data-onstyle="success" data-offstyle="secondary" id='sus_may_contact_me_switch' style='float: right;'>
                         </div>
                         Schülerinnen und Schüler dürfen mich im HeeseChat direkt anschreiben. <br /><span>Hinweis: Sie können unabhängig von dieser Einstellung jederzeit Schülerinnen und Schüler anschreiben.</span>
                     </div>
@@ -135,19 +135,19 @@
                     <div class="col-md-4">
                         <div style="display: flex; flex-direction: row; justify-content: space-between;">
                             <label style="margin-top: 0.4em;">Hintergrund</label>
-                            <input #{color_scheme[0] == 'd' ? 'checked' : ''} type="checkbox" data-toggle="toggle" data-on="dunkel" data-off="hell" data-onstyle="secondary" data-offstyle="secondary" id='dark_switch'>
+                            <input #{color_scheme[0] == 'd' ? 'checked' : ''} type="checkbox" data-bs-toggle="toggle" data-on="dunkel" data-off="hell" data-onstyle="secondary" data-offstyle="secondary" id='dark_switch'>
                         </div>
                     </div>
                     <div class="col-md-4">
                         <div style="display: flex; flex-direction: row; justify-content: space-between;">
                             <label style="margin-top: 0.4em;">Helligkeit</label>
-                            <input #{@session_user[:dark] ? 'checked' : ''} type="checkbox" data-toggle="toggle" data-on="dunkel" data-off="hell" data-onstyle="secondary" data-offstyle="secondary" id='dark_css_switch'>
+                            <input #{@session_user[:dark] ? 'checked' : ''} type="checkbox" data-bs-toggle="toggle" data-on="dunkel" data-off="hell" data-onstyle="secondary" data-offstyle="secondary" id='dark_css_switch'>
                         </div>
                     </div>
                     <div class="col-md-4">
                         <div style="display: flex; flex-direction: row; justify-content: space-between;">
                             <label style="margin-top: 0.4em;">Design</label>
-                            <input #{@session_user[:new_design] ? 'checked' : ''} type="checkbox" data-toggle="toggle" data-on="neu" data-off="alt" data-onstyle="secondary" data-offstyle="secondary" id='design_css_switch'>
+                            <input #{@session_user[:new_design] ? 'checked' : ''} type="checkbox" data-bs-toggle="toggle" data-on="neu" data-off="alt" data-onstyle="secondary" data-offstyle="secondary" id='design_css_switch'>
                         </div>
                     </div>
                 </div>
@@ -159,27 +159,27 @@
                     </div>
                     <div class="col-md-6 mt-2">
                         <label>Farbton</label>
-                        <input type="range" data-type='hue' class="form-control-range" id="ti_hue" min="-90" max="90" value="#{(@session_user || {})[:hue] || 0.0}" step="1.0">
+                        <input type="range" data-type='hue' class="form-range" id="ti_hue" min="-90" max="90" value="#{(@session_user || {})[:hue] || 0.0}" step="1.0">
                     </div>
                     <div class="col-md-6 mt-2">
                         <label>Sättigung</label>
-                        <input type="range" data-type='saturation' class="form-control-range" id="ti_saturation" min="0.0" max="2.0" value="#{(@session_user || {})[:saturation] || 1.0}" step="0.01">
+                        <input type="range" data-type='saturation' class="form-range" id="ti_saturation" min="0.0" max="2.0" value="#{(@session_user || {})[:saturation] || 1.0}" step="0.01">
                     </div>
                     <div class="col-md-6 mt-2">
                         <label>Helligkeit</label>
-                        <input type="range" data-type='brightness' class="form-control-range" id="ti_brightness" min="0.5" max="1.5" value="#{(@session_user || {})[:brightness] || 1.0}" step="0.01">
+                        <input type="range" data-type='brightness' class="form-range" id="ti_brightness" min="0.5" max="1.5" value="#{(@session_user || {})[:brightness] || 1.0}" step="0.01">
                     </div>
                     <div class="col-md-6 mt-2">
                         <label>Kontrast</label>
-                        <input type="range" data-type='contrast' class="form-control-range" id="ti_contrast" min="0.5" max="1.5" value="#{(@session_user || {})[:contrast] || 1.0}" step="0.01">
+                        <input type="range" data-type='contrast' class="form-range" id="ti_contrast" min="0.5" max="1.5" value="#{(@session_user || {})[:contrast] || 1.0}" step="0.01">
                     </div>
                     <div class="col-md-6 mt-2">
                         <label>Sepia</label>
-                        <input type="range" data-type='sepia' class="form-control-range" id="ti_sepia" min="0.0" max="1.0" value="#{(@session_user || {})[:sepia] || 0.0}" step="0.01">
+                        <input type="range" data-type='sepia' class="form-range" id="ti_sepia" min="0.0" max="1.0" value="#{(@session_user || {})[:sepia] || 0.0}" step="0.01">
                     </div>
                     <div class="col-md-6 mt-2">
                         <label>Analog</label>
-                        <input type="range" data-type='analog' class="form-control-range" id="ti_analog" min="0.0" max="0.25" value="#{(@session_user || {})[:analog] || 0.0}" step="0.025">
+                        <input type="range" data-type='analog' class="form-range" id="ti_analog" min="0.0" max="0.25" value="#{(@session_user || {})[:analog] || 0.0}" step="0.025">
                     </div>
                     <div class="col-md-12 mt-2">
                         <div class="pull-right"><button id='bu_reset_colors' class='btn btn-success'><i class='bi bi-undo'></i>&nbsp;&nbsp;Farbeinstellungen zurücksetzen</button></div>
@@ -215,7 +215,7 @@
                         <button class='btn bu-clipboard-ical btn-secondary btn-clipboard' data-clipboard-action='copy' data-clipboard-target="#ti_ical_link"><i class='bi bi-clipboard'></i>&nbsp;&nbsp;Kopieren</button>
                     </div>
                 </div>
-                <div class='float-right' style='margin-top: 5px;'>
+                <div class='float-end' style='margin-top: 5px;'>
                     <button class='btn bu-regenerate-ical btn-primary'><i class='bi bi-refresh'></i>&nbsp;&nbsp;Neu generieren</button>
                     <button class='btn bu-delete-ical btn-danger'><i class='bi bi-trash'></i>&nbsp;&nbsp;Löschen</button>
                 </div>
@@ -223,11 +223,11 @@
                 <div id='ical_options' style="margin-top: 20px; margin-bottom: 10px;">
                     <p>Hier kannst du auswählen, welche Informationen im iCal-Kalender auftauchen sollen:</p>
                     <div>
-                        <button class="btn btn-success bu-toggle-omit-ical mb-1 mr-1" data-omit-type='website_event'><i class='w-3 bi bi-check'></i>&nbsp;&nbsp;Schulweite Termine</button>
-                        <button class="btn btn-success bu-toggle-omit-ical mb-1 mr-1" data-omit-type='event'><i class='w-3 bi bi-check'></i>&nbsp;&nbsp;Meine Termine</button>
-                        <button class="btn btn-success bu-toggle-omit-ical mb-1 mr-1" data-omit-type='lesson'><i class='w-3 bi bi-check'></i>&nbsp;&nbsp;Unterricht</button>
-                        <button class="btn btn-success bu-toggle-omit-ical mb-1 mr-1" data-omit-type='holiday'><i class='w-3 bi bi-check'></i>&nbsp;&nbsp;Ferien und Feiertage</button>
-                        <button class="btn btn-success bu-toggle-omit-ical mb-1 mr-1" data-omit-type='birthday'><i class='w-3 bi bi-check'></i>&nbsp;&nbsp;Geburtstage</button>
+                        <button class="btn btn-success bu-toggle-omit-ical mb-1 me-1" data-omit-type='website_event'><i class='w-3 bi bi-check'></i>&nbsp;&nbsp;Schulweite Termine</button>
+                        <button class="btn btn-success bu-toggle-omit-ical mb-1 me-1" data-omit-type='event'><i class='w-3 bi bi-check'></i>&nbsp;&nbsp;Meine Termine</button>
+                        <button class="btn btn-success bu-toggle-omit-ical mb-1 me-1" data-omit-type='lesson'><i class='w-3 bi bi-check'></i>&nbsp;&nbsp;Unterricht</button>
+                        <button class="btn btn-success bu-toggle-omit-ical mb-1 me-1" data-omit-type='holiday'><i class='w-3 bi bi-check'></i>&nbsp;&nbsp;Ferien und Feiertage</button>
+                        <button class="btn btn-success bu-toggle-omit-ical mb-1 me-1" data-omit-type='birthday'><i class='w-3 bi bi-check'></i>&nbsp;&nbsp;Geburtstage</button>
                     </div>
                 </div>
 
@@ -240,16 +240,16 @@
             </p>
             <hr />
             <div style="display: flex; align-items: start; gap: 10px; justify-content: center;">
-                <button id='bu_prefer_email' class="btn btn-success bu_choose_login_preference" data-method="email"><i class='bi bi-envelope'></i>&nbsp;&nbsp;Code per E-Mail erhalten</button>
+                <button id='bu_prefer_email' class="btn btn-success bu_choose_login_preference" data-bs-method="email"><i class='bi bi-envelope'></i>&nbsp;&nbsp;Code per E-Mail erhalten</button>
                 <div style="display: #{user_is_eligible_for_sms? ? 'block' : 'none'}; text-align: center;">
-                    <button id='bu_prefer_sms' type="button" class="btn btn-outline-secondary bu_choose_login_preference" data-method="sms"><i class='bi bi-mobile'></i>&nbsp;&nbsp;Code per SMS erhalten</button>
+                    <button id='bu_prefer_sms' type="button" class="btn btn-outline-secondary bu_choose_login_preference" data-bs-method="sms"><i class='bi bi-mobile'></i>&nbsp;&nbsp;Code per SMS erhalten</button>
                     <div style="margin-top: 5px;">
                         <button class="btn btn-xs btn-success mi-add-phone-number"><i class='bi bi-plus'></i>&nbsp;&nbsp;Nummer hinterlegen</button>
                         <button class="btn btn-xs btn-outline-secondary mi-delete-phone-number"><i class='bi bi-trash'></i>&nbsp;&nbsp;Nummer löschen</button>
                     </div>
                 </div>
                 <div style="text-align: center;">
-                    <button id='bu_prefer_otp' type="button" class="btn btn-outline-secondary bu_choose_login_preference" data-method="otp"><i class='bi bi-qrcode'></i>&nbsp;&nbsp;OTP-Code eingeben</button>
+                    <button id='bu_prefer_otp' type="button" class="btn btn-outline-secondary bu_choose_login_preference" data-bs-method="otp"><i class='bi bi-qrcode'></i>&nbsp;&nbsp;OTP-Code eingeben</button>
                     <div style="margin-top: 5px;">
                         <button class="btn btn-xs btn-success mi-add-otp-code"><i class='bi bi-plus'></i>&nbsp;&nbsp;OTP aktivieren</button>
                         <button class="btn btn-xs btn-outline-secondary mi-delete-otp-code"><i class='bi bi-trash'></i>&nbsp;&nbsp;OTP deaktivieren</button>
@@ -302,7 +302,7 @@
                 </div>
             </div>
             <div class="modal-footer">
-                <button class="btn btn-secondary" data-dismiss="modal"><i class='bi bi-x'></i>&nbsp&nbsp;Schließen</button>
+                <button class="btn btn-secondary" data-bs-dismiss="modal"><i class='bi bi-x'></i>&nbsp&nbsp;Schließen</button>
             </div>
         </div>
     </div>
@@ -315,7 +315,7 @@
                 <h5 class="modal-title">Anmeldung via OTP aktivieren</h5>
             </div>
             <div class="modal-body">
-                <div class='otp-qr-code float-right' style='display: none; text-align: center; margin: 15px 0 15px 15px; background-color: #fff; padding: 15px; border-radius: 15px; box-shadow: 0 0 10px rgb(0 0 0 / 50%);'></div>
+                <div class='otp-qr-code float-end' style='display: none; text-align: center; margin: 15px 0 15px 15px; background-color: #fff; padding: 15px; border-radius: 15px; box-shadow: 0 0 10px rgb(0 0 0 / 50%);'></div>
                 <p>
                 Wenn du dich anmelden möchtest, ohne dass du dir jedesmal einen Code per E-Mail senden lassen musst, kannst du dich per OTP anmelden.
                 </p>
@@ -335,7 +335,7 @@
                 </div>
             </div>
             <div class="modal-footer">
-                <button class="btn btn-secondary" data-dismiss="modal"><i class='bi bi-x'></i>&nbsp&nbsp;Schließen</button>
+                <button class="btn btn-secondary" data-bs-dismiss="modal"><i class='bi bi-x'></i>&nbsp&nbsp;Schließen</button>
             </div>
         </div>
     </div>

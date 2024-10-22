@@ -43,7 +43,7 @@
             <div class="modal-footer">
                 <button id='bu_delete_tablet_set_booking' type="button" class="btn btn-danger"><i
                         class='bi bi-trash'></i>&nbsp;&nbsp;Buchung aufheben</button>
-                <button type="button" class="btn btn-secondary" data-dismiss="modal"><i
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal"><i
                         class='bi bi-x'></i>&nbsp;&nbsp;Schließen</button>
             </div>
         </div>
@@ -247,8 +247,7 @@
         div.empty();
         for (let key in tablet_sets) {
             let row = $('<tr>');
-            let bu_div = $('<div>').addClass('button-with-label');
-            let bu_book_tablet_set = $('<button>').addClass('btn').addClass('btn-sm').data('tablet_set_id', key).css('width', '120px');
+            let bu_book_tablet_set = $('<button>').addClass('btn').addClass('btn-sm').data('tablet_set_id', key);
             bu_book_tablet_set.prop('disabled', true);
             bu_book_tablet_set.click(update_booking_widgets);
             bu_book_tablet_set.addClass('btn-outline-secondary').html("<i class='bi bi-x'></i>&nbsp;&nbsp;Nicht gebucht");
@@ -271,7 +270,7 @@
             row.append($('<td>').text(key));
             row.append($('<td>').text(tablet_sets[key].label));
             row.append($('<td>').text(tablet_sets[key].standort));
-            row.append($('<td>').css('padding-top', '4px').css('padding-bottom', '4px').append(bu_div.append(bu_book_tablet_set)));
+            row.append($('<td>').append(bu_book_tablet_set));
             // console.log(data.available_tablet_sets[key]);
             // if (data.available_tablet_sets[key].blocked_by && data.available_tablet_sets[key].blocked_by.length > 0) {
             //     bu_book_tablet_set.prop('disabled', true).hide();

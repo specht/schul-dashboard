@@ -269,7 +269,7 @@
             }
             for (let key of Object.keys(data.actions_for_durations)) {
                 let actions = data.actions_for_durations[key];
-                let div = $(`<div class="col-span-4 md:col-span-2 xl:col-span-2 bg-gray-100 p-3 rounded-lg">`);
+                let div = $(`<div class="col-span-4 md:col-span-2 xl:col-span-2 bg-gray-100 p-3 rounded-3">`);
                 div.append($(`<h5 class="text-gray-500 italic">${key}</h5>`));
                 div.append($('<hr>'));
                 for (let x of ACTIVITY_DURATIONS) {

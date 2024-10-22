@@ -58,7 +58,7 @@
             <!-- Möchtest du dieses Foto für das Regal <span id="shelf_here"></span> hinterlegen? -->
             <img id="current_photo"/>
             <div class="button_container" style="margin: 15px;">
-                <button id='bu_discard_photo' type="button" class="btn btn-secondary" data-dismiss="modal"><i class='bi bi-x'></i>&nbsp;&nbsp;Abbrechen</button>
+                <button id='bu_discard_photo' type="button" class="btn btn-secondary" data-bs-dismiss="modal"><i class='bi bi-x'></i>&nbsp;&nbsp;Abbrechen</button>
                 <button id='bu_submit_photo' type="button" class="btn btn-success"><i class='bi bi-send'></i>&nbsp;&nbsp;Hochladen</button>
             </div>
         </div>
@@ -100,7 +100,7 @@
                 $('#shelf_items_list').append($("<div>").css('display', 'block').text(`Bereits im Regal: ${data.books.length} ${data.books.length === 1 ? 'Buch' : 'Bücher'} und ${data.photos.length} ${data.photos.length === 1 ? 'Foto' : 'Fotos'}.`));
                 for (let book of data.books) {
                     let cover_path = `${BIB_HOST}/gen/covers/${book.stem}-200.jpg`;
-                    let book_div = $(`<div class='bg-stone-800 mt-1 mr-1 border-r-2' style="height: 72px; width: 72px; background-position: center center; background-size: contain; background-repeat: no-repeat; border-right: 1px solid #ddd; overflow: hidden; position: relative; font-size: 80%; line-height: 100%;">${book.title} / ${book.author}</div>`);
+                    let book_div = $(`<div class='bg-stone-800 mt-1 me-1 border-r-2' style="height: 72px; width: 72px; background-position: center center; background-size: contain; background-repeat: no-repeat; border-right: 1px solid #ddd; overflow: hidden; position: relative; font-size: 80%; line-height: 100%;">${book.title} / ${book.author}</div>`);
                     let cover = $(`<div style="height: 72px; width: 72px; background-position: center center; background-size: cover; background-repeat: no-repeat; border-right: 1px solid #ddd; position: absolute; top: 0; left: 0;"></div>`);
                     book_div.append(cover);
                     cover.css('background-image', `url(${cover_path})`);
@@ -108,7 +108,7 @@
                 }
                 for (let photo of data.photos) {
                     let cover_path = `${BIB_HOST}/gen/shelf-photos/${photo.sha1}.jpg`;
-                    let book_div = $(`<div class='bg-stone-800 mt-1 mr-1 border-r-2' style="height: 72px; width: 72px; background-position: center center; background-size: contain; background-repeat: no-repeat; border-right: 1px solid #ddd; overflow: hidden; position: relative; font-size: 80%; line-height: 100%;"></div>`);
+                    let book_div = $(`<div class='bg-stone-800 mt-1 me-1 border-r-2' style="height: 72px; width: 72px; background-position: center center; background-size: contain; background-repeat: no-repeat; border-right: 1px solid #ddd; overflow: hidden; position: relative; font-size: 80%; line-height: 100%;"></div>`);
                     let cover = $(`<div style="height: 72px; width: 72px; background-position: center center; background-size: cover; background-repeat: no-repeat; border-right: 1px solid #ddd; position: absolute; top: 0; left: 0;"></div>`);
                     book_div.append(cover);
                     cover.css('background-image', `url(${cover_path})`);

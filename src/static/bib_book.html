@@ -29,7 +29,7 @@
 </style>
 <div class='container bg-white' style="padding-top: 15px;">
     <div id='book_here'>
-        <div id='book_cover_container' class='pull-left mr-3 mb-3 bg-stone-800 shadow shadow-md'>
+        <div id='book_cover_container' class='pull-left me-3 mb-3 bg-stone-800 shadow shadow-md'>
             <img id='book_cover' class=' text-center italic text-sm' style='width: 100%;' />
         </div>
         <div id='labels_here' class='pull-right'>
@@ -64,10 +64,10 @@
         <p>Wenn du dieses Buch im Unterricht verwenden möchtest, kannst du es hier bestellen.</p>
         <button id='bu_order_overview' class="btn btn-success"><i class='bi bi-shopping-basket'></i>&nbsp;&nbsp;Buch bestellen</button>
         <div id="order_div" style='display: none; margin-top: 15px;'>
-            <button id='bu_order_kurs' class='btn btn-outline-secondary mr-1'>
+            <button id='bu_order_kurs' class='btn btn-outline-secondary me-1'>
                 <i class='bi bi-group'></i>&nbsp;&nbsp;Ich möchte das Buch für eine Klasse oder einen Kurs bestellen.
             </button>
-            <button id='bu_order_private' class='btn btn-outline-secondary mr-1' style="display: none;" disabled>
+            <button id='bu_order_private' class='btn btn-outline-secondary me-1' style="display: none;" disabled>
                 <i class='bi bi-user'></i>&nbsp;&nbsp;Ich möchte das Buch für mich bestellen.
             </button>
             <div id="order_kurs_div" style='display: none; margin-top: 15px;'>
@@ -344,7 +344,7 @@
                 }
                 if (data.labels) {
                     for (let label of data.labels) {
-                        $('#labels_here').append($(`<span class='bg-stone-500 text-gray-800 text-sm mr-2 px-2.5 py-0.5 rounded dark:bg-gray-700 dark:text-gray-300'>${label.value}</span>`));
+                        $('#labels_here').append($(`<span class='bg-stone-500 text-gray-800 text-sm me-2 px-2.5 py-0.5 rounded dark:bg-gray-700 dark:text-gray-300'>${label.value}</span>`));
                     }
                 }
                 if (data.locations) {
@@ -445,7 +445,7 @@
                     let div = $("<div>");
                     $('#in_stock_all').append($(`<h3>Vorrätige Exemplare: ${data.in_stock_all.length}</h3>`));
                     $('#in_stock_all').append(div);
-                    $('#in_stock_all').append($(`<p class='text-muted font-italic'>Es kann sein, dass mehr Exemplare im Regal liegen, als hier angegeben ist. In diesem Fall sind die Exemplare noch nicht gescannt worden, z. B. durch einen Labeldruck, eine Ausleihe oder eine Rückgabe.</p>`));
+                    $('#in_stock_all').append($(`<p class='text-muted fst-italic'>Es kann sein, dass mehr Exemplare im Regal liegen, als hier angegeben ist. In diesem Fall sind die Exemplare noch nicht gescannt worden, z. B. durch einen Labeldruck, eine Ausleihe oder eine Rückgabe.</p>`));
                     if (data.in_stock_all.length > 0) {
                         new SortableTable({
                             element: div,

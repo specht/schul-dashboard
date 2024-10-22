@@ -19,22 +19,22 @@
       </div>
       <div class="modal-body">
         <form>
-            <div class="form-row">
-                <div class="form-group col-md-3">
+            <div class="row">
+                <div class="mb-3 col-md-3">
                     <label>Datum</label>
                     <input type='date' class='form-control' id='ti_datum' />
                 </div>
-                <div class="form-group col-md-3">
+                <div class="mb-3 col-md-3">
                     <label>bis</label>
                     <input type='date' class='form-control' id='ti_end_datum' />
                 </div>
-                <!-- <div class="form-group col-md-3">
+                <!-- <div class="mb-3 col-md-3">
                     <label>Klasse</label>
                     <input type='text' class='form-control' value='#{klasse}' readonly />
                 </div> -->
-                <div class="form-group col-md-3">
+                <div class="mb-3 col-md-3">
                     <label>Typ</label>
-                    <select id="ti_typ" class="form-control">
+                    <select id="ti_typ" class="form-select">
                         <option value='KA' selected>Klassenarbeit</option>
                         <option value='LEK'>LEK</option>
                         <option value='Exkursion'>Exkursion</option>
@@ -45,21 +45,21 @@
                         <option value='Elternabend'>Elternabend</option>
                     </select>
                 </div>
-                <div class="form-group col-md-3">
+                <div class="mb-3 col-md-3">
                     <label>Fach</label>
-                    <select id="ti_fach" class="form-control">
+                    <select id="ti_fach" class="form-select">
                     </select>
                 </div>
             </div>
-            <div class="form-row">
-                <div class="form-group col-md-12">
+            <div class="row">
+                <div class="mb-3 col-md-12">
                     <label>Kommentar</label>
                     <input type='text' class='form-control' id='ti_comment' />
                     <small class="form-text text-muted">Dieser Eintrag ist für alle Kolleginnen und Kollegen, aber nicht für SuS sichtbar.</small>
                 </div>
             </div>
-            <div class="form-row">
-                <div class="form-group col-md-12">
+            <div class="row">
+                <div class="mb-3 col-md-12">
                     <div class='button-with-label'>
                         <button id='ti_publish_for_klasse' data-state='no' class='btn btn-outline-secondary'><i class='bi bi-x'></i>Diesen Eintrag im Stundenplan der <strong>Klasse #{klasse}</strong> anzeigen</button>
                     </div>
@@ -72,7 +72,7 @@
         <button id='bu_delete_test' type="button" class="btn btn-danger"><i class='bi bi-trash'></i>&nbsp;&nbsp;<span>Löschen</span></button>
         <button id='bu_discard_test' type="button" class="btn btn-secondary" disabled><i class='bi bi-x'></i>&nbsp;&nbsp;<span>Verwerfen</span></button>
         <button id='bu_save_test' type="button" class="btn btn-success" disabled><i class='bi bi-check'></i>&nbsp;&nbsp;<span>Speichern</span></button>
-        <button id='bu_close_test' type="button" class="btn btn-secondary" disabled data-dismiss='modal'><i class='bi bi-x'></i>&nbsp;&nbsp;<span>Schließen</span></button>
+        <button id='bu_close_test' type="button" class="btn btn-secondary" disabled data-bs-dismiss='modal'><i class='bi bi-x'></i>&nbsp;&nbsp;<span>Schließen</span></button>
       </div>
     </div>
   </div>
@@ -87,7 +87,7 @@
       <div class="modal-body">
       </div>
       <div class="modal-footer">
-        <button type="button" class="btn btn-secondary" data-dismiss='modal'><i class='bi bi-x'></i>&nbsp;&nbsp;<span>Schließen</span></button>
+        <button type="button" class="btn btn-secondary" data-bs-dismiss='modal'><i class='bi bi-x'></i>&nbsp;&nbsp;<span>Schließen</span></button>
       </div>
     </div>
   </div>

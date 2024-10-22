@@ -433,7 +433,7 @@ var tablet_set_info = #{@@tablet_sets.to_json};
                     <strong>Hausaufgabenamt:</strong> Diese SuS können Hausaufgaben im Stundenplan eintragen, aber nicht Hausaufgaben bearbeiten oder löschen, die Sie selbst eingetragen haben. Sie haben jedoch die Möglichkeit, die von Schüler:innen vorgenommenen Eintragungen zu bearbeiten oder löschen.
                     <strong>Materialamt:</strong> Diese SuS können Materialien in einen speziellen Nextcloud-Ausgabeordner hochladen. Ihr ursprünglicher Ausgabeordner bleibt unberührt, und Sie haben volle Schreibrechte im Materialamt-Ausgabeordner. Bitte beachten Sie, dass die Änderungen immer erst am folgenden Tag gültig werden.
                 </div>
-                <div class="pull-right" style='margin-bottom: 0.5em;'>
+                <div class="float-right" style='margin-bottom: 0.5em;'>
                     <button type="button" class="btn btn-sm btn-success bu-add-amt" data-amt="hausaufgaben"><i class='bi bi-plus'></i>&nbsp;&nbsp;Hausaufgabenamt</button>
                     <button type="button" class="btn btn-sm btn-success bu-add-amt" data-amt="material"><i class='bi bi-plus'></i>&nbsp;&nbsp;Materialamt</button>
                 </div>
@@ -456,15 +456,15 @@ var tablet_set_info = #{@@tablet_sets.to_json};
                 <hr />
                 <label><b>Schülerlisten</b> <span class='text-muted'>(für diesen Kurs)</span></label>
                 <br />
-                <a href='/api/directory_xlsx/#{show_lesson_key}' class='btn btn-sm btn-primary' style='margin: 0 8px 8px 0;'><i class='bi bi-file-excel-o'></i>&nbsp;&nbsp;Excel-Tabelle herunterladen</a>
-                <a href='/api/directory_timetex_pdf/by_last_name/#{show_lesson_key}' class='btn btn-sm btn-primary' style='margin: 0 8px 8px 0;'><i class='bi bi-file-pdf-o'></i>&nbsp;&nbsp;Timetex-PDF herunterladen</a>
-                <a href='/api/directory_timetex_pdf/by_first_name/#{show_lesson_key}' class='btn btn-sm btn-primary' style='margin: 0 8px 8px 0;'><i class='bi bi-file-pdf-o'></i>&nbsp;&nbsp;Timetex-PDF herunterladen (nach Vornamen sortiert)</a>
+                <a href='/api/directory_xlsx/#{show_lesson_key}' class='btn btn-sm btn-primary' style='margin: 0 8px 8px 0;'><i class='bi bi-file-earmark-spreadsheet'></i>&nbsp;&nbsp;Excel-Tabelle herunterladen</a>
+                <a href='/api/directory_timetex_pdf/by_last_name/#{show_lesson_key}' class='btn btn-sm btn-primary' style='margin: 0 8px 8px 0;'><i class='bi bi-filetype-pdf'></i>&nbsp;&nbsp;Timetex-PDF herunterladen</a>
+                <a href='/api/directory_timetex_pdf/by_first_name/#{show_lesson_key}' class='btn btn-sm btn-primary' style='margin: 0 8px 8px 0;'><i class='bi bi-filetype-pdf'></i>&nbsp;&nbsp;Timetex-PDF herunterladen (nach Vornamen sortiert)</a>
                 <a id='bu_email_list' href='' style='margin: 0 8px 8px 0;' class='btn btn-sm btn-primary'><i class='bi bi-envelope-o'></i>&nbsp;&nbsp;Liste aller E-Mail-Adressen</a>
                 <hr />
                 -->
                 <label><b>Kursbuch</b></label>
                 <br />
-                <a href='/api/kursbuch_pdf/#{show_lesson_key}' class='btn btn-sm btn-primary' style='margin: 0 8px 8px 0;'><i class='bi bi-file-pdf-o'></i>&nbsp;&nbsp;Kursbuch-PDF herunterladen</a>
+                <a href='/api/kursbuch_pdf/#{show_lesson_key}' class='btn btn-sm btn-primary' style='margin: 0 8px 8px 0;'><i class='bi bi-filetype-pdf'></i>&nbsp;&nbsp;Kursbuch-PDF herunterladen</a>
             </div>
         </div>
         <div class='col-md-9 lc_table' style='overflow-x: auto;'>

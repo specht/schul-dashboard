@@ -16,7 +16,7 @@
                     <div style="display: flex; align-items: start; gap: 10px; justify-content: center; margin-bottom: 1em;">
                         <button style='display: #{@used_session[:method] == 'email' ? 'none' : 'block'}' id='bu_sf_email' type="button" class="btn btn-outline-secondary bu_second_login" data-bs-method="email" disabled><i class='bi bi-envelope'></i>&nbsp;&nbsp;Code per E-Mail erhalten</button>
                         <button style='display: #{((@used_session[:method] == 'sms') || !Main.sms_gateway_ready?) ? 'none' : 'block'}' id='bu_sf_sms' type="button" class="btn btn-outline-secondary bu_second_login" data-bs-method="sms" disabled><i class='bi bi-mobile'></i>&nbsp;&nbsp;Code per SMS erhalten</button>
-                        <button style='display: #{@used_session[:method] == 'otp' ? 'none' : 'block'}' id='bu_sf_otp' type="button" class="btn btn-outline-secondary bu_second_login" data-bs-method="otp" disabled><i class='bi bi-qrcode'></i>&nbsp;&nbsp;OTP-Code eingeben</button>
+                        <button style='display: #{@used_session[:method] == 'otp' ? 'none' : 'block'}' id='bu_sf_otp' type="button" class="btn btn-outline-secondary bu_second_login" data-bs-method="otp" disabled><i class='bi bi-qr-code-scan'></i>&nbsp;&nbsp;OTP-Code eingeben</button>
                     </div>
                     <div style='color: #888; margin-top: 1em;text-align: center; display: #{((@used_session[:method] != 'sms') && !Main.sms_gateway_ready?) ? 'block' : 'none'}'>
                         <em>
@@ -74,7 +74,7 @@
             <p><b>Schritt 2</b> &ndash; Klicken Sie auf »Anmeldung anfordern«, sobald das Gespräch hergestellt ist.</p>
             <p><button id='bu_request_signin_ad_hoc' class="btn btn-success"><i class='bi bi-send'></i>&nbsp;&nbsp;Anmeldung anfordern</button></p>
             <p><b>Schritt 3</b> &ndash; Klicken Sie auf »Anmelden«, sobald Sie die Freigabe erhalten haben.</p>
-            <p></p><button id='bu_perform_signin_ad_hoc' class="btn btn-success"><i class='bi bi-sign-in'></i>&nbsp;&nbsp;Anmelden</button></p>
+            <p></p><button id='bu_perform_signin_ad_hoc' class="btn btn-success"><i class='bi bi-box-arrow-in-right'></i>&nbsp;&nbsp;Anmelden</button></p>
         </div>
         <div class="modal-footer">
             <button id='bu_close_poll_response_modal' type="button" class="btn btn-secondary" data-bs-dismiss="modal">Schließen</button>

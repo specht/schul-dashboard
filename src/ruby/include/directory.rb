@@ -58,7 +58,7 @@ class Main < Sinatra::Base
 #             io.puts "Auf die Jitsi-Streams können momentan nur SuS zugreifen, die laut ihrer Gruppenzuordnung in der aktuellen Woche zu Hause sind oder explizit als »zu Hause« markiert sind."
             # io.puts "</div>"
             # if teacher_logged_in?
-            #     io.puts "<div class='pull-right' style='position: relative; top: 10px;'>"
+            #     io.puts "<div class='float-right' style='position: relative; top: 10px;'>"
             #     [:salzh, :contact_person, :hotspot_klasse].each do |status|
             #         salzh_label = "<span style='margin-left: 2em;'><span class='salzh-badge salzh-badge-big bg-#{SALZH_MODE_COLORS[status]}'><i class='fa #{SALZH_MODE_ICONS[status]}'></i></span>&nbsp;#{SALZH_MODE_LABEL[status]}</span>"
             #         io.puts salzh_label
@@ -299,7 +299,7 @@ class Main < Sinatra::Base
                     end
                 end
                 if teacher_logged_in?
-                    io.puts "<a class='btn btn-primary' href='/show_login_codes/#{klasse}'><i class='bi bi-sign-in'></i>&nbsp;&nbsp;Live-Anmeldungen der Klasse zeigen</a>"
+                    io.puts "<a class='btn btn-primary' href='/show_login_codes/#{klasse}'><i class='bi bi-box-arrow-in-right'></i>&nbsp;&nbsp;Live-Anmeldungen der Klasse zeigen</a>"
                 end
             end
             # io.puts print_stream_restriction_table(klasse)
@@ -311,10 +311,10 @@ class Main < Sinatra::Base
                     io.puts "<h3>Schülerlisten #{@@lessons[:lesson_keys][klasse][:pretty_folder_name]}</h3>"
                 end
     #             io.puts "<div style='text-align: center;'>"
-                io.puts "<a href='/api/directory_xlsx/#{klasse}' class='btn btn-primary'><i class='bi bi-file-excel-o'></i>&nbsp;&nbsp;Excel-Tabelle herunterladen</a>"
-                io.puts "<a href='/api/directory_timetex_pdf/by_last_name/#{klasse}' class='btn btn-primary'><i class='bi bi-file-pdf-o'></i>&nbsp;&nbsp;Timetex-PDF herunterladen</a>"
-                io.puts "<a href='/api/directory_timetex_pdf/by_first_name/#{klasse}' class='btn btn-primary'><i class='bi bi-file-pdf-o'></i>&nbsp;&nbsp;Timetex-PDF herunterladen (nach Vornamen sortiert)</a>"
-                io.puts "<a href='/api/directory_json/#{klasse}' class='btn btn-primary'><i class='bi bi-file-code-o'></i>&nbsp;&nbsp;JSON herunterladen</a>"
+                io.puts "<a href='/api/directory_xlsx/#{klasse}' class='btn btn-primary'><i class='bi bi-file-earmark-spreadsheet'></i>&nbsp;&nbsp;Excel-Tabelle herunterladen</a>"
+                io.puts "<a href='/api/directory_timetex_pdf/by_last_name/#{klasse}' class='btn btn-primary'><i class='bi bi-filetype-pdf'></i>&nbsp;&nbsp;Timetex-PDF herunterladen</a>"
+                io.puts "<a href='/api/directory_timetex_pdf/by_first_name/#{klasse}' class='btn btn-primary'><i class='bi bi-filetype-pdf'></i>&nbsp;&nbsp;Timetex-PDF herunterladen (nach Vornamen sortiert)</a>"
+                io.puts "<a href='/api/directory_json/#{klasse}' class='btn btn-primary'><i class='bi bi-filetype-json'></i>&nbsp;&nbsp;JSON herunterladen</a>"
             end
             if is_klasse
                 io.puts "<hr>"
@@ -328,15 +328,15 @@ class Main < Sinatra::Base
                     end
                 end
                 if teacher_logged_in?
-                    io.puts "<a href='/api/get_timetable_pdf_for_klasse/#{klasse}' target='_blank' class='btn btn-primary'><i class='bi bi-file-pdf-o'></i>&nbsp;&nbsp;Klassensatz Stundenpläne (#{@@schueler_for_klasse[klasse].size} Seiten)</a>"
+                    io.puts "<a href='/api/get_timetable_pdf_for_klasse/#{klasse}' target='_blank' class='btn btn-primary'><i class='bi bi-filetype-pdf'></i>&nbsp;&nbsp;Klassensatz Stundenpläne (#{@@schueler_for_klasse[klasse].size} Seiten)</a>"
                     unless ['11', '12'].include?(klasse)
-                        io.puts "<a href='/api/get_room_timetable_pdf/#{klasse}' target='_blank' class='btn btn-primary'><i class='bi bi-file-pdf-o'></i>&nbsp;&nbsp;Raumplan für die Klassenzimmertür</a>"
+                        io.puts "<a href='/api/get_room_timetable_pdf/#{klasse}' target='_blank' class='btn btn-primary'><i class='bi bi-filetype-pdf'></i>&nbsp;&nbsp;Raumplan für die Klassenzimmertür</a>"
                     end
                     io.puts "<div id='additional_teacher_content'></div>"
                 elsif schueler_logged_in?
                     unless hide_from_sus
-                        io.puts "<a href='/api/get_single_timetable_pdf' target='_blank' class='btn btn-primary'><i class='bi bi-file-pdf-o'></i>&nbsp;&nbsp;PDF herunterladen</a>"
-                        io.puts "<a href='/api/get_single_timetable_with_png_addition_pdf' target='_blank' class='btn btn-success'><i class='bi bi-file-pdf-o'></i>&nbsp;&nbsp;PDF herunterladen (mit Symbolen)</a>"
+                        io.puts "<a href='/api/get_single_timetable_pdf' target='_blank' class='btn btn-primary'><i class='bi bi-filetype-pdf'></i>&nbsp;&nbsp;PDF herunterladen</a>"
+                        io.puts "<a href='/api/get_single_timetable_with_png_addition_pdf' target='_blank' class='btn btn-success'><i class='bi bi-filetype-pdf'></i>&nbsp;&nbsp;PDF herunterladen (mit Symbolen)</a>"
                     end
                 end
                 unless schueler_logged_in? && hide_from_sus

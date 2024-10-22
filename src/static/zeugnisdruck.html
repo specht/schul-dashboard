@@ -34,7 +34,7 @@ window.addEventListener('load', function () {
                     $('#klassen_buttons_here button').removeClass('bg-amber-300 hover:bg-amber-300').addClass('bg-slate-900 hover:bg-slate-200');
                     $(e.target).addClass('bg-amber-300 hover:bg-amber-300').removeClass('bg-slate-900 hover:bg-slate-200');
                     $('#button_here').empty();
-                    let button = $(`<button id='bu_print_all' disabled class='btn btn-success'>`).html(`<i class='bi bi-file-pdf-o'></i>&nbsp;&nbsp;Alle Zeugnisse der Klasse ${klassen_tr[klasse] ?? klasse} (PDF)`);
+                    let button = $(`<button id='bu_print_all' disabled class='btn btn-success'>`).html(`<i class='bi bi-filetype-pdf'></i>&nbsp;&nbsp;Alle Zeugnisse der Klasse ${klassen_tr[klasse] ?? klasse} (PDF)`);
                     $('#button_here').append(button);
                     button.click(function(e) {
                         let liste = zeugnisliste_for_klasse[klasse];
@@ -42,7 +42,7 @@ window.addEventListener('load', function () {
                         get_zeugnis(klasse, emails, 'pdf');
                     });
                     if (need_sozialverhalten[klasse]) {
-                        let button2 = $(`<button id='bu_print_all_sozial' class='btn btn-info'>`).html(`<i class='bi bi-file-pdf-o'></i>&nbsp;&nbsp;Alle Sozialzeugnisse der Klasse ${klassen_tr[klasse] ?? klasse} (PDF)`);
+                        let button2 = $(`<button id='bu_print_all_sozial' class='btn btn-info'>`).html(`<i class='bi bi-filetype-pdf'></i>&nbsp;&nbsp;Alle Sozialzeugnisse der Klasse ${klassen_tr[klasse] ?? klasse} (PDF)`);
                         $('#button_here').append(`&nbsp;&nbsp;`);
                         $('#button_here').append(button2);
                         // if ('#{zeugnis_admin_logged_in? || (Time.now.strftime('%Y-%m-%dT%H:%M:%S') > DEADLINE_SOZIALNOTEN) ? 'true' : 'false'}' === 'false')
@@ -51,7 +51,7 @@ window.addEventListener('load', function () {
                             get_sozialzeugnis(klasse);
                         });
                     }
-                    let button3 = $(`<button id='bu_print_all' class='btn btn-secondary'>`).html(`<i class='bi bi-file-excel-o'></i>&nbsp;&nbsp;Alle Noten der Klasse ${klassen_tr[klasse] ?? klasse} (XLSX)`);
+                    let button3 = $(`<button id='bu_print_all' class='btn btn-secondary'>`).html(`<i class='bi bi-file-earmark-spreadsheet'></i>&nbsp;&nbsp;Alle Noten der Klasse ${klassen_tr[klasse] ?? klasse} (XLSX)`);
                         $('#button_here').append(`&nbsp;&nbsp;`);
                     $('#button_here').append(button3);
                     button3.click(function(e) {
@@ -59,7 +59,7 @@ window.addEventListener('load', function () {
                         let emails = liste.schueler.map(function(x) { return x.email; });
                         get_zeugnis(klasse, emails, 'xlsx');
                     });
-                    let button4 = $(`<button id='bu_print_all' class='btn btn-info'>`).html(`<i class='bi bi-file-pdf-o'></i>&nbsp;&nbsp;Zeugnisliste Klasse ${klassen_tr[klasse] ?? klasse} (PDF)`);
+                    let button4 = $(`<button id='bu_print_all' class='btn btn-info'>`).html(`<i class='bi bi-filetype-pdf'></i>&nbsp;&nbsp;Zeugnisliste Klasse ${klassen_tr[klasse] ?? klasse} (PDF)`);
                         $('#button_here').append(`&nbsp;&nbsp;`);
                     $('#button_here').append(button4);
                     button4.click(function(e) {
@@ -180,7 +180,7 @@ function load_zeugnis_table(container, klasse, edit_noten) {
             ];
             let zeugnis_key = liste.schueler[index].zeugnis_key;
             if (zeugnis_formular_fehler[zeugnis_key] === null) {
-                let bu_zeugnis_pdf = $("<button class='btn btn-xs btn-success'>").html("<i class='bi bi-file-pdf-o'></i>&nbsp;&nbsp;Zeugnis (PDF)</i>");
+                let bu_zeugnis_pdf = $("<button class='btn btn-xs btn-success'>").html("<i class='bi bi-filetype-pdf'></i>&nbsp;&nbsp;Zeugnis (PDF)</i>");
                 let bu_zeugnis_docx = $("<button class='btn btn-xs btn-outline-secondary'>").html("<i class='bi bi-file-word-o'></i>&nbsp;&nbsp;Zeugnis (docx)</i>");
                 cells.push($('<td>').append(bu_zeugnis_pdf).append('&nbsp;').append(bu_zeugnis_docx));
                 bu_zeugnis_pdf.click(function(e) {

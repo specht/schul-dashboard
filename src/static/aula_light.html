@@ -48,8 +48,8 @@
     <div class='row'>
         <div class="col-md-12">
             <h2 style="margin-bottom: 30px;">Aula Licht
-            <div class="pull-right">
-                <button id='config_upload' class='btn btn-primary' #{technikteam_logged_in? ? '' : 'style="display: none"'};><i class='bi bi-edit '></i>&nbsp;&nbsp;Konfiguration bearbeiten</button>
+            <div class="float-right">
+                <button id='config_upload' class='btn btn-primary' #{technikteam_logged_in? ? '' : 'style="display: none"'};><i class='bi bi-pencil '></i>&nbsp;&nbsp;Konfiguration bearbeiten</button>
                 <button id='super_user' class='btn btn-success'><i class='bi bi-bolt'></i>&nbsp;&nbsp;Schnelleingabe</button>
             </div>
             </h2>
@@ -75,7 +75,7 @@
             <button class='btn btn-primary rund' target='_blank'>00</button>
             <button class='btn btn-success rund' target='_blank'>00</button>
             &nbsp;&nbsp;Konventionell&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-            <div id="last_change" class="pull-right"></div>
+            <div id="last_change" class="float-right"></div>
             <br><br>
             <div class="table-responsive" style="max-width: 100%; overflow-x: auto;">
                 <table class='table table-narrow narrow table-sm table-striped'>
@@ -86,8 +86,8 @@
             </div>
             <br>          
             <div class="aula-element audience">Publikum</div>
-            <div class="pull-right">
-                <a href='/api/dmx_patch_pdf' target='_blank' class='btn btn-primary'><i class='bi bi-file-pdf-o'></i>&nbsp;&nbsp;Patch-Plan</a>
+            <div class="float-right">
+                <a href='/api/dmx_patch_pdf' target='_blank' class='btn btn-primary'><i class='bi bi-filetype-pdf'></i>&nbsp;&nbsp;Patch-Plan</a>
             </div>
         </div>
     </div>

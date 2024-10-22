@@ -36,7 +36,7 @@
             </div>
             <div class='row' style='margin-bottom: 15px;'>
                 <div class='col-md-12'>
-                    <div class="pull-right">
+                    <div class="float-right">
                         <button id='tp_report_problem_quiet' class='btn btn-outline-secondary' disabled><i class='bi bi-bell-slash '></i>&nbsp;&nbsp;Stumm Absenden (Für Testzwecke)</button>
                         <button id='tp_report_problem' class='btn btn-outline-secondary' disabled><i class='bi bi-send'></i>&nbsp;&nbsp;Absenden</button>
                     </div>
@@ -125,7 +125,7 @@
       <div class="modal-content">
        <div class="modal-header">
           <h5 class="modal-title">Super User</h5>
-          <button class='btn-pull-right btn-json-data btn btn-secondary'>JSON anzeigen</button>
+          <button class='btn-float-right btn-json-data btn btn-secondary'>JSON anzeigen</button>
         </div>
         <div class="modal-body">
             <div class='row'>
@@ -274,7 +274,7 @@
                         }
                         function get_modal() {
                             let klasse = entry.klasse ? ` (${entry.klasse})` : ""
-                            let tp_print = "<button class='btn btn-primary tp-print'><i class='bi bi-print'></i></button>"
+                            let tp_print = "<button class='btn btn-primary tp-print'><i class='bi bi-printer-fill'></i></button>"
                             let tp_delete = "<button class='btn btn-danger tp-delete';><i class='bi bi-trash'></i>&nbsp;&nbsp;Löschen</button>"
                             let tp_hide_admin = "<button class='btn btn-info tp-hide-admin'><i class='bi bi-eye'></i>&nbsp;&nbsp;Ausblenden</button>"
                             let fixer = entry.fnc_login ? `<button title='${entry.fdisplay_name} kümmert sich um das Problem.' class='tp-fixer'><img src='#{NEXTCLOUD_URL}/index.php/avatar/${entry.fnc_login}/256' class='icon avatar-md'/></button>` : "<button class='btn btn-warning tp-fixer'><i class='bi bi-user-plus'></i>&nbsp;&nbsp;Nutzer zuweisen</button>";
@@ -486,7 +486,7 @@
                         }
                         function get_modal() {
                             let klasse = entry.klasse ? ` (${entry.klasse})` : ""
-                            let tp_print = "<button class='btn btn-primary tp-print';><i class='bi bi-print'></i></button>"
+                            let tp_print = "<button class='btn btn-primary tp-print';><i class='bi bi-printer-fill'></i></button>"
                             let tp_delete = "<button class='btn btn-danger tp-delete';><i class='bi bi-trash'></i>&nbsp;&nbsp;Löschen</button>"
                             let tp_unhide_admin = "<button class='btn btn-secondary tp-unhide-admin'><i class='bi bi-eye'></i>&nbsp;&nbsp;Einblenden</button>"
                             let fixer = entry.fnc_login ? `<button title='${entry.fdisplay_name} kümmert sich um das Problem.' class='tp-fixer'><img src='#{NEXTCLOUD_URL}/index.php/avatar/${entry.fnc_login}/256' class='icon avatar-md'/></button>` : "<button class='btn btn-warning tp-fixer'><i class='bi bi-user-plus'></i>&nbsp;&nbsp;Nutzer zuweisen</button>";

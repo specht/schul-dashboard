@@ -2361,13 +2361,13 @@ hr.poll-entry-divider {
     width: 100%;
 }
 
-.news-post .image.pull-right {
+.news-post .image.float-right {
     float: right!important;
     padding-right: 0;
     margin-left: 15px;
 }
 
-.news-post .image.pull-left {
+.news-post .image.float-left {
     float: left!important;
     padding-left: 0;
     margin-right: 15px;

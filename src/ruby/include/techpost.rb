@@ -667,14 +667,14 @@ class Main < Sinatra::Base
         require_user_with_role!(:can_manage_tech_problems)
         StringIO.open do |io|
             io.puts "<p>Mit einem Klick auf diesen Button kannst du dieses Gerät dauerhaft als Lehrer-Tablet anmelden.</p>"
-            io.puts "<button class='btn btn-primary bu_login_teacher_tablet'><i class='bi bi-sign-in'></i>&nbsp;&nbsp;Lehrer-Tablet-Modus aktivieren</button>"
+            io.puts "<button class='btn btn-primary bu_login_teacher_tablet'><i class='bi bi-box-arrow-in-right'></i>&nbsp;&nbsp;Lehrer-Tablet-Modus aktivieren</button>"
             io.puts "<hr />"
             io.puts "<p>Bitte wähle ein order mehrere Kürzel, um dieses Gerät dauerhaft als Kurs-Tablet anzumelden.</p>"
             @@shorthands.keys.sort.each do |shorthand|
                 io.puts "<button class='btn-teacher-for-kurs-tablet-login btn btn-xs btn-outline-secondary' data-shorthand='#{shorthand}'>#{shorthand}</button>"
             end
             io.puts "<br /><br >"
-            io.puts "<button class='btn btn-primary bu_login_kurs_tablet' disabled><i class='bi bi-sign-in'></i>&nbsp;&nbsp;Kurs-Tablet-Modus aktivieren</button>"
+            io.puts "<button class='btn btn-primary bu_login_kurs_tablet' disabled><i class='bi bi-box-arrow-in-right'></i>&nbsp;&nbsp;Kurs-Tablet-Modus aktivieren</button>"
             io.puts "<hr />"
             io.puts "<p>Bitte wähle ein Tablet, um dieses Gerät dauerhaft als dieses Tablet anzumelden.</p>"
             @@tablets.keys.each do |id|

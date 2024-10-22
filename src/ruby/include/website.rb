@@ -133,11 +133,11 @@ class Main < Sinatra::Base
     def _include_file(name, label)
         icon = ''
         if name[-4, 4] == '.pdf'
-            icon = "<i class='file-type bi bi-file-pdf-o'></i>"
+            icon = "<i class='file-type bi bi-filetype-pdf'></i>"
         elsif name[-4, 4] == '.doc' || name[-5, 5] == '.docx'
             icon = "<i class='file-type bi bi-file-word-o'></i>"
         elsif name[-4, 4] == '.xls' || name[-5, 5] == '.xlsx'
-            icon = "<i class='file-type bi bi-file-excel-o'></i>"
+            icon = "<i class='file-type bi bi-file-earmark-spreadsheet'></i>"
         elsif name[-4, 4] == '.ppt' || name[-5, 5] == '.pptx'
             icon = "<i class='file-type bi bi-file-powerpoint-o'></i>"
         elsif name[-4, 4] == '.zip'
@@ -223,7 +223,7 @@ class Main < Sinatra::Base
                 io.puts "</div>"
                 io.string
             end
-#             "<img src='https://#{WEBSITE_HOST}/gen/i/#{slug}-1024.jpg' class='col-md-4 pull-left' />"
+#             "<img src='https://#{WEBSITE_HOST}/gen/i/#{slug}-1024.jpg' class='col-md-4 float-left' />"
         end
     end
     

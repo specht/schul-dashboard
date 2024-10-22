@@ -45,7 +45,7 @@
             <div class='hint'>
                 <div style='position: relative; top: 8px;'>
                 <span class='bullet'><i class='bi bi-check'></i></span><b>Schritt 1:</b> Seite aktualisieren
-                <a style='position: relative; top: -8px;' class='btn btn-success float-end' href='/'><i class='bi bi-refresh'></i>&nbsp;&nbsp;Jetzt aktualisieren</a>
+                <a style='position: relative; top: -8px;' class='btn btn-success float-end' href='/'><i class='bi bi-arrow-clockwise'></i>&nbsp;&nbsp;Jetzt aktualisieren</a>
                 </div>
                 <div style='clear: both;'></div>
             </div>
@@ -175,7 +175,7 @@
         <div style="#{teacher_logged_in? ? '' : 'display: none;'}">
             <a class="btn btn-warning bu-mail"><i class='bi bi-envelope-o'></i>&nbsp;&nbsp;E-Mail</a>
         </div>
-        <a class="btn btn-success bu-edit-lesson"><i class='bi bi-edit'></i>&nbsp;&nbsp;Bearbeiten</a>
+        <a class="btn btn-success bu-edit-lesson"><i class='bi bi-pencil'></i>&nbsp;&nbsp;Bearbeiten</a>
         <button class="show-ha-amt-only btn btn-secondary bu-discard-ha-amt-text-changes"><i class='bi bi-trash'></i>&nbsp;&nbsp;Änderungen verwerfen</button>
         <button class="show-ha-amt-only btn btn-success bu-save-ha-amt-text-changes"><i class='bi bi-check'></i>&nbsp;&nbsp;Änderungen speichern</button>
         <button class="show-ha-amt-only btn btn-success bu-enter-ha-amt-text"><i class='bi bi-pencil'></i>&nbsp;&nbsp;Hausaufgaben eintragen</button>
@@ -305,8 +305,8 @@
         </div>
         <div class="modal-footer">
         <button class="btn btn-secondary div_ad_hoc_fresh_sms bu_unlock_2fa_sms"><i class='bi bi-mobile'></i>&nbsp;&nbsp;SMS jetzt freigeben</button>
-        <button class="btn btn-secondary div_ad_hoc_fresh_otp bu_unlock_2fa_otp"><i class='bi bi-qrcode'></i>&nbsp;&nbsp;OTP jetzt freigeben</button>
-        <button id='bu_perform_ad_hoc_signin' type='button' class="btn btn-success"><i class='bi bi-sign-in'></i>&nbsp;&nbsp;Anmeldung erlauben</button>
+        <button class="btn btn-secondary div_ad_hoc_fresh_otp bu_unlock_2fa_otp"><i class='bi bi-qr-code-scan'></i>&nbsp;&nbsp;OTP jetzt freigeben</button>
+        <button id='bu_perform_ad_hoc_signin' type='button' class="btn btn-success"><i class='bi bi-box-arrow-in-right'></i>&nbsp;&nbsp;Anmeldung erlauben</button>
           <button type="button" class="btn btn-danger" data-bs-dismiss="modal"><i class='bi bi-x'></i>&nbsp;&nbsp;Anmeldung ablehnen</button>
         </div>
       </div>
@@ -617,7 +617,7 @@ function install_physics_handler(e) {
 
 function reload_print_button() {
     if (timetable_id == '#{@session_user[:id]}' && #{schueler_logged_in?}) {
-        $('.fc-print-button').html('<i class="bi bi-print"></i>');
+        $('.fc-print-button').html('<i class="bi bi-printer"></i>');
         $('.fc-print-button').show();
     } else {
         console.log("hide")
@@ -1321,7 +1321,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     body.append($('<a>').attr('href', nc_einsammel_link).attr('target', '_blank').addClass('btn').addClass('btn-primary').css('margin-right', '5px').css('margin-bottom', '5px').html("<i class='bi bi-nextcloud'></i>&nbsp;&nbsp;Zum Einsammel-Ordner&nbsp;&nbsp;<i class='bi bi-angle-double-right'></i>"));
                 }
                 if (event_data.lesson_lr)
-                    body.append($('<a>').attr('href', 'https://www.lernraum-berlin.de/').attr('target', '_blank').addClass('btn').addClass('btn-primary').css('margin-right', '5px').css('margin-bottom', '5px').html("<i class='bi bi-external-link'></i>&nbsp;&nbsp;Zum Lernraum&nbsp;&nbsp;<i class='bi bi-angle-double-right'></i>"));
+                    body.append($('<a>').attr('href', 'https://www.lernraum-berlin.de/').attr('target', '_blank').addClass('btn').addClass('btn-primary').css('margin-right', '5px').css('margin-bottom', '5px').html("<i class='bi bi-arrow-up-right'></i>&nbsp;&nbsp;Zum Lernraum&nbsp;&nbsp;<i class='bi bi-angle-double-right'></i>"));
                 wrote_something = true;
             }
             if (teacher_tablet_logged_in || klassenraum_logged_in) {
@@ -1359,7 +1359,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     body.append($('<a>').attr('href', nc_einsammel_link).attr('target', '_blank').addClass('btn').addClass('btn-primary').css('margin-right', '5px').css('margin-bottom', '5px').html("<i class='bi bi-nextcloud'></i>&nbsp;&nbsp;Zum Einsammel-Ordner&nbsp;&nbsp;<i class='bi bi-angle-double-right'></i>"));
                 }
                 if (event_data.homework_lr)
-                    body.append($('<a>').attr('href', 'https://www.lernraum-berlin.de/').attr('target', '_blank').addClass('btn').addClass('btn-primary').css('margin-right', '5px').css('margin-bottom', '5px').html("<i class='bi bi-external-link'></i>&nbsp;&nbsp;Zum Lernraum&nbsp;&nbsp;<i class='bi bi-angle-double-right'></i>"));
+                    body.append($('<a>').attr('href', 'https://www.lernraum-berlin.de/').attr('target', '_blank').addClass('btn').addClass('btn-primary').css('margin-right', '5px').css('margin-bottom', '5px').html("<i class='bi bi-arrow-up-right'></i>&nbsp;&nbsp;Zum Lernraum&nbsp;&nbsp;<i class='bi bi-angle-double-right'></i>"));
                 if (per_user.homework_feedback)
                 {
                     let parts = [];

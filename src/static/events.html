@@ -3,7 +3,7 @@
     <div class='row'>
         <div class='col-md-12'>
             <h2 style='margin-bottom: 30px;'>Termine</h2>
-            <button class='btn btn-success bu-new-event'><i class='bi bi-calendar-plus-o'></i>&nbsp;&nbsp;Neuer Termin</button>
+            <button class='btn btn-success bu-new-event'><i class='bi bi-calendar-plus'></i>&nbsp;&nbsp;Neuer Termin</button>
             <hr />
             <div class='events-container' style='max-width: 100%; overflow-x: auto;'>
                 <table class='table table-striped narrow' style='width: unset; min-width: 100%;'>
@@ -40,9 +40,7 @@
                     <div class='col-xl-2 col-lg-3 col-md-4 col-sm-4'>
                         <div class="mb-3">
                             <label>Videokonferenz</label>
-                            <div class='button-with-label'>
-                                <button id='ti_event_jitsi' data-state='no' class='btn_lesson_data btn btn-outline-secondary'><i class='bi bi-x'></i>&nbsp;&nbsp;Jitsi Meet</button>
-                            </div>
+                            <button id='ti_event_jitsi' data-state='no' class='btn_lesson_data btn btn-outline-secondary'><i class='bi bi-x'></i>&nbsp;&nbsp;Jitsi Meet</button>
                         </div>
                     </div>
                 </div>
@@ -68,11 +66,12 @@
                 </div>
                 <hr />
                 <div class="mb-3">
-                    <label style='width: 100%;'><a href='#' class='bu_open_ext_users_modal float-end btn btn-success'>Externe Teilnehmer…</a>Teilnehmer <span class='text-muted'>(nur diesen Personen wird der Termin im Kalender angezeigt)</span>
-                    </label>
-                    <input id='ti_recipients' class='form-control' placeholder='Teilnehmer suchen…' /><div class='recipient-input-dropdown' style='display: none;'></div></input>
-<!--                    <div style='font-size: 80%; margin-top: 10px;'>
-                    </div>-->
+                    <label style='width: 100%;'>Teilnehmer <span class='text-muted'>(nur diesen Personen wird der Termin im Kalender angezeigt)</span></label>
+                    <div class="input-group mb-3">
+                        <input id='ti_recipients' type="text" class="form-control" placeholder="Teilnehmer suchen…" aria-label="Recipient's username" aria-describedby="button-addon2">
+                        <a href='#' class='bu_open_ext_users_modal float-sm-right btn btn-outline-success' id="button-addon2">Externe Teilnehmer…</a>
+                    </div>
+                    <div class='recipient-input-dropdown' style='display: none;'></div>
                 </div>
                 <div class="mb-3">
                     <div class='recipients_list'>

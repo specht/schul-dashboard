@@ -2058,7 +2058,7 @@ class Main < Sinatra::Base
                 end
             else
                 nav_items << ['/hilfe', 'Hilfe', 'bi bi-question-circle']
-                nav_items << ['/', 'Anmelden', 'bi bi-sign-in']
+                nav_items << ['/', 'Anmelden', 'bi bi-box-arrow-in-right']
             end
             return nil if nav_items.empty?
             io.puts "<button class='navbar-toggler' type='button' data-bs-toggle='collapse' data-bs-target='#navbarTogglerDemo02' aria-controls='navbarTogglerDemo02' aria-expanded='false' aria-label='Toggle navigation'>"
@@ -2082,7 +2082,7 @@ class Main < Sinatra::Base
                     if user_who_can_upload_files_logged_in?
                         io.puts "<div class='dropdown-divider'></div>" if printed_something
                         io.puts "<a class='dropdown-item nav-icon' href='/upload_images'><div class='icon'><i class='bi bi-image'></i></div><span class='label'>Bilder hochladen</span></a>"
-                        io.puts "<a class='dropdown-item nav-icon' href='/upload_files'><div class='icon'><i class='bi bi-file-earmark-pdf'></i></div><span class='label'>Dateien hochladen</span></a>"
+                        io.puts "<a class='dropdown-item nav-icon' href='/upload_files'><div class='icon'><i class='bi bi-file-earmark-arrow-up'></i></div><span class='label'>Dateien hochladen</span></a>"
                         printed_something = true
                     end
                     if user_who_can_manage_monitors_logged_in?
@@ -2104,7 +2104,7 @@ class Main < Sinatra::Base
                     end
                     if admin_logged_in?
                         io.puts "<div class='dropdown-divider'></div>"
-                        io.puts "<a class='dropdown-item nav-icon' href='/show_all_login_codes'><div class='icon'><i class='bi bi-key'></i></div><span class='label'>Live-Anmeldungen</span></a>"
+                        io.puts "<a class='dropdown-item nav-icon' href='/show_all_login_codes'><div class='icon'><i class='bi bi-box-arrow-in-right'></i></div><span class='label'>Live-Anmeldungen</span></a>"
                         io.puts "<a class='dropdown-item nav-icon' href='/email_accounts'><div class='icon'><i class='bi bi-envelope'></i></div><span class='label'>E-Mail-Postfächer</span></a>"
                         io.puts "<a class='dropdown-item nav-icon' href='/stats'><div class='icon'><i class='bi bi-bar-chart'></i></div><span class='label'>Statistiken</span></a>"
                         printed_something = true
@@ -2117,7 +2117,7 @@ class Main < Sinatra::Base
                     io.puts "</li>"
                 elsif x == :pk5
                     io.puts "<li class='nav-item text-nowrap'>"
-                    io.puts "<a href='/pk5' class='nav-link nav-icon'><div class='icon'><i class='bi bi-file-earmark-text'></i></div>5. PK</a>"
+                    io.puts "<a href='/pk5' class='nav-link nav-icon'><div class='icon'><i class='bi bi-file-earmark-easel'></i></div>5. PK</a>"
                     io.puts "</li>"
                 elsif x == :advent_calendar
                     unless admin_logged_in?
@@ -2150,7 +2150,7 @@ class Main < Sinatra::Base
                     end
                     io.puts "<a class='dropdown-item nav-icon' href='/login'><div class='icon'><i class='bi bi-box-arrow-in-right'></i></div><span class='label'>Zusätzliche Anmeldung…</span></a>"
                     if user_with_role_logged_in?(:can_use_nextcloud)
-                        io.puts "<a class='dropdown-item nav-icon' href='/login_nc'><div class='icon'><i class='bi bi-cloud-arrow-down'></i></div><span class='label'>In Nextcloud anmelden…</span></a>"
+                        io.puts "<a class='dropdown-item nav-icon' href='/login_nc'><div class='icon'><img src='/images/nextcloud#{@session_user[:dark] ? '-white' : ''}.svg' alt='Nextcloud' width='16' height='16'></div><span class='label'>In Nextcloud anmelden…</span></a>"
                     end
                     if @session_user[:dark]
                         io.puts "<button class='dropdown-item nav-icon nav-light'><div class='icon'><i class='bi bi-sun'></i></div><span class='label'>Hell</span></button>"
@@ -2201,9 +2201,9 @@ class Main < Sinatra::Base
                     # end
                     if teacher_logged_in?
                         if user_with_role_logged_in?(:can_see_kurslisten)
-                            io.puts "<a class='dropdown-item nav-icon' href='/kurslisten'><div class='icon'><i class='bi bi-file-earmark-text'></i></div><span class='label'>Kurslisten</span></a>"
+                            io.puts "<a class='dropdown-item nav-icon' href='/kurslisten'><div class='icon'><i class='bi bi-filetype-pdf'></i></div><span class='label'>Kurslisten</span></a>"
                         end
-                        io.puts "<a class='dropdown-item nav-icon' href='/pk5_overview'><div class='icon'><i class='bi bi-file-earmark-text'></i></div><span class='label'>5. PK</span></a>"
+                        io.puts "<a class='dropdown-item nav-icon' href='/pk5_overview'><div class='icon'><i class='bi bi-file-earmark-easel'></i></div><span class='label'>5. PK</span></a>"
                     end
                     if schueler_logged_in?
                         if @session_user[:klasse].to_i < 11
@@ -2216,8 +2216,8 @@ class Main < Sinatra::Base
                             # if can_manage_salzh_logged_in?
                             #     io.puts "<a class='dropdown-item nav-icon' href='/salzh'><div class='icon'><i class='bi bi-house'></i></div><span class='label'>Testungen</span></a>"
                             # end
-                            io.puts "<a class='dropdown-item nav-icon' href='/klassenmemory_assign'><div class='icon'><i class='bi bi-person'></i></div><span class='label'>Klassenmemory</span></a>"
-                            io.puts "<a class='dropdown-item nav-icon' href='/tests'><div class='icon'><i class='bi bi-file-earmark-text'></i></div><span class='label'>Klassenarbeiten</span></a>"
+                            io.puts "<a class='dropdown-item nav-icon' href='/klassenmemory_assign'><div class='icon'><i class='bi bi-people'></i></div><span class='label'>Klassenmemory</span></a>"
+                            io.puts "<a class='dropdown-item nav-icon' href='/tests'><div class='icon'><i class='bi bi-file-earmark-check'></i></div><span class='label'>Klassenarbeiten</span></a>"
                         end
                         if user_with_role_logged_in?(:can_create_events)
                             io.puts "<a class='dropdown-item nav-icon' href='/events'><div class='icon'><i class='bi bi-calendar-check'></i></div><span class='label'>Termine</span></a>"
@@ -2322,7 +2322,7 @@ class Main < Sinatra::Base
                     io.puts "<a class='nav-link nav-icon' href='/techpost'><div class='icon'><i class='bi bi-laptop'></i></div>Technikamt</a>"
                 elsif x == :aula
                     io.puts "<li class='nav-item dropdown'>"
-                    io.puts "<a class='nav-link nav-icon dropdown-toggle' href='#' id='navbarDropdownAula' role='button' data-bs-toggle='dropdown' aria-expanded='false'><div class='icon'><i class='bi bi-building'></i></div>Aulatechnik</a>"
+                    io.puts "<a class='nav-link nav-icon dropdown-toggle' href='#' id='navbarDropdownAula' role='button' data-bs-toggle='dropdown' aria-expanded='false'><div class='icon'><i class='bi bi-cast'></i></div>Aulatechnik</a>"
                     io.puts "<ul class='dropdown-menu'>"
                     io.puts "<li><a class='dropdown-item nav-icon' href='/aula_light'><div class='icon'><i class='bi bi-lightbulb'></i></div><span class='label'>Licht</span></a></li>"
                     io.puts "<li><a class='dropdown-item nav-icon' style='display: none;' href='/aula_sound'><div class='icon'><i class='bi bi-music-note'></i></div><span class='label'>Ton</span></a></li>"
@@ -2470,7 +2470,7 @@ class Main < Sinatra::Base
                     tio.string
                 end
                 if hidden_something
-                    io.puts "<button class='btn btn-xs ttc bu-show-alle-teacher pull-right' style='margin-left: 0.5em; width: unset; padding: 0.25rem 0.5rem; display: inline-block;' onclick=\"$('.ttc-teacher').show(); $('.bu-show-alle-teacher').hide();\">Alle Lehrkräfte</button>"
+                    io.puts "<button class='btn btn-xs ttc bu-show-alle-teacher float-right' style='margin-left: 0.5em; width: unset; padding: 0.25rem 0.5rem; display: inline-block;' onclick=\"$('.ttc-teacher').show(); $('.bu-show-alle-teacher').hide();\">Alle Lehrkräfte</button>"
                 end
                 io.puts temp
                 unless teacher_tablet_logged_in?
@@ -2492,7 +2492,7 @@ class Main < Sinatra::Base
                         tio.string
                     end
                     if hidden_something
-                        io.puts "<button class='btn btn-xs ttc bu-show-alle-klassen pull-right' style='margin-left: 0.5em; width: unset; padding: 0.25rem 0.5rem; display: inline-block;' onclick=\"$('.ttc-klasse').show(); $('.bu-show-alle-klassen').hide();\">Alle Klassen</button>"
+                        io.puts "<button class='btn btn-xs ttc bu-show-alle-klassen float-right' style='margin-left: 0.5em; width: unset; padding: 0.25rem 0.5rem; display: inline-block;' onclick=\"$('.ttc-klasse').show(); $('.bu-show-alle-klassen').hide();\">Alle Klassen</button>"
                     end
                     io.puts temp
 
@@ -2514,7 +2514,7 @@ class Main < Sinatra::Base
                         tio.string
                     end
                     if hidden_something
-                        io.puts "<button class='btn btn-xs ttc bu-show-alle-rooms pull-right' style='margin-left: 0.5em; width: unset; padding: 0.25rem 0.5rem; display: inline-block;' onclick=\"$('.ttc-room').show(); $('.bu-show-alle-rooms').hide();\">Alle Räume</button>"
+                        io.puts "<button class='btn btn-xs ttc bu-show-alle-rooms float-right' style='margin-left: 0.5em; width: unset; padding: 0.25rem 0.5rem; display: inline-block;' onclick=\"$('.ttc-room').show(); $('.bu-show-alle-rooms').hide();\">Alle Räume</button>"
                     end
                     io.puts temp
                 end

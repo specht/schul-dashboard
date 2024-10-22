@@ -693,12 +693,12 @@ class Main < Sinatra::Base
                 io.puts "<td>#{d}</td>"
                 io.puts "<td style='text-overflow: ellipsis;'>#{(s[:sid] == @used_session[:sid]) ? '<i class=\'text-success bi bi-check\'></i>&nbsp;&nbsp;' : ''}#{s[:user_agent] || 'unbekanntes Gerät'}#{(s[:sid] == @used_session[:sid]) ? '<div style=\'font-size: 85%; margin-top: -5px;\'>(dieses Gerät)</div>' : ''}</td>"
                 io.puts "<td>#{LOGIN_METHODS[s[:method].to_sym] || '&ndash;'}</td>"
-                io.puts "<td><button class='btn btn-danger btn-xs btn-purge-session' data-purge-session='#{s[:scrambled_sid]}'><i class='bi bi-sign-out'></i>&nbsp;&nbsp;Gerät abmelden</button></td>"
+                io.puts "<td><button class='btn btn-danger btn-xs btn-purge-session' data-purge-session='#{s[:scrambled_sid]}'><i class='bi bi-box-arrow-right'></i>&nbsp;&nbsp;Gerät abmelden</button></td>"
                 io.puts "</tr>"
             end
             if sessions.size > 1
                 io.puts "<tr>"
-                io.puts "<td colspan='5'><button class='float-right btn btn-danger btn-xs btn-purge-session' data-purge-session='_all'><i class='bi bi-sign-out'></i>&nbsp;&nbsp;Alle Geräte abmelden</button></td>"
+                io.puts "<td colspan='5'><button class='float-right btn btn-danger btn-xs btn-purge-session' data-purge-session='_all'><i class='bi bi-box-arrow-right'></i>&nbsp;&nbsp;Alle Geräte abmelden</button></td>"
                 io.puts "</tr>"
             end
             io.puts "</tbody>"

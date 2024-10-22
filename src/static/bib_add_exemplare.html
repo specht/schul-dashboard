@@ -26,7 +26,7 @@
         </div>
     </div>
 
-    <button id='bu_print_labels' disabled class='pull-right btn btn-success'><span id='count_here'></span> Label drucken und Bücher aufnehmen</button>
+    <button id='bu_print_labels' disabled class='float-right btn btn-success'><span id='count_here'></span> Label drucken und Bücher aufnehmen</button>
     <div style="clear: both;"></div>
 </div>
 <script>
@@ -42,7 +42,7 @@
             $(`<li class='mx-1'><a class='inline-block bg-slate-900 border border-blue-500 hover:bg-slate-200 rounded py-1 px-3' href='/bib_book_edit/${stem}'><i class='bi bi-pencil'></i>&nbsp;&nbsp;Metadaten bearbeiten</a></li>`).insertAfter($('#sub_menu_extra'));
             if ("#{@session_device}" === 'bib-station-with-printer') {
                 $(`<li class='mx-1'><a class='inline-block bg-slate-900 border border-blue-500 hover:bg-slate-200 rounded py-1 px-3' href='/bib_add_exemplare/${stem}'><i class='bi bi-plus'></i>&nbsp;&nbsp;Neue Exemplare aufnehmen</a></li>`).insertAfter($('#sub_menu_extra'));
-                $(`<li class='mx-1'><a class='inline-block bg-slate-900 border border-blue-500 hover:bg-slate-200 rounded py-1 px-3' href='/bib_print_label/${stem}'><i class='bi bi-print'></i>&nbsp;&nbsp;Label drucken</a></li>`).insertAfter($('#sub_menu_extra'));
+                $(`<li class='mx-1'><a class='inline-block bg-slate-900 border border-blue-500 hover:bg-slate-200 rounded py-1 px-3' href='/bib_print_label/${stem}'><i class='bi bi-printer-fill'></i>&nbsp;&nbsp;Label drucken</a></li>`).insertAfter($('#sub_menu_extra'));
             }
             $(`<li class='mx-1'><a class='inline-block bg-slate-900 border border-blue-500 hover:bg-slate-200 rounded py-1 px-3' href='/bib_book/${stem}'><i class='bi bi-book'></i>&nbsp;&nbsp;Buch</a></li>`).insertAfter($('#sub_menu_extra'));
             $('#subsubmenu').show();

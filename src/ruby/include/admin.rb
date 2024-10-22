@@ -33,7 +33,7 @@ class Main < Sinatra::Base
         (users_with_telephone_number | users_with_otp).each do |email|
             methods = []
             methods << "<i class='bi bi-mobile'></i>&nbsp;&nbsp;SMS" if users_with_telephone_number.include?(email)
-            methods << "<i class='bi bi-qrcode'></i>&nbsp;&nbsp;OTP" if users_with_otp.include?(email)
+            methods << "<i class='bi bi-qr-code-scan'></i>&nbsp;&nbsp;OTP" if users_with_otp.include?(email)
             twofa_status[email] = methods.join(' / ')
         end
         StringIO.open do |io|
@@ -227,20 +227,20 @@ class Main < Sinatra::Base
             io.puts "</div>"
             io.puts "<hr>"
             io.puts "<h3 id='website'>Website</h3>"
-            io.puts "<button class='btn btn-secondary bu-refresh-staging'><i id='refresh-icon-staging' class='bi bi-refresh'></i>&nbsp;&nbsp;Vorschau-Seite aktualisieren</button>"
-            io.puts "<button class='btn btn-success bu-refresh-live'><i id='refresh-icon-live' class='bi bi-refresh'></i>&nbsp;&nbsp;Live-Seite aktualisieren</button>"
+            io.puts "<button class='btn btn-secondary bu-refresh-staging'><i id='refresh-icon-staging' class='bi bi-arrow-clockwise'></i>&nbsp;&nbsp;Vorschau-Seite aktualisieren</button>"
+            io.puts "<button class='btn btn-success bu-refresh-live'><i id='refresh-icon-live' class='bi bi-arrow-clockwise'></i>&nbsp;&nbsp;Live-Seite aktualisieren</button>"
             io.puts "<hr />"
             io.puts "<h3 id='tablets'>Tablets</h3>"
             io.puts "<hr />"
             io.puts "<p>Mit einem Klick auf diesen Button können Sie dieses Gerät dauerhaft als Lehrer-Tablet anmelden.</p>"
-            io.puts "<button class='btn btn-success bu_login_teacher_tablet'><i class='bi bi-sign-in'></i>&nbsp;&nbsp;Lehrer-Tablet-Modus aktivieren</button>"
+            io.puts "<button class='btn btn-success bu_login_teacher_tablet'><i class='bi bi-box-arrow-in-right'></i>&nbsp;&nbsp;Lehrer-Tablet-Modus aktivieren</button>"
             io.puts "<hr />"
             io.puts "<p>Bitte wählen Sie ein order mehrere Kürzel, um dieses Gerät dauerhaft als Kurs-Tablet anzumelden.</p>"
             @@shorthands.keys.sort.each do |shorthand|
                 io.puts "<button class='btn-teacher-for-kurs-tablet-login btn btn-xs btn-outline-secondary' data-shorthand='#{shorthand}'>#{shorthand}</button>"
             end
             io.puts "<br /><br >"
-            io.puts "<button class='btn btn-success bu_login_kurs_tablet' disabled><i class='bi bi-sign-in'></i>&nbsp;&nbsp;Kurs-Tablet-Modus aktivieren</button>"
+            io.puts "<button class='btn btn-success bu_login_kurs_tablet' disabled><i class='bi bi-box-arrow-in-right'></i>&nbsp;&nbsp;Kurs-Tablet-Modus aktivieren</button>"
             io.puts "<hr />"
             io.puts "<p>Bitte wählen Sie ein Tablet, um dieses Gerät dauerhaft als dieses Tablet anzumelden.</p>"
             @@tablets.keys.each do |id|
@@ -276,14 +276,14 @@ class Main < Sinatra::Base
             io.puts "</table>"
             io.puts "</div>"
             io.puts "<h3 id='monitor'>Monitor</h3>"
-            io.puts "<button class='btn btn-success bu-login-as-monitor'><i class='bi bi-sign-in'></i>&nbsp;&nbsp;Als Flur-Monitor anmelden</button>"
-            io.puts "<button class='btn btn-success bu-login-as-monitor-sek'><i class='bi bi-sign-in'></i>&nbsp;&nbsp;Als Sek-Monitor anmelden</button>"
-            io.puts "<button class='btn btn-success bu-login-as-monitor-lz'><i class='bi bi-sign-in'></i>&nbsp;&nbsp;Als LZ-Monitor anmelden</button>"
+            io.puts "<button class='btn btn-success bu-login-as-monitor'><i class='bi bi-box-arrow-in-right'></i>&nbsp;&nbsp;Als Flur-Monitor anmelden</button>"
+            io.puts "<button class='btn btn-success bu-login-as-monitor-sek'><i class='bi bi-box-arrow-in-right'></i>&nbsp;&nbsp;Als Sek-Monitor anmelden</button>"
+            io.puts "<button class='btn btn-success bu-login-as-monitor-lz'><i class='bi bi-box-arrow-in-right'></i>&nbsp;&nbsp;Als LZ-Monitor anmelden</button>"
             io.puts "<hr />"
             io.puts "<h3 id='bibliothek'>Bibliothek</h3>"
-            io.puts "<button class='btn btn-success bu-login-as-bib-mobile'><i class='bi bi-sign-in'></i>&nbsp;&nbsp;Als Bibliotheks-Handy anmelden</button>"
-            io.puts "<button class='btn btn-success bu-login-as-bib-station'><i class='bi bi-sign-in'></i>&nbsp;&nbsp;Als Bibliotheks-Station anmelden</button>"
-            io.puts "<button class='btn btn-success bu-login-as-bib-station-with-printer'><i class='bi bi-sign-in'></i>&nbsp;&nbsp;Als Bibliotheks-Station mit Labeldrucker anmelden</button>"
+            io.puts "<button class='btn btn-success bu-login-as-bib-mobile'><i class='bi bi-box-arrow-in-right'></i>&nbsp;&nbsp;Als Bibliotheks-Handy anmelden</button>"
+            io.puts "<button class='btn btn-success bu-login-as-bib-station'><i class='bi bi-box-arrow-in-right'></i>&nbsp;&nbsp;Als Bibliotheks-Station anmelden</button>"
+            io.puts "<button class='btn btn-success bu-login-as-bib-station-with-printer'><i class='bi bi-box-arrow-in-right'></i>&nbsp;&nbsp;Als Bibliotheks-Station mit Labeldrucker anmelden</button>"
             io.puts "<hr />"
             io.string
         end

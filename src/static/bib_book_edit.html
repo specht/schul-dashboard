@@ -32,7 +32,7 @@
     <div id='book_here'>
         <div class="row">
             <div class="col-md-3">
-                <div id='book_cover_container' class='pull-left me-3 mb-3 bg-stone-800 shadow shadow-md text-center italic text-sm border'
+                <div id='book_cover_container' class='float-left me-3 mb-3 bg-stone-800 shadow shadow-md text-center italic text-sm border'
                     style="width: 100%;">
                     <img id='book_cover' class='text-center italic text-sm' style='width: 100%; display: none;' />
                     <div id='book_cover_placeholder' style="padding-top: 60%; padding-bottom: 60%; display: none;">
@@ -116,7 +116,7 @@
                     Autor und Titel im vorherigen Bibliothekssystem: <span id='old_description'></span>
                 </div>
                 <!-- <hr /> -->
-                <!-- <button id='bu_save_changes' disabled class='btn btn-success pull-right'><i class='bi bi-check'></i>&nbsp;&nbsp;Änderungen speichern</button> -->
+                <!-- <button id='bu_save_changes' disabled class='btn btn-success float-right'><i class='bi bi-check'></i>&nbsp;&nbsp;Änderungen speichern</button> -->
             </div>
         </div>
     </div>
@@ -240,7 +240,7 @@
                 $(`<li class='mx-1'><a class='inline-block bg-slate-900 border border-blue-500 hover:bg-slate-200 rounded py-1 px-3' href='/bib_book_edit/${stem}'><i class='bi bi-pencil'></i>&nbsp;&nbsp;Metadaten bearbeiten</a></li>`).insertAfter($('#sub_menu_extra'));
                 if ("#{@session_device}" === 'bib-station-with-printer') {
                     $(`<li class='mx-1'><a class='inline-block bg-slate-900 border border-blue-500 hover:bg-slate-200 rounded py-1 px-3' href='/bib_add_exemplare/${stem}'><i class='bi bi-plus'></i>&nbsp;&nbsp;Neue Exemplare aufnehmen</a></li>`).insertAfter($('#sub_menu_extra'));
-                    $(`<li class='mx-1'><a class='inline-block bg-slate-900 border border-blue-500 hover:bg-slate-200 rounded py-1 px-3' href='/bib_print_label/${stem}'><i class='bi bi-print'></i>&nbsp;&nbsp;Label drucken</a></li>`).insertAfter($('#sub_menu_extra'));
+                    $(`<li class='mx-1'><a class='inline-block bg-slate-900 border border-blue-500 hover:bg-slate-200 rounded py-1 px-3' href='/bib_print_label/${stem}'><i class='bi bi-printer-fill'></i>&nbsp;&nbsp;Label drucken</a></li>`).insertAfter($('#sub_menu_extra'));
                 }
                 $(`<li class='mx-1'><a class='inline-block bg-slate-900 border border-blue-500 hover:bg-slate-200 rounded py-1 px-3' href='/bib_book/${stem}'><i class='bi bi-book'></i>&nbsp;&nbsp;Buch</a></li>`).insertAfter($('#sub_menu_extra'));
             }

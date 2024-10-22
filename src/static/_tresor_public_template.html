@@ -260,7 +260,7 @@
 <div id="device_navbar" class="container">
     <img src='#{NEXTCLOUD_URL}/index.php/avatar/#{@session_user[:nc_login]}/256}' class='avatar-md'/>
     <span style="display: inline-block; margin-left: 5px; position: relative; top: 2px;">#{@session_user[:display_name]}</span>
-    <button id='bu_logout' class="pull-right btn btn-sm btn-danger"><i class='bi bi-sign-out'></i>&nbsp;&nbsp;Abmelden</button>
+    <button id='bu_logout' class="float-right btn btn-sm btn-danger"><i class='bi bi-box-arrow-right'></i>&nbsp;&nbsp;Abmelden</button>
 </div>
 <div id='submenu_container'>
 <div id='submenu' class='container' style='padding: 0; display: flex; background: white; border-radius: 0; display: #{second_factor_time_left.nil? ? 'none' : 'block'};'>
@@ -289,7 +289,7 @@
             </li>
             <li class="mx-1" style="display: #{((!@session_user[:klassenleitung].nil?) || zeugnis_admin_logged_in?) ? 'unset' : 'none'};">
                 <a class="inline-block bg-slate-900 border border-blue-500 hover:bg-slate-200 rounded py-1 px-3"
-                    href="/zeugnisdruck"><i class='bi bi-print'></i>&nbsp;&nbsp;Zeugnisdruck</a>
+                    href="/zeugnisdruck"><i class='bi bi-printer-fill'></i>&nbsp;&nbsp;Zeugnisdruck</a>
             </li>
             <li class="mx-1" style='#{need_sozialverhalten() ? '' : 'display: none;'}'>
                 <a class="inline-block bg-slate-900 border border-blue-500 hover:bg-slate-200 rounded py-1 px-3"
@@ -301,7 +301,7 @@
                 <button id='bu-refresh-second-factor' style='white-space: nowrap;' class="inline-block bg-slate-900 border border-blue-500 rounded py-1 px-3"><i class='text-slate-600 bi bi-clock-o'></i>&nbsp;&nbsp;<span style='display: inline-block; width: 3em;' id="sf-time-left"></span></button>
             </li>
             <li class="mx-1">
-                <button id='bu-delete-second-factor' style='white-space: nowrap;' class="inline-block bg-slate-900 border border-blue-500 hover:bg-slate-200 rounded py-1 px-3"><i class='text-slate-600 bi bi-sign-out'></i>&nbsp;&nbsp;Abmelden</button>
+                <button id='bu-delete-second-factor' style='white-space: nowrap;' class="inline-block bg-slate-900 border border-blue-500 hover:bg-slate-200 rounded py-1 px-3"><i class='text-slate-600 bi bi-box-arrow-right'></i>&nbsp;&nbsp;Abmelden</button>
             </li>
         </ul>
     </section>

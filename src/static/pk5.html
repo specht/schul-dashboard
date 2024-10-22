@@ -148,7 +148,7 @@
                     </div>
 
                     <div class='col-md-12' style="text-align: right; #{(user_with_role_logged_in?(:oko) || (teacher_logged_in? && (@@pk5_faecher_for_email[@session_user[:email]] || Set.new()).include?(get_my_pk5(user_email)[:fas])) || (@session_user[:klasse] == PK5_CURRENT_KLASSE && (!$pk5.phases[$pk5.get_current_phase][:flags].include?(:no_sus_edit)))) ? '' : 'display: none;'}">
-                        <button id='bu_edit' class='btn btn-success'><i class='bi bi-edit'></i>&nbsp;&nbsp;Bearbeiten</button>
+                        <button id='bu_edit' class='btn btn-success'><i class='bi bi-pencil'></i>&nbsp;&nbsp;Bearbeiten</button>
                         <button id='bu_discard_changes' style='display: none;' class='btn btn-outline-secondary'><i class='bi bi-x'></i>&nbsp;&nbsp;Änderungen verwerfen</button>
                         <button id='bu_save_changes' style='display: none;' class='btn btn-success'><i class='bi bi-check'></i>&nbsp;&nbsp;Änderungen speichern</button>
                     </div>

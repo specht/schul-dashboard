@@ -35,11 +35,11 @@
                         if (entry.tested.indexOf(data.dates[i]) >= 0) {
                             button.addClass('btn-success');
                             button.data('tested', true);
-                            label = "<i class='bi bi-check'></i>"
+                            label = "<i class='bi bi-check-lg'></i>"
                         } else {
                             button.addClass('btn-outline-secondary');
                             button.data('tested', false);
-                            label = "<i class='bi bi-x'></i>"
+                            label = "<i class='bi bi-x-lg'></i>"
                         }
                         label += `&nbsp;&nbsp;${moment(data.dates[i]).format('ddd DD.MM.')}`;
                         button.html(label);
@@ -56,7 +56,7 @@
                                 tested ? 
                                 `Sind Sie sicher, dass Sie die negative Testung für <strong>${display_name}</strong> am <strong>${moment(datum).format('dddd, [den] DD.MM.YYYY')}</strong> entfernen möchten?` :
                                 `Sind Sie sicher, dass Sie eine negative Testung für <strong>${display_name}</strong> am <strong>${moment(datum).format('dddd, [den] DD.MM.YYYY')}</strong> eintragen möchten?`,
-                                tested ? "<i class='bi bi-check'></i>&nbsp;&nbsp;Eintrag entfernen" : "<i class='bi bi-check'></i>&nbsp;&nbsp;Negativen Test eintragen", tested ? 'btn-danger' : 'btn-success',
+                                tested ? "<i class='bi bi-check-lg'></i>&nbsp;&nbsp;Eintrag entfernen" : "<i class='bi bi-check-lg'></i>&nbsp;&nbsp;Negativen Test eintragen", tested ? 'btn-danger' : 'btn-success',
                                 'Abbrechen', 'btn-secondary', function () {
                                     api_call(tested ? '/api/remove_self_test_entry' : '/api/add_self_test_entry', {email: email, datum: datum}, function (data) {
                                         if (data.success) {

@@ -168,9 +168,9 @@ class Main < Sinatra::Base
                 #     io.puts "<td>"
                 #     testing_required = salzh_status[email][:testing_required]
                 #     if testing_required
-                #         io.puts "<button class='btn btn-sm btn-success bu_toggle_testing_required'><i class='bi bi-check'></i>&nbsp;&nbsp;notwendig</button>"
+                #         io.puts "<button class='btn btn-sm btn-success bu_toggle_testing_required'><i class='bi bi-check-lg'></i>&nbsp;&nbsp;notwendig</button>"
                 #     else
-                #         io.puts "<button class='btn btn-sm btn-outline-secondary bu_toggle_testing_required'><i class='bi bi-x'></i>&nbsp;&nbsp;nicht notwendig</button>"
+                #         io.puts "<button class='btn btn-sm btn-outline-secondary bu_toggle_testing_required'><i class='bi bi-x-lg'></i>&nbsp;&nbsp;nicht notwendig</button>"
                 #     end
                 #     io.puts "</td>"
 
@@ -183,9 +183,9 @@ class Main < Sinatra::Base
                 #     io.puts "<td>"
                 #     voluntary_testing = salzh_status[email][:voluntary_testing]
                 #     if voluntary_testing
-                #         io.puts "<button class='btn btn-sm btn-success bu_toggle_voluntary_testing'><i class='bi bi-check'></i>&nbsp;&nbsp;nimmt teil</button>"
+                #         io.puts "<button class='btn btn-sm btn-success bu_toggle_voluntary_testing'><i class='bi bi-check-lg'></i>&nbsp;&nbsp;nimmt teil</button>"
                 #     else
-                #         io.puts "<button class='btn btn-sm btn-outline-secondary bu_toggle_voluntary_testing'><i class='bi bi-x'></i>&nbsp;&nbsp;nimmt nicht teil</button>"
+                #         io.puts "<button class='btn btn-sm btn-outline-secondary bu_toggle_voluntary_testing'><i class='bi bi-x-lg'></i>&nbsp;&nbsp;nimmt nicht teil</button>"
                 #     end
                 #     io.puts "</td>"
                 # end
@@ -209,9 +209,9 @@ class Main < Sinatra::Base
                 if teacher_logged_in?
                     if klassenleiter_for_klasse_logged_in?(klasse)
                         if dashboard_amt.include?(email)
-                            io.puts "<td><button class='bu-toggle-dashboard-amt btn btn-sm btn-success' data-state='true'><i class='bi bi-check'></i>&nbsp;&nbsp;Dashboard-Amt</button></td>"
+                            io.puts "<td><button class='bu-toggle-dashboard-amt btn btn-sm btn-success' data-state='true'><i class='bi bi-check-lg'></i>&nbsp;&nbsp;Dashboard-Amt</button></td>"
                         else
-                            io.puts "<td><button class='bu-toggle-dashboard-amt btn btn-sm btn-outline-secondary' data-state='false'><i class='bi bi-x'></i>&nbsp;&nbsp;Dashboard-Amt</button></td>"
+                            io.puts "<td><button class='bu-toggle-dashboard-amt btn btn-sm btn-outline-secondary' data-state='false'><i class='bi bi-x-lg'></i>&nbsp;&nbsp;Dashboard-Amt</button></td>"
                         end
                     end
                     io.puts "<td><div class='group2-button group2-#{group2_for_email[email]}' data-email='#{email}'>#{group2_for_email[email]}</div></td>"

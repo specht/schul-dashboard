@@ -49,7 +49,7 @@
             </div>
         </div>
         <div class="modal-footer">
-            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal"><i class='bi bi-x'></i>&nbsp;&nbsp;Schließen</button>
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal"><i class='bi bi-x-lg'></i>&nbsp;&nbsp;Schließen</button>
 
         </div>
       </div>
@@ -65,8 +65,8 @@
                 <p>Sie haben eine Anfrage zur Betreuung der 5. PK im Referenzfach von #{CGI.escapeHTML(join_with_sep(get_my_pk5(user_email)[:sus] || [], ', ', ' und '))} bekommen. Bitte prüfen Sie die angegebenen Daten und sagen Sie anschließend die Betreuung zu oder ab. #{(get_my_pk5(user_email)[:sus] || []).size > 1 ? 'Die' : (@@user_info[user_email][:geschlecht] == 'w' ? 'Die': ' Der')} Prüfungskandidat#{(get_my_pk5(user_email)[:sus] || []).size > 1 ? 'en werden' : (@@user_info[user_email][:geschlecht] == 'w' ? 'in wird': ' wird')} automatisch per E-Mail über Ihre Entscheidung benachrichtigt.</p>
                 <p>#{get_invited_and_accepted_pk5_for_teacher()}</p>
                 <div style="text-align: center;">
-                    <button id='bu_accept_betreuung' class="btn btn-success" #{(get_remaining_pk5_projects_for_teacher()[:left] || 0) > 0 ? '' : 'disabled'}><i class='bi bi-check'></i>&nbsp;&nbsp;Betreuung annehmen</button>
-                    <button id='bu_reject_betreuung' class="btn btn-danger"><i class='bi bi-x'></i>&nbsp;&nbsp;Betreuung ablehnen</button>
+                    <button id='bu_accept_betreuung' class="btn btn-success" #{(get_remaining_pk5_projects_for_teacher()[:left] || 0) > 0 ? '' : 'disabled'}><i class='bi bi-check-lg'></i>&nbsp;&nbsp;Betreuung annehmen</button>
+                    <button id='bu_reject_betreuung' class="btn btn-danger"><i class='bi bi-x-lg'></i>&nbsp;&nbsp;Betreuung ablehnen</button>
                 </div>
             </div>
             <p>
@@ -121,7 +121,7 @@
                                     <span class="input-group-text text-secondary" title="Die Lehrkraft hat die Übernahme der Betreuung noch nicht bestätigt"><i class='bi bi-clock-o'></i></span>
                                     #{get_my_pk5(user_email)[:betreuende_lehrkraft_is_confirmed] ? '-->' : ''}
                                     #{get_my_pk5(user_email)[:betreuende_lehrkraft_is_confirmed] ? '' : '<!--'}
-                                    <span class="input-group-text text-success" title="Die Lehrkraft hat die Übernahme der Betreuung bestätigt"><i class='bi bi-check'></i></span>
+                                    <span class="input-group-text text-success" title="Die Lehrkraft hat die Übernahme der Betreuung bestätigt"><i class='bi bi-check-lg'></i></span>
                                     #{get_my_pk5(user_email)[:betreuende_lehrkraft_is_confirmed] ? '' : '-->'}
                                 </div>
                             </div>
@@ -149,8 +149,8 @@
 
                     <div class='col-md-12' style="text-align: right; #{(user_with_role_logged_in?(:oko) || (teacher_logged_in? && (@@pk5_faecher_for_email[@session_user[:email]] || Set.new()).include?(get_my_pk5(user_email)[:fas])) || (@session_user[:klasse] == PK5_CURRENT_KLASSE && (!$pk5.phases[$pk5.get_current_phase][:flags].include?(:no_sus_edit)))) ? '' : 'display: none;'}">
                         <button id='bu_edit' class='btn btn-success'><i class='bi bi-pencil'></i>&nbsp;&nbsp;Bearbeiten</button>
-                        <button id='bu_discard_changes' style='display: none;' class='btn btn-outline-secondary'><i class='bi bi-x'></i>&nbsp;&nbsp;Änderungen verwerfen</button>
-                        <button id='bu_save_changes' style='display: none;' class='btn btn-success'><i class='bi bi-check'></i>&nbsp;&nbsp;Änderungen speichern</button>
+                        <button id='bu_discard_changes' style='display: none;' class='btn btn-outline-secondary'><i class='bi bi-x-lg'></i>&nbsp;&nbsp;Änderungen verwerfen</button>
+                        <button id='bu_save_changes' style='display: none;' class='btn btn-success'><i class='bi bi-check-lg'></i>&nbsp;&nbsp;Änderungen speichern</button>
                     </div>
                     <div class='col-md-12'>
                         <div class='api_messages mt-3' style='display: none;'></div>
@@ -311,7 +311,7 @@ window.addEventListener('load', function() {
     $('#bu_accept_betreuung').on('click', function(e) {
         showTemplateModal('Betreuung annehmen',
             'Sind Sie sicher, dass Sie die Betreuung der Prüfung annehmen möchten? Es wird automatisch eine E-Mail mit Ihrer Entscheidung versendet.',
-            "<i class='bi bi-check'></i>&nbsp;&nbsp;Betreuung annehmen", 'btn-success',
+            "<i class='bi bi-check-lg'></i>&nbsp;&nbsp;Betreuung annehmen", 'btn-success',
             'Abbrechen', 'btn-secondary', function () {
                 api_call('/api/accept_or_reject_pk5_betreuung', {email: '#{user_email}', accept: 'true'}, function(data) {
                     if (data.success) window.location.reload();
@@ -322,7 +322,7 @@ window.addEventListener('load', function() {
     $('#bu_reject_betreuung').on('click', function(e) {
         showTemplateModal('Betreuung ablehnen',
             'Sind Sie sicher, dass Sie die Betreuung der Prüfung ablehnen möchten? Es wird automatisch eine E-Mail mit Ihrer Entscheidung versendet.',
-            "<i class='bi bi-check'></i>&nbsp;&nbsp;Betreuung ablehnen", 'btn-danger',
+            "<i class='bi bi-check-lg'></i>&nbsp;&nbsp;Betreuung ablehnen", 'btn-danger',
             'Abbrechen', 'btn-secondary', function () {
                 api_call('/api/accept_or_reject_pk5_betreuung', {email: '#{user_email}', accept: 'false'}, function(data) {
                     if (data.success) window.location.reload();

@@ -4,7 +4,7 @@
         background-color: #{(@session_user || {})[:dark] ? '#000' : '#fff'};
     }
     </style>
-<div class='container-fluid solid white'>
+<div class='container-fluid page solid white'>
     <div>
     #{mail_addresses_table(klasse)}
     </div>
@@ -123,9 +123,9 @@ document.addEventListener('DOMContentLoaded', function() {
         api_call('/api/toggle_testing_required', {email: email}, function(data) {
             if (data.success) {
                 if (data.testing_required) {
-                    button.removeClass('btn-outline-secondary').addClass('btn-success').html("<i class='bi bi-check'></i>&nbsp;&nbsp;notwendig");
+                    button.removeClass('btn-outline-secondary').addClass('btn-success').html("<i class='bi bi-check-lg'></i>&nbsp;&nbsp;notwendig");
                 } else {
-                    button.removeClass('btn-success').addClass('btn-outline-secondary').html("<i class='bi bi-x'></i>&nbsp;&nbsp;nicht notwendig");
+                    button.removeClass('btn-success').addClass('btn-outline-secondary').html("<i class='bi bi-x-lg'></i>&nbsp;&nbsp;nicht notwendig");
                 }
             }
         });
@@ -136,9 +136,9 @@ document.addEventListener('DOMContentLoaded', function() {
         api_call('/api/toggle_voluntary_testing', {email: email}, function(data) {
             if (data.success) {
                 if (data.voluntary_testing) {
-                    button.removeClass('btn-outline-secondary').addClass('btn-success').html("<i class='bi bi-check'></i>&nbsp;&nbsp;nimmt teil");
+                    button.removeClass('btn-outline-secondary').addClass('btn-success').html("<i class='bi bi-check-lg'></i>&nbsp;&nbsp;nimmt teil");
                 } else {
-                    button.removeClass('btn-success').addClass('btn-outline-secondary').html("<i class='bi bi-x'></i>&nbsp;&nbsp;nimmt nicht teil");
+                    button.removeClass('btn-success').addClass('btn-outline-secondary').html("<i class='bi bi-x-lg'></i>&nbsp;&nbsp;nimmt nicht teil");
                 }
             }
         });
@@ -174,11 +174,11 @@ document.addEventListener('DOMContentLoaded', function() {
             if (state === false) {
                 showTemplateModal(`Dashboard-Amt vergeben`,
                     `Sind Sie sicher, dass Sie das Dashboard-Amt an <strong>${display_name}</strong> vergeben möchten? ${first_name} wird eine E-Mail bekommen und darüber informiert, dass ${pronoun} ab sofort die Hausaufgaben im Dashboard eintragen kann und ab morgen Dateien in die Nextcloud hochladen kann.`,
-                    `<i class='bi bi-check'></i>&nbsp;&nbsp;Dashboard-Amt vergeben`, 'btn-success',
-                    `<i class='bi bi-x'></i>&nbsp;&nbsp;Abbrechen`, 'btn-secondary', function () {
+                    `<i class='bi bi-check-lg'></i>&nbsp;&nbsp;Dashboard-Amt vergeben`, 'btn-success',
+                    `<i class='bi bi-x-lg'></i>&nbsp;&nbsp;Abbrechen`, 'btn-secondary', function () {
                         api_call('/api/set_sus_dashboard_amt', {email: email, flag: 'true'}, function(data) {
                             if (data.success) {
-                                button.removeClass('btn-outline-secondary').addClass('btn-success').html("<i class='bi bi-check'></i>&nbsp;&nbsp;Dashboard-Amt");
+                                button.removeClass('btn-outline-secondary').addClass('btn-success').html("<i class='bi bi-check-lg'></i>&nbsp;&nbsp;Dashboard-Amt");
                                 button.data('state', 'true');
                             }
                         });
@@ -187,11 +187,11 @@ document.addEventListener('DOMContentLoaded', function() {
             } else {
                 showTemplateModal(`Dashboard-Amt aufheben`,
                     `Sind Sie sicher, dass Sie <strong>${display_name}</strong> das Dashboard-Amt entziehen möchten? ${first_name} wird eine E-Mail bekommen und darüber informiert, dass ${pronoun} die Hausaufgaben nicht mehr im Dashboard eintragen kann und keine Dateien mehr in die Nextcloud hochladen kann.`,
-                    `<i class='bi bi-check'></i>&nbsp;&nbsp;Dashboard-Amt entziehen`, 'btn-danger',
-                    `<i class='bi bi-x'></i>&nbsp;&nbsp;Abbrechen`, 'btn-secondary', function () {
+                    `<i class='bi bi-check-lg'></i>&nbsp;&nbsp;Dashboard-Amt entziehen`, 'btn-danger',
+                    `<i class='bi bi-x-lg'></i>&nbsp;&nbsp;Abbrechen`, 'btn-secondary', function () {
                         api_call('/api/set_sus_dashboard_amt', {email: email, flag: 'false'}, function(data) {
                             if (data.success) {
-                                button.removeClass('btn-success').addClass('btn-outline-secondary').html("<i class='bi bi-x'></i>&nbsp;&nbsp;Dashboard-Amt");
+                                button.removeClass('btn-success').addClass('btn-outline-secondary').html("<i class='bi bi-x-lg'></i>&nbsp;&nbsp;Dashboard-Amt");
                                 button.data('state', 'false');
                             }
                         });

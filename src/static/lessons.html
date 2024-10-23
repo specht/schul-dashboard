@@ -45,7 +45,7 @@ var tablet_set_info = #{@@tablet_sets.to_json};
                         <div class="mb-3">
                             <label>Gruppenräume bereitstellen</label>
                             <div class='button-with-label'>
-                                <button id='ti_event_jitsi_breakout_rooms' data-state='no' class='btn_lesson_data btn btn-outline-secondary'><i class='bi bi-x'></i>Gruppenräume</button>
+                                <button id='ti_event_jitsi_breakout_rooms' data-state='no' class='btn_lesson_data btn btn-outline-secondary'><i class='bi bi-x-lg'></i>Gruppenräume</button>
                             </div>
                         </div>
                     </div>
@@ -83,7 +83,7 @@ var tablet_set_info = #{@@tablet_sets.to_json};
                         <div class="mb-3">
                             <label>Freie Raumwahl</label>
                             <div class='button-with-label'>
-                                <button id='ti_breakout_rooms_roaming' data-state='no' class='btn_lesson_data btn btn-outline-secondary' title='SuS dürfen beliebig zwischen den Räumen wechseln'><i class='bi bi-x'></i>Freie Raumwahl</button>
+                                <button id='ti_breakout_rooms_roaming' data-state='no' class='btn_lesson_data btn btn-outline-secondary' title='SuS dürfen beliebig zwischen den Räumen wechseln'><i class='bi bi-x-lg'></i>Freie Raumwahl</button>
                             </div>
                         </div>
                     </div>
@@ -258,7 +258,7 @@ var tablet_set_info = #{@@tablet_sets.to_json};
     </div>
 </div>
 
-<div class='container-fluid solid white'>
+<div class='container-fluid page solid white'>
     <div class='api_messages overlay'></div>
     <div class='row' style='position: relative;'>
         <div class='col-md-3' style='margin-top: -20px;'>
@@ -266,7 +266,7 @@ var tablet_set_info = #{@@tablet_sets.to_json};
                 <p class='status_label'>&nbsp;</p>
                 <div class="mb-3 bu-save-discard-container">
                     <button class='bu-discard-changes btn btn-outline-secondary' style='margin-bottom: 3px;' disabled><i class='bi bi-trash'></i>&nbsp;&nbsp;Verwerfen</button>
-                    <button class='bu-save-changes btn btn-outline-secondary' style='margin-bottom: 3px;' disabled ><i class='bi bi-check'></i>&nbsp;&nbsp;Speichern</button>
+                    <button class='bu-save-changes btn btn-outline-secondary' style='margin-bottom: 3px;' disabled ><i class='bi bi-check-lg'></i>&nbsp;&nbsp;Speichern</button>
                     <div class="btn-group bu-umplanen-container" style='position: relative; top: -2px;'>
                         <button type="button" class="btn btn-outline-secondary dropdown-toggle bu-umplanen" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false" disabled>Umplanen</button>
                         <div class="dropdown-menu dropdown-menu-end">
@@ -311,7 +311,7 @@ var tablet_set_info = #{@@tablet_sets.to_json};
                         </div>
                         <textarea id='ti_stundenthema_text' style='height: 100px; margin-bottom: 15px;' class="form-control" disabled></textarea>
                         <div class='button-with-label'>
-                            <button id='ti_lesson_fixed' data-state='off' class='btn_lesson_data btn btn-sm btn-outline-secondary' disabled><i class='bi bi-x'></i>&nbsp;&nbsp;fester Termin</button>
+                            <button id='ti_lesson_fixed' data-state='off' class='btn_lesson_data btn btn-sm btn-outline-secondary' disabled><i class='bi bi-x-lg'></i>&nbsp;&nbsp;fester Termin</button>
                             <span>Sie bekommen eine E-Mail, falls sich die Stunde verschiebt.</span>
                         </div>
                     </div>
@@ -319,32 +319,32 @@ var tablet_set_info = #{@@tablet_sets.to_json};
                     <div class="mb-3">
                         <label><b>Durchführung</b> <span class='text-muted'>(für SuS sichtbar)</span></label>
                         <div class='button-with-label'>
-                            <button id='ti_lesson_jitsi' data-state='off' class='btn_lesson_data btn btn-sm btn-outline-secondary' disabled><i class='bi bi-x'></i>&nbsp;&nbsp;Jitsi Meet</button>
+                            <button id='ti_lesson_jitsi' data-state='off' class='btn_lesson_data btn btn-sm btn-outline-secondary' disabled><i class='bi bi-x-lg'></i>&nbsp;&nbsp;Jitsi Meet</button>
                             <span>Für diese Stunde wird ein Jitsi Meet-Stream bereitgestellt.</span>
                         </div>
                         <div class='button-with-label'>
-                            <button id='ti_lesson_jitsi_breakout_rooms_popup' data-state='off' class='btn_lesson_data btn btn-sm btn-outline-secondary' disabled><i class='bi bi-x'></i>&nbsp;&nbsp;Gruppenräume</button>
+                            <button id='ti_lesson_jitsi_breakout_rooms_popup' data-state='off' class='btn_lesson_data btn btn-sm btn-outline-secondary' disabled><i class='bi bi-x-lg'></i>&nbsp;&nbsp;Gruppenräume</button>
                             <span>Für diese Stunde werden Jitsi-Gruppenräume bereitgestellt.</span>
                         </div>
                         <!-- <div class='button-with-label'>
-                            <button id='ti_lesson_need_tablet' data-state='off' class='btn btn-sm btn-outline-secondary' disabled><i class='bi bi-x'></i>&nbsp;&nbsp;Tablet</button>
+                            <button id='ti_lesson_need_tablet' data-state='off' class='btn btn-sm btn-outline-secondary' disabled><i class='bi bi-x-lg'></i>&nbsp;&nbsp;Tablet</button>
                             <span>Ich benötige ein Tablet, um für die komplette saLzH-Klasse aus der Schule zu streamen.</span>
                         </div>
                         <div class='explanation tablet-booking-status' style='margin-top: 5px; white-space: normal;'>
                         </div> -->
                         <div class='button-with-label'>
-                            <button id='ti_lesson_need_tablet_set' data-state='off' class='btn btn-sm btn-outline-secondary' disabled><i class='bi bi-x'></i>&nbsp;&nbsp;Geräte</button>
+                            <button id='ti_lesson_need_tablet_set' data-state='off' class='btn btn-sm btn-outline-secondary' disabled><i class='bi bi-x-lg'></i>&nbsp;&nbsp;Geräte</button>
                             <span>Ich benötige einen Tabletsatz oder andere Geräte für meine Unterrichtsstunde.</span>
                         </div>
                         <div class='explanation tablet-set-booking-status' style='margin-top: 5px; white-space: normal;'>
                         </div>
                         <hr style='margin: 5px 0 10px 0;' />
                         <div class='button-with-label'>
-                            <button id='ti_lesson_nc' data-state='off' class='btn_lesson_data btn btn-sm btn-outline-secondary' disabled><i class='bi bi-x'></i>&nbsp;&nbsp;Nextcloud</button>
+                            <button id='ti_lesson_nc' data-state='off' class='btn_lesson_data btn btn-sm btn-outline-secondary' disabled><i class='bi bi-x-lg'></i>&nbsp;&nbsp;Nextcloud</button>
                             <span>Es befinden sich Aufgaben im Nextcloud-Ordner. Der Link zum Ordner wird automatisch bereitgestellt.</span>
                         </div>
                         <div class='button-with-label'>
-                            <button id='ti_lesson_lr' data-state='off' class='btn_lesson_data btn btn-sm btn-outline-secondary' disabled><i class='bi bi-x'></i>&nbsp;&nbsp;Lernraum</button>
+                            <button id='ti_lesson_lr' data-state='off' class='btn_lesson_data btn btn-sm btn-outline-secondary' disabled><i class='bi bi-x-lg'></i>&nbsp;&nbsp;Lernraum</button>
                             <span>Es befinden sich Aufgaben im Lernraum.</span>
                         </div>
                     </div>
@@ -373,11 +373,11 @@ var tablet_set_info = #{@@tablet_sets.to_json};
                             <span>Geplanter Zeitaufwand (in Minuten)</span>
                         </div>
                         <div class='button-with-label'>
-                            <button id='ti_homework_nc' data-state='off' class='btn_lesson_data btn btn-sm btn-outline-secondary' disabled><i class='bi bi-x'></i>&nbsp;&nbsp;Nextcloud</button>
+                            <button id='ti_homework_nc' data-state='off' class='btn_lesson_data btn btn-sm btn-outline-secondary' disabled><i class='bi bi-x-lg'></i>&nbsp;&nbsp;Nextcloud</button>
                             <span>Es befinden sich Hausaufgaben im Nextcloud-Ordner.</span>
                         </div>
                         <div class='button-with-label'>
-                            <button id='ti_homework_lr' data-state='off' class='btn_lesson_data btn btn-sm btn-outline-secondary' disabled><i class='bi bi-x'></i>&nbsp;&nbsp;Lernraum</button>
+                            <button id='ti_homework_lr' data-state='off' class='btn_lesson_data btn btn-sm btn-outline-secondary' disabled><i class='bi bi-x-lg'></i>&nbsp;&nbsp;Lernraum</button>
                             <span>Es befinden sich Hausaufgaben im Lernraum.</span>
                         </div>
                     </div>
@@ -537,10 +537,10 @@ function update_breakout_room_widgets() {
         $('.bu-breakout-room-arrange-dropdown').prop('disabled', true);
         
         $('#ti_event_jitsi_breakout_rooms').removeClass('btn-info').addClass('btn-outline-secondary');
-        $('#ti_event_jitsi_breakout_rooms').find('.fa').removeClass('fa-check').removeClass('fa-question-circle').addClass('fa-times');
+        $('#ti_event_jitsi_breakout_rooms').find('.fa').removeClass('bi-check').removeClass('bi-question-circle').addClass('bi-times');
         $('#ti_event_jitsi_breakout_rooms').data('state', 'no');
         $('#ti_breakout_rooms_roaming').removeClass('btn-info').addClass('btn-outline-secondary');
-        $('#ti_breakout_rooms_roaming').find('.fa').removeClass('fa-check').removeClass('fa-question-circle').addClass('fa-times');
+        $('#ti_breakout_rooms_roaming').find('.fa').removeClass('bi-check').removeClass('bi-question-circle').addClass('bi-times');
         $('#ti_breakout_rooms_roaming').data('state', 'no');
     } else {
         button.data('state', 'yes');
@@ -551,12 +551,12 @@ function update_breakout_room_widgets() {
         if (breakout_room_config.roaming || false) {
             let b = $('#ti_breakout_rooms_roaming');
             b.addClass('btn-info').removeClass('btn-outline-secondary');
-            b.find('.fa').addClass('fa-check').removeClass('fa-times');
+            b.find('.fa').addClass('bi-check').removeClass('bi-times');
             b.data('state', 'yes');
         } else {
             let b = $('#ti_breakout_rooms_roaming');
             b.removeClass('btn-info').addClass('btn-outline-secondary');
-            b.find('.fa').removeClass('fa-check').addClass('fa-times');
+            b.find('.fa').removeClass('bi-check').addClass('bi-times');
             b.data('state', 'no');
         }
         $('.bu-breakout-room-arrange-dropdown').prop('disabled', false);
@@ -565,19 +565,19 @@ function update_breakout_room_widgets() {
     button.removeClass('half');
     if (button.data('state') === 'no') {
         button.removeClass('btn-info').addClass('btn-outline-secondary');
-        button.find('.fa').removeClass('fa-check').removeClass('fa-question-circle').addClass('fa-times');
+        button.find('.fa').removeClass('bi-check').removeClass('bi-question-circle').addClass('bi-times');
         $('#ti_event_jitsi_breakout_rooms').removeClass('btn-info').addClass('btn-outline-secondary').data('state', 'no');
-        $('#ti_event_jitsi_breakout_rooms').find('.fa').removeClass('fa-check').removeClass('fa-question-circle').addClass('fa-times');
+        $('#ti_event_jitsi_breakout_rooms').find('.fa').removeClass('bi-check').removeClass('bi-question-circle').addClass('bi-times');
         $('#ti_breakout_rooms_roaming').removeClass('btn-info').addClass('btn-outline-secondary').data('state', 'no');
-        $('#ti_breakout_rooms_roaming').find('.fa').removeClass('fa-check').removeClass('fa-question-circle').addClass('fa-times');
+        $('#ti_breakout_rooms_roaming').find('.fa').removeClass('bi-check').removeClass('bi-question-circle').addClass('bi-times');
     }
     else {
         button.removeClass('btn-outline-secondary').addClass('btn-info');
-        button.find('.fa').removeClass('fa-times').removeClass('fa-question-circle').addClass('fa-check');
+        button.find('.fa').removeClass('bi-times').removeClass('bi-question-circle').addClass('bi-check');
         if ($('#ti_lesson_jitsi').data('state') !== 'yes')
             $('#ti_lesson_jitsi').click();
         $('#ti_event_jitsi_breakout_rooms').removeClass('btn-outline-secondary').addClass('btn-info').data('state', 'yes');
-        $('#ti_event_jitsi_breakout_rooms').find('.fa').removeClass('fa-times').removeClass('fa-question-circle').addClass('fa-check');
+        $('#ti_event_jitsi_breakout_rooms').find('.fa').removeClass('bi-times').removeClass('bi-question-circle').addClass('bi-check');
     }
     
     $('.breakout-rooms-container').empty();
@@ -723,11 +723,11 @@ function update_tablet_booking_status(info) {
 function update_tablet_set_booking_status() {
     if (booked_tablet_sets_config.length === 0) {
         $('#ti_lesson_need_tablet_set').removeClass('btn-info').addClass('btn-outline-secondary');
-        $('#ti_lesson_need_tablet_set').find('.fa').removeClass('fa-check').addClass('fa-times');
+        $('#ti_lesson_need_tablet_set').find('.fa').removeClass('bi-check').addClass('bi-times');
         $('.tablet-set-booking-status').empty();
     } else {
         $('#ti_lesson_need_tablet_set').addClass('btn-info').removeClass('btn-outline-secondary');
-        $('#ti_lesson_need_tablet_set').find('.fa').removeClass('fa-times').addClass('fa-check');
+        $('#ti_lesson_need_tablet_set').find('.fa').removeClass('bi-times').addClass('bi-check');
         let names = booked_tablet_sets_config.map(function(x) { return `<b class='bg-warning' style='border-radius: 2px; padding: 0 4px;'>${x}</b>`; });
         $('.tablet-set-booking-status').html(`Für diese Stunde reserviert: ${names.join(', ')}. Bitte beachten Sie, dass die Buchung verfällt, falls diese Stunde durch den Vertretungsplan verschoben werden sollte. Sie können dann ggfs. eine neue Buchung vornehmen.`);
     }
@@ -790,23 +790,23 @@ function selection_updated() {
                 if (breakout_room_config.rooms !== null && breakout_room_config.participants !== null)
                     breakout_room_config = sanitize_breakout_room_config(breakout_room_config);
                 button.removeClass('btn-outline-secondary').removeClass('half').addClass('btn-info');
-                button.find('.fa').removeClass('fa-times').removeClass('fa-question-circle').addClass('fa-check');
+                button.find('.fa').removeClass('bi-times').removeClass('bi-question-circle').addClass('bi-check');
                 button.data('state', 'yes');
             } else {
                 button.removeClass('btn-info').removeClass('half').addClass('btn-outline-secondary');
-                button.find('.fa').removeClass('fa-check').removeClass('fa-question-circle').addClass('fa-times');
+                button.find('.fa').removeClass('bi-check').removeClass('bi-question-circle').addClass('bi-times');
                 button.data('state', 'no');
             }
             button = $('#ti_lesson_need_tablet');
             if (((lesson_data[single_selected_offset] || {}).info || {}).booked_tablet) {
                 button.removeClass('btn-outline-secondary').removeClass('half').addClass('btn-info');
-                button.find('.fa').removeClass('fa-times').removeClass('fa-question-circle').addClass('fa-check');
+                button.find('.fa').removeClass('bi-times').removeClass('bi-question-circle').addClass('bi-check');
                 button.data('state', 'yes');
                 let info = ((lesson_data[single_selected_offset] || {}).info || {}).booked_tablet;
                 update_tablet_booking_status(info);
             } else {
                 button.removeClass('btn-info').removeClass('half').addClass('btn-outline-secondary');
-                button.find('.fa').removeClass('fa-check').removeClass('fa-question-circle').addClass('fa-times');
+                button.find('.fa').removeClass('bi-check').removeClass('bi-question-circle').addClass('bi-times');
                 button.data('state', 'no');
             }
             button = $('#ti_lesson_need_tablet_set');
@@ -816,11 +816,11 @@ function selection_updated() {
             button = $('#ti_lesson_fixed');
             if (((lesson_data[single_selected_offset] || {}).info || {}).lesson_fixed) {
                 button.removeClass('btn-outline-secondary').removeClass('half').addClass('btn-info');
-                button.find('.fa').removeClass('fa-times').removeClass('fa-question-circle').addClass('fa-check');
+                button.find('.fa').removeClass('bi-times').removeClass('bi-question-circle').addClass('bi-check');
                 button.data('state', 'yes');
             } else {
                 button.removeClass('btn-info').removeClass('half').addClass('btn-outline-secondary');
-                button.find('.fa').removeClass('fa-check').removeClass('fa-question-circle').addClass('fa-times');
+                button.find('.fa').removeClass('bi-check').removeClass('bi-question-circle').addClass('bi-times');
                 button.data('state', 'no');
             }
         } else {
@@ -890,19 +890,19 @@ function selection_updated() {
                 let v = (Object.keys(seen_values)[0] === 'true');
                 if (v === true) {
                     button.removeClass('btn-outline-secondary').removeClass('half').addClass('btn-info');
-                    button.find('.fa').removeClass('fa-times').removeClass('fa-question-circle').addClass('fa-check');
+                    button.find('.fa').removeClass('bi-times').removeClass('bi-question-circle').addClass('bi-check');
                     button.data('state', 'yes');
                     button.data('original_state', 'yes');
                 } else {
                     button.removeClass('btn-info').removeClass('half').addClass('btn-outline-secondary');
-                    button.find('.fa').removeClass('fa-check').removeClass('fa-question-circle').addClass('fa-times');
+                    button.find('.fa').removeClass('bi-check').removeClass('bi-question-circle').addClass('bi-times');
                     button.data('state', 'no');
                     button.data('original_state', 'no');
                 }
             } else {
                 // multiple values
                 button.removeClass('btn-outline-secondary').addClass('btn-info').addClass('half');
-                button.find('.fa').removeClass('fa-times').removeClass('fa-check').addClass('fa-question-circle');
+                button.find('.fa').removeClass('bi-times').removeClass('bi-check').addClass('bi-question-circle');
                 button.data('state', 'mixed');
                 button.data('original_state', 'mixed');
             }
@@ -1301,7 +1301,7 @@ function pending_feedback_changes() {
 
                     let has_ha_amt = (amt_list.indexOf('hausaufgaben') >= 0);
                     if (has_ha_amt) {
-                        let bu_remove_ha = $('<button>').addClass('btn').addClass('btn-xs').addClass('btn-danger').css('font-size', '0.7rem').html("<i class='bi bi-x'></i>");
+                        let bu_remove_ha = $('<button>').addClass('btn').addClass('btn-xs').addClass('btn-danger').css('font-size', '0.7rem').html("<i class='bi bi-x-lg'></i>");
                         row.append($('<td>').append(bu_remove_ha));
                         bu_remove_ha.click(function() {
                             api_call('/api/remove_sus_from_amt', {lesson_key: lesson_key, email: email, amt: 'hausaufgaben'}, function(data) {
@@ -1315,7 +1315,7 @@ function pending_feedback_changes() {
 
                     let has_ma_amt = (amt_list.indexOf('material') >= 0);
                     if (has_ma_amt) {
-                        let bu_remove_ma = $('<button>').addClass('btn').addClass('btn-xs').addClass('btn-danger').css('font-size', '0.7rem').html("<i class='bi bi-x'></i>");
+                        let bu_remove_ma = $('<button>').addClass('btn').addClass('btn-xs').addClass('btn-danger').css('font-size', '0.7rem').html("<i class='bi bi-x-lg'></i>");
                         row.append($('<td>').append(bu_remove_ma));
                         bu_remove_ma.click(function() {
                             api_call('/api/remove_sus_from_amt', {lesson_key: lesson_key, email: email, amt: 'material'}, function(data) {
@@ -1397,13 +1397,13 @@ document.addEventListener('DOMContentLoaded', function() {
             button.removeClass('half');
             if (button.data('state') === 'yes') {
                 button.removeClass('btn-info').addClass('btn-outline-secondary');
-                button.find('.fa').removeClass('fa-check').removeClass('fa-question-circle').addClass('fa-times');
+                button.find('.fa').removeClass('bi-check').removeClass('bi-question-circle').addClass('bi-times');
                 button.data('state', 'no');
                 button.blur();
             }
             else {
                 button.removeClass('btn-outline-secondary').addClass('btn-info');
-                button.find('.fa').removeClass('fa-times').removeClass('fa-question-circle').addClass('fa-check');
+                button.find('.fa').removeClass('bi-times').removeClass('bi-question-circle').addClass('bi-check');
                 button.data('state', 'yes');
             }
             if (button.attr('id') === 'ti_lesson_jitsi' && button.data('state') !== 'yes') {
@@ -1431,7 +1431,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     if (typeof(lesson_data[window.single_selected_offset].info.preliminary_booked_tablet) !== 'undefined')
                         delete lesson_data[window.single_selected_offset].info.preliminary_booked_tablet;
                     button.removeClass('btn-info').addClass('btn-outline-secondary');
-                    button.find('.fa').removeClass('fa-check').removeClass('fa-question-circle').addClass('fa-times');
+                    button.find('.fa').removeClass('bi-check').removeClass('bi-question-circle').addClass('bi-times');
                     button.data('state', 'no');
                     button.blur();
                     force_pending_changes = true;
@@ -1471,7 +1471,7 @@ document.addEventListener('DOMContentLoaded', function() {
                             jitsi_button.click();
                         }
                         button.removeClass('btn-outline-secondary').addClass('btn-info');
-                        button.find('.fa').removeClass('fa-times').removeClass('fa-question-circle').addClass('fa-check');
+                        button.find('.fa').removeClass('bi-times').removeClass('bi-question-circle').addClass('bi-check');
                         button.data('state', 'yes');
                         force_pending_changes = true;
                         update_changes();
@@ -1504,21 +1504,21 @@ document.addEventListener('DOMContentLoaded', function() {
                 let bu_div = $('<div>').addClass('button-with-label');
                 let bu_book_tablet_set = $('<button>').addClass('btn').addClass('btn-sm').data('tablet_set_id', key).css('width', '120px');
                 if (booked_tablet_sets_config.indexOf(key) >= 0) {
-                    bu_book_tablet_set.addClass('btn-info').html("<i class='bi bi-check'></i>&nbsp;&nbsp;Gebucht");
+                    bu_book_tablet_set.addClass('btn-info').html("<i class='bi bi-check-lg'></i>&nbsp;&nbsp;Gebucht");
                 } else
                 {
-                    bu_book_tablet_set.addClass('btn-outline-secondary').html("<i class='bi bi-x'></i>&nbsp;&nbsp;Nicht gebucht");
+                    bu_book_tablet_set.addClass('btn-outline-secondary').html("<i class='bi bi-x-lg'></i>&nbsp;&nbsp;Nicht gebucht");
                 }
                 bu_book_tablet_set.click(function(e) {
                     let button = $(e.target).closest('button');
                     let tablet_set_id = button.data('tablet_set_id');
                     if (booked_tablet_sets_config.indexOf(tablet_set_id) >= 0) {
                         button.removeClass('btn-info').addClass('btn-outline-secondary');
-                        button.html("<i class='bi bi-x'></i>&nbsp;&nbsp;Nicht gebucht");
+                        button.html("<i class='bi bi-x-lg'></i>&nbsp;&nbsp;Nicht gebucht");
                         booked_tablet_sets_config = booked_tablet_sets_config.filter(item => item !== tablet_set_id);
                     } else {
                         button.removeClass('btn-outline-secondary').addClass('btn-info');
-                        button.html("<i class='bi bi-check'></i>&nbsp;&nbsp;Gebucht");
+                        button.html("<i class='bi bi-check-lg'></i>&nbsp;&nbsp;Gebucht");
                         booked_tablet_sets_config = booked_tablet_sets_config.filter(item => item !== tablet_set_id);
                         booked_tablet_sets_config.push(tablet_set_id);
                         booked_tablet_sets_config.sort();

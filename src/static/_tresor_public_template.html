@@ -608,7 +608,7 @@ function input_tendenz_apply_style_and_fix(input, callback) {
 
 function style_consider_button(button, flag) {
     if (flag) {
-        button.removeClass('btn-outline-secondary').addClass('btn-danger').html(`<i class='bi bi-check'></i>&nbsp;&nbsp;besprechen`);
+        button.removeClass('btn-outline-secondary').addClass('btn-danger').html(`<i class='bi bi-check-lg'></i>&nbsp;&nbsp;besprechen`);
     } else {
         button.removeClass('btn-danger').addClass('btn-outline-secondary').html(`nicht besprechen`);
     }
@@ -792,7 +792,7 @@ function load_noten_table(container, klasse, edit_noten) {
                                         } else {
                                             $(e.target).val($(e.target).data('old_value'));
                                             input_note_apply_style_and_fix($(e.target), function(value) {
-                                                let icon = $(`<i class='bi bi-x tresor_icon text-danger'>`);
+                                                let icon = $(`<i class='bi bi-x-lg tresor_icon text-danger'>`);
                                                 icon.appendTo(input.closest('td'));
                                             });
                                         }
@@ -926,7 +926,7 @@ function load_fehltage_table(container, klasse, edit_noten) {
                                         } else {
                                             $(e.target).val($(e.target).data('old_value'));
                                             input_anzahl_apply_style_and_fix($(e.target), function(value) {
-                                                let icon = $(`<i class='bi bi-x tresor_icon text-danger'>`);
+                                                let icon = $(`<i class='bi bi-x-lg tresor_icon text-danger'>`);
                                                 icon.appendTo(input.closest('td'));
                                             });
                                         }
@@ -1046,7 +1046,7 @@ function load_sozialverhalten_table(container, klasse, edit_noten) {
                                         } else {
                                             $(e.target).val($(e.target).data('old_value'));
                                             input_tendenz_apply_style_and_fix($(e.target), function(value) {
-                                                let icon = $(`<i class='bi bi-x tresor_icon text-danger'>`);
+                                                let icon = $(`<i class='bi bi-x-lg tresor_icon text-danger'>`);
                                                     icon.appendTo(input.closest('td'));
                                                 });
                                             }
@@ -1245,7 +1245,7 @@ function load_angebote_bemerkungen_table(container, klasse, edit_noten) {
                                             } else {
                                                 $(e.target).val($(e.target).data('old_value'));
                                                 input_versetzt_apply_style_and_fix($(e.target), function(value) {
-                                                    let icon = $(`<i class='bi bi-x tresor_icon text-danger'>`);
+                                                    let icon = $(`<i class='bi bi-x-lg tresor_icon text-danger'>`);
                                                     icon.appendTo(input.closest('td'));
                                                 });
                                             }
@@ -1301,7 +1301,7 @@ function load_angebote_bemerkungen_table(container, klasse, edit_noten) {
                                             $(e.target).data('old_value', value);
                                         } else {
                                             $(e.target).val($(e.target).data('old_value'));
-                                            let icon = $(`<i class='bi bi-x tresor_icon text-danger'>`);
+                                            let icon = $(`<i class='bi bi-x-lg tresor_icon text-danger'>`);
                                             icon.appendTo(input.closest('td'));
                                         }
                                     });

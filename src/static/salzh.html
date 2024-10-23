@@ -153,9 +153,9 @@
             <div class="modal-footer">
                 <div id='publish_message_btn_container'>
                     <button id='bu_discard_message' class='btn btn-outline-secondary' disabled><i
-                            class='bi bi-x'></i>&nbsp;&nbsp;<span>Verwerfen</span></button>
+                            class='bi bi-x-lg'></i>&nbsp;&nbsp;<span>Verwerfen</span></button>
                     <button id='bu_send_message' class='btn btn-outline-secondary' disabled><i
-                            class='bi bi-check'></i>&nbsp;&nbsp;<span>Speichern</span></button>
+                            class='bi bi-check-lg'></i>&nbsp;&nbsp;<span>Speichern</span></button>
                 </div>
                 <button id='bu_delete_message' type="button" class="btn btn-outline-secondary" disabled
                     style='display: none;'><i class='bi bi-trash'></i>&nbsp;&nbsp;Nachricht löschen</button>
@@ -628,7 +628,7 @@
                 let display_name = row.data('display_name');
                 showTemplateModal('Eltern benachrichtigen',
                 `Sind Sie sicher, dass Sie die Eltern von ${display_name} wegen einer nicht erfolgten Testung benachrichtigen möchten?`,
-                "<i class='bi bi-check'></i>&nbsp;&nbsp;E-Mail senden", 'btn-success',
+                "<i class='bi bi-check-lg'></i>&nbsp;&nbsp;E-Mail senden", 'btn-success',
                 'Abbrechen', 'btn-secondary', function () {
                     api_call('/api/notify_parents_of_skipped_voluntary_testing', {email: email}, function(data) {
                         if (data.success) {

@@ -66,8 +66,8 @@
             </div>
             <div class="modal-footer">
                 <div id='save_group_btn_container'>
-                    <button id='bu_discard_group' class='btn btn-outline-secondary' disabled><i class='bi bi-x'></i>&nbsp;&nbsp;<span>Verwerfen</span></button>
-                    <button id='bu_save_group' class='btn btn-outline-secondary' disabled><i class='bi bi-check'></i>&nbsp;&nbsp;<span>Speichern</span></button>
+                    <button id='bu_discard_group' class='btn btn-outline-secondary' disabled><i class='bi bi-x-lg'></i>&nbsp;&nbsp;<span>Verwerfen</span></button>
+                    <button id='bu_save_group' class='btn btn-outline-secondary' disabled><i class='bi bi-check-lg'></i>&nbsp;&nbsp;<span>Speichern</span></button>
                 </div>
                 <button id='bu_delete_group' type="button" class="btn btn-outline-secondary" disabled style='display: none;'><i class='bi bi-trash'></i>&nbsp;&nbsp;Gruppe löschen</button>
                 <button id='bu_close_group_modal' type="button" class="btn btn-secondary" data-bs-dismiss="modal">Schließen</button>
@@ -343,7 +343,7 @@ function update_external_users_for_session_user() {
         let row = $('<tr>');
         row.append($('<td>').html(external_users_for_session_user.recipients[email].label));
         row.append($('<td>').html(email));
-//         let bu_toggle = $('<button>').data('email', email).addClass('btn').addClass('btn-xs').addClass('btn-secondary').html("<i class='bi bi-x'></i>&nbsp;&nbsp;nicht eingeladen");
+//         let bu_toggle = $('<button>').data('email', email).addClass('btn').addClass('btn-xs').addClass('btn-secondary').html("<i class='bi bi-x-lg'></i>&nbsp;&nbsp;nicht eingeladen");
 //         row.append($('<td>').append(bu_toggle));
         let bu_delete = $('<button>').data('email', email).addClass('btn').addClass('btn-xs').addClass('btn-danger').html("<i class='bi bi-trash'></i>");
         row.append($('<td>').append(bu_delete));
@@ -516,13 +516,13 @@ document.addEventListener('DOMContentLoaded', function() {
         let button = $(e.target);
         if (button.data('state') === 'yes') {
             button.removeClass('btn-info').addClass('btn-outline-secondary');
-            button.find('.fa').removeClass('fa-check').removeClass('fa-question-circle').addClass('fa-times');
+            button.find('.fa').removeClass('bi-check').removeClass('bi-question-circle').addClass('bi-times');
             button.data('state', 'no');
             button.blur();
         }
         else {
             button.removeClass('btn-outline-secondary').addClass('btn-info');
-            button.find('.fa').removeClass('fa-times').removeClass('fa-question-circle').addClass('fa-check');
+            button.find('.fa').removeClass('bi-times').removeClass('bi-question-circle').addClass('bi-check');
             button.data('state', 'yes');
         }
         update_buttons();

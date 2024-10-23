@@ -24,7 +24,7 @@ jQuery.extend({
 function show_error_message(message) {
     var div = $('<div>').css('text-align', 'center').css('padding', '15px').addClass('bg-light text-danger').html(message);
     $('.api_messages').empty();
-    let button = $("<button class='text-stone-400 btn float-right form-control' style='width: unset; margin: 8px;' ><i class='bi bi-x'></i></button>");
+    let button = $("<button class='text-stone-400 btn float-right form-control' style='width: unset; margin: 8px;' ><i class='bi bi-x-lg'></i></button>");
     $('.api_messages').append(button).append(div).show();
     button.click(function(e) { $('.api_messages').hide(); });
 }
@@ -46,7 +46,7 @@ function api_call(url, data, callback, options) {
         // show 'please wait' message after 500 ms
         (function () {
             window.please_wait_timeout = setTimeout(function () {
-                var div = $('<div>').css('text-align', 'center').css('padding', '15px').addClass('text-muted').html("<i class='bi bi-cog fa-spin'></i>&nbsp;&nbsp;Einen Moment bitte...");
+                var div = $('<div>').css('text-align', 'center').css('padding', '15px').addClass('text-muted').html("<i class='bi bi-cog bi-spin'></i>&nbsp;&nbsp;Einen Moment bitte...");
                 $('.api_messages').empty().show();
                 $('.api_messages').append(div);
             }, 500);
@@ -292,7 +292,7 @@ function create_audio_player(from, tag, duration) {
     let url = '/raw/uploads/audio_comment/' + tag.substr(0, 2) + '/' + tag.substr(2, tag.length - 2) + '.mp3';
     let player = $('<div>').addClass('audio-player');
     let top = $('<div>').addClass('player-top').appendTo(player);
-    let icon = $('<i>').addClass('fa').addClass('fa-play');
+    let icon = $('<i>').addClass('fa').addClass('bi-play');
     let play_button = $('<button>').addClass('player-button').addClass('btn').addClass('btn-primary').addClass('btn-sm').append(icon).append("&#8203;");
     top.append($('<span>').addClass('player-from').html(from));
     top.append(play_button);
@@ -357,19 +357,19 @@ function create_audio_player(from, tag, duration) {
         pb_audio.loop = false;
         pb_audio.addEventListener('play', function (e) {
             pb_playing = true;
-            pb_widget.icon.removeClass('fa-play').addClass('fa-pause');
+            pb_widget.icon.removeClass('bi-play').addClass('bi-pause');
         });
         pb_audio.addEventListener('ended', function () {
             pb_audio.currentTime = 0;
             pb_widget.indicator.css('left', '0%');
-            pb_widget.button.find('.fa').removeClass('fa-pause').addClass('fa-play');
+            pb_widget.button.find('.fa').removeClass('bi-pause').addClass('bi-play');
             pb_widget.duration_div.html(duration_to_str(pb_duration));
             pb_playing = false;
             pb_want_to_play = false;
         });
         pb_audio.addEventListener('pause', function () {
             pb_playing = false;
-            pb_widget.button.find('.fa').removeClass('fa-pause').addClass('fa-play');
+            pb_widget.button.find('.fa').removeClass('bi-pause').addClass('bi-play');
         });
         pb_audio.addEventListener('timeupdate', function (e) {
             pb_widget.indicator.css('left', '' + (100.0 * pb_audio.currentTime / pb_duration) + '%');

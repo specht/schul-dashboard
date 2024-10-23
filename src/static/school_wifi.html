@@ -107,7 +107,7 @@
                             update_submit_button();
                         });
 
-                        let acceptButton = $('<button>').addClass('btn btn-outline-success').html('<i class="bi bi-check"></i>');
+                        let acceptButton = $('<button>').addClass('btn btn-outline-success').html('<i class="bi bi-check-lg"></i>');
                         acceptButton.click(function(e) {
                             api_call('/api/accept_wifi_request', {token: request.request.token}, function(data) {
                                 if (data.success) 
@@ -115,7 +115,7 @@
                             });
                         });
 
-                        let declineButton = $('<button>').addClass('btn btn-outline-danger').html('<i class="bi bi-x"></i>');
+                        let declineButton = $('<button>').addClass('btn btn-outline-danger').html('<i class="bi bi-x-lg"></i>');
                         declineButton.click(function(e) {
                             api_call('/api/decline_wifi_request', {token: request.request.token}, function(data) {
                                 if (data.success) 
@@ -136,11 +136,11 @@
                     console.log("endDateTime: " + endDateTime);
 
                     if (request.request.status === 'accepted' && endDateTime >= now && startDateTime <= now) {
-                        statusIcon = $('<td>').html("<i class='text-success bi bi-check' title='Aktiv'></i> Aktiv");
+                        statusIcon = $('<td>').html("<i class='text-success bi bi-check-lg' title='Aktiv'></i> Aktiv");
                     } else if (request.request.status === 'waiting') {
                         statusIcon = $('<td>').html("<i class='text-secondary bi bi-clock-o' title='In Bearbeitung'></i> In Bearbeitung");
                     } else if (request.request.status === 'declined') {
-                        statusIcon = $('<td>').html("<i class='text-danger bi bi-x' title='Abgelehnt'></i> Abgelehnt");
+                        statusIcon = $('<td>').html("<i class='text-danger bi bi-x-lg' title='Abgelehnt'></i> Abgelehnt");
                     } else if (endDateTime < now) {
                         statusIcon = $('<td>').html("<i class='text-danger bi bi-lock' title='Beendet'></i> Beendet");
                     } else {

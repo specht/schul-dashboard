@@ -81,7 +81,7 @@
                                 $('<td>').text(`${moment.unix(order.o.ts_order_placed).format('L')}`).data('sort_value', order.o.ts_order_placed),
                                 $('<td>').css('max-width', '180px').text(`${kurs}`),
                                 $('<td>').text(`${missing_count}`).data('sort_value', missing_count),
-                                (order.o.complete) ? $('<td>').html(`<i class='bi bi-check text-grass-500'></i>&nbsp;&nbsp;Bereit`) :
+                                (order.o.complete) ? $('<td>').html(`<i class='bi bi-check-lg text-grass-500'></i>&nbsp;&nbsp;Bereit`) :
                                     (order.f_count === 0 ? $('<td>').html(`<i class='bi bi-clock-o text-stone-400'></i>&nbsp;&nbsp;in Bearbeitung`) :
                                     $('<td>').html(`<i class='bi bi-clock-o text-grass-500'></i>&nbsp;&nbsp;Teilweise bereit`)),
                                 

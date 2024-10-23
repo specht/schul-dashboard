@@ -105,7 +105,7 @@
                             entry.email,
                             create_user_td_span(entry.email),
                             $('<td>').html((db_user_info[entry.email] || {}).klasse || '&ndash;').data('sort_value', (db_user_info[entry.email] || {}).klassen_order),
-                            $('<td>').html(lehrmittelverein_state_cache[entry.email] ? `<i class='bi bi-check-circle text-grass-500'></i` : `<i class='bi bi-x-circle text-persimmon-500'></i>`).data('sort_value', (lehrmittelverein_state_cache[entry.email] || false).toString()),
+                            $('<td>').html(lehrmittelverein_state_cache[entry.email] ? `<i class='bi bi-check-lg-circle text-grass-500'></i` : `<i class='bi bi-x-lg-circle text-persimmon-500'></i>`).data('sort_value', (lehrmittelverein_state_cache[entry.email] || false).toString()),
                             $('<td>').html(`${entry.ausleih_count === 0 ? '&ndash;' : entry.ausleih_count}`).data('sort_value', entry.ausleih_count || 0),
                             $('<td>').html(`${entry.confirm_count ? entry.confirm_count : '&ndash;'}`).data('sort_value', entry.confirm_count || 0),
                         ];

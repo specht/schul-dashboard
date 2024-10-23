@@ -67,7 +67,7 @@ function add_recipient(key) {
     let sus_email = key.replace('eltern.', '');
     showTemplateModal('Elternvertreter:in hinzufügen',
                 `Sind Sie sicher, dass Sie die <b>${recipients[parent_email].label} (${db_user_info[sus_email].klasse})</b> als Elternvertreter:in hinzufügen möchten? Die Eltern werden umgehend per E-Mail darüber informiert, dass sie nun die E-Mail-Verteiler benutzen können.`,
-                "<i class='bi bi-check'></i>&nbsp;&nbsp;Elternvertreter:in hinzufügen", 'btn-success',
+                "<i class='bi bi-check-lg'></i>&nbsp;&nbsp;Elternvertreter:in hinzufügen", 'btn-success',
                 'Abbrechen', 'btn-secondary', function () {
                     console.log(`adding: ${sus_email}`);
                     api_call('/api/add_ev', {email: sus_email}, function(data) {

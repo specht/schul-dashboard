@@ -25,7 +25,7 @@
                     </thead>
                     <tbody id='news_here'>
                         <tr>
-                            <td><i class='bi bi-cog fa-spin'></i></td>
+                            <td><i class='bi bi-cog bi-spin'></i></td>
                         </tr>
                     </tbody>
                 </table>
@@ -60,9 +60,9 @@
                         class='bi bi-eye'></i>&nbsp;&nbsp;Vorschau</button>
                 <div id='save_news_btn_container'>
                     <button id='bu_discard' type="button" class="btn btn-outline-secondary"><i
-                            class='bi bi-x'></i>&nbsp;&nbsp;<span>Verwerfen</span></button>
+                            class='bi bi-x-lg'></i>&nbsp;&nbsp;<span>Verwerfen</span></button>
                     <button id='bu_save' type="button" class="btn btn-outline-secondary"><i
-                            class='bi bi-check'></i>&nbsp;&nbsp;<span>Speichern</span></button>
+                            class='bi bi-check-lg'></i>&nbsp;&nbsp;<span>Speichern</span></button>
                 </div>
                 <button id='bu_close_edit_modal' type="button" class="btn btn-secondary"
                     data-bs-dismiss="modal">Schließen</button>
@@ -168,13 +168,13 @@
                 tbody.append(row);
                 let bu_published = $('<button>').addClass('btn').addClass('btn-sm').
                     addClass(entry.published ? 'btn-success' : 'btn-outline-success').
-                    html(`<i class='fa ${entry.published ? 'fa-eye' : 'fa-eye-slash'}'></i>`);
+                    html(`<i class='fa ${entry.published ? 'bi-eye' : 'bi-eye-slash'}'></i>`);
 
                 let bu_sticky = $('<button>').addClass('btn').addClass('btn-sm').
                     addClass(entry.sticky ? 'btn-info' : 'btn-outline-info').
                     html("<i class='bi bi-map-pin'></i>");
 
-                let bu_delete = $('<button>').addClass('btn').addClass('btn-sm').addClass('btn-danger').html("<i class='bi bi-x'></i>");
+                let bu_delete = $('<button>').addClass('btn').addClass('btn-sm').addClass('btn-danger').html("<i class='bi bi-x-lg'></i>");
 
                 row.append($('<td>').append(bu_published).append(bu_sticky).append(bu_delete));
 
@@ -186,7 +186,7 @@
                             $(e.target).closest('tr').data('published', data.published);
                             bu_published.removeClass('btn-success').removeClass('btn-outline-success').
                                 addClass(data.published ? 'btn-success' : 'btn-outline-success').
-                                html(`<i class='fa ${data.published ? 'fa-eye' : 'fa-eye-slash'}'></i>`);
+                                html(`<i class='fa ${data.published ? 'bi-eye' : 'bi-eye-slash'}'></i>`);
                         }
                     });
                 });
@@ -283,10 +283,10 @@
         $('.ti_title').change(function (e) { update_buttons(); });
         $('#ta_markdown').change(function (e) { update_buttons(); });
         $('.bu-refresh-staging').click(function (e) {
-            $('#refresh-icon-staging').addClass('fa-spin');
+            $('#refresh-icon-staging').addClass('bi-spin');
             api_call('/api/refresh_news_on_website', { staging: 'yes' }, function (data) {
                 if (data.success) {
-                    $('#refresh-icon-staging').removeClass('fa-spin');
+                    $('#refresh-icon-staging').removeClass('bi-spin');
                     console.log('success');
                 }
             });
@@ -294,12 +294,12 @@
         $('.bu-refresh-live').click(function (e) {
             showTemplateModal('Website aktualisieren',
                 'Sind Sie sicher, dass Sie die Website aktualisieren möchten?',
-                "<i class='bi bi-check'></i>&nbsp;&nbsp;Website aktualisieren", 'btn-success',
+                "<i class='bi bi-check-lg'></i>&nbsp;&nbsp;Website aktualisieren", 'btn-success',
                 'Abbrechen', 'btn-secondary', function () {
-                    $('#refresh-icon-live').addClass('fa-spin');
+                    $('#refresh-icon-live').addClass('bi-spin');
                     api_call('/api/refresh_news_on_website', { staging: 'no' }, function (data) {
                         if (data.success) {
-                            $('#refresh-icon-live').removeClass('fa-spin');
+                            $('#refresh-icon-live').removeClass('bi-spin');
                             console.log('success');
                         }
                     });

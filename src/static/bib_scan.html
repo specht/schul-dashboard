@@ -92,7 +92,7 @@
             <div id='info_div' style="display: none;">
                 <hr style='margin: 12px 0 5px 0;'/>
                 <button id='bu_scan_isbn' class='float-right btn btn-sm btn-success ms-1 me-1'>ISBN scannen</button>
-                <button id='bu_scan_isbn_cancel' class='float-right btn btn-sm btn-danger ms-1 me-1' style="display: none;"><i class='bi bi-x'></i>&nbsp;&nbsp;Abbruch</button>
+                <button id='bu_scan_isbn_cancel' class='float-right btn btn-sm btn-danger ms-1 me-1' style="display: none;"><i class='bi bi-x-lg'></i>&nbsp;&nbsp;Abbruch</button>
                 <div id='info_isbn'></div>
                 <hr style='margin: 12px 0 5px 0;'/>
                 <button id='bu_set_shelf' style='display: none;' class='float-right btn btn-sm btn-success ms-1 me-1' disabled>Buch liegt in <span class="shelf_here" style="font-weight: bold;"></span></button>
@@ -129,7 +129,7 @@
                 </div>
             </div>
             <div class="button_container float-right" style="margin-top: 15px;">
-                <button id='bu_discard_photo' type="button" class="btn btn-secondary" data-bs-dismiss="modal"><i class='bi bi-x'></i>&nbsp;&nbsp;Abbrechen</button>
+                <button id='bu_discard_photo' type="button" class="btn btn-secondary" data-bs-dismiss="modal"><i class='bi bi-x-lg'></i>&nbsp;&nbsp;Abbrechen</button>
                 <button id='bu_submit_photo' type="button" class="btn btn-success"><i class='bi bi-send'></i>&nbsp;&nbsp;Hochladen</button>
             </div>
         </div>
@@ -160,9 +160,9 @@
             $('#title_div').text(title);
             $('#author_div').text(book.author);
             if (book.isbn) {
-                $('#info_isbn').html(`<i class='bi bi-check text-grass-500'></i>&nbsp;&nbsp;Buch hat eine ISBN`);
+                $('#info_isbn').html(`<i class='bi bi-check-lg text-grass-500'></i>&nbsp;&nbsp;Buch hat eine ISBN`);
             } else {
-                $('#info_isbn').html(`<i class='bi bi-x text-scarlet-500'></i>&nbsp;&nbsp;Buch hat keine ISBN`);
+                $('#info_isbn').html(`<i class='bi bi-x-lg text-scarlet-500'></i>&nbsp;&nbsp;Buch hat keine ISBN`);
                 if ((data.proposed_isbn || []).length > 0) {
                     $('#info_isbn').append(`, aber bereits Vorschläge: ${data.proposed_isbn.join(', ')}`);
                 }
@@ -172,14 +172,14 @@
             if (book.has_cover) {
                 $('#cover').attr('src', `${BIB_HOST}/gen/covers/${book.stem}-400.jpg`).removeClass('none').show();
                 $('#no_cover').hide();
-                $('#info_cover').html(`<i class='bi bi-check text-grass-500'></i>&nbsp;&nbsp;Buch hat ein Cover`);
+                $('#info_cover').html(`<i class='bi bi-check-lg text-grass-500'></i>&nbsp;&nbsp;Buch hat ein Cover`);
                 if ((data.book_photos || []).length > 0) {
                     $('#info_cover').append(`, aber es wurden Fotos hochgeladen:<br />`);
                 }
             } else {
                 $('#cover').attr('src', '').hide();
                 $('#no_cover').show();
-                $('#info_cover').html(`<i class='bi bi-x text-scarlet-500'></i>&nbsp;&nbsp;Buch hat kein Cover`);
+                $('#info_cover').html(`<i class='bi bi-x-lg text-scarlet-500'></i>&nbsp;&nbsp;Buch hat kein Cover`);
                 if ((data.book_photos || []).length > 0) {
                     $('#info_cover').append(`, aber bereits Vorschläge:<br />`);
                 }
@@ -192,9 +192,9 @@
             $('#link_exemplar').attr('href', `/bib_exemplar/${book.stem}-${bnr}`);
             $('.cover_link').show();
             if ((data.locations || []).length > 0) {
-                $('#info_shelf').html(`<i class='bi bi-check text-grass-500'></i>&nbsp;&nbsp;Buch hat einen Lagerort: ${data.locations.map(function(x) { return create_location_span(x); }).join(' ')}`);
+                $('#info_shelf').html(`<i class='bi bi-check-lg text-grass-500'></i>&nbsp;&nbsp;Buch hat einen Lagerort: ${data.locations.map(function(x) { return create_location_span(x); }).join(' ')}`);
             } else {
-                $('#info_shelf').html(`<i class='bi bi-x text-scarlet-500'></i>&nbsp;&nbsp;Buch hat keinen Lagerort`);
+                $('#info_shelf').html(`<i class='bi bi-x-lg text-scarlet-500'></i>&nbsp;&nbsp;Buch hat keinen Lagerort`);
             }
         } else {
             sound.play('error');

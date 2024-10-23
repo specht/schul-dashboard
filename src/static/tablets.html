@@ -20,7 +20,7 @@ document.addEventListener('DOMContentLoaded', function() {
     $('#add_mobile_device').click(function(e) {
         $('#__template_modal .modal-title').html('Gerät hinzufügen');
         $('#__template_modal .modal-body').html('<div class="col-sm-12"><div class="row"><div class="col-sm-4"><input id="set" placeholder="Satz (z.B. 1)" type="number" class="form-control"></input></div><div class="col-sm-4"><input id="tablet" placeholder="Nummer (z.B. 10)" type="number" class="form-control"></input></div><div class="col-sm-4"><input id="code" readonly placeholder="Code (vom Server)" type="number" class="form-control disabled"></input></div></div></div>');
-        let bu_confirm = $('<button>').addClass('btn ' + 'btn-success').html('<i class="bi bi-check"></i>&nbsp;&nbsp;Speichern');
+        let bu_confirm = $('<button>').addClass('btn ' + 'btn-success').html('<i class="bi bi-check-lg"></i>&nbsp;&nbsp;Speichern');
         $('#__template_modal .modal-footer').empty().append(bu_confirm);
         let bu_cancel = $('<button>').addClass('btn ' + 'btn-secondary').html('Schließen').attr('data-dismiss', 'modal');
         $('#__template_modal .modal-footer').append(bu_cancel);

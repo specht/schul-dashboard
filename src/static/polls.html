@@ -51,8 +51,8 @@
             </div>
             <div class="modal-footer">
                 <div id='save_poll_btn_container'>
-                    <button id='bu_discard_poll' class='btn btn-outline-secondary' disabled><i class='bi bi-x'></i>&nbsp;&nbsp;<span>Verwerfen</span></button>
-                    <button id='bu_save_poll' class='btn btn-outline-secondary' disabled><i class='bi bi-check'></i>&nbsp;&nbsp;<span>Speichern</span></button>
+                    <button id='bu_discard_poll' class='btn btn-outline-secondary' disabled><i class='bi bi-x-lg'></i>&nbsp;&nbsp;<span>Verwerfen</span></button>
+                    <button id='bu_save_poll' class='btn btn-outline-secondary' disabled><i class='bi bi-check-lg'></i>&nbsp;&nbsp;<span>Speichern</span></button>
                 </div>
                 <button id='bu_close_poll_modal' type="button" class="btn btn-secondary" data-bs-dismiss="modal">Schließen</button>
             </div>
@@ -77,7 +77,7 @@
                     <div class='col-md-2' style="display: #{user_with_role_logged_in?(:developer) ? 'block' : 'none'}">
                         <div class="mb-3">
                             <label>Sichbarkeit (Dev)</label>
-                            <button id='visible' data-state='yes' class='btn_visible btn btn-info'><i class='bi bi-check'></i>&nbsp;&nbsp;Sichtbar</button>
+                            <button id='visible' data-state='yes' class='btn_visible btn btn-info'><i class='bi bi-check-lg'></i>&nbsp;&nbsp;Sichtbar</button>
                         </div>
                     </div>
                 </div>
@@ -192,8 +192,8 @@
             </div>
             <div class="modal-footer">
                 <div id='save_poll_run_btn_container'>
-                    <button id='bu_discard_poll_run' class='btn btn-outline-secondary' disabled><i class='bi bi-x'></i>&nbsp;&nbsp;<span>Verwerfen</span></button>
-                    <button id='bu_save_poll_run' class='btn btn-outline-secondary' disabled><i class='bi bi-check'></i>&nbsp;&nbsp;<span>Speichern</span></button>
+                    <button id='bu_discard_poll_run' class='btn btn-outline-secondary' disabled><i class='bi bi-x-lg'></i>&nbsp;&nbsp;<span>Verwerfen</span></button>
+                    <button id='bu_save_poll_run' class='btn btn-outline-secondary' disabled><i class='bi bi-check-lg'></i>&nbsp;&nbsp;<span>Speichern</span></button>
                 </div>
                 <button id='bu_close_poll_run_modal' type="button" class="btn btn-secondary" data-bs-dismiss="modal">Schließen</button>
             </div>
@@ -733,7 +733,7 @@ function update_stored_polls() {
                 let bu_container = $('<div>').addClass('float-right').addClass('button-container-vertical');
                 let bu_poll_run_show_results = $('<button>').css('margin-left', '4px').addClass('btn').addClass('btn-primary').addClass('btn-sm').html(`<i class='bi bi-bar-chart'></i>&nbsp;&nbsp;Ergebnisse (${percent}% beantwortet)`);
                 let bu_poll_run_edit = $('<button>').css('margin-left', '4px').addClass('btn').addClass('btn-secondary').addClass('btn-sm').html("<i class='bi bi-pencil'></i>&nbsp;&nbsp;Durchführung bearbeiten");
-                let bu_poll_run_stop = $('<button>').css('margin-left', '4px').addClass('btn').addClass('btn-danger').addClass('btn-sm').html(`<i class='bi bi-x'></i>&nbsp;&nbsp;Umfrage stoppen`);
+                let bu_poll_run_stop = $('<button>').css('margin-left', '4px').addClass('btn').addClass('btn-danger').addClass('btn-sm').html(`<i class='bi bi-x-lg'></i>&nbsp;&nbsp;Umfrage stoppen`);
                 let bu_poll_run_delete = $('<button>').css('margin-left', '4px').addClass('btn').addClass('btn-danger').addClass('btn-sm').html(`<i class='bi bi-trash'></i>&nbsp;&nbsp;Durchführung löschen`);
                 let cell = $('<td>').css('text-align', 'right').css('overflow', 'visible');
                 if (state === 'running')
@@ -767,7 +767,7 @@ function update_stored_polls() {
                     let prid = $(e.target).closest('.poll-run-div').data('prid');
                     showTemplateModal('Umfrage stoppen',
                         'Sind Sie sicher, dass Sie diese Umfrage stoppen möchten?',
-                        "<i class='bi bi-x'></i>&nbsp;&nbsp;Umfrage stoppen", 'btn-danger',
+                        "<i class='bi bi-x-lg'></i>&nbsp;&nbsp;Umfrage stoppen", 'btn-danger',
                         'Abbrechen', 'btn-secondary', function() {
                             stop_poll_run(prid);
                         }
@@ -796,7 +796,7 @@ function update_external_users_for_session_user() {
         let row = $('<tr>');
         row.append($('<td>').html(external_users_for_session_user.recipients[email].label));
         row.append($('<td>').html(email));
-//         let bu_toggle = $('<button>').data('email', email).addClass('btn').addClass('btn-xs').addClass('btn-secondary').html("<i class='bi bi-x'></i>&nbsp;&nbsp;nicht eingeladen");
+//         let bu_toggle = $('<button>').data('email', email).addClass('btn').addClass('btn-xs').addClass('btn-secondary').html("<i class='bi bi-x-lg'></i>&nbsp;&nbsp;nicht eingeladen");
 //         row.append($('<td>').append(bu_toggle));
         let bu_delete = $('<button>').data('email', email).addClass('btn').addClass('btn-xs').addClass('btn-danger').html("<i class='bi bi-trash'></i>");
         row.append($('<td>').append(bu_delete));
@@ -1088,12 +1088,12 @@ function edit_poll_run(prid) {
     if (current_poll_run.visible == 'no') {
         $('#visible').data('state', current_poll_run.visible).prop('disabled', true);
         $('#visible').removeClass('btn-info').addClass('btn-outline-secondary');
-        $('#visible').find('.fa').removeClass('fa-check').removeClass('fa-question-circle').addClass('fa-times');
+        $('#visible').find('.fa').removeClass('bi-check').removeClass('bi-question-circle').addClass('bi-times');
         $('#visible').blur();
     } else {
         $('#visible').data('state', current_poll_run.visible).prop('disabled', true);
         $('#visible').removeClass('btn-outline-secondary').addClass('btn-info');
-        $('#visible').find('.fa').removeClass('fa-times').removeClass('fa-question-circle').addClass('fa-check');
+        $('#visible').find('.fa').removeClass('bi-times').removeClass('bi-question-circle').addClass('bi-check');
     }
     if (current_poll_run.anonymous) {
         $('#bu_poll_run_anonymous').removeClass('btn-outline-secondary').addClass('btn-primary');
@@ -1300,13 +1300,13 @@ document.addEventListener('DOMContentLoaded', function() {
         let button = $(e.target);
         if (button.data('state') === 'yes') {
             button.removeClass('btn-info').addClass('btn-outline-secondary');
-            button.find('.fa').removeClass('fa-check').removeClass('fa-question-circle').addClass('fa-times');
+            button.find('.fa').removeClass('bi-check').removeClass('bi-question-circle').addClass('bi-times');
             button.data('state', 'no');
             button.blur();
         }
         else {
             button.removeClass('btn-outline-secondary').addClass('btn-info');
-            button.find('.fa').removeClass('fa-times').removeClass('fa-question-circle').addClass('fa-check');
+            button.find('.fa').removeClass('bi-times').removeClass('bi-question-circle').addClass('bi-check');
             button.data('state', 'yes');
         }
         update_buttons();

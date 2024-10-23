@@ -3,7 +3,7 @@
 <div class='container bg-white' style="padding-top: 15px;">
     <div class='mb-3' id="button_div">
         <button id='bu_scan_exemplare' class='btn btn-outline-secondary me-1' disabled><i class='bi bi-barcode'></i>&nbsp;&nbsp;Exemplare scannen</button>
-        <button id='bu_confirm_checkout' class='btn btn-outline-secondary me-1' disabled><i class='bi bi-check'></i>&nbsp;&nbsp;Ausleihe durchführen</button>
+        <button id='bu_confirm_checkout' class='btn btn-outline-secondary me-1' disabled><i class='bi bi-check-lg'></i>&nbsp;&nbsp;Ausleihe durchführen</button>
         <button id='bu_print_receipt' class='btn btn-outline-secondary me-1' disabled><i class='bi bi-printer-fill'></i>&nbsp;&nbsp;Beleg drucken</button>
     </div>
     <div id="order_complete_hint" class="mb-3 alert alert-warning" style='display: none;'>
@@ -103,7 +103,7 @@
             already_scanned_barcodes[barcode] = true;
 
             tr = scan_table.element.find('tr').eq(Object.keys(already_scanned_barcodes).length);
-            tr.find('td').eq(3).html(`<i class='text-slate-500 bi bi-circle-o-notch fa-spin'></i>`);
+            tr.find('td').eq(3).html(`<i class='text-slate-500 bi bi-circle-o-notch bi-spin'></i>`);
             append_skip_button(tr.find('td').eq(3));
 
             if (scan_table.element.find('tr').length > 1)
@@ -332,7 +332,7 @@
             $('#bu_scan_exemplare').prop('disabled', true);
             $('#bu_change_stem').prop('disabled', false).show();
             let tr = scan_table.element.find('tr').eq(0);
-            tr.find('td').eq(3).html(`<i class='text-slate-500 bi bi-circle-o-notch fa-spin'></i>`);
+            tr.find('td').eq(3).html(`<i class='text-slate-500 bi bi-circle-o-notch bi-spin'></i>`);
             append_skip_button(tr.find('td').eq(3));
 
 

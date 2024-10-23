@@ -1,5 +1,5 @@
 #{this_is_a_page_for_logged_in_teachers}
-<div class='container-fluid' style='padding-top: 30px;'>
+<div class='container-fluid page' style='padding-top: 30px;'>
     <div class='row'>
         <div class='col-lg-8 col-md-12 offset-lg-2'>
             <div id='calendar' style='margin-bottom: 30px;'>
@@ -61,7 +61,7 @@
             <div class="row">
                 <div class="mb-3 col-md-12">
                     <div class='button-with-label'>
-                        <button id='ti_publish_for_klasse' data-state='no' class='btn btn-outline-secondary'><i class='bi bi-x'></i>Diesen Eintrag im Stundenplan der <strong>Klasse #{klasse}</strong> anzeigen</button>
+                        <button id='ti_publish_for_klasse' data-state='no' class='btn btn-outline-secondary'><i class='bi bi-x-lg'></i>Diesen Eintrag im Stundenplan der <strong>Klasse #{klasse}</strong> anzeigen</button>
                     </div>
                     <!-- <small class="form-text text-muted"></small> -->
                 </div>
@@ -70,9 +70,9 @@
       </div>
       <div class="modal-footer">
         <button id='bu_delete_test' type="button" class="btn btn-danger"><i class='bi bi-trash'></i>&nbsp;&nbsp;<span>Löschen</span></button>
-        <button id='bu_discard_test' type="button" class="btn btn-secondary" disabled><i class='bi bi-x'></i>&nbsp;&nbsp;<span>Verwerfen</span></button>
-        <button id='bu_save_test' type="button" class="btn btn-success" disabled><i class='bi bi-check'></i>&nbsp;&nbsp;<span>Speichern</span></button>
-        <button id='bu_close_test' type="button" class="btn btn-secondary" disabled data-bs-dismiss='modal'><i class='bi bi-x'></i>&nbsp;&nbsp;<span>Schließen</span></button>
+        <button id='bu_discard_test' type="button" class="btn btn-secondary" disabled><i class='bi bi-x-lg'></i>&nbsp;&nbsp;<span>Verwerfen</span></button>
+        <button id='bu_save_test' type="button" class="btn btn-success" disabled><i class='bi bi-check-lg'></i>&nbsp;&nbsp;<span>Speichern</span></button>
+        <button id='bu_close_test' type="button" class="btn btn-secondary" disabled data-bs-dismiss='modal'><i class='bi bi-x-lg'></i>&nbsp;&nbsp;<span>Schließen</span></button>
       </div>
     </div>
   </div>
@@ -87,7 +87,7 @@
       <div class="modal-body">
       </div>
       <div class="modal-footer">
-        <button type="button" class="btn btn-secondary" data-bs-dismiss='modal'><i class='bi bi-x'></i>&nbsp;&nbsp;<span>Schließen</span></button>
+        <button type="button" class="btn btn-secondary" data-bs-dismiss='modal'><i class='bi bi-x-lg'></i>&nbsp;&nbsp;<span>Schließen</span></button>
       </div>
     </div>
   </div>
@@ -236,7 +236,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 $('#ti_comment').val('');
                 $('#ti_publish_for_klasse').data('state', 'no');
                 $('#ti_publish_for_klasse').addClass('btn-outline-secondary').removeClass('btn-success');
-                $('#ti_publish_for_klasse').find('i').addClass('fa-times').removeClass('fa-check');
+                $('#ti_publish_for_klasse').find('i').addClass('bi-times').removeClass('bi-check');
 
                 stored_test_id = null;
                 stored_test_json = null;
@@ -246,7 +246,7 @@ document.addEventListener('DOMContentLoaded', function() {
             } else {
                 showTemplateModal('Keine Berechtigung', 
                     `Sie können in der Klasse ${klasse} keine Arbeiten eintragen, da Sie in dieser Klasse nicht unterrichten.`,
-                    "<i class='bi bi-x'></i>&nbsp;&nbsp;Schließen", 'btn-secondary',
+                    "<i class='bi bi-x-lg'></i>&nbsp;&nbsp;Schließen", 'btn-secondary',
                     null, null, function() {});
             }
         },
@@ -267,11 +267,11 @@ document.addEventListener('DOMContentLoaded', function() {
                     if (test.public_for_klasse === 'yes') {
                         $('#ti_publish_for_klasse').data('state', 'yes');
                         $('#ti_publish_for_klasse').removeClass('btn-outline-secondary').addClass('btn-success');
-                        $('#ti_publish_for_klasse').find('i').removeClass('fa-times').addClass('fa-check');
+                        $('#ti_publish_for_klasse').find('i').removeClass('bi-times').addClass('bi-check');
                     } else {
                         $('#ti_publish_for_klasse').data('state', 'no');
                         $('#ti_publish_for_klasse').addClass('btn-outline-secondary').removeClass('btn-success');
-                        $('#ti_publish_for_klasse').find('i').addClass('fa-times').removeClass('fa-check');
+                        $('#ti_publish_for_klasse').find('i').addClass('bi-times').removeClass('bi-check');
                     }
                     stored_test_id = test.id;
                     stored_test_json = JSON.stringify(collect_data());
@@ -359,11 +359,11 @@ document.addEventListener('DOMContentLoaded', function() {
         if (button.data('state') === 'no') {
             button.data('state', 'yes');
             button.removeClass('btn-outline-secondary').addClass('btn-success');
-            button.find('i').removeClass('fa-times').addClass('fa-check');
+            button.find('i').removeClass('bi-times').addClass('bi-check');
         } else {
             button.data('state', 'no');
             button.addClass('btn-outline-secondary').removeClass('btn-success');
-            button.find('i').addClass('fa-times').removeClass('fa-check');
+            button.find('i').addClass('bi-times').removeClass('bi-check');
         }
         update_buttons();
     });

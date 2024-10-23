@@ -50,7 +50,7 @@
       </div>
       <div class="modal-footer">
         <div id='publish_message_btn_container'>
-            <button id='bu_discard_message' class='btn btn-outline-secondary' disabled><i class='bi bi-x'></i>&nbsp;&nbsp;<span>Verwerfen</span></button>
+            <button id='bu_discard_message' class='btn btn-outline-secondary' disabled><i class='bi bi-x-lg'></i>&nbsp;&nbsp;<span>Verwerfen</span></button>
             <button id='bu_send_message' class='btn btn-outline-secondary' disabled><i class='bi bi-send'></i>&nbsp;&nbsp;<span>Senden</span></button>
         </div>
         <button id='bu_delete_message' type="button" class="btn btn-outline-secondary" disabled style='display: none;'><i class='bi bi-trash'></i>&nbsp;&nbsp;Nachricht löschen</button>
@@ -282,7 +282,7 @@ function update_sent_messages() {
         for (email of recipients)
             cell.append(gen_recipient_span(email), false);
         row.append(cell);
-        let msg_div = $('<td>').html("<i class='bi bi-spinner fa-spin'></i>");
+        let msg_div = $('<td>').html("<i class='bi bi-spinner bi-spin'></i>");
         row.append(msg_div);
         if (message.mid in message_cache) {
             msg_div.html(message_cache[message.mid]);
@@ -523,7 +523,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         let msg_header = $('<div>').addClass('from');
                         let msg_buttons = $('<div>').addClass('buttons');
                         let reply_button = $('<button>').addClass('btn').addClass('btn-sm').addClass('btn-outline-secondary').html("<i class='bi bi-reply'></i>&nbsp;&nbsp;Antworten");
-                        let toggle_mark_read_button = $('<button>').addClass('btn').addClass('btn-sm').addClass('btn-outline-secondary').html("<i class='bi bi-check'></i>&nbsp;&nbsp;Als gelesen markieren");
+                        let toggle_mark_read_button = $('<button>').addClass('btn').addClass('btn-sm').addClass('btn-outline-secondary').html("<i class='bi bi-check-lg'></i>&nbsp;&nbsp;Als gelesen markieren");
                         (function(to) {
                             reply_button.click(function(e) {
                                 compose_message(to);
@@ -535,7 +535,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         }
                         msg_header.append(msg_buttons);
                         msg_header.append($('<span>').html(message.from));
-                        let msg_div = $('<div>').addClass('message').html("<i class='bi bi-spinner fa-spin'></i>");
+                        let msg_div = $('<div>').addClass('message').html("<i class='bi bi-spinner bi-spin'></i>");
                         div = $('<div>').addClass('text-comment').append(msg_header).append(msg_div);
                         div.data('mid', message.mid);
                         div.data('msg_div', msg_div[0]);

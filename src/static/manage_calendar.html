@@ -115,10 +115,10 @@
             $('#deleteModal').modal('hide');
         });
         $('.bu-refresh-staging').click(function (e) {
-            $('#refresh-icon-staging').addClass('fa-spin');
+            $('#refresh-icon-staging').addClass('bi-spin');
             api_call('/api/refresh_news_on_website', { staging: 'yes' }, function (data) {
                 if (data.success) {
-                    $('#refresh-icon-staging').removeClass('fa-spin');
+                    $('#refresh-icon-staging').removeClass('bi-spin');
                     console.log('success');
                 }
             });
@@ -126,12 +126,12 @@
         $('.bu-refresh-live').click(function (e) {
             showTemplateModal('Website aktualisieren',
                 'Sind Sie sicher, dass Sie die Website aktualisieren möchten?',
-                "<i class='bi bi-check'></i>&nbsp;&nbsp;Website aktualisieren", 'btn-success',
+                "<i class='bi bi-check-lg'></i>&nbsp;&nbsp;Website aktualisieren", 'btn-success',
                 'Abbrechen', 'btn-secondary', function () {
-                    $('#refresh-icon-live').addClass('fa-spin');
+                    $('#refresh-icon-live').addClass('bi-spin');
                     api_call('/api/refresh_news_on_website', { staging: 'no' }, function (data) {
                         if (data.success) {
-                            $('#refresh-icon-live').removeClass('fa-spin');
+                            $('#refresh-icon-live').removeClass('bi-spin');
                             console.log('success');
                         }
                     });

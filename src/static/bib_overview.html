@@ -327,7 +327,7 @@
                 }
                 if (summoned_books_state_by_stem[stem].past > 0) {
                     let p = $('<p>');
-                    p.append(`<i class='text-bamboo-500 bi bi-check'></i>&nbsp;&nbsp;<b>Zurückgefordert und bereits zurückgegeben: ${summoned_books_state_by_stem[stem].past} Exemplar${summoned_books_state_by_stem[stem].past == 1 ? '' : 'e'}</b>`);
+                    p.append(`<i class='text-bamboo-500 bi bi-check-lg'></i>&nbsp;&nbsp;<b>Zurückgefordert und bereits zurückgegeben: ${summoned_books_state_by_stem[stem].past} Exemplar${summoned_books_state_by_stem[stem].past == 1 ? '' : 'e'}</b>`);
                     let durations = summoned_books_by_stem[stem].filter(function(x) {
                         return (x['r.ts_returned'] != null);
                     }).map(function(x) {

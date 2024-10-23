@@ -691,7 +691,7 @@ class Main < Sinatra::Base
                 io.puts "<td>#{d}</td>"
                 d = s[:last_access] ? Time.parse(s[:last_access]).strftime('%d.%m.%Y') : '&ndash;'
                 io.puts "<td>#{d}</td>"
-                io.puts "<td style='text-overflow: ellipsis;'>#{(s[:sid] == @used_session[:sid]) ? '<i class=\'text-success bi bi-check\'></i>&nbsp;&nbsp;' : ''}#{s[:user_agent] || 'unbekanntes Gerät'}#{(s[:sid] == @used_session[:sid]) ? '<div style=\'font-size: 85%; margin-top: -5px;\'>(dieses Gerät)</div>' : ''}</td>"
+                io.puts "<td style='text-overflow: ellipsis;'>#{(s[:sid] == @used_session[:sid]) ? '<i class=\'text-success bi bi-check-lg\'></i>&nbsp;&nbsp;' : ''}#{s[:user_agent] || 'unbekanntes Gerät'}#{(s[:sid] == @used_session[:sid]) ? '<div style=\'font-size: 85%; margin-top: -5px;\'>(dieses Gerät)</div>' : ''}</td>"
                 io.puts "<td>#{LOGIN_METHODS[s[:method].to_sym] || '&ndash;'}</td>"
                 io.puts "<td><button class='btn btn-danger btn-xs btn-purge-session' data-purge-session='#{s[:scrambled_sid]}'><i class='bi bi-box-arrow-right'></i>&nbsp;&nbsp;Gerät abmelden</button></td>"
                 io.puts "</tr>"
@@ -764,14 +764,14 @@ class Main < Sinatra::Base
                 io.puts "<tr>"
                 io.puts "<td>#{description}</td>"
                 if @session_user[:roles].include?(role)
-                    io.puts "<td><i class='bi bi-check text-success'></i></td>"
+                    io.puts "<td><i class='bi bi-check-lg text-success'></i></td>"
                     if @session_user[:role_transitive_origin][role]
                         io.puts "<td>#{AVAILABLE_ROLES[@session_user[:role_transitive_origin][role]]}</td>"
                     else
                         io.puts "<td>direkt gesetzt</td>"
                     end
                 else
-                    io.puts "<td><i class='bi bi-x text-danger'></i></td>"
+                    io.puts "<td><i class='bi bi-x-lg text-danger'></i></td>"
                     io.puts "<td></td>"
                 end
                 if admin_logged_in? || user_with_role_logged_in?(:developer)

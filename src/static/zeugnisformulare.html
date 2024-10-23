@@ -58,7 +58,7 @@ function render_zeugnisformulare() {
         let label = `Klassenstufe ${key.split('_')[0]}`;
         if (key.indexOf('_sesb') >= 0) label += ' (SESB)';
         tr.append($(`<td>`).html(label));
-        tr.append($(`<td>`).html((zeugnis_formular_fehler[key] === null) ? "<i class='bi bi-check text-green-500'></i>" : "<i class='bi bi-exclamation-circle text-red-600'></i>"));
+        tr.append($(`<td>`).html((zeugnis_formular_fehler[key] === null) ? "<i class='bi bi-check-lg text-green-500'></i>" : "<i class='bi bi-exclamation-circle text-red-600'></i>"));
         tr.append($(`<td style='white-space: unset;'>`).html((zeugnis_formular_fehler[key] ?? ['Formular vollständig']).join(', ')));
         // tr = $(`<tr style='line-height: 1em;'>`).appendTo(table);
         // tr.append($(`<td colspan='3' style='white-space: unset;'>`).html((zeugnis_formular_tags[key]).join(', ')));

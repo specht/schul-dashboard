@@ -445,8 +445,19 @@ a {
     color: #3465a4;
 }
 
-a:hover {
+.fc-col-header-cell-cushion  {
+    color: inherit;
+}
+
+a[href]:hover {
     text-decoration: underline;
+}
+
+.btn[href]:hover,
+.nav-link[href]:hover,
+.nav-item[href]:hover,
+.dropdown-item[href]:hover {
+    text-decoration: none;
 }
 
 .nav-item {
@@ -1412,7 +1423,7 @@ span.bv {
     top: 5px;
 }
 
-.audio-player .player-button .fa-play {
+.audio-player .player-button .bi-play {
     position: relative;
     top: 0px;
     left: 1px;

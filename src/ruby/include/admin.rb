@@ -9,7 +9,7 @@ class Main < Sinatra::Base
 
     def good_bad_icon(flag)
         if flag == true
-            "<i class='bi bi-check text-success'></i>"
+            "<i class='bi bi-check-lg text-success'></i>"
         elsif flag == false
             "<i class='bi bi-warning text-danger'></i>"
         end

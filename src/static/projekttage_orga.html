@@ -144,8 +144,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 row = $(`<div class='row'>`).appendTo($('.projekte-container'));
                 col = $(`<div class='col-md-12'>`).appendTo(row);
                 let bu_edit = $(`<button class='btn btn-success float-right ms-2'>`).html(`<i class='bi bi-pencil'></i>&nbsp;&nbsp;Bearbeiten`).appendTo(col);
-                let bu_save = $(`<button class='btn btn-success float-right ms-2'>`).html(`<i class='bi bi-check'></i>&nbsp;&nbsp;Änderungen speichern`).hide().appendTo(col);
-                let bu_discard = $(`<button class='btn btn-outline-secondary float-right ms-2'>`).html(`<i class='bi bi-x'></i>&nbsp;&nbsp;Änderungen verwerfen`).hide().appendTo(col);
+                let bu_save = $(`<button class='btn btn-success float-right ms-2'>`).html(`<i class='bi bi-check-lg'></i>&nbsp;&nbsp;Änderungen speichern`).hide().appendTo(col);
+                let bu_discard = $(`<button class='btn btn-outline-secondary float-right ms-2'>`).html(`<i class='bi bi-x-lg'></i>&nbsp;&nbsp;Änderungen verwerfen`).hide().appendTo(col);
                 bu_edit.on('click', function(e) {
                     ti_title.prop('readonly', false).data('old_value', ti_title.val());
                     ti_description.prop('readonly', false).data('old_value', ti_description.val()).focus();

@@ -1,5 +1,5 @@
 SALZH_MODE_COLORS = {:contact_person => 'warning', :salzh => 'danger', :hotspot_klasse => 'pink'}
-SALZH_MODE_ICONS = {:contact_person => 'fa-exclamation', :salzh => 'fa-home', :hotspot_klasse => 'fa-fire'}
+SALZH_MODE_ICONS = {:contact_person => 'bi-exclamation', :salzh => 'bi-home', :hotspot_klasse => 'bi-fire'}
 SALZH_MODE_LABEL = {:contact_person => 'Kontaktperson', :salzh => 'saLzH', :hotspot_klasse => 'Hotspot-Klasse'}
 
 class Main < Sinatra::Base

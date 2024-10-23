@@ -20,7 +20,7 @@
         background-color: rgba(0, 0, 0, 0.05);
     }
 </style>
-<div class='container-fluid'>
+<div class='container-fluid page timetable-container'>
     <div class="row" style="#{(((@session_user || {})[:otp_token]) || ((@session_user || {})[:telephone_number]) || (!user_with_role_logged_in?(:teacher))) ? 'display: none;' : 'display: block;'}">
         <div class="container" style="margin-top: -30px; margin-bottom: 30px;">
             <p>
@@ -44,20 +44,20 @@
         <div class='#{tablet_logged_in? ? 'col-md-6 offset-md-1' : 'col-md-2'} timetable_chooser' style='#{tablet_logged_in? ? 'margin-top: 23px;' : 'display: none;'}'>
             <div class='hint'>
                 <div style='position: relative; top: 8px;'>
-                <span class='bullet'><i class='bi bi-check'></i></span><b>Schritt 1:</b> Seite aktualisieren
+                <span class='bullet'><i class='bi bi-check-lg'></i></span><b>Schritt 1:</b> Seite aktualisieren
                 <a style='position: relative; top: -8px;' class='btn btn-success float-end' href='/'><i class='bi bi-arrow-clockwise'></i>&nbsp;&nbsp;Jetzt aktualisieren</a>
                 </div>
                 <div style='clear: both;'></div>
             </div>
             <div class='hint' style='#{(kurs_tablet_logged_in? || teacher_tablet_logged_in?) ? '' : 'display: none;'}'>
                 <div style='position: relative; top: 8px;'>
-                <span class='bullet'><i class='bi bi-check'></i></span><b>Schritt 2:</b> Kürzel auswählen<br /><br />
+                <span class='bullet'><i class='bi bi-check-lg'></i></span><b>Schritt 2:</b> Kürzel auswählen<br /><br />
                     #{print_timetable_chooser()}
                 </div>
             </div>
             <div class='hint' style='#{(klassenraum_logged_in?) ? '' : 'display: none;'}'>
                 <div style='position: relative; top: 8px;'>
-                <span class='bullet'><i class='bi bi-check'></i></span><b>Schritt 2:</b> Klasse auswählen<br /><br />
+                <span class='bullet'><i class='bi bi-check-lg'></i></span><b>Schritt 2:</b> Klasse auswählen<br /><br />
                     #{print_timetable_chooser()}
                 </div>
             </div>
@@ -127,7 +127,7 @@
             </div>
             <div class='hint' style='height: 60px; position: relative; top: 23px; #{tablet_logged_in? ? '' : 'display: none;'}'>
                 <div style='position: relative; top: 8px;'>
-                    <span class='bullet'><i class='bi bi-check'></i></span><b>Schritt #{(kurs_tablet_logged_in? || teacher_tablet_logged_in? || klassenraum_logged_in?) ? '3' : '2'}:</b> Stunde auswählen
+                    <span class='bullet'><i class='bi bi-check-lg'></i></span><b>Schritt #{(kurs_tablet_logged_in? || teacher_tablet_logged_in? || klassenraum_logged_in?) ? '3' : '2'}:</b> Stunde auswählen
                 </div>
             </div>
             <div id='calendar' style='margin-bottom: 30px;'>
@@ -177,9 +177,9 @@
         </div>
         <a class="btn btn-success bu-edit-lesson"><i class='bi bi-pencil'></i>&nbsp;&nbsp;Bearbeiten</a>
         <button class="show-ha-amt-only btn btn-secondary bu-discard-ha-amt-text-changes"><i class='bi bi-trash'></i>&nbsp;&nbsp;Änderungen verwerfen</button>
-        <button class="show-ha-amt-only btn btn-success bu-save-ha-amt-text-changes"><i class='bi bi-check'></i>&nbsp;&nbsp;Änderungen speichern</button>
+        <button class="show-ha-amt-only btn btn-success bu-save-ha-amt-text-changes"><i class='bi bi-check-lg'></i>&nbsp;&nbsp;Änderungen speichern</button>
         <button class="show-ha-amt-only btn btn-success bu-enter-ha-amt-text"><i class='bi bi-pencil'></i>&nbsp;&nbsp;Hausaufgaben eintragen</button>
-        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal"><i class='bi bi-x'></i>&nbsp;&nbsp;Schließen</button>
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal"><i class='bi bi-x-lg'></i>&nbsp;&nbsp;Schließen</button>
       </div>
     </div>
   </div>
@@ -211,7 +211,7 @@
             </div>
         </div>
         <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal"><i class='bi bi-x'></i>&nbsp;&nbsp;Schließen</button>
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal"><i class='bi bi-x-lg'></i>&nbsp;&nbsp;Schließen</button>
         </div>
       </div>
     </div>
@@ -267,10 +267,10 @@
         </div>
       </div>
       <div class="modal-footer">
-        <div class='feedback_submit_success me-auto'><i class='bi bi-check-circle text-success'></i>&nbsp;&nbsp;Dein Feedback wurde gespeichert.</div>
+        <div class='feedback_submit_success me-auto'><i class='bi bi-check-lg-circle text-success'></i>&nbsp;&nbsp;Dein Feedback wurde gespeichert.</div>
         <div class='feedback_submit_error me-auto'><i class='bi bi-exclamation-circle text-danger'></i>&nbsp;&nbsp;Dein Feedback konnte nicht gespeichert werden<span class='poll_submit_error_message'></span></div>
         <button id='bu_send_homework_feedback' type='button' class="btn btn-success"><i class='bi bi-send'></i>&nbsp;&nbsp;Feedback speichern</button>
-        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal"><i class='bi bi-x'></i>&nbsp;&nbsp;Schließen</button>
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal"><i class='bi bi-x-lg'></i>&nbsp;&nbsp;Schließen</button>
       </div>
     </div>
   </div>
@@ -307,7 +307,7 @@
         <button class="btn btn-secondary div_ad_hoc_fresh_sms bu_unlock_2fa_sms"><i class='bi bi-mobile'></i>&nbsp;&nbsp;SMS jetzt freigeben</button>
         <button class="btn btn-secondary div_ad_hoc_fresh_otp bu_unlock_2fa_otp"><i class='bi bi-qr-code-scan'></i>&nbsp;&nbsp;OTP jetzt freigeben</button>
         <button id='bu_perform_ad_hoc_signin' type='button' class="btn btn-success"><i class='bi bi-box-arrow-in-right'></i>&nbsp;&nbsp;Anmeldung erlauben</button>
-          <button type="button" class="btn btn-danger" data-bs-dismiss="modal"><i class='bi bi-x'></i>&nbsp;&nbsp;Anmeldung ablehnen</button>
+          <button type="button" class="btn btn-danger" data-bs-dismiss="modal"><i class='bi bi-x-lg'></i>&nbsp;&nbsp;Anmeldung ablehnen</button>
         </div>
       </div>
     </div>
@@ -667,10 +667,10 @@ var REASON_LABEL = {
 function generate_mail_pending_row(entry, sus_info) {
     let row = $(`<tr>`).data('email', sus_info.email).data('type', 'pending');
     if (typeof(entry.ts_sent_h) !== 'undefined' && entry.ts_sent_h !== null) {
-        row.append($(`<td colspan='2'>`).html(`<i class='bi bi-check text-success'></i>&nbsp;&nbsp;<em>»${REASON_LABEL[entry.reason] ?? entry.reason}« (${sus_info.display_first_name}) wurde um ${entry.ts_sent_h} Uhr gesendet</em>`));
+        row.append($(`<td colspan='2'>`).html(`<i class='bi bi-check-lg text-success'></i>&nbsp;&nbsp;<em>»${REASON_LABEL[entry.reason] ?? entry.reason}« (${sus_info.display_first_name}) wurde um ${entry.ts_sent_h} Uhr gesendet</em>`));
     } else {
         row.append($(`<td>`).html(`<i class='bi bi-clock-o'></i>&nbsp;&nbsp;<em>»${REASON_LABEL[entry.reason] ?? entry.reason}« (${sus_info.display_first_name}) wird um ${entry.ts_h} Uhr gesendet</em>`));
-        let button = $(`<button class='btn btn-sm btn-secondary'>`).html(`<i class='bi bi-x'></i>&nbsp;&nbsp;Abbrechen`);
+        let button = $(`<button class='btn btn-sm btn-secondary'>`).html(`<i class='bi bi-x-lg'></i>&nbsp;&nbsp;Abbrechen`);
         button.on('click', function(e) {
             api_call('/api/cancel_email', {tag: entry.tag}, function(data) {
                 if (data.success) {
@@ -877,7 +877,7 @@ document.addEventListener('DOMContentLoaded', function() {
                             markers.append($('<span>').html(`${Object.keys(per_user.lesson_notes).length}x <i class='bi bi-file-text-o'></i>`));
                         }
                     } else {
-                        markers.append($('<span>').html(`<i id='icon_hybrid_notes_${arg.event.extendedProps.lesson_key}_${arg.event.extendedProps.lesson_offset}' class='fa ${(((lesson_notes[arg.event.extendedProps.lesson_key] || {})[arg.event.extendedProps.lesson_offset] || '').length > 0) ? 'fa-file-text-o': 'fa-file-o'}'></i>`));
+                        markers.append($('<span>').html(`<i id='icon_hybrid_notes_${arg.event.extendedProps.lesson_key}_${arg.event.extendedProps.lesson_offset}' class='fa ${(((lesson_notes[arg.event.extendedProps.lesson_key] || {})[arg.event.extendedProps.lesson_offset] || '').length > 0) ? 'bi-file-text-o': 'bi-file-o'}'></i>`));
                     }
                 }
                 div1b.append(markers);
@@ -1511,10 +1511,10 @@ document.addEventListener('DOMContentLoaded', function() {
                     let mi_button = $('<button>').addClass('btn').addClass('btn-sm').addClass('dropdown-toggle').attr('data-toggle', 'dropdown').css('margin-bottom', '5px');
                     let dropdown_menu = $('<div>').addClass('dropdown-menu');
                     let mi_set_undone = $('<button>').addClass('dropdown-item').addClass('bu-set-undone').html("<i class='bi bi-clock-o'></i>noch nicht erledigt");
-                    let mi_set_done = $('<button>').addClass('dropdown-item').addClass('bu-set-done').html("<i class='bi bi-check'></i>erledigt");
+                    let mi_set_done = $('<button>').addClass('dropdown-item').addClass('bu-set-done').html("<i class='bi bi-check-lg'></i>erledigt");
                     let mi_feedback = $('<button>').addClass('dropdown-item').html("<i class='bi bi-comment-o'></i>Feedback geben…");
                     if (homework_feedback[`${entry.lesson_key}/${entry.offset}`].done) {
-                        mi_button.addClass('btn-success').html("<i class='bi bi-check'></i>&nbsp;&nbsp;erledigt");
+                        mi_button.addClass('btn-success').html("<i class='bi bi-check-lg'></i>&nbsp;&nbsp;erledigt");
                         mi_set_done.hide();
                     } else {
                         mi_button.addClass('btn-outline-secondary').html("<i class='bi bi-clock-o'></i>&nbsp;&nbsp;noch nicht erledigt");
@@ -1535,7 +1535,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         api_call('/api/mark_homework_done', {lesson_key: lesson_key, offset: offset}, function(data) {
                             if (data.success) {
                                 homework_feedback[`${lesson_key}/${offset}`].done = true;
-                                button.removeClass('btn-outline-secondary').addClass('btn-success').html("<i class='bi bi-check'></i>&nbsp;&nbsp;erledigt");
+                                button.removeClass('btn-outline-secondary').addClass('btn-success').html("<i class='bi bi-check-lg'></i>&nbsp;&nbsp;erledigt");
                                 parent.find('.bu-set-done').hide();
                                 parent.find('.bu-set-undone').show();
                             }
@@ -1749,7 +1749,7 @@ document.addEventListener('DOMContentLoaded', function() {
     $('.bu-add-self-test').click(function(e) {
         showTemplateModal('Testung protokollieren',
                 'Falls Sie sich <strong>heute</strong> getestet haben oder getestet worden sind <strong>und der Test negativ war</strong>, protokollieren Sie dieses Ergebnis nun bitte.',
-                "<i class='bi bi-check'></i>&nbsp;&nbsp;Negativen Test protokollieren", 'btn-success',
+                "<i class='bi bi-check-lg'></i>&nbsp;&nbsp;Negativen Test protokollieren", 'btn-success',
                 'Abbrechen', 'btn-secondary', function () {
                     api_call('/api/add_self_test_for_today', {}, function (data) {
                         if (data.success) {
@@ -1771,9 +1771,9 @@ document.addEventListener('DOMContentLoaded', function() {
                     lesson_notes[data.lesson_key] = {};
                 lesson_notes[data.lesson_key][data.lesson_offset] = data.text;
                 if (data.text.length === 0)
-                    $(`#icon_hybrid_notes_${data.lesson_key}_${data.lesson_offset}`).removeClass('fa-file-text-o').addClass('fa-file-o');
+                    $(`#icon_hybrid_notes_${data.lesson_key}_${data.lesson_offset}`).removeClass('bi-file-text-o').addClass('bi-file-o');
                 else
-                    $(`#icon_hybrid_notes_${data.lesson_key}_${data.lesson_offset}`).removeClass('fa-file-o').addClass('fa-file-text-o');
+                    $(`#icon_hybrid_notes_${data.lesson_key}_${data.lesson_offset}`).removeClass('bi-file-o').addClass('bi-file-text-o');
             }
         });
     });

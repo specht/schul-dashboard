@@ -611,7 +611,7 @@ class Main < Sinatra::Base
                 display_name = @@user_info[user][:display_name]
                 nc_login = @@user_info[user][:nc_login]
                 klasse = tr_klasse(@@user_info[user][:klasse])
-                io.puts "<tr><td><img src='#{NEXTCLOUD_URL}/index.php/avatar/#{nc_login}/256' class='icon avatar-md'>&nbsp;#{display_name}</td><td><button class='btn btn-xs btn-success bu-select-user-to-fix-problem' data-email='#{user}'><i class='bi bi-check'></i></button></td></tr>"
+                io.puts "<tr><td><img src='#{NEXTCLOUD_URL}/index.php/avatar/#{nc_login}/256' class='icon avatar-md'>&nbsp;#{display_name}</td><td><button class='btn btn-xs btn-success bu-select-user-to-fix-problem' data-email='#{user}'><i class='bi bi-check-lg'></i></button></td></tr>"
             end
             io.puts "</tbody></table>"
             io.puts "</div></div>"

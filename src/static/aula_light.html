@@ -44,7 +44,7 @@
         background-color: rgba(255, 255, 255, 0.2)!important;
     }
 </style>
-<div class='container-fluid' style='padding-top: 30px;'>
+<div class='container-fluid page' style='padding-top: 30px;'>
     <div class='row'>
         <div class="col-md-12">
             <h2 style="margin-bottom: 30px;">Aula Licht
@@ -214,7 +214,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     console.log(entry)
                     showTemplateModal('Channel <b><code>"' + entry.lightdata.desk + '"</code></b>',
                     'Dieser Scheinwerfer liegt auf dem DMX-Kanal <b><code>' + entry.lightdata.dmx + '</code></b>.<br><br><input type="number" id="al_desk_channel" class="form-control" placeholder="Channel auf dem Lichtpult" value="' + entry.lightdata.desk + '"></input>',
-                    "<i class='bi bi-check'></i>&nbsp;&nbsp;Speichern", 'btn-success',
+                    "<i class='bi bi-check-lg'></i>&nbsp;&nbsp;Speichern", 'btn-success',
                     'Abbrechen', 'btn-secondary', function() {
                         let input_desk = $('#al_desk_channel').val();
                         api_call('/api/set_desk_number', {dmx: dmx, desk: input_desk}, function(data) {
@@ -227,7 +227,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 let dmx = e.target.id;
                 showTemplateModal('Neuer Channel',
                     'Dieser Scheinwerfer liegt auf dem DMX-Kanal <b><code>' + dmx + '</code></b>.<br><br><input type="number" id="al_desk_channel" class="form-control" placeholder="Channel auf dem Lichtpult"></input>',
-                    "<i class='bi bi-check'></i>&nbsp;&nbsp;Speichern", 'btn-success',
+                    "<i class='bi bi-check-lg'></i>&nbsp;&nbsp;Speichern", 'btn-success',
                     'Abbrechen', 'btn-secondary', function() {
                         let input_desk = $('#al_desk_channel').val();
                         api_call('/api/set_desk_number', {dmx: dmx, desk: input_desk}, function(data) {

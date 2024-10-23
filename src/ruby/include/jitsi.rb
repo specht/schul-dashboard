@@ -110,7 +110,7 @@ class Main < Sinatra::Base
 
     def gen_jitsi_data(path)
         ua = USER_AGENT_PARSER.parse(request.env['HTTP_USER_AGENT'])
-        browser_icon = 'fa-microphone'
+        browser_icon = 'bi-microphone'
         browser_name = 'Browser'
         ['edge', 'firefox', 'chrome', 'safari', 'opera'].each do |x|
             if ua.family.downcase.include?(x)

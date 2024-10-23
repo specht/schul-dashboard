@@ -44,7 +44,7 @@
                 <button id='bu_delete_tablet_set_booking' type="button" class="btn btn-danger"><i
                         class='bi bi-trash'></i>&nbsp;&nbsp;Buchung aufheben</button>
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal"><i
-                        class='bi bi-x'></i>&nbsp;&nbsp;Schließen</button>
+                        class='bi bi-x-lg'></i>&nbsp;&nbsp;Schließen</button>
             </div>
         </div>
     </div>
@@ -101,10 +101,10 @@
             </div>
             <div class="modal-footer">
                 <button id='bu_perform_tablet_set_booking' type="button" class="btn btn-success">
-                    <i class='bi bi-check'></i>&nbsp;&nbsp;Buchen
+                    <i class='bi bi-check-lg'></i>&nbsp;&nbsp;Buchen
                 </button>
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
-                    <i class='bi bi-x'></i>&nbsp;&nbsp;Schließen
+                    <i class='bi bi-x-lg'></i>&nbsp;&nbsp;Schließen
                 </button>
             </div>
         </div>
@@ -250,17 +250,17 @@
             let bu_book_tablet_set = $('<button>').addClass('btn').addClass('btn-sm').data('tablet_set_id', key);
             bu_book_tablet_set.prop('disabled', true);
             bu_book_tablet_set.click(update_booking_widgets);
-            bu_book_tablet_set.addClass('btn-outline-secondary').html("<i class='bi bi-x'></i>&nbsp;&nbsp;Nicht gebucht");
+            bu_book_tablet_set.addClass('btn-outline-secondary').html("<i class='bi bi-x-lg'></i>&nbsp;&nbsp;Nicht gebucht");
             bu_book_tablet_set.click(function(e) {
                 let button = $(e.target).closest('button');
                 let tablet_set_id = button.data('tablet_set_id');
                 if (booked_tablet_sets_config.indexOf(tablet_set_id) >= 0) {
                     button.removeClass('btn-info').addClass('btn-outline-secondary');
-                    button.html("<i class='bi bi-x'></i>&nbsp;&nbsp;Nicht gebucht");
+                    button.html("<i class='bi bi-x-lg'></i>&nbsp;&nbsp;Nicht gebucht");
                     booked_tablet_sets_config = booked_tablet_sets_config.filter(item => item !== tablet_set_id);
                 } else {
                     button.removeClass('btn-outline-secondary').addClass('btn-info');
-                    button.html("<i class='bi bi-check'></i>&nbsp;&nbsp;Gebucht");
+                    button.html("<i class='bi bi-check-lg'></i>&nbsp;&nbsp;Gebucht");
                     booked_tablet_sets_config = booked_tablet_sets_config.filter(item => item !== tablet_set_id);
                     booked_tablet_sets_config.push(tablet_set_id);
                     booked_tablet_sets_config.sort();

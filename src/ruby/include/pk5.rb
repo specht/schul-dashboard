@@ -67,6 +67,12 @@ class Main < Sinatra::Base
                     extra_consultations[email] ||= {:want => false, :display_name => @@user_info[email][:display_name_official], :display_name_dativ => @@user_info[email][:display_name_official_dativ]}
                 end
             end
+            if result[:betreuende_lehrkraft] && result[:betreuende_lehrkraft_is_confirmed]
+                extra_consultations.delete(result[:betreuende_lehrkraft])
+            end
+            if result[:betreuende_lehrkraft_fas]
+                extra_consultations.delete(result[:betreuende_lehrkraft_fas])
+            end
             result[:extra_consultations] = extra_consultations
             result
         end

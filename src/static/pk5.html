@@ -195,15 +195,6 @@
 var my_pk5 = #{get_my_pk5(user_email).to_json};
 
 function update_extra_consultations(pk5) {
-    // <div class="row mb-1">
-    //     <div class="col-md-10">
-    //         Ich möchte einen Gesprächstermin mit Frau Schürmann erhalten:
-    //     </div>
-    //     <div class="col-md-2">
-    //         <button class="btn btn-sm btn-success"><i class='fa fa-check'></i>&nbsp;&nbsp;ja</button>
-    //         <button class="btn btn-sm btn-outline-secondary"><i class='fa fa-times'></i>&nbsp;&nbsp;nein</button>
-    //     </div>
-    // </div>
     $('#extra_consultations_here').empty();
     console.log(pk5);
     let keys = Object.keys(pk5.extra_consultations ?? {});

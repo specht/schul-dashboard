@@ -253,6 +253,10 @@ input {
     /* background-color: rgba(255,255,255,0.7)!important; */
 }
 
+.navbar a[href]:hover {
+    text-decoration: none;
+}
+
 .info {
     position: fixed;
     bottom: 0;
@@ -453,6 +457,7 @@ a[href]:hover {
     text-decoration: underline;
 }
 
+.nav-bar a[href]:hover,
 .btn[href]:hover,
 .nav-link[href]:hover,
 .nav-item[href]:hover,

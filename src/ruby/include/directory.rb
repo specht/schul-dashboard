@@ -176,7 +176,7 @@ class Main < Sinatra::Base
 
                 #     io.puts "<td>"
                 #     freiwillig_salzh = salzh_status[email][:freiwillig_salzh]
-                #     io.puts "<div class='input-group'><input type='date' class='form-control ti_freiwillig_salzh' value='#{freiwillig_salzh}' /><div class='input-group-append'><button #{freiwillig_salzh.nil? ? 'disabled' : ''} class='btn #{freiwillig_salzh.nil? ? 'btn-outline-secondary' : 'btn-danger'} bu_delete_freiwillig_salzh'><i class='bi bi-trash'></i></button></div></div>"
+                #     io.puts "<div class='input-group'><input type='date' class='form-control ti_freiwillig_salzh' value='#{freiwillig_salzh}' /><button #{freiwillig_salzh.nil? ? 'disabled' : ''} class='btn #{freiwillig_salzh.nil? ? 'btn-outline-secondary' : 'btn-danger'} bu_delete_freiwillig_salzh'><i class='bi bi-trash'></i></button></div>"
                 #     io.puts "</td>"
                 # end
                 # if klassenleiter_logged_in

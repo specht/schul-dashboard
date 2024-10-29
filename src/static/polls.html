@@ -905,7 +905,6 @@ function update_current_poll() {
                 let answer = item.answers[answer_index];
                 let input_group = $('<div>').addClass('input-group');
                 let ti = $('<input>').attr('placeholder', 'Bitte geben Sie eine Antwortmöglichkeit ein').addClass('form-control').val(answer).attr('data-item-index', item_index).attr('data-answer-index', answer_index);
-                let button_div = $('<div>').addClass('input-group-append');
                 let bu_rm = $('<button>').attr('title', 'Antwortmöglichkeit löschen').addClass('btn').addClass('btn-outline-secondary').html("<i class='bi bi-trash'></i>").data('item-index', item_index).data('answer-index', answer_index);
                 let bu_up = $('<button>').attr('title', 'Antwortmöglichkeit nach oben verschieben').addClass('btn').addClass('btn-outline-secondary').html("<i class='bi bi-arrow-up'></i>").data('item-index', item_index).data('answer-index', answer_index);
                 let bu_down = $('<button>').attr('title', 'Antwortmöglichkeit nach unten verschieben').addClass('btn').addClass('btn-outline-secondary').html("<i class='bi bi-arrow-down'></i>").data('item-index', item_index).data('answer-index', answer_index);
@@ -946,11 +945,10 @@ function update_current_poll() {
                     current_poll.items[item_index].answers.splice(answer_index + 1, 0, entry);
                     update_current_poll();
                 });
-                button_div.append(bu_rm);
-                button_div.append(bu_up);
-                button_div.append(bu_down);
                 input_group.append(ti)
-                input_group.append(button_div);
+                input_group.append(bu_rm);
+                input_group.append(bu_up);
+                input_group.append(bu_down);
                 bc.append(input_group);
             }
             div.append(bc);

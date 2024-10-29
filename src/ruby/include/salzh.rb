@@ -244,7 +244,7 @@ class Main < Sinatra::Base
                 # io.puts "<td>#{@@schueler_for_klasse[klasse].size}</td>"
                 io.puts "<td>"
                 hotspot_end_date = hotspot_dates[klasse]
-                io.puts "<div class='input-group input-group-sm'><input type='date' class='form-control ti_hotspot_end_date' value='#{hotspot_end_date}' /><div class='input-group-append'><button #{hotspot_end_date.nil? ? 'disabled' : ''} class='btn #{hotspot_end_date.nil? ? 'btn-outline-secondary' : 'btn-danger'} bu_delete_hotspot_end_date'><i class='bi bi-trash'></i></button></div></div>"
+                io.puts "<div class='input-group input-group-sm'><input type='date' class='form-control ti_hotspot_end_date' value='#{hotspot_end_date}' /><button #{hotspot_end_date.nil? ? 'disabled' : ''} class='btn #{hotspot_end_date.nil? ? 'btn-outline-secondary' : 'btn-danger'} bu_delete_hotspot_end_date'><i class='bi bi-trash'></i></button></div>"
                 io.puts "</td>"
             io.puts "</tr>"
             end

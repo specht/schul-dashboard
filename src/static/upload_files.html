@@ -107,9 +107,7 @@ function refresh_files() {
                 let code = 'file{' + file.name + '}{' + file.name.split('.').slice(0, -1).join('.') + '}';
                 let ig = $('<div>').addClass('input-group');
                 ig.append($('<input>').addClass('form-control').css('min-width', '100px').attr('type', 'text').attr('readonly', true).val(code));
-                let ia = $('<div>').addClass('input-group-append');
-                ia.append($('<button>').addClass('btn').addClass('btn-secondary').addClass('btn-clipboard').attr('data-clipboard-text', code).html("<i class='bi bi-clipboard'></i>"));
-                ig.append(ia);
+                ig.append($('<button>').addClass('btn').addClass('btn-secondary').addClass('btn-clipboard').attr('data-clipboard-text', code).html("<i class='bi bi-clipboard'></i>"));
                 row.append($('<td>').append(ig));
                 
                 let bu_delete = $('<button>').addClass('btn').addClass('btn-danger').html("<i class='bi bi-trash'></i>");

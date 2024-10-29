@@ -43,27 +43,21 @@
             <tr><th>Adresse:</th><td>
                 <div class="input-group">
                     <input type='text' class='form-control' value='#{NEXTCLOUD_URL}' readonly></input>
-                    <div class="input-group-append">
-                        <a class='btn btn-secondary' target='_blank' href='#{NEXTCLOUD_URL}/index.php/login?user=#{@session_user[:nc_login]}'><i class="bi bi-box-arrow-up-right"></i></i>&nbsp;&nbsp;Öffnen…</a>
-                    </div>
+                    <a class='btn btn-secondary' target='_blank' href='#{NEXTCLOUD_URL}/index.php/login?user=#{@session_user[:nc_login]}'><i class="bi bi-box-arrow-up-right"></i></i>&nbsp;&nbsp;Öffnen…</a>
                 </div>
             </td></tr>
             <tr><th>Login:</th><td>
                 <div class="input-group">
                     <input id='ti_nc_login' type='text' class='form-control' value='#{@session_user[:nc_login]}' readonly></input>
-                    <div class="input-group-append">
-                        <button class='btn btn-secondary btn-clipboard' data-clipboard-action='copy' data-clipboard-target="#ti_nc_login"><i class='bi bi-clipboard'></i>&nbsp;&nbsp;Kopieren</button>
-                    </div>
+                    <button class='btn btn-secondary btn-clipboard' data-clipboard-action='copy' data-clipboard-target="#ti_nc_login"><i class='bi bi-clipboard'></i>&nbsp;&nbsp;Kopieren</button>
                 </div>
             </td></tr>
             <tr><th>Initialpasswort:</th><td>
                 <div class="input-group">
                     <input id='ti_initial_nc_password' type='password' class='form-control' value='#{@session_user[:initial_nc_password]}' readonly></input>
-                    <div class="input-group-append">
-                        <button class='btn bu-show-password btn-secondary' style='border-right: 2px solid #444;'><i class='bi bi-eye'></i>&nbsp;&nbsp;Anzeigen</button>
-                        <button class='btn btn-secondary btn-clipboard' data-clipboard-action='copy' data-clipboard-text="#{@session_user[:initial_nc_password]}"><i class='bi bi-clipboard'></i>&nbsp;&nbsp;Kopieren</button>
-                    </div>
-                </div>
+                    <button class='btn bu-show-password btn-secondary' style='border-right: 2px solid #444;'><i class='bi bi-eye'></i>&nbsp;&nbsp;Anzeigen</button>
+                    <button class='btn btn-secondary btn-clipboard' data-clipboard-action='copy' data-clipboard-text="#{@session_user[:initial_nc_password]}"><i class='bi bi-clipboard'></i>&nbsp;&nbsp;Kopieren</button>
+                </d iv>
             </td></tr>
             </tbody>
             </table>

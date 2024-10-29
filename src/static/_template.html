@@ -656,7 +656,7 @@ function showTemplateModalWithInput(title, text, confirm_label, confirm_class,
 
 <nav class="navbar navbar-expand-md fixed-top justify-content-end">
     <div class="container-fluid">
-        <a class="navbar-brand" href="/"><img src='/#{(@session_user || {})[:dark] ? DARK_SCHUL_ICON : SCHUL_ICON}' style='width: 24px; height: 24px; top: -2px;' />&nbsp;&nbsp;{BRAND}</a>
+        <a class="navbar-brand" href="/"><img src='/#{(@session_user || {})[:dark] ? DARK_SCHUL_ICON : SCHUL_ICON}' style='width: 24px; height: 24px; position: relative; top: -3px; margin-right: 5px;' />&nbsp;&nbsp;{BRAND}</a>
         <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarText" aria-controls="navbarText" aria-expanded="false" aria-label="Toggle navigation">
             <span class="navbar-toggler-icon"></span>
         </button>

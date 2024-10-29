@@ -201,6 +201,10 @@
                 <option value="material">Material fehlt</option>
                 <option value="homework">Hausaufgaben fehlen</option>
                 <option value="signature">Unterschrift fehlt</option>
+                <option value="disturbance">Störverhalten</option>
+                <option value="disturbance_otium">Störverhalten (Otium)</option>
+                <option value="late">Verspätung</option>
+                <option value="praise">Besonderes Lob</option>
             </select>
             <div style="padding: 0.5em 0;">Sie können eine Notiz hinzufügen, um das Problem zu konkretisieren:</div>
             <textarea id='ti_mail_details' class="form-control"></textarea>
@@ -640,6 +644,18 @@ function mail_reason_changed() {
     } else if (reason === 'signature') {
         got_reason = true;
         $('#ti_mail_details').attr('placeholder', 'Notiz (z. B. »Anmeldung Klassenfahrt«)');
+    } else if (reason === 'disturbance') {
+        got_reason = true;
+        $('#ti_mail_details').attr('placeholder', 'Notiz');
+    } else if (reason === 'disturbance_otium') {
+        got_reason = true;
+        $('#ti_mail_details').attr('placeholder', 'Notiz');
+    } else if (reason === 'late') {
+        got_reason = true;
+        $('#ti_mail_details').attr('placeholder', 'Notiz (z. B. »10 Minuten«)');
+    } else if (reason === 'praise') {
+        got_reason = true;
+        $('#ti_mail_details').attr('placeholder', 'Notiz');
     } else {
         $('#ti_mail_details').attr('placeholder', 'Notiz');
     }
@@ -662,6 +678,10 @@ var REASON_LABEL = {
     material: 'Material fehlt',
     homework: 'Hausaufgaben fehlen',
     signature: 'Unterschrift fehlt',
+    disturbance: 'Störung',
+    disturbance_otium: 'Störung (Otium)',
+    late: 'Verspätung',
+    praise: 'Besonderes Lob',
 }
 
 function generate_mail_pending_row(entry, sus_info) {

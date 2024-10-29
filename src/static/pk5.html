@@ -105,13 +105,19 @@
                             </div>
                         </div>
                     </div>
-                    <div class='col-md-6'>
+                    <div class='col-md-4'>
                         <div class='form-group'>
                             <label>#{PK5_KEY_LABELS[:referenzfach]}</label>
                             <input id='ti_referenzfach' type='text' value='#{CGI.escapeHTML(get_my_pk5(user_email)[:referenzfach] || '')}' placeholder='kein Referenzfach gewählt' class='form-control' list='li_fach' readonly>
                         </div>
                     </div>
-                    <div class='col-md-6'>
+                    <div class='col-md-4'>
+                        <div class='form-group'>
+                            <label>Fachverantwortliche Lehrkraft (#{PK5_KEY_LABELS[:referenzfach]})</label>
+                            <input id='ti_referenzfach_fbl' type='text' value='#{CGI.escapeHTML(get_my_pk5(user_email)[:referenzfach_fbl] || '')}' placeholder='' class='form-control' readonly>
+                        </div>
+                    </div>
+                    <div class='col-md-4'>
                         <div class='form-group'>
                             <label>#{PK5_KEY_LABELS[:betreuende_lehrkraft]}</label>
                             <div class="input-group mb-3">
@@ -128,13 +134,19 @@
 
                         </div>
                     </div>
-                    <div class='col-md-6' style="display: #{$pk5.get_current_phase >= 5 ? 'block' : 'none'}">
+                    <div class='col-md-4' style="display: #{$pk5.get_current_phase >= 5 ? 'block' : 'none'}">
                         <div class='form-group'>
                             <label>Fächerübergreifender Aspekt</label>
                             <input id='ti_fas' type='text' value='#{CGI.escapeHTML(get_my_pk5(user_email)[:fas] || '')}' placeholder='kein fächerübergreifender Aspekt gewählt' class='form-control' list='li_fach' readonly>
                         </div>
                     </div>
-                    <div class='col-md-6' style="display: #{$pk5.get_current_phase >= 5 ? 'block' : 'none'}">
+                    <div class='col-md-4'>
+                        <div class='form-group'>
+                            <label>Fachverantwortliche Lehrkraft (Fächerübergreifender Aspekt)</label>
+                            <input id='ti_fas_fbl' type='text' value='#{CGI.escapeHTML(get_my_pk5(user_email)[:fas_fbl] || '')}' placeholder='' class='form-control' readonly>
+                        </div>
+                    </div>
+                    <div class='col-md-4' style="display: #{$pk5.get_current_phase >= 5 ? 'block' : 'none'}">
                         <div class='form-group'>
                             <label>Betreuende Lehrkraft im fächerübergreifenden Aspekt</label>
                             <input id='ti_betreuende_lehrkraft_fas' type='text' value='#{CGI.escapeHTML(get_my_pk5(user_email)[:betreuende_lehrkraft_fas_display_name] || '')}' placeholder='keine Lehrkraft gewählt' class='form-control' list='li_lehrkraft' readonly>
@@ -151,6 +163,18 @@
                         <button id='bu_edit' class='btn btn-success'><i class='fa fa-edit'></i>&nbsp;&nbsp;Bearbeiten</button>
                         <button id='bu_discard_changes' style='display: none;' class='btn btn-outline-secondary'><i class='fa fa-times'></i>&nbsp;&nbsp;Änderungen verwerfen</button>
                         <button id='bu_save_changes' style='display: none;' class='btn btn-success'><i class='fa fa-check'></i>&nbsp;&nbsp;Änderungen speichern</button>
+                    </div>
+
+                    <div class="col-md-12" style="#{$pk5.get_current_phase() == 9 ? '' : 'display: none;'}">
+                        <hr>
+                        <h4>Zentraler Beratungstermin</h4>
+                        <p>
+                            Beim zentralen Beratungstermin am 12.11.2024 sind alle Lehrkräfte in der Schule. Du führst an diesem Tag mindestens zwei
+                            Beratungsgespräche (mit deinen beiden betreuenden Lehrkräften). Gib hier an, ob du zusätzlich noch ein Gespräch mit
+                            einer fachverantwortlichen Lehrkraft führen möchtest.
+                        </p>
+                        <div id="extra_consultations_here">
+                        </div>
                     </div>
                     <div class='col-md-12'>
                         <div class='api_messages mt-3' style='display: none;'></div>
@@ -170,7 +194,48 @@
 <script>
 var my_pk5 = #{get_my_pk5(user_email).to_json};
 
+function update_extra_consultations(pk5) {
+    // <div class="row mb-1">
+    //     <div class="col-md-10">
+    //         Ich möchte einen Gesprächstermin mit Frau Schürmann erhalten:
+    //     </div>
+    //     <div class="col-md-2">
+    //         <button class="btn btn-sm btn-success"><i class='fa fa-check'></i>&nbsp;&nbsp;ja</button>
+    //         <button class="btn btn-sm btn-outline-secondary"><i class='fa fa-times'></i>&nbsp;&nbsp;nein</button>
+    //     </div>
+    // </div>
+    $('#extra_consultations_here').empty();
+    console.log(pk5);
+    let keys = Object.keys(pk5.extra_consultations ?? {});
+    keys.sort();
+    for (let email of keys) {
+        let data = pk5.extra_consultations[email];
+        let row = $(`<div class='row mb-1'>`);
+        $(`<div class='col-md-10'>`).text(`Ich möchte einen Gesprächstermin mit ${data.display_name_dativ} erhalten:`).appendTo(row);
+        let button_div = $(`<div class='col-md-2'>`).appendTo(row);
+        let button_yes = $(`<button class="btn btn-sm ${data.want ? 'btn-success' : 'btn-outline-secondary'}"><i class='fa fa-check'></i>&nbsp;&nbsp;ja</button>`).appendTo(button_div);
+        $(`<span>&nbsp;</span>`).appendTo(button_div);
+        let button_no = $(`<button class="btn btn-sm ${data.want ? 'btn-outline-secondary' : 'btn-secondary'}"><i class='fa fa-times'></i>&nbsp;&nbsp;nein</button>`).appendTo(button_div);
+        $('#extra_consultations_here').append(row);
+        if ('#{@session_user[:email] != user_email}' === 'true') {
+            button_yes.attr('disabled', true);
+            button_no.attr('disabled', true);
+        }
+        button_yes.click(function(e) {
+            api_call('/api/want_extra_consultation', {email: email, flag: 'yes'}, function(data) {
+                if (data.success) update_extra_consultations(data.result)
+            });
+        });
+        button_no.click(function(e) {
+            api_call('/api/want_extra_consultation', {email: email, flag: 'no'}, function(data) {
+                if (data.success) update_extra_consultations(data.result)
+            });
+        });
+    }
+}
+
 window.addEventListener('load', function() {
+    update_extra_consultations(my_pk5);
     $('#ti_themengebiet').val(my_pk5.themengebiet);
     $('#ti_referenzfach').val(my_pk5.referenzfach);
     $('#ti_betreuende_lehrkraft').val(my_pk5.betreuende_lehrkraft_display_name);
@@ -233,6 +298,9 @@ window.addEventListener('load', function() {
                         value = response.result.betreuende_lehrkraft_fas_display_name;
                     $(input).val(value);
                 }
+                $('#ti_referenzfach_fbl').val(response.result.referenzfach_fbl);
+                $('#ti_fas_fbl').val(response.result.fas_fbl);
+                update_extra_consultations(response.result);
 
                 $('#bu_edit').show();
                 $('#bu_discard_changes').hide();

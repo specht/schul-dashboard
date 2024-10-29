@@ -619,6 +619,7 @@ class Main < Sinatra::Base
     end
 
     post '/api/want_extra_consultation' do
+        assert($pk5.get_current_phase() == 9)
         data = parse_request_data(:required_keys => [:email, :flag], :optional_keys => [:sus_email])
         sus_email = @session_user[:email]
         if teacher_logged_in?

@@ -202,8 +202,8 @@ function update_extra_consultations(pk5) {
     for (let email of keys) {
         let data = pk5.extra_consultations[email];
         let row = $(`<div class='row mb-1'>`);
-        $(`<div class='col-md-10'>`).text(`Ich möchte einen Gesprächstermin mit ${data.display_name_dativ} erhalten:`).appendTo(row);
-        let button_div = $(`<div class='col-md-2'>`).appendTo(row);
+        $(`<div class='col-md-9'>`).text(`Ich möchte einen Gesprächstermin mit ${data.display_name_dativ} erhalten:`).appendTo(row);
+        let button_div = $(`<div class='col-md-3' style='text-align: right;'>`).appendTo(row);
         let button_yes = $(`<button class="btn btn-sm ${data.want ? 'btn-success' : 'btn-outline-secondary'}"><i class='fa fa-check'></i>&nbsp;&nbsp;ja</button>`).appendTo(button_div);
         $(`<span>&nbsp;</span>`).appendTo(button_div);
         let button_no = $(`<button class="btn btn-sm ${data.want ? 'btn-outline-secondary' : 'btn-secondary'}"><i class='fa fa-times'></i>&nbsp;&nbsp;nein</button>`).appendTo(button_div);

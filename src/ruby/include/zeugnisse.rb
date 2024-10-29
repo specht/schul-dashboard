@@ -496,12 +496,14 @@ class Main < Sinatra::Base
                 info['@Geschlecht'] = sus_info[:geschlecht]
                 wf_tr = {}
                 wf_count = 0
+                wf_entries = {}
                 faecher_info.each do |fach|
                     if wahlfach_info[fach]
                         if (cache["Schuljahr:#{ZEUGNIS_SCHULJAHR}/Halbjahr:#{ZEUGNIS_HALBJAHR}/Fach:#{fach}/Email:#{email}"] || '×') != '×'
                             wf_count += 1
                             wf_tr[fach] = "WF#{wf_count}"
                             info["#WF#{wf_count}_Name"] = "Wahlfach #{@@faecher[fach] || fach}"
+                            wf_entries["#{@@faecher[fach] || fach}"] = wf_count
                         end
                     end
                 end
@@ -518,6 +520,11 @@ class Main < Sinatra::Base
                     info["##{fach_tr}"] = note
                     # Also add the note to the original fach because of hybrid klassen 9o mixup AGr / $AGr (wahlfach for some)
                     info["##{fach}"] = note
+                    # Remove the note from Wahlfach entry if it's already there
+                    if wf_entries[@@faecher[fach] || fach]
+                        info["#WF#{wf_entries[@@faecher[fach] || fach]}"] = '--'
+                        info.delete("#WF#{wf_entries[@@faecher[fach] || fach]}_Name")
+                    end
                 end
                 ['VT', 'VT_UE', 'VS', 'VS_UE', 'VSP'].each do |item|
                     v = cache["Schuljahr:#{ZEUGNIS_SCHULJAHR}/Halbjahr:#{ZEUGNIS_HALBJAHR}/Fehltage:#{item}/Email:#{email}"] || '--'

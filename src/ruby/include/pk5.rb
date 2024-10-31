@@ -165,7 +165,7 @@ class Main < Sinatra::Base
                 email = @@shorthands[shorthand]
                 valid_emails.include?(email)
             end
-            new_consultations = shorthands.join(',')
+            new_consultations = shorthands.uniq.join(',')
             if p[:extra_consultations] != new_consultations
                 neo4j_query_expect_one(<<~END_OF_QUERY, {:sus_email => sus_email, :extra_consultations => new_consultations})
                     MATCH (u:User {email: $sus_email})

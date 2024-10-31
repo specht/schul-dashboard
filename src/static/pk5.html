@@ -169,11 +169,20 @@
                         <hr>
                         <h4>Zentraler Beratungstermin</h4>
                         <p>
-                            Beim zentralen Beratungstermin am 12.11.2024 sind alle Lehrkräfte in der Schule. Du führst an diesem Tag mindestens zwei
+                            Beim zentralen Beratungstermin am <strong>#{DateTime.parse($pk5.phases.select { |x| x[:index] == 11 }.first[:t0]).strftime('%d.%m.%Y')}</strong> sind alle Lehrkräfte in der Schule. Du führst an diesem Tag mindestens zwei
                             Beratungsgespräche (mit deinen beiden betreuenden Lehrkräften). Gib hier an, ob du zusätzlich noch ein Gespräch mit
                             einer fachverantwortlichen Lehrkraft führen möchtest.
                         </p>
                         <div id="extra_consultations_here">
+                        </div>
+                    </div>
+                    <div class="col-md-12" style="#{[10, 11].include?($pk5.get_current_phase()) ? '' : 'display: none;'}">
+                        <hr>
+                        <h4>Zentraler Beratungstermin</h4>
+                        <p>
+                            Beim zentralen Beratungstermin am <strong>#{DateTime.parse($pk5.phases.select { |x| x[:index] == 11 }.first[:t0]).strftime('%d.%m.%Y')}</strong> sind alle Lehrkräfte in der Schule. 
+                        </p>
+                        <div id="extra_consultation_events_here">
                         </div>
                     </div>
                     <div class='col-md-12'>
@@ -227,6 +236,16 @@ function update_extra_consultations(pk5) {
 
 window.addEventListener('load', function() {
     update_extra_consultations(my_pk5);
+    let events = my_pk5.extra_consultation_events ?? [];
+    if (events.length === 0) {
+        $('#extra_consultation_events_here').append($('<p>').text('Du hast keine Gepsprächstermine beim zentralen Beratungstermin. Du kannst jedoch jederzeit mit deinen betreuenden Lehrkräften Termine vereinbaren.'));
+    } else {
+        $('#extra_consultation_events_here').append($('<p>').text('Du hast folgende Termine:'));
+        let list = $(`<ul>`).appendTo($('#extra_consultation_events_here'));
+        for (let event of events) {
+            list.append($(`<li>`).text(`am ${event.date} um ${event.start_time} bei ${event.teacher}${event.room ? ` (${event.room})` : ''}`));
+        }
+    }
     $('#ti_themengebiet').val(my_pk5.themengebiet);
     $('#ti_referenzfach').val(my_pk5.referenzfach);
     $('#ti_betreuende_lehrkraft').val(my_pk5.betreuende_lehrkraft_display_name);

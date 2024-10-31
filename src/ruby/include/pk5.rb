@@ -74,6 +74,20 @@ class Main < Sinatra::Base
                 extra_consultations.delete(result[:betreuende_lehrkraft_fas])
             end
             result[:extra_consultations] = extra_consultations
+            result[:extra_consultation_events] = []
+            neo4j_query(<<~END_OF_QUERY, {:email => email}).each do |row|
+                MATCH (u:User {email: $email})-[:IS_PARTICIPANT]->(e:Event {zentraler_beratungstermin: TRUE})-[:ORGANIZED_BY]->(t:User)
+                RETURN e, t.email
+                ORDER BY e.date, e.start_time;
+            END_OF_QUERY
+                event = row['e']
+                result[:extra_consultation_events] << {
+                    :date => Date.parse(event[:date]).strftime('%d.%m.%Y'),
+                    :start_time => event[:start_time],
+                    :teacher => @@user_info[row['t.email']][:display_name_official_dativ],
+                    :room => (event[:description] || '').match(/Raum ([^\s<>]+)/)
+                }
+            end
             result
         end
     end

@@ -99,6 +99,9 @@ transaction do
                 :description => "<p>#{themengebiet}</p><p>#{user_info[teacher_email][:display_name_official]}, #{sus_emails.map { |x| user_info[x][:display_name]}.join(', ')}</p>",
                 :zentraler_beratungstermin => true,
             }
+            if event[:end_time] > '16:15'
+                puts "#{event[:start_time]} - #{event[:end_time]} / #{event[:title]}"
+            end
             if room_for_teacher[teacher_email]
                 event[:description] += "<p>Raum #{room_for_teacher[teacher_email]}</p>"
             else

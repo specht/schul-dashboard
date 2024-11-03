@@ -2032,9 +2032,9 @@ class Main < Sinatra::Base
                 # if user_is_eligible_for_tresor?
                 #     nav_items << :tresor
                 # end
-                if schueler_logged_in? && @session_user[:klassenstufe] <= 6
-                    nav_items << ['/mittagessen', 'Mittagessen', 'fa fa-cutlery']
-                end
+                # if schueler_logged_in? && @session_user[:klassenstufe] <= 6
+                #     nav_items << ['/mittagessen', 'Mittagessen', 'fa fa-cutlery']
+                # end
                 if admin_logged_in? || user_who_can_upload_files_logged_in? || user_who_can_manage_news_logged_in? || user_who_can_manage_monitors_logged_in? || user_who_can_manage_tablets_logged_in? || user_with_role_logged_in?(:developer)
                     nav_items << :admin
                 end
@@ -2185,11 +2185,11 @@ class Main < Sinatra::Base
                         printed_divider = true
                         io.puts "<a class='dropdown-item nav-icon' href='/bibliothek'><div class='icon'><i class='fa fa-book'></i></div><span class='label'>Bibliothek</span></a>"
                     end
-                    if user_with_role_logged_in?(:mittagessen)
-                        io.puts "<div class='dropdown-divider'></div>" unless printed_divider
-                        printed_divider = true
-                        io.puts "<a class='dropdown-item nav-icon' href='/mittagessen_overview'><div class='icon'><i class='fa fa-cutlery'></i></div><span class='label'>Mittagessen</span></a>"
-                    end
+                    # if user_with_role_logged_in?(:mittagessen)
+                    #     io.puts "<div class='dropdown-divider'></div>" unless printed_divider
+                    #     printed_divider = true
+                    #     io.puts "<a class='dropdown-item nav-icon' href='/mittagessen_overview'><div class='icon'><i class='fa fa-cutlery'></i></div><span class='label'>Mittagessen</span></a>"
+                    # end
                     # if user_logged_in?
                     #     if teacher_logged_in?
                     #         io.puts "<a class='dropdown-item nav-icon' href='/projekttage_sus'><div class='icon'><i class='fa fa-rocket'></i></div><span class='label'>Projekttage</span></a>"

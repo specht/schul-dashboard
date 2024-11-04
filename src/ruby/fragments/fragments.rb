@@ -2156,6 +2156,7 @@ class Main
             data[ym][:school_days] += 1
         end
         emails = @@schueler_for_klasse[klasse]
+        data[:total] ||= {}
         neo4j_query(<<~END_OF_QUERY, {:emails => emails, :ts0 => ts0, :ts1 => ts1}).each do |row|
             MATCH (t:User)<-[:SENT_BY]-(m:Mail)-[:SENT_TO]->(u:User)
             MATCH (m)-[:REGARDING]->(li:LessonInfo)-[:BELONGS_TO]->(l:Lesson)

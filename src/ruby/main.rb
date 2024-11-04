@@ -3199,7 +3199,7 @@ class Main < Sinatra::Base
             parts = request.env['REQUEST_PATH'].split('/')
             klasse = CGI::unescape(parts[2])
 #             STDERR.puts @@teachers_for_klasse[klasse].to_yaml
-            unless can_see_all_timetables_logged_in? || (@@teachers_for_klasse[klasse] || {}).include?(@session_user[:shorthand])
+            unless admin_logged_in? || can_see_all_timetables_logged_in? || (@@teachers_for_klasse[klasse] || {}).include?(@session_user[:shorthand])
                 redirect "#{WEB_ROOT}/", 302
             end
         elsif path == 'lessons'

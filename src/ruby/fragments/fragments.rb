@@ -2113,10 +2113,39 @@ class Main
     end
 
     def print_email_overview(klasse)
+        reason_order = [:material, :homework, :signature, :disturbance, :disturbance_otium, :late, :praise]
+        reason_label = {
+            :material => 'Material fehlt',
+            :homework => 'Hausaufgaben fehlen',
+            :signature => 'Unterschrift fehlt',
+            :disturbance => 'Störverhalten',
+            :disturbance_otium => 'Störverhalten (Otium)',
+            :late => 'Verspätung',
+            :praise => 'besonderes Lob',
+        }
+        reason_color = {
+            :material => '#fce94f',
+            :homework => '#fcaf3e',
+            :signature => '#f57900',
+            :disturbance => '#ef2929',
+            :disturbance_otium => '#cc0000',
+            :late => '#7b67ae',
+            :praise => '#4aa03f',
+        }
+        reason_text_color = {
+            :material => '#000000',
+            :homework => '#000000',
+            :signature => '#000000',
+            :disturbance => '#ffffff',
+            :disturbance_otium => '#ffffff',
+            :late => '#ffffff',
+            :praise => '#ffffff',
+        }
         data = {}
         ts0 = nil
         ts1 = nil
-        iterate_school_days do |ds|
+        iterate_school_days do |ds, dow|
+            next if [5, 6].include?(dow)
             ts0 ||= DateTime.parse(ds).to_i
             ts1 = DateTime.parse(ds).to_i
             ym = ds[0, 7]
@@ -2145,13 +2174,48 @@ class Main
             data[ym][:sus][sus_email][reason] ||= {}
             data[ym][:sus][sus_email][reason][fach] ||= 0
             data[ym][:sus][sus_email][reason][fach] += 1
+            data[:total] ||= {}
+            data[:total][sus_email] ||= 0
+            data[:total][sus_email] += 1
+        end
+        cols = data.keys.reject do |ym|
+            ym == :total
+        end.select do |ym|
+            Time.now.to_i >= Date.parse(ym + '-01').to_time.to_i
         end
         StringIO.open do |io|
+            reason_order.each do |reason|
+                io.puts "<span class='badge' style='background-color: #{reason_color[reason]}; color: #{reason_text_color[reason]};'>#{reason_label[reason]}</span>"
+            end
             io.puts "<div style='max-width: 100%; overflow-x: auto;'>"
             io.puts "<table class='table table-condensed table-striped narrow' style='width: unset; min-width: 100%;'>"
             io.puts "<thead>"
+            io.puts "<tr>"
+            io.puts "<th>Name</th>"
+            cols.each do |ym|
+                io.puts "<th>#{Date.parse(ym + '-01').strftime('%m')}</th>"
+            end
+            io.puts "</tr>"
             io.puts "</thead>"
             io.puts "<tbody>"
+            emails.sort do |a, b|
+                (data[:total][b] || 0) <=> (data[:total][a] || 0)
+            end.each do |email|
+                io.puts "<tr>"
+                io.puts "<td>#{@@user_info[email][:display_name]}</td>"
+                cols.each do |ym|
+                    io.puts "<td>"
+                    (data[ym][:sus][email] || {}).each_pair do |reason, info|
+                        (info || {}).each_pair do |fach, count|
+                            (1..count).each do
+                                io.puts "<span class='badge' style='font-weight: normal; background-color: #{reason_color[reason.to_sym]}; color: #{reason_text_color[reason.to_sym]};'>#{fach}</span>"
+                            end
+                        end
+                    end
+                    io.puts "</td>"
+                end
+                io.puts "</tr>"
+            end
             io.puts "</tbody>"
             io.puts "</table>"
             io.puts "</div>"

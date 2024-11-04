@@ -949,7 +949,7 @@ class Main
                     end
                 end
 
-                next unless klasse_for_room == wanted_klasse
+                next unless klasse_for_room == wanted_klasse || room == wanted_klasse
 
                 if klasse_for_room
                     max_klassen_stunden = max_stunden[klasse_for_room]

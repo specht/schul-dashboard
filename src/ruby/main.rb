@@ -3194,6 +3194,14 @@ class Main < Sinatra::Base
             unless can_see_all_timetables_logged_in? || (@@teachers_for_klasse[klasse] || {}).include?(@session_user[:shorthand])
                 redirect "#{WEB_ROOT}/", 302
             end
+        elsif path == 'email_overview'
+            redirect "#{WEB_ROOT}/", 302 unless @session_user
+            parts = request.env['REQUEST_PATH'].split('/')
+            klasse = CGI::unescape(parts[2])
+#             STDERR.puts @@teachers_for_klasse[klasse].to_yaml
+            unless can_see_all_timetables_logged_in? || (@@teachers_for_klasse[klasse] || {}).include?(@session_user[:shorthand])
+                redirect "#{WEB_ROOT}/", 302
+            end
         elsif path == 'lessons'
             redirect "#{WEB_ROOT}/", 302 unless @session_user
             parts = request.env['REQUEST_PATH'].split('/')

@@ -2111,4 +2111,51 @@ class Main
         end
         return doc.render
     end
+
+    def print_email_overview(klasse)
+        data = {}
+        ts0 = nil
+        ts1 = nil
+        iterate_school_days do |ds|
+            ts0 ||= DateTime.parse(ds).to_i
+            ts1 = DateTime.parse(ds).to_i
+            ym = ds[0, 7]
+            data[ym] ||= {
+                :school_days => 0,
+                :sus => {},
+            }
+            data[ym][:school_days] += 1
+        end
+        emails = @@schueler_for_klasse[klasse]
+        neo4j_query(<<~END_OF_QUERY, {:emails => emails, :ts0 => ts0, :ts1 => ts1}).each do |row|
+            MATCH (t:User)<-[:SENT_BY]-(m:Mail)-[:SENT_TO]->(u:User)
+            MATCH (m)-[:REGARDING]->(li:LessonInfo)-[:BELONGS_TO]->(l:Lesson)
+            WHERE u.email IN $emails AND
+            m.ts >= $ts0 AND m.ts <= $ts1
+            RETURN t.email, m, u.email, l.key;
+        END_OF_QUERY
+            teacher_email = row['t.email']
+            sus_email = row['u.email']
+            lesson_key = row['l.key']
+            fach = @@lessons[:lesson_keys][lesson_key][:fach]
+            reason = row['m'][:reason]
+            ts = row['m'][:ts]
+            ym = Time.at(ts).strftime('%Y-%m')
+            data[ym][:sus][sus_email] ||= {}
+            data[ym][:sus][sus_email][reason] ||= {}
+            data[ym][:sus][sus_email][reason][fach] ||= 0
+            data[ym][:sus][sus_email][reason][fach] += 1
+        end
+        StringIO.open do |io|
+            io.puts "<div style='max-width: 100%; overflow-x: auto;'>"
+            io.puts "<table class='table table-condensed table-striped narrow' style='width: unset; min-width: 100%;'>"
+            io.puts "<thead>"
+            io.puts "</thead>"
+            io.puts "<tbody>"
+            io.puts "</tbody>"
+            io.puts "</table>"
+            io.puts "</div>"
+            io.string
+        end
+    end
 end

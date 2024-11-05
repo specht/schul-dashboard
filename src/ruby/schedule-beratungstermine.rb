@@ -88,11 +88,13 @@ pk5_hash.each do |tag, data|
 end
 
 pool_copy = pool.to_yaml
-STDERR.puts pool_copy.to_yaml
+# STDERR.puts pool_copy.to_yaml
 
 min_error = nil
 best_solution = nil
 pk5_hash_copy = pk5_hash.to_yaml
+
+# Info: a slot amount to 5 minutes
 
 1000.times do
     pool = YAML.load(pool_copy)
@@ -110,27 +112,33 @@ pk5_hash_copy = pk5_hash.to_yaml
         tag = talk[:tag]
         teacher = talk[:teacher]
         pk5 = pk5_hash[tag]
+        slot_count = talk[:duration] / 5
         pool.delete_at(i)
         sus_emails = pk5[:emails]
         # STDERR.puts "#{teacher} + #{sus_emails.join(' + ')}"
         teacher_slots[teacher] ||= {}
         pk5_slots[tag] ||= {}
-        candidates = (0..100).reject { |x| teacher_slots[teacher].include?(x) }.sort
+        candidates = (0..100).reject { |x| (0...slot_count).any? { |i| teacher_slots[teacher].include?(x + i) } }.sort
         slot = candidates.first
-        if pk5_slots[tag].include?(slot)
+        if (0...slot_count).any? { |i| pk5_slots[tag].include?(slot + i) }
             # Error: slot is not available because Pk5 team is already in another talk
             # Put the item back
             fail_count += 1
             pool << talk
         else
             fail_count = 0
-            pk5_slots[tag][slot] = talk
-            teacher_slots[teacher][slot] = talk
-            pk5_hash[tag][:talks] ||= {}
-            pk5_hash[tag][:talks][slot] = teacher
+            (0...slot_count).each do |i|
+                pk5_slots[tag][slot + i] = talk
+                teacher_slots[teacher][slot + i] = talk
+                pk5_hash[tag][:talks] ||= {}
+                pk5_hash[tag][:talks][slot + i] = teacher
+            end
         end
         break if fail_count > 1000
     end
+
+    # STDERR.puts pk5_slots.to_yaml
+    # exit
 
     # puts "#{pool.size} talks left to distribute"
 
@@ -142,21 +150,24 @@ pk5_hash_copy = pk5_hash.to_yaml
         tag = talk[:tag]
         teacher = talk[:teacher]
         pk5 = pk5_hash[tag]
+        slot_count = talk[:duration] / 5
         pool.delete_at(i)
         sus_emails = pk5[:emails]
         # STDERR.puts "#{teacher} + #{sus_emails.join(' + ')}"
         teacher_slots[teacher] ||= {}
         pk5_slots[tag] ||= {}
-        candidates = (0..100).reject { |x| teacher_slots[teacher].include?(x) || pk5_slots[tag].include?(x) }.sort
+        candidates = (0..100).reject { |x| (0...slot_count).any? { |i| teacher_slots[teacher].include?(x + i) || pk5_slots[tag].include?(x + i)} }.sort
         slot = candidates.first
-        if pk5_slots[tag].include?(slot)
+        if (0...slot_count).any? { |i| pk5_slots[tag].include?(slot + i) }
             raise 'This cannot happen, but it did.'
         else
             fail_count = 0
-            pk5_slots[tag][slot] = talk
-            teacher_slots[teacher][slot] = talk
-            pk5_hash[tag][:talks] ||= {}
-            pk5_hash[tag][:talks][slot] = teacher
+            (0...slot_count).each do |i|
+                pk5_slots[tag][slot + i] = talk
+                teacher_slots[teacher][slot + i] = talk
+                pk5_hash[tag][:talks] ||= {}
+                pk5_hash[tag][:talks][slot + i] = teacher
+            end
         end
     end
 

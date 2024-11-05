@@ -12,8 +12,7 @@ include Neo4jBolt
 
 CONSULTATION_DATE = '2024-11-12'
 CONSULTATION_START_TIME = '14:45'
-CONSULTATION_DURATION = 15
-CONSULTATION_SKIP = 20
+SLOT_DURATION = 5
 
 Neo4jBolt.bolt_host = 'neo4j'
 Neo4jBolt.bolt_port = 7687
@@ -84,28 +83,33 @@ transaction do
         themengebiet = info[:pk5][:themengebiet]
         sus_emails = info[:emails]
         talks = (info[:talks] || {})
-        STDERR.puts "Warning: no talks scheduled for #{themengebiet}" if talks.empty?
-        talks.each_pair do |slot, teacher_email|
+        # STDERR.puts "Warning: no talks scheduled for #{themengebiet}" if talks.empty?
+        # STDERR.puts talks.to_yaml
+        talks_for_teacher = talks.group_by { |a, b| b }
+        talks_for_teacher.each_pair do |teacher_email, slots|
             timestamp = Time.now.to_i
+            slots = slots.map { |a, b| a }
+            slots.sort!
             event = {
                 :id => RandomTag.generate(12),
                 :created => timestamp,
                 :updated => timestamp,
                 :date => CONSULTATION_DATE,
-                :start_time => (Time.parse("1970-01-01T#{CONSULTATION_START_TIME}") + slot * CONSULTATION_SKIP * 60).strftime('%H:%M'),
-                :end_time => (Time.parse("1970-01-01T#{CONSULTATION_START_TIME}") + slot * CONSULTATION_SKIP * 60 + CONSULTATION_DURATION * 60).strftime('%H:%M'),
+                :start_time => (Time.parse("1970-01-01T#{CONSULTATION_START_TIME}") + slots.first * SLOT_DURATION * 60).strftime('%H:%M'),
+                :end_time => (Time.parse("1970-01-01T#{CONSULTATION_START_TIME}") + (slots.last + 1) * SLOT_DURATION * 60).strftime('%H:%M'),
                 :jitsi => false,
                 :title => "Zentraler Beratungstermin #{user_info[teacher_email][:display_name_official]} / #{sus_emails.map { |x| user_info[x][:display_name]}.join(' / ')}",
                 :description => "<p>#{themengebiet}</p><p>#{user_info[teacher_email][:display_name_official]}, #{sus_emails.map { |x| user_info[x][:display_name]}.join(', ')}</p>",
                 :zentraler_beratungstermin => true,
             }
+            puts "#{event[:start_time]} - #{event[:end_time]} / #{event[:title]}"
             if event[:end_time] > '16:15'
                 puts "#{event[:start_time]} - #{event[:end_time]} / #{event[:title]}"
             end
             if room_for_teacher[teacher_email]
                 event[:description] += "<p>Raum #{room_for_teacher[teacher_email]}</p>"
             else
-                STDERR.puts "[WARNING] No room defined for teacher: #{teacher_email}"
+                # STDERR.puts "[WARNING] No room defined for teacher: #{teacher_email}"
             end
             if SRSLY
                 node_id = neo4j_query_expect_one(<<~END_OF_QUERY, {:event => event, :teacher_email => teacher_email})['id']

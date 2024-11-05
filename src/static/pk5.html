@@ -209,6 +209,7 @@ function update_extra_consultations(pk5) {
     let keys = Object.keys(pk5.extra_consultations ?? {});
     keys.sort();
     for (let email of keys) {
+        console.log(email);
         let data = pk5.extra_consultations[email];
         let row = $(`<div class='row mb-1'>`);
         $(`<div class='col-md-9'>`).text(`Ich möchte einen Gesprächstermin mit ${data.display_name_dativ} erhalten:`).appendTo(row);
@@ -217,17 +218,17 @@ function update_extra_consultations(pk5) {
         $(`<span>&nbsp;</span>`).appendTo(button_div);
         let button_no = $(`<button class="btn btn-sm ${data.want ? 'btn-outline-secondary' : 'btn-secondary'}"><i class='fa fa-times'></i>&nbsp;&nbsp;nein</button>`).appendTo(button_div);
         $('#extra_consultations_here').append(row);
-        if ('#{@session_user[:email] != user_email}' === 'true') {
+        if ('#{@session_user[:email] != user_email && !user_with_role_logged_in?(:oko)}' === 'true') {
             button_yes.attr('disabled', true);
             button_no.attr('disabled', true);
         }
         button_yes.click(function(e) {
-            api_call('/api/want_extra_consultation', {email: email, flag: 'yes'}, function(data) {
+            api_call('/api/want_extra_consultation', {email: email, flag: 'yes', sus_email:'#{user_email}' }, function(data) {
                 if (data.success) update_extra_consultations(data.result)
             });
         });
         button_no.click(function(e) {
-            api_call('/api/want_extra_consultation', {email: email, flag: 'no'}, function(data) {
+            api_call('/api/want_extra_consultation', {email: email, flag: 'no', sus_email:'#{user_email}' }, function(data) {
                 if (data.success) update_extra_consultations(data.result)
             });
         });
@@ -238,7 +239,7 @@ window.addEventListener('load', function() {
     update_extra_consultations(my_pk5);
     let events = my_pk5.extra_consultation_events ?? [];
     if (events.length === 0) {
-        $('#extra_consultation_events_here').append($('<p>').text('Du hast keine Gepsprächstermine beim zentralen Beratungstermin. Du kannst jedoch jederzeit mit deinen betreuenden Lehrkräften Termine vereinbaren.'));
+        $('#extra_consultation_events_here').append($('<p>').text('Du hast keine Gesprächstermine beim zentralen Beratungstermin. Du kannst jedoch jederzeit mit deinen betreuenden Lehrkräften Termine vereinbaren.'));
     } else {
         $('#extra_consultation_events_here').append($('<p>').text('Du hast folgende Termine:'));
         let list = $(`<ul>`).appendTo($('#extra_consultation_events_here'));

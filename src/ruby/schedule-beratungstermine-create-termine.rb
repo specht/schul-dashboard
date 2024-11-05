@@ -141,6 +141,7 @@ transaction do
 end
 
 puts "Gesprächstermine für Lehrkräfte:"
+puts
 last_key = nil
 events.sort do |a, b|
     a[:teacher] == b[:teacher] ?
@@ -153,7 +154,9 @@ end.each do |x|
     last_key = x[:teacher]
 end
 
+puts
 puts "Gesprächstermine für SuS:"
+puts
 last_key = nil
 events.sort do |a, b|
     a[:tag] == b[:tag] ?

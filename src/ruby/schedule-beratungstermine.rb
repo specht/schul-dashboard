@@ -83,11 +83,12 @@ pk5_hash.each do |tag, data|
     teachers.uniq!
 
     teachers.each do |email|
-        pool << {:teacher => email, :tag => tag}
+        pool << {:teacher => email, :tag => tag, :duration => data[:emails].size == 1 ? 15 : 25}
     end
 end
 
 pool_copy = pool.to_yaml
+STDERR.puts pool_copy.to_yaml
 
 min_error = nil
 best_solution = nil

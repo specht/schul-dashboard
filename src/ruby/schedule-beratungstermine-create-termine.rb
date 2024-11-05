@@ -140,12 +140,28 @@ transaction do
     end
 end
 
-puts "Gesprächstermine für SuS:"
-
+puts "Gesprächstermine für Lehrkräfte:"
+last_key = nil
 events.sort do |a, b|
     a[:teacher] == b[:teacher] ?
     a[:event][:start_time] <=> b[:event][:start_time] :
     a[:teacher] <=> b[:teacher]
 end.each do |x|
+    last_key ||= x[:teacher]
+    puts if last_key != x[:teacher]
     puts "#{x[:event][:start_time]} - #{x[:event][:end_time]} / #{x[:event][:title].sub('Zentraler Beratungstermin', '').strip} (#{x[:event][:description].match(/Raum ([^\)<]+)/)&.[](1)})"
+    last_key = x[:teacher]
+end
+
+puts "Gesprächstermine für SuS:"
+last_key = nil
+events.sort do |a, b|
+    a[:tag] == b[:tag] ?
+    a[:event][:start_time] <=> b[:event][:start_time] :
+    a[:tag] <=> b[:tag]
+end.each do |x|
+    last_key ||= x[:tag]
+    puts if last_key != x[:tag]
+    puts "#{x[:event][:start_time]} - #{x[:event][:end_time]} / #{x[:event][:title].sub('Zentraler Beratungstermin', '').strip} (#{x[:event][:description].match(/Raum ([^\)<]+)/)&.[](1)})"
+    last_key = x[:tag]
 end

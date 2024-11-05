@@ -52,7 +52,7 @@ class Main < Sinatra::Base
     end
 
     post '/api/save_angebot' do
-        require_teacher!
+        require_user_with_role!(:can_manage_angebote)
         data = parse_request_data(:required_keys => [:name, :recipients],
                                   :types => {:recipients => Array},
                                   :max_body_length => 1024 * 1024,
@@ -89,7 +89,7 @@ class Main < Sinatra::Base
     end
 
     post '/api/update_angebot' do
-        require_teacher!
+        require_user_with_role!(:can_manage_angebote)
         data = parse_request_data(:required_keys => [:aid, :name, :recipients],
                                 :types => {:recipients => Array},
                                 :max_body_length => 1024 * 1024,
@@ -134,7 +134,7 @@ class Main < Sinatra::Base
     end
 
     post '/api/delete_angebot' do
-        require_teacher!
+        require_user_with_role!(:can_manage_angebote)
         data = parse_request_data(:required_keys => [:aid])
         id = data[:aid]
         transaction do
@@ -173,7 +173,7 @@ class Main < Sinatra::Base
     end
 
     def get_angebote_for_email
-        require_teacher!
+        require_user_with_role!(:can_manage_angebote)
         angebote = {}
         neo4j_query(<<~END_OF_QUERY).each do |row|
             MATCH (u:User)-[:IS_PART_OF]->(a:Angebot)-[:DEFINED_BY]->(ou:User)

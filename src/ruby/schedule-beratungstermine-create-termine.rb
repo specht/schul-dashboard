@@ -71,12 +71,17 @@ if File.exist?(path)
     end
 end
 
-puts '-' * 40
-all_teachers.reject { |x| room_for_teacher[x] }.map { |x| user_info[x][:shorthand] }.sort.each do |shorthand|
-    puts "#{shorthand},"
+shorthands_without_rooms = all_teachers.reject { |x| room_for_teacher[x] }.map { |x| user_info[x][:shorthand] }
+unless shorthands_without_rooms.empty?
+    puts '-' * 40
+    shorthands_without_rooms.sort.each do |shorthand|
+        puts "#{shorthand},"
+    end
+    puts '-' * 40
+    raise "No rooms defined for #{shorthands_without_rooms.size} teachers!"
 end
-puts '-' * 40
 
+events = []
 
 transaction do
     pk5_hash.each_pair do |tag, info|
@@ -102,10 +107,11 @@ transaction do
                 :description => "<p>#{themengebiet}</p><p>#{user_info[teacher_email][:display_name_official]}, #{sus_emails.map { |x| user_info[x][:display_name]}.join(', ')}</p>",
                 :zentraler_beratungstermin => true,
             }
-            puts "#{event[:start_time]} - #{event[:end_time]} / #{event[:title]}"
-            if event[:end_time] > '16:15'
-                puts "#{event[:start_time]} - #{event[:end_time]} / #{event[:title]}"
-            end
+            events << { :event => event, :tag => tag, :teacher => teacher_email }
+            # puts "#{event[:start_time]} - #{event[:end_time]} / #{event[:title]}"
+            # if event[:end_time] > '16:15'
+            #     puts "#{event[:start_time]} - #{event[:end_time]} / #{event[:title]}"
+            # end
             if room_for_teacher[teacher_email]
                 event[:description] += "<p>Raum #{room_for_teacher[teacher_email]}</p>"
             else
@@ -132,4 +138,14 @@ transaction do
             end
         end
     end
+end
+
+puts "Gesprächstermine für SuS:"
+
+events.sort do |a, b|
+    a[:teacher] == b[:teacher] ?
+    a[:event][:start_time] <=> b[:event][:start_time] :
+    a[:teacher] <=> b[:teacher]
+end.each do |x|
+    puts "#{x[:event][:start_time]} - #{x[:event][:end_time]} / #{x[:event][:title].sub('Zentraler Beratungstermin', '').strip} (#{x[:event][:description].match(/Raum ([^\)<]+)/)&.[](1)})"
 end

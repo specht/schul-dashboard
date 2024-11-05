@@ -19,10 +19,12 @@ AVAILABLE_ROLES = {
     :can_manage_bib_members => 'kann Bibliotheksnutzer verwalten',
     :can_manage_bib_payment => 'kann Bibliothekszahlungen verwalten',
     :can_manage_bib_special_access => 'Bibliothek Spezialzugriff',
+    :can_manage_angebote => 'kann Angebote verwalten',
     :can_manage_forschertage => 'kann Forschertage verwalten',
     :can_manage_tech_problems => 'kann gemeldete Technikprobleme bearbeiten',
     :can_manage_project_wifi_access => 'kann Zugriff auf das Projekt-WLAN verwalten',
     :can_open_project_wifi => 'kann das Projekt-WLAN öffnen',
+    :externe_ag_leitung => 'AG-Leitung (extern)',
     :gev => 'GEV',
     :sv => 'Schülervertretung',
     :technikteam => 'Technikteam',
@@ -46,7 +48,8 @@ AVAILABLE_ROLES = {
 }
 
 ROLE_TRANSITIONS = <<~END_OF_STRING
-    teacher => can_receive_messages can_write_messages can_book_tablets can_create_polls can_create_events can_use_mailing_lists can_use_nextcloud can_use_sms_gateway
+    teacher => can_receive_messages can_write_messages can_book_tablets can_create_polls can_create_events can_use_mailing_lists can_use_nextcloud can_use_sms_gateway can_manage_angebote
+    externe_ag_leitung => can_write_messages can_create_polls can_create_events can_use_mailing_lists can_use_nextcloud can_use_sms_gateway can_manage_angebote
     schueler => can_receive_messages can_use_nextcloud
     sv => can_write_messages can_create_polls can_use_mailing_lists can_create_events
     technikteam => can_write_messages can_book_tablets can_create_polls can_use_mailing_lists can_create_events can_manage_tablets can_manage_tech_problems can_report_tech_problems can_see_all_timetables

@@ -2180,7 +2180,7 @@ class Main < Sinatra::Base
                         printed_divider = true
                         io.puts "<a class='dropdown-item nav-icon' href='/lehrbuchverein'><div class='icon'><i class='fa fa-book'></i></div><span class='label'>Lehrmittelverein</span></a>"
                     end
-                    if schueler_logged_in? || teacher_logged_in?
+                    if schueler_logged_in? || teacher_logged_in? || user_with_role_logged_in?(:can_manage_bib)
                         io.puts "<div class='dropdown-divider'></div>" unless printed_divider
                         printed_divider = true
                         io.puts "<a class='dropdown-item nav-icon' href='/bibliothek'><div class='icon'><i class='fa fa-book'></i></div><span class='label'>Bibliothek</span></a>"
@@ -2235,7 +2235,7 @@ class Main < Sinatra::Base
                         if user_with_role_logged_in?(:can_use_mailing_lists)
                             io.puts "<a class='dropdown-item nav-icon' href='/mailing_lists'><div class='icon'><i class='fa fa-envelope'></i></div><span class='label'>E-Mail-Verteiler</span></a>"
                         end
-                        if teacher_logged_in?
+                        if user_with_role_logged_in?(:can_manage_angebote)
                             io.puts "<a class='dropdown-item nav-icon' href='/angebote'><div class='icon'><i class='fa fa-group'></i></div><span class='label'>AGs und Angebote</span></a>"
                         end
                         if user_with_role_logged_in?(:can_open_project_wifi)
@@ -3428,7 +3428,7 @@ class Main < Sinatra::Base
                 end
             end
         elsif path == 'angebote'
-            unless teacher_logged_in?
+            unless user_with_role_logged_in?(:can_manage_angebote)
                 redirect "#{WEB_ROOT}/", 302
             else
                 stored_angebote = get_angebote()

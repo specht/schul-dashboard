@@ -45,6 +45,7 @@ AVAILABLE_ROLES = {
     :can_see_kurslisten => 'kann Kurslisten einsehen',
     :mittagessen => 'kann Bestellungen für Mittagessen einsehen',
     :praktikum => 'Praktikum (kann Stundenpläne ohne Details einsehen)',
+    :can_print_photos => 'kann Fotos drucken',
 }
 
 ROLE_TRANSITIONS = <<~END_OF_STRING

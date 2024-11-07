@@ -1178,8 +1178,10 @@ class Main < Sinatra::Base
         end
 
         @@room_ids = {}
+        @@room_ids_rev = {}
         ROOM_ORDER.each do |room|
             @@room_ids[room] = Digest::SHA2.hexdigest(KLASSEN_ID_SALT + room).to_i(16).to_s(36)[0, 16]
+            @@room_ids_rev[@@room_ids[room]] = room
         end
         @@rooms_for_shorthand = {}
         @@rooms_for_klasse = {}

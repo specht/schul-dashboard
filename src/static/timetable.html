@@ -521,10 +521,11 @@ function update_ha_amt_buttons() {
 }
 
 var timetable_id = '#{timetable_id}';
+var room_ids_rev = #{teacher_logged_in? ? @@room_ids_rev.to_json : {}.to_json};
 
 function load_timetable(id) {
     timetable_id = id;
-    reload_print_button();
+    reload_print_button(room_ids_rev[id]);
     window.calendar.refetchEvents();
 }
 
@@ -619,8 +620,11 @@ function install_physics_handler(e) {
     });
 }
 
-function reload_print_button() {
-    if (timetable_id == '#{@session_user[:id]}' && #{schueler_logged_in?}) {
+var current_room_id = null;
+
+function reload_print_button(room_id) {
+    current_room_id = room_id;
+    if ((timetable_id == '#{@session_user[:id]}' && #{schueler_logged_in?}) || (room_id !== null)) {
         $('.fc-print-button').html('<i class="fa fa-print"></i>');
         $('.fc-print-button').show();
     } else {
@@ -1488,7 +1492,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     window.calendar = new FullCalendar.Calendar(document.getElementById('calendar'), options);
     window.calendar.render();
-    reload_print_button();
+    reload_print_button(null);
     $('#lessonModal').on('hidden.bs.modal', function() {
         if (pb_playing)
         {
@@ -1746,7 +1750,10 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     $('.fc-print-button').click(function(e) {
-        window.open('/api/get_single_timetable_pdf', '_blank');
+        if (current_room_id)
+            window.open(`/api/get_room_timetable_pdf/${current_room_id}`, '_blank');
+        else
+            window.open('/api/get_single_timetable_pdf', '_blank');
     });
 
     let temp = '#{Digest::SHA1.hexdigest(@session_user[:email] + 'hey')}';

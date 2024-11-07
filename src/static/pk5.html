@@ -42,9 +42,7 @@
             <div class="mb-3 mt-2">
                 <div class="input-group mb-3">
                     <input id='ti_add_sus' type='text' placeholder='Bitte gib einen Namen ein' class='form-control' list='li_sus_q2'>
-                    <div class="input-group-append">
-                      <button class="btn btn-success" type="button" id="bu_send_sus_invitation" disabled><i class='bi bi-send'></i>&nbsp;&nbsp;Einladung senden</button>
-                    </div>
+                    <button class="btn btn-success" type="button" id="bu_send_sus_invitation" disabled><i class='bi bi-send'></i>&nbsp;&nbsp;Einladung senden</button>
                 </div>
             </div>
         </div>
@@ -99,9 +97,7 @@
                             <label>Prüfungskandidat#{(get_my_pk5(user_email)[:sus] || []).size > 1 ? 'en' : (@@user_info[user_email][:geschlecht] == 'w' ? 'in': '')}</label>
                             <div class="input-group mb-3">
                                 <input type='text' value='#{CGI.escapeHTML(join_with_sep(get_my_pk5(user_email)[:sus] || [], ', ', ' und '))}' class='form-control' readonly disabled>
-                                <div class="input-group-append" style="#{(user_with_role_logged_in?(:oko) || (@session_user[:klasse] == PK5_CURRENT_KLASSE && !($pk5.phases[$pk5.get_current_phase][:flags].include?(:no_sus_edit)))) ? '' : 'display: none;'}">
-                                  <button class="btn btn-outline-secondary" type="button" id="bu_add_sus"><i class='bi bi-user-plus'></i></button>
-                                </div>
+                                <button class="btn btn-outline-secondary" type="button" id="bu_add_sus" style="#{(user_with_role_logged_in?(:oko) || (@session_user[:klasse] == PK5_CURRENT_KLASSE && !($pk5.phases[$pk5.get_current_phase][:flags].include?(:no_sus_edit)))) ? '' : 'display: none;'}"><i class='bi bi-user-plus'></i></button>
                             </div>
                         </div>
                     </div>
@@ -116,14 +112,12 @@
                             <label>#{PK5_KEY_LABELS[:betreuende_lehrkraft]}</label>
                             <div class="input-group mb-3">
                                 <input id='ti_betreuende_lehrkraft' type='text' value='#{CGI.escapeHTML(get_my_pk5(user_email)[:betreuende_lehrkraft_display_name] || '')}' placeholder='keine Lehrkraft gewählt' class='form-control' list='li_lehrkraft' readonly>
-                                <div class="input-group-append">
-                                    #{get_my_pk5(user_email)[:betreuende_lehrkraft_is_confirmed] ? '<!--' : ''}
-                                    <span class="input-group-text text-secondary" title="Die Lehrkraft hat die Übernahme der Betreuung noch nicht bestätigt"><i class='bi bi-clock-o'></i></span>
-                                    #{get_my_pk5(user_email)[:betreuende_lehrkraft_is_confirmed] ? '-->' : ''}
-                                    #{get_my_pk5(user_email)[:betreuende_lehrkraft_is_confirmed] ? '' : '<!--'}
-                                    <span class="input-group-text text-success" title="Die Lehrkraft hat die Übernahme der Betreuung bestätigt"><i class='bi bi-check-lg'></i></span>
-                                    #{get_my_pk5(user_email)[:betreuende_lehrkraft_is_confirmed] ? '' : '-->'}
-                                </div>
+                                #{get_my_pk5(user_email)[:betreuende_lehrkraft_is_confirmed] ? '<!--' : ''}
+                                <span class="input-group-text text-secondary" title="Die Lehrkraft hat die Übernahme der Betreuung noch nicht bestätigt"><i class='bi bi-clock-o'></i></span>
+                                #{get_my_pk5(user_email)[:betreuende_lehrkraft_is_confirmed] ? '-->' : ''}
+                                #{get_my_pk5(user_email)[:betreuende_lehrkraft_is_confirmed] ? '' : '<!--'}
+                                <span class="input-group-text text-success" title="Die Lehrkraft hat die Übernahme der Betreuung bestätigt"><i class='bi bi-check-lg'></i></span>
+                                #{get_my_pk5(user_email)[:betreuende_lehrkraft_is_confirmed] ? '' : '-->'}
                             </div>
 
                         </div>

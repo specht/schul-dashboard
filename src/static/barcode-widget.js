@@ -21,7 +21,7 @@ class BarcodeWidget {
             text_input.focus();
         });
         input_group.append(text_input);
-        input_group.append($("<div class='input-group-append'>").append(submit_button));
+        input_group.append(submit_button);
         video_container.append(video);
         container.append(video_container);
         container.append(hint);

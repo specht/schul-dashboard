@@ -41,7 +41,7 @@ class Main < Sinatra::Base
                 result[:sus].sort! do |a, b|
                     @@user_info[a][:last_name].downcase <=> @@user_info[b][:last_name].downcase
                 end
-                result[:sus].map! { |email| @@user_info[email][:display_name_official] }
+                result[:sus].map! { |teacher_email| @@user_info[teacher_email][:display_name_official] }
             end
             if result[:betreuende_lehrkraft]
                 result[:betreuende_lehrkraft_display_name] = @@user_info[result[:betreuende_lehrkraft]][:display_name_official]
@@ -52,19 +52,19 @@ class Main < Sinatra::Base
             end
             extra_consultations = {}
             (result[:extra_consultations] || '').split(',').each do |shorthand|
-                email = @@shorthands[shorthand]
-                extra_consultations[email] = {:want => true, :display_name => @@user_info[email][:display_name_official], :display_name_dativ => @@user_info[email][:display_name_official_dativ]}
+                teacher_email = @@shorthands[shorthand]
+                extra_consultations[teacher_email] = {:want => true, :display_name => @@user_info[teacher_email][:display_name_official], :display_name_dativ => @@user_info[teacher_email][:display_name_official_dativ]}
             end
             if result[:referenzfach]
                 result[:referenzfach_fbl] = @@pk5_faecher[result[:referenzfach]].map { |x| @@user_info[x][:display_name_official]}.join(', ')
-                @@pk5_faecher[result[:referenzfach]].each do |email|
-                    extra_consultations[email] ||= {:want => false, :display_name => @@user_info[email][:display_name_official], :display_name_dativ => @@user_info[email][:display_name_official_dativ]}
+                @@pk5_faecher[result[:referenzfach]].each do |teacher_email|
+                    extra_consultations[teacher_email] ||= {:want => false, :display_name => @@user_info[teacher_email][:display_name_official], :display_name_dativ => @@user_info[teacher_email][:display_name_official_dativ]}
                 end
             end
             if result[:fas]
                 result[:fas_fbl] = @@pk5_faecher[result[:fas]].map { |x| @@user_info[x][:display_name_official]}.join(', ')
-                @@pk5_faecher[result[:fas]].each do |email|
-                    extra_consultations[email] ||= {:want => false, :display_name => @@user_info[email][:display_name_official], :display_name_dativ => @@user_info[email][:display_name_official_dativ]}
+                @@pk5_faecher[result[:fas]].each do |teacher_email|
+                    extra_consultations[teacher_email] ||= {:want => false, :display_name => @@user_info[teacher_email][:display_name_official], :display_name_dativ => @@user_info[teacher_email][:display_name_official_dativ]}
                 end
             end
             if result[:betreuende_lehrkraft] && result[:betreuende_lehrkraft_is_confirmed]

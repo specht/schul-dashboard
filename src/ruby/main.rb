@@ -2371,14 +2371,14 @@ class Main < Sinatra::Base
     end
 
     def print_email_field(io, email)
-        io.puts "<div class='input-group mb-3'><input type='text' class='form-control' readonly value='#{email}' style='min-width: 100px;' aria-label='Email' />
+        io.puts "<div class='input-group'><input type='text' class='form-control' readonly value='#{email}' style='min-width: 100px;' aria-label='Email' />
         <button class='btn btn-outline-secondary btn-clipboard d-flex align-items-center justify-content-center' type='button' title='Eintrag in die Zwischenablage kopieren' data-clipboard-text='#{email}'>
         <i class='bi bi-clipboard'></i>
         </button></div>"
     end
 
     def print_password_field(io, password)
-        io.puts "<div class='input-group mb-3'><input type='password' class='form-control' readonly value='#{password}' style='min-width: 50px;' aria-label='Password' />
+        io.puts "<div class='input-group'><input type='password' class='form-control' readonly value='#{password}' style='min-width: 50px;' aria-label='Password' />
         <button class='btn btn-outline-secondary btn-clipboard d-flex align-items-center justify-content-center' type='button' title='Eintrag in die Zwischenablage kopieren' data-clipboard-text='#{password}'>
         <i class='bi bi-clipboard'></i>
         </button></div>"

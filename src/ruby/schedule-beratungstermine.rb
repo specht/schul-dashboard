@@ -33,6 +33,8 @@ class RandomTag
 end
 
 pk5_hash = {}
+pk5_for_sus = {}
+errors = []
 
 neo4j_query(<<~END_OF_QUERY).each do |row|
     MATCH (p:Pk5)-[:BELONGS_TO]->(u:User)
@@ -53,6 +55,17 @@ END_OF_QUERY
         :betreuende_lehrkraft_fas => p[:betreuende_lehrkraft_fas],
         :extra_consultations => p[:extra_consultations]
     }, :emails => emails}
+    emails.each do |email|
+        if pk5_for_sus[email]
+            errors << sus
+        end
+        pk5_for_sus[email] = tag
+    end
+end
+
+unless errors.empty?
+    STDERR.puts "Duplicate Pk5 for: #{errors.join(', ')}"
+    raise 'nope'
 end
 
 # Pro 5. PK: n Beratungstermine mit n Lehrkräften, 1 oder 2 SuS (gemeinsam)
@@ -103,6 +116,9 @@ pk5_hash_copy = pk5_hash.to_yaml
 
     teacher_slots = {}
     pk5_slots = {}
+
+    # puts pool.select { |x| x[:teacher] == 'frei@gymnasiumsteglitz.de'}.to_yaml
+    # exit
 
     fail_count = 0
     while !pool.empty?

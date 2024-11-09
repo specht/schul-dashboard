@@ -373,7 +373,7 @@ window.addEventListener('load', function() {
     });
     $('.bu-accept-invitation').on('click', function(e) {
         let other_email = $($(e.target).closest('button')[0]).data('email');
-        api_call('/api/accept_5pk_invitation', {sus_email: '#{user_email}', other_email: other_email}, function(response) {
+        api_call('/api/accept_pk5_invitation', {sus_email: '#{user_email}', other_email: other_email}, function(response) {
             if (response.success) {
                 window.location.reload();
             }
@@ -381,7 +381,7 @@ window.addEventListener('load', function() {
     });
     $('.bu-reject-invitation').on('click', function(e) {
         let other_email = $($(e.target).closest('button')[0]).data('email');
-        api_call('/api/reject_5pk_invitation', {sus_email: '#{user_email}', other_email: other_email}, function(response) {
+        api_call('/api/reject_pk5_invitation', {sus_email: '#{user_email}', other_email: other_email}, function(response) {
             if (response.success) {
                 window.location.reload();
             }

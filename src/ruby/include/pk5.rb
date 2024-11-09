@@ -490,7 +490,7 @@ class Main < Sinatra::Base
         respond(:html => pending_pk5_invitations_outgoing(sus_email))
     end
 
-    post '/api/accept_5pk_invitation' do
+    post '/api/accept_pk5_invitation' do
         data = parse_request_data(:required_keys => [:sus_email, :other_email])
         sus_email = data[:sus_email]
         if user_with_role_logged_in?(:oko)
@@ -523,7 +523,7 @@ class Main < Sinatra::Base
         respond(:yay => 'sure')
     end
 
-    post '/api/reject_5pk_invitation' do
+    post '/api/reject_pk5_invitation' do
         data = parse_request_data(:required_keys => [:sus_email, :other_email])
         sus_email = data[:sus_email]
         if user_with_role_logged_in?(:oko)

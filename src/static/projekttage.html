@@ -67,7 +67,9 @@
             <div class="alert alert-white" style="#{$projekttage.phases[$projekttage.get_current_phase][:flags].include?(:no_sus_edit) ? '' : 'display: none;'}">
                 <em><strong>Hinweis:</strong> Du kannst die folgenden Angaben in der aktuellen Phase nicht bearbeiten.</em>
             </div>
-            #{print_pending_projekttage_invitations_incoming(user_email)}
+            <div style="#{user_email == @session_user[:email] ? '' : 'display: none;'}">
+                #{print_pending_projekttage_invitations_incoming(user_email)}
+            </div>
             <div class='karteikarte'>
                 <div class='row'>
                     <datalist id='li_sus_q1'>

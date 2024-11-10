@@ -76,7 +76,9 @@
             <div class="alert alert-white" style="#{$pk5.phases[$pk5.get_current_phase][:flags].include?(:no_sus_edit) ? '' : 'display: none;'}">
                 <em><strong>Hinweis:</strong> Du kannst die folgenden Angaben in der aktuellen Phase nicht bearbeiten.</em>
             </div>
-            #{print_pending_pk5_invitations_incoming(user_email)}
+            <div style="#{user_email == @session_user[:email] ? '' : 'display: none;'}">
+                #{print_pending_pk5_invitations_incoming(user_email)}
+            </div>
             <div class='karteikarte'>
                 <div class='row'>
                     <datalist id='li_sus_q2'>

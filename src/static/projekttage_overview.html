@@ -38,7 +38,7 @@ window.addEventListener('load', function() {
                         entry.email,
                         `<td>${entry.sus}</td>`,
                         `<td style='max-width: 20em;'>${entry.projekttage.name ?? '&ndash;'}</td>`,
-                        `<td data-sort-value='${entry.projekttage.teilnehmer_max || 20}'>${entry.projekttage.teilnehmer_min ?? '1'} &ndash; ${entry.projekttage.teilnehmer_max ?? '20'}</td>`,
+                        `<td data-sort_value='${entry.projekttage.teilnehmer_max || 20}'>${entry.projekttage.teilnehmer_min ?? '1'} &ndash; ${entry.projekttage.teilnehmer_max ?? '20'}</td>`,
                         `<td>${entry.projekttage.klassenstufe_min ?? '5'} &ndash; ${entry.projekttage.klassenstufe_max ?? '9'}</td>`,
                         `<td>${entry.lehrkraft_wunsch ?? '&ndash;'}</td>`,
                         `<td>${entry.raumwunsch ?? '&ndash;'}</td>`,

@@ -350,6 +350,37 @@ class Main < Sinatra::Base
         respond(:rows => rows)
     end
 
+    def pk5_termine_rows
+        assert(user_with_role_logged_in?(:oko) || admin_logged_in?)
+
+        rows = []
+
+        neo4j_query(<<~END_OF_QUERY).each do |row|
+            MATCH (e:Event {zentraler_beratungstermin: TRUE})-[:ORGANIZED_BY]->(t:User)
+            WITH e, t
+            MATCH (e)<-[:IS_PARTICIPANT]-(u:User)
+            RETURN e, t.email AS organizer, COLLECT(u.email) AS participants;
+        END_OF_QUERY
+            rows << row
+        end
+        rows
+    end
+
+    post '/api/pk5_termine' do
+        assert(user_with_role_logged_in?(:oko) || admin_logged_in?)
+
+        rows = pk5_termine_rows()
+        rows.sort! do |a, b|
+            a_primary = a['e'][:start_time]
+            b_primary = b['e'][:start_time]
+            a_secondary = @@user_info[a['organizer']][:last_name].downcase
+            b_secondary = @@user_info[b['organizer']][:last_name].downcase
+            (a_primary == b_primary) ? (a_secondary <=> b_secondary) : (a_primary <=> b_primary)
+        end
+
+        respond(:rows => rows)
+    end
+
     post '/api/send_invitation_for_pk5' do
         data = parse_request_data(:required_keys => [:sus_email, :name])
         sus_email = data[:sus_email]

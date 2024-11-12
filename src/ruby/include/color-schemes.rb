@@ -6,6 +6,7 @@ COLOR_SCHEME_COLORS = [
     ['l94b2a1ff7d03e0ff03', 'Orangensaft', 'Karla'],
     ['lc0c0c0ff6700ebebeb', 'Orange Justice'],
     ['d013adedf3a01f7fe2e', 'Sunset', 'Josefine'],
+    ['l2288229a46464646fa', 'Iris', 'Jonah'],
     ['lfcbf499e0001eeba30', 'Gryffindor'],
     ['dfad31c8c0c03381e11', 'Exotherm'],
     ['d6a00009626006a0000', 'Blutroter Sommer', 'Thanos'],

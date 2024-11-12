@@ -367,7 +367,7 @@ class Main < Sinatra::Base
     end
 
     post '/api/pk5_termine' do
-        assert(user_with_role_logged_in?(:oko) || admin_logged_in?)
+        assert(user_with_role_logged_in?(:oko) || user_with_role_logged_in?(:sekretariat) || admin_logged_in?)
 
         rows = pk5_termine_rows()
         rows.sort! do |a, b|

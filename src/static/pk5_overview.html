@@ -2,7 +2,7 @@
 <div class='container-fluid white'>
     <div class='row'>
         <div class='col-md-12'>
-            <div style="float: right; #{(user_with_role_logged_in?(:oko) || admin_logged_in?) ? '' : 'display: none;'}">
+            <div style="float: right; #{(user_with_role_logged_in?(:oko) || user_with_role_logged_in?(:sekretariat) || admin_logged_in?) ? '' : 'display: none;'}">
                 <a class="btn btn-success mb-3" href="/pk5_termine">Zentrale Beratungstermine</a>
             </div>
             <h2 style='margin-bottom: 30px;'>5. Prüfungskomponente im Abitur</h2>

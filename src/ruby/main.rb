@@ -1065,11 +1065,12 @@ class Main < Sinatra::Base
         kurse_for_schueler, schueler_for_kurs = parser.parse_kurswahl(@@user_info.reject { |x, y| y[:teacher] }, @@lessons, lesson_key_tr, @@original_lesson_key_for_lesson_key, @@shorthands)
         @@kurse_for_schueler = kurse_for_schueler
         wahlpflicht_sus_for_lesson_key = parser.parse_wahlpflichtkurswahl(@@user_info.reject { |x, y| y[:teacher] }, @@lessons, lesson_key_tr, @@schueler_for_klasse)
+        @@wahlpflicht_lesson_ids = wahlpflicht_sus_for_lesson_key.keys
 
         @@kurse_for_lehrer = {}
         @@lessons[:lesson_keys].keys.each do |lesson_key|
             info = @@lessons[:lesson_keys][lesson_key]
-            next unless info[:klassen].include?('11') || info[:klassen].include?('12')
+            next unless info[:klassen].include?('11') || info[:klassen].include?('12') || wahlpflicht_sus_for_lesson_key.include?(lesson_key)
             info[:lehrer].each do |shorthand|
                 @@kurse_for_lehrer[@@shorthands[shorthand]] ||= []
                 @@kurse_for_lehrer[@@shorthands[shorthand]] << lesson_key
@@ -1152,7 +1153,12 @@ class Main < Sinatra::Base
         @@pausenaufsichten = parser.parse_pausenaufsichten(@@config)
 
         kurs_list_prefix_count = {}
+        list = []
         Main.iterate_kurse do |lesson_key|
+            list << lesson_key
+        end
+        list += @@wahlpflicht_lesson_ids
+        list.each do |lesson_key|
             list_email = 'kurs-' + lesson_key.downcase.split('_').first.gsub('~', '-').gsub('_', '-').gsub(' ', '-')
             kurs_list_prefix_count[list_email] ||= 0
             kurs_list_prefix_count[list_email] += 1
@@ -1374,10 +1380,11 @@ class Main < Sinatra::Base
             }
         end
 
-        Main.iterate_kurse do |lesson_key|
+        @@lessons[:lesson_keys].keys.each do |lesson_key|
             next if @@schueler_for_lesson[lesson_key].nil?
             info = @@lessons[:lesson_keys][lesson_key]
             list_email = info[:list_email]
+            next if list_email.nil?
             ['', 'eltern.'].each do |extra|
                 email = "#{extra}#{list_email}@#{MAILING_LIST_DOMAIN}"
                 @@mailing_lists[email] = {

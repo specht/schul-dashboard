@@ -700,7 +700,7 @@ class Main < Sinatra::Base
                 :klasse => record[:klasse],
                 :klassenstufe => record[:klasse] =~ /^\d/ ? record[:klasse].to_i : nil,
                 :geschlecht => record[:geschlecht],
-                :nc_login => record[:email].split('@').first.sub(/\.\d+$/, ''),
+                :nc_login => record[:nc_login],
                 :matrix_login => matrix_login,
                 :initial_nc_password => record[:initial_nc_password],
                 :biber_password => Main.gen_password_for_email(record[:email] + 'biber')[0, 4].downcase,

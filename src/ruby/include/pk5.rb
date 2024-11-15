@@ -13,7 +13,7 @@ PK5_KEY_LABELS = {
     :betreuende_lehrkraft => 'Betreuende Lehrkraft im Referenzfach',
     :fas => 'fächerübergreifender Aspekt',
     :betreuende_lehrkraft_fas => 'Betreuende Lehrkraft im fächerübergreifenden Aspekt',
-    :fragestellung => 'Fragestellung',
+    :fragestellung => 'Problemorientierte Frage-/Themenstellung',
 }
 
 class Main < Sinatra::Base
@@ -121,7 +121,7 @@ class Main < Sinatra::Base
                         if key == :betreuende_lehrkraft || key == :betreuende_lehrkraft_fas
                             value = (@@user_info[value] || {})[:display_name_official] || value
                         end
-                        if value.nil?
+                        if (value || '').empty?
                             io.puts "<div class='history_entry'>#{PK5_KEY_LABELS[key]} gelöscht durch #{@@user_info[entry['eu.email']][:display_name_official_dativ]}</div>"
                         else
                             io.puts "<div class='history_entry'>#{PK5_KEY_LABELS[key]} geändert auf <strong>»#{value}«</strong> durch #{@@user_info[entry['eu.email']][:display_name_official_dativ]}</div>"
@@ -201,6 +201,7 @@ class Main < Sinatra::Base
                 :betreuende_lehrkraft,
                 :fas,
                 :betreuende_lehrkraft_fas,
+                :fragestellung,
             ],
             :max_body_length => 16384,
             :max_string_length => 8192
@@ -220,7 +221,7 @@ class Main < Sinatra::Base
                 MERGE (p:Pk5)-[:BELONGS_TO]->(u)
                 RETURN p;
             END_OF_QUERY
-            [:themengebiet, :referenzfach, :betreuende_lehrkraft, :fas, :betreuende_lehrkraft_fas].each do |key|
+            [:themengebiet, :referenzfach, :betreuende_lehrkraft, :fas, :betreuende_lehrkraft_fas, :fragestellung].each do |key|
                 if data.include?(key)
                     value = data[key]
                     if key == :referenzfach || key == :fas

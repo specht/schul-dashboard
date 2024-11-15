@@ -154,10 +154,14 @@
                             <input id='ti_betreuende_lehrkraft_fas' type='text' value='#{CGI.escapeHTML(get_my_pk5(user_email)[:betreuende_lehrkraft_fas_display_name] || '')}' placeholder='keine Lehrkraft gewählt' class='form-control' list='li_lehrkraft' readonly>
                         </div>
                     </div>
-                    <div class='col-md-12' style="display: none;">
+                    <div class='col-md-12' style="display: #{$pk5.get_current_phase < 12 ? 'none' : 'block'};">
                         <div class='form-group'>
-                            <label>Fragestellung</label>
-                            <input id='ti_fragestellung' type='text' value='#{CGI.escapeHTML(get_my_pk5(user_email)[:fragestellung] || '')}' placeholder='keine Fragestellung gewählt' class='form-control' readonly>
+                            <label>#{PK5_KEY_LABELS[:fragestellung]}</label>
+                            <div class='alert alert-warning' style="padding: 0.5em 1em; display: #{$pk5.get_current_phase == 12 ? 'block' : 'none'};">
+                                <i class='fa fa-clock-o'></i>&nbsp;&nbsp;Trage hier deine vorläufige problemorientierte Frage-/Themenstellung <strong>bis #{WEEKDAYS_LONG[Date.parse($pk5.phases[12][:t1]).wday]}, den #{Date.parse($pk5.phases[12][:t1]).strftime('%d.%m.%Y')} um #{DateTime.parse($pk5.phases[12][:t1]).strftime('%H:%M')} Uhr</strong> ein, damit sie auf deinen Voucher II gedruckt werden kann.
+                                Die Fragestellung muss noch nicht perfekt sein, sie wird später noch verfeinert und konkretisiert.
+                            </div>
+                            <input id='ti_fragestellung' type='text' value='#{CGI.escapeHTML(get_my_pk5(user_email)[:fragestellung] || '')}' placeholder='keine Fragestellung formuliert' class='form-control' readonly>
                         </div>
                     </div>
 
@@ -253,19 +257,22 @@ window.addEventListener('load', function() {
     $('#ti_referenzfach').val(my_pk5.referenzfach);
     $('#ti_betreuende_lehrkraft').val(my_pk5.betreuende_lehrkraft_display_name);
     $('#ti_fas').val(my_pk5.fas);
+    $('#ti_fragestellung').val(my_pk5.fragestellung);
     $('#bu_edit').on('click', function(e) {
         $('.api_messages').hide();
         for (let input of $(e.target).closest('.karteikarte').find('input')) {
             let key = ($(input).attr('id') ?? '').replace("ti_", '');
             $(input).data('old_value', $(input).val());
             let open_this_field = false;
-            if (['themengebiet', 'referenzfach', 'betreuende_lehrkraft', 'fas'].indexOf(key) >= 0) {
+            if (['themengebiet', 'referenzfach', 'betreuende_lehrkraft', 'fas', 'fragestellung'].indexOf(key) >= 0) {
                 if ('true' === '#{user_with_role_logged_in?(:oko) || (@session_user[:klasse] == PK5_CURRENT_KLASSE && (!$pk5.phases[$pk5.get_current_phase][:flags].include?(:no_sus_edit)))}') {
+                    // OKO and SuS can edit
                     open_this_field = true;
                 }
             }
             if (['betreuende_lehrkraft_fas'].indexOf(key) >= 0) {
                 if ('true' === '#{user_with_role_logged_in?(:oko) || (teacher_logged_in? && (@@pk5_faecher_for_email[@session_user[:email]] || Set.new()).include?(get_my_pk5(user_email)[:fas]))}') {
+                    // OKO and FBL can edit
                     open_this_field = true;
                 }
             }

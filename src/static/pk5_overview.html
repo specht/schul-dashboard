@@ -33,7 +33,7 @@ window.addEventListener('load', function() {
             let table = new SortableTable({
                 element: $('#table_here'),
                 xs: true,
-                headers: ['Prüfungskandidat:innen', 'Themengebiet', 'Referenzfach', 'Lehrkraft', 'fächerübergreifender Aspekt', 'Lehrkraft (FA)'].map(function (x) {
+                headers: ['Prüfungskandidat:innen', 'Themengebiet', 'Referenzfach', 'Lehrkraft', 'fächerübergreifender Aspekt', 'Lehrkraft (FA)', 'Fragestellung'].map(function (x) {
                         let th = $('<th>').html(x.replace(' (FA)', ''));
                         return th;
                 }),
@@ -47,6 +47,7 @@ window.addEventListener('load', function() {
                         `<td data-sort_value='${entry.pk5.betreuende_lehrkraft ?? ''}'>${entry.betreuende_lehrkraft ?? '&ndash;'}</td>`,
                         `<td>${entry.pk5.fas ?? '&ndash;'}</td>`,
                         `<td data-sort_value='${entry.pk5.betreuende_lehrkraft_fas ?? ''}'>${entry.betreuende_lehrkraft_fas ?? '&ndash;'}</td>`,
+                        `<td>${entry.pk5.fragestellung ?? '&ndash;'}</td>`,
                     ];
                     return cells;
                 }),

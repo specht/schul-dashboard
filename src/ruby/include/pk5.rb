@@ -733,5 +733,16 @@ class Main < Sinatra::Base
         end
         respond_raw_with_mimetype(Main.print_voucher_1(rows), 'application/pdf')
     end
+
+    get '/api/print_voucher_2' do
+        assert(user_with_role_logged_in?(:oko))
+        require_teacher!
+
+        rows = pk5_overview_rows()
+        rows.sort! do |a, b|
+            a[:sus_index] <=> b[:sus_index]
+        end
+        respond_raw_with_mimetype(Main.print_voucher_2(rows), 'application/pdf')
+    end
 end
 

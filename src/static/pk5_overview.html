@@ -2,13 +2,12 @@
 <div class='container-fluid white'>
     <div class='row'>
         <div class='col-md-12'>
-            <div style="float: right; #{(user_with_role_logged_in?(:oko) || user_with_role_logged_in?(:sekretariat) || admin_logged_in?) ? '' : 'display: none;'}">
-                <a class="btn btn-success mb-3" href="/pk5_termine">Zentrale Beratungstermine</a>
+            <div class="mb-3" style="float: right; #{(user_with_role_logged_in?(:oko) || user_with_role_logged_in?(:sekretariat) || admin_logged_in?) ? '' : 'display: none;'}">
+                <a style="#{user_with_role_logged_in?(:oko) ? '' : 'display: none;'}" href="/api/print_voucher_1" class="btn btn-success"><i class='fa fa-file-pdf-o'></i>&nbsp;&nbsp;Voucher 1 generieren</a>
+                <a class="btn btn-success" href="/pk5_termine">Zentrale Beratungstermine</a>
+                <a style="#{user_with_role_logged_in?(:oko) ? '' : 'display: none;'}" href="/api/print_voucher_2" class="btn btn-success"><i class='fa fa-file-pdf-o'></i>&nbsp;&nbsp;Voucher 2 generieren</a>
             </div>
             <h2 style='margin-bottom: 30px;'>5. Prüfungskomponente im Abitur</h2>
-            <div style="#{user_with_role_logged_in?(:oko) ? 'margin-bottom: 1em;' : 'display: none;'}">
-                <a href="/api/print_voucher_1" class="btn btn-success"><i class='fa fa-file-pdf-o'></i>&nbsp;&nbsp;Voucher 1 generieren</a>
-            </div>
             <div id="table_here"></div>
         </div>
     </div>
@@ -27,6 +26,12 @@
 </style>
 
 <script>
+function escapeHtml(str) {
+    let div = document.createElement('div');
+    div.appendChild(document.createTextNode(str));
+    return div.innerHTML;
+}
+
 window.addEventListener('load', function() {
     api_call('/api/pk5_overview', {}, function(data) {
         if (data.success) {
@@ -42,12 +47,12 @@ window.addEventListener('load', function() {
                     let cells = [
                         entry.email,
                         `<td>${entry.sus}</td>`,
-                        `<td style='max-width: 20em;'>${entry.pk5.themengebiet ?? '&ndash;'}</td>`,
-                        `<td>${entry.pk5.referenzfach ?? '&ndash;'}</td>`,
-                        `<td data-sort_value='${entry.pk5.betreuende_lehrkraft ?? ''}'>${entry.betreuende_lehrkraft ?? '&ndash;'}</td>`,
-                        `<td>${entry.pk5.fas ?? '&ndash;'}</td>`,
-                        `<td data-sort_value='${entry.pk5.betreuende_lehrkraft_fas ?? ''}'>${entry.betreuende_lehrkraft_fas ?? '&ndash;'}</td>`,
-                        `<td>${entry.pk5.fragestellung ?? '&ndash;'}</td>`,
+                        `<td style='max-width: 20em;'>${escapeHtml(entry.pk5.themengebiet ?? '–')}</td>`,
+                        `<td>${entry.pk5.referenzfach ?? '–'}</td>`,
+                        `<td data-sort_value='${entry.pk5.betreuende_lehrkraft ?? ''}'>${entry.betreuende_lehrkraft ?? '–'}</td>`,
+                        `<td>${entry.pk5.fas ?? '–'}</td>`,
+                        `<td data-sort_value='${entry.pk5.betreuende_lehrkraft_fas ?? ''}'>${entry.betreuende_lehrkraft_fas ?? '–'}</td>`,
+                        `<td style='max-width: 20em;'>${escapeHtml(entry.pk5.fragestellung ?? '–')}</td>`,
                     ];
                     return cells;
                 }),

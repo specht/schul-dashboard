@@ -286,7 +286,7 @@ window.addEventListener('load', function() {
     });
     $('#bu_discard_changes').on('click', function(e) {
         $('.api_messages').hide();
-        for (let input of $(e.target).closest('.karteikarte').find('input')) {
+        for (let input of $(e.target).closest('.karteikarte').find('input, textarea')) {
             $(input).val($(input).data('old_value'));
             $(input).prop('readonly', true);
         }

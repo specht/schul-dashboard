@@ -838,7 +838,7 @@ class Parser
                 info['day_messages'].each do |sha1|
                     message = (vplan['entries'][sha1] || '').strip
                     unless message.empty?
-                        p_yw = Date.parse(datum).strftime('%Y-%V')
+                        p_yw = Date.parse(datum).strftime('%G-%V')
                         day_messages[p_yw] ||= {}
                         day_messages[p_yw][target] ||= {}
                         day_messages[p_yw][target][datum] ||= []

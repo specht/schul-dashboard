@@ -274,7 +274,7 @@ class Main < Sinatra::Base
                     breakout_room_name = path.split('/')[2]
                     # TODO: use code from get_jitsi_room_name_for_lesson_key
                     p_ymd = Date.today.strftime('%Y-%m-%d')
-                    p_yw = Date.today.strftime('%Y-%V')
+                    p_yw = Date.today.strftime('%G-%V')
                     assert(user_logged_in?)
                     timetable_path = "/gen/w/#{timetable_id}/#{p_yw}.json.gz"
                     timetable = nil
@@ -448,7 +448,7 @@ class Main < Sinatra::Base
 
     def get_jitsi_room_name_for_lesson_key(lesson_key, user = nil)
         p_ymd = Date.today.strftime('%Y-%m-%d')
-        p_yw = Date.today.strftime('%Y-%V')
+        p_yw = Date.today.strftime('%G-%V')
         user_id = @@user_info[user || @session_user[:email]][:id]
         timetable_path = "/gen/w/#{user_id}/#{p_yw}.json.gz"
         timetable = nil

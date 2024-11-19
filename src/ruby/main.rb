@@ -649,10 +649,10 @@ class Main < Sinatra::Base
         end
 
         @@lehrer_order.sort!() do |a, b|
-            la = @@user_info[a][:shorthand].downcase
-            lb = @@user_info[b][:shorthand].downcase
-            la = 'zzz' + la if la[0] == '_'
-            lb = 'zzz' + lb if lb[0] == '_'
+            la = @@user_info[a][:last_name].downcase
+            lb = @@user_info[b][:last_name].downcase
+            la = 'zzz' + la if @@user_info[a][:shorthand][0] == '_'
+            lb = 'zzz' + lb if @@user_info[b][:shorthand][0] == '_'
             la <=> lb
         end
         @@klassen_order = KLASSEN_ORDER

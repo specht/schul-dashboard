@@ -110,6 +110,115 @@ class MailBotRepl < Sinatra::Base
 
                             io.string
                         end
+                    elsif reason == 'disturbance'
+                        subject "Störverhalten"
+                        StringIO.open do |io|
+                            io.puts "<p>Liebe Eltern,</p>"
+                            io.print "<p>"
+                            io.print @@user_info[sus_email][:geschlecht] == 'm' ? 'Ihr Sohn' : 'Ihre Tochter'
+                            io.print ' '
+                            io.print @@user_info[sus_email][:display_first_name]
+                            io.print ' '
+                            io.print "fiel heute im Fach #{@@lessons[:lesson_keys][lesson_key][:pretty_fach]} durch "
+                            io.print "Störverhalten und Unaufmerksamkeit auf"
+                            unless (details || '').strip.empty?
+                                io.print " (#{details.strip}). "
+                            else
+                                io.print ". "
+                            end
+                            io.print "Dies hatte nicht nur negative Folgen für #{@@user_info[sus_email][:geschlecht] == 'm' ? 'seine' : 'ihre'} eigene Konzentration, sondern war "
+                            io.print "auch zum Nachteil für die gesamte Klasse. Bitte sprechen Sie mit #{@@user_info[sus_email][:display_first_name]} über die "
+                            io.print "Notwendigkeit, dem Unterricht aufmerksam zu folgen und Störverhalten im Unterricht zu unterlassen."
+                            io.puts "</p>"
+                            io.puts "<p>Mit freundlichen Grüßen<br>"
+                            io.puts "#{@@user_info[lehrer_email][:display_name]}</p>"
+
+                            io.string
+                        end
+                    elsif reason == 'disturbance_otium'
+                        subject "Störverhalten (Otium)"
+                        StringIO.open do |io|
+                            io.puts "<p>Liebe Eltern,</p>"
+                            io.print "<p>"
+                            io.print @@user_info[sus_email][:geschlecht] == 'm' ? 'Ihr Sohn' : 'Ihre Tochter'
+                            io.print ' '
+                            io.print @@user_info[sus_email][:display_first_name]
+                            io.print ' '
+                            io.print "zeigte heute im Fach #{@@lessons[:lesson_keys][lesson_key][:pretty_fach]} ein derart "
+                            io.print "ausgeprägtes Störverhalten"
+                            unless (details || '').strip.empty?
+                                io.print " (#{details.strip}), "
+                            else
+                                io.print ", "
+                            end
+                            io.print "dass ich #{@@user_info[sus_email][:geschlecht] == 'm' ? 'ihn' : 'sie'} "
+                            io.print "im Sinne #{@@user_info[sus_email][:geschlecht] == 'm' ? 'seiner' : 'ihrer'} Mitschüler:innen "
+                            io.print "als pädagogische Maßnahme vorübergehend vom Unterricht ausschließen musste."
+                            io.puts "</p>"
+                            io.puts "<p>"
+                            io.print "#{@@user_info[sus_email][:geschlecht] == 'm' ? 'Er' : 'Sie'} hat die Zeit im Otium verbracht "
+                            io.print "und muss die versäumten Unterrichtsinhalte selbständig nacharbeiten."
+                            io.print "Bitte sprechen Sie eingehend mit #{@@user_info[sus_email][:display_first_name]} über die "
+                            io.print "Konsequenzen #{@@user_info[sus_email][:geschlecht] == 'm' ? 'seines' : 'ihres'} Verhaltens."
+                            io.puts "</p>"
+                            io.puts "<p>Mit freundlichen Grüßen<br>"
+                            io.puts "#{@@user_info[lehrer_email][:display_name]}</p>"
+
+                            io.string
+                        end
+                    elsif reason == 'late'
+                        subject "Verspätung"
+                        StringIO.open do |io|
+                            io.puts "<p>Liebe Eltern,</p>"
+                            io.print "<p>"
+                            io.print @@user_info[sus_email][:geschlecht] == 'm' ? 'Ihr Sohn' : 'Ihre Tochter'
+                            io.print ' '
+                            io.print @@user_info[sus_email][:display_first_name]
+                            io.print ' '
+                            io.print "hat heute im Fach #{@@lessons[:lesson_keys][lesson_key][:pretty_fach]} einen "
+                            io.print "Klassenbucheintrag aufgrund einer Verspätung erhalten"
+                            unless (details || '').strip.empty?
+                                io.print " (#{details.strip}). "
+                            else
+                                io.print ". "
+                            end
+                            io.puts "</p>"
+                            io.puts "<p>"
+                            io.print "Bitte beachten Sie, dass diese E-Mail nur eine einzelfallbezogene "
+                            io.print "Rückmeldung darstellt und sich daraus kein Anspruch auf die vollständige "
+                            io.print "Meldung vergangener und zukünftiger Verspätungen ergibt."
+                            io.puts "</p>"
+                            io.puts "<p>Mit freundlichen Grüßen<br>"
+                            io.puts "#{@@user_info[lehrer_email][:display_name]}</p>"
+
+                            io.string
+                        end
+                    elsif reason == 'praise'
+                        subject "Lob"
+                        StringIO.open do |io|
+                            io.puts "<p>Liebe Eltern,</p>"
+                            io.print "<p>"
+                            io.print "ich freue mich, Ihnen mitteilen zu können, dass "
+                            io.print @@user_info[sus_email][:geschlecht] == 'm' ? 'Ihr Sohn' : 'Ihre Tochter'
+                            io.print ' '
+                            io.print @@user_info[sus_email][:display_first_name]
+                            io.print ' '
+                            io.print "heute im Fach #{@@lessons[:lesson_keys][lesson_key][:pretty_fach]} durch "
+                            io.print "besonders erwähnenswerte positive Leistungen aufgefallen ist"
+                            unless (details || '').strip.empty?
+                                io.print " (#{details.strip}). "
+                            else
+                                io.print ". "
+                            end
+                            io.print "Bitte loben Sie #{@@user_info[sus_email][:geschlecht] == 'm' ? 'ihn' : 'sie'} "
+                            io.print "für #{@@user_info[sus_email][:geschlecht] == 'm' ? 'sein' : 'ihr'} Engagement "
+                            io.print "und #{@@user_info[sus_email][:geschlecht] == 'm' ? 'seine' : 'ihre'} Leistungsbereitschaft."
+                            io.puts "</p>"
+                            io.puts "<p>Mit freundlichen Grüßen<br>"
+                            io.puts "#{@@user_info[lehrer_email][:display_name]}</p>"
+
+                            io.string
+                        end
                     end
                 end
                 $neo4j.neo4j_query_expect_one(<<~END_OF_QUERY, {:tag => tag, :ts => ts})

@@ -949,7 +949,7 @@ class Main
                     end
                 end
 
-                next unless klasse_for_room == wanted_klasse
+                next unless klasse_for_room == wanted_klasse || room == wanted_klasse
 
                 if klasse_for_room
                     max_klassen_stunden = max_stunden[klasse_for_room]
@@ -973,7 +973,7 @@ class Main
                     line_width 0.1.mm
                     text_box "<b>#{room[0] =~ /\d/ ? 'Raum ' : ''}#{room}</b>", :at => [left, bottom + height + 5.mm], :width => width, :height => 15.mm, :align => :left, :valign => :center, :size => 18, :overflow => :shrink_to_fit, :inline_format => true
                     text_box "<b>#{klasse_for_room ? 'Klasse ' + _self.tr_klasse(klasse_for_room) : ''}</b>", :at => [left, bottom + height + 5.mm], :width => width, :height => 15.mm, :align => :right, :valign => :center, :size => 18, :overflow => :shrink_to_fit, :inline_format => true
-                    text_box "Stand #{Date.today.strftime('%d.%m.%Y')}", :at => [left, bottom + 4.mm], :width => width, :height => 15.mm, :align => :center, :valign => :center, :size => 12, :overflow => :shrink_to_fit, :inline_format => true
+                    text_box "Stand #{Date.today.strftime('%d.%m.%Y')}", :at => [left, bottom + 12.mm], :width => width, :height => 15.mm, :align => :center, :valign => :center, :size => 12, :overflow => :shrink_to_fit, :inline_format => true
                     bounding_box([left, bottom + height], :width => width, :height => height) do
                         %w(Montag Dienstag Mittwoch Donnerstag Freitag).each.with_index do |tag, tag_index|
                             bounding_box([tw * tag_index, (bottom + height - 15.mm)], :width => tw, :height => th) do
@@ -2002,7 +2002,6 @@ class Main
             })
             first_page = true
             main.iterate_directory('12') do |email|
-                # next unless email.include?('haibel')
                 row = pk5_for_email[email] || {}
                 pk5 = row[:pk5] || {}
                 pk5[:sus] ||= []
@@ -2035,12 +2034,12 @@ class Main
                         move_down 3.mm
 
                         text "Abgabe bis spätestens <b>#{WEEKDAYS_LONG[deadline.wday]}</b>, den <b>#{deadline.strftime('%d.')} #{MONTHS[deadline.strftime('%m').to_i - 1]} #{deadline.strftime('%Y')}</b>, um <b>#{deadline.strftime('%H:%M')} Uhr</b> im Sekretariat.", :inline_format => true
-                        
+
                         move_down 1.cm
 
                         text "<b>Themengebiet</b>", :inline_format => true
                         move_down 3.mm
-                        value = (pk5[:themengebiet] || '').strip
+                        value = CGI.escapeHTML((pk5[:themengebiet] || '').strip)
                         value = '<em>(bisher nicht gewählt)</em>' if value.empty?
                         text value, :inline_format => true
                         move_down 8.mm
@@ -2110,5 +2109,258 @@ class Main
             end
         end
         return doc.render
+    end
+
+    def self.print_voucher_2(rows)
+        pk5_for_email = {}
+        rows.each do |row|
+            sus_list = row[:pk5][:sus] || []
+            sus_list << row[:email]
+            sus_list.uniq!
+            sus_list.each do |email|
+                pk5_for_email[email] = row
+            end
+        end
+        main = self
+        doc = Prawn::Document.new(:page_size => 'A4', :page_layout => :portrait, :margin => 0) do
+            font_families.update("RobotoCondensed" => {
+                :normal => "/app/fonts/RobotoCondensed-Regular.ttf",
+                :italic => "/app/fonts/RobotoCondensed-Italic.ttf",
+                :bold => "/app/fonts/RobotoCondensed-Bold.ttf",
+                :bold_italic => "/app/fonts/RobotoCondensed-BoldItalic.ttf"
+            })
+            font_families.update("Roboto" => {
+                :normal => "/app/fonts/Roboto-Regular.ttf",
+                :italic => "/app/fonts/Roboto-Italic.ttf",
+                :bold => "/app/fonts/Roboto-Bold.ttf",
+                :bold_italic => "/app/fonts/Roboto-BoldItalic.ttf"
+            })
+            font_families.update("AlegreyaSans" => {
+                :normal => "/app/fonts/AlegreyaSans-Regular.ttf",
+                :italic => "/app/fonts/AlegreyaSans-Italic.ttf",
+                :bold => "/app/fonts/AlegreyaSans-Bold.ttf",
+                :bold_italic => "/app/fonts/AlegreyaSans-BoldItalic.ttf"
+            })
+            first_page = true
+            main.iterate_directory('12') do |email|
+                row = pk5_for_email[email] || {}
+                pk5 = row[:pk5] || {}
+                pk5[:sus] ||= []
+                pk5[:sus] << email
+                pk5[:sus].uniq!
+                start_new_page unless first_page
+                first_page = false
+                mark_width = 4.cm
+                w = (18.cm - mark_width) / 10
+                hh = 5.mm
+                h = 5.mm
+                bounding_box([15.mm, 297.mm - 15.mm], :width => 18.cm, :height => 267.mm) do
+                    font('AlegreyaSans') do
+                        image "/data/gyst.jpg", :at => [0, 267.mm], :width => 2.5.cm
+                        image "/data/sesb.jpg", :at => [16.2.cm, 267.mm], :width => 1.8.cm
+                        move_down 2.mm
+                        text "Gymnasium Steglitz", :size => 24, :align => :center
+                        move_down 1.mm
+                        text "5. Prüfungskomponente im Abitur #{(Date.today + 365).strftime('%Y')}", :align => :center, :size => 14
+                        move_down 2.mm
+                        text "<b>Voucher II</b>", :align => :center, :inline_format => true, :size => 14
+
+                        move_down 1.8.cm
+
+                        text "Dieses Blatt dokumentiert den aktuellen Stand der Planung für die 5. Prüfungskomponente im Abitur #{(Date.today + 365).strftime('%Y')}."
+
+                        print_date = Date.parse($pk5.phases.select { |x| x[:index] == 13 }.first[:t1][0, 10])
+                        deadline = DateTime.parse($pk5.phases.select { |x| x[:index] == 14 }.first[:t1])
+
+                        move_down 3.mm
+
+                        text "Abgabe bis spätestens <b>#{WEEKDAYS_LONG[deadline.wday]}</b>, den <b>#{deadline.strftime('%d.')} #{MONTHS[deadline.strftime('%m').to_i - 1]} #{deadline.strftime('%Y')}</b>, um <b>#{deadline.strftime('%H:%M')} Uhr</b> im Sekretariat.", :inline_format => true
+
+                        move_down 1.cm
+
+                        text "<b>Themengebiet</b>", :inline_format => true
+                        move_down 3.mm
+                        value = CGI.escapeHTML((pk5[:themengebiet] || '').strip)
+                        value = '<em>(bisher nicht gewählt)</em>' if value.empty?
+                        text value, :inline_format => true
+                        move_down 8.mm
+
+                        text "<b>Prüfungskandidat#{@@user_info[email][:geschlecht] == 'w' ? 'in' : ''}</b>", :inline_format => true
+                        move_down 3.mm
+                        text @@user_info[email][:display_name]
+                        move_down 8.mm
+
+                        text "<b>Art der Prüfung</b>", :inline_format => true
+                        move_down 3.mm
+                        if pk5[:sus].size == 1
+                            value = "Einzelprüfung"
+                        else
+                            value = "Gruppenprüfung (gemeinsam mit #{join_with_sep(pk5[:sus].reject { |x| x == email}.map { |x| @@user_info[x][:display_name] }, ', ', ' und ')})"
+                        end
+                        text value, :inline_format => true
+                        move_down 8.mm
+
+                        text "<b>Referenzfach</b>", :inline_format => true
+                        move_down 3.mm
+                        value = (pk5[:referenzfach] || '').strip
+                        value = '<em>(bisher nicht gewählt)</em>' if value.empty?
+                        text value, :inline_format => true
+                        move_down 8.mm
+
+                        text "<b>Betreuende Lehrkraft im Referenzfach</b>", :inline_format => true
+                        move_down 3.mm
+                        value = (!pk5[:betreuende_lehrkraft].nil?) && (pk5[:betreuende_lehrkraft_confirmed_by] == pk5[:betreuende_lehrkraft]) ?
+                            @@user_info[pk5[:betreuende_lehrkraft]][:display_name_official] :
+                            '<em>(bisher nicht bestätigt)</em>'
+                        value = '<em>(bisher nicht gewählt)</em>' if pk5[:betreuende_lehrkraft].nil?
+                        text value, :inline_format => true
+                        move_down 8.mm
+
+                        text "<b>Fächerübergreifender Aspekt</b>", :inline_format => true
+                        move_down 3.mm
+                        value = (pk5[:fas] || '').strip
+                        value = '<em>(bisher nicht gewählt)</em>' if value.empty?
+                        text value, :inline_format => true
+                        move_down 8.mm
+
+                        text "<b>Vorläufige problemorientierte Frage-/Themenstellung</b>", :inline_format => true
+                        move_down 3.mm
+                        value = CGI.escapeHTML((pk5[:fragestellung] || '').strip)
+                        value = '<em>(bisher nicht formuliert)</em>' if value.empty?
+                        text value, :inline_format => true
+                        move_down 8.mm
+
+                        bounding_box([0.cm, 3.cm], :width => 18.cm, :height => 1.cm) do
+                            t = Date.today
+                            text "Berlin, den #{print_date.strftime('%d.')} #{MONTHS[print_date.strftime('%m').to_i - 1]} #{print_date.strftime('%Y')}", :size => 11
+                        end
+
+                        ["Prüfungskandidat#{@@user_info[email][:geschlecht] == 'w' ? 'in' : ''}", 'betreuende Lehrkraft', 'betreuende Lehrkraft im fächerübergreifenden Aspekt'].each.with_index do |x, i|
+                            bounding_box([18.cm / 3 * i, 1.2.cm], :width => 18.cm / 3 * 0.9, :height => 1.5.cm) do
+                                line [0, 9.5.mm], [18.cm / 3 * 0.9, 9.5.mm]
+                                stroke
+                                move_down 6.mm
+                                float do
+                                    text x, :size => 11, :align => :center, :inline_format => true
+                                end
+                            end
+                        end
+                    end
+                end
+            end
+        end
+        return doc.render
+    end
+
+    def print_email_overview(klasse)
+        reason_order = [:material, :homework, :signature, :disturbance, :disturbance_otium, :late, :praise]
+        reason_label = {
+            :material => 'Material fehlt',
+            :homework => 'Hausaufgaben fehlen',
+            :signature => 'Unterschrift fehlt',
+            :disturbance => 'Störverhalten',
+            :disturbance_otium => 'Störverhalten (Otium)',
+            :late => 'Verspätung',
+            :praise => 'besonderes Lob',
+        }
+        reason_color = {
+            :material => '#fce94f',
+            :homework => '#fcaf3e',
+            :signature => '#f57900',
+            :disturbance => '#ef2929',
+            :disturbance_otium => '#cc0000',
+            :late => '#7b67ae',
+            :praise => '#4aa03f',
+        }
+        reason_text_color = {
+            :material => '#000000',
+            :homework => '#000000',
+            :signature => '#000000',
+            :disturbance => '#ffffff',
+            :disturbance_otium => '#ffffff',
+            :late => '#ffffff',
+            :praise => '#ffffff',
+        }
+        data = {}
+        ts0 = nil
+        ts1 = nil
+        iterate_school_days do |ds, dow|
+            next if [5, 6].include?(dow)
+            ts0 ||= DateTime.parse(ds).to_i
+            ts1 = DateTime.parse(ds).to_i
+            ym = ds[0, 7]
+            data[ym] ||= {
+                :school_days => 0,
+                :sus => {},
+            }
+            data[ym][:school_days] += 1
+        end
+        emails = @@schueler_for_klasse[klasse]
+        data[:total] ||= {}
+        neo4j_query(<<~END_OF_QUERY, {:emails => emails, :ts0 => ts0, :ts1 => ts1}).each do |row|
+            MATCH (t:User)<-[:SENT_BY]-(m:Mail)-[:SENT_TO]->(u:User)
+            MATCH (m)-[:REGARDING]->(li:LessonInfo)-[:BELONGS_TO]->(l:Lesson)
+            WHERE u.email IN $emails AND
+            m.ts >= $ts0 AND m.ts <= $ts1
+            RETURN t.email, m, u.email, l.key;
+        END_OF_QUERY
+            teacher_email = row['t.email']
+            sus_email = row['u.email']
+            lesson_key = row['l.key']
+            fach = @@lessons[:lesson_keys][lesson_key][:fach]
+            reason = row['m'][:reason]
+            ts = row['m'][:ts]
+            ym = Time.at(ts).strftime('%Y-%m')
+            data[ym][:sus][sus_email] ||= {}
+            data[ym][:sus][sus_email][reason] ||= {}
+            data[ym][:sus][sus_email][reason][fach] ||= 0
+            data[ym][:sus][sus_email][reason][fach] += 1
+            data[:total] ||= {}
+            data[:total][sus_email] ||= 0
+            data[:total][sus_email] += 1
+        end
+        cols = data.keys.reject do |ym|
+            ym == :total
+        end.select do |ym|
+            Time.now.to_i >= Date.parse(ym + '-01').to_time.to_i
+        end
+        StringIO.open do |io|
+            reason_order.each do |reason|
+                io.puts "<span class='badge' style='background-color: #{reason_color[reason]}; color: #{reason_text_color[reason]};'>#{reason_label[reason]}</span>"
+            end
+            io.puts "<div style='max-width: 100%; overflow-x: auto;'>"
+            io.puts "<table class='table table-condensed table-striped narrow' style='width: unset; min-width: 100%;'>"
+            io.puts "<thead>"
+            io.puts "<tr>"
+            io.puts "<th>Name</th>"
+            cols.each do |ym|
+                io.puts "<th>#{Date.parse(ym + '-01').strftime('%m')}</th>"
+            end
+            io.puts "</tr>"
+            io.puts "</thead>"
+            io.puts "<tbody>"
+            emails.sort do |a, b|
+                (data[:total][b] || 0) <=> (data[:total][a] || 0)
+            end.each do |email|
+                io.puts "<tr>"
+                io.puts "<td>#{@@user_info[email][:display_name]}</td>"
+                cols.each do |ym|
+                    io.puts "<td>"
+                    (data[ym][:sus][email] || {}).each_pair do |reason, info|
+                        (info || {}).each_pair do |fach, count|
+                            (1..count).each do
+                                io.puts "<span class='badge' style='font-weight: normal; background-color: #{reason_color[reason.to_sym]}; color: #{reason_text_color[reason.to_sym]};'>#{fach}</span>"
+                            end
+                        end
+                    end
+                    io.puts "</td>"
+                end
+                io.puts "</tr>"
+            end
+            io.puts "</tbody>"
+            io.puts "</table>"
+            io.puts "</div>"
+            io.string
+        end
     end
 end

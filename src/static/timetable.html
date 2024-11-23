@@ -113,8 +113,8 @@
                 #{#print_lehrerzimmer_panel()}
                 #{#print_self_test_panel()}
                 #{print_current_polls()}
-                #{print_projektwahl_countdown_panel()}
-                #{print_phishing_panel()}
+                #{#print_projektwahl_countdown_panel()}
+                #{#print_phishing_panel()}
                 #{#print_salzh_panel()}
             </div>
         </div>
@@ -201,6 +201,10 @@
                 <option value="material">Material fehlt</option>
                 <option value="homework">Hausaufgaben fehlen</option>
                 <option value="signature">Unterschrift fehlt</option>
+                <option value="disturbance">Störverhalten</option>
+                <option value="disturbance_otium">Störverhalten (Otium)</option>
+                <option value="late">Verspätung</option>
+                <option value="praise">Besonderes Lob</option>
             </select>
             <div style="padding: 0.5em 0;">Sie können eine Notiz hinzufügen, um das Problem zu konkretisieren:</div>
             <textarea id='ti_mail_details' class="form-control"></textarea>
@@ -515,10 +519,11 @@ function update_ha_amt_buttons() {
 }
 
 var timetable_id = '#{timetable_id}';
+var room_ids_rev = #{teacher_logged_in? ? @@room_ids_rev.to_json : {}.to_json};
 
 function load_timetable(id) {
     timetable_id = id;
-    reload_print_button();
+    reload_print_button(room_ids_rev[id]);
     window.calendar.refetchEvents();
 }
 
@@ -613,9 +618,14 @@ function install_physics_handler(e) {
     });
 }
 
-function reload_print_button() {
-    if (timetable_id == '#{@session_user[:id]}' && #{schueler_logged_in?}) {
-        $('.fc-print-button').html('<i class="bi bi-printer"></i>');
+var current_room_id = null;
+
+function reload_print_button(room_id) {
+    if (typeof(room_id) === 'undefined') room_id = null;
+    current_room_id = room_id;
+    console.log(room_id);
+    if ((timetable_id == '#{@session_user[:id]}' && #{schueler_logged_in?}) || (room_id !== null)) {
+        $('.fc-print-button').html('<i class="fa fa-print"></i>');
         $('.fc-print-button').show();
     } else {
         console.log("hide")
@@ -638,6 +648,18 @@ function mail_reason_changed() {
     } else if (reason === 'signature') {
         got_reason = true;
         $('#ti_mail_details').attr('placeholder', 'Notiz (z. B. »Anmeldung Klassenfahrt«)');
+    } else if (reason === 'disturbance') {
+        got_reason = true;
+        $('#ti_mail_details').attr('placeholder', 'Notiz');
+    } else if (reason === 'disturbance_otium') {
+        got_reason = true;
+        $('#ti_mail_details').attr('placeholder', 'Notiz');
+    } else if (reason === 'late') {
+        got_reason = true;
+        $('#ti_mail_details').attr('placeholder', 'Notiz (z. B. »10 Minuten«)');
+    } else if (reason === 'praise') {
+        got_reason = true;
+        $('#ti_mail_details').attr('placeholder', 'Notiz');
     } else {
         $('#ti_mail_details').attr('placeholder', 'Notiz');
     }
@@ -660,6 +682,10 @@ var REASON_LABEL = {
     material: 'Material fehlt',
     homework: 'Hausaufgaben fehlen',
     signature: 'Unterschrift fehlt',
+    disturbance: 'Störung',
+    disturbance_otium: 'Störung (Otium)',
+    late: 'Verspätung',
+    praise: 'Besonderes Lob',
 }
 
 function generate_mail_pending_row(entry, sus_info) {
@@ -681,6 +707,12 @@ function generate_mail_pending_row(entry, sus_info) {
         row.append($(`<td style='text-align: right;'>`).append(button));
     }
     return row;
+}
+
+Date.prototype.getWeekYear = function() {
+  var date = new Date(this.getTime());
+  date.setDate(date.getDate() + 3 - (date.getDay() + 6) % 7);
+  return date.getFullYear();
 }
 
 document.addEventListener('DOMContentLoaded', function() {
@@ -711,7 +743,7 @@ document.addEventListener('DOMContentLoaded', function() {
             if (week.length < 2)
                 week = '0' + week;
 
-            let yw_date = start_date.getFullYear() + '-' + week;
+            let yw_date = start_date.getWeekYear() + '-' + week;
             let month = '' + (start_date.getMonth() + 1);
             let day = '' + start_date.getDate();
             if (month.length < 2) month = '0' + month;
@@ -1466,7 +1498,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     window.calendar = new FullCalendar.Calendar(document.getElementById('calendar'), options);
     window.calendar.render();
-    reload_print_button();
+    reload_print_button(null);
     $('#lessonModal').on('hidden.bs.modal', function() {
         if (pb_playing)
         {
@@ -1724,7 +1756,10 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     $('.fc-print-button').click(function(e) {
-        window.open('/api/get_single_timetable_pdf', '_blank');
+        if (current_room_id)
+            window.open(`/api/get_room_timetable_pdf/${current_room_id}`, '_blank');
+        else
+            window.open('/api/get_single_timetable_pdf', '_blank');
     });
 
     let temp = '#{Digest::SHA1.hexdigest(@session_user[:email] + 'hey')}';

@@ -1,0 +1,53 @@
+#{assert(user_with_role_logged_in?(:oko) || user_with_role_logged_in?(:sekretariat) || admin_logged_in?)}
+<div class='container-fluid white'>
+    <div class='row'>
+        <div class='col-md-12'>
+            <h2 style='margin-bottom: 30px;'>Zentrale Beratungstermine</h2>
+            <div id="table_here"></div>
+        </div>
+    </div>
+</div>
+
+<style>
+    tbody tr {
+        cursor: pointer;
+    }
+    tbody tr:hover {
+        box-shadow: 0 0 0.5em rgba(0, 0, 0, 0.3);
+    }
+    body.dark tbody tr:hover {
+        box-shadow: 0 0 0.5em rgba(255, 255, 255, 0.3);
+    }
+</style>
+
+<script>
+var user_info = #{@@user_info.to_json};
+window.addEventListener('load', function() {
+    api_call('/api/pk5_termine', {}, function(data) {
+        if (data.success) {
+            console.log(data);
+            let table = new SortableTable({
+                element: $('#table_here'),
+                xs: true,
+                headers: ['Datum', 'Beginn', 'Ende', 'Lehrkraft', 'Teilnehmer:innen'].map(function (x) {
+                        let th = $('<th>').html(x);
+                        return th;
+                }),
+                rows: data.rows.map(function (entry, index) {
+                    let cells = [
+                        entry.e.id,
+                        `<td data-sort_value='${entry.e.date}'>${moment(entry.e.date).format('L')}</td>`,
+                        `<td>${entry.e.start_time}</td>`,
+                        `<td>${entry.e.end_time}</td>`,
+                        `<td data-sort_value='${user_info[entry.organizer].last_name.toLowerCase()}'>${user_info[entry.organizer].display_name}</td>`,
+                        `<td>${entry.participants.map((x) => user_info[x].display_name_official).join(', ')}</td>`,
+                    ];
+                    return cells;
+                }),
+                sortable: true,
+                clickable_rows: false,
+            });
+        }
+    });
+});
+</script>

@@ -164,7 +164,7 @@
                 row.data('published', entry.published);
                 row.data('sticky', entry.sticky);
                 row.append($('<td>').text(entry.date.substr(0, 10)));
-                row.append($('<td>').addClass('row-title-here').text(entry.title));
+                row.append($('<td>').css('max-width', '50em').addClass('row-title-here').text(entry.title));
                 tbody.append(row);
                 let bu_published = $('<button>').addClass('btn').addClass('btn-sm').
                     addClass(entry.published ? 'btn-success' : 'btn-outline-success').

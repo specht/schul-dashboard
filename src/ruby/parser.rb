@@ -274,7 +274,7 @@ class Parser
                       :display_last_name_dativ => display_last_name.sub('Herr ', 'Herrn '),
                       :geschlecht => geschlecht,
                       :can_log_in => true,
-                      :nc_login => email.split('@').first,
+                      :nc_login => @nc_sub[email] || email.split('@'),
                       :initial_nc_password => gen_password_for_nc(email),
                      }
             yield record
@@ -396,21 +396,23 @@ class Parser
             end
         end
 
-        record = {:first_name => rufname,
-                  :official_first_name => vorname,
-                  :last_name => nachname,
-                  :email => email,
-                  :geburtstag => geburtstag,
-                  :initial_password => gen_password_for_email(email),
-                  :initial_nc_password => gen_password_for_nc(email),
-                  :klasse => klasse,
-                  :display_name => name_to_display_name(rufname, nachname),
-                  :display_first_name => name_to_display_name(rufname, ''),
-                  :display_last_name => name_to_display_name('', nachname),
-                  :display_name_official => name_to_display_name(rufname, nachname),
-                  :geschlecht => geschlecht,
-                  :can_log_in => true
-                  }
+        record = {
+            :first_name => rufname,
+            :official_first_name => vorname,
+            :last_name => nachname,
+            :email => email,
+            :geburtstag => geburtstag,
+            :initial_password => gen_password_for_email(email),
+            :initial_nc_password => gen_password_for_nc(email),
+            :klasse => klasse,
+            :display_name => name_to_display_name(rufname, nachname),
+            :display_first_name => name_to_display_name(rufname, ''),
+            :display_last_name => name_to_display_name('', nachname),
+            :display_name_official => name_to_display_name(rufname, nachname),
+            :geschlecht => geschlecht,
+            :can_log_in => true,
+            :nc_login => @nc_sub[email] || email.split('@').first.sub(/\.\d+$/, ''),
+        }
         record
     end
 
@@ -836,7 +838,7 @@ class Parser
                 info['day_messages'].each do |sha1|
                     message = (vplan['entries'][sha1] || '').strip
                     unless message.empty?
-                        p_yw = Date.parse(datum).strftime('%Y-%V')
+                        p_yw = Date.parse(datum).strftime('%G-%V')
                         day_messages[p_yw] ||= {}
                         day_messages[p_yw][target] ||= {}
                         day_messages[p_yw][target][datum] ||= []

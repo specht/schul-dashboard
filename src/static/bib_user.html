@@ -175,7 +175,7 @@
                     $('#div_returned').show();
                     let div = $('<div>').appendTo($('#book_table_returned'));
                     let headers = ['Signatur', 'Titel', 'Autor', 'Ausgeliehen', 'Zurückgegeben', 'Lehrkraft', 'Fach'];
-                    table = new SortableTable({
+                    let table2 = new SortableTable({
                         element: div,
                         xs: true,
                         headers: headers.map(function (x) {
@@ -199,7 +199,7 @@
                         clickable_rows: true,
                         clickable_row_callback: row_clicked
                     });
-                    table.sort_rows(3, false);
+                    table2.sort_rows(3, false);
                 }
                 if (data.in_limbo_exemplare.length > 0) {
                     $('#div_in_limbo').show();

@@ -1,0 +1,65 @@
+#{assert(teacher_logged_in?)}
+<div class='container-fluid white'>
+    <div class='row'>
+        <div class='col-md-12'>
+            <h2 style='margin-bottom: 30px;'>Projekttage</h2>
+            <div id="table_here"></div>
+        </div>
+    </div>
+</div>
+
+<style>
+    tbody tr {
+        cursor: pointer;
+    }
+    tbody tr:hover {
+        box-shadow: 0 0 0.5em rgba(0, 0, 0, 0.3);
+    }
+    body.dark tbody tr:hover {
+        box-shadow: 0 0 0.5em rgba(255, 255, 255, 0.3);
+    }
+</style>
+
+<script>
+window.addEventListener('load', function() {
+    api_call('/api/projekttage_overview', {}, function(data) {
+        if (data.success) {
+            console.log(data.rows);
+            let table = new SortableTable({
+                element: $('#table_here'),
+                xs: true,
+                headers: ['Anbieter', 'Name', 'Teilnehmer', 'Klassen', 'Lehrkraft', 'Raumwunsch'].map(function (x) {
+                        let th = $('<th>').html(x);
+                        return th;
+                }),
+                rows: data.rows.map(function (entry, index) {
+                    console.log(entry.projekttage.sus);
+                    let cells = [
+                        entry.email,
+                        `<td>${entry.sus}</td>`,
+                        `<td style='max-width: 20em;'>${entry.projekttage.name ?? '&ndash;'}</td>`,
+                        `<td data-sort_value='${entry.projekttage.teilnehmer_max || 20}'>${entry.projekttage.teilnehmer_min ?? '1'} &ndash; ${entry.projekttage.teilnehmer_max ?? '20'}</td>`,
+                        `<td>${entry.projekttage.klassenstufe_min ?? '5'} &ndash; ${entry.projekttage.klassenstufe_max ?? '9'}</td>`,
+                        `<td>${entry.lehrkraft_wunsch ?? '&ndash;'}</td>`,
+                        `<td>${entry.raumwunsch ?? '&ndash;'}</td>`,
+                    ];
+                    return cells;
+                }),
+                sortable: true,
+                clickable_rows: true,
+                clickable_row_callback: function(email) {
+                    window.location.href = `/projekttage/${email}`;
+                }
+            });
+        }
+    });
+
+    // $('tbody tr').on('click', function(e) {
+    //     let row = $(e.target).closest('tr')[0];
+    //     console.log(row);
+    //     let email = $(row).data('email');
+    //     console.log(email);
+    //     window.location.href = `/projekttage/${email}`;
+    // });
+});
+</script>

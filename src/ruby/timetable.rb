@@ -379,7 +379,7 @@ class Timetable
                 hfk_ds = k if ds >= k
             end
             ds_date = Date.parse(ds)
-            ds_yw = ds_date.strftime('%Y-%V')
+            ds_yw = ds_date.strftime('%G-%V')
             day_events = {}
             day_lesson_keys_for_stunde = {}
             day_events_regular = {}
@@ -1089,8 +1089,8 @@ class Timetable
         events_with_data_per_user_cache = {}
         start_date = Date.parse(@@config[:first_day])
         end_date = Date.parse(@@config[:last_day])
-        start_yw = start_date.strftime('%Y-%V')
-        end_yw = end_date.strftime('%Y-%V')
+        start_yw = start_date.strftime('%G-%V')
+        end_yw = end_date.strftime('%G-%V')
         jitsi_count_for_dh = {}
         p = start_date
         while p.wday != 1
@@ -1154,7 +1154,7 @@ class Timetable
 #         logged_emails = Set.new()
         while p <= end_date do
             p1 = p + 7
-            p_yw = p.strftime('%Y-%V')
+            p_yw = p.strftime('%G-%V')
             p_md = p.strftime('%m-%d')
             p_y = p.strftime('%Y')
             # aufsicht_start_date_for_dow = {}
@@ -2549,7 +2549,7 @@ class Timetable
         end
         rows.each do |row|
             ds_date = Date.parse(row[:info][:date])
-            ds_yw = ds_date.strftime('%Y-%V')
+            ds_yw = ds_date.strftime('%G-%V')
             # add event to organizer's events
             if row[:info][:id] && !row[:info][:deleted]
                 @events_for_user[row[:organized_by]] ||= {}

@@ -616,6 +616,7 @@ class Main < Sinatra::Base
                 :titel => record[:titel],
                 :display_name => record[:display_name],
                 :display_name_official => record[:display_name_official],
+                :display_name_official_dativ => record[:display_name_official].sub('Herr', 'Herrn'),
                 :display_last_name => record[:display_last_name],
                 :display_last_name_dativ => record[:display_last_name_dativ],
                 :geschlecht => record[:geschlecht],
@@ -648,10 +649,10 @@ class Main < Sinatra::Base
         end
 
         @@lehrer_order.sort!() do |a, b|
-            la = @@user_info[a][:shorthand].downcase
-            lb = @@user_info[b][:shorthand].downcase
-            la = 'zzz' + la if la[0] == '_'
-            lb = 'zzz' + lb if lb[0] == '_'
+            la = @@user_info[a][:last_name].downcase
+            lb = @@user_info[b][:last_name].downcase
+            la = 'zzz' + la if @@user_info[a][:shorthand][0] == '_'
+            lb = 'zzz' + lb if @@user_info[b][:shorthand][0] == '_'
             la <=> lb
         end
         @@klassen_order = KLASSEN_ORDER
@@ -691,6 +692,7 @@ class Main < Sinatra::Base
                 :display_first_name => record[:display_first_name],
                 :display_last_name => record[:display_last_name],
                 :display_name_official => record[:display_name_official],
+                :display_name_official_dativ => record[:display_name_official],
                 :last_name => record[:last_name],
                 :display_name => record[:display_name],
                 :email => record[:email],
@@ -698,7 +700,7 @@ class Main < Sinatra::Base
                 :klasse => record[:klasse],
                 :klassenstufe => record[:klasse] =~ /^\d/ ? record[:klasse].to_i : nil,
                 :geschlecht => record[:geschlecht],
-                :nc_login => record[:email].split('@').first.sub(/\.\d+$/, ''),
+                :nc_login => record[:nc_login],
                 :matrix_login => matrix_login,
                 :initial_nc_password => record[:initial_nc_password],
                 :biber_password => Main.gen_password_for_email(record[:email] + 'biber')[0, 4].downcase,
@@ -729,6 +731,7 @@ class Main < Sinatra::Base
                 :titel => record[:titel],
                 :display_name => record[:display_name],
                 :display_name_official => record[:display_name_official],
+                :display_name_official_dativ => record[:display_name_official].sub('Herr', 'Herrn'),
                 :display_last_name => record[:display_last_name],
                 :display_last_name_dativ => record[:display_last_name_dativ],
                 :geschlecht => record[:geschlecht],
@@ -1062,11 +1065,12 @@ class Main < Sinatra::Base
         kurse_for_schueler, schueler_for_kurs = parser.parse_kurswahl(@@user_info.reject { |x, y| y[:teacher] }, @@lessons, lesson_key_tr, @@original_lesson_key_for_lesson_key, @@shorthands)
         @@kurse_for_schueler = kurse_for_schueler
         wahlpflicht_sus_for_lesson_key = parser.parse_wahlpflichtkurswahl(@@user_info.reject { |x, y| y[:teacher] }, @@lessons, lesson_key_tr, @@schueler_for_klasse)
+        @@wahlpflicht_lesson_ids = wahlpflicht_sus_for_lesson_key.keys
 
         @@kurse_for_lehrer = {}
         @@lessons[:lesson_keys].keys.each do |lesson_key|
             info = @@lessons[:lesson_keys][lesson_key]
-            next unless info[:klassen].include?('11') || info[:klassen].include?('12')
+            next unless info[:klassen].include?('11') || info[:klassen].include?('12') || wahlpflicht_sus_for_lesson_key.include?(lesson_key)
             info[:lehrer].each do |shorthand|
                 @@kurse_for_lehrer[@@shorthands[shorthand]] ||= []
                 @@kurse_for_lehrer[@@shorthands[shorthand]] << lesson_key
@@ -1149,7 +1153,12 @@ class Main < Sinatra::Base
         @@pausenaufsichten = parser.parse_pausenaufsichten(@@config)
 
         kurs_list_prefix_count = {}
+        list = []
         Main.iterate_kurse do |lesson_key|
+            list << lesson_key
+        end
+        list += @@wahlpflicht_lesson_ids
+        list.each do |lesson_key|
             list_email = 'kurs-' + lesson_key.downcase.split('_').first.gsub('~', '-').gsub('_', '-').gsub(' ', '-')
             kurs_list_prefix_count[list_email] ||= 0
             kurs_list_prefix_count[list_email] += 1
@@ -1175,8 +1184,10 @@ class Main < Sinatra::Base
         end
 
         @@room_ids = {}
+        @@room_ids_rev = {}
         ROOM_ORDER.each do |room|
             @@room_ids[room] = Digest::SHA2.hexdigest(KLASSEN_ID_SALT + room).to_i(16).to_s(36)[0, 16]
+            @@room_ids_rev[@@room_ids[room]] = room
         end
         @@rooms_for_shorthand = {}
         @@rooms_for_klasse = {}
@@ -1369,10 +1380,11 @@ class Main < Sinatra::Base
             }
         end
 
-        Main.iterate_kurse do |lesson_key|
+        @@lessons[:lesson_keys].keys.each do |lesson_key|
             next if @@schueler_for_lesson[lesson_key].nil?
             info = @@lessons[:lesson_keys][lesson_key]
             list_email = info[:list_email]
+            next if list_email.nil?
             ['', 'eltern.'].each do |extra|
                 email = "#{extra}#{list_email}@#{MAILING_LIST_DOMAIN}"
                 @@mailing_lists[email] = {
@@ -2029,14 +2041,17 @@ class Main < Sinatra::Base
                 # if user_is_eligible_for_tresor?
                 #     nav_items << :tresor
                 # end
-                if schueler_logged_in? && @session_user[:klassenstufe] <= 6
-                    nav_items << ['/mittagessen', 'Mittagessen', 'bi bi-egg-fried']
-                end
+                # if schueler_logged_in? && @session_user[:klassenstufe] <= 6
+                #     nav_items << ['/mittagessen', 'Mittagessen', 'fa fa-cutlery']
+                # end
                 if admin_logged_in? || user_who_can_upload_files_logged_in? || user_who_can_manage_news_logged_in? || user_who_can_manage_monitors_logged_in? || user_who_can_manage_tablets_logged_in? || user_with_role_logged_in?(:developer)
                     nav_items << :admin
                 end
                 if (schueler_logged_in? && @session_user[:klasse] == PK5_CURRENT_KLASSE)
                     nav_items << :pk5
+                end
+                if (schueler_logged_in? && @session_user[:klasse] == PROJEKTTAGE_CURRENT_KLASSE)
+                    nav_items << :projekttage
                 end
                 if user_who_can_use_aula_logged_in?
                     nav_items << :aula
@@ -2119,6 +2134,10 @@ class Main < Sinatra::Base
                     io.puts "<li class='nav-item text-nowrap'>"
                     io.puts "<a href='/pk5' class='nav-link nav-icon'><div class='icon'><i class='bi bi-file-earmark-easel'></i></div>5. PK</a>"
                     io.puts "</li>"
+                elsif x == :projekttage
+                    io.puts "<li class='nav-item text-nowrap'>"
+                    io.puts "<a href='/projekttage' class='nav-link nav-icon'><div class='icon'><i class='fa fa-file-text-o'></i></div>Projekttage</a>"
+                    io.puts "</li>"
                 elsif x == :advent_calendar
                     unless admin_logged_in?
                         io.puts "<li class='nav-item text-nowrap'>"
@@ -2174,7 +2193,7 @@ class Main < Sinatra::Base
                         printed_divider = true
                         io.puts "<a class='dropdown-item nav-icon' href='/lehrbuchverein'><div class='icon'><i class='bi bi-book'></i></div><span class='label'>Lehrmittelverein</span></a>"
                     end
-                    if schueler_logged_in? || teacher_logged_in?
+                    if schueler_logged_in? || teacher_logged_in? || user_with_role_logged_in?(:can_manage_bib)
                         io.puts "<div class='dropdown-divider'></div>" unless printed_divider
                         printed_divider = true
                         io.puts "<a class='dropdown-item nav-icon' href='/bibliothek'><div class='icon'><i class='bi bi-book'></i></div><span class='label'>Bibliothek</span></a>"
@@ -2182,7 +2201,7 @@ class Main < Sinatra::Base
                     if user_with_role_logged_in?(:mittagessen)
                         io.puts "<div class='dropdown-divider'></div>" unless printed_divider
                         printed_divider = true
-                        io.puts "<a class='dropdown-item nav-icon' href='/mittagessen_overview'><div class='icon'><i class='bi bi-egg-fried'></i></div><span class='label'>Mittagessen</span></a>"
+                        io.puts "<a class='dropdown-item nav-icon' href='/mittagessen_overview'><div class='icon'><i class='fa fa-cutlery'></i></div><span class='label'>Mittagessen</span></a>"
                     end
                     # if user_logged_in?
                     #     if teacher_logged_in?
@@ -2203,7 +2222,7 @@ class Main < Sinatra::Base
                         if user_with_role_logged_in?(:can_see_kurslisten)
                             io.puts "<a class='dropdown-item nav-icon' href='/kurslisten'><div class='icon'><i class='bi bi-filetype-pdf'></i></div><span class='label'>Kurslisten</span></a>"
                         end
-                        io.puts "<a class='dropdown-item nav-icon' href='/pk5_overview'><div class='icon'><i class='bi bi-file-earmark-easel'></i></div><span class='label'>5. PK</span></a>"
+                        io.puts "<a class='dropdown-item nav-icon' href='/pk5_overview'><div class='icon'><i class='fa fa-file-text-o'></i></div><span class='label'>5. PK</span></a>"
                     end
                     if schueler_logged_in?
                         if @session_user[:klasse].to_i < 11
@@ -2230,7 +2249,7 @@ class Main < Sinatra::Base
                             io.puts "<a class='dropdown-item nav-icon' href='/mailing_lists'><div class='icon'><i class='bi bi-envelope'></i></div><span class='label'>E-Mail-Verteiler</span></a>"
                         end
                         if teacher_logged_in?
-                            io.puts "<a class='dropdown-item nav-icon' href='/angebote'><div class='icon'><i class='bi bi-people'></i></div><span class='label'>AGs und Angebote</span></a>"
+                            io.puts "<a class='dropdown-item nav-icon' href='/angebote'><div class='icon'><i class='fa fa-group'></i></div><span class='label'>AGs und Angebote</span></a>"
                         end
                         if user_with_role_logged_in?(:can_open_project_wifi)
                             io.puts "<a class='dropdown-item nav-icon' href='/school_wifi'><div class='icon'><i class='bi bi-wifi'></i></div><span class='label'>Schüler-WLAN</span></a>"
@@ -3184,6 +3203,14 @@ class Main < Sinatra::Base
             unless can_see_all_timetables_logged_in? || (@@teachers_for_klasse[klasse] || {}).include?(@session_user[:shorthand])
                 redirect "#{WEB_ROOT}/", 302
             end
+        elsif path == 'email_overview'
+            redirect "#{WEB_ROOT}/", 302 unless @session_user
+            parts = request.env['REQUEST_PATH'].split('/')
+            klasse = CGI::unescape(parts[2])
+#             STDERR.puts @@teachers_for_klasse[klasse].to_yaml
+            unless admin_logged_in? || can_see_all_timetables_logged_in? || (@@teachers_for_klasse[klasse] || {}).include?(@session_user[:shorthand])
+                redirect "#{WEB_ROOT}/", 302
+            end
         elsif path == 'lessons'
             redirect "#{WEB_ROOT}/", 302 unless @session_user
             parts = request.env['REQUEST_PATH'].split('/')
@@ -3216,6 +3243,12 @@ class Main < Sinatra::Base
             parts = request.env['REQUEST_PATH'].split('/')
             salzh_protocol_delta = (parts[2] || '').strip
         elsif path == 'pk5'
+            user_email = @session_user[:email]
+            if user_with_role_logged_in?(:teacher)
+                parts = request.env['REQUEST_PATH'].split('/')
+                user_email = parts[2]
+            end
+        elsif path == 'projekttage'
             user_email = @session_user[:email]
             if user_with_role_logged_in?(:teacher)
                 parts = request.env['REQUEST_PATH'].split('/')
@@ -3410,7 +3443,7 @@ class Main < Sinatra::Base
                 end
             end
         elsif path == 'angebote'
-            unless teacher_logged_in?
+            unless user_with_role_logged_in?(:can_manage_angebote)
                 redirect "#{WEB_ROOT}/", 302
             else
                 stored_angebote = get_angebote()

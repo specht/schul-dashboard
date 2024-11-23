@@ -13,7 +13,7 @@ PK5_KEY_LABELS = {
     :betreuende_lehrkraft => 'Betreuende Lehrkraft im Referenzfach',
     :fas => 'fächerübergreifender Aspekt',
     :betreuende_lehrkraft_fas => 'Betreuende Lehrkraft im fächerübergreifenden Aspekt',
-    :fragestellung => 'Fragestellung',
+    :fragestellung => 'Problemorientierte Frage-/Themenstellung',
 }
 
 class Main < Sinatra::Base
@@ -41,7 +41,7 @@ class Main < Sinatra::Base
                 result[:sus].sort! do |a, b|
                     @@user_info[a][:last_name].downcase <=> @@user_info[b][:last_name].downcase
                 end
-                result[:sus].map! { |email| @@user_info[email][:display_name_official] }
+                result[:sus].map! { |teacher_email| @@user_info[teacher_email][:display_name_official] }
             end
             if result[:betreuende_lehrkraft]
                 result[:betreuende_lehrkraft_display_name] = @@user_info[result[:betreuende_lehrkraft]][:display_name_official]
@@ -49,6 +49,44 @@ class Main < Sinatra::Base
             end
             if result[:betreuende_lehrkraft_fas]
                 result[:betreuende_lehrkraft_fas_display_name] = @@user_info[result[:betreuende_lehrkraft_fas]][:display_name_official]
+            end
+            extra_consultations = {}
+            (result[:extra_consultations] || '').split(',').each do |shorthand|
+                teacher_email = @@shorthands[shorthand]
+                extra_consultations[teacher_email] = {:want => true, :display_name => @@user_info[teacher_email][:display_name_official], :display_name_dativ => @@user_info[teacher_email][:display_name_official_dativ]}
+            end
+            if result[:referenzfach]
+                result[:referenzfach_fbl] = @@pk5_faecher[result[:referenzfach]].map { |x| @@user_info[x][:display_name_official]}.join(', ')
+                @@pk5_faecher[result[:referenzfach]].each do |teacher_email|
+                    extra_consultations[teacher_email] ||= {:want => false, :display_name => @@user_info[teacher_email][:display_name_official], :display_name_dativ => @@user_info[teacher_email][:display_name_official_dativ]}
+                end
+            end
+            if result[:fas]
+                result[:fas_fbl] = @@pk5_faecher[result[:fas]].map { |x| @@user_info[x][:display_name_official]}.join(', ')
+                @@pk5_faecher[result[:fas]].each do |teacher_email|
+                    extra_consultations[teacher_email] ||= {:want => false, :display_name => @@user_info[teacher_email][:display_name_official], :display_name_dativ => @@user_info[teacher_email][:display_name_official_dativ]}
+                end
+            end
+            if result[:betreuende_lehrkraft] && result[:betreuende_lehrkraft_is_confirmed]
+                extra_consultations.delete(result[:betreuende_lehrkraft])
+            end
+            if result[:betreuende_lehrkraft_fas]
+                extra_consultations.delete(result[:betreuende_lehrkraft_fas])
+            end
+            result[:extra_consultations] = extra_consultations
+            result[:extra_consultation_events] = []
+            neo4j_query(<<~END_OF_QUERY, {:email => email}).each do |row|
+                MATCH (u:User {email: $email})-[:IS_PARTICIPANT]->(e:Event {zentraler_beratungstermin: TRUE})-[:ORGANIZED_BY]->(t:User)
+                RETURN e, t.email
+                ORDER BY e.date, e.start_time;
+            END_OF_QUERY
+                event = row['e']
+                result[:extra_consultation_events] << {
+                    :date => Date.parse(event[:date]).strftime('%d.%m.%Y'),
+                    :start_time => event[:start_time],
+                    :teacher => @@user_info[row['t.email']][:display_name_official_dativ],
+                    :room => (event[:description] || '').match(/Raum ([^\s<>]+)/)
+                }
             end
             result
         end
@@ -73,7 +111,7 @@ class Main < Sinatra::Base
                     if entry_date != current_date
                         io.puts "<div class='history_date'>#{entry_date}</div>"
                         if current_date.nil?
-                            io.puts "<div class='history_entry'>Vorgang erstellt durch #{@@user_info[entry['eu.email']][:display_name_official]}</div>"
+                            io.puts "<div class='history_entry'>Vorgang erstellt durch #{@@user_info[entry['eu.email']][:display_name_official_dativ]}</div>"
                         end
                         current_date = entry_date
                     end
@@ -83,15 +121,15 @@ class Main < Sinatra::Base
                         if key == :betreuende_lehrkraft || key == :betreuende_lehrkraft_fas
                             value = (@@user_info[value] || {})[:display_name_official] || value
                         end
-                        if value.nil?
-                            io.puts "<div class='history_entry'>#{PK5_KEY_LABELS[key]} gelöscht durch #{@@user_info[entry['eu.email']][:display_name_official]}</div>"
+                        if (value || '').empty?
+                            io.puts "<div class='history_entry'>#{PK5_KEY_LABELS[key]} gelöscht durch #{@@user_info[entry['eu.email']][:display_name_official_dativ]}</div>"
                         else
-                            io.puts "<div class='history_entry'>#{PK5_KEY_LABELS[key]} geändert auf <strong>»#{value}«</strong> durch #{@@user_info[entry['eu.email']][:display_name_official]}</div>"
+                            io.puts "<div class='history_entry'>#{PK5_KEY_LABELS[key]} geändert auf <strong>»#{value}«</strong> durch #{@@user_info[entry['eu.email']][:display_name_official_dativ]}</div>"
                         end
                     elsif pc[:type] == 'invite_sus'
-                        io.puts "<div class='history_entry'><strong>#{@@user_info[pc[:other_email]][:display_name]}</strong> zur Gruppenprüfung eingeladen durch #{@@user_info[entry['eu.email']][:display_name_official]}</div>"
+                        io.puts "<div class='history_entry'><strong>#{@@user_info[pc[:other_email]][:display_name]}</strong> zur Gruppenprüfung eingeladen durch #{@@user_info[entry['eu.email']][:display_name_official_dativ]}</div>"
                     elsif pc[:type] == 'uninvite_sus'
-                        io.puts "<div class='history_entry'><strong>#{@@user_info[pc[:other_email]][:display_name]}</strong> von der Gruppenprüfung ausgeladen durch #{@@user_info[entry['eu.email']][:display_name_official]}</div>"
+                        io.puts "<div class='history_entry'><strong>#{@@user_info[pc[:other_email]][:display_name]}</strong> von der Gruppenprüfung ausgeladen durch #{@@user_info[entry['eu.email']][:display_name_official_dativ]}</div>"
                     elsif pc[:type] == 'accept_invitation'
                         io.puts "<div class='history_entry'><strong>#{@@user_info[pc[:email]][:display_name]}</strong> hat die Einladung zur Gruppenprüfung angenommen</div>"
                     elsif pc[:type] == 'reject_invitation'
@@ -125,6 +163,34 @@ class Main < Sinatra::Base
         respond(:html => my_pk5_history(sus_email))
     end
 
+    def fix_pk5(sus_email)
+        # make sure extra_consultation shorthands are in line
+        # with referenzfach and fas
+        p = neo4j_query_expect_one(<<~END_OF_QUERY, {:sus_email => sus_email})['p']
+            MATCH (u:User {email: $sus_email})
+            MATCH (p:Pk5)-[:BELONGS_TO]->(u)
+            RETURN p;
+        END_OF_QUERY
+        if p[:extra_consultations]
+            valid_emails = Set.new()
+            valid_emails |= Set.new(@@pk5_faecher[p[:referenzfach]] || [])
+            valid_emails |= Set.new(@@pk5_faecher[p[:fas]] || [])
+            shorthands = p[:extra_consultations].split(',').select do |shorthand|
+                email = @@shorthands[shorthand]
+                valid_emails.include?(email)
+            end
+            new_consultations = shorthands.uniq.join(',')
+            if p[:extra_consultations] != new_consultations
+                neo4j_query_expect_one(<<~END_OF_QUERY, {:sus_email => sus_email, :extra_consultations => new_consultations})
+                    MATCH (u:User {email: $sus_email})
+                    MATCH (p:Pk5)-[:BELONGS_TO]->(u)
+                    SET p.extra_consultations = $extra_consultations
+                    RETURN p;
+                END_OF_QUERY
+            end
+        end
+    end
+
     post '/api/update_pk5' do
         require_user!
         data = parse_request_data(
@@ -135,6 +201,7 @@ class Main < Sinatra::Base
                 :betreuende_lehrkraft,
                 :fas,
                 :betreuende_lehrkraft_fas,
+                :fragestellung,
             ],
             :max_body_length => 16384,
             :max_string_length => 8192
@@ -154,7 +221,7 @@ class Main < Sinatra::Base
                 MERGE (p:Pk5)-[:BELONGS_TO]->(u)
                 RETURN p;
             END_OF_QUERY
-            [:themengebiet, :referenzfach, :betreuende_lehrkraft, :fas, :betreuende_lehrkraft_fas].each do |key|
+            [:themengebiet, :referenzfach, :betreuende_lehrkraft, :fas, :betreuende_lehrkraft_fas, :fragestellung].each do |key|
                 if data.include?(key)
                     value = data[key]
                     if key == :referenzfach || key == :fas
@@ -193,6 +260,7 @@ class Main < Sinatra::Base
                     end
                 end
             end
+            fix_pk5(sus_email)
         end
         respond(:yay => 'sure', :result => get_my_pk5(sus_email))
     end
@@ -278,6 +346,37 @@ class Main < Sinatra::Base
             a_sus_index = a[:sus_index]
             b_sus_index = b[:sus_index]
             (a_primary == b_primary) ? (a_secondary == b_secondary ? (a_sus_index <=> b_sus_index) : (a_secondary ? -1 : 1)) : (a_primary ? -1 : 1)
+        end
+
+        respond(:rows => rows)
+    end
+
+    def pk5_termine_rows
+        assert(user_with_role_logged_in?(:oko) || admin_logged_in?)
+
+        rows = []
+
+        neo4j_query(<<~END_OF_QUERY).each do |row|
+            MATCH (e:Event {zentraler_beratungstermin: TRUE})-[:ORGANIZED_BY]->(t:User)
+            WITH e, t
+            MATCH (e)<-[:IS_PARTICIPANT]-(u:User)
+            RETURN e, t.email AS organizer, COLLECT(u.email) AS participants;
+        END_OF_QUERY
+            rows << row
+        end
+        rows
+    end
+
+    post '/api/pk5_termine' do
+        assert(user_with_role_logged_in?(:oko) || user_with_role_logged_in?(:sekretariat) || admin_logged_in?)
+
+        rows = pk5_termine_rows()
+        rows.sort! do |a, b|
+            a_primary = a['e'][:start_time]
+            b_primary = b['e'][:start_time]
+            a_secondary = @@user_info[a['organizer']][:last_name].downcase
+            b_secondary = @@user_info[b['organizer']][:last_name].downcase
+            (a_primary == b_primary) ? (a_secondary <=> b_secondary) : (a_primary <=> b_primary)
         end
 
         respond(:rows => rows)
@@ -423,7 +522,7 @@ class Main < Sinatra::Base
         respond(:html => pending_pk5_invitations_outgoing(sus_email))
     end
 
-    post '/api/accept_5pk_invitation' do
+    post '/api/accept_pk5_invitation' do
         data = parse_request_data(:required_keys => [:sus_email, :other_email])
         sus_email = data[:sus_email]
         if user_with_role_logged_in?(:oko)
@@ -456,7 +555,7 @@ class Main < Sinatra::Base
         respond(:yay => 'sure')
     end
 
-    post '/api/reject_5pk_invitation' do
+    post '/api/reject_pk5_invitation' do
         data = parse_request_data(:required_keys => [:sus_email, :other_email])
         sus_email = data[:sus_email]
         if user_with_role_logged_in?(:oko)
@@ -565,6 +664,35 @@ class Main < Sinatra::Base
         respond(:yay => 'sure')
     end
 
+    post '/api/want_extra_consultation' do
+        assert($pk5.get_current_phase() == 9)
+        data = parse_request_data(:required_keys => [:email, :flag], :optional_keys => [:sus_email])
+        sus_email = @session_user[:email]
+        if teacher_logged_in?
+            sus_email = data[:sus_email] if data[:sus_email]
+        end
+        transaction do
+            p = neo4j_query_expect_one(<<~END_OF_QUERY, {:sus_email => sus_email})['p']
+                MATCH (u:User {email: $sus_email})
+                MATCH (p:Pk5)-[:BELONGS_TO]->(u)
+                RETURN p;
+            END_OF_QUERY
+            extra_consultations = (p[:extra_consultations] || '').split(',')
+            if (data[:flag] == 'no')
+                extra_consultations.delete(@@user_info[data[:email]][:shorthand])
+            else
+                extra_consultations << @@user_info[data[:email]][:shorthand]
+            end
+            neo4j_query_expect_one(<<~END_OF_QUERY, {:sus_email => sus_email, :extra_consultations => extra_consultations.join(',')})
+                MATCH (u:User {email: $sus_email})
+                MATCH (p:Pk5)-[:BELONGS_TO]->(u)
+                SET p.extra_consultations = $extra_consultations
+                RETURN p;
+            END_OF_QUERY
+        end
+        respond(:yay => 'sure', :result => get_my_pk5(sus_email))
+    end
+
     def get_remaining_pk5_projects_for_teacher
         return {} unless teacher_logged_in?
         invited = 0
@@ -604,6 +732,17 @@ class Main < Sinatra::Base
             a[:sus_index] <=> b[:sus_index]
         end
         respond_raw_with_mimetype(Main.print_voucher_1(rows), 'application/pdf')
+    end
+
+    get '/api/print_voucher_2' do
+        assert(user_with_role_logged_in?(:oko))
+        require_teacher!
+
+        rows = pk5_overview_rows()
+        rows.sort! do |a, b|
+            a[:sus_index] <=> b[:sus_index]
+        end
+        respond_raw_with_mimetype(Main.print_voucher_2(rows), 'application/pdf')
     end
 end
 

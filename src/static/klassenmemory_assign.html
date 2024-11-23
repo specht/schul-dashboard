@@ -132,9 +132,23 @@
         transition: transform 0.2s ease-out, opacity 0.2s ease-out;
     }
 
+    #{user_with_role_logged_in?(:can_print_photos) ? '/*' : ''}
     @media print {
         .sus-foto-sm, .sus-foto-md {
             display: none;
+        }
+    }
+    #{user_with_role_logged_in?(:can_print_photos) ? '*/' : ''}
+    @media print {
+        #klassen-div, .foot {
+            display: none;
+        }
+        body {
+            background: none;
+            background-color: #fff;
+        }
+        .sus-label {
+            background-color: #fff;
         }
     }
 </style>

@@ -1,57 +1,377 @@
-#{this_is_a_page_for_logged_in_teachers}
+#{assert(teacher_logged_in? || (schueler_logged_in? && @session_user[:klasse] == PROJEKTTAGE_CURRENT_KLASSE))}
+<style>
+    body.dark .karteikarte {
+        background-color: rgba(0, 0, 0, 0.5);
+        border: 1px solid rgba(0, 0, 0, 0.8);
+        border-radius: 5px;
+        padding: 20px;
+        margin-bottom: 20px;
+    }
+    .karteikarte {
+        background-color: rgba(255, 255, 255, 0.8);
+        border: 1px solid rgba(255, 255, 255, 0.8);
+        border-radius: 5px;
+        padding: 20px;
+        margin-bottom: 20px;
+    }
+    .form-control[readonly] {
+        background: none;
+    }
+    ul {
+        list-style-type: disc;
+        margin-left: 1em;
+    }
+    input:read-only {
+       pointer-events: none;
+    }
+</style>
+
+<div class="modal" id="modal_add_sus" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true" style='z-index: 200000;'>
+    <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" >
+            Person hinzufügen
+          </h5>
+        </div>
+        <div class="modal-body">
+            <p>
+                Hier kannst du weitere Personen in dein Projekt einladen.
+            </p>
+            <div id="div_pending_invitations"></div>
+            <div class="form-group mt-2">
+                <div class="input-group mb-3">
+                    <input id='ti_add_sus' type='text' placeholder='Bitte gib einen Namen ein' class='form-control' list='li_sus_q1'>
+                    <div class="input-group-append">
+                      <button class="btn btn-success" type="button" id="bu_send_sus_invitation" disabled><i class='fa fa-send'></i>&nbsp;&nbsp;Einladung senden</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-dismiss="modal"><i class='fa fa-times'></i>&nbsp;&nbsp;Schließen</button>
+
+        </div>
+      </div>
+    </div>
+</div>
+
 <div class='container'>
     <div class='row'>
         <div class='col-md-12'>
-            <h2 style='margin-bottom: 30px;'>Projekttage #{Date.today.year}</h2>
-            <div class='projekte-container'>
-                <div style='max-width: 100%; overflow-x: auto;'>
-                    <table class='table table-xs narrow' style='width: unset; min-width: 100%;'>
-                    <thead>
-                        <tr>
-                            <th>Nr.</th>
-                            <th>Titel</th>
-                            <th>Kategorie</th>
-                            <th>Klassenstufe</th>
-                            <th>Kapazität</th>
-                            <th>Verantwortlich</th>
-                            <th>Lehrkräfte</th>
-                        </tr>
-                    </thead>
-                    <tbody class='projekte-here'>
-                    </tbody>
-                    </table>
+            <h2 style='margin-bottom: 30px;'>Projekttage</h2>
+            <p>
+                Diese Karteikarte fasst die Informationen zu deinen Projekttagen zusammen.
+                Die Angaben werden sich im Laufe der Zeit bis zu den Projekttagen verändern. Beachte den Zeitplan weiter unten auf dieser Seite.
+            </p>
+            <div class="alert alert-white" style="#{$projekttage.phases[$projekttage.get_current_phase][:flags].include?(:no_sus_edit) ? '' : 'display: none;'}">
+                <em><strong>Hinweis:</strong> Du kannst die folgenden Angaben in der aktuellen Phase nicht bearbeiten.</em>
+            </div>
+            <div style="#{user_email == @session_user[:email] ? '' : 'display: none;'}">
+                #{print_pending_projekttage_invitations_incoming(user_email)}
+            </div>
+            <div class='karteikarte'>
+                <div class='row'>
+                    <datalist id='li_sus_q1'>
+                        #{@@user_info.keys.select { |email| user_has_role(email, :schueler) && @@user_info[email][:klasse] == PROJEKTTAGE_CURRENT_KLASSE && email != @session_user[:email] }.sort { |a, b| @@user_info[a][:last_name] <=> @@user_info[b][:last_name] }.map { |email| "<option value='#{@@user_info[email][:display_name_official]}'></option>" }. join('\n')}
+                    </datalist>
+                    <datalist id='li_lehrkraft'>
+                        #{@@user_info.keys.select { |email| user_has_role(email, :teacher)}.select { |email| @@user_info[email][:shorthand][0] != '_' }.sort { |a, b| @@user_info[a][:last_name] <=> @@user_info[b][:last_name]}.map { |email| "<option value='#{@@user_info[email][:display_name_official]}'></option>" }. join('\n')}
+                    </datalist>
+                    <div class='col-md-7'>
+                        <div class='form-group'>
+                            <label>#{PROJEKTTAGE_KEY_LABELS[:name]}</label>
+                            <input id='ti_name' type='text' value='#{CGI.escapeHTML(get_my_projekttage(user_email)[:name] || '')}' placeholder='Bitte gib einen Namen für euer Projekt ein' class='form-control' readonly>
+                        </div>
+                    </div>
+                    <div class='col-md-5'>
+                        <div class='form-group'>
+                            <label>Anbieter des Projekts</label>
+                            <div class="input-group mb-3">
+                                <input type='text' value='#{CGI.escapeHTML(join_with_sep(get_my_projekttage(user_email)[:sus] || [], ', ', ' und '))}' class='form-control' readonly disabled>
+                                <div class="input-group-append" style="#{(user_with_role_logged_in?(:can_manage_projekttage) || (@session_user[:klasse] == PROJEKTTAGE_CURRENT_KLASSE && !($projekttage.phases[$projekttage.get_current_phase][:flags].include?(:no_sus_edit)))) ? '' : 'display: none;'}">
+                                  <button class="btn btn-outline-secondary" type="button" id="bu_add_sus"><i class='fa fa-user-plus'></i></button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class='col-md-12'>
+                        <div class='form-group'>
+                            <label>#{PROJEKTTAGE_KEY_LABELS[:ziel]}</label>
+                            <input id='ti_ziel' type='text' value='#{CGI.escapeHTML(get_my_projekttage(user_email)[:ziel] || '')}' placeholder='Bitte gib das Ziel eures Projekts ein' class='form-control' readonly>
+                        </div>
+                    </div>
+                    <div class='col-md-3'>
+                        <div class='form-group'>
+                            <label>Gewünschte Teilnehmerzahl</label>
+                            <div class="row">
+                                <div class="col-md-6 input-group mb-3">
+                                    <div class="input-group-prepend">
+                                    <span class="input-group-text">von</span>
+                                    </div>
+                                    <input style='text-align: center;' id='ti_teilnehmer_min' type='number' value='#{get_my_projekttage(user_email)[:teilnehmer_min] || 1}' class='form-control' readonly>
+                                </div>
+                                <div class="col-md-6 input-group mb-3">
+                                    <div class="input-group-prepend">
+                                    <span class="input-group-text">bis</span>
+                                    </div>
+                                    <input style='text-align: center;'  id='ti_teilnehmer_max' type='number' value='#{get_my_projekttage(user_email)[:teilnehmer_max] || 20}' class='form-control' readonly>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class='col-md-3'>
+                        <div class='form-group'>
+                            <label>Klassenstufen</label>
+                            <div class="row">
+                                <div class="col-md-6 input-group mb-3">
+                                    <div class="input-group-prepend">
+                                    <span class="input-group-text">von</span>
+                                    </div>
+                                    <input style='text-align: center;' id='ti_klassenstufe_min' type='text' value='#{get_my_projekttage(user_email)[:klassenstufe_min] || 5}' class='form-control' readonly>
+                                </div>
+                                <div class="col-md-6 input-group mb-3">
+                                    <div class="input-group-prepend">
+                                    <span class="input-group-text">bis</span>
+                                    </div>
+                                    <input style='text-align: center;'  id='ti_klassenstufe_max' type='text' value='#{get_my_projekttage(user_email)[:klassenstufe_max] || 9}' class='form-control' readonly>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-md-3">
+                        <div class='form-group'>
+                            <label>#{PROJEKTTAGE_KEY_LABELS[:lehrkraft_wunsch]}</label>
+                            <input id='ti_lehrkraft_wunsch' type='text' value='#{CGI.escapeHTML(get_my_projekttage(user_email)[:lehrkraft_wunsch] || '')}' placeholder='(optional)' class='form-control' readonly>
+                        </div>
+                    </div>
+
+                    <div class="col-md-3">
+                        <div class='form-group'>
+                            <label>#{PROJEKTTAGE_KEY_LABELS[:raumwunsch]}</label>
+                            <input id='ti_raumwunsch' type='text' value='#{CGI.escapeHTML(get_my_projekttage(user_email)[:raumwunsch] || '')}' placeholder='(optional)' class='form-control' readonly>
+                        </div>
+                    </div>
+
+                    <div class="col-md-6">
+                        <div class='form-group'>
+                            <label>#{PROJEKTTAGE_KEY_LABELS[:produkt]}</label>
+                            <textarea id='ti_produkt' class='form-control' style='height: 100px;' placeholder='Welches Produkt werden die SuS in eurem Projekt erarbeiten?' readonly>#{CGI.escapeHTML(get_my_projekttage(user_email)[:produkt] || '')}</textarea>
+                        </div>
+                    </div>
+
+                    <div class="col-md-6">
+                        <div class='form-group'>
+                            <label>#{PROJEKTTAGE_KEY_LABELS[:material]}</label>
+                            <textarea id='ti_material' class='form-control' style='height: 100px;' placeholder='Welches Material benötigt ihr für euer Projekt?' readonly>#{CGI.escapeHTML(get_my_projekttage(user_email)[:material] || '')}</textarea>
+                        </div>
+                    </div>
+
+                    <div class="col-md-6">
+                        <div class='form-group'>
+                            <label>#{PROJEKTTAGE_KEY_LABELS[:kosten_finanzierungsidee]}</label>
+                            <textarea id='ti_kosten_finanzierungsidee' class='form-control' style='height: 100px;' placeholder='Welche Kosten entstehen und wie könnte man sie decken?' readonly>#{CGI.escapeHTML(get_my_projekttage(user_email)[:kosten_finanzierungsidee] || '')}</textarea>
+                        </div>
+                    </div>
+
+                    <div class="col-md-6">
+                        <div class='form-group'>
+                            <label>#{PROJEKTTAGE_KEY_LABELS[:praesentationsidee]}</label>
+                            <textarea id='ti_praesentationsidee' class='form-control' style='height: 100px;' placeholder='Wie könnte man euer Projekt auf dem Schulfest präsentieren?' readonly>#{CGI.escapeHTML(get_my_projekttage(user_email)[:praesentationsidee] || '')}</textarea>
+                        </div>
+                    </div>
+
+                    <div class="col-md-4">
+                        <div class='form-group'>
+                            <label>#{PROJEKTTAGE_KEY_LABELS[:grobplanung1]}</label>
+                            <textarea id='ti_grobplanung1' class='form-control' style='height: 100px;' readonly>#{CGI.escapeHTML(get_my_projekttage(user_email)[:grobplanung1] || '')}</textarea>
+                        </div>
+                    </div>
+
+                    <div class="col-md-4">
+                        <div class='form-group'>
+                            <label>#{PROJEKTTAGE_KEY_LABELS[:grobplanung2]}</label>
+                            <textarea id='ti_grobplanung2' class='form-control' style='height: 100px;' readonly>#{CGI.escapeHTML(get_my_projekttage(user_email)[:grobplanung2] || '')}</textarea>
+                        </div>
+                    </div>
+
+                    <div class="col-md-4">
+                        <div class='form-group'>
+                            <label>#{PROJEKTTAGE_KEY_LABELS[:grobplanung3]}</label>
+                            <textarea id='ti_grobplanung3' class='form-control' style='height: 100px;' readonly>#{CGI.escapeHTML(get_my_projekttage(user_email)[:grobplanung3] || '')}</textarea>
+                        </div>
+                    </div>
+
+                    <div class="col-md-6">
+                        <div class='form-group'>
+                            <label>#{PROJEKTTAGE_KEY_LABELS[:planung_exkursion]}</label>
+                            <textarea id='ti_planung_exkursion' class='form-control' style='height: 100px;' placeholder='Falls ihr eine Exkursion plant, schreibt es hier rein.' readonly>#{CGI.escapeHTML(get_my_projekttage(user_email)[:planung_exkursion] || '')}</textarea>
+                        </div>
+                    </div>
+
+                    <div class="col-md-6">
+                        <div class='form-group'>
+                            <label>#{PROJEKTTAGE_KEY_LABELS[:planung_tablets]}</label>
+                            <textarea id='ti_planung_tablets' class='form-control' style='height: 100px;' placeholder='Benötigt ihr Tablets? Falls ja: an welchen Tagen und zu welchen Zeiten?' readonly>#{CGI.escapeHTML(get_my_projekttage(user_email)[:planung_tablets] || '')}</textarea>
+                        </div>
+                    </div>
+
+                    <div class='col-md-12' style="text-align: right; #{(user_with_role_logged_in?(:can_manage_projekttage) || (@session_user[:klasse] == PROJEKTTAGE_CURRENT_KLASSE && (!$projekttage.phases[$projekttage.get_current_phase][:flags].include?(:no_sus_edit)))) ? '' : 'display: none;'}">
+                        <button id='bu_edit' class='btn btn-success'><i class='fa fa-edit'></i>&nbsp;&nbsp;Bearbeiten</button>
+                        <button id='bu_discard_changes' style='display: none;' class='btn btn-outline-secondary'><i class='fa fa-times'></i>&nbsp;&nbsp;Änderungen verwerfen</button>
+                        <button id='bu_save_changes' style='display: none;' class='btn btn-success'><i class='fa fa-check'></i>&nbsp;&nbsp;Änderungen speichern</button>
+                    </div>
+
+                    <div class='col-md-12'>
+                        <div class='api_messages mt-3' style='display: none;'></div>
+                    </div>
                 </div>
             </div>
+            <hr>
+            <h4>Zeitplan</h4>
+            #{$projekttage.print_schedule()}
+            <hr>
+            <h4>Bearbeitungshistorie</h4>
+            <div id='div_history'>#{my_projekttage_history(user_email)}</div>
         </div>
     </div>
 </div>
 
 <script>
-var display_name_for_email = #{Hash[@@user_info.select { |email, info| user_has_role(email, :teacher) || info[:klassenstufe] == 11 }.map { |email, info| [email, info[:teacher] ? info[:display_name_official] : info[:display_name]] }].to_json};
-document.addEventListener('DOMContentLoaded', function() {
-    api_call('/api/get_projekte', {}, function(data) {
-        if (data.success) {
-            for (let projekt of data.projekte) {
-                console.log(projekt);
-                let row = $(`<tr>`);
-                row.append($(`<td>`).text(projekt.nr));
-                row.append($(`<td style='white-space: wrap; font-weight: bold;'>`).text(projekt.title));
-                row.append($(`<td style='white-space: wrap;'>`).text(projekt.categories.join(', ')));
-                row.append($(`<td>`).text(projekt.klassen_label));
-                row.append($(`<td>`).text(projekt.capacity ?? '–'));
-                row.append($(`<td style='white-space: wrap;'>`).text(projekt.organized_by.map(function(x) { return display_name_for_email[x] ?? x; }).join(', ')));
-                row.append($(`<td style='white-space: wrap;'>`).text(projekt.supervised_by.map(function(x) { return display_name_for_email[x] ?? x; }).join(', ')));
-                $('.projekte-here').append(row);
-                row = $(`<tr>`);
-                row.append($(`<td style='border-top: none;'>`));
-                row.append($(`<td colspan='6' style='border-top: none; white-space: wrap; ${(projekt.description ?? '').trim().length === 0 ? 'color: #ef4538;' : ''}'>`).text("Beschreibung: " + ((projekt.description ?? '').trim().length === 0 ? '(keine Beschreibung)' : projekt.description)));
-                $('.projekte-here').append(row);
-                row = $(`<tr>`);
-                row.append($(`<td style='border-top: none;'>`));
-                row.append($(`<td colspan='6' style='border-top: none; white-space: wrap; ${(projekt.exkursion_hint ?? '').trim().length === 0 ? 'color: #ef4538;' : ''}'>`).text("Geplante Exkursionen: " + ((projekt.exkursion_hint ?? '').trim().length === 0 ? '(keine Informationen zu geplanten Exkursionen)' : projekt.exkursion_hint)));
-                $('.projekte-here').append(row);
+var my_projekttage = #{get_my_projekttage(user_email).to_json};
+
+window.addEventListener('load', function() {
+    $('#bu_edit').on('click', function(e) {
+        $('.api_messages').hide();
+        for (let input of $(e.target).closest('.karteikarte').find('input, textarea')) {
+            let key = ($(input).attr('id') ?? '').replace("ti_", '');
+            $(input).data('old_value', $(input).val());
+            let open_this_field = false;
+            if (['name', 'ziel', 'teilnehmer_min', 'teilnehmer_max', 'klassenstufe_min', 'klassenstufe_max',
+                'lehrkraft_wunsch', 'raumwunsch',
+                'produkt', 'material', 'kosten_finanzierungsidee', 'praesentationsidee',
+                'grobplanung1', 'grobplanung2', 'grobplanung3',
+                'planung_exkursion', 'planung_tablets'].indexOf(key) >= 0) {
+                if ('true' === '#{user_with_role_logged_in?(:can_manage_projekttage) || (@session_user[:klasse] == PROJEKTTAGE_CURRENT_KLASSE && (!$projekttage.phases[$projekttage.get_current_phase][:flags].include?(:no_sus_edit)))}') {
+                    open_this_field = true;
+                }
+            }
+            if (open_this_field)
+                $(input).prop('readonly', false);
+        }
+        $('#bu_edit').hide();
+        $('#bu_discard_changes').show();
+        $('#bu_save_changes').show();
+        $('#bu_add_sus').prop('disabled', true);
+    });
+    $('#bu_discard_changes').on('click', function(e) {
+        $('.api_messages').hide();
+        for (let input of $(e.target).closest('.karteikarte').find('input, textarea')) {
+            $(input).val($(input).data('old_value'));
+            $(input).prop('readonly', true);
+        }
+        $('#bu_edit').show();
+        $('#bu_discard_changes').hide();
+        $('#bu_save_changes').hide();
+        $('#bu_add_sus').prop('disabled', false);
+    });
+    $('#bu_save_changes').on('click', function(e) {
+        $('.api_messages').hide();
+        let data = {};
+        for (let key of #{PROJEKTTAGE_KEYS.to_json}) {
+            let input = $(`#ti_${key}`);
+            let value = $(input).val().trim();
+            if (key === 'teilnehmer_min' || key === 'teilnehmer_max' || key === 'klassenstufe_min' || key === 'klassenstufe_max') value = parseInt(value);
+            data[$(input).attr('id').replace('ti_', '')] = value;
+            $(input).prop('readonly', true);
+        }
+        if ('#{user_with_role_logged_in?(:can_manage_projekttage)}' === 'true') {
+            data.sus_email = '#{user_email}';
+        }
+        console.log(data);
+        api_call('/api/update_projekttage', data, function(response) {
+            if (response.success) {
+                for (let key of #{PROJEKTTAGE_KEYS.to_json}) {
+                    let input = $(`#ti_${key}`);
+                    let value = response.result[key];
+                    $(input).val(value);
+                }
+
+                $('#bu_edit').show();
+                $('#bu_discard_changes').hide();
+                $('#bu_save_changes').hide();
+                $('#bu_add_sus').prop('disabled', false);
+                api_call('/api/my_projekttage_history', {sus_email: '#{user_email}'}, function(response2) {
+                    if (response2.success) {
+                        $('#div_history').html(response2.html);
+                    }
+                });
+            }
+        });
+    });
+    $("#bu_add_sus").on('click', function(e) {
+        api_call('/api/pending_projekttage_invitations_outgoing', {sus_email: '#{user_email}'}, function(response) {
+            if (response.success) {
+                $('#div_pending_invitations').html(response.html);
+                $('#ti_add_sus').val('');
+                $('#modal_add_sus').modal('show');
+                $('#ti_add_sus').focus();
+                $('#div_pending_invitations .bu-delete-invitation').on('click', function(e) {
+                    let other_email = $($(e.target).closest('button')[0]).data('email');
+                    api_call('/api/delete_invitation_for_projekttage', {sus_email: '#{user_email}', other_email: other_email}, function(response2) {
+                        if (response2.success) {
+                            api_call('/api/my_projekttage_history', {sus_email: '#{user_email}'}, function(response3) {
+                                if (response3.success) {
+                                    $('#div_history').html(response3.html);
+                                    $('#modal_add_sus').modal('hide');
+                                }
+                            });
+                        }
+                    });
+                });
+            }
+        });
+    });
+    $('#ti_add_sus').on('change keyup', function(e) {
+        let name = $('#ti_add_sus').val().trim();
+        let found_name = false;
+        for (let entry of $('datalist#li_sus_q1').find('option')) {
+            if (entry.value === name) {
+                found_name = true;
+                break;
             }
         }
+        $('#bu_send_sus_invitation').prop('disabled', !found_name);
+    });
+    $('#bu_send_sus_invitation').on('click', function(e) {
+        api_call('/api/send_invitation_for_projekttage', {sus_email: '#{user_email}', name: $('#ti_add_sus').val().trim()}, function(response) {
+            if (response.success) {
+                $('#modal_add_sus').modal('hide');
+                api_call('/api/my_projekttage_history', {sus_email: '#{user_email}'}, function(response2) {
+                    if (response2.success) {
+                        $('#div_history').html(response2.html);
+                    }
+                });
+            }
+        });
+    });
+    $('.bu-accept-invitation').on('click', function(e) {
+        let other_email = $($(e.target).closest('button')[0]).data('email');
+        api_call('/api/accept_projekttage_invitation', {sus_email: '#{user_email}', other_email: other_email}, function(response) {
+            if (response.success) {
+                window.location.reload();
+            }
+        });
+    });
+    $('.bu-reject-invitation').on('click', function(e) {
+        let other_email = $($(e.target).closest('button')[0]).data('email');
+        api_call('/api/reject_projekttage_invitation', {sus_email: '#{user_email}', other_email: other_email}, function(response) {
+            if (response.success) {
+                window.location.reload();
+            }
+        });
     });
 });
 </script>

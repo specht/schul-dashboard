@@ -241,7 +241,7 @@
             });
             $('#check_out_div').slideDown();
         });
-        if ((!lehrmittelverein_state_cache[email]) && (email.toLowerCase().indexOf('fachbereicht') < 0)) {
+        if ((!lehrmittelverein_state_cache[email]) && (email.toLowerCase().indexOf('fachbereich') < 0)) {
             $('#bu_checkout').prop('disabled', true);
             $('#hint_no_verein').show();
         }

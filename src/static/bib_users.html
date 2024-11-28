@@ -38,7 +38,7 @@
         }
         if (query !== null) {
             let info = db_user_info[data] || {};
-            let s = (info.display_name || '').toLowerCase() + ' ' + data;
+            let s = (info.display_name || '').toLowerCase() + ' ' + data.toLowerCase();
             for (let q of query) {
                 if (s.indexOf(q) < 0)
                     query_result = false;

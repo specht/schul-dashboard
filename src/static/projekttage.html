@@ -60,6 +60,7 @@
     <div class='row'>
         <div class='col-md-12'>
             <h2 style='margin-bottom: 30px;'>Projekttage</h2>
+            <a class="btn btn-success pull-right ml-2 mb-1" href="/projekttage_overview">Zur Projekttage-Übersicht</a>
             <p>
                 Diese Karteikarte fasst die Informationen zu deinen Projekttagen zusammen.
                 Die Angaben werden sich im Laufe der Zeit bis zu den Projekttagen verändern. Beachte den Zeitplan weiter unten auf dieser Seite.
@@ -89,7 +90,7 @@
                             <label>Anbieter des Projekts</label>
                             <div class="input-group mb-3">
                                 <input type='text' value='#{CGI.escapeHTML(join_with_sep(get_my_projekttage(user_email)[:sus] || [], ', ', ' und '))}' class='form-control' readonly disabled>
-                                <div class="input-group-append" style="#{(user_with_role_logged_in?(:can_manage_projekttage) || (@session_user[:klasse] == PROJEKTTAGE_CURRENT_KLASSE && !($projekttage.phases[$projekttage.get_current_phase][:flags].include?(:no_sus_edit)))) ? '' : 'display: none;'}">
+                                <div class="input-group-append" style="#{(user_with_role_logged_in?(:can_manage_projekttage) || (@session_user[:klasse] == PROJEKTTAGE_CURRENT_KLASSE && @session_user[:email] == user_email && !($projekttage.phases[$projekttage.get_current_phase][:flags].include?(:no_sus_edit)))) ? '' : 'display: none;'}">
                                   <button class="btn btn-outline-secondary" type="button" id="bu_add_sus"><i class='fa fa-user-plus'></i></button>
                                 </div>
                             </div>
@@ -218,7 +219,7 @@
                         </div>
                     </div>
 
-                    <div class='col-md-12' style="text-align: right; #{(user_with_role_logged_in?(:can_manage_projekttage) || (@session_user[:klasse] == PROJEKTTAGE_CURRENT_KLASSE && (!$projekttage.phases[$projekttage.get_current_phase][:flags].include?(:no_sus_edit)))) ? '' : 'display: none;'}">
+                    <div class='col-md-12' style="text-align: right; #{(user_with_role_logged_in?(:can_manage_projekttage) || (@session_user[:klasse] == PROJEKTTAGE_CURRENT_KLASSE && @session_user[:email] == user_email && (!$projekttage.phases[$projekttage.get_current_phase][:flags].include?(:no_sus_edit)))) ? '' : 'display: none;'}">
                         <button id='bu_edit' class='btn btn-success'><i class='fa fa-edit'></i>&nbsp;&nbsp;Bearbeiten</button>
                         <button id='bu_discard_changes' style='display: none;' class='btn btn-outline-secondary'><i class='fa fa-times'></i>&nbsp;&nbsp;Änderungen verwerfen</button>
                         <button id='bu_save_changes' style='display: none;' class='btn btn-success'><i class='fa fa-check'></i>&nbsp;&nbsp;Änderungen speichern</button>
@@ -232,9 +233,11 @@
             <hr>
             <h4>Zeitplan</h4>
             #{$projekttage.print_schedule()}
-            <hr>
-            <h4>Bearbeitungshistorie</h4>
-            <div id='div_history'>#{my_projekttage_history(user_email)}</div>
+            <div style="#{(teacher_logged_in? || user_email == @session_user[:email]) ? '' : 'display: none;'}">
+                <hr>
+                <h4>Bearbeitungshistorie</h4>
+                <div id='div_history'>#{my_projekttage_history(user_email)}</div>
+            </div>
         </div>
     </div>
 </div>

@@ -3258,10 +3258,12 @@ class Main < Sinatra::Base
             end
         elsif path == 'projekttage'
             user_email = @session_user[:email]
-            if user_with_role_logged_in?(:teacher)
-                parts = request.env['REQUEST_PATH'].split('/')
+            # if user_with_role_logged_in?(:teacher)
+            parts = request.env['REQUEST_PATH'].split('/')
+            if parts[2]
                 user_email = parts[2]
             end
+            # end
         elsif path == 'index'
             if @session_user
                 if @session_device

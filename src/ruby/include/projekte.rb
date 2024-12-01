@@ -170,8 +170,9 @@ class Main < Sinatra::Base
             :max_string_length => 8192
         )
         sus_email = @session_user[:email]
-        if teacher_logged_in?
-            sus_email = data[:sus_email] if data[:sus_email]
+        sus_email = data[:sus_email] if data[:sus_email]
+        if sus_email != @session_user[:email]
+            require_teacher!
         end
         assert(@@user_info[sus_email][:klasse] == PROJEKTTAGE_CURRENT_KLASSE)
         unless user_with_role_logged_in?(:can_manage_projekttage)
@@ -212,7 +213,7 @@ class Main < Sinatra::Base
     end
 
     def projekttage_overview_rows
-        require_teacher!
+        assert(teacher_logged_in? || (schueler_logged_in? && @session_user[:klasse] == PROJEKTTAGE_CURRENT_KLASSE))
 
         seen_sus = Set.new()
         projekttage_hash = {}
@@ -256,7 +257,7 @@ class Main < Sinatra::Base
     end
 
     post '/api/projekttage_overview' do
-        require_teacher!
+        assert(teacher_logged_in? || (schueler_logged_in? && @session_user[:klasse] == PROJEKTTAGE_CURRENT_KLASSE))
 
         rows = projekttage_overview_rows()
         rows.sort! do |a, b|
@@ -386,7 +387,7 @@ class Main < Sinatra::Base
         StringIO.open do |io|
             io.puts "<hr>"
             pending_invitations.each do |row|
-                io.puts "<p>Du hast <strong>#{@@user_info[row['u.email']][:display_name]}</strong> für eine Gruppenprüfung eingeladen.</p>"
+                io.puts "<p>Du hast <strong>#{@@user_info[row['u.email']][:display_name]}</strong> für dein Projekt eingeladen.</p>"
                 io.puts "<p>"
                 io.puts "<button class='btn btn-danger bu-delete-invitation' data-email='#{row['u.email']}'><i class='fa fa-times'></i>&nbsp;&nbsp;Einladung zurücknehmen</button>"
                 io.puts "</p>"

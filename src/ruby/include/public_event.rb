@@ -37,7 +37,8 @@ class Main < Sinatra::Base
             to data[:email]
             bcc SMTP_FROM
             from SMTP_FROM
-            reply_to SCHULLEITUNG_EMAIL
+            # reply_to SCHULLEITUNG_EMAIL
+            reply_to 'winkler@gymnasiumsteglitz.de'
 
             subject event[:mail_subject]
 

@@ -293,7 +293,6 @@ window.addEventListener('load', function() {
         if ('#{user_with_role_logged_in?(:can_manage_projekttage)}' === 'true') {
             data.sus_email = '#{user_email}';
         }
-        console.log(data);
         api_call('/api/update_projekttage', data, function(response) {
             if (response.success) {
                 for (let key of #{PROJEKTTAGE_KEYS.to_json}) {

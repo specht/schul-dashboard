@@ -24,7 +24,6 @@
 window.addEventListener('load', function() {
     api_call('/api/projekttage_overview', {}, function(data) {
         if (data.success) {
-            console.log(data.rows);
             let table = new SortableTable({
                 element: $('#table_here'),
                 xs: true,
@@ -33,7 +32,6 @@ window.addEventListener('load', function() {
                         return th;
                 }),
                 rows: data.rows.map(function (entry, index) {
-                    console.log(entry.projekttage.sus);
                     let cells = [
                         entry.email,
                         `<td>${entry.sus}</td>`,

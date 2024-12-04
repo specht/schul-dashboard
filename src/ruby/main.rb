@@ -1062,7 +1062,10 @@ class Main < Sinatra::Base
             @@user_info[email][:sesb] = true
         end
 
-        kurse_for_schueler, schueler_for_kurs = parser.parse_kurswahl(@@user_info.reject { |x, y| y[:teacher] }, @@lessons, lesson_key_tr, @@original_lesson_key_for_lesson_key, @@shorthands)
+        kurse_for_schueler, schueler_for_kurs, tutor_for_schueler = parser.parse_kurswahl(@@user_info.reject { |x, y| y[:teacher] }, @@lessons, lesson_key_tr, @@original_lesson_key_for_lesson_key, @@shorthands)
+        tutor_for_schueler.each_pair do |sus, tutor|
+            @@user_info[sus][:tutor] = tutor
+        end
         @@kurse_for_schueler = kurse_for_schueler
         wahlpflicht_sus_for_lesson_key = parser.parse_wahlpflichtkurswahl(@@user_info.reject { |x, y| y[:teacher] }, @@lessons, lesson_key_tr, @@schueler_for_klasse)
         @@wahlpflicht_lesson_ids = wahlpflicht_sus_for_lesson_key.keys

@@ -110,10 +110,14 @@ class Main < Sinatra::Base
                 io.puts "<th>Letzter Zugriff</th>"
                 io.puts "<th>Eltern-E-Mail-Adresse</th>"
             end
+            schueler_liste = @@schueler_for_klasse[klasse] || @@schueler_for_lesson[klasse] || []
+            has_oberstufe = schueler_liste.any? { |email| @@user_info[email][:klassenstufe] >= 11 }
+            if teacher_logged_in? && has_oberstufe
+                io.puts "<th>Tutor</th>"
+            end
             io.puts "</tr>"
             io.puts "</thead>"
             io.puts "<tbody>"
-            schueler_liste = @@schueler_for_klasse[klasse] || @@schueler_for_lesson[klasse] || []
             results = neo4j_query(<<~END_OF_QUERY, :email_addresses => schueler_liste)
                 MATCH (u:User)
                 WHERE u.email IN $email_addresses
@@ -249,6 +253,13 @@ class Main < Sinatra::Base
                     io.puts "<td>"
                     print_email_field(io, "eltern.#{record[:email]}")
                     io.puts "</td>"
+                    if has_oberstufe
+                        tutor = '&ndash;'
+                        if record[:tutor]
+                            tutor = @@user_info[record[:tutor]][:display_name]
+                        end
+                        io.puts "<td>#{tutor}</td>"
+                    end
                 end
                 io.puts "</tr>"
             end

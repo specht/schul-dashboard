@@ -1039,6 +1039,7 @@ class Parser
         end
         kurs_ids_for_tag = {}
         emails_for_kurs_id = {}
+        tutor_for_schueler = {}
         kurs_id_tr = {}
         if File.exist?('/data/kurswahl/kurs_id_tr.yaml')
             kurs_id_tr = YAML.load(File.read('/data/kurswahl/kurs_id_tr.yaml'))
@@ -1063,6 +1064,7 @@ class Parser
                         next if line.empty?
                         parts = line.split(';')
                         sus_name = parts[0]
+                        tutor_shorthand = parts[1]
                         shorthand = parts[3]
                         fach = parts[5].split('-').first
                         fach.sub!(/\d+$/, '')
@@ -1092,6 +1094,10 @@ class Parser
                         end
                         emails_for_kurs_id[kurs_id] ||= []
                         emails_for_kurs_id[kurs_id] << email_for_name[sus_name]
+                        tutor_for_schueler[email_for_name[sus_name]] ||= shorthands[tutor_shorthand]
+                        if tutor_for_schueler[email_for_name[sus_name]] != shorthands[tutor_shorthand]
+                            raise 'oops! tutor mismatch.'
+                        end
                     end
                 end
             rescue StandardError => e
@@ -1198,7 +1204,7 @@ class Parser
         #     end
         # end
 
-        return kurse_for_schueler, schueler_for_kurs
+        return kurse_for_schueler, schueler_for_kurs, tutor_for_schueler
     end
 
     def parse_wahlpflichtkurswahl(user_info, lessons, lesson_key_tr, schueler_for_klasse)

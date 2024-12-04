@@ -113,7 +113,7 @@ class Main < Sinatra::Base
             schueler_liste = @@schueler_for_klasse[klasse] || @@schueler_for_lesson[klasse] || []
             has_oberstufe = schueler_liste.any? { |email| @@user_info[email][:klassenstufe] >= 11 }
             if teacher_logged_in? && has_oberstufe
-                io.puts "<th>Tutor</th>"
+                io.puts "<th>Tutor:in</th>"
             end
             io.puts "</tr>"
             io.puts "</thead>"

@@ -225,6 +225,15 @@
                         <button id='bu_save_changes' style='display: none;' class='btn btn-success'><i class='fa fa-check'></i>&nbsp;&nbsp;Änderungen speichern</button>
                     </div>
 
+                    <div class='col-md-12' style="#{user_with_role_logged_in?(:can_manage_projekttage) ? '' : 'display: none;'}">
+                        <hr>
+                        <textarea id='ti_comment' class='form-control mb-2' style='height: 100px;' placeholder='Kommentar zum aktuellen Planungsstand'></textarea>
+                        <div style="text-align: right;">
+                            <button id='bu_send_comment' class="btn btn-warning" disabled><i class='fa fa-send'></i>&nbsp;&nbsp;Kommentar an das Projektteam senden</button>
+                            <!-- <button id='bu_approve' class="btn btn-success" disabled><i class='fa fa-check'></i>&nbsp;&nbsp;Planung genehmigen</button> -->
+                        </div>
+                    </div>
+
                     <div class='col-md-12'>
                         <div class='api_messages mt-3' style='display: none;'></div>
                     </div>
@@ -372,6 +381,22 @@ window.addEventListener('load', function() {
         api_call('/api/reject_projekttage_invitation', {sus_email: '#{user_email}', other_email: other_email}, function(response) {
             if (response.success) {
                 window.location.reload();
+            }
+        });
+    });
+    $('#ti_comment').on('change keydown keyup', function(e) {
+        $('#bu_send_comment').prop('disabled', $('#ti_comment').val().trim().length === 0);
+    });
+    $('#bu_send_comment').on('click', function(e) {
+        api_call('/api/send_projekttage_comment', {sus_email: '#{user_email}', comment: $('#ti_comment').val().trim()}, function(response) {
+            if (response.success) {
+                $('#ti_comment').val('');
+                $('#bu_send_comment').prop('disabled', true);
+                api_call('/api/my_projekttage_history', {sus_email: '#{user_email}'}, function(response2) {
+                    if (response2.success) {
+                        $('#div_history').html(response2.html);
+                    }
+                });
             }
         });
     });

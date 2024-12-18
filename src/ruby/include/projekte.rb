@@ -112,6 +112,8 @@ class Main < Sinatra::Base
                         io.puts "<div class='history_entry'><strong>#{@@user_info[pc[:email]][:display_name]}</strong> hat die Einladung zum Projekt angenommen</div>"
                     elsif pc[:type] == 'reject_invitation'
                         io.puts "<div class='history_entry'><strong>#{@@user_info[pc[:email]][:display_name]}</strong> hat die Einladung zum Projekt abgelehnt</div>"
+                    elsif pc[:type] == 'comment'
+                        io.puts "<div class='history_entry'>kommentiert von #{@@user_info[entry['eu.email']][:display_name_official_dativ]}: <b>#{pc[:comment].gsub("\n", '<br>')}</b></div>"
                     else
                         io.puts pc.to_json
                     end
@@ -470,6 +472,47 @@ class Main < Sinatra::Base
                 SET c.ts = $ts
                 RETURN p;
             END_OF_QUERY
+        end
+        respond(:yay => 'sure')
+    end
+
+    post '/api/send_projekttage_comment' do
+        data = parse_request_data(:required_keys => [:sus_email, :comment])
+        sus_email = data[:sus_email]
+        assert(user_with_role_logged_in?(:can_manage_projekttage))
+        assert(@@user_info[sus_email][:klasse] == PROJEKTTAGE_CURRENT_KLASSE)
+        ts = Time.now.to_i
+        transaction do
+            neo4j_query(<<~END_OF_QUERY, {:ts => ts, :sus_email => sus_email, :comment => data[:comment], :email => @session_user[:email]})
+                MATCH (tu:User {email: $email})
+                WITH tu
+                MATCH (p:Projekttage)-[:BELONGS_TO]->(u:User {email: $sus_email})
+                CREATE (p)<-[:TO]-(c:ProjekttageChange {type: 'comment', comment: $comment, ts: $ts})-[:BY]->(tu);
+            END_OF_QUERY
+            emails = neo4j_query(<<~END_OF_QUERY, {:sus_email => sus_email}).map { |x| x['ou.email'] }
+                MATCH (p:Projekttage)-[:BELONGS_TO]->(u:User {email: $sus_email})
+                WITH p
+                MATCH (p)-[:BELONGS_TO]->(ou:User)
+                RETURN ou.email;
+            END_OF_QUERY
+            session_user_email = @session_user[:email]
+            deliver_mail do
+                to emails
+                cc @@users_for_role[:can_manage_projekttage].to_a.sort
+                bcc SMTP_FROM
+                from SMTP_FROM
+                reply_to session_user_email
+
+                subject "Kommentar zu deiner Projektplanung"
+
+                StringIO.open do |io|
+                    io.puts "<p>Hallo!</p>"
+                    io.puts "<p>#{@@user_info[session_user_email][:display_name_official]} hat einen Kommentar zum aktuellen Planungsstand deines Projektes hinterlassen:</p>"
+                    io.puts "<p>#{data[:comment].gsub('\n', '<br>')}</p>"
+                    io.puts "<p>Viele Grüße,<br />#{WEBSITE_MAINTAINER_NAME}</p>"
+                    io.string
+                end
+            end
         end
         respond(:yay => 'sure')
     end

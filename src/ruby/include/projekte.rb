@@ -477,7 +477,7 @@ class Main < Sinatra::Base
     end
 
     post '/api/send_projekttage_comment' do
-        data = parse_request_data(:required_keys => [:sus_email, :comment])
+        data = parse_request_data(:required_keys => [:sus_email, :comment], :max_body_length => 1024 * 1024, :max_string_length => 1024 * 1024, :max_value_lengths => {:comment => 1024 * 1024})
         sus_email = data[:sus_email]
         assert(user_with_role_logged_in?(:can_manage_projekttage))
         assert(@@user_info[sus_email][:klasse] == PROJEKTTAGE_CURRENT_KLASSE)

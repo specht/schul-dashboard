@@ -83,6 +83,9 @@ class Main < Sinatra::Base
             io.puts "<th></th>"
             io.puts "<th>Name</th>"
             io.puts "<th>Vorname</th>"
+            unless is_klasse
+                io.puts "<th>Klasse</th>"
+            end
             io.puts "<th>Geburtsdatum</th>" if teacher_logged_in?
             # io.puts "<th>Status</th>"
             # if can_manage_salzh_logged_in?
@@ -154,6 +157,9 @@ class Main < Sinatra::Base
                 end
                 io.puts "<td><div class='#{salzh_class}' style='#{salzh_style}'>#{record[:last_name]}</div></td>"
                 io.puts "<td><div class='#{salzh_class}' style='#{salzh_style}'>#{record[:first_name]}</div></td>"
+                unless is_klasse
+                    io.puts "<td>#{tr_klasse(record[:klasse])}</td>"
+                end
                 if teacher_logged_in?
                     if record[:geburtstag]
                         io.puts "<td>#{Date.parse(record[:geburtstag]).strftime('%d.%m.%Y')}</td>"

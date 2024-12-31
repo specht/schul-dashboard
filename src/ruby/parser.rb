@@ -1054,7 +1054,7 @@ class Parser
                 kurs_pre_tr << [first, rest]
             end
         end
-        Dir['/data/kurswahl/csv/2025-01/**/*.csv'].sort.each do |path|
+        Dir['/data/kurswahl/csv/2025-02/**/*.csv'].sort.each do |path|
             begin
                 File.open(path) do |f|
                     f.each_line do |line|

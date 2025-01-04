@@ -80,8 +80,8 @@ class Main < Sinatra::Base
         # @@need_sozialverhalten is a hash of teacher shorthands and klassen
         @@need_sozialverhalten = {}
 
-        STDERR.puts "ATTENTION determine_zeugnislisten() IS DOING NOTHING RIGHT NOW"
-        return
+        # STDERR.puts "ATTENTION determine_zeugnislisten() IS DOING NOTHING RIGHT NOW"
+        # return
 
         kurse_for_klasse = Hash[ZEUGNIS_KLASSEN_ORDER.map do |klasse|
             [klasse, (@@lessons_for_klasse[klasse] || []).map { |x| @@lessons[:lesson_keys][x].merge({:lesson_key => x})}]
@@ -107,11 +107,17 @@ class Main < Sinatra::Base
             srand(42)
         end
         need_sv_for_klasse = {}
+        need_sv_for_klasse_and_fach = {}
         ((ANLAGE_SOZIALVERHALTEN[ZEUGNIS_SCHULJAHR] || {})[ZEUGNIS_HALBJAHR] || []).each do |entry|
             if entry == '*'
                 ZEUGNIS_KLASSEN_ORDER.each do |klasse|
                     need_sv_for_klasse[klasse] = true
                 end
+            elsif entry.include?('/')
+                klasse = entry.split('/')[0]
+                fach = entry.split('/')[1]
+                raise "zeugnis config: unknown klasse #{entry}" unless ZEUGNIS_KLASSEN_ORDER.include?(klasse)
+                need_sv_for_klasse_and_fach[entry] = true
             else
                 if ZEUGNIS_KLASSEN_ORDER.include?(entry)
                     need_sv_for_klasse[entry] = true
@@ -145,7 +151,7 @@ class Main < Sinatra::Base
                         @@zeugnisliste_for_lehrer[shorthand]["#{klasse}/#{fach}_AT"] = true
                         @@zeugnisliste_for_lehrer[shorthand]["#{klasse}/#{fach}_SL"] = true
                     end
-                    if need_sv_for_klasse[klasse]
+                    if need_sv_for_klasse[klasse] || need_sv_for_klasse_and_fach["#{klasse}/#{fach}"]
                         SOZIALNOTEN_KEYS.each do |item|
                             @@zeugnisliste_for_lehrer[shorthand]["#{klasse}/#{item}/#{fach}"] = true
                         end
@@ -168,7 +174,7 @@ class Main < Sinatra::Base
                         @@zeugnisliste_for_lehrer[shorthand]["#{klasse}/#{fach}_AT"] = true
                         @@zeugnisliste_for_lehrer[shorthand]["#{klasse}/#{fach}_SL"] = true
                     end
-                    if need_sv_for_klasse[klasse]
+                    if need_sv_for_klasse[klasse] || need_sv_for_klasse_and_fach["#{klasse}/#{fach}"]
                         SOZIALNOTEN_KEYS.each do |item|
                             @@zeugnisliste_for_lehrer[shorthand]["#{klasse}/#{item}/#{fach}"] = true
                         end

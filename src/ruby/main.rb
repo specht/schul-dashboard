@@ -2041,9 +2041,9 @@ class Main < Sinatra::Base
                 if user_with_role_logged_in?(:can_receive_messages)
                     nav_items << :messages
                 end
-                # if user_is_eligible_for_tresor?
-                #     nav_items << :tresor
-                # end
+                if user_is_eligible_for_tresor?
+                    nav_items << :tresor
+                end
                 # if schueler_logged_in? && @session_user[:klassenstufe] <= 6
                 #     nav_items << ['/mittagessen', 'Mittagessen', 'fa fa-cutlery']
                 # end

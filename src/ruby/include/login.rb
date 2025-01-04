@@ -900,7 +900,9 @@ class Main < Sinatra::Base
 
     def tresor_second_factor_ttl
         today = Date.today.strftime('%Y-%m-%d')
-        if zeugnis_admin_logged_in? && ZEUGNISKONFERENZEN.include?(today)
+        if DEVELOPMENT
+            TRESOR_SECOND_FACTOR_TTL * 4
+        elsif zeugnis_admin_logged_in? && ZEUGNISKONFERENZEN.include?(today)
             TRESOR_SECOND_FACTOR_TTL * 4
         else
             TRESOR_SECOND_FACTOR_TTL

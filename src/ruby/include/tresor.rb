@@ -1,8 +1,8 @@
 class Main < Sinatra::Base
 
     def user_is_eligible_for_tresor?
-        # return admin_logged_in?
-        return teacher_logged_in?
+        return admin_logged_in? || (DEVELOPMENT && teacher_logged_in?)
+        # return teacher_logged_in?
         # return false unless user_logged_in?
         # return false if DATENTRESOR_UNLOCKED_FOR.nil?
         # return false unless teacher_logged_in?

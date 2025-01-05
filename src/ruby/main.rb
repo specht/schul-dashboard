@@ -535,6 +535,18 @@ class Main < Sinatra::Base
         KLASSEN_TR[klasse] || klasse
     end
 
+    def self.tr_bildungsgang(x)
+        {:altsprachlich => 'altsprachlich',
+         :sesb => 'SESB',
+         :regulaer_la => 'regulär (la)',
+         :regulaer_frz => 'regulär (frz)',
+        }[x] || x
+    end
+
+    def tr_bildungsgang(x)
+        Main.tr_bildungsgang(x)
+    end
+
     def self.collect_data
         @@user_info = {}
         @@login_shortcuts = {}
@@ -679,6 +691,16 @@ class Main < Sinatra::Base
             end
         end
 
+        force_klassenstufe = {}
+        if File.exist?('/data/schueler/klassenstufe.yaml')
+            data = YAML.load(File.read('/data/schueler/klassenstufe.yaml'))
+            data.each_pair do |stufe, sus|
+                sus.each do |email|
+                    force_klassenstufe[email] = stufe
+                end
+            end
+        end
+
         parser.parse_schueler do |record|
             matrix_login = "@#{record[:email].split('@').first.sub(/\.\d+$/, '')}:#{MATRIX_DOMAIN_SHORT}"
             unless KLASSEN_ORDER.include?(record[:klasse])
@@ -698,7 +720,8 @@ class Main < Sinatra::Base
                 :email => record[:email],
                 :id => record[:id],
                 :klasse => record[:klasse],
-                :klassenstufe => record[:klasse] =~ /^\d/ ? record[:klasse].to_i : nil,
+                :klassenstufe => force_klassenstufe[record[:email]] || (record[:klasse] =~ /^\d/ ? record[:klasse].to_i : nil),
+                :bildungsgang => :altsprachlich,
                 :geschlecht => record[:geschlecht],
                 :nc_login => record[:nc_login],
                 :matrix_login => matrix_login,
@@ -1057,9 +1080,9 @@ class Main < Sinatra::Base
             last_start_date = start_date
         end
 
-        sesb_sus = parser.parse_sesb(@@user_info.reject { |x, y| y[:teacher] }, @@schueler_for_klasse)
-        sesb_sus.each do |email|
-            @@user_info[email][:sesb] = true
+        bildungsgaenge_sus = parser.parse_bildungsgaenge(@@user_info.reject { |x, y| y[:teacher] }, @@schueler_for_klasse)
+        bildungsgaenge_sus.each_pair do |email, bildungsgang|
+            @@user_info[email][:bildungsgang] = bildungsgang
         end
 
         kurse_for_schueler, schueler_for_kurs, tutor_for_schueler = parser.parse_kurswahl(@@user_info.reject { |x, y| y[:teacher] }, @@lessons, lesson_key_tr, @@original_lesson_key_for_lesson_key, @@shorthands)

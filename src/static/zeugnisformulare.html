@@ -57,6 +57,8 @@ function render_zeugnisformulare() {
         let tr = $(`<tr style='line-height: 1em;'>`).appendTo(table);
         let label = `Klassenstufe ${key.split('_')[0]}`;
         if (key.indexOf('_sesb') >= 0) label += ' (SESB)';
+        if (key.indexOf('_regulaer_la') >= 0) label += ' (la)';
+        if (key.indexOf('_regulaer_frz') >= 0) label += ' (frz)';
         tr.append($(`<td>`).html(label));
         tr.append($(`<td>`).html((zeugnis_formular_fehler[key] === null) ? "<i class='fa fa-check text-green-500'></i>" : "<i class='fa fa-exclamation-circle text-red-600'></i>"));
         tr.append($(`<td style='white-space: unset;'>`).html((zeugnis_formular_fehler[key] ?? ['Formular vollständig']).join(', ')));

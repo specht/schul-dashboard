@@ -42,9 +42,19 @@ class Main < Sinatra::Base
     end
 
     def self.zeugnis_key_for_email(email)
-        sesb = @@user_info[email][:sesb] || false
+        bildungsgang = @@user_info[email][:bildungsgang]
         klassenstufe = @@user_info[email][:klassenstufe]
-        return "#{klassenstufe}#{sesb ? '_sesb': ''}"
+        if bildungsgang == :altsprachlich
+            "#{klassenstufe}"
+        elsif bildungsgang == :regulaer_la
+            "#{klassenstufe}_regulaer_la"
+        elsif bildungsgang == :regulaer_frz
+            "#{klassenstufe}_regulaer_frz"
+        elsif bildungsgang == :sesb
+            "#{klassenstufe}_sesb"
+        else
+            raise 'nope'
+        end
     end
 
     def self.zeugnis_faecher_for_emails(emails)
@@ -263,6 +273,8 @@ class Main < Sinatra::Base
                     :last_name => ZEUGNIS_USE_MOCK_NAMES ? @mock[:nachnamen].sample : @@user_info[email][:last_name],
                     :geburtstag => ZEUGNIS_USE_MOCK_NAMES ? sprintf("%04d-%02d-%02d", @@user_info[email][:geburtstag][0, 4].to_i, (1..12).to_a.sample, (1..28).to_a.sample) : @@user_info[email][:geburtstag],
                     :geschlecht => geschlecht,
+                    :bildungsgang => Main.tr_bildungsgang(@@user_info[email][:bildungsgang]),
+                    :klassenstufe => @@user_info[email][:klassenstufe],
                 }
             end
         end
@@ -496,7 +508,14 @@ class Main < Sinatra::Base
                 last_zeugnis_name = name
                 info['#Vorname'] = "#{sus_info[:official_first_name]}"
                 info['#Geburtsdatum'] = "#{Date.parse(sus_info[:geburtstag]).strftime('%d.%m.%Y')}"
-                info['#Klasse'] = Main.tr_klasse(klasse)
+                print_klasse = Main.tr_klasse(klasse)
+                if print_klasse.include?('/')
+                    parts = print_klasse.split('/').select do |x|
+                        x.to_i == sus_info[:klassenstufe]
+                    end
+                    print_klasse = parts.first
+                end
+                info['#Klasse'] = print_klasse
                 info['#Zeugnisdatum'] = ZEUGNIS_DATUM
                 info['#Schuljahr'] = ZEUGNIS_SCHULJAHR.gsub('_', '/')
                 info['@Geschlecht'] = sus_info[:geschlecht]
@@ -549,7 +568,7 @@ class Main < Sinatra::Base
                 info["#BemerkungenAngebote"] = vl.size > 0 ? vl.join(" / ") : '--'
 
                 if ZEUGNIS_HALBJAHR == '2'
-                    if zeugnis_key == '5' || zeugnis_key == '7_sesb'
+                    if zeugnis_key == '5' || zeugnis_key == '7_sesb' || zeugnis_key == '7_regulaer_la'|| zeugnis_key == '7_regulaer_frz'
                         if cache["Schuljahr:#{ZEUGNIS_SCHULJAHR}/Halbjahr:#{ZEUGNIS_HALBJAHR}/AB:Probejahr bestanden/Email:#{email}"] == 'nein'
                             if zeugnis_key == '5'
                                 info['#Probejahr'] = "#{info['#Vorname']} hat die Probezeit nicht bestanden und besucht im kommenden Schuljahr die Jahrgangsstufe 6 der Primarstufe."

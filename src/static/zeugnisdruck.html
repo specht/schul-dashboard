@@ -19,7 +19,6 @@ var ZEUGNIS_HALBJAHR = "#{ZEUGNIS_HALBJAHR}";
 var zeugnis_klassen_order = #{ZEUGNIS_KLASSEN_ORDER.to_json};
 var klassen_tr = #{KLASSEN_TR.to_json};
 var zeugnisliste_for_klasse = #{@@zeugnisliste_for_klasse.to_json};
-var sesb_for_email = #{Hash[@@user_info.keys.map { |x| [x, @@user_info[x][:sesb]]}].to_json};
 var zeugnis_formular_fehler = #{Hash[FAECHER_FOR_ZEUGNIS[ZEUGNIS_SCHULJAHR][ZEUGNIS_HALBJAHR].keys.map { |key| [key, @@zeugnisse[:formulare][key][:formular_fehler]] }].to_json};
 var my_klassen = #{zeugnis_admin_logged_in? ? ZEUGNIS_KLASSEN_ORDER : (@@zeugnisliste_for_lehrer[@session_user[:shorthand]]).keys.select { |x| x.include?('/VT')}.map { |x| x.split('/').first }.sort.uniq.to_json};
 var need_sozialverhalten = #{@@need_sozialverhalten.to_json};
@@ -163,7 +162,7 @@ function load_zeugnis_table(container, klasse, edit_noten) {
     let table = new SortableTable({
         element: container,
         xs: true,
-        headers: ['Nr.', 'Nachname', 'Vorname', 'Geburtsdatum', 'Geschlecht', 'Klasse', 'Bildungsgang', 'Zeugnis'].map(function (x) {
+        headers: ['Nr.', 'Nachname', 'Vorname', 'Geburtsdatum', 'Geschlecht', 'Klasse', 'Bildungsgang', 'Stufe', 'Zeugnis'].map(function (x) {
             let th = $('<th>').html(x);
             return th;
         }),
@@ -176,7 +175,8 @@ function load_zeugnis_table(container, klasse, edit_noten) {
                 `<td>${moment(liste.schueler[index].geburtstag).format('L')}</td>`,
                 `<td>${liste.schueler[index].geschlecht}</td>`,
                 `<td>${klassen_tr[klasse] ?? klasse}</td>`,
-                `<td>${sesb_for_email[email] ? 'SESB' : 'altsprachlich'}</td>`,
+                `<td>${liste.schueler[index].bildungsgang}</td>`,
+                `<td>${liste.schueler[index].klassenstufe}</td>`,
             ];
             let zeugnis_key = liste.schueler[index].zeugnis_key;
             if (zeugnis_formular_fehler[zeugnis_key] === null) {

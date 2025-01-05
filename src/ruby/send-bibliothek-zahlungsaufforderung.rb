@@ -82,7 +82,13 @@ class Script
         @@user_info = Main.class_variable_get(:@@user_info)
         @@users_for_role = Main.class_variable_get(:@@users_for_role)
         @@schueler_for_klasse = Main.class_variable_get(:@@schueler_for_klasse)
-        sesb_sus = Set.new(parser.parse_sesb(@@user_info.reject { |x, y| y[:teacher] }, @@schueler_for_klasse))
+        sesb_sus = Set.new()
+        bildungsgaenge_sus = parser.parse_bildungsgaenge(@@user_info.reject { |x, y| y[:teacher] }, @@schueler_for_klasse)
+        bildungsgaenge_sus.each_pair do |email, bildungsgang|
+            if bildungsgang == :sesb
+                sesb_sus << email
+            end
+        end
 
         entries.sort do |a, b|
             (a[:klasse] == b[:klasse]) ?

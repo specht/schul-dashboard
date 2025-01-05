@@ -86,7 +86,11 @@ class Main < Sinatra::Base
             unless is_klasse
                 io.puts "<th>Klasse</th>"
             end
-            io.puts "<th>Geburtsdatum</th>" if teacher_logged_in?
+            if teacher_logged_in?
+                io.puts "<th>Geburtsdatum</th>"
+                io.puts "<th>Bildungsgang</th>"
+                io.puts "<th>Stufe</th>"
+            end
             # io.puts "<th>Status</th>"
             # if can_manage_salzh_logged_in?
             #     io.puts "<th>Reguläre Testung</th>"
@@ -166,6 +170,8 @@ class Main < Sinatra::Base
                     else
                         io.puts "<td>&ndash;</td>"
                     end
+                    io.puts "<td>#{tr_bildungsgang(record[:bildungsgang])}</td>"
+                    io.puts "<td>#{record[:klassenstufe]}</td>"
                 end
                 # salzh_label = ''
                 # if salzh_status[email][:status]

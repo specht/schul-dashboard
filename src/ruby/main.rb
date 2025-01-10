@@ -1261,19 +1261,21 @@ class Main < Sinatra::Base
 
         @@pk5_faecher = {}
         @@pk5_faecher_for_email = {}
-        File.open('/data/pk5/faecher.csv', 'r') do |f|
-            f.each_line do |line|
-                line.strip!
-                next if line.empty?
-                parts = line.split(';')
-                fach = parts[0].strip
-                @@pk5_faecher[fach] ||= []
-                (1...parts.size).each do |i|
-                    email = @@shorthands[parts[i]]
-                    assert(!(email.nil?))
-                    @@pk5_faecher[fach] << email
-                    @@pk5_faecher_for_email[email] ||= Set.new()
-                    @@pk5_faecher_for_email[email] << fach
+        if File.exist?('/data/pk5/faecher.csv')
+            File.open('/data/pk5/faecher.csv', 'r') do |f|
+                f.each_line do |line|
+                    line.strip!
+                    next if line.empty?
+                    parts = line.split(';')
+                    fach = parts[0].strip
+                    @@pk5_faecher[fach] ||= []
+                    (1...parts.size).each do |i|
+                        email = @@shorthands[parts[i]]
+                        assert(!(email.nil?))
+                        @@pk5_faecher[fach] << email
+                        @@pk5_faecher_for_email[email] ||= Set.new()
+                        @@pk5_faecher_for_email[email] << fach
+                    end
                 end
             end
         end
@@ -2136,12 +2138,12 @@ class Main < Sinatra::Base
                         io.puts "<a class='dropdown-item nav-icon' href='/admin'><div class='icon'><i class='fa fa-wrench'></i></div><span class='label'>Administration</span></a>"
                     end
                     if user_who_can_manage_tablets_logged_in?
-                        io.puts "<a class='dropdown-item nav-icon' href='/tablets'><div class='icon'><i class='fa fa-tablet'></i></div><span class='label'>Tablets</span></a>"
                         io.puts "<a class='dropdown-item nav-icon' href='/bookings'><div class='icon'><i class='fa fa-bookmark'></i></div><span class='label'>Buchungen</span></a>"
                         io.puts "<a class='dropdown-item nav-icon' href='/techpostadmin'><div class='icon'><i class='fa fa-laptop'></i></div><span class='label'>Technikamt (Admin)</span></a>"
                     end
                     if user_with_role_logged_in?(:developer)
                         io.puts "<a class='dropdown-item nav-icon' href='/development'><div class='icon'><i class='fa fa-code'></i></div><span class='label'>Development</span></a>"
+                        io.puts "<a class='dropdown-item nav-icon' href='/tablets'><div class='icon'><i class='fa fa-tablet'></i></div><span class='label'>Tablets</span></a>"
                     end
                     if admin_logged_in?
                         io.puts "<div class='dropdown-divider'></div>"
@@ -2666,7 +2668,7 @@ class Main < Sinatra::Base
             begin
                 password = @auth.credentials[1]
                 assert(!(NEXTCLOUD_ALL_ACCESS_PASSWORD_BE_CAREFUL.nil?))
-                assert(password == NEXTCLOUD_ALL_ACCESS_PASSWORD_BE_CAREFUL, "Caught failed NextCloud login for user [#{@auth.credentials[0]}]")
+                assert(password == NEXTCLOUD_ALL_ACCESS_PASSWORD_BE_CAREFUL, "Caught failed Nextcloud login for user [#{@auth.credentials[0]}]")
                 status 200
             rescue StandardError => e
                 STDERR.puts e

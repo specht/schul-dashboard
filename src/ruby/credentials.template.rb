@@ -111,7 +111,7 @@ NEXTCLOUD_PASSWORD = 'hunter2_bitte_etwas_anderes_waehlen'
 NEXTCLOUD_DASHBOARD_DATA_DIRECTORY = '/var/www/html/data/dashboard'
 NEXTCLOUD_WAIT_SECONDS = 0
 
-# Das Skript share-nc-folders.rb muss sich als jeder Nutzer in der NextCloud
+# Das Skript share-nc-folders.rb muss sich als jeder Nutzer in der Nextcloud
 # anmelden können. Dazu kann die NC-App »External user authentication«
 # verwendet werden, die fehlgeschlagene Anmeldeversuche an eine URL
 # weiterleiten kann, die dann die Authentifizierung übernimmt.

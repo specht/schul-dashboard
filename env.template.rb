@@ -34,7 +34,7 @@ ENABLE_MAIL_FORWARDER = false
 # im jpeg- und webp-Format.
 ENABLE_IMAGE_BOT = true
 
-# NextCloud für Test- und Entwicklungszwecke starten?
+# Nextcloud für Test- und Entwicklungszwecke starten?
 # Bitte so nicht für den Produktiveinsatz nutzen
 # (läuft z. B. mit SQLite und skaliert schlecht)
 ENABLE_NEXTCLOUD_SANDBOX = true

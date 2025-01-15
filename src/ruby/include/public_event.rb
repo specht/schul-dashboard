@@ -360,7 +360,7 @@ class Main < Sinatra::Base
                     row[:entries] = []
                     auto_entry[:spans].each do |span|
                         t = Time.parse("#{auto_entry[:day]}T#{span[0]}")
-                        while t <= Time.parse("#{auto_entry[:day]}T#{span[1]}")
+                        while t + auto_entry[:duration] * 60 <= Time.parse("#{auto_entry[:day]}T#{span[1]}")
                             row[:entries] << {
                                 :key => "#{t.strftime("%Y-%m-%dT%H:%M")}",
                                 :deadline => entry[:auto_rows_no_signup_deadline] ? "#{(t - entry[:auto_rows_no_signup_deadline] * 3600).strftime("%Y-%m-%dT%H:%M")}" : nil,

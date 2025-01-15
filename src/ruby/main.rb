@@ -2144,6 +2144,7 @@ class Main < Sinatra::Base
                     if user_with_role_logged_in?(:developer)
                         io.puts "<a class='dropdown-item nav-icon' href='/development'><div class='icon'><i class='fa fa-code'></i></div><span class='label'>Development</span></a>"
                         io.puts "<a class='dropdown-item nav-icon' href='/tablets'><div class='icon'><i class='fa fa-tablet'></i></div><span class='label'>Tablets</span></a>"
+                        io.puts "<a class='dropdown-item nav-icon' href='/school_wifi'><div class='icon'><i class='fa fa-wifi'></i></div><span class='label'>Schüler-WLAN</span></a>"
                     end
                     if admin_logged_in?
                         io.puts "<div class='dropdown-divider'></div>"
@@ -2283,9 +2284,9 @@ class Main < Sinatra::Base
                         if user_with_role_logged_in?(:can_manage_angebote)
                             io.puts "<a class='dropdown-item nav-icon' href='/angebote'><div class='icon'><i class='fa fa-group'></i></div><span class='label'>AGs und Angebote</span></a>"
                         end
-                        if user_with_role_logged_in?(:can_open_project_wifi)
-                            io.puts "<a class='dropdown-item nav-icon' href='/school_wifi'><div class='icon'><i class='fa fa-wifi'></i></div><span class='label'>Schüler-WLAN</span></a>"
-                        end
+                        # if user_with_role_logged_in?(:can_open_project_wifi)
+                        #     io.puts "<a class='dropdown-item nav-icon' href='/school_wifi'><div class='icon'><i class='fa fa-wifi'></i></div><span class='label'>Schüler-WLAN</span></a>"
+                        # end
                         io.puts "<a class='dropdown-item nav-icon' href='/groups'><div class='icon'><i class='fa fa-group'></i></div><span class='label'>Meine Gruppen</span></a>"
                     end
                     io.puts "<div class='dropdown-divider'></div>"

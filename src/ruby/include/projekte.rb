@@ -247,6 +247,7 @@ class Main < Sinatra::Base
                 end
             end
             projekttage ||= {}
+            # STDERR.puts projekttage[:sus].to_yaml
 
             rows << {
                 :email => email,

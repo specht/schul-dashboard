@@ -953,11 +953,27 @@ class Main < Sinatra::Base
         today = @@lessons[:start_date_for_date][today]
         timetable_today = @@lessons[:timetables][today]
         pretty_folder_names_for_teacher = {}
+
+        # sportkurse_tr = {}
+        # if File.exist?('/data/kurswahl/untis/sportkurse.csv')
+        #     File.open('/data/kurswahl/untis/sportkurse.csv') do |f|
+        #         f.each_line do |line|
+        #             parts = line.strip.split(',')
+        #             sportkurse_tr[parts[0]] = parts[1]
+        #         end
+        #     end
+        # end
         @@lessons[:lesson_keys].keys.each do |lesson_key|
             @@lessons[:lesson_keys][lesson_key][:id] = Digest::SHA2.hexdigest(LESSON_ID_SALT + lesson_key).to_i(16).to_s(36)[0, 16]
             lesson_info = @@lessons[:lesson_keys][lesson_key]
             fach = lesson_info[:fach]
             fach = @@faecher[fach] || fach
+            try_fach = lesson_info[:orig_fach].split('_')
+            try_fach.pop
+            try_fach = try_fach.join('_')
+            # if sportkurse_tr[try_fach]
+            #     fach = sportkurse_tr[try_fach]
+            # end
             pretty_fach = "#{fach.gsub('/', '-')}"
             pretty_folder_name = "#{fach} (#{lesson_info[:klassen].sort.map { |x| tr_klasse(x) }.join(', ')})".gsub('/', '-')
             lesson_info[:lehrer].each do |shorthand|

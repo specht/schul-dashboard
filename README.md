@@ -18,7 +18,7 @@ Presse:
 
 - jeder Teilnehmer sieht seinen aktuellen Stundenplan
   - für jede Stunde können von der Lehrkraft Themen und Aufgaben hinterlegt werden
-- Anbindung an NextCloud und Jitsi
+- Anbindung an Nextcloud und Jitsi
 - Daten zu Stundenplänen, Vertretungsplänen, Pausenaufsichtsplänen, Kurswahlen werden aus CSV-Dateien gelesen, die aus WinSchule oder Untis exportiert werden
 - Anmeldung ohne Passwort, dafür mit Zahlencode, der per E-Mail versendet wird oder alternativ per OTP
 - mit Hilfe eines persönlichen iCal-Links kann der aktuelle Dashboard-Stundenplan in andere Kalender eingebunden werden

@@ -55,7 +55,7 @@ class Main < Sinatra::Base
             io.puts "<div class='col-md-12'>"
             # io.puts "<div class='alert alert-warning'>"
             # io.puts "Bitte überprüfen Sie die <strong>Gruppenzuordnung (A/B)</strong> und markieren Sie alle Kinder, die aus gesundheitlichen Gründen / Quarantäne nicht in die Schule kommen können, als <strong>»zu Hause«</strong>."
-#             io.puts "Auf die Jitsi-Streams können momentan nur SuS zugreifen, die laut ihrer Gruppenzuordnung in der aktuellen Woche zu Hause sind oder explizit als »zu Hause« markiert sind."
+            # io.puts "Auf die Jitsi-Streams können momentan nur SuS zugreifen, die laut ihrer Gruppenzuordnung in der aktuellen Woche zu Hause sind oder explizit als »zu Hause« markiert sind."
             # io.puts "</div>"
             # if teacher_logged_in?
             #     io.puts "<div class='pull-right' style='position: relative; top: 10px;'>"
@@ -815,15 +815,15 @@ class Main < Sinatra::Base
                 end
                 seen_count = (Set.new(@@schueler_for_klasse[klasse]) & seen_users).size
                 text "Bisher mindestens einmal am Dashboard angemeldet haben sich <b>#{seen_count}</b> von <b>#{@@schueler_for_klasse[klasse].size}</b> SuS.\n\n", inline_format: true
-                text "Folgende SuS haben sich bisher <b>noch nicht</b> am Dashboard angemeldet und können deshalb auch bisher nicht auf die NextCloud zugreifen:\n\n", inline_format: true
+                text "Folgende SuS haben sich bisher <b>noch nicht</b> am Dashboard angemeldet und können deshalb auch bisher nicht auf die Nextcloud zugreifen:\n\n", inline_format: true
                 @@schueler_for_klasse[klasse].each do |email|
                     next unless never_seen_users.include?(email)
                     user = @@user_info[email]
                     text "#{user[:display_name].unicode_normalize(:nfc)}\n"
                 end
-                text "\n\nBitte erinnern Sie die SuS daran, schnellstmöglich ihr E-Mail-Postfach einzurichten, sich am Dashboard anzumelden und sich bei der NextCloud anzumelden. ", inline_format: true
+                text "\n\nBitte erinnern Sie die SuS daran, schnellstmöglich ihr E-Mail-Postfach einzurichten, sich am Dashboard anzumelden und sich bei der Nextcloud anzumelden. ", inline_format: true
                 text "Wer seinen E-Mail-Zettel verloren hat, schreibt bitte eine E-Mail an #{WEBSITE_MAINTAINER_NAME_AKKUSATIV} – <b>#{WEBSITE_MAINTAINER_EMAIL}</b> – dort bekommt jeder die Zugangsdaten zur Not noch einmal als PDF.\n\n", inline_format: true
-                text "Zuerst muss das E-Mail-Postfach eingerichtet werden. Den Zugangscode für das Dashboard bekommt man per E-Mail und die Zugangsdaten für die NextCloud finden sich im Dashboard im Menü ganz rechts: <em>In Nextcloud anmelden…</em>\n\n", inline_format: true
+                text "Zuerst muss das E-Mail-Postfach eingerichtet werden. Den Zugangscode für das Dashboard bekommt man per E-Mail und die Zugangsdaten für die Nextcloud finden sich im Dashboard im Menü ganz rechts: <em>In Nextcloud anmelden…</em>\n\n", inline_format: true
                 text "Bei Fällen, in denen ein E-Mail-Postfach abgelehnt wird, suchen Sie bitte das Gespräch und erfragen Sie die Gründe für diese Entscheidung. Es lassen sich für dieses Problem fast immer Lösungen im gegenseitigen Einvernehmen finden und deshalb bitte ich Sie, auch in diesen Fällen einen Kontakt zu #{WEBSITE_MAINTAINER_NAME_AKKUSATIV} herzustellen."
             end
         end

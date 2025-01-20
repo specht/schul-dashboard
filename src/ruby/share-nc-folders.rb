@@ -241,9 +241,9 @@ class Script
                 user_id = user[:nc_login]
                 email_for_user_id[user_id] = email
                 wanted_shares[user_id] ||= {}
-                wanted_shares[user_id]["/#{SHARE_SOURCE_FOLDER}/Protokolle/#{klasse}"] = {
+                wanted_shares[user_id]["/#{SHARE_SOURCE_FOLDER}/Protokolle/#{klasse.gsub('/', '-')}"] = {
                     :permissions => SHARE_READ | SHARE_UPDATE | SHARE_CREATE | SHARE_DELETE,
-                    :target_path => "/#{SHARE_TARGET_FOLDER}/Protokolle #{Main.tr_klasse(klasse)}",
+                    :target_path => "/#{SHARE_TARGET_FOLDER}/Protokolle #{Main.tr_klasse(klasse).gsub('/', '-')}",
                     :share_with => user[:display_name].unicode_normalize(:nfc)
                 }
             end
@@ -252,9 +252,9 @@ class Script
                 user_id = user[:nc_login]
                 email_for_user_id[user_id] = email
                 wanted_shares[user_id] ||= {}
-                wanted_shares[user_id]["/#{SHARE_SOURCE_FOLDER}/Protokolle/#{klasse}"] = {
+                wanted_shares[user_id]["/#{SHARE_SOURCE_FOLDER}/Protokolle/#{klasse.gsub('/', '-')}"] = {
                     :permissions => schueler_with_dashboard_amt.include?(email) ? SHARE_READ | SHARE_UPDATE | SHARE_CREATE | SHARE_DELETE : SHARE_READ,
-                    :target_path => "/#{SHARE_TARGET_FOLDER}/Protokolle #{Main.tr_klasse(klasse)}",
+                    :target_path => "/#{SHARE_TARGET_FOLDER}/Protokolle #{Main.tr_klasse(klasse).gsub('/', '-')}",
                     :share_with => user[:display_name].unicode_normalize(:nfc)
                 }
             end

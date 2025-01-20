@@ -200,7 +200,7 @@ class Main < Sinatra::Base
                     print_email_field(io, user[:email])
                     io.puts "</td>"
                 end
-                io.puts "<td>#{user[:roles].to_a.sort.map { |x| AVAILABLE_ROLES[x] }.join(', ')}</td>"
+                io.puts "<td style='white-space: normal;'>#{user[:roles].to_a.sort.map { |x| AVAILABLE_ROLES[x] }.join(', ')}</td>"
                 io.puts "<td><button class='btn btn-warning btn-xs btn-impersonate' data-impersonate-email='#{user[:email]}'><i class='fa fa-id-badge'></i>&nbsp;&nbsp;Anmelden</button></td>"
                 io.puts "<td>#{twofa_status[email]}</td>"
                 if all_sessions.include?(email)

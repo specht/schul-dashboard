@@ -119,7 +119,7 @@ class Script
                         File.open(mail_path, 'w') do |f|
                             f.puts body
                         end
-                        unless allowed_senders().include?(from_address.downcase) && MAILING_LIST_FORWARDER_ACCOUNTS.include?(from_address_suffix_with_at)
+                        unless allowed_senders().include?(from_address.downcase)
                             STDERR.puts "[#{Time.now.strftime('%Y-%m-%d %H:%M')}] Bouncing mail back to invalid sender #{mail.from[0]}: #{mail.subject}"
                             deliver_mail do |m2|
                                 m2.reply_to = "#{MAIL_SUPPORT_NAME} <#{MAIL_SUPPORT_EMAIL}>"
@@ -228,12 +228,18 @@ class Script
                     mail = Mail.read_from_string(File.read(mail_path))
                     from_address = Mail::Address.new(mail.from.first).address
                     from_address_suffix_with_at = '@' + from_address.split('@').last
-                    mail.delivery_method :smtp, MAILING_LIST_FORWARDER_ACCOUNTS[from_address_suffix_with_at]
+                    unless MAILING_LIST_FORWARDER_ACCOUNTS.include?(from_address_suffix_with_at)
+                        # we are forwarding a mail from another account and have to make a few adjustments
+                        mail.delivery_method :smtp, MAILING_LIST_FORWARDER_ACCOUNTS['default']
+                    else
+                        # we are forwarding a mail from our domain and thus can keep [from] intact
+                        mail.delivery_method :smtp, MAILING_LIST_FORWARDER_ACCOUNTS[from_address_suffix_with_at]
+                    end
                     mail.to = nil
                     mail.cc = []
                     mail.bcc = []
                     mail.reply_to = mail[:from].formatted.first
-#                     mail.from = ["#{mail[:from].formatted.first.gsub(/<[^>]+>/, '').strip} <#{MAILING_LIST_EMAIL}>"]
+                    #                     mail.from = ["#{mail[:from].formatted.first.gsub(/<[^>]+>/, '').strip} <#{MAILING_LIST_EMAIL}>"]
                     recipients = YAML::load(File.read(path))
                     while !recipients[:pending].empty?
                         recipient = recipients[:pending].first
@@ -243,10 +249,21 @@ class Script
                         File.open(File.join(File.dirname(path), 'last_forwarded_mail'), 'w') do |f|
                             f.write mail.to_s
                         end
+                        original_sender = mail[:from].formatted.first
                         begin
                             if DEVELOPMENT && !(VERTEILER_DEVELOPMENT_EMAILS.include?(recipient))
                                 STDERR.puts "(skipping mail forwarding because we're in development mode)"
                             else
+                                unless MAILING_LIST_FORWARDER_ACCOUNTS.include?(from_address_suffix_with_at)
+                                    mail_copy = Mail.new do
+                                        from     SMTP_USER
+                                        to       mail.to
+                                        reply_to mail.reply_to
+                                        subject  mail.subject
+                                        body     mail.body.to_s
+                                    end
+                                    mail = mail_copy
+                                end
                                 mail.deliver!
                             end
                         rescue StandardError => e
@@ -255,14 +272,13 @@ class Script
                             STDERR.puts "Error: #{e}"
                             STDERR.puts e.backtrace
                             # 1. notify WEBSITE_MAINTAINER_EMAIL
-                            _sender = mail[:from].formatted.first
+                            _sender = original_sender
                             _subject = "E-Mail-Weiterleitung fehlgeschlagen: #{mail.subject}"
                             _body = StringIO.open do |io|
-                                # "The mail forwarder failed to forward a mail from #{mail[:from].formatted.first} to #{recipient}.\r\n\r\n"
                                 io.puts "Hallo!\r\n\r\n"
                                 io.puts "Wir haben momentan leider bei manchen E-Mails technische Probleme mit der Weiterleitung. Die folgende E-Mail konnte leider nicht weitergeleitet werden:\r\n\r\n"
                                 io.puts "Betreff: #{mail.subject}\r\n"
-                                io.puts "Absender: #{mail[:from].formatted.first}\r\n\r\n"
+                                io.puts "Absender: #{original_sender}\r\n\r\n"
                                 io.puts "Die meisten Mails gehen durch, aber manche nicht. Wir arbeiten an einer Lösung des Problems. Bitte entschuldigen Sie die Unannehmlichkeiten.\r\n\r\n"
                                 io.puts "Bitte senden Sie Ihre E-Mail noch einmal direkt an die folgenden Empfängeraddressen, die Sie per Copy & Paste in BCC setzen können:\r\n\r\n"
                                 io.puts "#{recipients[:pending].join(', ')}\r\n\r\n"

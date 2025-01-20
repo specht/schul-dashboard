@@ -75,6 +75,15 @@ MAILING_LIST_FORWARDER_ACCOUNTS = {
         :password => SMTP_PASSWORD,
         :authentication => 'login',
         :enable_starttls_auto => true
+    },
+    'default' => {
+        :address => SMTP_SERVER,
+        :port => 587,
+        :domain => SMTP_DOMAIN,
+        :user_name => SMTP_USER,
+        :password => SMTP_PASSWORD,
+        :authentication => 'login',
+        :enable_starttls_auto => true
     }
 }
 

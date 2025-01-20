@@ -2,7 +2,8 @@
 #{File.read('/static/_tresor_public_template.html')}
 <div class='container bg-white'>
     <div class="w-full">
-        <h3>Zeugnisübersicht #{ZEUGNIS_SCHULJAHR.sub('_', '/')} (#{ZEUGNIS_HALBJAHR}. Halbjahr)</h3>
+        <h3>Zeugnisübersicht #{ZEUGNIS_SCHULJAHR.sub('_', '/')}
+            (#{ZEUGNIS_HALBJAHR}. Halbjahr)</h3>
         <div id="zeugnisuebersicht-here" class="row"></div>
     </div>
 </div>
@@ -31,6 +32,7 @@ var my_klassen = #{(@@zeugnisliste_for_lehrer[@session_user[:shorthand]]).keys.m
 var shorthands = #{@@shorthands.keys.sort { |a, b| a.downcase <=> b.downcase }.reject { |x| x[0] == '_'}.to_json};
 var need_sozialverhalten = #{@@need_sozialverhalten.to_json};
 var klassenleiter = #{@@klassenleiter.to_json};
+var anlage_sozialverhalten = #{ANLAGE_SOZIALVERHALTEN[ZEUGNIS_SCHULJAHR][ZEUGNIS_HALBJAHR].to_json};
 
 function have_or_admin(key) {
     return my_zeugnisliste[key] || `#{zeugnis_admin_logged_in?}` === 'true';
@@ -194,15 +196,19 @@ window.addEventListener('load', function () {
                     if (!have_or_admin_or_kl(`${klasse}/SV/${fach}`))
                         continue;
 
-                    let present_count = counts[`${klasse}/${fach}/SV`][0];
-                    let total_count = counts[`${klasse}/${fach}/SV`][1];
-                    if (total_count === 0)
-                        row.append($(`<td>`).append($(`<span>`).html(`<i class='fa fa-danger'></i>`).css('color', '#a40000')));
-                    else if (present_count === total_count)
-                        row.append($(`<td>`).append($(`<span>`).html(`<i class='fa fa-check-circle'></i>`).css('color', '#4aa03f')));
-                    else
-                        row.append($(`<td>`).append($(`<span>`).text(`${present_count}/${total_count}`).css('background-color', red_green_ramp(present_count / total_count)).addClass('ramp')));
-                    row.children().last().css('opacity', have_or_admin(`${klasse}/SV/${fach}`) ? 1.0 : 0.5);
+                    if (anlage_sozialverhalten.indexOf(klasse) >= 0 || anlage_sozialverhalten.indexOf(`${klasse}/${fach}`) >= 0) {
+                        let present_count = counts[`${klasse}/${fach}/SV`][0];
+                        let total_count = counts[`${klasse}/${fach}/SV`][1];
+                        if (total_count === 0)
+                            row.append($(`<td>`).append($(`<span>`).html(`<i class='fa fa-danger'></i>`).css('color', '#a40000')));
+                        else if (present_count === total_count)
+                            row.append($(`<td>`).append($(`<span>`).html(`<i class='fa fa-check-circle'></i>`).css('color', '#4aa03f')));
+                        else
+                            row.append($(`<td>`).append($(`<span>`).text(`${present_count}/${total_count}`).css('background-color', red_green_ramp(present_count / total_count)).addClass('ramp')));
+                        row.children().last().css('opacity', have_or_admin(`${klasse}/SV/${fach}`) ? 1.0 : 0.5);
+                    } else {
+                        row.append($(`<td>`).html('&ndash;'));
+                    }
                 }
             }
         }

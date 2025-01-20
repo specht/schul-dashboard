@@ -1088,8 +1088,13 @@ class Parser
             next unless info[:klasse] == '11' || info[:klasse] == '12'
             (0..info[:first_name].size).each do |i|
                 ['_', ''].each do |x|
-                    name = "#{info[:last_name]}#{x}#{info[:first_name][0, i]}"
+                    name = remove_accents("#{info[:last_name]}#{x}#{info[:first_name][0, i]}")
                     email_for_name[name] = email
+                    if info[:last_name].include?(',')
+                        flipped_last_name = info[:last_name].split(', ').map { |x| x.strip }.reverse.join(' ')
+                        name = remove_accents("#{flipped_last_name}#{x}#{info[:first_name][0, i]}")
+                        email_for_name[name] = email
+                    end
                 end
             end
         end

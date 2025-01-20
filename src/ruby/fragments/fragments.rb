@@ -85,6 +85,8 @@ class Main
         klassen_for_shorthands = {}
         consider_sus_for_klasse = {}
 
+        puts "HEY"
+
         ZEUGNIS_KLASSEN_ORDER.each do |klasse|
             consider_sus_for_klasse[klasse] = Set.new()
             liste = @@zeugnisliste_for_klasse[klasse]

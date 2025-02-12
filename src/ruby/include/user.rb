@@ -838,7 +838,7 @@ class Main < Sinatra::Base
         emails = data[:emails]
         emails.reject! do |email|
             return true unless @@user_info[email]
-            return true unless klassenleiter_for_klasse_or_admin_logged_in?(@@user_info[email][:klasse]) || user_with_role_logged_in?(:sekretariat)
+            return true unless admin_logged_in? || klassenleiter_for_klasse_or_admin_logged_in?(@@user_info[email][:klasse]) || user_with_role_logged_in?(:sekretariat)
             false
         end
         raise 'nope' if emails.empty?

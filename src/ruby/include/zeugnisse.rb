@@ -546,10 +546,10 @@ class Main < Sinatra::Base
                     # Also add the note to the original fach because of hybrid klassen 9o mixup AGr / $AGr (wahlfach for some)
                     info["##{fach}"] = note
                     # Remove the note from Wahlfach entry if it's already there
-                    if wf_entries[@@faecher[fach] || fach]
-                        info["#WF#{wf_entries[@@faecher[fach] || fach]}"] = '--'
-                        info.delete("#WF#{wf_entries[@@faecher[fach] || fach]}_Name")
-                    end
+                    # if wf_entries[@@faecher[fach] || fach]
+                    #     info["#WF#{wf_entries[@@faecher[fach] || fach]}"] = '--'
+                    #     info.delete("#WF#{wf_entries[@@faecher[fach] || fach]}_Name")
+                    # end
                 end
                 ['VT', 'VT_UE', 'VS', 'VS_UE', 'VSP'].each do |item|
                     v = cache["Schuljahr:#{ZEUGNIS_SCHULJAHR}/Halbjahr:#{ZEUGNIS_HALBJAHR}/Fehltage:#{item}/Email:#{email}"] || '--'

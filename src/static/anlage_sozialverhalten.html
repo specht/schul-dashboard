@@ -28,16 +28,32 @@
 </style>
 <div class='container bg-white'>
     <div class="w-full">
-        <h3>Anlage Sozialverhalten #{ZEUGNIS_SCHULJAHR.sub('_', '/')} (#{ZEUGNIS_HALBJAHR}. Halbjahr)</h3>
+        <h3>Anlage Sozialverhalten #{ZEUGNIS_SCHULJAHR.sub('_', '/')}
+            (#{ZEUGNIS_HALBJAHR}. Halbjahr)</h3>
         <p>
             Die Kategorien sind wie folgt definiert:
         </p>
 
-        <p><b>Zuverlässigkeit:</b> Die Schülerin / Der Schüler erscheint pünktlich zum Unterricht. Die Aufgaben werden termingerecht erfüllt, Hausaufgaben und Unterrichtsmaterial mitgebracht. Sie erfüllt die Erwartungen …</p>
-        <p><b>Leistungs- und Lernbereitschaft:</b> Die Schülerin / Der Schüler arbeitet ausdauernd und konzentriert mit. Sie / Er erfüllt die Erwartungen …</p>
-        <p><b>Selbständigkeit:</b> Die Schülerin / Der Schüler schätzt ihre / seine Fähigkeiten zutreffend ein. Sie / Er bearbeitet Aufgaben selbständig und kontrolliert Arbeitsergebnisse eigenständig. Sie / Er erfüllt die Erwartungen …</p>
-        <p><b>Kooperationsfähigkeit:</b> Die Schülerin / Der Schüler arbeitet zielgerichtet mit anderen zusammen und übernimmt eigenverantwortlich Aufgaben. Sie / Er hört anderen zu und geht auf andere ein. Sie / Er erfüllt die Erwartungen …</p>
-        <p><b>Soziales Verhalten:</b> Die Schülerin / Der Schüler respektiert andere Meinungen. Sie / Er setzt sich für ihre /seine Überzeugungen ein, beachtet Regeln und Vereinbarungen und geht konstruktiv mit Konflikten um. Sie / Er ist hilfsbereit. Sie / Er erfüllt die Erwartungen …</p>
+        <p><b>Zuverlässigkeit:</b> Die Schülerin / Der Schüler erscheint
+            pünktlich zum Unterricht. Die Aufgaben werden termingerecht erfüllt,
+            Hausaufgaben und Unterrichtsmaterial mitgebracht. Sie erfüllt die
+            Erwartungen …</p>
+        <p><b>Leistungs- und Lernbereitschaft:</b> Die Schülerin / Der Schüler
+            arbeitet ausdauernd und konzentriert mit. Sie / Er erfüllt die
+            Erwartungen …</p>
+        <p><b>Selbständigkeit:</b> Die Schülerin / Der Schüler schätzt ihre /
+            seine Fähigkeiten zutreffend ein. Sie / Er bearbeitet Aufgaben
+            selbständig und kontrolliert Arbeitsergebnisse eigenständig. Sie /
+            Er erfüllt die Erwartungen …</p>
+        <p><b>Kooperationsfähigkeit:</b> Die Schülerin / Der Schüler arbeitet
+            zielgerichtet mit anderen zusammen und übernimmt eigenverantwortlich
+            Aufgaben. Sie / Er hört anderen zu und geht auf andere ein. Sie / Er
+            erfüllt die Erwartungen …</p>
+        <p><b>Soziales Verhalten:</b> Die Schülerin / Der Schüler respektiert
+            andere Meinungen. Sie / Er setzt sich für ihre /seine Überzeugungen
+            ein, beachtet Regeln und Vereinbarungen und geht konstruktiv mit
+            Konflikten um. Sie / Er ist hilfsbereit. Sie / Er erfüllt die
+            Erwartungen …</p>
 
         <table class="expl_table table table-sm" style="width: unset;">
             <tr>
@@ -69,22 +85,34 @@
                 <td>
                     <span>&times;</span>
                     <br />
-                    Hinweis: Tragen Sie ein »x« ein, wenn der Eintrag im Zeugnisdruck leer bleiben soll, z. B. wenn die Schülerin / der Schüler vom Unterricht befreit war.
+                    Hinweis: Tragen Sie ein »x« ein, wenn der Eintrag im
+                    Zeugnisdruck leer bleiben soll, z. B. wenn die Schülerin /
+                    der Schüler vom Unterricht befreit war.
                 </td>
             </tr>
         </table>
         <div class="alert alert-success span-hl">
             <p>
-                Tipp: Nutzen Sie die Tasten <span>1</span>, <span>2</span>, <span>3</span> und <span>4</span>, um die Noten <span>++</span>, <span>+</span>, <span>o</span> und <span>-</span> zu vergeben und anschließend gleich automatisch in das nächste Eingabefeld zu springen.
+                Tipp: Nutzen Sie die Tasten <span>1</span>, <span>2</span>,
+                <span>3</span> und <span>4</span>, um die Noten <span>++</span>,
+                <span>+</span>, <span>o</span> und <span>-</span> zu vergeben
+                und anschließend gleich automatisch in das nächste Eingabefeld
+                zu springen.
             </p>
             <p>
-                Wählen Sie hier, ob Sie dabei von oben nach unten oder von links nach rechts springen möchten:
+                Wählen Sie hier, ob Sie dabei von oben nach unten oder von links
+                nach rechts springen möchten:
             </p>
-            <button id='bu_jump_row' class="btn btn-outline-secondary"><i class="fa fa-long-arrow-down"></i>&nbsp;&nbsp;von Zeile zu Zeile</button> &nbsp;
-            <button id='bu_jump_column' class="btn btn-outline-secondary"><i class="fa fa-long-arrow-right"></i>&nbsp;&nbsp;von Spalte zu Spalte</button>
+            <button id='bu_jump_row' class="btn btn-outline-secondary"><i
+                    class="fa fa-long-arrow-down"></i>&nbsp;&nbsp;von Zeile zu
+                Zeile</button> &nbsp;
+            <button id='bu_jump_column' class="btn btn-outline-secondary"><i
+                    class="fa fa-long-arrow-right"></i>&nbsp;&nbsp;von Spalte zu
+                Spalte</button>
         </div>
         <p>
-            Bitte wählen Sie eine Klasse, für die Sie Bewertungen eintragen möchten.
+            Bitte wählen Sie eine Klasse, für die Sie Bewertungen eintragen
+            möchten.
         </p>
 
         <div id="klassen_buttons_here"></div>
@@ -92,7 +120,13 @@
         <div id="edit_button_here" style="display: none; margin-bottom: 0.5em;">
             <button id="bu_toggle_edit" class='btn btn-secondary'></button>
             <p style="margin-top: 0.5em;">
-                <em>Hinweis: Nutzen Sie diese Schaltfläche, um die Tabelle vor versehentlichen Änderungen zu schützen. Sobald Sie Werte ändern, sind diese automatisch gespeichert &ndash; es ist nicht nötig, die Bearbeitung durch nochmaliges Drücken dieser Schaltfläche abzuschließen. Sie müssen lediglich das Eingabefeld verlassen, um den eingetragenen Wert zu speichern.</em>
+                <em>Hinweis: Nutzen Sie diese Schaltfläche, um die Tabelle vor
+                    versehentlichen Änderungen zu schützen. Sobald Sie Werte
+                    ändern, sind diese automatisch gespeichert &ndash; es ist
+                    nicht nötig, die Bearbeitung durch nochmaliges Drücken
+                    dieser Schaltfläche abzuschließen. Sie müssen lediglich das
+                    Eingabefeld verlassen, um den eingetragenen Wert zu
+                    speichern.</em>
             </p>
         </div>
 

@@ -832,4 +832,23 @@ class Main < Sinatra::Base
         end
         respond(:ok => true)
     end
+
+    post '/api/print_email_letters' do
+        data = parse_request_data(:required_keys => [:emails], :types => {:emails => Array})
+        emails = data[:emails]
+        emails.reject! do |email|
+            return true unless @@user_info[email]
+            return true unless klassenleiter_for_klasse_or_admin_logged_in?(@@user_info[email][:klasse]) || user_with_role_logged_in?(:sekretariat)
+            false
+        end
+        raise 'nope' if emails.empty?
+
+        respond_raw_with_mimetype(Main.print_email_letters(emails), 'application/pdf')
+    end
+
+    get '/api/print_email_letter_test' do
+        require_admin!
+        respond_raw_with_mimetype(Main.print_email_letters([@@users_for_role[:schueler].to_a.sample]), 'application/pdf')
+    end
+
 end

@@ -6,7 +6,7 @@
     </style>
 <div class='container-fluid solid white'>
     <div>
-    #{mail_addresses_table(klasse)}
+        #{mail_addresses_table(klasse)}
     </div>
 </div>
 
@@ -200,6 +200,22 @@ document.addEventListener('DOMContentLoaded', function() {
                 );
 
             }
+        });
+        $('.bu_print_email_letter').click(function(e) {
+            let email = $(e.target).closest('tr').data('email');
+            fetch('/api/print_email_letters', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({emails: [email]})
+            })
+            .then(response => response.blob())
+            .then(blob => {
+                let url = window.URL.createObjectURL(blob);
+                window.open(url, '_blank');
+            })
+            .catch(error => console.error('Error:', error));
         });
     }
 });

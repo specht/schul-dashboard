@@ -1,8 +1,12 @@
 require 'prawn'
 require 'prawn/measurement_extensions'
+# require 'prawn/table'
 require 'prawn-styled-text'
 require '/app/include/color.rb'
 require '/app/include/color-schemes.rb'
+
+CHARS = 'BCDFGHJKMNPQRSTVWXYZ23456789'.split('')
+SPECIAL = '-'.split('')
 
 class Prawn::Document
     def elide_string(s, width, style = {}, suffix = '…')
@@ -2362,5 +2366,164 @@ class Main
             io.puts "</div>"
             io.string
         end
+    end
+
+    def gen_password_for_email(email)
+        sha2 = Digest::SHA256.new()
+        sha2 << EMAIL_PASSWORD_SALT
+        sha2 << email
+        srand(sha2.hexdigest.to_i(16))
+        password = ''
+        while true do
+            if password =~ /[a-z]/ &&
+            password =~ /[A-Z]/ &&
+            password =~ /[0-9]/ &&
+            password.include?('-')
+                break
+            end
+            password = ''
+            8.times do
+                c = CHARS.sample.dup
+                c.downcase! if [0, 1].sample == 1
+                password += c
+            end
+            password += '-'
+            4.times do
+                c = CHARS.sample.dup
+                c.downcase! if [0, 1].sample == 1
+                password += c
+            end
+        end
+        password
+    end
+
+    def self.print_email_letters(emails)
+        main = self
+        doc = Prawn::Document.new(:page_size => 'A4', :page_layout => :portrait, :margin => 0) do
+            font_families.update("AlegreyaSans" => {
+                :normal => "/app/fonts/AlegreyaSans-Regular.ttf",
+                :italic => "/app/fonts/AlegreyaSans-Italic.ttf",
+                :bold => "/app/fonts/AlegreyaSans-Bold.ttf",
+                :bold_italic => "/app/fonts/AlegreyaSans-BoldItalic.ttf"
+            })
+            font_families.update("PTMono" => {
+                :normal => "/app/fonts/PTMono-Regular.ttf"
+            })
+            first_page = true
+            emails.each do |email|
+                start_new_page unless first_page
+                first_page = false
+                user_info = @@user_info[email]
+
+                def item(a, b, gap = 5.mm, font = 'AlegreyaSans')
+                    translate(0, 0) do
+                        text(a, inline_format: true)
+                    end
+                    move_up(14.4.pt)
+                    translate(gap, 0) do
+                        font font do
+                            text(b, inline_format: true, size: font == 'PTMono' ? 10.5 : nil)
+                        end
+                    end
+                    move_down 1.mm
+                end
+
+                font('AlegreyaSans') do
+                    bounding_box([20.mm, 282.mm], width: 170.mm, height: 267.mm) do
+                        font_size(16) do
+                            text("<b>Dein E-Mail-Postfach am Gymnasium Steglitz</b>", inline_format: true)
+                        end
+                        move_down 5.mm
+                        text("Hallo #{user_info[:first_name]}!")
+                        move_down 3.mm
+                        text("Da alle wichtigen Informationen aus der Schule per E-Mail an dich und deine Eltern gesendet werden, ist es wichtig, dass du dein E-Mail-Postfach einrichtest. Es dauert nur fünf Minuten! Und so geht es:", align: :justify, leading: 2, inline_format: true)
+
+                        move_down 3.mm
+
+                        bounding_box([0.mm, 230.mm], width: 80.mm, height: 55.mm) do
+                            font_size(12) do
+                                text("<b>Einrichtung von Gmail (Android)</b>", inline_format: true)
+                            end
+                            move_down 3.mm
+                            item('1.', 'Wähle im Menü »Einstellungen« <br>und »Konto hinzufügen«')
+                            item('2.', 'Wähle »Sonstige« und gib deine <br>E-Mail-Adresse ein')
+                            item('3.', "Wähle als Kontotyp: »Privat (IMAP)«")
+                            item('4.', "Gib dein Passwort ein")
+                            item('5.', "Eingangsserver / Server: imap.ionos.de")
+                            item('6.', "Ausgangsserver / Server: smtp.ionos.de")
+                        end
+                        bounding_box([85.mm, 230.mm], width: 80.mm, height: 55.mm) do
+                            font_size(12) do
+                                text("<b>Einrichtung von Apple Mail (iOS)</b>", inline_format: true)
+                            end
+                            move_down 3.mm
+                            item('1.', 'Wähle im Menü »Postfächer« und »Bearbeiten«')
+                            item('2.', 'Wähle »Mail«, »Accounts«')
+                            item('3.', 'Wähle »Account hinzufügen« und »Andere«')
+                            item('4.', 'Wähle »Mail-Account hinzufügen«')
+                            item('5.', 'Gib deine Zugangsdaten ein')
+                            item('6.', 'Eintreffende Mails / Hostname: imap.ionos.de')
+                            item('7.', 'Ausgehende Mails / Hostname: smtp.ionos.de')
+                        end
+
+                        move_down 4.mm
+                        text("Eine ausführliche Anleitung mit Bildern findest du hier: https://dashboard.gymnasiumsteglitz.de/hilfe", inline_format: true)
+                        move_down 4.mm
+                        font_size(14) do
+                            text("<b>Warum ist die Einrichtung wichtig?</b>", inline_format: true)
+                        end
+                        move_down 3.mm
+
+                        text("Du bekommst deine E-Mails direkt auf dein Handy und kannst sie jederzeit lesen. So verpasst du keine wichtigen Informationen aus der Schule. Dein Anmeldecode für das Dashboard kommt auch per E-Mail. Übrigens: du kannst dein Postfach natürlich auch auf mehreren Geräten nutzen.", align: :justify, leading: 2, inline_format: true)
+
+                        move_down 3.mm
+                        font_size(14) do
+                            text("<b>Zugangsdaten für dein Postfach</b>", inline_format: true)
+                        end
+                        move_down 3.mm
+                        item('<b>E-Mail-Adresse:</b>', user_info[:email], 30.mm, 'PTMono')
+                        move_down 1.mm
+                        item('<b>Passwort:</b>', "#{main.gen_password_for_email(user_info[:email])}", 30.mm, 'PTMono')
+                        move_down 1.mm
+                        move_down 5.mm
+                        font_size(12) do
+                            text("<b>Zugangsdaten für deine Eltern</b>", inline_format: true)
+                        end
+                        move_down 3.mm
+                        item('<b>E-Mail-Adresse:</b>', 'eltern.' + user_info[:email], 30.mm, 'PTMono')
+                        move_down 1.mm
+                        item('<b>Passwort:</b>', "#{main.gen_password_for_email('eltern.' + user_info[:email])}", 30.mm, 'PTMono')
+                        move_down 1.mm
+                        move_down 5.mm
+                        font_size(12) do
+                            text("<b>Server-Einstellungen</b>", inline_format: true)
+                        end
+                        move_down 3.mm
+                        item('Posteingangsserver:', 'imap.ionos.de (Port 993, TLS/SSL)', 40.mm, 'PTMono')
+                        move_down 1.mm
+                        item('Postausgangsserver:', 'smtp.ionos.de (Port 465, TLS/SSL)', 40.mm, 'PTMono')
+                        move_down 1.mm
+
+                        move_down 5.mm
+                        font_size(14) do
+                            text("<b>Du möchtest dein Passwort ändern?</b>", inline_format: true)
+                        end
+                        move_down 3.mm
+                        text("Melde dich einfach bei https://mail.ionos.de an, um dein Passwort zu ändern.")
+
+                        move_down 5.mm
+                        font_size(14) do
+                            text("<b>Du hast dein Passwort vergessen?</b>", inline_format: true)
+                        end
+                        move_down 3.mm
+                        text("Kein Problem, schreib einfach eine E-Mail an #{WEBSITE_MAINTAINER_NAME_AKKUSATIV} (#{WEBSITE_MAINTAINER_EMAIL}). Dann wird dein Passwort zurückgesetzt.", align: :justify, leading: 2, inline_format: true)
+                        bounding_box([0.mm, 0.mm], width: 170.mm, height: 10.mm) do
+                            text("<em>#{user_info[:display_name]} (#{main.tr_klasse(user_info[:klasse])})</em>", :align => :right, inline_format: true)
+                        end
+                    end
+                end
+            end
+        end
+        return doc.render
     end
 end

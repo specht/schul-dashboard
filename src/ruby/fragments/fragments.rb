@@ -2472,7 +2472,7 @@ class Main
                         move_down 4.mm
                         float do
                             translate(150.mm, 0.mm) do
-                                render_qr_code(RQRCode::QRCode.new("https://dashboard.gymnasiumsteglitz.de/hilfe", level: :h, size: 5), stroke: false)
+                                render_qr_code(RQRCode::QRCode.new("https://dashboard.gymnasiumsteglitz.de/hilfe", level: :h), stroke: false, extent: 20.mm)
                             end
                         end
                         text("Eine ausführliche Anleitung mit Bildern findest du auf der Hilfeseite des Dashboards: https://dashboard.gymnasiumsteglitz.de/hilfe", inline_format: true)

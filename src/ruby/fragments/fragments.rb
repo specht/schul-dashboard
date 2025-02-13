@@ -2476,7 +2476,7 @@ class Main
                         end
                         move_down 3.mm
 
-                        text("Du bekommst deine E-Mails direkt auf dein Handy und kannst sie jederzeit lesen. So verpasst du keine wichtigen Informationen aus der Schule. Dein Anmeldecode für das Dashboard kommt auch per E-Mail. Übrigens: du kannst dein Postfach natürlich auch auf mehreren Geräten nutzen.", align: :justify, leading: 2, inline_format: true)
+                        text("Du bekommst deine E-Mails direkt auf dein Handy und kannst sie jederzeit lesen. So verpasst du keine wichtigen Informationen aus der Schule. Dein Anmeldecode für das Dashboard kommt auch per E-Mail. Übrigens: du kannst dein Postfach natürlich auch auf mehreren Geräten und mit anderen Apps nutzen.", align: :justify, leading: 2, inline_format: true)
 
                         move_down 3.mm
                         font_size(14) do

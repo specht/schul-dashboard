@@ -116,7 +116,9 @@ class Main < Sinatra::Base
                 io.puts "<th>A/B</th>"
                 io.puts "<th>Letzter Zugriff</th>"
                 io.puts "<th>Eltern-E-Mail-Adresse</th>"
-                io.puts "<th>E-Mail-Brief</th>"
+                if klassenleiter_for_klasse_logged_in?(klasse) || admin_logged_in? || user_with_role_logged_in?(:sekretariat)
+                    io.puts "<th>E-Mail-Brief</th>"
+                end
             end
             schueler_liste = @@schueler_for_klasse[klasse] || @@schueler_for_lesson[klasse] || []
             has_oberstufe = schueler_liste.any? { |email| @@user_info[email][:klassenstufe] >= 11 }
@@ -266,9 +268,11 @@ class Main < Sinatra::Base
                     io.puts "<td>"
                     print_email_field(io, "eltern.#{record[:email]}")
                     io.puts "</td>"
-                    io.puts "<td>"
-                    io.puts "<button class='bu_print_email_letter btn btn-outline-secondary btn-sm'><i class='fa fa-envelope-o'></i>&nbsp;&nbsp;E-Mail-Brief</button>"
-                    io.puts "</td>"
+                    if klassenleiter_for_klasse_logged_in?(klasse) || admin_logged_in? || user_with_role_logged_in?(:sekretariat)
+                        io.puts "<td>"
+                        io.puts "<button class='bu_print_email_letter btn btn-outline-secondary btn-sm'><i class='fa fa-envelope-o'></i>&nbsp;&nbsp;E-Mail-Brief</button>"
+                        io.puts "</td>"
+                    end
                     if has_oberstufe
                         tutor = '&ndash;'
                         if record[:tutor]

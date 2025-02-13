@@ -2460,7 +2460,7 @@ class Main
                             end
                             move_down 3.mm
                             item('1.', 'Wähle im Menü »Postfächer«<br>und dann »Bearbeiten«')
-                            item('2.', 'Wähle »Mail«, »Accounts«')
+                            item('2.', 'Wähle »Mail« und »Accounts«')
                             item('3.', 'Wähle »Account hinzufügen« und »Andere«')
                             item('4.', 'Wähle »Mail-Account hinzufügen«')
                             item('5.', 'Gib deine Zugangsdaten ein')

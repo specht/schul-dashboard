@@ -1,7 +1,6 @@
 require 'prawn'
 require 'prawn/measurement_extensions'
 require 'prawn/qrcode'
-# require 'prawn/table'
 require 'prawn-styled-text'
 require '/app/include/color.rb'
 require '/app/include/color-schemes.rb'
@@ -2442,7 +2441,10 @@ class Main
                         move_down 3.mm
 
                         bounding_box([0.mm, 230.mm], width: 80.mm, height: 55.mm) do
-                            image "/app/email-templates/gmail.png", :at => [62.mm, 55.mm], :width => 15.mm, :height => 15.mm
+                            float do
+                                image "/app/email-templates/squircle2.png", at: [62.mm, 55.mm], width: 18.mm
+                            end
+                            image "/app/email-templates/gmail.png", :at => [64.mm, 53.mm], :width => 14.mm, :height => 14.mm
                             font_size(12) do
                                 text("<b>Einrichtung von Gmail (Android)</b>", inline_format: true)
                             end
@@ -2455,7 +2457,10 @@ class Main
                             item('6.', "Ausgangsserver / Server: smtp.ionos.de")
                         end
                         bounding_box([85.mm, 230.mm], width: 80.mm, height: 55.mm) do
-                            image "/app/email-templates/apple-mail.png", :at => [62.mm, 55.mm], :width => 15.mm, :height => 15.mm
+                            float do
+                                image "/app/email-templates/squircle2.png", at: [62.mm, 55.mm], width: 18.mm
+                            end
+                            image "/app/email-templates/apple-mail.png", :at => [64.mm, 53.mm], :width => 14.mm, :height => 14.mm
                             font_size(12) do
                                 text("<b>Einrichtung von Apple Mail (iOS)</b>", inline_format: true)
                             end
@@ -2471,7 +2476,10 @@ class Main
 
                         move_down 4.mm
                         float do
-                            translate(150.mm, 0.mm) do
+                            translate(145.mm, 0.mm) do
+                                float do
+                                    image "/app/email-templates/squircle2.png", at: [-2.mm, 173.mm], width: 24.mm
+                                end
                                 render_qr_code(RQRCode::QRCode.new("https://dashboard.gymnasiumsteglitz.de/hilfe", level: :h), stroke: false, extent: 20.mm)
                             end
                         end
@@ -2508,9 +2516,9 @@ class Main
                             text("<b>Server-Einstellungen</b>", inline_format: true)
                         end
                         move_down 3.mm
-                        item('Posteingangsserver:', 'imap.ionos.de (Port 993, TLS/SSL)', 40.mm, 'PTMono')
+                        item('Posteingangsserver:', 'imap.ionos.de (Port 993, SSL/TLS)', 40.mm, 'PTMono')
                         move_down 1.mm
-                        item('Postausgangsserver:', 'smtp.ionos.de (Port 465, TLS/SSL)', 40.mm, 'PTMono')
+                        item('Postausgangsserver:', 'smtp.ionos.de (Port 465, SSL/TLS)', 40.mm, 'PTMono')
                         move_down 1.mm
 
                         move_down 5.mm

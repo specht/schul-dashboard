@@ -2441,6 +2441,7 @@ class Main
                         move_down 3.mm
 
                         bounding_box([0.mm, 230.mm], width: 80.mm, height: 55.mm) do
+                            image "/app/email-templates/gmail.png", :at => [62.mm, 55.mm], :width => 15.mm, :height => 15.mm
                             font_size(12) do
                                 text("<b>Einrichtung von Gmail (Android)</b>", inline_format: true)
                             end
@@ -2453,11 +2454,12 @@ class Main
                             item('6.', "Ausgangsserver / Server: smtp.ionos.de")
                         end
                         bounding_box([85.mm, 230.mm], width: 80.mm, height: 55.mm) do
+                            image "/app/email-templates/apple-mail.png", :at => [62.mm, 55.mm], :width => 15.mm, :height => 15.mm
                             font_size(12) do
                                 text("<b>Einrichtung von Apple Mail (iOS)</b>", inline_format: true)
                             end
                             move_down 3.mm
-                            item('1.', 'Wähle im Menü »Postfächer« und »Bearbeiten«')
+                            item('1.', 'Wähle im Menü »Postfächer«<br>und dann »Bearbeiten«')
                             item('2.', 'Wähle »Mail«, »Accounts«')
                             item('3.', 'Wähle »Account hinzufügen« und »Andere«')
                             item('4.', 'Wähle »Mail-Account hinzufügen«')
@@ -2467,7 +2469,7 @@ class Main
                         end
 
                         move_down 4.mm
-                        text("Eine ausführliche Anleitung mit Bildern findest du hier: https://dashboard.gymnasiumsteglitz.de/hilfe", inline_format: true)
+                        text("Eine ausführliche Anleitung mit Bildern findest du auf der Hilfeseite des Dashboards: https://dashboard.gymnasiumsteglitz.de/hilfe", inline_format: true)
                         move_down 4.mm
                         font_size(14) do
                             text("<b>Warum ist die Einrichtung wichtig?</b>", inline_format: true)

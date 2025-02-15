@@ -1376,13 +1376,13 @@ class Main < Sinatra::Base
         @@mailing_lists["sus@#{MAILING_LIST_DOMAIN}"] = {
             :label => "Alle Schülerinnen und Schüler",
             :recipients => @@user_info.keys.select do |email|
-                !@@user_info[email][:teacher]
+                @@user_info[email][:klasse] != nil
             end
         }
         @@mailing_lists["eltern@#{MAILING_LIST_DOMAIN}"] = {
             :label => "Alle Eltern",
             :recipients => @@user_info.keys.select do |email|
-                !@@user_info[email][:teacher]
+                @@user_info[email][:klasse] != nil
             end.map do |email|
                 "eltern.#{email}"
             end

@@ -150,9 +150,9 @@ class Script
                                         end
                                     end
                                 else
-                                    if suffix == mailing_list_email_suffix.split('.').map.with_index { |x, i| i == 0 ? 'mail' : x }.join('.')
-                                        relocated_mailing_list_addresses << m.split('@').first + '@' + mailing_list_email_suffix
-                                    end
+                                    # if suffix == mailing_list_email_suffix.split('.').map.with_index { |x, i| i == 0 ? 'mail' : x }.join('.')
+                                    #     relocated_mailing_list_addresses << m.split('@').first + '@' + mailing_list_email_suffix
+                                    # end
                                 end
                             end
                             unless all_recipients.empty?

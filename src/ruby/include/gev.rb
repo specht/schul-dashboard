@@ -15,7 +15,7 @@ class Main < Sinatra::Base
         gev.each do |email|
             if @@user_info[email].nil?
                 deliver_mail do
-                    to @@users_for_role[:gev]
+                    to @@users_for_role[:gev].to_a
                     bcc SMTP_FROM
                     from SMTP_FROM
 

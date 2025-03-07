@@ -1154,4 +1154,28 @@ class Main < Sinatra::Base
             io.string
         end
     end
+
+    get '/api/sus_by_birthday_cutoff' do
+        require_admin!
+        sus_per_bracket = {}
+        s = StringIO.open do |io|
+            [:sub14, :sub16, :ge16].each do |bracket|
+                emails = @@users_for_role[:schueler].select do |email|
+                    if bracket == :sub14
+                        @@user_info[email][:geburtstag] > "2011-03-14"
+                    elsif bracket == :sub16
+                        @@user_info[email][:geburtstag] <= "2011-03-14" && @@user_info[email][:geburtstag] > "2009-03-14"
+                    else
+                        @@user_info[email][:geburtstag] <= "2009-03-14"
+                    end
+                end
+                io.puts "#{bracket}"
+                io.puts
+                io.puts emails.join('; ')
+                io.puts
+            end
+            io.string
+        end
+        respond_raw_with_mimetype(s, "text/plain")
+    end
 end

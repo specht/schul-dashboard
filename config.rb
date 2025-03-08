@@ -241,6 +241,8 @@ else
     docker_compose[:networks] = {DOCKER_NETWORK_NAME => {}}
 end
 
+docker_compose[:services][:weasyprint] = {:image => 'lgatica/weasyprint'}
+
 docker_compose[:services][:nginx][:ports] = ["127.0.0.1:#{DEV_NGINX_PORT}:80"]
 if DEVELOPMENT
     docker_compose[:services][:nginx][:ports] = ["0.0.0.0:#{DEV_NGINX_PORT}:80"]
@@ -254,7 +256,6 @@ else
     end
 end
 
-docker_compose[:services][:weasyprint] = {:image => 'lgatica/weasyprint'}
 # docker_compose[:services][:ruby][:extra_hosts] = ['host.docker.internal:host-gateway']
 
 docker_compose[:services].each_pair do |k, v|

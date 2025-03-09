@@ -61,7 +61,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.width = msg.Width
 		m.height = msg.Height
 		m.table.SetWidth(msg.Width - 4)
-		m.table.SetHeight(msg.Height - 5)
+		m.table.SetHeight(msg.Height - 3)
 	case tea.KeyMsg:
 		switch msg.String() {
 		case "esc":
@@ -118,8 +118,8 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 func (m model) View() string {
 	// Define styles.
 	style := lipgloss.NewStyle().
-		Width(m.width-4).
-		Height(m.height-10).
+		Width(m.width-2).
+		Height(m.height-4).
 		Margin(0).
 		Padding(0, 1).
 		Border(lipgloss.RoundedBorder()).
@@ -130,9 +130,9 @@ func (m model) View() string {
 
 	// Combine output and input.
 	return style.Render(fmt.Sprintf(
-		"%s\n\n%s",
+		"%s",
 		m.table.View(),
-		m.textInput.View())) + "\n[H] Hinzufügen   [E] Eingetroffen   [A] Abholung   [N] Nimmt mit"
+	)) + "\n[H] Hinzufügen   [E] Eingetroffen   [A] Abholung   [N] Nimmt mit"
 
 }
 

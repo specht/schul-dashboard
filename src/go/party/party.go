@@ -16,12 +16,13 @@ import (
 )
 
 type User struct {
-	FirstName  string                 `yaml:":first_name"`
-	LastName   string                 `yaml:":last_name"`
-	Klasse     string                 `yaml:":klasse"`
-	Geburtstag string                 `yaml:":geburtstag"`
-	Roles      map[string]interface{} `yaml:":roles"`
-	Alter	   int
+	FirstName   string                 `yaml:":first_name"`
+	LastName    string                 `yaml:":last_name"`
+	DisplayName string                 `yaml:":display_name"`
+	Klasse      string                 `yaml:":klasse"`
+	Geburtstag  string                 `yaml:":geburtstag"`
+	Roles       map[string]interface{} `yaml:":roles"`
+	Alter       int
 }
 
 // Model represents the state of the application.
@@ -164,14 +165,14 @@ func main() {
 
 	// Initialize the table.
 	columns := []table.Column{
-		{Title: "Nachname", Width: 20},
-		{Title: "Vorname", Width: 20},
+		{Title: "Name", Width: 32},
 		{Title: "Klasse", Width: 6},
 		{Title: "Alter", Width: 5},
+		{Title: "Eing.", Width: 5},
+		{Title: "Abholung", Width: 8},
 	}
 
-	rows := []table.Row{
-	}
+	rows := []table.Row{}
 
 	for _, user := range schueler {
 		birthDate, err := time.Parse("2006-01-02", user.Geburtstag)
@@ -184,8 +185,7 @@ func main() {
 		}
 		user.Alter = age
 		rows = append(rows, table.Row{
-			user.LastName,
-			user.FirstName,
+			user.DisplayName,
 			user.Klasse,
 			fmt.Sprintf("%d", user.Alter),
 		})
@@ -193,15 +193,8 @@ func main() {
 
 	// Sort the rows by Klasse, LastName, FirstName.
 	sort.SliceStable(rows, func(i, j int) bool {
-		if rows[i][2] == rows[j][2] {
-			if rows[i][0] == rows[j][0] {
-				return rows[i][1] < rows[j][1]
-			}
-			return rows[i][0] < rows[j][0]
-		}
-		return rows[i][2] < rows[j][2]
+		return rows[i][0] < rows[j][0]
 	})
-
 
 	t := table.New(
 		table.WithColumns(columns),
@@ -211,9 +204,9 @@ func main() {
 
 	// Initialize the model.
 	initialModel := model{
-		textInput: ti,
+		textInput:    ti,
 		autocomplete: []string{},
-		table: t,
+		table:        t,
 	}
 
 	// Start the Bubble Tea program.

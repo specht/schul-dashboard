@@ -1,41 +1,47 @@
 <div class='container'>
     <div class='row'>
         <div class='col-md-12'>
-        <h3 style='margin-bottom: 1em;'>Einladung zur Umfrage</h3>
-        
-        <div style='float: left; width: 36px; height: 36px; margin-right: 15px; position: relative; top: 5px; left: 4px;'>
-        #{poll_data[:organizer_icon]}
-        </div>
-        <div style='position: relative; top: -1px;'>
-            #{poll_data[:organizer]} hat Sie (#{poll_data[:external_user_name]}) zu einer Umfrage eingeladen: <strong>#{poll_data[:title]}</strong><br />
-            #{poll_data[:html]}         
-        </div>
-        <hr />
-        <div style='text-align: center;'>
-            <button class="btn btn-success btn-lg bu-launch-poll" #{poll_data[:disable_launch_button] ? 'disabled' : ''} data-poll-run-id="#{poll_data[:prid]}" data-poll-external-code="#{poll_data[:code]}">Zur Umfrage&nbsp;<i class="fa fa-angle-double-right"></i></button>
+            <h3 style='margin-bottom: 1em;'>Einladung zur Umfrage</h3>
+
+            <div
+                style='float: left; width: 36px; height: 36px; margin-right: 15px; position: relative; top: 5px; left: 4px;'>
+                #{poll_data[:organizer_icon]}
+            </div>
+            <div style='position: relative; top: -1px;'>
+                #{poll_data[:organizer]} hat Sie (#{poll_data[:external_user_name]}) zu einer Umfrage eingeladen:
+                <strong>#{poll_data[:title]}</strong><br />
+                #{poll_data[:html]}
+            </div>
+            <hr />
+            <div style='text-align: center;'>
+                <button class="btn btn-success btn-lg bu-launch-poll" #{poll_data[:disable_launch_button] ? 'disabled'
+                    : '' } data-poll-run-id="#{poll_data[:prid]}" data-poll-external-code="#{poll_data[:code]}">Zur
+                    Umfrage&nbsp;<i class="fa fa-angle-double-right"></i></button>
+            </div>
         </div>
     </div>
-</div>
 
-<style>
-b.key {
-    display: inline-block;
-    width: 130px;
-}
-.alert {
-/*     padding: 15px 0; */
-/*     border: none; */
-    margin-top: 15px;
-}
-.go_div {
-    text-align: center;
-}
-.go_div .btn {
-    margin: 5px;
-}
+    <style>
+        b.key {
+            display: inline-block;
+            width: 130px;
+        }
 
-.alert-secondary {
-    background-color: rgba(255, 255, 255, 0.5);
-}
-</style>
+        .alert {
+            /*     padding: 15px 0; */
+            /*     border: none; */
+            margin-top: 15px;
+        }
 
+        .go_div {
+            text-align: center;
+        }
+
+        .go_div .btn {
+            margin: 5px;
+        }
+
+        .alert-secondary {
+            background-color: rgba(255, 255, 255, 0.5);
+        }
+    </style>

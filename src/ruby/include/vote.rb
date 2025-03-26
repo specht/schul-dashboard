@@ -1,7 +1,6 @@
 class Main < Sinatra::Base
     post '/api/create_vote' do
-        raise 'not used anymore'
-        # require_teacher_or_sv!
+        assert(user_with_role_logged_in?(:can_create_polls))
         data = parse_request_data(:required_keys => [:title, :date, :count],
                                   :types => {:count => Integer})
         possible_codes = (0..9999).to_a
@@ -30,8 +29,7 @@ class Main < Sinatra::Base
     end
 
     post '/api/get_votes' do
-        raise 'not used anymore'
-        # require_teacher_or_sv!
+        assert(user_with_role_logged_in?(:can_create_polls))
         codes = neo4j_query(<<~END_OF_QUERY, :email => @session_user[:email]).map { |x| x['v.code'] }
             MATCH (v:Vote)-[:BELONGS_TO]->(:User {email: $email})
             RETURN v.code;
@@ -57,8 +55,7 @@ class Main < Sinatra::Base
     end
 
     post '/api/delete_vote' do
-        raise 'not used anymore'
-        # require_teacher_or_sv!
+        assert(user_with_role_logged_in?(:can_create_polls))
         data = parse_request_data(:required_keys => [:code],
                                   :types => {:code => Integer})
         code = data[:code]
@@ -74,7 +71,7 @@ class Main < Sinatra::Base
     end
 
     def vote_codes_from_token(vote_code, token, _count)
-        raise 'not used anymore'
+        assert(user_with_role_logged_in?(:can_create_polls))
         count = ((_count + 20) / 4).to_i * 4
         vote_code = sprintf('%04d', vote_code)
         codes = []
@@ -93,8 +90,7 @@ class Main < Sinatra::Base
     end
 
     get '/api/get_vote_pdf/*' do
-        raise 'not used anymore'
-        # require_teacher_or_sv!
+        assert(user_with_role_logged_in?(:can_create_polls))
         code = request.path.sub('/api/get_vote_pdf/', '').to_i
         neo4j_query_expect_one(<<~END_OF_QUERY, :code => code, :email => @session_user[:email])
             MATCH (v:Vote {code: $code})-[:BELONGS_TO]->(u:User {email: $email})

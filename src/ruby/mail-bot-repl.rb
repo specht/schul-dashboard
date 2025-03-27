@@ -13,6 +13,8 @@ class Neo4jGlobal
     include Neo4jBolt
 end
 
+Thread.abort_on_exception = true
+
 $neo4j = Neo4jGlobal.new
 
 class MailBotRepl < Sinatra::Base

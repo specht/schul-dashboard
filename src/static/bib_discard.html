@@ -12,13 +12,17 @@
         </div>
     </div>
     <div id='book_table'></div>
-    <div style='display: #{can_manage_bib_special_access_logged_in? ? 'block' : 'none'};'>
-        <button id='bu_open_div_discard_stem' class="btn btn-outline-secondary"><i class='fa fa-trash'></i>&nbsp;&nbsp;Stammsignatur ausmustern</button>
+    <div style='display: #{can_manage_bib_special_access_logged_in? ? ' block' : 'none' };'>
+        <button id='bu_ignore_checksum' data-value="no" class="btn btn-outline-secondary"><i
+                class='fa fa-times'></i>&nbsp;&nbsp;Prüfsumme ignorieren</button>
+        <button id='bu_open_div_discard_stem' class="btn btn-outline-secondary"><i
+                class='fa fa-trash'></i>&nbsp;&nbsp;Stammsignatur ausmustern</button>
         <div id="div_discard_stem" style="display: none;">
             <h3>Stammsignatur ausmustern</h3>
             <div class="alert alert-danger">
                 Achtung: Diese Funktion ist nur mit Spezialberechtigung verfügbar.
-                Bitte vergewissern Sie sich doppelt und dreifach, dass Sie die richtige Stammsignatur eingeben, bevor Sie auf »Ausmustern« drücken.
+                Bitte vergewissern Sie sich doppelt und dreifach, dass Sie die richtige Stammsignatur eingeben, bevor
+                Sie auf »Ausmustern« drücken.
                 <ol style='list-style: decimal; padding-left: 2em;'>
                     <li>Bitte geben Sie zuerst die Stammsignatur ein und drücken Sie auf »Senden«.</li>
                     <li>Vergewissern Sie sich, dass es sich um das richtige Buch handelt. Anschließend können Sie
@@ -27,7 +31,8 @@
                 </ol>
             </div>
             <div id='discard_stem_ig' class="input-group mt-1 mb-2">
-                <input id='ti_discard_stem' type="text" class="form-control" style="text-align: center;" placeholder="Bitte geben Sie die Stammsignatur ein">
+                <input id='ti_discard_stem' type="text" class="form-control" style="text-align: center;"
+                    placeholder="Bitte geben Sie die Stammsignatur ein">
                 <div class="input-group-append">
                     <button id='bu_send_discard_stem_find' class="btn btn-success" type="button">Senden</button>
                 </div>
@@ -40,8 +45,10 @@
                     <b>Autor:</b> <span id="ti_author"></span><br />
                     <b>Titel:</b> <span id="ti_title"></span>
                 </div>
-                <button id='bu_discard_1' class="btn btn-danger"><i class='fa fa-trash'></i>&nbsp;&nbsp;Ausmustern</button>
-                <button id='bu_discard_2' style='display: none;' class="btn btn-danger"><i class='fa fa-trash'></i>&nbsp;&nbsp;Ja ich bin mir ganz sicher, weg damit!</button>
+                <button id='bu_discard_1' class="btn btn-danger"><i
+                        class='fa fa-trash'></i>&nbsp;&nbsp;Ausmustern</button>
+                <button id='bu_discard_2' style='display: none;' class="btn btn-danger"><i
+                        class='fa fa-trash'></i>&nbsp;&nbsp;Ja ich bin mir ganz sicher, weg damit!</button>
             </div>
         </div>
     </div>
@@ -61,6 +68,9 @@
             bnr: parts.bnr
         };
         if (parts.checksum) data.checksum = parts.checksum;
+        let ignore_checksum = $('#bu_ignore_checksum').data('value') === 'yes';
+        if (ignore_checksum) data.skip_checksum_check = 'yes';
+
         bib_api_call('/jwt/discard_exemplar', data, function (data) {
             console.log(data);
             if (data.success) {
@@ -102,13 +112,30 @@
             on_scan: on_scan
         });
 
-        $('#bu_open_div_discard_stem').on('click', function(e) {
+        $('#bu_ignore_checksum').on('click', function (e) {
+            let value = $('#bu_ignore_checksum').data('value') === 'yes';
+            if (value) {
+                $('#bu_ignore_checksum').data('value', 'no');
+                $('#bu_ignore_checksum').removeClass('btn-success');
+                $('#bu_ignore_checksum').addClass('btn-outline-secondary');
+                $('#bu_ignore_checksum .fa').removeClass('fa-check');
+                $('#bu_ignore_checksum .fa').addClass('fa-times');
+            } else {
+                $('#bu_ignore_checksum').data('value', 'yes');
+                $('#bu_ignore_checksum').addClass('btn-success');
+                $('#bu_ignore_checksum').removeClass('btn-outline-secondary');
+                $('#bu_ignore_checksum .fa').addClass('fa-check');
+                $('#bu_ignore_checksum .fa').removeClass('fa-times');
+            }
+        });
+
+        $('#bu_open_div_discard_stem').on('click', function (e) {
             $('#bu_open_div_discard_stem').hide();
             $('#div_discard_stem').slideDown();
             $('#ti_discard_stem').focus();
         });
 
-        $('#bu_send_discard_stem_find').on('click', function(e) {
+        $('#bu_send_discard_stem_find').on('click', function (e) {
             let stem = parseInt($('#ti_discard_stem').val().trim());
             bib_api_call('/jwt/get_book', { stem: stem }, function (data) {
                 if (data.success) {
@@ -121,12 +148,12 @@
             });
         });
 
-        $('#bu_discard_1').on('click', function(e) {
+        $('#bu_discard_1').on('click', function (e) {
             $('#bu_discard_1').prop('disabled', true);
             $('#bu_discard_2').show();
         });
 
-        $('#bu_discard_2').on('click', function(e) {
+        $('#bu_discard_2').on('click', function (e) {
             let stem = parseInt($('#ti_discard_stem').val().trim());
             bib_api_call('/jwt/discard_stem', { stem: stem }, function (data) {
                 if (data.success) {

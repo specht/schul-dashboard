@@ -19,6 +19,32 @@ class Main < Sinatra::Base
         respond(:uploaded => 'yeah')
     end
 
+    post '/api/upload_poll_image' do
+        require_user!
+        entry = params['file']
+        filename = entry['filename']
+        blob = entry['tempfile'].read
+        sha1 = Digest::SHA1.hexdigest(blob)[0, 16]
+        path = "/internal/poll_uploads/images/poll-#{sha1}.#{filename.split('.').last}"
+        File.open(path, 'w') do |f|
+            f.write(blob)
+        end
+        [2048].each do |width|
+            jpg_path = "/internal/poll_uploads/images/poll-#{sha1}-#{width}.jpg"
+            system("convert -auto-orient -set colorspace RGB  \"#{path}\" -resize #{width}x#{width}^ -quality 85 -sampling-factor 4:2:0 -strip \"#{jpg_path}\"")
+        end
+        FileUtils.rm_f(path)
+        respond(:uploaded => 'yeah', :stored_path => "poll-#{sha1}")
+    end
+
+    get '/api/get_poll_photo/:slug' do
+        require_user!
+        slug = params[:slug]
+        path = "/internal/poll_uploads/images/#{slug}"
+        response.headers['Cache-Control'] = "max-age=#{3600 * 24 * 365}"
+        respond_raw_with_mimetype(File.read(path), 'image/jpeg')
+    end
+
     post '/api/upload_sus_image' do
         require_user!
         entry = params['file']

@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="de">
+
 <head>
     <!--
 
@@ -80,204 +81,246 @@
     <link href="/gen/css/compiled-#{compiled_css_sha1}.css" rel="stylesheet" />
 
     <style>
-    html {
-        -moz-filter: hue-rotate(#{(@session_user || {})[:hue] || 0}deg) saturate(#{(@session_user || {})[:saturation] || 1.0}) brightness(#{(@session_user || {})[:brightness] || 1.0}) contrast(#{(@session_user || {})[:contrast] || 1.0}) sepia(#{(@session_user || {})[:sepia] || 0.0});
-        -webkit-filter: hue-rotate(#{(@session_user || {})[:hue] || 0}deg) saturate(#{(@session_user || {})[:saturation] || 1.0}) brightness(#{(@session_user || {})[:brightness] || 1.0}) contrast(#{(@session_user || {})[:contrast] || 1.0}) sepia(#{(@session_user || {})[:sepia] || 0.0});
-        filter: hue-rotate(#{(@session_user || {})[:hue] || 0}deg) saturate(#{(@session_user || {})[:saturation] || 1.0}) brightness(#{(@session_user || {})[:brightness] || 1.0}) contrast(#{(@session_user || {})[:contrast] || 1.0}) sepia(#{(@session_user || {})[:sepia] || 0.0});
+        html {
+            -moz-filter: hue-rotate(#{(@session_user || {})[:hue] || 0
+        }
+
+        deg) saturate(#{(@session_user || {})[:saturation] || 1.0
+        }) brightness(#{(@session_user || {})[:brightness] || 1.0
+        }) contrast(#{(@session_user || {})[:contrast] || 1.0
+        }) sepia(#{(@session_user || {})[:sepia] || 0.0
+        });
+        -webkit-filter: hue-rotate(#{(@session_user || {})[:hue] || 0
+        }
+
+        deg) saturate(#{(@session_user || {})[:saturation] || 1.0
+        }) brightness(#{(@session_user || {})[:brightness] || 1.0
+        }) contrast(#{(@session_user || {})[:contrast] || 1.0
+        }) sepia(#{(@session_user || {})[:sepia] || 0.0
+        });
+        filter: hue-rotate(#{(@session_user || {})[:hue] || 0
+        }
+
+        deg) saturate(#{(@session_user || {})[:saturation] || 1.0
+        }) brightness(#{(@session_user || {})[:brightness] || 1.0
+        }) contrast(#{(@session_user || {})[:contrast] || 1.0
+        }) sepia(#{(@session_user || {})[:sepia] || 0.0
+        });
         transition: filter 0.25s ease-out;
-    }
-    :root {
-        --analog-opacity: #{(@session_user || {})[:analog] || 0};
-    }
-    .navbar::after, .foot::after, #main_container::after, .container::after, .dropdown-menu::after, .modal::after {
-        pointer-events: none;
-        opacity: var(--analog-opacity);
-        transition: opacity 0.25s ease-out;
-        content: "";
-        background-image: url("/grain/grain.jpg");
-        background-size: 2000px;
-        background-position: 50% 50%;
-        position: absolute;
-        left: 0;
-        top: 0;
-        right: 0;
-        bottom: 0;
-        border-radius: inherit;
-    }
-    .modal {z-index: 8000;}
-    .navbar {z-index: 8000;}
-    body {
-        #{ path == '/static/h4ck.html' || path == '/static/cyph3r.html' ? '/*' : ''} 
-        background-image: url(#{File.exist?('/gen/bg/bg-' + color_scheme + '.jpg') ? '/gen/bg/bg-#{color_scheme}.jpg' : '/gen/bg/bg-#{color_scheme[0, color_scheme.size - 1]}0.svg'});
+        }
+
+        :root {
+            --analog-opacity: #{(@session_user || {})[:analog] || 0
+        }
+
+        ;
+        }
+
+        .navbar::after,
+        .foot::after,
+        #main_container::after,
+        .container::after,
+        .dropdown-menu::after,
+        .modal::after {
+            pointer-events: none;
+            opacity: var(--analog-opacity);
+            transition: opacity 0.25s ease-out;
+            content: "";
+            background-image: url("/grain/grain.jpg");
+            background-size: 2000px;
+            background-position: 50% 50%;
+            position: absolute;
+            left: 0;
+            top: 0;
+            right: 0;
+            bottom: 0;
+            border-radius: inherit;
+        }
+
+        .modal {
+            z-index: 8000;
+        }
+
+        .navbar {
+            z-index: 8000;
+        }
+
+        body {
+            #{ path == '/static/h4ck.html' || path == '/static/cyph3r.html' ? '/*' : ''} background-image: url(#{File.exist?('/gen/bg/bg-' + color_scheme + '.jpg') ? '/gen/bg/bg-#{color_scheme}.jpg' : '/gen/bg/bg-#{color_scheme[0, color_scheme.size - 1]}0.svg'
+        });
         background-color: #{color_scheme[0] == 'l' ? '#f8f8f8' : '#080808'};
-        #{ path == '/static/h4ck.html' || path == '/static/cyph3r.html' ? '*/ transition: none;' : ''}
-        background-repeat: no-repeat;
+        #{ path == '/static/h4ck.html' || path == '/static/cyph3r.html' ? '*/ transition: none;' : ''} background-repeat: no-repeat;
         background-size: max(100vw, 1920px);
         background-position: 50% 0%;
-        #{css_for_font(font_family).map { |k, v| "#{k}: #{v};"}.join(' ')}
-    }
+        #{css_for_font(font_family).map { |k, v| "#{k}: #{v};
+        "}.join(' ')}
 
-    .fc-view-harness, table {
-        background-color: rgba(255, 255, 255, 0.3);
-    }
-    
-    .navbar {
-        background-color: #e8e8e8;
-    }
+        }
 
-    .text-muted {
-/*         color: unset!important; */
-/*         opacity: 0.7; */
-        color: #666!important;
-    }
-    
-    .container {
-        border-bottom-left-radius: 16px; 
-        border-bottom-right-radius: 16px; 
-        padding-top: 30px; 
-        background-color: rgba(255, 255, 255, 0.75); 
-        padding-bottom: 30px;
-        box-shadow: 0 0 30px rgba(0,0,0,0.3);
-/*         overflow-x: scroll; */
-    }
-    
-    .container-fluid {
-        padding-top: 30px; 
-        padding-bottom: 30px;
-    }
-    
-    .container-fluid.solid {
-        background-color: rgba(255, 255, 255, 0.75); 
-    }
-    
-    .form-control:disabled {
-        opacity: 0.7;
-    }
+        .fc-view-harness,
+        table {
+            background-color: rgba(255, 255, 255, 0.3);
+        }
 
-    .form-control[readonly] {
-        background-color: rgba(255, 255, 255, 0.5);
-    }
+        .navbar {
+            background-color: #e8e8e8;
+        }
 
-    hr {
-        border-top: 1px solid rgba(0, 0, 0, 0.2);
-    }
-    
-    @media (max-width: 575px) {
+        .text-muted {
+            /*         color: unset!important; */
+            /*         opacity: 0.7; */
+            color: #666 !important;
+        }
+
         .container {
-            border-bottom-left-radius: 0; 
-            border-bottom-right-radius: 0; 
+            border-bottom-left-radius: 16px;
+            border-bottom-right-radius: 16px;
+            padding-top: 30px;
+            background-color: rgba(255, 255, 255, 0.75);
+            padding-bottom: 30px;
+            box-shadow: 0 0 30px rgba(0, 0, 0, 0.3);
+            /*         overflow-x: scroll; */
         }
-    }
 
-    #advent_calendar {
-        position: fixed;
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        z-index: 100001;
-        background-color: #{((@session_user || {})[:color_scheme] || '')[0] == 'l' ? 'rgba(255,255,255,0.5)' : 'rgba(0,0,0,0.5)'};
-    }
+        .container-fluid {
+            padding-top: 30px;
+            padding-bottom: 30px;
+        }
 
-    #advent_calendar .square {
-        width: 108vh;
-        height: calc(90vh + 15px);
-        background-image: url(/images/advent-calendar/bg.jpg);
-        background-size: cover;
-        margin: 0;
-        position: absolute;
-        top: 50%;
-        left: 50%;
-        -ms-transform: translate(-50%, -50%);
-        transform: translate(-50%, -50%);    
-        border-radius: 1vh;
-        box-shadow: 0 0 2vh rgba(0,0,0,0.5);
-        border: 1vh solid #f8f8f8;
-        border-bottom: calc(1vh + 15px) solid #f8f8f8;
-    }
+        .container-fluid.solid {
+            background-color: rgba(255, 255, 255, 0.75);
+        }
 
-    #advent_calendar .attribution {
-        font-size: 12px;
-        color: #888;
-        position: absolute;
-        bottom: -20px;
-        width: 100%;
-        text-align: center;
-    }
+        .form-control:disabled {
+            opacity: 0.7;
+        }
 
-    @media (orientation: portrait) {
+        .form-control[readonly] {
+            background-color: rgba(255, 255, 255, 0.5);
+        }
+
+        hr {
+            border-top: 1px solid rgba(0, 0, 0, 0.2);
+        }
+
+        @media (max-width: 575px) {
+            .container {
+                border-bottom-left-radius: 0;
+                border-bottom-right-radius: 0;
+            }
+        }
+
+        #advent_calendar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            z-index: 100001;
+            background-color: #{((@session_user || {})[:color_scheme] || '')[0]=='l' ? 'rgba(255,255,255,0.5)': 'rgba(0,0,0,0.5)'
+        }
+
+        ;
+        }
+
         #advent_calendar .square {
-            width: 94vw;
-            height: calc(112.8vw + 15px);
-            border-radius: 1vw;
-            box-shadow: 0 0 2vw rgba(0,0,0,0.5);
-            border: 1vw solid #f8f8f8;
-            border-bottom: calc(1vw + 15px) solid #f8f8f8;
+            width: 108vh;
+            height: calc(90vh + 15px);
+            background-image: url(/images/advent-calendar/bg.jpg);
+            background-size: cover;
+            margin: 0;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            -ms-transform: translate(-50%, -50%);
+            transform: translate(-50%, -50%);
+            border-radius: 1vh;
+            box-shadow: 0 0 2vh rgba(0, 0, 0, 0.5);
+            border: 1vh solid #f8f8f8;
+            border-bottom: calc(1vh + 15px) solid #f8f8f8;
         }
-    }
 
-    #{print_advent_calendar_css()}
+        #advent_calendar .attribution {
+            font-size: 12px;
+            color: #888;
+            position: absolute;
+            bottom: -20px;
+            width: 100%;
+            text-align: center;
+        }
 
-    #advent_calendar .door {
-        position: absolute;
-        perspective: 1000px;
-        cursor: pointer;
-        display: inline-block;
-        margin: 0;
-        padding: 0.3%;
-    }
+        @media (orientation: portrait) {
+            #advent_calendar .square {
+                width: 94vw;
+                height: calc(112.8vw + 15px);
+                border-radius: 1vw;
+                box-shadow: 0 0 2vw rgba(0, 0, 0, 0.5);
+                border: 1vw solid #f8f8f8;
+                border-bottom: calc(1vw + 15px) solid #f8f8f8;
+            }
+        }
 
-    /* This container is needed to position the front and back side */
-    .flip-card-inner {
-        position: relative;
-        width: 100%;
-        height: 100%;
-        text-align: center;
-        transition: transform 0.8s;
-        transition-timing-function: cubic-bezier(0.165, 0.84, 0.44, 1);
-        transform-style: preserve-3d;
-    }
+        #{print_advent_calendar_css()} #advent_calendar .door {
+            position: absolute;
+            perspective: 1000px;
+            cursor: pointer;
+            display: inline-block;
+            margin: 0;
+            padding: 0.3%;
+        }
 
-    .door.open .flip-card-inner {
-        transform: rotateY(180deg);
-    }
+        /* This container is needed to position the front and back side */
+        .flip-card-inner {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            text-align: center;
+            transition: transform 0.8s;
+            transition-timing-function: cubic-bezier(0.165, 0.84, 0.44, 1);
+            transform-style: preserve-3d;
+        }
 
-    /* Position the front and back side */
-    .flip-card-front, .flip-card-back {
-        position: absolute;
-        width: 100%;
-        height: 100%;
-        -webkit-backface-visibility: hidden; /* Safari */
-        backface-visibility: hidden;
-        border-radius: 4%;
-        /* box-shadow: inset 5px 5px 10px rgba(0,0,0,0.3); */
-        box-shadow: 2px 2px 3px rgba(0,0,0,0.5);
-        /* border: 1px solid rgba(0,0,0,1); */
-    }
+        .door.open .flip-card-inner {
+            transform: rotateY(180deg);
+        }
 
-    /* Style the back side */
-    .flip-card-back {
-        background-color: #023;
-        transform: rotateY(180deg);
-        /* image-rendering: pixelated;
+        /* Position the front and back side */
+        .flip-card-front,
+        .flip-card-back {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            -webkit-backface-visibility: hidden;
+            /* Safari */
+            backface-visibility: hidden;
+            border-radius: 4%;
+            /* box-shadow: inset 5px 5px 10px rgba(0,0,0,0.3); */
+            box-shadow: 2px 2px 3px rgba(0, 0, 0, 0.5);
+            /* border: 1px solid rgba(0,0,0,1); */
+        }
+
+        /* Style the back side */
+        .flip-card-back {
+            background-color: #023;
+            transform: rotateY(180deg);
+            /* image-rendering: pixelated;
         -ms-interpolation-mode: nearest-neighbor;  */
-    }
+        }
 
-    .snowman {
-        background-image: url(/images/advent-calendar/snowman.png);
-        background-size: cover;
-        position: fixed;
-        left: 20px;
-        bottom: 20px;
-        transform: scaleX(-1);
-        width: 120px;
-        height: 160px;
-    }
+        .snowman {
+            background-image: url(/images/advent-calendar/snowman.png);
+            background-size: cover;
+            position: fixed;
+            left: 20px;
+            bottom: 20px;
+            transform: scaleX(-1);
+            width: 120px;
+            height: 160px;
+        }
 
-    .bu-launch-adventskalender {
-        cursor: pointer;
-    }
-
+        .bu-launch-adventskalender {
+            cursor: pointer;
+        }
     </style>
     #{(@session_user || {})[:dark] ? '' : '<!--'}
     <link href="/dark.css" rel="stylesheet" />
@@ -290,704 +333,744 @@
     #{PAGE_CSS_HERE}
 </head>
 
-<body #{(@session_user || {})[:dark] ? 'class=\'dark\'' : ''}>
+<body #{(@session_user || {})[:dark] ? 'class=\' dark\'' : '' }>
 
-<script>
-var poll_run_data = null;
-var force_close_poll_response = false;
-var CAN_HANDLE_EXTERNAL_USERS = false;
-var AGR_HOST = "#{DEVELOPMENT ? 'http://localhost:8035' : 'https://agr.nhcham.org'}";
-var BIB_HOST = "#{DEVELOPMENT ? 'http://localhost:8045' : 'https://gyst-bib.nhcham.org'}";
-var TRESOR_HOST = "#{DATENTRESOR_HOST}";
+    <script>
+        var poll_run_data = null;
+        var force_close_poll_response = false;
+        var CAN_HANDLE_EXTERNAL_USERS = false;
+        var AGR_HOST = "#{DEVELOPMENT ? 'http://localhost:8035' : 'https://agr.nhcham.org'}";
+        var BIB_HOST = "#{DEVELOPMENT ? 'http://localhost:8045' : 'https://gyst-bib.nhcham.org'}";
+        var TRESOR_HOST = "#{DATENTRESOR_HOST}";
 
-function collect_poll_run_data() {
-    // returns whether we have pending changes
-    poll_run_data.response = {};
-    let answered_item_count = 0;
-    let total_item_count = 0;
-    for (let item_index in poll_run_data.poll_run.items) {
-        let item = poll_run_data.poll_run.items[item_index];
-        if (item.type === 'radio') {
-            total_item_count += 1;
-            poll_run_data.response[item_index] = null;
-            if (poll_run_data.widgets[item_index].find('.selected').length > 0)
-                poll_run_data.response[item_index] = parseInt($(poll_run_data.widgets[item_index].find('.selected').eq(0)).data('answer-index'));
-            if (poll_run_data.response[item_index] !== null)
-                answered_item_count += 1;
-        } else if (item.type === 'checkbox') {
-            total_item_count += 1;
-            poll_run_data.response[item_index] = [];
-            jQuery.each(poll_run_data.widgets[item_index].find('.selected'), function(_, p) {
-                let answer_index = parseInt($(p).data('answer-index'));
-                poll_run_data.response[item_index].push(answer_index);
-            });
-            if (poll_run_data.response[item_index].length > 0)
-                answered_item_count += 1;
-        } else if (item.type === 'textarea') {
-            let s = poll_run_data.widgets[item_index].val().trim();
-            if (s.length > 0)
-                poll_run_data.response[item_index] = s;
-        }
-    }
-    $('.poll-run-progress').css('width', `${answered_item_count * 100 / total_item_count}%`);
-    $('.poll-run-progress-label').text(`${answered_item_count} von ${total_item_count} Frage${total_item_count === 1 ? '' : 'n'} beantwortet`);
-    for (let k in poll_run_data.response) {
-        if (poll_run_data.response[k] === null || (typeof(poll_run_data.response[k]) === 'object' && poll_run_data.response[k].length === 0))
-            delete poll_run_data.response[k];
-    }
-    let current_response_json = JSON.stringify(poll_run_data.response);
-    let stored_response_json = JSON.stringify(poll_run_data.stored_response);
-    if (current_response_json !== stored_response_json) {
-        $('#bu_hide_poll_run').prop('disabled', true);
-        $('#bu_discard_poll_results').prop('disabled', false).removeClass('btn-outline-secondary').addClass('btn-secondary');
-        $('#bu_submit_poll_results').prop('disabled', false).removeClass('btn-outline-success').addClass('btn-success');
-        $('#bu_close_poll_response_modal').prop('disabled', true).removeClass('btn-secondary').addClass('btn-outline-secondary');
-        return true;
-    } else {
-        $('#bu_hide_poll_run').prop('disabled', false);
-        $('#bu_discard_poll_results').prop('disabled', true).removeClass('btn-secondary').addClass('btn-outline-secondary');
-        $('#bu_submit_poll_results').prop('disabled', true).removeClass('btn-success').addClass('btn-outline-success');
-        $('#bu_close_poll_response_modal').prop('disabled', false).removeClass('btn-outline-secondary').addClass('btn-secondary');
-        return false;
-    }
-}
-
-function launch_poll(prid, external_code) {
-    if (typeof(external_code) === 'undefined')
-        external_code = null;
-    force_close_poll_response = false;
-    poll_run_data = {};
-    poll_run_data.widgets = {};
-    (function(external_code) {
-        api_call('/api/get_poll_run', {prid: prid, external_code: external_code}, function(data) {
-            if (data.success) {
-                console.log(data)
-                poll_run_data.prid = data.poll_run.id;
-                poll_run_data.external_code = external_code;
-                poll_run_data.poll = data.poll;
-                poll_run_data.poll_run = data.poll_run;
-                poll_run_data.organizer = data.organizer;
-                poll_run_data.total_participants = data.total_participants;
-                poll_run_data.stored_response = data.stored_response;
-                if (poll_run_data.poll_run.anonymous) {
-                    $('.poll-run-anonymous').show();
-                    $('.poll-run-non-anonymous').hide();
-                } else {
-                    $('.poll-run-anonymous').hide();
-                    $('.poll-run-non-anonymous').show();
+        function collect_poll_run_data() {
+            // returns whether we have pending changes
+            poll_run_data.response = {};
+            let answered_item_count = 0;
+            let total_item_count = 0;
+            for (let item_index in poll_run_data.poll_run.items) {
+                let item = poll_run_data.poll_run.items[item_index];
+                if (item.type === 'radio') {
+                    total_item_count += 1;
+                    poll_run_data.response[item_index] = null;
+                    if (poll_run_data.widgets[item_index].find('.selected').length > 0)
+                        poll_run_data.response[item_index] = parseInt($(poll_run_data.widgets[item_index].find('.selected').eq(0)).data('answer-index'));
+                    if (poll_run_data.response[item_index] !== null)
+                        answered_item_count += 1;
+                } else if (item.type === 'checkbox') {
+                    total_item_count += 1;
+                    poll_run_data.response[item_index] = [];
+                    jQuery.each(poll_run_data.widgets[item_index].find('.selected'), function (_, p) {
+                        let answer_index = parseInt($(p).data('answer-index'));
+                        poll_run_data.response[item_index].push(answer_index);
+                    });
+                    if (poll_run_data.response[item_index].length > 0)
+                        answered_item_count += 1;
+                } else if (item.type === 'textarea') {
+                    let s = poll_run_data.widgets[item_index].val().trim();
+                    if (s.length > 0)
+                        poll_run_data.response[item_index] = s;
                 }
-                $('#pollResponseModal .poll-run-organizer').text(data.organizer);
-                $('#pollResponseModal .poll-run-total-participants').text(`${data.total_participants}`);
-                $('#pollResponseModal .poll-title').text(data.poll.title);
-                $('#pollResponseModal .poll_submit_success').hide();
-                if (JSON.stringify(poll_run_data.stored_response) === '{}')
-                    $('#pollResponseModal .poll_submit_update_message').hide();
-                else
-                    $('#pollResponseModal .poll_submit_update_message').show();
-                $('#pollResponseModal .poll_submit_error').hide();
-                let div = $('#pollResponseModal .poll-items');
-                div.empty();
-                for (let item_index in data.poll_run.items) {
-                    let item = data.poll_run.items[item_index];
-                    let item_title = $('<p>').append($('<strong>').text(item.title));
-                    if (item.type === 'checkbox') {
-                        if ((item.max_checks || null) !== null) {
-                            item_title.append(' ').append($('<em>').html(`(Mehrfachnennungen möglich, aber <strong>höchstens ${item.max_checks} Antworten</strong>.)`));
+            }
+            $('.poll-run-progress').css('width', `${answered_item_count * 100 / total_item_count}%`);
+            $('.poll-run-progress-label').text(`${answered_item_count} von ${total_item_count} Frage${total_item_count === 1 ? '' : 'n'} beantwortet`);
+            for (let k in poll_run_data.response) {
+                if (poll_run_data.response[k] === null || (typeof (poll_run_data.response[k]) === 'object' && poll_run_data.response[k].length === 0))
+                    delete poll_run_data.response[k];
+            }
+            let current_response_json = JSON.stringify(poll_run_data.response);
+            let stored_response_json = JSON.stringify(poll_run_data.stored_response);
+            if (current_response_json !== stored_response_json) {
+                $('#bu_hide_poll_run').prop('disabled', true);
+                $('#bu_discard_poll_results').prop('disabled', false).removeClass('btn-outline-secondary').addClass('btn-secondary');
+                $('#bu_submit_poll_results').prop('disabled', false).removeClass('btn-outline-success').addClass('btn-success');
+                $('#bu_close_poll_response_modal').prop('disabled', true).removeClass('btn-secondary').addClass('btn-outline-secondary');
+                return true;
+            } else {
+                $('#bu_hide_poll_run').prop('disabled', false);
+                $('#bu_discard_poll_results').prop('disabled', true).removeClass('btn-secondary').addClass('btn-outline-secondary');
+                $('#bu_submit_poll_results').prop('disabled', true).removeClass('btn-success').addClass('btn-outline-success');
+                $('#bu_close_poll_response_modal').prop('disabled', false).removeClass('btn-outline-secondary').addClass('btn-secondary');
+                return false;
+            }
+        }
+
+        function launch_poll(prid, external_code) {
+            if (typeof (external_code) === 'undefined')
+                external_code = null;
+            force_close_poll_response = false;
+            poll_run_data = {};
+            poll_run_data.widgets = {};
+            (function (external_code) {
+                api_call('/api/get_poll_run', { prid: prid, external_code: external_code }, function (data) {
+                    if (data.success) {
+                        console.log(data)
+                        poll_run_data.prid = data.poll_run.id;
+                        poll_run_data.external_code = external_code;
+                        poll_run_data.poll = data.poll;
+                        poll_run_data.poll_run = data.poll_run;
+                        poll_run_data.organizer = data.organizer;
+                        poll_run_data.total_participants = data.total_participants;
+                        poll_run_data.stored_response = data.stored_response;
+                        if (poll_run_data.poll_run.anonymous) {
+                            $('.poll-run-anonymous').show();
+                            $('.poll-run-non-anonymous').hide();
                         } else {
-                            item_title.append(' ').append($('<em>').text('(Mehrfachnennungen möglich)'));
+                            $('.poll-run-anonymous').hide();
+                            $('.poll-run-non-anonymous').show();
                         }
-                    }
-                    div.append(item_title);
-                    if (item.type === 'radio' || item.type === 'checkbox') {
-                        let bc = $('<div>').addClass('poll_radio_buttons').data('item-index', item_index);
-                        poll_run_data.widgets[item_index] = bc;
-                        bc.data('poll_item_type', item.type);
-                        for (let answer_index in item.answers) {
-                            let answer = item.answers[answer_index];
-                            let p = $('<p>').text(answer).data('answer-index', answer_index);
-                            if (item.type === 'radio')
-                                p.prepend($("<i class='icon icon-selected fa fa-dot-circle-o'></i>"));
-                            else
-                                p.prepend($("<i class='icon icon-selected fa fa-check-circle-o'></i>"));
-                            p.prepend($("<i class='icon icon-unselected fa fa-circle-thin'></i>"));
-                            if (item.type === 'radio') {
-                                if ((poll_run_data.stored_response || {})[item_index] == answer_index)
-                                    p.addClass('selected');
-                            } else if (item.type === 'checkbox') {
-                                if ((((poll_run_data.stored_response || {})[item_index]) || []).indexOf(parseInt(answer_index)) >= 0)
-                                    p.addClass('selected');
-                            }
-                            p.click(function(e) {
-                                let p = $(e.target);
-                                let parent = $(e.target.closest('.poll_radio_buttons'));
-                                let item_index = parent.data('item-index');
-                                let item = poll_run_data.poll_run.items[item_index];
-                                let answer_index = p.data('answer-index');
-                                let type = parent.data('poll_item_type');
-                                let p_was_selected = p.hasClass('selected');
-                                if (type === 'radio') {
-                                    parent.find('p').removeClass('selected');
-                                }
-                                if (p_was_selected) {
-                                    p.removeClass('selected');
+                        $('#pollResponseModal .poll-run-organizer').text(data.organizer);
+                        $('#pollResponseModal .poll-run-total-participants').text(`${data.total_participants}`);
+                        $('#pollResponseModal .poll-title').text(data.poll.title);
+                        $('#pollResponseModal .poll_submit_success').hide();
+                        if (JSON.stringify(poll_run_data.stored_response) === '{}')
+                            $('#pollResponseModal .poll_submit_update_message').hide();
+                        else
+                            $('#pollResponseModal .poll_submit_update_message').show();
+                        $('#pollResponseModal .poll_submit_error').hide();
+                        let div = $('#pollResponseModal .poll-items');
+                        div.empty();
+                        for (let item_index in data.poll_run.items) {
+                            let item = data.poll_run.items[item_index];
+                            let item_title = $('<p>').append($('<strong>').text(item.title));
+                            if (item.type === 'checkbox') {
+                                if ((item.max_checks || null) !== null) {
+                                    item_title.append(' ').append($('<em>').html(`(Mehrfachnennungen möglich, aber <strong>höchstens ${item.max_checks} Antworten</strong>.)`));
                                 } else {
-                                    // check if max_checks is set
-                                    if ((item.type === 'checkbox') && (item.max_checks || null))
-                                    {
-                                        let count = 0;
-                                        jQuery.each(poll_run_data.widgets[item_index].find('.selected'), function(_, p) {
-                                            count += 1;
-                                        });
-                                        if (count < item.max_checks)
+                                    item_title.append(' ').append($('<em>').text('(Mehrfachnennungen möglich)'));
+                                }
+                            }
+                            div.append(item_title);
+                            if (item.type === 'radio' || item.type === 'checkbox') {
+                                let bc = $('<div>').addClass('poll_radio_buttons').data('item-index', item_index);
+                                poll_run_data.widgets[item_index] = bc;
+                                bc.data('poll_item_type', item.type);
+                                for (let answer_index in item.answers) {
+                                    let answer = item.answers[answer_index];
+                                    let p = $('<p>').text(answer).data('answer-index', answer_index);
+                                    if (item.type === 'radio')
+                                        p.prepend($("<i class='icon icon-selected fa fa-dot-circle-o'></i>"));
+                                    else
+                                        p.prepend($("<i class='icon icon-selected fa fa-check-circle-o'></i>"));
+                                    p.prepend($("<i class='icon icon-unselected fa fa-circle-thin'></i>"));
+                                    if (item.type === 'radio') {
+                                        if ((poll_run_data.stored_response || {})[item_index] == answer_index)
+                                            p.addClass('selected');
+                                    } else if (item.type === 'checkbox') {
+                                        if ((((poll_run_data.stored_response || {})[item_index]) || []).indexOf(parseInt(answer_index)) >= 0)
                                             p.addClass('selected');
                                     }
-                                    else
-                                        p.addClass('selected');
+                                    p.click(function (e) {
+                                        let p = $(e.target);
+                                        let parent = $(e.target.closest('.poll_radio_buttons'));
+                                        let item_index = parent.data('item-index');
+                                        let item = poll_run_data.poll_run.items[item_index];
+                                        let answer_index = p.data('answer-index');
+                                        let type = parent.data('poll_item_type');
+                                        let p_was_selected = p.hasClass('selected');
+                                        if (type === 'radio') {
+                                            parent.find('p').removeClass('selected');
+                                        }
+                                        if (p_was_selected) {
+                                            p.removeClass('selected');
+                                        } else {
+                                            // check if max_checks is set
+                                            if ((item.type === 'checkbox') && (item.max_checks || null)) {
+                                                let count = 0;
+                                                jQuery.each(poll_run_data.widgets[item_index].find('.selected'), function (_, p) {
+                                                    count += 1;
+                                                });
+                                                if (count < item.max_checks)
+                                                    p.addClass('selected');
+                                            }
+                                            else
+                                                p.addClass('selected');
+                                        }
+                                        collect_poll_run_data();
+                                    });
+                                    bc.append(p);
                                 }
-                                collect_poll_run_data();
-                            });
-                            bc.append(p);
+                                div.append(bc);
+                            } else if (item.type === 'textarea') {
+                                let textarea = $('<textarea>').addClass('form-control').data('item-index', item_index).css('margin-bottom', '15px');
+                                textarea.val((poll_run_data.stored_response || {})[item_index] || '');
+                                poll_run_data.widgets[item_index] = textarea;
+                                textarea.change(function (e) { collect_poll_run_data(); });
+                                div.append(textarea);
+                            } else if (item.type === 'paragraph') {
+                                let p = $('<p>').css('white-space', 'pre-line').text(item.text);
+                                div.append(p);
+                            } else if (item.type === 'image') {
+                                let image = $(`<img>`).attr('src', `/api/get_poll_photo/${item.sha1}-2048.jpg`);
+                                image.css('width', '100%');
+                                image.css('margin-bottom', '1em');
+                                div.append(image);
+                            }
                         }
-                        div.append(bc);
-                    } else if (item.type === 'textarea') {
-                        let textarea = $('<textarea>').addClass('form-control').data('item-index', item_index).css('margin-bottom', '15px');
-                        textarea.val((poll_run_data.stored_response || {})[item_index] || '');
-                        poll_run_data.widgets[item_index] = textarea;
-                        textarea.change(function(e) { collect_poll_run_data(); });
-                        div.append(textarea);
-                    } else if (item.type === 'paragraph') {
-                        let p = $('<p>').css('white-space', 'pre-line').text(item.text);
-                        div.append(p);
+                        collect_poll_run_data();
+                        if (external_code !== null && external_code.length > 0 || data.poll_run.visible == "no")
+                            $('#bu_hide_poll_run').hide();
+                        else
+                            $('#bu_hide_poll_run').show();
+                        $('#pollResponseModal').modal('show');
                     }
+                });
+            })(external_code);
+        }
+
+        function show_poll_run_results(prid) {
+            api_call('/api/get_poll_run_results', { prid: prid }, function (data) {
+                if (data.success) {
+                    $('#bu_poll_run_results_download_pdf').attr('href', `/api/poll_run_results_pdf/${data.prid}`);
+                    $('#bu_poll_run_results_download_zip').attr('href', `/api/poll_run_results_zip/${data.prid}`);
+                    $('#bu_poll_run_results_download_xlsx').attr('href', `/api/poll_run_results_xlsx/${data.prid}`);
+                    if (data.anonymous) {
+                        $('#bu_poll_run_results_download_zip').hide();
+                        $('#bu_poll_run_results_download_xlsx').hide();
+                    }
+                    else {
+                        $('#bu_poll_run_results_download_zip').show();
+                        $('#bu_poll_run_results_download_xlsx').show();
+                    }
+                    $('#pollRunResultsModal .poll-title').html(data.title);
+                    $('#pollRunResultsModal .poll-run-results-here').html(data.html);
+                    $('#pollRunResultsModal').modal('show');
                 }
-                collect_poll_run_data();
-                if (external_code !== null && external_code.length > 0 || data.poll_run.visible == "no")
-                    $('#bu_hide_poll_run').hide();
-                else
-                    $('#bu_hide_poll_run').show();
-                $('#pollResponseModal').modal('show');
-            }
-        });
-    })(external_code);
-}
-
-function show_poll_run_results(prid) {
-    api_call('/api/get_poll_run_results', {prid: prid}, function(data) {
-        if (data.success) {
-            $('#bu_poll_run_results_download_pdf').attr('href', `/api/poll_run_results_pdf/${data.prid}`);
-            $('#bu_poll_run_results_download_zip').attr('href', `/api/poll_run_results_zip/${data.prid}`);
-            $('#bu_poll_run_results_download_xlsx').attr('href', `/api/poll_run_results_xlsx/${data.prid}`);
-            if (data.anonymous) {
-                $('#bu_poll_run_results_download_zip').hide();
-                $('#bu_poll_run_results_download_xlsx').hide();
-            }
-            else {
-                $('#bu_poll_run_results_download_zip').show();
-                $('#bu_poll_run_results_download_xlsx').show();
-            }
-            $('#pollRunResultsModal .poll-title').html(data.title);
-            $('#pollRunResultsModal .poll-run-results-here').html(data.html);
-            $('#pollRunResultsModal').modal('show');
+            });
         }
-    });
-}
 
-</script>
+    </script>
 
-<div class="modal" id="__template_modal" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true" style='z-index: 200000;'>
-  <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h5 class="modal-title" >
-        </h5>
-      </div>
-      <div class="modal-body">
-      </div>
-      <div class="modal-footer">
-      </div>
-    </div>
-  </div>
-</div>
-
-<div class="modal" id="__template_modal_with_input" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true" style='z-index: 200000;'>
-    <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h5 class="modal-title" >
-          </h5>
-        </div>
-        <div class="modal-body">
-            <div class="modal-body-hint"></div>
-            <div class="form-group mt-2">
-                <input type="text" id="ti_template_modal_input" class="form-control">
-            </div>
-        </div>
-        <div class="modal-footer">
-        </div>
-      </div>
-    </div>
-  </div>
-  
-  <div class="modal" id="pollResponseModal" tabindex="-1" role="dialog" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-scrollable modal-xl modal-dialog-centered" role="document">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title poll-title"></h5>
-                <button id='bu_hide_poll_run' type="button" class="float-right btn btn-sm btn-outline-secondary"><i class='fa fa-eye-slash'></i>&nbsp;&nbsp;Diese Umfrage ausblenden</button>
-            </div>
-            <div class="modal-body">
-                <div class='alert alert-success poll-run-anonymous' style='padding-left: 50px; position: relative;'>
-                <i style='font-size:200%; position: absolute; left: 12px; top: 18px;' class='fa fa-user-secret'></i>Diese Umfrage ist anonym. <span class='poll-run-organizer'></span> wird #{schueler_logged_in? ? 'deine' : 'Ihre'} Antworten sehen können, aber nicht wissen, wer welche Antworten gegeben hat.<br />Insgesamt nehmen <span class='poll-run-total-participants'></span> Teilnehmerinnen und Teilnehmer an dieser Umfrage teil.
+    <div class="modal" id="__template_modal" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel"
+        aria-hidden="true" style='z-index: 200000;'>
+        <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">
+                    </h5>
                 </div>
-                <div class='alert alert-warning poll-run-non-anonymous' style='padding-left: 55px; position: relative;'>
-                <i style='font-size:200%; position: absolute; left: 10px; top: 18px;' class='fa fa-address-card-o'></i><strong>Hinweis:</strong> Diese Umfrage ist nicht anonym.<br /> <span class='poll-run-organizer'></span> wird #{schueler_logged_in? ? 'deine' : 'Ihre'} Antworten sehen können und auch die Tatsache, dass die Antworten von #{schueler_logged_in? ? 'dir' : 'Ihnen'} stammen.
+                <div class="modal-body">
                 </div>
-                <div class='row'>
-                    <div class='col-md-12 poll-items'></div>
+                <div class="modal-footer">
                 </div>
-            </div>
-            <div class="modal-footer">
-                <div class="progress" style='width: 100%;'>
-                    <div class="poll-run-progress progress-bar progress-bar-striped bg-success" role="progressbar" style="width: 0%;"><span class='poll-run-progress-label'></span></div>
-                </div>
-            </div>
-            <div class="modal-footer">
-                <div class='poll_submit_success mr-auto'><i class='fa fa-check-circle text-success'></i>&nbsp;&nbsp;#{schueler_logged_in? ? 'Deine' : 'Ihre'} Antworten wurden gespeichert.</div>
-                <div class='poll_submit_update_message mr-auto'><i class='fa fa-info-circle text-info'></i>&nbsp;&nbsp;#{schueler_logged_in? ? 'Du hast' : 'Sie haben'} bereits abgestimmt, #{schueler_logged_in? ? 'kannst deine' : 'können Ihre'} Einträge aber aktualisieren.</div>
-                <div class='poll_submit_error mr-auto'><i class='fa fa-exclamation-circle text-danger'></i>&nbsp;&nbsp;#{schueler_logged_in? ? 'Deine' : 'Ihre'} Antworten konnten nicht gespeichert werden<span class='poll_submit_error_message'></span></div>
-                <div id='save_poll_response_btn_container' style='display: inline-block;'>
-                    <button id='bu_discard_poll_results' type="button" class="btn btn-outline-secondary" disabled><i class='fa fa-times'></i>&nbsp;&nbsp;Änderungen verwerfen</button>
-                    <button id='bu_submit_poll_results' type="button" class="btn btn-outline-success" disabled><i class='fa fa-send'></i>&nbsp;&nbsp;Senden</button>
-                </div>
-                <button id='bu_close_poll_response_modal' type="button" class="btn btn-secondary" data-dismiss="modal">Schließen</button>
             </div>
         </div>
     </div>
-</div>
 
-<div class="modal" id="pollRunResultsModal" tabindex="-1" role="dialog" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-scrollable modal-lg modal-dialog-centered" role="document">
-        <div class="modal-content">
-<!--             <div class="modal-header"> -->
-<!--                 <h5 class="modal-title poll-title"></h5> -->
-<!--             </div> -->
-            <div class="modal-body">
-                <div class='row'>
-                    <div class='col-md-12 poll-run-results-here'></div>
+    <div class="modal" id="__template_modal_with_input" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel"
+        aria-hidden="true" style='z-index: 200000;'>
+        <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">
+                    </h5>
+                </div>
+                <div class="modal-body">
+                    <div class="modal-body-hint"></div>
+                    <div class="form-group mt-2">
+                        <input type="text" id="ti_template_modal_input" class="form-control">
+                    </div>
+                </div>
+                <div class="modal-footer">
                 </div>
             </div>
-            <div class="modal-footer">
-                <a id='bu_poll_run_results_download_pdf' target='_blank' href='#' class="btn btn-primary"><i class='fa fa-file-pdf-o'></i>&nbsp;&nbsp;Ergebnisse (PDF)</a>
-                <a id='bu_poll_run_results_download_zip' href='#' class="btn btn-primary"><i class='fa fa-file-zip-o'></i>&nbsp;&nbsp;Einzelergebnisse (ZIP)</a>
-                <a id='bu_poll_run_results_download_xlsx' href='#' class="btn btn-primary"><i class='fa fa-file-excel-o'></i>&nbsp;&nbsp;Einzelergebnisse (XLSX)</a>
-                <button id='bu_close_show_poll_run_results_modal' type="button" class="btn btn-secondary" data-dismiss="modal">Schließen</button>
+        </div>
+    </div>
+
+    <div class="modal" id="pollResponseModal" tabindex="-1" role="dialog" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-scrollable modal-xl modal-dialog-centered" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title poll-title"></h5>
+                    <button id='bu_hide_poll_run' type="button" class="float-right btn btn-sm btn-outline-secondary"><i
+                            class='fa fa-eye-slash'></i>&nbsp;&nbsp;Diese Umfrage ausblenden</button>
+                </div>
+                <div class="modal-body">
+                    <div class='alert alert-success poll-run-anonymous' style='padding-left: 50px; position: relative;'>
+                        <i style='font-size:200%; position: absolute; left: 12px; top: 18px;'
+                            class='fa fa-user-secret'></i>Diese Umfrage ist anonym. <span
+                            class='poll-run-organizer'></span> wird #{schueler_logged_in? ? 'deine' : 'Ihre'} Antworten
+                        sehen können, aber nicht wissen, wer welche Antworten gegeben hat.<br />Insgesamt nehmen <span
+                            class='poll-run-total-participants'></span> Teilnehmerinnen und Teilnehmer an dieser Umfrage
+                        teil.
+                    </div>
+                    <div class='alert alert-warning poll-run-non-anonymous'
+                        style='padding-left: 55px; position: relative;'>
+                        <i style='font-size:200%; position: absolute; left: 10px; top: 18px;'
+                            class='fa fa-address-card-o'></i><strong>Hinweis:</strong> Diese Umfrage ist nicht
+                        anonym.<br /> <span class='poll-run-organizer'></span> wird #{schueler_logged_in? ? 'deine' :
+                        'Ihre'} Antworten sehen können und auch die Tatsache, dass die Antworten von
+                        #{schueler_logged_in? ? 'dir' : 'Ihnen'} stammen.
+                    </div>
+                    <div class='row'>
+                        <div class='col-md-12 poll-items'></div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <div class="progress" style='width: 100%;'>
+                        <div class="poll-run-progress progress-bar progress-bar-striped bg-success" role="progressbar"
+                            style="width: 0%;"><span class='poll-run-progress-label'></span></div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <div class='poll_submit_success mr-auto'><i
+                            class='fa fa-check-circle text-success'></i>&nbsp;&nbsp;#{schueler_logged_in? ? 'Deine' :
+                        'Ihre'} Antworten wurden gespeichert.</div>
+                    <div class='poll_submit_update_message mr-auto'><i
+                            class='fa fa-info-circle text-info'></i>&nbsp;&nbsp;#{schueler_logged_in? ? 'Du hast' : 'Sie
+                        haben'} bereits abgestimmt, #{schueler_logged_in? ? 'kannst deine' : 'können Ihre'} Einträge
+                        aber aktualisieren.</div>
+                    <div class='poll_submit_error mr-auto'><i
+                            class='fa fa-exclamation-circle text-danger'></i>&nbsp;&nbsp;#{schueler_logged_in? ? 'Deine'
+                        : 'Ihre'} Antworten konnten nicht gespeichert werden<span
+                            class='poll_submit_error_message'></span></div>
+                    <div id='save_poll_response_btn_container' style='display: inline-block;'>
+                        <button id='bu_discard_poll_results' type="button" class="btn btn-outline-secondary" disabled><i
+                                class='fa fa-times'></i>&nbsp;&nbsp;Änderungen verwerfen</button>
+                        <button id='bu_submit_poll_results' type="button" class="btn btn-outline-success" disabled><i
+                                class='fa fa-send'></i>&nbsp;&nbsp;Senden</button>
+                    </div>
+                    <button id='bu_close_poll_response_modal' type="button" class="btn btn-secondary"
+                        data-dismiss="modal">Schließen</button>
+                </div>
             </div>
         </div>
     </div>
-</div>
 
-<script>
-function showTemplateModal(title, text, confirm_label, confirm_class,
-    cancel_label, cancel_class, confirm_callback) {
-    $('#__template_modal .modal-title').html(title);
-    $('#__template_modal .modal-body').html(text);
-    let bu_confirm = $('<button>').addClass('btn ' + confirm_class).html(confirm_label);
-    $('#__template_modal .modal-footer').empty().append(bu_confirm);
-    if (cancel_label !== null) {
-        let bu_cancel = $('<button>').addClass('btn ' + cancel_class).html(cancel_label).attr('data-dismiss', 'modal');
-        $('#__template_modal .modal-footer').append(bu_cancel);
-    }
-    bu_confirm.click(function(e) {
-        confirm_callback();
-        $('#__template_modal').modal('hide');
-    });
-    $('#__template_modal').modal('show');
-}
-
-function showTemplateModalWithInput(title, text, confirm_label, confirm_class,
-    cancel_label, cancel_class, label, placeholder, confirm_callback) {
-    $('#__template_modal_with_input .modal-title').html(title);
-    $('#__template_modal_with_input .modal-body-hint').html(text);
-    $('#__template_modal_with_input #ti_template_modal_input').val('').attr('placeholder', placeholder);
-    $('#ti_template_modal_input').unbind();
-    let bu_confirm = $('<button disabled>').addClass('btn btn-outline-secondary').html(confirm_label);
-    $('#__template_modal_with_input .modal-footer').empty().append(bu_confirm);
-    if (cancel_label !== null) {
-        let bu_cancel = $('<button>').addClass('btn ' + cancel_class).html(cancel_label).attr('data-dismiss', 'modal');
-        $('#__template_modal_with_input .modal-footer').append(bu_cancel);
-    }
-    bu_confirm.click(function(e) {
-        confirm_callback($('#ti_template_modal_input').val());
-        $('#__template_modal_with_input').modal('hide');
-    });
-    $('#__template_modal_with_input').on('shown.bs.modal', function(e) {
-        $('#ti_template_modal_input').focus();
-    });
-
-    function handle_ti_update() {
-        if ($('#ti_template_modal_input').val().length > 0) {
-            bu_confirm.removeClass('btn-outline-secondary').addClass(confirm_class).prop('disabled', false);
-        } else {
-            bu_confirm.addClass('btn-outline-secondary').removeClass(confirm_class).prop('disabled', true);
-        }
-    }
-    $('#ti_template_modal_input').keydown(function (e) {
-        handle_ti_update();
-    });
-    $('#ti_template_modal_input').keyup(function (e) {
-        handle_ti_update();
-    });
-    $('#ti_template_modal_input').change(function (e) {
-        handle_ti_update();
-    });
-    $('#ti_template_modal_input').keydown(function (e) {
-        if (e.key === 'Enter') {
-            if ($('#ti_template_modal_input').val().length > 0)
-                bu_confirm.click();
-        }
-    });
-    $('#__template_modal_with_input').modal('show');
-}
-</script>
-
-<nav class="navbar navbar-expand-md navbar-#{(@session_user || {})[:dark] ? 'dark' : 'light'} fixed-top justify-content-end">
-        <a class="navbar-brand" href="/"><img src='/#{(@session_user || {})[:dark] ? DARK_SCHUL_ICON : SCHUL_ICON}' style='width: 24px; height: 24px; position: relative; top: -2px;' /><span class='brand-brand'>&nbsp;&nbsp;{BRAND}</span></a>
-    <div class='ml-auto'></div>
-    #{nav_items(color_palette[:primary_color], now, new_messages_count)}
-</nav>
-<div class='container' style='text-align: center; display: #{MAINTENANCE_MODE ? 'block' : 'none'}'>
-<h2 style='margin-top: 15px; margin-bottom: 30px;'>Wartungsarbeiten</h2>
-<p>
-Es werden gerade Wartungsarbeiten durchgeführt und das Dashboard ist in wenigen Minuten wieder online.
-</p>
-</div>
-<div style='position: relative; display: #{MAINTENANCE_MODE ? 'none' : 'block'}' id="main_container">
-#{CONTENT}
-    <div class="grain_overlay"></div>
-</div>
-<!-- <div class='snowman'></div> -->
-<div class='foot text-muted'>
-    <span class='float-left'>&copy; 2025 <a href='https://gymnasiumsteglitz.de' target='_blank'>Gymnasium Steglitz</a></span>
-    <span class='timetable_updated float-left'></span>
-    <span><a href='/impressum'>Impressum</a></span>
-</div>
-<a class='github' href='https://github.com/specht/schul-dashboard'><i class='fa fa-github'></i></a>
-<div class='info' style='display: none;'></div>
-<div id='advent_calendar' style='display: none;'>
-    <div class='square'>
-        #{print_advent_calendar_doors}
-        <div class='attribution'>
-            Adventskalender-Design von Freepik
+    <div class="modal" id="pollRunResultsModal" tabindex="-1" role="dialog" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-scrollable modal-lg modal-dialog-centered" role="document">
+            <div class="modal-content">
+                <!--             <div class="modal-header"> -->
+                <!--                 <h5 class="modal-title poll-title"></h5> -->
+                <!--             </div> -->
+                <div class="modal-body">
+                    <div class='row'>
+                        <div class='col-md-12 poll-run-results-here'></div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <a id='bu_poll_run_results_download_pdf' target='_blank' href='#' class="btn btn-primary"><i
+                            class='fa fa-file-pdf-o'></i>&nbsp;&nbsp;Ergebnisse (PDF)</a>
+                    <a id='bu_poll_run_results_download_zip' href='#' class="btn btn-primary"><i
+                            class='fa fa-file-zip-o'></i>&nbsp;&nbsp;Einzelergebnisse (ZIP)</a>
+                    <a id='bu_poll_run_results_download_xlsx' href='#' class="btn btn-primary"><i
+                            class='fa fa-file-excel-o'></i>&nbsp;&nbsp;Einzelergebnisse (XLSX)</a>
+                    <button id='bu_close_show_poll_run_results_modal' type="button" class="btn btn-secondary"
+                        data-dismiss="modal">Schließen</button>
+                </div>
+            </div>
         </div>
     </div>
-</div>
-<script>
-var pb_audio = null;
-var pb_playing = false;
-var pb_want_to_play = false;
-var pb_widget = null;
-var pb_duration = 0;
-var pb_url = null;
-var show_messages_from = #{now};
-var unread_message_ids = #{unread_message_ids.to_json};
-window.FontAwesomeConfig = { autoReplaceSvg: false };
-var weekdays = ['So', 'Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa'];
-var weekdays_long = ['Sonntag', 'Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag', 'Samstag'];
-var color_palette = #{color_palette.to_json};
-var color_scheme = '#{color_scheme}';
 
-function duration_to_s(a, b) {
-    let diff = 0;
-    if (typeof(b) === 'undefined')
-        diff = moment(a).unix() - moment().unix();
-    else
-        diff = moment(b).unix() - moment(a).unix();
-    let duration = moment.duration(diff * 1000);
-    duration_parts = [];
-    if (duration.days() > 0)
-        duration_parts.push(`${duration.days()} Tag${duration.days() > 1 ? 'e' : ''}`);
-    if (duration.hours() > 0)
-        duration_parts.push(`${duration.hours()} Stunde${duration.hours() > 1 ? 'n' : ''}`);
-    if (duration.minutes() > 0)
-        duration_parts.push(`${duration.minutes()} Minute${duration.minutes() > 1 ? 'n' : ''}`);
-    if (duration_parts.length === 0)
-        return null;
-    let und_parts = [];
-    und_parts.push((duration_parts.slice(0, duration_parts.length - 1)).join(', '));
-    und_parts.push(duration_parts[duration_parts.length - 1]);
-    und_parts = und_parts.filter(function(e) { return e !== null && e.length > 0; });
-    return und_parts.join(' und ');
-}
-
-window.addEventListener('load', function() {
-    moment.locale('de');
-    $('.fix-this-link').click(function(e) {
-        e = $(e.target);
-        window.location = e.attr('href');
-    });
-    $('.switch-session').click(function(e) {
-        // clear any short-lived JWT from local storage
-        localStorage.clear();
-        let index = parseInt($(e.target.closest('.switch-session')).data('sidindex'));
-        api_call('/api/switch_current_session', {sid_index: index}, function(data) {
-            if (data.success) {
-                window.location.href = '/';
+    <script>
+        function showTemplateModal(title, text, confirm_label, confirm_class,
+            cancel_label, cancel_class, confirm_callback) {
+            $('#__template_modal .modal-title').html(title);
+            $('#__template_modal .modal-body').html(text);
+            let bu_confirm = $('<button>').addClass('btn ' + confirm_class).html(confirm_label);
+            $('#__template_modal .modal-footer').empty().append(bu_confirm);
+            if (cancel_label !== null) {
+                let bu_cancel = $('<button>').addClass('btn ' + cancel_class).html(cancel_label).attr('data-dismiss', 'modal');
+                $('#__template_modal .modal-footer').append(bu_cancel);
             }
-        });
-    });
-    $('#bu_discard_poll_results').click(function(e) {
-        force_close_poll_response = true;
-        $('#pollResponseModal').modal('hide');
-    });
-    $('#bu_submit_poll_results').click(function(e) {
-        $('#pollResponseModal .poll_submit_success').hide();
-        $('#pollResponseModal .poll_submit_update_message').hide();
-        $('#pollResponseModal .poll_submit_error').hide();
-        let store_response = JSON.stringify(poll_run_data.response || {});
-        api_call('/api/submit_poll_run', {prid: poll_run_data.prid, external_code: poll_run_data.external_code, response: store_response}, function(data) {
-            if (data.success) {
-                if (typeof(data.error) !== 'undefined') {
-                    $('#pollResponseModal .poll_submit_error_message').text(': ' + data.error);
-                    $('#pollResponseModal .poll_submit_error').fadeIn();
+            bu_confirm.click(function (e) {
+                confirm_callback();
+                $('#__template_modal').modal('hide');
+            });
+            $('#__template_modal').modal('show');
+        }
+
+        function showTemplateModalWithInput(title, text, confirm_label, confirm_class,
+            cancel_label, cancel_class, label, placeholder, confirm_callback) {
+            $('#__template_modal_with_input .modal-title').html(title);
+            $('#__template_modal_with_input .modal-body-hint').html(text);
+            $('#__template_modal_with_input #ti_template_modal_input').val('').attr('placeholder', placeholder);
+            $('#ti_template_modal_input').unbind();
+            let bu_confirm = $('<button disabled>').addClass('btn btn-outline-secondary').html(confirm_label);
+            $('#__template_modal_with_input .modal-footer').empty().append(bu_confirm);
+            if (cancel_label !== null) {
+                let bu_cancel = $('<button>').addClass('btn ' + cancel_class).html(cancel_label).attr('data-dismiss', 'modal');
+                $('#__template_modal_with_input .modal-footer').append(bu_cancel);
+            }
+            bu_confirm.click(function (e) {
+                confirm_callback($('#ti_template_modal_input').val());
+                $('#__template_modal_with_input').modal('hide');
+            });
+            $('#__template_modal_with_input').on('shown.bs.modal', function (e) {
+                $('#ti_template_modal_input').focus();
+            });
+
+            function handle_ti_update() {
+                if ($('#ti_template_modal_input').val().length > 0) {
+                    bu_confirm.removeClass('btn-outline-secondary').addClass(confirm_class).prop('disabled', false);
                 } else {
-                    $('#pollResponseModal .poll_submit_success').fadeIn();
-                    poll_run_data.stored_response = poll_run_data.response;
-                    collect_poll_run_data();
+                    bu_confirm.addClass('btn-outline-secondary').removeClass(confirm_class).prop('disabled', true);
                 }
-            } else {
-                $('#pollResponseModal .poll_submit_error_message').text('');
-                $('#pollResponseModal .poll_submit_error').fadeIn();
             }
-        });
-    });
-    $('#bu_hide_poll_run').click(function(e) {
-        api_call('/api/hide_poll_run', {prid: poll_run_data.prid}, function(data) {
-            if (data.success) {
-                window.location.reload();
-            }
-        });
-    });
-    $('#show_hidden_polls').click(function(e) {
-        $('.hint_poll_hidden_indicator').slideUp();
-        $('.hint_poll').slideDown();
-        e.preventDefault();
-    });
-    $('#pollResponseModal').on('hide.bs.modal', function(e) {
-        if (collect_poll_run_data() && (!force_close_poll_response)) {
-            $('#save_poll_response_btn_container').effect('shake', {direction: 'left', distance: 4});
-            e.preventDefault();
-            e.stopImmediatePropagation();
-            return false; 
+            $('#ti_template_modal_input').keydown(function (e) {
+                handle_ti_update();
+            });
+            $('#ti_template_modal_input').keyup(function (e) {
+                handle_ti_update();
+            });
+            $('#ti_template_modal_input').change(function (e) {
+                handle_ti_update();
+            });
+            $('#ti_template_modal_input').keydown(function (e) {
+                if (e.key === 'Enter') {
+                    if ($('#ti_template_modal_input').val().length > 0)
+                        bu_confirm.click();
+                }
+            });
+            $('#__template_modal_with_input').modal('show');
         }
-    });
-    jQuery.each($('.moment-countdown'), function(_, e) {
-        let t = moment($(e).data('target-timestamp'));
-        let bl = $(e).data('before-label');
-        let al = $(e).data('after-label');
-        let s = duration_to_s(t);
-        if (s === null)
-            $(e).text(al);
-        else
-            $(e).text(`${bl} ${s}`);
-        (function(e, t, bl, al) {
-            setInterval(function() {
+    </script>
+
+    <nav
+        class="navbar navbar-expand-md navbar-#{(@session_user || {})[:dark] ? 'dark' : 'light'} fixed-top justify-content-end">
+        <a class="navbar-brand" href="/"><img src='/#{(@session_user || {})[:dark] ? DARK_SCHUL_ICON : SCHUL_ICON}'
+                style='width: 24px; height: 24px; position: relative; top: -2px;' /><span
+                class='brand-brand'>&nbsp;&nbsp;{BRAND}</span></a>
+        <div class='ml-auto'></div>
+        #{nav_items(color_palette[:primary_color], now, new_messages_count)}
+    </nav>
+    <div class='container' style='text-align: center; display: #{MAINTENANCE_MODE ? ' block' : 'none' }'>
+        <h2 style='margin-top: 15px; margin-bottom: 30px;'>Wartungsarbeiten</h2>
+        <p>
+            Es werden gerade Wartungsarbeiten durchgeführt und das Dashboard ist in wenigen Minuten wieder online.
+        </p>
+    </div>
+    <div style='position: relative; display: #{MAINTENANCE_MODE ? ' none' : 'block' }' id="main_container">
+        #{CONTENT}
+        <div class="grain_overlay"></div>
+    </div>
+    <!-- <div class='snowman'></div> -->
+    <div class='foot text-muted'>
+        <span class='float-left'>&copy; 2025 <a href='https://gymnasiumsteglitz.de' target='_blank'>Gymnasium
+                Steglitz</a></span>
+        <span class='timetable_updated float-left'></span>
+        <span><a href='/impressum'>Impressum</a></span>
+    </div>
+    <a class='github' href='https://github.com/specht/schul-dashboard'><i class='fa fa-github'></i></a>
+    <div class='info' style='display: none;'></div>
+    <div id='advent_calendar' style='display: none;'>
+        <div class='square'>
+            #{print_advent_calendar_doors}
+            <div class='attribution'>
+                Adventskalender-Design von Freepik
+            </div>
+        </div>
+    </div>
+    <script>
+        var pb_audio = null;
+        var pb_playing = false;
+        var pb_want_to_play = false;
+        var pb_widget = null;
+        var pb_duration = 0;
+        var pb_url = null;
+        var show_messages_from = #{ now };
+        var unread_message_ids = #{ unread_message_ids.to_json };
+        window.FontAwesomeConfig = { autoReplaceSvg: false };
+        var weekdays = ['So', 'Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa'];
+        var weekdays_long = ['Sonntag', 'Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag', 'Samstag'];
+        var color_palette = #{ color_palette.to_json };
+        var color_scheme = '#{color_scheme}';
+
+        function duration_to_s(a, b) {
+            let diff = 0;
+            if (typeof (b) === 'undefined')
+                diff = moment(a).unix() - moment().unix();
+            else
+                diff = moment(b).unix() - moment(a).unix();
+            let duration = moment.duration(diff * 1000);
+            duration_parts = [];
+            if (duration.days() > 0)
+                duration_parts.push(`${duration.days()} Tag${duration.days() > 1 ? 'e' : ''}`);
+            if (duration.hours() > 0)
+                duration_parts.push(`${duration.hours()} Stunde${duration.hours() > 1 ? 'n' : ''}`);
+            if (duration.minutes() > 0)
+                duration_parts.push(`${duration.minutes()} Minute${duration.minutes() > 1 ? 'n' : ''}`);
+            if (duration_parts.length === 0)
+                return null;
+            let und_parts = [];
+            und_parts.push((duration_parts.slice(0, duration_parts.length - 1)).join(', '));
+            und_parts.push(duration_parts[duration_parts.length - 1]);
+            und_parts = und_parts.filter(function (e) { return e !== null && e.length > 0; });
+            return und_parts.join(' und ');
+        }
+
+        window.addEventListener('load', function () {
+            moment.locale('de');
+            $('.fix-this-link').click(function (e) {
+                e = $(e.target);
+                window.location = e.attr('href');
+            });
+            $('.switch-session').click(function (e) {
+                // clear any short-lived JWT from local storage
+                localStorage.clear();
+                let index = parseInt($(e.target.closest('.switch-session')).data('sidindex'));
+                api_call('/api/switch_current_session', { sid_index: index }, function (data) {
+                    if (data.success) {
+                        window.location.href = '/';
+                    }
+                });
+            });
+            $('#bu_discard_poll_results').click(function (e) {
+                force_close_poll_response = true;
+                $('#pollResponseModal').modal('hide');
+            });
+            $('#bu_submit_poll_results').click(function (e) {
+                $('#pollResponseModal .poll_submit_success').hide();
+                $('#pollResponseModal .poll_submit_update_message').hide();
+                $('#pollResponseModal .poll_submit_error').hide();
+                let store_response = JSON.stringify(poll_run_data.response || {});
+                api_call('/api/submit_poll_run', { prid: poll_run_data.prid, external_code: poll_run_data.external_code, response: store_response }, function (data) {
+                    if (data.success) {
+                        if (typeof (data.error) !== 'undefined') {
+                            $('#pollResponseModal .poll_submit_error_message').text(': ' + data.error);
+                            $('#pollResponseModal .poll_submit_error').fadeIn();
+                        } else {
+                            $('#pollResponseModal .poll_submit_success').fadeIn();
+                            poll_run_data.stored_response = poll_run_data.response;
+                            collect_poll_run_data();
+                        }
+                    } else {
+                        $('#pollResponseModal .poll_submit_error_message').text('');
+                        $('#pollResponseModal .poll_submit_error').fadeIn();
+                    }
+                });
+            });
+            $('#bu_hide_poll_run').click(function (e) {
+                api_call('/api/hide_poll_run', { prid: poll_run_data.prid }, function (data) {
+                    if (data.success) {
+                        window.location.reload();
+                    }
+                });
+            });
+            $('#show_hidden_polls').click(function (e) {
+                $('.hint_poll_hidden_indicator').slideUp();
+                $('.hint_poll').slideDown();
+                e.preventDefault();
+            });
+            $('#pollResponseModal').on('hide.bs.modal', function (e) {
+                if (collect_poll_run_data() && (!force_close_poll_response)) {
+                    $('#save_poll_response_btn_container').effect('shake', { direction: 'left', distance: 4 });
+                    e.preventDefault();
+                    e.stopImmediatePropagation();
+                    return false;
+                }
+            });
+            jQuery.each($('.moment-countdown'), function (_, e) {
+                let t = moment($(e).data('target-timestamp'));
+                let bl = $(e).data('before-label');
+                let al = $(e).data('after-label');
                 let s = duration_to_s(t);
                 if (s === null)
                     $(e).text(al);
                 else
                     $(e).text(`${bl} ${s}`);
-            }, 60000);
-        })(e, t, bl, al);
-    });
-    $('.bu-launch-poll').click(function(e) {
-        let prid = $(e.target).data('poll-run-id');
-        let external_code = $(e.target).data('poll-external-code') || '';
-        launch_poll(prid, external_code);
-    });
-    $('.bu-launch-adventskalender').click(function(e) {
-        e.preventDefault();
-        e.stopPropagation();
-        $('.collapse').removeClass('show');
-        $('#advent_calendar').fadeIn();
-    });
-    $('#advent_calendar').click(function(e) {
-        if ($(e.target).attr('id') == 'advent_calendar')
-            $('#advent_calendar').fadeOut();
-    });
-    $('#advent_calendar .square').click(function(e) {
-        if ($(e.target).hasClass('square'))
-            $('#advent_calendar').fadeOut();
-    });
-    $('.door').click(function(e) {
-        let max_door = #{advents_calendar_date_today() - 1};
-        let door_element = $(e.target).closest('.door');
-        let door = door_element.data('door');
-        if (door <= max_door) {
-            door_element.toggleClass('open');
-            api_call('/api/toggle_door', {door: door});
-        }
-    });
-    $('.klasse-click-row').click(function(e) {
-        let row = $(e.target).closest('tbody');
-        row.next().toggle();
-    });
-    $('.nav-dark').click(function(e) {
-        let mode = "dark"
-        api_call('/api/set_dark_css', {mode: mode}, function(data) {
-            if (data.success) {
-                location.reload();
+                (function (e, t, bl, al) {
+                    setInterval(function () {
+                        let s = duration_to_s(t);
+                        if (s === null)
+                            $(e).text(al);
+                        else
+                            $(e).text(`${bl} ${s}`);
+                    }, 60000);
+                })(e, t, bl, al);
+            });
+            $('.bu-launch-poll').click(function (e) {
+                let prid = $(e.target).data('poll-run-id');
+                let external_code = $(e.target).data('poll-external-code') || '';
+                launch_poll(prid, external_code);
+            });
+            $('.bu-launch-adventskalender').click(function (e) {
+                e.preventDefault();
+                e.stopPropagation();
+                $('.collapse').removeClass('show');
+                $('#advent_calendar').fadeIn();
+            });
+            $('#advent_calendar').click(function (e) {
+                if ($(e.target).attr('id') == 'advent_calendar')
+                    $('#advent_calendar').fadeOut();
+            });
+            $('#advent_calendar .square').click(function (e) {
+                if ($(e.target).hasClass('square'))
+                    $('#advent_calendar').fadeOut();
+            });
+            $('.door').click(function (e) {
+                let max_door = #{ advents_calendar_date_today() - 1
+            };
+            let door_element = $(e.target).closest('.door');
+            let door = door_element.data('door');
+            if (door <= max_door) {
+                door_element.toggleClass('open');
+                api_call('/api/toggle_door', { door: door });
             }
         });
-    });
-    $('.nav-light').click(function(e) {
-        let mode = "light"
-        api_call('/api/set_dark_css', {mode: mode}, function(data) {
-            if (data.success) {
-                location.reload();
-            }
+        $('.klasse-click-row').click(function (e) {
+            let row = $(e.target).closest('tbody');
+            row.next().toggle();
         });
-    });
-    render_timespans();
-    setInterval(function() {
+        $('.nav-dark').click(function (e) {
+            let mode = "dark"
+            api_call('/api/set_dark_css', { mode: mode }, function (data) {
+                if (data.success) {
+                    location.reload();
+                }
+            });
+        });
+        $('.nav-light').click(function (e) {
+            let mode = "light"
+            api_call('/api/set_dark_css', { mode: mode }, function (data) {
+                if (data.success) {
+                    location.reload();
+                }
+            });
+        });
         render_timespans();
-    }, 1000 * 60);
+        setInterval(function () {
+            render_timespans();
+        }, 1000 * 60);
 });
 
-window.addEventListener('resize', function() {
-    render_timespans();
-});
+        window.addEventListener('resize', function () {
+            render_timespans();
+        });
 
-var MONTHS = #{MONTHS.to_json};
-var WEEKDAYS = #{WEEKDAYS.to_json};
+        var MONTHS = #{ MONTHS.to_json };
+        var WEEKDAYS = #{ WEEKDAYS.to_json };
 
-function render_timespans() {
-    let dark = $('body').hasClass('dark');
-    console.log(dark);
-    for (let div of $('.render_timespan')) {
-        div = $(div);
-        if (div.find('canvas').length === 0) {
-            $('<canvas>').appendTo(div);
-            $('<div>').appendTo(div);
-        }
-        let canvas = div.find('canvas')[0];
-        let scale = 2.0;
-        canvas.width = div.width() * scale;
-        canvas.height = div.height() * scale;
-        let div2 = div.find('div')[0];
-        $(div2).empty();
-        let now = moment().unix();
-        let context = canvas.getContext('2d');
-        context.fillStyle = 'rgba(0, 0, 0, 0)';
-        context.fillRect(0, 0, canvas.width, canvas.height);
-        let t0 = now - (24 * 3600) * 3;
-        let show_days = 14;
-        if (div.width() / show_days < 40)
-            show_days = div.width() / 40.0;
-        t1 = t0 + show_days * 24 * 3600;
-        let t = moment().startOf('day').subtract(3, 'd').unix();
-        // t = Math.floor(t / (24 * 3600)) * 24 * 3600;
-        let tb = 15 * scale;
-        while (t < t1) {
-            let d = new Date(t * 1000);
-            let x = Math.round((t - t0) * div.width() / (show_days * 24 * 3600)) + 0.5;
-            let x1 = Math.round((t + 24 * 3600 - t0) * div.width() / (show_days * 24 * 3600)) + 0.5;
+        function render_timespans() {
+            let dark = $('body').hasClass('dark');
+            console.log(dark);
+            for (let div of $('.render_timespan')) {
+                div = $(div);
+                if (div.find('canvas').length === 0) {
+                    $('<canvas>').appendTo(div);
+                    $('<div>').appendTo(div);
+                }
+                let canvas = div.find('canvas')[0];
+                let scale = 2.0;
+                canvas.width = div.width() * scale;
+                canvas.height = div.height() * scale;
+                let div2 = div.find('div')[0];
+                $(div2).empty();
+                let now = moment().unix();
+                let context = canvas.getContext('2d');
+                context.fillStyle = 'rgba(0, 0, 0, 0)';
+                context.fillRect(0, 0, canvas.width, canvas.height);
+                let t0 = now - (24 * 3600) * 3;
+                let show_days = 14;
+                if (div.width() / show_days < 40)
+                    show_days = div.width() / 40.0;
+                t1 = t0 + show_days * 24 * 3600;
+                let t = moment().startOf('day').subtract(3, 'd').unix();
+                // t = Math.floor(t / (24 * 3600)) * 24 * 3600;
+                let tb = 15 * scale;
+                while (t < t1) {
+                    let d = new Date(t * 1000);
+                    let x = Math.round((t - t0) * div.width() / (show_days * 24 * 3600)) + 0.5;
+                    let x1 = Math.round((t + 24 * 3600 - t0) * div.width() / (show_days * 24 * 3600)) + 0.5;
 
-            if ((d.getDay() + 1) % 7 < 2) {
-                context.fillStyle = dark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.08)';
-                context.fillRect(x * scale, tb, (x1 - x) * scale, canvas.height);
-            } else {
-                context.fillStyle = dark ? 'rgba(0, 0, 0, 0.4)' : 'rgba(255, 255, 255, 0.4)';
-                context.fillRect(x * scale, tb, (x1 - x) * scale, canvas.height);
+                    if ((d.getDay() + 1) % 7 < 2) {
+                        context.fillStyle = dark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.08)';
+                        context.fillRect(x * scale, tb, (x1 - x) * scale, canvas.height);
+                    } else {
+                        context.fillStyle = dark ? 'rgba(0, 0, 0, 0.4)' : 'rgba(255, 255, 255, 0.4)';
+                        context.fillRect(x * scale, tb, (x1 - x) * scale, canvas.height);
+                    }
+                    context.beginPath();
+                    context.strokeStyle = dark ? 'rgba(255, 255, 255, 0.3)' : 'rgba(0, 0, 0, 0.5)';
+                    context.lineWidth = 0.5 * scale;
+                    context.moveTo(x * scale, tb);
+                    context.lineTo(x * scale, canvas.height);
+                    context.stroke();
+                    context.font = `${12 * scale}px sans-serif`;
+                    let s = `${d.getDate()}.${d.getMonth() + 1}.`;
+                    if (div.width() > 900) {
+                        s = `${WEEKDAYS[d.getDay()]}, ${d.getDate()}.${d.getMonth() + 1}.`;
+                    }
+
+                    context.fillStyle = dark ? 'rgba(255, 255, 255, 0.8)' : 'rgba(0, 0, 0, 0.8)';
+                    context.textAlign = 'center';
+                    context.fillText(s, Math.round((x + x1) * 0.5) * scale + 0.5, 14.5 * scale + tb);
+
+                    t += 24 * 3600;
+                }
+                context.beginPath();
+                context.strokeStyle = dark ? 'rgba(255, 255, 255, 0.3)' : 'rgba(0, 0, 0, 0.5)';
+                context.lineWidth = 0.5 * scale;
+                context.moveTo(0, tb + 0.5);
+                context.lineTo(canvas.width, tb + 0.5);
+                context.moveTo(0, canvas.height);
+                context.lineTo(canvas.width, canvas.height);
+                context.stroke();
+                let x = Math.round((now - t0) * div.width() / (show_days * 24 * 3600)) * scale + 0.5;
+                context.beginPath();
+                context.fillStyle = '#{color_palette[:primary]}';
+                context.moveTo(x - 10 * scale, 4 * scale);
+                context.lineTo(x, 8 * scale);
+                context.lineTo(x, 0);
+                context.lineTo(x - 10 * scale, 4 * scale);
+                context.textAlign = 'left';
+                context.fill();
+                context.beginPath();
+                context.strokeStyle = '#{color_palette[:primary]}';
+                context.lineWidth = 1 * scale;
+                context.moveTo(x, 0);
+                context.lineTo(x, canvas.height);
+                context.stroke();
+                context.fillStyle = dark ? 'rgba(255, 255, 255, 0.9)' : 'rgba(0, 0, 0, 0.8)';
+                context.fillText("jetzt", x + 4 * scale, 10 * scale);
+                for (let span of div.find('span')) {
+                    let d0 = moment($(span).data('t0')).unix();
+                    let d1 = moment($(span).data('t1')).unix();
+                    let label = $(span).text();
+                    let x0 = Math.round((d0 - t0) * div.width() / (show_days * 24 * 3600)) * scale + 0.5;
+                    let x1 = Math.round((d1 - t0) * div.width() / (show_days * 24 * 3600)) * scale + 0.5;
+                    if (x1 < 0 || x0 > canvas.width)
+                        continue;
+                    context.beginPath();
+                    context.fillStyle = '#{color_palette[:primary]}';
+                    context.roundRect(x0 + 2, 21 * scale + tb, x1 - x0 - 4 * scale, 5 * scale, 3 * scale);
+                    context.fill();
+                    context.beginPath();
+                    context.fillStyle = dark ? 'rgba(0, 0, 0, 0.9)' : 'rgba(255, 255, 255, 1.0)';
+                    context.roundRect(x0 + 2, 30 * scale + tb, x1 - x0 - 4 * scale, 20 * scale, 3 * scale);
+                    context.fill();
+                    context.lineWidth = 0.5;
+                    context.strokeStyle = 'rgba(0, 0, 0, 0.3)';
+                    context.stroke();
+                    if (x0 < 0)
+                        x0 = -2;
+                    if (x1 > canvas.width)
+                        x1 = canvas.width + 2;
+                    context.fillStyle = dark ? 'rgba(255, 255, 255, 0.9)' : 'rgba(0, 0, 0, 0.8)';
+                    context.textAlign = 'left';
+                    while (context.measureText(label).width > x1 - x0 - 4 * scale && label.length > 0) {
+                        label = label.slice(0, -1);
+                    }
+                    context.fillText(label, x0 + 6 * scale, 43.5 * scale + tb);
+                }
             }
-            context.beginPath();
-            context.strokeStyle = dark ? 'rgba(255, 255, 255, 0.3)' : 'rgba(0, 0, 0, 0.5)';
-            context.lineWidth = 0.5 * scale;
-            context.moveTo(x * scale, tb);
-            context.lineTo(x * scale, canvas.height);
-            context.stroke();
-            context.font = `${12 * scale}px sans-serif`;
-            let s = `${d.getDate()}.${d.getMonth() + 1}.`;
-            if (div.width() > 900) {
-                s = `${WEEKDAYS[d.getDay()]}, ${d.getDate()}.${d.getMonth() + 1}.`;
-            }
-
-            context.fillStyle = dark ? 'rgba(255, 255, 255, 0.8)' : 'rgba(0, 0, 0, 0.8)';
-            context.textAlign = 'center';
-            context.fillText(s, Math.round((x + x1) * 0.5) * scale + 0.5, 14.5 * scale + tb);
-
-            t += 24 * 3600;
         }
-        context.beginPath();
-        context.strokeStyle = dark ? 'rgba(255, 255, 255, 0.3)' : 'rgba(0, 0, 0, 0.5)';
-        context.lineWidth = 0.5 * scale;
-        context.moveTo(0, tb + 0.5);
-        context.lineTo(canvas.width, tb + 0.5);
-        context.moveTo(0, canvas.height);
-        context.lineTo(canvas.width, canvas.height);
-        context.stroke();
-        let x = Math.round((now - t0) * div.width() / (show_days * 24 * 3600)) * scale + 0.5;
-        context.beginPath();
-        context.fillStyle = '#{color_palette[:primary]}';
-        context.moveTo(x - 10 * scale, 4 * scale);
-        context.lineTo(x, 8 * scale);
-        context.lineTo(x, 0);
-        context.lineTo(x - 10 * scale, 4 * scale);
-        context.textAlign = 'left';
-        context.fill();
-        context.beginPath();
-        context.strokeStyle = '#{color_palette[:primary]}';
-        context.lineWidth = 1 * scale;
-        context.moveTo(x, 0);
-        context.lineTo(x, canvas.height);
-        context.stroke();
-        context.fillStyle = dark ? 'rgba(255, 255, 255, 0.9)' : 'rgba(0, 0, 0, 0.8)';
-        context.fillText("jetzt", x + 4 * scale, 10 * scale);
-        for (let span of div.find('span')) {
-            let d0 = moment($(span).data('t0')).unix();
-            let d1 = moment($(span).data('t1')).unix();
-            let label = $(span).text();
-            let x0 = Math.round((d0 - t0) * div.width() / (show_days * 24 * 3600)) * scale + 0.5;
-            let x1 = Math.round((d1 - t0) * div.width() / (show_days * 24 * 3600)) * scale + 0.5;
-            if (x1 < 0 || x0 > canvas.width)
-                continue;
-            context.beginPath();
-            context.fillStyle = '#{color_palette[:primary]}';
-            context.roundRect(x0 + 2, 21 * scale + tb, x1 - x0 - 4 * scale, 5 * scale, 3 * scale);
-            context.fill();
-            context.beginPath();
-            context.fillStyle = dark ? 'rgba(0, 0, 0, 0.9)' : 'rgba(255, 255, 255, 1.0)';
-            context.roundRect(x0 + 2, 30 * scale + tb, x1 - x0 - 4 * scale, 20 * scale, 3 * scale);
-            context.fill();
-            context.lineWidth = 0.5;
-            context.strokeStyle = 'rgba(0, 0, 0, 0.3)';
-            context.stroke();
-            if (x0 < 0)
-                x0 = -2;
-            if (x1 > canvas.width)
-                x1 = canvas.width + 2;
-            context.fillStyle = dark ? 'rgba(255, 255, 255, 0.9)' : 'rgba(0, 0, 0, 0.8)';
-            context.textAlign = 'left';
-            while (context.measureText(label).width > x1 - x0 - 4 * scale && label.length > 0) {
-                label = label.slice(0, -1);
-            }
-            context.fillText(label, x0 + 6 * scale, 43.5 * scale + tb);
-        }
-    }
-}
 
-function install_clipboard_handler(selector) {
-    window.clipboard = new ClipboardJS(selector);
-    window.clipboard.on('success', function(e) {
-        let check = $("<i class='fa fa-check btn-success btn-clipboard-check' />");
-        $(e.trigger).append(check);
-        (function(check) {
-            setTimeout(function() {
-                check.fadeOut(400, function() {
-                    check.remove();
-                });
-            }, 1000);
-        })(check);
-    });
-}
-</script>
-</body></html>
+        function install_clipboard_handler(selector) {
+            window.clipboard = new ClipboardJS(selector);
+            window.clipboard.on('success', function (e) {
+                let check = $("<i class='fa fa-check btn-success btn-clipboard-check' />");
+                $(e.trigger).append(check);
+                (function (check) {
+                    setTimeout(function () {
+                        check.fadeOut(400, function () {
+                            check.remove();
+                        });
+                    }, 1000);
+                })(check);
+            });
+        }
+    </script>
+</body>
+
+</html>

@@ -27,13 +27,14 @@ window.addEventListener('load', function() {
             let table = new SortableTable({
                 element: $('#table_here'),
                 xs: true,
-                headers: ['Anbieter', 'Name', 'Teilnehmer', 'Klassen', 'Lehrkraft', 'Raumwunsch'].map(function (x) {
-                        let th = $('<th>').html(x);
-                        return th;
+                headers: ['Nr.', 'Anbieter', 'Name', 'Teilnehmer', 'Klassen', 'Lehrkraft', 'Raumwunsch'].map(function (x) {
+                    let th = $('<th>').html(x);
+                    return th;
                 }),
                 rows: data.rows.map(function (entry, index) {
                     let cells = [
                         entry.email,
+                        `<td>${entry.projekttage.nr ?? '&ndash;'}</td>`,
                         `<td>${entry.sus}</td>`,
                         `<td style='max-width: 20em;'>${entry.projekttage.name ?? '&ndash;'}</td>`,
                         `<td data-sort_value='${entry.projekttage.teilnehmer_max || 20}'>${entry.projekttage.teilnehmer_min ?? '1'} &ndash; ${entry.projekttage.teilnehmer_max ?? '20'}</td>`,

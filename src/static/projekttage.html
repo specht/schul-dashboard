@@ -79,7 +79,13 @@
                     <datalist id='li_lehrkraft'>
                         #{@@user_info.keys.select { |email| user_has_role(email, :teacher)}.select { |email| @@user_info[email][:shorthand][0] != '_' }.sort { |a, b| @@user_info[a][:last_name] <=> @@user_info[b][:last_name]}.map { |email| "<option value='#{@@user_info[email][:display_name_official]}'></option>" }. join('\n')}
                     </datalist>
-                    <div class='col-md-7'>
+                    <div class='col-md-1'>
+                        <div class='form-group'>
+                            <label>#{PROJEKTTAGE_KEY_LABELS[:nr]}</label>
+                            <input id='ti_nr' type='text' value='#{CGI.escapeHTML(get_my_projekttage(user_email)[:nr] || '')}' placeholder='–' class='form-control' readonly>
+                        </div>
+                    </div>
+                    <div class='col-md-6'>
                         <div class='form-group'>
                             <label>#{PROJEKTTAGE_KEY_LABELS[:name]}</label>
                             <input id='ti_name' type='text' value='#{CGI.escapeHTML(get_my_projekttage(user_email)[:name] || '')}' placeholder='Bitte gib einen Namen für euer Projekt ein' class='form-control' readonly>
@@ -267,6 +273,11 @@ window.addEventListener('load', function() {
                 'grobplanung1', 'grobplanung2', 'grobplanung3',
                 'planung_exkursion', 'planung_tablets'].indexOf(key) >= 0) {
                 if ('true' === '#{user_with_role_logged_in?(:can_manage_projekttage) || (@session_user[:klasse] == PROJEKTTAGE_CURRENT_KLASSE && (!$projekttage.phases[$projekttage.get_current_phase][:flags].include?(:no_sus_edit)))}') {
+                    open_this_field = true;
+                }
+            }
+            if (['nr'].indexOf(key) >= 0) {
+                if ('true' === '#{user_with_role_logged_in?(:can_manage_projekttage)}') {
                     open_this_field = true;
                 }
             }

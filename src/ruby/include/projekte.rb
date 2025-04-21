@@ -1,4 +1,5 @@
 PROJEKTTAGE_KEYS = [
+    :nr,
     :name,
     :ziel,
     :teilnehmer_min,
@@ -19,6 +20,7 @@ PROJEKTTAGE_KEYS = [
 ]
 
 PROJEKTTAGE_KEY_LABELS = {
+    :nr => 'Nr.',
     :name => 'Name des Projekts',
     :ziel => 'Ziel',
     :teilnehmer_min => 'Gewünschte Teilnehmerzahl (min.)',
@@ -144,6 +146,7 @@ class Main < Sinatra::Base
         data = parse_request_data(
             :optional_keys => [
                 :sus_email,
+                :nr,
                 :name,
                 :ziel,
                 :teilnehmer_min,
@@ -264,9 +267,11 @@ class Main < Sinatra::Base
 
         rows = projekttage_overview_rows()
         rows.sort! do |a, b|
+            a_nr = a[:projekttage][:nr] || ''
+            b_nr = b[:projekttage][:nr] || ''
             a_sus_index = a[:sus_index]
             b_sus_index = b[:sus_index]
-            a_sus_index <=> b_sus_index
+            a_nr.to_i == b_nr.to_i ? a_nr <=> b_nr : (a_nr.to_i == b_nr.to_i ? a_sus_index <=> b_sus_index : a_nr.to_i <=> b_nr.to_i)
         end
 
         respond(:rows => rows)

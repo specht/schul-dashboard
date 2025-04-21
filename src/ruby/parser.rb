@@ -342,7 +342,7 @@ class Parser
     end
 
     def handle_schueler_line(line)
-        line = line.encode('utf-8')
+        line = line.encode('utf-8').strip
         parts = line.split("\t")
         nachname = parts[0].strip.gsub(/\s+/, ' ')#.unicode_normalize(:nfd)
         vorname = parts[1].strip.gsub(/\s+/, ' ')#.unicode_normalize(:nfd)
@@ -457,6 +457,7 @@ class Parser
         File.open(path, 'r:utf-8') do |f|
             f.each_line do |line|
                 next if line.strip[0] == '#' || line.strip.empty?
+
                 record = handle_schueler_line(line)
                 if KLASSEN_ORDER.include?(record[:klasse])
                     yield record

@@ -2846,6 +2846,7 @@ tr.palerow td {
     height: 180px;
     float: right;
     background-size: cover;
+    background-position: center;
 }
 
 body.dark .polaroid {
@@ -2937,4 +2938,8 @@ body.dark .hl {
 .modal {
     padding-bottom: 1.5em;
     padding-top: 3em;
+}
+
+.alert-white {
+    border: 1px solid rgba(0, 0, 0, 0.1);
 }

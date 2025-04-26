@@ -37,14 +37,18 @@ class StatsBotRepl < Sinatra::Base
         end
         votes = {}
         votes_by_vote = {}
+        (1..3).each do |i|
+            votes_by_vote[i] ||= Set.new()
+        end
         votes_by_email = {}
         votes_by_project = {}
         latest_vote_ts = 0
         $neo4j.neo4j_query(<<~END_OF_QUERY).each do |row|
-            MATCH (u:User)-[r:VOTED_FOR]->(p:Projekt)
+            MATCH (u:User)-[r:VOTED_FOR]->(p:Projekttage)
             RETURN u.email, r.vote, r.ts_updated, p.nr;
         END_OF_QUERY
             email = row['u.email']
+            next unless users[email]
             vote = row['r.vote']
             nr = row['p.nr']
             latest_vote_ts = row['r.ts_updated'] if row['r.ts_updated'] > latest_vote_ts
@@ -86,22 +90,23 @@ class StatsBotRepl < Sinatra::Base
         end
         projects = {}
         $neo4j.neo4j_query(<<~END_OF_QUERY).each do |row|
-            MATCH (p:Projekt) RETURN p;
+            MATCH (p:Projekttage) RETURN p;
         END_OF_QUERY
             p = row['p']
-            next if (p[:capacity] || 0) == 0
+            next if (p[:teilnehmer_max] || 0) == 0
             projects[p[:nr]] = {
                 :nr => p[:nr],
-                :title => p[:title],
-                :capacity => p[:capacity],
-                :min_klasse => p[:min_klasse],
-                :max_klasse => p[:max_klasse],
+                :name => p[:name],
+                :teilnehmer_max => p[:teilnehmer_max],
+                :klassenstufe_min => p[:klassenstufe_min],
+                :klassenstufe_max => p[:klassenstufe_max],
                 :participants => [],
             }
         end
+        STDERR.puts "HEY! #{projects.size} projects found."
         total_capacity = 0
         projects.each do |nr, p|
-            total_capacity += p[:capacity]
+            total_capacity += p[:teilnehmer_max]
         end
         projects_for_klassenstufe = {}
         project_stats = {}
@@ -123,7 +128,7 @@ class StatsBotRepl < Sinatra::Base
                     3 => 0
                 },
             }
-            (p[:min_klasse]..p[:max_klasse]).each do |klassenstufe|
+            (p[:klassenstufe_min]..p[:klassenstufe_max]).each do |klassenstufe|
                 projects_for_klassenstufe[klassenstufe] ||= Set.new()
                 projects_for_klassenstufe[klassenstufe] << nr
             end
@@ -161,9 +166,23 @@ class StatsBotRepl < Sinatra::Base
                     end
                 end
             rescue StandardError => e
+                STDERR.puts "Ignoring: #{e}"
                 # raise
             end
         end
+        if count == 0
+            STDERR.puts "Error: Couldn't distribute projects, aborting."
+            projects_for_klassenstufe.keys.sort.each do |klassenstufe|
+                count = projects_for_klassenstufe[klassenstufe].inject(0) { |sum, nr| sum + projects[nr][:teilnehmer_max] }
+                STDERR.puts "Klassenstufe #{klassenstufe}: #{count} spots"
+                projects_for_klassenstufe[klassenstufe].each do |nr|
+                    STDERR.puts "  #{nr}: #{projects[nr][:name]} (#{projects[nr][:teilnehmer_max]})"
+                end
+            end
+            return
+        end
+        STDERR.puts "count: #{count}"
+        STDERR.puts "emails: #{emails.size}"
         errors.map! { |x| x.to_f / count / emails.size }
         probabilities = {}
         emails.each do |email|

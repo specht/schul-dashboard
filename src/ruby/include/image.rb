@@ -117,4 +117,37 @@ class Main < Sinatra::Base
         images.sort! { |a, b| b[:timestamp] <=> a[:timestamp] }
         respond(:images => images)
     end
+
+    post '/api/upload_sus_pdf' do
+        require_user!
+        entry = params['file']
+        filename = entry['filename']
+        blob = entry['tempfile'].read
+        sha1 = Digest::SHA1.hexdigest(blob)[0, 16]
+        path = "/internal/sus_uploads/pdf/sus-#{sha1}.pdf"
+        File.open(path, 'w') do |f|
+            f.write(blob)
+        end
+        display_name = @session_user[:display_name]
+        deliver_mail("New PDF was uploaded by #{display_name} as sus-#{sha1}") do
+            to WEBSITE_MAINTAINER_EMAIL
+            bcc SMTP_FROM
+            from SMTP_FROM
+
+            subject "SuS PDF Upload from #{display_name}"
+
+            filename = "sus-#{sha1}.pdf"
+            add_file :content_type => entry['type'], :content => File.read("/internal/sus_uploads/pdf/sus-#{sha1}.pdf"), :filename => filename
+        end
+        respond(:uploaded => 'yeah', :stored_path => "sus-#{sha1}")
+    end
+
+    get '/api/get_sus_pdf/:slug' do
+        require_user!
+        slug = params[:slug]
+        path = "/internal/sus_uploads/pdf/#{slug}.pdf"
+        response.headers['Cache-Control'] = "max-age=#{3600 * 24 * 365}"
+        respond_raw_with_mimetype(File.read(path), 'application/pdf')
+    end
+
 end

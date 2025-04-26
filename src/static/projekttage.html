@@ -225,6 +225,56 @@
                         </div>
                     </div>
 
+                    <div class='col-md-12' style="display: #{projekttage_phase() < 1 ? 'none' : ''}; padding: 0;">
+                        <hr style="height: 8px; background: linear-gradient(rgba(0,0,0,0.1) 0%, rgba(0,0,0,0.0) 100%); border-top: 1px solid rgba(0,0,0,0.2);"/>
+                    </div>
+
+                    <div class="col-md-3" style="display: #{projekttage_phase() < 1 ? 'none' : ''};">
+                        <div class='form-group photo_div'>
+                            <label>Bild für den Projektkatalog</label>
+                            <div id='photo' class='polaroid big'></div>
+                            <div style="#{teacher_logged_in? ? 'display: none;' : ''}">
+                                <button id='bu_upload_photo' class='btn btn-sm btn-success mt-2'><i class='mr-2 fa fa-photo'></i>Foto hochladen</button>
+                                <button id='bu_delete_photo' class='btn btn-sm btn-danger mt-2'><i class='mr-2 fa fa-trash'></i>Löschen</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-md-9" style="display: #{projekttage_phase() < 1 ? 'none' : ''};">
+                        <div class='form-group'>
+                            <label>#{PROJEKTTAGE_KEY_LABELS[:werbetext]}</label>
+                            <textarea id='ti_werbetext' class='form-control' style='height: 226px;' placeholder='Schreibt hier euren Werbetext für den Projektkatalog rein.' readonly>#{CGI.escapeHTML(get_my_projekttage(user_email)[:werbetext] || '')}</textarea>
+                        </div>
+                        <div class="form-group">
+                            <label>Wähle ein oder mehrere Tags, die dein Projekt gut beschreiben:</label>
+                            #{PROJEKTTAGE_CATEGORIES.map do |cat|
+                                "<button data-cat='#{cat}' class='bu_cat btn btn-xs #{(get_my_projekttage(user_email)[:categories] || '').split(',').include?(cat) ? 'btn-success' : 'btn-outline-secondary'}'>#{cat}</button>"
+                            end.join(' ')}
+                        </div>
+                    </div>
+
+                    <div class='col-md-12' style="display: #{projekttage_phase() < 1 ? 'none' : ''};">
+                        <div class="div-planung-pdf-available alert alert-white" style="#{get_my_projekttage(user_email)[:planung_pdf] ? '' : 'display: none;'}">
+                            <i class="fa fa-check text-success" style="margin-right: 0.5em; font-size: 1.2em; position: relative; top: 0.1em;"></i>
+                            Du hast bereits eine Strukturplanung hochgeladen. Du kannst sie hier ansehen oder eine neue hochladen.
+                        </div>
+                        <div class="div-planung-pdf-missing alert alert-white" style="#{get_my_projekttage(user_email)[:planung_pdf] ? 'display: none;' : ''}">
+                            <i class="fa fa-clock-o" style="margin-right: 0.5em; font-size: 1.2em; position: relative; top: 0.1em;"></i>
+                            Bitte lade eine Strukturplanung hoch.
+                        </div>
+                        <span style="#{teacher_logged_in? ? 'display: none;' : ''}">
+                            <button id='bu_upload_pdf' class='btn btn-sm btn-success mt-2'><i class='mr-2 fa fa-upload'></i>Strukturplanung hochladen</button>
+                        </span>
+                        <a #{get_my_projekttage(user_email)[:planung_pdf] ? "href='/api/get_sus_pdf/#{get_my_projekttage(user_email)[:planung_pdf]}' target='_blank'" : ''} id='bu_download_pdf' class='#{get_my_projekttage(user_email)[:planung_pdf] ? '' : 'disabled'} btn btn-sm #{get_my_projekttage(user_email)[:planung_pdf] ? 'btn-warning' : 'btn-outline-secondary'} mt-2'><i class='mr-2 fa fa-file-pdf-o'></i>Strukturplanung ansehen</a>
+                        <span style="#{teacher_logged_in? ? 'display: none;' : ''}">
+                            <button #{get_my_projekttage(user_email)[:planung_pdf] ? '' : 'disabled'} id='bu_delete_pdf' class='btn btn-sm #{get_my_projekttage(user_email)[:planung_pdf] ? 'btn-danger' : 'btn-outline-secondary'} mt-2'><i class='mr-2 fa fa-trash'></i>Strukturplanung löschen</button>
+                        </span>
+                    </div>
+
+                    <div class='col-md-12' style="display: #{projekttage_phase() < 1 ? 'none' : ''}; padding: 0;">
+                        <hr style="height: 8px; background: linear-gradient(rgba(0,0,0,0.1) 0%, rgba(0,0,0,0.0) 100%); border-top: 1px solid rgba(0,0,0,0.2);"/>
+                    </div>
+
                     <div class='col-md-12' style="text-align: right; #{(user_with_role_logged_in?(:can_manage_projekttage) || (@session_user[:klasse] == PROJEKTTAGE_CURRENT_KLASSE && @session_user[:email] == user_email && (!$projekttage.phases[$projekttage.get_current_phase][:flags].include?(:no_sus_edit)))) ? '' : 'display: none;'}">
                         <button id='bu_edit' class='btn btn-success'><i class='fa fa-edit'></i>&nbsp;&nbsp;Bearbeiten</button>
                         <button id='bu_discard_changes' style='display: none;' class='btn btn-outline-secondary'><i class='fa fa-times'></i>&nbsp;&nbsp;Änderungen verwerfen</button>
@@ -261,6 +311,92 @@
 var my_projekttage = #{get_my_projekttage(user_email).to_json};
 
 window.addEventListener('load', function() {
+    Dropzone.autoDiscover = false;
+
+    $(`<form action='/api/upload_sus_image' class='dropzone' id='my-awesome-dropzone' style='display: none;'></form>`).appendTo('.photo_div');
+
+    let bu_upload_photo = $('#bu_upload_photo');
+    let bu_delete_photo = $('#bu_delete_photo');
+    let photo = $('#photo');
+
+    if (my_projekttage.photo) {
+        bu_delete_photo.prop('disabled', false);
+        bu_delete_photo.addClass('btn-danger').removeClass('btn-outline-secondary');
+        photo.css('background-image', `url(/api/get_sus_photo/${my_projekttage.photo}-512.jpg)`);
+    } else {
+        bu_delete_photo.prop('disabled', true);
+        bu_delete_photo.removeClass('btn-danger').addClass('btn-outline-secondary');
+        photo.css('background-image', `none`);
+    }
+
+    let dropzone = new Dropzone('#my-awesome-dropzone', {
+        acceptedFiles: 'image/*',
+        autoProcessQueue: true,
+        uploadMultiple: false,
+        init: function () {
+            this.on("success", function (file, data) {
+                data = JSON.parse(data);
+                console.log(data);
+                console.log('yay');
+                api_call('/api/set_photo_for_project', {photo: data.stored_path}, function(data2) {
+                    bu_delete_photo.prop('disabled', false);
+                    bu_delete_photo.addClass('btn-danger').removeClass('btn-outline-secondary');
+                    photo.css('background-image', `url(/api/get_sus_photo/${data.stored_path}-512.jpg)`);
+                });
+            });
+        }
+    });
+    bu_upload_photo.on('click', function(e) {
+        dropzone.hiddenFileInput.click()
+    });
+    bu_delete_photo.on('click', function(e) {
+        api_call('/api/delete_photo_for_project', {nr: my_projekttage.nr}, function(data) {
+            bu_delete_photo.prop('disabled', true);
+            bu_delete_photo.removeClass('btn-danger').addClass('btn-outline-secondary');
+            photo.css('background-image', `none`);
+        });
+    });
+
+    $(`<form action='/api/upload_sus_pdf' class='dropzone' id='my-awesome-dropzone-pdf' style='display: none;'></form>`).appendTo('.photo_div');
+    let bu_upload_pdf = $('#bu_upload_pdf');
+    let bu_show_pdf = $('#bu_download_pdf');
+    let bu_delete_pdf = $('#bu_delete_pdf');
+
+    let pdf_dropzone = new Dropzone('#my-awesome-dropzone-pdf', {
+        acceptedFiles: 'application/pdf',
+        autoProcessQueue: true,
+        uploadMultiple: false,
+        init: function () {
+            this.on("success", function (file, data) {
+                data = JSON.parse(data);
+                console.log(data);
+                api_call('/api/set_planung_pdf_for_project', {sha1: data.stored_path}, function(data2) {
+                    bu_delete_pdf.prop('disabled', false);
+                    bu_delete_pdf.addClass('btn-danger').removeClass('btn-outline-secondary');
+                    $('.div-planung-pdf-missing').hide();
+                    $('.div-planung-pdf-available').show();
+                    bu_show_pdf.removeClass('disabled');
+                    bu_show_pdf.removeClass('btn-outline-secondary').addClass('btn-warning');
+                    bu_show_pdf.attr('href', `/api/get_sus_pdf/${data.stored_path}`);
+                    bu_show_pdf.attr('target', '_blank');
+                });
+            });
+        }
+    });
+    bu_upload_pdf.on('click', function(e) {
+        pdf_dropzone.hiddenFileInput.click()
+    });
+    bu_delete_pdf.on('click', function(e) {
+        api_call('/api/delete_planung_pdf_for_project', {nr: my_projekttage.nr}, function(data) {
+            bu_delete_pdf.prop('disabled', true);
+            bu_delete_pdf.removeClass('btn-danger').addClass('btn-outline-secondary');
+            bu_show_pdf.addClass('disabled');
+            bu_show_pdf.removeClass('btn-warning').addClass('btn-outline-secondary');
+            $('.div-planung-pdf-missing').show();
+            $('.div-planung-pdf-available').hide();
+        });
+    });
+
     $('#bu_edit').on('click', function(e) {
         $('.api_messages').hide();
         for (let input of $(e.target).closest('.karteikarte').find('input, textarea')) {
@@ -271,7 +407,7 @@ window.addEventListener('load', function() {
                 'lehrkraft_wunsch', 'raumwunsch',
                 'produkt', 'material', 'kosten_finanzierungsidee', 'praesentationsidee',
                 'grobplanung1', 'grobplanung2', 'grobplanung3',
-                'planung_exkursion', 'planung_tablets'].indexOf(key) >= 0) {
+                'planung_exkursion', 'planung_tablets', 'werbetext'].indexOf(key) >= 0) {
                 if ('true' === '#{user_with_role_logged_in?(:can_manage_projekttage) || (@session_user[:klasse] == PROJEKTTAGE_CURRENT_KLASSE && (!$projekttage.phases[$projekttage.get_current_phase][:flags].include?(:no_sus_edit)))}') {
                     open_this_field = true;
                 }
@@ -305,7 +441,9 @@ window.addEventListener('load', function() {
         let data = {};
         for (let key of #{PROJEKTTAGE_KEYS.to_json}) {
             let input = $(`#ti_${key}`);
+            console.log(key);
             let value = $(input).val().trim();
+            console.log(value);
             if (key === 'teilnehmer_min' || key === 'teilnehmer_max' || key === 'klassenstufe_min' || key === 'klassenstufe_max') value = parseInt(value);
             data[$(input).attr('id').replace('ti_', '')] = value;
             $(input).prop('readonly', true);
@@ -411,5 +549,36 @@ window.addEventListener('load', function() {
             }
         });
     });
+    $('.bu_cat').on('click', function(e) {
+        let cat = $(e.target).data('cat');
+        if ($(e.target).hasClass('btn-success')) {
+            api_call('/api/toggle_category_for_projekttage', {cat: cat, nr: my_projekttage.nr, sus_email: '#{user_email}'}, function(response) {
+                if (response.success) {
+                    $(e.target).removeClass('btn-success').addClass('btn-outline-secondary');
+                }
+            });
+        } else {
+            api_call('/api/toggle_category_for_projekttage', {cat: cat, nr: my_projekttage.nr, sus_email: '#{user_email}'}, function(response) {
+                if (response.success) {
+                    $(e.target).removeClass('btn-outline-secondary').addClass('btn-success');
+                }
+            });
+        }
+    });
 });
 </script>
+
+<style>
+    .bu_cat {
+        font-weight: normal !important;
+        opacity: 0.5;
+        &.btn-success {
+            font-weight: bold !important;
+            opacity: 1.0;
+        }
+        &:disabled {
+            cursor: default;
+        }
+        #{(teacher_logged_in? && (!user_with_role_logged_in?(:can_manage_projekttage))) ? 'pointer-events: none !important; cursor: default !important;' : ''}
+    }
+</style>

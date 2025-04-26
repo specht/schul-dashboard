@@ -5,9 +5,9 @@
         <div class='col-md-12'>
             <h2 style='margin-bottom: 30px;'>Projekttage #{Date.today.year}</h2>
             <div class="alert mono-alert" style="#{schueler_logged_in? && (@session_user[:klassenstufe] || 7) >= 5 && (@session_user[:klassenstufe] || 7) <= 9 && projekttage_phase() < 3 ? '' : 'display: none;'}">
-                Zum Ende des Schuljahres, vom <b>11. bis 15. Juli</b>, finden wieder die Projekttage statt.
+                Zum Ende des Schuljahres, vom <b>17. bis 21. Juli</b>, finden wieder die Projekttage statt.
                 Hier siehst du, welche Projekte angeboten werden.
-                Am <b>Montag, den 3. Juni</b> gibt es eine Vorstellung der Projekte in der 7. Stunde. Du kannst dir dann drei
+                Am <b>Mittwoch, den 28. Mai</b> gibt es eine Vorstellung der Projekte in der 6. Stunde. Du kannst dir dann drei
                 Projektvorstellungen anschauen und anschließend hier deine Lieblingsprojekte wählen.
             </div>
             <div class="alert mono-alert" style="#{(user_eligible_for_projektwahl?) ? '' : 'display: none;'}">
@@ -167,7 +167,7 @@ function update_vote_summary(id) {
         }
     } else {
         if (id === '#text_vote_summary') {
-            $(id).append($(`<p>`).html(`<em>Du hast bisher ${items.length} Projekte gewählt. Die Prozentzahlen geben an, wie wahrscheinlich ungefähr es ist, dass du dieses Projekt bekommen wirst. <strong>Achtung:</strong> diese Zahlen werden sich ändern, je nachdem wie du und alle anderen wählen.</em>`));
+            $(id).append($(`<p>`).html(`<em>Du hast bisher ${items.length} Projekt${items.length === 1 ? '' : 'e'} gewählt. Die Prozentzahlen geben an, wie wahrscheinlich ungefähr es ist, dass du dieses Projekt bekommen wirst. <strong>Achtung:</strong> diese Zahlen werden sich ändern, je nachdem wie du und alle anderen wählen.</em>`));
         } else {
             $(id).append($(`<p>`).html(`<em>Du hast im Wahlzeitraum ${items.length} Projekte gewählt. Falls du kein Projekt bekommen haben solltest, das du dir gewünscht hast, beachte bitte die vorher bereits veröffentlichten Wahrscheinlichkeiten.</em>`));
         }
@@ -177,7 +177,7 @@ function update_vote_summary(id) {
             let project = item[1];
             console.log(project);
             let polaroid = $(`<div class="polaroid" style="position: relative; display: inline-block; float: none; width: 150px; height: 188px; margin-right: 10px; transform: none;"></div>`).css('background-image', `url(/api/get_sus_photo/${projekte[project].photo}-512.jpg)`).appendTo($(id));
-            polaroid.append($(`<div style='position: absolute; left: 0; right: 0; text-align: center; top: 135px; font-size: 80%; font-weight: bold; white-space: nowrap; overflow-x: clip; '>`).text(projekte[project].title));
+            polaroid.append($(`<div style='position: absolute; left: 0; right: 0; text-align: center; top: 135px; font-size: 80%; font-weight: bold; white-space: nowrap; overflow-x: clip; '>`).text(projekte[project].name));
             if (project_data[project]) {
                 polaroid.append($(`<div style='position: absolute; left: 0; right: 0; text-align: center; top: 150px; font-size: 80%; white-space: nowrap; overflow-x: clip; font-style: italic;'>`).text(`(${project_data[project].vote_count} Interessenten)`));
             }
@@ -235,17 +235,17 @@ function generate_projekt_card(projekt) {
         photo.css('background-image', `url(/api/get_sus_photo/${projekt.photo}-512.jpg)`);
     let card = $(`<div class='card'>`);
     card.append(photo);
-    card.append($(`<h4>`).text(projekt.title));
+    card.append($(`<h4>`).text(projekt.name));
     let div = $(`<div style='position: relative; top: -5px;'>`).appendTo(card);
-    for (let cat of projekt.categories)
+    for (let cat of (projekt.categories ?? '').split(','))
         div.append($(`<span class='badge badge-success' style='margin-right: 5px;'>`).text(cat));
-    if (projekt.min_klasse === projekt.max_klasse) {
-        div.append($(`<span class='badge badge-warning' style='margin-right: 5px;'>`).text(`nur Klasse ${projekt.min_klasse}`));
+    if (projekt.klassenstufe_min === projekt.klassenstufe_max) {
+        div.append($(`<span class='badge badge-warning' style='margin-right: 5px;'>`).text(`nur Klasse ${projekt.klassenstufe_min}`));
     } else {
-        div.append($(`<span class='badge badge-warning' style='margin-right: 5px;'>`).text(`Klasse ${projekt.min_klasse} – ${projekt.max_klasse}`));
+        div.append($(`<span class='badge badge-warning' style='margin-right: 5px;'>`).text(`Klasse ${projekt.klassenstufe_min} – ${projekt.klassenstufe_max}`));
     }
     card.append($(`<p style='font-style: italic;'>`).text(`${projekt.organized_by.map(function(x) { return display_name_for_email[x]; }).join(', ')}`));
-    card.append($(`<p>`).text(projekt.description ?? '(noch keine Beschreibung vorhanden)'));
+    card.append($(`<p style='white-space: pre-line;'>`).text(projekt.werbetext ?? '(noch keine Beschreibung vorhanden)'));
     return card;
 }
 
@@ -270,12 +270,12 @@ document.addEventListener('DOMContentLoaded', function() {
             }
             for (let projekt of data.projekte) {
                 projekte[projekt.nr] = projekt;
-                if (projekt.min_klasse === null)
+                if (projekt.klassenstufe_min === null)
                     continue;
                 let scaffold = $(`<div class='col-md-12'>`);
                 let card = generate_projekt_card(projekt);
                 if ('#{user_was_eligible_for_projektwahl?}' === 'true') {
-                    if (this_klasse >= projekt.min_klasse && this_klasse <= projekt.max_klasse) {
+                    if (this_klasse >= projekt.klassenstufe_min && this_klasse <= projekt.klassenstufe_max) {
                         vote_for_project[projekt.nr] = projekt.session_user_vote;
                     }
                 }
@@ -294,7 +294,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
                 if ('#{user_eligible_for_projektwahl?}' === 'true') {
                     $(`<hr class='dashed'>`).appendTo(card);
-                    if (this_klasse >= projekt.min_klasse && this_klasse <= projekt.max_klasse) {
+                    if (this_klasse >= projekt.klassenstufe_min && this_klasse <= projekt.klassenstufe_max) {
                         vote_for_project[projekt.nr] = projekt.session_user_vote;
                         $(`<p>`).text(`Teile uns hier mit, wie sehr du dich für dieses Projekt interessierst:`).appendTo(card);
                         div = $(`<div class='emojis'>`).appendTo(card);

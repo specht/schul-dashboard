@@ -2113,8 +2113,12 @@ class Main < Sinatra::Base
                 if (schueler_logged_in? && @session_user[:klasse] == PK5_CURRENT_KLASSE)
                     nav_items << :pk5
                 end
-                if (schueler_logged_in? && @session_user[:klasse] == PROJEKTTAGE_CURRENT_KLASSE)
-                    nav_items << :projekttage
+                if schueler_logged_in?
+                    if @session_user[:klasse] == PROJEKTTAGE_CURRENT_KLASSE
+                        nav_items << :projekttage
+                    elsif projekttage_phase() >= 2 && @session_user[:klassenstufe] < 10
+                        nav_items << :projekttage
+                    end
                 end
                 if user_who_can_use_aula_logged_in?
                     nav_items << :aula
@@ -2200,7 +2204,11 @@ class Main < Sinatra::Base
                     io.puts "</li>"
                 elsif x == :projekttage
                     io.puts "<li class='nav-item text-nowrap'>"
-                    io.puts "<a href='/projekttage' class='nav-link nav-icon'><div class='icon'><i class='fa fa-file-text-o'></i></div>Projekttage</a>"
+                    if @session_user[:klasse] == PROJEKTTAGE_CURRENT_KLASSE
+                        io.puts "<a href='/projekttage' class='nav-link nav-icon'><div class='icon'><i class='fa fa-rocket'></i></div>Projekttage</a>"
+                    else
+                        io.puts "<a href='/projekttage_sus' class='nav-link nav-icon'><div class='icon'><i class='fa fa-rocket'></i></div>Projekttage</a>"
+                    end
                     io.puts "</li>"
                 elsif x == :advent_calendar
                     unless admin_logged_in?
@@ -2290,7 +2298,7 @@ class Main < Sinatra::Base
                             io.puts "<a class='dropdown-item nav-icon' href='/kurslisten'><div class='icon'><i class='fa fa-file-text-o'></i></div><span class='label'>Kurslisten</span></a>"
                         end
                         io.puts "<a class='dropdown-item nav-icon' href='/pk5_overview'><div class='icon'><i class='fa fa-file-text-o'></i></div><span class='label'>5. PK</span></a>"
-                        io.puts "<a class='dropdown-item nav-icon' href='/projekttage_overview'><div class='icon'><i class='fa fa-file-text-o'></i></div><span class='label'>Projekttage</span></a>"
+                        io.puts "<a class='dropdown-item nav-icon' href='/projekttage_overview'><div class='icon'><i class='fa fa-rocket'></i></div><span class='label'>Projekttage</span></a>"
                     end
                     if schueler_logged_in?
                         if @session_user[:klasse].to_i < 11

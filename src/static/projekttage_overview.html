@@ -27,20 +27,25 @@ window.addEventListener('load', function() {
             let table = new SortableTable({
                 element: $('#table_here'),
                 xs: true,
-                headers: ['Nr.', 'Anbieter', 'Name', 'Teilnehmer', 'Klassen', 'Lehrkraft', 'Raumwunsch'].map(function (x) {
+                headers: ['Nr.', 'Anbieter', 'Name', 'Teilnehmer', 'Klassen', 'Lehrkraft', 'Raumwunsch', 'Planung'].map(function (x) {
                     let th = $('<th>').html(x);
                     return th;
                 }),
                 rows: data.rows.map(function (entry, index) {
+                    let pdf_button = '&ndash;';
+                    if (entry.projekttage.planung_pdf) {
+                        pdf_button = `<a href='/api/get_sus_pdf/${entry.projekttage.planung_pdf}' class='btn btn-xs btn-warning bu_pdf' target='_blank'><i class='fa fa-file-pdf-o' style='margin-right: 0.5em;'></i>Planung</a>`;
+                    }
                     let cells = [
                         entry.email,
                         `<td>${entry.projekttage.nr ?? '&ndash;'}</td>`,
-                        `<td>${entry.sus}</td>`,
+                        `<td style='max-width: 20em;'>${entry.sus}</td>`,
                         `<td style='max-width: 20em;'>${entry.projekttage.name ?? '&ndash;'}</td>`,
                         `<td data-sort_value='${entry.projekttage.teilnehmer_max || 20}'>${entry.projekttage.teilnehmer_min ?? '1'} &ndash; ${entry.projekttage.teilnehmer_max ?? '20'}</td>`,
                         `<td>${entry.projekttage.klassenstufe_min ?? '5'} &ndash; ${entry.projekttage.klassenstufe_max ?? '9'}</td>`,
-                        `<td>${entry.projekttage.lehrkraft_wunsch ?? '&ndash;'}</td>`,
-                        `<td>${entry.projekttage.raumwunsch ?? '&ndash;'}</td>`,
+                        `<td style='max-width: 20em;'>${entry.projekttage.lehrkraft_wunsch ?? '&ndash;'}</td>`,
+                        `<td style='max-width: 20em;'>${entry.projekttage.raumwunsch ?? '&ndash;'}</td>`,
+                        `<td>${pdf_button}</td>`,
                     ];
                     return cells;
                 }),
@@ -49,6 +54,9 @@ window.addEventListener('load', function() {
                 clickable_row_callback: function(email) {
                     window.location.href = `/projekttage/${email}`;
                 }
+            });
+            $('.bu_pdf').on('click', function(e) {
+                e.stopPropagation();
             });
         }
     });

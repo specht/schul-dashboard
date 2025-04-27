@@ -1,10 +1,5 @@
 class Main < Sinatra::Base
 
-    def at_datum_now
-        # return '2025-04-28' if DEVELOPMENT
-        Date.today.strftime('%Y-%m-%d')
-    end
-    
     post '/api/get_at_notes_sus_list' do
         require_teacher!
         data = parse_request_data(:required_keys => [:lesson_key])
@@ -25,7 +20,7 @@ class Main < Sinatra::Base
             week_freq_count[n] = freq
         end
         latest_datum_for_email = {}
-        datum = at_datum_now()
+        datum = Date.today.strftime('%Y-%m-%d')
         neo4j_query(<<~END_OF_QUERY, {:lesson_key => data[:lesson_key], :datum => datum}).each do |row|
             MATCH (us:User)<-[:FOR]-(at:AT {key: 'at'})-[:REGARDING]->(l:Lesson {key: $lesson_key})
             WHERE at.datum < $datum
@@ -49,7 +44,7 @@ class Main < Sinatra::Base
             todays_notes[row['email']] ||= {}
             todays_notes[row['email']][row['key']] = row['value'].nil? ? true : row['value']
         end
-        s = at_datum_now().split('-').map { |x| x.to_i }
+        s = Date.today.strftime('%Y-%m-%d').split('-').map { |x| x.to_i }
         srand(((s[0] * 1000) + s[1] * 31) + s[2])
         sus_index = {}
         @@schueler_for_lesson[data[:lesson_key]].each.with_index do |email, index|
@@ -81,7 +76,7 @@ class Main < Sinatra::Base
         require_teacher!
         data = parse_request_data(:required_keys => [:lesson_key, :email, :key, :value],
                                   :types => {:value => Integer})
-        datum = at_datum_now()
+        datum = Date.today.strftime('%Y-%m-%d')
         assert(data[:value] >= 0 && data[:value] <= 5)
         if (data[:value] != 0)
             neo4j_query_expect_one(<<~END_OF_QUERY, {:teacher_email => @session_user[:email], :sus_email => data[:email], :lesson_key => data[:lesson_key], :key => data[:key], :value => data[:value], :datum => datum})
@@ -107,15 +102,15 @@ class Main < Sinatra::Base
         require_teacher!
         data = parse_request_data(:required_keys => [:lesson_key, :email, :key])
         assert(['hausaufgaben', 'material', 'unterschrift'].include?(data[:key]))
-        datum = at_datum_now()
-        currently_missing = false
+        datum = Date.today.strftime('%Y-%m-%d')
+        currently_present = false
         neo4j_query(<<~END_OF_QUERY, {:lesson_key => data[:lesson_key], :email => data[:email], :key => data[:key], :datum => datum}).each do |row|
             MATCH (us:User {email: $email})<-[:FOR]-(at:AT {key: $key, datum: $datum})-[:REGARDING]->(l:Lesson {key: $lesson_key})
             RETURN COUNT(at) AS count;
         END_OF_QUERY
-            currently_missing = true if row['count'] > 0
+        currently_present = true if row['count'] > 0
         end
-        if currently_missing
+        if currently_present
             neo4j_query_expect_one(<<~END_OF_QUERY, {:lesson_key => data[:lesson_key], :email => data[:email], :key => data[:key], :datum => datum})
                 MATCH (us:User {email: $email})<-[:FOR]-(at:AT {key: $key, datum: $datum})-[:REGARDING]->(l:Lesson {key: $lesson_key})
                 DETACH DELETE at
@@ -131,6 +126,6 @@ class Main < Sinatra::Base
                 RETURN at;
             END_OF_QUERY
         end
-        respond(:missing => !currently_missing)
+        respond(:missing => currently_present)
     end
 end

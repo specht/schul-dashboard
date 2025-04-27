@@ -1,3 +1,9 @@
+REASON_TO_KEY = {
+    'material' => 'material',
+    'homework' => 'hausaufgaben',
+    'signature' => 'unterschrift',
+}
+
 class Main < Sinatra::Base
     post '/api/send_email' do
         require_teacher!
@@ -13,6 +19,7 @@ class Main < Sinatra::Base
         ts_h = t.strftime("%H:%M")
         ts_i = t.to_i
         tag = RandomTag.generate(24)
+        datum = Date.today.strftime('%Y-%m-%d')
         neo4j_query_expect_one(<<~END_OF_QUERY, {:tag => tag, :teacher_email => @session_user[:email], :sus_email => data[:email], :reason => data[:reason], :details => data[:details], :lesson_key => data[:lesson_key], :lesson_offset => data[:lesson_offset], :datum => data[:datum], :ts => ts_i})
             MATCH (ut:User {email: $teacher_email})
             MATCH (us:User {email: $sus_email})
@@ -22,6 +29,7 @@ class Main < Sinatra::Base
             CREATE (m)-[:REGARDING]->(i)
             RETURN m;
         END_OF_QUERY
+
         entry = {
             :tag => tag,
             :reason => data[:reason],

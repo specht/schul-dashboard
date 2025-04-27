@@ -2368,6 +2368,68 @@ class Main
         end
     end
 
+    def print_at_overview(klasse_or_lesson_key)
+        assert(teacher_logged_in?)
+        ts_start = Date.parse(@@config[:first_school_day]).to_time.to_i
+        lesson_keys = @@lessons_for_shorthand[@session_user[:shorthand]]
+        data = {}
+        all_ym = Set.new()
+        neo4j_query(<<~END_OF_QUERY, {:lesson_keys => lesson_keys, :ts_start => ts_start}).each do |row|
+            MATCH (us:User)<-[:FOR]-(at:AT)-[:REGARDING]->(i:LessonInfo)-[:BELONGS_TO]->(l:Lesson)
+            WHERE l.key IN $lesson_keys AND at.ts >= $ts_start
+            RETURN l.key, us.email, at
+            ORDER BY at.ts;
+        END_OF_QUERY
+            lesson_key = row['l.key']
+            email = row['us.email']
+            next unless @@user_info[email][:klasse] == klasse_or_lesson_key || lesson_key == klasse_or_lesson_key
+            ts = row['at'][:ts]
+            value = row['at'][:value]
+            ds_ym = Time.at(ts).strftime('%Y-%m')
+            all_ym << ds_ym
+            data[lesson_key] ||= {}
+            data[lesson_key][email] ||= {}
+            data[lesson_key][email][ds_ym] ||= []
+            data[lesson_key][email][ds_ym] << value
+        end
+        StringIO.open do |io|
+            data.keys.sort.each do |lesson_key|
+                io.puts "<h3>#{@@lessons[:lesson_keys][lesson_key][:pretty_folder_name]}</h3>"
+                io.puts "<div style='max-width: 100%; overflow-x: auto;'>"
+                io.puts "<table class='table table-condensed table-striped narrow' style='width: unset; min-width: 100%;'>"
+                io.puts "<thead>"
+                io.puts "<tr>"
+                io.puts "<th>Name</th>"
+                all_ym.to_a.sort.each do |ym|
+                    io.puts "<th>#{MONTHS[ym.split('-')[1].to_i - 1]}</th>"
+                end
+                io.puts "</tr>"
+                io.puts "</thead>"
+                io.puts "<tbody>"
+                @@schueler_for_lesson[lesson_key].each do |email|
+                    io.puts "<tr>"
+                    io.puts "<td>#{@@user_info[email][:display_name]}</td>"
+                    all_ym.to_a.sort.each do |ym|
+                        io.puts "<td>"
+                        if data[lesson_key][email] && data[lesson_key][email][ym]
+                            data[lesson_key][email][ym].each do |value|
+                                symbol_for_note = {1 => '–&nbsp;–', 2 => '–', 3 => 'o', 4 => '+', 5 => '+&nbsp;+'}
+                                io.puts "<span class='badge bu-at-note active' data-value='#{value}' style='min-width: 2em;'>#{symbol_for_note[value]}</span>"
+                            end
+                        else
+                            io.puts "<span style='opacity: 0.7;'>&ndash;</span>"
+                        end
+                        io.puts "</td>"
+                    end
+                end
+                io.puts "</tbody>"
+                io.puts "</table>"
+                io.puts "</div>"
+            end
+            io.string
+        end
+    end
+
     def gen_password_for_email(email)
         sha2 = Digest::SHA256.new()
         sha2 << EMAIL_PASSWORD_SALT

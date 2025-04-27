@@ -2943,3 +2943,28 @@ body.dark .hl {
 .alert-white {
     border: 1px solid rgba(0, 0, 0, 0.1);
 }
+
+.bu-at-note {
+    &.active {
+        &[data-value='1'] {
+            background-color: #870606 !important;
+            color: #fff !important;
+        }
+        &[data-value='2'] {
+            background-color: #E67010 !important;
+            color: #fff !important;
+        }
+        &[data-value='3'] {
+            background-color: #FFC300 !important;
+            color: #fff !important;
+        }
+        &[data-value='4'] {
+            background-color: #AFD558 !important;
+            color: #fff !important;
+        }
+        &[data-value='5'] {
+            background-color: #3EBA44 !important;
+            color: #fff !important;
+        }
+    }
+}

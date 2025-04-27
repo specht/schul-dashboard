@@ -73,6 +73,7 @@ TRESOR_JWT_TTL_EXTRA = 20
 require './background-renderer.rb'
 require './include/admin.rb'
 require './include/angebote.rb'
+require './include/at.rb'
 require './include/aula.rb'
 require './include/bib_login.rb'
 require './include/color.rb'
@@ -301,6 +302,7 @@ class SetupDatabase
     ]
 
     INDEX_LIST = [
+        'AT/ts',
         'AudioComment/offset',
         'Booking/confirmed',
         'Booking/datum',
@@ -3284,6 +3286,14 @@ class Main < Sinatra::Base
                 redirect "#{WEB_ROOT}/", 302
             end
         elsif path == 'email_overview'
+            redirect "#{WEB_ROOT}/", 302 unless @session_user
+            parts = request.env['REQUEST_PATH'].split('/')
+            klasse = CGI::unescape(parts[2])
+#             STDERR.puts @@teachers_for_klasse[klasse].to_yaml
+            unless admin_logged_in? || can_see_all_timetables_logged_in? || (@@teachers_for_klasse[klasse] || {}).include?(@session_user[:shorthand])
+                redirect "#{WEB_ROOT}/", 302
+            end
+        elsif path == 'at_overview'
             redirect "#{WEB_ROOT}/", 302 unless @session_user
             parts = request.env['REQUEST_PATH'].split('/')
             klasse = CGI::unescape(parts[2])

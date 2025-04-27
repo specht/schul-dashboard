@@ -1226,8 +1226,8 @@ document.addEventListener('DOMContentLoaded', function() {
                             toolbar = $(`<div class='btn-toolbar' style='flex-wrap: nowrap; justify-content: flex-start;'>`);
                             group = $(`<div class='btn-group' style='margin-right: 0.5em;'>`).appendTo(toolbar);
                             $(`<button data-key='hausaufgaben' class='bu-at-missing btn btn-xs ${(data.todays_notes[sus_info.email] ?? {}).hausaufgaben ? 'btn-danger' : 'btn-outline-secondary'}' style='white-space: nowrap;'>`).html(`HA`).appendTo(group);
-                            $(`<button data-key='material' class='bu-at-missing btn btn-xs ${(data.todays_notes[sus_info.email] ?? {}).material ? 'btn-danger' : 'btn-outline-secondary'}' style='white-space: nowrap;'>`).html(`Mat`).appendTo(group);
-                            $(`<button data-key='unterschrift' class='bu-at-missing btn btn-xs ${(data.todays_notes[sus_info.email] ?? {}).unterschrift ? 'btn-danger' : 'btn-outline-secondary'}' style='white-space: nowrap;'>`).html(`US`).appendTo(group);
+                            $(`<button data-key='material' class='bu-at-missing btn btn-xs ${(data.todays_notes[sus_info.email] ?? {}).material ? 'btn-danger' : 'btn-outline-secondary'}' style='white-space: nowrap;'>`).html(`Material`).appendTo(group);
+                            $(`<button data-key='unterschrift' class='bu-at-missing btn btn-xs ${(data.todays_notes[sus_info.email] ?? {}).unterschrift ? 'btn-danger' : 'btn-outline-secondary'}' style='white-space: nowrap;'>`).html(`Unterschrift`).appendTo(group);
                             let cell = $(`<td>`).append(toolbar).appendTo(row);
 
                             row.find('.bu-at-note').on('click', function(e) {
@@ -1249,9 +1249,9 @@ document.addEventListener('DOMContentLoaded', function() {
                                 api_call('/api/toggle_at_missing_for_sus', {email: email, lesson_key: event.lesson_key, key: key}, function(data) {
                                     if (data.success) {
                                         if (data.missing) {
-                                            button.removeClass('btn-outline-secondary').addClass('btn-danger');
-                                        } else {
                                             button.removeClass('btn-danger').addClass('btn-outline-secondary');
+                                        } else {
+                                            button.removeClass('btn-outline-secondary').addClass('btn-danger');
                                         }
                                     }
                                 });

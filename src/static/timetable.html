@@ -228,9 +228,18 @@
                 </h5>
             </div>
             <div class="modal-body">
-                <p>Um für alle SuS mindestens eine AT-Notiz in vier Wochen zu erhalten, bewerten Sie bitte <strong><span id='span_recommended_at_count'></span></strong> in der untenstehenden Liste. Sie können auch mehr oder weniger SuS bewerten &ndash; es stehen immer die SuS oben, die am längsten keine Note bekommen haben.</p>
-                <div style='max-width: 100%; overflow-x: auto;'>
-                    <table class='table table-sm table-striped' id='div_at_sus_table'>
+                <button class="bu-sort-at-table-by-recency btn btn-sm btn-secondary"><i class='fa fa-check'></i>&nbsp;&nbsp;Nach Dringlichkeit sortieren</button>
+                <div style='max-width: 100%; overflow-x: auto; margin-top: 1em;'>
+                    <table class='table table-sm' id='div_at_sus_table'>
+                        <thead>
+                            <tr>
+                                <th scope='col' class='sticky_col'>Name</th>
+                                <th scope='col'>AT</th>
+                                <th scope='col'>Versäumnis</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                        </tbody>
                     </table>
                 </div>
             </div>
@@ -1182,45 +1191,78 @@ document.addEventListener('DOMContentLoaded', function() {
                 $('.bu-mail').hide();
             }
 
-            $('#div_at_sus_table').empty();
+            $('#div_at_sus_table tbody').empty();
+            $('.bu-sort-at-table-by-recency').data('value', true).removeClass('btn-outline-secondary').addClass('btn-secondary');
             at_div_rows = {};
             if ('#{teacher_logged_in? ? 'true' : 'false'}' == 'true' && typeof(event.lesson_key) !== 'undefined' && (event.schueler_for_lesson ?? []).length > 0 && (my_lessons.indexOf(event.lesson_key) >= 0 && event.lesson_offset !== null && event.lesson_offset >= 0) && (#{DEVELOPMENT ? 'true' : 'false'} || ('#{Date.today.strftime('%Y-%m-%d')}' === event.datum))) {
                 api_call('/api/get_at_notes_sus_list', {lesson_key: event.lesson_key, lesson_offset: event.lesson_offset}, function(data) {
                     console.log(data);
                     if (data.success) {
-                        if (data.recommended_count === 1) {
-                            $('#span_recommended_at_count').text(`nur den ersten SuS`);
-                        } else {
-                            $('#span_recommended_at_count').text(`die ersten ${data.recommended_count} SuS`);
-                        }
-                        for (let sus_info of data.sus_list) {
+                        // if (data.recommended_count === 1) {
+                        //     $('#span_recommended_at_count').text(`nur den ersten SuS`);
+                        // } else {
+                        //     $('#span_recommended_at_count').text(`die ersten ${data.recommended_count} SuS`);
+                        // }
+                        for (let index = 0; index < data.sus_list.length; index++) {
+                            sus_info = data.sus_list[index];
                             at_div_rows[sus_info.email] = {};
                             let row = $(`<tr>`).data('email', sus_info.email).data('type', 'sus');
-                            row.append($(`<td style='white-space: pre;'>`).text(`${sus_info.last_name}, ${sus_info.first_name}`));
+                            row.data('recency_index', index * 2 + 0);
+                            row.data('sus_index', data.sus_index[sus_info.email]);
+                            row.append($(`<td class='sticky_col' style='white-space: pre;'>`).text(`${sus_info.last_name}, ${sus_info.first_name}`));
 
                             let toolbar = $(`<div class='btn-toolbar' style='flex-wrap: nowrap; justify-content: flex-start;'>`);
                             let group = $(`<div class='btn-group' style='margin-right: 0.5em;'>`).appendTo(toolbar);
                             let symbol_for_note = {1: '–&nbsp;–', 2: '–', 3: 'o', 4: '+', 5: '+&nbsp;+'};
-                            let stored_note = data.todays_notes[sus_info.email] || 0;
+                            let stored_note = (data.todays_notes[sus_info.email] ?? {}).at || 0;
                             for (let i = 1; i <= 5; i++) {
-                                let button = $(`<button data-value='${i}' class='${stored_note == i ? 'active' : ''} bu-at-note btn btn-sm btn-outline-secondary' style='white-space: nowrap; width: 2.5em;'>`).html(`<strong>${symbol_for_note[i]}</strong>`).appendTo(group);
+                                let button = $(`<button data-value='${i}' class='${stored_note == i ? 'active' : ''} bu-at-note btn btn-xs btn-outline-secondary' style='white-space: nowrap; width: 2.5em;'>`).html(`<strong>${symbol_for_note[i]}</strong>`).appendTo(group);
                             }
                             group = $(`<div class='btn-group'>`).appendTo(toolbar);
-                            let button = $(`<button data-value='0' class='bu-at-note btn btn-sm btn-outline-secondary' style='white-space: nowrap; width: 2.5em;'>`).html(`<i class='fa fa-times'></i>`).appendTo(group);
+                            let button = $(`<button data-value='0' class='bu-at-note btn btn-xs btn-outline-secondary' style='white-space: nowrap; width: 2.5em;'>`).html(`<i class='fa fa-times'></i>`).appendTo(group);
 
                             $(`<td>`).append(toolbar).appendTo(row);
+
+                            toolbar = $(`<div class='btn-toolbar' style='flex-wrap: nowrap; justify-content: flex-start;'>`);
+                            group = $(`<div class='btn-group' style='margin-right: 0.5em;'>`).appendTo(toolbar);
+                            $(`<button data-key='hausaufgaben' class='bu-at-missing btn btn-xs ${(data.todays_notes[sus_info.email] ?? {}).hausaufgaben ? 'btn-danger' : 'btn-outline-secondary'}' style='white-space: nowrap;'>`).html(`HA`).appendTo(group);
+                            $(`<button data-key='material' class='bu-at-missing btn btn-xs ${(data.todays_notes[sus_info.email] ?? {}).material ? 'btn-danger' : 'btn-outline-secondary'}' style='white-space: nowrap;'>`).html(`Mat`).appendTo(group);
+                            $(`<button data-key='unterschrift' class='bu-at-missing btn btn-xs ${(data.todays_notes[sus_info.email] ?? {}).unterschrift ? 'btn-danger' : 'btn-outline-secondary'}' style='white-space: nowrap;'>`).html(`US`).appendTo(group);
+                            let cell = $(`<td>`).append(toolbar).appendTo(row);
+
                             row.find('.bu-at-note').on('click', function(e) {
                                 let button = $(e.target).closest('.bu-at-note');
                                 let value = parseInt($(button).data('value'));
                                 let row = $(button).closest('tr');
                                 let email = row.data('email');
-                                api_call('/api/set_at_note_for_sus', {email: email, lesson_key: event.lesson_key, lesson_offset: event.lesson_offset, value: value}, function(data) {
+                                api_call('/api/set_at_note_for_sus', {email: email, lesson_key: event.lesson_key, key: 'at', value: value}, function(data) {
                                     row.find('.bu-at-note').removeClass('active');
                                     if (value !== 0)
                                         button.addClass('active');
                                 });
                             });
-                            $('#div_at_sus_table').append(row);
+                            row.find('.bu-at-missing').on('click', function(e) {
+                                let button = $(e.target).closest('.bu-at-missing');
+                                let key = $(button).data('key');
+                                let row = $(button).closest('tr');
+                                let email = row.data('email');
+                                api_call('/api/toggle_at_missing_for_sus', {email: email, lesson_key: event.lesson_key, key: key}, function(data) {
+                                    if (data.success) {
+                                        if (data.missing) {
+                                            button.removeClass('btn-outline-secondary').addClass('btn-danger');
+                                        } else {
+                                            button.removeClass('btn-danger').addClass('btn-outline-secondary');
+                                        }
+                                    }
+                                });
+                            });
+                            $('#div_at_sus_table tbody').append(row);
+                            if ((data.week_freq_count[index + 1] ?? 0) > 0) {
+                                let row = $(`<tr class='hint_row'>`);
+                                row.append($(`<td colspan='3' class='sticky_col'>`).html(`Bis hier ausfüllen für eine Notiz pro SuS ${data.week_freq_count[index + 1] === 1 ? 'in jeder Woche' : 'alle ' + data.week_freq_count[index + 1] + ' Wochen'}`));
+                                row.data('recency_index', index * 2 + 1);
+                                $('#div_at_sus_table tbody').append(row);
+                            }
                         }
                     }
                     $('.bu-at-notes').show();
@@ -1956,7 +1998,56 @@ document.addEventListener('DOMContentLoaded', function() {
             }, 1000);
         }
     });
+    $('.bu-sort-at-table-by-recency').on('click', function(e) {
+        let value = $('.bu-sort-at-table-by-recency').data('value');
+        console.log(value);
+        let table = $('#div_at_sus_table tbody');
+        let rows = table.find('tr').toArray();
+        rows.sort(function(a, b) {
+            let va = $(a).data(value ? 'sus_index' : 'recency_index') ?? 0;
+            let vb = $(b).data(value ? 'sus_index' : 'recency_index') ?? 0;
+            if (va < vb)
+                return -1;
+            else if (va > vb)
+                return 1;
+            else
+                return 0;
+        });
+        for (let row of rows) {
+            table.append(row);
+            if ($(row).hasClass('hint_row')) {
+                if (value)
+                    $(row).hide();
+                else
+                    $(row).show();
+            }
+        }
+        if (value) {
+            $('.bu-sort-at-table-by-recency').data('value', false);
+            $('.bu-sort-at-table-by-recency').closest('.btn').removeClass('btn-secondary').addClass('btn-outline-secondary');
+        } else {
+            $('.bu-sort-at-table-by-recency').data('value', true);
+            $('.bu-sort-at-table-by-recency').closest('.btn').addClass('btn-secondary').removeClass('btn-outline-secondary');
+        }
+    })
 });
 
 
 </script>
+
+<style>
+.sticky_col {
+    position: sticky;
+    left: 0;
+    background-color: #fff;
+    z-index: 2;
+}
+tr.hint_row td {
+    font-size: 90%;
+    font-style: italic;
+    background-color: #f0f0f0;
+    padding: 0 0.5em;
+    opacity: 0.8;
+}
+
+</style>

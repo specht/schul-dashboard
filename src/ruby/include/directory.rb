@@ -334,9 +334,9 @@ class Main < Sinatra::Base
                     io.puts "<a class='btn btn-warning' href='/email_overview/#{klasse}'><i class='fa fa-envelope-o'></i>&nbsp;&nbsp;E-Mails aus dem Unterricht</a>"
                 end
             end
-            if teacher_logged_in?
-                io.puts "<a class='btn btn-warning' href='/at_overview/#{klasse}'><i class='fa fa-star-o'></i>&nbsp;&nbsp;AT-Notizen</a>"
-            end
+            # if teacher_logged_in?
+            #     io.puts "<a class='btn btn-warning' href='/at_overview/#{klasse}'><i class='fa fa-star-o'></i>&nbsp;&nbsp;AT-Notizen</a>"
+            # end
             # io.puts print_stream_restriction_table(klasse)
             if teacher_logged_in?
                 io.puts "<hr>"

@@ -302,7 +302,8 @@ class SetupDatabase
     ]
 
     INDEX_LIST = [
-        'AT/ts',
+        'AT/datum',
+        'ATPlaceholder/datum',
         'AudioComment/offset',
         'Booking/confirmed',
         'Booking/datum',

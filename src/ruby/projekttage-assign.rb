@@ -38,12 +38,13 @@ class Script
         votes_by_email = {}
         votes_by_project = {}
         neo4j_query(<<~END_OF_QUERY).each do |row|
-            MATCH (u:User)-[r:VOTED_FOR]->(p:Projekt)
+            MATCH (u:User)-[r:VOTED_FOR]->(p:Projekttage)
             RETURN u.email, r.vote, p.nr;
         END_OF_QUERY
             email = row['u.email']
             vote = row['r.vote']
             nr = row['p.nr']
+            next unless users[email]
             users[email][:votes] << [nr, vote]
             users[email][:vote_hash][nr] = vote
             users[email][:highest_vote] = vote if vote > users[email][:highest_vote]
@@ -68,7 +69,7 @@ class Script
         end
         projects = {}
         neo4j_query(<<~END_OF_QUERY).each do |row|
-            MATCH (p:Projekt) RETURN p;
+            MATCH (p:Projekttage) RETURN p;
         END_OF_QUERY
             p = row['p']
             next if (p[:capacity] || 0) == 0
@@ -121,6 +122,7 @@ class Script
                     projects_for_email[email][project] += 1
                 end
             rescue
+                raise
             end
         end
         Main.print_project_assignment_summary_and_assign(best_assignment, @@user_info,

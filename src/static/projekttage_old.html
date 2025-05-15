@@ -1,4 +1,4 @@
-#{assert(user_logged_in? && @session_user[:klasse] == PROJEKTTAGE_CURRENT_KLASSE)}
+#{assert(user_logged_in? && email_is_projekttage_organizer?(@@user_info, @session_user[:email]))}
 <style>
 .cbl {
     border-left: 1px solid rgba(0, 0, 0, 0.15);

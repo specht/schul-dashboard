@@ -1,4 +1,4 @@
-#{assert(teacher_logged_in? || (schueler_logged_in? && @session_user[:klasse] == PROJEKTTAGE_CURRENT_KLASSE))}
+#{assert(teacher_logged_in? || email_is_projekttage_organizer?(@@user_info, @session_user[:email]))}
 <style>
     body.dark .karteikarte {
         background-color: rgba(0, 0, 0, 0.5);
@@ -74,7 +74,7 @@
             <div class='karteikarte'>
                 <div class='row'>
                     <datalist id='li_sus_q1'>
-                        #{@@user_info.keys.select { |email| user_has_role(email, :schueler) && @@user_info[email][:klasse] == PROJEKTTAGE_CURRENT_KLASSE && email != @session_user[:email] }.sort { |a, b| @@user_info[a][:last_name] <=> @@user_info[b][:last_name] }.map { |email| "<option value='#{@@user_info[email][:display_name_official]}'></option>" }. join('\n')}
+                        #{@@user_info.keys.select { |email| user_has_role(email, :schueler) && email_is_projekttage_organizer?(@@user_info, email) && email != @session_user[:email] }.sort { |a, b| @@user_info[a][:last_name] <=> @@user_info[b][:last_name] }.map { |email| "<option value='#{@@user_info[email][:display_name_official]}'></option>" }. join('\n')}
                     </datalist>
                     <datalist id='li_lehrkraft'>
                         #{@@user_info.keys.select { |email| user_has_role(email, :teacher)}.select { |email| @@user_info[email][:shorthand][0] != '_' }.sort { |a, b| @@user_info[a][:last_name] <=> @@user_info[b][:last_name]}.map { |email| "<option value='#{@@user_info[email][:display_name_official]}'></option>" }. join('\n')}
@@ -96,7 +96,7 @@
                             <label>Anbieter des Projekts</label>
                             <div class="input-group mb-3">
                                 <input type='text' value='#{CGI.escapeHTML(join_with_sep(get_my_projekttage(user_email)[:sus] || [], ', ', ' und '))}' class='form-control' readonly disabled>
-                                <div class="input-group-append" style="#{(user_with_role_logged_in?(:can_manage_projekttage) || (@session_user[:klasse] == PROJEKTTAGE_CURRENT_KLASSE && @session_user[:email] == user_email && !($projekttage.phases[$projekttage.get_current_phase][:flags].include?(:no_sus_edit)))) ? '' : 'display: none;'}">
+                                <div class="input-group-append" style="#{(user_with_role_logged_in?(:can_manage_projekttage) || (email_is_projekttage_organizer?(@@user_info, @session_user[:email]) && @session_user[:email] == user_email && !($projekttage.phases[$projekttage.get_current_phase][:flags].include?(:no_sus_edit)))) ? '' : 'display: none;'}">
                                   <button class="btn btn-outline-secondary" type="button" id="bu_add_sus"><i class='fa fa-user-plus'></i></button>
                                 </div>
                             </div>
@@ -275,7 +275,7 @@
                         <hr style="height: 8px; background: linear-gradient(rgba(0,0,0,0.1) 0%, rgba(0,0,0,0.0) 100%); border-top: 1px solid rgba(0,0,0,0.2);"/>
                     </div>
 
-                    <div class='col-md-12' style="text-align: right; #{(user_with_role_logged_in?(:can_manage_projekttage) || (@session_user[:klasse] == PROJEKTTAGE_CURRENT_KLASSE && @session_user[:email] == user_email && (!$projekttage.phases[$projekttage.get_current_phase][:flags].include?(:no_sus_edit)))) ? '' : 'display: none;'}">
+                    <div class='col-md-12' style="text-align: right; #{(user_with_role_logged_in?(:can_manage_projekttage) || (email_is_projekttage_organizer?(@@user_info, @session_user[:email]) && @session_user[:email] == user_email && (!$projekttage.phases[$projekttage.get_current_phase][:flags].include?(:no_sus_edit)))) ? '' : 'display: none;'}">
                         <button id='bu_edit' class='btn btn-success'><i class='fa fa-edit'></i>&nbsp;&nbsp;Bearbeiten</button>
                         <button id='bu_discard_changes' style='display: none;' class='btn btn-outline-secondary'><i class='fa fa-times'></i>&nbsp;&nbsp;Änderungen verwerfen</button>
                         <button id='bu_save_changes' style='display: none;' class='btn btn-success'><i class='fa fa-check'></i>&nbsp;&nbsp;Änderungen speichern</button>
@@ -408,7 +408,7 @@ window.addEventListener('load', function() {
                 'produkt', 'material', 'kosten_finanzierungsidee', 'praesentationsidee',
                 'grobplanung1', 'grobplanung2', 'grobplanung3',
                 'planung_exkursion', 'planung_tablets', 'werbetext'].indexOf(key) >= 0) {
-                if ('true' === '#{user_with_role_logged_in?(:can_manage_projekttage) || (@session_user[:klasse] == PROJEKTTAGE_CURRENT_KLASSE && (!$projekttage.phases[$projekttage.get_current_phase][:flags].include?(:no_sus_edit)))}') {
+                if ('true' === '#{user_with_role_logged_in?(:can_manage_projekttage) || (email_is_projekttage_organizer?(@@user_info, @session_user[:email]) && (!$projekttage.phases[$projekttage.get_current_phase][:flags].include?(:no_sus_edit)))}') {
                     open_this_field = true;
                 }
             }

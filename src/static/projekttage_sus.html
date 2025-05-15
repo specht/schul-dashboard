@@ -46,7 +46,7 @@
     </div>
     <div class='row projekte-here' style="#{(projekttage_phase() == 4 && user_was_eligible_for_projektwahl?) ? 'display: none;' : ''}">
         <div id="text_vote_summary_phase_4_overview" class="col-md-12" style="#{teacher_logged_in? ? '' : 'display: none;'}">
-            #{print_projekttage_assignment_summary()}
+            #{#print_projekttage_assignment_summary()}
         </div>
     </div>
 </div>

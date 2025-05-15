@@ -41,8 +41,12 @@ class Main < Sinatra::Base
         require_user!
         slug = params[:slug]
         path = "/internal/poll_uploads/images/#{slug}"
-        response.headers['Cache-Control'] = "max-age=#{3600 * 24 * 365}"
-        respond_raw_with_mimetype(File.read(path), 'image/jpeg')
+        if File.exist?(path)
+            response.headers['Cache-Control'] = "max-age=#{3600 * 24 * 365}"
+            respond_raw_with_mimetype(File.read(path), 'image/jpeg')
+        else
+            status 404
+        end
     end
 
     post '/api/upload_sus_image' do
@@ -78,8 +82,12 @@ class Main < Sinatra::Base
         require_user!
         slug = params[:slug]
         path = "/internal/sus_uploads/images/#{slug}"
-        response.headers['Cache-Control'] = "max-age=#{3600 * 24 * 365}"
-        respond_raw_with_mimetype(File.read(path), 'image/jpeg')
+        if File.exist?(path)
+            response.headers['Cache-Control'] = "max-age=#{3600 * 24 * 365}"
+            respond_raw_with_mimetype(File.read(path), 'image/jpeg')
+        else
+            status 404
+        end
     end
 
     post '/api/delete_image' do
@@ -146,8 +154,12 @@ class Main < Sinatra::Base
         require_user!
         slug = params[:slug]
         path = "/internal/sus_uploads/pdf/#{slug}.pdf"
-        response.headers['Cache-Control'] = "max-age=#{3600 * 24 * 365}"
-        respond_raw_with_mimetype(File.read(path), 'application/pdf')
+        if File.exist?(path)
+            response.headers['Cache-Control'] = "max-age=#{3600 * 24 * 365}"
+            respond_raw_with_mimetype(File.read(path), 'application/pdf')
+        else
+            status 404
+        end
     end
 
 end

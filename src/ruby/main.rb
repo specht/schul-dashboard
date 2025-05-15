@@ -2117,7 +2117,7 @@ class Main < Sinatra::Base
                     nav_items << :pk5
                 end
                 if schueler_logged_in?
-                    if @session_user[:klasse] == PROJEKTTAGE_CURRENT_KLASSE
+                    if email_is_projekttage_organizer?(@@user_info, @session_user[:email])
                         nav_items << :projekttage
                     elsif projekttage_phase() >= 2 && @session_user[:klassenstufe] < 10
                         nav_items << :projekttage
@@ -2207,7 +2207,7 @@ class Main < Sinatra::Base
                     io.puts "</li>"
                 elsif x == :projekttage
                     io.puts "<li class='nav-item text-nowrap'>"
-                    if @session_user[:klasse] == PROJEKTTAGE_CURRENT_KLASSE
+                    if email_is_projekttage_organizer?(@@user_info, @session_user[:email])
                         io.puts "<a href='/projekttage' class='nav-link nav-icon'><div class='icon'><i class='fa fa-rocket'></i></div>Projekttage</a>"
                     else
                         io.puts "<a href='/projekttage_sus' class='nav-link nav-icon'><div class='icon'><i class='fa fa-rocket'></i></div>Projekttage</a>"

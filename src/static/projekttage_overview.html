@@ -1,4 +1,4 @@
-#{assert(teacher_logged_in? || (schueler_logged_in? && @session_user[:klasse] == PROJEKTTAGE_CURRENT_KLASSE))}
+#{assert(teacher_logged_in? || email_is_projekttage_organizer?(@@user_info, @session_user[:email]))}
 <div class='container-fluid white'>
     <div class='row'>
         <div class='col-md-12'>

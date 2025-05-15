@@ -317,7 +317,7 @@ class Main < Sinatra::Base
         if sus_email != @session_user[:email]
             require_teacher!
         end
-        assert(@@user_info[sus_email][:klasse] == PROJEKTTAGE_CURRENT_KLASSE)
+        assert(email_is_projekttage_organizer?(@@user_info, sus_email))
         unless user_with_role_logged_in?(:can_manage_projekttage)
             assert(!$projekttage.phases[$projekttage.get_current_phase][:flags].include?(:no_sus_edit))
         end
@@ -356,7 +356,7 @@ class Main < Sinatra::Base
     end
 
     def projekttage_overview_rows
-        assert(teacher_logged_in? || (schueler_logged_in? && @session_user[:klasse] == PROJEKTTAGE_CURRENT_KLASSE))
+        assert(teacher_logged_in? || email_is_projekttage_organizer?[@session_user[:email]])
 
         seen_sus = Set.new()
         projekttage_hash = {}
@@ -375,7 +375,9 @@ class Main < Sinatra::Base
             projekttage_by_email[row['u.email']] = id
         end
 
-        @@schueler_for_klasse[PROJEKTTAGE_CURRENT_KLASSE].each.with_index do |email, sus_index|
+        sus_index = 0
+        @@user_info.each do |email|
+            next unless email_is_projekttage_organizer?(@@user_info, email)
             next if seen_sus.include?(email)
             seen_sus << email
             projekttage = nil
@@ -401,7 +403,7 @@ class Main < Sinatra::Base
     end
 
     post '/api/projekttage_overview' do
-        assert(teacher_logged_in? || (schueler_logged_in? && @session_user[:klasse] == PROJEKTTAGE_CURRENT_KLASSE))
+        assert(teacher_logged_in? || email_is_projekttage_organizer?(@@user_info, @session_user[:email]))
 
         rows = projekttage_overview_rows()
         rows.sort! do |a, b|
@@ -428,7 +430,7 @@ class Main < Sinatra::Base
             @@user_info[email][:display_name] == data[:name]
         end.first
         assert(other_email != nil)
-        assert(@@user_info[sus_email][:klasse] == PROJEKTTAGE_CURRENT_KLASSE)
+        assert(email_is_projekttage_organizer?(@@user_info, sus_email))
         assert(!$projekttage.phases[$projekttage.get_current_phase][:flags].include?(:no_sus_edit))
         ts = Time.now.to_i
         transaction do
@@ -471,7 +473,7 @@ class Main < Sinatra::Base
         end
         other_email = data[:other_email]
         assert(@@user_info.include?(other_email))
-        assert(@@user_info[sus_email][:klasse] == PROJEKTTAGE_CURRENT_KLASSE)
+        assert(email_is_projekttage_organizer?(@@user_info, sus_email))
         assert(!$projekttage.phases[$projekttage.get_current_phase][:flags].include?(:no_sus_edit))
         ts = Time.now.to_i
         transaction do
@@ -566,7 +568,7 @@ class Main < Sinatra::Base
         end
         other_email = data[:other_email]
         assert(@@user_info.include?(other_email))
-        assert(@@user_info[sus_email][:klasse] == PROJEKTTAGE_CURRENT_KLASSE)
+        assert(email_is_projekttage_organizer?(@@user_info, sus_email))
         assert(!$projekttage.phases[$projekttage.get_current_phase][:flags].include?(:no_sus_edit))
         ts = Time.now.to_i
         transaction do
@@ -599,7 +601,7 @@ class Main < Sinatra::Base
         end
         other_email = data[:other_email]
         assert(@@user_info.include?(other_email))
-        assert(@@user_info[sus_email][:klasse] == PROJEKTTAGE_CURRENT_KLASSE)
+        assert(email_is_projekttage_organizer?(@@user_info, sus_email))
         assert(!$projekttage.phases[$projekttage.get_current_phase][:flags].include?(:no_sus_edit))
         ts = Time.now.to_i
         transaction do
@@ -624,7 +626,7 @@ class Main < Sinatra::Base
         data = parse_request_data(:required_keys => [:sus_email, :comment], :max_body_length => 1024 * 1024, :max_string_length => 1024 * 1024, :max_value_lengths => {:comment => 1024 * 1024})
         sus_email = data[:sus_email]
         assert(user_with_role_logged_in?(:can_manage_projekttage))
-        assert(@@user_info[sus_email][:klasse] == PROJEKTTAGE_CURRENT_KLASSE)
+        assert(email_is_projekttage_organizer?(@@user_info, sus_email))
         ts = Time.now.to_i
         transaction do
             neo4j_query(<<~END_OF_QUERY, {:ts => ts, :sus_email => sus_email, :comment => data[:comment], :email => @session_user[:email]})

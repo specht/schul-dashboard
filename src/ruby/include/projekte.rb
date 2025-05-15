@@ -356,7 +356,7 @@ class Main < Sinatra::Base
     end
 
     def projekttage_overview_rows
-        assert(teacher_logged_in? || email_is_projekttage_organizer?[@session_user[:email]])
+        assert(teacher_logged_in? || email_is_projekttage_organizer?(@@user_info, @session_user[:email]))
 
         seen_sus = Set.new()
         projekttage_hash = {}
@@ -376,7 +376,7 @@ class Main < Sinatra::Base
         end
 
         sus_index = 0
-        @@user_info.each do |email|
+        @@user_info.keys.each do |email|
             next unless email_is_projekttage_organizer?(@@user_info, email)
             next if seen_sus.include?(email)
             seen_sus << email

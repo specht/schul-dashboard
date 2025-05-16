@@ -47,6 +47,7 @@ AVAILABLE_ROLES = {
     :mittagessen => 'kann Bestellungen für Mittagessen einsehen',
     :praktikum => 'Praktikum (kann Stundenpläne ohne Details einsehen)',
     :can_print_photos => 'kann Fotos drucken',
+    :can_manage_lab8 => 'kann Lab8-Projekte verwalten',
 }
 
 ROLE_TRANSITIONS = <<~END_OF_STRING

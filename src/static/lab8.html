@@ -1,0 +1,272 @@
+#{assert(teacher_logged_in? || email_is_eligible_for_lab8?(@@user_info, @session_user[:email]))}
+<style>
+    body.dark .karteikarte {
+        background-color: rgba(0, 0, 0, 0.5);
+        border: 1px solid rgba(0, 0, 0, 0.8);
+        border-radius: 5px;
+        padding: 20px;
+        margin-bottom: 20px;
+    }
+    .karteikarte {
+        background-color: rgba(255, 255, 255, 0.8);
+        border: 1px solid rgba(255, 255, 255, 0.8);
+        border-radius: 5px;
+        padding: 20px;
+        margin-bottom: 20px;
+    }
+    .form-control[readonly] {
+        background: none;
+    }
+    ul {
+        list-style-type: disc;
+        margin-left: 1em;
+    }
+    input:read-only {
+       pointer-events: none;
+    }
+</style>
+
+<div class="modal" id="modal_add_sus" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true" style='z-index: 200000;'>
+    <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" >
+            Person hinzufügen
+          </h5>
+        </div>
+        <div class="modal-body">
+            <p>
+                Hier kannst du weitere Personen in dein Lab 8-Projekt einladen.
+            </p>
+            <div id="div_pending_invitations"></div>
+            <div class="form-group mt-2">
+                <div class="input-group mb-3">
+                    <input id='ti_add_sus' type='text' placeholder='Bitte gib einen Namen ein' class='form-control' list='li_sus_q1'>
+                    <div class="input-group-append">
+                      <button class="btn btn-success" type="button" id="bu_send_sus_invitation" disabled><i class='fa fa-send'></i>&nbsp;&nbsp;Einladung senden</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-dismiss="modal"><i class='fa fa-times'></i>&nbsp;&nbsp;Schließen</button>
+
+        </div>
+      </div>
+    </div>
+</div>
+
+<div class='container'>
+    <div class='row'>
+        <div class='col-md-12'>
+            <h2 style='margin-bottom: 30px;'>Lab 8</h2>
+            <a class="btn btn-success pull-right ml-2 mb-1" href="/lab8_overview">Zur Lab 8-Übersicht</a>
+            <p style="margin-bottom: 3em;">
+                Diese Karteikarte fasst die Informationen zu deinem Lab 8-Projekt zusammen.
+            </p>
+            <div style="#{user_email == @session_user[:email] ? '' : 'display: none;'}">
+                #{print_pending_lab8_projekt_invitations_incoming(user_email)}
+            </div>
+            <div class='karteikarte'>
+                <div class='row'>
+                    <datalist id='li_sus_q1'>
+                        #{@@user_info.keys.select { |email| user_has_role(email, :schueler) && email_is_eligible_for_lab8?(@@user_info, email) && email != @session_user[:email] }.sort { |a, b| @@user_info[a][:last_name] <=> @@user_info[b][:last_name] }.map { |email| "<option value='#{@@user_info[email][:display_name_official]}'></option>" }. join('\n')}
+                    </datalist>
+                    <div class='col-md-1'>
+                        <div class='form-group'>
+                            <label>#{LAB8_KEY_LABELS[:nr]}</label>
+                            <input id='ti_nr' type='text' value='#{CGI.escapeHTML(get_my_lab8_projekt(user_email)[:nr] || '')}' placeholder='–' class='form-control' readonly>
+                        </div>
+                    </div>
+                    <div class='col-md-11'>
+                        <div class='form-group'>
+                            <label>#{LAB8_KEY_LABELS[:titel]}</label>
+                            <input id='ti_titel' type='text' value='#{CGI.escapeHTML(get_my_lab8_projekt(user_email)[:titel] || '')}' placeholder='Bitte gib einen Titel für euer Lab 8-Projekt ein' class='form-control' readonly>
+                        </div>
+                    </div>
+                    <div class='col-md-12'>
+                        <div class='form-group'>
+                            <label>Mitglieder des Projekts</label>
+                            <div class="input-group mb-3">
+                                <input type='text' value='#{CGI.escapeHTML(join_with_sep(get_my_lab8_projekt(user_email)[:sus] || [], ', ', ' und '))}' class='form-control' readonly disabled>
+                                <div class="input-group-append" style="#{(user_with_role_logged_in?(:can_manage_lab8) || (email_is_eligible_for_lab8?(@@user_info, @session_user[:email]) && @session_user[:email] == user_email)) ? '' : 'display: none;'}">
+                                  <button class="btn btn-outline-secondary" type="button" id="bu_add_sus"><i class='fa fa-user-plus'></i></button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class='col-md-12'>
+                        <div class='form-group'>
+                            <label>#{LAB8_KEY_LABELS[:produkt]}</label>
+                            <input id='ti_produkt' type='text' value='#{CGI.escapeHTML(get_my_lab8_projekt(user_email)[:produkt] || '')}' placeholder='Bitte gib ein, welches Produkt in eurem Projekt entstehen soll' class='form-control' readonly>
+                        </div>
+                    </div>
+
+                    <div class='col-md-12'>
+                        <div class='form-group'>
+                            <label>#{LAB8_KEY_LABELS[:orte]}</label>
+                            <input id='ti_orte' type='text' value='#{CGI.escapeHTML(get_my_lab8_projekt(user_email)[:orte] || '')}' placeholder='Bitte gib ein, an welchen Orten gearbeitet werden soll' class='form-control' readonly>
+                        </div>
+                    </div>
+
+                    <div class='col-md-12' style="padding: 0;">
+                        <hr style="height: 8px; background: linear-gradient(rgba(0,0,0,0.1) 0%, rgba(0,0,0,0.0) 100%); border-top: 1px solid rgba(0,0,0,0.2);"/>
+                    </div>
+
+                    <div class='col-md-12' style="text-align: right; #{(user_with_role_logged_in?(:can_manage_lab8) || (email_is_eligible_for_lab8?(@@user_info, @session_user[:email]) && @session_user[:email] == user_email)) ? '' : 'display: none;'}">
+                        <button id='bu_edit' class='btn btn-success'><i class='fa fa-edit'></i>&nbsp;&nbsp;Bearbeiten</button>
+                        <button id='bu_discard_changes' style='display: none;' class='btn btn-outline-secondary'><i class='fa fa-times'></i>&nbsp;&nbsp;Änderungen verwerfen</button>
+                        <button id='bu_save_changes' style='display: none;' class='btn btn-success'><i class='fa fa-check'></i>&nbsp;&nbsp;Änderungen speichern</button>
+                    </div>
+
+                    <div class='col-md-12'>
+                        <div class='api_messages mt-3' style='display: none;'></div>
+                    </div>
+                </div>
+            </div>
+            <div style="#{(teacher_logged_in? || user_email == @session_user[:email]) ? '' : 'display: none;'}">
+                <hr>
+                <h4>Bearbeitungshistorie</h4>
+                <div id='div_history'>#{my_lab8_projekt_history(user_email)}</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+var my_projekttage = #{get_my_lab8_projekt(user_email).to_json};
+
+window.addEventListener('load', function() {
+    $('#bu_edit').on('click', function(e) {
+        $('.api_messages').hide();
+        for (let input of $(e.target).closest('.karteikarte').find('input, textarea')) {
+            let key = ($(input).attr('id') ?? '').replace("ti_", '');
+            $(input).data('old_value', $(input).val());
+            let open_this_field = false;
+            if (['titel', 'produkt', 'orte'].indexOf(key) >= 0) {
+                if ('true' === '#{user_with_role_logged_in?(:can_manage_lab8) || (email_is_eligible_for_lab8?(@@user_info, @session_user[:email]))}') {
+                    open_this_field = true;
+                }
+            }
+            if (['nr'].indexOf(key) >= 0) {
+                if ('true' === '#{user_with_role_logged_in?(:can_manage_lab8)}') {
+                    open_this_field = true;
+                }
+            }
+            if (open_this_field)
+                $(input).prop('readonly', false);
+        }
+        $('#bu_edit').hide();
+        $('#bu_discard_changes').show();
+        $('#bu_save_changes').show();
+        $('#bu_add_sus').prop('disabled', true);
+    });
+    $('#bu_discard_changes').on('click', function(e) {
+        $('.api_messages').hide();
+        for (let input of $(e.target).closest('.karteikarte').find('input, textarea')) {
+            $(input).val($(input).data('old_value'));
+            $(input).prop('readonly', true);
+        }
+        $('#bu_edit').show();
+        $('#bu_discard_changes').hide();
+        $('#bu_save_changes').hide();
+        $('#bu_add_sus').prop('disabled', false);
+    });
+    $('#bu_save_changes').on('click', function(e) {
+        $('.api_messages').hide();
+        let data = {};
+        for (let key of #{LAB8_KEYS.to_json}) {
+            let input = $(`#ti_${key}`);
+            console.log(key);
+            let value = $(input).val().trim();
+            console.log(value);
+            data[$(input).attr('id').replace('ti_', '')] = value;
+            $(input).prop('readonly', true);
+        }
+        if ('#{user_with_role_logged_in?(:can_manage_lab8)}' === 'true') {
+            data.sus_email = '#{user_email}';
+        }
+        api_call('/api/update_lab8_projekt', data, function(response) {
+            if (response.success) {
+                for (let key of #{LAB8_KEYS.to_json}) {
+                    let input = $(`#ti_${key}`);
+                    let value = response.result[key];
+                    $(input).val(value);
+                }
+
+                $('#bu_edit').show();
+                $('#bu_discard_changes').hide();
+                $('#bu_save_changes').hide();
+                $('#bu_add_sus').prop('disabled', false);
+                api_call('/api/my_lab8_projekt_history', {sus_email: '#{user_email}'}, function(response2) {
+                    if (response2.success) {
+                        $('#div_history').html(response2.html);
+                    }
+                });
+            }
+        });
+    });
+    $("#bu_add_sus").on('click', function(e) {
+        api_call('/api/pending_lab8_projekt_invitations_outgoing', {sus_email: '#{user_email}'}, function(response) {
+            if (response.success) {
+                $('#div_pending_invitations').html(response.html);
+                $('#ti_add_sus').val('');
+                $('#modal_add_sus').modal('show');
+                $('#ti_add_sus').focus();
+                $('#div_pending_invitations .bu-delete-invitation').on('click', function(e) {
+                    let other_email = $($(e.target).closest('button')[0]).data('email');
+                    api_call('/api/delete_invitation_for_lab8_projekt', {sus_email: '#{user_email}', other_email: other_email}, function(response2) {
+                        if (response2.success) {
+                            api_call('/api/my_lab8_projekt_history', {sus_email: '#{user_email}'}, function(response3) {
+                                if (response3.success) {
+                                    $('#div_history').html(response3.html);
+                                    $('#modal_add_sus').modal('hide');
+                                }
+                            });
+                        }
+                    });
+                });
+            }
+        });
+    });
+    $('#ti_add_sus').on('change keyup', function(e) {
+        let name = $('#ti_add_sus').val().trim();
+        let found_name = false;
+        for (let entry of $('datalist#li_sus_q1').find('option')) {
+            if (entry.value === name) {
+                found_name = true;
+                break;
+            }
+        }
+        $('#bu_send_sus_invitation').prop('disabled', !found_name);
+    });
+    $('#bu_send_sus_invitation').on('click', function(e) {
+        api_call('/api/send_invitation_for_lab8_projekt', {sus_email: '#{user_email}', name: $('#ti_add_sus').val().trim()}, function(response) {
+            if (response.success) {
+                $('#modal_add_sus').modal('hide');
+                api_call('/api/my_lab8_projekt_history', {sus_email: '#{user_email}'}, function(response2) {
+                    if (response2.success) {
+                        $('#div_history').html(response2.html);
+                    }
+                });
+            }
+        });
+    });
+    $('.bu-accept-invitation').on('click', function(e) {
+        let other_email = $($(e.target).closest('button')[0]).data('email');
+        api_call('/api/accept_lab8_projekt_invitation', {sus_email: '#{user_email}', other_email: other_email}, function(response) {
+            if (response.success) {
+                window.location.reload();
+            }
+        });
+    });
+    $('.bu-reject-invitation').on('click', function(e) {
+        let other_email = $($(e.target).closest('button')[0]).data('email');
+        api_call('/api/reject_lab8_projekt_invitation', {sus_email: '#{user_email}', other_email: other_email}, function(response) {
+            if (response.success) {
+                window.location.reload();
+            }
+        });
+    });
+});
+</script>

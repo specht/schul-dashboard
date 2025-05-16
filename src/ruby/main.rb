@@ -53,10 +53,11 @@ warn_level = $VERBOSE
 $VERBOSE = nil
 require './credentials.rb'
 require '/data/config.rb'
-require '/data/zeugnisse/config.rb'
+require '/data/lab8/config.rb'
 require '/data/phishing/config.rb'
-require '/data/projekte/config.rb'
 require '/data/pk5/config.rb'
+require '/data/projekte/config.rb'
+require '/data/zeugnisse/config.rb'
 $VERBOSE = warn_level
 DASHBOARD_SERVICE = ENV['DASHBOARD_SERVICE']
 
@@ -93,6 +94,7 @@ require './include/homework.rb'
 require './include/ical.rb'
 require './include/image.rb'
 require './include/jitsi.rb'
+require './include/lab8.rb'
 require './include/lehrbuchverein.rb'
 require './include/lesson.rb'
 require './include/login.rb'
@@ -274,6 +276,7 @@ class SetupDatabase
         'Event/key',
         'Group/key',
         'KnownEmailAddress/email',
+        'Lab8Projekt/nr',
         'Lesson/key',
         'LoginCode/tag',
         'Mail/tag',
@@ -284,6 +287,7 @@ class SetupDatabase
         'PollRun/key',
         'PresenceToken/token',
         'Projekt/nr',
+        'Projekttage/nr',
         'PublicEventPerson/tag',
         'PublicEventTrack/track',
         'SchulTablet/code',
@@ -1781,10 +1785,11 @@ class Main < Sinatra::Base
             warn_level = $VERBOSE
             $VERBOSE = nil
             Kernel.send(:load, '/data/config.rb')
-            Kernel.send(:load, '/data/zeugnisse/config.rb')
+            Kernel.send(:load, '/data/lab8/config.rb')
             Kernel.send(:load, '/data/phishing/config.rb')
-            Kernel.send(:load, '/data/projekte/config.rb')
             Kernel.send(:load, '/data/pk5/config.rb')
+            Kernel.send(:load, '/data/projekte/config.rb')
+            Kernel.send(:load, '/data/zeugnisse/config.rb')
             $VERBOSE = warn_level
         end
         if DEVELOPMENT && request.path[0, 5] != '/api/'
@@ -2117,6 +2122,9 @@ class Main < Sinatra::Base
                     nav_items << :pk5
                 end
                 if schueler_logged_in?
+                    if email_is_eligible_for_lab8?(@@user_info, @session_user[:email])
+                        nav_items << :lab8
+                    end
                     if email_is_projekttage_organizer?(@@user_info, @session_user[:email])
                         nav_items << :projekttage
                     elsif projekttage_phase() >= 2 && @session_user[:klassenstufe] < 10
@@ -2204,6 +2212,10 @@ class Main < Sinatra::Base
                 elsif x == :pk5
                     io.puts "<li class='nav-item text-nowrap'>"
                     io.puts "<a href='/pk5' class='nav-link nav-icon'><div class='icon'><i class='fa fa-file-text-o'></i></div>5. PK</a>"
+                    io.puts "</li>"
+                elsif x == :lab8
+                    io.puts "<li class='nav-item text-nowrap'>"
+                    io.puts "<a href='/lab8' class='nav-link nav-icon'><div class='icon'><i class='fa fa-clock-o'></i></div>Lab 8</a>"
                     io.puts "</li>"
                 elsif x == :projekttage
                     io.puts "<li class='nav-item text-nowrap'>"
@@ -2301,6 +2313,7 @@ class Main < Sinatra::Base
                             io.puts "<a class='dropdown-item nav-icon' href='/kurslisten'><div class='icon'><i class='fa fa-file-text-o'></i></div><span class='label'>Kurslisten</span></a>"
                         end
                         io.puts "<a class='dropdown-item nav-icon' href='/pk5_overview'><div class='icon'><i class='fa fa-file-text-o'></i></div><span class='label'>5. PK</span></a>"
+                        io.puts "<a class='dropdown-item nav-icon' href='/lab8_overview'><div class='icon'><i class='fa fa-clock-o'></i></div><span class='label'>Lab 8</span></a>"
                         io.puts "<a class='dropdown-item nav-icon' href='/projekttage_overview'><div class='icon'><i class='fa fa-rocket'></i></div><span class='label'>Projekttage</span></a>"
                     end
                     if schueler_logged_in?
@@ -3340,6 +3353,14 @@ class Main < Sinatra::Base
                 user_email = parts[2]
             end
         elsif path == 'projekttage'
+            user_email = @session_user[:email]
+            # if user_with_role_logged_in?(:teacher)
+            parts = request.env['REQUEST_PATH'].split('/')
+            if parts[2]
+                user_email = parts[2]
+            end
+            # end
+        elsif path == 'lab8'
             user_email = @session_user[:email]
             # if user_with_role_logged_in?(:teacher)
             parts = request.env['REQUEST_PATH'].split('/')

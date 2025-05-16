@@ -560,7 +560,7 @@ class Main < Sinatra::Base
     post '/api/accept_projekttage_invitation' do
         data = parse_request_data(:required_keys => [:sus_email, :other_email])
         sus_email = data[:sus_email]
-        if user_with_role_logged_in?(:can_manage_project_wifi_access)
+        if user_with_role_logged_in?(:can_manage_projekttage)
         elsif user_with_role_logged_in?(:schueler)
             assert(sus_email == @session_user[:email])
         else

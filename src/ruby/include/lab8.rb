@@ -247,8 +247,11 @@ class Main < Sinatra::Base
                 :email => email,
                 :projekt => projekt,
                 :sus_index => sus_index,
-                :sus => (projekt[:sus] || [email]).map { |x| @@user_info[x][:last_name] + ', ' + @@user_info[x][:first_name]}.join(' / '),
+                :sus => (projekt[:sus] || [email]).map { |x| @@user_info[x][:display_name] }.join(' / '),
             }
+        end
+        rows.sort! do |a, b|
+            a[:sus] <=> b[:sus]
         end
         rows
     end

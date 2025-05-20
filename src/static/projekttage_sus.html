@@ -269,6 +269,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 $('#div_ts_details').show();
             }
             for (let projekt of data.projekte) {
+                if (projekt.nr[0] === '_') continue;
                 projekte[projekt.nr] = projekt;
                 if (projekt.klassenstufe_min === null)
                     continue;

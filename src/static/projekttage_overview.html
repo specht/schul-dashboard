@@ -27,7 +27,7 @@ window.addEventListener('load', function() {
             let table = new SortableTable({
                 element: $('#table_here'),
                 xs: true,
-                headers: ['Nr.', 'Anbieter', 'Name', 'Teilnehmer', 'Klassen', 'Lehrkraft', 'Raum', 'Planung'].map(function (x) {
+                headers: ['Nr.', 'Anbieter', 'Name', 'Teilnehmer', 'Klassen', 'Lehrkraft', 'Raum', 'Tablets', 'Planung'].map(function (x) {
                     let th = $('<th>').html(x);
                     return th;
                 }),
@@ -45,6 +45,7 @@ window.addEventListener('load', function() {
                         `<td>${entry.projekttage.klassenstufe_min ?? '5'} &ndash; ${entry.projekttage.klassenstufe_max ?? '9'}</td>`,
                         `<td style='max-width: 20em;'>${entry.projekttage.lehrkraft ?? '&ndash;'}</td>`,
                         `<td style='max-width: 20em;'>${entry.projekttage.raum ?? '&ndash;'}</td>`,
+                        `<td style='max-width: 20em;'>${entry.projekttage.planung_tablets ?? '&ndash;'}</td>`,
                         `<td>${pdf_button}</td>`,
                     ];
                     return cells;

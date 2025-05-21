@@ -18,6 +18,8 @@ PROJEKTTAGE_KEYS = [
     :planung_exkursion,
     :planung_tablets,
     :werbetext,
+    :raum,
+    :lehrkraft
 ]
 
 PROJEKTTAGE_KEY_LABELS = {
@@ -40,6 +42,8 @@ PROJEKTTAGE_KEY_LABELS = {
     :planung_exkursion => 'Planung Exkursion',
     :planung_tablets => 'Benötigte Tablets',
     :werbetext => 'Werbetext für den Projektkatalog',
+    :raum => 'Raum',
+    :lehrkraft => 'Betreuende Lehrkraft',
 }
 
 PROJEKT_VOTE_CODEPOINTS = [0x1fae5, 0x1f914, 0x1f60d, 0x1f525]

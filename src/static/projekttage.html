@@ -163,6 +163,20 @@
                         </div>
                     </div>
 
+                    <div class="col-md-9">
+                        <div class='form-group'>
+                            <label>#{PROJEKTTAGE_KEY_LABELS[:lehrkraft]}</label>
+                            <input id='ti_lehrkraft' type='text' value='#{CGI.escapeHTML(get_my_projekttage(user_email)[:lehrkraft] || '')}' placeholder='' class='form-control' readonly>
+                        </div>
+                    </div>
+
+                    <div class="col-md-3">
+                        <div class='form-group'>
+                            <label>#{PROJEKTTAGE_KEY_LABELS[:raum]}</label>
+                            <input id='ti_raum' type='text' value='#{CGI.escapeHTML(get_my_projekttage(user_email)[:raum] || '')}' placeholder='' class='form-control' readonly>
+                        </div>
+                    </div>
+
                     <div class="col-md-6">
                         <div class='form-group'>
                             <label>#{PROJEKTTAGE_KEY_LABELS[:produkt]}</label>
@@ -413,7 +427,7 @@ window.addEventListener('load', function() {
                     open_this_field = true;
                 }
             }
-            if (['nr'].indexOf(key) >= 0) {
+            if (['nr', 'raum', 'lehrkraft'].indexOf(key) >= 0) {
                 if ('true' === '#{user_with_role_logged_in?(:can_manage_projekttage)}') {
                     open_this_field = true;
                 }

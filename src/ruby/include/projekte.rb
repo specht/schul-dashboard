@@ -303,6 +303,8 @@ class Main < Sinatra::Base
                 :kosten_finanzierungsidee,
                 :lehrkraft_wunsch,
                 :raumwunsch,
+                :lehrkraft,
+                :raum,
                 :planung_exkursion,
                 :planung_tablets,
                 :werbetext,

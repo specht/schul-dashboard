@@ -275,6 +275,10 @@ class Script
                             add_file :content_type => 'application/pdf', :content => pdf, :filename => CGI.unescape(File.basename(path))
                         end
                     end
+                    if ARGV.include?('--test-first-mail')
+                        STDERR.puts mail.to_s
+                        exit
+                    end
                     if ARGV.include?('--srsly')
                         mail.deliver!
                         sleep 2

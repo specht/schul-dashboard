@@ -3,6 +3,7 @@ require './main.rb'
 require './parser.rb'
 require 'digest/sha2'
 require 'girocode'
+require 'cgi'
 require 'uri'
 require 'yaml'
 
@@ -271,7 +272,7 @@ class Script
                         end
 
                         pdf_for_path.each_pair do |path, pdf|
-                            add_file :content_type => 'application/pdf', :content => pdf, :filename => URI.decode_uri_component(File.basename(path))
+                            add_file :content_type => 'application/pdf', :content => pdf, :filename => CGI.unescape(File.basename(path))
                         end
                     end
                     if ARGV.include?('--srsly')

@@ -42,7 +42,7 @@ end
 class Script
     def run
 
-        files = ['https://dashboard.gymnasiumsteglitz.de/f/Informationen%20zum%20Schulbuchverein%20(Stand%2005-2024).pdf',
+        files = ['https://dashboard.gymnasiumsteglitz.de/f/Informationen%20zum%20Schulbuchverein%20(Stand%2005-2025).pdf',
                  'https://dashboard.gymnasiumsteglitz.de/f/Beitrittserkl%C3%A4rung%20(Stand%2005-2024).pdf']
 
         pdf_for_path = {}
@@ -147,8 +147,8 @@ class Script
                 doc.gsub!('#SUS_NAME.', record[:display_name])
                 doc.gsub!('#SUS_VORNAME.', record[:display_first_name])
                 # doc.gsub!('#DATUM.', Date.today.strftime('%d.%m.%Y'))
-                if Date.today.year != 2024
-                    raise "Date is not 2024!"
+                if Date.today.year != 2025
+                    raise "Date is not 2025!"
                 end
                 doc.gsub!('#DATUM.', '24.05.2024')
                 doc.gsub!('#MV_DATUM.', '6. Mai 2024')

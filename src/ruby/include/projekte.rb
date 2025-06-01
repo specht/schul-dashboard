@@ -1165,12 +1165,35 @@ class Main < Sinatra::Base
         # STDERR.puts "Got #{emails.size} emails"
         # STDERR.puts "Got #{projects.size} projects with a total capacity of #{total_capacity}"
         # STDERR.puts "Total capacity: #{total_capacity}"
+
+        # Update 2025: Also take into account the error
+        # of the previous year: if it's 2 or 3, then
+        # boost the vote by (error - 1)
+        last_year = PROJEKTWAHL_VOTE_END[0, 4].to_i - 1
+        path = "/data/projekte/assigned-results-#{last_year}.json"
+        if File.exist?(path)
+            last_year_assignments = JSON.parse(File.read(path))
+            error_for_email = last_year_assignments['error_for_email']
+            error_for_email.each_pair do |email, error|
+                if error >= 2
+                    old_votes = (votes_by_email[email]) || []
+                    old_votes.each do |sha1|
+                        vote = votes[sha1][:vote]
+                        votes_by_vote[vote].delete(sha1)
+                        vote += error - 1
+                        votes[sha1][:boosted_vote] = vote
+                        votes_by_vote[vote] ||= Set.new()
+                        votes_by_vote[vote] << sha1
+                    end
+                end
+            end
+        end
         result = {
             :project_for_email => {},
             :error_for_email => {},
             :emails_for_project => Hash[projects.map { |k, v| [k, []] } ],
         }
-        current_vote = 3
+        current_vote = 5
         remaining_emails = Set.new(emails)
         srand()
         # STEP 1: Assign projects by priority
@@ -1178,6 +1201,7 @@ class Main < Sinatra::Base
             votes_by_vote[current_vote] ||= Set.new()
             while (votes_by_vote[current_vote]).empty?
                 current_vote -= 1
+                votes_by_vote[current_vote] ||= Set.new()
                 if current_vote == 0
                     break
                 end
@@ -1202,6 +1226,7 @@ class Main < Sinatra::Base
                 # clear all entries of user
                 votes_by_email[email].each do |x|
                     votes_by_vote[votes[x][:vote]].delete(x)
+                    votes_by_vote[votes[x][:boosted_vote]].delete(x) if votes[x][:boosted_vote]
                 end
             end
             votes_by_vote[current_vote].delete(sha1)

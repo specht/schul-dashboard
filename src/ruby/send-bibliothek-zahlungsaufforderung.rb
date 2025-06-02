@@ -280,9 +280,6 @@ class Script
                     end
                     if ARGV.include?('--srsly')
                         mail.deliver!
-                        if ARGV.include?('--exit-after-first-mail')
-                            exit
-                        end
                         sleep 2
                     else
                         STDERR.puts "Not sending mail to #{recipient} unless you specify --srsly!"
@@ -344,9 +341,6 @@ class Script
                 end
                 if ARGV.include?('--srsly')
                     mail.deliver!
-                    if ARGV.include?('--exit-after-first-mail')
-                        exit
-                    end
                     sleep 2
                 else
                     STDERR.puts "Not sending mail to #{recipient} unless you specify --srsly!"

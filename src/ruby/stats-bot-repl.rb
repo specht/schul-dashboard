@@ -127,6 +127,7 @@ class StatsBotRepl < Sinatra::Base
                     2 => 0,
                     3 => 0
                 },
+                :sus => [],
             }
             (p[:klassenstufe_min]..p[:klassenstufe_max]).each do |klassenstufe|
                 projects_for_klassenstufe[klassenstufe] ||= Set.new()
@@ -204,6 +205,13 @@ class StatsBotRepl < Sinatra::Base
                     p = 1 if p < 1
                     p = 99 if p > 99
                     probabilities[email][nr] = sprintf('%d%%', p)
+                    if users[email][:vote_hash][nr] > 0
+                        project_stats[nr][:sus] << {
+                            :email => email,
+                            :prob => p,
+                            :vote => users[email][:vote_hash][nr] || 0,
+                        }
+                    end
                 end
             end
         end
@@ -239,7 +247,10 @@ class StatsBotRepl < Sinatra::Base
                         1 => (project_stats[nr][:vote][1].to_f / count).round,
                         2 => (project_stats[nr][:vote][2].to_f / count).round,
                         3 => (project_stats[nr][:vote][3].to_f / count).round,
-                    }
+                    },
+                    :sus => project_stats[nr][:sus].sort do |a, b|
+                        b[:prob] <=> a[:prob]
+                    end,
                 }
                 f.write(stats.to_json)
             end

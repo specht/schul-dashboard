@@ -2968,3 +2968,26 @@ body.dark .hl {
         }
     }
 }
+
+.name-list {
+    margin-bottom: 0.5em;
+    margin-top: -0.5em;
+    div {
+        display: inline-block;
+        padding: 0.2em 0.5em;
+        margin: 0.1em;
+        border-radius: 0.3em;
+        background-color: rgba(255, 255, 255, 0.8);
+        box-shadow: 1px 1px 1px rgba(0, 0, 0, 0.2);
+        .info {
+            position: relative;
+            box-shadow: none;
+            border: none;
+            background-color: rgba(0,0,0,0.4);
+            color: #fff;
+            font-size: 70%;
+            margin-left: 0.5em;
+            font-weight: bold;
+        }
+    }
+}

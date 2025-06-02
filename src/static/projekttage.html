@@ -62,6 +62,21 @@
             <h2 style='margin-bottom: 30px;'>Projekttage</h2>
             <a style='#{projekttage_phase() < 2 ? 'display: none;' : ''}' class="btn btn-success pull-right ml-2 mb-1" href="/projekttage_sus">Katalog</a>
             <a class="btn btn-success pull-right ml-2 mb-1" href="/projekttage_overview">Zur Projekttage-Übersicht</a>
+            <div style='#{projekttage_phase() == 3 ? '' : 'display: none;'}'>
+                <p>
+                    Hier ist eine Übersicht für dich, aus der du sehen kannst, welche Schülerinnen und Schüler sich für dein Projekt interessieren:
+                </p>
+                #{#print_projekt_interesse()}
+                <p>
+                    Bitte beachte, dass jeder mindestens drei Projekte wählen muss und die Zuordnung automatisiert geschieht, so dass alle ein möglichst gut passendes Projekt bekommen.
+                    Diese Zahlen werden also nicht deine tatsächliche Gruppenzusammensetzung reflektieren, können dir aber einen Anhaltspunkt dafür geben, wie gut dein
+                    Projekt in welchen Altersgruppen aufgenommen wird.
+                </p>
+                #{#print_projekt_interesse_stats()}
+            </div>
+            <div style='#{projekttage_phase() == 4 ? '' : 'display: none;'}'>
+                #{#print_projekt_assigned_sus()}
+            </div>
             <p>
                 Diese Karteikarte fasst die Informationen zu deinen Projekttagen zusammen.
                 Die Angaben werden sich im Laufe der Zeit bis zu den Projekttagen verändern. Beachte den Zeitplan weiter unten auf dieser Seite.

@@ -139,7 +139,7 @@ class Script
             raise 'oops' if amount == 0
             token_catalogue[subject.split(' ').first] = {:email => email, :amount => amount * 100}
 
-            unless File.exist?(out_path_pdf)
+            if (!File.exist?(out_path_pdf)) || (ARGV.include?('--redo-sesb-11') && klassenstufe == 11 && sesb)
                 out_path_dir = File.join("/internal/bibliothek/out/#{brief_sha1}")
                 FileUtils.mkpath(out_path_dir)
                 formular_sha1 = sha1
@@ -334,6 +334,9 @@ class Script
                     end
 
                     add_file :content_type => 'application/pdf', :content => File.read(out_path_pdf), :filename => "#{brief_sha1}.pdf"
+                end
+                if ARGV.include?('--redo-sesb-11')
+                    next unless klassenstufe == 11 && sesb
                 end
                 if ARGV.include?('--test-first-mail')
                     STDERR.puts mail.to_s

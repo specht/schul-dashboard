@@ -302,8 +302,8 @@ class Script
                             <p>Sehr geehrte Eltern von #{record[:display_name]},</p>
                             <p>hiermit möchten wir Sie daran erinnern, dass die jährliche Zahlung des Beitrags zum Schulbuchverein zum #{LBV_ZAHLUNGSFRIST} fällig wird.</p>
                             <p>Alle Informationen zur Beitragshöhe und Zahlungsweise finden Sie in der angehängten Beitragsaufforderung.</p>
-                            <p>Bitte beachten Sie, dass wir das Verfahren für die Beitragszahlung in diesem Jahr angepasst haben, um die Zuordnung der Zahlungseingänge zu erleichtern:</p>
-                            <p><b>--- Bitte tätigen Sie für jedes beitragspflichtige Kind eine eigene Überweisung und nutzen Sie nur den im Schreiben angegebenen Verwendungszweck! ---</b></p>
+                            <p>Bitte beachten Sie, dass wir das Verfahren für die Beitragszahlung im letzten Jahr angepasst haben, um die Zuordnung der Zahlungseingänge zu erleichtern:</p>
+                            <p><b>--- Bitte tätigen Sie für jedes beitragspflichtige Kind eine eigene Überweisung und nutzen Sie nur den im Schreiben angegebenen Verwendungszweck. Sie ersparen uns damit viel Arbeit. ---</b></p>
                             <p>Für Rückfragen stehen wir gerne per E-Mail unter <a href='mailto:schulbuchverein@gymnasiumsteglitz.de'>schulbuchverein@gymnasiumsteglitz.de</a> zur Verfügung.</p>
                             <p>Mit freundlichen Grüßen</p>
                             <p>

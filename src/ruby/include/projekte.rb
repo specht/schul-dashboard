@@ -1262,9 +1262,9 @@ class Main < Sinatra::Base
         result
     end
 
-    def print_projekt_interesse
+    def print_projekt_interesse(user_email)
         projekt = nil
-        neo4j_query(<<~END_OF_QUERY, {:email => @session_user[:email]}).each do |row|
+        neo4j_query(<<~END_OF_QUERY, {:email => user_email}).each do |row|
             MATCH (p:Projekttage)-[:BELONGS_TO]->(u:User {email: $email})
             RETURN p;
         END_OF_QUERY
@@ -1333,9 +1333,9 @@ class Main < Sinatra::Base
         end
     end
 
-    def print_projekt_interesse_stats
+    def print_projekt_interesse_stats(user_email)
         projekt = nil
-        neo4j_query(<<~END_OF_QUERY, {:email => @session_user[:email]}).each do |row|
+        neo4j_query(<<~END_OF_QUERY, {:email => user_email}).each do |row|
             MATCH (p:Projekttage)-[:BELONGS_TO]->(u:User {email: $email})
             RETURN p;
         END_OF_QUERY
@@ -1378,7 +1378,7 @@ class Main < Sinatra::Base
             io.puts "</ul></li>"
             io.puts "</ul>"
             if data['vote']['0'] * 100 / (data['geschlecht_m'] + data['geschlecht_w']) > 10
-                io.puts "<p>Hinweis: Falls du mit der Motivation deiner Gruppe nicht zufrieden bist, kannst du die Situation möglicherweise verbessern, indem du ggfs. deinen Titel, deinen Werbetext und / oder dein Projektbild aktualisierst oder Werbung in der Schule für dein Projekt machst.</p>"
+                io.puts "<p><strong>Hinweis:</strong> Nach dem aktuellen Stand werdet ihr ca. <strong>#{data['vote']['0']} Kind#{data['vote']['0'] > 1 ? 'er' : ''}</strong> betreuen müssen, #{data['vote']['0'] > 1 ? 'die' : 'das'} (bis jetzt) keine Lust auf euer Projekt #{data['vote']['0'] > 1 ? 'haben' : 'hat'}. Falls du mit der Motivation deiner Gruppe nicht zufrieden bist, kannst du die Situation möglicherweise verbessern, indem du ggfs. deinen Titel, deinen Werbetext und / oder dein Projektbild aktualisierst oder Werbung in der Schule für dein Projekt machst.</p>"
             end
             io.puts "<p>Bitte beachte, dass sich die Zusammensetzung deiner Gruppe noch ändern wird, abhängig vom weiteren Wahlverhalten, Umwahlen oder Anpassungen in eurem Projekt.</p>"
             io.puts "<p>Bisher haben #{ts_data['email_count_voted']} von #{ts_data['email_count_total']} Schülerinnen und Schülern ihre Projekte gewählt:"

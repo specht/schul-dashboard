@@ -1270,7 +1270,7 @@ class Main < Sinatra::Base
         END_OF_QUERY
             projekt = row['p']
         end
-        return '' if projekt.nil? || projekt[:klassenstufe_min].nil? || projekt[:klassenstufe_max].nil? || projekt[:capacity].nil?
+        return '' if projekt.nil? || projekt[:klassenstufe_min].nil? || projekt[:klassenstufe_max].nil? || projekt[:teilnehmer_max].nil?
 
         votes = {}
         neo4j_query(<<~END_OF_QUERY, {:nr => projekt[:nr]}).each do |row|
@@ -1378,7 +1378,7 @@ class Main < Sinatra::Base
             io.puts "</ul></li>"
             io.puts "</ul>"
             if data['vote']['0'] * 100 / (data['geschlecht_m'] + data['geschlecht_w']) > 10
-                io.puts "<p><strong>Hinweis:</strong> Nach dem aktuellen Stand werdet ihr ca. <strong>#{data['vote']['0']} Kind#{data['vote']['0'] > 1 ? 'er' : ''}</strong> betreuen müssen, #{data['vote']['0'] > 1 ? 'die' : 'das'} (bis jetzt) keine Lust auf euer Projekt #{data['vote']['0'] > 1 ? 'haben' : 'hat'}. Falls du mit der Motivation deiner Gruppe nicht zufrieden bist, kannst du die Situation möglicherweise verbessern, indem du ggfs. deinen Titel, deinen Werbetext und / oder dein Projektbild aktualisierst oder Werbung in der Schule für dein Projekt machst.</p>"
+                io.puts "<p><strong>Hinweis:</strong> Nach dem aktuellen Stand werdet ihr ca. <strong>#{data['vote']['0']} Kind#{data['vote']['0'] > 1 ? 'er' : ''}</strong> betreuen müssen, #{data['vote']['0'] > 1 ? 'die' : 'das'} (bis jetzt) keine Lust auf euer Projekt #{data['vote']['0'] > 1 ? 'haben' : 'hat'}. Falls ihr mit der Motivation eurer Gruppe nicht zufrieden seid, könnt ihr die Situation möglicherweise verbessern, indem ihr ggfs. euren Titel, euren Werbetext und / oder euer Projektbild aktualisiert oder Werbung in der Schule für euer Projekt macht. Da alle Kinder ihre Wahl noch bis <strong>#{WEEKDAYS_LONG[(Date.parse(PROJEKTWAHL_VOTE_END).strftime('%u').to_i) % 7]}, den #{Date.parse(PROJEKTWAHL_VOTE_END).strftime('%d.%m.%Y')} um #{DateTime.parse(PROJEKTWAHL_VOTE_END).strftime('%H:%M')} </strong> anpassen können, habt ihr bis dahin noch die Gelegenheit, die Zusammensetzung eurer Gruppe zu optimieren.</p>"
             end
             io.puts "<p>Bitte beachte, dass sich die Zusammensetzung deiner Gruppe noch ändern wird, abhängig vom weiteren Wahlverhalten, Umwahlen oder Anpassungen in eurem Projekt.</p>"
             io.puts "<p>Bisher haben #{ts_data['email_count_voted']} von #{ts_data['email_count_total']} Schülerinnen und Schülern ihre Projekte gewählt:"

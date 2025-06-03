@@ -727,7 +727,7 @@ class Main < Sinatra::Base
                 :email => record[:email],
                 :id => record[:id],
                 :klasse => record[:klasse],
-                :klassenstufe => force_klassenstufe[record[:email]] || (record[:klasse] =~ /^\d/ ? record[:klasse].to_i : nil),
+                :klassenstufe => force_klassenstufe[record[:email]] || (record[:klasse] =~ /^\d/ ? record[:klasse].to_i : 9),
                 :bildungsgang => :altsprachlich,
                 :geschlecht => record[:geschlecht],
                 :nc_login => record[:nc_login],

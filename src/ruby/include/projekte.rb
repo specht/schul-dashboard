@@ -1261,5 +1261,208 @@ class Main < Sinatra::Base
         # STDERR.puts "Assigned #{result[:project_for_email].size} of #{emails.size} users."
         result
     end
+
+    def print_projekt_interesse(user_email)
+        projekt = nil
+        neo4j_query(<<~END_OF_QUERY, {:email => user_email}).each do |row|
+            MATCH (p:Projekttage)-[:BELONGS_TO]->(u:User {email: $email})
+            RETURN p;
+        END_OF_QUERY
+            projekt = row['p']
+        end
+        return '' if projekt.nil? || projekt[:klassenstufe_min].nil? || projekt[:klassenstufe_max].nil? || projekt[:teilnehmer_max].nil?
+
+        votes = {}
+        neo4j_query(<<~END_OF_QUERY, {:nr => projekt[:nr]}).each do |row|
+            MATCH (u:User)-[r:VOTED_FOR]->(p:Projekttage {nr: $nr})
+            RETURN u.email, r;
+        END_OF_QUERY
+            email = row['u.email']
+            next unless @@user_info[email]
+            next unless @@user_info[email][:roles].include?(:schueler)
+            klassenstufe = @@user_info[email][:klassenstufe] || 7
+            vote = row['r'][:vote]
+            key = "#{klassenstufe}/#{vote}"
+            votes[key] ||= 0
+            votes[key] += 1
+            key = "klassenstufe/#{klassenstufe}"
+            votes[key] ||= 0
+            votes[key] += 1
+            key = "vote/#{vote}"
+            votes[key] ||= 0
+            votes[key] += 1
+            key = "total"
+            votes[key] ||= 0
+            votes[key] += 1
+        end
+
+        StringIO.open do |io|
+            io.puts "<div class='table-responsive' style='max-width: 100%; overflow-x: auto;'>"
+            io.puts "<table class='table table-sm' style='width: unset;'>"
+            io.puts "<tr>"
+            io.puts "<th>Klassenstufe</th>"
+            (projekt[:klassenstufe_min]..projekt[:klassenstufe_max]).each do |klasse|
+                io.puts "<th class='#{klasse == projekt[:klassenstufe_min] ? 'cbl' : ''}' style='text-align: center;'>#{klasse}.</th>"
+            end
+            io.puts "<th class='cbl' style='text-align: center;'>Σ</th>"
+            io.puts "</tr>"
+            ndash = "<span class='text-muted'>&ndash;</span>"
+            [3, 2, 1].each do |vote|
+                io.puts "<tr>"
+                io.puts "<td>#{PROJEKT_VOTE_CODEPOINTS[vote].chr(Encoding::UTF_8)} #{PROJEKT_VOTE_LABELS[vote]}</td>"
+                (projekt[:klassenstufe_min]..projekt[:klassenstufe_max]).each do |klasse|
+                    count = votes["#{klasse}/#{vote}"] || ndash
+                    io.puts "<td class='#{klasse == projekt[:klassenstufe_min] ? 'cbl' : ''}' style='text-align: center;'>#{count}</td>"
+                end
+                count = votes["vote/#{vote}"] || ndash
+                io.puts "<td class='cbl' style='text-align: center;'>#{count}</td>"
+                io.puts "</tr>"
+            end
+            io.puts "<tr>"
+            io.puts "<td>Σ</td>"
+            (projekt[:klassenstufe_min]..projekt[:klassenstufe_max]).each do |klasse|
+                count = votes["klassenstufe/#{klasse}"] || ndash
+                io.puts "<td class='#{klasse == projekt[:min_klassenstufe_minklasse] ? 'cbl' : ''}' style='text-align: center;'>#{count}</td>"
+            end
+            count = votes["total"] || ndash
+            io.puts "<td class='cbl' style='text-align: center;'>#{count}</td>"
+            io.puts "</tr>"
+            io.puts "</table>"
+            io.puts "</div>"
+            io.string
+        end
+    end
+
+    def print_projekt_interesse_stats(user_email)
+        projekt = nil
+        neo4j_query(<<~END_OF_QUERY, {:email => user_email}).each do |row|
+            MATCH (p:Projekttage)-[:BELONGS_TO]->(u:User {email: $email})
+            RETURN p;
+        END_OF_QUERY
+            projekt = row['p']
+        end
+        return '' if projekt.nil? || projekt[:klassenstufe_min].nil? || projekt[:klassenstufe_max].nil? || projekt[:teilnehmer_max].nil?
+
+        data = nil
+        begin
+            data = JSON.parse(File.read("/internal/projekttage/votes/project-#{projekt[:nr]}.json"))
+        rescue
+        end
+        ts_data = nil
+        begin
+            ts_data = JSON.parse(File.read("/internal/projekttage/votes/ts.json"))
+        rescue
+        end
+        return '' if ts_data.nil?
+
+        StringIO.open do |io|
+            io.puts "<h4>Vorschau deiner Projektgruppe</h4>"
+            io.puts "<p>Aktuell würde deine Projektgruppe ungefähr wie folgt aussehen:</p>"
+            io.puts "<ul style='list-style: disc; margin-left: 1.5em;'>"
+            io.puts "<li>#{data['geschlecht_m'] + data['geschlecht_w']} Teilnehmer:innen, davon #{data['geschlecht_m']} Jungen und #{data['geschlecht_w']} Mädchen</li>"
+            io.puts "<li>Klassenstufen:<ul style='list-style: disc; margin-left: 1.5em;'>"
+            x = ((projekt[:klassenstufe_min] || 5)..(projekt[:klassenstufe_max] || 9)).select do |klasse|
+                (data['klasse'][klasse.to_s] || 0) > 0
+            end.map do |klasse|
+                "<li>#{data['klasse'][klasse.to_s]} Kind#{data['klasse'][klasse.to_s] > 1 ? 'er' : ''} aus der #{klasse}. Klasse</li>"
+            end
+            io.puts x.join('')
+            io.puts "</ul></li>"
+            io.puts "<li>Motivation:<ul style='list-style: disc; margin-left: 1.5em;'>"
+            x = [3, 2, 1, 0].select do |vote|
+                (data['vote'][vote.to_s] || 0) > 0
+            end.map do |vote|
+                "<li>#{data['vote'][vote.to_s]} Kind#{data['vote'][vote.to_s] > 1 ? 'er' : ''} mit der Wahl: #{PROJEKT_VOTE_CODEPOINTS[vote].chr(Encoding::UTF_8)} »#{PROJEKT_VOTE_LABELS[vote]}«</li>"
+            end
+            io.puts x.join('')
+            io.puts "</ul></li>"
+            io.puts "</ul>"
+            if data['vote']['0'] * 100 / (data['geschlecht_m'] + data['geschlecht_w']) > 10
+                io.puts "<p><strong>Hinweis:</strong> Nach dem aktuellen Stand werdet ihr ca. <strong>#{data['vote']['0']} Kind#{data['vote']['0'] > 1 ? 'er' : ''}</strong> betreuen müssen, #{data['vote']['0'] > 1 ? 'die' : 'das'} (bis jetzt) keine Lust auf euer Projekt #{data['vote']['0'] > 1 ? 'haben' : 'hat'}. Falls ihr mit der Motivation eurer Gruppe nicht zufrieden seid, könnt ihr die Situation möglicherweise verbessern, indem ihr ggfs. euren Titel, euren Werbetext und / oder euer Projektbild aktualisiert oder Werbung in der Schule für euer Projekt macht. Da alle Kinder ihre Wahl noch bis <strong>#{WEEKDAYS_LONG[(Date.parse(PROJEKTWAHL_VOTE_END).strftime('%u').to_i) % 7]}, den #{Date.parse(PROJEKTWAHL_VOTE_END).strftime('%d.%m.%Y')} um #{DateTime.parse(PROJEKTWAHL_VOTE_END).strftime('%H:%M')} </strong> anpassen können, habt ihr bis dahin noch die Gelegenheit, die Zusammensetzung eurer Gruppe zu optimieren.</p>"
+            end
+            io.puts "<p>Bitte beachte, dass sich die Zusammensetzung deiner Gruppe noch ändern wird, abhängig vom weiteren Wahlverhalten, Umwahlen oder Anpassungen in eurem Projekt.</p>"
+            io.puts "<p>Bisher haben #{ts_data['email_count_voted']} von #{ts_data['email_count_total']} Schülerinnen und Schülern ihre Projekte gewählt:"
+            io.puts "<div class='progress'>"
+            p = ts_data['email_count_voted'] * 100 / ts_data['email_count_total']
+            io.puts "<div class='bg-success progress-bar progress-bar-striped progress-bar-animated' role='progressbar' style='width: #{p}%;'>#{p.round}%</div>"
+            io.puts "</div>"
+            io.puts "</p>"
+            io.puts "<p>Diese folgenden Kinder haben bisher Interesse an eurem Projekt bekundet (die Prozentwerte geben an, wie hoch die Wahrscheinlichkeit momentan ist, dass sie in euer Projekt kommen):</p>"
+            io.puts "<div class='name-list'>"
+            data['sus'].each.with_index do |row, _|
+                user_info = @@user_info[row['email']]
+                io.puts "<div>#{user_info[:display_name]} (#{tr_klasse(user_info[:klasse])})<div class='info'>#{row['prob']}%</div></div>"
+            end
+            io.puts "</div>"
+            io.string
+        end
+    end
+
+    def print_projekt_assigned_sus
+        projekt = nil
+        neo4j_query(<<~END_OF_QUERY, {:email => @session_user[:email]}).each do |row|
+            MATCH (p:Projekt)-[:ORGANIZED_BY]->(u:User {email: $email})
+            RETURN p;
+        END_OF_QUERY
+            projekt = row['p']
+        end
+        return '' if projekt.nil? || projekt[:min_klasse].nil? || projekt[:max_klasse].nil? || projekt[:teilnehmer_max].nil?
+
+        sus = []
+        neo4j_query(<<~END_OF_QUERY, {:nr => projekt[:nr]}).each do |row|
+            MATCH (u:User)-[r:ASSIGNED_TO]->(p:Projekt {nr: $nr})
+            RETURN u.email, r;
+        END_OF_QUERY
+            email = row['u.email']
+            next unless @@user_info[email]
+            next unless @@user_info[email][:roles].include?(:schueler)
+            sus << email
+        end
+        sus.sort! do |a, b|
+            ia = @@user_info[a]
+            ib = @@user_info[b]
+            ia[:klassenstufe] ||= 7
+            ib[:klassenstufe] ||= 7
+            (ia[:klassenstufe] == ib[:klassenstufe]) ?
+            (ia[:klasse] <=> ib[:klasse]) :
+            (ia[:klassenstufe] <=> ib[:klassenstufe])
+        end
+
+        StringIO.open do |io|
+            io.puts "<p>Die folgenden Schülerinnen und Schüler nehmen an deinem Projekt teil. Unten in der Tabelle findest du E-Mail-Verteiler, die du nutzen kannst, um alle Teilnehmer:innen und / oder deren Eltern zu erreichen. Nutze deine schulische E-Mail-Adresse, um die Verteiler zu verwenden.</p>"
+            io.puts "<div class='table-responsive' style='max-width: 100%; overflow-x: auto;'>"
+            io.puts "<table class='table table-sm' style='width: unset;'>"
+            io.puts "<tr>"
+            io.puts "<th>Nr.</th>"
+            io.puts "<th></th>"
+            io.puts "<th>Name</th>"
+            io.puts "<th>Klasse</th>"
+            io.puts "<th style='width: 30em;'>E-Mail</th>"
+            io.puts "</tr>"
+            sus.each.with_index do |email, i|
+                io.puts "<tr class='user_row'>"
+                io.puts "<td>#{i + 1}.</td>"
+                io.puts "<td><div class='icon nav_avatar'>#{user_icon(email, 'avatar-md')}</div></td>"
+                io.puts "<td>#{@@user_info[email][:display_name]}</td>"
+                io.puts "<td>#{tr_klasse(@@user_info[email][:klasse])}</td>"
+                io.write "<td>"
+                print_email_field(io, email)
+                io.write "</td>"
+                io.puts "</tr>"
+            end
+            ['', 'eltern.'].each do |prefix|
+                io.puts "<tr class='user_row'>"
+                io.puts "<td colspan='4'><em>E-Mail-Verteiler: #{prefix == 'eltern.' ? 'Alle Eltern eurer Teilnehmer:innen' : 'Alle Teilnehmer:innen'}</em></td>"
+                io.write "<td>"
+                print_email_field(io, "#{prefix}projekt-#{projekt[:nr]}@#{MAILING_LIST_DOMAIN}")
+                io.write "</td>"
+                io.puts "</tr>"
+            end
+            io.puts "</table>"
+            io.puts "</div>"
+
+            io.string
+        end
+    end    
 end
 

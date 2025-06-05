@@ -1071,6 +1071,14 @@ class Main < Sinatra::Base
                     end
                 end
             end
+            [5, 6, 7, 8, 9, 10, 11, 12].each do |klasse|
+                io.puts "<tr><th colspan='3'>Klassenstufe #{klasse}</th></tr>"
+                ['sus', 'eltern', 'lehrer'].each do |role|
+                    list_email = "#{role}.klassenstufe.#{klasse}@#{MAILING_LIST_DOMAIN}"
+                    print_mailing_list(io, list_email)
+                    remaining_mailing_lists.delete(list_email)
+                end
+            end
             io.puts "<tr><th colspan='3'>Klassenleiter-Teams</th></tr>"
             [5, 6, 7, 8, 9, 10].each do |klasse|
                 list_email = "team.#{klasse}@#{MAILING_LIST_DOMAIN}"

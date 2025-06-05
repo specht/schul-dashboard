@@ -1338,6 +1338,7 @@ class Main < Sinatra::Base
             @@mailing_lists[k] = v
         end
         all_kl = Set.new()
+        klassen_for_klassenstufe = {}
         @@klassen_order.each do |klasse|
             next unless @@schueler_for_klasse.include?(klasse)
             @@mailing_lists["klasse.#{klasse}@#{MAILING_LIST_DOMAIN}".downcase] = {
@@ -1359,6 +1360,9 @@ class Main < Sinatra::Base
                 end
             }
             if klasse.to_i > 0
+                klassenstufe = klasse.to_i
+                klassen_for_klassenstufe[klassenstufe] ||= []
+                klassen_for_klassenstufe[klassenstufe] << klasse
                 if @@klassenleiter[klasse]
                     @@mailing_lists["team.#{klasse.to_i}@#{MAILING_LIST_DOMAIN}".downcase] ||= {
                         :label => "Klassenleiterteam der Klassenstufe #{klasse.to_i}",
@@ -1372,6 +1376,36 @@ class Main < Sinatra::Base
                     end
                 end
             end
+        end
+
+        klassen_for_klassenstufe.each_pair do |klassenstufe, klassen|
+            ['sus', 'eltern'].each do |extra|
+                email = "#{extra}.klassenstufe.#{klassenstufe}@#{MAILING_LIST_DOMAIN}".downcase
+                @@mailing_lists[email] = {
+                    :label => "Alle #{{'sus' => 'SuS', 'eltern' => 'Eltern'}[extra]} der Klassenstufe #{klassenstufe}",
+                    :recipients => [],
+                }
+                klassen.each do |klasse|
+                    if @@schueler_for_klasse[klasse]
+                        @@mailing_lists[email][:recipients] += @@schueler_for_klasse[klasse].map do |email|
+                            extra == 'eltern' ? "eltern.#{email}" : email
+                        end
+                    end
+                end
+            end
+            email = "lehrer.klassenstufe.#{klassenstufe}@#{MAILING_LIST_DOMAIN}".downcase
+            @@mailing_lists[email] = {
+                :label => "Alle Lehrer der Klassenstufe #{klassenstufe}",
+                :recipients => [],
+            }
+            all_teachers = Set.new()
+            klassen.each do |klasse|
+                @@teachers_for_klasse[klasse].each_pair do |shorthand, _|
+                    teacher_email = @@shorthands[shorthand]
+                    all_teachers << teacher_email if teacher_email
+                end
+            end
+            @@mailing_lists[email][:recipients] = all_teachers.to_a.sort
         end
 
         @@mailing_lists["lehrer@#{MAILING_LIST_DOMAIN}"] = {

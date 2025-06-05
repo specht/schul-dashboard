@@ -1156,9 +1156,9 @@ class Main < Sinatra::Base
     end
 
     def self.assign_projects(emails, users, projects,
-        projects_for_klassenstufe, total_capacity,
-        votes, _votes_by_email,
-        _votes_by_vote, _votes_by_project, user_info)
+            projects_for_klassenstufe, total_capacity,
+            votes, _votes_by_email,
+            _votes_by_vote, _votes_by_project, user_info)
         votes_by_email = Hash[_votes_by_email.map { |a, b| [a, b.dup ] } ]
         votes_by_vote = Hash[_votes_by_vote.map { |a, b| [a, b.dup ] } ]
         votes_by_project = Hash[_votes_by_project.map { |a, b| [a, b.dup ] } ]
@@ -1193,7 +1193,7 @@ class Main < Sinatra::Base
             :error_for_email => {},
             :emails_for_project => Hash[projects.map { |k, v| [k, []] } ],
         }
-        current_vote = 5
+        current_vote = 6
         remaining_emails = Set.new(emails)
         srand()
         # STEP 1: Assign projects by priority
@@ -1361,7 +1361,7 @@ class Main < Sinatra::Base
             io.puts "<ul style='list-style: disc; margin-left: 1.5em;'>"
             io.puts "<li>#{data['geschlecht_m'] + data['geschlecht_w']} Teilnehmer:innen, davon #{data['geschlecht_m']} Jungen und #{data['geschlecht_w']} Mädchen</li>"
             io.puts "<li>Klassenstufen:<ul style='list-style: disc; margin-left: 1.5em;'>"
-            x = ((projekt[:klassenstufe_min] || 5)..(projekt[:klassenstufe_max] || 9)).select do |klasse|
+            x = (5..9).select do |klasse|
                 (data['klasse'][klasse.to_s] || 0) > 0
             end.map do |klasse|
                 "<li>#{data['klasse'][klasse.to_s]} Kind#{data['klasse'][klasse.to_s] > 1 ? 'er' : ''} aus der #{klasse}. Klasse</li>"

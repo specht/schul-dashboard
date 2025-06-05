@@ -131,7 +131,7 @@
 </style>
 
 <script>
-var display_name_for_email = #{Hash[@@user_info.select { |email, info| user_has_role(email, :teacher) || info[:klassenstufe] == 11 }.map { |email, info| [email, info[:teacher] ? info[:display_name_official] : info[:display_name]] }].to_json};
+var display_name_for_email = #{Hash[@@user_info.select { |email, info| user_has_role(email, :teacher) || (info[:klassenstufe] || 9) >= 11 }.map { |email, info| [email, info[:teacher] ? info[:display_name_official] : info[:display_name]] }].to_json};
 var this_klasse = #{@session_user[:klassenstufe] || 7};
 var projekte = {};
 var vote_for_project = {};
@@ -148,7 +148,7 @@ function update_vote_summary(id) {
     for (let nr of Object.keys(vote_for_project)) {
         let vote = vote_for_project[nr];
         if (vote > 0) {
-            buckets[vote].push(nr);
+            buckets[Math.min(vote, 3)].push(nr);
         }
     }
     let items = [];
@@ -277,9 +277,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 let scaffold = $(`<div class='col-md-12'>`);
                 let card = generate_projekt_card(projekt);
                 if ('#{user_was_eligible_for_projektwahl?}' === 'true') {
-                    if (this_klasse >= projekt.klassenstufe_min && this_klasse <= projekt.klassenstufe_max) {
+                    // if (this_klasse >= projekt.klassenstufe_min && this_klasse <= projekt.klassenstufe_max) {
                         vote_for_project[projekt.nr] = projekt.session_user_vote;
-                    }
+                    // }
                 }
                 if ('#{user_was_eligible_for_projektwahl?}' === 'true') {
                     if (typeof(data.assigned_projekt) !== 'undefined') {
@@ -296,8 +296,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
                 if ('#{user_eligible_for_projektwahl?}' === 'true') {
                     $(`<hr class='dashed'>`).appendTo(card);
-                    if (this_klasse >= projekt.klassenstufe_min && this_klasse <= projekt.klassenstufe_max) {
                         vote_for_project[projekt.nr] = projekt.session_user_vote;
+                    if (this_klasse >= projekt.klassenstufe_min && this_klasse <= projekt.klassenstufe_max) {
                         $(`<p>`).text(`Teile uns hier mit, wie sehr du dich für dieses Projekt interessierst:`).appendTo(card);
                         div = $(`<div class='emojis'>`).appendTo(card);
                         for (let i = 0; i < codepoints.length; i++) {

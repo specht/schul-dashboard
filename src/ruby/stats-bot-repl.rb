@@ -163,12 +163,14 @@ class StatsBotRepl < Sinatra::Base
                             project_stats[nr][:geschlecht_w] += 1
                         end
                         project_stats[nr][:klasse][@@user_info[email][:klassenstufe] || 7] += 1
-                        project_stats[nr][:vote][users[email][:vote_hash][nr] || 0] += 1
+                        if (users[email][:vote_hash][nr] || 0) <= 3
+                            project_stats[nr][:vote][users[email][:vote_hash][nr] || 0] += 1
+                        end
                     end
                 end
             rescue StandardError => e
                 STDERR.puts "Ignoring: #{e}"
-                # raise
+                raise
             end
         end
         if count == 0
@@ -196,11 +198,11 @@ class StatsBotRepl < Sinatra::Base
             projects_for_email[email].keys.each do |nr|
                 if users[email][:vote_hash].include?(nr)
                     p = projects_for_email[email][nr].to_f * 100.0 / count
-                    if users[email][:vote_hash].size == 1
-                        p *= 0.33
-                    elsif users[email][:vote_hash].size == 2
-                        p *= 0.66
-                    end
+                    # if users[email][:vote_hash].size == 1
+                    #     p *= 0.33
+                    # elsif users[email][:vote_hash].size == 2
+                    #     p *= 0.66
+                    # end
                     p = p.round
                     p = 1 if p < 1
                     p = 99 if p > 99

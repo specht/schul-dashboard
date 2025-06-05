@@ -2178,10 +2178,12 @@ class Main < Sinatra::Base
                 end
                 # nav_items << :advent_calendar #if advents_calendar_date_today > 0
                 nav_items << :profile
-                new_messages_count_s = new_messages_count.to_s
-                new_messages_count_s = '99+' if new_messages_count > 99
-                if new_messages_count > 0
-                    io.puts "<a href='/messages' class='new-messages-indicator-mini'><i class='fa fa-comment' style='color: #{primary_color};'></i><span>#{new_messages_count_s}</span></a>"
+                if user_with_role_logged_in?(:can_receive_messages)
+                    new_messages_count_s = new_messages_count.to_s
+                    new_messages_count_s = '99+' if new_messages_count > 99
+                    if new_messages_count > 0
+                        io.puts "<a href='/messages' class='new-messages-indicator-mini'><i class='fa fa-comment' style='color: #{primary_color};'></i><span>#{new_messages_count_s}</span></a>"
+                    end
                 end
             else
                 nav_items << ['/hilfe', 'Hilfe', 'fa fa-question-circle']

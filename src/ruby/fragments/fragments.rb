@@ -1748,6 +1748,43 @@ class Main
         return doc.render
     end
 
+    def self.update_assign_result_errors()
+        result = {}
+
+        result[:error_for_email] = {}
+
+        votes_for_email = {}
+
+        $neo4j.neo4j_query(<<~END_OF_QUERY).each do |row|
+            MATCH (u:User)-[r:VOTED_FOR]->(p:Projekttage)
+            RETURN u.email, r.vote, p.nr;
+        END_OF_QUERY
+            email = row['u.email']
+            vote = row['r.vote']
+            nr = row['p.nr']
+            votes_for_email[email] ||= {}
+            votes_for_email[email][nr] = vote
+        end
+
+        $neo4j.neo4j_query(<<~END_OF_QUERY).each do |row|
+            MATCH (u:User)-[r:ASSIGNED_TO]->(p:Projekttage)
+            RETURN u.email, p.nr;
+        END_OF_QUERY
+            email = row['u.email']
+            nr = row['p.nr']
+            assigned_vote = (votes_for_email[email] || {})[nr] || 0
+            highest_vote = (votes_for_email[email] || {}).values.max || 0
+            error = [0, highest_vote - assigned_vote].max
+            if error > 0
+                result[:error_for_email][email] = error
+            end
+        end
+
+        File.open("/internal/projekttage/votes/assign-result.json", 'w') do |f|
+            f.write result.to_json
+        end
+    end
+
     def self.print_project_assignment_summary_and_assign(result, user_info,
         votes, votes_by_email, votes_by_vote, votes_by_project)
         # Get projects
@@ -1795,9 +1832,9 @@ class Main
             nr = projekt[:nr]
             capacity = projekt[:capacity] || 0
             s = "[#{projekt[:nr]}] #{projekt[:title]} (#{projekt[:min_klasse]}–#{projekt[:max_klasse]}, max. #{capacity} SuS)"
-            STDERR.puts '-' * s.size
-            STDERR.puts s
-            STDERR.puts '-' * s.size
+            # STDERR.puts '-' * s.size
+            # STDERR.puts s
+            # STDERR.puts '-' * s.size
             (result[:emails_for_project][nr] || []).sort do |a, b|
                 klasse_a = user_info[a][:klassenstufe] || 7
                 klasse_b = user_info[b][:klassenstufe] || 7
@@ -1806,7 +1843,7 @@ class Main
                 seen_emails << email
                 name = user_info[email][:display_name]
                 klasse = user_info[email][:klasse]
-                STDERR.puts sprintf('%2d. {%d} %s (%s)', i + 1, result[:error_for_email][email], name, klasse)
+                # STDERR.puts sprintf('%2d. {%d} %s (%s)', i + 1, result[:error_for_email][email], name, klasse)
                 verdict = nil
                 if result[:error_for_email][email] == 0
                     if (votes_by_email[email] || []).empty?
@@ -1833,7 +1870,7 @@ class Main
                     end
                 end
                 verdict_for_email[email] = verdict
-                STDERR.puts "        #{verdict}"
+                # STDERR.puts "        #{verdict}"
                 # (votes_by_email[email] || []).sort do |a, b|
                 #     votes[b][:vote] <=> votes[a][:vote]
                 # end.each do |sha1|
@@ -1841,7 +1878,7 @@ class Main
                 #     STDERR.puts "  #{nr == vote[:nr] ? '==> ' : ''}[#{vote[:vote]}] #{projekte[vote[:nr]][:title]}"
                 # end
             end
-            STDERR.puts
+            # STDERR.puts
         end
         STDERR.puts "Wanted emails: #{wanted_emails.size}"
         STDERR.puts "Seen emails: #{seen_emails.size}"
@@ -1850,23 +1887,22 @@ class Main
         $neo4j.transaction do
             # delete all assignments
             $neo4j.neo4j_query(<<~END_OF_QUERY)
-                MATCH (:User)-[r:ASSIGNED_TO]->(:Projekt)
+                MATCH (:User)-[r:ASSIGNED_TO]->(:Projekttage)
                 DELETE r;
             END_OF_QUERY
             # create all assignments
             result[:project_for_email].each_pair do |email, nr|
                 $neo4j.neo4j_query(<<~END_OF_QUERY, {:email => email, :nr => nr})
                     MATCH (u:User {email: $email})
-                    MATCH (p:Projekt {nr: $nr})
+                    MATCH (p:Projekttage {nr: $nr})
                     CREATE (u)-[:ASSIGNED_TO]->(p);
                 END_OF_QUERY
             end
-            File.open("/internal/projekttage/votes/verdicts.json", 'w') do |f|
-                f.write verdict_for_email.to_json
-            end
-            File.open("/internal/projekttage/votes/assign-result.json", 'w') do |f|
-                f.write result.to_json
-            end
+            # File.open("/internal/projekttage/votes/verdicts.json", 'w') do |f|
+            #     f.write verdict_for_email.to_json
+            # end
+            Main.update_assign_result_errors()
+            Main.update_mailing_lists();
         end
     end
 

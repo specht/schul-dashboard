@@ -1,0 +1,109 @@
+#{assert(user_logged_in? && user_was_eligible_for_projektwahl? && projekttage_phase() == 4)}
+<div class='container'>
+    <div class='row'>
+        <div class='col-md-12'>
+            <h2 style='margin-bottom: 30px;'>Projekt-Tauschbörse #{Date.today.year}</h2>
+            <p>Die Tauschbörse ist noch bis <strong>#{WEEKDAYS_LONG[Date.parse(PROJEKTWAHL_SWAP_PHASE_END).wday]}</strong>, den <strong>#{Date.parse(PROJEKTWAHL_SWAP_PHASE_END).strftime('%d')}. #{MONTHS[Date.parse(PROJEKTWAHL_SWAP_PHASE_END).strftime('%m').to_i]}</strong> um <strong>#{DateTime.parse(PROJEKTWAHL_SWAP_PHASE_END).strftime('%H:%M')} Uhr</strong> geöffnet. Danach kannst du keine Projekte mehr tauschen.</p>
+            <h4>Und so funktioniert die Tauschbörse:</h4>
+            <p>Sprich dich mit anderen Kindern ab. Wenn du einen Tauschpartner findest oder ihr mit mehreren Kindern einen Ringtausch durchführen wollt, könnt ihr das hier tun.
+                Ihr könnt auch die entsprechenden Projektbetreuer:innen fragen, ob sie euch helfen können, einen Tauschpartner zu finden – sie können sehen, wer alles momentan in ihrem Projekt angemeldet ist.
+            </p>
+            <ul>
+                <li><strong>Schritt 1:</strong> Alle Kinder, die untereinander tauschen wollen, müssen ihren Platz für der Tauschbörse freigeben.</li>
+                <li><strong>Schritt 2:</strong> Wähle den Namen des Kindes, dessen Platz du haben möchtest. Die anderen Kinder müssen dies auch tun, wenn der Tausch durchgeführt werden soll.</li>
+                <li><strong>Schritt 3:</strong> Sobald ein vollständiger Tauschkreis aus zwei oder mehr Kindern vorhanden ist, wird der Tausch automatisch durchgeführt.</li>
+            </ul>
+            <p>
+                Du bist momentan in folgendem Projekt angemeldet:
+            </p>
+            <div id="current-project-card"></div>
+            <hr>
+            <div id="main"></div>
+        </div>
+    </div>
+</div>
+
+<style>
+.card {
+    background-color: #f8f9fa;
+    border: 1px solid #bebfc1;
+    border-radius: 8px;
+    padding: 20px;
+    margin-bottom: 20px;
+    min-height: 280px;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    position: relative;
+    display: block;
+    overflow: hidden;
+}
+.polaroid {
+    margin-bottom: 10px;
+    border-radius: 2px;
+}
+</style>
+
+<script>
+var display_name_for_email = #{Hash[@@user_info.select { |email, info| user_has_role(email, :teacher) || (info[:klassenstufe] || 9) >= 11 }.map { |email, info| [email, info[:teacher] ? info[:display_name_official] : info[:display_name]] }].to_json};
+
+function refresh() {
+    api_call('/api/get_projekt_swap_state', {}, function(data) {
+        console.log(data);
+        let card = generate_projekt_card(data.projekt);
+        $('#current-project-card').empty().append(card);
+        let main = $('#main');
+        main.empty();
+        let bu_disable_swap = $(`<button data-value='false' class='btn ${data.want_swap ? 'btn-outline-secondary' : 'btn-danger'}'><i class='fa fa-times'></i>&nbsp;&nbsp;Ich möchte mein Projekt nicht tauschen</button>`).appendTo(main);
+        $(`<span> </span>`).appendTo(main);
+        let bu_enable_swap = $(`<button data-value='true' class='btn ${data.want_swap ? 'btn-success' : 'btn-outline-secondary'}'><i class='fa fa-check'></i>&nbsp;&nbsp;Ich möchte an der Tauschbörse teilnehmen</button>`).appendTo(main);
+        for (let button of [bu_disable_swap, bu_enable_swap]) {
+            button.on('click', function() {
+                const value = `${$(this).data('value')}`;
+                api_call('/api/set_want_swap', { want_swap: value }, function(response) {
+                    if (response.success) {
+                        refresh();
+                    }
+                });
+            });
+        }
+        if (data.want_swap) {
+            $(`<hr>`).appendTo(main);
+            $(`<h4>Deine möglichen Tauschpartner</h4>`).appendTo(main);
+            if (data.swap_candidates.length === 0) {
+                $(`<p>Es gibt momentan keine Kinder, die an einem Tausch interessiert sind. Du kannst aber in deiner Klasse oder auf dem Schulhof fragen, ob jemand tauschen möchte.</p>`).appendTo(main);
+            } else {
+                $(`<p>Achtung: Einigt euch untereinander, bevor du einen Projekttausch anfragst. Wenn ihr euch alle einig seid und die entsprechenden Buttons drückt, kommt euer Tausch automatisch zustande.</p>`).appendTo(main);
+                let div = $(`<div class='table-responsive' style='max-width: 100%; overflow-x: auto;'>`).appendTo(main);
+                let table = $(`<table class='table table-condensed table-striped narrow' style='width: unset; min-width: 100%;'>`).appendTo(div);
+                let row = $(`<tr>`).appendTo(table);
+                row.append(`<th>Name</th>`);
+                row.append(`<th>Klasse</th>`);
+                row.append(`<th>Projekt</th>`);
+                row.append(`<th></th>`);
+                for (let candidate of data.swap_candidates) {
+                    let row = $(`<tr>`).appendTo(table);
+                    row.append(`<td>${candidate.name}</td>`);
+                    row.append(`<td>${candidate.klasse}</td>`);
+                    row.append(`<td>${candidate.projekt_name}</td>`);
+                    let cell = $(`<td>`).appendTo(row);
+                    let button = $(`<button class='btn btn-sm ${data.pending_swap_request == candidate.email ? 'btn-success' : 'btn-outline-secondary'}'>Ich möchte den Platz von ${candidate.first_name} haben</button>`).appendTo(cell);
+                    button.on('click', function() {
+                        api_call('/api/set_want_swap_partner', { other: candidate.email }, function(data) {
+                            if (data.success) {
+                                if (data.swapped) {
+                                    window.location.reload();
+                                } else {
+                                    refresh();
+                                }
+                            }
+                        });
+                    });
+                }
+            }
+        }
+    });
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    refresh();
+});
+</script>

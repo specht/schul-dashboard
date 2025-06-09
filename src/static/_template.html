@@ -539,6 +539,26 @@
             });
         }
 
+        function generate_projekt_card(projekt) {
+            let photo = $(`<div class='polaroid' style='width: 200px; height: 240px; margin-left: 10px;'>`);
+            if (projekt.photo)
+                photo.css('background-image', `url(/api/get_sus_photo/${projekt.photo}-512.jpg)`);
+            let card = $(`<div class='card'>`);
+            card.append(photo);
+            card.append($(`<h4>`).text(projekt.name));
+            let div = $(`<div style='position: relative; top: -5px;'>`).appendTo(card);
+            for (let cat of (projekt.categories ?? '').split(','))
+                div.append($(`<span class='badge badge-success' style='margin-right: 5px;'>`).text(cat));
+            if (projekt.klassenstufe_min === projekt.klassenstufe_max) {
+                div.append($(`<span class='badge badge-warning' style='margin-right: 5px;'>`).text(`nur Klasse ${projekt.klassenstufe_min}`));
+            } else {
+                div.append($(`<span class='badge badge-warning' style='margin-right: 5px;'>`).text(`Klasse ${projekt.klassenstufe_min} – ${projekt.klassenstufe_max}`));
+            }
+            card.append($(`<p style='font-style: italic;'>`).text(`${projekt.organized_by.map(function(x) { return display_name_for_email[x]; }).join(', ')}`));
+            card.append($(`<p style='white-space: pre-line;'>`).text(projekt.werbetext ?? '(noch keine Beschreibung vorhanden)'));
+            return card;
+        }
+
     </script>
 
     <div class="modal" id="__template_modal" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel"

@@ -24,6 +24,9 @@
     input:read-only {
        pointer-events: none;
     }
+    table .nav_avatar .avatar-md {
+        position: unset;
+    }
 </style>
 
 <div class="modal" id="modal_add_sus" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true" style='z-index: 200000;'>
@@ -65,8 +68,8 @@
             <div style='#{projekttage_phase() == 3 ? '' : 'display: none;'}'>
                 #{print_projekt_interesse_stats(user_email)}
             </div>
-            <div style='#{projekttage_phase() == 4 ? '' : 'display: none;'}'>
-                #{#print_projekt_assigned_sus()}
+            <div style='#{projekttage_phase() >= 4 ? '' : 'display: none;'}'>
+                #{print_projekt_assigned_sus()}
             </div>
             <p>
                 Diese Karteikarte fasst die Informationen zu deinen Projekttagen zusammen.

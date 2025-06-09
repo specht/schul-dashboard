@@ -2944,6 +2944,13 @@ body.dark .hl {
     border: 1px solid rgba(0, 0, 0, 0.1);
 }
 
+.alert {
+    @media (max-width: 576px) {
+        margin-left: -15px;
+        margin-right: -15px;
+    }
+}
+
 .bu-at-note {
     &.active {
         &[data-value='1'] {

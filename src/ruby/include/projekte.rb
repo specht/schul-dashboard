@@ -70,7 +70,7 @@ class Main < Sinatra::Base
 
     def user_was_eligible_for_projektwahl?
         return false unless schueler_logged_in?
-        return false unless projekttage_phase() == 4
+        return false unless projekttage_phase() >= 4
         klassenstufe = @session_user[:klassenstufe] || 7
         return klassenstufe >= 5 && klassenstufe <= 9
     end
@@ -157,19 +157,27 @@ class Main < Sinatra::Base
                 result[:ts] = JSON.parse(File.read('/internal/projekttage/votes/ts.json'))
                 result[:my_vote_data] = JSON.parse(File.read("/internal/projekttage/votes/#{@session_user[:email]}.json"))
                 result[:project_data] = JSON.parse(File.read("/internal/projekttage/votes/projects.json"))
+                path = "/internal/projekttage/votes/assign-result.json"
+                if File.exist?(path)
+                    temp = JSON.parse(File.read(path))
+                    result[:assigned_projekt_error] = temp['error_for_email'][@session_user[:email]] || 0
+                end
             rescue
             end
         end
         if user_was_eligible_for_projektwahl?
-            path = '/internal/projekttage/votes/verdicts.json'
-            if File.exist?(path)
-                verdict_for_email = JSON.parse(File.read(path))
-                result[:verdict] = verdict_for_email[@session_user[:email]]
-                result[:assigned_projekt] = neo4j_query_expect_one(<<~END_OF_QUERY, {:email => @session_user[:email]})['p.nr']
-                    MATCH (u:User {email: $email})-[:ASSIGNED_TO]->(p:Projekttage)
-                    RETURN p.nr;
-                END_OF_QUERY
-            end
+            # path = '/internal/projekttage/votes/verdicts.json'
+            # if File.exist?(path)
+                # verdict_for_email = JSON.parse(File.read(path))
+                # result[:verdict] = verdict_for_email[@session_user[:email]]
+                begin
+                    result[:assigned_projekt] = neo4j_query_expect_one(<<~END_OF_QUERY, {:email => @session_user[:email]})['p.nr']
+                        MATCH (u:User {email: $email})-[:ASSIGNED_TO]->(p:Projekttage)
+                        RETURN p.nr;
+                    END_OF_QUERY
+                rescue
+                end
+            # end
         end
         respond(result)
     end    
@@ -1024,30 +1032,23 @@ class Main < Sinatra::Base
                 sus_for_projekt[nr] << email
             end
 
-            io.puts "<h4>Freie Plätze in anderen Projekten</h4>"
-            io.puts "<p>Wenn du lieber in ein anderes Projekt wechseln möchtest, schreib einfach eine E-Mail bis <strong>Mittwoch, den 10. Juli um 16:00 Uhr</strong> an <a href='mailto:#{WEBSITE_MAINTAINER_EMAIL}'>#{WEBSITE_MAINTAINER_EMAIL}</a>. Momentan sind noch folgende Plätze frei:</p>"
-            io.puts "<div class='table-responsive' style='max-width: 100%; overflow-x: auto;'>"
-            io.puts "<table class='table table-sm table-striped' style='width: unset;'>"
-            io.puts "<tr>"
-            io.puts "<th>Projekt</th>"
-            io.puts "<th>Klasse</th>"
-            io.puts "<th>Freie Plätze</th>"
-            io.puts "</tr>"
-            projekte.each_pair do |nr, projekt|
-                if sus_for_projekt[nr].size < projekt[:teilnehmer_max]
-                    io.puts "<tr>"
-                    io.puts "<td>#{projekt[:name]}</td>"
-                    if projekt[:klassenstufe_min] == projekt[:klassenstufe_max]
-                        io.puts "<td>nur #{tr_klasse(projekt[:klassenstufe_min])}. Klasse</td>"
-                    else
-                        io.puts "<td>#{tr_klasse(projekt[:klassenstufe_min])}. – #{tr_klasse(projekt[:klassenstufe_max])}. Klasse</td>"
+            if projekttage_phase == 4
+                io.puts "<h4>Falls du unzufrieden mit deinem Projekt bist</h4>"
+                io.puts "<p>Wenn du lieber in ein anderes Projekt wechseln möchtest, hast du noch bis <strong>#{WEEKDAYS_LONG[Date.parse(PROJEKTWAHL_SWAP_PHASE_END).wday]}</strong>, den <strong>#{Date.parse(PROJEKTWAHL_SWAP_PHASE_END).strftime('%d')}. #{MONTHS[Date.parse(PROJEKTWAHL_SWAP_PHASE_END).strftime('%m').to_i]}</strong> um <strong>#{DateTime.parse(PROJEKTWAHL_SWAP_PHASE_END).strftime('%H:%M')} Uhr</strong> Zeit, um folgende Möglichkeiten zu probieren:"
+                io.puts "<h5>Möglichkeit 1: Freie Plätze in anderen Projekten</h5>"
+                io.puts "<p>Du kannst direkt in ein anderes Projekt wechseln, wenn dort noch ein Platz frei ist.</p>"
+                io.puts "<div class='direct-project-swap-div'>"
+                projekte.each_pair do |nr, projekt|
+                    if sus_for_projekt[nr].size < projekt[:teilnehmer_max]
+                        io.puts "<div class='direct-project-swap-candidate' data-nr='#{nr}'></div>"
                     end
-                    io.puts "<td>#{projekt[:teilnehmer_max] - sus_for_projekt[nr].size} von #{projekt[:teilnehmer_max]} frei</td>"
-                    io.puts "</tr>"
                 end
+                io.puts "</div>"
+
+                io.puts "<h5>Möglichkeit 2: Projekt-Tauschbörse</h5>"
+                io.puts "<p>Wenn du mit jemandem dein Projekt tauschen möchtest (zu zweit oder mit mehreren), dann versuch es mit der Tauschbörse:</p>"
+                io.puts "<a class='btn btn-success' href='/projekttauschboerse'>Projekt-Tauschbörse</a>"
             end
-            io.puts "</table>"
-            io.puts "</div>"
             io.string
         end
     end
@@ -1222,7 +1223,7 @@ class Main < Sinatra::Base
                 end
                 remaining_emails.delete(email)
                 result[:project_for_email][email] = nr
-                result[:error_for_email][email] = users[email][:highest_vote] - current_vote
+                result[:error_for_email][email] = [0, users[email][:highest_vote] - current_vote].max
                 # clear all entries of user
                 votes_by_email[email].each do |x|
                     votes_by_vote[votes[x][:vote]].delete(x)
@@ -1401,16 +1402,16 @@ class Main < Sinatra::Base
     def print_projekt_assigned_sus
         projekt = nil
         neo4j_query(<<~END_OF_QUERY, {:email => @session_user[:email]}).each do |row|
-            MATCH (p:Projekt)-[:ORGANIZED_BY]->(u:User {email: $email})
+            MATCH (p:Projekttage)-[:BELONGS_TO]->(u:User {email: $email})
             RETURN p;
         END_OF_QUERY
             projekt = row['p']
         end
-        return '' if projekt.nil? || projekt[:min_klasse].nil? || projekt[:max_klasse].nil? || projekt[:teilnehmer_max].nil?
+        return '' if projekt.nil? || projekt[:klassenstufe_min].nil? || projekt[:klassenstufe_max].nil? || projekt[:teilnehmer_max].nil?
 
         sus = []
         neo4j_query(<<~END_OF_QUERY, {:nr => projekt[:nr]}).each do |row|
-            MATCH (u:User)-[r:ASSIGNED_TO]->(p:Projekt {nr: $nr})
+            MATCH (u:User)-[r:ASSIGNED_TO]->(p:Projekttage {nr: $nr})
             RETURN u.email, r;
         END_OF_QUERY
             email = row['u.email']
@@ -1430,6 +1431,11 @@ class Main < Sinatra::Base
 
         StringIO.open do |io|
             io.puts "<p>Die folgenden Schülerinnen und Schüler nehmen an deinem Projekt teil. Unten in der Tabelle findest du E-Mail-Verteiler, die du nutzen kannst, um alle Teilnehmer:innen und / oder deren Eltern zu erreichen. Nutze deine schulische E-Mail-Adresse, um die Verteiler zu verwenden.</p>"
+            if projekttage_phase() < 5
+                io.puts "<p><strong>Achtung:</strong> Bitte beachte, dass momentan noch Projekte getauscht werden können. Die finale Teilnehmerliste steht erst am <strong>#{WEEKDAYS_LONG[Date.parse(PROJEKTWAHL_SWAP_PHASE_END).wday]}</strong>, den <strong>#{Date.parse(PROJEKTWAHL_SWAP_PHASE_END).strftime('%d')}. #{MONTHS[Date.parse(PROJEKTWAHL_SWAP_PHASE_END).strftime('%m').to_i]}</strong> um <strong>#{DateTime.parse(PROJEKTWAHL_SWAP_PHASE_END).strftime('%H:%M')} Uhr</strong> fest.</p>"
+            elsif projekttage_phase() == 5
+                io.puts "<p>Diese Teilnehmerliste ist jetzt final, es können keine Projekte mehr getauscht werden.</p>"
+            end
             io.puts "<div class='table-responsive' style='max-width: 100%; overflow-x: auto;'>"
             io.puts "<table class='table table-sm' style='width: unset;'>"
             io.puts "<tr>"
@@ -1463,6 +1469,249 @@ class Main < Sinatra::Base
 
             io.string
         end
-    end    
+    end
+
+    post '/api/swap_project_direct' do
+        data = parse_request_data(:required_keys => [:nr])
+        require_user!
+        assert(user_was_eligible_for_projektwahl?)
+        transaction do
+            taken_spots = Set.new()
+            teilnehmer_max = nil
+            neo4j_query(<<~END_OF_QUERY, {:nr => data[:nr]}).each do |row|
+                MATCH (u:User)-[:ASSIGNED_TO]->(p:Projekttage {nr: $nr})
+                RETURN u.email, p.teilnehmer_max;
+            END_OF_QUERY
+                email = row['u.email']
+                taken_spots << email
+                teilnehmer_max ||= row['p.teilnehmer_max']
+            end
+
+            spots_left = teilnehmer_max - taken_spots.size
+
+            assert(spots_left > 0)
+
+            neo4j_query_expect_one(<<~END_OF_QUERY, {:email => @session_user[:email]})
+                MATCH (u:User {email: $email})-[r:ASSIGNED_TO]->(p:Projekttage)
+                DELETE r
+                RETURN p.nr;
+            END_OF_QUERY
+            neo4j_query_expect_one(<<~END_OF_QUERY, {:email => @session_user[:email], :nr => data[:nr]})
+                MATCH (u:User {email: $email}), (p:Projekttage {nr: $nr})
+                CREATE (u)-[:ASSIGNED_TO]->(p)
+                RETURN p.nr;
+            END_OF_QUERY
+        end
+        Main.update_assign_result_errors()
+        Main.update_mailing_lists();
+        respond(:success => true)
+    end
+
+    def purge_inconsitent_swap_requests
+        requests = []
+        neo4j_query(<<~END_OF_QUERY, {}).each do |row|
+            MATCH (u:User)-[r:WANT_PROJECT_FROM]->(o:User)
+            RETURN u.email, r, o.email, ID(r) AS r_id;
+        END_OF_QUERY
+            requests << {
+                :r_id => row['r_id'],
+                :from => row['u.email'],
+                :to => row['o.email'],
+                :have => row['r'][:have],
+                :want => row['r'][:want]
+            }
+        end
+        current_project_for_candidates = {}
+        neo4j_query(<<~END_OF_QUERY, {}).each do |row|
+            MATCH (u:User)-[r:ASSIGNED_TO]->(p:Projekttage)
+            WHERE r.want_swap = true
+            RETURN u.email, p.nr;
+        END_OF_QUERY
+            current_project_for_candidates[row['u.email']] = row['p.nr']
+        end
+        # remove want request if:
+        # - any one of both users does not have the want_swap flag in the assigned_to relationship
+        # - the have or want project numbers do not match the currently assigned project IDs
+        purge_ids = []
+        requests.each do |request|
+            if current_project_for_candidates[request[:from]] == request[:have] && current_project_for_candidates[request[:to]] == request[:want]
+                next
+            end
+            STDERR.puts "Purging swap request: #{request[:from]} => #{request[:to]}"
+            purge_ids << request[:r_id]
+        end
+        unless purge_ids.empty?
+            neo4j_query(<<~END_OF_QUERY, {:purge_ids => purge_ids})
+                MATCH (u:User)-[r:WANT_PROJECT_FROM]->(o:User)
+                WHERE ID(r) IN $purge_ids
+                DELETE r;
+            END_OF_QUERY
+        end
+    end
+
+    post '/api/get_projekt_swap_state' do
+        require_user!
+        assert(user_was_eligible_for_projektwahl?)
+        result = {
+            :want_swap => false,
+            :swap_candidates => [],
+        }
+        purge_inconsitent_swap_requests()
+        neo4j_query(<<~END_OF_QUERY, {:email => @session_user[:email]}).each do |row|
+            MATCH (u:User {email: $email})-[r:ASSIGNED_TO]->(p:Projekttage)
+            RETURN r, p;
+        END_OF_QUERY
+            r = row['r']
+            p = row['p']
+            result[:want_swap] = true if r[:want_swap]
+            result[:projekt] = {
+                :nr => p[:nr],
+                :name => p[:name],
+                :teilnehmer_max => p[:teilnehmer_max],
+                :klassenstufe_min => p[:klassenstufe_min],
+                :klassenstufe_max => p[:klassenstufe_max],
+                :werbetext => p[:werbetext],
+                :photo => p[:photo],
+                :organized_by => [],
+            }
+        end
+        neo4j_query(<<~END_OF_QUERY, {:email => @session_user[:email]}).each do |row|
+            MATCH (u:User {email: $email})-[:ORGANIZED]->(p:Projekttage)-[:BELONGS_TO]->(o:User)
+            RETURN o.email;
+        END_OF_QUERY
+            result[:projekt][:organized_by] << row['o.email']
+        end
+
+        neo4j_query(<<~END_OF_QUERY, {}).each do |row|
+            MATCH (u:User)-[r:ASSIGNED_TO]->(p:Projekttage)
+            WHERE r.want_swap = true
+            RETURN u.email, r, p;
+        END_OF_QUERY
+            email = row['u.email']
+            r = row['r']
+            p = row['p']
+            next if email == @session_user[:email]
+            next if p[:klassenstufe_min] > @@user_info[@session_user[:email]][:klassenstufe]
+            next if p[:klassenstufe_max] < @@user_info[@session_user[:email]][:klassenstufe]
+            result[:swap_candidates] << {
+                :email => email,
+                :name => @@user_info[email][:display_name],
+                :first_name => @@user_info[email][:first_name],
+                :klasse => @@user_info[email][:klasse],
+                :projekt_name => p[:name],
+                :projekt_nr => p[:nr],
+            }
+        end
+        neo4j_query(<<~END_OF_QUERY, {email: @session_user[:email]}).each do |row|
+            MATCH (u:User {email: $email})-[r:WANT_PROJECT_FROM]->(o:User)
+            RETURN o.email;
+        END_OF_QUERY
+            result[:pending_swap_request] = row['o.email']
+        end
+        respond(result)
+    end
+
+    post "/api/set_want_swap" do
+        require_user!
+        assert(user_was_eligible_for_projektwahl?)
+        data = parse_request_data(:required_keys => [:want_swap])
+        want_swap = data[:want_swap] == "true"
+        if want_swap
+            neo4j_query_expect_one(<<~END_OF_QUERY, { :email => @session_user[:email] })
+                MATCH (u:User {email: $email})-[r:ASSIGNED_TO]->(p:Projekttage)
+                SET r.want_swap = true
+                RETURN p.nr;
+            END_OF_QUERY
+        else
+            neo4j_query_expect_one(<<~END_OF_QUERY, { :email => @session_user[:email] })
+                MATCH (u:User {email: $email})-[r:ASSIGNED_TO]->(p:Projekttage)
+                REMOVE r.want_swap
+                RETURN p.nr;
+            END_OF_QUERY
+            neo4j_query(<<~END_OF_QUERY, {:email => @session_user[:email]})
+                MATCH (u:User {email: $email})-[r:WANT_PROJECT_FROM]->(o:User)
+                DELETE r;
+            END_OF_QUERY
+        end
+    end
+
+    post "/api/set_want_swap_partner" do
+        require_user!
+        assert(user_was_eligible_for_projektwahl?)
+        data = parse_request_data(:required_keys => [:other])
+        other_email = data[:other]
+        assert(@@user_info.include?(other_email))
+        response = {}
+        transaction do
+            # purge pending want requests
+            neo4j_query(<<~END_OF_QUERY, {:email => @session_user[:email]})
+                MATCH (u:User {email: $email})-[r:WANT_PROJECT_FROM]->(o:User)
+                DELETE r;
+            END_OF_QUERY
+            purge_inconsitent_swap_requests()
+            own_nr = neo4j_query_expect_one(<<~END_OF_QUERY, {:email => @session_user[:email]})['p.nr']
+                MATCH (u:User {email: $email})-[r:ASSIGNED_TO]->(p:Projekttage)
+                RETURN p.nr;
+            END_OF_QUERY
+            other_nr = neo4j_query_expect_one(<<~END_OF_QUERY, {:email => other_email})['p.nr']
+                MATCH (u:User {email: $email})-[r:ASSIGNED_TO]->(p:Projekttage)
+                RETURN p.nr;
+            END_OF_QUERY
+            neo4j_query_expect_one(<<~END_OF_QUERY, {:email => @session_user[:email], :other_email => other_email, :own_nr => own_nr, :other_nr => other_nr})
+                MATCH (u:User {email: $email}), (o:User {email: $other_email})
+                CREATE (u)-[r:WANT_PROJECT_FROM]->(o)
+                SET r.have = $own_nr
+                SET r.want = $other_nr
+                RETURN r;
+            END_OF_QUERY
+            # now check if there's a closed WANT_PROJECT_FROM loop from the session user - if yes, perform the swap
+            path = []
+            p = @session_user[:email]
+            path << [p, own_nr]
+            loop do
+                p = nil
+                nr = nil
+                neo4j_query(<<~END_OF_QUERY, {:email => path.last.first}).each do |row|
+                    MATCH (u:User {email: $email})-[r:WANT_PROJECT_FROM]->(o:User)-[:ASSIGNED_TO]->(p:Projekttage)
+                    RETURN o.email, p.nr;
+                END_OF_QUERY
+                    p = row['o.email']
+                    nr = row['p.nr']
+                end
+                break if p.nil?
+                if p == @session_user[:email]
+                    # OMG we found a loop :-D
+                    STDERR.puts "Found a loop, performing swap:"
+                    STDERR.puts path.to_yaml
+                    path.each do |p|
+                        email = p[0]
+                        nr = p[1]
+                        neo4j_query(<<~END_OF_QUERY, {:email => email})
+                            MATCH (u:User {email: $email})-[r:ASSIGNED_TO]->(p:Projekttage)
+                            DELETE r;
+                        END_OF_QUERY
+                        neo4j_query(<<~END_OF_QUERY, {:email => email})
+                            MATCH (u:User {email: $email})-[r:WANT_PROJECT_FROM]->(o:User)
+                            DELETE r;
+                        END_OF_QUERY
+                    end
+                    path.each.with_index do |p, i|
+                        email = p[0]
+                        nr = path[(i + 1) % path.size][1]
+                        neo4j_query(<<~END_OF_QUERY, {:email => email, :nr => nr})
+                            MATCH (u:User {email: $email}), (p:Projekttage {nr: $nr})
+                            CREATE (u)-[:ASSIGNED_TO]->(p);
+                        END_OF_QUERY
+                    end
+                    Main.update_assign_result_errors()
+                    Main.update_mailing_lists()
+                    response[:swapped] = true
+                    break
+                end
+                path << [p, nr]
+            end
+        end
+        respond(response)
+    end
 end
 

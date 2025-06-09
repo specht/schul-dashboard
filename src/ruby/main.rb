@@ -1498,59 +1498,59 @@ class Main < Sinatra::Base
             end
         end
 
-        # projekte = {}
-        # $neo4j.neo4j_query(<<~END_OF_QUERY).each do |row|
-        #     MATCH (u:User)-[:ASSIGNED_TO]->(p:Projekt)
-        #     RETURN u.email, p.nr, p.title;
-        # END_OF_QUERY
-        #     nr = row['p.nr']
-        #     projekte[nr] ||= {
-        #         :title => row['p.title'],
-        #         :participants => [],
-        #         :organized_by => [],
-        #     }
-        #     projekte[nr][:participants] << row['u.email']
-        # end
-        # $neo4j.neo4j_query(<<~END_OF_QUERY).each do |row|
-        #     MATCH (p:Projekt)-[:ORGANIZED_BY]->(u:User)
-        #     RETURN u.email, p.nr;
-        # END_OF_QUERY
-        #     nr = row['p.nr']
-        #     next unless projekte[nr]
-        #     projekte[nr][:organized_by] << row['u.email']
-        # end
-        # projekte.each_pair do |nr, info|
-        #     ['', 'eltern.'].each do |prefix|
-        #         email = "#{prefix}projekt-#{nr}@#{MAILING_LIST_DOMAIN}"
-        #         @@mailing_lists[email] = {
-        #             :label => "Alle Teilnehmer:innen im Projekt »#{info[:title]}#{prefix == '' ? '' : ' (Eltern)'}«",
-        #             :recipients => info[:participants].map { |x|  prefix + x },
-        #             :extra_allowed_users => info[:organized_by],
-        #         }
-        #     end
-        # end
-        # if File.exist?('/internal/projekttage/votes/assign-result.json')
-        #     assign_results = JSON.parse(File.read('/internal/projekttage/votes/assign-result.json'))
-        #     users_for_error = {}
-        #     assign_results['error_for_email'].each_pair do |email, error|
-        #         users_for_error[error] ||= []
-        #         users_for_error[error] << email
-        #     end
-        #     users_for_error.each_pair do |error, emails|
-        #         emails_sorted = emails.sort do |a, b|
-        #             (@@user_info[a][:last_name] == @@user_info[b][:last_name]) ?
-        #             (@@user_info[a][:first_name] <=> @@user_info[b][:first_name]) :
-        #             (@@user_info[a][:last_name] <=> @@user_info[b][:last_name])
-        #         end
-        #         ['', 'eltern.'].each do |prefix|
-        #             email = "#{prefix}projekt-abweichung-#{error}@#{MAILING_LIST_DOMAIN}"
-        #             @@mailing_lists[email] = {
-        #                 :label => "Alle Projektteilnehmer:innen mit Abweichung #{error}#{prefix == '' ? '' : ' (Eltern)'}",
-        #                 :recipients => emails_sorted.map { |x|  prefix + x },
-        #             }
-        #         end
-        #     end
-        # end
+        projekte = {}
+        $neo4j.neo4j_query(<<~END_OF_QUERY).each do |row|
+            MATCH (u:User)-[:ASSIGNED_TO]->(p:Projekttage)
+            RETURN u.email, p.nr, p.name;
+        END_OF_QUERY
+            nr = row['p.nr']
+            projekte[nr] ||= {
+                :title => row['p.name'],
+                :participants => [],
+                :organized_by => [],
+            }
+            projekte[nr][:participants] << row['u.email']
+        end
+        $neo4j.neo4j_query(<<~END_OF_QUERY).each do |row|
+            MATCH (p:Projekttage)-[:BELONGS_TO]->(u:User)
+            RETURN u.email, p.nr;
+        END_OF_QUERY
+            nr = row['p.nr']
+            next unless projekte[nr]
+            projekte[nr][:organized_by] << row['u.email']
+        end
+        projekte.each_pair do |nr, info|
+            ['', 'eltern.'].each do |prefix|
+                email = "#{prefix}projekt-#{nr}@#{MAILING_LIST_DOMAIN}"
+                @@mailing_lists[email] = {
+                    :label => "Alle Teilnehmer:innen im Projekt »#{info[:title]}#{prefix == '' ? '' : ' (Eltern)'}«",
+                    :recipients => info[:participants].map { |x|  prefix + x },
+                    :extra_allowed_users => info[:organized_by],
+                }
+            end
+        end
+        if File.exist?('/internal/projekttage/votes/assign-result.json')
+            assign_results = JSON.parse(File.read('/internal/projekttage/votes/assign-result.json'))
+            users_for_error = {}
+            assign_results['error_for_email'].each_pair do |email, error|
+                users_for_error[error] ||= []
+                users_for_error[error] << email
+            end
+            users_for_error.each_pair do |error, emails|
+                emails_sorted = emails.sort do |a, b|
+                    (@@user_info[a][:last_name] == @@user_info[b][:last_name]) ?
+                    (@@user_info[a][:first_name] <=> @@user_info[b][:first_name]) :
+                    (@@user_info[a][:last_name] <=> @@user_info[b][:last_name])
+                end
+                ['', 'eltern.'].each do |prefix|
+                    email = "#{prefix}projekt-abweichung-#{error}@#{MAILING_LIST_DOMAIN}"
+                    @@mailing_lists[email] = {
+                        :label => "Alle Projektteilnehmer:innen mit Abweichung #{error}#{prefix == '' ? '' : ' (Eltern)'}",
+                        :recipients => emails_sorted.map { |x|  prefix + x },
+                    }
+                end
+            end
+        end
 
         if DASHBOARD_SERVICE == 'ruby'
             File.open('/internal/mailing_lists.yaml.tmp', 'w') do |f|

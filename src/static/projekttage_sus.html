@@ -31,7 +31,9 @@
             <div class="alert mono-alert" style="#{(user_was_eligible_for_projektwahl?) ? '' : 'display: none;'}">
                 <h3>Die Wahl der Projekte ist beendet</h3>
                 <p id="text_assign_summary"></p>
-                #{print_free_projekt_spots}
+                <div id="div_free_projekt_spots" style="display: none;">
+                    #{print_free_projekt_spots}
+                </div>
                 <p id="text_vote_summary_phase_4"></p>
             </div>
         </div>
@@ -44,7 +46,7 @@
         #{print_projekttage_vote_summary()}
         <h3 style='margin-bottom: 20px;'>Projektkatalog</h3>
     </div>
-    <div class='row projekte-here' style="#{(projekttage_phase() == 4 && user_was_eligible_for_projektwahl?) ? 'display: none;' : ''}">
+    <div class='row projekte-here' style="#{(projekttage_phase() >= 4 && user_was_eligible_for_projektwahl?) ? 'display: none;' : ''}">
         <div id="text_vote_summary_phase_4_overview" class="col-md-12" style="#{teacher_logged_in? ? '' : 'display: none;'}">
             #{#print_projekttage_assignment_summary()}
         </div>
@@ -128,6 +130,12 @@
         background-color: #222;
         color: #fff;
     }
+    .direct-swap {
+        cursor: pointer;
+    }
+    .direct-swap:hover {
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.5), 0 0 10px rgba(0, 0, 0, 0.5) inset;
+    }
 </style>
 
 <script>
@@ -170,7 +178,7 @@ function update_vote_summary(id) {
             // $(id).append($(`<p>`).html(`<em>Du hast bisher ${items.length} Projekt${items.length === 1 ? '' : 'e'} gewählt. Die Prozentzahlen geben an, wie wahrscheinlich ungefähr es ist, dass du dieses Projekt bekommen wirst. <strong>Achtung:</strong> diese Zahlen werden sich ändern, je nachdem wie du und alle anderen wählen.</em>`));
             $(id).append($(`<p>`).html(`<em>Du hast bisher ${items.length} Projekt${items.length === 1 ? '' : 'e'} gewählt.</em>`));
         } else {
-            $(id).append($(`<p>`).html(`<em>Du hast im Wahlzeitraum ${items.length} Projekte gewählt. Falls du kein Projekt bekommen haben solltest, das du dir gewünscht hast, beachte bitte die vorher bereits veröffentlichten Wahrscheinlichkeiten.</em>`));
+            // $(id).append($(`<p>`).html(`<em>Du hast im Wahlzeitraum ${items.length} Projekte gewählt. Falls du kein Projekt bekommen haben solltest, das du dir gewünscht hast, beachte bitte die vorher bereits veröffentlichten Wahrscheinlichkeiten.</em>`));
         }
         console.log('A', items);
         for (let item of items) {
@@ -230,26 +238,6 @@ function update_vote_summary(id) {
     }
 }
 
-function generate_projekt_card(projekt) {
-    let photo = $(`<div class='polaroid' style='width: 200px; height: 240px; margin-left: 10px;'>`);
-    if (projekt.photo)
-        photo.css('background-image', `url(/api/get_sus_photo/${projekt.photo}-512.jpg)`);
-    let card = $(`<div class='card'>`);
-    card.append(photo);
-    card.append($(`<h4>`).text(projekt.name));
-    let div = $(`<div style='position: relative; top: -5px;'>`).appendTo(card);
-    for (let cat of (projekt.categories ?? '').split(','))
-        div.append($(`<span class='badge badge-success' style='margin-right: 5px;'>`).text(cat));
-    if (projekt.klassenstufe_min === projekt.klassenstufe_max) {
-        div.append($(`<span class='badge badge-warning' style='margin-right: 5px;'>`).text(`nur Klasse ${projekt.klassenstufe_min}`));
-    } else {
-        div.append($(`<span class='badge badge-warning' style='margin-right: 5px;'>`).text(`Klasse ${projekt.klassenstufe_min} – ${projekt.klassenstufe_max}`));
-    }
-    card.append($(`<p style='font-style: italic;'>`).text(`${projekt.organized_by.map(function(x) { return display_name_for_email[x]; }).join(', ')}`));
-    card.append($(`<p style='white-space: pre-line;'>`).text(projekt.werbetext ?? '(noch keine Beschreibung vorhanden)'));
-    return card;
-}
-
 document.addEventListener('DOMContentLoaded', function() {
     api_call('/api/get_projekte', {}, function(data) {
         if (data.success) {
@@ -283,16 +271,21 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
                 if ('#{user_was_eligible_for_projektwahl?}' === 'true') {
                     if (typeof(data.assigned_projekt) !== 'undefined') {
-                        if (data.assigned_projekt == projekt.nr) {
+                        $('#div_free_projekt_spots').show();
+                        if (data.assigned_projekt === projekt.nr) {
                             $('#text_assign_summary').append($('<p>').text("Du bist folgendem Projekt zugeordnet:"));
                             let card = generate_projekt_card(projekt);
                             $('#text_assign_summary').append(card);
-                            $('#text_assign_summary').append($('<p>').text(data.verdict));
+                            if (data.assigned_projekt_error === 2) {
+                                $('#text_assign_summary').append($('<p>').text("Du hast ein Projekt zugeteilt bekommen, für das du nur wenig Interesse gezeigt hast. Dein Wunsch wird dafür im nächsten Jahr bevorzugt behandelt."));
+                            } else if (data.assigned_projekt_error === 3) {
+                                $('#text_assign_summary').append($('<p>').text("Du hast ein Projekt zugeteilt bekommen, für das du dich gar nicht angemeldet hast. Das kann leider manchmal passieren, da wir aufgrund von begrenzten Kapazitäten nicht immer jeden Wunsch erfüllen können. Dein Wunsch wird dafür im nächsten Jahr besonders bevorzugt behandelt."));
+                            }
                         }
                     } else {
                         $('#text_assign_summary').append($('<p>').text('In Kürze wirst du hier erfahren, welchem Projekt du zugeordnet wurdest.'));
+                        break;
                     }
-                    // return;
                 }
                 if ('#{user_eligible_for_projektwahl?}' === 'true') {
                     $(`<hr class='dashed'>`).appendTo(card);
@@ -347,7 +340,39 @@ document.addEventListener('DOMContentLoaded', function() {
                 update_vote_summary('#text_vote_summary');
             }
             if ('#{user_was_eligible_for_projektwahl?}' === 'true') {
-                update_vote_summary('#text_vote_summary_phase_4');
+                let direct_swap_candidates = [];
+                for (let div of document.querySelectorAll('.direct-project-swap-candidate')) {
+                    let nr = div.dataset.nr;
+                    if (projekte[nr].klassenstufe_min > this_klasse || projekte[nr].klassenstufe_max < this_klasse) continue;
+                    if (nr === data.assigned_projekt) continue;
+                    direct_swap_candidates.push(nr);
+                }
+                $('.direct-project-swap-div').empty();
+                if (direct_swap_candidates.length === 0) {
+                    $('.direct-project-swap-div').append($('<p>').text('Leider gibt es momentan keine freien Plätze für einen direkten Projektwechsel.'));
+                } else {
+                    $('.direct-project-swap-div').append($('<p>').text('In den folgenden Projekten sind noch Plätze frei:'));
+                    for (let nr of direct_swap_candidates) {
+                        let projekt = projekte[nr];
+                        let polaroid = $(`<div class="polaroid direct-swap" style="position: relative; display: inline-block; float: none; width: 150px; height: 188px; margin-right: 10px; transform: none;"></div>`).css('background-image', `url(/api/get_sus_photo/${projekt.photo}-512.jpg)`).appendTo($('.direct-project-swap-div'));
+                        polaroid.append($(`<div style='position: absolute; left: 0; right: 0; text-align: center; top: 135px; font-size: 80%; font-weight: bold; white-space: nowrap; overflow-x: clip; '>`).text(projekt.name));
+                        polaroid.on('click', function() {
+                            let card = generate_projekt_card(projekt);
+                            window.direct_swap_preview_box.empty();
+                            window.direct_swap_preview_box.append(card);
+                            let button = $(`<button class='btn btn-success'>`).html("<i class='fa fa-exchange'></i>&nbsp;&nbsp;In dieses Projekt wechseln").appendTo(card);
+                            button.on('click', function() {
+                                api_call('/api/swap_project_direct', {nr: projekt.nr}, function(data) {
+                                    if (data.success) {
+                                        window.location.reload();
+                                    }
+                                });
+                            });
+                        });
+                    }
+                    window.direct_swap_preview_box = $(`<div>`);
+                    $('.direct-project-swap-div').append(direct_swap_preview_box);
+                }
             }
         }
     });

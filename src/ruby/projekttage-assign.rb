@@ -72,23 +72,23 @@ class Script
             MATCH (p:Projekttage) RETURN p;
         END_OF_QUERY
             p = row['p']
-            next if (p[:capacity] || 0) == 0
+            next if (p[:teilnehmer_max] || 0) == 0
             projects[p[:nr]] = {
                 :nr => p[:nr],
-                :title => p[:title],
-                :capacity => p[:capacity],
-                :min_klasse => p[:min_klasse],
-                :max_klasse => p[:max_klasse],
+                :name => p[:name],
+                :teilnehmer_max => p[:teilnehmer_max],
+                :klassenstufe_min => p[:klassenstufe_min],
+                :klassenstufe_max => p[:klassenstufe_max],
                 :participants => [],
             }
         end
         total_capacity = 0
         projects.each do |nr, p|
-            total_capacity += p[:capacity]
+            total_capacity += p[:teilnehmer_max]
         end
         projects_for_klassenstufe = {}
         projects.each do |nr, p|
-            (p[:min_klasse]..p[:max_klasse]).each do |klassenstufe|
+            (p[:klassenstufe_min]..p[:klassenstufe_max]).each do |klassenstufe|
                 projects_for_klassenstufe[klassenstufe] ||= Set.new()
                 projects_for_klassenstufe[klassenstufe] << nr
             end

@@ -682,22 +682,22 @@ class Main < Sinatra::Base
 
     def self.update_projekttage_groups()
         @@projekttage_mailing_lists = {}
-        # $neo4j.neo4j_query(<<~END_OF_QUERY).map { |x| {:recipient => x['u.email'] } }.each do |row|
-        #     MATCH (u:User)
-        #     WHERE NOT (u)-[:VOTED_FOR]->(:Projekt)
-        #     RETURN u.email;
-        # END_OF_QUERY
-        #     email = row[:recipient]
-        #     next unless user_has_role(email, :schueler) && ((@@user_info[email][:klassenstufe] || 7) < 10)
-        #     ['', 'eltern.'].each do |who|
-        #         list_email = who + 'kein.projekt.gewaehlt' + '@' + MAILING_LIST_DOMAIN
-        #         @@projekttage_mailing_lists[list_email] ||= {
-        #             :label => 'Kein Projekt gewählt' + (who.empty? ? '' : ' (Eltern)'),
-        #             :recipients => [],
-        #         }
-        #         @@projekttage_mailing_lists[list_email][:recipients] << who + email
-        #     end
-        # end
+        $neo4j.neo4j_query(<<~END_OF_QUERY).map { |x| {:recipient => x['u.email'] } }.each do |row|
+            MATCH (u:User)
+            WHERE NOT (u)-[:VOTED_FOR]->(:Projekttage)
+            RETURN u.email;
+        END_OF_QUERY
+            email = row[:recipient]
+            next unless user_has_role(email, :schueler) && ((@@user_info[email][:klassenstufe] || 7) < 10)
+            ['', 'eltern.'].each do |who|
+                list_email = who + 'kein.projekt.gewaehlt' + '@' + MAILING_LIST_DOMAIN
+                @@projekttage_mailing_lists[list_email] ||= {
+                    :label => 'Kein Projekt gewählt' + (who.empty? ? '' : ' (Eltern)'),
+                    :recipients => [],
+                }
+                @@projekttage_mailing_lists[list_email][:recipients] << who + email
+            end
+        end
     end
 
     def self.update_lehrbuchverein_groups()

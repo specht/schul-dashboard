@@ -1189,4 +1189,93 @@ class Main < Sinatra::Base
         end
         respond_raw_with_mimetype(s, "text/plain")
     end
+
+    def inactive_sus_table()
+        assert(admin_logged_in?)
+        StringIO.open do |io|
+            io.puts "<div class='row'>"
+            io.puts "<div class='col-md-12'>"
+            io.puts "<div class='table-responsive' style='max-width: 100%; overflow-x: auto;'>"
+            io.puts "<table class='klassen_table table table-condensed table-striped narrow' style='width: unset; min-width: 100%;'>"
+            io.puts "<thead>"
+            io.puts "<tr>"
+            io.puts "<th></th>"
+            io.puts "<th>Name</th>"
+            io.puts "<th>Vorname</th>"
+            io.puts "<th>Klasse</th>"
+            io.puts "<th>Geburtsdatum</th>"
+            io.puts "<th>Bildungsgang</th>"
+            io.puts "<th>E-Mail-Adresse</th>"
+            io.puts "<th>Letzter Zugriff</th>"
+            io.puts "<th>Eltern-E-Mail-Adresse</th>"
+            io.puts "<th>Klassenleitung / Tutor:in</th>"
+            io.puts "</tr>"
+            io.puts "</thead>"
+            io.puts "<tbody>"
+            schueler_liste = []
+            KLASSEN_ORDER.each do |klasse|
+                schueler_liste += @@schueler_for_klasse[klasse]
+            end
+            last_access = {}
+            neo4j_query(<<~END_OF_QUERY).each do |x|
+                MATCH (u:User)
+                RETURN u.email, u.last_access;
+            END_OF_QUERY
+                last_access[x['u.email']] = x['u.last_access']
+            end
+
+            (schueler_liste || []).sort do |a, b|
+                ((KLASSEN_ORDER.index(@@user_info[a][:klasse]) == KLASSEN_ORDER.index(@@user_info[b][:klasse]))) ?
+                ((@@user_info[a][:last_name].unicode_normalize(:nfd) == @@user_info[b][:last_name].unicode_normalize(:nfd)) ?
+                (@@user_info[a][:first_name].unicode_normalize(:nfd) <=> @@user_info[b][:first_name].unicode_normalize(:nfd)) :
+                (@@user_info[a][:last_name].unicode_normalize(:nfd) <=> @@user_info[b][:last_name].unicode_normalize(:nfd))) :
+                (KLASSEN_ORDER.index(@@user_info[a][:klasse]) <=> KLASSEN_ORDER.index(@@user_info[b][:klasse]))
+            end.each.with_index do |email, _|
+                la_label = 'noch nie angemeldet'
+                today = Date.today.to_s
+                if last_access[email]
+                    days = (Date.today - Date.parse(last_access[email])).to_i
+                    if days < 35
+                        next
+                    else
+                        la_label = "vor #{days / 7} Wochen"
+                    end
+                end
+
+                record = @@user_info[email]
+                io.puts "<tr class='user_row' data-email='#{email}' data-display-name='#{record[:display_name]}' data-first-name='#{record[:first_name]}' data-pronoun='#{record[:geschlecht] == 'm' ? 'er' : 'sie'}'>"
+                io.puts "<td>#{user_icon(email, 'avatar-md')}</td>"
+                io.puts "<td>#{record[:last_name]}</td>"
+                io.puts "<td>#{record[:first_name]}</td>"
+                io.puts "<td>#{tr_klasse(record[:klasse])}</td>"
+                if record[:geburtstag]
+                    io.puts "<td>#{Date.parse(record[:geburtstag]).strftime('%d.%m.%Y')}</td>"
+                else
+                    io.puts "<td>&ndash;</td>"
+                end
+                io.puts "<td>#{tr_bildungsgang(record[:bildungsgang])}</td>"
+                io.puts "<td>"
+                print_email_field(io, record[:email])
+                io.puts "</td>"
+                io.puts "<td>#{la_label}</td>"
+                io.puts "<td>"
+                print_email_field(io, "eltern.#{record[:email]}")
+                io.puts "</td>"
+                tutor = '&ndash;'
+                if record[:tutor]
+                    tutor = @@user_info[record[:tutor]][:display_name]
+                else
+                    tutor = @@klassenleiter[record[:klasse]].map { |x| @@user_info[@@shorthands[x]][:display_name] }.join(', ')
+                end
+                io.puts "<td>#{tutor}</td>"
+                io.puts "</tr>"
+            end
+            io.puts "</tbody>"
+            io.puts "</table>"
+            io.puts "</div>"
+            io.puts "</div>"
+            io.puts "</div>"
+            io.string
+        end
+    end
 end

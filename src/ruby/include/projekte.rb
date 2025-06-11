@@ -1135,6 +1135,7 @@ class Main < Sinatra::Base
         assert(user_eligible_for_projektwahl?)
         data = parse_request_data(:required_keys => [:nr, :vote], :types => {:vote => Integer})
         ts = Time.now.to_i
+        data[:vote] = [data[:vote], 6].min
         if data[:vote] == 0
             neo4j_query(<<~END_OF_QUERY, {:nr => data[:nr], :email => @session_user[:email]})
                 MATCH (u:User {email: $email})-[v:VOTED_FOR]->(p:Projekttage {nr: $nr})

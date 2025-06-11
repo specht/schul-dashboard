@@ -1902,7 +1902,7 @@ class Main
             #     f.write verdict_for_email.to_json
             # end
             Main.update_assign_result_errors()
-            Main.update_mailing_lists();
+            # Main.update_mailing_lists()
         end
     end
 

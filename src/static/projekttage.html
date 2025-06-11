@@ -69,7 +69,7 @@
                 #{print_projekt_interesse_stats(user_email)}
             </div>
             <div style='#{projekttage_phase() >= 4 ? '' : 'display: none;'}'>
-                #{print_projekt_assigned_sus()}
+                #{print_projekt_assigned_sus(user_email)}
             </div>
             <p>
                 Diese Karteikarte fasst die Informationen zu deinen Projekttagen zusammen.

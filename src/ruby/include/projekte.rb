@@ -1400,9 +1400,9 @@ class Main < Sinatra::Base
         end
     end
 
-    def print_projekt_assigned_sus
+    def print_projekt_assigned_sus(user_email)
         projekt = nil
-        neo4j_query(<<~END_OF_QUERY, {:email => @session_user[:email]}).each do |row|
+        neo4j_query(<<~END_OF_QUERY, {:email => user_email}).each do |row|
             MATCH (p:Projekttage)-[:BELONGS_TO]->(u:User {email: $email})
             RETURN p;
         END_OF_QUERY

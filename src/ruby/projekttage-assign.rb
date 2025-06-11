@@ -132,3 +132,6 @@ end
 
 script = Script.new
 script.run
+STDERR.puts '>' * 40
+STDERR.puts "Achtung: Bitte starte einmal den Ruby-Container neu, um die Mailinglisten zu aktualisieren."
+STDERR.puts '>' * 40

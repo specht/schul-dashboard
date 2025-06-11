@@ -540,7 +540,7 @@
         }
 
         function generate_projekt_card(projekt) {
-            let photo = $(`<div class='polaroid' style='width: 200px; height: 240px; margin-left: 10px;'>`);
+            let photo = $(`<div class='polaroid' data-projekt-nr="${projekt.nr}" style='width: 200px; height: 240px; margin-left: 10px;'>`);
             if (projekt.photo)
                 photo.css('background-image', `url(/api/get_sus_photo/${projekt.photo}-512.jpg)`);
             let card = $(`<div class='card'>`);

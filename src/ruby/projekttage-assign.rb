@@ -42,7 +42,7 @@ class Script
             RETURN u.email, r.vote, p.nr;
         END_OF_QUERY
             email = row['u.email']
-            vote = row['r.vote']
+            vote = [row['r.vote'], 6].min
             nr = row['p.nr']
             next unless users[email]
             users[email][:votes] << [nr, vote]

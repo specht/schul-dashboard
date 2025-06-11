@@ -49,7 +49,7 @@ class StatsBotRepl < Sinatra::Base
         END_OF_QUERY
             email = row['u.email']
             next unless users[email]
-            vote = row['r.vote']
+            vote = [row['r.vote'], 6].min
             nr = row['p.nr']
             latest_vote_ts = row['r.ts_updated'] if row['r.ts_updated'] > latest_vote_ts
             users[email][:votes] << [nr, vote]

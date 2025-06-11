@@ -1537,7 +1537,9 @@ class Main < Sinatra::Base
                 users_for_error[error] << email
             end
             users_for_error.each_pair do |error, emails|
-                emails_sorted = emails.sort do |a, b|
+                emails_sorted = emails.select do |email|
+                    @@user_info[email]
+                end.sort do |a, b|
                     (@@user_info[a][:last_name] == @@user_info[b][:last_name]) ?
                     (@@user_info[a][:first_name] <=> @@user_info[b][:first_name]) :
                     (@@user_info[a][:last_name] <=> @@user_info[b][:last_name])

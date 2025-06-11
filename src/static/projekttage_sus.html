@@ -1,5 +1,27 @@
 #{this_is_a_page_for_logged_in_users}
 <!-- PHASE: #{projekttage_phase()} -->
+
+<!--
+Aufgepasst liebe Hacker und Hackerinnen!
+
+Man kann bei den Projektwahlen etwas nachhelfen. Die Projektwahl funktioniert wie folgt:
+
+Jeder vergibt für jedes Projekt 1 bis 3 Punkte (mehr = höheres Interesse).
+Wer im letzten Jahr ein Projekt bekommen hat, das er oder sie überhaupt 
+nicht wollte, bekommt einen Boost um +2 Punkte. Diese Kinder stimmen
+also mit 3 bis 5 Punkten statt 0 bis 3. Wer ein Projekt bekommen hat, an dem er oder sie
+nur geringes Interesse hatte, bekommt +1 Punkt, stimmt also mit 2 bis 4 Punkten.
+
+Es gibt in diesem Code einen Funktionsaufruf api/vote_for_project, mit dem
+man für ein Projekt eine Stimme abgeben kann. Diese Funktion erwartet
+einen Parameter "nr" (die Projektnummer als String) und einen Parameter
+"vote" (normalerweise 0 bis 3). Es hindert euch aber niemand daran, mit einer
+anderen Punktezahl abzustimmen, wenn ihr die JavaScript-Konsole beherrscht.
+
+Wichtig: Ihr dürft diesen Trick nur für euch selber anwenden, nicht für andere!
+
+Die Projektnummer findet ihr im Attribut "data-projekt-nr" des entsprechenden Polaroid-Fotos.
+-->
 <div class='container'>
     <div class='row'>
         <div class='col-md-12'>

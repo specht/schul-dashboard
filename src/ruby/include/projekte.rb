@@ -431,6 +431,31 @@ class Main < Sinatra::Base
             a_nr.to_i == b_nr.to_i ? a_nr <=> b_nr : (a_nr.to_i == b_nr.to_i ? a_sus_index <=> b_sus_index : a_nr.to_i <=> b_nr.to_i)
         end
 
+        if teacher_logged_in? && projekttage_phase() >= 4
+            sus_for_project = {}
+            neo4j_query(<<~END_OF_QUERY).each do |row|
+                MATCH (u:User)-[ra:ASSIGNED_TO]->(p:Projekttage)
+                OPTIONAL MATCH (u)-[rv:VOTED_FOR]->(p)
+                RETURN u.email, ra, rv, p.nr;
+            END_OF_QUERY
+                email = row['u.email']
+                next unless @@user_info[email] && @@user_info[email][:klassenstufe] >= 5 && @@user_info[email][:klassenstufe] <= 9
+                nr = row['p.nr']
+                sus_for_project[nr] ||= {}
+                sus_for_project[nr][:count] ||= 0
+                sus_for_project[nr][:count] += 1
+                sus_for_project[nr][:motivation] ||= [0, 0, 0, 0]
+                vote = [((row['rv'] || {})[:vote] || 0), 3].min
+                sus_for_project[nr][:motivation][vote] += 1
+                sus_for_project[nr][:want_swap] ||= 0
+                sus_for_project[nr][:want_swap] += 1 if row['ra'][:want_swap]
+            end
+            rows.map! do |row|
+                row[:motivation] = sus_for_project[row[:projekttage][:nr]] || {}
+                row
+            end
+        end
+
         respond(:rows => rows)
     end
 
@@ -1455,7 +1480,7 @@ class Main < Sinatra::Base
                     OPTIONAL MATCH (u)-[r:ASSIGNED_TO]->(p)
                     RETURN COALESCE(v.vote, 0) AS vote, r.want_swap AS want_swap;
                 END_OF_QUERY
-                    this_project_vote = row['vote']
+                    this_project_vote = [row['vote'], 3].min
                     want_swap = true if row['want_swap']
                 end
                 motivation = "#{PROJEKT_VOTE_CODEPOINTS[this_project_vote].chr(Encoding::UTF_8)}"

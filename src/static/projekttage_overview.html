@@ -80,7 +80,8 @@ window.addEventListener('load', function() {
                                 cells.push(`<td>&ndash;</td>`);
                             }
                             let free_spots = (entry.projekttage.teilnehmer_max ?? 20) - m.count;
-                            cells.push(`<td data-sort_value='${padWithZeroes(free_spots, 10)}' style='text-align: center;'>${free_spots === 0 ? '&ndash;' : free_spots}</td>`);
+                            let swap_bit = (m.want_swap > 0) ? ` (+${m.want_swap})` : '';
+                            cells.push(`<td data-sort_value='${padWithZeroes(free_spots, 10)}' style='text-align: center;'>${free_spots === 0 ? '&ndash;' : free_spots}${swap_bit}</td>`);
                         } else {
                             cells.push(`<td>&ndash;</td>`);
                             cells.push(`<td style='text-align: center;'>&ndash;</td>`);

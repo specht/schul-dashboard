@@ -1444,14 +1444,30 @@ class Main < Sinatra::Base
             io.puts "<th></th>"
             io.puts "<th>Name</th>"
             io.puts "<th>Klasse</th>"
+            io.puts "<th>Motivation</th>"
             io.puts "<th style='width: 30em;'>E-Mail</th>"
             io.puts "</tr>"
             sus.each.with_index do |email, i|
+                this_project_vote = 0
+                want_swap = false
+                neo4j_query(<<~END_OF_QUERY, {:email => email, :nr => projekt[:nr]}).each do |row|
+                    MATCH (u:User {email: $email})-[v:VOTED_FOR]->(p:Projekttage {nr: $nr})
+                    OPTIONAL MATCH (u)-[r:ASSIGNED_TO]->(p)
+                    RETURN COALESCE(v.vote, 0) AS vote, r.want_swap AS want_swap;
+                END_OF_QUERY
+                    this_project_vote = row['vote']
+                    want_swap = true if row['want_swap']
+                end
+                motivation = "#{PROJEKT_VOTE_CODEPOINTS[this_project_vote].chr(Encoding::UTF_8)}"
+                if want_swap
+                    motivation += " (möchte wechseln)"
+                end
                 io.puts "<tr class='user_row'>"
                 io.puts "<td>#{i + 1}.</td>"
                 io.puts "<td><div class='icon nav_avatar'>#{user_icon(email, 'avatar-md')}</div></td>"
                 io.puts "<td>#{@@user_info[email][:display_name]}</td>"
                 io.puts "<td>#{tr_klasse(@@user_info[email][:klasse])}</td>"
+                io.puts "<td>#{motivation}</td>"
                 io.write "<td>"
                 print_email_field(io, email)
                 io.write "</td>"
@@ -1459,7 +1475,7 @@ class Main < Sinatra::Base
             end
             ['', 'eltern.'].each do |prefix|
                 io.puts "<tr class='user_row'>"
-                io.puts "<td colspan='4'><em>E-Mail-Verteiler: #{prefix == 'eltern.' ? 'Alle Eltern eurer Teilnehmer:innen' : 'Alle Teilnehmer:innen'}</em></td>"
+                io.puts "<td colspan='5'><em>E-Mail-Verteiler: #{prefix == 'eltern.' ? 'Alle Eltern eurer Teilnehmer:innen' : 'Alle Teilnehmer:innen'}</em></td>"
                 io.write "<td>"
                 print_email_field(io, "#{prefix}projekt-#{projekt[:nr]}@#{MAILING_LIST_DOMAIN}")
                 io.write "</td>"

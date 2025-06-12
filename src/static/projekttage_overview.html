@@ -68,17 +68,19 @@ window.addEventListener('load', function() {
                             }
                             if (max_count > 0) {
                                 let parts = [];
+                                let averageMotivation = (m.motivation[1] * 1 + m.motivation[2] * 2 + m.motivation[3] * 3) / m.count;
+                                averageMotivation = parseInt(`${averageMotivation * 1000000}`);
                                 for (let i = 0; i <= 3; i++) {
                                     let scale = m.motivation[i] / max_count;
                                     scale = Math.pow(scale, 0.5);
                                     parts.push(`<span style='display: inline-block; transform: scale(${scale.toFixed(2)});'>${PROJEKT_VOTE_CODEPOINTS[i]}</span>`);
                                 }
-                                cells.push(`<td>${parts.join('')}</td>`);
+                                cells.push(`<td data-sort_value='${padWithZeroes(averageMotivation, 10)}'>${parts.join('')}</td>`);
                             } else {
                                 cells.push(`<td>&ndash;</td>`);
                             }
                             let free_spots = (entry.projekttage.teilnehmer_max ?? 20) - m.count;
-                            cells.push(`<td style='text-align: center;'>${free_spots === 0 ? '&ndash;' : free_spots}</td>`);
+                            cells.push(`<td data-sort_value='${padWithZeroes(free_spots, 10)}' style='text-align: center;'>${free_spots === 0 ? '&ndash;' : free_spots}</td>`);
                         } else {
                             cells.push(`<td>&ndash;</td>`);
                             cells.push(`<td style='text-align: center;'>&ndash;</td>`);

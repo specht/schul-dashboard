@@ -681,3 +681,10 @@ function red_green_ramp(x) {
     else
         return lerpColor('#fdb717', '#4aa03f', (x - 0.5) / 0.5);
 }
+
+function padWithZeroes(num, length) {
+    let s = '' + num;
+    while (s.length < length)
+        s = '0' + s;
+    return s;
+}

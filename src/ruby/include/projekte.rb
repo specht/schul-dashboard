@@ -448,7 +448,10 @@ class Main < Sinatra::Base
                 vote = [((row['rv'] || {})[:vote] || 0), 3].min
                 sus_for_project[nr][:motivation][vote] += 1
                 sus_for_project[nr][:want_swap] ||= 0
-                sus_for_project[nr][:want_swap] += 1 if row['ra'][:want_swap]
+                if row['ra'][:want_swap] == true
+                    STDERR.puts "User #{email} wants to swap project #{nr}"
+                    sus_for_project[nr][:want_swap] += 1
+                end
             end
             rows.map! do |row|
                 row[:motivation] = sus_for_project[row[:projekttage][:nr]] || {}
@@ -1477,10 +1480,14 @@ class Main < Sinatra::Base
                 want_swap = false
                 neo4j_query(<<~END_OF_QUERY, {:email => email, :nr => projekt[:nr]}).each do |row|
                     MATCH (u:User {email: $email})-[v:VOTED_FOR]->(p:Projekttage {nr: $nr})
-                    OPTIONAL MATCH (u)-[r:ASSIGNED_TO]->(p)
-                    RETURN COALESCE(v.vote, 0) AS vote, r.want_swap AS want_swap;
+                    RETURN COALESCE(v.vote, 0) AS vote;
                 END_OF_QUERY
                     this_project_vote = [row['vote'], 3].min
+                end
+                neo4j_query(<<~END_OF_QUERY, {:email => email, :nr => projekt[:nr]}).each do |row|
+                    MATCH (u:User {email: $email})-[r:ASSIGNED_TO]->(p:Projekttage {nr: $nr})
+                    RETURN r.want_swap AS want_swap;
+                END_OF_QUERY
                     want_swap = true if row['want_swap']
                 end
                 motivation = "#{PROJEKT_VOTE_CODEPOINTS[this_project_vote].chr(Encoding::UTF_8)}"

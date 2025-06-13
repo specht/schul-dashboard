@@ -1598,7 +1598,8 @@ class Main < Sinatra::Base
             END_OF_QUERY
             neo4j_query_expect_one(<<~END_OF_QUERY, {:email => @session_user[:email], :nr => data[:nr]})
                 MATCH (u:User {email: $email}), (p:Projekttage {nr: $nr})
-                CREATE (u)-[:ASSIGNED_TO]->(p)
+                CREATE (u)-[r:ASSIGNED_TO]->(p)
+                SET r.swapped = true
                 RETURN p.nr;
             END_OF_QUERY
         end
@@ -1800,7 +1801,8 @@ class Main < Sinatra::Base
                         nr = path[(i + 1) % path.size][1]
                         neo4j_query(<<~END_OF_QUERY, {:email => email, :nr => nr})
                             MATCH (u:User {email: $email}), (p:Projekttage {nr: $nr})
-                            CREATE (u)-[:ASSIGNED_TO]->(p);
+                            CREATE (u)-[r:ASSIGNED_TO]->(p);
+                            SET r.swapped = true;
                         END_OF_QUERY
                     end
                     Main.update_assign_result_errors()

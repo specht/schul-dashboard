@@ -44,15 +44,17 @@ window.addEventListener('load', function() {
                             `<td>${index + 1}.</td>`,
                             `<td>${entry.last_name}</td>`,
                             `<td>${entry.first_name}</td>`,
-                            `<td>${PROJEKT_VOTE_CODEPOINTS[entry.vote ?? 0]}${entry.want_swap ? ' (möchte wechseln)' : ''}</td>`,
-                            `<td>${entry.name}</td>`,
-                            `<td>${entry.raum}</td>`,
+                            `<td>${PROJEKT_VOTE_CODEPOINTS[entry.vote ?? 0]}${entry.swapped ? " <i class='fa fa-plus text-success'>" : ''}${entry.want_swap ? " <i class='fa fa-minus text-danger'>" : ''}</td>`,
+                            `<td>${entry.name ?? '&dash;'}</td>`,
+                            `<td>${entry.raum ?? '&dash;'}</td>`,
                         ];
                         return cells;
                     }),
                     sortable: true,
                     clickable_rows: false,
-                });                
+                });           
+                $('#table_here').append(`<p style='margin-top: 1em;'>Die Symbole geben an, ob und wie die Person ursprünglich für dein Projekt gestimmt hat und ob gewechselt wurde bzw. ein Wechselwunsch besteht.</p>`);
+                $('#table_here').append(`<table class="table table-sm" style="margin-bottom: 1em; width: unset;"><tbody><tr><td>🫥</td><td>»Ich habe kein Interesse an diesem Projekt.«</td></tr><tr><td>🤔</td><td>»Ich könnte mir vorstellen, an diesem Projekt teilzunehmen.«</td></tr><tr><td>😍</td><td>»Ich würde mich freuen, an diesem Projekt teilzunehmen.«</td></tr><tr><td>🔥</td><td>»Ich würde wirklich sehr gern an diesem Projekt teilnehmen.«</td></tr><tr><td style="text-align: center;"><i class="fa fa-plus text-success"></i></td><td>Teilnehmer:in ist nach der Auslosung ins Projekt gewechselt</td></tr><tr><td style="text-align: center;"><i class="fa fa-minus text-danger"></i></td><td>Teilnehmer:in ist auf der Suche nach einem anderen Projekt</td></tr></tbody></table>`);
             }
             $('#table_here').append($(`<h3>`).text(`Übersicht der Projekte`));
             let headers = ['Nr.', 'Anbieter', 'Name', 'Teilnehmer', 'Klassen', 'Lehrkraft'];

@@ -470,7 +470,7 @@ class Main < Sinatra::Base
                     end
                 end
             end
-            if my_klasse
+            if my_klasse && my_klasse.to_i != 10
                 klassen_info = {}
                 klassen_info[:klasse] = my_klasse
                 klassen_info[:klasse_tr] = tr_klasse(my_klasse)
@@ -1551,10 +1551,10 @@ class Main < Sinatra::Base
                 end
                 motivation = "#{PROJEKT_VOTE_CODEPOINTS[this_project_vote].chr(Encoding::UTF_8)}"
                 if swapped
-                    motivation = "<i class='fa fa-exchange text-success'></i> (reingewechselt)"
+                    motivation += " <i class='fa fa-plus text-success'></i> "
                 end
                 if want_swap
-                    motivation += " (möchte wechseln)"
+                    motivation += " <i class='fa fa-minus text-danger'></i> "
                 end
                 io.puts "<tr class='user_row'>"
                 io.puts "<td>#{i + 1}.</td>"
@@ -1577,6 +1577,14 @@ class Main < Sinatra::Base
             end
             io.puts "</table>"
             io.puts "</div>"
+            io.puts "<p>Die Symbole geben an, ob und wie die Person ursprünglich für dein Projekt gestimmt hat und ob gewechselt wurde bzw. ein Wechselwunsch besteht.</p>"
+            io.puts "<table class='table table-sm' style='margin-bottom: 1em; width: unset;'>"
+            (0..3).each do |vote|
+                io.puts "<tr><td>#{PROJEKT_VOTE_CODEPOINTS[vote].chr(Encoding::UTF_8)}</td><td>»#{PROJEKT_VOTE_LABELS[vote]}«</td></tr>"
+            end
+            io.puts "<tr><td style='text-align: center;'><i class='fa fa-plus text-success'></i></td><td>Teilnehmer:in ist nach der Auslosung ins Projekt gewechselt</td></tr>"
+            io.puts "<tr><td style='text-align: center;'><i class='fa fa-minus text-danger'></i></td><td>Teilnehmer:in ist auf der Suche nach einem anderen Projekt</td></tr>"
+            io.puts "</table>"
 
             io.string
         end

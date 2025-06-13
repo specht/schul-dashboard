@@ -451,8 +451,11 @@ class Main < Sinatra::Base
                 sus_for_project[nr][:motivation][vote] += 1
                 sus_for_project[nr][:want_swap] ||= 0
                 if row['ra'][:want_swap] == true
-                    STDERR.puts "User #{email} wants to swap project #{nr}"
                     sus_for_project[nr][:want_swap] += 1
+                end
+                sus_for_project[nr][:swapped] ||= 0
+                if row['ra'][:swapped] == true
+                    sus_for_project[nr][:swapped] += 1
                 end
             end
             rows.map! do |row|
@@ -477,17 +480,19 @@ class Main < Sinatra::Base
                     WHERE u.email IN $emails
                     WITH u, ra, p
                     OPTIONAL MATCH (u)-[rv:VOTED_FOR]->(p)
-                    RETURN u.email, p.nr, p.name, p.raum, ra.want_swap, rv.vote;
+                    RETURN u.email, p.nr, p.name, p.raum, ra.want_swap, ra.swapped, rv.vote;
                 END_OF_QUERY
                     email = row['u.email']
                     nr = row['p.nr']
                     want_swap = row['ra.want_swap']
+                    swapped = row['ra.swapped']
                     vote = row['rv.vote']
                     name = row['p.name']
                     raum = row['p.raum']
                     sus_info[email] = {
                         :nr => nr,
                         :want_swap => want_swap,
+                        :swapped => swapped,
                         :vote => vote,
                         :name => name,
                         :raum => raum,
@@ -500,6 +505,7 @@ class Main < Sinatra::Base
                         :nr => (sus_info[email] || {})[:nr],
                         :vote => (sus_info[email] || {})[:vote],
                         :want_swap => (sus_info[email] || {})[:want_swap],
+                        :swapped => (sus_info[email] || {})[:swapped],
                         :display_name => @@user_info[email][:display_name],
                         :first_name => @@user_info[email][:first_name],
                         :last_name => @@user_info[email][:last_name],
@@ -1529,6 +1535,7 @@ class Main < Sinatra::Base
             sus.each.with_index do |email, i|
                 this_project_vote = 0
                 want_swap = false
+                swapped = false
                 neo4j_query(<<~END_OF_QUERY, {:email => email, :nr => projekt[:nr]}).each do |row|
                     MATCH (u:User {email: $email})-[v:VOTED_FOR]->(p:Projekttage {nr: $nr})
                     RETURN COALESCE(v.vote, 0) AS vote;
@@ -1537,11 +1544,15 @@ class Main < Sinatra::Base
                 end
                 neo4j_query(<<~END_OF_QUERY, {:email => email, :nr => projekt[:nr]}).each do |row|
                     MATCH (u:User {email: $email})-[r:ASSIGNED_TO]->(p:Projekttage {nr: $nr})
-                    RETURN r.want_swap AS want_swap;
+                    RETURN r.want_swap AS want_swap, r.swapped AS swapped;
                 END_OF_QUERY
                     want_swap = true if row['want_swap']
+                    swapped = true if row['swapped']
                 end
                 motivation = "#{PROJEKT_VOTE_CODEPOINTS[this_project_vote].chr(Encoding::UTF_8)}"
+                if swapped
+                    motivation = "<i class='fa fa-exchange text-success'></i> (reingewechselt)"
+                end
                 if want_swap
                     motivation += " (möchte wechseln)"
                 end

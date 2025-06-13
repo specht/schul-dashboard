@@ -1800,7 +1800,8 @@ class Main < Sinatra::Base
                         email = p[0]
                         nr = path[(i + 1) % path.size][1]
                         neo4j_query(<<~END_OF_QUERY, {:email => email, :nr => nr})
-                            MATCH (u:User {email: $email}), (p:Projekttage {nr: $nr})
+                            MATCH (u:User {email: $email})
+                            MATCH (p:Projekttage {nr: $nr})
                             CREATE (u)-[r:ASSIGNED_TO]->(p);
                             SET r.swapped = true;
                         END_OF_QUERY

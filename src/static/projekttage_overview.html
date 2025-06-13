@@ -3,7 +3,6 @@
     <div class='row'>
         <div class='col-md-12'>
             <a style='#{projekttage_phase() < 2 ? 'display: none;' : ''}' class="btn btn-success pull-right ml-2 mb-1" href="/projekttage_sus">Katalog</a>
-            <h2 style='margin-bottom: 30px;'>Projekttage</h2>
             <div id="table_here"></div>
         </div>
     </div>
@@ -28,6 +27,34 @@ let PROJEKT_VOTE_CODEPOINTS = #{PROJEKT_VOTE_CODEPOINTS.map { |x| x.chr(Encoding
 window.addEventListener('load', function() {
     api_call('/api/projekttage_overview', {}, function(data) {
         if (data.success) {
+            console.log(data);
+            if (data.klassen_info) {
+                $('#table_here').append($(`<h3>`).text(`Projekttage der Klasse ${data.klassen_info.klasse_tr}`));
+                let headers = ['Nr.', 'Nachname', 'Vorname', 'Motivation', 'Projekt', 'Raum'];
+                let table = new SortableTable({
+                    element: $('#table_here'),
+                    xs: true,
+                    headers: headers.map(function (x) {
+                        let th = $('<th>').html(x);
+                        return th;
+                    }),
+                    rows: data.klassen_info.sus.map(function (entry, index) {
+                        let cells = [
+                            entry.email,
+                            `<td>${index + 1}.</td>`,
+                            `<td>${entry.last_name}</td>`,
+                            `<td>${entry.first_name}</td>`,
+                            `<td>${PROJEKT_VOTE_CODEPOINTS[entry.vote ?? 0]}${entry.want_swap ? ' (möchte wechseln)' : ''}</td>`,
+                            `<td>${entry.name}</td>`,
+                            `<td>${entry.raum}</td>`,
+                        ];
+                        return cells;
+                    }),
+                    sortable: true,
+                    clickable_rows: false,
+                });                
+            }
+            $('#table_here').append($(`<h3>`).text(`Übersicht der Projekte`));
             let headers = ['Nr.', 'Anbieter', 'Name', 'Teilnehmer', 'Klassen', 'Lehrkraft'];
             let show_stats = ('#{projekttage_phase() >= 4}' === 'true') && ('#{teacher_logged_in?}' === 'true');
             if (show_stats) {

@@ -422,6 +422,8 @@ class Main < Sinatra::Base
     post '/api/projekttage_overview' do
         assert(teacher_logged_in? || email_is_projekttage_organizer?(@@user_info, @session_user[:email]))
 
+        klassen_info = nil
+
         rows = projekttage_overview_rows()
         rows.sort! do |a, b|
             a_nr = a[:projekttage][:nr] || ''
@@ -457,9 +459,58 @@ class Main < Sinatra::Base
                 row[:motivation] = sus_for_project[row[:projekttage][:nr]] || {}
                 row
             end
+            my_klasse = nil
+            @@klassenleiter.each_pair do |klasse, shorthands|
+                shorthands.each do |shorthand|
+                    if @session_user[:shorthand] == shorthand
+                        my_klasse = klasse
+                    end
+                end
+            end
+            if my_klasse
+                klassen_info = {}
+                klassen_info[:klasse] = my_klasse
+                klassen_info[:klasse_tr] = tr_klasse(my_klasse)
+                sus_info = {}
+                neo4j_query(<<~END_OF_QUERY, {:emails => @@schueler_for_klasse[my_klasse]}).each do |row|
+                    MATCH (u:User)-[ra:ASSIGNED_TO]->(p:Projekttage)
+                    WHERE u.email IN $emails
+                    WITH u, ra, p
+                    OPTIONAL MATCH (u)-[rv:VOTED_FOR]->(p)
+                    RETURN u.email, p.nr, p.name, p.raum, ra.want_swap, rv.vote;
+                END_OF_QUERY
+                    email = row['u.email']
+                    nr = row['p.nr']
+                    want_swap = row['ra.want_swap']
+                    vote = row['rv.vote']
+                    name = row['p.name']
+                    raum = row['p.raum']
+                    sus_info[email] = {
+                        :nr => nr,
+                        :want_swap => want_swap,
+                        :vote => vote,
+                        :name => name,
+                        :raum => raum,
+                    }
+                end
+                klassen_info[:sus] = []
+                @@schueler_for_klasse[my_klasse].each do |email|
+                    klassen_info[:sus] << {
+                        :email => email,
+                        :nr => (sus_info[email] || {})[:nr],
+                        :vote => (sus_info[email] || {})[:vote],
+                        :want_swap => (sus_info[email] || {})[:want_swap],
+                        :display_name => @@user_info[email][:display_name],
+                        :first_name => @@user_info[email][:first_name],
+                        :last_name => @@user_info[email][:last_name],
+                        :name => (sus_info[email] || {})[:name],
+                        :raum => (sus_info[email] || {})[:raum],
+                    }
+                end
+            end
         end
 
-        respond(:rows => rows)
+        respond(:rows => rows, :klassen_info => klassen_info)
     end
 
     post '/api/send_invitation_for_projekttage' do

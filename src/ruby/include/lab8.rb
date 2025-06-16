@@ -3,6 +3,7 @@ LAB8_KEYS = [
     :titel,
     :produkt,
     :orte,
+    :reflexion1,
 ]
 
 LAB8_KEY_LABELS = {
@@ -10,6 +11,7 @@ LAB8_KEY_LABELS = {
     :titel => 'Titel',
     :produkt => 'Produkt',
     :orte => 'Orte, an denen gearbeitet werden soll',
+    :reflexion1 => 'Protokoll und Reflexion des 1. Tages',
 }
 
 class Main < Sinatra::Base
@@ -19,6 +21,7 @@ class Main < Sinatra::Base
             :titel => p[:titel],
             :produkt => p[:produkt],
             :orte => p[:orte],
+            :reflexion1 => p[:reflexion1],
             :members => [],
         }
     end
@@ -159,6 +162,7 @@ class Main < Sinatra::Base
                 :titel,
                 :produkt,
                 :orte,
+                :reflexion1,
             ],
             :max_body_length => 16384,
             :max_string_length => 8192

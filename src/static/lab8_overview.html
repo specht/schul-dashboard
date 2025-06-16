@@ -27,7 +27,7 @@ window.addEventListener('load', function() {
             let table = new SortableTable({
                 element: $('#table_here'),
                 xs: true,
-                headers: ['Nr.', 'Mitglieder', 'Titel', 'Produkt', 'Orte'].map(function (x) {
+                headers: ['Nr.', 'Mitglieder', 'Titel', 'Produkt', 'Orte', 'Reflexion Tag 1'].map(function (x) {
                     let th = $('<th>').html(x);
                     return th;
                 }),
@@ -40,6 +40,7 @@ window.addEventListener('load', function() {
                         `<td style='max-width: 20em;'>${entry.projekt.titel ?? '&ndash;'}</td>`,
                         `<td style='max-width: 20em;'>${entry.projekt.produkt ?? '&ndash;'}</td>`,
                         `<td style='max-width: 20em;'>${entry.projekt.orte ?? '&ndash;'}</td>`,
+                        `<td style='max-width: 20em;'>${entry.projekt.reflexion1 ?? '&ndash;'}</td>`,
                     ];
                     return cells;
                 }),

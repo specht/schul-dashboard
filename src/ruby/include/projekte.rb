@@ -1119,7 +1119,7 @@ class Main < Sinatra::Base
 
             if projekttage_phase == 4
                 io.puts "<h4>Falls du unzufrieden mit deinem Projekt bist</h4>"
-                io.puts "<p>Wenn du lieber in ein anderes Projekt wechseln möchtest, hast du noch bis <strong>#{WEEKDAYS_LONG[Date.parse(PROJEKTWAHL_SWAP_PHASE_END).wday]}</strong>, den <strong>#{Date.parse(PROJEKTWAHL_SWAP_PHASE_END).strftime('%d')}. #{MONTHS[Date.parse(PROJEKTWAHL_SWAP_PHASE_END).strftime('%m').to_i]}</strong> um <strong>#{DateTime.parse(PROJEKTWAHL_SWAP_PHASE_END).strftime('%H:%M')} Uhr</strong> Zeit, um folgende Möglichkeiten zu probieren:"
+                io.puts "<p>Wenn du lieber in ein anderes Projekt wechseln möchtest, hast du noch bis <strong>#{WEEKDAYS_LONG[Date.parse(PROJEKTWAHL_SWAP_PHASE_END).wday]}</strong>, den <strong>#{Date.parse(PROJEKTWAHL_SWAP_PHASE_END).strftime('%d')}. #{MONTHS[Date.parse(PROJEKTWAHL_SWAP_PHASE_END).strftime('%m').to_i - 1]}</strong> um <strong>#{DateTime.parse(PROJEKTWAHL_SWAP_PHASE_END).strftime('%H:%M')} Uhr</strong> Zeit, um folgende Möglichkeiten zu probieren:"
                 io.puts "<h5>Möglichkeit 1: Freie Plätze in anderen Projekten</h5>"
                 io.puts "<p>Du kannst direkt in ein anderes Projekt wechseln, wenn dort noch ein Platz frei ist.</p>"
                 io.puts "<div class='direct-project-swap-div'>"

@@ -1,0 +1,53 @@
+#{this_is_a_page_for_logged_in_teachers}
+#{File.read('/static/_tresor_public_template.html')}
+
+<div class='container bg-white'>
+    <div class="w-full">
+        <h3>AT-Notizen aus dem Unterricht</h3>
+        <p>
+            Bitte wählen Sie eine Klasse, für die Sie die AT-Notizen einsehen möchten.
+        </p>
+        <div id="klassen_buttons_here"></div>
+        <hr />
+        <div id="noten_here"></div>
+    </div>
+</div>
+
+<script>
+var ZEUGNIS_SCHULJAHR = "#{ZEUGNIS_SCHULJAHR}";
+var ZEUGNIS_HALBJAHR = "#{ZEUGNIS_HALBJAHR}";
+var zeugnis_klassen_order = #{ZEUGNIS_KLASSEN_ORDER.to_json};
+var klassen_tr = #{KLASSEN_TR.to_json};
+var zeugnisliste_for_klasse = #{@@zeugnisliste_for_klasse.to_json};
+var my_zeugnisliste = #{@@zeugnisliste_for_lehrer[@session_user[:shorthand]].to_json};
+var my_klassen = #{(zeugnis_admin_logged_in? ? KLASSEN_ORDER : @@zeugnisliste_for_lehrer[@session_user[:shorthand]].keys.map{ |x| x.split('/').first }.uniq).to_json};
+// var my_lessons = #{@@lessons_for_shorthand[@session_user[:shorthand]].reject { |k| ((@@lessons[:lesson_keys][k] || {})[:klassen] || []).empty? }.to_json};
+var my_lessons = #{@@lessons_for_shorthand[@session_user[:shorthand]].reject { |k| ((@@lessons[:lesson_keys][k] || {})[:klassen] || []).select { |x| KLASSEN_ORDER.include?(x)}.empty? }.to_json};
+var clicked_klasse = null;
+
+function load_at_noten(e, klasse_or_lesson_key) {
+    console.log('Loading AT Noten for Klasse:', klasse_or_lesson_key);
+    api_call('/api/get_at_overview', {klasse_or_lesson_key: klasse_or_lesson_key}, function(data) {
+        console.log(data);
+        if (data.success) {
+            // show 5 values scaled to max
+            // also show at notes
+            // also show mails
+        }
+    });
+}
+
+window.addEventListener('load', function () {
+    for (let klasse_or_lesson_key of my_lessons) {
+        let button = $(`<button style='white-space: nowrap;' class='inline-block bg-slate-900 border border-blue-500 hover:bg-slate-200 rounded py-1 px-3 mr-1 mb-1'>${klasse_or_lesson_key}</button>`);
+        $('#klassen_buttons_here').append(button);
+        button.click(function(e) {
+            $('#klassen_buttons_here button').removeClass('bg-amber-300 hover:bg-amber-300').addClass('bg-slate-900 hover:bg-slate-200');
+            $(e.target).addClass('bg-amber-300 hover:bg-amber-300').removeClass('bg-slate-900 hover:bg-slate-200');
+            load_at_noten($('#noten_here'), klasse_or_lesson_key);
+        });
+        if (my_lessons.length === 1)
+            button.click();
+    }
+});
+</script>

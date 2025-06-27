@@ -789,5 +789,27 @@ class Main < Sinatra::Base
         respond(:yay => 'sure', :pdf_base64 => Base64.strict_encode64(get_sozialzeugnis_pdf(data[:klasse], cache)), :name => 'Zeugniskonferenzen.pdf')
     end
 
+    post '/api/get_at_overview' do
+        assert(teacher_logged_in?)
+        data = parse_request_data(:required_keys => [:klasse_or_lesson_key])
+        klasse_or_lesson_key = data[:klasse_or_lesson_key]
+        data = {}
+        neo4j_query(<<~END_OF_QUERY, {:first_school_day => @@config[:first_school_day], :lesson_key => klasse_or_lesson_key}).each do |row|
+            MATCH (us:User)<-[:FOR]-(at:AT)-[:REGARDING]->(l:Lesson {key: $lesson_key})
+            WHERE at.datum >= $first_school_day
+            RETURN l.key, us.email, at
+            ORDER BY at.datum;
+        END_OF_QUERY
+            lesson_key = row['l.key']
+            email = row['us.email']
+            datum = row['at'][:datum]
+            value = row['at'][:value]
+            key = row['at'][:key]
+            data[email] ||= []
+            data[email] << row['at']
+        end
+        respond(:data => data)
+    end
+
 end
 

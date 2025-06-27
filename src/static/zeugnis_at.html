@@ -70,13 +70,13 @@ function load_at_noten(e, klasse_or_lesson_key) {
                                 let key = entry.key;
                                 let tr = {'hausaufgaben': 'homework', 'unterschrift': 'signature'};
                                 key = tr[key] ?? key;
-                                item_count[key] ??= 0;
-                                item_count[key] += 1;
+                                item_count[key] ??= {};
+                                item_count[key][entry.datum] = true;
                             }
                         } else if (entry.type === 'mail') {
                             let key = entry.reason;
-                            item_count[key] ??= 0;
-                            item_count[key] += 1;
+                            item_count[key] ??= {};
+                            item_count[key][entry.datum] = true;
                         }
                     }
                     let sum = at_note.reduce((a, b) => a + b, 0);
@@ -107,7 +107,7 @@ function load_at_noten(e, klasse_or_lesson_key) {
                         sum === 0 ? `<td></td>` : `<td style='text-align: center; vertical-align: bottom; font-size: 80%;'>(${sum})</td>`,
                     ];
                     for (let key of ['homework', 'material', 'signature', 'late', 'praise', 'disturbance', 'disturbance_otium']) {
-                        let count = item_count[key] || 0;
+                        let count = Object.keys(item_count[key] ?? {}).length;
                         if (count === 0) {
                             cells.push(`<td></td>`);
 

@@ -800,15 +800,27 @@ class Main < Sinatra::Base
             RETURN l.key, us.email, at
             ORDER BY at.datum;
         END_OF_QUERY
-            lesson_key = row['l.key']
             email = row['us.email']
-            datum = row['at'][:datum]
-            value = row['at'][:value]
-            key = row['at'][:key]
             data[email] ||= []
-            data[email] << row['at']
+            entry = row['at']
+            entry['type'] = 'at'
+            data[email] << entry
         end
-        respond(:data => data)
+        neo4j_query(<<~END_OF_QUERY, {:ts => Date.parse(@@config[:first_school_day]).to_time.to_i, :lesson_key => klasse_or_lesson_key, :email => @session_user[:email]}).each do |row|
+            MATCH (t:User {email: $email})<-[:SENT_BY]-(m:Mail)-[:SENT_TO]->(u:User)
+            MATCH (m)-[:REGARDING]->(li:LessonInfo)-[:BELONGS_TO]->(l:Lesson {key: $lesson_key})
+            WHERE m.ts >= $ts
+            RETURN t.email, m, u.email, l.key;
+        END_OF_QUERY
+            email = row['u.email']
+            data[email] ||= []
+            entry = row['m']
+            entry['type'] = 'mail'
+            entry['datum'] = Time.at(row['m'][:ts]).strftime('%Y-%m-%d')
+            data[email] << entry
+        end
+
+        respond(:sus => data)
     end
 
 end

@@ -22,7 +22,10 @@ var zeugnisliste_for_klasse = #{@@zeugnisliste_for_klasse.to_json};
 var my_zeugnisliste = #{@@zeugnisliste_for_lehrer[@session_user[:shorthand]].to_json};
 var my_klassen = #{(zeugnis_admin_logged_in? ? KLASSEN_ORDER : @@zeugnisliste_for_lehrer[@session_user[:shorthand]].keys.map{ |x| x.split('/').first }.uniq).to_json};
 // var my_lessons = #{@@lessons_for_shorthand[@session_user[:shorthand]].reject { |k| ((@@lessons[:lesson_keys][k] || {})[:klassen] || []).empty? }.to_json};
-var my_lessons = #{@@lessons_for_shorthand[@session_user[:shorthand]].reject { |k| ((@@lessons[:lesson_keys][k] || {})[:klassen] || []).select { |x| KLASSEN_ORDER.include?(x)}.empty? }.to_json};
+var my_lessons = #{@@lessons_for_shorthand[@session_user[:shorthand]].reject { |k| ((@@lessons[:lesson_keys][k] || {})[:klassen] || []).select { |x| KLASSEN_ORDER.include?(x)}.empty? }.sort { |a, b| KLASSEN_ORDER.index((@@lessons[:lesson_keys][a] || {})[:klassen].first) <=> KLASSEN_ORDER.index((@@lessons[:lesson_keys][b] || {})[:klassen].first) }.to_json};
+var lesson_labels = #{Hash[@@lessons[:lesson_keys].keys.map { |k| [k, @@lessons[:lesson_keys][k][:pretty_folder_name]]}].to_json};
+var schueler_for_lesson = #{@@schueler_for_lesson.to_json};
+var user_info = #{@@user_info.select { |x| user_has_role(x, :schueler) }.to_json};
 var clicked_klasse = null;
 
 function load_at_noten(e, klasse_or_lesson_key) {
@@ -30,6 +33,154 @@ function load_at_noten(e, klasse_or_lesson_key) {
     api_call('/api/get_at_overview', {klasse_or_lesson_key: klasse_or_lesson_key}, function(data) {
         console.log(data);
         if (data.success) {
+            let container = $('#noten_here');
+            container.empty();
+            let header_cells = [];
+            for (let item of ['Nr.', 'Nachname', 'Vorname', 'Klasse', 'AT']) {
+                let label = `${item}`;
+                let th = $('<th>').html(label);
+                if (item === 'Nachname') th.addClass('thsticky');
+                header_cells.push(th);
+            }
+            let table = new SortableTable({
+                element: container,
+                xs: true,
+                headers: header_cells,
+                rows:  schueler_for_lesson[klasse_or_lesson_key].map(function(email, index) {
+                    let info = user_info[email] || {};
+                    let entries = data.sus[email] || [];
+                    let cells = [
+                        email,
+                        `<td sort-value='${index}' style='text-align: right; vertical-align: bottom;'>${index + 1}.</td>`,
+                        `<td class='tdsticky' style='max-width: 10em; vertical-align: bottom;'>${info.last_name}</td>`,
+                        `<td style='max-width: 10em; vertical-align: bottom;'>${info.official_first_name}</td>`,
+                        `<td style='text-align: center; vertical-align: bottom;'>${klassen_tr[info.klasse] ?? info.klasse}</td>`,
+                        `<td style='vertical-align: bottom;'>${JSON.stringify(entries)}</td>`,
+                    ];
+                    return cells;
+
+                }),
+                // emails.map(function (email, index) {
+                //     let cells = [
+                //         email,
+                //         `<td style='text-align: right; vertical-align: bottom;'>${index + 1}.</td>`,
+                //         `<td class='tdsticky' style='max-width: 10em; vertical-align: bottom;'>${liste.schueler[index].last_name}</td>`,
+                //         `<td style='max-width: 10em; vertical-align: bottom;'>${liste.schueler[index].official_first_name}</td>`,
+                //         // `<td>${moment(liste.schueler[index].geburtstag).format('L')}</td>`,
+                //         `<td style='text-align: center; vertical-align: bottom;'>${klassen_tr[klasse] ?? klasse}</td>`,
+                //         `<td style='vertical-align: bottom;'>${liste.schueler[index].bildungsgang}</td>`,
+                //         `<td style='vertical-align: bottom;'>${liste.schueler[index].klassenstufe}</td>`,
+                //     ];
+                //     let bu_consider = $(`<button class='btn btn-xs'>`);
+                //     style_consider_button(bu_consider, false);
+                //     if (zeugnisliste_consider_closed || (!edit_noten))
+                //         bu_consider.prop('disabled', true);
+                //     cells.push($(`<td style='vertical-align: bottom;'>`).append(bu_consider));
+                //     bu_consider.on('click', function(e) {
+                //         let path = `Schuljahr:${ZEUGNIS_SCHULJAHR}/Halbjahr:${ZEUGNIS_HALBJAHR}/ZK:marked/Email:${email}`;
+                //         tresor_api_call('/jwt/toggle', {path: path, key: 'Wert'}, function(data) {
+                //             console.log(data);
+                //             if (data.success) {
+                //                 if (data.value === true) {
+                //                     style_consider_button(bu_consider, true);
+                //                 } else {
+                //                     style_consider_button(bu_consider, consider_cache[email]);
+                //                 }
+                //             }
+                //         });
+                //     });
+                //     for (let fi = 0; fi < faecher_for_paths.length; fi++) {
+                //         let fach = faecher_for_paths[fi];
+                //         let input = $(`<input placeholder='--' class='form-control' style='width: 3em; text-align: center; height: calc(1.5em + 2px);'>`)
+                //         input.on('dragstart', function(e) { e.preventDefault(); e.stopPropagation(); });
+                //         if (zeugnisliste_closed || (!edit_noten || ((!my_zeugnisliste[`${klasse}/${fach}`]) && ('#{zeugnis_admin_logged_in?}' === 'false')))) {
+                //             input.prop('disabled', true);
+                //         }
+                //         let value = data.results[0][0][0][fi][index][0];
+                //         if (noten_mark.indexOf(value) >= 0) {
+                //             consider_cache[email] = true;
+                //             consider_this = true;
+                //         }
+                //         input.val(value);
+                //         input.focus(function(e) {
+                //             input.select();
+                //             // input[0].scrollIntoView({behavior: 'instant', block: 'center', inline: 'center'});
+                //             container.find('tr').removeClass('focused');
+                //             input.closest('tr').addClass('focused');
+                //             $(e.target).data('old_value', $(e.target).val());
+                //         });
+                //         input.blur(function(e) {
+                //             container.find('tr').removeClass('focused');
+                //             let value = $(e.target).val().trim();
+                //             if (value !== $(e.target).data('old_value')) {
+                //                 let path = `Schuljahr:${ZEUGNIS_SCHULJAHR}/Halbjahr:${ZEUGNIS_HALBJAHR}/Fach:${fach}/Email:${email}`;
+                //                 input_note_apply_style_and_fix($(e.target), function(value) {
+                //                     input.closest('td').find('i.fa').remove();
+                //                     tresor_api_call('/jwt/store', {path: path, key: 'Wert', value: value}, function(data) {
+                //                         if (data.success) {
+                //                             $(e.target).data('old_value', data.value);
+                //                             $(e.target).data('value_pre', data.value_pre);
+                //                             input_note_apply_style_and_fix($(e.target), function(value) {});
+                //                         } else {
+                //                             $(e.target).val($(e.target).data('old_value'));
+                //                             input_note_apply_style_and_fix($(e.target), function(value) {
+                //                                 let icon = $(`<i class='fa fa-times tresor_icon text-danger'>`);
+                //                                 icon.appendTo(input.closest('td'));
+                //                             });
+                //                         }
+                //                     });
+                //                 });
+                //             }
+                //         });
+                //         input.keydown(function(e) {
+                //             if (e.key === 'Enter' || e.key === 'ArrowDown') {
+                //                 e.preventDefault();
+                //                 e.stopPropagation();
+                //                 let row = $(e.target).closest('tr');
+                //                 let this_index = $(e.target).closest('td').index();
+                //                 let next_row = row.next('tr');
+                //                 if (next_row.length === 0) {
+                //                     next_row = row.closest('tbody').find('tr').first();
+                //                 }
+                //                 next_row.find('td').eq(this_index).find('input').focus().select();
+                //             }
+                //             if (e.key === 'ArrowUp') {
+                //                 e.preventDefault();
+                //                 e.stopPropagation();
+                //                 let row = $(e.target).closest('tr');
+                //                 let this_index = $(e.target).closest('td').index();
+                //                 let next_row = row.prev('tr');
+                //                 if (next_row.length === 0) {
+                //                     next_row = row.closest('tbody').find('tr').last()
+                //                 }
+                //                 next_row.find('td').eq(this_index).find('input').focus().select();
+                //             }
+                //         });
+                //         let pre_value = data.results[0][0][0][fi][index][1];
+                //         let pre_marker = $(`<input placeholder="--" class="form-control pre-note-marker" disabled="" value="">`).val(pre_value);
+                //         input.data('value_pre', pre_value);
+                //         if (fach.substr(-3) === '_AT' || fach.substr(-3) === '_SL') {
+                //             input.data('optional', true);
+                //             pre_marker.data('optional', true);
+                //         }
+                //         let cell = $('<td>');
+                //         for (let i = 0; i < show_previous_noten.length; i++) {
+                //             let input = $(`<input disabled placeholder='' class='past-note form-control' style='width: 3em; text-align: center; height: calc(1.5em + 2px); font-size: 85%;'>`);
+                //             input.val(data.results[2 + i][0][0][fi][index][0]);
+                //             cell.append($(`<div class='note'>`).append(input));
+                //         }
+                //         cell.append($(`<div class='note'>`).append(input).append(pre_marker));
+                //         cells.push(cell);
+                //         input_note_apply_style_and_fix(input);
+                //     }
+                //     if (consider_this)
+                //         style_consider_button(bu_consider, true);
+                //     return cells;
+                // },
+            },
+            );
+                // sortable: false,
+            container.find('.table').css('width', 'unset');
             // show 5 values scaled to max
             // also show at notes
             // also show mails
@@ -39,7 +190,7 @@ function load_at_noten(e, klasse_or_lesson_key) {
 
 window.addEventListener('load', function () {
     for (let klasse_or_lesson_key of my_lessons) {
-        let button = $(`<button style='white-space: nowrap;' class='inline-block bg-slate-900 border border-blue-500 hover:bg-slate-200 rounded py-1 px-3 mr-1 mb-1'>${klasse_or_lesson_key}</button>`);
+        let button = $(`<button style='white-space: nowrap;' class='inline-block bg-slate-900 border border-blue-500 hover:bg-slate-200 rounded py-1 px-3 mr-1 mb-1'>${lesson_labels[klasse_or_lesson_key]}</button>`);
         $('#klassen_buttons_here').append(button);
         button.click(function(e) {
             $('#klassen_buttons_here button').removeClass('bg-amber-300 hover:bg-amber-300').addClass('bg-slate-900 hover:bg-slate-200');

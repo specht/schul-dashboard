@@ -33,99 +33,99 @@ function load_at_noten(e, klasse_or_lesson_key) {
         if (data.success) {
             second_factor_expires = Math.round((Date.now() / 1000.0) + data.time_left);
             update_time_left();
-        }
-    });
-    api_call('/api/get_at_overview', {klasse_or_lesson_key: klasse_or_lesson_key}, function(data) {
-        if (data.success) {
-            let container = $('#noten_here');
-            container.empty();
-            let header_cells = [];
-            for (let item of ['Nr.', 'Nachname', 'Vorname', 'Klasse', 'AT', 'Hausaufgaben<br>vergessen', 'Material<br>vergessen', 'Unterschrift<br>vergessen', 'Verspätung', 'Lob', 'Störung', 'Störung<br>(Otium)']) {
-                let label = `${item}`;
-                let th = $('<th>').html(label);
-                if (item === 'Nachname') th.addClass('thsticky');
-                if (item === 'AT') {
-                    th.html("AT-Notizen <span style='font-weight: normal; font-size: 0.8em;'>(mit Anzahl)</span>");
-                    th.attr('colspan', '2');
-                }
-                header_cells.push(th);
-            }
-            let table = new SortableTable({
-                element: container,
-                xs: true,
-                headers: header_cells,
-                rows:  schueler_for_lesson[klasse_or_lesson_key].map(function(email, index) {
-                    let info = user_info [email] || {};
-                    let entries = data.sus[email] || [];
-                    let at_note = [0, 0, 0, 0, 0];
-                    let item_count = {};
-                    for (let entry of entries) {
-                        if (entry.type === 'at') {
-                            if (entry.key === 'at') {
-                                let note = entry.value;
-                                if (note >= 1 && note <= 5) {
-                                    at_note[note - 1] += 1;
+            api_call('/api/get_at_overview', {klasse_or_lesson_key: klasse_or_lesson_key}, function(data) {
+                if (data.success) {
+                    let container = $('#noten_here');
+                    container.empty();
+                    let header_cells = [];
+                    for (let item of ['Nr.', 'Nachname', 'Vorname', 'Klasse', 'AT', 'Hausaufgaben<br>vergessen', 'Material<br>vergessen', 'Unterschrift<br>vergessen', 'Verspätung', 'Lob', 'Störung', 'Störung<br>(Otium)']) {
+                        let label = `${item}`;
+                        let th = $('<th>').html(label);
+                        if (item === 'Nachname') th.addClass('thsticky');
+                        if (item === 'AT') {
+                            th.html("AT-Notizen <span style='font-weight: normal; font-size: 0.8em;'>(mit Anzahl)</span>");
+                            th.attr('colspan', '2');
+                        }
+                        header_cells.push(th);
+                    }
+                    let table = new SortableTable({
+                        element: container,
+                        xs: true,
+                        headers: header_cells,
+                        rows:  schueler_for_lesson[klasse_or_lesson_key].map(function(email, index) {
+                            let info = user_info [email] || {};
+                            let entries = data.sus[email] || [];
+                            let at_note = [0, 0, 0, 0, 0];
+                            let item_count = {};
+                            for (let entry of entries) {
+                                if (entry.type === 'at') {
+                                    if (entry.key === 'at') {
+                                        let note = entry.value;
+                                        if (note >= 1 && note <= 5) {
+                                            at_note[note - 1] += 1;
+                                        }
+                                    } else {
+                                        let key = entry.key;
+                                        let tr = {'hausaufgaben': 'homework', 'unterschrift': 'signature'};
+                                        key = tr[key] ?? key;
+                                        item_count[key] ??= {};
+                                        item_count[key][entry.datum] = true;
+                                    }
+                                } else if (entry.type === 'mail') {
+                                    let key = entry.reason;
+                                    item_count[key] ??= {};
+                                    item_count[key][entry.datum] = true;
                                 }
-                            } else {
-                                let key = entry.key;
-                                let tr = {'hausaufgaben': 'homework', 'unterschrift': 'signature'};
-                                key = tr[key] ?? key;
-                                item_count[key] ??= {};
-                                item_count[key][entry.datum] = true;
                             }
-                        } else if (entry.type === 'mail') {
-                            let key = entry.reason;
-                            item_count[key] ??= {};
-                            item_count[key][entry.datum] = true;
-                        }
-                    }
-                    let sum = at_note.reduce((a, b) => a + b, 0);
-                    let max = Math.max(...at_note);
-                    let symbol_for_note = {1: '–&nbsp;–', 2: '–', 3: 'o', 4: '+', 5: '+&nbsp;+'};
-                    let label_for_item = {
-                        homework: 'Hausaufgaben',
-                        material: 'Material',
-                        signature: 'Unterschrift',
-                        late: 'Verspätung',
-                        praise: 'Lob',
-                        disturbance: 'Störung',
-                        disturbance_otium: 'Störung (Otium)',
-                    };
-                    if (max > 0) {
-                        at_note = at_note.map(x => Math.max(x / max, 0.0));
-                    }
-                    at_note = at_note.map((x, i) => {
-                        return `<span class='bu-at-note active badge' data-value='${i + 1}' style='white-space: nowrap; width: 2.5em; transform: scale(${Math.pow(x, 0.5)});'>${symbol_for_note[i + 1]}</span>`;
-                    });
-                    let cells = [
-                        email,
-                        `<td sort-value='${index}' style='text-align: right; vertical-align: bottom;'>${index + 1}.</td>`,
-                        `<td class='tdsticky' style='max-width: 10em; vertical-align: bottom;'>${info.last_name}</td>`,
-                        `<td style='max-width: 10em; vertical-align: bottom;'>${info.official_first_name}</td>`,
-                        `<td style='text-align: center; vertical-align: bottom;'>${klassen_tr[info.klasse] ?? info.klasse}</td>`,
-                        `<td style='vertical-align: bottom;'>${at_note.join(' ')}</td>`,
-                        sum === 0 ? `<td></td>` : `<td style='text-align: center; vertical-align: bottom; font-size: 80%;'>(${sum})</td>`,
-                    ];
-                    for (let key of ['homework', 'material', 'signature', 'late', 'praise', 'disturbance', 'disturbance_otium']) {
-                        let count = Object.keys(item_count[key] ?? {}).length;
-                        if (count === 0) {
-                            cells.push(`<td></td>`);
+                            let sum = at_note.reduce((a, b) => a + b, 0);
+                            let max = Math.max(...at_note);
+                            let symbol_for_note = {1: '–&nbsp;–', 2: '–', 3: 'o', 4: '+', 5: '+&nbsp;+'};
+                            let label_for_item = {
+                                homework: 'Hausaufgaben',
+                                material: 'Material',
+                                signature: 'Unterschrift',
+                                late: 'Verspätung',
+                                praise: 'Lob',
+                                disturbance: 'Störung',
+                                disturbance_otium: 'Störung (Otium)',
+                            };
+                            if (max > 0) {
+                                at_note = at_note.map(x => Math.max(x / max, 0.0));
+                            }
+                            at_note = at_note.map((x, i) => {
+                                return `<span class='bu-at-note active badge' data-value='${i + 1}' style='white-space: nowrap; width: 2.5em; transform: scale(${Math.pow(x, 0.5)});'>${symbol_for_note[i + 1]}</span>`;
+                            });
+                            let cells = [
+                                email,
+                                `<td sort-value='${index}' style='text-align: right; vertical-align: bottom;'>${index + 1}.</td>`,
+                                `<td class='tdsticky' style='max-width: 10em; vertical-align: bottom;'>${info.last_name}</td>`,
+                                `<td style='max-width: 10em; vertical-align: bottom;'>${info.official_first_name}</td>`,
+                                `<td style='text-align: center; vertical-align: bottom;'>${klassen_tr[info.klasse] ?? info.klasse}</td>`,
+                                `<td style='vertical-align: bottom;'>${at_note.join(' ')}</td>`,
+                                sum === 0 ? `<td></td>` : `<td style='text-align: center; vertical-align: bottom; font-size: 80%;'>(${sum})</td>`,
+                            ];
+                            for (let key of ['homework', 'material', 'signature', 'late', 'praise', 'disturbance', 'disturbance_otium']) {
+                                let count = Object.keys(item_count[key] ?? {}).length;
+                                if (count === 0) {
+                                    cells.push(`<td></td>`);
 
-                        } else {
-                            cells.push(`<td style='text-align: left; vertical-align: bottom;'><span class='badge badge-secondary' style='font-weight: normal;'>${label_for_item[key]}</span> &times; ${count}</td>`);
-                        }
-                    }
-                    // cells.push(`<td style='vertical-align: bottom;'>${JSON.stringify(item_count)}</td>`);
-                    return cells;
+                                } else {
+                                    cells.push(`<td style='text-align: left; vertical-align: bottom;'><span class='badge badge-secondary' style='font-weight: normal;'>${label_for_item[key]}</span> &times; ${count}</td>`);
+                                }
+                            }
+                            // cells.push(`<td style='vertical-align: bottom;'>${JSON.stringify(item_count)}</td>`);
+                            return cells;
 
-                }),
-                sortable: false,
-            },
-            );
-            container.find('.table').css('width', 'unset');
-            // show 5 values scaled to max
-            // also show at notes
-            // also show mails
+                        }),
+                        sortable: false,
+                    },
+                    );
+                    container.find('.table').css('width', 'unset');
+                    // show 5 values scaled to max
+                    // also show at notes
+                    // also show mails
+                }
+            });
         }
     });
 }

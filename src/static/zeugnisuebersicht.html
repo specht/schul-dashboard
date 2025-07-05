@@ -196,7 +196,7 @@ window.addEventListener('load', function () {
                     if (!have_or_admin_or_kl(`${klasse}/SV/${fach}`))
                         continue;
 
-                    if (anlage_sozialverhalten.indexOf(klasse) >= 0 || anlage_sozialverhalten.indexOf(`${klasse}/${fach}`) >= 0) {
+                    if (anlage_sozialverhalten.indexOf(klasse) >= 0 || anlage_sozialverhalten.indexOf(`${klasse}/${fach}`) >= 0 || anlage_sozialverhalten.indexOf('*') >= 0) {
                         let present_count = counts[`${klasse}/${fach}/SV`][0];
                         let total_count = counts[`${klasse}/${fach}/SV`][1];
                         if (total_count === 0)

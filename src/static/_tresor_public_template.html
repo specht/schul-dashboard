@@ -1452,7 +1452,8 @@ function print_pdf_sheets(path, options = {}) {
     });
 }
 
-function admin_only_copy_noten_from_halbjahr(klasse, fach) {
+function admin_only_copy_noten_from_halbjahr(klasse, fach, srsly) {
+    if (typeof(srsly) === 'undefined') srsly = false;
     if ('#{zeugnis_admin_logged_in?}' !== 'true') {
         console.log("Aborting because you are not zeugnis admin");
         return;
@@ -1527,13 +1528,22 @@ function admin_only_copy_noten_from_halbjahr(klasse, fach) {
                 setTimeout(function() {
                     let fach2 = faecher_for_paths[fi];
                     let value = data.results[0][0][0][fi][i][0];
-                    console.log(email, fach2, value);
                     let path = `Schuljahr:${ZEUGNIS_SCHULJAHR}/Halbjahr:${ZEUGNIS_HALBJAHR}/Fach:${fach2}/Email:${email}`;
-                    tresor_api_call('/jwt/store', {path: path, key: 'Wert', value: value}, function(data) {
-                        console.log(data);
-                    });
+                    if (srsly) {
+                        console.log(`Storing: ${email} / ${fach2}: ${value}`);
+                        tresor_api_call('/jwt/store', {path: path, key: 'Wert', value: value}, function(data) {
+                            console.log(data);
+                        });
+                    } else {
+                        console.log(`Not storing: ${email} / ${fach2}: ${value}`);
+                    }
                 }, 200 * i);
             }
+        }
+        if (!srsly) {
+            console.log("Not storing anything because srsly is false.");
+        } else {
+            console.log("Done storing values.");
         }
     });
 }

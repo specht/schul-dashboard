@@ -334,6 +334,7 @@ var FAECHER_SPRACHEN = #{FAECHER_SPRACHEN.to_json};
 var zeugnisliste_closed = #{(zeugnis_admin_logged_in? || Time.now.strftime('%Y-%m-%dT%H:%M:%S') < DEADLINE_NOTENEINTRAGUNG) ? 'false' : 'true'};
 var zeugnisliste_consider_closed = #{(zeugnis_admin_logged_in? || Time.now.strftime('%Y-%m-%dT%H:%M:%S') < DEADLINE_CONSIDER) ? 'false' : 'true'};
 var sozialverhalten_closed = #{(zeugnis_admin_logged_in? || Time.now.strftime('%Y-%m-%dT%H:%M:%S') < DEADLINE_SOZIALNOTEN) ? 'false' : 'true'};
+var SOZIALNOTEN_CATS = #{SOZIALNOTEN_CATS.to_json};
 var zeugniskonferenzen_today = #{(ZEUGNISKONFERENZEN[Date.today.strftime('%Y-%m-%d')] || []).to_json};
 var zeugnis_admin_and_konferenz = #{(zeugnis_admin_logged_in? && ZEUGNISKONFERENZEN.include?(Date.today.strftime('%Y-%m-%d')))};
 var running_zeugniskonferenzen = #{running_zeugniskonferenzen.to_json};
@@ -1452,8 +1453,9 @@ function print_pdf_sheets(path, options = {}) {
     });
 }
 
-function admin_only_copy_noten_from_halbjahr(klasse, fach, srsly) {
+function admin_only_copy_noten_from_halbjahr(klasse, fach, srsly, sv) {
     if (typeof(srsly) === 'undefined') srsly = false;
+    if (typeof(sv) === 'undefined') sv = false;
     if ('#{zeugnis_admin_logged_in?}' !== 'true') {
         console.log("Aborting because you are not zeugnis admin");
         return;
@@ -1469,7 +1471,7 @@ function admin_only_copy_noten_from_halbjahr(klasse, fach, srsly) {
 
     let path_arrays = [];
     let prev_entry = show_previous_noten[show_previous_noten.length - 1];
-    console.log(`Kopiere Noten von ${prev_entry.keys[0]}/${prev_entry.keys[1]} nach ${ZEUGNIS_SCHULJAHR}/${ZEUGNIS_HALBJAHR}`);
+    console.log(`Kopiere Noten von >>${prev_entry.keys[0]}/${prev_entry.keys[1]}<< nach >>${ZEUGNIS_SCHULJAHR}/${ZEUGNIS_HALBJAHR}<<`);
     let path_array = [];
     path_array.push(['Schuljahr', prev_entry.keys[0]]);
     path_array.push(['Halbjahr', prev_entry.keys[1]]);
@@ -1480,12 +1482,13 @@ function admin_only_copy_noten_from_halbjahr(klasse, fach, srsly) {
         if (original_fach !== fach) continue;
         let fach2 = prev_entry.tr[original_fach] ?? original_fach;
         faecher_for_paths.push(fach2);
-        if (FAECHER_SPRACHEN.indexOf(original_fach) >= 0) {
+        if ((!sv) && (FAECHER_SPRACHEN.indexOf(original_fach) >= 0)) {
             faecher_for_paths.push(`${fach2}_AT`);
             faecher_for_paths.push(`${fach2}_SL`);
         }
     }
     let emails = liste.schueler.map(function(x) { return x.email; });
+    if (sv) path_array.push(['SV', SOZIALNOTEN_CATS.map((x) => x[0])]);
     path_array.push(['Fach', faecher_for_paths]);
     path_array.push(['Email', emails]);
     path_arrays.push(path_array);
@@ -1499,53 +1502,102 @@ function admin_only_copy_noten_from_halbjahr(klasse, fach, srsly) {
         if (original_fach !== fach) continue;
         let fach2 = prev_entry.tr[original_fach] ?? original_fach;
         faecher_for_paths.push(fach2);
-        if (FAECHER_SPRACHEN.indexOf(original_fach) >= 0) {
+        if ((!sv) && (FAECHER_SPRACHEN.indexOf(original_fach) >= 0)) {
             faecher_for_paths.push(`${fach2}_AT`);
             faecher_for_paths.push(`${fach2}_SL`);
         }
     }
+    if (sv) path_array2.push(['SV', SOZIALNOTEN_CATS.map((x) => x[0])]);
     path_array2.push(['Fach', faecher_for_paths]);
     path_array2.push(['Email', emails]);
     path_arrays.push(path_array2);
 
-    tresor_api_call('/jwt/get_many_cutoff', {path_arrays: path_arrays, key: 'Wert'}, function(data) {
-        for (let i = 0; i < emails.length; i++) {
-            let email = emails[i];
-            for (let fi = 0; fi < faecher_for_paths.length; fi++) {
-                let fach2 = faecher_for_paths[fi];
-                let value = data.results[1][0][0][fi][i][0];
-                if (value !== null) {
-                    console.log("Aborting because there's already values here:")
-                    console.log(email, fach2, value);
-                    return;
+    console.log(path_array);
+
+    if (sv) {
+        tresor_api_call('/jwt/get_many_cutoff', {path_arrays: path_arrays, key: 'Wert'}, function(data) {
+            for (let i = 0; i < emails.length; i++) {
+                let email = emails[i];
+                for (let si = 0; si < SOZIALNOTEN_CATS.length; si++) {
+                    for (let fi = 0; fi < faecher_for_paths.length; fi++) {
+                        let fach2 = faecher_for_paths[fi];
+                        let value = data.results[1][0][0][si][fi][i][0];
+                        if (value !== null) {
+                            console.log("Aborting because there's already values here:")
+                            console.log(email, fach2, value);
+                            return;
+                        }
+                    }
                 }
             }
-        }
-        console.log('-----------------------------')
-        for (let i = 0; i < emails.length; i++) {
-            let email = emails[i];
-            for (let fi = 0; fi < faecher_for_paths.length; fi++) {
-                setTimeout(function() {
-                    let fach2 = faecher_for_paths[fi];
-                    let value = data.results[0][0][0][fi][i][0];
-                    let path = `Schuljahr:${ZEUGNIS_SCHULJAHR}/Halbjahr:${ZEUGNIS_HALBJAHR}/Fach:${fach2}/Email:${email}`;
-                    if (srsly) {
-                        console.log(`Storing: ${email} / ${fach2}: ${value}`);
-                        tresor_api_call('/jwt/store', {path: path, key: 'Wert', value: value}, function(data) {
-                            console.log(data);
-                        });
-                    } else {
-                        console.log(`Not storing: ${email} / ${fach2}: ${value}`);
+            console.log('-----------------------------')
+            for (let i = 0; i < emails.length; i++) {
+                let email = emails[i];
+                for (let si = 0; si < SOZIALNOTEN_CATS.length; si++) {
+                    for (let fi = 0; fi < faecher_for_paths.length; fi++) {
+                        setTimeout(function() {
+                            let sc = SOZIALNOTEN_CATS[si][0];
+                            let fach2 = faecher_for_paths[fi];
+                            let value = data.results[0][0][0][si][fi][i][0];
+                            let path = `Schuljahr:${ZEUGNIS_SCHULJAHR}/Halbjahr:${ZEUGNIS_HALBJAHR}/SV:${sc}/Fach:${fach2}/Email:${email}`;
+                            if (srsly) {
+                                console.log(`Storing: ${email} / ${sc} / ${fach2}: ${value}`);
+                                tresor_api_call('/jwt/store', {path: path, key: 'Wert', value: value}, function(data) {
+                                    console.log(data);
+                                });
+                            } else {
+                                console.log(`Not storing: ${email} / ${sc} / ${fach2}: ${value}`);
+                            }
+                        }, 200 * i);
                     }
-                }, 200 * i);
+                }
             }
-        }
-        if (!srsly) {
-            console.log("Not storing anything because srsly is false.");
-        } else {
-            console.log("Done storing values.");
-        }
-    });
+            if (!srsly) {
+                console.log("Not storing anything because srsly is false.");
+            } else {
+                console.log("Done storing values.");
+            }
+        });
+    } else {
+        tresor_api_call('/jwt/get_many_cutoff', {path_arrays: path_arrays, key: 'Wert'}, function(data) {
+            for (let i = 0; i < emails.length; i++) {
+                let email = emails[i];
+                for (let fi = 0; fi < faecher_for_paths.length; fi++) {
+                    let fach2 = faecher_for_paths[fi];
+                    let value = data.results[1][0][0][fi][i][0];
+                    if (value !== null) {
+                        console.log("Aborting because there's already values here:")
+                        console.log(email, fach2, value);
+                        return;
+                    }
+                }
+            }
+            console.log('-----------------------------')
+            for (let i = 0; i < emails.length; i++) {
+                let email = emails[i];
+                for (let fi = 0; fi < faecher_for_paths.length; fi++) {
+                    setTimeout(function() {
+                        let fach2 = faecher_for_paths[fi];
+                        let value = data.results[0][0][0][fi][i][0];
+                        let path = `Schuljahr:${ZEUGNIS_SCHULJAHR}/Halbjahr:${ZEUGNIS_HALBJAHR}/Fach:${fach2}/Email:${email}`;
+                        if (srsly) {
+                            console.log(`Storing: ${email} / ${fach2}: ${value}`);
+                            tresor_api_call('/jwt/store', {path: path, key: 'Wert', value: value}, function(data) {
+                                console.log(data);
+                            });
+                        } else {
+                            console.log(`Not storing: ${email} / ${fach2}: ${value}`);
+                        }
+                    }, 200 * i);
+                }
+            }
+            if (!srsly) {
+                console.log("Not storing anything because srsly is false.");
+            } else {
+                console.log("Done storing values.");
+            }
+        });
+    }
 }
 
 </script>

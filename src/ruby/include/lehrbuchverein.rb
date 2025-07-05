@@ -263,7 +263,7 @@ class Main < Sinatra::Base
                             email = token_catalogue[token][:email]
                             if amount_cents == token_catalogue[token][:amount]
                                 if @@user_info[email]
-                                    $neo4j.neo4j_query(<<~END_OF_QUERY, {:email => email, :jahr => LEHRBUCHVEREIN_JAHR})
+                                    $neo4j.neo4j_query(<<~END_OF_QUERY, {:email => email, :jahr => LBV_NEXT_SCHULJAHR.to_i})
                                         MATCH (u:User {email: $email})
                                         MERGE (j:Lehrbuchvereinsjahr {jahr: $jahr})
                                         CREATE (u)-[:PAID_FOR]->(j)

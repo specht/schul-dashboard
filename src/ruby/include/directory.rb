@@ -1,3 +1,6 @@
+
+NOBILIARY_PREFIX_REGEX = "/\\b(von|van|de|da|di|le)\\b/i"
+
 class Main < Sinatra::Base
     def self.iterate_kurse(&block)
         @@lessons[:lesson_keys].keys.sort do |a, b|

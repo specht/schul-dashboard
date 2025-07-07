@@ -565,9 +565,10 @@ class Main < Sinatra::Base
 
     def print_tresor_countdown_panel()
         return '' unless teacher_logged_in?
+        parts = []
         deadline = DEADLINE_NOTENEINTRAGUNG
         if Time.now.strftime('%Y-%m-%dT%H:%M:%S') <= deadline && (DateTime.parse(deadline) - DateTime.now).to_f < 7.0
-            return StringIO.open do |io|
+            parts << StringIO.open do |io|
                 io.puts "<div class='col-lg-12 col-md-4 col-sm-6'>"
                 io.puts "<div class='hint'>"
                 io.puts "<p><b>Noteneingabe im Datentresor</b></p>"
@@ -583,7 +584,7 @@ class Main < Sinatra::Base
         end
         deadline = DEADLINE_CONSIDER
         if Time.now.strftime('%Y-%m-%dT%H:%M:%S') <= deadline && (DateTime.parse(deadline) - DateTime.now).to_f < 7.0
-            return StringIO.open do |io|
+            parts << StringIO.open do |io|
                 io.puts "<div class='col-lg-12 col-md-4 col-sm-6'>"
                 io.puts "<div class='hint'>"
                 io.puts "<p><b>Markierung von SuS in den Listen für die Zeugniskonferenzen</b></p>"
@@ -600,7 +601,7 @@ class Main < Sinatra::Base
         if need_sozialverhalten()
             deadline = DEADLINE_SOZIALNOTEN
             if Time.now.strftime('%Y-%m-%dT%H:%M:%S') <= deadline && (DateTime.parse(deadline) - DateTime.now).to_f < 7.0
-                return StringIO.open do |io|
+                parts << StringIO.open do |io|
                     io.puts "<div class='col-lg-12 col-md-4 col-sm-6'>"
                     io.puts "<div class='hint'>"
                     io.puts "<p><b>Eintragung der Noten für das Arbeits- und Sozialverhalten</b></p>"
@@ -615,7 +616,7 @@ class Main < Sinatra::Base
                 end
             end
         end
-        return ''
+        return parts.join("\n")
     end
 
     def print_projektwahl_countdown_panel()

@@ -1911,17 +1911,18 @@ class Main
         projekte = {}
         emails_for_project = {}
         $neo4j.neo4j_query(<<~END_OF_QUERY).each do |row|
-            MATCH (p:Projekt)-[:ORGANIZED_BY]->(u:User)
+            MATCH (p:Projekttage)-[:BELONGS_TO]->(u:User)
             RETURN p, u;
         END_OF_QUERY
             p = row['p']
             u = row['u']
+            next unless @@user_info[u[:email]]
             projekte[p[:nr]] ||= {
                 :nr => p[:nr],
-                :title => p[:title],
-                :min_klasse => p[:min_klasse],
-                :max_klasse => p[:max_klasse],
-                :capacity => p[:capacity],
+                :title => p[:name],
+                :min_klasse => p[:klassenstufe_min],
+                :max_klasse => p[:klassenstufe_max],
+                :capacity => p[:teilnehmer_max],
             }
             emails_for_project[p[:nr]] ||= []
             emails_for_project[p[:nr]] << u[:email]
@@ -1958,6 +1959,7 @@ class Main
             })
             first_page = true
             projekte_list.each do |projekt|
+                STDERR.puts projekt.to_yaml
                 next if (projekt[:capacity] || 0) <= 0
                 emails_for_project[projekt[:nr]].each do |email|
                     start_new_page unless first_page

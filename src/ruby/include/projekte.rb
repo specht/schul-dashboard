@@ -1834,5 +1834,10 @@ class Main < Sinatra::Base
         end
         respond(response)
     end
+
+    get '/api/print_projekttage_urkunden' do
+        assert(admin_logged_in? || user_with_role_logged_in?(:can_manage_projekttage))
+        respond_raw_with_mimetype(Main.print_project_urkunden(), 'application/pdf')
+    end
 end
 

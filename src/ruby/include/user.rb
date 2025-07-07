@@ -590,7 +590,7 @@ class Main < Sinatra::Base
                 io.puts "<p><b>Markierung von SuS in den Listen für die Zeugniskonferenzen</b></p>"
                 io.puts "<hr />"
                 d = DateTime.parse(deadline)
-                io.puts "<p>Klassenleitungen: Bitte markieren Sie SuS, die Sie in den Zeug&shy;nis&shy;kon&shy;feren&shy;zen besprechen möchten, bis <strong<#{WEEKDAYS_LONG[d.wday]} um #{d.strftime('%H:%M')} Uhr</strong>. Hinweis: Alle SuS mit einer Note ab 4– sind schon auto&shy;matisch markiert.</p>"
+                io.puts "<p>Klassenleitungen: Bitte markieren Sie SuS, die Sie in den Zeug&shy;nis&shy;kon&shy;feren&shy;zen besprechen möchten, bis <strong>#{WEEKDAYS_LONG[d.wday]} um #{d.strftime('%H:%M')} Uhr</strong>. Hinweis: Alle SuS mit einer Note ab 4– sind schon auto&shy;matisch markiert.</p>"
                 io.puts "<div id='tresor_countdown_here' style='display: none;' data-deadline='#{Time.parse(deadline).to_i}'>"
                 io.puts "</div>"
                 io.puts "</div>"

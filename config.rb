@@ -168,8 +168,8 @@ docker_compose[:services][:neo4j][:user] = "#{UID}"
 
 docker_compose[:services][:timetable] = YAML.load(docker_compose[:services][:ruby].to_yaml)
 docker_compose[:services][:timetable]['entrypoint'] = DEVELOPMENT ?
-            'rerun -b --dir /app --ignore "fragments/*" -s SIGKILL \'rackup --port 8080 --host 0.0.0.0 timetable-repl.ru\'' :
-            'rackup --port 8080 --host 0.0.0.0 timetable-repl.ru'
+            'rerun -b --dir /app --ignore "fragments/*" -s SIGKILL \'thin --rackup timetable-repl.ru --port 8080 --address 0.0.0.0 start -e production\'' :
+            'thin --rackup timetable-repl.ru --port 8080 --address 0.0.0.0 start -e production'
 
 docker_compose[:services][:ruby][:user] = "#{UID}"
 docker_compose[:services][:ruby2][:user] = "#{UID}"
@@ -178,18 +178,18 @@ docker_compose[:services][:timetable][:user] = "#{UID}"
 if ENABLE_IMAGE_BOT
     docker_compose[:services][:image_bot] = YAML.load(docker_compose[:services][:ruby].to_yaml)
     docker_compose[:services][:image_bot]['entrypoint'] = DEVELOPMENT ?
-                'rerun -b --dir /app --ignore "fragments/*" -s SIGKILL \'rackup --port 8080 --host 0.0.0.0 image-bot-repl.ru\'' :
-                'rackup --port 8080 --host 0.0.0.0 image-bot-repl.ru'
+                'rerun -b --dir /app --ignore "fragments/*" -s SIGKILL \'thin --rackup image-bot-repl.ru --port 8080 --address 0.0.0.0 start -e production\'' :
+                'thin --rackup image-bot-repl.ru --port 8080 --address 0.0.0.0 start -e production'
 end
 docker_compose[:services][:mail_bot] = YAML.load(docker_compose[:services][:ruby].to_yaml)
 docker_compose[:services][:mail_bot]['entrypoint'] = DEVELOPMENT ?
-            'rerun -b --dir /app --ignore "fragments/*" -s SIGKILL \'rackup --port 8080 --host 0.0.0.0 mail-bot-repl.ru\'' :
-            'rackup --port 8080 --host 0.0.0.0 mail-bot-repl.ru'
+            'rerun -b --dir /app --ignore "fragments/*" -s SIGKILL \'thin --rackup mail-bot-repl.ru --port 8080 --address 0.0.0.0 start -e production\'' :
+            'thin --rackup mail-bot-repl.ru --port 8080 --address 0.0.0.0 start -e production'
 
 docker_compose[:services][:stats_bot] = YAML.load(docker_compose[:services][:ruby].to_yaml)
 docker_compose[:services][:stats_bot]['entrypoint'] = DEVELOPMENT ?
-            'rerun -b --dir /app --ignore "fragments/*" -s SIGKILL \'rackup --port 8080 --host 0.0.0.0 stats-bot-repl.ru\'' :
-            'rackup --port 8080 --host 0.0.0.0 stats-bot-repl.ru'
+            'rerun -b --dir /app --ignore "fragments/*" -s SIGKILL \'thin --rackup stats-bot-repl.ru --port 8080 --address 0.0.0.0 start -e production\'' :
+            'thin --rackup stats-bot-repl.ru --port 8080 --address 0.0.0.0 start -e production'
 
 docker_compose[:services][:vplan_watcher] = YAML.load(docker_compose[:services][:ruby].to_yaml)
 docker_compose[:services][:vplan_watcher]['entrypoint'] = DEVELOPMENT ?
@@ -198,8 +198,8 @@ docker_compose[:services][:vplan_watcher]['entrypoint'] = DEVELOPMENT ?
 
 docker_compose[:services][:invitation_bot] = YAML.load(docker_compose[:services][:ruby].to_yaml)
 docker_compose[:services][:invitation_bot]['entrypoint'] = DEVELOPMENT ?
-            'rerun -b --dir /app --ignore "fragments/*" -s SIGKILL \'rackup --port 8080 --host 0.0.0.0 invitation-repl.ru\'' :
-            'rackup --port 8080 --host 0.0.0.0 invitation-repl.ru'
+            'rerun -b --dir /app --ignore "fragments/*" -s SIGKILL \'thin --rackup invitation-repl.ru --port 8080 --address 0.0.0.0 start -e production\'' :
+            'thin --rackup invitation-repl.ru --port 8080 --address 0.0.0.0 start -e production'
 docker_compose[:services][:ruby][:user] = "#{UID}"
 docker_compose[:services][:invitation_bot][:user] = "#{UID}"
 

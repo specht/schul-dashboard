@@ -12,7 +12,7 @@ DELAYED_UPDATE_TIME = DEVELOPMENT ? 0 : 0
 
 class TimetableRepl < Sinatra::Base
     include Neo4jBolt
-    
+
     configure do
         set :show_exceptions, false
     end

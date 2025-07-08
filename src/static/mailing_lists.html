@@ -12,13 +12,16 @@ th {
     border-left: 1px solid rgba(0,0,0,0.3);
     box-shadow: inset 20px 0 20px -20px rgba(0,0,0,0.3);
 }
+.ml-table table td:nth-child(1) {
+    max-width: 30em;
+}
 </style>
 <div class='container'
     <div class='row'>
         <div class='col-md-12'>
             <h3>E-Mail-Verteiler</h3>
             <div class='alert alert-warning'>Hier sehen Sie alle E-Mail-Verteiler, die Sie verwenden können sowie alle Adressaten, die über diese Verteiler erreicht werden können.</div>
-            <div style='max-width: 100%; overflow-x: auto;'>
+            <div style='max-width: 100%; overflow-x: auto;' class='ml-table'>
                 #{print_mailing_lists()}
             </div>
         </div>

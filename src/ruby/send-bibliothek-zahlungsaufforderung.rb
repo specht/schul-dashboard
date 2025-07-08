@@ -124,7 +124,7 @@ class Script
             brief_sha1 = Digest::SHA1.hexdigest(brief_id).to_i(16).to_s(36)
             brief_sha1 = "Beitragsaufforderung #{LBV_NEXT_SCHULJAHR.gsub('/', '-')} #{record[:display_name]}"
 
-            out_path_docx = File.join("/internal/bibliothek/out/#{brief_sha1}.docx")
+            out_path_docx = File.join("/internal/bibliothek/out/#{brief_sha1}.docx")f
             out_path_pdf = File.join("/internal/bibliothek/out/#{brief_sha1}.pdf")
 
             amount = 0

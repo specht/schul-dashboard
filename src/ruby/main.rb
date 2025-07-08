@@ -34,6 +34,27 @@ require 'write_xlsx'
 require 'yaml'
 require 'zip'
 
+def sanitize_pdf_with_ghostscript(pdf_data)
+    cmd = [
+        "gs",
+        "-sDEVICE=pdfwrite",
+        "-dCompatibilityLevel=1.5",
+        "-dNOPAUSE",
+        "-dBATCH",
+        "-dQUIET",
+        "-sOutputFile=%stdout",
+        "-"
+    ]
+
+    stdout_str, stderr_str, status = Open3.capture3(*cmd, stdin_data: pdf_data)
+
+    unless status.success?
+        raise "Ghostscript failed: #{stderr_str}"
+    end
+
+    stdout_str
+end
+
 def assert(condition, message = 'assertion failed', suppress_backtrace = false, delay = nil)
     unless condition
         debug_error message

@@ -353,7 +353,7 @@ class Main
                 end
             end
         end
-        return doc.render
+        return sanitize_pdf_with_ghostscript(doc.render)
     end
 
     def get_zeugnislisten_sheets_pdf(cache, only_this_klasse = nil)
@@ -715,7 +715,7 @@ class Main
                 end
             end
         end
-        return doc.render
+        return sanitize_pdf_with_ghostscript(doc.render)
     end
 
     def get_sozialzeugnis_pdf(klasse, cache)
@@ -870,7 +870,7 @@ class Main
                 end
             end
         end
-        return doc.render
+        return sanitize_pdf_with_ghostscript(doc.render)
     end
 
     def get_room_timetable_pdf_for_klasse(wanted_klasse)
@@ -1151,7 +1151,7 @@ class Main
             #     STDERR.puts "Klasse #{klasse}: #{(klassenraum_for_klasse[klasse] || []).join(', ')}"
             # end
         end
-        return doc.render
+        return sanitize_pdf_with_ghostscript(doc.render)
     end
 
     def get_single_timetable_pdf(email, color_scheme, use_png_addition)
@@ -1375,7 +1375,7 @@ class Main
                 image('/app/images/timetable1-front.png', :at => [0, 210.mm], :width => 297.mm, :height => 210.mm)
             end
         end
-        return doc.render
+        return sanitize_pdf_with_ghostscript(doc.render)
     end
 
     def get_timetables_pdf(klasse, colors)
@@ -1553,7 +1553,7 @@ class Main
                 image('/app/images/timetable1-front.png', :at => [0, 210.mm], :width => 297.mm, :height => 210.mm)
             end
         end
-        return doc.render
+        return sanitize_pdf_with_ghostscript(doc.render)
     end
 
     def get_fehlzeiten_sheets_pdf(cache)
@@ -1745,7 +1745,7 @@ class Main
                 puts ZEUGNIS_KLASSEN_ORDER.to_yaml
             end
         end
-        return doc.render
+        return sanitize_pdf_with_ghostscript(doc.render)
     end
 
     def self.update_assign_result_errors()
@@ -2009,7 +2009,7 @@ class Main
                 end
             end
         end
-        return doc.render
+        return sanitize_pdf_with_ghostscript(doc.render)
     end
 
     def self.print_voucher_1(rows)
@@ -2150,7 +2150,7 @@ class Main
                 end
             end
         end
-        return doc.render
+        return sanitize_pdf_with_ghostscript(doc.render)
     end
 
     def self.print_voucher_2(rows)
@@ -2291,7 +2291,7 @@ class Main
                 end
             end
         end
-        return doc.render
+        return sanitize_pdf_with_ghostscript(doc.render)
     end
 
     def print_email_overview(klasse)
@@ -2579,6 +2579,6 @@ class Main
                 end
             end
         end
-        return doc.render
+        return sanitize_pdf_with_ghostscript(doc.render)
     end
 end

@@ -495,7 +495,15 @@ class Main < Sinatra::Base
                 end
                 faecher_info += faecher_info_extra
                 # STDERR.puts faecher_info.to_json
-                wahlfach_info = @@zeugnisliste_for_klasse[klasse][:wahlfach]
+                zeugnis_key = Main.zeugnis_key_for_email(email)
+                wahlfach_info = {}
+                FAECHER_FOR_ZEUGNIS[ZEUGNIS_SCHULJAHR][ZEUGNIS_HALBJAHR][zeugnis_key].each do |fach|
+                    if fach[0] == '$'
+                        wahlfach_info[fach.sub('$', '')] = true
+                    end
+                end
+
+                # wahlfach_info = @@zeugnisliste_for_klasse[klasse][:wahlfach]
                 # :zeugnis_key => self.zeugnis_key_for_email(email),
                 # :official_first_name => @@user_info[email][:official_first_name],
                 # :last_name => @@user_info[email][:last_name],

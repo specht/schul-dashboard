@@ -4,6 +4,7 @@
         <div class='col-md-12'>
             <a style='#{projekttage_phase() < 2 ? 'display: none;' : ''}' class="btn btn-success pull-right ml-2 mb-1" href="/projekttage_sus">Katalog</a>
             <a style='#{(projekttage_phase() < 2) || (!(admin_logged_in? || user_with_role_logged_in?(:can_manage_projekttage))) ? 'display: none;' : ''}' class="btn btn-success pull-right ml-2 mb-1" href="/api/print_projekttage_urkunden">Urkunden</a>
+            <a style='#{(projekttage_phase() < 2) || (!(admin_logged_in? || user_with_role_logged_in?(:can_manage_projekttage))) ? 'display: none;' : ''}' class="btn btn-success pull-right ml-2 mb-1" href="/api/print_projekttage_anwesenheitslisten">Anwesenheitslisten</a>
             <div id="table_here"></div>
         </div>
     </div>

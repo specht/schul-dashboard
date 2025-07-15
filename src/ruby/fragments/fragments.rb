@@ -1926,6 +1926,7 @@ class Main
             }
             emails_for_project[p[:nr]] ||= []
             emails_for_project[p[:nr]] << u[:email]
+            emails_for_project[p[:nr]].uniq!
         end
 
         projekte_list = []
@@ -2005,6 +2006,146 @@ class Main
                                 text "betreuende Lehrkraft", :size => 12, :align => :left
                             end
                         end
+                    end
+                end
+            end
+        end
+        return sanitize_pdf_with_ghostscript(doc.render)
+    end
+
+    def self.print_projekttage_anwesenheitslisten()
+        # Get projects
+        projekte = {}
+        emails_for_project = {}
+        sus_for_project = {}
+        $neo4j.neo4j_query(<<~END_OF_QUERY).each do |row|
+            MATCH (p:Projekttage)-[:BELONGS_TO]->(u:User)
+            RETURN p, u;
+        END_OF_QUERY
+            p = row['p']
+            u = row['u']
+            next unless @@user_info[u[:email]]
+            projekte[p[:nr]] ||= {
+                :nr => p[:nr],
+                :title => p[:name],
+                :min_klasse => p[:klassenstufe_min],
+                :max_klasse => p[:klassenstufe_max],
+                :capacity => p[:teilnehmer_max],
+            }
+            emails_for_project[p[:nr]] ||= []
+            emails_for_project[p[:nr]] << u[:email]
+            emails_for_project[p[:nr]].uniq!
+        end
+        $neo4j.neo4j_query(<<~END_OF_QUERY).each do |row|
+            MATCH (p:Projekttage)<-[:ASSIGNED_TO]-(u:User)
+            RETURN p, u;
+        END_OF_QUERY
+            p = row['p']
+            u = row['u']
+            next unless @@user_info[u[:email]]
+            sus_for_project[p[:nr]] ||= []
+            sus_for_project[p[:nr]] << u[:email]
+            sus_for_project[p[:nr]].uniq!
+        end
+
+        projekte_list = []
+        projekte.each_pair do |nr, p|
+            projekte_list << p
+        end
+
+        projekte_list.sort! do |a, b|
+            (a[:nr].to_i == b[:nr].to_i) ?
+            (a[:nr] <=> b[:nr]) :
+            (a[:nr].to_i <=> b[:nr].to_i)
+        end
+        doc = Prawn::Document.new(:page_size => 'A4', :page_layout => :portrait, :margin => 0) do
+            font_families.update("RobotoCondensed" => {
+                :normal => "/app/fonts/RobotoCondensed-Regular.ttf",
+                :italic => "/app/fonts/RobotoCondensed-Italic.ttf",
+                :bold => "/app/fonts/RobotoCondensed-Bold.ttf",
+                :bold_italic => "/app/fonts/RobotoCondensed-BoldItalic.ttf"
+            })
+            font_families.update("Roboto" => {
+                :normal => "/app/fonts/Roboto-Regular.ttf",
+                :italic => "/app/fonts/Roboto-Italic.ttf",
+                :bold => "/app/fonts/Roboto-Bold.ttf",
+                :bold_italic => "/app/fonts/Roboto-BoldItalic.ttf"
+            })
+            font_families.update("AlegreyaSans" => {
+                :normal => "/app/fonts/AlegreyaSans-Regular.ttf",
+                :italic => "/app/fonts/AlegreyaSans-Italic.ttf",
+                :bold => "/app/fonts/AlegreyaSans-Bold.ttf",
+                :bold_italic => "/app/fonts/AlegreyaSans-BoldItalic.ttf"
+            })
+            first_page = true
+            line_width 0.1.mm
+            projekte_list.each do |projekt|
+                next if (projekt[:capacity] || 0) <= 0
+                start_new_page unless first_page
+                first_page = false
+                bounding_box([20.mm, 277.mm], :width => 170.mm, :height => 207.mm) do
+                    font('AlegreyaSans') do
+                        text "<b>Anwesenheitsliste: »#{projekt[:title]}«</b>", :size => 16, :inline_format => true
+                        move_down 0.5.cm
+                        text(emails_for_project[projekt[:nr]].sort do |a, b|
+                            @@user_info[a][:last_name].downcase <=> @@user_info[b][:last_name].downcase
+                        end.map do |x| 
+                            @@user_info[x][:display_name]
+                        end.join(', '), :size => 12, :inline_format => true)
+                        move_down 1.cm
+
+                        sus_order = (sus_for_project[projekt[:nr]] || []).sort do |a, b|
+                            @@user_info[a][:last_name].downcase <=> @@user_info[b][:last_name].downcase
+                        end
+                        ty = cursor - 5.mm
+                        (-1...sus_order.size).each do |i|
+                            email = i == -1 ? nil : sus_order[i]
+                            waa = [10.mm, 30.mm, 30.mm, 13.mm, 21.mm, 22.mm, 22.mm, 22.mm]
+                            xo = 0.0
+                            waa.each.with_index do |wa, wi|
+                                bounding_box([xo, ty - i * 7.5.mm], width: wa, height: 7.5.mm) do
+                                    if i % 2 == 1
+                                        fill_color i == -1 ? 'e0e0e0' : 'f0f0f0'
+                                        rectangle([0, 7.5.mm], wa, 7.5.mm)
+                                        fill
+                                    end
+                                    fill_color '000000'
+                                    # s = "#{@@user_info[email][:last_name]}"
+                                    bounding_box([2.mm, 5.8.mm], width: wa - 4.mm, height: 7.mm) do
+                                        s = ""
+                                        if email.nil?
+                                            s = ['Nr.', 'Nachname', 'Vorname', 'Kl.', 'KL', 'Do', 'Fr', 'Mo'][wi]
+                                            s = "<b>#{s}</b>"
+                                        else
+                                            case wi
+                                            when 0
+                                                s = "#{i + 1}."
+                                            when 1
+                                                s = @@user_info[email][:last_name]
+                                            when 2
+                                                s = @@user_info[email][:first_name]
+                                            when 3
+                                                s = Main.tr_klasse(@@user_info[email][:klasse])
+                                            when 4
+                                                s = (@@klassenleiter[@@user_info[email][:klasse]] || []).join(', ')
+                                            end
+                                            s = elide_string(s.unicode_normalize(:nfc), wa - 4.mm, {:size => 11})
+                                        end
+                                        text s, :align => :left, :inline_format => true, :size => 11
+                                    end
+                                    stroke_bounds
+                                end
+                                xo += wa
+                            end
+                        end
+
+                        
+                        # (sus_for_project[projekt[:nr]] || []).sort do |a, b|
+                        #     @@user_info[a][:last_name].downcase <=> @@user_info[b][:last_name].downcase
+                        # end.each do |email|
+                        #     text(@@user_info[email][:last_name])
+                        #     move_down 0.5.cm
+                        # end
                     end
                 end
             end

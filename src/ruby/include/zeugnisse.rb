@@ -573,7 +573,7 @@ class Main < Sinatra::Base
                 vl << cache["Schuljahr:#{ZEUGNIS_SCHULJAHR}/Halbjahr:#{ZEUGNIS_HALBJAHR}/AB:Bemerkungen/Email:#{email}"]
                 vl << cache["Schuljahr:#{ZEUGNIS_SCHULJAHR}/Halbjahr:#{ZEUGNIS_HALBJAHR}/AB:Angebote/Email:#{email}"]
                 vl.reject! { |x| x.nil? }
-                info["#BemerkungenAngebote"] = vl.size > 0 ? vl.join(" / ") : '--'
+                info["#BemerkungenAngebote"] = vl.size > 0 ? vl.join(" ") : '--'
 
                 if ZEUGNIS_HALBJAHR == '2'
                     if zeugnis_key == '5' || zeugnis_key == '7_sesb' || zeugnis_key == '7_regulaer_la'|| zeugnis_key == '7_regulaer_frz'

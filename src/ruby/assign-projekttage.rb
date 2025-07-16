@@ -22,7 +22,8 @@ candidates = user_info.keys.select do |email|
 end
 
 if candidates.size != 1
-    STDERR.puts "Usage: ./assign-projekttage.rb <user> <nr> --srsly"
+    STDERR.puts "Found #{candidates.size} candidates:"
+    STDERR.puts candidates.to_yaml
     exit
 end
 

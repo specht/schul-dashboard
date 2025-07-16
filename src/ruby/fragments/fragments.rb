@@ -2098,20 +2098,24 @@ class Main
                             @@user_info[a][:last_name].downcase <=> @@user_info[b][:last_name].downcase
                         end
                         ty = cursor - 5.mm
+                        h = 10.mm # 7.5.mm for 30 participants
+                        # 10.mm for 23
+                        h = (-(2.5 / 7) * (sus_order.size - 30) + 7.5).mm
+                        h = 10.mm if h > 10.mm
                         (-1...sus_order.size).each do |i|
                             email = i == -1 ? nil : sus_order[i]
                             waa = [10.mm, 30.mm, 30.mm, 13.mm, 21.mm, 22.mm, 22.mm, 22.mm]
                             xo = 0.0
                             waa.each.with_index do |wa, wi|
-                                bounding_box([xo, ty - i * 7.5.mm], width: wa, height: 7.5.mm) do
+                                bounding_box([xo, ty - i * h], width: wa, height: h) do
                                     if i % 2 == 1
                                         fill_color i == -1 ? 'e0e0e0' : 'f0f0f0'
-                                        rectangle([0, 7.5.mm], wa, 7.5.mm)
+                                        rectangle([0, h], wa, h)
                                         fill
                                     end
                                     fill_color '000000'
                                     # s = "#{@@user_info[email][:last_name]}"
-                                    bounding_box([2.mm, 5.8.mm], width: wa - 4.mm, height: 7.mm) do
+                                    bounding_box([2.mm, h * 0.75], width: wa - 4.mm, height: h) do
                                         s = ""
                                         if email.nil?
                                             s = ['Nr.', 'Nachname', 'Vorname', 'Kl.', 'KL', 'Do', 'Fr', 'Mo'][wi]

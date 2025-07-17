@@ -3395,6 +3395,7 @@ class Main < Sinatra::Base
                                 :domain => JWT_DOMAIN_STREAM,
                                 :path => '/',
                                 :httponly => true,
+                                :same_site => :lax,
                                 :secure => DEVELOPMENT ? false : true)
             redirect "#{STREAM_SITE_URL}?jwt=#{jwt}", 302
         elsif path == 'tests'

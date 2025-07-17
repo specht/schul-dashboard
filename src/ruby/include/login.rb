@@ -418,6 +418,7 @@ class Main < Sinatra::Base
             :expires => Time.new + COOKIE_EXPIRY_TIME,
             :path => '/',
             :httponly => true,
+            :same_site => :lax,
             :secure => DEVELOPMENT ? false : true)
         respond(:ok => 'yeah')
     end
@@ -506,6 +507,7 @@ class Main < Sinatra::Base
                                 :expires => Time.new + COOKIE_EXPIRY_TIME,
                                 :path => '/',
                                 :httponly => true,
+                                :same_site => :lax,
                                 :secure => DEVELOPMENT ? false : true)
         end
     end

@@ -2177,19 +2177,19 @@ class Main < Sinatra::Base
                 if admin_logged_in? || user_who_can_upload_files_logged_in? || user_who_can_manage_news_logged_in? || user_who_can_manage_monitors_logged_in? || user_who_can_manage_tablets_logged_in? || user_with_role_logged_in?(:developer)
                     nav_items << :admin
                 end
-                if (schueler_logged_in? && @session_user[:klasse] == PK5_CURRENT_KLASSE)
-                    nav_items << :pk5
-                end
-                if schueler_logged_in?
-                    if email_is_eligible_for_lab8?(@@user_info, @session_user[:email])
-                        nav_items << :lab8
-                    end
-                    if email_is_projekttage_organizer?(@@user_info, @session_user[:email])
-                        nav_items << :projekttage
-                    elsif projekttage_phase() >= 2 && @session_user[:klassenstufe] < 10
-                        nav_items << :projekttage
-                    end
-                end
+                # if (schueler_logged_in? && @session_user[:klasse] == PK5_CURRENT_KLASSE)
+                #     nav_items << :pk5
+                # end
+                # if schueler_logged_in?
+                #     if email_is_eligible_for_lab8?(@@user_info, @session_user[:email])
+                #         nav_items << :lab8
+                #     end
+                #     if email_is_projekttage_organizer?(@@user_info, @session_user[:email])
+                #         nav_items << :projekttage
+                #     elsif projekttage_phase() >= 2 && @session_user[:klassenstufe] < 10
+                #         nav_items << :projekttage
+                #     end
+                # end
                 if user_who_can_use_aula_logged_in?
                     nav_items << :aula
                 end

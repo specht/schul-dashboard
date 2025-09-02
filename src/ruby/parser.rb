@@ -1043,7 +1043,7 @@ class Parser
             end
         end
 
-        Dir['/data/kurswahl/csv/2025-02/**/*.csv'].sort.each do |path|
+        Dir['/data/kurswahl/csv/2026-01/**/*.csv'].sort.each do |path|
             begin
                 File.open(path) do |f|
                     f.each_line do |line|
@@ -1114,7 +1114,9 @@ class Parser
                     kurse_for_schueler[email] << lesson_key
                 else
                     if DASHBOARD_SERVICE == 'ruby'
-                        puts "[#{name}] [#{kurs}] [#{lesson_key}] [#{lessons[:lesson_keys][lesson_key][:pretty_folder_name]}] [#{email}]"
+                        if lessons[:lesson_keys][lesson_key]
+                            puts "[#{name}] [#{kurs}] [#{lesson_key}] [#{lessons[:lesson_keys][lesson_key][:pretty_folder_name]}] [#{email}]"
+                        end
                     end
                 end
             end

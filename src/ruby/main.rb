@@ -1488,24 +1488,24 @@ class Main < Sinatra::Base
             }
         end
 
-        @@mailing_lists["dein-song-lt-14@#{MAILING_LIST_DOMAIN}"] = {
-            :label => "Dein Song (unter 14)",
-            :recipients => @@users_for_role[:schueler].to_a.select do |email|
-                @@user_info[email][:geburtstag] > "2011-03-14"
-            end
-        }
-        @@mailing_lists["dein-song-lt-16@#{MAILING_LIST_DOMAIN}"] = {
-            :label => "Dein Song (unter 16)",
-            :recipients => @@users_for_role[:schueler].to_a.select do |email|
-                @@user_info[email][:geburtstag] <= "2011-03-14" && @@user_info[email][:geburtstag] > "2009-03-14"
-            end
-        }
-        @@mailing_lists["dein-song-ge-16@#{MAILING_LIST_DOMAIN}"] = {
-            :label => "Dein Song (ab 16)",
-            :recipients => @@users_for_role[:schueler].to_a.select do |email|
-                @@user_info[email][:geburtstag] <= "2009-03-14"
-            end
-        }
+        # @@mailing_lists["dein-song-lt-14@#{MAILING_LIST_DOMAIN}"] = {
+        #     :label => "Dein Song (unter 14)",
+        #     :recipients => @@users_for_role[:schueler].to_a.select do |email|
+        #         @@user_info[email][:geburtstag] > "2011-03-14"
+        #     end
+        # }
+        # @@mailing_lists["dein-song-lt-16@#{MAILING_LIST_DOMAIN}"] = {
+        #     :label => "Dein Song (unter 16)",
+        #     :recipients => @@users_for_role[:schueler].to_a.select do |email|
+        #         @@user_info[email][:geburtstag] <= "2011-03-14" && @@user_info[email][:geburtstag] > "2009-03-14"
+        #     end
+        # }
+        # @@mailing_lists["dein-song-ge-16@#{MAILING_LIST_DOMAIN}"] = {
+        #     :label => "Dein Song (ab 16)",
+        #     :recipients => @@users_for_role[:schueler].to_a.select do |email|
+        #         @@user_info[email][:geburtstag] <= "2009-03-14"
+        #     end
+        # }
 
         @@lessons[:lesson_keys].keys.each do |lesson_key|
             next if @@schueler_for_lesson[lesson_key].nil?

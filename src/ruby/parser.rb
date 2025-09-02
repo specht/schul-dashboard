@@ -1368,7 +1368,7 @@ class Parser
                     sus.each do |name|
                         if name[0] == '@'
                             klasse = name.sub('@', '')
-                            schueler_for_klasse[klasse].each do |email|
+                            (schueler_for_klasse[klasse] || []).each do |email|
                                 bildungsgaenge_sus[email] = bildungsgang
                             end
                         else

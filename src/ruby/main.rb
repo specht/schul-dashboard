@@ -1152,9 +1152,11 @@ class Main < Sinatra::Base
             MATCH (u:User {has_dashboard_amt: TRUE}) RETURN u.email;
         END_OF_QUERY
             email = row['u.email']
-            (@@lessons_for_klasse[@@user_info[email][:klasse]] || []).each do |lesson_key|
-                @@materialamt_for_lesson[lesson_key] ||= Set.new()
-                @@materialamt_for_lesson[lesson_key] << row['u.email']
+            if @@user_info[email]
+                (@@lessons_for_klasse[@@user_info[email][:klasse]] || []).each do |lesson_key|
+                    @@materialamt_for_lesson[lesson_key] ||= Set.new()
+                    @@materialamt_for_lesson[lesson_key] << row['u.email']
+                end
             end
         end
 

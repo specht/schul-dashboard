@@ -1423,7 +1423,7 @@ class Main < Sinatra::Base
             }
             all_teachers = Set.new()
             klassen.each do |klasse|
-                @@teachers_for_klasse[klasse].each_pair do |shorthand, _|
+                (@@teachers_for_klasse[klasse] || {}).each_pair do |shorthand, _|
                     teacher_email = @@shorthands[shorthand]
                     all_teachers << teacher_email if teacher_email
                 end

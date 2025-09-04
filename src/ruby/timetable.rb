@@ -1771,22 +1771,22 @@ class Timetable
                                     e.delete(:vertretungs_text)
                                     e.delete(:data)
                                     subject = [
-                                        # ['Zauberkunst', 'Flitwick'],
-                                        # ['Wahrsagen', 'Trelawney'],
-                                        # ['Kräuterkunde', 'Sprout'],
-                                        # ['Muggelkunde', 'Burbage'],
-                                        # ['Pflege magischer Geschöpfe', 'Hagrid'],
-                                        # ['Zaubertränke', 'Snape'],
-                                        # ['Besenflug', 'Hooch'],
-                                        # ['Verteidigung gegen die dunklen Künste', 'Lupin']
-                                        ['Kreatives Chaos', 'Herr Dr. Wirrwarr'],
-                                        ['Schlafen für Fortgeschrittene', 'Frau Schlummer'],
-                                        ['Haustierpflege', 'Herr Tierlieb'],
-                                        ['Nonsenskunde', 'Frau Dr. Quatsch'],
-                                        ['Schokoladenwissenschaft', 'Herr Zuckerschnute'],
-                                        ['Zeitreisen', 'Frau Dr. Chronos'],
-                                        ['Unsichtbarkeitstraining für Anfänger', 'Frau Nebel-Schleierhaft'],
-                                        ['Pflanzenflüstern und Kräuterschnack', 'Frau Grünkraut'],
+                                        ['Zauberkunst', 'Flitwick'],
+                                        ['Wahrsagen', 'Trelawney'],
+                                        ['Kräuterkunde', 'Sprout'],
+                                        ['Muggelkunde', 'Burbage'],
+                                        ['Pflege magischer Geschöpfe', 'Hagrid'],
+                                        ['Zaubertränke', 'Snape'],
+                                        ['Besenflug', 'Hooch'],
+                                        ['Verteidigung gegen die dunklen Künste', 'Lupin']
+                                        # ['Kreatives Chaos', 'Herr Dr. Wirrwarr'],
+                                        # ['Schlafen für Fortgeschrittene', 'Frau Schlummer'],
+                                        # ['Haustierpflege', 'Herr Tierlieb'],
+                                        # ['Nonsenskunde', 'Frau Dr. Quatsch'],
+                                        # ['Schokoladenwissenschaft', 'Herr Zuckerschnute'],
+                                        # ['Zeitreisen', 'Frau Dr. Chronos'],
+                                        # ['Unsichtbarkeitstraining für Anfänger', 'Frau Nebel-Schleierhaft'],
+                                        # ['Pflanzenflüstern und Kräuterschnack', 'Frau Grünkraut'],
                                     ].sample
                                     e[:label_lehrer_lang] = "#{subject[1]}"
                                     e[:label_lehrer_short] = "#{subject[1]}"

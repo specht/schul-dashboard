@@ -70,7 +70,11 @@ class Main < Sinatra::Base
     end
 
     def can_see_all_timetables_logged_in?
-        user_with_role_logged_in?(:can_see_all_timetables)
+        if Main.determine_hide_from_sus() && schueler_logged_in?
+            false
+        else
+            user_with_role_logged_in?(:can_see_all_timetables)
+        end
     end
 
     def can_manage_salzh_logged_in?

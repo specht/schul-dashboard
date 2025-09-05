@@ -2707,7 +2707,7 @@ class Main < Sinatra::Base
                 io.puts "</div>"
                 io.string
             end
-        elsif technikteam_logged_in?
+        elsif technikteam_logged_in? && (!Main.determine_hide_from_sus)
             StringIO.open do |io|
                 io.puts "<div style='margin-bottom: 15px;'>"
                 io.puts "<a data-id='#{@session_user[:id]}' onclick=\"load_timetable('#{@session_user[:id]}');\" class='btn btn-sm ttc active' style='width: 100%; padding: 0.25rem 0.5rem; display: inline-block;'>Persönlicher Stundenplan (#{tr_klasse(@session_user[:klasse])})</a><hr>"

@@ -234,7 +234,7 @@ class Script
         end
         @@klassen_order.each do |klasse|
             next if klasse.to_i > 10
-            @@teachers_for_klasse[klasse].keys.each do |shorthand|
+            (@@teachers_for_klasse[klasse] || {}).keys.each do |shorthand|
                 email = @@shorthands[shorthand]
                 next if email.nil?
                 user = @@user_info[email]
@@ -247,7 +247,7 @@ class Script
                     :share_with => user[:display_name].unicode_normalize(:nfc)
                 }
             end
-            @@schueler_for_klasse[klasse].each do |email|
+            (@@schueler_for_klasse[klasse] || []).each do |email|
                 user = @@user_info[email]
                 user_id = user[:nc_login]
                 email_for_user_id[user_id] = email

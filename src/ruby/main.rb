@@ -3072,6 +3072,7 @@ class Main < Sinatra::Base
                 io.puts "#{@@user_info[email][:display_name]} <#{email}>"
             end
             @@klassen_order.each do |klasse|
+                next unless @@teachers_for_klasse[klasse]
                 io.puts
                 io.puts "> Klasse #{tr_klasse(klasse)}"
                 io.puts

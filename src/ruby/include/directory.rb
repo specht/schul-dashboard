@@ -91,6 +91,7 @@ class Main < Sinatra::Base
             end
             if teacher_logged_in?
                 io.puts "<th>Geburtsdatum</th>"
+                io.puts "<th>m/w</th>"
                 io.puts "<th>Bildungsgang</th>"
                 io.puts "<th>Stufe</th>"
             end
@@ -176,6 +177,7 @@ class Main < Sinatra::Base
                     else
                         io.puts "<td>&ndash;</td>"
                     end
+                    io.puts "<td>#{record[:geschlecht]}</td>"
                     io.puts "<td>#{tr_bildungsgang(record[:bildungsgang])}</td>"
                     io.puts "<td>#{record[:klassenstufe]}</td>"
                 end

@@ -1,6 +1,7 @@
 require 'prawn'
 require 'prawn/measurement_extensions'
 require 'prawn/qrcode'
+require 'prawn-svg'
 require 'prawn-styled-text'
 require '/app/include/color.rb'
 require '/app/include/color-schemes.rb'
@@ -1144,6 +1145,13 @@ class Main
                             text "Aktuelle Informationen:", :align => :center
                             print_qr_code(url, :pos => [0.mm, 30.mm], :extent => 30.mm, :stroke => false)
                         end
+                        # translate(135.mm, 28.mm) do
+                        #     # mirror horizontally: -1 in x-scale
+                        #     transformation_matrix(-1, 0, 0, 1, 0, 0)
+
+                        #     # draw svg at origin
+                        #     svg IO.read("/app/images/iso-exit-right.svg"), at: [0, 30.mm], width: 95.mm
+                        # end
                     end
                 end
             end

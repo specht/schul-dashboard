@@ -282,6 +282,7 @@ class Script
         wanted_nc_ids = nil
         unless argv.empty?
             wanted_nc_ids = Set.new(argv.map { |email| (@@user_info[email] || {})[:nc_login] })
+            STDERR.puts "Filtering to #{wanted_nc_ids.size} users: #{wanted_nc_ids.to_a.sort.to_yaml}"
         end
         STDERR.puts "Got wanted shares for #{wanted_shares.size} users."
         # File.open('/internal/debug/wanted-shares.yaml', 'w') do |f|

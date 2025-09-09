@@ -217,6 +217,28 @@ document.addEventListener('DOMContentLoaded', function() {
             })
             .catch(error => console.error('Error:', error));
         });
+        $('.bu-email-letters').click(function(e) {
+            let emails = [];
+            for (let row of $('.klassen_table tr')) {
+                let email = $(row).data('email');
+                if (typeof(email) !== 'undefined') {
+                    emails.push(email);
+                }
+            }
+            fetch('/api/print_email_letters', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({emails: emails})
+            })
+            .then(response => response.blob())
+            .then(blob => {
+                let url = window.URL.createObjectURL(blob);
+                window.open(url, '_blank');
+            })
+            .catch(error => console.error('Error:', error));
+        });
     }
 });
 </script>

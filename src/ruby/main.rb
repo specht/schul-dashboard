@@ -2178,9 +2178,9 @@ class Main < Sinatra::Base
                 if admin_logged_in? || user_who_can_upload_files_logged_in? || user_who_can_manage_news_logged_in? || user_who_can_manage_monitors_logged_in? || user_who_can_manage_tablets_logged_in? || user_with_role_logged_in?(:developer)
                     nav_items << :admin
                 end
-                # if (schueler_logged_in? && @session_user[:klasse] == PK5_CURRENT_KLASSE)
-                #     nav_items << :pk5
-                # end
+                if (schueler_logged_in? && @session_user[:klasse] == PK5_CURRENT_KLASSE)
+                    nav_items << :pk5
+                end
                 # if schueler_logged_in?
                 #     if email_is_eligible_for_lab8?(@@user_info, @session_user[:email])
                 #         nav_items << :lab8
@@ -2375,7 +2375,7 @@ class Main < Sinatra::Base
                         if user_with_role_logged_in?(:can_see_kurslisten)
                             io.puts "<a class='dropdown-item nav-icon' href='/kurslisten'><div class='icon'><i class='fa fa-file-text-o'></i></div><span class='label'>Kurslisten</span></a>"
                         end
-                        # io.puts "<a class='dropdown-item nav-icon' href='/pk5_overview'><div class='icon'><i class='fa fa-file-text-o'></i></div><span class='label'>5. PK</span></a>"
+                        io.puts "<a class='dropdown-item nav-icon' href='/pk5_overview'><div class='icon'><i class='fa fa-file-text-o'></i></div><span class='label'>5. PK</span></a>"
                         # io.puts "<a class='dropdown-item nav-icon' href='/lab8_overview'><div class='icon'><i class='fa fa-clock-o'></i></div><span class='label'>Lab 8</span></a>"
                         # io.puts "<a class='dropdown-item nav-icon' href='/projekttage_overview'><div class='icon'><i class='fa fa-rocket'></i></div><span class='label'>Projekttage</span></a>"
                     end

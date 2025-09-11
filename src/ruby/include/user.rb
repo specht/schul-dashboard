@@ -839,7 +839,8 @@ class Main < Sinatra::Base
     end
 
     post '/api/print_email_letters' do
-        data = parse_request_data(:required_keys => [:emails], :types => {:emails => Array})
+        require_teacher!
+        data = parse_request_data(:required_keys => [:emails], :types => {:emails => Array}, :max_body_length => 1024 * 1024)
         emails = data[:emails]
         emails.reject! do |email|
             return true unless @@user_info[email]

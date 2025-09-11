@@ -337,6 +337,7 @@ class Main < Sinatra::Base
                 if teacher_logged_in?
                     io.puts "<a class='btn btn-primary' href='/show_login_codes/#{klasse}'><i class='fa fa-sign-in'></i>&nbsp;&nbsp;Live-Anmeldungen der Klasse zeigen</a>"
                     io.puts "<a class='btn btn-warning' href='/email_overview/#{klasse}'><i class='fa fa-envelope-o'></i>&nbsp;&nbsp;E-Mails aus dem Unterricht</a>"
+                    io.puts "<button class='btn btn-primary bu-email-letters'>Alle E-Mail-Briefe (Zugangsdaten)</button>"
                 end
             end
             # if teacher_logged_in?

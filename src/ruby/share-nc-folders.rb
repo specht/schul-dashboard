@@ -169,7 +169,7 @@ class Script
             # only handle lessons which have actual Klassen
             next if (Set.new(lesson_info[:klassen]) & Set.new(@@klassen_order)).empty?
             unless ALSO_SHARE_OS_FOLDERS
-                next unless (Set.new(lesson_info[:klassen]) & Set.new(['11', '12'])).empty?
+                next unless (Set.new(lesson_info[:klassen]) & Set.new(['12'])).empty?
             end
             next if lesson_key[0, 8] == 'Testung_'
 
@@ -281,7 +281,8 @@ class Script
         end
         wanted_nc_ids = nil
         unless argv.empty?
-            wanted_nc_ids = Set.new(argv.map { |email| (@@user_info[email] || {})[:nc_login] })
+            wanted_nc_ids = Set.new(argv.map { |email| (@@user_info[email] || {})[:nc_login] }.reject { |x| x.nil? })
+            STDERR.puts "Filtering to #{wanted_nc_ids.size} users: #{wanted_nc_ids.to_a.sort.to_yaml}"
         end
         STDERR.puts "Got wanted shares for #{wanted_shares.size} users."
         # File.open('/internal/debug/wanted-shares.yaml', 'w') do |f|
@@ -319,8 +320,8 @@ class Script
         wanted_shares.keys.sort.each do |user_id|
             unless wanted_nc_ids.nil?
                 next unless wanted_nc_ids.include?(user_id)
-                # STDERR.puts "Wanted shares for #{user_id}:"
-                # STDERR.puts wanted_shares[user_id].to_yaml
+                STDERR.puts "Wanted shares for #{user_id}:"
+                STDERR.puts wanted_shares[user_id].to_yaml
             end
             ocs_user = Nextcloud.ocs(url: NEXTCLOUD_URL_FROM_RUBY_CONTAINER,
                                      username: user_id,

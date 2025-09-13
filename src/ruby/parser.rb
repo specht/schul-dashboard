@@ -1075,55 +1075,53 @@ class Parser
         #     end
         # end
         # TODO: Re-activate this
-        # if false
-        #     path = Dir['/data/kurswahl/untis/*.TXT'].sort.last
-        #     lesson_key_from_kurs = {}
-        #     lessons[:lesson_keys].each_pair do |lesson_key, lesson_info|
-        #         next unless lesson_info[:klassen].include?('11') || lesson_info[:klassen].include?('12')
-        #         parts = lesson_key.split('_')
-        #         parts.pop
-        #         shortened = parts.join('_')
-        #         lesson_info[:klassen].each do |klasse|
-        #             lesson_key_from_kurs["#{shortened}_#{klasse}"] = lesson_key
-        #         end
-        #     end
-        #     user_info.each_pair do |email, info|
-        #         next unless info[:klasse] == '11' || info[:klasse] == '12'
-        #         (0..info[:first_name].size).each do |i|
-        #             ['_', ''].each do |x|
-        #                 name = remove_accents("#{info[:last_name]}#{x}#{info[:first_name][0, i]}")
-        #                 email_for_name[name] = email
-        #                 if info[:last_name].include?(',')
-        #                     flipped_last_name = info[:last_name].split(', ').map { |x| x.strip }.reverse.join(' ')
-        #                     name = remove_accents("#{flipped_last_name}#{x}#{info[:first_name][0, i]}")
-        #                     email_for_name[name] = email
-        #                 end
-        #             end
-        #         end
-        #     end
-        #     File.open(path) do |f|
-        #         f.each_line do |line|
-        #             parts = line.split(',').map { |x| x.gsub('"', '') }
-        #             name = parts[0]
-        #             kurs = parts[2]
-        #             klasse = parts[4]
-        #             lesson_key = lesson_key_from_kurs["#{kurs}_#{klasse}"]
-        #             email = email_for_name[name]
-        #             if email && lesson_key
-        #                 schueler_for_kurs[lesson_key] ||= Set.new()
-        #                 schueler_for_kurs[lesson_key] << email
-        #                 kurse_for_schueler[email] ||= Set.new()
-        #                 kurse_for_schueler[email] << lesson_key
-        #             else
-        #                 if DASHBOARD_SERVICE == 'ruby'
-        #                     if lessons[:lesson_keys][lesson_key]
-        #                         puts "[#{name}] [#{kurs}] [#{lesson_key}] [#{lessons[:lesson_keys][lesson_key][:pretty_folder_name]}] [#{email}]"
-        #                     end
-        #                 end
-        #             end
-        #         end
-        #     end
-        # end
+        path = Dir['/data/kurswahl/untis/*.TXT'].sort.last
+        lesson_key_from_kurs = {}
+        lessons[:lesson_keys].each_pair do |lesson_key, lesson_info|
+            next unless lesson_info[:klassen].include?('11') || lesson_info[:klassen].include?('12')
+            parts = lesson_key.split('_')
+            parts.pop
+            shortened = parts.join('_')
+            lesson_info[:klassen].each do |klasse|
+                lesson_key_from_kurs["#{shortened}_#{klasse}"] = lesson_key
+            end
+        end
+        user_info.each_pair do |email, info|
+            next unless info[:klasse] == '11' || info[:klasse] == '12'
+            (0..info[:first_name].size).each do |i|
+                ['_', ''].each do |x|
+                    name = remove_accents("#{info[:last_name]}#{x}#{info[:first_name][0, i]}")
+                    email_for_name[name] = email
+                    if info[:last_name].include?(',')
+                        flipped_last_name = info[:last_name].split(', ').map { |x| x.strip }.reverse.join(' ')
+                        name = remove_accents("#{flipped_last_name}#{x}#{info[:first_name][0, i]}")
+                        email_for_name[name] = email
+                    end
+                end
+            end
+        end
+        File.open(path) do |f|
+            f.each_line do |line|
+                parts = line.split(',').map { |x| x.gsub('"', '') }
+                name = parts[0]
+                kurs = parts[2]
+                klasse = parts[4]
+                lesson_key = lesson_key_from_kurs["#{kurs}_#{klasse}"]
+                email = email_for_name[name]
+                if email && lesson_key
+                    schueler_for_kurs[lesson_key] ||= Set.new()
+                    schueler_for_kurs[lesson_key] << email
+                    kurse_for_schueler[email] ||= Set.new()
+                    kurse_for_schueler[email] << lesson_key
+                else
+                    if DASHBOARD_SERVICE == 'ruby'
+                        if lessons[:lesson_keys][lesson_key]
+                            puts "[#{name}] [#{kurs}] [#{lesson_key}] [#{lessons[:lesson_keys][lesson_key][:pretty_folder_name]}] [#{email}]"
+                        end
+                    end
+                end
+            end
+        end
         kurs_ids_for_tag = {}
         emails_for_kurs_id = {}
         kurs_id_tr = {}

@@ -2377,7 +2377,7 @@ class Main < Sinatra::Base
                         end
                         io.puts "<a class='dropdown-item nav-icon' href='/pk5_overview'><div class='icon'><i class='fa fa-file-text-o'></i></div><span class='label'>5. PK</span></a>"
                         # io.puts "<a class='dropdown-item nav-icon' href='/lab8_overview'><div class='icon'><i class='fa fa-clock-o'></i></div><span class='label'>Lab 8</span></a>"
-                        # io.puts "<a class='dropdown-item nav-icon' href='/projekttage_overview'><div class='icon'><i class='fa fa-rocket'></i></div><span class='label'>Projekttage</span></a>"
+                        io.puts "<a class='dropdown-item nav-icon' href='/projekttage_overview'><div class='icon'><i class='fa fa-rocket'></i></div><span class='label'>Projekttage</span></a>"
                     end
                     if schueler_logged_in?
                         if @session_user[:klasse].to_i < 11

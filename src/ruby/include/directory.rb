@@ -1058,7 +1058,7 @@ class Main < Sinatra::Base
         io.puts "<td>"
         print_email_field(io, list_email)
         io.puts "</td>"
-        if teacher_logged_in? || technikteam_logged_in?
+        if teacher_logged_in? || technikteam_logged_in? || user_with_role_logged_in?(:externe_ag_leitung)
             io.puts "<td style='text-align: right;'><button data-list-email='#{list_email}' class='btn btn-warning btn-sm bu-toggle-adresses'>#{info[:recipients].size} Adressen&nbsp;&nbsp;<i class='fa fa-chevron-down'></i></button></td>"
             io.puts "</tr>"
             io.puts "<tbody style='display: none;' class='list_email_emails' data-list-email='#{list_email}'>"

@@ -169,7 +169,7 @@ class Script
             # only handle lessons which have actual Klassen
             next if (Set.new(lesson_info[:klassen]) & Set.new(@@klassen_order)).empty?
             unless ALSO_SHARE_OS_FOLDERS
-                next unless (Set.new(lesson_info[:klassen]) & Set.new(['12'])).empty?
+                next unless (Set.new(lesson_info[:klassen]) & Set.new(['11', '12'])).empty?
             end
             next if lesson_key[0, 8] == 'Testung_'
 

@@ -1107,7 +1107,7 @@ class Parser
                 kurs = parts[2]
                 klasse = parts[4]
                 lesson_key = lesson_key_from_kurs["#{kurs}_#{klasse}"]
-                email = email_for_name[name]
+                email = email_for_name[name] || email_for_name[remove_accents(name)]
                 if email && lesson_key
                     schueler_for_kurs[lesson_key] ||= Set.new()
                     schueler_for_kurs[lesson_key] << email
@@ -1138,57 +1138,57 @@ class Parser
                 kurs_pre_tr << [first, rest]
             end
         end
-        Dir['/data/kurswahl/csv/2025-26-1/**/*.csv'].sort.each do |path|
-            begin
-                File.open(path) do |f|
-                    f.each_line do |line|
-                        line = line.force_encoding('CP1252')
-                        line = line.encode('UTF-8')
-                        line.strip!
-                        next if line.empty?
-                        parts = line.split(';')
-                        sus_name = parts[0]
-                        tutor_shorthand = parts[1]
-                        next if tutor_shorthand.nil? || tutor_shorthand.empty?
-                        shorthand = parts[3]
-                        fach = parts[5].split('-').first
-                        fach.sub!(/\d+$/, '')
-                        kurs_pre_tr.each do |tr|
-                            if fach == tr[0]
-                                fach = tr[1]
-                                break
-                            end
-                        end
-                        tag = "#{fach}/#{shorthand}"
+        # Dir['/data/kurswahl/csv/2025-26-1/**/*.csv'].sort.each do |path|
+        #     begin
+        #         File.open(path) do |f|
+        #             f.each_line do |line|
+        #                 line = line.force_encoding('CP1252')
+        #                 line = line.encode('UTF-8')
+        #                 line.strip!
+        #                 next if line.empty?
+        #                 parts = line.split(';')
+        #                 sus_name = parts[0]
+        #                 tutor_shorthand = parts[1]
+        #                 next if tutor_shorthand.nil? || tutor_shorthand.empty?
+        #                 shorthand = parts[3]
+        #                 fach = parts[5].split('-').first
+        #                 fach.sub!(/\d+$/, '')
+        #                 kurs_pre_tr.each do |tr|
+        #                     if fach == tr[0]
+        #                         fach = tr[1]
+        #                         break
+        #                     end
+        #                 end
+        #                 tag = "#{fach}/#{shorthand}"
 
-                        kurs_id = File.basename(path).split('.').first
-                        kurs_ids_for_tag[tag] ||= Set.new()
-                        kurs_ids_for_tag[tag] << kurs_id
-                        while sus_name.length > 0
-                            break if email_for_name.include?(sus_name)
-                            name_parts = sus_name.split(' ')
-                            sus_name = name_parts[0, name_parts.size - 1].join(' ')
-                        end
-                        unless shorthands.include?(shorthand)
-                            debug_ruby("Warning: Unknown shorthand »#{shorthand}« in #{File.basename(path)}\n#{line}")
-                            next
-                        end
-                        unless email_for_name.include?(sus_name)
-                            debug_ruby("Warning: Unknown SuS name »#{sus_name}« in #{File.basename(path)}\n#{line}")
-                            next
-                        end
-                        emails_for_kurs_id[kurs_id] ||= []
-                        emails_for_kurs_id[kurs_id] << email_for_name[sus_name]
-                        tutor_for_schueler[email_for_name[sus_name]] ||= shorthands[tutor_shorthand]
-                        if tutor_for_schueler[email_for_name[sus_name]] != shorthands[tutor_shorthand]
-                            raise 'oops! tutor mismatch.'
-                        end
-                    end
-                end
-            rescue StandardError => e
-                debug_ruby("Error parsing #{path}: #{e}")
-            end
-        end
+        #                 kurs_id = File.basename(path).split('.').first
+        #                 kurs_ids_for_tag[tag] ||= Set.new()
+        #                 kurs_ids_for_tag[tag] << kurs_id
+        #                 while sus_name.length > 0
+        #                     break if email_for_name.include?(sus_name)
+        #                     name_parts = sus_name.split(' ')
+        #                     sus_name = name_parts[0, name_parts.size - 1].join(' ')
+        #                 end
+        #                 unless shorthands.include?(shorthand)
+        #                     debug_ruby("Warning: Unknown shorthand »#{shorthand}« in #{File.basename(path)}\n#{line}")
+        #                     next
+        #                 end
+        #                 unless email_for_name.include?(sus_name)
+        #                     debug_ruby("Warning: Unknown SuS name »#{sus_name}« in #{File.basename(path)}\n#{line}")
+        #                     next
+        #                 end
+        #                 emails_for_kurs_id[kurs_id] ||= []
+        #                 emails_for_kurs_id[kurs_id] << email_for_name[sus_name]
+        #                 tutor_for_schueler[email_for_name[sus_name]] ||= shorthands[tutor_shorthand]
+        #                 if tutor_for_schueler[email_for_name[sus_name]] != shorthands[tutor_shorthand]
+        #                     raise 'oops! tutor mismatch.'
+        #                 end
+        #             end
+        #         end
+        #     rescue StandardError => e
+        #         debug_ruby("Error parsing #{path}: #{e}")
+        #     end
+        # end
         debug_logs = StringIO.open do |io|
             kurs_ids_for_tag.each_pair { |tag, ids| kurs_ids_for_tag[tag] = ids.to_a }
             File.open('/internal/debug/kurs_ids_for_tag.yaml', 'w') do |f|

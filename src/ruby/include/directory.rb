@@ -320,13 +320,13 @@ class Main < Sinatra::Base
             if teacher_logged_in?
                 if is_klasse
                     io.puts "<tr>"
-                    io.puts "<td colspan='4'></td>"
+                    io.puts "<td colspan='8'></td>"
                     io.puts "<td colspan='2'><b>E-Mail an die Klasse #{tr_klasse(klasse)}</b></td>"
                     io.puts "<td></td>"
                     io.puts "<td colspan='3'><b>E-Mail an alle Eltern der Klasse #{tr_klasse(klasse)}</b></td>"
                     io.puts "</tr>"
                     io.puts "<tr class='user_row'>"
-                    io.puts "<td colspan='4'></td>"
+                    io.puts "<td colspan='8'></td>"
                     io.puts "<td colspan='2'>"
                     print_email_field(io, "klasse.#{klasse}@#{MAILING_LIST_DOMAIN}".downcase)
                     io.puts "</td>"
@@ -337,13 +337,13 @@ class Main < Sinatra::Base
                     io.puts "</tr>"
                 else
                     io.puts "<tr>"
-                    io.puts "<td colspan='4'></td>"
+                    io.puts "<td colspan='8'></td>"
                     io.puts "<td colspan='2'><b>E-Mail an alle SuS des #{@@lessons[:lesson_keys][klasse][:pretty_folder_name]}</b></td>"
                     io.puts "<td></td>"
                     io.puts "<td colspan='3'><b>E-Mail an alle Eltern des #{@@lessons[:lesson_keys][klasse][:pretty_folder_name]}</b></td>"
                     io.puts "</tr>"
                     io.puts "<tr class='user_row'>"
-                    io.puts "<td colspan='4'></td>"
+                    io.puts "<td colspan='8'></td>"
                     io.puts "<td colspan='2'>"
                     print_email_field(io, "#{@@lessons[:lesson_keys][klasse][:list_email]}@#{MAILING_LIST_DOMAIN}".downcase)
                     io.puts "</td>"

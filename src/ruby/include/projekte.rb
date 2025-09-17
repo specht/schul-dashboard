@@ -1421,6 +1421,7 @@ class Main < Sinatra::Base
     end
 
     def print_projekt_interesse_stats(user_email)
+        return '' if projekttage_phase() < 2
         projekt = nil
         neo4j_query(<<~END_OF_QUERY, {:email => user_email}).each do |row|
             MATCH (p:Projekttage)-[:BELONGS_TO]->(u:User {email: $email})
@@ -1486,6 +1487,7 @@ class Main < Sinatra::Base
     end
 
     def print_projekt_assigned_sus(user_email)
+        return '' if projekttage_phase() < 3
         projekt = nil
         neo4j_query(<<~END_OF_QUERY, {:email => user_email}).each do |row|
             MATCH (p:Projekttage)-[:BELONGS_TO]->(u:User {email: $email})

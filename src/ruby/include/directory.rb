@@ -1,6 +1,35 @@
 
 NOBILIARY_PREFIX_REGEX = "/\\b(von|van|de|da|di|le)\\b/i"
 
+class Prawn::Document
+    def elide_string(s, width, style = {}, suffix = '…')
+        return '' if width <= 0
+        return s if width_of(s, style) <= width
+        suffix_width = width_of(suffix, style)
+        width -= suffix_width
+        length = s.size
+        i = 0
+        l = s.size
+        r = l
+        while width_of(s[0, l], style) > width
+            r = l
+            l /= 2
+        end
+        i = 0
+        while l < r - 1 do
+            m = (l + r) / 2
+            if width_of(s[0, m], style) > width
+                r = m
+            else
+                l = m
+            end
+            i += 1
+            break if (i > 1000)
+        end
+        s[0, l].strip + suffix
+    end
+end
+
 class Main < Sinatra::Base
     def self.iterate_kurse(&block)
         @@lessons[:lesson_keys].keys.sort do |a, b|
@@ -291,13 +320,13 @@ class Main < Sinatra::Base
             if teacher_logged_in?
                 if is_klasse
                     io.puts "<tr>"
-                    io.puts "<td colspan='4'></td>"
+                    io.puts "<td colspan='8'></td>"
                     io.puts "<td colspan='2'><b>E-Mail an die Klasse #{tr_klasse(klasse)}</b></td>"
                     io.puts "<td></td>"
                     io.puts "<td colspan='3'><b>E-Mail an alle Eltern der Klasse #{tr_klasse(klasse)}</b></td>"
                     io.puts "</tr>"
                     io.puts "<tr class='user_row'>"
-                    io.puts "<td colspan='4'></td>"
+                    io.puts "<td colspan='8'></td>"
                     io.puts "<td colspan='2'>"
                     print_email_field(io, "klasse.#{klasse}@#{MAILING_LIST_DOMAIN}".downcase)
                     io.puts "</td>"
@@ -308,13 +337,13 @@ class Main < Sinatra::Base
                     io.puts "</tr>"
                 else
                     io.puts "<tr>"
-                    io.puts "<td colspan='4'></td>"
+                    io.puts "<td colspan='8'></td>"
                     io.puts "<td colspan='2'><b>E-Mail an alle SuS des #{@@lessons[:lesson_keys][klasse][:pretty_folder_name]}</b></td>"
                     io.puts "<td></td>"
                     io.puts "<td colspan='3'><b>E-Mail an alle Eltern des #{@@lessons[:lesson_keys][klasse][:pretty_folder_name]}</b></td>"
                     io.puts "</tr>"
                     io.puts "<tr class='user_row'>"
-                    io.puts "<td colspan='4'></td>"
+                    io.puts "<td colspan='8'></td>"
                     io.puts "<td colspan='2'>"
                     print_email_field(io, "#{@@lessons[:lesson_keys][klasse][:list_email]}@#{MAILING_LIST_DOMAIN}".downcase)
                     io.puts "</td>"
@@ -353,6 +382,7 @@ class Main < Sinatra::Base
                 end
     #             io.puts "<div style='text-align: center;'>"
                 io.puts "<a href='/api/directory_xlsx/#{klasse}' class='btn btn-primary'><i class='fa fa-file-excel-o'></i>&nbsp;&nbsp;Excel-Tabelle herunterladen</a>"
+                io.puts "<a href='/api/directory_kursbuch_pdf/by_last_name/#{klasse}' class='btn btn-primary'><i class='fa fa-file-pdf-o'></i>&nbsp;&nbsp;Kursbuch-PDF herunterladen</a>"
                 io.puts "<a href='/api/directory_timetex_pdf/by_last_name/#{klasse}' class='btn btn-primary'><i class='fa fa-file-pdf-o'></i>&nbsp;&nbsp;Timetex-PDF herunterladen</a>"
                 io.puts "<a href='/api/directory_timetex_pdf/by_first_name/#{klasse}' class='btn btn-primary'><i class='fa fa-file-pdf-o'></i>&nbsp;&nbsp;Timetex-PDF herunterladen (nach Vornamen sortiert)</a>"
                 io.puts "<a href='/api/directory_json/#{klasse}' class='btn btn-primary'><i class='fa fa-file-code-o'></i>&nbsp;&nbsp;JSON herunterladen</a>"
@@ -782,6 +812,29 @@ class Main < Sinatra::Base
         respond_raw_with_mimetype(doc.render, 'application/pdf')
     end
 
+    get '/api/directory_kursbuch_pdf/by_last_name/*' do
+        require_teacher!
+        klasse = request.path.sub('/api/directory_kursbuch_pdf/by_last_name/', '')
+        main = self
+        d = (127.mm / 15)
+        doc = Prawn::Document.new(:page_size => 'A4', :page_layout => :portrait,
+                                :margin => 0) do
+            font('/app/fonts/RobotoCondensed-Regular.ttf') do
+                font_size 11
+                main.iterate_directory(klasse) do |email, i|
+                    user = @@user_info[email]
+                    y = 297.mm - 20.mm - d * i
+                    draw_text elide_string("#{user[:last_name].unicode_normalize(:nfc)}, #{user[:first_name].unicode_normalize(:nfc)}", 43.mm), :at => [30.5.mm, y + 8.pt]
+                    line_width 0.2.mm
+                    stroke { line [30.mm, y + d], [74.mm, y + d] } if i == 0
+                    stroke { line [30.mm, y], [74.mm, y] }
+                end
+            end
+        end
+        # respond_raw_with_mimetype_and_filename(doc.render, 'application/pdf', "Klasse #{klasse}.pdf")
+        respond_raw_with_mimetype(doc.render, 'application/pdf')
+    end
+
     get '/api/directory_timetex_pdf/by_first_name/*' do
         require_teacher!
         klasse = request.path.sub('/api/directory_timetex_pdf/by_first_name/', '')
@@ -1005,7 +1058,7 @@ class Main < Sinatra::Base
         io.puts "<td>"
         print_email_field(io, list_email)
         io.puts "</td>"
-        if teacher_logged_in? || technikteam_logged_in?
+        if teacher_logged_in? || technikteam_logged_in? || user_with_role_logged_in?(:externe_ag_leitung)
             io.puts "<td style='text-align: right;'><button data-list-email='#{list_email}' class='btn btn-warning btn-sm bu-toggle-adresses'>#{info[:recipients].size} Adressen&nbsp;&nbsp;<i class='fa fa-chevron-down'></i></button></td>"
             io.puts "</tr>"
             io.puts "<tbody style='display: none;' class='list_email_emails' data-list-email='#{list_email}'>"

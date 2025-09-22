@@ -2181,16 +2181,16 @@ class Main < Sinatra::Base
                 if (schueler_logged_in? && @session_user[:klasse] == PK5_CURRENT_KLASSE)
                     nav_items << :pk5
                 end
-                # if schueler_logged_in?
-                #     if email_is_eligible_for_lab8?(@@user_info, @session_user[:email])
-                #         nav_items << :lab8
-                #     end
-                #     if email_is_projekttage_organizer?(@@user_info, @session_user[:email])
-                #         nav_items << :projekttage
-                #     elsif projekttage_phase() >= 2 && @session_user[:klassenstufe] < 10
-                #         nav_items << :projekttage
-                #     end
-                # end
+                if schueler_logged_in?
+                    # if email_is_eligible_for_lab8?(@@user_info, @session_user[:email])
+                    #     nav_items << :lab8
+                    # end
+                    if email_is_projekttage_organizer?(@@user_info, @session_user[:email])
+                        nav_items << :projekttage
+                    elsif projekttage_phase() >= 2 && @session_user[:klassenstufe] < 10
+                        nav_items << :projekttage
+                    end
+                end
                 if user_who_can_use_aula_logged_in?
                     nav_items << :aula
                 end
@@ -2377,7 +2377,7 @@ class Main < Sinatra::Base
                         end
                         io.puts "<a class='dropdown-item nav-icon' href='/pk5_overview'><div class='icon'><i class='fa fa-file-text-o'></i></div><span class='label'>5. PK</span></a>"
                         # io.puts "<a class='dropdown-item nav-icon' href='/lab8_overview'><div class='icon'><i class='fa fa-clock-o'></i></div><span class='label'>Lab 8</span></a>"
-                        # io.puts "<a class='dropdown-item nav-icon' href='/projekttage_overview'><div class='icon'><i class='fa fa-rocket'></i></div><span class='label'>Projekttage</span></a>"
+                        io.puts "<a class='dropdown-item nav-icon' href='/projekttage_overview'><div class='icon'><i class='fa fa-rocket'></i></div><span class='label'>Projekttage</span></a>"
                     end
                     if schueler_logged_in?
                         if @session_user[:klasse].to_i < 11
@@ -2707,7 +2707,7 @@ class Main < Sinatra::Base
                 io.puts "</div>"
                 io.string
             end
-        elsif technikteam_logged_in? && (!Main.determine_hide_from_sus)
+        elsif (user_with_role_logged_in?(:can_see_all_timetables) || technikteam_logged_in?) && (!Main.determine_hide_from_sus)
             StringIO.open do |io|
                 io.puts "<div style='margin-bottom: 15px;'>"
                 io.puts "<a data-id='#{@session_user[:id]}' onclick=\"load_timetable('#{@session_user[:id]}');\" class='btn btn-sm ttc active' style='width: 100%; padding: 0.25rem 0.5rem; display: inline-block;'>Persönlicher Stundenplan (#{tr_klasse(@session_user[:klasse])})</a><hr>"

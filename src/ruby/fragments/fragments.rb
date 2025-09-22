@@ -874,6 +874,11 @@ class Main
         return sanitize_pdf_with_ghostscript(doc.render)
     end
 
+    RAUM_ARROW = {
+        :left => %w(122 123 124 125 126 127 224 225 226 317 319 320  407 408 410),
+        :right => %w(128 129 130 219 220 221 222 223 321 323 404 406)
+    }
+
     def get_room_timetable_pdf_for_klasse(wanted_klasse)
         today = Time.now.strftime('%Y-%m-%d')
         if today < @@config[:first_school_day]
@@ -1145,13 +1150,17 @@ class Main
                             text "Aktuelle Informationen:", :align => :center
                             print_qr_code(url, :pos => [0.mm, 30.mm], :extent => 30.mm, :stroke => false)
                         end
-                        # translate(135.mm, 28.mm) do
-                        #     # mirror horizontally: -1 in x-scale
-                        #     transformation_matrix(-1, 0, 0, 1, 0, 0)
-
-                        #     # draw svg at origin
-                        #     svg IO.read("/app/images/iso-exit-right.svg"), at: [0, 30.mm], width: 95.mm
-                        # end
+                        arrow_dir = nil
+                        if RAUM_ARROW[:left].include?(room)
+                            arrow_dir = :left
+                        elsif RAUM_ARROW[:right].include?(room)
+                            arrow_dir = :right
+                        end
+                        if arrow_dir
+                            translate(1.5.mm, 24.5.mm) do
+                                svg IO.read(arrow_dir == :left ? "/app/images/exit-left.svg" : "/app/images/exit-right.svg"), width: 80.mm
+                            end
+                        end
                     end
                 end
             end

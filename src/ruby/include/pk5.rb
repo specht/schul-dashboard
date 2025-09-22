@@ -8,7 +8,7 @@ PK5_KEYS = [
 ]
 
 PK5_KEY_LABELS = {
-    :themengebiet => 'Themengebiet',
+    :themengebiet => 'Themengebiet / Schwerpunktsetzung',
     :referenzfach => 'Referenzfach',
     :betreuende_lehrkraft => 'Betreuende Lehrkraft im Referenzfach',
     :fas => 'fächerübergreifender Aspekt',

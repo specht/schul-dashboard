@@ -228,6 +228,9 @@ class Main < Sinatra::Base
                         value = nil unless @@pk5_faecher.include?(value)
                     end
                     if key == :betreuende_lehrkraft || key == :betreuende_lehrkraft_fas
+                        if key == :betreuende_lehrkraft_fas
+                            assert(user_with_role_logged_in?(:oko) || (teacher_logged_in? && (@@pk5_faecher_for_email[@session_user[:email]] || Set.new()).include?(get_my_pk5(sus_email)[:fas])))
+                        end
                         value = @@users_for_role[:teacher].select do |email|
                             @@user_info[email][:display_name_official] == value
                         end.first

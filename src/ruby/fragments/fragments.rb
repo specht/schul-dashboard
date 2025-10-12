@@ -2232,8 +2232,10 @@ class Main
 
                         text "Dieses Blatt dokumentiert den aktuellen Stand der Planung für die 5. Prüfungskomponente im Abitur #{(Date.today + 365).strftime('%Y')}."
 
-                        print_date = Date.parse($pk5.phases.select { |x| x[:index] == 6 }.first[:t1][0, 10])
-                        deadline = DateTime.parse($pk5.phases.select { |x| x[:index] == 7 }.first[:t1])
+                        # print_date = Date.parse($pk5.phases.select { |x| x[:index] == 6 }.first[:t1][0, 10])
+                        # deadline = DateTime.parse($pk5.phases.select { |x| x[:index] == 7 }.first[:t1])
+                        print_date = Date.today
+                        deadline = DateTime.parse("1970-01-01T12:00:00")
 
                         move_down 3.mm
 
@@ -2373,8 +2375,10 @@ class Main
 
                         text "Dieses Blatt dokumentiert den aktuellen Stand der Planung für die 5. Prüfungskomponente im Abitur #{(Date.today + 365).strftime('%Y')}."
 
-                        print_date = Date.parse($pk5.phases.select { |x| x[:index] == 13 }.first[:t1][0, 10])
-                        deadline = DateTime.parse($pk5.phases.select { |x| x[:index] == 14 }.first[:t1])
+                        # print_date = Date.parse($pk5.phases.select { |x| x[:index] == 13 }.first[:t1][0, 10])
+                        # deadline = DateTime.parse($pk5.phases.select { |x| x[:index] == 14 }.first[:t1])
+                        print_date = Date.today
+                        deadline = DateTime.parse("1970-01-01T12:00:00")
 
                         move_down 3.mm
 

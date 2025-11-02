@@ -267,19 +267,19 @@
     <section class="w-full" style="height: 51px; display: #{second_factor_time_left.nil? ? 'none' : 'block'};">
         <ul class="submenu flex bg-white px-2.5 py-2"
             style="border-bottom: 1px solid #eee; left: 0px; right: 0px; z-index: 100;">
-            <li class="mx-1">
+            <!-- <li class="mx-1">
                 <a class="inline-block bg-slate-900 border border-blue-500 hover:bg-slate-200 rounded py-1 px-3"
                     href="/zeugnisuebersicht"><i class='fa fa-dashboard'></i>&nbsp;&nbsp;Übersicht</a>
             </li>
             <li class="mx-1" style="display: #{zeugnis_admin_logged_in? ? 'unset' : 'none'};">
                 <a class="inline-block bg-slate-900 border border-blue-500 hover:bg-slate-200 rounded py-1 px-3"
                     href="/zeugnisformulare"><i class='fa fa-file-word-o'></i>&nbsp;&nbsp;Zeugnisformulare</a>
-            </li>
+            </li> -->
             <li class="mx-1">
                 <a class="inline-block bg-slate-900 border border-blue-500 hover:bg-slate-200 rounded py-1 px-3"
                     href="/zeugnis_at"><i class='fa fa-star-o'></i>&nbsp;&nbsp;AT-Notizen</a>
             </li>
-            <li class="mx-1">
+            <!-- <li class="mx-1">
                 <a class="inline-block bg-slate-900 border border-blue-500 hover:bg-slate-200 rounded py-1 px-3"
                     href="/zeugnislisten"><i class='fa fa-table'></i>&nbsp;&nbsp;Zeugnislisten</a>
             </li>
@@ -298,7 +298,7 @@
             <li class="mx-1" style='#{need_sozialverhalten() ? '' : 'display: none;'}'>
                 <a class="inline-block bg-slate-900 border border-blue-500 hover:bg-slate-200 rounded py-1 px-3"
                     href="/anlage_sozialverhalten"><i class='fa fa-table'></i>&nbsp;&nbsp;Anlage Sozialverhalten</a>
-            </li>
+            </li> -->
             <li style="border-left: 1px solid #ccc; height: 52px; margin: -10px 10px -10px 10px; margin-left: auto;">
             </li>
             <li class="mx-1">
@@ -391,8 +391,9 @@ window.addEventListener('load', function () {
         } else {
             $('#connection-established').show();
             if ('#{second_factor_time_left.nil?}' !== 'true') {
-                if (window.location.pathname === '/tresor')
-                    window.location.href = '/zeugnisuebersicht';
+                if (window.location.pathname === '/tresor') {
+                    window.location.href = $('.submenu a').eq(0).attr('href');
+                }
             }
         }
     });

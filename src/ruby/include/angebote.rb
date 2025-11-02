@@ -184,7 +184,7 @@ class Main < Sinatra::Base
             email = row['u.email']
             angebote[email] ||= []
             angebote[email] << {
-                :owner => @@user_info[owner][:display_name],
+                :owner => (@@user_info[owner] || {})[:display_name] || "(#{owner})",
                 :name => name,
             }
         end

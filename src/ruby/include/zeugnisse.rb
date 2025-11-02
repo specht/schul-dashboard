@@ -80,7 +80,10 @@ class Main < Sinatra::Base
         # return true if session user has sozialnoten to enter
         return false unless user_logged_in?
         return false unless teacher_logged_in?
-        return true if @@need_sozialverhalten[@session_user[:shorthand]]
+        begin
+            return true if @@need_sozialverhalten[@session_user[:shorthand]]
+        rescue
+        end
         return false
     end
 
@@ -175,6 +178,7 @@ class Main < Sinatra::Base
                 fach = path.split('/')[3]
                 # next unless FAECHER_FOR_ZEUGNIS[ZEUGNIS_SCHULJAHR][ZEUGNIS_HALBJAHR].include?(fach) || FAECHER_FOR_ZEUGNIS[ZEUGNIS_SCHULJAHR][ZEUGNIS_HALBJAHR].include?('$' + fach)
                 emails.to_a.sort.each do |email|
+                    next if @@user_info[email].nil?
                     shorthand = @@user_info[email][:shorthand]
                     shorthands_for_fach[fach] ||= {}
                     shorthands_for_fach[fach][shorthand] = true

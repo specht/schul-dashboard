@@ -1328,7 +1328,7 @@ class Main < Sinatra::Base
 
         if ENV['DASHBOARD_SERVICE'] == 'ruby'
             # TODO: Temporarily disabled
-            # self.parse_zeugnisformulare()
+            self.parse_zeugnisformulare()
         end
 
         if ENV['DASHBOARD_SERVICE'] == 'ruby'

@@ -3121,6 +3121,11 @@ class Main < Sinatra::Base
             END_OF_QUERY
             unless File.exist?("/data/schueler/fotos/#{path}")
                 path = nil
+                neo4j_query_expect_one(<<~END_OF_QUERY, {:email => email})
+                    MATCH (u:User {email: $email})
+                    REMOVE u.foto_path
+                    RETURN u.email;
+                END_OF_QUERY
             end
             paths << path unless path.nil?
         end

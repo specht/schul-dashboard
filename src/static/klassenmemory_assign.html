@@ -721,6 +721,7 @@ window.addEventListener('load', function() {
                     fetch_cached_photo(path, function(decrypted) {
                         let frame = $(`<div class='sus-frame'>`);
                         let photo = $('<div class="sus-foto-sm">').css('background-image', `url(data:image/jpeg;base64,${decrypted})`);
+                        photo.attr('data-path', path);
                         let div = $(`<div style='display: inline-block;'>`);
                         div.append(frame);
                         frame.append(photo);

@@ -3119,9 +3119,12 @@ class Main < Sinatra::Base
                 MATCH (u:User {email: $email})
                 RETURN COALESCE(u.foto_path, NULL) AS foto_path;
             END_OF_QUERY
+            unless File.exist?("/data/schueler/fotos/#{path}")
+                path = nil
+            end
             paths << path unless path.nil?
         end
-        paths += Dir["/data/schueler/fotos/2024-#{klasse}-*"].map { |x| File.basename(x) }
+        paths += Dir["/data/schueler/fotos/2025-#{klasse}-*"].map { |x| File.basename(x) }
         paths.uniq!
         respond(:paths => paths)
     end

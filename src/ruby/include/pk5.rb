@@ -35,13 +35,15 @@ class Main < Sinatra::Base
         if result.nil?
             {
                 :sus => [@@user_info[email][:display_name]],
+                :sus_email => [email],
             }
         else
             if result[:sus]
                 result[:sus].sort! do |a, b|
                     @@user_info[a][:last_name].downcase <=> @@user_info[b][:last_name].downcase
                 end
-                result[:sus].map! { |teacher_email| @@user_info[teacher_email][:display_name_official] }
+                result[:sus_email] = result[:sus].dup
+                result[:sus].map! { |email| @@user_info[email][:display_name_official] }
             end
             if result[:betreuende_lehrkraft]
                 result[:betreuende_lehrkraft_display_name] = @@user_info[result[:betreuende_lehrkraft]][:display_name_official]
@@ -746,6 +748,21 @@ class Main < Sinatra::Base
             a[:sus_index] <=> b[:sus_index]
         end
         respond_raw_with_mimetype(Main.print_voucher_2(rows), 'application/pdf')
+    end
+
+    get '/api/print_voucher_for_sus/:email' do
+        assert(user_with_role_logged_in?(:oko))
+        require_teacher!
+        sus_email = params[:email]
+        pk5 = get_my_pk5(sus_email)
+        respond_raw_with_mimetype(Main.print_voucher(pk5), 'application/pdf')
+    end
+
+    get '/api/print_my_voucher' do
+        require_user!
+        assert(@session_user[:klasse] == PK5_CURRENT_KLASSE)
+        pk5 = get_my_pk5(@session_user[:email])
+        respond_raw_with_mimetype(Main.print_voucher(pk5), 'application/pdf')
     end
 end
 

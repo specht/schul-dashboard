@@ -3,9 +3,9 @@
     <div class='row'>
         <div class='col-md-12'>
             <div class="mb-3" style="float: right; #{(user_with_role_logged_in?(:oko) || user_with_role_logged_in?(:sekretariat) || admin_logged_in?) ? '' : 'display: none;'}">
-                <a style="#{user_with_role_logged_in?(:oko) ? '' : 'display: none;'}" href="/api/print_voucher_1" class="btn btn-success"><i class='fa fa-file-pdf-o'></i>&nbsp;&nbsp;Voucher 1 generieren</a>
+                <!-- <a style="#{user_with_role_logged_in?(:oko) ? '' : 'display: none;'}" href="/api/print_voucher_1" class="btn btn-success"><i class='fa fa-file-pdf-o'></i>&nbsp;&nbsp;Voucher 1 generieren</a> -->
                 <!-- <a class="btn btn-success" href="/pk5_termine">Zentrale Beratungstermine</a> -->
-                <a style="#{user_with_role_logged_in?(:oko) ? '' : 'display: none;'}" href="/api/print_voucher_2" class="btn btn-success"><i class='fa fa-file-pdf-o'></i>&nbsp;&nbsp;Voucher 2 generieren</a>
+                <!-- <a style="#{user_with_role_logged_in?(:oko) ? '' : 'display: none;'}" href="/api/print_voucher_2" class="btn btn-success"><i class='fa fa-file-pdf-o'></i>&nbsp;&nbsp;Voucher 2 generieren</a> -->
             </div>
             <h2 style='margin-bottom: 30px;'>5. Prüfungskomponente im Abitur</h2>
             <div id="table_here"></div>

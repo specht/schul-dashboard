@@ -1465,7 +1465,7 @@ class Main < Sinatra::Base
             :recipients => all_kl.to_a.sort
         }
         @@shorthands_for_fach.each_pair do |fach, shorthands|
-            @@mailing_lists["lehrer.#{fach.downcase}@#{MAILING_LIST_DOMAIN}"] = {
+            @@mailing_lists[remove_accents("lehrer.#{fach.downcase}@#{MAILING_LIST_DOMAIN}")] = {
                 :label => "Alle Lehrkräfte im Fach #{fach}",
                 :recipients => shorthands.map { |x| @@shorthands[x] }
             }

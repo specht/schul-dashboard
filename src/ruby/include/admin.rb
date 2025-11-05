@@ -461,6 +461,7 @@ class Main < Sinatra::Base
                 user = @@user_info[email]
                 shorthand = user[:shorthand]
                 shorthand = 'Mand' if shorthand == 'Man'
+                shorthand = 'FH' if shorthand == '_FH'
                 io.puts "#{user[:last_name]};#{user[:first_name].strip.empty? ? user[:last_name] : user[:first_name]};#{shorthand}"
             end
             path = '/data/lehrer/extra-ldc-accounts.csv'

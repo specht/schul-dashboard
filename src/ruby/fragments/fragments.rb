@@ -2499,7 +2499,7 @@ class Main
                         move_down 1.mm
                         text "5. Prüfungskomponente im Abitur #{(Date.today + 365).strftime('%Y')}", :align => :center, :size => 14
                         move_down 2.mm
-                        text "<b>Voucher</b>", :align => :center, :inline_format => true, :size => 14
+                        text "<b>Dokumentationsbogen</b>", :align => :center, :inline_format => true, :size => 14
 
                         move_down 1.8.cm
 
@@ -2561,12 +2561,12 @@ class Main
                         text value, :inline_format => true
                         move_down 8.mm
 
-                        text "<b>Vorläufige problemorientierte Frage-/Themenstellung</b>", :inline_format => true
-                        move_down 3.mm
-                        value = CGI.escapeHTML((pk5[:fragestellung] || '').strip)
-                        value = '<em>(bisher nicht formuliert)</em>' if value.empty?
-                        text value, :inline_format => true
-                        move_down 8.mm
+                        # text "<b>Vorläufige problemorientierte Frage-/Themenstellung</b>", :inline_format => true
+                        # move_down 3.mm
+                        # value = CGI.escapeHTML((pk5[:fragestellung] || '').strip)
+                        # value = '<em>(bisher nicht formuliert)</em>' if value.empty?
+                        # text value, :inline_format => true
+                        # move_down 8.mm
 
                         bounding_box([0.cm, 5.cm], :width => 18.cm, :height => 1.cm) do
                             t = Date.today

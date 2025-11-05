@@ -1158,7 +1158,7 @@ class Main < Sinatra::Base
             @@shorthands_for_fach.keys.sort do |a, b|
                 a.downcase <=> b.downcase
             end.each do |fach|
-                list_email = "lehrer.#{fach.downcase}@#{MAILING_LIST_DOMAIN}"
+                list_email = remove_accents("lehrer.#{fach.downcase}@#{MAILING_LIST_DOMAIN}")
                 if @@mailing_lists[list_email]
                     print_mailing_list(io, list_email)
                     remaining_mailing_lists.delete(list_email)

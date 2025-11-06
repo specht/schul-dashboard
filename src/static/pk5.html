@@ -59,11 +59,11 @@
     <div class='row'>
         <div class='col-md-12'>
             <div style="float: right;" class="mt-1">
-                <!-- <div style="display: #{user_with_role_logged_in?(:schueler) ? 'unset' : 'none'}">
-                    <a target='_blank' href='/api/print_my_voucher' class="btn btn-success"><i class='fa fa-file-pdf-o'></i>&nbsp;&nbsp;Dokumentationsbogen drucken</a>
-                </div> -->
+                <div style="display: #{user_with_role_logged_in?(:schueler) ? 'unset' : 'none'}">
+                    <a target='_blank' href='/api/print_my_voucher' class="btn btn-success"><i class='fa fa-file-pdf-o'></i>&nbsp;&nbsp;Dokumentationsbogen (Voucher)</a>
+                </div>
                 <div style="display: #{user_with_role_logged_in?(:oko) ? 'unset' : 'none'}">
-                    <button id="bu_print_voucher" data-email="#{user_email}" class="btn btn-success"><i class='fa fa-file-pdf-o'></i>&nbsp;&nbsp;Dokumentationsbogen drucken</button>
+                    <button id="bu_print_voucher" data-email="#{user_email}" class="btn btn-success"><i class='fa fa-file-pdf-o'></i>&nbsp;&nbsp;Dokumentationsbogen (Voucher)</button>
                 </div>
             </div>
             <h2 style='margin-bottom: 30px;'>5. Prüfungskomponente im Abitur</h2>

@@ -2499,7 +2499,7 @@ class Main
                         move_down 1.mm
                         text "5. Prüfungskomponente im Abitur #{(Date.today + 365).strftime('%Y')}", :align => :center, :size => 14
                         move_down 2.mm
-                        text "<b>Dokumentationsbogen</b>", :align => :center, :inline_format => true, :size => 14
+                        text "<b>Dokumentationsbogen (Voucher)</b>", :align => :center, :inline_format => true, :size => 14
 
                         move_down 1.8.cm
 
@@ -2508,7 +2508,7 @@ class Main
                         # print_date = Date.parse($pk5.phases.select { |x| x[:index] == 13 }.first[:t1][0, 10])
                         # deadline = DateTime.parse($pk5.phases.select { |x| x[:index] == 14 }.first[:t1])
                         print_date = Date.today
-                        deadline = DateTime.parse("2025-11-11T12:00:00")
+                        deadline = DateTime.parse("2025-11-18T12:00:00")
 
                         move_down 3.mm
 

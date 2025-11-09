@@ -307,7 +307,17 @@ window.addEventListener('load', function() {
         let data = {};
         for (let key of #{PK5_KEYS.to_json}) {
             let input = $(`#ti_${key}`);
-            data[$(input).attr('id').replace('ti_', '')] = $(input).val().trim();
+            let store_this_field = true;
+            if (['betreuende_lehrkraft_fas'].indexOf(key) >= 0) {
+                store_this_field = false;
+                if ('true' === '#{user_with_role_logged_in?(:oko) || (teacher_logged_in? && (@@pk5_faecher_for_email[@session_user[:email]] || Set.new()).include?(get_my_pk5(user_email)[:fas]))}') {
+                    // OKO and FBL can edit
+                    store_this_field = true;
+                }
+            }
+            if (store_this_field) {
+                data[$(input).attr('id').replace('ti_', '')] = $(input).val().trim();
+            }
             $(input).prop('readonly', true);
         }
         if ('#{user_with_role_logged_in?(:oko) || (teacher_logged_in? && (@@pk5_faecher_for_email[@session_user[:email]] || Set.new()).include?(get_my_pk5(user_email)[:fas]))}' === 'true') {

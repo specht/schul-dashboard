@@ -6,7 +6,7 @@ REASON_TO_KEY = {
 
 class Main < Sinatra::Base
     post '/api/send_email' do
-        require_teacher!
+        assert(teacher_logged_in? || user_with_role_logged_in?(:otium))
         data = parse_request_data(:required_keys => [:email, :reason, :details, :lesson_key, :lesson_offset, :datum],
                                   :types => {:lesson_offset => Integer})
         debug data.to_yaml
@@ -44,7 +44,7 @@ class Main < Sinatra::Base
 
     post '/api/get_pending_mails' do
         # get pending mails for current teacher
-        require_teacher!
+        assert(teacher_logged_in? || user_with_role_logged_in?(:otium))
         data = parse_request_data(:required_keys => [:lesson_key, :lesson_offset],
                                   :types => {:lesson_offset => Integer})
         results = {}
@@ -69,7 +69,7 @@ class Main < Sinatra::Base
     end
 
     post '/api/cancel_email' do
-        require_teacher!
+        assert(teacher_logged_in? || user_with_role_logged_in?(:otium))
         data = parse_request_data(:required_keys => [:tag],
                                   :types => {:lesson_offset => Integer})
         transaction do

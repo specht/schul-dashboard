@@ -173,7 +173,7 @@
                     <textarea class='form-control' id='ta_ha_amt_text' placeholder='Hier kannst du die Hausaufgaben zu dieser Stunde eintragen'></textarea>
                 </div>
                 <button style="#{teacher_logged_in? ? '' : 'display: none;'}" class="btn btn-warning bu-at-notes"><i class='fa fa-star-o'></i>&nbsp;&nbsp;AT</button>
-                <button style="#{teacher_logged_in? ? '' : 'display: none;'}" class="btn btn-warning bu-mail"><i class='fa fa-envelope-o'></i>&nbsp;&nbsp;Mail</button>
+                <button style="#{(teacher_logged_in? || user_with_role_logged_in?(:otium)) ? '' : 'display: none;'}" class="btn btn-warning bu-mail"><i class='fa fa-envelope-o'></i>&nbsp;&nbsp;Mail</button>
                 <a class="btn btn-success bu-edit-lesson"><i class='fa fa-edit'></i>&nbsp;&nbsp;Bearbeiten</a>
                 <button class="show-ha-amt-only btn btn-secondary bu-discard-ha-amt-text-changes"><i class='fa fa-trash'></i>&nbsp;&nbsp;Änderungen verwerfen</button>
                 <button class="show-ha-amt-only btn btn-success bu-save-ha-amt-text-changes"><i class='fa fa-check'></i>&nbsp;&nbsp;Änderungen speichern</button>
@@ -195,14 +195,15 @@
             <div class="modal-body">
                 <div style="padding: 0.5em 0;">Bitte wählen Sie einen Grund für die E-Mail:</div>
                 <select id='ti_mail_reason' class='form-control'>
-                    <option value="">Grund auswählen</option>
-                    <option value="material">Material fehlt</option>
-                    <option value="homework">Hausaufgaben fehlen</option>
-                    <option value="signature">Unterschrift fehlt</option>
-                    <option value="disturbance">Störverhalten</option>
-                    <option value="disturbance_otium">Störverhalten (Otium)</option>
-                    <option value="late">Verspätung</option>
-                    <option value="praise">Besonderes Lob</option>
+                    <option style="#{user_with_role_logged_in?(:otium) ? 'display: none;' : ''}" value="">Grund auswählen</option>
+                    <option style="#{user_with_role_logged_in?(:otium) ? 'display: none;' : ''}" value="material">Material fehlt</option>
+                    <option style="#{user_with_role_logged_in?(:otium) ? 'display: none;' : ''}" value="homework">Hausaufgaben fehlen</option>
+                    <option style="#{user_with_role_logged_in?(:otium) ? 'display: none;' : ''}" value="signature">Unterschrift fehlt</option>
+                    <option style="#{user_with_role_logged_in?(:otium) ? 'display: none;' : ''}" value="disturbance">Störverhalten</option>
+                    <option style="#{user_with_role_logged_in?(:otium) ? 'display: none;' : ''}" value="disturbance_otium" disabled>Störverhalten (Otium) – schickt jetzt das Otium</option>
+                    <option style="#{user_with_role_logged_in?(:otium) ? 'display: none;' : ''}" value="late">Verspätung</option>
+                    <option style="#{user_with_role_logged_in?(:otium) ? 'display: none;' : ''}" value="praise">Besonderes Lob</option>
+                    <option style="#{user_with_role_logged_in?(:otium) ? '' : 'display: none;'}" value="disturbance_otium" #{user_with_role_logged_in?(:otium) ? 'selected' : ''}>Störverhalten (Otium)</option>
                 </select>
                 <div style="padding: 0.5em 0;">Sie können eine Notiz hinzufügen, um das Problem zu konkretisieren:</div>
                 <textarea id='ti_mail_details' class="form-control"></textarea>
@@ -397,6 +398,8 @@ var jitsi_refresh_config = {
 };
 var tablet_set_info = #{@@tablet_sets.to_json};
 var ha_amt_lesson_keys = #{get_ha_amt_lesson_keys.to_json};
+var schueler_for_klasse = #{(teacher_logged_in? ? @@schueler_for_klasse : {}).map { |klasse, l| [klasse, l.map { |x| {email: x, display_first_name: @@user_info[x][:display_first_name], display_last_name: @@user_info[x][:display_last_name]}}]}.to_h.to_json};
+
 
 function clear_polling_handler() {
     if (jitsi_refresh_config.poll_handle !== null) {
@@ -1138,7 +1141,6 @@ document.addEventListener('DOMContentLoaded', function() {
                     omit_time: true
                 };
             }
-            console.log(event);
             if (ha_amt_lesson_keys.indexOf(event.lesson_key) >= 0)
             {
                 $('.show-ha-amt-only').show();
@@ -1148,8 +1150,26 @@ document.addEventListener('DOMContentLoaded', function() {
             $('#div_email_sus_table').empty();
             email_div_rows = {};
             pending_mail_data = {};
+            let allow = false;
+            if (typeof(event.lesson_key) !== 'undefined' &&
+                event.lesson_offset !== null &&
+                event.lesson_offset >= 0 &&
+                (#{DEVELOPMENT ? 'true' : 'false'} || ('#{Date.today.strftime('%Y-%m-%d')}' === event.datum)))
+            {
+                if ('#{user_with_role_logged_in?(:otium) ? 'true' : 'false'}' === 'true') {
+                    allow = true;
+                    event = Object.assign({}, event);
+                    event.schueler_for_lesson = schueler_for_klasse[event.klassen[0][0]];
+                } else if ('#{teacher_logged_in? ? 'true' : 'false'}' === 'true') {
+                    if (my_lessons.indexOf(event.lesson_key) >= 0) {
+                        if ((event.schueler_for_lesson ?? []).length > 0) {
+                            allow = true;
+                        }
+                    }
+                }
+            }
             console.log(event);
-            if ('#{teacher_logged_in? ? 'true' : 'false'}' == 'true' && typeof(event.lesson_key) !== 'undefined' && (event.schueler_for_lesson ?? []).length > 0 && (my_lessons.indexOf(event.lesson_key) >= 0 && event.lesson_offset !== null && event.lesson_offset >= 0) && (#{DEVELOPMENT ? 'true' : 'false'} || ('#{Date.today.strftime('%Y-%m-%d')}' === event.datum))) {
+            if (allow) {
                 api_call('/api/get_pending_mails', {lesson_key: event.lesson_key, lesson_offset: event.lesson_offset}, function(pending_data) {
                     pending_mail_data = pending_data.results;
                     console.log(pending_data);

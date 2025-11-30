@@ -1,6 +1,7 @@
 AVAILABLE_ROLES = {
     :teacher => 'Lehrkraft',
     :schueler => 'Schülerin / Schüler',
+    :otium => 'Otium',
     :admin => 'Administrator',
     :developer => 'Entwickler',
     :sekretariat => 'Sekretariat',

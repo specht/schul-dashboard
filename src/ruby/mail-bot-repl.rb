@@ -39,7 +39,11 @@ class MailBotRepl < Sinatra::Base
             mail = row['m']
             lesson_key = row['l'][:key]
             lesson_offset = row['i'][:offset]
-            lehrer_email = row['ut.email']
+            begin
+                lehrer_email = @@shorthands[@@lessons[:lesson_keys][lesson_key][:lehrer].first]
+            rescue
+                lehrer_email = row['ut.email']
+            end
             sus_email = row['us.email']
             reason = mail[:reason]
             details = mail[:details]
@@ -50,13 +54,14 @@ class MailBotRepl < Sinatra::Base
             kl_cc_key = "#{year_key}/#{klasse}"
             cc_emails = []
             cc_emails << sus_email
-            if EMAILS_AUS_DEM_UNTERRICHT_KLASSENLEITUNG_CC.include?(kl_cc_key)
+            cc_emails << row['ut.email']
+            # if EMAILS_AUS_DEM_UNTERRICHT_KLASSENLEITUNG_CC.include?(kl_cc_key)
                 @@klassenleiter[klasse].each do |shorthand|
                     if @@shorthands[shorthand]
                         cc_emails << @@shorthands[shorthand]
                     end
                 end
-            end
+            # end
             STDERR.puts "#{tag} / #{lesson_key} / #{lesson_offset} / #{lehrer_email} / #{sus_email} / #{reason} / #{details}"
             $neo4j.transaction do
                 deliver_mail do
@@ -64,7 +69,7 @@ class MailBotRepl < Sinatra::Base
                     reply_to lehrer_email
                     cc cc_emails
                     to "eltern." + sus_email
-                    bcc lehrer_email
+                    bcc SMTP_FROM
                     if reason == 'material'
                         subject "Fehlendes Arbeitsmaterial im Fach #{@@lessons[:lesson_keys][lesson_key][:pretty_fach]}"
                         StringIO.open do |io|

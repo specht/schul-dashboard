@@ -11,10 +11,12 @@ class Main < Sinatra::Base
                                   :types => {:lesson_offset => Integer})
         debug data.to_yaml
         t = DateTime.parse(DateTime.now.strftime("%Y-%m-%dT%H:%M:00%z")).to_time
-        while t.min % 10 != 0
-            t += 60
+        unless DEVELOPMENT
+            while t.min % 10 != 0
+                t += 60
+            end
+            t += 600
         end
-        t += 600
         ts = t.strftime("%Y-%m-%dT%H:%M:%S")
         ts_h = t.strftime("%H:%M")
         ts_i = t.to_i

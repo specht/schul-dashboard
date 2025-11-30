@@ -55,13 +55,13 @@ class MailBotRepl < Sinatra::Base
             cc_emails = []
             cc_emails << sus_email
             cc_emails << row['ut.email']
-            # if EMAILS_AUS_DEM_UNTERRICHT_KLASSENLEITUNG_CC.include?(kl_cc_key)
+            if EMAILS_AUS_DEM_UNTERRICHT_KLASSENLEITUNG_CC.include?(kl_cc_key) || reason == 'disturbance_otium'
                 @@klassenleiter[klasse].each do |shorthand|
                     if @@shorthands[shorthand]
                         cc_emails << @@shorthands[shorthand]
                     end
                 end
-            # end
+            end
             STDERR.puts "#{tag} / #{lesson_key} / #{lesson_offset} / #{lehrer_email} / #{sus_email} / #{reason} / #{details}"
             $neo4j.transaction do
                 deliver_mail do

@@ -25,6 +25,14 @@ SCHUL_MAIL_LOGIN_URL = "https://mail.beispielmailhoster.de"
 SCHUL_MAIL_LOGIN_SMTP_HOST = "smtp.beispielmailhoster.de"
 SCHUL_MAIL_LOGIN_IMAP_HOST = "imap.beispielmailhoster.de"
 
+PARSE_KLASSE_TR = { '8ω' => '8o' }
+
+FACH_CONSOLIDATE_FOR_VERTEILER = { 'Biologie' => 'Naturwissenschaften',}
+
+VERTEILER_TEST_EMAILS = []
+
+PK5_CURRENT_KLASSE = '12'
+
 # Bei Bedarf können alle Namen durch falsche Namen ersetzt werden
 # (für Demozwecke)
 USE_MOCK_NAMES = false

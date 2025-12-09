@@ -2024,17 +2024,12 @@ class Main < Sinatra::Base
                 :email => @session_user[:email],
                 :display_name => @session_user[:display_name],
                 :roles => [:teacher, :schueler].map { |x| @session_user[:roles].include?(x) ? x.to_s : nil }.compact,
-                :exp => exp
+                :exp => exp.to_i
             }
-            sso_cookie_payload_json = sso_cookie_payload.to_json
-            sso_cookie_payload_json_base64 = Base64.urlsafe_encode64(sso_cookie_payload_json, padding: false)
-            signature = OpenSSL::HMAC.hexdigest('SHA256', JWT_APPKEY, sso_cookie_payload_json_base64)
-            cookie = "#{sso_cookie_payload_json_base64}.#{signature}"
-            root = URI(WEB_ROOT)
-            host = root.host
+            sso_token = JWT.encode(sso_cookie_payload, JWT_APPKEY, "HS256")
             response.set_cookie(
                 "dashboard_sso",
-                value:     cookie,
+                value:     sso_token,
                 path:      "/",
                 domain:    cookie_domain(),
                 secure:    !DEVELOPMENT,

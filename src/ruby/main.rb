@@ -2018,8 +2018,55 @@ class Main < Sinatra::Base
         if @session_user
             @session_user[:roles] ||= Set.new()
         end
+        if @session_user
+            exp = Time.now + 3600 * 4
+            sso_cookie_payload = {
+                :email => @session_user[:email],
+                :display_name => @session_user[:display_name],
+                :roles => [:teacher, :schueler].map { |x| @session_user[:roles].include?(x) ? x.to_s : nil }.compact,
+                :exp => exp
+            }
+            sso_cookie_payload_json = sso_cookie_payload.to_json
+            sso_cookie_payload_json_base64 = Base64.urlsafe_encode64(sso_cookie_payload_json, padding: false)
+            signature = OpenSSL::HMAC.hexdigest('SHA256', JWT_APPKEY, sso_cookie_payload_json_base64)
+            cookie = "#{sso_cookie_payload_json_base64}.#{signature}"
+            root = URI(WEB_ROOT)
+            host = root.host
+            response.set_cookie(
+                "dashboard_sso",
+                value:     cookie,
+                path:      "/",
+                domain:    cookie_domain(),
+                secure:    !DEVELOPMENT,
+                httponly:  true,
+                same_site: :lax,
+                expires:   exp
+            )
+        end
         debug "[#{(@session_user || {})[:nc_login] || (@session_user || {})[:email] || 'anon'}] #{request.request_method} #{request.path}"
     end
+
+    def cookie_domain
+        uri = URI(WEB_ROOT)
+        host = uri.host
+
+        # Localhost cannot have a Domain attribute
+        return nil if host == "localhost"
+
+        # If it's already a subdomain (e.g. dashboard.gymnasiumsteglitz.de)
+        # you want the parent domain:
+        #   .gymnasiumsteglitz.de
+        parts = host.split(".")
+        return nil if parts.length < 2  # weird cases like "server" without TLD
+
+        # Top-level domain = last two (or more if needed)
+        # gymnasiumsteglitz.de → 2 parts
+        # co.uk domain? You can adapt, but not needed here.
+        base_domain = parts.last(2).join(".")
+
+        ".#{base_domain}"
+    end
+
 
     after '*' do
         cleanup_neo4j()

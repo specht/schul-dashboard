@@ -1703,6 +1703,12 @@ class Main < Sinatra::Base
     configure do
         setup = SetupDatabase.new()
         setup.wait_for_neo4j()
+        begin
+            STDERR.puts "Reading SSO private key..."
+            ES256_PRIVATE_KEY = OpenSSL::PKey::EC.new(File.read("/internal/sso-keys/sso_private.pem"))
+        rescue
+            STDERR.puts "WARNING: Could not read SSO private key!"
+        end
         @@renderer = BackgroundRenderer.new
         self.collect_data() unless defined?(SKIP_COLLECT_DATA) && SKIP_COLLECT_DATA
         @@ws_clients = {}
@@ -2024,9 +2030,18 @@ class Main < Sinatra::Base
                 :email => @session_user[:email],
                 :display_name => @session_user[:display_name],
                 :roles => [:teacher, :schueler].map { |x| @session_user[:roles].include?(x) ? x.to_s : nil }.compact,
-                :exp => exp.to_i
+                :exp => exp.to_i,
+                :iat => Time.now.to_i,
+                :iss => "dashboard.gymnasiumsteglitz.de"
             }
-            sso_token = JWT.encode(sso_cookie_payload, JWT_APPKEY, "HS256")
+            jwt_headers = { kid: "2025-01" }
+
+            sso_token = JWT.encode(
+            sso_cookie_payload,
+            ES256_PRIVATE_KEY,
+            "ES256",
+            jwt_headers
+            )
             response.set_cookie(
                 "dashboard_sso",
                 value:     sso_token,
@@ -2039,6 +2054,47 @@ class Main < Sinatra::Base
             )
         end
         debug "[#{(@session_user || {})[:nc_login] || (@session_user || {})[:email] || 'anon'}] #{request.request_method} #{request.path}"
+    end
+
+    get "/.well-known/sso_public_key.pem" do
+        content_type "text/plain"
+        File.read("/internal/sso-keys/sso_public.pem")
+    end
+
+    def base64url(bin)
+        Base64.urlsafe_encode64(bin).delete("=")
+    end
+
+    def load_es256_jwks
+        pub = OpenSSL::PKey::EC.new(File.read("/internal/sso-keys/sso_public.pem"))
+        point = pub.public_key
+
+        # Convert EC point → uncompressed format → extract x and y
+        bn = point.to_bn
+        raw = bn.to_s(2).bytes
+        raw.shift  # remove 0x04 prefix
+
+        x = raw[0, 32].pack("C*")
+        y = raw[32, 32].pack("C*")
+
+        {
+            keys: [
+                {
+                    kty: "EC",
+                    crv: "P-256",
+                    alg: "ES256",
+                    use: "sig",
+                    kid: "2025-01",  # match the kid in your JWT header
+                    x: base64url(x),
+                    y: base64url(y)
+                }
+            ]
+        }
+    end
+
+    get "/.well-known/jwks.json" do
+        content_type "application/json"
+        load_es256_jwks.to_json
     end
 
     def cookie_domain

@@ -857,4 +857,43 @@ class Main < Sinatra::Base
         respond_raw_with_mimetype(Main.print_email_letters([@@users_for_role[:schueler].to_a.sample]), 'application/pdf')
     end
 
+    get '/api/get_unterstufenparty_sus' do
+        require_teacher!
+        entries = []
+        KLASSEN_ORDER.each do |klasse|
+            next unless klasse.to_i == 5 || klasse.to_i == 6
+            print_name_for_email = {}
+            pool = Set.new()
+            @@schueler_for_klasse[klasse].each do |email|
+                pool << email
+            end
+            n = 0
+            while !pool.empty?
+                count_for_name = {}
+                pool.each do |email|
+                    first_name = @@user_info[email][:first_name]
+                    last_name = @@user_info[email][:last_name]
+                    print_name = first_name
+                    if n > 0
+                        print_name = "#{print_name} #{last_name[0, n]}."
+                    end
+                    count_for_name[print_name] ||= Set.new()
+                    count_for_name[print_name] << email
+                end
+                count_for_name.each_pair do |first_name, emails|
+                    if emails.size == 1
+                        print_name_for_email[emails.first] = first_name
+                        pool.delete(emails.first)
+                    end
+                end
+                n += 1
+            end
+            @@schueler_for_klasse[klasse].each do |email|
+                entries << [email, print_name_for_email[email], klasse]
+                # STDERR.puts "#{email} #{print_name_for_email[email]} #{klasse}"
+            end
+        end
+        respond_raw_with_mimetype(entries.to_json, 'application/json')
+    end
+
 end

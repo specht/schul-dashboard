@@ -2027,12 +2027,13 @@ class Main < Sinatra::Base
         if @session_user
             exp = Time.now + 3600 * 4
             sso_cookie_payload = {
+                :sub => "user:#{@session_user[:email]}",
                 :email => @session_user[:email],
-                :display_name => @session_user[:display_name],
+                :name => @session_user[:display_name],
                 :roles => [:teacher, :schueler].map { |x| @session_user[:roles].include?(x) ? x.to_s : nil }.compact,
                 :exp => exp.to_i,
                 :iat => Time.now.to_i,
-                :iss => "dashboard.gymnasiumsteglitz.de"
+                :iss => "https://dashboard.gymnasiumsteglitz.de"
             }
             jwt_headers = { kid: "2025-01" }
 

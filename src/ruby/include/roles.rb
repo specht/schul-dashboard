@@ -28,6 +28,7 @@ AVAILABLE_ROLES = {
     :externe_ag_leitung => 'AG-Leitung (extern)',
     :gev => 'GEV',
     :sv => 'Schülervertretung',
+    :sv_editor => 'SV-Redaktion',
     :technikteam => 'Technikteam',
     :technikamt => 'Technikamt',
     :wants_to_receive_techpost_debug_mail => 'Erhält E-Mails zu Technikproblemen',

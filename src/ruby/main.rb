@@ -2030,6 +2030,8 @@ class Main < Sinatra::Base
                 :sub => "user:#{@session_user[:email]}",
                 :email => @session_user[:email],
                 :name => @session_user[:display_name],
+                :first_name => @session_user[:first_name],
+                :last_name => @session_user[:last_name],
                 :roles => [:admin, :teacher, :schueler, :sv_editor].map { |x| @session_user[:roles].include?(x) ? x.to_s : nil }.compact,
                 :exp => exp.to_i,
                 :iat => Time.now.to_i,

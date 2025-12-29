@@ -2030,7 +2030,7 @@ class Main < Sinatra::Base
                 :sub => "user:#{@session_user[:email]}",
                 :email => @session_user[:email],
                 :name => @session_user[:display_name],
-                :roles => [:teacher, :schueler].map { |x| @session_user[:roles].include?(x) ? x.to_s : nil }.compact,
+                :roles => [:admin, :teacher, :schueler, :sv_editor].map { |x| @session_user[:roles].include?(x) ? x.to_s : nil }.compact,
                 :exp => exp.to_i,
                 :iat => Time.now.to_i,
                 :iss => "https://dashboard.gymnasiumsteglitz.de"
@@ -2038,10 +2038,10 @@ class Main < Sinatra::Base
             jwt_headers = { kid: "2025-01" }
 
             sso_token = JWT.encode(
-            sso_cookie_payload,
-            ES256_PRIVATE_KEY,
-            "ES256",
-            jwt_headers
+                sso_cookie_payload,
+                ES256_PRIVATE_KEY,
+                "ES256",
+                jwt_headers
             )
             response.set_cookie(
                 "dashboard_sso",

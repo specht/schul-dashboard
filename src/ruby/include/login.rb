@@ -207,6 +207,7 @@ class Main < Sinatra::Base
                 DETACH DELETE l
                 RETURN return_to;
             END_OF_QUERY
+            STDERR.puts "Return to: #{return_to.inspect}"
             purge_missing_sessions(session_id)
             respond(:ok => 'yeah', :return_to => return_to)
         end
@@ -269,6 +270,7 @@ class Main < Sinatra::Base
             DETACH DELETE l
             RETURN return_to;
         END_OF_QUERY
+        STDERR.puts "Return to: #{return_to.inspect}"
         purge_missing_sessions(session_id)
         respond(:ok => 'yeah', :return_to => return_to)
     end

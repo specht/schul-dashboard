@@ -545,9 +545,6 @@ class Main < Sinatra::Base
                 cookie_opts[:domain] = cookie_domain # ".gymnasiumsteglitz.de"
             end
 
-            STDERR.puts "NOW SETTING DASHBOARD SSO COOKIE"
-            STDERR.puts cookie_opts.to_yaml
-
             response.set_cookie("dashboard_sso", cookie_opts)
 
             token

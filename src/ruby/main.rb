@@ -544,6 +544,9 @@ class Main < Sinatra::Base
         end
 
         def dashboard_sso_needs_refresh?(leeway_seconds: 15 * 60)
+            STDERR.puts "Testing session user: #{@session_user.inspect}"
+            STDERR.puts "Testing cookie: #{request.cookies['dashboard_sso'].inspect}"
+            
             return false unless @session_user && @session_user[:email]
 
             raw = request.cookies["dashboard_sso"]

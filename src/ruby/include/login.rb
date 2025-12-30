@@ -532,6 +532,7 @@ class Main < Sinatra::Base
 
     post '/api/logout' do
         logout()
+        response.delete_cookie('dashboard_sso')
         respond(:ok => 'yeah')
     end
 
@@ -545,6 +546,7 @@ class Main < Sinatra::Base
                 purge_missing_sessions(sids[data[:sid_index]])
             end
         end
+        response.delete_cookie('dashboard_sso')
         respond(:ok => 'yeah')
     end
 

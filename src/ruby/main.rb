@@ -2027,7 +2027,6 @@ class Main < Sinatra::Base
         if @session_user
             exp = Time.now + 3600 * 4
             sso_cookie_payload = {
-                :sub => "user:#{@session_user[:email]}",
                 :email => @session_user[:email],
                 :name => @session_user[:display_name],
                 :first_name => @session_user[:first_name],

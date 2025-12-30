@@ -508,17 +508,17 @@ class Main < Sinatra::Base
         set :show_exceptions, false
     end
     helpers do
-        def issue_dashboard_sso_cookie!(user: @session_user, ttl_seconds: 4 * 60 * 60)
-            raise "No user for SSO cookie" unless user
+        def issue_dashboard_sso_cookie!(ttl_seconds: 4 * 60 * 60)
+            raise "No user for SSO cookie" unless @session_user
 
             now = Time.now.to_i
             exp = now + ttl_seconds
 
             payload = {
-                email: user[:email],
-                display_name:  user[:display_name],
-                first_name: user[:first_name],
-                last_name:  user[:last_name],
+                email: @session_user[:email],
+                display_name:  @session_user[:display_name],
+                first_name: @session_user[:first_name],
+                last_name:  @session_user[:last_name],
                 roles: [:admin, :teacher, :schueler, :sv_editor].map { |x| @session_user[:roles].include?(x) ? x.to_s : nil }.compact,
                 iat:  now,
                 exp:  exp,
@@ -529,16 +529,26 @@ class Main < Sinatra::Base
 
             token = JWT.encode(payload, ES256_PRIVATE_KEY, "ES256", headers)
 
-            response.set_cookie(
-                "dashboard_sso",
+            cookie_opts = {
                 value: token,
-                domain: cookie_domain,
                 path: "/",
-                secure: true,
                 httponly: true,
                 same_site: :lax,
                 expires: Time.at(exp)
-            )
+            }
+
+            if DEVELOPMENT
+                cookie_opts[:secure] = false
+                # do NOT set :domain on localhost/dev unless you're actually using your real domain locally
+            else
+                cookie_opts[:secure] = true
+                cookie_opts[:domain] = cookie_domain # ".gymnasiumsteglitz.de"
+            end
+
+            STDERR.puts "NOW SETTING DASHBOARD SSO COOKIE"
+            STDERR.puts cookie_opts.to_yaml
+
+            response.set_cookie("dashboard_sso", cookie_opts)
 
             token
         end

@@ -544,6 +544,8 @@ class Main < Sinatra::Base
         end
 
         def dashboard_sso_needs_refresh?(leeway_seconds: 15 * 60)
+            return false unless @session_user && @session_user[:email]
+
             raw = request.cookies["dashboard_sso"]
             return true if raw.nil? || raw.empty?
 
@@ -552,6 +554,10 @@ class Main < Sinatra::Base
             rescue
                 return true
             end
+
+            token_email = payload["email"].to_s.downcase
+            session_email = @session_user[:email].to_s.downcase
+            return true if token_email.empty? || token_email != session_email
 
             exp = payload["exp"].to_i
             return true if exp <= 0

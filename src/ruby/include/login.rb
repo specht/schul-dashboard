@@ -505,6 +505,7 @@ class Main < Sinatra::Base
         if new_cookie_value.empty? && request.cookies['sid']
             response.delete_cookie('sid')
         end
+        response.delete_cookie('dashboard_sso')
         if (request.cookies['sid'] || '') != new_cookie_value
             response.set_cookie('sid',
                                 :value => new_cookie_value,
@@ -532,7 +533,6 @@ class Main < Sinatra::Base
 
     post '/api/logout' do
         logout()
-        response.delete_cookie('dashboard_sso')
         respond(:ok => 'yeah')
     end
 
@@ -546,7 +546,6 @@ class Main < Sinatra::Base
                 purge_missing_sessions(sids[data[:sid_index]])
             end
         end
-        response.delete_cookie('dashboard_sso')
         respond(:ok => 'yeah')
     end
 

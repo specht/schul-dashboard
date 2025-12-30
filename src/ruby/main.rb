@@ -2083,6 +2083,7 @@ class Main < Sinatra::Base
         if @session_user
             @session_user[:roles] ||= Set.new()
         end
+        STDERR.puts "SSO needs refresh: #{dashboard_sso_needs_refresh?}"
         if @session_user && dashboard_sso_needs_refresh?
             issue_dashboard_sso_cookie!
         end

@@ -520,6 +520,7 @@ class Main < Sinatra::Base
                 first_name: @session_user[:first_name],
                 last_name:  @session_user[:last_name],
                 roles: [:admin, :teacher, :schueler, :sv_editor, :sv_admin].map { |x| @session_user[:roles].include?(x) ? x.to_s : nil }.compact,
+                avatar: "#{NEXTCLOUD_URL}/index.php/avatar/#{@session_user[:nc_login]}/128",
                 iat:  now,
                 exp:  exp,
                 iss:  WEB_ROOT

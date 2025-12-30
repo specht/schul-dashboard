@@ -519,7 +519,7 @@ class Main < Sinatra::Base
                 display_name:  @session_user[:display_name],
                 first_name: @session_user[:first_name],
                 last_name:  @session_user[:last_name],
-                roles: [:admin, :teacher, :schueler, :sv_editor].map { |x| @session_user[:roles].include?(x) ? x.to_s : nil }.compact,
+                roles: [:admin, :teacher, :schueler, :sv_editor, :sv_admin].map { |x| @session_user[:roles].include?(x) ? x.to_s : nil }.compact,
                 iat:  now,
                 exp:  exp,
                 iss:  WEB_ROOT

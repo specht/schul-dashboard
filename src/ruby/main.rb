@@ -534,7 +534,7 @@ class Main < Sinatra::Base
                 value: token,
                 domain: cookie_domain,
                 path: "/",
-                secure: !DEVELOPMENT,
+                secure: true,
                 httponly: true,
                 same_site: :lax,
                 expires: Time.at(exp)
@@ -544,9 +544,6 @@ class Main < Sinatra::Base
         end
 
         def dashboard_sso_needs_refresh?(leeway_seconds: 15 * 60)
-            STDERR.puts "Testing session user: #{@session_user.inspect}"
-            STDERR.puts "Testing cookie: #{request.cookies['dashboard_sso'].inspect}"
-            
             return false unless @session_user && @session_user[:email]
 
             raw = request.cookies["dashboard_sso"]
@@ -2086,7 +2083,6 @@ class Main < Sinatra::Base
         if @session_user
             @session_user[:roles] ||= Set.new()
         end
-        STDERR.puts "SSO needs refresh: #{dashboard_sso_needs_refresh?}"
         if @session_user && dashboard_sso_needs_refresh?
             issue_dashboard_sso_cookie!
         end

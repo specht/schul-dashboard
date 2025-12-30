@@ -28,7 +28,6 @@ class Main < Sinatra::Base
             CREATE (s:Session $data)-[:BELONGS_TO]->(u)
             RETURN s;
         END_OF_QUERY
-        issue_dashboard_sso_cookie!(user: @@user_info[email])
         sid
     end
 

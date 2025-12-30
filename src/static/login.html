@@ -3,21 +3,21 @@
         <div class='col-md-8 offset-md-2'>
             <h2 style='margin-bottom: 30px;'>Anmeldung</h2>
             <p>
-            Die Anmeldung ist relativ einfach und funktioniert ohne Passwort. Gib einfach deine E-Mail-Adresse ein und du erhältst einen Code für die Anmeldung an diesem Gerät. Wenn du diesen eingibst, bist du ein Jahr lang angemeldet (es sei denn, du meldest dich wieder ab). Du kannst jederzeit einen neuen Code anfordern.
+                Die Anmeldung ist relativ einfach und funktioniert ohne Passwort. Gib einfach deine E-Mail-Adresse ein und du erhältst einen Code für die Anmeldung an diesem Gerät. Wenn du diesen eingibst, bist du ein Jahr lang angemeldet (es sei denn, du meldest dich wieder ab). Du kannst jederzeit einen neuen Code anfordern.
             </p>
             <p class='text-muted'>
-            <em>
-            Hinweis: Für die Anmeldung benötigst du eine Schul-E-Mail-Adresse #{SCHUL_NAME_AN_DATIV} #{SCHUL_NAME}. Falls du Probleme bei der Anmeldung hast, melde dich bitte unter <a href='mailto:#{DASHBOARD_SUPPORT_EMAIL}'>#{DASHBOARD_SUPPORT_EMAIL}</a>.
-            </em>
+                <em>
+                    Hinweis: Für die Anmeldung benötigst du eine Schul-E-Mail-Adresse #{SCHUL_NAME_AN_DATIV} #{SCHUL_NAME}. Falls du Probleme bei der Anmeldung hast, melde dich bitte unter <a href='mailto:#{DASHBOARD_SUPPORT_EMAIL}'>#{DASHBOARD_SUPPORT_EMAIL}</a>.
+                </em>
             </p>
             <hr />
             <form id='form' autocomplete='on'>
-            <div class="input-group mb-3">
-                <input type="email" id='email' class="form-control" placeholder="Bitte gib deine E-Mail-Adresse ein" aria-label="E-Mail-Adresse" autocomplete='on'>
-                <div class="input-group-append">
-                    <button id='submit' class="btn btn-primary" type="submit" disabled>Code zusenden</button>
+                <div class="input-group mb-3">
+                    <input type="email" id='email' class="form-control" placeholder="Bitte gib deine E-Mail-Adresse ein" aria-label="E-Mail-Adresse" autocomplete='on'>
+                    <div class="input-group-append">
+                        <button id='submit' class="btn btn-primary" type="submit" disabled>Code zusenden</button>
+                    </div>
                 </div>
-            </div>
             </form>
             <div class='api_messages' style='display: none;'></div>
             <hr />
@@ -27,14 +27,19 @@
                 <i class='fa fa-question-circle' style='font-size: 150%; position: absolute; top: 0px; left: 4px;'></i>
                 Für alle Fragen rund um deine E-Mail-Adresse schau bitte auf unserer <a href='/hilfe'>Hilfe-Seite</a> nach!
             </div>
-        </div>        
+        </div>
     </div>
 </div>
 <style>
-.foot { padding-right: 40px; }
-.github { display: block; }
+    .foot { padding-right: 40px; }
+    .github { display: block; }
 </style>
 <script type='text/javascript'>
+
+function get_return_to() {
+    const p = new URLSearchParams(window.location.search);
+    return p.get('return_to') || '';
+}
 
 function update_submit_button() {
     if ($('#email').val().trim().length > 0) {
@@ -49,11 +54,13 @@ window.addEventListener('load', function () {
     $('#submit').click(function(e) {
         $('#email').prop('disabled', true);
         $('#submit').prop('disabled', true);
-        api_call('/api/login', {email: $('#email').val()}, function(data) {
-            if (data.success === true)
+
+        const return_to = get_return_to();
+
+        api_call('/api/login', { email: $('#email').val(), return_to: return_to }, function(data) {
+            if (data.success === true) {
                 window.location.href = '/c/' + data.tag;
-            else
-            {
+            } else {
                 $('#email').prop('disabled', false);
                 $('#submit').prop('disabled', false);
                 if (data.error === 'no_invitation_found')

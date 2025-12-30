@@ -201,12 +201,14 @@ class Main < Sinatra::Base
                 MATCH (s:Session {sid: $session_id})
                 SET s.method = $method;
             END_OF_QUERY
-            neo4j_query(<<~END_OF_QUERY, :tag => data[:tag])
+            return_to = neo4j_query_expect_one(<<~END_OF_QUERY, :tag => data[:tag])['return_to']
                 MATCH (l:LoginCode {tag: $tag})
-                DETACH DELETE l;
+                WITH l, l.return_to AS return_to
+                DETACH DELETE l
+                RETURN return_to;
             END_OF_QUERY
             purge_missing_sessions(session_id)
-            respond(:ok => 'yeah')
+            respond(:ok => 'yeah', :return_to => return_to)
         end
     end
 
@@ -261,12 +263,14 @@ class Main < Sinatra::Base
             MATCH (s:Session {sid: $session_id})
             SET s.method = $method;
         END_OF_QUERY
-        neo4j_query(<<~END_OF_QUERY, :tag => data[:tag])
+        return_to = neo4j_query_expect_one(<<~END_OF_QUERY, :tag => data[:tag])['return_to']
             MATCH (l:LoginCode {tag: $tag})
-            DETACH DELETE l;
+            WITH l, l.return_to AS return_to
+            DETACH DELETE l
+            RETURN return_to;
         END_OF_QUERY
         purge_missing_sessions(session_id)
-        respond(:ok => 'yeah')
+        respond(:ok => 'yeah', :return_to => return_to)
     end
 
     post '/api/send_forced_code2' do
@@ -551,7 +555,12 @@ class Main < Sinatra::Base
 
     post '/api/login' do
         response.headers['Access-Control-Allow-Origin'] = "https://chat.gymnasiumsteglitz.de"
-        data = parse_request_data(:required_keys => [:email], :optional_keys => [:purpose])
+        data = parse_request_data(:required_keys => [:email], :optional_keys => [:purpose, :return_to])
+        return_to = data[:return_to]
+        return_to = nil if return_to.nil? || return_to.strip == ''
+        if return_to
+            raise 'invalid return target' unless return_to.index('https://dashboard.gymnasiumsteglitz.de/') == 0 || return_to.index('https://sv.gymnasiumsteglitz.de/') == 0
+        end
         data[:email] = data[:email].strip.downcase
         login_for_chat = data[:purpose] == 'chat'
         if @@login_shortcuts.include?(data[:email])
@@ -583,9 +592,9 @@ class Main < Sinatra::Base
 #             MATCH (l:LoginCode)-[:BELONGS_TO]->(n:User {email: $email})
 #             DETACH DELETE l;
 #         END_OF_QUERY
-        result = neo4j_query_expect_one(<<~END_OF_QUERY, :email => data[:email], :tag => tag, :code => random_code, :valid_to => valid_to.to_i)
+        result = neo4j_query_expect_one(<<~END_OF_QUERY, :email => data[:email], :tag => tag, :code => random_code, :valid_to => valid_to.to_i, :return_to => return_to)
             MATCH (n:User {email: $email})
-            CREATE (l:LoginCode {tag: $tag, code: $code, valid_to: $valid_to})-[:BELONGS_TO]->(n)
+            CREATE (l:LoginCode {tag: $tag, code: $code, valid_to: $valid_to, return_to: $return_to})-[:BELONGS_TO]->(n)
             RETURN n, l;
         END_OF_QUERY
         telephone_number = result['n'][:telephone_number]

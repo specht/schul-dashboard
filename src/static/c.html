@@ -60,11 +60,11 @@ window.addEventListener('load', function () {
                     $('#code2').focus();
                     console.log('2FA');
                     if (data.sent === 'email')
-                        $('#span_sent').html('Wir haben dir einen 2. Code per <strong>E-Mail</strong> gesendet.');
+                    $('#span_sent').html('Wir haben dir einen 2. Code per <strong>E-Mail</strong> gesendet.');
                     else if (data.sent === 'sms')
-                        $('#span_sent').html('Wir haben dir einen 2. Code per <strong>SMS</strong> gesendet.');
+                    $('#span_sent').html('Wir haben dir einen 2. Code per <strong>SMS</strong> gesendet.');
                     else if (data.sent === 'no_methods_available')
-                        $('#span_sent').text('Du hast keinen zweiten Faktor hinterlegt, bitte melde dich bei #{DATENTRESOR_HOTLINE}.');
+                    $('#span_sent').text('Du hast keinen zweiten Faktor hinterlegt, bitte melde dich bei #{DATENTRESOR_HOTLINE}.');
                     else if (data.available_second_methods.indexOf('otp') >= 0) {
                         if (data.available_second_methods.indexOf('sms') >= 0 && data.sent !== 'sms') {
                             $('#span_sent').html('Verwende einfach einen <strong>OTP-Code</strong> oder lass dir eine <strong>SMS</strong> senden.');
@@ -75,11 +75,11 @@ window.addEventListener('load', function () {
                         }
                     }
                     if (data.available_second_methods.indexOf('sms') >= 0 && data.sent !== 'sms')
-                        $('#bu_force_2fa_sms').show();
+                    $('#bu_force_2fa_sms').show();
                     if (data.available_second_methods.indexOf('email') >= 0 && data.sent !== 'email')
-                        $('#bu_force_2fa_email').show();
+                    $('#bu_force_2fa_email').show();
                 } else {
-                    window.location.href = '/';
+                    window.location.href = data.return_to || '/';
                 }
             } else {
                 if (data.error === 'code_expired') {
@@ -88,7 +88,7 @@ window.addEventListener('load', function () {
                     show_error_message('Dein Anmeldecode ist abgelaufen.');
                 }
                 else
-                    show_error_message('Bei der Anmeldung ist ein Fehler aufgetreten.');
+                show_error_message('Bei der Anmeldung ist ein Fehler aufgetreten.');
                 $('#code').val('').focus();
             }
         });
@@ -97,7 +97,7 @@ window.addEventListener('load', function () {
         api_call('/api/confirm_forced_2fa_login', {tag: '#{login_tag}', code: $('#code').val(), code2: $('#code2').val()}, function(data) {
             console.log(data);
             if (data.success === true) {
-                window.location.href = '/';
+                window.location.href = data.return_to || '/';
             } else {
                 if (data.error === 'code_expired') {
                     $('#form').hide();
@@ -105,7 +105,7 @@ window.addEventListener('load', function () {
                     show_error_message('Dein Anmeldecode ist abgelaufen.');
                 }
                 else
-                    show_error_message('Bei der Anmeldung ist ein Fehler aufgetreten.');
+                show_error_message('Bei der Anmeldung ist ein Fehler aufgetreten.');
                 $('#code').val('').focus();
             }
         });

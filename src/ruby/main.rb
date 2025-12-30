@@ -507,6 +507,59 @@ class Main < Sinatra::Base
     configure do
         set :show_exceptions, false
     end
+    helpers do
+        def issue_dashboard_sso_cookie!(user: @session_user, ttl_seconds: 4 * 60 * 60)
+            raise "No user for SSO cookie" unless user
+
+            now = Time.now.to_i
+            exp = now + ttl_seconds
+
+            payload = {
+                email: user[:email],
+                display_name:  user[:display_name],
+                first_name: user[:first_name],
+                last_name:  user[:last_name],
+                roles: [:admin, :teacher, :schueler, :sv_editor].map { |x| @session_user[:roles].include?(x) ? x.to_s : nil }.compact,
+                iat:  now,
+                exp:  exp,
+                iss:  WEB_ROOT
+            }
+
+            headers = { kid: "2025-01" }
+
+            token = JWT.encode(payload, ES256_PRIVATE_KEY, "ES256", headers)
+
+            response.set_cookie(
+                "dashboard_sso",
+                value: token,
+                domain: cookie_domain,
+                path: "/",
+                secure: !DEVELOPMENT,
+                httponly: true,
+                same_site: :lax,
+                expires: Time.at(exp)
+            )
+
+            token
+        end
+
+        def dashboard_sso_needs_refresh?(leeway_seconds: 15 * 60)
+            raw = request.cookies["dashboard_sso"]
+            return true if raw.nil? || raw.empty?
+
+            payload = begin
+                JWT.decode(raw, nil, false).first
+            rescue
+                return true
+            end
+
+            exp = payload["exp"].to_i
+            return true if exp <= 0
+
+            now = Time.now.to_i
+            (exp - now) < leeway_seconds
+        end
+    end
 
     def self.iterate_school_days(options = {}, &block)
         day = Date.parse(@@config[:first_day])
@@ -2024,36 +2077,8 @@ class Main < Sinatra::Base
         if @session_user
             @session_user[:roles] ||= Set.new()
         end
-        if @session_user
-            exp = Time.now + 3600 * 4
-            sso_cookie_payload = {
-                :email => @session_user[:email],
-                :name => @session_user[:display_name],
-                :first_name => @session_user[:first_name],
-                :last_name => @session_user[:last_name],
-                :roles => [:admin, :teacher, :schueler, :sv_editor].map { |x| @session_user[:roles].include?(x) ? x.to_s : nil }.compact,
-                :exp => exp.to_i,
-                :iat => Time.now.to_i,
-                :iss => "https://dashboard.gymnasiumsteglitz.de"
-            }
-            jwt_headers = { kid: "2025-01" }
-
-            sso_token = JWT.encode(
-                sso_cookie_payload,
-                ES256_PRIVATE_KEY,
-                "ES256",
-                jwt_headers
-            )
-            response.set_cookie(
-                "dashboard_sso",
-                value:     sso_token,
-                path:      "/",
-                domain:    cookie_domain(),
-                secure:    !DEVELOPMENT,
-                httponly:  true,
-                same_site: :lax,
-                expires:   exp
-            )
+        if @session_user && dashboard_sso_needs_refresh?
+            issue_dashboard_sso_cookie!
         end
         debug "[#{(@session_user || {})[:nc_login] || (@session_user || {})[:email] || 'anon'}] #{request.request_method} #{request.path}"
     end
@@ -2120,6 +2145,23 @@ class Main < Sinatra::Base
         ".#{base_domain}"
     end
 
+    get "/sso/refresh" do
+        return_to = params["return_to"] || "/"
+
+        return_to = nil unless return_to.start_with?("https://sv.gymnasiumsteglitz.de/", "https://dashboard.gymnasiumsteglitz.de/")
+
+        if @session_user.nil?
+            # redirect to your normal login flow; preserve return_to
+            if return_to.nil?
+                redirect "/login"
+            else
+                redirect "/login?return_to=#{Rack::Utils.escape(return_to)}"
+            end
+        end
+
+        issue_dashboard_sso_cookie!
+        redirect return_to
+    end
 
     after '*' do
         cleanup_neo4j()

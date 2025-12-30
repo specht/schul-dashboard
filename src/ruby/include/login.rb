@@ -505,7 +505,13 @@ class Main < Sinatra::Base
         if new_cookie_value.empty? && request.cookies['sid']
             response.delete_cookie('sid')
         end
-        response.delete_cookie('dashboard_sso')
+        response.set_cookie(
+            'dashboard_sso',
+            value: '',
+            domain: cookie_domain,
+            path: '/',
+            expires: Time.at(0)
+        )
         if (request.cookies['sid'] || '') != new_cookie_value
             response.set_cookie('sid',
                                 :value => new_cookie_value,

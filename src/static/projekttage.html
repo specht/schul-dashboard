@@ -377,7 +377,7 @@ window.addEventListener('load', function() {
         dropzone.hiddenFileInput.click()
     });
     bu_delete_photo.on('click', function(e) {
-        api_call('/api/delete_photo_for_project', {nr: my_projekttage.nr}, function(data) {
+        api_call('/api/delete_photo_for_project', {}, function(data) {
             bu_delete_photo.prop('disabled', true);
             bu_delete_photo.removeClass('btn-danger').addClass('btn-outline-secondary');
             photo.css('background-image', `none`);
@@ -414,7 +414,7 @@ window.addEventListener('load', function() {
         pdf_dropzone.hiddenFileInput.click()
     });
     bu_delete_pdf.on('click', function(e) {
-        api_call('/api/delete_planung_pdf_for_project', {nr: my_projekttage.nr}, function(data) {
+        api_call('/api/delete_planung_pdf_for_project', {}, function(data) {
             bu_delete_pdf.prop('disabled', true);
             bu_delete_pdf.removeClass('btn-danger').addClass('btn-outline-secondary');
             bu_show_pdf.addClass('disabled');

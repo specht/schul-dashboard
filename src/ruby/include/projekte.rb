@@ -856,16 +856,15 @@ class Main < Sinatra::Base
     post '/api/toggle_category_for_projekttage' do
         require_user!
         transaction do
-            data = parse_request_data(:required_keys => [:cat, :nr], :optional_keys => [:sus_email])
+            data = parse_request_data(:required_keys => [:cat], :optional_keys => [:sus_email])
             cat = data[:cat]
-            nr = data[:nr]
             sus_email = @session_user[:email]
             if teacher_logged_in?
                 assert(user_with_role_logged_in?(:can_manage_projekttage))
                 sus_email = data[:sus_email] if data[:sus_email]
             end
-            projekt = neo4j_query_expect_one(<<~END_OF_QUERY, {:nr => nr, :sus_email => sus_email})['p']
-                MATCH (p:Projekttage {nr: $nr})-[:BELONGS_TO]->(u:User {email: $sus_email})
+            projekt = neo4j_query_expect_one(<<~END_OF_QUERY, {:sus_email => sus_email})['p']
+                MATCH (p:Projekttage)-[:BELONGS_TO]->(u:User {email: $sus_email})
                 RETURN p;
             END_OF_QUERY
             cats = (projekt[:categories] || '').split(',').map { |x| x.strip }
@@ -878,8 +877,8 @@ class Main < Sinatra::Base
             cats.select! { |x| PROJEKTTAGE_CATEGORIES.include?(x) }
             cats = cats.join(',')
             STDERR.puts "cats: #{cats}"
-            neo4j_query_expect_one(<<~END_OF_QUERY, {:nr => nr, :cats => cats, :sus_email => sus_email})
-                MATCH (p:Projekttage {nr: $nr})-[:BELONGS_TO]->(u:User {email: $sus_email})
+            neo4j_query_expect_one(<<~END_OF_QUERY, {:cats => cats, :sus_email => sus_email})
+                MATCH (p:Projekttage)-[:BELONGS_TO]->(u:User {email: $sus_email})
                 SET p.categories = $cats
                 RETURN p;
             END_OF_QUERY

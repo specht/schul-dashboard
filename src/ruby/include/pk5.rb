@@ -764,5 +764,20 @@ class Main < Sinatra::Base
         pk5 = get_my_pk5(@session_user[:email])
         respond_raw_with_mimetype(Main.print_voucher(pk5), 'application/pdf')
     end
+
+    get '/api/print_antrag_for_sus/:email' do
+        assert(user_with_role_logged_in?(:oko))
+        require_teacher!
+        sus_email = params[:email]
+        pk5 = get_my_pk5(sus_email)
+        respond_raw_with_mimetype(Main.print_antrag(pk5), 'application/pdf')
+    end
+
+    get '/api/print_my_antrag' do
+        require_user!
+        assert(@session_user[:klasse] == PK5_CURRENT_KLASSE)
+        pk5 = get_my_pk5(@session_user[:email])
+        respond_raw_with_mimetype(Main.print_antrag(pk5), 'application/pdf')
+    end
 end
 

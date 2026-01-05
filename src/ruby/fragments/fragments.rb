@@ -2600,6 +2600,144 @@ class Main
         return sanitize_pdf_with_ghostscript(doc.render)
     end
 
+    def self.print_antrag(pk5)
+        STDERR.puts pk5.to_yaml
+        main = self
+        doc = Prawn::Document.new(:page_size => 'A4', :page_layout => :portrait, :margin => 0) do
+            font_families.update("RobotoCondensed" => {
+                :normal => "/app/fonts/RobotoCondensed-Regular.ttf",
+                :italic => "/app/fonts/RobotoCondensed-Italic.ttf",
+                :bold => "/app/fonts/RobotoCondensed-Bold.ttf",
+                :bold_italic => "/app/fonts/RobotoCondensed-BoldItalic.ttf"
+            })
+            font_families.update("Roboto" => {
+                :normal => "/app/fonts/Roboto-Regular.ttf",
+                :italic => "/app/fonts/Roboto-Italic.ttf",
+                :bold => "/app/fonts/Roboto-Bold.ttf",
+                :bold_italic => "/app/fonts/Roboto-BoldItalic.ttf"
+            })
+            font_families.update("AlegreyaSans" => {
+                :normal => "/app/fonts/AlegreyaSans-Regular.ttf",
+                :italic => "/app/fonts/AlegreyaSans-Italic.ttf",
+                :bold => "/app/fonts/AlegreyaSans-Bold.ttf",
+                :bold_italic => "/app/fonts/AlegreyaSans-BoldItalic.ttf"
+            })
+            mark_width = 4.cm
+            w = (18.cm - mark_width) / 10
+            hh = 5.mm
+            h = 5.mm
+            first_page = true
+            pk5[:sus_email].each do |email|
+                start_new_page unless first_page
+                first_page = false
+                bounding_box([15.mm, 297.mm - 15.mm], :width => 18.cm, :height => 267.mm) do
+                    font('AlegreyaSans') do
+                        image "/data/gyst.jpg", :at => [0, 267.mm], :width => 2.5.cm
+                        image "/data/sesb.jpg", :at => [16.2.cm, 267.mm], :width => 1.8.cm
+                        move_down 2.mm
+                        text "Gymnasium Steglitz", :size => 24, :align => :center
+                        move_down 2.mm
+                        text "<b>Antrag auf das Absolvieren einer Präsentationsprüfung<br> im Rahmen der fünften Prüfungskomponente<br>im Abitur #{(Date.today).strftime('%Y')}</b>", :align => :center, :inline_format => true, :size => 14
+
+                        move_down 1.8.cm
+
+                        text "Dieses Blatt dokumentiert den aktuellen Stand der Planung für die 5. Prüfungskomponente im Abitur #{(Date.today).strftime('%Y')}."
+
+                        # print_date = Date.parse($pk5.phases.select { |x| x[:index] == 13 }.first[:t1][0, 10])
+                        # deadline = DateTime.parse($pk5.phases.select { |x| x[:index] == 14 }.first[:t1])
+                        print_date = Date.today
+                        deadline = DateTime.parse("2026-01-08T12:00:00")
+
+                        move_down 3.mm
+
+                        text "Abgabe bis spätestens <b>#{WEEKDAYS_LONG[deadline.wday]}</b>, den <b>#{deadline.strftime('%d.')} #{MONTHS[deadline.strftime('%m').to_i - 1]} #{deadline.strftime('%Y')}</b>, um <b>#{deadline.strftime('%H:%M')} Uhr</b> im Sekretariat.", :inline_format => true
+
+                        move_down 1.cm
+
+                        text "<b>Themengebiet</b>", :inline_format => true
+                        move_down 3.mm
+                        value = CGI.escapeHTML((pk5[:themengebiet] || '').strip)
+                        value = '<em>(bisher nicht gewählt)</em>' if value.empty?
+                        text value, :inline_format => true
+                        move_down 8.mm
+
+                        text "<b>Prüfungskandidat#{@@user_info[email][:geschlecht] == 'w' ? 'in' : ''}</b>", :inline_format => true
+                        move_down 3.mm
+                        text @@user_info[email][:display_name]
+                        move_down 8.mm
+
+                        text "<b>Art der Prüfung</b>", :inline_format => true
+                        move_down 3.mm
+                        if pk5[:sus].size == 1
+                            value = "Einzelprüfung"
+                        else
+                            value = "Gruppenprüfung (gemeinsam mit #{join_with_sep(pk5[:sus_email].reject { |x| x == email}.map { |x| @@user_info[x][:display_name] }, ', ', ' und ')})"
+                        end
+                        text value, :inline_format => true
+                        move_down 8.mm
+
+                        text "<b>Referenzfach</b>", :inline_format => true
+                        move_down 3.mm
+                        value = (pk5[:referenzfach] || '').strip
+                        value = '<em>(bisher nicht gewählt)</em>' if value.empty?
+                        text value, :inline_format => true
+                        move_down 8.mm
+
+                        text "<b>Betreuende Lehrkraft im Referenzfach</b>", :inline_format => true
+                        move_down 3.mm
+                        value = (!pk5[:betreuende_lehrkraft].nil?) && (pk5[:betreuende_lehrkraft_confirmed_by] == pk5[:betreuende_lehrkraft]) ?
+                            @@user_info[pk5[:betreuende_lehrkraft]][:display_name_official] :
+                            '<em>(bisher nicht bestätigt)</em>'
+                        value = '<em>(bisher nicht gewählt)</em>' if pk5[:betreuende_lehrkraft].nil?
+                        text value, :inline_format => true
+                        move_down 8.mm
+
+                        text "<b>Fächerübergreifender Aspekt</b>", :inline_format => true
+                        move_down 3.mm
+                        value = (pk5[:fas] || '').strip
+                        value = '<em>(bisher nicht gewählt)</em>' if value.empty?
+                        text value, :inline_format => true
+                        move_down 8.mm
+
+                        # text "<b>Vorläufige problemorientierte Frage-/Themenstellung</b>", :inline_format => true
+                        # move_down 3.mm
+                        # value = CGI.escapeHTML((pk5[:fragestellung] || '').strip)
+                        # value = '<em>(bisher nicht formuliert)</em>' if value.empty?
+                        # text value, :inline_format => true
+                        # move_down 8.mm
+
+                        bounding_box([0.cm, 5.cm], :width => 18.cm, :height => 1.cm) do
+                            t = Date.today
+                            text "Berlin, den #{print_date.strftime('%d.')} #{MONTHS[print_date.strftime('%m').to_i - 1]} #{print_date.strftime('%Y')}", :size => 11
+                        end
+
+                        ["Prüfungskandidat#{@@user_info[email][:geschlecht] == 'w' ? 'in' : ''}", 'Erziehungsberechtigte/r'].each.with_index do |x, i|
+                            bounding_box([18.cm / 2 * i, 3.2.cm], :width => 18.cm / 2 * 0.9, :height => 1.5.cm) do
+                                line [0, 9.5.mm], [18.cm / 2 * 0.9, 9.5.mm]
+                                stroke
+                                move_down 6.mm
+                                float do
+                                    text x, :size => 11, :align => :center, :inline_format => true
+                                end
+                            end
+                        end
+                        ['betreuende Lehrkraft', "betreuende Lehrkraft im\nfächerübergreifenden Aspekt"].each.with_index do |x, i|
+                            bounding_box([18.cm / 2 * i, 1.2.cm], :width => 18.cm / 2 * 0.9, :height => 1.5.cm) do
+                                line [0, 9.5.mm], [18.cm / 2 * 0.9, 9.5.mm]
+                                stroke
+                                move_down 6.mm
+                                float do
+                                    text x, :size => 11, :align => :center, :inline_format => true
+                                end
+                            end
+                        end
+                    end
+                end
+            end
+        end
+        return sanitize_pdf_with_ghostscript(doc.render)
+    end
+
     def print_email_overview(klasse)
         reason_order = [:material, :homework, :signature, :disturbance, :disturbance_otium, :late, :praise]
         reason_label = {

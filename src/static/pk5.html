@@ -60,10 +60,12 @@
         <div class='col-md-12'>
             <div style="float: right;" class="mt-1">
                 <div style="display: #{user_with_role_logged_in?(:schueler) ? 'unset' : 'none'}">
-                    <a target='_blank' href='/api/print_my_voucher' class="btn btn-success"><i class='fa fa-file-pdf-o'></i>&nbsp;&nbsp;Dokumentationsbogen (Voucher)</a>
+                    <!-- <a target='_blank' href='/api/print_my_voucher' class="btn btn-success"><i class='fa fa-file-pdf-o'></i>&nbsp;&nbsp;Dokumentationsbogen (Voucher)</a> -->
+                    <a target='_blank' href='/api/print_my_antrag' class="btn btn-success"><i class='fa fa-file-pdf-o'></i>&nbsp;&nbsp;Antrag drucken</a>
                 </div>
                 <div style="display: #{user_with_role_logged_in?(:oko) ? 'unset' : 'none'}">
-                    <button id="bu_print_voucher" data-email="#{user_email}" class="btn btn-success"><i class='fa fa-file-pdf-o'></i>&nbsp;&nbsp;Dokumentationsbogen (Voucher)</button>
+                    <!-- <button id="bu_print_voucher" data-email="#{user_email}" class="btn btn-success"><i class='fa fa-file-pdf-o'></i>&nbsp;&nbsp;Dokumentationsbogen (Voucher)</button> -->
+                    <button id="bu_print_antrag" data-email="#{user_email}" class="btn btn-success"><i class='fa fa-file-pdf-o'></i>&nbsp;&nbsp;Antrag drucken</button>
                 </div>
             </div>
             <h2 style='margin-bottom: 30px;'>5. Prüfungskomponente im Abitur</h2>
@@ -438,6 +440,10 @@ window.addEventListener('load', function() {
     $('#bu_print_voucher').on('click', function(e) {
         let email = $(e.target).data('email');
         window.open(`/api/print_voucher_for_sus/${encodeURIComponent(email)}`, '_blank');
+    });
+    $('#bu_print_antrag').on('click', function(e) {
+        let email = $(e.target).data('email');
+        window.open(`/api/print_antrag_for_sus/${encodeURIComponent(email)}`, '_blank');
     });
 });
 </script>

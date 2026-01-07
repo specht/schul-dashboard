@@ -60,12 +60,13 @@
         <div class='col-md-12'>
             <div style="float: right;" class="mt-1">
                 <div style="display: #{user_with_role_logged_in?(:schueler) ? 'unset' : 'none'}">
-                    <!-- <a target='_blank' href='/api/print_my_voucher' class="btn btn-success"><i class='fa fa-file-pdf-o'></i>&nbsp;&nbsp;Dokumentationsbogen (Voucher)</a> -->
-                    <a target='_blank' href='/api/print_my_antrag' class="btn btn-success"><i class='fa fa-file-pdf-o'></i>&nbsp;&nbsp;Antrag drucken</a>
+                    <a target='_blank' href='/api/print_my_voucher' class="btn btn-success"><i class='fa fa-file-pdf-o'></i>&nbsp;&nbsp;Dokumentationsbogen (Voucher)</a>
+                    <!-- <a target='_blank' href='/api/print_my_antrag' class="btn btn-success"><i class='fa fa-file-pdf-o'></i>&nbsp;&nbsp;Antrag drucken</a> -->
                 </div>
-                <!-- <div style="display: #{user_with_role_logged_in?(:oko) ? 'unset' : 'none'}">
-                    <button id="bu_print_antrag" data-email="#{user_email}" class="btn btn-success"><i class='fa fa-file-pdf-o'></i>&nbsp;&nbsp;Antrag drucken</button>
-                </div> -->
+                <div style="display: #{user_with_role_logged_in?(:oko) ? 'unset' : 'none'}">
+                    <button id="bu_print_voucher" data-email="#{user_email}" class="btn btn-success"><i class='fa fa-file-pdf-o'></i>&nbsp;&nbsp;Dokumentationsbogen (Voucber)</button>
+                    <!-- <button id="bu_print_antrag" data-email="#{user_email}" class="btn btn-success"><i class='fa fa-file-pdf-o'></i>&nbsp;&nbsp;Antrag drucken</button> -->
+                </div>
             </div>
             <h2 style='margin-bottom: 30px;'>5. Prüfungskomponente im Abitur</h2>
             <div class="alert alert-white" style="#{teacher_logged_in? && $pk5.get_current_phase >= 2 && get_my_pk5(user_email)[:betreuende_lehrkraft] == @session_user[:email] && !get_my_pk5(user_email)[:betreuende_lehrkraft_is_confirmed] ? '': 'display: none;'}">

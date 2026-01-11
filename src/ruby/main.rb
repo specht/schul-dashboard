@@ -3958,7 +3958,7 @@ class Main < Sinatra::Base
                         end
                         code = s[index + 2, length - 3]
                         begin
-#                             STDERR.puts code
+                            # STDERR.puts code
                             s[index, length] = eval(code).to_s || ''
                         rescue
                             debug "Error while evaluating for #{(@session_user || {})[:email]}:"

@@ -361,9 +361,17 @@ class Main < Sinatra::Base
                     auto_entry[:spans].each do |span|
                         t = Time.parse("#{auto_entry[:day]}T#{span[0]}")
                         while t + auto_entry[:duration] * 60 <= Time.parse("#{auto_entry[:day]}T#{span[1]}")
+                            deadline = nil
+                            if entry[:auto_rows_no_signup_deadline]
+                                if entry[:auto_rows_no_signup_deadline].is_a?(Numeric)
+                                    deadline = "#{(t - entry[:auto_rows_no_signup_deadline] * 3600).strftime("%Y-%m-%dT%H:%M")}"
+                                else
+                                    deadline = "#{t.strftime("%Y-%m-%dT")}#{entry[:auto_rows_no_signup_deadline]}"
+                                end
+                            end
                             row[:entries] << {
                                 :key => "#{t.strftime("%Y-%m-%dT%H:%M")}",
-                                :deadline => entry[:auto_rows_no_signup_deadline] ? "#{(t - entry[:auto_rows_no_signup_deadline] * 3600).strftime("%Y-%m-%dT%H:%M")}" : nil,
+                                :deadline => deadline,
                                 :description => "#{t.strftime("%H:%M")} Uhr",
                                 :row_description => row[:description],
                                 :capacity => 1,
@@ -377,6 +385,7 @@ class Main < Sinatra::Base
             end
             entry
         end
+        # debug @@public_event_config.to_yaml
     end
 
     def self.refresh_public_event_config()

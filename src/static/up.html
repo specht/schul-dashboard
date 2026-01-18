@@ -1,339 +1,415 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <title>Card Scanner Demo</title>
-  <style>
-    body {
-      font-family: system-ui, sans-serif;
-      margin: 0;
-      padding: 1rem;
-      background: #111;
-      color: #eee;
-    }
-    .row {
-      display: flex;
-      gap: 1rem;
-      flex-wrap: wrap;
-    }
-    video, canvas, img {
-      max-width: 100%;
-      border-radius: 8px;
-    }
-    #video {
-      border: 2px solid #555;
-    }
-    #scanBtn {
-      margin-top: 0.5rem;
-      padding: 0.5rem 1rem;
-      font-size: 1rem;
-    }
-    #status {
-      margin-top: 0.5rem;
-      font-weight: bold;
-    }
-    #cardPreview {
-      background: #222;
-      min-width: 300px;
-      min-height: 190px;
-    }
-    .ok {
-      color: #4caf50;
-    }
-    .error {
-      color: #ff5252;
-    }
-  </style>
+    <meta charset="UTF-8" />
+    <title>Card Scanner Demo</title>
+    <style>
+        body {
+            font-family: system-ui, sans-serif;
+            margin: 0;
+            padding: 1rem;
+            background: #111;
+            color: #eee;
+        }
+        .row {
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+        video, canvas, img {
+            max-width: 100%;
+            border-radius: 8px;
+        }
+        #video {
+            border: 2px solid #555;
+        }
+        #scanBtn {
+            margin-top: 0.5rem;
+            padding: 0.5rem 1rem;
+            font-size: 1rem;
+        }
+        #status {
+            margin-top: 0.5rem;
+            font-weight: bold;
+        }
+        #cardPreview {
+            background: #222;
+            min-width: 300px;
+            min-height: 190px;
+        }
+        .ok {
+            color: #4caf50;
+        }
+        .error {
+            color: #ff5252;
+        }
+    </style>
 </head>
 <body>
-  <h1>Card Scanner Demo</h1>
+    <h1>Card Scanner Demo</h1>
 
-  <div class="row">
-    <div>
-      <video id="video" autoplay playsinline></video><br />
-      <button id="scanBtn" disabled>Scan</button>
-      <div id="status">Loading OpenCV…</div>
+    <div class="row">
+        <div>
+            <video id="video" autoplay playsinline muted></video><br />
+            <button id="scanBtn" disabled>Scan</button>
+            <div id="status">Initializing…</div>
+        </div>
+
+        <div>
+            <p>Rectified card preview:</p>
+            <canvas id="cardPreview" width="640" height="400"></canvas>
+            <p>Sharpness score: <span id="sharpness">–</span></p>
+        </div>
     </div>
 
-    <div>
-      <p>Rectified card preview:</p>
-      <canvas id="cardPreview" width="640" height="400"></canvas>
-      <p>Sharpness score: <span id="sharpness">–</span></p>
-    </div>
-  </div>
+    <!-- Hidden canvas we draw the camera frame into -->
+    <canvas id="frameCanvas" style="display:none;"></canvas>
 
-  <!-- Hidden canvas we draw the camera frame into -->
-  <canvas id="frameCanvas" style="display:none;"></canvas>
+    <!-- OpenCV.js (4.x). -->
+    <script src="https://docs.opencv.org/4.x/opencv.js"></script>
 
-  <!-- OpenCV.js (4.x). You can pin to a specific version if you want. -->
-  <script async src="https://docs.opencv.org/4.x/opencv.js"></script>
+    <script>
+        const video = document.getElementById('video');
+        const scanBtn = document.getElementById('scanBtn');
+        const statusEl = document.getElementById('status');
+        const frameCanvas = document.getElementById('frameCanvas');
+        const frameCtx = frameCanvas.getContext('2d');
+        const cardPreview = document.getElementById('cardPreview');
+        const cardPreviewCtx = cardPreview.getContext('2d');
+        const sharpnessEl = document.getElementById('sharpness');
 
-  <script>
-    const video = document.getElementById('video');
-    const scanBtn = document.getElementById('scanBtn');
-    const statusEl = document.getElementById('status');
-    const frameCanvas = document.getElementById('frameCanvas');
-    const frameCtx = frameCanvas.getContext('2d');
-    const cardPreview = document.getElementById('cardPreview');
-    const cardPreviewCtx = cardPreview.getContext('2d');
-    const sharpnessEl = document.getElementById('sharpness');
+        // Parameters
+        const OUTPUT_WIDTH = 1024;
+        const OUTPUT_HEIGHT = 640;
+        const SHARPNESS_THRESHOLD = 150; // tweak after testing
 
-    // Parameters
-    const OUTPUT_WIDTH = 1024;
-    const OUTPUT_HEIGHT = 640;
-    const SHARPNESS_THRESHOLD = 150; // you'll tweak this after testing
+        let cvReady = false;
+        let cameraReady = false;
 
-    let cvReady = false;
-
-    // Called when OpenCV.js is ready
-    function onOpenCvReady() {
-      cvReady = true;
-      statusEl.textContent = 'OpenCV loaded. Initializing camera…';
-      initCamera();
-    }
-
-    // OpenCV.js sets this property when runtime is ready
-    window.cv = window.cv || {};
-    cv['onRuntimeInitialized'] = onOpenCvReady;
-
-    async function initCamera() {
-      try {
-        const stream = await navigator.mediaDevices.getUserMedia({
-          video: { facingMode: 'environment' },
-          audio: false
-        });
-        video.srcObject = stream;
-        video.addEventListener('loadedmetadata', () => {
-          // Match canvas to video size
-          frameCanvas.width = video.videoWidth;
-          frameCanvas.height = video.videoHeight;
-          statusEl.textContent = 'Camera ready. Place card on dark surface and press Scan.';
-          scanBtn.disabled = false;
-        });
-      } catch (err) {
-        console.error(err);
-        statusEl.textContent = 'Error accessing camera: ' + err.message;
-      }
-    }
-
-    scanBtn.addEventListener('click', () => {
-      if (!cvReady) return;
-      statusEl.textContent = 'Scanning…';
-      statusEl.className = '';
-      scanBtn.disabled = true;
-      setTimeout(() => {
-        processFrame();
-        scanBtn.disabled = false;
-      }, 10);
-    });
-
-    function processFrame() {
-      // Draw current video frame onto canvas
-      frameCtx.drawImage(video, 0, 0, frameCanvas.width, frameCanvas.height);
-
-      // Read as OpenCV Mat
-      let src = cv.imread(frameCanvas); // RGBA
-      let resized = new cv.Mat();
-
-      // Downscale if very large to speed up
-      const maxSide = 1280;
-      const scale = Math.min(1, maxSide / Math.max(src.cols, src.rows));
-      if (scale < 1) {
-        const newWidth = Math.round(src.cols * scale);
-        const newHeight = Math.round(src.rows * scale);
-        cv.resize(src, resized, new cv.Size(newWidth, newHeight), 0, 0, cv.INTER_AREA);
-        src.delete();
-        src = resized;
-      }
-
-      // Preprocess: grayscale, blur, Canny
-      let gray = new cv.Mat();
-      cv.cvtColor(src, gray, cv.COLOR_RGBA2GRAY, 0);
-
-      let blurred = new cv.Mat();
-      cv.GaussianBlur(gray, blurred, new cv.Size(3, 3), 0, 0, cv.BORDER_DEFAULT);
-
-      let edges = new cv.Mat();
-      cv.Canny(blurred, edges, 50, 150);
-
-      // Find contours
-      let contours = new cv.MatVector();
-      let hierarchy = new cv.Mat();
-      cv.findContours(edges, contours, hierarchy, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE);
-
-      let bestQuad = null;
-      let bestArea = 0;
-      const imgArea = src.cols * src.rows;
-
-      for (let i = 0; i < contours.size(); i++) {
-        const contour = contours.get(i);
-        const peri = cv.arcLength(contour, true);
-        const approx = new cv.Mat();
-        cv.approxPolyDP(contour, approx, 0.02 * peri, true);
-
-        if (approx.rows === 4) {
-          const area = cv.contourArea(approx);
-          // ignore tiny contours
-          if (area < imgArea * 0.15) {
-            approx.delete();
-            contour.delete();
-            continue;
-          }
-
-          // Evaluate aspect ratio roughly
-          const pts = [];
-          for (let j = 0; j < 4; j++) {
-            pts.push({
-              x: approx.intAt(j, 0),
-              y: approx.intAt(j, 1)
-            });
-          }
-
-          const { width, height } = estimateQuadSize(pts);
-          const aspect = width / height;
-          const targetAspect = 86 / 54; // ~1.59
-          const aspectDiff = Math.abs(aspect - targetAspect);
-
-          if (aspectDiff < 0.4 && area > bestArea) {
-            bestArea = area;
-            bestQuad = pts;
-          }
+        function updateStatus() {
+            if (cvReady && cameraReady) {
+                statusEl.textContent = 'Camera ready. Place card on dark surface and press Scan.';
+                scanBtn.disabled = false;
+            } else if (!cvReady && !cameraReady) {
+                statusEl.textContent = 'Initializing camera and OpenCV…';
+                scanBtn.disabled = true;
+            } else if (!cvReady && cameraReady) {
+                statusEl.textContent = 'Camera ready. Waiting for OpenCV…';
+                scanBtn.disabled = true;
+            } else if (cvReady && !cameraReady) {
+                statusEl.textContent = 'OpenCV ready. Waiting for camera…';
+                scanBtn.disabled = true;
+            }
         }
 
-        approx.delete();
-        contour.delete();
-      }
+        window.addEventListener('load', () => {
+            console.log('Page loaded, starting camera + waiting for OpenCV');
+            updateStatus();
+            initCamera();
+            waitForOpenCv();
+        });
 
-      let rectified = null;
-      let sharpness = null;
+        async function initCamera() {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({
+                    video: true,
+                    audio: false
+                });
+                video.srcObject = stream;
+                await video.play();
 
-      if (!bestQuad) {
-        statusEl.textContent = 'Card not found. Please realign and try again.';
-        statusEl.className = 'error';
-      } else {
-        // Perspective transform
-        const ordered = orderCorners(bestQuad);
-        rectified = warpToCard(src, ordered, OUTPUT_WIDTH, OUTPUT_HEIGHT);
+                console.log('After play:', video.videoWidth, video.videoHeight);
 
-        // Show preview
-        const cardCanvas = document.createElement('canvas');
-        cardCanvas.width = OUTPUT_WIDTH;
-        cardCanvas.height = OUTPUT_HEIGHT;
-        cv.imshow(cardCanvas, rectified);
-        cardPreviewCtx.clearRect(0, 0, cardPreview.width, cardPreview.height);
-        cardPreviewCtx.drawImage(
-          cardCanvas,
-          0, 0, cardCanvas.width, cardCanvas.height,
-          0, 0, cardPreview.width, cardPreview.height
-        );
+                if (video.videoWidth && video.videoHeight) {
+                    frameCanvas.width = video.videoWidth;
+                    frameCanvas.height = video.videoHeight;
+                    cameraReady = true;
+                    console.log('Camera ready immediately with size:', video.videoWidth, video.videoHeight);
+                    updateStatus();
+                } else {
+                    video.onloadedmetadata = () => {
+                        console.log('loadedmetadata', video.videoWidth, video.videoHeight);
 
-        // Sharpness (variance of Laplacian)
-        sharpness = computeSharpness(rectified);
-        sharpnessEl.textContent = sharpness.toFixed(1);
+                        if (!video.videoWidth || !video.videoHeight) {
+                            console.warn('Metadata had zero size, retrying in 100ms');
+                            setTimeout(video.onloadedmetadata, 100);
+                            return;
+                        }
 
-        if (sharpness >= SHARPNESS_THRESHOLD) {
-          statusEl.textContent = 'Card OK (sharp enough).';
-          statusEl.className = 'ok';
-        } else {
-          statusEl.textContent = 'Card detected but too blurry. Please try again.';
-          statusEl.className = 'error';
+                        frameCanvas.width = video.videoWidth;
+                        frameCanvas.height = video.videoHeight;
+
+                        cameraReady = true;
+                        console.log('Camera ready via loadedmetadata:', video.videoWidth, video.videoHeight);
+                        updateStatus();
+                    };
+                }
+            } catch (err) {
+                console.error('getUserMedia failed:', err);
+                statusEl.textContent = 'Camera error: ' + err.message;
+            }
         }
-      }
 
-      // Cleanup
-      src.delete();
-      gray.delete();
-      blurred.delete();
-      edges.delete();
-      contours.delete();
-      hierarchy.delete();
-      if (rectified) rectified.delete();
+        function waitForOpenCv() {
+            const interval = setInterval(() => {
+                if (window.cv && typeof cv.Mat === 'function') {
+                    clearInterval(interval);
+                    console.log('OpenCV is ready');
+                    cvReady = true;
+                    updateStatus();
+                }
+            }, 100);
+        }
+
+        scanBtn.addEventListener('click', () => {
+            if (!cvReady || !cameraReady) {
+                console.warn('Scan pressed before everything ready');
+                return;
+            }
+            statusEl.textContent = 'Scanning…';
+            statusEl.className = '';
+            scanBtn.disabled = true;
+            setTimeout(() => {
+                processFrame();
+                scanBtn.disabled = false;
+            }, 10);
+        });
+
+        function processFrame() {
+            // Draw current video frame onto canvas
+            frameCtx.drawImage(video, 0, 0, frameCanvas.width, frameCanvas.height);
+
+            // Read as OpenCV Mat (RGBA)
+            let src = cv.imread(frameCanvas);
+
+            // Preprocess: grayscale, blur
+            let gray = new cv.Mat();
+            cv.cvtColor(src, gray, cv.COLOR_RGBA2GRAY, 0);
+
+            let blurred = new cv.Mat();
+            cv.GaussianBlur(gray, blurred, new cv.Size(5, 5), 0, 0, cv.BORDER_DEFAULT);
+
+            // Binary threshold (Otsu) – better for white card on dark background
+            let bin = new cv.Mat();
+            cv.threshold(blurred, bin, 0, 255, cv.THRESH_BINARY + cv.THRESH_OTSU);
+
+            // Find contours on the binary image
+            let contours = new cv.MatVector();
+            let hierarchy = new cv.Mat();
+            cv.findContours(bin, contours, hierarchy, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE);
+
+            let bestQuad = null;
+            let bestArea = 0;
+            const imgArea = src.cols * src.rows;
+
+            for (let i = 0; i < contours.size(); i++) {
+                const contour = contours.get(i);
+                const peri = cv.arcLength(contour, true);
+                const approx = new cv.Mat();
+                cv.approxPolyDP(contour, approx, 0.02 * peri, true);
+
+                if (approx.rows === 4) {
+                    const area = cv.contourArea(approx);
+                    // ignore tiny contours – now only 5% of the image
+                    if (area < imgArea * 0.05) {
+                        approx.delete();
+                        contour.delete();
+                        continue;
+                    }
+
+                    const pts = [];
+                    for (let j = 0; j < 4; j++) {
+                        pts.push({
+                            x: approx.intAt(j, 0),
+                            y: approx.intAt(j, 1)
+                        });
+                    }
+
+                    // Just pick the largest quadrilateral – card will usually be it
+                    if (area > bestArea) {
+                        bestArea = area;
+                        bestQuad = pts;
+                    }
+                }
+
+                approx.delete();
+                contour.delete();
+            }
+
+            let rectified = null;
+            let sharpness = null;
+
+            if (!bestQuad) {
+                console.log('No suitable quad found');
+                statusEl.textContent = 'Card not found. Please realign and try again.';
+                statusEl.className = 'error';
+            } else {
+                const ordered = orderCorners(bestQuad);
+                rectified = warpToCard(src, ordered, OUTPUT_WIDTH, OUTPUT_HEIGHT);
+                let balanced = whitePatch(rectified);
+
+                const cardCanvas = document.createElement('canvas');
+                cardCanvas.width = OUTPUT_WIDTH;
+                cardCanvas.height = OUTPUT_HEIGHT;
+                cv.imshow(cardCanvas, balanced);
+                cardPreviewCtx.clearRect(0, 0, cardPreview.width, cardPreview.height);
+                cardPreviewCtx.drawImage(
+                    cardCanvas,
+                    0, 0, cardCanvas.width, cardCanvas.height,
+                    0, 0, cardPreview.width, cardPreview.height
+                );
+
+                sharpness = computeSharpness(balanced);
+                sharpnessEl.textContent = sharpness.toFixed(1);
+
+                if (sharpness >= SHARPNESS_THRESHOLD) {
+                    statusEl.textContent = 'Card OK (sharp enough).';
+                    statusEl.className = 'ok';
+                } else {
+                    statusEl.textContent = 'Card detected but too blurry. Please try again.';
+                    statusEl.className = 'error';
+                }
+                balanced.delete();
+            }
+
+            // Cleanup
+            src.delete();
+            gray.delete();
+            blurred.delete();
+            bin.delete();
+            contours.delete();
+            hierarchy.delete();
+            if (rectified) rectified.delete();
+        }
+
+        function estimateQuadSize(pts) {
+            function dist(a, b) {
+                const dx = a.x - b.x;
+                const dy = a.y - b.y;
+                return Math.sqrt(dx * dx + dy * dy);
+            }
+            const d01 = dist(pts[0], pts[1]);
+            const d12 = dist(pts[1], pts[2]);
+            const d23 = dist(pts[2], pts[3]);
+            const d30 = dist(pts[3], pts[0]);
+            const width = (d01 + d23) / 2;
+            const height = (d12 + d30) / 2;
+            return { width, height };
+        }
+
+        function orderCorners(pts) {
+            const sorted = pts.slice().sort((a, b) => a.y - b.y || a.x - b.x);
+            const top = sorted.slice(0, 2).sort((a, b) => a.x - b.x);
+            const bottom = sorted.slice(2, 4).sort((a, b) => a.x - b.x);
+            const tl = top[0];
+            const tr = top[1];
+            const bl = bottom[0];
+            const br = bottom[1];
+            return [tl, tr, br, bl];
+        }
+
+        function warpToCard(src, corners, outW, outH) {
+            const dst = new cv.Mat();
+            const srcTri = cv.matFromArray(4, 1, cv.CV_32FC2, [
+            corners[0].x, corners[0].y,
+            corners[1].x, corners[1].y,
+            corners[2].x, corners[2].y,
+            corners[3].x, corners[3].y
+            ]);
+            const dstTri = cv.matFromArray(4, 1, cv.CV_32FC2, [
+            0, 0,
+            outW - 1, 0,
+            outW - 1, outH - 1,
+            0, outH - 1
+            ]);
+            const M = cv.getPerspectiveTransform(srcTri, dstTri);
+            cv.warpPerspective(
+            src,
+            dst,
+            M,
+            new cv.Size(outW, outH),
+            cv.INTER_LINEAR,
+            cv.BORDER_CONSTANT,
+            new cv.Scalar()
+            );
+            srcTri.delete();
+            dstTri.delete();
+            M.delete();
+            return dst;
+        }
+
+        function computeSharpness(mat) {
+            let gray = new cv.Mat();
+            if (mat.channels() === 1) {
+                gray = mat.clone();
+            } else {
+                cv.cvtColor(mat, gray, cv.COLOR_RGBA2GRAY, 0);
+            }
+
+            let lap = new cv.Mat();
+            cv.Laplacian(gray, lap, cv.CV_64F);
+
+            const mean = new cv.Mat();
+            const stddev = new cv.Mat();
+            cv.meanStdDev(lap, mean, stddev);
+            const sigma = stddev.doubleAt(0, 0);
+            const variance = sigma * sigma;
+
+            gray.delete();
+            lap.delete();
+            mean.delete();
+            stddev.delete();
+
+            return variance;
+        }
+
+function whitePatch(mat) {
+  // Ensure BGR
+  let bgr = new cv.Mat();
+  if (mat.channels() === 4) {
+    cv.cvtColor(mat, bgr, cv.COLOR_RGBA2BGR);
+  } else {
+    bgr = mat.clone();
+  }
+
+  let channels = new cv.MatVector();
+  cv.split(bgr, channels);
+
+  for (let i = 0; i < 3; i++) {
+    let ch = channels.get(i);
+
+    // Get min & max for this channel
+    const minMax = cv.minMaxLoc(ch);
+    const minVal = minMax.minVal;
+    const maxVal = minMax.maxVal;
+
+    if (maxVal > minVal) {
+      // Scale channel so [minVal, maxVal] → [0, 255]
+      const alpha = 255.0 / (maxVal - minVal);
+      const beta  = -minVal * alpha;
+
+      let tmp = new cv.Mat();
+      cv.convertScaleAbs(ch, tmp, alpha, beta); // dst = |src*alpha + beta|
+      ch.delete();
+      ch = tmp;
     }
 
-    function estimateQuadSize(pts) {
-      function dist(a, b) {
-        const dx = a.x - b.x;
-        const dy = a.y - b.y;
-        return Math.sqrt(dx * dx + dy * dy);
-      }
-      // pairwise distances – a bit crude but enough to estimate aspect
-      const d01 = dist(pts[0], pts[1]);
-      const d12 = dist(pts[1], pts[2]);
-      const d23 = dist(pts[2], pts[3]);
-      const d30 = dist(pts[3], pts[0]);
-      const width = (d01 + d23) / 2;
-      const height = (d12 + d30) / 2;
-      return { width, height };
-    }
+    channels.set(i, ch);
+    ch.delete();
+  }
 
-    function orderCorners(pts) {
-      // pts: array of {x, y} of length 4
-      // return [tl, tr, br, bl]
-      const sorted = pts.slice().sort((a, b) => a.y - b.y || a.x - b.x);
-      const top = sorted.slice(0, 2).sort((a, b) => a.x - b.x);
-      const bottom = sorted.slice(2, 4).sort((a, b) => a.x - b.x);
-      const tl = top[0];
-      const tr = top[1];
-      const bl = bottom[0];
-      const br = bottom[1];
-      return [tl, tr, br, bl];
-    }
+  let out = new cv.Mat();
+  cv.merge(channels, out);
 
-    function warpToCard(src, corners, outW, outH) {
-      const dst = new cv.Mat();
-      const srcTri = cv.matFromArray(4, 1, cv.CV_32FC2, [
-        corners[0].x, corners[0].y,
-        corners[1].x, corners[1].y,
-        corners[2].x, corners[2].y,
-        corners[3].x, corners[3].y
-      ]);
-      const dstTri = cv.matFromArray(4, 1, cv.CV_32FC2, [
-        0, 0,
-        outW - 1, 0,
-        outW - 1, outH - 1,
-        0, outH - 1
-      ]);
-      const M = cv.getPerspectiveTransform(srcTri, dstTri);
-      cv.warpPerspective(
-        src,
-        dst,
-        M,
-        new cv.Size(outW, outH),
-        cv.INTER_LINEAR,
-        cv.BORDER_CONSTANT,
-        new cv.Scalar()
-      );
-      srcTri.delete();
-      dstTri.delete();
-      M.delete();
-      return dst;
-    }
+  channels.delete();
+  bgr.delete();
 
-    function computeSharpness(mat) {
-      // mat is RGBA or grayscale
-      let gray = new cv.Mat();
-      if (mat.channels() === 1) {
-        gray = mat.clone();
-      } else {
-        cv.cvtColor(mat, gray, cv.COLOR_RGBA2GRAY, 0);
-      }
+  return out; // BGR image with stretched channels
+}
 
-      let lap = new cv.Mat();
-      cv.Laplacian(gray, lap, cv.CV_64F);
 
-      const mean = new cv.Mat();
-      const stddev = new cv.Mat();
-      cv.meanStdDev(lap, mean, stddev);
-      const sigma = stddev.doubleAt(0, 0);
-      const variance = sigma * sigma;
 
-      gray.delete();
-      lap.delete();
-      mean.delete();
-      stddev.delete();
 
-      return variance;
-    }
-  </script>
+    </script>
 </body>
 </html>

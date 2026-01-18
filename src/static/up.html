@@ -48,7 +48,7 @@
             gap: 1rem;
             flex-wrap: wrap;
         }
-        
+
         /* NEW: keep a stable landscape box for the camera */
         .video-wrapper {
             position: relative;
@@ -58,12 +58,12 @@
             background: #000;
             overflow: hidden;
         }
-        
+
         video, canvas, img {
             max-width: 100%;
             border-radius: 8px;
         }
-        
+
         /* Let the video fill the box without squishing */
         #video {
             width: 100%;
@@ -71,12 +71,12 @@
             object-fit: cover;         /* crops a bit but keeps correct aspect */
             border: 2px solid #555;
         }
-        
+
     </style>
 </head>
 <body>
     <h1>Card Scanner Demo</h1>
-    
+
     <div class="row">
         <div>
             <div class="video-wrapper">
@@ -85,20 +85,20 @@
             <button id="scanBtn" disabled>Scan</button>
             <div id="status">Initializing…</div>
         </div>
-        
+
         <div>
             <p>Rectified card preview:</p>
             <canvas id="cardPreview" width="640" height="400"></canvas>
             <p>Sharpness score: <span id="sharpness">–</span></p>
         </div>
     </div>
-    
+
     <!-- Hidden canvas we draw the camera frame into -->
     <canvas id="frameCanvas" style="display:none;"></canvas>
-    
+
     <!-- OpenCV.js (4.x). -->
     <script src="https://docs.opencv.org/4.x/opencv.js"></script>
-    
+
     <script>
         const video = document.getElementById('video');
         const scanBtn = document.getElementById('scanBtn');
@@ -108,16 +108,16 @@
         const cardPreview = document.getElementById('cardPreview');
         const cardPreviewCtx = cardPreview.getContext('2d');
         const sharpnessEl = document.getElementById('sharpness');
-        
+
         // Parameters
         const OUTPUT_WIDTH = 1024;
         const OUTPUT_HEIGHT = 640;
         const SHARPNESS_THRESHOLD = 150; // tweak after testing
-        
+
         let cvReady = false;
         let cameraReady = false;
         let currentStream = null;
-        
+
         function updateStatus() {
             if (cvReady && cameraReady) {
                 statusEl.textContent = 'Camera ready. Place card on dark surface and press Scan.';
@@ -133,14 +133,14 @@
                 scanBtn.disabled = true;
             }
         }
-        
+
         window.addEventListener('load', () => {
             console.log('Page loaded, starting camera + waiting for OpenCV');
             updateStatus();
             initCamera();
             waitForOpenCv();
         });
-        
+
         async function initCamera() {
             try {
                 const stream = await navigator.mediaDevices.getUserMedia({
@@ -154,7 +154,7 @@
                 currentStream = stream;
                 video.srcObject = stream;
                 await video.play();
-                
+
                 console.log('After play:', video.videoWidth, video.videoHeight);
                 try {
                     const track = stream.getVideoTracks()[0];
@@ -168,7 +168,7 @@
                 } catch (e) {
                     console.warn('Continuous AF not supported:', e);
                 }
-                
+
                 if (video.videoWidth && video.videoHeight) {
                     frameCanvas.width = video.videoWidth;
                     frameCanvas.height = video.videoHeight;
@@ -178,16 +178,16 @@
                 } else {
                     video.onloadedmetadata = () => {
                         console.log('loadedmetadata', video.videoWidth, video.videoHeight);
-                        
+
                         if (!video.videoWidth || !video.videoHeight) {
                             console.warn('Metadata had zero size, retrying in 100ms');
                             setTimeout(video.onloadedmetadata, 100);
                             return;
                         }
-                        
+
                         frameCanvas.width = video.videoWidth;
                         frameCanvas.height = video.videoHeight;
-                        
+
                         cameraReady = true;
                         console.log('Camera ready via loadedmetadata:', video.videoWidth, video.videoHeight);
                         updateStatus();
@@ -198,7 +198,7 @@
                 statusEl.textContent = 'Camera error: ' + err.message;
             }
         }
-        
+
         function waitForOpenCv() {
             const interval = setInterval(() => {
                 if (window.cv && typeof cv.Mat === 'function') {
@@ -209,7 +209,7 @@
                 }
             }, 100);
         }
-        
+
         scanBtn.addEventListener('click', () => {
             if (!cvReady || !cameraReady) {
                 console.warn('Scan pressed before everything ready');
@@ -223,49 +223,77 @@
                 scanBtn.disabled = false;
             }, 10);
         });
-        
+
         function processFrame() {
-            // Draw current video frame onto canvas
+            // Draw current video frame onto canvas (full camera frame)
             frameCtx.drawImage(video, 0, 0, frameCanvas.width, frameCanvas.height);
-            
-            // Read as OpenCV Mat (RGBA)
-            let src = cv.imread(frameCanvas);
-            
+
+            // Read as OpenCV Mat (RGBA) – full frame
+            let srcFull = cv.imread(frameCanvas);
+
+            // ---- NEW: crop to same central aspect as visible video ----
+            const TARGET_ASPECT = 4 / 3; // must match .video-wrapper aspect-ratio
+            const fullW = srcFull.cols;
+            const fullH = srcFull.rows;
+            const fullAspect = fullW / fullH;
+
+            let roiRect;
+
+            if (fullAspect > TARGET_ASPECT) {
+                // Camera frame is wider than 4:3 -> crop left & right
+                const roiH = fullH;
+                const roiW = Math.round(roiH * TARGET_ASPECT);
+                const x = Math.floor((fullW - roiW) / 2);
+                roiRect = new cv.Rect(x, 0, roiW, roiH);
+            } else {
+                // Camera frame is taller than 4:3 -> crop top & bottom
+                const roiW = fullW;
+                const roiH = Math.round(roiW / TARGET_ASPECT);
+                const y = Math.floor((fullH - roiH) / 2);
+                roiRect = new cv.Rect(0, y, roiW, roiH);
+            }
+
+            // src = central 4:3 area matching what user sees
+            let src = srcFull.roi(roiRect);
+            // we won't use srcFull anymore
+            srcFull.delete();
+
+            // ---- existing pipeline continues using `src` instead of old src ----
+
             // Preprocess: grayscale, blur
             let gray = new cv.Mat();
             cv.cvtColor(src, gray, cv.COLOR_RGBA2GRAY, 0);
-            
+
             let blurred = new cv.Mat();
             cv.GaussianBlur(gray, blurred, new cv.Size(5, 5), 0, 0, cv.BORDER_DEFAULT);
-            
-            // Binary threshold (Otsu) – better for white card on dark background
+
+            // Binary threshold (Otsu)
             let bin = new cv.Mat();
             cv.threshold(blurred, bin, 0, 255, cv.THRESH_BINARY + cv.THRESH_OTSU);
-            
-            // Find contours on the binary image
+
+            // Find contours on the cropped binary image
             let contours = new cv.MatVector();
             let hierarchy = new cv.Mat();
             cv.findContours(bin, contours, hierarchy, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE);
-            
+
             let bestQuad = null;
             let bestArea = 0;
             const imgArea = src.cols * src.rows;
-            
+
             for (let i = 0; i < contours.size(); i++) {
                 const contour = contours.get(i);
                 const peri = cv.arcLength(contour, true);
                 const approx = new cv.Mat();
                 cv.approxPolyDP(contour, approx, 0.02 * peri, true);
-                
+
                 if (approx.rows === 4) {
                     const area = cv.contourArea(approx);
-                    // ignore tiny contours – now only 5% of the image
                     if (area < imgArea * 0.05) {
                         approx.delete();
                         contour.delete();
                         continue;
                     }
-                    
+
                     const pts = [];
                     for (let j = 0; j < 4; j++) {
                         pts.push({
@@ -273,44 +301,44 @@
                             y: approx.intAt(j, 1)
                         });
                     }
-                    
-                    // Just pick the largest quadrilateral – card will usually be it
+
                     if (area > bestArea) {
                         bestArea = area;
                         bestQuad = pts;
                     }
                 }
-                
+
                 approx.delete();
                 contour.delete();
             }
-            
+
             let rectified = null;
             let sharpness = null;
-            
+
             if (!bestQuad) {
-                console.log('No suitable quad found');
-                statusEl.textContent = 'Card not found. Please realign and try again.';
+                console.log('No suitable quad found inside visible area');
+                statusEl.textContent = 'Card not found in visible frame. Please realign.';
                 statusEl.className = 'error';
             } else {
                 const ordered = orderCorners(bestQuad);
                 rectified = warpToCard(src, ordered, OUTPUT_WIDTH, OUTPUT_HEIGHT);
-                let balanced = whitePatch(rectified);
-                
+
+                let normalized = whitePatch(rectified);
+
                 const cardCanvas = document.createElement('canvas');
                 cardCanvas.width = OUTPUT_WIDTH;
                 cardCanvas.height = OUTPUT_HEIGHT;
-                cv.imshow(cardCanvas, balanced);
+                cv.imshow(cardCanvas, normalized);
                 cardPreviewCtx.clearRect(0, 0, cardPreview.width, cardPreview.height);
                 cardPreviewCtx.drawImage(
                 cardCanvas,
                 0, 0, cardCanvas.width, cardCanvas.height,
                 0, 0, cardPreview.width, cardPreview.height
                 );
-                
-                sharpness = computeSharpness(balanced);
+
+                sharpness = computeSharpness(normalized);
                 sharpnessEl.textContent = sharpness.toFixed(1);
-                
+
                 if (sharpness >= SHARPNESS_THRESHOLD) {
                     statusEl.textContent = 'Card OK (sharp enough).';
                     statusEl.className = 'ok';
@@ -318,9 +346,10 @@
                     statusEl.textContent = 'Card detected but too blurry. Please try again.';
                     statusEl.className = 'error';
                 }
-                balanced.delete();
+
+                normalized.delete();
             }
-            
+
             // Cleanup
             src.delete();
             gray.delete();
@@ -330,7 +359,7 @@
             hierarchy.delete();
             if (rectified) rectified.delete();
         }
-        
+
         function estimateQuadSize(pts) {
             function dist(a, b) {
                 const dx = a.x - b.x;
@@ -345,7 +374,7 @@
             const height = (d12 + d30) / 2;
             return { width, height };
         }
-        
+
         function orderCorners(pts) {
             const sorted = pts.slice().sort((a, b) => a.y - b.y || a.x - b.x);
             const top = sorted.slice(0, 2).sort((a, b) => a.x - b.x);
@@ -356,7 +385,7 @@
             const br = bottom[1];
             return [tl, tr, br, bl];
         }
-        
+
         function warpToCard(src, corners, outW, outH) {
             const dst = new cv.Mat();
             const srcTri = cv.matFromArray(4, 1, cv.CV_32FC2, [
@@ -386,7 +415,7 @@
             M.delete();
             return dst;
         }
-        
+
         function computeSharpness(mat) {
             let gray = new cv.Mat();
             if (mat.channels() === 1) {
@@ -394,24 +423,24 @@
             } else {
                 cv.cvtColor(mat, gray, cv.COLOR_RGBA2GRAY, 0);
             }
-            
+
             let lap = new cv.Mat();
             cv.Laplacian(gray, lap, cv.CV_64F);
-            
+
             const mean = new cv.Mat();
             const stddev = new cv.Mat();
             cv.meanStdDev(lap, mean, stddev);
             const sigma = stddev.doubleAt(0, 0);
             const variance = sigma * sigma;
-            
+
             gray.delete();
             lap.delete();
             mean.delete();
             stddev.delete();
-            
+
             return variance;
         }
-        
+
         function whitePatch(mat) {
             // Input may be RGBA or BGR; we normalize in BGR, then go back to RGBA
             let bgr = new cv.Mat();
@@ -420,60 +449,60 @@
             } else {
                 bgr = mat.clone();
             }
-            
+
             let channels = new cv.MatVector();
             cv.split(bgr, channels);
-            
+
             for (let i = 0; i < 3; i++) {
                 let ch = channels.get(i);
-                
+
                 const minMax = cv.minMaxLoc(ch);
                 const minVal = minMax.minVal;
                 const maxVal = minMax.maxVal;
-                
+
                 if (maxVal > minVal) {
                     const alpha = 255.0 / (maxVal - minVal);
                     const beta  = -minVal * alpha;
-                    
+
                     let tmp = new cv.Mat();
                     cv.convertScaleAbs(ch, tmp, alpha, beta); // dst = |src*alpha + beta|
                     ch.delete();
                     ch = tmp;
                 }
-                
+
                 channels.set(i, ch);
                 ch.delete();
             }
-            
+
             let bgrOut = new cv.Mat();
             cv.merge(channels, bgrOut);
-            
+
             channels.delete();
             bgr.delete();
-            
+
             // 🔁 Convert BGR back to RGBA so colors are correct for cv.imshow
             let rgbaOut = new cv.Mat();
             cv.cvtColor(bgrOut, rgbaOut, cv.COLOR_BGR2RGBA);
             bgrOut.delete();
-            
+
             return rgbaOut; // 4-channel RGBA, good for cv.imshow
         }
-        
-        
-        
+
+
+
         // Tap-to-focus: best-effort, works only on some mobile browsers
         video.addEventListener('click', async (event) => {
             if (!currentStream) return;
-            
+
             const track = currentStream.getVideoTracks()[0];
             if (!track || !track.getCapabilities || !track.applyConstraints) {
                 console.log('Tap-to-focus not supported on this device');
                 return;
             }
-            
+
             const caps = track.getCapabilities();
             const constraints = { advanced: [] };
-            
+
             // If camera supports pointsOfInterest, set one based on tap position
             if (caps.pointsOfInterest) {
                 const rect = video.getBoundingClientRect();
@@ -481,17 +510,17 @@
                 const y = (event.clientY - rect.top) / rect.height;
                 constraints.advanced.push({ pointsOfInterest: [{ x, y }] });
             }
-            
+
             // If camera supports single-shot focus mode, use that
             if (caps.focusMode && caps.focusMode.includes('single-shot')) {
                 constraints.advanced.push({ focusMode: 'single-shot' });
             }
-            
+
             if (!constraints.advanced.length) {
                 console.log('No focus controls exposed; tap-to-focus will do nothing here');
                 return;
             }
-            
+
             try {
                 await track.applyConstraints(constraints);
                 console.log('Tap-to-focus constraints applied:', constraints);
@@ -499,8 +528,8 @@
                 console.warn('Failed to apply tap-to-focus constraints:', err);
             }
         });
-        
-        
+
+
     </script>
 </body>
 </html>

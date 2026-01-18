@@ -409,7 +409,7 @@
         }
 
         function whitePatch(mat) {
-            // Ensure BGR
+            // Input may be RGBA or BGR; we normalize in BGR, then go back to RGBA
             let bgr = new cv.Mat();
             if (mat.channels() === 4) {
                 cv.cvtColor(mat, bgr, cv.COLOR_RGBA2BGR);
@@ -423,13 +423,11 @@
             for (let i = 0; i < 3; i++) {
                 let ch = channels.get(i);
 
-                // Get min & max for this channel
                 const minMax = cv.minMaxLoc(ch);
                 const minVal = minMax.minVal;
                 const maxVal = minMax.maxVal;
 
                 if (maxVal > minVal) {
-                    // Scale channel so [minVal, maxVal] → [0, 255]
                     const alpha = 255.0 / (maxVal - minVal);
                     const beta  = -minVal * alpha;
 
@@ -443,14 +441,20 @@
                 ch.delete();
             }
 
-            let out = new cv.Mat();
-            cv.merge(channels, out);
+            let bgrOut = new cv.Mat();
+            cv.merge(channels, bgrOut);
 
             channels.delete();
             bgr.delete();
 
-            return out; // BGR image with stretched channels
+            // 🔁 Convert BGR back to RGBA so colors are correct for cv.imshow
+            let rgbaOut = new cv.Mat();
+            cv.cvtColor(bgrOut, rgbaOut, cv.COLOR_BGR2RGBA);
+            bgrOut.delete();
+
+            return rgbaOut; // 4-channel RGBA, good for cv.imshow
         }
+
 
 
         // Tap-to-focus: best-effort, works only on some mobile browsers

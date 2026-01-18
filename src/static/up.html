@@ -16,43 +16,56 @@
             gap: 1rem;
             flex-wrap: wrap;
         }
+
         .video-wrapper {
             position: relative;
             width: 100%;
-            max-width: 640px;
-            aspect-ratio: 4 / 3;
-            background: #000;
-            overflow: hidden;
-        }
-        video, canvas {
-            max-width: 100%;
-            border-radius: 8px;
-        }
-        #video {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            border: 2px solid #555;
-        }
-        #scanBtn {
-            margin-top: 0.5rem;
-            padding: 0.5rem 1rem;
-            font-size: 1rem;
-        }
-        #status { margin-top: 0.5rem; font-weight: bold; }
-        .video-wrapper {
-            position: relative;
-            width: 100%;
-            max-width: 640px;
             aspect-ratio: 4 / 3;
             background: #000;
             overflow: hidden;
         }
 
+        video, canvas {
+            max-width: 100%;
+            border-radius: 8px;
+        }
+
+        #video,
+        #cardPreview {
+            position: absolute;
+            inset: 0;                  /* top:0; right:0; bottom:0; left:0 */
+            width: 100%;
+            height: 100%;
+            object-fit: cover;         /* or object-fit:contain if you prefer letterboxing */
+            border: 2px solid #555;
+            border-radius: 8px;
+        }
+
+        /* Live video initially visible */
+        #video {
+            display: block;
+        }
+
+        /* Captured card initially hidden */
+        #cardPreview {
+            display: none;
+            background: #111;
+        }
+
+        #scanBtn {
+            margin-top: 0.5rem;
+            padding: 0.5rem 1rem;
+            font-size: 1rem;
+        }
+        #status {
+            margin-top: 0.5rem;
+            font-weight: bold;
+        }
+
         /* Overlay container sitting above the video */
         .video-overlay {
             position: absolute;
-            inset: 0;                 /* top:0; right:0; bottom:0; left:0 */
+            inset: 0;
             display: flex;
             justify-content: center;
             align-items: center;
@@ -67,26 +80,26 @@
             border: 2px dashed rgba(255,255,255,0.9);
             border-radius: 10px;
             box-shadow:
-            0 0 0 1px rgba(0,0,0,0.4),   /* subtle outline */
-            0 0 12px rgba(0,0,0,0.6);    /* soft glow to stand out */
+              0 0 0 1px rgba(0,0,0,0.4),
+              0 0 12px rgba(0,0,0,0.6);
         }
 
-        /* Optional: change color when scanner thinks it's good
-        (you can toggle .ready from JS later if you want) */
         .target-frame.ready {
             border-style: solid;
             border-color: #4caf50;
         }
-
     </style>
 </head>
 <body>
     <h1>Card Scanner Demo</h1>
 
     <div class="row">
-        <div>
+        <div class="col-md-12">
             <div class="video-wrapper">
+                <!-- live video OR cardPreview (never both visible) -->
                 <video id="video" autoplay playsinline muted></video>
+                <canvas id="cardPreview" width="640" height="400"></canvas>
+
                 <div class="video-overlay">
                     <div class="target-frame"></div>
                 </div>
@@ -95,12 +108,8 @@
             <div id="status">Initializing…</div>
         </div>
 
-        <div>
-            <p>Rectified card preview:</p>
-            <canvas id="cardPreview" width="640" height="400"></canvas>
+        <div class="col-md-12">
             <p>Sharpness score: <span id="sharpness">–</span></p>
-            <p>Last result image (click to open):</p>
-            <a id="resultLink" href="#" target="_blank">—</a>
         </div>
     </div>
 
@@ -108,17 +117,35 @@
     <script type="module">
         import { CardScanner } from "./include/card-scanner.js";
 
+        const videoEl = document.getElementById("video");
+        const cardPreview = document.getElementById("cardPreview");
+        const targetFrame = document.querySelector(".target-frame");
+        const statusEl = document.getElementById("status");
+        const sharpnessEl = document.getElementById("sharpness");
+
+        function showLiveVideo() {
+            document.getElementById("video").style.display = "block";
+            document.getElementById("cardPreview").style.display = "none";
+        }
+
+        function showCapturedCard() {
+            document.getElementById("video").style.display = "none";
+            document.getElementById("cardPreview").style.display = "block";
+        }
+
+        // start in live video mode
+        showLiveVideo();
+
         const scanner = new CardScanner({
-            videoEl: document.getElementById("video"),
-            previewCanvas: document.getElementById("cardPreview"),
-            statusEl: document.getElementById("status"),
-            sharpnessEl: document.getElementById("sharpness"),
+            videoEl,
+            previewCanvas: cardPreview,
+            statusEl,
+            sharpnessEl,
             sharpnessThreshold: 150,
             scanIntervalMs: 400,
             onGoodCapture: ({ dataUrl, sharpness }) => {
-                const link = document.getElementById("resultLink");
-                link.href = dataUrl;
-                link.textContent = `Open captured card (sharpness ${sharpness.toFixed(1)})`;
+                // show the captured card in the top div
+                showCapturedCard();
             }
         });
 
@@ -128,8 +155,9 @@
         // Start continuous scanning immediately
         scanner.start();
 
-        // Allow manual restart if staff thinks focus was off
+        // Restart: go back to live video and restart scanner
         document.getElementById("scanBtn").addEventListener("click", () => {
+            showLiveVideo();
             scanner.restart();
         });
     </script>

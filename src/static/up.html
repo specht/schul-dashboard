@@ -20,7 +20,7 @@
         .video-wrapper {
             position: relative;
             width: 100%;
-            aspect-ratio: 4 / 3;
+            aspect-ratio: 86 / 54;
             background: #000;
             overflow: hidden;
         }
@@ -85,8 +85,9 @@
         }
 
         .target-frame.ready {
-            border-style: solid;
-            border-color: #4caf50;
+            /* border-style: solid; */
+            /* border-color: #4caf50; */
+            display: none;
         }
     </style>
 </head>
@@ -98,7 +99,7 @@
             <div class="video-wrapper">
                 <!-- live video OR cardPreview (never both visible) -->
                 <video id="video" autoplay playsinline muted></video>
-                <canvas id="cardPreview" width="640" height="400"></canvas>
+                <canvas id="cardPreview" width="1024" height="640"></canvas>
 
                 <div class="video-overlay">
                     <div class="target-frame"></div>

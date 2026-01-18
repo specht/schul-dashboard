@@ -43,6 +43,35 @@
         .error {
             color: #ff5252;
         }
+        .row {
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+
+        /* NEW: keep a stable landscape box for the camera */
+        .video-wrapper {
+            position: relative;
+            width: 100%;
+            max-width: 640px;
+            aspect-ratio: 4 / 3;      /* choose 16/9 if you prefer */
+            background: #000;
+            overflow: hidden;
+        }
+
+        video, canvas, img {
+            max-width: 100%;
+            border-radius: 8px;
+        }
+
+        /* Let the video fill the box without squishing */
+        #video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;         /* crops a bit but keeps correct aspect */
+            border: 2px solid #555;
+        }
+
     </style>
 </head>
 <body>
@@ -50,7 +79,9 @@
 
     <div class="row">
         <div>
-            <video id="video" autoplay playsinline muted></video><br />
+            <div class="video-wrapper">
+                <video id="video" autoplay playsinline muted></video>
+            </div>
             <button id="scanBtn" disabled>Scan</button>
             <div id="status">Initializing…</div>
         </div>
@@ -85,6 +116,7 @@
 
         let cvReady = false;
         let cameraReady = false;
+        let currentStream = null;
 
         function updateStatus() {
             if (cvReady && cameraReady) {
@@ -115,10 +147,23 @@
                     video: { facingMode: 'environment' },
                     audio: false
                 });
+                currentStream = stream;
                 video.srcObject = stream;
                 await video.play();
 
                 console.log('After play:', video.videoWidth, video.videoHeight);
+                try {
+                    const track = stream.getVideoTracks()[0];
+                    if (track && track.getCapabilities) {
+                        const caps = track.getCapabilities();
+                        if (caps.focusMode && caps.focusMode.includes('continuous')) {
+                            await track.applyConstraints({ advanced: [{ focusMode: 'continuous' }] });
+                            console.log('Continuous autofocus requested');
+                        }
+                    }
+                } catch (e) {
+                    console.warn('Continuous AF not supported:', e);
+                }
 
                 if (video.videoWidth && video.videoHeight) {
                     frameCanvas.width = video.videoWidth;
@@ -254,9 +299,9 @@
                 cv.imshow(cardCanvas, balanced);
                 cardPreviewCtx.clearRect(0, 0, cardPreview.width, cardPreview.height);
                 cardPreviewCtx.drawImage(
-                    cardCanvas,
-                    0, 0, cardCanvas.width, cardCanvas.height,
-                    0, 0, cardPreview.width, cardPreview.height
+                cardCanvas,
+                0, 0, cardCanvas.width, cardCanvas.height,
+                0, 0, cardPreview.width, cardPreview.height
                 );
 
                 sharpness = computeSharpness(balanced);
@@ -363,51 +408,89 @@
             return variance;
         }
 
-function whitePatch(mat) {
-  // Ensure BGR
-  let bgr = new cv.Mat();
-  if (mat.channels() === 4) {
-    cv.cvtColor(mat, bgr, cv.COLOR_RGBA2BGR);
-  } else {
-    bgr = mat.clone();
-  }
+        function whitePatch(mat) {
+            // Ensure BGR
+            let bgr = new cv.Mat();
+            if (mat.channels() === 4) {
+                cv.cvtColor(mat, bgr, cv.COLOR_RGBA2BGR);
+            } else {
+                bgr = mat.clone();
+            }
 
-  let channels = new cv.MatVector();
-  cv.split(bgr, channels);
+            let channels = new cv.MatVector();
+            cv.split(bgr, channels);
 
-  for (let i = 0; i < 3; i++) {
-    let ch = channels.get(i);
+            for (let i = 0; i < 3; i++) {
+                let ch = channels.get(i);
 
-    // Get min & max for this channel
-    const minMax = cv.minMaxLoc(ch);
-    const minVal = minMax.minVal;
-    const maxVal = minMax.maxVal;
+                // Get min & max for this channel
+                const minMax = cv.minMaxLoc(ch);
+                const minVal = minMax.minVal;
+                const maxVal = minMax.maxVal;
 
-    if (maxVal > minVal) {
-      // Scale channel so [minVal, maxVal] → [0, 255]
-      const alpha = 255.0 / (maxVal - minVal);
-      const beta  = -minVal * alpha;
+                if (maxVal > minVal) {
+                    // Scale channel so [minVal, maxVal] → [0, 255]
+                    const alpha = 255.0 / (maxVal - minVal);
+                    const beta  = -minVal * alpha;
 
-      let tmp = new cv.Mat();
-      cv.convertScaleAbs(ch, tmp, alpha, beta); // dst = |src*alpha + beta|
-      ch.delete();
-      ch = tmp;
-    }
+                    let tmp = new cv.Mat();
+                    cv.convertScaleAbs(ch, tmp, alpha, beta); // dst = |src*alpha + beta|
+                    ch.delete();
+                    ch = tmp;
+                }
 
-    channels.set(i, ch);
-    ch.delete();
-  }
+                channels.set(i, ch);
+                ch.delete();
+            }
 
-  let out = new cv.Mat();
-  cv.merge(channels, out);
+            let out = new cv.Mat();
+            cv.merge(channels, out);
 
-  channels.delete();
-  bgr.delete();
+            channels.delete();
+            bgr.delete();
 
-  return out; // BGR image with stretched channels
-}
+            return out; // BGR image with stretched channels
+        }
 
 
+        // Tap-to-focus: best-effort, works only on some mobile browsers
+        video.addEventListener('click', async (event) => {
+            if (!currentStream) return;
+
+            const track = currentStream.getVideoTracks()[0];
+            if (!track || !track.getCapabilities || !track.applyConstraints) {
+                console.log('Tap-to-focus not supported on this device');
+                return;
+            }
+
+            const caps = track.getCapabilities();
+            const constraints = { advanced: [] };
+
+            // If camera supports pointsOfInterest, set one based on tap position
+            if (caps.pointsOfInterest) {
+                const rect = video.getBoundingClientRect();
+                const x = (event.clientX - rect.left) / rect.width;
+                const y = (event.clientY - rect.top) / rect.height;
+                constraints.advanced.push({ pointsOfInterest: [{ x, y }] });
+            }
+
+            // If camera supports single-shot focus mode, use that
+            if (caps.focusMode && caps.focusMode.includes('single-shot')) {
+                constraints.advanced.push({ focusMode: 'single-shot' });
+            }
+
+            if (!constraints.advanced.length) {
+                console.log('No focus controls exposed; tap-to-focus will do nothing here');
+                return;
+            }
+
+            try {
+                await track.applyConstraints(constraints);
+                console.log('Tap-to-focus constraints applied:', constraints);
+            } catch (err) {
+                console.warn('Failed to apply tap-to-focus constraints:', err);
+            }
+        });
 
 
     </script>

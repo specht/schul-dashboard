@@ -1,166 +1,257 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8" />
-    <title>Card Scanner Demo</title>
-    <style>
-        body {
-            font-family: system-ui, sans-serif;
-            margin: 0;
-            padding: 1rem;
-            background: #111;
-            color: #eee;
-        }
-        .row {
-            display: flex;
-            gap: 1rem;
-            flex-wrap: wrap;
-        }
+#{require_user_with_role!(:unterstufenparty)}
+<style>
+    .video-wrapper {
+        position: relative;
+        width: 100%;
+        aspect-ratio: 86 / 54;
+        background: white;
+        border-radius: 8px;
+        overflow: hidden;
+    }
 
-        .video-wrapper {
-            position: relative;
-            width: 100%;
-            aspect-ratio: 86 / 54;
-            background: #000;
-            overflow: hidden;
-        }
+    video, canvas {
+        max-width: 100%;
+        border-radius: 8px;
+    }
 
-        video, canvas {
-            max-width: 100%;
-            border-radius: 8px;
-        }
+    #video,
+    #cardPreview {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        /* border: 2px solid #555; */
+        border-radius: 8px;
+    }
 
-        #video,
-        #cardPreview {
-            position: absolute;
-            inset: 0;                  /* top:0; right:0; bottom:0; left:0 */
-            width: 100%;
-            height: 100%;
-            object-fit: cover;         /* or object-fit:contain if you prefer letterboxing */
-            border: 2px solid #555;
-            border-radius: 8px;
-        }
+    #video { display: block; }
+    #cardPreview { display: none; }
 
-        /* Live video initially visible */
-        #video {
-            display: block;
-        }
+    #status { margin-top: 0.5rem; font-weight: bold; }
 
-        /* Captured card initially hidden */
-        #cardPreview {
-            display: none;
-            background: #111;
-        }
+    .video-overlay {
+        position: absolute;
+        inset: 0;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        pointer-events: none;
+    }
 
-        #scanBtn {
-            margin-top: 0.5rem;
-            padding: 0.5rem 1rem;
-            font-size: 1rem;
-        }
-        #status {
-            margin-top: 0.5rem;
-            font-weight: bold;
-        }
+    .target-frame {
+        aspect-ratio: 86 / 54;
+        width: 85%;
+        max-height: 85%;
+        border: 2px dashed rgba(255,255,255,0.9);
+        border-radius: 10px;
+        box-shadow:
+            0 0 0 1px rgba(0,0,0,0.4),
+            0 0 12px rgba(0,0,0,0.6);
+    }
 
-        /* Overlay container sitting above the video */
-        .video-overlay {
-            position: absolute;
-            inset: 0;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            pointer-events: none;     /* don't block tap-to-focus */
-        }
+    .target-frame.ready { display: none; }
 
-        /* Target frame in card aspect ratio: 86 x 54 mm */
-        .target-frame {
-            aspect-ratio: 86 / 54;           /* ≈ 1.5926 */
-            width: 85%;                      /* relative to video wrapper */
-            max-height: 85%;
-            border: 2px dashed rgba(255,255,255,0.9);
-            border-radius: 10px;
-            box-shadow:
-              0 0 0 1px rgba(0,0,0,0.4),
-              0 0 12px rgba(0,0,0,0.6);
-        }
+</style>
 
-        .target-frame.ready {
-            /* border-style: solid; */
-            /* border-color: #4caf50; */
-            display: none;
-        }
-    </style>
-</head>
-<body>
-    <h1>Card Scanner Demo</h1>
-
+<div class="container">
     <div class="row">
         <div class="col-md-12">
-            <div class="video-wrapper">
-                <!-- live video OR cardPreview (never both visible) -->
+            <div class="video-wrapper mb-3">
                 <video id="video" autoplay playsinline muted></video>
                 <canvas id="cardPreview" width="1024" height="640"></canvas>
+                <div class="video-overlay"><div class="target-frame ready"></div></div>
+            </div>
 
-                <div class="video-overlay">
-                    <div class="target-frame"></div>
+            <div class="input-group mb-3">
+                <input id='ti_sus' type="text" list="people" class="form-control" placeholder="Schüler:in suchen oder QR-Code scannen">
+                <div class="input-group-append">
+                    <button class="btn btn-success" type="button" id="scanQrBtn"><i class='fa fa-qrcode'></i></button>
                 </div>
             </div>
-            <button id="scanBtn">Restart scan</button>
+            <datalist id="people">
+            </datalist>
+
+            <!-- <button id="scanQrBtn" class="btn btn-success">QR-Code scannen</button> -->
+            <button id="scanCardBtn" class="btn btn-success">Rückseite scannen</button>
+            <button id="scanResetBtn" class="btn btn-secondary">Reset</button>
+
             <div id="status">Initializing…</div>
         </div>
-
-        <div class="col-md-12">
-            <p>Sharpness score: <span id="sharpness">–</span></p>
-        </div>
     </div>
+</div>
 
-    <script src="https://docs.opencv.org/4.x/opencv.js"></script>
-    <script type="module">
-        import { CardScanner } from "./include/card-scanner.js";
+<script src="/include/opencv/opencv.js"></script>
+<script>
+    var is_safari = false;
+</script>
+<script type="module">
+    import { CardScanner } from "./include/card-scanner.js";
+    import { QrScanner } from "./include/qr-scanner.js";
+    let sound = new SoundPlayer();
 
-        const videoEl = document.getElementById("video");
-        const cardPreview = document.getElementById("cardPreview");
-        const targetFrame = document.querySelector(".target-frame");
-        const statusEl = document.getElementById("status");
-        const sharpnessEl = document.getElementById("sharpness");
+    const videoEl = document.getElementById("video");
+    const cardPreview = document.getElementById("cardPreview");
+    const statusEl = document.getElementById("status");
+    const targetFrame = document.querySelector(".target-frame");
 
-        function showLiveVideo() {
-            document.getElementById("video").style.display = "block";
-            document.getElementById("cardPreview").style.display = "none";
-        }
+    const up_sus_list = #{up_sus_list.to_json};
+    let up_sus_map = {};
+    let up_sus_email_for_code = {};
 
-        function showCapturedCard() {
-            document.getElementById("video").style.display = "none";
-            document.getElementById("cardPreview").style.display = "block";
-        }
+    let got_email = null;
+    let got_card = null;
 
-        // start in live video mode
-        showLiveVideo();
+    for (let sus of up_sus_list) {
+        up_sus_map[sus.email] = sus;
+        up_sus_email_for_code[sus.code] = sus.email;
+                        // <option value="Alice Wonderland" data-email="alice@example.com"></option>
+        let option = $('<option>').attr('value', `${sus.display_name} (${sus.klasse})`).attr('data-email', sus.email);
+        $('#people').append(option);
+    }
 
-        const scanner = new CardScanner({
-            videoEl,
-            previewCanvas: cardPreview,
-            statusEl,
-            sharpnessEl,
-            sharpnessThreshold: 150,
-            scanIntervalMs: 400,
-            onGoodCapture: ({ dataUrl, sharpness }) => {
-                // show the captured card in the top div
-                showCapturedCard();
-            }
+    let mode = null;
+    let cardScanner = null;
+    let qrScanner = null;
+
+    function showLive() {
+        videoEl.style.display = "block";
+        cardPreview.style.display = "none";
+        targetFrame.style.display = "flex";
+    }
+
+    function showCapture() {
+        videoEl.style.display = "none";
+        cardPreview.style.display = "block";
+        targetFrame.style.display = "none";
+    }
+
+    function stopAll() {
+        if (cardScanner) cardScanner.stop();
+        if (qrScanner) qrScanner.stop();
+    }
+
+    async function uploadCardCanvas(canvas) {
+        // Update status
+        statusEl.textContent = "Uploading…";
+
+        // Wrap toBlob in a Promise so we can await it
+        const blob = await new Promise((resolve, reject) => {
+            canvas.toBlob(
+                (b) => b ? resolve(b) : reject(new Error("Canvas toBlob failed")),
+                "image/jpeg",
+                0.9 // quality 0–1
+            );
         });
 
-        // Optional tap-to-focus behaviour
-        scanner.attachTapToFocus();
+        const formData = new FormData();
+        formData.append("card", blob, "card.jpg");
 
-        // Start continuous scanning immediately
-        scanner.start();
+        console.log(blob);
 
-        // Restart: go back to live video and restart scanner
-        document.getElementById("scanBtn").addEventListener("click", () => {
-            showLiveVideo();
-            scanner.restart();
+        // Adjust URL to your backend route
+        const response = await fetch("/api/up_upload_image", {
+            method: "POST",
+            body: formData
         });
-    </script>
-</body>
-</html>
+
+        if (!response.ok) {
+            throw new Error("Upload failed: " + response.status);
+        }
+
+        const result = await response.json().catch(() => null);
+
+        statusEl.textContent = "Upload finished.";
+        return result;
+    }
+
+
+    // --- Card scanner setup ---
+    cardScanner = new CardScanner({
+        videoEl,
+        previewCanvas: cardPreview,
+        statusEl,
+        sharpnessThreshold: 150,
+        scanIntervalMs: 400,
+        onGoodCapture: () => {
+            sound.play('snapshot');
+            showCapture();
+            mode = null;
+            uploadCardCanvas(cardPreview);
+        }
+    });
+    cardScanner.attachTapToFocus();
+
+    // --- QR scanner setup ---
+    qrScanner = new QrScanner({
+        videoEl,
+        previewCanvas: cardPreview,
+        statusEl,
+        scanIntervalMs: 200,
+        onResult: ({ text }) => {
+            sound.play('scan');
+            statusEl.textContent = "QR: " + text;
+            let info = up_sus_map[up_sus_email_for_code[text]];
+            $('#ti_sus').val(`${info.display_name} (${info.klasse})`);
+            got_email = info.email;
+            update_status();
+            // showCapture();
+            mode = null;
+        }
+    });
+    qrScanner.attachTapToFocus();
+
+    // --- UI buttons ---
+    document.getElementById("scanCardBtn").addEventListener("click", async () => {
+        stopAll();
+        mode = "card";
+        showLive();
+        await cardScanner.start();
+    });
+
+    document.getElementById("scanQrBtn").addEventListener("click", async () => {
+        stopAll();
+        mode = "qr";
+        showLive();
+        $('#ti_sus').val('');
+        got_email = null;
+        update_status();
+        await qrScanner.start();
+    });
+
+    // Reset view only
+    document.getElementById("scanResetBtn").addEventListener("click", () => {
+        stopAll();
+        mode = null;
+        showLive();
+        statusEl.textContent = "Stopped.";
+    });
+
+    const options = document.querySelectorAll('#people option');
+
+    $('#ti_sus')[0].addEventListener('click', () => {
+        $('#ti_sus').val('');
+        got_email = null;
+        update_status();
+    });
+    $('#ti_sus')[0].addEventListener('input', () => {
+        const opt = Array.from(options).find(o => o.value === $('#ti_sus').val());
+        if (opt) {
+            let email = opt.dataset.email;
+            got_email = email;
+            update_status();
+            $('#ti_sus').blur();
+
+        } else {
+            got_email = null;
+            update_status();
+        }
+    });
+
+    function update_status() {
+    }
+
+    // Initial state
+    showLive();
+    statusEl.textContent = "Ready.";
+</script>

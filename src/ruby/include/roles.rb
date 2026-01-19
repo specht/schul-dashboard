@@ -51,15 +51,16 @@ AVAILABLE_ROLES = {
     :praktikum => 'Praktikum (kann Stundenpläne ohne Details einsehen)',
     :can_print_photos => 'kann Fotos drucken',
     :can_manage_lab8 => 'kann Lab8-Projekte verwalten',
+    :unterstufenparty => 'Unterstufenparty',
 }
 
 ROLE_TRANSITIONS = <<~END_OF_STRING
     teacher => can_receive_messages can_write_messages can_book_tablets can_create_polls can_create_events can_use_mailing_lists can_use_nextcloud can_use_sms_gateway can_manage_angebote
     externe_ag_leitung => can_write_messages can_create_polls can_create_events can_use_mailing_lists can_use_nextcloud can_use_sms_gateway can_manage_angebote
     schueler => can_receive_messages can_use_nextcloud
-    sv => can_write_messages can_create_polls can_use_mailing_lists can_create_events
+    sv => can_write_messages can_create_polls can_use_mailing_lists can_create_events unterstufenparty
     technikteam => can_write_messages can_book_tablets can_create_polls can_use_mailing_lists can_create_events can_manage_tablets can_manage_tech_problems can_report_tech_problems can_see_all_timetables
-    admin => can_upload_files can_book_tablets can_manage_news can_manage_monitors can_manage_tablets can_manage_tech_problems can_report_tech_problems can_open_project_wifi sv_admin sv_editor
+    admin => can_upload_files can_book_tablets can_manage_news can_manage_monitors can_manage_tablets can_manage_tech_problems can_report_tech_problems can_open_project_wifi sv_admin sv_editor unterstufenparty
     schulbuchverein => can_use_mailing_lists can_use_nextcloud can_use_sms_gateway
     technikamt => can_report_tech_problems
     developer => can_manage_project_wifi_access can_open_project_wifi

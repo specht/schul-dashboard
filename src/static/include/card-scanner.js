@@ -117,6 +117,19 @@ export class CardScanner {
         }
     }
 
+    // NEW: actually turn the camera off
+    _stopCamera() {
+        if (this.currentStream) {
+            this.currentStream.getTracks().forEach(track => track.stop());
+            this.currentStream = null;
+        }
+        if (this.video) {
+            this.video.srcObject = null;
+        }
+        this.cameraReady = false;
+        this._updateStatus();
+    }
+
     // public API
     async start() {
         this._setStatus("Starting scanner…");
@@ -127,13 +140,13 @@ export class CardScanner {
             // wait until cvReady flips true
             const waitCv = () =>
                 new Promise(resolve => {
-                const intv = setInterval(() => {
-                    if (this.cvReady) {
-                        clearInterval(intv);
-                        resolve();
-                    }
-                }, 100);
-            });
+                    const intv = setInterval(() => {
+                        if (this.cvReady) {
+                            clearInterval(intv);
+                            resolve();
+                        }
+                    }, 100);
+                });
             await waitCv();
         }
 
@@ -151,6 +164,10 @@ export class CardScanner {
             clearInterval(this.scanTimer);
             this.scanTimer = null;
         }
+
+        // Turn off camera when we stop scanning
+        this._stopCamera();
+
         this._setStatus("Scanner stopped.");
     }
 
@@ -205,7 +222,7 @@ export class CardScanner {
             const result = this._processFrame();
             if (result && result.ok) {
                 // stop scanning and notify caller
-                this.stop();
+                this.stop(); // <-- now also turns off camera
                 this._setStatus("Good card captured.");
                 this.onGoodCapture(result);
             }
@@ -346,8 +363,6 @@ export class CardScanner {
         const ok = !!bestQuad && sharpness >= this.sharpnessThreshold;
 
         if (normalized && ok) {
-            // Caller might want the result; we can hand over the Mat or an ImageData/canvas.
-            // Here we convert to a data URL for convenience.
             const tmpCanvas = document.createElement("canvas");
             tmpCanvas.width = this.outputWidth;
             tmpCanvas.height = this.outputHeight;

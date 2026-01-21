@@ -226,18 +226,22 @@ class Main < Sinatra::Base
                     end
                 end
                 lehrer_set.each do |email|
-                    telephone_number = neo4j_query_expect_one(<<~END_OF_QUERY, {:email => email})['telephone_number']
-                        MATCH (u:User {email: $email})
-                        RETURN u.telephone_number AS telephone_number;
-                    END_OF_QUERY
-                    if telephone_number
-                        STDERR.puts "telephone_number: #{telephone_number}"
-                        STDERR.puts "deobfuscated: #{telephone_number.deobfuscate(SMS_PHONE_NUMBER_PASSPHRASE)}"
-                        begin
-                            send_sms(telephone_number.deobfuscate(SMS_PHONE_NUMBER_PASSPHRASE), "Die Zensurenkonferenz der Klasse #{klasse} beginnt jetzt.")
-                        rescue
-                            STDERR.puts "Failed to send SMS to #{telephone_number}"
+                    begin
+                        telephone_number = neo4j_query_expect_one(<<~END_OF_QUERY, {:email => email})['telephone_number']
+                            MATCH (u:User {email: $email})
+                            RETURN u.telephone_number AS telephone_number;
+                        END_OF_QUERY
+                        if telephone_number
+                            STDERR.puts "telephone_number: #{telephone_number}"
+                            STDERR.puts "deobfuscated: #{telephone_number.deobfuscate(SMS_PHONE_NUMBER_PASSPHRASE)}"
+                            begin
+                                send_sms(telephone_number.deobfuscate(SMS_PHONE_NUMBER_PASSPHRASE), "Die Zensurenkonferenz der Klasse #{klasse} beginnt jetzt.")
+                            rescue
+                                STDERR.puts "Failed to send SMS to #{telephone_number}"
+                            end
                         end
+                    rescue
+                        STDERR.puts "Failed to send SMS to #{email}"
                     end
                 end
             end

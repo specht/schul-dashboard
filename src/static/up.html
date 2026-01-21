@@ -54,29 +54,35 @@
 
 </style>
 
-<div class="container">
+<div class="container" style="padding-top: 15px;">
     <div class="row">
         <div class="col-md-12">
+            <div class="input-group mb-3">
+                <input id='ti_sus' type="text" list="people" class="form-control form-control-lg" placeholder="Suchen oder QR-Code scannen">
+                <div class="input-group-append">
+                    <button class="btn btn-lg btn-success" type="button" id="scanQrBtn"><i class='fa fa-qrcode'></i></button>
+                </div>
+            </div>
+            <datalist id="people">
+            </datalist>
+
             <div class="video-wrapper mb-3">
                 <video id="video" autoplay playsinline muted></video>
                 <canvas id="cardPreview" width="1024" height="640"></canvas>
                 <div class="video-overlay"><div class="target-frame ready"></div></div>
             </div>
 
-            <div class="input-group mb-3">
-                <input id='ti_sus' type="text" list="people" class="form-control" placeholder="Schüler:in suchen oder QR-Code scannen">
-                <div class="input-group-append">
-                    <button class="btn btn-success" type="button" id="scanQrBtn"><i class='fa fa-qrcode'></i></button>
-                </div>
+            <div class="d-flex" style="margin-top: 1em;">
+                <button id="scanCardBtn" class="btn btn-lg btn-success flex-fill mr-1"><i class='fa fa-id-card-o'></i>&nbsp;&nbsp;Rückseite scannen</button>
+                <button id="scanResetBtn" class="btn btn-lg btn-secondary flex-fill ml-1"><i class='fa fa-times'></i>&nbsp;&nbsp;Reset</button>
             </div>
-            <datalist id="people">
-            </datalist>
-
-            <!-- <button id="scanQrBtn" class="btn btn-success">QR-Code scannen</button> -->
-            <button id="scanCardBtn" class="btn btn-success">Rückseite scannen</button>
-            <button id="scanResetBtn" class="btn btn-secondary">Reset</button>
 
             <div id="status">Initializing…</div>
+
+            <div class="d-flex" style="margin-top: 4em;">
+                <button id='bu_checkin' disabled class="btn btn-lg btn-success flex-fill mr-1"><i class='fa fa-sign-in'></i>&nbsp;&nbsp;Check-in</button>
+                <button id='bu_checkout' disabled class="btn btn-lg btn-danger flex-fill ml-1"><i class='fa fa-sign-out'></i>&nbsp;&nbsp;Check-out</button>
+            </div>
         </div>
     </div>
 </div>
@@ -101,11 +107,14 @@
 
     let got_email = null;
     let got_card = null;
+    let got_info = null;
 
-    for (let sus of up_sus_list) {
+    const sorted_sus = [...up_sus_list].sort((a, b) =>
+        a.display_name.localeCompare(b.display_name, undefined, { sensitivity: 'base' })
+    );
+    for (let sus of sorted_sus) {
         up_sus_map[sus.email] = sus;
         up_sus_email_for_code[sus.code] = sus.email;
-                        // <option value="Alice Wonderland" data-email="alice@example.com"></option>
         let option = $('<option>').attr('value', `${sus.display_name} (${sus.klasse})`).attr('data-email', sus.email);
         $('#people').append(option);
     }
@@ -173,11 +182,13 @@
         statusEl,
         sharpnessThreshold: 150,
         scanIntervalMs: 400,
-        onGoodCapture: () => {
+        onGoodCapture: async () => {
             sound.play('snapshot');
             showCapture();
             mode = null;
-            uploadCardCanvas(cardPreview);
+            let result = await uploadCardCanvas(cardPreview);
+            got_card = result.sha1;
+            update_status();
         }
     });
     cardScanner.attachTapToFocus();
@@ -203,6 +214,8 @@
 
     // --- UI buttons ---
     document.getElementById("scanCardBtn").addEventListener("click", async () => {
+        got_card = null;
+        update_status();
         stopAll();
         mode = "card";
         showLive();
@@ -215,23 +228,34 @@
         showLive();
         $('#ti_sus').val('');
         got_email = null;
+        got_card = null;
         update_status();
         await qrScanner.start();
     });
 
-    // Reset view only
-    document.getElementById("scanResetBtn").addEventListener("click", () => {
+    function stopCamera() {
         stopAll();
         mode = null;
         showLive();
         statusEl.textContent = "Stopped.";
+    }
+
+    // Reset view only
+    document.getElementById("scanResetBtn").addEventListener("click", () => {
+        stopCamera();
+        $('#ti_sus').val('');
+        got_email = null;
+        got_card = null;
+        update_status();
     });
 
     const options = document.querySelectorAll('#people option');
 
     $('#ti_sus')[0].addEventListener('click', () => {
+        stopCamera();
         $('#ti_sus').val('');
         got_email = null;
+        got_card = null;
         update_status();
     });
     $('#ti_sus')[0].addEventListener('input', () => {
@@ -244,11 +268,35 @@
 
         } else {
             got_email = null;
+            got_card = null;
             update_status();
         }
     });
 
-    function update_status() {
+    async function update_status() {
+        console.log("Got email:", got_email, "Got card:", got_card);
+        if (got_email !== null && got_card !== null) {
+            let info = got_info || {};
+            if (info.email !== got_email) {
+                api_call('/api/up_get_info_for_email', { email: got_email }, function(data) {
+                    if (data.success) {
+                        got_info = data;
+                        console.log("Got info from email:", got_info);
+                        $('#bu_checkin').attr('disabled', false);
+                        $('#bu_checkout').attr('disabled', got_info.up_checked_in === null);
+                    } else {
+                        got_info = null;
+                        $('#bu_checkin').attr('disabled', false);
+                        $('#bu_checkout').attr('disabled', true);
+                    }
+                });
+            }
+        } else {
+            $('#bu_checkin').attr('disabled', true);
+            $('#bu_checkout').attr('disabled', true);
+            got_info = null;
+        }
+        console.log("Got info:", got_info);
     }
 
     // Initial state

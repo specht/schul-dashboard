@@ -80,7 +80,7 @@ export class CardScanner {
             this.video.srcObject = stream;
             await this.video.play();
 
-            // Request continuous AF if possible
+            // We still request continuous AF if possible, but this is optional.
             try {
                 const track = stream.getVideoTracks()[0];
                 if (track && track.getCapabilities) {
@@ -117,7 +117,14 @@ export class CardScanner {
         }
     }
 
-    // NEW: actually turn the camera off
+    _stopScanningOnly() {
+        if (this.scanTimer) {
+            clearInterval(this.scanTimer);
+            this.scanTimer = null;
+        }
+    }
+
+    // actually turn the camera off
     _stopCamera() {
         if (this.currentStream) {
             this.currentStream.getTracks().forEach(track => track.stop());
@@ -160,14 +167,8 @@ export class CardScanner {
     }
 
     stop() {
-        if (this.scanTimer) {
-            clearInterval(this.scanTimer);
-            this.scanTimer = null;
-        }
-
-        // Turn off camera when we stop scanning
+        this._stopScanningOnly();
         this._stopCamera();
-
         this._setStatus("Scanner stopped.");
     }
 
@@ -177,52 +178,12 @@ export class CardScanner {
         await this.start();
     }
 
-    // optional: expose tap-to-focus if caller wants to hook it up
+    // now: tap simply triggers a manual capture (no autofocus)
     attachTapToFocus() {
-        this.video.addEventListener("click", async (event) => {
-            // If we don't have a camera / cv yet, just ignore
-            if (!this.currentStream) {
-                this._manualCapture(true);
-                return;
-            }
-
-            const track = this.currentStream.getVideoTracks()[0];
-            let didTryFocus = false;
-
-            if (track && track.getCapabilities && track.applyConstraints) {
-                const caps = track.getCapabilities();
-                const constraints = { advanced: [] };
-
-                if (caps.pointsOfInterest) {
-                    const rect = this.video.getBoundingClientRect();
-                    const x = (event.clientX - rect.left) / rect.width;
-                    const y = (event.clientY - rect.top) / rect.height;
-                    constraints.advanced.push({ pointsOfInterest: [{ x, y }] });
-                }
-
-                if (caps.focusMode && caps.focusMode.includes("single-shot")) {
-                    constraints.advanced.push({ focusMode: "single-shot" });
-                }
-
-                if (constraints.advanced.length) {
-                    try {
-                        didTryFocus = true;
-                        await track.applyConstraints(constraints);
-                        console.log("Tap-to-focus constraints applied:", constraints);
-                    } catch (err) {
-                        console.warn("Failed to apply tap-to-focus constraints:", err);
-                    }
-                }
-            } else {
-                console.log("Tap-to-focus not supported on this device");
-            }
-
-            // After attempting focus (or if not supported), take a snapshot
-            // forceAccept = true so a slightly blurry card is still accepted.
-            this._manualCapture(true);
+        this.video.addEventListener("click", () => {
+            this._manualCapture();
         });
     }
-
 
     _scanOnce() {
         if (this.isProcessing) return;
@@ -243,10 +204,11 @@ export class CardScanner {
             this.isProcessing = false;
         }
     }
-    
+
     _manualCapture() {
-        // Don’t let it overlap with auto-processing
-        if (this.isProcessing) return;
+        // IMPORTANT: manual capture should always fire on tap.
+        // We stop the auto scanner but keep the camera alive.
+        this._stopScanningOnly();
 
         if (!this.cameraReady || !this.video) {
             this._setStatus("Tap capture: camera not ready.");
@@ -271,13 +233,12 @@ export class CardScanner {
             // Draw the current video frame “as is”
             this.frameCtx.drawImage(this.video, 0, 0, frameW, frameH);
 
-            // ---- NEW: crop middle portion with aspect ratio 86/54 ----
-            const TARGET_ASPECT = 86 / 54; // ~1.59, wider than tall
+            // Crop middle portion with aspect ratio 86/54
+            const TARGET_ASPECT = 86 / 54; // ~1.59
 
-            // We keep the full width and adjust height to match the aspect
+            // Keep full width, adjust height to match aspect
             let cropH = Math.round(frameW / TARGET_ASPECT);
 
-            // If for some reason the frame is too short, clamp
             if (cropH > frameH) {
                 cropH = frameH;
             }
@@ -309,8 +270,8 @@ export class CardScanner {
             // Export the cropped frame
             const dataUrl = cropCanvas.toDataURL("image/png");
 
-            // Stop scanning & camera, same behavior as auto success
-            this.stop();
+            // Turn off camera and mark success
+            this._stopCamera();
             this._setStatus("Photo captured.");
 
             this.onGoodCapture({
@@ -325,7 +286,7 @@ export class CardScanner {
             this.isProcessing = false;
         }
     }
-   
+
     _processFrame({ forceAccept = false } = {}) {
         const frameW = this.frameCanvas.width;
         const frameH = this.frameCanvas.height;
@@ -453,7 +414,6 @@ export class CardScanner {
         hierarchy.delete();
         if (rectified) rectified.delete();
 
-        // IMPORTANT CHANGE: factor in forceAccept
         const ok = !!bestQuad && (forceAccept || (sharpness !== null && sharpness >= this.sharpnessThreshold));
 
         if (normalized && ok) {

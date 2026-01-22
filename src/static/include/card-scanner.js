@@ -188,22 +188,53 @@ export class CardScanner {
      * Attach tap handler to always force a photo.
      * We handle both click and touchend to be robust on mobile.
      */
+    // optional: expose tap-to-focus / tap-to-capture
     attachTapToFocus() {
-        if (!this.video) return;
+        // Collect all elements we want to react to a tap
+        const tapTargets = new Set();
+
+        if (this.video) {
+            tapTargets.add(this.video);
+            // make it visually tappable
+            this.video.style.cursor = "pointer";
+            this.video.style.touchAction = "manipulation";
+        }
+
+        // Also hook up the visible frame overlay if you have one
+        const frameEl = document.querySelector(".target-frame");
+        if (frameEl) {
+            tapTargets.add(frameEl);
+            frameEl.style.cursor = "pointer";
+            frameEl.style.touchAction = "manipulation";
+        }
+
+        if (!tapTargets.size) return;
 
         const handler = (evt) => {
-            // Try to ensure we get the event and don’t trigger double
+            // For debugging – you should see this in the console on the phone
+            console.log("Tap detected on video/frame, triggering manual capture", {
+                type: evt.type,
+                target: evt.target && evt.target.tagName
+            });
+
+            // Don’t let the event bubble to other handlers that may interfere
             if (evt) {
-                evt.preventDefault?.();
                 evt.stopPropagation?.();
+                // Usually we don't need preventDefault here; comment it back in if needed:
+                // evt.preventDefault?.();
             }
-            console.log("Video tapped, triggering manual capture");
+
             this._manualCapture();
         };
 
-        this.video.addEventListener("click", handler);
-        // Use non-passive touchend so preventDefault works where supported
-        this.video.addEventListener("touchend", handler, { passive: false });
+        tapTargets.forEach((el) => {
+            // Pointer events (modern mobile & desktop)
+            el.addEventListener("pointerup", handler);
+
+            // Fallbacks:
+            el.addEventListener("click", handler);
+            el.addEventListener("touchend", handler, { passive: true });
+        });
     }
 
     _scanOnce() {

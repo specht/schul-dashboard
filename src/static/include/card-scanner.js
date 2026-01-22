@@ -34,6 +34,12 @@ export class CardScanner {
         this.scanTimer = null;
         this.isProcessing = false;
 
+        // Make sure the video actually looks tappable on mobile
+        if (this.video) {
+            this.video.style.cursor = "pointer";
+            this.video.style.touchAction = "manipulation";
+        }
+
         this._initOpenCvWatcher();
     }
 
@@ -80,7 +86,7 @@ export class CardScanner {
             this.video.srcObject = stream;
             await this.video.play();
 
-            // We still request continuous AF if possible, but this is optional.
+            // Request continuous AF if possible (optional)
             try {
                 const track = stream.getVideoTracks()[0];
                 if (track && track.getCapabilities) {
@@ -178,11 +184,26 @@ export class CardScanner {
         await this.start();
     }
 
-    // now: tap simply triggers a manual capture (no autofocus)
+    /**
+     * Attach tap handler to always force a photo.
+     * We handle both click and touchend to be robust on mobile.
+     */
     attachTapToFocus() {
-        this.video.addEventListener("click", () => {
+        if (!this.video) return;
+
+        const handler = (evt) => {
+            // Try to ensure we get the event and don’t trigger double
+            if (evt) {
+                evt.preventDefault?.();
+                evt.stopPropagation?.();
+            }
+            console.log("Video tapped, triggering manual capture");
             this._manualCapture();
-        });
+        };
+
+        this.video.addEventListener("click", handler);
+        // Use non-passive touchend so preventDefault works where supported
+        this.video.addEventListener("touchend", handler, { passive: false });
     }
 
     _scanOnce() {
@@ -206,8 +227,8 @@ export class CardScanner {
     }
 
     _manualCapture() {
-        // IMPORTANT: manual capture should always fire on tap.
-        // We stop the auto scanner but keep the camera alive.
+        // Manual capture should always react on tap.
+        // We stop the auto scanner but keep the camera alive until we’re done.
         this._stopScanningOnly();
 
         if (!this.cameraReady || !this.video) {

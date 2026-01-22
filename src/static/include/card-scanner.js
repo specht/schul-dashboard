@@ -180,38 +180,49 @@ export class CardScanner {
     // optional: expose tap-to-focus if caller wants to hook it up
     attachTapToFocus() {
         this.video.addEventListener("click", async (event) => {
-            if (!this.currentStream) return;
-
-            const track = this.currentStream.getVideoTracks()[0];
-            if (!track || !track.getCapabilities || !track.applyConstraints) {
-                console.log("Tap-to-focus not supported on this device");
+            // If we don't have a camera / cv yet, just ignore
+            if (!this.currentStream) {
+                this._manualCapture(true);
                 return;
             }
 
-            const caps = track.getCapabilities();
-            const constraints = { advanced: [] };
+            const track = this.currentStream.getVideoTracks()[0];
+            let didTryFocus = false;
 
-            if (caps.pointsOfInterest) {
-                const rect = this.video.getBoundingClientRect();
-                const x = (event.clientX - rect.left) / rect.width;
-                const y = (event.clientY - rect.top) / rect.height;
-                constraints.advanced.push({ pointsOfInterest: [{ x, y }] });
+            if (track && track.getCapabilities && track.applyConstraints) {
+                const caps = track.getCapabilities();
+                const constraints = { advanced: [] };
+
+                if (caps.pointsOfInterest) {
+                    const rect = this.video.getBoundingClientRect();
+                    const x = (event.clientX - rect.left) / rect.width;
+                    const y = (event.clientY - rect.top) / rect.height;
+                    constraints.advanced.push({ pointsOfInterest: [{ x, y }] });
+                }
+
+                if (caps.focusMode && caps.focusMode.includes("single-shot")) {
+                    constraints.advanced.push({ focusMode: "single-shot" });
+                }
+
+                if (constraints.advanced.length) {
+                    try {
+                        didTryFocus = true;
+                        await track.applyConstraints(constraints);
+                        console.log("Tap-to-focus constraints applied:", constraints);
+                    } catch (err) {
+                        console.warn("Failed to apply tap-to-focus constraints:", err);
+                    }
+                }
+            } else {
+                console.log("Tap-to-focus not supported on this device");
             }
 
-            if (caps.focusMode && caps.focusMode.includes("single-shot")) {
-                constraints.advanced.push({ focusMode: "single-shot" });
-            }
-
-            if (!constraints.advanced.length) return;
-
-            try {
-                await track.applyConstraints(constraints);
-                console.log("Tap-to-focus constraints applied:", constraints);
-            } catch (err) {
-                console.warn("Failed to apply tap-to-focus constraints:", err);
-            }
+            // After attempting focus (or if not supported), take a snapshot
+            // forceAccept = true so a slightly blurry card is still accepted.
+            this._manualCapture(true);
         });
     }
+
 
     _scanOnce() {
         if (this.isProcessing) return;
@@ -219,10 +230,10 @@ export class CardScanner {
 
         this.isProcessing = true;
         try {
-            const result = this._processFrame();
+            const result = this._processFrame({}); // auto: no forceAccept
             if (result && result.ok) {
                 // stop scanning and notify caller
-                this.stop(); // <-- now also turns off camera
+                this.stop();
                 this._setStatus("Good card captured.");
                 this.onGoodCapture(result);
             }
@@ -232,8 +243,90 @@ export class CardScanner {
             this.isProcessing = false;
         }
     }
+    
+    _manualCapture() {
+        // Don’t let it overlap with auto-processing
+        if (this.isProcessing) return;
 
-    _processFrame() {
+        if (!this.cameraReady || !this.video) {
+            this._setStatus("Tap capture: camera not ready.");
+            return;
+        }
+
+        this.isProcessing = true;
+        try {
+            // Use the real video resolution if available
+            const frameW = this.video.videoWidth || this.frameCanvas.width;
+            const frameH = this.video.videoHeight || this.frameCanvas.height;
+
+            if (!frameW || !frameH) {
+                this._setStatus("Tap capture: video not ready.");
+                return;
+            }
+
+            // Ensure frame canvas matches the video size
+            this.frameCanvas.width = frameW;
+            this.frameCanvas.height = frameH;
+
+            // Draw the current video frame “as is”
+            this.frameCtx.drawImage(this.video, 0, 0, frameW, frameH);
+
+            // ---- NEW: crop middle portion with aspect ratio 86/54 ----
+            const TARGET_ASPECT = 86 / 54; // ~1.59, wider than tall
+
+            // We keep the full width and adjust height to match the aspect
+            let cropH = Math.round(frameW / TARGET_ASPECT);
+
+            // If for some reason the frame is too short, clamp
+            if (cropH > frameH) {
+                cropH = frameH;
+            }
+
+            const cropY = Math.max(0, Math.floor((frameH - cropH) / 2));
+
+            const cropCanvas = document.createElement("canvas");
+            cropCanvas.width = frameW;
+            cropCanvas.height = cropH;
+            const cropCtx = cropCanvas.getContext("2d");
+
+            // Copy the centered vertical strip
+            cropCtx.drawImage(
+                this.frameCanvas,
+                0, cropY, frameW, cropH,   // source rect (middle strip)
+                0, 0, frameW, cropH        // dest rect
+            );
+
+            // Optional: show this cropped frame in the preview canvas
+            if (this.previewCanvas && this.previewCtx) {
+                this.previewCtx.clearRect(0, 0, this.previewCanvas.width, this.previewCanvas.height);
+                this.previewCtx.drawImage(
+                    cropCanvas,
+                    0, 0, frameW, cropH,
+                    0, 0, this.previewCanvas.width, this.previewCanvas.height
+                );
+            }
+
+            // Export the cropped frame
+            const dataUrl = cropCanvas.toDataURL("image/png");
+
+            // Stop scanning & camera, same behavior as auto success
+            this.stop();
+            this._setStatus("Photo captured.");
+
+            this.onGoodCapture({
+                ok: true,
+                sharpness: null,   // no sharpness check for manual shots
+                dataUrl
+            });
+        } catch (e) {
+            console.error("Manual capture error:", e);
+            this._setStatus("Error during tap capture.");
+        } finally {
+            this.isProcessing = false;
+        }
+    }
+   
+    _processFrame({ forceAccept = false } = {}) {
         const frameW = this.frameCanvas.width;
         const frameH = this.frameCanvas.height;
 
@@ -360,7 +453,8 @@ export class CardScanner {
         hierarchy.delete();
         if (rectified) rectified.delete();
 
-        const ok = !!bestQuad && sharpness >= this.sharpnessThreshold;
+        // IMPORTANT CHANGE: factor in forceAccept
+        const ok = !!bestQuad && (forceAccept || (sharpness !== null && sharpness >= this.sharpnessThreshold));
 
         if (normalized && ok) {
             const tmpCanvas = document.createElement("canvas");

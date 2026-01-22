@@ -323,6 +323,7 @@ class SetupDatabase
         'TechProblem/token',
         'TestEvent/key',
         'TextComment/key',
+        'Unterstufenparty/id',
         'User/email',
         'WebsiteEvent/key',
         'ZeugnisDelegate/path'
@@ -2541,6 +2542,9 @@ class Main < Sinatra::Base
                         if @session_user[:klasse].to_i < 11
                             io.puts "<a class='dropdown-item nav-icon' href='/directory/#{@session_user[:klasse]}'><div class='icon'><i class='fa fa-users'></i></div><span class='label'>Meine Klasse</span></a>"
                         end
+                    end
+                    if user_with_role_logged_in?(:unterstufenparty)
+                        io.puts "<a class='dropdown-item nav-icon' href='/up'><div class='icon'><i class='fa fa-ticket'></i></div><span class='label'>Unterstufenparty</span></a>"
                     end
                     if teacher_logged_in? || user_with_role_logged_in?(:can_create_events) || user_with_role_logged_in?(:can_create_polls) || user_with_role_logged_in?(:can_use_mailing_lists)
                         io.puts "<div class='dropdown-divider'></div>"

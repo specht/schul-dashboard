@@ -79,10 +79,12 @@
 
             <div id="status">Initializing…</div>
 
-            <div class="d-flex" style="margin-top: 4em;">
+            <div class="d-flex" style="margin-top: 1em;">
                 <button id='bu_checkin' disabled class="btn btn-lg btn-success flex-fill mr-1"><i class='fa fa-sign-in'></i>&nbsp;&nbsp;Check-in</button>
                 <button id='bu_checkout' disabled class="btn btn-lg btn-danger flex-fill ml-1"><i class='fa fa-sign-out'></i>&nbsp;&nbsp;Check-out</button>
             </div>
+            <hr>
+            <div id="checked_in_sus_here"></div>
         </div>
     </div>
 </div>
@@ -106,8 +108,8 @@
     let up_sus_email_for_code = {};
 
     let got_email = null;
-    let got_card = null;
-    let got_info = null;
+    let got_card_sha1 = null;
+    let got_card_text = null;
 
     const sorted_sus = [...up_sus_list].sort((a, b) =>
         a.display_name.localeCompare(b.display_name, undefined, { sensitivity: 'base' })
@@ -187,7 +189,8 @@
             showCapture();
             mode = null;
             let result = await uploadCardCanvas(cardPreview);
-            got_card = result.sha1;
+            got_card_sha1 = result.sha1;
+            got_card_text = null;
             update_status();
         }
     });
@@ -205,6 +208,7 @@
             let info = up_sus_map[up_sus_email_for_code[text]];
             $('#ti_sus').val(`${info.display_name} (${info.klasse})`);
             got_email = info.email;
+            fetchInfoForEmail();
             update_status();
             // showCapture();
             mode = null;
@@ -214,7 +218,8 @@
 
     // --- UI buttons ---
     document.getElementById("scanCardBtn").addEventListener("click", async () => {
-        got_card = null;
+        got_card_sha1 = null;
+        got_card_text = null;
         update_status();
         stopAll();
         mode = "card";
@@ -228,7 +233,8 @@
         showLive();
         $('#ti_sus').val('');
         got_email = null;
-        got_card = null;
+        got_card_sha1 = null;
+        got_card_text = null;
         update_status();
         await qrScanner.start();
     });
@@ -245,7 +251,8 @@
         stopCamera();
         $('#ti_sus').val('');
         got_email = null;
-        got_card = null;
+        got_card_sha1 = null;
+        got_card_text = null;
         update_status();
     });
 
@@ -255,51 +262,157 @@
         stopCamera();
         $('#ti_sus').val('');
         got_email = null;
-        got_card = null;
+        got_card_sha1 = null;
+        got_card_text = null;
         update_status();
     });
     $('#ti_sus')[0].addEventListener('input', () => {
         const opt = Array.from(options).find(o => o.value === $('#ti_sus').val());
         if (opt) {
-            let email = opt.dataset.email;
-            got_email = email;
+            got_email = opt.dataset.email;
+            got_card_sha1 = null;
+            got_card_text = null;
+            fetchInfoForEmail();
             update_status();
             $('#ti_sus').blur();
 
         } else {
             got_email = null;
-            got_card = null;
+            got_card_sha1 = null;
+            got_card_text = null;
             update_status();
         }
     });
 
-    async function update_status() {
-        console.log("Got email:", got_email, "Got card:", got_card);
-        if (got_email !== null && got_card !== null) {
-            let info = got_info || {};
-            if (info.email !== got_email) {
-                api_call('/api/up_get_info_for_email', { email: got_email }, function(data) {
-                    if (data.success) {
-                        got_info = data;
-                        console.log("Got info from email:", got_info);
-                        $('#bu_checkin').attr('disabled', false);
-                        $('#bu_checkout').attr('disabled', got_info.up_checked_in === null);
-                    } else {
-                        got_info = null;
-                        $('#bu_checkin').attr('disabled', false);
-                        $('#bu_checkout').attr('disabled', true);
-                    }
-                });
+    function fetchInfoForEmail() {
+        if (got_email === null)
+            return;
+
+        api_call('/api/up_get_info_for_email', { email: got_email }, function(data) {
+            if (data.success) {
+                if (data.last_card_sha1 !== null) {
+                    got_card_sha1 = data.last_card_sha1;
+                    showCard(data.last_card_sha1);
+                }
             }
-        } else {
+        });
+    }
+
+    function showCard(sha1) {
+        if (sha1 === null)
+            return;
+
+        fetch(`/api/up_card_image/${encodeURIComponent(sha1)}`)
+            .then(res => { if (!res.ok) throw new Error('Image fetch failed'); return res.blob(); })
+            .then(blob => createImageBitmap(blob))
+            .then(bitmap => {
+                cardPreview.width = bitmap.width;
+                cardPreview.height = bitmap.height;
+                const ctx = cardPreview.getContext('2d');
+                ctx.clearRect(0, 0, cardPreview.width, cardPreview.height);
+                ctx.drawImage(bitmap, 0, 0, cardPreview.width, cardPreview.height);
+                showCapture();
+                statusEl.textContent = "Card image loaded.";
+            })
+            .catch(err => {
+                console.error(err);
+                statusEl.textContent = "Failed to load card image.";
+            });
+    }
+
+    function update_status() {
+        if (got_email === null) {
             $('#bu_checkin').attr('disabled', true);
             $('#bu_checkout').attr('disabled', true);
-            got_info = null;
+            return;
         }
-        console.log("Got info:", got_info);
+        api_call('/api/up_get_info_for_email', { email: got_email }, function(data) {
+            if (data.success) {
+                console.log(data);
+                console.log(got_card_sha1, got_card_text);
+                let checkin_enabled = (got_card_sha1 !== null || got_card_text !== null);
+                let checkout_enabled = (data.last_status === 'checked_in');
+                $('#bu_checkin').attr('disabled', !checkin_enabled);
+                $('#bu_checkout').attr('disabled', !checkout_enabled);
+            } else {
+                $('#bu_checkin').attr('disabled', true);
+                $('#bu_checkout').attr('disabled', true);
+            }
+        });
     }
 
     // Initial state
     showLive();
     statusEl.textContent = "Ready.";
+
+    // Check-in button
+    $('#bu_checkin').on('click', function() {
+        if (got_email !== null && (got_card_sha1 !== null || got_card_text !== null)) {
+            api_call('/api/up_checkin', { email: got_email, card_sha1: got_card_sha1 ?? '', card_text: got_card_text ?? ''}, function(data) {
+                if (data.success) {
+                    stopCamera();
+                    statusEl.textContent = "Check-in successful.";
+                    sound.play('success');
+                    got_email = null;
+                    got_card_sha1 = null;
+                    got_card_text = null;
+                    $('#ti_sus').val('');
+                    update_status();
+                    update_checked_in_sus();
+                } else {
+                    statusEl.textContent = "Check-in failed.";
+                    sound.play('error');
+                }
+            });
+        }
+    });
+
+    // Check-out button
+    $('#bu_checkout').on('click', function() {
+        if (got_email !== null) {
+            api_call('/api/up_checkout', { email: got_email }, function(data) {
+                if (data.success) {
+                    stopCamera();
+                    statusEl.textContent = "Check-out successful.";
+                    sound.play('success');
+                    got_email = null;
+                    got_card_sha1 = null;
+                    got_card_text = null;
+                    $('#ti_sus').val('');
+                    update_status();
+                    update_checked_in_sus();
+                } else {
+                    statusEl.textContent = "Check-out failed.";
+                    sound.play('error');
+                }
+            });
+        }
+    });
+
+    function update_checked_in_sus() {
+        api_call('/api/up_get_checked_in_sus', {}, function(data) {
+            if (data.success) {
+                $('#checked_in_sus_here').empty();
+                $('#checked_in_sus_here').append($(`<h4>${data.checked_in_sus.length} SuS eingecheckt:</h4>`));
+                for (let email of data.checked_in_sus) {
+                    let sus = up_sus_map[email];
+                    let button = $('<button>')
+                        .addClass('btn btn-outline-secondary').text(`${sus.display_name} (${sus.klasse})`);
+                    button.on('click', function() {
+                        got_email = sus.email;
+                        got_card_sha1 = null;
+                        got_card_text = null;
+                        fetchInfoForEmail();
+                        update_status();
+                        $('#ti_sus').val(`${sus.display_name} (${sus.klasse})`);
+                    });
+                    button.appendTo($('#checked_in_sus_here'));
+                    $('#checked_in_sus_here').append(' ');
+
+                }
+            }
+        });
+    }
+
+    update_checked_in_sus();
 </script>

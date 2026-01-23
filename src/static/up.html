@@ -94,8 +94,8 @@
     var is_safari = false;
 </script>
 <script type="module">
-    import { CardScanner } from "./include/card-scanner.js";
-    import { QrScanner } from "./include/qr-scanner.js";
+    import { CardScanner } from "./include/card-scanner.js?#{Time.now.to_i}";
+    import { QrScanner } from "./include/qr-scanner.js?#{Time.now.to_i}";
     let sound = new SoundPlayer();
 
     const videoEl = document.getElementById("video");

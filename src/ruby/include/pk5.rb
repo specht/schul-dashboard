@@ -4,7 +4,8 @@ PK5_KEYS = [
     :betreuende_lehrkraft,
     :fas,
     :betreuende_lehrkraft_fas,
-    :fragestellung
+    :fragestellung,
+    :genehmigte_fragestellung,
 ]
 
 PK5_KEY_LABELS = {
@@ -14,6 +15,7 @@ PK5_KEY_LABELS = {
     :fas => 'fächerübergreifender Aspekt',
     :betreuende_lehrkraft_fas => 'Betreuende Lehrkraft im fächerübergreifenden Aspekt',
     :fragestellung => 'Problemorientierte Frage-/Themenstellung',
+    :genehmigte_fragestellung => 'Genehmigte problemorientierte Frage-/Themenstellung',
 }
 
 class Main < Sinatra::Base
@@ -90,6 +92,9 @@ class Main < Sinatra::Base
                     :room => (event[:description] || '').match(/Raum ([^\s<>]+)/)
                 }
             end
+            if (!PK5_PUBLISH_FINAL_THEMA) && (!user_with_role_logged_in?(:oko))
+                result.delete(:genehmigte_fragestellung)
+            end
             result
         end
     end
@@ -122,6 +127,9 @@ class Main < Sinatra::Base
                         value = pc[:value]
                         if key == :betreuende_lehrkraft || key == :betreuende_lehrkraft_fas
                             value = (@@user_info[value] || {})[:display_name_official] || value
+                        end
+                        if (!PK5_PUBLISH_FINAL_THEMA) && (key == :genehmigte_fragestellung) && (!user_with_role_logged_in?(:oko))
+                            next
                         end
                         if (value || '').empty?
                             io.puts "<div class='history_entry'>#{PK5_KEY_LABELS[key]} gelöscht durch #{@@user_info[entry['eu.email']][:display_name_official_dativ]}</div>"
@@ -204,6 +212,7 @@ class Main < Sinatra::Base
                 :fas,
                 :betreuende_lehrkraft_fas,
                 :fragestellung,
+                :genehmigte_fragestellung,
             ],
             :max_body_length => 16384,
             :max_string_length => 8192
@@ -223,7 +232,7 @@ class Main < Sinatra::Base
                 MERGE (p:Pk5)-[:BELONGS_TO]->(u)
                 RETURN p;
             END_OF_QUERY
-            [:themengebiet, :referenzfach, :betreuende_lehrkraft, :fas, :betreuende_lehrkraft_fas, :fragestellung].each do |key|
+            [:themengebiet, :referenzfach, :betreuende_lehrkraft, :fas, :betreuende_lehrkraft_fas, :fragestellung, :genehmigte_fragestellung].each do |key|
                 if data.include?(key)
                     value = data[key]
                     if key == :referenzfach || key == :fas
@@ -236,6 +245,9 @@ class Main < Sinatra::Base
                         value = @@users_for_role[:teacher].select do |email|
                             @@user_info[email][:display_name_official] == value
                         end.first
+                    end
+                    if (key == :genehmigte_fragestellung) && (!user_with_role_logged_in?(:oko))
+                        next
                     end
                     debug "#{key} => #{value}"
                     if (value || '') != (p[key] || '')

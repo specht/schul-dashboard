@@ -173,6 +173,13 @@
                             <textarea id='ti_fragestellung' placeholder='keine Fragestellung formuliert' class='form-control' readonly>#{CGI.escapeHTML(get_my_pk5(user_email)[:fragestellung] || '')}</textarea>
                         </div>
                     </div>
+                    <div class='col-md-12' style="display: #{($pk5.get_current_phase >= 3) && (!((!PK5_PUBLISH_FINAL_THEMA) && (!user_with_role_logged_in?(:oko)))) ? 'block' : 'none'};">
+                        <div class='form-group' style="#{(!((!PK5_PUBLISH_FINAL_THEMA) && (!user_with_role_logged_in?(:oko)))) ? '' : 'border: 1px dashed red; padding: 0 1em 1em 1em; border-radius: 8px; background-color: rgba(255, 0, 0, 0.02);'}">
+                            <hr>
+                            <label>#{PK5_KEY_LABELS[:genehmigte_fragestellung]}</label>
+                            <textarea id='ti_genehmigte_fragestellung' placeholder='keine genehmigte Fragestellung formuliert' class='form-control' readonly>#{CGI.escapeHTML(get_my_pk5(user_email)[:genehmigte_fragestellung] || '')}</textarea>
+                        </div>
+                    </div>
 
                     <div class='col-md-12' style="text-align: right; #{(user_with_role_logged_in?(:oko) || (teacher_logged_in? && (@@pk5_faecher_for_email[@session_user[:email]] || Set.new()).include?(get_my_pk5(user_email)[:fas])) || (@session_user[:klasse] == PK5_CURRENT_KLASSE && (!$pk5.phases[$pk5.get_current_phase][:flags].include?(:no_sus_edit)))) ? '' : 'display: none;'}">
                         <button id='bu_edit' class='btn btn-success'><i class='fa fa-edit'></i>&nbsp;&nbsp;Bearbeiten</button>
@@ -267,6 +274,7 @@ window.addEventListener('load', function() {
     $('#ti_betreuende_lehrkraft').val(my_pk5.betreuende_lehrkraft_display_name);
     $('#ti_fas').val(my_pk5.fas);
     $('#ti_fragestellung').val(my_pk5.fragestellung);
+    $('#ti_genehmigte_fragestellung').val(my_pk5.genehmigte_fragestellung);
     $('#bu_edit').on('click', function(e) {
         $('.api_messages').hide();
         for (let input of $(e.target).closest('.karteikarte').find('input, textarea')) {
@@ -282,6 +290,12 @@ window.addEventListener('load', function() {
             if (['betreuende_lehrkraft_fas'].indexOf(key) >= 0) {
                 if ('true' === '#{user_with_role_logged_in?(:oko) || (teacher_logged_in? && (@@pk5_faecher_for_email[@session_user[:email]] || Set.new()).include?(get_my_pk5(user_email)[:fas]))}') {
                     // OKO and FBL can edit
+                    open_this_field = true;
+                }
+            }
+            if (['genehmigte_fragestellung'].indexOf(key) >= 0) {
+                if ('true' === '#{user_with_role_logged_in?(:oko)}') {
+                    // only OKO can edit
                     open_this_field = true;
                 }
             }

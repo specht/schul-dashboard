@@ -174,7 +174,7 @@
                         </div>
                     </div>
                     <div class='col-md-12' style="display: #{($pk5.get_current_phase >= 3) && (!((!PK5_PUBLISH_FINAL_THEMA) && (!user_with_role_logged_in?(:oko)))) ? 'block' : 'none'};">
-                        <div class='form-group' style="#{(!((!PK5_PUBLISH_FINAL_THEMA) && (!user_with_role_logged_in?(:oko)))) ? '' : 'border: 1px dashed red; padding: 0 1em 1em 1em; border-radius: 8px; background-color: rgba(255, 0, 0, 0.02);'}">
+                        <div class='form-group' style="#{((!PK5_PUBLISH_FINAL_THEMA) && (user_with_role_logged_in?(:oko))) ? 'border: 1px dashed red; padding: 0 1em 1em 1em; border-radius: 8px; background-color: rgba(255, 0, 0, 0.02);' : ''}">
                             <hr>
                             <label>#{PK5_KEY_LABELS[:genehmigte_fragestellung]}</label>
                             <textarea id='ti_genehmigte_fragestellung' placeholder='keine genehmigte Fragestellung formuliert' class='form-control' readonly>#{CGI.escapeHTML(get_my_pk5(user_email)[:genehmigte_fragestellung] || '')}</textarea>

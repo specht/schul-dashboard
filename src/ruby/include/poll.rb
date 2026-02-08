@@ -523,7 +523,7 @@ class Main < Sinatra::Base
             participant_order.each.with_index do |email, index|
                 sheet.write_string(index + 1, 0, (@@user_info[email] || {})[:last_name] || 'NN')
                 sheet.write_string(index + 1, 1, (@@user_info[email] || {})[:first_name] || 'NN')
-                sheet.write_string(index + 1, 2, (@@user_info[email] || {})[:klasse])
+                sheet.write_string(index + 1, 2, (@@user_info[email] || {})[:klasse] || 'NN')
             end
             
             poll_run[:items].each.with_index do |item, item_index|

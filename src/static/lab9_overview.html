@@ -1,0 +1,59 @@
+#{assert(teacher_logged_in? || email_is_eligible_for_lab9?(@@user_info, @session_user[:email]))}
+<div class='container-fluid white'>
+    <div class='row'>
+        <div class='col-md-12'>
+            <h2 style='margin-bottom: 30px;'>Lab 9-Projekte</h2>
+            <div id="table_here"></div>
+        </div>
+    </div>
+</div>
+
+<style>
+    tbody tr {
+        cursor: pointer;
+    }
+    tbody tr:hover {
+        box-shadow: 0 0 0.5em rgba(0, 0, 0, 0.3);
+    }
+    body.dark tbody tr:hover {
+        box-shadow: 0 0 0.5em rgba(255, 255, 255, 0.3);
+    }
+</style>
+
+<script>
+window.addEventListener('load', function() {
+    api_call('/api/lab9_overview', {}, function(data) {
+        if (data.success) {
+            let table = new SortableTable({
+                element: $('#table_here'),
+                xs: true,
+                headers: ['Nr.', 'Mitglieder', 'Titel', 'Produkt', 'Orte', 'Tag 1', 'Tag 2', 'Tag 3', 'Tag 4'].map(function (x) {
+                    let th = $('<th>').html(x);
+                    return th;
+                }),
+                rows: data.rows.map(function (entry, index) {
+                    console.log(entry);
+                    let cells = [
+                        entry.email,
+                        `<td>${entry.projekt.nr ?? '&ndash;'}</td>`,
+                        `<td style='max-width: 20em;'>${entry.sus}</td>`,
+                        `<td style='max-width: 20em;'>${entry.projekt.titel ?? '&ndash;'}</td>`,
+                        `<td style='max-width: 20em;'>${entry.projekt.produkt ?? '&ndash;'}</td>`,
+                        `<td style='max-width: 20em;'>${entry.projekt.orte ?? '&ndash;'}</td>`,
+                        `<td style='max-width: 20em;'>${entry.projekt.reflexion1 ?? '&ndash;'}</td>`,
+                        `<td style='max-width: 20em;'>${entry.projekt.reflexion2 ?? '&ndash;'}</td>`,
+                        `<td style='max-width: 20em;'>${entry.projekt.reflexion3 ?? '&ndash;'}</td>`,
+                        `<td style='max-width: 20em;'>${entry.projekt.reflexion4 ?? '&ndash;'}</td>`,
+                    ];
+                    return cells;
+                }),
+                sortable: true,
+                clickable_rows: true,
+                clickable_row_callback: function(email) {
+                    window.location.href = `/lab9/${email}`;
+                }
+            });
+        }
+    });
+});
+</script>

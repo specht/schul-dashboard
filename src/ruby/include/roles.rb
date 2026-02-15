@@ -51,6 +51,7 @@ AVAILABLE_ROLES = {
     :praktikum => 'Praktikum (kann Stundenpläne ohne Details einsehen)',
     :can_print_photos => 'kann Fotos drucken',
     :can_manage_lab8 => 'kann Lab8-Projekte verwalten',
+    :can_manage_lab9 => 'kann Lab9-Projekte verwalten',
     :unterstufenparty => 'Unterstufenparty',
 }
 

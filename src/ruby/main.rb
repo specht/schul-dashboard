@@ -75,6 +75,7 @@ $VERBOSE = nil
 require './credentials.rb'
 require '/data/config.rb'
 require '/data/lab8/config.rb'
+require '/data/lab9/config.rb'
 require '/data/phishing/config.rb'
 require '/data/pk5/config.rb'
 require '/data/projekte/config.rb'
@@ -117,6 +118,7 @@ require './include/ical.rb'
 require './include/image.rb'
 require './include/jitsi.rb'
 require './include/lab8.rb'
+require './include/lab9.rb'
 require './include/lehrbuchverein.rb'
 require './include/lesson.rb'
 require './include/login.rb'
@@ -300,6 +302,7 @@ class SetupDatabase
         'Group/key',
         'KnownEmailAddress/email',
         'Lab8Projekt/nr',
+        'Lab9Projekt/nr',
         'Lesson/key',
         'LoginCode/tag',
         'Mail/tag',
@@ -1922,6 +1925,7 @@ class Main < Sinatra::Base
             $VERBOSE = nil
             Kernel.send(:load, '/data/config.rb')
             Kernel.send(:load, '/data/lab8/config.rb')
+            Kernel.send(:load, '/data/lab9/config.rb')
             Kernel.send(:load, '/data/phishing/config.rb')
             Kernel.send(:load, '/data/pk5/config.rb')
             Kernel.send(:load, '/data/projekte/config.rb')
@@ -2344,6 +2348,9 @@ class Main < Sinatra::Base
                     # if email_is_eligible_for_lab8?(@@user_info, @session_user[:email])
                     #     nav_items << :lab8
                     # end
+                    # if email_is_eligible_for_lab9?(@@user_info, @session_user[:email])
+                    #     nav_items << :lab9
+                    # end
                     if email_is_projekttage_organizer?(@@user_info, @session_user[:email])
                         nav_items << :projekttage
                     elsif projekttage_phase() >= 2 && @session_user[:klassenstufe] < 10
@@ -2438,6 +2445,10 @@ class Main < Sinatra::Base
                 elsif x == :lab8
                     io.puts "<li class='nav-item text-nowrap'>"
                     io.puts "<a href='/lab8' class='nav-link nav-icon'><div class='icon'><i class='fa fa-clock-o'></i></div>Lab 8</a>"
+                    io.puts "</li>"
+                elsif x == :lab9
+                    io.puts "<li class='nav-item text-nowrap'>"
+                    io.puts "<a href='/lab9' class='nav-link nav-icon'><div class='icon'><i class='fa fa-clock-o'></i></div>Lab 9</a>"
                     io.puts "</li>"
                 elsif x == :projekttage
                     io.puts "<li class='nav-item text-nowrap'>"
@@ -2535,7 +2546,8 @@ class Main < Sinatra::Base
                             io.puts "<a class='dropdown-item nav-icon' href='/kurslisten'><div class='icon'><i class='fa fa-file-text-o'></i></div><span class='label'>Kurslisten</span></a>"
                         end
                         io.puts "<a class='dropdown-item nav-icon' href='/pk5_overview'><div class='icon'><i class='fa fa-file-text-o'></i></div><span class='label'>5. PK</span></a>"
-                        # io.puts "<a class='dropdown-item nav-icon' href='/lab8_overview'><div class='icon'><i class='fa fa-clock-o'></i></div><span class='label'>Lab 8</span></a>"
+                        io.puts "<a class='dropdown-item nav-icon' href='/lab8_overview'><div class='icon'><i class='fa fa-clock-o'></i></div><span class='label'>Lab 8</span></a>"
+                        io.puts "<a class='dropdown-item nav-icon' href='/lab9_overview'><div class='icon'><i class='fa fa-clock-o'></i></div><span class='label'>Lab 9</span></a>"
                         io.puts "<a class='dropdown-item nav-icon' href='/projekttage_overview'><div class='icon'><i class='fa fa-rocket'></i></div><span class='label'>Projekttage</span></a>"
                     end
                     if schueler_logged_in?
@@ -3595,7 +3607,7 @@ class Main < Sinatra::Base
                     user_email = parts[2]
                 end
             end
-        elsif path == 'lab8'
+        elsif path == 'lab8' || path == 'lab9'
             user_email = @session_user[:email]
             # if user_with_role_logged_in?(:teacher)
             parts = request.env['REQUEST_PATH'].split('/')

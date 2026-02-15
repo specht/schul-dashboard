@@ -1259,6 +1259,10 @@ Ensure the default browser behavior of the `hidden` attribute.
   text-align: center;
 }
 
+.text-right {
+  text-align: right;
+}
+
 .align-middle {
   vertical-align: middle;
 }

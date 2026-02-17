@@ -97,40 +97,8 @@
                     </div>
                     <div class='col-md-12'>
                         <div class='form-group'>
-                            <label>#{LAB9_KEY_LABELS[:produkt]}</label>
-                            <input id='ti_produkt' type='text' value='#{CGI.escapeHTML(get_my_lab9_projekt(user_email)[:produkt] || '')}' placeholder='Bitte gib ein, welches Produkt in eurem Projekt entstehen soll' class='form-control' readonly>
-                        </div>
-                    </div>
-
-                    <div class='col-md-12'>
-                        <div class='form-group'>
-                            <label>#{LAB9_KEY_LABELS[:orte]}</label>
-                            <input id='ti_orte' type='text' value='#{CGI.escapeHTML(get_my_lab9_projekt(user_email)[:orte] || '')}' placeholder='Bitte gib ein, an welchen Orten gearbeitet werden soll' class='form-control' readonly>
-                        </div>
-                    </div>
-
-                    <div class='col-md-12'>
-                        <div class='form-group'>
-                            <label>#{LAB9_KEY_LABELS[:reflexion1]}</label>
-                            <textarea style='height: 10em;' id='ti_reflexion1' placeholder='' class='form-control' readonly>#{CGI.escapeHTML(get_my_lab9_projekt(user_email)[:reflexion1] || '')}</textarea>
-                        </div>
-                    </div>
-                    <div class='col-md-12'>
-                        <div class='form-group'>
-                            <label>#{LAB9_KEY_LABELS[:reflexion2]}</label>
-                            <textarea style='height: 10em;' id='ti_reflexion2' placeholder='' class='form-control' readonly>#{CGI.escapeHTML(get_my_lab9_projekt(user_email)[:reflexion2] || '')}</textarea>
-                        </div>
-                    </div>
-                    <div class='col-md-12'>
-                        <div class='form-group'>
-                            <label>#{LAB9_KEY_LABELS[:reflexion3]}</label>
-                            <textarea style='height: 10em;' id='ti_reflexion3' placeholder='' class='form-control' readonly>#{CGI.escapeHTML(get_my_lab9_projekt(user_email)[:reflexion3] || '')}</textarea>
-                        </div>
-                    </div>
-                    <div class='col-md-12'>
-                        <div class='form-group'>
-                            <label>#{LAB9_KEY_LABELS[:reflexion4]}</label>
-                            <textarea style='height: 10em;' id='ti_reflexion4' placeholder='' class='form-control' readonly>#{CGI.escapeHTML(get_my_lab9_projekt(user_email)[:reflexion4] || '')}</textarea>
+                            <label>#{LAB9_KEY_LABELS[:projekt]}</label>
+                            <input id='ti_projekt' type='text' value='#{CGI.escapeHTML(get_my_lab9_projekt(user_email)[:projekt] || '')}' placeholder='Bitte gib ein, welches Projekt ihr plant' class='form-control' readonly>
                         </div>
                     </div>
 
@@ -168,7 +136,7 @@ window.addEventListener('load', function() {
             let key = ($(input).attr('id') ?? '').replace("ti_", '');
             $(input).data('old_value', $(input).val());
             let open_this_field = false;
-            if (['titel', 'produkt', 'orte', 'reflexion1', 'reflexion2', 'reflexion3', 'reflexion4'].indexOf(key) >= 0) {
+            if (['titel', 'projekt'].indexOf(key) >= 0) {
                 if ('true' === '#{user_with_role_logged_in?(:can_manage_lab9) || (email_is_eligible_for_lab9?(@@user_info, @session_user[:email]))}') {
                     open_this_field = true;
                 }

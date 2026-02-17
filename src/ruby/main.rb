@@ -2348,9 +2348,9 @@ class Main < Sinatra::Base
                     # if email_is_eligible_for_lab8?(@@user_info, @session_user[:email])
                     #     nav_items << :lab8
                     # end
-                    # if email_is_eligible_for_lab9?(@@user_info, @session_user[:email])
-                    #     nav_items << :lab9
-                    # end
+                    if email_is_eligible_for_lab9?(@@user_info, @session_user[:email])
+                        nav_items << :lab9
+                    end
                     if email_is_projekttage_organizer?(@@user_info, @session_user[:email])
                         nav_items << :projekttage
                     elsif projekttage_phase() >= 2 && @session_user[:klassenstufe] < 10

@@ -27,7 +27,7 @@ window.addEventListener('load', function() {
             let table = new SortableTable({
                 element: $('#table_here'),
                 xs: true,
-                headers: ['Nr.', 'Mitglieder', 'Titel', 'Produkt', 'Orte', 'Tag 1', 'Tag 2', 'Tag 3', 'Tag 4'].map(function (x) {
+                headers: ['Nr.', 'Mitglieder', 'Titel', 'Projekt'].map(function (x) {
                     let th = $('<th>').html(x);
                     return th;
                 }),
@@ -38,12 +38,7 @@ window.addEventListener('load', function() {
                         `<td>${entry.projekt.nr ?? '&ndash;'}</td>`,
                         `<td style='max-width: 20em;'>${entry.sus}</td>`,
                         `<td style='max-width: 20em;'>${entry.projekt.titel ?? '&ndash;'}</td>`,
-                        `<td style='max-width: 20em;'>${entry.projekt.produkt ?? '&ndash;'}</td>`,
-                        `<td style='max-width: 20em;'>${entry.projekt.orte ?? '&ndash;'}</td>`,
-                        `<td style='max-width: 20em;'>${entry.projekt.reflexion1 ?? '&ndash;'}</td>`,
-                        `<td style='max-width: 20em;'>${entry.projekt.reflexion2 ?? '&ndash;'}</td>`,
-                        `<td style='max-width: 20em;'>${entry.projekt.reflexion3 ?? '&ndash;'}</td>`,
-                        `<td style='max-width: 20em;'>${entry.projekt.reflexion4 ?? '&ndash;'}</td>`,
+                        `<td style='max-width: 20em;'>${entry.projekt.projekt ?? '&ndash;'}</td>`,
                     ];
                     return cells;
                 }),

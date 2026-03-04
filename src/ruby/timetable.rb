@@ -2156,7 +2156,7 @@ class Timetable
 
         @@user_info.each_pair do |email, user|
             next if only_this_email && only_this_email != email
-            next unless user_has_role(email, :can_write_messages)
+            next unless user_has_role(email, :can_write_messages) || user_has_role(email, :gev)
             path = "/gen/w/#{user[:id]}/recipients.json.gz"
             FileUtils.mkpath(File.dirname(path))
             Zlib::GzipWriter.open(path) do |f|

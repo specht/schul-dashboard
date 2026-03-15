@@ -2554,6 +2554,7 @@ class Main < Sinatra::Base
                         if @session_user[:klasse].to_i < 11
                             io.puts "<a class='dropdown-item nav-icon' href='/directory/#{@session_user[:klasse]}'><div class='icon'><i class='fa fa-users'></i></div><span class='label'>Meine Klasse</span></a>"
                         end
+                        io.puts "<a class='dropdown-item nav-icon' href='https://sv.gymnasiumsteglitz.de'><div class='icon'><i class='fa fa-comments-o'></i></div><span class='label'>Schülervertretung</span></a>"
                     end
                     if user_with_role_logged_in?(:unterstufenparty)
                         io.puts "<a class='dropdown-item nav-icon' href='/up'><div class='icon'><i class='fa fa-ticket'></i></div><span class='label'>Unterstufenparty</span></a>"

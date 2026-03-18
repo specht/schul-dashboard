@@ -86,3 +86,10 @@ class Main < Sinatra::Base
     end
 end
 
+WANTS_TO_RECEIVE_TECHPOST_DEBUG_MAIL = []
+
+class Main < Sinatra::Base
+    def up_code_for_email(email)
+        nil
+    end
+end

@@ -38,7 +38,17 @@ window.addEventListener('load', function() {
             let table = new SortableTable({
                 element: $('#table_here'),
                 xs: true,
-                headers: ['Prüfungskandidat:innen', 'Themengebiet', 'Referenzfach', 'Lehrkraft', 'fächerübergreifender Aspekt', 'Lehrkraft (FA)', 'Fragestellung'].map(function (x) {
+                headers: [
+                    'Prüfungskandidat:innen',
+                    'Themengebiet',
+                    'Referenzfach',
+                    'Lehrkraft',
+                    'fächerübergreifender Aspekt',
+                    'Lehrkraft (FA)',
+                    // 'Fragestellung',
+                    '', // Erhalt bestätigt
+                    'Genehmigte Fragestellung',
+                ].map(function (x) {
                         let th = $('<th>').html(x.replace(' (FA)', ''));
                         return th;
                 }),
@@ -52,7 +62,9 @@ window.addEventListener('load', function() {
                         `<td data-sort_value='${entry.pk5.betreuende_lehrkraft ?? ''}'>${entry.betreuende_lehrkraft ?? '–'}</td>`,
                         `<td>${entry.pk5.fas ?? '–'}</td>`,
                         `<td data-sort_value='${entry.pk5.betreuende_lehrkraft_fas ?? ''}'>${entry.betreuende_lehrkraft_fas ?? '–'}</td>`,
-                        `<td style='max-width: 20em;'>${escapeHtml(entry.pk5.fragestellung ?? '–')}</td>`,
+                        // `<td style='max-width: 20em;'>${escapeHtml(entry.pk5.fragestellung ?? '–')}</td>`,
+                        `<td>${entry.pk5.thema_confirmed ? '<i class="fa fa-check text-success"></i>' : '–'}</td>`,
+                        `<td style='max-width: 20em;'>${escapeHtml(entry.pk5.genehmigte_fragestellung ?? '–')}</td>`,
                     ];
                     return cells;
                 }),

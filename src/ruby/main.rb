@@ -3483,8 +3483,8 @@ class Main < Sinatra::Base
 
     get '/*' do
         # first things first
-        response.headers['X-Tage-Bis-Zu-Den-Sommerferien'] = "#{(Date.parse('2025-07-24') - Date.today).to_i}"
-        response.headers['X-Tage-Bis-Weihnachten'] = "#{(Date.parse('2025-12-24') - Date.today).to_i}"
+        response.headers['X-Tage-Bis-Zu-Den-Sommerferien'] = "#{(Date.parse('2026-07-09') - Date.today).to_i}"
+        response.headers['X-Tage-Bis-Weihnachten'] = "#{(Date.parse('2026-12-24') - Date.today).to_i}"
 
         path = request.env['REQUEST_PATH']
         assert(path[0] == '/')

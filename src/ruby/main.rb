@@ -2345,9 +2345,9 @@ class Main < Sinatra::Base
                     nav_items << :pk5
                 end
                 if schueler_logged_in?
-                    # if email_is_eligible_for_lab8?(@@user_info, @session_user[:email])
-                    #     nav_items << :lab8
-                    # end
+                    if email_is_eligible_for_lab8?(@@user_info, @session_user[:email])
+                        nav_items << :lab8
+                    end
                     if email_is_eligible_for_lab9?(@@user_info, @session_user[:email])
                         nav_items << :lab9
                     end

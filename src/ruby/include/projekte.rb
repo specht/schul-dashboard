@@ -516,7 +516,15 @@ class Main < Sinatra::Base
             end
         end
 
-        respond(:rows => rows, :klassen_info => klassen_info)
+        sus_for_klassenstufe = {}
+        @@users_for_role[:schueler].each do |email|
+            info = @@user_info[email]
+            klassenstufe = info[:klassenstufe]
+            next unless klassenstufe >= 5 && klassenstufe <= 9
+            sus_for_klassenstufe[klassenstufe] ||= 0
+            sus_for_klassenstufe[klassenstufe] += 1
+        end
+        respond(:rows => rows, :klassen_info => klassen_info, :sus_for_klassenstufe => sus_for_klassenstufe)
     end
 
     post '/api/send_invitation_for_projekttage' do
@@ -1258,6 +1266,7 @@ class Main < Sinatra::Base
         last_year = PROJEKTWAHL_VOTE_END[0, 4].to_i - 1
         path = "/data/projekte/assigned-results-#{last_year}.json"
         if File.exist?(path)
+            # STDERR.puts "Reading last year's assignment results from #{path}"
             last_year_assignments = JSON.parse(File.read(path))
             error_for_email = last_year_assignments['error_for_email']
             error_for_email.each_pair do |email, error|
@@ -1318,32 +1327,110 @@ class Main < Sinatra::Base
             votes_by_vote[current_vote].delete(sha1)
         end
         # STDERR.puts "Assigned #{result[:project_for_email].size} of #{emails.size} users."
-        # STEP 2: Randomly assign the rest
-        remaining_projects = Set.new()
+        # STDERR.puts "Step 2: Constraint-aware random assignment of the remaining #{remaining_emails.size} users"
+
+        # STEP 2: Assign the rest using bipartite matching with capacities.
+        #
+        # Why not simple random assignment?
+        # Because some grades may have fewer possible projects. If we randomly fill
+        # those scarce projects with students from less constrained grades, we may
+        # later be unable to place all students, even though a valid assignment exists.
+
+        slots = []
+
         projects.each_pair do |nr, p|
-            if p[:teilnehmer_max] - result[:emails_for_project][nr].size > 0
-                remaining_projects << nr
+            used = result[:emails_for_project][nr].size
+            free = p[:teilnehmer_max] - used
+
+            # STDERR.puts "Project #{nr} has #{used} assigned users and a capacity of #{p[:teilnehmer_max]}"
+
+            free.times do |i|
+                slots << [nr, i]
             end
         end
-        while !remaining_emails.empty?
-            email = remaining_emails.to_a.sample
+
+        if slots.size < remaining_emails.size
+            raise "Oops: Not enough remaining capacity: #{slots.size} slots for #{remaining_emails.size} students"
+        end
+
+        remaining_email_list = remaining_emails.to_a.shuffle
+
+        possible_slots_for_email = {}
+
+        remaining_email_list.each do |email|
             klassenstufe = user_info[email][:klassenstufe] || 7
-            pool = projects_for_klassenstufe[klassenstufe] & remaining_projects
-            if pool.empty?
-                raise "Oops: Cannot assign #{email} (Klassenstufe #{klassenstufe})"
+            allowed_projects = projects_for_klassenstufe[klassenstufe] || Set.new()
+
+            possible_slots_for_email[email] = slots.select do |nr, _i|
+                allowed_projects.include?(nr)
+            end.shuffle
+
+            if possible_slots_for_email[email].empty?
+                STDERR.puts "Klassenstufe: #{klassenstufe}"
+                STDERR.puts "Projects for Klassenstufe: #{allowed_projects.to_a.sort.to_json}"
+                STDERR.puts "Remaining slots: #{slots.map(&:first).uniq.sort.to_json}"
+                raise "Oops: Cannot assign #{email} (Klassenstufe #{klassenstufe}); no compatible remaining project slots"
             end
-            nr = pool.to_a.sample
-            remaining_emails.delete(email)
+        end
+
+        # Place more constrained students first. This is not required for correctness
+        # of the matching algorithm, but it makes the search faster and easier to debug.
+        remaining_email_list.sort_by! do |email|
+            possible_slots_for_email[email].size
+        end
+
+        email_for_slot = {}
+
+        try_assign = lambda do |email, seen_slots|
+            possible_slots_for_email[email].each do |slot|
+                next if seen_slots.include?(slot)
+
+                seen_slots << slot
+
+                if !email_for_slot[slot] || try_assign.call(email_for_slot[slot], seen_slots)
+                    email_for_slot[slot] = email
+                    return true
+                end
+            end
+
+            false
+        end
+
+        remaining_email_list.each do |email|
+            unless try_assign.call(email, Set.new)
+                klassenstufe = user_info[email][:klassenstufe] || 7
+
+                STDERR.puts "Could not find a complete matching."
+                STDERR.puts "Failed email: #{email}"
+                STDERR.puts "Klassenstufe: #{klassenstufe}"
+                STDERR.puts "Possible projects: #{possible_slots_for_email[email].map(&:first).uniq.sort.to_json}"
+
+                remaining_email_list.each do |e|
+                    ks = user_info[e][:klassenstufe] || 7
+                    possible_projects = possible_slots_for_email[e].map(&:first).uniq.sort
+                    STDERR.puts "email: #{e}, klassenstufe: #{ks}, possible_projects: #{possible_projects.to_json}, highest_vote: #{user_info[e][:highest_vote]}"
+                end
+
+                raise "Oops: Cannot complete random assignment; no valid matching exists after priority assignments"
+            end
+        end
+
+        email_for_slot.each_pair do |slot, email|
+            nr, _i = slot
+
             if result[:project_for_email][email]
                 raise 'argh'
             end
+
             result[:project_for_email][email] = nr
             result[:emails_for_project][nr] << email
             result[:error_for_email][email] = users[email][:highest_vote] || 0
-            if result[:emails_for_project][nr].size >= projects[nr][:teilnehmer_max]
-                remaining_projects.delete(nr)
-            end
+
+            # STDERR.puts "Randomly assigned #{email} to project #{nr}"
         end
+
+        remaining_emails.clear
+
         # STDERR.puts "Assigned #{result[:project_for_email].size} of #{emails.size} users."
         result
     end

@@ -6,6 +6,7 @@
             <a style='#{(projekttage_phase() < 2) || (!(admin_logged_in? || user_with_role_logged_in?(:can_manage_projekttage))) ? 'display: none;' : ''}' class="btn btn-success pull-right ml-2 mb-1" href="/api/print_projekttage_urkunden">Urkunden</a>
             <a style='#{(projekttage_phase() < 2) || (!(admin_logged_in? || user_with_role_logged_in?(:can_manage_projekttage))) ? 'display: none;' : ''}' class="btn btn-success pull-right ml-2 mb-1" href="/api/print_projekttage_anwesenheitslisten">Anwesenheitslisten</a>
             <div id="table_here"></div>
+            <div id="overview_here"></div>
         </div>
     </div>
 </div>
@@ -131,6 +132,31 @@ window.addEventListener('load', function() {
             $('.bu_pdf').on('click', function(e) {
                 e.stopPropagation();
             });
+            // let klassenOverview = {};
+            // for (let i = 5; i <= 9; i++) {
+            //     klassenOverview[i] = { required: 0, available: 0 };
+            // }
+
+            // data.rows.forEach(function(entry) {
+            //     let minKlasse = entry.projekttage.klassenstufe_min ?? 5;
+            //     let maxKlasse = entry.projekttage.klassenstufe_max ?? 9;
+            //     let available = entry.projekttage.teilnehmer_max ?? 20;
+            //     let required = entry.projekttage.teilnehmer_min ?? 1;
+
+            //     for (let i = minKlasse; i <= maxKlasse; i++) {
+            //         klassenOverview[i].available += available;
+            //     }
+            // });
+            // for (let klasse = 5; klasse <= 9; klasse++) {
+            //     klassenOverview[klasse].required = data.sus_for_klassenstufe[klasse] || 0;
+            // }
+
+            // let overviewHtml = '<h3>Übersicht nach Klassenstufe</h3><table class="table table-sm"><thead><tr><th>Klassenstufe</th><th>Erforderliche Plätze</th><th>Verfügbare Plätze</th></tr></thead><tbody>';
+            // for (let i = 5; i <= 9; i++) {
+            //     overviewHtml += `<tr><td>${i}</td><td>${klassenOverview[i].required}</td><td>${klassenOverview[i].available}</td></tr>`;
+            // }
+            // overviewHtml += '</tbody></table>';
+            // $('#overview_here').append(overviewHtml);
         }
     });
 

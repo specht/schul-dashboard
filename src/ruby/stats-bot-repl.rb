@@ -138,7 +138,6 @@ class StatsBotRepl < Sinatra::Base
         count = 0
         errors = [0, 0, 0, 0]
         1000.times do |count|
-            STDERR.puts "Running round #{count + 1}..."
             begin
                 result = Main.assign_projects(emails, users, projects,
                     projects_for_klassenstufe, total_capacity,

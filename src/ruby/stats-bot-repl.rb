@@ -137,7 +137,7 @@ class StatsBotRepl < Sinatra::Base
         projects_for_email = {}
         count = 0
         errors = [0, 0, 0, 0]
-        1000.times do |count|
+        1000.times do |i|
             begin
                 result = Main.assign_projects(emails, users, projects,
                     projects_for_klassenstufe, total_capacity,
@@ -170,7 +170,7 @@ class StatsBotRepl < Sinatra::Base
                 end
             rescue StandardError => e
                 STDERR.puts "Ignoring: #{e}"
-                raise
+                # raise
             end
         end
         if count == 0

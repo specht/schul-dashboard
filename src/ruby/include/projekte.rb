@@ -1482,194 +1482,106 @@ class Main < Sinatra::Base
             projects_for_klassenstufe, total_capacity,
             votes, _votes_by_email,
             _votes_by_vote, _votes_by_project, user_info)
+        votes_by_email = Hash[_votes_by_email.map { |a, b| [a, b.dup ] } ]
+        votes_by_vote = Hash[_votes_by_vote.map { |a, b| [a, b.dup ] } ]
+        votes_by_project = Hash[_votes_by_project.map { |a, b| [a, b.dup ] } ]
+        # STDERR.puts "Got #{emails.size} emails"
+        # STDERR.puts "Got #{projects.size} projects with a total capacity of #{total_capacity}"
+        # STDERR.puts "Total capacity: #{total_capacity}"
 
-        srand
-
-        votes_by_email = Hash[_votes_by_email.map { |a, b| [a, b.dup] }]
-
-        effective_vote_by_sha1 = {}
-
-        _votes_by_vote.each_pair do |vote_value, sha1s|
-            sha1s.each do |sha1|
-                effective_vote_by_sha1[sha1] = vote_value
-            end
-        end
-
-        # Update 2025:
-        # Also take into account the error of the previous year.
-        # If it is 2 or 3, boost the vote by error - 1.
+        # Update 2025: Also take into account the error
+        # of the previous year: if it's 2 or 3, then
+        # boost the vote by (error - 1)
         last_year = PROJEKTWAHL_VOTE_END[0, 4].to_i - 1
         path = "/data/projekte/assigned-results-#{last_year}.json"
-
         if File.exist?(path)
             last_year_assignments = JSON.parse(File.read(path))
-            error_for_email = last_year_assignments['error_for_email'] || {}
-
+            error_for_email = last_year_assignments['error_for_email']
             error_for_email.each_pair do |email, error|
-                error = error.to_i
-                next unless error >= 2
-
-                old_votes = votes_by_email[email] || []
-
-                old_votes.each do |sha1|
-                    next unless effective_vote_by_sha1.key?(sha1)
-
-                    original_vote = votes[sha1][:vote]
-                    boosted_vote = original_vote + error - 1
-
-                    votes[sha1][:boosted_vote] = boosted_vote
-                    effective_vote_by_sha1[sha1] = boosted_vote
+                if error >= 2
+                    old_votes = (votes_by_email[email]) || []
+                    old_votes.each do |sha1|
+                        vote = votes[sha1][:vote]
+                        votes_by_vote[vote].delete(sha1)
+                        vote += error - 1
+                        votes[sha1][:boosted_vote] = vote
+                        votes_by_vote[vote] ||= Set.new()
+                        votes_by_vote[vote] << sha1
+                    end
                 end
             end
         end
-
-        buckets = Hash.new { |h, k| h[k] = [] }
-
-        effective_vote_by_sha1.each_pair do |sha1, effective_vote|
-            buckets[effective_vote] << sha1
-        end
-
-        buckets.each_value(&:shuffle!)
-
-        state = build_assignment_state(
-            emails,
-            projects,
-            projects_for_klassenstufe,
-            user_info
-        )
-
-        unless assignment_state_feasible?(state)
-            raise [
-                "Initial assignment is impossible with the given capacities and Klassenstufen.",
-                assignment_bottleneck_message(state)
-            ].join("\n")
-        end
-
         result = {
             :project_for_email => {},
             :error_for_email => {},
-            :emails_for_project => Hash[projects.map { |k, _v| [k, []] }],
+            :emails_for_project => Hash[projects.map { |k, v| [k, []] } ],
         }
-
-        assigned = {}
-
-        # STEP 1:
-        # Process only real submitted votes.
-        # Students with fewer votes therefore still have fewer chances.
-        max_vote = buckets.keys.compact.max || 0
-        current_vote = max_vote
-
-        while current_vote > 0
-            bucket = buckets[current_vote] || []
-
-            until bucket.empty?
-                sha1 = bucket.pop
-                vote = votes[sha1]
-
-                next unless vote
-
-                email = vote[:email]
-                nr = vote[:nr]
-
-                next if assigned[email]
-
-                grade_idx = state[:grade_idx_by_email][email]
-                next if grade_idx.nil?
-
-                next unless can_assign_fast?(state, grade_idx, nr)
-
+        current_vote = 6
+        remaining_emails = Set.new(emails)
+        srand()
+        # STEP 1: Assign projects by priority
+        loop do
+            votes_by_vote[current_vote] ||= Set.new()
+            while (votes_by_vote[current_vote]).empty?
+                current_vote -= 1
+                votes_by_vote[current_vote] ||= Set.new()
+                if current_vote == 0
+                    break
+                end
+            end
+            if current_vote == 0
+                break
+            end
+            sha1 = votes_by_vote[current_vote].to_a.sample
+            vote = votes[sha1]
+            nr = vote[:nr]
+            email = vote[:email]
+            # STDERR.puts "[#{current_vote} / #{votes_by_vote[current_vote].size} left] #{sha1} => #{vote.to_json}"
+            if result[:emails_for_project][nr].size < projects[nr][:teilnehmer_max]
+                # user can be assigned to project
                 result[:emails_for_project][nr] << email
-
                 if result[:project_for_email][email]
                     raise 'argh'
                 end
-
-                assigned[email] = true
+                remaining_emails.delete(email)
                 result[:project_for_email][email] = nr
-
-                highest_vote = users[email] ? users[email][:highest_vote].to_i : 0
-
-                # Keeps your previous compensation semantics:
-                # a boosted vote can count as compensation.
-                result[:error_for_email][email] = [
-                    0,
-                    highest_vote - current_vote
-                ].max
-
-                apply_fast_assignment!(state, grade_idx, nr)
-            end
-
-            current_vote -= 1
-        end
-
-        # STEP 2:
-        # Assign remaining students, choosing the most constrained grade first.
-        remaining_by_grade = Array.new(state[:grade_count]) { [] }
-
-        emails.each do |email|
-            next if assigned[email]
-
-            grade_idx = state[:grade_idx_by_email][email]
-            remaining_by_grade[grade_idx] << email
-        end
-
-        remaining_count = emails.size - assigned.size
-
-        while remaining_count > 0
-            best_grade_indices = []
-            best_pool_size = nil
-            best_safe_projects_by_grade = {}
-
-            grade_idx = 0
-
-            while grade_idx < state[:grade_count]
-                if !remaining_by_grade[grade_idx].empty?
-                    safe_projects = safe_projects_for_grade(state, grade_idx)
-                    pool_size = safe_projects.size
-
-                    if pool_size == 0
-                        klassenstufe = state[:klassenstufen][grade_idx]
-
-                        raise [
-                            "Oops: Cannot assign remaining students from Klassenstufe #{klassenstufe}.",
-                            assignment_bottleneck_message(state)
-                        ].join("\n")
-                    end
-
-                    best_safe_projects_by_grade[grade_idx] = safe_projects
-
-                    if best_pool_size.nil? || pool_size < best_pool_size
-                        best_pool_size = pool_size
-                        best_grade_indices = [grade_idx]
-                    elsif pool_size == best_pool_size
-                        best_grade_indices << grade_idx
-                    end
+                result[:error_for_email][email] = [0, users[email][:highest_vote] - current_vote].max
+                # clear all entries of user
+                votes_by_email[email].each do |x|
+                    votes_by_vote[votes[x][:vote]].delete(x)
+                    votes_by_vote[votes[x][:boosted_vote]].delete(x) if votes[x][:boosted_vote]
                 end
-
-                grade_idx += 1
             end
-
-            grade_idx = best_grade_indices.sample
-            email = pop_random!(remaining_by_grade[grade_idx])
-            safe_projects = best_safe_projects_by_grade[grade_idx]
-            nr = safe_projects.sample
-
+            votes_by_vote[current_vote].delete(sha1)
+        end
+        # STDERR.puts "Assigned #{result[:project_for_email].size} of #{emails.size} users."
+        # STEP 2: Randomly assign the rest
+        remaining_projects = Set.new()
+        projects.each_pair do |nr, p|
+            if p[:teilnehmer_max] - result[:emails_for_project][nr].size > 0
+                remaining_projects << nr
+            end
+        end
+        while !remaining_emails.empty?
+            email = remaining_emails.to_a.sample
+            klassenstufe = user_info[email][:klassenstufe] || 7
+            pool = projects_for_klassenstufe[klassenstufe] & remaining_projects
+            if pool.empty?
+                raise "Oops: Cannot assign #{email} (Klassenstufe #{klassenstufe})"
+            end
+            nr = pool.to_a.sample
+            remaining_emails.delete(email)
             if result[:project_for_email][email]
                 raise 'argh'
             end
-
             result[:project_for_email][email] = nr
             result[:emails_for_project][nr] << email
-
-            highest_vote = users[email] ? users[email][:highest_vote].to_i : 0
-            result[:error_for_email][email] = highest_vote
-
-            assigned[email] = true
-            remaining_count -= 1
-
-            apply_fast_assignment!(state, grade_idx, nr)
+            result[:error_for_email][email] = users[email][:highest_vote] || 0
+            if result[:emails_for_project][nr].size >= projects[nr][:teilnehmer_max]
+                remaining_projects.delete(nr)
+            end
         end
-
+        # STDERR.puts "Assigned #{result[:project_for_email].size} of #{emails.size} users."
         result
     end
 

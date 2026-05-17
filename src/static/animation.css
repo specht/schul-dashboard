@@ -1,0 +1,74 @@
+* {
+    transition: background-color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease, opacity 0.2s ease;
+}
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+@keyframes fadeInUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes fadeInDown { from { opacity: 0; transform: translateY(-20px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes fadeInLeft { from { opacity: 0; transform: translateX(-20px); } to { opacity: 1; transform: translateX(0); } }
+@keyframes fadeInRight { from { opacity: 0; transform: translateX(20px); } to { opacity: 1; transform: translateX(0); } }
+@keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.02); } 100% { transform: scale(1); } }
+@keyframes gentlePulse { 0% { opacity: 1; } 50% { opacity: 0.8; } 100% { opacity: 1; } }
+@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+.container, .container-fluid { animation: fadeInUp 0.3s ease-out; }
+.navbar { transition: background-color 0.3s ease, box-shadow 0.3s ease; }
+.navbar:hover { box-shadow: 0 4px 15px rgba(0,0,0,0.2); }
+.nav-link { position: relative; transition: color 0.2s ease; }
+.nav-link.active::after { content: ''; position: absolute; bottom: 0; left: 0; width: 100%; height: 2px; background: currentColor; }
+.nav-link .icon { transition: transform 0.2s ease; }
+.nav-link:hover .icon { transform: scale(1.05); }
+.btn { transition: all 0.2s ease; }
+.btn:hover { transform: translateY(-1px); box-shadow: 0 4px 10px rgba(0,0,0,0.15); }
+.btn:active { transform: translateY(0); }
+.card { transition: transform 0.2s ease, box-shadow 0.2s ease; }
+.card:hover { transform: translateY(-3px); box-shadow: 0 8px 20px rgba(0,0,0,0.15); }
+.dropdown-menu { display: block; opacity: 0; transform: translateY(-8px); transition: opacity 0.15s ease, transform 0.15s ease; pointer-events: none; }
+.dropdown.show .dropdown-menu, .dropdown-menu.show { opacity: 1; transform: translateY(0); pointer-events: auto; }
+.modal.fade .modal-dialog { transition: transform 0.2s ease-out, opacity 0.2s ease-out; transform: scale(0.95); opacity: 0; }
+.modal.show .modal-dialog { transform: scale(1); opacity: 1; }
+.modal-content { animation: fadeInUp 0.2s ease-out; }
+.table tbody tr { transition: background-color 0.15s ease; }
+.table tbody tr:hover { background-color: rgba(0,0,0,0.03); }
+.avatar-upload img, .avatar-image img, img.menu-avatar { transition: transform 0.2s ease, box-shadow 0.2s ease; }
+.avatar-upload img:hover, .avatar-image img:hover, img.menu-avatar:hover { transform: scale(1.03); box-shadow: 0 4px 12px rgba(0,0,0,0.2); }
+.ttc { transition: all 0.15s ease; }
+.ttc:hover { transform: scale(1.01); box-shadow: 0 4px 12px rgba(0,0,0,0.3); }
+.swatch { transition: transform 0.15s ease, box-shadow 0.15s ease; }
+.swatch:hover { transform: scale(1.01); box-shadow: 0 4px 12px rgba(0,0,0,0.3); }
+.hint, .alert, .api_messages { animation: fadeIn 0.2s ease-out; }
+.new-messages-indicator { animation: pulse 2s infinite ease-in-out; }
+.new-messages-indicator-mini .fa { animation: gentlePulse 2s infinite; }
+.badge, .task-badge { transition: transform 0.15s ease; }
+.badge:hover, .task-badge:hover { transform: scale(1.05); }
+.progress-bar { transition: width 0.3s ease; }
+.foot a { transition: color 0.15s ease; }
+.fc-event { transition: transform 0.15s ease, box-shadow 0.15s ease; }
+.fc-event:hover { transform: scale(1.01); box-shadow: 0 4px 12px rgba(0,0,0,0.2); z-index: 5; }
+.lesson_table tr { transition: background-color 0.15s ease; }
+.recipient { transition: transform 0.15s ease, box-shadow 0.15s ease; }
+.recipient:hover { transform: translateY(-1px); box-shadow: 2px 4px 8px rgba(0,0,0,0.2); }
+.ranking { transition: transform 0.15s ease, box-shadow 0.15s ease; }
+.ranking:hover { transform: scale(1.02); box-shadow: 0 4px 12px rgba(0,0,0,0.3); }
+input, select, textarea { transition: border-color 0.15s ease, box-shadow 0.15s ease; }
+input:focus, select:focus, textarea:focus { border-color: #80bdff; box-shadow: 0 0 0 0.2rem rgba(0,123,255,0.25); }
+.slider { transition: background-color 0.15s ease; }
+.slider:before { transition: transform 0.15s ease; }
+.group2-button { transition: transform 0.15s ease, box-shadow 0.15s ease; }
+.group2-button:hover:not(.disabled) { transform: scale(1.05); box-shadow: 0 2px 6px rgba(0,0,0,0.2); }
+.image_carousel img { transition: transform 0.15s ease, box-shadow 0.15s ease; }
+.image_carousel img:hover { transform: scale(1.01); box-shadow: 0 0 12px rgba(0,0,0,0.3); }
+.animate-fade-in { animation: fadeIn 0.3s ease; }
+.animate-fade-in-up { animation: fadeInUp 0.3s ease; }
+.animate-fade-in-down { animation: fadeInDown 0.3s ease; }
+.animate-pulse { animation: pulse 2s infinite; }
+.animate-spin { animation: spin 1s linear infinite; }
+.fc-timegrid-event-harness { transition: all 0.15s ease; }
+.fc-timegrid-event-harness:hover { transform: scale(1.005); z-index: 5; }
+.dropdown-item { transition: background-color 0.15s ease, color 0.15s ease; }
+.navbar-brand { transition: transform 0.15s ease; }
+.navbar-brand:hover { transform: scale(1.01); }
+.breadcrumb-item a { transition: color 0.15s ease; }
+.pagination .page-link { transition: background-color 0.15s ease, color 0.15s ease; }
+.progress { transition: height 0.2s ease; }
+.progress:hover { height: 1.1rem; }
+.alert { transition: border-color 0.15s ease, box-shadow 0.15s ease; }
+/* https://imgur.com/a/VhnvNjd */

@@ -169,7 +169,7 @@ class StatsBotRepl < Sinatra::Base
                     end
                 end
             rescue StandardError => e
-                STDERR.puts "Ignoring: #{e}"
+                # STDERR.puts "Ignoring: #{e}"
                 # raise
             end
         end

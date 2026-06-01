@@ -296,8 +296,9 @@ class Script
             STDERR.puts "Collecting present shares... (hint: specify --use-cached to re-use data in /internal/debug/present-shares-cache.yaml)"
             (@ocs.file_sharing.all || []).each do |share|
                 next if share['share_with'].nil?
-                present_shares[share['share_with']] ||= {}
+                next unless share['share_type'].to_i == 0
                 next unless share['path'].index("/#{SHARE_SOURCE_FOLDER}/") == 0
+                present_shares[share['share_with']] ||= {}
                 present_shares[share['share_with']][share['path']] = {
                     :permissions => share['permissions'].to_i,
                     :target_path => share['file_target'],

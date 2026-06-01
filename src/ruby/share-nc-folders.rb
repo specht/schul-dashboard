@@ -70,6 +70,7 @@ class Script
         @verbose = false
         @debug_shares = false
         @errors = []
+        @stats = Hash.new(0)
     end
 
     def log(message = '')
@@ -100,6 +101,69 @@ class Script
 
     def warn(message)
         STDERR.puts "WARNING: #{message}"
+    end
+
+    def count(key, amount = 1)
+        @stats[key] += amount
+    end
+
+    def set_count(key, value)
+        @stats[key] = value
+    end
+
+    def selected_user?(wanted_nc_ids, user_id)
+        wanted_nc_ids.nil? || wanted_nc_ids.include?(user_id)
+    end
+
+    def print_summary(failed_share_ids)
+        STDERR.puts
+        STDERR.puts "Summary:"
+        STDERR.puts "  Mode: #{SRSLY ? 'changed Nextcloud' : 'dry run, no changes'}"
+
+        STDERR.puts
+        STDERR.puts "  Scope:"
+        STDERR.puts "    wanted users:              #{@stats[:wanted_users]}"
+        STDERR.puts "    wanted shares:             #{@stats[:wanted_shares]}"
+        STDERR.puts "    users processed:           #{@stats[:users_processed]}"
+
+        STDERR.puts
+        STDERR.puts "  Shares:"
+        STDERR.puts "    already correct:           #{@stats[:shares_already_correct]}"
+        STDERR.puts "    newly shared:              #{@stats[:shares_created]}"
+        STDERR.puts "    recreated from stale info: #{@stats[:shares_recreated_from_stale_cache]}"
+        STDERR.puts "    permissions updated:       #{@stats[:permissions_updated]}"
+        STDERR.puts "    moved:                     #{@stats[:shares_moved]}"
+        STDERR.puts "    stale shares removed:      #{@stats[:shares_removed]}"
+        STDERR.puts "    duplicate targets skipped: #{@stats[:duplicate_target_sources_skipped]}"
+
+        unless SRSLY
+            STDERR.puts "    would ensure shares:       #{@stats[:shares_would_ensure]}"
+            STDERR.puts "    would remove shares:       #{@stats[:shares_would_remove]}"
+        end
+
+        STDERR.puts
+        STDERR.puts "  Target folders:"
+        STDERR.puts "    already wanted/in place:   #{@stats[:target_folders_already_wanted]}"
+        STDERR.puts "    deleted:                   #{@stats[:target_folders_deleted]}"
+        STDERR.puts "    kept because non-empty:    #{@stats[:target_folders_kept_nonempty]}"
+        STDERR.puts "    inspect/delete errors:     #{@stats[:target_folder_cleanup_errors]}"
+
+        unless SRSLY
+            STDERR.puts "    would delete:              #{@stats[:target_folders_would_delete]}"
+        end
+
+        STDERR.puts
+        STDERR.puts "  Parent folders for moved shares:"
+        STDERR.puts "    created:                   #{@stats[:parent_dirs_created]}"
+        STDERR.puts "    already present:           #{@stats[:parent_dirs_already_present]}"
+        STDERR.puts "    checks ok:                 #{@stats[:parent_checks_ok]}"
+
+        STDERR.puts
+        STDERR.puts "  Problems:"
+        STDERR.puts "    errors:                    #{@errors.size}"
+        STDERR.puts "    failed share ids:          #{failed_share_ids.size}"
+
+        STDERR.puts
     end
 
     def take_option!(argv, name)
@@ -212,7 +276,7 @@ class Script
         ok = true
         dir_parts = File.dirname(target_path).split('/')
 
-        dir_parts.each.with_index do |p, index|
+        dir_parts.each.with_index do |_p, index|
             sub_path = dir_parts[0, index + 1].join('/')
             next if sub_path.empty?
 
@@ -224,6 +288,12 @@ class Script
 
             debug_log "RAW MKCOL RESULT:"
             debug_log result.to_yaml
+
+            if result[:code] == 201
+                count(:parent_dirs_created)
+            elsif result[:code] == 405
+                count(:parent_dirs_already_present)
+            end
 
             unless result[:ok]
                 error "RAW MKCOL failed for [#{user_id}]#{sub_path}", result
@@ -248,6 +318,7 @@ class Script
             return false
         end
 
+        count(:parent_checks_ok)
         true
     end
 
@@ -576,11 +647,12 @@ class Script
                 src_for_target_path[info[:target_path]] << src
             end
 
-            src_for_target_path.each_pair do |target_path, sources|
+            src_for_target_path.each_pair do |_target_path, sources|
                 if sources.size > 1
                     sources_sorted = sources.to_a.sort
                     sources_sorted[1, sources_sorted.size - 1].each do |src|
                         log "SKIPPING #{src}"
+                        count(:duplicate_target_sources_skipped)
                         wanted_shares[user_id].delete(src)
                     end
                 end
@@ -602,6 +674,10 @@ class Script
             wanted_nc_ids = Set.new(argv.map { |email| (@@user_info[email] || {})[:nc_login] }.reject { |x| x.nil? })
             log "Filtering to #{wanted_nc_ids.size} users: #{wanted_nc_ids.to_a.sort.to_yaml}"
         end
+
+        selected_wanted_users = wanted_shares.keys.select { |user_id| selected_user?(wanted_nc_ids, user_id) }
+        set_count(:wanted_users, selected_wanted_users.size)
+        set_count(:wanted_shares, selected_wanted_users.map { |user_id| wanted_shares[user_id].size }.sum)
 
         log "Got wanted shares for #{wanted_shares.size} users."
 
@@ -644,6 +720,8 @@ class Script
                 log wanted_shares[user_id].to_yaml
             end
 
+            count(:users_processed)
+
             ocs_user = Nextcloud.ocs(url: NEXTCLOUD_URL_FROM_RUBY_CONTAINER,
                                      username: user_id,
                                      password: NEXTCLOUD_ALL_ACCESS_PASSWORD_BE_CAREFUL)
@@ -651,7 +729,7 @@ class Script
             wanted_dirs = Set.new()
             wanted_shares[user_id].values.map { |x| x[:target_path] + '/' }.each do |path|
                 parts = path.split('/')
-                parts.each.with_index do |part, index|
+                parts.each.with_index do |_part, index|
                     sub_path = parts[0, index + 1].join('/') + '/'
                     wanted_dirs << normalize_nc_path(sub_path) unless sub_path == '/'
                 end
@@ -672,7 +750,7 @@ class Script
                         :user_id => user_id,
                         :href => dir.href
                     }
-                    return false
+                    next
                 end
 
                 next unless dir.resourcetype == 'collection'
@@ -681,7 +759,7 @@ class Script
                 path = normalize_nc_path(path)
 
                 if wanted_dirs.include?(path)
-                    # ok
+                    count(:target_folders_already_wanted)
                 else
                     begin
                         dir2 = ocs_user.webdav.directory.find(path.gsub(' ', '%20'))
@@ -705,11 +783,16 @@ class Script
                             log "DELETING [#{user_id}]#{path}"
                             if SRSLY
                                 ocs_user.webdav.directory.destroy(path.gsub(' ', '%20'))
+                                count(:target_folders_deleted)
+                            else
+                                count(:target_folders_would_delete)
                             end
                         else
                             log "KEEPING [#{user_id}]#{path} because it has #{contents_count} files."
+                            count(:target_folders_kept_nonempty)
                         end
                     rescue StandardError => e
+                        count(:target_folder_cleanup_errors)
                         error "Could not inspect/delete [#{user_id}]#{path}: #{e.class}: #{e.message}", e.backtrace.first(10).join("\n")
                     end
                 end
@@ -722,13 +805,19 @@ class Script
 
                 unless SRSLY
                     log "Would ensure share: #{path} => #{user_id}"
+                    count(:shares_would_ensure)
                     next
                 end
 
                 begin
+                    created_now = false
+                    recreated_from_stale_cache = false
+
                     unless existing_share_info
                         log "Sharing #{path} to [#{user_id}]..."
                         create_user_share(@ocs, path, user_id, info[:permissions])
+                        count(:shares_created)
+                        created_now = true
                     end
 
                     shares = user_shares_for_path(path, user_id)
@@ -736,6 +825,8 @@ class Script
                     if shares.empty? && existing_share_info
                         log "Existing share info for #{path} to [#{user_id}] looked stale; creating share again..."
                         create_user_share(@ocs, path, user_id, info[:permissions])
+                        count(:shares_recreated_from_stale_cache)
+                        recreated_from_stale_cache = true
                         shares = user_shares_for_path(path, user_id)
                     end
 
@@ -762,9 +853,14 @@ class Script
                         STDERR.puts "  wanted perms:      #{info[:permissions]}"
                     end
 
+                    permissions_updated = false
+                    moved = false
+
                     if share['permissions'].to_i != info[:permissions]
                         log "Updating permissions [#{user_id}]#{share['file_target']}..."
                         @ocs.file_sharing.update_permissions(share['id'], info[:permissions])
+                        count(:permissions_updated)
+                        permissions_updated = true
                     end
 
                     if !same_nc_path?(share['file_target'], info[:target_path])
@@ -794,8 +890,15 @@ class Script
                             failed_share_ids << share['id']
                             next
                         end
+
+                        count(:shares_moved)
+                        moved = true
                     else
                         debug_log "  move needed:       no"
+                    end
+
+                    if existing_share_info && !created_now && !recreated_from_stale_cache && !permissions_updated && !moved
+                        count(:shares_already_correct)
                     end
                 rescue StandardError => e
                     error "Error while processing share #{path} for #{user_id}: #{e.class}: #{e.message}", e.backtrace.first(10).join("\n")
@@ -816,10 +919,13 @@ class Script
                 if SRSLY
                     begin
                         @ocs.file_sharing.destroy(info[:id])
+                        count(:shares_removed)
                     rescue StandardError => e
                         error "Could not remove stale share #{path} for #{user_id}, share id #{info[:id]}: #{e.class}: #{e.message}", e.backtrace.first(10).join("\n")
                         failed_share_ids << info[:id]
                     end
+                else
+                    count(:shares_would_remove)
                 end
             end
         end
@@ -827,6 +933,8 @@ class Script
         unless failed_share_ids.empty?
             error "Failed share IDs", failed_share_ids.to_a.sort.join("\n")
         end
+
+        print_summary(failed_share_ids)
 
         @errors.empty?
     end

@@ -152,6 +152,53 @@ class Script
         raise "Could not resolve --only-user #{only_user.inspect} as email or Nextcloud login"
     end
 
+    def create_parent_directories!(ocs_user, user_id, target_path, created_sub_paths, debug_shares)
+        dir_parts = File.dirname(target_path).split('/')
+
+        dir_parts.each.with_index do |p, index|
+            sub_path = dir_parts[0, index + 1].join('/')
+            next if sub_path.empty?
+
+            unless created_sub_paths.include?(sub_path)
+                STDERR.puts "Creating/checking [#{user_id}]#{sub_path}..."
+
+                begin
+                    create_result = ocs_user.webdav.directory.create(sub_path)
+
+                    if debug_shares
+                        STDERR.puts "MKCOL RESULT for [#{user_id}]#{sub_path}:"
+                        STDERR.puts create_result.to_yaml
+                    end
+                rescue StandardError => e
+                    STDERR.puts "MKCOL ERROR for [#{user_id}]#{sub_path}: #{e.class}: #{e.message}"
+                    STDERR.puts e.backtrace.first(5).join("\n") if debug_shares
+                end
+
+                created_sub_paths << sub_path
+            end
+        end
+    end
+
+    def check_parent_directory!(ocs_user, user_id, target_path, debug_shares)
+        parent_path = File.dirname(target_path)
+
+        begin
+            parent_dir = ocs_user.webdav.directory.find(parent_path)
+
+            if debug_shares
+                STDERR.puts "PARENT EXISTS:"
+                STDERR.puts "  parent path: #{parent_path}"
+                STDERR.puts "  href:        #{parent_dir.href rescue '(no href)'}"
+            end
+
+            true
+        rescue StandardError => e
+            STDERR.puts "PARENT CHECK FAILED for [#{user_id}]#{parent_path}: #{e.class}: #{e.message}"
+            STDERR.puts e.backtrace.first(5).join("\n") if debug_shares
+            false
+        end
+    end
+
     def run
         argv = ARGV.dup
         argv.delete('--share-archived')
@@ -455,7 +502,7 @@ class Script
                 parts = path.split('/')
                 parts.each.with_index do |part, index|
                     sub_path = parts[0, index + 1].join('/') + '/'
-                    wanted_dirs << normalize_nc_path(sub_path) unless sub_path == '/' || sub_path == "/#{SHARE_TARGET_FOLDER}/"
+                    wanted_dirs << normalize_nc_path(sub_path) unless sub_path == '/'
                 end
             end
 
@@ -560,19 +607,8 @@ class Script
                     end
 
                     if !same_nc_path?(share['file_target'], info[:target_path])
-                        dir_parts = File.dirname(info[:target_path]).split('/')
-
-                        dir_parts.each.with_index do |p, index|
-                            sub_path = dir_parts[0, index + 1].join('/')
-                            next if sub_path.empty?
-                            next if sub_path == "/#{SHARE_TARGET_FOLDER}"
-
-                            unless created_sub_paths.include?(sub_path)
-                                STDERR.puts "Creating [#{user_id}]#{sub_path}..."
-                                ocs_user.webdav.directory.create(sub_path)
-                                created_sub_paths << sub_path
-                            end
-                        end
+                        create_parent_directories!(ocs_user, user_id, info[:target_path], created_sub_paths, debug_shares)
+                        check_parent_directory!(ocs_user, user_id, info[:target_path], debug_shares)
 
                         STDERR.puts "Moving [#{user_id}]#{share['file_target']} to #{info[:target_path]}..."
                         result = ocs_user.webdav.directory.move(share['file_target'], info[:target_path])

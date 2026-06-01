@@ -8,6 +8,8 @@ require 'nextcloud'
 require 'cgi'
 require 'yaml'
 require 'zip'
+require 'uri'
+require 'net/http'
 
 DEBUG_ARCHIVE_PATH = '/data/debug_archives/2023-07-23.zip'
 SHARE_ARCHIVED_FILES = ARGV.include?('--share-archived')
@@ -26,6 +28,7 @@ SHARE_SHARE = 16
 HTTP_READ_TIMEOUT = 60 * 10
 
 # This is a really ugly way to monkey patch an increased HTTP read timeout into the dachinat/nextcloud gem.
+# We still use the gem for OCS share handling, but not for the fragile WebDAV MKCOL/MOVE calls.
 
 module Nextcloud
     class Api
@@ -90,6 +93,154 @@ class Script
         normalize_nc_path(a) == normalize_nc_path(b)
     end
 
+    def dav_escape_segment(segment)
+        CGI.escape(CGI.unescape(segment.to_s).unicode_normalize(:nfc)).gsub('+', '%20')
+    end
+
+    def dav_escape_path(path)
+        decoded = normalize_nc_path(path)
+        decoded = "/#{decoded}" unless decoded.start_with?('/')
+
+        decoded.split('/').map { |part| dav_escape_segment(part) }.join('/')
+    end
+
+    def dav_uri_for(user_id, path)
+        base = URI(NEXTCLOUD_URL_FROM_RUBY_CONTAINER)
+        base_path = base.path.to_s.sub(/\/+\z/, '')
+
+        uri = base.dup
+        uri.query = nil
+        uri.fragment = nil
+        uri.path = "#{base_path}/remote.php/dav/files/#{dav_escape_segment(user_id)}#{dav_escape_path(path)}"
+
+        uri
+    end
+
+    def raw_webdav_request(user_id, method, path, destination_path: nil, depth: nil)
+        uri = dav_uri_for(user_id, path)
+
+        response = Net::HTTP.start(uri.host, uri.port, use_ssl: uri.scheme == 'https') do |http|
+            http.read_timeout = HTTP_READ_TIMEOUT
+
+            req = Net::HTTPGenericRequest.new(method.to_s.upcase, false, true, uri.request_uri)
+            req.basic_auth user_id, NEXTCLOUD_ALL_ACCESS_PASSWORD_BE_CAREFUL
+            req['Depth'] = depth.to_s unless depth.nil?
+
+            if destination_path
+                destination_uri = dav_uri_for(user_id, destination_path)
+                req['Destination'] = destination_uri.to_s
+
+                # Do not silently overwrite an existing target. If the destination
+                # exists, we want the real WebDAV status code.
+                req['Overwrite'] = 'F'
+            end
+
+            http.request(req)
+        end
+
+        {
+            :ok => response.code.to_i.between?(200, 299),
+            :code => response.code.to_i,
+            :message => response.message,
+            :body => response.body.to_s,
+            :source_uri => uri.to_s,
+            :destination_uri => destination_path ? dav_uri_for(user_id, destination_path).to_s : nil
+        }
+    end
+
+    def raw_mkcol(user_id, path)
+        result = raw_webdav_request(user_id, 'MKCOL', path)
+
+        # 201 = created
+        # 405 = already exists / method not allowed on existing collection
+        result[:ok] = [201, 405].include?(result[:code])
+
+        result
+    end
+
+    def raw_propfind(user_id, path, depth: 0)
+        result = raw_webdav_request(user_id, 'PROPFIND', path, depth: depth)
+
+        # 207 = Multi-Status
+        result[:ok] = result[:code] == 207
+
+        result
+    end
+
+    def raw_move(user_id, source_path, target_path)
+        result = raw_webdav_request(user_id, 'MOVE', source_path, destination_path: target_path)
+
+        # 201 = created at destination
+        # 204 = moved successfully, no response body
+        result[:ok] = [201, 204].include?(result[:code])
+
+        result
+    end
+
+    def create_parent_directories_raw!(user_id, target_path, created_sub_paths, debug_shares)
+        dir_parts = File.dirname(target_path).split('/')
+
+        dir_parts.each.with_index do |p, index|
+            sub_path = dir_parts[0, index + 1].join('/')
+            next if sub_path.empty?
+
+            normalized = normalize_nc_path(sub_path)
+            next if created_sub_paths.include?(normalized)
+
+            STDERR.puts "RAW MKCOL/check [#{user_id}]#{sub_path}..."
+            result = raw_mkcol(user_id, sub_path)
+
+            if debug_shares
+                STDERR.puts "RAW MKCOL RESULT:"
+                STDERR.puts result.to_yaml
+            end
+
+            unless result[:ok]
+                STDERR.puts "RAW MKCOL failed for [#{user_id}]#{sub_path}:"
+                STDERR.puts result.to_yaml
+            end
+
+            created_sub_paths << normalized
+        end
+    end
+
+    def verify_parent_directory_raw!(user_id, target_path, debug_shares)
+        parent_path = File.dirname(target_path)
+        result = raw_propfind(user_id, parent_path, depth: 0)
+
+        if debug_shares
+            STDERR.puts "RAW PARENT CHECK:"
+            STDERR.puts result.to_yaml
+        end
+
+        unless result[:ok]
+            STDERR.puts "Parent directory does not exist or is not accessible: [#{user_id}]#{parent_path}"
+            STDERR.puts result.to_yaml
+            return false
+        end
+
+        true
+    end
+
+    def verify_share_target_after_move(path, user_id, share_id, wanted_target)
+        shares_after_move = user_shares_for_path(path, user_id)
+        share_after_move = shares_after_move.find { |x| x['id'].to_s == share_id.to_s }
+
+        STDERR.puts "AFTER MOVE CHECK:"
+        if share_after_move
+            STDERR.puts "  share id:       #{share_after_move['id']}"
+            STDERR.puts "  file_target:    #{share_after_move['file_target'].inspect}"
+            STDERR.puts "  decoded target: #{normalize_nc_path(share_after_move['file_target']).inspect}"
+            STDERR.puts "  wanted target:  #{normalize_nc_path(wanted_target).inspect}"
+
+            unless same_nc_path?(share_after_move['file_target'], wanted_target)
+                STDERR.puts "  WARNING: MOVE returned success, but file_target did not change as expected."
+            end
+        else
+            STDERR.puts "  WARNING: Could not find share after move."
+        end
+    end
+
     def create_user_share(ocs, path, user_id, permissions)
         # Use the OCS endpoint directly so we can explicitly suppress share mails.
         # shareType 0 = internal user share.
@@ -150,53 +301,6 @@ class Script
         end
 
         raise "Could not resolve --only-user #{only_user.inspect} as email or Nextcloud login"
-    end
-
-    def create_parent_directories!(ocs_user, user_id, target_path, created_sub_paths, debug_shares)
-        dir_parts = File.dirname(target_path).split('/')
-
-        dir_parts.each.with_index do |p, index|
-            sub_path = dir_parts[0, index + 1].join('/')
-            next if sub_path.empty?
-
-            unless created_sub_paths.include?(sub_path)
-                STDERR.puts "Creating/checking [#{user_id}]#{sub_path}..."
-
-                begin
-                    create_result = ocs_user.webdav.directory.create(sub_path)
-
-                    if debug_shares
-                        STDERR.puts "MKCOL RESULT for [#{user_id}]#{sub_path}:"
-                        STDERR.puts create_result.to_yaml
-                    end
-                rescue StandardError => e
-                    STDERR.puts "MKCOL ERROR for [#{user_id}]#{sub_path}: #{e.class}: #{e.message}"
-                    STDERR.puts e.backtrace.first(5).join("\n") if debug_shares
-                end
-
-                created_sub_paths << sub_path
-            end
-        end
-    end
-
-    def check_parent_directory!(ocs_user, user_id, target_path, debug_shares)
-        parent_path = File.dirname(target_path)
-
-        begin
-            parent_dir = ocs_user.webdav.directory.find(parent_path)
-
-            if debug_shares
-                STDERR.puts "PARENT EXISTS:"
-                STDERR.puts "  parent path: #{parent_path}"
-                STDERR.puts "  href:        #{parent_dir.href rescue '(no href)'}"
-            end
-
-            true
-        rescue StandardError => e
-            STDERR.puts "PARENT CHECK FAILED for [#{user_id}]#{parent_path}: #{e.class}: #{e.message}"
-            STDERR.puts e.backtrace.first(5).join("\n") if debug_shares
-            false
-        end
     end
 
     def run
@@ -510,6 +614,8 @@ class Script
             begin
                 result = ocs_user.webdav.directory.find("/#{SHARE_TARGET_FOLDER}").contents
             rescue NoMethodError => e
+            rescue StandardError => e
+                STDERR.puts "Could not list /#{SHARE_TARGET_FOLDER} for #{user_id}: #{e.class}: #{e.message}"
             end
 
             (result || []).each do |dir|
@@ -526,30 +632,34 @@ class Script
                 if wanted_dirs.include?(path)
                     # ok
                 else
-                    dir2 = ocs_user.webdav.directory.find(path.gsub(' ', '%20'))
-                    contents_count = (dir2.contents || []).size
-                    just_unterricht_shares = true
+                    begin
+                        dir2 = ocs_user.webdav.directory.find(path.gsub(' ', '%20'))
+                        contents_count = (dir2.contents || []).size
+                        just_unterricht_shares = true
 
-                    (dir2.contents || []).each do |x|
-                        href = x.href
-                        unless ['/Ausgabeordner/',
-                                '/Einsammelordner/',
-                                '/R%c3%bcckgabeordner/',
-                                '/Ausgabeordner%20(Dashboard-Amt)/',
-                                '/Auto-Einsammelordner%20(von%20SuS%20an%20mich)/',
-                                'Auto-R%c3%bcckgabeordner%20(von%20mir%20an%20SuS)/',
-                                '/SuS/'].any? { |y| href[href.size - y.size, y.size] == y }
-                            just_unterricht_shares = false
+                        (dir2.contents || []).each do |x|
+                            href = x.href
+                            unless ['/Ausgabeordner/',
+                                    '/Einsammelordner/',
+                                    '/R%c3%bcckgabeordner/',
+                                    '/Ausgabeordner%20(Dashboard-Amt)/',
+                                    '/Auto-Einsammelordner%20(von%20SuS%20an%20mich)/',
+                                    'Auto-R%c3%bcckgabeordner%20(von%20mir%20an%20SuS)/',
+                                    '/SuS/'].any? { |y| href[href.size - y.size, y.size] == y }
+                                just_unterricht_shares = false
+                            end
                         end
-                    end
 
-                    if contents_count == 0 || just_unterricht_shares
-                        STDERR.puts "DELETING [#{user_id}]#{path}"
-                        if SRSLY
-                            ocs_user.webdav.directory.destroy(path.gsub(' ', '%20'))
+                        if contents_count == 0 || just_unterricht_shares
+                            STDERR.puts "DELETING [#{user_id}]#{path}"
+                            if SRSLY
+                                ocs_user.webdav.directory.destroy(path.gsub(' ', '%20'))
+                            end
+                        else
+                            STDERR.puts "KEEPING [#{user_id}]#{path} because it has #{contents_count} files."
                         end
-                    else
-                        STDERR.puts "KEEPING [#{user_id}]#{path} because it has #{contents_count} files."
+                    rescue StandardError => e
+                        STDERR.puts "Could not inspect/delete [#{user_id}]#{path}: #{e.class}: #{e.message}"
                     end
                 end
             end
@@ -607,25 +717,26 @@ class Script
                     end
 
                     if !same_nc_path?(share['file_target'], info[:target_path])
-                        create_parent_directories!(ocs_user, user_id, info[:target_path], created_sub_paths, debug_shares)
-                        check_parent_directory!(ocs_user, user_id, info[:target_path], debug_shares)
+                        create_parent_directories_raw!(user_id, info[:target_path], created_sub_paths, debug_shares)
 
-                        STDERR.puts "Moving [#{user_id}]#{share['file_target']} to #{info[:target_path]}..."
-                        result = ocs_user.webdav.directory.move(share['file_target'], info[:target_path])
-
-                        if debug_shares
-                            STDERR.puts "MOVE RESULT:"
-                            STDERR.puts result.to_yaml
+                        unless verify_parent_directory_raw!(user_id, info[:target_path], debug_shares)
+                            failed_share_ids << share['id']
+                            next
                         end
 
-                        if result[:status] != 'ok'
-                            STDERR.puts "Error!"
-                            STDERR.puts result.to_yaml
+                        STDERR.puts "RAW MOVE [#{user_id}]#{share['file_target']} -> #{info[:target_path]}..."
+                        move_result = raw_move(user_id, share['file_target'], info[:target_path])
 
-                            if result[:exception] == 'OCP\\Files\\NotFoundException'
-                                failed_share_ids << share['id']
-                            end
+                        STDERR.puts "RAW MOVE RESULT:"
+                        STDERR.puts move_result.to_yaml if debug_shares || !move_result[:ok]
+
+                        unless move_result[:ok]
+                            STDERR.puts "RAW MOVE failed!"
+                            failed_share_ids << share['id']
+                            next
                         end
+
+                        verify_share_target_after_move(path, user_id, share['id'], info[:target_path])
                     elsif debug_shares
                         STDERR.puts "  move needed:       no"
                     end

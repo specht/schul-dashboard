@@ -861,12 +861,13 @@ class Main < Sinatra::Base
         require_teacher!
         entries = []
         KLASSEN_ORDER.each do |klasse|
-            next unless klasse.to_i == 6 || klasse.to_i == 7
             print_name_for_email = {}
             pool = Set.new()
             @@schueler_for_klasse[klasse].each do |email|
+                next unless UNTERSTUFEN_PARTY_KLASSENSTUFEN.include?(@@user_info[email][:klassenstufe])
                 pool << email
             end
+            next if pool.empty?
             n = 0
             while !pool.empty?
                 count_for_name = {}
@@ -889,6 +890,7 @@ class Main < Sinatra::Base
                 n += 1
             end
             @@schueler_for_klasse[klasse].each do |email|
+                next unless UNTERSTUFEN_PARTY_KLASSENSTUFEN.include?(@@user_info[email][:klassenstufe])
                 entries << [email, print_name_for_email[email], klasse]
                 # STDERR.puts "#{email} #{print_name_for_email[email]} #{klasse}"
             end

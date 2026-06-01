@@ -861,7 +861,7 @@ class Main < Sinatra::Base
         require_teacher!
         entries = []
         KLASSEN_ORDER.each do |klasse|
-            next unless klasse.to_i == 5 || klasse.to_i == 6
+            next unless klasse.to_i == 6 || klasse.to_i == 7
             print_name_for_email = {}
             pool = Set.new()
             @@schueler_for_klasse[klasse].each do |email|

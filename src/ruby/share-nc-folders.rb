@@ -68,6 +68,28 @@ class Script
                              password: NEXTCLOUD_PASSWORD)
     end
 
+    def take_option!(argv, name)
+        index = argv.index(name)
+        return nil if index.nil?
+
+        argv.delete_at(index)
+        value = argv.delete_at(index)
+
+        if value.nil? || value.start_with?('--')
+            raise "Missing value for #{name}"
+        end
+
+        value
+    end
+
+    def normalize_nc_path(path)
+        CGI.unescape(path.to_s).unicode_normalize(:nfc)
+    end
+
+    def same_nc_path?(a, b)
+        normalize_nc_path(a) == normalize_nc_path(b)
+    end
+
     def create_user_share(ocs, path, user_id, permissions)
         # Use the OCS endpoint directly so we can explicitly suppress share mails.
         # shareType 0 = internal user share.
@@ -116,11 +138,28 @@ class Script
         present_shares
     end
 
+    def resolve_only_user!(only_user)
+        return nil if only_user.nil?
+
+        if @@user_info[only_user]
+            return @@user_info[only_user][:nc_login]
+        end
+
+        if @@user_info.values.any? { |u| u[:nc_login] == only_user }
+            return only_user
+        end
+
+        raise "Could not resolve --only-user #{only_user.inspect} as email or Nextcloud login"
+    end
+
     def run
         argv = ARGV.dup
         argv.delete('--share-archived')
         argv.delete('--srsly')
         argv.delete('--use-cached')
+
+        only_user = take_option!(argv, '--only-user')
+        debug_shares = !argv.delete('--debug-shares').nil?
 
         @@debug_archive = {}
         if SHARE_ARCHIVED_FILES
@@ -198,6 +237,7 @@ class Script
         latest_lesson_keys = Set.new(@@lessons[:timetables][@@lessons[:timetables].keys.sort.last].keys)
         all_lesson_keys = Set.new()
         all_shorthands_for_lesson = {}
+
         @@lessons[:timetables].keys.sort.each do |date|
             all_lesson_keys |= Set.new(@@lessons[:timetables][date].keys)
             @@lessons[:timetables][date].each_pair do |lesson_key, lesson_info|
@@ -355,7 +395,12 @@ class Script
         end
 
         wanted_nc_ids = nil
-        unless argv.empty?
+        resolved_only_user = resolve_only_user!(only_user)
+
+        if resolved_only_user
+            wanted_nc_ids = Set.new([resolved_only_user])
+            STDERR.puts "Filtering to one user: #{resolved_only_user}"
+        elsif !argv.empty?
             wanted_nc_ids = Set.new(argv.map { |email| (@@user_info[email] || {})[:nc_login] }.reject { |x| x.nil? })
             STDERR.puts "Filtering to #{wanted_nc_ids.size} users: #{wanted_nc_ids.to_a.sort.to_yaml}"
         end
@@ -410,7 +455,7 @@ class Script
                 parts = path.split('/')
                 parts.each.with_index do |part, index|
                     sub_path = parts[0, index + 1].join('/') + '/'
-                    wanted_dirs << sub_path.gsub('%20', ' ') unless sub_path == '/' || sub_path == "/#{SHARE_TARGET_FOLDER}/"
+                    wanted_dirs << normalize_nc_path(sub_path) unless sub_path == '/' || sub_path == "/#{SHARE_TARGET_FOLDER}/"
                 end
             end
 
@@ -429,7 +474,7 @@ class Script
                 next unless dir.resourcetype == 'collection'
 
                 path = dir.href.sub("/remote.php/dav/files/#{user_id}", '')
-                path = CGI.unescape(path)
+                path = normalize_nc_path(path)
 
                 if wanted_dirs.include?(path)
                     # ok
@@ -467,18 +512,6 @@ class Script
             wanted_shares[user_id].each_pair do |path, info|
                 existing_share_info = (present_shares[user_id] || {})[path]
 
-                target_already_ok =
-                    existing_share_info &&
-                    (existing_share_info[:target_path] || '').gsub(' ', '%20') == info[:target_path].gsub(' ', '%20')
-
-                permissions_already_ok =
-                    existing_share_info &&
-                    existing_share_info[:permissions] == info[:permissions]
-
-                if target_already_ok && permissions_already_ok
-                    next
-                end
-
                 unless SRSLY
                     STDERR.puts "Would ensure share (if SRSLY): #{path} => #{user_id}"
                     next
@@ -506,12 +539,27 @@ class Script
 
                     share = shares.first
 
+                    if debug_shares
+                        STDERR.puts
+                        STDERR.puts "DEBUG SHARE"
+                        STDERR.puts "  user:              #{user_id}"
+                        STDERR.puts "  source path:       #{path}"
+                        STDERR.puts "  share id:          #{share['id']}"
+                        STDERR.puts "  share_type:        #{share['share_type']}"
+                        STDERR.puts "  current target:    #{share['file_target'].inspect}"
+                        STDERR.puts "  wanted target:     #{info[:target_path].inspect}"
+                        STDERR.puts "  current decoded:   #{normalize_nc_path(share['file_target']).inspect}"
+                        STDERR.puts "  wanted decoded:    #{normalize_nc_path(info[:target_path]).inspect}"
+                        STDERR.puts "  current perms:     #{share['permissions']}"
+                        STDERR.puts "  wanted perms:      #{info[:permissions]}"
+                    end
+
                     if share['permissions'].to_i != info[:permissions]
                         STDERR.puts "Updating permissions [#{user_id}]#{share['file_target']}..."
                         @ocs.file_sharing.update_permissions(share['id'], info[:permissions])
                     end
 
-                    if share['file_target'].gsub(' ', '%20') != info[:target_path].gsub(' ', '%20')
+                    if !same_nc_path?(share['file_target'], info[:target_path])
                         dir_parts = File.dirname(info[:target_path]).split('/')
 
                         dir_parts.each.with_index do |p, index|
@@ -529,6 +577,11 @@ class Script
                         STDERR.puts "Moving [#{user_id}]#{share['file_target']} to #{info[:target_path]}..."
                         result = ocs_user.webdav.directory.move(share['file_target'], info[:target_path])
 
+                        if debug_shares
+                            STDERR.puts "MOVE RESULT:"
+                            STDERR.puts result.to_yaml
+                        end
+
                         if result[:status] != 'ok'
                             STDERR.puts "Error!"
                             STDERR.puts result.to_yaml
@@ -537,10 +590,12 @@ class Script
                                 failed_share_ids << share['id']
                             end
                         end
+                    elsif debug_shares
+                        STDERR.puts "  move needed:       no"
                     end
                 rescue StandardError => e
                     STDERR.puts "ERROR while processing share #{path} for #{user_id}: #{e.class}: #{e.message}"
-                    STDERR.puts e.backtrace.first(5).join("\n")
+                    STDERR.puts e.backtrace.first(10).join("\n")
                 end
             end
         end

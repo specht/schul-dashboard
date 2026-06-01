@@ -430,6 +430,8 @@ class Script
                         end
                     end
                 rescue StandardError => e
+                    STDERR.puts "ERROR while processing share #{path} for #{user_id}: #{e.class}: #{e.message}"
+                    STDERR.puts e.backtrace.first(5).join("\n")
                 end
             end
         end

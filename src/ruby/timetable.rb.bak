@@ -923,7 +923,7 @@ class Timetable
 
                     # don't send mails if the booking was in the past for whatever reason
                     next if booking[:datum] < Date.today.to_s
-
+                    
                     shorthands.each do |shorthand|
                         email = @@shorthands[shorthand]
                         user_info = @@user_info[email]
@@ -982,7 +982,7 @@ class Timetable
 
                     # don't send mails if the booking was in the past for whatever reason
                     next if booking[:datum] < Date.today.to_s
-
+                    
                     shorthands.each do |shorthand|
                         email = @@shorthands[shorthand]
                         deliver_mail do
@@ -2017,8 +2017,8 @@ class Timetable
                     end
                 end
                 (@messages_for_user[email] || {}).each_pair do |mid, info|
-                    messages << {:mid => mid, :timestamp => info[:timestamp], :from => info[:from] }
-                end
+                                    messages << {:mid => mid, :timestamp => info[:timestamp], :from => info[:from], :formatted_reactions => info[:formatted_reactions] }
+                                end
                 messages.sort! do |a, b|
                     b[:timestamp] <=> a[:timestamp]
                 end
@@ -2471,10 +2471,11 @@ class Timetable
                         @messages_last_timestamp = rt[:updated] if rt[:updated] > @messages_last_timestamp
                     end
                     if row[:info][:id] && !row[:info][:deleted] && !(rt || {})[:deleted]
-                        @messages_for_user[to][row[:info][:id]] = {
-                            :timestamp => row[:info][:created],
-                            :from => row[:from]
-                        }
+                                            @messages_for_user[to][row[:info][:id]] = {
+                                                :timestamp => row[:info][:created],
+                                                :from => row[:from],
+                                                :formatted_reactions => row[:formatted_reactions]
+                                            }
                     else
                         @messages_for_user[to].delete(row[:info][:id])
                     end

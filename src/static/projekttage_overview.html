@@ -91,7 +91,7 @@ window.addEventListener('load', function() {
                         `<td style='max-width: 20em;'>${entry.projekttage.lehrkraft ?? '&ndash;'}</td>`
                     ];
                     if (show_stats) {
-                        if (entry.motivation) {
+                        if (entry.motivation && Object.keys(entry.motivation).length > 0) {
                             let m = entry.motivation;
                             let max_count = 0;
                             for (let i = 0; i <= 3; i++) {

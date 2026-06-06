@@ -1756,7 +1756,7 @@ class Main < Sinatra::Base
         StringIO.open do |io|
             io.puts "<p>Die folgenden Schülerinnen und Schüler nehmen an deinem Projekt teil. Unten in der Tabelle findest du E-Mail-Verteiler, die du nutzen kannst, um alle Teilnehmer:innen und / oder deren Eltern zu erreichen. Nutze deine schulische E-Mail-Adresse, um die Verteiler zu verwenden.</p>"
             if projekttage_phase() < 5
-                io.puts "<p><strong>Achtung:</strong> Bitte beachte, dass momentan noch Projekte getauscht werden können. Die finale Teilnehmerliste steht erst am <strong>#{WEEKDAYS_LONG[Date.parse(PROJEKTWAHL_SWAP_PHASE_END).wday]}</strong>, den <strong>#{Date.parse(PROJEKTWAHL_SWAP_PHASE_END).strftime('%d')}. #{MONTHS[Date.parse(PROJEKTWAHL_SWAP_PHASE_END).strftime('%m').to_i]}</strong> um <strong>#{DateTime.parse(PROJEKTWAHL_SWAP_PHASE_END).strftime('%H:%M')} Uhr</strong> fest.</p>"
+                io.puts "<p><strong>Achtung:</strong> Bitte beachte, dass momentan noch Projekte getauscht werden können. Die finale Teilnehmerliste steht erst am <strong>#{WEEKDAYS_LONG[Date.parse(PROJEKTWAHL_SWAP_PHASE_END).wday]}</strong>, den <strong>#{Date.parse(PROJEKTWAHL_SWAP_PHASE_END).strftime('%d')}. #{MONTHS[Date.parse(PROJEKTWAHL_SWAP_PHASE_END).strftime('%m').to_i - 1]}</strong> um <strong>#{DateTime.parse(PROJEKTWAHL_SWAP_PHASE_END).strftime('%H:%M')} Uhr</strong> fest.</p>"
             elsif projekttage_phase() == 5
                 io.puts "<p>Diese Teilnehmerliste ist jetzt final, es können keine Projekte mehr getauscht werden.</p>"
             end

@@ -124,7 +124,7 @@ class Script
                 end
                 success_count += 1
             rescue
-                raise
+                # raise
             end
         end
         STDERR.puts "Best score: #{best_score} (#{success_count} successful assignments out of #{sum} attempts)"

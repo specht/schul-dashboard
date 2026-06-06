@@ -97,6 +97,7 @@ class Script
         sum = 0
         best_assignment = nil
         best_score = nil
+        success_count = 0
         (DEVELOPMENT ? 100 : 10000).times do
             begin
                 error_3_count = 0
@@ -121,12 +122,18 @@ class Script
                     projects_for_email[email][project] ||= 0
                     projects_for_email[email][project] += 1
                 end
+                success_count += 1
             rescue
                 raise
             end
         end
-        Main.print_project_assignment_summary_and_assign(best_assignment, @@user_info,
-        votes, votes_by_email, votes_by_vote, votes_by_project)
+        STDERR.puts "Best score: #{best_score} (#{success_count} successful assignments out of #{sum} attempts)"
+        if ARGV.include?('--srsly')
+            Main.print_project_assignment_summary_and_assign(best_assignment, @@user_info,
+            votes, votes_by_email, votes_by_vote, votes_by_project)
+        else
+            STDERR.puts "Not doing anything unless you specify --srsly!"
+        end
     end
 end
 

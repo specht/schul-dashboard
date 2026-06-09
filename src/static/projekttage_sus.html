@@ -259,6 +259,10 @@ document.addEventListener('DOMContentLoaded', function() {
                 $('#div_ts_details').show();
             }
             for (let projekt of data.projekte) {
+                console.log(projekt.nr, projekt);
+            }
+            for (let projekt of data.projekte) {
+                console.log(projekt.nr, projekt);
                 if (projekt.nr[0] === '_') continue;
                 projekte[projekt.nr] = projekt;
                 if (projekt.klassenstufe_min === null)
@@ -341,9 +345,11 @@ document.addEventListener('DOMContentLoaded', function() {
                 update_vote_summary('#text_vote_summary');
             }
             if ('#{user_was_eligible_for_projektwahl?}' === 'true') {
+                console.log('yay');
                 let direct_swap_candidates = [];
                 for (let div of document.querySelectorAll('.direct-project-swap-candidate')) {
                     let nr = div.dataset.nr;
+                    console.log(nr, projekte[nr]);
                     if (projekte[nr].klassenstufe_min > this_klasse || projekte[nr].klassenstufe_max < this_klasse) continue;
                     if (nr === data.assigned_projekt) continue;
                     direct_swap_candidates.push(nr);

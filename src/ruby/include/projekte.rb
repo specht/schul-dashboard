@@ -176,6 +176,7 @@ class Main < Sinatra::Base
                         RETURN p.nr;
                     END_OF_QUERY
                 rescue
+                    raise
                 end
             # end
         end

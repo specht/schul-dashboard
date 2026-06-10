@@ -8,7 +8,7 @@ class Main < Sinatra::Base
         info = @@user_info[email]
         return false unless info[:roles].include?(:schueler)
         stufe = info[:klassenstufe]
-        return stufe >= 5 && stufe <= 6
+        return stufe >= 6 && stufe <= 7
     end
 
     def up_sus_list

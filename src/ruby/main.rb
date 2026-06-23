@@ -2056,6 +2056,7 @@ class Main < Sinatra::Base
                                         @session_user[:font] = results.first['u'][:font]
                                         @session_user[:color_scheme] = results.first['u'][:color_scheme]
                                         @session_user[:new_design] = results.first['u'][:new_design]
+                                        @session_user[:animation] = results.first['u'][:animation]
                                         @session_user[:dark] = results.first['u'][:dark]
                                         @session_user[:hue] = results.first['u'][:hue]
                                         @session_user[:saturation] = results.first['u'][:saturation]
@@ -3023,6 +3024,21 @@ class Main < Sinatra::Base
         END_OF_QUERY
 
         respond(:ok => true)
+    end
+
+    post '/api/set_animation' do
+      require_user!
+
+      data = parse_request_data(:required_keys => [:mode])
+      animation = data[:mode] == "an" ? true : false
+
+      results = neo4j_query(<<~END_OF_QUERY, :email => @session_user[:email], :animation => animation)
+        MATCH (u:User {email: $email})
+        SET u.animation = $animation;
+      END_OF_QUERY
+      @session_user[:animation] = animation
+
+      respond(:ok => true)
     end
 
     def get_open_doors_for_user()

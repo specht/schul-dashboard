@@ -328,6 +328,9 @@
     #{(@session_user || {})[:new_design] ? '' : '<!--'}
     <link href="/new_design.css" rel="stylesheet" />
     #{(@session_user || {})[:new_design] ? '' : '-->'}
+    #{(@session_user || {})[:animation] ? '' : '<!--'}
+    <link href="/animation.css" rel="stylesheet" />
+    #{(@session_user || {})[:animation] ? '' : '-->'}
     <script defer src="/gen/js/compiled-#{compiled_js_sha1}.js"></script>
 
     #{PAGE_CSS_HERE}

@@ -1454,9 +1454,10 @@ function print_pdf_sheets(path, options = {}) {
     });
 }
 
-function admin_only_copy_noten_from_halbjahr(klasse, fach, srsly, sv) {
+function admin_only_copy_noten_from_halbjahr(klasse, fach, srsly, sv, force_overwrite) {
     if (typeof(srsly) === 'undefined') srsly = false;
     if (typeof(sv) === 'undefined') sv = false;
+    if (typeof(force_overwrite) === 'undefined') force_overwrite = false;
     if ('#{zeugnis_admin_logged_in?}' !== 'true') {
         console.log("Aborting because you are not zeugnis admin");
         return;
@@ -1523,7 +1524,7 @@ function admin_only_copy_noten_from_halbjahr(klasse, fach, srsly, sv) {
                     for (let fi = 0; fi < faecher_for_paths.length; fi++) {
                         let fach2 = faecher_for_paths[fi];
                         let value = data.results[1][0][0][si][fi][i][0];
-                        if (value !== null) {
+                        if (value !== null && !force_overwrite) {
                             console.log("Aborting because there's already values here:")
                             console.log(email, fach2, value);
                             return;
@@ -1566,7 +1567,7 @@ function admin_only_copy_noten_from_halbjahr(klasse, fach, srsly, sv) {
                 for (let fi = 0; fi < faecher_for_paths.length; fi++) {
                     let fach2 = faecher_for_paths[fi];
                     let value = data.results[1][0][0][fi][i][0];
-                    if (value !== null) {
+                    if (value !== null && !force_overwrite) {
                         console.log("Aborting because there's already values here:")
                         console.log(email, fach2, value);
                         return;

@@ -1983,7 +1983,7 @@ class Main
                     start_new_page unless first_page
                     first_page = false
                     image "/app/images/gyst.png", :at => [20.mm, 277.mm], :height => 3.cm
-                    image "/app/images/sesb.png", :at => [165.mm, 277.mm], :height => 3.cm
+                    image "/app/images/sesb-neu.png", :at => [165.mm, 277.mm], :height => 3.cm
                     move_down 6.cm
                     bounding_box([20.mm, 227.mm], :width => 170.mm, :height => 207.mm) do
                         font('AlegreyaSans') do

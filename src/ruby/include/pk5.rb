@@ -19,6 +19,11 @@ PK5_KEY_LABELS = {
 }
 
 class Main < Sinatra::Base
+
+    def pk5_publish_final_thema
+        Time.now.strftime('%Y-%m-%dT%H:%M') >= PK5_PUBLISH_FINAL_THEMA
+    end
+
     def get_my_pk5(email)
         require_user!
         result = nil
@@ -92,7 +97,7 @@ class Main < Sinatra::Base
                     :room => (event[:description] || '').match(/Raum ([^\s<>]+)/)
                 }
             end
-            if (!PK5_PUBLISH_FINAL_THEMA) && (!user_with_role_logged_in?(:oko))
+            if (!pk5_publish_final_thema) && (!user_with_role_logged_in?(:oko))
                 result.delete(:genehmigte_fragestellung)
             end
             result
@@ -110,8 +115,17 @@ class Main < Sinatra::Base
                 io.puts "<em>(keine Einträge)</em>"
             else
                 current_date = nil
-                entries.each do |entry|
+                # scan entries and if we find multiple entries of :type == 'update_value' with :key == :genehmigte_fragestellung then only keep the last entry
+                last_genehmigte_fragestellung_index = nil
+                entries.each_with_index do |entry, index|
                     pc = entry['pc']
+                    if pc[:type] == 'update_value' && pc[:key].to_sym == :genehmigte_fragestellung
+                        last_genehmigte_fragestellung_index = index
+                    end
+                end
+                entries.each_with_index do |entry, index|
+                    pc = entry['pc']
+                    next if pc[:type] == 'update_value' && pc[:key].to_sym == :genehmigte_fragestellung && index != last_genehmigte_fragestellung_index
                     ts = pc[:ts]
                     ts_d = Time.at(ts)
                     entry_date = "#{WEEKDAYS_LONG[ts_d.wday]}, den #{ts_d.strftime("%d.%m.%Y")}"
@@ -128,7 +142,7 @@ class Main < Sinatra::Base
                         if key == :betreuende_lehrkraft || key == :betreuende_lehrkraft_fas
                             value = (@@user_info[value] || {})[:display_name_official] || value
                         end
-                        if (!PK5_PUBLISH_FINAL_THEMA) && (key == :genehmigte_fragestellung) && (!user_with_role_logged_in?(:oko))
+                        if (!pk5_publish_final_thema) && (key == :genehmigte_fragestellung) && (!user_with_role_logged_in?(:oko))
                             next
                         end
                         if (value || '').empty?
@@ -148,6 +162,8 @@ class Main < Sinatra::Base
                         io.puts "<div class='history_entry'><strong>#{@@user_info[entry['eu.email']][:display_name_official]}</strong> hat die Betreuung der Prüfung angenommen</div>"
                     elsif pc[:type] == 'reject_betreuung'
                         io.puts "<div class='history_entry'><strong>#{@@user_info[entry['eu.email']][:display_name_official]}</strong> hat die Betreuung der Prüfung abgelehnt</div>"
+                    elsif pc[:type] == 'confirm_thema'
+                        io.puts "<div class='history_entry'><strong>#{@@user_info[entry['eu.email']][:display_name_official]}</strong> hat den Erhalt der Prüfungsfrage bestätigt</div>"
                     else
                         io.puts pc.to_json
                     end
@@ -198,6 +214,36 @@ class Main < Sinatra::Base
                     RETURN p;
                 END_OF_QUERY
             end
+        end
+    end
+
+    post '/api/pk5_confirm_thema' do
+        require_user!
+        sus_email = @session_user[:email]
+        assert(@@user_info[sus_email][:klasse] == PK5_CURRENT_KLASSE)
+        transaction do
+            # 1. Make sure it's not already confirmed
+            already_confirmed = neo4j_query_expect_one(<<~END_OF_QUERY, {:sus_email => sus_email})['thema_confirmed']
+                MATCH (p:Pk5)-[:BELONGS_TO]->(u:User {email: $sus_email})
+                RETURN COALESCE(p.thema_confirmed, FALSE) AS thema_confirmed;
+            END_OF_QUERY
+            assert(!already_confirmed)
+            # 2. Set thema_confirmed to true
+            neo4j_query_expect_one(<<~END_OF_QUERY, {:sus_email => sus_email})
+                MATCH (p:Pk5)-[:BELONGS_TO]->(u:User {email: $sus_email})
+                SET p.thema_confirmed = TRUE
+                RETURN p;
+            END_OF_QUERY
+            # 3. Create a Pk5Change entry
+            ts = Time.now.to_i
+            neo4j_query_expect_one(<<~END_OF_QUERY, {:sus_email => sus_email, :ts => ts})
+                MATCH (eu:User {email: $sus_email})
+                MATCH (p:Pk5)-[:BELONGS_TO]->(:User {email: $sus_email})
+                CREATE (eu)<-[:BY]-(c:Pk5Change)-[:TO]->(p)
+                SET c.type = 'confirm_thema'
+                SET c.ts = $ts
+                RETURN p;
+            END_OF_QUERY
         end
     end
 

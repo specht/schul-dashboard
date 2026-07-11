@@ -2346,9 +2346,9 @@ class Main < Sinatra::Base
                     nav_items << :pk5
                 end
                 if schueler_logged_in?
-                    # if email_is_eligible_for_lab8?(@@user_info, @session_user[:email])
-                    #     nav_items << :lab8
-                    # end
+                    if email_is_eligible_for_lab8?(@@user_info, @session_user[:email])
+                        nav_items << :lab8
+                    end
                     if email_is_eligible_for_lab9?(@@user_info, @session_user[:email])
                         nav_items << :lab9
                     end
@@ -3499,8 +3499,8 @@ class Main < Sinatra::Base
 
     get '/*' do
         # first things first
-        response.headers['X-Tage-Bis-Zu-Den-Sommerferien'] = "#{(Date.parse('2025-07-24') - Date.today).to_i}"
-        response.headers['X-Tage-Bis-Weihnachten'] = "#{(Date.parse('2025-12-24') - Date.today).to_i}"
+        response.headers['X-Tage-Bis-Zu-Den-Sommerferien'] = "#{(Date.parse('2026-07-09') - Date.today).to_i}"
+        response.headers['X-Tage-Bis-Weihnachten'] = "#{(Date.parse('2026-12-24') - Date.today).to_i}"
 
         path = request.env['REQUEST_PATH']
         assert(path[0] == '/')

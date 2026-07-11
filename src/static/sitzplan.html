@@ -157,6 +157,7 @@ p {
 
 var sus = [];
 var sus_names = {};
+var bff_sus = {};
 
 Array.prototype.sample = function () {
     return this[Math.floor((Math.random() * this.length))];
@@ -175,6 +176,11 @@ var seats = [];
 var place_for_sus = [];
 
 #{File.read('/data/sitzplan/rules.js')}
+
+var bff = [];
+var count = 0;
+
+#{File.read('/data/sitzplan/bff.js')}
 
 function place_sus(silent) {
     // return;
@@ -213,6 +219,7 @@ function seat_suitable_for_kid(seat_index, kid_index) {
 }
 
 function shuffle_plan() {
+    count += 1;
     place_for_sus = [];
     let available_places = {};
     let available_sus = {};
@@ -246,6 +253,48 @@ function shuffle_plan() {
             }
         }
         console.log(rule[0], place_for_sus[sus_index]);
+    }
+    if (Object.keys(bff_sus).length > 0) {
+        for (let key in bff_sus) {
+            let sus_index1 = parseInt(key);
+            let sus_index2 = bff_sus[key][0];
+            let freq = bff_sus[key][1];
+            if (count % freq !== 0) continue;
+            // check if any of the two already has a place: place the other one next to them
+            // otherwise, find two places next to each other and place them there
+            if (sus_index1 in available_sus && sus_index2 in available_sus) {
+                let placed = false;
+                for (let i = 0; i < 1000; i++) {
+                    let key1 = Object.keys(available_places).sample();
+                    if (key1 in available_places) {
+                        let seat_index1 = available_places[key1];
+                        let seat1 = seats[seat_index1];
+                        let neighbors = [
+                            `${seat1[0] + 1}/${seat1[1]}`,
+                            `${seat1[0] - 1}/${seat1[1]}`,
+                        ];
+                        neighbors = neighbors.filter(x => x in available_places);
+                        if (neighbors.length > 0) {
+                            let key2 = neighbors.sample();
+                            let seat_index2 = available_places[key2];
+                            if (seat_suitable_for_kid(seat_index1, sus_index1) && seat_suitable_for_kid(seat_index2, sus_index2)) {
+                                place_for_sus[sus_index1] = seat_index1;
+                                place_for_sus[sus_index2] = seat_index2;
+                                delete available_places[key1];
+                                delete available_places[key2];
+                                delete available_sus[sus_index1];
+                                delete available_sus[sus_index2];
+                                placed = true;
+                                break;
+                            }
+                        }
+                    }
+                }
+                if (!placed) {
+                    console.log(`Couldn't place BFFs ${sus[sus_index1].first_name} and ${sus[sus_index2].first_name} together!`);
+                }
+            }
+        }
     }
     let n = 0;
     while (Object.keys(available_sus).length > 0) {
@@ -322,8 +371,10 @@ document.addEventListener('DOMContentLoaded', function() {
     // /api/directory_json/
     jQuery.get(`/api/directory_json/${klasse}`, {}, function(data) {
         sus = data;
+        let index_for_sus = {}
         for (let entry of sus) {
             sus_names[entry.nc_login] = true;
+            index_for_sus[entry.nc_login] = sus.indexOf(entry);
         }
         if (sus == null || sus.length === 0)
             window.location.href = '/';
@@ -346,6 +397,10 @@ document.addEventListener('DOMContentLoaded', function() {
             place.append(label);
             $('#seats').append(place);
             place_for_sus.push(i);
+        }
+        for (let pair of bff) {
+            if (index_for_sus[pair[0]] == null || index_for_sus[pair[1]] == null) continue;
+            bff_sus[index_for_sus[pair[0]]] = [index_for_sus[pair[1]], pair[2]];
         }
         window.addEventListener('resize', function(e) {
             fix_scale();

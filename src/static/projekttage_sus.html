@@ -6,10 +6,10 @@
         <div class='col-md-12'>
             <h2 style='margin-bottom: 30px;'>Projekttage #{Date.today.year}</h2>
             <div class="alert mono-alert" style="#{schueler_logged_in? && (@session_user[:klassenstufe] || 7) >= 5 && (@session_user[:klassenstufe] || 7) <= 9 && projekttage_phase() < 3 ? '' : 'display: none;'}">
-                Zum Ende des Schuljahres, vom <b>17. bis 21. Juli</b>, finden wieder die Projekttage statt.
+                Zum Ende des Schuljahres, vom <b>2. bis 6. Juli</b>, finden wieder die Projekttage statt.
                 Hier siehst du, welche Projekte angeboten werden.
-                Am <b>Mittwoch, den 28. Mai</b> gibt es eine Vorstellung der Projekte in der 6. Stunde. Du kannst dir dann drei
-                Projektvorstellungen anschauen und anschließend hier deine Lieblingsprojekte wählen.
+                Am <b>Mittwoch, den 13. Mai</b> gibt es eine Vorstellung der Projekte in der 6. Stunde. Du kannst dir dann drei
+                Projektvorstellungen anschauen und anschließend hier deine Lieblingsprojekte wählen (ab 16:00 Uhr).
             </div>
             <div class="alert mono-alert" style="#{(user_eligible_for_projektwahl?) ? '' : 'display: none;'}">
                 <h3>Wähle deine Lieblingsprojekte!</h3>
@@ -17,7 +17,7 @@
                     Wähle mindestens drei Projekte, die dich interessieren.
                     Falls du weniger als drei Projekte wählst, werden wir weitere zufällige Projekte für dich wählen, damit es insgesamt mindestens drei Projekte sind, mit denen jeder in die Auslosung geht.
                     Du kannst dich natürlich auch für mehr als drei Projekte anmelden.
-                    Du kannst deine Wahl bis <strong>#{WEEKDAYS_LONG[(Date.parse(PROJEKTWAHL_VOTE_END).strftime('%u').to_i) % 7]}, den #{Date.parse(PROJEKTWAHL_VOTE_END).strftime('%d.%m.%Y')} um #{DateTime.parse(PROJEKTWAHL_VOTE_END).strftime('%H:%M')} </strong> noch ändern.
+                    Du kannst deine Wahl bis <strong>#{WEEKDAYS_LONG[(Date.parse(PROJEKTWAHL_VOTE_END).strftime('%u').to_i) % 7]}, den #{Date.parse(PROJEKTWAHL_VOTE_END).strftime('%d.%m.%Y')} um #{DateTime.parse(PROJEKTWAHL_VOTE_END).strftime('%H:%M')} Uhr</strong> noch ändern.
                 </p>
                 <div id="div_ts_details" style="display: none;">
                     <p>
@@ -259,6 +259,10 @@ document.addEventListener('DOMContentLoaded', function() {
                 $('#div_ts_details').show();
             }
             for (let projekt of data.projekte) {
+                console.log(projekt.nr, projekt);
+            }
+            for (let projekt of data.projekte) {
+                console.log(projekt.nr, projekt);
                 if (projekt.nr[0] === '_') continue;
                 projekte[projekt.nr] = projekt;
                 if (projekt.klassenstufe_min === null)
@@ -341,9 +345,11 @@ document.addEventListener('DOMContentLoaded', function() {
                 update_vote_summary('#text_vote_summary');
             }
             if ('#{user_was_eligible_for_projektwahl?}' === 'true') {
+                console.log('yay');
                 let direct_swap_candidates = [];
                 for (let div of document.querySelectorAll('.direct-project-swap-candidate')) {
                     let nr = div.dataset.nr;
+                    console.log(nr, projekte[nr]);
                     if (projekte[nr].klassenstufe_min > this_klasse || projekte[nr].klassenstufe_max < this_klasse) continue;
                     if (nr === data.assigned_projekt) continue;
                     direct_swap_candidates.push(nr);

@@ -8,6 +8,8 @@ require 'nextcloud'
 require 'cgi'
 require 'yaml'
 require 'zip'
+require 'uri'
+require 'net/http'
 
 DEBUG_ARCHIVE_PATH = '/data/debug_archives/2023-07-23.zip'
 SHARE_ARCHIVED_FILES = ARGV.include?('--share-archived')
@@ -26,6 +28,7 @@ SHARE_SHARE = 16
 HTTP_READ_TIMEOUT = 60 * 10
 
 # This is a really ugly way to monkey patch an increased HTTP read timeout into the dachinat/nextcloud gem.
+# We still use the gem for OCS share handling, but not for the fragile WebDAV MKCOL/MOVE calls.
 
 module Nextcloud
     class Api
@@ -53,9 +56,6 @@ module Nextcloud
                 http.request(req)
             end
 
-            # if ![201, 204, 207].include? response.code
-            #   raise Errors::Error.new("Nextcloud received invalid status code")
-            # end
             raw ? response.body : Nokogiri::XML.parse(response.body)
         end
     end
@@ -66,12 +66,369 @@ class Script
         @ocs = Nextcloud.ocs(url: NEXTCLOUD_URL_FROM_RUBY_CONTAINER,
                              username: NEXTCLOUD_USER,
                              password: NEXTCLOUD_PASSWORD)
+
+        @verbose = false
+        @debug_shares = false
+        @errors = []
+        @stats = Hash.new(0)
+    end
+
+    def log(message = '')
+        return unless @verbose || @debug_shares
+
+        STDERR.puts message
+    end
+
+    def debug_log(message = '')
+        return unless @debug_shares
+
+        STDERR.puts message
+    end
+
+    def error(message, details = nil)
+        @errors << message
+
+        STDERR.puts "ERROR: #{message}"
+
+        return if details.nil?
+
+        if details.is_a?(String)
+            STDERR.puts details
+        else
+            STDERR.puts details.to_yaml
+        end
+    end
+
+    def warn(message)
+        STDERR.puts "WARNING: #{message}"
+    end
+
+    def count(key, amount = 1)
+        @stats[key] += amount
+    end
+
+    def set_count(key, value)
+        @stats[key] = value
+    end
+
+    def selected_user?(wanted_nc_ids, user_id)
+        wanted_nc_ids.nil? || wanted_nc_ids.include?(user_id)
+    end
+
+    def print_summary(failed_share_ids)
+        STDERR.puts
+        STDERR.puts "Summary:"
+        STDERR.puts "  Mode: #{SRSLY ? 'changed Nextcloud' : 'dry run, no changes'}"
+
+        STDERR.puts
+        STDERR.puts "  Scope:"
+        STDERR.puts "    wanted users:              #{@stats[:wanted_users]}"
+        STDERR.puts "    wanted shares:             #{@stats[:wanted_shares]}"
+        STDERR.puts "    users processed:           #{@stats[:users_processed]}"
+
+        STDERR.puts
+        STDERR.puts "  Shares:"
+        STDERR.puts "    already correct:           #{@stats[:shares_already_correct]}"
+        STDERR.puts "    newly shared:              #{@stats[:shares_created]}"
+        STDERR.puts "    recreated from stale info: #{@stats[:shares_recreated_from_stale_cache]}"
+        STDERR.puts "    permissions updated:       #{@stats[:permissions_updated]}"
+        STDERR.puts "    moved:                     #{@stats[:shares_moved]}"
+        STDERR.puts "    stale shares removed:      #{@stats[:shares_removed]}"
+        STDERR.puts "    duplicate targets skipped: #{@stats[:duplicate_target_sources_skipped]}"
+
+        unless SRSLY
+            STDERR.puts "    would ensure shares:       #{@stats[:shares_would_ensure]}"
+            STDERR.puts "    would remove shares:       #{@stats[:shares_would_remove]}"
+        end
+
+        STDERR.puts
+        STDERR.puts "  Target folders:"
+        STDERR.puts "    already wanted/in place:   #{@stats[:target_folders_already_wanted]}"
+        STDERR.puts "    deleted:                   #{@stats[:target_folders_deleted]}"
+        STDERR.puts "    kept because non-empty:    #{@stats[:target_folders_kept_nonempty]}"
+        STDERR.puts "    inspect/delete errors:     #{@stats[:target_folder_cleanup_errors]}"
+
+        unless SRSLY
+            STDERR.puts "    would delete:              #{@stats[:target_folders_would_delete]}"
+        end
+
+        STDERR.puts
+        STDERR.puts "  Parent folders for moved shares:"
+        STDERR.puts "    created:                   #{@stats[:parent_dirs_created]}"
+        STDERR.puts "    already present:           #{@stats[:parent_dirs_already_present]}"
+        STDERR.puts "    checks ok:                 #{@stats[:parent_checks_ok]}"
+
+        STDERR.puts
+        STDERR.puts "  Problems:"
+        STDERR.puts "    errors:                    #{@errors.size}"
+        STDERR.puts "    failed share ids:          #{failed_share_ids.size}"
+
+        STDERR.puts
+    end
+
+    def take_option!(argv, name)
+        index = argv.index(name)
+        return nil if index.nil?
+
+        argv.delete_at(index)
+        value = argv.delete_at(index)
+
+        if value.nil? || value.start_with?('--')
+            raise "Missing value for #{name}"
+        end
+
+        value
+    end
+
+    def normalize_nc_path(path)
+        CGI.unescape(path.to_s).unicode_normalize(:nfc)
+    end
+
+    def same_nc_path?(a, b)
+        normalize_nc_path(a) == normalize_nc_path(b)
+    end
+
+    def dav_escape_segment(segment)
+        CGI.escape(CGI.unescape(segment.to_s).unicode_normalize(:nfc)).gsub('+', '%20')
+    end
+
+    def dav_escape_path(path)
+        decoded = normalize_nc_path(path)
+        decoded = "/#{decoded}" unless decoded.start_with?('/')
+
+        decoded.split('/').map { |part| dav_escape_segment(part) }.join('/')
+    end
+
+    def dav_uri_for(user_id, path)
+        base = URI(NEXTCLOUD_URL_FROM_RUBY_CONTAINER)
+        base_path = base.path.to_s.sub(/\/+\z/, '')
+
+        uri = base.dup
+        uri.query = nil
+        uri.fragment = nil
+        uri.path = "#{base_path}/remote.php/dav/files/#{dav_escape_segment(user_id)}#{dav_escape_path(path)}"
+
+        uri
+    end
+
+    def raw_webdav_request(user_id, method, path, destination_path: nil, depth: nil)
+        uri = dav_uri_for(user_id, path)
+
+        response = Net::HTTP.start(uri.host, uri.port, use_ssl: uri.scheme == 'https') do |http|
+            http.read_timeout = HTTP_READ_TIMEOUT
+
+            req = Net::HTTPGenericRequest.new(method.to_s.upcase, false, true, uri.request_uri)
+            req.basic_auth user_id, NEXTCLOUD_ALL_ACCESS_PASSWORD_BE_CAREFUL
+            req['Depth'] = depth.to_s unless depth.nil?
+
+            if destination_path
+                destination_uri = dav_uri_for(user_id, destination_path)
+                req['Destination'] = destination_uri.to_s
+
+                # Do not silently overwrite an existing target. If the destination
+                # exists, we want the real WebDAV status code.
+                req['Overwrite'] = 'F'
+            end
+
+            http.request(req)
+        end
+
+        {
+            :ok => response.code.to_i.between?(200, 299),
+            :code => response.code.to_i,
+            :message => response.message,
+            :body => response.body.to_s,
+            :source_uri => uri.to_s,
+            :destination_uri => destination_path ? dav_uri_for(user_id, destination_path).to_s : nil
+        }
+    end
+
+    def raw_mkcol(user_id, path)
+        result = raw_webdav_request(user_id, 'MKCOL', path)
+
+        # 201 = created
+        # 405 = already exists / method not allowed on existing collection
+        result[:ok] = [201, 405].include?(result[:code])
+
+        result
+    end
+
+    def raw_propfind(user_id, path, depth: 0)
+        result = raw_webdav_request(user_id, 'PROPFIND', path, depth: depth)
+
+        # 207 = Multi-Status
+        result[:ok] = result[:code] == 207
+
+        result
+    end
+
+    def raw_move(user_id, source_path, target_path)
+        result = raw_webdav_request(user_id, 'MOVE', source_path, destination_path: target_path)
+
+        # 201 = created at destination
+        # 204 = moved successfully, no response body
+        result[:ok] = [201, 204].include?(result[:code])
+
+        result
+    end
+
+    def create_parent_directories_raw!(user_id, target_path, created_sub_paths)
+        ok = true
+        dir_parts = File.dirname(target_path).split('/')
+
+        dir_parts.each.with_index do |_p, index|
+            sub_path = dir_parts[0, index + 1].join('/')
+            next if sub_path.empty?
+
+            normalized = normalize_nc_path(sub_path)
+            next if created_sub_paths.include?(normalized)
+
+            log "RAW MKCOL/check [#{user_id}]#{sub_path}..."
+            result = raw_mkcol(user_id, sub_path)
+
+            debug_log "RAW MKCOL RESULT:"
+            debug_log result.to_yaml
+
+            if result[:code] == 201
+                count(:parent_dirs_created)
+            elsif result[:code] == 405
+                count(:parent_dirs_already_present)
+            end
+
+            unless result[:ok]
+                error "RAW MKCOL failed for [#{user_id}]#{sub_path}", result
+                ok = false
+            end
+
+            created_sub_paths << normalized
+        end
+
+        ok
+    end
+
+    def verify_parent_directory_raw!(user_id, target_path)
+        parent_path = File.dirname(target_path)
+        result = raw_propfind(user_id, parent_path, depth: 0)
+
+        debug_log "RAW PARENT CHECK:"
+        debug_log result.to_yaml
+
+        unless result[:ok]
+            error "Parent directory does not exist or is not accessible: [#{user_id}]#{parent_path}", result
+            return false
+        end
+
+        count(:parent_checks_ok)
+        true
+    end
+
+    def verify_share_target_after_move(path, user_id, share_id, wanted_target)
+        shares_after_move = user_shares_for_path(path, user_id)
+        share_after_move = shares_after_move.find { |x| x['id'].to_s == share_id.to_s }
+
+        if @debug_shares
+            STDERR.puts "AFTER MOVE CHECK:"
+            if share_after_move
+                STDERR.puts "  share id:       #{share_after_move['id']}"
+                STDERR.puts "  file_target:    #{share_after_move['file_target'].inspect}"
+                STDERR.puts "  decoded target: #{normalize_nc_path(share_after_move['file_target']).inspect}"
+                STDERR.puts "  wanted target:  #{normalize_nc_path(wanted_target).inspect}"
+            else
+                STDERR.puts "  Could not find share after move."
+            end
+        end
+
+        unless share_after_move
+            error "Could not verify share after MOVE: share disappeared from OCS result. User: #{user_id}, source: #{path}, share id: #{share_id}"
+            return false
+        end
+
+        unless same_nc_path?(share_after_move['file_target'], wanted_target)
+            error "MOVE returned success, but file_target did not change as expected. User: #{user_id}, source: #{path}, share id: #{share_id}", {
+                :current_file_target => share_after_move['file_target'],
+                :current_decoded => normalize_nc_path(share_after_move['file_target']),
+                :wanted_target => wanted_target,
+                :wanted_decoded => normalize_nc_path(wanted_target)
+            }
+            return false
+        end
+
+        true
+    end
+
+    def create_user_share(ocs, path, user_id, permissions)
+        # Use the OCS endpoint directly so we can explicitly suppress share mails.
+        # shareType 0 = internal user share.
+        ocs.request(:post, '/ocs/v2.php/apps/files_sharing/api/v1/shares', {
+            'path' => path,
+            'shareType' => 0,
+            'shareWith' => user_id,
+            'permissions' => permissions,
+            'sendMail' => 'false'
+        })
+    end
+
+    def user_shares_for_path(path, user_id)
+        (@ocs.file_sharing.specific(path.gsub(' ', '%20')) || []).select do |share|
+            share['share_type'].to_i == 0 && share['share_with'] == user_id
+        end
+    end
+
+    def cache_has_share_types?(present_shares)
+        present_shares.each_value do |shares_for_user|
+            shares_for_user.each_value do |info|
+                return false unless info.key?(:share_type)
+            end
+        end
+        true
+    end
+
+    def collect_present_shares
+        present_shares = {}
+
+        (@ocs.file_sharing.all || []).each do |share|
+            next if share['share_with'].nil?
+            next unless share['share_type'].to_i == 0
+            next unless share['path'].index("/#{SHARE_SOURCE_FOLDER}/") == 0
+
+            present_shares[share['share_with']] ||= {}
+            present_shares[share['share_with']][share['path']] = {
+                :permissions => share['permissions'].to_i,
+                :target_path => share['file_target'],
+                :share_with => share['share_with_displayname'],
+                :id => share['id'],
+                :share_type => share['share_type'].to_i
+            }
+        end
+
+        present_shares
+    end
+
+    def resolve_only_user!(only_user)
+        return nil if only_user.nil?
+
+        if @@user_info[only_user]
+            return @@user_info[only_user][:nc_login]
+        end
+
+        if @@user_info.values.any? { |u| u[:nc_login] == only_user }
+            return only_user
+        end
+
+        raise "Could not resolve --only-user #{only_user.inspect} as email or Nextcloud login"
     end
 
     def run
         argv = ARGV.dup
+
         argv.delete('--share-archived')
         argv.delete('--srsly')
+
+        use_cached = !argv.delete('--use-cached').nil?
+        @debug_shares = !argv.delete('--debug-shares').nil?
+        @verbose = !argv.delete('--verbose').nil? || @debug_shares
+
+        only_user = take_option!(argv, '--only-user')
 
         @@debug_archive = {}
         if SHARE_ARCHIVED_FILES
@@ -115,7 +472,7 @@ class Script
         end
 
         unless SRSLY
-            STDERR.puts "Attention: Doing nothing unless you specify --srsly!"
+            warn "Doing nothing unless you specify --srsly."
         end
 
         schueler_with_dashboard_amt = Set.new()
@@ -126,9 +483,10 @@ class Script
             schueler_with_dashboard_amt << email
         end
 
-
 #         @ocs.file_sharing.all.each do |share|
-#             STDERR.puts sprintf('[%5s] %s => [%s]%s', share['id'], share['path'], share['share_with'], share['file_target'])
+#             STDERR.puts sprintf('[%5s] type=%s %s => [%s]%s',
+#                                 share['id'], share['share_type'], share['path'],
+#                                 share['share_with'], share['file_target'])
 #             STDERR.puts share.to_yaml
 #             @ocs.file_sharing.destroy(share['id'])
 #         end
@@ -148,6 +506,7 @@ class Script
         latest_lesson_keys = Set.new(@@lessons[:timetables][@@lessons[:timetables].keys.sort.last].keys)
         all_lesson_keys = Set.new()
         all_shorthands_for_lesson = {}
+
         @@lessons[:timetables].keys.sort.each do |date|
             all_lesson_keys |= Set.new(@@lessons[:timetables][date].keys)
             @@lessons[:timetables][date].each_pair do |lesson_key, lesson_info|
@@ -161,31 +520,36 @@ class Script
                 end
             end
         end
-        # STDERR.puts "all lesson keys: #{all_lesson_keys.size}"
-        # STDERR.puts "latest lesson keys: #{latest_lesson_keys.size}"
-        # STDERR.puts "Diff: #{(all_lesson_keys - latest_lesson_keys).to_a.sort.join(' ')}"
+
         all_lesson_keys.each do |lesson_key|
             lesson_info = @@lessons[:lesson_keys][lesson_key]
+
             # only handle lessons which have actual Klassen
             next if (Set.new(lesson_info[:klassen]) & Set.new(@@klassen_order)).empty?
+
             unless ALSO_SHARE_OS_FOLDERS
                 next unless (Set.new(lesson_info[:klassen]) & Set.new(['11', '12'])).empty?
             end
+
             next if lesson_key[0, 8] == 'Testung_'
 
             folder_name = "#{lesson_key}"
             fach = lesson_info[:fach]
             fach = @@faecher[fach] || fach
             next if fach.empty?
+
             pretty_folder_name = lesson_info[:pretty_folder_name]
             teachers = Set.new(lesson_info[:lehrer])
             teachers |= all_shorthands_for_lesson[lesson_key] || Set.new()
+
             teachers.each do |shorthand|
                 email = @@shorthands[shorthand]
                 next if email.nil?
+
                 user = @@user_info[email]
                 user_id = user[:nc_login]
                 email_for_user_id[user_id] = email
+
                 wanted_shares[user_id] ||= {}
                 wanted_shares[user_id]["/#{SHARE_SOURCE_FOLDER}/#{folder_name}"] = {
                     :permissions => SHARE_READ | SHARE_UPDATE | SHARE_CREATE | SHARE_DELETE,
@@ -193,53 +557,66 @@ class Script
                     :share_with => user[:display_name].unicode_normalize(:nfc)
                 }
             end
+
             (@@schueler_for_lesson[lesson_key] || []).each do |email|
                 user = @@user_info[email]
                 name = user[:display_name].unicode_normalize(:nfc)
                 user_id = user[:nc_login]
                 email_for_user_id[user_id] = email
+
                 wanted_shares[user_id] ||= {}
                 pretty_folder_name = "#{fach.gsub('/', '-')}"
+
                 if pretty_folder_name.empty?
                     raise "nope: #{lesson_key}"
                 end
+
                 if @@materialamt_for_lesson[lesson_key]
                     permissions = SHARE_READ
                     if @@materialamt_for_lesson[lesson_key].include?(email)
                         permissions = SHARE_READ | SHARE_UPDATE | SHARE_CREATE | SHARE_DELETE
                     end
+
                     wanted_shares[user_id]["/#{SHARE_SOURCE_FOLDER}/#{folder_name}/Ausgabeordner-Materialamt"] = {
                         :permissions => permissions,
                         :target_path => "/#{SHARE_TARGET_FOLDER}/#{pretty_folder_name.gsub(' ', '%20')}/Ausgabeordner%20(Dashboard-Amt)",
                         :share_with => user[:display_name].unicode_normalize(:nfc)
                     }
                 end
+
                 wanted_shares[user_id]["/#{SHARE_SOURCE_FOLDER}/#{folder_name}/Ausgabeordner"] = {
                     :permissions => SHARE_READ,
                     :target_path => "/#{SHARE_TARGET_FOLDER}/#{pretty_folder_name.gsub(' ', '%20')}/Ausgabeordner",
                     :share_with => user[:display_name].unicode_normalize(:nfc)
                 }
+
                 wanted_shares[user_id]["/#{SHARE_SOURCE_FOLDER}/#{folder_name}/SuS/#{name}/Einsammelordner"] = {
                     :permissions => SHARE_READ | SHARE_UPDATE | SHARE_CREATE | SHARE_DELETE,
                     :target_path => "/#{SHARE_TARGET_FOLDER}/#{pretty_folder_name.gsub(' ', '%20')}/Einsammelordner",
                     :share_with => user[:display_name].unicode_normalize(:nfc)
                 }
+
                 wanted_shares[user_id]["/#{SHARE_SOURCE_FOLDER}/#{folder_name}/SuS/#{name}/Rückgabeordner"] = {
                     :permissions => SHARE_READ | SHARE_UPDATE | SHARE_CREATE | SHARE_DELETE,
                     :target_path => "/#{SHARE_TARGET_FOLDER}/#{pretty_folder_name.gsub(' ', '%20')}/Rückgabeordner",
                     :share_with => user[:display_name].unicode_normalize(:nfc)
                 }
             end
+
             next
         end
+
         @@klassen_order.each do |klasse|
             next if klasse.to_i > 10
+
             (@@teachers_for_klasse[klasse] || {}).keys.each do |shorthand|
                 email = @@shorthands[shorthand]
                 next if email.nil?
+
                 user = @@user_info[email]
                 user_id = user[:nc_login]
                 email_for_user_id[user_id] = email
+
                 wanted_shares[user_id] ||= {}
                 wanted_shares[user_id]["/#{SHARE_SOURCE_FOLDER}/Protokolle/#{klasse.gsub('/', '-')}"] = {
                     :permissions => SHARE_READ | SHARE_UPDATE | SHARE_CREATE | SHARE_DELETE,
@@ -247,10 +624,12 @@ class Script
                     :share_with => user[:display_name].unicode_normalize(:nfc)
                 }
             end
+
             (@@schueler_for_klasse[klasse] || []).each do |email|
                 user = @@user_info[email]
                 user_id = user[:nc_login]
                 email_for_user_id[user_id] = email
+
                 wanted_shares[user_id] ||= {}
                 wanted_shares[user_id]["/#{SHARE_SOURCE_FOLDER}/Protokolle/#{klasse.gsub('/', '-')}"] = {
                     :permissions => schueler_with_dashboard_amt.include?(email) ? SHARE_READ | SHARE_UPDATE | SHARE_CREATE | SHARE_DELETE : SHARE_READ,
@@ -259,198 +638,314 @@ class Script
                 }
             end
         end
+
         wanted_shares.keys.each do |user_id|
             src_for_target_path = {}
+
             wanted_shares[user_id].each_pair do |src, info|
                 src_for_target_path[info[:target_path]] ||= Set.new()
                 src_for_target_path[info[:target_path]] << src
             end
-            src_for_target_path.each_pair do |target_path, sources|
+
+            src_for_target_path.each_pair do |_target_path, sources|
                 if sources.size > 1
                     sources_sorted = sources.to_a.sort
                     sources_sorted[1, sources_sorted.size - 1].each do |src|
-                        STDERR.puts "SKIPPING #{src}"
+                        log "SKIPPING #{src}"
+                        count(:duplicate_target_sources_skipped)
                         wanted_shares[user_id].delete(src)
                     end
                 end
             end
+
             target_paths = wanted_shares[user_id].values.map { |x| x[:target_path] }
             if target_paths.sort.uniq.size != wanted_shares[user_id].size
                 raise "Ouch! We didn't catch something in the code above."
             end
         end
+
         wanted_nc_ids = nil
-        unless argv.empty?
+        resolved_only_user = resolve_only_user!(only_user)
+
+        if resolved_only_user
+            wanted_nc_ids = Set.new([resolved_only_user])
+            log "Filtering to one user: #{resolved_only_user}"
+        elsif !argv.empty?
             wanted_nc_ids = Set.new(argv.map { |email| (@@user_info[email] || {})[:nc_login] }.reject { |x| x.nil? })
-            STDERR.puts "Filtering to #{wanted_nc_ids.size} users: #{wanted_nc_ids.to_a.sort.to_yaml}"
+            log "Filtering to #{wanted_nc_ids.size} users: #{wanted_nc_ids.to_a.sort.to_yaml}"
         end
-        STDERR.puts "Got wanted shares for #{wanted_shares.size} users."
-        # File.open('/internal/debug/wanted-shares.yaml', 'w') do |f|
-        #     f.write wanted_shares.to_yaml
-        # end
+
+        selected_wanted_users = wanted_shares.keys.select { |user_id| selected_user?(wanted_nc_ids, user_id) }
+        set_count(:wanted_users, selected_wanted_users.size)
+        set_count(:wanted_shares, selected_wanted_users.map { |user_id| wanted_shares[user_id].size }.sum)
+
+        log "Got wanted shares for #{wanted_shares.size} users."
+
         present_shares = {}
-        if ARGV.include?('--use-cached')
-            STDERR.puts "Loading present shares from cache..."
+
+        if use_cached && File.exist?('/internal/debug/present-shares-cache.yaml')
+            log "Loading present shares from cache..."
             present_shares = YAML.load(File.read('/internal/debug/present-shares-cache.yaml'))
+
+            unless cache_has_share_types?(present_shares)
+                log "Ignoring old present-shares cache because it does not contain :share_type."
+                log "Rebuilding present shares from Nextcloud..."
+                present_shares = collect_present_shares
+            end
         else
-            STDERR.puts "Collecting present shares... (hint: specify --use-cached to re-use data in /internal/debug/present-shares-cache.yaml)"
-            (@ocs.file_sharing.all || []).each do |share|
-                next if share['share_with'].nil?
-                present_shares[share['share_with']] ||= {}
-                next unless share['path'].index("/#{SHARE_SOURCE_FOLDER}/") == 0
-                present_shares[share['share_with']][share['path']] = {
-                    :permissions => share['permissions'].to_i,
-                    :target_path => share['file_target'],
-                    :share_with => share['share_with_displayname'],
-                    :id => share['id']
-                }
-            end
-            File.open('/internal/debug/present-shares-cache.yaml', 'w') do |f|
-                f.write present_shares.to_yaml
-            end
+            log "Collecting present shares... (hint: specify --use-cached to re-use data in /internal/debug/present-shares-cache.yaml)"
+            present_shares = collect_present_shares
         end
-        STDERR.puts "Got present shares for #{present_shares.size} users."
+
+        File.open('/internal/debug/present-shares-cache.yaml', 'w') do |f|
+            f.write present_shares.to_yaml
+        end
+
+        log "Got present shares for #{present_shares.size} users."
+
         File.open('/internal/debug/present-shares.yaml', 'w') do |f|
             f.write present_shares.to_yaml
         end
+
         File.open('/internal/debug/wanted-shares.yaml', 'w') do |f|
             f.write wanted_shares.to_yaml
         end
+
         failed_share_ids = Set.new()
+
         wanted_shares.keys.sort.each do |user_id|
             unless wanted_nc_ids.nil?
                 next unless wanted_nc_ids.include?(user_id)
-                STDERR.puts "Wanted shares for #{user_id}:"
-                STDERR.puts wanted_shares[user_id].to_yaml
+                log "Wanted shares for #{user_id}:"
+                log wanted_shares[user_id].to_yaml
             end
+
+            count(:users_processed)
+
             ocs_user = Nextcloud.ocs(url: NEXTCLOUD_URL_FROM_RUBY_CONTAINER,
                                      username: user_id,
                                      password: NEXTCLOUD_ALL_ACCESS_PASSWORD_BE_CAREFUL)
+
             wanted_dirs = Set.new()
             wanted_shares[user_id].values.map { |x| x[:target_path] + '/' }.each do |path|
                 parts = path.split('/')
-                parts.each.with_index do |part, _|
-                    sub_path = parts[0, _ + 1].join('/') + '/'
-                    wanted_dirs << sub_path.gsub('%20', ' ') unless sub_path == '/' || sub_path == "/#{SHARE_TARGET_FOLDER}/"
+                parts.each.with_index do |_part, index|
+                    sub_path = parts[0, index + 1].join('/') + '/'
+                    wanted_dirs << normalize_nc_path(sub_path) unless sub_path == '/'
                 end
             end
-#             STDERR.puts wanted_dirs.to_a.sort.to_yaml
+
             result = []
             begin
                 result = ocs_user.webdav.directory.find("/#{SHARE_TARGET_FOLDER}").contents
             rescue NoMethodError => e
+                debug_log "Could not list /#{SHARE_TARGET_FOLDER} for #{user_id}: #{e.class}: #{e.message}"
+            rescue StandardError => e
+                debug_log "Could not list /#{SHARE_TARGET_FOLDER} for #{user_id}: #{e.class}: #{e.message}"
             end
+
             (result || []).each do |dir|
-                unless dir.href.index("/remote.php/dav/files/#{user_id}") ==  0
-                    STDERR.puts "Got unexpected dir: [#{user_id}]#{dir['href']}"
-                    exit(1)
-                end
-                next unless dir.resourcetype == 'collection'
-                path = dir.href.sub("/remote.php/dav/files/#{user_id}", '')
-                path = CGI.unescape(path)
-#                 STDERR.print "#{path} => "
-                if wanted_dirs.include?(path)
-#                     STDERR.puts "ok."
-                else
-                    dir2 = ocs_user.webdav.directory.find(path.gsub(' ', '%20'))
-                    contents_count = (dir2.contents || []).size
-                    just_unterricht_shares = true
-                    (dir2.contents || []).each do |x|
-                        href = x.href
-                        unless ['/Ausgabeordner/', '/Einsammelordner/', '/R%c3%bcckgabeordner/',
-                                '/Ausgabeordner%20(Dashboard-Amt)/',
-                                '/Auto-Einsammelordner%20(von%20SuS%20an%20mich)/',
-                                'Auto-R%c3%bcckgabeordner%20(von%20mir%20an%20SuS)/',
-                                '/SuS/'].any? { |y| href[href.size - y.size, y.size] == y }
-                            just_unterricht_shares = false
-                        end
-                    end
-                    if contents_count == 0 || just_unterricht_shares
-                        STDERR.puts "DELETING [#{user_id}]#{path}"
-                        if SRSLY
-                            ocs_user.webdav.directory.destroy(path.gsub(' ', '%20'))
-                        end
-                    else
-                        STDERR.puts "KEEPING [#{user_id}]#{path} because it has #{contents_count} files."
-                        # STDERR.puts (dir2.contents || []).to_yaml
-                    end
-                end
-            end
-            created_sub_paths = Set.new()
-            wanted_shares[user_id].each_pair do |path, info|
-                next if ((((present_shares[user_id] || {})[path]) || {})[:target_path] || '').gsub(' ', '%20') == info[:target_path] &&
-                    (((present_shares[user_id] || {})[path]) || {})[:permissions] == info[:permissions]
-                unless SRSLY
-                    STDERR.puts "Would share (if SRSLY): #{path} => #{user_id}"
+                unless dir.href.index("/remote.php/dav/files/#{user_id}") == 0
+                    error "Got unexpected dir while cleaning target folders for #{user_id}", {
+                        :user_id => user_id,
+                        :href => dir.href
+                    }
                     next
                 end
-                begin
-                    unless (present_shares[user_id] || {})[path] && ((((present_shares[user_id] || {})[path]) || {})[:target_path].gsub(' ', '%20') == info[:target_path].gsub(' ', '%20'))
-                        unless ((((present_shares[user_id] || {})[path]) || {})[:target_path] || '').gsub(' ', '%20') == info[:target_path].gsub(' ', '%20')
-                            STDERR.puts "Removing share #{path} for #{user_id}..."
-                            @ocs.file_sharing.destroy((((present_shares[user_id] || {})[path]) || {})[:id])
-                        end
-                        STDERR.puts "Sharing #{path} to [#{user_id}]..."
-                        _temp = @ocs.file_sharing.create(path, 0, user_id, nil, nil, info[:permissions])
-                    end
-                    shares = (@ocs.file_sharing.specific(path.gsub(' ', '%20')) || []).select { |x| x['share_with'] == user_id }
-                    if shares.size != 1
-                        STDERR.puts "Could not find share of #{path} to [#{user_id}]..."
-                        raise 'oops'
-                    end
-                    share = shares.first
-                    if share['permissions'].to_i != info[:permissions]
-                        STDERR.puts "Updating permissions [#{user_id}]#{share['file_target']}..."
-                        @ocs.file_sharing.update_permissions(share['id'], info[:permissions])
-                    end
-                    if share['file_target'].gsub(' ', '%20') != info[:target_path].gsub(' ', '%20')
-                        dir_parts = File.dirname(info[:target_path]).split('/')
-                        dir_parts.each.with_index do |p, _|
-                            sub_path = dir_parts[0, _ + 1].join('/')
-                            next if sub_path.empty?
-                            unless created_sub_paths.include?(sub_path)
-                                STDERR.puts "Creating [#{user_id}]#{sub_path}..."
-                                ocs_user.webdav.directory.create(sub_path)
-                                created_sub_paths << sub_path
+
+                next unless dir.resourcetype == 'collection'
+
+                path = dir.href.sub("/remote.php/dav/files/#{user_id}", '')
+                path = normalize_nc_path(path)
+
+                if wanted_dirs.include?(path)
+                    count(:target_folders_already_wanted)
+                else
+                    begin
+                        dir2 = ocs_user.webdav.directory.find(path.gsub(' ', '%20'))
+                        contents_count = (dir2.contents || []).size
+                        just_unterricht_shares = true
+
+                        (dir2.contents || []).each do |x|
+                            href = x.href
+                            unless ['/Ausgabeordner/',
+                                    '/Einsammelordner/',
+                                    '/R%c3%bcckgabeordner/',
+                                    '/Ausgabeordner%20(Dashboard-Amt)/',
+                                    '/Auto-Einsammelordner%20(von%20SuS%20an%20mich)/',
+                                    'Auto-R%c3%bcckgabeordner%20(von%20mir%20an%20SuS)/',
+                                    '/SuS/'].any? { |y| href[href.size - y.size, y.size] == y }
+                                just_unterricht_shares = false
                             end
                         end
-                        if share['file_target'] != info[:target_path]
-                            STDERR.puts "Moving [#{user_id}]#{share['file_target']} to #{info[:target_path]}..."
-                            result = ocs_user.webdav.directory.move(share['file_target'], info[:target_path])
-                            if result[:status] != 'ok'
-                                STDERR.puts "Error!"
-                                STDERR.puts result.to_yaml
-                                if result[:exception] == 'OCP\\Files\\NotFoundException'
-                                    failed_share_ids << share[:message]
-                                end
-                                # exit(1)
+
+                        if contents_count == 0 || just_unterricht_shares
+                            log "DELETING [#{user_id}]#{path}"
+                            if SRSLY
+                                ocs_user.webdav.directory.destroy(path.gsub(' ', '%20'))
+                                count(:target_folders_deleted)
+                            else
+                                count(:target_folders_would_delete)
                             end
                         else
-                            STDERR.puts "Not moving [#{user_id}]#{share['file_target']} to #{info[:target_path]} because they're identical"
+                            log "KEEPING [#{user_id}]#{path} because it has #{contents_count} files."
+                            count(:target_folders_kept_nonempty)
                         end
+                    rescue StandardError => e
+                        count(:target_folder_cleanup_errors)
+                        error "Could not inspect/delete [#{user_id}]#{path}: #{e.class}: #{e.message}", e.backtrace.first(10).join("\n")
+                    end
+                end
+            end
+
+            created_sub_paths = Set.new()
+
+            wanted_shares[user_id].each_pair do |path, info|
+                existing_share_info = (present_shares[user_id] || {})[path]
+
+                unless SRSLY
+                    log "Would ensure share: #{path} => #{user_id}"
+                    count(:shares_would_ensure)
+                    next
+                end
+
+                begin
+                    created_now = false
+                    recreated_from_stale_cache = false
+
+                    unless existing_share_info
+                        log "Sharing #{path} to [#{user_id}]..."
+                        create_user_share(@ocs, path, user_id, info[:permissions])
+                        count(:shares_created)
+                        created_now = true
+                    end
+
+                    shares = user_shares_for_path(path, user_id)
+
+                    if shares.empty? && existing_share_info
+                        log "Existing share info for #{path} to [#{user_id}] looked stale; creating share again..."
+                        create_user_share(@ocs, path, user_id, info[:permissions])
+                        count(:shares_recreated_from_stale_cache)
+                        recreated_from_stale_cache = true
+                        shares = user_shares_for_path(path, user_id)
+                    end
+
+                    if shares.size != 1
+                        error "Could not find exactly one user share of #{path} to [#{user_id}]", shares
+                        failed_share_ids << existing_share_info[:id] if existing_share_info && existing_share_info[:id]
+                        next
+                    end
+
+                    share = shares.first
+
+                    if @debug_shares
+                        STDERR.puts
+                        STDERR.puts "DEBUG SHARE"
+                        STDERR.puts "  user:              #{user_id}"
+                        STDERR.puts "  source path:       #{path}"
+                        STDERR.puts "  share id:          #{share['id']}"
+                        STDERR.puts "  share_type:        #{share['share_type']}"
+                        STDERR.puts "  current target:    #{share['file_target'].inspect}"
+                        STDERR.puts "  wanted target:     #{info[:target_path].inspect}"
+                        STDERR.puts "  current decoded:   #{normalize_nc_path(share['file_target']).inspect}"
+                        STDERR.puts "  wanted decoded:    #{normalize_nc_path(info[:target_path]).inspect}"
+                        STDERR.puts "  current perms:     #{share['permissions']}"
+                        STDERR.puts "  wanted perms:      #{info[:permissions]}"
+                    end
+
+                    permissions_updated = false
+                    moved = false
+
+                    if share['permissions'].to_i != info[:permissions]
+                        log "Updating permissions [#{user_id}]#{share['file_target']}..."
+                        @ocs.file_sharing.update_permissions(share['id'], info[:permissions])
+                        count(:permissions_updated)
+                        permissions_updated = true
+                    end
+
+                    if !same_nc_path?(share['file_target'], info[:target_path])
+                        unless create_parent_directories_raw!(user_id, info[:target_path], created_sub_paths)
+                            failed_share_ids << share['id']
+                            next
+                        end
+
+                        unless verify_parent_directory_raw!(user_id, info[:target_path])
+                            failed_share_ids << share['id']
+                            next
+                        end
+
+                        log "RAW MOVE [#{user_id}]#{share['file_target']} -> #{info[:target_path]}..."
+                        move_result = raw_move(user_id, share['file_target'], info[:target_path])
+
+                        debug_log "RAW MOVE RESULT:"
+                        debug_log move_result.to_yaml
+
+                        unless move_result[:ok]
+                            error "RAW MOVE failed for [#{user_id}]#{share['file_target']} -> #{info[:target_path]}", move_result
+                            failed_share_ids << share['id']
+                            next
+                        end
+
+                        unless verify_share_target_after_move(path, user_id, share['id'], info[:target_path])
+                            failed_share_ids << share['id']
+                            next
+                        end
+
+                        count(:shares_moved)
+                        moved = true
+                    else
+                        debug_log "  move needed:       no"
+                    end
+
+                    if existing_share_info && !created_now && !recreated_from_stale_cache && !permissions_updated && !moved
+                        count(:shares_already_correct)
                     end
                 rescue StandardError => e
+                    error "Error while processing share #{path} for #{user_id}: #{e.class}: #{e.message}", e.backtrace.first(10).join("\n")
+                    failed_share_ids << existing_share_info[:id] if existing_share_info && existing_share_info[:id]
                 end
             end
         end
+
         present_shares.keys.sort.each do |user_id|
             unless wanted_nc_ids.nil?
                 next unless wanted_nc_ids.include?(user_id)
             end
+
             present_shares[user_id].each_pair do |path, info|
                 next if (wanted_shares[user_id] || {})[path]
-                STDERR.puts "Removing share #{path} for #{user_id}..."
+
+                log "Removing share #{path} for #{user_id}..."
                 if SRSLY
-                    @ocs.file_sharing.destroy(info[:id])
+                    begin
+                        @ocs.file_sharing.destroy(info[:id])
+                        count(:shares_removed)
+                    rescue StandardError => e
+                        error "Could not remove stale share #{path} for #{user_id}, share id #{info[:id]}: #{e.class}: #{e.message}", e.backtrace.first(10).join("\n")
+                        failed_share_ids << info[:id]
+                    end
+                else
+                    count(:shares_would_remove)
                 end
             end
         end
+
         unless failed_share_ids.empty?
-            STDERR.puts "Failed share IDs:"
-            STDERR.puts failed_share_ids.to_a.sort.join("\n")
+            error "Failed share IDs", failed_share_ids.to_a.sort.join("\n")
         end
+
+        print_summary(failed_share_ids)
+
+        @errors.empty?
     end
 end
 
-script = Script.new
-script.run
+begin
+    script = Script.new
+    ok = script.run
+    exit(ok ? 0 : 1)
+rescue StandardError => e
+    STDERR.puts "ERROR: #{e.class}: #{e.message}"
+    STDERR.puts e.backtrace.first(10).join("\n")
+    exit(1)
+end

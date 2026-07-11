@@ -24,6 +24,81 @@
     input:read-only {
        pointer-events: none;
     }
+
+    .slider-button {
+      position: relative;
+      width: 340px;
+      height: 60px;
+      border-radius: 999px;
+      background: linear-gradient(135deg, #e9eef8, #dfe7f5);
+      /* box-shadow:
+        inset 0 1px 2px rgba(255,255,255,0.8),
+        0 8px 24px rgba(20, 30, 50, 0.12); */
+      overflow: hidden;
+      user-select: none;
+      touch-action: none;
+    }
+
+    .slider-fill {
+      position: absolute;
+      inset: 0 auto 0 0;
+      width: 60px;
+      border-radius: 999px;
+      background: linear-gradient(135deg, #4f8cff, #2563eb);
+      transition: width 0.2s ease;
+    }
+
+    .slider-label {
+      position: absolute;
+      inset: 0;
+      display: grid;
+      place-items: center;
+      /* font-size: 16px; */
+      /* font-weight: 600; */
+      color: #334155;
+      letter-spacing: 0.2px;
+      pointer-events: none;
+      line-height: 110%;
+      text-align: center;
+    }
+
+    .slider-thumb {
+      position: absolute;
+      top: 4px;
+      left: 4px;
+      width: 52px;
+      height: 52px;
+      border-radius: 50%;
+      background: #ffffff;
+      box-shadow:
+        0 4px 10px rgba(0,0,0,0.15),
+        inset 0 1px 1px rgba(255,255,255,0.9);
+      display: grid;
+      place-items: center;
+      font-size: 22px;
+      color: #2563eb;
+      cursor: grab;
+      transition: transform 0.2s ease, left 0.2s ease;
+    }
+
+    .slider-thumb:active {
+      cursor: grabbing;
+      transform: scale(1.03);
+    }
+
+    .slider-button.done .slider-fill {
+      width: 100% !important;
+      background: linear-gradient(135deg, #22c55e, #16a34a);
+    }
+
+    .slider-button.done .slider-label {
+      color: white;
+    }
+
+    .slider-button.done .slider-thumb {
+      left: calc(100% - 56px) !important;
+      color: #16a34a;
+    }
 </style>
 
 <div class="modal" id="modal_add_sus" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true" style='z-index: 200000;'>
@@ -163,7 +238,7 @@
                             <input id='ti_betreuende_lehrkraft_fas' type='text' value='#{CGI.escapeHTML(get_my_pk5(user_email)[:betreuende_lehrkraft_fas_display_name] || '')}' placeholder='keine Lehrkraft gewählt' class='form-control' list='li_lehrkraft' readonly>
                         </div>
                     </div>
-                    <div class='col-md-12' style="display: #{$pk5.get_current_phase >= 3 ? 'block' : 'none'};">
+                    <div class='col-md-12' style="display: #{($pk5.get_current_phase >= 3 && !pk5_publish_final_thema) ? 'block' : 'none'};">
                         <div class='form-group'>
                             <label>#{PK5_KEY_LABELS[:fragestellung]}</label>
                             <!-- <div class='alert alert-warning' style="padding: 0.5em 1em; display: #{$pk5.get_current_phase == 12 ? 'block' : 'none'};">
@@ -173,11 +248,22 @@
                             <textarea id='ti_fragestellung' placeholder='keine Fragestellung formuliert' class='form-control' readonly>#{CGI.escapeHTML(get_my_pk5(user_email)[:fragestellung] || '')}</textarea>
                         </div>
                     </div>
-                    <div class='col-md-12' style="display: #{($pk5.get_current_phase >= 3) && (!((!PK5_PUBLISH_FINAL_THEMA) && (!user_with_role_logged_in?(:oko)))) ? 'block' : 'none'};">
-                        <div class='form-group' style="#{((!PK5_PUBLISH_FINAL_THEMA) && (user_with_role_logged_in?(:oko))) ? 'border: 1px dashed red; padding: 0 1em 1em 1em; border-radius: 8px; background-color: rgba(255, 0, 0, 0.02);' : ''}">
+                    <div class='col-md-12' style="display: #{($pk5.get_current_phase >= 3) && (!((!pk5_publish_final_thema) && (!user_with_role_logged_in?(:oko)))) ? 'block' : 'none'};">
+                        <div class='form-group' style="#{((!pk5_publish_final_thema) && (user_with_role_logged_in?(:oko))) ? 'border: 1px dashed red; padding: 0 1em 1em 1em; border-radius: 8px; background-color: rgba(255, 0, 0, 0.02);' : ''}">
                             <hr>
                             <label>#{PK5_KEY_LABELS[:genehmigte_fragestellung]}</label>
-                            <textarea id='ti_genehmigte_fragestellung' placeholder='keine genehmigte Fragestellung formuliert' class='form-control' readonly>#{CGI.escapeHTML(get_my_pk5(user_email)[:genehmigte_fragestellung] || '')}</textarea>
+                            <textarea style='min-height: 120px;' id='ti_genehmigte_fragestellung' placeholder='keine genehmigte Fragestellung formuliert' class='form-control' readonly>#{CGI.escapeHTML(get_my_pk5(user_email)[:genehmigte_fragestellung] || '')}</textarea>
+                            <div style="display: #{get_my_pk5(user_email)[:thema_confirmed] ? 'none' : 'flex'}; align-items: center; flex-direction: column; margin-top: 1em;">
+                                <p>Bitte bestätige die Kenntnisnahme hier:</p>
+                                <div class="slider-button" id="slider">
+                                    <div class="slider-fill" id="fill"></div>
+                                    <div class="slider-label" id="label">Ja, ich habe die genehmigte<br>Fragestellung erhalten.</div>
+                                    <div class="slider-thumb" id="thumb">➜</div>
+                                </div>
+                            </div>
+                            <div style="display: #{get_my_pk5(user_email)[:thema_confirmed] ? 'block' : 'none'}; margin-top: 1em;">
+                                <p><i class='fa fa-check text-success'></i>&nbsp;&nbsp;Du hast den Erhalt der genehmigten problemorientierten Frage-/Themenstellung bereits bestätigt.</p>
+                            </div>
                         </div>
                     </div>
 
@@ -224,6 +310,98 @@
 
 <script>
 var my_pk5 = #{get_my_pk5(user_email).to_json};
+
+function setup_slider_button() {
+    const slider = document.getElementById("slider");
+    const thumb = document.getElementById("thumb");
+    const fill = document.getElementById("fill");
+    const label = document.getElementById("label");
+
+    let dragging = false;
+    let startX = 0;
+    let startLeft = 4;
+    let maxLeft = 0;
+    let confirmed = false;
+
+    function updateBounds() {
+      maxLeft = slider.clientWidth - thumb.clientWidth - 4;
+    }
+
+    function getClientX(event) {
+      return event.touches ? event.touches[0].clientX : event.clientX;
+    }
+
+    function startDrag(event) {
+      if (confirmed) return;
+      updateBounds();
+      dragging = true;
+      startX = getClientX(event);
+      startLeft = parseFloat(thumb.style.left) || 4;
+      thumb.style.transition = "none";
+      fill.style.transition = "none";
+    }
+
+    function onDrag(event) {
+      if (!dragging || confirmed) return;
+
+      const currentX = getClientX(event);
+      const delta = currentX - startX;
+      let newLeft = startLeft + delta;
+
+      newLeft = Math.max(4, Math.min(newLeft, maxLeft));
+
+      thumb.style.left = `${newLeft}px`;
+      fill.style.width = `${newLeft + thumb.clientWidth + 4}px`;
+
+      event.preventDefault();
+    }
+
+    function endDrag() {
+      if (!dragging || confirmed) return;
+      dragging = false;
+
+      const currentLeft = parseFloat(thumb.style.left) || 4;
+      const threshold = maxLeft * 0.85;
+
+      thumb.style.transition = "left 0.2s ease";
+      fill.style.transition = "width 0.2s ease";
+
+      if (currentLeft >= threshold) {
+        api_call('/api/pk5_confirm_thema', {}, function(data) {
+            if (data.success) {
+                confirmed = true;
+                slider.classList.add("done");
+                label.textContent = "Bestätigt";
+                thumb.style.left = `${maxLeft}px`;
+                fill.style.width = "100%";
+                api_call('/api/my_pk5_history', {sus_email: '#{user_email}'}, function(response2) {
+                    if (response2.success) {
+                        $('#div_history').html(response2.html);
+                    }
+                });
+            }
+        });
+      } else {
+        thumb.style.left = "4px";
+        fill.style.width = `${thumb.clientWidth + 8}px`;
+      }
+    }
+
+    thumb.style.left = "4px";
+    fill.style.width = `${thumb.clientWidth + 8}px`;
+
+    thumb.addEventListener("mousedown", startDrag);
+    thumb.addEventListener("touchstart", startDrag, { passive: true });
+
+    window.addEventListener("mousemove", onDrag);
+    window.addEventListener("touchmove", onDrag, { passive: false });
+
+    window.addEventListener("mouseup", endDrag);
+    window.addEventListener("touchend", endDrag);
+
+    window.addEventListener("resize", updateBounds);
+    updateBounds();
+}
 
 function update_extra_consultations(pk5) {
     $('#extra_consultations_here').empty();
@@ -459,5 +637,6 @@ window.addEventListener('load', function() {
     //     let email = $(e.target).data('email');
     //     window.open(`/api/print_antrag_for_sus/${encodeURIComponent(email)}`, '_blank');
     // });
+    setup_slider_button();
 });
 </script>

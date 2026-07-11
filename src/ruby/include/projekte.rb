@@ -176,6 +176,7 @@ class Main < Sinatra::Base
                         RETURN p.nr;
                     END_OF_QUERY
                 rescue
+                    raise
                 end
             # end
         end
@@ -516,7 +517,15 @@ class Main < Sinatra::Base
             end
         end
 
-        respond(:rows => rows, :klassen_info => klassen_info)
+        sus_for_klassenstufe = {}
+        @@users_for_role[:schueler].each do |email|
+            info = @@user_info[email]
+            klassenstufe = info[:klassenstufe]
+            next unless klassenstufe >= 5 && klassenstufe <= 9
+            sus_for_klassenstufe[klassenstufe] ||= 0
+            sus_for_klassenstufe[klassenstufe] += 1
+        end
+        respond(:rows => rows, :klassen_info => klassen_info, :sus_for_klassenstufe => sus_for_klassenstufe)
     end
 
     post '/api/send_invitation_for_projekttage' do
@@ -1241,6 +1250,235 @@ class Main < Sinatra::Base
         respond(:ts => ts)
     end
 
+    def self.pop_random!(array)
+        i = rand(array.size)
+        value = array[i]
+        array[i] = array[-1]
+        array.pop
+        value
+    end
+
+    def self.klassenstufe_for_email(email, user_info)
+        info = user_info[email] || {}
+        info[:klassenstufe] || 7
+    end
+
+    def self.register_tight_mask!(state, mask)
+        return if state[:tight_registered][mask]
+
+        state[:tight_registered][mask] = true
+
+        grade_count = state[:grade_count]
+        projects_in_mask = state[:projects_in_mask][mask]
+
+        projects_in_mask.each do |nr|
+            grade_idx = 0
+
+            while grade_idx < grade_count
+                if (mask & (1 << grade_idx)) == 0
+                    state[:blocked_count][grade_idx][nr] += 1
+                end
+
+                grade_idx += 1
+            end
+        end
+    end
+
+    def self.build_assignment_state(emails, projects, projects_for_klassenstufe, user_info)
+        project_numbers = projects.keys
+        project_set = Set.new(project_numbers)
+
+        klassenstufen_set = Set.new
+
+        emails.each do |email|
+            klassenstufen_set << klassenstufe_for_email(email, user_info)
+        end
+
+        projects_for_klassenstufe.keys.each do |klassenstufe|
+            klassenstufen_set << klassenstufe
+        end
+
+        klassenstufen = klassenstufen_set.to_a.sort
+
+        grade_index = {}
+
+        klassenstufen.each_with_index do |klassenstufe, index|
+            grade_index[klassenstufe] = index
+        end
+
+        grade_count = klassenstufen.size
+        full_mask = 1 << grade_count
+
+        grade_idx_by_email = {}
+        remaining_count_by_grade = Array.new(grade_count, 0)
+
+        emails.each do |email|
+            klassenstufe = klassenstufe_for_email(email, user_info)
+            grade_idx = grade_index[klassenstufe]
+
+            grade_idx_by_email[email] = grade_idx
+            remaining_count_by_grade[grade_idx] += 1
+        end
+
+        allowed_projects_by_grade = Array.new(grade_count) { Set.new }
+
+        klassenstufen.each_with_index do |klassenstufe, grade_idx|
+            allowed = projects_for_klassenstufe[klassenstufe] || []
+            allowed_projects_by_grade[grade_idx] = Set.new(allowed) & project_set
+        end
+
+        capacity_left = {}
+
+        projects.each_pair do |nr, project|
+            capacity_left[nr] = project[:teilnehmer_max].to_i
+        end
+
+        masks_with_project = Hash[project_numbers.map { |nr| [nr, []] }]
+        projects_in_mask = Array.new(full_mask) { [] }
+        slack_for_mask = Array.new(full_mask, 0)
+
+        mask = 1
+
+        while mask < full_mask
+            need = 0
+            union_projects = Set.new
+
+            grade_idx = 0
+
+            while grade_idx < grade_count
+                if (mask & (1 << grade_idx)) != 0
+                    need += remaining_count_by_grade[grade_idx]
+                    union_projects.merge(allowed_projects_by_grade[grade_idx])
+                end
+
+                grade_idx += 1
+            end
+
+            capacity = 0
+
+            union_projects.each do |nr|
+                capacity += capacity_left[nr].to_i
+                masks_with_project[nr] << mask
+            end
+
+            projects_in_mask[mask] = union_projects.to_a
+            slack_for_mask[mask] = capacity - need
+
+            mask += 1
+        end
+
+        blocked_count = Array.new(grade_count) { Hash.new(0) }
+        tight_registered = Array.new(full_mask, false)
+
+        state = {
+            :klassenstufen => klassenstufen,
+            :grade_count => grade_count,
+            :grade_idx_by_email => grade_idx_by_email,
+            :allowed_projects_by_grade => allowed_projects_by_grade,
+            :capacity_left => capacity_left,
+            :masks_with_project => masks_with_project,
+            :projects_in_mask => projects_in_mask,
+            :slack_for_mask => slack_for_mask,
+            :blocked_count => blocked_count,
+            :tight_registered => tight_registered,
+            :full_mask => full_mask,
+        }
+
+        mask = 1
+
+        while mask < full_mask
+            if slack_for_mask[mask] == 0
+                register_tight_mask!(state, mask)
+            end
+
+            mask += 1
+        end
+
+        state
+    end
+
+    def self.assignment_state_feasible?(state)
+        mask = 1
+
+        while mask < state[:full_mask]
+            return false if state[:slack_for_mask][mask] < 0
+            mask += 1
+        end
+
+        true
+    end
+
+    def self.assignment_bottleneck_message(state)
+        lines = []
+
+        mask = 1
+
+        while mask < state[:full_mask]
+            slack = state[:slack_for_mask][mask]
+
+            if slack < 0
+                grades = []
+
+                state[:klassenstufen].each_with_index do |klassenstufe, grade_idx|
+                    grades << klassenstufe if (mask & (1 << grade_idx)) != 0
+                end
+
+                lines << "Klassenstufen #{grades.inspect}: missing #{-slack} compatible slots"
+            elsif slack == 0
+                grades = []
+
+                state[:klassenstufen].each_with_index do |klassenstufe, grade_idx|
+                    grades << klassenstufe if (mask & (1 << grade_idx)) != 0
+                end
+
+                lines << "Klassenstufen #{grades.inspect}: exactly tight"
+            end
+
+            mask += 1
+        end
+
+        lines.empty? ? "No bottleneck found." : lines.join("\n")
+    end
+
+    def self.can_assign_fast?(state, grade_idx, nr)
+        return false unless state[:capacity_left][nr].to_i > 0
+        return false unless state[:allowed_projects_by_grade][grade_idx].include?(nr)
+
+        state[:blocked_count][grade_idx][nr] == 0
+    end
+
+    def self.apply_fast_assignment!(state, grade_idx, nr)
+        state[:capacity_left][nr] -= 1
+
+        grade_bit = 1 << grade_idx
+
+        state[:masks_with_project][nr].each do |mask|
+            # If the mask contains this student's grade, both demand and capacity
+            # decrease by one, so the slack stays unchanged.
+            next if (mask & grade_bit) != 0
+
+            state[:slack_for_mask][mask] -= 1
+
+            if state[:slack_for_mask][mask] < 0
+                raise "Internal error: assignment made state infeasible"
+            end
+
+            if state[:slack_for_mask][mask] == 0
+                register_tight_mask!(state, mask)
+            end
+        end
+    end
+
+    def self.safe_projects_for_grade(state, grade_idx)
+        result = []
+
+        state[:allowed_projects_by_grade][grade_idx].each do |nr|
+            result << nr if can_assign_fast?(state, grade_idx, nr)
+        end
+
+        result
+    end
+
     def self.assign_projects(emails, users, projects,
             projects_for_klassenstufe, total_capacity,
             votes, _votes_by_email,
@@ -1519,7 +1757,7 @@ class Main < Sinatra::Base
         StringIO.open do |io|
             io.puts "<p>Die folgenden Schülerinnen und Schüler nehmen an deinem Projekt teil. Unten in der Tabelle findest du E-Mail-Verteiler, die du nutzen kannst, um alle Teilnehmer:innen und / oder deren Eltern zu erreichen. Nutze deine schulische E-Mail-Adresse, um die Verteiler zu verwenden.</p>"
             if projekttage_phase() < 5
-                io.puts "<p><strong>Achtung:</strong> Bitte beachte, dass momentan noch Projekte getauscht werden können. Die finale Teilnehmerliste steht erst am <strong>#{WEEKDAYS_LONG[Date.parse(PROJEKTWAHL_SWAP_PHASE_END).wday]}</strong>, den <strong>#{Date.parse(PROJEKTWAHL_SWAP_PHASE_END).strftime('%d')}. #{MONTHS[Date.parse(PROJEKTWAHL_SWAP_PHASE_END).strftime('%m').to_i]}</strong> um <strong>#{DateTime.parse(PROJEKTWAHL_SWAP_PHASE_END).strftime('%H:%M')} Uhr</strong> fest.</p>"
+                io.puts "<p><strong>Achtung:</strong> Bitte beachte, dass momentan noch Projekte getauscht werden können. Die finale Teilnehmerliste steht erst am <strong>#{WEEKDAYS_LONG[Date.parse(PROJEKTWAHL_SWAP_PHASE_END).wday]}</strong>, den <strong>#{Date.parse(PROJEKTWAHL_SWAP_PHASE_END).strftime('%d')}. #{MONTHS[Date.parse(PROJEKTWAHL_SWAP_PHASE_END).strftime('%m').to_i - 1]}</strong> um <strong>#{DateTime.parse(PROJEKTWAHL_SWAP_PHASE_END).strftime('%H:%M')} Uhr</strong> fest.</p>"
             elsif projekttage_phase() == 5
                 io.puts "<p>Diese Teilnehmerliste ist jetzt final, es können keine Projekte mehr getauscht werden.</p>"
             end

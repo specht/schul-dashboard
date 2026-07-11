@@ -148,11 +148,11 @@ class Script
                 doc.gsub!('#SUS_NAME.', record[:display_name])
                 doc.gsub!('#SUS_VORNAME.', record[:display_first_name])
                 doc.gsub!('#DATUM.', Date.today.strftime('%d.%m.%Y'))
-                if Date.today.year != 2025
-                    raise "Date is not 2025!"
+                if Date.today.year != 2026
+                    raise "Date is not 2026!"
                 end
-                doc.gsub!('#MV_DATUM.', '12. Mai 2025')
-                doc.gsub!('#NEXT_SCHULJAHR.', '2025/26')
+                doc.gsub!('#MV_DATUM.', '4. Mai 2026')
+                doc.gsub!('#NEXT_SCHULJAHR.', LBV_NEXT_SCHULJAHR)
                 doc.gsub!('#ZAHLUNGSFRIST.', LBV_ZAHLUNGSFRIST)
                 doc.gsub!('#EMPFAENGER.', LBV_EMPFAENGER)
                 doc.gsub!('#IBAN.', LBV_IBAN.chars.each_slice(4).to_a.map { |x| x.join('') }.join(' '))

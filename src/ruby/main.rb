@@ -151,8 +151,7 @@ require './include/website.rb'
 require './include/zeugnisse.rb'
 require './parser.rb'
 
-Faye::WebSocket.load_adapter('thin')
-# Faye::WebSocket.load_adapter('puma')
+Faye::WebSocket.load_adapter('puma')
 
 def remove_accents(s)
     I18n.transliterate(s.unicode_normalize(:nfc).gsub('ä', 'ae').gsub('ö', 'oe').gsub('ü', 'ue').gsub('Ä', 'Ae').gsub('Ö', 'Oe').gsub('Ü', 'Ue').gsub('ß', 'ss').gsub('ė', 'e').gsub('š', 's').gsub('é', 'e'))
@@ -1789,7 +1788,7 @@ class Main < Sinatra::Base
         @@compiled_files = {}
         debug "DASHBOARD_SERVICE: #{ENV['DASHBOARD_SERVICE']}"
         debug "File.basename($0): #{File.basename($0)}"
-        if ENV['DASHBOARD_SERVICE'] == 'ruby' && (File.basename($0) == 'thin' || File.basename($0) == 'pry.rb' || File.basename($0) == 'puma')
+        if ENV['DASHBOARD_SERVICE'] == 'ruby' && ['pry.rb', 'puma', 'rackup'].include?(File.basename($0))
             setup.setup(self)
             COLOR_SCHEME_COLORS.each do |entry|
                 @@color_scheme_info[entry[0]] = [entry[1], entry[2]]
@@ -1831,7 +1830,7 @@ class Main < Sinatra::Base
             # STDERR.puts @@color_scheme_info.to_yaml
         end
 
-        if ['puma', 'thin', 'rackup'].include?(File.basename($0))
+        if ['puma', 'rackup'].include?(File.basename($0))
             debug('Server is up and running!')
         end
         if ENV['DASHBOARD_SERVICE'] == 'ruby' && File.basename($0) == 'pry.rb'

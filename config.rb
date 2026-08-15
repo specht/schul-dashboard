@@ -122,6 +122,14 @@ docker_compose[:services][:nginx][:depends_on] = [:ruby]
 
 env = []
 env << 'DEVELOPMENT=1' if DEVELOPMENT
+env << 'PUMA_MIN_THREADS=0'
+env << 'PUMA_MAX_THREADS=16'
+rackup_command = lambda do |rackup_file, port|
+    "rackup #{rackup_file} --server puma --env production --host 0.0.0.0 --port #{port}"
+end
+development_command = lambda do |command|
+    "rerun -b --dir /app --ignore \"fragments/*\" -s SIGTERM -- #{command}"
+end
 docker_compose[:services][:ruby] = {
     :build => './docker/ruby',
     :volumes => ['./src/ruby:/app:ro',
@@ -134,10 +142,8 @@ docker_compose[:services][:ruby] = {
     :environment => env,
     :working_dir => '/app',
     :entrypoint =>  DEVELOPMENT ?
-        'rerun -b --dir /app --ignore "fragments/*" -s SIGKILL \'thin --rackup config.ru --threaded start -e development\'' :
-        # 'rerun -b --dir /app --ignore "fragments/*" -s SIGKILL \'puma -p 3000 -w 4 --preload -t 0:16 -e development\'' :
-        'thin --rackup config.ru --threaded start -e production'}
-        # 'puma -p 3000 -w 4 --preload -t 0:16 -e production'
+        development_command.call(rackup_command.call('config.ru', 3000)) :
+        rackup_command.call('config.ru', 3000)}
 docker_compose[:services][:ruby][:depends_on] ||= []
 docker_compose[:services][:ruby][:depends_on] << :neo4j
 
@@ -155,8 +161,8 @@ docker_compose[:services][:neo4j][:user] = "#{UID}"
 
 docker_compose[:services][:timetable] = YAML.load(docker_compose[:services][:ruby].to_yaml)
 docker_compose[:services][:timetable]['entrypoint'] = DEVELOPMENT ?
-            'rerun -b --dir /app --ignore "fragments/*" -s SIGKILL \'thin --rackup timetable-repl.ru --port 8080 --address 0.0.0.0 start -e production\'' :
-            'thin --rackup timetable-repl.ru --port 8080 --address 0.0.0.0 start -e production'
+            development_command.call(rackup_command.call('timetable-repl.ru', 8080)) :
+            rackup_command.call('timetable-repl.ru', 8080)
 
 docker_compose[:services][:ruby][:user] = "#{UID}"
 docker_compose[:services][:timetable][:user] = "#{UID}"
@@ -164,18 +170,18 @@ docker_compose[:services][:timetable][:user] = "#{UID}"
 if ENABLE_IMAGE_BOT
     docker_compose[:services][:image_bot] = YAML.load(docker_compose[:services][:ruby].to_yaml)
     docker_compose[:services][:image_bot]['entrypoint'] = DEVELOPMENT ?
-                'rerun -b --dir /app --ignore "fragments/*" -s SIGKILL \'thin --rackup image-bot-repl.ru --port 8080 --address 0.0.0.0 start -e production\'' :
-                'thin --rackup image-bot-repl.ru --port 8080 --address 0.0.0.0 start -e production'
+                development_command.call(rackup_command.call('image-bot-repl.ru', 8080)) :
+                rackup_command.call('image-bot-repl.ru', 8080)
 end
 docker_compose[:services][:mail_bot] = YAML.load(docker_compose[:services][:ruby].to_yaml)
 docker_compose[:services][:mail_bot]['entrypoint'] = DEVELOPMENT ?
-            'rerun -b --dir /app --ignore "fragments/*" -s SIGKILL \'thin --rackup mail-bot-repl.ru --port 8080 --address 0.0.0.0 start -e production\'' :
-            'thin --rackup mail-bot-repl.ru --port 8080 --address 0.0.0.0 start -e production'
+            development_command.call(rackup_command.call('mail-bot-repl.ru', 8080)) :
+            rackup_command.call('mail-bot-repl.ru', 8080)
 
 docker_compose[:services][:stats_bot] = YAML.load(docker_compose[:services][:ruby].to_yaml)
 docker_compose[:services][:stats_bot]['entrypoint'] = DEVELOPMENT ?
-            'rerun -b --dir /app --ignore "fragments/*" -s SIGKILL \'thin --rackup stats-bot-repl.ru --port 8080 --address 0.0.0.0 start -e production\'' :
-            'thin --rackup stats-bot-repl.ru --port 8080 --address 0.0.0.0 start -e production'
+            development_command.call(rackup_command.call('stats-bot-repl.ru', 8080)) :
+            rackup_command.call('stats-bot-repl.ru', 8080)
 
 docker_compose[:services][:vplan_watcher] = YAML.load(docker_compose[:services][:ruby].to_yaml)
 docker_compose[:services][:vplan_watcher]['entrypoint'] = DEVELOPMENT ?
@@ -184,8 +190,8 @@ docker_compose[:services][:vplan_watcher]['entrypoint'] = DEVELOPMENT ?
 
 docker_compose[:services][:invitation_bot] = YAML.load(docker_compose[:services][:ruby].to_yaml)
 docker_compose[:services][:invitation_bot]['entrypoint'] = DEVELOPMENT ?
-            'rerun -b --dir /app --ignore "fragments/*" -s SIGKILL \'thin --rackup invitation-repl.ru --port 8080 --address 0.0.0.0 start -e production\'' :
-            'thin --rackup invitation-repl.ru --port 8080 --address 0.0.0.0 start -e production'
+            development_command.call(rackup_command.call('invitation-repl.ru', 8080)) :
+            rackup_command.call('invitation-repl.ru', 8080)
 docker_compose[:services][:ruby][:user] = "#{UID}"
 docker_compose[:services][:invitation_bot][:user] = "#{UID}"
 

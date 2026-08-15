@@ -2,7 +2,19 @@
 
 require 'open3'
 
-Open3.popen2("sh -c '(cd ../../ && ./config.rb run --rm --entrypoint ruby ruby collect-nextcloud-files-from-sus.rb #{ARGV.join(' ')})'") do |fin, fout, wait|
+repository_root = File.expand_path('../..', __dir__)
+command = [
+    './config.rb',
+    'exec',
+    '-T',
+    'ruby',
+    'ruby',
+    'collect-nextcloud-files-from-sus.rb',
+    *ARGV
+]
+
+Open3.popen2(*command, chdir: repository_root) do |fin, fout, wait|
+    fin.close
     lines = []
     error_lines = []
     failed = false
@@ -16,6 +28,7 @@ Open3.popen2("sh -c '(cd ../../ && ./config.rb run --rm --entrypoint ruby ruby c
             error_lines << "# #{line.rstrip}"
         end
     end
+    failed = true unless wait.value.success?
     if failed
         STDERR.puts error_lines.join("\n")
         exit(1)

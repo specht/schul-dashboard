@@ -1,3 +1,15 @@
 #!/usr/bin/env ruby
 
-system("cd ../.. && ./config.rb run --rm --entrypoint ruby ruby create-nc-users.rb #{ARGV.join(' ')} && cd src/scripts")
+repository_root = File.expand_path('../..', __dir__)
+
+success = system(
+  './config.rb',
+  'exec',
+  'ruby',
+  'ruby',
+  'create-nc-users.rb',
+  *ARGV,
+  chdir: repository_root
+)
+
+exit(success ? 0 : 1)

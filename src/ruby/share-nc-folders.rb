@@ -4,7 +4,6 @@ require './parser.rb'
 require 'set'
 require 'zlib'
 require 'fileutils'
-require 'nextcloud'
 require 'cgi'
 require 'yaml'
 require 'zip'
@@ -25,47 +24,9 @@ SHARE_CREATE = 4
 SHARE_DELETE = 8
 SHARE_SHARE = 16
 
-HTTP_READ_TIMEOUT = 60 * 10
-
-# This is a really ugly way to monkey patch an increased HTTP read timeout into the dachinat/nextcloud gem.
-# We still use the gem for OCS share handling, but not for the fragile WebDAV MKCOL/MOVE calls.
-
-module Nextcloud
-    class Api
-        # Sends API request to Nextcloud
-        #
-        # @param method [Symbol] Request type. Can be :get, :post, :put, etc.
-        # @param path [String] Nextcloud OCS API request path
-        # @param params [Hash, nil] Parameters to send
-        # @return [Object] Nokogiri::XML::Document
-        def request(method, path, params = nil, body = nil, depth = nil, destination = nil, raw = false)
-            response = Net::HTTP.start(@url.host, @url.port,
-            use_ssl: @url.scheme == "https") do |http|
-                http.read_timeout = HTTP_READ_TIMEOUT
-                req = Kernel.const_get("Net::HTTP::#{method.capitalize}").new(@url.request_uri + path)
-                req["OCS-APIRequest"] = true
-                req.basic_auth @username, @password
-                req["Content-Type"] = "application/x-www-form-urlencoded"
-
-                req["Depth"] = 0 if depth
-                req["Destination"] = destination if destination
-
-                req.set_form_data(params) if params
-                req.body = body if body
-
-                http.request(req)
-            end
-
-            raw ? response.body : Nokogiri::XML.parse(response.body)
-        end
-    end
-end
-
 class Script
     def initialize
-        @ocs = Nextcloud.ocs(url: NEXTCLOUD_URL_FROM_RUBY_CONTAINER,
-                             username: NEXTCLOUD_USER,
-                             password: NEXTCLOUD_PASSWORD)
+        @ocs = DashboardNextcloud.admin
 
         @verbose = false
         @debug_shares = false
@@ -181,41 +142,22 @@ class Script
     end
 
     def normalize_nc_path(path)
-        CGI.unescape(path.to_s).unicode_normalize(:nfc)
+        DashboardNextcloud.normalize_dav_path(path)
     end
 
     def same_nc_path?(a, b)
         normalize_nc_path(a) == normalize_nc_path(b)
     end
 
-    def dav_escape_segment(segment)
-        CGI.escape(CGI.unescape(segment.to_s).unicode_normalize(:nfc)).gsub('+', '%20')
-    end
-
-    def dav_escape_path(path)
-        decoded = normalize_nc_path(path)
-        decoded = "/#{decoded}" unless decoded.start_with?('/')
-
-        decoded.split('/').map { |part| dav_escape_segment(part) }.join('/')
-    end
-
     def dav_uri_for(user_id, path)
-        base = URI(NEXTCLOUD_URL_FROM_RUBY_CONTAINER)
-        base_path = base.path.to_s.sub(/\/+\z/, '')
-
-        uri = base.dup
-        uri.query = nil
-        uri.fragment = nil
-        uri.path = "#{base_path}/remote.php/dav/files/#{dav_escape_segment(user_id)}#{dav_escape_path(path)}"
-
-        uri
+        DashboardNextcloud.dav_uri(user_id, path)
     end
 
     def raw_webdav_request(user_id, method, path, destination_path: nil, depth: nil)
         uri = dav_uri_for(user_id, path)
 
         response = Net::HTTP.start(uri.host, uri.port, use_ssl: uri.scheme == 'https') do |http|
-            http.read_timeout = HTTP_READ_TIMEOUT
+            http.read_timeout = DashboardNextcloud::HTTP_READ_TIMEOUT
 
             req = Net::HTTPGenericRequest.new(method.to_s.upcase, false, true, uri.request_uri)
             req.basic_auth user_id, NEXTCLOUD_ALL_ACCESS_PASSWORD_BE_CAREFUL
@@ -359,7 +301,7 @@ class Script
     def create_user_share(ocs, path, user_id, permissions)
         # Use the OCS endpoint directly so we can explicitly suppress share mails.
         # shareType 0 = internal user share.
-        ocs.request(:post, '/ocs/v2.php/apps/files_sharing/api/v1/shares', {
+        ocs.file_sharing.request(:post, 'shares', {
             'path' => path,
             'shareType' => 0,
             'shareWith' => user_id,
@@ -722,9 +664,7 @@ class Script
 
             count(:users_processed)
 
-            ocs_user = Nextcloud.ocs(url: NEXTCLOUD_URL_FROM_RUBY_CONTAINER,
-                                     username: user_id,
-                                     password: NEXTCLOUD_ALL_ACCESS_PASSWORD_BE_CAREFUL)
+            ocs_user = DashboardNextcloud.as_user(user_id)
 
             wanted_dirs = Set.new()
             wanted_shares[user_id].values.map { |x| x[:target_path] + '/' }.each do |path|

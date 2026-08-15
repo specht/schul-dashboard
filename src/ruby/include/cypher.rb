@@ -273,7 +273,7 @@ class Main < Sinatra::Base
 
     def cypher_content
         require_user!
-        parts = request.env['REQUEST_PATH'].split('/')
+        parts = request.path.split('/')
         provided_password = (parts[2] || '').strip.downcase
         provided_password = nil if provided_password.empty?
         debug "provided: [#{provided_password}]"

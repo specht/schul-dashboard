@@ -141,19 +141,6 @@ docker_compose[:services][:ruby] = {
 docker_compose[:services][:ruby][:depends_on] ||= []
 docker_compose[:services][:ruby][:depends_on] << :neo4j
 
-docker_compose[:services][:ruby2] = {
-    :build => './docker/ruby2',
-    :volumes => ['./src/ruby:/app:ro',
-                 './src/static:/static:ro',
-                 "#{INPUT_DATA_PATH}:/data:ro",
-                 "#{RAW_FILES_PATH}:/raw:ro",
-                 "#{VPLAN_FILES_PATH}:/vplan:ro",
-                 "#{INTERNAL_PATH}:/internal",
-                 "#{GEN_FILES_PATH}:/gen:ro"],
-    :environment => env.dup,
-    :working_dir => '/app'
-}
-
 docker_compose[:services][:neo4j] = {
     :build => './docker/neo4j',
     :volumes => ["#{NEO4J_DATA_PATH}:/data",
@@ -172,7 +159,6 @@ docker_compose[:services][:timetable]['entrypoint'] = DEVELOPMENT ?
             'thin --rackup timetable-repl.ru --port 8080 --address 0.0.0.0 start -e production'
 
 docker_compose[:services][:ruby][:user] = "#{UID}"
-docker_compose[:services][:ruby2][:user] = "#{UID}"
 docker_compose[:services][:timetable][:user] = "#{UID}"
 
 if ENABLE_IMAGE_BOT
@@ -252,7 +238,7 @@ if DEVELOPMENT
     docker_compose[:services][:invitation_bot][:ports] = ['127.0.0.1:8023:8080']
 else
     docker_compose[:services].each_pair do |k, x|
-        x[:restart] = (k.to_s == 'ruby2') ? :no : :always
+        x[:restart] = :always
     end
 end
 
@@ -274,7 +260,7 @@ end
 
 FileUtils::mkpath(LOGS_PATH)
 FileUtils::cp('src/ruby/Gemfile', 'docker/ruby/')
-FileUtils::cp('src/ruby/Gemfile', 'docker/ruby2/')
+FileUtils::cp('src/ruby/Gemfile.lock', 'docker/ruby/')
 FileUtils::mkpath(File::join(RAW_FILES_PATH, 'uploads'))
 FileUtils::mkpath(File::join(RAW_FILES_PATH, 'uploads/audio_comment'))
 FileUtils::mkpath(File::join(RAW_FILES_PATH, 'uploads/images'))

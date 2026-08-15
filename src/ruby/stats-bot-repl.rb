@@ -299,7 +299,7 @@ class StatsBotRepl < Sinatra::Base
     end
 
     get '/api/update/*' do
-        data = request.env['REQUEST_PATH'].sub('/api/update/', '')
+        data = request.path.sub('/api/update/', '')
         if data == 'all'
             @@queue << {:which => :all}
         elsif data == 'projektwahl'

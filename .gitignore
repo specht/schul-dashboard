@@ -1,7 +1,7 @@
 /data/
 /docker/nginx/default.conf
 /docker/ruby/Gemfile
-/docker/ruby2/Gemfile
+/docker/ruby/Gemfile.lock
 /docker-compose.yaml
 /internal/
 /logs/

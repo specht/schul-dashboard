@@ -4,7 +4,6 @@ require './parser.rb'
 require 'set'
 require 'zlib'
 require 'fileutils'
-require 'nextcloud'
 require 'cgi'
 require 'yaml'
 

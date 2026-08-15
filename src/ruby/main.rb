@@ -14,7 +14,7 @@ require 'mail'
 require 'neo4j_bolt'
 require 'net/http'
 require 'net/imap'
-require 'nextcloud'
+require './nextcloud_client.rb'
 require 'nokogiri'
 require 'open3'
 require 'prawn/qrcode'
@@ -2226,9 +2226,7 @@ class Main < Sinatra::Base
 
     post '/api/reset_nc_password' do
         require_user!
-        ocs = Nextcloud.ocs(url: NEXTCLOUD_URL,
-                            username: NEXTCLOUD_USER,
-                            password: NEXTCLOUD_PASSWORD)
+        ocs = DashboardNextcloud.admin
         ocs.user.update(@session_user[:nc_login], 'password', @session_user[:initial_nc_password])
         respond(:ok => 'yay')
     end
@@ -3486,7 +3484,7 @@ class Main < Sinatra::Base
         response.headers['X-Tage-Bis-Zu-Den-Sommerferien'] = "#{(Date.parse('2026-07-09') - Date.today).to_i}"
         response.headers['X-Tage-Bis-Weihnachten'] = "#{(Date.parse('2026-12-24') - Date.today).to_i}"
 
-        path = request.env['REQUEST_PATH']
+        path = request.path
         assert(path[0] == '/')
         path = path[1, path.size - 1]
         path = 'index' if path.empty?
@@ -3532,7 +3530,7 @@ class Main < Sinatra::Base
         angebote_for_session_user = []
         if path == 'directory'
             redirect "#{WEB_ROOT}/", 302 unless @session_user
-            parts = request.env['REQUEST_PATH'].split('/')
+            parts = request.path.split('/')
             klasse = CGI::unescape(parts[2])
 #             STDERR.puts @@teachers_for_klasse[klasse].to_yaml
             unless (teacher_logged_in?) || (@session_user[:klasse] == klasse)
@@ -3540,7 +3538,7 @@ class Main < Sinatra::Base
             end
         elsif path == 'show_login_codes'
             redirect "#{WEB_ROOT}/", 302 unless @session_user
-            parts = request.env['REQUEST_PATH'].split('/')
+            parts = request.path.split('/')
             klasse = CGI::unescape(parts[2])
 #             STDERR.puts @@teachers_for_klasse[klasse].to_yaml
             unless can_see_all_timetables_logged_in? || (@@teachers_for_klasse[klasse] || {}).include?(@session_user[:shorthand])
@@ -3548,7 +3546,7 @@ class Main < Sinatra::Base
             end
         elsif path == 'email_overview'
             redirect "#{WEB_ROOT}/", 302 unless @session_user
-            parts = request.env['REQUEST_PATH'].split('/')
+            parts = request.path.split('/')
             klasse = CGI::unescape(parts[2])
 #             STDERR.puts @@teachers_for_klasse[klasse].to_yaml
             unless admin_logged_in? || can_see_all_timetables_logged_in? || (@@teachers_for_klasse[klasse] || {}).include?(@session_user[:shorthand])
@@ -3556,7 +3554,7 @@ class Main < Sinatra::Base
             end
         elsif path == 'at_overview'
             redirect "#{WEB_ROOT}/", 302 unless @session_user
-            parts = request.env['REQUEST_PATH'].split('/')
+            parts = request.path.split('/')
             klasse = CGI::unescape(parts[2])
 #             STDERR.puts @@teachers_for_klasse[klasse].to_yaml
             unless admin_logged_in? || can_see_all_timetables_logged_in? || (@@teachers_for_klasse[klasse] || {}).include?(@session_user[:shorthand])
@@ -3564,7 +3562,7 @@ class Main < Sinatra::Base
             end
         elsif path == 'lessons'
             redirect "#{WEB_ROOT}/", 302 unless @session_user
-            parts = request.env['REQUEST_PATH'].split('/')
+            parts = request.path.split('/')
             show_lesson_key = CGI::unescape(parts[2])
             lesson_key_id = @@lessons[:lesson_keys][show_lesson_key][:id]
             lesson_data = Main.get_lesson_data(show_lesson_key)
@@ -3586,24 +3584,24 @@ class Main < Sinatra::Base
                                 :secure => DEVELOPMENT ? false : true)
             redirect "#{STREAM_SITE_URL}?jwt=#{jwt}", 302
         elsif path == 'tests'
-            parts = request.env['REQUEST_PATH'].split('/')
+            parts = request.path.split('/')
             klasse = (parts[2] || '').strip
             if klasse.empty?
                 klasse = klassen_for_session_user.first
             end
         elsif path == 'salzh_protokoll' || path == 'self_tests'
-            parts = request.env['REQUEST_PATH'].split('/')
+            parts = request.path.split('/')
             salzh_protocol_delta = (parts[2] || '').strip
         elsif path == 'pk5'
             user_email = @session_user[:email]
             if user_with_role_logged_in?(:teacher)
-                parts = request.env['REQUEST_PATH'].split('/')
+                parts = request.path.split('/')
                 user_email = parts[2]
             end
         elsif path == 'projekttage'
             user_email = @session_user[:email]
             if user_with_role_logged_in?(:teacher)
-                parts = request.env['REQUEST_PATH'].split('/')
+                parts = request.path.split('/')
                 if parts[2]
                     user_email = parts[2]
                 end
@@ -3611,7 +3609,7 @@ class Main < Sinatra::Base
         elsif path == 'lab8' || path == 'lab9'
             user_email = @session_user[:email]
             # if user_with_role_logged_in?(:teacher)
-            parts = request.env['REQUEST_PATH'].split('/')
+            parts = request.path.split('/')
             if parts[2]
                 user_email = parts[2]
             end
@@ -3653,7 +3651,7 @@ class Main < Sinatra::Base
         if path == 'timetable'
             redirect "#{WEB_ROOT}/", 302 unless @session_user
             if teacher_logged_in? || tablet_logged_in? || can_see_all_timetables_logged_in?
-                parts = request.env['REQUEST_PATH'].split('/')
+                parts = request.path.split('/')
                 timetable_id = parts[2]
                 if tablet_logged_in?
                     tablet_id = @session_user[:tablet_id]
@@ -3937,9 +3935,29 @@ class Main < Sinatra::Base
                     @original_path = original_path
                     @task_slug = slug
                     if original_path == 'c'
-                        parts = request.env['REQUEST_PATH'].split('/')
+                        parts = request.path.split('/')
                         login_tag = parts[2]
                         login_code = parts[3]
+
+                        STDERR.puts "LOGIN DEBUG"
+                        STDERR.puts "  request_path: #{request.path.inspect}"
+                        STDERR.puts "  parts:        #{parts.inspect}"
+                        STDERR.puts "  login_tag:    #{login_tag.inspect}"
+                        STDERR.puts "  class:        #{login_tag.class}"
+                        STDERR.puts "  encoding:     #{login_tag.encoding}"
+                        STDERR.puts "  bytes:        #{login_tag.bytes.inspect}"
+
+                        debug_rows = neo4j_query(<<~CYPHER, tag: login_tag)
+                            MATCH (l:LoginCode)
+                            RETURN l.tag AS stored_tag,
+                                l.tag = $tag AS equal,
+                                size(l.tag) AS stored_size,
+                                size($tag) AS parameter_size
+                            ORDER BY l.tag
+                        CYPHER
+
+                        STDERR.puts "  rows:         #{debug_rows.inspect}"
+
                         login_method = neo4j_query_expect_one(<<~END_OF_QUERY, {:tag => login_tag})['method']
                             MATCH (l:LoginCode {tag: $tag}) RETURN COALESCE(l.method, 'email') AS method;
                         END_OF_QUERY

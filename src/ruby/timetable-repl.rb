@@ -78,7 +78,7 @@ class TimetableRepl < Sinatra::Base
     end
     
     get '/api/update/*' do
-        data = request.env['REQUEST_PATH'].sub('/api/update/', '')
+        data = request.path.sub('/api/update/', '')
         if data == 'all_messages'
             @@queue << {:which => :all_messages, :wait => true}
         elsif data =~ /^_event_.+/ || data =~ /^_poll_run_.+/ || data =~ /^_groups_.+/ || data =~ /^_angebote_.+/

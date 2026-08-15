@@ -1,6 +1,5 @@
 #!/usr/bin/env ruby
 require './main.rb'
-require 'nextcloud'
 
 require 'set'
 
@@ -8,9 +7,7 @@ class Script
     include UserRoleHelper
 
     def initialize
-        @ocs = Nextcloud.ocs(url: NEXTCLOUD_URL_FROM_RUBY_CONTAINER,
-                             username: NEXTCLOUD_USER,
-                             password: NEXTCLOUD_PASSWORD)
+        @ocs = DashboardNextcloud.admin
     end
 
     def run

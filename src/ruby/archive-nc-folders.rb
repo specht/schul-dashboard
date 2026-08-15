@@ -4,7 +4,6 @@ require './parser.rb'
 require 'set'
 require 'zlib'
 require 'fileutils'
-require 'nextcloud'
 require 'cgi'
 require 'yaml'
 
@@ -16,9 +15,7 @@ SHARE_SHARE = 16
 
 class Script
     def initialize
-        @ocs = Nextcloud.ocs(url: NEXTCLOUD_URL_FROM_RUBY_CONTAINER,
-                             username: NEXTCLOUD_USER,
-                             password: NEXTCLOUD_PASSWORD)
+        @ocs = DashboardNextcloud.admin
     end
 
     def run
@@ -43,9 +40,7 @@ class Script
             unless wanted_nc_ids.nil?
                 next unless wanted_nc_ids.include?(user_id)
             end
-            ocs_user = Nextcloud.ocs(url: NEXTCLOUD_URL_FROM_RUBY_CONTAINER,
-                                     username: user_id,
-                                     password: NEXTCLOUD_ALL_ACCESS_PASSWORD_BE_CAREFUL)
+            ocs_user = DashboardNextcloud.as_user(user_id)
             STDERR.puts "Moving [#{user_id}]/Unterricht to /Archiv-Jahresbeginn-25-26..."
             if srsly
                 result = ocs_user.webdav.directory.move('/Unterricht', '/Archiv-Jahresbeginn-25-26')

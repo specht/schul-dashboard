@@ -1,0 +1,16 @@
+DETACH DELETE:
+- LessonInfo
+- AudioComment
+- TextComment
+- HomeworkFeedback
+- Booking
+- Lab8Projekt
+- Lab8ProjektChange
+- Lab9Projekt
+- Lab9ProjektChange
+- Mail
+- AT
+- Pk5
+- Pk5Change
+- Projekttage
+- ProjekttageChange

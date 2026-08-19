@@ -88,7 +88,7 @@ GEM
       connection_pool (~> 3.0)
       tzinfo (~> 2.0)
       zeitwerk (~> 2.6)
-    neo4j_bolt (0.4.2)
+    neo4j_bolt (0.5.0)
       gli (~> 2.22)
       neo4j-ruby-driver (= 6.2.1.beta.4)
       pry (~> 0.15)
@@ -237,7 +237,7 @@ DEPENDENCIES
   kramdown
   mail
   mustermann (>= 3.0.3)
-  neo4j_bolt (~> 0.4.2)
+  neo4j_bolt (~> 0.5.0)
   nextcloud-client (~> 0.1.1)
   nokogiri
   prawn (< 2.5.0)

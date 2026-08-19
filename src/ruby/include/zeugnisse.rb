@@ -93,8 +93,8 @@ class Main < Sinatra::Base
         # @@need_sozialverhalten is a hash of teacher shorthands and klassen
         @@need_sozialverhalten = {}
 
-        # STDERR.puts "ATTENTION determine_zeugnislisten() IS DOING NOTHING RIGHT NOW"
-        # return
+        STDERR.puts "ATTENTION determine_zeugnislisten() IS DOING NOTHING RIGHT NOW"
+        return
 
         kurse_for_klasse = Hash[ZEUGNIS_KLASSEN_ORDER.map do |klasse|
             [klasse, (@@lessons_for_klasse[klasse] || []).map { |x| @@lessons[:lesson_keys][x].merge({:lesson_key => x})}]

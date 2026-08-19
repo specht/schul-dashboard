@@ -41,9 +41,9 @@ class Script
                 next unless wanted_nc_ids.include?(user_id)
             end
             ocs_user = DashboardNextcloud.as_user(user_id)
-            STDERR.puts "Moving [#{user_id}]/Unterricht to /Archiv-Jahresbeginn-25-26..."
+            STDERR.puts "Moving [#{user_id}]/Unterricht to /Archiv-Jahresbeginn-26-27..."
             if srsly
-                result = ocs_user.webdav.directory.move('/Unterricht', '/Archiv-Jahresbeginn-25-26')
+                result = ocs_user.webdav.directory.move('/Unterricht', '/Archiv-Jahresbeginn-26-27')
                 if result[:status] != 'ok'
                     STDERR.puts "Error!"
                     STDERR.puts result.to_json

@@ -657,8 +657,10 @@ class Parser
                     klasse = parts[1]
                     klasse = '8o' if klasse == '8?'
                     klasse = '8o' if klasse == '8ω'
+                    klasse = '8o' if klasse == '8w'
                     klasse = '9o' if klasse == '9?'
                     klasse = '9o' if klasse == '9ω'
+                    klasse = '9o' if klasse == '9w'
                     klasse = '7e_8e' if klasse == '7e/8e'
                     cache_key = parts[2, parts.size - 2].join('/')
                     line_cache[cache_key] ||= Set.new()

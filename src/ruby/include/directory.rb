@@ -707,11 +707,16 @@ class Main < Sinatra::Base
         END_OF_QUERY
             ['', 'eltern.'].each do |who|
                 list_email = who + remove_accents(row[:info][:name].downcase).split(/[^a-z0-9]+/).map { |x| x.strip }.reject { |x| x.empty? }.join('-') + '@' + MAILING_LIST_DOMAIN
-                @@angebote_mailing_lists[list_email] ||= {
-                    :label => row[:info][:name] + (who.empty? ? '' : ' (Eltern)'),
-                    :recipients => [],
-                }
-                @@angebote_mailing_lists[list_email][:recipients] << who + row[:recipient]
+                begin
+                    @@angebote_mailing_lists[list_email] ||= {
+                        :label => row[:info][:name] + (who.empty? ? '' : ' (Eltern)'),
+                        :recipients => [],
+                    }
+                    @@angebote_mailing_lists[list_email][:recipients] << who + row[:recipient]
+                rescue => e
+                    STDERR.puts "Error adding angebote mailing list:"
+                    STDERR.puts e
+                end
             end
         end
     end

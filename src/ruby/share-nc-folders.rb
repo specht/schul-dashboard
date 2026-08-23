@@ -96,6 +96,7 @@ class Script
         STDERR.puts "    permissions updated:       #{@stats[:permissions_updated]}"
         STDERR.puts "    moved:                     #{@stats[:shares_moved]}"
         STDERR.puts "    stale shares removed:      #{@stats[:shares_removed]}"
+        STDERR.puts "    duplicate shares removed:  #{@stats[:duplicate_shares_removed]}"
         STDERR.puts "    duplicate targets skipped: #{@stats[:duplicate_target_sources_skipped]}"
 
         unless SRSLY
@@ -361,6 +362,115 @@ class Script
         end
 
         present_shares
+    end
+
+    def present_shares_from_records
+        present_shares = {}
+
+        @present_share_records.each_pair do |key, shares|
+            path, user_id = key
+            next unless path.index("/#{SHARE_SOURCE_FOLDER}/") == 0
+            next if shares.empty?
+
+            share = shares.first
+
+            present_shares[user_id] ||= {}
+            present_shares[user_id][path] = {
+                :permissions => share['permissions'].to_i,
+                :target_path => share['file_target'],
+                :share_with => share['share_with_displayname'],
+                :id => share['id'],
+                :share_type => share['share_type'].to_i
+            }
+        end
+
+        present_shares
+    end
+
+    def preferred_share(shares, wanted_target)
+        shares.find do |share|
+            same_nc_path?(share['file_target'], wanted_target)
+        end || shares.min_by { |share| share['id'].to_i }
+    end
+
+    def remove_present_share_record!(key, share, duplicate:, failed_share_ids:)
+        path, user_id = key
+        kind = duplicate ? 'duplicate' : 'stale'
+
+        log "Removing #{kind} share ##{share['id']} #{path} => [#{user_id}]#{share['file_target']}..."
+
+        begin
+            @ocs.file_sharing.destroy(share['id'])
+            count(duplicate ? :duplicate_shares_removed : :shares_removed)
+            @present_share_records[key].delete_if do |record|
+                record['id'].to_s == share['id'].to_s
+            end
+            true
+        rescue StandardError => e
+            error "Could not remove #{kind} share #{path} for #{user_id}, share id #{share['id']}: #{e.class}: #{e.message}",
+                  e.backtrace.first(10).join("\n")
+            failed_share_ids << share['id']
+            false
+        end
+    end
+
+    def deduplicate_present_share_records!(path, user_id, wanted_target, failed_share_ids)
+        key = [normalize_nc_path(path), user_id]
+        shares = @present_share_records[key] || []
+        return shares if shares.size <= 1
+
+        keep = preferred_share(shares, wanted_target)
+        ok = true
+
+        shares.dup.each do |share|
+            next if share['id'].to_s == keep['id'].to_s
+
+            unless remove_present_share_record!(
+                key,
+                share,
+                duplicate: true,
+                failed_share_ids: failed_share_ids
+            )
+                ok = false
+            end
+        end
+
+        return nil unless ok
+
+        @present_share_records[key] || []
+    end
+
+    def reconcile_present_shares_before_ensure!(wanted_shares, wanted_nc_ids, failed_share_ids)
+        # Clean up before MOVE. Otherwise a stale share can still occupy the
+        # wanted destination and make SabreDAV return 412.
+        @present_share_records.keys.sort_by { |path, user_id| [user_id, path] }.each do |key|
+            path, user_id = key
+            next unless selected_user?(wanted_nc_ids, user_id)
+            next unless path.index("/#{SHARE_SOURCE_FOLDER}/") == 0
+
+            wanted_info = (wanted_shares[user_id] || {})[path]
+
+            if wanted_info.nil?
+                (@present_share_records[key] || []).dup.each do |share|
+                    remove_present_share_record!(
+                        key,
+                        share,
+                        duplicate: false,
+                        failed_share_ids: failed_share_ids
+                    )
+                end
+                next
+            end
+
+            deduplicate_present_share_records!(
+                path,
+                user_id,
+                wanted_info[:target_path],
+                failed_share_ids
+            )
+        end
+
+        present_shares_from_records
     end
 
     def resolve_only_user!(only_user)
@@ -661,6 +771,17 @@ class Script
             present_shares = collect_present_shares
         end
 
+        failed_share_ids = Set.new()
+
+        if SRSLY
+            log "Removing stale and duplicate shares before ensuring wanted shares..."
+            present_shares = reconcile_present_shares_before_ensure!(
+                wanted_shares,
+                wanted_nc_ids,
+                failed_share_ids
+            )
+        end
+
         File.open('/internal/debug/present-shares-cache.yaml', 'w') do |f|
             f.write present_shares.to_yaml
         end
@@ -674,8 +795,6 @@ class Script
         File.open('/internal/debug/wanted-shares.yaml', 'w') do |f|
             f.write wanted_shares.to_yaml
         end
-
-        failed_share_ids = Set.new()
 
         wanted_shares.keys.sort.each do |user_id|
             unless wanted_nc_ids.nil?
@@ -790,6 +909,19 @@ class Script
                         count(:shares_recreated_from_stale_cache)
                         recreated_from_stale_cache = true
                         shares = user_shares_for_path(path, user_id)
+                    end
+
+                    if shares.size > 1
+                        shares = deduplicate_present_share_records!(
+                            path,
+                            user_id,
+                            info[:target_path],
+                            failed_share_ids
+                        )
+
+                        # If removing one duplicate failed, do not attempt a MOVE
+                        # while multiple mounts for the same source remain.
+                        next if shares.nil?
                     end
 
                     if shares.size != 1

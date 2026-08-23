@@ -363,6 +363,8 @@ class SetupDatabase
     ]
 
     def setup(main)
+        return if ENV['DASHBOARD_SERVICE'] == 'script'
+
         delay = 1
         10.times do
             begin

@@ -32,6 +32,7 @@ class Script
         @debug_shares = false
         @errors = []
         @stats = Hash.new(0)
+        @present_share_records = {}
     end
 
     def log(message = '')
@@ -265,7 +266,7 @@ class Script
     end
 
     def verify_share_target_after_move(path, user_id, share_id, wanted_target)
-        shares_after_move = user_shares_for_path(path, user_id)
+        shares_after_move = user_shares_for_path(path, user_id, force: true)
         share_after_move = shares_after_move.find { |x| x['id'].to_s == share_id.to_s }
 
         if @debug_shares
@@ -310,10 +311,20 @@ class Script
         })
     end
 
-    def user_shares_for_path(path, user_id)
-        (@ocs.file_sharing.specific(path.gsub(' ', '%20')) || []).select do |share|
+    def user_shares_for_path(path, user_id, force: false)
+        key = [normalize_nc_path(path), user_id]
+
+        unless force
+            cached = @present_share_records[key]
+            return cached unless cached.nil?
+        end
+
+        shares = (@ocs.file_sharing.specific(path.gsub(' ', '%20')) || []).select do |share|
             share['share_type'].to_i == 0 && share['share_with'] == user_id
         end
+
+        @present_share_records[key] = shares
+        shares
     end
 
     def cache_has_share_types?(present_shares)
@@ -327,10 +338,16 @@ class Script
 
     def collect_present_shares
         present_shares = {}
+        @present_share_records = {}
 
         (@ocs.file_sharing.all || []).each do |share|
             next if share['share_with'].nil?
             next unless share['share_type'].to_i == 0
+            next if share['path'].nil?
+
+            key = [normalize_nc_path(share['path']), share['share_with']]
+            (@present_share_records[key] ||= []) << share
+
             next unless share['path'].index("/#{SHARE_SOURCE_FOLDER}/") == 0
 
             present_shares[share['share_with']] ||= {}
@@ -367,6 +384,11 @@ class Script
         argv.delete('--srsly')
 
         use_cached = !argv.delete('--use-cached').nil?
+        if use_cached && SRSLY
+            warn '--use-cached is ignored with --srsly so changes are based on a fresh share snapshot.'
+            use_cached = false
+        end
+
         @debug_shares = !argv.delete('--debug-shares').nil?
         @verbose = !argv.delete('--verbose').nil? || @debug_shares
 

@@ -5,6 +5,7 @@ require 'json'
 require 'net/http'
 require 'nokogiri'
 require 'set'
+require 'thread'
 require 'uri'
 
 class Script
@@ -12,6 +13,42 @@ class Script
         'd' => 'DAV:',
         'oc' => 'http://owncloud.org/ns'
     }.freeze
+
+    DEFAULT_JOBS = 8
+
+    class WebdavSession
+        def initialize
+            @base_uri = URI(NEXTCLOUD_URL_FROM_RUBY_CONTAINER)
+            connect
+        end
+
+        def request(request)
+            @http.request(request)
+        rescue EOFError, IOError, Errno::ECONNRESET, Errno::EPIPE
+            reconnect
+            @http.request(request)
+        end
+
+        def close
+            @http.finish if @http&.started?
+        rescue IOError
+            nil
+        end
+
+        private
+
+        def connect
+            @http = Net::HTTP.new(@base_uri.host, @base_uri.port)
+            @http.use_ssl = @base_uri.scheme == 'https'
+            @http.read_timeout = DashboardNextcloud::HTTP_READ_TIMEOUT
+            @http.start
+        end
+
+        def reconnect
+            close
+            connect
+        end
+    end
 
     def initialize
         @admin = DashboardNextcloud.admin
@@ -22,6 +59,8 @@ class Script
         @only_user = nil
         @only_klasse = nil
         @show_all_users = false
+        @root_only = false
+        @jobs = DEFAULT_JOBS
     end
 
     def take_option!(argv, name)
@@ -44,7 +83,12 @@ class Script
         @json_path = take_option!(argv, '--json')
         @only_user = take_option!(argv, '--only-user')
         @only_klasse = take_option!(argv, '--klasse')
+        jobs = take_option!(argv, '--jobs')
+        @jobs = Integer(jobs, 10) unless jobs.nil?
         @show_all_users = !argv.delete('--all-users').nil?
+        @root_only = !argv.delete('--root-only').nil?
+
+        raise '--jobs must be at least 1' if @jobs < 1
 
         unless argv.empty?
             raise "Unknown arguments: #{argv.join(' ')}"
@@ -81,7 +125,7 @@ class Script
         end
     end
 
-    def raw_propfind(user_id, path, depth: 1)
+    def raw_propfind(session, user_id, path, depth: 1)
         uri = DashboardNextcloud.dav_uri(user_id, path)
 
         body = <<~XML
@@ -100,16 +144,13 @@ class Script
             </d:propfind>
         XML
 
-        response = Net::HTTP.start(uri.host, uri.port, use_ssl: uri.scheme == 'https') do |http|
-            http.read_timeout = DashboardNextcloud::HTTP_READ_TIMEOUT
+        request = Net::HTTPGenericRequest.new('PROPFIND', true, true, uri.request_uri)
+        request.basic_auth user_id, NEXTCLOUD_ALL_ACCESS_PASSWORD_BE_CAREFUL
+        request['Depth'] = depth.to_s
+        request['Content-Type'] = 'application/xml; charset=utf-8'
+        request.body = body
 
-            request = Net::HTTPGenericRequest.new('PROPFIND', true, true, uri.request_uri)
-            request.basic_auth user_id, NEXTCLOUD_ALL_ACCESS_PASSWORD_BE_CAREFUL
-            request['Depth'] = depth.to_s
-            request['Content-Type'] = 'application/xml; charset=utf-8'
-            request.body = body
-            http.request(request)
-        end
+        response = session.request(request)
 
         unless response.code.to_i == 207
             raise "PROPFIND #{path.inspect} for #{user_id} failed: HTTP #{response.code} #{response.message}"
@@ -164,10 +205,10 @@ class Script
         end
     end
 
-    def list_directory(user_id, path)
+    def list_directory(session, user_id, path)
         wanted = normalize_path(path)
 
-        parse_propfind(user_id, raw_propfind(user_id, wanted, depth: 1)).reject do |entry|
+        parse_propfind(user_id, raw_propfind(session, user_id, wanted, depth: 1)).reject do |entry|
             entry[:path] == wanted
         end.sort_by do |entry|
             [entry[:type] == 'file' ? 1 : 0, entry[:name].downcase]
@@ -241,8 +282,8 @@ class Script
         result
     end
 
-    def scan_tree(user_id, path, mounts, seen_fileids = Set.new)
-        entries = list_directory(user_id, path)
+    def scan_tree(session, user_id, path, mounts, seen_fileids = Set.new)
+        entries = list_directory(session, user_id, path)
 
         entries.map do |entry|
             item = decorated_entry(entry, mounts)
@@ -254,7 +295,7 @@ class Script
                     next_seen = seen_fileids.dup
                     next_seen << entry[:fileid] unless entry[:fileid].nil?
                     begin
-                        item[:children] = scan_tree(user_id, entry[:path], mounts, next_seen)
+                        item[:children] = scan_tree(session, user_id, entry[:path], mounts, next_seen)
                     rescue StandardError => e
                         item[:children_error] = "#{e.class}: #{e.message}"
                     end
@@ -294,27 +335,27 @@ class Script
         end
     end
 
-    def scan_user(email, mounts_by_user)
+    def scan_user(session, email, mounts_by_user)
         info = @user_info.fetch(email)
         user_id = info[:nc_login]
         mounts = mounts_by_user[user_id]
 
-        root_entries = list_directory(user_id, '/').map do |entry|
+        root_entries = list_directory(session, user_id, '/').map do |entry|
             decorated_entry(entry, mounts)
         end
 
         unterricht_entry = root_entries.find { |entry| entry[:path] == '/Unterricht' }
 
         unterricht_tree =
-            if unterricht_entry && unterricht_entry[:type] == 'directory'
-                scan_tree(user_id, '/Unterricht', mounts)
+            if !@root_only && unterricht_entry && unterricht_entry[:type] == 'directory'
+                scan_tree(session, user_id, '/Unterricht', mounts)
             else
                 []
             end
 
         root_share_warnings = root_entries.select { |entry| entry[:warning] == 'ROOT SHARE' }
 
-        result = {
+        {
             email: email,
             nc_login: user_id,
             display_name: info[:display_name],
@@ -323,12 +364,23 @@ class Script
             root: root_entries,
             unterricht: unterricht_tree
         }
+    end
 
+    def print_user(result)
         puts
         puts '=' * 80
-        puts "#{info[:display_name]}  [#{user_id}]  #{info[:klasse]}"
-        puts "#{email}"
+        puts "#{result[:display_name]}  [#{result[:nc_login]}]  #{result[:klasse]}"
+        puts result[:email]
         puts
+
+        if result[:error]
+            puts "ERROR: #{result[:error]}"
+            return
+        end
+
+        root_share_warnings = result[:root_share_warnings] || []
+        root_entries = result[:root] || []
+        unterricht_entry = root_entries.find { |entry| entry[:path] == '/Unterricht' }
 
         if root_share_warnings.empty?
             puts 'Top level:'
@@ -345,14 +397,68 @@ class Script
             puts 'Unterricht/: MISSING'
         elsif unterricht_entry[:type] != 'directory'
             puts 'Unterricht/: NOT A DIRECTORY'
+        elsif @root_only
+            puts 'Unterricht/ tree: skipped (--root-only)'
         else
             puts 'Unterricht/ tree:'
-            unterricht_tree.each do |entry|
+            (result[:unterricht] || []).each do |entry|
                 print_entry(entry, indent: 1)
             end
         end
+    end
 
-        result
+    def scan_users(emails, mounts_by_user)
+        results = Array.new(emails.size)
+        queue = Queue.new
+        emails.each_with_index { |email, index| queue << [index, email] }
+
+        worker_count = [@jobs, emails.size].min
+        worker_count.times { queue << :stop }
+
+        progress_mutex = Mutex.new
+        completed = 0
+
+        sessions = Array.new(worker_count) { WebdavSession.new }
+
+        workers = sessions.map do |session|
+            Thread.new do
+                loop do
+                    item = queue.pop
+                    break if item == :stop
+
+                    index, email = item
+                    result =
+                        begin
+                            scan_user(session, email, mounts_by_user)
+                        rescue StandardError => e
+                            info = @user_info[email] || {}
+                            {
+                                email: email,
+                                nc_login: info[:nc_login],
+                                display_name: info[:display_name],
+                                klasse: info[:klasse],
+                                error: "#{e.class}: #{e.message}"
+                            }
+                        end
+
+                    results[index] = result
+
+                    progress_mutex.synchronize do
+                        completed += 1
+                        if result[:error]
+                            STDERR.puts "[#{completed}/#{emails.size}] ERROR #{email}: #{result[:error]}"
+                        else
+                            STDERR.puts "[#{completed}/#{emails.size}] #{email}"
+                        end
+                    end
+                end
+            end
+        end
+
+        workers.each(&:join)
+        results
+    ensure
+        (sessions || []).each(&:close)
     end
 
     def run
@@ -363,27 +469,15 @@ class Script
             raise 'No matching users.'
         end
 
-        STDERR.puts "Read-only Nextcloud scan of #{emails.size} user(s)."
+        STDERR.puts "Read-only Nextcloud scan of #{emails.size} user(s), #{@jobs} worker(s)."
         STDERR.puts 'No files, folders or shares will be changed.'
+        STDERR.puts 'Scanning top level only.' if @root_only
 
         mounts_by_user = share_mounts
-        results = []
+        results = scan_users(emails, mounts_by_user)
 
-        emails.each_with_index do |email, index|
-            STDERR.puts "[#{index + 1}/#{emails.size}] #{email}"
-            begin
-                results << scan_user(email, mounts_by_user)
-            rescue StandardError => e
-                info = @user_info[email] || {}
-                STDERR.puts "ERROR for #{email}: #{e.class}: #{e.message}"
-                results << {
-                    email: email,
-                    nc_login: info[:nc_login],
-                    display_name: info[:display_name],
-                    klasse: info[:klasse],
-                    error: "#{e.class}: #{e.message}"
-                }
-            end
+        results.each do |result|
+            print_user(result)
         end
 
         if @json_path

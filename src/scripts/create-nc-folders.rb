@@ -7,6 +7,8 @@ command = [
     './config.rb',
     'exec',
     '-T',
+    '-e',
+    'DASHBOARD_SERVICE=script',
     'ruby',
     'ruby',
     'create-nc-folders.rb'

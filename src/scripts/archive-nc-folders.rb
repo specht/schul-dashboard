@@ -5,6 +5,8 @@ repository_root = File.expand_path('../..', __dir__)
 success = system(
     './config.rb',
     'exec',
+    '-e',
+    'DASHBOARD_SERVICE=script',
     'ruby',
     'ruby',
     'archive-nc-folders.rb',

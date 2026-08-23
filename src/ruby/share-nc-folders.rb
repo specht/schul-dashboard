@@ -11,6 +11,7 @@ require 'uri'
 require 'net/http'
 require 'json'
 require 'securerandom'
+require 'rexml/document'
 
 DEBUG_ARCHIVE_PATH = '/data/debug_archives/2023-07-23.zip'
 SHARE_ARCHIVED_FILES = ARGV.include?('--share-archived')
@@ -110,6 +111,7 @@ class Script
         STDERR.puts "  Target folders:"
         STDERR.puts "    already wanted/in place:   #{@stats[:target_folders_already_wanted]}"
         STDERR.puts "    deleted:                   #{@stats[:target_folders_deleted]}"
+        STDERR.puts "    empty move targets removed: #{@stats[:empty_move_targets_removed]}"
         STDERR.puts "    kept because non-empty:    #{@stats[:target_folders_kept_nonempty]}"
         STDERR.puts "    inspect/delete errors:     #{@stats[:target_folder_cleanup_errors]}"
 
@@ -157,15 +159,21 @@ class Script
         DashboardNextcloud.dav_uri(user_id, path)
     end
 
-    def raw_webdav_request(user_id, method, path, destination_path: nil, depth: nil)
+    def raw_webdav_request(user_id, method, path, destination_path: nil, depth: nil, request_body: nil, headers: {})
         uri = dav_uri_for(user_id, path)
 
         response = Net::HTTP.start(uri.host, uri.port, use_ssl: uri.scheme == 'https') do |http|
             http.read_timeout = DashboardNextcloud::HTTP_READ_TIMEOUT
 
-            req = Net::HTTPGenericRequest.new(method.to_s.upcase, false, true, uri.request_uri)
+            req = Net::HTTPGenericRequest.new(method.to_s.upcase, !request_body.nil?, true, uri.request_uri)
             req.basic_auth user_id, NEXTCLOUD_ALL_ACCESS_PASSWORD_BE_CAREFUL
             req['Depth'] = depth.to_s unless depth.nil?
+            headers.each_pair { |name, value| req[name] = value }
+
+            unless request_body.nil?
+                req['Content-Type'] = 'application/xml; charset=utf-8' if req['Content-Type'].nil?
+                req.body = request_body
+            end
 
             if destination_path
                 destination_uri = dav_uri_for(user_id, destination_path)
@@ -205,6 +213,81 @@ class Script
         # 207 = Multi-Status
         result[:ok] = result[:code] == 207
 
+        result
+    end
+
+    def raw_propfind_move_target(user_id, path)
+        request_body = <<~XML
+            <?xml version="1.0" encoding="utf-8" ?>
+            <d:propfind xmlns:d="DAV:" xmlns:nc="http://nextcloud.org/ns">
+              <d:prop>
+                <d:resourcetype />
+                <d:getetag />
+                <nc:mount-type />
+                <nc:is-mount-root />
+              </d:prop>
+            </d:propfind>
+        XML
+
+        result = raw_webdav_request(
+            user_id,
+            'PROPFIND',
+            path,
+            depth: 1,
+            request_body: request_body
+        )
+        result[:ok] = result[:code] == 207
+        return result unless result[:ok]
+
+        begin
+            document = REXML::Document.new(result[:body])
+            namespaces = {
+                'd' => 'DAV:',
+                'nc' => 'http://nextcloud.org/ns'
+            }
+            responses = REXML::XPath.match(document, '//d:response', namespaces)
+            response = responses.first
+
+            raise 'PROPFIND returned no DAV response' if response.nil?
+
+            successful_propstat = REXML::XPath.match(response, 'd:propstat', namespaces).find do |propstat|
+                status = REXML::XPath.first(propstat, 'd:status', namespaces)&.text.to_s
+                status.include?(' 200 ')
+            end
+            raise 'PROPFIND returned no successful propstat' if successful_propstat.nil?
+
+            prop = REXML::XPath.first(successful_propstat, 'd:prop', namespaces)
+            raise 'PROPFIND returned no property set' if prop.nil?
+
+            mount_type_node = REXML::XPath.first(prop, 'nc:mount-type', namespaces)
+            mount_root_node = REXML::XPath.first(prop, 'nc:is-mount-root', namespaces)
+
+            result[:response_count] = responses.size
+            result[:collection] = !REXML::XPath.first(
+                prop,
+                'd:resourcetype/d:collection',
+                namespaces
+            ).nil?
+            result[:etag] = REXML::XPath.first(prop, 'd:getetag', namespaces)&.text.to_s
+            result[:mount_type] = mount_type_node&.text.to_s
+            result[:mount_root] = mount_root_node&.text.to_s == 'true'
+            result[:mount_info_available] = !mount_type_node.nil? && !mount_root_node.nil?
+        rescue StandardError => e
+            result[:ok] = false
+            result[:parse_error] = "#{e.class}: #{e.message}"
+        end
+
+        result
+    end
+
+    def raw_delete_empty_move_target(user_id, path, etag)
+        result = raw_webdav_request(
+            user_id,
+            'DELETE',
+            path,
+            headers: {'If-Match' => etag}
+        )
+        result[:ok] = result[:code] == 204
         result
     end
 
@@ -321,17 +404,61 @@ class Script
     end
 
     def share_move_target_free?(user_id, target_path)
-        result = raw_propfind(user_id, target_path, depth: 0)
+        result = raw_propfind_move_target(user_id, target_path)
 
         return true if result[:code] == 404
 
-        if result[:code] == 207
-            error "Refusing to move share for [#{user_id}] to #{target_path}: destination already exists", result
-        else
+        unless result[:ok]
             error "Could not verify that share destination is free for [#{user_id}]#{target_path}", result
+            return false
         end
 
-        false
+        unless result[:mount_info_available]
+            error "Refusing to remove existing destination for [#{user_id}]#{target_path}: Nextcloud did not return mount information", result
+            return false
+        end
+
+        if result[:mount_root] || !result[:mount_type].to_s.empty?
+            error "Refusing to move share for [#{user_id}] to #{target_path}: destination is a mounted filesystem node", {
+                :mount_type => result[:mount_type],
+                :mount_root => result[:mount_root],
+                :source_uri => result[:source_uri]
+            }
+            return false
+        end
+
+        unless result[:collection]
+            error "Refusing to move share for [#{user_id}] to #{target_path}: destination is not a directory", result
+            return false
+        end
+
+        if result[:response_count] != 1
+            error "Refusing to move share for [#{user_id}] to #{target_path}: destination directory is not empty", {
+                :entries_including_directory => result[:response_count],
+                :source_uri => result[:source_uri]
+            }
+            return false
+        end
+
+        if result[:etag].nil? || result[:etag].empty?
+            error "Refusing to remove empty destination for [#{user_id}]#{target_path}: Nextcloud returned no ETag", result
+            return false
+        end
+
+        # This is an ordinary empty directory at the exact place where the
+        # received share belongs. Remove it only if its ETag is unchanged since
+        # the Depth: 1 check above. That makes a concurrent change fail safely
+        # with HTTP 412 instead of deleting newly-added user data.
+        log "Removing empty ordinary destination directory [#{user_id}]#{target_path} before native share move..."
+        delete_result = raw_delete_empty_move_target(user_id, target_path, result[:etag])
+
+        unless delete_result[:ok]
+            error "Could not remove empty destination directory for [#{user_id}]#{target_path}", delete_result
+            return false
+        end
+
+        count(:empty_move_targets_removed)
+        true
     end
 
     def verify_share_target_after_move(path, user_id, share_id, wanted_target)

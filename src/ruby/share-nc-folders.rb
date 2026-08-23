@@ -9,6 +9,8 @@ require 'yaml'
 require 'zip'
 require 'uri'
 require 'net/http'
+require 'json'
+require 'securerandom'
 
 DEBUG_ARCHIVE_PATH = '/data/debug_archives/2023-07-23.zip'
 SHARE_ARCHIVED_FILES = ARGV.include?('--share-archived')
@@ -266,12 +268,78 @@ class Script
         true
     end
 
+    def native_share_move_rpc_dir
+        '/internal/nextcloud-share-move-rpc'
+    end
+
+    def native_share_move!(share, user_id, wanted_target)
+        rpc_dir = native_share_move_rpc_dir
+        ready_path = File.join(rpc_dir, 'ready')
+
+        unless File.exist?(ready_path)
+            raise "Nextcloud native share move worker is not running. Run this script via src/scripts/share-nc-folders.rb."
+        end
+
+        request_id = "#{Process.pid}-#{SecureRandom.hex(8)}"
+        request_path = File.join(rpc_dir, 'requests', "#{request_id}.json")
+        request_tmp_path = "#{request_path}.tmp"
+        response_path = File.join(rpc_dir, 'responses', "#{request_id}.json")
+
+        request = {
+            'share_id' => share['id'].to_s,
+            'recipient' => user_id,
+            'expected_owner' => share['uid_file_owner'] || share['uid_owner'] || NEXTCLOUD_USER,
+            'current_target' => normalize_nc_path(share['file_target']),
+            'target' => normalize_nc_path(wanted_target)
+        }
+
+        File.write(request_tmp_path, JSON.generate(request))
+        File.rename(request_tmp_path, request_path)
+
+        deadline = Process.clock_gettime(Process::CLOCK_MONOTONIC) + DashboardNextcloud::HTTP_READ_TIMEOUT
+        until File.exist?(response_path)
+            if Process.clock_gettime(Process::CLOCK_MONOTONIC) >= deadline
+                raise "Timed out waiting for Nextcloud native share move worker for share #{share['id']}"
+            end
+            sleep 0.02
+        end
+
+        response = JSON.parse(File.read(response_path))
+        unless response['ok']
+            raise "#{response['error_class']}: #{response['message']}"
+        end
+
+        unless same_nc_path?(response['target'], wanted_target)
+            raise "Native share move returned unexpected target #{response['target'].inspect} for share #{share['id']}"
+        end
+
+        response
+    ensure
+        FileUtils.rm_f(request_tmp_path) if defined?(request_tmp_path) && request_tmp_path
+        FileUtils.rm_f(request_path) if defined?(request_path) && request_path
+        FileUtils.rm_f(response_path) if defined?(response_path) && response_path
+    end
+
+    def share_move_target_free?(user_id, target_path)
+        result = raw_propfind(user_id, target_path, depth: 0)
+
+        return true if result[:code] == 404
+
+        if result[:code] == 207
+            error "Refusing to move share for [#{user_id}] to #{target_path}: destination already exists", result
+        else
+            error "Could not verify that share destination is free for [#{user_id}]#{target_path}", result
+        end
+
+        false
+    end
+
     def verify_share_target_after_move(path, user_id, share_id, wanted_target)
         shares_after_move = user_shares_for_path(path, user_id, force: true)
         share_after_move = shares_after_move.find { |x| x['id'].to_s == share_id.to_s }
 
         if @debug_shares
-            STDERR.puts "AFTER MOVE CHECK:"
+            STDERR.puts "AFTER NATIVE SHARE MOVE CHECK:"
             if share_after_move
                 STDERR.puts "  share id:       #{share_after_move['id']}"
                 STDERR.puts "  file_target:    #{share_after_move['file_target'].inspect}"
@@ -283,12 +351,12 @@ class Script
         end
 
         unless share_after_move
-            error "Could not verify share after MOVE: share disappeared from OCS result. User: #{user_id}, source: #{path}, share id: #{share_id}"
+            error "Could not verify share after native share move: share disappeared from OCS result. User: #{user_id}, source: #{path}, share id: #{share_id}"
             return false
         end
 
         unless same_nc_path?(share_after_move['file_target'], wanted_target)
-            error "MOVE returned success, but file_target did not change as expected. User: #{user_id}, source: #{path}, share id: #{share_id}", {
+            error "Native share move returned success, but file_target did not change as expected. User: #{user_id}, source: #{path}, share id: #{share_id}", {
                 :current_file_target => share_after_move['file_target'],
                 :current_decoded => normalize_nc_path(share_after_move['file_target']),
                 :wanted_target => wanted_target,
@@ -968,14 +1036,19 @@ class Script
                             next
                         end
 
-                        log "RAW MOVE [#{user_id}]#{share['file_target']} -> #{info[:target_path]}..."
-                        move_result = raw_move(user_id, share['file_target'], info[:target_path])
+                        unless share_move_target_free?(user_id, info[:target_path])
+                            failed_share_ids << share['id']
+                            next
+                        end
 
-                        debug_log "RAW MOVE RESULT:"
-                        debug_log move_result.to_yaml
-
-                        unless move_result[:ok]
-                            error "RAW MOVE failed for [#{user_id}]#{share['file_target']} -> #{info[:target_path]}", move_result
+                        log "NATIVE SHARE MOVE [#{user_id}]#{share['file_target']} -> #{info[:target_path]}..."
+                        begin
+                            move_result = native_share_move!(share, user_id, info[:target_path])
+                            debug_log "NATIVE SHARE MOVE RESULT:"
+                            debug_log move_result.to_yaml
+                        rescue StandardError => e
+                            error "Native share move failed for [#{user_id}]#{share['file_target']} -> #{info[:target_path]}: #{e.class}: #{e.message}",
+                                  e.backtrace.first(10).join("\n")
                             failed_share_ids << share['id']
                             next
                         end

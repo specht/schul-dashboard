@@ -27,6 +27,12 @@ LOGS_PATH = './logs'
 DATA_PATH = './data'
 INTERNAL_PATH = './internal'
 
+# Für native Änderungen des Zielpfads empfangener Nextcloud-Shares benötigt
+# share-nc-folders.rb Zugriff auf die lokale Nextcloud-Installation.
+# In Produktionsumgebungen z. B. '/www/vhosts/nextcloud'.
+NEXTCLOUD_INSTALL_PATH = nil
+NEXTCLOUD_PHP_COMMAND = ['sudo', '--user', 'www-data', '/usr/bin/php']
+
 # Der Mail-Forwarder ist ein Skript, das einen Mail-Verteiler implementiert.
 ENABLE_MAIL_FORWARDER = false
 

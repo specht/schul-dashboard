@@ -1359,7 +1359,8 @@ class Parser
     end
 
     def parse_wahlpflichtkurswahl(user_info, lessons, lesson_key_tr, schueler_for_klasse)
-#         debug "Parsing wahlpflichtkurswahl..."
+        debug "Parsing wahlpflichtkurswahl..."
+        STDERR.puts "ATTENTION: parse_wahlpflichtkurswahl is currently doing nothing!"
         schueler_for_lesson_key = {}
         unassigned_names = Set.new()
         begin

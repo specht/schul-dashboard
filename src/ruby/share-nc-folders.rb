@@ -1206,7 +1206,15 @@ class Script
                             next
                         end
 
-                        unless share_move_target_free?(user_id, info[:target_path])
+                        # When an existing share differs from the wanted target only
+                        # by canonical spelling (notably a legacy trailing slash),
+                        # the DAV destination is this share's own mount. In that case
+                        # it is safe to let Nextcloud rewrite file_target in place
+                        # instead of rejecting the destination as already mounted.
+                        canonicalization_only = DashboardNextcloud.canonical_share_target(share['file_target']) ==
+                                                DashboardNextcloud.canonical_share_target(info[:target_path])
+
+                        unless canonicalization_only || share_move_target_free?(user_id, info[:target_path])
                             failed_share_ids << share['id']
                             next
                         end

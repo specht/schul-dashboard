@@ -356,6 +356,8 @@ class Script
     end
 
     def native_share_move!(share, user_id, wanted_target)
+        target = DashboardNextcloud.canonical_share_target(wanted_target)
+
         rpc_dir = native_share_move_rpc_dir
         ready_path = File.join(rpc_dir, 'ready')
 
@@ -373,7 +375,7 @@ class Script
             'recipient' => user_id,
             'expected_owner' => share['uid_file_owner'] || share['uid_owner'] || NEXTCLOUD_USER,
             'current_target' => normalize_nc_path(share['file_target']),
-            'target' => normalize_nc_path(wanted_target)
+            'target' => target
         }
 
         File.write(request_tmp_path, JSON.generate(request))
@@ -392,8 +394,8 @@ class Script
             raise "#{response['error_class']}: #{response['message']}"
         end
 
-        unless same_nc_path?(response['target'], wanted_target)
-            raise "Native share move returned unexpected target #{response['target'].inspect} for share #{share['id']}"
+        unless same_nc_path?(response['target'], target)
+            raise "Native share move returned unexpected target #{response['target'].inspect}; expected #{target.inspect} for share #{share['id']}"
         end
 
         response

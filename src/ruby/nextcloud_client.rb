@@ -46,6 +46,14 @@ module DashboardNextcloud
         CGI.unescape(path.to_s).unicode_normalize(:nfc)
     end
 
+    def self.canonical_share_target(path)
+        normalized = normalize_dav_path(path)
+        normalized = "/#{normalized}" unless normalized.start_with?('/')
+        normalized = normalized.sub(%r{/+\z}, '')
+
+        normalized.empty? ? '/' : normalized
+    end
+
     def self.escape_dav_segment(segment)
         CGI.escape(normalize_dav_path(segment)).gsub('+', '%20')
     end

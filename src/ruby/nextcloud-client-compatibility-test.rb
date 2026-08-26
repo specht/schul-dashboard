@@ -158,6 +158,12 @@ class NextcloudClientCompatibilityTest < Minitest::Test
         assert_nil Thread.current[DashboardNextcloud::READ_TIMEOUT_KEY]
     end
 
+    def test_share_targets_are_canonicalized_without_trailing_slashes
+        assert_equal '/Unterricht/Geschichte GK (12)', DashboardNextcloud.canonical_share_target('/Unterricht/Geschichte GK (12)/')
+        assert_equal '/Unterricht/Rückgabe', DashboardNextcloud.canonical_share_target('Unterricht/R%C3%BCckgabe///')
+        assert_equal '/', DashboardNextcloud.canonical_share_target('/')
+    end
+
     def test_raw_webdav_uri_escapes_each_unicode_segment
         uri = DashboardNextcloud.dav_uri(
             'jörg example',

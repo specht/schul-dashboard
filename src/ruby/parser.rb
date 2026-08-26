@@ -1029,14 +1029,20 @@ class Parser
         kurse_for_schueler = {}
         schueler_for_kurs = {}
         tutor_for_schueler = {}
-        email_for_name = {}
+        emails_for_name = {}
+        register_name = lambda do |name, email|
+            [name, remove_accents(name)].uniq.each do |candidate|
+                emails_for_name[candidate] ||= Set.new()
+                emails_for_name[candidate] << email
+            end
+        end
         user_info.each_pair do |email, info|
             name = "#{info[:last_name].split(', ').reverse.join(' ')}, #{info[:official_first_name]}"
-            email_for_name[name] = email
+            register_name.call(name, email)
             name = "#{info[:last_name].split(', ').reverse.join(' ')}, #{info[:display_first_name]}"
-            email_for_name[name] = email
+            register_name.call(name, email)
             name = "#{info[:last_name].split(', ').reverse.join(' ')}, #{info[:first_name]}"
-            email_for_name[name] = email
+            register_name.call(name, email)
         end
         lesson_keys_for_tag = {}
         lessons[:lesson_keys].keys.each do |lesson_key|
@@ -1092,18 +1098,41 @@ class Parser
         end
         user_info.each_pair do |email, info|
             next unless info[:klasse] == '11' || info[:klasse] == '12'
-            (0..info[:first_name].size).each do |i|
-                ['_', ''].each do |x|
-                    name = remove_accents("#{info[:last_name]}#{x}#{info[:first_name][0, i]}")
-                    email_for_name[name] = email
-                    if info[:last_name].include?(',')
-                        flipped_last_name = info[:last_name].split(', ').map { |x| x.strip }.reverse.join(' ')
-                        name = remove_accents("#{flipped_last_name}#{x}#{info[:first_name][0, i]}")
-                        email_for_name[name] = email
+            last_names = [info[:last_name]]
+            if info[:last_name].include?(',')
+                last_names << info[:last_name].split(', ').map { |x| x.strip }.reverse.join(' ')
+            end
+            last_names.each do |last_name|
+                (0..info[:first_name].size).each do |i|
+                    ['_', ''].each do |x|
+                        register_name.call("#{last_name}#{x}#{info[:first_name][0, i]}", email)
                     end
+                end
+                unless info[:first_name].empty?
+                    register_name.call("#{last_name} #{info[:first_name][0]}.", email)
                 end
             end
         end
+
+        name_tr_path = '/data/kurswahl/name_tr.yaml'
+        name_tr = {}
+        if File.exist?(name_tr_path)
+            name_tr = YAML.load(File.read(name_tr_path)) || {}
+            unless name_tr.is_a?(Hash)
+                raise "Expected #{name_tr_path} to contain a mapping from Kurswahl names to e-mail addresses"
+            end
+            name_tr.each_pair do |name, email|
+                unless user_info.include?(email)
+                    raise "Unknown e-mail address #{email.inspect} for Kurswahl name #{name.inspect} in #{name_tr_path}"
+                end
+                unless ['11', '12'].include?(user_info[email][:klasse])
+                    raise "Kurswahl name #{name.inspect} points to #{email.inspect}, who is not in Jahrgang 11 or 12"
+                end
+            end
+        end
+
+        unmatched_names = Set.new()
+        ambiguous_names = {}
         File.open(path) do |f|
             f.each_line do |line|
                 parts = line.split(',').map { |x| x.gsub('"', '') }
@@ -1111,19 +1140,52 @@ class Parser
                 kurs = parts[2]
                 klasse = parts[4]
                 lesson_key = lesson_key_from_kurs["#{kurs}_#{klasse}"]
-                email = email_for_name[name] || email_for_name[remove_accents(name)]
-                if email && lesson_key
+
+                candidates = Set.new()
+                [name, remove_accents(name)].uniq.each do |candidate|
+                    candidates.merge(emails_for_name[candidate] || [])
+                end
+                email = name_tr[name]
+                email = candidates.first if email.nil? && candidates.size == 1
+
+                if email.nil?
+                    if candidates.empty?
+                        unmatched_names << name
+                    else
+                        ambiguous_names[name] ||= Set.new()
+                        ambiguous_names[name].merge(candidates)
+                    end
+                    next
+                end
+
+                if lesson_key
                     schueler_for_kurs[lesson_key] ||= Set.new()
                     schueler_for_kurs[lesson_key] << email
                     kurse_for_schueler[email] ||= Set.new()
                     kurse_for_schueler[email] << lesson_key
-                else
-                    if DASHBOARD_SERVICE == 'ruby'
-                        if lessons[:lesson_keys][lesson_key]
-                            puts "[#{name}] [#{kurs}] [#{lesson_key}] [#{lessons[:lesson_keys][lesson_key][:pretty_folder_name]}] [#{email}]"
-                        end
+                end
+            end
+        end
+
+        if DASHBOARD_SERVICE == 'ruby'
+            unless ambiguous_names.empty?
+                puts
+                puts 'Kurswahl: ambiguous student names:'
+                ambiguous_names.keys.sort.each do |name|
+                    puts "  #{name}"
+                    ambiguous_names[name].to_a.sort.each do |email|
+                        puts "    -> #{user_info[email][:display_name]} <#{email}>"
                     end
                 end
+                puts "  Add explicit assignments to #{name_tr_path}."
+            end
+            unless unmatched_names.empty?
+                puts
+                puts 'Kurswahl: unknown student names:'
+                unmatched_names.to_a.sort.each do |name|
+                    puts "  #{name}"
+                end
+                puts "  Add explicit assignments to #{name_tr_path}."
             end
         end
         kurs_ids_for_tag = {}

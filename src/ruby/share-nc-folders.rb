@@ -95,6 +95,7 @@ class Script
         STDERR.puts "  Shares:"
         STDERR.puts "    already correct:           #{@stats[:shares_already_correct]}"
         STDERR.puts "    newly shared:              #{@stats[:shares_created]}"
+        STDERR.puts "    creation failures:         #{@stats[:share_create_errors]}"
         STDERR.puts "    recreated from stale info: #{@stats[:shares_recreated_from_stale_cache]}"
         STDERR.puts "    permissions updated:       #{@stats[:permissions_updated]}"
         STDERR.puts "    moved:                     #{@stats[:shares_moved]}"
@@ -500,13 +501,51 @@ class Script
     def create_user_share(ocs, path, user_id, permissions)
         # Use the OCS endpoint directly so we can explicitly suppress share mails.
         # shareType 0 = internal user share.
-        ocs.file_sharing.request(:post, 'shares', {
+        response = ocs.file_sharing.request(:post, 'shares', {
             'path' => path,
             'shareType' => 0,
             'shareWith' => user_id,
             'permissions' => permissions,
             'sendMail' => 'false'
         })
+
+        meta = response.xpath('//meta/*').each_with_object({}) do |node, result|
+            result[node.name] = node.text
+        end
+
+        unless meta['status'] == 'ok'
+            status_code = meta['statuscode'].to_s
+            message = meta['message'].to_s
+            details = []
+            details << "OCS #{status_code}" unless status_code.empty?
+            details << message unless message.empty?
+            details << 'response contained no OCS status' if details.empty?
+
+            raise "Nextcloud rejected share creation #{path} => [#{user_id}]: #{details.join(': ')}"
+        end
+
+        share = {}
+        data = response.at_xpath('//data')
+        (data&.element_children || []).each do |node|
+            next unless node.element_children.empty?
+
+            share[node.name] = node.text
+        end
+
+        if share['id'].to_s.empty?
+            raise "Nextcloud reported successful share creation #{path} => [#{user_id}], but returned no share id"
+        end
+
+        unless share['share_type'].to_i == 0 &&
+               share['share_with'] == user_id &&
+               same_nc_path?(share['path'], path)
+            raise "Nextcloud returned an unexpected share after creating #{path} => [#{user_id}]: #{share.inspect}"
+        end
+
+        share
+    rescue StandardError
+        count(:share_create_errors)
+        raise
     end
 
     def user_shares_for_path(path, user_id, force: false)
@@ -1091,21 +1130,23 @@ class Script
                     created_now = false
                     recreated_from_stale_cache = false
 
+                    created_share = nil
+
                     unless existing_share_info
                         log "Sharing #{path} to [#{user_id}]..."
-                        create_user_share(@ocs, path, user_id, info[:permissions])
+                        created_share = create_user_share(@ocs, path, user_id, info[:permissions])
                         count(:shares_created)
                         created_now = true
                     end
 
-                    shares = user_shares_for_path(path, user_id)
+                    shares = created_share ? [created_share] : user_shares_for_path(path, user_id)
 
                     if shares.empty? && existing_share_info
                         log "Existing share info for #{path} to [#{user_id}] looked stale; creating share again..."
-                        create_user_share(@ocs, path, user_id, info[:permissions])
+                        recreated_share = create_user_share(@ocs, path, user_id, info[:permissions])
                         count(:shares_recreated_from_stale_cache)
                         recreated_from_stale_cache = true
-                        shares = user_shares_for_path(path, user_id)
+                        shares = [recreated_share]
                     end
 
                     if shares.size > 1

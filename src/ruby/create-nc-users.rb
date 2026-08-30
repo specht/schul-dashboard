@@ -45,6 +45,75 @@ class Script
         raise "#{action} failed: #{details}"
     end
 
+    def find_user!(user_id)
+        user = @ocs.user.find(user_id)
+        assert_ocs_success!(user, "Reading Nextcloud user #{user_id}")
+        user
+    end
+
+    def ensure_group!(group_id, all_groups, srsly)
+        return if all_groups.include?(group_id)
+
+        STDERR.puts "@ocs.group.create(#{group_id.inspect})"
+        return unless srsly
+
+        result = @ocs.group.create(group_id)
+        assert_ocs_success!(result, "Creating Nextcloud group #{group_id}")
+        all_groups << group_id
+    end
+
+    def update_user!(user_id, key, value, attribute)
+        result = @ocs.user.update(user_id, key, value)
+        assert_ocs_success!(result, "Updating #{key} for Nextcloud user #{user_id}")
+
+        updated = find_user!(user_id)
+        actual = updated.public_send(attribute)
+        return updated if actual == value
+
+        raise "Updating #{key} for #{user_id} reported success, but Nextcloud returned #{actual.inspect} instead of #{value.inspect}"
+    end
+
+    def add_user_to_group!(user_id, group_id)
+        result = @ocs.user(user_id).group.create(group_id)
+        assert_ocs_success!(result, "Adding Nextcloud user #{user_id} to group #{group_id}")
+    end
+
+    def remove_user_from_group!(user_id, group_id)
+        result = @ocs.user(user_id).group.destroy(group_id)
+        assert_ocs_success!(result, "Removing Nextcloud user #{user_id} from group #{group_id}")
+    end
+
+    def group_members!(group_id)
+        members = @ocs.group(group_id).members
+        assert_ocs_success!(members, "Reading members of Nextcloud group #{group_id}")
+        Set.new(members)
+    end
+
+    def reconcile_group_members!(group_id, wanted_members, srsly)
+        current_members = group_members!(group_id)
+        missing = wanted_members - current_members
+        stale = current_members - wanted_members
+
+        missing.to_a.sort.each do |user_id|
+            STDERR.puts "@ocs.user(#{user_id}).group.create(#{group_id.inspect})"
+            add_user_to_group!(user_id, group_id) if srsly
+        end
+
+        stale.to_a.sort.each do |user_id|
+            STDERR.puts "@ocs.user(#{user_id}).group.destroy(#{group_id.inspect})"
+            remove_user_from_group!(user_id, group_id) if srsly
+        end
+
+        return unless srsly
+
+        actual_members = group_members!(group_id)
+        return if actual_members == wanted_members
+
+        missing_after = (wanted_members - actual_members).to_a.sort
+        stale_after = (actual_members - wanted_members).to_a.sort
+        raise "Failed to reconcile #{group_id}: still missing #{missing_after.inspect}, still stale #{stale_after.inspect}"
+    end
+
     def user_backend(user_id)
         response = @ocs.request(:get, "users/#{user_id}")
         assert_ocs_success!(response, "Reading Nextcloud user #{user_id}")
@@ -126,31 +195,39 @@ class Script
         @@users_for_role = Main.class_variable_get(:@@users_for_role)
         @@klassen_for_shorthand = Main.class_variable_get(:@@klassen_for_shorthand)
         STDERR.print "Getting groups: "
-        all_groups = @ocs.group.all
+        group_list = @ocs.group.all
+        assert_ocs_success!(group_list, 'Listing Nextcloud groups')
+        all_groups = Set.new(group_list)
         STDERR.puts "found #{all_groups.size}"
-        if srsly
-            @ocs.group.create('Lehrbuchverein') unless all_groups.include?('Lehrbuchverein')
-            @ocs.group.create('Lehrer') unless all_groups.include?('Lehrer')
-            @ocs.group.create('SuS') unless all_groups.include?('SuS')
-        end
+
+        ensure_group!('Lehrbuchverein', all_groups, srsly)
+        ensure_group!('Lehrer', all_groups, srsly)
+        ensure_group!('SuS', all_groups, srsly)
+
         all_klassen = Set.new()
         @@klassen_for_shorthand.values.each { |x| all_klassen |= x }
         all_klassen.to_a.sort.each do |x|
-            if srsly
-                @ocs.group.create("Lehrer #{x}") unless all_groups.include?("Lehrer #{x}")
-            end
+            ensure_group!("Lehrer #{x}", all_groups, srsly)
+            ensure_group!("Klasse #{x}", all_groups, srsly)
         end
-        all_klassen.to_a.sort.each do |x|
-            if srsly
-                @ocs.group.create("Klasse #{x}") unless all_groups.include?("Klasse #{x}")
-            end
-        end
+
         STDERR.print "Getting users: "
-        all_users = Set.new(@ocs.user.all.map { |x| x.id })
+        user_list = @ocs.user.all
+        assert_ocs_success!(user_list, 'Listing Nextcloud users')
+        all_users = Set.new(user_list.map { |x| x.id })
         STDERR.puts "found #{all_users.size}"
         all_possible_klassen_order = Set.new(KLASSEN_ORDER)
         (5..10).each do |klasse|
             ['a', 'b', 'c', 'd', 'e', 'o'].each { |x| all_possible_klassen_order << "#{klasse}#{x}" }
+        end
+
+        desired_class_members = Hash.new { |hash, key| hash[key] = Set.new }
+        @@user_info.each_pair do |email, user|
+            next unless user_has_role(email, :schueler)
+
+            group_id = "Klasse #{user[:klasse]}"
+            desired_class_members[group_id] << user[:nc_login]
+            ensure_group!(group_id, all_groups, srsly)
         end
         @@user_info.each_pair do |email, user|
             next unless user_has_role(email, :teacher)
@@ -160,32 +237,29 @@ class Script
             user_id = user[:nc_login]
             next unless ensure_internal_user!(user_id, user[:initial_nc_password], all_users, srsly)
 
-            user_info = @ocs.user.find(user_id)
+            user_info = find_user!(user_id)
             if user_info.displayname != user[:display_last_name].unicode_normalize(:nfc)
                 STDERR.puts "@ocs.user.update(#{user_id}, 'displayname', #{user[:display_last_name].unicode_normalize(:nfc)})"
-                if srsly
-                    @ocs.user.update(user_id, 'displayname', user[:display_last_name].unicode_normalize(:nfc))
-                end
+                update_user!(
+                    user_id,
+                    'displayname',
+                    user[:display_last_name].unicode_normalize(:nfc),
+                    :displayname
+                ) if srsly
             end
             if user_info.email != email
                 STDERR.puts "@ocs.user.update(#{user_id}, 'email', #{email})"
-                if srsly
-                    @ocs.user.update(user_id, 'email', email)
-                end
+                update_user!(user_id, 'email', email, :email) if srsly
             end
             unless user_info.groups.include?('Lehrer')
                 STDERR.puts "@ocs.user(#{user_id}).group.create('Lehrer')"
-                if srsly
-                    @ocs.user(user_id).group.create('Lehrer')
-                end
+                add_user_to_group!(user_id, 'Lehrer') if srsly
             end
             # Lehrer zu allen Klassen hinzufügen
             klassen.each do |klasse|
                 unless user_info.groups.include?("Lehrer #{klasse}")
                     STDERR.puts "@ocs.user(#{user_id}).group.create('Lehrer #{klasse}')"
-                    if srsly
-                        @ocs.user(user_id).group.create("Lehrer #{klasse}")
-                    end
+                    add_user_to_group!(user_id, "Lehrer #{klasse}") if srsly
                 end
             end
             # Lehrer aus allen alten Klassen entfernen
@@ -193,9 +267,7 @@ class Script
                 unless klassen.include?(klasse)
                     if user_info.groups.include?("Lehrer #{klasse}")
                         STDERR.puts "@ocs.user(#{user_id}).group.destroy('Lehrer #{klasse}')"
-                        if srsly
-                            @ocs.user(user_id).group.destroy("Lehrer #{klasse}")
-                        end
+                        remove_user_from_group!(user_id, "Lehrer #{klasse}") if srsly
                     end
                 end
             end
@@ -203,47 +275,38 @@ class Script
         @@user_info.each_pair do |email, user|
             next unless user_has_role(email, :schueler)
             STDERR.print '.'
-            klasse = user[:klasse]
             user_id = user[:nc_login]
             next unless ensure_internal_user!(user_id, user[:initial_nc_password], all_users, srsly)
 
-            user_info = @ocs.user.find(user_id)
+            user_info = find_user!(user_id)
             if user_info.displayname != user[:display_name].unicode_normalize(:nfc)
                 STDERR.puts "@ocs.user.update(#{user_id}, 'displayname', #{user[:display_name].unicode_normalize(:nfc)})"
-                if srsly
-                    @ocs.user.update(user_id, 'displayname', user[:display_name].unicode_normalize(:nfc))
-                end
+                update_user!(
+                    user_id,
+                    'displayname',
+                    user[:display_name].unicode_normalize(:nfc),
+                    :displayname
+                ) if srsly
             end
             if user_info.email != email
                 STDERR.puts "@ocs.user.update(#{user_id}, 'email', #{email})"
-                if srsly
-                    @ocs.user.update(user_id, 'email', email)
-                end
+                update_user!(user_id, 'email', email, :email) if srsly
             end
             unless user_info.groups.include?('SuS')
                 STDERR.puts "@ocs.user(#{user_id}).group.create('SuS')"
-                if srsly
-                    @ocs.user(user_id).group.create('SuS')
-                end
+                add_user_to_group!(user_id, 'SuS') if srsly
             end
-            unless user_info.groups.include?("Klasse #{klasse}")
-                STDERR.puts "@ocs.user(#{user_id}).group.create('Klasse #{klasse}')"
-                if srsly
-                    @ocs.user(user_id).group.create("Klasse #{klasse}")
-                end
-            end
-            # Schüler aus allen alten Klassen entfernen
-            all_possible_klassen_order.each do |k|
-                unless k == klasse
-                    if user_info.groups.include?("Klasse #{k}")
-                        STDERR.puts "@ocs.user(#{user_id}).group.destroy('Klasse #{k}')"
-                        if srsly
-                            @ocs.user(user_id).group.destroy("Klasse #{k}")
-                        end
-                    end
-                end
-            end
+            # Class-group membership is reconciled globally below. Doing this at
+            # group level also catches former students that no longer occur in
+            # @@user_info and therefore can never be cleaned up by this loop.
         end
+        all_possible_klassen_order.to_a.sort.each do |klasse|
+            group_id = "Klasse #{klasse}"
+            next unless all_groups.include?(group_id)
+
+            reconcile_group_members!(group_id, desired_class_members[group_id], srsly)
+        end
+
         @@user_info.each_pair do |email, user|
             next unless user_has_role(email, :schulbuchverein)
             next unless user[:can_log_in]
@@ -251,24 +314,23 @@ class Script
             user_id = user[:nc_login]
             next unless ensure_internal_user!(user_id, user[:initial_nc_password], all_users, srsly)
 
-            user_info = @ocs.user.find(user_id)
+            user_info = find_user!(user_id)
             if user_info.displayname != user[:display_last_name].unicode_normalize(:nfc)
                 STDERR.puts "@ocs.user.update(#{user_id}, 'displayname', #{user[:display_last_name].unicode_normalize(:nfc)})"
-                if srsly
-                    @ocs.user.update(user_id, 'displayname', user[:display_last_name].unicode_normalize(:nfc))
-                end
+                update_user!(
+                    user_id,
+                    'displayname',
+                    user[:display_last_name].unicode_normalize(:nfc),
+                    :displayname
+                ) if srsly
             end
             if user_info.email != email
                 STDERR.puts "@ocs.user.update(#{user_id}, 'email', #{email})"
-                if srsly
-                    @ocs.user.update(user_id, 'email', email)
-                end
+                update_user!(user_id, 'email', email, :email) if srsly
             end
             unless user_info.groups.include?('Lehrbuchverein')
                 STDERR.puts "@ocs.user(#{user_id}).group.create('Lehrbuchverein')"
-                if srsly
-                    @ocs.user(user_id).group.create('Lehrbuchverein')
-                end
+                add_user_to_group!(user_id, 'Lehrbuchverein') if srsly
             end
         end
         STDERR.puts

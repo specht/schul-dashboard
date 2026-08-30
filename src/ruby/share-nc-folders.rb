@@ -375,7 +375,6 @@ class Script
             'share_id' => share['id'].to_s,
             'recipient' => user_id,
             'expected_owner' => share['uid_file_owner'] || share['uid_owner'] || NEXTCLOUD_USER,
-            'current_target' => normalize_nc_path(share['file_target']),
             'target' => target
         }
 
@@ -993,6 +992,7 @@ class Script
 
         present_shares = {}
 
+        STDERR.puts "Collecting current Nextcloud shares..."
         if use_cached && File.exist?('/internal/debug/present-shares-cache.yaml')
             log "Loading present shares from cache..."
             present_shares = YAML.load(File.read('/internal/debug/present-shares-cache.yaml'))
@@ -1010,6 +1010,7 @@ class Script
         failed_share_ids = Set.new()
 
         if SRSLY
+            STDERR.puts "Removing stale and duplicate shares..."
             log "Removing stale and duplicate shares before ensuring wanted shares..."
             present_shares = reconcile_present_shares_before_ensure!(
                 wanted_shares,
@@ -1032,12 +1033,14 @@ class Script
             f.write wanted_shares.to_yaml
         end
 
-        wanted_shares.keys.sort.each do |user_id|
+        STDERR.puts "Reconciling shares for #{selected_wanted_users.size} users..."
+        selected_wanted_users.sort.each_with_index do |user_id, user_index|
             unless wanted_nc_ids.nil?
-                next unless wanted_nc_ids.include?(user_id)
                 log "Wanted shares for #{user_id}:"
                 log wanted_shares[user_id].to_yaml
             end
+
+            STDERR.puts "Processing user #{user_index + 1}/#{selected_wanted_users.size}: #{user_id} (#{wanted_shares[user_id].size} shares)"
 
             count(:users_processed)
 

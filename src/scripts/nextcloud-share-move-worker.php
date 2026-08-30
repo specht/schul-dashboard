@@ -42,7 +42,7 @@ try {
             try {
                 $request = json_decode((string)file_get_contents($requestPath), true, 512, JSON_THROW_ON_ERROR);
 
-                foreach (['share_id', 'recipient', 'expected_owner', 'current_target', 'target'] as $key) {
+                foreach (['share_id', 'recipient', 'expected_owner', 'target'] as $key) {
                     if (!isset($request[$key]) || !is_string($request[$key]) || $request[$key] === '') {
                         throw new InvalidArgumentException("Missing or invalid request field: {$key}");
                     }
@@ -60,15 +60,15 @@ try {
                     throw new RuntimeException('Share owner changed before move');
                 }
 
+                // getShareById(..., $recipient) resolves the share in the
+                // recipient's mount context. If a mount-name collision exists,
+                // Nextcloud can therefore return e.g. "/Ausgabeordner (7)"
+                // even though the OCS share record exposed "/Ausgabeordner".
+                // The share ID, type, recipient and owner checks above uniquely
+                // identify the share; comparing those two target representations
+                // is not a valid concurrency guard.
                 $currentTarget = $share->getTarget();
                 if ($currentTarget !== $request['target']) {
-                    if ($currentTarget !== $request['current_target']) {
-                        throw new RuntimeException(
-                            'Share target changed before move: expected ' .
-                            $request['current_target'] . ', got ' . $currentTarget
-                        );
-                    }
-
                     $share->setTarget($request['target']);
                     $share = $shareManager->moveShare($share, $request['recipient']);
                 }
@@ -83,6 +83,7 @@ try {
                 $response = [
                     'ok' => true,
                     'share_id' => $share->getId(),
+                    'previous_target' => $currentTarget,
                     'target' => $share->getTarget(),
                 ];
             } catch (Throwable $e) {

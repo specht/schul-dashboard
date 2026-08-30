@@ -2,6 +2,7 @@
 require './main.rb'
 
 require 'set'
+require 'cgi'
 
 class Script
     include UserRoleHelper
@@ -84,9 +85,14 @@ class Script
     end
 
     def group_members!(group_id)
-        members = @ocs.group(group_id).members
-        assert_ocs_success!(members, "Reading members of Nextcloud group #{group_id}")
-        Set.new(members)
+        # nextcloud-client 0.1.1 interpolates group IDs directly into the OCS
+        # request path. Group names such as "Klasse 10a" therefore contain a
+        # literal space and can yield a non-OCS response. Escape the path
+        # segment ourselves and parse the response directly.
+        escaped_group_id = CGI.escape(group_id).gsub('+', '%20')
+        response = @ocs.request(:get, "groups/#{escaped_group_id}")
+        assert_ocs_success!(response, "Reading members of Nextcloud group #{group_id}")
+        Set.new(response.xpath('//data/users/element').map(&:text))
     end
 
     def reconcile_group_members!(group_id, wanted_members, srsly)

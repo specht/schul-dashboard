@@ -149,7 +149,6 @@ class Script
                 owner == NEXTCLOUD_USER &&
                 !recipient.empty? &&
                 target.start_with?(prefix) &&
-                target.end_with?('/') &&
                 (
                     wanted_nc_ids.nil? ||
                     wanted_nc_ids.include?(recipient)
@@ -167,8 +166,8 @@ class Script
         shares = archive_share_candidates(wanted_nc_ids)
 
         STDERR.puts(
-            "Found #{shares.size} archive share " \
-            "target#{shares.size == 1 ? '' : 's'} to canonicalize."
+            "Found #{shares.size} archive share" \
+            "#{shares.size == 1 ? '' : 's'} to check for target canonicalization."
         )
 
         failures = 0

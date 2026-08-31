@@ -695,7 +695,7 @@ class Parser
                     end
                     original_fach = parts[3]
                     next if (parts[3] || '').strip.empty?
-                    fach = parts[3].gsub('/', '-')
+                    fach = parts[3].gsub('/', '-').gsub(' ', '_')
                     raum = parts[4].split('~').join('/')
                     dow = parts[5].to_i - 1
                     stunde = parts[6].to_i

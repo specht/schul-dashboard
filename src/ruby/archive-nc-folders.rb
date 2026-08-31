@@ -146,7 +146,7 @@ class Script
             recipient = share['share_with'].to_s
 
             share['share_type'].to_i == 0 &&
-                owner == NEXTCLOUD_USER &&
+                owner.to_s.casecmp?(NEXTCLOUD_USER.to_s) &&
                 !recipient.empty? &&
                 target.start_with?(prefix) &&
                 (

@@ -527,7 +527,7 @@ class Main < Sinatra::Base
                 first_name: @session_user[:first_name],
                 last_name:  @session_user[:last_name],
                 roles: [:admin, :teacher, :schueler, :sv_editor, :sv_admin].map { |x| @session_user[:roles].include?(x) ? x.to_s : nil }.compact,
-                avatar: "#{NEXTCLOUD_URL}/index.php/avatar/#{@session_user[:nc_login]}/128",
+                avatar: "#{NEXTCLOUD_URL}/index.php/avatar/#{@session_user[:nc_login]}/64",
                 iat:  now,
                 exp:  exp,
                 iss:  WEB_ROOT
@@ -2774,7 +2774,7 @@ class Main < Sinatra::Base
             users.each do |email|
                 if @@user_info[email] && @@user_info[email][:teacher]
 #                     io.puts "<span class='btn btn-xs ttc'>#{@@user_info[email][:shorthand]}</span>"
-                    io.puts "<div style='margin-right: 5px; display: inline-block; position: relative; top: 5px; background-image: url(#{NEXTCLOUD_URL}/index.php/avatar/#{@@user_info[email][:nc_login]}/128), url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mO88h8AAq0B1REmZuEAAAAASUVORK5CYII=);' class='avatar-md'></div>"
+                    io.puts "<div style='margin-right: 5px; display: inline-block; position: relative; top: 5px; background-image: url(#{NEXTCLOUD_URL}/index.php/avatar/#{@@user_info[email][:nc_login]}/64), url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mO88h8AAq0B1REmZuEAAAAASUVORK5CYII=);' class='avatar-md'></div>"
                 end
             end
             io.puts "</div>"

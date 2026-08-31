@@ -391,7 +391,7 @@ document.addEventListener('DOMContentLoaded', function() {
             let kid = sus[i];
             let place = $(`<div class='place'>`).data('phi', 0.0).css('opacity', 0);
             // place.css('outline', kid.geschlecht === 'w' ? '1px solid red' : '1px solid blue');
-            let image = $(`<img style="background-image: url(https://nextcloud.gymnasiumsteglitz.de/index.php/avatar/${sus[i].nc_login}/128), url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mO88h8AAq0B1REmZuEAAAAASUVORK5CYII=);">`);
+            let image = $(`<img style="background-image: url(https://nextcloud.gymnasiumsteglitz.de/index.php/avatar/${sus[i].nc_login}/64), url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mO88h8AAq0B1REmZuEAAAAASUVORK5CYII=);">`);
             place.append(image);
             let label = $(`<div class='label'>`).html(kid.first_name);
             place.append(label);

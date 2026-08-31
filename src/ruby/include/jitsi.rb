@@ -44,7 +44,7 @@ class Main < Sinatra::Base
             end
             payload[:context][:user][:name] = user_has_role(use_user[:email], :teacher) ? use_user[:display_last_name] : use_user[:display_name]
             payload[:context][:user][:email] = use_user[:email]
-            payload[:context][:user][:avatar] = "#{NEXTCLOUD_URL}/index.php/avatar/#{use_user[:nc_login]}/128"
+            payload[:context][:user][:avatar] = "#{NEXTCLOUD_URL}/index.php/avatar/#{use_user[:nc_login]}/64"
             if eid
                 organizer_email = neo4j_query_expect_one(<<~END_OF_QUERY, :eid => eid, :session_email => use_user[:email])['ou.email']
                     MATCH (e:Event {id: $eid})-[:ORGANIZED_BY]->(ou:User)

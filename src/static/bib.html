@@ -30,7 +30,7 @@
                                 nc_login = user_info.nc_login;
                                 row.append($('<td>').text(exemplar.e.signature));
                                 row.append($('<td>').text(exemplar.r.datum));
-                                row.append($('<td>').append($('<div>').css('background-image', `url(#{NEXTCLOUD_URL}/index.php/avatar/${nc_login}/128), url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mO88h8AAq0B1REmZuEAAAAASUVORK5CYII=)`).addClass('avatar-md')));
+                                row.append($('<td>').append($('<div>').css('background-image', `url(#{NEXTCLOUD_URL}/index.php/avatar/${nc_login}/64), url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mO88h8AAq0B1REmZuEAAAAASUVORK5CYII=)`).addClass('avatar-md')));
                                 row.append($('<td>').text(user_info.display_name || email));
                                 row.append($('<td>').html(`${KLASSEN_TR[user_info.klasse || ''] || user_info.klasse || '&ndash;'}`));
                                 table.append(row);

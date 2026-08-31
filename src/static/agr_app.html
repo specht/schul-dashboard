@@ -343,7 +343,7 @@
                         let user_info = USER_INFO[entry.email] || {};
                         nc_login = user_info.nc_login;
                         row.append($('<td>'));
-                        row.append($('<td>').append($('<div>').css('background-image', `url(#{NEXTCLOUD_URL}/index.php/avatar/${nc_login}/128), url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mO88h8AAq0B1REmZuEAAAAASUVORK5CYII=)`).addClass('avatar-md')));
+                        row.append($('<td>').append($('<div>').css('background-image', `url(#{NEXTCLOUD_URL}/index.php/avatar/${nc_login}/64), url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mO88h8AAq0B1REmZuEAAAAASUVORK5CYII=)`).addClass('avatar-md')));
                         let bu_name = $('<span>').text(user_info.display_name || entry.email);
                         row.append($('<td>').append(bu_name));
                         let kurse = ((USER_INFO[entry.email] || {}).kurse || []).map(function(x) {return AGR_LESSON_INFO[x].label; }).join(', ') || '–';
@@ -385,7 +385,7 @@
                         let user_info = USER_INFO[email] || {};
                         nc_login = user_info.nc_login;
                         row.append($('<td>'));
-                        row.append($('<td>').append($('<div>').css('background-image', `url(#{NEXTCLOUD_URL}/index.php/avatar/${nc_login}/128), url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mO88h8AAq0B1REmZuEAAAAASUVORK5CYII=)`).addClass('avatar-md')));
+                        row.append($('<td>').append($('<div>').css('background-image', `url(#{NEXTCLOUD_URL}/index.php/avatar/${nc_login}/64), url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mO88h8AAq0B1REmZuEAAAAASUVORK5CYII=)`).addClass('avatar-md')));
                         let bu_name = $('<span>').text(user_info.display_name || email);
                         row.append($('<td>').append(bu_name));
                         let kurse = ((USER_INFO[email] || {}).kurse || []).map(function(x) {return AGR_LESSON_INFO[x].label; }).join(', ') || '–';

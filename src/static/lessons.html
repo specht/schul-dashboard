@@ -636,7 +636,7 @@ function update_breakout_room_widgets() {
             let user_widget = $('<div>').addClass('user-widget');
             user_widget.html(`${user.display_name} <div class='group2-button group2-button-sm group2-${user.group2}'>${user.group2}</div>`);
             let icon = $('<div>').addClass('icon');
-            icon.append('<div>').addClass('avatar-md').css('background-image', `url(#{NEXTCLOUD_URL}/index.php/avatar/${user.nc_login}/128), url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mO88h8AAq0B1REmZuEAAAAASUVORK5CYII=)`);
+            icon.append('<div>').addClass('avatar-md').css('background-image', `url(#{NEXTCLOUD_URL}/index.php/avatar/${user.nc_login}/64), url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mO88h8AAq0B1REmZuEAAAAASUVORK5CYII=)`);
             breakout_room_widgets.breakout_groups[breakout_room_config.participants[schueler_for_lesson_index[user.email]]].append(user_widget);
             user_widget.append(icon);
             user_widget.data('email', user.email);
@@ -2313,7 +2313,7 @@ document.addEventListener('DOMContentLoaded', function() {
     /* for (let user of schueler_for_lesson) {
         let row = $('<tr>');
         let icon = $('<div>').addClass('icon');
-        icon.append('<div>').addClass('avatar-md').css('background-image', `url(#{NEXTCLOUD_URL}/index.php/avatar/${user.nc_login}/128), url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mO88h8AAq0B1REmZuEAAAAASUVORK5CYII=)`);
+        icon.append('<div>').addClass('avatar-md').css('background-image', `url(#{NEXTCLOUD_URL}/index.php/avatar/${user.nc_login}/64), url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mO88h8AAq0B1REmZuEAAAAASUVORK5CYII=)`);
         row.append($('<td>').append(icon));
         row.append($('<td>').text(user.display_name));
         let bu_add = $('<button>').addClass('btn').addClass('btn-success').addClass('btn-xs').text('Hinzufügen').data('email', user.email);

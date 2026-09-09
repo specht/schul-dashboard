@@ -400,9 +400,9 @@ class Main < Sinatra::Base
                 end
                 if teacher_logged_in?
                     io.puts "<a href='/api/get_timetable_pdf_for_klasse/#{klasse}' target='_blank' class='btn btn-primary'><i class='fa fa-file-pdf-o'></i>&nbsp;&nbsp;Klassensatz Stundenpläne (#{@@schueler_for_klasse[klasse].size} Seiten)</a>"
-                    unless ['11', '12'].include?(klasse)
-                        io.puts "<a href='/api/get_room_timetable_pdf/#{klasse}' target='_blank' class='btn btn-primary'><i class='fa fa-file-pdf-o'></i>&nbsp;&nbsp;Raumplan für die Klassenzimmertür</a>"
-                    end
+                    # unless ['11', '12'].include?(klasse)
+                    #     io.puts "<a href='/api/get_room_timetable_pdf/#{klasse}' target='_blank' class='btn btn-primary'><i class='fa fa-file-pdf-o'></i>&nbsp;&nbsp;Raumplan für die Klassenzimmertür</a>"
+                    # end
                     io.puts "<div id='additional_teacher_content'></div>"
                 elsif schueler_logged_in?
                     unless hide_from_sus

@@ -109,7 +109,7 @@
         transition: filter 0.25s ease-out;
         }
 
-        #{ Digest::SHA1.hexdigest((@session_user[:email] || '') + 'l0tNx8dTbz8QXBNKRQKSWh') == 'fea34ec037069bd30b3c7ae330d2f64eba1d97c8' ? 'body{transform:rotate(1deg);}' : ''} 
+        #{ Digest::SHA1.hexdigest(((@session_user || {})[:email] || '') + 'l0tNx8dTbz8QXBNKRQKSWh') == 'fea34ec037069bd30b3c7ae330d2f64eba1d97c8' ? 'body{transform:rotate(1deg);}' : ''} 
         
         :root {
             --analog-opacity: #{(@session_user || {})[:analog] || 0

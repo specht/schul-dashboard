@@ -14,3 +14,6 @@ DETACH DELETE:
 - Pk5Change
 - Projekttage
 - ProjekttageChange
+- Test
+- TestEvent
+- Antikenfahrt: MATCH (u:User) WHERE u.group_af IS NOT NULL REMOVE u.group_af;

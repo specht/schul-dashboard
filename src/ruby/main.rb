@@ -442,6 +442,9 @@ class SetupDatabase
                     neo4j_query(<<~END_OF_QUERY, :email => "monitor-lz@#{SCHUL_MAIL_DOMAIN}")
                         MERGE (u:User {email: $email})
                     END_OF_QUERY
+                    neo4j_query(<<~END_OF_QUERY, :email => "monitor-buchungen@#{SCHUL_MAIL_DOMAIN}")
+                        MERGE (u:User {email: $email})
+                    END_OF_QUERY
                 end
                 transaction do
                     present_users = neo4j_query(<<~END_OF_QUERY).map { |x| x['u.email'] }
@@ -456,6 +459,7 @@ class SetupDatabase
                     wanted_users << "monitor@#{SCHUL_MAIL_DOMAIN}"
                     wanted_users << "monitor-sek@#{SCHUL_MAIL_DOMAIN}"
                     wanted_users << "monitor-lz@#{SCHUL_MAIL_DOMAIN}"
+                    wanted_users << "monitor-buchungen@#{SCHUL_MAIL_DOMAIN}"
                     wanted_users << "bib-mobile@#{SCHUL_MAIL_DOMAIN}"
                     wanted_users << "bib-station@#{SCHUL_MAIL_DOMAIN}"
                     wanted_users << "bib-station-with-printer@#{SCHUL_MAIL_DOMAIN}"
@@ -2051,6 +2055,12 @@ class Main < Sinatra::Base
                                         :is_monitor => true,
                                         :teacher => false,
                                     }
+                                elsif email == "monitor-buchungen@#{SCHUL_MAIL_DOMAIN}"
+                                    @session_user = {
+                                        :email => email,
+                                        :is_monitor => true,
+                                        :teacher => false,
+                                    }
                                 elsif email != "tablet@#{SCHUL_MAIL_DOMAIN}"
                                     @session_user = @@user_info[email].dup
                                     if @session_user
@@ -3460,6 +3470,17 @@ class Main < Sinatra::Base
         end
     end
 
+    before "/monitor/#{MONITOR_BUCHUNGEN_DEEP_LINK}" do
+        unless MONITOR_BUCHUNGEN_DEEP_LINK.nil?
+            @session_user = {
+                :email => "monitor-buchungen@#{SCHUL_MAIL_DOMAIN}",
+                :is_monitor => true,
+                :teacher => false,
+                :roles => Set.new(),
+            }
+        end
+    end
+
     get '/p/:tag' do
         redirect "#{WEB_ROOT}/bib_postpone/#{params[:tag]}", 302
     end
@@ -3647,7 +3668,7 @@ class Main < Sinatra::Base
             response.write(manifest)
         end
         if user_logged_in? && @session_user[:is_monitor]
-            path = 'monitor'
+            path = (@session_user[:email] == "monitor-buchungen@#{SCHUL_MAIL_DOMAIN}") ? 'monitor_buchungen' : 'monitor'
         end
         if path == 'timetable'
             redirect "#{WEB_ROOT}/", 302 unless @session_user
@@ -3917,7 +3938,7 @@ class Main < Sinatra::Base
         if color_scheme.size < 20
             color_scheme += '0'
         end
-        if path == 'monitor'
+        if path == 'monitor' || path == 'monitor_buchungen'
             color_scheme = pick_random_color_scheme()
         end
         rendered_something = @@renderer.render(["##{color_scheme[1, 6]}", "##{color_scheme[7, 6]}", "##{color_scheme[13, 6]}"], (@session_user || {})[:email])

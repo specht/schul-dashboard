@@ -263,6 +263,23 @@ UNTIS_VERTRETUNGSPLAN_PASSWORD = nil
 
 MONITOR_DEEP_LINK = nil
 MONITOR_LZ_DEEP_LINK = nil
+MONITOR_BUCHUNGEN_DEEP_LINK = nil
+
+# Stundenraster für den Buchungen-Monitor - hier bitte die Zeiten der eigenen Schule
+# eintragen. Es dient dort ausschließlich als optische Orientierung im Hintergrund;
+# die Buchungen selbst werden immer nach ihren echten Uhrzeiten platziert, unabhängig
+# von diesen Werten. Weichen einzelne Jahrgangsstufen vom Raster ab (z. B. andere
+# Mittagspause), ist das also unkritisch. Leere Liste = kein Raster anzeigen.
+MONITOR_BOOKINGS_PERIODS = [
+    {:start => '08:00', :end => '08:45', :label => '1. Stunde'},
+    {:start => '08:50', :end => '09:35', :label => '2. Stunde'},
+    {:start => '09:35', :end => '09:55', :label => 'Große Pause', :is_break => true},
+    {:start => '09:55', :end => '10:40', :label => '3. Stunde'},
+    {:start => '10:45', :end => '11:30', :label => '4. Stunde'},
+    {:start => '11:30', :end => '12:15', :label => 'Mittagspause', :is_break => true},
+    {:start => '12:15', :end => '13:00', :label => '5. Stunde'},
+    {:start => '13:05', :end => '13:50', :label => '6. Stunde'},
+]
 
 SEMI_PUBLIC_LINKS = []
 

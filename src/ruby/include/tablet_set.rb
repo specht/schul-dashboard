@@ -37,7 +37,59 @@ class Main < Sinatra::Base
         end
         respond(:bookings => results)
     end
-        
+
+    # bookings for today only, in the shape needed by the read-only "Buchungen"-Monitor.
+    # wird beim serverseitigen Rendern der Seite aufgerufen (also nach der Rechteprüfung
+    # in monitor_buchungen.html); ändert sich eine Buchung, lädt der Monitor neu -
+    # siehe update_monitors_bookings in monitor.rb.
+    def todays_tablet_set_bookings_for_monitor
+        datum = Date.today.strftime('%Y-%m-%d')
+        rows = neo4j_query(<<~END_OF_QUERY, {:datum => datum})
+            MATCH (t:TabletSet)<-[:BOOKED]-(b:Booking {datum: $datum})-[:BOOKED_BY]->(u:User)
+            OPTIONAL MATCH (b)-[:FOR]->(i:LessonInfo)-[:BELONGS_TO]->(l:Lesson)
+            RETURN t, l, b, u.email;
+        END_OF_QUERY
+        results = {}
+        @@tablet_sets.keys.each do |id|
+            results[id] = []
+        end
+        rows.each do |row|
+            booking = row['b']
+            tablet_set = row['t']
+            email = row['u.email']
+            results[tablet_set[:id]] ||= []
+            # bewusst nur die Felder, die der Monitor wirklich anzeigt - nicht den ganzen Knoten.
+            # Von der buchenden Person geht nur das Kürzel raus, kein Name: der Monitor hängt
+            # unter Umständen öffentlich einsehbar im Gebäude.
+            entry = {
+                :booking => {
+                    :start_time => booking[:start_time],
+                    :end_time => booking[:end_time],
+                    :reason => booking[:reason]
+                },
+                :shorthand => (@@user_info[email] || {})[:shorthand],
+                :tablet_set => tablet_set[:id],
+                :tablet_set_count => (@@tablet_sets[tablet_set[:id]] || {})[:count]
+            }
+            if row['l']
+                lesson_key = row['l'][:key]
+                entry[:lesson] = (@@lessons[:lesson_keys][lesson_key] || {})[:pretty_folder_name]
+                begin
+                    timetable_date = @@lessons[:start_date_for_date][datum]
+                    wday = (Date.parse(datum).wday + 6) % 7
+                    raeume = @@lessons[:timetables][timetable_date][lesson_key][:stunden][wday].values.map { |x| x[:raum] }.compact.uniq
+                    # Findet der Kurs an dem Tag in mehreren Räumen statt, lässt sich der Raum
+                    # nicht eindeutig zuordnen - dann lieber keinen anzeigen als den falschen.
+                    entry[:raum] = raeume.first if raeume.size == 1
+                rescue StandardError
+                    # ohne Stundenplandaten bleibt das Feld einfach leer
+                end
+            end
+            results[tablet_set[:id]] << entry
+        end
+        {:bookings => results, :datum => datum}
+    end
+
     # check whether we can book a list of tablet sets for a specific time span
     def already_booked_tablet_sets_for_timespan(datum, start_time, end_time)
         require_user_with_role!(:can_book_tablets)
@@ -147,6 +199,7 @@ class Main < Sinatra::Base
                     MERGE (b)-[:BOOKED]->(t)
                 END_OF_QUERY
             end
+            update_monitors_bookings()
         else
             debug "Cannot book tablet sets because of these:"
             debug conflicting_tablets.to_yaml
@@ -192,6 +245,7 @@ class Main < Sinatra::Base
                     CREATE (b)-[:BOOKED]->(t)
                 END_OF_QUERY
             end
+            update_monitors_bookings()
         else
             debug "Cannot book tablet sets because of these:"
             debug conflicting_tablets.to_yaml
@@ -447,9 +501,10 @@ class Main < Sinatra::Base
             end
         end
 
+        update_monitors_bookings()
         STDERR.puts result.to_yaml
         respond(:ok => 'yay')
-    end 
+    end
 
     post '/api/book_tablet_sets_for_timespan' do
         require_user_who_can_manage_tablets!

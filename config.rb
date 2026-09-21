@@ -276,6 +276,7 @@ FileUtils::mkpath(File::join(GEN_FILES_PATH, 'i'))
 FileUtils::mkpath(VPLAN_FILES_PATH)
 FileUtils::mkpath(MAIL_FORWARDER_PATH)
 FileUtils::mkpath(INTERNAL_PATH)
+FileUtils::mkpath(File::join(INTERNAL_PATH, 'debug'))
 FileUtils::mkpath(File::join(INTERNAL_PATH, 'sus_uploads/images'))
 FileUtils::mkpath(File::join(INTERNAL_PATH, 'sus_uploads/pdf'))
 FileUtils::mkpath(File::join(INTERNAL_PATH, 'poll_uploads/images'))
@@ -285,9 +286,7 @@ FileUtils::mkpath(NEO4J_LOGS_PATH)
 FileUtils::mkpath(File::join(INTERNAL_PATH, 'aula_light'))
 
 if DEVELOPMENT && ARGV == ['up']
-    fork do
-        system('./tailwind.sh')
-    end
+    Process.spawn('bash', './tailwind.sh')
 end
 
 `docker compose 2> /dev/null`

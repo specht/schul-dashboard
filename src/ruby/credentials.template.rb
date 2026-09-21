@@ -270,3 +270,10 @@ EXCLUDE_FROM_SELF_TEST_REPORT = []
 ZEUGNISKONFERENZEN = []
 
 FOTO_PASSWORD = nil
+
+# Deadlines für die Hinweis-Kästen auf der Startseite (ISO-Format). Ein Kasten
+# erscheint nur, wenn der Termin in der Zukunft, aber weniger als 7 Tage
+# entfernt liegt - ein Termin in der Vergangenheit blendet ihn also aus.
+# Ohne diese beiden Konstanten bricht user.rb beim ersten Lehrer-Login ab.
+DEADLINE_NOTENEINTRAGUNG = '2024-01-01T00:00:00'
+DEADLINE_CONSIDER = '2024-01-01T00:00:00'

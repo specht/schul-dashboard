@@ -4,6 +4,7 @@ Das Schul-Dashboard wurde am [Gymnasium Steglitz](https://gymnasiumsteglitz.de/)
 
 - [Installation](file.Installation.html)
 - [Entwicklerhandbuch](file.Development.html)
+- [Sitzplanhelfer](file.Sitzplanhelfer.html)
 
 ![Login-Seite des Schul-Dashboards](https://github.com/specht/schul-dashboard/raw/master/doc/login-screen.png)
 

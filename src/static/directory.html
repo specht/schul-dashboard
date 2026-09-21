@@ -155,10 +155,13 @@ document.addEventListener('DOMContentLoaded', function() {
                     if (n <= seats_dict[raum].length) {
                         if (first_room) {
                             $(`<hr>`).appendTo('#additional_teacher_content');
-                            $(`<h3>`).text('Sitzplan-Shuffler').appendTo('#additional_teacher_content');
+                            $(`<h3>`).text('Sitzplan').appendTo('#additional_teacher_content');
                             first_room = false;
                         }
-                        $(`<a>`).text(`Raum ${raum}`).attr('href', `/sitzplan/#{klasse}/${raum}`).addClass('btn btn-primary').css('margin', '0 0.1em').appendTo('#additional_teacher_content');
+                        let group = $(`<span>`).css('display', 'inline-block').css('margin', '0 0.6em 0.3em 0');
+                        $(`<a>`).text(`Raum ${raum}`).attr('href', `/sitzplan/#{klasse}/${raum}`).addClass('btn btn-primary').css('margin-right', '0.1em').appendTo(group);
+                        $(`<a>`).text(`Raum ${raum} (Helfer)`).attr('href', `/sitzplanhelfer/#{klasse}/${raum}`).addClass('btn btn-outline-primary').appendTo(group);
+                        group.appendTo('#additional_teacher_content');
                     }
                 }
             }

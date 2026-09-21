@@ -135,6 +135,7 @@ require './include/public_event.rb'
 require './include/roles.rb'
 require './include/salzh.rb'
 require './include/school_wifi.rb'
+require './include/sitzplanhelfer.rb'
 require './include/sms.rb'
 require './include/techpost.rb'
 require './include/stats.rb'
@@ -316,6 +317,7 @@ class SetupDatabase
         'PublicEventPerson/tag',
         'PublicEventTrack/track',
         'SchulTablet/code',
+        'SeatingCycle/id',
         'SecondLoginCode/tag',
         'SelfTestDay/datum',
         'Session/sid',
@@ -353,6 +355,9 @@ class SetupDatabase
         'PollRun/end_date',
         'PollRun/start_date',
         'PredefinedExternalUser/email',
+        'SeatingCycle/klasse',
+        'SeatingCycle/raum',
+        'SeatingCycle/saved_at',
         'Test/datum',
         'Test/fach',
         'Test/klasse',

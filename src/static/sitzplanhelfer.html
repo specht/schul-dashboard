@@ -1,0 +1,1011 @@
+#{redirect_on_error { require_teacher! }}
+<style>
+.sph-container {
+    max-width: 1100px;
+    margin: 1.5em auto;
+    padding: 1.5em;
+    /* Gleiche "Card"-Optik wie sonst im Dashboard (siehe .card in styles.css) -
+       der Seiteninhalt sitzt sonst ohne Kontrastfläche direkt auf dem
+       personalisierten Hintergrundbild, was Legenden-Text und Outline-Buttons
+       (z.B. "Wunschrunde schließen") kaum lesbar macht. */
+    background-color: rgba(255, 255, 255, 0.85);
+    backdrop-filter: blur(10px);
+    border-radius: 0.5em;
+    box-shadow: 0 0.2em 0.6em rgba(0,0,0,0.15);
+}
+.sph-section {
+    margin-bottom: 2em;
+}
+.sph-section h4 {
+    margin-bottom: 0.6em;
+}
+table.sph-wishes td, table.sph-wishes th {
+    vertical-align: middle;
+    padding: 0.3em 0.6em;
+}
+.sph-status-btn {
+    cursor: pointer;
+    opacity: 0.35;
+    margin: 0 2px;
+}
+.sph-status-btn.active {
+    opacity: 1;
+}
+.sph-status-btn.reject.active { color: #c62828; }
+.sph-wish-rejected {
+    color: #999;
+    text-decoration: line-through;
+}
+.sph-pair-list span.pair-chip, .sph-rule-list span.rule-chip {
+    display: inline-block;
+    background: #eee;
+    border-radius: 1em;
+    padding: 0.2em 0.8em;
+    margin: 0.2em;
+}
+.sph-pair-list span.pair-chip a, .sph-rule-list span.rule-chip a {
+    margin-left: 0.5em;
+    cursor: pointer;
+    color: #c62828;
+}
+#sph_seats, #sph_rule_seatmap {
+    position: relative;
+    margin: 1em auto 2em auto;
+    width: 100px;
+    height: 100px;
+}
+#sph_seats .place, #sph_rule_seatmap .place {
+    position: absolute;
+    width: 5vh;
+    height: 5vh;
+    box-shadow: 0 0 0.7vh rgba(0,0,0,0.5);
+    background-color: #fff;
+    border-radius: 1vh;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    font-size: 1.3vh;
+    border: 3px solid transparent;
+    transition: left 0.4s ease-out, top 0.4s ease-out;
+}
+#sph_seats .place.unresolved {
+    border-color: #e6a700;
+    background-color: #fff6df;
+}
+#sph_seats .place .sph-name, #sph_rule_seatmap .place .sph-name {
+    padding: 2px;
+    word-break: break-word;
+}
+#sph_rule_seatmap {
+    margin-top: 0.5em;
+}
+#sph_rule_seatmap .place {
+    cursor: pointer;
+    background-color: #f4f4f4;
+    color: #bbb;
+    font-size: 1.6vh;
+}
+#sph_rule_seatmap .place::before {
+    content: '+';
+}
+#sph_rule_seatmap .place:hover {
+    border-color: #999;
+    background-color: #ececec;
+}
+#sph_rule_seatmap .place.taken {
+    background-color: #dceeff;
+    border-color: #2f7fd6;
+    color: inherit;
+}
+#sph_rule_seatmap .place.taken::before {
+    content: '';
+}
+.sph-legend {
+    font-size: 0.9em;
+    color: #666;
+}
+.sph-tafel {
+    display: block;
+    width: fit-content;
+    margin: 1.5em auto 0 auto;
+    background-color: #2f3e2f;
+    color: #fff;
+    font-weight: bold;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    padding: 0.4em 3em;
+    border-radius: 0.3em;
+    box-shadow: 0 0.2em 0.4em rgba(0,0,0,0.3);
+}
+</style>
+<div class="sph-container">
+    <h1>Sitzplanhelfer <span id='sph_label'></span></h1>
+    <p class="text-muted">Wunschbasierte Sitzordnung – neben dem <a href="#" id="sph_link_shuffler">Sitzplan-Shuffler</a>.</p>
+
+    <div class="sph-section" id="sph_cycle_controls">
+        <span id="sph_duration_group" style="display: inline-block;">
+            <label for="sph_duration_days" style="margin-right: 0.3em;">Umfragedauer:</label>
+            <input type="number" id="sph_duration_days" class="form-control" style="width: 5em; display: inline-block;" min="1" max="60" value="4">
+            <span style="margin-right: 0.5em;">Tage</span>
+        </span>
+        <span id="sph_carry_over_group" style="display: none; margin-right: 0.5em;">
+            <label style="font-weight: normal;">
+                <input type="checkbox" id="sph_carry_over" checked>
+                Zwangspaare/Verbote/feste Plätze vom letzten Sitzplan übernehmen
+            </label>
+        </span>
+        <button class="btn btn-success" id="sph_bu_start_cycle">Neue Wunschrunde starten</button>
+        <button class="btn btn-outline-secondary" id="sph_bu_close_wishes" style="display: none;">Wunschrunde schließen</button>
+        <button class="btn btn-outline-danger" id="sph_bu_discard_cycle" style="display: none;">Wunschrunde verwerfen (neu beginnen)</button>
+        <span id="sph_cycle_info" class="sph-legend"></span>
+    </div>
+
+    <div class="sph-section" id="sph_wishes_section" style="display: none;">
+        <h4>Wünsche der Schüler:innen</h4>
+        <p class="sph-legend">Alle Wünsche fließen automatisch in die Planung ein – eine extra Bestätigung ist nicht nötig. Nur das rote Kreuz lehnt einen einzelnen Wunsch ab (durchgestrichen, wird dann ignoriert; nochmal klicken macht es rückgängig).
+        🤝 = wechselseitiger Wunsch (beide wollen sich gegenseitig) – diese werden bei der Planung bevorzugt erfüllt.
+        Die bis zu drei Wunschpartner sind gleichberechtigt (keine Rangfolge) – da an jedem Tisch nur 2 Personen sitzen, reicht es für „erfüllt", wenn <strong>einer</strong> davon tatsächlich der Tischnachbar wird.</p>
+        <table class="table table-sm sph-wishes">
+            <thead>
+                <tr><th>Name</th><th>Wunschpartner</th><th></th><th>Wunschpartner</th><th></th><th>Wunschpartner</th><th></th><th>Nicht neben</th><th></th></tr>
+            </thead>
+            <tbody id="sph_wishes_body"></tbody>
+        </table>
+    </div>
+
+    <div class="sph-section" id="sph_pairs_section">
+        <h4>Zwangspaare (Lehrkraft)</h4>
+        <div class="form-inline">
+            <select class="form-control" id="sph_pair_a"></select>
+            <span>&nbsp;und&nbsp;</span>
+            <select class="form-control" id="sph_pair_b"></select>
+            <button class="btn btn-sm btn-success" id="sph_bu_add_forced" style="margin-left: 0.5em;">müssen zusammensitzen</button>
+            <button class="btn btn-sm btn-danger" id="sph_bu_add_forbidden" style="margin-left: 0.5em;">dürfen nicht zusammensitzen</button>
+        </div>
+        <div class="sph-pair-list" id="sph_forced_list"><strong>Muss zusammen:</strong> <span class="none-hint">keine</span></div>
+        <div class="sph-pair-list" id="sph_forbidden_list"><strong>Darf nicht zusammen:</strong> <span class="none-hint">keine</span></div>
+    </div>
+
+    <div class="sph-section" id="sph_rules_section">
+        <h4>Feste Plätze</h4>
+        <div class="form-inline">
+            <select class="form-control" id="sph_rule_sus"></select>
+            <select class="form-control" id="sph_rule_area" style="margin-left: 0.5em;">
+                <option value="front">vorne</option>
+                <option value="back">hinten</option>
+                <option value="left">links</option>
+                <option value="right">rechts</option>
+                <option value="any">überall (keine Einschränkung mehr)</option>
+            </select>
+            <button class="btn btn-sm btn-primary" id="sph_bu_add_rule" style="margin-left: 0.5em;">grober Bereich festlegen</button>
+        </div>
+        <div class="sph-rule-list" id="sph_rules_list"><span class="none-hint">keine festen Plätze</span></div>
+        <p class="sph-legend">Für einen <strong>genauen Platz</strong>: oben Person auswählen, dann unten auf der Karte auf einen freien Platz klicken. Nochmal klicken auf einen bereits vergebenen Platz entfernt die Vorgabe wieder.</p>
+        <span class="sph-tafel" style="margin-top: 0;">Tafel</span>
+        <div id="sph_rule_seatmap"></div>
+    </div>
+
+    <div class="sph-section" id="sph_generate_section">
+        <button class="btn btn-lg btn-primary" id="sph_bu_generate">Sitzplan erzeugen</button>
+        <button class="btn btn-lg btn-success" id="sph_bu_save" style="display: none;">Sitzplan speichern</button>
+        <a class="btn btn-lg btn-outline-secondary" id="sph_link_public_view" href="#" target="_blank">Sitzplan für SuS anzeigen (ohne Wünsche)</a>
+        <span id="sph_unresolved_summary" class="text-warning" style="display: block; margin-top: 0.5em;"></span>
+    </div>
+
+    <span class="sph-tafel">Tafel</span>
+    <div id="sph_seats"></div>
+
+    <div class="sph-section" id="sph_history_section">
+        <h4>Gespeicherte Sitzpläne</h4>
+        <p class="sph-legend">Alle bisher gespeicherten Sitzpläne für diese Klasse/diesen Raum, neueste zuerst. Der oberste ist der, den SuS aktuell unter „Sitzplan anzeigen" sehen, wenn kein bestimmter Plan verlinkt wird. Ältere Pläne bleiben einzeln abrufbar; versehentlich gespeicherte können gelöscht werden.</p>
+        <table class="table table-sm">
+            <thead><tr><th>Gespeichert am</th><th>Zusammenfassung</th><th></th><th></th><th></th></tr></thead>
+            <tbody id="sph_history_body"><tr><td colspan="5" class="none-hint">Noch kein Sitzplan gespeichert.</td></tr></tbody>
+        </table>
+    </div>
+</div>
+
+<script>
+
+var klasse = '';
+var raum = '';
+var seats = [];
+var seats_dict = {};
+var sus = [];
+var wishes = {};
+var forced_pairs = [];
+var forbidden_pairs = [];
+var fixed_rules = [];
+var last_seats = {};
+// Wer hatte letzte Runde einen aktiven (nicht abgelehnten) Wunsch, der NICHT
+// erfüllt wurde - nicht weil die Lehrkraft ihn abgelehnt hat, sondern weil
+// sich einfach keine Paarung ergeben hat? Diese Personen sollen dieses Mal
+// bevorzugt werden. Gegenstück: wer hatte einen Wunsch, der erfüllt WURDE,
+// wird dieses Mal etwas zurückgestuft (analog zur vorne/hinten-Rotation).
+var last_unlucky_emails = new Set();
+var last_lucky_emails = new Set();
+var open_cycle_id = null;
+// Ist der offene Zyklus eine per "Bearbeiten" geöffnete Kopie eines bereits
+// gespeicherten Plans (statt einer frisch gestarteten Wunschrunde)?
+var is_reopened_edit = false;
+var current_placement = {};
+var current_unresolved = [];
+var current_satisfaction = {ok: 0, total: 0};
+var current_satisfied_emails = [];
+
+// Raum-Layouts, geteilt mit dem Sitzplan-Shuffler. Fehlt die Datei (z. B. in
+// einer frischen Installation, in der noch keine Räume erfasst sind), bleibt
+// seats_dict leer und unten erscheint ein erklärender Hinweis - besser als ein
+// Serverfehler beim Rendern der Seite.
+#{File.exist?('/data/sitzplan/seats.js') ? File.read('/data/sitzplan/seats.js') : ''}
+
+function display_name(email) {
+    let s = sus.find(x => x.email === email);
+    return s ? s.display_name : email;
+}
+
+// Namen, E-Mail-Adressen und Klasse/Raum stammen aus den Schuldaten bzw. der
+// URL und werden unten teilweise in HTML-Strings eingesetzt. Sie sind zwar
+// nicht frei wählbar, aber ein Name mit spitzen Klammern würde die Seite sonst
+// zerlegen - deshalb grundsätzlich escapen.
+function esc(s) {
+    return String(s === undefined || s === null ? '' : s)
+        .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+}
+
+function room_width_height() {
+    let w = 1, h = 1;
+    for (let s of seats) {
+        if (s[0] + 1 > w) w = s[0] + 1;
+        if (s[1] + 1 > h) h = s[1] + 1;
+    }
+    return [w, h];
+}
+
+function pair_exists(list, a, b) {
+    return list.some(p => p.slice().sort().join() === [a, b].sort().join());
+}
+
+// Sind zwei Personen bereits über exakte feste Plätze (siehe
+// render_rule_seatmap) zu Tischnachbarn gemacht worden? Für die
+// Widerspruchsprüfung gegen Verbotspaare, in beide Richtungen nutzbar.
+function pinned_as_neighbors(email_a, email_b) {
+    let ra = fixed_rules.find(r => r[0] === email_a && rule_is_exact_seat(r));
+    let rb = fixed_rules.find(r => r[0] === email_b && rule_is_exact_seat(r));
+    if (!ra || !rb) return false;
+    return ra[2][0] === rb[2][0] && Math.abs(ra[1][0] - rb[1][0]) === 1;
+}
+
+function room_mid_y() {
+    let maxY = 0;
+    for (let s of seats) if (s[1] > maxY) maxY = s[1];
+    return maxY / 2.0;
+}
+
+function neighbors(seatIndexA, seatIndexB) {
+    if (seatIndexA === undefined || seatIndexB === undefined) return false;
+    let a = seats[seatIndexA], b = seats[seatIndexB];
+    return a[1] === b[1] && Math.abs(a[0] - b[0]) === 1;
+}
+
+function shuffle_array(arr) {
+    arr = arr.slice();
+    for (let i = arr.length - 1; i > 0; i--) {
+        let j = Math.floor(Math.random() * (i + 1));
+        [arr[i], arr[j]] = [arr[j], arr[i]];
+    }
+    return arr;
+}
+
+function area_for_rule(area) {
+    let [w, h] = room_width_height();
+    let midX = (w - 1) / 2.0;
+    let midY = (h - 1) / 2.0;
+    if (area === 'front') return [[0, w - 1], [0, Math.floor(midY)]];
+    if (area === 'back') return [[0, w - 1], [Math.ceil(midY), h - 1]];
+    if (area === 'left') return [[0, Math.floor(midX)], [0, h - 1]];
+    if (area === 'right') return [[Math.ceil(midX), w - 1], [0, h - 1]];
+    return [[0, w - 1], [0, h - 1]];
+}
+
+function refresh_dropdowns() {
+    let opts = sus.map(s => `<option value="${esc(s.email)}">${esc(s.display_name)}</option>`).join('');
+    $('#sph_pair_a, #sph_pair_b, #sph_rule_sus').html(opts);
+}
+
+function render_pairs() {
+    function render_list(el, pairs, kind) {
+        if (pairs.length === 0) {
+            $(el).html(`<strong>${kind === 'forced' ? 'Muss zusammen' : 'Darf nicht zusammen'}:</strong> <span class="none-hint">keine</span>`);
+            return;
+        }
+        let html = `<strong>${kind === 'forced' ? 'Muss zusammen' : 'Darf nicht zusammen'}:</strong> `;
+        for (let [a, b] of pairs) {
+            html += `<span class="pair-chip">${esc(display_name(a))} + ${esc(display_name(b))}<a data-a="${esc(a)}" data-b="${esc(b)}" data-kind="${kind}" class="bu-remove-pair">&times;</a></span>`;
+        }
+        $(el).html(html);
+    }
+    render_list('#sph_forced_list', forced_pairs, 'forced');
+    render_list('#sph_forbidden_list', forbidden_pairs, 'forbidden');
+    $('.bu-remove-pair').off('click').on('click', function (e) {
+        let a = $(this).data('a'), b = $(this).data('b'), kind = $(this).data('kind');
+        api_call('/api/sph_remove_pair', {cycle_id: open_cycle_id, email_a: a, email_b: b, kind: kind}, function (data) {
+            forced_pairs = kind === 'forced' ? data.pairs : forced_pairs;
+            forbidden_pairs = kind === 'forbidden' ? data.pairs : forbidden_pairs;
+            render_pairs();
+        });
+    });
+}
+
+// Ist diese Regel ein exakter Platz (x_min===x_max, y_min===y_max) statt
+// eines groben Bereichs ("vorne" etc.)?
+function rule_is_exact_seat(r) {
+    return r[1][0] === r[1][1] && r[2][0] === r[2][1];
+}
+
+// Menschenlesbare Beschreibung einer fixed_rule fürs Chip/die Liste - erkennt
+// die vier Standardbereiche aus area_for_rule() wieder, sonst "genauer Platz"
+// bzw. allgemein "Bereich" (z. B. nach einer Übernahme aus einem anderen Raum
+// mit anderem Layout, wo die Koordinaten nicht mehr in ein Standardraster passen).
+function describe_rule(r) {
+    if (rule_is_exact_seat(r)) return 'genauer Platz';
+    let [, xr, yr] = r;
+    let labels = {front: 'vorne', back: 'hinten', left: 'links', right: 'rechts'};
+    for (let area in labels) {
+        let [axr, ayr] = area_for_rule(area);
+        if (axr[0] === xr[0] && axr[1] === xr[1] && ayr[0] === yr[0] && ayr[1] === yr[1]) return labels[area];
+    }
+    return 'Bereich';
+}
+
+function render_rules() {
+    if (fixed_rules.length === 0) {
+        $('#sph_rules_list').html('<span class="none-hint">keine festen Plätze</span>');
+        return;
+    }
+    let html = '';
+    for (let r of fixed_rules) {
+        html += `<span class="rule-chip">${esc(display_name(r[0]))} (${describe_rule(r)})<a data-email="${esc(r[0])}" class="bu-remove-rule">&times;</a></span>`;
+    }
+    $('#sph_rules_list').html(html);
+    $('.bu-remove-rule').off('click').on('click', function (e) {
+        let email = $(this).data('email');
+        api_call('/api/sph_remove_fixed_rule', {cycle_id: open_cycle_id, email: email}, function (data) {
+            fixed_rules = data.rules;
+            render_rules();
+            render_rule_seatmap();
+        });
+    });
+}
+
+// Klickbare Karte mit allen Plätzen des Raums (gleiches Koordinatensystem wie
+// Shuffler und generierter Plan, seats_dict[raum]) - Klick auf einen freien
+// Platz weist ihn der oben ausgewählten Person exakt zu; Klick auf einen
+// bereits vergebenen Platz entfernt die Vorgabe wieder.
+function render_rule_seatmap() {
+    let container = $('#sph_rule_seatmap');
+    if (!open_cycle_id) {
+        container.empty().css('width', '').css('height', '');
+        return;
+    }
+    let [w, h] = room_width_height();
+    container.empty();
+    let container_width = Math.min($('.sph-container').width() || 900, 900);
+    let scale = Math.min(90, container_width / w);
+    container.css('height', `${h * scale}px`).css('width', `${w * scale}px`);
+    for (let i = 0; i < seats.length; i++) {
+        let seat = seats[i];
+        let rule = fixed_rules.find(r => rule_is_exact_seat(r) && r[1][0] === seat[0] && r[2][0] === seat[1]);
+        let div = $('<div>').addClass('place').css('left', `${seat[0] * scale}px`).css('top', `${seat[1] * scale}px`)
+            .css('width', `${scale * 0.9}px`).css('height', `${scale * 0.9}px`).data('seat-index', i);
+        if (rule) {
+            div.addClass('taken').attr('title', `${display_name(rule[0])} - klicken zum Entfernen`);
+            div.append($('<div>').addClass('sph-name').text(display_name(rule[0])));
+        } else {
+            div.attr('title', 'Klicken, um die oben ausgewählte Person hier fest zu platzieren');
+        }
+        container.append(div);
+    }
+    $('#sph_rule_seatmap .place').off('click').on('click', function () {
+        let seat = seats[$(this).data('seat-index')];
+        let existing = fixed_rules.find(r => rule_is_exact_seat(r) && r[1][0] === seat[0] && r[2][0] === seat[1]);
+        if (existing) {
+            api_call('/api/sph_remove_fixed_rule', {cycle_id: open_cycle_id, email: existing[0]}, function (data) {
+                fixed_rules = data.rules;
+                render_rules();
+                render_rule_seatmap();
+            });
+            return;
+        }
+        let email = $('#sph_rule_sus').val();
+        if (!email) return;
+        let neighbor_rule = fixed_rules.find(r => rule_is_exact_seat(r) && r[0] !== email && r[2][0] === seat[1] && Math.abs(r[1][0] - seat[0]) === 1);
+        if (neighbor_rule && pair_exists(forbidden_pairs, email, neighbor_rule[0])) {
+            alert(`${display_name(email)} und ${display_name(neighbor_rule[0])} sind als "dürfen nicht zusammensitzen" markiert - bitte das zuerst entfernen, bevor du sie auf Nachbarplätze setzt.`);
+            return;
+        }
+        api_call('/api/sph_set_fixed_rule', {cycle_id: open_cycle_id, email: email, x_min: seat[0], x_max: seat[0], y_min: seat[1], y_max: seat[1]}, function (data) {
+            if (data.success === false) { alert(data.error || 'Konnte nicht gespeichert werden.'); return; }
+            fixed_rules = data.rules;
+            render_rules();
+            render_rule_seatmap();
+        });
+    });
+}
+
+// Wünscht email_b (in irgendeinem Slot, unabhängig vom Bestätigen-Status)
+// auch email_a? Für die 🤝-Anzeige in der Tabelle, damit die Lehrkraft
+// wechselseitige Wünsche schon vor dem Bestätigen erkennt.
+function wishes_mutual_any(email_a, email_b) {
+    let wb = wishes[email_b];
+    if (!wb) return false;
+    return wb.want1 === email_a || wb.want2 === email_a || wb.want3 === email_a;
+}
+
+// Wünsche gelten automatisch (kein extra Bestätigen nötig) - nur "rejected"
+// nimmt einen Wunsch aus der Planung raus. "Wechselseitig" heißt also: beide
+// Seiten wünschen sich gegenseitig UND keine Seite hat das abgelehnt.
+function is_mutual_active(email_a, target_b) {
+    let wb = wishes[target_b];
+    if (!wb) return false;
+    return (wb.want1 === email_a && wb.want1_status !== 'rejected') ||
+           (wb.want2 === email_a && wb.want2_status !== 'rejected') ||
+           (wb.want3 === email_a && wb.want3_status !== 'rejected');
+}
+
+function render_wishes() {
+    if (!open_cycle_id) {
+        $('#sph_wishes_section').hide();
+        return;
+    }
+    $('#sph_wishes_section').show();
+    let rows = '';
+    for (let s of sus) {
+        let w = wishes[s.email] || {};
+        function cell(field, statusField) {
+            if (!w[field]) return '<td>-</td><td></td>';
+            let name = esc(display_name(w[field]));
+            let rejected = w[statusField] === 'rejected';
+            let mutual = wishes_mutual_any(s.email, w[field]) ? " <span title='Wechselseitiger Wunsch'>🤝</span>" : '';
+            name = name + mutual;
+            return `<td class="${rejected ? 'sph-wish-rejected' : ''}">${name}</td><td style="white-space: nowrap;">` +
+                `<i class="fa fa-times sph-status-btn reject ${rejected ? 'active' : ''}" data-email="${esc(s.email)}" data-slot="${statusField}" data-status="rejected" title="Wunsch ablehnen"></i>` +
+                `</td>`;
+        }
+        rows += `<tr><td>${esc(s.display_name)}</td>${cell('want1', 'want1_status')}${cell('want2', 'want2_status')}${cell('want3', 'want3_status')}${cell('avoid1', 'avoid1_status')}</tr>`;
+    }
+    $('#sph_wishes_body').html(rows);
+    $('.sph-status-btn').off('click').on('click', function (e) {
+        let email = $(this).data('email'), slot = $(this).data('slot'), status = $(this).data('status');
+        let current = (wishes[email] || {})[slot] || 'pending';
+        let new_status = current === status ? 'pending' : status;
+        api_call('/api/sph_set_wish_status', {cycle_id: open_cycle_id, email: email, slot: slot, status: new_status}, function (data) {
+            if (data.success === false) { alert(data.error || 'Konnte nicht gespeichert werden.'); return; }
+            wishes[email] = wishes[email] || {};
+            wishes[email][slot] = new_status;
+            render_wishes();
+        });
+    });
+}
+
+function load_state() {
+    api_call('/api/sph_get_state', {klasse: klasse, raum: raum}, function (data) {
+        sus = data.sus;
+        wishes = data.wishes || {};
+        refresh_dropdowns();
+        if (data.open_cycle) {
+            open_cycle_id = data.open_cycle.id;
+            forced_pairs = data.open_cycle.forced_pairs || [];
+            forbidden_pairs = data.open_cycle.forbidden_pairs || [];
+            fixed_rules = data.open_cycle.fixed_rules || [];
+            $('#sph_bu_start_cycle').hide();
+            $('#sph_duration_group').hide();
+            $('#sph_carry_over_group').hide();
+            $('#sph_bu_discard_cycle').show();
+            // Eine per "Bearbeiten" geöffnete Kopie ist KEINE laufende
+            // Wunschrunde - dort wäre "Wunschrunde verwerfen" irreführend, weil
+            // weder Wünsche noch der ursprüngliche Plan verloren gehen.
+            is_reopened_edit = !!data.open_cycle.reopened_from;
+            if (is_reopened_edit) {
+                let d = new Date(data.open_cycle.reopened_from * 1000);
+                $('#sph_bu_close_wishes').hide();
+                $('#sph_bu_discard_cycle').text('Bearbeitung verwerfen');
+                $('#sph_cycle_info').text(`Du bearbeitest den gespeicherten Sitzplan vom ${d.toLocaleString('de-DE')}. Die Wünsche stammen aus der zugehörigen, bereits abgeschlossenen Wunschrunde – es läuft keine neue Umfrage. Zum Starten einer neuen Wunschrunde diese Bearbeitung zuerst speichern oder verwerfen.`);
+            } else if (data.open_cycle.wishes_open) {
+                $('#sph_bu_close_wishes').show().prop('disabled', false).text('Wunschrunde schließen');
+                $('#sph_bu_discard_cycle').text('Wunschrunde verwerfen (neu beginnen)');
+                $('#sph_cycle_info').text(`Wunschrunde läuft (Umfrage bis ${data.open_cycle.end_date}).`);
+            } else {
+                // Umfrage-Zeitfenster ist vorbei (oder wurde manuell geschlossen) -
+                // der Zyklus selbst bleibt aber offen zum Bearbeiten/Erzeugen/
+                // Speichern, nur "nochmal schließen" ergibt keinen Sinn mehr.
+                $('#sph_bu_close_wishes').hide();
+                $('#sph_bu_discard_cycle').text('Wunschrunde verwerfen (neu beginnen)');
+                $('#sph_cycle_info').text(`Wunschrunde ist geschlossen (Umfrage endete am ${data.open_cycle.end_date} um ${data.open_cycle.end_time} Uhr). Wünsche können weiter abgelehnt und der Plan erzeugt werden. Zum Starten einer neuen Wunschrunde zuerst speichern oder verwerfen.`);
+            }
+        } else {
+            open_cycle_id = null;
+            forced_pairs = []; forbidden_pairs = []; fixed_rules = [];
+            $('#sph_bu_close_wishes').hide();
+            $('#sph_bu_discard_cycle').hide();
+            $('#sph_duration_group').show();
+            $('#sph_carry_over_group').toggle(!!(data.last_cycle));
+            if (data.can_start_cycle) {
+                $('#sph_bu_start_cycle').show().prop('disabled', false).attr('title', '');
+                $('#sph_cycle_info').text('Keine Wunschrunde offen.');
+            } else {
+                // Nur die Klassenleitung darf eine Wunschrunde starten - sonst
+                // könnte jede Fachlehrkraft, die die Klasse aufruft, spontan
+                // eine Umfrage an alle SuS auslösen.
+                $('#sph_bu_start_cycle').show().prop('disabled', true)
+                    .attr('title', 'Nur die Klassenleitung kann eine Wunschrunde starten.');
+                $('#sph_duration_group').hide();
+                let names = (data.klassenleiter_names || []).join(', ') || 'nicht hinterlegt';
+                $('#sph_cycle_info').text(`Keine Wunschrunde offen. Nur die Klassenleitung (${names}) kann eine neue starten.`);
+            }
+        }
+        last_seats = (data.last_cycle && data.last_cycle.seats) || {};
+        let last_unresolved = (data.last_cycle && data.last_cycle.unresolved) || [];
+        last_unlucky_emails = new Set(last_unresolved.filter(f => /^(Wunsch mit|Keiner der bestätigten)/.test(f.reason || '')).map(f => f.email));
+        last_lucky_emails = new Set((data.last_cycle && data.last_cycle.satisfied_emails) || []);
+        // Ohne offene Wunschrunde lassen sich Paare, Regeln und "Sitzplan
+        // erzeugen" nicht sinnvoll bedienen (sie brauchen alle eine cycle_id) -
+        // deshalb ausblenden statt Klicks ins Leere laufen zu lassen. Der Link
+        // auf die SuS-Ansicht bleibt sichtbar, der zeigt den gespeicherten Plan.
+        $('#sph_pairs_section, #sph_rules_section, #sph_bu_generate').toggle(!!open_cycle_id);
+        if (!open_cycle_id) {
+            $('#sph_bu_save').hide();
+            $('#sph_unresolved_summary').empty();
+            $('#sph_seats').empty();
+        }
+        render_pairs();
+        render_rules();
+        render_rule_seatmap();
+        render_wishes();
+    });
+}
+
+// Baut EINEN Sitzplan-Versuch auf (harte Vorgaben zuerst, dann Rest zufällig)
+// und optimiert ihn per Zufalls-Tausch-Suche. Gibt {placement, score} zurück.
+// Wird von generate_plan() mehrfach mit unterschiedlichem Zufall aufgerufen,
+// damit nicht der erste (evtl. schlechte) Versuch das Ergebnis bestimmt.
+function build_and_optimize_once(emails) {
+    let placement = {};
+    let placed = new Set();
+    let available = seats.map((s, i) => i);
+
+    function try_place_in_range(email, xr, yr) {
+        let candidates = available.filter(i => seats[i][0] >= xr[0] && seats[i][0] <= xr[1] && seats[i][1] >= yr[0] && seats[i][1] <= yr[1]);
+        if (candidates.length === 0) return false;
+        let idx = candidates[Math.floor(Math.random() * candidates.length)];
+        placement[email] = idx;
+        available = available.filter(i => i !== idx);
+        placed.add(email);
+        return true;
+    }
+
+    for (let rule of fixed_rules) {
+        let [email, xr, yr] = rule;
+        if (!emails.includes(email)) continue;
+        try_place_in_range(email, xr, yr);
+    }
+
+    for (let [a, b] of forced_pairs) {
+        if (!emails.includes(a) || !emails.includes(b)) continue;
+        if (placed.has(a) && placed.has(b)) continue;
+        if (placed.has(a) || placed.has(b)) {
+            // Genau eine der beiden Personen sitzt schon fest (durch eine feste
+            // Platzvorgabe oben). Dann die andere direkt daneben setzen, statt
+            // das Zwangspaar aufzugeben - sonst bliebe es unerfüllt, obwohl der
+            // Nachbarplatz frei ist.
+            let anchor = placed.has(a) ? a : b;
+            let other = anchor === a ? b : a;
+            let s = seats[placement[anchor]];
+            for (let nc of [[s[0] + 1, s[1]], [s[0] - 1, s[1]]]) {
+                let j = available.find(k => seats[k][0] === nc[0] && seats[k][1] === nc[1]);
+                if (j !== undefined) {
+                    placement[other] = j;
+                    available = available.filter(k => k !== j);
+                    placed.add(other);
+                    break;
+                }
+            }
+            continue;
+        }
+        let found = false;
+        for (let i of shuffle_array(available)) {
+            let s = seats[i];
+            let opts = [[s[0] + 1, s[1]], [s[0] - 1, s[1]]];
+            for (let nc of opts) {
+                let j = available.find(k => seats[k][0] === nc[0] && seats[k][1] === nc[1]);
+                if (j !== undefined) {
+                    placement[a] = i; placement[b] = j;
+                    available = available.filter(k => k !== i && k !== j);
+                    placed.add(a); placed.add(b);
+                    found = true;
+                    break;
+                }
+            }
+            if (found) break;
+        }
+    }
+
+    let remaining = shuffle_array(emails.filter(e => !placed.has(e)));
+    for (let email of remaining) {
+        let idx = available[Math.floor(Math.random() * available.length)];
+        placement[email] = idx;
+        available = available.filter(i => i !== idx);
+        placed.add(email);
+    }
+
+    let mid = room_mid_y();
+    let locked = new Set();
+    for (let r of fixed_rules) locked.add(r[0]);
+    for (let [a, b] of forced_pairs) { locked.add(a); locked.add(b); }
+    let swappable = emails.filter(e => !locked.has(e));
+
+    // Fairness über Runden hinweg: wer letztes Mal trotz aktivem Wunsch
+    // (nicht abgelehnt) keine Paarung bekommen hat, wird dieses Mal
+    // bevorzugt; wer letztes Mal schon seinen Wunsch bekommen hat, tritt
+    // etwas zurück - jeweils VOR jemandem mit "normaler" Ausgangslage.
+    function luck_multiplier(email) {
+        if (last_unlucky_emails.has(email)) return 3;
+        if (last_lucky_emails.has(email)) return 0.5;
+        return 1;
+    }
+
+    function score(placement) {
+        let total = 0;
+        for (let email in wishes) {
+            if (!emails.includes(email)) continue;
+            let w = wishes[email];
+            let luck = luck_multiplier(email);
+            // Wechselseitig aktive Wünsche sind fast immer erfüllbar (beide
+            // wollen sich, ein Tisch reicht) - deutlich stärker gewichten als
+            // einseitige, damit die Suche diese "leichten Treffer" bevorzugt.
+            // Wünsche gelten automatisch, außer die Lehrkraft hat "abgelehnt"
+            // angeklickt (kein extra Bestätigen nötig).
+            if (w.want1_status !== 'rejected' && w.want1 && emails.includes(w.want1)) {
+                let bonus = (is_mutual_active(email, w.want1) ? 25 : 5) * luck;
+                total += neighbors(placement[email], placement[w.want1]) ? bonus : 0;
+            }
+            if (w.want2_status !== 'rejected' && w.want2 && emails.includes(w.want2)) {
+                let bonus = (is_mutual_active(email, w.want2) ? 25 : 5) * luck;
+                total += neighbors(placement[email], placement[w.want2]) ? bonus : 0;
+            }
+            if (w.want3_status !== 'rejected' && w.want3 && emails.includes(w.want3)) {
+                let bonus = (is_mutual_active(email, w.want3) ? 25 : 5) * luck;
+                total += neighbors(placement[email], placement[w.want3]) ? bonus : 0;
+            }
+            if (w.avoid1_status !== 'rejected' && w.avoid1 && emails.includes(w.avoid1)) {
+                total -= neighbors(placement[email], placement[w.avoid1]) ? 10 : 0;
+            }
+        }
+        for (let [a, b] of forbidden_pairs) {
+            if (emails.includes(a) && emails.includes(b)) {
+                total -= neighbors(placement[a], placement[b]) ? 10 : 0;
+            }
+        }
+        for (let email of emails) {
+            if (locked.has(email)) continue;
+            // last_seats[email] ist der Feld-Index aus dem zuletzt gespeicherten
+            // Plan (siehe render_placement/sph_save_cycle) - erst in [x,y] auflösen.
+            let prev_idx = last_seats[email];
+            if (prev_idx === undefined || !seats[prev_idx]) continue;
+            let was_front = seats[prev_idx][1] < mid;
+            let now_front = seats[placement[email]][1] < mid;
+            if (was_front && !now_front) total += 2;
+            if (was_front && now_front) total -= 2;
+        }
+        return total;
+    }
+
+    let current_score = score(placement);
+    for (let iter = 0; iter < 4000; iter++) {
+        if (swappable.length < 2) break;
+        let i = swappable[Math.floor(Math.random() * swappable.length)];
+        let j = swappable[Math.floor(Math.random() * swappable.length)];
+        if (i === j) continue;
+        let tmp = placement[i]; placement[i] = placement[j]; placement[j] = tmp;
+        let new_score = score(placement);
+        if (new_score >= current_score) {
+            current_score = new_score;
+        } else {
+            let tmp2 = placement[i]; placement[i] = placement[j]; placement[j] = tmp2;
+        }
+    }
+    return {placement: placement, score: current_score};
+}
+
+function generate_plan() {
+    let emails = sus.map(s => s.email);
+    if (emails.length > seats.length) {
+        alert(`Diese Klasse hat ${emails.length} SuS, aber Raum ${raum} nur ${seats.length} Plätze.`);
+        return;
+    }
+
+    // Mehrere unabhängige Zufalls-Durchläufe, besten Score behalten - ein
+    // einzelner Durchlauf kann in einem mittelmäßigen lokalen Optimum
+    // hängenbleiben, gerade bei vielen SuS mit überlappenden Wünschen.
+    let best = null;
+    const RESTARTS = 10;
+    for (let attempt = 0; attempt < RESTARTS; attempt++) {
+        let result = build_and_optimize_once(emails);
+        if (!best || result.score > best.score) best = result;
+    }
+    let placement = best.placement;
+
+    let failures = [];
+    let wish_total = 0, wish_ok = 0;
+    for (let rule of fixed_rules) {
+        let [email, xr, yr] = rule;
+        if (!emails.includes(email)) continue;
+        let seat = seats[placement[email]];
+        if (!(seat[0] >= xr[0] && seat[0] <= xr[1] && seat[1] >= yr[0] && seat[1] <= yr[1])) {
+            failures.push({email: email, reason: 'feste Platzvorgabe nicht erfüllbar'});
+        }
+    }
+    for (let [a, b] of forced_pairs) {
+        if (!emails.includes(a) || !emails.includes(b)) continue;
+        if (!neighbors(placement[a], placement[b])) {
+            failures.push({email: a, reason: `Zwangspaar mit ${display_name(b)} nicht erfüllbar`});
+            failures.push({email: b, reason: `Zwangspaar mit ${display_name(a)} nicht erfüllbar`});
+        }
+    }
+    // Die bis zu 3 Wunschpartner sind gleichberechtigt ("oder", nicht "und") -
+    // eine Person gilt als zufrieden, sobald EINER ihrer (nicht abgelehnten)
+    // Wünsche tatsächlich Tischnachbar wird. Die anderen, nicht getroffenen
+    // Wünsche dürfen NICHT einzeln als "nicht erfüllt" markiert werden, sonst
+    // wäre (bei mehreren aktiven Wünschen pro Person) fast immer irgendeiner
+    // davon nicht erfüllt und praktisch jede Person würde markiert, obwohl
+    // ihr eigentliches Ziel - mindestens ein Treffer - längst erreicht ist.
+    let students_with_want = new Set();
+    let students_satisfied = new Set();
+    for (let email in wishes) {
+        if (!emails.includes(email)) continue;
+        let w = wishes[email];
+        let active_targets = ['want1', 'want2', 'want3']
+            .filter(slot => w[slot + '_status'] !== 'rejected' && w[slot] && emails.includes(w[slot]))
+            .map(slot => w[slot]);
+
+        if (active_targets.length > 0) {
+            wish_total++;
+            students_with_want.add(email);
+            let hit = active_targets.find(target => neighbors(placement[email], placement[target]));
+            if (hit) {
+                wish_ok++;
+                students_satisfied.add(email);
+            } else if (active_targets.length === 1) {
+                failures.push({email: email, reason: `Wunsch mit ${display_name(active_targets[0])} nicht erfüllt`});
+            } else {
+                failures.push({email: email, reason: `Keiner der bestätigten Wunschpartner (${active_targets.map(display_name).join(', ')}) wurde Tischnachbar`});
+            }
+        }
+        if (w.avoid1_status !== 'rejected' && w.avoid1 && emails.includes(w.avoid1)) {
+            wish_total++;
+            if (!neighbors(placement[email], placement[w.avoid1])) wish_ok++;
+            else failures.push({email: email, reason: `sitzt trotzdem neben ${display_name(w.avoid1)}`});
+        }
+    }
+    for (let [a, b] of forbidden_pairs) {
+        if (emails.includes(a) && emails.includes(b) && neighbors(placement[a], placement[b])) {
+            failures.push({email: a, reason: `sitzt trotzdem neben ${display_name(b)}`});
+            failures.push({email: b, reason: `sitzt trotzdem neben ${display_name(a)}`});
+        }
+    }
+
+    current_placement = placement;
+    current_unresolved = failures;
+    current_satisfied_emails = [...students_satisfied];
+    current_satisfaction = {
+        ok: wish_ok, total: wish_total,
+        students_with_want: students_with_want.size, students_satisfied: students_satisfied.size,
+    };
+    render_placement();
+}
+
+function render_placement() {
+    let [w, h] = room_width_height();
+    let container = $('#sph_seats');
+    container.empty();
+    // Pixelbasierte Skalierung (wie sitzplan.html), passend zur .sph-container-Breite.
+    let container_width = Math.min($('.sph-container').width() || 900, 900);
+    let scale = Math.min(90, container_width / w);
+    container.css('position', 'relative').css('height', `${h * scale}px`).css('width', `${w * scale}px`);
+    let unresolved_emails = new Set(current_unresolved.map(f => f.email));
+    for (let email in current_placement) {
+        let seat = seats[current_placement[email]];
+        let div = $('<div>').addClass('place').css('left', `${seat[0] * scale}px`).css('top', `${seat[1] * scale}px`)
+            .css('width', `${scale * 0.9}px`).css('height', `${scale * 0.9}px`);
+        if (unresolved_emails.has(email)) div.addClass('unresolved');
+        let reasons = current_unresolved.filter(f => f.email === email).map(f => f.reason).join('; ');
+        if (reasons) div.attr('title', reasons);
+        div.append($('<div>').addClass('sph-name').text(display_name(email)));
+        container.append(div);
+    }
+    let rate_html = '';
+    if (current_satisfaction.students_with_want > 0) {
+        let pct = Math.round(100 * current_satisfaction.students_satisfied / current_satisfaction.students_with_want);
+        rate_html = `<p><strong>${current_satisfaction.students_satisfied} von ${current_satisfaction.students_with_want} SuS mit Wunsch (${pct}%)</strong> ` +
+            `haben mindestens einen ihrer bestätigten Wunschpartner tatsächlich als Tischnachbarn bekommen.</p>`;
+    }
+    if (current_unresolved.length > 0) {
+        let byEmail = {};
+        current_unresolved.forEach(f => { byEmail[f.email] = byEmail[f.email] || []; byEmail[f.email].push(f.reason); });
+        let lines = Object.keys(byEmail).map(e => `${display_name(e)}: ${byEmail[e].join(', ')}`);
+        $('#sph_unresolved_summary').html(rate_html + '<strong>Nicht erfüllte Vorgaben:</strong><br>' + lines.join('<br>'));
+    } else {
+        $('#sph_unresolved_summary').html(rate_html + 'Alle bestätigten Wünsche und Vorgaben konnten erfüllt werden.');
+    }
+    $('#sph_bu_save').show();
+}
+
+function render_history(cycles) {
+    if (!cycles || cycles.length === 0) {
+        $('#sph_history_body').html('<tr><td colspan="5" class="none-hint">Noch kein Sitzplan gespeichert.</td></tr>');
+        return;
+    }
+    let rows = '';
+    cycles.forEach((c, i) => {
+        let date_str = new Date(c.saved_at * 1000).toLocaleString('de-DE');
+        let current_badge = i === 0 ? ' <span class="badge badge-success">aktuell für SuS sichtbar</span>' : '';
+        let summary = `${c.satisfied_count} von ${c.seats_count} SuS mit erfülltem Wunsch, ${c.unresolved_count} offene Punkte`;
+        rows += `<tr>
+            <td>${date_str}${current_badge}</td>
+            <td>${summary}</td>
+            <td><a class="btn btn-sm btn-outline-secondary" href="/sitzplananzeige/${encodeURIComponent(klasse)}/${encodeURIComponent(raum)}?cycle=${encodeURIComponent(c.id)}" target="_blank">Für SuS anzeigen</a></td>
+            <td><button class="btn btn-sm btn-outline-primary bu-edit-cycle" data-id="${esc(c.id)}">Bearbeiten</button></td>
+            <td><button class="btn btn-sm btn-outline-danger bu-delete-cycle" data-id="${esc(c.id)}">Löschen</button></td>
+        </tr>`;
+    });
+    $('#sph_history_body').html(rows);
+    $('.bu-delete-cycle').off('click').on('click', function () {
+        let id = $(this).data('id');
+        if (!confirm('Diesen gespeicherten Sitzplan wirklich unwiderruflich löschen?')) return;
+        api_call('/api/sph_delete_cycle', {cycle_id: id}, function (data) {
+            if (data.success === false) { alert(data.error || 'Konnte nicht gelöscht werden.'); return; }
+            load_history();
+        });
+    });
+    $('.bu-edit-cycle').off('click').on('click', function () {
+        let id = $(this).data('id');
+        api_call('/api/sph_reopen_saved_cycle', {cycle_id: id}, function (data) {
+            if (data.success === false) { alert(data.error || 'Konnte nicht zur Bearbeitung geöffnet werden.'); return; }
+            load_state();
+            load_history();
+            $('html, body').animate({scrollTop: $('#sph_cycle_controls').offset().top}, 300);
+        });
+    });
+}
+
+function load_history() {
+    api_call('/api/sph_list_saved_cycles', {klasse: klasse, raum: raum}, function (data) {
+        render_history(data.cycles);
+    });
+}
+
+document.addEventListener('DOMContentLoaded', function () {
+    let parts = window.location.pathname.replace('/sitzplanhelfer/', '').split('/');
+    klasse = parts[0];
+    raum = parts[1];
+    seats = seats_dict[raum];
+    if (!seats) {
+        // Kein Layout für diesen Raum - mit einer Erklärung stehenbleiben statt
+        // wortlos auf die Startseite zu springen.
+        $('.sph-container').empty()
+            .append($('<h1>').text('Sitzplanhelfer'))
+            .append($('<p>').text(`Für Raum ${raum} ist keine Bestuhlung hinterlegt. Raum-Layouts werden in /data/sitzplan/seats.js gepflegt – dieselbe Datei, die auch der Sitzplan-Shuffler verwendet.`));
+        return;
+    }
+    $('#sph_label').text(`${klasse} – Raum ${raum}`);
+    $('#sph_link_shuffler').attr('href', `/sitzplan/${klasse}/${raum}`);
+    $('#sph_link_public_view').attr('href', `/sitzplananzeige/${klasse}/${raum}`);
+
+    $('#sph_bu_start_cycle').click(function () {
+        let duration_days = parseInt($('#sph_duration_days').val(), 10);
+        if (!duration_days || duration_days < 1) duration_days = 4;
+        let carry_over = $('#sph_carry_over_group').is(':visible') && $('#sph_carry_over').is(':checked') ? 'yes' : 'no';
+        api_call('/api/sph_start_cycle', {klasse: klasse, raum: raum, duration_days: duration_days, carry_over: carry_over}, function (data) {
+            if (data.success === false) { alert(data.error || 'Konnte nicht gestartet werden.'); return; }
+            load_state();
+        });
+    });
+    $('#sph_bu_close_wishes').click(function () {
+        $(this).prop('disabled', true).text('Wird geschlossen…');
+        api_call('/api/sph_close_wishes', {cycle_id: open_cycle_id}, function (data) {
+            load_state();
+        });
+    });
+    $('#sph_bu_discard_cycle').click(function () {
+        let frage = is_reopened_edit
+            // Beim Bearbeiten gehen weder Wünsche noch der Originalplan
+            // verloren - nur die hier gemachten Änderungen.
+            ? 'Bearbeitung verwerfen? Der ursprünglich gespeicherte Sitzplan bleibt unverändert in der Historie erhalten, und die Schülerwünsche gehen nicht verloren. Verworfen werden nur die hier vorgenommenen Änderungen an Zwangspaaren, Verboten und festen Plätzen.'
+            : 'Diese Wunschrunde wirklich verwerfen? Alle bisher eingegangenen Wünsche, Zwangspaare, Verbote und festen Plätze für diesen Zyklus gehen dabei verloren, und die Umfrage wird bei den SuS sofort zurückgezogen. Bereits gespeicherte Pläne in der Historie sind davon nicht betroffen.';
+        if (!confirm(frage)) return;
+        api_call('/api/sph_discard_open_cycle', {cycle_id: open_cycle_id}, function (data) {
+            if (data.success === false) { alert(data.error || 'Konnte nicht verworfen werden.'); return; }
+            load_state();
+        });
+    });
+    $('#sph_bu_add_forced').click(function () {
+        let a = $('#sph_pair_a').val(), b = $('#sph_pair_b').val();
+        if (a === b) { alert('Bitte zwei unterschiedliche Personen wählen.'); return; }
+        if (pair_exists(forbidden_pairs, a, b)) {
+            alert(`${display_name(a)} und ${display_name(b)} sind bereits als "darf nicht zusammensitzen" gesetzt - bitte das zuerst entfernen.`);
+            return;
+        }
+        api_call('/api/sph_set_pair', {cycle_id: open_cycle_id, email_a: a, email_b: b, kind: 'forced'}, function (data) {
+            if (data.success === false) { alert(data.error || 'Konnte nicht gespeichert werden.'); return; }
+            forced_pairs = data.pairs;
+            render_pairs();
+        });
+    });
+    $('#sph_bu_add_forbidden').click(function () {
+        let a = $('#sph_pair_a').val(), b = $('#sph_pair_b').val();
+        if (a === b) { alert('Bitte zwei unterschiedliche Personen wählen.'); return; }
+        if (pair_exists(forced_pairs, a, b)) {
+            alert(`${display_name(a)} und ${display_name(b)} sind bereits als "muss zusammensitzen" gesetzt - bitte das zuerst entfernen.`);
+            return;
+        }
+        if (pinned_as_neighbors(a, b)) {
+            alert(`${display_name(a)} und ${display_name(b)} sitzen bereits über feste Plätze nebeneinander - bitte zuerst einen der beiden festen Plätze entfernen.`);
+            return;
+        }
+        api_call('/api/sph_set_pair', {cycle_id: open_cycle_id, email_a: a, email_b: b, kind: 'forbidden'}, function (data) {
+            if (data.success === false) { alert(data.error || 'Konnte nicht gespeichert werden.'); return; }
+            forbidden_pairs = data.pairs;
+            render_pairs();
+        });
+    });
+    $('#sph_bu_add_rule').click(function () {
+        let email = $('#sph_rule_sus').val();
+        let area = $('#sph_rule_area').val();
+        if (area === 'any') {
+            api_call('/api/sph_remove_fixed_rule', {cycle_id: open_cycle_id, email: email}, function (data) {
+                fixed_rules = data.rules;
+                render_rules();
+                render_rule_seatmap();
+            });
+        } else {
+            let [xr, yr] = area_for_rule(area);
+            api_call('/api/sph_set_fixed_rule', {cycle_id: open_cycle_id, email: email, x_min: xr[0], x_max: xr[1], y_min: yr[0], y_max: yr[1]}, function (data) {
+                if (data.success === false) { alert(data.error || 'Konnte nicht gespeichert werden.'); return; }
+                fixed_rules = data.rules;
+                render_rules();
+                render_rule_seatmap();
+            });
+        }
+    });
+    $('#sph_bu_generate').click(function () {
+        generate_plan();
+    });
+    $('#sph_bu_save').click(function () {
+        api_call('/api/sph_save_cycle', {
+            cycle_id: open_cycle_id,
+            seats: JSON.stringify(current_placement),
+            unresolved: JSON.stringify(current_unresolved),
+            satisfied_emails: JSON.stringify(current_satisfied_emails),
+        }, function (data) {
+            if (data.success === false) { alert(data.error || 'Konnte nicht gespeichert werden.'); return; }
+            alert('Sitzplan gespeichert.');
+            // Der Zyklus ist jetzt abgeschlossen - ein zweiter Klick auf
+            // "Speichern" würde ins Leere laufen (open_cycle_id ist nach
+            // load_state() null), also Knopf und Vorschau zurücksetzen.
+            $('#sph_bu_save').hide();
+            current_placement = {};
+            current_unresolved = [];
+            $('#sph_seats').empty();
+            $('#sph_unresolved_summary').empty();
+            load_state();
+            load_history();
+        });
+    });
+
+    load_state();
+    load_history();
+});
+</script>

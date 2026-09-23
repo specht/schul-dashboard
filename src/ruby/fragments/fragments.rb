@@ -2772,8 +2772,8 @@ class Main
         ts1 = nil
         iterate_school_days do |ds, dow|
             next if [5, 6].include?(dow)
-            ts0 ||= DateTime.parse(ds).to_i
-            ts1 = DateTime.parse(ds).to_i
+            ts0 ||= Time.parse(ds).to_i
+            ts1 = Time.parse(ds).to_i
             ym = ds[0, 7]
             data[ym] ||= {
                 :school_days => 0,

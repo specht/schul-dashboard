@@ -3669,17 +3669,13 @@ class Main < Sinatra::Base
         end
         if user_logged_in? && @session_user[:is_monitor]
             if @session_user[:email] == "monitor-silentium@#{SCHUL_MAIL_DOMAIN}"
-                # Silentium zeigt normalerweise den Buchungen-Monitor, schaltet aber wie Flur/Sek/LZ
-                # auf Zeugniskonferenzen um (dann via 'monitor' im main_lz-Layout, siehe monitor.html).
+                # Buchungen-Monitor, außer der Zeugniskonferenzen-Schalter fürs Silentium ist an
                 path = get_monitor_zeugniskonferenzen()['silentium'] ? 'monitor' : 'monitor_buchungen'
             else
                 path = 'monitor'
             end
         elsif path == 'monitor' && request.path.split('/')[2] == 'silentium'
-            # erlaubt Verwaltungspersonal dieselbe Vorschau auf /monitor/silentium in
-            # manage_monitor.html, ohne dafür die eigene Session in die Monitor-Session verwandeln zu
-            # müssen - der Zugriff ist trotzdem geschützt, siehe
-            # require_monitor_or_user_who_can_manage_monitors! oben in monitor_buchungen.html.
+            # Vorschau in manage_monitor.html; die Templates prüfen selbst per require_monitor_or_user_who_can_manage_monitors!
             path = get_monitor_zeugniskonferenzen()['silentium'] ? 'monitor' : 'monitor_buchungen'
         end
         if path == 'timetable'
